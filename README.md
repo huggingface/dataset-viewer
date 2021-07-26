@@ -7,29 +7,32 @@ The URL schema is `https://huggingface.co/datasets-preview/:datasetId/extract?ro
 ## Requirements
 
 - Python 3.8+
+- Poetry
+- make
 
 ## Install
 
 ```bash
 git clone git@github.com:huggingface/datasets-preview-backend.git
 cd datasets-preview-backend
-python -m venv .venv
-source .venv/bin/activate
-pip install .
-deactivate
+make install
 ```
-
-See [INSTALL.md](./INSTALL.md) for details on how it has been deployed.
 
 ## Run
 
 ```bash
 cd datasets-preview-backend
-source .venv/bin/activate
-python datasets-preview-backend/main.py
+make run
 ```
 
 Set environment variables to configure the following aspects:
 
 - `DPB_EXTRACT_ROWS_LIMIT`: maximum number of rows in the extract. Defaults to `100`.
 - `DPB_PORT`: the port used by the app
+
+To restart the application on file changes while developing, run:
+
+```bash
+cd datasets-preview-backend
+make watch
+```
