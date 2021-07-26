@@ -1,0 +1,8 @@
+# MacOS
+.DS_Store
+
+# Python
+*.pyc
+.venv/
+
+.vscode/
