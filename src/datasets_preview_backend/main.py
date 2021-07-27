@@ -1,3 +1,4 @@
+import logging
 import os
 
 from starlette.applications import Starlette
@@ -32,19 +33,21 @@ async def healthcheck(request: Request):
 
 def get_dataset_extract(model_id: str, num_rows: int):
     # TODO: manage splits and submodels
-    print(f"Asked for {num_rows} first rows of model {model_id}")
+    logging.debug(f"Asked for {num_rows} first rows of model {model_id}")
     try:
         dataset = load_dataset(model_id, split="train", streaming=True)
     except:
-        print(f"WARN Dataset could not be loaded.")
+        logging.warning(f"Dataset could not be loaded.")
         return []
 
-    print(f"Dataset loaded")
+    logging.debug(f"Dataset loaded")
 
     rows = list(dataset.take(num_rows))
 
     if len(rows) != num_rows:
-        print(f"WARN could not read all the required rows ({len(rows)} / {num_rows})")
+        logging.warning(
+            f"could not read all the required rows ({len(rows)} / {num_rows})"
+        )
 
     return rows
 
