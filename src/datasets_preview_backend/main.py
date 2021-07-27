@@ -34,11 +34,8 @@ async def healthcheck(request: Request):
 def get_dataset_extract(model_id: str, num_rows: int):
     # TODO: manage splits and submodels
     logging.debug(f"Asked for {num_rows} first rows of model {model_id}")
-    try:
-        dataset = load_dataset(model_id, split="train", streaming=True)
-    except:
-        logging.warning(f"Dataset could not be loaded.")
-        return []
+
+    dataset = load_dataset(model_id, split="train", streaming=True)
 
     logging.debug(f"Dataset loaded")
 
@@ -58,7 +55,10 @@ async def extract(request: Request):
         d=request.query_params, key="rows", default=EXTRACT_ROWS_LIMIT
     )
 
-    return JSONResponse(get_dataset_extract(model_id, num_rows))
+    try:
+        return JSONResponse(get_dataset_extract(model_id, num_rows))
+    except FileNotFoundError as e:
+        return PlainTextResponse("Model data could not be found", status_code=404)
 
 
 def start():
