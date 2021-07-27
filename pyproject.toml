@@ -9,6 +9,7 @@ python = "^3.8"
 datasets = {extras = ["streaming"], version = "^1.10.2"}
 starlette = "^0.16.0"
 uvicorn = "^0.14.0"
+pytest = "^6.2.4"
 
 [tool.poetry.dev-dependencies]
 black = "^21.7b0"
