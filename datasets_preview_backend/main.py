@@ -2,9 +2,11 @@ import os
 
 from starlette.applications import Starlette
 from starlette.requests import Request
-from starlette.responses import PlainTextResponse
+from starlette.responses import PlainTextResponse, JSONResponse
 from starlette.routing import Route
 import uvicorn
+
+from datasets import load_dataset
 
 DEFAULT_PORT = 8000
 DEFAULT_EXTRACT_ROWS_LIMIT = 100
@@ -28,11 +30,32 @@ async def healthcheck(request: Request):
     return PlainTextResponse("ok")
 
 
+def get_dataset_extract(model_id: str, num_rows: int):
+    # TODO: manage splits and submodels
+    print(f"Asked for {num_rows} first rows of model {model_id}")
+    try:
+        dataset = load_dataset(model_id, split="train", streaming=True)
+    except:
+        print(f"Dataset could not be loaded.")
+        return []
+
+    print(f"Dataset loaded")
+
+    rows = list(dataset.take(num_rows))
+
+    if len(rows) != num_rows:
+        print(f"WARN could not read all the required rows ({len(rows)} / {num_rows})")
+
+    return rows
+
+
 async def extract(request: Request):
     model_id: str = request.path_params["model_id"]
-    rows = get_int_value(d=request.query_params, key="rows", default=EXTRACT_ROWS_LIMIT)
+    num_rows = get_int_value(
+        d=request.query_params, key="rows", default=EXTRACT_ROWS_LIMIT
+    )
 
-    return PlainTextResponse(model_id + "-" + str(rows))
+    return JSONResponse(get_dataset_extract(model_id, num_rows))
 
 
 def start():

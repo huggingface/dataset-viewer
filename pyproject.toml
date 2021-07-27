@@ -6,7 +6,7 @@ authors = ["Sylvain Lesage <severo@rednegra.net>"]
 
 [tool.poetry.dependencies]
 python = "^3.8"
-datasets = "^1.10.2"
+datasets = {extras = ["streaming"], version = "^1.10.2"}
 starlette = "^0.16.0"
 uvicorn = "^0.14.0"
 
