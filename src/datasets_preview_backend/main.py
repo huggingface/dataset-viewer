@@ -31,11 +31,11 @@ async def healthcheck(request: Request):
     return PlainTextResponse("ok")
 
 
-def get_dataset_extract(model_id: str, num_rows: int):
-    # TODO: manage splits and submodels
-    logging.debug(f"Asked for {num_rows} first rows of model {model_id}")
+def get_dataset_extract(dataset_id: str, num_rows: int):
+    # TODO: manage splits and configs
+    logging.debug(f"Asked for {num_rows} first rows of dataset {dataset_id}")
 
-    dataset = load_dataset(model_id, split="train", streaming=True)
+    dataset = load_dataset(dataset_id, split="train", streaming=True)
 
     logging.debug(f"Dataset loaded")
 
@@ -50,22 +50,23 @@ def get_dataset_extract(model_id: str, num_rows: int):
 
 
 async def extract(request: Request):
-    model_id: str = request.path_params["model_id"]
+    dataset_id: str = request.path_params["dataset_id"]
     num_rows = get_int_value(
         d=request.query_params, key="rows", default=EXTRACT_ROWS_LIMIT
     )
 
     try:
-        return JSONResponse(get_dataset_extract(model_id, num_rows))
+        return JSONResponse(get_dataset_extract(dataset_id, num_rows))
     except FileNotFoundError as e:
-        return PlainTextResponse("Model data could not be found", status_code=404)
+        return PlainTextResponse("Dataset not found", status_code=404)
+    # other exceptions will generate a 500 response
 
 
 def start():
     app = Starlette(
         routes=[
             Route("/healthcheck", endpoint=healthcheck),
-            Route("/{model_id:path}/extract", endpoint=extract),
+            Route("/{dataset_id:path}/extract", endpoint=extract),
         ]
     )
 
