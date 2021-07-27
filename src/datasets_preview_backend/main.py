@@ -36,7 +36,7 @@ def get_dataset_extract(model_id: str, num_rows: int):
     try:
         dataset = load_dataset(model_id, split="train", streaming=True)
     except:
-        print(f"Dataset could not be loaded.")
+        print(f"WARN Dataset could not be loaded.")
         return []
 
     print(f"Dataset loaded")
