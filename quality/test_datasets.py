@@ -4,34 +4,45 @@ from tqdm import tqdm
 
 from datasets import list_datasets
 
-from datasets_preview_backend.main import get_dataset_extract
+from datasets_preview_backend.main import extract_dataset_rows
 
 
 def export_all_datasets_exceptions():
-    num_rows = 100
+    num_rows = 10
     dataset_ids = list_datasets(with_community_datasets=True)
 
     results = []
 
-    for dataset_id in tqdm(dataset_ids[0:2]):
+    for dataset_id in tqdm(dataset_ids):
 
         success = False
         try:
-            extract = get_dataset_extract(dataset_id, num_rows)
+            extract = extract_dataset_rows(dataset_id, num_rows)
             exception = ""
-            if len(extract) != num_rows:
-                raise f"{len(extract)} rows instead of {num_rows}"
+            config_names = extract["configs"].keys()
+            split_names = set()
+            for config_name, config in extract["configs"].items():
+                for split_name, split in config["splits"].items():
+                    split_names.add(split_name)
+                    if len(split["rows"]) != num_rows:
+                        raise ValueError(
+                            f"{len(split['rows'])} rows instead of {num_rows} in {config_name} - {split_name}"
+                        )
             success = True
             message = ""
         except Exception as err:
             exception = str(type(err).__name__)
             message = str(err)
+            config_names = []
+            split_names = []
         results.append(
             {
                 "dataset_id": dataset_id,
                 "success": success,
                 "exception": exception,
                 "message": message,
+                "all_config_names": list(config_names),
+                "all_split_names": list(split_names),
             }
         )
 

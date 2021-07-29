@@ -10,7 +10,14 @@ from starlette.responses import PlainTextResponse, JSONResponse
 from starlette.routing import Route
 import uvicorn
 
-from datasets import load_dataset, prepare_module, import_main_class
+from datasets import (
+    Dataset,
+    IterableDataset,
+    load_dataset,
+    load_dataset_builder,
+    prepare_module,
+    import_main_class,
+)
 
 DEFAULT_PORT = 8000
 DEFAULT_EXTRACT_ROWS_LIMIT = 100
@@ -31,6 +38,17 @@ class ConfigNameError(Error):
 
     def __init__(self, config_name):
         self.config_name = config_name
+
+
+class SplitError(Error):
+    """Exception raised for errors in the split name.
+
+    Attributes:
+        split -- the erroneous dataset split
+    """
+
+    def __init__(self, split):
+        self.split = split
 
 
 def get_int_value(d, key, default):
@@ -61,40 +79,78 @@ def get_dataset_config_names(dataset_id: str) -> List[str]:
     return config_names
 
 
-def get_dataset_config_extract(dataset_id: str, config_name: str, num_rows: int):
+def get_config_splits(dataset_id: str, config_name: str) -> List[str]:
     try:
-        dataset = load_dataset(
-            dataset_id, name=config_name, split="train", streaming=True
-        )
+        builder = load_dataset_builder(dataset_id, name=config_name)
     except ValueError as err:
         message = str(err)
         if message.startswith(f"BuilderConfig {config_name} not found"):
             raise ConfigNameError(config_name=config_name)
         else:
             raise
+    return builder.info.splits.keys()
 
-    logging.debug(f"Dataset loaded")
+
+def extract_split_rows(dataset_id: str, config_name: str, split: str, num_rows: int):
+    logging.debug(
+        f"asked for {num_rows} first rows of dataset {dataset_id} - {config_name} - {split}"
+    )
+
+    try:
+        dataset: IterableDataset = load_dataset(
+            dataset_id, name=config_name, split=split, streaming=True
+        )
+    except ValueError as err:
+        message = str(err)
+        if message.startswith(f"BuilderConfig {config_name} not found"):
+            raise ConfigNameError(config_name=config_name)
+        elif message.startswith(f'Unknown split "{split}".') or message.startswith(
+            f"Bad split: {split}."
+        ):
+            raise SplitError(split=split)
+        else:
+            raise
 
     rows = list(dataset.take(num_rows))
-
     if len(rows) != num_rows:
         logging.warning(
-            f"could not read all the required rows ({len(rows)} / {num_rows})"
+            f"could not read all the required rows ({len(rows)} / {num_rows}) from dataset {dataset_id} - {config_name} - {split}"
         )
 
-    return {"dataset_id": dataset_id, "config_name": config_name, "rows": rows}
+    return {
+        "dataset_id": dataset_id,
+        "config_name": config_name,
+        "split": split,
+        "rows": rows,
+    }
 
 
-def get_dataset_extract(dataset_id: str, num_rows: int):
-    # TODO: manage splits
-    logging.debug(f"Asked for {num_rows} first rows of dataset {dataset_id}")
+def extract_config_rows(dataset_id: str, config_name: str, num_rows: int):
+    logging.debug(
+        f"asked for {num_rows} first rows of dataset {dataset_id} - {config_name}"
+    )
+
+    splits = get_config_splits(dataset_id, config_name)
+
+    return {
+        "dataset_id": dataset_id,
+        "config_name": config_name,
+        "splits": {
+            split: extract_split_rows(dataset_id, config_name, split, num_rows)
+            for split in splits
+        },
+    }
+
+
+def extract_dataset_rows(dataset_id: str, num_rows: int):
+    logging.debug(f"asked for {num_rows} first rows of dataset {dataset_id}")
 
     config_names = get_dataset_config_names(dataset_id)
 
     return {
         "dataset_id": dataset_id,
         "configs": {
-            config_name: get_dataset_config_extract(dataset_id, config_name, num_rows)
+            config_name: extract_config_rows(dataset_id, config_name, num_rows)
             for config_name in config_names
         },
     }
@@ -107,7 +163,7 @@ async def extract(request: Request):
     )
 
     try:
-        return JSONResponse(get_dataset_extract(dataset_id, num_rows))
+        return JSONResponse(extract_dataset_rows(dataset_id, num_rows))
     except FileNotFoundError as e:
         return PlainTextResponse("Dataset not found", status_code=404)
     # other exceptions will generate a 500 response
