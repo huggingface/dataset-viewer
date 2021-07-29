@@ -1,50 +1,124 @@
 import json
 import time
 from tqdm import tqdm
+from tqdm.contrib.concurrent import process_map
 
 from datasets import list_datasets
 
-from datasets_preview_backend.main import extract_dataset_rows
+from datasets_preview_backend.main import (
+    get_dataset_config_names,
+    get_config_splits,
+    extract_split_rows,
+)
+
+
+def get_config_names_report(dataset_id: str):
+    try:
+        config_names = get_dataset_config_names(dataset_id)
+        return {
+            "dataset_id": dataset_id,
+            "config_names": list(config_names),
+            "success": True,
+            "exception": None,
+            "message": None,
+        }
+    except Exception as err:
+        return {
+            "dataset_id": dataset_id,
+            "config_names": [],
+            "success": False,
+            "exception": str(type(err).__name__),
+            "message": str(err),
+        }
+
+
+def get_split_names_report(dataset_id: str, config_name: str):
+    try:
+        split_names = get_config_splits(dataset_id, config_name)
+        return {
+            "dataset_id": dataset_id,
+            "config_name": config_name,
+            "split_names": list(split_names),
+            "success": True,
+            "exception": None,
+            "message": None,
+        }
+    except Exception as err:
+        return {
+            "dataset_id": dataset_id,
+            "config_name": config_name,
+            "split_names": [],
+            "success": False,
+            "exception": str(type(err).__name__),
+            "message": str(err),
+        }
+
+
+def get_rows_report(dataset_id: str, config_name: str, split_name: str):
+    num_rows = 10
+    try:
+        extract = extract_split_rows(dataset_id, config_name, split_name, num_rows)
+        if len(extract["rows"]) != num_rows:
+            raise ValueError(f"{len(extract['rows'])} rows instead of {num_rows}")
+        return {
+            "dataset_id": dataset_id,
+            "config_name": config_name,
+            "split_name": split_name,
+            "success": True,
+            "exception": None,
+            "message": None,
+        }
+    except Exception as err:
+        return {
+            "dataset_id": dataset_id,
+            "config_name": config_name,
+            "split_name": split_name,
+            "success": False,
+            "exception": str(type(err).__name__),
+            "message": str(err),
+        }
 
 
 def export_all_datasets_exceptions():
-    num_rows = 10
     dataset_ids = list_datasets(with_community_datasets=True)
 
-    results = []
+    print("Get config names for all the datasets")
+    config_names_reports = process_map(
+        get_config_names_report,
+        dataset_ids,
+    )
 
-    for dataset_id in tqdm(dataset_ids):
+    print("Get split names for all the pairs (dataset_id, config_name)")
+    split_names_dataset_ids = []
+    split_names_config_names = []
+    for report in config_names_reports:
+        for config_name in report["config_names"]:
+            # reports with an exception will not contribute to the lists since config_names is empty
+            split_names_dataset_ids.append(report["dataset_id"])
+            split_names_config_names.append(config_name)
+    split_names_reports = process_map(
+        get_split_names_report, split_names_dataset_ids, split_names_config_names
+    )
 
-        success = False
-        try:
-            extract = extract_dataset_rows(dataset_id, num_rows)
-            exception = ""
-            config_names = extract["configs"].keys()
-            split_names = set()
-            for config_name, config in extract["configs"].items():
-                for split_name, split in config["splits"].items():
-                    split_names.add(split_name)
-                    if len(split["rows"]) != num_rows:
-                        raise ValueError(
-                            f"{len(split['rows'])} rows instead of {num_rows} in {config_name} - {split_name}"
-                        )
-            success = True
-            message = ""
-        except Exception as err:
-            exception = str(type(err).__name__)
-            message = str(err)
-            config_names = []
-            split_names = []
-        results.append(
-            {
-                "dataset_id": dataset_id,
-                "success": success,
-                "exception": exception,
-                "message": message,
-                "all_config_names": list(config_names),
-                "all_split_names": list(split_names),
-            }
-        )
+    print("Get rows extract for all the tuples (dataset_id, config_name, split_name)")
+    rows_dataset_ids = []
+    rows_config_names = []
+    rows_split_names = []
+    for report in split_names_reports:
+        for split_name in report["split_names"]:
+            # reports with an exception will not contribute to the lists since split_names is empty
+            rows_dataset_ids.append(report["dataset_id"])
+            rows_config_names.append(report["config_name"])
+            rows_split_names.append(split_name)
+    rows_reports = process_map(
+        get_rows_report, rows_dataset_ids, rows_config_names, rows_split_names
+    )
+
+    results = {
+        "config_names_reports": config_names_reports,
+        "split_names_reports": split_names_reports,
+        "rows_reports": rows_reports,
+    }
 
     time_string = time.strftime("%Y%m%d-%H%M%S")
     filename = f"/tmp/datasets-{time_string}.json"
