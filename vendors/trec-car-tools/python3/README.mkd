@@ -1,0 +1,4 @@
+# TREC CAR Python library
+
+See [ReadTheDocs](https://trec-car-tools.readthedocs.io/en/latest/) for Python
+usage and reference documentation.

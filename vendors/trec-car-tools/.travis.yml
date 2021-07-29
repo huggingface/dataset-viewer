@@ -1,0 +1,20 @@
+language: python
+python:
+  - "3.5"
+before_install:
+  - sudo apt-get -qq update
+  - sudo apt-get install -y maven
+python:
+  - "3.6"
+  - "3.7"
+install:
+  - pip install -r python3/requirements.txt
+script:
+  - pip install python3/
+  - pushd trec-car-tools-example; mvn install; popd
+
+  - curl http://trec-car.cs.unh.edu/datareleases/v2.0/test200.v2.0.tar.xz | tar -xJ
+  - pages=test200/test200-train/train.pages.cbor outlines=test200/test200-train/train.pages.cbor-outlines.cbor paragraphs=test200/test200-train/train.pages.cbor-paragraphs.cbor bash .travis/test.sh
+
+  - curl http://trec-car.cs.unh.edu/datareleases/v1.5/test200-v1.5.tar.xz | tar -xJ
+  - pages=test200/train.test200.cbor outlines=test200/train.test200.cbor paragraphs=test200/train.test200.cbor.paragraphs bash .travis/test.sh
