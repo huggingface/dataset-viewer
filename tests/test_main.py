@@ -3,7 +3,7 @@ import pytest
 from datasets_preview_backend.main import (
     DatasetBuilderScriptError,
     DatasetBuilderScriptConfigError,
-    DatasetBuilderScriptConfigNoSplitsError,
+    # DatasetBuilderScriptConfigNoSplitsError,
     ConfigNotFoundError,
     DatasetNotFoundError,
     SplitError,
@@ -36,6 +36,19 @@ def test_get_splits():  # sourcery skip: extract-duplicate-method
     assert "test" in splits
     assert "train" not in splits
 
+    # uses the fallback to call "builder._split_generators"
+    splits = get_config_splits("hda_nli_hindi", "HDA nli hindi")
+    assert len(splits) == 3
+    assert "train" in splits
+    assert "validation" in splits
+    assert "test" in splits
+
+    splits = get_config_splits("classla/copa_hr", "copa_hr")
+    assert len(splits) == 3
+
+    splits = get_config_splits("mc4", "sn")
+    assert len(splits) == 2
+
 
 def test_extract_split_rows():
     dataset_id = "acronym_identification"
@@ -64,9 +77,9 @@ def test_extract_split_rows_num_rows():
 
 
 def test_extract_unknown_config():
-    with pytest.raises(ConfigNameError):
+    with pytest.raises(ConfigNotFoundError):
         extract_config_rows("glue", "doesnotexist", 100)
-    with pytest.raises(ConfigNameError):
+    with pytest.raises(ConfigNotFoundError):
         extract_split_rows("glue", "doesnotexist", "train", 100)
 
 
@@ -140,15 +153,10 @@ def test_extract_bogus_config():
         extract_config_rows("nateraw/image-folder", None, 10)
 
 
-def test_extract_bogus_splits():
-    with pytest.raises(DatasetBuilderScriptConfigNoSplitsError):
-        extract_config_rows("hda_nli_hindi", "HDA nli hindi", 10)
-    with pytest.raises(DatasetBuilderScriptConfigNoSplitsError):
-        extract_config_rows("mc4", "sn", 10)
-    with pytest.raises(DatasetBuilderScriptConfigNoSplitsError):
-        extract_dataset_rows("classla/copa_hr", 100)
-    with pytest.raises(DatasetBuilderScriptConfigNoSplitsError):
-        extract_config_rows("classla/copa_hr", "copa_hr", 100)
+# def test_extract_bogus_splits():
+# not sure if we have an example of such an error
+# with pytest.raises(DatasetBuilderScriptConfigNoSplitsError):
+#     extract_config_rows("mc4", "sn", 10)
 
 
 def test_extract_not_implemented_split():

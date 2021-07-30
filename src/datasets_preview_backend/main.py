@@ -18,6 +18,7 @@ from datasets import (
     prepare_module,
     import_main_class,
 )
+from datasets.utils.streaming_download_manager import StreamingDownloadManager
 
 from datasets_preview_backend.exceptions import (
     DatasetBuilderScriptError,
@@ -82,11 +83,20 @@ def get_config_splits(dataset_id: str, config_name: str) -> List[str]:
         )
 
     if builder.info.splits is None:
-        raise DatasetBuilderScriptConfigNoSplitsError(
-            dataset_id=dataset_id, config_name=config_name
-        )
+        # try to get them from _split_generators
+        try:
+            splits = [
+                split_generator.name
+                for split_generator in builder._split_generators(
+                    StreamingDownloadManager(base_path=builder.base_path)
+                )
+            ]
+        except:
+            raise DatasetBuilderScriptConfigNoSplitsError(
+                dataset_id=dataset_id, config_name=config_name
+            )
     else:
-        splits = builder.info.splits.keys()
+        splits = list(builder.info.splits.keys())
     return splits
 
 
