@@ -14,13 +14,14 @@ from datasets.utils.streaming_download_manager import StreamingDownloadManager
 
 from datasets_preview_backend.exceptions import (
     DatasetBuilderScriptError,
-    DatasetBuilderScriptConfigError,
     DatasetBuilderScriptConfigNoSplitsError,
     DatasetNotFoundError,
     ConfigNotFoundError,
     SplitError,
     SplitNotImplementedError,
 )
+
+# TODO: log the traces on every caught exception
 
 
 def get_dataset_config_names(dataset_id: str) -> List[str]:
@@ -49,9 +50,7 @@ def get_config_splits(dataset_id: str, config_name: str) -> List[str]:
         else:
             raise
     except (ModuleNotFoundError, RuntimeError, TypeError):
-        raise DatasetBuilderScriptConfigError(
-            dataset_id=dataset_id, config_name=config_name
-        )
+        raise DatasetBuilderScriptError(dataset_id=dataset_id)
 
     if builder.info.splits is None:
         # try to get them from _split_generators
@@ -71,7 +70,7 @@ def get_config_splits(dataset_id: str, config_name: str) -> List[str]:
     return splits
 
 
-def extract_split_rows(dataset_id: str, config_name: str, split: str, num_rows: int):
+def extract_rows(dataset_id: str, config_name: str, split: str, num_rows: int):
     logging.debug(
         f"asked for {num_rows} first rows of dataset {dataset_id} - {config_name} - {split}"
     )
@@ -80,6 +79,8 @@ def extract_split_rows(dataset_id: str, config_name: str, split: str, num_rows: 
         dataset: IterableDataset = load_dataset(
             dataset_id, name=config_name, split=split, streaming=True
         )
+    except FileNotFoundError as err:
+        raise DatasetNotFoundError(dataset_id=dataset_id)
     except NotImplementedError as err:
         # TODO: check what has changed once https://github.com/huggingface/datasets/pull/2662 is merged
         try:
@@ -99,6 +100,8 @@ def extract_split_rows(dataset_id: str, config_name: str, split: str, num_rows: 
         message = str(err)
         if message.startswith(f"BuilderConfig {config_name} not found"):
             raise ConfigNotFoundError(dataset_id=dataset_id, config_name=config_name)
+        elif message.startswith(f"Config name is missing."):
+            raise ConfigNotFoundError(dataset_id=dataset_id, config_name=config_name)
         elif message.startswith(f'Unknown split "{split}".') or message.startswith(
             f"Bad split: {split}."
         ):
@@ -107,6 +110,8 @@ def extract_split_rows(dataset_id: str, config_name: str, split: str, num_rows: 
             )
         else:
             raise
+    except (ModuleNotFoundError, RuntimeError, TypeError):
+        raise DatasetBuilderScriptError(dataset_id=dataset_id)
 
     rows = list(dataset.take(num_rows))
     if len(rows) != num_rows:
@@ -119,35 +124,4 @@ def extract_split_rows(dataset_id: str, config_name: str, split: str, num_rows: 
         "config_name": config_name,
         "split": split,
         "rows": rows,
-    }
-
-
-def extract_config_rows(dataset_id: str, config_name: str, num_rows: int):
-    logging.debug(
-        f"asked for {num_rows} first rows of dataset {dataset_id} - {config_name}"
-    )
-
-    splits = get_config_splits(dataset_id, config_name)
-
-    return {
-        "dataset_id": dataset_id,
-        "config_name": config_name,
-        "splits": {
-            split: extract_split_rows(dataset_id, config_name, split, num_rows)
-            for split in splits
-        },
-    }
-
-
-def extract_dataset_rows(dataset_id: str, num_rows: int):
-    logging.debug(f"asked for {num_rows} first rows of dataset {dataset_id}")
-
-    config_names = get_dataset_config_names(dataset_id)
-
-    return {
-        "dataset_id": dataset_id,
-        "configs": {
-            config_name: extract_config_rows(dataset_id, config_name, num_rows)
-            for config_name in config_names
-        },
     }

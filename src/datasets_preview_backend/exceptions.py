@@ -18,22 +18,6 @@ class DatasetBuilderScriptError(Error):
         super().__init__(f"Dataset builder script error. Dataset: '{self.dataset_id}'")
 
 
-class DatasetBuilderScriptConfigError(Error):
-    """Exception raised if the builder script fails for this config.
-
-    Attributes:
-        dataset_id -- the erroneous dataset id
-        config_name -- the erroneous dataset config_name
-    """
-
-    def __init__(self, dataset_id, config_name):
-        self.dataset_id = dataset_id
-        self.config_name = config_name
-        super().__init__(
-            f"Dataset builder script error. Dataset: '{self.dataset_id}', config: '{self.config_name}'"
-        )
-
-
 class DatasetBuilderScriptConfigNoSplitsError(Error):
     """Exception raised if the builder script fails for this config.
 
