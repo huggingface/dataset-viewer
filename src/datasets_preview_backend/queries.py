@@ -14,7 +14,7 @@ from datasets.utils.streaming_download_manager import StreamingDownloadManager
 
 from datasets_preview_backend.exceptions import (
     DatasetBuilderScriptError,
-    DatasetBuilderScriptConfigNoSplitsError,
+    DatasetBuilderNoSplitsError,
     DatasetNotFoundError,
     ConfigNotFoundError,
     SplitError,
@@ -62,9 +62,7 @@ def get_splits(dataset: str, config: str) -> List[str]:
                 )
             ]
         except:
-            raise DatasetBuilderScriptConfigNoSplitsError(
-                dataset=dataset, config=config
-            )
+            raise DatasetBuilderNoSplitsError(dataset=dataset, config=config)
     else:
         splits = list(builder.info.splits.keys())
     return {"dataset": dataset, "config": config, "splits": splits}

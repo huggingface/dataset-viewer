@@ -25,8 +25,8 @@ class DatasetBuilderScriptError(Error):
         super().__init__(f"Dataset builder script error. Dataset: '{self.dataset}'")
 
 
-class DatasetBuilderScriptConfigNoSplitsError(Error):
-    """Exception raised if the builder script fails for this config.
+class DatasetBuilderNoSplitsError(Error):
+    """Exception raised if the builder script fails to provide the list of splits.
 
     Attributes:
         dataset -- the erroneous dataset id
@@ -37,7 +37,7 @@ class DatasetBuilderScriptConfigNoSplitsError(Error):
         self.dataset = dataset
         self.config = config
         super().__init__(
-            f"Dataset builder script error: missing .info.splits. Dataset: '{self.dataset}', config: {print_config(self.config)}"
+            f"Dataset builder script error: could not get the list of splits. Dataset: '{self.dataset}', config: {print_config(self.config)}"
         )
 
 

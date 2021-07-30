@@ -2,7 +2,7 @@ import pytest
 
 from datasets_preview_backend.queries import (
     DatasetBuilderScriptError,
-    # DatasetBuilderScriptConfigNoSplitsError,
+    DatasetBuilderNoSplitsError,
     ConfigNotFoundError,
     DatasetNotFoundError,
     SplitError,
@@ -117,10 +117,10 @@ def test_extract_bogus_config():
         extract_rows("nateraw/image-folder", None, "train", 10)
 
 
-# def test_extract_bogus_splits():
-# not sure if we have an example of such an error
-# with pytest.raises(DatasetBuilderScriptConfigNoSplitsError):
-#     extract_config_rows("mc4", "sn", 10)
+def test_extract_bogus_splits():
+    # not sure if we have an example of such an error
+    with pytest.raises(DatasetBuilderNoSplitsError):
+        get_splits("journalists_questions", "plain_text")
 
 
 def test_extract_not_implemented_split():
