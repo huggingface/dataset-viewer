@@ -47,6 +47,8 @@ def get_splits(dataset_id: str, config_name: str) -> List[str]:
         message = str(err)
         if message.startswith(f"BuilderConfig {config_name} not found"):
             raise ConfigNotFoundError(dataset_id=dataset_id, config_name=config_name)
+        elif message.startswith(f"Config name is missing."):
+            raise ConfigNotFoundError(dataset_id=dataset_id, config_name=config_name)
         else:
             raise
     except (ModuleNotFoundError, RuntimeError, TypeError):

@@ -1,3 +1,10 @@
+def print_config(config_name):
+    if config_name is None:
+        return "None"
+    else:
+        return f"'{config_name}'"
+
+
 class Error(Exception):
     """Base class for exceptions in this module."""
 
@@ -30,7 +37,7 @@ class DatasetBuilderScriptConfigNoSplitsError(Error):
         self.dataset_id = dataset_id
         self.config_name = config_name
         super().__init__(
-            f"Dataset builder script error: missing .info.splits. Dataset: '{self.dataset_id}', config: '{self.config_name}'"
+            f"Dataset builder script error: missing .info.splits. Dataset: '{self.dataset_id}', config: {print_config(self.config_name)}"
         )
 
 
@@ -58,7 +65,7 @@ class ConfigNotFoundError(Error):
         self.dataset_id = dataset_id
         self.config_name = config_name
         super().__init__(
-            f"Config not found. Dataset: '{self.dataset_id}', config: '{self.config_name}'"
+            f"Config not found. Dataset: '{self.dataset_id}', config: {print_config(self.config_name)}"
         )
 
 
@@ -76,7 +83,7 @@ class SplitError(Error):
         self.config_name = config_name
         self.split = split
         super().__init__(
-            f"Split error. Dataset: '{self.dataset_id}', config: '{self.config_name}', script: '{self.split}'"
+            f"Split error. Dataset: '{self.dataset_id}', config: {print_config(self.config_name)}, split: '{self.split}'"
         )
 
 
@@ -99,5 +106,5 @@ class SplitNotImplementedError(Error):
             "" if self.extension is None else f" for extension '{self.extension}'"
         )
         super().__init__(
-            f"Extraction protocol not implemented{extension_str}. Dataset: '{self.dataset_id}', config: '{self.config_name}', script: '{self.split}'"
+            f"Extraction protocol not implemented{extension_str}. Dataset: '{self.dataset_id}', config: {print_config(self.config_name)}, split: '{self.split}'"
         )
