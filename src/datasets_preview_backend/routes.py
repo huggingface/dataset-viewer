@@ -48,3 +48,20 @@ async def rows(request: Request):
     ) as err:
         return PlainTextResponse(err.message, status_code=400)
     # other exceptions will generate a 500 response
+
+
+async def configs(request: Request):
+    dataset_id: str = request.query_params.get("dataset")
+
+    if dataset_id is None:
+        return PlainTextResponse(
+            "'dataset' is a required query parameter.", status_code=400
+        )
+
+    try:
+        return JSONResponse(get_config_names(dataset_id))
+    except (DatasetNotFoundError) as err:
+        return PlainTextResponse(err.message, status_code=404)
+    except (DatasetBuilderScriptError,) as err:
+        return PlainTextResponse(err.message, status_code=400)
+    # other exceptions will generate a 500 response
