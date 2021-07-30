@@ -5,75 +5,72 @@ from tqdm.contrib.concurrent import process_map
 
 
 from datasets_preview_backend.queries import (
-    get_config_names,
+    get_configs,
     get_splits,
     extract_rows,
 )
 
 
-def get_config_names_report(dataset_id: str):
+def get_configs_report(dataset: str):
     try:
-        config_names = get_config_names(dataset_id)["config_names"]
+        configs = get_configs(dataset)["configs"]
         return {
-            "dataset_id": dataset_id,
-            "config_names": list(config_names),
+            "dataset": dataset,
+            "configs": list(configs),
             "success": True,
             "exception": None,
             "message": None,
         }
     except Exception as err:
         return {
-            "dataset_id": dataset_id,
-            "config_names": [],
+            "dataset": dataset,
+            "configs": [],
             "success": False,
             "exception": str(type(err).__name__),
             "message": str(err),
         }
 
 
-def get_split_names_report(dataset_id: str, config_name: str):
+def get_splits_report(dataset: str, config: str):
     try:
-        split_names = get_splits(dataset_id, config_name)["splits"]
+        splits = get_splits(dataset, config)["splits"]
         return {
-            "dataset_id": dataset_id,
-            "config_name": config_name,
-            "split_names": list(split_names),
+            "dataset": dataset,
+            "config": config,
+            "splits": list(splits),
             "success": True,
             "exception": None,
             "message": None,
         }
     except Exception as err:
         return {
-            "dataset_id": dataset_id,
-            "config_name": config_name,
-            "split_names": [],
+            "dataset": dataset,
+            "config": config,
+            "splits": [],
             "success": False,
             "exception": str(type(err).__name__),
             "message": str(err),
         }
 
 
-def get_rows_report(dataset_id: str, config_name: str, split_name: str):
+def get_rows_report(dataset: str, config: str, split: str):
     num_rows = 10
     try:
-        rows = extract_rows(dataset_id, config_name, split_name, num_rows)["rows"]
-        if len(rows) != num_rows:
-            raise ValueError(
-                f"number of rows is different from required: {len(rows)} instead of {num_rows}"
-            )
+        rows = extract_rows(dataset, config, split, num_rows)["rows"]
         return {
-            "dataset_id": dataset_id,
-            "config_name": config_name,
-            "split_name": split_name,
+            "dataset": dataset,
+            "config": config,
+            "split": split,
+            "row_length": len(rows),
             "success": True,
             "exception": None,
             "message": None,
         }
     except Exception as err:
         return {
-            "dataset_id": dataset_id,
-            "config_name": config_name,
-            "split_name": split_name,
+            "dataset": dataset,
+            "config": config,
+            "split": split,
             "success": False,
             "exception": str(type(err).__name__),
             "message": str(err),
@@ -81,49 +78,47 @@ def get_rows_report(dataset_id: str, config_name: str, split_name: str):
 
 
 def export_all_datasets_exceptions():
-    dataset_ids = list_datasets(with_community_datasets=True)
+    datasets = list_datasets(with_community_datasets=True)
 
     print("Get config names for all the datasets")
-    config_names_reports = process_map(
-        get_config_names_report, dataset_ids, chunksize=20
-    )
+    configs_reports = process_map(get_configs_report, datasets, chunksize=20)
 
-    print("Get split names for all the pairs (dataset_id, config_name)")
-    split_names_dataset_ids = []
-    split_names_config_names = []
-    for report in config_names_reports:
-        for config_name in report["config_names"]:
-            # reports with an exception will not contribute to the lists since config_names is empty
-            split_names_dataset_ids.append(report["dataset_id"])
-            split_names_config_names.append(config_name)
-    split_names_reports = process_map(
-        get_split_names_report,
-        split_names_dataset_ids,
-        split_names_config_names,
+    print("Get split names for all the pairs (dataset, config)")
+    splits_datasets = []
+    splits_configs = []
+    for report in configs_reports:
+        for config in report["configs"]:
+            # reports with an exception will not contribute to the lists since configs is empty
+            splits_datasets.append(report["dataset"])
+            splits_configs.append(config)
+    splits_reports = process_map(
+        get_splits_report,
+        splits_datasets,
+        splits_configs,
         chunksize=20,
     )
 
-    print("Get rows extract for all the tuples (dataset_id, config_name, split_name)")
-    rows_dataset_ids = []
-    rows_config_names = []
-    rows_split_names = []
-    for report in split_names_reports:
-        for split_name in report["split_names"]:
-            # reports with an exception will not contribute to the lists since split_names is empty
-            rows_dataset_ids.append(report["dataset_id"])
-            rows_config_names.append(report["config_name"])
-            rows_split_names.append(split_name)
+    print("Get rows extract for all the tuples (dataset, config, split)")
+    rows_datasets = []
+    rows_configs = []
+    rows_splits = []
+    for report in splits_reports:
+        for split in report["splits"]:
+            # reports with an exception will not contribute to the lists since splits is empty
+            rows_datasets.append(report["dataset"])
+            rows_configs.append(report["config"])
+            rows_splits.append(split)
     rows_reports = process_map(
         get_rows_report,
-        rows_dataset_ids,
-        rows_config_names,
-        rows_split_names,
+        rows_datasets,
+        rows_configs,
+        rows_splits,
         chunksize=20,
     )
 
     results = {
-        "config_names_reports": config_names_reports,
-        "split_names_reports": split_names_reports,
+        "configs_reports": configs_reports,
+        "splits_reports": splits_reports,
         "rows_reports": rows_reports,
     }
 

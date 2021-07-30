@@ -2,7 +2,7 @@ from starlette.requests import Request
 from starlette.responses import PlainTextResponse, JSONResponse
 
 from datasets_preview_backend.config import EXTRACT_ROWS_LIMIT
-from datasets_preview_backend.queries import extract_rows, get_config_names, get_splits
+from datasets_preview_backend.queries import extract_rows, get_configs, get_splits
 from datasets_preview_backend.utils import get_int_value
 from datasets_preview_backend.exceptions import (
     DatasetBuilderScriptError,
@@ -19,25 +19,25 @@ async def healthcheck(_: Request):
 
 
 async def rows(request: Request):
-    dataset_id: str = request.query_params.get("dataset")
-    config_name: str = request.query_params.get("config")
-    split_name: str = request.query_params.get("split")
+    dataset: str = request.query_params.get("dataset")
+    config: str = request.query_params.get("config")
+    split: str = request.query_params.get("split")
     num_rows = get_int_value(
         d=request.query_params, key="rows", default=EXTRACT_ROWS_LIMIT
     )
 
-    if dataset_id is None:
+    if dataset is None:
         return PlainTextResponse(
             "'dataset' is a required query parameter.", status_code=400
         )
     # note: config_name must not be set to refer to the None config_name (the majority of datasets).
-    if split_name is None:
+    if split is None:
         return PlainTextResponse(
             "'split' is a required query parameter.", status_code=400
         )
 
     try:
-        return JSONResponse(extract_rows(dataset_id, config_name, split_name, num_rows))
+        return JSONResponse(extract_rows(dataset, config, split, num_rows))
     except (DatasetNotFoundError, ConfigNotFoundError) as err:
         return PlainTextResponse(err.message, status_code=404)
     except (
@@ -51,15 +51,15 @@ async def rows(request: Request):
 
 
 async def configs(request: Request):
-    dataset_id: str = request.query_params.get("dataset")
+    dataset: str = request.query_params.get("dataset")
 
-    if dataset_id is None:
+    if dataset is None:
         return PlainTextResponse(
             "'dataset' is a required query parameter.", status_code=400
         )
 
     try:
-        return JSONResponse(get_config_names(dataset_id))
+        return JSONResponse(get_configs(dataset))
     except (DatasetNotFoundError) as err:
         return PlainTextResponse(err.message, status_code=404)
     except (DatasetBuilderScriptError,) as err:
@@ -68,17 +68,17 @@ async def configs(request: Request):
 
 
 async def splits(request: Request):
-    dataset_id: str = request.query_params.get("dataset")
-    config_name: str = request.query_params.get("config")
+    dataset: str = request.query_params.get("dataset")
+    config: str = request.query_params.get("config")
 
-    if dataset_id is None:
+    if dataset is None:
         return PlainTextResponse(
             "'dataset' is a required query parameter.", status_code=400
         )
     # note: config_name must not be set to refer to the None config_name (the majority of datasets).
 
     try:
-        return JSONResponse(get_splits(dataset_id, config_name))
+        return JSONResponse(get_splits(dataset, config))
     except (ConfigNotFoundError) as err:
         return PlainTextResponse(err.message, status_code=404)
     except (DatasetBuilderScriptError,) as err:

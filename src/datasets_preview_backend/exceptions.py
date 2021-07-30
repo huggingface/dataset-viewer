@@ -1,8 +1,8 @@
-def print_config(config_name):
-    if config_name is None:
+def print_config(config):
+    if config is None:
         return "None"
     else:
-        return f"'{config_name}'"
+        return f"'{config}'"
 
 
 class Error(Exception):
@@ -17,27 +17,27 @@ class DatasetBuilderScriptError(Error):
     """Exception raised if the dataset script fails.
 
     Attributes:
-        dataset_id -- the erroneous dataset id
+        dataset -- the erroneous dataset id
     """
 
-    def __init__(self, dataset_id):
-        self.dataset_id = dataset_id
-        super().__init__(f"Dataset builder script error. Dataset: '{self.dataset_id}'")
+    def __init__(self, dataset):
+        self.dataset = dataset
+        super().__init__(f"Dataset builder script error. Dataset: '{self.dataset}'")
 
 
 class DatasetBuilderScriptConfigNoSplitsError(Error):
     """Exception raised if the builder script fails for this config.
 
     Attributes:
-        dataset_id -- the erroneous dataset id
-        config_name -- the erroneous dataset config_name
+        dataset -- the erroneous dataset id
+        config -- the erroneous dataset config name
     """
 
-    def __init__(self, dataset_id, config_name):
-        self.dataset_id = dataset_id
-        self.config_name = config_name
+    def __init__(self, dataset, config):
+        self.dataset = dataset
+        self.config = config
         super().__init__(
-            f"Dataset builder script error: missing .info.splits. Dataset: '{self.dataset_id}', config: {print_config(self.config_name)}"
+            f"Dataset builder script error: missing .info.splits. Dataset: '{self.dataset}', config: {print_config(self.config)}"
         )
 
 
@@ -45,27 +45,27 @@ class DatasetNotFoundError(Error):
     """Exception raised if a dataset has not been found.
 
     Attributes:
-        dataset_id -- the erroneous dataset id
+        dataset -- the erroneous dataset id
     """
 
-    def __init__(self, dataset_id):
-        self.dataset_id = dataset_id
-        super().__init__(f"Dataset not found. Dataset: '{self.dataset_id}'")
+    def __init__(self, dataset):
+        self.dataset = dataset
+        super().__init__(f"Dataset not found. Dataset: '{self.dataset}'")
 
 
 class ConfigNotFoundError(Error):
     """Exception raised for config builder not found.
 
     Attributes:
-        dataset_id -- the erroneous dataset id
-        config_name -- the erroneous dataset config_name
+        dataset -- the erroneous dataset id
+        config -- the erroneous dataset config name
     """
 
-    def __init__(self, dataset_id, config_name):
-        self.dataset_id = dataset_id
-        self.config_name = config_name
+    def __init__(self, dataset, config):
+        self.dataset = dataset
+        self.config = config
         super().__init__(
-            f"Config not found. Dataset: '{self.dataset_id}', config: {print_config(self.config_name)}"
+            f"Config not found. Dataset: '{self.dataset}', config: {print_config(self.config)}"
         )
 
 
@@ -73,17 +73,17 @@ class SplitError(Error):
     """Exception raised for errors in the split.
 
     Attributes:
-        dataset_id -- the erroneous dataset id
-        config_name -- the erroneous dataset config_name
-        split -- the erroneous dataset split
+        dataset -- the erroneous dataset id
+        config -- the erroneous dataset config name
+        split -- the erroneous dataset split name
     """
 
-    def __init__(self, dataset_id, config_name, split):
-        self.dataset_id = dataset_id
-        self.config_name = config_name
+    def __init__(self, dataset, config, split):
+        self.dataset = dataset
+        self.config = config
         self.split = split
         super().__init__(
-            f"Split error. Dataset: '{self.dataset_id}', config: {print_config(self.config_name)}, split: '{self.split}'"
+            f"Split error. Dataset: '{self.dataset}', config: {print_config(self.config)}, split: '{self.split}'"
         )
 
 
@@ -91,20 +91,20 @@ class SplitNotImplementedError(Error):
     """Exception raised for NotImplementedError in the split.
 
     Attributes:
-        dataset_id -- the erroneous dataset id
-        config_name -- the erroneous dataset config_name
-        split -- the erroneous dataset split
+        dataset -- the erroneous dataset id
+        config -- the erroneous dataset config name
+        split -- the erroneous dataset split name
         extension -- the file extension not implemented yet
     """
 
-    def __init__(self, dataset_id, config_name, split, extension):
-        self.dataset_id = dataset_id
-        self.config_name = config_name
+    def __init__(self, dataset, config, split, extension):
+        self.dataset = dataset
+        self.config = config
         self.split = split
         self.extension = extension
         extension_str = (
             "" if self.extension is None else f" for extension '{self.extension}'"
         )
         super().__init__(
-            f"Extraction protocol not implemented{extension_str}. Dataset: '{self.dataset_id}', config: {print_config(self.config_name)}, split: '{self.split}'"
+            f"Extraction protocol not implemented{extension_str}. Dataset: '{self.dataset}', config: {print_config(self.config)}, split: '{self.split}'"
         )

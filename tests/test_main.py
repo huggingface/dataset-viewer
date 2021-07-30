@@ -7,35 +7,35 @@ from datasets_preview_backend.queries import (
     DatasetNotFoundError,
     SplitError,
     SplitNotImplementedError,
-    get_config_names,
+    get_configs,
     get_splits,
     extract_rows,
 )
 
 
 def test_get_configs():
-    dataset_id = "acronym_identification"
-    response = get_config_names(dataset_id)
-    assert "dataset_id" in response
-    assert response["dataset_id"] == dataset_id
-    assert "config_names" in response
-    config_names = response["config_names"]
-    assert len(config_names) == 1
-    assert config_names[0] is None
+    dataset = "acronym_identification"
+    response = get_configs(dataset)
+    assert "dataset" in response
+    assert response["dataset"] == dataset
+    assert "configs" in response
+    configs = response["configs"]
+    assert len(configs) == 1
+    assert configs[0] is None
 
-    config_names = get_config_names("glue")["config_names"]
-    assert len(config_names) == 12
-    assert "cola" in config_names
+    configs = get_configs("glue")["configs"]
+    assert len(configs) == 12
+    assert "cola" in configs
 
 
 def test_get_splits():
-    dataset_id = "acronym_identification"
-    config_name = None
-    response = get_splits(dataset_id, config_name)
-    assert "dataset_id" in response
-    assert response["dataset_id"] == dataset_id
-    assert "config_name" in response
-    assert response["config_name"] == config_name
+    dataset = "acronym_identification"
+    config = None
+    response = get_splits(dataset, config)
+    assert "dataset" in response
+    assert response["dataset"] == dataset
+    assert "config" in response
+    assert response["config"] == config
     assert "splits" in response
     splits = response["splits"]
     assert len(splits) == 3
@@ -61,13 +61,13 @@ def test_get_splits():
 
 
 def test_extract_split_rows():
-    dataset_id = "acronym_identification"
-    config_name = None
+    dataset = "acronym_identification"
+    config = None
     split = "train"
     num_rows = 100
-    extract = extract_rows(dataset_id, config_name, split, num_rows)
-    assert "dataset_id" in extract and extract["dataset_id"] == dataset_id
-    assert "config_name" in extract and extract["config_name"] == config_name
+    extract = extract_rows(dataset, config, split, num_rows)
+    assert "dataset" in extract and extract["dataset"] == dataset
+    assert "config" in extract and extract["config"] == config
     assert "split" in extract and extract["split"] == split
     assert "rows" in extract
     rows = extract["rows"]
@@ -76,11 +76,11 @@ def test_extract_split_rows():
 
 
 def test_extract_split_rows_num_rows():
-    dataset_id = "acronym_identification"
-    config_name = None
+    dataset = "acronym_identification"
+    config = None
     split = "train"
     num_rows = 20
-    extract = extract_rows(dataset_id, config_name, split, num_rows)
+    extract = extract_rows(dataset, config, split, num_rows)
     rows = extract["rows"]
     assert len(rows) == 20
     assert rows[0]["tokens"][0] == "What"
