@@ -13,7 +13,7 @@ from datasets_preview_backend.queries import (
 
 def get_config_names_report(dataset_id: str):
     try:
-        config_names = get_config_names(dataset_id)
+        config_names = get_config_names(dataset_id)["config_names"]
         return {
             "dataset_id": dataset_id,
             "config_names": list(config_names),
@@ -33,7 +33,7 @@ def get_config_names_report(dataset_id: str):
 
 def get_split_names_report(dataset_id: str, config_name: str):
     try:
-        split_names = get_splits(dataset_id, config_name)
+        split_names = get_splits(dataset_id, config_name)["splits"]
         return {
             "dataset_id": dataset_id,
             "config_name": config_name,
@@ -56,9 +56,11 @@ def get_split_names_report(dataset_id: str, config_name: str):
 def get_rows_report(dataset_id: str, config_name: str, split_name: str):
     num_rows = 10
     try:
-        extract = extract_rows(dataset_id, config_name, split_name, num_rows)
-        if len(extract["rows"]) != num_rows:
-            raise ValueError(f"{len(extract['rows'])} rows instead of {num_rows}")
+        rows = extract_rows(dataset_id, config_name, split_name, num_rows)["rows"]
+        if len(rows) != num_rows:
+            raise ValueError(
+                f"number of rows is different from required: {len(rows)} instead of {num_rows}"
+            )
         return {
             "dataset_id": dataset_id,
             "config_name": config_name,

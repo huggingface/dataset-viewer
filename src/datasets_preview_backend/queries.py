@@ -37,7 +37,7 @@ def get_config_names(dataset_id: str) -> List[str]:
     logging.debug(
         f"The dataset builder has {len(config_names)} configs: {config_names}"
     )
-    return config_names
+    return {"dataset_id": dataset_id, "config_names": config_names}
 
 
 def get_splits(dataset_id: str, config_name: str) -> List[str]:
@@ -69,7 +69,7 @@ def get_splits(dataset_id: str, config_name: str) -> List[str]:
             )
     else:
         splits = list(builder.info.splits.keys())
-    return splits
+    return {"dataset_id": dataset_id, "config_name": config_name, "splits": splits}
 
 
 def extract_rows(dataset_id: str, config_name: str, split: str, num_rows: int):

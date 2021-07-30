@@ -14,36 +14,49 @@ from datasets_preview_backend.queries import (
 
 
 def test_get_configs():
-    config_names = get_config_names("acronym_identification")
+    dataset_id = "acronym_identification"
+    response = get_config_names(dataset_id)
+    assert "dataset_id" in response
+    assert response["dataset_id"] == dataset_id
+    assert "config_names" in response
+    config_names = response["config_names"]
     assert len(config_names) == 1
     assert config_names[0] is None
 
-    config_names = get_config_names("glue")
+    config_names = get_config_names("glue")["config_names"]
     assert len(config_names) == 12
     assert "cola" in config_names
 
 
-def test_get_splits():  # sourcery skip: extract-duplicate-method
-    splits = get_splits("acronym_identification", None)
+def test_get_splits():
+    dataset_id = "acronym_identification"
+    config_name = None
+    response = get_splits(dataset_id, config_name)
+    assert "dataset_id" in response
+    assert response["dataset_id"] == dataset_id
+    assert "config_name" in response
+    assert response["config_name"] == config_name
+    assert "splits" in response
+    splits = response["splits"]
     assert len(splits) == 3
     assert "train" in splits
 
-    splits = get_splits("glue", "ax")
+    splits = get_splits("glue", "ax")["splits"]
     assert len(splits) == 1
     assert "test" in splits
     assert "train" not in splits
 
     # uses the fallback to call "builder._split_generators"
-    splits = get_splits("hda_nli_hindi", "HDA nli hindi")
+    splits = get_splits("hda_nli_hindi", "HDA nli hindi")["splits"]
     assert len(splits) == 3
     assert "train" in splits
     assert "validation" in splits
     assert "test" in splits
 
-    splits = get_splits("classla/copa_hr", "copa_hr")
+    splits = get_splits("classla/copa_hr", "copa_hr")["splits"]
     assert len(splits) == 3
 
-    splits = get_splits("mc4", "sn")
+    splits = get_splits("mc4", "sn")["splits"]
     assert len(splits) == 2
 
 
