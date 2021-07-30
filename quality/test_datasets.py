@@ -78,10 +78,11 @@ def get_rows_report(dataset: str, config: str, split: str):
 
 
 def export_all_datasets_exceptions():
+    chunksize = 5
     datasets = list_datasets(with_community_datasets=True)
 
     print("Get config names for all the datasets")
-    configs_reports = process_map(get_configs_report, datasets, chunksize=20)
+    configs_reports = process_map(get_configs_report, datasets, chunksize=chunksize)
 
     print("Get split names for all the pairs (dataset, config)")
     splits_datasets = []
@@ -95,7 +96,7 @@ def export_all_datasets_exceptions():
         get_splits_report,
         splits_datasets,
         splits_configs,
-        chunksize=20,
+        chunksize=chunksize,
     )
 
     print("Get rows extract for all the tuples (dataset, config, split)")
@@ -113,7 +114,7 @@ def export_all_datasets_exceptions():
         rows_datasets,
         rows_configs,
         rows_splits,
-        chunksize=20,
+        chunksize=chunksize,
     )
 
     results = {
