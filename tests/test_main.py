@@ -1,6 +1,6 @@
 import pytest
 
-from datasets_preview_backend.main import (
+from datasets_preview_backend.queries import (
     DatasetBuilderScriptError,
     DatasetBuilderScriptConfigError,
     # DatasetBuilderScriptConfigNoSplitsError,

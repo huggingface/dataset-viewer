@@ -1,11 +1,10 @@
+from datasets import list_datasets
 import json
 import time
-from tqdm import tqdm
 from tqdm.contrib.concurrent import process_map
 
-from datasets import list_datasets
 
-from datasets_preview_backend.main import (
+from datasets_preview_backend.queries import (
     get_dataset_config_names,
     get_config_splits,
     extract_split_rows,
