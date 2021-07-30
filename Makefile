@@ -7,7 +7,7 @@ run:
 	poetry run python src/datasets_preview_backend/main.py
 
 test:
-	poetry run python -m pytest tests
+	poetry run python -m pytest -x tests
 
 quality:
 	poetry run python quality/test_datasets.py

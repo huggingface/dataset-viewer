@@ -3,9 +3,11 @@ import pytest
 from datasets_preview_backend.main import (
     DatasetBuilderScriptError,
     DatasetBuilderScriptConfigError,
+    DatasetBuilderScriptConfigNoSplitsError,
     ConfigNotFoundError,
     DatasetNotFoundError,
     SplitError,
+    SplitNotImplementedError,
     get_dataset_config_names,
     get_config_splits,
     extract_dataset_rows,
@@ -133,6 +135,22 @@ def test_extract_bogus_dataset():
 
 def test_extract_bogus_config():
     with pytest.raises(DatasetBuilderScriptConfigError):
-        extract_dataset_rows("classla/copa_hr", 100)
+        extract_config_rows("Valahaar/wsdmt", None, 10)
     with pytest.raises(DatasetBuilderScriptConfigError):
+        extract_config_rows("nateraw/image-folder", None, 10)
+
+
+def test_extract_bogus_splits():
+    with pytest.raises(DatasetBuilderScriptConfigNoSplitsError):
+        extract_config_rows("hda_nli_hindi", "HDA nli hindi", 10)
+    with pytest.raises(DatasetBuilderScriptConfigNoSplitsError):
+        extract_config_rows("mc4", "sn", 10)
+    with pytest.raises(DatasetBuilderScriptConfigNoSplitsError):
+        extract_dataset_rows("classla/copa_hr", 100)
+    with pytest.raises(DatasetBuilderScriptConfigNoSplitsError):
         extract_config_rows("classla/copa_hr", "copa_hr", 100)
+
+
+def test_extract_not_implemented_split():
+    with pytest.raises(SplitNotImplementedError):
+        extract_split_rows("ade_corpus_v2", "Ade_corpus_v2_classification", "train", 10)

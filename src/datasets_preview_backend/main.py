@@ -1,5 +1,6 @@
 import logging
 import os
+import re
 
 from datasets.builder import DatasetBuilder
 from typing import List
@@ -21,9 +22,11 @@ from datasets import (
 from datasets_preview_backend.exceptions import (
     DatasetBuilderScriptError,
     DatasetBuilderScriptConfigError,
+    DatasetBuilderScriptConfigNoSplitsError,
     DatasetNotFoundError,
     ConfigNotFoundError,
     SplitError,
+    SplitNotImplementedError,
 )
 
 DEFAULT_PORT = 8000
@@ -73,16 +76,18 @@ def get_config_splits(dataset_id: str, config_name: str) -> List[str]:
             raise ConfigNotFoundError(dataset_id=dataset_id, config_name=config_name)
         else:
             raise
-    except ModuleNotFoundError:
+    except (ModuleNotFoundError, RuntimeError, TypeError):
         raise DatasetBuilderScriptConfigError(
             dataset_id=dataset_id, config_name=config_name
         )
 
     if builder.info.splits is None:
-        raise DatasetBuilderScriptConfigError(
+        raise DatasetBuilderScriptConfigNoSplitsError(
             dataset_id=dataset_id, config_name=config_name
         )
-    return builder.info.splits.keys()
+    else:
+        splits = builder.info.splits.keys()
+    return splits
 
 
 def extract_split_rows(dataset_id: str, config_name: str, split: str, num_rows: int):
@@ -93,6 +98,21 @@ def extract_split_rows(dataset_id: str, config_name: str, split: str, num_rows: 
     try:
         dataset: IterableDataset = load_dataset(
             dataset_id, name=config_name, split=split, streaming=True
+        )
+    except NotImplementedError as err:
+        # try to parse the unimplemented file extension
+        try:
+            regex = re.compile(
+                r"Extraction protocol for file at .*(\.[\w]*) is not implemented yet"
+            )
+            extension = regex.match(str(err)).group(1)
+        except:
+            extension = None
+        raise SplitNotImplementedError(
+            dataset_id=dataset_id,
+            config_name=config_name,
+            split=split,
+            extension=extension,
         )
     except ValueError as err:
         message = str(err)
@@ -162,7 +182,13 @@ async def extract(request: Request):
         return JSONResponse(extract_dataset_rows(dataset_id, num_rows))
     except (DatasetNotFoundError, ConfigNotFoundError) as err:
         return PlainTextResponse(err.message, status_code=404)
-    except (DatasetBuilderScriptError, DatasetBuilderScriptConfigError) as err:
+    except (
+        DatasetBuilderScriptError,
+        DatasetBuilderScriptConfigError,
+        DatasetBuilderScriptConfigNoSplitsError,
+        SplitError,
+        SplitNotImplementedError,
+    ) as err:
         return PlainTextResponse(err.message, status_code=400)
     # other exceptions will generate a 500 response
 
