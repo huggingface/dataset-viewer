@@ -84,8 +84,7 @@ def export_all_datasets_exceptions():
 
     print("Get config names for all the datasets")
     config_names_reports = process_map(
-        get_config_names_report,
-        dataset_ids,
+        get_config_names_report, dataset_ids, chunksize=20
     )
 
     print("Get split names for all the pairs (dataset_id, config_name)")
@@ -97,7 +96,10 @@ def export_all_datasets_exceptions():
             split_names_dataset_ids.append(report["dataset_id"])
             split_names_config_names.append(config_name)
     split_names_reports = process_map(
-        get_split_names_report, split_names_dataset_ids, split_names_config_names
+        get_split_names_report,
+        split_names_dataset_ids,
+        split_names_config_names,
+        chunksize=20,
     )
 
     print("Get rows extract for all the tuples (dataset_id, config_name, split_name)")
@@ -111,7 +113,11 @@ def export_all_datasets_exceptions():
             rows_config_names.append(report["config_name"])
             rows_split_names.append(split_name)
     rows_reports = process_map(
-        get_rows_report, rows_dataset_ids, rows_config_names, rows_split_names
+        get_rows_report,
+        rows_dataset_ids,
+        rows_config_names,
+        rows_split_names,
+        chunksize=20,
     )
 
     results = {
