@@ -6,7 +6,7 @@ from datasets_preview_backend.queries import extract_rows, get_configs, get_spli
 from datasets_preview_backend.utils import get_int_value
 from datasets_preview_backend.exceptions import (
     DatasetBuilderScriptError,
-    DatasetBuilderScriptConfigNoSplitsError,
+    DatasetBuilderNoSplitsError,
     DatasetNotFoundError,
     ConfigNotFoundError,
     SplitError,
@@ -42,7 +42,6 @@ async def rows(request: Request):
         return PlainTextResponse(err.message, status_code=404)
     except (
         DatasetBuilderScriptError,
-        DatasetBuilderScriptConfigNoSplitsError,
         SplitError,
         SplitNotImplementedError,
     ) as err:
@@ -81,6 +80,6 @@ async def splits(request: Request):
         return JSONResponse(get_splits(dataset, config))
     except (ConfigNotFoundError) as err:
         return PlainTextResponse(err.message, status_code=404)
-    except (DatasetBuilderScriptError,) as err:
+    except (DatasetBuilderScriptError, DatasetBuilderNoSplitsError) as err:
         return PlainTextResponse(err.message, status_code=400)
     # other exceptions will generate a 500 response
