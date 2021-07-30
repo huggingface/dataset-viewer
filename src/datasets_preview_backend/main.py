@@ -3,14 +3,14 @@ from starlette.routing import Route
 import uvicorn
 
 from datasets_preview_backend.config import PORT
-from datasets_preview_backend.routes import healthcheck, extract
+from datasets_preview_backend.routes import healthcheck, rows
 
 
 def start():
     app = Starlette(
         routes=[
             Route("/healthcheck", endpoint=healthcheck),
-            Route("/{dataset_id:path}/extract", endpoint=extract),
+            Route("/rows", endpoint=rows),
         ]
     )
 

@@ -19,8 +19,10 @@ async def healthcheck(_: Request):
     return PlainTextResponse("ok")
 
 
-async def extract(request: Request):
-    dataset_id: str = request.path_params["dataset_id"]
+async def rows(request: Request):
+    if "dataset" not in request.query_params:
+        return PlainTextResponse("Missing query parameter: 'dataset'", status_code=400)
+    dataset_id: str = request.query_params["dataset"]
     num_rows = get_int_value(
         d=request.query_params, key="rows", default=EXTRACT_ROWS_LIMIT
     )
