@@ -110,10 +110,10 @@ def extract_split_rows(dataset_id: str, config_name: str, split: str, num_rows: 
             dataset_id, name=config_name, split=split, streaming=True
         )
     except NotImplementedError as err:
-        # try to parse the unimplemented file extension
+        # TODO: check what has changed once https://github.com/huggingface/datasets/pull/2662 is merged
         try:
             regex = re.compile(
-                r"Extraction protocol for file at .*(\.[\w]*) is not implemented yet"
+                r"Extraction protocol for file at .*?((\.\w+)?\.\w+)* is not implemented yet"
             )
             extension = regex.match(str(err)).group(1)
         except:
