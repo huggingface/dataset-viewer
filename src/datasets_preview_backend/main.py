@@ -11,7 +11,6 @@ from starlette.routing import Route
 import uvicorn
 
 from datasets import (
-    Dataset,
     IterableDataset,
     load_dataset,
     load_dataset_builder,
@@ -19,36 +18,16 @@ from datasets import (
     import_main_class,
 )
 
+from datasets_preview_backend.exceptions import (
+    DatasetBuilderScriptError,
+    DatasetBuilderScriptConfigError,
+    DatasetNotFoundError,
+    ConfigNotFoundError,
+    SplitError,
+)
+
 DEFAULT_PORT = 8000
 DEFAULT_EXTRACT_ROWS_LIMIT = 100
-
-
-class Error(Exception):
-    """Base class for exceptions in this module."""
-
-    pass
-
-
-class ConfigNameError(Error):
-    """Exception raised for errors in the config name.
-
-    Attributes:
-        config_name -- the erroneous dataset config_name
-    """
-
-    def __init__(self, config_name):
-        self.config_name = config_name
-
-
-class SplitError(Error):
-    """Exception raised for errors in the split name.
-
-    Attributes:
-        split -- the erroneous dataset split
-    """
-
-    def __init__(self, split):
-        self.split = split
 
 
 def get_int_value(d, key, default):
@@ -70,8 +49,14 @@ async def healthcheck(request: Request):
 
 
 def get_dataset_config_names(dataset_id: str) -> List[str]:
-    module_path, *_ = prepare_module(dataset_id, dataset=True)
-    builder_cls = import_main_class(module_path, dataset=True)
+    try:
+        module_path, *_ = prepare_module(dataset_id, dataset=True)
+        builder_cls = import_main_class(module_path, dataset=True)
+    except FileNotFoundError as err:
+        raise DatasetNotFoundError(dataset_id=dataset_id)
+    except (ModuleNotFoundError):
+        raise DatasetBuilderScriptError(dataset_id=dataset_id)
+
     config_names = [c.name for c in builder_cls.BUILDER_CONFIGS] or [None]
     logging.debug(
         f"The dataset builder has {len(config_names)} configs: {config_names}"
@@ -85,9 +70,18 @@ def get_config_splits(dataset_id: str, config_name: str) -> List[str]:
     except ValueError as err:
         message = str(err)
         if message.startswith(f"BuilderConfig {config_name} not found"):
-            raise ConfigNameError(config_name=config_name)
+            raise ConfigNotFoundError(dataset_id=dataset_id, config_name=config_name)
         else:
             raise
+    except ModuleNotFoundError:
+        raise DatasetBuilderScriptConfigError(
+            dataset_id=dataset_id, config_name=config_name
+        )
+
+    if builder.info.splits is None:
+        raise DatasetBuilderScriptConfigError(
+            dataset_id=dataset_id, config_name=config_name
+        )
     return builder.info.splits.keys()
 
 
@@ -103,11 +97,13 @@ def extract_split_rows(dataset_id: str, config_name: str, split: str, num_rows: 
     except ValueError as err:
         message = str(err)
         if message.startswith(f"BuilderConfig {config_name} not found"):
-            raise ConfigNameError(config_name=config_name)
+            raise ConfigNotFoundError(dataset_id=dataset_id, config_name=config_name)
         elif message.startswith(f'Unknown split "{split}".') or message.startswith(
             f"Bad split: {split}."
         ):
-            raise SplitError(split=split)
+            raise SplitError(
+                dataset_id=dataset_id, config_name=config_name, split=split
+            )
         else:
             raise
 
@@ -164,8 +160,10 @@ async def extract(request: Request):
 
     try:
         return JSONResponse(extract_dataset_rows(dataset_id, num_rows))
-    except FileNotFoundError as e:
-        return PlainTextResponse("Dataset not found", status_code=404)
+    except (DatasetNotFoundError, ConfigNotFoundError) as err:
+        return PlainTextResponse(err.message, status_code=404)
+    except (DatasetBuilderScriptError, DatasetBuilderScriptConfigError) as err:
+        return PlainTextResponse(err.message, status_code=400)
     # other exceptions will generate a 500 response
 
 

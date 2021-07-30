@@ -1,7 +1,10 @@
 import pytest
 
 from datasets_preview_backend.main import (
-    ConfigNameError,
+    DatasetBuilderScriptError,
+    DatasetBuilderScriptConfigError,
+    ConfigNotFoundError,
+    DatasetNotFoundError,
     SplitError,
     get_dataset_config_names,
     get_config_splits,
@@ -112,5 +115,24 @@ def test_extract_dataset():
 
 
 def test_extract_unknown_dataset():
-    with pytest.raises(FileNotFoundError):
+    with pytest.raises(DatasetNotFoundError):
         extract_dataset_rows("doesnotexist", 100)
+    with pytest.raises(DatasetNotFoundError):
+        extract_dataset_rows("AConsApart/anime_subtitles_DialoGPT", 100)
+
+
+def test_extract_unknown_config():
+    with pytest.raises(ConfigNotFoundError):
+        extract_config_rows("glue", "doesnotexist", 100)
+
+
+def test_extract_bogus_dataset():
+    with pytest.raises(DatasetBuilderScriptError):
+        extract_dataset_rows("TimTreasure4/Test", 100)
+
+
+def test_extract_bogus_config():
+    with pytest.raises(DatasetBuilderScriptConfigError):
+        extract_dataset_rows("classla/copa_hr", 100)
+    with pytest.raises(DatasetBuilderScriptConfigError):
+        extract_config_rows("classla/copa_hr", "copa_hr", 100)
