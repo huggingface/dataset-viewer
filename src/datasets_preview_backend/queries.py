@@ -24,7 +24,7 @@ from datasets_preview_backend.exceptions import (
 # TODO: log the traces on every caught exception
 
 
-def get_dataset_config_names(dataset_id: str) -> List[str]:
+def get_config_names(dataset_id: str) -> List[str]:
     try:
         module_path, *_ = prepare_module(dataset_id, dataset=True)
         builder_cls = import_main_class(module_path, dataset=True)
@@ -40,7 +40,7 @@ def get_dataset_config_names(dataset_id: str) -> List[str]:
     return config_names
 
 
-def get_config_splits(dataset_id: str, config_name: str) -> List[str]:
+def get_splits(dataset_id: str, config_name: str) -> List[str]:
     try:
         builder = load_dataset_builder(dataset_id, name=config_name)
     except ValueError as err:

@@ -2,7 +2,7 @@ from starlette.requests import Request
 from starlette.responses import PlainTextResponse, JSONResponse
 
 from datasets_preview_backend.config import EXTRACT_ROWS_LIMIT
-from datasets_preview_backend.queries import extract_split_rows
+from datasets_preview_backend.queries import extract_rows, get_config_names
 from datasets_preview_backend.utils import get_int_value
 from datasets_preview_backend.exceptions import (
     DatasetBuilderScriptError,
@@ -37,9 +37,7 @@ async def rows(request: Request):
         )
 
     try:
-        return JSONResponse(
-            extract_split_rows(dataset_id, config_name, split_name, num_rows)
-        )
+        return JSONResponse(extract_rows(dataset_id, config_name, split_name, num_rows))
     except (DatasetNotFoundError, ConfigNotFoundError) as err:
         return PlainTextResponse(err.message, status_code=404)
     except (

@@ -7,43 +7,43 @@ from datasets_preview_backend.queries import (
     DatasetNotFoundError,
     SplitError,
     SplitNotImplementedError,
-    get_dataset_config_names,
-    get_config_splits,
+    get_config_names,
+    get_splits,
     extract_rows,
 )
 
 
 def test_get_configs():
-    config_names = get_dataset_config_names("acronym_identification")
+    config_names = get_config_names("acronym_identification")
     assert len(config_names) == 1
     assert config_names[0] is None
 
-    config_names = get_dataset_config_names("glue")
+    config_names = get_config_names("glue")
     assert len(config_names) == 12
     assert "cola" in config_names
 
 
 def test_get_splits():  # sourcery skip: extract-duplicate-method
-    splits = get_config_splits("acronym_identification", None)
+    splits = get_splits("acronym_identification", None)
     assert len(splits) == 3
     assert "train" in splits
 
-    splits = get_config_splits("glue", "ax")
+    splits = get_splits("glue", "ax")
     assert len(splits) == 1
     assert "test" in splits
     assert "train" not in splits
 
     # uses the fallback to call "builder._split_generators"
-    splits = get_config_splits("hda_nli_hindi", "HDA nli hindi")
+    splits = get_splits("hda_nli_hindi", "HDA nli hindi")
     assert len(splits) == 3
     assert "train" in splits
     assert "validation" in splits
     assert "test" in splits
 
-    splits = get_config_splits("classla/copa_hr", "copa_hr")
+    splits = get_splits("classla/copa_hr", "copa_hr")
     assert len(splits) == 3
 
-    splits = get_config_splits("mc4", "sn")
+    splits = get_splits("mc4", "sn")
     assert len(splits) == 2
 
 
