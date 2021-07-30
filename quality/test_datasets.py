@@ -2,6 +2,10 @@ from datasets import list_datasets
 import json
 import time
 from tqdm.contrib.concurrent import process_map
+import logging
+
+# remove any logs
+logging.disable(logging.CRITICAL)
 
 
 from datasets_preview_backend.queries import (
