@@ -8,11 +8,9 @@ import logging
 logging.disable(logging.CRITICAL)
 
 
-from datasets_preview_backend.queries import (
-    get_configs,
-    get_splits,
-    extract_rows,
-)
+from datasets_preview_backend.queries.configs import get_configs
+from datasets_preview_backend.queries.splits import get_splits
+from datasets_preview_backend.queries.rows import extract_rows
 
 
 def get_configs_report(dataset: str):
