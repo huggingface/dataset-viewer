@@ -1,3 +1,4 @@
+import logging
 from starlette.requests import Request
 from starlette.responses import PlainTextResponse, JSONResponse
 
@@ -7,9 +8,16 @@ from datasets_preview_backend.queries.splits import get_splits
 from datasets_preview_backend.queries.rows import extract_rows
 from datasets_preview_backend.utils import get_int_value
 from datasets_preview_backend.exceptions import (
+    StatusError,
     Status400Error,
     Status404Error,
 )
+
+
+def log_error(err: StatusError):
+    logging.debug(
+        f"Error {err.status_code} '{err.message}'. Caused by a {type(err.__cause__).__name__}: '{str(err.__cause__)}'"
+    )
 
 
 async def healthcheck(_: Request):
@@ -27,6 +35,7 @@ async def configs(request: Request):
     try:
         return JSONResponse(get_configs(dataset))
     except (Status400Error, Status404Error) as err:
+        log_error(err)
         return PlainTextResponse(err.message, status_code=err.status_code)
     # other exceptions will generate a 500 response
 
@@ -44,6 +53,7 @@ async def splits(request: Request):
     try:
         return JSONResponse(get_splits(dataset, config))
     except (Status400Error, Status404Error) as err:
+        log_error(err)
         return PlainTextResponse(err.message, status_code=err.status_code)
     # other exceptions will generate a 500 response
 
@@ -69,5 +79,6 @@ async def rows(request: Request):
     try:
         return JSONResponse(extract_rows(dataset, config, split, num_rows))
     except (Status400Error, Status404Error) as err:
+        log_error(err)
         return PlainTextResponse(err.message, status_code=err.status_code)
     # other exceptions will generate a 500 response
