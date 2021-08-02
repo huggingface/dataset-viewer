@@ -131,3 +131,9 @@ def test_extract_not_implemented_split():
 def test_tar_gz_extension():
     with pytest.raises(SplitNotImplementedError):
         extract_rows("air_dialogue", "air_dialogue_data", "train", 10)
+
+
+def test_import_nltk():
+    # requires the nltk dependency
+    configs = get_configs("vershasaxena91/squad_multitask")["configs"]
+    assert len(configs) == 3
