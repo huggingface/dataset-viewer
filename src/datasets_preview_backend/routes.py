@@ -8,6 +8,7 @@ from datasets_preview_backend.queries.rows import extract_rows
 from datasets_preview_backend.utils import get_int_value
 from datasets_preview_backend.exceptions import (
     DatasetBuilderScriptError,
+    DatasetBuilderNotFoundError,
     DatasetBuilderNoSplitsError,
     DatasetNotFoundError,
     ConfigNotFoundError,
@@ -61,7 +62,7 @@ async def configs(request: Request):
 
     try:
         return JSONResponse(get_configs(dataset))
-    except (DatasetNotFoundError) as err:
+    except (DatasetBuilderNotFoundError) as err:
         return PlainTextResponse(err.message, status_code=404)
     except (DatasetBuilderScriptError,) as err:
         return PlainTextResponse(err.message, status_code=400)

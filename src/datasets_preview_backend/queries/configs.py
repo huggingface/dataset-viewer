@@ -9,7 +9,7 @@ from datasets import (
 
 from datasets_preview_backend.exceptions import (
     DatasetBuilderScriptError,
-    DatasetNotFoundError,
+    DatasetBuilderNotFoundError,
 )
 
 # TODO: log the traces on every caught exception
@@ -20,7 +20,7 @@ def get_configs(dataset: str) -> List[str]:
         module_path, *_ = prepare_module(dataset, dataset=True)
         builder_cls = import_main_class(module_path, dataset=True)
     except FileNotFoundError as err:
-        raise DatasetNotFoundError(dataset=dataset)
+        raise DatasetBuilderNotFoundError(dataset=dataset)
     except (ModuleNotFoundError):
         raise DatasetBuilderScriptError(dataset=dataset)
 

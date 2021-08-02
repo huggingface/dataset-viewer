@@ -25,6 +25,20 @@ class DatasetBuilderScriptError(Error):
         super().__init__(f"Dataset builder script error. Dataset: '{self.dataset}'")
 
 
+class DatasetBuilderNotFoundError(Error):
+    """Exception raised if the dataset script could not be found.
+
+    Attributes:
+        dataset -- the erroneous dataset id
+    """
+
+    def __init__(self, dataset):
+        self.dataset = dataset
+        super().__init__(
+            f"Dataset builder script could not be found. Dataset: '{self.dataset}'"
+        )
+
+
 class DatasetBuilderNoSplitsError(Error):
     """Exception raised if the builder script fails to provide the list of splits.
 
