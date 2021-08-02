@@ -1,35 +1,34 @@
 from typing import List
 
-from datasets import (
-    load_dataset_builder,
-)
+from datasets import load_dataset_builder
 from datasets.utils.streaming_download_manager import StreamingDownloadManager
 
 from datasets_preview_backend.exceptions import (
-    DatasetBuilderScriptError,
-    DatasetBuilderNoSplitsError,
-    ConfigNotFoundError,
+    Status400Error,
+    Status404Error,
 )
-
-# TODO: log the traces on every caught exception
 
 
 def get_splits(dataset: str, config: str) -> List[str]:
     try:
         builder = load_dataset_builder(dataset, name=config)
+    except FileNotFoundError as err:
+        raise Status404Error("The dataset config could not be found.") from err
     except ValueError as err:
-        message = str(err)
-        if message.startswith(f"BuilderConfig {config} not found"):
-            raise ConfigNotFoundError(dataset=dataset, config=config)
-        elif message.startswith(f"Config name is missing."):
-            raise ConfigNotFoundError(dataset=dataset, config=config)
+        if str(err).startswith(f"BuilderConfig {config} not found."):
+            raise Status404Error("The dataset config could not be found.") from err
         else:
-            raise
-    except (ModuleNotFoundError, RuntimeError, TypeError):
-        raise DatasetBuilderScriptError(dataset=dataset)
+            raise Status400Error(
+                "The split names could not be parsed from the dataset config."
+            ) from err
+    except Exception as err:
+        raise Status400Error(
+            "The split names could not be parsed from the dataset config."
+        ) from err
 
     if builder.info.splits is None:
         # try to get them from _split_generators
+        # should not be necessary once https://github.com/huggingface/datasets/issues/2743 is fixed
         try:
             splits = [
                 split_generator.name
@@ -37,8 +36,10 @@ def get_splits(dataset: str, config: str) -> List[str]:
                     StreamingDownloadManager(base_path=builder.base_path)
                 )
             ]
-        except:
-            raise DatasetBuilderNoSplitsError(dataset=dataset, config=config)
+        except Exception as err:
+            raise Status400Error(
+                "The split names could not be parsed from the dataset config."
+            ) from err
     else:
         splits = list(builder.info.splits.keys())
     return {"dataset": dataset, "config": config, "splits": splits}

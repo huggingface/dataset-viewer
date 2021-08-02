@@ -1,7 +1,8 @@
 import pytest
 
 from datasets_preview_backend.queries.splits import (
-    DatasetBuilderNoSplitsError,
+    Status400Error,
+    Status404Error,
     get_splits,
 )
 
@@ -24,7 +25,7 @@ def test_get_splits():
     assert "test" in splits
     assert "train" not in splits
 
-    # uses the fallback to call "builder._split_generators"
+    # uses the fallback to call "builder._split_generators" while https://github.com/huggingface/datasets/issues/2743
     splits = get_splits("hda_nli_hindi", "HDA nli hindi")["splits"]
     assert len(splits) == 3
     assert "train" in splits
@@ -38,7 +39,23 @@ def test_get_splits():
     assert len(splits) == 2
 
 
-def test_extract_bogus_splits():
-    # not sure if we have an example of such an error
-    with pytest.raises(DatasetBuilderNoSplitsError):
+def test_no_splits():
+    # Due to https://github.com/huggingface/datasets/issues/2743
+    with pytest.raises(Status400Error):
         get_splits("journalists_questions", "plain_text")
+
+
+def test_builder_config_error():
+    with pytest.raises(Status400Error):
+        get_splits("KETI-AIR/nikl", "spoken.v1.0")
+    with pytest.raises(Status400Error):
+        get_splits("nateraw/image-folder", None)
+    with pytest.raises(Status400Error):
+        get_splits("Valahaar/wsdmt", None)
+
+
+def test_not_found():
+    with pytest.raises(Status404Error):
+        get_splits("doesnotexist", None)
+    with pytest.raises(Status404Error):
+        get_splits("glue", "doesnotexist")

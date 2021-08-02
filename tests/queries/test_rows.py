@@ -1,11 +1,8 @@
 import pytest
 
 from datasets_preview_backend.queries.rows import (
-    DatasetBuilderScriptError,
-    ConfigNotFoundError,
-    DatasetNotFoundError,
-    SplitError,
-    SplitNotImplementedError,
+    Status400Error,
+    Status404Error,
     extract_rows,
 )
 
@@ -36,42 +33,42 @@ def test_extract_split_rows_num_rows():
     assert rows[0]["tokens"][0] == "What"
 
 
+def test_extract_unknown_dataset():
+    with pytest.raises(Status404Error):
+        extract_rows("doesnotexist", None, "train", 100)
+    with pytest.raises(Status404Error):
+        extract_rows("AConsApart/anime_subtitles_DialoGPT", None, "train", 100)
+
+
 def test_extract_unknown_config():
-    with pytest.raises(ConfigNotFoundError):
+    with pytest.raises(Status404Error):
         extract_rows("glue", "doesnotexist", "train", 100)
-    with pytest.raises(ConfigNotFoundError):
+    with pytest.raises(Status404Error):
         extract_rows("glue", None, "train", 100)
 
 
 def test_extract_unknown_split():
-    with pytest.raises(SplitError):
+    with pytest.raises(Status404Error):
         extract_rows("glue", "ax", "train", 100)
 
 
-def test_extract_unknown_dataset():
-    with pytest.raises(DatasetNotFoundError):
-        extract_rows("doesnotexist", None, "train", 100)
-    with pytest.raises(DatasetNotFoundError):
-        extract_rows("AConsApart/anime_subtitles_DialoGPT", None, "train", 100)
-
-
 def test_extract_bogus_dataset():
-    with pytest.raises(DatasetBuilderScriptError):
+    with pytest.raises(Status400Error):
         extract_rows("TimTreasure4/Test", None, "train", 100)
 
 
 def test_extract_bogus_config():
-    with pytest.raises(DatasetBuilderScriptError):
+    with pytest.raises(Status400Error):
         extract_rows("Valahaar/wsdmt", None, "train", 10)
-    with pytest.raises(DatasetBuilderScriptError):
+    with pytest.raises(Status400Error):
         extract_rows("nateraw/image-folder", None, "train", 10)
 
 
 def test_extract_not_implemented_split():
-    with pytest.raises(SplitNotImplementedError):
+    with pytest.raises(Status400Error):
         extract_rows("ade_corpus_v2", "Ade_corpus_v2_classification", "train", 10)
 
 
 def test_tar_gz_extension():
-    with pytest.raises(SplitNotImplementedError):
+    with pytest.raises(Status400Error):
         extract_rows("air_dialogue", "air_dialogue_data", "train", 10)

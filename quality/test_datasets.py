@@ -22,14 +22,18 @@ def get_configs_report(dataset: str):
             "success": True,
             "exception": None,
             "message": None,
+            "cause": None,
+            "cause_message": None,
         }
     except Exception as err:
         return {
             "dataset": dataset,
             "configs": [],
             "success": False,
-            "exception": str(type(err).__name__),
+            "exception": type(err).__name__,
             "message": str(err),
+            "cause": type(err.__cause__).__name__,
+            "cause_message": str(err.__cause__),
         }
 
 
@@ -43,6 +47,8 @@ def get_splits_report(dataset: str, config: str):
             "success": True,
             "exception": None,
             "message": None,
+            "cause": None,
+            "cause_message": None,
         }
     except Exception as err:
         return {
@@ -50,8 +56,10 @@ def get_splits_report(dataset: str, config: str):
             "config": config,
             "splits": [],
             "success": False,
-            "exception": str(type(err).__name__),
+            "exception": type(err).__name__,
             "message": str(err),
+            "cause": type(err.__cause__).__name__,
+            "cause_message": str(err.__cause__),
         }
 
 
@@ -67,6 +75,8 @@ def get_rows_report(dataset: str, config: str, split: str):
             "success": True,
             "exception": None,
             "message": None,
+            "cause": None,
+            "cause_message": None,
         }
     except Exception as err:
         return {
@@ -74,8 +84,10 @@ def get_rows_report(dataset: str, config: str, split: str):
             "config": config,
             "split": split,
             "success": False,
-            "exception": str(type(err).__name__),
+            "exception": type(err).__name__,
             "message": str(err),
+            "cause": type(err.__cause__).__name__,
+            "cause_message": str(err.__cause__),
         }
 
 

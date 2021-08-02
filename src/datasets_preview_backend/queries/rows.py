@@ -9,14 +9,9 @@ from datasets import (
 )
 
 from datasets_preview_backend.exceptions import (
-    DatasetBuilderScriptError,
-    DatasetNotFoundError,
-    ConfigNotFoundError,
-    SplitError,
-    SplitNotImplementedError,
+    Status400Error,
+    Status404Error,
 )
-
-# TODO: log the traces on every caught exception
 
 
 def extract_rows(dataset: str, config: str, split: str, num_rows: int):
@@ -29,7 +24,9 @@ def extract_rows(dataset: str, config: str, split: str, num_rows: int):
             dataset, name=config, split=split, streaming=True
         )
     except FileNotFoundError as err:
-        raise DatasetNotFoundError(dataset=dataset)
+        raise Status404Error(
+            "The split for the dataset config could not be found."
+        ) from err
     except NotImplementedError as err:
         # TODO: check what has changed once https://github.com/huggingface/datasets/pull/2662 is merged
         try:
@@ -38,27 +35,28 @@ def extract_rows(dataset: str, config: str, split: str, num_rows: int):
             )
             extension = regex.match(str(err)).group(1)
         except:
-            extension = None
-        raise SplitNotImplementedError(
-            dataset=dataset,
-            config=config,
-            split=split,
-            extension=extension,
-        )
-    except ValueError as err:
-        message = str(err)
-        if message.startswith(f"BuilderConfig {config} not found"):
-            raise ConfigNotFoundError(dataset=dataset, config=config)
-        elif message.startswith(f"Config name is missing."):
-            raise ConfigNotFoundError(dataset=dataset, config=config)
-        elif message.startswith(f'Unknown split "{split}".') or message.startswith(
-            f"Bad split: {split}."
-        ):
-            raise SplitError(dataset=dataset, config=config, split=split)
+            raise Status400Error(
+                "The rows could not be extracted from the split of the dataset config."
+            ) from err
         else:
-            raise
-    except (ModuleNotFoundError, RuntimeError, TypeError):
-        raise DatasetBuilderScriptError(dataset=dataset)
+            raise Status400Error(
+                f"The rows could not be extracted from the split of the dataset config because extension {extension} is not supported."
+            ) from err
+    except ValueError as err:
+        if (
+            str(err).startswith(f"BuilderConfig {config} not found.")
+            or str(err).startswith(f"Config name is missing.")
+            or str(err).startswith(f"Bad split")
+        ):
+            raise Status404Error("The dataset config could not be found.") from err
+        else:
+            raise Status400Error(
+                "The rows could not be extracted from the split of the dataset config."
+            ) from err
+    except Exception as err:
+        raise Status400Error(
+            "The rows could not be extracted from the split of the dataset config."
+        ) from err
 
     rows = list(iterable_dataset.take(num_rows))
     if len(rows) != num_rows:

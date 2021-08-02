@@ -8,11 +8,9 @@ from datasets import (
 )
 
 from datasets_preview_backend.exceptions import (
-    DatasetBuilderScriptError,
-    DatasetBuilderNotFoundError,
+    Status400Error,
+    Status404Error,
 )
-
-# TODO: log the traces on every caught exception
 
 
 def get_configs(dataset: str) -> List[str]:
@@ -20,9 +18,11 @@ def get_configs(dataset: str) -> List[str]:
         module_path, *_ = prepare_module(dataset, dataset=True)
         builder_cls = import_main_class(module_path, dataset=True)
     except FileNotFoundError as err:
-        raise DatasetBuilderNotFoundError(dataset=dataset)
-    except (ModuleNotFoundError):
-        raise DatasetBuilderScriptError(dataset=dataset)
+        raise Status404Error("The dataset could not be found.") from err
+    except Exception as err:
+        raise Status400Error(
+            "The config names could not be parsed from the dataset."
+        ) from err
 
     configs = [c.name for c in builder_cls.BUILDER_CONFIGS] or [None]
     logging.debug(f"The dataset builder has {len(configs)} configs: {configs}")
