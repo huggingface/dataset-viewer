@@ -46,7 +46,7 @@ make watch
 
 ## Endpoints
 
-### healthcheck
+### /healthcheck
 
 Endpoint: `/healthcheck`
 
@@ -62,7 +62,7 @@ Responses:
 
 - `200`: text content `ok`
 
-### configs
+### /configs
 
 Endpoint: `/configs`
 
@@ -104,7 +104,7 @@ Responses:
 - `404`: the dataset cannot be found
 - `500`: application error
 
-### splits
+### /splits
 
 Endpoint: `/splits`
 
@@ -135,7 +135,7 @@ Responses:
 - `404`: the dataset or config cannot be found
 - `500`: application error
 
-### rows
+### /rows
 
 Endpoint: `/rows`
 
