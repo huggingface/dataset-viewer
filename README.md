@@ -12,16 +12,17 @@ The URL schema is `https://huggingface.co/datasets-preview/:datasetId/extract?ro
 
 ## Install
 
+Install with:
+
 ```bash
-git clone git@github.com:huggingface/datasets-preview-backend.git
-cd datasets-preview-backend
 make install
 ```
 
 ## Run
 
+Launch with:
+
 ```bash
-cd datasets-preview-backend
 make run
 ```
 
@@ -40,6 +41,5 @@ PORT=80 WEB_CONCURRENCY=4 make run
 To reload the application on file changes while developing, run:
 
 ```bash
-cd datasets-preview-backend
 make watch
 ```
