@@ -48,11 +48,9 @@ make watch
 
 ### /healthcheck
 
-Endpoint: `/healthcheck`
+> Ensure the app is running
 
 Example: http://54.158.211.3/healthcheck
-
-> Ensure the app is running
 
 Method: `GET`
 
@@ -64,11 +62,9 @@ Responses:
 
 ### /configs
 
-Endpoint: `/configs`
+> Lists the [configurations](https://huggingface.co/docs/datasets/loading_datasets.html#selecting-a-configuration) names for the dataset
 
 Example: http://54.158.211.3/configs?dataset=glue
-
-> Lists the [configurations](https://huggingface.co/docs/datasets/loading_datasets.html#selecting-a-configuration) names for the dataset
 
 Method: `GET`
 
@@ -106,11 +102,9 @@ Responses:
 
 ### /splits
 
-Endpoint: `/splits`
+> Lists the [splits](https://huggingface.co/docs/datasets/splits.html) names for a dataset config
 
 Example: http://54.158.211.3/splits?dataset=glue&config=ax
-
-> Lists the [splits](https://huggingface.co/docs/datasets/splits.html) names for a dataset config
 
 Method: `GET`
 
@@ -137,11 +131,9 @@ Responses:
 
 ### /rows
 
-Endpoint: `/rows`
+> Extract the first [rows](https://huggingface.co/docs/datasets/splits.html) for a split of a dataset config
 
 Example: http://54.158.211.3/rows?dataset=glue&config=ax&split=test&rows=2
-
-> Extract the first [rows](https://huggingface.co/docs/datasets/splits.html) for a split of a dataset config
 
 Method: `GET`
 
