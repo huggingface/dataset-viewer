@@ -43,3 +43,141 @@ To reload the application on file changes while developing, run:
 ```bash
 make watch
 ```
+
+## Endpoints
+
+### healthcheck
+
+Endpoint: `/healthcheck`
+
+Example: http://54.158.211.3/healthcheck
+
+> Ensure the app is running
+
+Method: `GET`
+
+Parameters: none
+
+Responses:
+
+- `200`: text content `ok`
+
+### configs
+
+Endpoint: `/configs`
+
+Example: http://54.158.211.3/configs?dataset=glue
+
+> Lists the [configurations](https://huggingface.co/docs/datasets/loading_datasets.html#selecting-a-configuration) names for the dataset
+
+Method: `GET`
+
+Parameters:
+
+- `dataset` (required): the dataset ID
+
+Responses:
+
+- `200`: JSON content with the following structure:
+
+  ```json
+  {
+    "dataset": "glue",
+    "configs": [
+      "cola",
+      "sst2",
+      "mrpc",
+      "qqp",
+      "stsb",
+      "mnli",
+      "mnli_mismatched",
+      "mnli_matched",
+      "qnli",
+      "rte",
+      "wnli",
+      "ax"
+    ]
+  }
+  ```
+
+- `400`: the dataset script is erroneous
+- `404`: the dataset cannot be found
+- `500`: application error
+
+### splits
+
+Endpoint: `/splits`
+
+Example: http://54.158.211.3/splits?dataset=glue&config=ax
+
+> Lists the [splits](https://huggingface.co/docs/datasets/splits.html) names for a dataset config
+
+Method: `GET`
+
+Parameters:
+
+- `dataset` (required): the dataset ID
+- `config`: the configuration name. It might be required, or not, depending on the dataset
+
+Responses:
+
+- `200`: JSON content with the following structure:
+
+  ```json
+  {
+    "dataset": "glue",
+    "config": "ax",
+    "splits": ["test"]
+  }
+  ```
+
+- `400`: the dataset script is erroneous
+- `404`: the dataset or config cannot be found
+- `500`: application error
+
+### rows
+
+Endpoint: `/rows`
+
+Example: http://54.158.211.3/rows?dataset=glue&config=ax&split=test&rows=2
+
+> Extract the first [rows](https://huggingface.co/docs/datasets/splits.html) for a split of a dataset config
+
+Method: `GET`
+
+Parameters:
+
+- `dataset` (required): the dataset ID
+- `config`: the configuration name. It might be required, or not, depending on the dataset
+- `split` (required): the split name
+- `rows`: the number of rows to extract. Defaults to 100.
+
+Responses:
+
+- `200`: JSON content with the following structure:
+
+  ```json
+  {
+    "dataset": "glue",
+    "config": "ax",
+    "split": "test",
+    "rows": [
+      {
+        "idx": 0,
+        "hypothesis": "The cat did not sit on the mat.",
+        "label": -1,
+        "premise": "The cat sat on the mat."
+      },
+      {
+        "idx": 1,
+        "hypothesis": "The cat sat on the mat.",
+        "label": -1,
+        "premise": "The cat did not sit on the mat."
+      }
+    ]
+  }
+  ```
+
+- `400`: the dataset script is erroneous, or the data cannot be obtained.
+- `404`: the dataset, config or script cannot be found
+- `500`: application error
