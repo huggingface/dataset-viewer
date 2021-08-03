@@ -27,10 +27,17 @@ make run
 
 Set environment variables to configure the following aspects:
 
-- `DPB_EXTRACT_ROWS_LIMIT`: maximum number of rows in the extract. Defaults to `100`.
-- `DPB_PORT`: the port used by the app
+- `EXTRACT_ROWS_LIMIT`: maximum number of rows in the extract. Defaults to `100`.
+- `PORT`: the port used by the app. Defaults to `8000`.
+- `WEB_CONCURRENCY`: the number of workers. Defaults to `1`.
 
-To restart the application on file changes while developing, run:
+For example:
+
+```bash
+PORT=80 WEB_CONCURRENCY=4 make run
+```
+
+To reload the application on file changes while developing, run:
 
 ```bash
 cd datasets-preview-backend

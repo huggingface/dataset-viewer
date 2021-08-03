@@ -5,7 +5,7 @@ DEFAULT_PORT = 8000
 DEFAULT_EXTRACT_ROWS_LIMIT = 100
 
 
-PORT = get_int_value(d=os.environ, key="DPB_PORT", default=DEFAULT_PORT)
+PORT = get_int_value(d=os.environ, key="PORT", default=DEFAULT_PORT)
 EXTRACT_ROWS_LIMIT = get_int_value(
-    d=os.environ, key="DPB_EXTRACT_ROWS_LIMIT", default=DEFAULT_EXTRACT_ROWS_LIMIT
+    d=os.environ, key="EXTRACT_ROWS_LIMIT", default=DEFAULT_EXTRACT_ROWS_LIMIT
 )
