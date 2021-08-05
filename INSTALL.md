@@ -121,7 +121,7 @@ make install
 Launch the app with pm2:
 
 ```bash
-PORT=8000 pm2 start --name datasets-preview-backend make -C /home/hf/datasets-preview-backend/ -- run
+PORT=8000 pm2 start --name datasets-preview-backend make -- -C /home/hf/datasets-preview-backend/ run
 ```
 
 Check if the app is accessible at http://54.158.211.3/healthcheck.
