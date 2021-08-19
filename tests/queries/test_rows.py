@@ -45,16 +45,13 @@ def test_extract_unknown_config():
         extract_rows("glue", "doesnotexist", "train", 100)
     with pytest.raises(Status404Error):
         extract_rows("glue", None, "train", 100)
+    with pytest.raises(Status404Error):
+        extract_rows("TimTreasure4/Test", None, "train", 100)
 
 
 def test_extract_unknown_split():
     with pytest.raises(Status404Error):
         extract_rows("glue", "ax", "train", 100)
-
-
-def test_extract_bogus_dataset():
-    with pytest.raises(Status400Error):
-        extract_rows("TimTreasure4/Test", None, "train", 100)
 
 
 def test_extract_bogus_config():

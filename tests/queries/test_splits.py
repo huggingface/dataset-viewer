@@ -39,12 +39,6 @@ def test_get_splits():
     assert len(splits) == 2
 
 
-def test_no_splits():
-    # Due to https://github.com/huggingface/datasets/issues/2743
-    with pytest.raises(Status400Error):
-        get_splits("journalists_questions", "plain_text")
-
-
 def test_builder_config_error():
     with pytest.raises(Status400Error):
         get_splits("KETI-AIR/nikl", "spoken.v1.0")

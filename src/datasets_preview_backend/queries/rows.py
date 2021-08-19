@@ -13,7 +13,6 @@ from datasets_preview_backend.exceptions import (
     Status404Error,
 )
 
-
 def extract_rows(dataset: str, config: str, split: str, num_rows: int):
     logging.debug(
         f"asked for {num_rows} first rows of dataset {dataset} - {config} - {split}"
@@ -23,6 +22,7 @@ def extract_rows(dataset: str, config: str, split: str, num_rows: int):
         iterable_dataset: IterableDataset = load_dataset(
             dataset, name=config, split=split, streaming=True
         )
+        rows = list(iterable_dataset.take(num_rows))
     except FileNotFoundError as err:
         raise Status404Error(
             "The split for the dataset config could not be found."
@@ -58,7 +58,6 @@ def extract_rows(dataset: str, config: str, split: str, num_rows: int):
             "The rows could not be extracted from the split of the dataset config."
         ) from err
 
-    rows = list(iterable_dataset.take(num_rows))
     if len(rows) != num_rows:
         logging.warning(
             f"could not read all the required rows ({len(rows)} / {num_rows}) from dataset {dataset} - {config} - {split}"

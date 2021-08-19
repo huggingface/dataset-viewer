@@ -1,4 +1,4 @@
-from datasets import list_datasets
+from datasets import list_datasets, disable_progress_bar
 import json
 import time
 from tqdm.contrib.concurrent import process_map
@@ -6,7 +6,7 @@ import logging
 
 # remove any logs
 logging.disable(logging.CRITICAL)
-
+disable_progress_bar()
 
 from datasets_preview_backend.queries.configs import get_configs
 from datasets_preview_backend.queries.splits import get_splits
