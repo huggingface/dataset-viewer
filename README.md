@@ -60,6 +60,106 @@ Responses:
 
 - `200`: text content `ok`
 
+### /info
+
+> Return the dataset_info.json file for the dataset
+
+Example: http://54.158.211.3/info?dataset=glue
+
+Method: `GET`
+
+Parameters:
+
+- `dataset` (required): the dataset ID
+
+Responses:
+
+- `200`: JSON content with the following structure:
+
+  ```json
+  {
+    "dataset": "glue",
+    "info": {
+      "cola": {
+        "description": "GLUE, the General Language Understanding Evaluation benchmark\n(https://gluebenchmark.com/) is a collection of resources for training,\nevaluating, and analyzing natural language understanding systems.\n\n",
+        "citation": "@article{warstadt2018neural,\n  title={Neural Network Acceptability Judgments},\n  author={Warstadt, Alex and Singh, Amanpreet and Bowman, Samuel R},\n  journal={arXiv preprint arXiv:1805.12471},\n  year={2018}\n}\n@inproceedings{wang2019glue,\n  title={{GLUE}: A Multi-Task Benchmark and Analysis Platform for Natural Language Understanding},\n  author={Wang, Alex and Singh, Amanpreet and Michael, Julian and Hill, Felix and Levy, Omer and Bowman, Samuel R.},\n  note={In the Proceedings of ICLR.},\n  year={2019}\n}\n\nNote that each GLUE dataset has its own citation. Please see the source to see\nthe correct citation for each contained dataset.",
+        "homepage": "https://nyu-mll.github.io/CoLA/",
+        "license": "",
+        "features": {
+          "sentence": {
+            "dtype": "string",
+            "id": null,
+            "_type": "Value"
+          },
+          "label": {
+            "num_classes": 2,
+            "names": [
+              "unacceptable",
+              "acceptable"
+            ],
+            "names_file": null,
+            "id": null,
+            "_type": "ClassLabel"
+          },
+          "idx": {
+            "dtype": "int32",
+            "id": null,
+            "_type": "Value"
+          }
+        },
+        "post_processed": null,
+        "supervised_keys": null,
+        "task_templates": null,
+        "builder_name": "glue",
+        "config_name": "cola",
+        "version": {
+          "version_str": "1.0.0",
+          "description": "",
+          "major": 1,
+          "minor": 0,
+          "patch": 0
+        },
+        "splits": {
+          "test"  : {
+            "name": "test",
+            "num_bytes": 61049,
+            "num_examples": 1063,
+            "dataset_name": "glue"
+          },
+          "train": {
+            "name": "train",
+            "num_bytes": 489149,
+            "num_examples": 8551,
+            "dataset_name": "glue"
+          },
+          "validation": {
+            "name": "validation",
+            "num_bytes": 60850,
+            "num_examples": 1043,
+            "dataset_name": "glue"
+          }
+        },
+        "download_checksums": {
+          "https://dl.fbaipublicfiles.com/glue/data/CoLA.zip": {
+            "num_bytes": 376971,
+            "checksum": "f212fcd832b8f7b435fb991f101abf89f96b933ab400603bf198960dfc32cbff"
+          }
+        },
+        "download_size": 376971,
+        "post_processing_size": null,
+        "dataset_size": 611048,
+        "size_in_bytes": 988019
+      },
+      "sst2": { ... },
+      ...
+    }
+  }
+  ```
+
+- `400`: the dataset script is erroneous
+- `404`: the dataset cannot be found
+- `500`: application error
+
 ### /configs
 
 > Lists the [configurations](https://huggingface.co/docs/datasets/loading_datasets.html#selecting-a-configuration) names for the dataset

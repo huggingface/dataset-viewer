@@ -3,6 +3,7 @@ from starlette.requests import Request
 from starlette.responses import PlainTextResponse, JSONResponse
 
 from datasets_preview_backend.config import EXTRACT_ROWS_LIMIT
+from datasets_preview_backend.queries.info import get_info
 from datasets_preview_backend.queries.configs import get_configs
 from datasets_preview_backend.queries.splits import get_splits
 from datasets_preview_backend.queries.rows import extract_rows
@@ -22,6 +23,22 @@ def log_error(err: StatusError):
 
 async def healthcheck(_: Request):
     return PlainTextResponse("ok")
+
+
+async def info(request: Request):
+    dataset: str = request.query_params.get("dataset")
+
+    if dataset is None:
+        return PlainTextResponse(
+            "'dataset' is a required query parameter.", status_code=400
+        )
+
+    try:
+        return JSONResponse(get_info(dataset))
+    except (Status400Error, Status404Error) as err:
+        log_error(err)
+        return PlainTextResponse(err.message, status_code=err.status_code)
+    # other exceptions will generate a 500 response
 
 
 async def configs(request: Request):

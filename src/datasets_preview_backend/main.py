@@ -3,7 +3,7 @@ from starlette.routing import Route
 import uvicorn
 
 from datasets_preview_backend.config import PORT
-from datasets_preview_backend.routes import healthcheck, rows, configs, splits
+from datasets_preview_backend.routes import healthcheck, rows, configs, splits, info
 
 
 def app():
@@ -13,6 +13,7 @@ def app():
             Route("/rows", endpoint=rows),
             Route("/configs", endpoint=configs),
             Route("/splits", endpoint=splits),
+            Route("/info", endpoint=info),
         ]
     )
 
