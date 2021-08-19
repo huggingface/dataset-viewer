@@ -21,6 +21,8 @@ Then update the code
 cd /home/hf/datasets-preview-backend/
 git fetch
 git merge
+# or better
+# git checkout 0.2.0 # <- the latest release tag (https://github.com/huggingface/datasets-preview-backend/releases/latest)
 ```
 
 Install packages
