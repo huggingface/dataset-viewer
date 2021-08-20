@@ -17,6 +17,7 @@ disable_progress_bar()
 
 def get_info_report(dataset: str):
     try:
+        t = time.process_time()
         info = get_info(dataset)["info"]
         return {
             "dataset": dataset,
@@ -26,6 +27,7 @@ def get_info_report(dataset: str):
             "message": None,
             "cause": None,
             "cause_message": None,
+            "elapsed_seconds": time.process_time() - t,
         }
     except Exception as err:
         return {
@@ -36,11 +38,13 @@ def get_info_report(dataset: str):
             "message": str(err),
             "cause": type(err.__cause__).__name__,
             "cause_message": str(err.__cause__),
+            "elapsed_seconds": time.process_time() - t,
         }
 
 
 def get_configs_report(dataset: str):
     try:
+        t = time.process_time()
         configs = get_configs(dataset)["configs"]
         return {
             "dataset": dataset,
@@ -50,6 +54,7 @@ def get_configs_report(dataset: str):
             "message": None,
             "cause": None,
             "cause_message": None,
+            "elapsed_seconds": time.process_time() - t,
         }
     except Exception as err:
         return {
@@ -60,11 +65,13 @@ def get_configs_report(dataset: str):
             "message": str(err),
             "cause": type(err.__cause__).__name__,
             "cause_message": str(err.__cause__),
+            "elapsed_seconds": time.process_time() - t,
         }
 
 
 def get_splits_report(dataset: str, config: str):
     try:
+        t = time.process_time()
         splits = get_splits(dataset, config)["splits"]
         return {
             "dataset": dataset,
@@ -75,6 +82,7 @@ def get_splits_report(dataset: str, config: str):
             "message": None,
             "cause": None,
             "cause_message": None,
+            "elapsed_seconds": time.process_time() - t,
         }
     except Exception as err:
         return {
@@ -86,12 +94,14 @@ def get_splits_report(dataset: str, config: str):
             "message": str(err),
             "cause": type(err.__cause__).__name__,
             "cause_message": str(err.__cause__),
+            "elapsed_seconds": time.process_time() - t,
         }
 
 
 def get_rows_report(dataset: str, config: str, split: str):
     num_rows = 10
     try:
+        t = time.process_time()
         rows = extract_rows(dataset, config, split, num_rows)["rows"]
         return {
             "dataset": dataset,
@@ -103,6 +113,7 @@ def get_rows_report(dataset: str, config: str, split: str):
             "message": None,
             "cause": None,
             "cause_message": None,
+            "elapsed_seconds": time.process_time() - t,
         }
     except Exception as err:
         return {
@@ -114,6 +125,7 @@ def get_rows_report(dataset: str, config: str, split: str):
             "message": str(err),
             "cause": type(err.__cause__).__name__,
             "cause_message": str(err.__cause__),
+            "elapsed_seconds": time.process_time() - t,
         }
 
 
