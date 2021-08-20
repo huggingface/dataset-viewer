@@ -16,7 +16,8 @@ def get_splits(dataset: str, config: str) -> List[str]:
         raise Status404Error("The dataset config could not be found.") from err
     except ValueError as err:
         if str(err).startswith(f"BuilderConfig {config} not found."):
-            raise Status404Error("The dataset config could not be found.") from err
+            raise Status404Error(
+                "The dataset config could not be found.") from err
         else:
             raise Status400Error(
                 "The split names could not be parsed from the dataset config."

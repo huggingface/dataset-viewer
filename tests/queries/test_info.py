@@ -19,7 +19,6 @@ def test_get_info():
     assert "cola" in info
 
 
-
 def test_script_error():
     # raises "ModuleNotFoundError: No module named 'datasets_modules.datasets.br-quad-2'", which should be caught and raised as DatasetBuilderScriptError
     with pytest.raises(Status400Error):
