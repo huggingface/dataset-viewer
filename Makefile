@@ -14,10 +14,12 @@ test:
 # Check that source code meets quality standards
 quality:
 	poetry run black --check tests src benchmark
+	poetry run isort --check-only tests src benchmark
 
 # Format source code automatically
 style:
 	poetry run black tests src benchmark
+	poetry run isort tests src benchmark
 
 benchmark:
 	poetry run python benchmark/test_datasets.py

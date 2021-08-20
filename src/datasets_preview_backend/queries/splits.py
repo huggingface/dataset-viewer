@@ -3,10 +3,7 @@ from typing import List
 from datasets import load_dataset_builder
 from datasets.utils.streaming_download_manager import StreamingDownloadManager
 
-from datasets_preview_backend.exceptions import (
-    Status400Error,
-    Status404Error,
-)
+from datasets_preview_backend.exceptions import Status400Error, Status404Error
 
 
 def get_splits(dataset: str, config: str) -> List[str]:

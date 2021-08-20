@@ -1,17 +1,10 @@
-import re
 import logging
-
+import re
 from typing import List
 
-from datasets import (
-    IterableDataset,
-    load_dataset,
-)
+from datasets import IterableDataset, load_dataset
 
-from datasets_preview_backend.exceptions import (
-    Status400Error,
-    Status404Error,
-)
+from datasets_preview_backend.exceptions import Status400Error, Status404Error
 
 
 def extract_rows(dataset: str, config: str, split: str, num_rows: int):

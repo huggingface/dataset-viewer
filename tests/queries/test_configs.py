@@ -1,6 +1,5 @@
 import pytest
 
-
 from datasets_preview_backend.queries.configs import (
     Status400Error,
     Status404Error,

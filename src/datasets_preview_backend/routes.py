@@ -1,18 +1,19 @@
 import logging
+
 from starlette.requests import Request
-from starlette.responses import PlainTextResponse, JSONResponse
+from starlette.responses import JSONResponse, PlainTextResponse
 
 from datasets_preview_backend.config import EXTRACT_ROWS_LIMIT
-from datasets_preview_backend.queries.info import get_info
-from datasets_preview_backend.queries.configs import get_configs
-from datasets_preview_backend.queries.splits import get_splits
-from datasets_preview_backend.queries.rows import extract_rows
-from datasets_preview_backend.utils import get_int_value
 from datasets_preview_backend.exceptions import (
-    StatusError,
     Status400Error,
     Status404Error,
+    StatusError,
 )
+from datasets_preview_backend.queries.configs import get_configs
+from datasets_preview_backend.queries.info import get_info
+from datasets_preview_backend.queries.rows import extract_rows
+from datasets_preview_backend.queries.splits import get_splits
+from datasets_preview_backend.utils import get_int_value
 
 
 def log_error(err: StatusError):

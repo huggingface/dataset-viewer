@@ -1,9 +1,9 @@
+import uvicorn
 from starlette.applications import Starlette
 from starlette.routing import Route
-import uvicorn
 
 from datasets_preview_backend.config import PORT
-from datasets_preview_backend.routes import healthcheck, rows, configs, splits, info
+from datasets_preview_backend.routes import configs, healthcheck, info, rows, splits
 
 
 def app():

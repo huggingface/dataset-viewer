@@ -1,16 +1,9 @@
 import logging
-
 from typing import List
 
-from datasets import (
-    prepare_module,
-    import_main_class,
-)
+from datasets import import_main_class, prepare_module
 
-from datasets_preview_backend.exceptions import (
-    Status400Error,
-    Status404Error,
-)
+from datasets_preview_backend.exceptions import Status400Error, Status404Error
 
 
 def get_configs(dataset: str) -> List[str]:
