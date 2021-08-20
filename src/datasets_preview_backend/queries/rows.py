@@ -49,8 +49,7 @@ def extract_rows(dataset: str, config: str, split: str, num_rows: int):
             or str(err).startswith(f"Config name is missing.")
             or str(err).startswith(f"Bad split")
         ):
-            raise Status404Error(
-                "The dataset config could not be found.") from err
+            raise Status404Error("The dataset config could not be found.") from err
         else:
             raise Status400Error(
                 "The rows could not be extracted from the split of the dataset config."

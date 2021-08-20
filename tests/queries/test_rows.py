@@ -63,8 +63,7 @@ def test_extract_bogus_config():
 
 def test_extract_not_implemented_split():
     with pytest.raises(Status400Error):
-        extract_rows("ade_corpus_v2",
-                     "Ade_corpus_v2_classification", "train", 10)
+        extract_rows("ade_corpus_v2", "Ade_corpus_v2_classification", "train", 10)
 
 
 def test_tar_gz_extension():

@@ -20,8 +20,10 @@ def get_info(dataset: str) -> any:
         module_path, *_ = prepare_module(dataset, dataset=True)
         builder_cls = import_main_class(module_path, dataset=True)
         total_dataset_infos = builder_cls.get_all_exported_dataset_infos()
-        info = {config_name: asdict(
-            config_info) for config_name, config_info in total_dataset_infos.items()}
+        info = {
+            config_name: asdict(config_info)
+            for config_name, config_info in total_dataset_infos.items()
+        }
     except FileNotFoundError as err:
         raise Status404Error("The dataset info could not be found.") from err
     except Exception as err:

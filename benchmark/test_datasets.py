@@ -120,15 +120,14 @@ def process_map(fun, iterator, max_workers):
     results = []
     with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
         # Start the load operations and mark each future with its URL
-        future_to_item = {executor.submit(
-            fun, **item): item for item in iterator}
+        future_to_item = {executor.submit(fun, **item): item for item in iterator}
         for future in concurrent.futures.as_completed(future_to_item):
             item = future_to_item[future]
             print(item)
             try:
                 result = future.result()
             except Exception as exc:
-                print('%r generated an exception: %s' % (item, exc))
+                print("%r generated an exception: %s" % (item, exc))
             else:
                 results.append(result)
     return results
@@ -141,19 +140,20 @@ def export_all_datasets_exceptions():
 
     # print("Get info for all the datasets")
     info_reports = process_map(
-        get_info_report, datasets_iterator, max_workers=max_workers)
+        get_info_report, datasets_iterator, max_workers=max_workers
+    )
 
     print("Get config names for all the datasets")
     configs_reports = process_map(
-        get_configs_report, datasets_iterator, max_workers=max_workers)
+        get_configs_report, datasets_iterator, max_workers=max_workers
+    )
 
     print("Get split names for all the pairs (dataset, config)")
     configs_iterator = []
     for report in configs_reports:
         for config in report["configs"]:
             # reports with an exception will not contribute to the lists since configs is empty
-            configs_iterator.append(
-                {"dataset": report["dataset"], "config": config})
+            configs_iterator.append({"dataset": report["dataset"], "config": config})
     splits_reports = process_map(
         get_splits_report,
         configs_iterator,
@@ -166,7 +166,12 @@ def export_all_datasets_exceptions():
         for split in report["splits"]:
             # reports with an exception will not contribute to the lists since splits is empty
             splits_iterator.append(
-                {"dataset": report["dataset"], "config": report["config"], "split": split})
+                {
+                    "dataset": report["dataset"],
+                    "config": report["config"],
+                    "split": split,
+                }
+            )
     rows_reports = process_map(
         get_rows_report,
         splits_iterator,
