@@ -6,7 +6,6 @@ from serialize import serialize_dataset_name
 # import shutil
 
 
-
 def main(filename: str):
     dataset_names = list_datasets(with_community_datasets=True)
     # replace '/' in namespaced dataset names

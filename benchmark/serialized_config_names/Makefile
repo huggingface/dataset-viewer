@@ -10,7 +10,7 @@ GET_SERIALIZED_CONFIG_NAMES = $(addprefix $(scriptsDir), get_serialized_config_n
 
 all: $(serialized_config_names_filename)
 
-# get the list of serialized dataset names (with '/' replaced with "___SLASH___")
+# get the list of serialized config names
 $(serialized_config_names_filename): $(get_configs_reports_filename)
 	@mkdir -p $(tmpDir)
 	poetry run python $(GET_SERIALIZED_CONFIG_NAMES) $(get_configs_reports_filename) $(serialized_config_names_filename)
