@@ -1,3 +1,4 @@
+# Launch with "make -j -l 7" to enable parallel execution
 .PHONY: clean all
 
 tmpDir = ./tmp/
@@ -19,22 +20,22 @@ $(report_filename): $(get_info_reports_filename) $(get_configs_reports_filename)
 	poetry run python $(MERGE_REPORTS) $(get_info_reports_filename) $(get_configs_reports_filename) $(get_splits_reports_filename) $(get_rows_reports_filename) $@
 
 $(get_rows_reports_filename): $(serialized_split_names_filename)
-	$(MAKE) -C get_rows_reports -j 5
+	$(MAKE) -C get_rows_reports
 
 $(serialized_split_names_filename): $(get_splits_reports_filename)
 	$(MAKE) -C serialized_split_names
 
 $(get_splits_reports_filename): $(serialized_config_names_filename)
-	$(MAKE) -C get_splits_reports -j 5
+	$(MAKE) -C get_splits_reports
 
 $(serialized_config_names_filename): $(get_configs_reports_filename)
 	$(MAKE) -C serialized_config_names
 
 $(get_configs_reports_filename): $(serialized_dataset_names_filename)
-	$(MAKE) -C get_configs_reports -j 5
+	$(MAKE) -C get_configs_reports
 
 $(get_info_reports_filename): $(serialized_dataset_names_filename)
-	$(MAKE) -C get_info_reports -j 5
+	$(MAKE) -C get_info_reports
 
 $(serialized_dataset_names_filename):
 	$(MAKE) -C serialized_dataset_names

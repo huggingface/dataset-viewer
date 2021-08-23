@@ -1,5 +1,10 @@
 PORT ?= 8000
 
+# monitor the load with htop and adapt the value (load should be a bit less than the number of processors (check with "$ nproc"))
+# this will launch as much processes as possible under the limit of load=MAX_LOAD
+MAX_LOAD = 7
+PARALLEL = -j -l $(MAX_LOAD)
+
 .PHONY: install run test quality style benchmark watch
 
 install:
@@ -22,7 +27,7 @@ style:
 	poetry run isort tests src benchmark
 
 benchmark:
-	$(MAKE) -C benchmark
+	$(MAKE) -C benchmark $(PARALLEL)
 	
 
 watch:
