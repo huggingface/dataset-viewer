@@ -28,10 +28,11 @@ style:
 
 # Get a report for every dataset / config / split of the Hub, for every endpoint
 # It takes 1 or 2 hours to run. Delete benchmark/tmp to run from scratch.
-# The result is benchmark/tmp/report.json
+# beware: even if all the data should theoritically be streamed, the ~/.cache/huggingface directory
+# will grow about 25G!
+# The result is benchmark/tmp/report.json (about 40M)
 benchmark:
 	$(MAKE) -C benchmark $(PARALLEL)
-	
 
 watch:
 	poetry run uvicorn --port $(PORT) --factory --reload datasets_preview_backend.main:app
