@@ -10,12 +10,13 @@ individual_report_filenames = $(addprefix $(reportsDir), $(addsuffix .json, $(se
 merged_report_filename = $(addprefix $(tmpDir), get_info_reports.json)
 
 GET_INFO_REPORT = $(addprefix $(scriptsDir), get_info_report.py)
+MERGE_REPORTS = $(addprefix $(scriptsDir), merge_reports.py)
 
 all: $(merged_report_filename)
 
 # merge all the reports in one JSON
 $(merged_report_filename): $(individual_report_filenames)
-	jq -s '.' $^ > $@
+	poetry run python $(MERGE_REPORTS) $(serialized_dataset_names_filename) $(reportsDir) $@
 
 # generate a report for every dataset (get_info.py) -> list of info, and potential exceptions
 # this is $(individual_report_filenames)

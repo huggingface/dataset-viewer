@@ -10,12 +10,13 @@ individual_report_filenames = $(addprefix $(reportsDir), $(addsuffix .json, $(se
 merged_report_filename = $(addprefix $(tmpDir), get_splits_reports.json)
 
 GET_SPLITS_REPORT = $(addprefix $(scriptsDir), get_splits_report.py)
+MERGE_REPORTS = $(addprefix $(scriptsDir), merge_reports.py)
 
 all: $(merged_report_filename)
 
 # merge all the reports in one JSON
 $(merged_report_filename): $(individual_report_filenames)
-	jq -s '.' $^ > $@
+	poetry run python $(MERGE_REPORTS) $(serialized_config_names_filename) $(reportsDir) $@
 
 # generate a report for every config (get_splits_report.py) -> list of splits, and potential exceptions
 # this is $(individual_report_filenames)

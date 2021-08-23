@@ -11,15 +11,12 @@ get_splits_reports_filename = $(addprefix $(tmpDir), get_splits_reports.json)
 get_rows_reports_filename = $(addprefix $(tmpDir), get_rows_reports.json)
 report_filename = $(addprefix $(tmpDir), report.json)
 
+COMPILE_REPORT = $(addprefix $(scriptsDir), compile_report.py)
+
 all: $(report_filename)
 
-$(report_filename): $(get_configs_reports_filename) $(get_info_reports_filename) $(get_splits_reports_filename) $(get_rows_reports_filename)
-#	TODO -> generate the report from the files
-#	{ info: <$info_filename, configs: <$configs_filename, ... }
-#	jq -s '.' $^ > $@
-
-# TODO: add splits and rows
-# we need to generate the list of pairs (dataset, config), and of tuples (dataset, config, split), one per line, in order to allow parallelization
+$(report_filename): $(get_info_reports_filename) $(get_configs_reports_filename) $(get_splits_reports_filename) $(get_rows_reports_filename)
+	poetry run python $(MERGE_REPORTS) $(get_info_reports_filename) $(get_configs_reports_filename) $(get_splits_reports_filename) $(get_rows_reports_filename) $@
 
 $(get_rows_reports_filename): $(serialized_split_names_filename)
 	$(MAKE) -C get_rows_reports -j 5
