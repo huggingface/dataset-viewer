@@ -26,6 +26,9 @@ style:
 	poetry run black tests src benchmark
 	poetry run isort tests src benchmark
 
+# Get a report for every dataset / config / split of the Hub, for every endpoint
+# It takes 1 or 2 hours to run. Delete benchmark/tmp to run from scratch.
+# The result is benchmark/tmp/report.json
 benchmark:
 	$(MAKE) -C benchmark $(PARALLEL)
 	
