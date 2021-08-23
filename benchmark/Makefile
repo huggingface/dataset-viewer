@@ -8,9 +8,8 @@ get_info_reports_filename = $(addprefix $(tmpDir), get_info_reports.json)
 get_configs_reports_filename = $(addprefix $(tmpDir), get_configs_reports.json)
 report_filename = $(addprefix $(tmpDir), report.json)
 
-all: $(report_filename) $(serialized_config_names_filename)
 
-$(report_filename): $(get_configs_report_filename) $(get_info_report_filename)
+all: $(get_configs_reports_filename) $(get_info_reports_filename) $(get_splits_reports_filename)
 #	TODO -> generate the report from the files
 #	{ info: <$info_filename, configs: <$configs_filename, ... }
 #	jq -s '.' $^ > $@

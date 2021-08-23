@@ -4,22 +4,23 @@ import time
 
 import typer
 from datasets import disable_progress_bar
-from serialize import deserialize_dataset_name
+from serialize import deserialize_config_name
 
-from datasets_preview_backend.queries.configs import get_configs
+from datasets_preview_backend.queries.splits import get_splits
 
 # remove any logs
 logging.disable(logging.CRITICAL)
 disable_progress_bar()
 
 
-def get_configs_report(dataset: str):
+def get_splits_report(dataset: str, config: str):
     try:
         t = time.process_time()
-        configs = get_configs(dataset)["configs"]
+        splits = get_splits(dataset, config)["splits"]
         return {
             "dataset": dataset,
-            "configs": list(configs),
+            "config": config,
+            "splits": list(splits),
             "success": True,
             "exception": None,
             "message": None,
@@ -30,7 +31,8 @@ def get_configs_report(dataset: str):
     except Exception as err:
         return {
             "dataset": dataset,
-            "configs": [],
+            "config": config,
+            "splits": [],
             "success": False,
             "exception": type(err).__name__,
             "message": str(err),
@@ -40,10 +42,11 @@ def get_configs_report(dataset: str):
         }
 
 
-def main(serialized_dataset_name: str, filename: str):
-    report = get_configs_report(deserialize_dataset_name(serialized_dataset_name))
+def main(serialized_config_name: str, filename: str):
+    dataset, config = deserialize_config_name(serialized_config_name)
+    splits = get_splits_report(dataset, config)
     with open(filename, "w") as f:
-        json.dump(report, f)
+        json.dump(splits, f)
 
 
 if __name__ == "__main__":

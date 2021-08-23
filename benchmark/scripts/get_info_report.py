@@ -4,6 +4,7 @@ import time
 
 import typer
 from datasets import disable_progress_bar
+from serialize import deserialize_dataset_name
 
 from datasets_preview_backend.queries.info import get_info
 
@@ -39,18 +40,10 @@ def get_info_report(dataset: str):
         }
 
 
-def to_safe(str):
-    return str.replace("/", "___SLASH___")
-
-
-def to_unsafe(str):
-    return str.replace("___SLASH___", "/")
-
-
-def main(safe_dataset: str, filename: str):
-    info = get_info_report(to_unsafe(safe_dataset))
+def main(serialized_dataset_name: str, filename: str):
+    report = get_info_report(deserialize_dataset_name(serialized_dataset_name))
     with open(filename, "w") as f:
-        json.dump(info, f)
+        json.dump(report, f)
 
 
 if __name__ == "__main__":
