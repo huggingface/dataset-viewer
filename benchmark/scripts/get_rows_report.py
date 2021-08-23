@@ -4,23 +4,25 @@ import time
 
 import typer
 from datasets import disable_progress_bar
-from serialize import deserialize_config_name
+from serialize import deserialize_split_name
 
-from datasets_preview_backend.queries.splits import get_splits
+from datasets_preview_backend.queries.rows import extract_rows
 
 # remove any logs
 logging.disable(logging.CRITICAL)
 disable_progress_bar()
 
 
-def get_splits_report(dataset: str, config: str):
+def get_rows_report(dataset: str, config: str, split: str):
+    num_rows = 10
     try:
         t = time.process_time()
-        splits = get_splits(dataset, config)["splits"]
+        rows = extract_rows(dataset, config, split, num_rows)["rows"]
         return {
             "dataset": dataset,
             "config": config,
-            "splits": list(splits),
+            "split": split,
+            "row_length": len(rows),
             "success": True,
             "exception": None,
             "message": None,
@@ -32,7 +34,7 @@ def get_splits_report(dataset: str, config: str):
         return {
             "dataset": dataset,
             "config": config,
-            "splits": [],
+            "split": split,
             "success": False,
             "exception": type(err).__name__,
             "message": str(err),
@@ -42,9 +44,9 @@ def get_splits_report(dataset: str, config: str):
         }
 
 
-def main(serialized_config_name: str, filename: str):
-    dataset, config = deserialize_config_name(serialized_config_name)
-    report = get_splits_report(dataset, config)
+def main(serialized_split_name: str, filename: str):
+    dataset, config, split = deserialize_split_name(serialized_split_name)
+    report = get_rows_report(dataset, config, split)
     with open(filename, "w") as f:
         json.dump(report, f)
 
