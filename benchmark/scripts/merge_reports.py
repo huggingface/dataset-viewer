@@ -1,6 +1,7 @@
 import json
-import typer
 import os
+
+import typer
 
 
 def main(
