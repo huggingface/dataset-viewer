@@ -22,7 +22,8 @@ style:
 	poetry run isort tests src benchmark
 
 benchmark:
-	poetry run python benchmark/test_datasets.py
+	$(MAKE) -C benchmark
+	
 
 watch:
 	poetry run uvicorn --port $(PORT) --factory --reload datasets_preview_backend.main:app

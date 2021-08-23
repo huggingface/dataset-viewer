@@ -8,3 +8,5 @@
 # local configurations
 .vscode/
 poetry.toml
+
+benchmark/tmp/
