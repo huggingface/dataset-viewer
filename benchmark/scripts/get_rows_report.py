@@ -22,7 +22,7 @@ def get_rows_report(dataset: str, config: str, split: str):
             "dataset": dataset,
             "config": config,
             "split": split,
-            "row_length": len(rows),
+            "rows_length": len(rows),
             "success": True,
             "exception": None,
             "message": None,
