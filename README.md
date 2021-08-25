@@ -50,7 +50,7 @@ make watch
 
 > Ensure the app is running
 
-Example: http://54.158.211.3/healthcheck
+Example: https://datasets-preview.huggingface.tech/healthcheck
 
 Method: `GET`
 
@@ -64,7 +64,7 @@ Responses:
 
 > Return the dataset_info.json file for the dataset
 
-Example: http://54.158.211.3/info?dataset=glue
+Example: https://datasets-preview.huggingface.tech/info?dataset=glue
 
 Method: `GET`
 
@@ -164,7 +164,7 @@ Responses:
 
 > Lists the [configurations](https://huggingface.co/docs/datasets/loading_datasets.html#selecting-a-configuration) names for the dataset
 
-Example: http://54.158.211.3/configs?dataset=glue
+Example: https://datasets-preview.huggingface.tech/configs?dataset=glue
 
 Method: `GET`
 
@@ -204,7 +204,7 @@ Responses:
 
 > Lists the [splits](https://huggingface.co/docs/datasets/splits.html) names for a dataset config
 
-Example: http://54.158.211.3/splits?dataset=glue&config=ax
+Example: https://datasets-preview.huggingface.tech/splits?dataset=glue&config=ax
 
 Method: `GET`
 
@@ -233,7 +233,7 @@ Responses:
 
 > Extract the first [rows](https://huggingface.co/docs/datasets/splits.html) for a split of a dataset config
 
-Example: http://54.158.211.3/rows?dataset=glue&config=ax&split=test&rows=2
+Example: https://datasets-preview.huggingface.tech/rows?dataset=glue&config=ax&split=test&rows=2
 
 Method: `GET`
 

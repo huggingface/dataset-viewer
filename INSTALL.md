@@ -37,7 +37,7 @@ Restart
 pm2 restart all
 ```
 
-Check if the app is accessible at http://54.158.211.3/healthcheck.
+Check if the app is accessible at https://datasets-preview.huggingface.tech/healthcheck.
 
 Finally un-pause the monitor at https://betteruptime.com/team/14149/monitors/389098.
 
@@ -50,6 +50,7 @@ ssh hf@ec2-54-158-211-3.compute-1.amazonaws.com
 
 ipv4: 172.30.4.71
 ipv4 (public): 54.158.211.3
+domain name: datasets-preview.huggingface.tech
 ```
 
 Grafana:
@@ -88,6 +89,7 @@ sudo vi /etc/nginx/sites-available/reverse-proxy.conf
 server {
   listen 80;
   listen [::]:80;
+  server_name datasets-preview.huggingface.tech;
 
   access_log /var/log/nginx/reverse-access.log;
   error_log /var/log/nginx/reverse-error.log;
@@ -110,6 +112,12 @@ sudo nginx -t # Test
 sudo systemctl reload nginx
 ```
 
+[Install certbot](https://certbot.eff.org/lets-encrypt/ubuntufocal-nginx) with snap to manage the certificate for the domain name. Email: infra+letsencrypt@huggingface.co.
+
+```bash
+sudo certbot --nginx
+```
+
 Install datasets-preview-backend:
 
 ```bash
@@ -126,7 +134,7 @@ Launch the app with pm2:
 PORT=8000 pm2 start --name datasets-preview-backend make -- -C /home/hf/datasets-preview-backend/ run
 ```
 
-Check if the app is accessible at http://54.158.211.3/healthcheck.
+Check if the app is accessible at https://datasets-preview.huggingface.tech/healthcheck.
 
 Finally, ensure that pm2 will restart on reboot (see https://pm2.keymetrics.io/docs/usage/startup/):
 
