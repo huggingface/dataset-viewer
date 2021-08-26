@@ -26,6 +26,18 @@ def test_default_config():
     assert response["info"][DEFAULT_CONFIG_NAME]["config_name"] == DEFAULT_CONFIG_NAME
 
 
+def test_missing_argument():
+    with pytest.raises(Status400Error):
+        get_info(None)
+
+
+def test_bad_type_argument():
+    with pytest.raises(TypeError):
+        get_info()
+    with pytest.raises(TypeError):
+        get_info(1)
+
+
 def test_script_error():
     # raises "ModuleNotFoundError: No module named 'datasets_modules.datasets.br-quad-2'", which should be caught and raised as DatasetBuilderScriptError
     with pytest.raises(Status400Error):

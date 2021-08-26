@@ -6,6 +6,10 @@ from datasets_preview_backend.exceptions import Status400Error, Status404Error
 
 
 def get_info(dataset: str):
+    if not isinstance(dataset, str) and dataset is not None:
+        raise TypeError("dataset argument should be a string")
+    if dataset is None:
+        raise Status400Error("'dataset' is a required query parameter.")
     try:
         module_path, *_ = prepare_module(dataset, dataset=True)
         builder_cls = import_main_class(module_path, dataset=True)

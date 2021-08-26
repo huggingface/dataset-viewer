@@ -9,7 +9,19 @@ from datasets_preview_backend.exceptions import Status400Error, Status404Error
 
 
 def extract_rows(dataset: str, config: Union[str, None], split: str, num_rows: int):
+    if not isinstance(dataset, str) and dataset is not None:
+        raise TypeError("dataset argument should be a string")
+    if dataset is None:
+        raise Status400Error("'dataset' is a required query parameter.")
     config = DEFAULT_CONFIG_NAME if config is None else config
+    if not isinstance(config, str) and config is not None:
+        raise TypeError("config argument should be a string")
+    if not isinstance(split, str) and split is not None:
+        raise TypeError("split argument should be a string")
+    if split is None:
+        raise Status400Error("'split' is a required query parameter.")
+    if not isinstance(num_rows, int):
+        raise TypeError("num_rows argument should be an int")
 
     logging.debug(
         f"asked for {num_rows} first rows of dataset {dataset} - {config} - {split}"

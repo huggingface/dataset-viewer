@@ -8,7 +8,13 @@ from datasets_preview_backend.exceptions import Status400Error, Status404Error
 
 
 def get_splits(dataset: str, config: Union[str, None]):
+    if not isinstance(dataset, str) and dataset is not None:
+        raise TypeError("dataset argument should be a string")
+    if dataset is None:
+        raise Status400Error("'dataset' is a required query parameter.")
     config = DEFAULT_CONFIG_NAME if config is None else config
+    if not isinstance(config, str) and config is not None:
+        raise TypeError("config argument should be a string")
 
     try:
         builder = load_dataset_builder(dataset, name=config)

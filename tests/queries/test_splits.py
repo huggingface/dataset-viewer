@@ -40,6 +40,20 @@ def test_get_splits():
     assert len(splits) == 2
 
 
+def test_missing_argument():
+    with pytest.raises(Status400Error):
+        get_splits(None, "ax")
+
+
+def test_bad_type_argument():
+    with pytest.raises(TypeError):
+        get_splits()
+    with pytest.raises(TypeError):
+        get_splits(1, "ax")
+    with pytest.raises(TypeError):
+        get_splits("glue", 1)
+
+
 def test_get_splits_without_config():
     dataset = "acronym_identification"
     splits1 = get_splits(dataset, None)

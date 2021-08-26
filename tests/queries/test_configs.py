@@ -23,6 +23,18 @@ def test_get_configs():
     assert "cola" in configs
 
 
+def test_missing_argument():
+    with pytest.raises(Status400Error):
+        get_configs(None)
+
+
+def test_bad_type_argument():
+    with pytest.raises(TypeError):
+        get_configs()
+    with pytest.raises(TypeError):
+        get_configs(1)
+
+
 def test_import_nltk():
     # requires the nltk dependency
     configs = get_configs("vershasaxena91/squad_multitask")["configs"]

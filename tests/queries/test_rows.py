@@ -23,6 +23,34 @@ def test_extract_split_rows():
     assert rows[0]["tokens"][0] == "What"
 
 
+def test_missing_argument():
+    with pytest.raises(Status400Error):
+        extract_rows(None, None, None, 10)
+    with pytest.raises(Status400Error):
+        extract_rows(None, None, "train", 10)
+    with pytest.raises(Status400Error):
+        extract_rows("glue", None, None, 10)
+
+
+def test_bad_type_argument():
+    with pytest.raises(TypeError):
+        extract_rows()
+    with pytest.raises(TypeError):
+        extract_rows("glue")
+    with pytest.raises(TypeError):
+        extract_rows("glue", "ax")
+    with pytest.raises(TypeError):
+        extract_rows("glue", "ax", "test")
+    with pytest.raises(TypeError):
+        extract_rows(1, "ax", "test", 10)
+    with pytest.raises(TypeError):
+        extract_rows("glue", 1, "test", 10)
+    with pytest.raises(TypeError):
+        extract_rows("glue", "ax", 1, 10)
+    with pytest.raises(TypeError):
+        extract_rows("glue", "ax", "test", "ten")
+
+
 def test_extract_split_rows_without_config():
     dataset = "acronym_identification"
     split = "train"
