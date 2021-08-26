@@ -1,14 +1,11 @@
-import json
-import logging
 from dataclasses import asdict
-from typing import List
 
 from datasets import import_main_class, prepare_module
 
 from datasets_preview_backend.exceptions import Status400Error, Status404Error
 
 
-def get_info(dataset: str) -> any:
+def get_info(dataset: str):
     try:
         module_path, *_ = prepare_module(dataset, dataset=True)
         builder_cls = import_main_class(module_path, dataset=True)

@@ -1,5 +1,6 @@
 import pytest
 
+from datasets_preview_backend.constants import DEFAULT_CONFIG_NAME
 from datasets_preview_backend.queries.info import (
     Status400Error,
     Status404Error,
@@ -16,6 +17,13 @@ def test_get_info():
     info = response["info"]
     assert len(list(info.keys())) == 12
     assert "cola" in info
+
+
+def test_default_config():
+    dataset = "acronym_identification"
+    response = get_info(dataset)
+    assert DEFAULT_CONFIG_NAME in response["info"]
+    assert response["info"][DEFAULT_CONFIG_NAME]["config_name"] == DEFAULT_CONFIG_NAME
 
 
 def test_script_error():

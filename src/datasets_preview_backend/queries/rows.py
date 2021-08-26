@@ -1,13 +1,16 @@
 import logging
 import re
-from typing import List
+from typing import Union
 
 from datasets import IterableDataset, load_dataset
 
+from datasets_preview_backend.constants import DEFAULT_CONFIG_NAME
 from datasets_preview_backend.exceptions import Status400Error, Status404Error
 
 
-def extract_rows(dataset: str, config: str, split: str, num_rows: int):
+def extract_rows(dataset: str, config: Union[str, None], split: str, num_rows: int):
+    config = DEFAULT_CONFIG_NAME if config is None else config
+
     logging.debug(
         f"asked for {num_rows} first rows of dataset {dataset} - {config} - {split}"
     )

@@ -1,5 +1,6 @@
 import pytest
 
+from datasets_preview_backend.constants import DEFAULT_CONFIG_NAME
 from datasets_preview_backend.queries.rows import (
     Status400Error,
     Status404Error,
@@ -9,7 +10,7 @@ from datasets_preview_backend.queries.rows import (
 
 def test_extract_split_rows():
     dataset = "acronym_identification"
-    config = None
+    config = DEFAULT_CONFIG_NAME
     split = "train"
     num_rows = 100
     extract = extract_rows(dataset, config, split, num_rows)
@@ -22,9 +23,20 @@ def test_extract_split_rows():
     assert rows[0]["tokens"][0] == "What"
 
 
+def test_extract_split_rows_without_config():
+    dataset = "acronym_identification"
+    split = "train"
+    num_rows = 100
+    extract1 = extract_rows(dataset, None, split, num_rows)
+    extract2 = extract_rows(dataset, DEFAULT_CONFIG_NAME, split, num_rows)
+    rows = extract1["rows"]
+    assert len(rows) == num_rows
+    assert extract1 == extract2
+
+
 def test_extract_split_rows_num_rows():
     dataset = "acronym_identification"
-    config = None
+    config = DEFAULT_CONFIG_NAME
     split = "train"
     num_rows = 20
     extract = extract_rows(dataset, config, split, num_rows)
@@ -35,18 +47,20 @@ def test_extract_split_rows_num_rows():
 
 def test_extract_unknown_dataset():
     with pytest.raises(Status404Error):
-        extract_rows("doesnotexist", None, "train", 100)
+        extract_rows("doesnotexist", DEFAULT_CONFIG_NAME, "train", 100)
     with pytest.raises(Status404Error):
-        extract_rows("AConsApart/anime_subtitles_DialoGPT", None, "train", 100)
+        extract_rows(
+            "AConsApart/anime_subtitles_DialoGPT", DEFAULT_CONFIG_NAME, "train", 100
+        )
 
 
 def test_extract_unknown_config():
     with pytest.raises(Status404Error):
         extract_rows("glue", "doesnotexist", "train", 100)
     with pytest.raises(Status404Error):
-        extract_rows("glue", None, "train", 100)
+        extract_rows("glue", DEFAULT_CONFIG_NAME, "train", 100)
     with pytest.raises(Status404Error):
-        extract_rows("TimTreasure4/Test", None, "train", 100)
+        extract_rows("TimTreasure4/Test", DEFAULT_CONFIG_NAME, "train", 100)
 
 
 def test_extract_unknown_split():
@@ -56,9 +70,9 @@ def test_extract_unknown_split():
 
 def test_extract_bogus_config():
     with pytest.raises(Status400Error):
-        extract_rows("Valahaar/wsdmt", None, "train", 10)
+        extract_rows("Valahaar/wsdmt", DEFAULT_CONFIG_NAME, "train", 10)
     with pytest.raises(Status400Error):
-        extract_rows("nateraw/image-folder", None, "train", 10)
+        extract_rows("nateraw/image-folder", DEFAULT_CONFIG_NAME, "train", 10)
 
 
 def test_extract_not_implemented_split():

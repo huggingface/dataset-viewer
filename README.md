@@ -196,6 +196,8 @@ Responses:
   }
   ```
 
+  Note that if there is only one default config, it will be named `"default"`. See https://datasets-preview.huggingface.tech/configs?dataset=sent_comp for example.
+
 - `400`: the dataset script is erroneous
 - `404`: the dataset cannot be found
 - `500`: application error
@@ -211,7 +213,7 @@ Method: `GET`
 Parameters:
 
 - `dataset` (required): the dataset ID
-- `config`: the configuration name. It might be required, or not, depending on the dataset
+- `config`: the configuration name. It might be required, or not, depending on the dataset. If the dataset does not contain configs, the `config` parameter can equivalently be passed with `config=default` or obviated.
 
 Responses:
 
@@ -240,7 +242,7 @@ Method: `GET`
 Parameters:
 
 - `dataset` (required): the dataset ID
-- `config`: the configuration name. It might be required, or not, depending on the dataset
+- `config`: the configuration name. It might be required, or not, depending on the dataset. If the dataset does not contain configs, the `config` parameter can equivalently be passed with `config=default` or obviated.
 - `split` (required): the split name
 - `rows`: the number of rows to extract. Defaults to 100.
 

@@ -1,5 +1,6 @@
 import pytest
 
+from datasets_preview_backend.constants import DEFAULT_CONFIG_NAME
 from datasets_preview_backend.queries.configs import (
     Status400Error,
     Status404Error,
@@ -15,7 +16,7 @@ def test_get_configs():
     assert "configs" in response
     configs = response["configs"]
     assert len(configs) == 1
-    assert configs[0] is None
+    assert configs[0] == DEFAULT_CONFIG_NAME
 
     configs = get_configs("glue")["configs"]
     assert len(configs) == 12

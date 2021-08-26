@@ -1,5 +1,6 @@
 import pytest
 
+from datasets_preview_backend.constants import DEFAULT_CONFIG_NAME
 from datasets_preview_backend.queries.splits import (
     Status400Error,
     Status404Error,
@@ -9,7 +10,7 @@ from datasets_preview_backend.queries.splits import (
 
 def test_get_splits():
     dataset = "acronym_identification"
-    config = None
+    config = DEFAULT_CONFIG_NAME
     response = get_splits(dataset, config)
     assert "dataset" in response
     assert response["dataset"] == dataset
@@ -39,17 +40,26 @@ def test_get_splits():
     assert len(splits) == 2
 
 
+def test_get_splits_without_config():
+    dataset = "acronym_identification"
+    splits1 = get_splits(dataset, None)
+    splits2 = get_splits(dataset, DEFAULT_CONFIG_NAME)
+    splits = splits1["splits"]
+    assert len(splits) == 3
+    assert splits1 == splits2
+
+
 def test_builder_config_error():
     with pytest.raises(Status400Error):
         get_splits("KETI-AIR/nikl", "spoken.v1.0")
     with pytest.raises(Status400Error):
-        get_splits("nateraw/image-folder", None)
+        get_splits("nateraw/image-folder", DEFAULT_CONFIG_NAME)
     with pytest.raises(Status400Error):
-        get_splits("Valahaar/wsdmt", None)
+        get_splits("Valahaar/wsdmt", DEFAULT_CONFIG_NAME)
 
 
 def test_not_found():
     with pytest.raises(Status404Error):
-        get_splits("doesnotexist", None)
+        get_splits("doesnotexist", DEFAULT_CONFIG_NAME)
     with pytest.raises(Status404Error):
         get_splits("glue", "doesnotexist")

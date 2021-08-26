@@ -1,10 +1,3 @@
-def print_config(config):
-    if config is None:
-        return "None"
-    else:
-        return f"'{config}'"
-
-
 class StatusError(Exception):
     """Base class for exceptions in this module."""
 

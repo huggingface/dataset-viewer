@@ -1,12 +1,15 @@
-from typing import List
+from typing import List, Union
 
 from datasets import load_dataset_builder
 from datasets.utils.streaming_download_manager import StreamingDownloadManager
 
+from datasets_preview_backend.constants import DEFAULT_CONFIG_NAME
 from datasets_preview_backend.exceptions import Status400Error, Status404Error
 
 
-def get_splits(dataset: str, config: str) -> List[str]:
+def get_splits(dataset: str, config: Union[str, None]):
+    config = DEFAULT_CONFIG_NAME if config is None else config
+
     try:
         builder = load_dataset_builder(dataset, name=config)
     except FileNotFoundError as err:
