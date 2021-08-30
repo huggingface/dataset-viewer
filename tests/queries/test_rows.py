@@ -109,3 +109,14 @@ def test_extract_not_implemented_split():
 def test_tar_gz_extension():
     with pytest.raises(Status400Error):
         extract_rows("air_dialogue", "air_dialogue_data", "train", 10)
+
+
+def test_dl_1_suffix():
+    # see https://github.com/huggingface/datasets/pull/2843
+    dataset = "discovery"
+    config = "discovery"
+    split = "train"
+    num_rows = 20
+    extract = extract_rows(dataset, config, split, num_rows)
+    rows = extract["rows"]
+    assert len(rows) == 20
