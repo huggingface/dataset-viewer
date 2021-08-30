@@ -7,7 +7,7 @@ The URL schema is `https://huggingface.co/datasets-preview/:datasetId/extract?ro
 ## Requirements
 
 - Python 3.8+
-- Poetry
+- Poetry 1.1.7+
 - make
 
 ## Install

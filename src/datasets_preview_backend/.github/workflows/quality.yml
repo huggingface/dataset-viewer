@@ -1,0 +1,30 @@
+name: Check code quality
+on: [push]
+
+jobs:
+  code-quality:
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: [3.8]
+        poetry-version: [1.1.7]
+        os: [ubuntu-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v2
+      - name: Use Python
+        uses: actions/setup-python@v2
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Use Poetry
+        uses: abatilo/setup-poetry@v2.0.0
+        with:
+          poetry-version: ${{ matrix.poetry-version }}
+      - name: Install dependencies
+        # should I add --no-dev? https://twitter.com/__matt_kramer__/status/1431693127694307333
+        run: poetry install
+        # Should I run "make quality" instead of replicating the tests?
+      - name: Run black
+        run: 	poetry run black --check tests src benchmark
+	    - name: Run isort
+        run: 	poetry run isort --check-only tests src benchmark
