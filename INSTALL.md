@@ -31,6 +31,12 @@ Install packages
 make install
 ```
 
+Check that all the tests are passing
+
+```
+make test
+```
+
 Restart
 
 ```

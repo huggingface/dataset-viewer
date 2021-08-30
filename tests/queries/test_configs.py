@@ -62,9 +62,3 @@ def test_no_dataset_no_script():
     # which should be caught and raised as DatasetBuilderScriptError
     with pytest.raises(Status404Error):
         get_configs("TimTreasure4/Test")
-
-
-def test_no_dataset_bad_script_name():
-    # the dataset script name is incorrect
-    with pytest.raises(Status404Error):
-        get_configs("Cropinky/rap_lyrics_english")
