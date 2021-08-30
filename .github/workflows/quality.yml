@@ -25,6 +25,6 @@ jobs:
         run: poetry install
         # Should I run "make quality" instead of replicating the tests?
       - name: Run black
-        run: 	poetry run black --check tests src benchmark
-	    - name: Run isort
-        run: 	poetry run isort --check-only tests src benchmark
+        run: poetry run black --check tests src benchmark
+      - name: Run isort
+        run: poetry run isort --check-only tests src benchmark
