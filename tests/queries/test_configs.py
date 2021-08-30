@@ -42,7 +42,8 @@ def test_import_nltk():
 
 
 def test_script_error():
-    # raises "ModuleNotFoundError: No module named 'datasets_modules.datasets.br-quad-2'", which should be caught and raised as DatasetBuilderScriptError
+    # raises "ModuleNotFoundError: No module named 'datasets_modules.datasets.br-quad-2'"
+    # which should be caught and raised as DatasetBuilderScriptError
     with pytest.raises(Status400Error):
         get_configs("piEsposito/br-quad-2.0")
 
@@ -57,7 +58,8 @@ def test_no_dataset_no_script():
     # the dataset does not contain a script
     with pytest.raises(Status404Error):
         get_configs("AConsApart/anime_subtitles_DialoGPT")
-    # raises "ModuleNotFoundError: No module named 'datasets_modules.datasets.Test'", which should be caught and raised as DatasetBuilderScriptError
+    # raises "ModuleNotFoundError: No module named 'datasets_modules.datasets.Test'"
+    # which should be caught and raised as DatasetBuilderScriptError
     with pytest.raises(Status404Error):
         get_configs("TimTreasure4/Test")
 

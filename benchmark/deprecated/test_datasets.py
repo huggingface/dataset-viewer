@@ -153,14 +153,10 @@ def export_all_datasets_exceptions():
     datasets_iterator = [{"dataset": dataset} for dataset in datasets]
 
     # print("Get info for all the datasets")
-    info_reports = process_map(
-        get_info_report, datasets_iterator, max_workers=max_workers
-    )
+    info_reports = process_map(get_info_report, datasets_iterator, max_workers=max_workers)
 
     print("Get config names for all the datasets")
-    configs_reports = process_map(
-        get_configs_report, datasets_iterator, max_workers=max_workers
-    )
+    configs_reports = process_map(get_configs_report, datasets_iterator, max_workers=max_workers)
 
     print("Get split names for all the pairs (dataset, config)")
     configs_iterator = []

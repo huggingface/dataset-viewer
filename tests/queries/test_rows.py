@@ -77,9 +77,7 @@ def test_extract_unknown_dataset():
     with pytest.raises(Status404Error):
         extract_rows("doesnotexist", DEFAULT_CONFIG_NAME, "train", 100)
     with pytest.raises(Status404Error):
-        extract_rows(
-            "AConsApart/anime_subtitles_DialoGPT", DEFAULT_CONFIG_NAME, "train", 100
-        )
+        extract_rows("AConsApart/anime_subtitles_DialoGPT", DEFAULT_CONFIG_NAME, "train", 100)
 
 
 def test_extract_unknown_config():

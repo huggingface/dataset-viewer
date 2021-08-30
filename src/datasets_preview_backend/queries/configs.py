@@ -17,9 +17,7 @@ def get_configs(dataset: str):
     except FileNotFoundError as err:
         raise Status404Error("The dataset could not be found.") from err
     except Exception as err:
-        raise Status400Error(
-            "The config names could not be parsed from the dataset."
-        ) from err
+        raise Status400Error("The config names could not be parsed from the dataset.") from err
 
     configs = [c.name for c in builder_cls.BUILDER_CONFIGS] or [DEFAULT_CONFIG_NAME]
     logging.debug(f"The dataset builder has {len(configs)} configs: {configs}")

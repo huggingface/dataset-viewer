@@ -20,6 +20,7 @@ test:
 quality:
 	poetry run black --check tests src benchmark
 	poetry run isort --check-only tests src benchmark
+	poetry run flake8 tests src benchmark
 	poetry run safety check
 
 # Format source code automatically

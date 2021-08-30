@@ -65,9 +65,7 @@ async def rows(request: Request):
     dataset: str = request.query_params.get("dataset")
     config: Union[str, None] = request.query_params.get("config")
     split: str = request.query_params.get("split")
-    num_rows = get_int_value(
-        d=request.query_params, key="rows", default=EXTRACT_ROWS_LIMIT
-    )
+    num_rows = get_int_value(d=request.query_params, key="rows", default=EXTRACT_ROWS_LIMIT)
 
     try:
         return JSONResponse(extract_rows(dataset, config, split, num_rows))

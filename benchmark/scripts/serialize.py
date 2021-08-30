@@ -18,17 +18,13 @@ def deserialize_dataset_name(serialized_dataset: str) -> str:
 
 def serialize_config_name(dataset: str, config: str) -> str:
     # due to config named "(China)", "bbc hindi nli"
-    safe_config = (
-        config.replace("(", PAR_OPEN).replace(")", PAR_CLOSE).replace(" ", SPACE)
-    )
+    safe_config = config.replace("(", PAR_OPEN).replace(")", PAR_CLOSE).replace(" ", SPACE)
     return serialize_dataset_name(dataset) + CONFIG_SEPARATOR + safe_config
 
 
 def deserialize_config_name(serialized_config: str) -> Tuple[str, str]:
     serialized_dataset, _, safe_config = serialized_config.partition(CONFIG_SEPARATOR)
-    config = (
-        safe_config.replace(PAR_OPEN, "(").replace(PAR_CLOSE, ")").replace(SPACE, " ")
-    )
+    config = safe_config.replace(PAR_OPEN, "(").replace(PAR_CLOSE, ")").replace(SPACE, " ")
     dataset = deserialize_dataset_name(serialized_dataset)
     return dataset, config
 
