@@ -30,5 +30,7 @@ jobs:
         run: poetry run isort --check-only tests src benchmark
       - name: Run flake8
         run: poetry run flake8 tests src benchmark
+      - name: Run bandit
+        run: poetry run bandit -r src benchmark
       - name: Run safety
         run: poetry run safety check
