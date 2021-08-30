@@ -16,10 +16,11 @@ run:
 test:
 	poetry run python -m pytest -x tests
 
-# Check that source code meets quality standards
+# Check that source code meets quality standards + security
 quality:
 	poetry run black --check tests src benchmark
 	poetry run isort --check-only tests src benchmark
+	poetry run safety check
 
 # Format source code automatically
 style:

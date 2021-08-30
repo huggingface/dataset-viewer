@@ -26,6 +26,7 @@ nltk = "^3.6.2"
 aiohttp = "^3.7.4"
 datasets = {extras = ["streaming"], git = "https://github.com/huggingface/datasets.git", rev = "b9fb8b2567aecfb14ad0bc31b59329f573eb35df"}
 typer = "^0.3.2"
+safety = "^1.10.3"
 
 [tool.poetry.dev-dependencies]
 pytest = "^6.2.4"

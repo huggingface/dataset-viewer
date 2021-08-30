@@ -28,3 +28,5 @@ jobs:
         run: poetry run black --check tests src benchmark
       - name: Run isort
         run: poetry run isort --check-only tests src benchmark
+      - name: Run safety
+        run: poetry run safety check
