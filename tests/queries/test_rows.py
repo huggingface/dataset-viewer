@@ -120,3 +120,14 @@ def test_dl_1_suffix():
     extract = extract_rows(dataset, config, split, num_rows)
     rows = extract["rows"]
     assert len(rows) == 20
+
+
+def test_txt_zip():
+    # see https://github.com/huggingface/datasets/pull/2856
+    dataset = "bianet"
+    config = "en_to_ku"
+    split = "train"
+    num_rows = 20
+    extract = extract_rows(dataset, config, split, num_rows)
+    rows = extract["rows"]
+    assert len(rows) == 20

@@ -357,8 +357,8 @@ docs = ["docutils (==0.16.0)", "recommonmark", "sphinx (==3.1.2)", "sphinx-markd
 [package.source]
 type = "git"
 url = "https://github.com/huggingface/datasets.git"
-reference = "595efc773e1b3b75e564bd0790d96daebc0adefd"
-resolved_reference = "595efc773e1b3b75e564bd0790d96daebc0adefd"
+reference = "a3ee72380213a17860f2d60f868abf2a6b0422f0"
+resolved_reference = "a3ee72380213a17860f2d60f868abf2a6b0422f0"
 
 [[package]]
 name = "dill"
@@ -448,7 +448,7 @@ python-versions = "*"
 
 [[package]]
 name = "fsspec"
-version = "2021.7.0"
+version = "2021.8.1"
 description = "File-system specification"
 category = "main"
 optional = false
@@ -703,6 +703,7 @@ python-versions = "*"
 [package.source]
 type = "url"
 url = "https://github.com/kpu/kenlm/archive/master.zip"
+
 [[package]]
 name = "keras"
 version = "2.6.0"
@@ -1679,7 +1680,7 @@ cffi = ["cffi (>=1.11)"]
 [metadata]
 lock-version = "1.1"
 python-versions = "^3.8"
-content-hash = "c640f39c16ad74f27f5c666bc518cce1dbe68adccce6be8f162c4b4d15e660fa"
+content-hash = "20736dbeb85b25f08f727793eca72f544559a46056cd9a123a75b1b2e0897f2f"
 
 [metadata.files]
 absl-py = [
@@ -2045,8 +2046,8 @@ flatbuffers = [
     {file = "flatbuffers-1.12.tar.gz", hash = "sha256:63bb9a722d5e373701913e226135b28a6f6ac200d5cc7b4d919fa38d73b44610"},
 ]
 fsspec = [
-    {file = "fsspec-2021.7.0-py3-none-any.whl", hash = "sha256:86822ccf367da99957f49db64f7d5fd3d8d21444fac4dfdc8ebc38ee93d478c6"},
-    {file = "fsspec-2021.7.0.tar.gz", hash = "sha256:792ebd3b54de0b30f1ce73f0ba0a8bcc864724f2d9f248cb8d0ece47db0cbde8"},
+    {file = "fsspec-2021.8.1-py3-none-any.whl", hash = "sha256:30f27c059a414d1f434b14b2d0e75c8d9c3dd473ad8daeccb444d9d4069b9f03"},
+    {file = "fsspec-2021.8.1.tar.gz", hash = "sha256:af125917788b77782899bbd4484d29e5407f53d2bb04cdfa025fe4931201a555"},
 ]
 future = [
     {file = "future-0.18.2.tar.gz", hash = "sha256:b1bead90b70cf6ec3f0710ae53a525360fa360d306a86583adc6bf83a4db537d"},

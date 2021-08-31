@@ -25,7 +25,7 @@ nltk = "^3.6.2"
 aiohttp = "^3.7.4"
 typer = "^0.3.2"
 transformers = "^4.10.0"
-datasets = {extras = ["streaming"], git = "https://github.com/huggingface/datasets.git", rev = "595efc773e1b3b75e564bd0790d96daebc0adefd"}
+datasets = {git = "https://github.com/huggingface/datasets.git", rev = "a3ee72380213a17860f2d60f868abf2a6b0422f0", extras = ["streaming"]}
 
 [tool.poetry.dev-dependencies]
 bandit = "^1.7.0"
