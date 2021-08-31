@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "datasets-preview-backend"
-version = "0.4.3"
+version = "0.4.4"
 description = "API to extract rows of 🤗 datasets"
 authors = ["Sylvain Lesage <severo@rednegra.net>"]
 
@@ -24,8 +24,8 @@ kenlm = {url = "https://github.com/kpu/kenlm/archive/master.zip"}
 nltk = "^3.6.2"
 aiohttp = "^3.7.4"
 typer = "^0.3.2"
-transformers = {git = "https://github.com/huggingface/transformers.git", rev = "d50649531f4ad6baf7e600099a511b044d5da748"}
-datasets = {extras = ["streaming"], git = "https://github.com/huggingface/datasets.git", rev = "6f7bca7a8c5518fd8f1aa6bea2542573646dd9f5"}
+transformers = "^4.10.0"
+datasets = {extras = ["streaming"], git = "https://github.com/huggingface/datasets.git", rev = "595efc773e1b3b75e564bd0790d96daebc0adefd"}
 
 [tool.poetry.dev-dependencies]
 bandit = "^1.7.0"
