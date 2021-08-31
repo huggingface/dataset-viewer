@@ -49,3 +49,4 @@ clean:
 	$(MAKE) -C get_configs_reports/ clean
 	$(MAKE) -C get_info_reports/ clean
 	$(MAKE) -C serialized_dataset_names/ clean
+	rm ${report_filename}
