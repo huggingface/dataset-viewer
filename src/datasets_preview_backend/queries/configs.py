@@ -12,6 +12,8 @@ def get_configs(dataset: str):
     if dataset is None:
         raise Status400Error("'dataset' is a required query parameter.")
     try:
+        # We could alternately just call get_dataset_config_names
+        # https://github.com/huggingface/datasets/blob/67574a8d74796bc065a8b9b49ec02f7b1200c172/src/datasets/inspect.py#L115
         module_path, *_ = prepare_module(dataset, dataset=True)
         builder_cls = import_main_class(module_path, dataset=True)
     except FileNotFoundError as err:

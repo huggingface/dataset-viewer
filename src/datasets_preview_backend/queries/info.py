@@ -11,6 +11,8 @@ def get_info(dataset: str):
     if dataset is None:
         raise Status400Error("'dataset' is a required query parameter.")
     try:
+        # We could alternately just call get_dataset_infos
+        # https://github.com/huggingface/datasets/blob/67574a8d74796bc065a8b9b49ec02f7b1200c172/src/datasets/inspect.py#L100
         module_path, *_ = prepare_module(dataset, dataset=True)
         builder_cls = import_main_class(module_path, dataset=True)
         total_dataset_infos = builder_cls.get_all_exported_dataset_infos()
