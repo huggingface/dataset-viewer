@@ -1,0 +1,28 @@
+name: Launch unit tests
+on: [push]
+
+jobs:
+  unit-tests:
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: [3.8]
+        poetry-version: [1.1.7]
+        os: [ubuntu-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v2
+      - name: Use Python
+        uses: actions/setup-python@v2
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Use Poetry
+        uses: abatilo/actions-poetry@v2.0.0
+        with:
+          poetry-version: ${{ matrix.poetry-version }}
+      - name: Install dependencies
+        # should I add --no-dev? https://twitter.com/__matt_kramer__/status/1431693127694307333
+        run: poetry install
+      - name: Run unit tests
+        # Should I run "make test" instead of replicating the tests?
+        run: poetry run python -m pytest -x tests

@@ -29,6 +29,7 @@ make run
 Set environment variables to configure the following aspects:
 
 - `EXTRACT_ROWS_LIMIT`: maximum number of rows in the extract. Defaults to `100`.
+- `HOSTNAME`: the hostname used by the app. Defaults to `"localhost"`.
 - `PORT`: the port used by the app. Defaults to `8000`.
 - `WEB_CONCURRENCY`: the number of workers. Defaults to `1`.
 
