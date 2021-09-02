@@ -5,7 +5,11 @@ from starlette.requests import Request
 from starlette.responses import JSONResponse, PlainTextResponse
 
 from datasets_preview_backend.config import EXTRACT_ROWS_LIMIT
-from datasets_preview_backend.exceptions import Status400Error, Status404Error, StatusError
+from datasets_preview_backend.exceptions import (
+    Status400Error,
+    Status404Error,
+    StatusError,
+)
 from datasets_preview_backend.queries.configs import get_configs
 from datasets_preview_backend.queries.info import get_info
 from datasets_preview_backend.queries.rows import extract_rows
