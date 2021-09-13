@@ -131,3 +131,10 @@ def test_txt_zip():
     extract = extract_rows(dataset, config, split, num_rows)
     rows = extract["rows"]
     assert len(rows) == 20
+
+
+# UNCOMMENT THIS WHEN https://github.com/huggingface/datasets/issues/2901 is fixed
+# def test_pathlib():
+#     # see https://github.com/huggingface/datasets/issues/2866
+#     extract = extract_rows("counter", DEFAULT_CONFIG_NAME, "train", 10)
+#     assert len(extract["rows"]) == 10
