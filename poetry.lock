@@ -322,17 +322,18 @@ python-versions = "*"
 
 [[package]]
 name = "datasets"
-version = "1.12.0"
-description = "HuggingFace/Datasets is an open library of NLP datasets."
+version = "1.12.1.dev0"
+description = ""
 category = "main"
 optional = false
 python-versions = "*"
+develop = false
 
 [package.dependencies]
 aiohttp = "*"
 dill = "*"
 fsspec = {version = ">=2021.05.0", extras = ["http"]}
-huggingface-hub = ">=0.0.14,<0.1.0"
+huggingface_hub = ">=0.0.14,<0.1.0"
 multiprocess = "*"
 numpy = ">=1.17"
 packaging = "*"
@@ -344,15 +345,20 @@ xxhash = "*"
 
 [package.extras]
 apache-beam = ["apache-beam (>=2.26.0)"]
-benchmarks = ["numpy (==1.18.5)", "tensorflow (==2.3.0)", "torch (==1.6.0)", "transformers (==3.0.2)"]
-dev = ["absl-py", "pytest", "pytest-xdist", "apache-beam (>=2.26.0)", "elasticsearch", "aiobotocore", "boto3", "botocore", "faiss-cpu", "fsspec", "moto[s3,server] (==2.0.4)", "rarfile (>=4.0)", "s3fs (==2021.08.1)", "tensorflow (>=2.3)", "torch", "transformers", "bs4", "conllu", "langdetect", "lxml", "mwparserfromhell", "nltk", "openpyxl", "py7zr", "tldextract", "zstandard", "bert-score (>=0.3.6)", "rouge-score", "sacrebleu", "scipy", "seqeval", "scikit-learn", "jiwer", "sentencepiece", "toml (>=0.10.1)", "requests-file (>=1.5.1)", "tldextract (>=3.1.0)", "texttable (>=1.6.3)", "Werkzeug (>=1.0.1)", "six (>=1.15.0,<1.16.0)", "wget (>=3.2)", "pytorch-nlp (==0.5.0)", "pytorch-lightning", "fastBPE (==0.1.0)", "fairseq", "black (==21.4b0)", "flake8 (==3.7.9)", "isort", "pyyaml (>=5.3.1)", "importlib-resources"]
-docs = ["docutils (==0.16.0)", "recommonmark", "sphinx (==3.1.2)", "sphinx-markdown-tables", "sphinx-rtd-theme (==0.4.3)", "sphinxext-opengraph (==0.4.1)", "sphinx-copybutton", "fsspec", "s3fs", "sphinx-panels", "sphinx-inline-tabs", "myst-parser"]
-quality = ["black (==21.4b0)", "flake8 (==3.7.9)", "isort", "pyyaml (>=5.3.1)"]
-s3 = ["fsspec", "boto3", "botocore", "s3fs"]
 tensorflow = ["tensorflow (>=2.2.0)"]
 tensorflow_gpu = ["tensorflow-gpu (>=2.2.0)"]
-tests = ["absl-py", "pytest", "pytest-xdist", "apache-beam (>=2.26.0)", "elasticsearch", "aiobotocore", "boto3", "botocore", "faiss-cpu", "fsspec", "moto[s3,server] (==2.0.4)", "rarfile (>=4.0)", "s3fs (==2021.08.1)", "tensorflow (>=2.3)", "torch", "transformers", "bs4", "conllu", "langdetect", "lxml", "mwparserfromhell", "nltk", "openpyxl", "py7zr", "tldextract", "zstandard", "bert-score (>=0.3.6)", "rouge-score", "sacrebleu", "scipy", "seqeval", "scikit-learn", "jiwer", "sentencepiece", "toml (>=0.10.1)", "requests-file (>=1.5.1)", "tldextract (>=3.1.0)", "texttable (>=1.6.3)", "Werkzeug (>=1.0.1)", "six (>=1.15.0,<1.16.0)", "wget (>=3.2)", "pytorch-nlp (==0.5.0)", "pytorch-lightning", "fastBPE (==0.1.0)", "fairseq", "importlib-resources"]
 torch = ["torch"]
+s3 = ["fsspec", "boto3", "botocore", "s3fs"]
+tests = ["absl-py", "pytest", "pytest-xdist", "apache-beam (>=2.26.0)", "elasticsearch", "aiobotocore", "boto3", "botocore", "faiss-cpu", "fsspec", "moto[server,s3] (==2.0.4)", "rarfile (>=4.0)", "s3fs (==2021.08.1)", "tensorflow (>=2.3)", "torch", "transformers", "bs4", "conllu", "langdetect", "lxml", "mwparserfromhell", "nltk", "openpyxl", "py7zr", "tldextract", "zstandard", "bert_score (>=0.3.6)", "rouge-score", "sacrebleu", "scipy", "seqeval", "scikit-learn", "jiwer", "sentencepiece", "toml (>=0.10.1)", "requests_file (>=1.5.1)", "tldextract (>=3.1.0)", "texttable (>=1.6.3)", "Werkzeug (>=1.0.1)", "six (>=1.15.0,<1.16.0)"]
+quality = ["black (==21.4b0)", "flake8 (==3.7.9)", "isort", "pyyaml (>=5.3.1)"]
+benchmarks = ["numpy (==1.18.5)", "tensorflow (==2.3.0)", "torch (==1.6.0)", "transformers (==3.0.2)"]
+docs = ["docutils (==0.16.0)", "recommonmark", "sphinx (==3.1.2)", "sphinx-markdown-tables", "sphinx-rtd-theme (==0.4.3)", "sphinxext-opengraph (==0.4.1)", "sphinx-copybutton", "fsspec", "s3fs", "sphinx-panels", "sphinx-inline-tabs", "myst-parser"]
+
+[package.source]
+type = "git"
+url = "https://github.com/huggingface/datasets.git"
+reference = "40773111c3e7db8a992fa1c48af32d900a1018d6"
+resolved_reference = "40773111c3e7db8a992fa1c48af32d900a1018d6"
 
 [[package]]
 name = "dill"
@@ -620,7 +626,7 @@ pyparsing = ">=2.4.2,<3"
 
 [[package]]
 name = "huggingface-hub"
-version = "0.0.16"
+version = "0.0.17"
 description = "Client library to download and publish models on the huggingface.co hub"
 category = "main"
 optional = false
@@ -634,10 +640,10 @@ tqdm = "*"
 typing-extensions = "*"
 
 [package.extras]
-all = ["pytest", "black (>=20.8b1)", "isort (>=5.5.4)", "flake8 (>=3.8.3)"]
-dev = ["pytest", "black (>=20.8b1)", "isort (>=5.5.4)", "flake8 (>=3.8.3)"]
+all = ["pytest", "datasets", "black (>=20.8b1)", "isort (>=5.5.4)", "flake8 (>=3.8.3)"]
+dev = ["pytest", "datasets", "black (>=20.8b1)", "isort (>=5.5.4)", "flake8 (>=3.8.3)"]
 quality = ["black (>=20.8b1)", "isort (>=5.5.4)", "flake8 (>=3.8.3)"]
-testing = ["pytest"]
+testing = ["pytest", "datasets"]
 torch = ["torch"]
 
 [[package]]
@@ -1673,7 +1679,7 @@ cffi = ["cffi (>=1.11)"]
 [metadata]
 lock-version = "1.1"
 python-versions = "^3.8"
-content-hash = "2e92c50072cd6bf7473948fb286b2450a4ca164a80d478921eeddb93053dd5e9"
+content-hash = "bafce9f1908ef4fbd5c29cf68bb43bbca682526f284cd544c5b95f1ee3c5bf71"
 
 [metadata.files]
 absl-py = [
@@ -1992,10 +1998,7 @@ crcmod = [
     {file = "crcmod-1.7.win32-py2.7.msi", hash = "sha256:737fb308fa2ce9aed2e29075f0d5980d4a89bfbec48a368c607c5c63b3efb90e"},
     {file = "crcmod-1.7.win32-py3.1.msi", hash = "sha256:50586ab48981f11e5b117523d97bb70864a2a1af246cf6e4f5c4a21ef4611cd1"},
 ]
-datasets = [
-    {file = "datasets-1.12.0-py3-none-any.whl", hash = "sha256:a45bd6c2835df0a8175a422ff057da252776b9027cd74611a9c04c71db2bbbd3"},
-    {file = "datasets-1.12.0.tar.gz", hash = "sha256:0084b8263f50812ed078577f73a0547fab61c89e4a89a04f3a9da5b39362cbfd"},
-]
+datasets = []
 dill = [
     {file = "dill-0.3.1.1.tar.gz", hash = "sha256:42d8ef819367516592a825746a18073ced42ca169ab1f5f4044134703e7a049c"},
 ]
@@ -2147,8 +2150,8 @@ httplib2 = [
     {file = "httplib2-0.19.1.tar.gz", hash = "sha256:0b12617eeca7433d4c396a100eaecfa4b08ee99aa881e6df6e257a7aad5d533d"},
 ]
 huggingface-hub = [
-    {file = "huggingface_hub-0.0.16-py3-none-any.whl", hash = "sha256:c8170998f1ac43ec9253f5fd321213aeee54a9b938c9ce5e696a06274710b67c"},
-    {file = "huggingface_hub-0.0.16.tar.gz", hash = "sha256:6742126aef62244db6dc4cd0d4d9f13eef6a9b125c972f92111fb285c1100ae6"},
+    {file = "huggingface_hub-0.0.17-py3-none-any.whl", hash = "sha256:ff7f64cf2ed08b201e2e0e21d437c0e180192b8d42e2ed2cf2d81e361389e688"},
+    {file = "huggingface_hub-0.0.17.tar.gz", hash = "sha256:4f9174a277d2ad884ea3d472534db11a114e2f44f21798410c152e80f4675917"},
 ]
 idna = [
     {file = "idna-3.2-py3-none-any.whl", hash = "sha256:14475042e284991034cb48e06f6851428fb14c4dc953acd9be9a5e95c7b6dd7a"},

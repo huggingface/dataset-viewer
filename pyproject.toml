@@ -25,7 +25,7 @@ nltk = "^3.6.2"
 aiohttp = "^3.7.4"
 typer = "^0.3.2"
 transformers = "^4.10.0"
-datasets = "^1.12.0"
+datasets = {git = "https://github.com/huggingface/datasets.git", rev = "40773111c3e7db8a992fa1c48af32d900a1018d6"}
 
 [tool.poetry.dev-dependencies]
 bandit = "^1.7.0"
