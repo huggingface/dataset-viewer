@@ -1,6 +1,6 @@
 from dataclasses import asdict
 
-from datasets import import_main_class, prepare_module
+from datasets import get_dataset_infos
 
 from datasets_preview_backend.exceptions import Status400Error, Status404Error
 
@@ -11,11 +11,8 @@ def get_info(dataset: str):
     if dataset is None:
         raise Status400Error("'dataset' is a required query parameter.")
     try:
-        # We could alternately just call get_dataset_infos
-        # https://github.com/huggingface/datasets/blob/67574a8d74796bc065a8b9b49ec02f7b1200c172/src/datasets/inspect.py#L100
-        module_path, *_ = prepare_module(dataset, dataset=True)
-        builder_cls = import_main_class(module_path, dataset=True)
-        total_dataset_infos = builder_cls.get_all_exported_dataset_infos()
+        get_dataset_infos(dataset)
+        total_dataset_infos = get_dataset_infos(dataset)
         info = {config_name: asdict(config_info) for config_name, config_info in total_dataset_infos.items()}
     except FileNotFoundError as err:
         raise Status404Error("The dataset info could not be found.") from err
