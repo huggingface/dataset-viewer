@@ -1,5 +1,3 @@
-PORT ?= 8000
-
 # monitor the load with htop and adapt the value (load should be a bit less than the number of processors (check with "$ nproc"))
 # this will launch as much processes as possible under the limit of load=MAX_LOAD
 MAX_LOAD = 7
@@ -10,8 +8,12 @@ PARALLEL = -j -l $(MAX_LOAD)
 install:
 	poetry install
 
+
 run:
-	poetry run uvicorn --port $(PORT) --factory datasets_preview_backend.main:app
+	poetry run python src/datasets_preview_backend/main.py
+
+watch:
+	poetry run watchmedo auto-restart -d src/datasets_preview_backend -p "*.py" -R python src/datasets_preview_backend/main.py
 
 test:
 	poetry run python -m pytest -x tests
@@ -36,6 +38,3 @@ style:
 # The result is benchmark/tmp/report.json (about 40M)
 benchmark:
 	$(MAKE) -C benchmark $(PARALLEL)
-
-watch:
-	poetry run uvicorn --port $(PORT) --factory --reload datasets_preview_backend.main:app

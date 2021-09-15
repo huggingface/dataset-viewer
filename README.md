@@ -28,15 +28,15 @@ make run
 
 Set environment variables to configure the following aspects:
 
-- `EXTRACT_ROWS_LIMIT`: maximum number of rows in the extract. Defaults to `100`.
-- `HOSTNAME`: the hostname used by the app. Defaults to `"localhost"`.
-- `PORT`: the port used by the app. Defaults to `8000`.
+- `APP_HOSTNAME`: the hostname used by the app. Defaults to `"localhost"`.
+- `APP_PORT`: the port used by the app. Defaults to `8000`.
+- `EXTRACT_ROWS_LIMIT`: number of rows in the extract, if not specified in the API request. Defaults to `100`.
 - `WEB_CONCURRENCY`: the number of workers. Defaults to `1`.
 
 For example:
 
 ```bash
-PORT=80 WEB_CONCURRENCY=4 make run
+APP_PORT=80 WEB_CONCURRENCY=4 make run
 ```
 
 To reload the application on file changes while developing, run:

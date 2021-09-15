@@ -6,6 +6,7 @@
 .venv/
 
 # local configurations
+.env
 .vscode/
 poetry.toml
 
