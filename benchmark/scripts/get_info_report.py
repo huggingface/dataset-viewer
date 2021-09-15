@@ -19,7 +19,7 @@ def get_info_report(dataset: str):
         info = get_info(dataset)["info"]
         return {
             "dataset": dataset,
-            "info": info,
+            "info_num_keys": len(info),
             "success": True,
             "exception": None,
             "message": None,
@@ -30,7 +30,6 @@ def get_info_report(dataset: str):
     except Exception as err:
         return {
             "dataset": dataset,
-            "info": None,
             "success": False,
             "exception": type(err).__name__,
             "message": str(err),
