@@ -1,6 +1,6 @@
 import logging
 import re
-from typing import Union
+from typing import Optional, Union
 
 from datasets import IterableDataset, load_dataset
 
@@ -10,7 +10,9 @@ from datasets_preview_backend.exceptions import Status400Error, Status404Error
 logger = logging.getLogger(__name__)
 
 
-def extract_rows(dataset: str, config: Union[str, None], split: str, num_rows: int):
+def extract_rows(
+    dataset: str, config: Union[str, None], split: str, num_rows: int, use_auth_token: Optional[str] = None
+):
     if not isinstance(dataset, str) and dataset is not None:
         raise TypeError("dataset argument should be a string")
     if dataset is None:
@@ -26,7 +28,9 @@ def extract_rows(dataset: str, config: Union[str, None], split: str, num_rows: i
         raise TypeError("num_rows argument should be an int")
 
     try:
-        iterable_dataset: IterableDataset = load_dataset(dataset, name=config, split=split, streaming=True)
+        iterable_dataset: IterableDataset = load_dataset(
+            dataset, name=config, split=split, streaming=True, use_auth_token=use_auth_token
+        )
         rows = list(iterable_dataset.take(num_rows))
     except FileNotFoundError as err:
         raise Status404Error("The split for the dataset config could not be found.") from err

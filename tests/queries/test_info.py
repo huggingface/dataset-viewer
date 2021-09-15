@@ -1,11 +1,17 @@
 import pytest
 
+from datasets_preview_backend.config import HF_TOKEN
 from datasets_preview_backend.constants import DEFAULT_CONFIG_NAME
 from datasets_preview_backend.queries.info import (
     Status400Error,
     Status404Error,
     get_info,
 )
+
+
+def test_config():
+    # token is required for the tests
+    assert HF_TOKEN is not None
 
 
 def test_get_info():
@@ -59,3 +65,10 @@ def test_no_dataset_no_script():
     # which should be caught and raised as DatasetBuilderScriptError
     with pytest.raises(Status404Error):
         get_info("TimTreasure4/Test")
+
+
+def test_hub_private_dataset():
+    response = get_info("severo/autonlp-data-imdb-sentiment-analysis", use_auth_token=HF_TOKEN)
+    assert response["info"] == {}
+
+    # TODO: find/create a private dataset with a dataset-info.json file

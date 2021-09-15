@@ -1,11 +1,17 @@
 import pytest
 
+from datasets_preview_backend.config import HF_TOKEN
 from datasets_preview_backend.constants import DEFAULT_CONFIG_NAME
 from datasets_preview_backend.queries.rows import (
     Status400Error,
     Status404Error,
     extract_rows,
 )
+
+
+def test_config():
+    # token is required for the tests
+    assert HF_TOKEN is not None
 
 
 def test_extract_split_rows():
@@ -137,3 +143,11 @@ def test_pathlib():
     # see https://github.com/huggingface/datasets/issues/2866
     extract = extract_rows("counter", DEFAULT_CONFIG_NAME, "train", 10)
     assert len(extract["rows"]) == 10
+
+
+# TODO: find a private model that works
+# def test_hub_private_dataset():
+#     response = extract_rows(
+#         "severo/autonlp-data-imdb-sentiment-analysis", "default", "train", 10, use_auth_token=HF_TOKEN
+#     )
+#     assert len(response["rows"]) == 10
