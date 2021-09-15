@@ -21,8 +21,6 @@ jobs:
         with:
           poetry-version: ${{ matrix.poetry-version }}
       - name: Install dependencies
-        # should I add --no-dev? https://twitter.com/__matt_kramer__/status/1431693127694307333
         run: poetry install
       - name: Run unit tests
-        # Should I run "make test" instead of replicating the tests?
         run: poetry run python -m pytest -x tests

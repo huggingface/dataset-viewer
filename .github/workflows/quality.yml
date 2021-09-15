@@ -21,9 +21,7 @@ jobs:
         with:
           poetry-version: ${{ matrix.poetry-version }}
       - name: Install dependencies
-        # should I add --no-dev? https://twitter.com/__matt_kramer__/status/1431693127694307333
         run: poetry install
-        # Should I run "make quality" instead of replicating the tests?
       - name: Run black
         run: poetry run black --check tests src benchmark
       - name: Run isort
