@@ -7,6 +7,8 @@ from datasets import IterableDataset, load_dataset
 from datasets_preview_backend.constants import DEFAULT_CONFIG_NAME
 from datasets_preview_backend.exceptions import Status400Error, Status404Error
 
+logger = logging.getLogger(__name__)
+
 
 def extract_rows(dataset: str, config: Union[str, None], split: str, num_rows: int):
     if not isinstance(dataset, str) and dataset is not None:
@@ -22,8 +24,6 @@ def extract_rows(dataset: str, config: Union[str, None], split: str, num_rows: i
         raise Status400Error("'split' is a required query parameter.")
     if not isinstance(num_rows, int):
         raise TypeError("num_rows argument should be an int")
-
-    logging.debug(f"asked for {num_rows} first rows of dataset {dataset} - {config} - {split}")
 
     try:
         iterable_dataset: IterableDataset = load_dataset(dataset, name=config, split=split, streaming=True)
@@ -55,7 +55,7 @@ def extract_rows(dataset: str, config: Union[str, None], split: str, num_rows: i
         raise Status400Error("The rows could not be extracted from the split of the dataset config.") from err
 
     if len(rows) != num_rows:
-        logging.warning(
+        logger.warning(
             f"could not read all the required rows ({len(rows)} / {num_rows}) from dataset {dataset} - {config} -"
             f" {split}"
         )

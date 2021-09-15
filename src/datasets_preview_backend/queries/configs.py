@@ -20,5 +20,4 @@ def get_configs(dataset: str):
     except Exception as err:
         raise Status400Error("The config names could not be parsed from the dataset.") from err
 
-    logging.debug(f"The dataset builder has {len(configs)} configs: {configs}")
     return {"dataset": dataset, "configs": configs}
