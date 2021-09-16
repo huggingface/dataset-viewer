@@ -23,4 +23,6 @@ jobs:
       - name: Install dependencies
         run: poetry install
       - name: Run unit tests
+        env:
+          HF_TOKEN: ${{ secrets.HF_TOKEN_SEVERO }}
         run: poetry run python -m pytest -x tests
