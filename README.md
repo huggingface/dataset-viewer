@@ -49,6 +49,14 @@ make watch
 
 ## Endpoints
 
+## Authorization
+
+For all the endpoints, you can pass a token in the `Authorization` header to get access to private datasets on the hub, for example:
+
+```
+curl -H "Authorization: Bearer <ACCESS_TOKEN>" https://datasets-preview.huggingface.tech/info?dataset=severo/autonlp-data-imdb-sentiment-analysis
+```
+
 ### /healthcheck
 
 > Ensure the app is running
