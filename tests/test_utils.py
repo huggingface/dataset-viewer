@@ -1,6 +1,7 @@
 from datasets_preview_backend.utils import get_int_value, get_str_value, get_token
-
-# from starlette.requests import  Request
+from starlette.requests import Request
+from starlette.datastructures import Headers
+from typing import Dict
 
 
 def test_get_int_value():
@@ -28,11 +29,15 @@ def test_get_str_value():
     assert get_str_value({}, "KEY", 123) == 123
 
 
-# def test_get_token():
-# TODO: how to test this? I don't know how to create or mock a request
-# TestClient requires an app as the input (https://www.starlette.io/testclient/)
-# r = Request({"type": "http", "headers": {"Authorization": "Bearer some_token"}})
-# assert get_token(r) == "some_token"
-# assert get_token({"headers": {"Authorization": "Basic some_token"}}) is None
-# assert get_token({"headers": {"Authorization": "Bearersome_token"}}) is None
-# assert get_token({"headers": {}}) is None
+def build_request(headers: Dict = None) -> Request:
+    if headers is None:
+        headers = {}
+    return Request({"type": "http", "headers": Headers(headers).raw})
+
+
+def test_get_token():
+    assert get_token(build_request({"Authorization": "Bearer some_token"})) == "some_token"
+    assert get_token(build_request({"Authorization": "beArER some_token"})) == "some_token"
+    assert get_token(build_request({"Authorization": "Basic some_token"})) is None
+    assert get_token(build_request({"Authorization": "Bearersome_token"})) is None
+    assert get_token(build_request({})) is None
