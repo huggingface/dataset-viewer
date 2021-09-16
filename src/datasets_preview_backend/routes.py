@@ -25,7 +25,7 @@ def log_error(err: StatusError):
 
 
 async def healthcheck(_: Request):
-    logger.info(f"/healthcheck")
+    logger.info("/healthcheck")
     return PlainTextResponse("ok")
 
 
