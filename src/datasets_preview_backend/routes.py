@@ -1,11 +1,12 @@
+import json
 import logging
 from typing import Optional, Union
 
-from starlette.requests import Request
-from starlette.responses import JSONResponse, PlainTextResponse
 from starlette.endpoints import HTTPEndpoint
+from starlette.requests import Request
+from starlette.responses import PlainTextResponse, Response
 
-from datasets_preview_backend.config import EXTRACT_ROWS_LIMIT
+from datasets_preview_backend.config import EXTRACT_ROWS_LIMIT, cache
 from datasets_preview_backend.exceptions import (
     Status400Error,
     Status404Error,
@@ -26,6 +27,7 @@ def log_error(err: StatusError):
 
 
 def get_response(
+    *,
     route: str,
     dataset: str,
     config: Optional[str] = None,
@@ -48,10 +50,44 @@ def get_response(
             content = extract_rows(dataset, config, split, num_rows, token)
         else:
             raise Exception(f"unknown route {route}")
-        return {"content": content, "status_code": 200}
+        status_code = 200
     except (Status400Error, Status404Error) as err:
         log_error(err)
-        return {"content": err.as_dict(), "status_code": err.status_code}
+        content = err.as_dict()
+        status_code = err.status_code
+
+    # response content is encoded to avoid issues when caching ("/info" returns a non pickable object)
+    bytes_content = json.dumps(
+        content,
+        ensure_ascii=False,
+        allow_nan=False,
+        indent=None,
+        separators=(",", ":"),
+    ).encode("utf-8")
+    return {
+        "content": bytes_content,
+        "status_code": status_code,
+    }
+
+
+def get_cached_response(**kwargs):
+    cache.close()
+    key = kwargs
+    print(kwargs)
+    if key in cache:
+        response = cache.get(key)
+    else:
+        response = get_response(**kwargs)
+        cache.set(key, response)
+    return response
+
+
+class CustomJSONResponse(Response):
+    media_type = "application/json"
+
+    def render(self, content: bytes) -> bytes:
+        # content is already an UTF-8 encoded JSON
+        return content
 
 
 class HealthCheck(HTTPEndpoint):
@@ -64,16 +100,16 @@ class Info(HTTPEndpoint):
     async def get(self, request: Request):
         dataset = request.query_params.get("dataset")
 
-        response = get_response("/info", dataset=dataset, token=request.user.token)
-        return JSONResponse(response["content"], status_code=response["status_code"])
+        response = get_cached_response(route="/info", dataset=dataset, token=request.user.token)
+        return CustomJSONResponse(response["content"], status_code=response["status_code"])
 
 
 class Configs(HTTPEndpoint):
     async def get(self, request: Request):
         dataset = request.query_params.get("dataset")
 
-        response = get_response("/configs", dataset=dataset, token=request.user.token)
-        return JSONResponse(response["content"], status_code=response["status_code"])
+        response = get_cached_response(route="/configs", dataset=dataset, token=request.user.token)
+        return CustomJSONResponse(response["content"], status_code=response["status_code"])
 
 
 class Splits(HTTPEndpoint):
@@ -81,8 +117,8 @@ class Splits(HTTPEndpoint):
         dataset = request.query_params.get("dataset")
         config = request.query_params.get("config")
 
-        response = get_response("/splits", dataset=dataset, config=config, token=request.user.token)
-        return JSONResponse(response["content"], status_code=response["status_code"])
+        response = get_cached_response(route="/splits", dataset=dataset, config=config, token=request.user.token)
+        return CustomJSONResponse(response["content"], status_code=response["status_code"])
 
 
 class Rows(HTTPEndpoint):
@@ -92,7 +128,7 @@ class Rows(HTTPEndpoint):
         split = request.query_params.get("split")
         num_rows = get_int_value(d=request.query_params, key="rows", default=EXTRACT_ROWS_LIMIT)
 
-        response = get_response(
-            "/rows", dataset=dataset, config=config, split=split, num_rows=num_rows, token=request.user.token
+        response = get_cached_response(
+            route="/rows", dataset=dataset, config=config, split=split, num_rows=num_rows, token=request.user.token
         )
-        return JSONResponse(response["content"], status_code=response["status_code"])
+        return CustomJSONResponse(response["content"], status_code=response["status_code"])
