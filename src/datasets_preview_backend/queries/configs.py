@@ -2,8 +2,10 @@ from typing import Optional
 
 from datasets import get_dataset_config_names
 
+from datasets_preview_backend.config import cache
 from datasets_preview_backend.constants import DEFAULT_CONFIG_NAME
 from datasets_preview_backend.exceptions import Status400Error, Status404Error
+from datasets_preview_backend.responses import SerializedResponse
 
 
 def get_configs(dataset: str, token: Optional[str] = None):
@@ -21,3 +23,12 @@ def get_configs(dataset: str, token: Optional[str] = None):
         raise Status400Error("The config names could not be parsed from the dataset.") from err
 
     return {"dataset": dataset, "configs": configs}
+
+
+@cache.memoize(expire=60)
+def get_configs_json(dataset: str, token: Optional[str] = None):
+    try:
+        response = SerializedResponse(get_configs(dataset, token))
+    except (Status400Error, Status404Error) as err:
+        response = SerializedResponse(err.as_dict(), err.status_code)
+    return response.as_json()

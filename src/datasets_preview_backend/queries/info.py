@@ -3,7 +3,9 @@ from typing import Optional
 
 from datasets import get_dataset_infos
 
+from datasets_preview_backend.config import cache
 from datasets_preview_backend.exceptions import Status400Error, Status404Error
+from datasets_preview_backend.responses import SerializedResponse
 
 
 def get_info(dataset: str, token: Optional[str] = None):
@@ -20,3 +22,12 @@ def get_info(dataset: str, token: Optional[str] = None):
         raise Status400Error("The dataset info could not be parsed from the dataset.") from err
 
     return {"dataset": dataset, "info": info}
+
+
+@cache.memoize(expire=60)
+def get_info_json(dataset: str, token: Optional[str] = None):
+    try:
+        response = SerializedResponse(get_info(dataset, token))
+    except (Status400Error, Status404Error) as err:
+        response = SerializedResponse(err.as_dict(), err.status_code)
+    return response.as_json()

@@ -4,8 +4,10 @@ from typing import Optional, Union
 
 from datasets import IterableDataset, load_dataset
 
+from datasets_preview_backend.config import cache
 from datasets_preview_backend.constants import DEFAULT_CONFIG_NAME
 from datasets_preview_backend.exceptions import Status400Error, Status404Error
+from datasets_preview_backend.responses import SerializedResponse
 
 logger = logging.getLogger(__name__)
 
@@ -68,3 +70,12 @@ def extract_rows(dataset: str, config: Union[str, None], split: str, num_rows: i
         "split": split,
         "rows": rows,
     }
+
+
+@cache.memoize(expire=60)
+def get_rows_json(dataset: str, config: Union[str, None], split: str, num_rows: int, token: Optional[str] = None):
+    try:
+        response = SerializedResponse(extract_rows(dataset, config, split, num_rows, token))
+    except (Status400Error, Status404Error) as err:
+        response = SerializedResponse(err.as_dict(), err.status_code)
+    return response.as_json()

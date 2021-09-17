@@ -1,3 +1,6 @@
+import logging
+
+
 class StatusError(Exception):
     """Base class for exceptions in this module."""
 
@@ -5,6 +8,10 @@ class StatusError(Exception):
         self.message = message
         self.status_code = status_code
         super().__init__(self.message)
+        # TODO: use caller's __name__ instead of this file's name
+        logger = logging.getLogger(__name__)
+        logger.warning(f"Error {self.status_code} '{self.message}'.")
+        logger.debug(f"Caused by a {type(self.__cause__).__name__}: '{str(self.__cause__)}'")
 
     def as_dict(self):
         return {
