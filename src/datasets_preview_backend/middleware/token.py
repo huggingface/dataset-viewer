@@ -23,7 +23,7 @@ def get_token(request: Request) -> Union[str, None]:
 class TokenUser(BaseUser):
     def __init__(self, token: str) -> None:
         self.username = "token"
-        self.token = token
+        self._token = token
 
     @property
     def is_authenticated(self) -> bool:
@@ -35,7 +35,7 @@ class TokenUser(BaseUser):
 
     @property
     def token(self) -> Union[str, None]:
-        return self.token
+        return self._token
 
 
 class UnauthenticatedTokenUser(BaseUser):
