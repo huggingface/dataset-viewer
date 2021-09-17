@@ -14,7 +14,7 @@ from datasets_preview_backend.queries.configs import get_configs
 from datasets_preview_backend.queries.info import get_info
 from datasets_preview_backend.queries.rows import extract_rows
 from datasets_preview_backend.queries.splits import get_splits
-from datasets_preview_backend.utils import get_int_value, get_token
+from datasets_preview_backend.utils import get_int_value
 
 logger = logging.getLogger(__name__)
 
@@ -60,26 +60,23 @@ async def healthcheck(_: Request):
 
 async def info(request: Request):
     dataset = request.query_params.get("dataset")
-    token = get_token(request)
 
-    response = get_response("/info", dataset=dataset, token=token)
+    response = get_response("/info", dataset=dataset, token=request.user.token)
     return JSONResponse(response["content"], status_code=response["status_code"])
 
 
 async def configs(request: Request):
     dataset = request.query_params.get("dataset")
-    token = get_token(request)
 
-    response = get_response("/configs", dataset=dataset, token=token)
+    response = get_response("/configs", dataset=dataset, token=request.user.token)
     return JSONResponse(response["content"], status_code=response["status_code"])
 
 
 async def splits(request: Request):
     dataset = request.query_params.get("dataset")
     config = request.query_params.get("config")
-    token = get_token(request)
 
-    response = get_response("/splits", dataset=dataset, config=config, token=token)
+    response = get_response("/splits", dataset=dataset, config=config, token=request.user.token)
     return JSONResponse(response["content"], status_code=response["status_code"])
 
 
@@ -88,7 +85,8 @@ async def rows(request: Request):
     config = request.query_params.get("config")
     split = request.query_params.get("split")
     num_rows = get_int_value(d=request.query_params, key="rows", default=EXTRACT_ROWS_LIMIT)
-    token = get_token(request)
 
-    response = get_response("/rows", dataset=dataset, config=config, split=split, num_rows=num_rows, token=token)
+    response = get_response(
+        "/rows", dataset=dataset, config=config, split=split, num_rows=num_rows, token=request.user.token
+    )
     return JSONResponse(response["content"], status_code=response["status_code"])
