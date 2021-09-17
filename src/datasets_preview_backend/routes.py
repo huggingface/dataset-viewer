@@ -55,7 +55,7 @@ def get_response(
 
 async def healthcheck(_: Request):
     logger.info("/healthcheck")
-    return PlainTextResponse("ok")
+    return PlainTextResponse("ok", headers={"Cache-Control": "no-store"})
 
 
 async def info(request: Request):
