@@ -3,6 +3,7 @@ from typing import Optional, Union
 
 from starlette.requests import Request
 from starlette.responses import JSONResponse, PlainTextResponse
+from starlette.endpoints import HTTPEndpoint
 
 from datasets_preview_backend.config import EXTRACT_ROWS_LIMIT
 from datasets_preview_backend.exceptions import (
@@ -53,40 +54,45 @@ def get_response(
         return {"content": err.as_dict(), "status_code": err.status_code}
 
 
-async def healthcheck(_: Request):
-    logger.info("/healthcheck")
-    return PlainTextResponse("ok", headers={"Cache-Control": "no-store"})
+class HealthCheck(HTTPEndpoint):
+    async def get(self, request: Request):
+        logger.info("/healthcheck")
+        return PlainTextResponse("ok", headers={"Cache-Control": "no-store"})
 
 
-async def info(request: Request):
-    dataset = request.query_params.get("dataset")
+class Info(HTTPEndpoint):
+    async def get(self, request: Request):
+        dataset = request.query_params.get("dataset")
 
-    response = get_response("/info", dataset=dataset, token=request.user.token)
-    return JSONResponse(response["content"], status_code=response["status_code"])
-
-
-async def configs(request: Request):
-    dataset = request.query_params.get("dataset")
-
-    response = get_response("/configs", dataset=dataset, token=request.user.token)
-    return JSONResponse(response["content"], status_code=response["status_code"])
+        response = get_response("/info", dataset=dataset, token=request.user.token)
+        return JSONResponse(response["content"], status_code=response["status_code"])
 
 
-async def splits(request: Request):
-    dataset = request.query_params.get("dataset")
-    config = request.query_params.get("config")
+class Configs(HTTPEndpoint):
+    async def get(self, request: Request):
+        dataset = request.query_params.get("dataset")
 
-    response = get_response("/splits", dataset=dataset, config=config, token=request.user.token)
-    return JSONResponse(response["content"], status_code=response["status_code"])
+        response = get_response("/configs", dataset=dataset, token=request.user.token)
+        return JSONResponse(response["content"], status_code=response["status_code"])
 
 
-async def rows(request: Request):
-    dataset = request.query_params.get("dataset")
-    config = request.query_params.get("config")
-    split = request.query_params.get("split")
-    num_rows = get_int_value(d=request.query_params, key="rows", default=EXTRACT_ROWS_LIMIT)
+class Splits(HTTPEndpoint):
+    async def get(self, request: Request):
+        dataset = request.query_params.get("dataset")
+        config = request.query_params.get("config")
 
-    response = get_response(
-        "/rows", dataset=dataset, config=config, split=split, num_rows=num_rows, token=request.user.token
-    )
-    return JSONResponse(response["content"], status_code=response["status_code"])
+        response = get_response("/splits", dataset=dataset, config=config, token=request.user.token)
+        return JSONResponse(response["content"], status_code=response["status_code"])
+
+
+class Rows(HTTPEndpoint):
+    async def get(self, request: Request):
+        dataset = request.query_params.get("dataset")
+        config = request.query_params.get("config")
+        split = request.query_params.get("split")
+        num_rows = get_int_value(d=request.query_params, key="rows", default=EXTRACT_ROWS_LIMIT)
+
+        response = get_response(
+            "/rows", dataset=dataset, config=config, split=split, num_rows=num_rows, token=request.user.token
+        )
+        return JSONResponse(response["content"], status_code=response["status_code"])

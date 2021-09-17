@@ -8,18 +8,18 @@ from datasets_preview_backend.config import (
     DATASETS_ENABLE_PRIVATE,
 )
 from datasets_preview_backend.middleware.token import get_token_middleware
-from datasets_preview_backend.routes import configs, healthcheck, info, rows, splits
+from datasets_preview_backend.routes import Configs, HealthCheck, Info, Rows, Splits
 
 
 def start():
     middleware = [get_token_middleware(datasets_enable_private=DATASETS_ENABLE_PRIVATE)]
     app = Starlette(
         routes=[
-            Route("/healthcheck", endpoint=healthcheck),
-            Route("/rows", endpoint=rows),
-            Route("/configs", endpoint=configs),
-            Route("/splits", endpoint=splits),
-            Route("/info", endpoint=info),
+            Route("/healthcheck", endpoint=HealthCheck),
+            Route("/rows", endpoint=Rows),
+            Route("/configs", endpoint=Configs),
+            Route("/splits", endpoint=Splits),
+            Route("/info", endpoint=Info),
         ],
         middleware=middleware,
     )
