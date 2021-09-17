@@ -1,3 +1,13 @@
+def get_bool_value(d, key, default):
+    if key not in d:
+        return default
+    try:
+        value = bool(d.get(key))
+    except (TypeError, ValueError):
+        value = default
+    return value
+
+
 def get_int_value(d, key, default):
     if key not in d:
         return default

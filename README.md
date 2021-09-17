@@ -30,6 +30,7 @@ Set environment variables to configure the following aspects:
 
 - `APP_HOSTNAME`: the hostname used by the app. Defaults to `"localhost"`.
 - `APP_PORT`: the port used by the app. Defaults to `8000`.
+- `DATASETS_ENABLE_PRIVATE`: enable private datasets. Defaults to `False`.
 - `EXTRACT_ROWS_LIMIT`: number of rows in the extract, if not specified in the API request. Defaults to `100`.
 - `HF_TOKEN`: the token to be able to download the private datasets from the hub (see https://huggingface.co/settings/token). Defaults to empty.
 - `LOG_LEVEL`: log level, among `DEBUG`, `INFO`, `WARNING`, `ERROR` and `CRITICAL`. Defaults to `INFO`.

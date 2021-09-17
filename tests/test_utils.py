@@ -1,4 +1,17 @@
-from datasets_preview_backend.utils import get_int_value, get_str_value
+from datasets_preview_backend.utils import get_bool_value, get_int_value, get_str_value
+
+
+def test_get_bool_value():
+    assert get_bool_value({"KEY": "True"}, "KEY", False) is True
+    assert get_bool_value({"KEY": "true"}, "KEY", False) is True
+    assert get_bool_value({"KEY": True}, "KEY", False) is True
+    assert get_bool_value({"KEY": "True"}, "DOESNOTEXIST", False) is False
+    assert get_bool_value({"KEY": ""}, "KEY", False) is False
+    assert get_bool_value({}, "KEY", False) is False
+    assert get_bool_value({}, "KEY", True) is True
+    # default value type is not constrained
+    assert get_bool_value({}, "KEY", None) is None
+    assert get_bool_value({}, "KEY", "string") == "string"
 
 
 def test_get_int_value():

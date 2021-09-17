@@ -5,6 +5,8 @@ from starlette.middleware import Middleware
 from starlette.middleware.authentication import AuthenticationMiddleware
 from starlette.requests import Request
 
+from datasets_preview_backend.constants import DEFAULT_DATASETS_ENABLE_PRIVATE
+
 
 def get_token(request: Request) -> Union[str, None]:
     try:
@@ -53,12 +55,18 @@ class UnauthenticatedTokenUser(BaseUser):
 
 
 class TokenAuthBackend(AuthenticationBackend):
+    def __init__(self, datasets_enable_private=DEFAULT_DATASETS_ENABLE_PRIVATE):
+        super().__init__()
+        self.datasets_enable_private = datasets_enable_private
+
     async def authenticate(self, request):
         token = get_token(request)
-        if token is None:
+        if token is None or not self.datasets_enable_private:
             return AuthCredentials([]), UnauthenticatedTokenUser()
         return AuthCredentials(["token"]), TokenUser(token)
 
 
-def get_token_middleware():
-    return Middleware(AuthenticationMiddleware, backend=TokenAuthBackend())
+def get_token_middleware(datasets_enable_private=DEFAULT_DATASETS_ENABLE_PRIVATE):
+    return Middleware(
+        AuthenticationMiddleware, backend=TokenAuthBackend(datasets_enable_private=datasets_enable_private)
+    )
