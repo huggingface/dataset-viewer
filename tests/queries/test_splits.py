@@ -86,5 +86,5 @@ def test_not_found():
 
 
 def test_hub_private_dataset():
-    response = get_splits("severo/autonlp-data-imdb-sentiment-analysis", "default", use_auth_token=HF_TOKEN)
+    response = get_splits("severo/autonlp-data-imdb-sentiment-analysis", "default", token=HF_TOKEN)
     assert response["splits"] == ["train"]

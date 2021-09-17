@@ -6,13 +6,13 @@ from datasets_preview_backend.constants import DEFAULT_CONFIG_NAME
 from datasets_preview_backend.exceptions import Status400Error, Status404Error
 
 
-def get_configs(dataset: str, use_auth_token: Optional[str] = None):
+def get_configs(dataset: str, token: Optional[str] = None):
     if not isinstance(dataset, str) and dataset is not None:
         raise TypeError("dataset argument should be a string")
     if dataset is None:
         raise Status400Error("'dataset' is a required query parameter.")
     try:
-        configs = get_dataset_config_names(dataset, use_auth_token=use_auth_token)
+        configs = get_dataset_config_names(dataset, use_auth_token=token)
         if len(configs) == 0:
             configs = [DEFAULT_CONFIG_NAME]
     except FileNotFoundError as err:

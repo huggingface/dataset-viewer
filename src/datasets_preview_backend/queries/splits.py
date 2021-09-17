@@ -6,7 +6,7 @@ from datasets_preview_backend.constants import DEFAULT_CONFIG_NAME
 from datasets_preview_backend.exceptions import Status400Error, Status404Error
 
 
-def get_splits(dataset: str, config: Union[str, None], use_auth_token: Optional[str] = None):
+def get_splits(dataset: str, config: Union[str, None], token: Optional[str] = None):
     if not isinstance(dataset, str) and dataset is not None:
         raise TypeError("dataset argument should be a string")
     if dataset is None:
@@ -16,7 +16,7 @@ def get_splits(dataset: str, config: Union[str, None], use_auth_token: Optional[
         raise TypeError("config argument should be a string")
 
     try:
-        splits = get_dataset_split_names(dataset, config, use_auth_token=use_auth_token)
+        splits = get_dataset_split_names(dataset, config, use_auth_token=token)
     except FileNotFoundError as err:
         raise Status404Error("The dataset config could not be found.") from err
     except ValueError as err:

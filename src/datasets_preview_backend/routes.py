@@ -30,21 +30,21 @@ def get_response(
     config: Optional[str] = None,
     split: Optional[str] = None,
     num_rows: Optional[int] = None,
-    use_auth_token: Optional[Union[str, None]] = None,
+    token: Optional[Union[str, None]] = None,
 ):
     try:
         if route == "/info":
             logger.info(f"/info, dataset={dataset}")
-            content = get_info(dataset, use_auth_token)
+            content = get_info(dataset, token)
         elif route == "/configs":
             logger.info(f"/configs, dataset={dataset}")
-            content = get_configs(dataset, use_auth_token)
+            content = get_configs(dataset, token)
         elif route == "/splits":
             logger.info(f"/splits, dataset={dataset}, config={config}")
-            content = get_splits(dataset, config, use_auth_token)
+            content = get_splits(dataset, config, token)
         elif route == "/rows":
             logger.info(f"/rows, dataset={dataset}, config={config}, split={split}, num_rows={num_rows}")
-            content = extract_rows(dataset, config, split, num_rows, use_auth_token)
+            content = extract_rows(dataset, config, split, num_rows, token)
         else:
             raise Exception(f"unknown route {route}")
         return {"content": content, "status_code": 200}
@@ -60,26 +60,26 @@ async def healthcheck(_: Request):
 
 async def info(request: Request):
     dataset = request.query_params.get("dataset")
-    use_auth_token = get_token(request)
+    token = get_token(request)
 
-    response = get_response("/info", dataset=dataset, use_auth_token=use_auth_token)
+    response = get_response("/info", dataset=dataset, token=token)
     return JSONResponse(response["content"], status_code=response["status_code"])
 
 
 async def configs(request: Request):
     dataset = request.query_params.get("dataset")
-    use_auth_token = get_token(request)
+    token = get_token(request)
 
-    response = get_response("/configs", dataset=dataset, use_auth_token=use_auth_token)
+    response = get_response("/configs", dataset=dataset, token=token)
     return JSONResponse(response["content"], status_code=response["status_code"])
 
 
 async def splits(request: Request):
     dataset = request.query_params.get("dataset")
     config = request.query_params.get("config")
-    use_auth_token = get_token(request)
+    token = get_token(request)
 
-    response = get_response("/splits", dataset=dataset, config=config, use_auth_token=use_auth_token)
+    response = get_response("/splits", dataset=dataset, config=config, token=token)
     return JSONResponse(response["content"], status_code=response["status_code"])
 
 
@@ -88,9 +88,7 @@ async def rows(request: Request):
     config = request.query_params.get("config")
     split = request.query_params.get("split")
     num_rows = get_int_value(d=request.query_params, key="rows", default=EXTRACT_ROWS_LIMIT)
-    use_auth_token = get_token(request)
+    token = get_token(request)
 
-    response = get_response(
-        "/rows", dataset=dataset, config=config, split=split, num_rows=num_rows, use_auth_token=use_auth_token
-    )
+    response = get_response("/rows", dataset=dataset, config=config, split=split, num_rows=num_rows, token=token)
     return JSONResponse(response["content"], status_code=response["status_code"])

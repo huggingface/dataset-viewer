@@ -71,5 +71,5 @@ def test_no_dataset_no_script():
 
 
 def test_hub_private_dataset():
-    response = get_configs("severo/autonlp-data-imdb-sentiment-analysis", use_auth_token=HF_TOKEN)
+    response = get_configs("severo/autonlp-data-imdb-sentiment-analysis", token=HF_TOKEN)
     assert response["configs"] == ["default"]

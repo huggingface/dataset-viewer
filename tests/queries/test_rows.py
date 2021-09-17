@@ -148,6 +148,6 @@ def test_pathlib():
 # TODO: find a private model that works
 # def test_hub_private_dataset():
 #     response = extract_rows(
-#         "severo/autonlp-data-imdb-sentiment-analysis", "default", "train", 10, use_auth_token=HF_TOKEN
+#         "severo/autonlp-data-imdb-sentiment-analysis", "default", "train", 10, token=HF_TOKEN
 #     )
 #     assert len(response["rows"]) == 10
