@@ -59,36 +59,36 @@ async def healthcheck(_: Request):
 
 
 async def info(request: Request):
-    dataset: str = request.query_params.get("dataset")
-    use_auth_token: Union[str, None] = get_token(request)
+    dataset = request.query_params.get("dataset")
+    use_auth_token = get_token(request)
 
     response = get_response("/info", dataset=dataset, use_auth_token=use_auth_token)
     return JSONResponse(response["content"], status_code=response["status_code"])
 
 
 async def configs(request: Request):
-    dataset: str = request.query_params.get("dataset")
-    use_auth_token: Union[str, None] = get_token(request)
+    dataset = request.query_params.get("dataset")
+    use_auth_token = get_token(request)
 
     response = get_response("/configs", dataset=dataset, use_auth_token=use_auth_token)
     return JSONResponse(response["content"], status_code=response["status_code"])
 
 
 async def splits(request: Request):
-    dataset: str = request.query_params.get("dataset")
-    config: Union[str, None] = request.query_params.get("config")
-    use_auth_token: Union[str, None] = get_token(request)
+    dataset = request.query_params.get("dataset")
+    config = request.query_params.get("config")
+    use_auth_token = get_token(request)
 
     response = get_response("/splits", dataset=dataset, config=config, use_auth_token=use_auth_token)
     return JSONResponse(response["content"], status_code=response["status_code"])
 
 
 async def rows(request: Request):
-    dataset: str = request.query_params.get("dataset")
-    config: Union[str, None] = request.query_params.get("config")
-    split: str = request.query_params.get("split")
+    dataset = request.query_params.get("dataset")
+    config = request.query_params.get("config")
+    split = request.query_params.get("split")
     num_rows = get_int_value(d=request.query_params, key="rows", default=EXTRACT_ROWS_LIMIT)
-    use_auth_token: Union[str, None] = get_token(request)
+    use_auth_token = get_token(request)
 
     response = get_response(
         "/rows", dataset=dataset, config=config, split=split, num_rows=num_rows, use_auth_token=use_auth_token
