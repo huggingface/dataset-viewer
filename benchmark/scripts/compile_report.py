@@ -10,7 +10,7 @@ def main(
     get_splits_reports_filename: str,
     get_rows_reports_filename: str,
     output: str,
-):
+) -> None:
     with open(get_info_reports_filename) as f:
         get_info_reports = json.load(f)
     with open(get_configs_reports_filename) as f:

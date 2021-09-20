@@ -5,7 +5,7 @@ import typer
 from datasets_preview_backend.serialize import serialize_config_name
 
 
-def main(get_configs_reports_filename: str, output: str):
+def main(get_configs_reports_filename: str, output: str) -> None:
     with open(get_configs_reports_filename) as f:
         get_configs_reports = json.load(f)
 

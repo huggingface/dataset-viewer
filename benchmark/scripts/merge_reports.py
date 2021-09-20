@@ -8,7 +8,7 @@ def main(
     basenames_filename: str,
     reports_dir: str,
     output: str,
-):
+) -> None:
     reports = []
     with open(basenames_filename) as f:
         basenames = f.read().splitlines()

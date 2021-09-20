@@ -3,17 +3,18 @@ import logging
 import time
 
 import typer
-from datasets import disable_progress_bar
+from datasets.utils.tqdm_utils import disable_progress_bar
 
 from datasets_preview_backend.queries.rows import extract_rows
 from datasets_preview_backend.serialize import deserialize_split_name
+from datasets_preview_backend.types import RowsReport
 
 # remove any logs
 logging.disable(logging.CRITICAL)
-disable_progress_bar()
+disable_progress_bar()  # type: ignore
 
 
-def get_rows_report(dataset: str, config: str, split: str):
+def get_rows_report(dataset: str, config: str, split: str) -> RowsReport:
     num_rows = 10
     try:
         t = time.process_time()
@@ -35,6 +36,7 @@ def get_rows_report(dataset: str, config: str, split: str):
             "dataset": dataset,
             "config": config,
             "split": split,
+            "rows_length": None,
             "success": False,
             "exception": type(err).__name__,
             "message": str(err),
@@ -44,7 +46,7 @@ def get_rows_report(dataset: str, config: str, split: str):
         }
 
 
-def main(serialized_split_name: str, filename: str):
+def main(serialized_split_name: str, filename: str) -> None:
     dataset, config, split = deserialize_split_name(serialized_split_name)
     report = get_rows_report(dataset, config, split)
     with open(filename, "w") as f:

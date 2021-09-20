@@ -1,14 +1,14 @@
-from typing import Union
+from typing import Tuple, Union
 
 from starlette.authentication import AuthCredentials, AuthenticationBackend, BaseUser
 from starlette.middleware import Middleware
 from starlette.middleware.authentication import AuthenticationMiddleware
-from starlette.requests import Request
+from starlette.requests import HTTPConnection
 
 from datasets_preview_backend.constants import DEFAULT_DATASETS_ENABLE_PRIVATE
 
 
-def get_token(request: Request) -> Union[str, None]:
+def get_token(request: HTTPConnection) -> Union[str, None]:
     try:
         if "Authorization" not in request.headers:
             return None
@@ -55,18 +55,20 @@ class UnauthenticatedTokenUser(BaseUser):
 
 
 class TokenAuthBackend(AuthenticationBackend):
-    def __init__(self, datasets_enable_private=DEFAULT_DATASETS_ENABLE_PRIVATE):
+    def __init__(self, datasets_enable_private: bool = DEFAULT_DATASETS_ENABLE_PRIVATE):
         super().__init__()
         self.datasets_enable_private = datasets_enable_private
 
-    async def authenticate(self, request):
+    async def authenticate(
+        self, request: HTTPConnection
+    ) -> Tuple[AuthCredentials, Union[TokenUser, UnauthenticatedTokenUser]]:
         token = get_token(request)
         if token is None or not self.datasets_enable_private:
             return AuthCredentials([]), UnauthenticatedTokenUser()
         return AuthCredentials(["token"]), TokenUser(token)
 
 
-def get_token_middleware(datasets_enable_private=DEFAULT_DATASETS_ENABLE_PRIVATE):
+def get_token_middleware(datasets_enable_private: bool = DEFAULT_DATASETS_ENABLE_PRIVATE) -> Middleware:
     return Middleware(
         AuthenticationMiddleware, backend=TokenAuthBackend(datasets_enable_private=datasets_enable_private)
     )

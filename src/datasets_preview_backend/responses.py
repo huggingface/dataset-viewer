@@ -2,7 +2,7 @@ import json
 
 from starlette.responses import Response
 
-from datasets_preview_backend._typing import ResponseContent, ResponseJSON
+from datasets_preview_backend.types import ResponseContent, ResponseJSON
 
 
 def to_bytes(content: ResponseContent) -> bytes:
@@ -36,5 +36,5 @@ class SerializedResponse:
         }
 
 
-def to_response(json: ResponseJSON):
+def to_response(json: ResponseJSON) -> CustomJSONResponse:
     return CustomJSONResponse(json["content"], status_code=json["status_code"])

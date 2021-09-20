@@ -2,7 +2,7 @@ import logging
 
 from starlette.endpoints import HTTPEndpoint
 from starlette.requests import Request
-from starlette.responses import PlainTextResponse
+from starlette.responses import PlainTextResponse, Response
 
 from datasets_preview_backend.config import EXTRACT_ROWS_LIMIT
 from datasets_preview_backend.queries.configs import get_configs_json
@@ -16,13 +16,13 @@ logger = logging.getLogger(__name__)
 
 
 class HealthCheck(HTTPEndpoint):
-    async def get(self, request: Request):
+    async def get(self, request: Request) -> Response:
         logger.info("/healthcheck")
         return PlainTextResponse("ok", headers={"Cache-Control": "no-store"})
 
 
 class Info(HTTPEndpoint):
-    async def get(self, request: Request):
+    async def get(self, request: Request) -> Response:
         dataset = request.query_params.get("dataset")
         logger.info(f"/info, dataset={dataset}")
 
@@ -30,7 +30,7 @@ class Info(HTTPEndpoint):
 
 
 class Configs(HTTPEndpoint):
-    async def get(self, request: Request):
+    async def get(self, request: Request) -> Response:
         dataset = request.query_params.get("dataset")
         logger.info(f"/configs, dataset={dataset}")
 
@@ -38,7 +38,7 @@ class Configs(HTTPEndpoint):
 
 
 class Splits(HTTPEndpoint):
-    async def get(self, request: Request):
+    async def get(self, request: Request) -> Response:
         dataset = request.query_params.get("dataset")
         config = request.query_params.get("config")
         logger.info(f"/splits, dataset={dataset}, config={config}")
@@ -47,7 +47,7 @@ class Splits(HTTPEndpoint):
 
 
 class Rows(HTTPEndpoint):
-    async def get(self, request: Request):
+    async def get(self, request: Request) -> Response:
         dataset = request.query_params.get("dataset")
         config = request.query_params.get("config")
         split = request.query_params.get("split")

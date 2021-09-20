@@ -1,12 +1,12 @@
 import logging
 
-from datasets_preview_backend._typing import StatusErrorDict
+from datasets_preview_backend.types import StatusErrorDict
 
 
 class StatusError(Exception):
     """Base class for exceptions in this module."""
 
-    def __init__(self, message, status_code):
+    def __init__(self, message: str, status_code: int):
         self.message = message
         self.status_code = status_code
         super().__init__(self.message)
@@ -32,7 +32,7 @@ class Status400Error(StatusError):
         message -- the content of the response
     """
 
-    def __init__(self, message):
+    def __init__(self, message: str):
         super().__init__(message, 400)
 
 
@@ -43,5 +43,5 @@ class Status404Error(StatusError):
         message -- the content of the response
     """
 
-    def __init__(self, message):
+    def __init__(self, message: str):
         super().__init__(message, 404)

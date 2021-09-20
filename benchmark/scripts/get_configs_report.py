@@ -3,17 +3,18 @@ import logging
 import time
 
 import typer
-from datasets import disable_progress_bar
+from datasets.utils.tqdm_utils import disable_progress_bar
 
 from datasets_preview_backend.queries.configs import get_configs
 from datasets_preview_backend.serialize import deserialize_dataset_name
+from datasets_preview_backend.types import ConfigsReport
 
 # remove any logs
 logging.disable(logging.CRITICAL)
-disable_progress_bar()
+disable_progress_bar()  # type: ignore
 
 
-def get_configs_report(dataset: str):
+def get_configs_report(dataset: str) -> ConfigsReport:
     try:
         t = time.process_time()
         configs = get_configs(dataset)["configs"]
@@ -40,7 +41,7 @@ def get_configs_report(dataset: str):
         }
 
 
-def main(serialized_dataset_name: str, filename: str):
+def main(serialized_dataset_name: str, filename: str) -> None:
     report = get_configs_report(deserialize_dataset_name(serialized_dataset_name))
     with open(filename, "w") as f:
         json.dump(report, f)

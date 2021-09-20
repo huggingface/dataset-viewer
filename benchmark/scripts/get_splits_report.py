@@ -3,17 +3,18 @@ import logging
 import time
 
 import typer
-from datasets import disable_progress_bar
+from datasets.utils.tqdm_utils import disable_progress_bar
 
 from datasets_preview_backend.queries.splits import get_splits
 from datasets_preview_backend.serialize import deserialize_config_name
+from datasets_preview_backend.types import SplitsReport
 
 # remove any logs
 logging.disable(logging.CRITICAL)
-disable_progress_bar()
+disable_progress_bar()  # type: ignore
 
 
-def get_splits_report(dataset: str, config: str):
+def get_splits_report(dataset: str, config: str) -> SplitsReport:
     try:
         t = time.process_time()
         splits = get_splits(dataset, config)["splits"]
@@ -42,7 +43,7 @@ def get_splits_report(dataset: str, config: str):
         }
 
 
-def main(serialized_config_name: str, filename: str):
+def main(serialized_config_name: str, filename: str) -> None:
     dataset, config = deserialize_config_name(serialized_config_name)
     report = get_splits_report(dataset, config)
     with open(filename, "w") as f:

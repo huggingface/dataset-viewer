@@ -4,11 +4,11 @@ from typing import Optional, Union
 
 from datasets import IterableDataset, load_dataset
 
-from datasets_preview_backend._typing import ResponseJSON, RowsDict
 from datasets_preview_backend.config import cache
 from datasets_preview_backend.constants import DEFAULT_CONFIG_NAME
 from datasets_preview_backend.exceptions import Status400Error, Status404Error
 from datasets_preview_backend.responses import SerializedResponse
+from datasets_preview_backend.types import ResponseJSON, RowsDict
 
 logger = logging.getLogger(__name__)
 
@@ -78,7 +78,7 @@ def extract_rows(
     }
 
 
-@cache.memoize(expire=60)
+@cache.memoize(expire=60)  # type:ignore
 def get_rows_json(
     dataset: str, config: Union[str, None], split: str, num_rows: int, token: Optional[str] = None
 ) -> ResponseJSON:

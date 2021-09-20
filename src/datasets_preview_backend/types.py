@@ -8,7 +8,7 @@ class ConfigsDict(TypedDict):
 
 class InfoDict(TypedDict):
     dataset: str
-    info: Dict
+    info: Dict[Any, Any]
 
 
 class SplitsDict(TypedDict):
@@ -38,3 +38,35 @@ ResponseContent = Union[ConfigsDict, InfoDict, SplitsDict, RowsDict, StatusError
 class ResponseJSON(TypedDict):
     content: bytes
     status_code: int
+
+
+class Report(TypedDict):
+    success: bool
+    exception: Union[str, None]
+    message: Union[str, None]
+    cause: Union[str, None]
+    cause_message: Union[str, None]
+    elapsed_seconds: float
+
+
+class InfoReport(Report):
+    dataset: str
+    info_num_keys: Union[int, None]
+
+
+class ConfigsReport(Report):
+    dataset: str
+    configs: List[str]
+
+
+class SplitsReport(Report):
+    dataset: str
+    config: str
+    splits: List[str]
+
+
+class RowsReport(Report):
+    dataset: str
+    config: str
+    split: str
+    rows_length: Union[int, None]
