@@ -1,10 +1,11 @@
 import json
-import typing
 
 from starlette.responses import Response
 
+from datasets_preview_backend._typing import ResponseContent, ResponseJSON
 
-def to_bytes(content: any) -> bytes:
+
+def to_bytes(content: ResponseContent) -> bytes:
     return json.dumps(
         content,
         ensure_ascii=False,
@@ -23,18 +24,17 @@ class CustomJSONResponse(Response):
 
 
 class SerializedResponse:
-    def __init__(self, content: typing.Any = None, status_code: int = 200) -> None:
+    def __init__(self, content: ResponseContent, status_code: int = 200) -> None:
         # response content is encoded to avoid issues when caching ("/info" returns a non pickable object)
-        self.content = to_bytes(content)
-        self.status_code = status_code
+        self.content: bytes = to_bytes(content)
+        self.status_code: int = status_code
 
-    def as_json(self):
+    def as_json(self) -> ResponseJSON:
         return {
             "content": self.content,
             "status_code": self.status_code,
         }
 
 
-# TODO: create a type for the JSON
-def to_response(json: typing.Any):
+def to_response(json: ResponseJSON):
     return CustomJSONResponse(json["content"], status_code=json["status_code"])

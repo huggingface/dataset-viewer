@@ -2,13 +2,14 @@ from typing import Optional, Union
 
 from datasets import get_dataset_split_names
 
+from datasets_preview_backend._typing import ResponseJSON, SplitsDict
 from datasets_preview_backend.config import cache
 from datasets_preview_backend.constants import DEFAULT_CONFIG_NAME
 from datasets_preview_backend.exceptions import Status400Error, Status404Error
 from datasets_preview_backend.responses import SerializedResponse
 
 
-def get_splits(dataset: str, config: Union[str, None], token: Optional[str] = None):
+def get_splits(dataset: str, config: Union[str, None], token: Optional[str] = None) -> SplitsDict:
     if not isinstance(dataset, str) and dataset is not None:
         raise TypeError("dataset argument should be a string")
     if dataset is None:
@@ -33,7 +34,7 @@ def get_splits(dataset: str, config: Union[str, None], token: Optional[str] = No
 
 
 @cache.memoize(expire=60)
-def get_splits_json(dataset: str, config: Union[str, None], token: Optional[str] = None):
+def get_splits_json(dataset: str, config: Union[str, None], token: Optional[str] = None) -> ResponseJSON:
     try:
         response = SerializedResponse(get_splits(dataset, config, token))
     except (Status400Error, Status404Error) as err:

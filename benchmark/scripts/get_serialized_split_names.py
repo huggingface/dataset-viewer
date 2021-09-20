@@ -1,7 +1,8 @@
 import json
 
 import typer
-from serialize import serialize_split_name
+
+from datasets_preview_backend.serialize import serialize_split_name
 
 
 def main(get_splits_reports_filename: str, output: str):

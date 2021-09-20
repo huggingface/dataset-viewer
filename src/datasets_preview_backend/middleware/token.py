@@ -11,13 +11,13 @@ from datasets_preview_backend.constants import DEFAULT_DATASETS_ENABLE_PRIVATE
 def get_token(request: Request) -> Union[str, None]:
     try:
         if "Authorization" not in request.headers:
-            return
+            return None
         auth = request.headers["Authorization"]
         scheme, token = auth.split()
     except Exception:
-        return
+        return None
     if scheme.lower() != "bearer":
-        return
+        return None
     return token
 
 

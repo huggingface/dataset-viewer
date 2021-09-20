@@ -1,5 +1,7 @@
 import logging
 
+from datasets_preview_backend._typing import StatusErrorDict
+
 
 class StatusError(Exception):
     """Base class for exceptions in this module."""
@@ -13,7 +15,7 @@ class StatusError(Exception):
         logger.warning(f"Error {self.status_code} '{self.message}'.")
         logger.debug(f"Caused by a {type(self.__cause__).__name__}: '{str(self.__cause__)}'")
 
-    def as_dict(self):
+    def as_dict(self) -> StatusErrorDict:
         return {
             "status_code": self.status_code,
             "exception": type(self).__name__,

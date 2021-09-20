@@ -4,6 +4,7 @@ from typing import Optional, Union
 
 from datasets import IterableDataset, load_dataset
 
+from datasets_preview_backend._typing import ResponseJSON, RowsDict
 from datasets_preview_backend.config import cache
 from datasets_preview_backend.constants import DEFAULT_CONFIG_NAME
 from datasets_preview_backend.exceptions import Status400Error, Status404Error
@@ -12,7 +13,9 @@ from datasets_preview_backend.responses import SerializedResponse
 logger = logging.getLogger(__name__)
 
 
-def extract_rows(dataset: str, config: Union[str, None], split: str, num_rows: int, token: Optional[str] = None):
+def extract_rows(
+    dataset: str, config: Union[str, None], split: str, num_rows: int, token: Optional[str] = None
+) -> RowsDict:
     if not isinstance(dataset, str) and dataset is not None:
         raise TypeError("dataset argument should be a string")
     if dataset is None:
@@ -28,9 +31,9 @@ def extract_rows(dataset: str, config: Union[str, None], split: str, num_rows: i
         raise TypeError("num_rows argument should be an int")
 
     try:
-        iterable_dataset: IterableDataset = load_dataset(
-            dataset, name=config, split=split, streaming=True, use_auth_token=token
-        )
+        iterable_dataset = load_dataset(dataset, name=config, split=split, streaming=True, use_auth_token=token)
+        if not isinstance(iterable_dataset, IterableDataset):
+            raise TypeError("load_dataset should return an IterableDataset")
         rows = list(iterable_dataset.take(num_rows))
     except FileNotFoundError as err:
         raise Status404Error("The split for the dataset config could not be found.") from err
@@ -38,7 +41,10 @@ def extract_rows(dataset: str, config: Union[str, None], split: str, num_rows: i
         # TODO: check what has changed once https://github.com/huggingface/datasets/pull/2662 is merged
         try:
             regex = re.compile(r"Extraction protocol for file at .*?((\.\w+)?\.\w+)* is not implemented yet")
-            extension = regex.match(str(err)).group(1)
+            match = regex.match(str(err))
+            if match is None:
+                raise Exception("No match")
+            extension = match.group(1)
         except Exception:
             raise Status400Error("The rows could not be extracted from the split of the dataset config.") from err
         else:
@@ -73,7 +79,9 @@ def extract_rows(dataset: str, config: Union[str, None], split: str, num_rows: i
 
 
 @cache.memoize(expire=60)
-def get_rows_json(dataset: str, config: Union[str, None], split: str, num_rows: int, token: Optional[str] = None):
+def get_rows_json(
+    dataset: str, config: Union[str, None], split: str, num_rows: int, token: Optional[str] = None
+) -> ResponseJSON:
     try:
         response = SerializedResponse(extract_rows(dataset, config, split, num_rows, token))
     except (Status400Error, Status404Error) as err:

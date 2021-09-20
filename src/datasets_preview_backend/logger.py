@@ -3,7 +3,7 @@ import logging
 from datasets_preview_backend.constants import DEFAULT_LOG_LEVEL
 
 
-def init_logger(log_level=DEFAULT_LOG_LEVEL):
+def init_logger(log_level: str = DEFAULT_LOG_LEVEL) -> None:
     logger = logging.getLogger("datasets_preview_backend")
     logger.setLevel(log_level)
 

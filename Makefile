@@ -23,6 +23,7 @@ quality:
 	poetry run black --check tests src benchmark
 	poetry run isort --check-only tests src benchmark
 	poetry run flake8 tests src benchmark
+	poetry run mypy tests src benchmark
 	poetry run bandit -r src benchmark
 	poetry run safety check -i 41161
 

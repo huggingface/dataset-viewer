@@ -1,4 +1,4 @@
-import uvicorn
+import uvicorn  # type: ignore
 from starlette.applications import Starlette
 from starlette.routing import Route
 
@@ -11,7 +11,7 @@ from datasets_preview_backend.middleware.token import get_token_middleware
 from datasets_preview_backend.routes import Configs, HealthCheck, Info, Rows, Splits
 
 
-def start():
+def start() -> None:
     middleware = [get_token_middleware(datasets_enable_private=DATASETS_ENABLE_PRIVATE)]
     app = Starlette(
         routes=[

@@ -3,12 +3,13 @@ from typing import Optional
 
 from datasets import get_dataset_infos
 
+from datasets_preview_backend._typing import InfoDict, ResponseJSON
 from datasets_preview_backend.config import cache
 from datasets_preview_backend.exceptions import Status400Error, Status404Error
 from datasets_preview_backend.responses import SerializedResponse
 
 
-def get_info(dataset: str, token: Optional[str] = None):
+def get_info(dataset: str, token: Optional[str] = None) -> InfoDict:
     if not isinstance(dataset, str) and dataset is not None:
         raise TypeError("dataset argument should be a string")
     if dataset is None:
@@ -25,7 +26,7 @@ def get_info(dataset: str, token: Optional[str] = None):
 
 
 @cache.memoize(expire=60)
-def get_info_json(dataset: str, token: Optional[str] = None):
+def get_info_json(dataset: str, token: Optional[str] = None) -> ResponseJSON:
     try:
         response = SerializedResponse(get_info(dataset, token))
     except (Status400Error, Status404Error) as err:

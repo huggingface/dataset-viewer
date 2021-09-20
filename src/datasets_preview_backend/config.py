@@ -1,6 +1,7 @@
 import os
 
-from diskcache import Cache
+# https://github.com/grantjenks/python-diskcache/issues/202#issuecomment-918806514
+from diskcache import Cache  # type: ignore
 from dotenv import load_dotenv
 
 from datasets_preview_backend.constants import (

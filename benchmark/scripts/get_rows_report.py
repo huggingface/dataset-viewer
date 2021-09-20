@@ -4,9 +4,9 @@ import time
 
 import typer
 from datasets import disable_progress_bar
-from serialize import deserialize_split_name
 
 from datasets_preview_backend.queries.rows import extract_rows
+from datasets_preview_backend.serialize import deserialize_split_name
 
 # remove any logs
 logging.disable(logging.CRITICAL)

@@ -1,7 +1,8 @@
 import json
 
 import typer
-from serialize import serialize_config_name
+
+from datasets_preview_backend.serialize import serialize_config_name
 
 
 def main(get_configs_reports_filename: str, output: str):
