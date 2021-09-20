@@ -26,7 +26,8 @@ class Info(HTTPEndpoint):
         dataset = request.query_params.get("dataset")
         logger.info(f"/info, dataset={dataset}")
 
-        return to_response(get_info_json(dataset=dataset, token=request.user.token))
+        info_json, max_age = get_info_json(dataset=dataset, token=request.user.token, _return_max_age=True)
+        return to_response(info_json, max_age)
 
 
 class Configs(HTTPEndpoint):

@@ -1,4 +1,5 @@
 import json
+from typing import Optional, Union
 
 from starlette.responses import Response
 
@@ -36,5 +37,8 @@ class SerializedResponse:
         }
 
 
-def to_response(json: ResponseJSON) -> CustomJSONResponse:
-    return CustomJSONResponse(json["content"], status_code=json["status_code"])
+def to_response(json: ResponseJSON, max_age: Optional[Union[int, None]] = None) -> CustomJSONResponse:
+    headers = {}
+    if max_age is not None:
+        headers["Cache-Control"] = f"public, max-age={max_age}"
+    return CustomJSONResponse(json["content"], status_code=json["status_code"], headers=headers)
