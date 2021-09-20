@@ -57,6 +57,7 @@ experimental-string-processing = true
 
 [tool.mypy]
 strict = true
+exclude = 'vendors'
 
 [[tool.mypy.overrides]]
 # could be solved in datasets by adding __add__ to the __init__.py file
