@@ -2,7 +2,7 @@ from typing import Optional
 
 from datasets import get_dataset_config_names as get_dataset_config_names
 
-from datasets_preview_backend.config import cache
+from datasets_preview_backend.config import cache, CACHE_TTL_SECONDS
 from datasets_preview_backend.constants import DEFAULT_CONFIG_NAME
 from datasets_preview_backend.exceptions import Status400Error, Status404Error
 from datasets_preview_backend.responses import SerializedResponse
@@ -26,7 +26,7 @@ def get_configs(dataset: str, token: Optional[str] = None) -> ConfigsDict:
     return {"dataset": dataset, "configs": configs}
 
 
-@cache.memoize(expire=60)  # type:ignore
+@cache.memoize(expire=CACHE_TTL_SECONDS)  # type:ignore
 def get_configs_json(dataset: str, token: Optional[str] = None) -> ResponseJSON:
     try:
         response = SerializedResponse(get_configs(dataset, token))

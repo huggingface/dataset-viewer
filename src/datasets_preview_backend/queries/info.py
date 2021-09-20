@@ -3,7 +3,7 @@ from typing import Optional
 
 from datasets import get_dataset_infos
 
-from datasets_preview_backend.config import cache
+from datasets_preview_backend.config import cache, CACHE_TTL_SECONDS
 from datasets_preview_backend.exceptions import Status400Error, Status404Error
 from datasets_preview_backend.responses import SerializedResponse
 from datasets_preview_backend.types import InfoDict, ResponseJSON
@@ -25,7 +25,7 @@ def get_info(dataset: str, token: Optional[str] = None) -> InfoDict:
     return {"dataset": dataset, "info": info}
 
 
-@cache.memoize(expire=60)  # type:ignore
+@cache.memoize(expire=CACHE_TTL_SECONDS)  # type:ignore
 def get_info_json(dataset: str, token: Optional[str] = None) -> ResponseJSON:
     try:
         response = SerializedResponse(get_info(dataset, token))
