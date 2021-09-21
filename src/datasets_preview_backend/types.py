@@ -39,11 +39,6 @@ class StatusErrorDict(TypedDict):
 ResponseContent = Union[DatasetsDict, ConfigsDict, InfoDict, SplitsDict, RowsDict, StatusErrorDict]
 
 
-class ResponseJSON(TypedDict):
-    content: bytes
-    status_code: int
-
-
 class Report(TypedDict):
     success: bool
     exception: Union[str, None]

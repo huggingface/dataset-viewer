@@ -1,13 +1,13 @@
 from dataclasses import asdict
-from typing import Optional
+from typing import Optional, cast
 
 from datasets import get_dataset_infos
 
 from datasets_preview_backend.cache import memoize  # type: ignore
 from datasets_preview_backend.config import CACHE_TTL_SECONDS, cache
 from datasets_preview_backend.exceptions import Status400Error, Status404Error
-from datasets_preview_backend.responses import SerializedResponse
-from datasets_preview_backend.types import InfoDict, ResponseJSON
+from datasets_preview_backend.responses import CachedResponse
+from datasets_preview_backend.types import InfoDict
 
 
 def get_info(dataset: str, token: Optional[str] = None) -> InfoDict:
@@ -27,9 +27,9 @@ def get_info(dataset: str, token: Optional[str] = None) -> InfoDict:
 
 
 @memoize(cache, expire=CACHE_TTL_SECONDS)  # type:ignore
-def get_info_json(dataset: str, token: Optional[str] = None) -> ResponseJSON:
+def get_info_response(*, dataset: str, token: Optional[str] = None) -> CachedResponse:
     try:
-        response = SerializedResponse(get_info(dataset, token))
+        response = CachedResponse(get_info(dataset, token))
     except (Status400Error, Status404Error) as err:
-        response = SerializedResponse(err.as_dict(), err.status_code)
-    return response.as_json()
+        response = CachedResponse(err.as_dict(), err.status_code)
+    return response

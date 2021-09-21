@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import Optional, cast
 
 from datasets import get_dataset_config_names
 
@@ -6,8 +6,8 @@ from datasets_preview_backend.cache import memoize  # type: ignore
 from datasets_preview_backend.config import CACHE_TTL_SECONDS, cache
 from datasets_preview_backend.constants import DEFAULT_CONFIG_NAME
 from datasets_preview_backend.exceptions import Status400Error, Status404Error
-from datasets_preview_backend.responses import SerializedResponse
-from datasets_preview_backend.types import ConfigsDict, ResponseJSON
+from datasets_preview_backend.responses import CachedResponse
+from datasets_preview_backend.types import ConfigsDict
 
 
 def get_configs(dataset: str, token: Optional[str] = None) -> ConfigsDict:
@@ -28,9 +28,9 @@ def get_configs(dataset: str, token: Optional[str] = None) -> ConfigsDict:
 
 
 @memoize(cache, expire=CACHE_TTL_SECONDS)  # type:ignore
-def get_configs_json(dataset: str, token: Optional[str] = None) -> ResponseJSON:
+def get_configs_response(*, dataset: str, token: Optional[str] = None) -> CachedResponse:
     try:
-        response = SerializedResponse(get_configs(dataset, token))
+        response = CachedResponse(get_configs(dataset, token))
     except (Status400Error, Status404Error) as err:
-        response = SerializedResponse(err.as_dict(), err.status_code)
-    return response.as_json()
+        response = CachedResponse(err.as_dict(), err.status_code)
+    return response

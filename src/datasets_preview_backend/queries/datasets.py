@@ -1,9 +1,11 @@
+from typing import cast
+
 from datasets import list_datasets
 
 from datasets_preview_backend.cache import memoize  # type: ignore
 from datasets_preview_backend.config import CACHE_TTL_SECONDS, cache
-from datasets_preview_backend.responses import SerializedResponse
-from datasets_preview_backend.types import DatasetsDict, ResponseJSON
+from datasets_preview_backend.responses import CachedResponse
+from datasets_preview_backend.types import DatasetsDict
 
 
 def get_datasets() -> DatasetsDict:
@@ -14,6 +16,5 @@ def get_datasets() -> DatasetsDict:
 
 
 @memoize(cache, expire=CACHE_TTL_SECONDS)  # type:ignore
-def get_datasets_json() -> ResponseJSON:
-    response = SerializedResponse(get_datasets())
-    return response.as_json()
+def get_datasets_response() -> CachedResponse:
+    return CachedResponse(get_datasets())

@@ -3,7 +3,7 @@ from typing import Optional, Union
 
 from starlette.responses import Response
 
-from datasets_preview_backend.types import ResponseContent, ResponseJSON
+from datasets_preview_backend.types import ResponseContent
 
 
 def to_bytes(content: ResponseContent) -> bytes:
@@ -24,21 +24,16 @@ class CustomJSONResponse(Response):
         return content
 
 
-class SerializedResponse:
+class CachedResponse:
     def __init__(self, content: ResponseContent, status_code: int = 200) -> None:
         # response content is encoded to avoid issues when caching ("/info" returns a non pickable object)
-        self.content: bytes = to_bytes(content)
+        self.content: ResponseContent = content
         self.status_code: int = status_code
-
-    def as_json(self) -> ResponseJSON:
-        return {
-            "content": self.content,
-            "status_code": self.status_code,
-        }
+        self.jsonContent: bytes = to_bytes(self.content)
 
 
-def to_response(json: ResponseJSON, max_age: Optional[Union[int, None]] = None) -> CustomJSONResponse:
+def send(cached_response: CachedResponse, max_age: Optional[Union[int, None]] = None) -> Response:
     headers = {}
     if max_age is not None:
         headers["Cache-Control"] = f"public, max-age={max_age}"
-    return CustomJSONResponse(json["content"], status_code=json["status_code"], headers=headers)
+    return CustomJSONResponse(cached_response.jsonContent, status_code=cached_response.status_code, headers=headers)

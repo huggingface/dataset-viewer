@@ -1,4 +1,4 @@
-from typing import Optional, Union
+from typing import Optional, Union, cast
 
 from datasets import get_dataset_split_names
 
@@ -6,8 +6,8 @@ from datasets_preview_backend.cache import memoize  # type: ignore
 from datasets_preview_backend.config import CACHE_TTL_SECONDS, cache
 from datasets_preview_backend.constants import DEFAULT_CONFIG_NAME
 from datasets_preview_backend.exceptions import Status400Error, Status404Error
-from datasets_preview_backend.responses import SerializedResponse
-from datasets_preview_backend.types import ResponseJSON, SplitsDict
+from datasets_preview_backend.responses import CachedResponse
+from datasets_preview_backend.types import SplitsDict
 
 
 def get_splits(dataset: str, config: Union[str, None], token: Optional[str] = None) -> SplitsDict:
@@ -35,9 +35,9 @@ def get_splits(dataset: str, config: Union[str, None], token: Optional[str] = No
 
 
 @memoize(cache, expire=CACHE_TTL_SECONDS)  # type:ignore
-def get_splits_json(dataset: str, config: Union[str, None], token: Optional[str] = None) -> ResponseJSON:
+def get_splits_response(*, dataset: str, config: Union[str, None], token: Optional[str] = None) -> CachedResponse:
     try:
-        response = SerializedResponse(get_splits(dataset, config, token))
+        response = CachedResponse(get_splits(dataset, config, token))
     except (Status400Error, Status404Error) as err:
-        response = SerializedResponse(err.as_dict(), err.status_code)
-    return response.as_json()
+        response = CachedResponse(err.as_dict(), err.status_code)
+    return response

@@ -1,6 +1,6 @@
 import logging
 import re
-from typing import Optional, Union
+from typing import Optional, Union, cast
 
 from datasets import IterableDataset, load_dataset
 
@@ -8,8 +8,8 @@ from datasets_preview_backend.cache import memoize  # type: ignore
 from datasets_preview_backend.config import CACHE_TTL_SECONDS, cache
 from datasets_preview_backend.constants import DEFAULT_CONFIG_NAME
 from datasets_preview_backend.exceptions import Status400Error, Status404Error
-from datasets_preview_backend.responses import SerializedResponse
-from datasets_preview_backend.types import ResponseJSON, RowsDict
+from datasets_preview_backend.responses import CachedResponse
+from datasets_preview_backend.types import RowsDict
 
 logger = logging.getLogger(__name__)
 
@@ -80,11 +80,11 @@ def extract_rows(
 
 
 @memoize(cache, expire=CACHE_TTL_SECONDS)  # type:ignore
-def get_rows_json(
-    dataset: str, config: Union[str, None], split: str, num_rows: int, token: Optional[str] = None
-) -> ResponseJSON:
+def get_rows_response(
+    *, dataset: str, config: Union[str, None], split: str, num_rows: int, token: Optional[str] = None
+) -> CachedResponse:
     try:
-        response = SerializedResponse(extract_rows(dataset, config, split, num_rows, token))
+        response = CachedResponse(extract_rows(dataset, config, split, num_rows, token))
     except (Status400Error, Status404Error) as err:
-        response = SerializedResponse(err.as_dict(), err.status_code)
-    return response.as_json()
+        response = CachedResponse(err.as_dict(), err.status_code)
+    return response
