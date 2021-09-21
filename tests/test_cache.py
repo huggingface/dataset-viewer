@@ -19,7 +19,7 @@ def test_memoize() -> None:
 
     result, max_age = fibonacci(20, _return_max_age=True)
     assert result == 6765
-    assert max_age == 99
+    assert max_age == 100
 
     result, max_age = fibonacci(20, _return_max_age=True)
     assert result == 6765
@@ -66,14 +66,14 @@ def test_memoize_expired() -> None:
             return fibonacci(number - 1) + fibonacci(number - 2)  # type: ignore
 
     result, max_age = fibonacci(20, _return_max_age=True)
-    assert max_age == 1
-    sleep(1)
+    assert max_age == 2
+    sleep(1.5)
     result, max_age = fibonacci(20, _return_max_age=True)
     assert max_age == 0
     sleep(1)
     result, max_age = fibonacci(20, _return_max_age=True)
     assert result == 6765
-    assert max_age == 1  # the cache had expired, the 2s TTL has restarted
+    assert max_age == 2  # the cache had expired, the 2s TTL has restarted
 
 
 def test_memoize_refresh() -> None:
@@ -89,8 +89,8 @@ def test_memoize_refresh() -> None:
         else:
             return fibonacci(number - 1) + fibonacci(number - 2)  # type: ignore
 
-    result, max_age = fibonacci(20, _return_max_age=True)
-    assert max_age == 1
+    _, max_age = fibonacci(20, _return_max_age=True)
+    assert max_age == 2
     sleep(1)
-    result, max_age = fibonacci(20, _return_max_age=True, _refresh=True)
-    assert max_age == 1
+    _, max_age = fibonacci(20, _return_max_age=True, _refresh=True)
+    assert max_age == 2

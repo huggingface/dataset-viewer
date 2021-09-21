@@ -11,6 +11,10 @@ from diskcache.core import ENOVAL, args_to_key, full_name
 # - add the special `_refresh` argument, inspired by django-cache-memoize:
 # https://github.com/peterbe/django-cache-memoize/blob/4da1ba4639774426fa928d4a461626e6f841b4f3/src/cache_memoize/__init__.py#L123 # noqa
 # - add the special `_return_expire` argument, inspired by the later
+# - add the `__cache__` wrapper property
+
+# beware: the cache keys are different if the arguments are passed as args or kwargs!
+# that's why we enforce to pass the arguments as kwargs
 
 
 def memoize(
@@ -64,6 +68,8 @@ def memoize(
     `_refresh` set to True (default is False) will bypass the cache and
     refresh the value
 
+    An additional `__cache__` attribute can be used to access the cache.
+
     An additional `__cache_key__` attribute can be used to generate the
     cache key used for the given arguments.
 
@@ -115,25 +121,21 @@ def memoize(
                 result = ENOVAL
             else:
                 result, expire_time = cache.get(key, default=ENOVAL, retry=True, expire_time=True)
+                max_age = None if expire_time is None else int(expire_time - time())
 
             if result is ENOVAL:
                 result = func(*args, **kwargs)
                 cache.set(key, result, expire, tag=tag, retry=True)
-                if _return_max_age:
-                    # we already now the result, but we need to get the expire_time
-                    _, expire_time = cache.get(key, default=ENOVAL, retry=True, expire_time=True)
+                max_age = expire
 
-            if not _return_max_age:
-                return result
-
-            max_age = None if expire_time is None else int(expire_time - time())
-            return result, max_age
+            return (result, max_age) if _return_max_age else result
 
         def __cache_key__(*args, **kwargs):
             "Make key for cache given function arguments."
-            return args_to_key(base, args, kwargs, typed)
+            return args_to_key(base, args, kwargs, typed=False)
 
         wrapper.__cache_key__ = __cache_key__
+        wrapper.__cache__ = cache
         return wrapper
 
     return decorator
