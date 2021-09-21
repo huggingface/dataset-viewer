@@ -37,3 +37,7 @@ def get_info_response(*, dataset: str, token: Optional[str] = None) -> CachedRes
     except (Status400Error, Status404Error) as err:
         response = CachedResponse(err.as_dict(), err.status_code)
     return response
+
+
+def get_refreshed_info(dataset: str, token: Optional[str] = None) -> InfoDict:
+    return cast(InfoDict, get_info_response(dataset, token, _refresh=True)["content"])

@@ -18,3 +18,7 @@ def get_datasets() -> DatasetsDict:
 @memoize(cache, expire=CACHE_TTL_SECONDS)  # type:ignore
 def get_datasets_response() -> CachedResponse:
     return CachedResponse(get_datasets())
+
+
+def get_refreshed_datasets() -> DatasetsDict:
+    return cast(DatasetsDict, get_datasets_response(_refresh=True).content)

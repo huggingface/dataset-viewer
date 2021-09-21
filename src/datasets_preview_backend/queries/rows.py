@@ -88,3 +88,9 @@ def get_rows_response(
     except (Status400Error, Status404Error) as err:
         response = CachedResponse(err.as_dict(), err.status_code)
     return response
+
+
+def get_refreshed_rows(
+    dataset: str, config: Union[str, None], split: str, num_rows: int, token: Optional[str] = None
+) -> RowsDict:
+    return cast(RowsDict, get_rows_response(dataset, config, split, num_rows, token, _refresh=True)["content"])

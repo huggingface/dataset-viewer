@@ -34,3 +34,7 @@ def get_configs_response(*, dataset: str, token: Optional[str] = None) -> Cached
     except (Status400Error, Status404Error) as err:
         response = CachedResponse(err.as_dict(), err.status_code)
     return response
+
+
+def get_refreshed_configs(dataset: str, token: Optional[str] = None) -> ConfigsDict:
+    return cast(ConfigsDict, get_configs_response(dataset, token, _refresh=True)["content"])

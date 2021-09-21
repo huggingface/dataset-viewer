@@ -41,3 +41,7 @@ def get_splits_response(*, dataset: str, config: Union[str, None], token: Option
     except (Status400Error, Status404Error) as err:
         response = CachedResponse(err.as_dict(), err.status_code)
     return response
+
+
+def get_refreshed_splits(dataset: str, config: Union[str, None], token: Optional[str] = None) -> SplitsDict:
+    return cast(SplitsDict, get_splits_response(dataset, config, token, _refresh=True)["content"])
