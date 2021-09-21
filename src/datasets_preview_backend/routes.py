@@ -6,6 +6,7 @@ from starlette.responses import PlainTextResponse, Response
 
 from datasets_preview_backend.config import EXTRACT_ROWS_LIMIT
 from datasets_preview_backend.queries.configs import get_configs_json
+from datasets_preview_backend.queries.datasets import get_datasets_json
 from datasets_preview_backend.queries.info import get_info_json
 from datasets_preview_backend.queries.rows import get_rows_json
 from datasets_preview_backend.queries.splits import get_splits_json
@@ -19,6 +20,14 @@ class HealthCheck(HTTPEndpoint):
     async def get(self, request: Request) -> Response:
         logger.info("/healthcheck")
         return PlainTextResponse("ok", headers={"Cache-Control": "no-store"})
+
+
+class Datasets(HTTPEndpoint):
+    async def get(self, _: Request) -> Response:
+        logger.info("/datasets")
+
+        json, max_age = get_datasets_json(_return_max_age=True)
+        return to_response(json, max_age)
 
 
 class Info(HTTPEndpoint):

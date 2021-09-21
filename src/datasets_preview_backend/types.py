@@ -1,6 +1,10 @@
 from typing import Any, Dict, List, TypedDict, Union
 
 
+class DatasetsDict(TypedDict):
+    datasets: List[str]
+
+
 class ConfigsDict(TypedDict):
     dataset: str
     configs: List[str]
@@ -32,7 +36,7 @@ class StatusErrorDict(TypedDict):
     cause_message: str
 
 
-ResponseContent = Union[ConfigsDict, InfoDict, SplitsDict, RowsDict, StatusErrorDict]
+ResponseContent = Union[DatasetsDict, ConfigsDict, InfoDict, SplitsDict, RowsDict, StatusErrorDict]
 
 
 class ResponseJSON(TypedDict):

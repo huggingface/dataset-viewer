@@ -73,6 +73,37 @@ Responses:
 
 - `200`: text content `ok`
 
+### /datasets
+
+> Lists the [datasets](https://huggingface.co/docs/datasets/loading_datasets.html#selecting-a-configuration) names: canonical and community
+
+Example: https://datasets-preview.huggingface.tech/datasets
+
+Method: `GET`
+
+Parameters: none
+
+Responses:
+
+- `200`: JSON content with the following structure:
+
+  ```json
+  {
+    "type": "all",
+    "datasets": [
+      "acronym_identification",
+      "ade_corpus_v2",
+      "adversarial_qa",
+      "aeslc",
+      "afrikaans_ner_corpus",
+      "ag_news",
+      ...
+    ]
+  }
+  ```
+
+- `500`: application error
+
 ### /info
 
 > Return the dataset_info.json file for the dataset
