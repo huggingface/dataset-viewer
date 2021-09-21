@@ -73,6 +73,57 @@ Responses:
 
 - `200`: text content `ok`
 
+### /cache
+
+> Ensure the app is running
+
+Example: https://datasets-preview.huggingface.tech/cache
+
+Method: `GET`
+
+Parameters: none
+
+Responses:
+
+- `200`: JSON content which gives statistics about the cache, with the following structure:
+
+```json
+{
+  "endpoints": {
+    "/datasets": {
+      "endpoint": "/datasets",
+      "expected": 1,
+      "cached": 1,
+      "valid": 1
+    },
+    "/info": {
+      "endpoint": "/info",
+      "expected": 1488,
+      "cached": 1,
+      "valid": 1
+    },
+    "/configs": {
+      "endpoint": "/configs",
+      "expected": 1488,
+      "cached": 1,
+      "valid": 1
+    },
+    "/splits": {
+      "endpoint": "/splits",
+      "expected": 12,
+      "cached": 1,
+      "valid": 1
+    },
+    "/rows": {
+      "endpoint": "/rows",
+      "expected": 3,
+      "cached": 1,
+      "valid": 1
+    }
+  }
+}
+```
+
 ### /datasets
 
 > Lists the [datasets](https://huggingface.co/docs/datasets/loading_datasets.html#selecting-a-configuration) names: canonical and community

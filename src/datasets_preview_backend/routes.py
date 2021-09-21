@@ -2,9 +2,10 @@ import logging
 
 from starlette.endpoints import HTTPEndpoint
 from starlette.requests import Request
-from starlette.responses import PlainTextResponse, Response
+from starlette.responses import PlainTextResponse, JSONResponse, Response
 
 from datasets_preview_backend.config import EXTRACT_ROWS_LIMIT
+from datasets_preview_backend.queries.cache_stats import get_cache_stats
 from datasets_preview_backend.queries.configs import get_configs_response
 from datasets_preview_backend.queries.datasets import get_datasets_response
 from datasets_preview_backend.queries.info import get_info_response
@@ -17,9 +18,15 @@ logger = logging.getLogger(__name__)
 
 
 class HealthCheck(HTTPEndpoint):
-    async def get(self, request: Request) -> Response:
+    async def get(self, _: Request) -> Response:
         logger.info("/healthcheck")
         return PlainTextResponse("ok", headers={"Cache-Control": "no-store"})
+
+
+class CacheStats(HTTPEndpoint):
+    async def get(self, _: Request) -> Response:
+        logger.info("/cache")
+        return JSONResponse(get_cache_stats(), headers={"Cache-Control": "no-store"})
 
 
 class Datasets(HTTPEndpoint):

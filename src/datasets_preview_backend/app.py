@@ -9,6 +9,7 @@ from datasets_preview_backend.config import (
 )
 from datasets_preview_backend.middleware.token import get_token_middleware
 from datasets_preview_backend.routes import (
+    CacheStats,
     Configs,
     Datasets,
     HealthCheck,
@@ -28,6 +29,7 @@ def start() -> None:
             Route("/configs", endpoint=Configs),
             Route("/splits", endpoint=Splits),
             Route("/rows", endpoint=Rows),
+            Route("/cache", endpoint=CacheStats),
         ],
         middleware=middleware,
     )

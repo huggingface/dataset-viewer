@@ -69,3 +69,21 @@ class RowsReport(Report):
     config: str
     split: str
     rows_length: Union[int, None]
+
+
+class ArgsCacheStats(TypedDict):
+    kwargs: Dict[str, Union[str, int]]
+    is_cached: bool
+    is_expired: bool
+    content: Union[ResponseContent, None]
+
+
+class EndpointCacheStats(TypedDict):
+    endpoint: str
+    expected: int
+    cached: int
+    valid: int
+
+
+class CacheStats(TypedDict):
+    endpoints: Dict[str, EndpointCacheStats]

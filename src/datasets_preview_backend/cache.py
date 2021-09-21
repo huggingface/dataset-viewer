@@ -116,6 +116,8 @@ def memoize(
             # variables as soon as possible.
             _refresh = bool(kwargs.pop("_refresh", False))
             _return_max_age = bool(kwargs.pop("_return_max_age", False))
+            # disable the token argument, and don't take it into account for the key
+            kwargs.pop("token", False)
             key = wrapper.__cache_key__(*args, **kwargs)
             if _refresh:
                 result = ENOVAL
