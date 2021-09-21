@@ -12,7 +12,7 @@ class ConfigsDict(TypedDict):
 
 class InfoDict(TypedDict):
     dataset: str
-    info: Dict[Any, Any]
+    info: Dict[str, Any]
 
 
 class SplitsDict(TypedDict):

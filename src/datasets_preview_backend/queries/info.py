@@ -16,13 +16,17 @@ def get_info(dataset: str, token: Optional[str] = None) -> InfoDict:
     if dataset is None:
         raise Status400Error("'dataset' is a required query parameter.")
     try:
-        total_dataset_infos = get_dataset_infos(dataset, use_auth_token=token)
-        info = {config_name: asdict(config_info) for config_name, config_info in total_dataset_infos.items()}
+        dataset_info_dict = get_dataset_infos(dataset, use_auth_token=token)
+        info = {}
+        for config, dataset_info in dataset_info_dict.items():
+            d = asdict(dataset_info)
+            if "splits" in d:
+                d["splits"] = {split_name: split_info for split_name, split_info in d["splits"].items()}
+            info[config] = d
     except FileNotFoundError as err:
         raise Status404Error("The dataset info could not be found.") from err
     except Exception as err:
         raise Status400Error("The dataset info could not be parsed from the dataset.") from err
-
     return {"dataset": dataset, "info": info}
 
 
