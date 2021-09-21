@@ -2,7 +2,7 @@ import logging
 
 from starlette.endpoints import HTTPEndpoint
 from starlette.requests import Request
-from starlette.responses import PlainTextResponse, JSONResponse, Response
+from starlette.responses import JSONResponse, PlainTextResponse, Response
 
 from datasets_preview_backend.config import EXTRACT_ROWS_LIMIT
 from datasets_preview_backend.queries.cache_stats import get_cache_stats

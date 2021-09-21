@@ -1,10 +1,9 @@
-from time import sleep
 from datasets_preview_backend.queries.cache_stats import get_cache_stats
+from datasets_preview_backend.queries.configs import get_configs_response
 from datasets_preview_backend.queries.datasets import get_datasets_response
 from datasets_preview_backend.queries.info import get_info_response
-from datasets_preview_backend.queries.configs import get_configs_response
-from datasets_preview_backend.queries.splits import get_splits_response
 from datasets_preview_backend.queries.rows import get_rows_response
+from datasets_preview_backend.queries.splits import get_splits_response
 
 
 def test_get_cache_stats() -> None:
