@@ -5,6 +5,11 @@ from time import time
 
 from diskcache.core import ENOVAL, args_to_key, full_name
 
+# this function is complex. It's basically a copy of "diskcache" code:
+# https://github.com/grantjenks/python-diskcache/blob/e1d7c4aaa6729178ca3216f4c8a75b835f963022/diskcache/core.py#L1812
+# where we add the special `_return_expire` argument, inspired by django-cache-memoize:
+# https://github.com/peterbe/django-cache-memoize/blob/4da1ba4639774426fa928d4a461626e6f841b4f3/src/cache_memoize/__init__.py#L123 # noqa
+
 
 def memoize(
     cache,
@@ -80,9 +85,6 @@ def memoize(
     :return: callable decorator
 
     """
-    # Copy from diskcache, to add the `_return_expire` argument, see
-    # https://github.com/grantjenks/python-diskcache/blob/e1d7c4aaa6729178ca3216f4c8a75b835f963022/diskcache/core.py#L1812
-
     # Caution: Nearly identical code exists in DjangoCache.memoize
     if callable(name):
         raise TypeError("name cannot be callable")
