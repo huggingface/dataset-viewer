@@ -7,8 +7,10 @@ from diskcache.core import ENOVAL, args_to_key, full_name
 
 # this function is complex. It's basically a copy of "diskcache" code:
 # https://github.com/grantjenks/python-diskcache/blob/e1d7c4aaa6729178ca3216f4c8a75b835f963022/diskcache/core.py#L1812
-# where we add the special `_return_expire` argument, inspired by django-cache-memoize:
+# where we:
+# - add the special `_refresh` argument, inspired by django-cache-memoize:
 # https://github.com/peterbe/django-cache-memoize/blob/4da1ba4639774426fa928d4a461626e6f841b4f3/src/cache_memoize/__init__.py#L123 # noqa
+# - add the special `_return_expire` argument, inspired by the later
 
 
 def memoize(
@@ -58,6 +60,10 @@ def memoize(
     (value, max_age) where max_age is the number of seconds until
     expiration, or None if no expiry.
 
+    Calling the memoized function with the special boolean argument
+    `_refresh` set to True (default is False) will bypass the cache and
+    refresh the value
+
     An additional `__cache_key__` attribute can be used to generate the
     cache key used for the given arguments.
 
@@ -89,6 +95,9 @@ def memoize(
     if callable(name):
         raise TypeError("name cannot be callable")
 
+    if not (expire is None or expire > 0):
+        raise TypeError("expire argument is not valid")
+
     def decorator(func):
         "Decorator created by memoize() for callable `func`."
         base = (full_name(func),) if name is None else (name,)
@@ -97,19 +106,22 @@ def memoize(
         def wrapper(*args, **kwargs):
             "Wrapper for callable to cache arguments and return values."
             # The cache key string should never be dependent on special keyword
-            # arguments like _return_max_age. So extract it into a variable as soon as
-            # possible.
+            # arguments like _refresh and _return_max_age. So extract them into
+            # variables as soon as possible.
+            _refresh = bool(kwargs.pop("_refresh", False))
             _return_max_age = bool(kwargs.pop("_return_max_age", False))
             key = wrapper.__cache_key__(*args, **kwargs)
-            result, expire_time = cache.get(key, default=ENOVAL, retry=True, expire_time=True)
+            if _refresh:
+                result = ENOVAL
+            else:
+                result, expire_time = cache.get(key, default=ENOVAL, retry=True, expire_time=True)
 
             if result is ENOVAL:
                 result = func(*args, **kwargs)
-                if expire is None or expire > 0:
-                    cache.set(key, result, expire, tag=tag, retry=True)
-                    if _return_max_age:
-                        # we already now the result, but we need to get the expire_time
-                        _, expire_time = cache.get(key, default=ENOVAL, retry=True, expire_time=True)
+                cache.set(key, result, expire, tag=tag, retry=True)
+                if _return_max_age:
+                    # we already now the result, but we need to get the expire_time
+                    _, expire_time = cache.get(key, default=ENOVAL, retry=True, expire_time=True)
 
             if not _return_max_age:
                 return result
