@@ -1,6 +1,6 @@
 from typing import Optional
 
-from datasets import get_dataset_config_names as get_dataset_config_names
+from datasets import get_dataset_config_names
 
 from datasets_preview_backend.cache import memoize  # type: ignore
 from datasets_preview_backend.config import CACHE_TTL_SECONDS, cache

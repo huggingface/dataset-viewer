@@ -26,8 +26,8 @@ class Info(HTTPEndpoint):
         dataset = request.query_params.get("dataset")
         logger.info(f"/info, dataset={dataset}")
 
-        info_json, max_age = get_info_json(dataset=dataset, token=request.user.token, _return_max_age=True)
-        return to_response(info_json, max_age)
+        json, max_age = get_info_json(dataset=dataset, token=request.user.token, _return_max_age=True)
+        return to_response(json, max_age)
 
 
 class Configs(HTTPEndpoint):
@@ -35,7 +35,8 @@ class Configs(HTTPEndpoint):
         dataset = request.query_params.get("dataset")
         logger.info(f"/configs, dataset={dataset}")
 
-        return to_response(get_configs_json(dataset=dataset, token=request.user.token))
+        json, max_age = get_configs_json(dataset=dataset, token=request.user.token, _return_max_age=True)
+        return to_response(json, max_age)
 
 
 class Splits(HTTPEndpoint):
@@ -44,7 +45,8 @@ class Splits(HTTPEndpoint):
         config = request.query_params.get("config")
         logger.info(f"/splits, dataset={dataset}, config={config}")
 
-        return to_response(get_splits_json(dataset=dataset, config=config, token=request.user.token))
+        json, max_age = get_splits_json(dataset=dataset, config=config, token=request.user.token, _return_max_age=True)
+        return to_response(json, max_age)
 
 
 class Rows(HTTPEndpoint):
@@ -55,6 +57,12 @@ class Rows(HTTPEndpoint):
         num_rows = get_int_value(d=request.query_params, key="rows", default=EXTRACT_ROWS_LIMIT)
         logger.info(f"/rows, dataset={dataset}, config={config}, split={split}, num_rows={num_rows}")
 
-        return to_response(
-            get_rows_json(dataset=dataset, config=config, split=split, num_rows=num_rows, token=request.user.token)
+        json, max_age = get_rows_json(
+            dataset=dataset,
+            config=config,
+            split=split,
+            num_rows=num_rows,
+            token=request.user.token,
+            _return_max_age=True,
         )
+        return to_response(json, max_age)
