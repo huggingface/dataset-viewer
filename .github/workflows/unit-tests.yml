@@ -25,4 +25,8 @@ jobs:
       - name: Run unit tests
         env:
           HF_TOKEN: ${{ secrets.HF_TOKEN_SEVERO }}
-        run: poetry run python -m pytest -x tests
+        run: poetry run python -m pytest tests
+      - uses: codecov/codecov-action@v2
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          files: ./coverage.xml

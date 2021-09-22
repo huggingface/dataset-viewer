@@ -16,7 +16,7 @@ watch:
 	poetry run watchmedo auto-restart -d src/datasets_preview_backend -p "*.py" -R python src/datasets_preview_backend/main.py
 
 test:
-	poetry run python -m pytest -x tests
+	poetry run python -m pytest --cov=datasets_preview_backend -x tests
 
 # Check that source code meets quality standards + security
 quality:

@@ -38,6 +38,7 @@ isort = "^5.9.3"
 pytest = "^6.2.4"
 safety = "^1.10.3"
 mypy = "^0.910"
+pytest-cov = "^2.12.1"
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]
@@ -47,6 +48,10 @@ build-backend = "poetry.core.masonry.api"
 filterwarnings = [
     "ignore::DeprecationWarning"
 ]
+addopts = "-s --cov --cov-report xml:coverage.xml --cov-report=term"
+
+[tool.coverage.run]
+source = ["datasets_preview_backend"]
 
 [tool.isort]
 profile = "black"
