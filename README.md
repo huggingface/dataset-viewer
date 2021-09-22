@@ -94,31 +94,41 @@ Responses:
       "endpoint": "/datasets",
       "expected": 1,
       "cached": 1,
+      "expired": 0,
+      "error": 0,
       "valid": 1
     },
     "/info": {
       "endpoint": "/info",
-      "expected": 1488,
-      "cached": 1,
-      "valid": 1
+      "expected": 1490,
+      "cached": 15,
+      "expired": 0,
+      "error": 0,
+      "valid": 15
     },
     "/configs": {
       "endpoint": "/configs",
-      "expected": 1488,
-      "cached": 1,
-      "valid": 1
+      "expected": 1490,
+      "cached": 15,
+      "expired": 0,
+      "error": 0,
+      "valid": 15
     },
     "/splits": {
       "endpoint": "/splits",
-      "expected": 12,
-      "cached": 1,
-      "valid": 1
+      "expected": 79,
+      "cached": 79,
+      "expired": 0,
+      "error": 0,
+      "valid": 79
     },
     "/rows": {
       "endpoint": "/rows",
-      "expected": 3,
-      "cached": 1,
-      "valid": 1
+      "expected": 127,
+      "cached": 127,
+      "expired": 0,
+      "error": 20,
+      "valid": 107
     }
   }
 }

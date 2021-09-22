@@ -31,6 +31,9 @@ class CachedResponse:
         self.status_code: int = status_code
         self.jsonContent: bytes = to_bytes(self.content)
 
+    def is_error(self) -> bool:
+        return self.status_code >= 300
+
 
 def send(cached_response: CachedResponse, max_age: Optional[Union[int, None]] = None) -> Response:
     headers = {}
