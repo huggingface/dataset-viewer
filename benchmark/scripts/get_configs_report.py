@@ -2,49 +2,47 @@ import json
 import logging
 import time
 
+import requests
 import typer
-from datasets.utils.tqdm_utils import disable_progress_bar
 
-from datasets_preview_backend.queries.configs import get_configs
+from datasets_preview_backend.reports import ConfigsReport
 from datasets_preview_backend.serialize import deserialize_dataset_name
-from datasets_preview_backend.types import ConfigsReport
 
 # remove any logs
 logging.disable(logging.CRITICAL)
-disable_progress_bar()  # type: ignore
+
+# TODO: use env vars + add an env var for the scheme (http/https)
+ENDPOINT = "http://localhost:8000/"
 
 
 def get_configs_report(dataset: str) -> ConfigsReport:
+    t = time.process_time()
+    r = requests.get(f"{ENDPOINT}configs?dataset={dataset}")
     try:
-        t = time.process_time()
-        configs = get_configs(dataset)["configs"]
-        return {
-            "dataset": dataset,
-            "configs": list(configs),
-            "success": True,
-            "exception": None,
-            "message": None,
-            "cause": None,
-            "cause_message": None,
-            "elapsed_seconds": time.process_time() - t,
-        }
+        r.raise_for_status()
+        response = r.json()
+        error = None
     except Exception as err:
-        return {
-            "dataset": dataset,
-            "configs": [],
-            "success": False,
-            "exception": type(err).__name__,
-            "message": str(err),
-            "cause": type(err.__cause__).__name__,
-            "cause_message": str(err.__cause__),
-            "elapsed_seconds": time.process_time() - t,
-        }
+        response = None
+        if r.status_code in [400, 404]:
+            # these error code are managed and return a json we can parse
+            error = r.json()
+        else:
+            error = {
+                "exception": type(err).__name__,
+                "message": str(err),
+                "cause": type(err.__cause__).__name__,
+                "cause_message": str(err.__cause__),
+                "status_code": r.status_code,
+            }
+    elapsed_seconds = time.process_time() - t
+    return ConfigsReport(args={"dataset": dataset}, response=response, error=error, elapsed_seconds=elapsed_seconds)
 
 
 def main(serialized_dataset_name: str, filename: str) -> None:
     report = get_configs_report(deserialize_dataset_name(serialized_dataset_name))
     with open(filename, "w") as f:
-        json.dump(report, f)
+        json.dump(report.to_dict(), f)
 
 
 if __name__ == "__main__":

@@ -1,11 +1,17 @@
+import requests
 import typer
-from datasets import list_datasets
 
 from datasets_preview_backend.serialize import serialize_dataset_name
 
+# TODO: use env vars + add an env var for the scheme (http/https)
+ENDPOINT = "http://localhost:8000/"
+
 
 def main(filename: str) -> None:
-    dataset_names = list_datasets(with_community_datasets=True)  # type: ignore
+    r = requests.get(f"{ENDPOINT}datasets")
+    r.raise_for_status()
+    d = r.json()
+    dataset_names = d["datasets"]
     # replace '/' in namespaced dataset names
     serialized_dataset_names = [serialize_dataset_name(dataset_name) for dataset_name in dataset_names]
     with open(filename, "w") as f:
