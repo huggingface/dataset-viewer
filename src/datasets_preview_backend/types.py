@@ -9,14 +9,17 @@ class DatasetsDict(TypedDict):
     datasets: List[DatasetItem]
 
 
+class InfoItem(TypedDict):
+    dataset: str
+    info: Dict[str, Any]
+
+
+InfoDict = InfoItem
+
+
 class ConfigsDict(TypedDict):
     dataset: str
     configs: List[str]
-
-
-class InfoDict(TypedDict):
-    dataset: str
-    info: Dict[str, Any]
 
 
 class SplitsDict(TypedDict):
@@ -40,4 +43,4 @@ class StatusErrorDict(TypedDict):
     cause_message: str
 
 
-ResponseContent = Union[DatasetsDict, ConfigsDict, InfoDict, SplitsDict, RowsDict, StatusErrorDict]
+ResponseContent = Union[DatasetsDict, InfoDict, ConfigsDict, SplitsDict, RowsDict, StatusErrorDict]
