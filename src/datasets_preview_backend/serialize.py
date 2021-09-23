@@ -1,41 +1,49 @@
-from typing import Tuple
+from typing import Dict, List, Optional, TypedDict
 
-SLASH = "___SLASH___"
-SPACE = "___SPACE___"
-PAR_OPEN = "___PAR_OPEN___"
-PAR_CLOSE = "___PAR_CLOSE___"
-CONFIG_SEPARATOR = "___CONFIG___"
-SPLIT_SEPARATOR = "___SPLIT___"
+characters: Dict[str, str] = {
+    "/": "___SLASH",
+    " ": "___SPACE",
+    "(": "___PAR",
+    ")": "___END_PAR",
+}
 
-
-def serialize_dataset_name(dataset: str) -> str:
-    return dataset.replace("/", SLASH)
+ordered_keys: Dict[str, str] = {"dataset": "___DATASET", "config": "___CONFIG", "split": "___SPLIT"}
 
 
-def deserialize_dataset_name(serialized_dataset: str) -> str:
-    return serialized_dataset.replace(SLASH, "/")
+def serialize_params(params: Dict[str, str]) -> str:
+    # order is important: "config" can be present only if "dataset" is also present
+    s = ""
+    for (key, prefix) in ordered_keys.items():
+        if key not in params:
+            return s
+        s += prefix + serialize(params[key])
+    return s
 
 
-def serialize_config_name(dataset: str, config: str) -> str:
-    # due to config named "(China)", "bbc hindi nli"
-    safe_config = config.replace("(", PAR_OPEN).replace(")", PAR_CLOSE).replace(" ", SPACE)
-    return serialize_dataset_name(dataset) + CONFIG_SEPARATOR + safe_config
+def deserialize_params(s: str) -> Dict[str, str]:
+    d_all: Dict[str, str] = {}
+    # order is important: "config" can be present only if "dataset" is also present
+    for (key, prefix) in reversed(ordered_keys.items()):
+        s, _, b = s.strip().partition(prefix)
+        value = deserialize(b)
+        d_all[key] = value
+
+    d: Dict[str, str] = {}
+    for (key, prefix) in ordered_keys.items():
+        if d_all[key] == "":
+            return d
+        d[key] = d_all[key]
+
+    return d
 
 
-def deserialize_config_name(serialized_config: str) -> Tuple[str, str]:
-    serialized_dataset, _, safe_config = serialized_config.partition(CONFIG_SEPARATOR)
-    config = safe_config.replace(PAR_OPEN, "(").replace(PAR_CLOSE, ")").replace(SPACE, " ")
-    dataset = deserialize_dataset_name(serialized_dataset)
-    return dataset, config
+def serialize(s: str) -> str:
+    for (unsafe, safe) in characters.items():
+        s = s.replace(unsafe, safe)
+    return s
 
 
-def serialize_split_name(dataset: str, config: str, split: str) -> str:
-    safe_split = split
-    return serialize_config_name(dataset, config) + SPLIT_SEPARATOR + safe_split
-
-
-def deserialize_split_name(serialized_split: str) -> Tuple[str, str, str]:
-    serialized_config, _, safe_split = serialized_split.partition(SPLIT_SEPARATOR)
-    split = safe_split.replace(PAR_OPEN, "(").replace(PAR_CLOSE, ")")
-    dataset, config = deserialize_config_name(serialized_config)
-    return dataset, config, split
+def deserialize(s: str) -> str:
+    for (unsafe, safe) in characters.items():
+        s = s.replace(safe, unsafe)
+    return s
