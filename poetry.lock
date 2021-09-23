@@ -368,7 +368,7 @@ tensorflow = ["tensorflow (>=2.2.0)"]
 tensorflow_gpu = ["tensorflow-gpu (>=2.2.0)"]
 torch = ["torch"]
 s3 = ["fsspec", "boto3", "botocore", "s3fs"]
-tests = ["absl-py", "pytest", "pytest-xdist", "apache-beam (>=2.26.0)", "elasticsearch", "aiobotocore", "boto3", "botocore", "faiss-cpu", "fsspec", "moto[s3,server] (==2.0.4)", "rarfile (>=4.0)", "s3fs (==2021.08.1)", "tensorflow (>=2.3)", "torch", "transformers", "bs4", "conllu", "langdetect", "lxml", "mwparserfromhell", "nltk", "openpyxl", "py7zr", "tldextract", "zstandard", "bert_score (>=0.3.6)", "rouge-score", "sacrebleu", "scipy", "seqeval", "scikit-learn", "jiwer", "sentencepiece", "toml (>=0.10.1)", "requests_file (>=1.5.1)", "tldextract (>=3.1.0)", "texttable (>=1.6.3)", "Werkzeug (>=1.0.1)", "six (>=1.15.0,<1.16.0)"]
+tests = ["absl-py", "pytest", "pytest-xdist", "apache-beam (>=2.26.0)", "elasticsearch", "aiobotocore", "boto3", "botocore", "faiss-cpu", "fsspec", "moto[server,s3] (==2.0.4)", "rarfile (>=4.0)", "s3fs (==2021.08.1)", "tensorflow (>=2.3)", "torch", "transformers", "bs4", "conllu", "langdetect", "lxml", "mwparserfromhell", "nltk", "openpyxl", "py7zr", "tldextract", "zstandard", "bert_score (>=0.3.6)", "rouge-score", "sacrebleu", "scipy", "seqeval", "scikit-learn", "jiwer", "sentencepiece", "toml (>=0.10.1)", "requests_file (>=1.5.1)", "tldextract (>=3.1.0)", "texttable (>=1.6.3)", "Werkzeug (>=1.0.1)", "six (>=1.15.0,<1.16.0)"]
 quality = ["black (==21.4b0)", "flake8 (==3.7.9)", "isort", "pyyaml (>=5.3.1)"]
 benchmarks = ["numpy (==1.18.5)", "tensorflow (==2.3.0)", "torch (==1.6.0)", "transformers (==3.0.2)"]
 docs = ["docutils (==0.16.0)", "recommonmark", "sphinx (==3.1.2)", "sphinx-markdown-tables", "sphinx-rtd-theme (==0.4.3)", "sphinxext-opengraph (==0.4.1)", "sphinx-copybutton", "fsspec", "s3fs", "sphinx-panels", "sphinx-inline-tabs", "myst-parser"]
@@ -432,7 +432,7 @@ python-versions = ">=3.6"
 
 [[package]]
 name = "fastavro"
-version = "1.4.4"
+version = "1.4.5"
 description = "Fast read/write of AVRO files"
 category = "main"
 optional = false
@@ -1547,7 +1547,7 @@ telegram = ["requests"]
 
 [[package]]
 name = "transformers"
-version = "4.10.2"
+version = "4.10.3"
 description = "State-of-the-art Natural Language Processing for TensorFlow 2.0 and PyTorch"
 category = "main"
 optional = false
@@ -1661,7 +1661,7 @@ python-versions = ">=3.6"
 
 [[package]]
 name = "urllib3"
-version = "1.26.6"
+version = "1.26.7"
 description = "HTTP library with thread-safe connection pooling, file post, and more."
 category = "main"
 optional = false
@@ -2164,23 +2164,23 @@ et-xmlfile = [
     {file = "et_xmlfile-1.1.0.tar.gz", hash = "sha256:8eb9e2bc2f8c97e37a2dc85a09ecdcdec9d8a396530a6d5a33b30b9a92da0c5c"},
 ]
 fastavro = [
-    {file = "fastavro-1.4.4-cp36-cp36m-macosx_10_14_x86_64.whl", hash = "sha256:0a3e3fa7288db81c1ad521321ced7a895c6a7928511b27393c3f418d6e5f6946"},
-    {file = "fastavro-1.4.4-cp36-cp36m-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:a8391357b6857f80b850bb4708c4b8db0f3d1c1e83ab2ea888958d89f46efd26"},
-    {file = "fastavro-1.4.4-cp36-cp36m-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:4f1e0093a5ea7f5b72997c91abfa7838cb536c9a1dca9df4c8b7f233e853e0ac"},
-    {file = "fastavro-1.4.4-cp36-cp36m-win_amd64.whl", hash = "sha256:e03b80a9fb52b753d948788b0048b2a3f7551ba7f8584e60e90a1b3b5071fdd0"},
-    {file = "fastavro-1.4.4-cp37-cp37m-macosx_10_14_x86_64.whl", hash = "sha256:b85f2569102f3b54a3973dd12f5bf5049c125488e70959360dd5cbb8c71d47c7"},
-    {file = "fastavro-1.4.4-cp37-cp37m-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:836399e5ac80ef8a19e3a0484585c58e52268c87d77b3681615761a9439032ed"},
-    {file = "fastavro-1.4.4-cp37-cp37m-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:b53816eec734ca34518c7e748d6d538aca0d3c0111ec726ad9808a098bfdd209"},
-    {file = "fastavro-1.4.4-cp37-cp37m-win_amd64.whl", hash = "sha256:6446204cf55299243c9d43b1c5e355c74e6980e61c9bb58138ea9f3a6c99d826"},
-    {file = "fastavro-1.4.4-cp38-cp38-macosx_10_14_x86_64.whl", hash = "sha256:76aa6545443e1f1d6406c52876f3f7157076b91441943db300bc1c0f0daad6aa"},
-    {file = "fastavro-1.4.4-cp38-cp38-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:24802411fa8557a6703ad1ccdea892f6b72730fc68ecb80214d7208f49a37ebc"},
-    {file = "fastavro-1.4.4-cp38-cp38-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:7844fc4f55da7b1948234a7e5a50230fa0f27ff74cdb5efbb107c5cd5db0f49a"},
-    {file = "fastavro-1.4.4-cp38-cp38-win_amd64.whl", hash = "sha256:bfcff703061a9ecce06fc69ac8f994fd1ddb2d55a6ff585fe25a7b45bbda4011"},
-    {file = "fastavro-1.4.4-cp39-cp39-macosx_10_14_x86_64.whl", hash = "sha256:bb49ece8865c8515f34ff8e307799b8cdb32b6db31acf4174c09b5c8e7fc5280"},
-    {file = "fastavro-1.4.4-cp39-cp39-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:30acd5c296155959f371bc4ccf7e76461fef5923c738fa34211b5a65c855aef2"},
-    {file = "fastavro-1.4.4-cp39-cp39-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:52b9fd197319a1b2eaeb9bfeb7313fa45ef92b49c3884c138b3ab90740232a66"},
-    {file = "fastavro-1.4.4-cp39-cp39-win_amd64.whl", hash = "sha256:c74f8b48d4e4b36a9013ddb2cbaac68504cfdc48cdfe4753edfd017b5156e18a"},
-    {file = "fastavro-1.4.4.tar.gz", hash = "sha256:16fcc82844913804b05f28481972b850580ff3103b48f36c021d3b99019f9e3f"},
+    {file = "fastavro-1.4.5-cp36-cp36m-macosx_10_14_x86_64.whl", hash = "sha256:48e6907088c058342635b577427c8d78ab18c8d20ca58a0c5365e5eb3157c6e2"},
+    {file = "fastavro-1.4.5-cp36-cp36m-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:7ee068012da1d262f2ae60798ad142cb7dd91eac21d04f379553924b91a46fff"},
+    {file = "fastavro-1.4.5-cp36-cp36m-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:a6b95e003a4c6668c102bd39cdeda7bdf38c16db46926a0b9f92800836e437f7"},
+    {file = "fastavro-1.4.5-cp36-cp36m-win_amd64.whl", hash = "sha256:6187bf2a37c2ca33a78bc424e874869b35593fcd059988487faa02f6b7b57f73"},
+    {file = "fastavro-1.4.5-cp37-cp37m-macosx_10_14_x86_64.whl", hash = "sha256:e7ea611a956c508bd97d2a2bc17c3fcdec48bd1151ad05b0e251bf2e50994665"},
+    {file = "fastavro-1.4.5-cp37-cp37m-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:431d382657812d9b24f2d16663841721187e7e89b137b8b34fdeee7809d66e88"},
+    {file = "fastavro-1.4.5-cp37-cp37m-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:06b531f1be2878c3eef7efdc68d637a3bfe2b6b074edde30ab6321bbb5ac1961"},
+    {file = "fastavro-1.4.5-cp37-cp37m-win_amd64.whl", hash = "sha256:5d8163fe404c1c48ce973772b5a00d1f696ae04c5e3ae4aa63c89276e617af63"},
+    {file = "fastavro-1.4.5-cp38-cp38-macosx_10_14_x86_64.whl", hash = "sha256:fe37f2e2e8e1170abe50dd113a730ffcb64d75b5a68997da2b22bb8545439642"},
+    {file = "fastavro-1.4.5-cp38-cp38-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:9cad773eccad51271faacafb7a4bb8c387e456eb419090cb529c116a4d918a89"},
+    {file = "fastavro-1.4.5-cp38-cp38-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:a60af4595b68838ce736aec0e9221d3e50dd29f26c6409f63f41256bfb6ef5c8"},
+    {file = "fastavro-1.4.5-cp38-cp38-win_amd64.whl", hash = "sha256:4dfcd2401759a80da6ceb4e46af660626d77c235b903db09c74d031f8e02a219"},
+    {file = "fastavro-1.4.5-cp39-cp39-macosx_10_14_x86_64.whl", hash = "sha256:246cc9043b31a004e13204fef72917bdb4886b752defe08eb32da3d87123802f"},
+    {file = "fastavro-1.4.5-cp39-cp39-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:61603a2b46cd6ca06a250fec3011c40400683c9b57d934f3e4d5cc3fe0f3d254"},
+    {file = "fastavro-1.4.5-cp39-cp39-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:fafe37983605ed74a5ca8063951f6d5984ad871e0ff895f14afa81a6d88c316e"},
+    {file = "fastavro-1.4.5-cp39-cp39-win_amd64.whl", hash = "sha256:4043ca61362601dbc9b0b51e852207130677842e93d95b5a5327c3ad478f14e1"},
+    {file = "fastavro-1.4.5.tar.gz", hash = "sha256:fb5b4b46bd9f89be07921752bac952daa872a79f94fadf01f3679da906824424"},
 ]
 filelock = [
     {file = "filelock-3.0.12-py3-none-any.whl", hash = "sha256:929b7d63ec5b7d6b71b0fa5ac14e030b3f70b75747cef1b10da9b879fef15836"},
@@ -3167,8 +3167,8 @@ tqdm = [
     {file = "tqdm-4.62.3.tar.gz", hash = "sha256:d359de7217506c9851b7869f3708d8ee53ed70a1b8edbba4dbcb47442592920d"},
 ]
 transformers = [
-    {file = "transformers-4.10.2-py3-none-any.whl", hash = "sha256:ceba5b990d766496f6eabb03759e9331b2304ccde01107f976488b051434249b"},
-    {file = "transformers-4.10.2.tar.gz", hash = "sha256:6be94336df429421b36fe20f66b9c911b12ef7602345dae519fe48b431a4a5b3"},
+    {file = "transformers-4.10.3-py3-none-any.whl", hash = "sha256:cad81126810d656270da5d031db3f85ce77071cfc298685cad0f4ff085ac09b7"},
+    {file = "transformers-4.10.3.tar.gz", hash = "sha256:6f94d3c2f36ee65dcc2156af1991733339469d77aa14ed7aac96bb6f70df576b"},
 ]
 trec-car-tools = []
 typer = [
@@ -3231,8 +3231,8 @@ ujson = [
     {file = "ujson-4.2.0.tar.gz", hash = "sha256:fffe509f556861c7343c6cba57ed05fe7bcf4b48a934a5b946ccb45428cf8883"},
 ]
 urllib3 = [
-    {file = "urllib3-1.26.6-py2.py3-none-any.whl", hash = "sha256:39fb8672126159acb139a7718dd10806104dec1e2f0f6c88aab05d17df10c8d4"},
-    {file = "urllib3-1.26.6.tar.gz", hash = "sha256:f57b4c16c62fa2760b7e3d97c35b255512fb6b59a259730f36ba32ce9f8e342f"},
+    {file = "urllib3-1.26.7-py2.py3-none-any.whl", hash = "sha256:c4fdf4019605b6e5423637e01bc9fe4daef873709a7973e195ceba0a62bbc844"},
+    {file = "urllib3-1.26.7.tar.gz", hash = "sha256:4987c65554f7a2dbf30c18fd48778ef124af6fab771a377103da0585e2336ece"},
 ]
 uvicorn = [
     {file = "uvicorn-0.14.0-py3-none-any.whl", hash = "sha256:2a76bb359171a504b3d1c853409af3adbfa5cef374a4a59e5881945a97a93eae"},
