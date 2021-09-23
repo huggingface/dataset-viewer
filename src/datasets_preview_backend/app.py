@@ -6,7 +6,6 @@ from datasets_preview_backend.config import (
     APP_HOSTNAME,
     APP_PORT,
     DATASETS_ENABLE_PRIVATE,
-    WEB_CONCURRENCY,
 )
 from datasets_preview_backend.middleware.token import get_token_middleware
 from datasets_preview_backend.routes import (
