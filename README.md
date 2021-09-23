@@ -351,9 +351,23 @@ Responses:
 
   ```json
   {
-    "dataset": "glue",
-    "config": "ax",
-    "splits": ["test"]
+    "splits": [
+      {
+        "dataset": "glue",
+        "config": "cola",
+        "split": "test"
+      },
+      {
+        "dataset": "glue",
+        "config": "cola",
+        "split": "train"
+      },
+      {
+        "dataset": "glue",
+        "config": "cola",
+        "split": "validation"
+      }
+    ]
   }
   ```
 

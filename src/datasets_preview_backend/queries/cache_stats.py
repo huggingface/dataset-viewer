@@ -106,11 +106,12 @@ def get_cache_stats() -> CacheStats:
             valid_splits_reports = [d for d in local_splits_reports if d["is_valid"]]
             for splits_report in valid_splits_reports:
                 splits_content = cast(SplitsContent, splits_report["content"])
-                dataset = splits_content["dataset"]
-                config = splits_content["config"]
                 splits = splits_content["splits"]
 
-                rows_args_list = [{"dataset": dataset, "config": config, "split": split} for split in splits]
+                rows_args_list = [
+                    {"dataset": split["dataset"], "config": split["config"], "split": split["split"]}
+                    for split in splits
+                ]
                 local_rows_reports = [get_kwargs_report(get_rows_response, args) for args in rows_args_list]
                 rows_reports += local_rows_reports
 

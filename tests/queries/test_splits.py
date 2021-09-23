@@ -15,41 +15,43 @@ def test_get_splits() -> None:
     dataset = "acronym_identification"
     config = DEFAULT_CONFIG_NAME
     response = get_splits(dataset, config)
-    assert "dataset" in response
-    assert response["dataset"] == dataset
-    assert "config" in response
-    assert response["config"] == config
     assert "splits" in response
-    splits = response["splits"]
-    assert len(splits) == 3
-    assert "train" in splits
+    splitItems = response["splits"]
+    assert len(splitItems) == 3
+    split = splitItems[0]
+    assert "dataset" in split
+    assert split["dataset"] == dataset
+    assert "config" in split
+    assert split["config"] == config
+    assert "split" in split
+    assert split["split"] == "train"
 
-    splits = get_splits("glue", "ax")["splits"]
+    splits = [s["split"] for s in get_splits("glue", "ax")["splits"]]
     assert len(splits) == 1
     assert "test" in splits
     assert "train" not in splits
 
     # uses the fallback to call "builder._split_generators" while https://github.com/huggingface/datasets/issues/2743
-    splits = get_splits("hda_nli_hindi", "HDA nli hindi")["splits"]
+    splits = [s["split"] for s in get_splits("hda_nli_hindi", "HDA nli hindi")["splits"]]
     assert len(splits) == 3
     assert "train" in splits
     assert "validation" in splits
     assert "test" in splits
 
-    splits = get_splits("classla/copa_hr", "copa_hr")["splits"]
-    assert len(splits) == 3
+    splitItems = get_splits("classla/copa_hr", "copa_hr")["splits"]
+    assert len(splitItems) == 3
 
-    splits = get_splits("mc4", "sn")["splits"]
-    assert len(splits) == 2
+    splitItems = get_splits("mc4", "sn")["splits"]
+    assert len(splitItems) == 2
 
 
+# TODO: change this behavior
 def test_get_splits_without_config() -> None:
     dataset = "acronym_identification"
-    splits1 = get_splits(dataset, None)
-    splits2 = get_splits(dataset, DEFAULT_CONFIG_NAME)
-    splits = splits1["splits"]
-    assert len(splits) == 3
-    assert splits1 == splits2
+    response1 = get_splits(dataset, None)
+    response2 = get_splits(dataset, DEFAULT_CONFIG_NAME)
+    assert len(response1["splits"]) == 3
+    assert response1 == response2
 
 
 def test_builder_config_error() -> None:
@@ -71,4 +73,4 @@ def test_not_found() -> None:
 def test_hub_private_dataset() -> None:
     if DATASETS_ENABLE_PRIVATE:
         response = get_splits("severo/autonlp-data-imdb-sentiment-analysis", "default", token=HF_TOKEN)
-        assert response["splits"] == ["train"]
+        assert response["splits"][0]["split"] == "train"

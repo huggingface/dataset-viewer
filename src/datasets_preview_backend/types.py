@@ -15,7 +15,12 @@ class ConfigItem(TypedDict):
     config: str
 
 
-SplitItem = str
+class SplitItem(TypedDict):
+    dataset: str
+    config: str
+    split: str
+
+
 RowsItem = Any
 
 # Content of endpoint responses
@@ -33,8 +38,6 @@ class ConfigsContent(TypedDict):
 
 
 class SplitsContent(TypedDict):
-    dataset: str
-    config: str
     splits: List[SplitItem]
 
 

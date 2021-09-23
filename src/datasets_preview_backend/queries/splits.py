@@ -31,7 +31,7 @@ def get_splits(dataset: str, config: Union[str, None], token: Optional[str] = No
     except Exception as err:
         raise Status400Error("The split names could not be parsed from the dataset config.") from err
 
-    return {"dataset": dataset, "config": config, "splits": splits}
+    return {"splits": [{"dataset": dataset, "config": config, "split": split} for split in splits]}
 
 
 @memoize(cache, expire=CACHE_TTL_SECONDS)  # type:ignore
