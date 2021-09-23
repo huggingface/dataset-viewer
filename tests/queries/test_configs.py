@@ -14,16 +14,18 @@ def test_config() -> None:
 def test_get_configs() -> None:
     dataset = "acronym_identification"
     response = get_configs(dataset)
-    assert "dataset" in response
-    assert response["dataset"] == dataset
     assert "configs" in response
     configs = response["configs"]
     assert len(configs) == 1
-    assert configs[0] == DEFAULT_CONFIG_NAME
+    config = configs[0]
+    assert "dataset" in config
+    assert config["dataset"] == dataset
+    assert "config" in config
+    assert config["config"] == DEFAULT_CONFIG_NAME
 
     configs = get_configs("glue")["configs"]
     assert len(configs) == 12
-    assert "cola" in configs
+    assert {"dataset": "glue", "config": "cola"} in configs
 
 
 def test_import_nltk() -> None:
@@ -58,4 +60,4 @@ def test_no_dataset_no_script() -> None:
 def test_hub_private_dataset() -> None:
     if DATASETS_ENABLE_PRIVATE:
         response = get_configs("severo/autonlp-data-imdb-sentiment-analysis", token=HF_TOKEN)
-        assert response["configs"] == ["default"]
+        assert response["configs"] == [{"dataset": "severo/autonlp-data-imdb-sentiment-analysis", "config": "default"}]

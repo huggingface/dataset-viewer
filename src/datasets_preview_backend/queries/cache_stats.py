@@ -97,10 +97,9 @@ def get_cache_stats() -> CacheStats:
         valid_configs_reports = [d for d in local_configs_reports if d["is_valid"]]
         for configs_report in valid_configs_reports:
             configs_content = cast(ConfigsContent, configs_report["content"])
-            dataset = configs_content["dataset"]
             configs = configs_content["configs"]
 
-            splits_kwargs_list = [{"dataset": dataset, "config": config} for config in configs]
+            splits_kwargs_list = [{"dataset": config["dataset"], "config": config["config"]} for config in configs]
             local_splits_reports = [get_kwargs_report(get_splits_response, kwargs) for kwargs in splits_kwargs_list]
             splits_reports += local_splits_reports
 

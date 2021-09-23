@@ -29,14 +29,14 @@ class RequestReport:
         self.error = error
         self.success = self.error is None and response is not None
         self.elapsed_seconds = elapsed_seconds
-        self.result = None
+        self.result: Any = None
         if response is not None:
             # response might be too heavy (we don't want to replicate the cache)
             # we get the essence of the response, depending on the case
             if "info" in response:
                 self.result = {"info_num_keys": len(response["info"])}
             elif "configs" in response:
-                self.result = {"configs": response["configs"]}
+                self.result = {"configs": [c["config"] for c in response["configs"]]}
             elif "splits" in response:
                 self.result = {"splits": response["splits"]}
             elif "rows" in response:

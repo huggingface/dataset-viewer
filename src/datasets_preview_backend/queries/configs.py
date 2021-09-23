@@ -24,7 +24,7 @@ def get_configs(dataset: str, token: Optional[str] = None) -> ConfigsContent:
     except Exception as err:
         raise Status400Error("The config names could not be parsed from the dataset.") from err
 
-    return {"dataset": dataset, "configs": configs}
+    return {"configs": [{"dataset": dataset, "config": d} for d in configs]}
 
 
 @memoize(cache, expire=CACHE_TTL_SECONDS)  # type:ignore

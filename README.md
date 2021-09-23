@@ -273,20 +273,55 @@ Responses:
 
   ```json
   {
-    "dataset": "glue",
     "configs": [
-      "cola",
-      "sst2",
-      "mrpc",
-      "qqp",
-      "stsb",
-      "mnli",
-      "mnli_mismatched",
-      "mnli_matched",
-      "qnli",
-      "rte",
-      "wnli",
-      "ax"
+      {
+        "dataset": "glue",
+        "config": "cola"
+      },
+      {
+        "dataset": "glue",
+        "config": "sst2"
+      },
+      {
+        "dataset": "glue",
+        "config": "mrpc"
+      },
+      {
+        "dataset": "glue",
+        "config": "qqp"
+      },
+      {
+        "dataset": "glue",
+        "config": "stsb"
+      },
+      {
+        "dataset": "glue",
+        "config": "mnli"
+      },
+      {
+        "dataset": "glue",
+        "config": "mnli_mismatched"
+      },
+      {
+        "dataset": "glue",
+        "config": "mnli_matched"
+      },
+      {
+        "dataset": "glue",
+        "config": "qnli"
+      },
+      {
+        "dataset": "glue",
+        "config": "rte"
+      },
+      {
+        "dataset": "glue",
+        "config": "wnli"
+      },
+      {
+        "dataset": "glue",
+        "config": "ax"
+      }
     ]
   }
   ```
