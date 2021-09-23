@@ -10,6 +10,10 @@ class InfoItem(TypedDict):
     info: Dict[str, Any]
 
 
+ConfigItem = str
+SplitItem = str
+RowsItem = Any
+
 # Content of endpoint responses
 class DatasetsContent(TypedDict):
     datasets: List[DatasetItem]
@@ -20,20 +24,20 @@ InfoContent = InfoItem
 
 class ConfigsContent(TypedDict):
     dataset: str
-    configs: List[str]
+    configs: List[ConfigItem]
 
 
 class SplitsContent(TypedDict):
     dataset: str
     config: str
-    splits: List[str]
+    splits: List[SplitItem]
 
 
 class RowsContent(TypedDict):
     dataset: str
     config: str
     split: str
-    rows: List[Any]
+    rows: List[RowsItem]
 
 
 class StatusErrorContent(TypedDict):
