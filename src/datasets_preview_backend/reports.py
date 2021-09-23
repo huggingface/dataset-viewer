@@ -6,7 +6,7 @@ import requests
 from datasets_preview_backend.types import StatusErrorDict
 
 
-class CommonReportDict(TypedDict):
+class RequestReportDict(TypedDict):
     url: str
     params: Optional[Dict[str, str]]
     success: bool
@@ -15,7 +15,7 @@ class CommonReportDict(TypedDict):
     elapsed_seconds: float
 
 
-class CommonReport:
+class RequestReport:
     def __init__(
         self,
         url: str,
@@ -44,7 +44,7 @@ class CommonReport:
             else:
                 self.result = {}
 
-    def to_dict(self) -> CommonReportDict:
+    def to_dict(self) -> RequestReportDict:
         return {
             "url": self.url,
             "params": self.params,
@@ -55,7 +55,7 @@ class CommonReport:
         }
 
 
-def get_report_dict(url: str, endpoint: str, params: Dict[str, str]) -> CommonReportDict:
+def get_request_report(url: str, endpoint: str, params: Dict[str, str]) -> RequestReportDict:
     t = time.process_time()
     r = requests.get(f"{url}/{endpoint}", params=params)
     try:
@@ -76,6 +76,6 @@ def get_report_dict(url: str, endpoint: str, params: Dict[str, str]) -> CommonRe
                 "status_code": r.status_code,
             }
     elapsed_seconds = time.process_time() - t
-    return CommonReport(
+    return RequestReport(
         url=url, params=params, response=response, error=error, elapsed_seconds=elapsed_seconds
     ).to_dict()

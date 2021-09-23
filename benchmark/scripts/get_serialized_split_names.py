@@ -3,13 +3,13 @@ from typing import List
 
 import typer
 
-from datasets_preview_backend.reports import CommonReportDict
+from datasets_preview_backend.reports import RequestReportDict
 from datasets_preview_backend.serialize import serialize_params
 
 
 def main(get_splits_reports_filename: str, output: str) -> None:
     with open(get_splits_reports_filename) as f:
-        get_splits_reports: List[CommonReportDict] = json.load(f)
+        get_splits_reports: List[RequestReportDict] = json.load(f)
 
     serialized_split_names = []
     for get_splits_report in get_splits_reports:
