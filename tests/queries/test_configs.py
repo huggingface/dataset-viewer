@@ -1,6 +1,6 @@
 import pytest
 
-from datasets_preview_backend.config import HF_TOKEN
+from datasets_preview_backend.config import DATASETS_ENABLE_PRIVATE, HF_TOKEN
 from datasets_preview_backend.constants import DEFAULT_CONFIG_NAME
 from datasets_preview_backend.exceptions import Status400Error, Status404Error
 from datasets_preview_backend.queries.configs import get_configs
@@ -8,7 +8,7 @@ from datasets_preview_backend.queries.configs import get_configs
 
 def test_config() -> None:
     # token is required for the tests
-    assert HF_TOKEN is not None
+    assert not DATASETS_ENABLE_PRIVATE or HF_TOKEN is not None
 
 
 def test_get_configs() -> None:
@@ -56,5 +56,6 @@ def test_no_dataset_no_script() -> None:
 
 
 def test_hub_private_dataset() -> None:
-    response = get_configs("severo/autonlp-data-imdb-sentiment-analysis", token=HF_TOKEN)
-    assert response["configs"] == ["default"]
+    if DATASETS_ENABLE_PRIVATE:
+        response = get_configs("severo/autonlp-data-imdb-sentiment-analysis", token=HF_TOKEN)
+        assert response["configs"] == ["default"]

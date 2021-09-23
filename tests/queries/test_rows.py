@@ -1,6 +1,6 @@
 import pytest
 
-from datasets_preview_backend.config import HF_TOKEN
+from datasets_preview_backend.config import DATASETS_ENABLE_PRIVATE, HF_TOKEN
 from datasets_preview_backend.constants import DEFAULT_CONFIG_NAME
 from datasets_preview_backend.exceptions import Status400Error, Status404Error
 from datasets_preview_backend.queries.rows import extract_rows
@@ -8,7 +8,7 @@ from datasets_preview_backend.queries.rows import extract_rows
 
 def test_config() -> None:
     # token is required for the tests
-    assert HF_TOKEN is not None
+    assert not DATASETS_ENABLE_PRIVATE or HF_TOKEN is not None
 
 
 def test_extract_split_rows() -> None:
@@ -116,7 +116,8 @@ def test_pathlib() -> None:
 
 # TODO: find a private model that works
 # def test_hub_private_dataset():
-#     response = extract_rows(
+#     if DATASETS_ENABLE_PRIVATE:
+#        response = extract_rows(
 #         "severo/autonlp-data-imdb-sentiment-analysis", "default", "train", 10, token=HF_TOKEN
-#     )
-#     assert len(response["rows"]) == 10
+#       )
+#       assert len(response["rows"]) == 10
