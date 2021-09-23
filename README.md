@@ -141,7 +141,6 @@ Responses:
 
   ```json
   {
-    "type": "all",
     "datasets": [
       "acronym_identification",
       "ade_corpus_v2",
