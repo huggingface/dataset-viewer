@@ -17,8 +17,6 @@ def main(filename: str) -> None:
     serialized_dataset_names = [
         serialize_params({"dataset": dataset_item["dataset"]}) for dataset_item in dataset_items
     ]
-    # tmp:
-    # serialized_dataset_names = serialized_dataset_names[0:15]
     with open(filename, "w") as f:
         for serialized_dataset_name in serialized_dataset_names:
             f.write("%s\n" % serialized_dataset_name)
