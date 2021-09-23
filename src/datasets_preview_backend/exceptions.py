@@ -1,6 +1,6 @@
 import logging
 
-from datasets_preview_backend.types import StatusErrorDict
+from datasets_preview_backend.types import StatusErrorContent
 
 
 class StatusError(Exception):
@@ -15,7 +15,7 @@ class StatusError(Exception):
         logger.warning(f"Error {self.status_code} '{self.message}'.")
         logger.debug(f"Caused by a {type(self.__cause__).__name__}: '{str(self.__cause__)}'")
 
-    def as_dict(self) -> StatusErrorDict:
+    def as_content(self) -> StatusErrorContent:
         return {
             "status_code": self.status_code,
             "exception": type(self).__name__,

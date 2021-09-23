@@ -141,14 +141,13 @@ Responses:
 
   ```json
   {
-    "type": "all",
     "datasets": [
-      "acronym_identification",
-      "ade_corpus_v2",
-      "adversarial_qa",
-      "aeslc",
-      "afrikaans_ner_corpus",
-      "ag_news",
+      {"dataset": "acronym_identification"},
+      {"dataset": "ade_corpus_v2"},
+      {"dataset": "adversarial_qa"},
+      {"dataset": "aeslc"},
+      {"dataset": "afrikaans_ner_corpus"},
+      {"dataset": "ag_news"},
       ...
     ]
   }
@@ -274,20 +273,55 @@ Responses:
 
   ```json
   {
-    "dataset": "glue",
     "configs": [
-      "cola",
-      "sst2",
-      "mrpc",
-      "qqp",
-      "stsb",
-      "mnli",
-      "mnli_mismatched",
-      "mnli_matched",
-      "qnli",
-      "rte",
-      "wnli",
-      "ax"
+      {
+        "dataset": "glue",
+        "config": "cola"
+      },
+      {
+        "dataset": "glue",
+        "config": "sst2"
+      },
+      {
+        "dataset": "glue",
+        "config": "mrpc"
+      },
+      {
+        "dataset": "glue",
+        "config": "qqp"
+      },
+      {
+        "dataset": "glue",
+        "config": "stsb"
+      },
+      {
+        "dataset": "glue",
+        "config": "mnli"
+      },
+      {
+        "dataset": "glue",
+        "config": "mnli_mismatched"
+      },
+      {
+        "dataset": "glue",
+        "config": "mnli_matched"
+      },
+      {
+        "dataset": "glue",
+        "config": "qnli"
+      },
+      {
+        "dataset": "glue",
+        "config": "rte"
+      },
+      {
+        "dataset": "glue",
+        "config": "wnli"
+      },
+      {
+        "dataset": "glue",
+        "config": "ax"
+      }
     ]
   }
   ```
@@ -309,7 +343,7 @@ Method: `GET`
 Parameters:
 
 - `dataset` (required): the dataset ID
-- `config`: the configuration name. It might be required, or not, depending on the dataset. If the dataset does not contain configs, the `config` parameter can equivalently be passed with `config=default` or obviated.
+- `config`: the configuration name. If the dataset does not contain configs, you may explicitly pass "config=default". If obviated, return the splits for all the configs of the dataset.
 
 Responses:
 
@@ -317,9 +351,23 @@ Responses:
 
   ```json
   {
-    "dataset": "glue",
-    "config": "ax",
-    "splits": ["test"]
+    "splits": [
+      {
+        "dataset": "glue",
+        "config": "cola",
+        "split": "test"
+      },
+      {
+        "dataset": "glue",
+        "config": "cola",
+        "split": "train"
+      },
+      {
+        "dataset": "glue",
+        "config": "cola",
+        "split": "validation"
+      }
+    ]
   }
   ```
 
@@ -338,8 +386,8 @@ Method: `GET`
 Parameters:
 
 - `dataset` (required): the dataset ID
-- `config`: the configuration name. It might be required, or not, depending on the dataset. If the dataset does not contain configs, the `config` parameter can equivalently be passed with `config=default` or obviated.
-- `split` (required): the split name
+- `config`: the configuration name. If the dataset does not contain configs, you may explicitly pass "config=default". If obviated, return the rows for all the configs of the dataset.
+- `split`: the split name. It's ignored if `config` is empty. If obviated, return the rows for all the splits of the config, or of the dataset if `config` is obviated too.
 
 Responses:
 
@@ -347,21 +395,36 @@ Responses:
 
   ```json
   {
-    "dataset": "glue",
-    "config": "ax",
-    "split": "test",
     "rows": [
       {
-        "idx": 0,
-        "hypothesis": "The cat did not sit on the mat.",
-        "label": -1,
-        "premise": "The cat sat on the mat."
+        "dataset": "glue",
+        "config": "cola",
+        "split": "train",
+        "row": {
+          "sentence": "Our friends won't buy this analysis, let alone the next one we propose.",
+          "label": 1,
+          "idx": 0
+        }
       },
       {
-        "idx": 1,
-        "hypothesis": "The cat sat on the mat.",
-        "label": -1,
-        "premise": "The cat did not sit on the mat."
+        "dataset": "glue",
+        "config": "cola",
+        "split": "train",
+        "row": {
+          "sentence": "One more pseudo generalization and I'm giving up.",
+          "label": 1,
+          "idx": 1
+        }
+      },
+      {
+        "dataset": "glue",
+        "config": "cola",
+        "split": "train",
+        "row": {
+          "sentence": "One more pseudo generalization or I'm giving up.",
+          "label": 1,
+          "idx": 2
+        }
       }
     ]
   }

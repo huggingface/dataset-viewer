@@ -3,7 +3,7 @@ from typing import Any, Dict, Optional, TypedDict
 
 import requests
 
-from datasets_preview_backend.types import StatusErrorDict
+from datasets_preview_backend.types import StatusErrorContent
 
 
 class RequestReportDict(TypedDict):
@@ -11,7 +11,7 @@ class RequestReportDict(TypedDict):
     params: Optional[Dict[str, str]]
     success: bool
     result: Any
-    error: Optional[StatusErrorDict]
+    error: Optional[StatusErrorContent]
     elapsed_seconds: float
 
 
@@ -21,7 +21,7 @@ class RequestReport:
         url: str,
         params: Optional[Dict[str, str]],
         response: Any,
-        error: Optional[StatusErrorDict],
+        error: Optional[StatusErrorContent],
         elapsed_seconds: float,
     ):
         self.url = url
@@ -29,14 +29,14 @@ class RequestReport:
         self.error = error
         self.success = self.error is None and response is not None
         self.elapsed_seconds = elapsed_seconds
-        self.result = None
+        self.result: Any = None
         if response is not None:
             # response might be too heavy (we don't want to replicate the cache)
             # we get the essence of the response, depending on the case
             if "info" in response:
                 self.result = {"info_num_keys": len(response["info"])}
             elif "configs" in response:
-                self.result = {"configs": response["configs"]}
+                self.result = {"configs": [c["config"] for c in response["configs"]]}
             elif "splits" in response:
                 self.result = {"splits": response["splits"]}
             elif "rows" in response:

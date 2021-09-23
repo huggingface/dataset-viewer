@@ -7,10 +7,10 @@ from datasets_preview_backend.cache import memoize  # type: ignore
 from datasets_preview_backend.config import CACHE_TTL_SECONDS, cache
 from datasets_preview_backend.exceptions import Status400Error, Status404Error
 from datasets_preview_backend.responses import CachedResponse
-from datasets_preview_backend.types import InfoDict
+from datasets_preview_backend.types import InfoContent
 
 
-def get_info(dataset: str, token: Optional[str] = None) -> InfoDict:
+def get_info(dataset: str, token: Optional[str] = None) -> InfoContent:
     if not isinstance(dataset, str) and dataset is not None:
         raise TypeError("dataset argument should be a string")
     if dataset is None:
@@ -35,9 +35,9 @@ def get_info_response(*, dataset: str, token: Optional[str] = None) -> CachedRes
     try:
         response = CachedResponse(get_info(dataset, token))
     except (Status400Error, Status404Error) as err:
-        response = CachedResponse(err.as_dict(), err.status_code)
+        response = CachedResponse(err.as_content(), err.status_code)
     return response
 
 
-def get_refreshed_info(dataset: str, token: Optional[str] = None) -> InfoDict:
-    return cast(InfoDict, get_info_response(dataset, token, _refresh=True)["content"])
+def get_refreshed_info(dataset: str, token: Optional[str] = None) -> InfoContent:
+    return cast(InfoContent, get_info_response(dataset, token, _refresh=True)["content"])
