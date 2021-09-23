@@ -19,10 +19,8 @@ Then update the code
 
 ```
 cd /home/hf/datasets-preview-backend/
-git fetch
-git merge
-# or better
-# git checkout 0.2.0 # <- the latest release tag (https://github.com/huggingface/datasets-preview-backend/releases/latest)
+git fetch --tags
+git checkout XXXX # <- the latest release tag (https://github.com/huggingface/datasets-preview-backend/releases/latest)
 ```
 
 If the Python version has been increased to 3.9.6, for example, [run](https://stackoverflow.com/a/65589331/7351594):
@@ -37,6 +35,13 @@ Install packages
 
 ```
 make install
+```
+
+Check is new environment variables are available and edit the environment variables in `.env`:
+
+```
+diff .env.example .env
+vi .env
 ```
 
 Check that all the tests are passing
@@ -142,10 +147,17 @@ cd datasets-preview-backend
 make install
 ```
 
+Copy and edit the environment variables file:
+
+```bash
+cp .env.example .env
+vi .env
+```
+
 Launch the app with pm2:
 
 ```bash
-PORT=8000 pm2 start --name datasets-preview-backend make -- -C /home/hf/datasets-preview-backend/ run
+pm2 start --name datasets-preview-backend make -- -C /home/hf/datasets-preview-backend/ run
 ```
 
 Check if the app is accessible at https://datasets-preview.huggingface.tech/healthcheck.
