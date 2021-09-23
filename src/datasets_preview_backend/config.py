@@ -13,6 +13,7 @@ from datasets_preview_backend.constants import (
     DEFAULT_EXTRACT_ROWS_LIMIT,
     DEFAULT_HF_TOKEN,
     DEFAULT_LOG_LEVEL,
+    DEFAULT_WEB_CONCURRENCY,
 )
 from datasets_preview_backend.utils import (
     get_bool_value,
@@ -34,5 +35,6 @@ DATASETS_ENABLE_PRIVATE = get_bool_value(
 EXTRACT_ROWS_LIMIT = get_int_value(d=os.environ, key="EXTRACT_ROWS_LIMIT", default=DEFAULT_EXTRACT_ROWS_LIMIT)
 HF_TOKEN = get_str_or_none_value(d=os.environ, key="HF_TOKEN", default=DEFAULT_HF_TOKEN)
 LOG_LEVEL = get_str_value(d=os.environ, key="LOG_LEVEL", default=DEFAULT_LOG_LEVEL)
+WEB_CONCURRENCY = get_int_value(d=os.environ, key="WEB_CONCURRENCY", default=DEFAULT_WEB_CONCURRENCY)
 
 cache = Cache(size_limit=CACHE_SIZE_LIMIT)
