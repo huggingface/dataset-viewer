@@ -9,12 +9,12 @@ from datasets_preview_backend.config import CACHE_TTL_SECONDS, EXTRACT_ROWS_LIMI
 from datasets_preview_backend.constants import DEFAULT_CONFIG_NAME
 from datasets_preview_backend.exceptions import Status400Error, Status404Error
 from datasets_preview_backend.responses import CachedResponse
-from datasets_preview_backend.types import RowsDict
+from datasets_preview_backend.types import RowsContent
 
 logger = logging.getLogger(__name__)
 
 
-def extract_rows(dataset: str, config: Union[str, None], split: str, token: Optional[str] = None) -> RowsDict:
+def extract_rows(dataset: str, config: Union[str, None], split: str, token: Optional[str] = None) -> RowsContent:
     if not isinstance(dataset, str) and dataset is not None:
         raise TypeError("dataset argument should be a string")
     if dataset is None:
@@ -83,9 +83,9 @@ def get_rows_response(
     try:
         response = CachedResponse(extract_rows(dataset, config, split, token))
     except (Status400Error, Status404Error) as err:
-        response = CachedResponse(err.as_dict(), err.status_code)
+        response = CachedResponse(err.as_content(), err.status_code)
     return response
 
 
-def get_refreshed_rows(dataset: str, config: Union[str, None], split: str, token: Optional[str] = None) -> RowsDict:
-    return cast(RowsDict, get_rows_response(dataset, config, split, token, _refresh=True)["content"])
+def get_refreshed_rows(dataset: str, config: Union[str, None], split: str, token: Optional[str] = None) -> RowsContent:
+    return cast(RowsContent, get_rows_response(dataset, config, split, token, _refresh=True)["content"])

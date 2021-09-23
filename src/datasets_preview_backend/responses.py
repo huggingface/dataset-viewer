@@ -3,10 +3,10 @@ from typing import Optional, Union
 
 from starlette.responses import Response
 
-from datasets_preview_backend.types import ResponseContent
+from datasets_preview_backend.types import Content
 
 
-def to_bytes(content: ResponseContent) -> bytes:
+def to_bytes(content: Content) -> bytes:
     return json.dumps(
         content,
         ensure_ascii=False,
@@ -25,9 +25,9 @@ class CustomJSONResponse(Response):
 
 
 class CachedResponse:
-    def __init__(self, content: ResponseContent, status_code: int = 200) -> None:
+    def __init__(self, content: Content, status_code: int = 200) -> None:
         # response content is encoded to avoid issues when caching ("/info" returns a non pickable object)
-        self.content: ResponseContent = content
+        self.content: Content = content
         self.status_code: int = status_code
         self.jsonContent: bytes = to_bytes(self.content)
 

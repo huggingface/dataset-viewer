@@ -7,10 +7,10 @@ from datasets_preview_backend.config import CACHE_TTL_SECONDS, cache
 from datasets_preview_backend.constants import DEFAULT_CONFIG_NAME
 from datasets_preview_backend.exceptions import Status400Error, Status404Error
 from datasets_preview_backend.responses import CachedResponse
-from datasets_preview_backend.types import SplitsDict
+from datasets_preview_backend.types import SplitsContent
 
 
-def get_splits(dataset: str, config: Union[str, None], token: Optional[str] = None) -> SplitsDict:
+def get_splits(dataset: str, config: Union[str, None], token: Optional[str] = None) -> SplitsContent:
     if not isinstance(dataset, str) and dataset is not None:
         raise TypeError("dataset argument should be a string")
     if dataset is None:
@@ -39,9 +39,9 @@ def get_splits_response(*, dataset: str, config: Union[str, None], token: Option
     try:
         response = CachedResponse(get_splits(dataset, config, token))
     except (Status400Error, Status404Error) as err:
-        response = CachedResponse(err.as_dict(), err.status_code)
+        response = CachedResponse(err.as_content(), err.status_code)
     return response
 
 
-def get_refreshed_splits(dataset: str, config: Union[str, None], token: Optional[str] = None) -> SplitsDict:
-    return cast(SplitsDict, get_splits_response(dataset, config, token, _refresh=True)["content"])
+def get_refreshed_splits(dataset: str, config: Union[str, None], token: Optional[str] = None) -> SplitsContent:
+    return cast(SplitsContent, get_splits_response(dataset, config, token, _refresh=True)["content"])

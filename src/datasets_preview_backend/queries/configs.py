@@ -7,10 +7,10 @@ from datasets_preview_backend.config import CACHE_TTL_SECONDS, cache
 from datasets_preview_backend.constants import DEFAULT_CONFIG_NAME
 from datasets_preview_backend.exceptions import Status400Error, Status404Error
 from datasets_preview_backend.responses import CachedResponse
-from datasets_preview_backend.types import ConfigsDict
+from datasets_preview_backend.types import ConfigsContent
 
 
-def get_configs(dataset: str, token: Optional[str] = None) -> ConfigsDict:
+def get_configs(dataset: str, token: Optional[str] = None) -> ConfigsContent:
     if not isinstance(dataset, str) and dataset is not None:
         raise TypeError("dataset argument should be a string")
     if dataset is None:
@@ -32,9 +32,9 @@ def get_configs_response(*, dataset: str, token: Optional[str] = None) -> Cached
     try:
         response = CachedResponse(get_configs(dataset, token))
     except (Status400Error, Status404Error) as err:
-        response = CachedResponse(err.as_dict(), err.status_code)
+        response = CachedResponse(err.as_content(), err.status_code)
     return response
 
 
-def get_refreshed_configs(dataset: str, token: Optional[str] = None) -> ConfigsDict:
-    return cast(ConfigsDict, get_configs_response(dataset, token, _refresh=True)["content"])
+def get_refreshed_configs(dataset: str, token: Optional[str] = None) -> ConfigsContent:
+    return cast(ConfigsContent, get_configs_response(dataset, token, _refresh=True)["content"])

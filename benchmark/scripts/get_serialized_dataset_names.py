@@ -2,7 +2,7 @@ import requests
 import typer
 
 from datasets_preview_backend.serialize import serialize_params
-from datasets_preview_backend.types import DatasetsDict
+from datasets_preview_backend.types import DatasetsContent
 
 # TODO: use env vars + add an env var for the scheme (http/https)
 ENDPOINT = "http://localhost:8000/"
@@ -11,7 +11,7 @@ ENDPOINT = "http://localhost:8000/"
 def main(filename: str) -> None:
     r = requests.get(f"{ENDPOINT}datasets")
     r.raise_for_status()
-    d: DatasetsDict = r.json()
+    d: DatasetsContent = r.json()
     dataset_items = d["datasets"]
     # replace '/' in namespaced dataset names
     serialized_dataset_names = [

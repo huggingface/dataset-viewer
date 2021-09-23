@@ -5,37 +5,38 @@ class DatasetItem(TypedDict):
     dataset: str
 
 
-class DatasetsDict(TypedDict):
-    datasets: List[DatasetItem]
-
-
 class InfoItem(TypedDict):
     dataset: str
     info: Dict[str, Any]
 
 
-InfoDict = InfoItem
+# Content of endpoint responses
+class DatasetsContent(TypedDict):
+    datasets: List[DatasetItem]
 
 
-class ConfigsDict(TypedDict):
+InfoContent = InfoItem
+
+
+class ConfigsContent(TypedDict):
     dataset: str
     configs: List[str]
 
 
-class SplitsDict(TypedDict):
+class SplitsContent(TypedDict):
     dataset: str
     config: str
     splits: List[str]
 
 
-class RowsDict(TypedDict):
+class RowsContent(TypedDict):
     dataset: str
     config: str
     split: str
     rows: List[Any]
 
 
-class StatusErrorDict(TypedDict):
+class StatusErrorContent(TypedDict):
     status_code: int
     exception: str
     message: str
@@ -43,4 +44,11 @@ class StatusErrorDict(TypedDict):
     cause_message: str
 
 
-ResponseContent = Union[DatasetsDict, InfoDict, ConfigsDict, SplitsDict, RowsDict, StatusErrorDict]
+Content = Union[
+    ConfigsContent,
+    DatasetsContent,
+    InfoContent,
+    RowsContent,
+    SplitsContent,
+    StatusErrorContent,
+]

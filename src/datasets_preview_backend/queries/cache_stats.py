@@ -7,10 +7,10 @@ from datasets_preview_backend.queries.info import get_info_response
 from datasets_preview_backend.queries.rows import get_rows_response
 from datasets_preview_backend.queries.splits import get_splits_response
 from datasets_preview_backend.types import (
-    ConfigsDict,
-    DatasetsDict,
-    ResponseContent,
-    SplitsDict,
+    ConfigsContent,
+    Content,
+    DatasetsContent,
+    SplitsContent,
 )
 
 
@@ -20,7 +20,7 @@ class ArgsCacheStats(TypedDict):
     is_expired: bool
     is_error: bool
     is_valid: bool
-    content: Union[ResponseContent, None]
+    content: Union[Content, None]
 
 
 class EndpointCacheStats(TypedDict):
@@ -83,8 +83,8 @@ def get_cache_stats() -> CacheStats:
 
     valid_datasets_reports = [d for d in datasets_reports if d["is_valid"]]
     for datasets_report in valid_datasets_reports:
-        datasets_dict = cast(DatasetsDict, datasets_report["content"])
-        datasets = datasets_dict["datasets"]
+        datasets_content = cast(DatasetsContent, datasets_report["content"])
+        datasets = datasets_content["datasets"]
 
         info_kwargs_list = [{"dataset": dataset["dataset"]} for dataset in datasets]
         local_info_reports = [get_kwargs_report(get_info_response, kwargs) for kwargs in info_kwargs_list]
@@ -96,9 +96,9 @@ def get_cache_stats() -> CacheStats:
 
         valid_configs_reports = [d for d in local_configs_reports if d["is_valid"]]
         for configs_report in valid_configs_reports:
-            configs_dict = cast(ConfigsDict, configs_report["content"])
-            dataset = configs_dict["dataset"]
-            configs = configs_dict["configs"]
+            configs_content = cast(ConfigsContent, configs_report["content"])
+            dataset = configs_content["dataset"]
+            configs = configs_content["configs"]
 
             splits_kwargs_list = [{"dataset": dataset, "config": config} for config in configs]
             local_splits_reports = [get_kwargs_report(get_splits_response, kwargs) for kwargs in splits_kwargs_list]
@@ -106,10 +106,10 @@ def get_cache_stats() -> CacheStats:
 
             valid_splits_reports = [d for d in local_splits_reports if d["is_valid"]]
             for splits_report in valid_splits_reports:
-                splits_dict = cast(SplitsDict, splits_report["content"])
-                dataset = splits_dict["dataset"]
-                config = splits_dict["config"]
-                splits = splits_dict["splits"]
+                splits_content = cast(SplitsContent, splits_report["content"])
+                dataset = splits_content["dataset"]
+                config = splits_content["config"]
+                splits = splits_content["splits"]
 
                 rows_args_list = [{"dataset": dataset, "config": config, "split": split} for split in splits]
                 local_rows_reports = [get_kwargs_report(get_rows_response, args) for args in rows_args_list]

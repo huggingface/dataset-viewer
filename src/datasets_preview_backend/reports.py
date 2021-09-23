@@ -3,7 +3,7 @@ from typing import Any, Dict, Optional, TypedDict
 
 import requests
 
-from datasets_preview_backend.types import StatusErrorDict
+from datasets_preview_backend.types import StatusErrorContent
 
 
 class RequestReportDict(TypedDict):
@@ -11,7 +11,7 @@ class RequestReportDict(TypedDict):
     params: Optional[Dict[str, str]]
     success: bool
     result: Any
-    error: Optional[StatusErrorDict]
+    error: Optional[StatusErrorContent]
     elapsed_seconds: float
 
 
@@ -21,7 +21,7 @@ class RequestReport:
         url: str,
         params: Optional[Dict[str, str]],
         response: Any,
-        error: Optional[StatusErrorDict],
+        error: Optional[StatusErrorContent],
         elapsed_seconds: float,
     ):
         self.url = url
