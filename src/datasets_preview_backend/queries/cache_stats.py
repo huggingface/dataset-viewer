@@ -111,10 +111,7 @@ def get_cache_stats() -> CacheStats:
                 config = splits_dict["config"]
                 splits = splits_dict["splits"]
 
-                # TODO: manage the num_rows argument
-                rows_args_list = [
-                    {"dataset": dataset, "config": config, "split": split, "num_rows": 100} for split in splits
-                ]
+                rows_args_list = [{"dataset": dataset, "config": config, "split": split} for split in splits]
                 local_rows_reports = [get_kwargs_report(get_rows_response, args) for args in rows_args_list]
                 rows_reports += local_rows_reports
 
