@@ -21,7 +21,12 @@ class SplitItem(TypedDict):
     split: str
 
 
-RowsItem = Any
+class RowsItem(TypedDict):
+    dataset: str
+    config: str
+    split: str
+    row: Any
+
 
 # Content of endpoint responses
 
@@ -42,9 +47,6 @@ class SplitsContent(TypedDict):
 
 
 class RowsContent(TypedDict):
-    dataset: str
-    config: str
-    split: str
     rows: List[RowsItem]
 
 

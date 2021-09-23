@@ -395,21 +395,36 @@ Responses:
 
   ```json
   {
-    "dataset": "glue",
-    "config": "ax",
-    "split": "test",
     "rows": [
       {
-        "idx": 0,
-        "hypothesis": "The cat did not sit on the mat.",
-        "label": -1,
-        "premise": "The cat sat on the mat."
+        "dataset": "glue",
+        "config": "cola",
+        "split": "train",
+        "row": {
+          "sentence": "Our friends won't buy this analysis, let alone the next one we propose.",
+          "label": 1,
+          "idx": 0
+        }
       },
       {
-        "idx": 1,
-        "hypothesis": "The cat sat on the mat.",
-        "label": -1,
-        "premise": "The cat did not sit on the mat."
+        "dataset": "glue",
+        "config": "cola",
+        "split": "train",
+        "row": {
+          "sentence": "One more pseudo generalization and I'm giving up.",
+          "label": 1,
+          "idx": 1
+        }
+      },
+      {
+        "dataset": "glue",
+        "config": "cola",
+        "split": "train",
+        "row": {
+          "sentence": "One more pseudo generalization or I'm giving up.",
+          "label": 1,
+          "idx": 2
+        }
       }
     ]
   }

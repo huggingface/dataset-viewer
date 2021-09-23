@@ -20,15 +20,17 @@ def test_get_split_rows() -> None:
     config = DEFAULT_CONFIG_NAME
     split = "train"
     response = get_rows(dataset, config, split)
-    assert "dataset" in response and response["dataset"] == dataset
-    assert "config" in response and response["config"] == config
-    assert "split" in response and response["split"] == split
     assert "rows" in response
-    rows = response["rows"]
-    assert len(rows) == EXTRACT_ROWS_LIMIT
-    assert rows[0]["tokens"][0] == "What"
+    rowItems = response["rows"]
+    assert len(rowItems) == EXTRACT_ROWS_LIMIT
+    rowItem = rowItems[0]
+    assert "dataset" in rowItem and rowItem["dataset"] == dataset
+    assert "config" in rowItem and rowItem["config"] == config
+    assert "split" in rowItem and rowItem["split"] == split
+    assert rowItem["row"]["tokens"][0] == "What"
 
 
+# TODO: this must change
 def test_get_split_rows_without_config() -> None:
     dataset = "acronym_identification"
     split = "train"

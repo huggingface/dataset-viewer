@@ -68,12 +68,7 @@ def get_rows(dataset: str, config: Union[str, None], split: str, token: Optional
             f" {split}"
         )
 
-    return {
-        "dataset": dataset,
-        "config": config,
-        "split": split,
-        "rows": rows,
-    }
+    return {"rows": [{"dataset": dataset, "config": config, "split": split, "row": row} for row in rows]}
 
 
 @memoize(cache, expire=CACHE_TTL_SECONDS)  # type:ignore
