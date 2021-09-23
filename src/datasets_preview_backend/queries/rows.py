@@ -14,7 +14,7 @@ from datasets_preview_backend.types import RowsContent
 logger = logging.getLogger(__name__)
 
 
-def extract_rows(dataset: str, config: Union[str, None], split: str, token: Optional[str] = None) -> RowsContent:
+def get_rows(dataset: str, config: Union[str, None], split: str, token: Optional[str] = None) -> RowsContent:
     if not isinstance(dataset, str) and dataset is not None:
         raise TypeError("dataset argument should be a string")
     if dataset is None:
@@ -81,7 +81,7 @@ def get_rows_response(
     *, dataset: str, config: Union[str, None], split: str, token: Optional[str] = None
 ) -> CachedResponse:
     try:
-        response = CachedResponse(extract_rows(dataset, config, split, token))
+        response = CachedResponse(get_rows(dataset, config, split, token))
     except (Status400Error, Status404Error) as err:
         response = CachedResponse(err.as_content(), err.status_code)
     return response
