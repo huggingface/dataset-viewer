@@ -5,7 +5,7 @@ from typing import Optional, Union, cast
 from datasets import IterableDataset, load_dataset
 
 from datasets_preview_backend.cache import memoize  # type: ignore
-from datasets_preview_backend.config import CACHE_TTL_SECONDS, cache
+from datasets_preview_backend.config import CACHE_TTL_SECONDS, cache, EXTRACT_ROWS_LIMIT
 from datasets_preview_backend.constants import DEFAULT_CONFIG_NAME
 from datasets_preview_backend.exceptions import Status400Error, Status404Error
 from datasets_preview_backend.responses import CachedResponse
@@ -14,9 +14,7 @@ from datasets_preview_backend.types import RowsDict
 logger = logging.getLogger(__name__)
 
 
-def extract_rows(
-    dataset: str, config: Union[str, None], split: str, num_rows: int, token: Optional[str] = None
-) -> RowsDict:
+def extract_rows(dataset: str, config: Union[str, None], split: str, token: Optional[str] = None) -> RowsDict:
     if not isinstance(dataset, str) and dataset is not None:
         raise TypeError("dataset argument should be a string")
     if dataset is None:
@@ -28,8 +26,7 @@ def extract_rows(
         raise TypeError("split argument should be a string")
     if split is None:
         raise Status400Error("'split' is a required query parameter.")
-    if not isinstance(num_rows, int):
-        raise TypeError("num_rows argument should be an int")
+    num_rows = EXTRACT_ROWS_LIMIT
 
     try:
         iterable_dataset = load_dataset(dataset, name=config, split=split, streaming=True, use_auth_token=token)
@@ -81,16 +78,14 @@ def extract_rows(
 
 @memoize(cache, expire=CACHE_TTL_SECONDS)  # type:ignore
 def get_rows_response(
-    *, dataset: str, config: Union[str, None], split: str, num_rows: int, token: Optional[str] = None
+    *, dataset: str, config: Union[str, None], split: str, token: Optional[str] = None
 ) -> CachedResponse:
     try:
-        response = CachedResponse(extract_rows(dataset, config, split, num_rows, token))
+        response = CachedResponse(extract_rows(dataset, config, split, token))
     except (Status400Error, Status404Error) as err:
         response = CachedResponse(err.as_dict(), err.status_code)
     return response
 
 
-def get_refreshed_rows(
-    dataset: str, config: Union[str, None], split: str, num_rows: int, token: Optional[str] = None
-) -> RowsDict:
-    return cast(RowsDict, get_rows_response(dataset, config, split, num_rows, token, _refresh=True)["content"])
+def get_refreshed_rows(dataset: str, config: Union[str, None], split: str, token: Optional[str] = None) -> RowsDict:
+    return cast(RowsDict, get_rows_response(dataset, config, split, token, _refresh=True)["content"])

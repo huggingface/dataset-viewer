@@ -68,13 +68,11 @@ class Rows(HTTPEndpoint):
         dataset = request.query_params.get("dataset")
         config = request.query_params.get("config")
         split = request.query_params.get("split")
-        num_rows = get_int_value(d=request.query_params, key="rows", default=EXTRACT_ROWS_LIMIT)
-        logger.info(f"/rows, dataset={dataset}, config={config}, split={split}, num_rows={num_rows}")
+        logger.info(f"/rows, dataset={dataset}, config={config}, split={split}")
         response, max_age = get_rows_response(
             dataset=dataset,
             config=config,
             split=split,
-            num_rows=num_rows,
             token=request.user.token,
             _return_max_age=True,
         )

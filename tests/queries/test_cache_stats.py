@@ -122,7 +122,7 @@ def test_get_cache_stats() -> None:
     assert endpoint["valid"] == 0
 
     # add rows to the cache
-    get_rows_response(dataset="glue", config="cola", split="train", num_rows=100)
+    get_rows_response(dataset="glue", config="cola", split="train")
     response = get_cache_stats()
     endpoints = response["endpoints"]
     endpoint = endpoints["/rows"]

@@ -2,8 +2,6 @@
 
 > API to extract rows of 🤗 datasets
 
-The URL schema is `https://huggingface.co/datasets-preview/:datasetId/extract?rows=100`. For example https://huggingface.co/datasets-preview/acronym_identification/extract?rows=10 will return a JSON file with the list of the first 10 rows of the first available dataset split in https://huggingface.co/datasets/acronym_identification.
-
 ## Requirements
 
 - Python 3.8+
@@ -333,7 +331,7 @@ Responses:
 
 > Extract the first [rows](https://huggingface.co/docs/datasets/splits.html) for a split of a dataset config
 
-Example: https://datasets-preview.huggingface.tech/rows?dataset=glue&config=ax&split=test&rows=2
+Example: https://datasets-preview.huggingface.tech/rows?dataset=glue&config=ax&split=test
 
 Method: `GET`
 
@@ -342,7 +340,6 @@ Parameters:
 - `dataset` (required): the dataset ID
 - `config`: the configuration name. It might be required, or not, depending on the dataset. If the dataset does not contain configs, the `config` parameter can equivalently be passed with `config=default` or obviated.
 - `split` (required): the split name
-- `rows`: the number of rows to extract. Defaults to 100.
 
 Responses:
 
