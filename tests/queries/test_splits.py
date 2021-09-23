@@ -45,13 +45,17 @@ def test_get_splits() -> None:
     assert len(splitItems) == 2
 
 
-# TODO: change this behavior
 def test_get_splits_without_config() -> None:
     dataset = "acronym_identification"
-    response1 = get_splits(dataset, None)
+    response1 = get_splits(dataset)
     response2 = get_splits(dataset, DEFAULT_CONFIG_NAME)
     assert len(response1["splits"]) == 3
     assert response1 == response2
+
+    dataset = "glue"
+    response = get_splits(dataset)
+    assert len(response["splits"]) == 34
+    assert {"dataset": "glue", "config": "ax", "split": "test"} in response["splits"]
 
 
 def test_builder_config_error() -> None:
