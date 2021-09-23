@@ -16,7 +16,10 @@ watch:
 	poetry run watchmedo auto-restart -d src/datasets_preview_backend -p "*.py" -R python src/datasets_preview_backend/main.py
 
 test:
-	poetry run python -m pytest --cov=datasets_preview_backend -x tests
+	poetry run python -m pytest -x tests
+
+coverage:
+	poetry run python -m pytest -s --cov --cov-report xml:coverage.xml --cov-report=term tests
 
 # Check that source code meets quality standards + security
 quality:

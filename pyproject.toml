@@ -49,7 +49,6 @@ build-backend = "poetry.core.masonry.api"
 filterwarnings = [
     "ignore::DeprecationWarning"
 ]
-addopts = "-s --cov --cov-report xml:coverage.xml --cov-report=term"
 
 [tool.coverage.run]
 source = ["datasets_preview_backend"]
