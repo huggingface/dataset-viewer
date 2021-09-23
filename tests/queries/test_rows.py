@@ -1,6 +1,10 @@
 import pytest
 
-from datasets_preview_backend.config import DATASETS_ENABLE_PRIVATE, HF_TOKEN, EXTRACT_ROWS_LIMIT
+from datasets_preview_backend.config import (
+    DATASETS_ENABLE_PRIVATE,
+    EXTRACT_ROWS_LIMIT,
+    HF_TOKEN,
+)
 from datasets_preview_backend.constants import DEFAULT_CONFIG_NAME
 from datasets_preview_backend.exceptions import Status400Error, Status404Error
 from datasets_preview_backend.queries.rows import extract_rows

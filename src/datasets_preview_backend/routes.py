@@ -4,7 +4,6 @@ from starlette.endpoints import HTTPEndpoint
 from starlette.requests import Request
 from starlette.responses import JSONResponse, PlainTextResponse, Response
 
-from datasets_preview_backend.config import EXTRACT_ROWS_LIMIT
 from datasets_preview_backend.queries.cache_stats import get_cache_stats
 from datasets_preview_backend.queries.configs import get_configs_response
 from datasets_preview_backend.queries.datasets import get_datasets_response
@@ -12,7 +11,6 @@ from datasets_preview_backend.queries.info import get_info_response
 from datasets_preview_backend.queries.rows import get_rows_response
 from datasets_preview_backend.queries.splits import get_splits_response
 from datasets_preview_backend.responses import send
-from datasets_preview_backend.utils import get_int_value
 
 logger = logging.getLogger(__name__)
 

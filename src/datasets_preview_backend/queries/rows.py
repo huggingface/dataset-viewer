@@ -5,7 +5,7 @@ from typing import Optional, Union, cast
 from datasets import IterableDataset, load_dataset
 
 from datasets_preview_backend.cache import memoize  # type: ignore
-from datasets_preview_backend.config import CACHE_TTL_SECONDS, cache, EXTRACT_ROWS_LIMIT
+from datasets_preview_backend.config import CACHE_TTL_SECONDS, EXTRACT_ROWS_LIMIT, cache
 from datasets_preview_backend.constants import DEFAULT_CONFIG_NAME
 from datasets_preview_backend.exceptions import Status400Error, Status404Error
 from datasets_preview_backend.responses import CachedResponse
