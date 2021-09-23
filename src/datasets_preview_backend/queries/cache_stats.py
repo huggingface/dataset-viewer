@@ -86,7 +86,7 @@ def get_cache_stats() -> CacheStats:
         datasets_dict = cast(DatasetsDict, datasets_report["content"])
         datasets = datasets_dict["datasets"]
 
-        info_kwargs_list = [{"dataset": dataset} for dataset in datasets]
+        info_kwargs_list = [{"dataset": dataset["dataset"]} for dataset in datasets]
         local_info_reports = [get_kwargs_report(get_info_response, kwargs) for kwargs in info_kwargs_list]
         info_reports += local_info_reports
 

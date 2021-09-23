@@ -142,12 +142,12 @@ Responses:
   ```json
   {
     "datasets": [
-      "acronym_identification",
-      "ade_corpus_v2",
-      "adversarial_qa",
-      "aeslc",
-      "afrikaans_ner_corpus",
-      "ag_news",
+      {"dataset": "acronym_identification"},
+      {"dataset": "ade_corpus_v2"},
+      {"dataset": "adversarial_qa"},
+      {"dataset": "aeslc"},
+      {"dataset": "afrikaans_ner_corpus"},
+      {"dataset": "ag_news"},
       ...
     ]
   }

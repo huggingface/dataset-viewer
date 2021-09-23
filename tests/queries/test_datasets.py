@@ -9,7 +9,7 @@ def test_get_datasets() -> None:
     assert "datasets" in response
     datasets = response["datasets"]
     assert len(datasets) > 1000
-    assert "glue" in datasets
+    assert {"dataset": "glue"} in datasets
 
 
 def test_get_refreshed_datasets() -> None:
@@ -17,4 +17,4 @@ def test_get_refreshed_datasets() -> None:
     assert "datasets" in response
     datasets = response["datasets"]
     assert len(datasets) > 1000
-    assert "glue" in datasets
+    assert {"dataset": "glue"} in datasets

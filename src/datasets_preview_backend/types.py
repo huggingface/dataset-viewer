@@ -1,8 +1,12 @@
 from typing import Any, Dict, List, TypedDict, Union
 
 
+class DatasetItem(TypedDict):
+    dataset: str
+
+
 class DatasetsDict(TypedDict):
-    datasets: List[str]
+    datasets: List[DatasetItem]
 
 
 class ConfigsDict(TypedDict):
