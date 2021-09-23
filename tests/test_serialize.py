@@ -44,7 +44,8 @@ def test_serialize_params() -> None:
     )
     assert (
         serialize_params({"dataset": "tommy19970714/common_voice", "config": "Chinese (Hong Kong)", "split": "train"})
-        == "___DATASETtommy19970714___SLASHcommon_voice___CONFIGChinese___SPACE___PARHong___SPACEKong___END_PAR___SPLITtrain"
+        == "___DATASETtommy19970714___SLASHcommon_voice"
+        + "___CONFIGChinese___SPACE___PARHong___SPACEKong___END_PAR___SPLITtrain"
     )
 
 
@@ -54,5 +55,6 @@ def test_deserialize_params() -> None:
     assert deserialize_params("___DATASETd___CONFIGc") == {"dataset": "d", "config": "c"}
     assert deserialize_params("___DATASETd___CONFIGc___SPLITs") == {"dataset": "d", "config": "c", "split": "s"}
     assert deserialize_params(
-        "___DATASETtommy19970714___SLASHcommon_voice___CONFIGChinese___SPACE___PARHong___SPACEKong___END_PAR___SPLITtrain"
+        "___DATASETtommy19970714___SLASHcommon_voice"
+        + "___CONFIGChinese___SPACE___PARHong___SPACEKong___END_PAR___SPLITtrain"
     ) == {"dataset": "tommy19970714/common_voice", "config": "Chinese (Hong Kong)", "split": "train"}
