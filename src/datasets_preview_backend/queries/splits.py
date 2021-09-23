@@ -20,9 +20,9 @@ def get_splits(dataset: str, config: Optional[str] = None, token: Optional[str] 
             raise TypeError("config argument should be a string")
         configs = [config]
     else:
-        configs_content = cast(ConfigsContent, get_configs_response(dataset=dataset).content)
+        configs_content = cast(ConfigsContent, get_configs_response(dataset=dataset, token=token).content)
         if "configs" not in configs_content:
-            # TODO: raise the get_config exception, instead of creating a new one?
+            # TODO: raise the get_configs exception, instead of creating a new one?
             # or as a cause
             raise Exception("configurations could not be found")
         configs = [configItem["config"] for configItem in configs_content["configs"]]

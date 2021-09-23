@@ -21,7 +21,7 @@ class SplitItem(TypedDict):
     split: str
 
 
-class RowsItem(TypedDict):
+class RowItem(TypedDict):
     dataset: str
     config: str
     split: str
@@ -47,7 +47,7 @@ class SplitsContent(TypedDict):
 
 
 class RowsContent(TypedDict):
-    rows: List[RowsItem]
+    rows: List[RowItem]
 
 
 class StatusErrorContent(TypedDict):

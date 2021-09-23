@@ -57,6 +57,10 @@ def test_get_splits_without_config() -> None:
     assert len(response["splits"]) == 34
     assert {"dataset": "glue", "config": "ax", "split": "test"} in response["splits"]
 
+    dataset = "adversarial_qa"
+    response = get_splits(dataset)
+    assert len(response["splits"]) == 4 * 3
+
 
 def test_builder_config_error() -> None:
     with pytest.raises(Status400Error):

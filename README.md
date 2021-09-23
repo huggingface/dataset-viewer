@@ -343,7 +343,7 @@ Method: `GET`
 Parameters:
 
 - `dataset` (required): the dataset ID
-- `config`: the configuration name. It might be required, or not, depending on the dataset. If the dataset does not contain configs, the `config` parameter can equivalently be passed with `config=default` or obviated.
+- `config`: the configuration name. If the dataset does not contain configs, you may explicitly pass "config=default". If obviated, return the splits for all the configs of the dataset.
 
 Responses:
 
@@ -386,8 +386,8 @@ Method: `GET`
 Parameters:
 
 - `dataset` (required): the dataset ID
-- `config`: the configuration name. It might be required, or not, depending on the dataset. If the dataset does not contain configs, the `config` parameter can equivalently be passed with `config=default` or obviated.
-- `split` (required): the split name
+- `config`: the configuration name. If the dataset does not contain configs, you may explicitly pass "config=default". If obviated, return the rows for all the configs of the dataset.
+- `split`: the split name. It's ignored if `config` is empty. If obviated, return the rows for all the splits of the config, or of the dataset if `config` is obviated too.
 
 Responses:
 

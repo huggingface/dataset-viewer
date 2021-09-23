@@ -30,15 +30,25 @@ def test_get_split_rows() -> None:
     assert rowItem["row"]["tokens"][0] == "What"
 
 
-# TODO: this must change
+def test_get_split_rows_without_split() -> None:
+    dataset = "acronym_identification"
+    response = get_rows(dataset, DEFAULT_CONFIG_NAME)
+    rows = response["rows"]
+    assert len(rows) == 3 * EXTRACT_ROWS_LIMIT
+
+
 def test_get_split_rows_without_config() -> None:
     dataset = "acronym_identification"
     split = "train"
-    response1 = get_rows(dataset, None, split)
-    response2 = get_rows(dataset, DEFAULT_CONFIG_NAME, split)
-    rows = response1["rows"]
-    assert len(rows) == EXTRACT_ROWS_LIMIT
+    response1 = get_rows(dataset)
+    assert len(response1["rows"]) == 1 * 3 * EXTRACT_ROWS_LIMIT
+
+    response2 = get_rows(dataset, None, split)
     assert response1 == response2
+
+    dataset = "adversarial_qa"
+    response3 = get_rows(dataset)
+    assert len(response3["rows"]) == 4 * 3 * EXTRACT_ROWS_LIMIT
 
 
 def test_get_unknown_dataset() -> None:
