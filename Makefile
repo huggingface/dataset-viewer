@@ -18,11 +18,15 @@ watch:
 test:
 	poetry run python -m pytest -x tests
 
+coverage:
+	poetry run python -m pytest -s --cov --cov-report xml:coverage.xml --cov-report=term tests
+
 # Check that source code meets quality standards + security
 quality:
 	poetry run black --check tests src benchmark
 	poetry run isort --check-only tests src benchmark
 	poetry run flake8 tests src benchmark
+	poetry run mypy tests src benchmark
 	poetry run bandit -r src benchmark
 	poetry run safety check -i 41161
 

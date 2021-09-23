@@ -30,10 +30,13 @@ Set environment variables to configure the following aspects:
 
 - `APP_HOSTNAME`: the hostname used by the app. Defaults to `"localhost"`.
 - `APP_PORT`: the port used by the app. Defaults to `8000`.
+- `CACHE_SIZE_LIMIT`: maximum size of the cache in bytes. Defaults to `1073741824` (1 GiB).
+- `CACHE_TTL_SECONDS`: number of seconds the entries are kept in cached. Defaults to `604800`.
+- `DATASETS_ENABLE_PRIVATE`: enable private datasets. Defaults to `False`.
 - `EXTRACT_ROWS_LIMIT`: number of rows in the extract, if not specified in the API request. Defaults to `100`.
 - `HF_TOKEN`: the token to be able to download the private datasets from the hub (see https://huggingface.co/settings/token). Defaults to empty.
 - `LOG_LEVEL`: log level, among `DEBUG`, `INFO`, `WARNING`, `ERROR` and `CRITICAL`. Defaults to `INFO`.
-- `WEB_CONCURRENCY`: the number of workers. Defaults to `1`.
+- `WEB_CONCURRENCY`: the number of workers. For now, it's ignored and hardcoded to 1 because the cache is not shared yet. Defaults to `1`.
 
 For example:
 
@@ -70,6 +73,98 @@ Parameters: none
 Responses:
 
 - `200`: text content `ok`
+
+### /cache
+
+> Ensure the app is running
+
+Example: https://datasets-preview.huggingface.tech/cache
+
+Method: `GET`
+
+Parameters: none
+
+Responses:
+
+- `200`: JSON content which gives statistics about the cache, with the following structure:
+
+```json
+{
+  "endpoints": {
+    "/datasets": {
+      "endpoint": "/datasets",
+      "expected": 1,
+      "cached": 1,
+      "expired": 0,
+      "error": 0,
+      "valid": 1
+    },
+    "/info": {
+      "endpoint": "/info",
+      "expected": 1490,
+      "cached": 15,
+      "expired": 0,
+      "error": 0,
+      "valid": 15
+    },
+    "/configs": {
+      "endpoint": "/configs",
+      "expected": 1490,
+      "cached": 15,
+      "expired": 0,
+      "error": 0,
+      "valid": 15
+    },
+    "/splits": {
+      "endpoint": "/splits",
+      "expected": 79,
+      "cached": 79,
+      "expired": 0,
+      "error": 0,
+      "valid": 79
+    },
+    "/rows": {
+      "endpoint": "/rows",
+      "expected": 127,
+      "cached": 127,
+      "expired": 0,
+      "error": 20,
+      "valid": 107
+    }
+  }
+}
+```
+
+### /datasets
+
+> Lists the [datasets](https://huggingface.co/docs/datasets/loading_datasets.html#selecting-a-configuration) names: canonical and community
+
+Example: https://datasets-preview.huggingface.tech/datasets
+
+Method: `GET`
+
+Parameters: none
+
+Responses:
+
+- `200`: JSON content with the following structure:
+
+  ```json
+  {
+    "type": "all",
+    "datasets": [
+      "acronym_identification",
+      "ade_corpus_v2",
+      "adversarial_qa",
+      "aeslc",
+      "afrikaans_ner_corpus",
+      "ag_news",
+      ...
+    ]
+  }
+  ```
+
+- `500`: application error
 
 ### /info
 

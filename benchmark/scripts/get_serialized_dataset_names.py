@@ -1,25 +1,21 @@
+import requests
 import typer
-from datasets import list_datasets
-from serialize import serialize_dataset_name
 
-# import os
-# import shutil
+from datasets_preview_backend.serialize import serialize_params
+
+# TODO: use env vars + add an env var for the scheme (http/https)
+ENDPOINT = "http://localhost:8000/"
 
 
-def main(filename: str):
-    dataset_names = list_datasets(with_community_datasets=True)
+def main(filename: str) -> None:
+    r = requests.get(f"{ENDPOINT}datasets")
+    r.raise_for_status()
+    d = r.json()
+    dataset_names = d["datasets"]
     # replace '/' in namespaced dataset names
-    serialized_dataset_names = [serialize_dataset_name(dataset_name) for dataset_name in dataset_names]
-    # # current subdirectories
-    # dir_list = next(os.walk(path))[1]
-    # # to add
-    # for dataset in safe_datasets:
-    #     if dataset not in dir_list:
-    #         os.mkdir(os.path.join(path, dataset))
-    # # to remove
-    # for dataset in dir_list:
-    #     if dataset not in safe_datasets:
-    #         shutil.rmtree(os.path.join(path, dataset))
+    serialized_dataset_names = [serialize_params({"dataset": dataset_name}) for dataset_name in dataset_names]
+    # tmp:
+    # serialized_dataset_names = serialized_dataset_names[0:15]
     with open(filename, "w") as f:
         for serialized_dataset_name in serialized_dataset_names:
             f.write("%s\n" % serialized_dataset_name)

@@ -1,13 +1,21 @@
 # MacOS
 .DS_Store
 
-# Python
+# Python and tools
 *.pyc
 .venv/
+.mypy_cache
+.pytest_cache
+.python-version
 
 # local configurations
 .env
 .vscode/
 poetry.toml
 
+# tests coverage
+.coverage
+coverage.xml
+
+# benchmark results
 benchmark/tmp/

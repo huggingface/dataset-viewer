@@ -1,11 +1,11 @@
 [tool.poetry]
 name = "datasets-preview-backend"
-version = "0.4.6"
+version = "0.5.0"
 description = "API to extract rows of 🤗 datasets"
 authors = ["Sylvain Lesage <severo@rednegra.net>"]
 
 [tool.poetry.dependencies]
-python = "^3.8"
+python = "^3.9.6"
 starlette = "^0.16.0"
 uvicorn = "^0.14.0"
 Pillow = "^8.3.1"
@@ -28,6 +28,8 @@ transformers = "^4.10.0"
 datasets = {git = "https://github.com/huggingface/datasets.git", rev = "a67992906ebe3f81e8047c58ba3392d2ec89fb67"}
 python-dotenv = "^0.19.0"
 watchdog = {extras = ["watchmedo"], version = "^2.1.3"}
+diskcache = "^5.2.1"
+types-requests = "^2.25.8"
 
 [tool.poetry.dev-dependencies]
 bandit = "^1.7.0"
@@ -36,6 +38,8 @@ flake8 = "^3.9.2"
 isort = "^5.9.3"
 pytest = "^6.2.4"
 safety = "^1.10.3"
+mypy = "^0.910"
+pytest-cov = "^2.12.1"
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]
@@ -46,9 +50,21 @@ filterwarnings = [
     "ignore::DeprecationWarning"
 ]
 
+[tool.coverage.run]
+source = ["datasets_preview_backend"]
+
 [tool.isort]
 profile = "black"
 
 [tool.black]
 line-length = 119
 experimental-string-processing = true
+
+[tool.mypy]
+strict = true
+exclude = 'vendors'
+
+[[tool.mypy.overrides]]
+# could be solved in datasets by adding __add__ to the __init__.py file
+module = "datasets"
+implicit_reexport = true

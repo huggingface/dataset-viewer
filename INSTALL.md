@@ -25,6 +25,14 @@ git merge
 # git checkout 0.2.0 # <- the latest release tag (https://github.com/huggingface/datasets-preview-backend/releases/latest)
 ```
 
+If the Python version has been increased to 3.9.6, for example, [run](https://stackoverflow.com/a/65589331/7351594):
+
+```
+pyenv install 3.9.6
+pyenv local 3.9.6
+poetry env use python3.9
+```
+
 Install packages
 
 ```

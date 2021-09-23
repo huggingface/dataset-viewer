@@ -2,19 +2,16 @@ import pytest
 
 from datasets_preview_backend.config import HF_TOKEN
 from datasets_preview_backend.constants import DEFAULT_CONFIG_NAME
-from datasets_preview_backend.queries.splits import (
-    Status400Error,
-    Status404Error,
-    get_splits,
-)
+from datasets_preview_backend.exceptions import Status400Error, Status404Error
+from datasets_preview_backend.queries.splits import get_splits
 
 
-def test_config():
+def test_config() -> None:
     # token is required for the tests
     assert HF_TOKEN is not None
 
 
-def test_get_splits():
+def test_get_splits() -> None:
     dataset = "acronym_identification"
     config = DEFAULT_CONFIG_NAME
     response = get_splits(dataset, config)
@@ -46,21 +43,7 @@ def test_get_splits():
     assert len(splits) == 2
 
 
-def test_missing_argument():
-    with pytest.raises(Status400Error):
-        get_splits(None, "ax")
-
-
-def test_bad_type_argument():
-    with pytest.raises(TypeError):
-        get_splits()
-    with pytest.raises(TypeError):
-        get_splits(1, "ax")
-    with pytest.raises(TypeError):
-        get_splits("glue", 1)
-
-
-def test_get_splits_without_config():
+def test_get_splits_without_config() -> None:
     dataset = "acronym_identification"
     splits1 = get_splits(dataset, None)
     splits2 = get_splits(dataset, DEFAULT_CONFIG_NAME)
@@ -69,7 +52,7 @@ def test_get_splits_without_config():
     assert splits1 == splits2
 
 
-def test_builder_config_error():
+def test_builder_config_error() -> None:
     with pytest.raises(Status400Error):
         get_splits("KETI-AIR/nikl", "spoken.v1.0")
     with pytest.raises(Status400Error):
@@ -78,13 +61,13 @@ def test_builder_config_error():
         get_splits("Valahaar/wsdmt", DEFAULT_CONFIG_NAME)
 
 
-def test_not_found():
+def test_not_found() -> None:
     with pytest.raises(Status404Error):
         get_splits("doesnotexist", DEFAULT_CONFIG_NAME)
     with pytest.raises(Status404Error):
         get_splits("glue", "doesnotexist")
 
 
-def test_hub_private_dataset():
-    response = get_splits("severo/autonlp-data-imdb-sentiment-analysis", "default", use_auth_token=HF_TOKEN)
+def test_hub_private_dataset() -> None:
+    response = get_splits("severo/autonlp-data-imdb-sentiment-analysis", "default", token=HF_TOKEN)
     assert response["splits"] == ["train"]
