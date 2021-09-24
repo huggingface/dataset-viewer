@@ -25,9 +25,7 @@ def get_splits(dataset: str, config: Optional[str] = None, token: Optional[str] 
     else:
         configs_content = cast(ConfigsContent, get_configs_response(dataset=dataset, token=token).content)
         if "configs" not in configs_content:
-            # TODO: raise the get_configs exception, instead of creating a new one?
-            # or as a cause
-            raise Exception("configurations could not be found")
+            raise Status400Error("configurations could not be found")
         configs = [configItem["config"] for configItem in configs_content["configs"]]
 
     splitItems: List[SplitItem] = []

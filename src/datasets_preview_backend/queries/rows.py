@@ -85,9 +85,7 @@ def get_rows(
     if config is None:
         configs_content = cast(ConfigsContent, get_configs_response(dataset=dataset, token=token).content)
         if "configs" not in configs_content:
-            # TODO: raise the get_config exception, instead of creating a new one?
-            # or as a cause
-            raise Exception("configurations could not be found")
+            raise Status400Error("configurations could not be found")
         configs = [configItem["config"] for configItem in configs_content["configs"]]
     else:
         configs = [config]
@@ -97,9 +95,7 @@ def get_rows(
     for config in configs:
         splits_content = cast(SplitsContent, get_splits_response(dataset=dataset, config=config, token=token).content)
         if "splits" not in splits_content:
-            # TODO: raise the get_splits exception, instead of creating a new one?
-            # or as a cause
-            raise Exception("splits could not be found")
+            raise Status400Error("splits could not be found")
         splits = [splitItem["split"] for splitItem in splits_content["splits"]]
 
         for split in splits:
