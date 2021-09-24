@@ -7,6 +7,7 @@ class DatasetItem(TypedDict):
 
 class InfoItem(TypedDict):
     dataset: str
+    config: str
     info: Dict[str, Any]
 
 
@@ -35,7 +36,8 @@ class DatasetsContent(TypedDict):
     datasets: List[DatasetItem]
 
 
-InfoContent = InfoItem
+class InfosContent(TypedDict):
+    infos: List[InfoItem]
 
 
 class ConfigsContent(TypedDict):
@@ -61,7 +63,7 @@ class StatusErrorContent(TypedDict):
 Content = Union[
     ConfigsContent,
     DatasetsContent,
-    InfoContent,
+    InfosContent,
     RowsContent,
     SplitsContent,
     StatusErrorContent,

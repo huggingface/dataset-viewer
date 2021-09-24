@@ -7,7 +7,7 @@ from starlette.responses import JSONResponse, PlainTextResponse, Response
 from datasets_preview_backend.queries.cache_stats import get_cache_stats
 from datasets_preview_backend.queries.configs import get_configs_response
 from datasets_preview_backend.queries.datasets import get_datasets_response
-from datasets_preview_backend.queries.info import get_info_response
+from datasets_preview_backend.queries.infos import get_infos_response
 from datasets_preview_backend.queries.rows import get_rows_response
 from datasets_preview_backend.queries.splits import get_splits_response
 from datasets_preview_backend.responses import send
@@ -34,11 +34,14 @@ class Datasets(HTTPEndpoint):
         return send(response, max_age)
 
 
-class Info(HTTPEndpoint):
+class Infos(HTTPEndpoint):
     async def get(self, request: Request) -> Response:
         dataset = request.query_params.get("dataset")
-        logger.info(f"/info, dataset={dataset}")
-        response, max_age = get_info_response(dataset=dataset, token=request.user.token, _return_max_age=True)
+        config = request.query_params.get("config")
+        logger.info(f"/infos, dataset={dataset}")
+        response, max_age = get_infos_response(
+            dataset=dataset, config=config, token=request.user.token, _return_max_age=True
+        )
         return send(response, max_age)
 
 

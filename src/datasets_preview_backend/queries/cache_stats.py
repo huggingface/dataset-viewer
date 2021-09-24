@@ -3,7 +3,7 @@ from typing import Any, Dict, List, TypedDict, Union, cast
 
 from datasets_preview_backend.queries.configs import get_configs_response
 from datasets_preview_backend.queries.datasets import get_datasets_response
-from datasets_preview_backend.queries.info import get_info_response
+from datasets_preview_backend.queries.infos import get_infos_response
 from datasets_preview_backend.queries.rows import get_rows_response
 from datasets_preview_backend.queries.splits import get_splits_response
 from datasets_preview_backend.types import (
@@ -76,7 +76,7 @@ def get_cache_stats() -> CacheStats:
 
     datasets_kwargs_list: Any = [{}]
     datasets_reports = [get_kwargs_report(get_datasets_response, kwargs) for kwargs in datasets_kwargs_list]
-    info_reports: List[ArgsCacheStats] = []
+    infos_reports: List[ArgsCacheStats] = []
     configs_reports: List[ArgsCacheStats] = []
     splits_reports: List[ArgsCacheStats] = []
     rows_reports: List[ArgsCacheStats] = []
@@ -86,11 +86,7 @@ def get_cache_stats() -> CacheStats:
         datasets_content = cast(DatasetsContent, datasets_report["content"])
         datasets = datasets_content["datasets"]
 
-        info_kwargs_list = [{"dataset": dataset["dataset"]} for dataset in datasets]
-        local_info_reports = [get_kwargs_report(get_info_response, kwargs) for kwargs in info_kwargs_list]
-        info_reports += local_info_reports
-
-        configs_kwargs_list = info_kwargs_list
+        configs_kwargs_list = [{"dataset": dataset["dataset"]} for dataset in datasets]
         local_configs_reports = [get_kwargs_report(get_configs_response, kwargs) for kwargs in configs_kwargs_list]
         configs_reports += local_configs_reports
 
@@ -98,6 +94,10 @@ def get_cache_stats() -> CacheStats:
         for configs_report in valid_configs_reports:
             configs_content = cast(ConfigsContent, configs_report["content"])
             configs = configs_content["configs"]
+
+            infos_kwargs_list = [{"dataset": config["dataset"], "config": config["config"]} for config in configs]
+            local_infos_reports = [get_kwargs_report(get_infos_response, kwargs) for kwargs in infos_kwargs_list]
+            infos_reports += local_infos_reports
 
             splits_kwargs_list = [{"dataset": config["dataset"], "config": config["config"]} for config in configs]
             local_splits_reports = [get_kwargs_report(get_splits_response, kwargs) for kwargs in splits_kwargs_list]
@@ -116,7 +116,7 @@ def get_cache_stats() -> CacheStats:
                 rows_reports += local_rows_reports
 
     endpoints["/datasets"] = get_endpoint_report("/datasets", datasets_reports)
-    endpoints["/info"] = get_endpoint_report("/info", info_reports)
+    endpoints["/infos"] = get_endpoint_report("/infos", infos_reports)
     endpoints["/configs"] = get_endpoint_report("/configs", configs_reports)
     endpoints["/splits"] = get_endpoint_report("/splits", splits_reports)
     endpoints["/rows"] = get_endpoint_report("/rows", rows_reports)
