@@ -59,9 +59,8 @@ def test_no_dataset_no_script() -> None:
 
 def test_hub_private_dataset() -> None:
     if DATASETS_ENABLE_PRIVATE:
-        response = get_infos("severo/autonlp-data-imdb-sentiment-analysis", token=HF_TOKEN)
-        assert response["infos"] == []
-
+        with pytest.raises(Status404Error):
+            response = get_infos("severo/autonlp-data-imdb-sentiment-analysis", token=HF_TOKEN)
     # TODO: find/create a private dataset with a dataset-info.json file
 
 
