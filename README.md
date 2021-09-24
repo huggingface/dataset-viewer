@@ -461,10 +461,40 @@ Parameters:
 
 Responses:
 
-- `200`: JSON content with the following structure:
+- `200`: JSON content that provides the types of the columns (see https://huggingface.co/docs/datasets/about_dataset_features.html) and the data rows, with the following structure:
 
   ```json
   {
+    "features": [
+      {
+        "dataset": "glue",
+        "config": "ax",
+        "features": {
+          "premise": {
+            "dtype": "string",
+            "id": null,
+            "_type": "Value"
+          },
+          "hypothesis": {
+            "dtype": "string",
+            "id": null,
+            "_type": "Value"
+          },
+          "label": {
+            "num_classes": 3,
+            "names": ["entailment", "neutral", "contradiction"],
+            "names_file": null,
+            "id": null,
+            "_type": "ClassLabel"
+          },
+          "idx": {
+            "dtype": "int32",
+            "id": null,
+            "_type": "Value"
+          }
+        }
+      }
+    ],
     "rows": [
       {
         "dataset": "glue",

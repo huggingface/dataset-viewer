@@ -9,10 +9,13 @@ from datasets_preview_backend.config import CACHE_TTL_SECONDS, EXTRACT_ROWS_LIMI
 from datasets_preview_backend.constants import DATASETS_BLOCKLIST
 from datasets_preview_backend.exceptions import Status400Error, Status404Error
 from datasets_preview_backend.queries.configs import get_configs_response
+from datasets_preview_backend.queries.infos import get_infos_response
 from datasets_preview_backend.queries.splits import get_splits_response
 from datasets_preview_backend.responses import CachedResponse
 from datasets_preview_backend.types import (
     ConfigsContent,
+    FeatureItem,
+    InfosContent,
     RowItem,
     RowsContent,
     SplitsContent,
@@ -40,6 +43,9 @@ def get_rows(
     if not isinstance(split, str) and split is not None:
         raise TypeError("split argument should be a string")
     num_rows = EXTRACT_ROWS_LIMIT
+
+    rowItems: List[RowItem] = []
+    featureItems: List[FeatureItem] = []
 
     if config is not None and split is not None:
         try:
@@ -81,7 +87,28 @@ def get_rows(
                 f"could not read all the required rows ({len(rows)} / {num_rows}) from dataset {dataset} -"
                 f" {config} - {split}"
             )
-        return {"rows": [{"dataset": dataset, "config": config, "split": split, "row": row} for row in rows]}
+
+        rowItems = [{"dataset": dataset, "config": config, "split": split, "row": row} for row in rows]
+
+        content = get_infos_response(dataset=dataset, config=config, token=token).content
+        if "infos" not in content:
+            error = cast(StatusErrorContent, content)
+            if "status_code" in error and error["status_code"] == 404:
+                raise Status404Error("features could not be found")
+            raise Status400Error("features could not be found")
+        infos_content = cast(InfosContent, content)
+        infoItems = [infoItem["info"] for infoItem in infos_content["infos"]]
+
+        if len(infoItems) != 1:
+            raise Exception("a dataset config should have exactly one info")
+        infoItem = infoItems[0]
+        if "features" not in infoItem:
+            raise Status400Error("a dataset config info should contain a 'features' property")
+        localFeaturesItems: List[FeatureItem] = [
+            {"dataset": dataset, "config": config, "features": infoItem["features"]}
+        ]
+
+        return {"features": localFeaturesItems, "rows": rowItems}
 
     if config is None:
         content = get_configs_response(dataset=dataset, token=token).content
@@ -95,7 +122,6 @@ def get_rows(
     else:
         configs = [config]
 
-    rowItems: List[RowItem] = []
     # Note that we raise on the first error
     for config in configs:
         content = get_splits_response(dataset=dataset, config=config, token=token).content
@@ -108,12 +134,20 @@ def get_rows(
         splits = [splitItem["split"] for splitItem in splits_content["splits"]]
 
         for split in splits:
-            rows_content = cast(
-                RowsContent, get_rows_response(dataset=dataset, config=config, split=split, token=token).content
-            )
+            content = get_rows_response(dataset=dataset, config=config, split=split, token=token).content
+            if "rows" not in content:
+                error = cast(StatusErrorContent, content)
+                if "status_code" in error and error["status_code"] == 404:
+                    raise Status404Error("rows could not be found")
+                raise Status400Error("rows could not be found")
+            rows_content = cast(RowsContent, content)
             rowItems += rows_content["rows"]
+            for featureItem in rows_content["features"]:
+                # there should be only one element. Anyway, let's loop
+                if featureItem not in featureItems:
+                    featureItems.append(featureItem)
 
-    return {"rows": rowItems}
+    return {"features": featureItems, "rows": rowItems}
 
 
 @memoize(cache, expire=CACHE_TTL_SECONDS)  # type:ignore

@@ -40,7 +40,7 @@ class RequestReport:
             elif "splits" in response:
                 self.result = {"splits": response["splits"]}
             elif "rows" in response:
-                self.result = {"rows_length": len(response["rows"])}
+                self.result = {"rows_length": len(response["rows"]), "features_length": len(response["features"])}
             else:
                 self.result = {}
 
