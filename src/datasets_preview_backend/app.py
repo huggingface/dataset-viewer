@@ -13,7 +13,7 @@ from datasets_preview_backend.routes import (
     Configs,
     Datasets,
     HealthCheck,
-    Info,
+    Infos,
     Rows,
     Splits,
 )
@@ -25,7 +25,7 @@ def create_app() -> Starlette:
         routes=[
             Route("/healthcheck", endpoint=HealthCheck),
             Route("/datasets", endpoint=Datasets),
-            Route("/info", endpoint=Info),
+            Route("/infos", endpoint=Infos),
             Route("/configs", endpoint=Configs),
             Route("/splits", endpoint=Splits),
             Route("/rows", endpoint=Rows),
