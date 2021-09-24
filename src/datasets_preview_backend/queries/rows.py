@@ -1,6 +1,6 @@
 import logging
 import re
-from typing import List, Optional, Union, cast
+from typing import List, Optional, cast
 
 from datasets import IterableDataset, load_dataset
 
@@ -113,7 +113,7 @@ def get_rows(
 
 @memoize(cache, expire=CACHE_TTL_SECONDS)  # type:ignore
 def get_rows_response(
-    *, dataset: str, config: Union[str, None], split: str, token: Optional[str] = None
+    *, dataset: str, config: Optional[str] = None, split: Optional[str] = None, token: Optional[str] = None
 ) -> CachedResponse:
     try:
         response = CachedResponse(get_rows(dataset, config, split, token))
@@ -122,5 +122,7 @@ def get_rows_response(
     return response
 
 
-def get_refreshed_rows(dataset: str, config: Union[str, None], split: str, token: Optional[str] = None) -> RowsContent:
+def get_refreshed_rows(
+    dataset: str, config: Optional[str] = None, split: Optional[str] = None, token: Optional[str] = None
+) -> RowsContent:
     return cast(RowsContent, get_rows_response(dataset, config, split, token, _refresh=True)["content"])

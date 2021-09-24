@@ -1,4 +1,4 @@
-from typing import List, Optional, Union, cast
+from typing import List, Optional, cast
 
 from datasets import get_dataset_split_names
 
@@ -50,7 +50,7 @@ def get_splits(dataset: str, config: Optional[str] = None, token: Optional[str] 
 
 
 @memoize(cache, expire=CACHE_TTL_SECONDS)  # type:ignore
-def get_splits_response(*, dataset: str, config: Union[str, None], token: Optional[str] = None) -> CachedResponse:
+def get_splits_response(*, dataset: str, config: Optional[str] = None, token: Optional[str] = None) -> CachedResponse:
     try:
         response = CachedResponse(get_splits(dataset, config, token))
     except (Status400Error, Status404Error) as err:
@@ -58,5 +58,5 @@ def get_splits_response(*, dataset: str, config: Union[str, None], token: Option
     return response
 
 
-def get_refreshed_splits(dataset: str, config: Union[str, None], token: Optional[str] = None) -> SplitsContent:
+def get_refreshed_splits(dataset: str, config: Optional[str] = None, token: Optional[str] = None) -> SplitsContent:
     return cast(SplitsContent, get_splits_response(dataset, config, token, _refresh=True)["content"])
