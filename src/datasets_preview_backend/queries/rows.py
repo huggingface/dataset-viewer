@@ -16,6 +16,7 @@ from datasets_preview_backend.types import (
     RowItem,
     RowsContent,
     SplitsContent,
+    StatusErrorContent,
 )
 
 logger = logging.getLogger(__name__)
@@ -83,9 +84,13 @@ def get_rows(
         return {"rows": [{"dataset": dataset, "config": config, "split": split, "row": row} for row in rows]}
 
     if config is None:
-        configs_content = cast(ConfigsContent, get_configs_response(dataset=dataset, token=token).content)
-        if "configs" not in configs_content:
+        content = get_configs_response(dataset=dataset, token=token).content
+        if "configs" not in content:
+            error = cast(StatusErrorContent, content)
+            if "status_code" in error and error["status_code"] == 404:
+                raise Status404Error("configurations could not be found")
             raise Status400Error("configurations could not be found")
+        configs_content = cast(ConfigsContent, content)
         configs = [configItem["config"] for configItem in configs_content["configs"]]
     else:
         configs = [config]
@@ -93,9 +98,13 @@ def get_rows(
     rowItems: List[RowItem] = []
     # Note that we raise on the first error
     for config in configs:
-        splits_content = cast(SplitsContent, get_splits_response(dataset=dataset, config=config, token=token).content)
-        if "splits" not in splits_content:
+        content = get_splits_response(dataset=dataset, config=config, token=token).content
+        if "splits" not in content:
+            error = cast(StatusErrorContent, content)
+            if "status_code" in error and error["status_code"] == 404:
+                raise Status404Error("splits could not be found")
             raise Status400Error("splits could not be found")
+        splits_content = cast(SplitsContent, content)
         splits = [splitItem["split"] for splitItem in splits_content["splits"]]
 
         for split in splits:

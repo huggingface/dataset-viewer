@@ -8,7 +8,12 @@ from datasets_preview_backend.constants import DATASETS_BLOCKLIST
 from datasets_preview_backend.exceptions import Status400Error, Status404Error
 from datasets_preview_backend.queries.configs import get_configs_response
 from datasets_preview_backend.responses import CachedResponse
-from datasets_preview_backend.types import ConfigsContent, SplitItem, SplitsContent
+from datasets_preview_backend.types import (
+    ConfigsContent,
+    SplitItem,
+    SplitsContent,
+    StatusErrorContent,
+)
 
 
 def get_splits(dataset: str, config: Optional[str] = None, token: Optional[str] = None) -> SplitsContent:
@@ -23,9 +28,13 @@ def get_splits(dataset: str, config: Optional[str] = None, token: Optional[str] 
             raise TypeError("config argument should be a string")
         configs = [config]
     else:
-        configs_content = cast(ConfigsContent, get_configs_response(dataset=dataset, token=token).content)
-        if "configs" not in configs_content:
+        content = get_configs_response(dataset=dataset, token=token).content
+        if "configs" not in content:
+            error = cast(StatusErrorContent, content)
+            if "status_code" in error and error["status_code"] == 404:
+                raise Status404Error("configurations could not be found")
             raise Status400Error("configurations could not be found")
+        configs_content = cast(ConfigsContent, content)
         configs = [configItem["config"] for configItem in configs_content["configs"]]
 
     splitItems: List[SplitItem] = []
