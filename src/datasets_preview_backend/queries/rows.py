@@ -6,6 +6,7 @@ from datasets import IterableDataset, load_dataset
 
 from datasets_preview_backend.cache import memoize  # type: ignore
 from datasets_preview_backend.config import CACHE_TTL_SECONDS, EXTRACT_ROWS_LIMIT, cache
+from datasets_preview_backend.constants import DATASETS_BLOCKLIST
 from datasets_preview_backend.exceptions import Status400Error, Status404Error
 from datasets_preview_backend.queries.configs import get_configs_response
 from datasets_preview_backend.queries.splits import get_splits_response
@@ -27,6 +28,8 @@ def get_rows(
         raise TypeError("dataset argument should be a string")
     if dataset is None:
         raise Status400Error("'dataset' is a required query parameter.")
+    if dataset in DATASETS_BLOCKLIST:
+        raise Status400Error("this dataset is not supported for now.")
     if config is None:
         # split is ignored if config is not passed
         logger.warning("split argument is ignored since config is not provided")

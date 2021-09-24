@@ -1,3 +1,5 @@
+from typing import List
+
 DEFAULT_APP_HOSTNAME: str = "localhost"
 DEFAULT_APP_PORT: int = 8000
 DEFAULT_CACHE_SIZE_LIMIT: int = 1073741824  # 2 ** 30 = 1 GiB
@@ -9,3 +11,4 @@ DEFAULT_LOG_LEVEL: str = "INFO"
 DEFAULT_WEB_CONCURRENCY: int = 1
 
 DEFAULT_CONFIG_NAME: str = "default"
+DATASETS_BLOCKLIST: List[str] = ["allenai/c4"]
