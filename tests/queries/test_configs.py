@@ -61,3 +61,10 @@ def test_hub_private_dataset() -> None:
     if DATASETS_ENABLE_PRIVATE:
         response = get_configs("severo/autonlp-data-imdb-sentiment-analysis", token=HF_TOKEN)
         assert response["configs"] == [{"dataset": "severo/autonlp-data-imdb-sentiment-analysis", "config": "default"}]
+
+
+def test_blocklisted_datasets() -> None:
+    # see https://github.com/huggingface/datasets-preview-backend/issues/17
+    dataset = "allenai/c4"
+    with pytest.raises(Status400Error):
+        get_configs(dataset)

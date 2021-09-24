@@ -126,3 +126,10 @@ def test_pathlib() -> None:
 #         "severo/autonlp-data-imdb-sentiment-analysis", "default", "train", token=HF_TOKEN
 #       )
 #       assert len(response["rows"]) == EXTRACT_ROWS_LIMIT
+
+
+def test_blocklisted_datasets() -> None:
+    # see https://github.com/huggingface/datasets-preview-backend/issues/17
+    dataset = "allenai/c4"
+    with pytest.raises(Status400Error):
+        get_rows(dataset)

@@ -82,3 +82,10 @@ def test_hub_private_dataset() -> None:
     if DATASETS_ENABLE_PRIVATE:
         response = get_splits("severo/autonlp-data-imdb-sentiment-analysis", "default", token=HF_TOKEN)
         assert response["splits"][0]["split"] == "train"
+
+
+def test_blocklisted_datasets() -> None:
+    # see https://github.com/huggingface/datasets-preview-backend/issues/17
+    dataset = "allenai/c4"
+    with pytest.raises(Status400Error):
+        get_splits(dataset)

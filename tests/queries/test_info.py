@@ -58,3 +58,10 @@ def test_hub_private_dataset() -> None:
         assert response["info"] == {}
 
     # TODO: find/create a private dataset with a dataset-info.json file
+
+
+def test_blocklisted_datasets() -> None:
+    # see https://github.com/huggingface/datasets-preview-backend/issues/17
+    dataset = "allenai/c4"
+    with pytest.raises(Status400Error):
+        get_info(dataset)

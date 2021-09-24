@@ -4,7 +4,7 @@ from datasets import get_dataset_config_names
 
 from datasets_preview_backend.cache import memoize  # type: ignore
 from datasets_preview_backend.config import CACHE_TTL_SECONDS, cache
-from datasets_preview_backend.constants import DEFAULT_CONFIG_NAME
+from datasets_preview_backend.constants import DATASETS_BLOCKLIST, DEFAULT_CONFIG_NAME
 from datasets_preview_backend.exceptions import Status400Error, Status404Error
 from datasets_preview_backend.responses import CachedResponse
 from datasets_preview_backend.types import ConfigsContent
@@ -15,6 +15,8 @@ def get_configs(dataset: str, token: Optional[str] = None) -> ConfigsContent:
         raise TypeError("dataset argument should be a string")
     if dataset is None:
         raise Status400Error("'dataset' is a required query parameter.")
+    if dataset in DATASETS_BLOCKLIST:
+        raise Status400Error("this dataset is not supported for now.")
     try:
         configs = get_dataset_config_names(dataset, use_auth_token=token)
         if len(configs) == 0:
