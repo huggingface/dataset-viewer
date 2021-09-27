@@ -34,6 +34,12 @@ def test_get_infos_no_config() -> None:
     assert len(infoItems) == 12
 
 
+def test_get_infos_no_dataset_info_file() -> None:
+    dataset = "lhoestq/custom_squad"
+    response = get_infos(dataset)
+    assert len(response["infos"]) == 1
+
+
 def test_script_error() -> None:
     # raises "ModuleNotFoundError: No module named 'datasets_modules.datasets.br-quad-2'"
     # which should be caught and raised as DatasetBuilderScriptError

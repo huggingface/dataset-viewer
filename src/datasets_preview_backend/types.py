@@ -29,7 +29,7 @@ class RowItem(TypedDict):
     row: Any
 
 
-class FeatureItem(TypedDict):
+class FeaturesItem(TypedDict):
     dataset: str
     config: str
     features: Any
@@ -55,7 +55,7 @@ class SplitsContent(TypedDict):
 
 
 class RowsContent(TypedDict):
-    features: List[FeatureItem]
+    features: List[FeaturesItem]
     rows: List[RowItem]
 
 

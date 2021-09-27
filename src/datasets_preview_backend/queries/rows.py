@@ -14,7 +14,7 @@ from datasets_preview_backend.queries.splits import get_splits_response
 from datasets_preview_backend.responses import CachedResponse
 from datasets_preview_backend.types import (
     ConfigsContent,
-    FeatureItem,
+    FeaturesItem,
     InfosContent,
     RowItem,
     RowsContent,
@@ -45,7 +45,7 @@ def get_rows(
     num_rows = EXTRACT_ROWS_LIMIT
 
     rowItems: List[RowItem] = []
-    featureItems: List[FeatureItem] = []
+    featuresItems: List[FeaturesItem] = []
 
     if config is not None and split is not None:
         try:
@@ -104,7 +104,7 @@ def get_rows(
         infoItem = infoItems[0]
         if "features" not in infoItem:
             raise Status400Error("a dataset config info should contain a 'features' property")
-        localFeaturesItems: List[FeatureItem] = [
+        localFeaturesItems: List[FeaturesItem] = [
             {"dataset": dataset, "config": config, "features": infoItem["features"]}
         ]
 
@@ -142,12 +142,12 @@ def get_rows(
                 raise Status400Error("rows could not be found")
             rows_content = cast(RowsContent, content)
             rowItems += rows_content["rows"]
-            for featureItem in rows_content["features"]:
+            for featuresItem in rows_content["features"]:
                 # there should be only one element. Anyway, let's loop
-                if featureItem not in featureItems:
-                    featureItems.append(featureItem)
+                if featuresItem not in featuresItems:
+                    featuresItems.append(featuresItem)
 
-    return {"features": featureItems, "rows": rowItems}
+    return {"features": featuresItems, "rows": rowItems}
 
 
 @memoize(cache, expire=CACHE_TTL_SECONDS)  # type:ignore

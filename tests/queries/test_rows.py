@@ -37,11 +37,11 @@ def test_get_split_features() -> None:
     response = get_rows(dataset, config, split)
     assert "features" in response
     assert len(response["features"]) == 1
-    featureItem = response["features"][0]
-    assert "dataset" in featureItem
-    assert "config" in featureItem
-    assert "features" in featureItem
-    assert featureItem["features"]["tokens"]["_type"] == "Sequence"
+    featuresItem = response["features"][0]
+    assert "dataset" in featuresItem
+    assert "config" in featuresItem
+    assert "features" in featuresItem
+    assert featuresItem["features"]["tokens"]["_type"] == "Sequence"
 
 
 def test_get_split_rows_without_split() -> None:

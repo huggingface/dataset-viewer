@@ -1,7 +1,7 @@
 from dataclasses import asdict
 from typing import List, Optional, cast
 
-from datasets import get_dataset_infos
+from datasets import load_dataset_builder
 
 from datasets_preview_backend.cache import memoize  # type: ignore
 from datasets_preview_backend.config import CACHE_TTL_SECONDS, cache
@@ -42,12 +42,9 @@ def get_infos(dataset: str, config: Optional[str] = None, token: Optional[str] =
     # Note that we raise on the first error
     for config in configs:
         try:
-            dataset_info_dict = get_dataset_infos(dataset, use_auth_token=token)
-            if config not in dataset_info_dict:
-                # this is an error in the dataset-info.json
-                raise Exception("The config is not listed in the datasets infos")
-            info = asdict(dataset_info_dict[config])
-            if "splits" in info:
+            builder = load_dataset_builder(dataset, name=config, use_auth_token=token)
+            info = asdict(builder.info)
+            if "splits" in info and info["splits"] is not None:
                 info["splits"] = {split_name: split_info for split_name, split_info in info["splits"].items()}
         except FileNotFoundError as err:
             raise Status404Error("The config info could not be found.") from err
