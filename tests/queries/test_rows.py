@@ -1,18 +1,11 @@
 import pytest
 
 from datasets_preview_backend.config import (
-    DATASETS_ENABLE_PRIVATE,
     EXTRACT_ROWS_LIMIT,
-    HF_TOKEN,
 )
 from datasets_preview_backend.constants import DEFAULT_CONFIG_NAME
 from datasets_preview_backend.exceptions import Status400Error, Status404Error
 from datasets_preview_backend.queries.rows import get_rows
-
-
-def test_config() -> None:
-    # token is required for the tests
-    assert not DATASETS_ENABLE_PRIVATE or HF_TOKEN is not None
 
 
 def test_get_split_rows() -> None:
@@ -138,15 +131,6 @@ def test_pathlib() -> None:
     # see https://github.com/huggingface/datasets/issues/2866
     response = get_rows("counter", DEFAULT_CONFIG_NAME, "train")
     assert len(response["rows"]) == EXTRACT_ROWS_LIMIT
-
-
-# TODO: find a private model that works
-# def test_hub_private_dataset():
-#     if DATASETS_ENABLE_PRIVATE:
-#        response = get_rows(
-#         "severo/autonlp-data-imdb-sentiment-analysis", "default", "train", token=HF_TOKEN
-#       )
-#       assert len(response["rows"]) == EXTRACT_ROWS_LIMIT
 
 
 def test_blocklisted_datasets() -> None:

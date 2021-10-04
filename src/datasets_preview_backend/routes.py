@@ -40,7 +40,9 @@ class Infos(HTTPEndpoint):
         config = request.query_params.get("config")
         logger.info(f"/infos, dataset={dataset}")
         response, max_age = get_infos_response(
-            dataset=dataset, config=config, token=request.user.token, _return_max_age=True
+            dataset=dataset,
+            config=config,
+            _return_max_age=True,
         )
         return send(response, max_age)
 
@@ -49,7 +51,7 @@ class Configs(HTTPEndpoint):
     async def get(self, request: Request) -> Response:
         dataset = request.query_params.get("dataset")
         logger.info(f"/configs, dataset={dataset}")
-        response, max_age = get_configs_response(dataset=dataset, token=request.user.token, _return_max_age=True)
+        response, max_age = get_configs_response(dataset=dataset, _return_max_age=True)
         return send(response, max_age)
 
 
@@ -59,7 +61,9 @@ class Splits(HTTPEndpoint):
         config = request.query_params.get("config")
         logger.info(f"/splits, dataset={dataset}, config={config}")
         response, max_age = get_splits_response(
-            dataset=dataset, config=config, token=request.user.token, _return_max_age=True
+            dataset=dataset,
+            config=config,
+            _return_max_age=True,
         )
         return send(response, max_age)
 
@@ -74,7 +78,6 @@ class Rows(HTTPEndpoint):
             dataset=dataset,
             config=config,
             split=split,
-            token=request.user.token,
             _return_max_age=True,
         )
         return send(response, max_age)

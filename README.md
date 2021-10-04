@@ -32,7 +32,6 @@ Set environment variables to configure the following aspects:
 - `CACHE_TTL_SECONDS`: number of seconds the entries are kept in cached. Defaults to `604800`.
 - `DATASETS_ENABLE_PRIVATE`: enable private datasets. Defaults to `False`.
 - `EXTRACT_ROWS_LIMIT`: number of rows in the extract, if not specified in the API request. Defaults to `100`.
-- `HF_TOKEN`: the token to be able to download the private datasets from the hub (see https://huggingface.co/settings/token). Defaults to empty.
 - `LOG_LEVEL`: log level, among `DEBUG`, `INFO`, `WARNING`, `ERROR` and `CRITICAL`. Defaults to `INFO`.
 - `WEB_CONCURRENCY`: the number of workers. For now, it's ignored and hardcoded to 1 because the cache is not shared yet. Defaults to `1`.
 

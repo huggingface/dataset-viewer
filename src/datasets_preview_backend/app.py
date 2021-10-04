@@ -5,9 +5,7 @@ from starlette.routing import Route
 from datasets_preview_backend.config import (
     APP_HOSTNAME,
     APP_PORT,
-    DATASETS_ENABLE_PRIVATE,
 )
-from datasets_preview_backend.middleware.token import get_token_middleware
 from datasets_preview_backend.routes import (
     CacheStats,
     Configs,
@@ -20,7 +18,6 @@ from datasets_preview_backend.routes import (
 
 
 def create_app() -> Starlette:
-    middleware = [get_token_middleware(datasets_enable_private=DATASETS_ENABLE_PRIVATE)]
     return Starlette(
         routes=[
             Route("/healthcheck", endpoint=HealthCheck),
@@ -31,7 +28,6 @@ def create_app() -> Starlette:
             Route("/rows", endpoint=Rows),
             Route("/cache", endpoint=CacheStats),
         ],
-        middleware=middleware,
     )
 
 

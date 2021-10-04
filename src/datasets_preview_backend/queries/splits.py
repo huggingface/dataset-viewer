@@ -16,7 +16,7 @@ from datasets_preview_backend.types import (
 )
 
 
-def get_splits(dataset: str, config: Optional[str] = None, token: Optional[str] = None) -> SplitsContent:
+def get_splits(dataset: str, config: Optional[str] = None) -> SplitsContent:
     if not isinstance(dataset, str) and dataset is not None:
         raise TypeError("dataset argument should be a string")
     if dataset is None:
@@ -28,7 +28,7 @@ def get_splits(dataset: str, config: Optional[str] = None, token: Optional[str] 
             raise TypeError("config argument should be a string")
         configs = [config]
     else:
-        content = get_configs_response(dataset=dataset, token=token).content
+        content = get_configs_response(dataset=dataset).content
         if "configs" not in content:
             error = cast(StatusErrorContent, content)
             if "status_code" in error and error["status_code"] == 404:
@@ -41,7 +41,7 @@ def get_splits(dataset: str, config: Optional[str] = None, token: Optional[str] 
     # Note that we raise on the first error
     for config in configs:
         try:
-            splits = get_dataset_split_names(dataset, config, use_auth_token=token)
+            splits = get_dataset_split_names(dataset, config)
         except FileNotFoundError as err:
             raise Status404Error("The dataset config could not be found.") from err
         except ValueError as err:
@@ -57,13 +57,13 @@ def get_splits(dataset: str, config: Optional[str] = None, token: Optional[str] 
 
 
 @memoize(cache, expire=CACHE_TTL_SECONDS)  # type:ignore
-def get_splits_response(*, dataset: str, config: Optional[str] = None, token: Optional[str] = None) -> CachedResponse:
+def get_splits_response(*, dataset: str, config: Optional[str] = None) -> CachedResponse:
     try:
-        response = CachedResponse(get_splits(dataset, config, token))
+        response = CachedResponse(get_splits(dataset, config))
     except (Status400Error, Status404Error) as err:
         response = CachedResponse(err.as_content(), err.status_code)
     return response
 
 
-def get_refreshed_splits(dataset: str, config: Optional[str] = None, token: Optional[str] = None) -> SplitsContent:
-    return cast(SplitsContent, get_splits_response(dataset, config, token, _refresh=True)["content"])
+def get_refreshed_splits(dataset: str, config: Optional[str] = None) -> SplitsContent:
+    return cast(SplitsContent, get_splits_response(dataset, config, _refresh=True)["content"])

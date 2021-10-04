@@ -9,7 +9,6 @@ from datasets_preview_backend.types import DatasetsContent
 
 
 def get_datasets() -> DatasetsContent:
-    # TODO: provide "token: Optional[str] = None" and fetch private datasets as well
     # If an exception is raised, we let starlette generate a 500 error
     datasets: List[str] = list_datasets(with_community_datasets=True, with_details=False)  # type: ignore
     return {"datasets": [{"dataset": d} for d in datasets]}

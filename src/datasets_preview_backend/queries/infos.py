@@ -17,7 +17,7 @@ from datasets_preview_backend.types import (
 )
 
 
-def get_infos(dataset: str, config: Optional[str] = None, token: Optional[str] = None) -> InfosContent:
+def get_infos(dataset: str, config: Optional[str] = None) -> InfosContent:
     if not isinstance(dataset, str) and dataset is not None:
         raise TypeError("dataset argument should be a string")
     if dataset is None:
@@ -29,7 +29,7 @@ def get_infos(dataset: str, config: Optional[str] = None, token: Optional[str] =
             raise TypeError("config argument should be a string")
         configs = [config]
     else:
-        content = get_configs_response(dataset=dataset, token=token).content
+        content = get_config_responses(dataset=dataset).content
         if "configs" not in content:
             error = cast(StatusErrorContent, content)
             if "status_code" in error and error["status_code"] == 404:
@@ -43,7 +43,7 @@ def get_infos(dataset: str, config: Optional[str] = None, token: Optional[str] =
     for config in configs:
         try:
             # TODO: use get_dataset_infos if https://github.com/huggingface/datasets/issues/3013 is fixed
-            builder = load_dataset_builder(dataset, name=config, use_auth_token=token)
+            builder = load_dataset_builder(dataset, name=config)
             info = asdict(builder.info)
             if "splits" in info and info["splits"] is not None:
                 info["splits"] = {split_name: split_info for split_name, split_info in info["splits"].items()}
@@ -57,13 +57,13 @@ def get_infos(dataset: str, config: Optional[str] = None, token: Optional[str] =
 
 
 @memoize(cache, expire=CACHE_TTL_SECONDS)  # type:ignore
-def get_infos_response(*, dataset: str, config: Optional[str] = None, token: Optional[str] = None) -> CachedResponse:
+def get_infos_response(*, dataset: str, config: Optional[str] = None) -> CachedResponse:
     try:
-        response = CachedResponse(get_infos(dataset, config, token))
+        response = CachedResponse(get_infos(dataset, config))
     except (Status400Error, Status404Error) as err:
         response = CachedResponse(err.as_content(), err.status_code)
     return response
 
 
-def get_refreshed_infos(dataset: str, config: Optional[str] = None, token: Optional[str] = None) -> InfosContent:
-    return cast(InfosContent, get_infos_response(dataset, config, token, _refresh=True)["content"])
+def get_refreshed_infos(dataset: str, config: Optional[str] = None) -> InfosContent:
+    return cast(InfosContent, get_infos_response(dataset, config, _refresh=True)["content"])

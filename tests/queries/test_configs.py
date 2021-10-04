@@ -1,14 +1,8 @@
 import pytest
 
-from datasets_preview_backend.config import DATASETS_ENABLE_PRIVATE, HF_TOKEN
 from datasets_preview_backend.constants import DEFAULT_CONFIG_NAME
 from datasets_preview_backend.exceptions import Status400Error, Status404Error
 from datasets_preview_backend.queries.configs import get_configs
-
-
-def test_config() -> None:
-    # token is required for the tests
-    assert not DATASETS_ENABLE_PRIVATE or HF_TOKEN is not None
 
 
 def test_get_configs() -> None:
@@ -55,12 +49,6 @@ def test_no_dataset_no_script() -> None:
     # which should be caught and raised as DatasetBuilderScriptError
     with pytest.raises(Status404Error):
         get_configs("TimTreasure4/Test")
-
-
-def test_hub_private_dataset() -> None:
-    if DATASETS_ENABLE_PRIVATE:
-        response = get_configs("severo/autonlp-data-imdb-sentiment-analysis", token=HF_TOKEN)
-        assert response["configs"] == [{"dataset": "severo/autonlp-data-imdb-sentiment-analysis", "config": "default"}]
 
 
 def test_blocklisted_datasets() -> None:

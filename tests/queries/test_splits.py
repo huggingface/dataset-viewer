@@ -1,14 +1,8 @@
 import pytest
 
-from datasets_preview_backend.config import DATASETS_ENABLE_PRIVATE, HF_TOKEN
 from datasets_preview_backend.constants import DEFAULT_CONFIG_NAME
 from datasets_preview_backend.exceptions import Status400Error, Status404Error
 from datasets_preview_backend.queries.splits import get_splits
-
-
-def test_config() -> None:
-    # token is required for the tests
-    assert not DATASETS_ENABLE_PRIVATE or HF_TOKEN is not None
 
 
 def test_get_splits() -> None:
@@ -76,12 +70,6 @@ def test_not_found() -> None:
         get_splits("doesnotexist", DEFAULT_CONFIG_NAME)
     with pytest.raises(Status404Error):
         get_splits("glue", "doesnotexist")
-
-
-def test_hub_private_dataset() -> None:
-    if DATASETS_ENABLE_PRIVATE:
-        response = get_splits("severo/autonlp-data-imdb-sentiment-analysis", "default", token=HF_TOKEN)
-        assert response["splits"][0]["split"] == "train"
 
 
 def test_blocklisted_datasets() -> None:

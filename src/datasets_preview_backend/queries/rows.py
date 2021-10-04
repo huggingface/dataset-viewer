@@ -25,9 +25,7 @@ from datasets_preview_backend.types import (
 logger = logging.getLogger(__name__)
 
 
-def get_rows(
-    dataset: str, config: Optional[str] = None, split: Optional[str] = None, token: Optional[str] = None
-) -> RowsContent:
+def get_rows(dataset: str, config: Optional[str] = None, split: Optional[str] = None) -> RowsContent:
     if not isinstance(dataset, str) and dataset is not None:
         raise TypeError("dataset argument should be a string")
     if dataset is None:
@@ -49,7 +47,7 @@ def get_rows(
 
     if config is not None and split is not None:
         try:
-            iterable_dataset = load_dataset(dataset, name=config, split=split, streaming=True, use_auth_token=token)
+            iterable_dataset = load_dataset(dataset, name=config, split=split, streaming=True)
             if not isinstance(iterable_dataset, IterableDataset):
                 raise TypeError("load_dataset should return an IterableDataset")
             rows = list(iterable_dataset.take(num_rows))
@@ -90,7 +88,7 @@ def get_rows(
 
         rowItems = [{"dataset": dataset, "config": config, "split": split, "row": row} for row in rows]
 
-        content = get_infos_response(dataset=dataset, config=config, token=token).content
+        content = get_infos_response(dataset=dataset, config=config).content
         if "infos" not in content:
             error = cast(StatusErrorContent, content)
             if "status_code" in error and error["status_code"] == 404:
@@ -112,7 +110,7 @@ def get_rows(
         return {"features": localFeatureItems, "rows": rowItems}
 
     if config is None:
-        content = get_configs_response(dataset=dataset, token=token).content
+        content = get_configs_response(dataset=dataset).content
         if "configs" not in content:
             error = cast(StatusErrorContent, content)
             if "status_code" in error and error["status_code"] == 404:
@@ -125,7 +123,7 @@ def get_rows(
 
     # Note that we raise on the first error
     for config in configs:
-        content = get_splits_response(dataset=dataset, config=config, token=token).content
+        content = get_splits_response(dataset=dataset, config=config).content
         if "splits" not in content:
             error = cast(StatusErrorContent, content)
             if "status_code" in error and error["status_code"] == 404:
@@ -135,7 +133,7 @@ def get_rows(
         splits = [splitItem["split"] for splitItem in splits_content["splits"]]
 
         for split in splits:
-            content = get_rows_response(dataset=dataset, config=config, split=split, token=token).content
+            content = get_rows_response(dataset=dataset, config=config, split=split).content
             if "rows" not in content:
                 error = cast(StatusErrorContent, content)
                 if "status_code" in error and error["status_code"] == 404:
@@ -151,17 +149,13 @@ def get_rows(
 
 
 @memoize(cache, expire=CACHE_TTL_SECONDS)  # type:ignore
-def get_rows_response(
-    *, dataset: str, config: Optional[str] = None, split: Optional[str] = None, token: Optional[str] = None
-) -> CachedResponse:
+def get_rows_response(*, dataset: str, config: Optional[str] = None, split: Optional[str] = None) -> CachedResponse:
     try:
-        response = CachedResponse(get_rows(dataset, config, split, token))
+        response = CachedResponse(get_rows(dataset, config, split))
     except (Status400Error, Status404Error) as err:
         response = CachedResponse(err.as_content(), err.status_code)
     return response
 
 
-def get_refreshed_rows(
-    dataset: str, config: Optional[str] = None, split: Optional[str] = None, token: Optional[str] = None
-) -> RowsContent:
-    return cast(RowsContent, get_rows_response(dataset, config, split, token, _refresh=True)["content"])
+def get_refreshed_rows(dataset: str, config: Optional[str] = None, split: Optional[str] = None) -> RowsContent:
+    return cast(RowsContent, get_rows_response(dataset, config, split, _refresh=True)["content"])
