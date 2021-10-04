@@ -3,6 +3,7 @@
 import functools as ft
 from time import time
 
+from diskcache import Cache
 from diskcache.core import ENOVAL, args_to_key, full_name
 
 # this function is complex. It's basically a copy of "diskcache" code:
@@ -18,11 +19,12 @@ from diskcache.core import ENOVAL, args_to_key, full_name
 
 
 def memoize(
-    cache,
-    name=None,
-    typed=False,
-    expire=None,
-    tag=None,
+    *,
+    cache: Cache,
+    name: str = None,
+    typed: bool = False,
+    expire: int = None,
+    tag: str = None,
 ):
     """Memoizing cache decorator.
 

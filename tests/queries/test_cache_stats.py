@@ -1,9 +1,12 @@
+import pytest
+
+from datasets_preview_backend.exceptions import Status404Error
 from datasets_preview_backend.queries.cache_stats import get_cache_stats
-from datasets_preview_backend.queries.configs import get_configs_response
-from datasets_preview_backend.queries.datasets import get_datasets_response
-from datasets_preview_backend.queries.infos import get_infos_response
-from datasets_preview_backend.queries.rows import get_rows_response
-from datasets_preview_backend.queries.splits import get_splits_response
+from datasets_preview_backend.queries.configs import get_configs
+from datasets_preview_backend.queries.datasets import get_datasets
+from datasets_preview_backend.queries.infos import get_infos
+from datasets_preview_backend.queries.rows import get_rows
+from datasets_preview_backend.queries.splits import get_splits
 
 
 def test_get_cache_stats() -> None:
@@ -20,7 +23,7 @@ def test_get_cache_stats() -> None:
     assert endpoint["valid"] == 0
 
     # add datasets to the cache
-    get_datasets_response()
+    get_datasets()
     response = get_cache_stats()
     endpoints = response["endpoints"]
     endpoint = endpoints["/datasets"]
@@ -39,7 +42,7 @@ def test_get_cache_stats() -> None:
     assert endpoint["valid"] == 0
 
     # add configs to the cache
-    get_configs_response(dataset="glue")
+    get_configs(dataset="glue")
     response = get_cache_stats()
     endpoints = response["endpoints"]
     endpoint = endpoints["/configs"]
@@ -57,7 +60,7 @@ def test_get_cache_stats() -> None:
     assert endpoint["valid"] == 0
 
     # add infos to the cache
-    get_infos_response(dataset="glue", config="ax")
+    get_infos(dataset="glue", config="ax")
     response = get_cache_stats()
     endpoints = response["endpoints"]
     endpoint = endpoints["/infos"]
@@ -70,9 +73,8 @@ def test_get_cache_stats() -> None:
     # add infos to the cache
     # this dataset is not in the list of datasets (see /datasets) and is thus not expected:
     # it does not appear in the stats, even if the response is in the cache
-    infos_response = get_infos_response(dataset="doesnotexist", config="doesnotexist")
-    assert infos_response.content is not None
-    assert "exception" in infos_response.content
+    with pytest.raises(Status404Error):
+        get_infos(dataset="doesnotexist", config="doesnotexist")
     response = get_cache_stats()
     endpoints = response["endpoints"]
     endpoint = endpoints["/infos"]
@@ -83,7 +85,7 @@ def test_get_cache_stats() -> None:
     assert endpoint["valid"] == 1
 
     # add splits to the cache
-    get_splits_response(dataset="glue", config="cola")
+    get_splits(dataset="glue", config="cola")
     response = get_cache_stats()
     endpoints = response["endpoints"]
     endpoint = endpoints["/splits"]
@@ -101,7 +103,7 @@ def test_get_cache_stats() -> None:
     assert endpoint["valid"] == 0
 
     # add rows to the cache
-    get_rows_response(dataset="glue", config="cola", split="train")
+    get_rows(dataset="glue", config="cola", split="train")
     response = get_cache_stats()
     endpoints = response["endpoints"]
     endpoint = endpoints["/rows"]

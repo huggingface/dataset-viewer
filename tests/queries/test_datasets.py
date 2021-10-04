@@ -1,6 +1,4 @@
-from datasets_preview_backend.queries.datasets import (
-    get_datasets,
-)
+from datasets_preview_backend.queries.datasets import get_datasets
 
 
 def test_get_datasets() -> None:

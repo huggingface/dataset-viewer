@@ -11,14 +11,13 @@ from datasets_preview_backend.exceptions import Status400Error, Status404Error
 from datasets_preview_backend.queries.configs import get_configs
 from datasets_preview_backend.queries.infos import get_infos
 from datasets_preview_backend.queries.splits import get_splits
-from datasets_preview_backend.responses import CachedResponse
 from datasets_preview_backend.types import FeatureItem, RowItem, RowsContent
 
 logger = logging.getLogger(__name__)
 
 
-@memoize(cache, expire=CACHE_TTL_SECONDS)  # type:ignore
-def get_rows(dataset: str, config: Optional[str] = None, split: Optional[str] = None) -> RowsContent:
+@memoize(cache=cache, expire=CACHE_TTL_SECONDS)  # type:ignore
+def get_rows(*, dataset: str, config: Optional[str] = None, split: Optional[str] = None) -> RowsContent:
     if not isinstance(dataset, str) and dataset is not None:
         raise TypeError("dataset argument should be a string")
     if dataset is None:
@@ -119,12 +118,3 @@ def get_rows(dataset: str, config: Optional[str] = None, split: Optional[str] = 
                     featureItems.append(featureItem)
 
     return {"features": featureItems, "rows": rowItems}
-
-
-@memoize(cache, expire=CACHE_TTL_SECONDS)  # type:ignore
-def get_rows_response(*, dataset: str, config: Optional[str] = None, split: Optional[str] = None) -> CachedResponse:
-    try:
-        response = CachedResponse(get_rows(dataset, config, split))
-    except (Status400Error, Status404Error) as err:
-        response = CachedResponse(err.as_content(), err.status_code)
-    return response
