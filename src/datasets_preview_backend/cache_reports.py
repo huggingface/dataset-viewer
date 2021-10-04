@@ -48,6 +48,7 @@ def get_cache_reports() -> List[ArgsCacheStats]:
     local_datasets_reports = [
         get_kwargs_report(endpoint="/datasets", kwargs=kwargs) for kwargs in datasets_kwargs_list
     ]
+    reports += local_datasets_reports
 
     valid_datasets_reports = [d for d in local_datasets_reports if d["is_valid"]]
     for datasets_report in valid_datasets_reports:

@@ -5,6 +5,7 @@ from starlette.requests import Request
 from starlette.responses import JSONResponse, PlainTextResponse, Response
 
 from datasets_preview_backend.queries.cache_stats import get_cache_stats
+from datasets_preview_backend.queries.validity_status import get_valid_datasets
 from datasets_preview_backend.responses import get_cached_response
 
 logger = logging.getLogger(__name__)
@@ -20,6 +21,12 @@ class CacheStats(HTTPEndpoint):
     async def get(self, _: Request) -> Response:
         logger.info("/cache")
         return JSONResponse(get_cache_stats(), headers={"Cache-Control": "no-store"})
+
+
+class ValidDatasets(HTTPEndpoint):
+    async def get(self, _: Request) -> Response:
+        logger.info("/valid")
+        return JSONResponse(get_valid_datasets(), headers={"Cache-Control": "no-store"})
 
 
 class Datasets(HTTPEndpoint):

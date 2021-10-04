@@ -65,7 +65,7 @@ Responses:
 
 ### /cache
 
-> Ensure the app is running
+> Give statistics about the content of the cache
 
 Example: https://datasets-preview.huggingface.tech/cache
 
@@ -121,6 +121,26 @@ Responses:
       "valid": 107
     }
   }
+}
+```
+
+### /valid
+
+> Give the list of the valid datasets
+
+Example: https://datasets-preview.huggingface.tech/valid
+
+Method: `GET`
+
+Parameters: none
+
+Responses:
+
+- `200`: JSON content which gives the list of the valid datasets, with the following structure. A dataset is considered valid if all the possible calls for all the endpoints for that dataset are in the cache, without error, and not expired.
+
+```json
+{
+  "datasets": ["discovery"]
 }
 ```
 

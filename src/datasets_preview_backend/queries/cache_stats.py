@@ -1,7 +1,7 @@
 from typing import Dict, List, TypedDict
 
+from datasets_preview_backend.cache_reports import ArgsCacheStats, get_cache_reports
 from datasets_preview_backend.responses import memoized_functions
-from datasets_preview_backend.cache_reports import get_cache_reports, ArgsCacheStats
 
 
 class EndpointCacheStats(TypedDict):
