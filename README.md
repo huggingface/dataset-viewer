@@ -461,7 +461,7 @@ Parameters:
 
 Responses:
 
-- `200`: JSON content that provides the types of the columns (see https://huggingface.co/docs/datasets/about_dataset_features.html) and the data rows, with the following structure:
+- `200`: JSON content that provides the types of the columns (see features at https://huggingface.co/docs/datasets/about_dataset_features.html) and the data rows, with the following structure. Note that the features are ordered and this order can be used to display the columns in a table for example.
 
   ```json
   {
@@ -469,25 +469,47 @@ Responses:
       {
         "dataset": "glue",
         "config": "ax",
-        "features": {
-          "premise": {
+        "feature": {
+          "name": "premise",
+          "content": {
             "dtype": "string",
             "id": null,
             "_type": "Value"
-          },
-          "hypothesis": {
+          }
+        }
+      },
+      {
+        "dataset": "glue",
+        "config": "ax",
+        "feature": {
+          "name": "hypothesis",
+          "content": {
             "dtype": "string",
             "id": null,
             "_type": "Value"
-          },
-          "label": {
+          }
+        }
+      },
+      {
+        "dataset": "glue",
+        "config": "ax",
+        "feature": {
+          "name": "label",
+          "content": {
             "num_classes": 3,
             "names": ["entailment", "neutral", "contradiction"],
             "names_file": null,
             "id": null,
             "_type": "ClassLabel"
-          },
-          "idx": {
+          }
+        }
+      },
+      {
+        "dataset": "glue",
+        "config": "ax",
+        "feature": {
+          "name": "idx",
+          "content": {
             "dtype": "int32",
             "id": null,
             "_type": "Value"

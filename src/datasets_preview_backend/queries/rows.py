@@ -14,7 +14,7 @@ from datasets_preview_backend.queries.splits import get_splits_response
 from datasets_preview_backend.responses import CachedResponse
 from datasets_preview_backend.types import (
     ConfigsContent,
-    FeaturesItem,
+    FeatureItem,
     InfosContent,
     RowItem,
     RowsContent,
@@ -45,7 +45,7 @@ def get_rows(
     num_rows = EXTRACT_ROWS_LIMIT
 
     rowItems: List[RowItem] = []
-    featuresItems: List[FeaturesItem] = []
+    featureItems: List[FeatureItem] = []
 
     if config is not None and split is not None:
         try:
@@ -104,11 +104,12 @@ def get_rows(
         infoItem = infoItems[0]
         if "features" not in infoItem:
             raise Status400Error("a dataset config info should contain a 'features' property")
-        localFeaturesItems: List[FeaturesItem] = [
-            {"dataset": dataset, "config": config, "features": infoItem["features"]}
+        localFeatureItems: List[FeatureItem] = [
+            {"dataset": dataset, "config": config, "feature": {"name": name, "content": content}}
+            for (name, content) in infoItem["features"].items()
         ]
 
-        return {"features": localFeaturesItems, "rows": rowItems}
+        return {"features": localFeatureItems, "rows": rowItems}
 
     if config is None:
         content = get_configs_response(dataset=dataset, token=token).content
@@ -142,12 +143,11 @@ def get_rows(
                 raise Status400Error("rows could not be found")
             rows_content = cast(RowsContent, content)
             rowItems += rows_content["rows"]
-            for featuresItem in rows_content["features"]:
-                # there should be only one element. Anyway, let's loop
-                if featuresItem not in featuresItems:
-                    featuresItems.append(featuresItem)
+            for featureItem in rows_content["features"]:
+                if featureItem not in featureItems:
+                    featureItems.append(featureItem)
 
-    return {"features": featuresItems, "rows": rowItems}
+    return {"features": featureItems, "rows": rowItems}
 
 
 @memoize(cache, expire=CACHE_TTL_SECONDS)  # type:ignore

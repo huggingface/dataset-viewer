@@ -36,19 +36,24 @@ def test_get_split_features() -> None:
     split = "train"
     response = get_rows(dataset, config, split)
     assert "features" in response
-    assert len(response["features"]) == 1
-    featuresItem = response["features"][0]
-    assert "dataset" in featuresItem
-    assert "config" in featuresItem
-    assert "features" in featuresItem
-    assert featuresItem["features"]["tokens"]["_type"] == "Sequence"
+    assert len(response["features"]) == 3
+    featureItem = response["features"][0]
+    assert "dataset" in featureItem
+    assert "config" in featureItem
+    assert "feature" in featureItem
+    feature = featureItem["feature"]
+    assert "name" in feature
+    assert "content" in feature
+    assert feature["name"] == "id"
+    assert "_type" in feature["content"]
+    assert feature["content"]["_type"] == "Value"
 
 
 def test_get_split_rows_without_split() -> None:
     dataset = "acronym_identification"
     response = get_rows(dataset, DEFAULT_CONFIG_NAME)
     assert len(response["rows"]) == 3 * EXTRACT_ROWS_LIMIT
-    assert len(response["features"]) == 1
+    assert len(response["features"]) == 3
 
 
 def test_get_split_rows_without_config() -> None:
@@ -56,7 +61,7 @@ def test_get_split_rows_without_config() -> None:
     split = "train"
     response1 = get_rows(dataset)
     assert len(response1["rows"]) == 1 * 3 * EXTRACT_ROWS_LIMIT
-    assert len(response1["features"]) == 1
+    assert len(response1["features"]) == 3
 
     response2 = get_rows(dataset, None, split)
     assert response1 == response2
@@ -64,7 +69,7 @@ def test_get_split_rows_without_config() -> None:
     dataset = "adversarial_qa"
     response3 = get_rows(dataset)
     assert len(response3["rows"]) == 4 * 3 * EXTRACT_ROWS_LIMIT
-    assert len(response3["features"]) == 4
+    assert len(response3["features"]) == 4 * 6
 
 
 def test_get_unknown_dataset() -> None:

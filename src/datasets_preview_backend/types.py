@@ -29,10 +29,15 @@ class RowItem(TypedDict):
     row: Any
 
 
-class FeaturesItem(TypedDict):
+class Feature(TypedDict):
+    name: str
+    content: Any
+
+
+class FeatureItem(TypedDict):
     dataset: str
     config: str
-    features: Any
+    feature: Feature
 
 
 # Content of endpoint responses
@@ -55,7 +60,7 @@ class SplitsContent(TypedDict):
 
 
 class RowsContent(TypedDict):
-    features: List[FeaturesItem]
+    features: List[FeatureItem]
     rows: List[RowItem]
 
 
