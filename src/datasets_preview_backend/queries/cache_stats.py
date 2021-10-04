@@ -1,11 +1,8 @@
 from time import time
 from typing import Any, Dict, List, TypedDict, Union, cast
 
-from datasets_preview_backend.queries.configs import get_configs
-from datasets_preview_backend.queries.datasets import get_datasets
-from datasets_preview_backend.queries.infos import get_infos
-from datasets_preview_backend.queries.rows import get_rows
-from datasets_preview_backend.queries.splits import get_splits
+from datasets_preview_backend.responses import memoized_functions
+
 from datasets_preview_backend.types import (
     ConfigsContent,
     Content,
@@ -52,7 +49,8 @@ def get_endpoint_report(endpoint: str, args_reports: List[ArgsCacheStats]) -> En
     }
 
 
-def get_kwargs_report(memoized_function: Any, kwargs: Any) -> ArgsCacheStats:
+def get_kwargs_report(endpoint: str, kwargs: Any) -> ArgsCacheStats:
+    memoized_function = memoized_functions[endpoint]
     cache = memoized_function.__cache__
     # cache.close()
     key = memoized_function.__cache_key__(**kwargs)
@@ -62,6 +60,7 @@ def get_kwargs_report(memoized_function: Any, kwargs: Any) -> ArgsCacheStats:
     is_error = isinstance(content, Exception)
     is_valid = is_cached and not is_expired and not is_error
     return {
+        "endpoint": endpoint,
         "kwargs": kwargs,
         "is_cached": is_cached,
         "is_expired": is_expired,
@@ -71,24 +70,24 @@ def get_kwargs_report(memoized_function: Any, kwargs: Any) -> ArgsCacheStats:
     }
 
 
-def get_cache_stats() -> CacheStats:
-    endpoints = {}
+def get_cache_reports() -> List[ArgsCacheStats]:
+    reports: List[ArgsCacheStats] = []
 
     datasets_kwargs_list: Any = [{}]
-    datasets_reports = [get_kwargs_report(get_datasets, kwargs) for kwargs in datasets_kwargs_list]
-    infos_reports: List[ArgsCacheStats] = []
-    configs_reports: List[ArgsCacheStats] = []
-    splits_reports: List[ArgsCacheStats] = []
-    rows_reports: List[ArgsCacheStats] = []
+    local_datasets_reports = [
+        get_kwargs_report(endpoint="/datasets", kwargs=kwargs) for kwargs in datasets_kwargs_list
+    ]
 
-    valid_datasets_reports = [d for d in datasets_reports if d["is_valid"]]
+    valid_datasets_reports = [d for d in local_datasets_reports if d["is_valid"]]
     for datasets_report in valid_datasets_reports:
         datasets_content = cast(DatasetsContent, datasets_report["content"])
         datasets = datasets_content["datasets"]
 
         configs_kwargs_list = [{"dataset": dataset["dataset"]} for dataset in datasets]
-        local_configs_reports = [get_kwargs_report(get_configs, kwargs) for kwargs in configs_kwargs_list]
-        configs_reports += local_configs_reports
+        local_configs_reports = [
+            get_kwargs_report(endpoint="/configs", kwargs=kwargs) for kwargs in configs_kwargs_list
+        ]
+        reports += local_configs_reports
 
         valid_configs_reports = [d for d in local_configs_reports if d["is_valid"]]
         for configs_report in valid_configs_reports:
@@ -96,29 +95,37 @@ def get_cache_stats() -> CacheStats:
             configs = configs_content["configs"]
 
             infos_kwargs_list = [{"dataset": config["dataset"], "config": config["config"]} for config in configs]
-            local_infos_reports = [get_kwargs_report(get_infos, kwargs) for kwargs in infos_kwargs_list]
-            infos_reports += local_infos_reports
+            local_infos_reports = [get_kwargs_report(endpoint="/infos", kwargs=kwargs) for kwargs in infos_kwargs_list]
+            reports += local_infos_reports
 
             splits_kwargs_list = [{"dataset": config["dataset"], "config": config["config"]} for config in configs]
-            local_splits_reports = [get_kwargs_report(get_splits, kwargs) for kwargs in splits_kwargs_list]
-            splits_reports += local_splits_reports
+            local_splits_reports = [
+                get_kwargs_report(endpoint="/splits", kwargs=kwargs) for kwargs in splits_kwargs_list
+            ]
+            reports += local_splits_reports
 
             valid_splits_reports = [d for d in local_splits_reports if d["is_valid"]]
             for splits_report in valid_splits_reports:
                 splits_content = cast(SplitsContent, splits_report["content"])
                 splits = splits_content["splits"]
 
-                rows_args_list = [
+                rows_kwargs_list = [
                     {"dataset": split["dataset"], "config": split["config"], "split": split["split"]}
                     for split in splits
                 ]
-                local_rows_reports = [get_kwargs_report(get_rows, args) for args in rows_args_list]
-                rows_reports += local_rows_reports
+                local_rows_reports = [
+                    get_kwargs_report(endpoint="/rows", kwargs=kwargs) for kwargs in rows_kwargs_list
+                ]
+                reports += local_rows_reports
+    return reports
 
-    endpoints["/datasets"] = get_endpoint_report("/datasets", datasets_reports)
-    endpoints["/infos"] = get_endpoint_report("/infos", infos_reports)
-    endpoints["/configs"] = get_endpoint_report("/configs", configs_reports)
-    endpoints["/splits"] = get_endpoint_report("/splits", splits_reports)
-    endpoints["/rows"] = get_endpoint_report("/rows", rows_reports)
+
+def get_cache_stats() -> CacheStats:
+    reports = get_cache_reports()
+
+    endpoints = {
+        endpoint: get_endpoint_report(endpoint, [report for report in reports if report["endpoint"] == endpoint])
+        for endpoint in memoized_functions
+    }
 
     return {"endpoints": endpoints}
