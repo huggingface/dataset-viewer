@@ -42,6 +42,7 @@ def get_infos(dataset: str, config: Optional[str] = None, token: Optional[str] =
     # Note that we raise on the first error
     for config in configs:
         try:
+            # TODO: use get_dataset_infos if https://github.com/huggingface/datasets/issues/3013 is fixed
             builder = load_dataset_builder(dataset, name=config, use_auth_token=token)
             info = asdict(builder.info)
             if "splits" in info and info["splits"] is not None:
