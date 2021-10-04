@@ -11,6 +11,7 @@ from datasets_preview_backend.routes import (
     Infos,
     Rows,
     Splits,
+    ValidDatasets,
 )
 
 
@@ -24,6 +25,7 @@ def create_app() -> Starlette:
             Route("/splits", endpoint=Splits),
             Route("/rows", endpoint=Rows),
             Route("/cache", endpoint=CacheStats),
+            Route("/valid", endpoint=ValidDatasets),
         ],
     )
 

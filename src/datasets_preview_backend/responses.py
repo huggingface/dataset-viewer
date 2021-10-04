@@ -48,7 +48,7 @@ memoized_functions = {
 }
 
 
-def get_endpoint_response(endpoint: str, **kwargs) -> CachedResponse:  # type: ignore
+def get_cached_response(endpoint: str, **kwargs) -> CachedResponse:  # type: ignore
     try:
         content, max_age = memoized_functions[endpoint](**kwargs, _return_max_age=True)
         return CachedResponse(content, max_age=max_age)
