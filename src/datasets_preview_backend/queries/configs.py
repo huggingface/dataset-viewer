@@ -1,5 +1,3 @@
-from typing import cast
-
 from datasets import get_dataset_config_names
 
 from datasets_preview_backend.cache import memoize  # type: ignore
@@ -37,7 +35,3 @@ def get_configs_response(*, dataset: str) -> CachedResponse:
     except (Status400Error, Status404Error) as err:
         response = CachedResponse(err.as_content(), err.status_code)
     return response
-
-
-def get_refreshed_configs(dataset: str) -> ConfigsContent:
-    return cast(ConfigsContent, get_configs_response(dataset, _refresh=True)["content"])

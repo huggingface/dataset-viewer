@@ -1,4 +1,4 @@
-from typing import List, cast
+from typing import List
 
 from datasets import list_datasets
 
@@ -18,7 +18,3 @@ def get_datasets() -> DatasetsContent:
 @memoize(cache, expire=CACHE_TTL_SECONDS)  # type:ignore
 def get_datasets_response() -> CachedResponse:
     return CachedResponse(get_datasets())
-
-
-def get_refreshed_datasets() -> DatasetsContent:
-    return cast(DatasetsContent, get_datasets_response(_refresh=True).content)

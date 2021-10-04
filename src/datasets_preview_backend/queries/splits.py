@@ -1,4 +1,4 @@
-from typing import List, Optional, cast
+from typing import List, Optional
 
 from datasets import get_dataset_split_names
 
@@ -54,7 +54,3 @@ def get_splits_response(*, dataset: str, config: Optional[str] = None) -> Cached
     except (Status400Error, Status404Error) as err:
         response = CachedResponse(err.as_content(), err.status_code)
     return response
-
-
-def get_refreshed_splits(dataset: str, config: Optional[str] = None) -> SplitsContent:
-    return cast(SplitsContent, get_splits_response(dataset, config, _refresh=True)["content"])

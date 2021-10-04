@@ -1,5 +1,5 @@
 from dataclasses import asdict
-from typing import List, Optional, cast
+from typing import List, Optional
 
 from datasets import load_dataset_builder
 
@@ -54,7 +54,3 @@ def get_infos_response(*, dataset: str, config: Optional[str] = None) -> CachedR
     except (Status400Error, Status404Error) as err:
         response = CachedResponse(err.as_content(), err.status_code)
     return response
-
-
-def get_refreshed_infos(dataset: str, config: Optional[str] = None) -> InfosContent:
-    return cast(InfosContent, get_infos_response(dataset, config, _refresh=True)["content"])

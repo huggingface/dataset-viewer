@@ -1,6 +1,6 @@
 import logging
 import re
-from typing import List, Optional, cast
+from typing import List, Optional
 
 from datasets import IterableDataset, load_dataset
 
@@ -128,7 +128,3 @@ def get_rows_response(*, dataset: str, config: Optional[str] = None, split: Opti
     except (Status400Error, Status404Error) as err:
         response = CachedResponse(err.as_content(), err.status_code)
     return response
-
-
-def get_refreshed_rows(dataset: str, config: Optional[str] = None, split: Optional[str] = None) -> RowsContent:
-    return cast(RowsContent, get_rows_response(dataset, config, split, _refresh=True)["content"])
