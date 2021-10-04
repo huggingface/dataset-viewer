@@ -8,23 +8,16 @@ from datasets_preview_backend.cache import memoize  # type: ignore
 from datasets_preview_backend.config import CACHE_TTL_SECONDS, EXTRACT_ROWS_LIMIT, cache
 from datasets_preview_backend.constants import DATASETS_BLOCKLIST
 from datasets_preview_backend.exceptions import Status400Error, Status404Error
-from datasets_preview_backend.queries.configs import get_configs_response
-from datasets_preview_backend.queries.infos import get_infos_response
-from datasets_preview_backend.queries.splits import get_splits_response
+from datasets_preview_backend.queries.configs import get_configs
+from datasets_preview_backend.queries.infos import get_infos
+from datasets_preview_backend.queries.splits import get_splits
 from datasets_preview_backend.responses import CachedResponse
-from datasets_preview_backend.types import (
-    ConfigsContent,
-    FeatureItem,
-    InfosContent,
-    RowItem,
-    RowsContent,
-    SplitsContent,
-    StatusErrorContent,
-)
+from datasets_preview_backend.types import FeatureItem, RowItem, RowsContent
 
 logger = logging.getLogger(__name__)
 
 
+@memoize(cache, expire=CACHE_TTL_SECONDS)  # type:ignore
 def get_rows(dataset: str, config: Optional[str] = None, split: Optional[str] = None) -> RowsContent:
     if not isinstance(dataset, str) and dataset is not None:
         raise TypeError("dataset argument should be a string")
@@ -88,13 +81,8 @@ def get_rows(dataset: str, config: Optional[str] = None, split: Optional[str] = 
 
         rowItems = [{"dataset": dataset, "config": config, "split": split, "row": row} for row in rows]
 
-        content = get_infos_response(dataset=dataset, config=config).content
-        if "infos" not in content:
-            error = cast(StatusErrorContent, content)
-            if "status_code" in error and error["status_code"] == 404:
-                raise Status404Error("features could not be found")
-            raise Status400Error("features could not be found")
-        infos_content = cast(InfosContent, content)
+        # note: the function might raise
+        infos_content = get_infos(dataset=dataset, config=config)
         infoItems = [infoItem["info"] for infoItem in infos_content["infos"]]
 
         if len(infoItems) != 1:
@@ -110,36 +98,21 @@ def get_rows(dataset: str, config: Optional[str] = None, split: Optional[str] = 
         return {"features": localFeatureItems, "rows": rowItems}
 
     if config is None:
-        content = get_configs_response(dataset=dataset).content
-        if "configs" not in content:
-            error = cast(StatusErrorContent, content)
-            if "status_code" in error and error["status_code"] == 404:
-                raise Status404Error("configurations could not be found")
-            raise Status400Error("configurations could not be found")
-        configs_content = cast(ConfigsContent, content)
+        # note: the function might raise
+        configs_content = get_configs(dataset=dataset)
         configs = [configItem["config"] for configItem in configs_content["configs"]]
     else:
         configs = [config]
 
     # Note that we raise on the first error
     for config in configs:
-        content = get_splits_response(dataset=dataset, config=config).content
-        if "splits" not in content:
-            error = cast(StatusErrorContent, content)
-            if "status_code" in error and error["status_code"] == 404:
-                raise Status404Error("splits could not be found")
-            raise Status400Error("splits could not be found")
-        splits_content = cast(SplitsContent, content)
+        # note: the function might raise
+        splits_content = get_splits(dataset=dataset, config=config)
         splits = [splitItem["split"] for splitItem in splits_content["splits"]]
 
         for split in splits:
-            content = get_rows_response(dataset=dataset, config=config, split=split).content
-            if "rows" not in content:
-                error = cast(StatusErrorContent, content)
-                if "status_code" in error and error["status_code"] == 404:
-                    raise Status404Error("rows could not be found")
-                raise Status400Error("rows could not be found")
-            rows_content = cast(RowsContent, content)
+            # note: the function might raise
+            rows_content = get_rows(dataset=dataset, config=config, split=split)
             rowItems += rows_content["rows"]
             for featureItem in rows_content["features"]:
                 if featureItem not in featureItems:

@@ -8,6 +8,7 @@ from datasets_preview_backend.responses import CachedResponse
 from datasets_preview_backend.types import DatasetsContent
 
 
+@memoize(cache, expire=CACHE_TTL_SECONDS)  # type:ignore
 def get_datasets() -> DatasetsContent:
     # If an exception is raised, we let starlette generate a 500 error
     datasets: List[str] = list_datasets(with_community_datasets=True, with_details=False)  # type: ignore

@@ -1,4 +1,4 @@
-from typing import Optional, cast
+from typing import cast
 
 from datasets import get_dataset_config_names
 
@@ -10,6 +10,7 @@ from datasets_preview_backend.responses import CachedResponse
 from datasets_preview_backend.types import ConfigsContent
 
 
+@memoize(cache, expire=CACHE_TTL_SECONDS)  # type:ignore
 def get_configs(dataset: str) -> ConfigsContent:
     if not isinstance(dataset, str) and dataset is not None:
         raise TypeError("dataset argument should be a string")

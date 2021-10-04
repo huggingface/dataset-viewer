@@ -14,11 +14,7 @@ from datasets_preview_backend.constants import (
     DEFAULT_LOG_LEVEL,
     DEFAULT_WEB_CONCURRENCY,
 )
-from datasets_preview_backend.utils import (
-    get_bool_value,
-    get_int_value,
-    get_str_value,
-)
+from datasets_preview_backend.utils import get_bool_value, get_int_value, get_str_value
 
 # Load environment variables defined in .env, if any
 load_dotenv()

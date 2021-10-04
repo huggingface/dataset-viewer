@@ -128,6 +128,12 @@ def memoize(
                 cache.set(key, result, expire, tag=tag, retry=True)
                 max_age = expire
 
+            # See https://github.com/peterbe/django-cache-memoize/blob/master/src/cache_memoize/__init__.py#L153-L156
+            # If the result is an exception we've caught and cached, raise it
+            # in the end as to not change the API of the function we're caching.
+            if isinstance(result, Exception):
+                # TODO: max_age
+                raise result
             return (result, max_age) if _return_max_age else result
 
         def __cache_key__(*args, **kwargs):

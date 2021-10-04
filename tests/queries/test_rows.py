@@ -1,8 +1,6 @@
 import pytest
 
-from datasets_preview_backend.config import (
-    EXTRACT_ROWS_LIMIT,
-)
+from datasets_preview_backend.config import EXTRACT_ROWS_LIMIT
 from datasets_preview_backend.constants import DEFAULT_CONFIG_NAME
 from datasets_preview_backend.exceptions import Status400Error, Status404Error
 from datasets_preview_backend.queries.rows import get_rows
