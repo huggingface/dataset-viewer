@@ -4,8 +4,8 @@ from typing import List, Optional
 
 from datasets import IterableDataset, load_dataset
 
-from datasets_preview_backend.cache import memoize  # type: ignore
-from datasets_preview_backend.config import CACHE_TTL_SECONDS, EXTRACT_ROWS_LIMIT, cache
+from datasets_preview_backend.cache import cache, memoize  # type: ignore
+from datasets_preview_backend.config import CACHE_TTL_SECONDS, EXTRACT_ROWS_LIMIT
 from datasets_preview_backend.constants import DATASETS_BLOCKLIST
 from datasets_preview_backend.exceptions import Status400Error, Status404Error
 from datasets_preview_backend.queries.configs import get_configs

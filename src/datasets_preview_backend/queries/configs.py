@@ -1,7 +1,7 @@
 from datasets import get_dataset_config_names
 
-from datasets_preview_backend.cache import memoize  # type: ignore
-from datasets_preview_backend.config import CACHE_TTL_SECONDS, cache
+from datasets_preview_backend.cache import cache, memoize  # type: ignore
+from datasets_preview_backend.config import CACHE_TTL_SECONDS
 from datasets_preview_backend.constants import DATASETS_BLOCKLIST, DEFAULT_CONFIG_NAME
 from datasets_preview_backend.exceptions import Status400Error, Status404Error
 from datasets_preview_backend.types import ConfigsContent

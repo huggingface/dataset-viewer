@@ -1,6 +1,6 @@
+from distutils.util import strtobool
 from os import _Environ
 from typing import Dict, Union
-from distutils.util import strtobool
 
 from starlette.datastructures import QueryParams
 

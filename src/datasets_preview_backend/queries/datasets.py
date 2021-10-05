@@ -2,8 +2,8 @@ from typing import List
 
 from datasets import list_datasets
 
-from datasets_preview_backend.cache import memoize  # type: ignore
-from datasets_preview_backend.config import CACHE_TTL_SECONDS, cache
+from datasets_preview_backend.cache import cache, memoize  # type: ignore
+from datasets_preview_backend.config import CACHE_TTL_SECONDS
 from datasets_preview_backend.types import DatasetsContent
 
 

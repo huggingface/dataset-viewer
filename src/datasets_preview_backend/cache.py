@@ -1,10 +1,35 @@
 # type: ignore
 
 import functools as ft
+import logging
 from time import time
 
+from appdirs import user_cache_dir
 from diskcache import Cache
 from diskcache.core import ENOVAL, args_to_key, full_name
+
+from datasets_preview_backend.config import (
+    CACHE_DIRECTORY,
+    CACHE_PERSIST,
+    CACHE_SIZE_LIMIT,
+)
+
+logger = logging.getLogger(__name__)
+
+
+# singleton
+cache_directory = CACHE_DIRECTORY
+if cache_directory is None and CACHE_PERSIST:
+    # set it to the default cache location on the machine, in order to
+    # persist the cache between runs
+    cache_directory = user_cache_dir("datasets_preview_backend")
+
+
+def show_cache_dir() -> None:
+    logger.info(f"Cache directory set to {cache_directory}")
+
+
+cache = Cache(directory=cache_directory, size_limit=CACHE_SIZE_LIMIT)
 
 # this function is complex. It's basically a copy of "diskcache" code:
 # https://github.com/grantjenks/python-diskcache/blob/e1d7c4aaa6729178ca3216f4c8a75b835f963022/diskcache/core.py#L1812
@@ -25,6 +50,7 @@ def memoize(
     typed: bool = False,
     expire: int = None,
     tag: str = None,
+    cache_exceptions=(Exception),
 ):
     """Memoizing cache decorator.
 
@@ -126,15 +152,21 @@ def memoize(
                 max_age = None if expire_time is None else int(expire_time - time())
 
             if result is ENOVAL:
-                result = func(*args, **kwargs)
+                # If the function raises an exception we want to cache,
+                # catch it, else let it propagate.
+                try:
+                    result = func(*args, **kwargs)
+                except cache_exceptions as exception:
+                    result = exception
                 cache.set(key, result, expire, tag=tag, retry=True)
                 max_age = expire
 
             # See https://github.com/peterbe/django-cache-memoize/blob/master/src/cache_memoize/__init__.py#L153-L156
             # If the result is an exception we've caught and cached, raise it
             # in the end as to not change the API of the function we're caching.
+            # TODO: .__cause__ seems to be lost
             if isinstance(result, Exception):
-                # TODO: max_age
+                # TODO: what to do with max_age?
                 raise result
             return (result, max_age) if _return_max_age else result
 

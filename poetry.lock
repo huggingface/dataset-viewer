@@ -87,7 +87,7 @@ test = ["freezegun (>=0.3.12)", "mock (>=1.0.1,<3.0.0)", "nose (>=1.3.7)", "nose
 name = "appdirs"
 version = "1.4.4"
 description = "A small Python module for determining appropriate platform-specific dirs, e.g. a \"user data dir\"."
-category = "dev"
+category = "main"
 optional = false
 python-versions = "*"
 
@@ -728,6 +728,7 @@ python-versions = "*"
 [package.source]
 type = "url"
 url = "https://github.com/kpu/kenlm/archive/master.zip"
+
 [[package]]
 name = "keras"
 version = "2.6.0"
@@ -1768,7 +1769,7 @@ cffi = ["cffi (>=1.11)"]
 [metadata]
 lock-version = "1.1"
 python-versions = "^3.9.6"
-content-hash = "8702fa390c0cbf496bd9899f3bfa66d7dfd7bc123315766ae155c1c1493075bb"
+content-hash = "e5be094b879fae3243f0eecfd2b650dacad61b144ce4d6238351cc88ada45bf5"
 
 [metadata.files]
 absl-py = [

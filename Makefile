@@ -19,7 +19,7 @@ test:
 	poetry run python -m pytest -x tests
 
 coverage:
-	poetry run python -m pytest -s --cov --cov-report xml:coverage.xml --cov-report=term tests
+	CACHE_DIRECTORY= CACHE_PERSIST=False poetry run python -m pytest -s --cov --cov-report xml:coverage.xml --cov-report=term tests
 
 # Check that source code meets quality standards + security
 quality:
