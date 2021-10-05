@@ -31,7 +31,7 @@ cache = Cache(directory=cache_directory, size_limit=CACHE_SIZE_LIMIT)
 
 
 def show_cache_dir() -> None:
-    logger.info(f"Cache directory set to {cache.directory}")
+    logger.info(f"Cache directory: {cache.directory}")
 
 
 # this function is complex. It's basically a copy of "diskcache" code:
