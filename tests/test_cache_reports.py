@@ -22,6 +22,3 @@ def test_get_kwargs_report_error() -> None:
     get_cached_response(endpoint, **kwargs)
     report = get_kwargs_report(endpoint, kwargs)
     assert report["status"] == "error"
-
-    report = get_kwargs_report(endpoint, kwargs)
-    assert report["status"] == "error"
