@@ -7,6 +7,7 @@ from datasets_preview_backend.utils import (
 
 
 def test_get_bool_value() -> None:
+    assert get_bool_value({"KEY": "False"}, "KEY", True) is False
     assert get_bool_value({"KEY": "True"}, "KEY", False) is True
     assert get_bool_value({"KEY": "true"}, "KEY", False) is True
     assert get_bool_value({"KEY": True}, "KEY", False) is True

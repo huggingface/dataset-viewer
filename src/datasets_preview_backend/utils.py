@@ -1,5 +1,6 @@
 from os import _Environ
 from typing import Dict, Union
+from distutils.util import strtobool
 
 from starlette.datastructures import QueryParams
 
@@ -10,7 +11,7 @@ def get_bool_value(d: GenericDict, key: str, default: bool) -> bool:
     if key not in d:
         return default
     try:
-        value = bool(d.get(key))
+        value = bool(strtobool(str(d.get(key))))
     except (TypeError, ValueError):
         value = default
     return value
