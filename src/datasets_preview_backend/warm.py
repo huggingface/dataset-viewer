@@ -8,7 +8,7 @@ MAX_THREADS = 5
 
 
 def call_get_rows(dataset: str) -> None:
-    try:
+    try:  # nosec
         get_rows(dataset=dataset)
     except Exception:
         pass
