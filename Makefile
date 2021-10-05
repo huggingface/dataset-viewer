@@ -42,3 +42,6 @@ style:
 # The result is benchmark/tmp/report.json (about 40M)
 benchmark:
 	$(MAKE) -C benchmark $(PARALLEL)
+
+warm:
+	poetry run python src/datasets_preview_backend/warm.py
