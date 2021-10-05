@@ -18,18 +18,21 @@ logger = logging.getLogger(__name__)
 
 
 # singleton
-cache_directory = CACHE_DIRECTORY
-if cache_directory is None and CACHE_PERSIST:
-    # set it to the default cache location on the machine, in order to
-    # persist the cache between runs
-    cache_directory = user_cache_dir("datasets_preview_backend")
+cache_directory = None
+if CACHE_PERSIST:
+    if CACHE_DIRECTORY is None:
+        # set it to the default cache location on the machine, in order to
+        # persist the cache between runs
+        cache_directory = user_cache_dir("datasets_preview_backend")
+    else:
+        cache_directory = CACHE_DIRECTORY
+
+cache = Cache(directory=cache_directory, size_limit=CACHE_SIZE_LIMIT)
 
 
 def show_cache_dir() -> None:
-    logger.info(f"Cache directory set to {cache_directory}")
+    logger.info(f"Cache directory set to {cache.directory}")
 
-
-cache = Cache(directory=cache_directory, size_limit=CACHE_SIZE_LIMIT)
 
 # this function is complex. It's basically a copy of "diskcache" code:
 # https://github.com/grantjenks/python-diskcache/blob/e1d7c4aaa6729178ca3216f4c8a75b835f963022/diskcache/core.py#L1812
