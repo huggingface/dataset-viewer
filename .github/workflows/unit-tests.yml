@@ -24,10 +24,8 @@ jobs:
         run: poetry install
       - name: Run unit tests
         env:
-          HF_TOKEN: ${{ secrets.HF_TOKEN_SEVERO }}
-          DATASETS_ENABLE_PRIVATE: True
+          CACHE_PERSIST: False
         run: poetry run python -m pytest -s --cov --cov-report xml:coverage.xml --cov-report=term tests
       - uses: codecov/codecov-action@v2
         with:
-          token: ${{ secrets.CODECOV_TOKEN }}
           files: ./coverage.xml
