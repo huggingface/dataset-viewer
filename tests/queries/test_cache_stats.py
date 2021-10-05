@@ -17,10 +17,10 @@ def test_get_cache_stats() -> None:
     endpoint = endpoints["/datasets"]
     assert endpoint["endpoint"] == "/datasets"
     assert endpoint["expected"] == 1
-    assert endpoint["cached"] == 0
-    assert endpoint["expired"] == 0
-    assert endpoint["error"] == 0
     assert endpoint["valid"] == 0
+    assert endpoint["error"] == 0
+    assert endpoint["cache_expired"] == 0
+    assert endpoint["cache_miss"] == 1
 
     # add datasets to the cache
     get_datasets()
@@ -29,17 +29,17 @@ def test_get_cache_stats() -> None:
     endpoint = endpoints["/datasets"]
     assert endpoint["endpoint"] == "/datasets"
     assert endpoint["expected"] == 1
-    assert endpoint["cached"] == 1
-    assert endpoint["expired"] == 0
+    assert endpoint["cache_miss"] == 0
+    assert endpoint["cache_expired"] == 0
     assert endpoint["error"] == 0
     assert endpoint["valid"] == 1
     endpoint = endpoints["/configs"]
     assert endpoint["endpoint"] == "/configs"
     assert endpoint["expected"] > 100
-    assert endpoint["cached"] == 0
-    assert endpoint["expired"] == 0
-    assert endpoint["error"] == 0
     assert endpoint["valid"] == 0
+    assert endpoint["error"] == 0
+    assert endpoint["cache_expired"] == 0
+    assert endpoint["cache_miss"] > 100
 
     # add configs to the cache
     get_configs(dataset="glue")
@@ -47,17 +47,17 @@ def test_get_cache_stats() -> None:
     endpoints = response["endpoints"]
     endpoint = endpoints["/configs"]
     assert endpoint["endpoint"] == "/configs"
-    assert endpoint["cached"] == 1
-    assert endpoint["expired"] == 0
-    assert endpoint["error"] == 0
     assert endpoint["valid"] == 1
+    assert endpoint["error"] == 0
+    assert endpoint["cache_expired"] == 0
+    assert endpoint["cache_miss"] > 100
     endpoint = endpoints["/splits"]
     assert endpoint["endpoint"] == "/splits"
     assert endpoint["expected"] == 12
-    assert endpoint["cached"] == 0
-    assert endpoint["expired"] == 0
-    assert endpoint["error"] == 0
     assert endpoint["valid"] == 0
+    assert endpoint["error"] == 0
+    assert endpoint["cache_expired"] == 0
+    assert endpoint["cache_miss"] == 12
 
     # add infos to the cache
     get_infos(dataset="glue", config="ax")
@@ -65,10 +65,10 @@ def test_get_cache_stats() -> None:
     endpoints = response["endpoints"]
     endpoint = endpoints["/infos"]
     assert endpoint["endpoint"] == "/infos"
-    assert endpoint["cached"] == 1
-    assert endpoint["expired"] == 0
-    assert endpoint["error"] == 0
     assert endpoint["valid"] == 1
+    assert endpoint["error"] == 0
+    assert endpoint["cache_expired"] == 0
+    assert endpoint["cache_miss"] == 11
 
     # add infos to the cache
     # this dataset is not in the list of datasets (see /datasets) and is thus not expected:
@@ -79,10 +79,10 @@ def test_get_cache_stats() -> None:
     endpoints = response["endpoints"]
     endpoint = endpoints["/infos"]
     assert endpoint["endpoint"] == "/infos"
-    assert endpoint["cached"] == 1
-    assert endpoint["expired"] == 0
-    assert endpoint["error"] == 0
     assert endpoint["valid"] == 1
+    assert endpoint["error"] == 0
+    assert endpoint["cache_expired"] == 0
+    assert endpoint["cache_miss"] == 11
 
     # add splits to the cache
     get_splits(dataset="glue", config="cola")
@@ -90,17 +90,17 @@ def test_get_cache_stats() -> None:
     endpoints = response["endpoints"]
     endpoint = endpoints["/splits"]
     assert endpoint["endpoint"] == "/splits"
-    assert endpoint["cached"] == 1
-    assert endpoint["expired"] == 0
-    assert endpoint["error"] == 0
     assert endpoint["valid"] == 1
+    assert endpoint["error"] == 0
+    assert endpoint["cache_expired"] == 0
+    assert endpoint["cache_miss"] == 11
     endpoint = endpoints["/rows"]
     assert endpoint["endpoint"] == "/rows"
     assert endpoint["expected"] == 3
-    assert endpoint["cached"] == 0
-    assert endpoint["expired"] == 0
-    assert endpoint["error"] == 0
     assert endpoint["valid"] == 0
+    assert endpoint["error"] == 0
+    assert endpoint["cache_expired"] == 0
+    assert endpoint["cache_miss"] == 3
 
     # add rows to the cache
     get_rows(dataset="glue", config="cola", split="train")
@@ -108,7 +108,7 @@ def test_get_cache_stats() -> None:
     endpoints = response["endpoints"]
     endpoint = endpoints["/rows"]
     assert endpoint["endpoint"] == "/rows"
-    assert endpoint["cached"] == 1
-    assert endpoint["expired"] == 0
-    assert endpoint["error"] == 0
     assert endpoint["valid"] == 1
+    assert endpoint["error"] == 0
+    assert endpoint["cache_expired"] == 0
+    assert endpoint["cache_miss"] == 2

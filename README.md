@@ -83,42 +83,42 @@ Responses:
     "/datasets": {
       "endpoint": "/datasets",
       "expected": 1,
-      "cached": 1,
-      "expired": 0,
+      "valid": 1,
       "error": 0,
-      "valid": 1
-    },
-    "/info": {
-      "endpoint": "/info",
-      "expected": 1490,
-      "cached": 15,
-      "expired": 0,
-      "error": 0,
-      "valid": 15
+      "cache_expired": 0,
+      "cache_miss": 0
     },
     "/configs": {
       "endpoint": "/configs",
-      "expected": 1490,
-      "cached": 15,
-      "expired": 0,
+      "expected": 1582,
+      "valid": 1,
       "error": 0,
-      "valid": 15
+      "cache_expired": 0,
+      "cache_miss": 1581
+    },
+    "/infos": {
+      "endpoint": "/infos",
+      "expected": 2,
+      "valid": 2,
+      "error": 0,
+      "cache_expired": 0,
+      "cache_miss": 0
     },
     "/splits": {
       "endpoint": "/splits",
-      "expected": 79,
-      "cached": 79,
-      "expired": 0,
+      "expected": 2,
+      "valid": 2,
       "error": 0,
-      "valid": 79
+      "cache_expired": 0,
+      "cache_miss": 0
     },
     "/rows": {
       "endpoint": "/rows",
-      "expected": 127,
-      "cached": 127,
-      "expired": 0,
-      "error": 20,
-      "valid": 107
+      "expected": 6,
+      "valid": 6,
+      "error": 0,
+      "cache_expired": 0,
+      "cache_miss": 0
     }
   }
 }
@@ -136,11 +136,19 @@ Parameters: none
 
 Responses:
 
-- `200`: JSON content which gives the list of the valid datasets, with the following structure. A dataset is considered valid if all the possible calls for all the endpoints for that dataset are in the cache, without error, and not expired.
+- `200`: JSON content which gives the list of the datasets per status, with the following structure.
 
 ```json
 {
-  "datasets": ["discovery"]
+  "valid": ["discovery"],
+  "error": [],
+  "cache_expired": [],
+  "cache_miss": [
+    "acronym_identification",
+    "ade_corpus_v2",
+    "adversarial_qa",
+    "aeslc"
+  ]
 }
 ```
 

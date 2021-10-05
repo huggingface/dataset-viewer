@@ -7,10 +7,10 @@ from datasets_preview_backend.responses import memoized_functions
 class EndpointCacheStats(TypedDict):
     endpoint: str
     expected: int
-    cached: int
-    expired: int
-    error: int
     valid: int
+    error: int
+    cache_expired: int
+    cache_miss: int
 
 
 class CacheStats(TypedDict):
@@ -18,18 +18,13 @@ class CacheStats(TypedDict):
 
 
 def get_endpoint_report(endpoint: str, args_reports: List[ArgsCacheStats]) -> EndpointCacheStats:
-    expected = args_reports
-    cached = [d for d in expected if d["is_cached"]]
-    expired = [d for d in expected if d["is_expired"]]
-    error = [d for d in expected if d["is_error"]]
-    valid = [d for d in expected if d["is_valid"]]
     return {
         "endpoint": endpoint,
-        "expected": len(expected),
-        "cached": len(cached),
-        "expired": len(expired),
-        "error": len(error),
-        "valid": len(valid),
+        "expected": len(args_reports),
+        "valid": len([d for d in args_reports if d["status"] == "valid"]),
+        "error": len([d for d in args_reports if d["status"] == "error"]),
+        "cache_expired": len([d for d in args_reports if d["status"] == "cache_expired"]),
+        "cache_miss": len([d for d in args_reports if d["status"] == "cache_miss"]),
     }
 
 

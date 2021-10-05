@@ -13,30 +13,33 @@ from datasets_preview_backend.types import (
 class ArgsCacheStats(TypedDict):
     endpoint: str
     kwargs: Dict[str, Union[str, int]]
-    is_cached: bool
-    is_expired: bool
-    is_error: bool
-    is_valid: bool
+    status: str
     content: Union[Content, None]
 
 
 def get_kwargs_report(endpoint: str, kwargs: Any) -> ArgsCacheStats:
     memoized_function = memoized_functions[endpoint]
     cache = memoized_function.__cache__
-    # cache.close()
     key = memoized_function.__cache_key__(**kwargs)
     content, expire_time = cache.get(key, default=None, expire_time=True)
-    is_cached = content is not None
-    is_expired = expire_time is not None and expire_time < time()
-    is_error = isinstance(content, Exception)
-    is_valid = is_cached and not is_expired and not is_error
+    # we only report the cached datasets as valid
+    # as we rely on cache warming at startup (otherwise, the first call would take too long - various hours)
+    # note that warming can be done by 1. calling /datasets, then 2. calling /rows?dataset={dataset}
+    # for all the datasets
+    # TODO: use an Enum?
+    status = (
+        "cache_miss"
+        if content is None
+        else "cache_expired"
+        if expire_time is not None and expire_time < time()
+        else "error"
+        if isinstance(content, Exception)
+        else "valid"
+    )
     return {
         "endpoint": endpoint,
         "kwargs": kwargs,
-        "is_cached": is_cached,
-        "is_expired": is_expired,
-        "is_error": is_error,
-        "is_valid": is_valid,
+        "status": status,
         "content": content,
     }
 
@@ -50,7 +53,7 @@ def get_cache_reports() -> List[ArgsCacheStats]:
     ]
     reports += local_datasets_reports
 
-    valid_datasets_reports = [d for d in local_datasets_reports if d["is_valid"]]
+    valid_datasets_reports = [d for d in local_datasets_reports if d["status"] == "valid"]
     for datasets_report in valid_datasets_reports:
         datasets_content = cast(DatasetsContent, datasets_report["content"])
         datasets = datasets_content["datasets"]
@@ -61,7 +64,7 @@ def get_cache_reports() -> List[ArgsCacheStats]:
         ]
         reports += local_configs_reports
 
-        valid_configs_reports = [d for d in local_configs_reports if d["is_valid"]]
+        valid_configs_reports = [d for d in local_configs_reports if d["status"] == "valid"]
         for configs_report in valid_configs_reports:
             configs_content = cast(ConfigsContent, configs_report["content"])
             configs = configs_content["configs"]
@@ -76,7 +79,7 @@ def get_cache_reports() -> List[ArgsCacheStats]:
             ]
             reports += local_splits_reports
 
-            valid_splits_reports = [d for d in local_splits_reports if d["is_valid"]]
+            valid_splits_reports = [d for d in local_splits_reports if d["status"] == "valid"]
             for splits_report in valid_splits_reports:
                 splits_content = cast(SplitsContent, splits_report["content"])
                 splits = splits_content["splits"]
