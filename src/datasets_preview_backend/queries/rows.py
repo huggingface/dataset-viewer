@@ -87,7 +87,7 @@ def get_rows(*, dataset: str, config: Optional[str] = None, split: Optional[str]
         if len(infoItems) != 1:
             raise Exception("a dataset config should have exactly one info")
         infoItem = infoItems[0]
-        if "features" not in infoItem:
+        if "features" not in infoItem or infoItem["features"] is None:
             raise Status400Error("a dataset config info should contain a 'features' property")
         localFeatureItems: List[FeatureItem] = [
             {"dataset": dataset, "config": config, "feature": {"name": name, "content": content}}
