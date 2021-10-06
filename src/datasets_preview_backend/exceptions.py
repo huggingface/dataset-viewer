@@ -12,7 +12,7 @@ class StatusError(Exception):
         super().__init__(self.message)
         # TODO: use caller's __name__ instead of this file's name
         logger = logging.getLogger(__name__)
-        logger.warning(f"Error {self.status_code} '{self.message}'.")
+        logger.debug(f"Error {self.status_code} '{self.message}'.")
         logger.debug(f"Caused by a {type(self.__cause__).__name__}: '{str(self.__cause__)}'")
 
     def as_content(self) -> StatusErrorContent:

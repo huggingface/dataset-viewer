@@ -26,7 +26,7 @@ def get_rows(*, dataset: str, config: Optional[str] = None, split: Optional[str]
         raise Status400Error("this dataset is not supported for now.")
     if config is None:
         # split is ignored if config is not passed
-        logger.warning("split argument is ignored since config is not provided")
+        logger.debug("split argument is ignored since config is not provided")
         split = None
     elif not isinstance(config, str):
         raise TypeError("config argument should be a string")
