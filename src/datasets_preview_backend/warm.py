@@ -34,6 +34,7 @@ def warm_dataset(dataset: str, max_load_pct: int) -> None:
     print(f"Cache warming: dataset '{dataset}'")
     t = time.perf_counter()
     try:  # nosec
+        # get_rows calls the four endpoints: /configs, /splits, /infos and /rows
         get_rows(dataset=dataset)
     except Exception:
         pass

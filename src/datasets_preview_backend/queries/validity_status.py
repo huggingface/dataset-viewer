@@ -21,57 +21,85 @@ class DatasetsByStatus(TypedDict):
     cache_miss: List[str]
 
 
-def get_dataset_status(*, reports: List[ArgsCacheStats], dataset: str) -> str:
+class ExpectedReports(TypedDict):
+    expected_reports: List[ArgsCacheStats]
+    missing: int
+
+
+def get_dataset_expected_reports(*, reports: List[ArgsCacheStats], dataset: str) -> ExpectedReports:
     dataset_reports = [
         report for report in reports if ("dataset" in report["kwargs"] and report["kwargs"]["dataset"] == dataset)
     ]
 
+    expected_reports: List[ArgsCacheStats] = []
+    missing: int = 0
+
     configs_reports = [report for report in dataset_reports if report["endpoint"] == "/configs"]
-    if len(configs_reports) != 1:
-        raise Exception("a dataset should have exactly one /configs report")
-    configs_report = configs_reports[0]
-    if configs_report["status"] != "valid":
-        return configs_report["status"]
+    if len(configs_reports) > 1:
+        raise Exception("a dataset should have at most one /configs report")
+    elif len(configs_reports) == 0:
+        missing += 1
+    else:
+        expected_reports.append(configs_reports[0])
 
-    configs = [configItem["config"] for configItem in cast(ConfigsContent, configs_report["content"])["configs"]]
-    for config in configs:
-        infos_reports = [
-            report
-            for report in dataset_reports
-            if report["endpoint"] == "/infos" and report["kwargs"]["config"] == config
-        ]
-        if len(infos_reports) != 1:
-            raise Exception("a (dataset,config) tuple should have exactly one /infos report")
-        infos_report = infos_reports[0]
-        if infos_report["status"] != "valid":
-            return infos_report["status"]
+        configs_content = cast(ConfigsContent, configs_reports[0]["content"])
+        if configs_content is not None:
+            for config in [configItem["config"] for configItem in configs_content["configs"]]:
+                infos_reports = [
+                    report
+                    for report in dataset_reports
+                    if report["endpoint"] == "/infos" and report["kwargs"]["config"] == config
+                ]
+                if len(infos_reports) > 1:
+                    raise Exception("a (dataset,config) tuple should have at most one /infos report")
+                elif len(infos_reports) == 0:
+                    missing += 1
+                else:
+                    expected_reports.append(infos_reports[0])
 
-        splits_reports = [
-            report
-            for report in dataset_reports
-            if report["endpoint"] == "/splits" and report["kwargs"]["config"] == config
-        ]
-        if len(splits_reports) != 1:
-            raise Exception("a (dataset,config) tuple should have exactly one /splits report")
-        splits_report = splits_reports[0]
-        if splits_report["status"] != "valid":
-            return splits_report["status"]
+                splits_reports = [
+                    report
+                    for report in dataset_reports
+                    if report["endpoint"] == "/splits" and report["kwargs"]["config"] == config
+                ]
+                if len(splits_reports) > 1:
+                    raise Exception("a (dataset,config) tuple should have at most one /splits report")
+                elif len(splits_reports) == 0:
+                    missing += 1
+                else:
+                    expected_reports.append(splits_reports[0])
 
-        splits = [splitItem["split"] for splitItem in cast(SplitsContent, splits_report["content"])["splits"]]
-        for split in splits:
-            rows_reports = [
-                report
-                for report in dataset_reports
-                if report["endpoint"] == "/rows"
-                and report["kwargs"]["config"] == config
-                and report["kwargs"]["split"] == split
-            ]
-            if len(rows_reports) != 1:
-                raise Exception("a (dataset,config,split) tuple should have exactly one /rows report")
-            rows_report = rows_reports[0]
-            if rows_report["status"] != "valid":
-                return rows_report["status"]
+                    splits_content = cast(SplitsContent, splits_reports[0]["content"])
+                    if splits_content is not None:
+                        for split in [splitItem["split"] for splitItem in splits_content["splits"]]:
+                            rows_reports = [
+                                report
+                                for report in dataset_reports
+                                if report["endpoint"] == "/rows"
+                                and report["kwargs"]["config"] == config
+                                and report["kwargs"]["split"] == split
+                            ]
+                            if len(rows_reports) > 1:
+                                raise Exception("a (dataset,config,split) tuple should have at most one /rows report")
+                            elif len(splits_reports) == 0:
+                                missing += 1
+                            else:
+                                expected_reports.append(rows_reports[0])
 
+    return {"expected_reports": expected_reports, "missing": missing}
+
+
+def get_dataset_status(*, reports: List[ArgsCacheStats], dataset: str) -> str:
+    expected_reports = get_dataset_expected_reports(reports=reports, dataset=dataset)
+    if any(r["status"] == "error" for r in expected_reports["expected_reports"]):
+        return "error"
+    elif (
+        any(r["status"] == "cache_miss" for r in expected_reports["expected_reports"])
+        or expected_reports["missing"] > 0
+    ):
+        return "cache_miss"
+    elif any(r["status"] == "cache_expired" for r in expected_reports["expected_reports"]):
+        return "cache_expired"
     return "valid"
 
 
