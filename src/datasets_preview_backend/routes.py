@@ -1,5 +1,7 @@
 import logging
 
+from typing import cast
+
 from starlette.endpoints import HTTPEndpoint
 from starlette.requests import Request
 from starlette.responses import JSONResponse, PlainTextResponse, Response
@@ -23,10 +25,18 @@ class CacheReports(HTTPEndpoint):
     async def get(self, _: Request) -> Response:
         logger.info("/cache-reports")
         reports = get_cache_reports()
-        for report in reports:
-            if isinstance(report["content"], StatusError):
-                report["content"] = report["content"].as_content()
-        return JSONResponse(reports, headers={"Cache-Control": "no-store"})
+        results = [
+            {
+                "endpoint": report["endpoint"],
+                "kwargs": report["kwargs"],
+                "status": report["status"],
+                "error": cast(StatusError, report["content"]).as_content()
+                if isinstance(report["content"], StatusError)
+                else None,
+            }
+            for report in reports
+        ]
+        return JSONResponse({"reports": results}, headers={"Cache-Control": "no-store"})
 
 
 class CacheStats(HTTPEndpoint):
