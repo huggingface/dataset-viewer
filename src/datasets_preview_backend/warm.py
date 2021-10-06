@@ -2,16 +2,20 @@ import os
 import time
 
 import psutil  # type: ignore
+from dotenv import load_dotenv
 
 from datasets_preview_backend.cache_reports import get_kwargs_report
+from datasets_preview_backend.constants import (
+    DEFAULT_MAX_LOAD_PCT,
+    DEFAULT_MAX_VIRTUAL_MEMORY_PCT,
+)
 from datasets_preview_backend.logger import init_logger
 from datasets_preview_backend.queries.datasets import get_datasets
 from datasets_preview_backend.queries.rows import get_rows
 from datasets_preview_backend.utils import get_int_value
 
-
-DEFAULT_MAX_LOAD_PCT = 50
-DEFAULT_MAX_VIRTUAL_MEMORY_PCT = 50
+# Load environment variables defined in .env, if any
+load_dotenv()
 
 
 def wait_until_load_is_ok(max_load_pct: int) -> None:
