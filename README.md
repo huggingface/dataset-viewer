@@ -49,10 +49,10 @@ To reload the application on file changes while developing, run:
 make watch
 ```
 
-To warm the cache (`MAX_THREADS` defaults to 1):
+To warm the cache (`SLEEP_SECONDS` defaults to 1 second between two dataset warms). It uses one thread.
 
 ```bash
-MAX_THREADS=2 make warm
+SLEEP_SECONDS=1 make warm
 ```
 
 ## Endpoints
