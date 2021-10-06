@@ -52,10 +52,10 @@ make watch
 To warm the cache:
 
 ```bash
-MAX_LOAD_PCT=50 make warm
+MAX_LOAD_PCT=50 MAX_VIRTUAL_MEMORY_PCT=50 make warm
 ```
 
-Cache warming uses only one thread, and before warming a new dataset, it waits until the load percentage, ie. the 1m load divided by the number of cpus \*100, is below `MAX_LOAD_PCT` (defaults to 50%).
+Cache warming uses only one thread, and before warming a new dataset, it waits until the load percentage, ie. the 1m load divided by the number of cpus \*100, is below `MAX_LOAD_PCT` (defaults to 50%). Also, if the virtual memory on the machine reaches `MAX_VIRTUAL_MEMORY_PCT`(defaults to 50%), the process stops.
 
 ## Endpoints
 

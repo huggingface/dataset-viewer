@@ -9,7 +9,9 @@ from datasets_preview_backend.queries.datasets import get_datasets
 from datasets_preview_backend.queries.rows import get_rows
 from datasets_preview_backend.utils import get_int_value
 
+
 DEFAULT_MAX_LOAD_PCT = 50
+DEFAULT_MAX_VIRTUAL_MEMORY_PCT = 50
 
 
 def wait_until_load_is_ok(max_load_pct: int) -> None:
@@ -44,9 +46,14 @@ def warm_dataset(dataset: str, max_load_pct: int) -> None:
 
 def warm() -> None:
     max_load_pct = get_int_value(os.environ, "MAX_LOAD_PCT", DEFAULT_MAX_LOAD_PCT)
+    max_virtual_memory_pct = get_int_value(os.environ, "MAX_VIRTUAL_MEMORY_PCT", DEFAULT_MAX_VIRTUAL_MEMORY_PCT)
     datasets = [d["dataset"] for d in get_datasets()["datasets"]]
 
     for dataset in datasets:
+        if psutil.virtual_memory().percent > max_virtual_memory_pct:
+            print("Memory usage is too high, we stop here.")
+            return
+
         status = get_cache_status(dataset)
         if status == "cache_miss":
             warm_dataset(dataset, max_load_pct)
