@@ -43,7 +43,7 @@ def get_dataset_expected_reports(*, reports: List[ArgsCacheStats], dataset: str)
         expected_reports.append(configs_reports[0])
 
         configs_content = cast(ConfigsContent, configs_reports[0]["content"])
-        if configs_content is not None:
+        if configs_content is not None and "configs" in configs_content:
             for config in [configItem["config"] for configItem in configs_content["configs"]]:
                 infos_reports = [
                     report
@@ -70,7 +70,7 @@ def get_dataset_expected_reports(*, reports: List[ArgsCacheStats], dataset: str)
                     expected_reports.append(splits_reports[0])
 
                     splits_content = cast(SplitsContent, splits_reports[0]["content"])
-                    if splits_content is not None:
+                    if splits_content is not None and "splits" in splits_content:
                         for split in [splitItem["split"] for splitItem in splits_content["splits"]]:
                             rows_reports = [
                                 report
