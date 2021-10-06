@@ -1,5 +1,4 @@
 import logging
-
 from typing import cast
 
 from starlette.endpoints import HTTPEndpoint
