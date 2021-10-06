@@ -2,7 +2,12 @@ import uvicorn  # type: ignore
 from starlette.applications import Starlette
 from starlette.routing import Route
 
-from datasets_preview_backend.config import APP_HOSTNAME, APP_PORT, CACHE_PERSIST, WEB_CONCURRENCY
+from datasets_preview_backend.config import (
+    APP_HOSTNAME,
+    APP_PORT,
+    CACHE_PERSIST,
+    WEB_CONCURRENCY,
+)
 from datasets_preview_backend.routes import (
     CacheStats,
     Configs,
