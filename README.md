@@ -49,6 +49,12 @@ To reload the application on file changes while developing, run:
 make watch
 ```
 
+To warm the cache (`MAX_THREADS` defaults to 1):
+
+```bash
+MAX_THREADS=2 make warm
+```
+
 ## Endpoints
 
 ### /healthcheck
