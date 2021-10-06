@@ -9,6 +9,7 @@ from datasets_preview_backend.config import (
     WEB_CONCURRENCY,
 )
 from datasets_preview_backend.routes import (
+    CacheReports,
     CacheStats,
     Configs,
     Datasets,
@@ -31,6 +32,7 @@ def create_app() -> Starlette:
             Route("/rows", endpoint=Rows),
             Route("/cache", endpoint=CacheStats),
             Route("/valid", endpoint=ValidDatasets),
+            Route("/cache-reports", endpoint=CacheReports),
         ],
     )
 

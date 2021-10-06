@@ -4,6 +4,8 @@ from starlette.endpoints import HTTPEndpoint
 from starlette.requests import Request
 from starlette.responses import JSONResponse, PlainTextResponse, Response
 
+from datasets_preview_backend.cache_reports import get_cache_reports
+from datasets_preview_backend.exceptions import StatusError
 from datasets_preview_backend.queries.cache_stats import get_cache_stats
 from datasets_preview_backend.queries.validity_status import get_valid_datasets
 from datasets_preview_backend.responses import get_cached_response
@@ -15,6 +17,16 @@ class HealthCheck(HTTPEndpoint):
     async def get(self, _: Request) -> Response:
         logger.info("/healthcheck")
         return PlainTextResponse("ok", headers={"Cache-Control": "no-store"})
+
+
+class CacheReports(HTTPEndpoint):
+    async def get(self, _: Request) -> Response:
+        logger.info("/cache-reports")
+        reports = get_cache_reports()
+        for report in reports:
+            if isinstance(report["content"], StatusError):
+                report["content"] = report["content"].as_content()
+        return JSONResponse(reports, headers={"Cache-Control": "no-store"})
 
 
 class CacheStats(HTTPEndpoint):
