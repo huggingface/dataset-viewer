@@ -7,6 +7,7 @@ from datasets_preview_backend.constants import (
     DEFAULT_APP_PORT,
     DEFAULT_CACHE_DIRECTORY,
     DEFAULT_CACHE_PERSIST,
+    DEFAULT_CACHE_SHORT_TTL_SECONDS,
     DEFAULT_CACHE_SIZE_LIMIT,
     DEFAULT_CACHE_TTL_SECONDS,
     DEFAULT_DATASETS_ENABLE_PRIVATE,
@@ -28,6 +29,9 @@ APP_HOSTNAME = os.environ.get("APP_HOSTNAME", DEFAULT_APP_HOSTNAME)
 APP_PORT = get_int_value(d=os.environ, key="APP_PORT", default=DEFAULT_APP_PORT)
 CACHE_DIRECTORY = get_str_or_none_value(d=os.environ, key="CACHE_DIRECTORY", default=DEFAULT_CACHE_DIRECTORY)
 CACHE_PERSIST = get_bool_value(d=os.environ, key="CACHE_PERSIST", default=DEFAULT_CACHE_PERSIST)
+CACHE_SHORT_TTL_SECONDS = get_int_value(
+    d=os.environ, key="CACHE_SHORT_TTL_SECONDS", default=DEFAULT_CACHE_SHORT_TTL_SECONDS
+)
 CACHE_SIZE_LIMIT = get_int_value(d=os.environ, key="CACHE_SIZE_LIMIT", default=DEFAULT_CACHE_SIZE_LIMIT)
 CACHE_TTL_SECONDS = get_int_value(d=os.environ, key="CACHE_TTL_SECONDS", default=DEFAULT_CACHE_TTL_SECONDS)
 DATASETS_ENABLE_PRIVATE = get_bool_value(

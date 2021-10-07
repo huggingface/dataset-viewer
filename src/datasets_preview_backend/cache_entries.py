@@ -1,6 +1,7 @@
 from time import time
 from typing import Any, Dict, List, TypedDict, Union, cast
 
+from datasets_preview_backend.config import CACHE_SHORT_TTL_SECONDS
 from datasets_preview_backend.responses import memoized_functions
 from datasets_preview_backend.types import (
     ConfigsContent,
@@ -44,6 +45,7 @@ def get_kwargs_report(endpoint: str, kwargs: Any) -> ArgsCacheStats:
     }
 
 
+@memoize(cache=cache, expire=CACHE_SHORT_TTL_SECONDS)  # type:ignore
 def get_cache_reports() -> List[ArgsCacheStats]:
     reports: List[ArgsCacheStats] = []
 

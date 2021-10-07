@@ -1,5 +1,6 @@
 from typing import Dict, List, TypedDict
 
+from datasets_preview_backend.config import CACHE_SHORT_TTL_SECONDS
 from datasets_preview_backend.cache_reports import ArgsCacheStats, get_cache_reports
 from datasets_preview_backend.responses import memoized_functions
 
@@ -28,6 +29,7 @@ def get_endpoint_report(endpoint: str, args_reports: List[ArgsCacheStats]) -> En
     }
 
 
+@memoize(cache=cache, expire=CACHE_SHORT_TTL_SECONDS)  # type:ignore
 def get_cache_stats() -> CacheStats:
     reports = get_cache_reports()
 

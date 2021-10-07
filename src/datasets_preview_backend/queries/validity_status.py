@@ -1,5 +1,6 @@
 from typing import List, TypedDict, cast
 
+from datasets_preview_backend.config import CACHE_SHORT_TTL_SECONDS
 from datasets_preview_backend.cache_reports import ArgsCacheStats, get_cache_reports
 from datasets_preview_backend.queries.datasets import get_datasets
 from datasets_preview_backend.types import ConfigsContent, SplitsContent
@@ -112,15 +113,16 @@ def get_dataset_status(*, reports: List[ArgsCacheStats], dataset: str) -> str:
 def get_validity_status() -> DatasetsStatus:
     dataset_content = get_datasets()
     datasets = [datasetItem["dataset"] for datasetItem in dataset_content["datasets"]]
-    reports = get_cache_reports()
+    entries = get_cache_entries()
     return {
         "datasets": [
-            {"dataset": dataset, "status": get_dataset_status(reports=reports, dataset=dataset)}
+            {"dataset": dataset, "status": get_dataset_status(entries=entries, dataset=dataset)}
             for dataset in datasets
         ]
     }
 
 
+@memoize(cache=cache, expire=CACHE_SHORT_TTL_SECONDS)  # type:ignore
 def get_valid_datasets() -> DatasetsByStatus:
     status = get_validity_status()
     return {
