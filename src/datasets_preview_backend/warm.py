@@ -7,6 +7,7 @@ from dotenv import load_dotenv
 from datasets_preview_backend.cache_entries import get_cache_entry
 from datasets_preview_backend.constants import (
     DEFAULT_MAX_LOAD_PCT,
+    DEFAULT_MAX_SWAP_MEMORY_PCT,
     DEFAULT_MAX_VIRTUAL_MEMORY_PCT,
 )
 from datasets_preview_backend.logger import init_logger
@@ -51,11 +52,15 @@ def warm_dataset(dataset: str, max_load_pct: int) -> None:
 def warm() -> None:
     max_load_pct = get_int_value(os.environ, "MAX_LOAD_PCT", DEFAULT_MAX_LOAD_PCT)
     max_virtual_memory_pct = get_int_value(os.environ, "MAX_VIRTUAL_MEMORY_PCT", DEFAULT_MAX_VIRTUAL_MEMORY_PCT)
+    max_swap_memory_pct = get_int_value(os.environ, "MAX_SWAP_MEMORY_PCT", DEFAULT_MAX_SWAP_MEMORY_PCT)
     datasets = [d["dataset"] for d in get_datasets()["datasets"]]
 
     for dataset in datasets:
         if psutil.virtual_memory().percent > max_virtual_memory_pct:
             print("Memory usage is too high, we stop here.")
+            return
+        if psutil.swap_memory().percent > max_swap_memory_pct:
+            print("Swap memory usage is too high, we stop here.")
             return
 
         status = get_cache_status(dataset)
