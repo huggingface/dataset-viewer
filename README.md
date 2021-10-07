@@ -97,47 +97,205 @@ Responses:
       "valid": 1,
       "error": 0,
       "cache_expired": 0,
-      "cache_miss": 0
+      "cache_miss": 0,
+      "expire_within": [
+        {
+          "name": "1m",
+          "seconds": 60,
+          "number": 0
+        },
+        {
+          "name": "10m",
+          "seconds": 600,
+          "number": 0
+        },
+        {
+          "name": "1h",
+          "seconds": 3600,
+          "number": 0
+        },
+        {
+          "name": "10h",
+          "seconds": 36000,
+          "number": 1
+        }
+      ]
     },
     "/configs": {
       "endpoint": "/configs",
-      "expected": 1582,
-      "valid": 1,
+      "expected": 1601,
+      "valid": 0,
       "error": 0,
       "cache_expired": 0,
-      "cache_miss": 1581
+      "cache_miss": 1601,
+      "expire_within": [
+        {
+          "name": "1m",
+          "seconds": 60,
+          "number": 0
+        },
+        {
+          "name": "10m",
+          "seconds": 600,
+          "number": 0
+        },
+        {
+          "name": "1h",
+          "seconds": 3600,
+          "number": 0
+        },
+        {
+          "name": "10h",
+          "seconds": 36000,
+          "number": 0
+        }
+      ]
     },
     "/infos": {
       "endpoint": "/infos",
-      "expected": 2,
-      "valid": 2,
+      "expected": 0,
+      "valid": 0,
       "error": 0,
       "cache_expired": 0,
-      "cache_miss": 0
+      "cache_miss": 0,
+      "expire_within": [
+        {
+          "name": "1m",
+          "seconds": 60,
+          "number": 0
+        },
+        {
+          "name": "10m",
+          "seconds": 600,
+          "number": 0
+        },
+        {
+          "name": "1h",
+          "seconds": 3600,
+          "number": 0
+        },
+        {
+          "name": "10h",
+          "seconds": 36000,
+          "number": 0
+        }
+      ]
     },
     "/splits": {
       "endpoint": "/splits",
-      "expected": 2,
-      "valid": 2,
+      "expected": 0,
+      "valid": 0,
       "error": 0,
       "cache_expired": 0,
-      "cache_miss": 0
+      "cache_miss": 0,
+      "expire_within": [
+        {
+          "name": "1m",
+          "seconds": 60,
+          "number": 0
+        },
+        {
+          "name": "10m",
+          "seconds": 600,
+          "number": 0
+        },
+        {
+          "name": "1h",
+          "seconds": 3600,
+          "number": 0
+        },
+        {
+          "name": "10h",
+          "seconds": 36000,
+          "number": 0
+        }
+      ]
     },
     "/rows": {
       "endpoint": "/rows",
-      "expected": 6,
-      "valid": 6,
+      "expected": 0,
+      "valid": 0,
       "error": 0,
       "cache_expired": 0,
-      "cache_miss": 0
+      "cache_miss": 0,
+      "expire_within": [
+        {
+          "name": "1m",
+          "seconds": 60,
+          "number": 0
+        },
+        {
+          "name": "10m",
+          "seconds": 600,
+          "number": 0
+        },
+        {
+          "name": "1h",
+          "seconds": 3600,
+          "number": 0
+        },
+        {
+          "name": "10h",
+          "seconds": 36000,
+          "number": 0
+        }
+      ]
     }
-  }
+  },
+  "created_at": "2021-10-07T13:41:45Z"
+}
+```
+
+### /cache-reports
+
+> Give detailed reports on the content of the cache
+
+Example: https://datasets-preview.huggingface.tech/cache-reports
+
+Method: `GET`
+
+Parameters: none
+
+Responses:
+
+- `200`: JSON content which the reports, one per endpoint + expected arguments, with the following structure:
+
+```json
+{
+  "reports": [
+    {
+      "endpoint": "/datasets",
+      "kwargs": {},
+      "status": "valid",
+      "expire": "2021-10-07T19:23:45Z",
+      "error": null
+    },
+    {
+      "endpoint": "/configs",
+      "kwargs": {
+        "dataset": "acronym_identification"
+      },
+      "status": "cache_miss",
+      "expire": null,
+      "error": null
+    },
+    {
+      "endpoint": "/configs",
+      "kwargs": {
+        "dataset": "ade_corpus_v2"
+      },
+      "status": "cache_miss",
+      "expire": null,
+      "error": null
+    }
+  ],
+  "created_at": "2021-10-07T13:42:45Z"
 }
 ```
 
 ### /valid
 
-> Give the list of the valid datasets
+> Give the list of the datasets, by validity status
 
 Example: https://datasets-preview.huggingface.tech/valid
 
@@ -159,7 +317,8 @@ Responses:
     "ade_corpus_v2",
     "adversarial_qa",
     "aeslc"
-  ]
+  ],
+  "created_at": "2021-10-07T13:33:46Z"
 }
 ```
 
