@@ -26,6 +26,7 @@ class CacheEntry(TypedDict):
     endpoint: str
     kwargs: Dict[str, Union[str, int]]
     status: str
+    expire_time: Union[float, None]
     content: Union[Content, None]
     error: Union[Exception, None]
 
@@ -52,6 +53,9 @@ def get_cache_entry(endpoint: str, kwargs: Any) -> CacheEntry:
         if cache_content is None
         # possibly: cache_expired will never occur
         else "cache_expired"
+        # diskcache uses time.time() internally:
+        # see https://github.com/grantjenks/python-diskcache/blob/master/diskcache/core.py#L769-L771
+        # so: we have to use it to compare. BEWARE the daylight savings time changes.
         if expire_time is not None and expire_time < time()
         else "error"
         if error is not None
@@ -61,6 +65,7 @@ def get_cache_entry(endpoint: str, kwargs: Any) -> CacheEntry:
         "endpoint": endpoint,
         "kwargs": kwargs,
         "status": status,
+        "expire_time": expire_time,
         "content": content,
         "error": error,
     }

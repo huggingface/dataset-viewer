@@ -1,3 +1,4 @@
+import time
 from typing import List, TypedDict, cast
 
 from datasets_preview_backend.cache import cache, memoize  # type: ignore
@@ -21,6 +22,7 @@ class DatasetsByStatus(TypedDict):
     error: List[str]
     cache_expired: List[str]
     cache_miss: List[str]
+    created_at: str
 
 
 class ExpectedEntries(TypedDict):
@@ -143,4 +145,5 @@ def get_valid_datasets() -> DatasetsByStatus:
             for dataset_status in status["datasets"]
             if dataset_status["status"] == "cache_miss"
         ],
+        "created_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
     }

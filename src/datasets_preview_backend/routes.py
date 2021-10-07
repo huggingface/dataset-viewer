@@ -29,7 +29,7 @@ class HealthCheck(HTTPEndpoint):
 class CacheReports(HTTPEndpoint):
     async def get(self, _: Request) -> Response:
         logger.info("/cache-reports")
-        return get_cached_response(memoized_functions=technical_functions, endpoint="/valid-reports").send()
+        return get_cached_response(memoized_functions=technical_functions, endpoint="/cache-reports").send()
 
 
 class CacheStats(HTTPEndpoint):

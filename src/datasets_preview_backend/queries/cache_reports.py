@@ -1,3 +1,4 @@
+import time
 from typing import Dict, List, TypedDict, Union
 
 from datasets_preview_backend.cache import cache, memoize  # type: ignore
@@ -11,11 +12,13 @@ class CacheReport(TypedDict):
     endpoint: str
     kwargs: Dict[str, Union[str, int]]
     status: str
+    expire: Union[str, None]
     error: Union[StatusErrorContent, None]
 
 
 class CacheReports(TypedDict):
     reports: List[CacheReport]
+    created_at: str
 
 
 def entry_to_report(entry: CacheEntry) -> CacheReport:
@@ -23,10 +26,16 @@ def entry_to_report(entry: CacheEntry) -> CacheReport:
         "endpoint": entry["endpoint"],
         "kwargs": entry["kwargs"],
         "status": entry["status"],
+        "expire": None
+        if entry["expire_time"] is None
+        else time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime(entry["expire_time"])),
         "error": entry["error"].as_content() if isinstance(entry["error"], StatusError) else None,
     }
 
 
 @memoize(cache=cache, expire=CACHE_SHORT_TTL_SECONDS)  # type:ignore
 def get_cache_reports() -> CacheReports:
-    return {"reports": [entry_to_report(entry) for entry in get_cache_entries()]}
+    return {
+        "reports": [entry_to_report(entry) for entry in get_cache_entries()],
+        "created_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+    }
