@@ -1,5 +1,3 @@
-import logging
-
 from typing import Optional
 
 from datasets_preview_backend.types import StatusErrorContent
