@@ -1,5 +1,4 @@
 import logging
-from typing import cast
 
 from starlette.endpoints import HTTPEndpoint
 from starlette.requests import Request
@@ -29,9 +28,7 @@ class CacheReports(HTTPEndpoint):
                 "endpoint": report["endpoint"],
                 "kwargs": report["kwargs"],
                 "status": report["status"],
-                "error": cast(StatusError, report["content"]).as_content()
-                if isinstance(report["content"], StatusError)
-                else None,
+                "error": report["content"].as_content() if isinstance(report["content"], StatusError) else None,
             }
             for report in reports
         ]
