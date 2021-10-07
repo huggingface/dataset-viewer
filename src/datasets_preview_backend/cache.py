@@ -147,6 +147,7 @@ def memoize(
             # variables as soon as possible.
             _refresh = bool(kwargs.pop("_refresh", False))
             _return_max_age = bool(kwargs.pop("_return_max_age", False))
+            _force_expire = kwargs.pop("_force_expire", expire)
             key = wrapper.__cache_key__(*args, **kwargs)
             if _refresh:
                 result = ENOVAL
@@ -161,7 +162,7 @@ def memoize(
                     result = func(*args, **kwargs)
                 except cache_exceptions as exception:
                     result = exception
-                cache.set(key, result, expire, tag=tag, retry=True)
+                cache.set(key, result, _force_expire, tag=tag, retry=True)
                 max_age = expire
 
             # See https://github.com/peterbe/django-cache-memoize/blob/master/src/cache_memoize/__init__.py#L153-L156

@@ -50,6 +50,7 @@ def get_cache_entry(endpoint: str, kwargs: Any) -> CacheEntry:
     status = (
         "cache_miss"
         if cache_content is None
+        # possibly: cache_expired will never occur
         else "cache_expired"
         if expire_time is not None and expire_time < time()
         else "error"
