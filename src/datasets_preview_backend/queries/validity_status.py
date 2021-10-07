@@ -1,7 +1,8 @@
 from typing import List, TypedDict, cast
 
+from datasets_preview_backend.cache import cache, memoize  # type: ignore
+from datasets_preview_backend.cache_entries import CacheEntry, get_cache_entries
 from datasets_preview_backend.config import CACHE_SHORT_TTL_SECONDS
-from datasets_preview_backend.cache_reports import ArgsCacheStats, get_cache_reports
 from datasets_preview_backend.queries.datasets import get_datasets
 from datasets_preview_backend.types import ConfigsContent, SplitsContent
 
@@ -22,90 +23,90 @@ class DatasetsByStatus(TypedDict):
     cache_miss: List[str]
 
 
-class ExpectedReports(TypedDict):
-    expected_reports: List[ArgsCacheStats]
+class ExpectedEntries(TypedDict):
+    expected_entries: List[CacheEntry]
     missing: int
 
 
-def get_dataset_expected_reports(*, reports: List[ArgsCacheStats], dataset: str) -> ExpectedReports:
-    dataset_reports = [
-        report for report in reports if ("dataset" in report["kwargs"] and report["kwargs"]["dataset"] == dataset)
+def get_dataset_expected_entries(*, entries: List[CacheEntry], dataset: str) -> ExpectedEntries:
+    dataset_entries = [
+        entry for entry in entries if ("dataset" in entry["kwargs"] and entry["kwargs"]["dataset"] == dataset)
     ]
 
-    expected_reports: List[ArgsCacheStats] = []
+    expected_entries: List[CacheEntry] = []
     missing: int = 0
 
-    configs_reports = [report for report in dataset_reports if report["endpoint"] == "/configs"]
-    if len(configs_reports) > 1:
-        raise Exception("a dataset should have at most one /configs report")
-    elif len(configs_reports) == 0:
+    configs_entries = [entry for entry in dataset_entries if entry["endpoint"] == "/configs"]
+    if len(configs_entries) > 1:
+        raise Exception("a dataset should have at most one /configs entry")
+    elif len(configs_entries) == 0:
         missing += 1
     else:
-        expected_reports.append(configs_reports[0])
+        expected_entries.append(configs_entries[0])
 
-        configs_content = cast(ConfigsContent, configs_reports[0]["content"])
+        configs_content = cast(ConfigsContent, configs_entries[0]["content"])
         try:
             configItems = configs_content["configs"]
         except TypeError:
             configItems = []
         for config in [configItem["config"] for configItem in configItems]:
-            infos_reports = [
-                report
-                for report in dataset_reports
-                if report["endpoint"] == "/infos" and report["kwargs"]["config"] == config
+            infos_entries = [
+                entry
+                for entry in dataset_entries
+                if entry["endpoint"] == "/infos" and entry["kwargs"]["config"] == config
             ]
-            if len(infos_reports) > 1:
-                raise Exception("a (dataset,config) tuple should have at most one /infos report")
-            elif len(infos_reports) == 0:
+            if len(infos_entries) > 1:
+                raise Exception("a (dataset,config) tuple should have at most one /infos entry")
+            elif len(infos_entries) == 0:
                 missing += 1
             else:
-                expected_reports.append(infos_reports[0])
+                expected_entries.append(infos_entries[0])
 
-            splits_reports = [
-                report
-                for report in dataset_reports
-                if report["endpoint"] == "/splits" and report["kwargs"]["config"] == config
+            splits_entries = [
+                entry
+                for entry in dataset_entries
+                if entry["endpoint"] == "/splits" and entry["kwargs"]["config"] == config
             ]
-            if len(splits_reports) > 1:
-                raise Exception("a (dataset,config) tuple should have at most one /splits report")
-            elif len(splits_reports) == 0:
+            if len(splits_entries) > 1:
+                raise Exception("a (dataset,config) tuple should have at most one /splits entry")
+            elif len(splits_entries) == 0:
                 missing += 1
             else:
-                expected_reports.append(splits_reports[0])
+                expected_entries.append(splits_entries[0])
 
-                splits_content = cast(SplitsContent, splits_reports[0]["content"])
+                splits_content = cast(SplitsContent, splits_entries[0]["content"])
                 try:
                     splitItems = splits_content["splits"]
                 except TypeError:
                     splitItems = []
                 for split in [splitItem["split"] for splitItem in splitItems]:
-                    rows_reports = [
-                        report
-                        for report in dataset_reports
-                        if report["endpoint"] == "/rows"
-                        and report["kwargs"]["config"] == config
-                        and report["kwargs"]["split"] == split
+                    rows_entries = [
+                        entry
+                        for entry in dataset_entries
+                        if entry["endpoint"] == "/rows"
+                        and entry["kwargs"]["config"] == config
+                        and entry["kwargs"]["split"] == split
                     ]
-                    if len(rows_reports) > 1:
-                        raise Exception("a (dataset,config,split) tuple should have at most one /rows report")
-                    elif len(splits_reports) == 0:
+                    if len(rows_entries) > 1:
+                        raise Exception("a (dataset,config,split) tuple should have at most one /rows entry")
+                    elif len(splits_entries) == 0:
                         missing += 1
                     else:
-                        expected_reports.append(rows_reports[0])
+                        expected_entries.append(rows_entries[0])
 
-    return {"expected_reports": expected_reports, "missing": missing}
+    return {"expected_entries": expected_entries, "missing": missing}
 
 
-def get_dataset_status(*, reports: List[ArgsCacheStats], dataset: str) -> str:
-    expected_reports = get_dataset_expected_reports(reports=reports, dataset=dataset)
-    if any(r["status"] == "error" for r in expected_reports["expected_reports"]):
+def get_dataset_status(*, entries: List[CacheEntry], dataset: str) -> str:
+    expected_entries = get_dataset_expected_entries(entries=entries, dataset=dataset)
+    if any(r["status"] == "error" for r in expected_entries["expected_entries"]):
         return "error"
     elif (
-        any(r["status"] == "cache_miss" for r in expected_reports["expected_reports"])
-        or expected_reports["missing"] > 0
+        any(r["status"] == "cache_miss" for r in expected_entries["expected_entries"])
+        or expected_entries["missing"] > 0
     ):
         return "cache_miss"
-    elif any(r["status"] == "cache_expired" for r in expected_reports["expected_reports"]):
+    elif any(r["status"] == "cache_expired" for r in expected_entries["expected_entries"]):
         return "cache_expired"
     return "valid"
 

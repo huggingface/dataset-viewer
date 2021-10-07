@@ -4,7 +4,7 @@ import time
 import psutil  # type: ignore
 from dotenv import load_dotenv
 
-from datasets_preview_backend.cache_reports import get_kwargs_report
+from datasets_preview_backend.cache_entries import get_cache_entry
 from datasets_preview_backend.constants import (
     DEFAULT_MAX_LOAD_PCT,
     DEFAULT_MAX_VIRTUAL_MEMORY_PCT,
@@ -30,8 +30,8 @@ def wait_until_load_is_ok(max_load_pct: int) -> None:
 
 
 def get_cache_status(dataset: str) -> str:
-    report = get_kwargs_report("/rows", {"dataset": dataset})
-    return report["status"]
+    cache_entry = get_cache_entry("/rows", {"dataset": dataset})
+    return cache_entry["status"]
 
 
 def warm_dataset(dataset: str, max_load_pct: int) -> None:

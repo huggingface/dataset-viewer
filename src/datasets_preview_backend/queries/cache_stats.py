@@ -1,8 +1,12 @@
 from typing import Dict, List, TypedDict
 
+from datasets_preview_backend.cache import cache, memoize  # type: ignore
+from datasets_preview_backend.cache_entries import (
+    CacheEntry,
+    get_cache_entries,
+    memoized_functions,
+)
 from datasets_preview_backend.config import CACHE_SHORT_TTL_SECONDS
-from datasets_preview_backend.cache_reports import ArgsCacheStats, get_cache_reports
-from datasets_preview_backend.responses import memoized_functions
 
 
 class EndpointCacheStats(TypedDict):
@@ -18,23 +22,23 @@ class CacheStats(TypedDict):
     endpoints: Dict[str, EndpointCacheStats]
 
 
-def get_endpoint_report(endpoint: str, args_reports: List[ArgsCacheStats]) -> EndpointCacheStats:
+def get_endpoint_report(endpoint: str, cache_entries: List[CacheEntry]) -> EndpointCacheStats:
     return {
         "endpoint": endpoint,
-        "expected": len(args_reports),
-        "valid": len([d for d in args_reports if d["status"] == "valid"]),
-        "error": len([d for d in args_reports if d["status"] == "error"]),
-        "cache_expired": len([d for d in args_reports if d["status"] == "cache_expired"]),
-        "cache_miss": len([d for d in args_reports if d["status"] == "cache_miss"]),
+        "expected": len(cache_entries),
+        "valid": len([d for d in cache_entries if d["status"] == "valid"]),
+        "error": len([d for d in cache_entries if d["status"] == "error"]),
+        "cache_expired": len([d for d in cache_entries if d["status"] == "cache_expired"]),
+        "cache_miss": len([d for d in cache_entries if d["status"] == "cache_miss"]),
     }
 
 
 @memoize(cache=cache, expire=CACHE_SHORT_TTL_SECONDS)  # type:ignore
 def get_cache_stats() -> CacheStats:
-    reports = get_cache_reports()
+    cache_entries = get_cache_entries()
 
     endpoints = {
-        endpoint: get_endpoint_report(endpoint, [report for report in reports if report["endpoint"] == endpoint])
+        endpoint: get_endpoint_report(endpoint, [entry for entry in cache_entries if entry["endpoint"] == endpoint])
         for endpoint in memoized_functions
     }
 

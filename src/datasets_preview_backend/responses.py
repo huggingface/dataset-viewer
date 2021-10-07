@@ -1,14 +1,9 @@
 import json
-from typing import Optional
+from typing import Any, Dict, Optional
 
 from starlette.responses import JSONResponse, Response
 
 from datasets_preview_backend.exceptions import Status400Error, Status404Error
-from datasets_preview_backend.queries.configs import get_configs
-from datasets_preview_backend.queries.datasets import get_datasets
-from datasets_preview_backend.queries.infos import get_infos
-from datasets_preview_backend.queries.rows import get_rows
-from datasets_preview_backend.queries.splits import get_splits
 from datasets_preview_backend.types import Content
 
 
@@ -39,16 +34,7 @@ class CachedResponse:
         return JSONResponse(self.content, status_code=self.status_code, headers=headers)
 
 
-memoized_functions = {
-    "/datasets": get_datasets,
-    "/configs": get_configs,
-    "/infos": get_infos,
-    "/splits": get_splits,
-    "/rows": get_rows,
-}
-
-
-def get_cached_response(endpoint: str, **kwargs) -> CachedResponse:  # type: ignore
+def get_cached_response(memoized_functions: Dict[str, Any], endpoint: str, **kwargs) -> CachedResponse:  # type: ignore
     try:
         content, max_age = memoized_functions[endpoint](**kwargs, _return_max_age=True)
         return CachedResponse(content, max_age=max_age)
