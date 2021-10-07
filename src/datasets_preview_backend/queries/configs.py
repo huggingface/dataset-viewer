@@ -20,8 +20,8 @@ def get_configs(*, dataset: str) -> ConfigsContent:
         if len(configs) == 0:
             configs = [DEFAULT_CONFIG_NAME]
     except FileNotFoundError as err:
-        raise Status404Error("The dataset could not be found.") from err
+        raise Status404Error("The dataset could not be found.", err)
     except Exception as err:
-        raise Status400Error("The config names could not be parsed from the dataset.") from err
+        raise Status400Error("The config names could not be parsed from the dataset.", err)
 
     return {"configs": [{"dataset": dataset, "config": d} for d in configs]}

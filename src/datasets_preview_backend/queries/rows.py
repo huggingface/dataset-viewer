@@ -44,7 +44,7 @@ def get_rows(*, dataset: str, config: Optional[str] = None, split: Optional[str]
                 raise TypeError("load_dataset should return an IterableDataset")
             rows = list(iterable_dataset.take(num_rows))
         except FileNotFoundError as err:
-            raise Status404Error("The split for the dataset config could not be found.") from err
+            raise Status404Error("The split for the dataset config could not be found.", err)
         except NotImplementedError as err:
             # TODO: check what has changed once https://github.com/huggingface/datasets/pull/2662 is merged
             try:
@@ -54,23 +54,24 @@ def get_rows(*, dataset: str, config: Optional[str] = None, split: Optional[str]
                     raise Exception("No match")
                 extension = match.group(1)
             except Exception:
-                raise Status400Error("The rows could not be extracted from the split of the dataset config.") from err
+                raise Status400Error("The rows could not be extracted from the split of the dataset config.", err)
             else:
                 raise Status400Error(
                     "The rows could not be extracted from the split of the dataset config because extension"
-                    f" {extension} is not supported."
-                ) from err
+                    f" {extension} is not supported.",
+                    err,
+                )
         except ValueError as err:
             if (
                 str(err).startswith(f"BuilderConfig {config} not found.")
                 or str(err).startswith("Config name is missing.")
                 or str(err).startswith("Bad split")
             ):
-                raise Status404Error("The dataset config could not be found.") from err
+                raise Status404Error("The dataset config could not be found.", err)
             else:
-                raise Status400Error("The rows could not be extracted from the split of the dataset config.") from err
+                raise Status400Error("The rows could not be extracted from the split of the dataset config.", err)
         except Exception as err:
-            raise Status400Error("The rows could not be extracted from the split of the dataset config.") from err
+            raise Status400Error("The rows could not be extracted from the split of the dataset config.", err)
 
         if len(rows) != num_rows:
             logger.warning(

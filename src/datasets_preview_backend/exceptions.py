@@ -1,27 +1,28 @@
 import logging
 
+from typing import Optional
+
 from datasets_preview_backend.types import StatusErrorContent
 
 
 class StatusError(Exception):
     """Base class for exceptions in this module."""
 
-    def __init__(self, message: str, status_code: int):
-        self.message = message
+    def __init__(self, message: str, status_code: int, cause: Optional[Exception] = None):
+        super().__init__(message)
         self.status_code = status_code
-        super().__init__(self.message)
-        # TODO: use caller's __name__ instead of this file's name
-        logger = logging.getLogger(__name__)
-        logger.debug(f"Error {self.status_code} '{self.message}'.")
-        logger.debug(f"Caused by a {type(self.__cause__).__name__}: '{str(self.__cause__)}'")
+        self.exception = type(self).__name__
+        self.message = str(self)
+        self.cause_name = type(cause).__name__
+        self.cause_message = str(cause)
 
     def as_content(self) -> StatusErrorContent:
         return {
             "status_code": self.status_code,
-            "exception": type(self).__name__,
-            "message": str(self),
-            "cause": type(self.__cause__).__name__,
-            "cause_message": str(self.__cause__),
+            "exception": self.exception,
+            "message": self.message,
+            "cause": self.cause_name,
+            "cause_message": self.cause_message,
         }
 
 
@@ -32,8 +33,8 @@ class Status400Error(StatusError):
         message -- the content of the response
     """
 
-    def __init__(self, message: str):
-        super().__init__(message, 400)
+    def __init__(self, message: str, cause: Optional[Exception] = None):
+        super().__init__(message, 400, cause)
 
 
 class Status404Error(StatusError):
@@ -43,5 +44,5 @@ class Status404Error(StatusError):
         message -- the content of the response
     """
 
-    def __init__(self, message: str):
-        super().__init__(message, 404)
+    def __init__(self, message: str, cause: Optional[Exception] = None):
+        super().__init__(message, 404, cause)

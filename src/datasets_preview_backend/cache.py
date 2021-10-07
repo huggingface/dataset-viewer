@@ -167,7 +167,6 @@ def memoize(
             # See https://github.com/peterbe/django-cache-memoize/blob/master/src/cache_memoize/__init__.py#L153-L156
             # If the result is an exception we've caught and cached, raise it
             # in the end as to not change the API of the function we're caching.
-            # TODO: .__cause__ seems to be lost
             if isinstance(result, Exception):
                 # TODO: what to do with max_age?
                 raise result

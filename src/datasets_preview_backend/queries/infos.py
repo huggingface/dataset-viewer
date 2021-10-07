@@ -38,9 +38,9 @@ def get_infos(*, dataset: str, config: Optional[str] = None) -> InfosContent:
             if "splits" in info and info["splits"] is not None:
                 info["splits"] = {split_name: split_info for split_name, split_info in info["splits"].items()}
         except FileNotFoundError as err:
-            raise Status404Error("The config info could not be found.") from err
+            raise Status404Error("The config info could not be found.", err)
         except Exception as err:
-            raise Status400Error("The config info could not be parsed from the dataset.") from err
+            raise Status400Error("The config info could not be parsed from the dataset.", err)
         infoItems.append({"dataset": dataset, "config": config, "info": info})
 
     return {"infos": infoItems}

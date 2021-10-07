@@ -33,14 +33,14 @@ def get_splits(*, dataset: str, config: Optional[str] = None) -> SplitsContent:
         try:
             splits = get_dataset_split_names(dataset, config)
         except FileNotFoundError as err:
-            raise Status404Error("The dataset config could not be found.") from err
+            raise Status404Error("The dataset config could not be found.", err)
         except ValueError as err:
             if str(err).startswith(f"BuilderConfig {config} not found."):
-                raise Status404Error("The dataset config could not be found.") from err
+                raise Status404Error("The dataset config could not be found.", err)
             else:
-                raise Status400Error("The split names could not be parsed from the dataset config.") from err
+                raise Status400Error("The split names could not be parsed from the dataset config.", err)
         except Exception as err:
-            raise Status400Error("The split names could not be parsed from the dataset config.") from err
+            raise Status400Error("The split names could not be parsed from the dataset config.", err)
         splitItems += [{"dataset": dataset, "config": config, "split": split} for split in splits]
 
     return {"splits": splitItems}
