@@ -165,13 +165,13 @@ Check if the app is accessible at https://datasets-preview.huggingface.tech/heal
 Warm the cache with:
 
 ```bash
-pm2 start --name datasets-preview-backend-warm make -- -C /home/hf/datasets-preview-backend/ warm
+pm2 start --no-autorestart --name datasets-preview-backend-warm make -- -C /home/hf/datasets-preview-backend/ warm
 ```
 
 Setup the refresh process (1% every 15 minutes, so that the datasets should be refreshed every 12h in average):
 
 ```bash
-pm2 start --cron "*/15 * * * *" --name datasets-preview-backend-refresh make -- -C /home/hf/datasets-preview-backend/ refresh
+pm2 start --cron "*/15 * * * *" --no-autorestart --name datasets-preview-backend-refresh make -- -C /home/hf/datasets-preview-backend/ refresh
 ```
 
 Finally, ensure that pm2 will restart on reboot (see https://pm2.keymetrics.io/docs/usage/startup/):
