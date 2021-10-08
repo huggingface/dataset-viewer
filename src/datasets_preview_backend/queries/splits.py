@@ -3,14 +3,13 @@ from typing import List, Optional
 from datasets import get_dataset_split_names
 
 from datasets_preview_backend.cache import cache, memoize  # type: ignore
-from datasets_preview_backend.config import CACHE_TTL_SECONDS
 from datasets_preview_backend.constants import DATASETS_BLOCKLIST
 from datasets_preview_backend.exceptions import Status400Error, Status404Error
 from datasets_preview_backend.queries.configs import get_configs
 from datasets_preview_backend.types import SplitItem, SplitsContent
 
 
-@memoize(cache=cache, expire=CACHE_TTL_SECONDS)  # type:ignore
+@memoize(cache=cache)  # type:ignore
 def get_splits(*, dataset: str, config: Optional[str] = None) -> SplitsContent:
     if not isinstance(dataset, str) and dataset is not None:
         raise TypeError("dataset argument should be a string")

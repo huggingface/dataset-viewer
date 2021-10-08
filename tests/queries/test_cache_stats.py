@@ -24,7 +24,7 @@ def test_get_cache_stats() -> None:
 
     # add datasets to the cache
     get_datasets()
-    response = get_cache_stats(_refresh=True)
+    response = get_cache_stats()
     endpoints = response["endpoints"]
     endpoint = endpoints["/datasets"]
     assert endpoint["endpoint"] == "/datasets"
@@ -43,7 +43,7 @@ def test_get_cache_stats() -> None:
 
     # add configs to the cache
     get_configs(dataset="glue")
-    response = get_cache_stats(_refresh=True)
+    response = get_cache_stats()
     endpoints = response["endpoints"]
     endpoint = endpoints["/configs"]
     assert endpoint["endpoint"] == "/configs"
@@ -61,7 +61,7 @@ def test_get_cache_stats() -> None:
 
     # add infos to the cache
     get_infos(dataset="glue", config="ax")
-    response = get_cache_stats(_refresh=True)
+    response = get_cache_stats()
     endpoints = response["endpoints"]
     endpoint = endpoints["/infos"]
     assert endpoint["endpoint"] == "/infos"
@@ -75,7 +75,7 @@ def test_get_cache_stats() -> None:
     # it does not appear in the stats, even if the response is in the cache
     with pytest.raises(Status404Error):
         get_infos(dataset="doesnotexist", config="doesnotexist")
-    response = get_cache_stats(_refresh=True)
+    response = get_cache_stats()
     endpoints = response["endpoints"]
     endpoint = endpoints["/infos"]
     assert endpoint["endpoint"] == "/infos"
@@ -86,7 +86,7 @@ def test_get_cache_stats() -> None:
 
     # add splits to the cache
     get_splits(dataset="glue", config="cola")
-    response = get_cache_stats(_refresh=True)
+    response = get_cache_stats()
     endpoints = response["endpoints"]
     endpoint = endpoints["/splits"]
     assert endpoint["endpoint"] == "/splits"
@@ -104,7 +104,7 @@ def test_get_cache_stats() -> None:
 
     # add rows to the cache
     get_rows(dataset="glue", config="cola", split="train")
-    response = get_cache_stats(_refresh=True)
+    response = get_cache_stats()
     endpoints = response["endpoints"]
     endpoint = endpoints["/rows"]
     assert endpoint["endpoint"] == "/rows"

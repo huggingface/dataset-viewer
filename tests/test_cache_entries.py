@@ -21,7 +21,7 @@ def test_get_cache_entry_error() -> None:
     assert report["status"] == "cache_miss"
 
     # warm the cache
-    get_cached_response(memoized_functions, endpoint, **kwargs)
+    get_cached_response(memoized_functions[endpoint], max_age=1, **kwargs)
 
     report = get_cache_entry(endpoint, kwargs)
     assert report["status"] == "error"
@@ -37,7 +37,7 @@ def test_get_cache_entry_expired() -> None:
     assert report["status"] == "cache_miss"
 
     # warm the cache
-    get_cached_response(memoized_functions, endpoint, _force_expire=EXPIRE_SECONDS, **kwargs)
+    get_cached_response(memoized_functions[endpoint], max_age=1, _force_expire=EXPIRE_SECONDS, **kwargs)
 
     report = get_cache_entry(endpoint, kwargs)
     assert report["status"] == "valid"

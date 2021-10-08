@@ -1,9 +1,7 @@
 import time
 from typing import List, TypedDict, cast
 
-from datasets_preview_backend.cache import cache, memoize  # type: ignore
 from datasets_preview_backend.cache_entries import CacheEntry, get_cache_entries
-from datasets_preview_backend.config import CACHE_SHORT_TTL_SECONDS
 from datasets_preview_backend.queries.datasets import get_datasets
 from datasets_preview_backend.types import ConfigsContent, SplitsContent
 
@@ -125,7 +123,6 @@ def get_validity_status() -> DatasetsStatus:
     }
 
 
-@memoize(cache=cache, expire=CACHE_SHORT_TTL_SECONDS)  # type:ignore
 def get_valid_datasets() -> DatasetsByStatus:
     status = get_validity_status()
     return {

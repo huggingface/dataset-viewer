@@ -30,12 +30,12 @@ Set environment variables to configure the following aspects:
 - `APP_PORT`: the port used by the app. Defaults to `8000`.
 - `CACHE_DIRECTORY`: directory where the cache is stored (see http://www.grantjenks.com/docs/diskcache/tutorial.html). It's only applied if `CACHE_PERSIST` is `True`. Defaults to empty.
 - `CACHE_PERSIST`: persist the cache between runs by using the platform's default caches directory. Defaults to `True`.
-- `CACHE_SHORT_TTL_SECONDS`: number of seconds the short-lived entries are kept in cached. Defaults to `120` (2 minutes).
 - `CACHE_SIZE_LIMIT`: maximum size of the cache in bytes. Defaults to `1073741824` (1 GiB).
-- `CACHE_TTL_SECONDS`: number of seconds the entries are kept in cached. Defaults to `21600` (6 hours).
 - `DATASETS_ENABLE_PRIVATE`: enable private datasets. Defaults to `False`.
 - `EXTRACT_ROWS_LIMIT`: number of rows in the extract, if not specified in the API request. Defaults to `100`.
 - `LOG_LEVEL`: log level, among `DEBUG`, `INFO`, `WARNING`, `ERROR` and `CRITICAL`. Defaults to `INFO`.
+- `MAX_AGE_LONG_SECONDS`: number of seconds to set in the `max-age` header on data endpoints. Defaults to `21600` (6 hours).
+- `MAX_AGE_SHORT_SECONDS`: number of seconds to set in the `max-age` header on technical endpoints. Defaults to `120` (2 minutes).
 - `WEB_CONCURRENCY`: the number of workers. For now, it's ignored and hardcoded to 1 because the cache is not shared yet. Defaults to `1`.
 
 For example:

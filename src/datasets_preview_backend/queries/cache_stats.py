@@ -1,13 +1,11 @@
 import time
 from typing import Dict, List, TypedDict
 
-from datasets_preview_backend.cache import cache, memoize  # type: ignore
 from datasets_preview_backend.cache_entries import (
     CacheEntry,
     get_cache_entries,
     memoized_functions,
 )
-from datasets_preview_backend.config import CACHE_SHORT_TTL_SECONDS
 
 
 class ExpireWithin(TypedDict):
@@ -70,7 +68,6 @@ def get_endpoint_report(endpoint: str, cache_entries: List[CacheEntry], current_
     }
 
 
-@memoize(cache=cache, expire=CACHE_SHORT_TTL_SECONDS)  # type:ignore
 def get_cache_stats() -> CacheStats:
     cache_entries = get_cache_entries()
     current_time = time.time()
