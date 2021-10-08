@@ -13,8 +13,12 @@ class DatasetsContent(TypedDict):
     datasets: List[DatasetItem]
 
 
+def get_dataset_items() -> List[DatasetItem]:
+    # If an exception is raised, we let it propagate
+    datasets: List[str] = list_datasets(with_community_datasets=True, with_details=False)  # type: ignore
+    return [{"dataset": d} for d in datasets]
+
+
 @memoize(cache)  # type:ignore
 def get_datasets() -> DatasetsContent:
-    # If an exception is raised, we let starlette generate a 500 error
-    datasets: List[str] = list_datasets(with_community_datasets=True, with_details=False)  # type: ignore
-    return {"datasets": [{"dataset": d} for d in datasets]}
+    return {"datasets": get_dataset_items()}

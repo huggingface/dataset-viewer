@@ -16,14 +16,7 @@ class ConfigsContent(TypedDict):
     configs: List[ConfigItem]
 
 
-@memoize(cache)  # type:ignore
-def get_configs(*, dataset: str) -> ConfigsContent:
-    if not isinstance(dataset, str) and dataset is not None:
-        raise TypeError("dataset argument should be a string")
-    if dataset is None:
-        raise Status400Error("'dataset' is a required query parameter.")
-    if dataset in DATASETS_BLOCKLIST:
-        raise Status400Error("this dataset is not supported for now.")
+def get_config_items(dataset: str) -> List[ConfigItem]:
     try:
         configs = get_dataset_config_names(dataset)
         if len(configs) == 0:
@@ -32,5 +25,18 @@ def get_configs(*, dataset: str) -> ConfigsContent:
         raise Status404Error("The dataset could not be found.", err)
     except Exception as err:
         raise Status400Error("The config names could not be parsed from the dataset.", err)
+    return [{"dataset": dataset, "config": d} for d in configs]
 
-    return {"configs": [{"dataset": dataset, "config": d} for d in configs]}
+
+@memoize(cache)  # type:ignore
+def get_configs(*, dataset: str) -> ConfigsContent:
+    if not isinstance(dataset, str) and dataset is not None:
+        raise TypeError("dataset argument should be a string")
+    if dataset is None:
+        raise Status400Error("'dataset' is a required query parameter.")
+    if dataset in DATASETS_BLOCKLIST:
+        raise Status400Error("this dataset is not supported for now.")
+
+    config_items = get_config_items(dataset)
+
+    return {"configs": config_items}
