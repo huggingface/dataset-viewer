@@ -38,7 +38,7 @@ class RowsContent(TypedDict):
     rows: List[RowItem]
 
 
-@memoize(cache=cache)  # type:ignore
+@memoize(cache)  # type:ignore
 def get_rows(*, dataset: str, config: Optional[str] = None, split: Optional[str] = None) -> RowsContent:
     if not isinstance(dataset, str) and dataset is not None:
         raise TypeError("dataset argument should be a string")

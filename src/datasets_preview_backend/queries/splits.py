@@ -18,7 +18,7 @@ class SplitsContent(TypedDict):
     splits: List[SplitItem]
 
 
-@memoize(cache=cache)  # type:ignore
+@memoize(cache)  # type:ignore
 def get_splits(*, dataset: str, config: Optional[str] = None) -> SplitsContent:
     if not isinstance(dataset, str) and dataset is not None:
         raise TypeError("dataset argument should be a string")

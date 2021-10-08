@@ -38,17 +38,15 @@ def show_cache_dir() -> None:
 # where we:
 # - add the special `_refresh` argument, inspired by django-cache-memoize:
 # https://github.com/peterbe/django-cache-memoize/blob/4da1ba4639774426fa928d4a461626e6f841b4f3/src/cache_memoize/__init__.py#L123 # noqa
-# - add the `__cache__` wrapper property
+# - add the special `_lookup` argument
 # - removed what we don't use
-
+#
 # beware: the cache keys are different if the arguments are passed as args or kwargs!
 # that's why we enforce to pass the arguments as kwargs
 
 
 def memoize(
-    *,
     cache: Cache,
-    cache_exceptions=(Exception),
 ):
     """Memoizing cache decorator.
 
@@ -78,15 +76,9 @@ def memoize(
     `_refresh` set to True (default is False) will bypass the cache and
     refresh the value
 
-    An additional `__cache__` attribute can be used to access the cache.
-
-    An additional `__cache_key__` attribute can be used to generate the
-    cache key used for the given arguments.
-
-    >>> key = fibonacci.__cache_key__(100)
-    >>> print(cache[key])
-    354224848179261915075
-
+    Calling the memoized function with the special boolean argument
+    `_lookup` set to True (default is False) will bypass the cache refresh
+    and return diskcache.core.ENOVAL in case of cache miss.
 
     :param cache: cache to store callable arguments and return values
     :return: callable decorator
@@ -104,15 +96,16 @@ def memoize(
             # arguments like _refresh and _return_max_age. So extract them into
             # variables as soon as possible.
             _refresh = bool(kwargs.pop("_refresh", False))
-            key = wrapper.__cache_key__(*args, **kwargs)
+            _lookup = bool(kwargs.pop("_lookup", False))
+            key = args_to_key(base, args, kwargs, typed=False)
             result = ENOVAL if _refresh else cache.get(key, default=ENOVAL, retry=True)
 
-            if result is ENOVAL:
+            if result is ENOVAL and not _lookup:
                 # If the function raises an exception we want to cache,
                 # catch it, else let it propagate.
                 try:
                     result = func(*args, **kwargs)
-                except cache_exceptions as exception:
+                except Exception as exception:
                     result = exception
                 cache.set(key, result, retry=True)
 
@@ -123,12 +116,6 @@ def memoize(
                 raise result
             return result
 
-        def __cache_key__(*args, **kwargs):
-            "Make key for cache given function arguments."
-            return args_to_key(base, args, kwargs, typed=False)
-
-        wrapper.__cache_key__ = __cache_key__
-        wrapper.__cache__ = cache
         return wrapper
 
     return decorator

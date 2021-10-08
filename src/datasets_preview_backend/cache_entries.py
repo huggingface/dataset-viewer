@@ -1,5 +1,7 @@
 from typing import Any, Dict, List, TypedDict, Union, cast
 
+from diskcache.core import ENOVAL  # type: ignore
+
 from datasets_preview_backend.exceptions import StatusErrorContent
 from datasets_preview_backend.queries.configs import ConfigsContent, get_configs
 from datasets_preview_backend.queries.datasets import DatasetsContent, get_datasets
@@ -35,19 +37,20 @@ class CacheEntry(TypedDict):
 
 
 def get_cache_entry(endpoint: str, kwargs: Any) -> CacheEntry:
-    memoized_function = memoized_functions[endpoint]
-    cache = memoized_function.__cache__
-    key = memoized_function.__cache_key__(**kwargs)
-    cache_content = cache.get(key, default=None)
+    try:
+        content = memoized_functions[endpoint](**kwargs, _lookup=True)
+    except Exception as err:
+        content = err
 
-    is_error = isinstance(cache_content, Exception)
+    is_cache_miss = content == ENOVAL
+    is_error = isinstance(content, Exception)
 
     return {
         "endpoint": endpoint,
         "kwargs": kwargs,
-        "status": "cache_miss" if cache_content is None else "error" if is_error else "valid",
-        "content": None if is_error else cache_content,
-        "error": cache_content if is_error else None,
+        "status": "cache_miss" if is_cache_miss else "error" if is_error else "valid",
+        "content": None if is_error else content,
+        "error": content if is_error else None,
     }
 
 

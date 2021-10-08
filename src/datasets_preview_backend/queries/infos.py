@@ -19,7 +19,7 @@ class InfosContent(TypedDict):
     infos: List[InfoItem]
 
 
-@memoize(cache=cache)  # type:ignore
+@memoize(cache)  # type:ignore
 def get_infos(*, dataset: str, config: Optional[str] = None) -> InfosContent:
     if not isinstance(dataset, str) and dataset is not None:
         raise TypeError("dataset argument should be a string")
