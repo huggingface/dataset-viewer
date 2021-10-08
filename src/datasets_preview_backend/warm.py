@@ -64,5 +64,5 @@ def warm() -> None:
 
 
 if __name__ == "__main__":
-    init_logger(log_level="ERROR")
+    init_logger(log_level="INFO")
     warm()
