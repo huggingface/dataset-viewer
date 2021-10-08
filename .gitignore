@@ -16,6 +16,3 @@ poetry.toml
 # tests coverage
 .coverage
 coverage.xml
-
-# benchmark results
-benchmark/tmp/

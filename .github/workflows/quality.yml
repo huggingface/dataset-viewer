@@ -23,14 +23,14 @@ jobs:
       - name: Install dependencies
         run: poetry install
       - name: Run black
-        run: poetry run black --check tests src benchmark
+        run: poetry run black --check tests src
       - name: Run isort
-        run: poetry run isort --check-only tests src benchmark
+        run: poetry run isort --check-only tests src
       - name: Run flake8
-        run: poetry run flake8 tests src benchmark
+        run: poetry run flake8 tests src
       - name: Run mypy
-        run: poetry run mypy tests src benchmark
+        run: poetry run mypy tests src
       - name: Run bandit
-        run: poetry run bandit -r src benchmark
+        run: poetry run bandit -r src
       - name: Run safety
         run: poetry run safety check  -i 41161
