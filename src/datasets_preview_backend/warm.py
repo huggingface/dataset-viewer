@@ -31,7 +31,7 @@ def wait_until_load_is_ok(max_load_pct: int) -> None:
 
 
 def get_cache_status(dataset: str) -> str:
-    cache_entry = get_cache_entry("/rows", {"dataset": dataset})
+    cache_entry = get_cache_entry("/rows", get_rows, {"dataset": dataset})
     return cache_entry["status"]
 
 

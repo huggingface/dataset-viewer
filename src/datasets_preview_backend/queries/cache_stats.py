@@ -1,11 +1,7 @@
 import time
 from typing import Dict, List, TypedDict
 
-from datasets_preview_backend.cache_entries import (
-    CacheEntry,
-    get_cache_entries,
-    memoized_functions,
-)
+from datasets_preview_backend.cache_entries import CacheEntry, get_cache_entries
 
 
 class EndpointCacheStats(TypedDict):
@@ -35,11 +31,17 @@ def get_cache_stats() -> CacheStats:
     cache_entries = get_cache_entries()
     current_time = time.time()
 
-    endpoints = {
+    by_endpoint = {
         endpoint: get_endpoint_report(
             endpoint, [entry for entry in cache_entries if entry["endpoint"] == endpoint], current_time
         )
-        for endpoint in memoized_functions
+        for endpoint in [
+            "/datasets",
+            "/configs",
+            "/infos",
+            "/splits",
+            "/rows",
+        ]
     }
 
-    return {"endpoints": endpoints, "created_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime(current_time))}
+    return {"endpoints": by_endpoint, "created_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime(current_time))}

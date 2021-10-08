@@ -18,12 +18,12 @@ def test_get_cache_entry_error() -> None:
     endpoint = "/configs"
     kwargs = {"dataset": "doesnotexist"}
 
-    report = get_cache_entry(endpoint, kwargs)
+    report = get_cache_entry(endpoint, get_configs, kwargs)
     assert report["status"] == "cache_miss"
 
     # warm the cache
     with pytest.raises(Status404Error):
         get_configs(**kwargs)
 
-    report = get_cache_entry(endpoint, kwargs)
+    report = get_cache_entry(endpoint, get_configs, kwargs)
     assert report["status"] == "error"
