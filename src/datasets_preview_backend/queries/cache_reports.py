@@ -2,8 +2,7 @@ import time
 from typing import Dict, List, TypedDict, Union
 
 from datasets_preview_backend.cache_entries import CacheEntry, get_cache_entries
-from datasets_preview_backend.exceptions import StatusError
-from datasets_preview_backend.types import StatusErrorContent
+from datasets_preview_backend.exceptions import StatusError, StatusErrorContent
 
 
 class CacheReport(TypedDict):

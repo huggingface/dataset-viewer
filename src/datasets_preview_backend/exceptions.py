@@ -1,6 +1,12 @@
-from typing import Optional
+from typing import Optional, TypedDict
 
-from datasets_preview_backend.types import StatusErrorContent
+
+class StatusErrorContent(TypedDict):
+    status_code: int
+    exception: str
+    message: str
+    cause: str
+    cause_message: str
 
 
 class StatusError(Exception):

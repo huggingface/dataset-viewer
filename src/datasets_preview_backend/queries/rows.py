@@ -1,6 +1,6 @@
 import logging
 import re
-from typing import List, Optional
+from typing import Any, List, Optional, TypedDict
 
 from datasets import IterableDataset, load_dataset
 
@@ -11,9 +11,31 @@ from datasets_preview_backend.exceptions import Status400Error, Status404Error
 from datasets_preview_backend.queries.configs import get_configs
 from datasets_preview_backend.queries.infos import get_infos
 from datasets_preview_backend.queries.splits import get_splits
-from datasets_preview_backend.types import FeatureItem, RowItem, RowsContent
 
 logger = logging.getLogger(__name__)
+
+
+class Feature(TypedDict):
+    name: str
+    content: Any
+
+
+class FeatureItem(TypedDict):
+    dataset: str
+    config: str
+    feature: Feature
+
+
+class RowItem(TypedDict):
+    dataset: str
+    config: str
+    split: str
+    row: Any
+
+
+class RowsContent(TypedDict):
+    features: List[FeatureItem]
+    rows: List[RowItem]
 
 
 @memoize(cache=cache)  # type:ignore

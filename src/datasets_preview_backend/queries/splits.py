@@ -1,4 +1,4 @@
-from typing import List, Optional
+from typing import List, Optional, TypedDict
 
 from datasets import get_dataset_split_names
 
@@ -6,7 +6,16 @@ from datasets_preview_backend.cache import cache, memoize  # type: ignore
 from datasets_preview_backend.constants import DATASETS_BLOCKLIST
 from datasets_preview_backend.exceptions import Status400Error, Status404Error
 from datasets_preview_backend.queries.configs import get_configs
-from datasets_preview_backend.types import SplitItem, SplitsContent
+
+
+class SplitItem(TypedDict):
+    dataset: str
+    config: str
+    split: str
+
+
+class SplitsContent(TypedDict):
+    splits: List[SplitItem]
 
 
 @memoize(cache=cache)  # type:ignore

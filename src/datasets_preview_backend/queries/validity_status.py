@@ -2,8 +2,9 @@ import time
 from typing import List, TypedDict, cast
 
 from datasets_preview_backend.cache_entries import CacheEntry, get_cache_entries
+from datasets_preview_backend.queries.configs import ConfigsContent
 from datasets_preview_backend.queries.datasets import get_datasets
-from datasets_preview_backend.types import ConfigsContent, SplitsContent
+from datasets_preview_backend.queries.splits import SplitsContent
 
 
 class DatasetStatus(TypedDict):

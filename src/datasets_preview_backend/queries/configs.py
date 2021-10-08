@@ -1,9 +1,19 @@
+from typing import List, TypedDict
+
 from datasets import get_dataset_config_names
 
 from datasets_preview_backend.cache import cache, memoize  # type: ignore
 from datasets_preview_backend.constants import DATASETS_BLOCKLIST, DEFAULT_CONFIG_NAME
 from datasets_preview_backend.exceptions import Status400Error, Status404Error
-from datasets_preview_backend.types import ConfigsContent
+
+
+class ConfigItem(TypedDict):
+    dataset: str
+    config: str
+
+
+class ConfigsContent(TypedDict):
+    configs: List[ConfigItem]
 
 
 @memoize(cache=cache)  # type:ignore

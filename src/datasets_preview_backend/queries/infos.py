@@ -1,5 +1,5 @@
 from dataclasses import asdict
-from typing import List, Optional
+from typing import Any, Dict, List, Optional, TypedDict
 
 from datasets import load_dataset_builder
 
@@ -7,7 +7,16 @@ from datasets_preview_backend.cache import cache, memoize  # type: ignore
 from datasets_preview_backend.constants import DATASETS_BLOCKLIST
 from datasets_preview_backend.exceptions import Status400Error, Status404Error
 from datasets_preview_backend.queries.configs import get_configs
-from datasets_preview_backend.types import InfoItem, InfosContent
+
+
+class InfoItem(TypedDict):
+    dataset: str
+    config: str
+    info: Dict[str, Any]
+
+
+class InfosContent(TypedDict):
+    infos: List[InfoItem]
 
 
 @memoize(cache=cache)  # type:ignore

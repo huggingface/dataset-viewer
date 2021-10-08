@@ -1,9 +1,16 @@
-from typing import List
+from typing import List, TypedDict
 
 from datasets import list_datasets
 
 from datasets_preview_backend.cache import cache, memoize  # type: ignore
-from datasets_preview_backend.types import DatasetsContent
+
+
+class DatasetItem(TypedDict):
+    dataset: str
+
+
+class DatasetsContent(TypedDict):
+    datasets: List[DatasetItem]
 
 
 @memoize(cache=cache)  # type:ignore

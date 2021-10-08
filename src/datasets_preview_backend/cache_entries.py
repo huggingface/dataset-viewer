@@ -1,16 +1,11 @@
 from typing import Any, Dict, List, TypedDict, Union, cast
 
-from datasets_preview_backend.queries.configs import get_configs
-from datasets_preview_backend.queries.datasets import get_datasets
-from datasets_preview_backend.queries.infos import get_infos
-from datasets_preview_backend.queries.rows import get_rows
-from datasets_preview_backend.queries.splits import get_splits
-from datasets_preview_backend.types import (
-    ConfigsContent,
-    Content,
-    DatasetsContent,
-    SplitsContent,
-)
+from datasets_preview_backend.exceptions import StatusErrorContent
+from datasets_preview_backend.queries.configs import ConfigsContent, get_configs
+from datasets_preview_backend.queries.datasets import DatasetsContent, get_datasets
+from datasets_preview_backend.queries.infos import InfosContent, get_infos
+from datasets_preview_backend.queries.rows import RowsContent, get_rows
+from datasets_preview_backend.queries.splits import SplitsContent, get_splits
 
 memoized_functions = {
     "/datasets": get_datasets,
@@ -19,6 +14,16 @@ memoized_functions = {
     "/splits": get_splits,
     "/rows": get_rows,
 }
+
+
+Content = Union[
+    ConfigsContent,
+    DatasetsContent,
+    InfosContent,
+    RowsContent,
+    SplitsContent,
+    StatusErrorContent,
+]
 
 
 class CacheEntry(TypedDict):
