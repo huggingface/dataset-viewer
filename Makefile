@@ -35,5 +35,7 @@ style:
 	poetry run black tests src
 	poetry run isort tests src
 
+refresh:
+	poetry run python src/datasets_preview_backend/refresh.py
 warm:
 	poetry run python src/datasets_preview_backend/warm.py

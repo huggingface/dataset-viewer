@@ -81,6 +81,10 @@ def memoize(
     `_lookup` set to True (default is False) will bypass the cache refresh
     and return diskcache.core.ENOVAL in case of cache miss.
 
+    Calling the memoized function with the special boolean argument
+    `_delete` set to True (default is False) will delete the cache entry after
+    getting the value.
+
     :param cache: cache to store callable arguments and return values
     :return: callable decorator
 
@@ -94,11 +98,13 @@ def memoize(
         def wrapper(*args, **kwargs):
             "Wrapper for callable to cache arguments and return values."
             # The cache key string should never be dependent on special keyword
-            # arguments like _refresh and _return_max_age. So extract them into
+            # arguments like _refresh. So extract them into
             # variables as soon as possible.
             _refresh = bool(kwargs.pop("_refresh", False))
             _lookup = bool(kwargs.pop("_lookup", False))
+            _delete = bool(kwargs.pop("_delete", False))
             key = args_to_key(base, args, kwargs, typed=False)
+
             result = ENOVAL if _refresh else cache.get(key, default=ENOVAL, retry=True)
 
             if result is ENOVAL and not _lookup:
@@ -109,6 +115,9 @@ def memoize(
                 except StatusError as exception:
                     result = exception
                 cache.set(key, result, retry=True)
+
+            if _delete:
+                cache.delete(key, retry=True)
 
             # See https://github.com/peterbe/django-cache-memoize/blob/master/src/cache_memoize/__init__.py#L153-L156
             # If the result is an exception we've caught and cached, raise it

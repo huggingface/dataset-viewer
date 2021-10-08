@@ -18,10 +18,34 @@ Content = Union[ConfigsContent, InfosContent, RowsContent, SplitsContent]
 
 class CacheEntry(TypedDict):
     endpoint: str
+    function: Any
     kwargs: Dict[str, str]
     status: str
     content: Union[Content, None]
     error: Union[StatusErrorContent, None]
+
+
+def delete_cache_entry(cache_entry: CacheEntry) -> None:
+    cache_entry["function"](**cache_entry["kwargs"], _delete=True)
+
+
+def get_entries_status(entries: List[CacheEntry]) -> str:
+    if any(r["status"] == "error" for r in entries):
+        return "error"
+    elif any(r["status"] == "cache_miss" for r in entries):
+        return "cache_miss"
+    elif all(r["status"] == "valid" for r in entries):
+        return "valid"
+    raise Exception("should not occur")
+
+
+def get_entry_dataset(cache_entry: CacheEntry) -> str:
+    return cache_entry["kwargs"]["dataset"]
+
+
+def get_dataset_status(dataset: str) -> str:
+    entries = get_expected_dataset_entries({"dataset": dataset})
+    return get_entries_status([entry for entry in entries if get_entry_dataset(entry) == dataset])
 
 
 def get_cache_entry(endpoint: str, func: Any, kwargs: Any) -> CacheEntry:
@@ -45,6 +69,7 @@ def get_cache_entry(endpoint: str, func: Any, kwargs: Any) -> CacheEntry:
 
     return {
         "endpoint": endpoint,
+        "function": func,
         "kwargs": kwargs,
         "status": status,
         "content": content,

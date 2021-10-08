@@ -2,7 +2,11 @@ import itertools
 import time
 from typing import List, TypedDict
 
-from datasets_preview_backend.cache_entries import CacheEntry, get_expected_entries
+from datasets_preview_backend.cache_entries import (
+    get_expected_entries,
+    get_entries_status,
+    get_entry_dataset,
+)
 
 
 class DatasetStatus(TypedDict):
@@ -19,20 +23,6 @@ class DatasetsByStatus(TypedDict):
     error: List[str]
     cache_miss: List[str]
     created_at: str
-
-
-def get_entries_status(entries: List[CacheEntry]) -> str:
-    if any(r["status"] == "error" for r in entries):
-        return "error"
-    elif any(r["status"] == "cache_miss" for r in entries):
-        return "cache_miss"
-    elif all(r["status"] == "valid" for r in entries):
-        return "valid"
-    raise Exception("should not occur")
-
-
-def get_entry_dataset(cache_entry: CacheEntry) -> str:
-    return cache_entry["kwargs"]["dataset"]
 
 
 def get_validity_status() -> DatasetsStatus:

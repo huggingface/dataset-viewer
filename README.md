@@ -56,7 +56,15 @@ To warm the cache:
 MAX_LOAD_PCT=50 MAX_VIRTUAL_MEMORY_PCT=95 MAX_SWAP_MEMORY_PCT=80 make warm
 ```
 
-Cache warming uses only one thread, and before warming a new dataset, it waits until the load percentage, ie. the 1m load divided by the number of cpus \*100, is below `MAX_LOAD_PCT` (defaults to 50%). Also, if the virtual memory on the machine reaches `MAX_VIRTUAL_MEMORY_PCT`(defaults to 95%), or if the swap memory reaches `MAX_SWAP_MEMORY_PCT`(defaults to 80%), the process stops.
+Cache warming uses only one thread, and before warming a new dataset, it waits until the load percentage, ie. the 1m load divided by the number of cpus \*100, is below `MAX_LOAD_PCT` (defaults to 50%). Also, if the virtual memory on the machine reaches `MAX_VIRTUAL_MEMORY_PCT` (defaults to 95%), or if the swap memory reaches `MAX_SWAP_MEMORY_PCT` (defaults to 80%), the process stops.
+
+To refresh random 3% of the datasets:
+
+```bash
+REFRESH_PCT=3 make refresh
+```
+
+The number of randomly chosen datasets to refresh is set by `REFRESH_PCT` (defaults to 1% - set to `100` to refresh all the datasets). Same limits as warming apply with `MAX_LOAD_PCT`, `MAX_VIRTUAL_MEMORY_PCT` and `MAX_SWAP_MEMORY_PCT`.
 
 ## Endpoints
 
