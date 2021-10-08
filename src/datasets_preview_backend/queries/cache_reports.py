@@ -17,6 +17,7 @@ class CacheReports(TypedDict):
     created_at: str
 
 
+# we remove the content because it's too heavy
 def entry_to_report(entry: CacheEntry) -> CacheReport:
     return {
         "endpoint": entry["endpoint"],

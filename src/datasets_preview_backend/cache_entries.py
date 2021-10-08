@@ -40,24 +40,14 @@ def get_cache_entry(endpoint: str, kwargs: Any) -> CacheEntry:
     key = memoized_function.__cache_key__(**kwargs)
     cache_content = cache.get(key, default=None)
 
-    error: Union[Exception, None] = None
-    content: Union[Content, None] = None
-    if isinstance(cache_content, Exception):
-        error = cache_content
-    else:
-        content = cache_content
-    # we only report the cached datasets as valid
-    # as we rely on cache warming at startup (otherwise, the first call would take too long - various hours)
-    # note that warming can be done by 1. calling /datasets, then 2. calling /rows?dataset={dataset}
-    # for all the datasets
-    # TODO: use an Enum?
-    status = "cache_miss" if cache_content is None else "error" if error is not None else "valid"
+    is_error = isinstance(cache_content, Exception)
+
     return {
         "endpoint": endpoint,
         "kwargs": kwargs,
-        "status": status,
-        "content": content,
-        "error": error,
+        "status": "cache_miss" if cache_content is None else "error" if is_error else "valid",
+        "content": None if is_error else cache_content,
+        "error": cache_content if is_error else None,
     }
 
 
