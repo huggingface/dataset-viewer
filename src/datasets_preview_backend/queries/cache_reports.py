@@ -10,7 +10,6 @@ class CacheReport(TypedDict):
     endpoint: str
     kwargs: Dict[str, Union[str, int]]
     status: str
-    expire: Union[str, None]
     error: Union[StatusErrorContent, None]
 
 
@@ -24,9 +23,6 @@ def entry_to_report(entry: CacheEntry) -> CacheReport:
         "endpoint": entry["endpoint"],
         "kwargs": entry["kwargs"],
         "status": entry["status"],
-        "expire": None
-        if entry["expire_time"] is None
-        else time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime(entry["expire_time"])),
         "error": entry["error"].as_content() if isinstance(entry["error"], StatusError) else None,
     }
 

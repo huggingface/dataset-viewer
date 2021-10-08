@@ -1,4 +1,3 @@
-from time import time
 from typing import Any, Dict, List, TypedDict, Union, cast
 
 from datasets_preview_backend.queries.configs import get_configs
@@ -26,7 +25,6 @@ class CacheEntry(TypedDict):
     endpoint: str
     kwargs: Dict[str, Union[str, int]]
     status: str
-    expire_time: Union[float, None]
     content: Union[Content, None]
     error: Union[Exception, None]
 
@@ -35,7 +33,7 @@ def get_cache_entry(endpoint: str, kwargs: Any) -> CacheEntry:
     memoized_function = memoized_functions[endpoint]
     cache = memoized_function.__cache__
     key = memoized_function.__cache_key__(**kwargs)
-    cache_content, expire_time = cache.get(key, default=None, expire_time=True)
+    cache_content = cache.get(key, default=None)
 
     error: Union[Exception, None] = None
     content: Union[Content, None] = None
@@ -48,24 +46,11 @@ def get_cache_entry(endpoint: str, kwargs: Any) -> CacheEntry:
     # note that warming can be done by 1. calling /datasets, then 2. calling /rows?dataset={dataset}
     # for all the datasets
     # TODO: use an Enum?
-    status = (
-        "cache_miss"
-        if cache_content is None
-        # possibly: cache_expired will never occur
-        else "cache_expired"
-        # diskcache uses time.time() internally:
-        # see https://github.com/grantjenks/python-diskcache/blob/master/diskcache/core.py#L769-L771
-        # so: we have to use it to compare. BEWARE the daylight savings time changes.
-        if expire_time is not None and expire_time < time()
-        else "error"
-        if error is not None
-        else "valid"
-    )
+    status = "cache_miss" if cache_content is None else "error" if error is not None else "valid"
     return {
         "endpoint": endpoint,
         "kwargs": kwargs,
         "status": status,
-        "expire_time": expire_time,
         "content": content,
         "error": error,
     }

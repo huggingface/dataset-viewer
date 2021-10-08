@@ -18,7 +18,6 @@ class DatasetsStatus(TypedDict):
 class DatasetsByStatus(TypedDict):
     valid: List[str]
     error: List[str]
-    cache_expired: List[str]
     cache_miss: List[str]
     created_at: str
 
@@ -106,8 +105,6 @@ def get_dataset_status(*, entries: List[CacheEntry], dataset: str) -> str:
         or expected_entries["missing"] > 0
     ):
         return "cache_miss"
-    elif any(r["status"] == "cache_expired" for r in expected_entries["expected_entries"]):
-        return "cache_expired"
     return "valid"
 
 
@@ -131,11 +128,6 @@ def get_valid_datasets() -> DatasetsByStatus:
         ],
         "error": [
             dataset_status["dataset"] for dataset_status in status["datasets"] if dataset_status["status"] == "error"
-        ],
-        "cache_expired": [
-            dataset_status["dataset"]
-            for dataset_status in status["datasets"]
-            if dataset_status["status"] == "cache_expired"
         ],
         "cache_miss": [
             dataset_status["dataset"]

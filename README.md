@@ -96,153 +96,38 @@ Responses:
       "expected": 1,
       "valid": 1,
       "error": 0,
-      "cache_expired": 0,
-      "cache_miss": 0,
-      "expire_within": [
-        {
-          "name": "1m",
-          "seconds": 60,
-          "number": 0
-        },
-        {
-          "name": "10m",
-          "seconds": 600,
-          "number": 0
-        },
-        {
-          "name": "1h",
-          "seconds": 3600,
-          "number": 0
-        },
-        {
-          "name": "10h",
-          "seconds": 36000,
-          "number": 1
-        }
-      ]
+      "cache_miss": 0
     },
     "/configs": {
       "endpoint": "/configs",
-      "expected": 1601,
+      "expected": 1611,
       "valid": 0,
       "error": 0,
-      "cache_expired": 0,
-      "cache_miss": 1601,
-      "expire_within": [
-        {
-          "name": "1m",
-          "seconds": 60,
-          "number": 0
-        },
-        {
-          "name": "10m",
-          "seconds": 600,
-          "number": 0
-        },
-        {
-          "name": "1h",
-          "seconds": 3600,
-          "number": 0
-        },
-        {
-          "name": "10h",
-          "seconds": 36000,
-          "number": 0
-        }
-      ]
+      "cache_miss": 1611
     },
     "/infos": {
       "endpoint": "/infos",
       "expected": 0,
       "valid": 0,
       "error": 0,
-      "cache_expired": 0,
-      "cache_miss": 0,
-      "expire_within": [
-        {
-          "name": "1m",
-          "seconds": 60,
-          "number": 0
-        },
-        {
-          "name": "10m",
-          "seconds": 600,
-          "number": 0
-        },
-        {
-          "name": "1h",
-          "seconds": 3600,
-          "number": 0
-        },
-        {
-          "name": "10h",
-          "seconds": 36000,
-          "number": 0
-        }
-      ]
+      "cache_miss": 0
     },
     "/splits": {
       "endpoint": "/splits",
       "expected": 0,
       "valid": 0,
       "error": 0,
-      "cache_expired": 0,
-      "cache_miss": 0,
-      "expire_within": [
-        {
-          "name": "1m",
-          "seconds": 60,
-          "number": 0
-        },
-        {
-          "name": "10m",
-          "seconds": 600,
-          "number": 0
-        },
-        {
-          "name": "1h",
-          "seconds": 3600,
-          "number": 0
-        },
-        {
-          "name": "10h",
-          "seconds": 36000,
-          "number": 0
-        }
-      ]
+      "cache_miss": 0
     },
     "/rows": {
       "endpoint": "/rows",
       "expected": 0,
       "valid": 0,
       "error": 0,
-      "cache_expired": 0,
-      "cache_miss": 0,
-      "expire_within": [
-        {
-          "name": "1m",
-          "seconds": 60,
-          "number": 0
-        },
-        {
-          "name": "10m",
-          "seconds": 600,
-          "number": 0
-        },
-        {
-          "name": "1h",
-          "seconds": 3600,
-          "number": 0
-        },
-        {
-          "name": "10h",
-          "seconds": 36000,
-          "number": 0
-        }
-      ]
+      "cache_miss": 0
     }
   },
-  "created_at": "2021-10-07T13:41:45Z"
+  "created_at": "2021-10-08T08:27:14Z"
 }
 ```
 
@@ -267,7 +152,6 @@ Responses:
       "endpoint": "/datasets",
       "kwargs": {},
       "status": "valid",
-      "expire": "2021-10-07T19:23:45Z",
       "error": null
     },
     {
@@ -276,7 +160,6 @@ Responses:
         "dataset": "acronym_identification"
       },
       "status": "cache_miss",
-      "expire": null,
       "error": null
     },
     {
@@ -285,11 +168,10 @@ Responses:
         "dataset": "ade_corpus_v2"
       },
       "status": "cache_miss",
-      "expire": null,
       "error": null
     }
   ],
-  "created_at": "2021-10-07T13:42:45Z"
+  "created_at": "2021-10-08T08:27:46Z"
 }
 ```
 
@@ -311,7 +193,6 @@ Responses:
 {
   "valid": ["discovery"],
   "error": [],
-  "cache_expired": [],
   "cache_miss": [
     "acronym_identification",
     "ade_corpus_v2",
