@@ -91,13 +91,6 @@ Responses:
 ```json
 {
   "endpoints": {
-    "/datasets": {
-      "endpoint": "/datasets",
-      "expected": 1,
-      "valid": 1,
-      "error": 0,
-      "cache_miss": 0
-    },
     "/configs": {
       "endpoint": "/configs",
       "expected": 1611,
@@ -148,12 +141,6 @@ Responses:
 ```json
 {
   "reports": [
-    {
-      "endpoint": "/datasets",
-      "kwargs": {},
-      "status": "valid",
-      "error": null
-    },
     {
       "endpoint": "/configs",
       "kwargs": {

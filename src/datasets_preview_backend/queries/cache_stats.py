@@ -1,7 +1,7 @@
 import time
 from typing import Dict, List, TypedDict
 
-from datasets_preview_backend.cache_entries import CacheEntry, get_cache_entries
+from datasets_preview_backend.cache_entries import CacheEntry, get_expected_entries
 
 
 class EndpointCacheStats(TypedDict):
@@ -17,7 +17,7 @@ class CacheStats(TypedDict):
     created_at: str
 
 
-def get_endpoint_report(endpoint: str, cache_entries: List[CacheEntry], current_time: float) -> EndpointCacheStats:
+def get_endpoint_report(endpoint: str, cache_entries: List[CacheEntry]) -> EndpointCacheStats:
     return {
         "endpoint": endpoint,
         "expected": len(cache_entries),
@@ -28,15 +28,11 @@ def get_endpoint_report(endpoint: str, cache_entries: List[CacheEntry], current_
 
 
 def get_cache_stats() -> CacheStats:
-    cache_entries = get_cache_entries()
-    current_time = time.time()
+    cache_entries = get_expected_entries()
 
     by_endpoint = {
-        endpoint: get_endpoint_report(
-            endpoint, [entry for entry in cache_entries if entry["endpoint"] == endpoint], current_time
-        )
+        endpoint: get_endpoint_report(endpoint, [entry for entry in cache_entries if entry["endpoint"] == endpoint])
         for endpoint in [
-            "/datasets",
             "/configs",
             "/infos",
             "/splits",
@@ -44,4 +40,4 @@ def get_cache_stats() -> CacheStats:
         ]
     }
 
-    return {"endpoints": by_endpoint, "created_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime(current_time))}
+    return {"endpoints": by_endpoint, "created_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())}

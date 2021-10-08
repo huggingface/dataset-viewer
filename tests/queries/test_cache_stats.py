@@ -3,7 +3,6 @@ import pytest
 from datasets_preview_backend.exceptions import Status404Error
 from datasets_preview_backend.queries.cache_stats import get_cache_stats
 from datasets_preview_backend.queries.configs import get_configs
-from datasets_preview_backend.queries.datasets import get_datasets
 from datasets_preview_backend.queries.infos import get_infos
 from datasets_preview_backend.queries.rows import get_rows
 from datasets_preview_backend.queries.splits import get_splits
@@ -11,26 +10,7 @@ from datasets_preview_backend.queries.splits import get_splits
 
 def test_get_cache_stats() -> None:
     response = get_cache_stats()
-    assert "endpoints" in response
     endpoints = response["endpoints"]
-    assert len(endpoints) == 5
-    endpoint = endpoints["/datasets"]
-    assert endpoint["endpoint"] == "/datasets"
-    assert endpoint["expected"] == 1
-    assert endpoint["valid"] == 0
-    assert endpoint["error"] == 0
-    assert endpoint["cache_miss"] == 1
-
-    # add datasets to the cache
-    get_datasets()
-    response = get_cache_stats()
-    endpoints = response["endpoints"]
-    endpoint = endpoints["/datasets"]
-    assert endpoint["endpoint"] == "/datasets"
-    assert endpoint["expected"] == 1
-    assert endpoint["cache_miss"] == 0
-    assert endpoint["error"] == 0
-    assert endpoint["valid"] == 1
     endpoint = endpoints["/configs"]
     assert endpoint["endpoint"] == "/configs"
     assert endpoint["expected"] > 100
