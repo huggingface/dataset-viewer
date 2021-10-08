@@ -1,6 +1,9 @@
+import pytest
+
 from datasets_preview_backend.cache import cache_directory  # type: ignore
-from datasets_preview_backend.cache_entries import get_cache_entry, memoized_functions
-from datasets_preview_backend.responses import get_cached_response
+from datasets_preview_backend.cache_entries import get_cache_entry
+from datasets_preview_backend.exceptions import Status404Error
+from datasets_preview_backend.queries.configs import get_configs
 
 
 def test_cache_directory() -> None:
@@ -19,7 +22,8 @@ def test_get_cache_entry_error() -> None:
     assert report["status"] == "cache_miss"
 
     # warm the cache
-    get_cached_response(memoized_functions[endpoint], max_age=1, **kwargs)
+    with pytest.raises(Status404Error):
+        get_configs(**kwargs)
 
     report = get_cache_entry(endpoint, kwargs)
     assert report["status"] == "error"
