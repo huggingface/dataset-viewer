@@ -55,7 +55,7 @@ def refresh_dataset(dataset: str, max_load_pct: int) -> None:
 
 # TODO: we could get the first N, sorted by creation time (more or less expire time)
 def make_criterion(threshold: float) -> Any:
-    return lambda x: random() < threshold
+    return lambda x: random() < threshold  # nosec
 
 
 def refresh() -> None:
