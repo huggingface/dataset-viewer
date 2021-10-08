@@ -1,5 +1,3 @@
-from time import sleep
-
 from datasets_preview_backend.cache import cache_directory  # type: ignore
 from datasets_preview_backend.cache_entries import get_cache_entry, memoized_functions
 from datasets_preview_backend.responses import get_cached_response
@@ -21,29 +19,7 @@ def test_get_cache_entry_error() -> None:
     assert report["status"] == "cache_miss"
 
     # warm the cache
-    get_cached_response(memoized_functions, endpoint, **kwargs)
+    get_cached_response(memoized_functions[endpoint], max_age=1, **kwargs)
 
     report = get_cache_entry(endpoint, kwargs)
     assert report["status"] == "error"
-
-
-def test_get_cache_entry_expired() -> None:
-    EXPIRE_SECONDS = 1
-
-    endpoint = "/configs"
-    kwargs = {"dataset": "glue"}
-
-    report = get_cache_entry(endpoint, kwargs)
-    assert report["status"] == "cache_miss"
-
-    # warm the cache
-    get_cached_response(memoized_functions, endpoint, _force_expire=EXPIRE_SECONDS, **kwargs)
-
-    report = get_cache_entry(endpoint, kwargs)
-    assert report["status"] == "valid"
-
-    # wait until the cache has expired
-    sleep(EXPIRE_SECONDS + 1)
-
-    report = get_cache_entry(endpoint, kwargs)
-    assert report["status"] == "cache_miss"

@@ -5,7 +5,7 @@ from typing import List, Optional
 from datasets import IterableDataset, load_dataset
 
 from datasets_preview_backend.cache import cache, memoize  # type: ignore
-from datasets_preview_backend.config import CACHE_TTL_SECONDS, EXTRACT_ROWS_LIMIT
+from datasets_preview_backend.config import EXTRACT_ROWS_LIMIT
 from datasets_preview_backend.constants import DATASETS_BLOCKLIST
 from datasets_preview_backend.exceptions import Status400Error, Status404Error
 from datasets_preview_backend.queries.configs import get_configs
@@ -16,7 +16,7 @@ from datasets_preview_backend.types import FeatureItem, RowItem, RowsContent
 logger = logging.getLogger(__name__)
 
 
-@memoize(cache=cache, expire=CACHE_TTL_SECONDS)  # type:ignore
+@memoize(cache=cache)  # type:ignore
 def get_rows(*, dataset: str, config: Optional[str] = None, split: Optional[str] = None) -> RowsContent:
     if not isinstance(dataset, str) and dataset is not None:
         raise TypeError("dataset argument should be a string")

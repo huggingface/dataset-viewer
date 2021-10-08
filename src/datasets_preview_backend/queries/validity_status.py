@@ -1,9 +1,7 @@
 import time
 from typing import List, TypedDict, cast
 
-from datasets_preview_backend.cache import cache, memoize  # type: ignore
 from datasets_preview_backend.cache_entries import CacheEntry, get_cache_entries
-from datasets_preview_backend.config import CACHE_SHORT_TTL_SECONDS
 from datasets_preview_backend.queries.datasets import get_datasets
 from datasets_preview_backend.types import ConfigsContent, SplitsContent
 
@@ -20,7 +18,6 @@ class DatasetsStatus(TypedDict):
 class DatasetsByStatus(TypedDict):
     valid: List[str]
     error: List[str]
-    cache_expired: List[str]
     cache_miss: List[str]
     created_at: str
 
@@ -108,8 +105,6 @@ def get_dataset_status(*, entries: List[CacheEntry], dataset: str) -> str:
         or expected_entries["missing"] > 0
     ):
         return "cache_miss"
-    elif any(r["status"] == "cache_expired" for r in expected_entries["expected_entries"]):
-        return "cache_expired"
     return "valid"
 
 
@@ -125,7 +120,6 @@ def get_validity_status() -> DatasetsStatus:
     }
 
 
-@memoize(cache=cache, expire=CACHE_SHORT_TTL_SECONDS)  # type:ignore
 def get_valid_datasets() -> DatasetsByStatus:
     status = get_validity_status()
     return {
@@ -134,11 +128,6 @@ def get_valid_datasets() -> DatasetsByStatus:
         ],
         "error": [
             dataset_status["dataset"] for dataset_status in status["datasets"] if dataset_status["status"] == "error"
-        ],
-        "cache_expired": [
-            dataset_status["dataset"]
-            for dataset_status in status["datasets"]
-            if dataset_status["status"] == "cache_expired"
         ],
         "cache_miss": [
             dataset_status["dataset"]
