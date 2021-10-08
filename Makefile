@@ -3,7 +3,7 @@
 MAX_LOAD = 7
 PARALLEL = -j -l $(MAX_LOAD)
 
-.PHONY: install run test quality style benchmark watch
+.PHONY: install run watch test coverage quality style warm
 
 install:
 	poetry install
@@ -23,25 +23,17 @@ coverage:
 
 # Check that source code meets quality standards + security
 quality:
-	poetry run black --check tests src benchmark
-	poetry run isort --check-only tests src benchmark
-	poetry run flake8 tests src benchmark
-	poetry run mypy tests src benchmark
-	poetry run bandit -r src benchmark
+	poetry run black --check tests src
+	poetry run isort --check-only tests src
+	poetry run flake8 tests src
+	poetry run mypy tests src
+	poetry run bandit -r src
 	poetry run safety check -i 41161
 
 # Format source code automatically
 style:
-	poetry run black tests src benchmark
-	poetry run isort tests src benchmark
-
-# Get a report for every dataset / config / split of the Hub, for every endpoint
-# It takes 1 or 2 hours to run. Delete benchmark/tmp to run from scratch.
-# beware: even if all the data should theoritically be streamed, the ~/.cache/huggingface directory
-# will grow about 25G!
-# The result is benchmark/tmp/report.json (about 40M)
-benchmark:
-	$(MAKE) -C benchmark $(PARALLEL)
+	poetry run black tests src
+	poetry run isort tests src
 
 warm:
 	poetry run python src/datasets_preview_backend/warm.py
