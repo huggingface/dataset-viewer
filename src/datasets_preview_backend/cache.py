@@ -12,6 +12,7 @@ from datasets_preview_backend.config import (
     CACHE_PERSIST,
     CACHE_SIZE_LIMIT,
 )
+from datasets_preview_backend.exceptions import StatusError
 
 logger = logging.getLogger(__name__)
 
@@ -105,14 +106,14 @@ def memoize(
                 # catch it, else let it propagate.
                 try:
                     result = func(*args, **kwargs)
-                except Exception as exception:
+                except StatusError as exception:
                     result = exception
                 cache.set(key, result, retry=True)
 
             # See https://github.com/peterbe/django-cache-memoize/blob/master/src/cache_memoize/__init__.py#L153-L156
             # If the result is an exception we've caught and cached, raise it
             # in the end as to not change the API of the function we're caching.
-            if isinstance(result, Exception):
+            if isinstance(result, StatusError):
                 raise result
             return result
 
