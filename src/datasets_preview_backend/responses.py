@@ -1,20 +1,9 @@
-import json
 from typing import Any, Dict, Optional
 
 from starlette.responses import JSONResponse, Response
 
 from datasets_preview_backend.exceptions import Status400Error, Status404Error
 from datasets_preview_backend.types import Content
-
-
-def to_bytes(content: Content) -> bytes:
-    return json.dumps(
-        content,
-        ensure_ascii=False,
-        allow_nan=False,
-        indent=None,
-        separators=(",", ":"),
-    ).encode("utf-8")
 
 
 class CachedResponse:
