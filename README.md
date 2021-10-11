@@ -94,41 +94,15 @@ Parameters: none
 
 Responses:
 
-- `200`: JSON content which gives statistics about the cache, with the following structure:
+- `200`: JSON content which gives statistics about the datasets in the cache, with the following structure:
 
 ```json
 {
-  "endpoints": {
-    "/configs": {
-      "endpoint": "/configs",
-      "expected": 1611,
-      "valid": 0,
-      "error": 0,
-      "cache_miss": 1611
-    },
-    "/infos": {
-      "endpoint": "/infos",
-      "expected": 0,
-      "valid": 0,
-      "error": 0,
-      "cache_miss": 0
-    },
-    "/splits": {
-      "endpoint": "/splits",
-      "expected": 0,
-      "valid": 0,
-      "error": 0,
-      "cache_miss": 0
-    },
-    "/rows": {
-      "endpoint": "/rows",
-      "expected": 0,
-      "valid": 0,
-      "error": 0,
-      "cache_miss": 0
-    }
-  },
-  "created_at": "2021-10-08T08:27:14Z"
+  "expected": 1628,
+  "valid": 5,
+  "error": 8,
+  "cache_miss": 1615,
+  "created_at": "2021-10-11T16:33:08Z"
 }
 ```
 
@@ -144,24 +118,18 @@ Parameters: none
 
 Responses:
 
-- `200`: JSON content which the reports, one per endpoint + expected arguments, with the following structure:
+- `200`: JSON content which the dataset cache reports, with the following structure:
 
 ```json
 {
   "reports": [
     {
-      "endpoint": "/configs",
-      "kwargs": {
-        "dataset": "acronym_identification"
-      },
-      "status": "cache_miss",
+      "dataset": "acronym_identification",
+      "status": "valid",
       "error": null
     },
     {
-      "endpoint": "/configs",
-      "kwargs": {
-        "dataset": "ade_corpus_v2"
-      },
+      "dataset": "ade_corpus_v2",
       "status": "cache_miss",
       "error": null
     }
@@ -187,7 +155,7 @@ Responses:
 ```json
 {
   "valid": ["discovery"],
-  "error": [],
+  "error": ["TimTreasure4/Test"],
   "cache_miss": [
     "acronym_identification",
     "ade_corpus_v2",
