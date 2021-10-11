@@ -16,7 +16,6 @@ from datasets_preview_backend.exceptions import StatusError
 
 logger = logging.getLogger(__name__)
 
-
 # singleton
 cache_directory = None
 if CACHE_PERSIST:
@@ -28,6 +27,10 @@ if CACHE_PERSIST:
         cache_directory = CACHE_DIRECTORY
 
 cache = Cache(directory=cache_directory, size_limit=CACHE_SIZE_LIMIT)
+
+
+class CacheNotFoundError(Exception):
+    pass
 
 
 def show_cache_dir() -> None:
@@ -107,7 +110,9 @@ def memoize(
 
             result = ENOVAL if _refresh else cache.get(key, default=ENOVAL, retry=True)
 
-            if result is ENOVAL and not _lookup:
+            if result is ENOVAL:
+                if _lookup:
+                    raise CacheNotFoundError()
                 # If the function raises an exception we want to cache,
                 # catch it, else let it propagate.
                 try:

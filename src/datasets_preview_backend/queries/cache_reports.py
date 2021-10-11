@@ -1,13 +1,15 @@
 import time
-from typing import Dict, List, TypedDict, Union
+from typing import List, TypedDict, Union
 
-from datasets_preview_backend.cache_entries import CacheEntry, get_expected_entries
+from datasets_preview_backend.dataset_entries import (
+    get_dataset_cache_status,
+    get_refreshed_dataset_names,
+)
 from datasets_preview_backend.exceptions import StatusErrorContent
 
 
 class CacheReport(TypedDict):
-    endpoint: str
-    kwargs: Dict[str, str]
+    dataset: str
     status: str
     error: Union[StatusErrorContent, None]
 
@@ -18,17 +20,17 @@ class CacheReports(TypedDict):
 
 
 # we remove the content because it's too heavy
-def entry_to_report(entry: CacheEntry) -> CacheReport:
+def get_dataset_report(dataset: str) -> CacheReport:
+    status = get_dataset_cache_status(dataset)
     return {
-        "endpoint": entry["endpoint"],
-        "kwargs": entry["kwargs"],
-        "status": entry["status"],
-        "error": entry["error"],
+        "dataset": dataset,
+        "status": status["status"],
+        "error": status["error"],
     }
 
 
 def get_cache_reports() -> CacheReports:
     return {
-        "reports": [entry_to_report(entry) for entry in get_expected_entries()],
+        "reports": [get_dataset_report(dataset) for dataset in get_refreshed_dataset_names()],
         "created_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
     }
