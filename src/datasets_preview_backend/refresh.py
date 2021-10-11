@@ -1,24 +1,22 @@
 import os
 import time
 from random import random
-from typing import Any, List
+from typing import Any
 
 import psutil  # type: ignore
 from dotenv import load_dotenv
 
-from datasets_preview_backend.cache_entries import (
-    delete_cache_entry,
-    get_expected_dataset_entries,
-)
 from datasets_preview_backend.constants import (
     DEFAULT_MAX_LOAD_PCT,
     DEFAULT_MAX_SWAP_MEMORY_PCT,
     DEFAULT_MAX_VIRTUAL_MEMORY_PCT,
     DEFAULT_REFRESH_PCT,
 )
+from datasets_preview_backend.dataset_entries import (
+    get_refreshed_dataset_entry,
+    get_refreshed_dataset_names,
+)
 from datasets_preview_backend.logger import init_logger
-from datasets_preview_backend.queries.datasets import get_datasets
-from datasets_preview_backend.queries.rows import get_rows
 from datasets_preview_backend.utils import get_int_value
 
 # Load environment variables defined in .env, if any
@@ -42,11 +40,7 @@ def refresh_dataset(dataset: str, max_load_pct: int) -> None:
     print(f"Cache refreshing: dataset '{dataset}'")
     t = time.perf_counter()
     try:  # nosec
-        # first get all the excepted entries for the dataset, and delete them all
-        for entry in get_expected_dataset_entries({"dataset": dataset}):
-            delete_cache_entry(entry)
-        # then get_rows calls the four endpoints: /configs, /splits, /infos and /rows
-        get_rows(dataset=dataset)
+        get_refreshed_dataset_entry(dataset)
     except Exception:
         pass
     elapsed_seconds = time.perf_counter() - t
@@ -64,7 +58,7 @@ def refresh() -> None:
     max_swap_memory_pct = get_int_value(os.environ, "MAX_SWAP_MEMORY_PCT", DEFAULT_MAX_SWAP_MEMORY_PCT)
     refresh_pct = get_int_value(os.environ, "REFRESH_PCT", DEFAULT_REFRESH_PCT)
 
-    datasets: List[str] = [d["dataset"] for d in get_datasets(_refresh=True)["datasets"]]
+    datasets = get_refreshed_dataset_names()
 
     criterion = make_criterion(refresh_pct / 100)
     selected_datasets = list(filter(criterion, datasets))
