@@ -1,7 +1,7 @@
 import logging
-import orjson
 from typing import Any
 
+import orjson
 from starlette.endpoints import HTTPEndpoint
 from starlette.requests import Request
 from starlette.responses import JSONResponse, PlainTextResponse, Response
@@ -19,6 +19,7 @@ from datasets_preview_backend.queries.validity_status import get_valid_datasets
 from datasets_preview_backend.queries.webhook import post_webhook
 
 logger = logging.getLogger(__name__)
+
 
 # orjson is used to get rid of errors with datetime (see allenai/c4)
 class OrjsonResponse(JSONResponse):
