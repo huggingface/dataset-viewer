@@ -15,12 +15,13 @@ from datasets_preview_backend.queries.infos import get_infos
 from datasets_preview_backend.queries.rows import get_rows
 from datasets_preview_backend.queries.splits import get_splits
 from datasets_preview_backend.queries.validity_status import get_valid_datasets
+from datasets_preview_backend.queries.webhook import post_webhook
 
 logger = logging.getLogger(__name__)
 
 
 def get_response(func: Any, max_age: int, **kwargs) -> JSONResponse:  # type: ignore
-    headers = {"Cache-Control": f"public, max-age={max_age}"}
+    headers = {"Cache-Control": f"public, max-age={max_age}"} if max_age > 0 else {"Cache-Control": "no-store"}
     try:
         return JSONResponse(func(**kwargs), status_code=200, headers=headers)
     except (Status400Error, Status404Error) as err:
@@ -49,6 +50,19 @@ class ValidDatasets(HTTPEndpoint):
     async def get(self, _: Request) -> Response:
         logger.info("/valid")
         return get_response(get_valid_datasets, MAX_AGE_SHORT_SECONDS)
+
+
+class WebHook(HTTPEndpoint):
+    async def post(self, request: Request) -> Response:
+        logger.info("/webhook")
+        headers = {"Cache-Control": "no-store"}
+        try:
+            json = await request.json()
+            return JSONResponse(post_webhook(json), status_code=200, headers=headers)
+        except (Status400Error, Status404Error) as err:
+            return JSONResponse(err.as_content(), status_code=err.status_code, headers=headers)
+
+        # return get_response(post_webhook, 0, request=request)
 
 
 class Datasets(HTTPEndpoint):

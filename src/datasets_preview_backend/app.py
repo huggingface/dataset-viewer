@@ -18,6 +18,7 @@ from datasets_preview_backend.routes import (
     Rows,
     Splits,
     ValidDatasets,
+    WebHook,
 )
 
 
@@ -33,6 +34,7 @@ def create_app() -> Starlette:
             Route("/cache", endpoint=CacheStats),
             Route("/valid", endpoint=ValidDatasets),
             Route("/cache-reports", endpoint=CacheReports),
+            Route("/webhook", endpoint=WebHook, methods=["POST"]),
         ],
     )
 
