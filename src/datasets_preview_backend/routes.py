@@ -1,4 +1,5 @@
 import logging
+import orjson
 from typing import Any
 
 from starlette.endpoints import HTTPEndpoint
@@ -19,13 +20,18 @@ from datasets_preview_backend.queries.webhook import post_webhook
 
 logger = logging.getLogger(__name__)
 
+# orjson is used to get rid of errors with datetime (see allenai/c4)
+class OrjsonResponse(JSONResponse):
+    def render(self, content: Any) -> bytes:
+        return orjson.dumps(content)
 
-def get_response(func: Any, max_age: int, **kwargs) -> JSONResponse:  # type: ignore
+
+def get_response(func: Any, max_age: int, **kwargs) -> Response:  # type: ignore
     headers = {"Cache-Control": f"public, max-age={max_age}"} if max_age > 0 else {"Cache-Control": "no-store"}
     try:
-        return JSONResponse(func(**kwargs), status_code=200, headers=headers)
+        return OrjsonResponse(func(**kwargs), status_code=200, headers=headers)
     except (Status400Error, Status404Error) as err:
-        return JSONResponse(err.as_content(), status_code=err.status_code, headers=headers)
+        return OrjsonResponse(err.as_content(), status_code=err.status_code, headers=headers)
 
 
 class HealthCheck(HTTPEndpoint):
@@ -58,9 +64,9 @@ class WebHook(HTTPEndpoint):
         headers = {"Cache-Control": "no-store"}
         try:
             json = await request.json()
-            return JSONResponse(post_webhook(json), status_code=200, headers=headers)
+            return OrjsonResponse(post_webhook(json), status_code=200, headers=headers)
         except (Status400Error, Status404Error) as err:
-            return JSONResponse(err.as_content(), status_code=err.status_code, headers=headers)
+            return OrjsonResponse(err.as_content(), status_code=err.status_code, headers=headers)
 
         # return get_response(post_webhook, 0, request=request)
 
