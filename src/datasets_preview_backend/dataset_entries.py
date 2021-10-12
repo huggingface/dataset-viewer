@@ -150,9 +150,12 @@ def get_info(dataset: str, config: str) -> Info:
 
 
 def get_features(info: Info) -> List[Feature]:
-    if "features" not in info or info["features"] is None:
-        raise Status400Error("a dataset config info should contain a 'features' property")
-    return [{"name": name, "content": content} for (name, content) in info["features"].items()]
+    try:
+        features = [] if info["features"] is None else info["features"].items()
+        return [{"name": name, "content": content} for (name, content) in features]
+    except Exception as err:
+        # note that no exception will be raised if features exists, but is empty
+        raise Status400Error("features not found in dataset config info", err)
 
 
 def get_config_name(config_entry: Config) -> str:

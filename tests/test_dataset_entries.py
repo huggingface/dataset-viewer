@@ -38,6 +38,13 @@ def test_get_dataset_cache_status_error() -> None:
 
 
 # get_features
+def test_empty_features() -> None:
+    configs = get_config_names("allenai/c4")
+    info = get_info("allenai/c4", configs[0])
+    features = get_features(info)
+    assert len(features) == 0
+
+
 def test_get_features() -> None:
     info = get_info("acronym_identification", DEFAULT_CONFIG_NAME)
     features = get_features(info)
