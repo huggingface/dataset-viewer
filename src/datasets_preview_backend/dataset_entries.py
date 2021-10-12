@@ -245,6 +245,10 @@ def get_refreshed_dataset_entry(dataset: str) -> DatasetEntry:
     return get_dataset_entry(dataset=dataset, _refresh=True)  # type: ignore
 
 
+def delete_dataset_entry(dataset: str) -> DatasetEntry:
+    return get_dataset_entry(dataset=dataset, _delete=True)  # type: ignore
+
+
 @memoize(cache)  # type:ignore
 def get_dataset_names() -> List[str]:
     # If an exception is raised, we let it propagate

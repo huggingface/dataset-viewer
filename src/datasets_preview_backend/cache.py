@@ -108,6 +108,10 @@ def memoize(
             _delete = bool(kwargs.pop("_delete", False))
             key = args_to_key(base, args, kwargs, typed=False)
 
+            if _delete:
+                cache.delete(key, retry=True)
+                return
+
             result = ENOVAL if _refresh else cache.get(key, default=ENOVAL, retry=True)
 
             if result is ENOVAL:
@@ -120,9 +124,6 @@ def memoize(
                 except StatusError as exception:
                     result = exception
                 cache.set(key, result, retry=True)
-
-            if _delete:
-                cache.delete(key, retry=True)
 
             # See https://github.com/peterbe/django-cache-memoize/blob/master/src/cache_memoize/__init__.py#L153-L156
             # If the result is an exception we've caught and cached, raise it

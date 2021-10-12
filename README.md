@@ -166,6 +166,40 @@ Responses:
 }
 ```
 
+### /webhook
+
+> Adds, updates or removes a cache entry
+
+Example: https://datasets-preview.huggingface.tech/webhook
+
+Method: `POST`
+
+Body:
+
+```json
+{
+  "add": "dataset1",
+  "update": "dataset1",
+  "remove": "dataset1"
+}
+```
+
+The three keys are optional, and moonlanding should send only one of them. `add` and `update` take some time to respond, because the dataset is fetched, while `remove` returns immediately.
+
+Responses:
+
+- `200`: JSON content with the following structure:
+
+  ```json
+  {
+    "status": "ok"
+  }
+  ```
+
+- `400`: the payload is erroneous, or a 400 error raised during the cache operation
+- `404`: a 404 error raised during the cache operation
+- `500`: application error
+
 ### /datasets
 
 > Lists the [datasets](https://huggingface.co/docs/datasets/loading_datasets.html#selecting-a-configuration) names: canonical and community
