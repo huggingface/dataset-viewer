@@ -32,6 +32,7 @@ diskcache = "^5.2.1"
 types-requests = "^2.25.8"
 appdirs = "^1.4.4"
 psutil = "^5.8.0"
+orjson = "^3.6.4"
 
 [tool.poetry.dev-dependencies]
 bandit = "^1.7.0"
