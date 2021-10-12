@@ -344,7 +344,7 @@ develop = false
 aiohttp = "*"
 dill = "*"
 fsspec = {version = ">=2021.05.0", extras = ["http"]}
-huggingface_hub = ">=0.0.14,<0.1.0"
+huggingface_hub = ">=0.0.18,<0.1.0"
 multiprocess = "*"
 numpy = ">=1.17"
 packaging = "*"
@@ -368,8 +368,8 @@ docs = ["docutils (==0.16.0)", "recommonmark", "sphinx (==3.1.2)", "sphinx-markd
 [package.source]
 type = "git"
 url = "https://github.com/huggingface/datasets.git"
-reference = "64dadeddb8d2fd9cd457bcaae74e7dd9878fc91b"
-resolved_reference = "64dadeddb8d2fd9cd457bcaae74e7dd9878fc91b"
+reference = "e4b33592fd5d421a1a869e2a0515cb603bada228"
+resolved_reference = "e4b33592fd5d421a1a869e2a0515cb603bada228"
 
 [[package]]
 name = "dill"
@@ -651,7 +651,7 @@ pyparsing = ">=2.4.2,<3"
 
 [[package]]
 name = "huggingface-hub"
-version = "0.0.17"
+version = "0.0.19"
 description = "Client library to download and publish models on the huggingface.co hub"
 category = "main"
 optional = false
@@ -660,6 +660,7 @@ python-versions = ">=3.6.0"
 [package.dependencies]
 filelock = "*"
 packaging = ">=20.9"
+pyyaml = "*"
 requests = "*"
 tqdm = "*"
 typing-extensions = "*"
@@ -668,6 +669,7 @@ typing-extensions = "*"
 all = ["pytest", "datasets", "black (>=20.8b1)", "isort (>=5.5.4)", "flake8 (>=3.8.3)"]
 dev = ["pytest", "datasets", "black (>=20.8b1)", "isort (>=5.5.4)", "flake8 (>=3.8.3)"]
 quality = ["black (>=20.8b1)", "isort (>=5.5.4)", "flake8 (>=3.8.3)"]
+tensorflow = ["tensorflow"]
 testing = ["pytest", "datasets"]
 torch = ["torch"]
 
@@ -1780,7 +1782,7 @@ cffi = ["cffi (>=1.11)"]
 [metadata]
 lock-version = "1.1"
 python-versions = "^3.9.6"
-content-hash = "b794233627eaeeed00a80139acaea2500ef94f92c076d10149f5658e6ce98aa9"
+content-hash = "9d38f56d9d1bbc4ae3f29efde56252a462f5796b4ef85b2cf7a0853d2e2824aa"
 
 [metadata.files]
 absl-py = [
@@ -2292,8 +2294,8 @@ httplib2 = [
     {file = "httplib2-0.19.1.tar.gz", hash = "sha256:0b12617eeca7433d4c396a100eaecfa4b08ee99aa881e6df6e257a7aad5d533d"},
 ]
 huggingface-hub = [
-    {file = "huggingface_hub-0.0.17-py3-none-any.whl", hash = "sha256:ff7f64cf2ed08b201e2e0e21d437c0e180192b8d42e2ed2cf2d81e361389e688"},
-    {file = "huggingface_hub-0.0.17.tar.gz", hash = "sha256:4f9174a277d2ad884ea3d472534db11a114e2f44f21798410c152e80f4675917"},
+    {file = "huggingface_hub-0.0.19-py3-none-any.whl", hash = "sha256:edcea87cbd709073a63fc911efa2d8fd8304f62cfe43f0bf497dec8eaac10369"},
+    {file = "huggingface_hub-0.0.19.tar.gz", hash = "sha256:6ea6fff78b692fc9b05e0315c2d7d835a6f42902e472eadeceebff12babd6c06"},
 ]
 idna = [
     {file = "idna-3.2-py3-none-any.whl", hash = "sha256:14475042e284991034cb48e06f6851428fb14c4dc953acd9be9a5e95c7b6dd7a"},
