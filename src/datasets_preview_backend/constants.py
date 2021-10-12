@@ -18,4 +18,4 @@ DEFAULT_MAX_VIRTUAL_MEMORY_PCT: int = 95
 DEFAULT_REFRESH_PCT: int = 1
 
 DEFAULT_CONFIG_NAME: str = "default"
-DATASETS_BLOCKLIST: List[str] = ["allenai/c4"]
+DATASETS_BLOCKLIST: List[str] = []

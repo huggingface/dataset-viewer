@@ -129,6 +129,10 @@ def test_get_config_names() -> None:
     assert len(configs) == 12
     assert "cola" in configs
 
+    # see https://github.com/huggingface/datasets-preview-backend/issues/17
+    configs = get_config_names("allenai/c4")
+    assert len(configs) == 1
+
 
 # get_dataset_entry
 def test_script_error() -> None:
@@ -161,13 +165,6 @@ def test_builder_config_error() -> None:
         get_dataset_entry(dataset="nateraw/image-folder")
     with pytest.raises(Status400Error):
         get_dataset_entry(dataset="Valahaar/wsdmt")
-
-
-def test_blocklisted_datasets() -> None:
-    # see https://github.com/huggingface/datasets-preview-backend/issues/17
-    dataset = "allenai/c4"
-    with pytest.raises(Status400Error):
-        get_dataset_entry(dataset=dataset)
 
 
 # get_dataset_names
