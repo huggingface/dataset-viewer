@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "datasets-preview-backend"
-version = "0.9.3"
+version = "0.10.0"
 description = "API to extract rows of 🤗 datasets"
 authors = ["Sylvain Lesage <severo@rednegra.net>"]
 
