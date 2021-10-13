@@ -249,7 +249,7 @@ def get_refreshed_dataset_entry(dataset: str) -> DatasetEntry:
 
 
 def delete_dataset_entry(dataset: str) -> None:
-    get_dataset_entry(dataset=dataset, _delete=True)  # type: ignore
+    get_dataset_entry(dataset=dataset, _delete=True)
 
 
 @memoize(cache)  # type:ignore
