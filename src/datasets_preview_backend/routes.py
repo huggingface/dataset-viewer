@@ -1,3 +1,4 @@
+import base64
 import logging
 from typing import Any
 
@@ -22,9 +23,15 @@ logger = logging.getLogger(__name__)
 
 
 # orjson is used to get rid of errors with datetime (see allenai/c4)
+def orjson_default(obj: Any) -> Any:
+    if isinstance(obj, bytes):
+        return base64.b64encode(obj).decode("utf-8")
+    raise TypeError
+
+
 class OrjsonResponse(JSONResponse):
     def render(self, content: Any) -> bytes:
-        return orjson.dumps(content)
+        return orjson.dumps(content, option=orjson.OPT_UTC_Z, default=orjson_default)
 
 
 def get_response(func: Any, max_age: int, **kwargs) -> Response:  # type: ignore

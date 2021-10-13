@@ -25,7 +25,6 @@ nltk = "^3.6.2"
 aiohttp = "^3.7.4"
 typer = "^0.3.2"
 transformers = "^4.10.0"
-datasets = {git = "https://github.com/huggingface/datasets.git", rev = "e4b33592fd5d421a1a869e2a0515cb603bada228"}
 python-dotenv = "^0.19.0"
 watchdog = {extras = ["watchmedo"], version = "^2.1.3"}
 diskcache = "^5.2.1"
@@ -33,6 +32,7 @@ types-requests = "^2.25.8"
 appdirs = "^1.4.4"
 psutil = "^5.8.0"
 orjson = "^3.6.4"
+datasets = {git = "https://github.com/huggingface/datasets.git", rev = "5528318dc615ffa28a01724f6ab2cbf2953cb8b0"}
 
 [tool.poetry.dev-dependencies]
 bandit = "^1.7.0"

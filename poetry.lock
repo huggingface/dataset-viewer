@@ -368,8 +368,8 @@ docs = ["docutils (==0.16.0)", "recommonmark", "sphinx (==3.1.2)", "sphinx-markd
 [package.source]
 type = "git"
 url = "https://github.com/huggingface/datasets.git"
-reference = "e4b33592fd5d421a1a869e2a0515cb603bada228"
-resolved_reference = "e4b33592fd5d421a1a869e2a0515cb603bada228"
+reference = "5528318dc615ffa28a01724f6ab2cbf2953cb8b0"
+resolved_reference = "5528318dc615ffa28a01724f6ab2cbf2953cb8b0"
 
 [[package]]
 name = "dill"
@@ -1782,7 +1782,7 @@ cffi = ["cffi (>=1.11)"]
 [metadata]
 lock-version = "1.1"
 python-versions = "^3.9.6"
-content-hash = "ddd01c0d5dee4ef70e990243039fe3e8024c12922d0b45a44f22641c5b6dd2aa"
+content-hash = "5cd9482b0698f1acd13a9025ab7630d8dfd854027604e538a83bf2f2a13c959e"
 
 [metadata.files]
 absl-py = [
