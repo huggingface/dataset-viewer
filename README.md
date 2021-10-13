@@ -30,7 +30,7 @@ Set environment variables to configure the following aspects:
 - `APP_PORT`: the port used by the app. Defaults to `8000`.
 - `CACHE_DIRECTORY`: directory where the cache is stored (see http://www.grantjenks.com/docs/diskcache/tutorial.html). It's only applied if `CACHE_PERSIST` is `True`. Defaults to empty.
 - `CACHE_PERSIST`: persist the cache between runs by using the platform's default caches directory. Defaults to `True`.
-- `CACHE_SIZE_LIMIT`: maximum size of the cache in bytes. Defaults to `1073741824` (1 GiB).
+- `CACHE_SIZE_LIMIT`: maximum size of the cache in bytes. Defaults to `10000000000` (10 GB).
 - `DATASETS_ENABLE_PRIVATE`: enable private datasets. Defaults to `False`.
 - `DATASETS_REVISION`: git reference for the canonical datasets on https://github.com/huggingface/datasets. Defaults to `5528318dc615ffa28a01724f6ab2cbf2953cb8b0`.
 - `EXTRACT_ROWS_LIMIT`: number of rows in the extract, if not specified in the API request. Defaults to `100`.
