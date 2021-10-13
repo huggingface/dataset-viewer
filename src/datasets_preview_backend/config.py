@@ -9,6 +9,7 @@ from datasets_preview_backend.constants import (
     DEFAULT_CACHE_PERSIST,
     DEFAULT_CACHE_SIZE_LIMIT,
     DEFAULT_DATASETS_ENABLE_PRIVATE,
+    DEFAULT_DATASETS_REVISION,
     DEFAULT_EXTRACT_ROWS_LIMIT,
     DEFAULT_LOG_LEVEL,
     DEFAULT_MAX_AGE_LONG_SECONDS,
@@ -33,8 +34,12 @@ CACHE_SIZE_LIMIT = get_int_value(d=os.environ, key="CACHE_SIZE_LIMIT", default=D
 DATASETS_ENABLE_PRIVATE = get_bool_value(
     d=os.environ, key="DATASETS_ENABLE_PRIVATE", default=DEFAULT_DATASETS_ENABLE_PRIVATE
 )
+DATASETS_REVISION = get_str_value(d=os.environ, key="DATASETS_REVISION", default=DEFAULT_DATASETS_REVISION)
 EXTRACT_ROWS_LIMIT = get_int_value(d=os.environ, key="EXTRACT_ROWS_LIMIT", default=DEFAULT_EXTRACT_ROWS_LIMIT)
 LOG_LEVEL = get_str_value(d=os.environ, key="LOG_LEVEL", default=DEFAULT_LOG_LEVEL)
 MAX_AGE_LONG_SECONDS = get_int_value(d=os.environ, key="MAX_AGE_LONG_SECONDS", default=DEFAULT_MAX_AGE_LONG_SECONDS)
 MAX_AGE_SHORT_SECONDS = get_int_value(d=os.environ, key="MAX_AGE_SHORT_SECONDS", default=DEFAULT_MAX_AGE_SHORT_SECONDS)
 WEB_CONCURRENCY = get_int_value(d=os.environ, key="WEB_CONCURRENCY", default=DEFAULT_WEB_CONCURRENCY)
+
+# Ensure datasets library uses the excepted revision
+os.environ["HF_SCRIPTS_VERSION"] = DATASETS_REVISION

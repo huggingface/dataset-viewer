@@ -64,9 +64,12 @@ def test_get_rows() -> None:
     assert rows[0]["tokens"][0] == "What"
 
 
-def test_get_not_implemented_split() -> None:
-    with pytest.raises(Status400Error):
-        get_rows("ade_corpus_v2", "Ade_corpus_v2_classification", "train")
+def test_iter_archive() -> None:
+    # see https://github.com/huggingface/datasets/pull/3066
+    rows = get_rows("food101", DEFAULT_CONFIG_NAME, "train")
+    assert len(rows) == EXTRACT_ROWS_LIMIT
+    assert rows[0]["image"]["filename"] == "2885220.jpg"
+    assert type(rows[0]["image"]["data"]) == bytes
 
 
 def test_tar_gz_extension() -> None:
@@ -86,10 +89,11 @@ def test_txt_zip() -> None:
     assert len(rows) == EXTRACT_ROWS_LIMIT
 
 
-def test_pathlib() -> None:
-    # see https://github.com/huggingface/datasets/issues/2866
-    rows = get_rows(dataset="counter", config=DEFAULT_CONFIG_NAME, split="train")
-    assert len(rows) == EXTRACT_ROWS_LIMIT
+# # Remove for now, see https://github.com/huggingface/datasets/issues/2866#issuecomment-942122817
+# def test_pathlib() -> None:
+#     # see https://github.com/huggingface/datasets/issues/2866#issuecomment-942111376
+#     with pytest.raises(Status400Error):
+#         get_rows(dataset="counter", config=DEFAULT_CONFIG_NAME, split="train")
 
 
 # get_split
