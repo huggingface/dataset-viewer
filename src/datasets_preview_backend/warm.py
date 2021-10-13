@@ -60,9 +60,9 @@ def warm() -> None:
             return
 
         print(f"Checking dataset '{dataset}'")
-        status = get_dataset_cache_status(dataset)
+        status = get_dataset_cache_status(dataset)["status"]
         print(f"Checked: '{status}'")
-        if status["status"] == "cache_miss":
+        if status == "cache_miss":
             warm_dataset(dataset, max_load_pct)
 
 
