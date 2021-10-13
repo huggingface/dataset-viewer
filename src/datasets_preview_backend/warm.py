@@ -59,7 +59,9 @@ def warm() -> None:
             print("Swap memory usage is too high, we stop here.")
             return
 
+        print(f"Checking dataset '{dataset}'")
         status = get_dataset_cache_status(dataset)
+        print(f"Checked: '{status}'")
         if status["status"] == "cache_miss":
             warm_dataset(dataset, max_load_pct)
 
