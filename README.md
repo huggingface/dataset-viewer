@@ -179,13 +179,13 @@ Body:
 
 ```json
 {
-  "add": "dataset1",
-  "update": "dataset1",
-  "remove": "dataset1"
+  "add": "datasets/dataset1",
+  "update": "datasets/dataset1",
+  "remove": "datasets/dataset1"
 }
 ```
 
-The three keys are optional, and moonlanding should send only one of them. `add` and `update` take some time to respond, because the dataset is fetched, while `remove` returns immediately.
+The three keys are optional, and moonlanding should send only one of them. `add` and `update` take some time to respond, because the dataset is fetched, while `remove` returns immediately. The dataset identifiers are full names, ie. they must include the `datasets/` prefix, which means that a community dataset will have two slashes: `datasets/allenai/c4` for example.
 
 Responses:
 

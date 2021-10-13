@@ -32,14 +32,34 @@ def parse_payload(json: Any) -> MoonWebhookV2Payload:
     }
 
 
+def get_dataset_name(id: Optional[str]) -> Optional[str]:
+    if id is None:
+        return None
+    dataset_name = id.removeprefix("datasets/")
+    if id == dataset_name:
+        logger.info(f"ignored because a full dataset id must starts with 'datasets/': {id}")
+        return None
+    return dataset_name
+
+
+def try_to_refresh(id: Optional[str]) -> None:
+    dataset_name = get_dataset_name(id)
+    if dataset_name is not None:
+        logger.debug(f"webhook: refresh {dataset_name}")
+        get_refreshed_dataset_entry(dataset_name)
+
+
+def try_to_delete(id: Optional[str]) -> None:
+    dataset_name = get_dataset_name(id)
+    if dataset_name is not None:
+        logger.debug(f"webhook: delete {dataset_name}")
+        delete_dataset_entry(dataset_name)
+
+
 def process_payload(payload: MoonWebhookV2Payload) -> None:
-    if payload["add"] is not None:
-        get_refreshed_dataset_entry(payload["add"])
-    if payload["update"] is not None:
-        get_refreshed_dataset_entry(payload["update"])
-    if payload["remove"] is not None:
-        delete_dataset_entry(payload["remove"])
-    return
+    try_to_refresh(payload["add"])
+    try_to_refresh(payload["update"])
+    try_to_delete(payload["remove"])
 
 
 def post_webhook(json: Any) -> WebHookContent:
