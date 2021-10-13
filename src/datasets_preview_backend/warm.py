@@ -28,21 +28,21 @@ def wait_until_load_is_ok(max_load_pct: int) -> None:
         if load_pct[0] < max_load_pct:
             break
         elapsed_seconds = time.perf_counter() - t
-        print(f"Waiting ({elapsed_seconds:.1f}s) for the load to be under {max_load_pct}%")
+        print(f"Waiting ({elapsed_seconds:.1f}s) for the load to be under {max_load_pct}%", flush=True)
         time.sleep(1)
 
 
 def warm_dataset(dataset: str, max_load_pct: int) -> None:
     wait_until_load_is_ok(max_load_pct)
 
-    print(f"Cache warming: dataset '{dataset}'")
+    print(f"Cache warming: dataset '{dataset}'", flush=True)
     t = time.perf_counter()
     try:  # nosec
         get_dataset_entry(dataset=dataset)
     except Exception:
         pass
     elapsed_seconds = time.perf_counter() - t
-    print(f"Cache warming: dataset '{dataset}' - done in {elapsed_seconds:.1f}s")
+    print(f"Cache warming: dataset '{dataset}' - done in {elapsed_seconds:.1f}s", flush=True)
 
 
 def warm() -> None:
@@ -53,15 +53,15 @@ def warm() -> None:
 
     for dataset in datasets:
         if psutil.virtual_memory().percent > max_virtual_memory_pct:
-            print("Memory usage is too high, we stop here.")
+            print("Memory usage is too high, we stop here.", flush=True)
             return
         if psutil.swap_memory().percent > max_swap_memory_pct:
-            print("Swap memory usage is too high, we stop here.")
+            print("Swap memory usage is too high, we stop here.", flush=True)
             return
 
-        print(f"Checking dataset '{dataset}'")
+        print(f"Checking dataset '{dataset}'", flush=True)
         status = get_dataset_cache_status(dataset)["status"]
-        print(f"Checked: '{status}'")
+        print(f"Checked: '{status}'", flush=True)
         if status == "cache_miss":
             warm_dataset(dataset, max_load_pct)
 

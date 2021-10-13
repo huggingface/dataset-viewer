@@ -30,21 +30,21 @@ def wait_until_load_is_ok(max_load_pct: int) -> None:
         if load_pct[0] < max_load_pct:
             break
         elapsed_seconds = time.perf_counter() - t
-        print(f"Waiting ({elapsed_seconds:.1f}s) for the load to be under {max_load_pct}%")
+        print(f"Waiting ({elapsed_seconds:.1f}s) for the load to be under {max_load_pct}%", flush=True)
         time.sleep(1)
 
 
 def refresh_dataset(dataset: str, max_load_pct: int) -> None:
     wait_until_load_is_ok(max_load_pct)
 
-    print(f"Cache refreshing: dataset '{dataset}'")
+    print(f"Cache refreshing: dataset '{dataset}'", flush=True)
     t = time.perf_counter()
     try:  # nosec
         get_refreshed_dataset_entry(dataset)
     except Exception:
         pass
     elapsed_seconds = time.perf_counter() - t
-    print(f"Cache refreshing: dataset '{dataset}' - done in {elapsed_seconds:.1f}s")
+    print(f"Cache refreshing: dataset '{dataset}' - done in {elapsed_seconds:.1f}s", flush=True)
 
 
 # TODO: we could get the first N, sorted by creation time (more or less expire time)
@@ -64,15 +64,16 @@ def refresh() -> None:
     selected_datasets = list(filter(criterion, datasets))
     print(
         f"Refreshing: {len(selected_datasets)} datasets from"
-        f" {len(datasets)} ({100*len(selected_datasets)/len(datasets):.1f}%)"
+        f" {len(datasets)} ({100*len(selected_datasets)/len(datasets):.1f}%)",
+        flush=True,
     )
 
     for dataset in selected_datasets:
         if psutil.virtual_memory().percent > max_virtual_memory_pct:
-            print("Memory usage is too high, we stop here.")
+            print("Memory usage is too high, we stop here.", flush=True)
             return
         if psutil.swap_memory().percent > max_swap_memory_pct:
-            print("Swap memory usage is too high, we stop here.")
+            print("Swap memory usage is too high, we stop here.", flush=True)
             return
         refresh_dataset(dataset, max_load_pct)
 
