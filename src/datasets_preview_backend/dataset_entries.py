@@ -12,6 +12,7 @@ from datasets import (
     load_dataset_builder,
 )
 
+from datasets_preview_backend.assets import create_asset_file
 from datasets_preview_backend.cache import (  # type: ignore
     CacheNotFoundError,
     cache,
@@ -32,6 +33,9 @@ logger = logging.getLogger(__name__)
 class Feature(TypedDict):
     name: str
     content: Any
+
+
+Cell = Any
 
 
 Row = Any
@@ -55,6 +59,52 @@ class Config(TypedDict):
 class DatasetEntry(TypedDict):
     dataset: str
     configs: List[Config]
+
+
+class CellTypeError(Exception):
+    pass
+
+
+def generate_image_cell(dataset: str, config: str, split: str, row_idx: int, column: str, cell: Cell) -> Cell:
+    if column != "image":
+        raise CellTypeError("image column must be named 'image'")
+    try:
+        filename = cell["filename"]
+        data = cell["data"]
+    except Exception:
+        raise CellTypeError("image cell must contain 'filename' and 'data' fields")
+    if type(filename) != str:
+        raise CellTypeError("'filename' field must be a string")
+    if type(data) != bytes:
+        raise CellTypeError("'data' field must be a bytes")
+
+    # this function can raise, we don't catch it
+    url_path = create_asset_file(dataset, config, split, row_idx, column, filename, data)
+
+    return {"url_path": url_path}
+
+
+cell_generators = [generate_image_cell]
+
+
+def generate_cell(dataset: str, config: str, split: str, row_idx: int, column: str, cell: Cell) -> Cell:
+    for cell_generator in cell_generators:
+        try:
+            return cell_generator(dataset, config, split, row_idx, column, cell)
+        except CellTypeError:
+            pass
+    return cell
+
+
+def get_cells(row: Row) -> List[Cell]:
+    try:
+        return list(row.items())
+    except Exception as err:
+        raise Status400Error("cells could not be extracted from the row", err)
+
+
+def generate_row(dataset: str, config: str, split: str, row: Row, row_idx: int) -> Row:
+    return {column: generate_cell(dataset, config, split, row_idx, column, cell) for (column, cell) in get_cells(row)}
 
 
 def get_rows(dataset: str, config: str, split: str) -> List[Row]:
@@ -101,7 +151,7 @@ def get_rows(dataset: str, config: str, split: str) -> List[Row]:
             f" {config} - {split}"
         )
 
-    return rows
+    return [generate_row(dataset, config, split, row, row_idx) for row_idx, row in enumerate(rows)]
 
 
 def filter_split_entries(split_entries: List[Split], split: Optional[str] = None) -> List[Split]:

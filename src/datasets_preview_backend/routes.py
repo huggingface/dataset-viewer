@@ -1,17 +1,11 @@
 import base64
 import logging
-from io import BytesIO
 from typing import Any
 
 import orjson
 from starlette.endpoints import HTTPEndpoint
 from starlette.requests import Request
-from starlette.responses import (
-    JSONResponse,
-    PlainTextResponse,
-    Response,
-    StreamingResponse,
-)
+from starlette.responses import JSONResponse, PlainTextResponse, Response
 
 from datasets_preview_backend.config import MAX_AGE_LONG_SECONDS, MAX_AGE_SHORT_SECONDS
 from datasets_preview_backend.exceptions import Status400Error, Status404Error
@@ -19,7 +13,6 @@ from datasets_preview_backend.queries.cache_reports import get_cache_reports
 from datasets_preview_backend.queries.cache_stats import get_cache_stats
 from datasets_preview_backend.queries.configs import get_configs
 from datasets_preview_backend.queries.datasets import get_datasets
-from datasets_preview_backend.queries.image import get_image
 from datasets_preview_backend.queries.infos import get_infos
 from datasets_preview_backend.queries.rows import get_rows
 from datasets_preview_backend.queries.splits import get_splits
@@ -138,36 +131,3 @@ class Rows(HTTPEndpoint):
             config=config,
             split=split,
         )
-
-
-class Image(HTTPEndpoint):
-    async def get(self, request: Request) -> Response:
-        dataset = request.path_params.get("dataset")
-        config = request.path_params.get("config")
-        split = request.path_params.get("split")
-        row = request.path_params.get("row")
-        column = request.path_params.get("column")
-        filename = request.path_params.get("filename")
-        logger.info(
-            f"/image, dataset={dataset}, config={config}, split={split}, row={row}, column={column},"
-            f" filename={filename}"
-        )
-
-        headers = {"Cache-Control": "public, max-age={MAX_AGE_LONG_SECONDS}"}
-        # TODO: alternative: create the file during the cache warming, and serve it as a StaticResponse
-        try:
-            image_cell = get_image(
-                dataset=dataset,
-                config=config,
-                split=split,
-                row=row,
-                column=column,
-                filename=filename,
-            )
-            data = image_cell["data"]
-            buffer = BytesIO(data)
-            headers["Content-Disposition"] = image_cell["filename"]
-            headers["Content-Length"] = str(len(data))
-            return StreamingResponse(buffer, media_type=image_cell["mime_type"], headers=headers)
-        except (Status400Error, Status404Error) as err:
-            return OrjsonResponse(err.as_content(), status_code=err.status_code, headers=headers)

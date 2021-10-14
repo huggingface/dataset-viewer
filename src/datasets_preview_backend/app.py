@@ -1,7 +1,9 @@
 import uvicorn  # type: ignore
 from starlette.applications import Starlette
-from starlette.routing import Route
+from starlette.routing import Mount, Route
+from starlette.staticfiles import StaticFiles
 
+from datasets_preview_backend.assets import assets_directory
 from datasets_preview_backend.config import (
     APP_HOSTNAME,
     APP_PORT,
@@ -14,7 +16,6 @@ from datasets_preview_backend.routes import (
     Configs,
     Datasets,
     HealthCheck,
-    Image,
     Infos,
     Rows,
     Splits,
@@ -34,12 +35,9 @@ def create_app() -> Starlette:
             Route("/rows", endpoint=Rows),
             Route("/cache", endpoint=CacheStats),
             Route("/valid", endpoint=ValidDatasets),
-            Route(
-                "/image/{dataset:path}/___/{config:str}/{split:str}/{row:int}/{column:str}/{filename:path}",
-                endpoint=Image,
-            ),
             Route("/cache-reports", endpoint=CacheReports),
             Route("/webhook", endpoint=WebHook, methods=["POST"]),
+            Mount("/assets", app=StaticFiles(directory=assets_directory, check_dir=True), name="assets"),
         ],
     )
 

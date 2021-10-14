@@ -29,7 +29,8 @@ Set environment variables to configure the following aspects:
 
 - `APP_HOSTNAME`: the hostname used by the app. Defaults to `"localhost"`.
 - `APP_PORT`: the port used by the app. Defaults to `8000`.
-- `CACHE_DIRECTORY`: directory where the cache is stored (see http://www.grantjenks.com/docs/diskcache/tutorial.html). It's only applied if `CACHE_PERSIST` is `True`. Defaults to empty.
+- `ASSETS_DIRECTORY`: directory where the asset files are stored. Defaults to empty, in which case the assets are located in the `datasets_preview_backend_assets` subdirectory inside the OS default cache directory.
+- `CACHE_DIRECTORY`: directory where the cache is stored (see http://www.grantjenks.com/docs/diskcache/tutorial.html). It's only applied if `CACHE_PERSIST` is `True`. Defaults to empty, in which case the cache is located in the `datasets_preview_backend` subdirectory inside the OS default cache directory.
 - `CACHE_PERSIST`: persist the cache between runs by using the platform's default caches directory. Defaults to `True`.
 - `CACHE_SIZE_LIMIT`: maximum size of the cache in bytes. Defaults to `10000000000` (10 GB).
 - `DATASETS_ENABLE_PRIVATE`: enable private datasets. Defaults to `False`.
@@ -633,28 +634,28 @@ Responses:
 - `404`: the dataset, config or script cannot be found
 - `500`: application error
 
-### /image
+### /assets
 
-> Return the image from a dataset cell
+> Return an asset
 
-Example: https://datasets-preview.huggingface.tech/image/food101/___/default/train/0/image/2885220.jpg
+Example: https://datasets-preview.huggingface.tech/assets/food101/___/default/train/0/image/2885220.jpg
 
 Method: `GET`
 
 Path parameters:
 
-`/image/:dataset/___/:config/:split/:row/:column/:filename`
+`/assets/:dataset/___/:config/:split/:row_idx/:column/:filename`
 
 - `dataset` (required): the dataset ID
 - `config` (required): the configuration name. If the dataset does not contain configs, you must explicitly pass "config=default"
 - `split` (required): the split name
-- `row` (required): the 0-based row index
+- `row_idx` (required): the 0-based row index
 - `column` (required): the column name
-- `filename` (required): the image file name
+- `filename` (required): the asset file name
 
 Responses:
 
-- `200`: the image file
+- `200`: the asset file
 - `400`: the dataset script is erroneous, or the data cannot be obtained.
 - `404`: the dataset, config, script, row, column, filename or data cannot be found
 - `500`: application error

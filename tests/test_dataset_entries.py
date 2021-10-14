@@ -68,8 +68,7 @@ def test_iter_archive() -> None:
     # see https://github.com/huggingface/datasets/pull/3066
     rows = get_rows("food101", DEFAULT_CONFIG_NAME, "train")
     assert len(rows) == EXTRACT_ROWS_LIMIT
-    assert rows[0]["image"]["filename"] == "2885220.jpg"
-    assert type(rows[0]["image"]["data"]) == bytes
+    assert rows[0]["image"]["url_path"] == "assets/food101/___/default/train/0/image/2885220.jpg"
 
 
 def test_tar_gz_extension() -> None:
