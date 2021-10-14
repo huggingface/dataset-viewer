@@ -1175,6 +1175,14 @@ optional = false
 python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*"
 
 [[package]]
+name = "pyicu"
+version = "2.7.4"
+description = "Python extension wrapping the ICU C++ API"
+category = "main"
+optional = false
+python-versions = "*"
+
+[[package]]
 name = "pymongo"
 version = "3.12.0"
 description = "Python driver for MongoDB <http://www.mongodb.org>"
@@ -1782,7 +1790,7 @@ cffi = ["cffi (>=1.11)"]
 [metadata]
 lock-version = "1.1"
 python-versions = "^3.9.6"
-content-hash = "5cd9482b0698f1acd13a9025ab7630d8dfd854027604e538a83bf2f2a13c959e"
+content-hash = "82d13290c37bb6b460e19739500139b7e072494b06f21b369e5f7a6cc8f186c5"
 
 [metadata.files]
 absl-py = [
@@ -2844,6 +2852,9 @@ pydot = [
 pyflakes = [
     {file = "pyflakes-2.3.1-py2.py3-none-any.whl", hash = "sha256:7893783d01b8a89811dd72d7dfd4d84ff098e5eed95cfa8905b22bbffe52efc3"},
     {file = "pyflakes-2.3.1.tar.gz", hash = "sha256:f5bc8ecabc05bb9d291eb5203d6810b49040f6ff446a756326104746cc00c1db"},
+]
+pyicu = [
+    {file = "PyICU-2.7.4.tar.gz", hash = "sha256:c0655302e2aea16f9acefe04152f74e5d7d70542e9e15c89ee8d763c8e097f56"},
 ]
 pymongo = [
     {file = "pymongo-3.12.0-cp27-cp27m-macosx_10_14_intel.whl", hash = "sha256:072ba7cb65c8aa4d5c5659bf6722ee85781c9d7816dc00679b8b6f3dff1ddafc"},

@@ -33,6 +33,7 @@ appdirs = "^1.4.4"
 psutil = "^5.8.0"
 orjson = "^3.6.4"
 datasets = {git = "https://github.com/huggingface/datasets.git", rev = "5528318dc615ffa28a01724f6ab2cbf2953cb8b0"}
+PyICU = "^2.7.4"
 
 [tool.poetry.dev-dependencies]
 bandit = "^1.7.0"
