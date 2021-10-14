@@ -14,6 +14,7 @@ from datasets_preview_backend.routes import (
     Configs,
     Datasets,
     HealthCheck,
+    Image,
     Infos,
     Rows,
     Splits,
@@ -33,6 +34,10 @@ def create_app() -> Starlette:
             Route("/rows", endpoint=Rows),
             Route("/cache", endpoint=CacheStats),
             Route("/valid", endpoint=ValidDatasets),
+            Route(
+                "/image/{dataset:path}/___/{config:str}/{split:str}/{row:int}/{column:str}/{filename:path}",
+                endpoint=Image,
+            ),
             Route("/cache-reports", endpoint=CacheReports),
             Route("/webhook", endpoint=WebHook, methods=["POST"]),
         ],
