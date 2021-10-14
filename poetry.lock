@@ -333,7 +333,7 @@ python-versions = "*"
 
 [[package]]
 name = "datasets"
-version = "1.12.2.dev0"
+version = "1.13.1.dev0"
 description = ""
 category = "main"
 optional = false
@@ -355,12 +355,13 @@ tqdm = ">=4.62.1"
 xxhash = "*"
 
 [package.extras]
+audio = ["librosa"]
 apache-beam = ["apache-beam (>=2.26.0)"]
 tensorflow = ["tensorflow (>=2.2.0)"]
 tensorflow_gpu = ["tensorflow-gpu (>=2.2.0)"]
 torch = ["torch"]
 s3 = ["fsspec", "boto3", "botocore", "s3fs"]
-tests = ["absl-py", "pytest", "pytest-xdist", "apache-beam (>=2.26.0)", "elasticsearch", "aiobotocore", "boto3", "botocore", "faiss-cpu", "fsspec", "moto[s3,server] (==2.0.4)", "rarfile (>=4.0)", "s3fs (==2021.08.1)", "tensorflow (>=2.3)", "torch", "transformers", "bs4", "conllu", "langdetect", "lxml", "mwparserfromhell", "nltk", "openpyxl", "py7zr", "tldextract", "zstandard", "bert_score (>=0.3.6)", "rouge-score", "sacrebleu", "scipy", "seqeval", "scikit-learn", "jiwer", "sentencepiece", "toml (>=0.10.1)", "requests_file (>=1.5.1)", "tldextract (>=3.1.0)", "texttable (>=1.6.3)", "Werkzeug (>=1.0.1)", "six (>=1.15.0,<1.16.0)"]
+tests = ["absl-py", "pytest", "pytest-datadir", "pytest-xdist", "apache-beam (>=2.26.0)", "elasticsearch", "aiobotocore", "boto3", "botocore", "faiss-cpu", "fsspec", "moto[s3,server] (==2.0.4)", "rarfile (>=4.0)", "s3fs (==2021.08.1)", "tensorflow (>=2.3)", "torch", "torchaudio", "transformers", "bs4", "conllu", "langdetect", "lxml", "mwparserfromhell", "nltk", "openpyxl", "py7zr", "tldextract", "zstandard", "bert_score (>=0.3.6)", "rouge-score", "sacrebleu", "scipy", "seqeval", "scikit-learn", "jiwer", "sentencepiece", "toml (>=0.10.1)", "requests_file (>=1.5.1)", "tldextract (>=3.1.0)", "texttable (>=1.6.3)", "Werkzeug (>=1.0.1)", "six (>=1.15.0,<1.16.0)"]
 quality = ["black (==21.4b0)", "flake8 (==3.7.9)", "isort", "pyyaml (>=5.3.1)"]
 benchmarks = ["numpy (==1.18.5)", "tensorflow (==2.3.0)", "torch (==1.6.0)", "transformers (==3.0.2)"]
 docs = ["docutils (==0.16.0)", "recommonmark", "sphinx (==3.1.2)", "sphinx-markdown-tables", "sphinx-rtd-theme (==0.4.3)", "sphinxext-opengraph (==0.4.1)", "sphinx-copybutton", "fsspec (<2021.9.0)", "s3fs", "sphinx-panels", "sphinx-inline-tabs", "myst-parser"]
@@ -368,8 +369,8 @@ docs = ["docutils (==0.16.0)", "recommonmark", "sphinx (==3.1.2)", "sphinx-markd
 [package.source]
 type = "git"
 url = "https://github.com/huggingface/datasets.git"
-reference = "5528318dc615ffa28a01724f6ab2cbf2953cb8b0"
-resolved_reference = "5528318dc615ffa28a01724f6ab2cbf2953cb8b0"
+reference = "d860b493037ee8dba6b1f1a6e5b2de6747acd54a"
+resolved_reference = "d860b493037ee8dba6b1f1a6e5b2de6747acd54a"
 
 [[package]]
 name = "dill"
@@ -1790,7 +1791,7 @@ cffi = ["cffi (>=1.11)"]
 [metadata]
 lock-version = "1.1"
 python-versions = "^3.9.6"
-content-hash = "82d13290c37bb6b460e19739500139b7e072494b06f21b369e5f7a6cc8f186c5"
+content-hash = "ea46ff0adde5ab6c97202ca95c22b64dc598966d43776629296aebdea83128e4"
 
 [metadata.files]
 absl-py = [

@@ -33,7 +33,7 @@ Set environment variables to configure the following aspects:
 - `CACHE_PERSIST`: persist the cache between runs by using the platform's default caches directory. Defaults to `True`.
 - `CACHE_SIZE_LIMIT`: maximum size of the cache in bytes. Defaults to `10000000000` (10 GB).
 - `DATASETS_ENABLE_PRIVATE`: enable private datasets. Defaults to `False`.
-- `DATASETS_REVISION`: git reference for the canonical datasets on https://github.com/huggingface/datasets. Defaults to `5528318dc615ffa28a01724f6ab2cbf2953cb8b0`.
+- `DATASETS_REVISION`: git reference for the canonical datasets on https://github.com/huggingface/datasets. Defaults to `d860b493037ee8dba6b1f1a6e5b2de6747acd54a`.
 - `EXTRACT_ROWS_LIMIT`: number of rows in the extract, if not specified in the API request. Defaults to `100`.
 - `LOG_LEVEL`: log level, among `DEBUG`, `INFO`, `WARNING`, `ERROR` and `CRITICAL`. Defaults to `INFO`.
 - `MAX_AGE_LONG_SECONDS`: number of seconds to set in the `max-age` header on data endpoints. Defaults to `21600` (6 hours).
