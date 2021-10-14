@@ -89,11 +89,10 @@ def test_txt_zip() -> None:
     assert len(rows) == EXTRACT_ROWS_LIMIT
 
 
-# # Remove for now, see https://github.com/huggingface/datasets/issues/2866#issuecomment-942122817
-# def test_pathlib() -> None:
-#     # see https://github.com/huggingface/datasets/issues/2866#issuecomment-942111376
-#     with pytest.raises(Status400Error):
-#         get_rows(dataset="counter", config=DEFAULT_CONFIG_NAME, split="train")
+def test_pathlib() -> None:
+    # see https://github.com/huggingface/datasets/issues/2866
+    rows = get_rows(dataset="counter", config=DEFAULT_CONFIG_NAME, split="train")
+    assert len(rows) == EXTRACT_ROWS_LIMIT
 
 
 # get_split
