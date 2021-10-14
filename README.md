@@ -632,3 +632,29 @@ Responses:
 - `400`: the dataset script is erroneous, or the data cannot be obtained.
 - `404`: the dataset, config or script cannot be found
 - `500`: application error
+
+### /image
+
+> Return the image from a dataset cell
+
+Example: https://datasets-preview.huggingface.tech/image/food101/___/default/train/0/image/2885220.jpg
+
+Method: `GET`
+
+Path parameters:
+
+`/image/:dataset/___/:config/:split/:row/:column/:filename`
+
+- `dataset` (required): the dataset ID
+- `config` (required): the configuration name. If the dataset does not contain configs, you must explicitly pass "config=default"
+- `split` (required): the split name
+- `row` (required): the 0-based row index
+- `column` (required): the column name
+- `filename` (required): the image file name
+
+Responses:
+
+- `200`: the image file
+- `400`: the dataset script is erroneous, or the data cannot be obtained.
+- `404`: the dataset, config, script, row, column, filename or data cannot be found
+- `500`: application error
