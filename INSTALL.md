@@ -168,7 +168,7 @@ Warm the cache with:
 pm2 start --no-autorestart --name datasets-preview-backend-warm make -- -C /home/hf/datasets-preview-backend/ warm
 ```
 
-Setup the refresh process (1% every 15 minutes, so that the datasets should be refreshed every 12h in average):
+Setup the refresh process (1% every 15 minutes, so that the datasets should be refreshed every 25h in average):
 
 ```bash
 pm2 start --cron "*/15 * * * *" --no-autorestart --name datasets-preview-backend-refresh make -- -C /home/hf/datasets-preview-backend/ refresh
