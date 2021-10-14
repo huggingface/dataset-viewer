@@ -86,7 +86,7 @@ BetterUptime:
 Install packages, logged as `hf`:
 
 ```bash
-sudo apt install python-is-python3 make nginx
+sudo apt install python-is-python3 make nginx libicu-dev
 ```
 
 Also install node and npm (with [nvm](https://github.com/nvm-sh/nvm)), then:

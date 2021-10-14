@@ -7,6 +7,7 @@
 - Python 3.8+
 - Poetry 1.1.7+
 - make
+- libicu-dev
 
 ## Install
 
