@@ -69,6 +69,9 @@ def test_iter_archive() -> None:
     rows = get_rows("food101", DEFAULT_CONFIG_NAME, "train")
     assert len(rows) == EXTRACT_ROWS_LIMIT
     assert rows[0]["image"]["url_path"] == "assets/food101/___/default/train/0/image/2885220.jpg"
+    info = get_info("food101", DEFAULT_CONFIG_NAME)
+    features = get_features(info)
+    assert features[0] == {"name": "image", "content": {"url_path": {"id": None, "_type": "ImageFile"}}}
 
 
 def test_tar_gz_extension() -> None:
