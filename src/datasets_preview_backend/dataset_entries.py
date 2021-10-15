@@ -83,9 +83,7 @@ def generate_image_cell(dataset: str, config: str, split: str, row_idx: int, col
         raise CellTypeError("'data' field must be a bytes")
 
     # this function can raise, we don't catch it
-    url_path = create_asset_file(dataset, config, split, row_idx, column, filename, data)
-
-    return {"url_path": url_path}
+    return create_asset_file(dataset, config, split, row_idx, column, filename, data)
 
 
 cell_generators = [generate_image_cell]
@@ -130,7 +128,7 @@ def generate_image_feature(name: str, content: Any) -> Any:
     except Exception:
         raise FeatureTypeError("image feature must contain 'filename' and 'data' fields")
     # Custom "_type": "ImageFile"
-    return {"url_path": {"id": None, "_type": "ImageFile"}}
+    return {"id": None, "_type": "ImageFile"}
 
 
 feature_generators = [generate_image_feature]
