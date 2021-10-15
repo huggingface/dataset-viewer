@@ -65,6 +65,10 @@ class CellTypeError(Exception):
     pass
 
 
+class FeatureTypeError(Exception):
+    pass
+
+
 def generate_image_cell(dataset: str, config: str, split: str, row_idx: int, column: str, cell: Cell) -> Cell:
     if column != "image":
         raise CellTypeError("image column must be named 'image'")
@@ -105,6 +109,40 @@ def get_cells(row: Row) -> List[Cell]:
 
 def generate_row(dataset: str, config: str, split: str, row: Row, row_idx: int) -> Row:
     return {column: generate_cell(dataset, config, split, row_idx, column, cell) for (column, cell) in get_cells(row)}
+
+
+def check_value_feature(content: Any, key: str, dtype: str) -> None:
+    if key not in content:
+        raise TypeError("feature content don't contain the key")
+    value = content[key]
+    if "_type" not in value or value["_type"] != "Value":
+        raise TypeError("_type should be 'Value'")
+    if "dtype" not in value or value["dtype"] != dtype:
+        raise TypeError("dtype is not the expected value")
+
+
+def generate_image_feature(name: str, content: Any) -> Any:
+    if name != "image":
+        raise FeatureTypeError("image column must be named 'image'")
+    try:
+        check_value_feature(content, "filename", "string")
+        check_value_feature(content, "data", "binary")
+    except Exception:
+        raise FeatureTypeError("image feature must contain 'filename' and 'data' fields")
+    # Custom "_type": "ImageFile"
+    return {"url_path": {"id": None, "_type": "ImageFile"}}
+
+
+feature_generators = [generate_image_feature]
+
+
+def generate_feature_content(column: str, content: Any) -> Any:
+    for feature_generator in feature_generators:
+        try:
+            return feature_generator(column, content)
+        except FeatureTypeError:
+            pass
+    return content
 
 
 def get_rows(dataset: str, config: str, split: str) -> List[Row]:
@@ -202,7 +240,7 @@ def get_info(dataset: str, config: str) -> Info:
 def get_features(info: Info) -> List[Feature]:
     try:
         features = [] if info["features"] is None else info["features"].items()
-        return [{"name": name, "content": content} for (name, content) in features]
+        return [{"name": name, "content": generate_feature_content(name, content)} for (name, content) in features]
     except Exception as err:
         # note that no exception will be raised if features exists, but is empty
         raise Status400Error("features not found in dataset config info", err)
