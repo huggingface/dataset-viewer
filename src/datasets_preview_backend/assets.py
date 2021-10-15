@@ -2,6 +2,7 @@ import os
 from typing import Tuple
 
 from appdirs import user_cache_dir  # type:ignore
+from PIL import Image  # type: ignore
 
 from datasets_preview_backend.config import ASSETS_DIRECTORY
 
@@ -27,6 +28,15 @@ def create_asset_file(
     file_path = os.path.join(dir_path, filename)
     with open(file_path, "wb") as f:
         f.write(data)
+    return f"assets/{url_dir_path}/{filename}"
+
+
+def create_image_file(
+    dataset: str, config: str, split: str, row_idx: int, column: str, filename: str, image: Image
+) -> str:
+    dir_path, url_dir_path = create_asset_dir(dataset, config, split, row_idx, column)
+    file_path = os.path.join(dir_path, filename)
+    image.save(file_path)
     return f"assets/{url_dir_path}/{filename}"
 
 

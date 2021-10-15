@@ -64,6 +64,15 @@ def test_get_rows() -> None:
     assert rows[0]["tokens"][0] == "What"
 
 
+def test_mnist() -> None:
+    rows = get_rows("mnist", "mnist", "train")
+    assert len(rows) == EXTRACT_ROWS_LIMIT
+    assert rows[0]["image"] == "assets/mnist/___/mnist/train/0/image/image.jpg"
+    info = get_info("mnist", "mnist")
+    features = get_features(info)
+    assert features[0] == {"name": "image", "content": {"id": None, "_type": "ImageFile"}}
+
+
 def test_iter_archive() -> None:
     # see https://github.com/huggingface/datasets/pull/3066
     rows = get_rows("food101", DEFAULT_CONFIG_NAME, "train")

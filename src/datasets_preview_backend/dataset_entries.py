@@ -3,6 +3,7 @@ import re
 from dataclasses import asdict
 from typing import Any, Dict, List, Optional, TypedDict, Union
 
+import numpy  # type: ignore
 from datasets import (
     IterableDataset,
     get_dataset_config_names,
@@ -11,8 +12,9 @@ from datasets import (
     load_dataset,
     load_dataset_builder,
 )
+from PIL import Image  # type: ignore
 
-from datasets_preview_backend.assets import create_asset_file
+from datasets_preview_backend.assets import create_asset_file, create_image_file
 from datasets_preview_backend.cache import (  # type: ignore
     CacheNotFoundError,
     cache,
@@ -86,7 +88,27 @@ def generate_image_cell(dataset: str, config: str, split: str, row_idx: int, col
     return create_asset_file(dataset, config, split, row_idx, column, filename, data)
 
 
-cell_generators = [generate_image_cell]
+def generate_array2d_image_cell(dataset: str, config: str, split: str, row_idx: int, column: str, cell: Cell) -> Cell:
+    if column != "image":
+        raise CellTypeError("image column must be named 'image'")
+    if (
+        not isinstance(cell, list)
+        or len(cell) == 0
+        or not isinstance(cell[0], list)
+        or len(cell[0]) == 0
+        or type(cell[0][0]) != int
+    ):
+        raise CellTypeError("array2d image cell must contain 2D array of integers")
+    array = 255 - numpy.asarray(cell, dtype=numpy.uint8)
+    mode = "L"
+    image = Image.fromarray(array, mode)
+    filename = "image.jpg"
+
+    return create_image_file(dataset, config, split, row_idx, column, filename, image)
+
+
+# TODO: use the features to help generating the cells?
+cell_generators = [generate_image_cell, generate_array2d_image_cell]
 
 
 def generate_cell(dataset: str, config: str, split: str, row_idx: int, column: str, cell: Cell) -> Cell:
@@ -109,12 +131,9 @@ def generate_row(dataset: str, config: str, split: str, row: Row, row_idx: int) 
     return {column: generate_cell(dataset, config, split, row_idx, column, cell) for (column, cell) in get_cells(row)}
 
 
-def check_value_feature(content: Any, key: str, dtype: str) -> None:
-    if key not in content:
-        raise TypeError("feature content don't contain the key")
-    value = content[key]
-    if "_type" not in value or value["_type"] != "Value":
-        raise TypeError("_type should be 'Value'")
+def check_feature_type(value: Any, type: str, dtype: str) -> None:
+    if "_type" not in value or value["_type"] != type:
+        raise TypeError("_type is not the expected value")
     if "dtype" not in value or value["dtype"] != dtype:
         raise TypeError("dtype is not the expected value")
 
@@ -123,15 +142,27 @@ def generate_image_feature(name: str, content: Any) -> Any:
     if name != "image":
         raise FeatureTypeError("image column must be named 'image'")
     try:
-        check_value_feature(content, "filename", "string")
-        check_value_feature(content, "data", "binary")
+        check_feature_type(content["filename"], "Value", "string")
+        check_feature_type(content["data"], "Value", "binary")
     except Exception:
         raise FeatureTypeError("image feature must contain 'filename' and 'data' fields")
     # Custom "_type": "ImageFile"
     return {"id": None, "_type": "ImageFile"}
 
 
-feature_generators = [generate_image_feature]
+def generate_array2d_image_feature(name: str, content: Any) -> Any:
+    if name != "image":
+        raise FeatureTypeError("image column must be named 'image'")
+    try:
+        check_feature_type(content, "Array2D", "uint8")
+    except Exception:
+        raise FeatureTypeError("array2D image feature must have type uint8")
+    # we also have shape in the feature: shape: [28, 28] for MNIST
+    # Custom "_type": "ImageFile"
+    return {"id": None, "_type": "ImageFile"}
+
+
+feature_generators = [generate_image_feature, generate_array2d_image_feature]
 
 
 def generate_feature_content(column: str, content: Any) -> Any:
