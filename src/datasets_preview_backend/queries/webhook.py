@@ -5,7 +5,7 @@ from datasets_preview_backend.dataset_entries import (
     delete_dataset_entry,
     get_refreshed_dataset_entry,
 )
-from datasets_preview_backend.exceptions import Status400Error
+from datasets_preview_backend.exceptions import Status400Error, StatusError
 
 logger = logging.getLogger(__name__)
 
@@ -68,5 +68,9 @@ def post_webhook(json: Any) -> WebHookContent:
         payload = parse_payload(json)
     except Exception as err:
         raise Status400Error("Invalid JSON", err)
-    process_payload(payload)
+    try:
+        process_payload(payload)
+    except StatusError:
+        # the cache has been refreshed, return OK
+        pass
     return {"status": "ok"}
