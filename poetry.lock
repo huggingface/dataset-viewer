@@ -333,7 +333,7 @@ python-versions = "*"
 
 [[package]]
 name = "datasets"
-version = "1.13.1.dev0"
+version = "1.13.4.dev0"
 description = ""
 category = "main"
 optional = false
@@ -344,7 +344,7 @@ develop = false
 aiohttp = "*"
 dill = "*"
 fsspec = {version = ">=2021.05.0", extras = ["http"]}
-huggingface_hub = ">=0.0.18,<0.1.0"
+huggingface_hub = ">=0.0.19,<0.1.0"
 multiprocess = "*"
 numpy = ">=1.17"
 packaging = "*"
@@ -369,8 +369,8 @@ docs = ["docutils (==0.16.0)", "recommonmark", "sphinx (==3.1.2)", "sphinx-markd
 [package.source]
 type = "git"
 url = "https://github.com/huggingface/datasets.git"
-reference = "d860b493037ee8dba6b1f1a6e5b2de6747acd54a"
-resolved_reference = "d860b493037ee8dba6b1f1a6e5b2de6747acd54a"
+reference = "0ef629cdda4aaab151a792ff29c879f4fcf7f4f4"
+resolved_reference = "0ef629cdda4aaab151a792ff29c879f4fcf7f4f4"
 
 [[package]]
 name = "dill"
@@ -472,7 +472,7 @@ python-versions = "*"
 
 [[package]]
 name = "fsspec"
-version = "2021.10.0"
+version = "2021.10.1"
 description = "File-system specification"
 category = "main"
 optional = false
@@ -1791,7 +1791,7 @@ cffi = ["cffi (>=1.11)"]
 [metadata]
 lock-version = "1.1"
 python-versions = "^3.9.6"
-content-hash = "ea46ff0adde5ab6c97202ca95c22b64dc598966d43776629296aebdea83128e4"
+content-hash = "958c87cdc4e8cee9fecfd12148ac96c9def6452bdf60fab346906eeed184e81f"
 
 [metadata.files]
 absl-py = [
@@ -2198,8 +2198,8 @@ flatbuffers = [
     {file = "flatbuffers-1.12.tar.gz", hash = "sha256:63bb9a722d5e373701913e226135b28a6f6ac200d5cc7b4d919fa38d73b44610"},
 ]
 fsspec = [
-    {file = "fsspec-2021.10.0-py3-none-any.whl", hash = "sha256:7760d6b2f35739697d694c724be3500b19e6b33af65b139306be98bb1d1ebcdd"},
-    {file = "fsspec-2021.10.0.tar.gz", hash = "sha256:9505afbf8cee22cf12a29742e23ad79ad132b3423632ec3a3bf9034ce3911138"},
+    {file = "fsspec-2021.10.1-py3-none-any.whl", hash = "sha256:7164a488f3f5bf6a0fb39674978b756dda84e011a5db411a79791b7c38a36ff7"},
+    {file = "fsspec-2021.10.1.tar.gz", hash = "sha256:c245626e3cb8de5cd91485840b215a385fa6f2b0f6ab87978305e99e2d842753"},
 ]
 future = [
     {file = "future-0.18.2.tar.gz", hash = "sha256:b1bead90b70cf6ec3f0710ae53a525360fa360d306a86583adc6bf83a4db537d"},
