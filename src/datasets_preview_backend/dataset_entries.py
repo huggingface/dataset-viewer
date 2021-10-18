@@ -12,6 +12,7 @@ from datasets import (
     load_dataset,
     load_dataset_builder,
 )
+from datasets.utils.download_manager import GenerateMode
 from PIL import Image  # type: ignore
 
 from datasets_preview_backend.assets import create_asset_file, create_image_file
@@ -198,7 +199,9 @@ def get_rows(dataset: str, config: str, split: str) -> List[Row]:
     num_rows = EXTRACT_ROWS_LIMIT
 
     try:
-        iterable_dataset = load_dataset(dataset, name=config, split=split, streaming=True)
+        iterable_dataset = load_dataset(
+            dataset, name=config, split=split, streaming=True, download_mode=GenerateMode.FORCE_REDOWNLOAD
+        )
         if not isinstance(iterable_dataset, IterableDataset):
             raise TypeError("load_dataset should return an IterableDataset")
         rows = list(iterable_dataset.take(num_rows))
@@ -258,7 +261,7 @@ def get_split(dataset: str, config: str, split: str) -> Split:
 
 def get_split_names(dataset: str, config: str) -> List[str]:
     try:
-        split_names: List[str] = get_dataset_split_names(dataset, config)
+        split_names: List[str] = get_dataset_split_names(dataset, config, download_mode=GenerateMode.FORCE_REDOWNLOAD)
     except FileNotFoundError as err:
         raise Status404Error("The dataset config could not be found.", err)
     except ValueError as err:
@@ -275,7 +278,7 @@ def get_split_names(dataset: str, config: str) -> List[str]:
 def get_info(dataset: str, config: str) -> Info:
     try:
         # TODO: use get_dataset_infos if https://github.com/huggingface/datasets/issues/3013 is fixed
-        builder = load_dataset_builder(dataset, name=config)
+        builder = load_dataset_builder(dataset, name=config, download_mode=GenerateMode.FORCE_REDOWNLOAD)
         info = asdict(builder.info)
         if "splits" in info and info["splits"] is not None:
             info["splits"] = {split_name: split_info for split_name, split_info in info["splits"].items()}
@@ -322,7 +325,7 @@ def get_config(dataset: str, config_name: str) -> Config:
 
 def get_config_names(dataset: str) -> List[str]:
     try:
-        config_names: List[str] = get_dataset_config_names(dataset)
+        config_names: List[str] = get_dataset_config_names(dataset, download_mode=GenerateMode.FORCE_REDOWNLOAD)
         if not config_names:
             config_names = [DEFAULT_CONFIG_NAME]
     except FileNotFoundError as err:
