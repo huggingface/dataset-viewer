@@ -9,8 +9,10 @@ from datasets_preview_backend.config import (
     APP_HOSTNAME,
     APP_PORT,
     CACHE_PERSIST,
+    LOG_LEVEL,
     WEB_CONCURRENCY,
 )
+from datasets_preview_backend.logger import init_logger
 from datasets_preview_backend.routes import (
     CacheReports,
     CacheStats,
@@ -26,6 +28,10 @@ from datasets_preview_backend.routes import (
 
 
 def create_app() -> Starlette:
+    init_logger(log_level=LOG_LEVEL)  # every worker has its own logger
+    show_cache_dir()
+    show_asserts_dir()
+
     return Starlette(
         routes=[
             Route("/healthcheck", endpoint=HealthCheck),
@@ -44,8 +50,6 @@ def create_app() -> Starlette:
 
 
 def start() -> None:
-    show_cache_dir()
-    show_asserts_dir()
     # the cache is shared between workers only if CACHE_PERSIST is set to true
     # if not, only one worker is allowed
     web_concurrency = WEB_CONCURRENCY if CACHE_PERSIST else 1

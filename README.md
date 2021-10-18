@@ -39,7 +39,7 @@ Set environment variables to configure the following aspects:
 - `LOG_LEVEL`: log level, among `DEBUG`, `INFO`, `WARNING`, `ERROR` and `CRITICAL`. Defaults to `INFO`.
 - `MAX_AGE_LONG_SECONDS`: number of seconds to set in the `max-age` header on data endpoints. Defaults to `21600` (6 hours).
 - `MAX_AGE_SHORT_SECONDS`: number of seconds to set in the `max-age` header on technical endpoints. Defaults to `120` (2 minutes).
-- `WEB_CONCURRENCY`: the number of workers. For now, it's ignored and hardcoded to 1 because the cache is not shared yet. Defaults to `1`.
+- `WEB_CONCURRENCY`: the number of workers. For now, it's ignored and hardcoded to 1 because the cache is not shared yet. Defaults to `2`.
 
 For example:
 
@@ -59,7 +59,7 @@ To warm the cache:
 MAX_LOAD_PCT=50 MAX_VIRTUAL_MEMORY_PCT=95 MAX_SWAP_MEMORY_PCT=80 make warm
 ```
 
-Cache warming uses only one thread, and before warming a new dataset, it waits until the load percentage, ie. the 1m load divided by the number of cpus \*100, is below `MAX_LOAD_PCT` (defaults to 50%). Also, if the virtual memory on the machine reaches `MAX_VIRTUAL_MEMORY_PCT` (defaults to 95%), or if the swap memory reaches `MAX_SWAP_MEMORY_PCT` (defaults to 80%), the process stops.
+Cache warming uses only one thread, and before warming a new dataset, it waits until the load percentage, ie. the 1m load divided by the number of cpus \*100, is below `MAX_LOAD_PCT` (defaults to 50%). Also, if the virtual memory on the machine reaches `MAX_VIRTUAL_MEMORY_PCT` (defaults to 95%), or if the swap memory reaches `MAX_SWAP_MEMORY_PCT` (defaults to 60%), the process stops.
 
 To refresh random 3% of the datasets:
 
