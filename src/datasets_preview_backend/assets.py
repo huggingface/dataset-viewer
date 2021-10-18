@@ -1,3 +1,4 @@
+import logging
 import os
 from typing import Tuple
 
@@ -6,12 +7,18 @@ from PIL import Image  # type: ignore
 
 from datasets_preview_backend.config import ASSETS_DIRECTORY
 
+logger = logging.getLogger(__name__)
+
 DATASET_SEPARATOR = "___"
 ASSET_DIR_MODE = 755
 
 # set it to the default cache location on the machine, if ASSETS_DIRECTORY is null
 assets_directory = user_cache_dir("datasets_preview_backend_assets") if ASSETS_DIRECTORY is None else ASSETS_DIRECTORY
 os.makedirs(assets_directory, exist_ok=True)
+
+
+def show_asserts_dir() -> None:
+    logger.info(f"Assets directory: {assets_directory}")
 
 
 def create_asset_dir(dataset: str, config: str, split: str, row_idx: int, column: str) -> Tuple[str, str]:
