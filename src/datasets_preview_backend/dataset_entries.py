@@ -12,7 +12,7 @@ from datasets import (
     load_dataset,
     load_dataset_builder,
 )
-from datasets.utils.download_manager import GenerateMode
+from datasets.utils.download_manager import GenerateMode as GenerateMode
 from PIL import Image  # type: ignore
 
 from datasets_preview_backend.assets import create_asset_file, create_image_file
