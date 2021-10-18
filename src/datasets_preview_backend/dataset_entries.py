@@ -71,6 +71,15 @@ class FeatureTypeError(Exception):
     pass
 
 
+def generate_image_url_cell(dataset: str, config: str, split: str, row_idx: int, column: str, cell: Cell) -> Cell:
+    # TODO: also manage nested dicts and other names
+    if column != "image_url":
+        raise CellTypeError("image URL column must be named 'image_url'")
+    if type(cell) != str:
+        raise CellTypeError("image URL column must be a string")
+    return cell
+
+
 def generate_image_cell(dataset: str, config: str, split: str, row_idx: int, column: str, cell: Cell) -> Cell:
     if column != "image":
         raise CellTypeError("image column must be named 'image'")
@@ -108,7 +117,7 @@ def generate_array2d_image_cell(dataset: str, config: str, split: str, row_idx: 
 
 
 # TODO: use the features to help generating the cells?
-cell_generators = [generate_image_cell, generate_array2d_image_cell]
+cell_generators = [generate_image_cell, generate_array2d_image_cell, generate_image_url_cell]
 
 
 def generate_cell(dataset: str, config: str, split: str, row_idx: int, column: str, cell: Cell) -> Cell:
@@ -138,6 +147,17 @@ def check_feature_type(value: Any, type: str, dtype: str) -> None:
         raise TypeError("dtype is not the expected value")
 
 
+def generate_image_url_feature(name: str, content: Any) -> Any:
+    if name != "image_url":
+        raise FeatureTypeError("image URL column must be named 'image_url'")
+    try:
+        check_feature_type(content, "Value", "string")
+    except Exception:
+        raise FeatureTypeError("image URL feature must be a string")
+    # Custom "_type": "ImageFile"
+    return {"id": None, "_type": "ImageUrl"}
+
+
 def generate_image_feature(name: str, content: Any) -> Any:
     if name != "image":
         raise FeatureTypeError("image column must be named 'image'")
@@ -162,7 +182,7 @@ def generate_array2d_image_feature(name: str, content: Any) -> Any:
     return {"id": None, "_type": "ImageFile"}
 
 
-feature_generators = [generate_image_feature, generate_array2d_image_feature]
+feature_generators = [generate_image_feature, generate_array2d_image_feature, generate_image_url_feature]
 
 
 def generate_feature_content(column: str, content: Any) -> Any:
