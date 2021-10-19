@@ -5,7 +5,8 @@ PARALLEL = -j -l $(MAX_LOAD)
 
 .PHONY: install run watch test coverage quality style warm
 
-install:
+install:	
+	poetry run pip install --upgrade pip
 	poetry install
 
 

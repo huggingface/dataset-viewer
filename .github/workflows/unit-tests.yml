@@ -20,6 +20,8 @@ jobs:
         uses: abatilo/actions-poetry@v2.0.0
         with:
           poetry-version: ${{ matrix.poetry-version }}
+      - name: Upgrade pip
+        run: poetry run pip install --upgrade pip
       - name: Install dependencies
         run: poetry install
       - name: Run unit tests
