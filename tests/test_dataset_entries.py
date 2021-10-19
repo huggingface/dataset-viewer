@@ -73,6 +73,15 @@ def test_mnist() -> None:
     assert features[0] == {"name": "image", "content": {"id": None, "_type": "ImageFile"}}
 
 
+def test_cifar() -> None:
+    rows = get_rows("cifar10", "plain_text", "train")
+    assert len(rows) == EXTRACT_ROWS_LIMIT
+    assert rows[0]["img"] == "assets/cifar10/___/plain_text/train/0/img/image.jpg"
+    info = get_info("cifar10", "plain_text")
+    features = get_features(info)
+    assert features[0] == {"name": "img", "content": {"id": None, "_type": "ImageFile"}}
+
+
 def test_iter_archive() -> None:
     rows = get_rows("food101", DEFAULT_CONFIG_NAME, "train")
     assert len(rows) == EXTRACT_ROWS_LIMIT
@@ -80,11 +89,6 @@ def test_iter_archive() -> None:
     info = get_info("food101", DEFAULT_CONFIG_NAME)
     features = get_features(info)
     assert features[0] == {"name": "image", "content": {"id": None, "_type": "ImageFile"}}
-
-
-def test_tar_gz_extension() -> None:
-    with pytest.raises(Status400Error):
-        get_rows("air_dialogue", "air_dialogue_data", "train")
 
 
 def test_dl_1_suffix() -> None:

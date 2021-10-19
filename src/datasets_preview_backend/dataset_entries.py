@@ -99,6 +99,27 @@ def generate_image_cell(dataset: str, config: str, split: str, row_idx: int, col
     return create_asset_file(dataset, config, split, row_idx, column, filename, data)
 
 
+def generate_array3d_image_cell(dataset: str, config: str, split: str, row_idx: int, column: str, cell: Cell) -> Cell:
+    if column != "img":
+        raise CellTypeError("image column must be named 'img'")
+    if (
+        not isinstance(cell, list)
+        or len(cell) == 0
+        or not isinstance(cell[0], list)
+        or len(cell[0]) == 0
+        or not isinstance(cell[0][0], list)
+        or len(cell[0][0]) == 0
+        or type(cell[0][0][0]) != int
+    ):
+        raise CellTypeError("array3d image cell must contain 3D array of integers")
+    array = numpy.asarray(cell, dtype=numpy.uint8)
+    mode = "RGB"
+    image = Image.fromarray(array, mode)
+    filename = "image.jpg"
+
+    return create_image_file(dataset, config, split, row_idx, column, filename, image)
+
+
 def generate_array2d_image_cell(dataset: str, config: str, split: str, row_idx: int, column: str, cell: Cell) -> Cell:
     if column != "image":
         raise CellTypeError("image column must be named 'image'")
@@ -119,7 +140,12 @@ def generate_array2d_image_cell(dataset: str, config: str, split: str, row_idx: 
 
 
 # TODO: use the features to help generating the cells?
-cell_generators = [generate_image_cell, generate_array2d_image_cell, generate_image_url_cell]
+cell_generators = [
+    generate_image_cell,
+    generate_array2d_image_cell,
+    generate_array3d_image_cell,
+    generate_image_url_cell,
+]
 
 
 def generate_cell(dataset: str, config: str, split: str, row_idx: int, column: str, cell: Cell) -> Cell:
@@ -172,6 +198,18 @@ def generate_image_feature(name: str, content: Any) -> Any:
     return {"id": None, "_type": "ImageFile"}
 
 
+def generate_array3d_image_feature(name: str, content: Any) -> Any:
+    if name != "img":
+        raise FeatureTypeError("image column must be named 'img'")
+    try:
+        check_feature_type(content, "Array3D", "uint8")
+    except Exception:
+        raise FeatureTypeError("array3D image feature must have type uint8")
+    # we also have shape in the feature: shape: [32, 32, 3] for cifar10
+    # Custom "_type": "ImageFile"
+    return {"id": None, "_type": "ImageFile"}
+
+
 def generate_array2d_image_feature(name: str, content: Any) -> Any:
     if name != "image":
         raise FeatureTypeError("image column must be named 'image'")
@@ -184,7 +222,12 @@ def generate_array2d_image_feature(name: str, content: Any) -> Any:
     return {"id": None, "_type": "ImageFile"}
 
 
-feature_generators = [generate_image_feature, generate_array2d_image_feature, generate_image_url_feature]
+feature_generators = [
+    generate_image_feature,
+    generate_array2d_image_feature,
+    generate_array3d_image_feature,
+    generate_image_url_feature,
+]
 
 
 def generate_feature_content(column: str, content: Any) -> Any:
