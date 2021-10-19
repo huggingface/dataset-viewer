@@ -1790,7 +1790,7 @@ vision = ["pillow"]
 [[package]]
 name = "trec-car-tools"
 version = "2.5.4"
-description = ""
+description = "Support tools for TREC CAR participants. Also see trec-car.cs.unh.edu"
 category = "main"
 optional = false
 python-versions = ">=3.6"
