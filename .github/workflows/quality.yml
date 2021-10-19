@@ -33,4 +33,4 @@ jobs:
       - name: Run bandit
         run: poetry run bandit -r src
       - name: Run safety
-        run: poetry run safety check  -i 41161
+        run: poetry run safety check
