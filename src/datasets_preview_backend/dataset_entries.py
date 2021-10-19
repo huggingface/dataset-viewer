@@ -395,11 +395,39 @@ def delete_dataset_entry(dataset: str) -> None:
     get_dataset_entry(dataset=dataset, _delete=True)
 
 
+class DatasetFullItem(TypedDict):
+    id: str
+    tags: List[str]
+    citation: Union[str, None]
+    description: Union[str, None]
+    paperswithcode_id: Union[str, None]
+    downloads: Union[int, None]
+
+
 @memoize(cache)  # type:ignore
-def get_dataset_names() -> List[str]:
+def get_dataset_items() -> List[DatasetFullItem]:
     # If an exception is raised, we let it propagate
-    return list_datasets(with_community_datasets=True, with_details=False)  # type: ignore
+    datasets = list_datasets(with_community_datasets=True, with_details=True)  # type: ignore
+    return [
+        {
+            "id": str(dataset.id),
+            "tags": [str(tag) for tag in getattr(dataset, "tags", [])],
+            "citation": getattr(dataset, "citation", None),
+            "description": getattr(dataset, "description", None),
+            "paperswithcode_id": getattr(dataset, "paperswithcode_id", None),
+            "downloads": getattr(dataset, "downloads", None),
+        }
+        for dataset in datasets
+    ]
+
+
+def get_refreshed_dataset_items() -> List[DatasetFullItem]:
+    return get_dataset_items(_refresh=True)  # type: ignore
+
+
+def get_dataset_names() -> List[str]:
+    return [d["id"] for d in get_dataset_items()]
 
 
 def get_refreshed_dataset_names() -> List[str]:
-    return get_dataset_names(_refresh=True)  # type: ignore
+    return [d["id"] for d in get_refreshed_dataset_items()]
