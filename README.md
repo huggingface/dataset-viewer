@@ -128,11 +128,57 @@ Responses:
   "reports": [
     {
       "dataset": "acronym_identification",
-      "status": "valid",
+      "tags": [
+        "annotations_creators:expert-generated",
+        "language_creators:found",
+        "languages:en",
+        "licenses:mit",
+        "multilinguality:monolingual",
+        "size_categories:10K<n<100K",
+        "source_datasets:original",
+        "task_categories:structure-prediction",
+        "task_ids:structure-prediction-other-acronym-identification"
+      ],
+      "downloads": 4634,
+      "status": "cache_miss",
       "error": null
     },
     {
       "dataset": "ade_corpus_v2",
+      "tags": [
+        "annotations_creators:expert-generated",
+        "language_creators:found",
+        "languages:en",
+        "licenses:unknown",
+        "multilinguality:monolingual",
+        "size_categories:10K<n<100K",
+        "size_categories:1K<n<10K",
+        "size_categories:n<1K",
+        "source_datasets:original",
+        "task_categories:text-classification",
+        "task_categories:structure-prediction",
+        "task_ids:fact-checking",
+        "task_ids:coreference-resolution"
+      ],
+      "downloads": 3292,
+      "status": "cache_miss",
+      "error": null
+    },
+    {
+      "dataset": "adversarial_qa",
+      "tags": [
+        "annotations_creators:crowdsourced",
+        "language_creators:found",
+        "languages:en",
+        "licenses:cc-by-sa-4.0",
+        "multilinguality:monolingual",
+        "size_categories:10K<n<100K",
+        "source_datasets:original",
+        "task_categories:question-answering",
+        "task_ids:extractive-qa",
+        "task_ids:open-domain-qa"
+      ],
+      "downloads": 40637,
       "status": "cache_miss",
       "error": null
     }

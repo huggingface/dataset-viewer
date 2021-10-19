@@ -7,7 +7,7 @@ from datasets_preview_backend.dataset_entries import (
     get_config_names,
     get_dataset_cache_status,
     get_dataset_entry,
-    get_dataset_names,
+    get_dataset_items,
     get_features,
     get_info,
     get_rows,
@@ -188,7 +188,20 @@ def test_builder_config_error() -> None:
 
 
 # get_dataset_names
-def test_get_dataset_names() -> None:
-    datasets = get_dataset_names()
-    assert len(datasets) > 1000
-    assert "glue" in datasets
+def test_get_dataset_items() -> None:
+    dataset_items = get_dataset_items()
+    assert len(dataset_items) > 1000
+    glue_datasets = [dataset for dataset in dataset_items if dataset["id"] == "glue"]
+    assert len(glue_datasets) == 1
+    glue = glue_datasets[0]
+    assert glue["id"] == "glue"
+    assert len(glue["tags"]) > 5
+    assert "task_categories:text-classification" in glue["tags"]
+    assert glue["citation"] is not None
+    assert glue["citation"].startswith("@inproceedings")
+    assert glue["description"] is not None
+    assert glue["description"].startswith("GLUE, the General Language")
+    assert glue["paperswithcode_id"] is not None
+    assert glue["paperswithcode_id"] == "glue"
+    assert glue["downloads"] is not None
+    assert glue["downloads"] > 500000
