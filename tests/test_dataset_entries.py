@@ -82,11 +82,6 @@ def test_iter_archive() -> None:
     assert features[0] == {"name": "image", "content": {"id": None, "_type": "ImageFile"}}
 
 
-def test_tar_gz_extension() -> None:
-    with pytest.raises(Status400Error):
-        get_rows("air_dialogue", "air_dialogue_data", "train")
-
-
 def test_dl_1_suffix() -> None:
     # see https://github.com/huggingface/datasets/pull/2843
     rows = get_rows("discovery", "discovery", "train")
