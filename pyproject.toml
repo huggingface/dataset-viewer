@@ -1,58 +1,57 @@
 [tool.poetry]
+authors = ["Sylvain Lesage <severo@rednegra.net>"]
+description = "API to extract rows of 🤗 datasets"
 name = "datasets-preview-backend"
 version = "0.10.13"
-description = "API to extract rows of 🤗 datasets"
-authors = ["Sylvain Lesage <severo@rednegra.net>"]
 
 [tool.poetry.dependencies]
-python = "^3.9.6"
-starlette = "^0.16.0"
-uvicorn = "^0.14.0"
-Pillow = "^8.3.1"
-trec-car-tools = {path = "vendors/trec-car-tools/python3"}
-apache-beam = "^2.31.0"
-conllu = "^4.4"
-kss = "^2.5.1"
+Pillow = "^8.4.0"
+PyICU = "^2.7.4"
+aiohttp = "^3.7.4.post0"
+apache-beam = "^2.33.0"
+appdirs = "^1.4.4"
+conllu = "^4.4.1"
+datasets = { git = "https://github.com/huggingface/datasets.git", rev = "0ef629cdda4aaab151a792ff29c879f4fcf7f4f4" }
+diskcache = "^5.2.1"
+kenlm = { url = "https://github.com/kpu/kenlm/archive/master.zip" }
+kss = "^2.6.0"
 lm-dataformat = "^0.0.19"
 lxml = "^4.6.3"
 nlp = "^0.4.0"
-openpyxl = "^3.0.7"
-py7zr = "^0.16.1"
-tensorflow = "^2.5.0"
-wget = "^3.2"
-kenlm = {url = "https://github.com/kpu/kenlm/archive/master.zip"}
-nltk = "^3.6.2"
-aiohttp = "^3.7.4"
-typer = "^0.3.2"
-transformers = "^4.10.0"
-python-dotenv = "^0.19.0"
-watchdog = {extras = ["watchmedo"], version = "^2.1.3"}
-diskcache = "^5.2.1"
-types-requests = "^2.25.8"
-appdirs = "^1.4.4"
-psutil = "^5.8.0"
+nltk = "^3.6.5"
+openpyxl = "^3.0.9"
 orjson = "^3.6.4"
-PyICU = "^2.7.4"
-datasets = {git = "https://github.com/huggingface/datasets.git", rev = "0ef629cdda4aaab151a792ff29c879f4fcf7f4f4"}
+psutil = "^5.8.0"
+py7zr = "^0.16.2"
+python = "^3.9.6"
+python-dotenv = "^0.19.1"
+starlette = "^0.16.0"
+tensorflow = "^2.6.0"
+transformers = "^4.11.3"
+trec-car-tools = { path = "vendors/trec-car-tools/python3" }
+typer = "^0.3.2"
+types-requests = "^2.25.11"
+uvicorn = "^0.14.0"
+watchdog = { extras = ["watchmedo"], version = "^2.1.3" }
+wget = "^3.2"
 
 [tool.poetry.dev-dependencies]
 bandit = "^1.7.0"
 black = "21.7b0"
 flake8 = "^3.9.2"
 isort = "^5.9.3"
-pytest = "^6.2.4"
-safety = "^1.10.3"
 mypy = "^0.910"
+poetryup = "^0.3.8"
+pytest = "^6.2.5"
 pytest-cov = "^2.12.1"
+safety = "^1.10.3"
 
 [build-system]
-requires = ["poetry-core>=1.0.0"]
 build-backend = "poetry.core.masonry.api"
+requires = ["poetry-core>=1.0.0"]
 
 [tool.pytest.ini_options]
-filterwarnings = [
-    "ignore::DeprecationWarning"
-]
+filterwarnings = ["ignore::DeprecationWarning"]
 
 [tool.coverage.run]
 source = ["datasets_preview_backend"]
@@ -61,14 +60,14 @@ source = ["datasets_preview_backend"]
 profile = "black"
 
 [tool.black]
-line-length = 119
 experimental-string-processing = true
+line-length = 119
 
 [tool.mypy]
-strict = true
 exclude = 'vendors'
+strict = true
 
 [[tool.mypy.overrides]]
 # could be solved in datasets by adding __add__ to the __init__.py file
-module = "datasets"
 implicit_reexport = true
+module = "datasets"
