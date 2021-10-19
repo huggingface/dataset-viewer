@@ -1,5 +1,7 @@
 import uvicorn  # type: ignore
 from starlette.applications import Starlette
+from starlette.middleware import Middleware
+from starlette.middleware.gzip import GZipMiddleware
 from starlette.routing import Mount, Route
 from starlette.staticfiles import StaticFiles
 
@@ -32,21 +34,21 @@ def create_app() -> Starlette:
     show_cache_dir()
     show_asserts_dir()
 
-    return Starlette(
-        routes=[
-            Route("/healthcheck", endpoint=HealthCheck),
-            Route("/datasets", endpoint=Datasets),
-            Route("/infos", endpoint=Infos),
-            Route("/configs", endpoint=Configs),
-            Route("/splits", endpoint=Splits),
-            Route("/rows", endpoint=Rows),
-            Route("/cache", endpoint=CacheStats),
-            Route("/valid", endpoint=ValidDatasets),
-            Route("/cache-reports", endpoint=CacheReports),
-            Route("/webhook", endpoint=WebHook, methods=["POST"]),
-            Mount("/assets", app=StaticFiles(directory=assets_directory, check_dir=True), name="assets"),
-        ],
-    )
+    middleware = [Middleware(GZipMiddleware)]
+    routes = [
+        Route("/healthcheck", endpoint=HealthCheck),
+        Route("/datasets", endpoint=Datasets),
+        Route("/infos", endpoint=Infos),
+        Route("/configs", endpoint=Configs),
+        Route("/splits", endpoint=Splits),
+        Route("/rows", endpoint=Rows),
+        Route("/cache", endpoint=CacheStats),
+        Route("/valid", endpoint=ValidDatasets),
+        Route("/cache-reports", endpoint=CacheReports),
+        Route("/webhook", endpoint=WebHook, methods=["POST"]),
+        Mount("/assets", app=StaticFiles(directory=assets_directory, check_dir=True), name="assets"),
+    ]
+    return Starlette(routes=routes, middleware=middleware)
 
 
 def start() -> None:
