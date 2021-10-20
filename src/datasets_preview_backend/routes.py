@@ -87,47 +87,47 @@ class Datasets(HTTPEndpoint):
 
 class Infos(HTTPEndpoint):
     async def get(self, request: Request) -> Response:
-        dataset = request.query_params.get("dataset")
-        config = request.query_params.get("config")
-        logger.info(f"/infos, dataset={dataset}")
+        dataset_name = request.query_params.get("dataset")
+        config_name = request.query_params.get("config")
+        logger.info(f"/infos, dataset={dataset_name}")
         return get_response(
             get_infos,
             MAX_AGE_LONG_SECONDS,
-            dataset=dataset,
-            config=config,
+            dataset_name=dataset_name,
+            config_name=config_name,
         )
 
 
 class Configs(HTTPEndpoint):
     async def get(self, request: Request) -> Response:
-        dataset = request.query_params.get("dataset")
-        logger.info(f"/configs, dataset={dataset}")
-        return get_response(get_configs, MAX_AGE_LONG_SECONDS, dataset=dataset)
+        dataset_name = request.query_params.get("dataset")
+        logger.info(f"/configs, dataset={dataset_name}")
+        return get_response(get_configs, MAX_AGE_LONG_SECONDS, dataset_name=dataset_name)
 
 
 class Splits(HTTPEndpoint):
     async def get(self, request: Request) -> Response:
-        dataset = request.query_params.get("dataset")
-        config = request.query_params.get("config")
-        logger.info(f"/splits, dataset={dataset}, config={config}")
+        dataset_name = request.query_params.get("dataset")
+        config_name = request.query_params.get("config")
+        logger.info(f"/splits, dataset={dataset_name}, config={config_name}")
         return get_response(
             get_splits,
             MAX_AGE_LONG_SECONDS,
-            dataset=dataset,
-            config=config,
+            dataset_name=dataset_name,
+            config_name=config_name,
         )
 
 
 class Rows(HTTPEndpoint):
     async def get(self, request: Request) -> Response:
-        dataset = request.query_params.get("dataset")
-        config = request.query_params.get("config")
-        split = request.query_params.get("split")
-        logger.info(f"/rows, dataset={dataset}, config={config}, split={split}")
+        dataset_name = request.query_params.get("dataset")
+        config_name = request.query_params.get("config")
+        split_name = request.query_params.get("split")
+        logger.info(f"/rows, dataset={dataset_name}, config={config_name}, split={split_name}")
         return get_response(
             get_rows,
             MAX_AGE_LONG_SECONDS,
-            dataset=dataset,
-            config=config,
-            split=split,
+            dataset_name=dataset_name,
+            config_name=config_name,
+            split_name=split_name,
         )

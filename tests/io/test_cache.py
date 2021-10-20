@@ -1,6 +1,6 @@
 from diskcache import Cache  # type: ignore
 
-from datasets_preview_backend.cache import memoize  # type: ignore
+from datasets_preview_backend.io.cache import memoize  # type: ignore
 
 
 def test_memoize() -> None:

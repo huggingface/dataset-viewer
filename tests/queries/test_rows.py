@@ -23,18 +23,17 @@ def test_get_splits() -> None:
     assert "row" in rowItem
     assert rowItem["row"]["tokens"][0] == "What"
 
-    assert "features" in response
-    assert len(response["features"]) == 3
-    featureItem = response["features"][0]
-    assert "dataset" in featureItem
-    assert "config" in featureItem
-    assert "feature" in featureItem
-    feature = featureItem["feature"]
-    assert "name" in feature
-    assert "content" in feature
-    assert feature["name"] == "id"
-    assert "_type" in feature["content"]
-    assert feature["content"]["_type"] == "Value"
+    assert "columns" in response
+    assert len(response["columns"]) == 3
+    column_item = response["columns"][0]
+    assert "dataset" in column_item
+    assert "config" in column_item
+    assert "column" in column_item
+    column = column_item["column"]
+    assert "name" in column
+    assert "type" in column
+    assert column["name"] == "id"
+    assert column["type"] == "STRING"
 
 
 def test_no_config() -> None:

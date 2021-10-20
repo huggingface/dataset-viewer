@@ -1,58 +1,65 @@
 import logging
-from typing import Any, List, Optional, TypedDict
+from typing import List, Optional, TypedDict
 
-from datasets_preview_backend.dataset_entries import (
-    filter_config_entries,
-    filter_split_entries,
-    get_dataset_entry,
-)
+from datasets_preview_backend.models.column import JsonColumn
+from datasets_preview_backend.models.config import filter_configs
+from datasets_preview_backend.models.dataset import get_dataset
+from datasets_preview_backend.models.row import Row
+from datasets_preview_backend.models.split import filter_splits
 
 logger = logging.getLogger(__name__)
 
 
-class Feature(TypedDict):
-    name: str
-    content: Any
-
-
-class FeatureItem(TypedDict):
+class ColumnItem(TypedDict):
     dataset: str
     config: str
-    feature: Feature
+    split: str
+    column: JsonColumn
 
 
 class RowItem(TypedDict):
     dataset: str
     config: str
     split: str
-    row: Any
+    row: Row
 
 
 class RowsContent(TypedDict):
-    features: List[FeatureItem]
+    columns: List[ColumnItem]
     rows: List[RowItem]
 
 
-def get_rows(dataset: str, config: Optional[str] = None, split: Optional[str] = None) -> RowsContent:
-    if config is None:
+def get_rows(dataset_name: str, config_name: Optional[str] = None, split_name: Optional[str] = None) -> RowsContent:
+    if config_name is None:
         # split is ignored if config is not passed
         logger.debug("split argument is ignored since config is not provided")
-        split = None
+        split_name = None
 
-    dataset_entry = get_dataset_entry(dataset=dataset)
+    dataset = get_dataset(dataset_name=dataset_name)
 
-    config_entries = filter_config_entries(dataset_entry["configs"], config)
+    configs = filter_configs(dataset["configs"], config_name)
 
     return {
-        "features": [
-            {"dataset": dataset, "config": config_entry["config"], "feature": feature}
-            for config_entry in config_entries
-            for feature in config_entry["features"]
+        "columns": [
+            {
+                "dataset": dataset_name,
+                "config": config["config_name"],
+                "split": split["split_name"],
+                "column": column.to_json(),
+            }
+            for config in configs
+            for split in filter_splits(config["splits"], split_name)
+            for column in split["columns"]
         ],
         "rows": [
-            {"dataset": dataset, "config": config_entry["config"], "split": split_entry["split"], "row": row}
-            for config_entry in config_entries
-            for split_entry in filter_split_entries(config_entry["splits"], split)
-            for row in split_entry["rows"]
+            {
+                "dataset": dataset_name,
+                "config": config["config_name"],
+                "split": split["split_name"],
+                "row": row,
+            }
+            for config in configs
+            for split in filter_splits(config["splits"], split_name)
+            for row in split["rows"]
         ],
     }

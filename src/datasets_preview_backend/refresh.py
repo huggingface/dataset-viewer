@@ -12,11 +12,9 @@ from datasets_preview_backend.constants import (
     DEFAULT_MAX_VIRTUAL_MEMORY_PCT,
     DEFAULT_REFRESH_PCT,
 )
-from datasets_preview_backend.dataset_entries import (
-    get_refreshed_dataset_entry,
-    get_refreshed_dataset_names,
-)
-from datasets_preview_backend.logger import init_logger
+from datasets_preview_backend.io.logger import init_logger
+from datasets_preview_backend.models.dataset import get_refreshed_dataset
+from datasets_preview_backend.models.hf_dataset import get_refreshed_hf_dataset_names
 from datasets_preview_backend.utils import get_int_value
 
 # Load environment variables defined in .env, if any
@@ -40,7 +38,7 @@ def refresh_dataset(dataset: str, max_load_pct: int) -> None:
     print(f"Cache refreshing: dataset '{dataset}'", flush=True)
     t = time.perf_counter()
     try:  # nosec
-        get_refreshed_dataset_entry(dataset)
+        get_refreshed_dataset(dataset)
     except Exception:
         pass
     elapsed_seconds = time.perf_counter() - t
@@ -58,7 +56,7 @@ def refresh() -> None:
     max_swap_memory_pct = get_int_value(os.environ, "MAX_SWAP_MEMORY_PCT", DEFAULT_MAX_SWAP_MEMORY_PCT)
     refresh_pct = get_int_value(os.environ, "REFRESH_PCT", DEFAULT_REFRESH_PCT)
 
-    datasets = get_refreshed_dataset_names()
+    datasets = get_refreshed_hf_dataset_names()
 
     criterion = make_criterion(refresh_pct / 100)
     selected_datasets = list(filter(criterion, datasets))

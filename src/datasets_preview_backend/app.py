@@ -5,8 +5,6 @@ from starlette.middleware.gzip import GZipMiddleware
 from starlette.routing import Mount, Route
 from starlette.staticfiles import StaticFiles
 
-from datasets_preview_backend.assets import assets_directory, show_asserts_dir
-from datasets_preview_backend.cache import show_cache_dir  # type: ignore
 from datasets_preview_backend.config import (
     APP_HOSTNAME,
     APP_PORT,
@@ -14,7 +12,9 @@ from datasets_preview_backend.config import (
     LOG_LEVEL,
     WEB_CONCURRENCY,
 )
-from datasets_preview_backend.logger import init_logger
+from datasets_preview_backend.io.asset import assets_directory, show_asserts_dir
+from datasets_preview_backend.io.cache import show_cache_dir  # type: ignore
+from datasets_preview_backend.io.logger import init_logger
 from datasets_preview_backend.routes import (
     CacheReports,
     CacheStats,

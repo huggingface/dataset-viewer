@@ -1,9 +1,7 @@
 from typing import List, Optional, TypedDict
 
-from datasets_preview_backend.dataset_entries import (
-    filter_config_entries,
-    get_dataset_entry,
-)
+from datasets_preview_backend.models.config import filter_configs
+from datasets_preview_backend.models.dataset import get_dataset
 
 
 class SplitItem(TypedDict):
@@ -16,13 +14,13 @@ class SplitsContent(TypedDict):
     splits: List[SplitItem]
 
 
-def get_splits(dataset: str, config: Optional[str] = None) -> SplitsContent:
-    dataset_entry = get_dataset_entry(dataset=dataset)
+def get_splits(dataset_name: str, config_name: Optional[str] = None) -> SplitsContent:
+    dataset = get_dataset(dataset_name=dataset_name)
 
     return {
         "splits": [
-            {"dataset": dataset, "config": config_entry["config"], "split": split_entry["split"]}
-            for config_entry in filter_config_entries(dataset_entry["configs"], config)
-            for split_entry in config_entry["splits"]
+            {"dataset": dataset_name, "config": config["config_name"], "split": split["split_name"]}
+            for config in filter_configs(dataset["configs"], config_name)
+            for split in config["splits"]
         ]
     }
