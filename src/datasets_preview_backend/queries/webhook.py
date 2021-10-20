@@ -1,11 +1,11 @@
 import logging
 from typing import Any, Optional, TypedDict
 
-from datasets_preview_backend.dataset_entries import (
-    delete_dataset_entry,
-    get_refreshed_dataset_entry,
-)
 from datasets_preview_backend.exceptions import Status400Error, StatusError
+from datasets_preview_backend.models.dataset import (
+    delete_dataset,
+    get_refreshed_dataset,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -46,14 +46,14 @@ def try_to_refresh(id: Optional[str]) -> None:
     dataset_name = get_dataset_name(id)
     if dataset_name is not None:
         logger.debug(f"webhook: refresh {dataset_name}")
-        get_refreshed_dataset_entry(dataset_name)
+        get_refreshed_dataset(dataset_name)
 
 
 def try_to_delete(id: Optional[str]) -> None:
     dataset_name = get_dataset_name(id)
     if dataset_name is not None:
         logger.debug(f"webhook: delete {dataset_name}")
-        delete_dataset_entry(dataset_name)
+        delete_dataset(dataset_name)
 
 
 def process_payload(payload: MoonWebhookV2Payload) -> None:
@@ -63,6 +63,7 @@ def process_payload(payload: MoonWebhookV2Payload) -> None:
 
 
 def post_webhook(json: Any) -> WebHookContent:
+    # TODO: respond directly, without waiting for the cache to be refreshed?
     try:
         logger.info(f"webhook: {json}")
         payload = parse_payload(json)

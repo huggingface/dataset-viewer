@@ -36,6 +36,6 @@ def test_get_infos_no_dataset_info_file() -> None:
 
 def test_not_found() -> None:
     with pytest.raises(Status404Error):
-        get_infos(dataset="doesnotexist")
+        get_infos("doesnotexist")
     with pytest.raises(Status404Error):
-        get_infos(dataset="acronym_identification", config="doesnotexist")
+        get_infos("acronym_identification", "doesnotexist")

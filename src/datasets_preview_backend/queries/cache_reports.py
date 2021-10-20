@@ -1,12 +1,12 @@
 import time
 from typing import List, TypedDict, Union
 
-from datasets_preview_backend.dataset_entries import (
-    DatasetFullItem,
-    get_dataset_cache_status,
-    get_refreshed_dataset_items,
-)
 from datasets_preview_backend.exceptions import StatusErrorContent
+from datasets_preview_backend.models.dataset import get_dataset_cache_status
+from datasets_preview_backend.models.hf_dataset import (
+    HFDataset,
+    get_refreshed_hf_datasets,
+)
 
 
 class CacheReport(TypedDict):
@@ -23,12 +23,12 @@ class CacheReports(TypedDict):
 
 
 # we remove the content because it's too heavy
-def get_dataset_report(dataset: DatasetFullItem) -> CacheReport:
-    status = get_dataset_cache_status(dataset["id"])
+def get_dataset_report(hf_dataset: HFDataset) -> CacheReport:
+    status = get_dataset_cache_status(hf_dataset["id"])
     return {
-        "dataset": dataset["id"],
-        "tags": dataset["tags"],
-        "downloads": dataset["downloads"],
+        "dataset": hf_dataset["id"],
+        "tags": hf_dataset["tags"],
+        "downloads": hf_dataset["downloads"],
         "status": status["status"],
         "error": status["error"],
     }
@@ -36,6 +36,6 @@ def get_dataset_report(dataset: DatasetFullItem) -> CacheReport:
 
 def get_cache_reports() -> CacheReports:
     return {
-        "reports": [get_dataset_report(dataset) for dataset in get_refreshed_dataset_items()],
+        "reports": [get_dataset_report(hf_dataset) for hf_dataset in get_refreshed_hf_datasets()],
         "created_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
     }

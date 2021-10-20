@@ -1,9 +1,8 @@
+# TODO: deprecate?
 from typing import Any, Dict, List, Optional, TypedDict
 
-from datasets_preview_backend.dataset_entries import (
-    filter_config_entries,
-    get_dataset_entry,
-)
+from datasets_preview_backend.models.config import filter_configs
+from datasets_preview_backend.models.dataset import get_dataset
 
 
 class InfoItem(TypedDict):
@@ -16,12 +15,12 @@ class InfosContent(TypedDict):
     infos: List[InfoItem]
 
 
-def get_infos(dataset: str, config: Optional[str] = None) -> InfosContent:
-    dataset_entry = get_dataset_entry(dataset=dataset)
+def get_infos(dataset_name: str, config_name: Optional[str] = None) -> InfosContent:
+    dataset = get_dataset(dataset_name=dataset_name)
 
     return {
         "infos": [
-            {"dataset": dataset, "config": config_entry["config"], "info": config_entry["info"]}
-            for config_entry in filter_config_entries(dataset_entry["configs"], config)
+            {"dataset": dataset_name, "config": config["config_name"], "info": config["info"]}
+            for config in filter_configs(dataset["configs"], config_name)
         ]
     }

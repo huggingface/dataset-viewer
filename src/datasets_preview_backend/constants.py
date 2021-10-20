@@ -21,3 +21,4 @@ DEFAULT_REFRESH_PCT: int = 1
 
 DEFAULT_CONFIG_NAME: str = "default"
 DATASETS_BLOCKLIST: List[str] = ["imthanhlv/binhvq_news21_raw"]
+FORCE_REDOWNLOAD: str = "force_redownload"

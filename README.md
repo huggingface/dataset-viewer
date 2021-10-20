@@ -530,7 +530,7 @@ Responses:
 
 > Lists the [splits](https://huggingface.co/docs/datasets/splits.html) names for a dataset config
 
-Example: https://datasets-preview.huggingface.tech/splits?dataset=glue&config=ax
+Example: https://datasets-preview.huggingface.tech/splits?dataset=glue&config=cola
 
 Method: `GET`
 
@@ -589,55 +589,33 @@ Responses:
 
   ```json
   {
-    "features": [
+    "columns": [
       {
         "dataset": "glue",
-        "config": "ax",
-        "feature": {
-          "name": "premise",
-          "content": {
-            "dtype": "string",
-            "id": null,
-            "_type": "Value"
-          }
+        "config": "cola",
+        "split": "train",
+        "column": {
+          "name": "sentence",
+          "type": "STRING"
         }
       },
       {
         "dataset": "glue",
-        "config": "ax",
-        "feature": {
-          "name": "hypothesis",
-          "content": {
-            "dtype": "string",
-            "id": null,
-            "_type": "Value"
-          }
-        }
-      },
-      {
-        "dataset": "glue",
-        "config": "ax",
-        "feature": {
+        "config": "cola",
+        "split": "train",
+        "column": {
           "name": "label",
-          "content": {
-            "num_classes": 3,
-            "names": ["entailment", "neutral", "contradiction"],
-            "names_file": null,
-            "id": null,
-            "_type": "ClassLabel"
-          }
+          "type": "CLASS_LABEL",
+          "labels": ["unacceptable", "acceptable"]
         }
       },
       {
         "dataset": "glue",
-        "config": "ax",
-        "feature": {
+        "config": "cola",
+        "split": "train",
+        "column": {
           "name": "idx",
-          "content": {
-            "dtype": "int32",
-            "id": null,
-            "_type": "Value"
-          }
+          "type": "INT"
         }
       }
     ],
