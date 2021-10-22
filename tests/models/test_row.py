@@ -1,8 +1,12 @@
+import pytest
+
+
 from datasets_preview_backend.config import EXTRACT_ROWS_LIMIT
 from datasets_preview_backend.constants import DEFAULT_CONFIG_NAME
 from datasets_preview_backend.io.cache import cache_directory  # type: ignore
 from datasets_preview_backend.models.column import get_columns_from_info
 from datasets_preview_backend.models.column.class_label import ClassLabelColumn
+from datasets_preview_backend.models.config import get_config_names
 from datasets_preview_backend.models.info import get_info
 from datasets_preview_backend.models.row import get_rows, get_rows_and_columns
 
@@ -74,3 +78,15 @@ def test_pathlib() -> None:
     # see https://github.com/huggingface/datasets/issues/2866
     rows = get_rows(dataset="counter", config=DEFAULT_CONFIG_NAME, split="train")
     assert len(rows) == EXTRACT_ROWS_LIMIT
+
+
+def test_community_with_no_config() -> None:
+    config_names = get_config_names(dataset_name="Check/region_1")
+    assert config_names == ["default"]
+    rows = get_rows("Check/region_1", "default", "train")
+    assert len(rows) == 2
+    info = get_info("Check/region_1", "default")
+    columns_or_none = get_columns_from_info(info)
+    with pytest.raises(KeyError):
+        # see https://github.com/huggingface/datasets-preview-backend/issues/78
+        get_rows_and_columns("Check/region_1", "default", "train", columns_or_none)
