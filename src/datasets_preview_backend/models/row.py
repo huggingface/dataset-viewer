@@ -1,14 +1,12 @@
 import logging
 import re
-from typing import Any, Dict, List, Tuple
+from typing import Any, Dict, List
 
 from datasets import IterableDataset, load_dataset
 
 from datasets_preview_backend.config import EXTRACT_ROWS_LIMIT
 from datasets_preview_backend.constants import FORCE_REDOWNLOAD
 from datasets_preview_backend.exceptions import Status400Error, Status404Error
-from datasets_preview_backend.models.column import Column, get_columns_from_info
-from datasets_preview_backend.models.info import Info
 
 logger = logging.getLogger(__name__)
 
@@ -66,48 +64,3 @@ def get_rows(dataset_name: str, config_name: str, split_name: str) -> List[Row]:
         )
 
     return rows
-
-
-def generate_typed_row(
-    dataset_name: str, config_name: str, split_name: str, row: Row, row_idx: int, columns: List[Column]
-) -> Row:
-    return {
-        column.name: column.get_cell_value(dataset_name, config_name, split_name, row_idx, row[column.name])
-        for column in columns
-    }
-
-
-def get_columns_from_row(row: Row) -> List[Column]:
-    # TODO: try to guess the column type from the values instead of just using the default type?
-    return [Column(name, None) for name in row.keys()]
-
-
-def check_columns(columns: List[Column], row: Row) -> None:
-    if len(row) != len(columns):
-        raise Status400Error("number of columns in features and row is different")
-    column_names = [column.name for column in columns]
-    row_names = list(row.keys())
-    if len(column_names) != len(set(column_names)):
-        raise Status400Error("duplicate feature names")
-    if len(row_names) != len(set(row_names)):
-        raise Status400Error("duplicate column names in row")
-    if len(set(column_names) - set(row_names)) != 0:
-        raise Status400Error("column names mismatch between features and row")
-
-
-def get_rows_and_columns(
-    dataset_name: str, config_name: str, split_name: str, info: Info
-) -> Tuple[List[Row], List[Column]]:
-    # redundant work, but simpler code logic
-    columns_or_none = get_columns_from_info(info)
-
-    rows = get_rows(dataset_name, config_name, split_name)
-    if not rows:
-        return [], [] if columns_or_none is None else columns_or_none
-    columns = get_columns_from_row(rows[0]) if columns_or_none is None else columns_or_none
-    check_columns(columns, rows[0])
-    typed_rows = [
-        generate_typed_row(dataset_name, config_name, split_name, row, row_idx, columns)
-        for row_idx, row in enumerate(rows)
-    ]
-    return typed_rows, columns
