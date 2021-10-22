@@ -52,7 +52,7 @@ class ImageArray2DColumn(Column):
 
     def get_cell_value(self, dataset_name: str, config_name: str, split_name: str, row_idx: int, value: Any) -> Cell:
         check_value(value)
-        array = 255 - numpy.asarray(value, dtype=numpy.uint8)  # TODO: OK for MNIST, but for the rest?
+        array = numpy.asarray(value, dtype=numpy.uint8)
         mode = "L"
         image = Image.fromarray(array, mode)
         filename = "image.jpg"
