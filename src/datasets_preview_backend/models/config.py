@@ -4,7 +4,6 @@ from datasets import get_dataset_config_names
 
 from datasets_preview_backend.constants import DEFAULT_CONFIG_NAME, FORCE_REDOWNLOAD
 from datasets_preview_backend.exceptions import Status400Error, Status404Error
-from datasets_preview_backend.models.column import get_columns_from_info
 from datasets_preview_backend.models.info import Info, get_info
 from datasets_preview_backend.models.split import Split, get_splits
 
@@ -30,8 +29,7 @@ def get_config(dataset_name: str, config_name: str) -> Config:
         raise TypeError("config_name argument should be a string")
     # Get all the data
     info = get_info(dataset_name, config_name)
-    columns_or_none = get_columns_from_info(info)
-    splits = get_splits(dataset_name, config_name, columns_or_none)
+    splits = get_splits(dataset_name, config_name, info)
 
     return {"config_name": config_name, "splits": splits, "info": info}
 

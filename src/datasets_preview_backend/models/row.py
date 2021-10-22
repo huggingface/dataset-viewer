@@ -1,13 +1,14 @@
 import logging
 import re
-from typing import Any, Dict, List, Tuple, Union
+from typing import Any, Dict, List, Tuple
 
 from datasets import IterableDataset, load_dataset
 
 from datasets_preview_backend.config import EXTRACT_ROWS_LIMIT
 from datasets_preview_backend.constants import FORCE_REDOWNLOAD
 from datasets_preview_backend.exceptions import Status400Error, Status404Error
-from datasets_preview_backend.models.column import Column
+from datasets_preview_backend.models.column import Column, get_columns_from_info
+from datasets_preview_backend.models.info import Info
 
 logger = logging.getLogger(__name__)
 
@@ -19,7 +20,11 @@ def get_rows(dataset_name: str, config_name: str, split_name: str) -> List[Row]:
     num_rows = EXTRACT_ROWS_LIMIT
     try:
         iterable_dataset = load_dataset(
-            dataset_name, name=config_name, split=split_name, streaming=True, download_mode=FORCE_REDOWNLOAD  # type: ignore
+            dataset_name,
+            name=config_name,
+            split=split_name,
+            streaming=True,
+            download_mode=FORCE_REDOWNLOAD,  # type: ignore
         )
         if not isinstance(iterable_dataset, IterableDataset):
             raise TypeError("load_dataset should return an IterableDataset")
@@ -91,8 +96,11 @@ def check_columns(columns: List[Column], row: Row) -> None:
 
 
 def get_rows_and_columns(
-    dataset_name: str, config_name: str, split_name: str, columns_or_none: Union[List[Column], None]
+    dataset_name: str, config_name: str, split_name: str, info: Info
 ) -> Tuple[List[Row], List[Column]]:
+    # redundant work, but simpler code logic
+    columns_or_none = get_columns_from_info(info)
+
     rows = get_rows(dataset_name, config_name, split_name)
     if not rows:
         return [], [] if columns_or_none is None else columns_or_none

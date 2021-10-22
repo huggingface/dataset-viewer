@@ -1,6 +1,5 @@
 from datasets_preview_backend.constants import DEFAULT_CONFIG_NAME
 from datasets_preview_backend.io.cache import cache_directory  # type: ignore
-from datasets_preview_backend.models.column import get_columns_from_info
 from datasets_preview_backend.models.info import get_info
 from datasets_preview_backend.models.split import get_split, get_split_names
 
@@ -16,8 +15,7 @@ def test_cache_directory() -> None:
 # get_split
 def test_get_split() -> None:
     info = get_info("glue", "ax")
-    columns_or_none = get_columns_from_info(info)
-    split = get_split("glue", "ax", "test", columns_or_none)
+    split = get_split("glue", "ax", "test", info)
     assert split["split_name"] == "test"
     assert "rows" in split
     assert "columns" in split

@@ -1,11 +1,10 @@
 import pytest
 
-
 from datasets_preview_backend.config import EXTRACT_ROWS_LIMIT
 from datasets_preview_backend.constants import DEFAULT_CONFIG_NAME
 from datasets_preview_backend.io.cache import cache_directory  # type: ignore
-from datasets_preview_backend.models.column import get_columns_from_info
 from datasets_preview_backend.models.column.class_label import ClassLabelColumn
+from datasets_preview_backend.models.column.default import ColumnType
 from datasets_preview_backend.models.config import get_config_names
 from datasets_preview_backend.models.info import get_info
 from datasets_preview_backend.models.row import get_rows, get_rows_and_columns
@@ -22,16 +21,14 @@ def test_cache_directory() -> None:
 # get_rows
 def test_get_rows() -> None:
     info = get_info("acronym_identification", DEFAULT_CONFIG_NAME)
-    columns_or_none = get_columns_from_info(info)
-    rows, columns = get_rows_and_columns("acronym_identification", DEFAULT_CONFIG_NAME, "train", columns_or_none)
+    rows, columns = get_rows_and_columns("acronym_identification", DEFAULT_CONFIG_NAME, "train", info)
     assert len(rows) == EXTRACT_ROWS_LIMIT
     assert rows[0]["tokens"][0] == "What"
 
 
 def test_class_label() -> None:
     info = get_info("glue", "cola")
-    columns_or_none = get_columns_from_info(info)
-    rows, columns = get_rows_and_columns("glue", "cola", "train", columns_or_none)
+    rows, columns = get_rows_and_columns("glue", "cola", "train", info)
     assert columns[1].type.name == "CLASS_LABEL"
     assert isinstance(columns[1], ClassLabelColumn)
     assert "unacceptable" in columns[1].labels
@@ -40,24 +37,21 @@ def test_class_label() -> None:
 
 def test_mnist() -> None:
     info = get_info("mnist", "mnist")
-    columns_or_none = get_columns_from_info(info)
-    rows, columns = get_rows_and_columns("mnist", "mnist", "train", columns_or_none)
+    rows, columns = get_rows_and_columns("mnist", "mnist", "train", info)
     assert len(rows) == EXTRACT_ROWS_LIMIT
     assert rows[0]["image"] == "assets/mnist/___/mnist/train/0/image/image.jpg"
 
 
 def test_cifar() -> None:
     info = get_info("cifar10", "plain_text")
-    columns_or_none = get_columns_from_info(info)
-    rows, columns = get_rows_and_columns("cifar10", "plain_text", "train", columns_or_none)
+    rows, columns = get_rows_and_columns("cifar10", "plain_text", "train", info)
     assert len(rows) == EXTRACT_ROWS_LIMIT
     assert rows[0]["img"] == "assets/cifar10/___/plain_text/train/0/img/image.jpg"
 
 
 def test_iter_archive() -> None:
     info = get_info("food101", DEFAULT_CONFIG_NAME)
-    columns_or_none = get_columns_from_info(info)
-    rows, columns = get_rows_and_columns("food101", DEFAULT_CONFIG_NAME, "train", columns_or_none)
+    rows, columns = get_rows_and_columns("food101", DEFAULT_CONFIG_NAME, "train", info)
     assert len(rows) == EXTRACT_ROWS_LIMIT
     assert rows[0]["image"] == "assets/food101/___/default/train/0/image/2885220.jpg"
 
@@ -86,7 +80,6 @@ def test_community_with_no_config() -> None:
     rows = get_rows("Check/region_1", "default", "train")
     assert len(rows) == 2
     info = get_info("Check/region_1", "default")
-    columns_or_none = get_columns_from_info(info)
     with pytest.raises(KeyError):
         # see https://github.com/huggingface/datasets-preview-backend/issues/78
-        get_rows_and_columns("Check/region_1", "default", "train", columns_or_none)
+        get_rows_and_columns("Check/region_1", "default", "train", info)
