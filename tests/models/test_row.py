@@ -76,7 +76,7 @@ def test_txt_zip() -> None:
 
 def test_pathlib() -> None:
     # see https://github.com/huggingface/datasets/issues/2866
-    rows = get_rows(dataset="counter", config=DEFAULT_CONFIG_NAME, split="train")
+    rows = get_rows("counter", DEFAULT_CONFIG_NAME, "train")
     assert len(rows) == EXTRACT_ROWS_LIMIT
 
 

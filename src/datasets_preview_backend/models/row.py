@@ -15,11 +15,11 @@ logger = logging.getLogger(__name__)
 Row = Dict[str, Any]
 
 
-def get_rows(dataset: str, config: str, split: str) -> List[Row]:
+def get_rows(dataset_name: str, config_name: str, split_name: str) -> List[Row]:
     num_rows = EXTRACT_ROWS_LIMIT
     try:
         iterable_dataset = load_dataset(
-            dataset, name=config, split=split, streaming=True, download_mode=FORCE_REDOWNLOAD  # type: ignore
+            dataset_name, name=config_name, split=split_name, streaming=True, download_mode=FORCE_REDOWNLOAD  # type: ignore
         )
         if not isinstance(iterable_dataset, IterableDataset):
             raise TypeError("load_dataset should return an IterableDataset")
@@ -44,7 +44,7 @@ def get_rows(dataset: str, config: str, split: str) -> List[Row]:
             )
     except ValueError as err:
         if (
-            str(err).startswith(f"BuilderConfig {config} not found.")
+            str(err).startswith(f"BuilderConfig {config_name} not found.")
             or str(err).startswith("Config name is missing.")
             or str(err).startswith("Bad split")
         ):
@@ -56,16 +56,19 @@ def get_rows(dataset: str, config: str, split: str) -> List[Row]:
 
     if len(rows) != num_rows:
         logger.info(
-            f"could not read all the required rows ({len(rows)} / {num_rows}) from dataset {dataset} -"
-            f" {config} - {split}"
+            f"could not read all the required rows ({len(rows)} / {num_rows}) from dataset {dataset_name} -"
+            f" {config_name} - {split_name}"
         )
 
     return rows
 
 
-def generate_typed_row(dataset: str, config: str, split: str, row: Row, row_idx: int, columns: List[Column]) -> Row:
+def generate_typed_row(
+    dataset_name: str, config_name: str, split_name: str, row: Row, row_idx: int, columns: List[Column]
+) -> Row:
     return {
-        column.name: column.get_cell_value(dataset, config, split, row_idx, row[column.name]) for column in columns
+        column.name: column.get_cell_value(dataset_name, config_name, split_name, row_idx, row[column.name])
+        for column in columns
     }
 
 
