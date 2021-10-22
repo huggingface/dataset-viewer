@@ -31,11 +31,12 @@ class Column:
     name: str
     type: ColumnType
 
-    def __init__(self, name: str, feature: Any):
+    def __init__(self, name: str, feature: Any, values: List[Any]):
         self.name = name
         self.type = ColumnType.JSON
 
     def get_cell_value(self, dataset_name: str, config_name: str, split_name: str, row_idx: int, value: Any) -> Cell:
+        # TODO: return JSON? of pickled?
         return value
 
     def to_json(self) -> JsonColumn:
@@ -50,6 +51,10 @@ class ColumnTypeError(Exception):
 
 
 class CellTypeError(Exception):
+    pass
+
+
+class ColumnInferenceError(Exception):
     pass
 
 

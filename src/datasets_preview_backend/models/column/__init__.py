@@ -1,11 +1,14 @@
-from typing import Any, List, Union
+from typing import Any, Dict, List, Union
 
+from datasets_preview_backend.config import EXTRACT_ROWS_LIMIT
 from datasets_preview_backend.exceptions import Status400Error
 from datasets_preview_backend.models.column.bool import BoolColumn
 from datasets_preview_backend.models.column.class_label import ClassLabelColumn
 from datasets_preview_backend.models.column.default import (
     Cell,
+    CellTypeError,
     Column,
+    ColumnInferenceError,
     ColumnType,
     ColumnTypeError,
     JsonColumn,
@@ -18,6 +21,7 @@ from datasets_preview_backend.models.column.image_url import ImageUrlColumn
 from datasets_preview_backend.models.column.int import IntColumn
 from datasets_preview_backend.models.column.string import StringColumn
 from datasets_preview_backend.models.info import Info
+from datasets_preview_backend.models.row import Row
 
 column_classes = [
     ClassLabelColumn,
@@ -31,26 +35,44 @@ column_classes = [
     StringColumn,
 ]
 
+Features = Dict[str, Any]
+FeaturesOrNone = Union[Features, None]
 
-def get_column(name: str, feature: Any) -> Column:
+MAX_ROWS_FOR_TYPE_INFERENCE_AND_CHECK = EXTRACT_ROWS_LIMIT
+
+
+def get_features(info: Info) -> FeaturesOrNone:
+    try:
+        return None if info["features"] is None else {name: feature for (name, feature) in info["features"].items()}
+    except Exception as err:
+        raise Status400Error("features could not be extracted from dataset config info", err)
+
+
+def get_column(column_name: str, features: FeaturesOrNone, rows: List[Row]) -> Column:
+    feature = None if features is None else features[column_name]
+    values = [row[column_name] for row in rows[:MAX_ROWS_FOR_TYPE_INFERENCE_AND_CHECK]]
+
     # try until one works
     for column_class in column_classes:
         try:
-            return column_class(name, feature)
-        except ColumnTypeError:
+            return column_class(column_name, feature, values)
+        except (ColumnTypeError, CellTypeError, ColumnInferenceError):
             pass
     # none has worked
-    return Column(name, feature)
+    return Column(column_name, feature, values)
 
 
-def get_columns_from_info(info: Info) -> Union[List[Column], None]:
-    try:
-        if info["features"] is None:
-            return None
-        return [get_column(name, feature) for (name, feature) in info["features"].items()]
-    except Exception as err:
-        # note that no exception will be raised if features exists but is empty
-        raise Status400Error("features could not be inferred from dataset config info", err)
+def get_columns(info: Info, rows: List[Row]) -> List[Column]:
+    features = get_features(info)
+
+    if features is None and not rows:
+        return []
+    # order
+    column_names = list(features.keys()) if features is not None else list(rows[0].keys())
+    # check, just in case
+    if features and rows and features.keys() != rows[0].keys():
+        raise Status400Error("columns from features and first row don't match")
+    return [get_column(column_name, features, rows) for column_name in column_names]
 
 
 # explicit re-export

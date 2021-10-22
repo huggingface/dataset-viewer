@@ -1,11 +1,13 @@
-from typing import List, Optional, TypedDict, Union
+from typing import List, Optional, TypedDict
 
 from datasets import get_dataset_split_names
 
 from datasets_preview_backend.constants import FORCE_REDOWNLOAD
 from datasets_preview_backend.exceptions import Status400Error, Status404Error
 from datasets_preview_backend.models.column import Column
-from datasets_preview_backend.models.row import Row, get_rows_and_columns
+from datasets_preview_backend.models.info import Info
+from datasets_preview_backend.models.row import Row
+from datasets_preview_backend.models.typed_row import get_typed_rows_and_columns
 
 
 class Split(TypedDict):
@@ -14,11 +16,9 @@ class Split(TypedDict):
     columns: List[Column]
 
 
-def get_split(
-    dataset_name: str, config_name: str, split_name: str, columns_or_none: Union[List[Column], None]
-) -> Split:
-    rows, columns = get_rows_and_columns(dataset_name, config_name, split_name, columns_or_none)
-    return {"split_name": split_name, "rows": rows, "columns": columns}
+def get_split(dataset_name: str, config_name: str, split_name: str, info: Info) -> Split:
+    typed_rows, columns = get_typed_rows_and_columns(dataset_name, config_name, split_name, info)
+    return {"split_name": split_name, "rows": typed_rows, "columns": columns}
 
 
 def get_split_names(dataset_name: str, config_name: str) -> List[str]:
@@ -38,9 +38,9 @@ def get_split_names(dataset_name: str, config_name: str) -> List[str]:
     return split_names
 
 
-def get_splits(dataset_name: str, config_name: str, columns_or_none: Union[List[Column], None]) -> List[Split]:
+def get_splits(dataset_name: str, config_name: str, info: Info) -> List[Split]:
     return [
-        get_split(dataset_name, config_name, split_name, columns_or_none)
+        get_split(dataset_name, config_name, split_name, info)
         for split_name in get_split_names(dataset_name, config_name)
     ]
 
