@@ -39,8 +39,7 @@ Set environment variables to configure the following aspects:
 - `LOG_LEVEL`: log level, among `DEBUG`, `INFO`, `WARNING`, `ERROR` and `CRITICAL`. Defaults to `INFO`.
 - `MAX_AGE_LONG_SECONDS`: number of seconds to set in the `max-age` header on data endpoints. Defaults to `21600` (6 hours).
 - `MAX_AGE_SHORT_SECONDS`: number of seconds to set in the `max-age` header on technical endpoints. Defaults to `120` (2 minutes).
-- `MONGO_HOSTNAME`: the hostname used by the mongo server. Defaults to `"localhost"`.
-- `MONGO_PORT`: the port used by the mongo server. Defaults to `27018`.
+- `MONGO_URL`: the URL used to connect to the mongo db server. Defaults to `"mongodb://localhost:27018"`.
 - `WEB_CONCURRENCY`: the number of workers. For now, it's ignored and hardcoded to 1 because the cache is not shared yet. Defaults to `2`.
 
 For example:
