@@ -804,6 +804,17 @@ optional = false
 python-versions = ">=3.7,<4.0"
 
 [[package]]
+name = "mongoengine"
+version = "0.23.1"
+description = "MongoEngine is a Python Object-Document Mapper for working with MongoDB."
+category = "main"
+optional = false
+python-versions = ">=3.6"
+
+[package.dependencies]
+pymongo = ">=3.4,<4.0"
+
+[[package]]
 name = "multidict"
 version = "5.2.0"
 description = "multidict implementation"
@@ -1833,7 +1844,7 @@ cffi = ["cffi (>=1.11)"]
 [metadata]
 lock-version = "1.1"
 python-versions = "^3.9.6"
-content-hash = "25ab86c422e91f606452f5ee221962998b7a2ced44d908c79e6a5d6a7899f8d6"
+content-hash = "50dc220e949d7c09672015b94bc31fa63272f1ce335c530524d8092d9b3b3fda"
 
 [metadata.files]
 absl-py = [
@@ -2409,6 +2420,10 @@ mccabe = [
 mongo-types = [
     {file = "mongo-types-0.14.2.tar.gz", hash = "sha256:b88bad6afad0ac713b09aaf307394970d8870153db393ad10b9f20ff783e7b63"},
     {file = "mongo_types-0.14.2-py3-none-any.whl", hash = "sha256:af0a381fcfafc97da08673c40421008db61be9dab9ffabaf104e9e6a4d29d294"},
+]
+mongoengine = [
+    {file = "mongoengine-0.23.1-py3-none-any.whl", hash = "sha256:3d1c8b9f5d43144bd726a3f01e58d2831c6fb112960a4a60b3a26fa85e026ab3"},
+    {file = "mongoengine-0.23.1.tar.gz", hash = "sha256:de275e70cd58891dc46eef43369c522ce450dccb6d6f1979cbc9b93e6bdaf6cb"},
 ]
 multidict = [
     {file = "multidict-5.2.0-cp310-cp310-macosx_10_9_universal2.whl", hash = "sha256:3822c5894c72e3b35aae9909bef66ec83e44522faf767c0ad39e0e2de11d3b55"},
