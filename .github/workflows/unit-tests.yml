@@ -22,6 +22,8 @@ jobs:
           poetry-version: ${{ matrix.poetry-version }}
       - name: Install dependencies
         run: poetry install
+      - name: Create mongoDB Docker container
+        run: sudo docker run -d -p 27018:27017 mongo:latest
       - name: Run unit tests
         env:
           CACHE_PERSIST: False
