@@ -15,6 +15,7 @@ from datasets_preview_backend.constants import (
     DEFAULT_LOG_LEVEL,
     DEFAULT_MAX_AGE_LONG_SECONDS,
     DEFAULT_MAX_AGE_SHORT_SECONDS,
+    DEFAULT_MONGO_CACHE_DATABASE,
     DEFAULT_MONGO_URL,
     DEFAULT_WEB_CONCURRENCY,
 )
@@ -42,6 +43,7 @@ EXTRACT_ROWS_LIMIT = get_int_value(d=os.environ, key="EXTRACT_ROWS_LIMIT", defau
 LOG_LEVEL = get_str_value(d=os.environ, key="LOG_LEVEL", default=DEFAULT_LOG_LEVEL)
 MAX_AGE_LONG_SECONDS = get_int_value(d=os.environ, key="MAX_AGE_LONG_SECONDS", default=DEFAULT_MAX_AGE_LONG_SECONDS)
 MAX_AGE_SHORT_SECONDS = get_int_value(d=os.environ, key="MAX_AGE_SHORT_SECONDS", default=DEFAULT_MAX_AGE_SHORT_SECONDS)
+MONGO_CACHE_DATABASE = os.environ.get("MONGO_CACHE_DATABASE", DEFAULT_MONGO_CACHE_DATABASE)
 MONGO_URL = os.environ.get("MONGO_URL", DEFAULT_MONGO_URL)
 WEB_CONCURRENCY = get_int_value(d=os.environ, key="WEB_CONCURRENCY", default=DEFAULT_WEB_CONCURRENCY)
 
