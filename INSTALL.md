@@ -180,3 +180,11 @@ Finally, ensure that pm2 will restart on reboot (see https://pm2.keymetrics.io/d
 pm2 startup
 # and follow the instructions
 ```
+
+## Mongo
+
+Launch a docker container:
+
+```bash
+docker run -p 27018:27017 --name datasets-preview-backend-mongo -d mongo:latest
+```

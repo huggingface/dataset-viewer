@@ -15,6 +15,8 @@ from datasets_preview_backend.constants import (
     DEFAULT_LOG_LEVEL,
     DEFAULT_MAX_AGE_LONG_SECONDS,
     DEFAULT_MAX_AGE_SHORT_SECONDS,
+    DEFAULT_MONGO_HOSTNAME,
+    DEFAULT_MONGO_PORT,
     DEFAULT_WEB_CONCURRENCY,
 )
 from datasets_preview_backend.utils import (
@@ -41,6 +43,8 @@ EXTRACT_ROWS_LIMIT = get_int_value(d=os.environ, key="EXTRACT_ROWS_LIMIT", defau
 LOG_LEVEL = get_str_value(d=os.environ, key="LOG_LEVEL", default=DEFAULT_LOG_LEVEL)
 MAX_AGE_LONG_SECONDS = get_int_value(d=os.environ, key="MAX_AGE_LONG_SECONDS", default=DEFAULT_MAX_AGE_LONG_SECONDS)
 MAX_AGE_SHORT_SECONDS = get_int_value(d=os.environ, key="MAX_AGE_SHORT_SECONDS", default=DEFAULT_MAX_AGE_SHORT_SECONDS)
+MONGO_HOSTNAME = os.environ.get("MONGO_HOSTNAME", DEFAULT_MONGO_HOSTNAME)
+MONGO_PORT = get_int_value(d=os.environ, key="MONGO_PORT", default=DEFAULT_MONGO_PORT)
 WEB_CONCURRENCY = get_int_value(d=os.environ, key="WEB_CONCURRENCY", default=DEFAULT_WEB_CONCURRENCY)
 
 # Ensure datasets library uses the excepted revision
