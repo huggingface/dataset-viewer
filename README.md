@@ -184,6 +184,29 @@ Responses:
 }
 ```
 
+### /queue
+
+> Give statistics about the content of the queue
+
+Example: https://datasets-preview.huggingface.tech/queue
+
+Method: `GET`
+
+Parameters: none
+
+Responses:
+
+- `200`: JSON content which gives statistics about the queue, with the following structure:
+
+```json
+{
+  "waiting": 1,
+  "started": 0,
+  "done": 0,
+  "created_at": "2021-10-26T21:17:31Z"
+}
+```
+
 ### /webhook
 
 > Adds, updates or removes a cache entry
