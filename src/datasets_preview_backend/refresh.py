@@ -19,7 +19,7 @@ load_dotenv()
 # TODO: we could get the first N, sorted by creation time (more or less expire time)
 def make_criterion(threshold: float) -> Callable[[str], bool]:
     def criterion(_: str) -> bool:
-        return random() < threshold
+        return random() < threshold  # nosec
 
     return criterion
 
