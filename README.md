@@ -100,10 +100,8 @@ Responses:
 
 ```json
 {
-  "expected": 1628,
   "valid": 5,
   "error": 8,
-  "cache_miss": 1615,
   "created_at": "2021-10-11T16:33:08Z"
 }
 ```
@@ -125,70 +123,26 @@ Responses:
 ```json
 {
   "reports": [
+    { "dataset": "food101", "status": "valid", "error": null },
     {
-      "dataset": "acronym_identification",
-      "tags": [
-        "annotations_creators:expert-generated",
-        "language_creators:found",
-        "languages:en",
-        "licenses:mit",
-        "multilinguality:monolingual",
-        "size_categories:10K<n<100K",
-        "source_datasets:original",
-        "task_categories:structure-prediction",
-        "task_ids:structure-prediction-other-acronym-identification"
-      ],
-      "downloads": 4634,
-      "status": "cache_miss",
-      "error": null
-    },
-    {
-      "dataset": "ade_corpus_v2",
-      "tags": [
-        "annotations_creators:expert-generated",
-        "language_creators:found",
-        "languages:en",
-        "licenses:unknown",
-        "multilinguality:monolingual",
-        "size_categories:10K<n<100K",
-        "size_categories:1K<n<10K",
-        "size_categories:n<1K",
-        "source_datasets:original",
-        "task_categories:text-classification",
-        "task_categories:structure-prediction",
-        "task_ids:fact-checking",
-        "task_ids:coreference-resolution"
-      ],
-      "downloads": 3292,
-      "status": "cache_miss",
-      "error": null
-    },
-    {
-      "dataset": "adversarial_qa",
-      "tags": [
-        "annotations_creators:crowdsourced",
-        "language_creators:found",
-        "languages:en",
-        "licenses:cc-by-sa-4.0",
-        "multilinguality:monolingual",
-        "size_categories:10K<n<100K",
-        "source_datasets:original",
-        "task_categories:question-answering",
-        "task_ids:extractive-qa",
-        "task_ids:open-domain-qa"
-      ],
-      "downloads": 40637,
-      "status": "cache_miss",
-      "error": null
+      "dataset": "allenai/c4",
+      "status": "error",
+      "error": {
+        "status_code": 404,
+        "exception": "Status404Error",
+        "message": "The split for the dataset config could not be found.",
+        "cause": "FileNotFoundError",
+        "cause_message": "https://huggingface.co/datasets/allenai/c4/resolve/f3b95a11ff318ce8b651afc7eb8e7bd2af469c10/en.noblocklist/c4-train.00000-of-01024.json.gz"
+      }
     }
   ],
-  "created_at": "2021-10-08T08:27:46Z"
+  "created_at": "2021-10-26T14:13:45Z"
 }
 ```
 
 ### /valid
 
-> Give the list of the datasets, by validity status
+> Give the list of the valid datasets
 
 Example: https://datasets-preview.huggingface.tech/valid
 
@@ -203,13 +157,6 @@ Responses:
 ```json
 {
   "valid": ["discovery"],
-  "error": ["TimTreasure4/Test"],
-  "cache_miss": [
-    "acronym_identification",
-    "ade_corpus_v2",
-    "adversarial_qa",
-    "aeslc"
-  ],
   "created_at": "2021-10-07T13:33:46Z"
 }
 ```
@@ -245,14 +192,13 @@ Responses:
   ```
 
 - `400`: the payload is erroneous, or a 400 error raised during the cache operation
-- `404`: a 404 error raised during the cache operation
 - `500`: application error
 
-### /datasets
+### /hf_datasets
 
-> Lists the [datasets](https://huggingface.co/docs/datasets/loading_datasets.html#selecting-a-configuration) names: canonical and community
+> Lists the HuggingFace [datasets](https://huggingface.co/docs/datasets/loading_datasets.html#selecting-a-configuration): canonical and community
 
-Example: https://datasets-preview.huggingface.tech/datasets
+Example: https://datasets-preview.huggingface.tech/hf_datasets
 
 Method: `GET`
 
@@ -265,13 +211,50 @@ Responses:
   ```json
   {
     "datasets": [
-      {"dataset": "acronym_identification"},
-      {"dataset": "ade_corpus_v2"},
-      {"dataset": "adversarial_qa"},
-      {"dataset": "aeslc"},
-      {"dataset": "afrikaans_ner_corpus"},
-      {"dataset": "ag_news"},
-      ...
+      {
+        "id": "acronym_identification",
+        "tags": [
+          "annotations_creators:expert-generated",
+          "language_creators:found",
+          "languages:en",
+          "licenses:mit",
+          "multilinguality:monolingual",
+          "size_categories:10K<n<100K",
+          "source_datasets:original",
+          "task_categories:structure-prediction",
+          "task_ids:structure-prediction-other-acronym-identification"
+        ],
+        "citation": "@inproceedings{veyseh-et-al-2020-what,\n   title={{What Does This Acronym Mean? Introducing a New Dataset for Acronym Identification and Disambiguation}},\n   author={Amir Pouran Ben Veyseh and Franck Dernoncourt and Quan Hung Tran and Thien Huu Nguyen},\n   year={2020},\n   booktitle={Proceedings of COLING},\n   link={https://arxiv.org/pdf/2010.14678v1.pdf}\n}",
+        "description": "Acronym identification training and development sets for the acronym identification task at SDU@AAAI-21.",
+        "paperswithcode_id": "acronym-identification",
+        "downloads": 5174
+      },
+      {
+        "id": "aeslc",
+        "tags": ["languages:en"],
+        "citation": "@misc{zhang2019email,\n    title={This Email Could Save Your Life: Introducing the Task of Email Subject Line Generation},\n    author={Rui Zhang and Joel Tetreault},\n    year={2019},\n    eprint={1906.03497},\n    archivePrefix={arXiv},\n    primaryClass={cs.CL}\n}",
+        "description": "A collection of email messages of employees in the Enron Corporation.\n\nThere are two features:\n  - email_body: email body text.\n  - subject_line: email subject text.",
+        "paperswithcode_id": "aeslc",
+        "downloads": 3053
+      },
+      {
+        "id": "afrikaans_ner_corpus",
+        "tags": [
+          "annotations_creators:expert-generated",
+          "language_creators:expert-generated",
+          "languages:af",
+          "licenses:other-Creative Commons Attribution 2.5 South Africa License",
+          "multilinguality:monolingual",
+          "size_categories:1K<n<10K",
+          "source_datasets:original",
+          "task_categories:structure-prediction",
+          "task_ids:named-entity-recognition"
+        ],
+        "citation": "@inproceedings{afrikaans_ner_corpus,\n  author    = {\tGerhard van Huyssteen and\n                Martin Puttkammer and\n                E.B. Trollip and\n                J.C. Liversage and\n              Roald Eiselen},\n  title     = {NCHLT Afrikaans Named Entity Annotated Corpus},\n  booktitle = {Eiselen, R. 2016. Government domain named entity recognition for South African languages. Proceedings of the 10th      Language Resource and Evaluation Conference, Portorož, Slovenia.},\n  year      = {2016},\n  url       = {https://repo.sadilar.org/handle/20.500.12185/299},\n}",
+        "description": "Named entity annotated data from the NCHLT Text Resource Development: Phase II Project, annotated with PERSON, LOCATION, ORGANISATION and MISCELLANEOUS tags.",
+        "paperswithcode_id": null,
+        "downloads": 229
+      }
     ]
   }
   ```
@@ -352,7 +335,7 @@ Responses:
   Note that if there is only one default config, it will be named `"default"`. See https://datasets-preview.huggingface.tech/configs?dataset=sent_comp for example.
 
 - `400`: the dataset script is erroneous
-- `404`: the dataset cannot be found
+- `404`: the dataset cannot be found, or it's not in the cache
 - `500`: application error
 
 ### /infos
@@ -522,7 +505,7 @@ Responses:
   ```
 
 - `400`: the dataset script is erroneous
-- `404`: the dataset cannot be found
+- `404`: the dataset cannot be found, or it's not in the cache
 - `500`: application error
 
 ### /splits
@@ -565,7 +548,7 @@ Responses:
   ```
 
 - `400`: the dataset script is erroneous
-- `404`: the dataset or config cannot be found
+- `404`: the dataset or config cannot be found, or it's not in the cache
 - `500`: application error
 
 ### /rows
@@ -654,7 +637,7 @@ Responses:
   ```
 
 - `400`: the dataset script is erroneous, or the data cannot be obtained.
-- `404`: the dataset, config or script cannot be found
+- `404`: the dataset, config or script cannot be found, or it's not in the cache
 - `500`: application error
 
 ### /assets

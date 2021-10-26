@@ -1,5 +1,5 @@
 import types
-from typing import Generic, Type, TypeVar
+from typing import Any, Generic, List, Type, TypedDict, TypeVar, Union
 
 from mongoengine import Document, DoesNotExist, connect
 from mongoengine.fields import DictField, StringField
@@ -79,3 +79,36 @@ def delete_dataset_cache(dataset_name: str) -> None:
 
 def clean_database() -> None:
     DatasetCache.drop_collection()  # type: ignore
+
+
+# special reports
+
+
+def get_dataset_names_with_status(status: str) -> List[str]:
+    return [d.dataset_name for d in DatasetCache.objects(status=status).only("dataset_name")]
+
+
+def get_datasets_count_with_status(status: str) -> int:
+    return DatasetCache.objects(status=status).count()
+
+
+class CacheReport(TypedDict):
+    dataset: str
+    status: str
+    error: Union[Any, None]
+
+
+def get_datasets_reports() -> List[CacheReport]:
+    # first the valid entries: we don't want the content
+    valid: List[CacheReport] = [
+        {"dataset": d.dataset_name, "status": "valid", "error": None}
+        for d in DatasetCache.objects(status="valid").only("dataset_name")
+    ]
+
+    # now the error entries
+    error: List[CacheReport] = [
+        {"dataset": d.dataset_name, "status": "error", "error": d.content}
+        for d in DatasetCache.objects(status="error").only("dataset_name", "content")
+    ]
+
+    return valid + error

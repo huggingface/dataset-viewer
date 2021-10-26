@@ -22,23 +22,13 @@ def clean_mongo_database() -> None:
     clean_database()
 
 
-def test_datetime_content(client: TestClient) -> None:
-    response = client.get("/rows", params={"dataset": "allenai/c4"})
-    assert response.status_code == 404
-
-    response = client.post("/webhook", json={"add": "datasets/allenai/c4"})
-    assert response.status_code == 200
-
-    response = client.get("/rows", params={"dataset": "allenai/c4"})
-    assert response.status_code == 200
-
-
 def test_get_cache_reports(client: TestClient) -> None:
+    client.post("/webhook", json={"add": "datasets/acronym_identification"})
     response = client.get("/cache-reports")
     assert response.status_code == 200
     json = response.json()
     reports = json["reports"]
-    assert len(reports) > 100
+    assert len(reports) == 1
     report = reports[0]
     assert "dataset" in report
     assert "status" in report
@@ -49,10 +39,8 @@ def test_get_cache_stats(client: TestClient) -> None:
     response = client.get("/cache")
     assert response.status_code == 200
     json = response.json()
-    assert json["expected"] > 100
     assert "valid" in json
     assert "error" in json
-    assert json["cache_miss"] > 100
 
 
 def test_get_valid_datasets(client: TestClient) -> None:
@@ -60,8 +48,6 @@ def test_get_valid_datasets(client: TestClient) -> None:
     assert response.status_code == 200
     json = response.json()
     assert "valid" in json
-    assert "error" in json
-    assert len(json["cache_miss"]) > 100
 
 
 def test_get_healthcheck(client: TestClient) -> None:
@@ -70,13 +56,12 @@ def test_get_healthcheck(client: TestClient) -> None:
     assert response.text == "ok"
 
 
-def test_get_datasets(client: TestClient) -> None:
-    response = client.get("/datasets")
+def test_get_hf_datasets(client: TestClient) -> None:
+    response = client.get("/hf_datasets")
     assert response.status_code == 200
     json = response.json()
     datasets = json["datasets"]
     assert len(datasets) > 1000
-    assert {"dataset": "glue"} in datasets
 
 
 def test_get_configs(client: TestClient) -> None:
@@ -220,3 +205,14 @@ def test_get_rows(client: TestClient) -> None:
     client.post("/webhook", json={"add": f"datasets/{dataset}"})
     response = client.get("/rows", params={"dataset": dataset})
     assert response.status_code == 404
+
+
+def test_datetime_content(client: TestClient) -> None:
+    response = client.get("/rows", params={"dataset": "allenai/c4"})
+    assert response.status_code == 404
+
+    response = client.post("/webhook", json={"add": "datasets/allenai/c4"})
+    assert response.status_code == 200
+
+    response = client.get("/rows", params={"dataset": "allenai/c4"})
+    assert response.status_code == 200

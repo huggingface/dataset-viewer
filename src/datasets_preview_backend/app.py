@@ -17,8 +17,8 @@ from datasets_preview_backend.io.mongo import connect_cache
 from datasets_preview_backend.routes.cache_reports import cache_reports_endpoint
 from datasets_preview_backend.routes.cache_stats import cache_stats_endpoint
 from datasets_preview_backend.routes.configs import configs_endpoint
-from datasets_preview_backend.routes.datasets import datasets_endpoint
 from datasets_preview_backend.routes.healthcheck import healthcheck_endpoint
+from datasets_preview_backend.routes.hf_datasets import hf_datasets_endpoint
 from datasets_preview_backend.routes.infos import infos_endpoint
 from datasets_preview_backend.routes.rows import rows_endpoint
 from datasets_preview_backend.routes.splits import splits_endpoint
@@ -37,8 +37,8 @@ def create_app() -> Starlette:
         Route("/cache", endpoint=cache_stats_endpoint),
         Route("/cache-reports", endpoint=cache_reports_endpoint),
         Route("/configs", endpoint=configs_endpoint),
-        Route("/datasets", endpoint=datasets_endpoint),
         Route("/healthcheck", endpoint=healthcheck_endpoint),
+        Route("/hf_datasets", endpoint=hf_datasets_endpoint),
         Route("/infos", endpoint=infos_endpoint),
         Route("/rows", endpoint=rows_endpoint),
         Route("/splits", endpoint=splits_endpoint),
