@@ -2,7 +2,7 @@ import pytest
 from mongoengine import DoesNotExist
 
 from datasets_preview_backend.config import MONGO_CACHE_DATABASE
-from datasets_preview_backend.io.mongo import (
+from datasets_preview_backend.io.cache import (
     DatasetCache,
     clean_database,
     connect_cache,

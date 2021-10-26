@@ -12,8 +12,8 @@ from datasets_preview_backend.constants import (
     DEFAULT_MAX_VIRTUAL_MEMORY_PCT,
     DEFAULT_REFRESH_PCT,
 )
+from datasets_preview_backend.io.cache import update_dataset_cache
 from datasets_preview_backend.io.logger import init_logger
-from datasets_preview_backend.io.mongo import update_dataset_cache
 from datasets_preview_backend.models.hf_dataset import get_hf_dataset_names
 from datasets_preview_backend.utils import get_int_value
 

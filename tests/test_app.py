@@ -3,7 +3,7 @@ from starlette.testclient import TestClient
 
 from datasets_preview_backend.app import create_app
 from datasets_preview_backend.config import MONGO_CACHE_DATABASE
-from datasets_preview_backend.io.mongo import clean_database
+from datasets_preview_backend.io.cache import clean_database
 
 
 @pytest.fixture(autouse=True, scope="module")

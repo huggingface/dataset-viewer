@@ -12,8 +12,8 @@ from datasets_preview_backend.config import (
     WEB_CONCURRENCY,
 )
 from datasets_preview_backend.io.asset import assets_directory, show_asserts_dir
+from datasets_preview_backend.io.cache import connect_cache
 from datasets_preview_backend.io.logger import init_logger
-from datasets_preview_backend.io.mongo import connect_cache
 from datasets_preview_backend.routes.cache_reports import cache_reports_endpoint
 from datasets_preview_backend.routes.cache_stats import cache_stats_endpoint
 from datasets_preview_backend.routes.configs import configs_endpoint
