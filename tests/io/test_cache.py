@@ -2,13 +2,15 @@ import pytest
 from mongoengine import DoesNotExist
 
 from datasets_preview_backend.config import MONGO_CACHE_DATABASE
+from datasets_preview_backend.exceptions import StatusError
 from datasets_preview_backend.io.cache import (
     DatasetCache,
     clean_database,
-    connect_cache,
+    connect_to_cache,
     delete_dataset_cache,
-    update_dataset_cache,
+    upsert_dataset_cache,
 )
+from datasets_preview_backend.models.dataset import get_dataset
 
 
 @pytest.fixture(autouse=True, scope="module")
@@ -19,7 +21,7 @@ def safe_guard() -> None:
 
 @pytest.fixture(autouse=True, scope="module")
 def client() -> None:
-    connect_cache()
+    connect_to_cache()
 
 
 @pytest.fixture(autouse=True)
@@ -37,7 +39,8 @@ def test_save() -> None:
 
 def test_acronym_identification() -> None:
     dataset_name = "acronym_identification"
-    update_dataset_cache(dataset_name)
+    dataset = get_dataset(dataset_name)
+    upsert_dataset_cache(dataset_name, "valid", dataset)
     retrieved = DatasetCache.objects(dataset_name=dataset_name).get()
     assert retrieved.dataset_name == dataset_name
     assert len(retrieved.content["configs"]) == 1
@@ -48,6 +51,9 @@ def test_acronym_identification() -> None:
 
 def test_doesnotexist() -> None:
     dataset_name = "doesnotexist"
-    update_dataset_cache(dataset_name)
+    try:
+        get_dataset(dataset_name)
+    except StatusError as err:
+        upsert_dataset_cache(dataset_name, "error", err.as_content())
     retrieved = DatasetCache.objects(dataset_name=dataset_name).get()
     assert retrieved.status == "error"

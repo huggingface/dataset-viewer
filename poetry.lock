@@ -1714,6 +1714,14 @@ dev = ["autoflake (>=1.3.1,<2.0.0)", "flake8 (>=3.8.3,<4.0.0)"]
 doc = ["mkdocs (>=1.1.2,<2.0.0)", "mkdocs-material (>=5.4.0,<6.0.0)", "markdown-include (>=0.5.1,<0.6.0)"]
 
 [[package]]
+name = "types-psutil"
+version = "5.8.13"
+description = "Typing stubs for psutil"
+category = "main"
+optional = false
+python-versions = "*"
+
+[[package]]
 name = "types-requests"
 version = "2.25.11"
 description = "Typing stubs for requests"
@@ -1844,7 +1852,7 @@ cffi = ["cffi (>=1.11)"]
 [metadata]
 lock-version = "1.1"
 python-versions = "^3.9.6"
-content-hash = "50dc220e949d7c09672015b94bc31fa63272f1ce335c530524d8092d9b3b3fda"
+content-hash = "7a8ff869adda19567453bdff39d7b7f698d9cf372efc6628134b7b77aef27570"
 
 [metadata.files]
 absl-py = [
@@ -3394,6 +3402,10 @@ trec-car-tools = []
 typer = [
     {file = "typer-0.3.2-py3-none-any.whl", hash = "sha256:ba58b920ce851b12a2d790143009fa00ac1d05b3ff3257061ff69dbdfc3d161b"},
     {file = "typer-0.3.2.tar.gz", hash = "sha256:5455d750122cff96745b0dec87368f56d023725a7ebc9d2e54dd23dc86816303"},
+]
+types-psutil = [
+    {file = "types-psutil-5.8.13.tar.gz", hash = "sha256:0e7f6b921477576f241f06eb01f97d7b50aeb4b2264a7ab65c927d74ded854d0"},
+    {file = "types_psutil-5.8.13-py3-none-any.whl", hash = "sha256:a37394123c8a635223e4e5e3a9f5212f66b08279da7b38db317e113f9ab6dcd0"},
 ]
 types-requests = [
     {file = "types-requests-2.25.11.tar.gz", hash = "sha256:b279284e51f668e38ee12d9665e4d789089f532dc2a0be4a1508ca0efd98ba9e"},

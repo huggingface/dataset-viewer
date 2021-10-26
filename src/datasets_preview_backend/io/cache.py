@@ -6,8 +6,8 @@ from mongoengine.fields import DictField, StringField
 from mongoengine.queryset.queryset import QuerySet
 
 from datasets_preview_backend.config import MONGO_CACHE_DATABASE, MONGO_URL
-from datasets_preview_backend.exceptions import Status404Error, StatusError
-from datasets_preview_backend.models.dataset import get_dataset
+from datasets_preview_backend.exceptions import Status404Error, StatusErrorContent
+from datasets_preview_backend.models.dataset import Dataset
 
 # START monkey patching ### hack ###
 # see https://github.com/sbdchd/mongo-types#install
@@ -29,11 +29,12 @@ class QuerySetManager(Generic[U]):
 # END monkey patching ### hack ###
 
 
-def connect_cache() -> None:
-    connect(MONGO_CACHE_DATABASE, host=MONGO_URL)
+def connect_to_cache() -> None:
+    connect(MONGO_CACHE_DATABASE, alias="cache", host=MONGO_URL)
 
 
 class DatasetCache(Document):
+    meta = {"collection": "dataset_caches", "db_alias": "cache"}
     dataset_name = StringField(primary_key=True)
     status = StringField(required=True)  # TODO: enum
     content = DictField()  # TODO: more detail?
@@ -61,16 +62,8 @@ def get_dataset_cache(dataset_name: str) -> DatasetCache:
     # it might also (but shouldn't) raise MultipleObjectsReturned: more than one result
 
 
-def update_dataset_cache(dataset_name: str) -> None:
-    try:
-        dataset = get_dataset(dataset_name=dataset_name)
-        dataset_cache = DatasetCache(dataset_name=dataset_name, status="valid", content=dataset)
-    except StatusError as err:
-        dataset_cache = DatasetCache(dataset_name=dataset_name, status="error", content=err.as_content())
-
-    # https://docs.mongoengine.org/guide/validation.html#built-in-validation
-    # dataset_cache.validate()     # raises ValidationError (Invalid email address: ['email'])
-    dataset_cache.save()
+def upsert_dataset_cache(dataset_name: str, status: str, content: Union[Dataset, StatusErrorContent]) -> None:
+    DatasetCache(dataset_name=dataset_name, status=status, content=content).save()
 
 
 def delete_dataset_cache(dataset_name: str) -> None:

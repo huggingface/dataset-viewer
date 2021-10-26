@@ -53,21 +53,43 @@ To reload the application on file changes while developing, run:
 make watch
 ```
 
-To warm the cache:
+To launch a worker, which will take jobs from the queue:
 
 ```bash
-MAX_LOAD_PCT=50 MAX_VIRTUAL_MEMORY_PCT=95 MAX_SWAP_MEMORY_PCT=80 make warm
+MAX_LOAD_PCT=50 MAX_MEMORY_PCT=60 WORKER_SLEEP_SECONDS=5 make worker
 ```
 
-Cache warming uses only one thread, and before warming a new dataset, it waits until the load percentage, ie. the 1m load divided by the number of cpus \*100, is below `MAX_LOAD_PCT` (defaults to 50%). Also, if the virtual memory on the machine reaches `MAX_VIRTUAL_MEMORY_PCT` (defaults to 95%), or if the swap memory reaches `MAX_SWAP_MEMORY_PCT` (defaults to 60%), the process stops.
+Every `WORKER_SLEEP_SECONDS` (defaults to 5 seconds) when idle, the worker will check if resources are available, and update the cache entry for a dataset, if it could get a job from the queue. Then loop to start again. The resources are considered available if all the conditions are met:
 
-To refresh random 3% of the datasets:
+- the load percentage (the max of the 1m/5m/15m load divided by the number of cpus \*100) is below `MAX_LOAD_PCT` (defaults to 50%)
+- the memory (RAM + SWAP) on the machine is below `MAX_MEMORY_PCT` (defaults to 60%)
+
+To warm the cache, ie. add all the missing Hugging Face datasets to the queue:
+
+```bash
+make warm
+```
+
+To refresh random 3% of the Hugging Face datasets:
 
 ```bash
 REFRESH_PCT=3 make refresh
 ```
 
-The number of randomly chosen datasets to refresh is set by `REFRESH_PCT` (defaults to 1% - set to `100` to refresh all the datasets). Same limits as warming apply with `MAX_LOAD_PCT`, `MAX_VIRTUAL_MEMORY_PCT` and `MAX_SWAP_MEMORY_PCT`.
+The number of randomly chosen datasets to refresh is set by `REFRESH_PCT` (defaults to 1% - set to `100` to refresh all the datasets).
+
+To empty the databases:
+
+```bash
+make clean
+```
+
+or individually:
+
+```bash
+make clean-cache
+make clean-queue
+```
 
 ## Endpoints
 
