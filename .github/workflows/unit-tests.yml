@@ -22,9 +22,11 @@ jobs:
           poetry-version: ${{ matrix.poetry-version }}
       - name: Install dependencies
         run: poetry install
+      - name: Create mongoDB Docker container
+        run: sudo docker run -d -p 27018:27017 mongo:latest
       - name: Run unit tests
         env:
-          CACHE_PERSIST: False
+          MONGO_CACHE_DATABASE: datasets_preview_cache_test
         run: poetry run python -m pytest -s --cov --cov-report xml:coverage.xml --cov-report=term tests
       - uses: codecov/codecov-action@v2
         with:

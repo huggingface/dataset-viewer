@@ -30,15 +30,14 @@ Set environment variables to configure the following aspects:
 - `APP_HOSTNAME`: the hostname used by the app. Defaults to `"localhost"`.
 - `APP_PORT`: the port used by the app. Defaults to `8000`.
 - `ASSETS_DIRECTORY`: directory where the asset files are stored. Defaults to empty, in which case the assets are located in the `datasets_preview_backend_assets` subdirectory inside the OS default cache directory.
-- `CACHE_DIRECTORY`: directory where the cache is stored (see http://www.grantjenks.com/docs/diskcache/tutorial.html). It's only applied if `CACHE_PERSIST` is `True`. Defaults to empty, in which case the cache is located in the `datasets_preview_backend` subdirectory inside the OS default cache directory.
-- `CACHE_PERSIST`: persist the cache between runs by using the platform's default caches directory. Defaults to `True`.
-- `CACHE_SIZE_LIMIT`: maximum size of the cache in bytes. Defaults to `10000000000` (10 GB).
 - `DATASETS_ENABLE_PRIVATE`: enable private datasets. Defaults to `False`.
 - `DATASETS_REVISION`: git reference for the canonical datasets on https://github.com/huggingface/datasets. Defaults to `stream-tar`.
 - `EXTRACT_ROWS_LIMIT`: number of rows in the extract, if not specified in the API request. Defaults to `100`.
 - `LOG_LEVEL`: log level, among `DEBUG`, `INFO`, `WARNING`, `ERROR` and `CRITICAL`. Defaults to `INFO`.
 - `MAX_AGE_LONG_SECONDS`: number of seconds to set in the `max-age` header on data endpoints. Defaults to `21600` (6 hours).
 - `MAX_AGE_SHORT_SECONDS`: number of seconds to set in the `max-age` header on technical endpoints. Defaults to `120` (2 minutes).
+- `MONGO_CACHE_DATABASE`: the name of the database used for storing the cache. Defaults to `"datasets_preview_cache"`.
+- `MONGO_URL`: the URL used to connect to the mongo db server. Defaults to `"mongodb://localhost:27018"`.
 - `WEB_CONCURRENCY`: the number of workers. For now, it's ignored and hardcoded to 1 because the cache is not shared yet. Defaults to `2`.
 
 For example:

@@ -4,10 +4,10 @@ from datasets_preview_backend.models.column.default import (
     Cell,
     CellTypeError,
     Column,
+    ColumnDict,
     ColumnInferenceError,
     ColumnType,
     ColumnTypeError,
-    JsonColumn,
     check_feature_type,
 )
 
@@ -44,5 +44,5 @@ class ClassLabelColumn(Column):
         check_value(value)
         return value
 
-    def to_json(self) -> JsonColumn:
+    def as_dict(self) -> ColumnDict:
         return {"name": self.name, "type": self.type.name, "labels": self.labels}

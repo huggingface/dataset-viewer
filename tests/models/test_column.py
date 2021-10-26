@@ -1,18 +1,8 @@
 from datasets_preview_backend.constants import DEFAULT_CONFIG_NAME
-from datasets_preview_backend.io.cache import cache_directory  # type: ignore
 from datasets_preview_backend.models.column import ColumnType, get_columns
 from datasets_preview_backend.models.column.class_label import ClassLabelColumn
 from datasets_preview_backend.models.config import get_config_names
 from datasets_preview_backend.models.info import get_info
-
-
-def test_cache_directory() -> None:
-    # ensure the cache directory is empty, so that this file gets an empty cache
-    assert cache_directory is None
-    # note that the same cache is used all over this file. We might want to call
-    # http://www.grantjenks.com/docs/diskcache/api.html#diskcache.Cache.clear
-    # at the beginning of every test to start with an empty cache
-
 
 # TODO: add a test for each type
 
@@ -53,7 +43,7 @@ def test_cifar() -> None:
     info = get_info("cifar10", "plain_text")
     columns = get_columns(info, [])
     assert columns is not None
-    json = columns[0].to_json()
+    json = columns[0].as_dict()
     assert json["name"] == "img"
     assert json["type"] == "RELATIVE_IMAGE_URL"
 

@@ -137,6 +137,12 @@ sudo systemctl reload nginx
 sudo certbot --nginx
 ```
 
+Launch a docker container with mongo:
+
+```bash
+docker run -p 27018:27017 --name datasets-preview-backend-mongo -d --restart always mongo:latest
+```
+
 Install datasets-preview-backend:
 
 ```bash

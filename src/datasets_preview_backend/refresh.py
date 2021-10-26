@@ -13,8 +13,8 @@ from datasets_preview_backend.constants import (
     DEFAULT_REFRESH_PCT,
 )
 from datasets_preview_backend.io.logger import init_logger
-from datasets_preview_backend.models.dataset import get_refreshed_dataset
-from datasets_preview_backend.models.hf_dataset import get_refreshed_hf_dataset_names
+from datasets_preview_backend.io.mongo import update_dataset_cache
+from datasets_preview_backend.models.hf_dataset import get_hf_dataset_names
 from datasets_preview_backend.utils import get_int_value
 
 # Load environment variables defined in .env, if any
@@ -32,17 +32,17 @@ def wait_until_load_is_ok(max_load_pct: int) -> None:
         time.sleep(1)
 
 
-def refresh_dataset(dataset: str, max_load_pct: int) -> None:
+def refresh_dataset(dataset_name: str, max_load_pct: int) -> None:
     wait_until_load_is_ok(max_load_pct)
 
-    print(f"Cache refreshing: dataset '{dataset}'", flush=True)
+    print(f"Cache refreshing: dataset '{dataset_name}'", flush=True)
     t = time.perf_counter()
     try:  # nosec
-        get_refreshed_dataset(dataset)
+        update_dataset_cache(dataset_name)
     except Exception:
         pass
     elapsed_seconds = time.perf_counter() - t
-    print(f"Cache refreshing: dataset '{dataset}' - done in {elapsed_seconds:.1f}s", flush=True)
+    print(f"Cache refreshing: dataset '{dataset_name}' - done in {elapsed_seconds:.1f}s", flush=True)
 
 
 # TODO: we could get the first N, sorted by creation time (more or less expire time)
@@ -56,24 +56,25 @@ def refresh() -> None:
     max_swap_memory_pct = get_int_value(os.environ, "MAX_SWAP_MEMORY_PCT", DEFAULT_MAX_SWAP_MEMORY_PCT)
     refresh_pct = get_int_value(os.environ, "REFRESH_PCT", DEFAULT_REFRESH_PCT)
 
-    datasets = get_refreshed_hf_dataset_names()
+    # TODO: cache get_hf_dataset_names?
+    dataset_names = get_hf_dataset_names()
 
     criterion = make_criterion(refresh_pct / 100)
-    selected_datasets = list(filter(criterion, datasets))
+    selected_dataset_names = list(filter(criterion, dataset_names))
     print(
-        f"Refreshing: {len(selected_datasets)} datasets from"
-        f" {len(datasets)} ({100*len(selected_datasets)/len(datasets):.1f}%)",
+        f"Refreshing: {len(selected_dataset_names)} datasets from"
+        f" {len(dataset_names)} ({100*len(selected_dataset_names)/len(dataset_names):.1f}%)",
         flush=True,
     )
 
-    for dataset in selected_datasets:
+    for dataset_name in selected_dataset_names:
         if psutil.virtual_memory().percent > max_virtual_memory_pct:
             print("Memory usage is too high, we stop here.", flush=True)
             return
         if psutil.swap_memory().percent > max_swap_memory_pct:
             print("Swap memory usage is too high, we stop here.", flush=True)
             return
-        refresh_dataset(dataset, max_load_pct)
+        refresh_dataset(dataset_name, max_load_pct)
 
 
 if __name__ == "__main__":

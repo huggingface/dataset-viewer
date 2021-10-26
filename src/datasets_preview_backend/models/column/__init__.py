@@ -8,10 +8,10 @@ from datasets_preview_backend.models.column.default import (
     Cell,
     CellTypeError,
     Column,
+    ColumnDict,
     ColumnInferenceError,
     ColumnType,
     ColumnTypeError,
-    JsonColumn,
 )
 from datasets_preview_backend.models.column.float import FloatColumn
 from datasets_preview_backend.models.column.image_array2d import ImageArray2DColumn
@@ -76,4 +76,4 @@ def get_columns(info: Info, rows: List[Row]) -> List[Column]:
 
 
 # explicit re-export
-__all__ = ["Column", "Cell", "ColumnType", "JsonColumn"]
+__all__ = ["Column", "Cell", "ColumnType", "ColumnDict"]

@@ -34,6 +34,8 @@ types-requests = "^2.25.11"
 uvicorn = "^0.14.0"
 watchdog = { extras = ["watchmedo"], version = "^2.1.3" }
 wget = "^3.2"
+mongoengine = "^0.23.1"
+mongo-types = "^0.14.2"
 
 [tool.poetry.dev-dependencies]
 bandit = "^1.7.0"

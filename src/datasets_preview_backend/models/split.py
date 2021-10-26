@@ -4,7 +4,7 @@ from datasets import get_dataset_split_names
 
 from datasets_preview_backend.constants import FORCE_REDOWNLOAD
 from datasets_preview_backend.exceptions import Status400Error, Status404Error
-from datasets_preview_backend.models.column import Column
+from datasets_preview_backend.models.column import ColumnDict
 from datasets_preview_backend.models.info import Info
 from datasets_preview_backend.models.row import Row
 from datasets_preview_backend.models.typed_row import get_typed_rows_and_columns
@@ -13,12 +13,12 @@ from datasets_preview_backend.models.typed_row import get_typed_rows_and_columns
 class Split(TypedDict):
     split_name: str
     rows: List[Row]
-    columns: List[Column]
+    columns: List[ColumnDict]
 
 
 def get_split(dataset_name: str, config_name: str, split_name: str, info: Info) -> Split:
-    typed_rows, columns = get_typed_rows_and_columns(dataset_name, config_name, split_name, info)
-    return {"split_name": split_name, "rows": typed_rows, "columns": columns}
+    typed_rows, columns_dicts = get_typed_rows_and_columns(dataset_name, config_name, split_name, info)
+    return {"split_name": split_name, "rows": typed_rows, "columns": columns_dicts}
 
 
 def get_split_names(dataset_name: str, config_name: str) -> List[str]:

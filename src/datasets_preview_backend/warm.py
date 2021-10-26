@@ -10,11 +10,8 @@ from datasets_preview_backend.constants import (
     DEFAULT_MAX_VIRTUAL_MEMORY_PCT,
 )
 from datasets_preview_backend.io.logger import init_logger
-from datasets_preview_backend.models.dataset import (
-    get_dataset,
-    get_dataset_cache_status,
-)
-from datasets_preview_backend.models.hf_dataset import get_refreshed_hf_dataset_names
+from datasets_preview_backend.io.mongo import get_dataset_cache, update_dataset_cache
+from datasets_preview_backend.models.hf_dataset import get_hf_dataset_names
 from datasets_preview_backend.utils import get_int_value
 
 # Load environment variables defined in .env, if any
@@ -32,26 +29,27 @@ def wait_until_load_is_ok(max_load_pct: int) -> None:
         time.sleep(1)
 
 
-def warm_dataset(dataset: str, max_load_pct: int) -> None:
+def warm_dataset(dataset_name: str, max_load_pct: int) -> None:
     wait_until_load_is_ok(max_load_pct)
 
-    print(f"Cache warming: dataset '{dataset}'", flush=True)
+    print(f"Cache warming: dataset '{dataset_name}'", flush=True)
     t = time.perf_counter()
     try:  # nosec
-        get_dataset(dataset_name=dataset)
+        update_dataset_cache(dataset_name=dataset_name)
     except Exception:
         pass
     elapsed_seconds = time.perf_counter() - t
-    print(f"Cache warming: dataset '{dataset}' - done in {elapsed_seconds:.1f}s", flush=True)
+    print(f"Cache warming: dataset '{dataset_name}' - done in {elapsed_seconds:.1f}s", flush=True)
 
 
 def warm() -> None:
     max_load_pct = get_int_value(os.environ, "MAX_LOAD_PCT", DEFAULT_MAX_LOAD_PCT)
     max_virtual_memory_pct = get_int_value(os.environ, "MAX_VIRTUAL_MEMORY_PCT", DEFAULT_MAX_VIRTUAL_MEMORY_PCT)
     max_swap_memory_pct = get_int_value(os.environ, "MAX_SWAP_MEMORY_PCT", DEFAULT_MAX_SWAP_MEMORY_PCT)
-    datasets = get_refreshed_hf_dataset_names()
+    # TODO: cache get_hf_dataset_names?
+    dataset_names = get_hf_dataset_names()
 
-    for dataset in datasets:
+    for dataset_name in dataset_names:
         if psutil.virtual_memory().percent > max_virtual_memory_pct:
             print("Memory usage is too high, we stop here.", flush=True)
             return
@@ -59,11 +57,11 @@ def warm() -> None:
             print("Swap memory usage is too high, we stop here.", flush=True)
             return
 
-        print(f"Checking dataset '{dataset}'", flush=True)
-        status = get_dataset_cache_status(dataset)["status"]
+        print(f"Checking dataset '{dataset_name}'", flush=True)
+        status = get_dataset_cache(dataset_name).status
         print(f"Checked: '{status}'", flush=True)
         if status == "cache_miss":
-            warm_dataset(dataset, max_load_pct)
+            warm_dataset(dataset_name, max_load_pct)
 
 
 if __name__ == "__main__":
