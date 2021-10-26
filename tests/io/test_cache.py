@@ -32,7 +32,7 @@ def test_save() -> None:
     dataset_cache.save()
 
     retrieved = DatasetCache.objects(dataset_name="test")
-    assert len(list(retrieved)) >= 1
+    assert len(list(retrieved)) == 1
 
 
 def test_acronym_identification() -> None:
