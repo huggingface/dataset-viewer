@@ -2,8 +2,6 @@ from typing import List, TypedDict, Union
 
 from datasets import list_datasets
 
-from datasets_preview_backend.io.cache import cache, memoize  # type: ignore
-
 
 class HFDataset(TypedDict):
     id: str
@@ -14,7 +12,6 @@ class HFDataset(TypedDict):
     downloads: Union[int, None]
 
 
-@memoize(cache)  # type:ignore
 def get_hf_datasets() -> List[HFDataset]:
     # If an exception is raised, we let it propagate
     datasets = list_datasets(with_community_datasets=True, with_details=True)  # type: ignore
@@ -31,13 +28,5 @@ def get_hf_datasets() -> List[HFDataset]:
     ]
 
 
-def get_refreshed_hf_datasets() -> List[HFDataset]:
-    return get_hf_datasets(_refresh=True)  # type: ignore
-
-
 def get_hf_dataset_names() -> List[str]:
     return [d["id"] for d in get_hf_datasets()]
-
-
-def get_refreshed_hf_dataset_names() -> List[str]:
-    return [d["id"] for d in get_refreshed_hf_datasets()]

@@ -16,10 +16,10 @@ watch:
 	poetry run watchmedo auto-restart -d src/datasets_preview_backend -p "*.py" -R python src/datasets_preview_backend/main.py
 
 test:
-	CACHE_PERSIST=False poetry run python -m pytest -x tests
+	MONGO_CACHE_DATABASE="datasets_preview_cache_test" poetry run python -m pytest -x tests
 
 coverage:
-	CACHE_PERSIST=False poetry run python -m pytest -s --cov --cov-report xml:coverage.xml --cov-report=term tests
+	MONGO_CACHE_DATABASE="datasets_preview_cache_test" poetry run python -m pytest -s --cov --cov-report xml:coverage.xml --cov-report=term tests
 
 # Check that source code meets quality standards + security
 quality:

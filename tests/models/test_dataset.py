@@ -1,31 +1,7 @@
 import pytest
 
 from datasets_preview_backend.exceptions import Status400Error, Status404Error
-from datasets_preview_backend.io.cache import cache_directory  # type: ignore
-from datasets_preview_backend.models.dataset import (
-    get_dataset,
-    get_dataset_cache_status,
-)
-
-
-def test_cache_directory() -> None:
-    # ensure the cache directory is empty, so that this file gets an empty cache
-    assert cache_directory is None
-    # note that the same cache is used all over this file. We might want to call
-    # http://www.grantjenks.com/docs/diskcache/api.html#diskcache.Cache.clear
-    # at the beginning of every test to start with an empty cache
-
-
-def test_get_dataset_cache_status_error() -> None:
-    report = get_dataset_cache_status("doesnotexist")
-    assert report["status"] == "cache_miss"
-
-    # warm the cache
-    with pytest.raises(Status404Error):
-        get_dataset(dataset_name="doesnotexist")
-
-    report = get_dataset_cache_status("doesnotexist")
-    assert report["status"] == "error"
+from datasets_preview_backend.models.dataset import get_dataset
 
 
 def test_script_error() -> None:

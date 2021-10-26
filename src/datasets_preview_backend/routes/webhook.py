@@ -1,11 +1,11 @@
 import logging
 from typing import Any, Optional, TypedDict
 
-from datasets_preview_backend.exceptions import Status400Error, StatusError
-from datasets_preview_backend.models.dataset import (
-    delete_dataset,
-    get_refreshed_dataset,
-)
+from starlette.requests import Request
+from starlette.responses import Response
+
+from datasets_preview_backend.io.mongo import delete_dataset_cache, update_dataset_cache
+from datasets_preview_backend.routes._utils import get_response
 
 logger = logging.getLogger(__name__)
 
@@ -42,36 +42,40 @@ def get_dataset_name(id: Optional[str]) -> Optional[str]:
     return dataset_name
 
 
-def try_to_refresh(id: Optional[str]) -> None:
+def try_to_update(id: Optional[str]) -> None:
     dataset_name = get_dataset_name(id)
     if dataset_name is not None:
         logger.debug(f"webhook: refresh {dataset_name}")
-        get_refreshed_dataset(dataset_name)
+        update_dataset_cache(dataset_name)
 
 
 def try_to_delete(id: Optional[str]) -> None:
     dataset_name = get_dataset_name(id)
     if dataset_name is not None:
         logger.debug(f"webhook: delete {dataset_name}")
-        delete_dataset(dataset_name)
+        delete_dataset_cache(dataset_name)
 
 
 def process_payload(payload: MoonWebhookV2Payload) -> None:
-    try_to_refresh(payload["add"])
-    try_to_refresh(payload["update"])
+    try_to_update(payload["add"])
+    try_to_update(payload["update"])
     try_to_delete(payload["remove"])
 
 
-def post_webhook(json: Any) -> WebHookContent:
+async def webhook_endpoint(request: Request) -> Response:
+    try:
+        json = await request.json()
+    except Exception:
+        content = {"status": "error", "error": "the body could not be parsed as a JSON"}
+        return get_response(content, 400)
+    logger.info(f"/webhook: {json}")
     # TODO: respond directly, without waiting for the cache to be refreshed?
     try:
-        logger.info(f"webhook: {json}")
         payload = parse_payload(json)
-    except Exception as err:
-        raise Status400Error("Invalid JSON", err)
-    try:
-        process_payload(payload)
-    except StatusError:
-        # the cache has been refreshed, return OK
-        pass
-    return {"status": "ok"}
+    except Exception:
+        content = {"status": "error", "error": "the JSON payload is invalid"}
+        return get_response(content, 400)
+
+    process_payload(payload)
+    content = {"status": "ok"}
+    return get_response(content, 200)

@@ -137,6 +137,12 @@ sudo systemctl reload nginx
 sudo certbot --nginx
 ```
 
+Launch a docker container with mongo:
+
+```bash
+docker run -p 27018:27017 --name datasets-preview-backend-mongo -d --restart always mongo:latest
+```
+
 Install datasets-preview-backend:
 
 ```bash
@@ -179,12 +185,4 @@ Finally, ensure that pm2 will restart on reboot (see https://pm2.keymetrics.io/d
 ```bash
 pm2 startup
 # and follow the instructions
-```
-
-## Mongo
-
-Launch a docker container:
-
-```bash
-docker run -p 27018:27017 --name datasets-preview-backend-mongo -d mongo:latest
 ```

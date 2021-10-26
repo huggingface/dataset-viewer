@@ -17,12 +17,12 @@ class ColumnType(Enum):
 Cell = Any
 
 
-class _BaseJsonColumn(TypedDict):
+class _BaseColumnDict(TypedDict):
     name: str
     type: str
 
 
-class JsonColumn(_BaseJsonColumn, total=False):
+class ColumnDict(_BaseColumnDict, total=False):
     # https://www.python.org/dev/peps/pep-0655/#motivation
     labels: List[str]
 
@@ -39,7 +39,7 @@ class Column:
         # TODO: return JSON? of pickled?
         return value
 
-    def to_json(self) -> JsonColumn:
+    def as_dict(self) -> ColumnDict:
         return {"name": self.name, "type": self.type.name}
 
 

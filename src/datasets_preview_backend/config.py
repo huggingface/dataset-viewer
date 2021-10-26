@@ -6,9 +6,6 @@ from datasets_preview_backend.constants import (
     DEFAULT_APP_HOSTNAME,
     DEFAULT_APP_PORT,
     DEFAULT_ASSETS_DIRECTORY,
-    DEFAULT_CACHE_DIRECTORY,
-    DEFAULT_CACHE_PERSIST,
-    DEFAULT_CACHE_SIZE_LIMIT,
     DEFAULT_DATASETS_ENABLE_PRIVATE,
     DEFAULT_DATASETS_REVISION,
     DEFAULT_EXTRACT_ROWS_LIMIT,
@@ -32,9 +29,6 @@ load_dotenv()
 APP_HOSTNAME = os.environ.get("APP_HOSTNAME", DEFAULT_APP_HOSTNAME)
 APP_PORT = get_int_value(d=os.environ, key="APP_PORT", default=DEFAULT_APP_PORT)
 ASSETS_DIRECTORY = get_str_or_none_value(d=os.environ, key="ASSETS_DIRECTORY", default=DEFAULT_ASSETS_DIRECTORY)
-CACHE_DIRECTORY = get_str_or_none_value(d=os.environ, key="CACHE_DIRECTORY", default=DEFAULT_CACHE_DIRECTORY)
-CACHE_PERSIST = get_bool_value(d=os.environ, key="CACHE_PERSIST", default=DEFAULT_CACHE_PERSIST)
-CACHE_SIZE_LIMIT = get_int_value(d=os.environ, key="CACHE_SIZE_LIMIT", default=DEFAULT_CACHE_SIZE_LIMIT)
 DATASETS_ENABLE_PRIVATE = get_bool_value(
     d=os.environ, key="DATASETS_ENABLE_PRIVATE", default=DEFAULT_DATASETS_ENABLE_PRIVATE
 )
