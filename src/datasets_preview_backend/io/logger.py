@@ -5,8 +5,8 @@ import datasets
 from datasets_preview_backend.constants import DEFAULT_LOG_LEVEL
 
 
-def init_logger(log_level: str = DEFAULT_LOG_LEVEL) -> None:
-    logger = logging.getLogger("datasets_preview_backend")
+def init_logger(log_level: str = DEFAULT_LOG_LEVEL, name: str = "datasets_preview_backend") -> None:
+    logger = logging.getLogger(name)
     logger.setLevel(log_level)
 
     format = "%(levelname)s: %(asctime)s - %(name)s - %(message)s"

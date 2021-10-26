@@ -5,7 +5,7 @@ from starlette.requests import Request
 from starlette.responses import Response
 
 from datasets_preview_backend.config import MAX_AGE_SHORT_SECONDS
-from datasets_preview_backend.io.mongo import get_datasets_count_with_status
+from datasets_preview_backend.io.cache import get_datasets_count_with_status
 from datasets_preview_backend.routes._utils import get_response
 
 logger = logging.getLogger(__name__)

@@ -12,14 +12,16 @@ from datasets_preview_backend.config import (
     WEB_CONCURRENCY,
 )
 from datasets_preview_backend.io.asset import assets_directory, show_asserts_dir
+from datasets_preview_backend.io.cache import connect_to_cache
 from datasets_preview_backend.io.logger import init_logger
-from datasets_preview_backend.io.mongo import connect_cache
+from datasets_preview_backend.io.queue import connect_to_queue
 from datasets_preview_backend.routes.cache_reports import cache_reports_endpoint
 from datasets_preview_backend.routes.cache_stats import cache_stats_endpoint
 from datasets_preview_backend.routes.configs import configs_endpoint
 from datasets_preview_backend.routes.healthcheck import healthcheck_endpoint
 from datasets_preview_backend.routes.hf_datasets import hf_datasets_endpoint
 from datasets_preview_backend.routes.infos import infos_endpoint
+from datasets_preview_backend.routes.queue_stats import queue_stats_endpoint
 from datasets_preview_backend.routes.rows import rows_endpoint
 from datasets_preview_backend.routes.splits import splits_endpoint
 from datasets_preview_backend.routes.validity_status import valid_datasets_endpoint
@@ -28,7 +30,8 @@ from datasets_preview_backend.routes.webhook import webhook_endpoint
 
 def create_app() -> Starlette:
     init_logger(log_level=LOG_LEVEL)  # every worker has its own logger
-    connect_cache()
+    connect_to_cache()
+    connect_to_queue()
     show_asserts_dir()
 
     middleware = [Middleware(GZipMiddleware)]
@@ -40,6 +43,7 @@ def create_app() -> Starlette:
         Route("/healthcheck", endpoint=healthcheck_endpoint),
         Route("/hf_datasets", endpoint=hf_datasets_endpoint),
         Route("/infos", endpoint=infos_endpoint),
+        Route("/queue", endpoint=queue_stats_endpoint),
         Route("/rows", endpoint=rows_endpoint),
         Route("/splits", endpoint=splits_endpoint),
         Route("/valid", endpoint=valid_datasets_endpoint),

@@ -180,6 +180,12 @@ Setup the refresh process (1% every 15 minutes, so that the datasets should be r
 pm2 start --cron "*/15 * * * *" --no-autorestart --name datasets-preview-backend-refresh make -- -C /home/hf/datasets-preview-backend/ refresh
 ```
 
+Setup a worker (run again to create another worker, and so on):
+
+```bash
+pm2 start --name datasets-preview-backend-worker make -- -C /home/hf/datasets-preview-backend/ worker
+```
+
 Finally, ensure that pm2 will restart on reboot (see https://pm2.keymetrics.io/docs/usage/startup/):
 
 ```bash

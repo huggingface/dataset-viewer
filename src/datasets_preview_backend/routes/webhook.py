@@ -4,7 +4,8 @@ from typing import Any, Optional, TypedDict
 from starlette.requests import Request
 from starlette.responses import Response
 
-from datasets_preview_backend.io.mongo import delete_dataset_cache, update_dataset_cache
+from datasets_preview_backend.io.cache import delete_dataset_cache
+from datasets_preview_backend.io.queue import add_job
 from datasets_preview_backend.routes._utils import get_response
 
 logger = logging.getLogger(__name__)
@@ -46,7 +47,7 @@ def try_to_update(id: Optional[str]) -> None:
     dataset_name = get_dataset_name(id)
     if dataset_name is not None:
         logger.debug(f"webhook: refresh {dataset_name}")
-        update_dataset_cache(dataset_name)
+        add_job(dataset_name)
 
 
 def try_to_delete(id: Optional[str]) -> None:
@@ -69,7 +70,6 @@ async def webhook_endpoint(request: Request) -> Response:
         content = {"status": "error", "error": "the body could not be parsed as a JSON"}
         return get_response(content, 400)
     logger.info(f"/webhook: {json}")
-    # TODO: respond directly, without waiting for the cache to be refreshed?
     try:
         payload = parse_payload(json)
     except Exception:

@@ -27,6 +27,7 @@ jobs:
       - name: Run unit tests
         env:
           MONGO_CACHE_DATABASE: datasets_preview_cache_test
+          MONGO_QUEUE_DATABASE: datasets_preview_queue_test
         run: poetry run python -m pytest -s --cov --cov-report xml:coverage.xml --cov-report=term tests
       - uses: codecov/codecov-action@v2
         with:
