@@ -57,3 +57,12 @@ def test_doesnotexist() -> None:
         upsert_dataset_cache(dataset_name, "error", err.as_content())
     retrieved = DatasetCache.objects(dataset_name=dataset_name).get()
     assert retrieved.status == "error"
+
+
+def test_large_document() -> None:
+    # see https://github.com/huggingface/datasets-preview-backend/issues/89
+    dataset_name = "the_pile_books3"
+    dataset = get_dataset(dataset_name)
+    upsert_dataset_cache(dataset_name, "valid", dataset)
+    retrieved = DatasetCache.objects(dataset_name=dataset_name).get()
+    assert retrieved.status == "error"

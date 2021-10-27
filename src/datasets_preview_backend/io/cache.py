@@ -4,9 +4,14 @@ from typing import Any, Generic, List, Type, TypedDict, TypeVar, Union
 from mongoengine import Document, DoesNotExist, connect
 from mongoengine.fields import DictField, StringField
 from mongoengine.queryset.queryset import QuerySet
+from pymongo.errors import DocumentTooLarge
 
 from datasets_preview_backend.config import MONGO_CACHE_DATABASE, MONGO_URL
-from datasets_preview_backend.exceptions import Status404Error, StatusErrorContent
+from datasets_preview_backend.exceptions import (
+    Status400Error,
+    Status404Error,
+    StatusErrorContent,
+)
 from datasets_preview_backend.models.dataset import Dataset
 
 # START monkey patching ### hack ###
@@ -63,7 +68,17 @@ def get_dataset_cache(dataset_name: str) -> DatasetCache:
 
 
 def upsert_dataset_cache(dataset_name: str, status: str, content: Union[Dataset, StatusErrorContent]) -> None:
-    DatasetCache(dataset_name=dataset_name, status=status, content=content).save()
+    try:
+        DatasetCache(dataset_name=dataset_name, status=status, content=content).save()
+    except DocumentTooLarge:
+        # the content is over 16MB, see https://github.com/huggingface/datasets-preview-backend/issues/89
+        DatasetCache(
+            dataset_name=dataset_name,
+            status="error",
+            content=Status400Error(
+                "The dataset document is larger than the maximum supported size (16MB)."
+            ).as_content(),
+        ).save()
 
 
 def delete_dataset_cache(dataset_name: str) -> None:
