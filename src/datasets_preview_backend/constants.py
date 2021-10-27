@@ -21,5 +21,10 @@ DEFAULT_WORKER_SLEEP_SECONDS: int = 5
 DEFAULT_REFRESH_PCT: int = 1
 
 DEFAULT_CONFIG_NAME: str = "default"
-DATASETS_BLOCKLIST: List[str] = ["imthanhlv/binhvq_news21_raw"]
+# these datasets take too much time, we block them beforehand
+DATASETS_BLOCKLIST: List[str] = [
+    "imthanhlv/binhvq_news21_raw",
+    "SaulLu/Natural_Questions_HTML_Toy",
+    "SaulLu/Natural_Questions_HTML_reduced_all",
+]
 FORCE_REDOWNLOAD: str = "force_redownload"
