@@ -116,6 +116,10 @@ def clean_database() -> None:
     Job.drop_collection()  # type: ignore
 
 
+def force_finish_started_jobs() -> None:
+    Job.objects(started_at__exists=True, finished_at=None).update(finished_at=datetime.utcnow())
+
+
 # special reports
 
 

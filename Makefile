@@ -1,4 +1,4 @@
-.PHONY: install run watch test coverage quality style warm worker refresh clean clean-queue clean-cache
+.PHONY: install run watch test coverage quality style warm worker refresh clean clean-queue clean-cache force-finish-queue
 
 install:
 	poetry install
@@ -36,6 +36,8 @@ warm:
 	poetry run python src/datasets_preview_backend/warm.py
 worker:
 	poetry run python src/datasets_preview_backend/worker.py
+force-finish-queue:
+	poetry run python src/datasets_preview_backend/force_finish_queue.py
 clean-queue:
 	poetry run python src/datasets_preview_backend/clean_queue.py
 clean-cache:
