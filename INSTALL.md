@@ -89,6 +89,8 @@ Install packages, logged as `hf`:
 sudo apt install python-is-python3 make nginx libicu-dev
 ```
 
+Also install docker (see https://docs.docker.com/engine/install/ubuntu/#install-using-the-repository and https://docs.docker.com/engine/install/linux-postinstall/).
+
 Also install node and npm (with [nvm](https://github.com/nvm-sh/nvm)), then:
 
 ```bash
