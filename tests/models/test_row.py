@@ -58,6 +58,7 @@ def test_community_with_no_config() -> None:
     config_names = get_config_names(dataset_name="Check/region_1")
     assert config_names == ["default"]
     rows = get_rows("Check/region_1", "default", "train")
+    # it's not correct: here this is the number of splits, not the number of rows
     assert len(rows) == 2
     # see https://github.com/huggingface/datasets-preview-backend/issues/78
     get_rows("Check/region_1", "default", "train")

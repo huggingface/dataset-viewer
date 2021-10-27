@@ -50,7 +50,11 @@ def get_features(info: Info) -> FeaturesOrNone:
 
 def get_column(column_name: str, features: FeaturesOrNone, rows: List[Row]) -> Column:
     feature = None if features is None else features[column_name]
-    values = [row[column_name] for row in rows[:MAX_ROWS_FOR_TYPE_INFERENCE_AND_CHECK]]
+    try:
+        values = [row[column_name] for row in rows[:MAX_ROWS_FOR_TYPE_INFERENCE_AND_CHECK]]
+    except KeyError:
+        # see https://datasets-preview.huggingface.tech/queue
+        raise Status400Error("could not get the config name for this dataset")
 
     # try until one works
     for column_class in column_classes:
