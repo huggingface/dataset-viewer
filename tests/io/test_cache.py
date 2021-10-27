@@ -72,7 +72,7 @@ def test_config_error() -> None:
     # see https://github.com/huggingface/datasets-preview-backend/issues/78
     dataset_name = "Check/region_1"
     try:
-        dataset = get_dataset(dataset_name)
+        get_dataset(dataset_name)
     except StatusError as err:
         upsert_dataset_cache(dataset_name, "error", err.as_content())
     retrieved = DatasetCache.objects(dataset_name=dataset_name).get()
