@@ -30,10 +30,5 @@ DATASETS_BLOCKLIST: List[str] = [
     "kiyoung2/aistage-mrc",
     "SaulLu/Natural_Questions_HTML",
 ]
-# these datasets can generate issues on moon-landing: we reduce the number
-# of rows returned by the API
-# see https://github.com/huggingface/moon-landing/issues/1457
-TRUNCATED_DATASETS_LIST: List[str] = ["tydiqa"]
-TRUNCATED_EXTRACT_ROWS_LIMIT: int = 10
 
 FORCE_REDOWNLOAD: str = "force_redownload"
