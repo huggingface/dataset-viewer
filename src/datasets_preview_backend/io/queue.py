@@ -1,6 +1,7 @@
+import time
 import types
 from datetime import datetime
-from typing import Generic, Tuple, Type, TypeVar
+from typing import Generic, List, Optional, Tuple, Type, TypedDict, TypeVar
 
 from mongoengine import Document, DoesNotExist, connect
 from mongoengine.errors import ValidationError
@@ -35,6 +36,20 @@ class QuerySetManager(Generic[U]):
 # END monkey patching ### hack ###
 
 
+class JobDict(TypedDict):
+    dataset_name: str
+    created_at: datetime
+    started_at: Optional[datetime]
+    finished_at: Optional[datetime]
+
+
+class DumpByStatus(TypedDict):
+    waiting: List[JobDict]
+    started: List[JobDict]
+    finished: List[JobDict]
+    created_at: str
+
+
 def connect_to_queue() -> None:
     connect(MONGO_QUEUE_DATABASE, alias="queue", host=MONGO_URL)
 
@@ -51,6 +66,14 @@ class Job(Document):
     created_at = DateTimeField(required=True)
     started_at = DateTimeField()
     finished_at = DateTimeField()
+
+    def to_dict(self) -> JobDict:
+        return {
+            "dataset_name": self.dataset_name,
+            "created_at": self.created_at,
+            "started_at": self.started_at,
+            "finished_at": self.finished_at,
+        }
 
     objects = QuerySetManager["Job"]()
 
@@ -92,8 +115,20 @@ def add_job(dataset_name: str) -> None:
     # raises MultipleObjectsReturned if more than one entry -> should never occur, we let it raise
 
 
+def get_waiting_jobs() -> QuerySet[Job]:
+    return Job.objects(started_at=None)
+
+
+def get_started_jobs() -> QuerySet[Job]:
+    return Job.objects(started_at__exists=True, finished_at=None)
+
+
+def get_finished_jobs() -> QuerySet[Job]:
+    return Job.objects(finished_at__exists=True)
+
+
 def get_job() -> Tuple[str, str]:
-    job = Job.objects(started_at=None).order_by("+created_at").first()
+    job = get_waiting_jobs().order_by("+created_at").first()
     if job is None:
         raise EmptyQueue("no job available")
     if job.finished_at is not None:
@@ -117,7 +152,7 @@ def clean_database() -> None:
 
 
 def force_finish_started_jobs() -> None:
-    Job.objects(started_at__exists=True, finished_at=None).update(finished_at=datetime.utcnow())
+    get_started_jobs().update(finished_at=datetime.utcnow())
 
 
 # special reports
@@ -125,9 +160,18 @@ def force_finish_started_jobs() -> None:
 
 def get_jobs_count_with_status(status: str) -> int:
     if status == "waiting":
-        return Job.objects(started_at=None).count()
+        return get_waiting_jobs().count()
     elif status == "started":
-        return Job.objects(started_at__exists=True, finished_at=None).count()
+        return get_started_jobs().count()
     else:
         # done
-        return Job.objects(finished_at__exists=True).count()
+        return get_finished_jobs().count()
+
+
+def get_dump_by_status() -> DumpByStatus:
+    return {
+        "waiting": [d.to_dict() for d in get_waiting_jobs()],
+        "started": [d.to_dict() for d in get_started_jobs()],
+        "finished": [d.to_dict() for d in get_finished_jobs()],
+        "created_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+    }
