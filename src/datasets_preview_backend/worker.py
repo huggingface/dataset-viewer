@@ -29,7 +29,7 @@ max_memory_pct = get_int_value(os.environ, "MAX_MEMORY_PCT", DEFAULT_MAX_MEMORY_
 worker_sleep_seconds = get_int_value(os.environ, "WORKER_SLEEP_SECONDS", DEFAULT_WORKER_SLEEP_SECONDS)
 
 
-def process_next_job() -> None:
+def process_next_job() -> bool:
     logger = logging.getLogger("worker")
     logger.debug("try to process a job")
 
@@ -38,7 +38,7 @@ def process_next_job() -> None:
         logger.debug(f"job assigned: {job_id} for dataset: {dataset_name}")
     except EmptyQueue:
         logger.debug("no job in the queue")
-        return
+        return False
 
     try:
         logger.info(f"compute dataset '{dataset_name}'")
@@ -51,6 +51,7 @@ def process_next_job() -> None:
     finally:
         finish_job(job_id)
         logger.debug(f"job finished: {job_id} for dataset: {dataset_name}")
+    return True
 
 
 def has_memory() -> bool:
@@ -84,10 +85,11 @@ def sleep() -> None:
 
 
 def loop() -> None:
-    while True:
-        if has_resources():
-            process_next_job()
+    while not has_resources() or not process_next_job():
         sleep()
+    # a job has been processed - exit
+    # the worker should be restarted automatically by pm2
+    # this way, we avoid using too much RAM+SWAP
 
 
 if __name__ == "__main__":
