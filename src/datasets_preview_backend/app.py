@@ -21,6 +21,7 @@ from datasets_preview_backend.routes.configs import configs_endpoint
 from datasets_preview_backend.routes.healthcheck import healthcheck_endpoint
 from datasets_preview_backend.routes.hf_datasets import hf_datasets_endpoint
 from datasets_preview_backend.routes.infos import infos_endpoint
+from datasets_preview_backend.routes.queue_dump import queue_dump_endpoint
 from datasets_preview_backend.routes.queue_stats import queue_stats_endpoint
 from datasets_preview_backend.routes.rows import rows_endpoint
 from datasets_preview_backend.routes.splits import splits_endpoint
@@ -44,6 +45,7 @@ def create_app() -> Starlette:
         Route("/hf_datasets", endpoint=hf_datasets_endpoint),
         Route("/infos", endpoint=infos_endpoint),
         Route("/queue", endpoint=queue_stats_endpoint),
+        Route("/queue-dump", endpoint=queue_dump_endpoint),
         Route("/rows", endpoint=rows_endpoint),
         Route("/splits", endpoint=splits_endpoint),
         Route("/valid", endpoint=valid_datasets_endpoint),

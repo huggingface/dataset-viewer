@@ -207,6 +207,36 @@ Responses:
 }
 ```
 
+### /queue-dump
+
+> Give the queue entries, classed by status
+
+Example: https://datasets-preview.huggingface.tech/queue-dump
+
+Method: `GET`
+
+Parameters: none
+
+Responses:
+
+- `200`: JSON content which the queue content, by status, with the following structure:
+
+```json
+{
+  "waiting": [
+    {
+      "dataset_name": "acronym_identification",
+      "created_at": "2021-10-26T20:55:06.850000",
+      "started_at": null,
+      "finished_at": null
+    }
+  ],
+  "started": [],
+  "finished": [],
+  "created_at": "2021-10-29T08:19:20Z"
+}
+```
+
 ### /webhook
 
 > Adds, updates or removes a cache entry
