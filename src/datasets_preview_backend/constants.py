@@ -26,5 +26,8 @@ DATASETS_BLOCKLIST: List[str] = [
     "imthanhlv/binhvq_news21_raw",
     "SaulLu/Natural_Questions_HTML_Toy",
     "SaulLu/Natural_Questions_HTML_reduced_all",
+    "z-uo/squad-it",
+    "kiyoung2/aistage-mrc",
+    "SaulLu/Natural_Questions_HTML",
 ]
 FORCE_REDOWNLOAD: str = "force_redownload"
