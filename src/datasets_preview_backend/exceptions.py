@@ -1,12 +1,12 @@
-from typing import Optional, TypedDict, Union
+from typing import Optional, TypedDict
 
 
 class StatusErrorContent(TypedDict):
     status_code: int
     exception: str
     message: str
-    cause: Union[str, None]
-    cause_message: Union[str, None]
+    cause: str
+    cause_message: str
 
 
 class StatusError(Exception):
@@ -17,8 +17,8 @@ class StatusError(Exception):
         self.status_code = status_code
         self.exception = type(self).__name__
         self.message = str(self)
-        self.cause_name = None if cause is None else type(cause).__name__
-        self.cause_message = None if cause is None else str(cause)
+        self.cause_name = self.exception if cause is None else type(cause).__name__
+        self.cause_message = self.message if cause is None else str(cause)
 
     def as_content(self) -> StatusErrorContent:
         return {
