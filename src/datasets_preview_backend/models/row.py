@@ -5,7 +5,8 @@ from typing import Any, Dict, List
 from datasets import IterableDataset, load_dataset
 
 from datasets_preview_backend.config import EXTRACT_ROWS_LIMIT
-from datasets_preview_backend.constants import FORCE_REDOWNLOAD
+from datasets_preview_backend.constants import FORCE_REDOWNLOAD, TRUNCATED_DATASETS_LIST, TRUNCATED_EXTRACT_ROWS_LIMIT
+
 from datasets_preview_backend.exceptions import Status400Error, Status404Error
 
 logger = logging.getLogger(__name__)
@@ -15,7 +16,7 @@ Row = Dict[str, Any]
 
 
 def get_rows(dataset_name: str, config_name: str, split_name: str) -> List[Row]:
-    num_rows = EXTRACT_ROWS_LIMIT
+    num_rows = TRUNCATED_EXTRACT_ROWS_LIMIT if dataset_name in TRUNCATED_DATASETS_LIST else EXTRACT_ROWS_LIMIT
     try:
         iterable_dataset = load_dataset(
             dataset_name,
