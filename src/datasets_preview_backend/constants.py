@@ -29,5 +29,6 @@ DATASETS_BLOCKLIST: List[str] = [
     "z-uo/squad-it",
     "kiyoung2/aistage-mrc",
     "SaulLu/Natural_Questions_HTML",
+    "tydiqa",  # see https://github.com/huggingface/moon-landing/issues/1457
 ]
 FORCE_REDOWNLOAD: str = "force_redownload"
