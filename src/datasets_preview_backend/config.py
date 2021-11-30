@@ -43,5 +43,5 @@ MONGO_QUEUE_DATABASE = get_str_value(d=os.environ, key="MONGO_QUEUE_DATABASE", d
 MONGO_URL = get_str_value(d=os.environ, key="MONGO_URL", default=DEFAULT_MONGO_URL)
 WEB_CONCURRENCY = get_int_value(d=os.environ, key="WEB_CONCURRENCY", default=DEFAULT_WEB_CONCURRENCY)
 
-# Ensure datasets library uses the excepted revision
+# Ensure datasets library uses the expected revision
 os.environ["HF_SCRIPTS_VERSION"] = DATASETS_REVISION
