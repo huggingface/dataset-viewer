@@ -56,8 +56,8 @@ def test_image_url() -> None:
 
 def test_community_with_no_config() -> None:
     config_names = get_config_names(dataset_name="Check/region_1")
-    assert config_names == ["default"]
-    info = get_info("Check/region_1", DEFAULT_CONFIG_NAME)
+    assert config_names == ["Check___region_1"]
+    info = get_info("Check/region_1", "Check___region_1")
     with pytest.raises(Status400Error):
         # see https://github.com/huggingface/datasets-preview-backend/issues/78
-        get_typed_rows_and_columns("Check/region_1", DEFAULT_CONFIG_NAME, "train", info)
+        get_typed_rows_and_columns("Check/region_1", "Check___region_1", "train", info)
