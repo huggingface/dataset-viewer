@@ -23,7 +23,7 @@ quality:
 	poetry run flake8 tests src
 	poetry run mypy tests src
 	poetry run bandit -r src
-	poetry run safety check -i 41161
+	poetry run safety check -i 41161 -i 42098 -i 42062
 
 # Format source code automatically
 style:
