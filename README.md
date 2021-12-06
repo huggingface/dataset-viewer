@@ -270,6 +270,13 @@ Responses:
 - `400`: the payload is erroneous, or a 400 error raised during the cache operation
 - `500`: application error
 
+Note: if you want to refresh multiple datasets at a time, you have to call the endpoint again and again. You can use bash for example:
+
+```bash
+MODELS=(amazon_polarity ami arabic_billion_words)
+for model in ${MODELS[@]}; do curl -X POST https://datasets-preview.huggingface.tech/webhook -H 'Content-Type: application/json' -d '{"update": "datasets/'$model'"}'; done;
+```
+
 ### /hf_datasets
 
 > Lists the HuggingFace [datasets](https://huggingface.co/docs/datasets/loading_datasets.html#selecting-a-configuration): canonical and community
