@@ -25,7 +25,7 @@ def no_op(self, x):  # type: ignore
     return self
 
 
-QuerySet.__class_getitem__ = types.MethodType(no_op, QuerySet)  # type: ignore
+QuerySet.__class_getitem__ = types.MethodType(no_op, QuerySet)
 
 
 class QuerySetManager(Generic[U]):

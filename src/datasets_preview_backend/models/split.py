@@ -1,10 +1,10 @@
-from typing import List, Optional, TypedDict
+from typing import List, TypedDict
 
 from datasets import get_dataset_split_names
 
 from datasets_preview_backend.constants import FORCE_REDOWNLOAD
 from datasets_preview_backend.exceptions import Status400Error, Status404Error
-from datasets_preview_backend.models.column import ColumnDict
+from datasets_preview_backend.models.column import Column
 from datasets_preview_backend.models.info import Info
 from datasets_preview_backend.models.row import Row
 from datasets_preview_backend.models.typed_row import get_typed_rows_and_columns
@@ -13,12 +13,12 @@ from datasets_preview_backend.models.typed_row import get_typed_rows_and_columns
 class Split(TypedDict):
     split_name: str
     rows: List[Row]
-    columns: List[ColumnDict]
+    columns: List[Column]
 
 
 def get_split(dataset_name: str, config_name: str, split_name: str, info: Info) -> Split:
-    typed_rows, columns_dicts = get_typed_rows_and_columns(dataset_name, config_name, split_name, info)
-    return {"split_name": split_name, "rows": typed_rows, "columns": columns_dicts}
+    typed_rows, columns = get_typed_rows_and_columns(dataset_name, config_name, split_name, info)
+    return {"split_name": split_name, "rows": typed_rows, "columns": columns}
 
 
 def get_split_names(dataset_name: str, config_name: str) -> List[str]:
@@ -43,13 +43,3 @@ def get_splits(dataset_name: str, config_name: str, info: Info) -> List[Split]:
         get_split(dataset_name, config_name, split_name, info)
         for split_name in get_split_names(dataset_name, config_name)
     ]
-
-
-def filter_splits(splits: List[Split], split_name: Optional[str] = None) -> List[Split]:
-    if split_name is not None:
-        if not isinstance(split_name, str):
-            raise TypeError("split_name argument should be a string")
-        splits = [split for split in splits if split["split_name"] == split_name]
-        if not splits:
-            raise Status404Error("split_name not found in config")
-    return splits

@@ -5,7 +5,7 @@ class StatusErrorContent(TypedDict):
     status_code: int
     exception: str
     message: str
-    cause: str
+    cause_exception: str
     cause_message: str
 
 
@@ -17,7 +17,7 @@ class StatusError(Exception):
         self.status_code = status_code
         self.exception = type(self).__name__
         self.message = str(self)
-        self.cause_name = self.exception if cause is None else type(cause).__name__
+        self.cause_exception = self.exception if cause is None else type(cause).__name__
         self.cause_message = self.message if cause is None else str(cause)
 
     def as_content(self) -> StatusErrorContent:
@@ -25,7 +25,7 @@ class StatusError(Exception):
             "status_code": self.status_code,
             "exception": self.exception,
             "message": self.message,
-            "cause": self.cause_name,
+            "cause_exception": self.cause_exception,
             "cause_message": self.cause_message,
         }
 

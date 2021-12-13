@@ -2,13 +2,13 @@ import pytest
 from mongoengine import DoesNotExist
 
 from datasets_preview_backend.config import MONGO_CACHE_DATABASE
-from datasets_preview_backend.exceptions import StatusError
 from datasets_preview_backend.io.cache import (
-    DatasetCache,
+    DbDataset,
     clean_database,
     connect_to_cache,
     delete_dataset_cache,
-    upsert_dataset_cache,
+    refresh_dataset,
+    upsert_dataset,
 )
 from datasets_preview_backend.models.dataset import get_dataset
 
@@ -30,50 +30,43 @@ def clean_mongo_database() -> None:
 
 
 def test_save() -> None:
-    dataset_cache = DatasetCache(dataset_name="test", status="cache_miss", content={"key": "value"})
+    dataset_cache = DbDataset(dataset_name="test", status="cache_miss")
     dataset_cache.save()
 
-    retrieved = DatasetCache.objects(dataset_name="test")
+    retrieved = DbDataset.objects(dataset_name="test")
     assert len(list(retrieved)) == 1
 
 
 def test_acronym_identification() -> None:
     dataset_name = "acronym_identification"
     dataset = get_dataset(dataset_name)
-    upsert_dataset_cache(dataset_name, "valid", dataset)
-    retrieved = DatasetCache.objects(dataset_name=dataset_name).get()
+    upsert_dataset(dataset)
+    retrieved = DbDataset.objects(dataset_name=dataset_name).get()
     assert retrieved.dataset_name == dataset_name
-    assert len(retrieved.content["configs"]) == 1
+    assert retrieved.status == "valid"
     delete_dataset_cache(dataset_name)
     with pytest.raises(DoesNotExist):
-        DatasetCache.objects(dataset_name=dataset_name).get()
+        DbDataset.objects(dataset_name=dataset_name).get()
 
 
 def test_doesnotexist() -> None:
     dataset_name = "doesnotexist"
-    try:
-        get_dataset(dataset_name)
-    except StatusError as err:
-        upsert_dataset_cache(dataset_name, "error", err.as_content())
-    retrieved = DatasetCache.objects(dataset_name=dataset_name).get()
-    assert retrieved.status == "error"
-
-
-def test_large_document() -> None:
-    # see https://github.com/huggingface/datasets-preview-backend/issues/89
-    dataset_name = "the_pile_books3"
-    dataset = get_dataset(dataset_name)
-    upsert_dataset_cache(dataset_name, "valid", dataset)
-    retrieved = DatasetCache.objects(dataset_name=dataset_name).get()
+    refresh_dataset(dataset_name)
+    retrieved = DbDataset.objects(dataset_name=dataset_name).get()
     assert retrieved.status == "error"
 
 
 def test_config_error() -> None:
     # see https://github.com/huggingface/datasets-preview-backend/issues/78
     dataset_name = "Check/region_1"
-    try:
-        get_dataset(dataset_name)
-    except StatusError as err:
-        upsert_dataset_cache(dataset_name, "error", err.as_content())
-    retrieved = DatasetCache.objects(dataset_name=dataset_name).get()
+    refresh_dataset(dataset_name)
+    retrieved = DbDataset.objects(dataset_name=dataset_name).get()
     assert retrieved.status == "error"
+
+
+def test_large_document() -> None:
+    # see https://github.com/huggingface/datasets-preview-backend/issues/89
+    dataset_name = "SaulLu/Natural_Questions_HTML"
+    refresh_dataset(dataset_name)
+    retrieved = DbDataset.objects(dataset_name=dataset_name).get()
+    assert retrieved.status == "valid"

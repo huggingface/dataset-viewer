@@ -1,6 +1,6 @@
 from typing import List, Tuple
 
-from datasets_preview_backend.models.column import Column, ColumnDict, get_columns
+from datasets_preview_backend.models.column import Column, get_columns
 from datasets_preview_backend.models.info import Info
 from datasets_preview_backend.models.row import Row, get_rows
 
@@ -24,9 +24,9 @@ def get_typed_rows(
 
 def get_typed_rows_and_columns(
     dataset_name: str, config_name: str, split_name: str, info: Info
-) -> Tuple[List[Row], List[ColumnDict]]:
+) -> Tuple[List[Row], List[Column]]:
     rows = get_rows(dataset_name, config_name, split_name)
     columns = get_columns(info, rows)
     typed_rows = get_typed_rows(dataset_name, config_name, split_name, rows, columns)
-    columns_dicts = [column.as_dict() for column in columns]
-    return typed_rows, columns_dicts
+    # columns_dicts = column.as_dict() for column in columns]
+    return typed_rows, columns

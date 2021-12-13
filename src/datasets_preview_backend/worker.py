@@ -10,8 +10,7 @@ from datasets_preview_backend.constants import (
     DEFAULT_MAX_MEMORY_PCT,
     DEFAULT_WORKER_SLEEP_SECONDS,
 )
-from datasets_preview_backend.exceptions import StatusError
-from datasets_preview_backend.io.cache import connect_to_cache, upsert_dataset_cache
+from datasets_preview_backend.io.cache import connect_to_cache, refresh_dataset
 from datasets_preview_backend.io.logger import init_logger
 from datasets_preview_backend.io.queue import (
     EmptyQueue,
@@ -19,7 +18,6 @@ from datasets_preview_backend.io.queue import (
     finish_job,
     get_job,
 )
-from datasets_preview_backend.models.dataset import get_dataset
 from datasets_preview_backend.utils import get_int_value
 
 # Load environment variables defined in .env, if any
@@ -42,12 +40,7 @@ def process_next_job() -> bool:
 
     try:
         logger.info(f"compute dataset '{dataset_name}'")
-        dataset = get_dataset(dataset_name=dataset_name)
-        upsert_dataset_cache(dataset_name, "valid", dataset)
-        logger.debug(f"dataset '{dataset_name}' is valid, cache updated")
-    except StatusError as err:
-        upsert_dataset_cache(dataset_name, "error", err.as_content())
-        logger.debug(f"dataset '{dataset_name}' had error, cache updated")
+        refresh_dataset(dataset_name=dataset_name)
     finally:
         finish_job(job_id)
         logger.debug(f"job finished: {job_id} for dataset: {dataset_name}")
