@@ -2,7 +2,7 @@ import logging
 
 from dotenv import load_dotenv
 
-from datasets_preview_backend.io.cache import connect_to_cache, get_dataset_cache
+from datasets_preview_backend.io.cache import connect_to_cache, is_dataset_cached
 from datasets_preview_backend.io.logger import init_logger
 from datasets_preview_backend.io.queue import add_job, connect_to_queue
 from datasets_preview_backend.models.hf_dataset import get_hf_dataset_names
@@ -15,9 +15,7 @@ def warm() -> None:
     logger = logging.getLogger("warm")
     dataset_names = get_hf_dataset_names()
     for dataset_name in dataset_names:
-        status = get_dataset_cache(dataset_name).status
-        logger.debug(f"Checked: '{status}'", flush=True)
-        if status == "cache_miss":
+        if not is_dataset_cached(dataset_name):
             add_job(dataset_name)
             logger.info(f"added a job to refresh '{dataset_name}'")
         else:

@@ -3,9 +3,7 @@ from starlette.testclient import TestClient
 
 from datasets_preview_backend.app import create_app
 from datasets_preview_backend.config import MONGO_CACHE_DATABASE
-from datasets_preview_backend.exceptions import StatusError
-from datasets_preview_backend.io.cache import clean_database, upsert_dataset_cache
-from datasets_preview_backend.models.dataset import get_dataset
+from datasets_preview_backend.io.cache import clean_database, refresh_dataset
 
 
 @pytest.fixture(autouse=True, scope="module")
@@ -24,16 +22,8 @@ def clean_mongo_database() -> None:
     clean_database()
 
 
-def compute_dataset_cache(dataset_name: str) -> None:
-    try:
-        dataset = get_dataset(dataset_name=dataset_name)
-        upsert_dataset_cache(dataset_name, "valid", dataset)
-    except StatusError as err:
-        upsert_dataset_cache(dataset_name, "error", err.as_content())
-
-
 def test_get_cache_reports(client: TestClient) -> None:
-    compute_dataset_cache("acronym_identification")
+    refresh_dataset("acronym_identification")
     response = client.get("/cache-reports")
     assert response.status_code == 200
     json = response.json()
@@ -74,62 +64,10 @@ def test_get_hf_datasets(client: TestClient) -> None:
     assert len(datasets) > 1000
 
 
-def test_get_configs(client: TestClient) -> None:
-    dataset = "acronym_identification"
-    compute_dataset_cache(dataset)
-    response = client.get("/configs", params={"dataset": dataset})
-    assert response.status_code == 200
-    json = response.json()
-    configs = json["configs"]
-    assert len(configs) == 1
-    config = configs[0]
-    assert config["dataset"] == dataset
-    assert config["config"] == "default"
-
-
-def test_get_infos(client: TestClient) -> None:
-    dataset = "acronym_identification"
-    config = "default"
-    compute_dataset_cache(dataset)
-    response = client.get("/infos", params={"dataset": dataset, "config": config})
-    assert response.status_code == 200
-    json = response.json()
-    infoItems = json["infos"]
-    assert len(infoItems) == 1
-    infoItem = infoItems[0]
-    assert infoItem["dataset"] == dataset
-    assert infoItem["config"] == config
-    assert "features" in infoItem["info"]
-
-    # no config provided
-    response = client.get("/infos", params={"dataset": dataset})
-    json = response.json()
-    infoItems = json["infos"]
-    assert len(infoItems) == 1
-
-    # not found
-    response = client.get("/infos", params={"dataset": dataset, "config": "doesnotexist"})
-    assert response.status_code == 404
-
-    # no dataset info file
-    dataset = "lhoestq/custom_squad"
-    compute_dataset_cache(dataset)
-    response = client.get("/infos", params={"dataset": dataset})
-    json = response.json()
-    infoItems = json["infos"]
-    assert len(infoItems) == 1
-
-    # not found
-    dataset = "doesnotexist"
-    compute_dataset_cache(dataset)
-    response = client.get("/infos", params={"dataset": dataset})
-    assert response.status_code == 404
-
-
 def test_get_splits(client: TestClient) -> None:
     dataset = "acronym_identification"
     config = "default"
-    compute_dataset_cache(dataset)
+    refresh_dataset(dataset)
     response = client.get("/splits", params={"dataset": dataset, "config": config})
     assert response.status_code == 200
     json = response.json()
@@ -138,7 +76,7 @@ def test_get_splits(client: TestClient) -> None:
     split = splitItems[0]
     assert split["dataset"] == dataset
     assert split["config"] == config
-    assert split["split"] == "train"
+    assert split["split"] == "test"
 
     # no config
     response2 = client.get("/splits", params={"dataset": dataset})
@@ -152,7 +90,7 @@ def test_get_splits(client: TestClient) -> None:
     # uses the fallback to call "builder._split_generators" while https://github.com/huggingface/datasets/issues/2743
     dataset = "hda_nli_hindi"
     config = "HDA nli hindi"
-    compute_dataset_cache(dataset)
+    refresh_dataset(dataset)
     response = client.get("/splits", params={"dataset": dataset, "config": config})
     assert response.status_code == 200
     json = response.json()
@@ -164,7 +102,7 @@ def test_get_splits(client: TestClient) -> None:
 
     # not found
     dataset = "doesnotexist"
-    compute_dataset_cache(dataset)
+    refresh_dataset(dataset)
     response = client.get("/splits", params={"dataset": dataset})
     assert response.status_code == 404
 
@@ -173,7 +111,7 @@ def test_get_rows(client: TestClient) -> None:
     dataset = "acronym_identification"
     config = "default"
     split = "train"
-    compute_dataset_cache(dataset)
+    refresh_dataset(dataset)
     response = client.get("/rows", params={"dataset": dataset, "config": config, "split": split})
     assert response.status_code == 200
     json = response.json()
@@ -212,7 +150,7 @@ def test_get_rows(client: TestClient) -> None:
 
     # not found
     dataset = "doesnotexist"
-    compute_dataset_cache(dataset)
+    refresh_dataset(dataset)
     response = client.get("/rows", params={"dataset": dataset})
     assert response.status_code == 404
 
@@ -222,7 +160,7 @@ def test_datetime_content(client: TestClient) -> None:
     response = client.get("/rows", params={"dataset": dataset})
     assert response.status_code == 404
 
-    compute_dataset_cache(dataset)
+    refresh_dataset(dataset)
 
     response = client.get("/rows", params={"dataset": dataset})
     assert response.status_code == 200

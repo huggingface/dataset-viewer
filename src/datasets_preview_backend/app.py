@@ -17,10 +17,8 @@ from datasets_preview_backend.io.logger import init_logger
 from datasets_preview_backend.io.queue import connect_to_queue
 from datasets_preview_backend.routes.cache_reports import cache_reports_endpoint
 from datasets_preview_backend.routes.cache_stats import cache_stats_endpoint
-from datasets_preview_backend.routes.configs import configs_endpoint
 from datasets_preview_backend.routes.healthcheck import healthcheck_endpoint
 from datasets_preview_backend.routes.hf_datasets import hf_datasets_endpoint
-from datasets_preview_backend.routes.infos import infos_endpoint
 from datasets_preview_backend.routes.queue_dump import queue_dump_endpoint
 from datasets_preview_backend.routes.queue_stats import queue_stats_endpoint
 from datasets_preview_backend.routes.rows import rows_endpoint
@@ -40,10 +38,8 @@ def create_app() -> Starlette:
         Mount("/assets", app=StaticFiles(directory=assets_directory, check_dir=True), name="assets"),
         Route("/cache", endpoint=cache_stats_endpoint),
         Route("/cache-reports", endpoint=cache_reports_endpoint),
-        Route("/configs", endpoint=configs_endpoint),
         Route("/healthcheck", endpoint=healthcheck_endpoint),
         Route("/hf_datasets", endpoint=hf_datasets_endpoint),
-        Route("/infos", endpoint=infos_endpoint),
         Route("/queue", endpoint=queue_stats_endpoint),
         Route("/queue-dump", endpoint=queue_dump_endpoint),
         Route("/rows", endpoint=rows_endpoint),
