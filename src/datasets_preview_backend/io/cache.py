@@ -305,9 +305,6 @@ def get_rows(dataset_name: str, config_name: Optional[str] = None, split_name: O
 
 # special reports
 
-# def get_dataset_status(dataset_name: str) -> List[str]:
-#     return [d.dataset_name for d in DbDataset.objects(status=status).only("dataset_name")]
-
 
 def get_dataset_names_with_status(status: str) -> List[str]:
     return [d.dataset_name for d in DbDataset.objects(status=status).only("dataset_name")]
