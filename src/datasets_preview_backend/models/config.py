@@ -1,4 +1,4 @@
-from typing import List, Optional, TypedDict
+from typing import List, TypedDict
 
 from datasets import get_dataset_config_names
 
@@ -12,16 +12,6 @@ class Config(TypedDict):
     config_name: str
     splits: List[Split]
     info: Info
-
-
-def filter_configs(configs: List[Config], config_name: Optional[str] = None) -> List[Config]:
-    if config_name is not None:
-        if not isinstance(config_name, str):
-            raise TypeError("config argument should be a string")
-        configs = [config for config in configs if config["config_name"] == config_name]
-        if not configs:
-            raise Status404Error("config not found in dataset")
-    return configs
 
 
 def get_config(dataset_name: str, config_name: str) -> Config:

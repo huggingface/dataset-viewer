@@ -4,7 +4,7 @@ DEFAULT_APP_HOSTNAME: str = "localhost"
 DEFAULT_APP_PORT: int = 8000
 DEFAULT_ASSETS_DIRECTORY: None = None
 DEFAULT_DATASETS_ENABLE_PRIVATE: bool = False
-DEFAULT_DATASETS_REVISION: str = "master"
+DEFAULT_DATASETS_REVISION: str = "1.16.1"
 DEFAULT_EXTRACT_ROWS_LIMIT: int = 100
 DEFAULT_LOG_LEVEL: str = "INFO"
 DEFAULT_MAX_AGE_LONG_SECONDS: int = 21600  # 6 * 60 * 60 = 6 hours
@@ -28,7 +28,6 @@ DATASETS_BLOCKLIST: List[str] = [
     "SaulLu/Natural_Questions_HTML_reduced_all",
     "z-uo/squad-it",
     "kiyoung2/aistage-mrc",
-    "SaulLu/Natural_Questions_HTML",
 ]
 
 FORCE_REDOWNLOAD: str = "force_redownload"

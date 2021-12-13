@@ -12,8 +12,6 @@ from datasets_preview_backend.io.queue import (
     get_job,
 )
 
-# from mongoengine import DoesNotExist
-
 
 @pytest.fixture(autouse=True, scope="module")
 def safe_guard() -> None:

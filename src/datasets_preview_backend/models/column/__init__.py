@@ -80,4 +80,4 @@ def get_columns(info: Info, rows: List[Row]) -> List[Column]:
 
 
 # explicit re-export
-__all__ = ["Column", "Cell", "ColumnType", "ColumnDict"]
+__all__ = ["Column", "Cell", "ColumnType", "ColumnDict", "ClassLabelColumn"]
