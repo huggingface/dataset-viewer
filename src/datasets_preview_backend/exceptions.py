@@ -5,6 +5,7 @@ class StatusErrorContent(TypedDict):
     status_code: int
     exception: str
     message: str
+    cause: str
     cause_exception: str
     cause_message: str
 
@@ -25,7 +26,7 @@ class StatusError(Exception):
             "status_code": self.status_code,
             "exception": self.exception,
             "message": self.message,
-            "cause": self.cause_exception, # TODO: deprecate
+            "cause": self.cause_exception,  # TODO: deprecate
             "cause_exception": self.cause_exception,
             "cause_message": self.cause_message,
         }
