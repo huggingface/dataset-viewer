@@ -215,7 +215,7 @@ def upsert_dataset(dataset: Dataset) -> None:
             dataset_name, Status400Error("The dataset document is larger than the maximum supported size (16MB).")
         )
     except Exception as err:
-        upsert_error(dataset_name, Status500Error(err))
+        upsert_error(dataset_name, Status500Error(str(err)))
 
 
 def delete_dataset_cache(dataset_name: str) -> None:
