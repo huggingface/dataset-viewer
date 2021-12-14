@@ -135,6 +135,7 @@ class _BaseErrorItem(TypedDict):
 
 class ErrorItem(_BaseErrorItem, total=False):
     # https://www.python.org/dev/peps/pep-0655/#motivation
+    cause: str
     cause_exception: str
     cause_message: str
 
