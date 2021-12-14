@@ -25,6 +25,7 @@ class StatusError(Exception):
             "status_code": self.status_code,
             "exception": self.exception,
             "message": self.message,
+            "cause": self.cause_exception,  # will be deprecated
             "cause_exception": self.cause_exception,
             "cause_message": self.cause_message,
         }
