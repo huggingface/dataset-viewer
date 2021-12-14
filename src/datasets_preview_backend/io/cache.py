@@ -150,6 +150,7 @@ class DbError(Document):
     def to_item(self) -> ErrorItem:
         error: ErrorItem = {"status_code": self.status_code, "exception": self.exception, "message": self.message}
         if self.cause_exception and self.cause_message:
+            error["cause"] = self.cause_exception  # to be deprecated
             error["cause_exception"] = self.cause_exception
             error["cause_message"] = self.cause_message
         return error
