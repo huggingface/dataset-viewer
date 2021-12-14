@@ -28,6 +28,17 @@ DATASETS_BLOCKLIST: List[str] = [
     "SaulLu/Natural_Questions_HTML_reduced_all",
     "z-uo/squad-it",
     "kiyoung2/aistage-mrc",
+    "clips/mqa",
+    "Alvenir/nst-da-16khz",
+    "fractalego/QA_to_statements",
+    "lewtun/gem-multi-dataset-predictions",
+    "lukesjordan/worldbank-project-documents",
+    "midas/ldke3k_medium",
+    "midas/ldke3k_small",
+    "midas/ldkp3k_small",
+    "qr/cefr_book_sentences",
+    "hyperpartisan_news_detection",
+    "math_dataset",
 ]
 
 FORCE_REDOWNLOAD: str = "force_redownload"
