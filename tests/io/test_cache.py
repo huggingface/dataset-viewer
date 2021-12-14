@@ -37,9 +37,19 @@ def test_save() -> None:
     assert len(list(retrieved)) == 1
 
 
+def test_save_and_update() -> None:
+    DbDataset(dataset_name="test", status="cache_miss").save()
+    DbDataset.objects(dataset_name="test").upsert_one(status="valid")
+    retrieved = DbDataset.objects(dataset_name="test")
+    assert len(retrieved) == 1
+    assert retrieved[0].status == "valid"
+
+
 def test_acronym_identification() -> None:
     dataset_name = "acronym_identification"
     dataset = get_dataset(dataset_name)
+    upsert_dataset(dataset)
+    # ensure it's idempotent
     upsert_dataset(dataset)
     retrieved = DbDataset.objects(dataset_name=dataset_name).get()
     assert retrieved.dataset_name == dataset_name

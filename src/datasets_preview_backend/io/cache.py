@@ -11,6 +11,7 @@ from datasets_preview_backend.config import MONGO_CACHE_DATABASE, MONGO_URL
 from datasets_preview_backend.exceptions import (
     Status400Error,
     Status404Error,
+    Status500Error,
     StatusError,
 )
 from datasets_preview_backend.models.column import (
@@ -164,16 +165,14 @@ def upsert_error(dataset_name: str, error: StatusError) -> None:
     DbSplit.objects(dataset_name=dataset_name).delete()
     DbRow.objects(dataset_name=dataset_name).delete()
     DbColumn.objects(dataset_name=dataset_name).delete()
-    DbError.objects(dataset_name=dataset_name).delete()  # useless?
-    DbDataset(dataset_name=dataset_name, status="error").save()
-    DbError(
-        dataset_name=dataset_name,
+    DbDataset.objects(dataset_name=dataset_name).upsert_one(status="error")
+    DbError.objects(dataset_name=dataset_name).upsert_one(
         status_code=error.status_code,
         exception=error.exception,
         message=error.message,
         cause_exception=error.cause_exception,
         cause_message=error.cause_message,
-    ).save()
+    )
 
 
 def upsert_dataset(dataset: Dataset) -> None:
@@ -183,7 +182,7 @@ def upsert_dataset(dataset: Dataset) -> None:
     DbColumn.objects(dataset_name=dataset_name).delete()
     DbError.objects(dataset_name=dataset_name).delete()
     try:
-        DbDataset(dataset_name=dataset_name, status="valid").save()
+        DbDataset.objects(dataset_name=dataset_name).upsert_one(status="valid")
         for config in dataset["configs"]:
             config_name = config["config_name"]
             for split in config["splits"]:
@@ -215,6 +214,8 @@ def upsert_dataset(dataset: Dataset) -> None:
         upsert_error(
             dataset_name, Status400Error("The dataset document is larger than the maximum supported size (16MB).")
         )
+    except Exception as err:
+        upsert_error(dataset_name, Status500Error(err))
 
 
 def delete_dataset_cache(dataset_name: str) -> None:

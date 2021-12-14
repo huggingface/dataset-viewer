@@ -52,3 +52,14 @@ class Status404Error(StatusError):
 
     def __init__(self, message: str, cause: Optional[Exception] = None):
         super().__init__(message, 404, cause)
+
+
+class Status500Error(StatusError):
+    """Exception raised if the response must be a 500 status code.
+
+    Attributes:
+        message -- the content of the response
+    """
+
+    def __init__(self, message: str, cause: Optional[Exception] = None):
+        super().__init__(message, 500, cause)
