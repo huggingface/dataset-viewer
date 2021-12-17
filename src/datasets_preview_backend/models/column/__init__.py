@@ -2,6 +2,7 @@ from typing import Any, Dict, List, Union
 
 from datasets_preview_backend.config import EXTRACT_ROWS_LIMIT
 from datasets_preview_backend.exceptions import Status400Error
+from datasets_preview_backend.models.column.audio import AudioColumn
 from datasets_preview_backend.models.column.bool import BoolColumn
 from datasets_preview_backend.models.column.class_label import ClassLabelColumn
 from datasets_preview_backend.models.column.default import (
@@ -24,6 +25,7 @@ from datasets_preview_backend.models.info import Info
 from datasets_preview_backend.models.row import Row
 
 column_classes = [
+    AudioColumn,
     ClassLabelColumn,
     ImageBytesColumn,
     ImageArray2DColumn,

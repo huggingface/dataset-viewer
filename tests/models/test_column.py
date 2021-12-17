@@ -62,3 +62,11 @@ def test_severo_wit() -> None:
     assert columns is not None
     assert columns[2].name == "image_url"
     assert columns[2].type == ColumnType.IMAGE_URL
+
+
+def test_audio() -> None:
+    info = get_info("common_voice", "tr")
+    columns = get_columns(info, [])
+    assert columns is not None
+    assert columns[2].name == "audio"
+    assert columns[2].type == ColumnType.AUDIO_RELATIVE_SOURCES

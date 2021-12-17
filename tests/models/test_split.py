@@ -24,3 +24,8 @@ def test_splits_fallback() -> None:
     splits = get_split_names("hda_nli_hindi", "HDA nli hindi")
     assert len(splits) == 3
     assert "train" in splits
+
+
+def test_audio_dataset() -> None:
+    split_names = get_split_names("common_voice", "tr")
+    assert "train" in split_names

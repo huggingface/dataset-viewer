@@ -10,6 +10,7 @@ class ColumnType(Enum):
     STRING = auto()
     IMAGE_URL = auto()
     RELATIVE_IMAGE_URL = auto()
+    AUDIO_RELATIVE_SOURCES = auto()
     CLASS_LABEL = auto()
 
 
