@@ -20,6 +20,8 @@ jobs:
         uses: abatilo/actions-poetry@v2.0.0
         with:
           poetry-version: ${{ matrix.poetry-version }}
+      - name: Install packages
+        run: sudo apt install -y libicu-dev ffmpeg libavcodec-extra libsndfile1 llvm
       - name: Install dependencies
         run: poetry install
       - name: Create mongoDB Docker container
