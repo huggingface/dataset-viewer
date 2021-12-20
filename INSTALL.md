@@ -86,7 +86,7 @@ BetterUptime:
 Install packages, logged as `hf`:
 
 ```bash
-sudo apt install python-is-python3 make nginx libicu-dev
+sudo apt install python-is-python3 make nginx libicu-dev ffmpeg libavcodec-extra libsndfile1
 ```
 
 Also install docker (see https://docs.docker.com/engine/install/ubuntu/#install-using-the-repository and https://docs.docker.com/engine/install/linux-postinstall/).

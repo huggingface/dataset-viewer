@@ -62,3 +62,9 @@ def test_community_with_no_config() -> None:
     assert len(rows) == 2
     # see https://github.com/huggingface/datasets-preview-backend/issues/78
     get_rows("Check/region_1", "Check___region_1", "train")
+
+
+def test_audio_dataset() -> None:
+    rows = get_rows("common_voice", "tr", "train")
+    assert len(rows) == EXTRACT_ROWS_LIMIT
+    assert rows[0]["audio"]["sampling_rate"] == 48000
