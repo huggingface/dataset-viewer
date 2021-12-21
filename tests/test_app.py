@@ -127,6 +127,7 @@ def test_get_rows(client: TestClient) -> None:
     column_item = json["columns"][0]
     assert "dataset" in column_item
     assert "config" in column_item
+    assert "column_idx" in column_item
     column = column_item["column"]
     assert column["name"] == "id"
     assert column["type"] == "STRING"

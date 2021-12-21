@@ -412,6 +412,7 @@ Responses:
         "dataset": "glue",
         "config": "cola",
         "split": "train",
+        "column_idx": 0,
         "column": {
           "name": "sentence",
           "type": "STRING"
@@ -421,6 +422,7 @@ Responses:
         "dataset": "glue",
         "config": "cola",
         "split": "train",
+        "column_idx": 1,
         "column": {
           "name": "label",
           "type": "CLASS_LABEL",
@@ -431,6 +433,7 @@ Responses:
         "dataset": "glue",
         "config": "cola",
         "split": "train",
+        "column_idx": 2,
         "column": {
           "name": "idx",
           "type": "INT"

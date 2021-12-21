@@ -107,6 +107,7 @@ class ColumnItem(TypedDict):
     dataset: str
     config: str
     split: str
+    column_idx: int
     column: ColumnDict
 
 
@@ -114,6 +115,7 @@ class DbColumn(Document):
     dataset_name = StringField(required=True, unique_with=["config_name", "split_name", "name"])
     config_name = StringField(required=True)
     split_name = StringField(required=True)
+    column_idx = IntField(required=True, min_value=0)
     name = StringField(required=True)
     type = EnumField(ColumnType, required=True)
     labels = ListField(StringField())
@@ -122,7 +124,13 @@ class DbColumn(Document):
         column: ColumnDict = {"name": self.name, "type": self.type.name}
         if self.labels:
             column["labels"] = self.labels
-        return {"dataset": self.dataset_name, "config": self.config_name, "split": self.split_name, "column": column}
+        return {
+            "dataset": self.dataset_name,
+            "config": self.config_name,
+            "split": self.split_name,
+            "column_idx": self.column_idx,
+            "column": column,
+        }
 
     meta = {"collection": "columns", "db_alias": "cache"}
     objects = QuerySetManager["DbColumn"]()
@@ -198,11 +206,12 @@ def upsert_dataset(dataset: Dataset) -> None:
                         row_idx=row_idx,
                         row=row,
                     ).save()
-                for column in columns:
+                for column_idx, column in enumerate(columns):
                     db_column = DbColumn(
                         dataset_name=dataset_name,
                         config_name=config_name,
                         split_name=split_name,
+                        column_idx=column_idx,
                         name=column.name,
                         type=column.type,
                     )
@@ -288,21 +297,25 @@ def get_columns(
     dataset_name: str, config_name: Optional[str] = None, split_name: Optional[str] = None
 ) -> List[ColumnItem]:
     if config_name is None:
-        columns = DbColumn.objects(dataset_name=dataset_name)
+        columns = DbColumn.objects(dataset_name=dataset_name).order_by("+column_idx")
     elif split_name is None:
-        columns = DbColumn.objects(dataset_name=dataset_name, config_name=config_name)
+        columns = DbColumn.objects(dataset_name=dataset_name, config_name=config_name).order_by("+column_idx")
     else:
-        columns = DbColumn.objects(dataset_name=dataset_name, config_name=config_name, split_name=split_name)
+        columns = DbColumn.objects(dataset_name=dataset_name, config_name=config_name, split_name=split_name).order_by(
+            "+column_idx"
+        )
     return [column.to_item() for column in columns]
 
 
 def get_rows(dataset_name: str, config_name: Optional[str] = None, split_name: Optional[str] = None) -> List[RowItem]:
     if config_name is None:
-        rows = DbRow.objects(dataset_name=dataset_name)
+        rows = DbRow.objects(dataset_name=dataset_name).order_by("+row_idx")
     elif split_name is None:
-        rows = DbRow.objects(dataset_name=dataset_name, config_name=config_name)
+        rows = DbRow.objects(dataset_name=dataset_name, config_name=config_name).order_by("+row_idx")
     else:
-        rows = DbRow.objects(dataset_name=dataset_name, config_name=config_name, split_name=split_name)
+        rows = DbRow.objects(dataset_name=dataset_name, config_name=config_name, split_name=split_name).order_by(
+            "+row_idx"
+        )
     return [row.to_item() for row in rows]
 
 

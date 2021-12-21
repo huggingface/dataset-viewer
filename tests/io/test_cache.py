@@ -7,6 +7,7 @@ from datasets_preview_backend.io.cache import (
     clean_database,
     connect_to_cache,
     delete_dataset_cache,
+    get_columns,
     refresh_dataset,
     upsert_dataset,
 )
@@ -80,3 +81,12 @@ def test_large_document() -> None:
     refresh_dataset(dataset_name)
     retrieved = DbDataset.objects(dataset_name=dataset_name).get()
     assert retrieved.status == "valid"
+
+
+def test_column_order() -> None:
+    dataset_name = "head_qa"
+    refresh_dataset(dataset_name)
+    columns = get_columns(dataset_name, "en", "train")
+    print(columns)
+    print([column["column"]["name"] for column in columns])
+    assert columns[6]["column"]["name"] == "image"
