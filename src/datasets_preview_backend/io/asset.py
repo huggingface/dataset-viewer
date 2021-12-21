@@ -42,7 +42,7 @@ def create_asset_file(
 
 
 def create_image_file(
-    dataset: str, config: str, split: str, row_idx: int, column: str, filename: str, image: Image
+    dataset: str, config: str, split: str, row_idx: int, column: str, filename: str, image: Image.Image
 ) -> str:
     dir_path, url_dir_path = create_asset_dir(dataset, config, split, row_idx, column)
     file_path = os.path.join(dir_path, filename)
