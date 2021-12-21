@@ -1,3 +1,5 @@
+from PIL import Image  # type: ignore
+
 from datasets_preview_backend.config import EXTRACT_ROWS_LIMIT
 from datasets_preview_backend.constants import DEFAULT_CONFIG_NAME
 from datasets_preview_backend.models.config import get_config_names
@@ -19,20 +21,19 @@ def test_class_label() -> None:
 def test_mnist() -> None:
     rows = get_rows("mnist", "mnist", "train")
     assert len(rows) == EXTRACT_ROWS_LIMIT
-    assert isinstance(rows[0]["image"], list)
+    assert isinstance(rows[0]["image"], Image.Image)
 
 
 def test_cifar() -> None:
     rows = get_rows("cifar10", "plain_text", "train")
     assert len(rows) == EXTRACT_ROWS_LIMIT
-    assert isinstance(rows[0]["img"], list)
+    assert isinstance(rows[0]["img"], Image.Image)
 
 
 def test_iter_archive() -> None:
     rows = get_rows("food101", DEFAULT_CONFIG_NAME, "train")
     assert len(rows) == EXTRACT_ROWS_LIMIT
-    assert type(rows[0]["image"]["filename"]) == str
-    assert type(rows[0]["image"]["data"]) == bytes
+    assert isinstance(rows[0]["image"], Image.Image)
 
 
 def test_dl_1_suffix() -> None:

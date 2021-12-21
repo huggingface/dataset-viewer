@@ -15,6 +15,7 @@ from datasets_preview_backend.models.column.default import (
     ColumnTypeError,
 )
 from datasets_preview_backend.models.column.float import FloatColumn
+from datasets_preview_backend.models.column.image import ImageColumn
 from datasets_preview_backend.models.column.image_array2d import ImageArray2DColumn
 from datasets_preview_backend.models.column.image_array3d import ImageArray3DColumn
 from datasets_preview_backend.models.column.image_bytes import ImageBytesColumn
@@ -27,6 +28,7 @@ from datasets_preview_backend.models.row import Row
 column_classes = [
     AudioColumn,
     ClassLabelColumn,
+    ImageColumn,
     ImageBytesColumn,
     ImageArray2DColumn,
     ImageArray3DColumn,
