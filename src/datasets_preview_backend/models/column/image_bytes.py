@@ -27,7 +27,7 @@ def check_value(value: Any) -> None:
             raise CellTypeError("'data' field must be a bytes")
 
 
-def check_values(values: List[Any]) -> None:
+def infer_from_values(values: List[Any]) -> None:
     for value in values:
         check_value(value)
     if values and all(value is None for value in values):
@@ -44,12 +44,14 @@ class ImageBytesColumn(Column):
                 check_feature_type(feature["data"], "Value", ["binary"])
             except Exception:
                 raise ColumnTypeError("feature type mismatch")
-        # else: we can infer from values
-        check_values(values)
+        else:
+            infer_from_values(values)
         self.name = name
         self.type = ColumnType.RELATIVE_IMAGE_URL
 
     def get_cell_value(self, dataset_name: str, config_name: str, split_name: str, row_idx: int, value: Any) -> Cell:
+        if value is None:
+            return None
         check_value(value)
         filename = value["filename"]
         data = value["data"]

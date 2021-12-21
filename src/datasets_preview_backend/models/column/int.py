@@ -16,7 +16,7 @@ def check_value(value: Any) -> None:
         raise CellTypeError("value type mismatch")
 
 
-def check_values(values: List[Any]) -> None:
+def infer_from_values(values: List[Any]) -> None:
     for value in values:
         check_value(value)
     if values and all(value is None for value in values):
@@ -43,8 +43,8 @@ class IntColumn(Column):
                 )
             except Exception:
                 raise ColumnTypeError("feature type mismatch")
-        # else: we can infer from values
-        check_values(values)
+        else:
+            infer_from_values(values)
         self.name = name
         self.type = ColumnType.INT
 

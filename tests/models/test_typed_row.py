@@ -42,6 +42,15 @@ def test_cifar() -> None:
     assert columns[0].type == ColumnType.RELATIVE_IMAGE_URL
 
 
+def test_head_qa() -> None:
+    info = get_info("head_qa", "en")
+    typed_rows, columns = get_typed_rows_and_columns("head_qa", "en", "train", info)
+    assert len(typed_rows) == EXTRACT_ROWS_LIMIT
+    assert typed_rows[0]["image"] is None
+    assert columns[6].name == "image"
+    assert columns[6].type == ColumnType.RELATIVE_IMAGE_URL
+
+
 def test_iter_archive() -> None:
     info = get_info("food101", DEFAULT_CONFIG_NAME)
     typed_rows, columns = get_typed_rows_and_columns("food101", DEFAULT_CONFIG_NAME, "train", info)

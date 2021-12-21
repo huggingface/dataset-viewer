@@ -15,11 +15,13 @@ from datasets_preview_backend.models.column.default import (
 
 
 def check_value(value: Any) -> None:
+    if value is None:
+        return
     if not isinstance(value, Image.Image):
         raise CellTypeError("image cell must be a PIL image")
 
 
-def check_values(values: List[Any]) -> None:
+def infer_from_values(values: List[Any]) -> None:
     for value in values:
         check_value(value)
     if values and all(value is None for value in values):
@@ -33,12 +35,14 @@ class ImageColumn(Column):
                 check_feature_type(feature, "Image", [])
             except Exception:
                 raise ColumnTypeError("feature type mismatch")
-        # else: we can infer from values
-        check_values(values)
+        else:
+            infer_from_values(values)
         self.name = name
         self.type = ColumnType.RELATIVE_IMAGE_URL
 
     def get_cell_value(self, dataset_name: str, config_name: str, split_name: str, row_idx: int, value: Any) -> Cell:
+        if value is None:
+            return None
         check_value(value)
         # this function can raise, we don't catch it
         return create_image_file(dataset_name, config_name, split_name, row_idx, self.name, "image.jpg", value)

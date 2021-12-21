@@ -27,7 +27,7 @@ def check_value(value: Any) -> None:
             raise CellTypeError("'array' field must be a numpy.ndarray")
 
 
-def check_values(values: List[Any]) -> None:
+def infer_from_values(values: List[Any]) -> None:
     for value in values:
         check_value(value)
     if values and all(value is None for value in values):
@@ -41,12 +41,14 @@ class AudioColumn(Column):
                 check_feature_type(feature, "Audio", [])
             except Exception:
                 raise ColumnTypeError("feature type mismatch")
-        # else: we can infer from values
-        check_values(values)
+        else:
+            infer_from_values(values)
         self.name = name
         self.type = ColumnType.AUDIO_RELATIVE_SOURCES
 
     def get_cell_value(self, dataset_name: str, config_name: str, split_name: str, row_idx: int, value: Any) -> Cell:
+        if value is None:
+            return None
         check_value(value)
         array = value["array"]
         sampling_rate = value["sampling_rate"]

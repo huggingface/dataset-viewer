@@ -5,7 +5,6 @@ from datasets_preview_backend.models.column.default import (
     CellTypeError,
     Column,
     ColumnDict,
-    ColumnInferenceError,
     ColumnType,
     ColumnTypeError,
     check_feature_type,
@@ -15,13 +14,6 @@ from datasets_preview_backend.models.column.default import (
 def check_value(value: Any) -> None:
     if value is not None and type(value) != int:
         raise CellTypeError("class label values must be integers")
-
-
-def check_values(values: List[Any]) -> None:
-    for value in values:
-        check_value(value)
-    if values and all(value is None for value in values):
-        raise ColumnInferenceError("all the values are None, cannot infer column type")
 
 
 class ClassLabelColumn(Column):
@@ -36,7 +28,6 @@ class ClassLabelColumn(Column):
             self.labels = [str(name) for name in feature["names"]]
         except Exception:
             raise ColumnTypeError("feature type mismatch")
-        check_values(values)
         self.name = name
         self.type = ColumnType.CLASS_LABEL
 

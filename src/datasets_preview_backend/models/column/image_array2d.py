@@ -28,7 +28,7 @@ def check_value(value: Any) -> None:
         raise CellTypeError("value must contain 2D array of integers")
 
 
-def check_values(values: List[Any]) -> None:
+def infer_from_values(values: List[Any]) -> None:
     for value in values:
         check_value(value)
     if values and all(value is None for value in values):
@@ -44,13 +44,15 @@ class ImageArray2DColumn(Column):
                 check_feature_type(feature, "Array2D", ["uint8"])
             except Exception:
                 raise ColumnTypeError("feature type mismatch")
-        # else: we can infer from values
-        check_values(values)
+        else:
+            infer_from_values(values)
         # we also have shape in the feature: shape: [28, 28] for MNIST
         self.name = name
         self.type = ColumnType.RELATIVE_IMAGE_URL
 
     def get_cell_value(self, dataset_name: str, config_name: str, split_name: str, row_idx: int, value: Any) -> Cell:
+        if value is None:
+            return None
         check_value(value)
         array = numpy.asarray(value, dtype=numpy.uint8)
         mode = "L"
