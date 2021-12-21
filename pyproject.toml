@@ -11,7 +11,7 @@ aiohttp = "^3.7.4.post0"
 apache-beam = "^2.33.0"
 appdirs = "^1.4.4"
 conllu = "^4.4.1"
-datasets = { extras = ["audio"], version = "^1.16.1" }
+datasets = {git = "https://github.com/huggingface/datasets.git", rev = "master", extras = ["audio"]}
 diskcache = "^5.2.1"
 kenlm = { url = "https://github.com/kpu/kenlm/archive/master.zip" }
 kss = "^2.6.0"
