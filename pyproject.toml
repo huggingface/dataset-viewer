@@ -2,7 +2,7 @@
 authors = ["Sylvain Lesage <severo@rednegra.net>"]
 description = "API to extract rows of 🤗 datasets"
 name = "datasets-preview-backend"
-version = "0.15.4"
+version = "0.15.5"
 
 [tool.poetry.dependencies]
 Pillow = "^8.4.0"
@@ -10,9 +10,11 @@ PyICU = "^2.7.4"
 aiohttp = "^3.7.4.post0"
 apache-beam = "^2.33.0"
 appdirs = "^1.4.4"
+bs4 = "^0.0.1"
 conllu = "^4.4.1"
 datasets = { extras = ["audio", "vision"], version = "^1.17.0" }
 diskcache = "^5.2.1"
+function-parser = "^0.0.3"
 kenlm = { url = "https://github.com/kpu/kenlm/archive/master.zip" }
 kss = "^2.6.0"
 lm-dataformat = "^0.0.19"
@@ -28,8 +30,11 @@ py7zr = "^0.16.2"
 pydub = "^0.25.1"
 python = "^3.9.6"
 python-dotenv = "^0.19.1"
+rarfile = "^4.0"
+sklearn = "^0.0"
 starlette = "^0.16.0"
 tensorflow = "2.6.2"
+tfrecord = "^1.14.1"
 torchaudio = "^0.10.1"
 transformers = "^4.11.3"
 trec-car-tools = { path = "vendors/trec-car-tools/python3" }
