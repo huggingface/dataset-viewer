@@ -11,13 +11,10 @@ aiohttp = "^3.7.4.post0"
 apache-beam = "^2.33.0"
 appdirs = "^1.4.4"
 conllu = "^4.4.1"
-datasets = { git = "https://github.com/huggingface/datasets.git", rev = "master", extras = [
-    "audio",
-] }
+datasets = { extras = ["audio", "vision"], version = "^1.17.0" }
 diskcache = "^5.2.1"
 kenlm = { url = "https://github.com/kpu/kenlm/archive/master.zip" }
 kss = "^2.6.0"
-librosa = "^0.8.1"
 lm-dataformat = "^0.0.19"
 lxml = "^4.6.3"
 mongo-types = "0.15.1"

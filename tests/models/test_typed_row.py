@@ -30,7 +30,7 @@ def test_mnist() -> None:
     info = get_info("mnist", "mnist")
     typed_rows, columns = get_typed_rows_and_columns("mnist", "mnist", "train", info)
     assert len(typed_rows) == EXTRACT_ROWS_LIMIT
-    assert typed_rows[0]["image"] == "assets/mnist/___/mnist/train/0/image/image.jpg"
+    assert typed_rows[0]["image"] == "assets/mnist/--/mnist/train/0/image/image.jpg"
     assert columns[0].type == ColumnType.RELATIVE_IMAGE_URL
 
 
@@ -38,7 +38,7 @@ def test_cifar() -> None:
     info = get_info("cifar10", "plain_text")
     typed_rows, columns = get_typed_rows_and_columns("cifar10", "plain_text", "train", info)
     assert len(typed_rows) == EXTRACT_ROWS_LIMIT
-    assert typed_rows[0]["img"] == "assets/cifar10/___/plain_text/train/0/img/image.jpg"
+    assert typed_rows[0]["img"] == "assets/cifar10/--/plain_text/train/0/img/image.jpg"
     assert columns[0].type == ColumnType.RELATIVE_IMAGE_URL
 
 
@@ -67,11 +67,11 @@ def test_image_url() -> None:
 
 def test_community_with_no_config() -> None:
     config_names = get_config_names(dataset_name="Check/region_1")
-    assert config_names == ["Check___region_1"]
-    info = get_info("Check/region_1", "Check___region_1")
+    assert config_names == ["Check--region_1"]
+    info = get_info("Check/region_1", "Check--region_1")
     with pytest.raises(Status400Error):
         # see https://github.com/huggingface/datasets-preview-backend/issues/78
-        get_typed_rows_and_columns("Check/region_1", "Check___region_1", "train", info)
+        get_typed_rows_and_columns("Check/region_1", "Check--region_1", "train", info)
 
 
 def test_audio_dataset() -> None:
@@ -82,4 +82,4 @@ def test_audio_dataset() -> None:
     assert len(typed_rows[0]["audio"]) == 2
     assert typed_rows[0]["audio"][0]["type"] == "audio/mpeg"
     assert typed_rows[0]["audio"][1]["type"] == "audio/wav"
-    assert typed_rows[0]["audio"][0]["src"] == "assets/common_voice/___/tr/train/0/audio/audio.mp3"
+    assert typed_rows[0]["audio"][0]["src"] == "assets/common_voice/--/tr/train/0/audio/audio.mp3"
