@@ -2,7 +2,7 @@
 authors = ["Sylvain Lesage <severo@rednegra.net>"]
 description = "API to extract rows of 🤗 datasets"
 name = "datasets-preview-backend"
-version = "0.15.5"
+version = "0.15.6"
 
 [tool.poetry.dependencies]
 Pillow = "^8.4.0"
@@ -15,6 +15,7 @@ conllu = "^4.4.1"
 datasets = { extras = ["audio", "vision"], version = "^1.17.0" }
 diskcache = "^5.2.1"
 function-parser = "^0.0.3"
+gdown = "^4.2.0"
 kenlm = { url = "https://github.com/kpu/kenlm/archive/master.zip" }
 kss = "^2.6.0"
 lm-dataformat = "^0.0.19"
