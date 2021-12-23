@@ -119,8 +119,8 @@ server {
 
   # due to https://github.com/encode/starlette/issues/950, which generates errors in Safari: https://developer.apple.com/library/archive/documentation/AppleApplications/Reference/SafariWebContent/CreatingVideoforSafarioniPhone/CreatingVideoforSafarioniPhone.html#//apple_ref/doc/uid/TP40006514-SW6
   # we serve the static files from nginx instead of starlette
-  location /assets {
-    root /home/hf/.cache/datasets_preview_backend_assets
+  location /assets/ {
+    alias /data/;
   }
 
   location / {
@@ -170,6 +170,8 @@ cp .env.example .env
 vi .env
 ```
 
+Note that we assume `ASSETS_DIRECTORY=/data` in the nginx configuration. If you set the assets directory to another place, or let the default, ensure the nginx configuration is setup accordingly. Beware: the default directory inside `/home/hf/.cache` is surely not readable by the nginx user.
+
 Launch the app with pm2:
 
 ```bash
@@ -184,12 +186,6 @@ Warm the cache with:
 pm2 start --no-autorestart --name datasets-preview-backend-warm make -- -C /home/hf/datasets-preview-backend/ warm
 ```
 
-Setup the refresh process (1% every 15 minutes, so that the datasets should be refreshed every 25h in average):
-
-```bash
-pm2 start --cron "*/15 * * * *" --no-autorestart --name datasets-preview-backend-refresh make -- -C /home/hf/datasets-preview-backend/ refresh
-```
-
 Setup a worker (run again to create another worker, and so on):
 
 ```bash
@@ -201,4 +197,12 @@ Finally, ensure that pm2 will restart on reboot (see https://pm2.keymetrics.io/d
 ```bash
 pm2 startup
 # and follow the instructions
+```
+
+---
+
+Optionally: setup the refresh process (1% every 15 minutes, so that the datasets should be refreshed every 25h in average):
+
+```bash
+pm2 start --cron "*/15 * * * *" --no-autorestart --name datasets-preview-backend-refresh make -- -C /home/hf/datasets-preview-backend/ refresh
 ```
