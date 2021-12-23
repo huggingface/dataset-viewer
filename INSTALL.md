@@ -112,8 +112,16 @@ server {
   listen [::]:80;
   server_name datasets-preview.huggingface.tech;
 
+  add_header 'Access-Control-Allow-Origin' '*';
+
   access_log /var/log/nginx/reverse-access.log;
   error_log /var/log/nginx/reverse-error.log;
+
+  # due to https://github.com/encode/starlette/issues/950, which generates errors in Safari: https://developer.apple.com/library/archive/documentation/AppleApplications/Reference/SafariWebContent/CreatingVideoforSafarioniPhone/CreatingVideoforSafarioniPhone.html#//apple_ref/doc/uid/TP40006514-SW6
+  # we serve the static files from nginx instead of starlette
+  location /assets {
+    root /home/hf/.cache/datasets_preview_backend_assets
+  }
 
   location / {
     proxy_pass http://localhost:8000/;

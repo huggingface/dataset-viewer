@@ -13,7 +13,7 @@ from datasets_preview_backend.config import ASSETS_DIRECTORY
 logger = logging.getLogger(__name__)
 
 DATASET_SEPARATOR = "--"
-ASSET_DIR_MODE = 755
+ASSET_DIR_MODE = 0o755
 
 # set it to the default cache location on the machine, if ASSETS_DIRECTORY is null
 assets_directory = user_cache_dir("datasets_preview_backend_assets") if ASSETS_DIRECTORY is None else ASSETS_DIRECTORY
