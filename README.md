@@ -31,7 +31,7 @@ Set environment variables to configure the following aspects:
 - `APP_PORT`: the port used by the app. Defaults to `8000`.
 - `ASSETS_DIRECTORY`: directory where the asset files are stored. Defaults to empty, in which case the assets are located in the `datasets_preview_backend_assets` subdirectory inside the OS default cache directory.
 - `DATASETS_ENABLE_PRIVATE`: enable private datasets. Defaults to `False`.
-- `DATASETS_REVISION`: git reference for the canonical datasets on https://github.com/huggingface/datasets. Defaults to `e42e15f92c1033e5df9348f6b6c0d441489aa187`.
+- `DATASETS_REVISION`: git reference for the canonical datasets on https://github.com/huggingface/datasets. Defaults to `8418b1d4ebac7c59372c5a55556522584891ba9c`.
 - `EXTRACT_ROWS_LIMIT`: number of rows in the extract, if not specified in the API request. Defaults to `100`.
 - `LOG_LEVEL`: log level, among `DEBUG`, `INFO`, `WARNING`, `ERROR` and `CRITICAL`. Defaults to `INFO`.
 - `MAX_AGE_LONG_SECONDS`: number of seconds to set in the `max-age` header on data endpoints. Defaults to `21600` (6 hours).
