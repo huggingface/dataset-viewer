@@ -2,7 +2,7 @@
 authors = ["Sylvain Lesage <severo@rednegra.net>"]
 description = "API to extract rows of 🤗 datasets"
 name = "datasets-preview-backend"
-version = "0.15.9"
+version = "0.15.10"
 
 [tool.poetry.dependencies]
 Pillow = "^8.4.0"
@@ -12,7 +12,7 @@ apache-beam = "^2.33.0"
 appdirs = "^1.4.4"
 bs4 = "^0.0.1"
 conllu = "^4.4.1"
-datasets = { git = "https://github.com/huggingface/datasets.git", rev = "e42e15f92c1033e5df9348f6b6c0d441489aa187", extras = [
+datasets = { git = "https://github.com/huggingface/datasets.git", rev = "8418b1d4ebac7c59372c5a55556522584891ba9c", extras = [
     "audio",
     "vision",
 ] }
