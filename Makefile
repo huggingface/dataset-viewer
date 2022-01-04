@@ -38,6 +38,8 @@ worker:
 	poetry run python src/datasets_preview_backend/worker.py
 force-finish-queue:
 	poetry run python src/datasets_preview_backend/force_finish_queue.py
+force-refresh-cache:
+	poetry run python src/datasets_preview_backend/force_refresh_cache.py
 clean-queue:
 	poetry run python src/datasets_preview_backend/clean_queue.py
 clean-cache:
