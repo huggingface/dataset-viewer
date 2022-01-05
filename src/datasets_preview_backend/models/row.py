@@ -1,6 +1,6 @@
 import logging
 import re
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 
 from datasets import IterableDataset, load_dataset
 
@@ -14,7 +14,7 @@ logger = logging.getLogger(__name__)
 Row = Dict[str, Any]
 
 
-def get_rows(dataset_name: str, config_name: str, split_name: str) -> List[Row]:
+def get_rows(dataset_name: str, config_name: str, split_name: str, hf_token: Optional[str] = None) -> List[Row]:
     num_rows = EXTRACT_ROWS_LIMIT
     try:
         iterable_dataset = load_dataset(
@@ -23,6 +23,7 @@ def get_rows(dataset_name: str, config_name: str, split_name: str) -> List[Row]:
             split=split_name,
             streaming=True,
             download_mode=FORCE_REDOWNLOAD,  # type: ignore
+            use_auth_token=hf_token,
         )
         if not isinstance(iterable_dataset, IterableDataset):
             raise TypeError("load_dataset should return an IterableDataset")

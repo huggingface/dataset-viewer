@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Optional
 
 DEFAULT_APP_HOSTNAME: str = "localhost"
 DEFAULT_APP_PORT: int = 8000
@@ -14,6 +14,7 @@ DEFAULT_MONGO_QUEUE_DATABASE: str = "datasets_preview_queue"
 DEFAULT_MONGO_URL: str = "mongodb://localhost:27018"
 DEFAULT_WEB_CONCURRENCY: int = 2
 
+DEFAULT_HF_TOKEN: Optional[str] = None
 DEFAULT_MAX_LOAD_PCT: int = 50
 DEFAULT_MAX_MEMORY_PCT: int = 60
 DEFAULT_WORKER_SLEEP_SECONDS: int = 5

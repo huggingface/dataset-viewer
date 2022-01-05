@@ -1,4 +1,4 @@
-from typing import List, Tuple
+from typing import List, Optional, Tuple
 
 from datasets_preview_backend.models.column import Column, get_columns
 from datasets_preview_backend.models.info import Info
@@ -23,9 +23,9 @@ def get_typed_rows(
 
 
 def get_typed_rows_and_columns(
-    dataset_name: str, config_name: str, split_name: str, info: Info
+    dataset_name: str, config_name: str, split_name: str, info: Info, hf_token: Optional[str] = None
 ) -> Tuple[List[Row], List[Column]]:
-    rows = get_rows(dataset_name, config_name, split_name)
+    rows = get_rows(dataset_name, config_name, split_name, hf_token)
     columns = get_columns(info, rows)
     typed_rows = get_typed_rows(dataset_name, config_name, split_name, rows, columns)
     # columns_dicts = column.as_dict() for column in columns]
