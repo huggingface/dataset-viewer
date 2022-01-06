@@ -1,4 +1,4 @@
-from typing import List, TypedDict
+from typing import List, Optional, TypedDict
 
 from datasets import get_dataset_split_names
 
@@ -16,15 +16,17 @@ class Split(TypedDict):
     columns: List[Column]
 
 
-def get_split(dataset_name: str, config_name: str, split_name: str, info: Info) -> Split:
-    typed_rows, columns = get_typed_rows_and_columns(dataset_name, config_name, split_name, info)
+def get_split(
+    dataset_name: str, config_name: str, split_name: str, info: Info, hf_token: Optional[str] = None
+) -> Split:
+    typed_rows, columns = get_typed_rows_and_columns(dataset_name, config_name, split_name, info, hf_token)
     return {"split_name": split_name, "rows": typed_rows, "columns": columns}
 
 
-def get_split_names(dataset_name: str, config_name: str) -> List[str]:
+def get_split_names(dataset_name: str, config_name: str, hf_token: Optional[str] = None) -> List[str]:
     try:
         split_names: List[str] = get_dataset_split_names(
-            dataset_name, config_name, download_mode=FORCE_REDOWNLOAD  # type: ignore
+            dataset_name, config_name, download_mode=FORCE_REDOWNLOAD, use_auth_token=hf_token  # type: ignore
         )
     except FileNotFoundError as err:
         raise Status404Error("The dataset config could not be found.", err)
@@ -38,8 +40,8 @@ def get_split_names(dataset_name: str, config_name: str) -> List[str]:
     return split_names
 
 
-def get_splits(dataset_name: str, config_name: str, info: Info) -> List[Split]:
+def get_splits(dataset_name: str, config_name: str, info: Info, hf_token: Optional[str] = None) -> List[Split]:
     return [
-        get_split(dataset_name, config_name, split_name, info)
-        for split_name in get_split_names(dataset_name, config_name)
+        get_split(dataset_name, config_name, split_name, info, hf_token)
+        for split_name in get_split_names(dataset_name, config_name, hf_token)
     ]

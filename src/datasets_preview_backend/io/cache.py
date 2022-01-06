@@ -20,6 +20,7 @@ from datasets_preview_backend.models.column import (
     ColumnType,
 )
 from datasets_preview_backend.models.dataset import Dataset, get_dataset
+from datasets_preview_backend.models.hf_dataset import ask_access
 
 # START monkey patching ### hack ###
 # see https://github.com/sbdchd/mongo-types#install
@@ -243,9 +244,13 @@ def clean_database() -> None:
     DbError.drop_collection()  # type: ignore
 
 
-def refresh_dataset(dataset_name: str) -> None:
+def refresh_dataset(dataset_name: str, hf_token: Optional[str] = None) -> None:
+    if hf_token:
+        # remove the gate (for gated datasets) if a token is passed
+        ask_access(dataset_name, hf_token)
+
     try:
-        dataset = get_dataset(dataset_name=dataset_name)
+        dataset = get_dataset(dataset_name, hf_token)
         upsert_dataset(dataset)
         logger.debug(f"dataset '{dataset_name}' is valid, cache updated")
     except StatusError as err:

@@ -1,6 +1,10 @@
+import logging
 from typing import List, TypedDict, Union
 
+import requests
 from datasets import list_datasets
+
+logger = logging.getLogger(__name__)
 
 
 class HFDataset(TypedDict):
@@ -26,6 +30,16 @@ def get_hf_datasets() -> List[HFDataset]:
         }
         for dataset in datasets
     ]
+
+
+def ask_access(dataset_name: str, hf_token: str) -> None:
+    url = f"https://huggingface.co/datasets/{dataset_name}/ask-access"
+    headers = {"Authorization": f"Bearer {hf_token}"}
+    try:
+        requests.get(url, headers=headers)
+    except Exception as err:
+        logger.warning(f"error while asking access to dataset {dataset_name}: {err}")
+    # TODO: check if the access was granted: check if we were redirected to the dataset page, or to the login page
 
 
 def get_hf_dataset_names() -> List[str]:

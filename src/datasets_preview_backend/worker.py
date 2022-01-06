@@ -6,6 +6,7 @@ from dotenv import load_dotenv
 from psutil import cpu_count, getloadavg, swap_memory, virtual_memory
 
 from datasets_preview_backend.constants import (
+    DEFAULT_HF_TOKEN,
     DEFAULT_MAX_LOAD_PCT,
     DEFAULT_MAX_MEMORY_PCT,
     DEFAULT_WORKER_SLEEP_SECONDS,
@@ -18,13 +19,14 @@ from datasets_preview_backend.io.queue import (
     finish_job,
     get_job,
 )
-from datasets_preview_backend.utils import get_int_value
+from datasets_preview_backend.utils import get_int_value, get_str_or_none_value
 
 # Load environment variables defined in .env, if any
 load_dotenv()
 max_load_pct = get_int_value(os.environ, "MAX_LOAD_PCT", DEFAULT_MAX_LOAD_PCT)
 max_memory_pct = get_int_value(os.environ, "MAX_MEMORY_PCT", DEFAULT_MAX_MEMORY_PCT)
 worker_sleep_seconds = get_int_value(os.environ, "WORKER_SLEEP_SECONDS", DEFAULT_WORKER_SLEEP_SECONDS)
+hf_token = get_str_or_none_value(d=os.environ, key="HF_TOKEN", default=DEFAULT_HF_TOKEN)
 
 
 def process_next_job() -> bool:
@@ -40,7 +42,7 @@ def process_next_job() -> bool:
 
     try:
         logger.info(f"compute dataset '{dataset_name}'")
-        refresh_dataset(dataset_name=dataset_name)
+        refresh_dataset(dataset_name=dataset_name, hf_token=hf_token)
     finally:
         finish_job(job_id)
         logger.debug(f"job finished: {job_id} for dataset: {dataset_name}")
