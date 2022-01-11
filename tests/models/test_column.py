@@ -1,7 +1,8 @@
 from datasets_preview_backend.constants import DEFAULT_CONFIG_NAME
 from datasets_preview_backend.models.column import ColumnType, get_columns
 from datasets_preview_backend.models.column.class_label import ClassLabelColumn
-from datasets_preview_backend.models.config import get_config_names
+
+# from datasets_preview_backend.models.config import get_config_names
 from datasets_preview_backend.models.info import get_info
 
 # TODO: add a test for each type

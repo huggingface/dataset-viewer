@@ -8,7 +8,6 @@ from datasets_preview_backend.models.config import get_config_names
 from datasets_preview_backend.models.info import get_info
 from datasets_preview_backend.models.typed_row import get_typed_rows_and_columns
 
-
 # def test_detect_types_from_typed_rows() -> None:
 #     info = get_info("allenai/c4", DEFAULT_CONFIG_NAME)
 #     typed_rows, columns = get_typed_rows_and_columns("allenai/c4", DEFAULT_CONFIG_NAME, "train", info)
