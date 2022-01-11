@@ -246,13 +246,15 @@ def clean_database() -> None:
     DbError.drop_collection()  # type: ignore
 
 
-def refresh_dataset(dataset_name: str, hf_token: Optional[str] = None) -> None:
+def refresh_dataset(
+    dataset_name: str, hf_token: Optional[str] = None, max_size_fallback: Optional[int] = None
+) -> None:
     if hf_token:
         # remove the gate (for gated datasets) if a token is passed
         ask_access(dataset_name, hf_token)
 
     try:
-        dataset = get_dataset(dataset_name, hf_token)
+        dataset = get_dataset(dataset_name, hf_token, max_size_fallback)
         upsert_dataset(dataset)
         logger.debug(f"dataset '{dataset_name}' is valid, cache updated")
     except StatusError as err:

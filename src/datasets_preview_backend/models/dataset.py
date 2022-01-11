@@ -13,8 +13,8 @@ class Dataset(TypedDict):
     configs: List[Config]
 
 
-def get_dataset(dataset_name: str, hf_token: Optional[str] = None) -> Dataset:
+def get_dataset(dataset_name: str, hf_token: Optional[str] = None, max_size_fallback: Optional[int] = None) -> Dataset:
     if dataset_name in DATASETS_BLOCKLIST:
         raise Status400Error("this dataset is not supported for now.")
-    configs = get_configs(dataset_name, hf_token)
+    configs = get_configs(dataset_name, hf_token, max_size_fallback)
     return {"dataset_name": dataset_name, "configs": configs}
