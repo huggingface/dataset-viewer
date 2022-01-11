@@ -17,9 +17,15 @@ class Split(TypedDict):
 
 
 def get_split(
-    dataset_name: str, config_name: str, split_name: str, info: Info, hf_token: Optional[str] = None
+    dataset_name: str,
+    config_name: str,
+    split_name: str,
+    info: Info,
+    hf_token: Optional[str] = None,
+    max_size_fallback: Optional[int] = None,
 ) -> Split:
-    typed_rows, columns = get_typed_rows_and_columns(dataset_name, config_name, split_name, info, hf_token)
+    fallback = max_size_fallback is not None and "size_in_bytes" in info and info["size_in_bytes"] < max_size_fallback
+    typed_rows, columns = get_typed_rows_and_columns(dataset_name, config_name, split_name, info, hf_token, fallback)
     return {"split_name": split_name, "rows": typed_rows, "columns": columns}
 
 
@@ -33,8 +39,14 @@ def get_split_names(dataset_name: str, config_name: str, hf_token: Optional[str]
     return split_names
 
 
-def get_splits(dataset_name: str, config_name: str, info: Info, hf_token: Optional[str] = None) -> List[Split]:
+def get_splits(
+    dataset_name: str,
+    config_name: str,
+    info: Info,
+    hf_token: Optional[str] = None,
+    max_size_fallback: Optional[int] = None,
+) -> List[Split]:
     return [
-        get_split(dataset_name, config_name, split_name, info, hf_token)
+        get_split(dataset_name, config_name, split_name, info, hf_token, max_size_fallback)
         for split_name in get_split_names(dataset_name, config_name, hf_token)
     ]

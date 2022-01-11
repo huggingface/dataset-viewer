@@ -9,6 +9,7 @@ from datasets_preview_backend.constants import (
     DEFAULT_HF_TOKEN,
     DEFAULT_MAX_LOAD_PCT,
     DEFAULT_MAX_MEMORY_PCT,
+    DEFAULT_MAX_SIZE_FALLBACK,
     DEFAULT_WORKER_SLEEP_SECONDS,
 )
 from datasets_preview_backend.io.cache import connect_to_cache, refresh_dataset
@@ -27,6 +28,7 @@ max_load_pct = get_int_value(os.environ, "MAX_LOAD_PCT", DEFAULT_MAX_LOAD_PCT)
 max_memory_pct = get_int_value(os.environ, "MAX_MEMORY_PCT", DEFAULT_MAX_MEMORY_PCT)
 worker_sleep_seconds = get_int_value(os.environ, "WORKER_SLEEP_SECONDS", DEFAULT_WORKER_SLEEP_SECONDS)
 hf_token = get_str_or_none_value(d=os.environ, key="HF_TOKEN", default=DEFAULT_HF_TOKEN)
+max_size_fallback = get_int_value(os.environ, "MAX_SIZE_FALLBACK", DEFAULT_MAX_SIZE_FALLBACK)
 
 
 def process_next_job() -> bool:
@@ -42,7 +44,7 @@ def process_next_job() -> bool:
 
     try:
         logger.info(f"compute dataset '{dataset_name}'")
-        refresh_dataset(dataset_name=dataset_name, hf_token=hf_token)
+        refresh_dataset(dataset_name=dataset_name, hf_token=hf_token, max_size_fallback=max_size_fallback)
     finally:
         finish_job(job_id)
         logger.debug(f"job finished: {job_id} for dataset: {dataset_name}")

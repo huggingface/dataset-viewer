@@ -14,12 +14,14 @@ class Config(TypedDict):
     info: Info
 
 
-def get_config(dataset_name: str, config_name: str, hf_token: Optional[str] = None) -> Config:
+def get_config(
+    dataset_name: str, config_name: str, hf_token: Optional[str] = None, max_size_fallback: Optional[int] = None
+) -> Config:
     if not isinstance(config_name, str):
         raise TypeError("config_name argument should be a string")
     # Get all the data
     info = get_info(dataset_name, config_name, hf_token)
-    splits = get_splits(dataset_name, config_name, info, hf_token)
+    splits = get_splits(dataset_name, config_name, info, hf_token, max_size_fallback)
 
     return {"config_name": config_name, "splits": splits, "info": info}
 
@@ -36,7 +38,10 @@ def get_config_names(dataset_name: str, hf_token: Optional[str] = None) -> List[
     return config_names
 
 
-def get_configs(dataset_name: str, hf_token: Optional[str] = None) -> List[Config]:
+def get_configs(
+    dataset_name: str, hf_token: Optional[str] = None, max_size_fallback: Optional[int] = None
+) -> List[Config]:
     return [
-        get_config(dataset_name, config_name, hf_token) for config_name in get_config_names(dataset_name, hf_token)
+        get_config(dataset_name, config_name, hf_token, max_size_fallback)
+        for config_name in get_config_names(dataset_name, hf_token)
     ]
