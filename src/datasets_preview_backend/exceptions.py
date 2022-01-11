@@ -1,13 +1,15 @@
-from typing import Optional, TypedDict
+import sys
+import traceback
+from typing import List, Optional, TypedDict
 
 
 class StatusErrorContent(TypedDict):
     status_code: int
     exception: str
     message: str
-    cause: str
     cause_exception: str
     cause_message: str
+    cause_traceback: List[str]
 
 
 class StatusError(Exception):
@@ -18,17 +20,24 @@ class StatusError(Exception):
         self.status_code = status_code
         self.exception = type(self).__name__
         self.message = str(self)
-        self.cause_exception = self.exception if cause is None else type(cause).__name__
-        self.cause_message = self.message if cause is None else str(cause)
+        if cause is None:
+            self.cause_exception = self.exception
+            self.cause_message = self.message
+            self.cause_traceback = []
+        else:
+            self.cause_exception = type(cause).__name__
+            self.cause_message = str(cause)
+            (t, v, tb) = sys.exc_info()
+            self.cause_traceback = traceback.format_exception(t, v, tb)
 
     def as_content(self) -> StatusErrorContent:
         return {
             "status_code": self.status_code,
             "exception": self.exception,
             "message": self.message,
-            "cause": self.cause_exception,  # TODO: deprecate
             "cause_exception": self.cause_exception,
             "cause_message": self.cause_message,
+            "cause_traceback": self.cause_traceback,
         }
 
 
@@ -41,17 +50,6 @@ class Status400Error(StatusError):
 
     def __init__(self, message: str, cause: Optional[Exception] = None):
         super().__init__(message, 400, cause)
-
-
-class Status404Error(StatusError):
-    """Exception raised if the response must be a 404 status code.
-
-    Attributes:
-        message -- the content of the response
-    """
-
-    def __init__(self, message: str, cause: Optional[Exception] = None):
-        super().__init__(message, 404, cause)
 
 
 class Status500Error(StatusError):

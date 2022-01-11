@@ -10,7 +10,6 @@ from pymongo.errors import DocumentTooLarge
 from datasets_preview_backend.config import MONGO_CACHE_DATABASE, MONGO_URL
 from datasets_preview_backend.exceptions import (
     Status400Error,
-    Status404Error,
     Status500Error,
     StatusError,
 )
@@ -145,9 +144,9 @@ class _BaseErrorItem(TypedDict):
 
 class ErrorItem(_BaseErrorItem, total=False):
     # https://www.python.org/dev/peps/pep-0655/#motivation
-    cause: str
     cause_exception: str
     cause_message: str
+    cause_traceback: List[str]
 
 
 class DbError(Document):
@@ -157,13 +156,15 @@ class DbError(Document):
     message = StringField(required=True)
     cause_exception = StringField()
     cause_message = StringField()
+    cause_traceback = ListField(StringField())
 
     def to_item(self) -> ErrorItem:
         error: ErrorItem = {"status_code": self.status_code, "exception": self.exception, "message": self.message}
         if self.cause_exception and self.cause_message:
-            error["cause"] = self.cause_exception  # to be deprecated
             error["cause_exception"] = self.cause_exception
             error["cause_message"] = self.cause_message
+        if self.cause_traceback:
+            error["cause_traceback"] = self.cause_traceback
         return error
 
     meta = {"collection": "errors", "db_alias": "cache"}
@@ -181,6 +182,7 @@ def upsert_error(dataset_name: str, error: StatusError) -> None:
         message=error.message,
         cause_exception=error.cause_exception,
         cause_message=error.cause_message,
+        cause_traceback=error.cause_traceback,
     )
 
 
@@ -263,13 +265,13 @@ def refresh_dataset(dataset_name: str, hf_token: Optional[str] = None) -> None:
 
 def check_dataset(dataset_name: str) -> None:
     if DbDataset.objects(dataset_name=dataset_name).count() == 0:
-        raise Status404Error("Not found. Maybe the cache is missing, or maybe the dataset does not exist.")
+        raise Status400Error("Not found. Maybe the cache is missing, or maybe the dataset does not exist.")
 
 
 def is_dataset_cached(dataset_name: str) -> bool:
     try:
         check_dataset(dataset_name)
-    except Status404Error:
+    except Status400Error:
         return False
     return True
 

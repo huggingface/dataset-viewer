@@ -85,7 +85,7 @@ def test_get_splits(client: TestClient) -> None:
 
     # not found
     response = client.get("/splits", params={"dataset": dataset, "config": "doesnotexist"})
-    assert response.status_code == 404
+    assert response.status_code == 400
 
     # uses the fallback to call "builder._split_generators" while https://github.com/huggingface/datasets/issues/2743
     dataset = "hda_nli_hindi"
@@ -104,7 +104,7 @@ def test_get_splits(client: TestClient) -> None:
     dataset = "doesnotexist"
     refresh_dataset(dataset)
     response = client.get("/splits", params={"dataset": dataset})
-    assert response.status_code == 404
+    assert response.status_code == 400
 
 
 def test_get_rows(client: TestClient) -> None:
@@ -144,24 +144,24 @@ def test_get_rows(client: TestClient) -> None:
 
     # not found
     response = client.get("/rows", params={"dataset": dataset, "config": "doesnotexist"})
-    assert response.status_code == 404
+    assert response.status_code == 400
 
     response = client.get("/rows", params={"dataset": dataset, "config": "default", "split": "doesnotexist"})
-    assert response.status_code == 404
+    assert response.status_code == 400
 
     # not found
     dataset = "doesnotexist"
     refresh_dataset(dataset)
     response = client.get("/rows", params={"dataset": dataset})
-    assert response.status_code == 404
+    assert response.status_code == 400
 
 
-def test_datetime_content(client: TestClient) -> None:
-    dataset = "allenai/c4"
-    response = client.get("/rows", params={"dataset": dataset})
-    assert response.status_code == 404
+# def test_datetime_content(client: TestClient) -> None:
+#     dataset = "allenai/c4"
+#     response = client.get("/rows", params={"dataset": dataset})
+#     assert response.status_code == 400
 
-    refresh_dataset(dataset)
+#     refresh_dataset(dataset)
 
-    response = client.get("/rows", params={"dataset": dataset})
-    assert response.status_code == 200
+#     response = client.get("/rows", params={"dataset": dataset})
+#     assert response.status_code == 200

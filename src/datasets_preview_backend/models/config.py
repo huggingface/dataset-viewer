@@ -3,7 +3,7 @@ from typing import List, Optional, TypedDict
 from datasets import get_dataset_config_names
 
 from datasets_preview_backend.constants import DEFAULT_CONFIG_NAME, FORCE_REDOWNLOAD
-from datasets_preview_backend.exceptions import Status400Error, Status404Error
+from datasets_preview_backend.exceptions import Status400Error
 from datasets_preview_backend.models.info import Info, get_info
 from datasets_preview_backend.models.split import Split, get_splits
 
@@ -31,10 +31,8 @@ def get_config_names(dataset_name: str, hf_token: Optional[str] = None) -> List[
         )
         if not config_names:
             config_names = [DEFAULT_CONFIG_NAME]
-    except FileNotFoundError as err:
-        raise Status404Error("The dataset could not be found.", err)
     except Exception as err:
-        raise Status400Error("The config names could not be parsed from the dataset.", err)
+        raise Status400Error("Cannot get the config names for the dataset.", err)
     return config_names
 
 

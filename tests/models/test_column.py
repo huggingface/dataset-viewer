@@ -1,7 +1,8 @@
 from datasets_preview_backend.constants import DEFAULT_CONFIG_NAME
 from datasets_preview_backend.models.column import ColumnType, get_columns
 from datasets_preview_backend.models.column.class_label import ClassLabelColumn
-from datasets_preview_backend.models.config import get_config_names
+
+# from datasets_preview_backend.models.config import get_config_names
 from datasets_preview_backend.models.info import get_info
 
 # TODO: add a test for each type
@@ -15,11 +16,11 @@ def test_class_label() -> None:
     assert "unacceptable" in columns[1].labels
 
 
-def test_empty_features() -> None:
-    configs = get_config_names("allenai/c4")
-    info = get_info("allenai/c4", configs[0])
-    columns = get_columns(info, [])
-    assert columns == []
+# def test_empty_features() -> None:
+#     configs = get_config_names("allenai/c4")
+#     info = get_info("allenai/c4", configs[0])
+#     columns = get_columns(info, [])
+#     assert columns == []
 
 
 def test_get_columns() -> None:

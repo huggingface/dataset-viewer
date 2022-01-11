@@ -4,7 +4,7 @@ from starlette.requests import Request
 from starlette.responses import Response
 
 from datasets_preview_backend.config import MAX_AGE_LONG_SECONDS
-from datasets_preview_backend.exceptions import Status404Error
+from datasets_preview_backend.exceptions import Status400Error
 from datasets_preview_backend.io.cache import (
     NoError,
     check_dataset,
@@ -28,7 +28,7 @@ async def splits_endpoint(request: Request) -> Response:
         except NoError:
             splits = get_splits(dataset_name, config_name)
             if not splits:
-                raise Status404Error("No split found for dataset and config.")
+                raise Status400Error("No split found for dataset and config.")
             return get_response({"splits": splits}, 200, MAX_AGE_LONG_SECONDS)
-    except Status404Error as err:
+    except Status400Error as err:
         return get_response(err.as_content(), err.status_code, MAX_AGE_LONG_SECONDS)
