@@ -4,7 +4,7 @@ from starlette.requests import Request
 from starlette.responses import Response
 
 from datasets_preview_backend.config import MAX_AGE_LONG_SECONDS
-from datasets_preview_backend.exceptions import Status404Error
+from datasets_preview_backend.exceptions import Status400Error
 from datasets_preview_backend.io.cache import (
     NoError,
     check_dataset,
@@ -31,9 +31,9 @@ async def rows_endpoint(request: Request) -> Response:
             columns = get_columns(dataset_name, config_name, split_name)
             rows = get_rows(dataset_name, config_name, split_name)
             if not columns:
-                raise Status404Error("No columns found for dataset, config, split.")
+                raise Status400Error("No columns found for dataset, config, split.")
             if not rows:
-                raise Status404Error("No rows found for dataset, config, split.")
+                raise Status400Error("No rows found for dataset, config, split.")
             return get_response({"columns": columns, "rows": rows}, 200, MAX_AGE_LONG_SECONDS)
-    except Status404Error as err:
+    except Status400Error as err:
         return get_response(err.as_content(), err.status_code, MAX_AGE_LONG_SECONDS)

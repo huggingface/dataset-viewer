@@ -10,7 +10,6 @@ from pymongo.errors import DocumentTooLarge
 from datasets_preview_backend.config import MONGO_CACHE_DATABASE, MONGO_URL
 from datasets_preview_backend.exceptions import (
     Status400Error,
-    Status404Error,
     Status500Error,
     StatusError,
 )
@@ -263,13 +262,13 @@ def refresh_dataset(dataset_name: str, hf_token: Optional[str] = None) -> None:
 
 def check_dataset(dataset_name: str) -> None:
     if DbDataset.objects(dataset_name=dataset_name).count() == 0:
-        raise Status404Error("Not found. Maybe the cache is missing, or maybe the dataset does not exist.")
+        raise Status400Error("Not found. Maybe the cache is missing, or maybe the dataset does not exist.")
 
 
 def is_dataset_cached(dataset_name: str) -> bool:
     try:
         check_dataset(dataset_name)
-    except Status404Error:
+    except Status400Error:
         return False
     return True
 

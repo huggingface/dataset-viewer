@@ -10,12 +10,6 @@ from mongoengine.queryset.queryset import QuerySet
 
 from datasets_preview_backend.config import MONGO_QUEUE_DATABASE, MONGO_URL
 
-# from typing import Any, Generic, List, Type, TypedDict, TypeVar, Union
-
-
-# from datasets_preview_backend.exceptions import Status404Error, StatusError
-# from datasets_preview_backend.models.dataset import get_dataset
-
 # START monkey patching ### hack ###
 # see https://github.com/sbdchd/mongo-types#install
 U = TypeVar("U", bound=Document)
