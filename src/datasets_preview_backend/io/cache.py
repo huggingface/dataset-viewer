@@ -146,6 +146,7 @@ class ErrorItem(_BaseErrorItem, total=False):
     # https://www.python.org/dev/peps/pep-0655/#motivation
     cause_exception: str
     cause_message: str
+    cause_traceback: List[str]
 
 
 class DbError(Document):
@@ -155,12 +156,15 @@ class DbError(Document):
     message = StringField(required=True)
     cause_exception = StringField()
     cause_message = StringField()
+    cause_traceback = ListField(StringField())
 
     def to_item(self) -> ErrorItem:
         error: ErrorItem = {"status_code": self.status_code, "exception": self.exception, "message": self.message}
         if self.cause_exception and self.cause_message:
             error["cause_exception"] = self.cause_exception
             error["cause_message"] = self.cause_message
+        if self.cause_traceback:
+            error["cause_traceback"] = self.cause_traceback
         return error
 
     meta = {"collection": "errors", "db_alias": "cache"}
@@ -178,6 +182,7 @@ def upsert_error(dataset_name: str, error: StatusError) -> None:
         message=error.message,
         cause_exception=error.cause_exception,
         cause_message=error.cause_message,
+        cause_traceback=error.cause_traceback,
     )
 
 

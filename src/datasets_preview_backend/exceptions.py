@@ -1,4 +1,6 @@
-from typing import Optional, TypedDict
+import sys
+import traceback
+from typing import List, Optional, TypedDict
 
 
 class StatusErrorContent(TypedDict):
@@ -7,6 +9,7 @@ class StatusErrorContent(TypedDict):
     message: str
     cause_exception: str
     cause_message: str
+    cause_traceback: List[str]
 
 
 class StatusError(Exception):
@@ -17,8 +20,15 @@ class StatusError(Exception):
         self.status_code = status_code
         self.exception = type(self).__name__
         self.message = str(self)
-        self.cause_exception = self.exception if cause is None else type(cause).__name__
-        self.cause_message = self.message if cause is None else str(cause)
+        if cause is None:
+            self.cause_exception = self.exception
+            self.cause_message = self.message
+            self.cause_traceback = []
+        else:
+            self.cause_exception = type(cause).__name__
+            self.cause_message = str(cause)
+            (t, v, tb) = sys.exc_info()
+            self.cause_traceback = traceback.format_exception(t, v, tb)
 
     def as_content(self) -> StatusErrorContent:
         return {
@@ -27,6 +37,7 @@ class StatusError(Exception):
             "message": self.message,
             "cause_exception": self.cause_exception,
             "cause_message": self.cause_message,
+            "cause_traceback": self.cause_traceback,
         }
 
 
