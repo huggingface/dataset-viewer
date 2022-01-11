@@ -156,7 +156,7 @@ Responses:
         "status_code": 404,
         "exception": "Status404Error",
         "message": "The split for the dataset config could not be found.",
-        "cause": "FileNotFoundError",
+        "cause_exception": "FileNotFoundError",
         "cause_message": "https://huggingface.co/datasets/allenai/c4/resolve/f3b95a11ff318ce8b651afc7eb8e7bd2af469c10/en.noblocklist/c4-train.00000-of-01024.json.gz"
       }
     }
