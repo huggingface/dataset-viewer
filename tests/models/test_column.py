@@ -15,11 +15,11 @@ def test_class_label() -> None:
     assert "unacceptable" in columns[1].labels
 
 
-def test_empty_features() -> None:
-    configs = get_config_names("allenai/c4")
-    info = get_info("allenai/c4", configs[0])
-    columns = get_columns(info, [])
-    assert columns == []
+# def test_empty_features() -> None:
+#     configs = get_config_names("allenai/c4")
+#     info = get_info("allenai/c4", configs[0])
+#     columns = get_columns(info, [])
+#     assert columns == []
 
 
 def test_get_columns() -> None:
