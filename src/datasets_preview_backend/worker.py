@@ -32,7 +32,7 @@ max_size_fallback = get_int_value(os.environ, "MAX_SIZE_FALLBACK", DEFAULT_MAX_S
 
 
 def process_next_job() -> bool:
-    logger = logging.getLogger("worker")
+    logger = logging.getLogger("datasets_preview_backend.worker")
     logger.debug("try to process a job")
 
     try:
@@ -52,7 +52,7 @@ def process_next_job() -> bool:
 
 
 def has_memory() -> bool:
-    logger = logging.getLogger("worker")
+    logger = logging.getLogger("datasets_preview_backend.worker")
     virtual_memory_used: int = virtual_memory().used  # type: ignore
     virtual_memory_total: int = virtual_memory().total  # type: ignore
     percent = (swap_memory().used + virtual_memory_used) / (swap_memory().total + virtual_memory_total)
@@ -63,7 +63,7 @@ def has_memory() -> bool:
 
 
 def has_cpu() -> bool:
-    logger = logging.getLogger("worker")
+    logger = logging.getLogger("datasets_preview_backend.worker")
     load_pct = max(x / cpu_count() * 100 for x in getloadavg())
     ok = load_pct < max_load_pct
     if not ok:
@@ -76,7 +76,7 @@ def has_resources() -> bool:
 
 
 def sleep() -> None:
-    logger = logging.getLogger("worker")
+    logger = logging.getLogger("datasets_preview_backend.worker")
     logger.debug(f"sleep during {worker_sleep_seconds} seconds")
     time.sleep(worker_sleep_seconds)
 
@@ -90,7 +90,7 @@ def loop() -> None:
 
 
 if __name__ == "__main__":
-    init_logger("DEBUG", "worker")
+    init_logger("DEBUG")
     connect_to_cache()
     connect_to_queue()
     loop()

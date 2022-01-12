@@ -14,6 +14,7 @@ class Dataset(TypedDict):
 
 
 def get_dataset(dataset_name: str, hf_token: Optional[str] = None, max_size_fallback: Optional[int] = None) -> Dataset:
+    logger.info(f"get dataset '{dataset_name}'")
     if dataset_name in DATASETS_BLOCKLIST:
         raise Status400Error("this dataset is not supported for now.")
     configs = get_configs(dataset_name, hf_token, max_size_fallback)
