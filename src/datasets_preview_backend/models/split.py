@@ -1,3 +1,4 @@
+import logging
 from typing import List, Optional, TypedDict
 
 from datasets import get_dataset_split_names
@@ -8,6 +9,8 @@ from datasets_preview_backend.models.column import Column
 from datasets_preview_backend.models.info import Info
 from datasets_preview_backend.models.row import Row
 from datasets_preview_backend.models.typed_row import get_typed_rows_and_columns
+
+logger = logging.getLogger(__name__)
 
 
 class Split(TypedDict):
@@ -24,6 +27,7 @@ def get_split(
     hf_token: Optional[str] = None,
     max_size_fallback: Optional[int] = None,
 ) -> Split:
+    logger.info(f"get split '{split_name}' for config '{config_name}' of dataset '{dataset_name}'")
     fallback = max_size_fallback is not None and "size_in_bytes" in info and info["size_in_bytes"] < max_size_fallback
     typed_rows, columns = get_typed_rows_and_columns(dataset_name, config_name, split_name, info, hf_token, fallback)
     return {"split_name": split_name, "rows": typed_rows, "columns": columns}

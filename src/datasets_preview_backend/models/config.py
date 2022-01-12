@@ -1,3 +1,4 @@
+import logging
 from typing import List, Optional, TypedDict
 
 from datasets import get_dataset_config_names
@@ -6,6 +7,8 @@ from datasets_preview_backend.constants import DEFAULT_CONFIG_NAME, FORCE_REDOWN
 from datasets_preview_backend.exceptions import Status400Error
 from datasets_preview_backend.models.info import Info, get_info
 from datasets_preview_backend.models.split import Split, get_splits
+
+logger = logging.getLogger(__name__)
 
 
 class Config(TypedDict):
@@ -17,6 +20,7 @@ class Config(TypedDict):
 def get_config(
     dataset_name: str, config_name: str, hf_token: Optional[str] = None, max_size_fallback: Optional[int] = None
 ) -> Config:
+    logger.info(f"get config '{config_name}' for dataset '{dataset_name}'")
     if not isinstance(config_name, str):
         raise TypeError("config_name argument should be a string")
     # Get all the data

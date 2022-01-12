@@ -28,7 +28,7 @@ from datasets_preview_backend.routes.webhook import webhook_endpoint
 
 
 def create_app() -> Starlette:
-    init_logger(log_level=LOG_LEVEL)  # every worker has its own logger
+    init_logger(log_level=LOG_LEVEL)
     connect_to_cache()
     connect_to_queue()
     show_asserts_dir()
