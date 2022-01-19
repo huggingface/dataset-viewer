@@ -68,19 +68,13 @@ Also specify `HF_TOKEN` with a User Access Token (see https://huggingface.co/set
 
 Also specify `MAX_SIZE_FALLBACK` with the maximum size in bytes of the dataset to fallback in normal mode if streaming fails. Note that it requires to have the size in the info metadata. Set to `0` to disable the fallback. Defaults to `100_000_000`.
 
+The `WORKER_QUEUE` variable specifies which jobs queue the worker will pull jobs from. It can be equal to `datasets` (default) or `splits`. The `datasets` jobs should be a lot faster than the `splits` ones, so that we should need a lot more workers for `splits` than for `datasets`.
+
 To warm the cache, ie. add all the missing Hugging Face datasets to the queue:
 
 ```bash
 make warm
 ```
-
-To refresh random 3% of the Hugging Face datasets:
-
-```bash
-REFRESH_PCT=3 make refresh
-```
-
-The number of randomly chosen datasets to refresh is set by `REFRESH_PCT` (defaults to 1% - set to `100` to refresh all the datasets).
 
 To empty the databases:
 
@@ -92,7 +86,14 @@ or individually:
 
 ```bash
 make clean-cache
-make clean-queue
+make clean-queues         # delete all the jobs
+```
+
+See also:
+
+```bash
+make cancel-started-jobs
+make cancel-waiting-jobs
 ```
 
 ## Endpoints
@@ -169,7 +170,7 @@ Responses:
 
 ### /valid
 
-> Give the list of the valid datasets
+> Give the list of the valid datasets. A dataset is considered valid if `/splits` and `/rows` for all the splits return a valid response. Note that stalled cache entries are considered valid.
 
 Example: https://datasets-preview.huggingface.tech/valid
 
@@ -350,16 +351,15 @@ Responses:
 
 ### /splits
 
-> Lists the [splits](https://huggingface.co/docs/datasets/splits.html) names for a dataset config
+> Lists the [splits](https://huggingface.co/docs/datasets/splits.html) names for a dataset
 
-Example: https://datasets-preview.huggingface.tech/splits?dataset=glue&config=cola
+Example: https://datasets-preview.huggingface.tech/splits?dataset=glue
 
 Method: `GET`
 
 Parameters:
 
 - `dataset` (required): the dataset ID
-- `config`: the configuration name. If the dataset does not contain configs, you may explicitly pass "config=default". If obviated, return the splits for all the configs of the dataset.
 
 Responses:
 
@@ -402,8 +402,8 @@ Method: `GET`
 Parameters:
 
 - `dataset` (required): the dataset ID
-- `config`: the configuration name. If the dataset does not contain configs, you may explicitly pass "config=default". If obviated, return the rows for all the configs of the dataset.
-- `split`: the split name. It's ignored if `config` is empty. If obviated, return the rows for all the splits of the config, or of the dataset if `config` is obviated too.
+- `config` (required): the configuration name
+- `split` (required): the split name
 
 Responses:
 

@@ -31,10 +31,19 @@ class QuerySetManager(Generic[U]):
 
 
 class JobDict(TypedDict):
-    dataset_name: str
     created_at: datetime
     started_at: Optional[datetime]
     finished_at: Optional[datetime]
+
+
+class DatasetJobDict(JobDict):
+    dataset_name: str
+
+
+class SplitJobDict(JobDict):
+    dataset_name: str
+    config_name: str
+    split_name: str
 
 
 class DumpByStatus(TypedDict):
@@ -54,14 +63,14 @@ def connect_to_queue() -> None:
 # - finished: started_at is not None and finished_at is None: started jobs
 # For a given dataset_name, any number of finished jobs are allowed, but only 0 or 1
 # job for the set of the other states
-class Job(Document):
-    meta = {"collection": "jobs", "db_alias": "queue"}
+class DatasetJob(Document):
+    meta = {"collection": "dataset_jobs", "db_alias": "queue"}
     dataset_name = StringField(required=True)
     created_at = DateTimeField(required=True)
     started_at = DateTimeField()
     finished_at = DateTimeField()
 
-    def to_dict(self) -> JobDict:
+    def to_dict(self) -> DatasetJobDict:
         return {
             "dataset_name": self.dataset_name,
             "created_at": self.created_at,
@@ -69,7 +78,32 @@ class Job(Document):
             "finished_at": self.finished_at,
         }
 
-    objects = QuerySetManager["Job"]()
+    objects = QuerySetManager["DatasetJob"]()
+
+
+class SplitJob(Document):
+    meta = {"collection": "split_jobs", "db_alias": "queue"}
+    dataset_name = StringField(required=True)
+    config_name = StringField(required=True)
+    split_name = StringField(required=True)
+    created_at = DateTimeField(required=True)
+    started_at = DateTimeField()
+    finished_at = DateTimeField()
+
+    def to_dict(self) -> SplitJobDict:
+        return {
+            "dataset_name": self.dataset_name,
+            "config_name": self.config_name,
+            "split_name": self.split_name,
+            "created_at": self.created_at,
+            "started_at": self.started_at,
+            "finished_at": self.finished_at,
+        }
+
+    objects = QuerySetManager["SplitJob"]()
+
+
+AnyJob = TypeVar("AnyJob", DatasetJob, SplitJob)  # Must be DatasetJob or SplitJob
 
 
 # TODO: add priority (webhook: 5, warming: 3, refresh: 1)
@@ -96,76 +130,143 @@ class IncoherentState(Exception):
     pass
 
 
-class InvalidJobId(Exception):
-    pass
-
-
-def add_job(dataset_name: str) -> None:
+def add_job(existing_jobs: QuerySet[AnyJob], new_job: AnyJob):
     try:
-        # Check if a not-finished job already exists
-        Job.objects(dataset_name=dataset_name, finished_at=None).get()
+        # Check if a non-finished job already exists
+        existing_jobs.filter(finished_at=None).get()
     except DoesNotExist:
-        Job(dataset_name=dataset_name, created_at=datetime.utcnow()).save()
+        new_job.save()
     # raises MultipleObjectsReturned if more than one entry -> should never occur, we let it raise
 
 
-def get_waiting_jobs() -> QuerySet[Job]:
-    return Job.objects(started_at=None)
+def add_dataset_job(dataset_name: str) -> None:
+    add_job(
+        DatasetJob.objects(dataset_name=dataset_name),
+        DatasetJob(dataset_name=dataset_name, created_at=datetime.utcnow()),
+    )
 
 
-def get_started_jobs() -> QuerySet[Job]:
-    return Job.objects(started_at__exists=True, finished_at=None)
+def add_split_job(dataset_name: str, config_name: str, split_name: str) -> None:
+    add_job(
+        SplitJob.objects(dataset_name=dataset_name, config_name=config_name, split_name=split_name),
+        SplitJob(
+            dataset_name=dataset_name, config_name=config_name, split_name=split_name, created_at=datetime.utcnow()
+        ),
+    )
 
 
-def get_finished_jobs() -> QuerySet[Job]:
-    return Job.objects(finished_at__exists=True)
+def get_waiting(jobs: QuerySet[AnyJob]) -> QuerySet[AnyJob]:
+    return jobs(started_at__exists=False, finished_at__exists=False)
 
 
-def get_job() -> Tuple[str, str]:
-    job = get_waiting_jobs().order_by("+created_at").first()
+def get_started(jobs: QuerySet[AnyJob]) -> QuerySet[AnyJob]:
+    return jobs(started_at__exists=True, finished_at__exists=False)
+
+
+def get_finished(jobs: QuerySet[AnyJob]) -> QuerySet[AnyJob]:
+    return jobs(finished_at__exists=True)
+
+
+def start_job(jobs: QuerySet[AnyJob]) -> AnyJob:
+    job = get_waiting(jobs).order_by("+created_at").first()
     if job is None:
         raise EmptyQueue("no job available")
     if job.finished_at is not None:
         raise IncoherentState("a job with an empty start_at field should not have a finished_at field")
     job.update(started_at=datetime.utcnow())
-    return str(job.id), job.dataset_name  # type: ignore
+    return job
 
 
-def finish_job(job_id: str) -> None:
+def get_dataset_job() -> Tuple[str, str]:
+    job = start_job(DatasetJob.objects)
+    return str(job.pk), job.dataset_name
+    # ^ job.pk is the id. job.id is not recognized by mypy
+
+
+def get_split_job() -> Tuple[str, str, str, str]:
+    job = start_job(SplitJob.objects)
+    return str(job.pk), job.dataset_name, job.config_name, job.split_name
+    # ^ job.pk is the id. job.id is not recognized by mypy
+
+
+def finish_jobs(jobs: QuerySet[AnyJob], job_id=str) -> None:
     try:
-        job = Job.objects(id=job_id, started_at__exists=True, finished_at=None).get()
-    except DoesNotExist:
+        job = jobs(pk=job_id, started_at__exists=True, finished_at=None).get()
+    except (DoesNotExist, ValidationError):
         raise JobNotFound("the job does not exist")
-    except ValidationError:
-        raise InvalidJobId("the job id is invalid")
     job.update(finished_at=datetime.utcnow())
 
 
+def finish_started_jobs(jobs: QuerySet[AnyJob]) -> None:
+    get_started(jobs).update(finished_at=datetime.utcnow())
+
+
+def finish_waiting_jobs(jobs: QuerySet[AnyJob]) -> None:
+    get_waiting(jobs).update(finished_at=datetime.utcnow())
+
+
+def finish_dataset_job(job_id: str) -> None:
+    finish_jobs(DatasetJob.objects, job_id)
+
+
+def finish_split_job(job_id: str) -> None:
+    finish_jobs(SplitJob.objects, job_id)
+
+
 def clean_database() -> None:
-    Job.drop_collection()  # type: ignore
+    DatasetJob.drop_collection()  # type: ignore
+    SplitJob.drop_collection()  # type: ignore
 
 
-def force_finish_started_jobs() -> None:
-    get_started_jobs().update(finished_at=datetime.utcnow())
+def finish_started_dataset_jobs() -> None:
+    finish_started_jobs(DatasetJob.objects)
+
+
+def finish_started_split_jobs() -> None:
+    finish_started_jobs(SplitJob.objects)
+
+
+def finish_waiting_dataset_jobs() -> None:
+    finish_waiting_jobs(DatasetJob.objects)
+
+
+def finish_waiting_split_jobs() -> None:
+    finish_waiting_jobs(SplitJob.objects)
 
 
 # special reports
 
 
-def get_jobs_count_with_status(status: str) -> int:
+def get_jobs_count_with_status(jobs: QuerySet[AnyJob], status: str) -> int:
     if status == "waiting":
-        return get_waiting_jobs().count()
+        return get_waiting(jobs).count()
     elif status == "started":
-        return get_started_jobs().count()
+        return get_started(jobs).count()
     else:
         # done
-        return get_finished_jobs().count()
+        return get_finished(jobs).count()
 
 
-def get_dump_by_status() -> DumpByStatus:
+def get_dataset_jobs_count_with_status(status: str) -> int:
+    return get_jobs_count_with_status(DatasetJob.objects, status)
+
+
+def get_split_jobs_count_with_status(status: str) -> int:
+    return get_jobs_count_with_status(SplitJob.objects, status)
+
+
+def get_dump_by_status(jobs: QuerySet[AnyJob]) -> DumpByStatus:
     return {
-        "waiting": [d.to_dict() for d in get_waiting_jobs()],
-        "started": [d.to_dict() for d in get_started_jobs()],
-        "finished": [d.to_dict() for d in get_finished_jobs()],
+        "waiting": [d.to_dict() for d in get_waiting(jobs)],
+        "started": [d.to_dict() for d in get_started(jobs)],
+        "finished": [d.to_dict() for d in get_finished(jobs)],
         "created_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
     }
+
+
+def get_dataset_dump_by_status() -> DumpByStatus:
+    return get_dump_by_status(DatasetJob.objects)
+
+
+def get_split_dump_by_status() -> DumpByStatus:
+    return get_dump_by_status(SplitJob.objects)

@@ -1,11 +1,30 @@
+import enum
 import logging
 import types
-from typing import Any, Dict, Generic, List, Optional, Type, TypedDict, TypeVar, Union
+from datetime import datetime
+from typing import (
+    Any,
+    Dict,
+    Generic,
+    List,
+    Optional,
+    Tuple,
+    Type,
+    TypedDict,
+    TypeVar,
+    Union,
+)
 
 from mongoengine import Document, DoesNotExist, connect
-from mongoengine.fields import DictField, EnumField, IntField, ListField, StringField
+from mongoengine.fields import (
+    DateTimeField,
+    DictField,
+    EnumField,
+    IntField,
+    ListField,
+    StringField,
+)
 from mongoengine.queryset.queryset import QuerySet
-from pymongo.errors import DocumentTooLarge
 
 from datasets_preview_backend.config import MONGO_CACHE_DATABASE, MONGO_URL
 from datasets_preview_backend.exceptions import (
@@ -18,8 +37,12 @@ from datasets_preview_backend.models.column import (
     ColumnDict,
     ColumnType,
 )
-from datasets_preview_backend.models.dataset import Dataset, get_dataset
+from datasets_preview_backend.models.dataset import (
+    SplitFullName,
+    get_dataset_split_full_names,
+)
 from datasets_preview_backend.models.hf_dataset import ask_access
+from datasets_preview_backend.models.split import Split, get_split
 
 # START monkey patching ### hack ###
 # see https://github.com/sbdchd/mongo-types#install
@@ -48,10 +71,18 @@ def connect_to_cache() -> None:
     connect(MONGO_CACHE_DATABASE, alias="cache", host=MONGO_URL)
 
 
-# the purpose of this collection is to check if the dataset exists and which is it's status
+class Status(enum.Enum):
+    EMPTY = "empty"
+    VALID = "valid"
+    ERROR = "error"
+    STALLED = "stalled"
+
+
+# the purpose of this collection is to check if the dataset exists, which is its status and since when
 class DbDataset(Document):
     dataset_name = StringField(required=True, unique=True)
-    status = StringField(required=True)  # TODO: enum
+    status = EnumField(Status, default=Status.EMPTY)
+    since = DateTimeField(default=datetime.utcnow)
 
     meta = {"collection": "datasets", "db_alias": "cache"}
     objects = QuerySetManager["DbDataset"]()
@@ -63,13 +94,22 @@ class SplitItem(TypedDict):
     split: str
 
 
+class SplitsResponse(TypedDict):
+    splits: List[SplitItem]
+
+
 class DbSplit(Document):
     dataset_name = StringField(required=True, unique_with=["config_name", "split_name"])
     config_name = StringField(required=True)
     split_name = StringField(required=True)
+    status = EnumField(Status, default=Status.EMPTY)
+    since = DateTimeField(default=datetime.utcnow)
 
     def to_item(self) -> SplitItem:
         return {"dataset": self.dataset_name, "config": self.config_name, "split": self.split_name}
+
+    def to_split_full_name(self) -> SplitFullName:
+        return {"dataset_name": self.dataset_name, "config_name": self.config_name, "split_name": self.split_name}
 
     meta = {"collection": "splits", "db_alias": "cache"}
     objects = QuerySetManager["DbSplit"]()
@@ -111,6 +151,11 @@ class ColumnItem(TypedDict):
     column: ColumnDict
 
 
+class RowsResponse(TypedDict):
+    columns: List[ColumnItem]
+    rows: List[RowItem]
+
+
 class DbColumn(Document):
     dataset_name = StringField(required=True, unique_with=["config_name", "split_name", "name"])
     config_name = StringField(required=True)
@@ -149,7 +194,7 @@ class ErrorItem(_BaseErrorItem, total=False):
     cause_traceback: List[str]
 
 
-class DbError(Document):
+class DbDatasetError(Document):
     dataset_name = StringField(required=True, unique=True)
     status_code = IntField(required=True)  # TODO: an enum
     exception = StringField(required=True)
@@ -167,16 +212,40 @@ class DbError(Document):
             error["cause_traceback"] = self.cause_traceback
         return error
 
-    meta = {"collection": "errors", "db_alias": "cache"}
-    objects = QuerySetManager["DbError"]()
+    meta = {"collection": "dataset_errors", "db_alias": "cache"}
+    objects = QuerySetManager["DbDatasetError"]()
 
 
-def upsert_error(dataset_name: str, error: StatusError) -> None:
+class DbSplitError(Document):
+    dataset_name = StringField(required=True, unique_with=["config_name", "split_name"])
+    config_name = StringField(required=True)
+    split_name = StringField(required=True)
+    status_code = IntField(required=True)  # TODO: an enum
+    exception = StringField(required=True)
+    message = StringField(required=True)
+    cause_exception = StringField()
+    cause_message = StringField()
+    cause_traceback = ListField(StringField())
+
+    def to_item(self) -> ErrorItem:
+        error: ErrorItem = {"status_code": self.status_code, "exception": self.exception, "message": self.message}
+        if self.cause_exception and self.cause_message:
+            error["cause_exception"] = self.cause_exception
+            error["cause_message"] = self.cause_message
+        if self.cause_traceback:
+            error["cause_traceback"] = self.cause_traceback
+        return error
+
+    meta = {"collection": "split_errors", "db_alias": "cache"}
+    objects = QuerySetManager["DbSplitError"]()
+
+
+def upsert_dataset_error(dataset_name: str, error: StatusError) -> None:
     DbSplit.objects(dataset_name=dataset_name).delete()
     DbRow.objects(dataset_name=dataset_name).delete()
     DbColumn.objects(dataset_name=dataset_name).delete()
-    DbDataset.objects(dataset_name=dataset_name).upsert_one(status="error")
-    DbError.objects(dataset_name=dataset_name).upsert_one(
+    DbDataset.objects(dataset_name=dataset_name).upsert_one(status=Status.ERROR)
+    DbDatasetError.objects(dataset_name=dataset_name).upsert_one(
         status_code=error.status_code,
         exception=error.exception,
         message=error.message,
@@ -186,48 +255,75 @@ def upsert_error(dataset_name: str, error: StatusError) -> None:
     )
 
 
-def upsert_dataset(dataset: Dataset) -> None:
-    dataset_name = dataset["dataset_name"]
-    DbSplit.objects(dataset_name=dataset_name).delete()
-    DbRow.objects(dataset_name=dataset_name).delete()
-    DbColumn.objects(dataset_name=dataset_name).delete()
-    DbError.objects(dataset_name=dataset_name).delete()
-    try:
-        DbDataset.objects(dataset_name=dataset_name).upsert_one(status="valid")
-        for config in dataset["configs"]:
-            config_name = config["config_name"]
-            for split in config["splits"]:
-                split_name = split["split_name"]
-                rows = split["rows"]
-                columns = split["columns"]
-                DbSplit(dataset_name=dataset_name, config_name=config_name, split_name=split_name).save()
-                for row_idx, row in enumerate(rows):
-                    DbRow(
-                        dataset_name=dataset_name,
-                        config_name=config_name,
-                        split_name=split_name,
-                        row_idx=row_idx,
-                        row=row,
-                    ).save()
-                for column_idx, column in enumerate(columns):
-                    db_column = DbColumn(
-                        dataset_name=dataset_name,
-                        config_name=config_name,
-                        split_name=split_name,
-                        column_idx=column_idx,
-                        name=column.name,
-                        type=column.type,
-                    )
-                    # TODO: seems like suboptimal code, introducing unnecessary coupling
-                    if isinstance(column, ClassLabelColumn):
-                        db_column.labels = column.labels
-                    db_column.save()
-    except DocumentTooLarge:
-        upsert_error(
-            dataset_name, Status400Error("The dataset document is larger than the maximum supported size (16MB).")
+def upsert_dataset(dataset_name: str, new_split_full_names: List[SplitFullName]) -> None:
+    DbDataset.objects(dataset_name=dataset_name).upsert_one(status=Status.VALID)
+    DbDatasetError.objects(dataset_name=dataset_name).delete()
+
+    current_split_full_names = [o.to_split_full_name() for o in DbSplit.objects(dataset_name=dataset_name)]
+
+    for split_full_name in current_split_full_names:
+        if split_full_name not in new_split_full_names:
+            # delete the splits that disappeared
+            delete_split(split_full_name)
+
+    for split_full_name in new_split_full_names:
+        if split_full_name not in current_split_full_names:
+            # create the new empty splits
+            create_split(split_full_name)
+        else:
+            # mark all the existing splits as stalled
+            mark_split_as_stalled(split_full_name)
+
+
+def upsert_split_error(dataset_name: str, config_name: str, split_name: str, error: StatusError) -> None:
+    DbRow.objects(dataset_name=dataset_name, config_name=config_name, split_name=split_name).delete()
+    DbColumn.objects(dataset_name=dataset_name, config_name=config_name, split_name=split_name).delete()
+    DbSplit.objects(dataset_name=dataset_name, config_name=config_name, split_name=split_name).upsert_one(
+        status=Status.ERROR
+    )
+    DbSplitError.objects(dataset_name=dataset_name, config_name=config_name, split_name=split_name).upsert_one(
+        status_code=error.status_code,
+        exception=error.exception,
+        message=error.message,
+        cause_exception=error.cause_exception,
+        cause_message=error.cause_message,
+        cause_traceback=error.cause_traceback,
+    )
+
+
+def upsert_split(dataset_name: str, config_name: str, split_name: str, split: Split) -> None:
+    rows = split["rows"]
+    columns = split["columns"]
+
+    DbSplit.objects(dataset_name=dataset_name, config_name=config_name, split_name=split_name).upsert_one(
+        status=Status.VALID
+    )
+    DbSplitError.objects(dataset_name=dataset_name, config_name=config_name, split_name=split_name).delete()
+
+    DbRow.objects(dataset_name=dataset_name, config_name=config_name, split_name=split_name).delete()
+    for row_idx, row in enumerate(rows):
+        DbRow(
+            dataset_name=dataset_name,
+            config_name=config_name,
+            split_name=split_name,
+            row_idx=row_idx,
+            row=row,
+        ).save()
+
+    DbColumn.objects(dataset_name=dataset_name, config_name=config_name, split_name=split_name).delete()
+    for column_idx, column in enumerate(columns):
+        db_column = DbColumn(
+            dataset_name=dataset_name,
+            config_name=config_name,
+            split_name=split_name,
+            column_idx=column_idx,
+            name=column.name,
+            type=column.type,
         )
-    except Exception as err:
-        upsert_error(dataset_name, Status500Error(str(err)))
+        # TODO: seems like suboptimal code, introducing unnecessary coupling
+        if isinstance(column, ClassLabelColumn):
+            db_column.labels = column.labels
+        db_column.save()
 
 
 def delete_dataset_cache(dataset_name: str) -> None:
@@ -235,7 +331,7 @@ def delete_dataset_cache(dataset_name: str) -> None:
     DbSplit.objects(dataset_name=dataset_name).delete()
     DbRow.objects(dataset_name=dataset_name).delete()
     DbColumn.objects(dataset_name=dataset_name).delete()
-    DbError.objects(dataset_name=dataset_name).delete()
+    DbDatasetError.objects(dataset_name=dataset_name).delete()
 
 
 def clean_database() -> None:
@@ -243,99 +339,183 @@ def clean_database() -> None:
     DbSplit.drop_collection()  # type: ignore
     DbRow.drop_collection()  # type: ignore
     DbColumn.drop_collection()  # type: ignore
-    DbError.drop_collection()  # type: ignore
+    DbDatasetError.drop_collection()  # type: ignore
 
 
-def refresh_dataset(
-    dataset_name: str, hf_token: Optional[str] = None, max_size_fallback: Optional[int] = None
-) -> None:
+def refresh_dataset_split_full_names(dataset_name: str, hf_token: Optional[str] = None) -> List[SplitFullName]:
     if hf_token:
         # remove the gate (for gated datasets) if a token is passed
         ask_access(dataset_name, hf_token)
 
     try:
-        dataset = get_dataset(dataset_name, hf_token, max_size_fallback)
-        upsert_dataset(dataset)
+        split_full_names = get_dataset_split_full_names(dataset_name, hf_token)
+        upsert_dataset(dataset_name, split_full_names)
         logger.debug(f"dataset '{dataset_name}' is valid, cache updated")
+        return split_full_names
     except StatusError as err:
-        upsert_error(dataset_name, err)
+        upsert_dataset_error(dataset_name, err)
         logger.debug(f"dataset '{dataset_name}' had error, cache updated")
+    except Exception as err:
+        upsert_dataset_error(dataset_name, Status500Error(str(err)))
+        logger.debug(f"dataset '{dataset_name}' had error, cache updated")
+    return []
+
+
+def delete_split(split_full_name: SplitFullName):
+    dataset_name = split_full_name["dataset_name"]
+    config_name = split_full_name["config_name"]
+    split_name = split_full_name["split_name"]
+    DbRow.objects(dataset_name=dataset_name, config_name=config_name, split_name=split_name).delete()
+    DbColumn.objects(dataset_name=dataset_name, config_name=config_name, split_name=split_name).delete()
+    DbSplit.objects(dataset_name=dataset_name, config_name=config_name, split_name=split_name).delete()
+    # DbSplitError.objects(dataset_name=dataset_name, config_name=config_name, split_name=split_name).delete()
+    logger.debug(f"dataset '{dataset_name}': deleted split {split_name} from config {config_name}")
+
+
+def create_split(split_full_name: SplitFullName):
+    dataset_name = split_full_name["dataset_name"]
+    config_name = split_full_name["config_name"]
+    split_name = split_full_name["split_name"]
+    DbSplit(dataset_name=dataset_name, config_name=config_name, split_name=split_name, status=Status.EMPTY).save()
+    logger.debug(f"dataset '{dataset_name}': created split {split_name} in config {config_name}")
+
+
+def mark_split_as_stalled(split_full_name: SplitFullName):
+    dataset_name = split_full_name["dataset_name"]
+    config_name = split_full_name["config_name"]
+    split_name = split_full_name["split_name"]
+    DbSplit.objects(dataset_name=dataset_name, config_name=config_name, split_name=split_name).update(
+        status=Status.STALLED
+    )
+    logger.debug(f"dataset '{dataset_name}': marked split {split_name} in config {config_name} as stalled")
+
+
+def refresh_split(
+    dataset_name: str,
+    config_name: str,
+    split_name: str,
+    hf_token: Optional[str] = None,
+    max_size_fallback: Optional[int] = None,
+):
+    if hf_token:
+        # remove the gate (for gated datasets) if a token is passed
+        ask_access(dataset_name, hf_token)
+
+    try:
+        split = get_split(
+            dataset_name, config_name, split_name, hf_token=hf_token, max_size_fallback=max_size_fallback
+        )
+        upsert_split(dataset_name, config_name, split_name, split)
+        logger.debug(
+            f"split '{split_name}' from dataset '{dataset_name}' in config '{config_name}' is valid, cache updated"
+        )
+    except StatusError as err:
+        upsert_split_error(dataset_name, config_name, split_name, err)
+        logger.debug(
+            f"split '{split_name}' from dataset '{dataset_name}' in config '{config_name}' had error, cache updated"
+        )
+    except Exception as err:
+        upsert_split_error(dataset_name, config_name, split_name, Status500Error(str(err)))
+        logger.debug(
+            f"split '{split_name}' from dataset '{dataset_name}' in config '{config_name}' had error, cache updated"
+        )
+
+
+def list_split_full_names_to_refresh(dataset_name: str):
+    return [
+        split.to_split_full_name()
+        for split in DbSplit.objects(dataset_name=dataset_name, status__in=[Status.EMPTY, Status.STALLED])
+    ]
 
 
 # export
 
 
-def check_dataset(dataset_name: str) -> None:
-    if DbDataset.objects(dataset_name=dataset_name).count() == 0:
-        raise Status400Error("Not found. Maybe the cache is missing, or maybe the dataset does not exist.")
-
-
-def is_dataset_cached(dataset_name: str) -> bool:
+def should_dataset_be_refreshed(dataset_name: str) -> bool:
     try:
-        check_dataset(dataset_name)
-    except Status400Error:
-        return False
-    return True
-
-
-class NoError(Exception):
-    pass
-
-
-def get_error(dataset_name: str) -> ErrorItem:
-    # can raise DoesNotExist
-    try:
-        return DbError.objects(dataset_name=dataset_name).get().to_item()
+        dataset = DbDataset.objects(dataset_name=dataset_name).get()
+        return dataset.status in [Status.STALLED, Status.EMPTY]
     except DoesNotExist:
-        raise NoError()
+        return True
+    # ^ can also raise MultipleObjectsReturned, which should not occur -> we let the exception raise
 
 
-def get_splits(
-    dataset_name: str, config_name: Optional[str] = None, split_name: Optional[str] = None
-) -> List[SplitItem]:
-    if config_name is None:
-        splits = DbSplit.objects(dataset_name=dataset_name)
-    elif split_name is None:
-        splits = DbSplit.objects(dataset_name=dataset_name, config_name=config_name)
-    else:
-        splits = DbSplit.objects(dataset_name=dataset_name, config_name=config_name, split_name=split_name)
-    return [split.to_item() for split in splits]
+def get_splits_response(dataset_name: str) -> Tuple[Union[SplitsResponse, None], Union[ErrorItem, None], int]:
+    try:
+        dataset = DbDataset.objects(dataset_name=dataset_name).get()
+    except DoesNotExist:
+        raise Status400Error("Not found. Maybe the cache is missing, or maybe the dataset does not exist.")
+    # ^ can also raise MultipleObjectsReturned, which should not occur -> we let the exception raise
+
+    if dataset.status == Status.EMPTY:
+        raise Status400Error("Not found. Cache is waiting to be refreshed.")
+        # ^ should not occur with the current logic
+    if dataset.status == Status.ERROR:
+        dataset_error = DbDatasetError.objects(dataset_name=dataset_name).get()
+        # ^ can raise DoesNotExist or MultipleObjectsReturned, which should not occur -> we let the exception raise
+        return None, dataset_error.to_item(), dataset_error.status_code
+
+    splits_response: SplitsResponse = {
+        "splits": [split.to_item() for split in DbSplit.objects(dataset_name=dataset_name)]
+    }
+    return splits_response, None, 200
 
 
-def get_columns(
-    dataset_name: str, config_name: Optional[str] = None, split_name: Optional[str] = None
-) -> List[ColumnItem]:
-    if config_name is None:
-        columns = DbColumn.objects(dataset_name=dataset_name).order_by("+column_idx")
-    elif split_name is None:
-        columns = DbColumn.objects(dataset_name=dataset_name, config_name=config_name).order_by("+column_idx")
-    else:
-        columns = DbColumn.objects(dataset_name=dataset_name, config_name=config_name, split_name=split_name).order_by(
-            "+column_idx"
-        )
-    return [column.to_item() for column in columns]
+def get_rows_response(
+    dataset_name: str, config_name: str, split_name: str
+) -> Tuple[Union[RowsResponse, None], Union[ErrorItem, None], int]:
+    try:
+        split = DbSplit.objects(dataset_name=dataset_name, config_name=config_name, split_name=split_name).get()
+    except DoesNotExist:
+        raise Status400Error("Not found. Maybe the cache is missing, or maybe the split does not exist.")
+    # ^ can also raise MultipleObjectsReturned, which should not occur -> we let the exception raise
 
+    if split.status == Status.EMPTY:
+        raise Status400Error("Not found. Cache is waiting to be refreshed.")
+        # ^ should not occur with the current logic
+    if split.status == Status.ERROR:
+        split_error = DbSplitError.objects(
+            dataset_name=dataset_name, config_name=config_name, split_name=split_name
+        ).get()
+        # ^ can raise DoesNotExist or MultipleObjectsReturned, which should not occur -> we let the exception raise
+        return None, split_error.to_item(), split_error.status_code
 
-def get_rows(dataset_name: str, config_name: Optional[str] = None, split_name: Optional[str] = None) -> List[RowItem]:
-    if config_name is None:
-        rows = DbRow.objects(dataset_name=dataset_name).order_by("+row_idx")
-    elif split_name is None:
-        rows = DbRow.objects(dataset_name=dataset_name, config_name=config_name).order_by("+row_idx")
-    else:
-        rows = DbRow.objects(dataset_name=dataset_name, config_name=config_name, split_name=split_name).order_by(
-            "+row_idx"
-        )
-    return [row.to_item() for row in rows]
+    # TODO: if status is Status.STALLED, mention it in the response?
+    columns = DbColumn.objects(dataset_name=dataset_name, config_name=config_name, split_name=split_name).order_by(
+        "+column_idx"
+    )
+    rows = DbRow.objects(dataset_name=dataset_name, config_name=config_name, split_name=split_name).order_by(
+        "+row_idx"
+    )
+    rows_response: RowsResponse = {
+        "columns": [column.to_item() for column in columns],
+        "rows": [row.to_item() for row in rows],
+    }
+    return rows_response, None, 200
 
 
 # special reports
 
 
+def is_dataset_valid_or_stalled(dataset: DbDataset) -> bool:
+    if dataset.status not in [Status.VALID, Status.STALLED]:
+        return False
+
+    split_statuses = DbSplit.objects(dataset_name=dataset.dataset_name).only("status")
+    return all(status in [Status.VALID, Status.STALLED] for status in split_statuses)
+
+
+def get_valid_or_stalled_dataset_names() -> List[str]:
+    return [d.dataset_name for d in DbDataset.objects() if is_dataset_valid_or_stalled(d)]
+
+
 def get_dataset_names_with_status(status: str) -> List[str]:
+    # TODO: take the splits statuses into account?
     return [d.dataset_name for d in DbDataset.objects(status=status).only("dataset_name")]
 
 
 def get_datasets_count_with_status(status: str) -> int:
+    # TODO: take the splits statuses into account?
     return DbDataset.objects(status=status).count()
 
 
@@ -346,15 +526,18 @@ class CacheReport(TypedDict):
 
 
 def get_datasets_reports() -> List[CacheReport]:
+    # TODO: take the splits statuses into account?
+
     # first the valid entries: we don't want the content
     valid: List[CacheReport] = [
         {"dataset": d.dataset_name, "status": "valid", "error": None}
-        for d in DbDataset.objects(status="valid").only("dataset_name")
+        for d in DbDataset.objects(status=Status.VALID).only("dataset_name")
     ]
 
     # now the error entries
     error: List[CacheReport] = [
-        {"dataset": error.dataset_name, "status": "error", "error": error.to_item()} for error in DbError.objects()
+        {"dataset": error.dataset_name, "status": "error", "error": error.to_item()}
+        for error in DbDatasetError.objects()
     ]
 
     return valid + error

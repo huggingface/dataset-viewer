@@ -3,7 +3,11 @@ from starlette.testclient import TestClient
 
 from datasets_preview_backend.app import create_app
 from datasets_preview_backend.config import MONGO_CACHE_DATABASE
-from datasets_preview_backend.io.cache import clean_database, refresh_dataset
+from datasets_preview_backend.io.cache import (
+    clean_database,
+    refresh_dataset_split_full_names,
+    refresh_split,
+)
 
 
 @pytest.fixture(autouse=True, scope="module")
@@ -23,7 +27,7 @@ def clean_mongo_database() -> None:
 
 
 def test_get_cache_reports(client: TestClient) -> None:
-    refresh_dataset("acronym_identification")
+    refresh_dataset_split_full_names("acronym_identification")
     response = client.get("/cache-reports")
     assert response.status_code == 200
     json = response.json()
@@ -66,16 +70,15 @@ def test_get_hf_datasets(client: TestClient) -> None:
 
 def test_get_splits(client: TestClient) -> None:
     dataset = "acronym_identification"
-    config = "default"
-    refresh_dataset(dataset)
-    response = client.get("/splits", params={"dataset": dataset, "config": config})
+    refresh_dataset_split_full_names(dataset)
+    response = client.get("/splits", params={"dataset": dataset})
     assert response.status_code == 200
     json = response.json()
     splitItems = json["splits"]
     assert len(splitItems) == 3
     split = splitItems[0]
     assert split["dataset"] == dataset
-    assert split["config"] == config
+    assert split["config"] == "default"
     assert split["split"] == "test"
 
     # no config
@@ -83,15 +86,10 @@ def test_get_splits(client: TestClient) -> None:
     json2 = response2.json()
     assert json == json2
 
-    # not found
-    response = client.get("/splits", params={"dataset": dataset, "config": "doesnotexist"})
-    assert response.status_code == 400
-
     # uses the fallback to call "builder._split_generators" while https://github.com/huggingface/datasets/issues/2743
     dataset = "hda_nli_hindi"
-    config = "HDA nli hindi"
-    refresh_dataset(dataset)
-    response = client.get("/splits", params={"dataset": dataset, "config": config})
+    refresh_dataset_split_full_names(dataset)
+    response = client.get("/splits", params={"dataset": dataset})
     assert response.status_code == 200
     json = response.json()
     splits = [s["split"] for s in json["splits"]]
@@ -102,8 +100,12 @@ def test_get_splits(client: TestClient) -> None:
 
     # not found
     dataset = "doesnotexist"
-    refresh_dataset(dataset)
+    refresh_dataset_split_full_names(dataset)
     response = client.get("/splits", params={"dataset": dataset})
+    assert response.status_code == 400
+
+    # missing parameter
+    response = client.get("/splits")
     assert response.status_code == 400
 
 
@@ -111,7 +113,7 @@ def test_get_rows(client: TestClient) -> None:
     dataset = "acronym_identification"
     config = "default"
     split = "train"
-    refresh_dataset(dataset)
+    refresh_split(dataset, config, split)
     response = client.get("/rows", params={"dataset": dataset, "config": config, "split": split})
     assert response.status_code == 200
     json = response.json()
@@ -132,27 +134,16 @@ def test_get_rows(client: TestClient) -> None:
     assert column["name"] == "id"
     assert column["type"] == "STRING"
 
-    # no split
-    response2 = client.get("/rows", params={"dataset": dataset, "config": config})
-    json2 = response2.json()
-    assert len(json2["rows"]) > len(json["rows"])
-
-    # no config
-    response3 = client.get("/rows", params={"dataset": dataset})
-    json3 = response3.json()
-    assert json2 == json3
-
-    # not found
-    response = client.get("/rows", params={"dataset": dataset, "config": "doesnotexist"})
+    # missing parameter
+    response = client.get("/rows", params={"dataset": dataset, "config": config})
     assert response.status_code == 400
-
-    response = client.get("/rows", params={"dataset": dataset, "config": "default", "split": "doesnotexist"})
-    assert response.status_code == 400
-
-    # not found
-    dataset = "doesnotexist"
-    refresh_dataset(dataset)
     response = client.get("/rows", params={"dataset": dataset})
+    assert response.status_code == 400
+    response = client.get("/rows")
+    assert response.status_code == 400
+
+    # not found
+    response = client.get("/rows", params={"dataset": dataset, "config": "default", "split": "doesnotexist"})
     assert response.status_code == 400
 
 

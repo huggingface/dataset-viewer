@@ -7,11 +7,13 @@ from datasets_preview_backend.io.cache import (
     clean_database,
     connect_to_cache,
     delete_dataset_cache,
-    get_columns,
-    refresh_dataset,
+    get_rows_response,
+    get_splits_response,
+    refresh_dataset_split_full_names,
+    refresh_split,
     upsert_dataset,
 )
-from datasets_preview_backend.models.dataset import get_dataset
+from datasets_preview_backend.models.dataset import get_dataset_split_full_names
 
 
 @pytest.fixture(autouse=True, scope="module")
@@ -31,7 +33,7 @@ def clean_mongo_database() -> None:
 
 
 def test_save() -> None:
-    dataset_cache = DbDataset(dataset_name="test", status="cache_miss")
+    dataset_cache = DbDataset(dataset_name="test", status="valid")
     dataset_cache.save()
 
     retrieved = DbDataset.objects(dataset_name="test")
@@ -39,22 +41,22 @@ def test_save() -> None:
 
 
 def test_save_and_update() -> None:
-    DbDataset(dataset_name="test", status="cache_miss").save()
+    DbDataset(dataset_name="test", status="empty").save()
     DbDataset.objects(dataset_name="test").upsert_one(status="valid")
     retrieved = DbDataset.objects(dataset_name="test")
     assert len(retrieved) == 1
-    assert retrieved[0].status == "valid"
+    assert retrieved[0].status.value == "valid"
 
 
 def test_acronym_identification() -> None:
     dataset_name = "acronym_identification"
-    dataset = get_dataset(dataset_name)
-    upsert_dataset(dataset)
+    split_full_names = get_dataset_split_full_names(dataset_name)
+    upsert_dataset(dataset_name, split_full_names)
     # ensure it's idempotent
-    upsert_dataset(dataset)
+    upsert_dataset(dataset_name, split_full_names)
     retrieved = DbDataset.objects(dataset_name=dataset_name).get()
     assert retrieved.dataset_name == dataset_name
-    assert retrieved.status == "valid"
+    assert retrieved.status.value == "valid"
     delete_dataset_cache(dataset_name)
     with pytest.raises(DoesNotExist):
         DbDataset.objects(dataset_name=dataset_name).get()
@@ -62,31 +64,39 @@ def test_acronym_identification() -> None:
 
 def test_doesnotexist() -> None:
     dataset_name = "doesnotexist"
-    refresh_dataset(dataset_name)
+    refresh_dataset_split_full_names(dataset_name)
     retrieved = DbDataset.objects(dataset_name=dataset_name).get()
-    assert retrieved.status == "error"
+    assert retrieved.status.value == "error"
 
 
 def test_config_error() -> None:
     # see https://github.com/huggingface/datasets-preview-backend/issues/78
     dataset_name = "Check/region_1"
-    refresh_dataset(dataset_name)
+    refresh_dataset_split_full_names(dataset_name)
     retrieved = DbDataset.objects(dataset_name=dataset_name).get()
-    assert retrieved.status == "error"
+    assert retrieved.status.value == "valid"
+    splits_response, error, status_code = get_splits_response(dataset_name)
+    assert status_code == 200
+    assert error is None
+    assert splits_response is not None
+    assert "splits" in splits_response
+    assert len(splits_response["splits"]) == 1
 
 
 def test_large_document() -> None:
     # see https://github.com/huggingface/datasets-preview-backend/issues/89
     dataset_name = "SaulLu/Natural_Questions_HTML"
-    refresh_dataset(dataset_name)
+    refresh_dataset_split_full_names(dataset_name)
     retrieved = DbDataset.objects(dataset_name=dataset_name).get()
-    assert retrieved.status == "valid"
+    assert retrieved.status.value == "valid"
 
 
 def test_column_order() -> None:
-    dataset_name = "head_qa"
-    refresh_dataset(dataset_name)
-    columns = get_columns(dataset_name, "en", "train")
-    print(columns)
-    print([column["column"]["name"] for column in columns])
-    assert columns[6]["column"]["name"] == "image"
+    refresh_split("head_qa", "en", "train")
+    rows_response, error, status_code = get_rows_response("head_qa", "en", "train")
+    assert status_code == 200
+    assert error is None
+    assert rows_response is not None
+    print(rows_response["columns"])
+    assert "columns" in rows_response
+    assert rows_response["columns"][6]["column"]["name"] == "image"

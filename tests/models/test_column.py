@@ -1,4 +1,3 @@
-from datasets_preview_backend.constants import DEFAULT_CONFIG_NAME
 from datasets_preview_backend.models.column import ColumnType, get_columns
 from datasets_preview_backend.models.column.class_label import ClassLabelColumn
 
@@ -24,7 +23,7 @@ def test_class_label() -> None:
 
 
 def test_get_columns() -> None:
-    info = get_info("acronym_identification", DEFAULT_CONFIG_NAME)
+    info = get_info("acronym_identification", "default")
     columns = get_columns(info, [])
     assert columns is not None and len(columns) == 3
     column = columns[0]
@@ -50,7 +49,7 @@ def test_cifar() -> None:
 
 
 def test_iter_archive() -> None:
-    info = get_info("food101", DEFAULT_CONFIG_NAME)
+    info = get_info("food101", "default")
     columns = get_columns(info, [])
     assert columns is not None
     assert columns[0].name == "image"
@@ -58,7 +57,7 @@ def test_iter_archive() -> None:
 
 
 def test_severo_wit() -> None:
-    info = get_info("severo/wit", DEFAULT_CONFIG_NAME)
+    info = get_info("severo/wit", "default")
     columns = get_columns(info, [])
     assert columns is not None
     assert columns[2].name == "image_url"
