@@ -610,7 +610,7 @@ def get_splits_reports_with_error() -> List[SplitCacheReport]:
             "dataset": error.dataset_name,
             "config": error.config_name,
             "split": error.split_name,
-            "status": "error",
+            "status": Status.ERROR.name,
             "error": error.to_item(),
         }
         for error in DbSplitError.objects()
