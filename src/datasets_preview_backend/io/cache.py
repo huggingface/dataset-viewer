@@ -102,6 +102,7 @@ class DbSplit(Document):
     dataset_name = StringField(required=True, unique_with=["config_name", "split_name"])
     config_name = StringField(required=True)
     split_name = StringField(required=True)
+    split_idx = IntField(required=True, min_value=0)  # used to maintain the order
     status = EnumField(Status, default=Status.EMPTY)
     since = DateTimeField(default=datetime.utcnow)
 
@@ -266,13 +267,13 @@ def upsert_dataset(dataset_name: str, new_split_full_names: List[SplitFullName])
             # delete the splits that disappeared
             delete_split(split_full_name)
 
-    for split_full_name in new_split_full_names:
+    for split_idx, split_full_name in enumerate(new_split_full_names):
         if split_full_name not in current_split_full_names:
             # create the new empty splits
-            create_split(split_full_name)
+            create_split(split_full_name, split_idx)
         else:
             # mark all the existing splits as stalled
-            mark_split_as_stalled(split_full_name)
+            mark_split_as_stalled(split_full_name, split_idx)
 
 
 def upsert_split_error(dataset_name: str, config_name: str, split_name: str, error: StatusError) -> None:
@@ -372,20 +373,26 @@ def delete_split(split_full_name: SplitFullName):
     logger.debug(f"dataset '{dataset_name}': deleted split {split_name} from config {config_name}")
 
 
-def create_split(split_full_name: SplitFullName):
+def create_split(split_full_name: SplitFullName, split_idx: int):
     dataset_name = split_full_name["dataset_name"]
     config_name = split_full_name["config_name"]
     split_name = split_full_name["split_name"]
-    DbSplit(dataset_name=dataset_name, config_name=config_name, split_name=split_name, status=Status.EMPTY).save()
+    DbSplit(
+        dataset_name=dataset_name,
+        config_name=config_name,
+        split_name=split_name,
+        status=Status.EMPTY,
+        split_idx=split_idx,
+    ).save()
     logger.debug(f"dataset '{dataset_name}': created split {split_name} in config {config_name}")
 
 
-def mark_split_as_stalled(split_full_name: SplitFullName):
+def mark_split_as_stalled(split_full_name: SplitFullName, split_idx: int):
     dataset_name = split_full_name["dataset_name"]
     config_name = split_full_name["config_name"]
     split_name = split_full_name["split_name"]
     DbSplit.objects(dataset_name=dataset_name, config_name=config_name, split_name=split_name).update(
-        status=Status.STALLED
+        status=Status.STALLED, split_idx=split_idx
     )
     logger.debug(f"dataset '{dataset_name}': marked split {split_name} in config {config_name} as stalled")
 
@@ -456,7 +463,7 @@ def get_splits_response(dataset_name: str) -> Tuple[Union[SplitsResponse, None],
         return None, dataset_error.to_item(), dataset_error.status_code
 
     splits_response: SplitsResponse = {
-        "splits": [split.to_item() for split in DbSplit.objects(dataset_name=dataset_name)]
+        "splits": [split.to_item() for split in DbSplit.objects(dataset_name=dataset_name).order_by("+split_idx")]
     }
     return splits_response, None, 200
 
