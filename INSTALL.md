@@ -198,11 +198,3 @@ Finally, ensure that pm2 will restart on reboot (see https://pm2.keymetrics.io/d
 pm2 startup
 # and follow the instructions
 ```
-
----
-
-Optionally: setup the refresh process (1% every 15 minutes, so that the datasets should be refreshed every 25h in average):
-
-```bash
-pm2 start --cron "*/15 * * * *" --no-autorestart --name datasets-preview-backend-refresh make -- -C /home/hf/datasets-preview-backend/ refresh
-```

@@ -5,7 +5,7 @@ from starlette.requests import Request
 from starlette.responses import Response
 
 from datasets_preview_backend.io.cache import delete_dataset_cache
-from datasets_preview_backend.io.queue import add_job
+from datasets_preview_backend.io.queue import add_dataset_job
 from datasets_preview_backend.routes._utils import get_response
 
 logger = logging.getLogger(__name__)
@@ -47,7 +47,7 @@ def try_to_update(id: Optional[str]) -> None:
     dataset_name = get_dataset_name(id)
     if dataset_name is not None:
         logger.debug(f"webhook: refresh {dataset_name}")
-        add_job(dataset_name)
+        add_dataset_job(dataset_name)
 
 
 def try_to_delete(id: Optional[str]) -> None:

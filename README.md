@@ -68,19 +68,13 @@ Also specify `HF_TOKEN` with a User Access Token (see https://huggingface.co/set
 
 Also specify `MAX_SIZE_FALLBACK` with the maximum size in bytes of the dataset to fallback in normal mode if streaming fails. Note that it requires to have the size in the info metadata. Set to `0` to disable the fallback. Defaults to `100_000_000`.
 
+The `WORKER_QUEUE` variable specifies which jobs queue the worker will pull jobs from. It can be equal to `datasets` (default) or `splits`. The `datasets` jobs should be a lot faster than the `splits` ones, so that we should need a lot more workers for `splits` than for `datasets`.
+
 To warm the cache, ie. add all the missing Hugging Face datasets to the queue:
 
 ```bash
 make warm
 ```
-
-To refresh random 3% of the Hugging Face datasets:
-
-```bash
-REFRESH_PCT=3 make refresh
-```
-
-The number of randomly chosen datasets to refresh is set by `REFRESH_PCT` (defaults to 1% - set to `100` to refresh all the datasets).
 
 To empty the databases:
 
@@ -92,7 +86,14 @@ or individually:
 
 ```bash
 make clean-cache
-make clean-queue
+make clean-queues         # delete all the jobs
+```
+
+See also:
+
+```bash
+make cancel-started-jobs
+make cancel-waiting-jobs
 ```
 
 ## Endpoints
@@ -127,11 +128,13 @@ Responses:
 
 ```json
 {
-  "valid": 5,
-  "error": 8,
-  "created_at": "2021-10-11T16:33:08Z"
+  "datasets": { "empty": 0, "error": 0, "stalled": 0, "valid": 1 },
+  "splits": { "empty": 1, "error": 1, "stalled": 0, "valid": 0 },
+  "created_at": "2022-01-20T14:40:50Z"
 }
 ```
+
+Beware: a "dataset" is considered valid if it has fetched correctly the configs and splits. The splits themselves can have errors (ie: the rows or columns might have errors)
 
 ### /cache-reports
 
@@ -149,27 +152,63 @@ Responses:
 
 ```json
 {
-  "reports": [
-    { "dataset": "food101", "status": "valid", "error": null },
-    {
-      "dataset": "allenai/c4",
-      "status": "error",
-      "error": {
-        "status_code": 404,
-        "exception": "Status404Error",
-        "message": "The split for the dataset config could not be found.",
-        "cause_exception": "FileNotFoundError",
-        "cause_message": "https://huggingface.co/datasets/allenai/c4/resolve/f3b95a11ff318ce8b651afc7eb8e7bd2af469c10/en.noblocklist/c4-train.00000-of-01024.json.gz"
+  "datasets": {
+    "empty": [],
+    "error": [],
+    "stalled": [],
+    "valid": [{ "dataset": "sent_comp", "status": "VALID", "error": null }]
+  },
+  "splits": {
+    "empty": [
+      {
+        "dataset": "sent_comp",
+        "config": "default",
+        "split": "train",
+        "status": "EMPTY",
+        "error": null
       }
-    }
-  ],
-  "created_at": "2021-10-26T14:13:45Z"
+    ],
+    "error": [
+      {
+        "dataset": "sent_comp",
+        "config": "default",
+        "split": "validation",
+        "status": "error",
+        "error": {
+          "status_code": 400,
+          "exception": "Status400Error",
+          "message": "Cannot get the first rows for the split.",
+          "cause_exception": "FileNotFoundError",
+          "cause_message": "[Errno 2] No such file or directory: 'https://github.com/google-research-datasets/sentence-compression/raw/master/data/comp-data.eval.json.gz'",
+          "cause_traceback": [
+            "Traceback (most recent call last):\n",
+            "  File \"/home/slesage/hf/datasets-preview-backend/src/datasets_preview_backend/models/row.py\", line 61, in get_rows\n    rows = extract_rows(dataset_name, config_name, split_name, num_rows, hf_token)\n",
+            "  File \"/home/slesage/hf/datasets-preview-backend/src/datasets_preview_backend/models/row.py\", line 32, in decorator\n    return func(*args, **kwargs)\n",
+            "  File \"/home/slesage/hf/datasets-preview-backend/src/datasets_preview_backend/models/row.py\", line 55, in extract_rows\n    return list(iterable_dataset.take(num_rows))\n",
+            "  File \"/home/slesage/hf/datasets-preview-backend/.venv/lib/python3.9/site-packages/datasets/iterable_dataset.py\", line 341, in __iter__\n    for key, example in self._iter():\n",
+            "  File \"/home/slesage/hf/datasets-preview-backend/.venv/lib/python3.9/site-packages/datasets/iterable_dataset.py\", line 338, in _iter\n    yield from ex_iterable\n",
+            "  File \"/home/slesage/hf/datasets-preview-backend/.venv/lib/python3.9/site-packages/datasets/iterable_dataset.py\", line 273, in __iter__\n    yield from islice(self.ex_iterable, self.n)\n",
+            "  File \"/home/slesage/hf/datasets-preview-backend/.venv/lib/python3.9/site-packages/datasets/iterable_dataset.py\", line 78, in __iter__\n    for key, example in self.generate_examples_fn(**self.kwargs):\n",
+            "  File \"/home/slesage/.cache/huggingface/modules/datasets_modules/datasets/sent_comp/512501fef5db888ec620cb9e4943420ea7c7c244c60de9222fb50bca1232f4b5/sent_comp.py\", line 136, in _generate_examples\n    with gzip.open(filepath, mode=\"rt\", encoding=\"utf-8\") as f:\n",
+            "  File \"/home/slesage/.pyenv/versions/3.9.6/lib/python3.9/gzip.py\", line 58, in open\n    binary_file = GzipFile(filename, gz_mode, compresslevel)\n",
+            "  File \"/home/slesage/.pyenv/versions/3.9.6/lib/python3.9/gzip.py\", line 173, in __init__\n    fileobj = self.myfileobj = builtins.open(filename, mode or 'rb')\n",
+            "FileNotFoundError: [Errno 2] No such file or directory: 'https://github.com/google-research-datasets/sentence-compression/raw/master/data/comp-data.eval.json.gz'\n"
+          ]
+        }
+      }
+    ],
+    "stalled": [],
+    "valid": []
+  },
+  "created_at": "2022-01-20T14:40:27Z"
 }
 ```
 
+Beware: a "dataset" is considered valid if it has fetched correctly the configs and splits. The splits themselves can have errors (ie: the rows or columns might have errors)
+
 ### /valid
 
-> Give the list of the valid datasets
+> Give the list of the valid datasets. A dataset is considered valid if `/splits` and `/rows` for all the splits return a valid response. Note that stalled cache entries are considered valid.
 
 Example: https://datasets-preview.huggingface.tech/valid
 
@@ -204,10 +243,21 @@ Responses:
 
 ```json
 {
-  "waiting": 1,
-  "started": 0,
-  "done": 0,
-  "created_at": "2021-10-26T21:17:31Z"
+  "datasets": {
+    "waiting": 0,
+    "started": 0,
+    "success": 1,
+    "error": 0,
+    "cancelled": 0
+  },
+  "splits": {
+    "waiting": 0,
+    "started": 0,
+    "success": 0,
+    "error": 0,
+    "cancelled": 34
+  },
+  "created_at": "2022-01-20T13:52:05Z"
 }
 ```
 
@@ -227,17 +277,39 @@ Responses:
 
 ```json
 {
-  "waiting": [
-    {
-      "dataset_name": "acronym_identification",
-      "created_at": "2021-10-26T20:55:06.850000",
-      "started_at": null,
-      "finished_at": null
-    }
-  ],
-  "started": [],
-  "finished": [],
-  "created_at": "2021-10-29T08:19:20Z"
+  "datasets": {
+    "waiting": [],
+    "started": [],
+    "success": [
+      {
+        "dataset_name": "glue",
+        "status": "SUCCESS",
+        "created_at": "2022-01-20T13:48:06.705000",
+        "started_at": "2022-01-20T13:48:21.615000",
+        "finished_at": "2022-01-20T13:48:27.898000"
+      }
+    ],
+    "error": [],
+    "cancelled": []
+  },
+  "splits": {
+    "waiting": [],
+    "started": [],
+    "success": [],
+    "error": [],
+    "cancelled": [
+      {
+        "dataset_name": "glue",
+        "config_name": "cola",
+        "split_name": "test",
+        "status": "CANCELLED",
+        "created_at": "2022-01-20T13:48:27.846000",
+        "started_at": null,
+        "finished_at": "2022-01-20T13:51:51.411000"
+      }
+    ]
+  },
+  "created_at": "2022-01-20T13:59:03Z"
 }
 ```
 
@@ -259,7 +331,7 @@ Body:
 }
 ```
 
-The three keys are optional, and moonlanding should send only one of them. `add` and `update` take some time to respond, because the dataset is fetched, while `remove` returns immediately. The dataset identifiers are full names, ie. they must include the `datasets/` prefix, which means that a community dataset will have two slashes: `datasets/allenai/c4` for example.
+The three keys are optional, and moonlanding should send only one of them. The dataset identifiers are full names, ie. they must include the `datasets/` prefix, which means that a community dataset will have two slashes: `datasets/allenai/c4` for example.
 
 Responses:
 
@@ -280,6 +352,37 @@ Note: if you want to refresh multiple datasets at a time, you have to call the e
 MODELS=(amazon_polarity ami arabic_billion_words)
 for model in ${MODELS[@]}; do curl -X POST https://datasets-preview.huggingface.tech/webhook -H 'Content-Type: application/json' -d '{"update": "datasets/'$model'"}'; done;
 ```
+
+### /refresh-split
+
+> Refresh the cache of rows and columns of a split
+
+Example: https://datasets-preview.huggingface.tech/refresh-split
+
+Method: `POST`
+
+Body:
+
+```json
+{
+  "dataset": "glue",
+  "config": "ax",
+  "split": "test"
+}
+```
+
+Responses:
+
+- `200`: JSON content with the following structure:
+
+  ```json
+  {
+    "status": "ok"
+  }
+  ```
+
+- `400`: the payload is erroneous, or a 400 error raised during the cache operation
+- `500`: application error
 
 ### /hf_datasets
 
@@ -350,16 +453,15 @@ Responses:
 
 ### /splits
 
-> Lists the [splits](https://huggingface.co/docs/datasets/splits.html) names for a dataset config
+> Lists the [splits](https://huggingface.co/docs/datasets/splits.html) names for a dataset
 
-Example: https://datasets-preview.huggingface.tech/splits?dataset=glue&config=cola
+Example: https://datasets-preview.huggingface.tech/splits?dataset=glue
 
 Method: `GET`
 
 Parameters:
 
 - `dataset` (required): the dataset ID
-- `config`: the configuration name. If the dataset does not contain configs, you may explicitly pass "config=default". If obviated, return the splits for all the configs of the dataset.
 
 Responses:
 
@@ -368,21 +470,9 @@ Responses:
   ```json
   {
     "splits": [
-      {
-        "dataset": "glue",
-        "config": "cola",
-        "split": "test"
-      },
-      {
-        "dataset": "glue",
-        "config": "cola",
-        "split": "train"
-      },
-      {
-        "dataset": "glue",
-        "config": "cola",
-        "split": "validation"
-      }
+      { "dataset": "glue", "config": "cola", "split": "test" },
+      { "dataset": "glue", "config": "cola", "split": "train" },
+      { "dataset": "glue", "config": "cola", "split": "validation" }
     ]
   }
   ```
@@ -402,8 +492,8 @@ Method: `GET`
 Parameters:
 
 - `dataset` (required): the dataset ID
-- `config`: the configuration name. If the dataset does not contain configs, you may explicitly pass "config=default". If obviated, return the rows for all the configs of the dataset.
-- `split`: the split name. It's ignored if `config` is empty. If obviated, return the rows for all the splits of the config, or of the dataset if `config` is obviated too.
+- `config` (required): the configuration name
+- `split` (required): the split name
 
 Responses:
 
@@ -414,64 +504,71 @@ Responses:
     "columns": [
       {
         "dataset": "glue",
-        "config": "cola",
-        "split": "train",
+        "config": "ax",
+        "split": "test",
         "column_idx": 0,
-        "column": {
-          "name": "sentence",
-          "type": "STRING"
-        }
+        "column": { "name": "premise", "type": "STRING" }
       },
       {
         "dataset": "glue",
-        "config": "cola",
-        "split": "train",
+        "config": "ax",
+        "split": "test",
         "column_idx": 1,
+        "column": { "name": "hypothesis", "type": "STRING" }
+      },
+      {
+        "dataset": "glue",
+        "config": "ax",
+        "split": "test",
+        "column_idx": 2,
         "column": {
           "name": "label",
           "type": "CLASS_LABEL",
-          "labels": ["unacceptable", "acceptable"]
+          "labels": ["entailment", "neutral", "contradiction"]
         }
       },
       {
         "dataset": "glue",
-        "config": "cola",
-        "split": "train",
-        "column_idx": 2,
-        "column": {
-          "name": "idx",
-          "type": "INT"
-        }
+        "config": "ax",
+        "split": "test",
+        "column_idx": 3,
+        "column": { "name": "idx", "type": "INT" }
       }
     ],
     "rows": [
       {
         "dataset": "glue",
-        "config": "cola",
-        "split": "train",
+        "config": "ax",
+        "split": "test",
+        "row_idx": 0,
         "row": {
-          "sentence": "Our friends won't buy this analysis, let alone the next one we propose.",
-          "label": 1,
+          "premise": "The cat sat on the mat.",
+          "hypothesis": "The cat did not sit on the mat.",
+          "label": -1,
           "idx": 0
         }
       },
       {
         "dataset": "glue",
-        "config": "cola",
-        "split": "train",
+        "config": "ax",
+        "split": "test",
+        "row_idx": 1,
         "row": {
-          "sentence": "One more pseudo generalization and I'm giving up.",
-          "label": 1,
+          "premise": "The cat did not sit on the mat.",
+          "hypothesis": "The cat sat on the mat.",
+          "label": -1,
           "idx": 1
         }
       },
       {
         "dataset": "glue",
-        "config": "cola",
-        "split": "train",
+        "config": "ax",
+        "split": "test",
+        "row_idx": 2,
         "row": {
-          "sentence": "One more pseudo generalization or I'm giving up.",
-          "label": 1,
+          "premise": "When you've got no snow, it's really hard to learn a snow sport so we looked at all the different ways I could mimic being on snow without actually being on snow.",
+          "hypothesis": "When you've got snow, it's really hard to learn a snow sport so we looked at all the different ways I could mimic being on snow without actually being on snow.",
+          "label": -1,
           "idx": 2
         }
       }

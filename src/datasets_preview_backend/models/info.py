@@ -21,7 +21,7 @@ def get_info(dataset_name: str, config_name: str, hf_token: Optional[str] = None
         )
         info = asdict(builder.info)
         if "splits" in info and info["splits"] is not None:
-            info["splits"] = {split_name: split_info for split_name, split_info in info["splits"].items()}
+            info["splits"] = dict(info["splits"].items())
     except Exception as err:
         raise Status400Error("Cannot get the metadata info for the config.", err)
     return info

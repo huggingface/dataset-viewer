@@ -1,14 +1,12 @@
 from PIL import Image  # type: ignore
 
 from datasets_preview_backend.config import EXTRACT_ROWS_LIMIT
-from datasets_preview_backend.constants import DEFAULT_CONFIG_NAME
-from datasets_preview_backend.models.config import get_config_names
 from datasets_preview_backend.models.row import get_rows
 
 
 # get_rows
 def test_get_rows() -> None:
-    rows = get_rows("acronym_identification", DEFAULT_CONFIG_NAME, "train")
+    rows = get_rows("acronym_identification", "default", "train")
     assert len(rows) == EXTRACT_ROWS_LIMIT
     assert rows[0]["tokens"][0] == "What"
 
@@ -31,7 +29,7 @@ def test_cifar() -> None:
 
 
 def test_iter_archive() -> None:
-    rows = get_rows("food101", DEFAULT_CONFIG_NAME, "train")
+    rows = get_rows("food101", "default", "train")
     assert len(rows) == EXTRACT_ROWS_LIMIT
     assert isinstance(rows[0]["image"], Image.Image)
 
@@ -56,8 +54,6 @@ def test_txt_zip() -> None:
 
 
 def test_community_with_no_config() -> None:
-    config_names = get_config_names(dataset_name="Check/region_1")
-    assert config_names == ["Check--region_1"]
     rows = get_rows("Check/region_1", "Check--region_1", "train")
     # it's not correct: here this is the number of splits, not the number of rows
     assert len(rows) == 2

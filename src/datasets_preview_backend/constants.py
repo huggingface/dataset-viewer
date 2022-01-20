@@ -19,10 +19,10 @@ DEFAULT_MAX_LOAD_PCT: int = 50
 DEFAULT_MAX_MEMORY_PCT: int = 60
 DEFAULT_MAX_SIZE_FALLBACK: int = 100_000_000
 DEFAULT_WORKER_SLEEP_SECONDS: int = 5
+DEFAULT_WORKER_QUEUE: str = "datasets"
 
 DEFAULT_REFRESH_PCT: int = 1
 
-DEFAULT_CONFIG_NAME: str = "default"
 # these datasets take too much time, we block them beforehand
 DATASETS_BLOCKLIST: List[str] = [
     "imthanhlv/binhvq_news21_raw",
