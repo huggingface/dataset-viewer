@@ -260,7 +260,7 @@ Body:
 }
 ```
 
-The three keys are optional, and moonlanding should send only one of them. `add` and `update` take some time to respond, because the dataset is fetched, while `remove` returns immediately. The dataset identifiers are full names, ie. they must include the `datasets/` prefix, which means that a community dataset will have two slashes: `datasets/allenai/c4` for example.
+The three keys are optional, and moonlanding should send only one of them. The dataset identifiers are full names, ie. they must include the `datasets/` prefix, which means that a community dataset will have two slashes: `datasets/allenai/c4` for example.
 
 Responses:
 
@@ -281,6 +281,37 @@ Note: if you want to refresh multiple datasets at a time, you have to call the e
 MODELS=(amazon_polarity ami arabic_billion_words)
 for model in ${MODELS[@]}; do curl -X POST https://datasets-preview.huggingface.tech/webhook -H 'Content-Type: application/json' -d '{"update": "datasets/'$model'"}'; done;
 ```
+
+### /refresh-split
+
+> Refresh the cache of rows and columns of a split
+
+Example: https://datasets-preview.huggingface.tech/refresh-split
+
+Method: `POST`
+
+Body:
+
+```json
+{
+  "dataset": "glue",
+  "config": "ax",
+  "split": "test"
+}
+```
+
+Responses:
+
+- `200`: JSON content with the following structure:
+
+  ```json
+  {
+    "status": "ok"
+  }
+  ```
+
+- `400`: the payload is erroneous, or a 400 error raised during the cache operation
+- `500`: application error
 
 ### /hf_datasets
 
@@ -368,21 +399,9 @@ Responses:
   ```json
   {
     "splits": [
-      {
-        "dataset": "glue",
-        "config": "cola",
-        "split": "test"
-      },
-      {
-        "dataset": "glue",
-        "config": "cola",
-        "split": "train"
-      },
-      {
-        "dataset": "glue",
-        "config": "cola",
-        "split": "validation"
-      }
+      { "dataset": "glue", "config": "cola", "split": "test" },
+      { "dataset": "glue", "config": "cola", "split": "train" },
+      { "dataset": "glue", "config": "cola", "split": "validation" }
     ]
   }
   ```
@@ -414,64 +433,71 @@ Responses:
     "columns": [
       {
         "dataset": "glue",
-        "config": "cola",
-        "split": "train",
+        "config": "ax",
+        "split": "test",
         "column_idx": 0,
-        "column": {
-          "name": "sentence",
-          "type": "STRING"
-        }
+        "column": { "name": "premise", "type": "STRING" }
       },
       {
         "dataset": "glue",
-        "config": "cola",
-        "split": "train",
+        "config": "ax",
+        "split": "test",
         "column_idx": 1,
+        "column": { "name": "hypothesis", "type": "STRING" }
+      },
+      {
+        "dataset": "glue",
+        "config": "ax",
+        "split": "test",
+        "column_idx": 2,
         "column": {
           "name": "label",
           "type": "CLASS_LABEL",
-          "labels": ["unacceptable", "acceptable"]
+          "labels": ["entailment", "neutral", "contradiction"]
         }
       },
       {
         "dataset": "glue",
-        "config": "cola",
-        "split": "train",
-        "column_idx": 2,
-        "column": {
-          "name": "idx",
-          "type": "INT"
-        }
+        "config": "ax",
+        "split": "test",
+        "column_idx": 3,
+        "column": { "name": "idx", "type": "INT" }
       }
     ],
     "rows": [
       {
         "dataset": "glue",
-        "config": "cola",
-        "split": "train",
+        "config": "ax",
+        "split": "test",
+        "row_idx": 0,
         "row": {
-          "sentence": "Our friends won't buy this analysis, let alone the next one we propose.",
-          "label": 1,
+          "premise": "The cat sat on the mat.",
+          "hypothesis": "The cat did not sit on the mat.",
+          "label": -1,
           "idx": 0
         }
       },
       {
         "dataset": "glue",
-        "config": "cola",
-        "split": "train",
+        "config": "ax",
+        "split": "test",
+        "row_idx": 1,
         "row": {
-          "sentence": "One more pseudo generalization and I'm giving up.",
-          "label": 1,
+          "premise": "The cat did not sit on the mat.",
+          "hypothesis": "The cat sat on the mat.",
+          "label": -1,
           "idx": 1
         }
       },
       {
         "dataset": "glue",
-        "config": "cola",
-        "split": "train",
+        "config": "ax",
+        "split": "test",
+        "row_idx": 2,
         "row": {
-          "sentence": "One more pseudo generalization or I'm giving up.",
-          "label": 1,
+          "premise": "When you've got no snow, it's really hard to learn a snow sport so we looked at all the different ways I could mimic being on snow without actually being on snow.",
+          "hypothesis": "When you've got snow, it's really hard to learn a snow sport so we looked at all the different ways I could mimic being on snow without actually being on snow.",
+          "label": -1,
           "idx": 2
         }
       }

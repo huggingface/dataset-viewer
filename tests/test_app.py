@@ -81,11 +81,6 @@ def test_get_splits(client: TestClient) -> None:
     assert split["config"] == "default"
     assert split["split"] == "train"
 
-    # no config
-    response2 = client.get("/splits", params={"dataset": dataset})
-    json2 = response2.json()
-    assert json == json2
-
     # uses the fallback to call "builder._split_generators" while https://github.com/huggingface/datasets/issues/2743
     dataset = "hda_nli_hindi"
     refresh_dataset_split_full_names(dataset)
