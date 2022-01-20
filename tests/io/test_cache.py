@@ -2,6 +2,7 @@ import pytest
 from mongoengine import DoesNotExist
 
 from datasets_preview_backend.config import MONGO_CACHE_DATABASE
+from datasets_preview_backend.exceptions import Status400Error
 from datasets_preview_backend.io.cache import (
     DbDataset,
     clean_database,
@@ -64,7 +65,8 @@ def test_acronym_identification() -> None:
 
 def test_doesnotexist() -> None:
     dataset_name = "doesnotexist"
-    refresh_dataset_split_full_names(dataset_name)
+    with pytest.raises(Status400Error):
+        refresh_dataset_split_full_names(dataset_name)
     retrieved = DbDataset.objects(dataset_name=dataset_name).get()
     assert retrieved.status.value == "error"
 

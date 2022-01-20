@@ -3,6 +3,7 @@ from starlette.testclient import TestClient
 
 from datasets_preview_backend.app import create_app
 from datasets_preview_backend.config import MONGO_CACHE_DATABASE
+from datasets_preview_backend.exceptions import Status400Error
 from datasets_preview_backend.io.cache import (
     clean_database,
     refresh_dataset_split_full_names,
@@ -106,7 +107,8 @@ def test_get_splits(client: TestClient) -> None:
 
     # not found
     dataset = "doesnotexist"
-    refresh_dataset_split_full_names(dataset)
+    with pytest.raises(Status400Error):
+        refresh_dataset_split_full_names(dataset)
     response = client.get("/splits", params={"dataset": dataset})
     assert response.status_code == 400
 
