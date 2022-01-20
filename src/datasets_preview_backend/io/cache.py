@@ -521,30 +521,123 @@ def get_dataset_names_with_status(status: str) -> List[str]:
     return [d.dataset_name for d in DbDataset.objects(status=status).only("dataset_name")]
 
 
-def get_datasets_count_with_status(status: str) -> int:
+def get_datasets_count_with_status(status: Status) -> int:
     # TODO: take the splits statuses into account?
     return DbDataset.objects(status=status).count()
 
 
-class CacheReport(TypedDict):
+def get_splits_count_with_status(status: Status) -> int:
+    # TODO: take the splits statuses into account?
+    return DbSplit.objects(status=status).count()
+
+
+class CountByStatus(TypedDict):
+    empty: int
+    error: int
+    stalled: int
+    valid: int
+
+
+def get_datasets_count_by_status() -> CountByStatus:
+    return {
+        "empty": get_datasets_count_with_status(Status.EMPTY),
+        "error": get_datasets_count_with_status(Status.ERROR),
+        "stalled": get_datasets_count_with_status(Status.STALLED),
+        "valid": get_datasets_count_with_status(Status.VALID),
+    }
+
+
+def get_splits_count_by_status() -> CountByStatus:
+    return {
+        "empty": get_splits_count_with_status(Status.EMPTY),
+        "error": get_splits_count_with_status(Status.ERROR),
+        "stalled": get_splits_count_with_status(Status.STALLED),
+        "valid": get_splits_count_with_status(Status.VALID),
+    }
+
+
+class DatasetCacheReport(TypedDict):
     dataset: str
     status: str
     error: Union[Any, None]
 
 
-def get_datasets_reports() -> List[CacheReport]:
-    # TODO: take the splits statuses into account?
-
-    # first the valid entries: we don't want the content
-    valid: List[CacheReport] = [
-        {"dataset": d.dataset_name, "status": "valid", "error": None}
-        for d in DbDataset.objects(status=Status.VALID).only("dataset_name")
-    ]
-
-    # now the error entries
-    error: List[CacheReport] = [
+def get_datasets_reports_with_error() -> List[DatasetCacheReport]:
+    return [
         {"dataset": error.dataset_name, "status": "error", "error": error.to_item()}
         for error in DbDatasetError.objects()
     ]
 
-    return valid + error
+
+def get_datasets_reports_with_status(status: Status) -> List[DatasetCacheReport]:
+    return [
+        {"dataset": d.dataset_name, "status": status.name, "error": None}
+        for d in DbDataset.objects(status=status).only("dataset_name")
+    ]
+
+
+class DatasetCacheReportsByStatus(TypedDict):
+    empty: List[DatasetCacheReport]
+    error: List[DatasetCacheReport]
+    stalled: List[DatasetCacheReport]
+    valid: List[DatasetCacheReport]
+
+
+def get_datasets_reports_by_status() -> DatasetCacheReportsByStatus:
+    # TODO: take the splits statuses into account?
+    return {
+        "empty": get_datasets_reports_with_status(Status.EMPTY),
+        "error": get_datasets_reports_with_error(),
+        "stalled": get_datasets_reports_with_status(Status.STALLED),
+        "valid": get_datasets_reports_with_status(Status.VALID),
+    }
+
+
+class SplitCacheReport(TypedDict):
+    dataset: str
+    config: str
+    split: str
+    status: str
+    error: Union[Any, None]
+
+
+def get_splits_reports_with_error() -> List[SplitCacheReport]:
+    return [
+        {
+            "dataset": error.dataset_name,
+            "config": error.config_name,
+            "split": error.split_name,
+            "status": "error",
+            "error": error.to_item(),
+        }
+        for error in DbSplitError.objects()
+    ]
+
+
+def get_splits_reports_with_status(status: Status) -> List[SplitCacheReport]:
+    return [
+        {
+            "dataset": d.dataset_name,
+            "config": d.config_name,
+            "split": d.split_name,
+            "status": status.name,
+            "error": None,
+        }
+        for d in DbSplit.objects(status=status).only("dataset_name", "config_name", "split_name")
+    ]
+
+
+class SplitCacheReportsByStatus(TypedDict):
+    empty: List[SplitCacheReport]
+    error: List[SplitCacheReport]
+    stalled: List[SplitCacheReport]
+    valid: List[SplitCacheReport]
+
+
+def get_splits_reports_by_status() -> SplitCacheReportsByStatus:
+    return {
+        "empty": list(get_splits_reports_with_status(Status.EMPTY)),
+        "error": get_splits_reports_with_error(),
+        "stalled": get_splits_reports_with_status(Status.STALLED),
+        "valid": get_splits_reports_with_status(Status.VALID),
+    }

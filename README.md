@@ -128,11 +128,13 @@ Responses:
 
 ```json
 {
-  "valid": 5,
-  "error": 8,
-  "created_at": "2021-10-11T16:33:08Z"
+  "datasets": { "empty": 0, "error": 0, "stalled": 0, "valid": 1 },
+  "splits": { "empty": 1, "error": 1, "stalled": 0, "valid": 0 },
+  "created_at": "2022-01-20T14:40:50Z"
 }
 ```
+
+Beware: a "dataset" is considered valid if it has fetched correctly the configs and splits. The splits themselves can have errors (ie: the rows or columns might have errors)
 
 ### /cache-reports
 
@@ -150,23 +152,59 @@ Responses:
 
 ```json
 {
-  "reports": [
-    { "dataset": "food101", "status": "valid", "error": null },
-    {
-      "dataset": "allenai/c4",
-      "status": "error",
-      "error": {
-        "status_code": 404,
-        "exception": "Status404Error",
-        "message": "The split for the dataset config could not be found.",
-        "cause_exception": "FileNotFoundError",
-        "cause_message": "https://huggingface.co/datasets/allenai/c4/resolve/f3b95a11ff318ce8b651afc7eb8e7bd2af469c10/en.noblocklist/c4-train.00000-of-01024.json.gz"
+  "datasets": {
+    "empty": [],
+    "error": [],
+    "stalled": [],
+    "valid": [{ "dataset": "sent_comp", "status": "VALID", "error": null }]
+  },
+  "splits": {
+    "empty": [
+      {
+        "dataset": "sent_comp",
+        "config": "default",
+        "split": "train",
+        "status": "EMPTY",
+        "error": null
       }
-    }
-  ],
-  "created_at": "2021-10-26T14:13:45Z"
+    ],
+    "error": [
+      {
+        "dataset": "sent_comp",
+        "config": "default",
+        "split": "validation",
+        "status": "error",
+        "error": {
+          "status_code": 400,
+          "exception": "Status400Error",
+          "message": "Cannot get the first rows for the split.",
+          "cause_exception": "FileNotFoundError",
+          "cause_message": "[Errno 2] No such file or directory: 'https://github.com/google-research-datasets/sentence-compression/raw/master/data/comp-data.eval.json.gz'",
+          "cause_traceback": [
+            "Traceback (most recent call last):\n",
+            "  File \"/home/slesage/hf/datasets-preview-backend/src/datasets_preview_backend/models/row.py\", line 61, in get_rows\n    rows = extract_rows(dataset_name, config_name, split_name, num_rows, hf_token)\n",
+            "  File \"/home/slesage/hf/datasets-preview-backend/src/datasets_preview_backend/models/row.py\", line 32, in decorator\n    return func(*args, **kwargs)\n",
+            "  File \"/home/slesage/hf/datasets-preview-backend/src/datasets_preview_backend/models/row.py\", line 55, in extract_rows\n    return list(iterable_dataset.take(num_rows))\n",
+            "  File \"/home/slesage/hf/datasets-preview-backend/.venv/lib/python3.9/site-packages/datasets/iterable_dataset.py\", line 341, in __iter__\n    for key, example in self._iter():\n",
+            "  File \"/home/slesage/hf/datasets-preview-backend/.venv/lib/python3.9/site-packages/datasets/iterable_dataset.py\", line 338, in _iter\n    yield from ex_iterable\n",
+            "  File \"/home/slesage/hf/datasets-preview-backend/.venv/lib/python3.9/site-packages/datasets/iterable_dataset.py\", line 273, in __iter__\n    yield from islice(self.ex_iterable, self.n)\n",
+            "  File \"/home/slesage/hf/datasets-preview-backend/.venv/lib/python3.9/site-packages/datasets/iterable_dataset.py\", line 78, in __iter__\n    for key, example in self.generate_examples_fn(**self.kwargs):\n",
+            "  File \"/home/slesage/.cache/huggingface/modules/datasets_modules/datasets/sent_comp/512501fef5db888ec620cb9e4943420ea7c7c244c60de9222fb50bca1232f4b5/sent_comp.py\", line 136, in _generate_examples\n    with gzip.open(filepath, mode=\"rt\", encoding=\"utf-8\") as f:\n",
+            "  File \"/home/slesage/.pyenv/versions/3.9.6/lib/python3.9/gzip.py\", line 58, in open\n    binary_file = GzipFile(filename, gz_mode, compresslevel)\n",
+            "  File \"/home/slesage/.pyenv/versions/3.9.6/lib/python3.9/gzip.py\", line 173, in __init__\n    fileobj = self.myfileobj = builtins.open(filename, mode or 'rb')\n",
+            "FileNotFoundError: [Errno 2] No such file or directory: 'https://github.com/google-research-datasets/sentence-compression/raw/master/data/comp-data.eval.json.gz'\n"
+          ]
+        }
+      }
+    ],
+    "stalled": [],
+    "valid": []
+  },
+  "created_at": "2022-01-20T14:40:27Z"
 }
 ```
+
+Beware: a "dataset" is considered valid if it has fetched correctly the configs and splits. The splits themselves can have errors (ie: the rows or columns might have errors)
 
 ### /valid
 
