@@ -508,8 +508,8 @@ def is_dataset_valid_or_stalled(dataset: DbDataset) -> bool:
     if dataset.status not in [Status.VALID, Status.STALLED]:
         return False
 
-    split_statuses = DbSplit.objects(dataset_name=dataset.dataset_name).only("status")
-    return all(status in [Status.VALID, Status.STALLED] for status in split_statuses)
+    splits = DbSplit.objects(dataset_name=dataset.dataset_name).only("status")
+    return all(split.status in [Status.VALID, Status.STALLED] for split in splits)
 
 
 def get_valid_or_stalled_dataset_names() -> List[str]:
