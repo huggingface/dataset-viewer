@@ -79,7 +79,7 @@ def test_get_splits(client: TestClient) -> None:
     split = splitItems[0]
     assert split["dataset"] == dataset
     assert split["config"] == "default"
-    assert split["split"] == "test"
+    assert split["split"] == "train"
 
     # no config
     response2 = client.get("/splits", params={"dataset": dataset})
