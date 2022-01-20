@@ -356,10 +356,11 @@ def refresh_dataset_split_full_names(dataset_name: str, hf_token: Optional[str] 
     except StatusError as err:
         upsert_dataset_error(dataset_name, err)
         logger.debug(f"dataset '{dataset_name}' had error, cache updated")
+        raise err
     except Exception as err:
         upsert_dataset_error(dataset_name, Status500Error(str(err)))
         logger.debug(f"dataset '{dataset_name}' had error, cache updated")
-    return []
+        raise err
 
 
 def delete_split(split_full_name: SplitFullName):
@@ -421,11 +422,13 @@ def refresh_split(
         logger.debug(
             f"split '{split_name}' from dataset '{dataset_name}' in config '{config_name}' had error, cache updated"
         )
+        raise err
     except Exception as err:
         upsert_split_error(dataset_name, config_name, split_name, Status500Error(str(err)))
         logger.debug(
             f"split '{split_name}' from dataset '{dataset_name}' in config '{config_name}' had error, cache updated"
         )
+        raise err
 
 
 def list_split_full_names_to_refresh(dataset_name: str):
