@@ -175,7 +175,7 @@ Note that we assume `ASSETS_DIRECTORY=/data` in the nginx configuration. If you 
 Launch the app with pm2:
 
 ```bash
-pm2 start --name datasets-preview-backend make -- -C /home/hf/datasets-preview-backend/ run
+pm2 start --name app make -- -C /home/hf/datasets-preview-backend/ run
 ```
 
 Check if the app is accessible at https://datasets-preview.huggingface.tech/healthcheck.
@@ -183,13 +183,14 @@ Check if the app is accessible at https://datasets-preview.huggingface.tech/heal
 Warm the cache with:
 
 ```bash
-pm2 start --no-autorestart --name datasets-preview-backend-warm make -- -C /home/hf/datasets-preview-backend/ warm
+pm2 start --no-autorestart --name warm make -- -C /home/hf/datasets-preview-backend/ warm
 ```
 
-Setup a worker (run again to create another worker, and so on):
+Setup workers (run again to create another worker, and so on):
 
 ```bash
-pm2 start --name datasets-preview-backend-worker make -- -C /home/hf/datasets-preview-backend/ worker
+WORKER_QUEUE=datasets pm2 start --name worker-datasets make -- -C /home/hf/datasets-preview-backend/ worker
+WORKER_QUEUE=splits pm2 start --name worker-splits make -- -C /home/hf/datasets-preview-backend/ worker
 ```
 
 Finally, ensure that pm2 will restart on reboot (see https://pm2.keymetrics.io/docs/usage/startup/):
