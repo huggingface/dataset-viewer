@@ -31,9 +31,15 @@ def test_get_cache_reports(client: TestClient) -> None:
     response = client.get("/cache-reports")
     assert response.status_code == 200
     json = response.json()
-    reports = json["reports"]
-    assert len(reports) == 1
-    report = reports[0]
+    assert "datasets" in json
+    assert "splits" in json
+    datasets = json["datasets"]
+    assert "empty" in datasets
+    assert "error" in datasets
+    assert "stalled" in datasets
+    assert "valid" in datasets
+    assert len(datasets["valid"]) == 1
+    report = datasets["valid"][0]
     assert "dataset" in report
     assert "status" in report
     assert "error" in report
@@ -43,8 +49,13 @@ def test_get_cache_stats(client: TestClient) -> None:
     response = client.get("/cache")
     assert response.status_code == 200
     json = response.json()
-    assert "valid" in json
-    assert "error" in json
+    assert "datasets" in json
+    assert "splits" in json
+    datasets = json["datasets"]
+    assert "empty" in datasets
+    assert "error" in datasets
+    assert "stalled" in datasets
+    assert "valid" in datasets
 
 
 def test_get_valid_datasets(client: TestClient) -> None:
