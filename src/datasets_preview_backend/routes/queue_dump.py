@@ -1,4 +1,5 @@
 import logging
+import time
 
 from starlette.requests import Request
 from starlette.responses import Response
@@ -16,5 +17,11 @@ logger = logging.getLogger(__name__)
 async def queue_dump_endpoint(_: Request) -> Response:
     logger.info("/queue-dump")
     return get_response(
-        {"datasets": get_dataset_dump_by_status(), "splits": get_split_dump_by_status()}, 200, MAX_AGE_SHORT_SECONDS
+        {
+            "datasets": get_dataset_dump_by_status(),
+            "splits": get_split_dump_by_status(),
+            "created_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+        },
+        200,
+        MAX_AGE_SHORT_SECONDS,
     )

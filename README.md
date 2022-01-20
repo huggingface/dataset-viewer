@@ -205,10 +205,21 @@ Responses:
 
 ```json
 {
-  "waiting": 1,
-  "started": 0,
-  "done": 0,
-  "created_at": "2021-10-26T21:17:31Z"
+  "datasets": {
+    "waiting": 0,
+    "started": 0,
+    "success": 1,
+    "error": 0,
+    "cancelled": 0
+  },
+  "splits": {
+    "waiting": 0,
+    "started": 0,
+    "success": 0,
+    "error": 0,
+    "cancelled": 34
+  },
+  "created_at": "2022-01-20T13:52:05Z"
 }
 ```
 
@@ -228,17 +239,39 @@ Responses:
 
 ```json
 {
-  "waiting": [
-    {
-      "dataset_name": "acronym_identification",
-      "created_at": "2021-10-26T20:55:06.850000",
-      "started_at": null,
-      "finished_at": null
-    }
-  ],
-  "started": [],
-  "finished": [],
-  "created_at": "2021-10-29T08:19:20Z"
+  "datasets": {
+    "waiting": [],
+    "started": [],
+    "success": [
+      {
+        "dataset_name": "glue",
+        "status": "SUCCESS",
+        "created_at": "2022-01-20T13:48:06.705000",
+        "started_at": "2022-01-20T13:48:21.615000",
+        "finished_at": "2022-01-20T13:48:27.898000"
+      }
+    ],
+    "error": [],
+    "cancelled": []
+  },
+  "splits": {
+    "waiting": [],
+    "started": [],
+    "success": [],
+    "error": [],
+    "cancelled": [
+      {
+        "dataset_name": "glue",
+        "config_name": "cola",
+        "split_name": "test",
+        "status": "CANCELLED",
+        "created_at": "2022-01-20T13:48:27.846000",
+        "started_at": null,
+        "finished_at": "2022-01-20T13:51:51.411000"
+      }
+    ]
+  },
+  "created_at": "2022-01-20T13:59:03Z"
 }
 ```
 

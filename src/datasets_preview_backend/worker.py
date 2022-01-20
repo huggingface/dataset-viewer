@@ -62,10 +62,11 @@ def process_next_dataset_job() -> bool:
             add_split_job(
                 split_full_name["dataset_name"], split_full_name["config_name"], split_full_name["split_name"]
             )
-    finally:
-        finish_dataset_job(job_id)
-        logger.debug(f"job finished: {job_id} for dataset: {dataset_name}")
-
+        finish_dataset_job(job_id, success=True)
+        logger.debug(f"job finished with success: {job_id} for dataset: {dataset_name}")
+    except Exception:
+        finish_dataset_job(job_id, success=False)
+        logger.debug(f"job finished with error: {job_id} for dataset: {dataset_name}")
     return True
 
 
@@ -92,10 +93,15 @@ def process_next_split_job() -> bool:
             hf_token=hf_token,
             max_size_fallback=max_size_fallback,
         )
-    finally:
-        finish_split_job(job_id)
+        finish_split_job(job_id, success=True)
         logger.debug(
-            f"job finished: {job_id} for split '{split_name}' from dataset '{dataset_name}' with config"
+            f"job finished with success: {job_id} for split '{split_name}' from dataset '{dataset_name}' with config"
+            f" '{config_name}'"
+        )
+    except Exception:
+        finish_split_job(job_id, success=False)
+        logger.debug(
+            f"job finished with error: {job_id} for split '{split_name}' from dataset '{dataset_name}' with config"
             f" '{config_name}'"
         )
     return True

@@ -61,8 +61,9 @@ clean-queues:
 	poetry run python src/datasets_preview_backend/clean_queues.py
 
 .PHONY: clean-cache
-clean-cache-all:
+clean-cache:
 	poetry run python src/datasets_preview_backend/clean_cache.py
+# TODO: remove the assets too
 
 .PHONY: clean
 clean: clean-queues clean-cache

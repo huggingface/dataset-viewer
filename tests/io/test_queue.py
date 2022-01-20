@@ -36,12 +36,12 @@ def test_add_job() -> None:
     add_dataset_job("test")
     with pytest.raises(EmptyQueue):
         get_dataset_job()
-    finish_dataset_job(job_id)
+    finish_dataset_job(job_id, success=True)
     with pytest.raises(EmptyQueue):
         get_dataset_job()
     add_dataset_job("test")
     job_id, dataset_name = get_dataset_job()
     with pytest.raises(JobNotFound):
         other_job_id = ("1" if job_id[0] == "0" else "0") + job_id[1:]
-        finish_dataset_job(other_job_id)
-    finish_dataset_job(job_id)
+        finish_dataset_job(other_job_id, success=True)
+    finish_dataset_job(job_id, success=True)
