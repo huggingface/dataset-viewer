@@ -128,7 +128,8 @@ def has_memory() -> bool:
 
 def has_cpu() -> bool:
     logger = logging.getLogger("datasets_preview_backend.worker")
-    load_pct = max(x / cpu_count() * 100 for x in getloadavg())
+    load_pct = max(getloadavg()[:2]) / cpu_count() * 100
+    # ^ only current load and 5m load. 15m load is not relevant to decide to launch a new job
     ok = load_pct < max_load_pct
     if not ok:
         logger.info(f"cpu load is too high: {load_pct:.0f}% - max is {max_load_pct}%")
