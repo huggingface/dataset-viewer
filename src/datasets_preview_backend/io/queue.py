@@ -93,7 +93,7 @@ class DatasetJob(Document):
     def to_dict(self) -> DatasetJobDict:
         return {
             "dataset_name": self.dataset_name,
-            "status": self.status.name,
+            "status": self.status.value,
             "created_at": self.created_at,
             "started_at": self.started_at,
             "finished_at": self.finished_at,
@@ -117,7 +117,7 @@ class SplitJob(Document):
             "dataset_name": self.dataset_name,
             "config_name": self.config_name,
             "split_name": self.split_name,
-            "status": self.status.name,
+            "status": self.status.value,
             "created_at": self.created_at,
             "started_at": self.started_at,
             "finished_at": self.finished_at,

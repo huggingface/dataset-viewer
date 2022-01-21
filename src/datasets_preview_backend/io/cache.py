@@ -567,14 +567,14 @@ class DatasetCacheReport(TypedDict):
 
 def get_datasets_reports_with_error() -> List[DatasetCacheReport]:
     return [
-        {"dataset": error.dataset_name, "status": "error", "error": error.to_item()}
+        {"dataset": error.dataset_name, "status": Status.ERROR.value, "error": error.to_item()}
         for error in DbDatasetError.objects()
     ]
 
 
 def get_datasets_reports_with_status(status: Status) -> List[DatasetCacheReport]:
     return [
-        {"dataset": d.dataset_name, "status": status.name, "error": None}
+        {"dataset": d.dataset_name, "status": status.value, "error": None}
         for d in DbDataset.objects(status=status).only("dataset_name")
     ]
 
@@ -610,7 +610,7 @@ def get_splits_reports_with_error() -> List[SplitCacheReport]:
             "dataset": error.dataset_name,
             "config": error.config_name,
             "split": error.split_name,
-            "status": Status.ERROR.name,
+            "status": Status.ERROR.value,
             "error": error.to_item(),
         }
         for error in DbSplitError.objects()
@@ -623,7 +623,7 @@ def get_splits_reports_with_status(status: Status) -> List[SplitCacheReport]:
             "dataset": d.dataset_name,
             "config": d.config_name,
             "split": d.split_name,
-            "status": status.name,
+            "status": status.value,
             "error": None,
         }
         for d in DbSplit.objects(status=status).only("dataset_name", "config_name", "split_name")
