@@ -3,7 +3,7 @@ from typing import List, Optional, TypedDict
 
 from datasets import get_dataset_config_names, get_dataset_split_names
 
-from datasets_preview_backend.constants import DATASETS_BLOCKLIST, FORCE_REDOWNLOAD
+from datasets_preview_backend.constants import FORCE_REDOWNLOAD
 from datasets_preview_backend.exceptions import Status400Error
 
 logger = logging.getLogger(__name__)
@@ -17,8 +17,6 @@ class SplitFullName(TypedDict):
 
 def get_dataset_split_full_names(dataset_name: str, hf_token: Optional[str] = None) -> List[SplitFullName]:
     logger.info(f"get dataset '{dataset_name}' split full names")
-    if dataset_name in DATASETS_BLOCKLIST:
-        raise Status400Error("this dataset is not supported for now.")
     try:
         return [
             {"dataset_name": dataset_name, "config_name": config_name, "split_name": split_name}
