@@ -41,6 +41,7 @@ DATASETS_BLOCKLIST: List[str] = [
     "qr/cefr_book_sentences",
     "hyperpartisan_news_detection",
     "math_dataset",
+    "unicamp-dl/mmarco",
 ]
 
 FORCE_REDOWNLOAD: str = "force_redownload"
