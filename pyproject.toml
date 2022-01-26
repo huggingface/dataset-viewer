@@ -12,7 +12,7 @@ apache-beam = "^2.33.0"
 appdirs = "^1.4.4"
 bs4 = "^0.0.1"
 conllu = "^4.4.1"
-datasets = { extras = ["audio", "vision"], version = "^1.18.0" }
+datasets = { extras = ["audio", "vision"], version = "^1.18.1" }
 diskcache = "^5.2.1"
 function-parser = "^0.0.3"
 gdown = "^4.2.0"
