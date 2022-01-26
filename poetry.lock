@@ -410,7 +410,7 @@ test = ["pytest (>=6.2.0)", "pytest-cov", "pytest-subtests", "pytest-xdist", "pr
 
 [[package]]
 name = "datasets"
-version = "1.18.0"
+version = "1.18.1"
 description = "HuggingFace community-driven open-source library of datasets"
 category = "main"
 optional = false
@@ -2532,7 +2532,7 @@ cffi = ["cffi (>=1.11)"]
 [metadata]
 lock-version = "1.1"
 python-versions = "3.9.6"
-content-hash = "f253f58f67fd990c5767d5f2969a5bab2e698c489e4bc8749635ee9541514e9e"
+content-hash = "739a6a20950b99e17d516e4adf042872532adf626654ae1a50365e63c8c66481"
 
 [metadata.files]
 absl-py = [
@@ -3007,8 +3007,8 @@ cryptography = [
     {file = "cryptography-36.0.1.tar.gz", hash = "sha256:53e5c1dc3d7a953de055d77bef2ff607ceef7a2aac0353b5d630ab67f7423638"},
 ]
 datasets = [
-    {file = "datasets-1.18.0-py3-none-any.whl", hash = "sha256:80b3b3656f734c5a6fab891d0ea7b8e1aeac8fee3449a82904d61a3cf65b7f82"},
-    {file = "datasets-1.18.0.tar.gz", hash = "sha256:808907d1180b741d83e5bd7ed7dedb32e5acf2728da401d68384468b141ea22f"},
+    {file = "datasets-1.18.1-py3-none-any.whl", hash = "sha256:b3582fec332f994d61a0cb8dbc401fd226dc0bd9dd27432ab0bec99c9c15cff1"},
+    {file = "datasets-1.18.1.tar.gz", hash = "sha256:d55e7b380f9d3e70cebde07c24f9d449b3190cfc0b4dd4eceabf6a0640b37e1e"},
 ]
 decorator = [
     {file = "decorator-5.1.1-py3-none-any.whl", hash = "sha256:b8c3f85900b9dc423225913c5aace94729fe1fa9763b38939a95226f02d37186"},
