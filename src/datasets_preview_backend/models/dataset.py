@@ -5,6 +5,7 @@ from datasets import get_dataset_config_names, get_dataset_split_names
 
 from datasets_preview_backend.constants import FORCE_REDOWNLOAD
 from datasets_preview_backend.exceptions import Status400Error
+from datasets_preview_backend.models._guard import guard_blocked_datasets
 
 logger = logging.getLogger(__name__)
 
@@ -18,6 +19,7 @@ class SplitFullName(TypedDict):
 def get_dataset_split_full_names(dataset_name: str, hf_token: Optional[str] = None) -> List[SplitFullName]:
     logger.info(f"get dataset '{dataset_name}' split full names")
     try:
+        guard_blocked_datasets(dataset_name)
         return [
             {"dataset_name": dataset_name, "config_name": config_name, "split_name": split_name}
             for config_name in get_dataset_config_names(

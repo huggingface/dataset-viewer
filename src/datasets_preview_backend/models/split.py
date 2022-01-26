@@ -1,6 +1,7 @@
 import logging
 from typing import List, Optional, TypedDict
 
+from datasets_preview_backend.models._guard import guard_blocked_datasets
 from datasets_preview_backend.models.column import Column
 from datasets_preview_backend.models.info import get_info
 from datasets_preview_backend.models.row import Row
@@ -23,6 +24,7 @@ def get_split(
     max_size_fallback: Optional[int] = None,
 ) -> Split:
     logger.info(f"get split '{split_name}' for config '{config_name}' of dataset '{dataset_name}'")
+    guard_blocked_datasets(dataset_name)
     info = get_info(dataset_name, config_name, hf_token)
     fallback = (
         max_size_fallback is not None
