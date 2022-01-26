@@ -6,6 +6,7 @@ from dotenv import load_dotenv
 from psutil import cpu_count, getloadavg, swap_memory, virtual_memory
 
 from datasets_preview_backend.constants import (
+    DEFAULT_DATASETS_REVISION,
     DEFAULT_HF_TOKEN,
     DEFAULT_MAX_LOAD_PCT,
     DEFAULT_MAX_MEMORY_PCT,
@@ -42,6 +43,10 @@ worker_sleep_seconds = get_int_value(os.environ, "WORKER_SLEEP_SECONDS", DEFAULT
 hf_token = get_str_or_none_value(d=os.environ, key="HF_TOKEN", default=DEFAULT_HF_TOKEN)
 max_size_fallback = get_int_value(os.environ, "MAX_SIZE_FALLBACK", DEFAULT_MAX_SIZE_FALLBACK)
 worker_queue = get_str_value(os.environ, "WORKER_QUEUE", DEFAULT_WORKER_QUEUE)
+# Ensure datasets library uses the expected revision for canonical datasets
+os.environ["HF_SCRIPTS_VERSION"] = get_str_value(
+    d=os.environ, key="DATASETS_REVISION", default=DEFAULT_DATASETS_REVISION
+)
 
 
 def process_next_dataset_job() -> bool:
