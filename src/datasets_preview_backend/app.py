@@ -24,7 +24,7 @@ from datasets_preview_backend.routes.queue_stats import queue_stats_endpoint
 from datasets_preview_backend.routes.refresh_split import refresh_split_endpoint
 from datasets_preview_backend.routes.rows import rows_endpoint
 from datasets_preview_backend.routes.splits import splits_endpoint
-from datasets_preview_backend.routes.validity_status import valid_datasets_endpoint
+from datasets_preview_backend.routes.valid import valid_datasets_endpoint
 from datasets_preview_backend.routes.webhook import webhook_endpoint
 
 

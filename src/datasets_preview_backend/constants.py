@@ -7,8 +7,8 @@ DEFAULT_DATASETS_ENABLE_PRIVATE: bool = False
 DEFAULT_DATASETS_REVISION: str = "master"
 DEFAULT_EXTRACT_ROWS_LIMIT: int = 100
 DEFAULT_LOG_LEVEL: str = "INFO"
-DEFAULT_MAX_AGE_LONG_SECONDS: int = 21600  # 6 * 60 * 60 = 6 hours
-DEFAULT_MAX_AGE_SHORT_SECONDS: int = 120  # 2 minutes
+DEFAULT_MAX_AGE_LONG_SECONDS: int = 120  # 2 minutes
+DEFAULT_MAX_AGE_SHORT_SECONDS: int = 10  # 10 seconds
 DEFAULT_MONGO_CACHE_DATABASE: str = "datasets_preview_cache"
 DEFAULT_MONGO_QUEUE_DATABASE: str = "datasets_preview_queue"
 DEFAULT_MONGO_URL: str = "mongodb://localhost:27018"
