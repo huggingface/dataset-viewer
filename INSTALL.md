@@ -120,8 +120,10 @@ server {
   # due to https://github.com/encode/starlette/issues/950, which generates errors in Safari: https://developer.apple.com/library/archive/documentation/AppleApplications/Reference/SafariWebContent/CreatingVideoforSafarioniPhone/CreatingVideoforSafarioniPhone.html#//apple_ref/doc/uid/TP40006514-SW6
   # we serve the static files from nginx instead of starlette
   location /assets/ {
-    alias /data/;
+    alias /data/assets/;
   }
+
+  proxy_cache_path /data/nginx/cache levels=1:2 keys_zone=STATIC:50m inactive=24h max_size=1g;
 
   location / {
     proxy_pass http://localhost:8000/;
@@ -129,13 +131,22 @@ server {
     proxy_set_header X-Real-IP $remote_addr;
     proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
     proxy_set_header X-Forwarded-Proto $scheme;
-    proxy_buffering off;
     proxy_http_version 1.1;
+    # cache all the HEAD+GET requests (without Set-Cookie)
+    # Cache-Control is used to determine the cache duration
+    # see https://www.nginx.com/blog/nginx-caching-guide/
+    proxy_buffering on;
+    proxy_cache STATIC;
+    proxy_cache_use_stale error timeout invalid_header updating http_500 http_502 http_503 http_504;
+    proxy_cache_background_update on;
+    proxy_cache_lock on;
   }
 }
 ```
 
 ```bash
+sudo mkdir -p /data/assets /data/nginx/cache
+sudo chmod -R a+x /data/assets /data/nginx/cache
 sudo ln -s /etc/nginx/sites-available/reverse-proxy.conf /etc/nginx/sites-enabled/reverse-proxy.conf
 sudo nginx -t # Test
 sudo systemctl reload nginx
