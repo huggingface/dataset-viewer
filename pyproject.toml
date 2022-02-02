@@ -2,7 +2,7 @@
 authors = ["Sylvain Lesage <severo@rednegra.net>"]
 description = "API to extract rows of 🤗 datasets"
 name = "datasets-preview-backend"
-version = "0.16.9"
+version = "0.16.10"
 
 [tool.poetry.dependencies]
 Pillow = "^8.4.0"
