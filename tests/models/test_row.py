@@ -34,10 +34,11 @@ def test_iter_archive() -> None:
     assert isinstance(rows[0]["image"], Image.Image)
 
 
-def test_dl_1_suffix() -> None:
-    # see https://github.com/huggingface/datasets/pull/2843
-    rows = get_rows("discovery", "discovery", "train")
-    assert len(rows) == EXTRACT_ROWS_LIMIT
+# disable for now: see https://github.com/huggingface/datasets/issues/3677 also
+# def test_dl_1_suffix() -> None:
+#     # see https://github.com/huggingface/datasets/pull/2843
+#     rows = get_rows("discovery", "discovery", "train")
+#     assert len(rows) == EXTRACT_ROWS_LIMIT
 
 
 def test_txt_zip() -> None:
