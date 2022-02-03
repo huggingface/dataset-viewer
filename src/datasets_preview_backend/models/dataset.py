@@ -2,6 +2,7 @@ import logging
 from typing import List, Optional, TypedDict
 
 from datasets import get_dataset_config_names, get_dataset_split_names
+from datasets.inspect import SplitsNotFoundError
 
 from datasets_preview_backend.constants import FORCE_REDOWNLOAD
 from datasets_preview_backend.exceptions import Status400Error
@@ -29,5 +30,8 @@ def get_dataset_split_full_names(dataset_name: str, hf_token: Optional[str] = No
                 dataset_name, config_name, use_auth_token=hf_token  # type: ignore
             )
         ]
+    except SplitsNotFoundError as err:
+        # we bypass the SplitsNotFoundError, as we're interested in the cause
+        raise Status400Error("Cannot get the split names for the dataset.", err.__cause__)
     except Exception as err:
         raise Status400Error("Cannot get the split names for the dataset.", err)
