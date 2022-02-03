@@ -42,6 +42,9 @@ DATASETS_BLOCKLIST: List[str] = [
     "hyperpartisan_news_detection",
     "math_dataset",
     "unicamp-dl/mmarco",
+    "echarlaix/gqa-lxmert",
+    "Graphcore/gqa-lxmert",
+    "bigscience/P3",
 ]
 
 FORCE_REDOWNLOAD: str = "force_redownload"
