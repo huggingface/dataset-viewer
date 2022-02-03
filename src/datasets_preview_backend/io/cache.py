@@ -515,6 +515,15 @@ def is_dataset_valid_or_stalled(dataset: DbDataset) -> bool:
     return all(split.status in [Status.VALID, Status.STALLED] for split in splits)
 
 
+def is_dataset_name_valid_or_stalled(dataset_name: str) -> bool:
+    try:
+        dataset = DbDataset.objects(dataset_name=dataset_name).get()
+        return is_dataset_valid_or_stalled(dataset)
+    except DoesNotExist:
+        return False
+    # ^ can also raise MultipleObjectsReturned, which should not occur -> we let the exception raise
+
+
 def get_valid_or_stalled_dataset_names() -> List[str]:
     return [d.dataset_name for d in DbDataset.objects() if is_dataset_valid_or_stalled(d)]
 
