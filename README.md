@@ -227,6 +227,28 @@ Responses:
 }
 ```
 
+### /is-valid
+
+> Tells if a dataset is valid. A dataset is considered valid if `/splits` and `/rows` for all the splits return a valid response. Note that stalled cache entries are considered valid.
+
+Example: https://datasets-preview.huggingface.tech/is-valid?dataset=glue
+
+Method: `GET`
+
+Parameters:
+
+- `dataset` (required): the dataset ID
+
+Responses:
+
+- `200`: JSON content which tells if the dataset is valid or not
+
+```json
+{
+  "valid": true
+}
+```
+
 ### /queue
 
 > Give statistics about the content of the queue

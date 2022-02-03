@@ -24,7 +24,10 @@ from datasets_preview_backend.routes.queue_stats import queue_stats_endpoint
 from datasets_preview_backend.routes.refresh_split import refresh_split_endpoint
 from datasets_preview_backend.routes.rows import rows_endpoint
 from datasets_preview_backend.routes.splits import splits_endpoint
-from datasets_preview_backend.routes.valid import valid_datasets_endpoint
+from datasets_preview_backend.routes.valid import (
+    is_valid_endpoint,
+    valid_datasets_endpoint,
+)
 from datasets_preview_backend.routes.webhook import webhook_endpoint
 
 
@@ -41,6 +44,7 @@ def create_app() -> Starlette:
         Route("/cache-reports", endpoint=cache_reports_endpoint),
         Route("/healthcheck", endpoint=healthcheck_endpoint),
         Route("/hf_datasets", endpoint=hf_datasets_endpoint),
+        Route("/is-valid", endpoint=is_valid_endpoint),
         Route("/queue", endpoint=queue_stats_endpoint),
         Route("/queue-dump", endpoint=queue_dump_endpoint),
         Route("/refresh-split", endpoint=refresh_split_endpoint, methods=["POST"]),

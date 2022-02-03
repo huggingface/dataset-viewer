@@ -66,6 +66,27 @@ def test_get_valid_datasets(client: TestClient) -> None:
     assert "valid" in json
 
 
+def test_get_is_valid(client: TestClient) -> None:
+    response = client.get("/is-valid")
+    assert response.status_code == 400
+
+    dataset = "acronym_identification"
+    split_full_names = refresh_dataset_split_full_names(dataset)
+    for split_full_name in split_full_names:
+        refresh_split(split_full_name["dataset_name"], split_full_name["config_name"], split_full_name["split_name"])
+    response = client.get("/is-valid", params={"dataset": "acronym_identification"})
+    assert response.status_code == 200
+    json = response.json()
+    assert "valid" in json
+    assert json["valid"] is True
+
+    response = client.get("/is-valid", params={"dataset": "doesnotexist"})
+    assert response.status_code == 200
+    json = response.json()
+    assert "valid" in json
+    assert json["valid"] is False
+
+
 def test_get_healthcheck(client: TestClient) -> None:
     response = client.get("/healthcheck")
     assert response.status_code == 200
