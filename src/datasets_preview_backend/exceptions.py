@@ -15,7 +15,7 @@ class StatusErrorContent(TypedDict):
 class StatusError(Exception):
     """Base class for exceptions in this module."""
 
-    def __init__(self, message: str, status_code: int, cause: Optional[Exception] = None):
+    def __init__(self, message: str, status_code: int, cause: Optional[BaseException] = None):
         super().__init__(message)
         self.status_code = status_code
         self.exception = type(self).__name__
@@ -48,7 +48,7 @@ class Status400Error(StatusError):
         message -- the content of the response
     """
 
-    def __init__(self, message: str, cause: Optional[Exception] = None):
+    def __init__(self, message: str, cause: Optional[BaseException] = None):
         super().__init__(message, 400, cause)
 
 
@@ -59,5 +59,5 @@ class Status500Error(StatusError):
         message -- the content of the response
     """
 
-    def __init__(self, message: str, cause: Optional[Exception] = None):
+    def __init__(self, message: str, cause: Optional[BaseException] = None):
         super().__init__(message, 500, cause)
