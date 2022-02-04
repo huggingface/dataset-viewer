@@ -18,7 +18,10 @@ from datasets_preview_backend.io.queue import connect_to_queue
 from datasets_preview_backend.routes.cache_reports import cache_reports_endpoint
 from datasets_preview_backend.routes.cache_stats import cache_stats_endpoint
 from datasets_preview_backend.routes.healthcheck import healthcheck_endpoint
-from datasets_preview_backend.routes.hf_datasets import hf_datasets_endpoint
+from datasets_preview_backend.routes.hf_datasets import (
+    hf_datasets_endpoint,
+    hf_datasets_count_by_cache_status_endpoint,
+)
 from datasets_preview_backend.routes.queue_dump import queue_dump_endpoint
 from datasets_preview_backend.routes.queue_stats import queue_stats_endpoint
 from datasets_preview_backend.routes.refresh_split import refresh_split_endpoint
@@ -44,6 +47,7 @@ def create_app() -> Starlette:
         Route("/cache-reports", endpoint=cache_reports_endpoint),
         Route("/healthcheck", endpoint=healthcheck_endpoint),
         Route("/hf_datasets", endpoint=hf_datasets_endpoint),
+        Route("/hf-datasets-count-by-cache-status", endpoint=hf_datasets_count_by_cache_status_endpoint),
         Route("/is-valid", endpoint=is_valid_endpoint),
         Route("/queue", endpoint=queue_stats_endpoint),
         Route("/queue-dump", endpoint=queue_dump_endpoint),
