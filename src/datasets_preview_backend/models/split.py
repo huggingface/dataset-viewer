@@ -14,6 +14,8 @@ class Split(TypedDict):
     split_name: str
     rows: List[Row]
     columns: List[Column]
+    num_bytes: Optional[int]
+    num_examples: Optional[int]
 
 
 def get_split(
@@ -33,4 +35,16 @@ def get_split(
         and info["size_in_bytes"] < max_size_fallback
     )
     typed_rows, columns = get_typed_rows_and_columns(dataset_name, config_name, split_name, info, hf_token, fallback)
-    return {"split_name": split_name, "rows": typed_rows, "columns": columns}
+    try:
+        num_bytes = info["splits"][split_name]["num_bytes"]
+        num_examples = info["splits"][split_name]["num_examples"]
+    except Exception:
+        num_bytes = None
+        num_examples = None
+    return {
+        "split_name": split_name,
+        "rows": typed_rows,
+        "columns": columns,
+        "num_bytes": num_bytes,
+        "num_examples": num_examples,
+    }

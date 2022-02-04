@@ -92,6 +92,8 @@ class SplitItem(TypedDict):
     dataset: str
     config: str
     split: str
+    num_bytes: Optional[int]
+    num_examples: Optional[int]
 
 
 class SplitsResponse(TypedDict):
@@ -103,11 +105,19 @@ class DbSplit(Document):
     config_name = StringField(required=True)
     split_name = StringField(required=True)
     split_idx = IntField(required=True, min_value=0)  # used to maintain the order
+    num_bytes = IntField(min_value=0)
+    num_examples = IntField(min_value=0)
     status = EnumField(Status, default=Status.EMPTY)
     since = DateTimeField(default=datetime.utcnow)
 
     def to_item(self) -> SplitItem:
-        return {"dataset": self.dataset_name, "config": self.config_name, "split": self.split_name}
+        return {
+            "dataset": self.dataset_name,
+            "config": self.config_name,
+            "split": self.split_name,
+            "num_bytes": self.num_bytes,
+            "num_examples": self.num_examples,
+        }
 
     def to_split_full_name(self) -> SplitFullName:
         return {"dataset_name": self.dataset_name, "config_name": self.config_name, "split_name": self.split_name}
@@ -297,7 +307,7 @@ def upsert_split(dataset_name: str, config_name: str, split_name: str, split: Sp
     columns = split["columns"]
 
     DbSplit.objects(dataset_name=dataset_name, config_name=config_name, split_name=split_name).upsert_one(
-        status=Status.VALID
+        status=Status.VALID, num_bytes=split["num_bytes"], num_examples=split["num_examples"]
     )
     DbSplitError.objects(dataset_name=dataset_name, config_name=config_name, split_name=split_name).delete()
 
