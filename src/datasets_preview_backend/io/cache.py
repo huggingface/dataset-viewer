@@ -524,6 +524,39 @@ def is_dataset_name_valid_or_stalled(dataset_name: str) -> bool:
     # ^ can also raise MultipleObjectsReturned, which should not occur -> we let the exception raise
 
 
+class CountByCacheStatus(TypedDict):
+    valid: int
+    error: int
+    missing: int
+
+
+def get_dataset_cache_status(dataset_name: str) -> str:
+    try:
+        dataset = DbDataset.objects(dataset_name=dataset_name).get()
+        if dataset.status == Status.EMPTY:
+            return "missing"
+        if dataset.status == Status.ERROR:
+            return "error"
+        splits = DbSplit.objects(dataset_name=dataset.dataset_name).only("status")
+        if any(split.status == Status.EMPTY for split in splits):
+            return "missing"
+        elif any(split.status == Status.ERROR for split in splits):
+            return "error"
+        return "valid"
+    except DoesNotExist:
+        return "missing"
+    # ^ can also raise MultipleObjectsReturned, which should not occur -> we let the exception raise
+
+
+def get_datasets_count_by_cache_status(dataset_names: List[str]) -> CountByCacheStatus:
+    dataset_statuses = [get_dataset_cache_status(x) for x in dataset_names]
+    return {
+        "valid": len([x for x in dataset_statuses if x == "valid"]),
+        "error": len([x for x in dataset_statuses if x == "error"]),
+        "missing": len([x for x in dataset_statuses if x == "missing"]),
+    }
+
+
 def get_valid_or_stalled_dataset_names() -> List[str]:
     return [d.dataset_name for d in DbDataset.objects() if is_dataset_valid_or_stalled(d)]
 
