@@ -528,9 +528,27 @@ Responses:
   ```json
   {
     "splits": [
-      { "dataset": "glue", "config": "cola", "split": "test" },
-      { "dataset": "glue", "config": "cola", "split": "train" },
-      { "dataset": "glue", "config": "cola", "split": "validation" }
+      {
+        "dataset": "glue",
+        "config": "cola",
+        "split": "test",
+        "num_bytes": 217556,
+        "num_examples": 1821
+      },
+      {
+        "dataset": "glue",
+        "config": "cola",
+        "split": "train",
+        "num_bytes": 4715283,
+        "num_examples": 67349
+      },
+      {
+        "dataset": "glue",
+        "config": "cola",
+        "split": "validation",
+        "num_bytes": 106692,
+        "num_examples": 872
+      }
     ]
   }
   ```
@@ -538,6 +556,8 @@ Responses:
 - `400`: the dataset script is erroneous
 - `404`: the dataset or config cannot be found, or it's not in the cache
 - `500`: application error
+
+Note that the value of `"num_bytes"` and `"num_examples"` is set to `null` if the data is not available.
 
 ### /rows
 
