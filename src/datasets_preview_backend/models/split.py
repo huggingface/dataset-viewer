@@ -14,6 +14,8 @@ class Split(TypedDict):
     split_name: str
     rows: List[Row]
     columns: List[Column]
+    num_bytes: Optional[int]
+    num_examples: Optional[int]
 
 
 def get_split(
