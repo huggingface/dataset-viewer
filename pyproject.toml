@@ -35,12 +35,12 @@ rarfile = "^4.0"
 requests = "^2.27.1"
 sklearn = "^0.0"
 starlette = "^0.16.0"
-tensorflow = "2.6.2"
+tensorflow = "2.8.0"
 tfrecord = "^1.14.1"
 torchaudio = "^0.10.1"
 transformers = "^4.11.3"
 trec-car-tools = { path = "vendors/trec-car-tools/python3" }
-typer = "^0.3.2"
+typer = "^0.4.0"
 types-psutil = "^5.8.13"
 types-requests = "^2.25.11"
 uvicorn = "^0.14.0"
@@ -49,7 +49,7 @@ wget = "^3.2"
 
 [tool.poetry.dev-dependencies]
 bandit = "^1.7.0"
-black = "21.7b0"
+black = "^22.1.0"
 flake8 = "^3.9.2"
 isort = "^5.9.3"
 mypy = "0.812"
@@ -72,8 +72,8 @@ source = ["datasets_preview_backend"]
 profile = "black"
 
 [tool.black]
-experimental-string-processing = true
 line-length = 119
+preview = true
 
 [tool.mypy]
 exclude = 'vendors'
