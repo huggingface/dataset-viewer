@@ -208,7 +208,7 @@ Beware: a "dataset" is considered valid if it has fetched correctly the configs 
 
 ### /valid
 
-> Give the list of the valid datasets. A dataset is considered valid if `/splits` and `/rows` for all the splits return a valid response. Note that stalled cache entries are considered valid.
+> Give the list of the valid datasets. Here, a dataset is considered valid if `/splits` returns a valid response, and if `/rows` returns a valid response for _at least one split_. Note that stalled cache entries are considered valid.
 
 Example: https://datasets-preview.huggingface.tech/valid
 
@@ -229,7 +229,7 @@ Responses:
 
 ### /is-valid
 
-> Tells if a dataset is valid. A dataset is considered valid if `/splits` and `/rows` for all the splits return a valid response. Note that stalled cache entries are considered valid.
+> Tells if a dataset is valid. A dataset is considered valid if `/splits` returns a valid response, and if `/rows` returns a valid response for _at least one split_. Note that stalled cache entries are considered valid.
 
 Example: https://datasets-preview.huggingface.tech/is-valid?dataset=glue
 
