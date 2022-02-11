@@ -21,7 +21,7 @@ jobs:
         with:
           poetry-version: ${{ matrix.poetry-version }}
       - name: Install packages
-        run: sudo apt install -y libicu-dev ffmpeg libavcodec-extra libsndfile1 llvm
+        run: sudo apt update; sudo apt install -y libicu-dev ffmpeg libavcodec-extra libsndfile1 llvm
       - name: Install dependencies
         run: poetry install
       - name: Create mongoDB Docker container
