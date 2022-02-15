@@ -74,7 +74,9 @@ def get_columns(info: Info, rows: List[Row]) -> List[Column]:
         if not rows:
             return []
         else:
-            column_names = list(rows[0].keys())
+            column_names = list(
+                {column_name for row in rows[:MAX_ROWS_FOR_TYPE_INFERENCE_AND_CHECK] for column_name in row.keys()}
+            )
     else:
         column_names = list(features.keys())
     return [get_column(column_name, features, rows) for column_name in column_names]
