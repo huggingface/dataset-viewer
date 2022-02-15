@@ -14,6 +14,8 @@ def get_typed_row(
 ) -> Row:
     return {
         column.name: column.get_cell_value(dataset_name, config_name, split_name, row_idx, row[column.name])
+        if column.name in row
+        else None
         for column in columns
     }
 
@@ -43,5 +45,4 @@ def get_typed_rows_and_columns(
             raise err
     columns = get_columns(info, rows)
     typed_rows = get_typed_rows(dataset_name, config_name, split_name, rows, columns)
-    # columns_dicts = column.as_dict() for column in columns]
     return typed_rows, columns

@@ -54,11 +54,7 @@ def get_features(info: Info) -> FeaturesOrNone:
 
 def get_column(column_name: str, features: FeaturesOrNone, rows: List[Row]) -> Column:
     feature = None if features is None else features[column_name]
-    try:
-        values = [row[column_name] for row in rows[:MAX_ROWS_FOR_TYPE_INFERENCE_AND_CHECK]]
-    except KeyError:
-        # see https://datasets-preview.huggingface.tech/queue
-        raise Status400Error("could not get the config name for this dataset")
+    values = [row[column_name] for row in rows[:MAX_ROWS_FOR_TYPE_INFERENCE_AND_CHECK] if column_name in row]
 
     # try until one works
     for column_class in column_classes:
@@ -73,13 +69,14 @@ def get_column(column_name: str, features: FeaturesOrNone, rows: List[Row]) -> C
 def get_columns(info: Info, rows: List[Row]) -> List[Column]:
     features = get_features(info)
 
-    if features is None and not rows:
-        return []
     # order
-    column_names = list(features.keys()) if features is not None else list(rows[0].keys())
-    # check, just in case
-    if features and rows and features.keys() != rows[0].keys():
-        raise Status400Error("columns from features and first row don't match")
+    if features is None:
+        if not rows:
+            return []
+        else:
+            column_names = list(rows[0].keys())
+    else:
+        column_names = list(features.keys())
     return [get_column(column_name, features, rows) for column_name in column_names]
 
 
