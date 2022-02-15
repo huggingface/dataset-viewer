@@ -75,7 +75,9 @@ def get_columns(info: Info, rows: List[Row]) -> List[Column]:
             return []
         else:
             column_names = list(
-                {column_name for row in rows[:MAX_ROWS_FOR_TYPE_INFERENCE_AND_CHECK] for column_name in row.keys()}
+                dict.fromkeys(
+                    column_name for row in rows[:MAX_ROWS_FOR_TYPE_INFERENCE_AND_CHECK] for column_name in row.keys()
+                )
             )
     else:
         column_names = list(features.keys())
