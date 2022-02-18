@@ -94,11 +94,13 @@ def test_large_document() -> None:
 
 
 def test_column_order() -> None:
-    refresh_split("head_qa", "en", "train")
-    rows_response, error, status_code = get_rows_response("head_qa", "en", "train")
+    refresh_split("acronym_identification", "default", "train")
+    rows_response, error, status_code = get_rows_response("acronym_identification", "default", "train")
     assert status_code == 200
     assert error is None
     assert rows_response is not None
     print(rows_response["columns"])
     assert "columns" in rows_response
-    assert rows_response["columns"][6]["column"]["name"] == "image"
+    assert rows_response["columns"][0]["column"]["name"] == "id"
+    assert rows_response["columns"][1]["column"]["name"] == "tokens"
+    assert rows_response["columns"][2]["column"]["name"] == "labels"
