@@ -63,7 +63,8 @@ class CountByStatus(TypedDict):
     cancelled: int
 
 
-class DumpByStatus(TypedDict):
+# All the fields are optional
+class DumpByStatus(TypedDict, total=False):
     waiting: List[JobDict]
     started: List[JobDict]
     success: List[JobDict]
@@ -295,7 +296,12 @@ def get_dump_with_status(jobs: QuerySet[AnyJob], status: Status) -> List[JobDict
     return [d.to_dict() for d in get_jobs_with_status(jobs, status)]
 
 
-def get_dump_by_status(jobs: QuerySet[AnyJob]) -> DumpByStatus:
+def get_dump_by_status(jobs: QuerySet[AnyJob], waiting_started: bool = False) -> DumpByStatus:
+    if waiting_started:
+        return {
+            "waiting": get_dump_with_status(jobs, Status.WAITING),
+            "started": get_dump_with_status(jobs, Status.STARTED),
+        }
     return {
         "waiting": get_dump_with_status(jobs, Status.WAITING),
         "started": get_dump_with_status(jobs, Status.STARTED),
@@ -305,9 +311,9 @@ def get_dump_by_status(jobs: QuerySet[AnyJob]) -> DumpByStatus:
     }
 
 
-def get_dataset_dump_by_status() -> DumpByStatus:
-    return get_dump_by_status(DatasetJob.objects)
+def get_dataset_dump_by_status(waiting_started: bool = False) -> DumpByStatus:
+    return get_dump_by_status(DatasetJob.objects, waiting_started)
 
 
-def get_split_dump_by_status() -> DumpByStatus:
-    return get_dump_by_status(SplitJob.objects)
+def get_split_dump_by_status(waiting_started: bool = False) -> DumpByStatus:
+    return get_dump_by_status(SplitJob.objects, waiting_started)

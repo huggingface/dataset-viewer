@@ -25,3 +25,16 @@ async def queue_dump_endpoint(_: Request) -> Response:
         200,
         MAX_AGE_SHORT_SECONDS,
     )
+
+
+async def queue_dump_waiting_started_endpoint(_: Request) -> Response:
+    logger.info("/queue-dump-waiting-started")
+    return get_response(
+        {
+            "datasets": get_dataset_dump_by_status(waiting_started=True),
+            "splits": get_split_dump_by_status(waiting_started=True),
+            "created_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+        },
+        200,
+        MAX_AGE_SHORT_SECONDS,
+    )
