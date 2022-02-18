@@ -102,5 +102,5 @@ def test_column_order() -> None:
     print(rows_response["columns"])
     assert "columns" in rows_response
     assert rows_response["columns"][0]["column"]["name"] == "id"
-    assert rows_response["columns"][0]["column"]["name"] == "tokens"
-    assert rows_response["columns"][0]["column"]["name"] == "labels"
+    assert rows_response["columns"][1]["column"]["name"] == "tokens"
+    assert rows_response["columns"][2]["column"]["name"] == "labels"
