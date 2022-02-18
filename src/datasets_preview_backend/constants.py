@@ -45,6 +45,7 @@ DATASETS_BLOCKLIST: List[str] = [
     "echarlaix/gqa-lxmert",
     "Graphcore/gqa-lxmert",
     "bigscience/P3",
+    "lvwerra/github-code",
 ]
 
 FORCE_REDOWNLOAD: str = "force_redownload"
