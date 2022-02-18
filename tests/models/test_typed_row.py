@@ -1,7 +1,6 @@
 import pytest
 
 from datasets_preview_backend.config import EXTRACT_ROWS_LIMIT
-from datasets_preview_backend.exceptions import Status400Error
 from datasets_preview_backend.models.column import ClassLabelColumn, ColumnType
 from datasets_preview_backend.models.info import get_info
 from datasets_preview_backend.models.typed_row import get_typed_rows_and_columns
