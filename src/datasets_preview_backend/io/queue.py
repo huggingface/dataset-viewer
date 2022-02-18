@@ -1,7 +1,7 @@
 import enum
 import types
 from datetime import datetime
-from typing import Generic, List, Optional, Tuple, Type, TypedDict, TypeVar
+from typing import Generic, List, Optional, Tuple, Type, TypedDict, TypeVar, Union
 
 from mongoengine import Document, DoesNotExist, connect
 from mongoengine.errors import ValidationError
@@ -69,6 +69,11 @@ class DumpByStatus(TypedDict):
     success: List[JobDict]
     error: List[JobDict]
     cancelled: List[JobDict]
+
+
+class DumpWaitingStartedByStatus(TypedDict):
+    waiting: List[JobDict]
+    started: List[JobDict]
 
 
 def connect_to_queue() -> None:
@@ -295,7 +300,14 @@ def get_dump_with_status(jobs: QuerySet[AnyJob], status: Status) -> List[JobDict
     return [d.to_dict() for d in get_jobs_with_status(jobs, status)]
 
 
-def get_dump_by_status(jobs: QuerySet[AnyJob]) -> DumpByStatus:
+def get_dump_by_status(
+    jobs: QuerySet[AnyJob], waiting_started: bool = False
+) -> Union[DumpByStatus, DumpWaitingStartedByStatus]:
+    if waiting_started:
+        return {
+            "waiting": get_dump_with_status(jobs, Status.WAITING),
+            "started": get_dump_with_status(jobs, Status.STARTED),
+        }
     return {
         "waiting": get_dump_with_status(jobs, Status.WAITING),
         "started": get_dump_with_status(jobs, Status.STARTED),
@@ -305,9 +317,9 @@ def get_dump_by_status(jobs: QuerySet[AnyJob]) -> DumpByStatus:
     }
 
 
-def get_dataset_dump_by_status() -> DumpByStatus:
-    return get_dump_by_status(DatasetJob.objects)
+def get_dataset_dump_by_status(waiting_started: bool = False) -> Union[DumpByStatus, DumpWaitingStartedByStatus]:
+    return get_dump_by_status(DatasetJob.objects, waiting_started)
 
 
-def get_split_dump_by_status() -> DumpByStatus:
-    return get_dump_by_status(SplitJob.objects)
+def get_split_dump_by_status(waiting_started: bool = False) -> Union[DumpByStatus, DumpWaitingStartedByStatus]:
+    return get_dump_by_status(SplitJob.objects, waiting_started)

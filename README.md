@@ -371,6 +371,34 @@ Responses:
 }
 ```
 
+### /queue-dump-waiting-started
+
+> Give the queue entries, classed by status, only for "waiting" and "started" statuses
+
+Example: https://datasets-preview.huggingface.tech/queue-dump-waiting-started
+
+Method: `GET`
+
+Parameters: none
+
+Responses:
+
+- `200`: JSON content which the queue content, by status, with the following structure:
+
+```json
+{
+  "datasets": {
+    "waiting": [],
+    "started": []
+  },
+  "splits": {
+    "waiting": [],
+    "started": []
+  },
+  "created_at": "2022-01-20T13:59:03Z"
+}
+```
+
 ### /webhook
 
 > Adds, updates or removes a cache entry
