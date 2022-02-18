@@ -40,8 +40,8 @@ def test_cifar() -> None:
 
 
 def test_head_qa() -> None:
-    info = get_info("head_qa", "en")
-    typed_rows, columns = get_typed_rows_and_columns("head_qa", "en", "train", info)
+    info = get_info("head_qa", "es")
+    typed_rows, columns = get_typed_rows_and_columns("head_qa", "es", "train", info)
     assert len(typed_rows) == EXTRACT_ROWS_LIMIT
     assert typed_rows[0]["image"] is None
     assert columns[6].name == "image"

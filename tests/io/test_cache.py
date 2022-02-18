@@ -94,8 +94,8 @@ def test_large_document() -> None:
 
 
 def test_column_order() -> None:
-    refresh_split("head_qa", "en", "train")
-    rows_response, error, status_code = get_rows_response("head_qa", "en", "train")
+    refresh_split("head_qa", "es", "train")
+    rows_response, error, status_code = get_rows_response("head_qa", "es", "train")
     assert status_code == 200
     assert error is None
     assert rows_response is not None
