@@ -14,8 +14,6 @@ def get_typed_row(
 ) -> Row:
     return {
         column.name: column.get_cell_value(dataset_name, config_name, split_name, row_idx, row[column.name])
-        if column.name in row
-        else None
         for column in columns
     }
 
