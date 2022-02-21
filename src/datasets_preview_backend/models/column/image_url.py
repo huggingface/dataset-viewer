@@ -32,8 +32,8 @@ class ImageUrlColumn(Column):
         if feature:
             try:
                 check_feature_type(feature, "Value", ["string"])
-            except Exception:
-                raise ColumnTypeError("feature type mismatch")
+            except Exception as e:
+                raise ColumnTypeError("feature type mismatch") from e
         else:
             # if values are strings, and the column name matches, let's say it's an image url
             infer_from_values(values)

@@ -60,7 +60,7 @@ def get_rows(dataset_name: str, config_name: str, split_name: str, hf_token: Opt
     try:
         rows = extract_rows(dataset_name, config_name, split_name, num_rows, hf_token)
     except Exception as err:
-        raise Status400Error("Cannot get the first rows for the split.", err)
+        raise Status400Error("Cannot get the first rows for the split.", err) from err
     if len(rows) != num_rows:
         logger.info(
             f"could not read all the required rows ({len(rows)} / {num_rows}) from dataset {dataset_name} -"
@@ -89,7 +89,7 @@ def get_rows_without_streaming(
         size = len(next(iter(d.values())))
         rows = [{col: d[col][i] for col in d} for i in range(size)]
     except Exception as err:
-        raise Status400Error("Cannot get the first rows for the split.", err)
+        raise Status400Error("Cannot get the first rows for the split.", err) from err
     if len(rows) != num_rows:
         logger.info(
             f"could not read all the required rows ({len(rows)} / {num_rows}) from dataset {dataset_name} -"

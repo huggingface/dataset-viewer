@@ -47,9 +47,9 @@ MAX_ROWS_FOR_TYPE_INFERENCE_AND_CHECK = EXTRACT_ROWS_LIMIT
 
 def get_features(info: Info) -> FeaturesOrNone:
     try:
-        return None if info["features"] is None else {name: feature for (name, feature) in info["features"].items()}
+        return None if info["features"] is None else dict(info["features"].items())
     except Exception as err:
-        raise Status400Error("features could not be extracted from dataset config info", err)
+        raise Status400Error("features could not be extracted from dataset config info", err) from err
 
 
 def get_column(column_name: str, features: FeaturesOrNone, rows: List[Row]) -> Column:

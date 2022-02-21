@@ -19,8 +19,8 @@ def check_value(value: Any) -> None:
         try:
             path = value["path"]
             array = value["array"]
-        except Exception:
-            raise CellTypeError("audio cell must contain 'path' and 'array' fields")
+        except Exception as e:
+            raise CellTypeError("audio cell must contain 'path' and 'array' fields") from e
         if type(path) != str:
             raise CellTypeError("'path' field must be a string")
         if type(array) != ndarray:
@@ -39,8 +39,8 @@ class AudioColumn(Column):
         if feature:
             try:
                 check_feature_type(feature, "Audio", [])
-            except Exception:
-                raise ColumnTypeError("feature type mismatch")
+            except Exception as e:
+                raise ColumnTypeError("feature type mismatch") from e
         else:
             infer_from_values(values)
         self.name = name

@@ -366,11 +366,11 @@ def refresh_dataset_split_full_names(dataset_name: str, hf_token: Optional[str] 
     except StatusError as err:
         upsert_dataset_error(dataset_name, err)
         logger.debug(f"dataset '{dataset_name}' had error, cache updated")
-        raise err
+        raise
     except Exception as err:
         upsert_dataset_error(dataset_name, Status500Error(str(err)))
         logger.debug(f"dataset '{dataset_name}' had error, cache updated")
-        raise err
+        raise
 
 
 def delete_split(split_full_name: SplitFullName):
@@ -432,13 +432,13 @@ def refresh_split(
         logger.debug(
             f"split '{split_name}' from dataset '{dataset_name}' in config '{config_name}' had error, cache updated"
         )
-        raise err
+        raise
     except Exception as err:
         upsert_split_error(dataset_name, config_name, split_name, Status500Error(str(err)))
         logger.debug(
             f"split '{split_name}' from dataset '{dataset_name}' in config '{config_name}' had error, cache updated"
         )
-        raise err
+        raise
 
 
 def list_split_full_names_to_refresh(dataset_name: str):
@@ -463,8 +463,9 @@ def should_dataset_be_refreshed(dataset_name: str) -> bool:
 def get_splits_response(dataset_name: str) -> Tuple[Union[SplitsResponse, None], Union[ErrorItem, None], int]:
     try:
         dataset = DbDataset.objects(dataset_name=dataset_name).get()
-    except DoesNotExist:
-        raise Status400Error("Not found. Maybe the cache is missing, or maybe the dataset does not exist.")
+    except DoesNotExist as e:
+        raise Status400Error("Not found. Maybe the cache is missing, or maybe the dataset does not exist.") from e
+
     # ^ can also raise MultipleObjectsReturned, which should not occur -> we let the exception raise
 
     if dataset.status == Status.EMPTY:
@@ -486,8 +487,9 @@ def get_rows_response(
 ) -> Tuple[Union[RowsResponse, None], Union[ErrorItem, None], int]:
     try:
         split = DbSplit.objects(dataset_name=dataset_name, config_name=config_name, split_name=split_name).get()
-    except DoesNotExist:
-        raise Status400Error("Not found. Maybe the cache is missing, or maybe the split does not exist.")
+    except DoesNotExist as e:
+        raise Status400Error("Not found. Maybe the cache is missing, or maybe the split does not exist.", e) from e
+
     # ^ can also raise MultipleObjectsReturned, which should not occur -> we let the exception raise
 
     if split.status == Status.EMPTY:

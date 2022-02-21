@@ -36,8 +36,8 @@ class FloatColumn(Column):
                         "float64",
                     ],
                 )
-            except Exception:
-                raise ColumnTypeError("feature type mismatch")
+            except Exception as e:
+                raise ColumnTypeError("feature type mismatch") from e
         else:
             infer_from_values(values)
         self.name = name

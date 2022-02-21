@@ -32,6 +32,6 @@ def get_dataset_split_full_names(dataset_name: str, hf_token: Optional[str] = No
         ]
     except SplitsNotFoundError as err:
         # we bypass the SplitsNotFoundError, as we're interested in the cause
-        raise Status400Error("Cannot get the split names for the dataset.", err.__cause__)
+        raise Status400Error("Cannot get the split names for the dataset.", err.__cause__) from err
     except Exception as err:
-        raise Status400Error("Cannot get the split names for the dataset.", err)
+        raise Status400Error("Cannot get the split names for the dataset.", err) from err

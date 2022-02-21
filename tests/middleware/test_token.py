@@ -6,7 +6,9 @@ from starlette.requests import Request
 from datasets_preview_backend.middleware.token import get_token
 
 
-def build_request(headers: Dict[str, str] = {}) -> Request:
+def build_request(headers: Dict[str, str] = None) -> Request:
+    if headers is None:
+        headers = {}
     return Request({"type": "http", "headers": Headers(headers).raw})
 
 

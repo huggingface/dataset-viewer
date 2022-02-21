@@ -23,5 +23,5 @@ def get_info(dataset_name: str, config_name: str, hf_token: Optional[str] = None
         if "splits" in info and info["splits"] is not None:
             info["splits"] = dict(info["splits"].items())
     except Exception as err:
-        raise Status400Error("Cannot get the metadata info for the config.", err)
+        raise Status400Error("Cannot get the metadata info for the config.", err) from err
     return info
