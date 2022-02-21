@@ -19,8 +19,9 @@ def check_value(value: Any) -> None:
         try:
             filename = value["filename"]
             data = value["data"]
-        except Exception:
-            raise CellTypeError("image cell must contain 'filename' and 'data' fields")
+        except Exception as e:
+            raise CellTypeError("image cell must contain 'filename' and 'data' fields") from e
+
         if type(filename) != str:
             raise CellTypeError("'filename' field must be a string")
         if type(data) != bytes:
@@ -42,8 +43,8 @@ class ImageBytesColumn(Column):
             try:
                 check_feature_type(feature["filename"], "Value", ["string"])
                 check_feature_type(feature["data"], "Value", ["binary"])
-            except Exception:
-                raise ColumnTypeError("feature type mismatch")
+            except Exception as e:
+                raise ColumnTypeError("feature type mismatch") from e
         else:
             infer_from_values(values)
         self.name = name

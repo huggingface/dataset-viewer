@@ -26,8 +26,8 @@ class ClassLabelColumn(Column):
         try:
             check_feature_type(feature, "ClassLabel", [])
             self.labels = [str(name) for name in feature["names"]]
-        except Exception:
-            raise ColumnTypeError("feature type mismatch")
+        except Exception as e:
+            raise ColumnTypeError("feature type mismatch") from e
         self.name = name
         self.type = ColumnType.CLASS_LABEL
 

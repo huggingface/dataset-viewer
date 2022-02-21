@@ -138,8 +138,8 @@ AnyJob = TypeVar("AnyJob", DatasetJob, SplitJob)  # Must be DatasetJob or SplitJ
 # enqueue
 # dequeue
 # peek
-# isfull
-# isempty
+# is full
+# is empty
 
 
 class EmptyQueue(Exception):
@@ -226,8 +226,8 @@ def get_split_job() -> Tuple[str, str, str, str]:
 def finish_started_jobs(jobs: QuerySet[AnyJob], job_id: str, success: bool) -> None:
     try:
         job = jobs(pk=job_id, status=Status.STARTED).get()
-    except (DoesNotExist, ValidationError):
-        raise JobNotFound("the job does not exist")
+    except (DoesNotExist, ValidationError) as e:
+        raise JobNotFound("the job does not exist") from e
     if job.finished_at is not None or job.started_at is None:
         raise IncoherentState("a started job should not have a finished_at field or an empty started_at field")
     status = Status.SUCCESS if success else Status.ERROR

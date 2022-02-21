@@ -36,11 +36,11 @@ def get_typed_rows_and_columns(
 ) -> Tuple[List[Row], List[Column]]:
     try:
         rows = get_rows(dataset_name, config_name, split_name, hf_token)
-    except Exception as err:
+    except Exception:
         if fallback:
             rows = get_rows_without_streaming(dataset_name, config_name, split_name, hf_token)
         else:
-            raise err
+            raise
     columns = get_columns(info, rows)
     typed_rows = get_typed_rows(dataset_name, config_name, split_name, rows, columns)
     return typed_rows, columns
