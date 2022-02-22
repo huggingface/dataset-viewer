@@ -47,5 +47,3 @@ DATASETS_BLOCKLIST: List[str] = [
     "bigscience/P3",
     "lvwerra/github-code",
 ]
-
-FORCE_REDOWNLOAD: str = "force_redownload"
