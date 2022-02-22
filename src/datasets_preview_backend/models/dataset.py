@@ -1,10 +1,9 @@
 import logging
 from typing import List, Optional, TypedDict
 
-from datasets import get_dataset_config_names, get_dataset_split_names
+from datasets import DownloadMode, get_dataset_config_names, get_dataset_split_names
 from datasets.inspect import SplitsNotFoundError
 
-from datasets_preview_backend.constants import FORCE_REDOWNLOAD
 from datasets_preview_backend.exceptions import Status400Error
 from datasets_preview_backend.models._guard import guard_blocked_datasets
 
@@ -24,11 +23,9 @@ def get_dataset_split_full_names(dataset_name: str, hf_token: Optional[str] = No
         return [
             {"dataset_name": dataset_name, "config_name": config_name, "split_name": split_name}
             for config_name in get_dataset_config_names(
-                dataset_name, download_mode=FORCE_REDOWNLOAD, use_auth_token=hf_token  # type: ignore
+                dataset_name, download_mode=DownloadMode.FORCE_REDOWNLOAD, use_auth_token=hf_token
             )
-            for split_name in get_dataset_split_names(
-                dataset_name, config_name, use_auth_token=hf_token  # type: ignore
-            )
+            for split_name in get_dataset_split_names(dataset_name, config_name, use_auth_token=hf_token)
         ]
     except SplitsNotFoundError as err:
         # we bypass the SplitsNotFoundError, as we're interested in the cause

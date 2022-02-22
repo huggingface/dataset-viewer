@@ -3,10 +3,9 @@ import logging
 import time
 from typing import Any, Dict, List, Optional
 
-from datasets import Dataset, IterableDataset, load_dataset
+from datasets import Dataset, DownloadMode, IterableDataset, load_dataset
 
 from datasets_preview_backend.config import EXTRACT_ROWS_LIMIT
-from datasets_preview_backend.constants import FORCE_REDOWNLOAD
 from datasets_preview_backend.exceptions import Status400Error
 
 logger = logging.getLogger(__name__)
@@ -47,7 +46,7 @@ def extract_rows(
         name=config_name,
         split=split_name,
         streaming=True,
-        download_mode=FORCE_REDOWNLOAD,  # type: ignore
+        download_mode=DownloadMode.FORCE_REDOWNLOAD,
         use_auth_token=hf_token,
     )
     if not isinstance(iterable_dataset, IterableDataset):
