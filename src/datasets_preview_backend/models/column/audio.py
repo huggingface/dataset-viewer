@@ -1,5 +1,6 @@
 from typing import Any, List
 
+from datasets import Audio
 from numpy import ndarray  # type:ignore
 
 from datasets_preview_backend.io.asset import create_audio_files
@@ -10,7 +11,6 @@ from datasets_preview_backend.models.column.default import (
     ColumnInferenceError,
     ColumnType,
     ColumnTypeError,
-    check_feature_type,
 )
 
 
@@ -37,10 +37,8 @@ def infer_from_values(values: List[Any]) -> None:
 class AudioColumn(Column):
     def __init__(self, name: str, feature: Any, values: List[Any]):
         if feature:
-            try:
-                check_feature_type(feature, "Audio", [])
-            except Exception as e:
-                raise ColumnTypeError("feature type mismatch") from e
+            if not isinstance(feature, Audio):
+                raise ColumnTypeError("feature type mismatch")
         else:
             infer_from_values(values)
         self.name = name

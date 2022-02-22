@@ -1,7 +1,8 @@
 from typing import List, Optional, Tuple
 
+from datasets import DatasetInfo
+
 from datasets_preview_backend.models.column import Column, get_columns
-from datasets_preview_backend.models.info import Info
 from datasets_preview_backend.models.row import (
     Row,
     get_rows,
@@ -30,7 +31,7 @@ def get_typed_rows_and_columns(
     dataset_name: str,
     config_name: str,
     split_name: str,
-    info: Info,
+    info: DatasetInfo,
     hf_token: Optional[str] = None,
     fallback: Optional[bool] = False,
 ) -> Tuple[List[Row], List[Column]]:

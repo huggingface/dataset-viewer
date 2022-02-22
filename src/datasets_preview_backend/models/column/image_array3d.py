@@ -1,6 +1,7 @@
 from typing import Any, List
 
 import numpy  # type: ignore
+from datasets import Array3D
 from PIL import Image  # type: ignore
 
 from datasets_preview_backend.io.asset import create_image_file
@@ -11,7 +12,7 @@ from datasets_preview_backend.models.column.default import (
     ColumnInferenceError,
     ColumnType,
     ColumnTypeError,
-    check_feature_type,
+    check_dtype,
 )
 
 COLUMN_NAMES = ["img"]
@@ -42,10 +43,8 @@ class ImageArray3DColumn(Column):
         if name not in COLUMN_NAMES:
             raise ColumnTypeError("feature name mismatch")
         if feature:
-            try:
-                check_feature_type(feature, "Array3D", ["uint8"])
-            except Exception as e:
-                raise ColumnTypeError("feature type mismatch") from e
+            if not check_dtype(feature, ["uint8"], Array3D):
+                raise ColumnTypeError("feature type mismatch")
         else:
             infer_from_values(values)
         # we also have shape in the feature: shape: [32, 32, 3] for cifar10

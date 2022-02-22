@@ -7,7 +7,7 @@ from datasets_preview_backend.models.column.default import (
     ColumnInferenceError,
     ColumnType,
     ColumnTypeError,
-    check_feature_type,
+    check_dtype,
 )
 
 
@@ -26,18 +26,15 @@ def infer_from_values(values: List[Any]) -> None:
 class FloatColumn(Column):
     def __init__(self, name: str, feature: Any, values: List[Any]):
         if feature:
-            try:
-                check_feature_type(
-                    feature,
-                    "Value",
-                    [
-                        "float16",
-                        "float32",
-                        "float64",
-                    ],
-                )
-            except Exception as e:
-                raise ColumnTypeError("feature type mismatch") from e
+            if not check_dtype(
+                feature,
+                [
+                    "float16",
+                    "float32",
+                    "float64",
+                ],
+            ):
+                raise ColumnTypeError("feature type mismatch")
         else:
             infer_from_values(values)
         self.name = name

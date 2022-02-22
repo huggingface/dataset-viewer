@@ -1,5 +1,7 @@
 from typing import Any, List
 
+from datasets import ClassLabel
+
 from datasets_preview_backend.models.column.default import (
     Cell,
     CellTypeError,
@@ -7,7 +9,6 @@ from datasets_preview_backend.models.column.default import (
     ColumnDict,
     ColumnType,
     ColumnTypeError,
-    check_feature_type,
 )
 
 
@@ -23,11 +24,9 @@ class ClassLabelColumn(Column):
         if feature is None:
             # we cannot infer from the values in that case (would be inferred as INT instead)
             raise ColumnTypeError("not a class label")
-        try:
-            check_feature_type(feature, "ClassLabel", [])
-            self.labels = [str(name) for name in feature["names"]]
-        except Exception as e:
-            raise ColumnTypeError("feature type mismatch") from e
+        if not isinstance(feature, ClassLabel):
+            raise ColumnTypeError("feature type mismatch")
+        self.labels = feature.names
         self.name = name
         self.type = ColumnType.CLASS_LABEL
 

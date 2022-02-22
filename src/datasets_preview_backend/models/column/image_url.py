@@ -7,7 +7,7 @@ from datasets_preview_backend.models.column.default import (
     ColumnInferenceError,
     ColumnType,
     ColumnTypeError,
-    check_feature_type,
+    check_dtype,
 )
 
 COLUMN_NAMES = ["image_url"]
@@ -30,10 +30,8 @@ class ImageUrlColumn(Column):
         if name not in COLUMN_NAMES:
             raise ColumnTypeError("feature name mismatch")
         if feature:
-            try:
-                check_feature_type(feature, "Value", ["string"])
-            except Exception as e:
-                raise ColumnTypeError("feature type mismatch") from e
+            if not check_dtype(feature, ["string"]):
+                raise ColumnTypeError("feature type mismatch")
         else:
             # if values are strings, and the column name matches, let's say it's an image url
             infer_from_values(values)
