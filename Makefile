@@ -28,8 +28,8 @@ quality:
 	poetry run flake8 tests src
 	poetry run mypy tests src
 	poetry run bandit -r src
-	poetry run safety check -i 44652 -i 44487 -i 44485 -i 44524 -i 44525 -i 44486 -i 43453 -i 44716 -i 44717 -i 44715
-# ^^ safety exceptions: py7zr, pillow, numpy 
+	poetry run safety check -i 44487 -i 44485 -i 44524 -i 44525 -i 44486 -i 44716 -i 44717 -i 44715
+# ^^ safety exceptions: pillow, numpy
 
 # Format source code automatically
 .PHONY: style
