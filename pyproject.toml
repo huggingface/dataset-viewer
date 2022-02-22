@@ -12,7 +12,7 @@ apache-beam = "^2.33.0"
 appdirs = "^1.4.4"
 bs4 = "^0.0.1"
 conllu = "^4.4.1"
-datasets = { git = "https://github.com/huggingface/datasets.git", rev = "99816c6b9aa4c16365235a4c6c0802389a045a13", extras = [
+datasets = { git = "https://github.com/huggingface/datasets.git", rev = "18e3ac0f3eef5427c64fe8461291ab3ec9310aaa", extras = [
     "audio",
     "vision",
 ] }

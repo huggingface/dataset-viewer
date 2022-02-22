@@ -7,7 +7,7 @@ from datasets_preview_backend.models.column.default import (
     ColumnInferenceError,
     ColumnType,
     ColumnTypeError,
-    check_feature_type,
+    check_dtype,
 )
 
 
@@ -26,10 +26,8 @@ def infer_from_values(values: List[Any]) -> None:
 class BoolColumn(Column):
     def __init__(self, name: str, feature: Any, values: List[Any]):
         if feature:
-            try:
-                check_feature_type(feature, "Value", ["bool"])
-            except Exception as e:
-                raise ColumnTypeError("feature type mismatch") from e
+            if not check_dtype(feature, ["bool"]):
+                raise ColumnTypeError("feature type mismatch")
         else:
             infer_from_values(values)
         self.name = name

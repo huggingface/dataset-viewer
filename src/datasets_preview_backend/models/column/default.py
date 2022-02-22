@@ -1,6 +1,8 @@
 from enum import Enum, auto
 from typing import Any, List, TypedDict
 
+from datasets import Value
+
 
 class ColumnType(Enum):
     JSON = auto()  # default
@@ -59,8 +61,7 @@ class ColumnInferenceError(Exception):
     pass
 
 
-def check_feature_type(value: Any, type: str, dtypes: List[str]) -> None:
-    if "_type" not in value or value["_type"] != type:
-        raise TypeError("_type is not the expected value")
-    if dtypes and ("dtype" not in value or value["dtype"] not in dtypes):
-        raise TypeError("dtype is not the expected value")
+def check_dtype(feature: Any, dtypes: List[str], expected_class=None) -> bool:
+    if expected_class is None:
+        expected_class = Value
+    return isinstance(feature, expected_class) and feature.dtype in dtypes

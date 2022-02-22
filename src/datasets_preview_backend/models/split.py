@@ -29,15 +29,14 @@ def get_split(
     guard_blocked_datasets(dataset_name)
     info = get_info(dataset_name, config_name, hf_token)
     fallback = (
-        max_size_fallback is not None
-        and "size_in_bytes" in info
-        and isinstance(info["size_in_bytes"], int)
-        and info["size_in_bytes"] < max_size_fallback
+        max_size_fallback is not None and info.size_in_bytes is not None and info.size_in_bytes < max_size_fallback
     )
     typed_rows, columns = get_typed_rows_and_columns(dataset_name, config_name, split_name, info, hf_token, fallback)
     try:
-        num_bytes = info["splits"][split_name]["num_bytes"]
-        num_examples = info["splits"][split_name]["num_examples"]
+        if info.splits is None:
+            raise Exception("no splits in info")
+        num_bytes = info.splits[split_name].num_bytes
+        num_examples = info.splits[split_name].num_examples
     except Exception:
         num_bytes = None
         num_examples = None
