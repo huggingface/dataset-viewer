@@ -8,13 +8,13 @@ from datasets_preview_backend.constants import (
     DEFAULT_ASSETS_DIRECTORY,
     DEFAULT_DATASETS_ENABLE_PRIVATE,
     DEFAULT_DATASETS_REVISION,
-    DEFAULT_EXTRACT_ROWS_LIMIT,
     DEFAULT_LOG_LEVEL,
     DEFAULT_MAX_AGE_LONG_SECONDS,
     DEFAULT_MAX_AGE_SHORT_SECONDS,
     DEFAULT_MONGO_CACHE_DATABASE,
     DEFAULT_MONGO_QUEUE_DATABASE,
     DEFAULT_MONGO_URL,
+    DEFAULT_ROWS_MAX_NUMBER,
     DEFAULT_WEB_CONCURRENCY,
 )
 from datasets_preview_backend.utils import (
@@ -34,13 +34,13 @@ DATASETS_ENABLE_PRIVATE = get_bool_value(
     d=os.environ, key="DATASETS_ENABLE_PRIVATE", default=DEFAULT_DATASETS_ENABLE_PRIVATE
 )
 DATASETS_REVISION = get_str_value(d=os.environ, key="DATASETS_REVISION", default=DEFAULT_DATASETS_REVISION)
-EXTRACT_ROWS_LIMIT = get_int_value(d=os.environ, key="EXTRACT_ROWS_LIMIT", default=DEFAULT_EXTRACT_ROWS_LIMIT)
 LOG_LEVEL = get_str_value(d=os.environ, key="LOG_LEVEL", default=DEFAULT_LOG_LEVEL)
 MAX_AGE_LONG_SECONDS = get_int_value(d=os.environ, key="MAX_AGE_LONG_SECONDS", default=DEFAULT_MAX_AGE_LONG_SECONDS)
 MAX_AGE_SHORT_SECONDS = get_int_value(d=os.environ, key="MAX_AGE_SHORT_SECONDS", default=DEFAULT_MAX_AGE_SHORT_SECONDS)
 MONGO_CACHE_DATABASE = get_str_value(d=os.environ, key="MONGO_CACHE_DATABASE", default=DEFAULT_MONGO_CACHE_DATABASE)
 MONGO_QUEUE_DATABASE = get_str_value(d=os.environ, key="MONGO_QUEUE_DATABASE", default=DEFAULT_MONGO_QUEUE_DATABASE)
 MONGO_URL = get_str_value(d=os.environ, key="MONGO_URL", default=DEFAULT_MONGO_URL)
+ROWS_MAX_NUMBER = get_int_value(d=os.environ, key="ROWS_MAX_NUMBER", default=DEFAULT_ROWS_MAX_NUMBER)
 WEB_CONCURRENCY = get_int_value(d=os.environ, key="WEB_CONCURRENCY", default=DEFAULT_WEB_CONCURRENCY)
 
 # Ensure datasets library uses the expected revision for canonical datasets

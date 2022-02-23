@@ -2,7 +2,7 @@ from typing import List, Union
 
 from datasets import DatasetInfo, Features
 
-from datasets_preview_backend.config import EXTRACT_ROWS_LIMIT
+from datasets_preview_backend.config import ROWS_MAX_NUMBER
 from datasets_preview_backend.exceptions import Status400Error
 from datasets_preview_backend.models.column.audio import AudioColumn
 from datasets_preview_backend.models.column.bool import BoolColumn
@@ -40,7 +40,7 @@ column_classes = [
 
 FeaturesOrNone = Union[Features, None]
 
-MAX_ROWS_FOR_TYPE_INFERENCE_AND_CHECK = EXTRACT_ROWS_LIMIT
+MAX_ROWS_FOR_TYPE_INFERENCE_AND_CHECK = ROWS_MAX_NUMBER
 
 
 def get_column(column_name: str, features: FeaturesOrNone, rows: List[Row]) -> Column:

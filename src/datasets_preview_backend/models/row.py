@@ -5,7 +5,7 @@ from typing import Any, Dict, List, Optional
 
 from datasets import Dataset, DownloadMode, IterableDataset, load_dataset
 
-from datasets_preview_backend.config import EXTRACT_ROWS_LIMIT
+from datasets_preview_backend.config import ROWS_MAX_NUMBER
 from datasets_preview_backend.exceptions import Status400Error
 
 logger = logging.getLogger(__name__)
@@ -55,7 +55,7 @@ def extract_rows(
 
 
 def get_rows(dataset_name: str, config_name: str, split_name: str, hf_token: Optional[str] = None) -> List[Row]:
-    num_rows = EXTRACT_ROWS_LIMIT
+    num_rows = ROWS_MAX_NUMBER
     try:
         rows = extract_rows(dataset_name, config_name, split_name, num_rows, hf_token)
     except Exception as err:
@@ -74,7 +74,7 @@ def get_rows_without_streaming(
     split_name: str,
     hf_token: Optional[str] = None,
 ) -> List[Row]:
-    num_rows = EXTRACT_ROWS_LIMIT
+    num_rows = ROWS_MAX_NUMBER
     try:
         dataset = load_dataset(
             dataset_name,
