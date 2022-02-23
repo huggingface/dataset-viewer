@@ -112,7 +112,7 @@ server {
   listen [::]:80;
   server_name datasets-preview.huggingface.tech;
 
-  add_header 'Access-Control-Allow-Origin' '*';
+  add_header 'Access-Control-Allow-Origin' '*' always;
 
   access_log /var/log/nginx/reverse-access.log;
   error_log /var/log/nginx/reverse-error.log;
