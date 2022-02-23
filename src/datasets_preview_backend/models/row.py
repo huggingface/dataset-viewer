@@ -1,12 +1,11 @@
 import functools
 import logging
 import time
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Union
 
 from datasets import Dataset, DownloadMode, IterableDataset, load_dataset
 
 from datasets_preview_backend.config import ROWS_MAX_NUMBER
-from datasets_preview_backend.exceptions import Status400Error
 
 logger = logging.getLogger(__name__)
 
@@ -37,10 +36,26 @@ def retry(func):
     return decorator
 
 
-@retry
-def extract_rows(
-    dataset_name: str, config_name: str, split_name: str, num_rows: int, hf_token: Optional[str] = None
+def take_rows(
+    dataset: Union[Dataset, IterableDataset], dataset_name: str, config_name: str, split_name: str
 ) -> List[Row]:
+    num_rows = ROWS_MAX_NUMBER
+    if isinstance(dataset, IterableDataset):
+        rows = list(dataset.take(num_rows))
+    else:
+        d = dataset[:num_rows]
+        size = len(next(iter(d.values())))
+        rows = [{col: d[col][i] for col in d} for i in range(size)]
+    if len(rows) != num_rows:
+        logger.info(
+            f"could not read all the required rows ({len(rows)} / {num_rows}) from dataset {dataset_name} -"
+            f" {config_name} - {split_name}"
+        )
+    return rows
+
+
+@retry
+def get_rows(dataset_name: str, config_name: str, split_name: str, hf_token: Optional[str] = None) -> List[Row]:
     iterable_dataset = load_dataset(
         dataset_name,
         name=config_name,
@@ -51,21 +66,7 @@ def extract_rows(
     )
     if not isinstance(iterable_dataset, IterableDataset):
         raise TypeError("load_dataset should return an IterableDataset")
-    return list(iterable_dataset.take(num_rows))
-
-
-def get_rows(dataset_name: str, config_name: str, split_name: str, hf_token: Optional[str] = None) -> List[Row]:
-    num_rows = ROWS_MAX_NUMBER
-    try:
-        rows = extract_rows(dataset_name, config_name, split_name, num_rows, hf_token)
-    except Exception as err:
-        raise Status400Error("Cannot get the first rows for the split.", err) from err
-    if len(rows) != num_rows:
-        logger.info(
-            f"could not read all the required rows ({len(rows)} / {num_rows}) from dataset {dataset_name} -"
-            f" {config_name} - {split_name}"
-        )
-    return rows
+    return take_rows(iterable_dataset, dataset_name, config_name, split_name)
 
 
 def get_rows_without_streaming(
@@ -74,24 +75,12 @@ def get_rows_without_streaming(
     split_name: str,
     hf_token: Optional[str] = None,
 ) -> List[Row]:
-    num_rows = ROWS_MAX_NUMBER
-    try:
-        dataset = load_dataset(
-            dataset_name,
-            name=config_name,
-            split=split_name,
-            use_auth_token=hf_token,
-        )
-        if not isinstance(dataset, Dataset):
-            raise TypeError("load_dataset should return a Dataset")
-        d = dataset[:num_rows]
-        size = len(next(iter(d.values())))
-        rows = [{col: d[col][i] for col in d} for i in range(size)]
-    except Exception as err:
-        raise Status400Error("Cannot get the first rows for the split.", err) from err
-    if len(rows) != num_rows:
-        logger.info(
-            f"could not read all the required rows ({len(rows)} / {num_rows}) from dataset {dataset_name} -"
-            f" {config_name} - {split_name}"
-        )
-    return rows
+    dataset = load_dataset(
+        dataset_name,
+        name=config_name,
+        split=split_name,
+        use_auth_token=hf_token,
+    )
+    if not isinstance(dataset, Dataset):
+        raise TypeError("load_dataset should return a Dataset")
+    return take_rows(dataset, dataset_name, config_name, split_name)
