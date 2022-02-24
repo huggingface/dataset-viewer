@@ -70,3 +70,12 @@ def test_image_url() -> None:
 #     assert typed_rows[0]["audio"][0]["type"] == "audio/mpeg"
 #     assert typed_rows[0]["audio"][1]["type"] == "audio/wav"
 #     assert typed_rows[0]["audio"][0]["src"] == "assets/common_voice/--/tr/train/0/audio/audio.mp3"
+
+
+def test_bytes_limit() -> None:
+    dataset = "edbeeching/decision_transformer_gym_replay"
+    config = "hopper-expert-v2"
+    split = "train"
+    info = get_info(dataset, config)
+    typed_rows, columns = get_typed_rows_and_columns(dataset, config, split, info)
+    assert len(typed_rows) == 3
