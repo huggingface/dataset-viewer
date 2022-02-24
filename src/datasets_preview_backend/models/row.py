@@ -36,21 +36,23 @@ def retry(func):
     return decorator
 
 
-def take_rows(
-    dataset: Union[Dataset, IterableDataset], dataset_name: str, config_name: str, split_name: str
-) -> List[Row]:
-    num_rows = ROWS_MAX_NUMBER
-    if isinstance(dataset, IterableDataset):
-        rows = list(dataset.take(num_rows))
-    else:
-        d = dataset[:num_rows]
-        size = len(next(iter(d.values())))
-        rows = [{col: d[col][i] for col in d} for i in range(size)]
-    if len(rows) != num_rows:
-        logger.info(
-            f"could not read all the required rows ({len(rows)} / {num_rows}) from dataset {dataset_name} -"
-            f" {config_name} - {split_name}"
-        )
+def take_rows(dataset: Union[Dataset, IterableDataset]) -> List[Row]:
+    iterator = iter(dataset)
+
+    i = 0
+    rows = []
+    while True:
+        try:
+            row = next(iterator)
+        except StopIteration:
+            logger.debug(f"all the rows have been fetched ({i})")
+            break
+        if i >= ROWS_MAX_NUMBER:
+            logger.debug("reached max number of rows ({ROWS_MAX_NUMBER}): truncate")
+            break
+        rows.append(row)
+        i += 1
+
     return rows
 
 
@@ -66,7 +68,7 @@ def get_rows(dataset_name: str, config_name: str, split_name: str, hf_token: Opt
     )
     if not isinstance(iterable_dataset, IterableDataset):
         raise TypeError("load_dataset should return an IterableDataset")
-    return take_rows(iterable_dataset, dataset_name, config_name, split_name)
+    return take_rows(iterable_dataset)
 
 
 def get_rows_without_streaming(
@@ -83,4 +85,4 @@ def get_rows_without_streaming(
     )
     if not isinstance(dataset, Dataset):
         raise TypeError("load_dataset should return a Dataset")
-    return take_rows(dataset, dataset_name, config_name, split_name)
+    return take_rows(dataset)
