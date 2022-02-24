@@ -11,6 +11,7 @@ DEFAULT_MAX_AGE_SHORT_SECONDS: int = 10  # 10 seconds
 DEFAULT_MONGO_CACHE_DATABASE: str = "datasets_preview_cache"
 DEFAULT_MONGO_QUEUE_DATABASE: str = "datasets_preview_queue"
 DEFAULT_MONGO_URL: str = "mongodb://localhost:27018"
+DEFAULT_ROWS_MAX_BYTES: int = 1_000_000
 DEFAULT_ROWS_MAX_NUMBER: int = 100
 DEFAULT_WEB_CONCURRENCY: int = 2
 

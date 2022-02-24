@@ -1,5 +1,6 @@
 import enum
 import logging
+import sys
 import types
 from datetime import datetime
 from typing import (
@@ -43,6 +44,7 @@ from datasets_preview_backend.models.dataset import (
 )
 from datasets_preview_backend.models.hf_dataset import ask_access
 from datasets_preview_backend.models.split import Split, get_split
+from datasets_preview_backend.utils import orjson_dumps
 
 # START monkey patching ### hack ###
 # see https://github.com/sbdchd/mongo-types#install
@@ -482,8 +484,35 @@ def get_splits_response(dataset_name: str) -> Tuple[Union[SplitsResponse, None],
     return splits_response, None, 200
 
 
+def get_size_in_bytes(row: RowItem):
+    return sys.getsizeof(orjson_dumps(row))
+    # ^^ every row is transformed here in a string, because it corresponds to
+    # the size the row will contribute in the JSON response to /rows endpoint.
+    # The size of the string is measured in bytes.
+    # An alternative would have been to look at the memory consumption (pympler) but it's
+    # less related to what matters here (size of the JSON, number of characters in the
+    # dataset viewer table on the hub)
+
+
+def to_row_items(rows: QuerySet[DbRow], rows_max_bytes: Optional[int]) -> List[RowItem]:
+    row_items = []
+    bytes = 0
+    for idx, row in enumerate(rows):
+        row_item = row.to_item()
+        if rows_max_bytes is not None:
+            bytes += get_size_in_bytes(row_item)
+            if bytes >= rows_max_bytes:
+                logger.debug(
+                    f"the rows in the split have been truncated to {idx} row(s) to keep the size ({bytes}) under the"
+                    f" limit ({rows_max_bytes})"
+                )
+                break
+        row_items.append(row_item)
+    return row_items
+
+
 def get_rows_response(
-    dataset_name: str, config_name: str, split_name: str
+    dataset_name: str, config_name: str, split_name: str, rows_max_bytes: Optional[int] = None
 ) -> Tuple[Union[RowsResponse, None], Union[ErrorItem, None], int]:
     try:
         split = DbSplit.objects(dataset_name=dataset_name, config_name=config_name, split_name=split_name).get()
@@ -506,12 +535,15 @@ def get_rows_response(
     columns = DbColumn.objects(dataset_name=dataset_name, config_name=config_name, split_name=split_name).order_by(
         "+column_idx"
     )
+    # TODO: on some datasets, such as "edbeeching/decision_transformer_gym_replay", it takes a long time, and we
+    # truncate it anyway in to_row_items(). We might optimize here
     rows = DbRow.objects(dataset_name=dataset_name, config_name=config_name, split_name=split_name).order_by(
         "+row_idx"
     )
+    row_items = to_row_items(rows, rows_max_bytes)
     rows_response: RowsResponse = {
         "columns": [column.to_item() for column in columns],
-        "rows": [row.to_item() for row in rows],
+        "rows": row_items,
     }
     return rows_response, None, 200
 
