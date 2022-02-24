@@ -15,7 +15,7 @@ Row = Dict[str, Any]
 
 def retry(func):
     """retries with an increasing sleep before every attempt"""
-    SLEEPS = [7, 70, 7 * 60, 70 * 60]
+    SLEEPS = [1, 7, 70, 7 * 60, 70 * 60]
     MAX_ATTEMPTS = len(SLEEPS)
 
     @functools.wraps(func)
