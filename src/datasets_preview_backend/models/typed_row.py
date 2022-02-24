@@ -44,7 +44,7 @@ def get_typed_rows(
     bytes = 0
     for idx, row in enumerate(rows):
         typed_row = get_typed_row(dataset_name, config_name, split_name, row, idx, columns)
-        if ROWS_MAX_BYTES is not None:
+        if rows_max_bytes is not None:
             bytes += get_size_in_bytes(typed_row)
             if bytes >= rows_max_bytes:
                 logger.debug(
