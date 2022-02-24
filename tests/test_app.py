@@ -185,3 +185,15 @@ def test_get_rows(client: TestClient) -> None:
 
 #     response = client.get("/rows", params={"dataset": dataset})
 #     assert response.status_code == 200
+
+
+def test_bytes_limit(client: TestClient) -> None:
+    dataset = "edbeeching/decision_transformer_gym_replay"
+    config = "hopper-expert-v2"
+    split = "train"
+    refresh_split(dataset, config, split)
+    response = client.get("/rows", params={"dataset": dataset, "config": config, "split": split})
+    assert response.status_code == 200
+    json = response.json()
+    rowItems = json["rows"]
+    assert len(rowItems) == 3

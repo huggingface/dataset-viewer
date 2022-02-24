@@ -2,12 +2,9 @@ from typing import List, Optional, Tuple
 
 from datasets import DatasetInfo
 
+from datasets_preview_backend.exceptions import Status400Error
 from datasets_preview_backend.models.column import Column, get_columns
-from datasets_preview_backend.models.row import (
-    Row,
-    get_rows,
-    get_rows_without_streaming,
-)
+from datasets_preview_backend.models.row import Row, get_rows
 
 
 def get_typed_row(
@@ -36,12 +33,16 @@ def get_typed_rows_and_columns(
     fallback: Optional[bool] = False,
 ) -> Tuple[List[Row], List[Column]]:
     try:
-        rows = get_rows(dataset_name, config_name, split_name, hf_token)
-    except Exception:
-        if fallback:
-            rows = get_rows_without_streaming(dataset_name, config_name, split_name, hf_token)
-        else:
-            raise
+        try:
+            rows = get_rows(dataset_name, config_name, split_name, hf_token, streaming=True)
+        except Exception:
+            if fallback:
+                rows = get_rows(dataset_name, config_name, split_name, hf_token, streaming=False)
+            else:
+                raise
+    except Exception as err:
+        raise Status400Error("Cannot get the first rows for the split.", err) from err
+
     columns = get_columns(info, rows)
     typed_rows = get_typed_rows(dataset_name, config_name, split_name, rows, columns)
     return typed_rows, columns

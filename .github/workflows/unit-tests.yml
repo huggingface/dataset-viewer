@@ -28,7 +28,7 @@ jobs:
         run: sudo docker run -d -p 27018:27017 mongo:latest
       - name: Run unit tests
         env:
-          EXTRACT_ROWS_LIMIT: 5
+          ROWS_MAX_NUMBER: 5
           MONGO_CACHE_DATABASE: datasets_preview_cache_test
           MONGO_QUEUE_DATABASE: datasets_preview_queue_test
         run: poetry run python -m pytest -s --cov --cov-report xml:coverage.xml --cov-report=term tests
