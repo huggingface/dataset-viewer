@@ -4,11 +4,7 @@ from datasets import DatasetInfo
 
 from datasets_preview_backend.exceptions import Status400Error
 from datasets_preview_backend.models.column import Column, get_columns
-from datasets_preview_backend.models.row import (
-    Row,
-    get_rows,
-    get_rows_without_streaming,
-)
+from datasets_preview_backend.models.row import Row, get_rows
 
 
 def get_typed_row(
@@ -38,10 +34,10 @@ def get_typed_rows_and_columns(
 ) -> Tuple[List[Row], List[Column]]:
     try:
         try:
-            rows = get_rows(dataset_name, config_name, split_name, hf_token)
+            rows = get_rows(dataset_name, config_name, split_name, hf_token, streaming=True)
         except Exception:
             if fallback:
-                rows = get_rows_without_streaming(dataset_name, config_name, split_name, hf_token)
+                rows = get_rows(dataset_name, config_name, split_name, hf_token, streaming=False)
             else:
                 raise
     except Exception as err:

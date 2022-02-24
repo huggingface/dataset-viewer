@@ -57,8 +57,10 @@ def take_rows(dataset: Union[Dataset, IterableDataset]) -> List[Row]:
 
 
 @retry
-def get_rows(dataset_name: str, config_name: str, split_name: str, hf_token: Optional[str] = None) -> List[Row]:
-    iterable_dataset = load_dataset(
+def get_rows(
+    dataset_name: str, config_name: str, split_name: str, hf_token: Optional[str] = None, streaming: bool = True
+) -> List[Row]:
+    dataset = load_dataset(
         dataset_name,
         name=config_name,
         split=split_name,
@@ -66,23 +68,9 @@ def get_rows(dataset_name: str, config_name: str, split_name: str, hf_token: Opt
         download_mode=DownloadMode.FORCE_REDOWNLOAD,
         use_auth_token=hf_token,
     )
-    if not isinstance(iterable_dataset, IterableDataset):
-        raise TypeError("load_dataset should return an IterableDataset")
-    return take_rows(iterable_dataset)
-
-
-def get_rows_without_streaming(
-    dataset_name: str,
-    config_name: str,
-    split_name: str,
-    hf_token: Optional[str] = None,
-) -> List[Row]:
-    dataset = load_dataset(
-        dataset_name,
-        name=config_name,
-        split=split_name,
-        use_auth_token=hf_token,
-    )
-    if not isinstance(dataset, Dataset):
+    if streaming:
+        if not isinstance(dataset, IterableDataset):
+            raise TypeError("load_dataset should return an IterableDataset")
+    elif not isinstance(dataset, Dataset):
         raise TypeError("load_dataset should return a Dataset")
     return take_rows(dataset)
