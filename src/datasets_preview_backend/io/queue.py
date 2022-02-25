@@ -267,12 +267,12 @@ def cancel_waiting_jobs(jobs: QuerySet[AnyJob]) -> None:
     get_waiting(jobs).update(finished_at=datetime.utcnow(), status=Status.CANCELLED)
 
 
-def finish_dataset_job(job_id: str, success: bool) -> bool:
-    return finish_started_job(DatasetJob.objects, job_id, success)
+def finish_dataset_job(job_id: str, success: bool) -> None:
+    finish_started_job(DatasetJob.objects, job_id, success)
 
 
-def finish_split_job(job_id: str, success: bool) -> bool:
-    return finish_started_job(SplitJob.objects, job_id, success)
+def finish_split_job(job_id: str, success: bool) -> None:
+    finish_started_job(SplitJob.objects, job_id, success)
 
 
 def clean_database() -> None:
