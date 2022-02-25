@@ -3,7 +3,6 @@ import pytest
 from datasets_preview_backend.config import MONGO_QUEUE_DATABASE
 from datasets_preview_backend.io.queue import (
     EmptyQueue,
-    JobNotFound,
     add_dataset_job,
     clean_database,
     connect_to_queue,
