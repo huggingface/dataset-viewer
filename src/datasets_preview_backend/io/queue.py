@@ -204,13 +204,14 @@ def get_finished(jobs: QuerySet[AnyJob]) -> QuerySet[AnyJob]:
 
 
 def start_job(jobs: QuerySet[AnyJob], max_jobs_per_dataset: Optional[int] = None) -> AnyJob:
-    waiting_jobs = get_waiting(jobs).order_by("+created_at")
+    waiting_jobs = get_waiting(jobs).order_by("+created_at").no_cache()
+    # ^ no_cache should generate a query on every iteration, which should solve concurrency issues between workers
     for job in waiting_jobs:
-        if job.finished_at is not None or job.status != Status.WAITING:
-            raise IncoherentState(
-                "a job with an empty start_at field should not have a finished_at field or a WAITING status"
-            )
-        if max_jobs_per_dataset is None or get_num_started_for_dataset(jobs, job.dataset_name) < max_jobs_per_dataset:
+        if job.started_at is not None or job.finished_at is not None:
+            raise IncoherentState("a job with status WAITING should have empty started_at and finished_at fields")
+        if job.status is Status.WAITING and (
+            max_jobs_per_dataset is None or get_num_started_for_dataset(jobs, job.dataset_name) < max_jobs_per_dataset
+        ):
             job.update(started_at=datetime.utcnow(), status=Status.STARTED)
             return job
     raise EmptyQueue(f"no job available (within the limit of {max_jobs_per_dataset} started jobs per dataset)")
