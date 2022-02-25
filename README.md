@@ -64,6 +64,7 @@ Every `WORKER_SLEEP_SECONDS` (defaults to 5 seconds) when idle, the worker will 
 
 - the load percentage (the max of the 1m/5m/15m load divided by the number of cpus \*100) is below `MAX_LOAD_PCT` (defaults to 50%)
 - the memory (RAM + SWAP) on the machine is below `MAX_MEMORY_PCT` (defaults to 60%)
+- the number of started jobs for the same dataset is under `MAX_JOBS_PER_DATASET`
 
 Also specify `HF_TOKEN` with a User Access Token (see https://huggingface.co/settings/token, only the `read` role is required) to allow the worker to download gated models from the hub. Defaults to empty.
 
