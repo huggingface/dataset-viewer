@@ -150,7 +150,7 @@ def has_resources() -> bool:
 
 def sleep() -> None:
     logger = logging.getLogger("datasets_preview_backend.worker")
-    jitter = 0.75 + random.random() / 2
+    jitter = 0.75 + random.random() / 2  # nosec
     # ^ between 0.75 and 1.25
     duration = worker_sleep_seconds * jitter
     logger.debug(f"sleep during {duration:.2f} seconds")
