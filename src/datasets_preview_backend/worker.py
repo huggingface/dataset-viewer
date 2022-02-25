@@ -16,6 +16,7 @@ from datasets_preview_backend.constants import (
     DEFAULT_WORKER_QUEUE,
     DEFAULT_WORKER_SLEEP_SECONDS,
 )
+from datasets_preview_backend.exceptions import Status400Error
 from datasets_preview_backend.io.cache import (
     connect_to_cache,
     refresh_dataset_split_full_names,
@@ -72,6 +73,8 @@ def process_next_dataset_job() -> bool:
             add_split_job(
                 split_full_name["dataset_name"], split_full_name["config_name"], split_full_name["split_name"]
             )
+    except Status400Error:
+        pass
     finally:
         finish_dataset_job(job_id, success=success)
         result = "success" if success else "error"
@@ -104,6 +107,8 @@ def process_next_split_job() -> bool:
             max_size_fallback=max_size_fallback,
         )
         success = True
+    except Status400Error:
+        pass
     finally:
         finish_split_job(job_id, success=success)
         result = "success" if success else "error"
