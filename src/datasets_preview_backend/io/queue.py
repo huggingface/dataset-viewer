@@ -5,7 +5,6 @@ from datetime import datetime
 from typing import Generic, List, Optional, Tuple, Type, TypedDict, TypeVar
 
 from mongoengine import Document, DoesNotExist, connect
-from mongoengine.errors import ValidationError
 from mongoengine.fields import DateTimeField, EnumField, StringField
 from mongoengine.queryset.queryset import QuerySet
 
@@ -245,7 +244,7 @@ def get_split_job(max_jobs_per_dataset: Optional[int] = None) -> Tuple[str, str,
 def finish_started_job(jobs: QuerySet[AnyJob], job_id: str, success: bool) -> bool:
     try:
         job = jobs(pk=job_id).get()
-    except (DoesNotExist) as e:
+    except DoesNotExist:
         logger.warning(f"started job {job.to_id()} does not exist. Aborting.")
         return False
     if job.status is not Status.STARTED:
