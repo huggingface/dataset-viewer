@@ -241,24 +241,22 @@ def get_split_job(max_jobs_per_dataset: Optional[int] = None) -> Tuple[str, str,
     # ^ job.pk is the id. job.id is not recognized by mypy
 
 
-def finish_started_job(jobs: QuerySet[AnyJob], job_id: str, success: bool) -> bool:
+def finish_started_job(jobs: QuerySet[AnyJob], job_id: str, success: bool) -> None:
     try:
         job = jobs(pk=job_id).get()
     except DoesNotExist:
-        logger.warning(f"started job {job_id} does not exist. Aborting.")
-        return False
+        logger.error(f"started job {job_id} does not exist. Aborting.")
+        return
     if job.status is not Status.STARTED:
-        logger.warning(f"started job {job.to_id()} has a not the STARTED status. Aborting.")
-        return False
+        logger.warning(
+            f"started job {job.to_id()} has a not the STARTED status ({job.status.value}). Force finishing anyway."
+        )
     if job.finished_at is not None:
-        logger.warning(f"started job {job.to_id()} has a non-empty finished_at field. Aborting.")
-        return False
+        logger.warning(f"started job {job.to_id()} has a non-empty finished_at field. Force finishing anyway.")
     if job.started_at is None:
-        logger.warning(f"started job {job.to_id()} has an empty started_at field. Aborting.")
-        return False
+        logger.warning(f"started job {job.to_id()} has an empty started_at field. Force finishing anyway.")
     status = Status.SUCCESS if success else Status.ERROR
     job.update(finished_at=datetime.utcnow(), status=status)
-    return True
 
 
 def cancel_started_jobs(jobs: QuerySet[AnyJob]) -> None:

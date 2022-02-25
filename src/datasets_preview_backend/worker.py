@@ -63,18 +63,19 @@ def process_next_dataset_job() -> bool:
         logger.debug("no job in the queue")
         return False
 
+    success = False
     try:
         logger.info(f"compute dataset '{dataset_name}'")
         split_full_names = refresh_dataset_split_full_names(dataset_name=dataset_name, hf_token=hf_token)
+        success = True
         for split_full_name in split_full_names:
             add_split_job(
                 split_full_name["dataset_name"], split_full_name["config_name"], split_full_name["split_name"]
             )
-        if finish_dataset_job(job_id, success=True):
-            logger.debug(f"job finished with success: {job_id} for dataset: {dataset_name}")
-    except Exception:
-        if finish_dataset_job(job_id, success=False):
-            logger.debug(f"job finished with error: {job_id} for dataset: {dataset_name}")
+    finally:
+        finish_dataset_job(job_id, success=success)
+        result = "success" if success else "error"
+        logger.debug(f"job finished with {result}: {job_id} for dataset: {dataset_name}")
     return True
 
 
@@ -92,6 +93,7 @@ def process_next_split_job() -> bool:
         logger.debug("no job in the queue")
         return False
 
+    success = False
     try:
         logger.info(f"compute split '{split_name}' from dataset '{dataset_name}' with config '{config_name}'")
         refresh_split(
@@ -101,17 +103,14 @@ def process_next_split_job() -> bool:
             hf_token=hf_token,
             max_size_fallback=max_size_fallback,
         )
-        if finish_split_job(job_id, success=True):
-            logger.debug(
-                f"job finished with success: {job_id} for split '{split_name}' from dataset '{dataset_name}' with"
-                f" config '{config_name}'"
-            )
-    except Exception:
-        if finish_split_job(job_id, success=False):
-            logger.debug(
-                f"job finished with error: {job_id} for split '{split_name}' from dataset '{dataset_name}' with config"
-                f" '{config_name}'"
-            )
+        success = True
+    finally:
+        finish_split_job(job_id, success=success)
+        result = "success" if success else "error"
+        logger.debug(
+            f"job finished with {result}: {job_id} for split '{split_name}' from dataset '{dataset_name}' with"
+            f" config '{config_name}'"
+        )
     return True
 
 
