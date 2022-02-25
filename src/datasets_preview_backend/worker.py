@@ -1,5 +1,6 @@
 import logging
 import os
+import random
 import time
 
 from dotenv import load_dotenv
@@ -149,8 +150,11 @@ def has_resources() -> bool:
 
 def sleep() -> None:
     logger = logging.getLogger("datasets_preview_backend.worker")
-    logger.debug(f"sleep during {worker_sleep_seconds} seconds")
-    time.sleep(worker_sleep_seconds)
+    jitter = 0.75 + random.random() / 2
+    # ^ between 0.75 and 1.25
+    duration = worker_sleep_seconds * jitter
+    logger.debug(f"sleep during {duration:.2f} seconds")
+    time.sleep(duration)
 
 
 def loop() -> None:
