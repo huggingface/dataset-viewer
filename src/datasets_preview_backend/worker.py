@@ -8,6 +8,7 @@ from psutil import cpu_count, getloadavg, swap_memory, virtual_memory
 from datasets_preview_backend.constants import (
     DEFAULT_DATASETS_REVISION,
     DEFAULT_HF_TOKEN,
+    DEFAULT_MAX_JOBS_PER_DATASET,
     DEFAULT_MAX_LOAD_PCT,
     DEFAULT_MAX_MEMORY_PCT,
     DEFAULT_MAX_SIZE_FALLBACK,
@@ -37,6 +38,7 @@ from datasets_preview_backend.utils import (
 
 # Load environment variables defined in .env, if any
 load_dotenv()
+max_jobs_per_dataset = get_int_value(os.environ, "MAX_JOBS_PER_DATASET", DEFAULT_MAX_JOBS_PER_DATASET)
 max_load_pct = get_int_value(os.environ, "MAX_LOAD_PCT", DEFAULT_MAX_LOAD_PCT)
 max_memory_pct = get_int_value(os.environ, "MAX_MEMORY_PCT", DEFAULT_MAX_MEMORY_PCT)
 worker_sleep_seconds = get_int_value(os.environ, "WORKER_SLEEP_SECONDS", DEFAULT_WORKER_SLEEP_SECONDS)
@@ -54,7 +56,7 @@ def process_next_dataset_job() -> bool:
     logger.debug("try to process a dataset job")
 
     try:
-        job_id, dataset_name = get_dataset_job()
+        job_id, dataset_name = get_dataset_job(max_jobs_per_dataset)
         logger.debug(f"job assigned: {job_id} for dataset: {dataset_name}")
     except EmptyQueue:
         logger.debug("no job in the queue")
@@ -80,7 +82,7 @@ def process_next_split_job() -> bool:
     logger.debug("try to process a split job")
 
     try:
-        job_id, dataset_name, config_name, split_name = get_split_job()
+        job_id, dataset_name, config_name, split_name = get_split_job(max_jobs_per_dataset)
         logger.debug(
             f"job assigned: {job_id} for split '{split_name}' from dataset '{dataset_name}' with config"
             f" '{config_name}'"

@@ -195,30 +195,38 @@ def get_started(jobs: QuerySet[AnyJob]) -> QuerySet[AnyJob]:
     return get_jobs_with_status(jobs, Status.STARTED)
 
 
+def get_num_started_for_dataset(jobs: QuerySet[AnyJob], dataset_name: str) -> int:
+    return jobs(status=Status.STARTED, dataset_name=dataset_name).count()
+
+
 def get_finished(jobs: QuerySet[AnyJob]) -> QuerySet[AnyJob]:
     return jobs(status__nin=[Status.WAITING, Status.STARTED])
 
 
-def start_job(jobs: QuerySet[AnyJob]) -> AnyJob:
-    job = get_waiting(jobs).order_by("+created_at").first()
-    if job is None:
-        raise EmptyQueue("no job available")
-    if job.finished_at is not None or job.status != Status.WAITING:
-        raise IncoherentState(
-            "a job with an empty start_at field should not have a finished_at field or a WAITING status"
-        )
-    job.update(started_at=datetime.utcnow(), status=Status.STARTED)
-    return job
+def start_job(jobs: QuerySet[AnyJob], max_jobs_per_dataset: Optional[int] = None) -> AnyJob:
+    waiting_jobs = get_waiting(jobs).order_by("+created_at")
+    for job in waiting_jobs:
+        if job.finished_at is not None or job.status != Status.WAITING:
+            raise IncoherentState(
+                "a job with an empty start_at field should not have a finished_at field or a WAITING status"
+            )
+        if max_jobs_per_dataset is None or get_num_started_for_dataset(jobs, job.dataset_name) < max_jobs_per_dataset:
+            job.update(started_at=datetime.utcnow(), status=Status.STARTED)
+            return job
+    raise EmptyQueue(f"no job available (within the limit of {max_jobs_per_dataset} started jobs per dataset)")
 
 
-def get_dataset_job() -> Tuple[str, str]:
-    job = start_job(DatasetJob.objects)
+def get_dataset_job(max_jobs_per_dataset: Optional[int] = None) -> Tuple[str, str]:
+    job = start_job(DatasetJob.objects, max_jobs_per_dataset)
+    # ^ max_jobs_per_dataset is not very useful for the DatasetJob queue
+    # since only one job per dataset can exist anyway
+    # It's here for consistency and safeguard
     return str(job.pk), job.dataset_name
     # ^ job.pk is the id. job.id is not recognized by mypy
 
 
-def get_split_job() -> Tuple[str, str, str, str]:
-    job = start_job(SplitJob.objects)
+def get_split_job(max_jobs_per_dataset: Optional[int] = None) -> Tuple[str, str, str, str]:
+    job = start_job(SplitJob.objects, max_jobs_per_dataset)
     return str(job.pk), job.dataset_name, job.config_name, job.split_name
     # ^ job.pk is the id. job.id is not recognized by mypy
 
