@@ -1,10 +1,10 @@
 import enum
+import logging
 import types
 from datetime import datetime
 from typing import Generic, List, Optional, Tuple, Type, TypedDict, TypeVar
 
 from mongoengine import Document, DoesNotExist, connect
-from mongoengine.errors import ValidationError
 from mongoengine.fields import DateTimeField, EnumField, StringField
 from mongoengine.queryset.queryset import QuerySet
 
@@ -28,6 +28,8 @@ class QuerySetManager(Generic[U]):
 
 
 # END monkey patching ### hack ###
+
+logger = logging.getLogger(__name__)
 
 
 class Status(enum.Enum):
@@ -100,6 +102,9 @@ class DatasetJob(Document):
             "finished_at": self.finished_at,
         }
 
+    def to_id(self) -> str:
+        return f"DatasetJob[{self.dataset_name}]"
+
     objects = QuerySetManager["DatasetJob"]()
 
 
@@ -124,6 +129,9 @@ class SplitJob(Document):
             "finished_at": self.finished_at,
         }
 
+    def to_id(self) -> str:
+        return f"SplitJob[{self.dataset_name}, {self.config_name}, {self.split_name}]"
+
     objects = QuerySetManager["SplitJob"]()
 
 
@@ -147,10 +155,6 @@ class EmptyQueue(Exception):
 
 
 class JobNotFound(Exception):
-    pass
-
-
-class IncoherentState(Exception):
     pass
 
 
@@ -207,11 +211,16 @@ def start_job(jobs: QuerySet[AnyJob], max_jobs_per_dataset: Optional[int] = None
     waiting_jobs = get_waiting(jobs).order_by("+created_at").no_cache()
     # ^ no_cache should generate a query on every iteration, which should solve concurrency issues between workers
     for job in waiting_jobs:
-        if job.started_at is not None or job.finished_at is not None:
-            raise IncoherentState("a job with status WAITING should have empty started_at and finished_at fields")
-        if job.status is Status.WAITING and (
-            max_jobs_per_dataset is None or get_num_started_for_dataset(jobs, job.dataset_name) < max_jobs_per_dataset
-        ):
+        if job.status is not Status.WAITING:
+            logger.warning(f"waiting job {job.to_id()} has a not the WAITING status. Ignoring it.")
+            continue
+        if job.started_at is not None:
+            logger.warning(f"waiting job {job.to_id()} has a non empty started_at field. Ignoring it.")
+            continue
+        if job.finished_at is not None:
+            logger.warning(f"waiting job {job.to_id()} has a non empty started_at field. Ignoring it.")
+            continue
+        if max_jobs_per_dataset is None or get_num_started_for_dataset(jobs, job.dataset_name) < max_jobs_per_dataset:
             job.update(started_at=datetime.utcnow(), status=Status.STARTED)
             return job
     raise EmptyQueue(f"no job available (within the limit of {max_jobs_per_dataset} started jobs per dataset)")
@@ -232,15 +241,24 @@ def get_split_job(max_jobs_per_dataset: Optional[int] = None) -> Tuple[str, str,
     # ^ job.pk is the id. job.id is not recognized by mypy
 
 
-def finish_started_jobs(jobs: QuerySet[AnyJob], job_id: str, success: bool) -> None:
+def finish_started_job(jobs: QuerySet[AnyJob], job_id: str, success: bool) -> bool:
     try:
-        job = jobs(pk=job_id, status=Status.STARTED).get()
-    except (DoesNotExist, ValidationError) as e:
-        raise JobNotFound("the job does not exist") from e
-    if job.finished_at is not None or job.started_at is None:
-        raise IncoherentState("a started job should not have a finished_at field or an empty started_at field")
+        job = jobs(pk=job_id).get()
+    except DoesNotExist:
+        logger.warning(f"started job {job.to_id()} does not exist. Aborting.")
+        return False
+    if job.status is not Status.STARTED:
+        logger.warning(f"started job {job.to_id()} has a not the STARTED status. Aborting.")
+        return False
+    if job.finished_at is not None:
+        logger.warning(f"started job {job.to_id()} has a non-empty finished_at field. Aborting.")
+        return False
+    if job.started_at is None:
+        logger.warning(f"started job {job.to_id()} has an empty started_at field. Aborting.")
+        return False
     status = Status.SUCCESS if success else Status.ERROR
     job.update(finished_at=datetime.utcnow(), status=status)
+    return True
 
 
 def cancel_started_jobs(jobs: QuerySet[AnyJob]) -> None:
@@ -251,12 +269,12 @@ def cancel_waiting_jobs(jobs: QuerySet[AnyJob]) -> None:
     get_waiting(jobs).update(finished_at=datetime.utcnow(), status=Status.CANCELLED)
 
 
-def finish_dataset_job(job_id: str, success: bool) -> None:
-    finish_started_jobs(DatasetJob.objects, job_id, success)
+def finish_dataset_job(job_id: str, success: bool) -> bool:
+    return finish_started_job(DatasetJob.objects, job_id, success)
 
 
-def finish_split_job(job_id: str, success: bool) -> None:
-    finish_started_jobs(SplitJob.objects, job_id, success)
+def finish_split_job(job_id: str, success: bool) -> bool:
+    return finish_started_job(SplitJob.objects, job_id, success)
 
 
 def clean_database() -> None:
