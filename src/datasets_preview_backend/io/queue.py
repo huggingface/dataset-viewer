@@ -245,7 +245,7 @@ def finish_started_job(jobs: QuerySet[AnyJob], job_id: str, success: bool) -> bo
     try:
         job = jobs(pk=job_id).get()
     except DoesNotExist:
-        logger.warning(f"started job {job.to_id()} does not exist. Aborting.")
+        logger.warning(f"started job {job_id} does not exist. Aborting.")
         return False
     if job.status is not Status.STARTED:
         logger.warning(f"started job {job.to_id()} has a not the STARTED status. Aborting.")
