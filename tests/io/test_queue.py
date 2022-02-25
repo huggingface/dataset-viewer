@@ -41,7 +41,7 @@ def test_add_job() -> None:
         get_dataset_job()
     add_dataset_job("test")
     job_id, dataset_name = get_dataset_job()
-    with pytest.raises(JobNotFound):
-        other_job_id = ("1" if job_id[0] == "0" else "0") + job_id[1:]
-        finish_dataset_job(other_job_id, success=True)
+    other_job_id = ("1" if job_id[0] == "0" else "0") + job_id[1:]
+    finish_dataset_job(other_job_id, success=True)
+    # ^ fails silently (with a log)
     finish_dataset_job(job_id, success=True)
