@@ -419,42 +419,48 @@ test = ["pytest (>=6.2.0)", "pytest-cov", "pytest-subtests", "pytest-xdist", "pr
 
 [[package]]
 name = "datasets"
-version = "1.18.4"
-description = "HuggingFace community-driven open-source library of datasets"
+version = "1.18.5.dev0"
+description = ""
 category = "main"
 optional = false
 python-versions = "*"
+develop = false
 
 [package.dependencies]
 aiohttp = "*"
 dill = "*"
 fsspec = {version = ">=2021.05.0", extras = ["http"]}
-huggingface-hub = ">=0.1.0,<1.0.0"
+huggingface_hub = ">=0.1.0,<1.0.0"
 librosa = {version = "*", optional = true, markers = "extra == \"audio\""}
 multiprocess = "*"
 numpy = ">=1.17"
 packaging = "*"
 pandas = "*"
 Pillow = {version = ">=6.2.1", optional = true, markers = "extra == \"vision\""}
-pyarrow = ">=3.0.0,<4.0.0 || >4.0.0"
+pyarrow = ">=5.0.0"
 requests = ">=2.19.0"
 responses = "<0.19"
 tqdm = ">=4.62.1"
 xxhash = "*"
 
 [package.extras]
-apache-beam = ["apache-beam (>=2.26.0)"]
 audio = ["librosa"]
-benchmarks = ["numpy (==1.18.5)", "tensorflow (==2.3.0)", "torch (==1.6.0)", "transformers (==3.0.2)"]
-dev = ["absl-py", "pytest", "pytest-datadir", "pytest-xdist", "apache-beam (>=2.26.0)", "elasticsearch (<8.0.0)", "aiobotocore", "boto3", "botocore", "faiss-cpu (>=1.6.4)", "fsspec", "moto[server,s3] (==2.0.4)", "rarfile (>=4.0)", "s3fs (==2021.08.1)", "tensorflow (>=2.3,!=2.6.0,!=2.6.1)", "torch", "torchaudio", "soundfile", "transformers", "bs4", "conllu", "h5py", "langdetect", "lxml", "mwparserfromhell", "nltk", "openpyxl", "py7zr", "tldextract", "zstandard", "bert-score (>=0.3.6)", "rouge-score", "sacrebleu", "scipy", "seqeval", "scikit-learn", "jiwer", "sentencepiece", "torchmetrics (==0.6.0)", "mauve-text", "toml (>=0.10.1)", "requests-file (>=1.5.1)", "tldextract (>=3.1.0)", "texttable (>=1.6.3)", "Werkzeug (>=1.0.1)", "six (>=1.15.0,<1.16.0)", "Pillow (>=6.2.1)", "librosa", "wget (>=3.2)", "pytorch-nlp (==0.5.0)", "pytorch-lightning", "fastBPE (==0.1.0)", "fairseq", "black (>=22.0,<23.0)", "flake8 (>=3.8.3)", "isort (>=5.0.0)", "pyyaml (>=5.3.1)", "importlib-resources"]
-docs = ["docutils (==0.16.0)", "recommonmark", "sphinx (==3.1.2)", "sphinx-markdown-tables", "sphinx-rtd-theme (==0.4.3)", "sphinxext-opengraph (==0.4.1)", "sphinx-copybutton", "fsspec (<2021.9.0)", "s3fs", "sphinx-panels", "sphinx-inline-tabs", "myst-parser", "Markdown (!=3.3.5)"]
-quality = ["black (>=22.0,<23.0)", "flake8 (>=3.8.3)", "isort (>=5.0.0)", "pyyaml (>=5.3.1)"]
-s3 = ["fsspec", "boto3", "botocore", "s3fs"]
+vision = ["Pillow (>=6.2.1)"]
+apache-beam = ["apache-beam (>=2.26.0)"]
 tensorflow = ["tensorflow (>=2.2.0,!=2.6.0,!=2.6.1)"]
 tensorflow_gpu = ["tensorflow-gpu (>=2.2.0,!=2.6.0,!=2.6.1)"]
-tests = ["absl-py", "pytest", "pytest-datadir", "pytest-xdist", "apache-beam (>=2.26.0)", "elasticsearch (<8.0.0)", "aiobotocore", "boto3", "botocore", "faiss-cpu (>=1.6.4)", "fsspec", "moto[server,s3] (==2.0.4)", "rarfile (>=4.0)", "s3fs (==2021.08.1)", "tensorflow (>=2.3,!=2.6.0,!=2.6.1)", "torch", "torchaudio", "soundfile", "transformers", "bs4", "conllu", "h5py", "langdetect", "lxml", "mwparserfromhell", "nltk", "openpyxl", "py7zr", "tldextract", "zstandard", "bert-score (>=0.3.6)", "rouge-score", "sacrebleu", "scipy", "seqeval", "scikit-learn", "jiwer", "sentencepiece", "torchmetrics (==0.6.0)", "mauve-text", "toml (>=0.10.1)", "requests-file (>=1.5.1)", "tldextract (>=3.1.0)", "texttable (>=1.6.3)", "Werkzeug (>=1.0.1)", "six (>=1.15.0,<1.16.0)", "Pillow (>=6.2.1)", "librosa", "wget (>=3.2)", "pytorch-nlp (==0.5.0)", "pytorch-lightning", "fastBPE (==0.1.0)", "fairseq", "importlib-resources"]
 torch = ["torch"]
-vision = ["Pillow (>=6.2.1)"]
+s3 = ["fsspec", "boto3", "botocore", "s3fs"]
+tests = ["absl-py", "pytest", "pytest-datadir", "pytest-xdist", "apache-beam (>=2.26.0)", "elasticsearch (<8.0.0)", "aiobotocore", "boto3", "botocore", "faiss-cpu (>=1.6.4)", "fsspec", "moto[s3,server] (==2.0.4)", "rarfile (>=4.0)", "s3fs (==2021.08.1)", "tensorflow (>=2.3,!=2.6.0,!=2.6.1)", "torch", "torchaudio", "soundfile", "transformers", "bs4", "conllu", "h5py", "langdetect", "lxml", "mwparserfromhell", "nltk", "openpyxl", "py7zr", "tldextract", "zstandard", "bert_score (>=0.3.6)", "rouge-score", "sacrebleu", "scipy", "seqeval", "scikit-learn", "jiwer", "sentencepiece", "torchmetrics (==0.6.0)", "mauve-text", "toml (>=0.10.1)", "requests_file (>=1.5.1)", "tldextract (>=3.1.0)", "texttable (>=1.6.3)", "Werkzeug (>=1.0.1)", "six (>=1.15.0,<1.16.0)"]
+quality = ["black (>=22.0,<23.0)", "flake8 (>=3.8.3)", "isort (>=5.0.0)", "pyyaml (>=5.3.1)"]
+benchmarks = ["numpy (==1.18.5)", "tensorflow (==2.3.0)", "torch (==1.6.0)", "transformers (==3.0.2)"]
+docs = ["s3fs"]
+
+[package.source]
+type = "git"
+url = "https://github.com/huggingface/datasets.git"
+reference = "4b9334007e069ad71630ba36283d3abafba42174"
+resolved_reference = "4b9334007e069ad71630ba36283d3abafba42174"
 
 [[package]]
 name = "decorator"
@@ -2559,7 +2565,7 @@ cffi = ["cffi (>=1.11)"]
 [metadata]
 lock-version = "1.1"
 python-versions = "3.9.6"
-content-hash = "8ccc3fc544d33d693e897b5352a89f511a09f5008cf93fb81d8adfb78a7ac123"
+content-hash = "006fd51a2f8aff04ef6411cfdea3cfb8f0453e3b8793f3b15fbd342a84a9811c"
 
 [metadata.files]
 absl-py = [
@@ -3048,10 +3054,7 @@ cryptography = [
     {file = "cryptography-36.0.1-pp38-pypy38_pp73-win_amd64.whl", hash = "sha256:39bdf8e70eee6b1c7b289ec6e5d84d49a6bfa11f8b8646b5b3dfe41219153316"},
     {file = "cryptography-36.0.1.tar.gz", hash = "sha256:53e5c1dc3d7a953de055d77bef2ff607ceef7a2aac0353b5d630ab67f7423638"},
 ]
-datasets = [
-    {file = "datasets-1.18.4-py3-none-any.whl", hash = "sha256:e13695ad7aeda2af4430ac1a0b62def9c4b60bb4cc14dbaa240e6683cac50c49"},
-    {file = "datasets-1.18.4.tar.gz", hash = "sha256:8f28a7afc2f894c68cb017335a32812f443fe41bc59c089cbd15d7412d3f7f96"},
-]
+datasets = []
 decorator = [
     {file = "decorator-5.1.1-py3-none-any.whl", hash = "sha256:b8c3f85900b9dc423225913c5aace94729fe1fa9763b38939a95226f02d37186"},
     {file = "decorator-5.1.1.tar.gz", hash = "sha256:637996211036b6385ef91435e4fae22989472f9d571faba8927ba8253acbc330"},
