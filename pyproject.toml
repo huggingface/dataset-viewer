@@ -12,7 +12,10 @@ apache-beam = "^2.33.0"
 appdirs = "^1.4.4"
 bs4 = "^0.0.1"
 conllu = "^4.4.1"
-datasets = { extras = ["audio", "vision"], version = "^1.18.4" }
+datasets = { git = "https://github.com/huggingface/datasets.git", rev = "4b9334007e069ad71630ba36283d3abafba42174", extras = [
+    "audio",
+    "vision",
+] }
 diskcache = "^5.2.1"
 function-parser = "^0.0.3"
 gdown = "^4.2.0"
