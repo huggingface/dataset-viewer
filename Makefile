@@ -14,11 +14,11 @@ watch:
 
 .PHONY: test
 test:
-	ROWS_MAX_NUMBER=5 MONGO_CACHE_DATABASE="datasets_preview_cache_test" MONGO_QUEUE_DATABASE="datasets_preview_queue_test" poetry run python -m pytest -x tests
+	ROWS_MIN_NUMBER=2 ROWS_MAX_NUMBER=5 MONGO_CACHE_DATABASE="datasets_preview_cache_test" MONGO_QUEUE_DATABASE="datasets_preview_queue_test" poetry run python -m pytest -x tests
 
 .PHONY: coverage
 coverage:
-	ROWS_MAX_NUMBER=5 MONGO_CACHE_DATABASE="datasets_preview_cache_test" MONGO_QUEUE_DATABASE="datasets_preview_queue_test" poetry run python -m pytest -s --cov --cov-report xml:coverage.xml --cov-report=term tests
+	ROWS_MIN_NUMBER=2 ROWS_MAX_NUMBER=5 MONGO_CACHE_DATABASE="datasets_preview_cache_test" MONGO_QUEUE_DATABASE="datasets_preview_queue_test" poetry run python -m pytest -s --cov --cov-report xml:coverage.xml --cov-report=term tests
 
 # Check that source code meets quality standards + security
 .PHONY: quality

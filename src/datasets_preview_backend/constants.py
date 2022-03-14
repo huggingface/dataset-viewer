@@ -13,6 +13,7 @@ DEFAULT_MONGO_QUEUE_DATABASE: str = "datasets_preview_queue"
 DEFAULT_MONGO_URL: str = "mongodb://localhost:27018"
 DEFAULT_ROWS_MAX_BYTES: int = 1_000_000
 DEFAULT_ROWS_MAX_NUMBER: int = 100
+DEFAULT_ROWS_MIN_NUMBER: int = 10
 DEFAULT_WEB_CONCURRENCY: int = 2
 
 DEFAULT_HF_TOKEN: Optional[str] = None
@@ -24,6 +25,9 @@ DEFAULT_WORKER_SLEEP_SECONDS: int = 5
 DEFAULT_WORKER_QUEUE: str = "datasets"
 
 DEFAULT_REFRESH_PCT: int = 1
+
+# below 100 bytes, the cell content will not be truncated
+DEFAULT_MIN_CELL_BYTES: int = 100
 
 # these datasets take too much time, we block them beforehand
 DATASETS_BLOCKLIST: List[str] = [

@@ -28,6 +28,7 @@ jobs:
         run: sudo docker run -d -p 27018:27017 mongo:latest
       - name: Run unit tests
         env:
+          ROWS_MIN_NUMBER: 2
           ROWS_MAX_NUMBER: 5
           MONGO_CACHE_DATABASE: datasets_preview_cache_test
           MONGO_QUEUE_DATABASE: datasets_preview_queue_test

@@ -31,11 +31,9 @@ def get_rows(
     elif not isinstance(dataset, Dataset):
         raise TypeError("load_dataset should return a Dataset")
     rows_plus_one = list(itertools.islice(dataset, ROWS_MAX_NUMBER + 1))
-    # ^^ to be able to detect if a split has exactly DEFAULT_ROWS_MAX_NUMBER rows
+    # ^^ to be able to detect if a split has exactly ROWS_MAX_NUMBER rows
     if len(rows_plus_one) <= ROWS_MAX_NUMBER:
         logger.debug(f"all the rows in the split have been fetched ({len(rows_plus_one)})")
     else:
         logger.debug(f"the rows in the split have been truncated ({ROWS_MAX_NUMBER} rows)")
     return rows_plus_one[:ROWS_MAX_NUMBER]
-    # ^^ note that DEFAULT_ROWS_MAX_BYTES is not enforced here, but in typed_row.py
-    # after the type of the fields is known (ie: the row can be converted to JSON)
