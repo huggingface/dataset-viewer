@@ -40,6 +40,7 @@ Set environment variables to configure the following aspects:
 - `MONGO_URL`: the URL used to connect to the mongo db server. Defaults to `"mongodb://localhost:27018"`.
 - `ROWS_MAX_BYTES`: max size of the /rows endpoint response in bytes. Defaults to `1_000_000` (1 MB).
 - `ROWS_MAX_NUMBER`: max number of rows in the /rows endpoint response. Defaults to `100`.
+- `ROWS_MIN_NUMBER`: min number of rows in the /rows endpoint response. Defaults to `10`.
 - `WEB_CONCURRENCY`: the number of workers. For now, it's ignored and hardcoded to 1 because the cache is not shared yet. Defaults to `2`.
 
 For example:
@@ -605,7 +606,7 @@ Parameters:
 
 Responses:
 
-- `200`: JSON content that provides the types of the columns (see features at https://huggingface.co/docs/datasets/about_dataset_features.html) and the data rows, with the following structure. Note that the features are ordered and this order can be used to display the columns in a table for example. Binary values are transmitted in UTF-8 encoded base64 strings. The number of rows depends on `ROWS_MAX_BYTES` and `ROWS_MAX_NUMBER`.
+- `200`: JSON content that provides the types of the columns (see features at https://huggingface.co/docs/datasets/about_dataset_features.html) and the data rows, with the following structure. Note that the features are ordered and this order can be used to display the columns in a table for example. Binary values are transmitted in UTF-8 encoded base64 strings. The number of rows depends on `ROWS_MAX_BYTES`, `ROWS_MIN_NUMBER` and `ROWS_MAX_NUMBER`. Note that the content of a cell might be truncated to fit within the limits, in which case the `truncated_cells` array will contain the name of the cell (see the last element in the example), and the cell content will always be a string.
 
   ```json
   {
@@ -654,7 +655,8 @@ Responses:
           "hypothesis": "The cat did not sit on the mat.",
           "label": -1,
           "idx": 0
-        }
+        },
+        "truncated_cells": []
       },
       {
         "dataset": "glue",
@@ -666,7 +668,8 @@ Responses:
           "hypothesis": "The cat sat on the mat.",
           "label": -1,
           "idx": 1
-        }
+        },
+        "truncated_cells": []
       },
       {
         "dataset": "glue",
@@ -674,11 +677,12 @@ Responses:
         "split": "test",
         "row_idx": 2,
         "row": {
-          "premise": "When you've got no snow, it's really hard to learn a snow sport so we looked at all the different ways I could mimic being on snow without actually being on snow.",
-          "hypothesis": "When you've got snow, it's really hard to learn a snow sport so we looked at all the different ways I could mimic being on snow without actually being on snow.",
+          "premise": "When you've got no snow, it's really hard to learn a snow sport so we lo",
+          "hypothesis": "When you've got snow, it's really hard to learn a snow sport so we looke",
           "label": -1,
           "idx": 2
-        }
+        },
+        "truncated_cells": ["premise", "hypothesis"]
       }
     ]
   }

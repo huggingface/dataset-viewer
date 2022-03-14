@@ -28,6 +28,7 @@ from mongoengine.fields import (
 from mongoengine.queryset.queryset import QuerySet
 
 from datasets_preview_backend.config import MONGO_CACHE_DATABASE, MONGO_URL
+from datasets_preview_backend.constants import DEFAULT_MIN_CELL_BYTES
 from datasets_preview_backend.exceptions import (
     Status400Error,
     Status500Error,
@@ -134,6 +135,7 @@ class RowItem(TypedDict):
     split: str
     row_idx: int
     row: Dict[str, Any]
+    truncated_cells: List[str]
 
 
 class DbRow(Document):
@@ -150,6 +152,7 @@ class DbRow(Document):
             "split": self.split_name,
             "row_idx": self.row_idx,
             "row": self.row,
+            "truncated_cells": [],
         }
 
     meta = {"collection": "rows", "db_alias": "cache"}
@@ -484,8 +487,8 @@ def get_splits_response(dataset_name: str) -> Tuple[Union[SplitsResponse, None],
     return splits_response, None, 200
 
 
-def get_size_in_bytes(row: RowItem):
-    return sys.getsizeof(orjson_dumps(row))
+def get_size_in_bytes(obj: Any):
+    return sys.getsizeof(orjson_dumps(obj))
     # ^^ every row is transformed here in a string, because it corresponds to
     # the size the row will contribute in the JSON response to /rows endpoint.
     # The size of the string is measured in bytes.
@@ -494,17 +497,85 @@ def get_size_in_bytes(row: RowItem):
     # dataset viewer table on the hub)
 
 
-def to_row_items(rows: QuerySet[DbRow], rows_max_bytes: Optional[int]) -> List[RowItem]:
+def truncate_cell(cell: Any, min_cell_bytes: int) -> str:
+    return orjson_dumps(cell)[:min_cell_bytes].decode("utf8", "ignore")
+
+
+# Mutates row_item, and returns it anyway
+def truncate_row_item(row_item: RowItem) -> RowItem:
+    min_cell_bytes = DEFAULT_MIN_CELL_BYTES
+    row = {}
+    for column_name, cell in row_item["row"].items():
+        # for now: all the cells, but the smallest ones, are truncated
+        cell_bytes = get_size_in_bytes(cell)
+        if cell_bytes > min_cell_bytes:
+            row_item["truncated_cells"].append(column_name)
+            row[column_name] = truncate_cell(cell, min_cell_bytes)
+        else:
+            row[column_name] = cell
+    row_item["row"] = row
+    return row_item
+
+
+# Mutates row_items, and returns them anyway
+def truncate_row_items(row_items: List[RowItem], rows_max_bytes: int) -> List[RowItem]:
+    # compute the current size
+    rows_bytes = sum(get_size_in_bytes(row_item) for row_item in row_items)
+
+    # Loop backwards, so that the last rows are truncated first
+    for row_item in reversed(row_items):
+        previous_size = get_size_in_bytes(row_item)
+        row_item = truncate_row_item(row_item)
+        new_size = get_size_in_bytes(row_item)
+        rows_bytes += new_size - previous_size
+        row_idx = row_item["row_idx"]
+        logger.debug(f"the size of the rows is now ({rows_bytes}) after truncating row idx={row_idx}")
+        if rows_bytes < rows_max_bytes:
+            break
+    return row_items
+
+
+def to_row_items(
+    rows: QuerySet[DbRow], rows_max_bytes: Optional[int], rows_min_number: Optional[int]
+) -> List[RowItem]:
     row_items = []
-    bytes = 0
-    for idx, row in enumerate(rows):
+    rows_bytes = 0
+    if rows_min_number is None:
+        rows_min_number = 0
+    else:
+        logger.debug(f"min number of rows in the response: '{rows_min_number}'")
+    if rows_max_bytes is not None:
+        logger.debug(f"max number of bytes in the response: '{rows_max_bytes}'")
+
+    # two restrictions must be enforced:
+    # - at least rows_min_number rows
+    # - at most rows_max_bytes bytes
+    # To enforce this:
+    # 1. first get the first rows_min_number rows
+    for row in rows[:rows_min_number]:
         row_item = row.to_item()
         if rows_max_bytes is not None:
-            bytes += get_size_in_bytes(row_item)
-            if bytes >= rows_max_bytes:
+            rows_bytes += get_size_in_bytes(row_item)
+        row_items.append(row_item)
+
+    # 2. if the total is over the bytes limit, truncate the values, iterating backwards starting
+    # from the last rows, until getting under the threshold
+    if rows_max_bytes is not None and rows_bytes >= rows_max_bytes:
+        logger.debug(
+            f"the size of the first {rows_min_number} rows ({rows_bytes}) is above the max number of bytes"
+            f" ({rows_max_bytes}), they will be truncated"
+        )
+        return truncate_row_items(row_items, rows_max_bytes)
+
+    # 3. else: add the remaining rows until the end, or until the bytes threshold
+    for idx, row in enumerate(rows[rows_min_number:]):
+        row_item = row.to_item()
+        if rows_max_bytes is not None:
+            rows_bytes += get_size_in_bytes(row_item)
+            if rows_bytes >= rows_max_bytes:
                 logger.debug(
-                    f"the rows in the split have been truncated to {idx} row(s) to keep the size ({bytes}) under the"
-                    f" limit ({rows_max_bytes})"
+                    f"the rows in the split have been truncated to {rows_min_number + idx} row(s) to keep the size"
+                    f" ({rows_bytes}) under the limit ({rows_max_bytes})"
                 )
                 break
         row_items.append(row_item)
@@ -512,7 +583,11 @@ def to_row_items(rows: QuerySet[DbRow], rows_max_bytes: Optional[int]) -> List[R
 
 
 def get_rows_response(
-    dataset_name: str, config_name: str, split_name: str, rows_max_bytes: Optional[int] = None
+    dataset_name: str,
+    config_name: str,
+    split_name: str,
+    rows_max_bytes: Optional[int] = None,
+    rows_min_number: Optional[int] = None,
 ) -> Tuple[Union[RowsResponse, None], Union[ErrorItem, None], int]:
     try:
         split = DbSplit.objects(dataset_name=dataset_name, config_name=config_name, split_name=split_name).get()
@@ -540,7 +615,7 @@ def get_rows_response(
     rows = DbRow.objects(dataset_name=dataset_name, config_name=config_name, split_name=split_name).order_by(
         "+row_idx"
     )
-    row_items = to_row_items(rows, rows_max_bytes)
+    row_items = to_row_items(rows, rows_max_bytes, rows_min_number)
     rows_response: RowsResponse = {
         "columns": [column.to_item() for column in columns],
         "rows": row_items,
