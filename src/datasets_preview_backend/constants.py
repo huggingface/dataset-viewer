@@ -51,4 +51,6 @@ DATASETS_BLOCKLIST: List[str] = [
     "echarlaix/gqa-lxmert",
     "Graphcore/gqa-lxmert",
     "bigscience/P3",
+    "Graphcore/vqa-lxmert",
+    "echarlaix/vqa-lxmert",
 ]
