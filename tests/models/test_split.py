@@ -1,4 +1,4 @@
-from datasets_preview_backend.config import HF_TOKEN
+from datasets_preview_backend.config import HF_TOKEN, ROWS_MAX_NUMBER
 from datasets_preview_backend.models.split import get_split
 
 # TODO: test fallback
@@ -20,5 +20,5 @@ def test_gated() -> None:
     split_name = "train"
     split = get_split(dataset_name, config_name, split_name, HF_TOKEN)
 
-    assert len(split["rows"]) == 100
+    assert len(split["rows"]) == ROWS_MAX_NUMBER
     assert split["rows"][0]["year"] == "1855"
