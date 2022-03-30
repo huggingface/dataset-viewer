@@ -8,6 +8,7 @@ from datasets_preview_backend.constants import (
     DEFAULT_ASSETS_DIRECTORY,
     DEFAULT_DATASETS_ENABLE_PRIVATE,
     DEFAULT_DATASETS_REVISION,
+    DEFAULT_HF_TOKEN,
     DEFAULT_LOG_LEVEL,
     DEFAULT_MAX_AGE_LONG_SECONDS,
     DEFAULT_MAX_AGE_SHORT_SECONDS,
@@ -36,6 +37,7 @@ DATASETS_ENABLE_PRIVATE = get_bool_value(
     d=os.environ, key="DATASETS_ENABLE_PRIVATE", default=DEFAULT_DATASETS_ENABLE_PRIVATE
 )
 DATASETS_REVISION = get_str_value(d=os.environ, key="DATASETS_REVISION", default=DEFAULT_DATASETS_REVISION)
+HF_TOKEN = get_str_or_none_value(d=os.environ, key="HF_TOKEN", default=DEFAULT_HF_TOKEN)
 LOG_LEVEL = get_str_value(d=os.environ, key="LOG_LEVEL", default=DEFAULT_LOG_LEVEL)
 MAX_AGE_LONG_SECONDS = get_int_value(d=os.environ, key="MAX_AGE_LONG_SECONDS", default=DEFAULT_MAX_AGE_LONG_SECONDS)
 MAX_AGE_SHORT_SECONDS = get_int_value(d=os.environ, key="MAX_AGE_SHORT_SECONDS", default=DEFAULT_MAX_AGE_SHORT_SECONDS)

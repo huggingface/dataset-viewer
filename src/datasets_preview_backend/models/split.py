@@ -3,6 +3,7 @@ from typing import List, Optional, TypedDict
 
 from datasets_preview_backend.models._guard import guard_blocked_datasets
 from datasets_preview_backend.models.column import Column
+from datasets_preview_backend.models.hf_dataset import ask_access
 from datasets_preview_backend.models.info import get_info
 from datasets_preview_backend.models.row import Row
 from datasets_preview_backend.models.typed_row import get_typed_rows_and_columns
@@ -27,6 +28,9 @@ def get_split(
 ) -> Split:
     logger.info(f"get split '{split_name}' for config '{config_name}' of dataset '{dataset_name}'")
     guard_blocked_datasets(dataset_name)
+    if hf_token:
+        # remove the gate (for gated datasets) if a token is passed
+        ask_access(dataset_name, hf_token)
     info = get_info(dataset_name, config_name, hf_token)
     fallback = (
         max_size_fallback is not None and info.size_in_bytes is not None and info.size_in_bytes < max_size_fallback

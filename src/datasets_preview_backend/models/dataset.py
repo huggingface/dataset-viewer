@@ -6,6 +6,7 @@ from datasets.inspect import SplitsNotFoundError
 
 from datasets_preview_backend.exceptions import Status400Error
 from datasets_preview_backend.models._guard import guard_blocked_datasets
+from datasets_preview_backend.models.hf_dataset import ask_access
 
 logger = logging.getLogger(__name__)
 
@@ -18,6 +19,11 @@ class SplitFullName(TypedDict):
 
 def get_dataset_split_full_names(dataset_name: str, hf_token: Optional[str] = None) -> List[SplitFullName]:
     logger.info(f"get dataset '{dataset_name}' split full names")
+
+    if hf_token:
+        # remove the gate (for gated datasets) if a token is passed
+        ask_access(dataset_name, hf_token)
+
     try:
         guard_blocked_datasets(dataset_name)
         return [

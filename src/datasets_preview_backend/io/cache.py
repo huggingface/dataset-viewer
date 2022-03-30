@@ -43,7 +43,6 @@ from datasets_preview_backend.models.dataset import (
     SplitFullName,
     get_dataset_split_full_names,
 )
-from datasets_preview_backend.models.hf_dataset import ask_access
 from datasets_preview_backend.models.split import Split, get_split
 from datasets_preview_backend.utils import orjson_dumps
 
@@ -359,10 +358,6 @@ def clean_database() -> None:
 
 
 def refresh_dataset_split_full_names(dataset_name: str, hf_token: Optional[str] = None) -> List[SplitFullName]:
-    if hf_token:
-        # remove the gate (for gated datasets) if a token is passed
-        ask_access(dataset_name, hf_token)
-
     try:
         split_full_names = get_dataset_split_full_names(dataset_name, hf_token)
         upsert_dataset(dataset_name, split_full_names)
@@ -420,10 +415,6 @@ def refresh_split(
     hf_token: Optional[str] = None,
     max_size_fallback: Optional[int] = None,
 ):
-    if hf_token:
-        # remove the gate (for gated datasets) if a token is passed
-        ask_access(dataset_name, hf_token)
-
     try:
         split = get_split(
             dataset_name, config_name, split_name, hf_token=hf_token, max_size_fallback=max_size_fallback
