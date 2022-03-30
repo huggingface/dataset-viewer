@@ -16,9 +16,9 @@ def test_get_split() -> None:
 
 def test_gated() -> None:
     dataset_name = "severo/dummy_gated"
-    config_name = "asr"
-    split_name = "test"
+    config_name = "severo--embellishments"
+    split_name = "train"
     split = get_split(dataset_name, config_name, split_name, HF_TOKEN)
 
-    assert len(split["rows"]) == 3
-    assert split["rows"][0]["file"] == "https://huggingface.co/datasets/Narsil/asr_dummy/raw/main/1.flac"
+    assert len(split["rows"]) == 100
+    assert split["rows"][0]["year"] == "1855"
