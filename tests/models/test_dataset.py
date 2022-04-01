@@ -1,5 +1,6 @@
 import pytest
 
+from datasets_preview_backend.config import HF_TOKEN
 from datasets_preview_backend.exceptions import Status400Error
 from datasets_preview_backend.models.dataset import get_dataset_split_full_names
 
@@ -51,3 +52,13 @@ def test_splits_fallback() -> None:
     split_full_names = get_dataset_split_full_names("hda_nli_hindi")
     assert len(split_full_names) == 3
     assert {"dataset_name": "hda_nli_hindi", "config_name": "HDA nli hindi", "split_name": "train"} in split_full_names
+
+
+def test_gated() -> None:
+    split_full_names = get_dataset_split_full_names("severo/dummy_gated", HF_TOKEN)
+    assert len(split_full_names) == 1
+    assert {
+        "dataset_name": "severo/dummy_gated",
+        "config_name": "severo--embellishments",
+        "split_name": "train",
+    } in split_full_names

@@ -18,6 +18,7 @@ class SplitFullName(TypedDict):
 
 def get_dataset_split_full_names(dataset_name: str, hf_token: Optional[str] = None) -> List[SplitFullName]:
     logger.info(f"get dataset '{dataset_name}' split full names")
+
     try:
         guard_blocked_datasets(dataset_name)
         return [
