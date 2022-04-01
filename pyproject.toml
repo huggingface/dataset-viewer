@@ -18,7 +18,7 @@ function-parser = "^0.0.3"
 gdown = "^4.2.0"
 kenlm = { url = "https://github.com/kpu/kenlm/archive/master.zip" }
 kss = "^2.6.0"
-lm-dataformat = "^0.0.19"
+lm-dataformat = "^0.0.20"
 lxml = "^4.6.3"
 mongo-types = "0.15.1"
 mongoengine = "^0.23.1"

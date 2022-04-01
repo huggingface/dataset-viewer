@@ -35,5 +35,5 @@ jobs:
       - name: Run bandit
         run: poetry run bandit -r src
       - name: Run safety
-        run: poetry run safety check -i 44487 -i 44485 -i 44524 -i 44525 -i 44486 -i 44716 -i 44717 -i 44715 -i 45356
+        run: poetry run safety check -i 44487 -i 44485 -i 44524 -i 44525 -i 44486 -i 44716 -i 44717 -i 44715 -i 45356 -i 46499
         # ^^ safety exceptions: pillow, numpy
