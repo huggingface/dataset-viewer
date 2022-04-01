@@ -67,7 +67,7 @@ Every `WORKER_SLEEP_SECONDS` (defaults to 5 seconds) when idle, the worker will 
 - the memory (RAM + SWAP) on the machine is below `MAX_MEMORY_PCT` (defaults to 60%)
 - the number of started jobs for the same dataset is under `MAX_JOBS_PER_DATASET`
 
-Also specify `HF_TOKEN` with a User Access Token (see https://huggingface.co/settings/token, only the `read` role is required) to allow the worker to download gated models from the hub. Defaults to empty.
+Also specify `HF_TOKEN` with an App Access Token (ask moonlanding administrators to get one, only the `read` role is required) to allow the worker to download gated models from the hub. Defaults to empty.
 
 Also specify `MAX_SIZE_FALLBACK` with the maximum size in bytes of the dataset to fallback in normal mode if streaming fails. Note that it requires to have the size in the info metadata. Set to `0` to disable the fallback. Defaults to `100_000_000`.
 
