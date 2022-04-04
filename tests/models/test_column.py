@@ -15,11 +15,10 @@ def test_class_label() -> None:
     assert "unacceptable" in columns[1].labels
 
 
-# def test_empty_features() -> None:
-#     configs = get_config_names("allenai/c4")
-#     info = get_info("allenai/c4", configs[0])
-#     columns = get_columns(info, [])
-#     assert columns == []
+def test_empty_features() -> None:
+    info = get_info("allenai/c4", "allenai--c4")
+    columns = get_columns(info, [])
+    assert columns == []
 
 
 def test_get_columns() -> None:
@@ -65,8 +64,8 @@ def test_severo_wit() -> None:
 
 
 def test_audio() -> None:
-    info = get_info("common_voice", "tr")
+    info = get_info("abidlabs/test-audio-1", "test")
     columns = get_columns(info, [])
     assert columns is not None
-    assert columns[2].name == "audio"
-    assert columns[2].type == ColumnType.AUDIO_RELATIVE_SOURCES
+    assert columns[1].name == "Output"
+    assert columns[1].type == ColumnType.AUDIO_RELATIVE_SOURCES

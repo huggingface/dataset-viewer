@@ -3,11 +3,12 @@ from datasets_preview_backend.models.column import ClassLabelColumn, ColumnType
 from datasets_preview_backend.models.info import get_info
 from datasets_preview_backend.models.typed_row import get_typed_rows_and_columns
 
-# def test_detect_types_from_typed_rows() -> None:
-#     info = get_info("allenai/c4", "")
-#     typed_rows, columns = get_typed_rows_and_columns("allenai/c4", "default", "train", info)
-#     assert len(typed_rows) == ROWS_MAX_NUMBER
-#     assert columns[0].type == ColumnType.STRING
+
+def test_detect_types_from_typed_rows() -> None:
+    info = get_info("allenai/c4", "allenai--c4")
+    typed_rows, columns = get_typed_rows_and_columns("allenai/c4", "allenai--c4", "train", info)
+    assert len(typed_rows) == ROWS_MAX_NUMBER
+    assert columns[0].type == ColumnType.STRING
 
 
 def test_class_label() -> None:
@@ -36,14 +37,13 @@ def test_cifar() -> None:
     assert columns[0].type == ColumnType.RELATIVE_IMAGE_URL
 
 
-# disable until https://github.com/huggingface/datasets/issues/3758 is fixed
-# def test_head_qa() -> None:
-#     info = get_info("head_qa", "es")
-#     typed_rows, columns = get_typed_rows_and_columns("head_qa", "es", "train", info)
-#     assert len(typed_rows) == ROWS_MAX_NUMBER
-#     assert typed_rows[0]["image"] is None
-#     assert columns[6].name == "image"
-#     assert columns[6].type == ColumnType.RELATIVE_IMAGE_URL
+def test_head_qa() -> None:
+    info = get_info("head_qa", "es")
+    typed_rows, columns = get_typed_rows_and_columns("head_qa", "es", "train", info)
+    assert len(typed_rows) == ROWS_MAX_NUMBER
+    assert typed_rows[0]["image"] is None
+    assert columns[6].name == "image"
+    assert columns[6].type == ColumnType.RELATIVE_IMAGE_URL
 
 
 def test_iter_archive() -> None:
@@ -60,13 +60,12 @@ def test_image_url() -> None:
     assert columns[2].type == ColumnType.IMAGE_URL
 
 
-# Temporarily disable (related to https://github.com/huggingface/datasets/issues/3663 ?)
-# def test_audio_dataset() -> None:
-#     info = get_info("common_voice", "tr")
-#     typed_rows, columns = get_typed_rows_and_columns("common_voice", "tr", "train", info)
-#     assert len(typed_rows) == ROWS_MAX_NUMBER
-#     assert columns[2].type == ColumnType.AUDIO_RELATIVE_SOURCES
-#     assert len(typed_rows[0]["audio"]) == 2
-#     assert typed_rows[0]["audio"][0]["type"] == "audio/mpeg"
-#     assert typed_rows[0]["audio"][1]["type"] == "audio/wav"
-#     assert typed_rows[0]["audio"][0]["src"] == "assets/common_voice/--/tr/train/0/audio/audio.mp3"
+def test_audio_dataset() -> None:
+    info = get_info("abidlabs/test-audio-1", "test")
+    typed_rows, columns = get_typed_rows_and_columns("abidlabs/test-audio-1", "test", "train", info)
+    assert len(typed_rows) == 1
+    assert columns[1].type == ColumnType.AUDIO_RELATIVE_SOURCES
+    assert len(typed_rows[0]["Output"]) == 2
+    assert typed_rows[0]["Output"][0]["type"] == "audio/mpeg"
+    assert typed_rows[0]["Output"][1]["type"] == "audio/wav"
+    assert typed_rows[0]["Output"][0]["src"] == "assets/abidlabs/test-audio-1/--/test/train/0/Output/audio.mp3"
