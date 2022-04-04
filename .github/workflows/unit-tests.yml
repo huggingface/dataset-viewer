@@ -24,9 +24,7 @@ jobs:
         run: sudo apt update; sudo apt install -y libicu-dev ffmpeg libavcodec-extra llvm
       - name: Install libsndfile
         run: >
-          sudo apt install -y autoconf autogen automake build-essential libasound2-dev
-            libflac-dev libogg-dev libtool libvorbis-dev libopus-dev libmp3lame-dev
-            libmpg123-dev pkg-config;
+          sudo apt install -y autoconf autogen automake build-essential libasound2-dev libflac-dev libogg-dev libtool libvorbis-dev libopus-dev libmp3lame-dev libmpg123-dev pkg-config;
           cd /tmp;
           git clone https://github.com/libsndfile/libsndfile.git;
           cd libsndfile;
