@@ -34,11 +34,10 @@ def test_iter_archive() -> None:
     assert isinstance(rows[0]["image"], Image.Image)
 
 
-# disable for now: see https://github.com/huggingface/datasets/issues/3677 also
-# def test_dl_1_suffix() -> None:
-#     # see https://github.com/huggingface/datasets/pull/2843
-#     rows = get_rows("discovery", "discovery", "train")
-#     assert len(rows) == ROWS_MAX_NUMBER
+def test_dl_1_suffix() -> None:
+    # see https://github.com/huggingface/datasets/pull/2843
+    rows = get_rows("discovery", "discovery", "train")
+    assert len(rows) == ROWS_MAX_NUMBER
 
 
 def test_txt_zip() -> None:
@@ -47,11 +46,10 @@ def test_txt_zip() -> None:
     assert len(rows) == ROWS_MAX_NUMBER
 
 
-# TOO LONG... TODO: investigate why. Desactivating for now
-# def test_pathlib() -> None:
-#     # see https://github.com/huggingface/datasets/issues/2866
-#     rows = get_rows("counter", DEFAULT_CONFIG_NAME, "train")
-#     assert len(rows) == ROWS_MAX_NUMBER
+def test_pathlib() -> None:
+    # see https://github.com/huggingface/datasets/issues/2866
+    rows = get_rows("counter", "counter", "train")
+    assert len(rows) == ROWS_MAX_NUMBER
 
 
 def test_community_with_no_config() -> None:

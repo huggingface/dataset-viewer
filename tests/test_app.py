@@ -176,15 +176,17 @@ def test_get_rows(client: TestClient) -> None:
     assert response.status_code == 400
 
 
-# def test_datetime_content(client: TestClient) -> None:
-#     dataset = "allenai/c4"
-#     response = client.get("/rows", params={"dataset": dataset})
-#     assert response.status_code == 400
+def test_datetime_content(client: TestClient) -> None:
+    dataset = "allenai/c4"
+    config = "allenai--c4"
+    split = "train"
+    response = client.get("/rows", params={"dataset": dataset, "config": config, "split": split})
+    assert response.status_code == 400
 
-#     refresh_dataset(dataset)
+    refresh_split(dataset, config, split)
 
-#     response = client.get("/rows", params={"dataset": dataset})
-#     assert response.status_code == 200
+    response = client.get("/rows", params={"dataset": dataset, "config": config, "split": split})
+    assert response.status_code == 200
 
 
 def test_bytes_limit(client: TestClient) -> None:

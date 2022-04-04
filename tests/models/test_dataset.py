@@ -43,8 +43,9 @@ def test_get_split() -> None:
     assert len(split_full_names) == 34
     assert {"dataset_name": "glue", "config_name": "ax", "split_name": "test"} in split_full_names
 
-    split_full_names = get_dataset_split_full_names("common_voice")
-    assert len(split_full_names) > 300
+    # Temporarily disable (https://github.com/huggingface/datasets-preview-backend/issues/188)
+    # split_full_names = get_dataset_split_full_names("common_voice")
+    # assert len(split_full_names) > 300
 
 
 def test_splits_fallback() -> None:
