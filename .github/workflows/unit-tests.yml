@@ -21,7 +21,21 @@ jobs:
         with:
           poetry-version: ${{ matrix.poetry-version }}
       - name: Install packages
-        run: sudo apt update; sudo apt install -y libicu-dev ffmpeg libavcodec-extra libsndfile1 llvm
+        run: sudo apt update; sudo apt install -y libicu-dev ffmpeg libavcodec-extra llvm
+      - name: Install libsndfile
+        run: >
+          sudo apt install -y autoconf autogen automake build-essential libasound2-dev libflac-dev libogg-dev libtool libvorbis-dev libopus-dev libmp3lame-dev libmpg123-dev pkg-config;
+          cd /tmp;
+          git clone https://github.com/libsndfile/libsndfile.git;
+          cd libsndfile;
+          git checkout v1.0.30;
+          ./autogen.sh;
+          ./configure --enable-werror;
+          make;
+          sudo make install;
+          sudo ldconfig;
+          cd;
+          rm -rf /tmp/libsndfile;
       - name: Install dependencies
         run: poetry install
       - name: Create mongoDB Docker container

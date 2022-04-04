@@ -86,7 +86,24 @@ BetterUptime:
 Install packages, logged as `hf`:
 
 ```bash
-sudo apt install python-is-python3 make nginx libicu-dev ffmpeg libavcodec-extra libsndfile1
+sudo apt install python-is-python3 make nginx libicu-dev ffmpeg libavcodec-extra
+```
+
+Also install `libsndfile` in version `v1.0.30`. As the version in ubuntu stable for the moment is `v1.0.28`, we can build from scratch (see details here: https://github.com/libsndfile/libsndfile)
+
+```
+sudo apt install -y autoconf autogen automake build-essential libasound2-dev libflac-dev libogg-dev libtool libvorbis-dev libopus-dev libmp3lame-dev libmpg123-dev pkg-config;
+cd /tmp;
+git clone https://github.com/libsndfile/libsndfile.git;
+cd libsndfile;
+git checkout v1.0.30;
+./autogen.sh;
+./configure --enable-werror;
+make;
+sudo make install;
+sudo ldconfig;
+cd;
+rm -rf /tmp/libsndfile
 ```
 
 Also install docker (see https://docs.docker.com/engine/install/ubuntu/#install-using-the-repository and https://docs.docker.com/engine/install/linux-postinstall/).

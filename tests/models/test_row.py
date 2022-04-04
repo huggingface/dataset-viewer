@@ -64,3 +64,10 @@ def test_audio_dataset() -> None:
     rows = get_rows("abidlabs/test-audio-1", "test", "train")
     assert len(rows) == 1
     assert rows[0]["Output"]["sampling_rate"] == 48000
+
+
+def test_libsndfile() -> None:
+    # see https://github.com/huggingface/datasets-preview-backend/issues/194
+    rows = get_rows("polinaeterna/ml_spoken_words", "ar", "train")
+    assert len(rows) == ROWS_MAX_NUMBER
+    assert rows[0]["audio"]["sampling_rate"] == 48000
