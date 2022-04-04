@@ -2,19 +2,23 @@ import pytest
 from starlette.testclient import TestClient
 
 from datasets_preview_backend.app import create_app
-from datasets_preview_backend.config import MONGO_CACHE_DATABASE
+from datasets_preview_backend.config import MONGO_CACHE_DATABASE, MONGO_QUEUE_DATABASE
 from datasets_preview_backend.exceptions import Status400Error
+from datasets_preview_backend.io.cache import clean_database as clean_cache_database
 from datasets_preview_backend.io.cache import (
-    clean_database,
     refresh_dataset_split_full_names,
     refresh_split,
 )
+from datasets_preview_backend.io.queue import add_dataset_job, add_split_job
+from datasets_preview_backend.io.queue import clean_database as clean_queue_database
 
 
 @pytest.fixture(autouse=True, scope="module")
 def safe_guard() -> None:
     if "test" not in MONGO_CACHE_DATABASE:
-        raise Exception("Test must be launched on a test mongo database")
+        raise Exception("Tests on cache must be launched on a test mongo database")
+    if "test" not in MONGO_QUEUE_DATABASE:
+        raise Exception("Tests on queue must be launched on a test mongo database")
 
 
 @pytest.fixture(scope="module")
@@ -23,8 +27,9 @@ def client() -> TestClient:
 
 
 @pytest.fixture(autouse=True)
-def clean_mongo_database() -> None:
-    clean_database()
+def clean_mongo_databases() -> None:
+    clean_cache_database()
+    clean_queue_database()
 
 
 def test_get_cache_reports(client: TestClient) -> None:
@@ -199,3 +204,20 @@ def test_bytes_limit(client: TestClient) -> None:
     json = response.json()
     rowItems = json["rows"]
     assert len(rowItems) == 3
+
+
+def test_cache_refreshing(client: TestClient) -> None:
+    dataset = "acronym_identification"
+    response = client.get("/splits", params={"dataset": dataset})
+    assert response.json()["message"] == "Not found. The dataset does not exist."
+    add_dataset_job(dataset)
+    response = client.get("/splits", params={"dataset": dataset})
+    assert response.json()["message"] == "The dataset is being processed. Retry later."
+
+    config = "default"
+    split = "train"
+    response = client.get("/rows", params={"dataset": dataset, "config": config, "split": split})
+    assert response.json()["message"] == "Not found. The split does not exist."
+    add_split_job(dataset, config, split)
+    response = client.get("/rows", params={"dataset": dataset, "config": config, "split": split})
+    assert response.json()["message"] == "The split is being processed. Retry later."

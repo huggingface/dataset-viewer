@@ -342,3 +342,19 @@ def get_dataset_dump_by_status(waiting_started: bool = False) -> DumpByStatus:
 
 def get_split_dump_by_status(waiting_started: bool = False) -> DumpByStatus:
     return get_dump_by_status(SplitJob.objects, waiting_started)
+
+
+def is_dataset_in_queue(dataset_name: str) -> bool:
+    return DatasetJob.objects(status__in=[Status.WAITING, Status.STARTED], dataset_name=dataset_name).count() > 0
+
+
+def is_split_in_queue(dataset_name: str, config_name: str, split_name: str) -> bool:
+    return (
+        SplitJob.objects(
+            status__in=[Status.WAITING, Status.STARTED],
+            dataset_name=dataset_name,
+            config_name=config_name,
+            split_name=split_name,
+        ).count()
+        > 0
+    )

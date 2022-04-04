@@ -460,7 +460,7 @@ def get_splits_response(dataset_name: str) -> Tuple[Union[SplitsResponse, None],
     try:
         dataset = DbDataset.objects(dataset_name=dataset_name).get()
     except DoesNotExist as e:
-        raise Status400Error("Not found. Maybe the cache is missing, or maybe the dataset does not exist.") from e
+        raise Status400Error("Not found. The dataset does not exist.") from e
 
     # ^ can also raise MultipleObjectsReturned, which should not occur -> we let the exception raise
 
@@ -583,7 +583,7 @@ def get_rows_response(
     try:
         split = DbSplit.objects(dataset_name=dataset_name, config_name=config_name, split_name=split_name).get()
     except DoesNotExist as e:
-        raise Status400Error("Not found. Maybe the cache is missing, or maybe the split does not exist.", e) from e
+        raise Status400Error("Not found. The split does not exist.", e) from e
 
     # ^ can also raise MultipleObjectsReturned, which should not occur -> we let the exception raise
 

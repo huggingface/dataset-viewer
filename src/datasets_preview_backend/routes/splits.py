@@ -6,6 +6,7 @@ from starlette.responses import Response
 from datasets_preview_backend.config import MAX_AGE_LONG_SECONDS
 from datasets_preview_backend.exceptions import Status400Error, StatusError
 from datasets_preview_backend.io.cache import get_splits_response
+from datasets_preview_backend.io.queue import is_dataset_in_queue
 from datasets_preview_backend.routes._utils import get_response
 
 logger = logging.getLogger(__name__)
@@ -16,9 +17,15 @@ async def splits_endpoint(request: Request) -> Response:
     logger.info(f"/splits, dataset={dataset_name}")
 
     try:
-        if not isinstance(dataset_name, str):
-            raise Status400Error("Parameter 'dataset' is required")
-        splits_response, splits_error, status_code = get_splits_response(dataset_name)
-        return get_response(splits_response or splits_error, status_code, MAX_AGE_LONG_SECONDS)
+        try:
+            if not isinstance(dataset_name, str):
+                raise Status400Error("Parameter 'dataset' is required")
+            splits_response, splits_error, status_code = get_splits_response(dataset_name)
+            return get_response(splits_response or splits_error, status_code, MAX_AGE_LONG_SECONDS)
+        except StatusError as err:
+            if err.message == "Not found. The dataset does not exist." and is_dataset_in_queue(dataset_name):
+                raise Status400Error("The dataset is being processed. Retry later.", err) from err
+            else:
+                raise err
     except StatusError as err:
         return get_response(err.as_content(), err.status_code, MAX_AGE_LONG_SECONDS)
