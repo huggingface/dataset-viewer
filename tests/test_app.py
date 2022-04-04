@@ -4,16 +4,13 @@ from starlette.testclient import TestClient
 from datasets_preview_backend.app import create_app
 from datasets_preview_backend.config import MONGO_CACHE_DATABASE, MONGO_QUEUE_DATABASE
 from datasets_preview_backend.exceptions import Status400Error
+from datasets_preview_backend.io.cache import clean_database as clean_cache_database
 from datasets_preview_backend.io.cache import (
-    clean_database as clean_cache_database,
     refresh_dataset_split_full_names,
     refresh_split,
 )
-from datasets_preview_backend.io.queue import (
-    add_dataset_job,
-    add_split_job,
-    clean_database as clean_queue_database,
-)
+from datasets_preview_backend.io.queue import add_dataset_job, add_split_job
+from datasets_preview_backend.io.queue import clean_database as clean_queue_database
 
 
 @pytest.fixture(autouse=True, scope="module")
