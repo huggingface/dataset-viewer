@@ -60,8 +60,7 @@ def test_community_with_no_config() -> None:
     get_rows("Check/region_1", "Check--region_1", "train")
 
 
-# Temporarily disable (related to https://github.com/huggingface/datasets/issues/3663 ?)
-# def test_audio_dataset() -> None:
-#     rows = get_rows("common_voice", "tr", "train")
-#     assert len(rows) == ROWS_MAX_NUMBER
-#     assert rows[0]["audio"]["sampling_rate"] == 48000
+def test_audio_dataset() -> None:
+    rows = get_rows("abidlabs/test-audio-1", "test", "train")
+    assert len(rows) == 1
+    assert rows[0]["Output"]["sampling_rate"] == 48000

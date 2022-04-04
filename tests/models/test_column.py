@@ -63,10 +63,9 @@ def test_severo_wit() -> None:
     assert columns[2].type == ColumnType.IMAGE_URL
 
 
-# Temporarily disable (https://github.com/huggingface/datasets-preview-backend/issues/188)
-# def test_audio() -> None:
-#     info = get_info("common_voice", "tr")
-#     columns = get_columns(info, [])
-#     assert columns is not None
-#     assert columns[2].name == "audio"
-#     assert columns[2].type == ColumnType.AUDIO_RELATIVE_SOURCES
+def test_audio() -> None:
+    info = get_info("abidlabs/test-audio-1", "test")
+    columns = get_columns(info, [])
+    assert columns is not None
+    assert columns[1].name == "Output"
+    assert columns[1].type == ColumnType.AUDIO_RELATIVE_SOURCES

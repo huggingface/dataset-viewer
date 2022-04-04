@@ -60,13 +60,12 @@ def test_image_url() -> None:
     assert columns[2].type == ColumnType.IMAGE_URL
 
 
-# Temporarily disable (https://github.com/huggingface/datasets-preview-backend/issues/188)
-# def test_audio_dataset() -> None:
-#     info = get_info("common_voice", "tr")
-#     typed_rows, columns = get_typed_rows_and_columns("common_voice", "tr", "train", info)
-#     assert len(typed_rows) == ROWS_MAX_NUMBER
-#     assert columns[2].type == ColumnType.AUDIO_RELATIVE_SOURCES
-#     assert len(typed_rows[0]["audio"]) == 2
-#     assert typed_rows[0]["audio"][0]["type"] == "audio/mpeg"
-#     assert typed_rows[0]["audio"][1]["type"] == "audio/wav"
-#     assert typed_rows[0]["audio"][0]["src"] == "assets/common_voice/--/tr/train/0/audio/audio.mp3"
+def test_audio_dataset() -> None:
+    info = get_info("abidlabs/test-audio-1", "test")
+    typed_rows, columns = get_typed_rows_and_columns("abidlabs/test-audio-1", "test", "train", info)
+    assert len(typed_rows) == 1
+    assert columns[1].type == ColumnType.AUDIO_RELATIVE_SOURCES
+    assert len(typed_rows[0]["Output"]) == 2
+    assert typed_rows[0]["Output"][0]["type"] == "audio/mpeg"
+    assert typed_rows[0]["Output"][1]["type"] == "audio/wav"
+    assert typed_rows[0]["Output"][0]["src"] == "assets/abidlabs/test-audio-1/--/test/train/0/Output/audio.mp3"
