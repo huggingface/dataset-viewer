@@ -8,9 +8,13 @@ from datasets_preview_backend.config import (
     ROWS_MAX_BYTES,
     ROWS_MIN_NUMBER,
 )
-from datasets_preview_backend.exceptions import Status400Error, StatusError
+from datasets_preview_backend.exceptions import (
+    Status400Error,
+    Status500Error,
+    StatusError,
+)
 from datasets_preview_backend.io.cache import get_rows_response
-from datasets_preview_backend.io.queue import is_split_in_queue
+from datasets_preview_backend.io.queue import is_dataset_in_queue, is_split_in_queue
 from datasets_preview_backend.routes._utils import get_response
 
 logger = logging.getLogger(__name__)
@@ -35,11 +39,13 @@ async def rows_endpoint(request: Request) -> Response:
             )
             return get_response(rows_response or rows_error, status_code, MAX_AGE_LONG_SECONDS)
         except StatusError as err:
-            if err.message == "Not found. The split does not exist." and is_split_in_queue(
-                dataset_name, config_name, split_name
-            ):
+            if err.message == "The split does not exist." and is_dataset_in_queue(dataset_name):
+                raise Status400Error("The dataset is being processed. Retry later.", err) from err
+            if err.message != "The split cache is empty.":
+                raise err
+            if is_split_in_queue(dataset_name, config_name, split_name):
                 raise Status400Error("The split is being processed. Retry later.", err) from err
             else:
-                raise err
+                raise Status500Error("The split cache is empty but no job has been launched.", err) from err
     except StatusError as err:
         return get_response(err.as_content(), err.status_code, MAX_AGE_LONG_SECONDS)

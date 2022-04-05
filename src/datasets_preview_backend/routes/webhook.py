@@ -4,7 +4,10 @@ from typing import Any, Optional, TypedDict
 from starlette.requests import Request
 from starlette.responses import Response
 
-from datasets_preview_backend.io.cache import delete_dataset_cache
+from datasets_preview_backend.io.cache import (
+    create_or_mark_dataset_as_stalled,
+    delete_dataset_cache,
+)
 from datasets_preview_backend.io.queue import add_dataset_job
 from datasets_preview_backend.routes._utils import get_response
 
@@ -47,6 +50,7 @@ def try_to_update(id: Optional[str]) -> None:
     dataset_name = get_dataset_name(id)
     if dataset_name is not None:
         logger.debug(f"webhook: refresh {dataset_name}")
+        create_or_mark_dataset_as_stalled(dataset_name)
         add_dataset_job(dataset_name)
 
 

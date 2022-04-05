@@ -6,11 +6,18 @@ from datasets_preview_backend.config import MONGO_CACHE_DATABASE, MONGO_QUEUE_DA
 from datasets_preview_backend.exceptions import Status400Error
 from datasets_preview_backend.io.cache import clean_database as clean_cache_database
 from datasets_preview_backend.io.cache import (
+    create_or_mark_dataset_as_stalled,
+    create_or_mark_split_as_stalled,
     refresh_dataset_split_full_names,
     refresh_split,
 )
 from datasets_preview_backend.io.queue import add_dataset_job, add_split_job
 from datasets_preview_backend.io.queue import clean_database as clean_queue_database
+from datasets_preview_backend.io.queue import (
+    finish_dataset_job,
+    finish_split_job,
+    get_dataset_job,
+)
 
 
 @pytest.fixture(autouse=True, scope="module")
@@ -206,18 +213,97 @@ def test_bytes_limit(client: TestClient) -> None:
     assert len(rowItems) == 3
 
 
-def test_cache_refreshing(client: TestClient) -> None:
+def test_dataset_cache_refreshing(client: TestClient) -> None:
     dataset = "acronym_identification"
     response = client.get("/splits", params={"dataset": dataset})
-    assert response.json()["message"] == "Not found. The dataset does not exist."
+    assert response.json()["message"] == "The dataset does not exist."
     add_dataset_job(dataset)
+    create_or_mark_dataset_as_stalled(dataset)
     response = client.get("/splits", params={"dataset": dataset})
     assert response.json()["message"] == "The dataset is being processed. Retry later."
 
+
+def test_split_cache_refreshing(client: TestClient) -> None:
+    dataset = "acronym_identification"
     config = "default"
     split = "train"
     response = client.get("/rows", params={"dataset": dataset, "config": config, "split": split})
-    assert response.json()["message"] == "Not found. The split does not exist."
+    assert response.json()["message"] == "The split does not exist."
     add_split_job(dataset, config, split)
+    create_or_mark_split_as_stalled({"dataset_name": dataset, "config_name": config, "split_name": split}, 0)
     response = client.get("/rows", params={"dataset": dataset, "config": config, "split": split})
     assert response.json()["message"] == "The split is being processed. Retry later."
+
+
+def test_error_messages(client: TestClient) -> None:
+    # https://github.com/huggingface/datasets-preview-backend/issues/196
+    dataset = "acronym_identification"
+    config = "default"
+    split = "train"
+
+    response = client.get("/splits", params={"dataset": dataset})
+    # ^ equivalent to
+    # curl http://localhost:8000/splits\?dataset\=acronym_identification
+    assert response.json()["message"] == "The dataset does not exist."
+
+    client.post("/webhook", json={"update": f"datasets/{dataset}"})
+    # ^ equivalent to
+    # curl -X POST http://localhost:8000/webhook -H 'Content-Type: application/json' \
+    #   -d '{"update": "datasets/acronym_identification"}'
+
+    response = client.get("/splits", params={"dataset": dataset})
+    # ^ equivalent to
+    # curl http://localhost:8000/splits\?dataset\=acronym_identification
+    assert response.json()["message"] == "The dataset is being processed. Retry later."
+
+    response = client.get("/rows", params={"dataset": dataset, "config": config, "split": split})
+    # ^ equivalent to
+    # curl http://localhost:8000/rows\?dataset\=acronym_identification\&config\=default\&split\=train
+    assert response.json()["message"] == "The dataset is being processed. Retry later."
+
+    # simulate dataset worker
+    # ^ equivalent to
+    # WORKER_QUEUE=datasets make worker
+    # part A
+    job_id, dataset_name = get_dataset_job()
+    split_full_names = refresh_dataset_split_full_names(dataset_name=dataset_name)
+
+    response = client.get("/rows", params={"dataset": dataset, "config": config, "split": split})
+    # ^ equivalent to
+    # curl http://localhost:8000/rows\?dataset\=acronym_identification\&config\=default\&split\=train
+    assert response.status_code == 500
+    assert response.json()["message"] == "The split cache is empty but no job has been launched."
+
+    # part B
+    for split_full_name in split_full_names:
+        add_split_job(split_full_name["dataset_name"], split_full_name["config_name"], split_full_name["split_name"])
+    finish_dataset_job(job_id, success=True)
+
+    response = client.get("/splits", params={"dataset": dataset})
+    # ^ equivalent to
+    # curl http://localhost:8000/splits\?dataset\=acronym_identification
+    assert response.status_code == 200
+    assert response.json()["splits"][0] == {
+        "dataset": dataset,
+        "config": config,
+        "split": split,
+        "num_bytes": None,
+        "num_examples": None,
+    }
+
+    response = client.get("/rows", params={"dataset": dataset, "config": config, "split": split})
+    # ^ equivalent to
+    # curl http://localhost:8000/rows\?dataset\=acronym_identification\&config\=default\&split\=train
+    assert response.json()["message"] == "The split is being processed. Retry later."
+
+    refresh_split(dataset_name=dataset, config_name=config, split_name=split)
+    finish_split_job(job_id, success=True)
+    # ^ equivalent to
+    # WORKER_QUEUE=splits make worker
+
+    response = client.get("/rows", params={"dataset": dataset, "config": config, "split": split})
+    # ^ equivalent to
+    # curl http://localhost:8000/rows\?dataset\=acronym_identification\&config\=default\&split\=train
+
+    assert response.status_code == 200
+    assert len(response.json()["rows"]) > 0
