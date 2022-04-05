@@ -6,6 +6,8 @@ from datasets_preview_backend.config import MONGO_CACHE_DATABASE, MONGO_QUEUE_DA
 from datasets_preview_backend.exceptions import Status400Error
 from datasets_preview_backend.io.cache import clean_database as clean_cache_database
 from datasets_preview_backend.io.cache import (
+    create_or_mark_dataset_as_stalled,
+    create_or_mark_split_as_stalled,
     refresh_dataset_split_full_names,
     refresh_split,
 )
@@ -211,19 +213,24 @@ def test_bytes_limit(client: TestClient) -> None:
     assert len(rowItems) == 3
 
 
-def test_cache_refreshing(client: TestClient) -> None:
+def test_dataset_cache_refreshing(client: TestClient) -> None:
     dataset = "acronym_identification"
     response = client.get("/splits", params={"dataset": dataset})
-    assert response.json()["message"] == "Not found. The dataset does not exist."
+    assert response.json()["message"] == "The dataset does not exist."
     add_dataset_job(dataset)
+    create_or_mark_dataset_as_stalled(dataset)
     response = client.get("/splits", params={"dataset": dataset})
     assert response.json()["message"] == "The dataset is being processed. Retry later."
 
+
+def test_split_cache_refreshing(client: TestClient) -> None:
+    dataset = "acronym_identification"
     config = "default"
     split = "train"
     response = client.get("/rows", params={"dataset": dataset, "config": config, "split": split})
-    assert response.json()["message"] == "Not found. The split does not exist."
+    assert response.json()["message"] == "The split does not exist."
     add_split_job(dataset, config, split)
+    create_or_mark_split_as_stalled({"dataset_name": dataset, "config_name": config, "split_name": split}, 0)
     response = client.get("/rows", params={"dataset": dataset, "config": config, "split": split})
     assert response.json()["message"] == "The split is being processed. Retry later."
 
