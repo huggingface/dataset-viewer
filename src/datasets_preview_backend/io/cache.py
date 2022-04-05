@@ -347,6 +347,7 @@ def delete_dataset_cache(dataset_name: str) -> None:
     DbRow.objects(dataset_name=dataset_name).delete()
     DbColumn.objects(dataset_name=dataset_name).delete()
     DbDatasetError.objects(dataset_name=dataset_name).delete()
+    DbSplitError.objects(dataset_name=dataset_name).delete()
 
 
 def clean_database() -> None:
@@ -355,6 +356,7 @@ def clean_database() -> None:
     DbRow.drop_collection()  # type: ignore
     DbColumn.drop_collection()  # type: ignore
     DbDatasetError.drop_collection()  # type: ignore
+    DbSplitError.drop_collection()  # type: ignore
 
 
 def refresh_dataset_split_full_names(dataset_name: str, hf_token: Optional[str] = None) -> List[SplitFullName]:
