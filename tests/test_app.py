@@ -9,14 +9,13 @@ from datasets_preview_backend.io.cache import (
     refresh_dataset_split_full_names,
     refresh_split,
 )
+from datasets_preview_backend.io.queue import add_dataset_job, add_split_job
+from datasets_preview_backend.io.queue import clean_database as clean_queue_database
 from datasets_preview_backend.io.queue import (
-    add_dataset_job,
-    add_split_job,
     finish_dataset_job,
     finish_split_job,
     get_dataset_job,
 )
-from datasets_preview_backend.io.queue import clean_database as clean_queue_database
 
 
 @pytest.fixture(autouse=True, scope="module")
@@ -242,7 +241,8 @@ def test_error_messages(client: TestClient) -> None:
 
     client.post("/webhook", json={"update": f"datasets/{dataset}"})
     # ^ equivalent to
-    # curl -X POST http://localhost:8000/webhook -H 'Content-Type: application/json' -d '{"update": "datasets/acronym_identification"}'
+    # curl -X POST http://localhost:8000/webhook -H 'Content-Type: application/json' \
+    #   -d '{"update": "datasets/acronym_identification"}'
 
     response = client.get("/splits", params={"dataset": dataset})
     # ^ equivalent to

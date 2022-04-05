@@ -8,7 +8,11 @@ from datasets_preview_backend.config import (
     ROWS_MAX_BYTES,
     ROWS_MIN_NUMBER,
 )
-from datasets_preview_backend.exceptions import Status400Error, Status500Error, StatusError
+from datasets_preview_backend.exceptions import (
+    Status400Error,
+    Status500Error,
+    StatusError,
+)
 from datasets_preview_backend.io.cache import get_rows_response
 from datasets_preview_backend.io.queue import is_dataset_in_queue, is_split_in_queue
 from datasets_preview_backend.routes._utils import get_response
