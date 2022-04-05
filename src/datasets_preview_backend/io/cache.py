@@ -274,20 +274,17 @@ def upsert_dataset(dataset_name: str, new_split_full_names: List[SplitFullName])
     DbDataset.objects(dataset_name=dataset_name).upsert_one(status=Status.VALID)
     DbDatasetError.objects(dataset_name=dataset_name).delete()
 
-    current_split_full_names = [o.to_split_full_name() for o in DbSplit.objects(dataset_name=dataset_name)]
+    split_full_names_to_delete = [
+        o.to_split_full_name()
+        for o in DbSplit.objects(dataset_name=dataset_name)
+        if o.to_split_full_name() not in new_split_full_names
+    ]
 
-    for split_full_name in current_split_full_names:
-        if split_full_name not in new_split_full_names:
-            # delete the splits that disappeared
-            delete_split(split_full_name)
+    for split_full_name in split_full_names_to_delete:
+        delete_split(split_full_name)
 
     for split_idx, split_full_name in enumerate(new_split_full_names):
-        if split_full_name not in current_split_full_names:
-            # create the new empty splits
-            create_split(split_full_name, split_idx)
-        else:
-            # mark all the existing splits as stalled
-            mark_split_as_stalled(split_full_name, split_idx)
+        create_or_mark_split_as_stalled(split_full_name, split_idx)
 
 
 def upsert_split_error(dataset_name: str, config_name: str, split_name: str, error: StatusError) -> None:
@@ -386,7 +383,7 @@ def delete_split(split_full_name: SplitFullName):
     logger.debug(f"dataset '{dataset_name}': deleted split {split_name} from config {config_name}")
 
 
-def create_split(split_full_name: SplitFullName, split_idx: int):
+def create_empty_split(split_full_name: SplitFullName, split_idx: int):
     dataset_name = split_full_name["dataset_name"]
     config_name = split_full_name["config_name"]
     split_name = split_full_name["split_name"]
@@ -397,7 +394,37 @@ def create_split(split_full_name: SplitFullName, split_idx: int):
         status=Status.EMPTY,
         split_idx=split_idx,
     ).save()
-    logger.debug(f"dataset '{dataset_name}': created split {split_name} in config {config_name}")
+    logger.debug(f"dataset '{dataset_name}': created empty split {split_name} in config {config_name}")
+
+
+def create_empty_dataset(dataset_name: str):
+    DbDataset(dataset_name=dataset_name).save()
+    logger.debug(f"created empty dataset '{dataset_name}'")
+
+
+def create_or_mark_dataset_as_stalled(dataset_name: str):
+    try:
+        DbDataset.objects(dataset_name=dataset_name).get()
+        mark_dataset_as_stalled(dataset_name)
+    except DoesNotExist:
+        create_empty_dataset(dataset_name)
+
+
+def mark_dataset_as_stalled(dataset_name: str):
+    DbDataset.objects(dataset_name=dataset_name).update(status=Status.STALLED)
+    logger.debug(f"marked dataset '{dataset_name}' as stalled")
+
+
+def create_or_mark_split_as_stalled(split_full_name: SplitFullName, split_idx: int):
+    try:
+        DbSplit.objects(
+            dataset_name=split_full_name["dataset_name"],
+            config_name=split_full_name["config_name"],
+            split_name=split_full_name["split_name"],
+        ).get()
+        mark_split_as_stalled(split_full_name, split_idx)
+    except DoesNotExist:
+        create_empty_split(split_full_name, split_idx)
 
 
 def mark_split_as_stalled(split_full_name: SplitFullName, split_idx: int):
@@ -462,13 +489,12 @@ def get_splits_response(dataset_name: str) -> Tuple[Union[SplitsResponse, None],
     try:
         dataset = DbDataset.objects(dataset_name=dataset_name).get()
     except DoesNotExist as e:
-        raise Status400Error("Not found. The dataset does not exist.") from e
+        raise Status400Error("The dataset does not exist.") from e
 
     # ^ can also raise MultipleObjectsReturned, which should not occur -> we let the exception raise
 
     if dataset.status == Status.EMPTY:
-        raise Status400Error("Not found. Cache is waiting to be refreshed.")
-        # ^ should not occur with the current logic
+        raise Status400Error("The dataset cache is empty.")
     if dataset.status == Status.ERROR:
         dataset_error = DbDatasetError.objects(dataset_name=dataset_name).get()
         # ^ can raise DoesNotExist or MultipleObjectsReturned, which should not occur -> we let the exception raise
@@ -585,12 +611,12 @@ def get_rows_response(
     try:
         split = DbSplit.objects(dataset_name=dataset_name, config_name=config_name, split_name=split_name).get()
     except DoesNotExist as e:
-        raise Status400Error("Not found. The split does not exist.", e) from e
+        raise Status400Error("The split does not exist.", e) from e
 
     # ^ can also raise MultipleObjectsReturned, which should not occur -> we let the exception raise
 
     if split.status == Status.EMPTY:
-        raise Status400Error("Not found. Cache is waiting to be refreshed.")
+        raise Status400Error("The split cache is empty.")
         # ^ should not occur with the current logic
     if split.status == Status.ERROR:
         split_error = DbSplitError.objects(

@@ -4,10 +4,13 @@ from datasets_preview_backend.config import MONGO_QUEUE_DATABASE
 from datasets_preview_backend.io.queue import (
     EmptyQueue,
     add_dataset_job,
+    add_split_job,
     clean_database,
     connect_to_queue,
     finish_dataset_job,
     get_dataset_job,
+    is_dataset_in_queue,
+    is_split_in_queue,
 )
 
 
@@ -44,3 +47,23 @@ def test_add_job() -> None:
     finish_dataset_job(other_job_id, success=True)
     # ^ fails silently (with a log)
     finish_dataset_job(job_id, success=True)
+
+
+def test_is_dataset_in_queue() -> None:
+    dataset_name = "test_dataset"
+    dataset_name_2 = "test_dataset_2"
+    assert is_dataset_in_queue(dataset_name) is False
+    add_dataset_job(dataset_name)
+    assert is_dataset_in_queue(dataset_name) is True
+    assert is_dataset_in_queue(dataset_name_2) is False
+
+
+def test_is_split_in_queue() -> None:
+    dataset_name = "test_dataset"
+    config_name = "test_config"
+    split_name = "test_split"
+    dataset_name_2 = "test_dataset_2"
+    assert is_split_in_queue(dataset_name, config_name, split_name) is False
+    add_split_job(dataset_name, config_name, split_name)
+    assert is_split_in_queue(dataset_name, config_name, split_name) is True
+    assert is_split_in_queue(dataset_name_2, config_name, split_name) is False
