@@ -143,16 +143,28 @@ class DbRow(Document):
     split_name = StringField(required=True)
     row_idx = IntField(required=True, min_value=0)
     row = DictField(required=True)
+    status = EnumField(Status, default=Status.EMPTY)
+    since = DateTimeField(default=datetime.utcnow)
 
     def to_item(self) -> RowItem:
-        return {
-            "dataset": self.dataset_name,
-            "config": self.config_name,
-            "split": self.split_name,
-            "row_idx": self.row_idx,
-            "row": self.row,
-            "truncated_cells": [],
-        }
+        if self.status == Status.VALID:
+            return {
+                "dataset": self.dataset_name,
+                "config": self.config_name,
+                "split": self.split_name,
+                "row_idx": self.row_idx,
+                "row": self.row,
+                "truncated_cells": [],
+            }
+        else:
+            return {
+                "dataset": self.dataset_name,
+                "config": self.config_name,
+                "split": self.split_name,
+                "row_idx": self.row_idx,
+                "row": self.row,
+                "truncated_cells": list(self.row.keys()),
+            }
 
     meta = {"collection": "rows", "db_alias": "cache"}
     objects = QuerySetManager["DbRow"]()
@@ -314,13 +326,25 @@ def upsert_split(dataset_name: str, config_name: str, split_name: str, split: Sp
 
     DbRow.objects(dataset_name=dataset_name, config_name=config_name, split_name=split_name).delete()
     for row_idx, row in enumerate(rows):
-        DbRow(
-            dataset_name=dataset_name,
-            config_name=config_name,
-            split_name=split_name,
-            row_idx=row_idx,
-            row=row,
-        ).save()
+        try:
+            DbRow(
+                dataset_name=dataset_name,
+                config_name=config_name,
+                split_name=split_name,
+                row_idx=row_idx,
+                row=row,
+                status=Status.VALID,
+            ).save()
+        except Exception:
+            DbRow(
+                dataset_name=dataset_name,
+                config_name=config_name,
+                split_name=split_name,
+                row_idx=row_idx,
+                row={column_name: "" for column_name in row.keys()},
+                # ^ truncated to empty string
+                status=Status.ERROR,
+            ).save()
 
     DbColumn.objects(dataset_name=dataset_name, config_name=config_name, split_name=split_name).delete()
     for column_idx, column in enumerate(columns):

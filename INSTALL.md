@@ -44,6 +44,12 @@ diff .env.example .env
 vi .env
 ```
 
+Apply the database migrations (see [src/datasets_preview_backend/io/migrations/README.md](./src/datasets_preview_backend/io/migrations/README.md)) if any
+
+```
+# see https://github.com/huggingface/datasets-preview-backend/blob/main/src/datasets_preview_backend/io/migrations/README.md
+```
+
 Check that all the tests are passing
 
 ```
