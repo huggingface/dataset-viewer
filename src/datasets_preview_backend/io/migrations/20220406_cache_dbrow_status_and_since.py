@@ -1,19 +1,15 @@
 from datetime import datetime
 
-from datasets_preview_backend.io.cache import DbRow, Status, connect_to_cache
-from datasets_preview_backend.io.migrations._utils import check_documents
+from pymongo import MongoClient
+from pymongo.collection import Collection
 
-# connect
-connect_to_cache()
+from datasets_preview_backend.config import MONGO_CACHE_DATABASE, MONGO_URL
+from datasets_preview_backend.io.cache import Status
+
+client = MongoClient(MONGO_URL)
+db = client[MONGO_CACHE_DATABASE]
+
 
 # migrate
-DbRow.objects().update(status=Status.VALID, since=datetime.utcnow)
-
-
-# validate
-def custom_validation(row: DbRow) -> None:
-    if row.status != Status.VALID:
-        raise ValueError(f"row status should be '{Status.VALID}', got '{row.status}'")
-
-
-check_documents(DbRow, 100, custom_validation)
+rows_coll = Collection(db, "rows")
+rows_coll.update_many({}, {"$set": {"status": Status.VALID.value, "since": datetime.utcnow}})

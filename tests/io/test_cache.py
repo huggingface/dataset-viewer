@@ -16,7 +16,7 @@ from datasets_preview_backend.io.cache import (
     upsert_split,
 )
 from datasets_preview_backend.models.dataset import get_dataset_split_full_names
-from datasets_preview_backend.models.split import Split
+from datasets_preview_backend.models.split import RowItem, Split
 
 
 @pytest.fixture(autouse=True, scope="module")
@@ -113,18 +113,24 @@ def test_big_row() -> None:
     dataset_name = "test_dataset"
     config_name = "test_config"
     split_name = "test_split"
-    big_row = {"col": "a" * 100_000_000}
+    big_row: RowItem = {
+        "dataset": dataset_name,
+        "config": config_name,
+        "split": split_name,
+        "row_idx": 0,
+        "row": {"col": "a" * 100_000_000},
+        "truncated_cells": [],
+    }
     split: Split = {
         "split_name": split_name,
-        "rows": [big_row],
-        "columns": [],
+        "rows_response": {"rows": [big_row], "columns": []},
         "num_bytes": None,
         "num_examples": None,
     }
     upsert_split(dataset_name, config_name, split_name, split)
     rows_response, error, status_code = get_rows_response(dataset_name, config_name, split_name)
-    assert status_code == 200
-    assert error is None
-    assert rows_response is not None
-    assert rows_response["rows"][0]["row"]["col"] == ""
-    assert rows_response["rows"][0]["truncated_cells"] == ["col"]
+    assert status_code == 500
+    assert error is not None
+    assert rows_response is None
+    assert error["message"] == "could not store the rows/ cache entry."
+    assert error["cause_exception"] == "DocumentTooLarge"

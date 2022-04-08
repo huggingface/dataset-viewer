@@ -1,6 +1,5 @@
 import enum
 import logging
-import sys
 import types
 from datetime import datetime
 from typing import (
@@ -26,25 +25,19 @@ from mongoengine.fields import (
     StringField,
 )
 from mongoengine.queryset.queryset import QuerySet
+from pymongo.errors import DocumentTooLarge
 
 from datasets_preview_backend.config import MONGO_CACHE_DATABASE, MONGO_URL
-from datasets_preview_backend.constants import DEFAULT_MIN_CELL_BYTES
 from datasets_preview_backend.exceptions import (
     Status400Error,
     Status500Error,
     StatusError,
-)
-from datasets_preview_backend.models.column import (
-    ClassLabelColumn,
-    ColumnDict,
-    ColumnType,
 )
 from datasets_preview_backend.models.dataset import (
     SplitFullName,
     get_dataset_split_full_names,
 )
 from datasets_preview_backend.models.split import Split, get_split
-from datasets_preview_backend.utils import orjson_dumps
 
 # START monkey patching ### hack ###
 # see https://github.com/sbdchd/mongo-types#install
@@ -102,6 +95,10 @@ class SplitsResponse(TypedDict):
     splits: List[SplitItem]
 
 
+def get_empty_rows_response() -> Dict[str, Any]:
+    return {"columns": [], "rows": []}
+
+
 class DbSplit(Document):
     dataset_name = StringField(required=True, unique_with=["config_name", "split_name"])
     config_name = StringField(required=True)
@@ -109,10 +106,11 @@ class DbSplit(Document):
     split_idx = IntField(required=True, min_value=0)  # used to maintain the order
     num_bytes = IntField(min_value=0)
     num_examples = IntField(min_value=0)
+    rows_response = DictField(required=True)
     status = EnumField(Status, default=Status.EMPTY)
     since = DateTimeField(default=datetime.utcnow)
 
-    def to_item(self) -> SplitItem:
+    def to_split_item(self) -> SplitItem:
         return {
             "dataset": self.dataset_name,
             "config": self.config_name,
@@ -126,86 +124,6 @@ class DbSplit(Document):
 
     meta = {"collection": "splits", "db_alias": "cache"}
     objects = QuerySetManager["DbSplit"]()
-
-
-class RowItem(TypedDict):
-    dataset: str
-    config: str
-    split: str
-    row_idx: int
-    row: Dict[str, Any]
-    truncated_cells: List[str]
-
-
-class DbRow(Document):
-    dataset_name = StringField(required=True, unique_with=["config_name", "split_name", "row_idx"])
-    config_name = StringField(required=True)
-    split_name = StringField(required=True)
-    row_idx = IntField(required=True, min_value=0)
-    row = DictField(required=True)
-    status = EnumField(Status, default=Status.EMPTY)
-    since = DateTimeField(default=datetime.utcnow)
-
-    def to_item(self) -> RowItem:
-        if self.status == Status.VALID:
-            return {
-                "dataset": self.dataset_name,
-                "config": self.config_name,
-                "split": self.split_name,
-                "row_idx": self.row_idx,
-                "row": self.row,
-                "truncated_cells": [],
-            }
-        else:
-            return {
-                "dataset": self.dataset_name,
-                "config": self.config_name,
-                "split": self.split_name,
-                "row_idx": self.row_idx,
-                "row": self.row,
-                "truncated_cells": list(self.row.keys()),
-            }
-
-    meta = {"collection": "rows", "db_alias": "cache"}
-    objects = QuerySetManager["DbRow"]()
-
-
-class ColumnItem(TypedDict):
-    dataset: str
-    config: str
-    split: str
-    column_idx: int
-    column: ColumnDict
-
-
-class RowsResponse(TypedDict):
-    columns: List[ColumnItem]
-    rows: List[RowItem]
-
-
-class DbColumn(Document):
-    dataset_name = StringField(required=True, unique_with=["config_name", "split_name", "name"])
-    config_name = StringField(required=True)
-    split_name = StringField(required=True)
-    column_idx = IntField(required=True, min_value=0)
-    name = StringField(required=True)
-    type = EnumField(ColumnType, required=True)
-    labels = ListField(StringField())
-
-    def to_item(self) -> ColumnItem:
-        column: ColumnDict = {"name": self.name, "type": self.type.name}
-        if self.labels:
-            column["labels"] = self.labels
-        return {
-            "dataset": self.dataset_name,
-            "config": self.config_name,
-            "split": self.split_name,
-            "column_idx": self.column_idx,
-            "column": column,
-        }
-
-    meta = {"collection": "columns", "db_alias": "cache"}
-    objects = QuerySetManager["DbColumn"]()
 
 
 class _BaseErrorItem(TypedDict):
@@ -269,8 +187,6 @@ class DbSplitError(Document):
 
 def upsert_dataset_error(dataset_name: str, error: StatusError) -> None:
     DbSplit.objects(dataset_name=dataset_name).delete()
-    DbRow.objects(dataset_name=dataset_name).delete()
-    DbColumn.objects(dataset_name=dataset_name).delete()
     DbDataset.objects(dataset_name=dataset_name).upsert_one(status=Status.ERROR)
     DbDatasetError.objects(dataset_name=dataset_name).upsert_one(
         status_code=error.status_code,
@@ -300,8 +216,6 @@ def upsert_dataset(dataset_name: str, new_split_full_names: List[SplitFullName])
 
 
 def upsert_split_error(dataset_name: str, config_name: str, split_name: str, error: StatusError) -> None:
-    DbRow.objects(dataset_name=dataset_name, config_name=config_name, split_name=split_name).delete()
-    DbColumn.objects(dataset_name=dataset_name, config_name=config_name, split_name=split_name).delete()
     DbSplit.objects(dataset_name=dataset_name, config_name=config_name, split_name=split_name).upsert_one(
         status=Status.ERROR
     )
@@ -315,58 +229,29 @@ def upsert_split_error(dataset_name: str, config_name: str, split_name: str, err
     )
 
 
-def upsert_split(dataset_name: str, config_name: str, split_name: str, split: Split) -> None:
-    rows = split["rows"]
-    columns = split["columns"]
-
-    DbSplit.objects(dataset_name=dataset_name, config_name=config_name, split_name=split_name).upsert_one(
-        status=Status.VALID, num_bytes=split["num_bytes"], num_examples=split["num_examples"]
-    )
-    DbSplitError.objects(dataset_name=dataset_name, config_name=config_name, split_name=split_name).delete()
-
-    DbRow.objects(dataset_name=dataset_name, config_name=config_name, split_name=split_name).delete()
-    for row_idx, row in enumerate(rows):
-        try:
-            DbRow(
-                dataset_name=dataset_name,
-                config_name=config_name,
-                split_name=split_name,
-                row_idx=row_idx,
-                row=row,
-                status=Status.VALID,
-            ).save()
-        except Exception:
-            DbRow(
-                dataset_name=dataset_name,
-                config_name=config_name,
-                split_name=split_name,
-                row_idx=row_idx,
-                row={column_name: "" for column_name in row.keys()},
-                # ^ truncated to empty string
-                status=Status.ERROR,
-            ).save()
-
-    DbColumn.objects(dataset_name=dataset_name, config_name=config_name, split_name=split_name).delete()
-    for column_idx, column in enumerate(columns):
-        db_column = DbColumn(
-            dataset_name=dataset_name,
-            config_name=config_name,
-            split_name=split_name,
-            column_idx=column_idx,
-            name=column.name,
-            type=column.type,
+def upsert_split(
+    dataset_name: str,
+    config_name: str,
+    split_name: str,
+    split: Split,
+) -> None:
+    try:
+        DbSplit.objects(dataset_name=dataset_name, config_name=config_name, split_name=split_name).upsert_one(
+            status=Status.VALID,
+            num_bytes=split["num_bytes"],
+            num_examples=split["num_examples"],
+            rows_response=split["rows_response"],  # TODO: a class method
         )
-        # TODO: seems like suboptimal code, introducing unnecessary coupling
-        if isinstance(column, ClassLabelColumn):
-            db_column.labels = column.labels
-        db_column.save()
+        DbSplitError.objects(dataset_name=dataset_name, config_name=config_name, split_name=split_name).delete()
+    except DocumentTooLarge as err:
+        upsert_split_error(
+            dataset_name, config_name, split_name, Status500Error("could not store the rows/ cache entry.", err)
+        )
 
 
 def delete_dataset_cache(dataset_name: str) -> None:
     DbDataset.objects(dataset_name=dataset_name).delete()
     DbSplit.objects(dataset_name=dataset_name).delete()
-    DbRow.objects(dataset_name=dataset_name).delete()
-    DbColumn.objects(dataset_name=dataset_name).delete()
     DbDatasetError.objects(dataset_name=dataset_name).delete()
     DbSplitError.objects(dataset_name=dataset_name).delete()
 
@@ -374,8 +259,6 @@ def delete_dataset_cache(dataset_name: str) -> None:
 def clean_database() -> None:
     DbDataset.drop_collection()  # type: ignore
     DbSplit.drop_collection()  # type: ignore
-    DbRow.drop_collection()  # type: ignore
-    DbColumn.drop_collection()  # type: ignore
     DbDatasetError.drop_collection()  # type: ignore
     DbSplitError.drop_collection()  # type: ignore
 
@@ -400,10 +283,8 @@ def delete_split(split_full_name: SplitFullName):
     dataset_name = split_full_name["dataset_name"]
     config_name = split_full_name["config_name"]
     split_name = split_full_name["split_name"]
-    DbRow.objects(dataset_name=dataset_name, config_name=config_name, split_name=split_name).delete()
-    DbColumn.objects(dataset_name=dataset_name, config_name=config_name, split_name=split_name).delete()
     DbSplit.objects(dataset_name=dataset_name, config_name=config_name, split_name=split_name).delete()
-    # DbSplitError.objects(dataset_name=dataset_name, config_name=config_name, split_name=split_name).delete()
+    DbSplitError.objects(dataset_name=dataset_name, config_name=config_name, split_name=split_name).delete()
     logger.debug(f"dataset '{dataset_name}': deleted split {split_name} from config {config_name}")
 
 
@@ -417,6 +298,7 @@ def create_empty_split(split_full_name: SplitFullName, split_idx: int):
         split_name=split_name,
         status=Status.EMPTY,
         split_idx=split_idx,
+        rows_response=get_empty_rows_response(),
     ).save()
     logger.debug(f"dataset '{dataset_name}': created empty split {split_name} in config {config_name}")
 
@@ -467,7 +349,9 @@ def refresh_split(
     split_name: str,
     hf_token: Optional[str] = None,
     max_size_fallback: Optional[int] = None,
+    rows_max_bytes: Optional[int] = None,
     rows_max_number: Optional[int] = None,
+    rows_min_number: Optional[int] = None,
 ):
     try:
         split = get_split(
@@ -476,7 +360,9 @@ def refresh_split(
             split_name,
             hf_token=hf_token,
             max_size_fallback=max_size_fallback,
+            rows_max_bytes=rows_max_bytes,
             rows_max_number=rows_max_number,
+            rows_min_number=rows_min_number,
         )
         upsert_split(dataset_name, config_name, split_name, split)
         logger.debug(
@@ -531,113 +417,18 @@ def get_splits_response(dataset_name: str) -> Tuple[Union[SplitsResponse, None],
         return None, dataset_error.to_item(), dataset_error.status_code
 
     splits_response: SplitsResponse = {
-        "splits": [split.to_item() for split in DbSplit.objects(dataset_name=dataset_name).order_by("+split_idx")]
+        "splits": [
+            split.to_split_item() for split in DbSplit.objects(dataset_name=dataset_name).order_by("+split_idx")
+        ]
     }
     return splits_response, None, 200
-
-
-def get_size_in_bytes(obj: Any):
-    return sys.getsizeof(orjson_dumps(obj))
-    # ^^ every row is transformed here in a string, because it corresponds to
-    # the size the row will contribute in the JSON response to /rows endpoint.
-    # The size of the string is measured in bytes.
-    # An alternative would have been to look at the memory consumption (pympler) but it's
-    # less related to what matters here (size of the JSON, number of characters in the
-    # dataset viewer table on the hub)
-
-
-def truncate_cell(cell: Any, min_cell_bytes: int) -> str:
-    return orjson_dumps(cell)[:min_cell_bytes].decode("utf8", "ignore")
-
-
-# Mutates row_item, and returns it anyway
-def truncate_row_item(row_item: RowItem) -> RowItem:
-    min_cell_bytes = DEFAULT_MIN_CELL_BYTES
-    row = {}
-    for column_name, cell in row_item["row"].items():
-        # for now: all the cells, but the smallest ones, are truncated
-        cell_bytes = get_size_in_bytes(cell)
-        if cell_bytes > min_cell_bytes:
-            row_item["truncated_cells"].append(column_name)
-            row[column_name] = truncate_cell(cell, min_cell_bytes)
-        else:
-            row[column_name] = cell
-    row_item["row"] = row
-    return row_item
-
-
-# Mutates row_items, and returns them anyway
-def truncate_row_items(row_items: List[RowItem], rows_max_bytes: int) -> List[RowItem]:
-    # compute the current size
-    rows_bytes = sum(get_size_in_bytes(row_item) for row_item in row_items)
-
-    # Loop backwards, so that the last rows are truncated first
-    for row_item in reversed(row_items):
-        previous_size = get_size_in_bytes(row_item)
-        row_item = truncate_row_item(row_item)
-        new_size = get_size_in_bytes(row_item)
-        rows_bytes += new_size - previous_size
-        row_idx = row_item["row_idx"]
-        logger.debug(f"the size of the rows is now ({rows_bytes}) after truncating row idx={row_idx}")
-        if rows_bytes < rows_max_bytes:
-            break
-    return row_items
-
-
-def to_row_items(
-    rows: QuerySet[DbRow], rows_max_bytes: Optional[int], rows_min_number: Optional[int]
-) -> List[RowItem]:
-    row_items = []
-    rows_bytes = 0
-    if rows_min_number is None:
-        rows_min_number = 0
-    else:
-        logger.debug(f"min number of rows in the response: '{rows_min_number}'")
-    if rows_max_bytes is not None:
-        logger.debug(f"max number of bytes in the response: '{rows_max_bytes}'")
-
-    # two restrictions must be enforced:
-    # - at least rows_min_number rows
-    # - at most rows_max_bytes bytes
-    # To enforce this:
-    # 1. first get the first rows_min_number rows
-    for row in rows[:rows_min_number]:
-        row_item = row.to_item()
-        if rows_max_bytes is not None:
-            rows_bytes += get_size_in_bytes(row_item)
-        row_items.append(row_item)
-
-    # 2. if the total is over the bytes limit, truncate the values, iterating backwards starting
-    # from the last rows, until getting under the threshold
-    if rows_max_bytes is not None and rows_bytes >= rows_max_bytes:
-        logger.debug(
-            f"the size of the first {rows_min_number} rows ({rows_bytes}) is above the max number of bytes"
-            f" ({rows_max_bytes}), they will be truncated"
-        )
-        return truncate_row_items(row_items, rows_max_bytes)
-
-    # 3. else: add the remaining rows until the end, or until the bytes threshold
-    for idx, row in enumerate(rows[rows_min_number:]):
-        row_item = row.to_item()
-        if rows_max_bytes is not None:
-            rows_bytes += get_size_in_bytes(row_item)
-            if rows_bytes >= rows_max_bytes:
-                logger.debug(
-                    f"the rows in the split have been truncated to {rows_min_number + idx} row(s) to keep the size"
-                    f" ({rows_bytes}) under the limit ({rows_max_bytes})"
-                )
-                break
-        row_items.append(row_item)
-    return row_items
 
 
 def get_rows_response(
     dataset_name: str,
     config_name: str,
     split_name: str,
-    rows_max_bytes: Optional[int] = None,
-    rows_min_number: Optional[int] = None,
-) -> Tuple[Union[RowsResponse, None], Union[ErrorItem, None], int]:
+) -> Tuple[Union[Dict[str, Any], None], Union[ErrorItem, None], int]:
     try:
         split = DbSplit.objects(dataset_name=dataset_name, config_name=config_name, split_name=split_name).get()
     except DoesNotExist as e:
@@ -655,21 +446,7 @@ def get_rows_response(
         # ^ can raise DoesNotExist or MultipleObjectsReturned, which should not occur -> we let the exception raise
         return None, split_error.to_item(), split_error.status_code
 
-    # TODO: if status is Status.STALLED, mention it in the response?
-    columns = DbColumn.objects(dataset_name=dataset_name, config_name=config_name, split_name=split_name).order_by(
-        "+column_idx"
-    )
-    # TODO: on some datasets, such as "edbeeching/decision_transformer_gym_replay", it takes a long time, and we
-    # truncate it anyway in to_row_items(). We might optimize here
-    rows = DbRow.objects(dataset_name=dataset_name, config_name=config_name, split_name=split_name).order_by(
-        "+row_idx"
-    )
-    row_items = to_row_items(rows, rows_max_bytes, rows_min_number)
-    rows_response: RowsResponse = {
-        "columns": [column.to_item() for column in columns],
-        "rows": row_items,
-    }
-    return rows_response, None, 200
+    return split.rows_response, None, 200
 
 
 # special reports

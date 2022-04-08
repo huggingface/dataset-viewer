@@ -20,6 +20,12 @@ To run a script, for example [20220406_cache_dbrow_status_and_since.py](./202204
 poetry run python src/datasets_preview_backend/io/migrations/<YOUR_MIGRATION_FILE>.py
 ```
 
+Then, validate with
+
+```shell
+poetry run python src/datasets_preview_backend/io/migrations/validate.py
+```
+
 In case of **error**, restore the database, else remove the dump file
 
 ```shell

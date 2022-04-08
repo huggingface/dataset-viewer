@@ -20,8 +20,10 @@ def get_rows(
     split_name: str,
     hf_token: Optional[str] = None,
     streaming: bool = True,
-    rows_max_number: Optional[int] = DEFAULT_ROWS_MAX_NUMBER,
+    rows_max_number: Optional[int] = None,
 ) -> List[Row]:
+    if rows_max_number is None:
+        rows_max_number = DEFAULT_ROWS_MAX_NUMBER
     dataset = load_dataset(
         dataset_name,
         name=config_name,

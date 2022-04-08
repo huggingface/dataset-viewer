@@ -3,11 +3,7 @@ import logging
 from starlette.requests import Request
 from starlette.responses import Response
 
-from datasets_preview_backend.config import (
-    MAX_AGE_LONG_SECONDS,
-    ROWS_MAX_BYTES,
-    ROWS_MIN_NUMBER,
-)
+from datasets_preview_backend.config import MAX_AGE_LONG_SECONDS
 from datasets_preview_backend.exceptions import (
     Status400Error,
     Status500Error,
@@ -34,9 +30,7 @@ async def rows_endpoint(request: Request) -> Response:
                 or not isinstance(split_name, str)
             ):
                 raise StatusError("Parameters 'dataset', 'config' and 'split' are required", 400)
-            rows_response, rows_error, status_code = get_rows_response(
-                dataset_name, config_name, split_name, ROWS_MAX_BYTES, ROWS_MIN_NUMBER
-            )
+            rows_response, rows_error, status_code = get_rows_response(dataset_name, config_name, split_name)
             return get_response(rows_response or rows_error, status_code, MAX_AGE_LONG_SECONDS)
         except StatusError as err:
             if err.message == "The split does not exist." and is_dataset_in_queue(dataset_name):
