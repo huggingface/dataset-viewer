@@ -1,4 +1,4 @@
-from typing import Any, Callable, ClassVar, Iterator, List, Optional, Type, TypeVar
+from typing import Callable, Iterator, List, Optional, Type, TypeVar
 
 from mongoengine import Document
 from pymongo.collection import Collection
@@ -7,10 +7,6 @@ from pymongo.collection import Collection
 # --- some typing subtleties, see https://github.com/sbdchd/mongo-types
 class DocumentWithId(Document):
     id: str
-
-
-# class ExtendedDocument(DocumentWithId):
-#     objects: ClassVar[Callable[[Any], DocumentWithId]]
 
 
 U = TypeVar("U", bound=DocumentWithId)

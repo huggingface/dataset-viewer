@@ -3,6 +3,7 @@ from PIL import Image  # type: ignore
 from datasets_preview_backend.config import ROWS_MAX_NUMBER
 from datasets_preview_backend.models.row import get_rows
 
+
 # get_rows
 def test_get_rows() -> None:
     rows = get_rows("acronym_identification", "default", "train", rows_max_number=ROWS_MAX_NUMBER)

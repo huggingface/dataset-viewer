@@ -3,6 +3,7 @@ from datasets_preview_backend.models.column import ClassLabelColumn, ColumnType
 from datasets_preview_backend.models.info import get_info
 from datasets_preview_backend.models.typed_row import get_typed_rows_and_columns
 
+
 # TODO: this is slow: change the tested dataset?
 def test_detect_types_from_typed_rows() -> None:
     info = get_info("allenai/c4", "allenai--c4")

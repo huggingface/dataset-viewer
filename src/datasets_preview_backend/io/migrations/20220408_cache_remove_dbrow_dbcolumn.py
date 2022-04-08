@@ -1,10 +1,10 @@
+import base64
+import sys
 from enum import Enum, auto
 from typing import Any, Dict, List, TypedDict
-from pymongo import MongoClient
-from pymongo.collection import Collection
-import sys
+
 import orjson
-import base64
+from pymongo import MongoClient
 
 from datasets_preview_backend.config import MONGO_CACHE_DATABASE, MONGO_URL
 from datasets_preview_backend.io.cache import Status
@@ -82,6 +82,8 @@ def truncate_cell(cell: Any, min_cell_bytes: int) -> str:
 
 
 DEFAULT_MIN_CELL_BYTES = 100
+
+
 # Mutates row_item, and returns it anyway
 def truncate_row_item(row_item: RowItem) -> RowItem:
     min_cell_bytes = DEFAULT_MIN_CELL_BYTES
@@ -127,9 +129,9 @@ def to_row_item(row: Dict[str, Any]) -> RowItem:
 
 # migrate
 rows_max_bytes = 1_000_000
-splits_coll = Collection(db, "splits")
-rows_coll = Collection(db, "rows")
-columns_coll = Collection(db, "columns")
+splits_coll = db.splits
+rows_coll = db.rows
+columns_coll = db.columns
 splits_coll.update_many({}, {"$set": {"rows_response": get_empty_rows_response()}})
 # ^ add the new field to all the splits
 for split in splits_coll.find({"status": {"$in": [Status.VALID.value, Status.STALLED.value]}}):
