@@ -4,7 +4,7 @@ from typing import Any, Dict, List, Optional
 
 from datasets import Dataset, DownloadMode, IterableDataset, load_dataset
 
-from datasets_preview_backend.config import ROWS_MAX_NUMBER
+from datasets_preview_backend.constants import DEFAULT_ROWS_MAX_NUMBER
 from datasets_preview_backend.utils import retry
 
 logger = logging.getLogger(__name__)
@@ -15,7 +15,12 @@ Row = Dict[str, Any]
 
 @retry(logger=logger)
 def get_rows(
-    dataset_name: str, config_name: str, split_name: str, hf_token: Optional[str] = None, streaming: bool = True
+    dataset_name: str,
+    config_name: str,
+    split_name: str,
+    hf_token: Optional[str] = None,
+    streaming: bool = True,
+    rows_max_number: Optional[int] = DEFAULT_ROWS_MAX_NUMBER,
 ) -> List[Row]:
     dataset = load_dataset(
         dataset_name,
@@ -30,10 +35,10 @@ def get_rows(
             raise TypeError("load_dataset should return an IterableDataset")
     elif not isinstance(dataset, Dataset):
         raise TypeError("load_dataset should return a Dataset")
-    rows_plus_one = list(itertools.islice(dataset, ROWS_MAX_NUMBER + 1))
+    rows_plus_one = list(itertools.islice(dataset, rows_max_number + 1))
     # ^^ to be able to detect if a split has exactly ROWS_MAX_NUMBER rows
-    if len(rows_plus_one) <= ROWS_MAX_NUMBER:
+    if len(rows_plus_one) <= rows_max_number:
         logger.debug(f"all the rows in the split have been fetched ({len(rows_plus_one)})")
     else:
-        logger.debug(f"the rows in the split have been truncated ({ROWS_MAX_NUMBER} rows)")
-    return rows_plus_one[:ROWS_MAX_NUMBER]
+        logger.debug(f"the rows in the split have been truncated ({rows_max_number} rows)")
+    return rows_plus_one[:rows_max_number]

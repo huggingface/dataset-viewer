@@ -36,13 +36,14 @@ def get_typed_rows_and_columns(
     info: DatasetInfo,
     hf_token: Optional[str] = None,
     fallback: Optional[bool] = False,
+    rows_max_number: Optional[int] = None,
 ) -> Tuple[List[Row], List[Column]]:
     try:
         try:
-            rows = get_rows(dataset_name, config_name, split_name, hf_token, streaming=True)
+            rows = get_rows(dataset_name, config_name, split_name, hf_token, True, rows_max_number)
         except Exception:
             if fallback:
-                rows = get_rows(dataset_name, config_name, split_name, hf_token, streaming=False)
+                rows = get_rows(dataset_name, config_name, split_name, hf_token, False, rows_max_number)
             else:
                 raise
     except Exception as err:

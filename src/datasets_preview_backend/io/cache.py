@@ -467,10 +467,16 @@ def refresh_split(
     split_name: str,
     hf_token: Optional[str] = None,
     max_size_fallback: Optional[int] = None,
+    rows_max_number: Optional[int] = None,
 ):
     try:
         split = get_split(
-            dataset_name, config_name, split_name, hf_token=hf_token, max_size_fallback=max_size_fallback
+            dataset_name,
+            config_name,
+            split_name,
+            hf_token=hf_token,
+            max_size_fallback=max_size_fallback,
+            rows_max_number=rows_max_number,
         )
         upsert_split(dataset_name, config_name, split_name, split)
         logger.debug(

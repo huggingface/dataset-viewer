@@ -24,6 +24,7 @@ def get_split(
     split_name: str,
     hf_token: Optional[str] = None,
     max_size_fallback: Optional[int] = None,
+    rows_max_number: Optional[int] = None,
 ) -> Split:
     logger.info(f"get split '{split_name}' for config '{config_name}' of dataset '{dataset_name}'")
     guard_blocked_datasets(dataset_name)
@@ -31,7 +32,9 @@ def get_split(
     fallback = (
         max_size_fallback is not None and info.size_in_bytes is not None and info.size_in_bytes < max_size_fallback
     )
-    typed_rows, columns = get_typed_rows_and_columns(dataset_name, config_name, split_name, info, hf_token, fallback)
+    typed_rows, columns = get_typed_rows_and_columns(
+        dataset_name, config_name, split_name, info, hf_token, fallback, rows_max_number
+    )
     try:
         if info.splits is None:
             raise Exception("no splits in info")

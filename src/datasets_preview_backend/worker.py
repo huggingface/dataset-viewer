@@ -13,6 +13,7 @@ from datasets_preview_backend.constants import (
     DEFAULT_MAX_LOAD_PCT,
     DEFAULT_MAX_MEMORY_PCT,
     DEFAULT_MAX_SIZE_FALLBACK,
+    DEFAULT_ROWS_MAX_NUMBER,
     DEFAULT_WORKER_QUEUE,
     DEFAULT_WORKER_SLEEP_SECONDS,
 )
@@ -46,7 +47,9 @@ max_memory_pct = get_int_value(os.environ, "MAX_MEMORY_PCT", DEFAULT_MAX_MEMORY_
 worker_sleep_seconds = get_int_value(os.environ, "WORKER_SLEEP_SECONDS", DEFAULT_WORKER_SLEEP_SECONDS)
 hf_token = get_str_or_none_value(d=os.environ, key="HF_TOKEN", default=DEFAULT_HF_TOKEN)
 max_size_fallback = get_int_value(os.environ, "MAX_SIZE_FALLBACK", DEFAULT_MAX_SIZE_FALLBACK)
+rows_max_number = get_int_value(os.environ, "ROWS_MAX_NUMBER", DEFAULT_ROWS_MAX_NUMBER)
 worker_queue = get_str_value(os.environ, "WORKER_QUEUE", DEFAULT_WORKER_QUEUE)
+
 # Ensure datasets library uses the expected revision for canonical datasets
 os.environ["HF_SCRIPTS_VERSION"] = get_str_value(
     d=os.environ, key="DATASETS_REVISION", default=DEFAULT_DATASETS_REVISION
@@ -105,6 +108,7 @@ def process_next_split_job() -> bool:
             split_name=split_name,
             hf_token=hf_token,
             max_size_fallback=max_size_fallback,
+            rows_max_number=rows_max_number,
         )
         success = True
     except Status400Error:
