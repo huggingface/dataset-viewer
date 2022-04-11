@@ -11,7 +11,7 @@ The commit, and the release, MUST always give the list of migration scripts that
 Before apply the migration script, be sure to **backup** the database, in case of failure.
 
 ```shell
-mongodump --uri=mongodb://localhost:27018 --archive=dump.bson
+mongodump --forceTableScan --uri=mongodb://localhost:27018 --archive=dump.bson
 ```
 
 To run a script, for example [20220406_cache_dbrow_status_and_since.py](./20220406_cache_dbrow_status_and_since.py):
