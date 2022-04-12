@@ -1,4 +1,4 @@
-from datasets_preview_backend.config import HF_TOKEN, ROWS_MAX_NUMBER
+from datasets_preview_backend.config import HF_TOKEN, MAX_SIZE_FALLBACK, ROWS_MAX_NUMBER
 from datasets_preview_backend.models.split import get_split
 
 # TODO: test fallback
@@ -22,6 +22,23 @@ def test_gated() -> None:
 
     assert len(split["rows_response"]["rows"]) == ROWS_MAX_NUMBER
     assert split["rows_response"]["rows"][0]["row"]["year"] == "1855"
+
+
+def test_fallback() -> None:
+    # https://github.com/huggingface/datasets/issues/3185
+    dataset_name = "samsum"
+    config_name = "samsum"
+    split_name = "train"
+    split = get_split(
+        dataset_name,
+        config_name,
+        split_name,
+        HF_TOKEN,
+        rows_max_number=ROWS_MAX_NUMBER,
+        max_size_fallback=MAX_SIZE_FALLBACK,
+    )
+
+    assert len(split["rows_response"]["rows"]) == ROWS_MAX_NUMBER
 
 
 # TODO: test the truncation
