@@ -12,6 +12,7 @@ from datasets_preview_backend.constants import (
     DEFAULT_LOG_LEVEL,
     DEFAULT_MAX_AGE_LONG_SECONDS,
     DEFAULT_MAX_AGE_SHORT_SECONDS,
+    DEFAULT_MAX_SIZE_FALLBACK,
     DEFAULT_MONGO_CACHE_DATABASE,
     DEFAULT_MONGO_QUEUE_DATABASE,
     DEFAULT_MONGO_URL,
@@ -50,6 +51,7 @@ WEB_CONCURRENCY = get_int_value(d=os.environ, key="WEB_CONCURRENCY", default=DEF
 os.environ["HF_SCRIPTS_VERSION"] = DATASETS_REVISION
 
 # for tests - to be removed
+MAX_SIZE_FALLBACK = get_int_value(os.environ, "MAX_SIZE_FALLBACK", DEFAULT_MAX_SIZE_FALLBACK)
 ROWS_MAX_BYTES = get_int_value(d=os.environ, key="ROWS_MAX_BYTES", default=DEFAULT_ROWS_MAX_BYTES)
 ROWS_MAX_NUMBER = get_int_value(d=os.environ, key="ROWS_MAX_NUMBER", default=DEFAULT_ROWS_MAX_NUMBER)
 ROWS_MIN_NUMBER = get_int_value(d=os.environ, key="ROWS_MIN_NUMBER", default=DEFAULT_ROWS_MIN_NUMBER)

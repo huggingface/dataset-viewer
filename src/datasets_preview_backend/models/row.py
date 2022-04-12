@@ -28,7 +28,7 @@ def get_rows(
         dataset_name,
         name=config_name,
         split=split_name,
-        streaming=True,
+        streaming=streaming,
         download_mode=DownloadMode.FORCE_REDOWNLOAD,
         use_auth_token=hf_token,
     )
