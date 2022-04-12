@@ -2,7 +2,13 @@ import pytest
 from starlette.testclient import TestClient
 
 from datasets_preview_backend.app import create_app
-from datasets_preview_backend.config import MONGO_CACHE_DATABASE, MONGO_QUEUE_DATABASE
+from datasets_preview_backend.config import (
+    MONGO_CACHE_DATABASE,
+    MONGO_QUEUE_DATABASE,
+    ROWS_MAX_BYTES,
+    ROWS_MAX_NUMBER,
+    ROWS_MIN_NUMBER,
+)
 from datasets_preview_backend.exceptions import Status400Error
 from datasets_preview_backend.io.cache import clean_database as clean_cache_database
 from datasets_preview_backend.io.cache import (
@@ -85,7 +91,14 @@ def test_get_is_valid(client: TestClient) -> None:
     dataset = "acronym_identification"
     split_full_names = refresh_dataset_split_full_names(dataset)
     for split_full_name in split_full_names:
-        refresh_split(split_full_name["dataset_name"], split_full_name["config_name"], split_full_name["split_name"])
+        refresh_split(
+            split_full_name["dataset_name"],
+            split_full_name["config_name"],
+            split_full_name["split_name"],
+            rows_max_bytes=ROWS_MAX_BYTES,
+            rows_max_number=ROWS_MAX_NUMBER,
+            rows_min_number=ROWS_MIN_NUMBER,
+        )
     response = client.get("/is-valid", params={"dataset": "acronym_identification"})
     assert response.status_code == 200
     json = response.json()
@@ -154,7 +167,14 @@ def test_get_rows(client: TestClient) -> None:
     dataset = "acronym_identification"
     config = "default"
     split = "train"
-    refresh_split(dataset, config, split)
+    refresh_split(
+        dataset,
+        config,
+        split,
+        rows_max_bytes=ROWS_MAX_BYTES,
+        rows_max_number=ROWS_MAX_NUMBER,
+        rows_min_number=ROWS_MIN_NUMBER,
+    )
     response = client.get("/rows", params={"dataset": dataset, "config": config, "split": split})
     assert response.status_code == 200
     json = response.json()
@@ -195,7 +215,14 @@ def test_datetime_content(client: TestClient) -> None:
     response = client.get("/rows", params={"dataset": dataset, "config": config, "split": split})
     assert response.status_code == 400
 
-    refresh_split(dataset, config, split)
+    refresh_split(
+        dataset,
+        config,
+        split,
+        rows_max_bytes=ROWS_MAX_BYTES,
+        rows_max_number=ROWS_MAX_NUMBER,
+        rows_min_number=ROWS_MIN_NUMBER,
+    )
 
     response = client.get("/rows", params={"dataset": dataset, "config": config, "split": split})
     assert response.status_code == 200
@@ -205,7 +232,14 @@ def test_bytes_limit(client: TestClient) -> None:
     dataset = "edbeeching/decision_transformer_gym_replay"
     config = "hopper-expert-v2"
     split = "train"
-    refresh_split(dataset, config, split)
+    refresh_split(
+        dataset,
+        config,
+        split,
+        rows_max_bytes=ROWS_MAX_BYTES,
+        rows_max_number=ROWS_MAX_NUMBER,
+        rows_min_number=ROWS_MIN_NUMBER,
+    )
     response = client.get("/rows", params={"dataset": dataset, "config": config, "split": split})
     assert response.status_code == 200
     json = response.json()
@@ -296,7 +330,14 @@ def test_error_messages(client: TestClient) -> None:
     # curl http://localhost:8000/rows\?dataset\=acronym_identification\&config\=default\&split\=train
     assert response.json()["message"] == "The split is being processed. Retry later."
 
-    refresh_split(dataset_name=dataset, config_name=config, split_name=split)
+    refresh_split(
+        dataset_name=dataset,
+        config_name=config,
+        split_name=split,
+        rows_max_bytes=ROWS_MAX_BYTES,
+        rows_max_number=ROWS_MAX_NUMBER,
+        rows_min_number=ROWS_MIN_NUMBER,
+    )
     finish_split_job(job_id, success=True)
     # ^ equivalent to
     # WORKER_QUEUE=splits make worker

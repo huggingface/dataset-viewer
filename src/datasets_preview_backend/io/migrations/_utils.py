@@ -1,4 +1,4 @@
-from typing import Any, Callable, ClassVar, Iterator, List, Optional, Type, TypeVar
+from typing import Callable, Iterator, List, Optional, Type, TypeVar
 
 from mongoengine import Document
 from pymongo.collection import Collection
@@ -9,11 +9,7 @@ class DocumentWithId(Document):
     id: str
 
 
-class ExtendedDocument(DocumentWithId):
-    objects: ClassVar[Callable[[Any], DocumentWithId]]
-
-
-U = TypeVar("U", bound=ExtendedDocument)
+U = TypeVar("U", bound=DocumentWithId)
 DocumentClass = Type[U]
 CustomValidation = Callable[[U], None]
 # --- end
@@ -27,10 +23,10 @@ def get_random_oids(collection: Collection, sample_size: int) -> List[int]:
 def get_random_documents(DocCls: DocumentClass, sample_size: int) -> Iterator[DocumentWithId]:
     doc_collection = DocCls._get_collection()
     random_oids = get_random_oids(doc_collection, sample_size)
-    return DocCls.objects(id__in=random_oids)
+    return DocCls.objects(id__in=random_oids)  # type: ignore
 
 
-def check_documents(DocCls: DocumentClass, sample_size: int, custom_validation: Optional[CustomValidation]):
+def check_documents(DocCls: DocumentClass, sample_size: int, custom_validation: Optional[CustomValidation] = None):
     for doc in get_random_documents(DocCls, sample_size):
         # general validation (types and values)
         doc.validate()

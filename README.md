@@ -38,9 +38,6 @@ Set environment variables to configure the following aspects:
 - `MONGO_CACHE_DATABASE`: the name of the database used for storing the cache. Defaults to `"datasets_preview_cache"`.
 - `MONGO_QUEUE_DATABASE`: the name of the database used for storing the queue. Defaults to `"datasets_preview_queue"`.
 - `MONGO_URL`: the URL used to connect to the mongo db server. Defaults to `"mongodb://localhost:27018"`.
-- `ROWS_MAX_BYTES`: max size of the /rows endpoint response in bytes. Defaults to `1_000_000` (1 MB).
-- `ROWS_MAX_NUMBER`: max number of rows in the /rows endpoint response. Defaults to `100`.
-- `ROWS_MIN_NUMBER`: min number of rows in the /rows endpoint response. Defaults to `10`.
 - `WEB_CONCURRENCY`: the number of workers. For now, it's ignored and hardcoded to 1 because the cache is not shared yet. Defaults to `2`.
 
 For example:
@@ -70,6 +67,8 @@ Every `WORKER_SLEEP_SECONDS` (defaults to 5 seconds) when idle, the worker will 
 Also specify `HF_TOKEN` with an App Access Token (ask moonlanding administrators to get one, only the `read` role is required) to allow the worker to download gated models from the hub. Defaults to empty.
 
 Also specify `MAX_SIZE_FALLBACK` with the maximum size in bytes of the dataset to fallback in normal mode if streaming fails. Note that it requires to have the size in the info metadata. Set to `0` to disable the fallback. Defaults to `100_000_000`.
+
+`ROWS_MIN_NUMBER` is the min number (defaults to `10`) and `ROWS_MAX_NUMBER` the max number (defaults to `100`) of rows fetched by the worker for the split, and provided in the /rows endpoint response. `ROWS_MAX_BYTES` is the max size of the /rows endpoint response in bytes. Defaults to `1_000_000` (1 MB).
 
 The `WORKER_QUEUE` variable specifies which jobs queue the worker will pull jobs from. It can be equal to `datasets` (default) or `splits`. The `datasets` jobs should be a lot faster than the `splits` ones, so that we should need a lot more workers for `splits` than for `datasets`.
 

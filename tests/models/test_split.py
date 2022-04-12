@@ -18,7 +18,10 @@ def test_gated() -> None:
     dataset_name = "severo/dummy_gated"
     config_name = "severo--embellishments"
     split_name = "train"
-    split = get_split(dataset_name, config_name, split_name, HF_TOKEN)
+    split = get_split(dataset_name, config_name, split_name, HF_TOKEN, rows_max_number=ROWS_MAX_NUMBER)
 
-    assert len(split["rows"]) == ROWS_MAX_NUMBER
-    assert split["rows"][0]["year"] == "1855"
+    assert len(split["rows_response"]["rows"]) == ROWS_MAX_NUMBER
+    assert split["rows_response"]["rows"][0]["row"]["year"] == "1855"
+
+
+# TODO: test the truncation
