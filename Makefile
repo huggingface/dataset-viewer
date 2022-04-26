@@ -65,3 +65,7 @@ clean-cache:
 
 .PHONY: clean
 clean: clean-queues clean-cache
+
+.PHONY: vscode
+vscode:
+	./tools/update_vscode_setup.sh
