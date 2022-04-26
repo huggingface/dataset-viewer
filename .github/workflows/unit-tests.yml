@@ -2,7 +2,61 @@ name: Launch unit tests
 on: [push]
 
 jobs:
-  unit-tests:
+  unit-tests-api_service:
+    defaults:
+      run:
+        shell: bash
+        working-directory: api_service
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: [3.9.6]
+        poetry-version: [1.1.7]
+        os: [ubuntu-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v2
+      - name: Use Python
+        uses: actions/setup-python@v2
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Use Poetry
+        uses: abatilo/actions-poetry@v2.0.0
+        with:
+          poetry-version: ${{ matrix.poetry-version }}
+      - name: Install packages
+        run: sudo apt update; sudo apt install -y libicu-dev ffmpeg libavcodec-extra llvm
+      - name: Install libsndfile
+        run: >
+          sudo apt install -y autoconf autogen automake build-essential libasound2-dev libflac-dev libogg-dev libtool libvorbis-dev libopus-dev libmp3lame-dev libmpg123-dev pkg-config;
+          cd /tmp;
+          git clone https://github.com/libsndfile/libsndfile.git;
+          cd libsndfile;
+          git checkout v1.0.30;
+          ./autogen.sh;
+          ./configure --enable-werror;
+          make;
+          sudo make install;
+          sudo ldconfig;
+          cd;
+          rm -rf /tmp/libsndfile;
+      - name: Install dependencies
+        run: poetry install
+      - name: Create mongoDB Docker container
+        run: sudo docker run -d -p 27018:27017 mongo:latest
+      - name: Run unit tests
+        env:
+          ROWS_MIN_NUMBER: 2
+          ROWS_MAX_NUMBER: 5
+          MONGO_CACHE_DATABASE: datasets_preview_cache_test
+          MONGO_QUEUE_DATABASE: datasets_preview_queue_test
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+        run: poetry run python -m pytest -s --cov --cov-report xml:coverage.xml --cov-report=term tests
+      - uses: codecov/codecov-action@v2
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          files: ./coverage.xml
+  unit-tests-datasets_preview_backend:
     defaults:
       run:
         shell: bash

@@ -3,7 +3,7 @@ from typing import Dict
 from starlette.datastructures import Headers
 from starlette.requests import Request
 
-from datasets_preview_backend.middleware.token import get_token
+from api_service.middleware.token import get_token
 
 
 def build_request(headers: Dict[str, str] = None) -> Request:

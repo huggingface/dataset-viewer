@@ -1,11 +1,11 @@
 import logging
 from typing import Any, TypedDict
 
+from datasets_preview_backend.io.queue import add_split_job
 from starlette.requests import Request
 from starlette.responses import Response
 
-from datasets_preview_backend.io.queue import add_split_job
-from datasets_preview_backend.routes._utils import get_response
+from api_service.routes._utils import get_response
 
 logger = logging.getLogger(__name__)
 

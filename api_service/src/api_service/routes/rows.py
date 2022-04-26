@@ -1,9 +1,5 @@
 import logging
 
-from starlette.requests import Request
-from starlette.responses import Response
-
-from datasets_preview_backend.config import MAX_AGE_LONG_SECONDS
 from datasets_preview_backend.exceptions import (
     Status400Error,
     Status500Error,
@@ -11,7 +7,11 @@ from datasets_preview_backend.exceptions import (
 )
 from datasets_preview_backend.io.cache import get_rows_response
 from datasets_preview_backend.io.queue import is_dataset_in_queue, is_split_in_queue
-from datasets_preview_backend.routes._utils import get_response
+from starlette.requests import Request
+from starlette.responses import Response
+
+from api_service.config import MAX_AGE_LONG_SECONDS
+from api_service.routes._utils import get_response
 
 logger = logging.getLogger(__name__)
 

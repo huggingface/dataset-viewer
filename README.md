@@ -4,10 +4,13 @@
 
 ## Requirements
 
-- Python 3.8+
+- Python 3.9.6+
 - Poetry 1.1.7+
 - make
 - libicu-dev
+- libsndfile 1.0.30+
+
+See [INSTALL](./INSTALL.md#Install)
 
 ## Install
 

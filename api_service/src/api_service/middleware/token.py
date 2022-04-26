@@ -1,11 +1,10 @@
 from typing import Tuple, Union
 
+from datasets_preview_backend.constants import DEFAULT_DATASETS_ENABLE_PRIVATE
 from starlette.authentication import AuthCredentials, AuthenticationBackend, BaseUser
 from starlette.middleware import Middleware
 from starlette.middleware.authentication import AuthenticationMiddleware
 from starlette.requests import HTTPConnection
-
-from datasets_preview_backend.constants import DEFAULT_DATASETS_ENABLE_PRIVATE
 
 
 def get_token(request: HTTPConnection) -> Union[str, None]:

@@ -2,32 +2,37 @@
 .PHONY: install
 install:
 	$(MAKE) -C datasets_preview_backend/ install
+	$(MAKE) -C api_service/ install
 
 .PHONY: run
 run:
-	$(MAKE) -C datasets_preview_backend/ run
+	$(MAKE) -C api_service/ run
 
 .PHONY: watch
 watch:
-	$(MAKE) -C datasets_preview_backend/ watch
+	$(MAKE) -C api_service/ watch
 	
 .PHONY: test
 test:
 	$(MAKE) -C datasets_preview_backend/ test
+	$(MAKE) -C api_service/ test
 
 .PHONY: coverage
 coverage:
 	$(MAKE) -C datasets_preview_backend/ coverage
+	$(MAKE) -C api_service/ coverage
 
 # Check that source code meets quality standards + security
 .PHONY: quality
 quality:
 	$(MAKE) -C datasets_preview_backend/ quality
+	$(MAKE) -C api_service/ quality
 
 # Format source code automatically
 .PHONY: style
 style:
 	$(MAKE) -C datasets_preview_backend/ style
+	$(MAKE) -C api_service/ style
 
 .PHONY: warm
 warm:

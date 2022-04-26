@@ -1,40 +1,32 @@
 import uvicorn  # type: ignore
+from datasets_preview_backend.io.asset import assets_directory, show_asserts_dir
+from datasets_preview_backend.io.cache import connect_to_cache
+from datasets_preview_backend.io.logger import init_logger
+from datasets_preview_backend.io.queue import connect_to_queue
 from starlette.applications import Starlette
 from starlette.middleware import Middleware
 from starlette.middleware.gzip import GZipMiddleware
 from starlette.routing import Mount, Route
 from starlette.staticfiles import StaticFiles
 
-from datasets_preview_backend.config import (
-    APP_HOSTNAME,
-    APP_PORT,
-    LOG_LEVEL,
-    WEB_CONCURRENCY,
-)
-from datasets_preview_backend.io.asset import assets_directory, show_asserts_dir
-from datasets_preview_backend.io.cache import connect_to_cache
-from datasets_preview_backend.io.logger import init_logger
-from datasets_preview_backend.io.queue import connect_to_queue
-from datasets_preview_backend.routes.cache_reports import cache_reports_endpoint
-from datasets_preview_backend.routes.cache_stats import cache_stats_endpoint
-from datasets_preview_backend.routes.healthcheck import healthcheck_endpoint
-from datasets_preview_backend.routes.hf_datasets import (
+from api_service.config import APP_HOSTNAME, APP_PORT, LOG_LEVEL, WEB_CONCURRENCY
+from api_service.routes.cache_reports import cache_reports_endpoint
+from api_service.routes.cache_stats import cache_stats_endpoint
+from api_service.routes.healthcheck import healthcheck_endpoint
+from api_service.routes.hf_datasets import (
     hf_datasets_count_by_cache_status_endpoint,
     hf_datasets_endpoint,
 )
-from datasets_preview_backend.routes.queue_dump import (
+from api_service.routes.queue_dump import (
     queue_dump_endpoint,
     queue_dump_waiting_started_endpoint,
 )
-from datasets_preview_backend.routes.queue_stats import queue_stats_endpoint
-from datasets_preview_backend.routes.refresh_split import refresh_split_endpoint
-from datasets_preview_backend.routes.rows import rows_endpoint
-from datasets_preview_backend.routes.splits import splits_endpoint
-from datasets_preview_backend.routes.valid import (
-    is_valid_endpoint,
-    valid_datasets_endpoint,
-)
-from datasets_preview_backend.routes.webhook import webhook_endpoint
+from api_service.routes.queue_stats import queue_stats_endpoint
+from api_service.routes.refresh_split import refresh_split_endpoint
+from api_service.routes.rows import rows_endpoint
+from api_service.routes.splits import splits_endpoint
+from api_service.routes.valid import is_valid_endpoint, valid_datasets_endpoint
+from api_service.routes.webhook import webhook_endpoint
 
 
 def create_app() -> Starlette:

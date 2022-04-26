@@ -1,7 +1,4 @@
 import pytest
-from starlette.testclient import TestClient
-
-from datasets_preview_backend.app import create_app
 from datasets_preview_backend.config import (
     MONGO_CACHE_DATABASE,
     MONGO_QUEUE_DATABASE,
@@ -24,6 +21,9 @@ from datasets_preview_backend.io.queue import (
     finish_split_job,
     get_dataset_job,
 )
+from starlette.testclient import TestClient
+
+from api_service.app import create_app
 
 
 @pytest.fixture(autouse=True, scope="module")

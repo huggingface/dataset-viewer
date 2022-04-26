@@ -30,6 +30,10 @@ cd datasets_preview_backend
 pyenv install 3.9.6
 pyenv local 3.9.6
 poetry env use python3.9
+
+cd api_service
+pyenv local 3.9.6
+poetry env use python3.9
 ```
 
 Install packages
