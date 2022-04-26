@@ -6,7 +6,6 @@
 .venv/
 .mypy_cache
 .pytest_cache
-.python-version
 
 # local configurations
 .env
