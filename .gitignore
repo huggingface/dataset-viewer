@@ -10,7 +10,6 @@
 # local configurations
 .env
 .vscode/
-poetry.toml
 
 # tests coverage
 .coverage

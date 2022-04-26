@@ -26,12 +26,12 @@ git checkout XXXX # <- the latest release tag (https://github.com/huggingface/da
 If the Python version has been increased to 3.9.6, for example, [run](https://stackoverflow.com/a/65589331/7351594):
 
 ```
-cd datasets_preview_backend
+cd services/datasets_preview_backend
 pyenv install 3.9.6
 pyenv local 3.9.6
 poetry env use python3.9
 
-cd api_service
+cd services/api_service
 pyenv local 3.9.6
 poetry env use python3.9
 ```
@@ -45,7 +45,7 @@ make install
 Check is new environment variables are available and edit the environment variables in `.env`:
 
 ```
-cd datasets_preview_backend
+cd services/datasets_preview_backend
 diff .env.example .env
 vi .env
 ```
