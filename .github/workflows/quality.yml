@@ -3,6 +3,10 @@ on: [push]
 
 jobs:
   code-quality:
+    defaults:
+      run:
+        shell: bash
+        working-directory: datasets_preview_backend
     strategy:
       fail-fast: false
       matrix:

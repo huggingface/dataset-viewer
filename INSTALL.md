@@ -26,6 +26,7 @@ git checkout XXXX # <- the latest release tag (https://github.com/huggingface/da
 If the Python version has been increased to 3.9.6, for example, [run](https://stackoverflow.com/a/65589331/7351594):
 
 ```
+cd datasets_preview_backend
 pyenv install 3.9.6
 pyenv local 3.9.6
 poetry env use python3.9
@@ -40,14 +41,15 @@ make install
 Check is new environment variables are available and edit the environment variables in `.env`:
 
 ```
+cd datasets_preview_backend
 diff .env.example .env
 vi .env
 ```
 
-Apply the database migrations (see [src/datasets_preview_backend/io/migrations/README.md](./src/datasets_preview_backend/io/migrations/README.md)) if any
+Apply the database migrations (see [datasets_preview_backend/src/datasets_preview_backend/io/migrations/README.md](./datasets_preview_backend/src/datasets_preview_backend/io/migrations/README.md)) if any
 
 ```
-# see https://github.com/huggingface/datasets-preview-backend/blob/main/src/datasets_preview_backend/io/migrations/README.md
+# see https://github.com/huggingface/datasets-preview-backend/blob/main/datasets_preview_backend/src/datasets_preview_backend/io/migrations/README.md
 ```
 
 Check that all the tests are passing
@@ -200,6 +202,7 @@ make install
 Copy and edit the environment variables file:
 
 ```bash
+cd datasets-preview-backend
 cp .env.example .env
 vi .env
 ```
