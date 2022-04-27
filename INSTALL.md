@@ -26,12 +26,12 @@ git checkout XXXX # <- the latest release tag (https://github.com/huggingface/da
 If the Python version has been increased to 3.9.6, for example, [run](https://stackoverflow.com/a/65589331/7351594):
 
 ```
-cd services/job_runner
+cd job_runner
 pyenv install 3.9.6
 pyenv local 3.9.6
 poetry env use python3.9
 
-cd services/api_service
+cd api_service
 pyenv local 3.9.6
 poetry env use python3.9
 ```
@@ -45,15 +45,15 @@ make install
 Check is new environment variables are available and edit the environment variables in `.env`:
 
 ```
-cd services/job_runner
+cd job_runner
 diff .env.example .env
 vi .env
 ```
 
-Apply the database migrations (see [libs/libcache/src/libcache/migrations/README.md](./libs/libcache/src/libcache/migrations/README.md)) if any
+Apply the database migrations (see [libcache/src/libcache/migrations/README.md](./libcache/src/libcache/migrations/README.md)) if any
 
 ```
-# see https://github.com/huggingface/datasets-preview-backend/blob/main/libs/libcache/src/libcache/migrations/README.md
+# see https://github.com/huggingface/datasets-preview-backend/blob/main/libcache/src/libcache/migrations/README.md
 ```
 
 Check that all the tests are passing

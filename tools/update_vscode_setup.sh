@@ -5,7 +5,7 @@
 shopt -s dotglob
 shopt -s nullglob
 
-VENV_PATHS_ARR=(*/*/.venv/lib/*/site-packages/)
+VENV_PATHS_ARR=(*/.venv/lib/*/site-packages/)
 VENV_PATHS=$(printf ",\"%s\"" "${VENV_PATHS_ARR[@]}")
 EXTRA_PATHS=${VENV_PATHS:1}
 

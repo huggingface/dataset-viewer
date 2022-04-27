@@ -961,6 +961,54 @@ optional = false
 python-versions = "*"
 
 [[package]]
+name = "libmodels"
+version = "0.1.0"
+description = "Library that provide the models and gets the data"
+category = "main"
+optional = false
+python-versions = "3.9.6"
+develop = true
+
+[package.dependencies]
+aiohttp = "^3.7.4.post0"
+apache-beam = "^2.33.0"
+appdirs = "^1.4.4"
+bs4 = "^0.0.1"
+conllu = "^4.4.1"
+datasets = {version = "^2.1.0", extras = ["audio", "vision"]}
+gdown = "^4.2.0"
+kenlm = {url = "https://github.com/kpu/kenlm/archive/master.zip"}
+kss = "^2.6.0"
+libutils = {path = "../libutils", develop = true}
+lm-dataformat = "^0.0.20"
+lxml = "^4.6.3"
+nlp = "^0.4.0"
+nltk = "^3.6.5"
+openpyxl = "^3.0.9"
+Pillow = "^8.4.0"
+psutil = "^5.8.0"
+py7zr = "^0.17.4"
+pydub = "^0.25.1"
+PyICU = "^2.7.4"
+python-dotenv = "^0.20.0"
+rarfile = "^4.0"
+requests = "^2.27.1"
+sklearn = "^0.0"
+tensorflow = "2.8.0"
+tfrecord = "^1.14.1"
+torchaudio = "^0.10.1"
+transformers = "^4.11.3"
+trec-car-tools = {path = "vendors/trec-car-tools/python3"}
+typer = "^0.4.0"
+types-psutil = "^5.8.13"
+types-requests = "^2.25.11"
+wget = "^3.2"
+
+[package.source]
+type = "directory"
+url = "../libmodels"
+
+[[package]]
 name = "librosa"
 version = "0.9.1"
 description = "Python module for audio and music processing"
@@ -1060,6 +1108,25 @@ description = "McCabe checker, plugin for flake8"
 category = "dev"
 optional = false
 python-versions = "*"
+
+[[package]]
+name = "mongo-types"
+version = "0.15.1"
+description = "Type stubs for mongoengine w/ basic support for bson and pymongo"
+category = "main"
+optional = false
+python-versions = ">=3.7,<4.0"
+
+[[package]]
+name = "mongoengine"
+version = "0.23.1"
+description = "MongoEngine is a Python Object-Document Mapper for working with MongoDB."
+category = "main"
+optional = false
+python-versions = ">=3.6"
+
+[package.dependencies]
+pymongo = ">=3.4,<4.0"
 
 [[package]]
 name = "msal"
@@ -2323,7 +2390,7 @@ numpy = ">=1.11.2"
 
 [package.source]
 type = "directory"
-url = "vendors/trec-car-tools/python3"
+url = "../libmodels/vendors/trec-car-tools/python3"
 
 [[package]]
 name = "tree-sitter"
@@ -2368,7 +2435,7 @@ python-versions = "*"
 
 [[package]]
 name = "types-requests"
-version = "2.27.21"
+version = "2.27.22"
 description = "Typing stubs for requests"
 category = "main"
 optional = false
@@ -2490,7 +2557,7 @@ cffi = ["cffi (>=1.11)"]
 [metadata]
 lock-version = "1.1"
 python-versions = "3.9.6"
-content-hash = "02c27735127bd42abf319994d1bb58331035c60e5f587eeb87bed59adce253ef"
+content-hash = "2b83079453ea17a1bed21a177da9361c04362224b6b9aa434c4fd7d4942962f7"
 
 [metadata.files]
 absl-py = [
@@ -3283,6 +3350,7 @@ libclang = [
     {file = "libclang-14.0.1-py2.py3-none-musllinux_1_2_x86_64.whl", hash = "sha256:58b9679868b2d6b5172ded26026c2f71306c4cabd6d15b93b597446fd677eb98"},
     {file = "libclang-14.0.1-py2.py3-none-win_amd64.whl", hash = "sha256:1a4f0d5959c801c975950926cffb9b45521c890d7c4b730d8a1f688d75b25de9"},
 ]
+libmodels = []
 librosa = [
     {file = "librosa-0.9.1-py3-none-any.whl", hash = "sha256:c2bb61a8008367cca89a3f1dad352d8e55fe5ca5f7414fb5d5258eb52765db33"},
     {file = "librosa-0.9.1.tar.gz", hash = "sha256:7ed5d6e3f4546e5e3c2840691f9ddc56878f914a35a50060df5fca2b26d4b614"},
@@ -3385,6 +3453,14 @@ markdown = [
 mccabe = [
     {file = "mccabe-0.6.1-py2.py3-none-any.whl", hash = "sha256:ab8a6258860da4b6677da4bd2fe5dc2c659cff31b3ee4f7f5d64e79735b80d42"},
     {file = "mccabe-0.6.1.tar.gz", hash = "sha256:dd8d182285a0fe56bace7f45b5e7d1a6ebcbf524e8f3bd87eb0f125271b8831f"},
+]
+mongo-types = [
+    {file = "mongo-types-0.15.1.tar.gz", hash = "sha256:0a9deeb7733ea7da5db3711d92e22d93556b522f860bbff82e5df44c53bd06a9"},
+    {file = "mongo_types-0.15.1-py3-none-any.whl", hash = "sha256:9417ae5b9a759c09630b5ec7d66904cc333c2d2fcfe75e2760a332ed5e267309"},
+]
+mongoengine = [
+    {file = "mongoengine-0.23.1-py3-none-any.whl", hash = "sha256:3d1c8b9f5d43144bd726a3f01e58d2831c6fb112960a4a60b3a26fa85e026ab3"},
+    {file = "mongoengine-0.23.1.tar.gz", hash = "sha256:de275e70cd58891dc46eef43369c522ce450dccb6d6f1979cbc9b93e6bdaf6cb"},
 ]
 msal = [
     {file = "msal-1.17.0-py2.py3-none-any.whl", hash = "sha256:5a52d78e70d2c451e267c1e8c2342e4c06f495c75c859aeafd9260d3974f09fe"},
@@ -4739,8 +4815,8 @@ types-psutil = [
     {file = "types_psutil-5.8.22-py3-none-any.whl", hash = "sha256:aa98bb5e1b702a70902172e69083a8e00802b6a7d7f03e2c7ba736b92919b8c6"},
 ]
 types-requests = [
-    {file = "types-requests-2.27.21.tar.gz", hash = "sha256:acc1ba53fa9e209b6cda9fddf411cb6e062e5ce31c8886543edd9b980026c74a"},
-    {file = "types_requests-2.27.21-py3-none-any.whl", hash = "sha256:bfe9190c15743f5a7f11a6d93fe700d5e9e164a4c6ef43ac3e7e582ac3deebb4"},
+    {file = "types-requests-2.27.22.tar.gz", hash = "sha256:2e81a74d2db1e6d06baa4a9e1896720543739297a23daac0436a34e2fc732574"},
+    {file = "types_requests-2.27.22-py3-none-any.whl", hash = "sha256:58730c31469fb959a21496d97d2e59c06ca6de2ccdfecb583cb924b83cb0811e"},
 ]
 types-urllib3 = [
     {file = "types-urllib3-1.26.13.tar.gz", hash = "sha256:40f8fb5e8cd7d57e8aefdee3fdd5e930aa1a1bb4179cdadd55226cea588af790"},
