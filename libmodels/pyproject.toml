@@ -34,7 +34,7 @@ tensorflow = "2.8.0"
 tfrecord = "^1.14.1"
 torchaudio = "^0.10.1"
 transformers = "^4.11.3"
-trec-car-tools = { path = "vendors/trec-car-tools/python3" }
+trec-car-tools = { path = "../vendors/trec-car-tools/python3" }
 typer = "^0.4.0"
 types-psutil = "^5.8.13"
 types-requests = "^2.25.11"
