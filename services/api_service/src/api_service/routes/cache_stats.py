@@ -1,10 +1,7 @@
 import logging
 import time
 
-from datasets_preview_backend.io.cache import (
-    get_datasets_count_by_status,
-    get_splits_count_by_status,
-)
+from libcache.cache import get_datasets_count_by_status, get_splits_count_by_status
 from starlette.requests import Request
 from starlette.responses import Response
 

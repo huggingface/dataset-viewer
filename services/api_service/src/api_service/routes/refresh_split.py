@@ -1,7 +1,7 @@
 import logging
 from typing import Any, TypedDict
 
-from datasets_preview_backend.io.queue import add_split_job
+from libqueue.queue import add_split_job
 from starlette.requests import Request
 from starlette.responses import Response
 

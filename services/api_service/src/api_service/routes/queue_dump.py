@@ -1,10 +1,7 @@
 import logging
 import time
 
-from datasets_preview_backend.io.queue import (
-    get_dataset_dump_by_status,
-    get_split_dump_by_status,
-)
+from libqueue.queue import get_dataset_dump_by_status, get_split_dump_by_status
 from starlette.requests import Request
 from starlette.responses import Response
 

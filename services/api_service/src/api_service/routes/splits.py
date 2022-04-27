@@ -1,12 +1,8 @@
 import logging
 
-from datasets_preview_backend.exceptions import (
-    Status400Error,
-    Status500Error,
-    StatusError,
-)
-from datasets_preview_backend.io.cache import get_splits_response
-from datasets_preview_backend.io.queue import is_dataset_in_queue
+from libcache.cache import get_splits_response
+from libqueue.queue import is_dataset_in_queue
+from libutils.exceptions import Status400Error, Status500Error, StatusError
 from starlette.requests import Request
 from starlette.responses import Response
 

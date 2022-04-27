@@ -2,56 +2,26 @@ name: Check code quality
 on: [push]
 
 jobs:
-  code-quality-api_service:
-    defaults:
-      run:
-        shell: bash
-        working-directory: services/api_service
+  code-quality:
     strategy:
       fail-fast: false
       matrix:
         python-version: [3.9.6]
         poetry-version: [1.1.7]
         os: [ubuntu-latest]
-    runs-on: ${{ matrix.os }}
-    steps:
-      - uses: actions/checkout@v2
-      - name: Use Python
-        uses: actions/setup-python@v2
-        with:
-          python-version: ${{ matrix.python-version }}
-      - name: Use Poetry
-        uses: abatilo/actions-poetry@v2.0.0
-        with:
-          poetry-version: ${{ matrix.poetry-version }}
-      - name: Install packages
-        run: sudo apt update; sudo apt install -y libicu-dev ffmpeg libavcodec-extra libsndfile1 llvm
-      - name: Install dependencies
-        run: poetry install
-      - name: Run black
-        run: poetry run black --check tests src
-      - name: Run isort
-        run: poetry run isort --check-only tests src
-      - name: Run flake8
-        run: poetry run flake8 tests src
-      - name: Run mypy
-        run: poetry run mypy tests src
-      - name: Run bandit
-        run: poetry run bandit -r src
-      - name: Run safety
-        run: poetry run safety check -i 44487 -i 44485 -i 44524 -i 44525 -i 44486 -i 44716 -i 44717 -i 44715 -i 45356 -i 46499
-        # ^^ safety exceptions: pillow, numpy
-  code-quality-datasets_preview_backend:
+        working-directory:
+          [
+            services/api_service,
+            services/job_runner,
+            libs/libcache,
+            libs/libmodels,
+            libs/libqueue,
+            libs/libutils,
+          ]
     defaults:
       run:
         shell: bash
-        working-directory: services/datasets_preview_backend
-    strategy:
-      fail-fast: false
-      matrix:
-        python-version: [3.9.6]
-        poetry-version: [1.1.7]
-        os: [ubuntu-latest]
+        working-directory: ${{ matrix.working-directory }}
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v2

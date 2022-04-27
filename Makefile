@@ -1,70 +1,54 @@
 
 .PHONY: install
 install:
-	$(MAKE) -C services/datasets_preview_backend/ install
+	$(MAKE) -C services/job_runner/ install
 	$(MAKE) -C services/api_service/ install
 
-.PHONY: run
-run:
+.PHONY: api
+api:
 	$(MAKE) -C services/api_service/ run
 
-.PHONY: watch
-watch:
-	$(MAKE) -C services/api_service/ watch
-	
+.PHONY: worker
+worker:
+	$(MAKE) -C services/job_runner/ run
+
 .PHONY: test
 test:
-	$(MAKE) -C services/datasets_preview_backend/ test
+	$(MAKE) -C services/job_runner/ test
 	$(MAKE) -C services/api_service/ test
+	$(MAKE) -C libs/libcache/ test
+	$(MAKE) -C libs/libmodels/ test
+	$(MAKE) -C libs/libqueue/ test
+	$(MAKE) -C libs/libutils/ test
 
 .PHONY: coverage
 coverage:
-	$(MAKE) -C services/datasets_preview_backend/ coverage
+	$(MAKE) -C services/job_runner/ coverage
 	$(MAKE) -C services/api_service/ coverage
+	$(MAKE) -C libs/libcache/ coverage
+	$(MAKE) -C libs/libmodels/ coverage
+	$(MAKE) -C libs/libqueue/ coverage
+	$(MAKE) -C libs/libutils/ coverage
 
 # Check that source code meets quality standards + security
 .PHONY: quality
 quality:
-	$(MAKE) -C services/datasets_preview_backend/ quality
+	$(MAKE) -C services/job_runner/ quality
 	$(MAKE) -C services/api_service/ quality
+	$(MAKE) -C libs/libcache/ quality
+	$(MAKE) -C libs/libmodels/ quality
+	$(MAKE) -C libs/libqueue/ quality
+	$(MAKE) -C libs/libutils/ quality
 
 # Format source code automatically
 .PHONY: style
 style:
-	$(MAKE) -C services/datasets_preview_backend/ style
+	$(MAKE) -C services/job_runner/ style
 	$(MAKE) -C services/api_service/ style
-
-.PHONY: warm
-warm:
-	$(MAKE) -C services/datasets_preview_backend/ warm
-
-.PHONY: worker
-worker:
-	$(MAKE) -C services/datasets_preview_backend/ worker
-
-.PHONY: force-refresh-cache
-force-refresh-cache:
-	$(MAKE) -C services/datasets_preview_backend/ force-refresh-cache
-
-.PHONY: cancel-started-jobs
-cancel-started-jobs:
-	$(MAKE) -C services/datasets_preview_backend/ cancel-started-jobs
-
-.PHONY: cancel-waiting-jobs
-cancel-waiting-jobs:
-	$(MAKE) -C services/datasets_preview_backend/ cancel-waiting-jobs
-
-.PHONY: clean-queues
-clean-queues:
-	$(MAKE) -C services/datasets_preview_backend/ clean-queues
-
-.PHONY: clean-cache
-clean-cache:
-	$(MAKE) -C services/datasets_preview_backend/ clean-cache
-# TODO: remove the assets too
-
-.PHONY: clean
-clean: clean-queues clean-cache
+	$(MAKE) -C libs/libcache/ style
+	$(MAKE) -C libs/libmodels/ style
+	$(MAKE) -C libs/libqueue/ style
+	$(MAKE) -C libs/libutils/ style
 
 .PHONY: vscode
 vscode:

@@ -1,6 +1,6 @@
 from typing import Any
 
-from datasets_preview_backend.utils import orjson_dumps
+from libutils.utils import orjson_dumps
 from starlette.responses import JSONResponse, Response
 
 

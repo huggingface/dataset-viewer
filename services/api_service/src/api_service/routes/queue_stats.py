@@ -1,7 +1,7 @@
 import logging
 import time
 
-from datasets_preview_backend.io.queue import (
+from libqueue.queue import (
     get_dataset_jobs_count_by_status,
     get_split_jobs_count_by_status,
 )

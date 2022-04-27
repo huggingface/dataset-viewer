@@ -1,8 +1,8 @@
 import uvicorn  # type: ignore
-from datasets_preview_backend.io.asset import assets_directory, show_asserts_dir
-from datasets_preview_backend.io.cache import connect_to_cache
-from datasets_preview_backend.io.logger import init_logger
-from datasets_preview_backend.io.queue import connect_to_queue
+from libcache.cache import connect_to_cache
+from libmodels.asset import assets_directory, show_asserts_dir
+from libqueue.queue import connect_to_queue
+from libutils.logger import init_logger
 from starlette.applications import Starlette
 from starlette.middleware import Middleware
 from starlette.middleware.gzip import GZipMiddleware

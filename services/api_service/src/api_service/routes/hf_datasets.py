@@ -1,7 +1,7 @@
 import logging
 
-from datasets_preview_backend.io.cache import get_datasets_count_by_cache_status
-from datasets_preview_backend.models.hf_dataset import get_hf_datasets
+from libcache.cache import get_datasets_count_by_cache_status
+from libmodels.hf_dataset import get_hf_datasets
 from starlette.requests import Request
 from starlette.responses import Response
 
