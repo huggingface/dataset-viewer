@@ -1,15 +1,16 @@
 [tool.poetry]
 authors = ["Sylvain Lesage <sylvain.lesage@huggingface.co>"]
-description = "Library for the cache in mongodb"
-name = "libcache"
+description = "Worker that refreshes datasets and splits"
+name = "job_runner"
 version = "0.1.0"
 
 [tool.poetry.dependencies]
-libmodels = { path = "../libmodels", develop = true }
-libutils = { path = "../libutils", develop = true }
-mongo-types = "0.15.1"
-mongoengine = "^0.23.1"
+libcache = { path = "../../libs/libcache", develop = true }
+libmodels = { path = "../../libs/libmodels", develop = true }
+libqueue = { path = "../../libs/libqueue", develop = true }
+libutils = { path = "../../libs/libutils", develop = true }
 python = "3.9.6"
+python-dotenv = "^0.20.0"
 
 [tool.poetry.dev-dependencies]
 bandit = "^1.7.0"
@@ -30,7 +31,7 @@ requires = ["poetry-core>=1.0.0"]
 filterwarnings = ["ignore::DeprecationWarning"]
 
 [tool.coverage.run]
-source = ["libcache"]
+source = ["job_runner"]
 
 [tool.isort]
 profile = "black"

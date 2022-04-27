@@ -10,7 +10,14 @@ jobs:
         poetry-version: [1.1.7]
         os: [ubuntu-latest]
         working-directory:
-          [api_service, job_runner, libcache, libmodels, libqueue, libutils]
+          [
+            services/api_service,
+            services/job_runner,
+            libs/libcache,
+            libs/libmodels,
+            libs/libqueue,
+            libs/libutils,
+          ]
     defaults:
       run:
         shell: bash

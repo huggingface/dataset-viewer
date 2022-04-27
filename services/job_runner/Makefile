@@ -1,4 +1,4 @@
-include ../tools/Common.mk
+include ../../tools/Common.mk
 
 .PHONY: run
 run:

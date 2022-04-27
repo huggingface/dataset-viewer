@@ -1,63 +1,63 @@
 
 .PHONY: install
 install:
-	$(MAKE) -C job_runner/ install
-	$(MAKE) -C api_service/ install
+	$(MAKE) -C services/job_runner/ install
+	$(MAKE) -C services/api_service/ install
 
 .PHONY: lock
 lock:
-	$(MAKE) -C libutils/ lock
-	$(MAKE) -C libqueue/ lock
-	$(MAKE) -C libcache/ lock
-	$(MAKE) -C libmodels/ lock
-	$(MAKE) -C job_runner/ lock
-	$(MAKE) -C api_service/ lock
+	$(MAKE) -C libs/libutils/ lock
+	$(MAKE) -C libs/libqueue/ lock
+	$(MAKE) -C libs/libcache/ lock
+	$(MAKE) -C libs/libmodels/ lock
+	$(MAKE) -C services/job_runner/ lock
+	$(MAKE) -C services/api_service/ lock
 
 .PHONY: api
 api:
-	$(MAKE) -C api_service/ run
+	$(MAKE) -C services/api_service/ run
 
 .PHONY: worker
 worker:
-	$(MAKE) -C job_runner/ run
+	$(MAKE) -C services/job_runner/ run
 
 .PHONY: test
 test:
-	$(MAKE) -C job_runner/ test
-	$(MAKE) -C api_service/ test
-	$(MAKE) -C libcache/ test
-	$(MAKE) -C libmodels/ test
-	$(MAKE) -C libqueue/ test
-	$(MAKE) -C libutils/ test
+	$(MAKE) -C services/job_runner/ test
+	$(MAKE) -C services/api_service/ test
+	$(MAKE) -C libs/libcache/ test
+	$(MAKE) -C libs/libmodels/ test
+	$(MAKE) -C libs/libqueue/ test
+	$(MAKE) -C libs/libutils/ test
 
 .PHONY: coverage
 coverage:
-	$(MAKE) -C job_runner/ coverage
-	$(MAKE) -C api_service/ coverage
-	$(MAKE) -C libcache/ coverage
-	$(MAKE) -C libmodels/ coverage
-	$(MAKE) -C libqueue/ coverage
-	$(MAKE) -C libutils/ coverage
+	$(MAKE) -C services/job_runner/ coverage
+	$(MAKE) -C services/api_service/ coverage
+	$(MAKE) -C libs/libcache/ coverage
+	$(MAKE) -C libs/libmodels/ coverage
+	$(MAKE) -C libs/libqueue/ coverage
+	$(MAKE) -C libs/libutils/ coverage
 
 # Check that source code meets quality standards + security
 .PHONY: quality
 quality:
-	$(MAKE) -C job_runner/ quality
-	$(MAKE) -C api_service/ quality
-	$(MAKE) -C libcache/ quality
-	$(MAKE) -C libmodels/ quality
-	$(MAKE) -C libqueue/ quality
-	$(MAKE) -C libutils/ quality
+	$(MAKE) -C services/job_runner/ quality
+	$(MAKE) -C services/api_service/ quality
+	$(MAKE) -C libs/libcache/ quality
+	$(MAKE) -C libs/libmodels/ quality
+	$(MAKE) -C libs/libqueue/ quality
+	$(MAKE) -C libs/libutils/ quality
 
 # Format source code automatically
 .PHONY: style
 style:
-	$(MAKE) -C job_runner/ style
-	$(MAKE) -C api_service/ style
-	$(MAKE) -C libcache/ style
-	$(MAKE) -C libmodels/ style
-	$(MAKE) -C libqueue/ style
-	$(MAKE) -C libutils/ style
+	$(MAKE) -C services/job_runner/ style
+	$(MAKE) -C services/api_service/ style
+	$(MAKE) -C libs/libcache/ style
+	$(MAKE) -C libs/libmodels/ style
+	$(MAKE) -C libs/libqueue/ style
+	$(MAKE) -C libs/libutils/ style
 
 .PHONY: vscode
 vscode:
