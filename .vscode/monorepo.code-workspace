@@ -36,6 +36,9 @@
     },
     "python.formatting.provider": "black",
     "editor.formatOnPaste": false,
-    "editor.formatOnSave": true
+    "editor.formatOnSave": true,
+    "python.linting.enabled": true,
+    "python.linting.mypyEnabled": true,
+    "python.linting.flake8Enabled": true
   }
 }
