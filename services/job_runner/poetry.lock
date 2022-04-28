@@ -919,7 +919,6 @@ python-versions = "*"
 [package.source]
 type = "url"
 url = "https://github.com/kpu/kenlm/archive/master.zip"
-
 [[package]]
 name = "keras"
 version = "2.8.0"
@@ -979,54 +978,6 @@ description = "Clang Python Bindings, mirrored from the official LLVM repo: http
 category = "main"
 optional = false
 python-versions = "*"
-
-[[package]]
-name = "libmodels"
-version = "0.1.0"
-description = "Library that provide the models and gets the data"
-category = "main"
-optional = false
-python-versions = "3.9.6"
-develop = true
-
-[package.dependencies]
-aiohttp = "^3.7.4.post0"
-apache-beam = "^2.33.0"
-appdirs = "^1.4.4"
-bs4 = "^0.0.1"
-conllu = "^4.4.1"
-datasets = {version = "^2.1.0", extras = ["audio", "vision"]}
-gdown = "^4.2.0"
-kenlm = {url = "https://github.com/kpu/kenlm/archive/master.zip"}
-kss = "^2.6.0"
-libutils = {path = "../../libs/libutils", develop = true}
-lm-dataformat = "^0.0.20"
-lxml = "^4.6.3"
-nlp = "^0.4.0"
-nltk = "^3.6.5"
-openpyxl = "^3.0.9"
-Pillow = "^8.4.0"
-psutil = "^5.8.0"
-py7zr = "^0.17.4"
-pydub = "^0.25.1"
-PyICU = "^2.7.4"
-python-dotenv = "^0.20.0"
-rarfile = "^4.0"
-requests = "^2.27.1"
-sklearn = "^0.0"
-tensorflow = "2.8.0"
-tfrecord = "^1.14.1"
-torchaudio = "^0.10.1"
-transformers = "^4.11.3"
-trec-car-tools = {path = "../../vendors/trec-car-tools/python3"}
-typer = "^0.4.0"
-types-psutil = "^5.8.13"
-types-requests = "^2.25.11"
-wget = "^3.2"
-
-[package.source]
-type = "directory"
-url = "../../libs/libmodels"
 
 [[package]]
 name = "libqueue"
@@ -2474,7 +2425,7 @@ python-versions = "*"
 
 [[package]]
 name = "types-requests"
-version = "2.27.23"
+version = "2.27.24"
 description = "Typing stubs for requests"
 category = "main"
 optional = false
@@ -2596,7 +2547,7 @@ cffi = ["cffi (>=1.11)"]
 [metadata]
 lock-version = "1.1"
 python-versions = "3.9.6"
-content-hash = "b8e85fb9b35dbb7f5abd3ca8e92edcfac1ce0f90ba81563889fd7d03d46625eb"
+content-hash = "6467fe9e5a60d186d2fe25bf6d2cc211364ae3903a03b19d7593f89a158132c9"
 
 [metadata.files]
 absl-py = [
@@ -3390,7 +3341,6 @@ libclang = [
     {file = "libclang-14.0.1-py2.py3-none-musllinux_1_2_x86_64.whl", hash = "sha256:58b9679868b2d6b5172ded26026c2f71306c4cabd6d15b93b597446fd677eb98"},
     {file = "libclang-14.0.1-py2.py3-none-win_amd64.whl", hash = "sha256:1a4f0d5959c801c975950926cffb9b45521c890d7c4b730d8a1f688d75b25de9"},
 ]
-libmodels = []
 libqueue = []
 librosa = [
     {file = "librosa-0.9.1-py3-none-any.whl", hash = "sha256:c2bb61a8008367cca89a3f1dad352d8e55fe5ca5f7414fb5d5258eb52765db33"},
@@ -4856,8 +4806,8 @@ types-psutil = [
     {file = "types_psutil-5.8.22-py3-none-any.whl", hash = "sha256:aa98bb5e1b702a70902172e69083a8e00802b6a7d7f03e2c7ba736b92919b8c6"},
 ]
 types-requests = [
-    {file = "types-requests-2.27.23.tar.gz", hash = "sha256:13f750ed6a450c9c39a620fe901349f73cde680c8de2ee7c4319d5e77a593618"},
-    {file = "types_requests-2.27.23-py3-none-any.whl", hash = "sha256:018dc26464fd4d07fc67a230bd050e4fa250fd26fdf1f7d09b1ddbd29d06c825"},
+    {file = "types-requests-2.27.24.tar.gz", hash = "sha256:e1cde99e92d5fb7afa0ee53924b211f4c47639516434d86dc84d53ec84fcfa8a"},
+    {file = "types_requests-2.27.24-py3-none-any.whl", hash = "sha256:5501ec6bcc164c54a6598e7ee6581827ea0ac0472e9d33b9456d202892f8d94c"},
 ]
 types-urllib3 = [
     {file = "types-urllib3-1.26.13.tar.gz", hash = "sha256:40f8fb5e8cd7d57e8aefdee3fdd5e930aa1a1bb4179cdadd55226cea588af790"},

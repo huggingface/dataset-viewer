@@ -1,11 +1,11 @@
 import logging
 
 from libcache.cache import get_datasets_count_by_cache_status
-from libmodels.hf_dataset import get_hf_datasets
 from starlette.requests import Request
 from starlette.responses import Response
 
 from api_service.config import MAX_AGE_LONG_SECONDS
+from api_service.hf_dataset import get_hf_datasets
 from api_service.routes._utils import get_response
 
 logger = logging.getLogger(__name__)

@@ -1,6 +1,6 @@
 import uvicorn  # type: ignore
+from libcache.asset import get_assets_dir, show_assets_dir
 from libcache.cache import connect_to_cache
-from libmodels.asset import assets_directory, show_asserts_dir
 from libqueue.queue import connect_to_queue
 from libutils.logger import init_logger
 from starlette.applications import Starlette
@@ -33,11 +33,11 @@ def create_app() -> Starlette:
     init_logger(log_level=LOG_LEVEL)
     connect_to_cache()
     connect_to_queue()
-    show_asserts_dir()
+    show_assets_dir()
 
     middleware = [Middleware(GZipMiddleware)]
     routes = [
-        Mount("/assets", app=StaticFiles(directory=assets_directory, check_dir=True), name="assets"),
+        Mount("/assets", app=StaticFiles(directory=get_assets_dir(), check_dir=True), name="assets"),
         Route("/cache", endpoint=cache_stats_endpoint),
         Route("/cache-reports", endpoint=cache_reports_endpoint),
         Route("/healthcheck", endpoint=healthcheck_endpoint),

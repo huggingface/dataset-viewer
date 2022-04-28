@@ -6,7 +6,8 @@ install:
 lock:
 	rm -rf .venv/
 	rm -f poetry.lock
-	$(MAKE) install
+	poetry lock
+	poetry install
 
 # Check that source code meets quality standards + security
 .PHONY: quality

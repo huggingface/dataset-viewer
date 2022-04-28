@@ -14,7 +14,6 @@ jobs:
             services/api_service,
             services/job_runner,
             libs/libcache,
-            libs/libmodels,
             libs/libqueue,
             libs/libutils,
           ]

@@ -9,10 +9,6 @@
       "path": "../libs/libcache"
     },
     {
-      "name": "libs/libmodels",
-      "path": "../libs/libmodels"
-    },
-    {
       "name": "libs/libqueue",
       "path": "../libs/libqueue"
     },
@@ -40,5 +36,8 @@
     "python.linting.enabled": true,
     "python.linting.mypyEnabled": true,
     "python.linting.flake8Enabled": true
+  },
+  "extensions": {
+    "recommendations": ["ms-python.python"]
   }
 }
