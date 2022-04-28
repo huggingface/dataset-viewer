@@ -919,6 +919,7 @@ python-versions = "*"
 [package.source]
 type = "url"
 url = "https://github.com/kpu/kenlm/archive/master.zip"
+
 [[package]]
 name = "keras"
 version = "2.8.0"
@@ -962,10 +963,10 @@ python-versions = "3.9.6"
 develop = true
 
 [package.dependencies]
-libmodels = {path = "../../libs/libmodels", develop = true}
 libutils = {path = "../../libs/libutils", develop = true}
 mongo-types = "0.15.1"
 mongoengine = "^0.23.1"
+python-dotenv = "^0.20.0"
 
 [package.source]
 type = "directory"

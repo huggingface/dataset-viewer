@@ -1,5 +1,6 @@
 from enum import Enum, auto
-from typing import Any, List, TypedDict
+from typing import Any, List
+from libutils.types import ColumnDict
 
 from datasets import Value
 
@@ -18,16 +19,6 @@ class ColumnType(Enum):
 
 # TODO: a set of possible cell types (problem: JSON is Any)
 Cell = Any
-
-
-class _BaseColumnDict(TypedDict):
-    name: str
-    type: str
-
-
-class ColumnDict(_BaseColumnDict, total=False):
-    # https://www.python.org/dev/peps/pep-0655/#motivation
-    labels: List[str]
 
 
 class Column:

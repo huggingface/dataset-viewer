@@ -2,11 +2,7 @@ import logging
 import random
 import time
 
-from libcache.cache import (
-    connect_to_cache,
-    refresh_dataset_split_full_names,
-    refresh_split,
-)
+from libcache.cache import connect_to_cache
 from libqueue.queue import (
     EmptyQueue,
     add_split_job,
@@ -32,6 +28,7 @@ from job_runner.config import (
     WORKER_QUEUE,
     WORKER_SLEEP_SECONDS,
 )
+from job_runner.refresh import refresh_dataset_split_full_names, refresh_split
 
 
 def process_next_dataset_job() -> bool:

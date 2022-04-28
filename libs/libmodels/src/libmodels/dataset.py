@@ -1,19 +1,14 @@
 import logging
-from typing import List, Optional, TypedDict
+from typing import List, Optional
 
 from datasets import DownloadMode, get_dataset_config_names, get_dataset_split_names
 from datasets.inspect import SplitsNotFoundError
 from libutils.exceptions import Status400Error
+from libutils.types import SplitFullName
 
 from libmodels._guard import guard_blocked_datasets
 
 logger = logging.getLogger(__name__)
-
-
-class SplitFullName(TypedDict):
-    dataset_name: str
-    config_name: str
-    split_name: str
 
 
 def get_dataset_split_full_names(dataset_name: str, hf_token: Optional[str] = None) -> List[SplitFullName]:

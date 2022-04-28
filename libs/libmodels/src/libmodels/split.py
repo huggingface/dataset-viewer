@@ -1,46 +1,18 @@
 import logging
 import sys
-from typing import Any, Dict, List, Optional, TypedDict
+from typing import Any, List, Optional
 
 from libutils.utils import orjson_dumps
+from libutils.types import RowItem, ColumnItem, RowsResponse, Split
 
 from libmodels._guard import guard_blocked_datasets
-from libmodels.column import Column, ColumnDict
+from libmodels.column import Column
 from libmodels.constants import DEFAULT_MIN_CELL_BYTES
 from libmodels.info import get_info
 from libmodels.row import Row
 from libmodels.typed_row import get_typed_rows_and_columns
 
 logger = logging.getLogger(__name__)
-
-
-class RowItem(TypedDict):
-    dataset: str
-    config: str
-    split: str
-    row_idx: int
-    row: Dict[str, Any]
-    truncated_cells: List[str]
-
-
-class ColumnItem(TypedDict):
-    dataset: str
-    config: str
-    split: str
-    column_idx: int
-    column: ColumnDict
-
-
-class RowsResponse(TypedDict):
-    columns: List[ColumnItem]
-    rows: List[RowItem]
-
-
-class Split(TypedDict):
-    split_name: str
-    rows_response: RowsResponse
-    num_bytes: Optional[int]
-    num_examples: Optional[int]
 
 
 def get_size_in_bytes(obj: Any):

@@ -1,7 +1,7 @@
+from typing import List
+
 import pytest
-from libmodels.dataset import get_dataset_split_full_names
-from libmodels.split import RowItem, Split
-from libutils.exceptions import Status400Error
+from libutils.types import RowItem, Split, SplitFullName
 from mongoengine import DoesNotExist
 
 from libcache.cache import (
@@ -10,9 +10,6 @@ from libcache.cache import (
     connect_to_cache,
     delete_dataset_cache,
     get_rows_response,
-    get_splits_response,
-    refresh_dataset_split_full_names,
-    refresh_split,
     upsert_dataset,
     upsert_split,
 )
@@ -52,8 +49,10 @@ def test_save_and_update() -> None:
 
 
 def test_acronym_identification() -> None:
-    dataset_name = "acronym_identification"
-    split_full_names = get_dataset_split_full_names(dataset_name)
+    dataset_name = "test_dataset"
+    split_full_names: List[SplitFullName] = [
+        {"dataset_name": dataset_name, "config_name": "test_config", "split_name": "test_split"}
+    ]
     upsert_dataset(dataset_name, split_full_names)
     # ensure it's idempotent
     upsert_dataset(dataset_name, split_full_names)
@@ -63,49 +62,6 @@ def test_acronym_identification() -> None:
     delete_dataset_cache(dataset_name)
     with pytest.raises(DoesNotExist):
         DbDataset.objects(dataset_name=dataset_name).get()
-
-
-def test_doesnotexist() -> None:
-    dataset_name = "doesnotexist"
-    with pytest.raises(Status400Error):
-        refresh_dataset_split_full_names(dataset_name)
-    retrieved = DbDataset.objects(dataset_name=dataset_name).get()
-    assert retrieved.status.value == "error"
-
-
-def test_config_error() -> None:
-    # see https://github.com/huggingface/datasets-preview-backend/issues/78
-    dataset_name = "Check/region_1"
-    refresh_dataset_split_full_names(dataset_name)
-    retrieved = DbDataset.objects(dataset_name=dataset_name).get()
-    assert retrieved.status.value == "valid"
-    splits_response, error, status_code = get_splits_response(dataset_name)
-    assert status_code == 200
-    assert error is None
-    assert splits_response is not None
-    assert "splits" in splits_response
-    assert len(splits_response["splits"]) == 1
-
-
-def test_large_document() -> None:
-    # see https://github.com/huggingface/datasets-preview-backend/issues/89
-    dataset_name = "SaulLu/Natural_Questions_HTML"
-    refresh_dataset_split_full_names(dataset_name)
-    retrieved = DbDataset.objects(dataset_name=dataset_name).get()
-    assert retrieved.status.value == "valid"
-
-
-def test_column_order() -> None:
-    refresh_split("acronym_identification", "default", "train")
-    rows_response, error, status_code = get_rows_response("acronym_identification", "default", "train")
-    assert status_code == 200
-    assert error is None
-    assert rows_response is not None
-    print(rows_response["columns"])
-    assert "columns" in rows_response
-    assert rows_response["columns"][0]["column"]["name"] == "id"
-    assert rows_response["columns"][1]["column"]["name"] == "tokens"
-    assert rows_response["columns"][2]["column"]["name"] == "labels"
 
 
 def test_big_row() -> None:
