@@ -9,7 +9,6 @@
 
 # local configurations
 .env
-.vscode/
 
 # tests coverage
 .coverage
