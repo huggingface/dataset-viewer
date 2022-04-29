@@ -7,6 +7,7 @@ from libutils.utils import (
     get_str_or_none_value,
     get_str_value,
 )
+from datasets.utils.logging import set_verbosity, log_levels
 
 from job_runner.constants import (
     DEFAULT_ASSETS_DIRECTORY,
@@ -53,3 +54,5 @@ WORKER_SLEEP_SECONDS = get_int_value(os.environ, "WORKER_SLEEP_SECONDS", DEFAULT
 
 # Ensure the datasets library uses the expected revision for canonical datasets
 os.environ["HF_SCRIPTS_VERSION"] = DATASETS_REVISION
+# Set logs from the datasets library to the least verbose
+set_verbosity(log_levels["critical"])
