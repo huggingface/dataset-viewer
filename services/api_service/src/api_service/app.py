@@ -1,5 +1,5 @@
 import uvicorn  # type: ignore
-from libcache.asset import get_assets_dir, show_assets_dir
+from libcache.asset import init_assets_dir, show_assets_dir
 from libcache.cache import connect_to_cache
 from libqueue.queue import connect_to_queue
 from libutils.logger import init_logger
@@ -9,7 +9,13 @@ from starlette.middleware.gzip import GZipMiddleware
 from starlette.routing import Mount, Route
 from starlette.staticfiles import StaticFiles
 
-from api_service.config import APP_HOSTNAME, APP_PORT, LOG_LEVEL, WEB_CONCURRENCY
+from api_service.config import (
+    APP_HOSTNAME,
+    APP_PORT,
+    ASSETS_DIRECTORY,
+    LOG_LEVEL,
+    WEB_CONCURRENCY,
+)
 from api_service.routes.cache_reports import cache_reports_endpoint
 from api_service.routes.cache_stats import cache_stats_endpoint
 from api_service.routes.healthcheck import healthcheck_endpoint
@@ -33,11 +39,11 @@ def create_app() -> Starlette:
     init_logger(log_level=LOG_LEVEL)
     connect_to_cache()
     connect_to_queue()
-    show_assets_dir()
+    show_assets_dir(ASSETS_DIRECTORY)
 
     middleware = [Middleware(GZipMiddleware)]
     routes = [
-        Mount("/assets", app=StaticFiles(directory=get_assets_dir(), check_dir=True), name="assets"),
+        Mount("/assets", app=StaticFiles(directory=init_assets_dir(ASSETS_DIRECTORY), check_dir=True), name="assets"),
         Route("/cache", endpoint=cache_stats_endpoint),
         Route("/cache-reports", endpoint=cache_reports_endpoint),
         Route("/healthcheck", endpoint=healthcheck_endpoint),

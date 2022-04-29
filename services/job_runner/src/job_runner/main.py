@@ -2,6 +2,7 @@ import logging
 import random
 import time
 
+from libcache.asset import show_assets_dir
 from libcache.cache import connect_to_cache
 from libqueue.queue import (
     EmptyQueue,
@@ -17,6 +18,7 @@ from libutils.logger import init_logger
 from psutil import cpu_count, getloadavg, swap_memory, virtual_memory
 
 from job_runner.config import (
+    ASSETS_DIRECTORY,
     HF_TOKEN,
     MAX_JOBS_PER_DATASET,
     MAX_LOAD_PCT,
@@ -154,4 +156,5 @@ if __name__ == "__main__":
     init_logger("DEBUG")
     connect_to_cache()
     connect_to_queue()
+    show_assets_dir(ASSETS_DIRECTORY)
     loop()

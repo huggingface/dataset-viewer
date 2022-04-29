@@ -1,5 +1,6 @@
 from typing import Optional
 
+DEFAULT_ASSETS_DIRECTORY: None = None
 DEFAULT_HF_TOKEN: Optional[str] = None
 DEFAULT_MAX_JOBS_PER_DATASET: int = 2
 DEFAULT_MAX_LOAD_PCT: int = 50

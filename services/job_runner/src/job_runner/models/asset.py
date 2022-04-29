@@ -3,10 +3,12 @@ import os
 from typing import List, Tuple, TypedDict
 
 import soundfile  # type:ignore
-from libcache.asset import get_assets_dir
+from libcache.asset import init_assets_dir
 from numpy import ndarray  # type:ignore
 from PIL import Image  # type: ignore
 from pydub import AudioSegment  # type:ignore
+
+from job_runner.config import ASSETS_DIRECTORY
 
 logger = logging.getLogger(__name__)
 
@@ -15,8 +17,7 @@ ASSET_DIR_MODE = 0o755
 
 
 def create_asset_dir(dataset: str, config: str, split: str, row_idx: int, column: str) -> Tuple[str, str]:
-    assets_dir = get_assets_dir()
-    # TODO: add assets_dir as an argument?
+    assets_dir = init_assets_dir(ASSETS_DIRECTORY)
     dir_path = os.path.join(assets_dir, dataset, DATASET_SEPARATOR, config, split, str(row_idx), column)
     url_dir_path = f"{dataset}/{DATASET_SEPARATOR}/{config}/{split}/{row_idx}/{column}"
     os.makedirs(dir_path, ASSET_DIR_MODE, exist_ok=True)
