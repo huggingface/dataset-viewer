@@ -1,5 +1,6 @@
 import pytest
-from libcache.cache import clean_database as clean_cache_database
+
+# from libcache.cache import clean_database as clean_cache_database
 from libcache.cache import (
     create_or_mark_dataset_as_stalled,
     create_or_mark_split_as_stalled,
@@ -9,13 +10,13 @@ from libqueue.queue import clean_database as clean_queue_database
 from starlette.testclient import TestClient
 
 from api_service.app import create_app
-from api_service.config import MONGO_CACHE_DATABASE, MONGO_QUEUE_DATABASE
+from api_service.config import MONGO_QUEUE_DATABASE
 
 
 @pytest.fixture(autouse=True, scope="module")
 def safe_guard() -> None:
-    if "test" not in MONGO_CACHE_DATABASE:
-        raise Exception("Tests on cache must be launched on a test mongo database")
+    # if "test" not in MONGO_CACHE_DATABASE:
+    #     raise Exception("Tests on cache must be launched on a test mongo database")
     if "test" not in MONGO_QUEUE_DATABASE:
         raise Exception("Tests on queue must be launched on a test mongo database")
 
@@ -27,7 +28,7 @@ def client() -> TestClient:
 
 @pytest.fixture(autouse=True)
 def clean_mongo_databases() -> None:
-    clean_cache_database()
+    # clean_cache_database()
     clean_queue_database()
 
 

@@ -14,6 +14,8 @@ from api_service.config import (
     APP_PORT,
     ASSETS_DIRECTORY,
     LOG_LEVEL,
+    MONGO_CACHE_DATABASE,
+    MONGO_URL,
     WEB_CONCURRENCY,
 )
 from api_service.routes.cache_reports import cache_reports_endpoint
@@ -37,7 +39,7 @@ from api_service.routes.webhook import webhook_endpoint
 
 def create_app() -> Starlette:
     init_logger(log_level=LOG_LEVEL)
-    connect_to_cache()
+    connect_to_cache(database=MONGO_CACHE_DATABASE, host=MONGO_URL)
     connect_to_queue()
     show_assets_dir(ASSETS_DIRECTORY)
 

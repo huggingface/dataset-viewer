@@ -8,8 +8,9 @@ from libcache.cache import (
 )
 from libutils.exceptions import Status400Error
 
-from job_runner.config import MONGO_CACHE_DATABASE
 from job_runner.refresh import refresh_dataset_split_full_names, refresh_split
+
+from ._utils import MONGO_CACHE_DATABASE, MONGO_URL
 
 
 @pytest.fixture(autouse=True, scope="module")
@@ -20,7 +21,7 @@ def safe_guard() -> None:
 
 @pytest.fixture(autouse=True, scope="module")
 def client() -> None:
-    connect_to_cache()
+    connect_to_cache(database=MONGO_CACHE_DATABASE, host=MONGO_URL)
 
 
 @pytest.fixture(autouse=True)

@@ -3,6 +3,16 @@ from typing import Callable, Iterator, List, Optional, Type, TypeVar
 from mongoengine import Document
 from pymongo.collection import Collection
 
+import os
+
+from libutils.utils import get_str_value
+
+DEFAULT_MONGO_CACHE_DATABASE: str = "datasets_preview_cache"
+DEFAULT_MONGO_URL: str = "mongodb://localhost:27018"
+
+MONGO_CACHE_DATABASE = get_str_value(d=os.environ, key="MONGO_CACHE_DATABASE", default=DEFAULT_MONGO_CACHE_DATABASE)
+MONGO_URL = get_str_value(d=os.environ, key="MONGO_URL", default=DEFAULT_MONGO_URL)
+
 
 # --- some typing subtleties, see https://github.com/sbdchd/mongo-types
 class DocumentWithId(Document):

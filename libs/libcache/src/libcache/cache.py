@@ -29,8 +29,6 @@ from mongoengine.fields import (
 from mongoengine.queryset.queryset import QuerySet
 from pymongo.errors import DocumentTooLarge
 
-from libcache.config import MONGO_CACHE_DATABASE, MONGO_URL
-
 # START monkey patching ### hack ###
 # see https://github.com/sbdchd/mongo-types#install
 U = TypeVar("U", bound=Document)
@@ -54,8 +52,8 @@ class QuerySetManager(Generic[U]):
 # END monkey patching ### hack ###
 
 
-def connect_to_cache() -> None:
-    connect(MONGO_CACHE_DATABASE, alias="cache", host=MONGO_URL)
+def connect_to_cache(database, host) -> None:
+    connect(database, alias="cache", host=host)
 
 
 class Status(enum.Enum):

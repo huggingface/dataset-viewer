@@ -13,7 +13,8 @@ from libcache.cache import (
     upsert_dataset,
     upsert_split,
 )
-from libcache.config import MONGO_CACHE_DATABASE
+
+from ._utils import MONGO_CACHE_DATABASE, MONGO_URL
 
 
 @pytest.fixture(autouse=True, scope="module")
@@ -24,7 +25,7 @@ def safe_guard() -> None:
 
 @pytest.fixture(autouse=True, scope="module")
 def client() -> None:
-    connect_to_cache()
+    connect_to_cache(database=MONGO_CACHE_DATABASE, host=MONGO_URL)
 
 
 @pytest.fixture(autouse=True)

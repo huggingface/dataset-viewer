@@ -7,7 +7,7 @@ import orjson
 from pymongo import MongoClient
 
 from libcache.cache import Status
-from libcache.config import MONGO_CACHE_DATABASE, MONGO_URL
+from ._utils import MONGO_CACHE_DATABASE, MONGO_URL
 
 client = MongoClient(MONGO_URL)
 db = client[MONGO_CACHE_DATABASE]

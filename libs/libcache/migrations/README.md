@@ -1,6 +1,6 @@
 # MongoDB migrations
 
-The cache and the queue are stored in two MongoDB databases. They are defined by the env vars: `MONGO_CACHE_DATABASE` and `MONGO_CACHE_DATABASE`, see the [README](../../../../../README.md).
+The cache is stored in a MongoDB database.
 
 When the structure of a database is changed, the data stored in the database must be migrated to the new structure. It's done using the migration scripts in this directory.
 
@@ -17,12 +17,16 @@ mongodump --forceTableScan --uri=mongodb://localhost:27018 --archive=dump.bson
 To run a script, for example [20220406_cache_dbrow_status_and_since.py](./20220406_cache_dbrow_status_and_since.py):
 
 ```shell
+export MONGO_CACHE_DATABASE="datasets_preview_queue_test"
+export MONGO_URL="mongodb://localhost:27018"
 poetry run python libs/libcache/src/libcache/migrations/<YOUR_MIGRATION_FILE>.py
 ```
 
 Then, validate with
 
 ```shell
+export MONGO_CACHE_DATABASE="datasets_preview_queue_test"
+export MONGO_URL="mongodb://localhost:27018"
 poetry run python libs/libcache/src/libcache/migrations/validate.py
 ```
 
@@ -30,7 +34,8 @@ In case of **error**, restore the database, else remove the dump file
 
 ```shell
 # only in case of error!
-mongorestore --drop --uri=mongodb://localhost:27018 --archive=dump.bson
+export MONGO_URL="mongodb://localhost:27018"
+mongorestore --drop --uri=${MONGO_URL} --archive=dump.bson
 ```
 
 ## Write a migration script
