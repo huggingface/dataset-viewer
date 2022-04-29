@@ -10,7 +10,6 @@ libutils = { path = "../../libs/libutils", develop = true }
 mongo-types = "0.15.1"
 mongoengine = "^0.23.1"
 python = "3.9.6"
-python-dotenv = "^0.20.0"
 
 [tool.poetry.dev-dependencies]
 bandit = "^1.7.0"

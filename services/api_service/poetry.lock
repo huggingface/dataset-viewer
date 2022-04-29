@@ -452,7 +452,6 @@ appdirs = "^1.4.4"
 libutils = {path = "../../libs/libutils", develop = true}
 mongo-types = "0.15.1"
 mongoengine = "^0.23.1"
-python-dotenv = "^0.20.0"
 
 [package.source]
 type = "directory"
@@ -471,7 +470,6 @@ develop = true
 libutils = {path = "../../libs/libutils", develop = true}
 mongo-types = "0.15.1"
 mongoengine = "^0.23.1"
-python-dotenv = "^0.20.0"
 
 [package.source]
 type = "directory"
