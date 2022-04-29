@@ -1,6 +1,7 @@
 from libutils.utils import (
     get_bool_value,
     get_int_value,
+    get_str_list_value,
     get_str_or_none_value,
     get_str_value,
 )
@@ -32,8 +33,21 @@ def test_get_str_value() -> None:
     # Empty string is ignored
     assert get_str_value({"KEY": ""}, "KEY", default) == default
     assert get_str_value({"KEY": "test"}, "KEY", default) == "test"
+    assert get_str_value({"KEY": "  test "}, "KEY", default) == "test"
     assert get_str_value({"KEY": "None"}, "KEY", default) == "None"
     assert get_str_value({"KEY": "test"}, "DOESNOTEXIST", default) == default
+
+
+def test_get_str_list_value() -> None:
+    default = ["a", "b"]
+    assert get_str_list_value({}, "KEY", default) == default
+    # Empty string is NOT ignored
+    assert get_str_list_value({"KEY": ""}, "KEY", default) == []
+    assert get_str_list_value({"KEY": "test"}, "KEY", default) == ["test"]
+    assert get_str_list_value({"KEY": "None"}, "KEY", default) == ["None"]
+    assert get_str_list_value({"KEY": "a,b,c"}, "KEY", default) == ["a", "b", "c"]
+    assert get_str_list_value({"KEY": "a  , b,  c "}, "KEY", default) == ["a", "b", "c"]
+    assert get_str_list_value({"KEY": "test"}, "DOESNOTEXIST", default) == default
 
 
 def test_get_str_or_none_value() -> None:

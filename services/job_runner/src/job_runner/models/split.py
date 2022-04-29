@@ -7,7 +7,7 @@ from libutils.utils import orjson_dumps
 
 from job_runner.models._guard import guard_blocked_datasets
 from job_runner.models.column import Column
-from job_runner.models.constants import DEFAULT_MIN_CELL_BYTES
+from job_runner.config import MIN_CELL_BYTES
 from job_runner.models.info import get_info
 from job_runner.models.row import Row
 from job_runner.models.typed_row import get_typed_rows_and_columns
@@ -31,14 +31,13 @@ def truncate_cell(cell: Any, min_cell_bytes: int) -> str:
 
 # Mutates row_item, and returns it anyway
 def truncate_row_item(row_item: RowItem) -> RowItem:
-    min_cell_bytes = DEFAULT_MIN_CELL_BYTES
     row = {}
     for column_name, cell in row_item["row"].items():
         # for now: all the cells, but the smallest ones, are truncated
         cell_bytes = get_size_in_bytes(cell)
-        if cell_bytes > min_cell_bytes:
+        if cell_bytes > MIN_CELL_BYTES:
             row_item["truncated_cells"].append(column_name)
-            row[column_name] = truncate_cell(cell, min_cell_bytes)
+            row[column_name] = truncate_cell(cell, MIN_CELL_BYTES)
         else:
             row[column_name] = cell
     row_item["row"] = row

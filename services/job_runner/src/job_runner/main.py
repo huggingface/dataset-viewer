@@ -20,6 +20,7 @@ from psutil import cpu_count, getloadavg, swap_memory, virtual_memory
 from job_runner.config import (
     ASSETS_DIRECTORY,
     HF_TOKEN,
+    LOG_LEVEL,
     MAX_JOBS_PER_DATASET,
     MAX_LOAD_PCT,
     MAX_MEMORY_PCT,
@@ -156,7 +157,7 @@ def loop() -> None:
 
 
 if __name__ == "__main__":
-    init_logger("DEBUG")
+    init_logger(LOG_LEVEL)
     connect_to_cache(database=MONGO_CACHE_DATABASE, host=MONGO_URL)
     connect_to_queue(database=MONGO_QUEUE_DATABASE, host=MONGO_URL)
     show_assets_dir(ASSETS_DIRECTORY)

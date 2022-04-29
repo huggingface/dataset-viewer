@@ -4,7 +4,7 @@ import time
 from distutils.util import strtobool
 from logging import Logger
 from os import _Environ
-from typing import Any, Dict, Union
+from typing import Any, Dict, List, Union
 
 import orjson
 from starlette.datastructures import QueryParams
@@ -38,6 +38,12 @@ def get_str_value(d: GenericDict, key: str, default: str) -> str:
         return default
     value = str(d.get(key)).strip()
     return default if value == "" else value
+
+
+def get_str_list_value(d: GenericDict, key: str, default: List[str]) -> List[str]:
+    if key not in d:
+        return default
+    return [el.strip() for el in str(d.get(key)).split(",") if len(el.strip())]
 
 
 def get_str_or_none_value(d: GenericDict, key: str, default: Union[str, None]) -> Union[str, None]:

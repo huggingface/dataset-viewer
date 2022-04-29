@@ -1,6 +1,6 @@
 from libutils.exceptions import Status400Error
 
-from job_runner.models.constants import DATASETS_BLOCKLIST
+from job_runner.config import DATASETS_BLOCKLIST
 
 
 def guard_blocked_datasets(dataset_name: str) -> None:

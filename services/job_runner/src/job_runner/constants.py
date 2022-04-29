@@ -1,11 +1,15 @@
-from typing import Optional
+from typing import List, Optional
 
 DEFAULT_ASSETS_DIRECTORY: None = None
+DEFAULT_DATASETS_BLOCKLIST: List[str] = []
+DEFAULT_DATASETS_REVISION: str = "master"
 DEFAULT_HF_TOKEN: Optional[str] = None
-DEFAULT_MAX_JOBS_PER_DATASET: int = 2
-DEFAULT_MAX_LOAD_PCT: int = 50
-DEFAULT_MAX_MEMORY_PCT: int = 60
+DEFAULT_LOG_LEVEL: str = "INFO"
+DEFAULT_MAX_JOBS_PER_DATASET: int = 1
+DEFAULT_MAX_LOAD_PCT: int = 70
+DEFAULT_MAX_MEMORY_PCT: int = 80
 DEFAULT_MAX_SIZE_FALLBACK: int = 100_000_000
+DEFAULT_MIN_CELL_BYTES: int = 100
 DEFAULT_MONGO_CACHE_DATABASE: str = "datasets_preview_cache"
 DEFAULT_MONGO_QUEUE_DATABASE: str = "datasets_preview_queue"
 DEFAULT_MONGO_URL: str = "mongodb://localhost:27018"

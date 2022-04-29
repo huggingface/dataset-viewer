@@ -5,7 +5,7 @@ from typing import Any, Dict, List, Optional
 from datasets import Dataset, DownloadMode, IterableDataset, load_dataset
 from libutils.utils import retry
 
-from job_runner.models.constants import DEFAULT_ROWS_MAX_NUMBER
+from job_runner.constants import DEFAULT_ROWS_MAX_NUMBER
 
 logger = logging.getLogger(__name__)
 
