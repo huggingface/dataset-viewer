@@ -1,8 +1,9 @@
 import pytest
 from libutils.exceptions import Status400Error
 
-from job_runner.models.config import HF_TOKEN
 from job_runner.models.dataset import get_dataset_split_full_names
+
+from .._utils import HF_TOKEN
 
 
 def test_script_error() -> None:

@@ -14,7 +14,7 @@ The requirements are:
 We assume a machine running Ubuntu. Install packages:
 
 ```bash
-sudo apt install python-is-python3 make libicu-dev ffmpeg libavcodec-extra
+sudo apt install python-is-python3 make libicu-dev ffmpeg libavcodec-extra llvm
 ```
 
 Also install `libsndfile` in version `v1.0.30`. As the version in ubuntu stable for the moment is `v1.0.28`, we can build from scratch (see details here: https://github.com/libsndfile/libsndfile)

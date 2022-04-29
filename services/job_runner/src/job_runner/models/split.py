@@ -5,9 +5,9 @@ from typing import Any, List, Optional
 from libutils.types import ColumnItem, RowItem, RowsResponse, Split
 from libutils.utils import orjson_dumps
 
+from job_runner.config import MIN_CELL_BYTES
 from job_runner.models._guard import guard_blocked_datasets
 from job_runner.models.column import Column
-from job_runner.config import MIN_CELL_BYTES
 from job_runner.models.info import get_info
 from job_runner.models.row import Row
 from job_runner.models.typed_row import get_typed_rows_and_columns

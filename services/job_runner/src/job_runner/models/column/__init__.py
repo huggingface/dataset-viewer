@@ -3,6 +3,7 @@ from typing import List, Union
 from datasets import DatasetInfo, Features
 from libutils.exceptions import Status400Error
 
+from job_runner.config import ROWS_MAX_NUMBER
 from job_runner.models.column.audio import AudioColumn
 from job_runner.models.column.bool import BoolColumn
 from job_runner.models.column.class_label import ClassLabelColumn
@@ -22,7 +23,6 @@ from job_runner.models.column.image_array3d import ImageArray3DColumn
 from job_runner.models.column.image_url import ImageUrlColumn
 from job_runner.models.column.int import IntColumn
 from job_runner.models.column.string import StringColumn
-from job_runner.models.constants import DEFAULT_ROWS_MAX_NUMBER
 from job_runner.models.row import Row
 
 column_classes = [
@@ -40,7 +40,7 @@ column_classes = [
 
 FeaturesOrNone = Union[Features, None]
 
-MAX_ROWS_FOR_TYPE_INFERENCE_AND_CHECK = DEFAULT_ROWS_MAX_NUMBER
+MAX_ROWS_FOR_TYPE_INFERENCE_AND_CHECK = ROWS_MAX_NUMBER
 
 
 def get_column(column_name: str, features: FeaturesOrNone, rows: List[Row]) -> Column:

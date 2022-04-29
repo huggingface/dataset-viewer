@@ -1,5 +1,6 @@
-from job_runner.models.config import HF_TOKEN, MAX_SIZE_FALLBACK, ROWS_MAX_NUMBER
 from job_runner.models.split import get_split
+
+from .._utils import HF_TOKEN, ROWS_MAX_NUMBER
 
 # TODO: test fallback
 
@@ -29,6 +30,7 @@ def test_fallback() -> None:
     dataset_name = "samsum"
     config_name = "samsum"
     split_name = "train"
+    MAX_SIZE_FALLBACK = 100_000_000
     split = get_split(
         dataset_name,
         config_name,

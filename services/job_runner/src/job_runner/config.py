@@ -1,7 +1,12 @@
 import os
 
 from dotenv import load_dotenv
-from libutils.utils import get_int_value, get_str_list_value, get_str_or_none_value, get_str_value
+from libutils.utils import (
+    get_int_value,
+    get_str_list_value,
+    get_str_or_none_value,
+    get_str_value,
+)
 
 from job_runner.constants import (
     DEFAULT_ASSETS_DIRECTORY,

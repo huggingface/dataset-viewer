@@ -1,7 +1,8 @@
 from PIL import Image  # type: ignore
 
-from job_runner.models.config import ROWS_MAX_NUMBER
 from job_runner.models.row import get_rows
+
+from .._utils import ROWS_MAX_NUMBER
 
 
 # get_rows

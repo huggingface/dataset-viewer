@@ -1,7 +1,8 @@
 from job_runner.models.column import ClassLabelColumn, ColumnType
-from job_runner.models.config import ROWS_MAX_NUMBER
 from job_runner.models.info import get_info
 from job_runner.models.typed_row import get_typed_rows_and_columns
+
+from .._utils import ROWS_MAX_NUMBER
 
 
 # TODO: this is slow: change the tested dataset?
