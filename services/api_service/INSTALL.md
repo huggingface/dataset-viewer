@@ -1,11 +1,13 @@
-# INSTALL
+# Install guide
+
+Follow the [general INSTALL](../INSTALL.md) to be sure to setup the assets directory and the databases.
 
 ## Requirements
 
 The requirements are:
 
 - node (for pm2)
-- Python 3.9.6+
+- Python 3.9.6+ (consider [pyenv](https://github.com/pyenv/pyenv))
 - Poetry 1.1.7+
 - make
 - nginx
@@ -70,8 +72,8 @@ server {
 ```
 
 ```bash
-sudo mkdir -p /data/assets /data/nginx/cache
-sudo chmod -R a+x /data/assets /data/nginx/cache
+sudo mkdir -p /data/nginx/cache
+sudo chmod -R a+x /data/nginx/cache
 sudo ln -s /etc/nginx/sites-available/reverse-proxy.conf /etc/nginx/sites-enabled/reverse-proxy.conf
 sudo nginx -t # Test
 sudo systemctl reload nginx

@@ -1,11 +1,13 @@
-# INSTALL
+# Install guide
+
+Follow the [general INSTALL](../INSTALL.md) to be sure to setup the assets directory and the databases.
 
 ## Requirements
 
 The requirements are:
 
 - node (for pm2)
-- Python 3.9.6+
+- Python 3.9.6+ (consider [pyenv](https://github.com/pyenv/pyenv))
 - Poetry 1.1.7+
 - make
 - libicu-dev
