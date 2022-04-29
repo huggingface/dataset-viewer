@@ -105,9 +105,7 @@ pm2 logs
 
 ## Upgrade
 
-To deploy a new version of the job-runner, first stop the current workers:
-
-Update the code
+To deploy a new version of the job-runner, first update the code
 
 ```
 cd /home/hf/datasets-preview-backend/

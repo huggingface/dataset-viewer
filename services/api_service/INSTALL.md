@@ -1,124 +1,20 @@
 # INSTALL
 
-datasets-preview-backend is installed on a virtual machine (ec2-54-158-211-3.compute-1.amazonaws.com).
+## Requirements
 
-## Manage
+The requirements are:
 
-Use [pm2](https://pm2.keymetrics.io/docs/usage/quick-start/#cheatsheet) to manage the service.
+- node (for pm2)
+- Python 3.9.6+
+- Poetry 1.1.7+
+- make
+- nginx
 
-```bash
-pm2 list
-pm2 logs
-```
-
-## Upgrade
-
-To deploy a new version of datasets-preview-backend, first pause the monitor at https://betteruptime.com/team/14149/monitors/389098.
-
-Then update the code
-
-```
-cd /home/hf/datasets-preview-backend/
-git fetch --tags
-git checkout XXXX # <- the latest release tag (https://github.com/huggingface/datasets-preview-backend/releases/latest)
-```
-
-If the Python version has been increased to 3.9.6, for example, [run](https://stackoverflow.com/a/65589331/7351594):
-
-```
-cd job_runner
-pyenv install 3.9.6
-pyenv local 3.9.6
-poetry env use python3.9
-
-cd api_service
-pyenv local 3.9.6
-poetry env use python3.9
-```
-
-Install packages
-
-```
-make install
-```
-
-Check is new environment variables are available and edit the environment variables in `.env`:
-
-```
-cd job_runner
-diff .env.example .env
-vi .env
-```
-
-Apply the database migrations (see [libcache/src/libcache/migrations/README.md](./libcache/src/libcache/migrations/README.md)) if any
-
-```
-# see https://github.com/huggingface/datasets-preview-backend/blob/main/libcache/src/libcache/migrations/README.md
-```
-
-Check that all the tests are passing
-
-```
-make test
-```
-
-Restart
-
-```
-pm2 restart all
-```
-
-Check if the app is accessible at https://datasets-preview.huggingface.tech/healthcheck.
-
-Finally un-pause the monitor at https://betteruptime.com/team/14149/monitors/389098.
-
-## Machine
+We assume a machine running Ubuntu. Install packages:
 
 ```bash
-ssh hf@ec2-54-158-211-3.compute-1.amazonaws.com
-
-/: 200 GB
-
-ipv4: 172.30.4.71
-ipv4 (public): 54.158.211.3
-domain name: datasets-preview.huggingface.tech
+sudo apt install python-is-python3 make nginx
 ```
-
-Grafana:
-
-- https://grafana.huggingface.co/d/gBtAotjMk/use-method?orgId=2&var-DS_PROMETHEUS=HF%20Prometheus&var-node=data-preview
-- https://grafana.huggingface.co/d/rYdddlPWk/node-exporter-full?orgId=2&refresh=1m&var-DS_PROMETHEUS=HF%20Prometheus&var-job=node_exporter_metrics&var-node=data-preview&var-diskdevices=%5Ba-z%5D%2B%7Cnvme%5B0-9%5D%2Bn%5B0-9%5D%2B
-
-BetterUptime:
-
-- https://betteruptime.com/team/14149/monitors/389098
-
-## Install
-
-Install packages, logged as `hf`:
-
-```bash
-sudo apt install python-is-python3 make nginx libicu-dev ffmpeg libavcodec-extra
-```
-
-Also install `libsndfile` in version `v1.0.30`. As the version in ubuntu stable for the moment is `v1.0.28`, we can build from scratch (see details here: https://github.com/libsndfile/libsndfile)
-
-```
-sudo apt install -y autoconf autogen automake build-essential libasound2-dev libflac-dev libogg-dev libtool libvorbis-dev libopus-dev libmp3lame-dev libmpg123-dev pkg-config;
-cd /tmp;
-git clone https://github.com/libsndfile/libsndfile.git;
-cd libsndfile;
-git checkout v1.0.30;
-./autogen.sh;
-./configure --enable-werror;
-make;
-sudo make install;
-sudo ldconfig;
-cd;
-rm -rf /tmp/libsndfile
-```
-
-Also install docker (see https://docs.docker.com/engine/install/ubuntu/#install-using-the-repository and https://docs.docker.com/engine/install/linux-postinstall/).
 
 Also install node and npm (with [nvm](https://github.com/nvm-sh/nvm)), then:
 
@@ -187,56 +83,112 @@ sudo systemctl reload nginx
 sudo certbot --nginx
 ```
 
-Launch a docker container with mongo:
+## Install and configure
 
-```bash
-docker run -p 27018:27017 --name datasets-preview-backend-mongo -d --restart always mongo:latest
-```
-
-Install datasets-preview-backend:
+Install the API service:
 
 ```bash
 cd
 # See https://github.blog/2013-09-03-two-factor-authentication/#how-does-it-work-for-command-line-git for authentication
 git clone https://github.com/huggingface/datasets-preview-backend.git
-cd datasets-preview-backend
+cd datasets-preview-backend/services/api_service
 make install
 ```
 
 Copy and edit the environment variables file:
 
 ```bash
-cd datasets-preview-backend
+cd datasets-preview-backend/services/api_service
 cp .env.example .env
 vi .env
 ```
 
 Note that we assume `ASSETS_DIRECTORY=/data` in the nginx configuration. If you set the assets directory to another place, or let the default, ensure the nginx configuration is setup accordingly. Beware: the default directory inside `/home/hf/.cache` is surely not readable by the nginx user.
 
-Launch the app with pm2:
+## Deploy
+
+Launch the API with pm2:
 
 ```bash
-pm2 start --name app make -- -C /home/hf/datasets-preview-backend/ run
+pm2 start --name api make -- -C /home/hf/datasets-preview-backend/ run
 ```
 
-Check if the app is accessible at https://datasets-preview.huggingface.tech/healthcheck.
-
-Warm the cache with:
-
-```bash
-pm2 start --no-autorestart --name warm make -- -C /home/hf/datasets-preview-backend/ warm
-```
-
-Setup workers (run again to create another worker, and so on):
-
-```bash
-WORKER_QUEUE=datasets pm2 start --name worker-datasets make -- -C /home/hf/datasets-preview-backend/ worker
-WORKER_QUEUE=splits pm2 start --name worker-splits make -- -C /home/hf/datasets-preview-backend/ worker
-```
+Check if the api is accessible at https://datasets-preview.huggingface.tech/healthcheck.
 
 Finally, ensure that pm2 will restart on reboot (see https://pm2.keymetrics.io/docs/usage/startup/):
 
+- if it's the first time:
+  ```bash
+  pm2 startup
+  # and follow the instructions
+  ```
+- else:
+  ```bash
+  pm2 save
+  ```
+
+## Manage
+
+Use [pm2](https://pm2.keymetrics.io/docs/usage/quick-start/#cheatsheet) to manage the service.
+
 ```bash
-pm2 startup
-# and follow the instructions
+pm2 list
+pm2 logs api
 ```
+
+## Upgrade
+
+To deploy a new version of datasets-preview-backend, first pause the monitor at https://betteruptime.com/team/14149/monitors/389098.
+
+Then update the code
+
+```
+cd /home/hf/datasets-preview-backend/
+git fetch --tags
+git checkout XXXX # <- the latest release tag (https://github.com/huggingface/datasets-preview-backend/releases/latest)
+```
+
+If the Python version has been increased to 3.9.6, for example, [run](https://stackoverflow.com/a/65589331/7351594):
+
+```
+cd services/api_service
+pyenv install 3.9.6
+pyenv local 3.9.6
+poetry env use python3.9
+```
+
+Install packages
+
+```
+make install
+```
+
+Check if new environment variables are available and edit the environment variables in `.env`:
+
+```
+cd services/api_service
+diff .env.example .env
+vi .env
+```
+
+Apply the database migrations (see [libs/libcache/src/libcache/migrations/README.md](./../../libs/libcache/migrations/README.md)) if any (in this case: ensure to upgrade the other services too).
+
+```
+# see https://github.com/huggingface/datasets-preview-backend/blob/main/libs/libcache/migrations/README.md
+```
+
+If you want to be extra-sure, check that all the tests are passing
+
+```
+make test
+```
+
+Restart
+
+```
+pm2 restart api
+```
+
+Check if the API is accessible at https://datasets-preview.huggingface.tech/healthcheck.
+
+Finally un-pause the monitor at https://betteruptime.com/team/14149/monitors/389098.

@@ -66,3 +66,26 @@ Note that we assume `ASSETS_DIRECTORY=/data` in the nginx configuration. If you 
 ---
 
 how to monitor the job runners and the queue?
+
+---
+
+```python
+DEFAULT_MAX_SIZE_FALLBACK
+DEFAULT_ROWS_MAX_BYTES,
+DEFAULT_ROWS_MAX_NUMBER,
+DEFAULT_ROWS_MIN_NUMBER,
+
+# for tests - to be removed
+MAX_SIZE_FALLBACK = get_int_value(os.environ, "MAX_SIZE_FALLBACK", DEFAULT_MAX_SIZE_FALLBACK)
+ROWS_MAX_BYTES = get_int_value(d=os.environ, key="ROWS_MAX_BYTES", default=DEFAULT_ROWS_MAX_BYTES)
+ROWS_MAX_NUMBER = get_int_value(d=os.environ, key="ROWS_MAX_NUMBER", default=DEFAULT_ROWS_MAX_NUMBER)
+ROWS_MIN_NUMBER = get_int_value(d=os.environ, key="ROWS_MIN_NUMBER", default=DEFAULT_ROWS_MIN_NUMBER)
+```
+
+---
+
+Warm the cache with:
+
+```bash
+pm2 start --no-autorestart --name warm make -- -C /home/hf/datasets-preview-backend/ warm
+```

@@ -1,24 +1,10 @@
 # Datasets preview backend API
 
-> API to extract rows of 🤗 datasets
-
-## Requirements
-
-- Python 3.9.6+
-- Poetry 1.1.7+
-- make
-- libicu-dev
-- libsndfile 1.0.30+
-
-See [INSTALL](./INSTALL.md#Install)
+> API to get the first rows of 🤗 datasets
 
 ## Install
 
-Install with:
-
-```bash
-make install
-```
+See [INSTALL](./INSTALL.md#Install)
 
 ## Run
 
@@ -33,8 +19,6 @@ Set environment variables to configure the following aspects:
 - `APP_HOSTNAME`: the hostname used by the app. Defaults to `"localhost"`.
 - `APP_PORT`: the port used by the app. Defaults to `8000`.
 - `ASSETS_DIRECTORY`: directory where the asset files are stored. Defaults to empty, in which case the assets are located in the `datasets_preview_backend_assets` subdirectory inside the OS default cache directory.
-- `DATASETS_ENABLE_PRIVATE`: enable private datasets. Defaults to `False`.
-- `DATASETS_REVISION`: git reference for the canonical datasets on https://github.com/huggingface/datasets. Defaults to `master`.
 - `LOG_LEVEL`: log level, among `DEBUG`, `INFO`, `WARNING`, `ERROR` and `CRITICAL`. Defaults to `INFO`.
 - `MAX_AGE_LONG_SECONDS`: number of seconds to set in the `max-age` header on data endpoints. Defaults to `120` (2 minutes).
 - `MAX_AGE_SHORT_SECONDS`: number of seconds to set in the `max-age` header on technical endpoints. Defaults to `10` (10 seconds).
@@ -53,52 +37,6 @@ To reload the application on file changes while developing, run:
 
 ```bash
 make watch
-```
-
-To launch a worker, which will take jobs from the queue:
-
-```bash
-MAX_LOAD_PCT=50 MAX_MEMORY_PCT=60 WORKER_SLEEP_SECONDS=5 make worker
-```
-
-Every `WORKER_SLEEP_SECONDS` (defaults to 5 seconds) when idle, the worker will check if resources are available, and update the cache entry for a dataset, if it could get a job from the queue. Then loop to start again. The resources are considered available if all the conditions are met:
-
-- the load percentage (the max of the 1m/5m/15m load divided by the number of cpus \*100) is below `MAX_LOAD_PCT` (defaults to 50%)
-- the memory (RAM + SWAP) on the machine is below `MAX_MEMORY_PCT` (defaults to 60%)
-- the number of started jobs for the same dataset is under `MAX_JOBS_PER_DATASET`
-
-Also specify `HF_TOKEN` with an App Access Token (ask moonlanding administrators to get one, only the `read` role is required) to allow the worker to download gated models from the hub. Defaults to empty.
-
-Also specify `MAX_SIZE_FALLBACK` with the maximum size in bytes of the dataset to fallback in normal mode if streaming fails. Note that it requires to have the size in the info metadata. Set to `0` to disable the fallback. Defaults to `100_000_000`.
-
-`ROWS_MIN_NUMBER` is the min number (defaults to `10`) and `ROWS_MAX_NUMBER` the max number (defaults to `100`) of rows fetched by the worker for the split, and provided in the /rows endpoint response. `ROWS_MAX_BYTES` is the max size of the /rows endpoint response in bytes. Defaults to `1_000_000` (1 MB).
-
-The `WORKER_QUEUE` variable specifies which jobs queue the worker will pull jobs from. It can be equal to `datasets` (default) or `splits`. The `datasets` jobs should be a lot faster than the `splits` ones, so that we should need a lot more workers for `splits` than for `datasets`.
-
-To warm the cache, ie. add all the missing Hugging Face datasets to the queue:
-
-```bash
-make warm
-```
-
-To empty the databases:
-
-```bash
-make clean
-```
-
-or individually:
-
-```bash
-make clean-cache
-make clean-queues         # delete all the jobs
-```
-
-See also:
-
-```bash
-make cancel-started-jobs
-make cancel-waiting-jobs
 ```
 
 ## Endpoints
