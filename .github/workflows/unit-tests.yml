@@ -6,9 +6,54 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
+        mongo-port: [27018]
         python-version: [3.9.6]
         poetry-version: [1.1.7]
         os: [ubuntu-latest]
+        working-directory:
+          [services/api_service, libs/libcache, libs/libqueue, libs/libutils]
+    defaults:
+      run:
+        shell: bash
+        working-directory: ${{ matrix.working-directory }}
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v2
+      - name: Use Python
+        uses: actions/setup-python@v2
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Use Poetry
+        uses: abatilo/actions-poetry@v2.0.0
+        with:
+          poetry-version: ${{ matrix.poetry-version }}
+      - name: Install dependencies
+        run: poetry install
+      - name: Create mongoDB Docker container
+        run: sudo docker run -d -p ${{ matrix.mongo-port }}:27017 mongo:latest
+      - name: Run unit tests
+        env:
+          MONGO_CACHE_DATABASE: datasets_preview_cache_test
+          MONGO_QUEUE_DATABASE: datasets_preview_queue_test
+          MONGO_URL: mongodb://localhost:${{ matrix.mongo-port }}
+        run: poetry run python -m pytest -s --cov --cov-report xml:coverage.xml --cov-report=term tests
+      - uses: codecov/codecov-action@v2
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          files: ./coverage.xml
+  unit-tests-job-runner:
+    strategy:
+      fail-fast: false
+      matrix:
+        mongo-port: [27018]
+        python-version: [3.9.6]
+        poetry-version: [1.1.7]
+        os: [ubuntu-latest]
+        working-directory: [services/job_runner]
+    defaults:
+      run:
+        shell: bash
+        working-directory: ${{ matrix.working-directory }}
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v2
@@ -39,13 +84,12 @@ jobs:
       - name: Install dependencies
         run: poetry install
       - name: Create mongoDB Docker container
-        run: sudo docker run -d -p 27018:27017 mongo:latest
+        run: sudo docker run -d -p ${{ matrix.mongo-port }}:27017 mongo:latest
       - name: Run unit tests
         env:
-          ROWS_MIN_NUMBER: 2
           ROWS_MAX_NUMBER: 5
           MONGO_CACHE_DATABASE: datasets_preview_cache_test
-          MONGO_QUEUE_DATABASE: datasets_preview_queue_test
+          MONGO_URL: mongodb://localhost:${{ matrix.mongo-port }}
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
         run: poetry run python -m pytest -s --cov --cov-report xml:coverage.xml --cov-report=term tests
       - uses: codecov/codecov-action@v2

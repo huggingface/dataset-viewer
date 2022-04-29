@@ -1,0 +1,42 @@
+[tool.poetry]
+authors = ["Sylvain Lesage <sylvain.lesage@huggingface.co>"]
+description = "Library for utils"
+name = "libutils"
+version = "0.1.0"
+
+[tool.poetry.dependencies]
+function-parser = "^0.0.3"
+orjson = "^3.6.4"
+python = "3.9.6"
+starlette = "^0.16.0"
+
+[tool.poetry.dev-dependencies]
+bandit = "^1.7.0"
+black = "^22.1.0"
+flake8 = "^3.9.2"
+isort = "^5.9.3"
+mypy = "0.812"
+poetryup = "^0.3.8"
+pytest = "^6.2.5"
+pytest-cov = "^2.12.1"
+safety = "^1.10.3"
+
+[build-system]
+build-backend = "poetry.core.masonry.api"
+requires = ["poetry-core>=1.0.0"]
+
+[tool.pytest.ini_options]
+filterwarnings = ["ignore::DeprecationWarning"]
+
+[tool.coverage.run]
+source = ["libutils"]
+
+[tool.isort]
+profile = "black"
+
+[tool.black]
+line-length = 119
+preview = true
+
+[tool.mypy]
+strict = true

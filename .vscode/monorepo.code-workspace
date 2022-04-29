@@ -1,0 +1,43 @@
+{
+  "folders": [
+    {
+      "name": "ROOT",
+      "path": ".."
+    },
+    {
+      "name": "libs/libcache",
+      "path": "../libs/libcache"
+    },
+    {
+      "name": "libs/libqueue",
+      "path": "../libs/libqueue"
+    },
+    {
+      "name": "libs/libutils",
+      "path": "../libs/libutils"
+    },
+    {
+      "name": "services/api_service",
+      "path": "../services/api_service"
+    },
+    {
+      "name": "services/job_runner",
+      "path": "../services/job_runner"
+    }
+  ],
+  "settings": {
+    "files.exclude": {
+      "libs": true,
+      "services": true
+    },
+    "python.formatting.provider": "black",
+    "editor.formatOnPaste": false,
+    "editor.formatOnSave": true,
+    "python.linting.enabled": true,
+    "python.linting.mypyEnabled": true,
+    "python.linting.flake8Enabled": true
+  },
+  "extensions": {
+    "recommendations": ["ms-python.python"]
+  }
+}
