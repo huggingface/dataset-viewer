@@ -1,14 +1,11 @@
 import logging
 
-from libutils.constants import DEFAULT_LOG_LEVEL
 
-
-def init_logger(log_level: str = DEFAULT_LOG_LEVEL, name: str = "datasets_preview_backend") -> None:
+def init_logger(log_level: str = "INFO", name: str = "datasets_preview_backend") -> None:
     logger = logging.getLogger(name)
     logger.setLevel(log_level)
 
-    format = "%(levelname)s: %(asctime)s - %(name)s - %(message)s"
-    formatter = logging.Formatter(format)
+    formatter = logging.Formatter("%(levelname)s: %(asctime)s - %(name)s - %(message)s")
 
     logHandler = logging.StreamHandler()
     logHandler.setFormatter(formatter)

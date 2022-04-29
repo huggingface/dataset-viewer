@@ -1,1 +1,0 @@
-DEFAULT_LOG_LEVEL: str = "INFO"
