@@ -17,7 +17,7 @@ from libqueue.queue import (
 @pytest.fixture(autouse=True, scope="module")
 def safe_guard() -> None:
     if "test" not in MONGO_QUEUE_DATABASE:
-        raise Exception("Test must be launched on a test mongo database")
+        raise ValueError("Test must be launched on a test mongo database")
 
 
 @pytest.fixture(autouse=True, scope="module")

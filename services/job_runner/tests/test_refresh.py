@@ -15,7 +15,7 @@ from job_runner.refresh import refresh_dataset_split_full_names, refresh_split
 @pytest.fixture(autouse=True, scope="module")
 def safe_guard() -> None:
     if "test" not in MONGO_CACHE_DATABASE:
-        raise Exception("Test must be launched on a test mongo database")
+        raise ValueError("Test must be launched on a test mongo database")
 
 
 @pytest.fixture(autouse=True, scope="module")
