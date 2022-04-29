@@ -25,6 +25,7 @@ from job_runner.config import (
     MAX_MEMORY_PCT,
     MAX_SIZE_FALLBACK,
     MONGO_CACHE_DATABASE,
+    MONGO_QUEUE_DATABASE,
     MONGO_URL,
     ROWS_MAX_BYTES,
     ROWS_MAX_NUMBER,
@@ -157,6 +158,6 @@ def loop() -> None:
 if __name__ == "__main__":
     init_logger("DEBUG")
     connect_to_cache(database=MONGO_CACHE_DATABASE, host=MONGO_URL)
-    connect_to_queue()
+    connect_to_queue(database=MONGO_QUEUE_DATABASE, host=MONGO_URL)
     show_assets_dir(ASSETS_DIRECTORY)
     loop()

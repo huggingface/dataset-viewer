@@ -8,8 +8,6 @@ from mongoengine import Document, DoesNotExist, connect
 from mongoengine.fields import DateTimeField, EnumField, StringField
 from mongoengine.queryset.queryset import QuerySet
 
-from libqueue.config import MONGO_QUEUE_DATABASE, MONGO_URL
-
 # START monkey patching ### hack ###
 # see https://github.com/sbdchd/mongo-types#install
 U = TypeVar("U", bound=Document)
@@ -74,8 +72,8 @@ class DumpByStatus(TypedDict, total=False):
     cancelled: List[JobDict]
 
 
-def connect_to_queue() -> None:
-    connect(MONGO_QUEUE_DATABASE, alias="queue", host=MONGO_URL)
+def connect_to_queue(database, host) -> None:
+    connect(database, alias="queue", host=host)
 
 
 # States:

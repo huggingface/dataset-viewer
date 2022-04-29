@@ -7,22 +7,25 @@ from libcache.cache import (
 )
 from libqueue.queue import add_dataset_job, add_split_job
 from libqueue.queue import clean_database as clean_queue_database
+from libqueue.queue import connect_to_queue
 from starlette.testclient import TestClient
 
 from api_service.app import create_app
-from api_service.config import MONGO_QUEUE_DATABASE
+
+from ._utils import MONGO_QUEUE_DATABASE, MONGO_URL
 
 
 @pytest.fixture(autouse=True, scope="module")
 def safe_guard() -> None:
     # if "test" not in MONGO_CACHE_DATABASE:
-    #     raise Exception("Tests on cache must be launched on a test mongo database")
+    #     raise ValueError("Tests on cache must be launched on a test mongo database")
     if "test" not in MONGO_QUEUE_DATABASE:
-        raise Exception("Tests on queue must be launched on a test mongo database")
+        raise ValueError("Tests on queue must be launched on a test mongo database")
 
 
 @pytest.fixture(scope="module")
 def client() -> TestClient:
+    connect_to_queue(database=MONGO_QUEUE_DATABASE, host=MONGO_URL)
     return TestClient(create_app())
 
 

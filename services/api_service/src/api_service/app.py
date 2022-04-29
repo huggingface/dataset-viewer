@@ -15,6 +15,7 @@ from api_service.config import (
     ASSETS_DIRECTORY,
     LOG_LEVEL,
     MONGO_CACHE_DATABASE,
+    MONGO_QUEUE_DATABASE,
     MONGO_URL,
     WEB_CONCURRENCY,
 )
@@ -40,7 +41,7 @@ from api_service.routes.webhook import webhook_endpoint
 def create_app() -> Starlette:
     init_logger(log_level=LOG_LEVEL)
     connect_to_cache(database=MONGO_CACHE_DATABASE, host=MONGO_URL)
-    connect_to_queue()
+    connect_to_queue(database=MONGO_QUEUE_DATABASE, host=MONGO_URL)
     show_assets_dir(ASSETS_DIRECTORY)
 
     middleware = [Middleware(GZipMiddleware)]

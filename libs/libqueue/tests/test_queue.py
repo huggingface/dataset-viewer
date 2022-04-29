@@ -1,6 +1,5 @@
 import pytest
 
-from libqueue.config import MONGO_QUEUE_DATABASE
 from libqueue.queue import (
     EmptyQueue,
     add_dataset_job,
@@ -13,6 +12,8 @@ from libqueue.queue import (
     is_split_in_queue,
 )
 
+from ._utils import MONGO_QUEUE_DATABASE, MONGO_URL
+
 
 @pytest.fixture(autouse=True, scope="module")
 def safe_guard() -> None:
@@ -22,7 +23,7 @@ def safe_guard() -> None:
 
 @pytest.fixture(autouse=True, scope="module")
 def client() -> None:
-    connect_to_queue()
+    connect_to_queue(database=MONGO_QUEUE_DATABASE, host=MONGO_URL)
 
 
 @pytest.fixture(autouse=True)
