@@ -52,14 +52,14 @@ jobs:
       - name: Install dependencies
         run: poetry install
       - name: Create mongoDB Docker container
-        run: sudo docker run -d -p {{ matrix.mongo-port }}:27017 mongo:latest
+        run: sudo docker run -d -p ${{ matrix.mongo-port }}:27017 mongo:latest
       - name: Run unit tests
         env:
           ROWS_MIN_NUMBER: 2
           ROWS_MAX_NUMBER: 5
           MONGO_CACHE_DATABASE: datasets_preview_cache_test
           MONGO_QUEUE_DATABASE: datasets_preview_queue_test
-          MONGO_URL: mongodb://localhost:{{ matrix.mongo-port }}
+          MONGO_URL: mongodb://localhost:${{ matrix.mongo-port }}
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
         run: poetry run python -m pytest -s --cov --cov-report xml:coverage.xml --cov-report=term tests
       - uses: codecov/codecov-action@v2
