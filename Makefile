@@ -9,7 +9,6 @@ lock:
 	$(MAKE) -C libs/libutils/ lock
 	$(MAKE) -C libs/libqueue/ lock
 	$(MAKE) -C libs/libcache/ lock
-	$(MAKE) -C libs/libmodels/ lock
 	$(MAKE) -C services/job_runner/ lock
 	$(MAKE) -C services/api_service/ lock
 
@@ -26,7 +25,6 @@ test:
 	$(MAKE) -C services/job_runner/ test
 	$(MAKE) -C services/api_service/ test
 	$(MAKE) -C libs/libcache/ test
-	$(MAKE) -C libs/libmodels/ test
 	$(MAKE) -C libs/libqueue/ test
 	$(MAKE) -C libs/libutils/ test
 
@@ -35,7 +33,6 @@ coverage:
 	$(MAKE) -C services/job_runner/ coverage
 	$(MAKE) -C services/api_service/ coverage
 	$(MAKE) -C libs/libcache/ coverage
-	$(MAKE) -C libs/libmodels/ coverage
 	$(MAKE) -C libs/libqueue/ coverage
 	$(MAKE) -C libs/libutils/ coverage
 
@@ -45,7 +42,6 @@ quality:
 	$(MAKE) -C services/job_runner/ quality
 	$(MAKE) -C services/api_service/ quality
 	$(MAKE) -C libs/libcache/ quality
-	$(MAKE) -C libs/libmodels/ quality
 	$(MAKE) -C libs/libqueue/ quality
 	$(MAKE) -C libs/libutils/ quality
 
@@ -55,10 +51,5 @@ style:
 	$(MAKE) -C services/job_runner/ style
 	$(MAKE) -C services/api_service/ style
 	$(MAKE) -C libs/libcache/ style
-	$(MAKE) -C libs/libmodels/ style
 	$(MAKE) -C libs/libqueue/ style
 	$(MAKE) -C libs/libutils/ style
-
-.PHONY: vscode
-vscode:
-	tools/update_vscode_setup.sh
