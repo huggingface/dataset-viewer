@@ -2,6 +2,7 @@ import logging
 import os
 
 from appdirs import user_cache_dir  # type:ignore
+
 from libcache.config import ASSETS_DIRECTORY
 
 logger = logging.getLogger(__name__)

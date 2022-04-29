@@ -1,8 +1,8 @@
 from enum import Enum, auto
 from typing import Any, List
-from libutils.types import ColumnDict
 
 from datasets import Value
+from libutils.types import ColumnDict
 
 
 class ColumnType(Enum):

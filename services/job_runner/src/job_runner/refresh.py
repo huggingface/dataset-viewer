@@ -7,10 +7,11 @@ from libcache.cache import (
     upsert_split,
     upsert_split_error,
 )
-from job_runner.models.dataset import get_dataset_split_full_names
-from job_runner.models.split import get_split
 from libutils.exceptions import Status500Error, StatusError
 from libutils.types import SplitFullName
+
+from job_runner.models.dataset import get_dataset_split_full_names
+from job_runner.models.split import get_split
 
 logger = logging.getLogger(__name__)
 

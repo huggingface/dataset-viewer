@@ -1,10 +1,13 @@
 import os
 
 from dotenv import load_dotenv
-from libutils.utils import get_str_value, get_str_or_none_value
+from libutils.utils import get_str_or_none_value, get_str_value
 
-from libcache.constants import DEFAULT_ASSETS_DIRECTORY, DEFAULT_MONGO_CACHE_DATABASE, DEFAULT_MONGO_URL
-
+from libcache.constants import (
+    DEFAULT_ASSETS_DIRECTORY,
+    DEFAULT_MONGO_CACHE_DATABASE,
+    DEFAULT_MONGO_URL,
+)
 
 # Load environment variables defined in .env, if any
 load_dotenv()

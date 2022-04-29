@@ -5,6 +5,7 @@ name = "libcache"
 version = "0.1.0"
 
 [tool.poetry.dependencies]
+appdirs = "^1.4.4"
 libutils = { path = "../../libs/libutils", develop = true }
 mongo-types = "0.15.1"
 mongoengine = "^0.23.1"
