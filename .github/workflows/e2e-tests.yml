@@ -1,0 +1,16 @@
+name: Launch e2e tests
+on: [push]
+
+jobs:
+  e2e-tests:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v2
+      - name: Build the docker images
+        run: docker-compose build
+      - name: Launch the services
+        run: docker-compose up -d

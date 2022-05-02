@@ -1,5 +1,15 @@
 # Install guide
 
+## Docker
+
+Install docker (see https://docs.docker.com/engine/install/ubuntu/#install-using-the-repository and https://docs.docker.com/engine/install/linux-postinstall/)
+
+```
+docker-compose up --build -d --scale splits-worker=5
+```
+
+## Without docker
+
 We assume a machine with Ubuntu.
 
 We need to prepare space on the disk for the assets, for example at `/data/assets`:
