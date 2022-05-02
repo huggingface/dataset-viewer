@@ -14,3 +14,5 @@ jobs:
         run: docker-compose build
       - name: Launch the services
         run: docker-compose up -d
+      - name: End-to-end tests
+        run: make e2e

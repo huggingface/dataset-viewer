@@ -39,6 +39,7 @@ coverage:
 # Check that source code meets quality standards + security
 .PHONY: quality
 quality:
+	$(MAKE) -C e2e/ quality
 	$(MAKE) -C services/job_runner/ quality
 	$(MAKE) -C services/api_service/ quality
 	$(MAKE) -C libs/libcache/ quality
@@ -48,8 +49,13 @@ quality:
 # Format source code automatically
 .PHONY: style
 style:
+	$(MAKE) -C e2e/ style
 	$(MAKE) -C services/job_runner/ style
 	$(MAKE) -C services/api_service/ style
 	$(MAKE) -C libs/libcache/ style
 	$(MAKE) -C libs/libqueue/ style
 	$(MAKE) -C libs/libutils/ style
+
+.PHONY: e2e
+e2e:
+	$(MAKE) -C e2e/ e2e
