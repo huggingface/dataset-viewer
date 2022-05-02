@@ -1,0 +1,16 @@
+.github
+.git
+.circleci
+.vscode
+assets
+**/__pycache__
+**/.pytest_cache
+**/.egg
+**/.egg-info
+**/*.md
+**/*.env*
+**/.venv
+**/.mypy_cache
+**/.pytest_cache
+**/.coverage
+**/coverage.xml
