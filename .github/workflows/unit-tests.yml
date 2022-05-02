@@ -6,7 +6,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        mongo-port: [27018]
+        mongo-port: [27017]
         python-version: [3.9.6]
         poetry-version: [1.1.7]
         os: [ubuntu-latest]
@@ -45,7 +45,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        mongo-port: [27018]
+        mongo-port: [27017]
         python-version: [3.9.6]
         poetry-version: [1.1.7]
         os: [ubuntu-latest]

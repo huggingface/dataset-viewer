@@ -16,7 +16,7 @@ We also need to have a mongo server:
 - launch a docker container with mongo:
 
   ```bash
-  docker run -p 27018:27017 --name datasets-preview-backend-mongo -d --restart always mongo:latest
+  docker run -p 27017:27017 --name datasets-preview-backend-mongo -d --restart always mongo:latest
   ```
 
 Install and deploy the API server with [services/api_service/INSTALL.md](./services/api_service/INSTALL.md) and the workers with [services/job_runner/INSTALL.md](./services/job_runner/INSTALL.md).
