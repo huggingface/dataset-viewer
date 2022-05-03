@@ -1,4 +1,4 @@
-name: "[ALL] Build docker images"
+name: "Build and push docker images"
 
 on:
   workflow_dispatch:
@@ -6,10 +6,14 @@ on:
 
 env:
   REGION: us-east-1
-  REPOSITORY: 707930574880.dkr.ecr.us-east-1.amazonaws.com/hub-datasets-server-api
+  REPOSITORY_PREFIX: 707930574880.dkr.ecr.us-east-1.amazonaws.com/hub-datasets-server-
 
 jobs:
-  build-and-push-image:
+  build-and-push-image-api:
+    strategy:
+      fail-fast: false
+      matrix:
+        service: [api, worker]
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
@@ -30,14 +34,14 @@ jobs:
         id: meta
         uses: docker/metadata-action@98669ae865ea3cffbcbaa878cf57c20bbf1c6c38
         with:
-          images: ${{ env.REPOSITORY }}
+          images: ${{ env.REPOSITORY_PREFIX }}${{ matrix.service }}
           tags: |
             type=raw,value=sha-${{ steps.vars.outputs.sha_short }}
       - name: Build and push Docker image
         uses: docker/build-push-action@ad44023a93711e3deb337508980b4b5e9bcdc5dc
         with:
           context: .
-          file: services/api_service/Dockerfile
+          file: services/${{ matrix.service }}/Dockerfile
           build-args: COMMIT=${{ steps.vars.outputs.sha_short }}
           push: true
           tags: ${{ steps.meta.outputs.tags }}

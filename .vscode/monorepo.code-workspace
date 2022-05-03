@@ -17,12 +17,12 @@
       "path": "../libs/libutils"
     },
     {
-      "name": "services/api_service",
-      "path": "../services/api_service"
+      "name": "services/api",
+      "path": "../services/api"
     },
     {
-      "name": "services/job_runner",
-      "path": "../services/job_runner"
+      "name": "services/worker",
+      "path": "../services/worker"
     }
   ],
   "settings": {

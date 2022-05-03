@@ -29,11 +29,11 @@ We also need to have a mongo server:
   docker run -p 27017:27017 --name datasets-preview-backend-mongo -d --restart always mongo:latest
   ```
 
-Install and deploy the API server with [services/api_service/INSTALL.md](./services/api_service/INSTALL.md) and the workers with [services/job_runner/INSTALL.md](./services/job_runner/INSTALL.md).
+Install and deploy the API server with [services/api/INSTALL.md](./services/api/INSTALL.md) and the workers with [services/worker/INSTALL.md](./services/worker/INSTALL.md).
 
 ## Upgrade
 
-See the instructions in [services/api_service/INSTALL.md](./services/api_service/INSTALL.md#upgrade) and [services/job_runner/INSTALL.md](./services/job_runner/INSTALL.md#upgrade). Also migrate the databases if needed (see the [libcache migrations README](./libs/libcache/migrations/README.md)).
+See the instructions in [services/api/INSTALL.md](./services/api/INSTALL.md#upgrade) and [services/worker/INSTALL.md](./services/worker/INSTALL.md#upgrade). Also migrate the databases if needed (see the [libcache migrations README](./libs/libcache/migrations/README.md)).
 
 ## Production
 

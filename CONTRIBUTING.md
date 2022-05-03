@@ -16,8 +16,8 @@ then install:
 - [libs/libcache](./libs/libcache/INSTALL.md)
 - [libs/libqueue](./libs/libcache/INSTALL.md)
 - [libs/libutils](./libs/libutils/INSTALL.md)
-- [services/api_service](./services/api_service/INSTALL.md)
-- [services/job_runner](./services/job_runner/INSTALL.md)
+- [services/api](./services/api/INSTALL.md)
+- [services/worker](./services/worker/INSTALL.md)
 
 If you use VSCode, it might be useful to use the ["monorepo" workspace](./.vscode/monorepo.code-workspace) (see a [blogpost](https://medium.com/rewrite-tech/visual-studio-code-tips-for-monorepo-development-with-multi-root-workspaces-and-extension-6b69420ecd12) for more explanations). It is a multi-root workspace, with one folder for each library and service (note that we hide them from the ROOT to avoid editing there). Each folder has its own Python interpreter, with access to the dependencies installed by Poetry. You might have to manually select the interpreter in every folder though on first access, then VSCode stores the information in its local storage.
 
@@ -59,7 +59,7 @@ Otherwise, if we only used `../libutils`, the dependencies would break in the `p
 
 Poetry keeps the exact version of all the dependencies in `poetry.lock`. If you manually change `pyproject.toml`, you will have to call `poetry lock` (or `make lock`) to update `poetry.lock`. Beware: it might also upgrade the dependencies (use [`--no-update`](https://python-poetry.org/docs/cli/#options-9) if you want to avoid this).
 
-If you update the dependencies of a library, you will have to run `poetry lock` (or `make lock`) in every library or service that depend on it. Beware, refreshing the lock on [services/job_runner](./services/job_runner) takes a lot of time.
+If you update the dependencies of a library, you will have to run `poetry lock` (or `make lock`) in every library or service that depend on it. Beware, refreshing the lock on [services/worker](./services/worker) takes a lot of time.
 
 In case you wonder, the `poetry.lock` files must be versioned.
 
