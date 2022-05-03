@@ -6,8 +6,7 @@ on:
 
 env:
   REGION: us-east-1
-  REGISTRY: 707930574880.dkr.ecr.us-east-1.amazonaws.com
-  REPOSITORY: hub-datasets-server-api
+  REPOSITORY: 707930574880.dkr.ecr.us-east-1.amazonaws.com/hub-datasets-server-api
 
 jobs:
   build-and-push-image:
@@ -31,7 +30,7 @@ jobs:
         id: meta
         uses: docker/metadata-action@98669ae865ea3cffbcbaa878cf57c20bbf1c6c38
         with:
-          images: ${{ env.REGISTRY }}/${{ env.REPOSITORY }}
+          images: ${{ env.REPOSITORY }}
           tags: |
             type=raw,value=sha-${{ steps.vars.outputs.sha_short }}
       - name: Build and push Docker image
