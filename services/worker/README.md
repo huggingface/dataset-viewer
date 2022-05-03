@@ -1,6 +1,6 @@
-# Datasets preview backend - job runner
+# Datasets preview backend - worker
 
-> Job runner to pre-process datasets and splits
+> Worker to pre-process datasets and splits
 
 ## Install
 

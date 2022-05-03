@@ -46,7 +46,7 @@ Also [install poetry](https://python-poetry.org/docs/master/#installation). Don'
 
 ## Install and configure
 
-Install the job runner:
+Install the worker:
 
 ```bash
 
@@ -68,13 +68,13 @@ In particular, set the following environment variables to get access to the comm
 
 ## Deploy
 
-Deploy the datasets job runners with:
+Deploy the datasets workers with:
 
 ```bash
 pm2 start --name datasets-worker make -- -C /home/hf/datasets-preview-backend/services/worker/ datasets-worker
 ```
 
-Deploy the splits job runners with:
+Deploy the splits workers with:
 
 ```bash
 pm2 start --name splits-worker make -- -C /home/hf/datasets-preview-backend/services/worker/ splits-worker
@@ -107,7 +107,7 @@ pm2 logs
 
 ## Upgrade
 
-To deploy a new version of the job-runner, first update the code
+To deploy a new version of the worker, first update the code
 
 ```
 cd /home/hf/datasets-preview-backend/
