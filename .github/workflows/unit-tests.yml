@@ -41,7 +41,7 @@ jobs:
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           files: ./coverage.xml
-  unit-tests-job-runner:
+  unit-tests-worker:
     strategy:
       fail-fast: false
       matrix:
