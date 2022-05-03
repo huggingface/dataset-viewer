@@ -1,4 +1,4 @@
-# Datasets preview backend - worker
+# Datasets server - worker
 
 > Worker to pre-process datasets and splits
 
@@ -22,7 +22,7 @@ make splits-worker
 
 Set environment variables to configure the following aspects:
 
-- `ASSETS_DIRECTORY`: directory where the asset files are stored. Defaults to empty, in which case the assets are located in the `datasets_preview_backend_assets` subdirectory inside the OS default cache directory.
+- `ASSETS_DIRECTORY`: directory where the asset files are stored. Defaults to empty, in which case the assets are located in the `datasets_server_assets` subdirectory inside the OS default cache directory.
 - `DATASETS_BLOCKLIST`: comma-separated list of datasets that will never be processed. It's used to preventively block the biggest datasets, that we don't know how to manage properly in our infrastructure. An example: `DATASETS_BLOCKLIST="Alvenir/nst-da-16khz,bigscience/P3,clips/mqa"` (use [`\`](https://stackoverflow.com/a/3871336/7351594) to have one dataset per line if it makes the list more readable). Defaults to empty.
 - `DATASETS_REVISION`: git reference for the canonical datasets on https://github.com/huggingface/datasets. Defaults to `master`.
 - `HF_TOKEN`: App Access Token (ask moonlanding administrators to get one, only the `read` role is required), to access the gated datasets. Defaults to empty.
@@ -32,8 +32,8 @@ Set environment variables to configure the following aspects:
 - `MAX_MEMORY_PCT`: the maximum memory (RAM + SWAP) usage of the machine (in percentage) allowed to start a job. Defaults to 80.
 - `MAX_SIZE_FALLBACK`: the maximum size in bytes of the dataset to fallback in normal mode if streaming fails. Note that it requires to have the size in the info metadata. Set to `0` to disable the fallback. Defaults to `100_000_000`.
 - `MIN_CELL_BYTES`: the minimum size in bytes of a cell when truncating the content of a row (see `ROWS_MAX_BYTES`). Below this limit, the cell content will not be truncated. Defaults to `100`.
-- `MONGO_CACHE_DATABASE`: the name of the database used for storing the cache. Defaults to `"datasets_preview_cache"`.
-- `MONGO_QUEUE_DATABASE`: the name of the database used for storing the queue. Defaults to `"datasets_preview_queue"`.
+- `MONGO_CACHE_DATABASE`: the name of the database used for storing the cache. Defaults to `"datasets_server_cache"`.
+- `MONGO_QUEUE_DATABASE`: the name of the database used for storing the queue. Defaults to `"datasets_server_queue"`.
 - `MONGO_URL`: the URL used to connect to the mongo db server. Defaults to `"mongodb://localhost:27017"`.
 - `ROWS_MAX_BYTES`: the max size of the /rows endpoint response in bytes. Defaults to `1_000_000` (1 MB).
 - `ROWS_MAX_NUMBER`: the max number of rows fetched by the worker for the split, and provided in the /rows endpoint response. Defaults to `100`.

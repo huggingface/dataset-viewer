@@ -1,6 +1,8 @@
-# Datasets preview backend
+# Datasets server
 
-> API to get the first rows of the Hugging Face Hub datasets
+> Stores the hub datasets, and provides an internal API to query their contents, metadata and basic statistics.
+
+For now, it just provides an API to get the first rows of the Hugging Face Hub datasets (previously known as `datasets-preview-backend`)
 
 Caveat: only the [streamable datasets](https://huggingface.co/docs/datasets/stream) and the small datasets (less than 100MB) are supported at the moment.
 

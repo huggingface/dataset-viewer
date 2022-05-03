@@ -268,7 +268,7 @@ def test_split_cache_refreshing(client: TestClient) -> None:
 
 # TODO: move to e2e tests
 # def test_error_messages(client: TestClient) -> None:
-#     # https://github.com/huggingface/datasets-preview-backend/issues/196
+#     # https://github.com/huggingface/datasets-server/issues/196
 #     dataset = "acronym_identification"
 #     config = "default"
 #     split = "train"

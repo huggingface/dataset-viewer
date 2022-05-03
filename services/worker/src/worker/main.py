@@ -38,7 +38,7 @@ from worker.refresh import refresh_dataset_split_full_names, refresh_split
 
 
 def process_next_dataset_job() -> bool:
-    logger = logging.getLogger("datasets_preview_backend.worker")
+    logger = logging.getLogger("datasets_server.worker")
     logger.debug("try to process a dataset job")
 
     try:
@@ -67,7 +67,7 @@ def process_next_dataset_job() -> bool:
 
 
 def process_next_split_job() -> bool:
-    logger = logging.getLogger("datasets_preview_backend.worker")
+    logger = logging.getLogger("datasets_server.worker")
     logger.debug("try to process a split job")
 
     try:
@@ -115,7 +115,7 @@ def process_next_job() -> bool:
 
 
 def has_memory() -> bool:
-    logger = logging.getLogger("datasets_preview_backend.worker")
+    logger = logging.getLogger("datasets_server.worker")
     virtual_memory_used: int = virtual_memory().used  # type: ignore
     virtual_memory_total: int = virtual_memory().total  # type: ignore
     percent = (swap_memory().used + virtual_memory_used) / (swap_memory().total + virtual_memory_total)
@@ -126,7 +126,7 @@ def has_memory() -> bool:
 
 
 def has_cpu() -> bool:
-    logger = logging.getLogger("datasets_preview_backend.worker")
+    logger = logging.getLogger("datasets_server.worker")
     load_pct = max(getloadavg()[:2]) / cpu_count() * 100
     # ^ only current load and 5m load. 15m load is not relevant to decide to launch a new job
     ok = load_pct < MAX_LOAD_PCT
@@ -140,7 +140,7 @@ def has_resources() -> bool:
 
 
 def sleep() -> None:
-    logger = logging.getLogger("datasets_preview_backend.worker")
+    logger = logging.getLogger("datasets_server.worker")
     jitter = 0.75 + random.random() / 2  # nosec
     # ^ between 0.75 and 1.25
     duration = WORKER_SLEEP_SECONDS * jitter

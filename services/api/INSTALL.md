@@ -92,15 +92,15 @@ Install the API service:
 ```bash
 cd
 # See https://github.blog/2013-09-03-two-factor-authentication/#how-does-it-work-for-command-line-git for authentication
-git clone https://github.com/huggingface/datasets-preview-backend.git
-cd datasets-preview-backend/services/api
+git clone https://github.com/huggingface/datasets-server.git
+cd datasets-server/services/api
 make install
 ```
 
 Copy and edit the environment variables file:
 
 ```bash
-cd datasets-preview-backend/services/api
+cd datasets-server/services/api
 cp .env.example .env
 vi .env
 ```
@@ -112,7 +112,7 @@ Note that we assume `ASSETS_DIRECTORY=/data` in the nginx configuration. If you 
 Launch the API with pm2:
 
 ```bash
-pm2 start --name api make -- -C /home/hf/datasets-preview-backend/ run
+pm2 start --name api make -- -C /home/hf/datasets-server/ run
 ```
 
 Check if the api is accessible at https://datasets-preview.huggingface.tech/healthcheck.
@@ -140,14 +140,14 @@ pm2 logs api
 
 ## Upgrade
 
-To deploy a new version of datasets-preview-backend, first pause the monitor at https://betteruptime.com/team/14149/monitors/389098.
+To deploy a new version of datasets-server, first pause the monitor at https://betteruptime.com/team/14149/monitors/389098.
 
 Then update the code
 
 ```
-cd /home/hf/datasets-preview-backend/
+cd /home/hf/datasets-server/
 git fetch --tags
-git checkout XXXX # <- the latest release tag (https://github.com/huggingface/datasets-preview-backend/releases/latest)
+git checkout XXXX # <- the latest release tag (https://github.com/huggingface/datasets-server/releases/latest)
 ```
 
 If the Python version has been increased to 3.9.6, for example, [run](https://stackoverflow.com/a/65589331/7351594):
@@ -176,7 +176,7 @@ vi .env
 Apply the database migrations (see [libs/libcache/src/libcache/migrations/README.md](./../../libs/libcache/migrations/README.md)) if any (in this case: ensure to upgrade the other services too).
 
 ```
-# see https://github.com/huggingface/datasets-preview-backend/blob/main/libs/libcache/migrations/README.md
+# see https://github.com/huggingface/datasets-server/blob/main/libs/libcache/migrations/README.md
 ```
 
 If you want to be extra-sure, check that all the tests are passing

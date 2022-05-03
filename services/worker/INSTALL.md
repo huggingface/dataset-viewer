@@ -51,15 +51,15 @@ Install the worker:
 ```bash
 
 # See https://github.blog/2013-09-03-two-factor-authentication/#how-does-it-work-for-command-line-git for authentication
-git clone https://github.com/huggingface/datasets-preview-backend.git
-cd datasets-preview-backend/services/worker
+git clone https://github.com/huggingface/datasets-server.git
+cd datasets-server/services/worker
 make install
 ```
 
 Copy and edit the environment variables file:
 
 ```bash
-cd datasets-preview-backend/services/worker
+cd datasets-server/services/worker
 cp .env.example .env
 vi .env
 ```
@@ -71,13 +71,13 @@ In particular, set the following environment variables to get access to the comm
 Deploy the datasets workers with:
 
 ```bash
-pm2 start --name datasets-worker make -- -C /home/hf/datasets-preview-backend/services/worker/ datasets-worker
+pm2 start --name datasets-worker make -- -C /home/hf/datasets-server/services/worker/ datasets-worker
 ```
 
 Deploy the splits workers with:
 
 ```bash
-pm2 start --name splits-worker make -- -C /home/hf/datasets-preview-backend/services/worker/ splits-worker
+pm2 start --name splits-worker make -- -C /home/hf/datasets-server/services/worker/ splits-worker
 ```
 
 Launch the same command again to deploy one worker more.
@@ -110,9 +110,9 @@ pm2 logs
 To deploy a new version of the worker, first update the code
 
 ```
-cd /home/hf/datasets-preview-backend/
+cd /home/hf/datasets-server/
 git fetch --tags
-git checkout XXXX # <- the latest release tag (https://github.com/huggingface/datasets-preview-backend/releases/latest)
+git checkout XXXX # <- the latest release tag (https://github.com/huggingface/datasets-server/releases/latest)
 ```
 
 If the Python version has been increased to 3.9.6, for example, [run](https://stackoverflow.com/a/65589331/7351594):
@@ -141,7 +141,7 @@ vi .env
 Apply the database migrations (see [libs/libcache/src/libcache/migrations/README.md](./../../libs/libcache/migrations/README.md)) if any (in this case: ensure to upgrade the other services too).
 
 ```
-# see https://github.com/huggingface/datasets-preview-backend/blob/main/libs/libcache/migrations/README.md
+# see https://github.com/huggingface/datasets-server/blob/main/libs/libcache/migrations/README.md
 ```
 
 If you want to be extra-sure, check that all the tests are passing

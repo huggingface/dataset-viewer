@@ -9,7 +9,7 @@ make warm
 Warm the cache with:
 
 ```bash
-pm2 start --no-autorestart --name warm make -- -C /home/hf/datasets-preview-backend/ warm
+pm2 start --no-autorestart --name warm make -- -C /home/hf/datasets-server/ warm
 ```
 
 To empty the databases:

@@ -39,7 +39,7 @@ def test_doesnotexist() -> None:
 
 
 def test_config_error() -> None:
-    # see https://github.com/huggingface/datasets-preview-backend/issues/78
+    # see https://github.com/huggingface/datasets-server/issues/78
     dataset_name = "Check/region_1"
     refresh_dataset_split_full_names(dataset_name)
     # TODO: don't use internals of the cache database?
@@ -54,7 +54,7 @@ def test_config_error() -> None:
 
 
 def test_large_document() -> None:
-    # see https://github.com/huggingface/datasets-preview-backend/issues/89
+    # see https://github.com/huggingface/datasets-server/issues/89
     dataset_name = "SaulLu/Natural_Questions_HTML"
     refresh_dataset_split_full_names(dataset_name)
     retrieved = DbDataset.objects(dataset_name=dataset_name).get()
