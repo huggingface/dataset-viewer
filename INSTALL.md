@@ -1,5 +1,15 @@
 # Install guide
 
+## Docker
+
+Install docker (see https://docs.docker.com/engine/install/ubuntu/#install-using-the-repository and https://docs.docker.com/engine/install/linux-postinstall/)
+
+```
+docker-compose up --build -d --scale splits-worker=5
+```
+
+## Without docker
+
 We assume a machine with Ubuntu.
 
 We need to prepare space on the disk for the assets, for example at `/data/assets`:
@@ -16,7 +26,7 @@ We also need to have a mongo server:
 - launch a docker container with mongo:
 
   ```bash
-  docker run -p 27018:27017 --name datasets-preview-backend-mongo -d --restart always mongo:latest
+  docker run -p 27017:27017 --name datasets-preview-backend-mongo -d --restart always mongo:latest
   ```
 
 Install and deploy the API server with [services/api_service/INSTALL.md](./services/api_service/INSTALL.md) and the workers with [services/job_runner/INSTALL.md](./services/job_runner/INSTALL.md).

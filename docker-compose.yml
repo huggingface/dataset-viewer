@@ -1,0 +1,56 @@
+version: "3.9"
+services:
+  api:
+    build:
+      context: .
+      dockerfile: ./services/api_service/Dockerfile
+    volumes:
+      - assets:/assets:ro
+    environment:
+      APP_PORT: 8000
+      APP_HOSTNAME: 0.0.0.0
+      ASSETS_DIRECTORY: "/assets"
+      MONGO_URL: "mongodb://mongodb"
+      WEB_CONCURRENCY: 1
+    ports:
+      - 8000:8000
+    depends_on:
+      mongodb:
+        condition: service_started
+    restart: unless-stopped
+  datasets-worker:
+    build:
+      context: .
+      dockerfile: ./services/job_runner/Dockerfile
+    volumes:
+      - assets:/assets:rw
+    environment:
+      ASSETS_DIRECTORY: "/assets"
+      MONGO_URL: "mongodb://mongodb"
+      WORKER_QUEUE: "datasets"
+    depends_on:
+      mongodb:
+        condition: service_started
+    restart: always
+  splits-worker:
+    build:
+      context: .
+      dockerfile: ./services/job_runner/Dockerfile
+    volumes:
+      - assets:/assets:rw
+    environment:
+      ASSETS_DIRECTORY: "/assets"
+      MONGO_URL: "mongodb://mongodb"
+      WORKER_QUEUE: "splits"
+    depends_on:
+      mongodb:
+        condition: service_started
+    restart: always
+  mongodb:
+    image: mongo
+    volumes:
+      - mongo:/data/db:rw
+      # TODO: authentication, healthcheck, expose?, migrations?
+volumes:
+  assets:
+  mongo:

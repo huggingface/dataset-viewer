@@ -1,8 +1,12 @@
 include ../../tools/Common.mk
 
+.PHONY: run
+run:
+	poetry run python src/job_runner/main.py
+
 .PHONY: datasets-worker
 datasets-worker:
-	WORKER_QUEUE=dataset poetry run python src/job_runner/main.py
+	WORKER_QUEUE=datasets poetry run python src/job_runner/main.py
 
 .PHONY: splits-worker
 splits-worker:
