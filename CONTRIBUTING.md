@@ -81,3 +81,17 @@ All the contributions should go through a pull request. The pull requests must b
 ## GitHub Actions
 
 You can use [act](https://github.com/nektos/act) to test the GitHub Actions (see [.github/workflows/](.github/workflows/)) locally. It reduces the retroaction loop when working on the GitHub Actions, avoid polluting the branches with empty pushes only meant to trigger the CI, and allows to only run specific actions.
+
+For example, to launch the build and push of the docker images to ECR:
+
+```
+act -j build-and-push-image --secret-file my.secrets
+```
+
+with `my.secrets` a file with the secrets:
+
+```
+AWS_ACCESS_KEY_ID=xxx
+AWS_SECRET_ACCESS_KEY=xxx
+GITHUB_TOKEN=xxx
+```
