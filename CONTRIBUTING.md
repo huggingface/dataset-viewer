@@ -95,3 +95,5 @@ AWS_ACCESS_KEY_ID=xxx
 AWS_SECRET_ACCESS_KEY=xxx
 GITHUB_TOKEN=xxx
 ```
+
+You might prefer to use [aws-vault](https://github.com/99designs/aws-vault) instead to set the environment variables, but you will still have to pass the GitHub token as a secret.
