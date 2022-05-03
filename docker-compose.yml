@@ -3,7 +3,7 @@ services:
   api:
     build:
       context: .
-      dockerfile: ./services/api_service/Dockerfile
+      dockerfile: ./services/api/Dockerfile
     volumes:
       - assets:/assets:ro
     environment:
@@ -21,7 +21,7 @@ services:
   datasets-worker:
     build:
       context: .
-      dockerfile: ./services/job_runner/Dockerfile
+      dockerfile: ./services/worker/Dockerfile
     volumes:
       - assets:/assets:rw
     environment:
@@ -35,7 +35,7 @@ services:
   splits-worker:
     build:
       context: .
-      dockerfile: ./services/job_runner/Dockerfile
+      dockerfile: ./services/worker/Dockerfile
     volumes:
       - assets:/assets:rw
     environment:

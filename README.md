@@ -16,9 +16,9 @@ To develop, see [CONTRIBUTING.md](./CONTRIBUTING.md)
 
 The application is distributed in several components.
 
-([api_service](./services/api_service)) is an API web server that exposes [endpoints](./services/api_service/README.md#endpoints) to access the first rows of the Hugging Face Hub datasets. Some of the endpoints generate responses on the fly, but the two main endpoints (`/splits` and `/rows`) only serve precomputed responses, because generating these responses takes time.
+([api](./services/api)) is an API web server that exposes [endpoints](./services/api/README.md#endpoints) to access the first rows of the Hugging Face Hub datasets. Some of the endpoints generate responses on the fly, but the two main endpoints (`/splits` and `/rows`) only serve precomputed responses, because generating these responses takes time.
 
-The precomputed responses are stored in a Mongo database called "cache" (see [libcache](./libs/libcache)). They are computed by workers ([job_runner](./services/job_runner)) which take their jobs from a job queue stored in a Mongo database called "queue" (see [libqueue](./libs/libqueue)), and store the results (error or valid response) into the "cache".
+The precomputed responses are stored in a Mongo database called "cache" (see [libcache](./libs/libcache)). They are computed by workers ([worker](./services/worker)) which take their jobs from a job queue stored in a Mongo database called "queue" (see [libqueue](./libs/libqueue)), and store the results (error or valid response) into the "cache".
 
 The API service exposes the `/webhook` endpoint which is called by the Hub on every creation, update or deletion of a dataset on the Hub. On deletion, the cached responses are deleted. On creation or update, a new job is appended in the "queue" database.
 

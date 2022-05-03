@@ -34,6 +34,6 @@ make cancel-waiting-jobs
 
 ---
 
-how to monitor the job runners and the queue?
+how to monitor the workers and the queue?
 
 grafana doesn't have any data (see links in INSTALL.md)

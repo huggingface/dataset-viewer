@@ -1,37 +1,37 @@
 
 .PHONY: install
 install:
-	$(MAKE) -C services/job_runner/ install
-	$(MAKE) -C services/api_service/ install
+	$(MAKE) -C services/worker/ install
+	$(MAKE) -C services/api/ install
 
 .PHONY: lock
 lock:
 	$(MAKE) -C libs/libutils/ lock
 	$(MAKE) -C libs/libqueue/ lock
 	$(MAKE) -C libs/libcache/ lock
-	$(MAKE) -C services/job_runner/ lock
-	$(MAKE) -C services/api_service/ lock
+	$(MAKE) -C services/worker/ lock
+	$(MAKE) -C services/api/ lock
 
 .PHONY: api
 api:
-	$(MAKE) -C services/api_service/ run
+	$(MAKE) -C services/api/ run
 
 .PHONY: worker
 worker:
-	$(MAKE) -C services/job_runner/ run
+	$(MAKE) -C services/worker/ run
 
 .PHONY: test
 test:
-	$(MAKE) -C services/job_runner/ test
-	$(MAKE) -C services/api_service/ test
+	$(MAKE) -C services/worker/ test
+	$(MAKE) -C services/api/ test
 	$(MAKE) -C libs/libcache/ test
 	$(MAKE) -C libs/libqueue/ test
 	$(MAKE) -C libs/libutils/ test
 
 .PHONY: coverage
 coverage:
-	$(MAKE) -C services/job_runner/ coverage
-	$(MAKE) -C services/api_service/ coverage
+	$(MAKE) -C services/worker/ coverage
+	$(MAKE) -C services/api/ coverage
 	$(MAKE) -C libs/libcache/ coverage
 	$(MAKE) -C libs/libqueue/ coverage
 	$(MAKE) -C libs/libutils/ coverage
@@ -40,8 +40,8 @@ coverage:
 .PHONY: quality
 quality:
 	$(MAKE) -C e2e/ quality
-	$(MAKE) -C services/job_runner/ quality
-	$(MAKE) -C services/api_service/ quality
+	$(MAKE) -C services/worker/ quality
+	$(MAKE) -C services/api/ quality
 	$(MAKE) -C libs/libcache/ quality
 	$(MAKE) -C libs/libqueue/ quality
 	$(MAKE) -C libs/libutils/ quality
@@ -50,8 +50,8 @@ quality:
 .PHONY: style
 style:
 	$(MAKE) -C e2e/ style
-	$(MAKE) -C services/job_runner/ style
-	$(MAKE) -C services/api_service/ style
+	$(MAKE) -C services/worker/ style
+	$(MAKE) -C services/api/ style
 	$(MAKE) -C libs/libcache/ style
 	$(MAKE) -C libs/libqueue/ style
 	$(MAKE) -C libs/libutils/ style
