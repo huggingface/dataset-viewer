@@ -26,7 +26,7 @@ We also need to have a mongo server:
 - launch a docker container with mongo:
 
   ```bash
-  docker run -p 27017:27017 --name datasets-preview-backend-mongo -d --restart always mongo:latest
+  docker run -p 27017:27017 --name datasets-server-mongo -d --restart always mongo:latest
   ```
 
 Install and deploy the API server with [services/api/INSTALL.md](./services/api/INSTALL.md) and the workers with [services/worker/INSTALL.md](./services/worker/INSTALL.md).
@@ -37,7 +37,7 @@ See the instructions in [services/api/INSTALL.md](./services/api/INSTALL.md#upgr
 
 ## Production
 
-datasets-preview-backend is installed on a t2.2xlarge [EC2 virtual machine](https://us-east-1.console.aws.amazon.com/ec2/v2/home?region=us-east-1#InstanceDetails:instanceId=i-0b19b8deb4301ad4a) (under the "JULIEN CHAUMOND" account).
+datasets-server is installed on a t2.2xlarge [EC2 virtual machine](https://us-east-1.console.aws.amazon.com/ec2/v2/home?region=us-east-1#InstanceDetails:instanceId=i-0b19b8deb4301ad4a) (under the "JULIEN CHAUMOND" account).
 
 ```bash
 ssh hf@ec2-54-209-89-185.compute-1.amazonaws.com

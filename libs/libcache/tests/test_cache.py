@@ -66,7 +66,7 @@ def test_acronym_identification() -> None:
 
 
 def test_big_row() -> None:
-    # https://github.com/huggingface/datasets-preview-backend/issues/197
+    # https://github.com/huggingface/datasets-server/issues/197
     dataset_name = "test_dataset"
     config_name = "test_config"
     split_name = "test_split"

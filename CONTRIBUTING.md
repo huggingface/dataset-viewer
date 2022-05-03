@@ -7,8 +7,8 @@ The repository is structured as a monorepo, with Python applications in [service
 To start working on the project:
 
 ```bash
-git clone git@github.com:huggingface/datasets-preview-backend.git
-cd datasets-preview-backend
+git clone git@github.com:huggingface/datasets-server.git
+cd datasets-server
 ```
 
 then install:
@@ -72,7 +72,7 @@ git tag 0.20.2
 git push --tags
 ```
 
-Then we create a release at https://github.com/huggingface/datasets-preview-backend/releases/new, choosing a tag, then using the button "+ Auto-generate release notes".
+Then we create a release at https://github.com/huggingface/datasets-server/releases/new, choosing a tag, then using the button "+ Auto-generate release notes".
 
 ## Pull requests
 
@@ -95,3 +95,5 @@ AWS_ACCESS_KEY_ID=xxx
 AWS_SECRET_ACCESS_KEY=xxx
 GITHUB_TOKEN=xxx
 ```
+
+You might prefer to use [aws-vault](https://github.com/99designs/aws-vault) instead to set the environment variables, but you will still have to pass the GitHub token as a secret.

@@ -1,7 +1,7 @@
 import logging
 
 
-def init_logger(log_level: str = "INFO", name: str = "datasets_preview_backend") -> None:
+def init_logger(log_level: str = "INFO", name: str = "datasets_server") -> None:
     logger = logging.getLogger(name)
     logger.setLevel(log_level)
 
