@@ -43,6 +43,8 @@ The CI checks the tests a [GitHub action](./.github/workflows/unit-tests.yml). T
 make test
 ```
 
+Note that it requires the resources to be ready, ie. mongo and the storage for assets. See [INSTALL.md](./INSTALL.md).
+
 ## Poetry
 
 ### Hack: reference through the root
