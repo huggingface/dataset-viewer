@@ -44,13 +44,3 @@ Install `make` to use the [Makefile](../charts/datasets-server/Makefile) to depl
 ```
 sudo apt install make
 ```
-
-Once installed, you can [alias](https://www.google.com/search?q=persist+alias+linux) it to `k` in your bash/zsh profile so that:
-
-To use it, you have to configure it to use a specific cluster using `aws eks`. See [the "clusters" section in kube/ README](./kubernetes.md#clusters).
-
-- add [autocompletion](https://kubernetes.io/docs/reference/kubectl/cheatsheet/#kubectl-autocomplete)
-- create an [alias](https://www.google.com/search?q=persist+alias+linux) to `k`: `alias k="kubectl"`
-- install [kubectx and kubens](https://github.com/ahmetb/kubectx) to switch easily between [contexts](./kubernetes.md#context) and [namespaces](./kubernetes.md#namespaces)
-- install [fzf](https://github.com/junegunn/fzf) and [kube-fzf](https://github.com/thecasualcoder/kube-fzf): command-line fuzzy searching of Kubernetes Pods
-- install [kubelens](https://github.com/kubelens/kubelens): web application to look at the objects
