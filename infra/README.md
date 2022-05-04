@@ -12,6 +12,8 @@ Before starting, ensure to:
 - [install the tools](#tools)
 - [setup the AWS CLI profile](#aws-cli-profile)
 
+Note that this directory (`infra/`) is used to manage the deployment of the `datasets-server` services to the cloud infrastructure (AWS) using Kubernetes. The infrastructure in itself is not managed here, but in https://github.com/huggingface/infra/ (using terraform). If you need to create or modify some resources, contact the infra team.
+
 ## Tools
 
 To work on the infrastructure, various CLI tools are required.
