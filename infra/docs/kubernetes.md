@@ -99,11 +99,11 @@ Some useful commands:
 - `kubectl get xxx`: get the list of objects of type `xxx`. See also the [tips section](#tips-with-kubectl-get)
 - `kubectl explain xxx`: get a description of what the `xxx` object type is.
 - `kubectl logs pod/yyy`: show the logs of the pod `yyy`
-- `kubectl exec pod/yyy -it sh`: open a shell on the pod `yyy`
+- `kubectl exec pod/yyy -it sh`: open a shell on the pod `yyy`. More here: https://kubernetes.io/docs/reference/kubectl/cheatsheet/#interacting-with-running-pods and here: https://kubernetes.io/docs/reference/kubectl/cheatsheet/#interacting-with-deployments-and-services
 
 ### Tips with kubectl get
 
-The `-o` option of `kubectl get xxx`, where `xxx` is the object type (`namespace`, `pod`, `deploy`...), allows to format the output:
+The `-o` option of `kubectl get xxx`, where `xxx` is the object type (`namespace`, `pod`, `deploy`...), allows to [format the output](https://kubernetes.io/docs/reference/kubectl/cheatsheet/#formatting-output):
 
 - without the option `-o`: a table with a basic list of attributes and one line per object
 - `-o wide`: a table with an extended list of attributes and one line per object
@@ -147,6 +147,8 @@ kubectl get namespace
 kubectl get namespaces
 kubectl get ns
 ```
+
+More here: https://kubernetes.io/docs/reference/kubectl/cheatsheet/#viewing-finding-resources
 
 ## Namespaces
 

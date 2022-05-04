@@ -8,19 +8,20 @@ To work on the infrastructure, various CLI tools are required or recommended.
 
 You will mainly use:
 
-- `aws configure sso` to login. See the [ECR section below](#amazon-elastic-container-registry-ecr).
-- `aws ecr` to list, pull, push the docker images to the ECR repository. See the [ECR section below](#amazon-elastic-container-registry-ecr).
-- `aws eks` to inspect the Kubernetes clusters, and setup `kubectl`. See [the "clusters" section in kube/ README](./kube/README.md#clusters).
+- `aws configure sso` to login. See [authentication.md](./authentication.md).
+- `aws ecr` to list, pull, push the docker images to the ECR repository. See [docker.md](./docker.md).
+- `aws eks` to inspect the Kubernetes clusters, and setup `kubectl`. See [kubernetes.md](./kubernetes.md#clusters).
 
 ### kubectl
 
 `kubectl` is the Kubernetes CLI. See https://kubernetes.io/docs/tasks/tools/install-kubectl-linux/ to install it on Linux.
 
-Once installed, you can [alias](https://www.google.com/search?q=persist+alias+linux) it to `k` in your bash/zsh profile so that:
+To use it, you have to configure it to use a specific cluster using `aws eks`. See [the "clusters" section in kube/ README](./kubernetes.md#clusters).
 
-```
-$ alias | grep kubectl
-k=kubectl
-```
+Once installed, you can:
 
-To use it, you have to configure it to use a specific cluster using `aws eks`. See [the "clusters" section in kube/ README](./kube/README.md#clusters).
+- add [autocompletion](https://kubernetes.io/docs/reference/kubectl/cheatsheet/#kubectl-autocomplete)
+- create an [alias](https://www.google.com/search?q=persist+alias+linux) to `k`: `alias k="kubectl"`
+- install [kubectx and kubens](https://github.com/ahmetb/kubectx) to switch easily between [contexts](./kubernetes.md#context) and [namespaces](./kubernetes.md#namespaces)
+- install [fzf](https://github.com/junegunn/fzf) and [kube-fzf](https://github.com/thecasualcoder/kube-fzf): command-line fuzzy searching of Kubernetes Pods
+- install [kubelens](https://github.com/kubelens/kubelens): web application to look at the objects
