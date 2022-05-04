@@ -21,11 +21,6 @@ aws s3 ls --profile hub
 
 In the docs, we assume the AWS CLI profile is called `hub`.
 
-<<<<<<< HEAD
-=======
-**Note**: until all the rights of the `EKS-HUB-Hub` role are setup adequately, you can use another role (create another profile called `hub-pu` by using `HFPowerUserAccess` instead of `EKS-HUB-Hub` in `aws configure sso`). This role will be removed soon.
-
->>>>>>> docs: ✏️ reorganize the files
 The profile `hub` is meant to:
 
 - operate inside the two EKS clusters (`hub-prod` and `hub-ephemeral`):

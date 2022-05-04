@@ -33,11 +33,8 @@ $ aws eks list-clusters --profile=hub
 An error occurred (AccessDeniedException) when calling the ListClusters operation: User: arn:aws:sts::707930574880:assumed-role/AWSReservedSSO_EKS-HUB-Hub_3c94769b0752b7d7/sylvain.lesage@huggingface.co is not authorized to perform: eks:ListClusters on resource: arn:aws:eks:us-east-1:707930574880:cluster/*
 ```
 
-<<<<<<< HEAD
 We've had to use another role to do it: create another profile called `hub-pu` by using `HFPowerUserAccess` instead of `EKS-HUB-Hub` in `aws configure sso`. Beware: this role might be removed soon.
 
-=======
->>>>>>> docs: ✏️ reorganize the files
 ### Use a cluster
 
 Setup `kubectl` to use a cluster:
@@ -68,11 +65,7 @@ The principal Kubernetes objects within a cluster are:
 
 - [namespace](https://kubernetes.io/docs/concepts/overview/working-with-objects/namespaces/): mechanism for isolating groups of resources within a single cluster
 - [node](https://kubernetes.io/docs/tutorials/kubernetes-basics/explore/explore-intro/): the virtual or physical machines grouped in a cluster, each of which runs multiple pods. Note that with the `EKS-HUB-Hub` role, we don't have access to the list of nodes
-<<<<<<< HEAD
 - [deployment](https://kubernetes.io/docs/tutorials/kubernetes-basics/deploy-app/deploy-intro/): the configuration sent to the control plane to deploy and manage a containerized application. It describes a desired state for a set of pods
-=======
-- [deployment](https://kubernetes.io/docs/tutorials/kubernetes-basics/deploy-app/deploy-intro/): the configuration sent to the control plane to deploy and manage a containerized application.
->>>>>>> docs: ✏️ reorganize the files
 - [pod](https://kubernetes.io/docs/concepts/workloads/pods/): the pods are where the containerized applications are running, once deployed.
 - [service](https://kubernetes.io/docs/concepts/services-networking/service/): an abstraction to access containerized application through the network from outside the cluster (maps a port on the proxy to the pods that will respond)
 - [ingress](https://kubernetes.io/docs/concepts/services-networking/ingress/): a set of rules that define how a service is exposed to the outside (URL, load-balancing, TLS, etc.)
@@ -108,7 +101,6 @@ Some useful commands:
 - `kubectl get xxx`: get the list of objects of type `xxx`. See also the [tips section](#tips-with-kubectl-get)
 - `kubectl explain xxx`: get a description of what the `xxx` object type is.
 - `kubectl logs pod/yyy`: show the logs of the pod `yyy`
-<<<<<<< HEAD
 - `kubectl exec pod/yyy -it sh`: open a shell on the pod `yyy`. More here: https://kubernetes.io/docs/reference/kubectl/cheatsheet/#interacting-with-running-pods and here: https://kubernetes.io/docs/reference/kubectl/cheatsheet/#interacting-with-deployments-and-services
 - `kubectl describe xxx/yyy`: show the details of the object `yyy` of type `xxx`. In particular, look at the `Events` section at the end, to debug what occurs to the object.
   ```
@@ -118,17 +110,11 @@ Some useful commands:
     Normal   Pulled     8m1s (x301 over 17h)   kubelet  Container image "707930574880.dkr.ecr.us-east-1.amazonaws.com/hub-datasets-server-api:sha-59db084" already present on machine
     Warning  BackOff    3m3s (x3643 over 17h)  kubelet  Back-off restarting failed container
   ```
+- `kubectl exec pod/yyy -it sh`: open a shell on the pod `yyy`. More here: https://kubernetes.io/docs/reference/kubectl/cheatsheet/#interacting-with-running-pods and here: https://kubernetes.io/docs/reference/kubectl/cheatsheet/#interacting-with-deployments-and-services
 
 ### Tips with kubectl get
 
 The `-o` option of `kubectl get xxx`, where `xxx` is the object type (`namespace`, `pod`, `deploy`...), allows to [format the output](https://kubernetes.io/docs/reference/kubectl/cheatsheet/#formatting-output):
-=======
-- `kubectl exec pod/yyy -it sh`: open a shell on the pod `yyy`
-
-### Tips with kubectl get
-
-The `-o` option of `kubectl get xxx`, where `xxx` is the object type (`namespace`, `pod`, `deploy`...), allows to format the output:
->>>>>>> docs: ✏️ reorganize the files
 
 - without the option `-o`: a table with a basic list of attributes and one line per object
 - `-o wide`: a table with an extended list of attributes and one line per object
@@ -173,15 +159,12 @@ kubectl get namespaces
 kubectl get ns
 ```
 
-<<<<<<< HEAD
 More here: https://kubernetes.io/docs/reference/kubectl/cheatsheet/#viewing-finding-resources
 
 ## Other tips
 
 Make your containerized applications listen to `0.0.0.0`, not `localhost`.
 
-=======
->>>>>>> docs: ✏️ reorganize the files
 ## Namespaces
 
 Get the list of [namespaces](https://kubernetes.io/docs/concepts/overview/working-with-objects/namespaces/) of the current cluster (`hub-ephemeral`)):
