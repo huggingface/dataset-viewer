@@ -17,4 +17,4 @@ Note that this directory (`infra/`) is used to manage the deployment of the `dat
 The subdirectories are:
 
 - [docs/](./docs/): documentation
-- [kube](./kube): the kubernetes configuration
+- [charts](./charts): the kubernetes configurations, packaged as [Helm charts](https://helm.sh/docs/topics/charts/).
