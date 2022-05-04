@@ -91,6 +91,16 @@ DESCRIPTION:
 ...
 ```
 
+### Useful kubectl commands
+
+Some useful commands:
+
+- `kubectl api-resources`: list all the object types (resources)
+- `kubectl get xxx`: get the list of objects of type `xxx`. See also the [tips section](#tips-with-kubectl-get)
+- `kubectl explain xxx`: get a description of what the `xxx` object type is.
+- `kubectl logs pod/yyy`: show the logs of the pod `yyy`
+- `kubectl exec pod/yyy -it sh`: open a shell on the pod `yyy`
+
 ### Tips with kubectl get
 
 The `-o` option of `kubectl get xxx`, where `xxx` is the object type (`namespace`, `pod`, `deploy`...), allows to format the output:
