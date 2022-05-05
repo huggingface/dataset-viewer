@@ -1,0 +1,33 @@
+# Deployment if no storage is used, StatefulSet else
+{{- if not .Values.global.storage.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    {{ include "labels.api" . | nindent 4 }}
+  name: {{ include "name" . }}-api
+  namespace: {{ .Release.Namespace }}
+spec:
+  progressDeadlineSeconds: 600
+  replicas: {{ .Values.api.replicas }}
+  revisionHistoryLimit: 10
+  selector:
+    matchLabels:
+      {{ include "labels.api" . | nindent 6 }}
+  strategy:
+    rollingUpdate:
+      maxSurge: 25%
+      maxUnavailable: 25%
+    type: RollingUpdate
+  template:
+    metadata:
+      labels:
+        {{ include "labels.api" . | nindent 8 }}
+    {{ include "apiPodSpec" . | nindent 4 }}
+        resources:
+          {{ toYaml .Values.api.resources | nindent 10 }}
+      nodeSelector:
+        {{ toYaml .Values.api.nodeSelector | nindent 8 }}
+      tolerations:
+        {{ toYaml .Values.api.tolerations | nindent 8 }}
+{{- end }}

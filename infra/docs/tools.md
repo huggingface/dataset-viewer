@@ -32,7 +32,10 @@ Helm is a package manager for Kubernetes, and installs a [chart](https://helm.sh
 
 See https://helm.sh/docs/intro/install/ to install the `helm` CLI.
 
-Once installed, you can install [helm-diff](https://github.com/databus23/helm-diff): a helm plugin that shows a diff explaining what a helm upgrade would change.
+Once installed, you can:
+
+- add [autocompletion](https://helm.sh/docs/helm/helm_completion/#see-also)
+- install [helm-diff](https://github.com/databus23/helm-diff): a helm plugin that shows a diff explaining what a helm upgrade would change.
 
 ### make
 

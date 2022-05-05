@@ -1,0 +1,59 @@
+mongodb:
+  enabled: false
+  useStatefulSet: true
+  auth:
+    enabled: false
+  serviceAccount:
+    create: false
+  # Name of the mongo db database used to cache the datasets
+  cacheDatabase: "datasets_server_cache"
+  # Name of the mongo db database used to store the jobs queue
+  queueDatabase: "datasets_server_queue"
+
+image:
+  repository: 707930574880.dkr.ecr.us-east-1.amazonaws.com
+  name: hub-datasets-server-api
+  tag: sha-59db084 
+  pullPolicy: IfNotPresent
+
+# Global values that apply to API and workers
+global:
+  ephemeral: false
+  domain: "datasets-server.us.dev.moon.huggingface.tech"
+  storage:
+    enabled: false
+    assetsDirectory: "/assets"
+    nfs: {}
+
+# API
+api:
+  replicas: 1
+  
+  service:
+    type: NodePort
+    annotations: { }
+
+  ingress:
+    annotations: { }
+  
+  resources:
+    requests:
+      cpu: 1
+    limits: 
+      cpu: 1
+  nodeSelector: {}
+  tolerations: []
+
+  readinessPort: 80  
+  # Application hostname
+  appHostname: "localhost"
+  # Application port
+  appPort: 80
+  # Log level
+  logLevel: "INFO"
+  # Number of seconds to set in the `max-age` header on data endpoints
+  maxAgeLongSeconds: "120"
+  # Number of seconds to set in the `max-age` header on technical endpoints
+  maxAgeShortSeconds: "10"  
+  # Number of uvicorn workers
+  webConcurrency: "2"

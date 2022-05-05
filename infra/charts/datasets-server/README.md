@@ -17,7 +17,7 @@ Set the SHA of the last commit in [values.yaml](./values.yaml). It allows to sel
 Dry run:
 
 ```shell
-helm dependency update .
+make init
 make diff-ephemeral
 ```
 

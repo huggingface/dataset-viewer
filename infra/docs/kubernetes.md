@@ -63,7 +63,7 @@ The principal Kubernetes objects within a cluster are:
 
 - [namespace](https://kubernetes.io/docs/concepts/overview/working-with-objects/namespaces/): mechanism for isolating groups of resources within a single cluster
 - [node](https://kubernetes.io/docs/tutorials/kubernetes-basics/explore/explore-intro/): the virtual or physical machines grouped in a cluster, each of which runs multiple pods. Note that with the `EKS-HUB-Hub` role, we don't have access to the list of nodes
-- [deployment](https://kubernetes.io/docs/tutorials/kubernetes-basics/deploy-app/deploy-intro/): the configuration sent to the control plane to deploy and manage a containerized application.
+- [deployment](https://kubernetes.io/docs/tutorials/kubernetes-basics/deploy-app/deploy-intro/): the configuration sent to the control plane to deploy and manage a containerized application. It describes a desired state for a set of pods
 - [pod](https://kubernetes.io/docs/concepts/workloads/pods/): the pods are where the containerized applications are running, once deployed.
 - [service](https://kubernetes.io/docs/concepts/services-networking/service/): an abstraction to access containerized application through the network from outside the cluster (maps a port on the proxy to the pods that will respond)
 - [ingress](https://kubernetes.io/docs/concepts/services-networking/ingress/): a set of rules that define how a service is exposed to the outside (URL, load-balancing, TLS, etc.)

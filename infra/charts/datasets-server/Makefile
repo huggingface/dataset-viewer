@@ -1,21 +1,25 @@
 RELEASE_NAME := datasets-server
 K8S_NAMESPACE := hub
 
-.PHONY: install
-diff:
-	helm install $(RELEASE_NAME) . --values env/$(ENV).yaml --values env/infra-$(ENV).json -n $(K8S_NAMESPACE)
+.PHONY: init
+init:
+	helm dependency update .
+
+.PHONY: uninstall
+uninstall:
+	helm uninstall $(RELEASE_NAME) -n $(K8S_NAMESPACE)
 
 .PHONY: diff
 diff:
-	helm diff upgrade $(RELEASE_NAME) . --values env/$(ENV).yaml --values env/infra-$(ENV).json -n $(K8S_NAMESPACE)
+	helm diff upgrade --install $(RELEASE_NAME) . --values env/$(ENV).yaml -n $(K8S_NAMESPACE)
 
 .PHONY: upgrade
 upgrade:
-	helm upgrade $(RELEASE_NAME) . --values env/$(ENV).yaml --values env/infra-$(ENV).json -n $(K8S_NAMESPACE)
+	helm upgrade --install $(RELEASE_NAME) . --values env/$(ENV).yaml -n $(K8S_NAMESPACE)
 
 .PHONY: install-ephemeral
 install-ephemeral:
-	@make install ENV=ephemeral
+	@make upgrade ENV=ephemeral
 
 .PHONY: diff-ephemeral
 diff-ephemeral:
@@ -24,3 +28,7 @@ diff-ephemeral:
 .PHONY: upgrade-ephemeral
 upgrade-ephemeral:
 	@make upgrade ENV=ephemeral
+
+.PHONY: quality
+quality:
+	helm lint

@@ -1,0 +1,2 @@
+# we don't version the Helm dependencies charts
+charts/

@@ -18,3 +18,5 @@ The subdirectories are:
 
 - [docs/](./docs/): documentation
 - [charts](./charts): the kubernetes configurations, packaged as [Helm charts](https://helm.sh/docs/topics/charts/).
+
+All the docs are located in [docs/](./docs). You might also be interested in reading the doc for [moon-landing](https://github.com/huggingface/moon-landing/blob/main/infra/hub/README.md).
