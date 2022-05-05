@@ -33,6 +33,8 @@ $ aws eks list-clusters --profile=hub
 An error occurred (AccessDeniedException) when calling the ListClusters operation: User: arn:aws:sts::707930574880:assumed-role/AWSReservedSSO_EKS-HUB-Hub_3c94769b0752b7d7/sylvain.lesage@huggingface.co is not authorized to perform: eks:ListClusters on resource: arn:aws:eks:us-east-1:707930574880:cluster/*
 ```
 
+We've had to use another role to do it: create another profile called `hub-pu` by using `HFPowerUserAccess` instead of `EKS-HUB-Hub` in `aws configure sso`. Beware: this role might be removed soon.
+
 ### Use a cluster
 
 Setup `kubectl` to use a cluster:
