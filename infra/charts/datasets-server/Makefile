@@ -17,17 +17,13 @@ diff:
 upgrade:
 	helm upgrade --install $(RELEASE_NAME) . --values env/$(ENV).yaml -n $(K8S_NAMESPACE)
 
-.PHONY: install-ephemeral
-install-ephemeral:
-	@make upgrade ENV=ephemeral
+.PHONY: diff-dev
+diff-dev:
+	@make diff ENV=dev
 
-.PHONY: diff-ephemeral
-diff-ephemeral:
-	@make diff ENV=ephemeral
-
-.PHONY: upgrade-ephemeral
-upgrade-ephemeral:
-	@make upgrade ENV=ephemeral
+.PHONY: upgrade-dev
+upgrade-dev:
+	@make upgrade ENV=dev
 
 .PHONY: quality
 quality:

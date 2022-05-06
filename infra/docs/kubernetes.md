@@ -102,6 +102,14 @@ Some useful commands:
 - `kubectl explain xxx`: get a description of what the `xxx` object type is.
 - `kubectl logs pod/yyy`: show the logs of the pod `yyy`
 - `kubectl exec pod/yyy -it sh`: open a shell on the pod `yyy`. More here: https://kubernetes.io/docs/reference/kubectl/cheatsheet/#interacting-with-running-pods and here: https://kubernetes.io/docs/reference/kubectl/cheatsheet/#interacting-with-deployments-and-services
+- `kubectl describe xxx/yyy`: show the details of the object `yyy` of type `xxx`. In particular, look at the `Events` section at the end, to debug what occurs to the object.
+  ```
+    Type     Reason     Age                    From     Message
+    ----     ------     ----                   ----     -------
+    Warning  Unhealthy  28m (x2730 over 17h)   kubelet  Readiness probe failed: dial tcp 10.12.43.223:80: connect: connection refused
+    Normal   Pulled     8m1s (x301 over 17h)   kubelet  Container image "707930574880.dkr.ecr.us-east-1.amazonaws.com/hub-datasets-server-api:sha-59db084" already present on machine
+    Warning  BackOff    3m3s (x3643 over 17h)  kubelet  Back-off restarting failed container
+  ```
 
 ### Tips with kubectl get
 
@@ -151,6 +159,10 @@ kubectl get ns
 ```
 
 More here: https://kubernetes.io/docs/reference/kubectl/cheatsheet/#viewing-finding-resources
+
+## Other tips
+
+Make your containerized applications listen to `0.0.0.0`, not `localhost`.
 
 ## Namespaces
 

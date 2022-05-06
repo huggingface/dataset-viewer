@@ -18,11 +18,11 @@ Dry run:
 
 ```shell
 make init
-make diff-ephemeral
+make diff-dev
 ```
 
 Deploy:
 
 ```shell
-make upgrade-ephemeral
+make upgrade-dev
 ```

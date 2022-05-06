@@ -32,22 +32,10 @@ app.kubernetes.io/name: {{ include "name" . }}
 app.kubernetes.io/instance: {{ .Release.Name }}
 {{- end }}
 
-{{- define "datasets-server.name" -}}
-datasets-server
-{{- end -}}
-
 {{- define "labels.api" -}}
 {{ include "labels" . }}
 release: {{ $.Release.Name | quote }}
 heritage: {{ $.Release.Service | quote }}
 chart: "{{ include "name" . }}"
-app: "{{ include "datasets-server.name" . }}-api"
-{{- end -}}
-
-{{- define "labels.worker" -}}
-{{ include "labels" . }}
-release: {{ $.Release.Name | quote }}
-heritage: {{ $.Release.Service | quote }}
-chart: "{{ include "name" . }}"
-app: "{{ include "datasets-server.name" . }}-worker"
+app: "{{ include "name" . }}-api"
 {{- end -}}

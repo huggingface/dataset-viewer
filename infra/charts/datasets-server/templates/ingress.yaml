@@ -2,6 +2,7 @@ apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
   annotations:
+    # to communicate with AWS
     {{ toYaml .Values.api.ingress.annotations | nindent 4 }}
   labels:
     {{ include "labels.api" . | nindent 4 }}
@@ -9,7 +10,7 @@ metadata:
   namespace: {{ .Release.Namespace }}
 spec:
   rules:
-    - host: {{ .Values.global.domain }}
+    - host: {{ .Values.domain }}
       http:
         paths:
           - backend:
@@ -19,7 +20,3 @@ spec:
                   name: http
             pathType: ImplementationSpecific
 
-    # {{- if .Values.global.ephemeral  }}
-    # - host: {{ $.Release.Name }}.{{ .Values.global.domain }}
-    # {{- else }}
-    # {{- end }}

@@ -1,5 +1,3 @@
-# Deployment if no storage is used, StatefulSet else
-{{- if not .Values.global.storage.enabled }}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -30,4 +28,12 @@ spec:
         {{ toYaml .Values.api.nodeSelector | nindent 8 }}
       tolerations:
         {{ toYaml .Values.api.tolerations | nindent 8 }}
-{{- end }}
+      volumes:
+        - name: assets
+          nfs:
+            server: {{ .Values.storage.nfs.server }}
+            path: {{ .Values.storage.nfs.path }}
+      securityContext:
+        runAsGroup: 1000
+        runAsNonRoot: false
+        runAsUser: 1000

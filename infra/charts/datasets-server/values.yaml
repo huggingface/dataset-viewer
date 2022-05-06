@@ -10,23 +10,20 @@ mongodb:
   # Name of the mongo db database used to store the jobs queue
   queueDatabase: "datasets_server_queue"
 
-image:
-  repository: 707930574880.dkr.ecr.us-east-1.amazonaws.com
-  name: hub-datasets-server-api
-  tag: sha-59db084 
-  pullPolicy: IfNotPresent
+storage:
+  # Directory of assets (audio files and images that will be served for the web)
+  assetsDirectory: "/assets"
+  nfs: {}
 
-# Global values that apply to API and workers
-global:
-  ephemeral: false
-  domain: "datasets-server.us.dev.moon.huggingface.tech"
-  storage:
-    enabled: false
-    assetsDirectory: "/assets"
-    nfs: {}
+domain: "datasets-server.us.dev.moon.huggingface.tech"
 
-# API
 api:
+  image:
+    repository: 707930574880.dkr.ecr.us-east-1.amazonaws.com
+    name: hub-datasets-server-api
+    tag: sha-59db084
+    pullPolicy: IfNotPresent
+
   replicas: 1
   
   service:
@@ -44,9 +41,9 @@ api:
   nodeSelector: {}
   tolerations: []
 
-  readinessPort: 80  
-  # Application hostname
-  appHostname: "localhost"
+  readinessPort: 80
+  # Application hostname - it must not be set to localhost to work in Kube!
+  appHostname: "0.0.0.0"
   # Application port
   appPort: 80
   # Log level
