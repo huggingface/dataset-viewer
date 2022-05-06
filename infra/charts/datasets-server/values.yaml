@@ -54,3 +54,91 @@ api:
   maxAgeShortSeconds: "10"  
   # Number of uvicorn workers
   webConcurrency: "2"
+
+
+datasetsWorker:
+  image:
+    repository: 707930574880.dkr.ecr.us-east-1.amazonaws.com
+    name: hub-datasets-server-worker
+    tag: sha-59db084
+    pullPolicy: IfNotPresent
+
+  replicas: 1
+  
+  resources:
+    requests:
+      cpu: 1
+    limits: 
+      cpu: 1
+  nodeSelector: {}
+  tolerations: []
+
+  # Datasets blocklist
+  datasetsBlocklist: ""
+  # Git reference for the canonical datasets on https://github.com/huggingface/datasets
+  datasetsRevision: "master"
+  # User Access Token (see https://huggingface.co/settings/token, only the `read` role is required)
+  hfToken: ""
+  # Log level
+  logLevel: "INFO"
+  # Maximum number of jobs running at the same time for the same dataset
+  maxJobsPerDataset: 1
+  # Max CPU load (%) - if reached, sleeps until it comes back under the limit
+  maxLoadPct: 50
+  # Max memory (RAM + SWAP) (%) - if reached, sleeps until it comes back under the limit
+  maxMemoryPct: 60
+  # Max size (in bytes) of the dataset to fallback in normal mode if streaming fails
+  maxSizeFallback: "100_000_000"
+  # Min size of a cell in the /rows endpoint response in bytes
+  minCellBytes: 100
+  # Max size of the /rows endpoint response in bytes
+  rowMaxBytes: "1_000_000"
+  # Max number of rows in the /rows endpoint response
+  rowsMaxNumber: 100
+  # Min number of rows in the /rows endpoint response
+  rowsMinNumber: 10
+  # Number of seconds a worker will sleep before trying to process a new job
+  workerSleepSeconds: 5
+
+splitsWorker:
+  image:
+    repository: 707930574880.dkr.ecr.us-east-1.amazonaws.com
+    name: hub-datasets-server-worker
+    tag: sha-59db084
+    pullPolicy: IfNotPresent
+  replicas: 1
+  
+  resources:
+    requests:
+      cpu: 1
+    limits: 
+      cpu: 1
+  nodeSelector: {}
+  tolerations: []
+
+  # Datasets blocklist
+  datasetsBlocklist: ""
+  # Git reference for the canonical datasets on https://github.com/huggingface/datasets
+  datasetsRevision: "master"
+  # User Access Token (see https://huggingface.co/settings/token, only the `read` role is required)
+  hfToken: ""
+  # Log level
+  logLevel: "INFO"
+  # Maximum number of jobs running at the same time for the same dataset
+  maxJobsPerDataset: 1
+  # Max CPU load (%) - if reached, sleeps until it comes back under the limit
+  maxLoadPct: 50
+  # Max memory (RAM + SWAP) (%) - if reached, sleeps until it comes back under the limit
+  maxMemoryPct: 60
+  # Max size (in bytes) of the dataset to fallback in normal mode if streaming fails
+  maxSizeFallback: "100_000_000"
+  # Min size of a cell in the /rows endpoint response in bytes
+  minCellBytes: 100
+  # Max size of the /rows endpoint response in bytes
+  rowMaxBytes: "1_000_000"
+  # Max number of rows in the /rows endpoint response
+  rowsMaxNumber: 100
+  # Min number of rows in the /rows endpoint response
+  rowsMinNumber: 10
+  # Number of seconds a worker will sleep before trying to process a new job
+  workerSleepSeconds: 5

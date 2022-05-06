@@ -1,0 +1,39 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    {{ include "labels.datasetsWorker" . | nindent 4 }}
+  name: {{ include "name" . }}-datasets-worker
+  namespace: {{ .Release.Namespace }}
+spec:
+  progressDeadlineSeconds: 600
+  replicas: {{ .Values.datasetsWorker.replicas }}
+  revisionHistoryLimit: 10
+  selector:
+    matchLabels:
+      {{ include "labels.datasetsWorker" . | nindent 6 }}
+  strategy:
+    rollingUpdate:
+      maxSurge: 25%
+      maxUnavailable: 25%
+    type: RollingUpdate
+  template:
+    metadata:
+      labels:
+        {{ include "labels.datasetsWorker" . | nindent 8 }}
+    {{ include "datasetsWorkerPodSpec" . | nindent 4 }}
+        resources:
+          {{ toYaml .Values.datasetsWorker.resources | nindent 10 }}
+      nodeSelector:
+        {{ toYaml .Values.datasetsWorker.nodeSelector | nindent 8 }}
+      tolerations:
+        {{ toYaml .Values.datasetsWorker.tolerations | nindent 8 }}
+      volumes:
+        - name: assets
+          nfs:
+            server: {{ .Values.storage.nfs.server }}
+            path: {{ .Values.storage.nfs.path }}
+      securityContext:
+        runAsGroup: 1000
+        runAsNonRoot: false
+        runAsUser: 1000

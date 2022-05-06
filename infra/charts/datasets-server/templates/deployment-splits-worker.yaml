@@ -1,0 +1,39 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    {{ include "labels.splitsWorker" . | nindent 4 }}
+  name: {{ include "name" . }}-splits-worker
+  namespace: {{ .Release.Namespace }}
+spec:
+  progressDeadlineSeconds: 600
+  replicas: {{ .Values.splitsWorker.replicas }}
+  revisionHistoryLimit: 10
+  selector:
+    matchLabels:
+      {{ include "labels.splitsWorker" . | nindent 6 }}
+  strategy:
+    rollingUpdate:
+      maxSurge: 25%
+      maxUnavailable: 25%
+    type: RollingUpdate
+  template:
+    metadata:
+      labels:
+        {{ include "labels.splitsWorker" . | nindent 8 }}
+    {{ include "splitsWorkerPodSpec" . | nindent 4 }}
+        resources:
+          {{ toYaml .Values.splitsWorker.resources | nindent 10 }}
+      nodeSelector:
+        {{ toYaml .Values.splitsWorker.nodeSelector | nindent 8 }}
+      tolerations:
+        {{ toYaml .Values.splitsWorker.tolerations | nindent 8 }}
+      volumes:
+        - name: assets
+          nfs:
+            server: {{ .Values.storage.nfs.server }}
+            path: {{ .Values.storage.nfs.path }}
+      securityContext:
+        runAsGroup: 1000
+        runAsNonRoot: false
+        runAsUser: 1000

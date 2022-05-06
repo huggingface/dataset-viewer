@@ -24,3 +24,21 @@ api:
       cpu: 0.01
     limits:
       cpu: 1
+
+datasets-worker:
+  replicas: 2
+
+  resources:
+    requests:
+      cpu: 0.01
+    limits:
+      cpu: 1
+
+splits-worker:
+  replicas: 5
+
+  resources:
+    requests:
+      cpu: 0.01
+    limits:
+      cpu: 1
