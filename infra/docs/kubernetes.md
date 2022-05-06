@@ -110,7 +110,6 @@ Some useful commands:
     Normal   Pulled     8m1s (x301 over 17h)   kubelet  Container image "707930574880.dkr.ecr.us-east-1.amazonaws.com/hub-datasets-server-api:sha-59db084" already present on machine
     Warning  BackOff    3m3s (x3643 over 17h)  kubelet  Back-off restarting failed container
   ```
-- `kubectl exec pod/yyy -it sh`: open a shell on the pod `yyy`. More here: https://kubernetes.io/docs/reference/kubectl/cheatsheet/#interacting-with-running-pods and here: https://kubernetes.io/docs/reference/kubectl/cheatsheet/#interacting-with-deployments-and-services
 
 ### Tips with kubectl get
 
