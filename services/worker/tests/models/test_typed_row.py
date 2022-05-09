@@ -33,14 +33,15 @@ def test_mnist() -> None:
     assert columns[0].type == ColumnType.RELATIVE_IMAGE_URL
 
 
-def test_cifar() -> None:
-    info = get_info("cifar10", "plain_text")
-    typed_rows, columns = get_typed_rows_and_columns(
-        "cifar10", "plain_text", "train", info, rows_max_number=ROWS_MAX_NUMBER
-    )
-    assert len(typed_rows) == ROWS_MAX_NUMBER
-    assert typed_rows[0]["img"] == "assets/cifar10/--/plain_text/train/0/img/image.jpg"
-    assert columns[0].type == ColumnType.RELATIVE_IMAGE_URL
+# TODO: re-enable the test
+# def test_cifar() -> None:
+#     info = get_info("cifar10", "plain_text")
+#     typed_rows, columns = get_typed_rows_and_columns(
+#         "cifar10", "plain_text", "train", info, rows_max_number=ROWS_MAX_NUMBER
+#     )
+#     assert len(typed_rows) == ROWS_MAX_NUMBER
+#     assert typed_rows[0]["img"] == "assets/cifar10/--/plain_text/train/0/img/image.jpg"
+#     assert columns[0].type == ColumnType.RELATIVE_IMAGE_URL
 
 
 # TODO: re-enable the test
