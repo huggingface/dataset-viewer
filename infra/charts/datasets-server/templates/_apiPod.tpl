@@ -7,8 +7,8 @@ spec:
       value: {{ .Values.api.appHostname | quote }}
     - name: APP_PORT
       value: {{ .Values.api.appPort | quote }}
-    - name: ASSETS_DIRECTORY
-      value: {{ .Values.storage.assetsDirectory | quote }}
+    # - name: ASSETS_DIRECTORY
+    #   value: {{ .Values.storage.assetsDirectory | quote }}
     - name: LOG_LEVEL
       value: {{ .Values.api.logLevel | quote }}
     - name: MAX_AGE_LONG_SECONDS
@@ -27,15 +27,15 @@ spec:
       value: {{ .Values.api.webConcurrency | quote }}
     image: "{{ .Values.api.image.repository }}/{{ .Values.api.image.name }}:{{ .Values.api.image.tag }}"
     imagePullPolicy: {{ .Values.api.image.pullPolicy }}
-    volumeMounts:
-    - mountPath: {{ .Values.storage.assetsDirectory | quote }}
-      mountPropagation: None
-      name: assets
-      # in a subdirectory named as the chart (datasets-server/), and below it,
-      # in a subdirectory named as the Release, so that Releases will not share the same assets/ dir
-      subPath: "{{ include "name" . }}/{{ .Release.Name }}"
-      # the api only requires read access to the assets
-      readOnly: true
+    # volumeMounts:
+    # - mountPath: {{ .Values.storage.assetsDirectory | quote }}
+    #   mountPropagation: None
+    #   name: assets
+    #   # in a subdirectory named as the chart (datasets-server/), and below it,
+    #   # in a subdirectory named as the Release, so that Releases will not share the same assets/ dir
+    #   subPath: "{{ include "name" . }}/{{ .Release.Name }}"
+    #   # the api only requires read access to the assets
+    #   readOnly: true
     readinessProbe:
       tcpSocket:
         port: {{ .Values.api.readinessPort }}

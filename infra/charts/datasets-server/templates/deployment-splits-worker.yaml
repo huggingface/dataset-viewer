@@ -28,12 +28,12 @@ spec:
         {{ toYaml .Values.splitsWorker.nodeSelector | nindent 8 }}
       tolerations:
         {{ toYaml .Values.splitsWorker.tolerations | nindent 8 }}
-      volumes:
-        - name: assets
-          nfs:
-            server: {{ .Values.storage.nfs.server }}
-            path: {{ .Values.storage.nfs.path }}
-      securityContext:
-        runAsGroup: 1000
-        runAsNonRoot: false
-        runAsUser: 1000
+      # volumes:
+      #   - name: assets
+      #     nfs:
+      #       server: {{ .Values.storage.nfs.server }}
+      #       path: {{ .Values.storage.nfs.path }}
+      # securityContext:
+      #   runAsGroup: 1000
+      #   runAsNonRoot: false
+      #   runAsUser: 1000

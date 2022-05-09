@@ -3,8 +3,8 @@ spec:
   containers:
   - name: hub-datasets-server-worker
     env:
-    - name: ASSETS_DIRECTORY
-      value: {{ .Values.storage.assetsDirectory | quote }}
+    # - name: ASSETS_DIRECTORY
+    #   value: {{ .Values.storage.assetsDirectory | quote }}
     - name: DATASETS_BLOCKLIST
       value: {{ .Values.splitsWorker.datasetsBlocklist | quote }}
     - name: DATASETS_REVISION
@@ -48,22 +48,22 @@ spec:
     - name: WORKER_QUEUE
       # Job queue the worker will pull jobs from: 'datasets' or 'splits'
       value: "splits"
-    image: "{{ .Values.api.image.repository }}/{{ .Values.api.image.name }}:{{ .Values.api.image.tag }}"
-    imagePullPolicy: {{ .Values.api.image.pullPolicy }}
-    volumeMounts:
-    - mountPath: {{ .Values.storage.assetsDirectory | quote }}
-      mountPropagation: None
-      name: assets
-      # in a subdirectory named as the chart (datasets-server/), and below it,
-      # in a subdirectory named as the Release, so that Releases will not share the same assets/ dir
-      subPath: "{{ include "name" . }}/{{ .Release.Name }}"
-      # the workers have to write the assets to the disk
-      readOnly: false
+    image: "{{ .Values.splitsWorker.image.repository }}/{{ .Values.splitsWorker.image.name }}:{{ .Values.splitsWorker.image.tag }}"
+    imagePullPolicy: {{ .Values.splitsWorker.image.pullPolicy }}
+    # volumeMounts:
+    # - mountPath: {{ .Values.storage.assetsDirectory | quote }}
+    #   mountPropagation: None
+    #   name: assets
+    #   # in a subdirectory named as the chart (datasets-server/), and below it,
+    #   # in a subdirectory named as the Release, so that Releases will not share the same assets/ dir
+    #   subPath: "{{ include "name" . }}/{{ .Release.Name }}"
+    #   # the workers have to write the assets to the disk
+    #   readOnly: false
     # TODO: provide readiness and liveness probes
     # readinessProbe:
     #   tcpSocket:
-    #     port: {{ .Values.api.readinessPort }}
+    #     port: {{ .Values.splitsWorker.readinessPort }}
     # livenessProbe:
     #   tcpSocket:
-    #     port: {{ .Values.api.readinessPort }}
+    #     port: {{ .Values.splitsWorker.readinessPort }}
 {{- end -}}
