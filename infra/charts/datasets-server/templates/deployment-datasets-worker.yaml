@@ -3,7 +3,7 @@ kind: Deployment
 metadata:
   labels:
     {{ include "labels.datasetsWorker" . | nindent 4 }}
-  name: {{ include "name" . }}-datasets-worker
+  name: "{{ include "instanceName" . }}-datasets-worker"
   namespace: {{ .Release.Namespace }}
 spec:
   progressDeadlineSeconds: 600

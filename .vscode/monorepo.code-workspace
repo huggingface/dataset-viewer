@@ -31,11 +31,9 @@
       "services": true
     },
     "python.formatting.provider": "black",
-    "editor.formatOnPaste": false,
-    "editor.formatOnSave": true,
     "python.linting.enabled": true,
     "python.linting.mypyEnabled": true,
-    "python.linting.flake8Enabled": true
+    "python.linting.flake8Enabled": true,
   },
   "extensions": {
     "recommendations": [

@@ -13,6 +13,14 @@ Create chart name and version as used by the chart label.
 {{- end }}
 
 {{/*
+Name of the instance (chart + release).
+*/}}
+{{- define "instanceName" -}}
+{{- printf "%s-%s" .Chart.Name .Release.Name | trunc 63 | trimSuffix "-" }}
+{{- end }}
+
+
+{{/*
 Selector labels
 */}}
 {{- define "selectorLabels" -}}
@@ -35,18 +43,17 @@ heritage: {{ $.Release.Service | quote }}
 chart: "{{ include "name" . }}"
 {{- end }}
 
-
 {{- define "labels.api" -}}
 {{ include "labels" . }}
-app: "{{ include "name" . }}-api"
+app: "{{ include "instanceName" . }}-api"
 {{- end -}}
 
 {{- define "labels.datasetsWorker" -}}
 {{ include "labels" . }}
-app: "{{ include "name" . }}-datasets-worker"
+app: "{{ include "instanceName" . }}-datasets-worker"
 {{- end -}}
 
 {{- define "labels.splitsWorker" -}}
 {{ include "labels" . }}
-app: "{{ include "name" . }}-splits-worker"
+app: "{{ include "instanceName" . }}-splits-worker"
 {{- end -}}

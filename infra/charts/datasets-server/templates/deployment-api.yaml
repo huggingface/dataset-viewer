@@ -3,7 +3,7 @@ kind: Deployment
 metadata:
   labels:
     {{ include "labels.api" . | nindent 4 }}
-  name: {{ include "name" . }}-api
+  name: "{{ include "instanceName" . }}-api"
   namespace: {{ .Release.Namespace }}
 spec:
   progressDeadlineSeconds: 600

@@ -6,6 +6,8 @@ storage:
     path: "/fsx"
     server: "svm-0a8e8f8730e2ad14b.fs-0a24e04dfda29bd3f.fsx.us-east-1.amazonaws.com"
 
+domain: "datasets-server.us.dev.moon.huggingface.tech"
+
 api:
   replicas: 1
 

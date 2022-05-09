@@ -1,7 +1,7 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: "{{ include "name" . }}-api"
+  name: "{{ include "instanceName" . }}-api"
   annotations:
     {{ toYaml .Values.api.service.annotations | nindent 4 }}
   namespace: {{ .Release.Namespace }}

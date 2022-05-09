@@ -1,7 +1,7 @@
 {{- define "splitsWorkerPodSpec" -}}
 spec:
   containers:
-  - name: hub-datasets-server-worker
+  - name: "{{ include "instanceName" .}}-splits-worker"
     env:
     # - name: ASSETS_DIRECTORY
     #   value: {{ .Values.storage.assetsDirectory | quote }}
