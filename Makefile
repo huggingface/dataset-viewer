@@ -40,6 +40,7 @@ coverage:
 .PHONY: quality
 quality:
 	$(MAKE) -C e2e/ quality
+	$(MAKE) -C infra/charts/datasets-server/ quality
 	$(MAKE) -C services/worker/ quality
 	$(MAKE) -C services/api/ quality
 	$(MAKE) -C libs/libcache/ quality

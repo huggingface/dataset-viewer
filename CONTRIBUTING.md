@@ -43,6 +43,8 @@ The CI checks the tests a [GitHub action](./.github/workflows/unit-tests.yml). T
 make test
 ```
 
+Note that it requires the resources to be ready, ie. mongo and the storage for assets. See [INSTALL.md](./INSTALL.md).
+
 ## Poetry
 
 ### Hack: reference through the root
@@ -65,14 +67,17 @@ In case you wonder, the `poetry.lock` files must be versioned.
 
 ## Versions
 
-We don't change the version of the libraries and services in `pyproject.toml`, because they are local dependencies and access to the current files anyway. But before deploying to prod, we create a git tag that we increment accordingly to the change (major/minor/bugfix), for example:
+We don't change the version of the libraries and services in `pyproject.toml`, because they are local dependencies and access to the current files anyway. But before deploying to prod, we:
 
-```
-git tag 0.20.2
-git push --tags
-```
+- increment the version (that we increment accordingly to the change: major/minor/bugfix) in the `appVersion` parameter of the [Helm chart](./infra/charts/datasets-server/Chart.yaml)
+- create a git tag with the same version, for example:
 
-Then we create a release at https://github.com/huggingface/datasets-server/releases/new, choosing a tag, then using the button "+ Auto-generate release notes".
+  ```
+  git tag 0.20.2
+  git push --tags
+  ```
+
+- create a release at https://github.com/huggingface/datasets-server/releases/new, choosing a tag, then using the button "+ Auto-generate release notes".
 
 ## Pull requests
 

@@ -38,6 +38,9 @@
     "python.linting.flake8Enabled": true
   },
   "extensions": {
-    "recommendations": ["ms-python.python"]
+    "recommendations": [
+      "ms-python.python",
+      "ms-kubernetes-tools.vscode-kubernetes-tools"
+    ]
   }
 }
