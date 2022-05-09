@@ -149,11 +149,15 @@ def sleep() -> None:
 
 
 def loop() -> None:
-    while not has_resources() or not process_next_job():
-        sleep()
-    # a job has been processed - exit
-    # the worker should be restarted automatically by pm2
-    # this way, we avoid using too much RAM+SWAP
+    logger = logging.getLogger("datasets_server.worker")
+    while True:
+        if has_resources():
+            try:
+                process_next_job()
+            except Exception:
+                logger.warning("error while processing the job")
+        else:
+            sleep()
 
 
 if __name__ == "__main__":
