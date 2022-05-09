@@ -2,8 +2,9 @@ mongodb:
   enabled: true
 
 storage:
-  # JSON format is used because it's easier (ie. less error prone) to copy/paste the output of terraform
-  nfs: {"path":"/fsx","server":"svm-0006d5ba595c33b3e.fs-079a245c1521ad9fe.fsx.us-east-1.amazonaws.com"}
+  nfs:
+    path: "/fsx"
+    server: "svm-0a8e8f8730e2ad14b.fs-0a24e04dfda29bd3f.fsx.us-east-1.amazonaws.com"
 
 api:
   replicas: 1
