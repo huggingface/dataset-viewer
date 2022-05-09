@@ -26,7 +26,7 @@ api:
     limits:
       cpu: 1
 
-datasets-worker:
+datasetsWorker:
   replicas: 2
 
   resources:
@@ -35,7 +35,7 @@ datasets-worker:
     limits:
       cpu: 1
 
-splits-worker:
+splitsWorker:
   replicas: 5
 
   resources:
