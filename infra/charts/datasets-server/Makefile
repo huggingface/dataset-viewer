@@ -1,3 +1,4 @@
+CHART_NAME := datasets-server
 K8S_NAMESPACE := hub
 
 .PHONY: init
@@ -6,15 +7,15 @@ init:
 
 .PHONY: uninstall
 uninstall:
-	helm uninstall $(ENV) -n $(K8S_NAMESPACE)
+	helm uninstall $(CHART_NAME)-$(ENV) -n $(K8S_NAMESPACE)
 
 .PHONY: diff
 diff:
-	helm diff upgrade --install $(ENV) . --values env/$(ENV).yaml -n $(K8S_NAMESPACE)
+	helm diff upgrade --install $(CHART_NAME)-$(ENV) . --values env/$(ENV).yaml -n $(K8S_NAMESPACE)
 
 .PHONY: upgrade
 upgrade:
-	helm upgrade --install $(ENV) . --values env/$(ENV).yaml -n $(K8S_NAMESPACE)
+	helm upgrade --install $(CHART_NAME)-$(ENV) . --values env/$(ENV).yaml -n $(K8S_NAMESPACE)
 
 .PHONY: diff-dev
 diff-dev:

@@ -3,7 +3,7 @@ kind: Deployment
 metadata:
   labels:
     {{ include "labels.splitsWorker" . | nindent 4 }}
-  name: "{{ include "instanceName" . }}-splits-worker"
+  name: "{{ .Release.Name }}-splits-worker"
   namespace: {{ .Release.Namespace }}
 spec:
   progressDeadlineSeconds: 600
