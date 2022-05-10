@@ -1,7 +1,7 @@
 {{- define "apiPodSpec" -}}
 spec:
   containers:
-  - name: "{{ .Release.Name }}-api-worker"
+  - name: "datasets-server-api"
     env:
     - name: APP_HOSTNAME
       value: {{ .Values.api.appHostname | quote }}

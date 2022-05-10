@@ -1,7 +1,7 @@
 {{- define "splitsWorkerPodSpec" -}}
 spec:
   containers:
-  - name: "{{ .Release.Name }}-splits-worker"
+  - name: "datasets-server-splits-worker"
     env:
     # - name: ASSETS_DIRECTORY
     #   value: {{ .Values.storage.assetsDirectory | quote }}
