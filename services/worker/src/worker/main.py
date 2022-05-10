@@ -116,6 +116,8 @@ def process_next_job() -> bool:
 
 def has_memory() -> bool:
     logger = logging.getLogger("datasets_server.worker")
+    if MAX_MEMORY_PCT <= 0:
+        return True
     virtual_memory_used: int = virtual_memory().used  # type: ignore
     virtual_memory_total: int = virtual_memory().total  # type: ignore
     percent = (swap_memory().used + virtual_memory_used) / (swap_memory().total + virtual_memory_total)
@@ -127,6 +129,8 @@ def has_memory() -> bool:
 
 def has_cpu() -> bool:
     logger = logging.getLogger("datasets_server.worker")
+    if MAX_LOAD_PCT <= 0:
+        return True
     load_pct = max(getloadavg()[:2]) / cpu_count() * 100
     # ^ only current load and 5m load. 15m load is not relevant to decide to launch a new job
     ok = load_pct < MAX_LOAD_PCT
