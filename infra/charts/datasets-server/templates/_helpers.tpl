@@ -13,14 +13,6 @@ Create chart name and version as used by the chart label.
 {{- end }}
 
 {{/*
-Name of the instance (chart + release).
-*/}}
-{{- define "instanceName" -}}
-{{- printf "%s-%s" .Chart.Name .Release.Name | trunc 63 | trimSuffix "-" }}
-{{- end }}
-
-
-{{/*
 Selector labels
 */}}
 {{- define "selectorLabels" -}}
@@ -45,15 +37,33 @@ chart: "{{ include "name" . }}"
 
 {{- define "labels.api" -}}
 {{ include "labels" . }}
-app: "{{ include "instanceName" . }}-api"
+app: "{{ .Release.Name }}-api"
 {{- end -}}
 
 {{- define "labels.datasetsWorker" -}}
 {{ include "labels" . }}
-app: "{{ include "instanceName" . }}-datasets-worker"
+app: "{{ .Release.Name }}-datasets-worker"
 {{- end -}}
 
 {{- define "labels.splitsWorker" -}}
 {{ include "labels" . }}
-app: "{{ include "instanceName" . }}-splits-worker"
+app: "{{ .Release.Name }}-splits-worker"
 {{- end -}}
+
+{{/*
+The assets/ subpath in the NFS
+- in a subdirectory named as the chart (datasets-server/), and below it,
+- in a subdirectory named as the Release, so that Releases will not share the same assets/ dir
+*/}}
+{{- define "assets.subpath" -}}
+{{- printf "%s/%s/%s/" .Chart.Name .Release.Name "assets" }}
+{{- end }}
+
+{{/*
+The cache/ subpath in the NFS
+- in a subdirectory named as the chart (datasets-server/), and below it,
+- in a subdirectory named as the Release, so that Releases will not share the same assets/ dir
+*/}}
+{{- define "cache.subpath" -}}
+{{- printf "%s/%s/%s/" .Chart.Name .Release.Name "cache" }}
+{{- end }}

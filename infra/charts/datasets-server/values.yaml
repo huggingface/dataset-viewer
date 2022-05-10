@@ -13,15 +13,19 @@ mongodb:
 storage:
   # Directory of assets (audio files and images that will be served for the web)
   assetsDirectory: "/assets"
+  # Directory of the "datasets" library cache (both for modules and datasets)
+  cacheDirectory: "/cache"
   nfs: {}
 
 domain: "datasets-server.us.dev.moon.huggingface.tech"
+uid: 1000
+gid: 3000
 
 api:
   image:
     repository: 707930574880.dkr.ecr.us-east-1.amazonaws.com
     name: hub-datasets-server-api
-    tag: sha-59db084
+    tag: sha-3dbea82
     pullPolicy: IfNotPresent
 
   replicas: 1
@@ -60,7 +64,7 @@ datasetsWorker:
   image:
     repository: 707930574880.dkr.ecr.us-east-1.amazonaws.com
     name: hub-datasets-server-worker
-    tag: sha-12646ee
+    tag: sha-3dbea82
     pullPolicy: IfNotPresent
 
   replicas: 1
@@ -84,9 +88,9 @@ datasetsWorker:
   # Maximum number of jobs running at the same time for the same dataset
   maxJobsPerDataset: 1
   # Max CPU load (%) - if reached, sleeps until it comes back under the limit
-  maxLoadPct: 50
+  maxLoadPct: 0
   # Max memory (RAM + SWAP) (%) - if reached, sleeps until it comes back under the limit
-  maxMemoryPct: 60
+  maxMemoryPct: 0
   # Max size (in bytes) of the dataset to fallback in normal mode if streaming fails
   maxSizeFallback: "100_000_000"
   # Min size of a cell in the /rows endpoint response in bytes
@@ -104,7 +108,7 @@ splitsWorker:
   image:
     repository: 707930574880.dkr.ecr.us-east-1.amazonaws.com
     name: hub-datasets-server-worker
-    tag: sha-12646ee
+    tag: sha-3dbea82
     pullPolicy: IfNotPresent
   replicas: 1
   
@@ -127,9 +131,9 @@ splitsWorker:
   # Maximum number of jobs running at the same time for the same dataset
   maxJobsPerDataset: 1
   # Max CPU load (%) - if reached, sleeps until it comes back under the limit
-  maxLoadPct: 50
+  maxLoadPct: 0
   # Max memory (RAM + SWAP) (%) - if reached, sleeps until it comes back under the limit
-  maxMemoryPct: 60
+  maxMemoryPct: 0
   # Max size (in bytes) of the dataset to fallback in normal mode if streaming fails
   maxSizeFallback: "100_000_000"
   # Min size of a cell in the /rows endpoint response in bytes

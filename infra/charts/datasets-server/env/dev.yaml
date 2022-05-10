@@ -4,7 +4,7 @@ mongodb:
 storage:
   nfs:
     path: "/fsx"
-    server: "svm-0a8e8f8730e2ad14b.fs-0a24e04dfda29bd3f.fsx.us-east-1.amazonaws.com"
+    server: "svm-08a37cf73026f0b5c.fs-097afa9688029b62a.fsx.us-east-1.amazonaws.com"
 
 domain: "datasets-server.us.dev.moon.huggingface.tech"
 
