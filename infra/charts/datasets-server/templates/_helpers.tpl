@@ -49,3 +49,21 @@ app: "{{ .Release.Name }}-datasets-worker"
 {{ include "labels" . }}
 app: "{{ .Release.Name }}-splits-worker"
 {{- end -}}
+
+{{/*
+The assets/ subpath in the NFS
+- in a subdirectory named as the chart (datasets-server/), and below it,
+- in a subdirectory named as the Release, so that Releases will not share the same assets/ dir
+*/}}
+{{- define "assets.subpath" -}}
+{{- printf "%s/%s/%s/" .Chart.Name .Release.Name "assets" }}
+{{- end }}
+
+{{/*
+The cache/ subpath in the NFS
+- in a subdirectory named as the chart (datasets-server/), and below it,
+- in a subdirectory named as the Release, so that Releases will not share the same assets/ dir
+*/}}
+{{- define "cache.subpath" -}}
+{{- printf "%s/%s/%s/" .Chart.Name .Release.Name "cache" }}
+{{- end }}

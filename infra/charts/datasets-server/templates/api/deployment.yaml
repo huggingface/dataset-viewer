@@ -21,19 +21,21 @@ spec:
     metadata:
       labels:
         {{ include "labels.api" . | nindent 8 }}
-    {{ include "apiPodSpec" . | nindent 4 }}
-        resources:
-          {{ toYaml .Values.api.resources | nindent 10 }}
+    spec:
+      initContainers:
+        {{ include "initContainerAssets" . | nindent 8 }}
+      containers:
+        {{ include "containerApi" . | nindent 8 }}
       nodeSelector:
         {{ toYaml .Values.api.nodeSelector | nindent 8 }}
       tolerations:
         {{ toYaml .Values.api.tolerations | nindent 8 }}
-      # volumes:
-      #   - name: assets
-      #     nfs:
-      #       server: {{ .Values.storage.nfs.server }}
-      #       path: {{ .Values.storage.nfs.path }}
-      # securityContext:
-      #   runAsGroup: 1000
-      #   runAsNonRoot: false
-      #   runAsUser: 1000
+      volumes:
+      - name: nfs
+        nfs:
+          server: {{ .Values.storage.nfs.server }}
+          path: {{ .Values.storage.nfs.path }}
+      securityContext:
+        runAsUser: {{ .Values.uid }}
+        runAsGroup: {{ .Values.gid }}
+        runAsNonRoot: true
