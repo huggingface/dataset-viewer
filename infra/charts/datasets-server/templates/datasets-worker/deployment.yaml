@@ -13,10 +13,7 @@ spec:
     matchLabels:
       {{ include "labels.datasetsWorker" . | nindent 6 }}
   strategy:
-    rollingUpdate:
-      maxSurge: 25%
-      maxUnavailable: 25%
-    type: RollingUpdate
+    type: Recreate
   template:
     metadata:
       labels:
