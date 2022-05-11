@@ -1,6 +1,6 @@
 {{- define "initContainerAssets" -}}
 - name: prepare-assets
-  image: alpine:latest
+  image: ubuntu:focal
   imagePullPolicy: IfNotPresent
   command: ["/bin/sh", "-c"]
   args:

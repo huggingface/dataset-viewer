@@ -1,6 +1,6 @@
 {{- define "initContainerCache" -}}
 - name: prepare-cache
-  image: alpine:latest
+  image: ubuntu:focal
   imagePullPolicy: IfNotPresent
   command: ["/bin/sh", "-c"]
   args:
