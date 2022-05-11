@@ -8,11 +8,13 @@ The [values.yaml](../charts/datasets-server/values.yaml) file contains a list of
 
 ## Notes
 
-An Helm Release is like an instance of the app, deployed on the Kubernetes cluster. You can have various Releases at the same time, for example moon-landing has one Release for each pull-request, allowing to test the hub on every branch. All is related to the Release "name", which must be used in the labels, so that the Kubernetes objects are related as expected in the same Release, and ignore the objects of the other Releases.
+An Helm Release is like an instance of the app, deployed on the Kubernetes cluster. You can have various Releases at the same time, for example moon-landing has one Release for each pull-request, allowing to test the hub on every branch. All is related to the Release name (eg. `datasets-server-dev`), which must be used in the labels, so that the Kubernetes objects are related as expected in the same Release, and ignore the objects of the other Releases.
 
 Note that Kubernetes is not [blue-green deployment](https://en.wikipedia.org/wiki/Blue-green_deployment) (blue-green: two environments, "blue" and "green", coexist, where one is active and the other is inactive, and upgrading the app consists in preparing the inactive one, then activating it instead of the other). Meanwhile, Kubernetes create the new pods (and delete the old ones) one by one, which can lead to a small period with some pods running the new version of the app, and other ones running the old version. This means that the application should take care of the retrocompatibility (writing to the database, to the filesystem).
 
-To deploy mongodb for a given release, we declare it as a dependency in the datasets-server [Chart.yaml](../charts/datasets-server/Chart.yaml). When deployed, it spawns a service named `datasets-server-mongodb` (the release name, followed by `-mongodb`). We can see it:
+### MongoDB
+
+To deploy mongodb for a given release, we declare it as a dependency in the datasets-server [Chart.yaml](../charts/datasets-server/Chart.yaml). When deployed, it spawns a service named `datasets-server-dev-mongodb` (the release name, followed by `-mongodb`). We can see it:
 
 ```
 $ hubectl get service

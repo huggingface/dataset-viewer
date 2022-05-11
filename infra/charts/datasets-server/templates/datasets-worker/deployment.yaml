@@ -1,0 +1,39 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    {{ include "labels.datasetsWorker" . | nindent 4 }}
+  name: "{{ include "release" . }}-datasets-worker"
+  namespace: {{ .Release.Namespace }}
+spec:
+  progressDeadlineSeconds: 600
+  replicas: {{ .Values.datasetsWorker.replicas }}
+  revisionHistoryLimit: 10
+  selector:
+    matchLabels:
+      {{ include "labels.datasetsWorker" . | nindent 6 }}
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        {{ include "labels.datasetsWorker" . | nindent 8 }}
+    spec:
+      initContainers:
+        {{ include "initContainerAssets" . | nindent 8 }}
+        {{ include "initContainerCache" . | nindent 8 }}
+      containers:
+        {{ include "containerDatasetsWorker" . | nindent 8 }}
+      nodeSelector:
+        {{ toYaml .Values.datasetsWorker.nodeSelector | nindent 8 }}
+      tolerations:
+        {{ toYaml .Values.datasetsWorker.tolerations | nindent 8 }}
+      volumes:
+        - name: nfs
+          nfs:
+            server: {{ .Values.storage.nfs.server }}
+            path: {{ .Values.storage.nfs.path }}
+      securityContext:
+        runAsUser: {{ .Values.uid }}
+        runAsGroup: {{ .Values.gid }}
+        runAsNonRoot: true

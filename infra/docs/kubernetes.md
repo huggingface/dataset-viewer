@@ -219,3 +219,43 @@ CURRENT   NAME                                                       CLUSTER    
 Note that contexts are a help for the developer to get quickly in the correct configuration. It's not stored in the cluster.
 
 You might be interested in the `kubectx` and `kubens` tools (see https://github.com/ahmetb/kubectx) if you want to switch more easily between namespaces and contexts.
+
+## Secrets
+
+The HF token must be set manually in a secret (see https://kubernetes.io/docs/tasks/configmap-secret/managing-secret-using-config-file/).
+
+First, convert the secret to base64:
+
+```
+# Ask the Hub administrators to get an HF App token
+$ echo -n 'hf_app_xxxx' | base64
+yyyyy
+```
+
+Then paste it inside a secret configuration:
+
+```
+$ vi secret.yaml
+```
+
+```yaml
+apiVersion: v1
+kind: Secret
+metadata:
+  name: datasets-server-secrets
+type: Opaque
+data:
+  hfToken: yyyyy
+```
+
+Finally create the secret:
+
+```
+kubectl apply -f ./secret.yaml
+```
+
+Alternatively, we can generate the secret with:
+
+```shell
+kubectl create secret generic datasets-server-secrets --from-literal=hfToken='yyyyy'
+```
