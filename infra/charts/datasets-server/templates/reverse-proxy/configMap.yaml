@@ -1,0 +1,10 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  labels:
+    {{ include "labels.reverseProxy" . | nindent 4 }}
+  name: "{{ include "release" . }}-reverse-proxy"
+  namespace: {{ .Release.Namespace }}
+data:
+  default.conf.template: |-
+    {{ .Files.Get .Values.reverseProxy.nginxTemplateFile | replace "${TARGET_URL}" (include "api.url" . | quote ) | nindent 4 }}

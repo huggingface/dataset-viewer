@@ -21,6 +21,10 @@
       "path": "../services/api"
     },
     {
+      "name": "services/reverse-proxy",
+      "path": "../services/reverse-proxy"
+    },
+    {
       "name": "services/worker",
       "path": "../services/worker"
     }

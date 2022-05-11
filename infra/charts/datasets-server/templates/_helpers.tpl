@@ -13,6 +13,13 @@ Expand the name of the release.
 {{- end }}
 
 {{/*
+The name of the release in uppercase and with underscores.
+*/}}
+{{- define "upper-release" -}}
+{{- include "release" . | replace "-" "_" | upper }}
+{{- end }}
+
+{{/*
 Create chart name and version as used by the chart label.
 */}}
 {{- define "chart" -}}
@@ -41,6 +48,11 @@ release: {{ $.Release.Name | quote }}
 heritage: {{ $.Release.Service | quote }}
 chart: "{{ include "name" . }}"
 {{- end }}
+
+{{- define "labels.reverseProxy" -}}
+{{ include "labels" . }}
+app: "{{ .Release.Name }}-reverse-proxy"
+{{- end -}}
 
 {{- define "labels.api" -}}
 {{ include "labels" . }}
@@ -75,6 +87,14 @@ The cache/ subpath in the NFS
 {{- printf "%s/%s/%s/" .Chart.Name .Release.Name "cache" }}
 {{- end }}
 
+{{/*
+The cache/ subpath in the NFS
+- in a subdirectory named as the chart (datasets-server/), and below it,
+- in a subdirectory named as the Release, so that Releases will not share the same assets/ dir
+*/}}
+{{- define "nginx.cache.subpath" -}}
+{{- printf "%s/%s/%s/" .Chart.Name .Release.Name "nginx-cache" }}
+{{- end }}
 
 {{/*
 The URL to access the mongodb instance created if mongodb.enable is true
@@ -82,4 +102,12 @@ It's named using the Release name
 */}}
 {{- define "mongodb.url" -}}
 {{- printf "mongodb://%s-mongodb" .Release.Name }}
+{{- end }}
+
+{{/*
+The URL to access the API service from another container
+See https://kubernetes.io/docs/concepts/services-networking/connect-applications-service/#environment-variables
+*/}}
+{{- define "api.url" -}}
+{{- printf "http://${%s_API_SERVICE_HOST}:${%s_API_SERVICE_PORT}" ( include "upper-release" . ) ( include "upper-release" . ) }}
 {{- end }}

@@ -3,9 +3,9 @@ kind: Ingress
 metadata:
   annotations:
     # to communicate with AWS
-    {{ toYaml .Values.api.ingress.annotations | nindent 4 }}
+    {{ toYaml .Values.reverseProxy.ingress.annotations | nindent 4 }}
   labels:
-    {{ include "labels.api" . | nindent 4 }}
+    {{ include "labels.reverseProxy" . | nindent 4 }}
   name: {{ include "release" . }}
   namespace: {{ .Release.Namespace }}
 spec:
@@ -15,8 +15,7 @@ spec:
         paths:
           - backend:
               service:
-                name: "{{ include "release" . }}-api"
+                name: "{{ include "release" . }}-reverse-proxy"
                 port:
                   name: http
             pathType: ImplementationSpecific
-

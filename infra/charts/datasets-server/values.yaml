@@ -17,6 +17,42 @@ domain: "datasets-server.us.dev.moon.huggingface.tech"
 uid: 1000
 gid: 3000
 
+reverseProxy:
+  image:
+    repository: docker.io
+    name: nginx
+    tag: "1.20"
+    pullPolicy: IfNotPresent
+
+  replicas: 1
+
+  service:
+    type: NodePort
+    annotations: { }
+
+  ingress:
+    annotations: { }
+
+  resources:
+    requests:
+      cpu: 1
+    limits:
+      cpu: 1
+  nodeSelector: {}
+  tolerations: []
+
+  # Directory of assets (audio files and images that will be served for the web)
+  assetsDirectory: "/assets"
+  # Directory of the nginx cache
+  cacheDirectory: "/nginx-cache"
+  readinessPort: 80
+  cacheInactive: 24h
+  cacheMaxSize: 1g
+  cacheZoneSize: 50m
+  host: localhost
+  nginxTemplateFile: "nginx-templates/default.conf.template"
+  port: 80
+
 api:
   image:
     repository: 707930574880.dkr.ecr.us-east-1.amazonaws.com
