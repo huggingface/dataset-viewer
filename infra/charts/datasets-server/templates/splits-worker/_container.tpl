@@ -37,7 +37,7 @@
     value: {{ .Values.mongodb.queueDatabase | quote }}
   {{- if .Values.mongodb.enabled }}
   - name: MONGO_URL
-    value: mongodb://{{.Release.Name}}-mongodb
+    value: {{ include "mongodb.url" . }}
   {{- end }}
   - name: ROWS_MAX_BYTES
     value: {{ .Values.splitsWorker.rowsMaxBytes | quote }}

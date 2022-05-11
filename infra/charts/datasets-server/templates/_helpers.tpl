@@ -74,3 +74,12 @@ The cache/ subpath in the NFS
 {{- define "cache.subpath" -}}
 {{- printf "%s/%s/%s/" .Chart.Name .Release.Name "cache" }}
 {{- end }}
+
+
+{{/*
+The URL to access the mongodb instance created if mongodb.enable is true
+It's named using the Release name
+*/}}
+{{- define "mongodb.url" -}}
+{{- printf "mongodb://%s-mongodb" .Release.Name }}
+{{- end }}
