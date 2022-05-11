@@ -1,5 +1,5 @@
 {{- define "containerSplitsWorker" -}}
-- name: "datasets-server-splits-worker"
+- name: "{{ include "name" . }}-splits-worker"
   env:
   - name: ASSETS_DIRECTORY
     value: {{ .Values.storage.assetsDirectory | quote }}

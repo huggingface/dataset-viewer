@@ -6,6 +6,13 @@ Expand the name of the chart.
 {{- end }}
 
 {{/*
+Expand the name of the release.
+*/}}
+{{- define "release" -}}
+{{- default .Release.Name .Values.nameOverride | trunc 63 | trimSuffix "-" }}
+{{- end }}
+
+{{/*
 Create chart name and version as used by the chart label.
 */}}
 {{- define "chart" -}}
@@ -37,17 +44,17 @@ chart: "{{ include "name" . }}"
 
 {{- define "labels.api" -}}
 {{ include "labels" . }}
-app: "{{ .Release.Name }}-api"
+app: "{{ include "release" . }}-api"
 {{- end -}}
 
 {{- define "labels.datasetsWorker" -}}
 {{ include "labels" . }}
-app: "{{ .Release.Name }}-datasets-worker"
+app: "{{ include "release" . }}-datasets-worker"
 {{- end -}}
 
 {{- define "labels.splitsWorker" -}}
 {{ include "labels" . }}
-app: "{{ .Release.Name }}-splits-worker"
+app: "{{ include "release" . }}-splits-worker"
 {{- end -}}
 
 {{/*

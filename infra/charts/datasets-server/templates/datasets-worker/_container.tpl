@@ -1,5 +1,5 @@
 {{- define "containerDatasetsWorker" -}}
-- name: "datasets-server-datasets-worker"
+- name: "{{ include "name" . }}-datasets-worker"
   env:
   - name: ASSETS_DIRECTORY
     value: {{ .Values.storage.assetsDirectory | quote }}

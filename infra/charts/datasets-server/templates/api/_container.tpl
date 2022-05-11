@@ -1,5 +1,5 @@
 {{- define "containerApi" -}}
-- name: "datasets-server-api"
+- name: "{{ include "name" . }}-api"
   env:
   - name: APP_HOSTNAME
     value: {{ .Values.api.appHostname | quote }}

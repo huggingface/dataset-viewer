@@ -6,7 +6,7 @@ metadata:
     {{ toYaml .Values.api.ingress.annotations | nindent 4 }}
   labels:
     {{ include "labels.api" . | nindent 4 }}
-  name: {{ .Release.Name }}
+  name: {{ include "release" . }}
   namespace: {{ .Release.Namespace }}
 spec:
   rules:
@@ -15,7 +15,7 @@ spec:
         paths:
           - backend:
               service:
-                name: "{{ .Release.Name }}-api"
+                name: "{{ include "release" . }}-api"
                 port:
                   name: http
             pathType: ImplementationSpecific
