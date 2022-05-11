@@ -253,3 +253,9 @@ Finally create the secret:
 ```
 kubectl apply -f ./secret.yaml
 ```
+
+Alternatively, we can generate the secret with:
+
+```shell
+kubectl create secret generic datasets-server-secrets --from-literal=hfToken='yyyyy'
+```
