@@ -11,10 +11,6 @@ mongodb:
   queueDatabase: "datasets_server_queue"
 
 storage:
-  # Directory of assets (audio files and images that will be served for the web)
-  assetsDirectory: "/assets"
-  # Directory of the "datasets" library cache (both for modules and datasets)
-  cacheDirectory: "/cache"
   nfs: {}
 
 domain: "datasets-server.us.dev.moon.huggingface.tech"
@@ -45,6 +41,8 @@ api:
   nodeSelector: {}
   tolerations: []
 
+  # Directory of assets (audio files and images that will be served for the web)
+  assetsDirectory: "/assets"
   readinessPort: 80
   # Application hostname - it must not be set to localhost to work in Kube!
   appHostname: "0.0.0.0"
@@ -77,6 +75,10 @@ datasetsWorker:
   nodeSelector: {}
   tolerations: []
 
+  # Directory of assets (audio files and images that will be served for the web)
+  assetsDirectory: "/assets"
+  # Directory of the "datasets" library cache (both for modules and datasets)
+  cacheDirectory: "/cache"
   # Datasets blocklist
   datasetsBlocklist: ""
   # Git reference for the canonical datasets on https://github.com/huggingface/datasets
@@ -120,6 +122,10 @@ splitsWorker:
   nodeSelector: {}
   tolerations: []
 
+  # Directory of assets (audio files and images that will be served for the web)
+  assetsDirectory: "/assets"
+  # Directory of the "datasets" library cache (both for modules and datasets)
+  cacheDirectory: "/cache"
   # Datasets blocklist
   datasetsBlocklist: ""
   # Git reference for the canonical datasets on https://github.com/huggingface/datasets
