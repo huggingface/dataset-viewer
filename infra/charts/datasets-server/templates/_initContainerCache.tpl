@@ -4,9 +4,9 @@
   imagePullPolicy: IfNotPresent
   command: ["/bin/sh", "-c"]
   args:
-  - chown {{ .Values.uid }}:{{ .Values.gid }} {{ .Values.storage.cacheDirectory | quote }};
+  - chown {{ .Values.uid }}:{{ .Values.gid }} /mounted-path;
   volumeMounts:
-  - mountPath: {{ .Values.storage.cacheDirectory | quote }}
+  - mountPath: /mounted-path
     mountPropagation: None
     name: nfs
     subPath: "{{ include "cache.subpath" . }}"
