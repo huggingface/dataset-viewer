@@ -6,7 +6,7 @@
   - name: APP_PORT
     value: {{ .Values.api.appPort | quote }}
   - name: ASSETS_DIRECTORY
-    value: {{ .Values.storage.assetsDirectory | quote }}
+    value: {{ .Values.api.assetsDirectory | quote }}
   - name: LOG_LEVEL
     value: {{ .Values.api.logLevel | quote }}
   - name: MAX_AGE_LONG_SECONDS
@@ -26,7 +26,7 @@
   image: "{{ .Values.api.image.repository }}/{{ .Values.api.image.name }}:{{ .Values.api.image.tag }}"
   imagePullPolicy: {{ .Values.api.image.pullPolicy }}
   volumeMounts:
-  - mountPath: {{ .Values.storage.assetsDirectory | quote }}
+  - mountPath: {{ .Values.api.assetsDirectory | quote }}
     mountPropagation: None
     name: nfs
     subPath: "{{ include "assets.subpath" . }}"

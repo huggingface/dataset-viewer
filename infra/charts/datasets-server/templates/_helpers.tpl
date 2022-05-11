@@ -42,6 +42,11 @@ heritage: {{ $.Release.Service | quote }}
 chart: "{{ include "name" . }}"
 {{- end }}
 
+{{- define "labels.reverseProxy" -}}
+{{ include "labels" . }}
+app: "{{ .Release.Name }}-reverse-proxy"
+{{- end -}}
+
 {{- define "labels.api" -}}
 {{ include "labels" . }}
 app: "{{ include "release" . }}-api"
@@ -75,6 +80,14 @@ The cache/ subpath in the NFS
 {{- printf "%s/%s/%s/" .Chart.Name .Release.Name "cache" }}
 {{- end }}
 
+{{/*
+The cache/ subpath in the NFS
+- in a subdirectory named as the chart (datasets-server/), and below it,
+- in a subdirectory named as the Release, so that Releases will not share the same assets/ dir
+*/}}
+{{- define "nginx.cache.subpath" -}}
+{{- printf "%s/%s/%s/" .Chart.Name .Release.Name "nginx-cache" }}
+{{- end }}
 
 {{/*
 The URL to access the mongodb instance created if mongodb.enable is true
@@ -82,4 +95,12 @@ It's named using the Release name
 */}}
 {{- define "mongodb.url" -}}
 {{- printf "mongodb://%s-mongodb" .Release.Name }}
+{{- end }}
+
+{{/*
+The URL to access the API service from another container
+See https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/#a-aaaa-records
+*/}}
+{{- define "api.url" -}}
+{{- printf "http://%s-api.%s.svc.cluster.local:80" ( include "release" . ) ( .Release.Namespace ) }}
 {{- end }}

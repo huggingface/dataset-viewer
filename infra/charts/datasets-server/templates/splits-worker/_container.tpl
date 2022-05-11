@@ -2,15 +2,15 @@
 - name: "{{ include "name" . }}-splits-worker"
   env:
   - name: ASSETS_DIRECTORY
-    value: {{ .Values.storage.assetsDirectory | quote }}
+    value: {{ .Values.splitsWorker.assetsDirectory | quote }}
   - name: DATASETS_BLOCKLIST
     value: {{ .Values.splitsWorker.datasetsBlocklist | quote }}
   - name: DATASETS_REVISION
     value: {{ .Values.splitsWorker.datasetsRevision | quote }}
   - name: HF_DATASETS_CACHE
-    value: "{{ .Values.storage.cacheDirectory }}/datasets"
+    value: "{{ .Values.splitsWorker.cacheDirectory }}/datasets"
   - name: HF_MODULES_CACHE
-    value: "{{ .Values.storage.cacheDirectory }}/modules"
+    value: "{{ .Values.splitsWorker.cacheDirectory }}/modules"
   - name: HF_TOKEN
     # see https://kubernetes.io/docs/concepts/configuration/secret/#creating-a-secret
     # and https://kubernetes.io/docs/concepts/configuration/secret/#using-secrets-as-environment-variables
@@ -53,12 +53,12 @@
   image: "{{ .Values.splitsWorker.image.repository }}/{{ .Values.splitsWorker.image.name }}:{{ .Values.splitsWorker.image.tag }}"
   imagePullPolicy: {{ .Values.splitsWorker.image.pullPolicy }}
   volumeMounts:
-  - mountPath: {{ .Values.storage.assetsDirectory | quote }}
+  - mountPath: {{ .Values.splitsWorker.assetsDirectory | quote }}
     mountPropagation: None
     name: nfs
     subPath: "{{ include "assets.subpath" . }}"
     readOnly: false
-  - mountPath: {{ .Values.storage.cacheDirectory | quote }}
+  - mountPath: {{ .Values.splitsWorker.cacheDirectory | quote }}
     mountPropagation: None
     name: nfs
     subPath: "{{ include "cache.subpath" . }}"

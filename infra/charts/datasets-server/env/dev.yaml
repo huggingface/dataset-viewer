@@ -8,7 +8,7 @@ storage:
 
 domain: "datasets-server.us.dev.moon.huggingface.tech"
 
-api:
+reverseProxy:
   replicas: 1
 
   ingress:
@@ -21,6 +21,15 @@ api:
       alb.ingress.kubernetes.io/scheme: "internet-facing"
       alb.ingress.kubernetes.io/tags: "Env=dev,Project=datasets-server,Terraform=true"
       kubernetes.io/ingress.class: "alb"
+
+  resources:
+    requests:
+      cpu: 0.01
+    limits:
+      cpu: 1
+
+api:
+  replicas: 1
 
   resources:
     requests:

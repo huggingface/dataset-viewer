@@ -1,0 +1,45 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    {{ include "labels.reverseProxy" . | nindent 4 }}
+  name: "{{ include "release" . }}-reverse-proxy"
+  namespace: {{ .Release.Namespace }}
+spec:
+  progressDeadlineSeconds: 600
+  replicas: {{ .Values.reverseProxy.replicas }}
+  revisionHistoryLimit: 10
+  selector:
+    matchLabels:
+      {{ include "labels.reverseProxy" . | nindent 6 }}
+  strategy:
+    rollingUpdate:
+      maxSurge: 25%
+      maxUnavailable: 25%
+    type: RollingUpdate
+  template:
+    metadata:
+      labels:
+        {{ include "labels.reverseProxy" . | nindent 8 }}
+    spec:
+      initContainers:
+        {{ include "initContainerAssets" . | nindent 8 }}
+      containers:
+        {{ include "containerReverseProxy" . | nindent 8 }}
+      nodeSelector:
+        {{ toYaml .Values.reverseProxy.nodeSelector | nindent 8 }}
+      tolerations:
+        {{ toYaml .Values.reverseProxy.tolerations | nindent 8 }}
+      volumes:
+      - name: nfs
+        nfs:
+          server: {{ .Values.storage.nfs.server }}
+          path: {{ .Values.storage.nfs.path }}
+      - name: nginx-templates
+        configMap:
+          name: "{{ include "release" . }}-reverse-proxy"
+          defaultMode: 420
+          optional: false
+          items:
+            - key: "default.conf.template"
+              path: "default.conf.template"
