@@ -17,6 +17,8 @@
     value: {{ .Values.reverseProxy.host | quote }}
   - name: PORT
     value: {{ .Values.reverseProxy.port | quote }}
+  - name: TARGET_URL
+    value: {{ include "api.url" . | quote }}
   volumeMounts:
   - name: nginx-templates
     mountPath: /etc/nginx/templates

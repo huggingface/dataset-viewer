@@ -7,4 +7,4 @@ metadata:
   namespace: {{ .Release.Namespace }}
 data:
   default.conf.template: |-
-    {{ .Files.Get .Values.reverseProxy.nginxTemplateFile | replace "${TARGET_URL}" (include "api.url" . | quote ) | nindent 4 }}
+    {{ .Files.Get .Values.reverseProxy.nginxTemplateFile | nindent 4 }}

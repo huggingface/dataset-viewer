@@ -13,13 +13,6 @@ Expand the name of the release.
 {{- end }}
 
 {{/*
-The name of the release in uppercase and with underscores.
-*/}}
-{{- define "upper-release" -}}
-{{- include "release" . | replace "-" "_" | upper }}
-{{- end }}
-
-{{/*
 Create chart name and version as used by the chart label.
 */}}
 {{- define "chart" -}}
@@ -106,8 +99,8 @@ It's named using the Release name
 
 {{/*
 The URL to access the API service from another container
-See https://kubernetes.io/docs/concepts/services-networking/connect-applications-service/#environment-variables
+See https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/#a-aaaa-records
 */}}
 {{- define "api.url" -}}
-{{- printf "http://${%s_API_SERVICE_HOST}:${%s_API_SERVICE_PORT}" ( include "upper-release" . ) ( include "upper-release" . ) }}
+{{- printf "http://%s-api.%s.svc.cluster.local:80" ( include "release" . ) ( .Release.Namespace ) }}
 {{- end }}
