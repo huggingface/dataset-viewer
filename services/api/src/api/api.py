@@ -8,16 +8,17 @@ from starlette.middleware import Middleware
 from starlette.middleware.gzip import GZipMiddleware
 from starlette.routing import Mount, Route
 from starlette.staticfiles import StaticFiles
+from starlette_prometheus import PrometheusMiddleware
 
 from api.config import (
-    APP_HOSTNAME,
-    APP_PORT,
+    API_HOSTNAME,
+    API_NUM_WORKERS,
+    API_PORT,
     ASSETS_DIRECTORY,
     LOG_LEVEL,
     MONGO_CACHE_DATABASE,
     MONGO_QUEUE_DATABASE,
     MONGO_URL,
-    WEB_CONCURRENCY,
 )
 from api.routes.cache_reports import cache_reports_endpoint
 from api.routes.cache_stats import cache_stats_endpoint
@@ -44,7 +45,7 @@ def create_app() -> Starlette:
     connect_to_queue(database=MONGO_QUEUE_DATABASE, host=MONGO_URL)
     show_assets_dir(ASSETS_DIRECTORY)
 
-    middleware = [Middleware(GZipMiddleware)]
+    middleware = [Middleware(GZipMiddleware), Middleware(PrometheusMiddleware, filter_unhandled_paths=True)]
     routes = [
         Mount("/assets", app=StaticFiles(directory=init_assets_dir(ASSETS_DIRECTORY), check_dir=True), name="assets"),
         Route("/cache", endpoint=cache_stats_endpoint),
@@ -65,5 +66,5 @@ def create_app() -> Starlette:
     return Starlette(routes=routes, middleware=middleware)
 
 
-def start() -> None:
-    uvicorn.run("app:create_app", host=APP_HOSTNAME, port=APP_PORT, factory=True, workers=WEB_CONCURRENCY)
+def start_api() -> None:
+    uvicorn.run("api:create_app", host=API_HOSTNAME, port=API_PORT, factory=True, workers=API_NUM_WORKERS)

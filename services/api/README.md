@@ -16,17 +16,19 @@ make run
 
 Set environment variables to configure the following aspects:
 
-- `APP_HOSTNAME`: the hostname used by the app. Defaults to `"localhost"`.
-- `APP_PORT`: the port used by the app. Defaults to `8000`.
+- `API_HOSTNAME`: the hostname used by the API endpoint. Defaults to `"localhost"`.
+- `API_NUM_WORKERS`: the number of workers of the API endpoint. Defaults to `2`.
+- `API_PORT`: the port used by the API endpoint. Defaults to `8000`.
 - `ASSETS_DIRECTORY`: directory where the asset files are stored. Defaults to empty, in which case the assets are located in the `datasets_server_assets` subdirectory inside the OS default cache directory.
 - `LOG_LEVEL`: log level, among `DEBUG`, `INFO`, `WARNING`, `ERROR` and `CRITICAL`. Defaults to `INFO`.
 - `MAX_AGE_LONG_SECONDS`: number of seconds to set in the `max-age` header on data endpoints. Defaults to `120` (2 minutes).
 - `MAX_AGE_SHORT_SECONDS`: number of seconds to set in the `max-age` header on technical endpoints. Defaults to `10` (10 seconds).
+- `METRICS_HOSTNAME`: the hostname used by the metrics endpoint. Defaults to `"localhost"`.
+- `METRICS_NUM_WORKERS`: the number of workers of the metrics endpoint. Defaults to `2`.
 - `METRICS_PORT`: the port used by the metrics endpoint. Defaults to `8001`.
 - `MONGO_CACHE_DATABASE`: the name of the database used for storing the cache. Defaults to `"datasets_server_cache"`.
 - `MONGO_QUEUE_DATABASE`: the name of the database used for storing the queue. Defaults to `"datasets_server_queue"`.
 - `MONGO_URL`: the URL used to connect to the mongo db server. Defaults to `"mongodb://localhost:27017"`.
-- `WEB_CONCURRENCY`: the number of workers. For now, it's ignored and hardcoded to 1 because the cache is not shared yet. Defaults to `2`.
 
 For example:
 
@@ -40,7 +42,7 @@ To reload the application on file changes while developing, run:
 make watch
 ```
 
-## Endpoints
+## API Endpoint - routes
 
 ### /healthcheck
 
@@ -658,3 +660,58 @@ Responses:
 - `400`: the dataset script is erroneous, or the data cannot be obtained.
 - `404`: the dataset, config, script, row, column, filename or data cannot be found
 - `500`: application error
+
+## Metrics endpoint
+
+### /
+
+> return a list of metrics in the Prometheus format
+
+Example: https://datasets-preview.huggingface.tech:8001/
+
+Method: `GET`
+
+Parameters: none
+
+Responses:
+
+- `200`: text content in the Prometheus format:
+
+```text
+# HELP python_gc_objects_collected_total Objects collected during gc
+# TYPE python_gc_objects_collected_total counter
+python_gc_objects_collected_total{generation="0"} 65.0
+python_gc_objects_collected_total{generation="1"} 354.0
+python_gc_objects_collected_total{generation="2"} 0.0
+# HELP python_gc_objects_uncollectable_total Uncollectable object found during GC
+# TYPE python_gc_objects_uncollectable_total counter
+python_gc_objects_uncollectable_total{generation="0"} 0.0
+python_gc_objects_uncollectable_total{generation="1"} 0.0
+python_gc_objects_uncollectable_total{generation="2"} 0.0
+# HELP python_gc_collections_total Number of times this generation was collected
+# TYPE python_gc_collections_total counter
+python_gc_collections_total{generation="0"} 112.0
+python_gc_collections_total{generation="1"} 10.0
+python_gc_collections_total{generation="2"} 0.0
+# HELP python_info Python platform information
+# TYPE python_info gauge
+python_info{implementation="CPython",major="3",minor="9",patchlevel="6",version="3.9.6"} 1.0
+# HELP process_virtual_memory_bytes Virtual memory size in bytes.
+# TYPE process_virtual_memory_bytes gauge
+process_virtual_memory_bytes 2.02330112e+08
+# HELP process_resident_memory_bytes Resident memory size in bytes.
+# TYPE process_resident_memory_bytes gauge
+process_resident_memory_bytes 3.9419904e+07
+# HELP process_start_time_seconds Start time of the process since unix epoch in seconds.
+# TYPE process_start_time_seconds gauge
+process_start_time_seconds 1.6523620659e+09
+# HELP process_cpu_seconds_total Total user and system CPU time spent in seconds.
+# TYPE process_cpu_seconds_total counter
+process_cpu_seconds_total 0.7000000000000001
+# HELP process_open_fds Number of open file descriptors.
+# TYPE process_open_fds gauge
+process_open_fds 12.0
+# HELP process_max_fds Maximum number of open file descriptors.
+# TYPE process_max_fds gauge
+process_max_fds 100000.0
+```
