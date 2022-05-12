@@ -25,7 +25,5 @@ COPY tools ./tools/
 WORKDIR /src/services/api/
 RUN poetry install
 
-EXPOSE 8000
-
 ENTRYPOINT ["make"]
 CMD ["run"]
