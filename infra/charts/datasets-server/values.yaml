@@ -57,7 +57,7 @@ api:
   image:
     repository: 707930574880.dkr.ecr.us-east-1.amazonaws.com
     name: hub-datasets-server-api
-    tag: sha-8ba2427
+    tag: sha-eea6c56
     pullPolicy: IfNotPresent
 
   replicas: 1
@@ -80,12 +80,12 @@ api:
   # Directory of assets (audio files and images that will be served for the web)
   assetsDirectory: "/assets"
   readinessPort: 80
-  # API endpoint hostname - it must not be set to localhost to work in Kube!
-  apiHostname: "0.0.0.0"
-  # Number of uvicorn workers for the API endpoint
-  apiNumWorkers: "2"
-  # API endpoint port
-  apiPort: 80
+  # Application hostname - it must not be set to localhost to work in Kube!
+  appHostname: "0.0.0.0"
+  # Number of uvicorn workers for running the application
+  appNumWorkers: "2"
+  # Application endpoint port
+  appPort: 80
   # Log level
   logLevel: "INFO"
   # Number of seconds to set in the `max-age` header on data endpoints
@@ -98,7 +98,7 @@ datasetsWorker:
   image:
     repository: 707930574880.dkr.ecr.us-east-1.amazonaws.com
     name: hub-datasets-server-worker
-    tag: sha-8ba2427
+    tag: sha-eea6c56
     pullPolicy: IfNotPresent
 
   replicas: 1
@@ -146,7 +146,7 @@ splitsWorker:
   image:
     repository: 707930574880.dkr.ecr.us-east-1.amazonaws.com
     name: hub-datasets-server-worker
-    tag: sha-8ba2427
+    tag: sha-eea6c56
     pullPolicy: IfNotPresent
   replicas: 1
   

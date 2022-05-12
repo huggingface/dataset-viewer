@@ -1,12 +1,12 @@
 {{- define "containerApi" -}}
 - name: "{{ include "name" . }}-api"
   env:
-  - name: API_HOSTNAME
-    value: {{ .Values.api.apiHostname | quote }}
-  - name: API_NUM_WORKERS
-    value: {{ .Values.api.apiNumWorkers | quote }}
-  - name: API_PORT
-    value: {{ .Values.api.apiPort | quote }}
+  - name: APP_HOSTNAME
+    value: {{ .Values.api.appHostname | quote }}
+  - name: APP_NUM_WORKERS
+    value: {{ .Values.api.appNumWorkers | quote }}
+  - name: APP_PORT
+    value: {{ .Values.api.appPort | quote }}
   - name: ASSETS_DIRECTORY
     value: {{ .Values.api.assetsDirectory | quote }}
   - name: LOG_LEVEL
