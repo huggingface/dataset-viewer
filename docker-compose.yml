@@ -27,17 +27,13 @@ services:
     volumes:
       - assets:/assets:ro
     environment:
-      API_HOSTNAME: 0.0.0.0
-      API_NUM_WORKERS: 1
-      API_PORT: 8080
+      APP_HOSTNAME: 0.0.0.0
+      APP_NUM_WORKERS: 1
+      APP_PORT: 8080
       ASSETS_DIRECTORY: "/assets"
-      METRICS_HOSTNAME: 0.0.0.0
-      METRICS_NUM_WORKERS: 1
-      METRICS_PORT: 8081
       MONGO_URL: "mongodb://mongodb"
     ports:
       - 8080:8080
-      - 8081:8081
     depends_on:
       mongodb:
         condition: service_started

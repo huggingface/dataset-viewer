@@ -42,7 +42,7 @@ To reload the application on file changes while developing, run:
 make watch
 ```
 
-## API Endpoint - routes
+## Endpoints
 
 ### /healthcheck
 
@@ -661,9 +661,7 @@ Responses:
 - `404`: the dataset, config, script, row, column, filename or data cannot be found
 - `500`: application error
 
-## Metrics endpoint
-
-### /
+### /metrics
 
 > return a list of metrics in the Prometheus format
 

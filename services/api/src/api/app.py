@@ -8,12 +8,12 @@ from starlette.middleware import Middleware
 from starlette.middleware.gzip import GZipMiddleware
 from starlette.routing import Mount, Route
 from starlette.staticfiles import StaticFiles
-from starlette_prometheus import PrometheusMiddleware
+from starlette_prometheus import PrometheusMiddleware, metrics
 
 from api.config import (
-    API_HOSTNAME,
-    API_NUM_WORKERS,
-    API_PORT,
+    APP_HOSTNAME,
+    APP_NUM_WORKERS,
+    APP_PORT,
     ASSETS_DIRECTORY,
     LOG_LEVEL,
     MONGO_CACHE_DATABASE,
@@ -54,6 +54,7 @@ def create_app() -> Starlette:
         Route("/hf_datasets", endpoint=hf_datasets_endpoint),
         Route("/hf-datasets-count-by-cache-status", endpoint=hf_datasets_count_by_cache_status_endpoint),
         Route("/is-valid", endpoint=is_valid_endpoint),
+        Route("/metrics", endpoint=metrics),
         Route("/queue", endpoint=queue_stats_endpoint),
         Route("/queue-dump-waiting-started", endpoint=queue_dump_waiting_started_endpoint),
         Route("/queue-dump", endpoint=queue_dump_endpoint),
@@ -66,5 +67,5 @@ def create_app() -> Starlette:
     return Starlette(routes=routes, middleware=middleware)
 
 
-def start_api() -> None:
-    uvicorn.run("api:create_app", host=API_HOSTNAME, port=API_PORT, factory=True, workers=API_NUM_WORKERS)
+def start() -> None:
+    uvicorn.run("app:create_app", host=APP_HOSTNAME, port=APP_PORT, factory=True, workers=APP_NUM_WORKERS)

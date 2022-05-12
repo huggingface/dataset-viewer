@@ -10,7 +10,7 @@ from libqueue.queue import clean_database as clean_queue_database
 from libqueue.queue import connect_to_queue
 from starlette.testclient import TestClient
 
-from api.api import create_app
+from api.app import create_app
 
 from ._utils import MONGO_QUEUE_DATABASE, MONGO_URL
 
@@ -346,3 +346,14 @@ def test_split_cache_refreshing(client: TestClient) -> None:
 
 #     assert response.status_code == 200
 #     assert len(response.json()["rows"]) > 0
+
+
+def test_metrics(client: TestClient) -> None:
+    response = client.get("/metrics")
+    assert response.status_code == 200
+    text = response.text
+    lines = text.split("\n")
+    metrics = {line.split(" ")[0]: float(line.split(" ")[1]) for line in lines if line and line[0] != "#"}
+    name = "process_start_time_seconds"
+    assert name in metrics
+    assert metrics[name] > 0
