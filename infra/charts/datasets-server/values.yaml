@@ -57,7 +57,7 @@ api:
   image:
     repository: 707930574880.dkr.ecr.us-east-1.amazonaws.com
     name: hub-datasets-server-api
-    tag: sha-76e7cd1
+    tag: sha-b58ef46
     pullPolicy: IfNotPresent
 
   replicas: 1
@@ -98,7 +98,7 @@ datasetsWorker:
   image:
     repository: 707930574880.dkr.ecr.us-east-1.amazonaws.com
     name: hub-datasets-server-worker
-    tag: sha-76e7cd1
+    tag: sha-b58ef46
     pullPolicy: IfNotPresent
 
   replicas: 1
@@ -146,7 +146,7 @@ splitsWorker:
   image:
     repository: 707930574880.dkr.ecr.us-east-1.amazonaws.com
     name: hub-datasets-server-worker
-    tag: sha-76e7cd1
+    tag: sha-b58ef46
     pullPolicy: IfNotPresent
   replicas: 1
   
