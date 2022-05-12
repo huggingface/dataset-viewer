@@ -1,10 +1,12 @@
 {{- define "containerApi" -}}
 - name: "{{ include "name" . }}-api"
   env:
-  - name: APP_HOSTNAME
-    value: {{ .Values.api.appHostname | quote }}
-  - name: APP_PORT
-    value: {{ .Values.api.appPort | quote }}
+  - name: API_HOSTNAME
+    value: {{ .Values.api.apiHostname | quote }}
+  - name: API_NUM_WORKERS
+    value: {{ .Values.api.apiNumWorkers | quote }}
+  - name: API_PORT
+    value: {{ .Values.api.apiPort | quote }}
   - name: ASSETS_DIRECTORY
     value: {{ .Values.api.assetsDirectory | quote }}
   - name: LOG_LEVEL
@@ -21,8 +23,6 @@
   - name: MONGO_URL
     value: mongodb://{{.Release.Name}}-mongodb
   {{- end }}
-  - name: WEB_CONCURRENCY
-    value: {{ .Values.api.webConcurrency | quote }}
   image: "{{ .Values.api.image.repository }}/{{ .Values.api.image.name }}:{{ .Values.api.image.tag }}"
   imagePullPolicy: {{ .Values.api.image.pullPolicy }}
   volumeMounts:

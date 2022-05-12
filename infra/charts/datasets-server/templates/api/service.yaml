@@ -12,7 +12,7 @@ spec:
   - name: http
     port: 80
     protocol: TCP
-    targetPort: {{ .Values.api.appPort }}
+    targetPort: {{ .Values.api.apiPort }}
   selector:
     {{ include "labels.api" . | nindent 4 }}
   type: {{ .Values.api.service.type }}
