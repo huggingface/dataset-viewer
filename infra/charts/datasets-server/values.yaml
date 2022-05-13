@@ -57,7 +57,7 @@ api:
   image:
     repository: 707930574880.dkr.ecr.us-east-1.amazonaws.com
     name: hub-datasets-server-api
-    tag: sha-b58ef46
+    tag: sha-eea6c56
     pullPolicy: IfNotPresent
 
   replicas: 1
@@ -82,7 +82,9 @@ api:
   readinessPort: 80
   # Application hostname - it must not be set to localhost to work in Kube!
   appHostname: "0.0.0.0"
-  # Application port
+  # Number of uvicorn workers for running the application
+  appNumWorkers: "2"
+  # Application endpoint port
   appPort: 80
   # Log level
   logLevel: "INFO"
@@ -90,15 +92,13 @@ api:
   maxAgeLongSeconds: "120"
   # Number of seconds to set in the `max-age` header on technical endpoints
   maxAgeShortSeconds: "10"  
-  # Number of uvicorn workers
-  webConcurrency: "2"
 
 
 datasetsWorker:
   image:
     repository: 707930574880.dkr.ecr.us-east-1.amazonaws.com
     name: hub-datasets-server-worker
-    tag: sha-b58ef46
+    tag: sha-eea6c56
     pullPolicy: IfNotPresent
 
   replicas: 1
@@ -146,7 +146,7 @@ splitsWorker:
   image:
     repository: 707930574880.dkr.ecr.us-east-1.amazonaws.com
     name: hub-datasets-server-worker
-    tag: sha-b58ef46
+    tag: sha-eea6c56
     pullPolicy: IfNotPresent
   replicas: 1
   

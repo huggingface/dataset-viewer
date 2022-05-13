@@ -3,6 +3,8 @@
   env:
   - name: APP_HOSTNAME
     value: {{ .Values.api.appHostname | quote }}
+  - name: APP_NUM_WORKERS
+    value: {{ .Values.api.appNumWorkers | quote }}
   - name: APP_PORT
     value: {{ .Values.api.appPort | quote }}
   - name: ASSETS_DIRECTORY
@@ -21,8 +23,6 @@
   - name: MONGO_URL
     value: mongodb://{{.Release.Name}}-mongodb
   {{- end }}
-  - name: WEB_CONCURRENCY
-    value: {{ .Values.api.webConcurrency | quote }}
   image: "{{ .Values.api.image.repository }}/{{ .Values.api.image.name }}:{{ .Values.api.image.tag }}"
   imagePullPolicy: {{ .Values.api.image.pullPolicy }}
   volumeMounts:

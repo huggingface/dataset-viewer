@@ -16,8 +16,9 @@ make run
 
 Set environment variables to configure the following aspects:
 
-- `APP_HOSTNAME`: the hostname used by the app. Defaults to `"localhost"`.
-- `APP_PORT`: the port used by the app. Defaults to `8000`.
+- `API_HOSTNAME`: the hostname used by the API endpoint. Defaults to `"localhost"`.
+- `API_NUM_WORKERS`: the number of workers of the API endpoint. Defaults to `2`.
+- `API_PORT`: the port used by the API endpoint. Defaults to `8000`.
 - `ASSETS_DIRECTORY`: directory where the asset files are stored. Defaults to empty, in which case the assets are located in the `datasets_server_assets` subdirectory inside the OS default cache directory.
 - `LOG_LEVEL`: log level, among `DEBUG`, `INFO`, `WARNING`, `ERROR` and `CRITICAL`. Defaults to `INFO`.
 - `MAX_AGE_LONG_SECONDS`: number of seconds to set in the `max-age` header on data endpoints. Defaults to `120` (2 minutes).
@@ -25,7 +26,6 @@ Set environment variables to configure the following aspects:
 - `MONGO_CACHE_DATABASE`: the name of the database used for storing the cache. Defaults to `"datasets_server_cache"`.
 - `MONGO_QUEUE_DATABASE`: the name of the database used for storing the queue. Defaults to `"datasets_server_queue"`.
 - `MONGO_URL`: the URL used to connect to the mongo db server. Defaults to `"mongodb://localhost:27017"`.
-- `WEB_CONCURRENCY`: the number of workers. For now, it's ignored and hardcoded to 1 because the cache is not shared yet. Defaults to `2`.
 
 For example:
 
@@ -45,7 +45,7 @@ make watch
 
 > Ensure the app is running
 
-Example: https://datasets-preview.huggingface.tech/healthcheck
+Example: https://datasets-server.huggingface.tech/healthcheck
 
 Method: `GET`
 
@@ -55,35 +55,11 @@ Responses:
 
 - `200`: text content `ok`
 
-### /cache
-
-> Give statistics about the content of the cache
-
-Example: https://datasets-preview.huggingface.tech/cache
-
-Method: `GET`
-
-Parameters: none
-
-Responses:
-
-- `200`: JSON content which gives statistics about the datasets in the cache, with the following structure:
-
-```json
-{
-  "datasets": { "empty": 0, "error": 0, "stalled": 0, "valid": 1 },
-  "splits": { "empty": 1, "error": 1, "stalled": 0, "valid": 0 },
-  "created_at": "2022-01-20T14:40:50Z"
-}
-```
-
-Beware: a "dataset" is considered valid if it has fetched correctly the configs and splits. The splits themselves can have errors (ie: the rows or columns might have errors)
-
 ### /cache-reports
 
 > Give detailed reports on the content of the cache
 
-Example: https://datasets-preview.huggingface.tech/cache-reports
+Example: https://datasets-server.huggingface.tech/cache-reports
 
 Method: `GET`
 
@@ -153,7 +129,7 @@ Beware: a "dataset" is considered valid if it has fetched correctly the configs 
 
 > Give the list of the valid datasets. Here, a dataset is considered valid if `/splits` returns a valid response, and if `/rows` returns a valid response for _at least one split_. Note that stalled cache entries are considered valid.
 
-Example: https://datasets-preview.huggingface.tech/valid
+Example: https://datasets-server.huggingface.tech/valid
 
 Method: `GET`
 
@@ -174,7 +150,7 @@ Responses:
 
 > Tells if a dataset is valid. A dataset is considered valid if `/splits` returns a valid response, and if `/rows` returns a valid response for _at least one split_. Note that stalled cache entries are considered valid.
 
-Example: https://datasets-preview.huggingface.tech/is-valid?dataset=glue
+Example: https://datasets-server.huggingface.tech/is-valid?dataset=glue
 
 Method: `GET`
 
@@ -196,7 +172,7 @@ Responses:
 
 > Give statistics about the datasets of the hub
 
-Example: https://datasets-preview.huggingface.tech/hf-datasets-count-by-cache-status
+Example: https://datasets-server.huggingface.tech/hf-datasets-count-by-cache-status
 
 Method: `GET`
 
@@ -228,45 +204,11 @@ The meaning is the following:
 - "error": the list of splits could not be fetched, or the rows could not be fetched for some splits
 - "missing": the list of splits is missing, or the rows are missing for some splits
 
-### /queue
-
-> Give statistics about the content of the queue
-
-Example: https://datasets-preview.huggingface.tech/queue
-
-Method: `GET`
-
-Parameters: none
-
-Responses:
-
-- `200`: JSON content which gives statistics about the queue, with the following structure:
-
-```json
-{
-  "datasets": {
-    "waiting": 0,
-    "started": 0,
-    "success": 1,
-    "error": 0,
-    "cancelled": 0
-  },
-  "splits": {
-    "waiting": 0,
-    "started": 0,
-    "success": 0,
-    "error": 0,
-    "cancelled": 34
-  },
-  "created_at": "2022-01-20T13:52:05Z"
-}
-```
-
 ### /queue-dump
 
 > Give the queue entries, classed by status
 
-Example: https://datasets-preview.huggingface.tech/queue-dump
+Example: https://datasets-server.huggingface.tech/queue-dump
 
 Method: `GET`
 
@@ -318,7 +260,7 @@ Responses:
 
 > Give the queue entries, classed by status, only for "waiting" and "started" statuses
 
-Example: https://datasets-preview.huggingface.tech/queue-dump-waiting-started
+Example: https://datasets-server.huggingface.tech/queue-dump-waiting-started
 
 Method: `GET`
 
@@ -346,7 +288,7 @@ Responses:
 
 > Adds, updates or removes a cache entry
 
-Example: https://datasets-preview.huggingface.tech/webhook
+Example: https://datasets-server.huggingface.tech/webhook
 
 Method: `POST`
 
@@ -379,14 +321,14 @@ Note: if you want to refresh multiple datasets at a time, you have to call the e
 
 ```bash
 MODELS=(amazon_polarity ami arabic_billion_words)
-for model in ${MODELS[@]}; do curl -X POST https://datasets-preview.huggingface.tech/webhook -H 'Content-Type: application/json' -d '{"update": "datasets/'$model'"}'; done;
+for model in ${MODELS[@]}; do curl -X POST https://datasets-server.huggingface.tech/webhook -H 'Content-Type: application/json' -d '{"update": "datasets/'$model'"}'; done;
 ```
 
 ### /refresh-split
 
 > Refresh the cache of rows and columns of a split
 
-Example: https://datasets-preview.huggingface.tech/refresh-split
+Example: https://datasets-server.huggingface.tech/refresh-split
 
 Method: `POST`
 
@@ -417,7 +359,7 @@ Responses:
 
 > Lists the HuggingFace [datasets](https://huggingface.co/docs/datasets/loading_datasets.html#selecting-a-configuration): canonical and community
 
-Example: https://datasets-preview.huggingface.tech/hf_datasets
+Example: https://datasets-server.huggingface.tech/hf_datasets
 
 Method: `GET`
 
@@ -484,7 +426,7 @@ Responses:
 
 > Lists the [splits](https://huggingface.co/docs/datasets/splits.html) names for a dataset
 
-Example: https://datasets-preview.huggingface.tech/splits?dataset=glue
+Example: https://datasets-server.huggingface.tech/splits?dataset=glue
 
 Method: `GET`
 
@@ -534,7 +476,7 @@ Note that the value of `"num_bytes"` and `"num_examples"` is set to `null` if th
 
 > Extract the first [rows](https://huggingface.co/docs/datasets/splits.html) for a split of a dataset config
 
-Example: https://datasets-preview.huggingface.tech/rows?dataset=glue&config=ax&split=test
+Example: https://datasets-server.huggingface.tech/rows?dataset=glue&config=ax&split=test
 
 Method: `GET`
 
@@ -636,7 +578,7 @@ Responses:
 
 > Return an asset
 
-Example: https://datasets-preview.huggingface.tech/assets/food101/--/default/train/0/image/2885220.jpg
+Example: https://datasets-server.huggingface.tech/assets/food101/--/default/train/0/image/2885220.jpg
 
 Method: `GET`
 
@@ -657,3 +599,46 @@ Responses:
 - `400`: the dataset script is erroneous, or the data cannot be obtained.
 - `404`: the dataset, config, script, row, column, filename or data cannot be found
 - `500`: application error
+
+### /prometheus
+
+> return a list of metrics in the Prometheus format
+
+Example: https://datasets-server.huggingface.tech/prometheus
+
+Method: `GET`
+
+Parameters: none
+
+Responses:
+
+- `200`: text content in the Prometheus format:
+
+```text
+...
+# HELP starlette_requests_in_progress Gauge of requests by method and path currently being processed
+# TYPE starlette_requests_in_progress gauge
+starlette_requests_in_progress{method="GET",path_template="/prometheus"} 1.0
+# HELP queue_jobs_total Number of jobs in the queue
+# TYPE queue_jobs_total gauge
+queue_jobs_total{queue="datasets",status="waiting"} 0.0
+queue_jobs_total{queue="datasets",status="started"} 0.0
+queue_jobs_total{queue="datasets",status="success"} 3.0
+queue_jobs_total{queue="datasets",status="error"} 0.0
+queue_jobs_total{queue="datasets",status="cancelled"} 0.0
+queue_jobs_total{queue="splits",status="waiting"} 0.0
+queue_jobs_total{queue="splits",status="started"} 0.0
+queue_jobs_total{queue="splits",status="success"} 4.0
+queue_jobs_total{queue="splits",status="error"} 0.0
+queue_jobs_total{queue="splits",status="cancelled"} 0.0
+# HELP cache_entries_total Number of entries in the cache
+# TYPE cache_entries_total gauge
+cache_entries_total{cache="datasets",status="empty"} 0.0
+cache_entries_total{cache="datasets",status="error"} 0.0
+cache_entries_total{cache="datasets",status="stalled"} 0.0
+cache_entries_total{cache="datasets",status="valid"} 1.0
+cache_entries_total{cache="splits",status="empty"} 0.0
+cache_entries_total{cache="splits",status="error"} 0.0
+cache_entries_total{cache="splits",status="stalled"} 0.0
+cache_entries_total{cache="splits",status="valid"} 2.0
+```

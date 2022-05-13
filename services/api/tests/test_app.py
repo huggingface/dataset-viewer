@@ -7,12 +7,10 @@ from libcache.cache import (
 )
 from libqueue.queue import add_dataset_job, add_split_job
 from libqueue.queue import clean_database as clean_queue_database
-from libqueue.queue import connect_to_queue
 from starlette.testclient import TestClient
 
 from api.app import create_app
-
-from ._utils import MONGO_QUEUE_DATABASE, MONGO_URL
+from api.config import MONGO_QUEUE_DATABASE
 
 
 @pytest.fixture(autouse=True, scope="module")
@@ -25,7 +23,6 @@ def safe_guard() -> None:
 
 @pytest.fixture(scope="module")
 def client() -> TestClient:
-    connect_to_queue(database=MONGO_QUEUE_DATABASE, host=MONGO_URL)
     return TestClient(create_app())
 
 
@@ -53,19 +50,6 @@ def clean_mongo_databases() -> None:
 #     assert "dataset" in report
 #     assert "status" in report
 #     assert "error" in report
-
-
-def test_get_cache_stats(client: TestClient) -> None:
-    response = client.get("/cache")
-    assert response.status_code == 200
-    json = response.json()
-    assert "datasets" in json
-    assert "splits" in json
-    datasets = json["datasets"]
-    assert "empty" in datasets
-    assert "error" in datasets
-    assert "stalled" in datasets
-    assert "valid" in datasets
 
 
 def test_get_valid_datasets(client: TestClient) -> None:
@@ -346,3 +330,17 @@ def test_split_cache_refreshing(client: TestClient) -> None:
 
 #     assert response.status_code == 200
 #     assert len(response.json()["rows"]) > 0
+
+
+def test_prometheus(client: TestClient) -> None:
+    response = client.get("/prometheus")
+    assert response.status_code == 200
+    text = response.text
+    lines = text.split("\n")
+    metrics = {line.split(" ")[0]: float(line.split(" ")[1]) for line in lines if line and line[0] != "#"}
+    name = "process_start_time_seconds"
+    assert name in metrics
+    assert metrics[name] > 0
+    name = "process_start_time_seconds"
+    assert 'queue_jobs_total{queue="datasets",status="waiting"}' in metrics
+    assert 'cache_entries_total{cache="datasets",status="empty"}' in metrics
