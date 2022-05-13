@@ -25,7 +25,7 @@ gid: 3000
 datasetsBlocklist: ""
 
 docker:
-  tag: sha-b793bcf
+  tag: sha-a495e5f
 
 reverseProxy:
   image:
