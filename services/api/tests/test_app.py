@@ -55,19 +55,6 @@ def clean_mongo_databases() -> None:
 #     assert "error" in report
 
 
-def test_get_cache_stats(client: TestClient) -> None:
-    response = client.get("/cache")
-    assert response.status_code == 200
-    json = response.json()
-    assert "datasets" in json
-    assert "splits" in json
-    datasets = json["datasets"]
-    assert "empty" in datasets
-    assert "error" in datasets
-    assert "stalled" in datasets
-    assert "valid" in datasets
-
-
 def test_get_valid_datasets(client: TestClient) -> None:
     response = client.get("/valid")
     assert response.status_code == 200
@@ -357,3 +344,6 @@ def test_metrics(client: TestClient) -> None:
     name = "process_start_time_seconds"
     assert name in metrics
     assert metrics[name] > 0
+    name = "process_start_time_seconds"
+    assert 'queue_jobs_total{queue="datasets",status="waiting"}' in metrics
+    assert 'cache_total{cache="datasets",status="empty"}' in metrics
