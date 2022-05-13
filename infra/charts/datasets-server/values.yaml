@@ -21,6 +21,9 @@ domain: "datasets-server.us.dev.moon.huggingface.tech"
 uid: 1000
 gid: 3000
 
+# Datasets blocklist
+datasetsBlocklist: ""
+
 docker:
   tag: sha-b793bcf
 
@@ -120,8 +123,6 @@ datasetsWorker:
   assetsDirectory: "/assets"
   # Directory of the "datasets" library cache (both for modules and datasets)
   cacheDirectory: "/cache"
-  # Datasets blocklist
-  datasetsBlocklist: ""
   # Git reference for the canonical datasets on https://github.com/huggingface/datasets
   datasetsRevision: "master"
   # User Access Token (see https://huggingface.co/settings/token, only the `read` role is required)
@@ -166,8 +167,6 @@ splitsWorker:
   assetsDirectory: "/assets"
   # Directory of the "datasets" library cache (both for modules and datasets)
   cacheDirectory: "/cache"
-  # Datasets blocklist
-  datasetsBlocklist: ""
   # Git reference for the canonical datasets on https://github.com/huggingface/datasets
   datasetsRevision: "master"
   # User Access Token (see https://huggingface.co/settings/token, only the `read` role is required)

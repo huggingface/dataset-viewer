@@ -4,7 +4,7 @@
   - name: ASSETS_DIRECTORY
     value: {{ .Values.datasetsWorker.assetsDirectory | quote }}
   - name: DATASETS_BLOCKLIST
-    value: {{ .Values.datasetsWorker.datasetsBlocklist | quote }}
+    value: {{ .Values.datasetsBlocklist | quote }}
   - name: DATASETS_REVISION
     value: {{ .Values.datasetsWorker.datasetsRevision | quote }}
   - name: HF_DATASETS_CACHE
