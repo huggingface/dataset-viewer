@@ -15,9 +15,13 @@ splits-worker:
 # Ensure to specify HF_TOKEN when calling make test, ie HF_TOKEN=hf_app_xxx make test
 .PHONY: test
 test:
-	ROWS_MAX_NUMBER=5 MONGO_CACHE_DATABASE="datasets_server_cache_test" poetry run python -m pytest -x tests
+	docker-compose -f tests/docker-compose.yml up -d
+	ROWS_MAX_NUMBER=5 MONGO_CACHE_DATABASE="datasets_server_cache_test" MONGO_QUEUE_DATABASE="datasets_server_queue_test" MONGO_URL="mongodb://localhost:27019" poetry run python -m pytest -x tests
+	docker-compose -f tests/docker-compose.yml down
 
 # Ensure to specify HF_TOKEN when calling make coverage, ie HF_TOKEN=hf_app_xxx make coverage
 .PHONY: coverage
 coverage:
-	ROWS_MAX_NUMBER=5 MONGO_CACHE_DATABASE="datasets_server_cache_test" poetry run python -m pytest -s --cov --cov-report xml:coverage.xml --cov-report=term tests
+	docker-compose -f tests/docker-compose.yml up -d
+	ROWS_MAX_NUMBER=5 MONGO_CACHE_DATABASE="datasets_server_cache_test" MONGO_QUEUE_DATABASE="datasets_server_queue_test" MONGO_URL="mongodb://localhost:27019" poetry run python -m pytest -s --cov --cov-report xml:coverage.xml --cov-report=term tests
+	docker-compose -f tests/docker-compose.yml down
