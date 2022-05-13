@@ -10,7 +10,6 @@ from libqueue.queue import clean_database as clean_queue_database
 from starlette.testclient import TestClient
 
 from api.app import create_app
-
 from api.config import MONGO_QUEUE_DATABASE
 
 
