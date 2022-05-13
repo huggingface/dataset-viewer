@@ -335,8 +335,8 @@ def test_split_cache_refreshing(client: TestClient) -> None:
 #     assert len(response.json()["rows"]) > 0
 
 
-def test_metrics(client: TestClient) -> None:
-    response = client.get("/metrics")
+def test_prometheus(client: TestClient) -> None:
+    response = client.get("/prometheus")
     assert response.status_code == 200
     text = response.text
     lines = text.split("\n")
@@ -346,4 +346,4 @@ def test_metrics(client: TestClient) -> None:
     assert metrics[name] > 0
     name = "process_start_time_seconds"
     assert 'queue_jobs_total{queue="datasets",status="waiting"}' in metrics
-    assert 'cache_total{cache="datasets",status="empty"}' in metrics
+    assert 'cache_entries_total{cache="datasets",status="empty"}' in metrics

@@ -20,7 +20,7 @@ from api.config import (
     MONGO_QUEUE_DATABASE,
     MONGO_URL,
 )
-from api.metrics import MetricsHandler
+from api.prometheus import Prometheus
 from api.routes.cache_reports import cache_reports_endpoint
 from api.routes.healthcheck import healthcheck_endpoint
 from api.routes.hf_datasets import (
@@ -43,7 +43,7 @@ def create_app() -> Starlette:
     connect_to_cache(database=MONGO_CACHE_DATABASE, host=MONGO_URL)
     connect_to_queue(database=MONGO_QUEUE_DATABASE, host=MONGO_URL)
     show_assets_dir(ASSETS_DIRECTORY)
-    metrics_handler = MetricsHandler()
+    prometheus = Prometheus()
 
     middleware = [Middleware(GZipMiddleware), Middleware(PrometheusMiddleware, filter_unhandled_paths=True)]
     routes = [
@@ -53,7 +53,7 @@ def create_app() -> Starlette:
         Route("/hf_datasets", endpoint=hf_datasets_endpoint),
         Route("/hf-datasets-count-by-cache-status", endpoint=hf_datasets_count_by_cache_status_endpoint),
         Route("/is-valid", endpoint=is_valid_endpoint),
-        Route("/metrics", endpoint=metrics_handler.endpoint),
+        Route("/prometheus", endpoint=prometheus.endpoint),
         Route("/queue-dump-waiting-started", endpoint=queue_dump_waiting_started_endpoint),
         Route("/queue-dump", endpoint=queue_dump_endpoint),
         Route("/refresh-split", endpoint=refresh_split_endpoint, methods=["POST"]),

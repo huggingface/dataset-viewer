@@ -20,7 +20,7 @@ from starlette.requests import Request
 from starlette.responses import Response
 
 
-class MetricsHandler:
+class Prometheus:
     metrics: Dict[str, Gauge] = {}
 
     def __init__(self):
