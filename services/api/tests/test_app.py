@@ -7,12 +7,11 @@ from libcache.cache import (
 )
 from libqueue.queue import add_dataset_job, add_split_job
 from libqueue.queue import clean_database as clean_queue_database
-from libqueue.queue import connect_to_queue
 from starlette.testclient import TestClient
 
 from api.app import create_app
 
-from ._utils import MONGO_QUEUE_DATABASE, MONGO_URL
+from api.config import MONGO_QUEUE_DATABASE
 
 
 @pytest.fixture(autouse=True, scope="module")
@@ -25,7 +24,6 @@ def safe_guard() -> None:
 
 @pytest.fixture(scope="module")
 def client() -> TestClient:
-    connect_to_queue(database=MONGO_QUEUE_DATABASE, host=MONGO_URL)
     return TestClient(create_app())
 
 
