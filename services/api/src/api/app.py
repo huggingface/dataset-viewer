@@ -8,7 +8,7 @@ from starlette.middleware import Middleware
 from starlette.middleware.gzip import GZipMiddleware
 from starlette.routing import Mount, Route
 from starlette.staticfiles import StaticFiles
-from starlette_prometheus import PrometheusMiddleware, metrics
+from starlette_prometheus import PrometheusMiddleware
 
 from api.config import (
     APP_HOSTNAME,
@@ -20,6 +20,7 @@ from api.config import (
     MONGO_QUEUE_DATABASE,
     MONGO_URL,
 )
+from api.metrics import MetricsHandler
 from api.routes.cache_reports import cache_reports_endpoint
 from api.routes.cache_stats import cache_stats_endpoint
 from api.routes.healthcheck import healthcheck_endpoint
@@ -31,7 +32,6 @@ from api.routes.queue_dump import (
     queue_dump_endpoint,
     queue_dump_waiting_started_endpoint,
 )
-from api.routes.queue_stats import queue_stats_endpoint
 from api.routes.refresh_split import refresh_split_endpoint
 from api.routes.rows import rows_endpoint
 from api.routes.splits import splits_endpoint
@@ -44,6 +44,7 @@ def create_app() -> Starlette:
     connect_to_cache(database=MONGO_CACHE_DATABASE, host=MONGO_URL)
     connect_to_queue(database=MONGO_QUEUE_DATABASE, host=MONGO_URL)
     show_assets_dir(ASSETS_DIRECTORY)
+    metrics_handler = MetricsHandler()
 
     middleware = [Middleware(GZipMiddleware), Middleware(PrometheusMiddleware, filter_unhandled_paths=True)]
     routes = [
@@ -54,8 +55,7 @@ def create_app() -> Starlette:
         Route("/hf_datasets", endpoint=hf_datasets_endpoint),
         Route("/hf-datasets-count-by-cache-status", endpoint=hf_datasets_count_by_cache_status_endpoint),
         Route("/is-valid", endpoint=is_valid_endpoint),
-        Route("/metrics", endpoint=metrics),
-        Route("/queue", endpoint=queue_stats_endpoint),
+        Route("/metrics", endpoint=metrics_handler.endpoint),
         Route("/queue-dump-waiting-started", endpoint=queue_dump_waiting_started_endpoint),
         Route("/queue-dump", endpoint=queue_dump_endpoint),
         Route("/refresh-split", endpoint=refresh_split_endpoint, methods=["POST"]),

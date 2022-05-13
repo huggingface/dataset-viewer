@@ -231,40 +231,6 @@ The meaning is the following:
 - "error": the list of splits could not be fetched, or the rows could not be fetched for some splits
 - "missing": the list of splits is missing, or the rows are missing for some splits
 
-### /queue
-
-> Give statistics about the content of the queue
-
-Example: https://datasets-preview.huggingface.tech/queue
-
-Method: `GET`
-
-Parameters: none
-
-Responses:
-
-- `200`: JSON content which gives statistics about the queue, with the following structure:
-
-```json
-{
-  "datasets": {
-    "waiting": 0,
-    "started": 0,
-    "success": 1,
-    "error": 0,
-    "cancelled": 0
-  },
-  "splits": {
-    "waiting": 0,
-    "started": 0,
-    "success": 0,
-    "error": 0,
-    "cancelled": 34
-  },
-  "created_at": "2022-01-20T13:52:05Z"
-}
-```
-
 ### /queue-dump
 
 > Give the queue entries, classed by status
