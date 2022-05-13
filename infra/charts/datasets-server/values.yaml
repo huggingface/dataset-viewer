@@ -146,7 +146,7 @@ datasetsWorker:
   # Min number of rows in the /rows endpoint response
   rowsMinNumber: 10
   # Number of seconds a worker will sleep before trying to process a new job
-  workerSleepSeconds: 5
+  workerSleepSeconds: 15
 
 splitsWorker:
   image:
@@ -190,4 +190,4 @@ splitsWorker:
   # Min number of rows in the /rows endpoint response
   rowsMinNumber: 10
   # Number of seconds a worker will sleep before trying to process a new job
-  workerSleepSeconds: 5
+  workerSleepSeconds: 15
