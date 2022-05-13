@@ -1,0 +1,60 @@
+mongodb:
+  enabled: false
+
+storage:
+  nfs:
+    path: "/fsx"
+    server: "svm-0adb40782285e2ec6.fs-0220b222fb471f3b9.fsx.us-east-1.amazonaws.com"
+
+secrets:
+  hfToken: hf-token
+  mongodbUrl: mongodb-url
+
+domain: "datasets-server-prod.us.dev.moon.huggingface.tech"
+
+reverseProxy:
+  replicas: 1
+
+  ingress:
+    annotations:
+      # Link to Route53 - we could set any subdomain to us.dev.moon.huggingface.tech (common zone to the k8s cluster)
+      external-dns.alpha.kubernetes.io/hostname: "datasets-server-prod.us.dev.moon.huggingface.tech"
+      alb.ingress.kubernetes.io/healthcheck-path: "/healthcheck"
+      alb.ingress.kubernetes.io/listen-ports: "[{\"HTTP\": 80, \"HTTPS\": 443}]"
+      alb.ingress.kubernetes.io/load-balancer-name: "hub-datasets-server-prod"
+      alb.ingress.kubernetes.io/scheme: "internet-facing"
+      alb.ingress.kubernetes.io/tags: "Env=prod,Project=datasets-server,Terraform=true"
+      kubernetes.io/ingress.class: "alb"
+
+  resources:
+    requests:
+      cpu: 0.01
+    limits:
+      cpu: 1
+
+api:
+  replicas: 1
+
+  resources:
+    requests:
+      cpu: 0.01
+    limits:
+      cpu: 1
+
+datasetsWorker:
+  replicas: 2
+
+  resources:
+    requests:
+      cpu: 0.01
+    limits:
+      cpu: 1
+
+splitsWorker:
+  replicas: 5
+
+  resources:
+    requests:
+      cpu: 0.01
+    limits:
+      cpu: 1

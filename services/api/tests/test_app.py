@@ -5,6 +5,7 @@ from libcache.cache import (
     create_or_mark_dataset_as_stalled,
     create_or_mark_split_as_stalled,
 )
+from libcache.cache import clean_database as clean_cache_database
 from libqueue.queue import add_dataset_job, add_split_job
 from libqueue.queue import clean_database as clean_queue_database
 from starlette.testclient import TestClient
@@ -28,7 +29,7 @@ def client() -> TestClient:
 
 @pytest.fixture(autouse=True)
 def clean_mongo_databases() -> None:
-    # clean_cache_database()
+    clean_cache_database()
     clean_queue_database()
 
 
