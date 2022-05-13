@@ -16,8 +16,8 @@
     # and https://kubernetes.io/docs/concepts/configuration/secret/#using-secrets-as-environment-variables
     valueFrom:
       secretKeyRef:
-        name: datasets-server-secrets
-        key: hfToken
+        name: {{ .Values.secrets.hfToken | quote }}
+        key: HF_TOKEN
         optional: false
   - name: LOG_LEVEL
     value: {{ .Values.datasetsWorker.logLevel | quote }}
@@ -35,9 +35,15 @@
     value: {{ .Values.mongodb.cacheDatabase | quote }}
   - name: MONGO_QUEUE_DATABASE
     value: {{ .Values.mongodb.queueDatabase | quote }}
-  {{- if .Values.mongodb.enabled }}
   - name: MONGO_URL
-    value: {{ include "mongodb.url" . }}
+  {{- if .Values.mongodb.enabled }}
+    value: mongodb://{{.Release.Name}}-mongodb
+  {{- else }}
+    valueFrom:
+      secretKeyRef:
+        name: {{ .Values.secrets.mongoUrl | quote }}
+        key: MONGO_URL
+        optional: false
   {{- end }}
   - name: ROWS_MAX_BYTES
     value: {{ .Values.datasetsWorker.rowsMaxBytes | quote }}
@@ -50,7 +56,7 @@
   - name: WORKER_QUEUE
     # Job queue the worker will pull jobs from: 'datasets' or 'splits'
     value: "datasets"
-  image: "{{ .Values.datasetsWorker.image.repository }}/{{ .Values.datasetsWorker.image.name }}:{{ .Values.datasetsWorker.image.tag }}"
+  image: "{{ .Values.datasetsWorker.image.repository }}/{{ .Values.datasetsWorker.image.name }}:{{ .Values.docker.tag }}"
   imagePullPolicy: {{ .Values.datasetsWorker.image.pullPolicy }}
   volumeMounts:
   - mountPath: {{ .Values.datasetsWorker.assetsDirectory | quote }}

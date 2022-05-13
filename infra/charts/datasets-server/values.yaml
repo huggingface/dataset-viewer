@@ -13,9 +13,16 @@ mongodb:
 storage:
   nfs: {}
 
+secrets:
+  hfToken: datasets-server-hf-token
+  mongoUrl: false
+
 domain: "datasets-server.us.dev.moon.huggingface.tech"
 uid: 1000
 gid: 3000
+
+docker:
+  tag: sha-b793bcf
 
 reverseProxy:
   image:
@@ -57,7 +64,6 @@ api:
   image:
     repository: 707930574880.dkr.ecr.us-east-1.amazonaws.com
     name: hub-datasets-server-api
-    tag: sha-2d71d7e
     pullPolicy: IfNotPresent
 
   replicas: 1
@@ -98,7 +104,6 @@ datasetsWorker:
   image:
     repository: 707930574880.dkr.ecr.us-east-1.amazonaws.com
     name: hub-datasets-server-worker
-    tag: sha-2d71d7e
     pullPolicy: IfNotPresent
 
   replicas: 1
@@ -146,7 +151,6 @@ splitsWorker:
   image:
     repository: 707930574880.dkr.ecr.us-east-1.amazonaws.com
     name: hub-datasets-server-worker
-    tag: sha-2d71d7e
     pullPolicy: IfNotPresent
   replicas: 1
   

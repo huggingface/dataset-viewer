@@ -6,6 +6,10 @@ storage:
     path: "/fsx"
     server: "svm-08a37cf73026f0b5c.fs-097afa9688029b62a.fsx.us-east-1.amazonaws.com"
 
+secrets:
+  hfToken: datasets-server-hf-token
+  mongoUrl: false
+
 domain: "datasets-server.us.dev.moon.huggingface.tech"
 
 reverseProxy:
