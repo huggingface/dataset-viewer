@@ -16,7 +16,7 @@ secrets:
 domain: "datasets-server.huggingface.tech"
 
 reverseProxy:
-  replicas: 1
+  replicas: 2
 
   ingress:
     annotations:
@@ -51,7 +51,7 @@ reverseProxy:
       cpu: 1
 
 api:
-  replicas: 1
+  replicas: 2
 
   resources:
     requests:
@@ -60,7 +60,7 @@ api:
       cpu: 1
 
 datasetsWorker:
-  replicas: 4
+  replicas: 3
 
   resources:
     requests:
@@ -69,7 +69,7 @@ datasetsWorker:
       cpu: 1
 
 splitsWorker:
-  replicas: 20
+  replicas: 12
 
   resources:
     requests:
