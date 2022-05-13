@@ -160,8 +160,7 @@ def loop() -> None:
                 process_next_job()
             except Exception:
                 logger.warning("error while processing the job")
-        else:
-            sleep()
+        sleep()
 
 
 if __name__ == "__main__":
