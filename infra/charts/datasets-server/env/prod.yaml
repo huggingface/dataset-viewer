@@ -1,48 +1,91 @@
 mongodb:
   enabled: false
+  # we use the secret instead to get the mongo URL
 
 storage:
   nfs:
     path: "/fsx"
     server: "svm-0adb40782285e2ec6.fs-0220b222fb471f3b9.fsx.us-east-1.amazonaws.com"
+    # https://us-east-1.console.aws.amazon.com/fsx/home?region=us-east-1#file-system-details/fs-0220b222fb471f3b9
+    # Alarm: https://us-east-1.console.aws.amazon.com/cloudwatch/home?region=us-east-1#alarmsV2:alarm/Low+disk+on+datasets+server?
 
 secrets:
   hfToken: hf-token
-  mongodbUrl: mongodb-url
+  mongoUrl: mongo-url
 
-domain: "datasets-server-prod.us.dev.moon.huggingface.tech"
+domain: "datasets-server.huggingface.tech"
+
+# Datasets blocklist
+datasetsBlocklist: >-
+  Alvenir/nst-da-16khz
+  bigscience/P3
+  clips/mqa
+  echarlaix/gqa-lxmert
+  echarlaix/vqa-lxmert
+  fractalego/QA_to_statements
+  hyperpartisan_news_detection
+  imthanhlv/binhvq_news21_raw
+  Graphcore/gqa-lxmert
+  Graphcore/vqa-lxmert
+  kiyoung2/aistage-mrc
+  lewtun/gem-multi-dataset-predictions
+  lukesjordan/worldbank-project-documents
+  math_dataset
+  midas/ldke3k_medium
+  midas/ldke3k_small
+  midas/ldkp3k_small
+  qr/cefr_book_sentences
+  SaulLu/Natural_Questions_HTML_reduced_all
+  SaulLu/Natural_Questions_HTML_Toy
+  unicamp-dl/mmarco
+  z-uo/squad-it
 
 reverseProxy:
-  replicas: 1
+  replicas: 2
 
   ingress:
     annotations:
-      # Link to Route53 - we could set any subdomain to us.dev.moon.huggingface.tech (common zone to the k8s cluster)
-      external-dns.alpha.kubernetes.io/hostname: "datasets-server-prod.us.dev.moon.huggingface.tech"
       alb.ingress.kubernetes.io/healthcheck-path: "/healthcheck"
       alb.ingress.kubernetes.io/listen-ports: "[{\"HTTP\": 80, \"HTTPS\": 443}]"
       alb.ingress.kubernetes.io/load-balancer-name: "hub-datasets-server-prod"
       alb.ingress.kubernetes.io/scheme: "internet-facing"
       alb.ingress.kubernetes.io/tags: "Env=prod,Project=datasets-server,Terraform=true"
+      alb.ingress.kubernetes.io/target-node-labels: role-datasets-server=true
       kubernetes.io/ingress.class: "alb"
+
+  service:
+    annotations:
+      service.beta.kubernetes.io/aws-load-balancer-additional-resource-tags: Env=prod,Project=datasets-server,Terraform=true
+      service.beta.kubernetes.io/aws-load-balancer-name: hub-prod-datasets-server-nlb
+      service.beta.kubernetes.io/aws-load-balancer-nlb-target-type: instance
+      service.beta.kubernetes.io/aws-load-balancer-scheme: internal
+      service.beta.kubernetes.io/aws-load-balancer-type: external
+      service.beta.kubernetes.io/aws-load-balancer-target-node-labels: role-datasets-server=true
+
+  nodeSelector:
+    role-datasets-server: 'true'
+
+  tolerations:
+    - key: CriticalAddonsOnly
+      operator: Equal
 
   resources:
     requests:
-      cpu: 0.01
+      cpu: 1
     limits:
       cpu: 1
 
 api:
-  replicas: 1
+  replicas: 2
 
   resources:
     requests:
-      cpu: 0.01
+      cpu: 1
     limits:
       cpu: 1
 
 datasetsWorker:
-  replicas: 2
+  replicas: 3
 
   resources:
     requests:
@@ -51,7 +94,7 @@ datasetsWorker:
       cpu: 1
 
 splitsWorker:
-  replicas: 5
+  replicas: 12
 
   resources:
     requests:

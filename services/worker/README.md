@@ -41,7 +41,7 @@ Set environment variables to configure the following aspects:
 - `ROWS_MAX_NUMBER`: the max number of rows fetched by the worker for the split, and provided in the /rows endpoint response. Defaults to `100`.
 - `ROWS_MIN_NUMBER`: the min number of rows fetched by the worker for the split, and provided in the /rows endpoint response. Defaults to `10`.
 - `WORKER_QUEUE`: name of the queue the worker will pull jobs from. It can be equal to `datasets` or `splits`. The `datasets` jobs should be a lot faster than the `splits` ones, so that we should need a lot more workers for `splits` than for `datasets`. Note that this environment variable is already set to the appropriate value in `make datasets-worker` and `make splits-worker`. Defaults to `datasets`.
-- `WORKER_SLEEP_SECONDS`: duration in seconds of a worker wait loop iteration, before checking if resources are available and processing a job if any is available. Defaults to `5`.
+- `WORKER_SLEEP_SECONDS`: duration in seconds of a worker wait loop iteration, before checking if resources are available and processing a job if any is available. Note that the worker does not sleep on the first loop after finishing a job. Defaults to `15`.
 
 For example:
 

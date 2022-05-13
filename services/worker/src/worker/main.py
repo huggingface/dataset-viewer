@@ -47,6 +47,9 @@ def process_next_dataset_job() -> bool:
     except EmptyQueue:
         logger.debug("no job in the queue")
         return False
+    except Exception as err:
+        logger.debug(f"unknown exception: {err}")
+        raise
 
     success = False
     try:
@@ -157,11 +160,13 @@ def loop() -> None:
     while True:
         if has_resources():
             try:
-                process_next_job()
+                if process_next_job():
+                    # loop immediately to try another job
+                    # see https://github.com/huggingface/datasets-server/issues/265
+                    continue
             except Exception:
                 logger.warning("error while processing the job")
-        else:
-            sleep()
+        sleep()
 
 
 if __name__ == "__main__":

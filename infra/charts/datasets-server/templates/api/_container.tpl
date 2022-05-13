@@ -19,11 +19,17 @@
     value: {{ .Values.mongodb.cacheDatabase | quote }}
   - name: MONGO_QUEUE_DATABASE
     value: {{ .Values.mongodb.queueDatabase | quote }}
-  {{- if .Values.mongodb.enabled }}
   - name: MONGO_URL
+  {{- if .Values.mongodb.enabled }}
     value: mongodb://{{.Release.Name}}-mongodb
+  {{- else }}
+    valueFrom:
+      secretKeyRef:
+        name: {{ .Values.secrets.mongoUrl | quote }}
+        key: MONGO_URL
+        optional: false
   {{- end }}
-  image: "{{ .Values.api.image.repository }}/{{ .Values.api.image.name }}:{{ .Values.api.image.tag }}"
+  image: "{{ .Values.api.image.repository }}/{{ .Values.api.image.name }}:{{ .Values.docker.tag }}"
   imagePullPolicy: {{ .Values.api.image.pullPolicy }}
   volumeMounts:
   - mountPath: {{ .Values.api.assetsDirectory | quote }}

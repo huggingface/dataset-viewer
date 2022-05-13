@@ -242,10 +242,10 @@ $ vi secret.yaml
 apiVersion: v1
 kind: Secret
 metadata:
-  name: datasets-server-secrets
+  name: datasets-server-hf-token
 type: Opaque
 data:
-  hfToken: yyyyy
+  HF_TOKEN: yyyyy
 ```
 
 Finally create the secret:
@@ -257,5 +257,5 @@ kubectl apply -f ./secret.yaml
 Alternatively, we can generate the secret with:
 
 ```shell
-kubectl create secret generic datasets-server-secrets --from-literal=hfToken='yyyyy'
+kubectl create secret generic datasets-server-hf-token --from-literal=HF_TOKEN='hf_app_xxxx'
 ```
