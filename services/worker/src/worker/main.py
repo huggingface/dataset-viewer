@@ -82,6 +82,9 @@ def process_next_split_job() -> bool:
     except EmptyQueue:
         logger.debug("no job in the queue")
         return False
+    except Exception as err:
+        logger.debug(f"unknown exception: {err}")
+        raise
 
     success = False
     try:
