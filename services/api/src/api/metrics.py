@@ -1,6 +1,7 @@
 import os
 from typing import Dict
 
+from libcache.cache import get_datasets_count_by_status, get_splits_count_by_status
 from libqueue.queue import (
     get_dataset_jobs_count_by_status,
     get_split_jobs_count_by_status,
@@ -39,12 +40,19 @@ class MetricsHandler:
         self.metrics["queue_jobs_total"] = Gauge(
             "queue_jobs_total", "Number of jobs in the queue", ["queue", "status"]
         )
+        self.metrics["cache_entries_total"] = Gauge(
+            "cache_entries_total", "Number of entries in the cache", ["cache", "status"]
+        )
 
     def updateMetrics(self):
-        for status, total in get_split_jobs_count_by_status().items():
-            self.metrics["queue_jobs_total"].labels(queue="splits", status=status).set(total)
         for status, total in get_dataset_jobs_count_by_status().items():
             self.metrics["queue_jobs_total"].labels(queue="datasets", status=status).set(total)
+        for status, total in get_split_jobs_count_by_status().items():
+            self.metrics["queue_jobs_total"].labels(queue="splits", status=status).set(total)
+        for status, total in get_datasets_count_by_status().items():
+            self.metrics["cache_entries_total"].labels(cache="datasets", status=status).set(total)
+        for status, total in get_splits_count_by_status().items():
+            self.metrics["cache_entries_total"].labels(cache="splits", status=status).set(total)
 
     def endpoint(self, request: Request) -> Response:
         self.updateMetrics()

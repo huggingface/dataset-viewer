@@ -22,7 +22,6 @@ from api.config import (
 )
 from api.metrics import MetricsHandler
 from api.routes.cache_reports import cache_reports_endpoint
-from api.routes.cache_stats import cache_stats_endpoint
 from api.routes.healthcheck import healthcheck_endpoint
 from api.routes.hf_datasets import (
     hf_datasets_count_by_cache_status_endpoint,
@@ -49,7 +48,6 @@ def create_app() -> Starlette:
     middleware = [Middleware(GZipMiddleware), Middleware(PrometheusMiddleware, filter_unhandled_paths=True)]
     routes = [
         Mount("/assets", app=StaticFiles(directory=init_assets_dir(ASSETS_DIRECTORY), check_dir=True), name="assets"),
-        Route("/cache", endpoint=cache_stats_endpoint),
         Route("/cache-reports", endpoint=cache_reports_endpoint),
         Route("/healthcheck", endpoint=healthcheck_endpoint),
         Route("/hf_datasets", endpoint=hf_datasets_endpoint),

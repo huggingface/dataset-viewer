@@ -58,30 +58,6 @@ Responses:
 
 - `200`: text content `ok`
 
-### /cache
-
-> Give statistics about the content of the cache
-
-Example: https://datasets-preview.huggingface.tech/cache
-
-Method: `GET`
-
-Parameters: none
-
-Responses:
-
-- `200`: JSON content which gives statistics about the datasets in the cache, with the following structure:
-
-```json
-{
-  "datasets": { "empty": 0, "error": 0, "stalled": 0, "valid": 1 },
-  "splits": { "empty": 1, "error": 1, "stalled": 0, "valid": 0 },
-  "created_at": "2022-01-20T14:40:50Z"
-}
-```
-
-Beware: a "dataset" is considered valid if it has fetched correctly the configs and splits. The splits themselves can have errors (ie: the rows or columns might have errors)
-
 ### /cache-reports
 
 > Give detailed reports on the content of the cache
