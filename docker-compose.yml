@@ -71,6 +71,9 @@ services:
     volumes:
       - mongo:/data/db:rw
       # TODO: authentication, healthcheck, expose?, migrations?
+    ports:
+      # for debug
+      - "27017:27017"
 volumes:
   assets:
   mongo:
