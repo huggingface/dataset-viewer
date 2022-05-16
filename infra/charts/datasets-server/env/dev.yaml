@@ -10,6 +10,9 @@ secrets:
   hfToken: datasets-server-hf-token
   mongoUrl: false
 
+monitoring:
+  enabled: false
+
 domain: "datasets-server.us.dev.moon.huggingface.tech"
 
 reverseProxy:

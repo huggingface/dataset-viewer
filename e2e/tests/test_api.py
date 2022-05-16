@@ -13,7 +13,7 @@ def test_get_dataset():
     response = requests.post(f"{URL}/webhook", json={"update": "datasets/acronym_identification"})
     assert response.status_code == 200
 
-    response = requests.get(f"{URL}/prometheus")
+    response = requests.get(f"{URL}/metrics")
     lines = response.text.split("\n")
     metrics = {line.split(" ")[0]: float(line.split(" ")[1]) for line in lines if line and line[0] != "#"}
     assert (
