@@ -8,7 +8,7 @@ metadata:
   namespace: {{ .Release.Namespace }}
 spec:
   endpoints:
-    - path: /prometheus
+    - path: /metrics
       port: http
   namespaceSelector:
     matchNames:

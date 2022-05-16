@@ -600,11 +600,11 @@ Responses:
 - `404`: the dataset, config, script, row, column, filename or data cannot be found
 - `500`: application error
 
-### /prometheus
+### /metrics
 
 > return a list of metrics in the Prometheus format
 
-Example: https://datasets-server.huggingface.tech/prometheus
+Example: https://datasets-server.huggingface.tech/metrics
 
 Method: `GET`
 
@@ -618,7 +618,7 @@ Responses:
 ...
 # HELP starlette_requests_in_progress Gauge of requests by method and path currently being processed
 # TYPE starlette_requests_in_progress gauge
-starlette_requests_in_progress{method="GET",path_template="/prometheus"} 1.0
+starlette_requests_in_progress{method="GET",path_template="/metrics"} 1.0
 # HELP queue_jobs_total Number of jobs in the queue
 # TYPE queue_jobs_total gauge
 queue_jobs_total{queue="datasets",status="waiting"} 0.0

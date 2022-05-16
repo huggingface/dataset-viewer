@@ -333,8 +333,8 @@ def test_split_cache_refreshing(client: TestClient) -> None:
 #     assert len(response.json()["rows"]) > 0
 
 
-def test_prometheus(client: TestClient) -> None:
-    response = client.get("/prometheus")
+def test_metrics(client: TestClient) -> None:
+    response = client.get("/metrics")
     assert response.status_code == 200
     text = response.text
     lines = text.split("\n")

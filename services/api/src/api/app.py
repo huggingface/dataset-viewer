@@ -53,7 +53,7 @@ def create_app() -> Starlette:
         Route("/hf_datasets", endpoint=hf_datasets_endpoint),
         Route("/hf-datasets-count-by-cache-status", endpoint=hf_datasets_count_by_cache_status_endpoint),
         Route("/is-valid", endpoint=is_valid_endpoint),
-        Route("/prometheus", endpoint=prometheus.endpoint),
+        Route("/metrics", endpoint=prometheus.endpoint),
         Route("/queue-dump-waiting-started", endpoint=queue_dump_waiting_started_endpoint),
         Route("/queue-dump", endpoint=queue_dump_endpoint),
         Route("/refresh-split", endpoint=refresh_split_endpoint, methods=["POST"]),
