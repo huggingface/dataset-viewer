@@ -101,3 +101,6 @@ splitsWorker:
       cpu: 0.01
     limits:
       cpu: 1
+
+  # Log level
+  logLevel: "DEBUG"
