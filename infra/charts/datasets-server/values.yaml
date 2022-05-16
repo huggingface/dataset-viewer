@@ -25,7 +25,7 @@ gid: 3000
 datasetsBlocklist: ""
 
 docker:
-  tag: sha-e98a0aa
+  tag: sha-7ae7942
 
 reverseProxy:
   image:
@@ -169,8 +169,6 @@ splitsWorker:
   cacheDirectory: "/cache"
   # Git reference for the canonical datasets on https://github.com/huggingface/datasets
   datasetsRevision: "master"
-  # User Access Token (see https://huggingface.co/settings/token, only the `read` role is required)
-  hfToken: ""
   # Log level
   logLevel: "INFO"
   # Maximum number of jobs running at the same time for the same dataset
