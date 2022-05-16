@@ -8,6 +8,7 @@ from libqueue.queue import (
     connect_to_queue,
     finish_dataset_job,
     get_dataset_job,
+    get_split_job,
     is_dataset_in_queue,
     is_split_in_queue,
 )
@@ -48,6 +49,24 @@ def test_add_job() -> None:
     finish_dataset_job(other_job_id, success=True)
     # ^ fails silently (with a log)
     finish_dataset_job(job_id, success=True)
+
+
+def test_max_jobs_per_dataset() -> None:
+    add_split_job("dataset", "config", "split1")
+    add_split_job("dataset", "config", "split2")
+    add_split_job("dataset", "config", "split3")
+    _, dataset_name, config_name, split_name = get_split_job()
+    assert dataset_name == "dataset"
+    assert config_name == "config"
+    assert split_name == "split1"
+    with pytest.raises(EmptyQueue):
+        get_split_job(0)
+    with pytest.raises(EmptyQueue):
+        get_split_job(1)
+    _, dataset_name, config_name, split_name = get_split_job(2)
+    assert split_name == "split2"
+    with pytest.raises(EmptyQueue):
+        get_split_job(2)
 
 
 def test_is_dataset_in_queue() -> None:

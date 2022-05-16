@@ -205,23 +205,28 @@ def get_finished(jobs: QuerySet[AnyJob]) -> QuerySet[AnyJob]:
     return jobs(status__nin=[Status.WAITING, Status.STARTED])
 
 
+def get_excluded_dataset_names(jobs: QuerySet[AnyJob], max_jobs_per_dataset: Optional[int] = None) -> List[str]:
+    if max_jobs_per_dataset is None:
+        return []
+    dataset_names = [job.dataset_name for job in jobs(status=Status.STARTED).only("dataset_name")]
+    return list(
+        {dataset_name for dataset_name in dataset_names if dataset_names.count(dataset_name) >= max_jobs_per_dataset}
+    )
+
+
 def start_job(jobs: QuerySet[AnyJob], max_jobs_per_dataset: Optional[int] = None) -> AnyJob:
-    waiting_jobs = get_waiting(jobs).order_by("+created_at").no_cache()
+    excluded_dataset_names = get_excluded_dataset_names(jobs, max_jobs_per_dataset)
+    next_waiting_job = (
+        jobs(status=Status.WAITING, dataset_name__nin=excluded_dataset_names)
+        .order_by("+created_at")
+        .no_cache()
+        .first()
+    )
     # ^ no_cache should generate a query on every iteration, which should solve concurrency issues between workers
-    for job in waiting_jobs:
-        if job.status is not Status.WAITING:
-            logger.warning(f"waiting job {job.to_id()} has a not the WAITING status. Ignoring it.")
-            continue
-        if job.started_at is not None:
-            logger.warning(f"waiting job {job.to_id()} has a non empty started_at field. Ignoring it.")
-            continue
-        if job.finished_at is not None:
-            logger.warning(f"waiting job {job.to_id()} has a non empty started_at field. Ignoring it.")
-            continue
-        if max_jobs_per_dataset is None or get_num_started_for_dataset(jobs, job.dataset_name) < max_jobs_per_dataset:
-            job.update(started_at=datetime.utcnow(), status=Status.STARTED)
-            return job
-    raise EmptyQueue(f"no job available (within the limit of {max_jobs_per_dataset} started jobs per dataset)")
+    if next_waiting_job is None:
+        raise EmptyQueue("no job available (within the limit of {max_jobs_per_dataset} started jobs per dataset)")
+    next_waiting_job.update(started_at=datetime.utcnow(), status=Status.STARTED)
+    return next_waiting_job
 
 
 def get_dataset_job(max_jobs_per_dataset: Optional[int] = None) -> Tuple[str, str]:
