@@ -1,0 +1,10 @@
+version: "3.9"
+services:
+  mongodb-test-libqueue:
+    image: mongo
+    volumes:
+      - mongo-test-libqueue:/data/db:rw
+    ports:
+      - 27020:27017
+volumes:
+  mongo-test-libqueue:
