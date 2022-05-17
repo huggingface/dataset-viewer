@@ -13,6 +13,9 @@ secrets:
   hfToken: hf-token
   mongoUrl: mongo-url
 
+monitoring:
+  enabled: true
+
 domain: "datasets-server.huggingface.tech"
 
 # Datasets blocklist
