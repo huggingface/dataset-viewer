@@ -1,33 +1,38 @@
 import logging
+from typing import List
 
 from dotenv import load_dotenv
-
+from huggingface_hub import list_datasets  # type: ignore
 from libcache.cache import (
     connect_to_cache,
     list_split_full_names_to_refresh,
     should_dataset_be_refreshed,
 )
+from libqueue.queue import add_dataset_job, add_split_job, connect_to_queue
 from libutils.logger import init_logger
-from libqueue.queue import (
-    add_dataset_job,
-    add_split_job,
-    connect_to_queue,
+
+from admin.config import (
+    LOG_LEVEL,
+    MONGO_CACHE_DATABASE,
+    MONGO_QUEUE_DATABASE,
+    MONGO_URL,
 )
-from libmodels.hf_dataset import get_hf_dataset_names
 
 # Load environment variables defined in .env, if any
 load_dotenv()
 
 
-def warm() -> None:
-    logger = logging.getLogger("warm")
-    dataset_names = get_hf_dataset_names()
+def get_hf_dataset_names():
+    return [str(dataset.id) for dataset in list_datasets(full=True)]
+
+
+def warm_cache(dataset_names: List[str]) -> None:
+    logger = logging.getLogger("warm_cache")
     for dataset_name in dataset_names:
-        split_full_names = list_split_full_names_to_refresh(dataset_name)
         if should_dataset_be_refreshed(dataset_name):
             add_dataset_job(dataset_name)
             logger.info(f"added a job to refresh '{dataset_name}'")
-        elif split_full_names:
+        elif split_full_names := list_split_full_names_to_refresh(dataset_name):
             for split_full_name in split_full_names:
                 dataset_name = split_full_name["dataset_name"]
                 config_name = split_full_name["config_name"]
@@ -42,7 +47,9 @@ def warm() -> None:
 
 
 if __name__ == "__main__":
-    init_logger("INFO", "warm")
-    connect_to_cache()
-    connect_to_queue()
-    warm()
+    init_logger(LOG_LEVEL, "warm_cache")
+    logger = logging.getLogger("warm_cache")
+    connect_to_cache(MONGO_CACHE_DATABASE, MONGO_URL)
+    connect_to_queue(MONGO_QUEUE_DATABASE, MONGO_URL)
+    warm_cache(get_hf_dataset_names())
+    logger.info("all the missing datasets have been added to the queue")

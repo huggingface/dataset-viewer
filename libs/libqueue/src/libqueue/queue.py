@@ -262,14 +262,6 @@ def finish_started_job(jobs: QuerySet[AnyJob], job_id: str, success: bool) -> No
     job.update(finished_at=datetime.utcnow(), status=status)
 
 
-def cancel_started_jobs(jobs: QuerySet[AnyJob]) -> None:
-    get_started(jobs).update(finished_at=datetime.utcnow(), status=Status.CANCELLED)
-
-
-def cancel_waiting_jobs(jobs: QuerySet[AnyJob]) -> None:
-    get_waiting(jobs).update(finished_at=datetime.utcnow(), status=Status.CANCELLED)
-
-
 def finish_dataset_job(job_id: str, success: bool) -> None:
     finish_started_job(DatasetJob.objects, job_id, success)
 
@@ -284,19 +276,15 @@ def clean_database() -> None:
 
 
 def cancel_started_dataset_jobs() -> None:
-    cancel_started_jobs(DatasetJob.objects)
+    for job in get_started(DatasetJob.objects):
+        job.update(finished_at=datetime.utcnow(), status=Status.CANCELLED)
+        add_dataset_job(dataset_name=job.dataset_name)
 
 
 def cancel_started_split_jobs() -> None:
-    cancel_started_jobs(SplitJob.objects)
-
-
-def cancel_waiting_dataset_jobs() -> None:
-    cancel_waiting_jobs(DatasetJob.objects)
-
-
-def cancel_waiting_split_jobs() -> None:
-    cancel_waiting_jobs(SplitJob.objects)
+    for job in get_started(SplitJob.objects):
+        job.update(finished_at=datetime.utcnow(), status=Status.CANCELLED)
+        add_split_job(dataset_name=job.dataset_name, config_name=job.config_name, split_name=job.split_name)
 
 
 # special reports
