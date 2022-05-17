@@ -78,6 +78,9 @@ reverseProxy:
 api:
   replicas: 2
 
+  nodeSelector:
+    role-datasets-server: 'true'
+
   resources:
     requests:
       cpu: 1
@@ -87,6 +90,9 @@ api:
 datasetsWorker:
   replicas: 3
 
+  nodeSelector:
+    role-datasets-server: 'true'
+
   resources:
     requests:
       cpu: 0.01
@@ -95,6 +101,9 @@ datasetsWorker:
 
 splitsWorker:
   replicas: 12
+
+  nodeSelector:
+    role-datasets-server: 'true'
 
   resources:
     requests:
