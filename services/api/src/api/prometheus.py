@@ -55,6 +55,7 @@ class Prometheus:
             self.metrics["cache_entries_total"].labels(cache="splits", status=status).set(total)
 
     def endpoint(self, request: Request) -> Response:
-        self.updateMetrics()
+        # disabled for now to fix https://github.com/huggingface/datasets-server/issues/279
+        # self.updateMetrics()
 
         return Response(generate_latest(self.getRegistry()), headers={"Content-Type": CONTENT_TYPE_LATEST})
