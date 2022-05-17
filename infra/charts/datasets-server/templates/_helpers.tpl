@@ -62,6 +62,11 @@ app: "{{ include "release" . }}-datasets-worker"
 app: "{{ include "release" . }}-splits-worker"
 {{- end -}}
 
+{{- define "labels.admin" -}}
+{{ include "labels" . }}
+app: "{{ include "release" . }}-admin"
+{{- end -}}
+
 {{/*
 The assets/ subpath in the NFS
 - in a subdirectory named as the chart (datasets-server/), and below it,
