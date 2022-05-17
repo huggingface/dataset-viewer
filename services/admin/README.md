@@ -22,24 +22,22 @@ Set environment variables to configure the following aspects:
 - `MONGO_QUEUE_DATABASE`: the name of the database used for storing the queue. Defaults to `"datasets_server_queue"`.
 - `MONGO_URL`: the URL used to connect to the mongo db server. Defaults to `"mongodb://localhost:27017"`.
 
-To access the shell:
+To launch the scripts:
 
 - if the image runs in a docker container:
 
   ```shell
-  docker exec -it datasets-server_admin_1 sh
+  docker exec -it datasets-server_admin_1 make <SCRIPT>
   ```
 
 - if the image runs in a kube pod:
 
   ```shell
-  kubectl exec datasets-server-prod-admin-5cc8f8fcd7-k7jfc -- sh
+  kubectl exec datasets-server-prod-admin-5cc8f8fcd7-k7jfc -- make <SCRIPT>
   ```
 
-Then run one of those:
+The scripts:
 
-```shell
-make cancel-started-split-jobs   # cancel all the started split jobs (stop the workers before!)
-make cancel-started-dataset-jobs # cancel all the started dataset jobs (stop the workers before!)
-make warm-cache                  # create jobs for all the missing datasets and/or splits
-```
+- `cancel-started-split-jobs`: cancel all the started split jobs (stop the workers before!)
+- `cancel-started-dataset-jobs`: cancel all the started dataset jobs (stop the workers before!)
+- `warm-cache`: create jobs for all the missing datasets and/or splits
