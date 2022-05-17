@@ -1,0 +1,10 @@
+version: "3.9"
+services:
+  mongodb-test:
+    image: mongo
+    volumes:
+      - mongo-test:/data/db:rw
+    ports:
+      - 27018:27017
+volumes:
+  mongo-test:

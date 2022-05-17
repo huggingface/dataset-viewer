@@ -11,7 +11,7 @@ jobs:
         poetry-version: [1.1.7]
         os: [ubuntu-latest]
         working-directory:
-          [services/api, libs/libcache, libs/libqueue, libs/libutils]
+          [services/admin, services/api, libs/libcache, libs/libqueue, libs/libutils]
     defaults:
       run:
         shell: bash

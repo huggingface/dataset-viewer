@@ -28,7 +28,7 @@ gid: 3000
 datasetsBlocklist: ""
 
 docker:
-  tag: sha-8a7c036
+  tag: sha-b1ed584
 
 reverseProxy:
   image:
@@ -192,3 +192,25 @@ splitsWorker:
   rowsMinNumber: 10
   # Number of seconds a worker will sleep before trying to process a new job
   workerSleepSeconds: 15
+
+
+admin:
+  image:
+    repository: 707930574880.dkr.ecr.us-east-1.amazonaws.com
+    name: hub-datasets-server-admin
+    pullPolicy: IfNotPresent
+
+  replicas: 1
+
+  resources:
+    requests:
+      cpu: 1
+    limits:
+      cpu: 1
+  nodeSelector: {}
+  tolerations: []
+
+  # Directory of assets (audio files and images that will be served for the web)
+  assetsDirectory: "/assets"
+  # Log level
+  logLevel: "INFO"

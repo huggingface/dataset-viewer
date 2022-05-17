@@ -66,6 +66,16 @@ services:
       mongodb:
         condition: service_started
     restart: always
+  admin:
+    build:
+      context: .
+      dockerfile: ./services/admin/Dockerfile
+    environment:
+      MONGO_URL: "mongodb://mongodb"
+    depends_on:
+      mongodb:
+        condition: service_started
+    restart: always
   mongodb:
     image: mongo
     volumes:

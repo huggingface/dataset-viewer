@@ -3,6 +3,7 @@
 install:
 	$(MAKE) -C services/worker/ install
 	$(MAKE) -C services/api/ install
+	$(MAKE) -C services/admin/ install
 
 .PHONY: lock
 lock:
@@ -11,6 +12,7 @@ lock:
 	$(MAKE) -C libs/libcache/ lock
 	$(MAKE) -C services/worker/ lock
 	$(MAKE) -C services/api/ lock
+	$(MAKE) -C services/admin/ lock
 
 .PHONY: api
 api:
@@ -22,6 +24,7 @@ worker:
 
 .PHONY: test
 test:
+	$(MAKE) -C services/admin/ test
 	$(MAKE) -C services/worker/ test
 	$(MAKE) -C services/api/ test
 	$(MAKE) -C libs/libcache/ test
@@ -30,6 +33,7 @@ test:
 
 .PHONY: coverage
 coverage:
+	$(MAKE) -C services/admin/ coverage
 	$(MAKE) -C services/worker/ coverage
 	$(MAKE) -C services/api/ coverage
 	$(MAKE) -C libs/libcache/ coverage
@@ -43,6 +47,7 @@ quality:
 	$(MAKE) -C infra/charts/datasets-server/ quality
 	$(MAKE) -C services/worker/ quality
 	$(MAKE) -C services/api/ quality
+	$(MAKE) -C services/admin/ quality
 	$(MAKE) -C libs/libcache/ quality
 	$(MAKE) -C libs/libqueue/ quality
 	$(MAKE) -C libs/libutils/ quality
@@ -53,6 +58,7 @@ style:
 	$(MAKE) -C e2e/ style
 	$(MAKE) -C services/worker/ style
 	$(MAKE) -C services/api/ style
+	$(MAKE) -C services/admin/ style
 	$(MAKE) -C libs/libcache/ style
 	$(MAKE) -C libs/libqueue/ style
 	$(MAKE) -C libs/libutils/ style
