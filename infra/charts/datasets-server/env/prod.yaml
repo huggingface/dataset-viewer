@@ -19,29 +19,7 @@ monitoring:
 domain: "datasets-server.huggingface.tech"
 
 # Datasets blocklist
-datasetsBlocklist: >-
-  Alvenir/nst-da-16khz
-  bigscience/P3
-  clips/mqa
-  echarlaix/gqa-lxmert
-  echarlaix/vqa-lxmert
-  fractalego/QA_to_statements
-  hyperpartisan_news_detection
-  imthanhlv/binhvq_news21_raw
-  Graphcore/gqa-lxmert
-  Graphcore/vqa-lxmert
-  kiyoung2/aistage-mrc
-  lewtun/gem-multi-dataset-predictions
-  lukesjordan/worldbank-project-documents
-  math_dataset
-  midas/ldke3k_medium
-  midas/ldke3k_small
-  midas/ldkp3k_small
-  qr/cefr_book_sentences
-  SaulLu/Natural_Questions_HTML_reduced_all
-  SaulLu/Natural_Questions_HTML_Toy
-  unicamp-dl/mmarco
-  z-uo/squad-it
+datasetsBlocklist: "bigscience/P3,echarlaix/gqa-lxmert,Graphcore/gqa-lxmert"
 
 reverseProxy:
   replicas: 2
