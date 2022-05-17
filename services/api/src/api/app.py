@@ -8,7 +8,6 @@ from starlette.middleware import Middleware
 from starlette.middleware.gzip import GZipMiddleware
 from starlette.routing import Mount, Route
 from starlette.staticfiles import StaticFiles
-from starlette_prometheus import PrometheusMiddleware
 
 from api.config import (
     APP_HOSTNAME,
@@ -45,7 +44,7 @@ def create_app() -> Starlette:
     show_assets_dir(ASSETS_DIRECTORY)
     prometheus = Prometheus()
 
-    middleware = [Middleware(GZipMiddleware), Middleware(PrometheusMiddleware, filter_unhandled_paths=True)]
+    middleware = [Middleware(GZipMiddleware)]
     routes = [
         Mount("/assets", app=StaticFiles(directory=init_assets_dir(ASSETS_DIRECTORY), check_dir=True), name="assets"),
         Route("/cache-reports", endpoint=cache_reports_endpoint),

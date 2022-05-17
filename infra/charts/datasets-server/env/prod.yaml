@@ -53,8 +53,10 @@ reverseProxy:
   resources:
     requests:
       cpu: 1
+      memory: "256Mi"
     limits:
       cpu: 1
+      memory: "256Mi"
 
 api:
   replicas: 2
@@ -65,8 +67,10 @@ api:
   resources:
     requests:
       cpu: 1
+      memory: "256Mi"
     limits:
       cpu: 1
+      memory: "256Mi"
 
 datasetsWorker:
   replicas: 3
