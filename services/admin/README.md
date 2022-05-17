@@ -33,7 +33,7 @@ To access the shell:
 - if the image runs in a kube pod:
 
   ```shell
-  kubectl exec datasets-server-dev-datasets-admin-5cc8f8fcd7-k7jfc -- sh
+  kubectl exec datasets-server-prod-admin-5cc8f8fcd7-k7jfc -- sh
   ```
 
 Then run one of those:
