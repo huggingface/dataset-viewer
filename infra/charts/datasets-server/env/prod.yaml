@@ -19,7 +19,7 @@ monitoring:
 domain: "datasets-server.huggingface.tech"
 
 # Datasets blocklist
-datasetsBlocklist: "bigscience/P3,echarlaix/gqa-lxmert,Graphcore/gqa-lxmert"
+datasetsBlocklist: "bigscience/P3,echarlaix/gqa-lxmert,Graphcore/gqa-lxmert,Graphcore/vqa-lxmert,echarlaix/vqa-lxmert,LIUM/tedlium,Shitao/MSMARCOForLibVQ,imthanhlv/binhvq_news21_raw,abdusahmbzuai/masc_dev"
 
 reverseProxy:
   replicas: 2
@@ -66,14 +66,14 @@ api:
 
   resources:
     requests:
-      cpu: 1
-      memory: "256Mi"
+      cpu: 2
+      memory: "1Gi"
     limits:
-      cpu: 1
-      memory: "256Mi"
+      cpu: 2
+      memory: "1Gi"
 
 datasetsWorker:
-  replicas: 3
+  replicas: 2
 
   nodeSelector:
     role-datasets-server: 'true'
@@ -83,9 +83,11 @@ datasetsWorker:
       cpu: 0.01
     limits:
       cpu: 1
+      memory: "4Gi"
+
 
 splitsWorker:
-  replicas: 12
+  replicas: 10
 
   nodeSelector:
     role-datasets-server: 'true'
@@ -95,6 +97,7 @@ splitsWorker:
       cpu: 0.01
     limits:
       cpu: 1
+      memory: "4Gi"
 
   # Log level
   logLevel: "DEBUG"
