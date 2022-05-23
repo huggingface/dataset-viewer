@@ -10,7 +10,9 @@ from libcache.cache import (
     clean_database,
     connect_to_cache,
     delete_dataset_cache,
+    get_datasets_count_by_status,
     get_rows_response,
+    get_splits_count_by_status,
     get_valid_or_stalled_dataset_names,
     upsert_dataset,
     upsert_split,
@@ -146,3 +148,28 @@ def test_valid() -> None:
     )
 
     assert get_valid_or_stalled_dataset_names() == ["test_dataset", "test_dataset2"]
+
+
+def test_count_by_status() -> None:
+    assert get_datasets_count_by_status() == {"empty": 0, "error": 0, "stalled": 0, "valid": 0}
+
+    upsert_dataset(
+        "test_dataset", [{"dataset_name": "test_dataset", "config_name": "test_config", "split_name": "test_split"}]
+    )
+
+    assert get_datasets_count_by_status() == {"empty": 0, "error": 0, "stalled": 0, "valid": 1}
+    assert get_splits_count_by_status() == {"empty": 1, "error": 0, "stalled": 0, "valid": 0}
+
+    upsert_split(
+        "test_dataset",
+        "test_config",
+        "test_split",
+        {
+            "split_name": "test_split",
+            "rows_response": {"rows": [], "columns": []},
+            "num_bytes": None,
+            "num_examples": None,
+        },
+    )
+
+    assert get_splits_count_by_status() == {"empty": 0, "error": 0, "stalled": 0, "valid": 1}

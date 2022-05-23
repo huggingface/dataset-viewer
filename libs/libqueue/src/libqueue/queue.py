@@ -2,7 +2,7 @@ import enum
 import logging
 import types
 from datetime import datetime
-from typing import Generic, List, Optional, Tuple, Type, TypedDict, TypeVar
+from typing import Dict, Generic, List, Optional, Tuple, Type, TypedDict, TypeVar
 
 from mongoengine import Document, DoesNotExist, connect
 from mongoengine.fields import DateTimeField, EnumField, StringField
@@ -304,12 +304,14 @@ def cancel_started_split_jobs() -> None:
 
 
 def get_jobs_count_by_status(jobs: QuerySet[AnyJob]) -> CountByStatus:
+    frequencies: Dict[str, int] = jobs.item_frequencies("status", normalize=False)  # type: ignore
+    # ensure that all the statuses are present, even if equal to zero
     return {
-        "waiting": get_jobs_with_status(jobs, Status.WAITING).count(),
-        "started": get_jobs_with_status(jobs, Status.STARTED).count(),
-        "success": get_jobs_with_status(jobs, Status.SUCCESS).count(),
-        "error": get_jobs_with_status(jobs, Status.ERROR).count(),
-        "cancelled": get_jobs_with_status(jobs, Status.CANCELLED).count(),
+        "waiting": frequencies.get(Status.WAITING.value, 0),
+        "started": frequencies.get(Status.STARTED.value, 0),
+        "success": frequencies.get(Status.SUCCESS.value, 0),
+        "error": frequencies.get(Status.ERROR.value, 0),
+        "cancelled": frequencies.get(Status.CANCELLED.value, 0),
     }
 
 
