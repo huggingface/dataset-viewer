@@ -345,3 +345,4 @@ def test_metrics(client: TestClient) -> None:
     name = "process_start_time_seconds"
     assert 'queue_jobs_total{queue="datasets",status="waiting"}' in metrics
     assert 'cache_entries_total{cache="datasets",status="empty"}' in metrics
+    assert 'starlette_requests_total{method="GET",path_template="/metrics"}' in metrics
