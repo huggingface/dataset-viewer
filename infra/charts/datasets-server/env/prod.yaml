@@ -19,7 +19,7 @@ monitoring:
 domain: "datasets-server.huggingface.tech"
 
 # Datasets blocklist
-datasetsBlocklist: "bigscience/P3,echarlaix/gqa-lxmert,Graphcore/gqa-lxmert,Graphcore/vqa-lxmert,echarlaix/vqa-lxmert,LIUM/tedlium,Shitao/MSMARCOForLibVQ,imthanhlv/binhvq_news21_raw,abdusahmbzuai/masc_dev,MLCommons/peoples_speech"
+datasetsBlocklist: "bigscience/P3,echarlaix/gqa-lxmert,Graphcore/gqa-lxmert,Graphcore/vqa-lxmert,echarlaix/vqa-lxmert,LIUM/tedlium,Shitao/MSMARCOForLibVQ,imthanhlv/binhvq_news21_raw,abdusahmbzuai/masc_dev,MLCommons/peoples_speech,electricity_load_diagrams,svhn,the_pile,gary109/crop14_public-test,scielo,hyperpartisan_news_detection,wiki_auto,visual_genome"
 
 reverseProxy:
   replicas: 2
@@ -27,7 +27,7 @@ reverseProxy:
   ingress:
     annotations:
       alb.ingress.kubernetes.io/healthcheck-path: "/healthcheck"
-      alb.ingress.kubernetes.io/listen-ports: "[{\"HTTP\": 80, \"HTTPS\": 443}]"
+      alb.ingress.kubernetes.io/listen-ports: '[{"HTTP": 80, "HTTPS": 443}]'
       alb.ingress.kubernetes.io/load-balancer-name: "hub-datasets-server-prod"
       alb.ingress.kubernetes.io/scheme: "internet-facing"
       alb.ingress.kubernetes.io/tags: "Env=prod,Project=datasets-server,Terraform=true"
@@ -44,7 +44,7 @@ reverseProxy:
       service.beta.kubernetes.io/aws-load-balancer-target-node-labels: role-datasets-server=true
 
   nodeSelector:
-    role-datasets-server: 'true'
+    role-datasets-server: "true"
 
   tolerations:
     - key: CriticalAddonsOnly
@@ -62,21 +62,24 @@ api:
   replicas: 1
 
   nodeSelector:
-    role-datasets-server: 'true'
+    role-datasets-server: "true"
 
   resources:
     requests:
-      cpu: 2
-      memory: "1Gi"
+      cpu: 4
+      memory: "2Gi"
     limits:
-      cpu: 2
-      memory: "1Gi"
+      cpu: 4
+      memory: "2Gi"
+
+  # Number of uvicorn workers for running the application
+  appNumWorkers: "8"
 
 datasetsWorker:
   replicas: 2
 
   nodeSelector:
-    role-datasets-server: 'true'
+    role-datasets-server: "true"
 
   resources:
     requests:
@@ -85,12 +88,11 @@ datasetsWorker:
       cpu: 1
       memory: "4Gi"
 
-
 splitsWorker:
   replicas: 4
 
   nodeSelector:
-    role-datasets-server: 'true'
+    role-datasets-server: "true"
 
   resources:
     requests:
@@ -108,7 +110,7 @@ admin:
   replicas: 1
 
   nodeSelector:
-    role-datasets-server: 'true'
+    role-datasets-server: "true"
 
   resources:
     requests:
