@@ -11,7 +11,7 @@ aiohttp = "^3.7.4.post0"
 apache-beam = "^2.33.0"
 bs4 = "^0.0.1"
 conllu = "^4.4.1"
-datasets = { extras = ["audio", "vision"], version = "^2.2.1" }
+datasets = { extras = ["audio", "vision"], version = "^2.2.2" }
 gdown = "^4.2.0"
 kenlm = { url = "https://github.com/kpu/kenlm/archive/master.zip" }
 kss = "^2.6.0"
