@@ -69,7 +69,7 @@ class DbDataset(Document):
     status = EnumField(Status, default=Status.EMPTY)
     since = DateTimeField(default=datetime.utcnow)
 
-    meta = {"collection": "datasets", "db_alias": "cache"}
+    meta = {"collection": "datasets", "db_alias": "cache", "indexes": ["dataset_name", "status"]}
     objects = QuerySetManager["DbDataset"]()
 
 
@@ -112,7 +112,11 @@ class DbSplit(Document):
     def to_split_full_name(self) -> SplitFullName:
         return {"dataset_name": self.dataset_name, "config_name": self.config_name, "split_name": self.split_name}
 
-    meta = {"collection": "splits", "db_alias": "cache"}
+    meta = {
+        "collection": "splits",
+        "db_alias": "cache",
+        "indexes": ["status", ("dataset_name", "config_name", "split_name"), ("dataset_name", "status")],
+    }
     objects = QuerySetManager["DbSplit"]()
 
 
@@ -171,7 +175,11 @@ class DbSplitError(Document):
             error["cause_traceback"] = self.cause_traceback
         return error
 
-    meta = {"collection": "split_errors", "db_alias": "cache"}
+    meta = {
+        "collection": "split_errors",
+        "db_alias": "cache",
+        "indexes": [("dataset_name", "config_name", "split_name")],
+    }
     objects = QuerySetManager["DbSplitError"]()
 
 

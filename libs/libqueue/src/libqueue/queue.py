@@ -84,7 +84,11 @@ def connect_to_queue(database, host) -> None:
 # For a given dataset_name, any number of finished and cancelled jobs are allowed,
 # but only 0 or 1 job for the set of the other states
 class DatasetJob(Document):
-    meta = {"collection": "dataset_jobs", "db_alias": "queue"}
+    meta = {
+        "collection": "dataset_jobs",
+        "db_alias": "queue",
+        "indexes": ["status", "dataset_name", ("dataset_name", "status")],
+    }
     dataset_name = StringField(required=True)
     created_at = DateTimeField(required=True)
     started_at = DateTimeField()
@@ -107,7 +111,16 @@ class DatasetJob(Document):
 
 
 class SplitJob(Document):
-    meta = {"collection": "split_jobs", "db_alias": "queue"}
+    meta = {
+        "collection": "split_jobs",
+        "db_alias": "queue",
+        "indexes": [
+            "status",
+            ("dataset_name", "config_name", "split_name"),
+            ("dataset_name", "status"),
+            ("dataset_name", "config_name", "split_name", "status"),
+        ],
+    }
     dataset_name = StringField(required=True)
     config_name = StringField(required=True)
     split_name = StringField(required=True)
