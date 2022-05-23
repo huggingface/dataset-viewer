@@ -120,6 +120,9 @@ class DbSplit(Document):
     objects = QuerySetManager["DbSplit"]()
 
 
+AnyDb = TypeVar("AnyDb", DbDataset, DbSplit)  # Must be DbDataset or DbSplit
+
+
 class _BaseErrorItem(TypedDict):
     status_code: int
     exception: str
@@ -465,16 +468,6 @@ def get_dataset_names_with_status(status: str) -> List[str]:
     return [d.dataset_name for d in DbDataset.objects(status=status).only("dataset_name")]
 
 
-def get_datasets_count_with_status(status: Status) -> int:
-    # TODO: take the splits statuses into account?
-    return DbDataset.objects(status=status).count()
-
-
-def get_splits_count_with_status(status: Status) -> int:
-    # TODO: take the splits statuses into account?
-    return DbSplit.objects(status=status).count()
-
-
 class CountByStatus(TypedDict):
     empty: int
     error: int
@@ -482,22 +475,24 @@ class CountByStatus(TypedDict):
     valid: int
 
 
-def get_datasets_count_by_status() -> CountByStatus:
+def get_entries_count_by_status(entries: QuerySet[AnyDb]) -> CountByStatus:
+    frequencies: Dict[str, int] = entries.item_frequencies("status", normalize=False)  # type: ignore
+    # ensure that all the statuses are present, even if equal to zero
     return {
-        "empty": get_datasets_count_with_status(Status.EMPTY),
-        "error": get_datasets_count_with_status(Status.ERROR),
-        "stalled": get_datasets_count_with_status(Status.STALLED),
-        "valid": get_datasets_count_with_status(Status.VALID),
+        "empty": frequencies.get(Status.EMPTY.value, 0),
+        "error": frequencies.get(Status.ERROR.value, 0),
+        "stalled": frequencies.get(Status.STALLED.value, 0),
+        "valid": frequencies.get(Status.VALID.value, 0),
     }
+
+
+def get_datasets_count_by_status() -> CountByStatus:
+    # TODO: take the splits statuses into account?
+    return get_entries_count_by_status(DbDataset.objects)
 
 
 def get_splits_count_by_status() -> CountByStatus:
-    return {
-        "empty": get_splits_count_with_status(Status.EMPTY),
-        "error": get_splits_count_with_status(Status.ERROR),
-        "stalled": get_splits_count_with_status(Status.STALLED),
-        "valid": get_splits_count_with_status(Status.VALID),
-    }
+    return get_entries_count_by_status(DbSplit.objects)
 
 
 class DatasetCacheReport(TypedDict):

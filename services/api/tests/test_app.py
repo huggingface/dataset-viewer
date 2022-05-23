@@ -343,6 +343,5 @@ def test_metrics(client: TestClient) -> None:
     assert name in metrics
     assert metrics[name] > 0
     name = "process_start_time_seconds"
-    # Disabled for now
-    # assert 'queue_jobs_total{queue="datasets",status="waiting"}' in metrics
-    # assert 'cache_entries_total{cache="datasets",status="empty"}' in metrics
+    assert 'queue_jobs_total{queue="datasets",status="waiting"}' in metrics
+    assert 'cache_entries_total{cache="datasets",status="empty"}' in metrics

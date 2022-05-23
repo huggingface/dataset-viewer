@@ -8,7 +8,9 @@ from libqueue.queue import (
     connect_to_queue,
     finish_dataset_job,
     get_dataset_job,
+    get_dataset_jobs_count_by_status,
     get_split_job,
+    get_split_jobs_count_by_status,
     is_dataset_in_queue,
     is_split_in_queue,
 )
@@ -87,3 +89,29 @@ def test_is_split_in_queue() -> None:
     add_split_job(dataset_name, config_name, split_name)
     assert is_split_in_queue(dataset_name, config_name, split_name) is True
     assert is_split_in_queue(dataset_name_2, config_name, split_name) is False
+
+
+def test_count_by_status() -> None:
+    assert get_dataset_jobs_count_by_status() == {
+        "waiting": 0,
+        "started": 0,
+        "success": 0,
+        "error": 0,
+        "cancelled": 0,
+    }
+
+    add_dataset_job("test_dataset")
+
+    assert get_dataset_jobs_count_by_status() == {"waiting": 1, "started": 0, "success": 0, "error": 0, "cancelled": 0}
+
+    assert get_split_jobs_count_by_status() == {
+        "waiting": 0,
+        "started": 0,
+        "success": 0,
+        "error": 0,
+        "cancelled": 0,
+    }
+
+    add_split_job("test_dataset", "test_config", "test_split")
+
+    assert get_split_jobs_count_by_status() == {"waiting": 1, "started": 0, "success": 0, "error": 0, "cancelled": 0}
