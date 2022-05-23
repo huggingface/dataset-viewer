@@ -1,6 +1,7 @@
 from typing import List
 
 import pytest
+from libutils.exceptions import Status400Error
 from libutils.types import RowItem, Split, SplitFullName
 from mongoengine import DoesNotExist
 
@@ -15,7 +16,6 @@ from libcache.cache import (
     upsert_split,
     upsert_split_error,
 )
-from libutils.exceptions import Status400Error
 
 from ._utils import MONGO_CACHE_DATABASE, MONGO_URL
 
