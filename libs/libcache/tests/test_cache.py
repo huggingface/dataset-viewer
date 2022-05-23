@@ -10,9 +10,12 @@ from libcache.cache import (
     connect_to_cache,
     delete_dataset_cache,
     get_rows_response,
+    get_valid_or_stalled_dataset_names,
     upsert_dataset,
     upsert_split,
+    upsert_split_error,
 )
+from libutils.exceptions import Status400Error
 
 from ._utils import MONGO_CACHE_DATABASE, MONGO_URL
 
@@ -91,3 +94,38 @@ def test_big_row() -> None:
     assert rows_response is None
     assert error["message"] == "could not store the rows/ cache entry."
     assert error["cause_exception"] == "DocumentTooLarge"
+
+
+def test_valid() -> None:
+    assert get_valid_or_stalled_dataset_names() == []
+
+    upsert_dataset(
+        "test_dataset", [{"dataset_name": "test_dataset", "config_name": "test_config", "split_name": "test_split"}]
+    )
+
+    assert get_valid_or_stalled_dataset_names() == []
+
+    upsert_split(
+        "test_dataset",
+        "test_config",
+        "test_split",
+        {
+            "split_name": "test_split",
+            "rows_response": {"rows": [], "columns": []},
+            "num_bytes": None,
+            "num_examples": None,
+        },
+    )
+
+    assert get_valid_or_stalled_dataset_names() == ["test_dataset"]
+
+    upsert_dataset(
+        "test_dataset2",
+        [{"dataset_name": "test_dataset2", "config_name": "test_config2", "split_name": "test_split2"}],
+    )
+
+    assert get_valid_or_stalled_dataset_names() == ["test_dataset"]
+
+    upsert_split_error("test_dataset2", "test_config2", "test_split2", Status400Error("error"))
+
+    assert get_valid_or_stalled_dataset_names() == ["test_dataset"]
