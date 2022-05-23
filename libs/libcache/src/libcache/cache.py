@@ -438,7 +438,18 @@ def get_datasets_count_by_cache_status(dataset_names: List[str]) -> CountByCache
 
 
 def get_valid_or_stalled_dataset_names() -> List[str]:
-    return [d.dataset_name for d in DbDataset.objects() if is_dataset_valid_or_stalled(d)]
+    # a dataset is considered valid if:
+    # - the dataset is valid or stalled
+    candidate_dataset_names = {
+        d.dataset_name for d in DbDataset.objects(status__in=[Status.VALID, Status.STALLED]).only("dataset_name")
+    }
+    # - at least one of its splits is valid or stalled
+    candidate_dataset_names_in_splits = {
+        d.dataset_name for d in DbSplit.objects(status__in=[Status.VALID, Status.STALLED]).only("dataset_name")
+    }
+    candidate_dataset_names.intersection_update(candidate_dataset_names_in_splits)
+    # note that the list is sorted alphabetically for consistency
+    return sorted(candidate_dataset_names)
 
 
 def get_dataset_names_with_status(status: str) -> List[str]:

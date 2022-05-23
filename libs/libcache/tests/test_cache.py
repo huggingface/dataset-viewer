@@ -121,7 +121,10 @@ def test_valid() -> None:
 
     upsert_dataset(
         "test_dataset2",
-        [{"dataset_name": "test_dataset2", "config_name": "test_config2", "split_name": "test_split2"}],
+        [
+            {"dataset_name": "test_dataset2", "config_name": "test_config2", "split_name": "test_split2"},
+            {"dataset_name": "test_dataset2", "config_name": "test_config2", "split_name": "test_split3"},
+        ],
     )
 
     assert get_valid_or_stalled_dataset_names() == ["test_dataset"]
@@ -129,3 +132,17 @@ def test_valid() -> None:
     upsert_split_error("test_dataset2", "test_config2", "test_split2", Status400Error("error"))
 
     assert get_valid_or_stalled_dataset_names() == ["test_dataset"]
+
+    upsert_split(
+        "test_dataset2",
+        "test_config2",
+        "test_split3",
+        {
+            "split_name": "test_split3",
+            "rows_response": {"rows": [], "columns": []},
+            "num_bytes": None,
+            "num_examples": None,
+        },
+    )
+
+    assert get_valid_or_stalled_dataset_names() == ["test_dataset", "test_dataset2"]
