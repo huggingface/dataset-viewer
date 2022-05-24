@@ -59,7 +59,7 @@ reverseProxy:
       memory: "256Mi"
 
 api:
-  replicas: 1
+  replicas: 3
 
   nodeSelector:
     role-datasets-server: "true"
@@ -73,7 +73,9 @@ api:
       memory: "2Gi"
 
   # Number of uvicorn workers for running the application
-  appNumWorkers: "8"
+  # (2 x $num_cores) + 1
+  # https://docs.gunicorn.org/en/stable/design.html#how-many-workers
+  appNumWorkers: "9"
 
 datasetsWorker:
   replicas: 2
