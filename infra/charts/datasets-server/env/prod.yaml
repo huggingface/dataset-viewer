@@ -19,7 +19,7 @@ monitoring:
 domain: "datasets-server.huggingface.tech"
 
 # Datasets blocklist
-datasetsBlocklist: "bigscience/P3,echarlaix/gqa-lxmert,Graphcore/gqa-lxmert,Graphcore/vqa-lxmert,echarlaix/vqa-lxmert,LIUM/tedlium,Shitao/MSMARCOForLibVQ,imthanhlv/binhvq_news21_raw,abdusahmbzuai/masc_dev,MLCommons/peoples_speech,electricity_load_diagrams,svhn,the_pile,gary109/crop14_public-test,scielo,hyperpartisan_news_detection,wiki_auto,visual_genome,ms_marco"
+datasetsBlocklist: "bigscience/P3,echarlaix/gqa-lxmert,Graphcore/gqa-lxmert,Graphcore/vqa-lxmert,echarlaix/vqa-lxmert,LIUM/tedlium,Shitao/MSMARCOForLibVQ,imthanhlv/binhvq_news21_raw,abdusahmbzuai/masc_dev,MLCommons/peoples_speech,electricity_load_diagrams,svhn,the_pile,gary109/crop14_public-test,scielo,hyperpartisan_news_detection,wiki_auto,visual_genome,ms_marco,Aniemore/resd,trashsock/hands-images"
 
 reverseProxy:
   replicas: 2
