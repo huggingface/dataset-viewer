@@ -7,20 +7,19 @@ jobs:
       fail-fast: false
       matrix:
         python-version: [3.9.6]
-        poetry-version: [1.1.7]
+        poetry-version: [1.1.13]
         os: [ubuntu-latest]
         working-directory: [e2e]
     runs-on: ${{ matrix.os }}
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
+      - name: Install poetry
+        run: pipx install poetry==${{ matrix.poetry-version }}
       - name: Use Python
-        uses: actions/setup-python@v2
+        uses: actions/setup-python@v3
         with:
           python-version: ${{ matrix.python-version }}
-      - name: Use Poetry
-        uses: abatilo/actions-poetry@v2.0.0
-        with:
-          poetry-version: ${{ matrix.poetry-version }}
+          cache: 'poetry'
       - name: Build the docker images
         run: docker-compose build
       - name: Launch the services
