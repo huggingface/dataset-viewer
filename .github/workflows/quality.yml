@@ -13,18 +13,12 @@ jobs:
         python-version: [3.9.6]
         poetry-version: [1.1.13]
         os: [ubuntu-latest]
-        project: [
-          {working-directory: 'e2e', cache-dependency-path: ['e2e/poetry.lock']},
-          {working-directory: 'services/admin', cache-dependency-path: ['services/api/poetry.lock', 'libs/libcache/poetry.lock', 'libs/libqueue/poetry.lock', 'libs/libutils/poetry.lock']},
-          {working-directory: 'services/api', cache-dependency-path: ['services/api/poetry.lock', 'libs/libcache/poetry.lock', 'libs/libqueue/poetry.lock', 'libs/libutils/poetry.lock']},
-          {working-directory: 'libs/libcache', cache-dependency-path: ['libs/libcache/poetry.lock', 'libs/libutils/poetry.lock']},
-          {working-directory: 'libs/libqueue', cache-dependency-path: ['libs/libqueue/poetry.lock', 'libs/libutils/poetry.lock']},
-          {working-directory: 'libs/libutils', cache-dependency-path: ['libs/libutils/poetry.lock']},
-        ]
+        working-directory:
+          [e2e, services/admin, services/api, libs/libcache, libs/libqueue, libs/libutils]
     defaults:
       run:
         shell: bash
-        working-directory: ${{ matrix.project.working-directory }}
+        working-directory: ${{ matrix.working-directory }}
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v3
@@ -35,7 +29,8 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
           cache: 'poetry'
-          cache-dependency-path: ${{ matrix.project.cache-dependency-path }}
+          cache-dependency-path: |
+            ${{ matrix.working-directory }}/poetry.lock
       - name: Install dependencies
         # "poetry env use" is required: https://github.com/actions/setup-python/issues/374#issuecomment-1088938718
         run: |
@@ -54,53 +49,55 @@ jobs:
       - name: Run safety
         run: poetry run safety check -i 44487 -i 44485 -i 44524 -i 44525 -i 44486 -i 44716 -i 44717 -i 44715 -i 45356 -i 46499
         # ^^ safety exceptions: pillow, numpy
-  # code-quality-job-runner:
-  #   strategy:
-  #     fail-fast: false
-  #     matrix:
-  #       python-version: [3.9.6]
-  #       poetry-version: [1.1.13]
-  #       os: [ubuntu-latest]
-  #       working-directory: [services/worker]
-  #   defaults:
-  #     run:
-  #       shell: bash
-  #       working-directory: ${{ matrix.working-directory }}
-  #   runs-on: ${{ matrix.os }}
-  #   steps:
-  #     - uses: actions/checkout@v3
-  #     - name: Install poetry
-  #       run: pipx install poetry==${{ matrix.poetry-version }}
-  #     - name: Use Python
-  #       uses: actions/setup-python@v3
-  #       with:
-  #         python-version: ${{ matrix.python-version }}
-  #         cache: 'poetry'
-  #     - name: Install packages
-  #       run: sudo apt update; sudo apt install -y libicu-dev ffmpeg libavcodec-extra libsndfile1 llvm
-  #     - name: Install dependencies
-  #       run: |
-  #         poetry env use "${{ matrix.python-version }}"
-  #         poetry install
-  #     - name: Run black
-  #       run: poetry run black --check tests src
-  #     - name: Run isort
-  #       run: poetry run isort --check-only tests src
-  #     - name: Run flake8
-  #       run: poetry run flake8 tests src
-  #     - name: Run mypy
-  #       run: poetry run mypy tests src
-  #     - name: Run bandit
-  #       run: poetry run bandit -r src
-  #     - name: Run safety
-  #       run: poetry run safety check -i 44487 -i 44485 -i 44524 -i 44525 -i 44486 -i 44716 -i 44717 -i 44715 -i 45356 -i 46499
-  #       # ^^ safety exceptions: pillow, numpy
-  # code-quality-helm:
-  #   runs-on: ubuntu-20.04
-  #   steps:
-  #     - name: Checkout sources
-  #       uses: actions/checkout@main
+  code-quality-job-runner:
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: [3.9.6]
+        poetry-version: [1.1.13]
+        os: [ubuntu-latest]
+        working-directory: [services/worker]
+    defaults:
+      run:
+        shell: bash
+        working-directory: ${{ matrix.working-directory }}
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v3
+      - name: Install poetry
+        run: pipx install poetry==${{ matrix.poetry-version }}
+      - name: Use Python
+        uses: actions/setup-python@v3
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: 'poetry'
+          cache-dependency-path: |
+            ${{ matrix.working-directory }}/poetry.lock
+      - name: Install packages
+        run: sudo apt update; sudo apt install -y libicu-dev ffmpeg libavcodec-extra libsndfile1 llvm
+      - name: Install dependencies
+        run: |
+          poetry env use "${{ matrix.python-version }}"
+          poetry install
+      - name: Run black
+        run: poetry run black --check tests src
+      - name: Run isort
+        run: poetry run isort --check-only tests src
+      - name: Run flake8
+        run: poetry run flake8 tests src
+      - name: Run mypy
+        run: poetry run mypy tests src
+      - name: Run bandit
+        run: poetry run bandit -r src
+      - name: Run safety
+        run: poetry run safety check -i 44487 -i 44485 -i 44524 -i 44525 -i 44486 -i 44716 -i 44717 -i 44715 -i 45356 -i 46499
+        # ^^ safety exceptions: pillow, numpy
+  code-quality-helm:
+    runs-on: ubuntu-20.04
+    steps:
+      - name: Checkout sources
+        uses: actions/checkout@main
 
-  #     - name: Lint chart
-  #       run: helm lint
-  #       working-directory: infra/charts/datasets-server
+      - name: Lint chart
+        run: helm lint
+        working-directory: infra/charts/datasets-server
