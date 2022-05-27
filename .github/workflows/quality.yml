@@ -31,7 +31,9 @@ jobs:
         with:
           poetry-version: ${{ matrix.poetry-version }}
       - name: Install dependencies
-        run: poetry install
+        run: |
+          poetry config virtualenvs.in-project false
+          poetry install
       - name: Run black
         run: poetry run black --check tests src
       - name: Run isort
