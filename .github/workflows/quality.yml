@@ -11,6 +11,10 @@ jobs:
         os: [ubuntu-latest]
         working-directory:
           [e2e, services/admin, services/api, libs/libcache, libs/libqueue, libs/libutils]
+    defaults:
+      run:
+        shell: bash
+        working-directory: ${{ matrix.working-directory }}
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v3
@@ -20,39 +24,21 @@ jobs:
         uses: actions/setup-python@v3
         with:
           python-version: ${{ matrix.python-version }}
-          cache: 'poetry'
-          cache-dependency-path: |
-            ${{ matrix.working-directory }}/poetry.lock
-            libs/libutils/poetry.lock
-          # ^ try to fix https://github.com/huggingface/datasets-server/pull/314#issuecomment-1137563191
+          # cache: 'poetry'
       - name: Install dependencies
-        run: |
-          cd ${{ matrix.working-directory }}
-          poetry install
+        run: poetry install
       - name: Run black
-        run:  |
-          cd ${{ matrix.working-directory }}
-          poetry run black --check tests src
+        run: poetry run black --check tests src
       - name: Run isort
-        run:  |
-          cd ${{ matrix.working-directory }}
-          poetry run isort --check-only tests src
+        run: poetry run isort --check-only tests src
       - name: Run flake8
-        run:  |
-          cd ${{ matrix.working-directory }}
-          poetry run flake8 tests src
+        run: poetry run flake8 tests src
       - name: Run mypy
-        run:  |
-          cd ${{ matrix.working-directory }}
-          poetry run mypy tests src
+        run: poetry run mypy tests src
       - name: Run bandit
-        run:  |
-          cd ${{ matrix.working-directory }}
-          poetry run bandit -r src
+        run: poetry run bandit -r src
       - name: Run safety
-        run:  |
-          cd ${{ matrix.working-directory }}
-          poetry run safety check -i 44487 -i 44485 -i 44524 -i 44525 -i 44486 -i 44716 -i 44717 -i 44715 -i 45356 -i 46499
+        run: poetry run safety check -i 44487 -i 44485 -i 44524 -i 44525 -i 44486 -i 44716 -i 44717 -i 44715 -i 45356 -i 46499
         # ^^ safety exceptions: pillow, numpy
   code-quality-job-runner:
     strategy:
