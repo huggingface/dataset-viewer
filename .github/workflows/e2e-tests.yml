@@ -9,6 +9,7 @@ on:
     # ^ run manually if you need to have the e2e tests
 
 env:
+  REGION: us-east-1
   # required to get access to use a cached poetry venv in "/home/runner/.cache/pypoetry/virtualenvs"
   POETRY_VIRTUALENVS_IN_PROJECT: false
 
