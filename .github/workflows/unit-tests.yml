@@ -1,96 +1,96 @@
-name: Launch unit tests
-on: [push]
+# name: Launch unit tests
+# on: [push]
 
-jobs:
-  unit-tests:
-    strategy:
-      fail-fast: false
-      matrix:
-        mongo-port: [27017]
-        python-version: [3.9.6]
-        poetry-version: [1.1.13]
-        os: [ubuntu-latest]
-        working-directory:
-          [services/admin, services/api, libs/libcache, libs/libqueue, libs/libutils]
-    defaults:
-      run:
-        shell: bash
-        working-directory: ${{ matrix.working-directory }}
-    runs-on: ${{ matrix.os }}
-    steps:
-      - uses: actions/checkout@v3
-      - name: Install poetry
-        run: pipx install poetry==${{ matrix.poetry-version }}
-      - name: Use Python
-        uses: actions/setup-python@v3
-        with:
-          python-version: ${{ matrix.python-version }}
-          cache: 'poetry'
-      - name: Install dependencies
-        run: poetry install
-      - name: Create mongoDB Docker container
-        run: sudo docker run -d -p ${{ matrix.mongo-port }}:27017 mongo:latest
-      - name: Run unit tests
-        env:
-          MONGO_CACHE_DATABASE: datasets_server_cache_test
-          MONGO_QUEUE_DATABASE: datasets_server_queue_test
-          MONGO_URL: mongodb://localhost:${{ matrix.mongo-port }}
-        run: poetry run python -m pytest -s --cov --cov-report xml:coverage.xml --cov-report=term tests
-      - uses: codecov/codecov-action@v2
-        with:
-          token: ${{ secrets.CODECOV_TOKEN }}
-          files: ./coverage.xml
-  unit-tests-worker:
-    strategy:
-      fail-fast: false
-      matrix:
-        mongo-port: [27017]
-        python-version: [3.9.6]
-        poetry-version: [1.1.7]
-        os: [ubuntu-latest]
-        working-directory: [services/worker]
-    defaults:
-      run:
-        shell: bash
-        working-directory: ${{ matrix.working-directory }}
-    runs-on: ${{ matrix.os }}
-    steps:
-      - uses: actions/checkout@v3
-      - name: Install poetry
-        run: pipx install poetry==${{ matrix.poetry-version }}
-      - name: Use Python
-        uses: actions/setup-python@v3
-        with:
-          python-version: ${{ matrix.python-version }}
-          cache: 'poetry'
-      - name: Install packages
-        run: sudo apt update; sudo apt install -y libicu-dev ffmpeg libavcodec-extra llvm
-      - name: Install libsndfile
-        run: >
-          sudo apt install -y autoconf autogen automake build-essential libasound2-dev libflac-dev libogg-dev libtool libvorbis-dev libopus-dev libmp3lame-dev libmpg123-dev pkg-config;
-          cd /tmp;
-          git clone https://github.com/libsndfile/libsndfile.git;
-          cd libsndfile;
-          git checkout v1.0.30;
-          ./autogen.sh;
-          ./configure --enable-werror;
-          make;
-          sudo make install;
-          sudo ldconfig;
-          cd;
-          rm -rf /tmp/libsndfile;
-      - name: Install dependencies
-        run: poetry install
-      - name: Create mongoDB Docker container
-        run: sudo docker run -d -p ${{ matrix.mongo-port }}:27017 mongo:latest
-      - name: Run unit tests
-        env:
-          ROWS_MAX_NUMBER: 5
-          MONGO_CACHE_DATABASE: datasets_server_cache_test
-          MONGO_URL: mongodb://localhost:${{ matrix.mongo-port }}
-          HF_TOKEN: ${{ secrets.HF_TOKEN }}
-        run: poetry run python -m pytest -s --cov --cov-report xml:coverage.xml --cov-report=term tests
-      - uses: codecov/codecov-action@v2
-        with:
-          token: ${{ secrets.CODECOV_TOKEN }}
-          files: ./coverage.xml
+# jobs:
+#   unit-tests:
+#     strategy:
+#       fail-fast: false
+#       matrix:
+#         mongo-port: [27017]
+#         python-version: [3.9.6]
+#         poetry-version: [1.1.13]
+#         os: [ubuntu-latest]
+#         working-directory:
+#           [services/admin, services/api, libs/libcache, libs/libqueue, libs/libutils]
+#     defaults:
+#       run:
+#         shell: bash
+#         working-directory: ${{ matrix.working-directory }}
+#     runs-on: ${{ matrix.os }}
+#     steps:
+#       - uses: actions/checkout@v3
+#       - name: Install poetry
+#         run: pipx install poetry==${{ matrix.poetry-version }}
+#       - name: Use Python
+#         uses: actions/setup-python@v3
+#         with:
+#           python-version: ${{ matrix.python-version }}
+#           cache: 'poetry'
+#       - name: Install dependencies
+#         run: poetry install
+#       - name: Create mongoDB Docker container
+#         run: sudo docker run -d -p ${{ matrix.mongo-port }}:27017 mongo:latest
+#       - name: Run unit tests
+#         env:
+#           MONGO_CACHE_DATABASE: datasets_server_cache_test
+#           MONGO_QUEUE_DATABASE: datasets_server_queue_test
+#           MONGO_URL: mongodb://localhost:${{ matrix.mongo-port }}
+#         run: poetry run python -m pytest -s --cov --cov-report xml:coverage.xml --cov-report=term tests
+#       - uses: codecov/codecov-action@v2
+#         with:
+#           token: ${{ secrets.CODECOV_TOKEN }}
+#           files: ./coverage.xml
+#   unit-tests-worker:
+#     strategy:
+#       fail-fast: false
+#       matrix:
+#         mongo-port: [27017]
+#         python-version: [3.9.6]
+#         poetry-version: [1.1.7]
+#         os: [ubuntu-latest]
+#         working-directory: [services/worker]
+#     defaults:
+#       run:
+#         shell: bash
+#         working-directory: ${{ matrix.working-directory }}
+#     runs-on: ${{ matrix.os }}
+#     steps:
+#       - uses: actions/checkout@v3
+#       - name: Install poetry
+#         run: pipx install poetry==${{ matrix.poetry-version }}
+#       - name: Use Python
+#         uses: actions/setup-python@v3
+#         with:
+#           python-version: ${{ matrix.python-version }}
+#           cache: 'poetry'
+#       - name: Install packages
+#         run: sudo apt update; sudo apt install -y libicu-dev ffmpeg libavcodec-extra llvm
+#       - name: Install libsndfile
+#         run: >
+#           sudo apt install -y autoconf autogen automake build-essential libasound2-dev libflac-dev libogg-dev libtool libvorbis-dev libopus-dev libmp3lame-dev libmpg123-dev pkg-config;
+#           cd /tmp;
+#           git clone https://github.com/libsndfile/libsndfile.git;
+#           cd libsndfile;
+#           git checkout v1.0.30;
+#           ./autogen.sh;
+#           ./configure --enable-werror;
+#           make;
+#           sudo make install;
+#           sudo ldconfig;
+#           cd;
+#           rm -rf /tmp/libsndfile;
+#       - name: Install dependencies
+#         run: poetry install
+#       - name: Create mongoDB Docker container
+#         run: sudo docker run -d -p ${{ matrix.mongo-port }}:27017 mongo:latest
+#       - name: Run unit tests
+#         env:
+#           ROWS_MAX_NUMBER: 5
+#           MONGO_CACHE_DATABASE: datasets_server_cache_test
+#           MONGO_URL: mongodb://localhost:${{ matrix.mongo-port }}
+#           HF_TOKEN: ${{ secrets.HF_TOKEN }}
+#         run: poetry run python -m pytest -s --cov --cov-report xml:coverage.xml --cov-report=term tests
+#       - uses: codecov/codecov-action@v2
+#         with:
+#           token: ${{ secrets.CODECOV_TOKEN }}
+#           files: ./coverage.xml
