@@ -25,8 +25,10 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
           # cache: 'poetry'
-      - name: Install poetry
-        run: pipx install poetry==${{ matrix.poetry-version }}
+      - name: Use Poetry
+        uses: abatilo/actions-poetry@v2.0.0
+        with:
+          poetry-version: ${{ matrix.poetry-version }}
       - name: Install dependencies
         run: poetry install
       - name: Run black
