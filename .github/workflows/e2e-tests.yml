@@ -1,11 +1,12 @@
-name: Launch e2e tests
-on: workflow_dispatch
+name: e2e tests
+on:
+  workflow_run:
+    workflows: ["Build and push docker images"]
+    types: [completed]
+    # note that it is run only on main! which is somewhat useless :'(
+    # https://docs.github.com/en/actions/using-workflows/events-that-trigger-workflows#workflow_run
+  workflow_dispatch:
     # ^ run manually if you need to have the e2e tests
-  # workflow_run:
-  #   workflows: ["Build and push docker images"]
-  #   types: [completed]
-  #   # note that it is run only on main! which is somewhat useless :'(
-  #   # https://docs.github.com/en/actions/using-workflows/events-that-trigger-workflows#workflow_run
 
 env:
   # required to get access to use a cached poetry venv in "/home/runner/.cache/pypoetry/virtualenvs"
