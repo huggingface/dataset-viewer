@@ -1,6 +1,10 @@
 name: Launch unit tests
 on: [push]
 
+env:
+  # required to get access to use a cached poetry venv in "/home/runner/.cache/pypoetry/virtualenvs"
+  POETRY_VIRTUALENVS_IN_PROJECT: false
+
 jobs:
   unit-tests:
     strategy:
@@ -8,7 +12,7 @@ jobs:
       matrix:
         mongo-port: [27017]
         python-version: [3.9.6]
-        poetry-version: [1.1.7]
+        poetry-version: [1.1.13]
         os: [ubuntu-latest]
         working-directory:
           [services/admin, services/api, libs/libcache, libs/libqueue, libs/libutils]
@@ -18,17 +22,20 @@ jobs:
         working-directory: ${{ matrix.working-directory }}
     runs-on: ${{ matrix.os }}
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
+      - name: Install poetry
+        run: pipx install poetry==${{ matrix.poetry-version }}
       - name: Use Python
-        uses: actions/setup-python@v2
+        uses: actions/setup-python@v3
         with:
           python-version: ${{ matrix.python-version }}
-      - name: Use Poetry
-        uses: abatilo/actions-poetry@v2.0.0
-        with:
-          poetry-version: ${{ matrix.poetry-version }}
+          cache: 'poetry'
+          cache-dependency-path: |
+            ${{ matrix.working-directory }}/poetry.lock
       - name: Install dependencies
-        run: poetry install
+        run: |
+          poetry env use "${{ matrix.python-version }}"
+          poetry install
       - name: Create mongoDB Docker container
         run: sudo docker run -d -p ${{ matrix.mongo-port }}:27017 mongo:latest
       - name: Run unit tests
@@ -56,15 +63,16 @@ jobs:
         working-directory: ${{ matrix.working-directory }}
     runs-on: ${{ matrix.os }}
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
+      - name: Install poetry
+        run: pipx install poetry==${{ matrix.poetry-version }}
       - name: Use Python
-        uses: actions/setup-python@v2
+        uses: actions/setup-python@v3
         with:
           python-version: ${{ matrix.python-version }}
-      - name: Use Poetry
-        uses: abatilo/actions-poetry@v2.0.0
-        with:
-          poetry-version: ${{ matrix.poetry-version }}
+          cache: 'poetry'
+          cache-dependency-path: |
+            ${{ matrix.working-directory }}/poetry.lock
       - name: Install packages
         run: sudo apt update; sudo apt install -y libicu-dev ffmpeg libavcodec-extra llvm
       - name: Install libsndfile
@@ -82,7 +90,9 @@ jobs:
           cd;
           rm -rf /tmp/libsndfile;
       - name: Install dependencies
-        run: poetry install
+        run: |
+          poetry env use "${{ matrix.python-version }}"
+          poetry install
       - name: Create mongoDB Docker container
         run: sudo docker run -d -p ${{ matrix.mongo-port }}:27017 mongo:latest
       - name: Run unit tests
