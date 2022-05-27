@@ -17,6 +17,8 @@ jobs:
         shell: bash
         working-directory: ${{ matrix.working-directory }}
     runs-on: ${{ matrix.os }}
+    env:
+      POETRY_VIRTUALENVS_IN_PROJECT: false
     steps:
       - uses: actions/checkout@v3
       - name: Install poetry
@@ -31,9 +33,7 @@ jobs:
         with:
           poetry-version: ${{ matrix.poetry-version }}
       - name: Install dependencies
-        run: |
-          poetry config virtualenvs.in-project false
-          poetry install
+        run: poetry install
       - name: Run black
         run: poetry run black --check tests src
       - name: Run isort
