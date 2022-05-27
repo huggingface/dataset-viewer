@@ -7,7 +7,7 @@ jobs:
       fail-fast: false
       matrix:
         python-version: [3.9.6]
-        poetry-version: [1.1.13]
+        poetry-version: [1.1.7]
         os: [ubuntu-latest]
         working-directory:
           [e2e, services/admin, services/api, libs/libcache, libs/libqueue, libs/libutils]
