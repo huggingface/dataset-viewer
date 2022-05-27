@@ -18,6 +18,7 @@ jobs:
         working-directory: ${{ matrix.working-directory }}
     runs-on: ${{ matrix.os }}
     env:
+      # required to get access to use a cached poetry venv in "/home/runner/.cache/pypoetry/virtualenvs"
       POETRY_VIRTUALENVS_IN_PROJECT: false
     steps:
       - uses: actions/checkout@v3
@@ -28,12 +29,11 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
           cache: 'poetry'
-      - name: Use Poetry
-        uses: abatilo/actions-poetry@v2.0.0
-        with:
-          poetry-version: ${{ matrix.poetry-version }}
       - name: Install dependencies
-        run: poetry install
+        # "poetry env use" is required: https://github.com/actions/setup-python/issues/374#issuecomment-1088938718
+        run: |
+          poetry env use "${{ matrix.python-version }}"
+          poetry install
       - name: Run black
         run: poetry run black --check tests src
       - name: Run isort
