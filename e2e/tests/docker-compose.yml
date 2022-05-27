@@ -3,7 +3,7 @@ services:
   reverse-proxy:
     image: nginx:1.20
     volumes:
-      - ./infra/charts/datasets-server/nginx-templates/:/etc/nginx/templates:ro
+      - ../../infra/charts/datasets-server/nginx-templates/:/etc/nginx/templates:ro
       - reverse-proxy-cache:/nginx-cache
       - assets:/assets:ro
     ports:
