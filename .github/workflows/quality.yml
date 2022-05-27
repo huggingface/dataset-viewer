@@ -25,6 +25,10 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
           cache: 'poetry'
+          cache-dependency-path: |
+            poetry.lock
+            ../../libs/libutils/poetry.lock
+          # ^ try to fix https://github.com/huggingface/datasets-server/pull/314#issuecomment-1137563191
       - name: Install dependencies
         run: poetry install
       - name: Run black
