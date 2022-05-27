@@ -24,6 +24,7 @@ services:
     build:
       context: .
       dockerfile: ./services/api/Dockerfile
+    image: 707930574880.dkr.ecr.us-east-1.amazonaws.com/hub-datasets-server-api:${DOCKER_TAG}
     volumes:
       - assets:/assets:ro
     environment:
@@ -42,6 +43,7 @@ services:
     build:
       context: .
       dockerfile: ./services/worker/Dockerfile
+    image: 707930574880.dkr.ecr.us-east-1.amazonaws.com/hub-datasets-server-worker:${DOCKER_TAG}
     volumes:
       - assets:/assets:rw
     environment:
@@ -56,6 +58,7 @@ services:
     build:
       context: .
       dockerfile: ./services/worker/Dockerfile
+    image: 707930574880.dkr.ecr.us-east-1.amazonaws.com/hub-datasets-server-worker:${DOCKER_TAG}
     volumes:
       - assets:/assets:rw
     environment:
@@ -70,6 +73,7 @@ services:
     build:
       context: .
       dockerfile: ./services/admin/Dockerfile
+    image: 707930574880.dkr.ecr.us-east-1.amazonaws.com/hub-datasets-server-admin:${DOCKER_TAG}
     environment:
       MONGO_URL: "mongodb://mongodb"
     depends_on:
