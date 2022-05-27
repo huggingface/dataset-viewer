@@ -1,39 +1,39 @@
-name: Launch e2e tests
-on: [push]
+# name: Launch e2e tests
+# on: [push]
 
-env:
-  # required to get access to use a cached poetry venv in "/home/runner/.cache/pypoetry/virtualenvs"
-  POETRY_VIRTUALENVS_IN_PROJECT: false
+# env:
+#   # required to get access to use a cached poetry venv in "/home/runner/.cache/pypoetry/virtualenvs"
+#   POETRY_VIRTUALENVS_IN_PROJECT: false
 
-jobs:
-  e2e-tests:
-    strategy:
-      fail-fast: false
-      matrix:
-        python-version: [3.9.6]
-        poetry-version: [1.1.13]
-        os: [ubuntu-latest]
-        working-directory: [e2e]
-    runs-on: ${{ matrix.os }}
-    steps:
-      - uses: actions/checkout@v3
-      - name: Install poetry
-        run: pipx install poetry==${{ matrix.poetry-version }}
-      - name: Use Python
-        uses: actions/setup-python@v3
-        with:
-          python-version: ${{ matrix.python-version }}
-          cache: 'poetry'
-      - name: Build the docker images
-        run: docker-compose build
-      - name: Launch the services
-        run: docker-compose up -d
-      - name: Install dependencies
-        run: |
-          cd ${{ matrix.working-directory }}
-          poetry env use "${{ matrix.python-version }}"
-          poetry install
-      - name: End-to-end tests
-        run: |
-          cd ${{ matrix.working-directory }}
-          make e2e
+# jobs:
+#   e2e-tests:
+#     strategy:
+#       fail-fast: false
+#       matrix:
+#         python-version: [3.9.6]
+#         poetry-version: [1.1.13]
+#         os: [ubuntu-latest]
+#         working-directory: [e2e]
+#     runs-on: ${{ matrix.os }}
+#     steps:
+#       - uses: actions/checkout@v3
+#       - name: Install poetry
+#         run: pipx install poetry==${{ matrix.poetry-version }}
+#       - name: Use Python
+#         uses: actions/setup-python@v3
+#         with:
+#           python-version: ${{ matrix.python-version }}
+#           cache: 'poetry'
+#       - name: Build the docker images
+#         run: docker-compose build
+#       - name: Launch the services
+#         run: docker-compose up -d
+#       - name: Install dependencies
+#         run: |
+#           cd ${{ matrix.working-directory }}
+#           poetry env use "${{ matrix.python-version }}"
+#           poetry install
+#       - name: End-to-end tests
+#         run: |
+#           cd ${{ matrix.working-directory }}
+#           make e2e
