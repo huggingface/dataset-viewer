@@ -13,18 +13,12 @@ jobs:
         python-version: [3.9.6]
         poetry-version: [1.1.13]
         os: [ubuntu-latest]
-        project: [
-          {working-directory: 'e2e', cache-dependency-path: ['e2e/poetry.lock']},
-          {working-directory: 'services/admin', cache-dependency-path: ['services/api/poetry.lock', 'libs/libcache/poetry.lock', 'libs/libqueue/poetry.lock', 'libs/libutils/poetry.lock']},
-          {working-directory: 'services/api', cache-dependency-path: ['services/api/poetry.lock', 'libs/libcache/poetry.lock', 'libs/libqueue/poetry.lock', 'libs/libutils/poetry.lock']},
-          {working-directory: 'libs/libcache', cache-dependency-path: ['libs/libcache/poetry.lock', 'libs/libutils/poetry.lock']},
-          {working-directory: 'libs/libqueue', cache-dependency-path: ['libs/libqueue/poetry.lock', 'libs/libutils/poetry.lock']},
-          {working-directory: 'libs/libutils', cache-dependency-path: ['libs/libutils/poetry.lock']},
-        ]
+        working-directory:
+          [e2e, services/admin, services/api, libs/libcache, libs/libqueue, libs/libutils]
     defaults:
       run:
         shell: bash
-        working-directory: ${{ matrix.project.working-directory }}
+        working-directory: ${{ matrix.working-directory }}
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v3
@@ -35,7 +29,8 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
           cache: 'poetry'
-          cache-dependency-path: ${{ matrix.project.cache-dependency-path }}
+          cache-dependency-path: |
+            ${{ matrix.working-directory }}/poetry.lock
       - name: Install dependencies
         # "poetry env use" is required: https://github.com/actions/setup-python/issues/374#issuecomment-1088938718
         run: |

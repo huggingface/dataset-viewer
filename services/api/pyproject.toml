@@ -6,9 +6,9 @@ version = "0.1.0"
 
 [tool.poetry.dependencies]
 huggingface-hub = "^0.5.1"
-libcache = { path = "../../libs/libcache", develop = true }
-libqueue = { path = "../../libs/libqueue", develop = true }
-libutils = { path = "../../libs/libutils", develop = true }
+libcache = { path = "../../libs/libcache/dist/libcache-0.1.0-py3-none-any.whl", develop = false }
+libqueue = { path = "../../libs/libqueue/dist/libqueue-0.1.0-py3-none-any.whl", develop = false }
+libutils = { path = "../../libs/libutils/dist/libutils-0.1.0-py3-none-any.whl", develop = false }
 python = "3.9.6"
 python-dotenv = "^0.20.0"
 starlette = "^0.16.0"
