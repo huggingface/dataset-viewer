@@ -22,6 +22,10 @@ jobs:
         poetry-version: [1.1.13]
         os: [ubuntu-latest]
         working-directory: [e2e]
+    defaults:
+      run:
+        shell: bash
+        working-directory: ${{ matrix.working-directory }}
     runs-on: ${{ matrix.os }}
     if: ${{ github.event.workflow_run.conclusion == 'success' }}
     steps:
@@ -53,10 +57,8 @@ jobs:
         run: docker-compose up -d
       - name: Install dependencies
         run: |
-          cd ${{ matrix.working-directory }}
           poetry env use "${{ matrix.python-version }}"
           poetry install
       - name: End-to-end tests
         run: |
-          cd ${{ matrix.working-directory }}
           make e2e
