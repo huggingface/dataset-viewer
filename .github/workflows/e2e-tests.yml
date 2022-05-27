@@ -54,7 +54,7 @@ jobs:
       - name: Launch the services
         env:
           DOCKER_TAG: sha-${{ steps.vars.outputs.sha_short }}
-        run: docker-compose -f ${{ matrix.working-directory }}/tests/docker-compose.yml up -d
+        run: docker-compose -f tests/docker-compose.yml up -d
       - name: Install dependencies
         run: |
           poetry env use "${{ matrix.python-version }}"
