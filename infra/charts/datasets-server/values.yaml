@@ -95,7 +95,7 @@ api:
   # Application hostname - it must not be set to localhost to work in Kube!
   appHostname: "0.0.0.0"
   # Number of uvicorn workers for running the application
-  appNumWorkers: "2"
+  appNumWorkers: "1"
   # Application endpoint port
   appPort: 80
   # Log level
