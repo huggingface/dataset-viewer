@@ -59,7 +59,7 @@ reverseProxy:
       memory: "256Mi"
 
 api:
-  replicas: 10
+  replicas: 6
 
   nodeSelector:
     role-datasets-server: "true"
@@ -67,10 +67,10 @@ api:
   resources:
     requests:
       cpu: 1
-      memory: "512Mi"
+      memory: "1Gi"
     limits:
       cpu: 1
-      memory: "512Mi"
+      memory: "1Gi"
 
   appNumWorkers: "1"
 
