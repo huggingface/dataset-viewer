@@ -87,7 +87,7 @@ class DatasetJob(Document):
     meta = {
         "collection": "dataset_jobs",
         "db_alias": "queue",
-        "indexes": ["status", "dataset_name", ("dataset_name", "status")],
+        "indexes": ["status", ("dataset_name", "status")],
     }
     dataset_name = StringField(required=True)
     created_at = DateTimeField(required=True)
@@ -116,7 +116,6 @@ class SplitJob(Document):
         "db_alias": "queue",
         "indexes": [
             "status",
-            ("dataset_name", "config_name", "split_name"),
             ("dataset_name", "status"),
             ("dataset_name", "config_name", "split_name", "status"),
         ],
