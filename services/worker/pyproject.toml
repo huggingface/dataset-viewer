@@ -2,7 +2,7 @@
 authors = ["Sylvain Lesage <sylvain.lesage@huggingface.co>"]
 description = "Worker that refreshes datasets and splits"
 name = "worker"
-version = "0.1.0"
+version = "0.1.1"
 
 [tool.poetry.dependencies]
 Pillow = "^8.4.0"
@@ -15,9 +15,9 @@ datasets = { extras = ["audio", "vision"], version = "^2.2.2" }
 gdown = "^4.2.0"
 kenlm = { url = "https://github.com/kpu/kenlm/archive/master.zip" }
 kss = "^2.6.0"
-libcache = { path = "../../libs/libcache/dist/libcache-0.1.0-py3-none-any.whl", develop = false }
-libqueue = { path = "../../libs/libqueue/dist/libqueue-0.1.0-py3-none-any.whl", develop = false }
-libutils = { path = "../../libs/libutils/dist/libutils-0.1.0-py3-none-any.whl", develop = false }
+libcache = { path = "../../libs/libcache/dist/libcache-0.1.1-py3-none-any.whl", develop = false }
+libqueue = { path = "../../libs/libqueue/dist/libqueue-0.1.1-py3-none-any.whl", develop = false }
+libutils = { path = "../../libs/libutils/dist/libutils-0.1.1-py3-none-any.whl", develop = false }
 lm-dataformat = "^0.0.20"
 lxml = "^4.6.3"
 nlp = "^0.4.0"
@@ -31,7 +31,7 @@ python-dotenv = "^0.20.0"
 rarfile = "^4.0"
 requests = "^2.27.1"
 sklearn = "^0.0"
-tensorflow = "2.8.0"
+tensorflow = "^2.9.0"
 tfrecord = "^1.14.1"
 torchaudio = "^0.10.1"
 transformers = "^4.11.3"

@@ -1,3 +1,7 @@
+# pillow <9.0.0
+PILLOW_EXCEPTIONS:= -i 44525 -i 44524 -i 44486 -i 44485 -i 45356 -i 44487
+SAFETY_EXCEPTIONS := $(PILLOW_EXCEPTIONS)
+
 include ../../tools/Common.mk
 
 .PHONY: run

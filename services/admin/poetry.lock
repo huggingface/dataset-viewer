@@ -434,7 +434,7 @@ plugins = ["setuptools"]
 
 [[package]]
 name = "libcache"
-version = "0.1.0"
+version = "0.1.1"
 description = "Library for the cache in mongodb"
 category = "main"
 optional = false
@@ -442,36 +442,36 @@ python-versions = "==3.9.6"
 
 [package.dependencies]
 appdirs = ">=1.4.4,<2.0.0"
-libutils = "0.1.0"
+libutils = "0.1.1"
 mongo-types = "0.15.1"
 mongoengine = ">=0.24.1,<0.25.0"
 pymongo = {version = ">=3.12.3,<4.0.0", extras = ["srv"]}
 
 [package.source]
 type = "file"
-url = "../../libs/libcache/dist/libcache-0.1.0-py3-none-any.whl"
+url = "../../libs/libcache/dist/libcache-0.1.1-py3-none-any.whl"
 
 [[package]]
 name = "libqueue"
-version = "0.1.0"
+version = "0.1.1"
 description = "Library for the jobs queue in mongodb"
 category = "main"
 optional = false
 python-versions = "==3.9.6"
 
 [package.dependencies]
-libutils = "0.1.0"
+libutils = "0.1.1"
 mongo-types = "0.15.1"
 mongoengine = ">=0.24.1,<0.25.0"
 pymongo = {version = ">=3.12.3,<4.0.0", extras = ["srv"]}
 
 [package.source]
 type = "file"
-url = "../../libs/libqueue/dist/libqueue-0.1.0-py3-none-any.whl"
+url = "../../libs/libqueue/dist/libqueue-0.1.1-py3-none-any.whl"
 
 [[package]]
 name = "libutils"
-version = "0.1.0"
+version = "0.1.1"
 description = "Library for utils"
 category = "main"
 optional = false
@@ -484,7 +484,7 @@ starlette = ">=0.16.0,<0.17.0"
 
 [package.source]
 type = "file"
-url = "../../libs/libutils/dist/libutils-0.1.0-py3-none-any.whl"
+url = "../../libs/libutils/dist/libutils-0.1.1-py3-none-any.whl"
 
 [[package]]
 name = "mccabe"
@@ -1127,7 +1127,7 @@ socks = ["PySocks (>=1.5.6,!=1.5.7,<2.0)"]
 [metadata]
 lock-version = "1.1"
 python-versions = "3.9.6"
-content-hash = "3b28f7a5e31b598d5329fd799bf72133fc88a02d85ea8819fdb2cd0ceb7056f6"
+content-hash = "9aa47ad13853d4b54606af2cdbc0c4f2c24daf727d567623fc475383dd29d3df"
 
 [metadata.files]
 anyio = [
@@ -1389,13 +1389,13 @@ isort = [
     {file = "isort-5.10.1.tar.gz", hash = "sha256:e8443a5e7a020e9d7f97f1d7d9cd17c88bcb3bc7e218bf9cf5095fe550be2951"},
 ]
 libcache = [
-    {file = "libcache-0.1.0-py3-none-any.whl", hash = "sha256:49e180ec7a334f2e886bf8628f7ddcb222dfd705e97a85611f1519bda1bc01ed"},
+    {file = "libcache-0.1.1-py3-none-any.whl", hash = "sha256:40e7ae95c00d2213bdc4f80091a33367cc86c34ebccc787250e68ab9d0ff291e"},
 ]
 libqueue = [
-    {file = "libqueue-0.1.0-py3-none-any.whl", hash = "sha256:dfdffd63426b9866933ef61924b61a984e211419f6d10b11f2da0c9d724b8e91"},
+    {file = "libqueue-0.1.1-py3-none-any.whl", hash = "sha256:50a690a0cbfc157a36ec19c1ce343a8f0b1b3a060e93c3f566c415eba8e225f9"},
 ]
 libutils = [
-    {file = "libutils-0.1.0-py3-none-any.whl", hash = "sha256:111594bc3775f86faaf0b2ff011e397698c6392e67b90dbcc4ac09f087fb3268"},
+    {file = "libutils-0.1.1-py3-none-any.whl", hash = "sha256:6f119f45b98d62f5bc10b6212b6a8f31f579c0890a36d9877f5dd0f0889b0c37"},
 ]
 mccabe = [
     {file = "mccabe-0.6.1-py2.py3-none-any.whl", hash = "sha256:ab8a6258860da4b6677da4bd2fe5dc2c659cff31b3ee4f7f5d64e79735b80d42"},

@@ -389,7 +389,7 @@ plugins = ["setuptools"]
 
 [[package]]
 name = "libutils"
-version = "0.1.0"
+version = "0.1.1"
 description = "Library for utils"
 category = "main"
 optional = false
@@ -402,7 +402,7 @@ starlette = ">=0.16.0,<0.17.0"
 
 [package.source]
 type = "file"
-url = "../libutils/dist/libutils-0.1.0-py3-none-any.whl"
+url = "../libutils/dist/libutils-0.1.1-py3-none-any.whl"
 
 [[package]]
 name = "mccabe"
@@ -1034,7 +1034,7 @@ socks = ["PySocks (>=1.5.6,!=1.5.7,<2.0)"]
 [metadata]
 lock-version = "1.1"
 python-versions = "3.9.6"
-content-hash = "c3cf49d1e159a5ce73065842523f44f1551b4463c5912edc085b5dbe836f077a"
+content-hash = "b0a6fb4304268c8a9b74444928e062ec88a2daa8e3683e3de7e1166fbe586643"
 
 [metadata.files]
 anyio = [
@@ -1284,7 +1284,7 @@ isort = [
     {file = "isort-5.10.1.tar.gz", hash = "sha256:e8443a5e7a020e9d7f97f1d7d9cd17c88bcb3bc7e218bf9cf5095fe550be2951"},
 ]
 libutils = [
-    {file = "libutils-0.1.0-py3-none-any.whl", hash = "sha256:111594bc3775f86faaf0b2ff011e397698c6392e67b90dbcc4ac09f087fb3268"},
+    {file = "libutils-0.1.1-py3-none-any.whl", hash = "sha256:6f119f45b98d62f5bc10b6212b6a8f31f579c0890a36d9877f5dd0f0889b0c37"},
 ]
 mccabe = [
     {file = "mccabe-0.6.1-py2.py3-none-any.whl", hash = "sha256:ab8a6258860da4b6677da4bd2fe5dc2c659cff31b3ee4f7f5d64e79735b80d42"},
