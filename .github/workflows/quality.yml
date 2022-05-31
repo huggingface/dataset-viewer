@@ -47,8 +47,7 @@ jobs:
       - name: Run bandit
         run: poetry run bandit -r src
       - name: Run safety
-        run: poetry run safety check -i 44487 -i 44485 -i 44524 -i 44525 -i 44486 -i 44716 -i 44717 -i 44715 -i 45356 -i 46499
-        # ^^ safety exceptions: pillow, numpy
+        run: poetry run safety check
   code-quality-job-runner:
     strategy:
       fail-fast: false
@@ -90,8 +89,10 @@ jobs:
       - name: Run bandit
         run: poetry run bandit -r src
       - name: Run safety
-        run: poetry run safety check -i 44487 -i 44485 -i 44524 -i 44525 -i 44486 -i 44716 -i 44717 -i 44715 -i 45356 -i 46499
-        # ^^ safety exceptions: pillow, numpy
+        env:
+          # pillow <9.0.0
+          PILLOW_EXCEPTIONS: -i 44525 -i 44524 -i 44486 -i 44485 -i 45356 -i 44487
+        run: poetry run safety check $PILLOW_EXCEPTIONS
   code-quality-helm:
     runs-on: ubuntu-20.04
     steps:
