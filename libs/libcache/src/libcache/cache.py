@@ -364,7 +364,12 @@ def get_splits_response(dataset_name: str) -> Tuple[Union[SplitsResponse, None],
 
     splits_response: SplitsResponse = {
         "splits": [
-            split.to_split_item() for split in DbSplit.objects(dataset_name=dataset_name).order_by("+split_idx")
+            split.to_split_item()
+            for split in DbSplit.objects(dataset_name=dataset_name).only(
+                "dataset_name", "config_name", "split_name", "num_bytes", "num_examples"
+            )
+            # ^ don't fetch "rows_response" which can be very large
+            .order_by("+split_idx")
         ]
     }
     return splits_response, None, 200
