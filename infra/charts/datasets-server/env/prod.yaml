@@ -52,22 +52,22 @@ reverseProxy:
 
   resources:
     requests:
-      cpu: 1
+      cpu: 0.1
       memory: "256Mi"
     limits:
       cpu: 1
       memory: "256Mi"
 
 api:
-  replicas: 6
+  replicas: 4
 
   nodeSelector:
     role-datasets-server: "true"
 
   resources:
     requests:
-      cpu: 1
-      memory: "1Gi"
+      cpu: 0.25
+      memory: "512Mi"
     limits:
       cpu: 1
       memory: "1Gi"
@@ -85,7 +85,7 @@ datasetsWorker:
       cpu: 0.01
     limits:
       cpu: 1
-      memory: "4Gi"
+      memory: "1Gi"
 
 splitsWorker:
   replicas: 4
