@@ -45,7 +45,7 @@ make watch
 
 > Ensure the app is running
 
-Example: https://datasets-server.huggingface.tech/healthcheck
+Example: https://datasets-server.huggingface.co/healthcheck
 
 Method: `GET`
 
@@ -59,7 +59,7 @@ Responses:
 
 > Give detailed reports on the content of the cache
 
-Example: https://datasets-server.huggingface.tech/cache-reports
+Example: https://datasets-server.huggingface.co/cache-reports
 
 Method: `GET`
 
@@ -129,7 +129,7 @@ Beware: a "dataset" is considered valid if it has fetched correctly the configs 
 
 > Give the list of the valid datasets. Here, a dataset is considered valid if `/splits` returns a valid response, and if `/rows` returns a valid response for _at least one split_. Note that stalled cache entries are considered valid.
 
-Example: https://datasets-server.huggingface.tech/valid
+Example: https://datasets-server.huggingface.co/valid
 
 Method: `GET`
 
@@ -150,7 +150,7 @@ Responses:
 
 > Tells if a dataset is valid. A dataset is considered valid if `/splits` returns a valid response, and if `/rows` returns a valid response for _at least one split_. Note that stalled cache entries are considered valid.
 
-Example: https://datasets-server.huggingface.tech/is-valid?dataset=glue
+Example: https://datasets-server.huggingface.co/is-valid?dataset=glue
 
 Method: `GET`
 
@@ -172,7 +172,7 @@ Responses:
 
 > Give statistics about the datasets of the hub
 
-Example: https://datasets-server.huggingface.tech/hf-datasets-count-by-cache-status
+Example: https://datasets-server.huggingface.co/hf-datasets-count-by-cache-status
 
 Method: `GET`
 
@@ -208,7 +208,7 @@ The meaning is the following:
 
 > Give the queue entries, classed by status
 
-Example: https://datasets-server.huggingface.tech/queue-dump
+Example: https://datasets-server.huggingface.co/queue-dump
 
 Method: `GET`
 
@@ -260,7 +260,7 @@ Responses:
 
 > Give the queue entries, classed by status, only for "waiting" and "started" statuses
 
-Example: https://datasets-server.huggingface.tech/queue-dump-waiting-started
+Example: https://datasets-server.huggingface.co/queue-dump-waiting-started
 
 Method: `GET`
 
@@ -288,7 +288,7 @@ Responses:
 
 > Adds, updates or removes a cache entry
 
-Example: https://datasets-server.huggingface.tech/webhook
+Example: https://datasets-server.huggingface.co/webhook
 
 Method: `POST`
 
@@ -321,14 +321,14 @@ Note: if you want to refresh multiple datasets at a time, you have to call the e
 
 ```bash
 MODELS=(amazon_polarity ami arabic_billion_words)
-for model in ${MODELS[@]}; do curl -X POST https://datasets-server.huggingface.tech/webhook -H 'Content-Type: application/json' -d '{"update": "datasets/'$model'"}'; done;
+for model in ${MODELS[@]}; do curl -X POST https://datasets-server.huggingface.co/webhook -H 'Content-Type: application/json' -d '{"update": "datasets/'$model'"}'; done;
 ```
 
 ### /refresh-split
 
 > Refresh the cache of rows and columns of a split
 
-Example: https://datasets-server.huggingface.tech/refresh-split
+Example: https://datasets-server.huggingface.co/refresh-split
 
 Method: `POST`
 
@@ -359,7 +359,7 @@ Responses:
 
 > Lists the HuggingFace [datasets](https://huggingface.co/docs/datasets/loading_datasets.html#selecting-a-configuration): canonical and community
 
-Example: https://datasets-server.huggingface.tech/hf_datasets
+Example: https://datasets-server.huggingface.co/hf_datasets
 
 Method: `GET`
 
@@ -426,7 +426,7 @@ Responses:
 
 > Lists the [splits](https://huggingface.co/docs/datasets/splits.html) names for a dataset
 
-Example: https://datasets-server.huggingface.tech/splits?dataset=glue
+Example: https://datasets-server.huggingface.co/splits?dataset=glue
 
 Method: `GET`
 
@@ -476,7 +476,7 @@ Note that the value of `"num_bytes"` and `"num_examples"` is set to `null` if th
 
 > Extract the first [rows](https://huggingface.co/docs/datasets/splits.html) for a split of a dataset config
 
-Example: https://datasets-server.huggingface.tech/rows?dataset=glue&config=ax&split=test
+Example: https://datasets-server.huggingface.co/rows?dataset=glue&config=ax&split=test
 
 Method: `GET`
 
@@ -578,7 +578,7 @@ Responses:
 
 > Return an asset
 
-Example: https://datasets-server.huggingface.tech/assets/food101/--/default/train/0/image/2885220.jpg
+Example: https://datasets-server.huggingface.co/assets/food101/--/default/train/0/image/2885220.jpg
 
 Method: `GET`
 
@@ -604,7 +604,7 @@ Responses:
 
 > return a list of metrics in the Prometheus format
 
-Example: https://datasets-server.huggingface.tech/metrics
+Example: https://datasets-server.huggingface.co/metrics
 
 Method: `GET`
 
