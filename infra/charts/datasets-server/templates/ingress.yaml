@@ -19,3 +19,14 @@ spec:
                 port:
                   name: http
             pathType: ImplementationSpecific
+    {{- if .Values.oldDomain }}
+    - host: {{ .Values.oldDomain }}
+      http:
+        paths:
+          - backend:
+              service:
+                name: "{{ include "release" . }}-reverse-proxy"
+                port:
+                  name: http
+            pathType: ImplementationSpecific
+    {{- end }}
