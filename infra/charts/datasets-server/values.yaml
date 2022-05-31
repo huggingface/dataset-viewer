@@ -27,9 +27,6 @@ gid: 3000
 # Datasets blocklist
 datasetsBlocklist: ""
 
-docker:
-  tag: sha-da86243
-
 reverseProxy:
   image:
     repository: docker.io
@@ -70,6 +67,7 @@ api:
   image:
     repository: 707930574880.dkr.ecr.us-east-1.amazonaws.com
     name: hub-datasets-server-api
+    tag: sha-ab6473e
     pullPolicy: IfNotPresent
 
   replicas: 1
@@ -110,6 +108,7 @@ datasetsWorker:
   image:
     repository: 707930574880.dkr.ecr.us-east-1.amazonaws.com
     name: hub-datasets-server-worker
+    tag: sha-da86243
     pullPolicy: IfNotPresent
 
   replicas: 1
@@ -155,6 +154,7 @@ splitsWorker:
   image:
     repository: 707930574880.dkr.ecr.us-east-1.amazonaws.com
     name: hub-datasets-server-worker
+    tag: sha-da86243
     pullPolicy: IfNotPresent
   replicas: 1
   
@@ -198,6 +198,7 @@ admin:
   image:
     repository: 707930574880.dkr.ecr.us-east-1.amazonaws.com
     name: hub-datasets-server-admin
+    tag: sha-da86243
     pullPolicy: IfNotPresent
 
   replicas: 1

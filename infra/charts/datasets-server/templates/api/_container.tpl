@@ -29,7 +29,7 @@
         key: MONGO_URL
         optional: false
   {{- end }}
-  image: "{{ .Values.api.image.repository }}/{{ .Values.api.image.name }}:{{ .Values.docker.tag }}"
+  image: "{{ .Values.api.image.repository }}/{{ .Values.api.image.name }}:{{ .Values.api.image.tag }}"
   imagePullPolicy: {{ .Values.api.image.pullPolicy }}
   volumeMounts:
   - mountPath: {{ .Values.api.assetsDirectory | quote }}
