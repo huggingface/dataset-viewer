@@ -115,7 +115,12 @@ class DbSplit(Document):
     meta = {
         "collection": "splits",
         "db_alias": "cache",
-        "indexes": ["status", ("dataset_name", "config_name", "split_name"), ("dataset_name", "status")],
+        "indexes": [
+            ("dataset_name", "config_name", "split_name"),
+            ("dataset_name", "status"),
+            ("status", "dataset_name"),
+            # ^ this index (reversed) is used for the "distinct" command to get the names of the valid datasets
+        ],
     }
     objects = QuerySetManager["DbSplit"]()
 
