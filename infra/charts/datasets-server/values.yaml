@@ -67,7 +67,7 @@ api:
   image:
     repository: 707930574880.dkr.ecr.us-east-1.amazonaws.com
     name: hub-datasets-server-api
-    tag: sha-bd93aa9
+    tag: sha-7cb4f82
     pullPolicy: IfNotPresent
 
   replicas: 1
