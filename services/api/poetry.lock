@@ -304,7 +304,7 @@ requests = ["requests (>=2.4.0,<3.0.0)"]
 
 [[package]]
 name = "filelock"
-version = "3.7.0"
+version = "3.7.1"
 description = "A platform independent file lock."
 category = "main"
 optional = false
@@ -452,7 +452,7 @@ plugins = ["setuptools"]
 
 [[package]]
 name = "libcache"
-version = "0.1.1"
+version = "0.1.3"
 description = "Library for the cache in mongodb"
 category = "main"
 optional = false
@@ -467,11 +467,11 @@ pymongo = {version = ">=3.12.3,<4.0.0", extras = ["srv"]}
 
 [package.source]
 type = "file"
-url = "../../libs/libcache/dist/libcache-0.1.1-py3-none-any.whl"
+url = "../../libs/libcache/dist/libcache-0.1.3-py3-none-any.whl"
 
 [[package]]
 name = "libqueue"
-version = "0.1.1"
+version = "0.1.2"
 description = "Library for the jobs queue in mongodb"
 category = "main"
 optional = false
@@ -485,7 +485,7 @@ pymongo = {version = ">=3.12.3,<4.0.0", extras = ["srv"]}
 
 [package.source]
 type = "file"
-url = "../../libs/libqueue/dist/libqueue-0.1.1-py3-none-any.whl"
+url = "../../libs/libqueue/dist/libqueue-0.1.2-py3-none-any.whl"
 
 [[package]]
 name = "libutils"
@@ -533,14 +533,14 @@ pymongo = ">=3.4,<5.0"
 
 [[package]]
 name = "msal"
-version = "1.17.0"
+version = "1.18.0"
 description = "The Microsoft Authentication Library (MSAL) for Python library enables your app to access the Microsoft Cloud by supporting authentication of users with Microsoft Azure Active Directory accounts (AAD) and Microsoft Accounts (MSA) using industry standard OAuth2 and OpenID Connect."
 category = "main"
 optional = false
 python-versions = "*"
 
 [package.dependencies]
-cryptography = ">=0.6,<39"
+cryptography = ">=0.6,<40"
 PyJWT = {version = ">=1.0.0,<3", extras = ["crypto"]}
 requests = ">=2.0.0,<3"
 
@@ -1198,7 +1198,7 @@ watchmedo = ["PyYAML (>=3.10)"]
 [metadata]
 lock-version = "1.1"
 python-versions = "3.9.6"
-content-hash = "494ebc3a450694159b51d2ed1fb604c6d2f1b240641007bfd2149429f4f96b1d"
+content-hash = "ffb0e8cb53ebc8edfb560c6af4d24ba6badafd69065abdb0107f01a6eadd5d6b"
 
 [metadata.files]
 anyio = [
@@ -1421,8 +1421,8 @@ elasticsearch = [
     {file = "elasticsearch-8.2.0.tar.gz", hash = "sha256:1ca41710ed460acfe3d1724a5a2aefbda24564abb10c03e38e71575183d390fb"},
 ]
 filelock = [
-    {file = "filelock-3.7.0-py3-none-any.whl", hash = "sha256:c7b5fdb219b398a5b28c8e4c1893ef5f98ece6a38c6ab2c22e26ec161556fed6"},
-    {file = "filelock-3.7.0.tar.gz", hash = "sha256:b795f1b42a61bbf8ec7113c341dad679d772567b936fbd1bf43c9a238e673e20"},
+    {file = "filelock-3.7.1-py3-none-any.whl", hash = "sha256:37def7b658813cda163b56fc564cdc75e86d338246458c4c28ae84cabefa2404"},
+    {file = "filelock-3.7.1.tar.gz", hash = "sha256:3a0fd85166ad9dbab54c9aec96737b744106dc5f15c0b09a6744a445299fcf04"},
 ]
 flake8 = [
     {file = "flake8-3.9.2-py2.py3-none-any.whl", hash = "sha256:bf8fd333346d844f616e8d47905ef3a3384edae6b4e9beb0c5101e25e3110907"},
@@ -1468,10 +1468,10 @@ isort = [
     {file = "isort-5.10.1.tar.gz", hash = "sha256:e8443a5e7a020e9d7f97f1d7d9cd17c88bcb3bc7e218bf9cf5095fe550be2951"},
 ]
 libcache = [
-    {file = "libcache-0.1.1-py3-none-any.whl", hash = "sha256:40e7ae95c00d2213bdc4f80091a33367cc86c34ebccc787250e68ab9d0ff291e"},
+    {file = "libcache-0.1.3-py3-none-any.whl", hash = "sha256:e6533ed06611ebd6ebfedd15ac4f65feec66428c10b9efa301a40c399b47cd0c"},
 ]
 libqueue = [
-    {file = "libqueue-0.1.1-py3-none-any.whl", hash = "sha256:50a690a0cbfc157a36ec19c1ce343a8f0b1b3a060e93c3f566c415eba8e225f9"},
+    {file = "libqueue-0.1.2-py3-none-any.whl", hash = "sha256:31b9f1ecc84edf6c188ee53af21cdb29ee222695145ed310175d0a35ef5fd6c4"},
 ]
 libutils = [
     {file = "libutils-0.1.1-py3-none-any.whl", hash = "sha256:6f119f45b98d62f5bc10b6212b6a8f31f579c0890a36d9877f5dd0f0889b0c37"},
@@ -1489,8 +1489,8 @@ mongoengine = [
     {file = "mongoengine-0.24.1.tar.gz", hash = "sha256:01baac85f408f5eefb6195c0afeae631e7fc6fab5cb221a7b46646f94227d6da"},
 ]
 msal = [
-    {file = "msal-1.17.0-py2.py3-none-any.whl", hash = "sha256:5a52d78e70d2c451e267c1e8c2342e4c06f495c75c859aeafd9260d3974f09fe"},
-    {file = "msal-1.17.0.tar.gz", hash = "sha256:04e3cb7bb75c51f56d290381f23056207df1f3eb594ed03d38551f3b16d2a36e"},
+    {file = "msal-1.18.0-py2.py3-none-any.whl", hash = "sha256:9c10e6cb32e0b6b8eaafc1c9a68bc3b2ff71505e0c5b8200799582d8b9f22947"},
+    {file = "msal-1.18.0.tar.gz", hash = "sha256:576af55866038b60edbcb31d831325a1bd8241ed272186e2832968fd4717d202"},
 ]
 msal-extensions = [
     {file = "msal-extensions-1.0.0.tar.gz", hash = "sha256:c676aba56b0cce3783de1b5c5ecfe828db998167875126ca4b47dc6436451354"},
