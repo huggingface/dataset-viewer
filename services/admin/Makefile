@@ -1,5 +1,13 @@
 include ../../tools/Common.mk
 
+.PHONY: run
+run:
+	poetry run python src/admin/main.py
+
+.PHONY: watch
+watch:
+	poetry run watchmedo auto-restart -d src/admin -p "*.py" -R python src/admin/main.py
+
 .PHONY: cancel-started-split-jobs
 cancel-started-split-jobs:
 	poetry run python src/admin/scripts/cancel_started_split_jobs.py

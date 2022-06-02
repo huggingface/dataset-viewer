@@ -1,9 +1,12 @@
 import os
 
 from dotenv import load_dotenv
-from libutils.utils import get_str_or_none_value, get_str_value
+from libutils.utils import get_int_value, get_str_or_none_value, get_str_value
 
 from admin.constants import (
+    DEFAULT_APP_HOSTNAME,
+    DEFAULT_APP_NUM_WORKERS,
+    DEFAULT_APP_PORT,
     DEFAULT_ASSETS_DIRECTORY,
     DEFAULT_LOG_LEVEL,
     DEFAULT_MONGO_CACHE_DATABASE,
@@ -14,6 +17,9 @@ from admin.constants import (
 # Load environment variables defined in .env, if any
 load_dotenv()
 
+APP_HOSTNAME = get_str_value(d=os.environ, key="APP_HOSTNAME", default=DEFAULT_APP_HOSTNAME)
+APP_NUM_WORKERS = get_int_value(d=os.environ, key="APP_NUM_WORKERS", default=DEFAULT_APP_NUM_WORKERS)
+APP_PORT = get_int_value(d=os.environ, key="APP_PORT", default=DEFAULT_APP_PORT)
 ASSETS_DIRECTORY = get_str_or_none_value(d=os.environ, key="ASSETS_DIRECTORY", default=DEFAULT_ASSETS_DIRECTORY)
 LOG_LEVEL = get_str_value(d=os.environ, key="LOG_LEVEL", default=DEFAULT_LOG_LEVEL)
 MONGO_CACHE_DATABASE = get_str_value(d=os.environ, key="MONGO_CACHE_DATABASE", default=DEFAULT_MONGO_CACHE_DATABASE)
