@@ -1472,7 +1472,7 @@ libcache = [
     {file = "libcache-0.1.5-py3-none-any.whl", hash = "sha256:85c5406a3d29504072ac2e5589fc9262ec9e6a4c15db70cd5fd5b377d765f21a"},
 ]
 libqueue = [
-    {file = "libqueue-0.1.3-py3-none-any.whl", hash = "sha256:2c44631e8b3081f484ec3c9f0c20e061bc6f4a7e053e852b6d1af7afbe946907"},
+    {file = "libqueue-0.1.3-py3-none-any.whl", hash = "sha256:ba07273d7bf7c05048c2d7ffd0b1ebc47fff08e873681039ef53d2ec3bde522b"},
 ]
 libutils = [
     {file = "libutils-0.1.1-py3-none-any.whl", hash = "sha256:6f119f45b98d62f5bc10b6212b6a8f31f579c0890a36d9877f5dd0f0889b0c37"},

@@ -2,7 +2,7 @@ import enum
 import logging
 import types
 from datetime import datetime
-from typing import Dict, Generic, List, Optional, Tuple, Type, TypedDict, TypeVar
+from typing import Generic, List, Optional, Tuple, Type, TypedDict, TypeVar
 
 from mongoengine import Document, DoesNotExist, connect
 from mongoengine.fields import DateTimeField, EnumField, StringField
