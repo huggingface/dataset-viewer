@@ -1,5 +1,10 @@
 proxy_cache_path ${CACHE_DIRECTORY}/ levels=1:2 keys_zone=STATIC:${CACHE_ZONE_SIZE} inactive=${CACHE_INACTIVE} max_size=${CACHE_MAX_SIZE};
 
+log_format  datasetsserver  '$remote_addr - $remote_user [$time_local]'
+                  ' "$request_method $scheme://$host$request_uri $server_protocol" '
+                  '$status $body_bytes_sent "$http_referer" '
+                  '"$http_user_agent" "$http_x_forwarded_for"';
+
 server {
   listen ${PORT};
   listen [::]:${PORT};
@@ -30,4 +35,6 @@ server {
     # we have to add Access-Control-Allow-Origin again, see https://nginx.org/en/docs/http/ngx_http_headers_module.html#add_header
     add_header 'Access-Control-Allow-Origin' '*' always;
   }
+
+  access_log  /var/log/nginx/access.log  datasetsserver;
 }
