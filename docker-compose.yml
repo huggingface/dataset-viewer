@@ -71,7 +71,13 @@ services:
       context: .
       dockerfile: ./services/admin/Dockerfile
     environment:
+      APP_HOSTNAME: 0.0.0.0
+      APP_NUM_WORKERS: 1
+      APP_PORT: 8081
+      ASSETS_DIRECTORY: "/assets"
       MONGO_URL: "mongodb://mongodb"
+    ports:
+      - 8081:8081
     depends_on:
       mongodb:
         condition: service_started
