@@ -25,6 +25,5 @@ COPY tools ./tools/
 WORKDIR /src/services/admin/
 RUN poetry install
 
-# https://stackoverflow.com/a/55734437/7351594
-# do nothing: the user has to login to the machine to run the scripts with make
-CMD exec /bin/bash -c "trap : TERM INT; sleep infinity & wait"
+ENTRYPOINT ["make"]
+CMD ["run"]

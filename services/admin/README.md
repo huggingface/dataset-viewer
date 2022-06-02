@@ -6,7 +6,7 @@
 
 See [INSTALL](./INSTALL.md#Install)
 
-## Run
+## Run the scripts
 
 Launch the scripts with:
 
@@ -41,3 +41,10 @@ The scripts:
 - `cancel-started-split-jobs`: cancel all the started split jobs (stop the workers before!)
 - `cancel-started-dataset-jobs`: cancel all the started dataset jobs (stop the workers before!)
 - `warm-cache`: create jobs for all the missing datasets and/or splits
+
+## Run the API
+
+The admin service provides technical endpoints:
+
+- `/healthcheck`
+- `/metrics`: gives info about the cache and the queue
