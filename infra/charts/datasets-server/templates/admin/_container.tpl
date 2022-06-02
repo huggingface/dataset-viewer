@@ -1,6 +1,12 @@
 {{- define "containerAdmin" -}}
 - name: "{{ include "name" . }}-admin"
   env:
+  - name: APP_HOSTNAME
+    value: {{ .Values.admin.appHostname | quote }}
+  - name: APP_NUM_WORKERS
+    value: {{ .Values.admin.appNumWorkers | quote }}
+  - name: APP_PORT
+    value: {{ .Values.admin.appPort | quote }}
   - name: ASSETS_DIRECTORY
     value: {{ .Values.splitsWorker.assetsDirectory | quote }}
   - name: LOG_LEVEL
@@ -29,13 +35,16 @@
     readOnly: false
   securityContext:
     allowPrivilegeEscalation: false
-  # TODO: provide readiness and liveness probes
-  # readinessProbe:
-  #   tcpSocket:
-  #     port: {{ .Values.admin.readinessPort }}
-  # livenessProbe:
-  #   tcpSocket:
-  #     port: {{ .Values.admin.readinessPort }}
+  readinessProbe:
+    tcpSocket:
+      port: {{ .Values.admin.readinessPort }}
+  livenessProbe:
+    tcpSocket:
+      port: {{ .Values.admin.readinessPort }}
+  ports:
+  - containerPort: {{ .Values.admin.appPort }}
+    name: http
+    protocol: TCP
   resources:
     {{ toYaml .Values.admin.resources | nindent 4 }}
 {{- end -}}
