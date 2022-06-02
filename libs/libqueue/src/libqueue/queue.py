@@ -303,8 +303,12 @@ def cancel_started_split_jobs() -> None:
 
 
 def get_jobs_count_by_status(jobs: QuerySet[AnyJob]) -> CountByStatus:
-    frequencies: Dict[str, int] = jobs.item_frequencies("status", normalize=False)  # type: ignore
+    pipeline = [{"$group": {"_id": "$status", "count": {"$sum": 1}}}]
+    frequencies: Dict[str, int] = {d["_id"]: d["count"] for d in jobs.aggregate(pipeline)}  # type: ignore
     # ensure that all the statuses are present, even if equal to zero
+    # note: we repeat the values instead of looping on Status because we don't know how to get the types right in mypy
+    # result: CountByStatus = {s.value: frequencies.get(s.value, 0) for s in Status} # <- doesn't work in mypy
+    # see https://stackoverflow.com/a/67292548/7351594
     return {
         "waiting": frequencies.get(Status.WAITING.value, 0),
         "started": frequencies.get(Status.STARTED.value, 0),
