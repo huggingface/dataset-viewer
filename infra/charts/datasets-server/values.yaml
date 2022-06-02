@@ -198,10 +198,17 @@ admin:
   image:
     repository: 707930574880.dkr.ecr.us-east-1.amazonaws.com
     name: hub-datasets-server-admin
-    tag: sha-da86243
+    tag: sha-e675472
     pullPolicy: IfNotPresent
 
   replicas: 1
+
+  service:
+    type: NodePort
+    annotations: { }
+
+  ingress:
+    annotations: { }
 
   resources:
     requests:
@@ -211,7 +218,15 @@ admin:
   nodeSelector: {}
   tolerations: []
 
+  # Application hostname - it must not be set to localhost to work in Kube!
+  appHostname: "0.0.0.0"
+  # Number of uvicorn workers for running the application
+  appNumWorkers: "1"
+  # Application endpoint port
+  appPort: 80
   # Directory of assets (audio files and images that will be served for the web)
   assetsDirectory: "/assets"
   # Log level
   logLevel: "INFO"
+
+  readinessPort: 80

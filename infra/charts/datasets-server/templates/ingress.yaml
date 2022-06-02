@@ -30,3 +30,12 @@ spec:
                   name: http
             pathType: ImplementationSpecific
     {{- end }}
+    - host: "admin.{{ .Values.domain }}"
+      http:
+        paths:
+          - backend:
+              service:
+                name: "{{ include "release" . }}-admin"
+                port:
+                  name: http
+            pathType: ImplementationSpecific

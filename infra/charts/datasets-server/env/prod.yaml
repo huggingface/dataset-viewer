@@ -121,3 +121,5 @@ admin:
 
   # Log level
   logLevel: "DEBUG"
+
+  appNumWorkers: "1"
