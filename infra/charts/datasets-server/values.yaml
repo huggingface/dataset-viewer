@@ -20,7 +20,8 @@ secrets:
 monitoring:
   enabled: false
 
-domain: "datasets-server.us.dev.moon.huggingface.tech"
+adminDomain: "datasets-server-admin.us.dev.moon.huggingface.tech"
+apiDomain: "datasets-server.us.dev.moon.huggingface.tech"
 uid: 1000
 gid: 3000
 

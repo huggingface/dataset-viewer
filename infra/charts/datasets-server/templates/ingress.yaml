@@ -10,7 +10,16 @@ metadata:
   namespace: {{ .Release.Namespace }}
 spec:
   rules:
-    - host: {{ .Values.domain }}
+    - host: {{ .Values.adminDomain }}
+      http:
+        paths:
+          - backend:
+              service:
+                name: "{{ include "release" . }}-admin"
+                port:
+                  name: http
+            pathType: ImplementationSpecific
+    - host: {{ .Values.apiDomain }}
       http:
         paths:
           - backend:
@@ -19,8 +28,8 @@ spec:
                 port:
                   name: http
             pathType: ImplementationSpecific
-    {{- if .Values.oldDomain }}
-    - host: {{ .Values.oldDomain }}
+    {{- if .Values.oldApiDomain }}
+    - host: {{ .Values.oldApiDomain }}
       http:
         paths:
           - backend:
@@ -30,12 +39,3 @@ spec:
                   name: http
             pathType: ImplementationSpecific
     {{- end }}
-    - host: "admin.{{ .Values.domain }}"
-      http:
-        paths:
-          - backend:
-              service:
-                name: "{{ include "release" . }}-admin"
-                port:
-                  name: http
-            pathType: ImplementationSpecific
