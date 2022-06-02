@@ -487,13 +487,15 @@ class CountByStatus(TypedDict):
 
 
 def get_entries_count_by_status(entries: QuerySet[AnyDb]) -> CountByStatus:
-    frequencies: Dict[str, int] = entries.item_frequencies("status", normalize=False)  # type: ignore
     # ensure that all the statuses are present, even if equal to zero
+    # note: we repeat the values instead of looping on Status because we don't know how to get the types right in mypy
+    # result: CountByStatus = {s.value: entries(status=s.value).count() for s in Status} # <- doesn't work in mypy
+    # see https://stackoverflow.com/a/67292548/7351594
     return {
-        "empty": frequencies.get(Status.EMPTY.value, 0),
-        "error": frequencies.get(Status.ERROR.value, 0),
-        "stalled": frequencies.get(Status.STALLED.value, 0),
-        "valid": frequencies.get(Status.VALID.value, 0),
+        "empty": entries(status=Status.EMPTY.value).count(),
+        "error": entries(status=Status.ERROR.value).count(),
+        "stalled": entries(status=Status.STALLED.value).count(),
+        "valid": entries(status=Status.VALID.value).count(),
     }
 
 
