@@ -10,11 +10,11 @@ uninstall:
 
 .PHONY: diff
 diff:
-	helm diff upgrade --install $(CHART_NAME)-$(ENV) . --values env/$(ENV).yaml -n $(K8S_NAMESPACE)
+	helm diff upgrade --install $(CHART_NAME)-$(ENV) . --values docker-images.yaml --values env/$(ENV).yaml -n $(K8S_NAMESPACE)
 
 .PHONY: upgrade
 upgrade:
-	helm upgrade --install $(CHART_NAME)-$(ENV) . --values env/$(ENV).yaml -n $(K8S_NAMESPACE)
+	helm upgrade --install $(CHART_NAME)-$(ENV) . --values docker-images.yaml --values env/$(ENV).yaml -n $(K8S_NAMESPACE)
 
 .PHONY: diff-dev
 diff-dev:

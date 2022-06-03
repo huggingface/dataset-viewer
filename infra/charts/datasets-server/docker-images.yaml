@@ -1,0 +1,9 @@
+{
+  "dockerImage": {
+    "admin": "707930574880.dkr.ecr.us-east-1.amazonaws.com/hub-datasets-server-admin:sha-e675472",
+    "api": "707930574880.dkr.ecr.us-east-1.amazonaws.com/hub-datasets-server-api:sha-7cb4f82",
+    "datasetsWorker": "707930574880.dkr.ecr.us-east-1.amazonaws.com/hub-datasets-server-worker:sha-da86243",
+    "reverseProxy": "docker.io/nginx:1.20",
+    "splitsWorker": "707930574880.dkr.ecr.us-east-1.amazonaws.com/hub-datasets-server-worker:sha-da86243",
+  }  
+}
