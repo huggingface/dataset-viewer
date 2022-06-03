@@ -2,7 +2,7 @@ name: infra
 on:
   push:
     paths:
-      - 'infra/**'
+      - 'infra/charts/datasets-server/**'
 jobs:
   code-quality-helm:
     runs-on: ubuntu-20.04
@@ -12,3 +12,10 @@ jobs:
       - name: Lint chart
         run: helm lint
         working-directory: infra/charts/datasets-server
+  e2e-tests:
+    uses: ./.github/workflows/_e2e_tests.yml
+    with:
+      config-file: infra/charts/datasets-server/docker-images.yml
+    secrets:
+      aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+      aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
