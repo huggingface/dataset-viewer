@@ -4,6 +4,8 @@ on:
   push:
     paths:
       - 'e2e/**'
+      - '.github/workflows/e2e.yml'
+      - '.github/workflows/_quality-python.yml'
 jobs:
   quality:
     uses: ./.github/workflows/_quality-python.yml

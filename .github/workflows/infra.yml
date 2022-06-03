@@ -4,6 +4,8 @@ on:
   push:
     paths:
       - 'infra/charts/datasets-server/**'
+      - '.github/workflows/infra.yml'
+      - '.github/workflows/_e2e_tests.yml'
 jobs:
   code-quality-helm:
     runs-on: ubuntu-20.04
