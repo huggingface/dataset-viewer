@@ -1,20 +1,22 @@
-name: "Build and push docker images"
-
-on:
-  workflow_dispatch:
-  push:
-
+name: Build and push service docker image
+on: 
+  workflow_call:
+    inputs:
+      service:
+        required: true
+        type: string
+    secrets:
+      aws-access-key-id:
+        required: true
+      aws-secret-access-key:
+        required: true
 env:
+  os: "ubuntu-latest"
   REGION: us-east-1
   REPOSITORY_PREFIX: 707930574880.dkr.ecr.us-east-1.amazonaws.com/hub-datasets-server-
-
 jobs:
-  build-and-push-image-api:
-    strategy:
-      fail-fast: false
-      matrix:
-        service: [admin, api, worker]
-    runs-on: ubuntu-latest
+  build-and-push-image:
+    runs-on: ${{ env.os }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v2
@@ -26,8 +28,8 @@ jobs:
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v1
         with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-access-key-id: ${{ secrets.aws-access-key-id }}
+          aws-secret-access-key: ${{ secrets.aws-secret-access-key }}
           aws-region: ${{ env.REGION }}
       - name: Login to Amazon ECR
         id: login-ecr
@@ -36,18 +38,18 @@ jobs:
         id: meta
         uses: docker/metadata-action@v4
         with:
-          images: ${{ env.REPOSITORY_PREFIX }}${{ matrix.service }}
+          images: ${{ env.REPOSITORY_PREFIX }}${{ inputs.service }}
           tags: |
             type=raw,value=sha-${{ steps.vars.outputs.sha_short }}
       - name: Build and push Docker image
         uses: docker/build-push-action@v3
         with:
           context: .
-          file: services/${{ matrix.service }}/Dockerfile
+          file: services/${{ inputs.service }}/Dockerfile
           build-args: COMMIT=${{ steps.vars.outputs.sha_short }}
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
           # see https://github.com/docker/build-push-action/blob/master/docs/advanced/cache.md#cache-backend-api
-          cache-from: type=gha,scope=buildkit-${{ matrix.service }}
-          cache-to: type=gha,mode=max,scope=buildkit-${{ matrix.service }}
+          cache-from: type=gha,scope=buildkit-${{ inputs.service }}
+          cache-to: type=gha,mode=max,scope=buildkit-${{ inputs.service }}

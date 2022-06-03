@@ -1,0 +1,57 @@
+name: Check Python code quality
+on: 
+  workflow_call:
+    inputs:
+      working-directory:
+        required: true
+        type: string
+      safety-exceptions:
+        required: false
+        type: string
+      is-worker:
+        required: false
+        type: boolean
+env:
+  # required to get access to use a cached poetry venv in "/home/runner/.cache/pypoetry/virtualenvs"
+  POETRY_VIRTUALENVS_IN_PROJECT: false
+  python-version: "3.9.6"
+  poetry-version: "1.1.13"
+  os: "ubuntu-latest"
+jobs:
+  code-quality:
+    defaults:
+      run:
+        shell: bash
+        working-directory: ${{ inputs.working-directory }}
+    runs-on: ${{ env.os }}
+    steps:
+      - uses: actions/checkout@v3
+      - name: Install poetry
+        run: pipx install poetry==${{ env.poetry-version }}
+      - name: Use Python
+        uses: actions/setup-python@v3
+        with:
+          python-version: ${{ env.python-version }}
+          cache: 'poetry'
+          cache-dependency-path: |
+            ${{ inputs.working-directory }}/poetry.lock
+      - name: Install packages for worker
+        if: ${{ inputs.is-worker }}
+        run: sudo apt update; sudo apt install -y libicu-dev ffmpeg libavcodec-extra libsndfile1 llvm
+      - name: Install dependencies
+        # "poetry env use" is required: https://github.com/actions/setup-python/issues/374#issuecomment-1088938718
+        run: |
+          poetry env use "${{ env.python-version }}"
+          poetry install
+      - name: Run black
+        run: poetry run black --check tests src
+      - name: Run isort
+        run: poetry run isort --check-only tests src
+      - name: Run flake8
+        run: poetry run flake8 tests src
+      - name: Run mypy
+        run: poetry run mypy tests src
+      - name: Run bandit
+        run: poetry run bandit -r src
+      - name: Run safety
+        run: poetry run safety check ${{ inputs.safety-exceptions }}

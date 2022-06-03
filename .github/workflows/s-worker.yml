@@ -1,0 +1,28 @@
+name: services/worker
+on:
+  push:
+    paths:
+      - 'services/worker/**'
+env:
+  service: worker
+  working-directory: services/worker
+jobs:
+  quality:
+    uses: ./.github/workflows/_quality-python.yml
+    with:
+      working-directory: ${{ env.working-directory }}
+      # pillow <9.0.0
+      safety-exceptions: "-i 44525 -i 44524 -i 44486 -i 44485 -i 45356 -i 44487"
+      is_worker: true
+  unit-tests:
+    uses: ./.github/workflows/_unit-tests-python.yml
+    with:
+      working-directory: ${{ env.working-directory }}
+      is_worker: true
+  docker:
+    uses: ./.github/workflows/_docker.yml
+    with:
+      service: ${{ env.service }}
+    secrets:
+      aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+      aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
