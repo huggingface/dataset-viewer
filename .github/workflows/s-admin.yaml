@@ -1,24 +1,22 @@
 name: services/admin
 on:
+  workflow_dispatch:
   push:
     paths:
       - 'services/admin/**'
-env:
-  service: admin
-  working-directory: services/admin
 jobs:
   quality:
     uses: ./.github/workflows/_quality-python.yml
     with:
-      working-directory: ${{ env.working-directory }}
+      working-directory: services/admin
   unit-tests:
     uses: ./.github/workflows/_unit-tests-python.yml
     with:
-      working-directory: ${{ env.working-directory }}
+      working-directory: services/admin
   docker:
     uses: ./.github/workflows/_docker.yml
     with:
-      service: ${{ env.service }}
+      service: admin
     secrets:
       aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
       aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}

@@ -10,6 +10,14 @@ mongodb:
   # Name of the mongo db database used to store the jobs queue
   queueDatabase: "datasets_server_queue"
 
+# overriden by docker-images.yaml (which must be in JSON format!)
+dockerImage:
+  admin: ''
+  api: ''
+  datasetsWorker: ''
+  reverseProxy: ''
+  splitsWorker: ''
+
 storage:
   nfs: {}
 

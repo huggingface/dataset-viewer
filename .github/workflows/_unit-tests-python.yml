@@ -14,14 +14,13 @@ env:
   mongo-port: "27017"
   python-version: "3.9.6"
   poetry-version: "1.1.13"
-  os: "ubuntu-latest"
 jobs:
   unit-tests:
     defaults:
       run:
         shell: bash
         working-directory: ${{ inputs.working-directory }}
-    runs-on: ${{ env.os }}
+    runs-on: "ubuntu-latest"
     steps:
       - uses: actions/checkout@v3
       - name: Install poetry

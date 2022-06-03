@@ -1,16 +1,15 @@
 name: libs/libutils
 on:
+  workflow_dispatch:
   push:
     paths:
       - 'libs/libutils/**'
-env:
-  working-directory: libs/libutils
 jobs:
   quality:
     uses: ./.github/workflows/_quality-python.yml
     with:
-      working-directory: ${{ env.working-directory }}
+      working-directory: libs/libutils
   unit-tests:
     uses: ./.github/workflows/_unit-tests-python.yml
     with:
-      working-directory: ${{ env.working-directory }}
+      working-directory: libs/libutils

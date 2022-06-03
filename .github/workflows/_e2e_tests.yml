@@ -11,7 +11,6 @@ on:
       aws-secret-access-key:
         required: true
 env:
-  os: "ubuntu-latest"
   python-version: 3.9.6
   poetry-version: 1.1.13
   # required to get access to use a cached poetry venv in "/home/runner/.cache/pypoetry/virtualenvs"
@@ -19,12 +18,29 @@ env:
   region: us-east-1
   working-directory: e2e
 jobs:
+  get-config:
+    runs-on: ubuntu-latest
+    outputs:
+      dockerConfig: ${{ steps.set-var.outputs.dockerConfig }}
+    steps:
+    - name: Get docker images
+      id: set-var
+      run: |
+        # from https://stackoverflow.com/a/61919791/7351594
+        content=`cat ${{ inputs.config-file }}`
+        # the following lines are only required for multi line json
+        content="${content//'%'/'%25'}"
+        content="${content//$'\n'/'%0A'}"
+        content="${content//$'\r'/'%0D'}"
+        # end of optional handling for multi line json
+        echo "::set-output name=dockerConfig::$content"
   e2e-tests:
+    needs: get-config
     defaults:
       run:
         shell: bash
-        working-directory: ${{ env.working-directory }}
-    runs-on: ${{ env.os }}
+        working-directory: e2e
+    runs-on: "ubuntu-latest"
     steps:
       - uses: actions/checkout@v3
       - name: Configure AWS credentials
@@ -45,24 +61,13 @@ jobs:
           cache: 'poetry'
           cache-dependency-path: |
             ${{ env.working-directory }}/poetry.lock
-      - name: Get docker images
-        id: set_var
-        run: |
-          # from https://stackoverflow.com/a/61919791/7351594
-          content=`cat ${{ inputs.config-file }}`
-          # the following lines are only required for multi line json
-          content="${content//'%'/'%25'}"
-          content="${content//$'\n'/'%0A'}"
-          content="${content//$'\r'/'%0D'}"
-          # end of optional handling for multi line json
-          echo "::set-output name=dockerConfig::$content"
       - name: Launch the services
         env:
-          SERVICE_ADMIN_DOCKER_IMAGE: "${{fromJson(steps.set_var.outputs.dockerConfig).dockerImage.admin}}"
-          SERVICE_API_DOCKER_IMAGE: "${{fromJson(steps.set_var.outputs.dockerConfig).dockerImage.api}}"
-          SERVICE_DATASETS_WORKER_DOCKER_IMAGE: "${{fromJson(steps.set_var.outputs.dockerConfig).dockerImage.datasetsWorker}}"
-          SERVICE_REVERSE_PROXY_DOCKER_IMAGE: "${{fromJson(steps.set_var.outputs.dockerConfig).dockerImage.reverseProxy}}"
-          SERVICE_SPLITS_WORKER_DOCKER_IMAGE: "${{fromJson(steps.set_var.outputs.dockerConfig).dockerImage.splitsWorker}}"
+          SERVICE_ADMIN_DOCKER_IMAGE: "${{fromJson(needs.get-config.outputs.dockerConfig).dockerImage.admin}}"
+          SERVICE_API_DOCKER_IMAGE: "${{fromJson(needs.get-config.outputs.dockerConfig).dockerImage.api}}"
+          SERVICE_DATASETS_WORKER_DOCKER_IMAGE: "${{fromJson(needs.get-config.outputs.dockerConfig).dockerImage.datasetsWorker}}"
+          SERVICE_REVERSE_PROXY_DOCKER_IMAGE: "${{fromJson(needs.get-config.outputs.dockerConfig).dockerImage.reverseProxy}}"
+          SERVICE_SPLITS_WORKER_DOCKER_IMAGE: "${{fromJson(needs.get-config.outputs.dockerConfig).dockerImage.splitsWorker}}"
         run: docker-compose -f tests/docker-compose.yml up -d
       - name: Install dependencies
         run: |
