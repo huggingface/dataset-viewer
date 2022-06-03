@@ -16,7 +16,7 @@ jobs:
   e2e-tests:
     uses: ./.github/workflows/_e2e_tests.yml
     with:
-      config-file: infra/charts/datasets-server/docker-images.yml
+      config-file: infra/charts/datasets-server/docker-images.yaml
     secrets:
       aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
       aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
