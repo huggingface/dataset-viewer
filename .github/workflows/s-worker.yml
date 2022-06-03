@@ -21,6 +21,9 @@ jobs:
     with:
       working-directory: services/worker
       is-worker: true
+    secrets:
+      hf-token: ${{ secrets.HF_TOKEN }}
+      codecov-token: ${{ secrets.CODECOV_TOKEN }}
   docker:
     uses: ./.github/workflows/_docker.yml
     with:

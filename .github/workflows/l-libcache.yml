@@ -16,3 +16,5 @@ jobs:
     uses: ./.github/workflows/_unit-tests-python.yml
     with:
       working-directory: libs/libcache
+    secrets:
+      codecov-token: ${{ secrets.CODECOV_TOKEN }}

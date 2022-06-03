@@ -17,6 +17,8 @@ jobs:
     uses: ./.github/workflows/_unit-tests-python.yml
     with:
       working-directory: services/api
+    secrets:
+      codecov-token: ${{ secrets.CODECOV_TOKEN }}
   docker:
     uses: ./.github/workflows/_docker.yml
     with:
