@@ -1,7 +1,7 @@
 {{- define "containerReverseProxy" -}}
 - name: "{{ include "name" . }}-reverse-proxy"    
-  image: "{{ .Values.reverseProxy.image.repository }}/{{ .Values.reverseProxy.image.name }}:{{ .Values.reverseProxy.image.tag }}"
-  imagePullPolicy: {{ .Values.reverseProxy.image.pullPolicy }}
+  image: {{ .Values.dockerImage.reverseProxy }}
+  imagePullPolicy: IfNotPresent
   env:
   - name: ASSETS_DIRECTORY
     value: {{ .Values.reverseProxy.assetsDirectory | quote }}

@@ -29,12 +29,6 @@ gid: 3000
 datasetsBlocklist: ""
 
 reverseProxy:
-  image:
-    repository: docker.io
-    name: nginx
-    tag: "1.20"
-    pullPolicy: IfNotPresent
-
   replicas: 1
 
   service:
@@ -65,12 +59,6 @@ reverseProxy:
   port: 80
 
 api:
-  image:
-    repository: 707930574880.dkr.ecr.us-east-1.amazonaws.com
-    name: hub-datasets-server-api
-    tag: sha-7cb4f82
-    pullPolicy: IfNotPresent
-
   replicas: 1
   
   service:
@@ -106,12 +94,6 @@ api:
 
 
 datasetsWorker:
-  image:
-    repository: 707930574880.dkr.ecr.us-east-1.amazonaws.com
-    name: hub-datasets-server-worker
-    tag: sha-da86243
-    pullPolicy: IfNotPresent
-
   replicas: 1
   
   resources:
@@ -152,11 +134,6 @@ datasetsWorker:
   workerSleepSeconds: 15
 
 splitsWorker:
-  image:
-    repository: 707930574880.dkr.ecr.us-east-1.amazonaws.com
-    name: hub-datasets-server-worker
-    tag: sha-da86243
-    pullPolicy: IfNotPresent
   replicas: 1
   
   resources:
@@ -196,12 +173,6 @@ splitsWorker:
 
 
 admin:
-  image:
-    repository: 707930574880.dkr.ecr.us-east-1.amazonaws.com
-    name: hub-datasets-server-admin
-    tag: sha-e675472
-    pullPolicy: IfNotPresent
-
   replicas: 1
 
   service:

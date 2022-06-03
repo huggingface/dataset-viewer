@@ -12,8 +12,8 @@ on:
         required: true
 env:
   os: "ubuntu-latest"
-  REGION: us-east-1
-  REPOSITORY_PREFIX: 707930574880.dkr.ecr.us-east-1.amazonaws.com/hub-datasets-server-
+  region: us-east-1
+  repository-prefix: 707930574880.dkr.ecr.us-east-1.amazonaws.com/hub-datasets-server-
 jobs:
   build-and-push-image:
     runs-on: ${{ env.os }}
@@ -30,7 +30,7 @@ jobs:
         with:
           aws-access-key-id: ${{ secrets.aws-access-key-id }}
           aws-secret-access-key: ${{ secrets.aws-secret-access-key }}
-          aws-region: ${{ env.REGION }}
+          aws-region: ${{ env.region }}
       - name: Login to Amazon ECR
         id: login-ecr
         uses: aws-actions/amazon-ecr-login@v1
@@ -38,7 +38,7 @@ jobs:
         id: meta
         uses: docker/metadata-action@v4
         with:
-          images: ${{ env.REPOSITORY_PREFIX }}${{ inputs.service }}
+          images: ${{ env.repository-prefix }}${{ inputs.service }}
           tags: |
             type=raw,value=sha-${{ steps.vars.outputs.sha_short }}
       - name: Build and push Docker image

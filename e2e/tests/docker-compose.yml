@@ -1,7 +1,7 @@
 version: "3.9"
 services:
   reverse-proxy:
-    image: nginx:1.20
+    image: ${SERVICE_REVERSE_PROXY_DOCKER_IMAGE}
     volumes:
       - ../../infra/charts/datasets-server/nginx-templates/:/etc/nginx/templates:ro
       - reverse-proxy-cache:/nginx-cache
@@ -21,7 +21,7 @@ services:
       api:
         condition: service_started
   api:
-    image: 707930574880.dkr.ecr.us-east-1.amazonaws.com/hub-datasets-server-api:${DOCKER_TAG}
+    image: ${SERVICE_API_DOCKER_IMAGE}
     volumes:
       - assets:/assets:ro
     environment:
@@ -37,7 +37,7 @@ services:
         condition: service_started
     restart: unless-stopped
   datasets-worker:
-    image: 707930574880.dkr.ecr.us-east-1.amazonaws.com/hub-datasets-server-worker:${DOCKER_TAG}
+    image: ${SERVICE_DATASETS_WORKER_DOCKER_IMAGE}
     volumes:
       - assets:/assets:rw
     environment:
@@ -49,7 +49,7 @@ services:
         condition: service_started
     restart: always
   splits-worker:
-    image: 707930574880.dkr.ecr.us-east-1.amazonaws.com/hub-datasets-server-worker:${DOCKER_TAG}
+    image: ${SERVICE_SPLITS_WORKER_DOCKER_IMAGE}
     volumes:
       - assets:/assets:rw
     environment:
@@ -61,7 +61,7 @@ services:
         condition: service_started
     restart: always
   admin:
-    image: 707930574880.dkr.ecr.us-east-1.amazonaws.com/hub-datasets-server-admin:${DOCKER_TAG}
+    image: ${SERVICE_ADMIN_DOCKER_IMAGE}
     environment:
       MONGO_URL: "mongodb://mongodb"
     depends_on:

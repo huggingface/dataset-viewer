@@ -25,8 +25,8 @@
         key: MONGO_URL
         optional: false
   {{- end }}
-  image: "{{ .Values.admin.image.repository }}/{{ .Values.admin.image.name }}:{{ .Values.admin.image.tag }}"
-  imagePullPolicy: {{ .Values.admin.image.pullPolicy }}
+  image: {{ .Values.dockerImage.admin }}
+  imagePullPolicy: IfNotPresent
   volumeMounts:
   - mountPath: {{ .Values.admin.assetsDirectory | quote }}
     mountPropagation: None

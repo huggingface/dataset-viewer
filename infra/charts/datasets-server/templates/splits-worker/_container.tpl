@@ -56,8 +56,8 @@
   - name: WORKER_QUEUE
     # Job queue the worker will pull jobs from: 'datasets' or 'splits'
     value: "splits"
-  image: "{{ .Values.splitsWorker.image.repository }}/{{ .Values.splitsWorker.image.name }}:{{ .Values.splitsWorker.image.tag }}"
-  imagePullPolicy: {{ .Values.splitsWorker.image.pullPolicy }}
+  image: {{ .Values.dockerImage.splitsWorker }}
+  imagePullPolicy: IfNotPresent
   volumeMounts:
   - mountPath: {{ .Values.splitsWorker.assetsDirectory | quote }}
     mountPropagation: None
