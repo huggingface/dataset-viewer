@@ -4,6 +4,9 @@ on:
   push:
     paths:
       - 'libs/libcache/**'
+      - '.github/workflows/infra.yml'
+      - '.github/workflows/_quality-python.yml'
+      - '.github/workflows/_unit-tests-python.yml'
 jobs:
   quality:
     uses: ./.github/workflows/_quality-python.yml

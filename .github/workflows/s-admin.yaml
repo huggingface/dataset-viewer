@@ -4,6 +4,10 @@ on:
   push:
     paths:
       - 'services/admin/**'
+      - '.github/workflows/infra.yml'
+      - '.github/workflows/_quality-python.yml'
+      - '.github/workflows/_unit-tests-python.yml'
+      - '.github/workflows/_docker.yml'
 jobs:
   quality:
     uses: ./.github/workflows/_quality-python.yml

@@ -4,6 +4,10 @@ on:
   push:
     paths:
       - 'services/worker/**'
+      - '.github/workflows/infra.yml'
+      - '.github/workflows/_quality-python.yml'
+      - '.github/workflows/_unit-tests-python.yml'
+      - '.github/workflows/_docker.yml'
 jobs:
   quality:
     uses: ./.github/workflows/_quality-python.yml
@@ -11,12 +15,12 @@ jobs:
       working-directory: services/worker
       # pillow <9.0.0
       safety-exceptions: "-i 44525 -i 44524 -i 44486 -i 44485 -i 45356 -i 44487"
-      is_worker: true
+      is-worker: true
   unit-tests:
     uses: ./.github/workflows/_unit-tests-python.yml
     with:
       working-directory: services/worker
-      is_worker: true
+      is-worker: true
   docker:
     uses: ./.github/workflows/_docker.yml
     with:
