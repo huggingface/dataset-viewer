@@ -8,6 +8,11 @@ on:
       is-worker:
         required: false
         type: boolean
+    secrets:
+      hf-token:
+        required: false
+      codecov-token:
+        required: true
 env:
   # required to get access to use a cached poetry venv in "/home/runner/.cache/pypoetry/virtualenvs"
   POETRY_VIRTUALENVS_IN_PROJECT: false
@@ -62,8 +67,9 @@ jobs:
           MONGO_CACHE_DATABASE: datasets_server_cache_test
           MONGO_QUEUE_DATABASE: datasets_server_queue_test
           MONGO_URL: mongodb://localhost:${{ env.mongo-port }}
+          HF_TOKEN: ${{ secrets.hf-token}}
         run: poetry run python -m pytest -s --cov --cov-report xml:coverage.xml --cov-report=term tests
       - uses: codecov/codecov-action@v2
         with:
-          token: ${{ secrets.CODECOV_TOKEN }}
+          token: ${{ secrets.codecov-token }}
           files: ./coverage.xml
