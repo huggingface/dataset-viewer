@@ -1,0 +1,70 @@
+name: Launch Python unit tests
+on: 
+  workflow_call:
+    inputs:
+      working-directory:
+        required: true
+        type: string
+      is-worker:
+        required: false
+        type: boolean
+env:
+  # required to get access to use a cached poetry venv in "/home/runner/.cache/pypoetry/virtualenvs"
+  POETRY_VIRTUALENVS_IN_PROJECT: false
+  mongo-port: "27017"
+  python-version: "3.9.6"
+  poetry-version: "1.1.13"
+  os: "ubuntu-latest"
+jobs:
+  unit-tests:
+    defaults:
+      run:
+        shell: bash
+        working-directory: ${{ inputs.working-directory }}
+    runs-on: ${{ env.os }}
+    steps:
+      - uses: actions/checkout@v3
+      - name: Install poetry
+        run: pipx install poetry==${{ env.poetry-version }}
+      - name: Use Python
+        uses: actions/setup-python@v3
+        with:
+          python-version: ${{ env.python-version }}
+          cache: 'poetry'
+          cache-dependency-path: |
+            ${{ inputs.working-directory }}/poetry.lock
+      - name: Install packages
+        if: ${{ inputs.is-worker }}
+        run: sudo apt update; sudo apt install -y libicu-dev ffmpeg libavcodec-extra llvm
+      - name: Install libsndfile
+        if: ${{ inputs.is-worker }}
+        run: >
+          sudo apt install -y autoconf autogen automake build-essential libasound2-dev libflac-dev libogg-dev libtool libvorbis-dev libopus-dev libmp3lame-dev libmpg123-dev pkg-config;
+          cd /tmp;
+          git clone https://github.com/libsndfile/libsndfile.git;
+          cd libsndfile;
+          git checkout v1.0.30;
+          ./autogen.sh;
+          ./configure --enable-werror;
+          make;
+          sudo make install;
+          sudo ldconfig;
+          cd;
+          rm -rf /tmp/libsndfile;
+      - name: Install dependencies
+        # "poetry env use" is required: https://github.com/actions/setup-python/issues/374#issuecomment-1088938718
+        run: |
+          poetry env use "${{ env.python-version }}"
+          poetry install
+      - name: Create mongoDB Docker container
+        run: sudo docker run -d -p ${{ env.mongo-port }}:27017 mongo:latest
+      - name: Run unit tests
+        env:
+          MONGO_CACHE_DATABASE: datasets_server_cache_test
+          MONGO_QUEUE_DATABASE: datasets_server_queue_test
+          MONGO_URL: mongodb://localhost:${{ matrix.mongo-port }}
+        run: poetry run python -m pytest -s --cov --cov-report xml:coverage.xml --cov-report=term tests
+      - uses: codecov/codecov-action@v2
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          files: ./coverage.xml

@@ -1,0 +1,14 @@
+name: infra
+on:
+  push:
+    paths:
+      - 'infra/**'
+jobs:
+  code-quality-helm:
+    runs-on: ubuntu-20.04
+    steps:
+      - name: Checkout sources
+        uses: actions/checkout@main
+      - name: Lint chart
+        run: helm lint
+        working-directory: infra/charts/datasets-server

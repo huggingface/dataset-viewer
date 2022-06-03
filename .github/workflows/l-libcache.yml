@@ -1,0 +1,16 @@
+name: libs/libcache
+on:
+  push:
+    paths:
+      - 'libs/libcache/**'
+env:  
+  working-directory: libs/libcache
+jobs:
+  quality:
+    uses: ./.github/workflows/_quality-python.yml
+    with:
+      working-directory: ${{ env.working-directory }}
+  unit-tests:
+    uses: ./.github/workflows/_unit-tests-python.yml
+    with:
+      working-directory: ${{ env.working-directory }}
