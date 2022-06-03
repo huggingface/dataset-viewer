@@ -4,22 +4,19 @@ on:
   push:
     paths:
       - 'services/api/**'
-env:
-  service: api
-  working-directory: services/api
 jobs:
   quality:
     uses: ./.github/workflows/_quality-python.yml
     with:
-      working-directory: ${{ env.working-directory }}
+      working-directory: services/api
   unit-tests:
     uses: ./.github/workflows/_unit-tests-python.yml
     with:
-      working-directory: ${{ env.working-directory }}
+      working-directory: services/api
   docker:
     uses: ./.github/workflows/_docker.yml
     with:
-      service: ${{ env.service }}
+      service: api
     secrets:
       aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
       aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}

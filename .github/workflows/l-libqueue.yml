@@ -4,14 +4,12 @@ on:
   push:
     paths:
       - 'libs/libqueue/**'
-env:
-  working-directory: libs/libqueue
 jobs:
   quality:
     uses: ./.github/workflows/_quality-python.yml
     with:
-      working-directory: ${{ env.working-directory }}
+      working-directory: libs/libqueue
   unit-tests:
     uses: ./.github/workflows/_unit-tests-python.yml
     with:
-      working-directory: ${{ env.working-directory }}
+      working-directory: libs/libqueue

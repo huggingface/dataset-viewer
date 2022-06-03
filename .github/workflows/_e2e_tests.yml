@@ -10,21 +10,20 @@ on:
         required: true
       aws-secret-access-key:
         required: true
+env:
+  python-version: 3.9.6
+  poetry-version: 1.1.13
+  # required to get access to use a cached poetry venv in "/home/runner/.cache/pypoetry/virtualenvs"
+  POETRY_VIRTUALENVS_IN_PROJECT: false
+  region: us-east-1
+  working-directory: e2e
 jobs:
   e2e-tests:
-    env:
-      os: "ubuntu-latest"
-      python-version: 3.9.6
-      poetry-version: 1.1.13
-      # required to get access to use a cached poetry venv in "/home/runner/.cache/pypoetry/virtualenvs"
-      POETRY_VIRTUALENVS_IN_PROJECT: false
-      region: us-east-1
-      working-directory: e2e
     defaults:
       run:
         shell: bash
-        working-directory: ${{ env.working-directory }}
-    runs-on: ${{ env.os }}
+        working-directory: e2e
+    runs-on: "ubuntu-latest"
     steps:
       - uses: actions/checkout@v3
       - name: Configure AWS credentials

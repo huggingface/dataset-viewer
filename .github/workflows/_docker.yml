@@ -11,12 +11,11 @@ on:
       aws-secret-access-key:
         required: true
 env:
-  os: "ubuntu-latest"
   region: us-east-1
   repository-prefix: 707930574880.dkr.ecr.us-east-1.amazonaws.com/hub-datasets-server-
 jobs:
   build-and-push-image:
-    runs-on: ${{ env.os }}
+    runs-on: "ubuntu-latest"
     steps:
       - name: Checkout repository
         uses: actions/checkout@v2

@@ -4,10 +4,8 @@ on:
   push:
     paths:
       - 'e2e/**'
-env:
-  working-directory: e2e
 jobs:
   quality:
     uses: ./.github/workflows/_quality-python.yml
     with:
-      working-directory: ${{ env.working-directory }}
+      working-directory: e2e
