@@ -23,17 +23,20 @@ jobs:
     outputs:
       dockerConfig: ${{ steps.set-var.outputs.dockerConfig }}
     steps:
-    - name: Get docker images
-      id: set-var
-      run: |
-        # from https://stackoverflow.com/a/61919791/7351594
-        content=`cat ${{ inputs.config-file }}`
-        # the following lines are only required for multi line json
-        content="${content//'%'/'%25'}"
-        content="${content//$'\n'/'%0A'}"
-        content="${content//$'\r'/'%0D'}"
-        # end of optional handling for multi line json
-        echo "::set-output name=dockerConfig::$content"
+      - uses: actions/checkout@v3
+        with:
+          path: './'
+      - name: Get docker images
+        id: set-var
+        run: |
+          # from https://stackoverflow.com/a/61919791/7351594
+          content=`cat ${{ inputs.config-file }}`
+          # the following lines are only required for multi line json
+          content="${content//'%'/'%25'}"
+          content="${content//$'\n'/'%0A'}"
+          content="${content//$'\r'/'%0D'}"
+          # end of optional handling for multi line json
+          echo "::set-output name=dockerConfig::$content"
   e2e-tests:
     needs: get-config
     defaults:
