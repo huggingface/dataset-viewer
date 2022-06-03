@@ -1,5 +1,6 @@
 name: e2e
 on:
+  workflow_dispatch:
   push:
     paths:
       - 'e2e/**'

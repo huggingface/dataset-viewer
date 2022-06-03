@@ -1,5 +1,6 @@
 name: infra
 on:
+  workflow_dispatch:
   push:
     paths:
       - 'infra/charts/datasets-server/**'

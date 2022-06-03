@@ -1,5 +1,6 @@
 name: services/worker
 on:
+  workflow_dispatch:
   push:
     paths:
       - 'services/worker/**'

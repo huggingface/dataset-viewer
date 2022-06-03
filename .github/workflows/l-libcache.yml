@@ -1,5 +1,6 @@
 name: libs/libcache
 on:
+  workflow_dispatch:
   push:
     paths:
       - 'libs/libcache/**'

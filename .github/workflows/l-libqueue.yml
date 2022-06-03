@@ -1,5 +1,6 @@
 name: libs/libqueue
 on:
+  workflow_dispatch:
   push:
     paths:
       - 'libs/libqueue/**'

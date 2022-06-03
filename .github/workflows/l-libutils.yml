@@ -1,5 +1,6 @@
 name: libs/libutils
 on:
+  workflow_dispatch:
   push:
     paths:
       - 'libs/libutils/**'
