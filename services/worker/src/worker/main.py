@@ -180,17 +180,16 @@ def sleep() -> None:
 
 def loop() -> None:
     logger = logging.getLogger("datasets_server.worker")
-    while True:
-        if has_resources():
-            try:
-                if process_next_job():
-                    # loop immediately to try another job
-                    # see https://github.com/huggingface/datasets-server/issues/265
-                    continue
-            except BaseException as e:
-                logger.critical(f"quit due to an uncaught error while processing the job: {e}")
-                raise
-        sleep()
+    try:
+        while True:
+            if has_resources() and process_next_job():
+                # loop immediately to try another job
+                # see https://github.com/huggingface/datasets-server/issues/265
+                continue
+            sleep()
+    except BaseException as e:
+        logger.critical(f"quit due to an uncaught error while processing the job: {e}")
+        raise
 
 
 if __name__ == "__main__":
