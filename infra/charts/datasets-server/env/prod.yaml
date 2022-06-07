@@ -89,7 +89,7 @@ api:
   appNumWorkers: "1"
 
 datasetsWorker:
-  replicas: 1
+  replicas: 4
 
   nodeSelector:
     role-datasets-server: "true"
@@ -97,12 +97,13 @@ datasetsWorker:
   resources:
     requests:
       cpu: 0.01
+      memory: "1Gi"
     limits:
       cpu: 3
       memory: "20Gi"
 
 splitsWorker:
-  replicas: 3
+  replicas: 12
 
   nodeSelector:
     role-datasets-server: "true"
@@ -110,6 +111,7 @@ splitsWorker:
   resources:
     requests:
       cpu: 0.01
+      memory: "1Gi"
     limits:
       cpu: 3
       memory: "24Gi"
