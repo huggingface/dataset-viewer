@@ -2,19 +2,14 @@ import os
 
 from datasets.utils.logging import log_levels, set_verbosity
 from dotenv import load_dotenv
-from libutils.utils import (
-    get_int_value,
-    get_str_list_value,
-    get_str_or_none_value,
-    get_str_value,
-)
+from libutils.utils import get_int_value, get_str_or_none_value, get_str_value
 
 from worker.constants import (
     DEFAULT_ASSETS_DIRECTORY,
-    DEFAULT_DATASETS_BLOCKLIST,
     DEFAULT_DATASETS_REVISION,
     DEFAULT_HF_TOKEN,
     DEFAULT_LOG_LEVEL,
+    DEFAULT_MAX_JOB_RETRIES,
     DEFAULT_MAX_JOBS_PER_DATASET,
     DEFAULT_MAX_LOAD_PCT,
     DEFAULT_MAX_MEMORY_PCT,
@@ -34,10 +29,10 @@ from worker.constants import (
 load_dotenv()
 
 ASSETS_DIRECTORY = get_str_or_none_value(d=os.environ, key="ASSETS_DIRECTORY", default=DEFAULT_ASSETS_DIRECTORY)
-DATASETS_BLOCKLIST = get_str_list_value(d=os.environ, key="DATASETS_BLOCKLIST", default=DEFAULT_DATASETS_BLOCKLIST)
 DATASETS_REVISION = get_str_value(d=os.environ, key="DATASETS_REVISION", default=DEFAULT_DATASETS_REVISION)
 HF_TOKEN = get_str_or_none_value(d=os.environ, key="HF_TOKEN", default=DEFAULT_HF_TOKEN)
 LOG_LEVEL = get_str_value(d=os.environ, key="LOG_LEVEL", default=DEFAULT_LOG_LEVEL)
+MAX_JOB_RETRIES = get_int_value(os.environ, "MAX_JOB_RETRIES", DEFAULT_MAX_JOB_RETRIES)
 MAX_JOBS_PER_DATASET = get_int_value(os.environ, "MAX_JOBS_PER_DATASET", DEFAULT_MAX_JOBS_PER_DATASET)
 MAX_LOAD_PCT = get_int_value(os.environ, "MAX_LOAD_PCT", DEFAULT_MAX_LOAD_PCT)
 MAX_MEMORY_PCT = get_int_value(os.environ, "MAX_MEMORY_PCT", DEFAULT_MAX_MEMORY_PCT)

@@ -33,9 +33,6 @@ apiDomain: "datasets-server.us.dev.moon.huggingface.tech"
 uid: 1000
 gid: 3000
 
-# Datasets blocklist
-datasetsBlocklist: ""
-
 reverseProxy:
   replicas: 1
 
@@ -122,6 +119,8 @@ datasetsWorker:
   hfToken: ""
   # Log level
   logLevel: "INFO"
+  # Max number of job retries (for 500 errors) for the same job
+  maxJobRetries: 3
   # Maximum number of jobs running at the same time for the same dataset
   maxJobsPerDataset: 1
   # Max CPU load (%) - if reached, sleeps until it comes back under the limit
@@ -160,6 +159,8 @@ splitsWorker:
   datasetsRevision: "master"
   # Log level
   logLevel: "INFO"
+  # Max number of job retries (for 500 errors) for the same job
+  maxJobRetries: 3
   # Maximum number of jobs running at the same time for the same dataset
   maxJobsPerDataset: 1
   # Max CPU load (%) - if reached, sleeps until it comes back under the limit

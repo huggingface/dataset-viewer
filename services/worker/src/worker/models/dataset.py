@@ -6,8 +6,6 @@ from datasets.inspect import SplitsNotFoundError
 from libutils.exceptions import Status400Error
 from libutils.types import SplitFullName
 
-from worker.models._guard import guard_blocked_datasets
-
 logger = logging.getLogger(__name__)
 
 
@@ -15,7 +13,6 @@ def get_dataset_split_full_names(dataset_name: str, hf_token: Optional[str] = No
     logger.info(f"get dataset '{dataset_name}' split full names")
 
     try:
-        guard_blocked_datasets(dataset_name)
         return [
             {"dataset_name": dataset_name, "config_name": config_name, "split_name": split_name}
             for config_name in get_dataset_config_names(

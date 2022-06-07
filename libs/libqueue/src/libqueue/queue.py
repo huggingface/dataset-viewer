@@ -5,7 +5,7 @@ from datetime import datetime
 from typing import Generic, List, Optional, Tuple, Type, TypedDict, TypeVar
 
 from mongoengine import Document, DoesNotExist, connect
-from mongoengine.fields import DateTimeField, EnumField, StringField
+from mongoengine.fields import DateTimeField, EnumField, IntField, StringField
 from mongoengine.queryset.queryset import QuerySet
 
 # START monkey patching ### hack ###
@@ -43,6 +43,7 @@ class JobDict(TypedDict):
     created_at: datetime
     started_at: Optional[datetime]
     finished_at: Optional[datetime]
+    retries: int
 
 
 class DatasetJobDict(JobDict):
@@ -94,6 +95,7 @@ class DatasetJob(Document):
     started_at = DateTimeField()
     finished_at = DateTimeField()
     status = EnumField(Status, default=Status.WAITING)
+    retries = IntField(required=False, default=0)
 
     def to_dict(self) -> DatasetJobDict:
         return {
@@ -102,6 +104,7 @@ class DatasetJob(Document):
             "created_at": self.created_at,
             "started_at": self.started_at,
             "finished_at": self.finished_at,
+            "retries": self.retries,
         }
 
     def to_id(self) -> str:
@@ -127,6 +130,7 @@ class SplitJob(Document):
     created_at = DateTimeField(required=True)
     started_at = DateTimeField()
     finished_at = DateTimeField()
+    retries = IntField(required=False, default=0)
 
     def to_dict(self) -> SplitJobDict:
         return {
@@ -137,6 +141,7 @@ class SplitJob(Document):
             "created_at": self.created_at,
             "started_at": self.started_at,
             "finished_at": self.finished_at,
+            "retries": self.retries,
         }
 
     def to_id(self) -> str:
@@ -177,14 +182,14 @@ def add_job(existing_jobs: QuerySet[AnyJob], new_job: AnyJob):
     # raises MultipleObjectsReturned if more than one entry -> should never occur, we let it raise
 
 
-def add_dataset_job(dataset_name: str) -> None:
+def add_dataset_job(dataset_name: str, retries: Optional[int] = 0) -> None:
     add_job(
         DatasetJob.objects(dataset_name=dataset_name),
-        DatasetJob(dataset_name=dataset_name, created_at=datetime.utcnow(), status=Status.WAITING),
+        DatasetJob(dataset_name=dataset_name, created_at=datetime.utcnow(), status=Status.WAITING, retries=retries),
     )
 
 
-def add_split_job(dataset_name: str, config_name: str, split_name: str) -> None:
+def add_split_job(dataset_name: str, config_name: str, split_name: str, retries: Optional[int] = 0) -> None:
     add_job(
         SplitJob.objects(dataset_name=dataset_name, config_name=config_name, split_name=split_name),
         SplitJob(
@@ -193,6 +198,7 @@ def add_split_job(dataset_name: str, config_name: str, split_name: str) -> None:
             split_name=split_name,
             created_at=datetime.utcnow(),
             status=Status.WAITING,
+            retries=retries,
         ),
     )
 
@@ -241,18 +247,18 @@ def start_job(jobs: QuerySet[AnyJob], max_jobs_per_dataset: Optional[int] = None
     return next_waiting_job
 
 
-def get_dataset_job(max_jobs_per_dataset: Optional[int] = None) -> Tuple[str, str]:
+def get_dataset_job(max_jobs_per_dataset: Optional[int] = None) -> Tuple[str, str, int]:
     job = start_job(DatasetJob.objects, max_jobs_per_dataset)
     # ^ max_jobs_per_dataset is not very useful for the DatasetJob queue
     # since only one job per dataset can exist anyway
     # It's here for consistency and safeguard
-    return str(job.pk), job.dataset_name
+    return str(job.pk), job.dataset_name, job.retries
     # ^ job.pk is the id. job.id is not recognized by mypy
 
 
-def get_split_job(max_jobs_per_dataset: Optional[int] = None) -> Tuple[str, str, str, str]:
+def get_split_job(max_jobs_per_dataset: Optional[int] = None) -> Tuple[str, str, str, str, int]:
     job = start_job(SplitJob.objects, max_jobs_per_dataset)
-    return str(job.pk), job.dataset_name, job.config_name, job.split_name
+    return str(job.pk), job.dataset_name, job.config_name, job.split_name, job.retries
     # ^ job.pk is the id. job.id is not recognized by mypy
 
 
@@ -290,13 +296,15 @@ def clean_database() -> None:
 def cancel_started_dataset_jobs() -> None:
     for job in get_started(DatasetJob.objects):
         job.update(finished_at=datetime.utcnow(), status=Status.CANCELLED)
-        add_dataset_job(dataset_name=job.dataset_name)
+        add_dataset_job(dataset_name=job.dataset_name, retries=job.retries)
 
 
 def cancel_started_split_jobs() -> None:
     for job in get_started(SplitJob.objects):
         job.update(finished_at=datetime.utcnow(), status=Status.CANCELLED)
-        add_split_job(dataset_name=job.dataset_name, config_name=job.config_name, split_name=job.split_name)
+        add_split_job(
+            dataset_name=job.dataset_name, config_name=job.config_name, split_name=job.split_name, retries=job.retries
+        )
 
 
 # special reports

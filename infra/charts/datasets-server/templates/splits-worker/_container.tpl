@@ -3,8 +3,6 @@
   env:
   - name: ASSETS_DIRECTORY
     value: {{ .Values.splitsWorker.assetsDirectory | quote }}
-  - name: DATASETS_BLOCKLIST
-    value: {{ .Values.datasetsBlocklist | quote }}
   - name: DATASETS_REVISION
     value: {{ .Values.splitsWorker.datasetsRevision | quote }}
   - name: HF_DATASETS_CACHE
@@ -21,6 +19,8 @@
         optional: false
   - name: LOG_LEVEL
     value: {{ .Values.splitsWorker.logLevel | quote }}
+  - name: MAX_JOB_RETRIES
+    value: {{ .Values.splitsWorker.maxJobRetries | quote }}
   - name: MAX_JOBS_PER_DATASET
     value: {{ .Values.splitsWorker.maxJobsPerDataset | quote }}
   - name: MAX_LOAD_PCT
