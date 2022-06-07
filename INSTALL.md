@@ -48,7 +48,7 @@ ssh aws/datasets-preview-backend/1
 
 public ipv4: 54.209.89.185
 private ipv4: 172.30.4.71
-domain name: datasets-preview.huggingface.tech
+domain name: datasets-server.huggingface.co
 ```
 
 Grafana (TODO: no data at the moment):

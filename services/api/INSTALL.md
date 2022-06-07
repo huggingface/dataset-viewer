@@ -37,7 +37,7 @@ sudo vi /etc/nginx/sites-available/reverse-proxy.conf
 server {
   listen 80;
   listen [::]:80;
-  server_name datasets-preview.huggingface.tech;
+  server_name datasets-server.huggingface.co;
 
   add_header 'Access-Control-Allow-Origin' '*' always;
 
@@ -115,7 +115,7 @@ Launch the API with pm2:
 pm2 start --name api make -- -C /home/hf/datasets-server/ run
 ```
 
-Check if the api is accessible at https://datasets-preview.huggingface.tech/healthcheck.
+Check if the api is accessible at https://datasets-server.huggingface.co/healthcheck.
 
 Finally, ensure that pm2 will restart on reboot (see https://pm2.keymetrics.io/docs/usage/startup/):
 
@@ -191,6 +191,6 @@ Restart
 pm2 restart api
 ```
 
-Check if the API is accessible at https://datasets-preview.huggingface.tech/healthcheck.
+Check if the API is accessible at https://datasets-server.huggingface.co/healthcheck.
 
 Finally un-pause the monitor at https://betteruptime.com/team/14149/monitors/389098.
