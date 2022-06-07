@@ -23,12 +23,12 @@ make splits-worker
 Set environment variables to configure the following aspects:
 
 - `ASSETS_DIRECTORY`: directory where the asset files are stored. Defaults to empty, in which case the assets are located in the `datasets_server_assets` subdirectory inside the OS default cache directory.
-- `DATASETS_BLOCKLIST`: comma-separated list of datasets that will never be processed. It's used to preventively block the biggest datasets, that we don't know how to manage properly in our infrastructure. An example: `DATASETS_BLOCKLIST="Alvenir/nst-da-16khz,bigscience/P3,clips/mqa"` (use [`\`](https://stackoverflow.com/a/3871336/7351594) to have one dataset per line if it makes the list more readable). Defaults to empty.
 - `DATASETS_REVISION`: git reference for the canonical datasets on https://github.com/huggingface/datasets. Defaults to `master`.
 - `HF_DATASETS_CACHE`: directory where the `datasets` library will store the cached datasets data. Defaults to `~/.cache/huggingface/datasets`.
 - `HF_MODULES_CACHE`: directory where the `datasets` library will store the cached datasets scripts. Defaults to `~/.cache/huggingface/modules`.
 - `HF_TOKEN`: App Access Token (ask moonlanding administrators to get one, only the `read` role is required), to access the gated datasets. Defaults to empty.
 - `LOG_LEVEL`: log level, among `DEBUG`, `INFO`, `WARNING`, `ERROR` and `CRITICAL`. Defaults to `INFO`.
+- `MAX_JOB_RETRIES`: the maximum number of job retries (for uncaught errors, such as RAM shortage) for the same job. The job is re-enqueued if an unexpected server error occurred and if its "retries" number is under `MAX_JOB_RETRIES`. Defaults to 3.
 - `MAX_JOBS_PER_DATASET`: the maximum number of started jobs for the same dataset. Defaults to 1.
 - `MAX_LOAD_PCT`: the maximum load of the machine (in percentage: the max between the 1m load and the 5m load divided by the number of cpus \*100) allowed to start a job. Set to 0 to disable the test. Defaults to 70.
 - `MAX_MEMORY_PCT`: the maximum memory (RAM + SWAP) usage of the machine (in percentage) allowed to start a job. Set to 0 to disable the test. Defaults to 80.

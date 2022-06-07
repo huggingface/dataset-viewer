@@ -6,6 +6,7 @@ from libcache.asset import show_assets_dir
 from libcache.cache import connect_to_cache
 from libqueue.queue import (
     EmptyQueue,
+    add_dataset_job,
     add_split_job,
     connect_to_queue,
     finish_dataset_job,
@@ -13,7 +14,7 @@ from libqueue.queue import (
     get_dataset_job,
     get_split_job,
 )
-from libutils.exceptions import Status400Error
+from libutils.exceptions import Status500Error, StatusError
 from libutils.logger import init_logger
 from psutil import cpu_count, getloadavg, swap_memory, virtual_memory
 
@@ -21,6 +22,7 @@ from worker.config import (
     ASSETS_DIRECTORY,
     HF_TOKEN,
     LOG_LEVEL,
+    MAX_JOB_RETRIES,
     MAX_JOBS_PER_DATASET,
     MAX_LOAD_PCT,
     MAX_MEMORY_PCT,
@@ -42,7 +44,7 @@ def process_next_dataset_job() -> bool:
     logger.debug("try to process a dataset job")
 
     try:
-        job_id, dataset_name = get_dataset_job(MAX_JOBS_PER_DATASET)
+        job_id, dataset_name, retries = get_dataset_job(MAX_JOBS_PER_DATASET)
         logger.debug(f"job assigned: {job_id} for dataset: {dataset_name}")
     except EmptyQueue:
         logger.debug("no job in the queue")
@@ -60,12 +62,13 @@ def process_next_dataset_job() -> bool:
             add_split_job(
                 split_full_name["dataset_name"], split_full_name["config_name"], split_full_name["split_name"]
             )
-    except Status400Error:
-        pass
-    finally:
+    except StatusError as e:
         finish_dataset_job(job_id, success=success)
         result = "success" if success else "error"
         logger.debug(f"job finished with {result}: {job_id} for dataset: {dataset_name}")
+        if isinstance(e, Status500Error) and retries < MAX_JOB_RETRIES:
+            add_dataset_job(dataset_name, retries=retries + 1)
+            logger.debug(f"job re-enqueued (retries: {retries}) for dataset: {dataset_name}")
     return True
 
 
@@ -74,7 +77,7 @@ def process_next_split_job() -> bool:
     logger.debug("try to process a split job")
 
     try:
-        job_id, dataset_name, config_name, split_name = get_split_job(MAX_JOBS_PER_DATASET)
+        job_id, dataset_name, config_name, split_name, retries = get_split_job(MAX_JOBS_PER_DATASET)
         logger.debug(
             f"job assigned: {job_id} for split '{split_name}' from dataset '{dataset_name}' with config"
             f" '{config_name}'"
@@ -100,15 +103,19 @@ def process_next_split_job() -> bool:
             rows_min_number=ROWS_MIN_NUMBER,
         )
         success = True
-    except Status400Error:
-        pass
-    finally:
+    except StatusError as e:
         finish_split_job(job_id, success=success)
         result = "success" if success else "error"
         logger.debug(
             f"job finished with {result}: {job_id} for split '{split_name}' from dataset '{dataset_name}' with"
             f" config '{config_name}'"
         )
+        if isinstance(e, Status500Error) and retries < MAX_JOB_RETRIES:
+            add_split_job(dataset_name, config_name, split_name, retries=retries + 1)
+            logger.debug(
+                f"job re-enqueued (retries: {retries}) for split '{split_name}' from dataset '{dataset_name}' with"
+                f" config '{config_name}'"
+            )
     return True
 
 
@@ -167,8 +174,9 @@ def loop() -> None:
                     # loop immediately to try another job
                     # see https://github.com/huggingface/datasets-server/issues/265
                     continue
-            except Exception:
-                logger.warning("error while processing the job")
+            except BaseException as e:
+                logger.critical(f"quit due to an uncaught error while processing the job: {e}")
+                raise
         sleep()
 
 

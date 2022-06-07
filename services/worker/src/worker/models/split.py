@@ -6,7 +6,6 @@ from libutils.types import ColumnItem, RowItem, RowsResponse, Split
 from libutils.utils import orjson_dumps
 
 from worker.config import MIN_CELL_BYTES
-from worker.models._guard import guard_blocked_datasets
 from worker.models.column import Column
 from worker.models.info import get_info
 from worker.models.row import Row
@@ -149,7 +148,6 @@ def get_split(
     rows_min_number: Optional[int] = None,
 ) -> Split:
     logger.info(f"get split '{split_name}' for config '{config_name}' of dataset '{dataset_name}'")
-    guard_blocked_datasets(dataset_name)
     info = get_info(dataset_name, config_name, hf_token)
     fallback = (
         max_size_fallback is not None and info.size_in_bytes is not None and info.size_in_bytes < max_size_fallback

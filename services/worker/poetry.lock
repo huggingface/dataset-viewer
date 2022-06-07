@@ -931,6 +931,7 @@ python-versions = "*"
 [package.source]
 type = "url"
 url = "https://github.com/kpu/kenlm/archive/master.zip"
+
 [[package]]
 name = "keras"
 version = "2.9.0"
@@ -966,7 +967,7 @@ python-versions = ">=3"
 
 [[package]]
 name = "libcache"
-version = "0.1.1"
+version = "0.1.5"
 description = "Library for the cache in mongodb"
 category = "main"
 optional = false
@@ -981,7 +982,7 @@ pymongo = {version = ">=3.12.3,<4.0.0", extras = ["srv"]}
 
 [package.source]
 type = "file"
-url = "../../libs/libcache/dist/libcache-0.1.1-py3-none-any.whl"
+url = "../../libs/libcache/dist/libcache-0.1.5-py3-none-any.whl"
 
 [[package]]
 name = "libclang"
@@ -993,7 +994,7 @@ python-versions = "*"
 
 [[package]]
 name = "libqueue"
-version = "0.1.1"
+version = "0.1.4"
 description = "Library for the jobs queue in mongodb"
 category = "main"
 optional = false
@@ -1007,7 +1008,7 @@ pymongo = {version = ">=3.12.3,<4.0.0", extras = ["srv"]}
 
 [package.source]
 type = "file"
-url = "../../libs/libqueue/dist/libqueue-0.1.1-py3-none-any.whl"
+url = "../../libs/libqueue/dist/libqueue-0.1.4-py3-none-any.whl"
 
 [[package]]
 name = "librosa"
@@ -2531,7 +2532,7 @@ cffi = ["cffi (>=1.11)"]
 [metadata]
 lock-version = "1.1"
 python-versions = "3.9.6"
-content-hash = "44593aeafa3189109418ece8e79540506455aa93a665897bbe755424030937c1"
+content-hash = "f19b3b1a92a1c4fe6faf65e2c279459b684da0f55aef35b187e7b88c5d0efc7e"
 
 [metadata.files]
 absl-py = [
@@ -3322,7 +3323,7 @@ kss = [
     {file = "kss-2.6.0-py3-none-any.whl", hash = "sha256:fedbdcd0bfc33111d7817866dd60346dab79f9f1ca5bab0026c4ee40e5941b0c"},
 ]
 libcache = [
-    {file = "libcache-0.1.1-py3-none-any.whl", hash = "sha256:40e7ae95c00d2213bdc4f80091a33367cc86c34ebccc787250e68ab9d0ff291e"},
+    {file = "libcache-0.1.5-py3-none-any.whl", hash = "sha256:85c5406a3d29504072ac2e5589fc9262ec9e6a4c15db70cd5fd5b377d765f21a"},
 ]
 libclang = [
     {file = "libclang-14.0.1-py2.py3-none-macosx_10_9_x86_64.whl", hash = "sha256:a00c5f433af032979ac0cf03bcba59cf5247cb01fa04ef2380bf9668e84d50a9"},
@@ -3334,7 +3335,7 @@ libclang = [
     {file = "libclang-14.0.1-py2.py3-none-win_amd64.whl", hash = "sha256:1a4f0d5959c801c975950926cffb9b45521c890d7c4b730d8a1f688d75b25de9"},
 ]
 libqueue = [
-    {file = "libqueue-0.1.1-py3-none-any.whl", hash = "sha256:50a690a0cbfc157a36ec19c1ce343a8f0b1b3a060e93c3f566c415eba8e225f9"},
+    {file = "libqueue-0.1.4-py3-none-any.whl", hash = "sha256:64d3f22ab0d667ed6a9b5aed79d481c32eca5f5d948caa824f6feedfa11a89df"},
 ]
 librosa = [
     {file = "librosa-0.9.1-py3-none-any.whl", hash = "sha256:c2bb61a8008367cca89a3f1dad352d8e55fe5ca5f7414fb5d5258eb52765db33"},

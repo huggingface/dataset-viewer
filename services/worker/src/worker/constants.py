@@ -1,10 +1,10 @@
-from typing import List, Optional
+from typing import Optional
 
 DEFAULT_ASSETS_DIRECTORY: None = None
-DEFAULT_DATASETS_BLOCKLIST: List[str] = []
 DEFAULT_DATASETS_REVISION: str = "master"
 DEFAULT_HF_TOKEN: Optional[str] = None
 DEFAULT_LOG_LEVEL: str = "INFO"
+DEFAULT_MAX_JOB_RETRIES: int = 3
 DEFAULT_MAX_JOBS_PER_DATASET: int = 1
 DEFAULT_MAX_LOAD_PCT: int = 70
 DEFAULT_MAX_MEMORY_PCT: int = 80
