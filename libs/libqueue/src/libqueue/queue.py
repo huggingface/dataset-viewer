@@ -296,13 +296,15 @@ def clean_database() -> None:
 def cancel_started_dataset_jobs() -> None:
     for job in get_started(DatasetJob.objects):
         job.update(finished_at=datetime.utcnow(), status=Status.CANCELLED)
-        add_dataset_job(dataset_name=job.dataset_name)
+        add_dataset_job(dataset_name=job.dataset_name, retries=job.retries)
 
 
 def cancel_started_split_jobs() -> None:
     for job in get_started(SplitJob.objects):
         job.update(finished_at=datetime.utcnow(), status=Status.CANCELLED)
-        add_split_job(dataset_name=job.dataset_name, config_name=job.config_name, split_name=job.split_name)
+        add_split_job(
+            dataset_name=job.dataset_name, config_name=job.config_name, split_name=job.split_name, retries=job.retries
+        )
 
 
 # special reports
