@@ -54,19 +54,27 @@ def process_next_dataset_job() -> bool:
         raise
 
     success = False
+    retry = False
     try:
         logger.info(f"compute dataset '{dataset_name}'")
         split_full_names = refresh_dataset_split_full_names(dataset_name=dataset_name, hf_token=HF_TOKEN)
         success = True
         for split_full_name in split_full_names:
             add_split_job(
-                split_full_name["dataset_name"], split_full_name["config_name"], split_full_name["split_name"]
+                split_full_name["dataset_name"],
+                split_full_name["config_name"],
+                split_full_name["split_name"],
+                retries=0,
             )
     except StatusError as e:
+        if isinstance(e, Status500Error) and retries < MAX_JOB_RETRIES:
+            retry = True
+        # in any case: don't raise the StatusError, and go to finally
+    finally:
         finish_dataset_job(job_id, success=success)
         result = "success" if success else "error"
         logger.debug(f"job finished with {result}: {job_id} for dataset: {dataset_name}")
-        if isinstance(e, Status500Error) and retries < MAX_JOB_RETRIES:
+        if retry:
             add_dataset_job(dataset_name, retries=retries + 1)
             logger.debug(f"job re-enqueued (retries: {retries}) for dataset: {dataset_name}")
     return True
@@ -90,6 +98,7 @@ def process_next_split_job() -> bool:
         raise
 
     success = False
+    retry = False
     try:
         logger.info(f"compute split '{split_name}' from dataset '{dataset_name}' with config '{config_name}'")
         refresh_split(
@@ -104,13 +113,17 @@ def process_next_split_job() -> bool:
         )
         success = True
     except StatusError as e:
+        if isinstance(e, Status500Error) and retries < MAX_JOB_RETRIES:
+            retry = True
+        # in any case: don't raise the StatusError, and go to finally
+    finally:
         finish_split_job(job_id, success=success)
         result = "success" if success else "error"
         logger.debug(
             f"job finished with {result}: {job_id} for split '{split_name}' from dataset '{dataset_name}' with"
             f" config '{config_name}'"
         )
-        if isinstance(e, Status500Error) and retries < MAX_JOB_RETRIES:
+        if retry:
             add_split_job(dataset_name, config_name, split_name, retries=retries + 1)
             logger.debug(
                 f"job re-enqueued (retries: {retries}) for split '{split_name}' from dataset '{dataset_name}' with"
@@ -167,17 +180,16 @@ def sleep() -> None:
 
 def loop() -> None:
     logger = logging.getLogger("datasets_server.worker")
-    while True:
-        if has_resources():
-            try:
-                if process_next_job():
-                    # loop immediately to try another job
-                    # see https://github.com/huggingface/datasets-server/issues/265
-                    continue
-            except BaseException as e:
-                logger.critical(f"quit due to an uncaught error while processing the job: {e}")
-                raise
-        sleep()
+    try:
+        while True:
+            if has_resources() and process_next_job():
+                # loop immediately to try another job
+                # see https://github.com/huggingface/datasets-server/issues/265
+                continue
+            sleep()
+    except BaseException as e:
+        logger.critical(f"quit due to an uncaught error while processing the job: {e}")
+        raise
 
 
 if __name__ == "__main__":
