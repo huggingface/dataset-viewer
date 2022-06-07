@@ -2,8 +2,8 @@
   "dockerImage": {
     "admin": "707930574880.dkr.ecr.us-east-1.amazonaws.com/hub-datasets-server-admin:sha-c26970d",
     "api": "707930574880.dkr.ecr.us-east-1.amazonaws.com/hub-datasets-server-api:sha-131ef42",
-    "datasetsWorker": "707930574880.dkr.ecr.us-east-1.amazonaws.com/hub-datasets-server-worker:sha-af11d19",
+    "datasetsWorker": "707930574880.dkr.ecr.us-east-1.amazonaws.com/hub-datasets-server-worker:sha-53b482d",
     "reverseProxy": "docker.io/nginx:1.20",
-    "splitsWorker": "707930574880.dkr.ecr.us-east-1.amazonaws.com/hub-datasets-server-worker:sha-af11d19",
+    "splitsWorker": "707930574880.dkr.ecr.us-east-1.amazonaws.com/hub-datasets-server-worker:sha-53b482d",
   }  
 }
