@@ -89,7 +89,7 @@ api:
   appNumWorkers: "1"
 
 datasetsWorker:
-  replicas: 2
+  replicas: 1
 
   nodeSelector:
     role-datasets-server: "true"
@@ -102,7 +102,7 @@ datasetsWorker:
       memory: "20Gi"
 
 splitsWorker:
-  replicas: 2
+  replicas: 3
 
   nodeSelector:
     role-datasets-server: "true"
@@ -112,7 +112,7 @@ splitsWorker:
       cpu: 0.01
     limits:
       cpu: 3
-      memory: "20Gi"
+      memory: "24Gi"
 
   # Log level
   logLevel: "DEBUG"
