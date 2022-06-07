@@ -452,7 +452,7 @@ plugins = ["setuptools"]
 
 [[package]]
 name = "libcache"
-version = "0.1.4"
+version = "0.1.5"
 description = "Library for the cache in mongodb"
 category = "main"
 optional = false
@@ -467,11 +467,11 @@ pymongo = {version = ">=3.12.3,<4.0.0", extras = ["srv"]}
 
 [package.source]
 type = "file"
-url = "../../libs/libcache/dist/libcache-0.1.4-py3-none-any.whl"
+url = "../../libs/libcache/dist/libcache-0.1.5-py3-none-any.whl"
 
 [[package]]
 name = "libqueue"
-version = "0.1.2"
+version = "0.1.5"
 description = "Library for the jobs queue in mongodb"
 category = "main"
 optional = false
@@ -485,7 +485,7 @@ pymongo = {version = ">=3.12.3,<4.0.0", extras = ["srv"]}
 
 [package.source]
 type = "file"
-url = "../../libs/libqueue/dist/libqueue-0.1.2-py3-none-any.whl"
+url = "../../libs/libqueue/dist/libqueue-0.1.5-py3-none-any.whl"
 
 [[package]]
 name = "libutils"
@@ -1198,7 +1198,7 @@ watchmedo = ["PyYAML (>=3.10)"]
 [metadata]
 lock-version = "1.1"
 python-versions = "3.9.6"
-content-hash = "8b6565d38b9b7d1fbc74df408200b9d0080802f887c1acc16bfebc2474c8e7f1"
+content-hash = "3e8d028fd11ca2b8e5b175a8de3f1d1da74a498682a668826504ad51a01deca5"
 
 [metadata.files]
 anyio = [
@@ -1468,10 +1468,10 @@ isort = [
     {file = "isort-5.10.1.tar.gz", hash = "sha256:e8443a5e7a020e9d7f97f1d7d9cd17c88bcb3bc7e218bf9cf5095fe550be2951"},
 ]
 libcache = [
-    {file = "libcache-0.1.4-py3-none-any.whl", hash = "sha256:0a2bb15d2a26fc7dd8db1813da4899fbcc417df6b946d2f9c59fd0c4d0d75d50"},
+    {file = "libcache-0.1.5-py3-none-any.whl", hash = "sha256:85c5406a3d29504072ac2e5589fc9262ec9e6a4c15db70cd5fd5b377d765f21a"},
 ]
 libqueue = [
-    {file = "libqueue-0.1.2-py3-none-any.whl", hash = "sha256:31b9f1ecc84edf6c188ee53af21cdb29ee222695145ed310175d0a35ef5fd6c4"},
+    {file = "libqueue-0.1.5-py3-none-any.whl", hash = "sha256:6ae2145e259d5fd7ad6112e63c30205030a0fbf972fba9028d43b6dd5766581f"},
 ]
 libutils = [
     {file = "libutils-0.1.1-py3-none-any.whl", hash = "sha256:6f119f45b98d62f5bc10b6212b6a8f31f579c0890a36d9877f5dd0f0889b0c37"},
