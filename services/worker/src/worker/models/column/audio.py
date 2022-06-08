@@ -15,16 +15,20 @@ from worker.models.column.default import (
 
 
 def check_value(value: Any) -> None:
-    if value is not None:
-        try:
-            path = value["path"]
-            array = value["array"]
-        except Exception as e:
-            raise CellTypeError("audio cell must contain 'path' and 'array' fields") from e
-        if type(path) != str:
-            raise CellTypeError("'path' field must be a string")
-        if type(array) != ndarray:
-            raise CellTypeError("'array' field must be a numpy.ndarray")
+    if value is None:
+        return
+    try:
+        path = value["path"]
+        array = value["array"]
+        sampling_rate = value["sampling_rate"]
+    except Exception as e:
+        raise CellTypeError("audio cell must contain 'path' and 'array' fields") from e
+    if path is not None and type(path) != str:
+        raise CellTypeError("'path' field must be a string or None")
+    if type(array) != ndarray:
+        raise CellTypeError("'array' field must be a numpy.ndarray")
+    if type(sampling_rate) != int:
+        raise CellTypeError("'sampling_rate' field must be an integer")
 
 
 def infer_from_values(values: List[Any]) -> None:

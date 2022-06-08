@@ -83,3 +83,14 @@ def test_audio_dataset() -> None:
     assert typed_rows[0]["Output"][0]["type"] == "audio/mpeg"
     assert typed_rows[0]["Output"][1]["type"] == "audio/wav"
     assert typed_rows[0]["Output"][0]["src"] == "assets/abidlabs/test-audio-1/--/test/train/0/Output/audio.mp3"
+
+
+def test_audio_path_none_dataset() -> None:
+    info = get_info("LIUM/tedlium", "release1")
+    typed_rows, columns = get_typed_rows_and_columns("LIUM/tedlium", "release1", "test", info, rows_max_number=1)
+    assert len(typed_rows) == 1
+    assert columns[0].type == ColumnType.AUDIO_RELATIVE_SOURCES
+    assert len(typed_rows[0]["audio"]) == 2
+    assert typed_rows[0]["audio"][0]["type"] == "audio/mpeg"
+    assert typed_rows[0]["audio"][1]["type"] == "audio/wav"
+    assert typed_rows[0]["audio"][0]["src"] == "assets/LIUM/tedlium/--/release1/test/0/audio/audio.mp3"
