@@ -45,6 +45,8 @@
         key: MONGO_URL
         optional: false
   {{- end }}
+  - name: NUMBA_CACHE_DIR
+    value: {{ .Values.splitsWorker.numbaCacheDirectory | quote }}
   - name: ROWS_MAX_BYTES
     value: {{ .Values.splitsWorker.rowsMaxBytes | quote }}
   - name: ROWS_MAX_NUMBER
@@ -68,6 +70,11 @@
     mountPropagation: None
     name: nfs
     subPath: "{{ include "cache.subpath" . }}"
+    readOnly: false
+  - mountPath: {{ .Values.splitsWorker.numbaCacheDirectory | quote }}
+    mountPropagation: None
+    name: nfs
+    subPath: "{{ include "numba.cache.subpath" . }}"
     readOnly: false
   securityContext:
     allowPrivilegeEscalation: false

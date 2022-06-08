@@ -131,6 +131,8 @@ datasetsWorker:
   maxSizeFallback: "100_000_000"
   # Min size of a cell in the /rows endpoint response in bytes
   minCellBytes: 100
+  # Directory of the "numba" library cache
+  numbaCacheDirectory: "/numba-cache"
   # Max size of the /rows endpoint response in bytes
   rowMaxBytes: "1_000_000"
   # Max number of rows in the /rows endpoint response
@@ -171,6 +173,8 @@ splitsWorker:
   maxSizeFallback: "100_000_000"
   # Min size of a cell in the /rows endpoint response in bytes
   minCellBytes: 100
+  # Directory of the "numba" library cache
+  numbaCacheDirectory: "/numba-cache"
   # Max size of the /rows endpoint response in bytes
   rowMaxBytes: "1_000_000"
   # Max number of rows in the /rows endpoint response
