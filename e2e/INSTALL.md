@@ -18,3 +18,10 @@ make install
 ```
 
 It will create a virtual environment in a `./.venv/` subdirectory.
+
+You must also login to AWS to be able to download the docker images:
+
+```
+aws ecr get-login-password --region us-east-1 --profile=hub-prod \
+    | docker login --username AWS --password-stdin 707930574880.dkr.ecr.us-east-1.amazonaws.com
+```
