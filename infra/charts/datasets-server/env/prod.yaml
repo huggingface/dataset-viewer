@@ -1,17 +1,18 @@
 # resources for the prod namespace are defined here: https://us-east-1.console.aws.amazon.com/eks/home?region=us-east-1#/clusters/hub-prod/nodegroups/datasets-server-20220513085103612000000001
 # the nodes are 4 t3.2xlarge instances (8 vCPUs, 32 GiB), ie:
-# 32 vCPUs and 128 GiB RAM are available
+# 32 vCPUs and 128 GiB RAM are available (but no more than 8 cpus or 32 GiB for each pod)
 #
 # the max resources (limits) per deployment are:
 # - reverse-proxy: 2 pods -> 2 CPUs, 512MiB
 # - api: 4 pods -> 4 CPUs, 4 GiB
 # - admin: 1 pod -> 1 CPU
-# this lets 25 CPUs, and 123 GB for the workers
-# But due to toleration "CriticalAddonsOnly" which does not allow to deploy,
-# we have to use less... It seems that, with 3 CPUs and 20GB for every
-# datasets and splits worker, we can only deploy 4 workers
-# - datasets-worker: 2 workers -> 6 CPUs, 40 GiB
-# - splits-worker: 2 workers -> 6 CPUs, 40 GiB
+# this lets 25 CPUs, and 123 GiB for the workers
+# we will over-commit the resources by a factor 4 in order to get more workers
+# available in case of burst of jobs (most of the jobs don't require much resources)
+# so: 100 CPUs and 492 GiB RAM
+#
+# - datasets-worker: 4 workers -> 6 CPUs, 30 GiB
+# - splits-worker: 12 workers -> 6 CPUs, 30 GiB
 
 mongodb:
   enabled: false
@@ -99,11 +100,11 @@ datasetsWorker:
       cpu: 0.01
       memory: "1Gi"
     limits:
-      cpu: 3
-      memory: "20Gi"
+      cpu: 6
+      memory: "30Gi"
 
 splitsWorker:
-  replicas: 6
+  replicas: 10
 
   nodeSelector:
     role-datasets-server: "true"
@@ -114,12 +115,12 @@ splitsWorker:
       memory: "1Gi"
     limits:
       cpu: 6
-      memory: "48Gi"
+      memory: "30Gi"
 
   # Log level
   logLevel: "DEBUG"
   # Maximum number of jobs running at the same time for the same dataset
-  maxJobsPerDataset: 2
+  maxJobsPerDataset: 5
 
 admin:
   replicas: 1
