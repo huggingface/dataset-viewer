@@ -8,6 +8,8 @@ from mongoengine import DoesNotExist
 
 from libcache.cache import (
     DbDataset,
+    DbSplit,
+    Status,
     clean_database,
     connect_to_cache,
     delete_dataset_cache,
@@ -55,14 +57,19 @@ def test_save_and_update() -> None:
     assert retrieved[0].status.value == "valid"
 
 
-def test_acronym_identification() -> None:
+def test_upsert_dataset() -> None:
     dataset_name = "test_dataset"
     split_full_names: List[SplitFullName] = [
         {"dataset_name": dataset_name, "config_name": "test_config", "split_name": "test_split"}
     ]
     upsert_dataset(dataset_name, split_full_names)
+    split = DbSplit.objects(dataset_name=dataset_name).get()
+    assert split.status == Status.EMPTY
     # ensure it's idempotent
     upsert_dataset(dataset_name, split_full_names)
+    split = DbSplit.objects(dataset_name=dataset_name).get()
+    assert split.status == Status.EMPTY
+
     retrieved = DbDataset.objects(dataset_name=dataset_name).get()
     assert retrieved.dataset_name == dataset_name
     assert retrieved.status.value == "valid"

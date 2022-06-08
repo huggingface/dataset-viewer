@@ -319,12 +319,18 @@ def mark_dataset_as_stalled(dataset_name: str):
 
 def create_or_mark_split_as_stalled(split_full_name: SplitFullName, split_idx: int):
     try:
-        DbSplit.objects(
-            dataset_name=split_full_name["dataset_name"],
-            config_name=split_full_name["config_name"],
-            split_name=split_full_name["split_name"],
+        dataset_name = split_full_name["dataset_name"]
+        config_name = split_full_name["config_name"]
+        split_name = split_full_name["split_name"]
+        split = DbSplit.objects(
+            dataset_name=dataset_name,
+            config_name=config_name,
+            split_name=split_name,
         ).get()
-        mark_split_as_stalled(split_full_name, split_idx)
+        if split.status == Status.EMPTY:
+            logger.debug(f"dataset '{dataset_name}': let split {split_name} in config {config_name} as empty")
+        else:
+            mark_split_as_stalled(split_full_name, split_idx)
     except DoesNotExist:
         create_empty_split(split_full_name, split_idx)
 
