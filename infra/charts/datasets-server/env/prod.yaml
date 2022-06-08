@@ -103,7 +103,7 @@ datasetsWorker:
       memory: "20Gi"
 
 splitsWorker:
-  replicas: 12
+  replicas: 6
 
   nodeSelector:
     role-datasets-server: "true"
@@ -113,13 +113,13 @@ splitsWorker:
       cpu: 0.01
       memory: "1Gi"
     limits:
-      cpu: 3
-      memory: "24Gi"
+      cpu: 6
+      memory: "48Gi"
 
   # Log level
   logLevel: "DEBUG"
   # Maximum number of jobs running at the same time for the same dataset
-  maxJobsPerDataset: 1
+  maxJobsPerDataset: 2
 
 admin:
   replicas: 1
