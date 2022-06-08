@@ -37,6 +37,7 @@ Set environment variables to configure the following aspects:
 - `MONGO_CACHE_DATABASE`: the name of the database used for storing the cache. Defaults to `"datasets_server_cache"`.
 - `MONGO_QUEUE_DATABASE`: the name of the database used for storing the queue. Defaults to `"datasets_server_queue"`.
 - `MONGO_URL`: the URL used to connect to the mongo db server. Defaults to `"mongodb://localhost:27017"`.
+- `NUMBA_CACHE_DIR`: directory where the `numba` decorators (used by `librosa`) can write cache. Required on cloud infrastructure (see https://stackoverflow.com/a/63367171/7351594).
 - `ROWS_MAX_BYTES`: the max size of the /rows endpoint response in bytes. Defaults to `1_000_000` (1 MB).
 - `ROWS_MAX_NUMBER`: the max number of rows fetched by the worker for the split, and provided in the /rows endpoint response. Defaults to `100`.
 - `ROWS_MIN_NUMBER`: the min number of rows fetched by the worker for the split, and provided in the /rows endpoint response. Defaults to `10`.

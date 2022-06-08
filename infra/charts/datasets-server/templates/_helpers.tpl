@@ -70,7 +70,7 @@ app: "{{ include "release" . }}-admin"
 {{/*
 The assets/ subpath in the NFS
 - in a subdirectory named as the chart (datasets-server/), and below it,
-- in a subdirectory named as the Release, so that Releases will not share the same assets/ dir
+- in a subdirectory named as the Release, so that Releases will not share the same dir
 */}}
 {{- define "assets.subpath" -}}
 {{- printf "%s/%s/%s/" .Chart.Name .Release.Name "assets" }}
@@ -79,16 +79,25 @@ The assets/ subpath in the NFS
 {{/*
 The cache/ subpath in the NFS
 - in a subdirectory named as the chart (datasets-server/), and below it,
-- in a subdirectory named as the Release, so that Releases will not share the same assets/ dir
+- in a subdirectory named as the Release, so that Releases will not share the same dir
 */}}
 {{- define "cache.subpath" -}}
 {{- printf "%s/%s/%s/" .Chart.Name .Release.Name "cache" }}
 {{- end }}
 
 {{/*
-The cache/ subpath in the NFS
+The numba-cache/ subpath in the NFS
 - in a subdirectory named as the chart (datasets-server/), and below it,
-- in a subdirectory named as the Release, so that Releases will not share the same assets/ dir
+- in a subdirectory named as the Release, so that Releases will not share the same dir
+*/}}
+{{- define "numba.cache.subpath" -}}
+{{- printf "%s/%s/%s/" .Chart.Name .Release.Name "numba-cache" }}
+{{- end }}
+
+{{/*
+The nginx-cache/ subpath in the NFS
+- in a subdirectory named as the chart (datasets-server/), and below it,
+- in a subdirectory named as the Release, so that Releases will not share the same dir
 */}}
 {{- define "nginx.cache.subpath" -}}
 {{- printf "%s/%s/%s/" .Chart.Name .Release.Name "nginx-cache" }}
