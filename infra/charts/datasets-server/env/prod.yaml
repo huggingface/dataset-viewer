@@ -2,17 +2,16 @@
 # the nodes are 4 t3.2xlarge instances (8 vCPUs, 32 GiB), ie:
 # 32 vCPUs and 128 GiB RAM are available
 #
-# the max resources lmimits) per deployment are:
+# the max resources (limits) per deployment are:
 # - reverse-proxy: 2 pods -> 2 CPUs, 512MiB
 # - api: 4 pods -> 4 CPUs, 4 GiB
 # - admin: 1 pod -> 1 CPU
 # this lets 25 CPUs, and 123 GB for the workers
-# Let's overcommit by a factor 4, ie 100 CPUs and 492 GB,
-# and give the same amount of max resources to the datasets
-# and splits workers: 6 CPUs and 32GB
-# This means about 16 pods
-# - datasets-worker: 4 workers -> 24 CPUs, 128 GiB
-# - splits-worker: 12 workers -> 72 CPUs, 384 GiB
+# But due to toleration "CriticalAddonsOnly" which does not allow to deploy,
+# we have to use less... It seems that, with 3 CPUs and 20GB for every
+# datasets and splits worker, we can only deploy 4 workers
+# - datasets-worker: 2 workers -> 6 CPUs, 40 GiB
+# - splits-worker: 2 workers -> 6 CPUs, 40 GiB
 
 mongodb:
   enabled: false
@@ -98,12 +97,13 @@ datasetsWorker:
   resources:
     requests:
       cpu: 0.01
+      memory: "1Gi"
     limits:
-      cpu: 6
-      memory: "32Gi"
+      cpu: 3
+      memory: "20Gi"
 
 splitsWorker:
-  replicas: 8
+  replicas: 6
 
   nodeSelector:
     role-datasets-server: "true"
@@ -111,9 +111,10 @@ splitsWorker:
   resources:
     requests:
       cpu: 0.01
+      memory: "1Gi"
     limits:
       cpu: 6
-      memory: "32Gi"
+      memory: "48Gi"
 
   # Log level
   logLevel: "DEBUG"
