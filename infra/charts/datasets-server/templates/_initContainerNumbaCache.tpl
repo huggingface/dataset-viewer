@@ -1,5 +1,5 @@
 {{- define "initContainerNumbaCache" -}}
-- name: prepare-cache
+- name: prepare-numba-cache
   image: ubuntu:focal
   imagePullPolicy: IfNotPresent
   command: ["/bin/sh", "-c"]
