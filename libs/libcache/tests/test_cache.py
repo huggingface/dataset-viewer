@@ -1,3 +1,4 @@
+from sqlite3 import Timestamp
 from typing import List
 
 import pytest
@@ -90,9 +91,10 @@ def test_big_row() -> None:
         "num_examples": None,
     }
     upsert_split(dataset_name, config_name, split_name, split)
-    rows_response, error, status_code = get_rows_response(dataset_name, config_name, split_name)
+    json_rows_response, rows_response, error, status_code = get_rows_response(dataset_name, config_name, split_name)
     assert status_code == 500
     assert error is not None
+    assert json_rows_response is None
     assert rows_response is None
     assert error["message"] == "could not store the rows/ cache entry."
     assert error["cause_exception"] == "DocumentTooLarge"
@@ -173,3 +175,38 @@ def test_count_by_status() -> None:
     )
 
     assert get_splits_count_by_status() == {"empty": 0, "error": 0, "stalled": 0, "valid": 1}
+
+
+def test_json_rows_response() -> None:
+    dataset_name = "test_dataset"
+    config_name = "test_config"
+    split_name = "test_split"
+    row: RowItem = {
+        "dataset": dataset_name,
+        "config": config_name,
+        "split": split_name,
+        "row_idx": 0,
+        "row": {"col1": "test", "col2": 1, "col3": Timestamp(2022, 5, 1)},
+        "truncated_cells": [],
+    }
+    upsert_split(
+        "test_dataset",
+        "test_config",
+        "test_split",
+        {
+            "split_name": "test_split",
+            "rows_response": {"rows": [row], "columns": []},
+            "num_bytes": None,
+            "num_examples": None,
+        },
+    )
+    json_rows_response, rows_response, error, status_code = get_rows_response(dataset_name, config_name, split_name)
+    assert error is None
+    assert rows_response is None
+    assert json_rows_response is not None
+    assert status_code == 200
+    assert (
+        json_rows_response
+        == '{"rows":[{"dataset":"test_dataset","config":"test_config","split":"test_split","row_idx":0,'
+        '"row":{"col1":"test","col2":1,"col3":"2022-05-01T00:00:00"},"truncated_cells":[]}],"columns":[]}'
+    )

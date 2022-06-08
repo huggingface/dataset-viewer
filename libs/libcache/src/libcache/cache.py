@@ -17,6 +17,7 @@ from typing import (
 
 from libutils.exceptions import Status400Error, Status500Error, StatusError
 from libutils.types import Split, SplitFullName
+from libutils.utils import orjson_dumps
 from mongoengine import Document, DoesNotExist, connect
 from mongoengine.fields import (
     DateTimeField,
@@ -85,8 +86,12 @@ class SplitsResponse(TypedDict):
     splits: List[SplitItem]
 
 
-def get_empty_rows_response() -> Dict[str, Any]:
-    return {"columns": [], "rows": []}
+def to_json(content: Any) -> str:
+    return orjson_dumps(content).decode("utf-8")
+
+
+def get_empty_json_rows_response() -> str:
+    return to_json({"columns": [], "rows": []})
 
 
 class DbSplit(Document):
@@ -96,7 +101,8 @@ class DbSplit(Document):
     split_idx = IntField(required=True, min_value=0)  # used to maintain the order
     num_bytes = IntField(min_value=0)
     num_examples = IntField(min_value=0)
-    rows_response = DictField(required=True)
+    rows_response = DictField(required=False)
+    json_rows_response = StringField(required=False)
     status = EnumField(Status, default=Status.EMPTY)
     since = DateTimeField(default=datetime.utcnow)
 
@@ -246,7 +252,7 @@ def upsert_split(
             status=Status.VALID,
             num_bytes=split["num_bytes"],
             num_examples=split["num_examples"],
-            rows_response=split["rows_response"],  # TODO: a class method
+            json_rows_response=to_json(split["rows_response"]),
         )
         DbSplitError.objects(dataset_name=dataset_name, config_name=config_name, split_name=split_name).delete()
     except DocumentTooLarge as err:
@@ -288,7 +294,7 @@ def create_empty_split(split_full_name: SplitFullName, split_idx: int):
         split_name=split_name,
         status=Status.EMPTY,
         split_idx=split_idx,
-        rows_response=get_empty_rows_response(),
+        json_rows_response=get_empty_json_rows_response(),
     ).save()
     logger.debug(f"dataset '{dataset_name}': created empty split {split_name} in config {config_name}")
 
@@ -373,7 +379,7 @@ def get_splits_response(dataset_name: str) -> Tuple[Union[SplitsResponse, None],
             for split in DbSplit.objects(dataset_name=dataset_name).only(
                 "dataset_name", "config_name", "split_name", "num_bytes", "num_examples"
             )
-            # ^ don't fetch "rows_response" which can be very large
+            # ^ don't fetch "rows_response"/"json_rows_response" which can be very large
             .order_by("+split_idx")
         ]
     }
@@ -384,7 +390,7 @@ def get_rows_response(
     dataset_name: str,
     config_name: str,
     split_name: str,
-) -> Tuple[Union[Dict[str, Any], None], Union[ErrorItem, None], int]:
+) -> Tuple[Union[str, None], Union[Dict[str, Any], None], Union[ErrorItem, None], int]:
     try:
         split = DbSplit.objects(dataset_name=dataset_name, config_name=config_name, split_name=split_name).get()
     except DoesNotExist as e:
@@ -400,9 +406,12 @@ def get_rows_response(
             dataset_name=dataset_name, config_name=config_name, split_name=split_name
         ).get()
         # ^ can raise DoesNotExist or MultipleObjectsReturned, which should not occur -> we let the exception raise
-        return None, split_error.to_item(), split_error.status_code
+        return None, None, split_error.to_item(), split_error.status_code
 
-    return split.rows_response, None, 200
+    if split.json_rows_response:
+        return split.json_rows_response, None, None, 200
+    else:
+        return None, split.rows_response, None, 200
 
 
 # special reports
