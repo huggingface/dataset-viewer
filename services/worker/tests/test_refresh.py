@@ -1,3 +1,5 @@
+import json
+
 import pytest
 from libcache.cache import (
     DbDataset,
@@ -63,12 +65,16 @@ def test_large_document() -> None:
 
 def test_column_order() -> None:
     refresh_split("acronym_identification", "default", "train")
-    rows_response, error, status_code = get_rows_response("acronym_identification", "default", "train")
+    json_rows_response, rows_response, error, status_code = get_rows_response(
+        "acronym_identification", "default", "train"
+    )
     assert status_code == 200
     assert error is None
-    assert rows_response is not None
-    print(rows_response["columns"])
-    assert "columns" in rows_response
-    assert rows_response["columns"][0]["column"]["name"] == "id"
-    assert rows_response["columns"][1]["column"]["name"] == "tokens"
-    assert rows_response["columns"][2]["column"]["name"] == "labels"
+    assert rows_response is None
+    assert json_rows_response is not None
+    response = json.loads(json_rows_response)
+    print(response["columns"])
+    assert "columns" in response
+    assert response["columns"][0]["column"]["name"] == "id"
+    assert response["columns"][1]["column"]["name"] == "tokens"
+    assert response["columns"][2]["column"]["name"] == "labels"

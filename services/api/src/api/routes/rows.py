@@ -7,7 +7,7 @@ from starlette.requests import Request
 from starlette.responses import Response
 
 from api.config import MAX_AGE_LONG_SECONDS
-from api.routes._utils import get_response
+from api.routes._utils import get_json_response, get_response
 
 logger = logging.getLogger(__name__)
 
@@ -26,8 +26,13 @@ async def rows_endpoint(request: Request) -> Response:
                 or not isinstance(split_name, str)
             ):
                 raise StatusError("Parameters 'dataset', 'config' and 'split' are required", 400)
-            rows_response, rows_error, status_code = get_rows_response(dataset_name, config_name, split_name)
-            return get_response(rows_response or rows_error, status_code, MAX_AGE_LONG_SECONDS)
+            json_rows_response, rows_response, rows_error, status_code = get_rows_response(
+                dataset_name, config_name, split_name
+            )
+            if json_rows_response:
+                return get_json_response(json_rows_response, status_code, MAX_AGE_LONG_SECONDS)
+            else:
+                return get_response(rows_response or rows_error, status_code, MAX_AGE_LONG_SECONDS)
         except StatusError as err:
             if err.message == "The split does not exist." and is_dataset_in_queue(dataset_name):
                 raise Status400Error("The dataset is being processed. Retry later.", err) from err

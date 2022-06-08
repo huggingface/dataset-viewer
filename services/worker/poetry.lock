@@ -967,7 +967,7 @@ python-versions = ">=3"
 
 [[package]]
 name = "libcache"
-version = "0.1.5"
+version = "0.1.6"
 description = "Library for the cache in mongodb"
 category = "main"
 optional = false
@@ -982,7 +982,7 @@ pymongo = {version = ">=3.12.3,<4.0.0", extras = ["srv"]}
 
 [package.source]
 type = "file"
-url = "../../libs/libcache/dist/libcache-0.1.5-py3-none-any.whl"
+url = "../../libs/libcache/dist/libcache-0.1.6-py3-none-any.whl"
 
 [[package]]
 name = "libclang"
@@ -2532,7 +2532,7 @@ cffi = ["cffi (>=1.11)"]
 [metadata]
 lock-version = "1.1"
 python-versions = "3.9.6"
-content-hash = "f19b3b1a92a1c4fe6faf65e2c279459b684da0f55aef35b187e7b88c5d0efc7e"
+content-hash = "1dd53cb040992152bb7bc76237425a591116130a45164c27ecf4746c6a9f047f"
 
 [metadata.files]
 absl-py = [
@@ -3323,7 +3323,7 @@ kss = [
     {file = "kss-2.6.0-py3-none-any.whl", hash = "sha256:fedbdcd0bfc33111d7817866dd60346dab79f9f1ca5bab0026c4ee40e5941b0c"},
 ]
 libcache = [
-    {file = "libcache-0.1.5-py3-none-any.whl", hash = "sha256:85c5406a3d29504072ac2e5589fc9262ec9e6a4c15db70cd5fd5b377d765f21a"},
+    {file = "libcache-0.1.6-py3-none-any.whl", hash = "sha256:5236cd9a6a4235ee2db6b6284fa94e71da71ef160f947413e2cc0c2aebcac698"},
 ]
 libclang = [
     {file = "libclang-14.0.1-py2.py3-none-macosx_10_9_x86_64.whl", hash = "sha256:a00c5f433af032979ac0cf03bcba59cf5247cb01fa04ef2380bf9668e84d50a9"},
