@@ -4,7 +4,7 @@ from typing import List, Optional, Tuple
 from datasets import DatasetInfo
 from libutils.exceptions import Status400Error
 
-from worker.models.column import Column, get_columns
+from worker.models.column import CellTypeError, Column, get_columns
 from worker.models.row import Row, get_rows
 
 logger = logging.getLogger(__name__)
@@ -13,10 +13,13 @@ logger = logging.getLogger(__name__)
 def get_typed_row(
     dataset_name: str, config_name: str, split_name: str, row: Row, row_idx: int, columns: List[Column]
 ) -> Row:
-    return {
-        column.name: column.get_cell_value(dataset_name, config_name, split_name, row_idx, row[column.name])
-        for column in columns
-    }
+    try:
+        return {
+            column.name: column.get_cell_value(dataset_name, config_name, split_name, row_idx, row[column.name])
+            for column in columns
+        }
+    except CellTypeError as err:
+        raise Status400Error("Cell type error.", err) from err
 
 
 def get_typed_rows(
