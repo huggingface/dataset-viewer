@@ -40,6 +40,13 @@ class Split(TypedDict):
     num_examples: Optional[int]
 
 
+class JSONSplit(TypedDict):
+    split_name: str
+    json_rows_response: str
+    num_bytes: Optional[int]
+    num_examples: Optional[int]
+
+
 class SplitFullName(TypedDict):
     dataset_name: str
     config_name: str
