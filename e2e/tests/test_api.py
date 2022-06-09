@@ -70,7 +70,7 @@ def test_get_dataset():
     assert json["rows"][0]["row"]["id"] == "TR-0"
 
 
-def test_reproduce_bug_empty_split():
+def test_bug_empty_split():
     # see #185 and #177
     # we get an error when:
     # - the dataset has been processed and the splits have been created in the database
@@ -102,9 +102,10 @@ def test_reproduce_bug_empty_split():
 
     # at this moment, there is a concurrency race between the dataset worker and the split worker
     # but the dataset worker should finish before, because it's faster on this dataset
-    # if we poll again /rows until we have something else than "being processed", we should
-    # get a valid response, but with empty rows, which is incorrect and due to the bug
-    response = poll_rows_until_split_process_has_finished(dataset, config, split, 15)
+    # With the bug, if we polled again /rows until we have something else than "being processed",
+    # we would have gotten a valid response, but with empty rows, which is incorrect
+    # Now: it gives a correct list of elements
+    response = poll_rows_until_split_process_has_finished(dataset, config, split, 30)
     assert response.status_code == 200
     json = response.json()
-    assert json == {"columns": [], "rows": []}
+    assert len(json["rows"]) == 100
