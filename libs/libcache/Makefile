@@ -1,5 +1,5 @@
 include ../../tools/Common.mk
-export MONGO_PORT := 27030
+MONGO_PORT := 27030
 
 .PHONY: test
 test:

@@ -15,6 +15,7 @@ class ColumnType(Enum):
     RELATIVE_IMAGE_URL = auto()
     AUDIO_RELATIVE_SOURCES = auto()
     CLASS_LABEL = auto()
+    TIMESTAMP = auto()
 
 
 # TODO: a set of possible cell types (problem: JSON is Any)

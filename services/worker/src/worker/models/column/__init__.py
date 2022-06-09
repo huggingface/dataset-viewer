@@ -23,6 +23,7 @@ from worker.models.column.image_array3d import ImageArray3DColumn
 from worker.models.column.image_url import ImageUrlColumn
 from worker.models.column.int import IntColumn
 from worker.models.column.string import StringColumn
+from worker.models.column.timestamp import TimestampColumn
 from worker.models.row import Row
 
 column_classes = [
@@ -32,6 +33,7 @@ column_classes = [
     ImageArray2DColumn,
     ImageArray3DColumn,
     ImageUrlColumn,
+    TimestampColumn,
     BoolColumn,
     IntColumn,
     FloatColumn,
@@ -50,7 +52,7 @@ def get_column(column_name: str, features: FeaturesOrNone, rows: List[Row]) -> C
     except KeyError as e:
         raise Status400Error("one column is missing in the dataset rows", e) from e
 
-    # try until one works
+    # try until one works, in the priority order of column_classes
     for column_class in column_classes:
         try:
             return column_class(column_name, feature, values)

@@ -1,6 +1,6 @@
 import pytest
 from libcache.cache import clean_database as clean_cache_database
-from libcache.cache import connect_to_cache
+from libcache.cache import connect_to_cache, get_rows_response
 from libqueue.queue import add_dataset_job, add_split_job
 from libqueue.queue import clean_database as clean_queue_database
 from libqueue.queue import connect_to_queue
@@ -38,3 +38,16 @@ def test_process_next_split_job():
     add_split_job("acronym_identification", "default", "train")
     result = process_next_split_job()
     assert result is True
+
+
+def test_timestamp_cell():
+    # this one is more e2e test than unit test
+    add_split_job("ett", "h1", "train")
+    result = process_next_split_job()
+    assert result is True
+    json_rows_response, rows_response, error_response, status = get_rows_response("ett", "h1", "train")
+    assert json_rows_response is not None
+    assert rows_response is None
+    assert error_response is None
+    assert status == 200
+    print(json_rows_response)

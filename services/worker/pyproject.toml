@@ -15,9 +15,9 @@ datasets = { extras = ["audio", "vision"], version = "^2.2.2" }
 gdown = "^4.2.0"
 kenlm = { url = "https://github.com/kpu/kenlm/archive/master.zip" }
 kss = "^2.6.0"
-libcache = { path = "../../libs/libcache/dist/libcache-0.1.7-py3-none-any.whl", develop = false }
-libqueue = { path = "../../libs/libqueue/dist/libqueue-0.1.4-py3-none-any.whl", develop = false }
-libutils = { path = "../../libs/libutils/dist/libutils-0.1.1-py3-none-any.whl", develop = false }
+libcache = { path = "../../libs/libcache/dist/libcache-0.1.9-py3-none-any.whl", develop = false }
+libqueue = { path = "../../libs/libqueue/dist/libqueue-0.1.6-py3-none-any.whl", develop = false }
+libutils = { path = "../../libs/libutils/dist/libutils-0.1.2-py3-none-any.whl", develop = false }
 lm-dataformat = "^0.0.20"
 lxml = "^4.6.3"
 nlp = "^0.4.0"

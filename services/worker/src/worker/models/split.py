@@ -2,7 +2,7 @@ import logging
 import sys
 from typing import Any, List, Optional
 
-from libutils.types import ColumnItem, RowItem, RowsResponse, Split
+from libutils.types import ColumnItem, JSONSplit, RowItem, RowsResponse, Split
 from libutils.utils import orjson_dumps
 
 from worker.config import MIN_CELL_BYTES
@@ -147,7 +147,6 @@ def get_split(
     rows_max_number: Optional[int] = None,
     rows_min_number: Optional[int] = None,
 ) -> Split:
-    logger.info(f"get split '{split_name}' for config '{config_name}' of dataset '{dataset_name}'")
     info = get_info(dataset_name, config_name, hf_token)
     fallback = (
         max_size_fallback is not None and info.size_in_bytes is not None and info.size_in_bytes < max_size_fallback
@@ -178,4 +177,37 @@ def get_split(
         "rows_response": rows_response,
         "num_bytes": num_bytes,
         "num_examples": num_examples,
+    }
+
+
+def to_json_rows_response(rows_response: RowsResponse) -> str:
+    return orjson_dumps(rows_response).decode("utf-8")
+
+
+def get_json_split(
+    dataset_name: str,
+    config_name: str,
+    split_name: str,
+    hf_token: Optional[str] = None,
+    max_size_fallback: Optional[int] = None,
+    rows_max_bytes: Optional[int] = None,
+    rows_max_number: Optional[int] = None,
+    rows_min_number: Optional[int] = None,
+) -> JSONSplit:
+    logger.info(f"get split '{split_name}' for config '{config_name}' of dataset '{dataset_name}'")
+    split = get_split(
+        dataset_name=dataset_name,
+        config_name=config_name,
+        split_name=split_name,
+        hf_token=hf_token,
+        max_size_fallback=max_size_fallback,
+        rows_max_bytes=rows_max_bytes,
+        rows_max_number=rows_max_number,
+        rows_min_number=rows_min_number,
+    )
+    return {
+        "split_name": split["split_name"],
+        "json_rows_response": to_json_rows_response(split["rows_response"]),
+        "num_bytes": split["num_bytes"],
+        "num_examples": split["num_examples"],
     }

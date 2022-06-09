@@ -4,14 +4,14 @@ from typing import List, Optional
 from libcache.cache import (
     upsert_dataset,
     upsert_dataset_error,
-    upsert_split,
+    upsert_json_split,
     upsert_split_error,
 )
 from libutils.exceptions import Status500Error, StatusError
 from libutils.types import SplitFullName
 
 from worker.models.dataset import get_dataset_split_full_names
-from worker.models.split import get_split
+from worker.models.split import get_json_split
 
 logger = logging.getLogger(__name__)
 
@@ -43,7 +43,7 @@ def refresh_split(
     rows_min_number: Optional[int] = None,
 ):
     try:
-        split = get_split(
+        json_split = get_json_split(
             dataset_name,
             config_name,
             split_name,
@@ -53,7 +53,7 @@ def refresh_split(
             rows_max_number=rows_max_number,
             rows_min_number=rows_min_number,
         )
-        upsert_split(dataset_name, config_name, split_name, split)
+        upsert_json_split(dataset_name, config_name, split_name, json_split)
         logger.debug(
             f"split '{split_name}' from dataset '{dataset_name}' in config '{config_name}' is valid, cache updated"
         )

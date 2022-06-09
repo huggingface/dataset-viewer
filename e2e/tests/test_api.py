@@ -1,7 +1,29 @@
 # import pytest
 import requests
+import time
 
-URL = "http://localhost:8000"
+URL = "http://localhost:8080"
+
+
+def get_response(url: str, timeout: int = 20) -> requests.Response:
+    interval = 1
+    retries = timeout // interval
+    done = False
+    while retries > 0 and not done:
+        retries -= 1
+        time.sleep(interval)
+        response = requests.get(url)
+        # print(response.text)
+        done = response.headers.get("Content-Type") == "application/json"
+    return response
+
+
+def get_splits_response(dataset: str, timeout: int = 20) -> requests.Response:
+    return get_response(f"{URL}/splits?dataset={dataset}", timeout)
+
+
+def get_rows_response(dataset: str, config: str, split: str, timeout: int = 50) -> requests.Response:
+    return get_response(f"{URL}/rows?dataset={dataset}&config={config}&split={split}", timeout)
 
 
 def test_healthcheck():
@@ -10,17 +32,34 @@ def test_healthcheck():
 
 
 def test_get_dataset():
-    response = requests.post(f"{URL}/webhook", json={"update": "datasets/acronym_identification"})
+    dataset = "acronym_identification"
+    config = "default"
+    split = "train"
+    response = requests.post(f"{URL}/webhook", json={"update": f"datasets/{dataset}"})
     assert response.status_code == 200
 
-    # Disabled until the metrics are fixed
-    # https://github.com/huggingface/datasets-server/issues/250
-    # response = requests.get(f"{URL}/metrics")
-    # lines = response.text.split("\n")
-    # metrics = {line.split(" ")[0]: float(line.split(" ")[1]) for line in lines if line and line[0] != "#"}
-    # assert (
-    #     metrics['queue_jobs_total{queue="datasets",status="waiting"}']
-    #     + metrics['queue_jobs_total{queue="datasets",status="started"}']
-    #     + metrics['queue_jobs_total{queue="datasets",status="success"}']
-    #     >= 1
-    # )
+    response = get_splits_response(dataset, timeout=15)
+    assert response.status_code == 200
+
+    response = get_rows_response(dataset, config, split, timeout=15)
+    assert response.status_code == 200
+    json = response.json()
+    assert "rows" in json
+    assert json["rows"][0]["row"]["id"] == "TR-0"
+
+
+def test_timestamp_column():
+    dataset = "ett"
+    config = "h1"
+    split = "train"
+    response = requests.post(f"{URL}/webhook", json={"update": f"datasets/{dataset}"})
+    assert response.status_code == 200
+
+    response = get_splits_response(dataset, timeout=15)
+    assert response.status_code == 200
+
+    response = get_rows_response(dataset, config, split, timeout=15)
+    assert response.status_code == 200
+    json = response.json()
+    assert "rows" in json
+    assert json["rows"][0]["row"]["id"] == "TR-0"

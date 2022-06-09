@@ -8,6 +8,8 @@ export SERVICE_SPLITS_WORKER_DOCKER_IMAGE := $(shell jq -r '.dockerImage.splitsW
 
 .PHONY: e2e
 e2e:
-	docker-compose -f tests/docker-compose.yml up -d --remove-orphans
 	poetry run python -m pytest -x tests
-	docker-compose -f tests/docker-compose.yml down
+# docker-compose -f ./docker-compose.yml down
+# docker volume rm e2e_assets e2e_mongo e2e_reverse-proxy-cache
+# docker-compose -f ./docker-compose.yml up -d --remove-orphans --scale splits-worker=5
+# docker-compose -f ./docker-compose.yml down
