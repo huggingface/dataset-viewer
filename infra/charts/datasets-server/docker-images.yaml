@@ -4,6 +4,6 @@
     "api": "707930574880.dkr.ecr.us-east-1.amazonaws.com/hub-datasets-server-api:sha-131ef42",
     "datasetsWorker": "707930574880.dkr.ecr.us-east-1.amazonaws.com/hub-datasets-server-worker:sha-20be42f",
     "reverseProxy": "docker.io/nginx:1.20",
-    "splitsWorker": "707930574880.dkr.ecr.us-east-1.amazonaws.com/hub-datasets-server-worker:sha-20be42f",
+    "splitsWorker": "707930574880.dkr.ecr.us-east-1.amazonaws.com/hub-datasets-server-worker:sha-20be42f"
   }  
 }

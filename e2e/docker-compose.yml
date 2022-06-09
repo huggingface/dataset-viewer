@@ -3,7 +3,7 @@ services:
   reverse-proxy:
     image: ${SERVICE_REVERSE_PROXY_DOCKER_IMAGE}
     volumes:
-      - ../../infra/charts/datasets-server/nginx-templates/:/etc/nginx/templates:ro
+      - ../infra/charts/datasets-server/nginx-templates/:/etc/nginx/templates:ro
       - reverse-proxy-cache:/nginx-cache
       - assets:/assets:ro
     ports:
@@ -18,8 +18,7 @@ services:
       - PORT=80
       - TARGET_URL=http://api:8080
     depends_on:
-      api:
-        condition: service_started
+      - api
   api:
     image: ${SERVICE_API_DOCKER_IMAGE}
     volumes:
@@ -33,8 +32,7 @@ services:
     ports:
       - 8080:8080
     depends_on:
-      mongodb:
-        condition: service_started
+      - mongodb
     restart: unless-stopped
   datasets-worker:
     image: ${SERVICE_DATASETS_WORKER_DOCKER_IMAGE}
@@ -43,10 +41,10 @@ services:
     environment:
       ASSETS_DIRECTORY: "/assets"
       MONGO_URL: "mongodb://mongodb"
+      WORKER_SLEEP_SECONDS: "1"
       WORKER_QUEUE: "datasets"
     depends_on:
-      mongodb:
-        condition: service_started
+      - mongodb
     restart: always
   splits-worker:
     image: ${SERVICE_SPLITS_WORKER_DOCKER_IMAGE}
@@ -55,18 +53,17 @@ services:
     environment:
       ASSETS_DIRECTORY: "/assets"
       MONGO_URL: "mongodb://mongodb"
+      WORKER_SLEEP_SECONDS: "1"
       WORKER_QUEUE: "splits"
     depends_on:
-      mongodb:
-        condition: service_started
+      - mongodb
     restart: always
   admin:
     image: ${SERVICE_ADMIN_DOCKER_IMAGE}
     environment:
       MONGO_URL: "mongodb://mongodb"
     depends_on:
-      mongodb:
-        condition: service_started
+      - mongodb
     restart: always
   mongodb:
     image: mongo
