@@ -1,9 +1,9 @@
-from sqlite3 import Timestamp
+import json
 from typing import List
 
 import pytest
 from libutils.exceptions import Status400Error
-from libutils.types import RowItem, Split, SplitFullName
+from libutils.types import JSONSplit, RowItem, SplitFullName
 from mongoengine import DoesNotExist
 
 from libcache.cache import (
@@ -18,7 +18,7 @@ from libcache.cache import (
     get_splits_count_by_status,
     get_valid_or_stalled_dataset_names,
     upsert_dataset,
-    upsert_split,
+    upsert_json_split,
     upsert_split_error,
 )
 
@@ -91,13 +91,13 @@ def test_big_row() -> None:
         "row": {"col": "a" * 100_000_000},
         "truncated_cells": [],
     }
-    split: Split = {
+    json_split: JSONSplit = {
         "split_name": split_name,
-        "rows_response": {"rows": [big_row], "columns": []},
+        "json_rows_response": json.dumps({"rows": [big_row], "columns": []}),
         "num_bytes": None,
         "num_examples": None,
     }
-    upsert_split(dataset_name, config_name, split_name, split)
+    upsert_json_split(dataset_name, config_name, split_name, json_split)
     json_rows_response, rows_response, error, status_code = get_rows_response(dataset_name, config_name, split_name)
     assert status_code == 500
     assert error is not None
@@ -116,13 +116,13 @@ def test_valid() -> None:
 
     assert get_valid_or_stalled_dataset_names() == []
 
-    upsert_split(
+    upsert_json_split(
         "test_dataset",
         "test_config",
         "test_split",
         {
             "split_name": "test_split",
-            "rows_response": {"rows": [], "columns": []},
+            "json_rows_response": '{"rows": [], "columns": []}',
             "num_bytes": None,
             "num_examples": None,
         },
@@ -144,13 +144,13 @@ def test_valid() -> None:
 
     assert get_valid_or_stalled_dataset_names() == ["test_dataset"]
 
-    upsert_split(
+    upsert_json_split(
         "test_dataset2",
         "test_config2",
         "test_split3",
         {
             "split_name": "test_split3",
-            "rows_response": {"rows": [], "columns": []},
+            "json_rows_response": '{"rows": [], "columns": []}',
             "num_bytes": None,
             "num_examples": None,
         },
@@ -169,13 +169,13 @@ def test_count_by_status() -> None:
     assert get_datasets_count_by_status() == {"empty": 0, "error": 0, "stalled": 0, "valid": 1}
     assert get_splits_count_by_status() == {"empty": 1, "error": 0, "stalled": 0, "valid": 0}
 
-    upsert_split(
+    upsert_json_split(
         "test_dataset",
         "test_config",
         "test_split",
         {
             "split_name": "test_split",
-            "rows_response": {"rows": [], "columns": []},
+            "json_rows_response": '{"rows": [], "columns": []}',
             "num_bytes": None,
             "num_examples": None,
         },
@@ -188,32 +188,37 @@ def test_json_rows_response() -> None:
     dataset_name = "test_dataset"
     config_name = "test_config"
     split_name = "test_split"
-    row: RowItem = {
-        "dataset": dataset_name,
-        "config": config_name,
-        "split": split_name,
-        "row_idx": 0,
-        "row": {"col1": "test", "col2": 1, "col3": Timestamp(2022, 5, 1)},
-        "truncated_cells": [],
-    }
-    upsert_split(
+    input_json_rows_response: str = json.dumps(
+        {
+            "rows": [
+                {
+                    "dataset": dataset_name,
+                    "config": config_name,
+                    "split": split_name,
+                    "row_idx": 0,
+                    "row": '{"col1": "test", "col2": 1, "col3": "Timestamp(2022, 5, 1)"}',
+                    "truncated_cells": [],
+                }
+            ],
+            "columns": [],
+        }
+    )
+    upsert_json_split(
         "test_dataset",
         "test_config",
         "test_split",
         {
             "split_name": "test_split",
-            "rows_response": {"rows": [row], "columns": []},
+            "json_rows_response": input_json_rows_response,
             "num_bytes": None,
             "num_examples": None,
         },
     )
-    json_rows_response, rows_response, error, status_code = get_rows_response(dataset_name, config_name, split_name)
+    output_json_rows_response, rows_response, error, status_code = get_rows_response(
+        dataset_name, config_name, split_name
+    )
     assert error is None
     assert rows_response is None
-    assert json_rows_response is not None
+    assert output_json_rows_response is not None
     assert status_code == 200
-    assert (
-        json_rows_response
-        == '{"rows":[{"dataset":"test_dataset","config":"test_config","split":"test_split","row_idx":0,'
-        '"row":{"col1":"test","col2":1,"col3":"2022-05-01T00:00:00"},"truncated_cells":[]}],"columns":[]}'
-    )
+    assert output_json_rows_response == input_json_rows_response

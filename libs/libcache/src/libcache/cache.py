@@ -16,7 +16,7 @@ from typing import (
 )
 
 from libutils.exceptions import Status400Error, Status500Error, StatusError
-from libutils.types import Split, SplitFullName
+from libutils.types import JSONSplit, SplitFullName
 from libutils.utils import orjson_dumps
 from mongoengine import Document, DoesNotExist, connect
 from mongoengine.fields import (
@@ -241,18 +241,18 @@ def upsert_split_error(dataset_name: str, config_name: str, split_name: str, err
     )
 
 
-def upsert_split(
+def upsert_json_split(
     dataset_name: str,
     config_name: str,
     split_name: str,
-    split: Split,
+    json_split: JSONSplit,
 ) -> None:
     try:
         DbSplit.objects(dataset_name=dataset_name, config_name=config_name, split_name=split_name).upsert_one(
             status=Status.VALID,
-            num_bytes=split["num_bytes"],
-            num_examples=split["num_examples"],
-            json_rows_response=to_json(split["rows_response"]),
+            num_bytes=json_split["num_bytes"],
+            num_examples=json_split["num_examples"],
+            json_rows_response=json_split["json_rows_response"],
         )
         DbSplitError.objects(dataset_name=dataset_name, config_name=config_name, split_name=split_name).delete()
     except DocumentTooLarge as err:
