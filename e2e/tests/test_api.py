@@ -76,7 +76,8 @@ def test_bug_empty_split():
     # - the dataset has been processed and the splits have been created in the database
     # - the splits have not been processed and are still in EMPTY status in the database
     # - the dataset is processed again, and the splits are marked as STALLED
-    # - as STALLED, they are thus returned with an empty content, instead of an error message (waiting for being processsed)
+    # - as STALLED, they are thus returned with an empty content, instead of an error message
+    # (waiting for being processsed)
     dataset = "nielsr/CelebA-faces"
     config = "nielsr--CelebA-faces"
     split = "train"
