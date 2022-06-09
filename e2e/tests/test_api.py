@@ -6,27 +6,6 @@ import requests
 URL = "http://localhost:8080"
 
 
-def get_response(url: str, timeout: int = 20) -> requests.Response:
-    interval = 1
-    retries = timeout // interval
-    done = False
-    while retries > 0 and not done:
-        retries -= 1
-        time.sleep(interval)
-        response = requests.get(url)
-        # print(response.text)
-        done = response.headers.get("Content-Type") == "application/json"
-    return response
-
-
-def get_splits_response(dataset: str, timeout: int = 20) -> requests.Response:
-    return get_response(f"{URL}/splits?dataset={dataset}", timeout)
-
-
-def get_rows_response(dataset: str, config: str, split: str, timeout: int = 50) -> requests.Response:
-    return get_response(f"{URL}/rows?dataset={dataset}&config={config}&split={split}", timeout)
-
-
 def test_healthcheck():
     response = requests.get(f"{URL}/healthcheck")
     assert response.status_code == 200
@@ -36,14 +15,40 @@ def test_get_dataset():
     dataset = "acronym_identification"
     config = "default"
     split = "train"
+
+    # ask for the dataset to be refreshed
     response = requests.post(f"{URL}/webhook", json={"update": f"datasets/{dataset}"})
     assert response.status_code == 200
 
-    response = get_splits_response(dataset, timeout=15)
+    # poll the /splits endpoint until we get something else than "The dataset cache is empty."
+    interval = 1
+    timeout = 15
+    url = f"{URL}/splits?dataset={dataset}"
+    retries = timeout // interval
+    done = False
+    response = None
+    json = None
+    while retries > 0 and not done:
+        retries -= 1
+        time.sleep(interval)
+        response = requests.get(url)
+        json = response.json()
+        done = not json or "message" not in json or json["message"] != "The dataset is being processed. Retry later."
     assert response.status_code == 200
 
-    response = get_rows_response(dataset, config, split, timeout=15)
+    interval = 1
+    timeout = 15
+    url = f"{URL}/rows?dataset={dataset}&config={config}&split={split}"
+    retries = timeout // interval
+    done = False
+    response = None
+    json = None
+    while retries > 0 and not done:
+        retries -= 1
+        time.sleep(interval)
+        response = requests.get(url)
+        json = response.json()
+        done = not json or "message" not in json or json["message"] != "The split is being processed. Retry later."
     assert response.status_code == 200
-    json = response.json()
     assert "rows" in json
     assert json["rows"][0]["row"]["id"] == "TR-0"
