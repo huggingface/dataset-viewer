@@ -17,7 +17,6 @@ from typing import (
 
 from libutils.exceptions import Status400Error, Status500Error, StatusError
 from libutils.types import JSONSplit, SplitFullName
-from libutils.utils import orjson_dumps
 from mongoengine import Document, DoesNotExist, connect
 from mongoengine.fields import (
     DateTimeField,
@@ -86,12 +85,8 @@ class SplitsResponse(TypedDict):
     splits: List[SplitItem]
 
 
-def to_json(content: Any) -> str:
-    return orjson_dumps(content).decode("utf-8")
-
-
 def get_empty_json_rows_response() -> str:
-    return to_json({"columns": [], "rows": []})
+    return '{"columns": [], "rows": []}'
 
 
 class DbSplit(Document):
