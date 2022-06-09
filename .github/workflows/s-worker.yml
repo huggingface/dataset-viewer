@@ -4,7 +4,7 @@ on:
   push:
     paths:
       - 'services/worker/**'
-      - '.github/workflows/infra.yml'
+      - '.github/workflows/s-worker.yml'
       - '.github/workflows/_quality-python.yml'
       - '.github/workflows/_unit-tests-python.yml'
       - '.github/workflows/_docker.yml'
