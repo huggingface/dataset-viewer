@@ -1,6 +1,7 @@
 # import pytest
-import requests
 import time
+
+import requests
 
 URL = "http://localhost:8080"
 
