@@ -110,6 +110,8 @@ Some useful commands:
     Normal   Pulled     8m1s (x301 over 17h)   kubelet  Container image "707930574880.dkr.ecr.us-east-1.amazonaws.com/hub-datasets-server-api:sha-59db084" already present on machine
     Warning  BackOff    3m3s (x3643 over 17h)  kubelet  Back-off restarting failed container
   ```
+- `kubectl rollout restart deploy/yyy`: recreate the pods of the deploy `yyy`
+- `kubectl scale --replicas=5 deploy/yyy`: change (up or down, 0 is also valid) the number of replicas of the deploy `yyy`
 
 ### Tips with kubectl get
 
