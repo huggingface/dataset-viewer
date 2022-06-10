@@ -28,9 +28,9 @@ server {
     # see https://www.nginx.com/blog/nginx-caching-guide/
     proxy_buffering on;
     proxy_cache STATIC;
-    proxy_cache_use_stale error timeout invalid_header updating http_500 http_502 http_503 http_504;
-    proxy_cache_background_update on;
-    proxy_cache_lock on;
+    proxy_cache_use_stale off;
+    proxy_cache_background_update off;
+    proxy_cache_lock off;
     add_header X-Cache-Status $upstream_cache_status;
     # we have to add Access-Control-Allow-Origin again, see https://nginx.org/en/docs/http/ngx_http_headers_module.html#add_header
     add_header 'Access-Control-Allow-Origin' '*' always;
