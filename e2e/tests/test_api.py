@@ -43,8 +43,18 @@ def poll_rows_until_split_process_has_finished(
 
 
 def test_healthcheck():
+    # this tests ensures the nginx reverse proxy and the api are up
     response = requests.get(f"{URL}/healthcheck")
     assert response.status_code == 200
+    assert response.text == "ok"
+
+
+def test_valid():
+    # this test ensures that the mongo db can be accessed by the api
+    response = requests.get(f"{URL}/valid")
+    assert response.status_code == 200
+    # at this moment no dataset has been processed
+    assert response.json()["valid"] == []
 
 
 def test_get_dataset():
@@ -56,11 +66,11 @@ def test_get_dataset():
     response = requests.post(f"{URL}/webhook", json={"update": f"datasets/{dataset}"})
     assert response.status_code == 200
 
-    # poll the /splits endpoint until we get something else than "The dataset cache is empty."
+    # poll the /splits endpoint until we get something else than "The dataset is being processed. Retry later."
     response = poll_splits_until_dataset_process_has_finished(dataset, 60)
     assert response.status_code == 200
 
-    # poll the /rows endpoint until we get something else than "The split cache is empty."
+    # poll the /rows endpoint until we get something else than "The split is being processed. Retry later."
     response = poll_rows_until_split_process_has_finished(dataset, config, split, 60)
     assert response.status_code == 200
     json = response.json()
@@ -84,7 +94,7 @@ def test_bug_empty_split():
     response = requests.post(f"{URL}/webhook", json={"update": f"datasets/{dataset}"})
     assert response.status_code == 200
 
-    # poll the /splits endpoint until we get something else than "The dataset cache is empty."
+    # poll the /splits endpoint until we get something else than "The dataset is being processed. Retry later."
     response = poll_splits_until_dataset_process_has_finished(dataset, 60)
     assert response.status_code == 200
 
