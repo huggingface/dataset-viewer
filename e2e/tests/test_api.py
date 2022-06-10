@@ -3,9 +3,7 @@ import time
 
 import requests
 
-URL = "http://localhost:8080"
-# ^ we should access localhost:8000 (reverse-proxy) instead of 8080 (api)
-# but there seems to be a bug: the errors seem to be cached by the reverse proxy
+URL = "http://localhost:8000"
 
 
 def poll_splits_until_dataset_process_has_finished(
