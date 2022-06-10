@@ -129,3 +129,20 @@ def test_valid_after_two_datasets_processed():
     assert response.status_code == 200
     # at this moment no dataset has been processed
     assert response.json()["valid"] == ["acronym_identification", "nielsr/CelebA-faces"]
+
+
+def test_timestamp_column():
+    # this test replicates the bug with the Timestamp values, https://github.com/huggingface/datasets/issues/4413
+    dataset = "ett"
+    config = "h1"
+    split = "train"
+    response = requests.post(f"{URL}/webhook", json={"update": f"datasets/{dataset}"})
+    assert response.status_code == 200
+
+    response = poll_splits_until_dataset_process_has_finished(dataset, 60)
+    assert response.status_code == 200
+
+    response = poll_rows_until_split_process_has_finished(dataset, config, split, 60)
+    assert response.status_code == 500
+    json = response.json()
+    assert json["message"] == "Type is not JSON serializable: Timestamp"
