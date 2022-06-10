@@ -57,11 +57,11 @@ def test_get_dataset():
     assert response.status_code == 200
 
     # poll the /splits endpoint until we get something else than "The dataset cache is empty."
-    response = poll_splits_until_dataset_process_has_finished(dataset, 15)
+    response = poll_splits_until_dataset_process_has_finished(dataset, 60)
     assert response.status_code == 200
 
     # poll the /rows endpoint until we get something else than "The split cache is empty."
-    response = poll_rows_until_split_process_has_finished(dataset, config, split, 15)
+    response = poll_rows_until_split_process_has_finished(dataset, config, split, 60)
     assert response.status_code == 200
     json = response.json()
     assert "rows" in json
@@ -85,7 +85,7 @@ def test_bug_empty_split():
     assert response.status_code == 200
 
     # poll the /splits endpoint until we get something else than "The dataset cache is empty."
-    response = poll_splits_until_dataset_process_has_finished(dataset, 15)
+    response = poll_splits_until_dataset_process_has_finished(dataset, 60)
     assert response.status_code == 200
 
     # at this point the splits should have been created in the dataset, and still be EMPTY
@@ -104,7 +104,7 @@ def test_bug_empty_split():
     # With the bug, if we polled again /rows until we have something else than "being processed",
     # we would have gotten a valid response, but with empty rows, which is incorrect
     # Now: it gives a correct list of elements
-    response = poll_rows_until_split_process_has_finished(dataset, config, split, 30)
+    response = poll_rows_until_split_process_has_finished(dataset, config, split, 60)
     assert response.status_code == 200
     json = response.json()
     assert len(json["rows"]) == 100
