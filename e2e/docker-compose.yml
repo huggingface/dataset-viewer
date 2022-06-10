@@ -9,14 +9,14 @@ services:
     ports:
       - "8000:80"
     environment:
-      - ASSETS_DIRECTORY=/assets
-      - CACHE_DIRECTORY=/nginx-cache
-      - CACHE_INACTIVE=24h
-      - CACHE_MAX_SIZE=1g
-      - CACHE_ZONE_SIZE=50m
-      - HOST=localhost
-      - PORT=80
-      - TARGET_URL=http://api:8080
+      ASSETS_DIRECTORY: /assets
+      CACHE_DIRECTORY: /nginx-cache
+      CACHE_INACTIVE: 24h
+      CACHE_MAX_SIZE: 1g
+      CACHE_ZONE_SIZE: 50m
+      HOST: localhost
+      PORT: 80
+      TARGET_URL: http://api:8080
     depends_on:
       - api
   api:
