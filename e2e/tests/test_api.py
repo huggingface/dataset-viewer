@@ -1,26 +1,128 @@
 # import pytest
+import time
+
 import requests
 
 URL = "http://localhost:8000"
 
 
+def poll_splits_until_dataset_process_has_finished(
+    dataset: str, timeout: int = 15, interval: int = 1
+) -> requests.Response:
+    url = f"{URL}/splits?dataset={dataset}"
+    retries = timeout // interval
+    done = False
+    response = None
+    while retries > 0 and not done:
+        retries -= 1
+        time.sleep(interval)
+        response = requests.get(url)
+        json = response.json()
+        done = not json or "message" not in json or json["message"] != "The dataset is being processed. Retry later."
+    if response is None:
+        raise RuntimeError("no request has been done")
+    return response
+
+
+def poll_rows_until_split_process_has_finished(
+    dataset: str, config: str, split: str, timeout: int = 15, interval: int = 1
+) -> requests.Response:
+    url = f"{URL}/rows?dataset={dataset}&config={config}&split={split}"
+    retries = timeout // interval
+    done = False
+    response = None
+    while retries > 0 and not done:
+        retries -= 1
+        time.sleep(interval)
+        response = requests.get(url)
+        json = response.json()
+        done = not json or "message" not in json or json["message"] != "The split is being processed. Retry later."
+    if response is None:
+        raise RuntimeError("no request has been done")
+    return response
+
+
 def test_healthcheck():
+    # this tests ensures the nginx reverse proxy and the api are up
     response = requests.get(f"{URL}/healthcheck")
     assert response.status_code == 200
+    assert response.text == "ok"
+
+
+def test_valid():
+    # this test ensures that the mongo db can be accessed by the api
+    response = requests.get(f"{URL}/valid")
+    assert response.status_code == 200
+    # at this moment no dataset has been processed
+    assert response.json()["valid"] == []
 
 
 def test_get_dataset():
-    response = requests.post(f"{URL}/webhook", json={"update": "datasets/acronym_identification"})
+    dataset = "acronym_identification"
+    config = "default"
+    split = "train"
+
+    # ask for the dataset to be refreshed
+    response = requests.post(f"{URL}/webhook", json={"update": f"datasets/{dataset}"})
     assert response.status_code == 200
 
-    # Disabled until the metrics are fixed
-    # https://github.com/huggingface/datasets-server/issues/250
-    # response = requests.get(f"{URL}/metrics")
-    # lines = response.text.split("\n")
-    # metrics = {line.split(" ")[0]: float(line.split(" ")[1]) for line in lines if line and line[0] != "#"}
-    # assert (
-    #     metrics['queue_jobs_total{queue="datasets",status="waiting"}']
-    #     + metrics['queue_jobs_total{queue="datasets",status="started"}']
-    #     + metrics['queue_jobs_total{queue="datasets",status="success"}']
-    #     >= 1
-    # )
+    # poll the /splits endpoint until we get something else than "The dataset is being processed. Retry later."
+    response = poll_splits_until_dataset_process_has_finished(dataset, 60)
+    assert response.status_code == 200
+
+    # poll the /rows endpoint until we get something else than "The split is being processed. Retry later."
+    response = poll_rows_until_split_process_has_finished(dataset, config, split, 60)
+    assert response.status_code == 200
+    json = response.json()
+    assert "rows" in json
+    assert json["rows"][0]["row"]["id"] == "TR-0"
+
+
+def test_bug_empty_split():
+    # see #185 and #177
+    # we get an error when:
+    # - the dataset has been processed and the splits have been created in the database
+    # - the splits have not been processed and are still in EMPTY status in the database
+    # - the dataset is processed again, and the splits are marked as STALLED
+    # - as STALLED, they are thus returned with an empty content, instead of an error message
+    # (waiting for being processsed)
+    dataset = "nielsr/CelebA-faces"
+    config = "nielsr--CelebA-faces"
+    split = "train"
+
+    # ask for the dataset to be refreshed
+    response = requests.post(f"{URL}/webhook", json={"update": f"datasets/{dataset}"})
+    assert response.status_code == 200
+
+    # poll the /splits endpoint until we get something else than "The dataset is being processed. Retry later."
+    response = poll_splits_until_dataset_process_has_finished(dataset, 60)
+    assert response.status_code == 200
+
+    # at this point the splits should have been created in the dataset, and still be EMPTY
+    url = f"{URL}/rows?dataset={dataset}&config={config}&split={split}"
+    response = requests.get(url)
+    assert response.status_code == 400
+    json = response.json()
+    assert json["message"] == "The split is being processed. Retry later."
+
+    # ask again for the dataset to be refreshed
+    response = requests.post(f"{URL}/webhook", json={"update": f"datasets/{dataset}"})
+    assert response.status_code == 200
+
+    # at this moment, there is a concurrency race between the dataset worker and the split worker
+    # but the dataset worker should finish before, because it's faster on this dataset
+    # With the bug, if we polled again /rows until we have something else than "being processed",
+    # we would have gotten a valid response, but with empty rows, which is incorrect
+    # Now: it gives a correct list of elements
+    response = poll_rows_until_split_process_has_finished(dataset, config, split, 60)
+    assert response.status_code == 200
+    json = response.json()
+    assert len(json["rows"]) == 100
+
+
+def test_valid_after_two_datasets_processed():
+    # this test ensures that the two datasets processed successfully are present in /valid
+    response = requests.get(f"{URL}/valid")
+    assert response.status_code == 200
+    # at this moment no dataset has been processed
+    assert response.json()["valid"] == ["acronym_identification", "nielsr/CelebA-faces"]

@@ -5,6 +5,10 @@
       "path": ".."
     },
     {
+      "name": "e2e",
+      "path": "../e2e"
+    },
+    {
       "name": "libs/libcache",
       "path": "../libs/libcache"
     },
@@ -35,6 +39,7 @@
   ],
   "settings": {
     "files.exclude": {
+      "e2e": true,
       "libs": true,
       "services": true
     },

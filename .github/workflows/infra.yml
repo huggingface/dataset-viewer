@@ -5,7 +5,6 @@ on:
     paths:
       - 'infra/charts/datasets-server/**'
       - '.github/workflows/infra.yml'
-      - '.github/workflows/_e2e_tests.yml'
 jobs:
   code-quality-helm:
     runs-on: ubuntu-20.04
@@ -15,10 +14,3 @@ jobs:
       - name: Lint chart
         run: helm lint
         working-directory: infra/charts/datasets-server
-  e2e-tests:
-    uses: ./.github/workflows/_e2e_tests.yml
-    with:
-      config-file: infra/charts/datasets-server/docker-images.yaml
-    secrets:
-      aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-      aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}

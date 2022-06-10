@@ -4,7 +4,7 @@ on:
   push:
     paths:
       - 'libs/libutils/**'
-      - '.github/workflows/infra.yml'
+      - '.github/workflows/l-libutils.yml'
       - '.github/workflows/_quality-python.yml'
       - '.github/workflows/_unit-tests-python.yml'
 jobs:

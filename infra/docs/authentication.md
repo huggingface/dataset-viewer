@@ -12,28 +12,28 @@ There are 3 roles available to you. # <-- select "EKS-HUB-Hub"
 Using the role name "EKS-HUB-Hub"
 CLI default client Region [None]: us-east-1
 CLI default output format [None]:
-CLI profile name [EKS-HUB-Hub-707930574880]: hub
+CLI profile name [EKS-HUB-Hub-707930574880]: hub-prod
 
 To use this profile, specify the profile name using --profile, as shown:
 
-aws s3 ls --profile hub
+aws s3 ls --profile hub-prod
 ```
 
-In the docs, we assume the AWS CLI profile is called `hub`.
+In the docs, we assume the AWS CLI profile is called `hub-prod`.
 
-The profile `hub` is meant to:
+The profile `hub-prod` is meant to:
 
 - operate inside the two EKS clusters (`hub-prod` and `hub-ephemeral`):
 
   ```shell
-  $ aws eks describe-cluster --profile=hub --name=hub-ephemeral
-  $ aws eks update-kubeconfig --profile=hub --name=hub-ephemeral
+  $ aws eks describe-cluster --profile=hub-prod --name=hub-prod
+  $ aws eks update-kubeconfig --profile=hub-prod --name=hub-prod
   ```
 
 - list, pull, push docker images from repositories of the ECR registry (`707930574880.dkr.ecr.us-east-1.amazonaws.com`):
 
   ```shell
-  $ aws ecr get-login-password --region us-east-1 --profile=hub \
+  $ aws ecr get-login-password --region us-east-1 --profile=hub-prod \
     | docker login --username AWS --password-stdin 707930574880.dkr.ecr.us-east-1.amazonaws.com
   ```
 
@@ -42,5 +42,5 @@ The profile `hub` is meant to:
 It is not meant to operate on AWS resources directly. The following command gives authentication error for example:
 
 ```shell
-$ aws eks list-clusters --profile=hub
+$ aws eks list-clusters --profile=hub-prod
 ```

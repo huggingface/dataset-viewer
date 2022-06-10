@@ -1,12 +1,11 @@
 import logging
 
 from libcache.cache import get_rows_response
-from libqueue.queue import is_dataset_in_queue, is_split_in_queue
-from libutils.exceptions import Status400Error, Status500Error, StatusError
+from libutils.exceptions import Status400Error, StatusError
 from starlette.requests import Request
 from starlette.responses import Response
 
-from api.config import MAX_AGE_LONG_SECONDS
+from api.config import MAX_AGE_LONG_SECONDS, MAX_AGE_SHORT_SECONDS
 from api.routes._utils import get_response
 
 logger = logging.getLogger(__name__)
@@ -29,13 +28,8 @@ async def rows_endpoint(request: Request) -> Response:
             rows_response, rows_error, status_code = get_rows_response(dataset_name, config_name, split_name)
             return get_response(rows_response or rows_error, status_code, MAX_AGE_LONG_SECONDS)
         except StatusError as err:
-            if err.message == "The split does not exist." and is_dataset_in_queue(dataset_name):
-                raise Status400Error("The dataset is being processed. Retry later.", err) from err
-            if err.message != "The split cache is empty.":
-                raise err
-            if is_split_in_queue(dataset_name, config_name, split_name):
+            if err.message == "The split cache is empty.":
                 raise Status400Error("The split is being processed. Retry later.", err) from err
-            else:
-                raise Status500Error("The split cache is empty but no job has been launched.", err) from err
+            raise err
     except StatusError as err:
-        return get_response(err.as_content(), err.status_code, MAX_AGE_LONG_SECONDS)
+        return get_response(err.as_content(), err.status_code, MAX_AGE_SHORT_SECONDS)

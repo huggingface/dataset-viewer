@@ -9,7 +9,7 @@ from libutils.exceptions import Status400Error, StatusError
 from starlette.requests import Request
 from starlette.responses import Response
 
-from api.config import MAX_AGE_LONG_SECONDS
+from api.config import MAX_AGE_LONG_SECONDS, MAX_AGE_SHORT_SECONDS
 from api.routes._utils import get_response
 
 logger = logging.getLogger(__name__)
@@ -35,4 +35,4 @@ async def is_valid_endpoint(request: Request) -> Response:
         }
         return get_response(content, 200, MAX_AGE_LONG_SECONDS)
     except StatusError as err:
-        return get_response(err.as_content(), err.status_code, MAX_AGE_LONG_SECONDS)
+        return get_response(err.as_content(), err.status_code, MAX_AGE_SHORT_SECONDS)
