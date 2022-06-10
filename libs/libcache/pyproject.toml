@@ -2,11 +2,11 @@
 authors = ["Sylvain Lesage <sylvain.lesage@huggingface.co>"]
 description = "Library for the cache in mongodb"
 name = "libcache"
-version = "0.1.6"
+version = "0.1.7"
 
 [tool.poetry.dependencies]
 appdirs = "^1.4.4"
-libutils = { path = "../../libs/libutils/dist/libutils-0.1.1-py3-none-any.whl", develop = false }
+libutils = { path = "../../libs/libutils/dist/libutils-0.1.2-py3-none-any.whl", develop = false }
 mongo-types = "0.15.1"
 mongoengine = "^0.24.1"
 pymongo = { extras = ["srv"], version = "^3.12.3" }
