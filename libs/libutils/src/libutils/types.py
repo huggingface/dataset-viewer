@@ -1,21 +1,33 @@
 from typing import Any, Dict, List, Optional, TypedDict, Union
-from libutils.enums import TimestampUnit
+
+from libutils.enums import (
+    CommonColumnType,
+    LabelsColumnType,
+    TimestampColumnType,
+    TimestampUnit,
+)
 
 
-class CommonColumnDict(TypedDict):
+class _BaseColumnDict(TypedDict):
     name: str
-    type: str
 
 
-class ClassLabelColumnDict(CommonColumnDict):
+class CommonColumnDict(_BaseColumnDict):
+    type: CommonColumnType
+
+
+class ClassLabelColumnDict(_BaseColumnDict):
+    type: LabelsColumnType
     labels: List[str]
 
 
-class TimestampColumnDict(CommonColumnDict):
+class TimestampColumnDict(_BaseColumnDict):
+    type: TimestampColumnType
     unit: TimestampUnit
     tz: Optional[str]
 
 
+ColumnType = Union[CommonColumnType, LabelsColumnType, TimestampColumnType]
 ColumnDict = Union[CommonColumnDict, ClassLabelColumnDict, TimestampColumnDict]
 
 
