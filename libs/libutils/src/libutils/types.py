@@ -1,14 +1,22 @@
-from typing import Any, Dict, List, Optional, TypedDict
+from typing import Any, Dict, List, Optional, TypedDict, Union
+from libutils.enums import TimestampUnit
 
 
-class _BaseColumnDict(TypedDict):
+class CommonColumnDict(TypedDict):
     name: str
     type: str
 
 
-class ColumnDict(_BaseColumnDict, total=False):
-    # https://www.python.org/dev/peps/pep-0655/#motivation
+class ClassLabelColumnDict(CommonColumnDict):
     labels: List[str]
+
+
+class TimestampColumnDict(CommonColumnDict):
+    unit: TimestampUnit
+    tz: Optional[str]
+
+
+ColumnDict = Union[CommonColumnDict, ClassLabelColumnDict, TimestampColumnDict]
 
 
 class RowItem(TypedDict):
