@@ -118,3 +118,11 @@ def test_bug_empty_split():
     assert response.status_code == 200
     json = response.json()
     assert len(json["rows"]) == 100
+
+
+def test_valid_after_two_datasets_processed():
+    # this test ensures that the two datasets processed successfully are present in /valid
+    response = requests.get(f"{URL}/valid")
+    assert response.status_code == 200
+    # at this moment no dataset has been processed
+    assert response.json()["valid"] == ["acronym_identification", "nielsr/CelebA-faces"]

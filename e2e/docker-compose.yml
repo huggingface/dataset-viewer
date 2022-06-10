@@ -29,8 +29,8 @@ services:
       APP_PORT: 8080
       ASSETS_DIRECTORY: "/assets"
       # use shorter cache durations for the e2e tests
-      MAX_AGE_SHORT_SECONDS: 2
-      MAX_AGE_LONG_SECONDS: 10
+      MAX_AGE_SHORT_SECONDS: 1
+      MAX_AGE_LONG_SECONDS: 2
       MONGO_URL: "mongodb://mongodb"
     ports:
       - 8080:8080
