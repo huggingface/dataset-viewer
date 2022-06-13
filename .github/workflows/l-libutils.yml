@@ -7,6 +7,8 @@ on:
       - '.github/workflows/l-libutils.yml'
       - '.github/workflows/_quality-python.yml'
       - '.github/workflows/_unit-tests-python.yml'
+      - 'tools/Python.mk'
+      - 'tools/docker-compose-empty.yml'
 jobs:
   quality:
     uses: ./.github/workflows/_quality-python.yml

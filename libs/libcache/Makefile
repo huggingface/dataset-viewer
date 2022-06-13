@@ -1,13 +1,9 @@
-include ../../tools/Common.mk
+# environment variables for the commands (docker-compose, poetry)
+export TEST_MONGO_PORT := 27020
+export TEST_MONGO_CACHE_DATABASE := datasets_server_cache_test
+export TEST_COMPOSE_PROJECT_NAME := libcache
+# makefile variables
+TEST_DOCKER_COMPOSE := ../../tools/docker-compose-mongo.yml
 
-.PHONY: test
-test:
-	docker-compose -f tests/docker-compose.yml up -d
-	MONGO_CACHE_DATABASE="datasets_server_cache_test" MONGO_URL="mongodb://localhost:27018" poetry run python -m pytest -x tests
-	docker-compose -f tests/docker-compose.yml down
-
-.PHONY: coverage
-coverage:
-	docker-compose -f tests/docker-compose.yml up -d
-	MONGO_CACHE_DATABASE="datasets_server_cache_test" MONGO_URL="mongodb://localhost:27018" poetry run python -m pytest -s --cov --cov-report xml:coverage.xml --cov-report=term tests
-	docker-compose -f tests/docker-compose.yml down
+include ../../tools/Python.mk
+include ../../tools/Docker.mk

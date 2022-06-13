@@ -8,6 +8,8 @@ on:
       - '.github/workflows/_e2e_tests.yml'
       - '.github/workflows/_quality-python.yml'
       - '.github/workflows/e2e.yml'
+      - 'tools/Python.mk'
+      - 'tools/docker-compose-datasets-server-from-remote-images.yml'
 jobs:
   quality:
     uses: ./.github/workflows/_quality-python.yml

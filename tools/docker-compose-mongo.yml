@@ -5,6 +5,6 @@ services:
     volumes:
       - mongo-test:/data/db:rw
     ports:
-      - 27018:27017
+      - ${MONGO_PORT-27017}:27017
 volumes:
   mongo-test:

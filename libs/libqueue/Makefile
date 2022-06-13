@@ -1,13 +1,9 @@
-include ../../tools/Common.mk
+# environment variables for the commands (docker-compose, poetry)
+export TEST_MONGO_PORT := 27021
+export TEST_MONGO_QUEUE_DATABASE := datasets_server_queue_test
+export TEST_COMPOSE_PROJECT_NAME := libqueue
+# makefile variables
+TEST_DOCKER_COMPOSE := ../../tools/docker-compose-mongo.yml
 
-.PHONY: test
-test:
-	docker-compose -f tests/docker-compose.yml up -d --remove-orphans
-	MONGO_URL="mongodb://localhost:27020" MONGO_QUEUE_DATABASE="datasets_server_queue_test" poetry run python -m pytest -x tests
-	docker-compose -f tests/docker-compose.yml down
-
-.PHONY: coverage
-coverage:
-	docker-compose -f tests/docker-compose.yml up -d --remove-orphans
-	MONGO_URL="mongodb://localhost:27020" MONGO_QUEUE_DATABASE="datasets_server_queue_test" poetry run python -m pytest -s --cov --cov-report xml:coverage.xml --cov-report=term tests
-	docker-compose -f tests/docker-compose.yml down
+include ../../tools/Python.mk
+include ../../tools/Docker.mk

@@ -3,11 +3,11 @@ services:
   reverse-proxy:
     image: nginx:1.20
     volumes:
-      - ./infra/charts/datasets-server/nginx-templates/:/etc/nginx/templates:ro
+      - ../infra/charts/datasets-server/nginx-templates/:/etc/nginx/templates:ro
       - reverse-proxy-cache:/nginx-cache
       - assets:/assets:ro
     ports:
-      - "8000:80"
+      - "${SERVICE_REVERSE_PROXY_PORT-8000}:80"
     environment:
       - ASSETS_DIRECTORY=/assets
       - CACHE_DIRECTORY=/nginx-cache
@@ -22,8 +22,8 @@ services:
         condition: service_started
   api:
     build:
-      context: .
-      dockerfile: ./services/api/Dockerfile
+      context: ..
+      dockerfile: services/api/Dockerfile
     volumes:
       - assets:/assets:ro
     environment:
@@ -33,14 +33,15 @@ services:
       ASSETS_DIRECTORY: "/assets"
       MONGO_URL: "mongodb://mongodb"
     ports:
-      - 8080:8080
+      # for debug
+      - ${SERVICE_API_PORT-8080}:8080
     depends_on:
       mongodb:
         condition: service_started
     restart: unless-stopped
   datasets-worker:
     build:
-      context: .
+      context: ..
       dockerfile: ./services/worker/Dockerfile
     volumes:
       - assets:/assets:rw
@@ -54,7 +55,7 @@ services:
     restart: always
   splits-worker:
     build:
-      context: .
+      context: ..
       dockerfile: ./services/worker/Dockerfile
     volumes:
       - assets:/assets:rw
@@ -68,7 +69,7 @@ services:
     restart: always
   admin:
     build:
-      context: .
+      context: ..
       dockerfile: ./services/admin/Dockerfile
     environment:
       APP_HOSTNAME: 0.0.0.0
@@ -77,7 +78,8 @@ services:
       ASSETS_DIRECTORY: "/assets"
       MONGO_URL: "mongodb://mongodb"
     ports:
-      - 8081:8081
+      # for debug
+      - ${SERVICE_ADMIN_PORT-8081}:8081
     depends_on:
       mongodb:
         condition: service_started
@@ -89,7 +91,7 @@ services:
       # TODO: authentication, healthcheck, expose?, migrations?
     ports:
       # for debug
-      - "27017:27017"
+      - "${MONGO_PORT-27017}:27017"
 volumes:
   assets:
   mongo:

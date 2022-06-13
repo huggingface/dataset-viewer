@@ -1,9 +1,12 @@
 # import pytest
+import os
 import time
 
 import requests
 
-URL = "http://localhost:8000"
+SERVICE_REVERSE_PROXY_PORT = os.environ.get("SERVICE_REVERSE_PROXY_PORT", "8000")
+
+URL = f"http://localhost:{SERVICE_REVERSE_PROXY_PORT}"
 
 
 def poll_splits_until_dataset_process_has_finished(
