@@ -7,7 +7,7 @@ services:
       - reverse-proxy-cache:/nginx-cache
       - assets:/assets:ro
     ports:
-      - "${SERVICE_REVERSE_PROXY_PORT}:80"
+      - "${SERVICE_REVERSE_PROXY_PORT-8000}:80"
     environment:
       - ASSETS_DIRECTORY=/assets
       - CACHE_DIRECTORY=/nginx-cache
@@ -34,7 +34,7 @@ services:
       MONGO_URL: "mongodb://mongodb"
     ports:
       # for debug
-      - ${SERVICE_API_PORT}:8080
+      - ${SERVICE_API_PORT-8080}:8080
     depends_on:
       mongodb:
         condition: service_started
@@ -79,7 +79,7 @@ services:
       MONGO_URL: "mongodb://mongodb"
     ports:
       # for debug
-      - ${SERVICE_ADMIN_PORT}:8081
+      - ${SERVICE_ADMIN_PORT-8081}:8081
     depends_on:
       mongodb:
         condition: service_started
@@ -91,7 +91,7 @@ services:
       # TODO: authentication, healthcheck, expose?, migrations?
     ports:
       # for debug
-      - "${MONGO_PORT}:27017"
+      - "${MONGO_PORT-27017}:27017"
 volumes:
   assets:
   mongo:

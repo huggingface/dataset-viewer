@@ -1,13 +1,13 @@
 version: "3.9"
 services:
   reverse-proxy:
-    image: ${SERVICE_REVERSE_PROXY_DOCKER_IMAGE}
+    image: ${SERVICE_REVERSE_PROXY_DOCKER_IMAGE?SERVICE_REVERSE_PROXY_DOCKER_IMAGE env var must be provided}
     volumes:
       - ../infra/charts/datasets-server/nginx-templates/:/etc/nginx/templates:ro
       - reverse-proxy-cache:/nginx-cache
       - assets:/assets:ro
     ports:
-      - "${SERVICE_REVERSE_PROXY_PORT}:80"
+      - "${SERVICE_REVERSE_PROXY_PORT-8000}:80"
     environment:
       ASSETS_DIRECTORY: /assets
       CACHE_DIRECTORY: /nginx-cache
@@ -20,7 +20,7 @@ services:
     depends_on:
       - api
   api:
-    image: ${SERVICE_API_DOCKER_IMAGE}
+    image: ${SERVICE_API_DOCKER_IMAGE?SERVICE_API_DOCKER_IMAGE env var must be provided}
     volumes:
       - assets:/assets:ro
     environment:
@@ -34,12 +34,12 @@ services:
       MONGO_URL: "mongodb://mongodb"
     ports:
       # for debug
-      - ${SERVICE_API_PORT}:8080
+      - ${SERVICE_API_PORT-8080}:8080
     depends_on:
       - mongodb
     restart: unless-stopped
   datasets-worker:
-    image: ${SERVICE_DATASETS_WORKER_DOCKER_IMAGE}
+    image: ${SERVICE_DATASETS_WORKER_DOCKER_IMAGE?SERVICE_DATASETS_WORKER_DOCKER_IMAGE env var must be provided}
     volumes:
       - assets:/assets:rw
     environment:
@@ -51,7 +51,7 @@ services:
       - mongodb
     restart: always
   splits-worker:
-    image: ${SERVICE_SPLITS_WORKER_DOCKER_IMAGE}
+    image: ${SERVICE_SPLITS_WORKER_DOCKER_IMAGE?SERVICE_SPLITS_WORKER_DOCKER_IMAGE env var must be provided}
     volumes:
       - assets:/assets:rw
     environment:
@@ -63,7 +63,7 @@ services:
       - mongodb
     restart: always
   admin:
-    image: ${SERVICE_ADMIN_DOCKER_IMAGE}
+    image: ${SERVICE_ADMIN_DOCKER_IMAGE?SERVICE_ADMIN_DOCKER_IMAGE env var must be provided}
     environment:
       APP_HOSTNAME: 0.0.0.0
       APP_NUM_WORKERS: 1
@@ -75,7 +75,7 @@ services:
     restart: always
     ports:
       # for debug
-      - ${SERVICE_ADMIN_PORT}:8081
+      - ${SERVICE_ADMIN_PORT-8081}:8081
   mongodb:
     image: mongo
     volumes:
@@ -83,7 +83,7 @@ services:
       # TODO: authentication, healthcheck, expose?, migrations?
     ports:
       # for debug
-      - "${MONGO_PORT}:27017"
+      - "${MONGO_PORT-27017}:27017"
 volumes:
   assets:
   mongo:
