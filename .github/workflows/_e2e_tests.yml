@@ -71,7 +71,8 @@ jobs:
           SERVICE_DATASETS_WORKER_DOCKER_IMAGE: "${{fromJson(needs.get-config.outputs.dockerConfig).dockerImage.datasetsWorker}}"
           SERVICE_REVERSE_PROXY_DOCKER_IMAGE: "${{fromJson(needs.get-config.outputs.dockerConfig).dockerImage.reverseProxy}}"
           SERVICE_SPLITS_WORKER_DOCKER_IMAGE: "${{fromJson(needs.get-config.outputs.dockerConfig).dockerImage.splitsWorker}}"
-        run: docker-compose -f ./docker-compose.yml up -d
+        working-directory: tools
+        run: docker-compose -f ./docker-compose-datasets-server-from-remote-images.yml up -d
       - name: Install dependencies
         run: |
           poetry env use "${{ env.python-version }}"
