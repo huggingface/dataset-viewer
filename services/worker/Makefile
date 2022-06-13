@@ -12,6 +12,7 @@ SAFETY_EXCEPTIONS := $(PILLOW_EXCEPTIONS)
 
 # Ensure to specify HF_TOKEN when calling make test, ie HF_TOKEN=hf_app_xxx make test
 include ../../tools/Python.mk
+include ../../tools/Docker.mk
 
 .PHONY: run
 run:

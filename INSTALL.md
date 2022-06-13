@@ -5,7 +5,14 @@
 Install docker (see https://docs.docker.com/engine/install/ubuntu/#install-using-the-repository and https://docs.docker.com/engine/install/linux-postinstall/)
 
 ```
-docker-compose up --build -d --scale splits-worker=5
+make install
+make start-from-local-code
+```
+
+To use the docker images already compiled using the CI:
+
+```
+make start-from-remote-images
 ```
 
 ## Without docker
@@ -29,7 +36,7 @@ We also need to have a mongo server:
   docker run -p 27017:27017 --name datasets-server-mongo -d --restart always mongo:latest
   ```
 
-Install and deploy the API server with [services/api/INSTALL.md](./services/api/INSTALL.md) and the workers with [services/worker/INSTALL.md](./services/worker/INSTALL.md).
+Install and deploy the API server with [services/api/INSTALL.md](./services/api/INSTALL.md), the admin server with [services/admin/INSTALL.md](./services/admin/INSTALL.md) and the workers with [services/worker/INSTALL.md](./services/worker/INSTALL.md).
 
 ## Upgrade
 
@@ -37,25 +44,14 @@ See the instructions in [services/api/INSTALL.md](./services/api/INSTALL.md#upgr
 
 ## Production
 
-datasets-server is installed on a t2.2xlarge [EC2 virtual machine](https://us-east-1.console.aws.amazon.com/ec2/v2/home?region=us-east-1#InstanceDetails:instanceId=i-0b19b8deb4301ad4a) (under the "JULIEN CHAUMOND" account).
+datasets-server is installed on a [kubernetes cluster](https://us-east-1.console.aws.amazon.com/eks/home?region=us-east-1#/clusters)
 
-```bash
-ssh hf@ec2-54-209-89-185.compute-1.amazonaws.com
-# or using https://github.com/huggingface/conf/blob/master/ssh-config-hf-aws
-ssh aws/datasets-preview-backend/1
+Grafana:
 
-/: 500 GB
-
-public ipv4: 54.209.89.185
-private ipv4: 172.30.4.71
-domain name: datasets-server.huggingface.co
-```
-
-Grafana (TODO: no data at the moment):
-
-- https://grafana.huggingface.co/d/gBtAotjMk/use-method?orgId=2&var-DS_PROMETHEUS=HF%20Prometheus&var-node=data-preview
-- https://grafana.huggingface.co/d/rYdddlPWk/node-exporter-full?orgId=2&refresh=1m&var-DS_PROMETHEUS=HF%20Prometheus&var-job=node_exporter_metrics&var-node=data-preview&var-diskdevices=%5Ba-z%5D%2B%7Cnvme%5B0-9%5D%2Bn%5B0-9%5D%2B
+- https://grafana.huggingface.tech/dashboards/f/j1kRCJEnk/hub?query=Datasets%20server
+- https://grafana.huggingface.tech/d/a164a7f0339f99e89cea5cb47e9be617/kubernetes-compute-resources-workload?orgId=1&refresh=10s&var-datasource=Prometheus%20EKS%20Hub%20Prod&var-cluster=&var-namespace=datasets-server&var-type=deployment&var-workload=datasets-server-prod-splits-worker
 
 BetterUptime:
 
 - https://betteruptime.com/team/14149/monitors/389098
+- https://betteruptime.com/team/14149/monitors/691070

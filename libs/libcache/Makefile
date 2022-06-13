@@ -6,3 +6,4 @@ export TEST_COMPOSE_PROJECT_NAME := libcache
 TEST_DOCKER_COMPOSE := ../../tools/docker-compose-mongo.yml
 
 include ../../tools/Python.mk
+include ../../tools/Docker.mk

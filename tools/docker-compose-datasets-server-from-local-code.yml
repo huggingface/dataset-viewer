@@ -1,7 +1,7 @@
 version: "3.9"
 services:
   reverse-proxy:
-    image: ${SERVICE_REVERSE_PROXY_DOCKER_IMAGE}
+    image: nginx:1.20
     volumes:
       - ../infra/charts/datasets-server/nginx-templates/:/etc/nginx/templates:ro
       - reverse-proxy-cache:/nginx-cache
@@ -9,18 +9,21 @@ services:
     ports:
       - "${SERVICE_REVERSE_PROXY_PORT}:80"
     environment:
-      ASSETS_DIRECTORY: /assets
-      CACHE_DIRECTORY: /nginx-cache
-      CACHE_INACTIVE: 24h
-      CACHE_MAX_SIZE: 1g
-      CACHE_ZONE_SIZE: 50m
-      HOST: localhost
-      PORT: 80
-      TARGET_URL: http://api:8080
+      - ASSETS_DIRECTORY=/assets
+      - CACHE_DIRECTORY=/nginx-cache
+      - CACHE_INACTIVE=24h
+      - CACHE_MAX_SIZE=1g
+      - CACHE_ZONE_SIZE=50m
+      - HOST=localhost
+      - PORT=80
+      - TARGET_URL=http://api:8080
     depends_on:
-      - api
+      api:
+        condition: service_started
   api:
-    image: ${SERVICE_API_DOCKER_IMAGE}
+    build:
+      context: ..
+      dockerfile: services/api/Dockerfile
     volumes:
       - assets:/assets:ro
     environment:
@@ -28,45 +31,58 @@ services:
       APP_NUM_WORKERS: 1
       APP_PORT: 8080
       ASSETS_DIRECTORY: "/assets"
-      # use shorter cache durations for the e2e tests
-      MAX_AGE_SHORT_SECONDS: 1
-      MAX_AGE_LONG_SECONDS: 2
       MONGO_URL: "mongodb://mongodb"
     ports:
-      - 8080:8080
+      # for debug
+      - ${SERVICE_API_PORT}:8080
     depends_on:
-      - mongodb
+      mongodb:
+        condition: service_started
     restart: unless-stopped
   datasets-worker:
-    image: ${SERVICE_DATASETS_WORKER_DOCKER_IMAGE}
+    build:
+      context: ..
+      dockerfile: ./services/worker/Dockerfile
     volumes:
       - assets:/assets:rw
     environment:
       ASSETS_DIRECTORY: "/assets"
       MONGO_URL: "mongodb://mongodb"
-      WORKER_SLEEP_SECONDS: "1"
       WORKER_QUEUE: "datasets"
     depends_on:
-      - mongodb
+      mongodb:
+        condition: service_started
     restart: always
   splits-worker:
-    image: ${SERVICE_SPLITS_WORKER_DOCKER_IMAGE}
+    build:
+      context: ..
+      dockerfile: ./services/worker/Dockerfile
     volumes:
       - assets:/assets:rw
     environment:
       ASSETS_DIRECTORY: "/assets"
       MONGO_URL: "mongodb://mongodb"
-      WORKER_SLEEP_SECONDS: "1"
       WORKER_QUEUE: "splits"
     depends_on:
-      - mongodb
+      mongodb:
+        condition: service_started
     restart: always
   admin:
-    image: ${SERVICE_ADMIN_DOCKER_IMAGE}
+    build:
+      context: ..
+      dockerfile: ./services/admin/Dockerfile
     environment:
+      APP_HOSTNAME: 0.0.0.0
+      APP_NUM_WORKERS: 1
+      APP_PORT: 8081
+      ASSETS_DIRECTORY: "/assets"
       MONGO_URL: "mongodb://mongodb"
+    ports:
+      # for debug
+      - ${SERVICE_ADMIN_PORT}:8081
     depends_on:
-      - mongodb
+      mongodb:
+        condition: service_started
     restart: always
   mongodb:
     image: mongo
