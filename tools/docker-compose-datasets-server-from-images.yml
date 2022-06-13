@@ -7,7 +7,7 @@ services:
       - reverse-proxy-cache:/nginx-cache
       - assets:/assets:ro
     ports:
-      - "8000:80"
+      - "${SERVICE_REVERSE_PROXY_PORT}:80"
     environment:
       ASSETS_DIRECTORY: /assets
       CACHE_DIRECTORY: /nginx-cache
@@ -75,7 +75,7 @@ services:
       # TODO: authentication, healthcheck, expose?, migrations?
     ports:
       # for debug
-      - "27017:27017"
+      - "${MONGO_PORT}:27017"
 volumes:
   assets:
   mongo:
