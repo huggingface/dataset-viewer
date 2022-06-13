@@ -1,9 +1,6 @@
-include ../../tools/Common.mk
+# environment variables for the commands (docker-compose, poetry)
+export TEST_COMPOSE_PROJECT_NAME := libutils
+# makefile variables
+TEST_DOCKER_COMPOSE := ../../tools/docker-compose-empty.yml
 
-.PHONY: test
-test:
-	poetry run python -m pytest -x tests
-
-.PHONY: coverage
-coverage:
-	poetry run python -m pytest -s --cov --cov-report xml:coverage.xml --cov-report=term tests
+include ../../tools/Python.mk
