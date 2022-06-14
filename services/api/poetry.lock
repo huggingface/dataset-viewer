@@ -1475,7 +1475,7 @@ libqueue = [
     {file = "libqueue-0.1.6-py3-none-any.whl", hash = "sha256:23a03ce67a8d3dd8609e24b2e0f9aba9718d9b69dc642559b1a13c1421dd5537"},
 ]
 libutils = [
-    {file = "libutils-0.1.2-py3-none-any.whl", hash = "sha256:d8db9957164b7856255a75114cfd6c9b801d30db0b7f2eada09b9463651f45ba"},
+    {file = "libutils-0.1.2-py3-none-any.whl", hash = "sha256:f69ce3846ee032bab7160f89524f5cf59d32c13ce5944996f63ee532f7f59e0b"},
 ]
 mccabe = [
     {file = "mccabe-0.6.1-py2.py3-none-any.whl", hash = "sha256:ab8a6258860da4b6677da4bd2fe5dc2c659cff31b3ee4f7f5d64e79735b80d42"},
