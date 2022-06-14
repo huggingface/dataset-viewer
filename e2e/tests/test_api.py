@@ -1,4 +1,3 @@
-# import pytest
 import os
 import time
 
@@ -127,7 +126,7 @@ def test_valid_after_two_datasets_processed():
     # this test ensures that the two datasets processed successfully are present in /valid
     response = requests.get(f"{URL}/valid")
     assert response.status_code == 200
-    # at this moment no dataset has been processed
+    # at this moment various datasets have been processed
     assert response.json()["valid"] == ["acronym_identification", "nielsr/CelebA-faces"]
 
 
@@ -143,6 +142,10 @@ def test_timestamp_column():
     assert response.status_code == 200
 
     response = poll_rows_until_split_process_has_finished(dataset, config, split, 60)
-    assert response.status_code == 500
+    assert response.status_code == 200
     json = response.json()
-    assert json["message"] == "Type is not JSON serializable: Timestamp"
+    assert len(json["rows"]) == 100
+    assert json["rows"][0]["row"]["start"] == 1467331200.0
+    assert json["columns"][0]["column"]["type"] == "TIMESTAMP"
+    assert json["columns"][0]["column"]["unit"] == "s"
+    assert json["columns"][0]["column"]["tz"] is None
