@@ -2,8 +2,11 @@ from typing import Any, Dict, List, Optional, TypedDict, Union
 
 from libutils.enums import (
     CommonColumnType,
+    CommonColumnTypeName,
     LabelsColumnType,
+    LabelsColumnTypeName,
     TimestampColumnType,
+    TimestampColumnTypeName,
     TimestampUnit,
 )
 
@@ -13,16 +16,16 @@ class _BaseColumnDict(TypedDict):
 
 
 class CommonColumnDict(_BaseColumnDict):
-    type: CommonColumnType
+    type: CommonColumnTypeName
 
 
 class ClassLabelColumnDict(_BaseColumnDict):
-    type: LabelsColumnType
+    type: LabelsColumnTypeName
     labels: List[str]
 
 
 class TimestampColumnDict(_BaseColumnDict):
-    type: TimestampColumnType
+    type: TimestampColumnTypeName
     unit: TimestampUnit
     tz: Optional[str]
 
