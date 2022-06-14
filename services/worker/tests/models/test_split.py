@@ -84,7 +84,7 @@ def test_audio_path_none_dataset() -> None:
         split["rows_response"]["rows"][0]["row"]["audio"][0]["src"]
         == "assets/LIUM/tedlium/--/release1/test/0/audio/audio.mp3"
     )
-    assert split["rows_response"]["columns"][2]["column"]["type"] == ColumnType.AUDIO_RELATIVE_SOURCES.name
+    assert split["rows_response"]["columns"][0]["column"]["type"] == ColumnType.AUDIO_RELATIVE_SOURCES.name
 
 
 def test_get_split() -> None:
