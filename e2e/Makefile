@@ -11,6 +11,7 @@ TEST_DOCKER_COMPOSE := ../tools/docker-compose-datasets-server-from-remote-image
 DOCKER_IMAGES := ../infra/charts/datasets-server/docker-images.yaml
 
 include ../tools/Python.mk
+include ../tools/DockerRemoteImages.mk
 include ../tools/Docker.mk
 
 .PHONY: e2e
