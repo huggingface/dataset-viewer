@@ -8,10 +8,9 @@ from worker.models.asset import create_image_file
 from worker.models.column.default import (
     Cell,
     CellTypeError,
-    Column,
     ColumnInferenceError,
-    ColumnType,
     ColumnTypeError,
+    CommonColumn,
     check_dtype,
 )
 
@@ -36,7 +35,7 @@ def infer_from_values(values: List[Any]) -> None:
         raise ColumnInferenceError("all the values are None, cannot infer column type")
 
 
-class ImageArray2DColumn(Column):
+class ImageArray2DColumn(CommonColumn):
     def __init__(self, name: str, feature: Any, values: List[Any]):
         if name not in COLUMN_NAMES:
             raise ColumnTypeError("feature name mismatch")
@@ -47,7 +46,7 @@ class ImageArray2DColumn(Column):
             infer_from_values(values)
         # we also have shape in the feature: shape: [28, 28] for MNIST
         self.name = name
-        self.type = ColumnType.RELATIVE_IMAGE_URL
+        self.type = "RELATIVE_IMAGE_URL"
 
     def get_cell_value(self, dataset_name: str, config_name: str, split_name: str, row_idx: int, value: Any) -> Cell:
         if value is None:

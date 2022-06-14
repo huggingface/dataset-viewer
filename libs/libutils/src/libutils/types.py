@@ -1,14 +1,34 @@
-from typing import Any, Dict, List, Optional, TypedDict
+from typing import Any, Dict, List, Literal, Optional, TypedDict, Union
+
+TimestampUnit = Literal["s", "ms", "us", "ns"]
+CommonColumnType = Literal[
+    "JSON", "BOOL", "INT", "FLOAT", "STRING", "IMAGE_URL", "RELATIVE_IMAGE_URL", "AUDIO_RELATIVE_SOURCES"
+]
+ClassLabelColumnType = Literal["CLASS_LABEL"]
+TimestampColumnType = Literal["TIMESTAMP"]
 
 
 class _BaseColumnDict(TypedDict):
     name: str
-    type: str
 
 
-class ColumnDict(_BaseColumnDict, total=False):
-    # https://www.python.org/dev/peps/pep-0655/#motivation
+class CommonColumnDict(_BaseColumnDict):
+    type: CommonColumnType
+
+
+class ClassLabelColumnDict(_BaseColumnDict):
+    type: ClassLabelColumnType
     labels: List[str]
+
+
+class TimestampColumnDict(_BaseColumnDict):
+    type: TimestampColumnType
+    unit: TimestampUnit
+    tz: Optional[str]
+
+
+ColumnType = Union[CommonColumnType, ClassLabelColumnType, TimestampColumnType]
+ColumnDict = Union[CommonColumnDict, ClassLabelColumnDict, TimestampColumnDict]
 
 
 class RowItem(TypedDict):

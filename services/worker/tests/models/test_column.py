@@ -1,5 +1,6 @@
-from worker.models.column import ColumnType, get_columns
+from worker.models.column import get_columns
 from worker.models.column.class_label import ClassLabelColumn
+from worker.models.column.timestamp import TimestampColumn
 from worker.models.info import get_info
 
 # TODO: add a test for each type
@@ -8,7 +9,7 @@ from worker.models.info import get_info
 def test_class_label() -> None:
     info = get_info("glue", "cola")
     columns = get_columns(info, [])
-    assert columns[1].type.name == "CLASS_LABEL"
+    assert columns[1].type == "CLASS_LABEL"
     assert isinstance(columns[1], ClassLabelColumn)
     assert "unacceptable" in columns[1].labels
 
@@ -25,7 +26,7 @@ def test_get_columns() -> None:
     assert columns is not None and len(columns) == 3
     column = columns[0]
     assert column.name == "id"
-    assert column.type == ColumnType.STRING
+    assert column.type == "STRING"
 
 
 def test_mnist() -> None:
@@ -33,7 +34,7 @@ def test_mnist() -> None:
     columns = get_columns(info, [])
     assert columns is not None
     assert columns[0].name == "image"
-    assert columns[0].type == ColumnType.RELATIVE_IMAGE_URL
+    assert columns[0].type == "RELATIVE_IMAGE_URL"
 
 
 def test_cifar() -> None:
@@ -50,7 +51,7 @@ def test_iter_archive() -> None:
     columns = get_columns(info, [])
     assert columns is not None
     assert columns[0].name == "image"
-    assert columns[0].type == ColumnType.RELATIVE_IMAGE_URL
+    assert columns[0].type == "RELATIVE_IMAGE_URL"
 
 
 def test_severo_wit() -> None:
@@ -58,7 +59,7 @@ def test_severo_wit() -> None:
     columns = get_columns(info, [])
     assert columns is not None
     assert columns[2].name == "image_url"
-    assert columns[2].type == ColumnType.IMAGE_URL
+    assert columns[2].type == "IMAGE_URL"
 
 
 def test_audio() -> None:
@@ -66,4 +67,15 @@ def test_audio() -> None:
     columns = get_columns(info, [])
     assert columns is not None
     assert columns[1].name == "Output"
-    assert columns[1].type == ColumnType.AUDIO_RELATIVE_SOURCES
+    assert columns[1].type == "AUDIO_RELATIVE_SOURCES"
+
+
+def test_timestamp() -> None:
+    info = get_info("ett", "h1")
+    columns = get_columns(info, [])
+    assert columns is not None
+    assert columns[0].name == "start"
+    assert columns[0].type == "TIMESTAMP"
+    assert isinstance(columns[0], TimestampColumn)
+    assert columns[0].unit == "s"
+    assert columns[0].tz is None

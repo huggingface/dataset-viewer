@@ -2,14 +2,14 @@ import logging
 import sys
 from typing import Any, List, Optional
 
+from libutils.exceptions import Status400Error
 from libutils.types import ColumnItem, RowItem, RowsResponse, Split
 from libutils.utils import orjson_dumps
 
 from worker.config import MIN_CELL_BYTES
-from worker.models.column import Column
+from worker.models.column import CellTypeError, Column, get_columns
 from worker.models.info import get_info
-from worker.models.row import Row
-from worker.models.typed_row import get_typed_rows_and_columns
+from worker.models.row import Row, get_rows
 
 logger = logging.getLogger(__name__)
 
@@ -137,6 +137,28 @@ def create_truncated_row_items(
     return row_items
 
 
+def get_typed_row(
+    dataset_name: str, config_name: str, split_name: str, row: Row, row_idx: int, columns: List[Column]
+) -> Row:
+    try:
+        return {
+            column.name: column.get_cell_value(dataset_name, config_name, split_name, row_idx, row[column.name])
+            for column in columns
+        }
+    except CellTypeError as err:
+        raise Status400Error("Cell type error.", err) from err
+
+
+def get_typed_rows(
+    dataset_name: str,
+    config_name: str,
+    split_name: str,
+    rows: List[Row],
+    columns: List[Column],
+) -> List[Row]:
+    return [get_typed_row(dataset_name, config_name, split_name, row, idx, columns) for idx, row in enumerate(rows)]
+
+
 def get_split(
     dataset_name: str,
     config_name: str,
@@ -152,9 +174,20 @@ def get_split(
     fallback = (
         max_size_fallback is not None and info.size_in_bytes is not None and info.size_in_bytes < max_size_fallback
     )
-    typed_rows, columns = get_typed_rows_and_columns(
-        dataset_name, config_name, split_name, info, hf_token, fallback, rows_max_number
-    )
+
+    try:
+        try:
+            rows = get_rows(dataset_name, config_name, split_name, hf_token, True, rows_max_number)
+        except Exception:
+            if fallback:
+                rows = get_rows(dataset_name, config_name, split_name, hf_token, False, rows_max_number)
+            else:
+                raise
+    except Exception as err:
+        raise Status400Error("Cannot get the first rows for the split.", err) from err
+
+    columns = get_columns(info, rows)
+    typed_rows = get_typed_rows(dataset_name, config_name, split_name, rows, columns)
     row_items = create_truncated_row_items(
         dataset_name, config_name, split_name, typed_rows, rows_max_bytes, rows_min_number
     )

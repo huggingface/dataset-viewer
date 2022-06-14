@@ -3,10 +3,9 @@ from typing import Any, List
 from worker.models.column.default import (
     Cell,
     CellTypeError,
-    Column,
     ColumnInferenceError,
-    ColumnType,
     ColumnTypeError,
+    CommonColumn,
     check_dtype,
 )
 
@@ -23,7 +22,7 @@ def infer_from_values(values: List[Any]) -> None:
         raise ColumnInferenceError("all the values are None, cannot infer column type")
 
 
-class BoolColumn(Column):
+class BoolColumn(CommonColumn):
     def __init__(self, name: str, feature: Any, values: List[Any]):
         if feature:
             if not check_dtype(feature, ["bool"]):
@@ -31,7 +30,7 @@ class BoolColumn(Column):
         else:
             infer_from_values(values)
         self.name = name
-        self.type = ColumnType.BOOL
+        self.type = "BOOL"
 
     def get_cell_value(self, dataset_name: str, config_name: str, split_name: str, row_idx: int, value: Any) -> Cell:
         check_value(value)

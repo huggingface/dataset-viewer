@@ -15,6 +15,7 @@ LOCAL_CODE_DOCKER_COMPOSE := ./tools/docker-compose-datasets-server-from-local-c
 REMOTE_IMAGES_DOCKER_COMPOSE := ./tools/docker-compose-datasets-server-from-remote-images.yml
 DOCKER_IMAGES := ./infra/charts/datasets-server/docker-images.yaml
 
+include tools/DockerRemoteImages.mk
 include tools/Docker.mk
 
 .PHONY: install
