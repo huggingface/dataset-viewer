@@ -1,9 +1,9 @@
 from typing import get_args
 
 from libutils.types import (
+    ClassLabelColumnType,
     ColumnDict,
     CommonColumnType,
-    ClassLabelColumnType,
     TimestampColumnType,
     TimestampUnit,
 )
