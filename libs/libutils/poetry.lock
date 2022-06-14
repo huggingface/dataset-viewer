@@ -413,11 +413,11 @@ portalocker = [
 
 [[package]]
 name = "msrest"
-version = "0.7.0"
+version = "0.7.1"
 description = "AutoRest swagger generator Python client runtime."
 category = "main"
 optional = false
-python-versions = "*"
+python-versions = ">=3.6"
 
 [package.dependencies]
 azure-core = ">=1.24.0"
@@ -1224,8 +1224,8 @@ msal-extensions = [
     {file = "msal_extensions-1.0.0-py2.py3-none-any.whl", hash = "sha256:91e3db9620b822d0ed2b4d1850056a0f133cba04455e62f11612e40f5502f2ee"},
 ]
 msrest = [
-    {file = "msrest-0.7.0-py2.py3-none-any.whl", hash = "sha256:59b06d168ea11448b79921be0760f488347e140d69fb2c2b9f37000615ca4a39"},
-    {file = "msrest-0.7.0.zip", hash = "sha256:2210a4dff54c6d3af30bf2fc10db206a1bc5b097c654ce54b0ecd633d762afdf"},
+    {file = "msrest-0.7.1-py3-none-any.whl", hash = "sha256:21120a810e1233e5e6cc7fe40b474eeb4ec6f757a15d7cf86702c369f9567c32"},
+    {file = "msrest-0.7.1.zip", hash = "sha256:6e7661f46f3afd88b75667b7187a92829924446c7ea1d169be8c4bb7eeb788b9"},
 ]
 mypy = [
     {file = "mypy-0.812-cp35-cp35m-macosx_10_9_x86_64.whl", hash = "sha256:a26f8ec704e5a7423c8824d425086705e381b4f1dfdef6e3a1edab7ba174ec49"},

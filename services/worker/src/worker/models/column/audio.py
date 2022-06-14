@@ -7,10 +7,9 @@ from worker.models.asset import create_audio_files
 from worker.models.column.default import (
     Cell,
     CellTypeError,
-    Column,
     ColumnInferenceError,
-    ColumnType,
     ColumnTypeError,
+    CommonColumn,
 )
 
 
@@ -38,7 +37,7 @@ def infer_from_values(values: List[Any]) -> None:
         raise ColumnInferenceError("all the values are None, cannot infer column type")
 
 
-class AudioColumn(Column):
+class AudioColumn(CommonColumn):
     def __init__(self, name: str, feature: Any, values: List[Any]):
         if feature:
             if not isinstance(feature, Audio):
@@ -46,7 +45,7 @@ class AudioColumn(Column):
         else:
             infer_from_values(values)
         self.name = name
-        self.type = ColumnType.AUDIO_RELATIVE_SOURCES
+        self.type = "AUDIO_RELATIVE_SOURCES"
 
     def get_cell_value(self, dataset_name: str, config_name: str, split_name: str, row_idx: int, value: Any) -> Cell:
         if value is None:

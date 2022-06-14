@@ -1,14 +1,11 @@
-from typing import Any, Dict, List, Optional, TypedDict, Union
+from typing import Any, Dict, List, Literal, Optional, TypedDict, Union
 
-from libutils.enums import (
-    CommonColumnType,
-    CommonColumnTypeName,
-    LabelsColumnType,
-    LabelsColumnTypeName,
-    TimestampColumnType,
-    TimestampColumnTypeName,
-    TimestampUnit,
-)
+TimestampUnit = Literal["s", "ms", "us", "ns"]
+CommonColumnType = Literal[
+    "JSON", "BOOL", "INT", "FLOAT", "STRING", "IMAGE_URL", "RELATIVE_IMAGE_URL", "AUDIO_RELATIVE_SOURCES"
+]
+ClassLabelColumnType = Literal["CLASS_LABEL"]
+TimestampColumnType = Literal["TIMESTAMP"]
 
 
 class _BaseColumnDict(TypedDict):
@@ -16,21 +13,21 @@ class _BaseColumnDict(TypedDict):
 
 
 class CommonColumnDict(_BaseColumnDict):
-    type: CommonColumnTypeName
+    type: CommonColumnType
 
 
 class ClassLabelColumnDict(_BaseColumnDict):
-    type: LabelsColumnTypeName
+    type: ClassLabelColumnType
     labels: List[str]
 
 
 class TimestampColumnDict(_BaseColumnDict):
-    type: TimestampColumnTypeName
+    type: TimestampColumnType
     unit: TimestampUnit
     tz: Optional[str]
 
 
-ColumnType = Union[CommonColumnType, LabelsColumnType, TimestampColumnType]
+ColumnType = Union[CommonColumnType, ClassLabelColumnType, TimestampColumnType]
 ColumnDict = Union[CommonColumnDict, ClassLabelColumnDict, TimestampColumnDict]
 
 

@@ -1,3 +1,4 @@
+import contextlib
 from typing import List, Union
 
 from datasets import DatasetInfo, Features
@@ -11,10 +12,9 @@ from worker.models.column.default import (
     Cell,
     CellTypeError,
     Column,
-    ColumnDict,
     ColumnInferenceError,
-    ColumnType,
     ColumnTypeError,
+    CommonColumn,
 )
 from worker.models.column.float import FloatColumn
 from worker.models.column.image import ImageColumn
@@ -25,9 +25,12 @@ from worker.models.column.int import IntColumn
 from worker.models.column.string import StringColumn
 from worker.models.row import Row
 
-column_classes = [
-    AudioColumn,
+class_label_column_classes = [
     ClassLabelColumn,
+]
+
+common_column_classes = [
+    AudioColumn,
     ImageColumn,
     ImageArray2DColumn,
     ImageArray3DColumn,
@@ -51,13 +54,14 @@ def get_column(column_name: str, features: FeaturesOrNone, rows: List[Row]) -> C
         raise Status400Error("one column is missing in the dataset rows", e) from e
 
     # try until one works
-    for column_class in column_classes:
-        try:
-            return column_class(column_name, feature, values)
-        except (ColumnTypeError, CellTypeError, ColumnInferenceError):
-            pass
+    for class_label_column_class in class_label_column_classes:
+        with contextlib.suppress(ColumnTypeError, CellTypeError, ColumnInferenceError):
+            return class_label_column_class(column_name, feature, values)
+    for common_column_class in common_column_classes:
+        with contextlib.suppress(ColumnTypeError, CellTypeError, ColumnInferenceError):
+            return common_column_class(column_name, feature, values)
     # none has worked
-    return Column(column_name, feature, values)
+    return CommonColumn(column_name, feature, values)
 
 
 def get_columns(info: DatasetInfo, rows: List[Row]) -> List[Column]:
@@ -75,4 +79,4 @@ def get_columns(info: DatasetInfo, rows: List[Row]) -> List[Column]:
 
 
 # explicit re-export
-__all__ = ["Column", "Cell", "ColumnType", "ColumnDict", "ClassLabelColumn"]
+__all__ = ["Column", "Cell"]

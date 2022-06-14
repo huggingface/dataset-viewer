@@ -1,40 +1,35 @@
-from enum import Enum, auto
+from abc import ABC, abstractmethod
 from typing import Any, List
 
 from datasets import Value
-from libutils.types import ColumnDict
-
-
-class ColumnType(Enum):
-    JSON = auto()  # default
-    BOOL = auto()
-    INT = auto()
-    FLOAT = auto()
-    STRING = auto()
-    IMAGE_URL = auto()
-    RELATIVE_IMAGE_URL = auto()
-    AUDIO_RELATIVE_SOURCES = auto()
-    CLASS_LABEL = auto()
-
+from libutils.types import ColumnDict, ColumnType, CommonColumnType
 
 # TODO: a set of possible cell types (problem: JSON is Any)
 Cell = Any
 
 
-class Column:
+class Column(ABC):
     name: str
     type: ColumnType
 
     def __init__(self, name: str, feature: Any, values: List[Any]):
         self.name = name
-        self.type = ColumnType.JSON
+        self.type = "JSON"
 
     def get_cell_value(self, dataset_name: str, config_name: str, split_name: str, row_idx: int, value: Any) -> Cell:
         # TODO: return JSON? of pickled?
         return value
 
+    @abstractmethod
     def as_dict(self) -> ColumnDict:
-        return {"name": self.name, "type": self.type.name}
+        pass
+
+
+class CommonColumn(Column):
+    type: CommonColumnType
+
+    def as_dict(self) -> ColumnDict:
+        return {"name": self.name, "type": self.type}
 
 
 # Utils

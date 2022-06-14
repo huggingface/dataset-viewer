@@ -3352,7 +3352,7 @@ librosa = [
     {file = "librosa-0.9.1.tar.gz", hash = "sha256:7ed5d6e3f4546e5e3c2840691f9ddc56878f914a35a50060df5fca2b26d4b614"},
 ]
 libutils = [
-    {file = "libutils-0.1.2-py3-none-any.whl", hash = "sha256:f69ce3846ee032bab7160f89524f5cf59d32c13ce5944996f63ee532f7f59e0b"},
+    {file = "libutils-0.1.2-py3-none-any.whl", hash = "sha256:cd2fcf357dc234cb09552e32c80d40a550bef9882330ce11cc22b60cb61332ba"},
 ]
 llvmlite = [
     {file = "llvmlite-0.38.1-cp310-cp310-macosx_10_9_x86_64.whl", hash = "sha256:a7dd2bd1d6406e7789273e3f8a304ed5d9adcfaa5768052fca7dc233a857be98"},

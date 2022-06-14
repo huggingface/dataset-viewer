@@ -1,37 +1,61 @@
-from libutils.enums import (
+from typing import get_args
+
+from libutils.types import (
+    ColumnDict,
     CommonColumnType,
-    LabelsColumnType,
+    ClassLabelColumnType,
     TimestampColumnType,
     TimestampUnit,
 )
-from libutils.types import ColumnDict
+
+
+def test_timestamp_unit() -> None:
+    assert get_args(TimestampUnit) == ("s", "ms", "us", "ns")
+    assert set(get_args(TimestampUnit)) == {"s", "ms", "us", "ns"}
+    assert list(get_args(TimestampUnit)) == ["s", "ms", "us", "ns"]
+    assert "ms" in get_args(TimestampUnit)
+
+
+def test_column_type() -> None:
+    assert set(get_args(CommonColumnType)) == {
+        "JSON",
+        "BOOL",
+        "INT",
+        "FLOAT",
+        "STRING",
+        "IMAGE_URL",
+        "RELATIVE_IMAGE_URL",
+        "AUDIO_RELATIVE_SOURCES",
+    }
+    assert set(get_args(ClassLabelColumnType)) == {"CLASS_LABEL"}
+    assert set(get_args(TimestampColumnType)) == {"TIMESTAMP"}
 
 
 def test_column_dict() -> None:
     # allowed
-    col: ColumnDict = {"name": "mycol", "type": CommonColumnType.JSON.name}
+    col: ColumnDict = {"name": "mycol", "type": "JSON"}
     labels: ColumnDict = {
         "name": "mycol",
-        "type": LabelsColumnType.CLASS_LABEL.name,
+        "type": "CLASS_LABEL",
         "labels": ["positive", "negative", "neutral"],
     }
     timestamp: ColumnDict = {
         "name": "mycol",
-        "type": TimestampColumnType.TIMESTAMP.name,
+        "type": "TIMESTAMP",
         "tz": None,
-        "unit": TimestampUnit["ms"],
+        "unit": "ms",
     }
     # not allowed
     missing_field: ColumnDict = {
         "name": "mycol",
-        "type": TimestampColumnType.TIMESTAMP.name,
+        "type": "TIMESTAMP",
         "tz": None,
     }  # type: ignore
     wrong_type: ColumnDict = {
         "name": "mycol",
-        "type": CommonColumnType.JSON.name,  # type: ignore
+        "type": "JSON",  # type: ignore
         "tz": None,
-        "unit": TimestampUnit["ms"],
+        "unit": "ms",
     }
 
     # nothing to test, we just want to ensure that mypy doesn't break

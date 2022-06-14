@@ -1,15 +1,9 @@
 from typing import Any, List
 
 from datasets import ClassLabel
+from libutils.types import ClassLabelColumnType, ColumnDict
 
-from worker.models.column.default import (
-    Cell,
-    CellTypeError,
-    Column,
-    ColumnDict,
-    ColumnType,
-    ColumnTypeError,
-)
+from worker.models.column.default import Cell, CellTypeError, Column, ColumnTypeError
 
 
 def check_value(value: Any) -> None:
@@ -18,6 +12,7 @@ def check_value(value: Any) -> None:
 
 
 class ClassLabelColumn(Column):
+    type: ClassLabelColumnType
     labels: List[str]
 
     def __init__(self, name: str, feature: Any, values: List[Any]):
@@ -28,11 +23,11 @@ class ClassLabelColumn(Column):
             raise ColumnTypeError("feature type mismatch")
         self.labels = feature.names
         self.name = name
-        self.type = ColumnType.CLASS_LABEL
+        self.type = "CLASS_LABEL"
 
     def get_cell_value(self, dataset_name: str, config_name: str, split_name: str, row_idx: int, value: Any) -> Cell:
         check_value(value)
         return value
 
     def as_dict(self) -> ColumnDict:
-        return {"name": self.name, "type": self.type.name, "labels": self.labels}
+        return {"name": self.name, "type": self.type, "labels": self.labels}

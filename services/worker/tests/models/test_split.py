@@ -1,4 +1,3 @@
-from worker.models.column import ColumnType
 from worker.models.split import get_split
 
 from .._utils import HF_TOKEN, ROWS_MAX_NUMBER
@@ -10,14 +9,14 @@ from .._utils import HF_TOKEN, ROWS_MAX_NUMBER
 def test_detect_types_from_typed_rows() -> None:
     split = get_split("allenai/c4", "allenai--c4", "train", rows_max_number=ROWS_MAX_NUMBER)
     assert len(split["rows_response"]["rows"]) == ROWS_MAX_NUMBER
-    assert split["rows_response"]["columns"][0]["column"]["type"] == ColumnType.STRING.name
+    assert split["rows_response"]["columns"][0]["column"]["type"] == "STRING"
 
 
 def test_class_label() -> None:
     split = get_split("glue", "cola", "train", rows_max_number=ROWS_MAX_NUMBER)
     assert len(split["rows_response"]["rows"]) == ROWS_MAX_NUMBER
     assert split["rows_response"]["rows"][0]["row"]["label"] == 1
-    assert split["rows_response"]["columns"][1]["column"]["type"] == ColumnType.CLASS_LABEL.name
+    assert split["rows_response"]["columns"][1]["column"]["type"] == "CLASS_LABEL"
     assert "unacceptable" in split["rows_response"]["columns"][1]["column"]["labels"]
 
 
@@ -25,7 +24,7 @@ def test_mnist() -> None:
     split = get_split("mnist", "mnist", "train", rows_max_number=ROWS_MAX_NUMBER)
     assert len(split["rows_response"]["rows"]) == ROWS_MAX_NUMBER
     assert split["rows_response"]["rows"][0]["row"]["image"] == "assets/mnist/--/mnist/train/0/image/image.jpg"
-    assert split["rows_response"]["columns"][0]["column"]["type"] == ColumnType.RELATIVE_IMAGE_URL.name
+    assert split["rows_response"]["columns"][0]["column"]["type"] == "RELATIVE_IMAGE_URL"
 
 
 # TODO: re-enable the test
@@ -52,13 +51,13 @@ def test_mnist() -> None:
 def test_iter_archive() -> None:
     split = get_split("food101", "default", "train", rows_max_number=ROWS_MAX_NUMBER)
     assert len(split["rows_response"]["rows"]) == ROWS_MAX_NUMBER
-    assert split["rows_response"]["columns"][0]["column"]["type"] == ColumnType.RELATIVE_IMAGE_URL.name
+    assert split["rows_response"]["columns"][0]["column"]["type"] == "RELATIVE_IMAGE_URL"
 
 
 def test_image_url() -> None:
     split = get_split("severo/wit", "default", "train", rows_max_number=ROWS_MAX_NUMBER)
     assert len(split["rows_response"]["rows"]) == ROWS_MAX_NUMBER
-    assert split["rows_response"]["columns"][2]["column"]["type"] == ColumnType.IMAGE_URL.name
+    assert split["rows_response"]["columns"][2]["column"]["type"] == "IMAGE_URL"
 
 
 def test_audio_dataset() -> None:
@@ -71,7 +70,7 @@ def test_audio_dataset() -> None:
         split["rows_response"]["rows"][0]["row"]["Output"][0]["src"]
         == "assets/abidlabs/test-audio-1/--/test/train/0/Output/audio.mp3"
     )
-    assert split["rows_response"]["columns"][1]["column"]["type"] == ColumnType.AUDIO_RELATIVE_SOURCES.name
+    assert split["rows_response"]["columns"][1]["column"]["type"] == "AUDIO_RELATIVE_SOURCES"
 
 
 def test_audio_path_none_dataset() -> None:
@@ -84,7 +83,7 @@ def test_audio_path_none_dataset() -> None:
         split["rows_response"]["rows"][0]["row"]["audio"][0]["src"]
         == "assets/LIUM/tedlium/--/release1/test/0/audio/audio.mp3"
     )
-    assert split["rows_response"]["columns"][0]["column"]["type"] == ColumnType.AUDIO_RELATIVE_SOURCES.name
+    assert split["rows_response"]["columns"][0]["column"]["type"] == "AUDIO_RELATIVE_SOURCES"
 
 
 def test_get_split() -> None:
