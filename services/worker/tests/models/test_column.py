@@ -1,5 +1,6 @@
 from worker.models.column import get_columns
 from worker.models.column.class_label import ClassLabelColumn
+from worker.models.column.timestamp import TimestampColumn
 from worker.models.info import get_info
 
 # TODO: add a test for each type
@@ -67,3 +68,14 @@ def test_audio() -> None:
     assert columns is not None
     assert columns[1].name == "Output"
     assert columns[1].type == "AUDIO_RELATIVE_SOURCES"
+
+
+def test_timestamp() -> None:
+    info = get_info("ett", "h1")
+    columns = get_columns(info, [])
+    assert columns is not None
+    assert columns[0].name == "start"
+    assert columns[0].type == "TIMESTAMP"
+    assert isinstance(columns[0], TimestampColumn)
+    assert columns[0].unit == "s"
+    assert columns[0].tz is None

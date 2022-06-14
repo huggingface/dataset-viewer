@@ -23,7 +23,12 @@ from worker.models.column.image_array3d import ImageArray3DColumn
 from worker.models.column.image_url import ImageUrlColumn
 from worker.models.column.int import IntColumn
 from worker.models.column.string import StringColumn
+from worker.models.column.timestamp import TimestampColumn
 from worker.models.row import Row
+
+timestamp_column_classes = [
+    TimestampColumn,
+]
 
 class_label_column_classes = [
     ClassLabelColumn,
@@ -54,6 +59,9 @@ def get_column(column_name: str, features: FeaturesOrNone, rows: List[Row]) -> C
         raise Status400Error("one column is missing in the dataset rows", e) from e
 
     # try until one works
+    for timestamp_column_class in timestamp_column_classes:
+        with contextlib.suppress(ColumnTypeError, CellTypeError, ColumnInferenceError):
+            return timestamp_column_class(column_name, feature, values)
     for class_label_column_class in class_label_column_classes:
         with contextlib.suppress(ColumnTypeError, CellTypeError, ColumnInferenceError):
             return class_label_column_class(column_name, feature, values)
