@@ -1,8 +1,11 @@
-import pandas
+import pandas  # type: ignore
 
 from worker.models.split import get_split
 
 from .._utils import HF_TOKEN, ROWS_MAX_NUMBER
+
+# pandas types: see https://github.com/VirtusLab/pandas-stubs/issues/172
+
 
 # TODO: test fallback
 
@@ -138,8 +141,6 @@ def test_timestamp() -> None:
         rows_max_number=ROWS_MAX_NUMBER,
     )
     assert len(split["rows_response"]["rows"]) == ROWS_MAX_NUMBER
-    split["rows_response"]["rows"][0]
-    split["rows_response"]["columns"][0]
     assert split["rows_response"]["rows"][0]["row"]["start"] == 1467331200.0
     assert split["rows_response"]["columns"][0]["column"]["type"] == "TIMESTAMP"
     assert split["rows_response"]["columns"][0]["column"]["unit"] == "s"

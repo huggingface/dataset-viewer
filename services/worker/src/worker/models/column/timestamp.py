@@ -1,7 +1,7 @@
 import re
 from typing import Any, List, Optional, get_args
 
-import pandas
+import pandas  # type: ignore
 from datasets import Value
 from libutils.types import ColumnDict, TimestampColumnType, TimestampUnit
 
@@ -12,6 +12,9 @@ from worker.models.column.default import (
     ColumnInferenceError,
     ColumnTypeError,
 )
+
+# pandas types: see https://github.com/VirtusLab/pandas-stubs/issues/172
+
 
 TimestampTz = Optional[str]
 
