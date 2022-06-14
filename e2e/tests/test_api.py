@@ -144,7 +144,8 @@ def test_timestamp_column():
     response = poll_rows_until_split_process_has_finished(dataset, config, split, 60)
     assert response.status_code == 200
     json = response.json()
-    assert len(json["rows"]) == 100
+    TRUNCATED_TO_ONE_ROW = 1
+    assert len(json["rows"]) == TRUNCATED_TO_ONE_ROW
     assert json["rows"][0]["row"]["start"] == 1467331200.0
     assert json["columns"][0]["column"]["type"] == "TIMESTAMP"
     assert json["columns"][0]["column"]["unit"] == "s"
