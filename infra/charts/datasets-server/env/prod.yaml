@@ -21,8 +21,8 @@ mongodb:
 storage:
   nfs:
     path: "/fsx"
-    server: "svm-0adb40782285e2ec6.fs-0220b222fb471f3b9.fsx.us-east-1.amazonaws.com"
-    # https://us-east-1.console.aws.amazon.com/fsx/home?region=us-east-1#file-system-details/fs-0220b222fb471f3b9
+    server: "svm-0bd5fa426547fca22.fs-02050b8d555063cde.fsx.us-east-1.amazonaws.com"
+    # https://us-east-1.console.aws.amazon.com/fsx/home?region=us-east-1#file-system-details/fs-02050b8d555063cde
     # Alarm: https://us-east-1.console.aws.amazon.com/cloudwatch/home?region=us-east-1#alarmsV2:alarm/Low+disk+on+datasets+server?
 
 secrets:
