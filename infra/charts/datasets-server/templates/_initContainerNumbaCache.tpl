@@ -9,7 +9,7 @@
   - mountPath: /mounted-path
     mountPropagation: None
     name: nfs
-    subPath: "{{ include "numba.cache.subpath" . }}"
+    subPath: "{{ include "cache.numba.subpath" . }}"
     readOnly: false
   securityContext:
     runAsNonRoot: false

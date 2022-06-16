@@ -9,7 +9,7 @@
   - mountPath: /mounted-path
     mountPropagation: None
     name: nfs
-    subPath: "{{ include "cache.subpath" . }}"
+    subPath: "{{ include "cache.datasets.subpath" . }}"
     readOnly: false
   securityContext:
     runAsNonRoot: false
