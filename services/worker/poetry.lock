@@ -294,7 +294,7 @@ python-versions = "*"
 
 [[package]]
 name = "certifi"
-version = "2022.5.18.1"
+version = "2022.6.15"
 description = "Python package for providing Mozilla's CA Bundle."
 category = "main"
 optional = false
@@ -405,7 +405,7 @@ test = ["pytest (>=6.2.0)", "pytest-benchmark", "pytest-cov", "pytest-subtests",
 
 [[package]]
 name = "datasets"
-version = "2.3.1"
+version = "2.3.2"
 description = "HuggingFace community-driven open-source library of datasets"
 category = "main"
 optional = false
@@ -533,7 +533,7 @@ develop = ["pytest", "pytest-cov", "pytest-mock", "pytest-asyncio", "pytest-http
 
 [[package]]
 name = "elasticsearch"
-version = "8.2.2"
+version = "8.2.3"
 description = "Python client for Elasticsearch"
 category = "main"
 optional = false
@@ -2530,7 +2530,7 @@ cffi = ["cffi (>=1.11)"]
 [metadata]
 lock-version = "1.1"
 python-versions = "3.9.6"
-content-hash = "30492acd03b58eb3ac5cd9a67be9d17aa8938eceb76c0a8e6a146ed8c0dea5ae"
+content-hash = "e2fd4945bfc7f1d30e1ca624a7724e9bf4ce24090358032c221ddde90adfcd18"
 
 [metadata.files]
 absl-py = [
@@ -2821,8 +2821,8 @@ cbor = [
     {file = "cbor-1.0.0.tar.gz", hash = "sha256:13225a262ddf5615cbd9fd55a76a0d53069d18b07d2e9f19c39e6acb8609bbb6"},
 ]
 certifi = [
-    {file = "certifi-2022.5.18.1-py3-none-any.whl", hash = "sha256:f1d53542ee8cbedbe2118b5686372fb33c297fcd6379b050cca0ef13a597382a"},
-    {file = "certifi-2022.5.18.1.tar.gz", hash = "sha256:9c5705e395cd70084351dd8ad5c41e65655e08ce46f2ec9cf6c2c08390f71eb7"},
+    {file = "certifi-2022.6.15-py3-none-any.whl", hash = "sha256:fe86415d55e84719d75f8b69414f6438ac3547d2078ab91b67e779ef69378412"},
+    {file = "certifi-2022.6.15.tar.gz", hash = "sha256:84c85a9078b11105f04f3036a9482ae10e4621616db313fe045dd24743a0820d"},
 ]
 cffi = [
     {file = "cffi-1.15.0-cp27-cp27m-macosx_10_9_x86_64.whl", hash = "sha256:c2502a1a03b6312837279c8c1bd3ebedf6c12c4228ddbad40912d671ccc8a962"},
@@ -3039,8 +3039,8 @@ cryptography = [
     {file = "cryptography-37.0.2.tar.gz", hash = "sha256:f224ad253cc9cea7568f49077007d2263efa57396a2f2f78114066fd54b5c68e"},
 ]
 datasets = [
-    {file = "datasets-2.3.1-py3-none-any.whl", hash = "sha256:e66eeddf7a7786c3a071d0e702d6d62169a66366c9fdb4b1d640d8fa6ed5ad93"},
-    {file = "datasets-2.3.1.tar.gz", hash = "sha256:250e5de053d99ac5cdc129c2a0c35c1a022361c774f1c40cbe1c4fa847fecfd6"},
+    {file = "datasets-2.3.2-py3-none-any.whl", hash = "sha256:479d63940c31e01dba578a8a072fee45215a081c66f6d46659add84bc3e518ad"},
+    {file = "datasets-2.3.2.tar.gz", hash = "sha256:d21c90473f2f83fd3f395c1c3e9a46ae0deeec0f987608bbf9ee33d935b9fcbe"},
 ]
 decorator = [
     {file = "decorator-5.1.1-py3-none-any.whl", hash = "sha256:b8c3f85900b9dc423225913c5aace94729fe1fa9763b38939a95226f02d37186"},
@@ -3069,8 +3069,8 @@ elastic-transport = [
     {file = "elastic_transport-8.1.2-py3-none-any.whl", hash = "sha256:10914d0c5c268d9dcfee02cfbef861382d098309ba4eedab820062841bd214b3"},
 ]
 elasticsearch = [
-    {file = "elasticsearch-8.2.2-py3-none-any.whl", hash = "sha256:a0fac3d8aaed8efb2a0d1116e64039bcf56c1605a1ba04c7e451adcecb45d979"},
-    {file = "elasticsearch-8.2.2.tar.gz", hash = "sha256:e8fbf27422f16641711011eeed1ff5592c388c67f9036ffdf60f351ece5cc1f6"},
+    {file = "elasticsearch-8.2.3-py3-none-any.whl", hash = "sha256:c0e1f72f09c41cbf61e9e953d016440e8873f38749297c0b8a2b2fcfe2aaaaf7"},
+    {file = "elasticsearch-8.2.3.tar.gz", hash = "sha256:b48629c109cf1467ef0c4fce7345615cb1bb8955f30e3a013fc8e640e7720076"},
 ]
 et-xmlfile = [
     {file = "et_xmlfile-1.1.0-py3-none-any.whl", hash = "sha256:a2ba85d1d6a74ef63837eed693bcb89c3f752169b0e3e7ae5b16ca5e1b3deada"},
