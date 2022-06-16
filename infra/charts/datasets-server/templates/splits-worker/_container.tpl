@@ -69,12 +69,12 @@
   - mountPath: {{ .Values.splitsWorker.cacheDirectory | quote }}
     mountPropagation: None
     name: nfs
-    subPath: "{{ include "cache.subpath" . }}"
+    subPath: "{{ include "cache.datasets.subpath" . }}"
     readOnly: false
   - mountPath: {{ .Values.splitsWorker.numbaCacheDirectory | quote }}
     mountPropagation: None
     name: nfs
-    subPath: "{{ include "numba.cache.subpath" . }}"
+    subPath: "{{ include "cache.numba.subpath" . }}"
     readOnly: false
   securityContext:
     allowPrivilegeEscalation: false

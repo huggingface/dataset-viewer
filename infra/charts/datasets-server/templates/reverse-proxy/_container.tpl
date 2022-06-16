@@ -32,7 +32,7 @@
   - mountPath: {{ .Values.reverseProxy.cacheDirectory | quote }}
     mountPropagation: None
     name: nfs
-    subPath: "{{ include "nginx.cache.subpath" . }}"
+    subPath: "{{ include "cache.nginx.subpath" . }}"
     readOnly: false
   readinessProbe:
     tcpSocket:

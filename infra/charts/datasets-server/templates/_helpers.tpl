@@ -81,8 +81,8 @@ The cache/ subpath in the NFS
 - in a subdirectory named as the chart (datasets-server/), and below it,
 - in a subdirectory named as the Release, so that Releases will not share the same dir
 */}}
-{{- define "cache.subpath" -}}
-{{- printf "%s/%s/%s/" .Chart.Name .Release.Name "cache" }}
+{{- define "cache.datasets.subpath" -}}
+{{- printf "%s/%s/%s/" .Chart.Name .Release.Name "cache-datasets-2" }}
 {{- end }}
 
 {{/*
@@ -90,8 +90,8 @@ The numba-cache/ subpath in the NFS
 - in a subdirectory named as the chart (datasets-server/), and below it,
 - in a subdirectory named as the Release, so that Releases will not share the same dir
 */}}
-{{- define "numba.cache.subpath" -}}
-{{- printf "%s/%s/%s/" .Chart.Name .Release.Name "numba-cache" }}
+{{- define "cache.numba.subpath" -}}
+{{- printf "%s/%s/%s/" .Chart.Name .Release.Name "cache-numba-2" }}
 {{- end }}
 
 {{/*
@@ -99,8 +99,8 @@ The nginx-cache/ subpath in the NFS
 - in a subdirectory named as the chart (datasets-server/), and below it,
 - in a subdirectory named as the Release, so that Releases will not share the same dir
 */}}
-{{- define "nginx.cache.subpath" -}}
-{{- printf "%s/%s/%s/" .Chart.Name .Release.Name "nginx-cache" }}
+{{- define "cache.nginx.subpath" -}}
+{{- printf "%s/%s/%s/" .Chart.Name .Release.Name "cache-nginx-2" }}
 {{- end }}
 
 {{/*
