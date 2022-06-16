@@ -1,18 +1,26 @@
 # resources for the prod namespace are defined here: https://us-east-1.console.aws.amazon.com/eks/home?region=us-east-1#/clusters/hub-prod/nodegroups/datasets-server-20220513085103612000000001
-# the nodes are 4 t3.2xlarge instances (8 vCPUs, 32 GiB), ie:
-# 32 vCPUs and 128 GiB RAM are available (but no more than 8 cpus or 32 GiB for each pod)
+# the nodes are up to 20 t3.2xlarge instances (8 vCPUs, 32 GiB), with autoscale
+# (see https://github.com/huggingface/infra/pull/239/files)
+# this means that we can get up to:
+# 160 vCPUs and 640 GiB RAM are available (but no more than 8 cpus or 32 GiB for each pod)
 #
 # the max resources (limits) per deployment are:
 # - reverse-proxy: 2 pods -> 2 CPUs, 512MiB
 # - api: 4 pods -> 4 CPUs, 4 GiB
 # - admin: 1 pod -> 1 CPU
-# this lets 25 CPUs, and 123 GiB for the workers
-# we will over-commit the resources by a factor 4 in order to get more workers
-# available in case of burst of jobs (most of the jobs don't require much resources)
-# so: 100 CPUs and 492 GiB RAM
+# and for the workers:
+# - datasets-worker: 1 CPUs, 30 GiB
+# - splits-worker: 1 CPUs, 30 GiB
+# We set the requested RAM to 8 GiB per worker, in order to trigger the autoscale. We should be able to
+# launch 3 worker pods per node, taking the sidecars into account, it means 60 pods
 #
-# - datasets-worker: 4 workers -> 6 CPUs, 30 GiB
-# - splits-worker: 12 workers -> 6 CPUs, 30 GiB
+# Being optimistic about not all the pods having to increase their memory usage to 30 GiB at the same time,
+# ie over-committing a bit, we can set up to 60 workers (dataset + split).
+#
+# For now, we have to scale manually with:
+#  kubectl scale --replicas=16 deploy/datasets-server-prod-datasets-worker
+# or
+#  kubectl scale --replicas=32 deploy/datasets-server-prod-splits-worker
 
 mongodb:
   enabled: false
@@ -67,7 +75,7 @@ reverseProxy:
 
   resources:
     requests:
-      cpu: 0.1
+      cpu: 1
       memory: "256Mi"
     limits:
       cpu: 1
@@ -81,7 +89,7 @@ api:
 
   resources:
     requests:
-      cpu: 0.25
+      cpu: 1
       memory: "512Mi"
     limits:
       cpu: 1
@@ -97,10 +105,10 @@ datasetsWorker:
 
   resources:
     requests:
-      cpu: 0.01
-      memory: "1Gi"
+      cpu: 1
+      memory: "8Gi"
     limits:
-      cpu: 6
+      cpu: 1
       memory: "30Gi"
 
 splitsWorker:
@@ -111,10 +119,10 @@ splitsWorker:
 
   resources:
     requests:
-      cpu: 0.01
-      memory: "1Gi"
+      cpu: 1
+      memory: "8Gi"
     limits:
-      cpu: 6
+      cpu: 1
       memory: "30Gi"
 
   # Log level
@@ -130,7 +138,7 @@ admin:
 
   resources:
     requests:
-      cpu: 0.01
+      cpu: 1
     limits:
       cpu: 1
 
