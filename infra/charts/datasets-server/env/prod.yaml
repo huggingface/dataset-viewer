@@ -11,12 +11,11 @@
 # and for the workers:
 # - datasets-worker: 1 CPUs, 30 GiB
 # - splits-worker: 1 CPUs, 30 GiB
-# We set the requested RAM to 10 GiB per worker, in order to trigger the autoscale
+# We set the requested RAM to 8 GiB per worker, in order to trigger the autoscale. We should be able to
+# launch 3 worker pods per node, taking the sidecars into account, it means 60 pods
 #
-# As we have about 19 nodes for the workers, it means 152 vCPUs and 608 GiB RAM
-# it means 60 pods if we take the requested RAM into account, or 20 pods if we take the max RAM
-#
-# Being optimistic and over-committing a bit, we can set up to 60 workers (dataset + split).
+# Being optimistic about not all the pods having to increase their memory usage to 30 GiB at the same time,
+# ie over-committing a bit, we can set up to 60 workers (dataset + split).
 #
 # For now, we have to scale manually with:
 #  kubectl scale --replicas=16 deploy/datasets-server-prod-datasets-worker
@@ -107,7 +106,7 @@ datasetsWorker:
   resources:
     requests:
       cpu: 1
-      memory: "10Gi"
+      memory: "8Gi"
     limits:
       cpu: 1
       memory: "30Gi"
@@ -121,7 +120,7 @@ splitsWorker:
   resources:
     requests:
       cpu: 1
-      memory: "10Gi"
+      memory: "8Gi"
     limits:
       cpu: 1
       memory: "30Gi"
