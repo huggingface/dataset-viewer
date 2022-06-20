@@ -96,6 +96,8 @@ api:
       memory: "1Gi"
 
   appNumWorkers: "1"
+  # Log level
+  logLevel: "DEBUG"
 
 datasetsWorker:
   replicas: 4
@@ -110,6 +112,9 @@ datasetsWorker:
     limits:
       cpu: 1
       memory: "30Gi"
+
+  # Log level
+  logLevel: "DEBUG"
 
 splitsWorker:
   replicas: 10
@@ -142,7 +147,7 @@ admin:
     limits:
       cpu: 1
 
+  appNumWorkers: "1"
   # Log level
   logLevel: "DEBUG"
 
-  appNumWorkers: "1"
