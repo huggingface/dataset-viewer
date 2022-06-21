@@ -47,7 +47,7 @@ class ImageColumn(CommonColumn):
                 image_file = create_image_file(
                     dataset_name, config_name, split_name, row_idx, self.name, "image" + ext, value
                 )
-            except Exception:
+            except Exception:  # nosec
                 continue
             else:
                 break
