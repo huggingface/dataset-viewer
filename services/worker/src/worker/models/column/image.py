@@ -42,7 +42,7 @@ class ImageColumn(CommonColumn):
             return None
         check_value(value)
         # attempt to generate one of the supported formats; if unsuccessful, throw an error
-        for ext in [".jpg"]:
+        for ext in [".jpg", ".png"]:
             try:
                 return create_image_file(
                     dataset_name, config_name, split_name, row_idx, self.name, f"image{ext}", value
@@ -52,4 +52,4 @@ class ImageColumn(CommonColumn):
                 #  OSError: cannot write mode P as JPEG
                 #  OSError: cannot write mode RGBA as JPEG
                 continue
-        raise ValueError("Image cannot be written as JPEG")
+        raise ValueError("Image cannot be written as JPEG or PNG")

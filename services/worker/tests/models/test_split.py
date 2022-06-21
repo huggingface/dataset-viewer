@@ -161,27 +161,52 @@ def test_timestamp() -> None:
 
 def test_image() -> None:
     # see https://github.com/huggingface/datasets-server/issues/191
-    # reproduce the error
-    # image on row #20 raises an error: OSError: cannot write mode RGBA as JPEG
-    with pytest.raises(ValueError) as e:
-        get_split(
-            "wikimedia/wit_base",
-            "wikimedia--wit_base",
-            "train",
-            HF_TOKEN,
-            rows_max_number=21,
-        )
-    assert str(e.value) == "Image cannot be written as JPEG"
+    split = get_split(
+        "wikimedia/wit_base",
+        "wikimedia--wit_base",
+        "train",
+        HF_TOKEN,
+        rows_max_number=21,
+    )
+    assert split["rows_response"]["columns"][0]["column"]["type"] == "RELATIVE_IMAGE_URL"
+    assert (
+        split["rows_response"]["rows"][0]["row"]["image"]
+        == "assets/wikimedia/wit_base/--/wikimedia--wit_base/train/0/image/image.jpg"
+    )
+    assert (
+        split["rows_response"]["rows"][20]["row"]["image"]
+        == "assets/wikimedia/wit_base/--/wikimedia--wit_base/train/20/image/image.png"
+    )
 
-    with pytest.raises(ValueError) as e:
-        get_split(
-            "Chris1/GTA5",
-            "Chris1--GTA5",
-            "train",
-            HF_TOKEN,
-            rows_max_number=1,
-        )
-    assert str(e.value) == "Image cannot be written as JPEG"
+    split = get_split(
+        "Chris1/GTA5",
+        "Chris1--GTA5",
+        "train",
+        HF_TOKEN,
+        rows_max_number=1,
+    )
+    assert split["rows_response"]["columns"][0]["column"]["type"] == "RELATIVE_IMAGE_URL"
+    assert split["rows_response"]["columns"][1]["column"]["type"] == "RELATIVE_IMAGE_URL"
+    assert (
+        split["rows_response"]["rows"][0]["row"]["image"]
+        == "assets/Chris1/GTA5/--/Chris1--GTA5/train/0/image/image.jpg"
+    )
+    assert (
+        split["rows_response"]["rows"][0]["row"]["semantic_segmentation"]
+        == "assets/Chris1/GTA5/--/Chris1--GTA5/train/0/semantic_segmentation/image.png"
+    )
+
+    split = get_split(
+        "huggan/few-shot-skulls",
+        "huggan--few-shot-skulls",
+        "train",
+        HF_TOKEN,
+        rows_max_number=52,
+    )
+    assert (
+        split["rows_response"]["rows"][51]["row"]["image"]
+        == "assets/huggan/few-shot-skulls/--/huggan--few-shot-skulls/train/51/image/image.png"
+    )
 
 
 # TODO: test the truncation
