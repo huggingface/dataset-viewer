@@ -157,14 +157,14 @@ def test_valid() -> None:
 
 
 def test_count_by_status() -> None:
-    assert get_datasets_count_by_status() == {"empty": 0, "error": 0, "stale": 0, "valid": 0}
+    assert get_datasets_count_by_status() == {"empty": 0, "error": 0, "stalled": 0, "valid": 0}
 
     upsert_dataset(
         "test_dataset", [{"dataset_name": "test_dataset", "config_name": "test_config", "split_name": "test_split"}]
     )
 
-    assert get_datasets_count_by_status() == {"empty": 0, "error": 0, "stale": 0, "valid": 1}
-    assert get_splits_count_by_status() == {"empty": 1, "error": 0, "stale": 0, "valid": 0}
+    assert get_datasets_count_by_status() == {"empty": 0, "error": 0, "stalled": 0, "valid": 1}
+    assert get_splits_count_by_status() == {"empty": 1, "error": 0, "stalled": 0, "valid": 0}
 
     upsert_split(
         "test_dataset",
@@ -178,4 +178,4 @@ def test_count_by_status() -> None:
         },
     )
 
-    assert get_splits_count_by_status() == {"empty": 0, "error": 0, "stale": 0, "valid": 1}
+    assert get_splits_count_by_status() == {"empty": 0, "error": 0, "stalled": 0, "valid": 1}

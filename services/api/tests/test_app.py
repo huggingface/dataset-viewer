@@ -44,7 +44,7 @@ def clean_mongo_databases() -> None:
 #     datasets = json["datasets"]
 #     assert "empty" in datasets
 #     assert "error" in datasets
-#     assert "stale" in datasets
+#     assert "stalled" in datasets
 #     assert "valid" in datasets
 #     assert len(datasets["valid"]) == 1
 #     report = datasets["valid"][0]

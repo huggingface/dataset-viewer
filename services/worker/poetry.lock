@@ -929,7 +929,6 @@ python-versions = "*"
 [package.source]
 type = "url"
 url = "https://github.com/kpu/kenlm/archive/master.zip"
-
 [[package]]
 name = "keras"
 version = "2.9.0"
@@ -965,7 +964,7 @@ python-versions = ">=3"
 
 [[package]]
 name = "libcache"
-version = "0.1.8"
+version = "0.1.7"
 description = "Library for the cache in mongodb"
 category = "main"
 optional = false
@@ -980,7 +979,7 @@ pymongo = {version = ">=3.12.3,<4.0.0", extras = ["srv"]}
 
 [package.source]
 type = "file"
-url = "../../libs/libcache/dist/libcache-0.1.8-py3-none-any.whl"
+url = "../../libs/libcache/dist/libcache-0.1.7-py3-none-any.whl"
 
 [[package]]
 name = "libclang"
@@ -2531,7 +2530,7 @@ cffi = ["cffi (>=1.11)"]
 [metadata]
 lock-version = "1.1"
 python-versions = "3.9.6"
-content-hash = "f4a610f87a510885605ef7e025e9e5d52994617d35f151a4007a846298d3dbc3"
+content-hash = "e2fd4945bfc7f1d30e1ca624a7724e9bf4ce24090358032c221ddde90adfcd18"
 
 [metadata.files]
 absl-py = [
@@ -3334,7 +3333,7 @@ kss = [
     {file = "kss-2.6.0-py3-none-any.whl", hash = "sha256:fedbdcd0bfc33111d7817866dd60346dab79f9f1ca5bab0026c4ee40e5941b0c"},
 ]
 libcache = [
-    {file = "libcache-0.1.8-py3-none-any.whl", hash = "sha256:e788928611f73e1964a5a3b923ccd60754732625b2d50887c72e5c5b1829dc1a"},
+    {file = "libcache-0.1.7-py3-none-any.whl", hash = "sha256:ec3eda392a4c68c6af1779b1d7335520b3cd0eddf58f7cc9857535ab6d82ce64"},
 ]
 libclang = [
     {file = "libclang-14.0.1-py2.py3-none-macosx_10_9_x86_64.whl", hash = "sha256:a00c5f433af032979ac0cf03bcba59cf5247cb01fa04ef2380bf9668e84d50a9"},
