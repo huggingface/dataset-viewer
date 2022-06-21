@@ -1,5 +1,4 @@
 import pandas  # type: ignore
-import pytest
 
 from worker.models.split import get_split
 
