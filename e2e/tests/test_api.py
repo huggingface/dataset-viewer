@@ -150,3 +150,27 @@ def test_timestamp_column():
     assert json["columns"][0]["column"]["type"] == "TIMESTAMP"
     assert json["columns"][0]["column"]["unit"] == "s"
     assert json["columns"][0]["column"]["tz"] is None
+
+
+def test_png_image():
+    # this test ensures that an image is saved as PNG if it cannot be saved as PNG
+    # https://github.com/huggingface/datasets-server/issues/191
+    dataset = "wikimedia/wit_base"
+    config = "wikimedia--wit_base"
+    split = "train"
+    response = requests.post(f"{URL}/webhook", json={"update": f"datasets/{dataset}"})
+    assert response.status_code == 200
+
+    response = poll_splits_until_dataset_process_has_finished(dataset, 60)
+    assert response.status_code == 200
+
+    response = poll_rows_until_split_process_has_finished(dataset, config, split, 60)
+    assert response.status_code == 200
+    json = response.json()
+    assert json["columns"][0]["column"]["type"] == "RELATIVE_IMAGE_URL"
+    assert (
+        json["rows"][0]["row"]["image"] == "assets/wikimedia/wit_base/--/wikimedia--wit_base/train/0/image/image.jpg"
+    )
+    assert (
+        json["rows"][20]["row"]["image"] == "assets/wikimedia/wit_base/--/wikimedia--wit_base/train/20/image/image.png"
+    )
