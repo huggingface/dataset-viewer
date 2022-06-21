@@ -41,16 +41,18 @@ class ImageColumn(CommonColumn):
         if value is None:
             return None
         check_value(value)
+        # this function can raise, we don't catch it
+        return create_image_file(dataset_name, config_name, split_name, row_idx, self.name, "image.jpg", value)
         # attempt to generate one of the supported formats; if unsuccessful, throw an error
-        for ext in [".jpg", ".png"]:
-            try:
-                image_file = create_image_file(
-                    dataset_name, config_name, split_name, row_idx, self.name, "image" + ext, value
-                )
-            except Exception:  # nosec
-                continue
-            else:
-                break
-        else:
-            raise ValueError("Image cannot be written as JPEG or PNG")
-        return image_file
+        # for ext in [".jpg", ".png"]:
+        #     try:
+        #         image_file = create_image_file(
+        #             dataset_name, config_name, split_name, row_idx, self.name, "image" + ext, value
+        #         )
+        #     except Exception:  # nosec
+        #         continue
+        #     else:
+        #         break
+        # else:
+        #     raise ValueError("Image cannot be written as JPEG or PNG")
+        # return image_file
