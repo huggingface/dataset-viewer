@@ -163,7 +163,7 @@ def test_image() -> None:
     # see https://github.com/huggingface/datasets-server/issues/191
     # reproduce the error
     # image on row #20 raises an error: OSError: cannot write mode RGBA as JPEG
-    with pytest.raises(OSError):
+    with pytest.raises(ValueError) as e:
         get_split(
             "wikimedia/wit_base",
             "wikimedia--wit_base",
@@ -171,7 +171,9 @@ def test_image() -> None:
             HF_TOKEN,
             rows_max_number=21,
         )
-    with pytest.raises(OSError):
+    assert str(e.value) == "Image cannot be written as JPEG"
+
+    with pytest.raises(ValueError) as e:
         get_split(
             "Chris1/GTA5",
             "Chris1--GTA5",
@@ -179,6 +181,7 @@ def test_image() -> None:
             HF_TOKEN,
             rows_max_number=1,
         )
+    assert str(e.value) == "Image cannot be written as JPEG"
 
 
 # TODO: test the truncation
