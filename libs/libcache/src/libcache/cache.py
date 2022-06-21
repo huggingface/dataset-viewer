@@ -60,7 +60,7 @@ class Status(enum.Enum):
     EMPTY = "empty"
     VALID = "valid"
     ERROR = "error"
-    STALE = "stale"
+    STALLED = "stalled"
 
 
 # the purpose of this collection is to check if the dataset exists, which is its status and since when
@@ -307,8 +307,8 @@ def create_or_mark_dataset_as_stalled(dataset_name: str):
 
 
 def mark_dataset_as_stalled(dataset_name: str):
-    DbDataset.objects(dataset_name=dataset_name).update(status=Status.STALE)
-    logger.debug(f"marked dataset '{dataset_name}' as stale")
+    DbDataset.objects(dataset_name=dataset_name).update(status=Status.STALLED)
+    logger.debug(f"marked dataset '{dataset_name}' as stalled")
 
 
 def create_or_mark_split_as_stalled(split_full_name: SplitFullName, split_idx: int):
@@ -334,15 +334,15 @@ def mark_split_as_stalled(split_full_name: SplitFullName, split_idx: int):
     config_name = split_full_name["config_name"]
     split_name = split_full_name["split_name"]
     DbSplit.objects(dataset_name=dataset_name, config_name=config_name, split_name=split_name).update(
-        status=Status.STALE, split_idx=split_idx
+        status=Status.STALLED, split_idx=split_idx
     )
-    logger.debug(f"dataset '{dataset_name}': marked split {split_name} in config {config_name} as stale")
+    logger.debug(f"dataset '{dataset_name}': marked split {split_name} in config {config_name} as stalled")
 
 
 def list_split_full_names_to_refresh(dataset_name: str):
     return [
         split.to_split_full_name()
-        for split in DbSplit.objects(dataset_name=dataset_name, status__in=[Status.EMPTY, Status.STALE])
+        for split in DbSplit.objects(dataset_name=dataset_name, status__in=[Status.EMPTY, Status.STALLED])
     ]
 
 
@@ -352,7 +352,7 @@ def list_split_full_names_to_refresh(dataset_name: str):
 def should_dataset_be_refreshed(dataset_name: str) -> bool:
     try:
         dataset = DbDataset.objects(dataset_name=dataset_name).get()
-        return dataset.status in [Status.STALE, Status.EMPTY]
+        return dataset.status in [Status.STALLED, Status.EMPTY]
     except DoesNotExist:
         return True
     # ^ can also raise MultipleObjectsReturned, which should not occur -> we let the exception raise
@@ -415,11 +415,11 @@ def get_rows_response(
 
 
 def is_dataset_valid_or_stalled(dataset: DbDataset) -> bool:
-    if dataset.status not in [Status.VALID, Status.STALE]:
+    if dataset.status not in [Status.VALID, Status.STALLED]:
         return False
 
     splits = DbSplit.objects(dataset_name=dataset.dataset_name).only("status")
-    return any(split.status in [Status.VALID, Status.STALE] for split in splits)
+    return any(split.status in [Status.VALID, Status.STALLED] for split in splits)
 
 
 def is_dataset_name_valid_or_stalled(dataset_name: str) -> bool:
@@ -466,11 +466,13 @@ def get_datasets_count_by_cache_status(dataset_names: List[str]) -> CountByCache
 
 def get_valid_or_stalled_dataset_names() -> List[str]:
     # a dataset is considered valid if:
-    # - the dataset is valid or stale
-    candidate_dataset_names = set(DbDataset.objects(status__in=[Status.VALID, Status.STALE]).distinct("dataset_name"))
-    # - at least one of its splits is valid or stale
+    # - the dataset is valid or stalled
+    candidate_dataset_names = set(
+        DbDataset.objects(status__in=[Status.VALID, Status.STALLED]).distinct("dataset_name")
+    )
+    # - at least one of its splits is valid or stalled
     candidate_dataset_names_in_splits = set(
-        DbSplit.objects(status__in=[Status.VALID, Status.STALE]).distinct("dataset_name")
+        DbSplit.objects(status__in=[Status.VALID, Status.STALLED]).distinct("dataset_name")
     )
 
     candidate_dataset_names.intersection_update(candidate_dataset_names_in_splits)
@@ -486,7 +488,7 @@ def get_dataset_names_with_status(status: str) -> List[str]:
 class CountByStatus(TypedDict):
     empty: int
     error: int
-    stale: int
+    stalled: int
     valid: int
 
 
@@ -498,7 +500,7 @@ def get_entries_count_by_status(entries: QuerySet[AnyDb]) -> CountByStatus:
     return {
         "empty": entries(status=Status.EMPTY.value).count(),
         "error": entries(status=Status.ERROR.value).count(),
-        "stale": entries(status=Status.STALE.value).count(),
+        "stalled": entries(status=Status.STALLED.value).count(),
         "valid": entries(status=Status.VALID.value).count(),
     }
 
@@ -535,7 +537,7 @@ def get_datasets_reports_with_status(status: Status) -> List[DatasetCacheReport]
 class DatasetCacheReportsByStatus(TypedDict):
     empty: List[DatasetCacheReport]
     error: List[DatasetCacheReport]
-    stale: List[DatasetCacheReport]
+    stalled: List[DatasetCacheReport]
     valid: List[DatasetCacheReport]
 
 
@@ -544,7 +546,7 @@ def get_datasets_reports_by_status() -> DatasetCacheReportsByStatus:
     return {
         "empty": get_datasets_reports_with_status(Status.EMPTY),
         "error": get_datasets_reports_with_error(),
-        "stale": get_datasets_reports_with_status(Status.STALE),
+        "stalled": get_datasets_reports_with_status(Status.STALLED),
         "valid": get_datasets_reports_with_status(Status.VALID),
     }
 
@@ -586,7 +588,7 @@ def get_splits_reports_with_status(status: Status) -> List[SplitCacheReport]:
 class SplitCacheReportsByStatus(TypedDict):
     empty: List[SplitCacheReport]
     error: List[SplitCacheReport]
-    stale: List[SplitCacheReport]
+    stalled: List[SplitCacheReport]
     valid: List[SplitCacheReport]
 
 
@@ -594,6 +596,6 @@ def get_splits_reports_by_status() -> SplitCacheReportsByStatus:
     return {
         "empty": list(get_splits_reports_with_status(Status.EMPTY)),
         "error": get_splits_reports_with_error(),
-        "stale": get_splits_reports_with_status(Status.STALE),
+        "stalled": get_splits_reports_with_status(Status.STALLED),
         "valid": get_splits_reports_with_status(Status.VALID),
     }

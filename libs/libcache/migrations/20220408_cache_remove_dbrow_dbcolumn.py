@@ -6,6 +6,7 @@ from typing import Any, Dict, List, TypedDict
 import orjson
 from pymongo import MongoClient
 
+from libcache.cache import Status
 from ._utils import MONGO_CACHE_DATABASE, MONGO_URL
 
 client = MongoClient(MONGO_URL)
@@ -133,7 +134,7 @@ rows_coll = db.rows
 columns_coll = db.columns
 splits_coll.update_many({}, {"$set": {"rows_response": get_empty_rows_response()}})
 # ^ add the new field to all the splits
-for split in splits_coll.find({"status": {"$in": ["valid", "stalled"]}}):
+for split in splits_coll.find({"status": {"$in": [Status.VALID.value, Status.STALLED.value]}}):
     print(f"update split {split}")
     columns = list(
         columns_coll.find(

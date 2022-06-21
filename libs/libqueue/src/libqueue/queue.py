@@ -154,9 +154,9 @@ AnyJob = TypeVar("AnyJob", DatasetJob, SplitJob)  # Must be DatasetJob or SplitJ
 
 
 # TODO: add priority (webhook: 5, warming: 3, refresh: 1)
-# TODO: add status (valid/error/stale) to the finished jobs
+# TODO: add status (valid/error/stalled) to the finished jobs
 # TODO: limit the size of the queue? remove the oldest if room is needed?
-# TODO: how to avoid deadlocks (a worker has taken the job, but never finished)? stale, hours
+# TODO: how to avoid deadlocks (a worker has taken the job, but never finished)? stalled, hours
 
 # enqueue
 # dequeue
