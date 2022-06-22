@@ -85,8 +85,8 @@ def test_bug_empty_split():
     # we get an error when:
     # - the dataset has been processed and the splits have been created in the database
     # - the splits have not been processed and are still in EMPTY status in the database
-    # - the dataset is processed again, and the splits are marked as STALLED
-    # - as STALLED, they are thus returned with an empty content, instead of an error message
+    # - the dataset is processed again, and the splits are marked as STALE
+    # - they are thus returned with an empty content, instead of an error message
     # (waiting for being processsed)
     dataset = "nielsr/CelebA-faces"
     config = "nielsr--CelebA-faces"
@@ -164,7 +164,7 @@ def test_png_image():
     response = poll_splits_until_dataset_process_has_finished(dataset, 60)
     assert response.status_code == 200
 
-    response = poll_rows_until_split_process_has_finished(dataset, config, split, 60)
+    response = poll_rows_until_split_process_has_finished(dataset, config, split, 60 * 3)
     assert response.status_code == 200
     json = response.json()
     assert json["columns"][0]["column"]["type"] == "RELATIVE_IMAGE_URL"

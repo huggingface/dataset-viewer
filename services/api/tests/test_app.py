@@ -3,8 +3,8 @@ import pytest
 # from libcache.cache import clean_database as clean_cache_database
 from libcache.cache import clean_database as clean_cache_database
 from libcache.cache import (
-    create_or_mark_dataset_as_stalled,
-    create_or_mark_split_as_stalled,
+    create_or_mark_dataset_as_stale,
+    create_or_mark_split_as_stale,
 )
 from libqueue.queue import add_dataset_job, add_split_job
 from libqueue.queue import clean_database as clean_queue_database
@@ -44,7 +44,7 @@ def clean_mongo_databases() -> None:
 #     datasets = json["datasets"]
 #     assert "empty" in datasets
 #     assert "error" in datasets
-#     assert "stalled" in datasets
+#     assert "stale" in datasets
 #     assert "valid" in datasets
 #     assert len(datasets["valid"]) == 1
 #     report = datasets["valid"][0]
@@ -234,7 +234,7 @@ def test_dataset_cache_refreshing(client: TestClient) -> None:
     response = client.get("/splits", params={"dataset": dataset})
     assert response.json()["message"] == "The dataset does not exist."
     add_dataset_job(dataset)
-    create_or_mark_dataset_as_stalled(dataset)
+    create_or_mark_dataset_as_stale(dataset)
     response = client.get("/splits", params={"dataset": dataset})
     assert response.json()["message"] == "The dataset is being processed. Retry later."
 
@@ -246,7 +246,7 @@ def test_split_cache_refreshing(client: TestClient) -> None:
     response = client.get("/rows", params={"dataset": dataset, "config": config, "split": split})
     assert response.json()["message"] == "The split does not exist."
     add_split_job(dataset, config, split)
-    create_or_mark_split_as_stalled({"dataset_name": dataset, "config_name": config, "split_name": split}, 0)
+    create_or_mark_split_as_stale({"dataset_name": dataset, "config_name": config, "split_name": split}, 0)
     response = client.get("/rows", params={"dataset": dataset, "config": config, "split": split})
     assert response.json()["message"] == "The split is being processed. Retry later."
 

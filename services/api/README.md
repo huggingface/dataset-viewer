@@ -74,7 +74,7 @@ Responses:
   "datasets": {
     "empty": [],
     "error": [],
-    "stalled": [],
+    "stale": [],
     "valid": [{ "dataset": "sent_comp", "status": "VALID", "error": null }]
   },
   "splits": {
@@ -116,7 +116,7 @@ Responses:
         }
       }
     ],
-    "stalled": [],
+    "stale": [],
     "valid": []
   },
   "created_at": "2022-01-20T14:40:27Z"
@@ -127,7 +127,7 @@ Beware: a "dataset" is considered valid if it has fetched correctly the configs 
 
 ### /valid
 
-> Give the list of the valid datasets. Here, a dataset is considered valid if `/splits` returns a valid response, and if `/rows` returns a valid response for _at least one split_. Note that stalled cache entries are considered valid.
+> Give the list of the valid datasets. Here, a dataset is considered valid if `/splits` returns a valid response, and if `/rows` returns a valid response for _at least one split_. Note that stale cache entries are considered valid.
 
 Example: https://datasets-server.huggingface.co/valid
 
@@ -148,7 +148,7 @@ Responses:
 
 ### /is-valid
 
-> Tells if a dataset is valid. A dataset is considered valid if `/splits` returns a valid response, and if `/rows` returns a valid response for _at least one split_. Note that stalled cache entries are considered valid.
+> Tells if a dataset is valid. A dataset is considered valid if `/splits` returns a valid response, and if `/rows` returns a valid response for _at least one split_. Note that stale cache entries are considered valid.
 
 Example: https://datasets-server.huggingface.co/is-valid?dataset=glue
 
@@ -200,7 +200,7 @@ Responses:
 
 The meaning is the following:
 
-- "valid": the list of splits and the 100 first rows of every split are available (maybe stalled)
+- "valid": the list of splits and the 100 first rows of every split are available (maybe stale)
 - "error": the list of splits could not be fetched, or the rows could not be fetched for some splits
 - "missing": the list of splits is missing, or the rows are missing for some splits
 
@@ -635,10 +635,10 @@ queue_jobs_total{queue="splits",status="cancelled"} 0.0
 # TYPE cache_entries_total gauge
 cache_entries_total{cache="datasets",status="empty"} 0.0
 cache_entries_total{cache="datasets",status="error"} 0.0
-cache_entries_total{cache="datasets",status="stalled"} 0.0
+cache_entries_total{cache="datasets",status="stale"} 0.0
 cache_entries_total{cache="datasets",status="valid"} 1.0
 cache_entries_total{cache="splits",status="empty"} 0.0
 cache_entries_total{cache="splits",status="error"} 0.0
-cache_entries_total{cache="splits",status="stalled"} 0.0
+cache_entries_total{cache="splits",status="stale"} 0.0
 cache_entries_total{cache="splits",status="valid"} 2.0
 ```

@@ -1,7 +1,7 @@
 import logging
 from typing import Any, Optional, TypedDict
 
-from libcache.cache import create_or_mark_dataset_as_stalled, delete_dataset_cache
+from libcache.cache import create_or_mark_dataset_as_stale, delete_dataset_cache
 from libqueue.queue import add_dataset_job
 from starlette.requests import Request
 from starlette.responses import Response
@@ -47,7 +47,7 @@ def try_to_update(id: Optional[str]) -> None:
     dataset_name = get_dataset_name(id)
     if dataset_name is not None:
         logger.debug(f"webhook: refresh {dataset_name}")
-        create_or_mark_dataset_as_stalled(dataset_name)
+        create_or_mark_dataset_as_stale(dataset_name)
         add_dataset_job(dataset_name)
 
 
