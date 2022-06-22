@@ -2,8 +2,8 @@ import logging
 import time
 
 from libcache.cache import (
-    get_valid_or_stalled_dataset_names,
-    is_dataset_name_valid_or_stalled,
+    get_valid_or_stale_dataset_names,
+    is_dataset_name_valid_or_stale,
 )
 from libutils.exceptions import Status400Error, StatusError
 from starlette.requests import Request
@@ -18,7 +18,7 @@ logger = logging.getLogger(__name__)
 async def valid_datasets_endpoint(_: Request) -> Response:
     logger.info("/valid")
     content = {
-        "valid": get_valid_or_stalled_dataset_names(),
+        "valid": get_valid_or_stale_dataset_names(),
         "created_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
     }
     return get_response(content, 200, MAX_AGE_LONG_SECONDS)
@@ -31,7 +31,7 @@ async def is_valid_endpoint(request: Request) -> Response:
         if not isinstance(dataset_name, str):
             raise Status400Error("Parameter 'dataset' is required")
         content = {
-            "valid": is_dataset_name_valid_or_stalled(dataset_name),
+            "valid": is_dataset_name_valid_or_stale(dataset_name),
         }
         return get_response(content, 200, MAX_AGE_LONG_SECONDS)
     except StatusError as err:
