@@ -15,7 +15,7 @@ from libcache.cache import (
     get_datasets_count_by_status,
     get_rows_response,
     get_splits_count_by_status,
-    get_valid_or_stalled_dataset_names,
+    get_valid_or_stale_dataset_names,
     upsert_dataset,
     upsert_split,
     upsert_split_error,
@@ -105,13 +105,13 @@ def test_big_row() -> None:
 
 
 def test_valid() -> None:
-    assert get_valid_or_stalled_dataset_names() == []
+    assert get_valid_or_stale_dataset_names() == []
 
     upsert_dataset(
         "test_dataset", [{"dataset_name": "test_dataset", "config_name": "test_config", "split_name": "test_split"}]
     )
 
-    assert get_valid_or_stalled_dataset_names() == []
+    assert get_valid_or_stale_dataset_names() == []
 
     upsert_split(
         "test_dataset",
@@ -125,7 +125,7 @@ def test_valid() -> None:
         },
     )
 
-    assert get_valid_or_stalled_dataset_names() == ["test_dataset"]
+    assert get_valid_or_stale_dataset_names() == ["test_dataset"]
 
     upsert_dataset(
         "test_dataset2",
@@ -135,11 +135,11 @@ def test_valid() -> None:
         ],
     )
 
-    assert get_valid_or_stalled_dataset_names() == ["test_dataset"]
+    assert get_valid_or_stale_dataset_names() == ["test_dataset"]
 
     upsert_split_error("test_dataset2", "test_config2", "test_split2", Status400Error("error"))
 
-    assert get_valid_or_stalled_dataset_names() == ["test_dataset"]
+    assert get_valid_or_stale_dataset_names() == ["test_dataset"]
 
     upsert_split(
         "test_dataset2",
@@ -153,18 +153,18 @@ def test_valid() -> None:
         },
     )
 
-    assert get_valid_or_stalled_dataset_names() == ["test_dataset", "test_dataset2"]
+    assert get_valid_or_stale_dataset_names() == ["test_dataset", "test_dataset2"]
 
 
 def test_count_by_status() -> None:
-    assert get_datasets_count_by_status() == {"empty": 0, "error": 0, "stalled": 0, "valid": 0}
+    assert get_datasets_count_by_status() == {"empty": 0, "error": 0, "stale": 0, "valid": 0}
 
     upsert_dataset(
         "test_dataset", [{"dataset_name": "test_dataset", "config_name": "test_config", "split_name": "test_split"}]
     )
 
-    assert get_datasets_count_by_status() == {"empty": 0, "error": 0, "stalled": 0, "valid": 1}
-    assert get_splits_count_by_status() == {"empty": 1, "error": 0, "stalled": 0, "valid": 0}
+    assert get_datasets_count_by_status() == {"empty": 0, "error": 0, "stale": 0, "valid": 1}
+    assert get_splits_count_by_status() == {"empty": 1, "error": 0, "stale": 0, "valid": 0}
 
     upsert_split(
         "test_dataset",
@@ -178,4 +178,4 @@ def test_count_by_status() -> None:
         },
     )
 
-    assert get_splits_count_by_status() == {"empty": 0, "error": 0, "stalled": 0, "valid": 1}
+    assert get_splits_count_by_status() == {"empty": 0, "error": 0, "stale": 0, "valid": 1}
