@@ -164,7 +164,7 @@ def test_png_image():
     response = poll_splits_until_dataset_process_has_finished(dataset, 60)
     assert response.status_code == 200
 
-    response = poll_rows_until_split_process_has_finished(dataset, config, split, 60)
+    response = poll_rows_until_split_process_has_finished(dataset, config, split, 60 * 3)
     assert response.status_code == 200
     json = response.json()
     assert json["columns"][0]["column"]["type"] == "RELATIVE_IMAGE_URL"
