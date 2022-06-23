@@ -7,9 +7,9 @@
     value: {{ .Values.datasetsWorker.datasetsRevision | quote }}
   - name: HF_DATASETS_CACHE
     value: "{{ .Values.datasetsWorker.cacheDirectory }}/datasets"
-  # note: HF_MODULES_CACHE is not set to a shared directory
-  # we let "datasets" find a directory by itself: we want a different cache for the modules for each worker
-  # and the size should remain so small that we don't need to worry about putting it on an external storage
+  - name: HF_MODULES_CACHE
+    value: "/tmp/modules-cache"
+  # the size should remain so small that we don't need to worry about putting it on an external storage
   # see https://github.com/huggingface/datasets-server/issues/248
   - name: HF_TOKEN
     # see https://kubernetes.io/docs/concepts/configuration/secret/#creating-a-secret
