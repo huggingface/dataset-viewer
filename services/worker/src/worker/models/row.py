@@ -2,7 +2,7 @@ import itertools
 import logging
 from typing import Any, Dict, List, Optional
 
-from datasets import Dataset, DownloadMode, IterableDataset, load_dataset
+from datasets import Dataset, IterableDataset, load_dataset
 from libutils.utils import retry
 
 from worker.constants import DEFAULT_ROWS_MAX_NUMBER
@@ -29,7 +29,6 @@ def get_rows(
         name=config_name,
         split=split_name,
         streaming=streaming,
-        download_mode=DownloadMode.FORCE_REDOWNLOAD,
         use_auth_token=hf_token,
     )
     if streaming:
