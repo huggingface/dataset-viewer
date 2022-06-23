@@ -42,8 +42,10 @@ services:
     image: ${SERVICE_DATASETS_WORKER_DOCKER_IMAGE?SERVICE_DATASETS_WORKER_DOCKER_IMAGE env var must be provided}
     volumes:
       - assets:/assets:rw
+      - datasets-cache:/datasets-cache:rw
     environment:
       ASSETS_DIRECTORY: "/assets"
+      HF_DATASETS_CACHE: "/datasets-cache"
       MONGO_URL: "mongodb://mongodb"
       WORKER_SLEEP_SECONDS: "1"
       WORKER_QUEUE: "datasets"
@@ -54,8 +56,10 @@ services:
     image: ${SERVICE_SPLITS_WORKER_DOCKER_IMAGE?SERVICE_SPLITS_WORKER_DOCKER_IMAGE env var must be provided}
     volumes:
       - assets:/assets:rw
+      - datasets-cache:/datasets-cache:rw
     environment:
       ASSETS_DIRECTORY: "/assets"
+      HF_DATASETS_CACHE: "/datasets-cache"
       MONGO_URL: "mongodb://mongodb"
       WORKER_SLEEP_SECONDS: "1"
       WORKER_QUEUE: "splits"
@@ -86,5 +90,6 @@ services:
       - "${MONGO_PORT-27017}:27017"
 volumes:
   assets:
+  datasets-cache:
   mongo:
   reverse-proxy-cache:

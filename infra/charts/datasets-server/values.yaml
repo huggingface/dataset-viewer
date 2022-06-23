@@ -111,7 +111,7 @@ datasetsWorker:
 
   # Directory of assets (audio files and images that will be served for the web)
   assetsDirectory: "/assets"
-  # Directory of the "datasets" library cache (both for modules and datasets)
+  # Directory of the "datasets" library cache (for the datasets, not the modules)
   cacheDirectory: "/cache"
   # Git reference for the canonical datasets on https://github.com/huggingface/datasets
   datasetsRevision: "master"
@@ -155,7 +155,7 @@ splitsWorker:
 
   # Directory of assets (audio files and images that will be served for the web)
   assetsDirectory: "/assets"
-  # Directory of the "datasets" library cache (both for modules and datasets)
+  # Directory of the "datasets" library cache (for the datasets, not the modules)
   cacheDirectory: "/cache"
   # Git reference for the canonical datasets on https://github.com/huggingface/datasets
   datasetsRevision: "master"
