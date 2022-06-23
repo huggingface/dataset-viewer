@@ -1,7 +1,7 @@
 import logging
 from typing import List, Optional
 
-from datasets import DownloadMode, get_dataset_config_names, get_dataset_split_names
+from datasets import get_dataset_config_names, get_dataset_split_names
 from datasets.inspect import SplitsNotFoundError
 from libutils.exceptions import Status400Error
 from libutils.types import SplitFullName
@@ -15,9 +15,7 @@ def get_dataset_split_full_names(dataset_name: str, hf_token: Optional[str] = No
     try:
         return [
             {"dataset_name": dataset_name, "config_name": config_name, "split_name": split_name}
-            for config_name in get_dataset_config_names(
-                dataset_name, download_mode=DownloadMode.FORCE_REDOWNLOAD, use_auth_token=hf_token
-            )
+            for config_name in get_dataset_config_names(dataset_name, use_auth_token=hf_token)
             for split_name in get_dataset_split_names(dataset_name, config_name, use_auth_token=hf_token)
         ]
     except SplitsNotFoundError as err:
