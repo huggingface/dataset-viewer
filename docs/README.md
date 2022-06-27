@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 -->
 
-# Generating the documentation
+# Generate the documentation
 
 To generate the documentation, you first have to build it. Several packages are necessary to build the doc,
 you can install them with the following command, in this directory:
@@ -32,10 +32,20 @@ check how they look like before committing for instance). You don't have to comm
 
 ---
 
-## Building the documentation
+## Preview the documentation
 
-Once you have setup the `doc-builder` and additional packages, you can generate the documentation by typing the
+Once you have setup the `doc-builder` and additional packages, you can preview the documentation by typing the
 following command:
+
+```bash
+make preview
+```
+
+The documentation is available at http://localhost:3000/.
+
+## Build the documentation
+
+To build the documentation, launch:
 
 ```bash
 BUILD_DIR=/tmp/doc-datasets-server/ make build
