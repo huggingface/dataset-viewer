@@ -1,15 +1,15 @@
 # Datasets server
 
-The 🤗 datasets server gives access, via a REST API, to the contents, metadata and basic statistics of the [Hugging Face Hub datasets](https://huggingface.co/datasets).
+The 🤗 datasets server gives access to the contents, metadata and basic statistics of the [Hugging Face Hub datasets](https://huggingface.co/datasets) via a REST API.
 
-## REST API
+## History
 
-The base URL of the REST API is https://datasets-server.huggingface.co.
+The API has originally been developed to provide data to the [dataset viewer](https://huggingface.co/docs/hub/datasets-viewer) on the Hub. Indeed, the information about the datasets cannot be extracted live, and must be preprocessed and stored beforehand in order to later be accessed quickly on the Hub.
 
-For now, it provides the following endpoints for the [dataset viewer](https://huggingface.co/docs/hub/datasets-viewer) on the Hub:
+We decided to make the API public to give access programmatically, through a REST API, to the contents, metadata and statistics of the Hub datasets.
 
-| Endpoint | Description | Query parameters |
-| --- | --- | --- |
-| /valid GET | Get the list of datasets hosted in the Hub and supported by the datasets server. | |
-| /splits GET | Get the list of configurations and splits of a dataset. | - `dataset`: name of the dataset |
-| /rows GET | Get the first rows of a dataset split. | - `dataset`: name of the dataset - `config`: name of the config - `split`: name of the split |
+## Evolution
+
+The API currently provides three endpoints.
+
+The plan is to add more of them in the near future. The two next features should be the basic statistics by column, and random access to the datasets rows.

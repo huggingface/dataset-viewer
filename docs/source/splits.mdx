@@ -1,0 +1,75 @@
+# Splits
+
+A dataset generally contains multiple [splits](https://huggingface.co/docs/datasets/load_hub#splits):
+
+> a split is a specific subset of a dataset like `train` and `test`
+
+and optionally various [configurations](https://huggingface.co/docs/datasets/load_hub#configurations):
+
+> Some datasets contain several sub-datasets. For example, the MInDS-14 dataset has several sub-datasets, each one containing audio data in a different language. These sub-datasets are known as configurations.
+
+See the [documentation](https://huggingface.co/docs/datasets) of the [🤗 datasets](https://github.com/huggingface/datasets) library to read more in depth about the concepts.
+
+To get the list of splits and configurations of a dataset:
+
+  ```
+  https://datasets-server.huggingface.co/splits?dataset={dataset_name}
+  ```
+
+<Tip warning={true}>
+  Currently, the API only returns rows of the ["streamable" datasets](https://huggingface.co/docs/datasets/stream).
+
+  By loading the datasets in streaming mode, the first rows can be extracted without the need to download the whole dataset. In the future, we plan to also support non-streamable datasets.
+</Tip>
+
+
+For example, [`duorc`](https://huggingface.co/datasets/duorc) has six splits, within two configurations: https://datasets-server.huggingface.co/splits?dataset=duorc
+
+```json
+{
+  "splits": [
+    {
+      "dataset": "duorc",
+      "config": "SelfRC",
+      "split": "train",
+      "num_bytes": 239852925,
+      "num_examples": 60721
+    },
+    {
+      "dataset": "duorc",
+      "config": "SelfRC",
+      "split": "validation",
+      "num_bytes": 51662575,
+      "num_examples": 12961
+    },
+    {
+      "dataset": "duorc",
+      "config": "SelfRC",
+      "split": "test",
+      "num_bytes": 49142766,
+      "num_examples": 12559
+    },
+    {
+      "dataset": "duorc",
+      "config": "ParaphraseRC",
+      "split": "train",
+      "num_bytes": 496683105,
+      "num_examples": 69524
+    },
+    {
+      "dataset": "duorc",
+      "config": "ParaphraseRC",
+      "split": "validation",
+      "num_bytes": 106510545,
+      "num_examples": 15591
+    },
+    {
+      "dataset": "duorc",
+      "config": "ParaphraseRC",
+      "split": "test",
+      "num_bytes": 115215816,
+      "num_examples": 15857
+    }
+  ]
+}
+```

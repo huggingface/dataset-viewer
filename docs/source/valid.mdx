@@ -1,0 +1,23 @@
+# Valid datasets
+
+An error can occur when extracting the [splits](./splits) or the first [rows](./rows) of some datasets. In this case, an error is returned.
+
+The `/valid` endpoints gives the list of the Hub datasets that work without an error:
+
+  ```
+  https://datasets-server.huggingface.co/valid
+  ```
+
+The response takes the following form: https://datasets-server.huggingface.co/valid
+
+```json
+{
+  "valid": [
+    "0n1xus/codexglue",
+    "0n1xus/pytorrent-standalone",
+    "0x7194633/rupile",
+    "51la5/keyword-extraction",
+    ...
+  ]
+}
+```
