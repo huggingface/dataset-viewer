@@ -5,9 +5,9 @@ name = "datasets-server-doc"
 version = "0.1.0"
 
 [tool.poetry.dependencies]
-#hf-doc-builder = { git = "https://github.com/huggingface/doc-builder.git", rev = "a3c770b97dc447e6b53cb43230ba56009e73b43a", extras = ["quality"] }
 hf-doc-builder = { extras = ["quality"], version = "0.3.0" }
 python = "3.9.6"
+watchdog = "^2.1.9"
 
 [build-system]
 build-backend = "poetry.core.masonry.api"
