@@ -1,0 +1,311 @@
+{
+  "openapi": "3.0.2",
+  "info": {
+    "title": "Datasets server API",
+    "description": "The 🤗 Datasets server API gives access to the contents, metadata and basic statistics of the Hugging Face Hub datasets.",
+    "contact": {
+      "name": "API Support",
+      "email": "website@huggingface.co"
+    },
+    "version": "1.0"
+  },
+  "servers": [
+    {
+      "url": "https://datasets-server.huggingface.co",
+      "description": "Production server"
+    }
+  ],
+  "components": {
+    "headers": {
+      "Cache-Control": {
+        "description": "Directives that control caching in browsers and shared caches. This directive is used internally for caching the responses: the API will serve the same response until the cache has expired.",
+        "schema": { "type": "string" },
+        "examples": {
+          "no-cache": { "summary": "No cache.", "value": "no-cache" },
+          "max-age": { "summary": "Cache TTL.", "value": "max-age=120" }
+        },
+        "required": true
+      },
+      "Access-Control-Allow-Origin": {
+        "description": "Indicates whether the response can be shared with requesting code from the given origin.",
+        "schema": { "type": "string" },
+        "example": "*",
+        "required": true
+      }
+    },
+    "schemas": {
+      "SplitsResponse": {
+        "type": "object",
+        "required": ["splits"],
+        "properties": {
+          "splits": {
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/SplitItem" }
+          }
+        }
+      },
+      "SplitItem": {
+        "type": "object",
+        "required": ["dataset", "config", "split"],
+        "properties": {
+          "dataset": {
+            "type": "string"
+          },
+          "config": {
+            "type": "string"
+          },
+          "split": {
+            "type": "string"
+          },
+          "num_bytes": {
+            "type": "integer"
+          },
+          "num_examples": {
+            "type": "integer"
+          }
+        }
+      },
+      "StatusErrorContent": {
+        "type": "object",
+        "required": ["status_code", "exception", "message"],
+        "properties": {
+          "status_code": {
+            "type": "integer"
+          },
+          "exception": {
+            "type": "string"
+          },
+          "message": {
+            "type": "string"
+          },
+          "cause_exception": {
+            "type": "string"
+          },
+          "cause_message": {
+            "type": "string"
+          },
+          "cause_traceback": {
+            "type": "string"
+          }
+        }
+      }
+    }
+  },
+  "paths": {
+    "/splits": {
+      "get": {
+        "summary": "List of splits",
+        "description": "The list of splits of a dataset.",
+        "externalDocs": {
+          "description": "See Splits (Hub docs)",
+          "url": "https://huggingface.co/docs/datasets-server/splits"
+        },
+        "operationId": "listSplits",
+        "parameters": [
+          {
+            "name": "dataset",
+            "in": "query",
+            "description": "The identifier of the dataset on the Hub.",
+            "required": true,
+            "schema": { "type": "string" },
+            "examples": {
+              "glue": { "summary": "a canonical dataset", "value": "glue" },
+              "Helsinki-NLP/tatoeba_mt": {
+                "summary": "a namespaced dataset",
+                "value": "Helsinki-NLP/tatoeba_mt"
+              }
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A list of splits.</br>Beware: the response is not paginated.",
+            "headers": {
+              "Cache-Control": { "$ref": "#/components/headers/Cache-Control" },
+              "Access-Control-Allow-Origin": {
+                "$ref": "#/components/headers/Access-Control-Allow-Origin"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SplitsResponse"
+                },
+                "examples": {
+                  "duorc": {
+                    "summary": "duorc: two configs, six splits",
+                    "value": {
+                      "splits": [
+                        {
+                          "dataset": "duorc",
+                          "config": "SelfRC",
+                          "split": "train",
+                          "num_bytes": 239852925,
+                          "num_examples": 60721
+                        },
+                        {
+                          "dataset": "duorc",
+                          "config": "SelfRC",
+                          "split": "validation",
+                          "num_bytes": 51662575,
+                          "num_examples": 12961
+                        },
+                        {
+                          "dataset": "duorc",
+                          "config": "SelfRC",
+                          "split": "test",
+                          "num_bytes": 49142766,
+                          "num_examples": 12559
+                        },
+                        {
+                          "dataset": "duorc",
+                          "config": "ParaphraseRC",
+                          "split": "train",
+                          "num_bytes": 496683105,
+                          "num_examples": 69524
+                        },
+                        {
+                          "dataset": "duorc",
+                          "config": "ParaphraseRC",
+                          "split": "validation",
+                          "num_bytes": 106510545,
+                          "num_examples": 15591
+                        },
+                        {
+                          "dataset": "duorc",
+                          "config": "ParaphraseRC",
+                          "split": "test",
+                          "num_bytes": 115215816,
+                          "num_examples": 15857
+                        }
+                      ]
+                    }
+                  },
+                  "emotion": {
+                    "summary": "emotion: one config, three splits",
+                    "value": {
+                      "splits": [
+                        {
+                          "dataset": "emotion",
+                          "config": "default",
+                          "split": "train",
+                          "num_bytes": 1741541,
+                          "num_examples": 16000
+                        },
+                        {
+                          "dataset": "emotion",
+                          "config": "default",
+                          "split": "validation",
+                          "num_bytes": 214699,
+                          "num_examples": 2000
+                        },
+                        {
+                          "dataset": "emotion",
+                          "config": "default",
+                          "split": "test",
+                          "num_bytes": 217177,
+                          "num_examples": 2000
+                        }
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The dataset has some issue that prevents extracting the list of splits.<br/>The error response should give insights to help fix the issue.",
+            "headers": {
+              "Cache-Control": {
+                "$ref": "#/components/headers/Cache-Control"
+              },
+              "Access-Control-Allow-Origin": {
+                "$ref": "#/components/headers/Access-Control-Allow-Origin"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StatusErrorContent"
+                },
+                "examples": {
+                  "TypeError": {
+                    "summary": "TypeError",
+                    "value": {
+                      "status_code": 400,
+                      "exception": "Status400Error",
+                      "message": "Cannot get the split names for the dataset.",
+                      "cause_exception": "TypeError",
+                      "cause_message": "expected str, bytes or os.PathLike object, not NoneType",
+                      "cause_traceback": [
+                        "Traceback (most recent call last):\n",
+                        "  File \"/src/services/worker/.venv/lib/python3.9/site-packages/datasets/inspect.py\", line 354, in get_dataset_config_info\n    for split_generator in builder._split_generators(\n",
+                        "  File \"/cache/modules/datasets_modules/datasets/superb/b8183f71eabe8c559d7f3f528ab37a6a21ad1ee088fd3423574cecad8b3ec67e/superb.py\", line 427, in _split_generators\n    manual_dir = os.path.abspath(os.path.expanduser(dl_manager.manual_dir))\n",
+                        "  File \"/usr/local/lib/python3.9/posixpath.py\", line 231, in expanduser\n    path = os.fspath(path)\n",
+                        "TypeError: expected str, bytes or os.PathLike object, not NoneType\n",
+                        "\nThe above exception was the direct cause of the following exception:\n\n",
+                        "Traceback (most recent call last):\n",
+                        "  File \"/src/services/worker/src/worker/models/dataset.py\", line 16, in get_dataset_split_full_names\n    return [\n",
+                        "  File \"/src/services/worker/src/worker/models/dataset.py\", line 21, in <listcomp>\n    for split_name in get_dataset_split_names(dataset_name, config_name, use_auth_token=hf_token)\n",
+                        "  File \"/src/services/worker/.venv/lib/python3.9/site-packages/datasets/inspect.py\", line 404, in get_dataset_split_names\n    info = get_dataset_config_info(\n",
+                        "  File \"/src/services/worker/.venv/lib/python3.9/site-packages/datasets/inspect.py\", line 359, in get_dataset_config_info\n    raise SplitsNotFoundError(\"The split names could not be parsed from the dataset config.\") from err\n",
+                        "datasets.inspect.SplitsNotFoundError: The split names could not be parsed from the dataset config.\n"
+                      ]
+                    }
+                  },
+                  "FileNotFoundError": {
+                    "summary": "FileNotFoundError",
+                    "value": {
+                      "status_code": 400,
+                      "exception": "Status400Error",
+                      "message": "Cannot get the split names for the dataset.",
+                      "cause_exception": "FileNotFoundError",
+                      "cause_message": "Couldn't find a dataset script at /src/services/worker/akhaliq/test/test.py or any data file in the same directory. Couldn't find 'akhaliq/test' on the Hugging Face Hub either: FileNotFoundError: The dataset repository at 'akhaliq/test' doesn't contain any data file.",
+                      "cause_traceback": [
+                        "Traceback (most recent call last):\n",
+                        "  File \"/src/services/worker/src/worker/models/dataset.py\", line 18, in get_dataset_split_full_names\n    for config_name in get_dataset_config_names(\n",
+                        "  File \"/src/services/worker/.venv/lib/python3.9/site-packages/datasets/inspect.py\", line 289, in get_dataset_config_names\n    dataset_module = dataset_module_factory(\n",
+                        "  File \"/src/services/worker/.venv/lib/python3.9/site-packages/datasets/load.py\", line 1189, in dataset_module_factory\n    raise FileNotFoundError(\n",
+                        "FileNotFoundError: Couldn't find a dataset script at /src/services/worker/akhaliq/test/test.py or any data file in the same directory. Couldn't find 'akhaliq/test' on the Hugging Face Hub either: FileNotFoundError: The dataset repository at 'akhaliq/test' doesn't contain any data file.\n"
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "The server encountered an error.",
+            "headers": {
+              "Cache-Control": {
+                "$ref": "#/components/headers/Cache-Control"
+              },
+              "Access-Control-Allow-Origin": {
+                "$ref": "#/components/headers/Access-Control-Allow-Origin"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StatusErrorContent"
+                },
+                "examples": {
+                  "mongo": {
+                    "summary": "internal error",
+                    "value": {
+                      "status_code": 500,
+                      "exception": "Status500Error",
+                      "message": "Tried to save duplicate unique keys (E11000 duplicate key error collection: datasets_server_cache.splits index: dataset_name_1_config_name_1_split_name_1 dup key: { dataset_name: \"csebuetnlp/xlsum\", config_name: \"chinese_traditional\", split_name: \"test\" }, full error: {'index': 0, 'code': 11000, 'keyPattern': {'dataset_name': 1, 'config_name': 1, 'split_name': 1}, 'keyValue': {'dataset_name': 'csebuetnlp/xlsum', 'config_name': 'chinese_traditional', 'split_name': 'test'}, 'errmsg': 'E11000 duplicate key error collection: datasets_server_cache.splits index: dataset_name_1_config_name_1_split_name_1 dup key: { dataset_name: \"csebuetnlp/xlsum\", config_name: \"chinese_traditional\", split_name: \"test\" }'})",
+                      "cause_exception": "Status500Error",
+                      "cause_message": "Tried to save duplicate unique keys (E11000 duplicate key error collection: datasets_server_cache.splits index: dataset_name_1_config_name_1_split_name_1 dup key: { dataset_name: \"csebuetnlp/xlsum\", config_name: \"chinese_traditional\", split_name: \"test\" }, full error: {'index': 0, 'code': 11000, 'keyPattern': {'dataset_name': 1, 'config_name': 1, 'split_name': 1}, 'keyValue': {'dataset_name': 'csebuetnlp/xlsum', 'config_name': 'chinese_traditional', 'split_name': 'test'}, 'errmsg': 'E11000 duplicate key error collection: datasets_server_cache.splits index: dataset_name_1_config_name_1_split_name_1 dup key: { dataset_name: \"csebuetnlp/xlsum\", config_name: \"chinese_traditional\", split_name: \"test\" }'})"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
