@@ -224,6 +224,20 @@
             "items": { "type": "string" }
           }
         }
+      },
+      "ValidResponse": {
+        "type": "object",
+        "required": ["valid", "created_at"],
+        "properties": {
+          "valid": {
+            "type": "array",
+            "items": { "type": "string" }
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
       }
     }
   },
@@ -522,7 +536,523 @@
                 "schema": {
                   "$ref": "#/components/schemas/RowsResponse"
                 },
-                "examples": {}
+                "examples": {
+                  "cola": {
+                    "summary": "text, and label column (only 3 rows are shown for brevity)",
+                    "value": {
+                      "columns": [
+                        {
+                          "dataset": "glue",
+                          "config": "cola",
+                          "split": "train",
+                          "column_idx": 0,
+                          "column": { "name": "sentence", "type": "STRING" }
+                        },
+                        {
+                          "dataset": "glue",
+                          "config": "cola",
+                          "split": "train",
+                          "column_idx": 1,
+                          "column": {
+                            "name": "label",
+                            "type": "CLASS_LABEL",
+                            "labels": ["unacceptable", "acceptable"]
+                          }
+                        },
+                        {
+                          "dataset": "glue",
+                          "config": "cola",
+                          "split": "train",
+                          "column_idx": 2,
+                          "column": { "name": "idx", "type": "INT" }
+                        }
+                      ],
+                      "rows": [
+                        {
+                          "dataset": "glue",
+                          "config": "cola",
+                          "split": "train",
+                          "row_idx": 0,
+                          "row": {
+                            "sentence": "Our friends won't buy this analysis, let alone the next one we propose.",
+                            "label": 1,
+                            "idx": 0
+                          },
+                          "truncated_cells": []
+                        },
+                        {
+                          "dataset": "glue",
+                          "config": "cola",
+                          "split": "train",
+                          "row_idx": 1,
+                          "row": {
+                            "sentence": "One more pseudo generalization and I'm giving up.",
+                            "label": 1,
+                            "idx": 1
+                          },
+                          "truncated_cells": []
+                        },
+                        {
+                          "dataset": "glue",
+                          "config": "cola",
+                          "split": "train",
+                          "row_idx": 2,
+                          "row": {
+                            "sentence": "One more pseudo generalization or I'm giving up.",
+                            "label": 1,
+                            "idx": 2
+                          },
+                          "truncated_cells": []
+                        },
+                        {
+                          "dataset": "glue",
+                          "config": "cola",
+                          "split": "train",
+                          "row_idx": 3,
+                          "row": {
+                            "sentence": "The more we study verbs, the crazier they get.",
+                            "label": 1,
+                            "idx": 3
+                          },
+                          "truncated_cells": []
+                        }
+                      ]
+                    }
+                  },
+                  "truncated": {
+                    "summary": "truncated cells due to the response size (has a timestamp column)",
+                    "value": {
+                      "columns": [
+                        {
+                          "dataset": "ett",
+                          "config": "m2",
+                          "split": "test",
+                          "column_idx": 0,
+                          "column": {
+                            "name": "start",
+                            "type": "TIMESTAMP",
+                            "tz": null,
+                            "unit": "s"
+                          }
+                        },
+                        {
+                          "dataset": "ett",
+                          "config": "m2",
+                          "split": "test",
+                          "column_idx": 1,
+                          "column": { "name": "target", "type": "JSON" }
+                        },
+                        {
+                          "dataset": "ett",
+                          "config": "m2",
+                          "split": "test",
+                          "column_idx": 2,
+                          "column": {
+                            "name": "feat_static_cat",
+                            "type": "JSON"
+                          }
+                        },
+                        {
+                          "dataset": "ett",
+                          "config": "m2",
+                          "split": "test",
+                          "column_idx": 3,
+                          "column": {
+                            "name": "feat_dynamic_real",
+                            "type": "JSON"
+                          }
+                        },
+                        {
+                          "dataset": "ett",
+                          "config": "m2",
+                          "split": "test",
+                          "column_idx": 4,
+                          "column": { "name": "item_id", "type": "STRING" }
+                        }
+                      ],
+                      "rows": [
+                        {
+                          "dataset": "ett",
+                          "config": "m2",
+                          "split": "test",
+                          "row_idx": 0,
+                          "row": {
+                            "start": 1467331200.0,
+                            "target": "[38.6619987487793,38.222999572753906,37.34400177001953,37.124000549316406,37.124000549316406,36.9039",
+                            "feat_static_cat": [0],
+                            "feat_dynamic_real": "[[41.130001068115234,39.62200164794922,38.86800003051758,35.518001556396484,37.52799987792969,37.611",
+                            "item_id": "OT"
+                          },
+                          "truncated_cells": ["target", "feat_dynamic_real"]
+                        },
+                        {
+                          "dataset": "ett",
+                          "config": "m2",
+                          "split": "test",
+                          "row_idx": 1,
+                          "row": {
+                            "start": 1467331200.0,
+                            "target": "[38.6619987487793,38.222999572753906,37.34400177001953,37.124000549316406,37.124000549316406,36.9039",
+                            "feat_static_cat": [0],
+                            "feat_dynamic_real": "[[41.130001068115234,39.62200164794922,38.86800003051758,35.518001556396484,37.52799987792969,37.611",
+                            "item_id": "OT"
+                          },
+                          "truncated_cells": ["target", "feat_dynamic_real"]
+                        },
+                        {
+                          "dataset": "ett",
+                          "config": "m2",
+                          "split": "test",
+                          "row_idx": 2,
+                          "row": {
+                            "start": 1467331200.0,
+                            "target": "[38.6619987487793,38.222999572753906,37.34400177001953,37.124000549316406,37.124000549316406,36.9039",
+                            "feat_static_cat": [0],
+                            "feat_dynamic_real": "[[41.130001068115234,39.62200164794922,38.86800003051758,35.518001556396484,37.52799987792969,37.611",
+                            "item_id": "OT"
+                          },
+                          "truncated_cells": ["target", "feat_dynamic_real"]
+                        },
+                        {
+                          "dataset": "ett",
+                          "config": "m2",
+                          "split": "test",
+                          "row_idx": 3,
+                          "row": {
+                            "start": 1467331200.0,
+                            "target": "[38.6619987487793,38.222999572753906,37.34400177001953,37.124000549316406,37.124000549316406,36.9039",
+                            "feat_static_cat": [0],
+                            "feat_dynamic_real": "[[41.130001068115234,39.62200164794922,38.86800003051758,35.518001556396484,37.52799987792969,37.611",
+                            "item_id": "OT"
+                          },
+                          "truncated_cells": ["target", "feat_dynamic_real"]
+                        },
+                        {
+                          "dataset": "ett",
+                          "config": "m2",
+                          "split": "test",
+                          "row_idx": 4,
+                          "row": {
+                            "start": 1467331200.0,
+                            "target": "[38.6619987487793,38.222999572753906,37.34400177001953,37.124000549316406,37.124000549316406,36.9039",
+                            "feat_static_cat": [0],
+                            "feat_dynamic_real": "[[41.130001068115234,39.62200164794922,38.86800003051758,35.518001556396484,37.52799987792969,37.611",
+                            "item_id": "OT"
+                          },
+                          "truncated_cells": ["target", "feat_dynamic_real"]
+                        },
+                        {
+                          "dataset": "ett",
+                          "config": "m2",
+                          "split": "test",
+                          "row_idx": 5,
+                          "row": {
+                            "start": 1467331200.0,
+                            "target": "[38.6619987487793,38.222999572753906,37.34400177001953,37.124000549316406,37.124000549316406,36.9039",
+                            "feat_static_cat": [0],
+                            "feat_dynamic_real": "[[41.130001068115234,39.62200164794922,38.86800003051758,35.518001556396484,37.52799987792969,37.611",
+                            "item_id": "OT"
+                          },
+                          "truncated_cells": ["target", "feat_dynamic_real"]
+                        },
+                        {
+                          "dataset": "ett",
+                          "config": "m2",
+                          "split": "test",
+                          "row_idx": 6,
+                          "row": {
+                            "start": 1467331200.0,
+                            "target": "[38.6619987487793,38.222999572753906,37.34400177001953,37.124000549316406,37.124000549316406,36.9039",
+                            "feat_static_cat": [0],
+                            "feat_dynamic_real": "[[41.130001068115234,39.62200164794922,38.86800003051758,35.518001556396484,37.52799987792969,37.611",
+                            "item_id": "OT"
+                          },
+                          "truncated_cells": ["target", "feat_dynamic_real"]
+                        },
+                        {
+                          "dataset": "ett",
+                          "config": "m2",
+                          "split": "test",
+                          "row_idx": 7,
+                          "row": {
+                            "start": 1467331200.0,
+                            "target": "[38.6619987487793,38.222999572753906,37.34400177001953,37.124000549316406,37.124000549316406,36.9039",
+                            "feat_static_cat": [0],
+                            "feat_dynamic_real": "[[41.130001068115234,39.62200164794922,38.86800003051758,35.518001556396484,37.52799987792969,37.611",
+                            "item_id": "OT"
+                          },
+                          "truncated_cells": ["target", "feat_dynamic_real"]
+                        },
+                        {
+                          "dataset": "ett",
+                          "config": "m2",
+                          "split": "test",
+                          "row_idx": 8,
+                          "row": {
+                            "start": 1467331200.0,
+                            "target": "[38.6619987487793,38.222999572753906,37.34400177001953,37.124000549316406,37.124000549316406,36.9039",
+                            "feat_static_cat": [0],
+                            "feat_dynamic_real": "[[41.130001068115234,39.62200164794922,38.86800003051758,35.518001556396484,37.52799987792969,37.611",
+                            "item_id": "OT"
+                          },
+                          "truncated_cells": ["target", "feat_dynamic_real"]
+                        },
+                        {
+                          "dataset": "ett",
+                          "config": "m2",
+                          "split": "test",
+                          "row_idx": 9,
+                          "row": {
+                            "start": 1467331200.0,
+                            "target": "[38.6619987487793,38.222999572753906,37.34400177001953,37.124000549316406,37.124000549316406,36.9039",
+                            "feat_static_cat": [0],
+                            "feat_dynamic_real": "[[41.130001068115234,39.62200164794922,38.86800003051758,35.518001556396484,37.52799987792969,37.611",
+                            "item_id": "OT"
+                          },
+                          "truncated_cells": ["target", "feat_dynamic_real"]
+                        }
+                      ]
+                    }
+                  },
+                  "image": {
+                    "summary": "a column with images (only 3 rows are shown for brevity)",
+                    "value": {
+                      "columns": [
+                        {
+                          "dataset": "huggan/horse2zebra",
+                          "config": "huggan--horse2zebra-aligned",
+                          "split": "train",
+                          "column_idx": 0,
+                          "column": {
+                            "name": "imageA",
+                            "type": "RELATIVE_IMAGE_URL"
+                          }
+                        },
+                        {
+                          "dataset": "huggan/horse2zebra",
+                          "config": "huggan--horse2zebra-aligned",
+                          "split": "train",
+                          "column_idx": 1,
+                          "column": {
+                            "name": "imageB",
+                            "type": "RELATIVE_IMAGE_URL"
+                          }
+                        }
+                      ],
+                      "rows": [
+                        {
+                          "dataset": "huggan/horse2zebra",
+                          "config": "huggan--horse2zebra-aligned",
+                          "split": "train",
+                          "row_idx": 0,
+                          "row": {
+                            "imageA": "assets/huggan/horse2zebra/--/huggan--horse2zebra-aligned/train/0/imageA/image.jpg",
+                            "imageB": "assets/huggan/horse2zebra/--/huggan--horse2zebra-aligned/train/0/imageB/image.jpg"
+                          },
+                          "truncated_cells": []
+                        },
+                        {
+                          "dataset": "huggan/horse2zebra",
+                          "config": "huggan--horse2zebra-aligned",
+                          "split": "train",
+                          "row_idx": 1,
+                          "row": {
+                            "imageA": "assets/huggan/horse2zebra/--/huggan--horse2zebra-aligned/train/1/imageA/image.jpg",
+                            "imageB": "assets/huggan/horse2zebra/--/huggan--horse2zebra-aligned/train/1/imageB/image.jpg"
+                          },
+                          "truncated_cells": []
+                        },
+                        {
+                          "dataset": "huggan/horse2zebra",
+                          "config": "huggan--horse2zebra-aligned",
+                          "split": "train",
+                          "row_idx": 2,
+                          "row": {
+                            "imageA": "assets/huggan/horse2zebra/--/huggan--horse2zebra-aligned/train/2/imageA/image.jpg",
+                            "imageB": "assets/huggan/horse2zebra/--/huggan--horse2zebra-aligned/train/2/imageB/image.jpg"
+                          },
+                          "truncated_cells": []
+                        }
+                      ]
+                    }
+                  },
+                  "audio": {
+                    "summary": "a column with audio files (only 3 rows are shown for brevity)",
+                    "value": {
+                      "columns": [
+                        {
+                          "dataset": "mozilla-foundation/common_voice_9_0",
+                          "config": "en",
+                          "split": "train",
+                          "column_idx": 0,
+                          "column": { "name": "client_id", "type": "STRING" }
+                        },
+                        {
+                          "dataset": "mozilla-foundation/common_voice_9_0",
+                          "config": "en",
+                          "split": "train",
+                          "column_idx": 1,
+                          "column": { "name": "path", "type": "STRING" }
+                        },
+                        {
+                          "dataset": "mozilla-foundation/common_voice_9_0",
+                          "config": "en",
+                          "split": "train",
+                          "column_idx": 2,
+                          "column": {
+                            "name": "audio",
+                            "type": "AUDIO_RELATIVE_SOURCES"
+                          }
+                        },
+                        {
+                          "dataset": "mozilla-foundation/common_voice_9_0",
+                          "config": "en",
+                          "split": "train",
+                          "column_idx": 3,
+                          "column": { "name": "sentence", "type": "STRING" }
+                        },
+                        {
+                          "dataset": "mozilla-foundation/common_voice_9_0",
+                          "config": "en",
+                          "split": "train",
+                          "column_idx": 4,
+                          "column": { "name": "up_votes", "type": "INT" }
+                        },
+                        {
+                          "dataset": "mozilla-foundation/common_voice_9_0",
+                          "config": "en",
+                          "split": "train",
+                          "column_idx": 5,
+                          "column": { "name": "down_votes", "type": "INT" }
+                        },
+                        {
+                          "dataset": "mozilla-foundation/common_voice_9_0",
+                          "config": "en",
+                          "split": "train",
+                          "column_idx": 6,
+                          "column": { "name": "age", "type": "STRING" }
+                        },
+                        {
+                          "dataset": "mozilla-foundation/common_voice_9_0",
+                          "config": "en",
+                          "split": "train",
+                          "column_idx": 7,
+                          "column": { "name": "gender", "type": "STRING" }
+                        },
+                        {
+                          "dataset": "mozilla-foundation/common_voice_9_0",
+                          "config": "en",
+                          "split": "train",
+                          "column_idx": 8,
+                          "column": { "name": "accent", "type": "STRING" }
+                        },
+                        {
+                          "dataset": "mozilla-foundation/common_voice_9_0",
+                          "config": "en",
+                          "split": "train",
+                          "column_idx": 9,
+                          "column": { "name": "locale", "type": "STRING" }
+                        },
+                        {
+                          "dataset": "mozilla-foundation/common_voice_9_0",
+                          "config": "en",
+                          "split": "train",
+                          "column_idx": 10,
+                          "column": { "name": "segment", "type": "STRING" }
+                        }
+                      ],
+                      "rows": [
+                        {
+                          "dataset": "mozilla-foundation/common_voice_9_0",
+                          "config": "en",
+                          "split": "train",
+                          "row_idx": 0,
+                          "row": {
+                            "client_id": "04960d53cc851eeb6d93f21a09e09ab36fe16943acb226ced1211d7250ab2f1b9a1d655c1cc03d50006e396010851ad52d4c53f49dd77b080b01c4230704c68d",
+                            "path": null,
+                            "audio": [
+                              {
+                                "src": "assets/mozilla-foundation/common_voice_9_0/--/en/train/0/audio/audio.mp3",
+                                "type": "audio/mpeg"
+                              },
+                              {
+                                "src": "assets/mozilla-foundation/common_voice_9_0/--/en/train/0/audio/audio.wav",
+                                "type": "audio/wav"
+                              }
+                            ],
+                            "sentence": "Why does Melissandre look like she wants to consume Jon Snow on the ride up the wall?",
+                            "up_votes": 2,
+                            "down_votes": 0,
+                            "age": "fourties",
+                            "gender": "male",
+                            "accent": "United States English",
+                            "locale": "en",
+                            "segment": ""
+                          },
+                          "truncated_cells": []
+                        },
+                        {
+                          "dataset": "mozilla-foundation/common_voice_9_0",
+                          "config": "en",
+                          "split": "train",
+                          "row_idx": 1,
+                          "row": {
+                            "client_id": "f9f1f96bae1390dfe61ff298abb90975c079e913c712d57d97307ed797469eac446abb149daaad24cacffcc24e1e3275fefeb97f977eb74ce2233e0e5c1d437e",
+                            "path": null,
+                            "audio": [
+                              {
+                                "src": "assets/mozilla-foundation/common_voice_9_0/--/en/train/1/audio/audio.mp3",
+                                "type": "audio/mpeg"
+                              },
+                              {
+                                "src": "assets/mozilla-foundation/common_voice_9_0/--/en/train/1/audio/audio.wav",
+                                "type": "audio/wav"
+                              }
+                            ],
+                            "sentence": "\"I'm getting them for twelve dollars a night.\"",
+                            "up_votes": 2,
+                            "down_votes": 0,
+                            "age": "",
+                            "gender": "",
+                            "accent": "",
+                            "locale": "en",
+                            "segment": ""
+                          },
+                          "truncated_cells": []
+                        },
+                        {
+                          "dataset": "mozilla-foundation/common_voice_9_0",
+                          "config": "en",
+                          "split": "train",
+                          "row_idx": 2,
+                          "row": {
+                            "client_id": "a6c7706a220eeea7ee3687c1122fe7ac17962d2449d25b6db37cc41cdaace442683e11945b6f581e73941c3083cd4eecfafc938840459cd8c571dae7774ee687",
+                            "path": null,
+                            "audio": [
+                              {
+                                "src": "assets/mozilla-foundation/common_voice_9_0/--/en/train/2/audio/audio.mp3",
+                                "type": "audio/mpeg"
+                              },
+                              {
+                                "src": "assets/mozilla-foundation/common_voice_9_0/--/en/train/2/audio/audio.wav",
+                                "type": "audio/wav"
+                              }
+                            ],
+                            "sentence": "Tower of strength",
+                            "up_votes": 2,
+                            "down_votes": 0,
+                            "age": "",
+                            "gender": "",
+                            "accent": "",
+                            "locale": "en",
+                            "segment": ""
+                          },
+                          "truncated_cells": []
+                        }
+                      ]
+                    }
+                  }
+                }
               }
             }
           },
@@ -684,6 +1214,53 @@
                         "  File \"/src/services/worker/.venv/lib/python3.9/site-packages/pymongo/message.py\", line 1140, in _raise_document_too_large\n    raise DocumentTooLarge(\"%r command document too large\" % (operation,))\n",
                         "pymongo.errors.DocumentTooLarge: 'update' command document too large\n"
                       ]
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/valid": {
+      "get": {
+        "summary": " Valid datasets",
+        "description": "The list of the Hub datasets that work without an error (for /splits and /rows).",
+        "externalDocs": {
+          "description": "See  Valid datasets (Hub docs)",
+          "url": "https://huggingface.co/docs/datasets-server/valid"
+        },
+        "operationId": "listValidDatasets",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "The valid datasets.",
+            "headers": {
+              "Cache-Control": {
+                "$ref": "#/components/headers/Cache-Control"
+              },
+              "Access-Control-Allow-Origin": {
+                "$ref": "#/components/headers/Access-Control-Allow-Origin"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidResponse"
+                },
+                "examples": {
+                  "valid": {
+                    "summary": "list of datasets",
+                    "value": {
+                      "valid": [
+                        "0n1xus/codexglue",
+                        "0n1xus/pytorrent-standalone",
+                        "0x7194633/rupile",
+                        "51la5/keyword-extraction",
+                        "AHussain0418/day2_data"
+                      ],
+                      "created_at": "2022-06-28T16:04:24Z"
                     }
                   }
                 }
