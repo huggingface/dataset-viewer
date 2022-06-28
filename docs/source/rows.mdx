@@ -103,7 +103,7 @@ For example, the columns and the first rows of the `duorc` / `SelfRC` train spli
 
 ## Truncated responses
 
-When the size of the response for 100 rows would have been too big, the last rows are removed until reaching under the acceptable limit.
+When the response size for 100 rows is too big, the last rows are removed until the response size is under 1MB.
 
 If even the first rows generate a response that does not fit within the limit, the content of the cells themselves is truncated and converted to a string. In this case, the truncated cells are listed in the `truncated_cells` field.
 
