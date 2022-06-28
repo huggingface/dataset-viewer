@@ -8,7 +8,9 @@ The endpoint `/rows` provides the columns and the first rows of a dataset [split
 
 The first 100 rows, or all the rows if the split contains less than 100 rows, are returned. The list of columns contain the data type.
 
-For example, the columns and the first rows of the `duorc` / `SelfRC` train split are: https://datasets-server.huggingface.co/rows?dataset=duorc&config=SelfRC&split=train
+For example, here are the columns and the first rows of the `duorc` / `SelfRC` train split.
+
+https://datasets-server.huggingface.co/rows?dataset=duorc&config=SelfRC&split=train
 
 ```json
 {
@@ -107,7 +109,9 @@ When the response size for 100 rows is too big, the last rows are removed until 
 
 If even the first rows generate a response that does not fit within the limit, the content of the cells themselves is truncated and converted to a string. In this case, the truncated cells are listed in the `truncated_cells` field.
 
-See for example the [`ett`](https://huggingface.co/datasets/ett/viewer/m2/test) dataset: https://datasets-server.huggingface.co/rows?dataset=ett&config=m2&split=test. Only 10 rows are returned, and the content of two of the columns are truncated:
+See for example the [`ett`](https://huggingface.co/datasets/ett/viewer/m2/test) dataset: only 10 rows are returned, and the content of two of the columns are truncated.
+
+https://datasets-server.huggingface.co/rows?dataset=ett&config=m2&split=test
 
 ```json
   ...
