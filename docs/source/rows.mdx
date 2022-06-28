@@ -1,0 +1,148 @@
+# First rows
+
+The endpoint `/rows` provides the columns and the first rows of a dataset [split](./splits):
+
+  ```
+  https://datasets-server.huggingface.co/rows?dataset={dataset_name}&config={config_name}&split={split_name}
+  ```
+
+The first 100 rows, or all the rows if the split contains less than 100 rows, are returned. The list of columns contain the data type.
+
+For example, here are the columns and the first rows of the `duorc` / `SelfRC` train split.
+
+https://datasets-server.huggingface.co/rows?dataset=duorc&config=SelfRC&split=train
+
+```json
+{
+  "columns": [
+    {
+      "dataset": "duorc",
+      "config": "SelfRC",
+      "split": "train",
+      "column_idx": 0,
+      "column": { "name": "plot_id", "type": "STRING" }
+    },
+    {
+      "dataset": "duorc",
+      "config": "SelfRC",
+      "split": "train",
+      "column_idx": 1,
+      "column": { "name": "plot", "type": "STRING" }
+    },
+    {
+      "dataset": "duorc",
+      "config": "SelfRC",
+      "split": "train",
+      "column_idx": 2,
+      "column": { "name": "title", "type": "STRING" }
+    },
+    {
+      "dataset": "duorc",
+      "config": "SelfRC",
+      "split": "train",
+      "column_idx": 3,
+      "column": { "name": "question_id", "type": "STRING" }
+    },
+    {
+      "dataset": "duorc",
+      "config": "SelfRC",
+      "split": "train",
+      "column_idx": 4,
+      "column": { "name": "question", "type": "STRING" }
+    },
+    {
+      "dataset": "duorc",
+      "config": "SelfRC",
+      "split": "train",
+      "column_idx": 5,
+      "column": { "name": "answers", "type": "JSON" }
+    },
+    {
+      "dataset": "duorc",
+      "config": "SelfRC",
+      "split": "train",
+      "column_idx": 6,
+      "column": { "name": "no_answer", "type": "BOOL" }
+    }
+  ],
+  "rows": [
+    {
+      "dataset": "duorc",
+      "config": "SelfRC",
+      "split": "train",
+      "row_idx": 0,
+      "row": {
+        "plot_id": "/m/03vyhn",
+        "plot": "200 years in the future, Mars has been colonized by a high-tech company.\nMelanie Ballard (Natasha Henstridge) arrives by train to a Mars mining camp which has cut all communication links with the company headquarters. She's not alone, as she is with a group of fellow police officers. They find the mining camp deserted except for a person in the prison, Desolation Williams (Ice Cube), who seems to laugh about them because they are all going to die. They were supposed to take Desolation to headquarters, but decide to explore first to find out what happened.They find a man inside an encapsulated mining car, who tells them not to open it. However, they do and he tries to kill them. One of the cops witnesses strange men with deep scarred and heavily tattooed faces killing the remaining survivors. The cops realise they need to leave the place fast.Desolation explains that the miners opened a kind of Martian construction in the soil which unleashed red dust. Those who breathed that dust became violent psychopaths who started to build weapons and kill the uninfected. They changed genetically, becoming distorted but much stronger.The cops and Desolation leave the prison with difficulty, and devise a plan to kill all the genetically modified ex-miners on the way out. However, the plan goes awry, and only Melanie and Desolation reach headquarters alive. Melanie realises that her bosses won't ever believe her. However, the red dust eventually arrives to headquarters, and Melanie and Desolation need to fight once again.",
+        "title": "Ghosts of Mars",
+        "question_id": "b440de7d-9c3f-841c-eaec-a14bdff950d1",
+        "question": "How did the police arrive at the Mars mining camp?",
+        "answers": ["They arrived by train."],
+        "no_answer": false
+      },
+      "truncated_cells": []
+    },
+    {
+      "dataset": "duorc",
+      "config": "SelfRC",
+      "split": "train",
+      "row_idx": 1,
+      "row": {
+        "plot_id": "/m/03vyhn",
+        "plot": "200 years in the future, Mars has been colonized by a high-tech company.\nMelanie Ballard (Natasha Henstridge) arrives by train to a Mars mining camp which has cut all communication links with the company headquarters. She's not alone, as she is with a group of fellow police officers. They find the mining camp deserted except for a person in the prison, Desolation Williams (Ice Cube), who seems to laugh about them because they are all going to die. They were supposed to take Desolation to headquarters, but decide to explore first to find out what happened.They find a man inside an encapsulated mining car, who tells them not to open it. However, they do and he tries to kill them. One of the cops witnesses strange men with deep scarred and heavily tattooed faces killing the remaining survivors. The cops realise they need to leave the place fast.Desolation explains that the miners opened a kind of Martian construction in the soil which unleashed red dust. Those who breathed that dust became violent psychopaths who started to build weapons and kill the uninfected. They changed genetically, becoming distorted but much stronger.The cops and Desolation leave the prison with difficulty, and devise a plan to kill all the genetically modified ex-miners on the way out. However, the plan goes awry, and only Melanie and Desolation reach headquarters alive. Melanie realises that her bosses won't ever believe her. However, the red dust eventually arrives to headquarters, and Melanie and Desolation need to fight once again.",
+        "title": "Ghosts of Mars",
+        "question_id": "a9f95c0d-121f-3ca9-1595-d497dc8bc56c",
+        "question": "Who has colonized Mars 200 years in the future?",
+        "answers": [
+          "A high-tech company has colonized Mars 200 years in the future."
+        ],
+        "no_answer": false
+      },
+      "truncated_cells": []
+    },
+    ...
+```
+
+## Truncated responses
+
+When the response size for 100 rows is too big, the last rows are removed until the response size is under 1MB.
+
+If even the first rows generate a response that does not fit within the limit, the content of the cells themselves is truncated and converted to a string. In this case, the truncated cells are listed in the `truncated_cells` field.
+
+See for example the [`ett`](https://huggingface.co/datasets/ett/viewer/m2/test) dataset: only 10 rows are returned, and the content of two of the columns are truncated.
+
+https://datasets-server.huggingface.co/rows?dataset=ett&config=m2&split=test
+
+```json
+  ...
+  "rows": [
+    {
+      "dataset": "ett",
+      "config": "m2",
+      "split": "test",
+      "row_idx": 0,
+      "row": {
+        "start": 1467331200.0,
+        "target": "[38.6619987487793,38.222999572753906,37.34400177001953,37.124000549316406,37.124000549316406,36.9039",
+        "feat_static_cat": [0],
+        "feat_dynamic_real": "[[41.130001068115234,39.62200164794922,38.86800003051758,35.518001556396484,37.52799987792969,37.611",
+        "item_id": "OT"
+      },
+      "truncated_cells": ["target", "feat_dynamic_real"]
+    },
+    {
+      "dataset": "ett",
+      "config": "m2",
+      "split": "test",
+      "row_idx": 1,
+      "row": {
+        "start": 1467331200.0,
+        "target": "[38.6619987487793,38.222999572753906,37.34400177001953,37.124000549316406,37.124000549316406,36.9039",
+        "feat_static_cat": [0],
+        "feat_dynamic_real": "[[41.130001068115234,39.62200164794922,38.86800003051758,35.518001556396484,37.52799987792969,37.611",
+        "item_id": "OT"
+      },
+      "truncated_cells": ["target", "feat_dynamic_real"]
+    }
+  ...
+```

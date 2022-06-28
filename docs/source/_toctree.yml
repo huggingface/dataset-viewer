@@ -1,0 +1,13 @@
+
+- sections: 
+  - local: index
+    title: 🤗 Datasets server
+  - local: splits
+    title: Splits
+  - local: rows
+    title: First rows
+  - local: valid
+    title: Valid datasets
+  - local: api_reference
+    title: API reference
+  title: Get started
