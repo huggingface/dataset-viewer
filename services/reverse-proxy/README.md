@@ -29,3 +29,4 @@ The image requires three directories to be mounted (from volumes):
 - `$ASSETS_DIRECTORY` (read-only): the directory that contains the static assets.
 - `$CACHE_DIRECTORY` (read/write): the directory that contains the nginx cache
 - `/etc/nginx/templates` (read-only): the directory that contains the nginx configuration template ([templates](./templates/))
+- `/staticfiles` (read-only): the directory that contains the static files (`openapi.json`).

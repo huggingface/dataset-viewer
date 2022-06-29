@@ -6,6 +6,7 @@ services:
       - ../infra/charts/datasets-server/nginx-templates/:/etc/nginx/templates:ro
       - reverse-proxy-cache:/nginx-cache
       - assets:/assets:ro
+      - ../infra/charts/datasets-server/static-files/openapi.json:/static-files/openapi.json:ro
     ports:
       - "${SERVICE_REVERSE_PROXY_PORT-8000}:80"
     environment:
