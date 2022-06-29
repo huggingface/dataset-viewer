@@ -61,6 +61,7 @@ reverseProxy:
   cacheZoneSize: 50m
   host: localhost
   nginxTemplateFile: "nginx-templates/default.conf.template"
+  openapiFile: "static-files/openapi.json"
   port: 80
 
 api:

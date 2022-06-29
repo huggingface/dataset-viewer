@@ -24,6 +24,10 @@
     mountPath: /etc/nginx/templates
     mountPropagation: None
     readOnly: true
+  - name: static-files
+    mountPath: /static-files
+    mountPropagation: None
+    readOnly: true
   - mountPath: {{ .Values.reverseProxy.assetsDirectory | quote }}
     mountPropagation: None
     name: nfs

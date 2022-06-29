@@ -12,6 +12,10 @@ server {
 
   add_header 'Access-Control-Allow-Origin' '*' always;
 
+  location /openapi.json {
+    alias /static-files/openapi.json;
+  }
+
   location /assets/ {
     alias ${ASSETS_DIRECTORY}/;
   }
