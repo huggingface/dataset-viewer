@@ -8,7 +8,7 @@ from libcache.cache import (
 )
 from libutils.exceptions import Status400Error
 
-from worker.refresh import refresh_dataset_split_full_names, refresh_split
+from worker.refresh import refresh_dataset, refresh_split
 
 from ._utils import MONGO_CACHE_DATABASE, MONGO_URL
 
@@ -32,7 +32,7 @@ def clean_mongo_database() -> None:
 def test_doesnotexist() -> None:
     dataset_name = "doesnotexist"
     with pytest.raises(Status400Error):
-        refresh_dataset_split_full_names(dataset_name)
+        refresh_dataset(dataset_name)
     # TODO: don't use internals of the cache database?
     retrieved = DbDataset.objects(dataset_name=dataset_name).get()
     assert retrieved.status.value == "error"
@@ -41,7 +41,7 @@ def test_doesnotexist() -> None:
 def test_config_error() -> None:
     # see https://github.com/huggingface/datasets-server/issues/78
     dataset_name = "Check/region_1"
-    refresh_dataset_split_full_names(dataset_name)
+    refresh_dataset(dataset_name)
     # TODO: don't use internals of the cache database?
     retrieved = DbDataset.objects(dataset_name=dataset_name).get()
     assert retrieved.status.value == "valid"
@@ -56,7 +56,7 @@ def test_config_error() -> None:
 def test_large_document() -> None:
     # see https://github.com/huggingface/datasets-server/issues/89
     dataset_name = "SaulLu/Natural_Questions_HTML"
-    refresh_dataset_split_full_names(dataset_name)
+    refresh_dataset(dataset_name)
     retrieved = DbDataset.objects(dataset_name=dataset_name).get()
     assert retrieved.status.value == "valid"
 
