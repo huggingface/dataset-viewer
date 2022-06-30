@@ -2,7 +2,7 @@
 authors = ["Sylvain Lesage <sylvain.lesage@huggingface.co>"]
 description = "Library for the jobs queue in mongodb"
 name = "libqueue"
-version = "0.1.6"
+version = "0.1.7"
 
 [tool.poetry.dependencies]
 libutils = { path = "../../libs/libutils/dist/libutils-0.1.2-py3-none-any.whl", develop = false }
