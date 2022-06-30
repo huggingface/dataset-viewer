@@ -4,15 +4,19 @@ import time
 
 from libcache.asset import show_assets_dir
 from libcache.cache import connect_to_cache
+from libcache.simple_cache import HTTPStatus
 from libqueue.queue import (
     EmptyQueue,
     add_dataset_job,
     add_split_job,
+    add_splits_job,
     connect_to_queue,
     finish_dataset_job,
     finish_split_job,
+    finish_splits_job,
     get_dataset_job,
     get_split_job,
+    get_splits_job,
 )
 from libutils.exceptions import Status500Error, StatusError
 from libutils.logger import init_logger
@@ -36,7 +40,7 @@ from worker.config import (
     WORKER_QUEUE,
     WORKER_SLEEP_SECONDS,
 )
-from worker.refresh import refresh_dataset, refresh_split
+from worker.refresh import refresh_dataset, refresh_split, refresh_splits
 
 
 def process_next_dataset_job() -> bool:
@@ -115,11 +119,42 @@ def process_next_split_job() -> bool:
     return True
 
 
+def process_next_splits_job() -> bool:
+    logger = logging.getLogger("datasets_server.worker")
+    logger.debug("try to process a splits/ job")
+
+    try:
+        job_id, dataset_name, retries = get_splits_job(MAX_JOBS_PER_DATASET)
+        logger.debug(f"job assigned: {job_id} for dataset={dataset_name}")
+    except EmptyQueue:
+        logger.debug("no job in the queue")
+        return False
+
+    success = False
+    retry = False
+    try:
+        logger.info(f"compute dataset={dataset_name}")
+        http_status = refresh_splits(dataset_name=dataset_name, hf_token=HF_TOKEN)
+        success = http_status == HTTPStatus.OK
+        if http_status == HTTPStatus.INTERNAL_SERVER_ERROR and retries < MAX_JOB_RETRIES:
+            retry = True
+    finally:
+        finish_splits_job(job_id, success=success)
+        result = "success" if success else "error"
+        logger.debug(f"job finished with {result}: {job_id} for dataset={dataset_name}")
+        if retry:
+            add_splits_job(dataset_name, retries=retries + 1)
+            logger.debug(f"job re-enqueued (retries: {retries}) for dataset={dataset_name}")
+    return True
+
+
 def process_next_job() -> bool:
     if WORKER_QUEUE == "datasets":
         return process_next_dataset_job()
     elif WORKER_QUEUE == "splits":
         return process_next_split_job()
+    elif WORKER_QUEUE == "splits_responses":
+        return process_next_splits_job()
     raise NotImplementedError(f"Job queue {WORKER_QUEUE} does not exist")
 
 
