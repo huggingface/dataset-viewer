@@ -5,7 +5,11 @@ from libqueue.queue import add_dataset_job, add_split_job, add_splits_job
 from libqueue.queue import clean_database as clean_queue_database
 from libqueue.queue import connect_to_queue
 
-from worker.main import process_next_dataset_job, process_next_split_job, process_next_splits_job
+from worker.main import (
+    process_next_dataset_job,
+    process_next_split_job,
+    process_next_splits_job,
+)
 
 from ._utils import MONGO_CACHE_DATABASE, MONGO_QUEUE_DATABASE, MONGO_URL
 

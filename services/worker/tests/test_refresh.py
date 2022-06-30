@@ -4,8 +4,8 @@ from libcache.cache import (
     clean_database,
     connect_to_cache,
     get_rows_response,
-    get_splits_response as old_get_splits_response,
 )
+from libcache.cache import get_splits_response as old_get_splits_response
 from libcache.simple_cache import HTTPStatus, get_splits_response
 from libutils.exceptions import Status400Error
 
