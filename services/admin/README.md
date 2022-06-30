@@ -40,6 +40,8 @@ The scripts:
 
 - `cancel-started-split-jobs`: cancel all the started split jobs (stop the workers before!)
 - `cancel-started-dataset-jobs`: cancel all the started dataset jobs (stop the workers before!)
+- `cancel-started-splits-jobs`: cancel all the started splits/ jobs (stop the workers before!)
+- `cancel-started-first-rows-jobs`: cancel all the started first-rows/ jobs (stop the workers before!)
 - `warm-cache`: create jobs for all the missing datasets and/or splits
 
 ## Run the API

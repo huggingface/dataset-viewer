@@ -3,7 +3,7 @@ from typing import List
 
 from dotenv import load_dotenv
 from huggingface_hub import list_datasets  # type: ignore
-from libqueue.queue import add_dataset_job, connect_to_queue
+from libqueue.queue import add_dataset_job, add_splits_job, connect_to_queue
 from libutils.logger import init_logger
 
 from admin.config import LOG_LEVEL, MONGO_QUEUE_DATABASE, MONGO_URL
@@ -19,7 +19,9 @@ def get_hf_dataset_names():
 def refresh_datasets_cache(dataset_names: List[str]) -> None:
     logger = logging.getLogger("refresh_cache")
     for dataset_name in dataset_names:
+        # don't mark the cache entries as stale, because it's manually triggered
         add_dataset_job(dataset_name)
+        add_splits_job(dataset_name)
         logger.info(f"added a job to refresh '{dataset_name}'")
 
 

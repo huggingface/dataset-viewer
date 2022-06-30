@@ -26,6 +26,14 @@ cancel-started-split-jobs:
 cancel-started-dataset-jobs:
 	poetry run python src/admin/scripts/cancel_started_dataset_jobs.py
 
+.PHONY: cancel-started-splits-jobs
+cancel-started-splits-jobs:
+	poetry run python src/admin/scripts/cancel_started_splits_jobs.py
+
+.PHONY: cancel-started-first-rows-jobs
+cancel-started-first-rows-jobs:
+	poetry run python src/admin/scripts/cancel_started_first_rows_jobs.py
+
 .PHONY: refresh-cache
 refresh-cache:
 	poetry run python src/admin/scripts/refresh_cache.py
