@@ -24,5 +24,12 @@ def test_first_rows() -> None:
 
 
 def test_no_features() -> None:
-    with pytest.raises(Status400Error):
-        get_first_rows("severo/fix-401", "severo--fix-401", "train", rows_max_number=1)
+    response = get_first_rows("severo/fix-401", "severo--fix-401", "train", rows_max_number=1)
+
+    assert response["features"][1]["idx"] == 1
+    assert response["features"][1]["name"] == "area_mean"
+    assert response["features"][1]["type"]["_type"] == "Value"
+    assert response["features"][1]["type"]["dtype"] == "float64"
+
+    assert response["rows"][0]["row_idx"] == 0
+    assert response["rows"][0]["row"]["area_mean"] == 1001.0

@@ -2,7 +2,7 @@ import logging
 import sys
 from typing import Any, Dict, List, Optional
 
-from datasets import Features
+from datasets import Features, IterableDataset, load_dataset
 from libutils.exceptions import Status400Error
 from libutils.types import RowItem
 from libutils.utils import orjson_dumps
@@ -181,9 +181,25 @@ def get_first_rows(
     # features
     info = get_info(dataset_name, config_name, hf_token)
     if not info.features:
-        raise Status400Error("No features found in the datasets-info.json file.")
-        # ^ TODO: fix this with upgrading datasets and using <dataset>._resolve_features():
-        # https://github.com/huggingface/datasets/blob/f5826eff9b06ab10dba1adfa52543341ef1e6009/src/datasets/iterable_dataset.py#L1255
+        try:
+            # https://github.com/huggingface/datasets/blob/f5826eff9b06ab10dba1adfa52543341ef1e6009/src/datasets/iterable_dataset.py#L1255
+            iterable_dataset = load_dataset(
+                dataset_name,
+                name=config_name,
+                split=split_name,
+                streaming=True,
+                use_auth_token=hf_token,
+            )
+            if not isinstance(iterable_dataset, IterableDataset):
+                raise TypeError("load_dataset should return an IterableDataset")
+            iterable_dataset = iterable_dataset._resolve_features()
+            if not isinstance(iterable_dataset, IterableDataset):
+                raise TypeError("load_dataset should return an IterableDataset")
+            features = iterable_dataset.features
+        except Exception as err:
+            raise Status400Error("Features cannot be found for the split.", err) from err
+    else:
+        features = info.features
 
     # rows
     fallback = (
@@ -201,11 +217,11 @@ def get_first_rows(
     except Exception as err:
         raise Status400Error("Cannot get the first rows for the split.", err) from err
 
-    typed_rows = get_typed_rows(dataset_name, config_name, split_name, rows, info.features)
+    typed_rows = get_typed_rows(dataset_name, config_name, split_name, rows, features)
     row_items = create_truncated_row_items(
         dataset_name, config_name, split_name, typed_rows, rows_max_bytes, rows_min_number
     )
     return {
-        "features": to_features_list(dataset_name, config_name, split_name, info.features),
+        "features": to_features_list(dataset_name, config_name, split_name, features),
         "rows": row_items,
     }
