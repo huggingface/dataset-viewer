@@ -11,12 +11,14 @@ from libcache.simple_cache import (
     HTTPStatus,
     delete_first_rows_responses,
     get_dataset_first_rows_response_splits,
+    upsert_first_rows_response,
     upsert_splits_response,
 )
 from libqueue.queue import add_first_rows_job, add_split_job
 from libutils.exceptions import Status400Error, Status500Error, StatusError
 
 from worker.models.dataset import get_dataset_split_full_names
+from worker.models.first_rows import get_first_rows
 from worker.models.info import DatasetInfo, get_info
 from worker.models.split import get_split
 
@@ -159,4 +161,54 @@ def refresh_splits(dataset_name: str, hf_token: Optional[str] = None) -> HTTPSta
             get_error_response_with_cause(err),
         )
         logger.debug(f"splits response for dataset={dataset_name} had INTERNAL_SERVER_ERROR error, cache updated")
+        return HTTPStatus.INTERNAL_SERVER_ERROR
+
+
+def refresh_first_rows(
+    dataset_name: str,
+    config_name: str,
+    split_name: str,
+    hf_token: Optional[str] = None,
+    max_size_fallback: Optional[int] = None,
+    rows_max_bytes: Optional[int] = None,
+    rows_max_number: Optional[int] = None,
+    rows_min_number: Optional[int] = None,
+) -> HTTPStatus:
+    try:
+        response = get_first_rows(
+            dataset_name,
+            config_name,
+            split_name,
+            hf_token=hf_token,
+            max_size_fallback=max_size_fallback,
+            rows_max_bytes=rows_max_bytes,
+            rows_max_number=rows_max_number,
+            rows_min_number=rows_min_number,
+        )
+        upsert_first_rows_response(dataset_name, config_name, split_name, response, HTTPStatus.OK)
+        logger.debug(f"dataset={dataset_name} config={config_name} split={split_name} is valid, cache updated")
+        return HTTPStatus.OK
+    except Status400Error as err:
+        upsert_first_rows_response(
+            dataset_name, config_name, split_name, get_error_response_with_cause(err), HTTPStatus.BAD_REQUEST
+        )
+        logger.debug(
+            f"first-rows response for dataset={dataset_name} config={config_name} split={split_name} had BAD_REQUEST"
+            " error, cache updated"
+        )
+        return HTTPStatus.BAD_REQUEST
+    except Exception as err:
+        err = err if isinstance(err, Status500Error) else Status500Error(str(err))
+        upsert_first_rows_response(
+            dataset_name,
+            config_name,
+            split_name,
+            get_error_response(err),
+            HTTPStatus.INTERNAL_SERVER_ERROR,
+            get_error_response_with_cause(err),
+        )
+        logger.debug(
+            f"first-rows response for dataset={dataset_name} config={config_name} split={split_name} had"
+            " INTERNAL_SERVER_ERROR error, cache updated"
+        )
         return HTTPStatus.INTERNAL_SERVER_ERROR

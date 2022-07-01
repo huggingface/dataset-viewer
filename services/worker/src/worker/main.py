@@ -8,13 +8,16 @@ from libcache.simple_cache import HTTPStatus
 from libqueue.queue import (
     EmptyQueue,
     add_dataset_job,
+    add_first_rows_job,
     add_split_job,
     add_splits_job,
     connect_to_queue,
     finish_dataset_job,
+    finish_first_rows_job,
     finish_split_job,
     finish_splits_job,
     get_dataset_job,
+    get_first_rows_job,
     get_split_job,
     get_splits_job,
 )
@@ -40,7 +43,12 @@ from worker.config import (
     WORKER_QUEUE,
     WORKER_SLEEP_SECONDS,
 )
-from worker.refresh import refresh_dataset, refresh_split, refresh_splits
+from worker.refresh import (
+    refresh_dataset,
+    refresh_first_rows,
+    refresh_split,
+    refresh_splits,
+)
 
 
 def process_next_dataset_job() -> bool:
@@ -148,9 +156,54 @@ def process_next_splits_job() -> bool:
     return True
 
 
+def process_next_first_rows_job() -> bool:
+    logger = logging.getLogger("datasets_server.worker")
+    logger.debug("try to process a first-rows job")
+
+    try:
+        job_id, dataset_name, config_name, split_name, retries = get_first_rows_job(MAX_JOBS_PER_DATASET)
+        logger.debug(f"job assigned: {job_id} for dataset={dataset_name} config={config_name} split={split_name}")
+    except EmptyQueue:
+        logger.debug("no job in the queue")
+        return False
+
+    success = False
+    retry = False
+    try:
+        logger.info(f"compute dataset={dataset_name} config={config_name} split={split_name}")
+        http_status = refresh_first_rows(
+            dataset_name=dataset_name,
+            config_name=config_name,
+            split_name=split_name,
+            hf_token=HF_TOKEN,
+            max_size_fallback=MAX_SIZE_FALLBACK,
+            rows_max_bytes=ROWS_MAX_BYTES,
+            rows_max_number=ROWS_MAX_NUMBER,
+            rows_min_number=ROWS_MIN_NUMBER,
+        )
+        success = http_status == HTTPStatus.OK
+        if http_status == HTTPStatus.INTERNAL_SERVER_ERROR and retries < MAX_JOB_RETRIES:
+            retry = True
+    finally:
+        finish_first_rows_job(job_id, success=success)
+        result = "success" if success else "error"
+        logger.debug(
+            f"job finished with {result}: {job_id} for dataset={dataset_name} config={config_name} split={split_name}"
+        )
+        if retry:
+            add_first_rows_job(dataset_name, config_name, split_name, retries=retries + 1)
+            logger.debug(
+                f"job re-enqueued (retries: {retries}) for"
+                f" dataset={dataset_name} config={config_name} split={split_name}"
+            )
+    return True
+
+
 def process_next_job() -> bool:
     if WORKER_QUEUE == "datasets":
         return process_next_dataset_job()
+    elif WORKER_QUEUE == "first_rows_responses":
+        return process_next_first_rows_job()
     elif WORKER_QUEUE == "splits":
         return process_next_split_job()
     elif WORKER_QUEUE == "splits_responses":

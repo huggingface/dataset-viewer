@@ -6,10 +6,19 @@ from libcache.cache import (
     get_rows_response,
 )
 from libcache.cache import get_splits_response as old_get_splits_response
-from libcache.simple_cache import HTTPStatus, get_splits_response
+from libcache.simple_cache import (
+    HTTPStatus,
+    get_first_rows_response,
+    get_splits_response,
+)
 from libutils.exceptions import Status400Error
 
-from worker.refresh import refresh_dataset, refresh_split, refresh_splits
+from worker.refresh import (
+    refresh_dataset,
+    refresh_first_rows,
+    refresh_split,
+    refresh_splits,
+)
 
 from ._utils import MONGO_CACHE_DATABASE, MONGO_URL
 
@@ -91,8 +100,30 @@ def test_column_order() -> None:
     assert status_code == 200
     assert error is None
     assert rows_response is not None
-    print(rows_response["columns"])
     assert "columns" in rows_response
     assert rows_response["columns"][0]["column"]["name"] == "id"
     assert rows_response["columns"][1]["column"]["name"] == "tokens"
     assert rows_response["columns"][2]["column"]["name"] == "labels"
+
+
+def test_first_rows() -> None:
+    http_status = refresh_first_rows("common_voice", "tr", "train")
+    response, cached_http_status = get_first_rows_response("common_voice", "tr", "train")
+    assert http_status == HTTPStatus.OK
+    assert cached_http_status == HTTPStatus.OK
+
+    assert response["features"][0]["idx"] == 0
+    assert response["features"][0]["name"] == "client_id"
+    assert response["features"][0]["type"]["_type"] == "Value"
+    assert response["features"][0]["type"]["dtype"] == "string"
+
+    assert response["features"][2]["name"] == "audio"
+    assert response["features"][2]["type"]["_type"] == "Audio"
+    assert response["features"][2]["type"]["sampling_rate"] == 48000
+
+    assert response["rows"][0]["row_idx"] == 0
+    assert response["rows"][0]["row"]["client_id"].startswith("54fc2d015c27a057b")
+    assert response["rows"][0]["row"]["audio"] == [
+        {"src": "assets/common_voice/--/tr/train/0/audio/audio.mp3", "type": "audio/mpeg"},
+        {"src": "assets/common_voice/--/tr/train/0/audio/audio.wav", "type": "audio/wav"},
+    ]
