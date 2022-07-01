@@ -1,4 +1,6 @@
+import pytest
 from worker.models.first_rows import get_first_rows
+from libutils.exceptions import Status400Error
 
 
 def test_first_rows() -> None:
@@ -19,3 +21,8 @@ def test_first_rows() -> None:
         {"src": "assets/common_voice/--/tr/train/0/audio/audio.mp3", "type": "audio/mpeg"},
         {"src": "assets/common_voice/--/tr/train/0/audio/audio.wav", "type": "audio/wav"},
     ]
+
+
+def test_no_features() -> None:
+    with pytest.raises(Status400Error):
+        get_first_rows("severo/fix-401", "severo--fix-401", "train", rows_max_number=1)
