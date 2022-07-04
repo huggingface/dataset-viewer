@@ -1,4 +1,4 @@
-import pandas  # type: ignore
+# import pandas  # type: ignore
 
 from worker.models.split import get_split
 
