@@ -56,6 +56,38 @@ services:
       mongodb:
         condition: service_started
     restart: always
+  worker-first-rows:
+    build:
+      context: ..
+      dockerfile: ./services/worker/Dockerfile
+    volumes:
+      - assets:/assets:rw
+      - datasets-cache:/datasets-cache:rw
+    environment:
+      ASSETS_DIRECTORY: "/assets"
+      HF_DATASETS_CACHE: "/datasets-cache"
+      MONGO_URL: "mongodb://mongodb"
+      WORKER_QUEUE: "first_rows_responses"
+    depends_on:
+      mongodb:
+        condition: service_started
+    restart: always
+  worker-splits-next:
+    build:
+      context: ..
+      dockerfile: ./services/worker/Dockerfile
+    volumes:
+      - assets:/assets:rw
+      - datasets-cache:/datasets-cache:rw
+    environment:
+      ASSETS_DIRECTORY: "/assets"
+      HF_DATASETS_CACHE: "/datasets-cache"
+      MONGO_URL: "mongodb://mongodb"
+      WORKER_QUEUE: "splits_responses"
+    depends_on:
+      mongodb:
+        condition: service_started
+    restart: always
   worker-splits:
     build:
       context: ..

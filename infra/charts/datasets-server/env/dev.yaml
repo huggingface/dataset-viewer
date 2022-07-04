@@ -54,8 +54,26 @@ worker:
       limits:
         cpu: 1
 
+  firstRows:
+    replicas: 5
+
+    resources:
+      requests:
+        cpu: 0.01
+      limits:
+        cpu: 1
+
   splits:
     replicas: 5
+
+    resources:
+      requests:
+        cpu: 0.01
+      limits:
+        cpu: 1
+
+  splitsNext:
+    replicas: 2
 
     resources:
       requests:

@@ -62,6 +62,16 @@ app: "{{ include "release" . }}-worker-datasets"
 app: "{{ include "release" . }}-worker-splits"
 {{- end -}}
 
+{{- define "labels.worker.firstRows" -}}
+{{ include "labels" . }}
+app: "{{ include "release" . }}-worker-first-rows"
+{{- end -}}
+
+{{- define "labels.worker.splitsNext" -}}
+{{ include "labels" . }}
+app: "{{ include "release" . }}-worker-splits-next"
+{{- end -}}
+
 {{- define "labels.admin" -}}
 {{ include "labels" . }}
 app: "{{ include "release" . }}-admin"

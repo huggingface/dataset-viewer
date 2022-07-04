@@ -53,6 +53,34 @@ services:
     depends_on:
       - mongodb
     restart: always
+  worker-first-rows:
+    image: ${SERVICE_WORKER_FIRST_ROWS_DOCKER_IMAGE?SERVICE_WORKER_FIRST_ROWS_DOCKER_IMAGE env var must be provided}
+    volumes:
+      - assets:/assets:rw
+      - datasets-cache:/datasets-cache:rw
+    environment:
+      ASSETS_DIRECTORY: "/assets"
+      HF_DATASETS_CACHE: "/datasets-cache"
+      MONGO_URL: "mongodb://mongodb"
+      WORKER_SLEEP_SECONDS: "1"
+      WORKER_QUEUE: "first_rows_responses"
+    depends_on:
+      - mongodb
+    restart: always
+  worker-splits-next:
+    image: ${SERVICE_WORKER_SPLITS_NEXT_DOCKER_IMAGE?SERVICE_WORKER_SPLITS_NEXT_DOCKER_IMAGE env var must be provided}
+    volumes:
+      - assets:/assets:rw
+      - datasets-cache:/datasets-cache:rw
+    environment:
+      ASSETS_DIRECTORY: "/assets"
+      HF_DATASETS_CACHE: "/datasets-cache"
+      MONGO_URL: "mongodb://mongodb"
+      WORKER_SLEEP_SECONDS: "1"
+      WORKER_QUEUE: "splits_responses"
+    depends_on:
+      - mongodb
+    restart: always
   worker-splits:
     image: ${SERVICE_WORKER_SPLITS_DOCKER_IMAGE?SERVICE_WORKER_SPLITS_DOCKER_IMAGE env var must be provided}
     volumes:
