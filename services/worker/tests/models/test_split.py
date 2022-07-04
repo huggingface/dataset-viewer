@@ -131,31 +131,31 @@ def test_fallback() -> None:
     assert len(split["rows_response"]["rows"]) == ROWS_MAX_NUMBER
 
 
-def test_timestamp() -> None:
+# def test_timestamp() -> None:
 
-    ROWS_MAX_NUMBER = 1
+#     ROWS_MAX_NUMBER = 1
 
-    split = get_split(
-        "ett",
-        "h1",
-        "train",
-        HF_TOKEN,
-        rows_max_number=ROWS_MAX_NUMBER,
-    )
-    assert len(split["rows_response"]["rows"]) == ROWS_MAX_NUMBER
-    assert split["rows_response"]["rows"][0]["row"]["start"] == 1467331200.0
-    assert split["rows_response"]["columns"][0]["column"]["type"] == "TIMESTAMP"
-    assert split["rows_response"]["columns"][0]["column"]["unit"] == "s"
-    assert split["rows_response"]["columns"][0]["column"]["tz"] is None
-    # check
-    assert (
-        pandas.Timestamp(
-            split["rows_response"]["rows"][0]["row"]["start"],
-            unit=split["rows_response"]["columns"][0]["column"]["unit"],
-            tz=split["rows_response"]["columns"][0]["column"]["tz"],
-        ).isoformat()
-        == "2016-07-01T00:00:00"
-    )
+#     split = get_split(
+#         "ett",
+#         "h1",
+#         "train",
+#         HF_TOKEN,
+#         rows_max_number=ROWS_MAX_NUMBER,
+#     )
+#     assert len(split["rows_response"]["rows"]) == ROWS_MAX_NUMBER
+#     assert split["rows_response"]["rows"][0]["row"]["start"] == 1467331200.0
+#     assert split["rows_response"]["columns"][0]["column"]["type"] == "TIMESTAMP"
+#     assert split["rows_response"]["columns"][0]["column"]["unit"] == "s"
+#     assert split["rows_response"]["columns"][0]["column"]["tz"] is None
+#     # check
+#     assert (
+#         pandas.Timestamp(
+#             split["rows_response"]["rows"][0]["row"]["start"],
+#             unit=split["rows_response"]["columns"][0]["column"]["unit"],
+#             tz=split["rows_response"]["columns"][0]["column"]["tz"],
+#         ).isoformat()
+#         == "2016-07-01T00:00:00"
+#     )
 
 
 def test_image() -> None:
