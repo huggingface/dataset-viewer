@@ -22,6 +22,7 @@ from api.config import (
 )
 from api.prometheus import Prometheus
 from api.routes.cache_reports import cache_reports_endpoint
+from api.routes.first_rows import first_rows_endpoint
 from api.routes.healthcheck import healthcheck_endpoint
 from api.routes.hf_datasets import (
     hf_datasets_count_by_cache_status_endpoint,
@@ -34,6 +35,7 @@ from api.routes.queue_dump import (
 from api.routes.refresh_split import refresh_split_endpoint
 from api.routes.rows import rows_endpoint
 from api.routes.splits import splits_endpoint
+from api.routes.splits_next import splits_endpoint_next
 from api.routes.valid import is_valid_endpoint, valid_datasets_endpoint
 from api.routes.webhook import webhook_endpoint
 
@@ -49,6 +51,7 @@ def create_app() -> Starlette:
     routes = [
         Mount("/assets", app=StaticFiles(directory=init_assets_dir(ASSETS_DIRECTORY), check_dir=True), name="assets"),
         Route("/cache-reports", endpoint=cache_reports_endpoint),
+        Route("/first-rows", endpoint=first_rows_endpoint),
         Route("/healthcheck", endpoint=healthcheck_endpoint),
         Route("/hf_datasets", endpoint=hf_datasets_endpoint),
         Route("/hf-datasets-count-by-cache-status", endpoint=hf_datasets_count_by_cache_status_endpoint),
@@ -59,6 +62,7 @@ def create_app() -> Starlette:
         Route("/refresh-split", endpoint=refresh_split_endpoint, methods=["POST"]),
         Route("/rows", endpoint=rows_endpoint),
         Route("/splits", endpoint=splits_endpoint),
+        Route("/splits-next", endpoint=splits_endpoint_next),
         Route("/valid", endpoint=valid_datasets_endpoint),
         Route("/webhook", endpoint=webhook_endpoint, methods=["POST"]),
     ]
