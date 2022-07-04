@@ -4,7 +4,7 @@ import types
 from datetime import datetime, timezone
 from typing import Dict, Generic, List, Optional, Tuple, Type, TypedDict, TypeVar
 
-from mongoengine import Document, connect
+from mongoengine import Document, DoesNotExist, connect
 from mongoengine.fields import (
     BooleanField,
     DateTimeField,
@@ -228,3 +228,7 @@ def get_first_rows_responses_count_by_status() -> CountByHTTPStatus:
 def _clean_database() -> None:
     SplitsResponse.drop_collection()  # type: ignore
     FirstRowsResponse.drop_collection()  # type: ignore
+
+
+# explicit re-export
+__all__ = ["DoesNotExist"]

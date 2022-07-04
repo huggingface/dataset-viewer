@@ -1,8 +1,8 @@
 import pytest
-from mongoengine import DoesNotExist
 from pymongo.errors import DocumentTooLarge
 
 from libcache.simple_cache import (
+    DoesNotExist,
     HTTPStatus,
     _clean_database,
     connect_to_cache,
