@@ -150,4 +150,3 @@ admin:
   appNumWorkers: "1"
   # Log level
   logLevel: "DEBUG"
-

@@ -12,11 +12,11 @@ mongodb:
 
 # overriden by docker-images.yaml (which must be in JSON format!)
 dockerImage:
-  admin: ''
-  api: ''
-  datasetsWorker: ''
-  reverseProxy: ''
-  splitsWorker: ''
+  admin: ""
+  api: ""
+  datasetsWorker: ""
+  reverseProxy: ""
+  splitsWorker: ""
 
 storage:
   nfs: {}
@@ -38,10 +38,10 @@ reverseProxy:
 
   service:
     type: NodePort
-    annotations: { }
+    annotations: {}
 
   ingress:
-    annotations: { }
+    annotations: {}
 
   resources:
     requests:
@@ -66,18 +66,18 @@ reverseProxy:
 
 api:
   replicas: 1
-  
+
   service:
     type: NodePort
-    annotations: { }
+    annotations: {}
 
   ingress:
-    annotations: { }
-  
+    annotations: {}
+
   resources:
     requests:
       cpu: 1
-    limits: 
+    limits:
       cpu: 1
   nodeSelector: {}
   tolerations: []
@@ -96,16 +96,15 @@ api:
   # Number of seconds to set in the `max-age` header on data endpoints
   maxAgeLongSeconds: "120"
   # Number of seconds to set in the `max-age` header on technical endpoints
-  maxAgeShortSeconds: "10"  
-
+  maxAgeShortSeconds: "10"
 
 datasetsWorker:
   replicas: 1
-  
+
   resources:
     requests:
       cpu: 1
-    limits: 
+    limits:
       cpu: 1
   nodeSelector: {}
   tolerations: []
@@ -145,11 +144,11 @@ datasetsWorker:
 
 splitsWorker:
   replicas: 1
-  
+
   resources:
     requests:
       cpu: 1
-    limits: 
+    limits:
       cpu: 1
   nodeSelector: {}
   tolerations: []
@@ -185,16 +184,15 @@ splitsWorker:
   # Number of seconds a worker will sleep before trying to process a new job
   workerSleepSeconds: 15
 
-
 admin:
   replicas: 1
 
   service:
     type: NodePort
-    annotations: { }
+    annotations: {}
 
   ingress:
-    annotations: { }
+    annotations: {}
 
   resources:
     requests:
