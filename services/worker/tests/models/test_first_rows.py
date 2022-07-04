@@ -1,6 +1,3 @@
-import pytest
-from libutils.exceptions import Status400Error
-
 from worker.models.first_rows import get_first_rows
 
 

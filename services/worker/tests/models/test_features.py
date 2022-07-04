@@ -2,7 +2,8 @@ import datetime
 from zoneinfo import ZoneInfo
 
 import numpy as np
-import pandas as pd
+import pandas as pd  # type: ignore
+import pyarrow as pa  # type: ignore
 import pytest
 from datasets import (
     Array2D,
@@ -14,8 +15,10 @@ from datasets import (
     Dataset,
     Features,
     Image,
+    Sequence,
     Translation,
     TranslationVariableLanguages,
+    Value,
 )
 
 from worker.models.features import get_cell_value
@@ -25,14 +28,15 @@ from worker.models.features import get_cell_value
 # - implement the client on the Hub (dataset viewer)
 
 
-# see https://github.com/huggingface/datasets/blob/a5192964dc4b76ee5c03593c11ee56f29bbd688d/src/datasets/features/features.py#L1469
+# see https://github.com/huggingface/datasets/blob/a5192964dc4b76ee5c03593c11ee56f29bbd688d/...
+#     src/datasets/features/features.py#L1469
 # ``FieldType`` can be one of the following:
 # - a :class:`datasets.Value` feature specifies a single typed value, e.g. ``int64`` or ``string``
 @pytest.mark.parametrize(
     "input_value,input_dtype,output_value,output_dtype",
     [
         # null
-        # TODO
+        (None, None, None, "null"),
         # bool
         (False, pd.BooleanDtype(), False, "bool"),
         # int8
@@ -52,18 +56,18 @@ from worker.models.features import get_cell_value
         # uint64
         (7, pd.UInt64Dtype(), 7, "uint64"),
         # float16
-        # TODO
-        #   (-3.14, np.float16, -3.14, "float16"),
+        (-3.14, np.float16, np.float16(-3.14), "float16"),
+        # ^ TODO: is it a datasets bug?
         # float32 (alias float)
-        # TODO
-        #   (-3.14, np.float32, -3.14, "float32"),
+        (-3.14, np.float32, np.float32(-3.14), "float32"),
+        # ^ TODO: is it a datasets bug?
         # float64 (alias double)
-        # TODO
-        #   (-3.14, np.float64, -3.14, "float64"),
+        (-3.14, np.float64, -3.14, "float64"),
         # time32[(s|ms)]
         # TODO
         # time64[(us|ns)]
-        # TODO
+        # (time(1, 1, 1), None, datetime.datetime(1, 1, 1), "time64[us]"),
+        # ^ TODO: add after https://github.com/huggingface/datasets/issues/4620 is fixed
         # timestamp[(s|ms|us|ns)]
         (pd.Timestamp(2020, 1, 1), None, datetime.datetime(2020, 1, 1, 0, 0), "timestamp[ns]"),
         (
@@ -106,8 +110,17 @@ from worker.models.features import get_cell_value
     ],
 )
 def test_value(input_value, input_dtype, output_value, output_dtype) -> None:
-    df = pd.DataFrame({"feature_name": [input_value]}, dtype=input_dtype)
-    dataset = Dataset.from_pandas(df)
+    if input_dtype == "datetime64[ns]":
+        a = pa.array(
+            [
+                datetime.datetime(2022, 7, 4, 3, 2, 1),
+            ],
+            type=pa.date64(),
+        )
+        dataset = Dataset.from_buffer(a.to_buffer())
+    else:
+        df = pd.DataFrame({"feature_name": [input_value]}, dtype=input_dtype)
+        dataset = Dataset.from_pandas(df)
     feature = dataset.features["feature_name"]
     assert feature._type == "Value"
     assert feature.dtype == output_dtype
@@ -120,23 +133,55 @@ def test_value(input_value, input_dtype, output_value, output_dtype) -> None:
     "get_data_tuple",
     [
         # (input value, input feature, output value, output _type)
-        # - a :class:`datasets.ClassLabel` feature specifies a field with a predefined set of classes which can have labels
-        #   associated to them and will be stored as integers in the dataset
+        # - a :class:`datasets.ClassLabel` feature specifies a field with a predefined set of classes
+        #   which can have labels associated to them and will be stored as integers in the dataset
         lambda config: ("positive", ClassLabel(names=["negative", "positive"]), 1, "ClassLabel"),
-        # - a python :obj:`dict` which specifies that the field is a nested field containing a mapping of sub-fields to sub-fields
-        #   features. It's possible to have nested fields of nested fields in an arbitrary manner
-        # TODO
-        # - a python :obj:`list` or a :class:`datasets.Sequence` specifies that the field contains a list of objects. The python
-        #   :obj:`list` or :class:`datasets.Sequence` should be provided with a single sub-feature as an example of the feature
-        #   type hosted in this list
+        # - a python :obj:`dict` which specifies that the field is a nested field containing a mapping of sub-fields
+        #   to sub-fields features. It's possible to have nested fields of nested fields in an arbitrary manner
+        lambda config: (
+            {"a": 0},
+            None,
+            {"a": 0},
+            {"a": Value(dtype="int64", id=None)},
+        ),
+        # - a python :obj:`list` or a :class:`datasets.Sequence` specifies that the field contains a list of objects.
+        #    The python :obj:`list` or :class:`datasets.Sequence` should be provided with a single sub-feature as an
+        #    example of the feature type hosted in this list
         #   <Tip>
-        #   A :class:`datasets.Sequence` with a internal dictionary feature will be automatically converted into a dictionary of
-        #   lists. This behavior is implemented to have a compatilbity layer with the TensorFlow Datasets library but may be
-        #   un-wanted in some cases. If you don't want this behavior, you can use a python :obj:`list` instead of the
-        #   :class:`datasets.Sequence`.
+        #   A :class:`datasets.Sequence` with a internal dictionary feature will be automatically converted into a
+        #   dictionary of lists. This behavior is implemented to have a compatilbity layer with the TensorFlow Datasets
+        #   library but may be un-wanted in some cases. If you don't want this behavior, you can use a python
+        #   :obj:`list` instead of the :class:`datasets.Sequence`.
         #   </Tip>
-        # TODO
-        # - a :class:`Array2D`, :class:`Array3D`, :class:`Array4D` or :class:`Array5D` feature for multidimensional arrays
+        lambda config: (
+            [{"a": 0}],
+            None,
+            [{"a": 0}],
+            [{"a": Value(dtype="int64", id=None)}],
+        ),
+        lambda config: (
+            [0],
+            None,
+            [0],
+            "Sequence",
+        ),
+        lambda config: (
+            [{"a": 0}],
+            Sequence(feature={"a": Value(dtype="int64")}),
+            {"a": [0]},
+            "Sequence",
+        ),
+        # lambda config: (
+        #     [
+        #         {"array": [0.1, 0.2, 0.3], "sampling_rate": 16_000},
+        #     ],
+        #     Sequence(feature=Audio()),
+        #     # ^ corner case: an Audio in a Sequence
+        #     [{"path": None, "array": np.array([0.09997559, 0.19998169, 0.29998779]), "sampling_rate": 16_000}],
+        #     "Sequence",
+        # ),
+        # - a :class:`Array2D`, :class:`Array3D`, :class:`Array4D` or :class:`Array5D` feature for multidimensional
+        #   arrays
         lambda config: (
             np.zeros((2, 2)),
             Array2D(shape=(2, 2), dtype="float32"),
@@ -161,8 +206,9 @@ def test_value(input_value, input_dtype, output_value, output_dtype) -> None:
             [[[[[0]]]]],
             "Array5D",
         ),
-        # - an :class:`Audio` feature to store the absolute path to an audio file or a dictionary with the relative path
-        # to an audio file ("path" key) and its bytes content ("bytes" key). This feature extracts the audio data.
+        # - an :class:`Audio` feature to store the absolute path to an audio file or a dictionary with the relative
+        #   path to an audio file ("path" key) and its bytes content ("bytes" key). This feature extracts the audio
+        #   data.
         lambda config: (
             {"array": [0.1, 0.2, 0.3], "sampling_rate": 16_000},
             Audio(),
@@ -172,15 +218,17 @@ def test_value(input_value, input_dtype, output_value, output_dtype) -> None:
             ],
             "Audio",
         ),
-        # - an :class:`Image` feature to store the absolute path to an image file, an :obj:`np.ndarray` object, a :obj:`PIL.Image.Image` object
-        # or a dictionary with the relative path to an image file ("path" key) and its bytes content ("bytes" key). This feature extracts the image data.
+        # - an :class:`Image` feature to store the absolute path to an image file, an :obj:`np.ndarray` object, a
+        #   :obj:`PIL.Image.Image` object or a dictionary with the relative path to an image file ("path" key) and
+        #   its bytes content ("bytes" key). This feature extracts the image data.
         lambda config: (
             {"path": config["image_file"]},
             Image(),
             "assets/dataset/--/config/split/7/feature_name/image.jpg",
             "Image",
         ),
-        # - :class:`datasets.Translation` and :class:`datasets.TranslationVariableLanguages`, the two features specific to Machine Translation
+        # - :class:`datasets.Translation` and :class:`datasets.TranslationVariableLanguages`, the two features
+        #   specific to Machine Translation
         lambda config: (
             {"en": "the cat", "fr": "le chat"},
             Translation(languages=["en", "fr"]),
@@ -197,9 +245,15 @@ def test_value(input_value, input_dtype, output_value, output_dtype) -> None:
 )
 def test_others(config, get_data_tuple) -> None:
     (input_value, input_feature, output_value, output__type) = get_data_tuple(config)
-    features = Features({"feature_name": input_feature})
-    dataset = Dataset.from_dict({"feature_name": [input_value]}, features)
+    if input_feature is None:
+        dataset = Dataset.from_dict({"feature_name": [input_value]})
+    else:
+        features = Features({"feature_name": input_feature})
+        dataset = Dataset.from_dict({"feature_name": [input_value]}, features)
     feature = dataset.features["feature_name"]
-    assert feature._type == output__type
+    if type(output__type) in [list, dict]:
+        assert feature == output__type
+    else:
+        assert feature._type == output__type
     value = get_cell_value("dataset", "config", "split", 7, dataset[0]["feature_name"], "feature_name", feature)
     assert value == output_value
