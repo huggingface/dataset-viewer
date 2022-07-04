@@ -144,7 +144,7 @@ worker:
     # Number of seconds a worker will sleep before trying to process a new job
     workerSleepSeconds: 15
 
-  first-rows:
+  firstRows:
     replicas: 1
 
     resources:
@@ -188,7 +188,7 @@ worker:
     # Number of seconds a worker will sleep before trying to process a new job
     workerSleepSeconds: 15
 
-  splits-next:
+  splitsNext:
     replicas: 1
 
     resources:
