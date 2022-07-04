@@ -8,9 +8,9 @@
   - name: APP_PORT
     value: {{ .Values.admin.appPort | quote }}
   - name: ASSETS_DIRECTORY
-    value: {{ .Values.splitsWorker.assetsDirectory | quote }}
+    value: {{ .Values.admin.assetsDirectory | quote }}
   - name: LOG_LEVEL
-    value: {{ .Values.splitsWorker.logLevel | quote }}
+    value: {{ .Values.admin.logLevel | quote }}
   - name: MONGO_CACHE_DATABASE
     value: {{ .Values.mongodb.cacheDatabase | quote }}
   - name: MONGO_QUEUE_DATABASE

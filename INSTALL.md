@@ -49,7 +49,7 @@ datasets-server is installed on a [kubernetes cluster](https://us-east-1.console
 Grafana:
 
 - https://grafana.huggingface.tech/dashboards/f/j1kRCJEnk/hub?query=Datasets%20server
-- https://grafana.huggingface.tech/d/a164a7f0339f99e89cea5cb47e9be617/kubernetes-compute-resources-workload?orgId=1&refresh=10s&var-datasource=Prometheus%20EKS%20Hub%20Prod&var-cluster=&var-namespace=datasets-server&var-type=deployment&var-workload=datasets-server-prod-splits-worker
+- https://grafana.huggingface.tech/d/a164a7f0339f99e89cea5cb47e9be617/kubernetes-compute-resources-workload?orgId=1&refresh=10s&var-datasource=Prometheus%20EKS%20Hub%20Prod&var-cluster=&var-namespace=datasets-server&var-type=deployment&var-workload=datasets-server-prod-worker-splits
 
 BetterUptime:
 

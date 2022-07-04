@@ -71,13 +71,13 @@ In particular, set the following environment variables to get access to the comm
 Deploy the datasets workers with:
 
 ```bash
-pm2 start --name datasets-worker make -- -C /home/hf/datasets-server/services/worker/ datasets-worker
+pm2 start --name worker-datasets make -- -C /home/hf/datasets-server/services/worker/ worker-datasets
 ```
 
 Deploy the splits workers with:
 
 ```bash
-pm2 start --name splits-worker make -- -C /home/hf/datasets-server/services/worker/ splits-worker
+pm2 start --name worker-splits make -- -C /home/hf/datasets-server/services/worker/ worker-splits
 ```
 
 Launch the same command again to deploy one worker more.
@@ -153,6 +153,6 @@ make test
 Restart
 
 ```
-pm2 restart datasets-worker
-pm2 restart splits-worker
+pm2 restart worker-datasets
+pm2 restart worker-splits
 ```

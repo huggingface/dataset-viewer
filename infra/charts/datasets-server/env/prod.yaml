@@ -9,8 +9,8 @@
 # - api: 4 pods -> 4 CPUs, 4 GiB
 # - admin: 1 pod -> 1 CPU
 # and for the workers:
-# - datasets-worker: 1 CPUs, 30 GiB
-# - splits-worker: 1 CPUs, 30 GiB
+# - datasets: 1 CPUs, 30 GiB
+# - splits: 1 CPUs, 30 GiB
 # We set the requested RAM to 8 GiB per worker, in order to trigger the autoscale. We should be able to
 # launch 3 worker pods per node, taking the sidecars into account, it means 60 pods
 #
@@ -18,9 +18,9 @@
 # ie over-committing a bit, we can set up to 60 workers (dataset + split).
 #
 # For now, we have to scale manually with:
-#  kubectl scale --replicas=16 deploy/datasets-server-prod-datasets-worker
+#  kubectl scale --replicas=16 deploy/datasets-server-prod-worker-datasets
 # or
-#  kubectl scale --replicas=32 deploy/datasets-server-prod-splits-worker
+#  kubectl scale --replicas=32 deploy/datasets-server-prod-worker-splits
 
 mongodb:
   enabled: false
@@ -99,41 +99,42 @@ api:
   # Log level
   logLevel: "DEBUG"
 
-datasetsWorker:
-  replicas: 4
+worker:
+  datasets:
+    replicas: 4
 
-  nodeSelector:
-    role-datasets-server: "true"
+    nodeSelector:
+      role-datasets-server: "true"
 
-  resources:
-    requests:
-      cpu: 1
-      memory: "8Gi"
-    limits:
-      cpu: 1
-      memory: "30Gi"
+    resources:
+      requests:
+        cpu: 1
+        memory: "8Gi"
+      limits:
+        cpu: 1
+        memory: "30Gi"
 
-  # Log level
-  logLevel: "DEBUG"
+    # Log level
+    logLevel: "DEBUG"
 
-splitsWorker:
-  replicas: 10
+  splits:
+    replicas: 10
 
-  nodeSelector:
-    role-datasets-server: "true"
+    nodeSelector:
+      role-datasets-server: "true"
 
-  resources:
-    requests:
-      cpu: 1
-      memory: "8Gi"
-    limits:
-      cpu: 1
-      memory: "30Gi"
+    resources:
+      requests:
+        cpu: 1
+        memory: "8Gi"
+      limits:
+        cpu: 1
+        memory: "30Gi"
 
-  # Log level
-  logLevel: "DEBUG"
-  # Maximum number of jobs running at the same time for the same dataset
-  maxJobsPerDataset: 5
+    # Log level
+    logLevel: "DEBUG"
+    # Maximum number of jobs running at the same time for the same dataset
+    maxJobsPerDataset: 5
 
 admin:
   replicas: 1

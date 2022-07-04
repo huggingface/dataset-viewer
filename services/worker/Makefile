@@ -18,10 +18,10 @@ include ../../tools/Docker.mk
 run:
 	poetry run python src/worker/main.py
 
-.PHONY: datasets-worker
-datasets-worker:
+.PHONY: worker-datasets
+worker-datasets:
 	WORKER_QUEUE=datasets poetry run python src/worker/main.py
 
-.PHONY: splits-worker
-splits-worker:
+.PHONY: worker-splits
+worker-splits:
 	WORKER_QUEUE=splits poetry run python src/worker/main.py

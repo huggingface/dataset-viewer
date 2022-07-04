@@ -111,7 +111,7 @@ def test_bug_empty_split():
     response = requests.post(f"{URL}/webhook", json={"update": f"datasets/{dataset}"})
     assert response.status_code == 200
 
-    # at this moment, there is a concurrency race between the dataset worker and the split worker
+    # at this moment, there is a concurrency race between the datasets worker and the splits worker
     # but the dataset worker should finish before, because it's faster on this dataset
     # With the bug, if we polled again /rows until we have something else than "being processed",
     # we would have gotten a valid response, but with empty rows, which is incorrect

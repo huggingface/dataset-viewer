@@ -39,8 +39,8 @@ services:
     depends_on:
       - mongodb
     restart: unless-stopped
-  datasets-worker:
-    image: ${SERVICE_DATASETS_WORKER_DOCKER_IMAGE?SERVICE_DATASETS_WORKER_DOCKER_IMAGE env var must be provided}
+  worker-datasets:
+    image: ${SERVICE_WORKER_DATASETS_DOCKER_IMAGE?SERVICE_WORKER_DATASETS_DOCKER_IMAGE env var must be provided}
     volumes:
       - assets:/assets:rw
       - datasets-cache:/datasets-cache:rw
@@ -53,8 +53,8 @@ services:
     depends_on:
       - mongodb
     restart: always
-  splits-worker:
-    image: ${SERVICE_SPLITS_WORKER_DOCKER_IMAGE?SERVICE_SPLITS_WORKER_DOCKER_IMAGE env var must be provided}
+  worker-splits:
+    image: ${SERVICE_WORKER_SPLITS_DOCKER_IMAGE?SERVICE_WORKER_SPLITS_DOCKER_IMAGE env var must be provided}
     volumes:
       - assets:/assets:rw
       - datasets-cache:/datasets-cache:rw

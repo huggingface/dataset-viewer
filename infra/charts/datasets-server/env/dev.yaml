@@ -44,23 +44,24 @@ api:
     limits:
       cpu: 1
 
-datasetsWorker:
-  replicas: 2
+worker:
+  datasets:
+    replicas: 2
 
-  resources:
-    requests:
-      cpu: 0.01
-    limits:
-      cpu: 1
+    resources:
+      requests:
+        cpu: 0.01
+      limits:
+        cpu: 1
 
-splitsWorker:
-  replicas: 5
+  splits:
+    replicas: 5
 
-  resources:
-    requests:
-      cpu: 0.01
-    limits:
-      cpu: 1
+    resources:
+      requests:
+        cpu: 0.01
+      limits:
+        cpu: 1
 
 admin:
   replicas: 1
