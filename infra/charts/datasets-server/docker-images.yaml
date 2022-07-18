@@ -7,7 +7,7 @@
       "datasets": "707930574880.dkr.ecr.us-east-1.amazonaws.com/hub-datasets-server-worker:sha-94372a4",
       "firstRows": "707930574880.dkr.ecr.us-east-1.amazonaws.com/hub-datasets-server-worker:sha-94372a4",
       "splits": "707930574880.dkr.ecr.us-east-1.amazonaws.com/hub-datasets-server-worker:sha-94372a4",
-      "splitsNext": "707930574880.dkr.ecr.us-east-1.amazonaws.com/hub-datasets-server-worker:sha-94372a4",
+      "splitsNext": "707930574880.dkr.ecr.us-east-1.amazonaws.com/hub-datasets-server-worker:sha-94372a4"
     }
   }  
 }
