@@ -149,16 +149,19 @@ def create_truncated_row_items(
 
 
 def get_typed_rows(
-    dataset_name: str,
-    config_name: str,
-    split_name: str,
-    rows: List[Row],
-    features: Features,
+    dataset_name: str, config_name: str, split_name: str, rows: List[Row], features: Features, assets_base_url: str
 ) -> List[Row]:
     return [
         {
             featureName: get_cell_value(
-                dataset_name, config_name, split_name, row_idx, row[featureName], featureName, fieldType
+                dataset_name,
+                config_name,
+                split_name,
+                row_idx,
+                row[featureName],
+                featureName,
+                fieldType,
+                assets_base_url,
             )
             for (featureName, fieldType) in features.items()
         }
@@ -170,6 +173,7 @@ def get_first_rows(
     dataset_name: str,
     config_name: str,
     split_name: str,
+    assets_base_url: str,
     hf_token: Optional[str] = None,
     max_size_fallback: Optional[int] = None,
     rows_max_bytes: Optional[int] = None,
@@ -217,7 +221,7 @@ def get_first_rows(
     except Exception as err:
         raise Status400Error("Cannot get the first rows for the split.", err) from err
 
-    typed_rows = get_typed_rows(dataset_name, config_name, split_name, rows, features)
+    typed_rows = get_typed_rows(dataset_name, config_name, split_name, rows, features, assets_base_url)
     row_items = create_truncated_row_items(
         dataset_name, config_name, split_name, typed_rows, rows_max_bytes, rows_min_number
     )

@@ -5,6 +5,7 @@ from dotenv import load_dotenv
 from libutils.utils import get_int_value, get_str_or_none_value, get_str_value
 
 from worker.constants import (
+    DEFAULT_ASSETS_BASE_URL,
     DEFAULT_ASSETS_DIRECTORY,
     DEFAULT_DATASETS_REVISION,
     DEFAULT_HF_TOKEN,
@@ -28,6 +29,7 @@ from worker.constants import (
 # Load environment variables defined in .env, if any
 load_dotenv()
 
+ASSETS_BASE_URL = get_str_value(d=os.environ, key="ASSETS_BASE_URL", default=DEFAULT_ASSETS_BASE_URL)
 ASSETS_DIRECTORY = get_str_or_none_value(d=os.environ, key="ASSETS_DIRECTORY", default=DEFAULT_ASSETS_DIRECTORY)
 DATASETS_REVISION = get_str_value(d=os.environ, key="DATASETS_REVISION", default=DEFAULT_DATASETS_REVISION)
 HF_TOKEN = get_str_or_none_value(d=os.environ, key="HF_TOKEN", default=DEFAULT_HF_TOKEN)

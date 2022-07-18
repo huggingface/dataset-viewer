@@ -57,4 +57,4 @@ class ImageArray2DColumn(CommonColumn):
         image = Image.fromarray(array, mode)
         filename = "image.jpg"
 
-        return create_image_file(dataset_name, config_name, split_name, row_idx, self.name, filename, image)
+        return create_image_file(dataset_name, config_name, split_name, row_idx, self.name, filename, image, "assets")

@@ -54,4 +54,6 @@ class AudioColumn(CommonColumn):
         array = value["array"]
         sampling_rate = value["sampling_rate"]
         # this function can raise, we don't catch it
-        return create_audio_files(dataset_name, config_name, split_name, row_idx, self.name, array, sampling_rate)
+        return create_audio_files(
+            dataset_name, config_name, split_name, row_idx, self.name, array, sampling_rate, "assets"
+        )

@@ -45,7 +45,7 @@ class ImageColumn(CommonColumn):
         for ext in [".jpg", ".png"]:
             try:
                 return create_image_file(
-                    dataset_name, config_name, split_name, row_idx, self.name, f"image{ext}", value
+                    dataset_name, config_name, split_name, row_idx, self.name, f"image{ext}", value, "assets"
                 )
             except OSError:
                 # if wrong format, try the next one, see https://github.com/huggingface/datasets-server/issues/191

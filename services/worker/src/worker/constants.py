@@ -1,5 +1,6 @@
 from typing import Optional
 
+DEFAULT_ASSETS_BASE_URL: str = "assets"
 DEFAULT_ASSETS_DIRECTORY: None = None
 DEFAULT_DATASETS_REVISION: str = "master"
 DEFAULT_HF_TOKEN: Optional[str] = None

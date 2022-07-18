@@ -1,8 +1,9 @@
 from worker.models.first_rows import get_first_rows
+from .._utils import ASSETS_BASE_URL
 
 
 def test_first_rows() -> None:
-    response = get_first_rows("common_voice", "tr", "train", rows_max_number=1)
+    response = get_first_rows("common_voice", "tr", "train", rows_max_number=1, assets_base_url=ASSETS_BASE_URL)
 
     assert response["features"][0]["idx"] == 0
     assert response["features"][0]["name"] == "client_id"
@@ -16,13 +17,15 @@ def test_first_rows() -> None:
     assert response["rows"][0]["row_idx"] == 0
     assert response["rows"][0]["row"]["client_id"].startswith("54fc2d015c27a057b")
     assert response["rows"][0]["row"]["audio"] == [
-        {"src": "assets/common_voice/--/tr/train/0/audio/audio.mp3", "type": "audio/mpeg"},
-        {"src": "assets/common_voice/--/tr/train/0/audio/audio.wav", "type": "audio/wav"},
+        {"src": f"{ASSETS_BASE_URL}/common_voice/--/tr/train/0/audio/audio.mp3", "type": "audio/mpeg"},
+        {"src": f"{ASSETS_BASE_URL}/common_voice/--/tr/train/0/audio/audio.wav", "type": "audio/wav"},
     ]
 
 
 def test_no_features() -> None:
-    response = get_first_rows("severo/fix-401", "severo--fix-401", "train", rows_max_number=1)
+    response = get_first_rows(
+        "severo/fix-401", "severo--fix-401", "train", rows_max_number=1, assets_base_url=ASSETS_BASE_URL
+    )
 
     assert response["features"][1]["idx"] == 1
     assert response["features"][1]["name"] == "area_mean"
