@@ -1,6 +1,8 @@
 {{- define "containerWorkerSplits" -}}
 - name: "{{ include "name" . }}-worker-splits"
   env:
+  - name: ASSETS_BASE_URL
+    value: "{{ include "assets.baseUrl" . }}"
   - name: ASSETS_DIRECTORY
     value: {{ .Values.worker.splits.assetsDirectory | quote }}
   - name: DATASETS_REVISION

@@ -1,6 +1,8 @@
 {{- define "containerWorkerFirstRows" -}}
 - name: "{{ include "name" . }}-worker-first-rows"
   env:
+  - name: ASSETS_BASE_URL
+    value: "{{ include "assets.baseUrl" . }}"
   - name: ASSETS_DIRECTORY
     value: {{ .Values.worker.firstRows.assetsDirectory | quote }}
   - name: DATASETS_REVISION

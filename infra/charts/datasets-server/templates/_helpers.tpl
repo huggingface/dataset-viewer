@@ -78,6 +78,13 @@ app: "{{ include "release" . }}-admin"
 {{- end -}}
 
 {{/*
+The assets base URL
+*/}}
+{{- define "assets.baseUrl" -}}
+{{- printf "https://%s/assets" .Values.apiDomain }}
+{{- end }}
+
+{{/*
 The assets/ subpath in the NFS
 - in a subdirectory named as the chart (datasets-server/), and below it,
 - in a subdirectory named as the Release, so that Releases will not share the same dir

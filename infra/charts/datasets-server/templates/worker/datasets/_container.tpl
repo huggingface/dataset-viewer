@@ -1,6 +1,8 @@
 {{- define "containerWorkerDatasets" -}}
 - name: "{{ include "name" . }}-worker-datasets"
   env:
+  - name: ASSETS_BASE_URL
+    value: "{{ include "assets.baseUrl" . }}"
   - name: ASSETS_DIRECTORY
     value: {{ .Values.worker.datasets.assetsDirectory | quote }}
   - name: DATASETS_REVISION

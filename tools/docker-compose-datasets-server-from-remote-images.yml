@@ -45,6 +45,7 @@ services:
       - assets:/assets:rw
       - datasets-cache:/datasets-cache:rw
     environment:
+      ASSETS_BASE_URL: "http://localhost:${SERVICE_REVERSE_PROXY_PORT-8000}/assets"
       ASSETS_DIRECTORY: "/assets"
       HF_DATASETS_CACHE: "/datasets-cache"
       MONGO_URL: "mongodb://mongodb"
@@ -59,6 +60,7 @@ services:
       - assets:/assets:rw
       - datasets-cache:/datasets-cache:rw
     environment:
+      ASSETS_BASE_URL: "http://localhost:${SERVICE_REVERSE_PROXY_PORT-8000}/assets"
       ASSETS_DIRECTORY: "/assets"
       HF_DATASETS_CACHE: "/datasets-cache"
       MONGO_URL: "mongodb://mongodb"
@@ -73,6 +75,7 @@ services:
       - assets:/assets:rw
       - datasets-cache:/datasets-cache:rw
     environment:
+      ASSETS_BASE_URL: "http://localhost:${SERVICE_REVERSE_PROXY_PORT-8000}/assets"
       ASSETS_DIRECTORY: "/assets"
       HF_DATASETS_CACHE: "/datasets-cache"
       MONGO_URL: "mongodb://mongodb"
@@ -87,6 +90,7 @@ services:
       - assets:/assets:rw
       - datasets-cache:/datasets-cache:rw
     environment:
+      ASSETS_BASE_URL: "http://localhost:${SERVICE_REVERSE_PROXY_PORT-8000}/assets"
       ASSETS_DIRECTORY: "/assets"
       HF_DATASETS_CACHE: "/datasets-cache"
       MONGO_URL: "mongodb://mongodb"
