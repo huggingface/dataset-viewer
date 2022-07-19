@@ -1,7 +1,7 @@
 import pytest
 from libcache.cache import (
     DbDataset,
-    clean_database,
+    clean_database as clean_cache_database,
     connect_to_cache,
     get_rows_response,
 )
@@ -11,6 +11,7 @@ from libcache.simple_cache import (
     get_first_rows_response,
     get_splits_response,
 )
+from libqueue.queue import connect_to_queue, clean_database as clean_queue_database
 from libutils.exceptions import Status400Error
 
 from worker.refresh import (
@@ -20,7 +21,7 @@ from worker.refresh import (
     refresh_splits,
 )
 
-from ._utils import ASSETS_BASE_URL, MONGO_CACHE_DATABASE, MONGO_URL
+from ._utils import ASSETS_BASE_URL, MONGO_CACHE_DATABASE, MONGO_QUEUE_DATABASE, MONGO_URL
 
 
 @pytest.fixture(autouse=True, scope="module")
@@ -32,11 +33,13 @@ def safe_guard() -> None:
 @pytest.fixture(autouse=True, scope="module")
 def client() -> None:
     connect_to_cache(database=MONGO_CACHE_DATABASE, host=MONGO_URL)
+    connect_to_queue(database=MONGO_QUEUE_DATABASE, host=MONGO_URL)
 
 
 @pytest.fixture(autouse=True)
 def clean_mongo_database() -> None:
-    clean_database()
+    clean_cache_database()
+    clean_queue_database()
 
 
 def test_doesnotexist() -> None:
