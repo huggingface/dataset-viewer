@@ -26,6 +26,7 @@ from libutils.logger import init_logger
 from psutil import cpu_count, getloadavg, swap_memory, virtual_memory
 
 from worker.config import (
+    ASSETS_BASE_URL,
     ASSETS_DIRECTORY,
     HF_TOKEN,
     LOG_LEVEL,
@@ -175,6 +176,7 @@ def process_next_first_rows_job() -> bool:
             dataset_name=dataset_name,
             config_name=config_name,
             split_name=split_name,
+            assets_base_url=ASSETS_BASE_URL,
             hf_token=HF_TOKEN,
             max_size_fallback=MAX_SIZE_FALLBACK,
             rows_max_bytes=ROWS_MAX_BYTES,

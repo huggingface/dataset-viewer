@@ -23,6 +23,8 @@ from datasets import (
 
 from worker.models.features import get_cell_value
 
+from .._utils import ASSETS_BASE_URL
+
 # we need to know the correspondence between the feature type and the cell value, in order to:
 # - document the API
 # - implement the client on the Hub (dataset viewer)
@@ -124,7 +126,9 @@ def test_value(input_value, input_dtype, output_value, output_dtype) -> None:
     feature = dataset.features["feature_name"]
     assert feature._type == "Value"
     assert feature.dtype == output_dtype
-    value = get_cell_value("dataset", "config", "split", 7, dataset[0]["feature_name"], "feature_name", feature)
+    value = get_cell_value(
+        "dataset", "config", "split", 7, dataset[0]["feature_name"], "feature_name", feature, ASSETS_BASE_URL
+    )
     assert value == output_value
 
 
@@ -255,5 +259,7 @@ def test_others(config, get_data_tuple) -> None:
         assert feature == output__type
     else:
         assert feature._type == output__type
-    value = get_cell_value("dataset", "config", "split", 7, dataset[0]["feature_name"], "feature_name", feature)
+    value = get_cell_value(
+        "dataset", "config", "split", 7, dataset[0]["feature_name"], "feature_name", feature, ASSETS_BASE_URL
+    )
     assert value == output_value

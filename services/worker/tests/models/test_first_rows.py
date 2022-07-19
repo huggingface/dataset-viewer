@@ -1,4 +1,5 @@
 from worker.models.first_rows import get_first_rows
+
 from .._utils import ASSETS_BASE_URL
 
 

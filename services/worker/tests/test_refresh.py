@@ -20,7 +20,7 @@ from worker.refresh import (
     refresh_splits,
 )
 
-from ._utils import MONGO_CACHE_DATABASE, MONGO_URL
+from ._utils import ASSETS_BASE_URL, MONGO_CACHE_DATABASE, MONGO_URL
 
 
 @pytest.fixture(autouse=True, scope="module")
@@ -107,7 +107,7 @@ def test_column_order() -> None:
 
 
 def test_first_rows() -> None:
-    http_status = refresh_first_rows("common_voice", "tr", "train")
+    http_status = refresh_first_rows("common_voice", "tr", "train", ASSETS_BASE_URL)
     response, cached_http_status = get_first_rows_response("common_voice", "tr", "train")
     assert http_status == HTTPStatus.OK
     assert cached_http_status == HTTPStatus.OK
