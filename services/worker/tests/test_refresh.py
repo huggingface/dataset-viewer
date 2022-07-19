@@ -1,17 +1,15 @@
 import pytest
-from libcache.cache import (
-    DbDataset,
-    clean_database as clean_cache_database,
-    connect_to_cache,
-    get_rows_response,
-)
+from libcache.cache import DbDataset
+from libcache.cache import clean_database as clean_cache_database
+from libcache.cache import connect_to_cache, get_rows_response
 from libcache.cache import get_splits_response as old_get_splits_response
 from libcache.simple_cache import (
     HTTPStatus,
     get_first_rows_response,
     get_splits_response,
 )
-from libqueue.queue import connect_to_queue, clean_database as clean_queue_database
+from libqueue.queue import clean_database as clean_queue_database
+from libqueue.queue import connect_to_queue
 from libutils.exceptions import Status400Error
 
 from worker.refresh import (
@@ -21,7 +19,12 @@ from worker.refresh import (
     refresh_splits,
 )
 
-from ._utils import ASSETS_BASE_URL, MONGO_CACHE_DATABASE, MONGO_QUEUE_DATABASE, MONGO_URL
+from ._utils import (
+    ASSETS_BASE_URL,
+    MONGO_CACHE_DATABASE,
+    MONGO_QUEUE_DATABASE,
+    MONGO_URL,
+)
 
 
 @pytest.fixture(autouse=True, scope="module")
