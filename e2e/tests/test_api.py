@@ -8,52 +8,55 @@ SERVICE_REVERSE_PROXY_PORT = os.environ.get("SERVICE_REVERSE_PROXY_PORT", "8000"
 URL = f"http://localhost:{SERVICE_REVERSE_PROXY_PORT}"
 
 
-def poll_splits_until_dataset_process_has_finished(
-    dataset: str, endpoint: str = "splits", timeout: int = 15, interval: int = 1
+def poll_until_valid_response(
+    url: str, timeout: int = 15, interval: int = 1, valid_error_message: str = None
 ) -> requests.Response:
-    url = f"{URL}/{endpoint}?dataset={dataset}"
     retries = timeout // interval
-    done = False
+    should_retry = True
     response = None
-    while retries > 0 and not done:
+    while retries > 0 and should_retry:
         retries -= 1
         time.sleep(interval)
         response = requests.get(url)
-        json = response.json()
-        done = not json or "message" not in json or json["message"] != "The dataset is being processed. Retry later."
+        if valid_error_message is None:
+            should_retry = response.status_code != 200
+        else:
+            json = response.json()
+            should_retry = "message" in json and json["message"] == valid_error_message
     if response is None:
         raise RuntimeError("no request has been done")
     return response
+
+
+def poll_splits_until_dataset_process_has_finished(
+    dataset: str, endpoint: str = "splits", timeout: int = 15, interval: int = 1
+) -> requests.Response:
+    return poll_until_valid_response(
+        f"{URL}/{endpoint}?dataset={dataset}", timeout, interval, "The dataset is being processed. Retry later."
+    )
 
 
 def poll_rows_until_split_process_has_finished(
     dataset: str, config: str, split: str, endpoint: str = "splits", timeout: int = 15, interval: int = 1
 ) -> requests.Response:
-    url = f"{URL}/{endpoint}?dataset={dataset}&config={config}&split={split}"
-    retries = timeout // interval
-    done = False
-    response = None
-    while retries > 0 and not done:
-        retries -= 1
-        time.sleep(interval)
-        response = requests.get(url)
-        json = response.json()
-        done = not json or "message" not in json or json["message"] != "The split is being processed. Retry later."
-    if response is None:
-        raise RuntimeError("no request has been done")
-    return response
+    return poll_until_valid_response(
+        f"{URL}/{endpoint}?dataset={dataset}&config={config}&split={split}",
+        timeout,
+        interval,
+        "The split is being processed. Retry later.",
+    )
 
 
 def test_healthcheck():
     # this tests ensures the nginx reverse proxy and the api are up
-    response = requests.get(f"{URL}/healthcheck")
+    response = poll_until_valid_response(f"{URL}/healthcheck", 15, 1)
     assert response.status_code == 200
     assert response.text == "ok"
 
 
 def test_valid():
     # this test ensures that the mongo db can be accessed by the api
-    response = requests.get(f"{URL}/valid")
+    response = poll_until_valid_response(f"{URL}/valid", 15, 1)
     assert response.status_code == 200
     # at this moment no dataset has been processed
     assert response.json()["valid"] == []
