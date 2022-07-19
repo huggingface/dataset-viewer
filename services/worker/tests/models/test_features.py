@@ -217,8 +217,14 @@ def test_value(input_value, input_dtype, output_value, output_dtype) -> None:
             {"array": [0.1, 0.2, 0.3], "sampling_rate": 16_000},
             Audio(),
             [
-                {"src": "assets/dataset/--/config/split/7/feature_name/audio.mp3", "type": "audio/mpeg"},
-                {"src": "assets/dataset/--/config/split/7/feature_name/audio.wav", "type": "audio/wav"},
+                {
+                    "src": "http://localhost/assets/dataset/--/config/split/7/feature_name/audio.mp3",
+                    "type": "audio/mpeg",
+                },
+                {
+                    "src": "http://localhost/assets/dataset/--/config/split/7/feature_name/audio.wav",
+                    "type": "audio/wav",
+                },
             ],
             "Audio",
         ),
@@ -228,7 +234,7 @@ def test_value(input_value, input_dtype, output_value, output_dtype) -> None:
         lambda config: (
             {"path": config["image_file"]},
             Image(),
-            "assets/dataset/--/config/split/7/feature_name/image.jpg",
+            "http://localhost/assets/dataset/--/config/split/7/feature_name/image.jpg",
             "Image",
         ),
         # - :class:`datasets.Translation` and :class:`datasets.TranslationVariableLanguages`, the two features
