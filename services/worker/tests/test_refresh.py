@@ -124,6 +124,6 @@ def test_first_rows() -> None:
     assert response["rows"][0]["row_idx"] == 0
     assert response["rows"][0]["row"]["client_id"].startswith("54fc2d015c27a057b")
     assert response["rows"][0]["row"]["audio"] == [
-        {"src": "assets/common_voice/--/tr/train/0/audio/audio.mp3", "type": "audio/mpeg"},
-        {"src": "assets/common_voice/--/tr/train/0/audio/audio.wav", "type": "audio/wav"},
+        {"src": f"{ASSETS_BASE_URL}/common_voice/--/tr/train/0/audio/audio.mp3", "type": "audio/mpeg"},
+        {"src": f"{ASSETS_BASE_URL}/common_voice/--/tr/train/0/audio/audio.wav", "type": "audio/wav"},
     ]
