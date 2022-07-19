@@ -24,23 +24,20 @@ def create_asset_dir(dataset: str, config: str, split: str, row_idx: int, column
     return dir_path, url_dir_path
 
 
-def create_asset_file(
-    dataset: str, config: str, split: str, row_idx: int, column: str, filename: str, data: bytes
-) -> str:
-    dir_path, url_dir_path = create_asset_dir(dataset, config, split, row_idx, column)
-    file_path = os.path.join(dir_path, filename)
-    with open(file_path, "wb") as f:
-        f.write(data)
-    return f"assets/{url_dir_path}/{filename}"
-
-
 def create_image_file(
-    dataset: str, config: str, split: str, row_idx: int, column: str, filename: str, image: Image.Image
+    dataset: str,
+    config: str,
+    split: str,
+    row_idx: int,
+    column: str,
+    filename: str,
+    image: Image.Image,
+    assets_base_url: str,
 ) -> str:
     dir_path, url_dir_path = create_asset_dir(dataset, config, split, row_idx, column)
     file_path = os.path.join(dir_path, filename)
     image.save(file_path)
-    return f"assets/{url_dir_path}/{filename}"
+    return f"{assets_base_url}/{url_dir_path}/{filename}"
 
 
 class AudioSource(TypedDict):
@@ -49,7 +46,14 @@ class AudioSource(TypedDict):
 
 
 def create_audio_files(
-    dataset: str, config: str, split: str, row_idx: int, column: str, array: ndarray, sampling_rate: int
+    dataset: str,
+    config: str,
+    split: str,
+    row_idx: int,
+    column: str,
+    array: ndarray,
+    sampling_rate: int,
+    assets_base_url: str,
 ) -> List[AudioSource]:
     wav_filename = "audio.wav"
     mp3_filename = "audio.mp3"
@@ -60,8 +64,8 @@ def create_audio_files(
     segment = AudioSegment.from_wav(wav_file_path)
     segment.export(mp3_file_path, format="mp3")
     return [
-        {"src": f"assets/{url_dir_path}/{mp3_filename}", "type": "audio/mpeg"},
-        {"src": f"assets/{url_dir_path}/{wav_filename}", "type": "audio/wav"},
+        {"src": f"{assets_base_url}/{url_dir_path}/{mp3_filename}", "type": "audio/mpeg"},
+        {"src": f"{assets_base_url}/{url_dir_path}/{wav_filename}", "type": "audio/wav"},
     ]
 
 

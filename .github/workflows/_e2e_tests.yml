@@ -68,9 +68,11 @@ jobs:
         env:
           SERVICE_ADMIN_DOCKER_IMAGE: "${{fromJson(needs.get-config.outputs.dockerConfig).dockerImage.admin}}"
           SERVICE_API_DOCKER_IMAGE: "${{fromJson(needs.get-config.outputs.dockerConfig).dockerImage.api}}"
-          SERVICE_DATASETS_WORKER_DOCKER_IMAGE: "${{fromJson(needs.get-config.outputs.dockerConfig).dockerImage.datasetsWorker}}"
           SERVICE_REVERSE_PROXY_DOCKER_IMAGE: "${{fromJson(needs.get-config.outputs.dockerConfig).dockerImage.reverseProxy}}"
-          SERVICE_SPLITS_WORKER_DOCKER_IMAGE: "${{fromJson(needs.get-config.outputs.dockerConfig).dockerImage.splitsWorker}}"
+          SERVICE_WORKER_DATASETS_DOCKER_IMAGE: "${{fromJson(needs.get-config.outputs.dockerConfig).dockerImage.worker.datasets}}"
+          SERVICE_WORKER_FIRST_ROWS_DOCKER_IMAGE: "${{fromJson(needs.get-config.outputs.dockerConfig).dockerImage.worker.firstRows}}"
+          SERVICE_WORKER_SPLITS_DOCKER_IMAGE: "${{fromJson(needs.get-config.outputs.dockerConfig).dockerImage.worker.splits}}"
+          SERVICE_WORKER_SPLITS_NEXT_DOCKER_IMAGE: "${{fromJson(needs.get-config.outputs.dockerConfig).dockerImage.worker.splitsNext}}"
         working-directory: tools
         run: docker-compose -f ./docker-compose-datasets-server-from-remote-images.yml up -d
       - name: Install dependencies

@@ -39,12 +39,13 @@ services:
     depends_on:
       - mongodb
     restart: unless-stopped
-  datasets-worker:
-    image: ${SERVICE_DATASETS_WORKER_DOCKER_IMAGE?SERVICE_DATASETS_WORKER_DOCKER_IMAGE env var must be provided}
+  worker-datasets:
+    image: ${SERVICE_WORKER_DATASETS_DOCKER_IMAGE?SERVICE_WORKER_DATASETS_DOCKER_IMAGE env var must be provided}
     volumes:
       - assets:/assets:rw
       - datasets-cache:/datasets-cache:rw
     environment:
+      ASSETS_BASE_URL: "http://localhost:${SERVICE_REVERSE_PROXY_PORT-8000}/assets"
       ASSETS_DIRECTORY: "/assets"
       HF_DATASETS_CACHE: "/datasets-cache"
       MONGO_URL: "mongodb://mongodb"
@@ -53,12 +54,43 @@ services:
     depends_on:
       - mongodb
     restart: always
-  splits-worker:
-    image: ${SERVICE_SPLITS_WORKER_DOCKER_IMAGE?SERVICE_SPLITS_WORKER_DOCKER_IMAGE env var must be provided}
+  worker-first-rows:
+    image: ${SERVICE_WORKER_FIRST_ROWS_DOCKER_IMAGE?SERVICE_WORKER_FIRST_ROWS_DOCKER_IMAGE env var must be provided}
     volumes:
       - assets:/assets:rw
       - datasets-cache:/datasets-cache:rw
     environment:
+      ASSETS_BASE_URL: "http://localhost:${SERVICE_REVERSE_PROXY_PORT-8000}/assets"
+      ASSETS_DIRECTORY: "/assets"
+      HF_DATASETS_CACHE: "/datasets-cache"
+      MONGO_URL: "mongodb://mongodb"
+      WORKER_SLEEP_SECONDS: "1"
+      WORKER_QUEUE: "first_rows_responses"
+    depends_on:
+      - mongodb
+    restart: always
+  worker-splits-next:
+    image: ${SERVICE_WORKER_SPLITS_NEXT_DOCKER_IMAGE?SERVICE_WORKER_SPLITS_NEXT_DOCKER_IMAGE env var must be provided}
+    volumes:
+      - assets:/assets:rw
+      - datasets-cache:/datasets-cache:rw
+    environment:
+      ASSETS_BASE_URL: "http://localhost:${SERVICE_REVERSE_PROXY_PORT-8000}/assets"
+      ASSETS_DIRECTORY: "/assets"
+      HF_DATASETS_CACHE: "/datasets-cache"
+      MONGO_URL: "mongodb://mongodb"
+      WORKER_SLEEP_SECONDS: "1"
+      WORKER_QUEUE: "splits_responses"
+    depends_on:
+      - mongodb
+    restart: always
+  worker-splits:
+    image: ${SERVICE_WORKER_SPLITS_DOCKER_IMAGE?SERVICE_WORKER_SPLITS_DOCKER_IMAGE env var must be provided}
+    volumes:
+      - assets:/assets:rw
+      - datasets-cache:/datasets-cache:rw
+    environment:
+      ASSETS_BASE_URL: "http://localhost:${SERVICE_REVERSE_PROXY_PORT-8000}/assets"
       ASSETS_DIRECTORY: "/assets"
       HF_DATASETS_CACHE: "/datasets-cache"
       MONGO_URL: "mongodb://mongodb"

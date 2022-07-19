@@ -2,9 +2,15 @@ import os
 from typing import Dict
 
 from libcache.cache import get_datasets_count_by_status, get_splits_count_by_status
+from libcache.simple_cache import (
+    get_first_rows_responses_count_by_status,
+    get_splits_responses_count_by_status,
+)
 from libqueue.queue import (
     get_dataset_jobs_count_by_status,
+    get_first_rows_jobs_count_by_status,
     get_split_jobs_count_by_status,
+    get_splits_jobs_count_by_status,
 )
 from prometheus_client import (  # type: ignore # https://github.com/prometheus/client_python/issues/491
     CONTENT_TYPE_LATEST,
@@ -49,10 +55,18 @@ class Prometheus:
             self.metrics["queue_jobs_total"].labels(queue="datasets", status=status).set(total)
         for status, total in get_split_jobs_count_by_status().items():
             self.metrics["queue_jobs_total"].labels(queue="splits", status=status).set(total)
+        for status, total in get_splits_jobs_count_by_status().items():
+            self.metrics["queue_jobs_total"].labels(queue="splits/", status=status).set(total)
+        for status, total in get_first_rows_jobs_count_by_status().items():
+            self.metrics["queue_jobs_total"].labels(queue="first-rows/", status=status).set(total)
         for status, total in get_datasets_count_by_status().items():
             self.metrics["cache_entries_total"].labels(cache="datasets", status=status).set(total)
         for status, total in get_splits_count_by_status().items():
             self.metrics["cache_entries_total"].labels(cache="splits", status=status).set(total)
+        for status, total in get_splits_responses_count_by_status().items():
+            self.metrics["cache_entries_total"].labels(cache="splits/", status=status).set(total)
+        for status, total in get_first_rows_responses_count_by_status().items():
+            self.metrics["cache_entries_total"].labels(cache="first-rows/", status=status).set(total)
 
     def endpoint(self, request: Request) -> Response:
         self.updateMetrics()

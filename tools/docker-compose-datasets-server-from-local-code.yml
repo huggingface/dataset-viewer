@@ -40,7 +40,7 @@ services:
       mongodb:
         condition: service_started
     restart: unless-stopped
-  datasets-worker:
+  worker-datasets:
     build:
       context: ..
       dockerfile: ./services/worker/Dockerfile
@@ -48,6 +48,7 @@ services:
       - assets:/assets:rw
       - datasets-cache:/datasets-cache:rw
     environment:
+      ASSETS_BASE_URL: "http://localhost:${SERVICE_REVERSE_PROXY_PORT-8000}/assets"
       ASSETS_DIRECTORY: "/assets"
       HF_DATASETS_CACHE: "/datasets-cache"
       MONGO_URL: "mongodb://mongodb"
@@ -56,7 +57,7 @@ services:
       mongodb:
         condition: service_started
     restart: always
-  splits-worker:
+  worker-first-rows:
     build:
       context: ..
       dockerfile: ./services/worker/Dockerfile
@@ -64,6 +65,41 @@ services:
       - assets:/assets:rw
       - datasets-cache:/datasets-cache:rw
     environment:
+      ASSETS_BASE_URL: "http://localhost:${SERVICE_REVERSE_PROXY_PORT-8000}/assets"
+      ASSETS_DIRECTORY: "/assets"
+      HF_DATASETS_CACHE: "/datasets-cache"
+      MONGO_URL: "mongodb://mongodb"
+      WORKER_QUEUE: "first_rows_responses"
+    depends_on:
+      mongodb:
+        condition: service_started
+    restart: always
+  worker-splits-next:
+    build:
+      context: ..
+      dockerfile: ./services/worker/Dockerfile
+    volumes:
+      - assets:/assets:rw
+      - datasets-cache:/datasets-cache:rw
+    environment:
+      ASSETS_BASE_URL: "http://localhost:${SERVICE_REVERSE_PROXY_PORT-8000}/assets"
+      ASSETS_DIRECTORY: "/assets"
+      HF_DATASETS_CACHE: "/datasets-cache"
+      MONGO_URL: "mongodb://mongodb"
+      WORKER_QUEUE: "splits_responses"
+    depends_on:
+      mongodb:
+        condition: service_started
+    restart: always
+  worker-splits:
+    build:
+      context: ..
+      dockerfile: ./services/worker/Dockerfile
+    volumes:
+      - assets:/assets:rw
+      - datasets-cache:/datasets-cache:rw
+    environment:
+      ASSETS_BASE_URL: "http://localhost:${SERVICE_REVERSE_PROXY_PORT-8000}/assets"
       ASSETS_DIRECTORY: "/assets"
       HF_DATASETS_CACHE: "/datasets-cache"
       MONGO_URL: "mongodb://mongodb"

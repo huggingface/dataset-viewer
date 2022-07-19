@@ -30,6 +30,7 @@ def warm_cache(dataset_names: List[str]) -> None:
     logger = logging.getLogger("warm_cache")
     for dataset_name in dataset_names:
         if should_dataset_be_refreshed(dataset_name):
+            # don't mark the cache entries as stale, because it's manually triggered
             add_dataset_job(dataset_name)
             logger.info(f"added a job to refresh '{dataset_name}'")
         elif split_full_names := list_split_full_names_to_refresh(dataset_name):
@@ -37,6 +38,7 @@ def warm_cache(dataset_names: List[str]) -> None:
                 dataset_name = split_full_name["dataset_name"]
                 config_name = split_full_name["config_name"]
                 split_name = split_full_name["split_name"]
+                # don't mark the cache entries as stale, because it's manually triggered
                 add_split_job(dataset_name, config_name, split_name)
                 logger.info(
                     f"added a job to refresh split '{split_name}' from dataset '{dataset_name}' with config"
@@ -44,6 +46,11 @@ def warm_cache(dataset_names: List[str]) -> None:
                 )
         else:
             logger.debug(f"dataset already in the cache: '{dataset_name}'")
+
+    # TODO? also warm splits/ and first-rows/ caches. For now, there are no methods to
+    # get access to the stale status, and there is no more logic relation between both cache,
+    # so: we should have to read the splits/ cache responses to know which first-rows/ to
+    # refresh. It seems a bit too much, and this script is not really used anymore.
 
 
 if __name__ == "__main__":

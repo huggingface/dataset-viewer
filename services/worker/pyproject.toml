@@ -11,12 +11,17 @@ aiohttp = "^3.7.4.post0"
 apache-beam = "^2.33.0"
 bs4 = "^0.0.1"
 conllu = "^4.4.1"
-datasets = { extras = ["audio", "vision"], version = "^2.3.2" }
+#datasets = { extras = ["audio", "vision"], version = "^2.3.2" }
+# branch on main for: a) timestamp cast to datetime, b) features with inference in streaming mode: IterableDataset._resolve_features()
+datasets = { git = "https://github.com/huggingface/datasets.git", rev = "7e514c312fcc1d4b8f8e297df5549f669bfb30f8", extras = [
+    "audio",
+    "vision",
+] }
 gdown = "^4.2.0"
 kenlm = { url = "https://github.com/kpu/kenlm/archive/master.zip" }
 kss = "^2.6.0"
-libcache = { path = "../../libs/libcache/dist/libcache-0.1.8-py3-none-any.whl", develop = false }
-libqueue = { path = "../../libs/libqueue/dist/libqueue-0.1.6-py3-none-any.whl", develop = false }
+libcache = { path = "../../libs/libcache/dist/libcache-0.1.9-py3-none-any.whl", develop = false }
+libqueue = { path = "../../libs/libqueue/dist/libqueue-0.1.7-py3-none-any.whl", develop = false }
 libutils = { path = "../../libs/libutils/dist/libutils-0.1.2-py3-none-any.whl", develop = false }
 lm-dataformat = "^0.0.20"
 lxml = "^4.6.3"

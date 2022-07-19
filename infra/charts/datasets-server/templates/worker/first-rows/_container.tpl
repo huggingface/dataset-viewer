@@ -1,12 +1,14 @@
-{{- define "containerSplitsWorker" -}}
-- name: "{{ include "name" . }}-splits-worker"
+{{- define "containerWorkerFirstRows" -}}
+- name: "{{ include "name" . }}-worker-first-rows"
   env:
+  - name: ASSETS_BASE_URL
+    value: "{{ include "assets.baseUrl" . }}"
   - name: ASSETS_DIRECTORY
-    value: {{ .Values.splitsWorker.assetsDirectory | quote }}
+    value: {{ .Values.worker.firstRows.assetsDirectory | quote }}
   - name: DATASETS_REVISION
-    value: {{ .Values.splitsWorker.datasetsRevision | quote }}
+    value: {{ .Values.worker.firstRows.datasetsRevision | quote }}
   - name: HF_DATASETS_CACHE
-    value: "{{ .Values.splitsWorker.cacheDirectory }}/datasets"
+    value: "{{ .Values.worker.firstRows.cacheDirectory }}/datasets"
   # note: HF_MODULES_CACHE is not set to a shared directory
   - name: HF_MODULES_CACHE
     value: "/tmp/modules-cache"
@@ -21,19 +23,19 @@
         key: HF_TOKEN
         optional: false
   - name: LOG_LEVEL
-    value: {{ .Values.splitsWorker.logLevel | quote }}
+    value: {{ .Values.worker.firstRows.logLevel | quote }}
   - name: MAX_JOB_RETRIES
-    value: {{ .Values.splitsWorker.maxJobRetries | quote }}
+    value: {{ .Values.worker.firstRows.maxJobRetries | quote }}
   - name: MAX_JOBS_PER_DATASET
-    value: {{ .Values.splitsWorker.maxJobsPerDataset | quote }}
+    value: {{ .Values.worker.firstRows.maxJobsPerDataset | quote }}
   - name: MAX_LOAD_PCT
-    value: {{ .Values.splitsWorker.maxLoadPct | quote }}
+    value: {{ .Values.worker.firstRows.maxLoadPct | quote }}
   - name: MAX_MEMORY_PCT
-    value: {{ .Values.splitsWorker.maxMemoryPct | quote }}
+    value: {{ .Values.worker.firstRows.maxMemoryPct | quote }}
   - name: MAX_SIZE_FALLBACK
-    value: {{ .Values.splitsWorker.maxSizeFallback | quote }}
+    value: {{ .Values.worker.firstRows.maxSizeFallback | quote }}
   - name: MIN_CELL_BYTES
-    value: {{ .Values.splitsWorker.minCellBytes | quote }}
+    value: {{ .Values.worker.firstRows.minCellBytes | quote }}
   - name: MONGO_CACHE_DATABASE
     value: {{ .Values.mongodb.cacheDatabase | quote }}
   - name: MONGO_QUEUE_DATABASE
@@ -49,32 +51,32 @@
         optional: false
   {{- end }}
   - name: NUMBA_CACHE_DIR
-    value: {{ .Values.splitsWorker.numbaCacheDirectory | quote }}
+    value: {{ .Values.worker.firstRows.numbaCacheDirectory | quote }}
   - name: ROWS_MAX_BYTES
-    value: {{ .Values.splitsWorker.rowsMaxBytes | quote }}
+    value: {{ .Values.worker.firstRows.rowsMaxBytes | quote }}
   - name: ROWS_MAX_NUMBER
-    value: {{ .Values.splitsWorker.rowsMaxNumber | quote }}
+    value: {{ .Values.worker.firstRows.rowsMaxNumber | quote }}
   - name: ROWS_MIN_NUMBER
-    value: {{ .Values.splitsWorker.rowsMinNumber| quote }}
+    value: {{ .Values.worker.firstRows.rowsMinNumber| quote }}
   - name: WORKER_SLEEP_SECONDS
-    value: {{ .Values.splitsWorker.workerSleepSeconds | quote }}
+    value: {{ .Values.worker.firstRows.workerleepSeconds | quote }}
   - name: WORKER_QUEUE
     # Job queue the worker will pull jobs from: 'datasets' or 'splits'
-    value: "splits"
-  image: {{ .Values.dockerImage.splitsWorker }}
+    value: "first_rows_responses"
+  image: {{ .Values.dockerImage.worker.firstRows }}
   imagePullPolicy: IfNotPresent
   volumeMounts:
-  - mountPath: {{ .Values.splitsWorker.assetsDirectory | quote }}
+  - mountPath: {{ .Values.worker.firstRows.assetsDirectory | quote }}
     mountPropagation: None
     name: nfs
     subPath: "{{ include "assets.subpath" . }}"
     readOnly: false
-  - mountPath: {{ .Values.splitsWorker.cacheDirectory | quote }}
+  - mountPath: {{ .Values.worker.firstRows.cacheDirectory | quote }}
     mountPropagation: None
     name: nfs
     subPath: "{{ include "cache.datasets.subpath" . }}"
     readOnly: false
-  - mountPath: {{ .Values.splitsWorker.numbaCacheDirectory | quote }}
+  - mountPath: {{ .Values.worker.firstRows.numbaCacheDirectory | quote }}
     mountPropagation: None
     name: nfs
     subPath: "{{ include "cache.numba.subpath" . }}"
@@ -84,10 +86,10 @@
   # TODO: provide readiness and liveness probes
   # readinessProbe:
   #   tcpSocket:
-  #     port: {{ .Values.splitsWorker.readinessPort }}
+  #     port: {{ .Values.worker.firstRows.readinessPort }}
   # livenessProbe:
   #   tcpSocket:
-  #     port: {{ .Values.splitsWorker.readinessPort }}
+  #     port: {{ .Values.worker.firstRows.readinessPort }}
   resources:
-    {{ toYaml .Values.splitsWorker.resources | nindent 4 }}
+    {{ toYaml .Values.worker.firstRows.resources | nindent 4 }}
 {{- end -}}

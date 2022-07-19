@@ -52,20 +52,37 @@ app: "{{ .Release.Name }}-reverse-proxy"
 app: "{{ include "release" . }}-api"
 {{- end -}}
 
-{{- define "labels.datasetsWorker" -}}
+{{- define "labels.worker.datasets" -}}
 {{ include "labels" . }}
-app: "{{ include "release" . }}-datasets-worker"
+app: "{{ include "release" . }}-worker-datasets"
 {{- end -}}
 
-{{- define "labels.splitsWorker" -}}
+{{- define "labels.worker.splits" -}}
 {{ include "labels" . }}
-app: "{{ include "release" . }}-splits-worker"
+app: "{{ include "release" . }}-worker-splits"
+{{- end -}}
+
+{{- define "labels.worker.firstRows" -}}
+{{ include "labels" . }}
+app: "{{ include "release" . }}-worker-first-rows"
+{{- end -}}
+
+{{- define "labels.worker.splitsNext" -}}
+{{ include "labels" . }}
+app: "{{ include "release" . }}-worker-splits-next"
 {{- end -}}
 
 {{- define "labels.admin" -}}
 {{ include "labels" . }}
 app: "{{ include "release" . }}-admin"
 {{- end -}}
+
+{{/*
+The assets base URL
+*/}}
+{{- define "assets.baseUrl" -}}
+{{- printf "https://%s/assets" .Values.apiDomain }}
+{{- end }}
 
 {{/*
 The assets/ subpath in the NFS
