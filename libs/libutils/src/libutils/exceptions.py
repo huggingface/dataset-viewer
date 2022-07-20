@@ -12,6 +12,19 @@ class StatusErrorContent(TypedDict):
     cause_traceback: List[str]
 
 
+class Status400ErrorResponse(TypedDict):
+    status_code: int
+    message: str
+    cause_exception: str
+    cause_message: str
+    cause_traceback: List[str]
+
+
+class Status500ErrorResponse(TypedDict):
+    status_code: int
+    message: str
+
+
 class StatusError(Exception):
     """Base class for exceptions in this module."""
 
@@ -51,6 +64,15 @@ class Status400Error(StatusError):
     def __init__(self, message: str, cause: Optional[BaseException] = None):
         super().__init__(message, 400, cause)
 
+    def as_response(self) -> Status400ErrorResponse:
+        return {
+            "status_code": self.status_code,
+            "message": self.message,
+            "cause_exception": self.cause_exception,
+            "cause_message": self.cause_message,
+            "cause_traceback": self.cause_traceback,
+        }
+
 
 class Status500Error(StatusError):
     """Exception raised if the response must be a 500 status code.
@@ -61,3 +83,9 @@ class Status500Error(StatusError):
 
     def __init__(self, message: str, cause: Optional[BaseException] = None):
         super().__init__(message, 500, cause)
+
+    def as_response(self) -> Status500ErrorResponse:
+        return {
+            "status_code": self.status_code,
+            "message": self.message,
+        }
