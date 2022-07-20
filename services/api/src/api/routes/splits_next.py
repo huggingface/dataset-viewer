@@ -1,7 +1,8 @@
 import logging
 
 from libcache.simple_cache import DoesNotExist, HTTPStatus, get_splits_response
-from libutils.exceptions import Status400Error
+from libqueue.queue import is_splits_response_in_process
+from libutils.exceptions import Status400Error, Status500Error
 from starlette.requests import Request
 from starlette.responses import Response
 
@@ -25,4 +26,11 @@ async def splits_endpoint_next(request: Request) -> Response:
             MAX_AGE_LONG_SECONDS if http_status == HTTPStatus.OK else MAX_AGE_SHORT_SECONDS,
         )
     except DoesNotExist:
-        return get_response(Status400Error("Not found").as_content(), 400, MAX_AGE_SHORT_SECONDS)
+        if is_splits_response_in_process(dataset_name):
+            return get_response(
+                Status500Error("The list of splits is not ready yet. Please retry later.").as_content(),
+                500,
+                MAX_AGE_SHORT_SECONDS,
+            )
+        else:
+            return get_response(Status400Error("Not found").as_content(), 400, MAX_AGE_SHORT_SECONDS)

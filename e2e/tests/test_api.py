@@ -8,9 +8,7 @@ SERVICE_REVERSE_PROXY_PORT = os.environ.get("SERVICE_REVERSE_PROXY_PORT", "8000"
 URL = f"http://localhost:{SERVICE_REVERSE_PROXY_PORT}"
 
 
-def poll_until_valid_response(
-    url: str, timeout: int = 15, interval: int = 1, valid_error_message: str = None
-) -> requests.Response:
+def poll_until_valid_response(url: str, timeout: int = 15, interval: int = 1) -> requests.Response:
     retries = timeout // interval
     should_retry = True
     response = None
@@ -18,11 +16,15 @@ def poll_until_valid_response(
         retries -= 1
         time.sleep(interval)
         response = requests.get(url)
-        if valid_error_message is None:
-            should_retry = response.status_code != 200
+        if response.status_code == 400:
+            # special case for /splits and /rows. It should be removed once they are deprecated
+            # it was an error to return 400 if the client should retry
+            try:
+                should_retry = "retry" in response.json()["message"].lower()
+            except Exception:
+                should_retry = False
         else:
-            json = response.json()
-            should_retry = "message" in json and json["message"] == valid_error_message
+            should_retry = response.status_code == 500
     if response is None:
         raise RuntimeError("no request has been done")
     return response
@@ -31,19 +33,14 @@ def poll_until_valid_response(
 def poll_splits_until_dataset_process_has_finished(
     dataset: str, endpoint: str = "splits", timeout: int = 15, interval: int = 1
 ) -> requests.Response:
-    return poll_until_valid_response(
-        f"{URL}/{endpoint}?dataset={dataset}", timeout, interval, "The dataset is being processed. Retry later."
-    )
+    return poll_until_valid_response(f"{URL}/{endpoint}?dataset={dataset}", timeout, interval)
 
 
 def poll_rows_until_split_process_has_finished(
     dataset: str, config: str, split: str, endpoint: str = "splits", timeout: int = 15, interval: int = 1
 ) -> requests.Response:
     return poll_until_valid_response(
-        f"{URL}/{endpoint}?dataset={dataset}&config={config}&split={split}",
-        timeout,
-        interval,
-        "The split is being processed. Retry later.",
+        f"{URL}/{endpoint}?dataset={dataset}&config={config}&split={split}", timeout, interval
     )
 
 

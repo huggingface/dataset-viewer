@@ -6,11 +6,14 @@ from libqueue.queue import (
     add_splits_job,
     clean_database,
     connect_to_queue,
+    finish_first_rows_job,
     finish_splits_job,
     get_first_rows_job,
     get_first_rows_jobs_count_by_status,
     get_splits_job,
     get_splits_jobs_count_by_status,
+    is_first_rows_response_in_process,
+    is_splits_response_in_process,
 )
 
 from ._utils import MONGO_QUEUE_DATABASE, MONGO_URL
@@ -37,10 +40,12 @@ def test_add_job() -> None:
     add_splits_job("test")
     # a second call is ignored
     add_splits_job("test")
+    assert is_splits_response_in_process("test") is True
     # get and start the first job
     job_id, dataset_name, retries = get_splits_job()
     assert dataset_name == "test"
     assert retries == 0
+    assert is_splits_response_in_process("test") is True
     # adding the job while the first one has not finished yet is ignored
     add_splits_job("test")
     with pytest.raises(EmptyQueue):
@@ -49,6 +54,7 @@ def test_add_job() -> None:
     # finish the first job
     finish_splits_job(job_id, success=True)
     # the queue is empty
+    assert is_splits_response_in_process("test") is False
     with pytest.raises(EmptyQueue):
         get_splits_job()
     # add a job again
@@ -64,12 +70,14 @@ def test_add_job() -> None:
 
 def test_max_jobs_per_dataset() -> None:
     add_first_rows_job("dataset", "config", "split1")
+    assert is_first_rows_response_in_process("dataset", "config", "split1") is True
     add_first_rows_job("dataset", "config", "split2")
     add_first_rows_job("dataset", "config", "split3")
-    _, dataset_name, config_name, split_name, __ = get_first_rows_job()
+    job_id, dataset_name, config_name, split_name, __ = get_first_rows_job()
     assert dataset_name == "dataset"
     assert config_name == "config"
     assert split_name == "split1"
+    assert is_first_rows_response_in_process("dataset", "config", "split1") is True
     with pytest.raises(EmptyQueue):
         get_first_rows_job(0)
     with pytest.raises(EmptyQueue):
@@ -78,6 +86,9 @@ def test_max_jobs_per_dataset() -> None:
     assert split_name == "split2"
     with pytest.raises(EmptyQueue):
         get_first_rows_job(2)
+    # finish the first job
+    finish_first_rows_job(job_id, success=True)
+    assert is_first_rows_response_in_process("dataset", "config", "split1") is False
 
 
 def test_count_by_status() -> None:

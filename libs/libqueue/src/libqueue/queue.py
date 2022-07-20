@@ -439,6 +439,22 @@ def cancel_started_first_rows_jobs() -> None:
         )
 
 
+def is_splits_response_in_process(dataset_name: str) -> bool:
+    return SplitsJob.objects(dataset_name=dataset_name, status__in=[Status.WAITING, Status.STARTED]).count() > 0
+
+
+def is_first_rows_response_in_process(dataset_name: str, config_name: str, split_name: str) -> bool:
+    return (
+        FirstRowsJob.objects(
+            dataset_name=dataset_name,
+            config_name=config_name,
+            split_name=split_name,
+            status__in=[Status.WAITING, Status.STARTED],
+        ).count()
+        > 0
+    )
+
+
 # special reports
 
 
