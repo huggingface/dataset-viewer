@@ -200,10 +200,10 @@ def get_split(
     }
     try:
         if info.splits is None:
-            raise Exception("no splits in info")
+            raise ValueError("no splits in info")
         num_bytes = info.splits[split_name].num_bytes
         num_examples = info.splits[split_name].num_examples
-    except Exception:
+    except ValueError:
         num_bytes = None
         num_examples = None
     return {

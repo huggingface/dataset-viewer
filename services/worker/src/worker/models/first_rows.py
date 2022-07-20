@@ -3,7 +3,7 @@ import sys
 from typing import Any, Dict, List, Optional
 
 from datasets import Features, IterableDataset, load_dataset
-from libutils.exceptions import Status400Error
+from libutils.exceptions import Status400Error, Status500Error
 from libutils.types import RowItem
 from libutils.utils import orjson_dumps
 
@@ -201,7 +201,7 @@ def get_first_rows(
                 raise TypeError("load_dataset should return an IterableDataset")
             features = iterable_dataset.features
         except Exception as err:
-            raise Status400Error("Features cannot be found for the split.", err) from err
+            raise Status400Error("The split features (columns) cannot be extracted.", err) from err
     else:
         features = info.features
 
@@ -211,17 +211,24 @@ def get_first_rows(
     )
 
     try:
-        try:
-            rows = get_rows(dataset_name, config_name, split_name, hf_token, True, rows_max_number)
-        except Exception:
-            if fallback:
-                rows = get_rows(dataset_name, config_name, split_name, hf_token, False, rows_max_number)
-            else:
-                raise
+        rows = get_rows(dataset_name, config_name, split_name, hf_token, True, rows_max_number)
     except Exception as err:
-        raise Status400Error("Cannot get the first rows for the split.", err) from err
+        if not fallback:
+            raise Status400Error(
+                "Cannot load the dataset split (in streaming mode) to extract the first rows.", err
+            ) from err
+        try:
+            rows = get_rows(dataset_name, config_name, split_name, hf_token, False, rows_max_number)
+        except Exception as err:
+            raise Status400Error(
+                "Cannot load the dataset split (in normal download mode) to extract the first rows.", err
+            ) from err
 
-    typed_rows = get_typed_rows(dataset_name, config_name, split_name, rows, features, assets_base_url)
+    try:
+        typed_rows = get_typed_rows(dataset_name, config_name, split_name, rows, features, assets_base_url)
+    except Exception as err:
+        raise Status500Error("The dataset values post-processing failed. Please report the issue.", err) from err
+
     row_items = create_truncated_row_items(
         dataset_name, config_name, split_name, typed_rows, rows_max_bytes, rows_min_number
     )
