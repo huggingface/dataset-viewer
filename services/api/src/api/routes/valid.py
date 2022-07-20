@@ -2,11 +2,10 @@ import logging
 import time
 
 from libcache.cache import (
-    StatusError,
     get_valid_or_stale_dataset_names,
     is_dataset_name_valid_or_stale,
 )
-from libutils.exceptions import Status400Error, Status500Error, StatusError as StatusErrorBis
+from libutils.exceptions import Status400Error, Status500Error, StatusError
 from starlette.requests import Request
 from starlette.responses import Response
 
@@ -36,7 +35,7 @@ async def is_valid_endpoint(request: Request) -> Response:
                 "valid": is_dataset_name_valid_or_stale(dataset_name),
             }
             return get_response(content, 200, MAX_AGE_LONG_SECONDS)
-        except (StatusError, StatusErrorBis) as err:
+        except StatusError as err:
             return get_response(err.as_content(), err.status_code, MAX_AGE_SHORT_SECONDS)
     except Exception as err:
         return get_response(Status500Error("Unexpected error.", err).as_content(), 500, MAX_AGE_SHORT_SECONDS)

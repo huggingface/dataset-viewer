@@ -1,7 +1,7 @@
 import logging
 
-from libcache.cache import get_rows_response, Status400Error, Status500Error, StatusError
-from libutils.exceptions import StatusError as StatusErrorBis
+from libcache.cache import get_rows_response
+from libutils.exceptions import Status400Error, Status500Error, StatusError
 from starlette.requests import Request
 from starlette.responses import Response
 
@@ -27,7 +27,7 @@ async def rows_endpoint(request: Request) -> Response:
                 raise Status400Error("Parameters 'dataset', 'config' and 'split' are required")
             rows_response, rows_error, status_code = get_rows_response(dataset_name, config_name, split_name)
             return get_response(rows_response or rows_error, status_code, MAX_AGE_LONG_SECONDS)
-        except (StatusError, StatusErrorBis) as err:
+        except StatusError as err:
             e = (
                 Status400Error("The split is being processed. Retry later.")
                 if err.message == "The split cache is empty."

@@ -1,7 +1,7 @@
 import logging
 
-from libcache.cache import get_splits_response, Status400Error, Status500Error, StatusError
-from libutils.exceptions import StatusError as StatusErrorBis
+from libcache.cache import get_splits_response
+from libutils.exceptions import Status400Error, Status500Error, StatusError
 from starlette.requests import Request
 from starlette.responses import Response
 
@@ -21,7 +21,7 @@ async def splits_endpoint(request: Request) -> Response:
                 raise Status400Error("Parameter 'dataset' is required")
             splits_response, splits_error, status_code = get_splits_response(dataset_name)
             return get_response(splits_response or splits_error, status_code, MAX_AGE_LONG_SECONDS)
-        except (StatusError, StatusErrorBis) as err:
+        except StatusError as err:
             e = (
                 Status400Error("The dataset is being processed. Retry later.")
                 if err.message == "The dataset cache is empty."
