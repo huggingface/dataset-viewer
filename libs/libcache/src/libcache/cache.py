@@ -1,7 +1,5 @@
 import enum
 import logging
-import sys
-import traceback
 import types
 from datetime import datetime
 from typing import (
@@ -9,7 +7,6 @@ from typing import (
     Dict,
     Generic,
     List,
-    Literal,
     Optional,
     Tuple,
     Type,
@@ -18,6 +15,8 @@ from typing import (
     Union,
 )
 
+from libutils.exceptions import Status400Error, Status500Error, StatusError
+from libutils.types import Split, SplitFullName
 from mongoengine import Document, DoesNotExist, connect
 from mongoengine.fields import (
     DateTimeField,
@@ -51,166 +50,6 @@ class QuerySetManager(Generic[U]):
 
 
 # END monkey patching ### hack ###
-
-# COPY in order to remove dependency on libutils
-# This file will be removed soon, once /splits and /rows will be deprecated
-
-
-class StatusErrorContent(TypedDict):
-    status_code: int
-    exception: str
-    message: str
-    cause_exception: str
-    cause_message: str
-    cause_traceback: List[str]
-
-
-class Status400ErrorResponse(TypedDict):
-    status_code: int
-    message: str
-    cause_exception: str
-    cause_message: str
-    cause_traceback: List[str]
-
-
-class Status500ErrorResponse(TypedDict):
-    status_code: int
-    message: str
-
-
-class StatusError(Exception):
-    """Base class for exceptions in this module."""
-
-    def __init__(self, message: str, status_code: int, cause: Optional[BaseException] = None):
-        super().__init__(message)
-        self.status_code = status_code
-        self.exception = type(self).__name__
-        self.message = str(self)
-        if cause is None:
-            self.cause_exception = self.exception
-            self.cause_message = self.message
-            self.cause_traceback = []
-        else:
-            self.cause_exception = type(cause).__name__
-            self.cause_message = str(cause)
-            (t, v, tb) = sys.exc_info()
-            self.cause_traceback = traceback.format_exception(t, v, tb)
-
-    def as_content(self) -> StatusErrorContent:
-        return {
-            "status_code": self.status_code,
-            "exception": self.exception,
-            "message": self.message,
-            "cause_exception": self.cause_exception,
-            "cause_message": self.cause_message,
-            "cause_traceback": self.cause_traceback,
-        }
-
-
-class Status400Error(StatusError):
-    """Exception raised if the response must be a 400 status code.
-
-    Attributes:
-        message -- the content of the response
-    """
-
-    def __init__(self, message: str, cause: Optional[BaseException] = None):
-        super().__init__(message, 400, cause)
-
-    def as_response(self) -> Status400ErrorResponse:
-        return {
-            "status_code": self.status_code,
-            "message": self.message,
-            "cause_exception": self.cause_exception,
-            "cause_message": self.cause_message,
-            "cause_traceback": self.cause_traceback,
-        }
-
-
-class Status500Error(StatusError):
-    """Exception raised if the response must be a 500 status code.
-
-    Attributes:
-        message -- the content of the response
-    """
-
-    def __init__(self, message: str, cause: Optional[BaseException] = None):
-        super().__init__(message, 500, cause)
-
-    def as_response(self) -> Status500ErrorResponse:
-        return {
-            "status_code": self.status_code,
-            "message": self.message,
-        }
-
-
-TimestampUnit = Literal["s", "ms", "us", "ns"]
-CommonColumnType = Literal[
-    "JSON", "BOOL", "INT", "FLOAT", "STRING", "IMAGE_URL", "RELATIVE_IMAGE_URL", "AUDIO_RELATIVE_SOURCES"
-]
-ClassLabelColumnType = Literal["CLASS_LABEL"]
-TimestampColumnType = Literal["TIMESTAMP"]
-
-
-class _BaseColumnDict(TypedDict):
-    name: str
-
-
-class CommonColumnDict(_BaseColumnDict):
-    type: CommonColumnType
-
-
-class ClassLabelColumnDict(_BaseColumnDict):
-    type: ClassLabelColumnType
-    labels: List[str]
-
-
-class TimestampColumnDict(_BaseColumnDict):
-    type: TimestampColumnType
-    unit: TimestampUnit
-    tz: Optional[str]
-
-
-ColumnType = Union[CommonColumnType, ClassLabelColumnType, TimestampColumnType]
-ColumnDict = Union[CommonColumnDict, ClassLabelColumnDict, TimestampColumnDict]
-
-
-class RowItem(TypedDict):
-    dataset: str
-    config: str
-    split: str
-    row_idx: int
-    row: Dict[str, Any]
-    truncated_cells: List[str]
-
-
-class ColumnItem(TypedDict):
-    dataset: str
-    config: str
-    split: str
-    column_idx: int
-    column: ColumnDict
-
-
-class RowsResponse(TypedDict):
-    columns: List[ColumnItem]
-    rows: List[RowItem]
-
-
-class Split(TypedDict):
-    split_name: str
-    rows_response: RowsResponse
-    num_bytes: Optional[int]
-    num_examples: Optional[int]
-
-
-class SplitFullName(TypedDict):
-    dataset_name: str
-    config_name: str
-    split_name: str
-
-
-# END COPY in order to remove dependency on libutils
 
 
 def connect_to_cache(database, host) -> None:
