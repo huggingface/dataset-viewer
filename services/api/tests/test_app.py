@@ -13,7 +13,12 @@ from libcache.simple_cache import (
     upsert_first_rows_response,
     upsert_splits_response,
 )
-from libqueue.queue import add_dataset_job, add_split_job
+from libqueue.queue import (
+    add_dataset_job,
+    add_first_rows_job,
+    add_split_job,
+    add_splits_job,
+)
 from libqueue.queue import clean_database as clean_queue_database
 from starlette.testclient import TestClient
 
@@ -262,11 +267,11 @@ def test_splits_cache_refreshing(client: TestClient) -> None:
     dataset = "acronym_identification"
     response = client.get("/splits-next", params={"dataset": dataset})
     assert response.json()["message"] == "Not found"
-    add_dataset_job(dataset)
+    add_splits_job(dataset)
     mark_splits_responses_as_stale(dataset)
     # ^ has no effect for the moment (no entry for the dataset, and anyway: no way to know the value of the stale flag)
     response = client.get("/splits-next", params={"dataset": dataset})
-    assert response.json()["message"] == "Not found"
+    assert response.json()["message"] == "The list of splits is not ready yet. Please retry later."
     # simulate the worker
     upsert_splits_response(dataset, {"key": "value"}, HTTPStatus.OK)
     response = client.get("/splits-next", params={"dataset": dataset})
@@ -280,11 +285,11 @@ def test_first_rows_cache_refreshing(client: TestClient) -> None:
     split = "train"
     response = client.get("/first-rows", params={"dataset": dataset, "config": config, "split": split})
     assert response.json()["message"] == "Not found"
-    add_split_job(dataset, config, split)
+    add_first_rows_job(dataset, config, split)
     mark_first_rows_responses_as_stale(dataset, config, split)
     # ^ has no effect for the moment (no entry for the split, and anyway: no way to know the value of the stale flag)
     response = client.get("/first-rows", params={"dataset": dataset, "config": config, "split": split})
-    assert response.json()["message"] == "Not found"
+    assert response.json()["message"] == "The list of the first rows is not ready yet. Please retry later."
     # simulate the worker
     upsert_first_rows_response(dataset, config, split, {"key": "value"}, HTTPStatus.OK)
     response = client.get("/first-rows", params={"dataset": dataset, "config": config, "split": split})
