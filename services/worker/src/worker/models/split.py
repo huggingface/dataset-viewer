@@ -198,14 +198,14 @@ def get_split(
         ],
         "rows": row_items,
     }
-    try:
-        if info.splits is None:
-            raise Exception("no splits in info")
-        num_bytes = info.splits[split_name].num_bytes
-        num_examples = info.splits[split_name].num_examples
-    except Exception:
-        num_bytes = None
-        num_examples = None
+
+    num_bytes = None
+    num_examples = None
+    if info.splits is not None and split_name in info.splits:
+        if hasattr(info.splits[split_name], "num_bytes"):
+            num_bytes = info.splits[split_name].num_bytes
+        if hasattr(info.splits[split_name], "num_examples"):
+            num_examples = info.splits[split_name].num_examples
     return {
         "split_name": split_name,
         "rows_response": rows_response,

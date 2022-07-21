@@ -77,28 +77,6 @@ def refresh_split(
         raise
 
 
-def get_error_response(error: StatusError) -> Dict:
-    return {
-        "status_code": error.status_code,
-        "exception": error.exception,
-        "message": error.message,
-    }
-
-
-def get_error_response_with_cause(error: StatusError) -> Dict:
-    error_response = {
-        "status_code": error.status_code,
-        "exception": error.exception,
-        "message": error.message,
-    }
-    if error.cause_exception and error.cause_message:
-        error_response["cause_exception"] = error.cause_exception
-        error_response["cause_message"] = error.cause_message
-    if error.cause_traceback:
-        error_response["cause_traceback"] = error.cause_traceback
-    return error_response
-
-
 def refresh_splits(dataset_name: str, hf_token: Optional[str] = None) -> HTTPStatus:
     try:
         split_full_names = get_dataset_split_full_names(dataset_name, hf_token)
@@ -149,16 +127,16 @@ def refresh_splits(dataset_name: str, hf_token: Optional[str] = None) -> HTTPSta
         logger.debug(f"{len(new_splits)} 'first-rows' jobs added for the splits of dataset={dataset_name}")
         return HTTPStatus.OK
     except Status400Error as err:
-        upsert_splits_response(dataset_name, get_error_response_with_cause(err), HTTPStatus.BAD_REQUEST)
+        upsert_splits_response(dataset_name, dict(err.as_response()), HTTPStatus.BAD_REQUEST)
         logger.debug(f"splits response for dataset={dataset_name} had BAD_REQUEST error, cache updated")
         return HTTPStatus.BAD_REQUEST
     except Exception as err:
         err = err if isinstance(err, Status500Error) else Status500Error(str(err))
         upsert_splits_response(
             dataset_name,
-            get_error_response(err),
+            dict(err.as_response()),
             HTTPStatus.INTERNAL_SERVER_ERROR,
-            get_error_response_with_cause(err),
+            dict(err.as_content()),
         )
         logger.debug(f"splits response for dataset={dataset_name} had INTERNAL_SERVER_ERROR error, cache updated")
         return HTTPStatus.INTERNAL_SERVER_ERROR
@@ -192,7 +170,7 @@ def refresh_first_rows(
         return HTTPStatus.OK
     except Status400Error as err:
         upsert_first_rows_response(
-            dataset_name, config_name, split_name, get_error_response_with_cause(err), HTTPStatus.BAD_REQUEST
+            dataset_name, config_name, split_name, dict(err.as_response()), HTTPStatus.BAD_REQUEST
         )
         logger.debug(
             f"first-rows response for dataset={dataset_name} config={config_name} split={split_name} had BAD_REQUEST"
@@ -205,9 +183,9 @@ def refresh_first_rows(
             dataset_name,
             config_name,
             split_name,
-            get_error_response(err),
+            dict(err.as_response()),
             HTTPStatus.INTERNAL_SERVER_ERROR,
-            get_error_response_with_cause(err),
+            dict(err.as_content()),
         )
         logger.debug(
             f"first-rows response for dataset={dataset_name} config={config_name} split={split_name} had"

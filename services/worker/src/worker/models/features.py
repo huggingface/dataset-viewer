@@ -105,4 +105,4 @@ def get_cell_value(
         # TODO: check the type?
         return cell
     else:
-        raise TypeError("Cell type error.")
+        raise TypeError("could not determine the type of the data cell.")

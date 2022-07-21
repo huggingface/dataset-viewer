@@ -33,9 +33,9 @@ def get_rows(
     )
     if streaming:
         if not isinstance(dataset, IterableDataset):
-            raise TypeError("load_dataset should return an IterableDataset")
+            raise TypeError("load_dataset should return an IterableDataset in streaming mode")
     elif not isinstance(dataset, Dataset):
-        raise TypeError("load_dataset should return a Dataset")
+        raise TypeError("load_dataset should return a Dataset in normal mode")
     rows_plus_one = list(itertools.islice(dataset, rows_max_number + 1))
     # ^^ to be able to detect if a split has exactly ROWS_MAX_NUMBER rows
     if len(rows_plus_one) <= rows_max_number:

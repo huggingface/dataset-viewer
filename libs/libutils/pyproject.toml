@@ -2,7 +2,7 @@
 authors = ["Sylvain Lesage <sylvain.lesage@huggingface.co>"]
 description = "Library for utils"
 name = "libutils"
-version = "0.1.2"
+version = "0.1.4"
 
 [tool.poetry.dependencies]
 function-parser = "^0.0.3"

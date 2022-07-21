@@ -5,7 +5,7 @@ from libcache.cache import (
     get_valid_or_stale_dataset_names,
     is_dataset_name_valid_or_stale,
 )
-from libutils.exceptions import Status400Error, StatusError
+from libutils.exceptions import Status400Error, Status500Error, StatusError
 from starlette.requests import Request
 from starlette.responses import Response
 
@@ -25,14 +25,17 @@ async def valid_datasets_endpoint(_: Request) -> Response:
 
 
 async def is_valid_endpoint(request: Request) -> Response:
-    dataset_name = request.query_params.get("dataset")
-    logger.info(f"/is-valid, dataset={dataset_name}")
     try:
-        if not isinstance(dataset_name, str):
-            raise Status400Error("Parameter 'dataset' is required")
-        content = {
-            "valid": is_dataset_name_valid_or_stale(dataset_name),
-        }
-        return get_response(content, 200, MAX_AGE_LONG_SECONDS)
-    except StatusError as err:
-        return get_response(err.as_content(), err.status_code, MAX_AGE_SHORT_SECONDS)
+        dataset_name = request.query_params.get("dataset")
+        logger.info(f"/is-valid, dataset={dataset_name}")
+        try:
+            if not isinstance(dataset_name, str):
+                raise Status400Error("Parameter 'dataset' is required")
+            content = {
+                "valid": is_dataset_name_valid_or_stale(dataset_name),
+            }
+            return get_response(content, 200, MAX_AGE_LONG_SECONDS)
+        except StatusError as err:
+            return get_response(err.as_content(), err.status_code, MAX_AGE_SHORT_SECONDS)
+    except Exception as err:
+        return get_response(Status500Error("Unexpected error.", err).as_content(), 500, MAX_AGE_SHORT_SECONDS)
