@@ -65,6 +65,39 @@
           }
         }
       },
+      "Status400ErrorContent": {
+        "type": "object",
+        "required": ["status_code", "message"],
+        "properties": {
+          "status_code": {
+            "type": "integer"
+          },
+          "message": {
+            "type": "string"
+          },
+          "cause_exception": {
+            "type": "string"
+          },
+          "cause_message": {
+            "type": "string"
+          },
+          "cause_traceback": {
+            "type": "string"
+          }
+        }
+      },
+      "Status500ErrorContent": {
+        "type": "object",
+        "required": ["status_code", "message"],
+        "properties": {
+          "status_code": {
+            "type": "integer"
+          },
+          "message": {
+            "type": "string"
+          }
+        }
+      },
       "StatusErrorContent": {
         "type": "object",
         "required": ["status_code", "exception", "message"],
@@ -89,6 +122,20 @@
           }
         }
       },
+      "FirstRowsResponse": {
+        "type": "object",
+        "required": ["features", "rows"],
+        "properties": {
+          "columns": {
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/FeatureItem" }
+          },
+          "rows": {
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/FirstRowItem" }
+          }
+        }
+      },
       "RowsResponse": {
         "type": "object",
         "required": ["columns", "rows"],
@@ -100,6 +147,268 @@
           "rows": {
             "type": "array",
             "items": { "$ref": "#/components/schemas/RowItem" }
+          }
+        }
+      },
+      "FeatureItem": {
+        "type": "object",
+        "required": ["dataset", "config", "split", "idx", "name", "type"],
+        "properties": {
+          "dataset": {
+            "type": "string"
+          },
+          "config": {
+            "type": "string"
+          },
+          "split": {
+            "type": "string"
+          },
+          "idx": {
+            "type": "integer"
+          },
+          "name": {
+            "type": "string"
+          },
+          "type": {
+            "$ref": "#/components/schemas/FeatureType"
+          }
+        }
+      },
+      "FeatureType": {
+        "oneOf": [
+          { "$ref": "#/components/schemas/ValueFeatureType" },
+          { "$ref": "#/components/schemas/ClassLabelFeatureType" },
+          { "$ref": "#/components/schemas/ArrayXDFeatureType" },
+          { "$ref": "#/components/schemas/TranslationFeatureType" },
+          {
+            "$ref": "#/components/schemas/TranslationVariableLanguagesFeatureType"
+          },
+          {
+            "$ref": "#/components/schemas/SequenceFeatureType"
+          },
+          {
+            "$ref": "#/components/schemas/DictFeatureType"
+          },
+          {
+            "$ref": "#/components/schemas/ListFeatureType"
+          },
+          {
+            "$ref": "#/components/schemas/AudioFeatureType"
+          },
+          {
+            "$ref": "#/components/schemas/ImageFeatureType"
+          }
+        ]
+      },
+      "ValueFeatureType": {
+        "type": "object",
+        "required": ["id", "_type", "dtype"],
+        "properties": {
+          "id": {
+            "type": "string",
+            "nullable": true,
+            "enum": [null]
+          },
+          "_type": {
+            "type": "string",
+            "enum": ["Value"]
+          },
+          "dtype": {
+            "type": "string",
+            "enum": [
+              "null",
+              "bool",
+              "int8",
+              "int16",
+              "int32",
+              "int64",
+              "uint8",
+              "uint16",
+              "uint32",
+              "uint64",
+              "float16",
+              "float32 (alias float)",
+              "float64 (alias double)",
+              "time32[(s|ms)]",
+              "time64[(us|ns)]",
+              "timestamp[(s|ms|us|ns)]",
+              "timestamp[(s|ms|us|ns), tz=(tzstring)]",
+              "date32",
+              "date64",
+              "duration[(s|ms|us|ns)]",
+              "decimal128(precision, scale)",
+              "decimal256(precision, scale)",
+              "binary",
+              "large_binary",
+              "string",
+              "large_string"
+            ]
+          }
+        }
+      },
+      "ClassLabelFeatureType": {
+        "type": "object",
+        "required": ["id", "_type", "num_classes", "names"],
+        "properties": {
+          "id": {
+            "type": "string",
+            "nullable": true,
+            "enum": [null]
+          },
+          "_type": {
+            "type": "string",
+            "enum": ["ClassLabel"]
+          },
+          "num_classes": {
+            "type": "integer"
+          },
+          "names": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "ArrayXDFeatureType": {
+        "type": "object",
+        "required": ["id", "_type", "shape"],
+        "properties": {
+          "id": {
+            "type": "string",
+            "nullable": true,
+            "enum": [null]
+          },
+          "_type": {
+            "type": "string",
+            "enum": ["Array2D", "Array3D", "Array4D", "Array5D"]
+          },
+          "shape": {
+            "type": "array",
+            "items": {
+              "type": "integer",
+              "nullable": true
+            }
+          }
+        }
+      },
+      "TranslationFeatureType": {
+        "type": "object",
+        "required": ["id", "_type", "languages"],
+        "properties": {
+          "id": {
+            "type": "string",
+            "nullable": true,
+            "enum": [null]
+          },
+          "_type": {
+            "type": "string",
+            "enum": ["Translation"]
+          },
+          "languages": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "TranslationVariableLanguagesFeatureType": {
+        "type": "object",
+        "required": ["id", "_type", "num_languages", "languages"],
+        "properties": {
+          "id": {
+            "type": "string",
+            "nullable": true,
+            "enum": [null]
+          },
+          "_type": {
+            "type": "string",
+            "enum": ["TranslationVariableLanguages"]
+          },
+          "num_languages": {
+            "type": "integer"
+          },
+          "languages": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "SequenceFeatureType": {
+        "type": "object",
+        "required": ["id", "_type", "length", "feature"],
+        "properties": {
+          "id": {
+            "type": "string",
+            "nullable": true,
+            "enum": [null]
+          },
+          "_type": {
+            "type": "string",
+            "enum": ["Sequence"]
+          },
+          "length": {
+            "type": "integer"
+          },
+          "feature": {
+            "$ref": "#/components/schemas/DictFeatureType"
+          }
+        }
+      },
+      "DictFeatureType": {
+        "type": "object",
+        "additionalProperties": {
+          "$ref": "#/components/schemas/FeatureType"
+        }
+      },
+      "ListFeatureType": {
+        "type": "array",
+        "items": {
+          "$ref": "#/components/schemas/DictFeatureType"
+        }
+      },
+      "AudioFeatureType": {
+        "type": "object",
+        "required": ["id", "_type", "sampling_rate", "mono", "decode"],
+        "properties": {
+          "id": {
+            "type": "string",
+            "nullable": true,
+            "enum": [null]
+          },
+          "_type": {
+            "type": "string",
+            "enum": ["Audio"]
+          },
+          "sampling_rate": {
+            "type": "number"
+          },
+          "mono": {
+            "type": "boolean"
+          },
+          "decode": {
+            "type": "boolean"
+          }
+        }
+      },
+      "ImageFeatureType": {
+        "type": "object",
+        "required": ["id", "_type", "decode"],
+        "properties": {
+          "id": {
+            "type": "string",
+            "nullable": true,
+            "enum": [null]
+          },
+          "_type": {
+            "type": "string",
+            "enum": ["Image"]
+          },
+          "decode": {
+            "type": "boolean"
           }
         }
       },
@@ -225,6 +534,174 @@
           }
         }
       },
+      "FirstRowItem": {
+        "type": "object",
+        "required": [
+          "dataset",
+          "config",
+          "split",
+          "row_idx",
+          "row",
+          "truncated_cells"
+        ],
+        "properties": {
+          "dataset": {
+            "type": "string"
+          },
+          "config": {
+            "type": "string"
+          },
+          "split": {
+            "type": "string"
+          },
+          "row_idx": {
+            "type": "integer"
+          },
+          "row": {
+            "type": "object",
+            "additionalProperties": {
+              "$ref": "#/components/schemas/Cell"
+            }
+          },
+          "truncated_cells": {
+            "type": "array",
+            "items": { "type": "string" }
+          }
+        }
+      },
+      "Cell": {
+        "oneOf": [
+          { "$ref": "#/components/schemas/ValueCell" },
+          { "$ref": "#/components/schemas/ClassLabelCell" },
+          { "$ref": "#/components/schemas/Array2DCell" },
+          { "$ref": "#/components/schemas/Array3DCell" },
+          { "$ref": "#/components/schemas/Array4DCell" },
+          { "$ref": "#/components/schemas/Array5DCell" },
+          { "$ref": "#/components/schemas/TranslationCell" },
+          {
+            "$ref": "#/components/schemas/TranslationVariableLanguagesCell"
+          },
+          {
+            "$ref": "#/components/schemas/SequenceCell"
+          },
+          {
+            "$ref": "#/components/schemas/DictCell"
+          },
+          {
+            "$ref": "#/components/schemas/ListCell"
+          },
+          {
+            "$ref": "#/components/schemas/AudioCell"
+          },
+          {
+            "$ref": "#/components/schemas/ImageCell"
+          }
+        ]
+      },
+      "ValueCell": {
+        "oneOf": [
+          { "type": "boolean" },
+          { "type": "integer" },
+          { "type": "number" },
+          { "type": "string" }
+        ],
+        "nullable": true
+      },
+      "ClassLabelCell": {
+        "type": "integer"
+      },
+      "Array2DCell": {
+        "type": "array",
+        "items": {
+          "type": "array",
+          "items": {
+            "type": "number"
+          }
+        }
+      },
+      "Array3DCell": {
+        "type": "array",
+        "items": {
+          "$ref": "#/components/schemas/Array2DCell"
+        }
+      },
+      "Array4DCell": {
+        "type": "array",
+        "items": {
+          "$ref": "#/components/schemas/Array3DCell"
+        }
+      },
+      "Array5DCell": {
+        "type": "array",
+        "items": {
+          "$ref": "#/components/schemas/Array4DCell"
+        }
+      },
+      "TranslationCell": {
+        "type": "object",
+        "additionalProperties": {
+          "type": "string"
+        }
+      },
+      "TranslationVariableLanguagesCell": {
+        "type": "object",
+        "required": ["language", "translation"],
+        "properties": {
+          "language": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "translation": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "SequenceCell": {
+        "oneOf": [
+          { "$ref": "#/components/schemas/ListCell" },
+          { "$ref": "#/components/schemas/DictionaryOfListsCell" }
+        ]
+      },
+      "ListCell": {
+        "type": "array",
+        "items": {
+          "$ref": "#/components/schemas/Cell"
+        }
+      },
+      "DictionaryOfListsCell": {
+        "type": "object",
+        "additionalProperties": {
+          "$ref": "#/components/schemas/ListCell"
+        }
+      },
+      "DictCell": {
+        "type": "object",
+        "additionalProperties": {
+          "$ref": "#/components/schemas/Cell"
+        }
+      },
+      "AudioCell": {
+        "type": "object",
+        "properties": {
+          "src": {
+            "type": "string",
+            "format": "uri"
+          },
+          "type": {
+            "type": "string",
+            "enum": ["audio/wav", "audio/mpeg"]
+          }
+        }
+      },
+      "ImageCell": {
+        "type": "string",
+        "format": "uri"
+      },
       "ValidResponse": {
         "type": "object",
         "required": ["valid", "created_at"],
@@ -244,7 +721,7 @@
   "paths": {
     "/splits": {
       "get": {
-        "summary": "List of splits",
+        "summary": "List of splits (will soon be replaced with /splits-next)",
         "description": "The list of splits of a dataset.",
         "externalDocs": {
           "description": "See Splits (Hub docs)",
@@ -457,9 +934,226 @@
         }
       }
     },
+    "/splits-next": {
+      "get": {
+        "summary": "List of splits (will soon replace /splits)",
+        "description": "The list of splits of a dataset.",
+        "externalDocs": {
+          "description": "See Splits (Hub docs)",
+          "url": "https://huggingface.co/docs/datasets-server/splits"
+        },
+        "operationId": "listSplits",
+        "parameters": [
+          {
+            "name": "dataset",
+            "in": "query",
+            "description": "The identifier of the dataset on the Hub.",
+            "required": true,
+            "schema": { "type": "string" },
+            "examples": {
+              "glue": { "summary": "a canonical dataset", "value": "glue" },
+              "Helsinki-NLP/tatoeba_mt": {
+                "summary": "a namespaced dataset",
+                "value": "Helsinki-NLP/tatoeba_mt"
+              }
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A list of splits.</br>Beware: the response is not paginated.",
+            "headers": {
+              "Cache-Control": { "$ref": "#/components/headers/Cache-Control" },
+              "Access-Control-Allow-Origin": {
+                "$ref": "#/components/headers/Access-Control-Allow-Origin"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SplitsResponse"
+                },
+                "examples": {
+                  "duorc": {
+                    "summary": "duorc: two configs, six splits",
+                    "value": {
+                      "splits": [
+                        {
+                          "dataset": "duorc",
+                          "config": "SelfRC",
+                          "split": "train",
+                          "num_bytes": 239852925,
+                          "num_examples": 60721
+                        },
+                        {
+                          "dataset": "duorc",
+                          "config": "SelfRC",
+                          "split": "validation",
+                          "num_bytes": 51662575,
+                          "num_examples": 12961
+                        },
+                        {
+                          "dataset": "duorc",
+                          "config": "SelfRC",
+                          "split": "test",
+                          "num_bytes": 49142766,
+                          "num_examples": 12559
+                        },
+                        {
+                          "dataset": "duorc",
+                          "config": "ParaphraseRC",
+                          "split": "train",
+                          "num_bytes": 496683105,
+                          "num_examples": 69524
+                        },
+                        {
+                          "dataset": "duorc",
+                          "config": "ParaphraseRC",
+                          "split": "validation",
+                          "num_bytes": 106510545,
+                          "num_examples": 15591
+                        },
+                        {
+                          "dataset": "duorc",
+                          "config": "ParaphraseRC",
+                          "split": "test",
+                          "num_bytes": 115215816,
+                          "num_examples": 15857
+                        }
+                      ]
+                    }
+                  },
+                  "emotion": {
+                    "summary": "emotion: one config, three splits",
+                    "value": {
+                      "splits": [
+                        {
+                          "dataset": "emotion",
+                          "config": "default",
+                          "split": "train",
+                          "num_bytes": 1741541,
+                          "num_examples": 16000
+                        },
+                        {
+                          "dataset": "emotion",
+                          "config": "default",
+                          "split": "validation",
+                          "num_bytes": 214699,
+                          "num_examples": 2000
+                        },
+                        {
+                          "dataset": "emotion",
+                          "config": "default",
+                          "split": "test",
+                          "num_bytes": 217177,
+                          "num_examples": 2000
+                        }
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The dataset has some issue that prevents extracting the list of splits.<br/>The error response should give insights to help fix the issue.<br/>The client should not retry the request, because the response will not change until the dataset is fixed.",
+            "headers": {
+              "Cache-Control": {
+                "$ref": "#/components/headers/Cache-Control"
+              },
+              "Access-Control-Allow-Origin": {
+                "$ref": "#/components/headers/Access-Control-Allow-Origin"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Status400ErrorContent"
+                },
+                "examples": {
+                  "TypeError": {
+                    "summary": "SplitsNotFoundError",
+                    "value": {
+                      "status_code": 400,
+                      "message": "Cannot get the split names for the dataset.",
+                      "cause_exception": "SplitsNotFoundError",
+                      "cause_message": "The split names could not be parsed from the dataset config.",
+                      "cause_traceback": [
+                        "Traceback (most recent call last):\n",
+                        "  File \"/src/services/worker/.venv/lib/python3.9/site-packages/datasets/inspect.py\", line 354, in get_dataset_config_info\n    for split_generator in builder._split_generators(\n",
+                        "  File \"/tmp/modules-cache/datasets_modules/datasets/timit_asr/43f9448dd5db58e95ee48a277f466481b151f112ea53e27f8173784da9254fb2/timit_asr.py\", line 117, in _split_generators\n    data_dir = os.path.abspath(os.path.expanduser(dl_manager.manual_dir))\n",
+                        "  File \"/usr/local/lib/python3.9/posixpath.py\", line 231, in expanduser\n    path = os.fspath(path)\n",
+                        "TypeError: expected str, bytes or os.PathLike object, not NoneType\n",
+                        "\nThe above exception was the direct cause of the following exception:\n\n",
+                        "Traceback (most recent call last):\n",
+                        "  File \"/src/services/worker/src/worker/models/dataset.py\", line 15, in get_dataset_split_full_names\n    return [\n",
+                        "  File \"/src/services/worker/src/worker/models/dataset.py\", line 18, in <listcomp>\n    for split_name in get_dataset_split_names(dataset_name, config_name, use_auth_token=hf_token)\n",
+                        "  File \"/src/services/worker/.venv/lib/python3.9/site-packages/datasets/inspect.py\", line 404, in get_dataset_split_names\n    info = get_dataset_config_info(\n",
+                        "  File \"/src/services/worker/.venv/lib/python3.9/site-packages/datasets/inspect.py\", line 359, in get_dataset_config_info\n    raise SplitsNotFoundError(\"The split names could not be parsed from the dataset config.\") from err\n",
+                        "datasets.inspect.SplitsNotFoundError: The split names could not be parsed from the dataset config.\n"
+                      ]
+                    }
+                  },
+                  "FileNotFoundError": {
+                    "summary": "FileNotFoundError",
+                    "value": {
+                      "status_code": 400,
+                      "message": "Cannot get the split names for the dataset.",
+                      "cause_exception": "FileNotFoundError",
+                      "cause_message": "Couldn't find a dataset script at /src/services/worker/akhaliq/test/test.py or any data file in the same directory. Couldn't find 'akhaliq/test' on the Hugging Face Hub either: FileNotFoundError: The dataset repository at 'akhaliq/test' doesn't contain any data file.",
+                      "cause_traceback": [
+                        "Traceback (most recent call last):\n",
+                        "  File \"/src/services/worker/src/worker/models/dataset.py\", line 17, in get_dataset_split_full_names\n    for config_name in get_dataset_config_names(dataset_name, use_auth_token=hf_token)\n",
+                        "  File \"/src/services/worker/.venv/lib/python3.9/site-packages/datasets/inspect.py\", line 289, in get_dataset_config_names\n    dataset_module = dataset_module_factory(\n",
+                        "  File \"/src/services/worker/.venv/lib/python3.9/site-packages/datasets/load.py\", line 1242, in dataset_module_factory\n    raise FileNotFoundError(\n",
+                        "FileNotFoundError: Couldn't find a dataset script at /src/services/worker/akhaliq/test/test.py or any data file in the same directory. Couldn't find 'akhaliq/test' on the Hugging Face Hub either: FileNotFoundError: The dataset repository at 'akhaliq/test' doesn't contain any data file.\n"
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "The server encountered an error, or the response still hasn't been generated (the process is asynchronous). The client should retry after a time, in particular in the case of the response still being processed. If the error does not vanish, it's possibly due to a bug in the API software and should be reported.",
+            "headers": {
+              "Cache-Control": {
+                "$ref": "#/components/headers/Cache-Control"
+              },
+              "Access-Control-Allow-Origin": {
+                "$ref": "#/components/headers/Access-Control-Allow-Origin"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Status500ErrorContent"
+                },
+                "examples": {
+                  "not-ready": {
+                    "summary": "the response is not ready yet.",
+                    "value": {
+                      "status_code": 500,
+                      "message": "The list of splits is not ready yet. Please retry later."
+                    }
+                  },
+                  "internal": {
+                    "summary": "internal error",
+                    "value": {
+                      "status_code": 500,
+                      "message": "Unexpected error."
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/rows": {
       "get": {
-        "summary": "First rows of a split",
+        "summary": "First rows of a split (soon deprecated)",
         "description": "The list of the 100 first rows of a dataset split.",
         "externalDocs": {
           "description": "See First rows (Hub docs)",
@@ -1214,6 +1908,860 @@
                         "  File \"/src/services/worker/.venv/lib/python3.9/site-packages/pymongo/message.py\", line 1140, in _raise_document_too_large\n    raise DocumentTooLarge(\"%r command document too large\" % (operation,))\n",
                         "pymongo.errors.DocumentTooLarge: 'update' command document too large\n"
                       ]
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/first-rows": {
+      "get": {
+        "summary": "First rows of a split (will soon replace /rows)",
+        "description": "The list of the 100 first rows of a dataset split.",
+        "externalDocs": {
+          "description": "See First rows (Hub docs)",
+          "url": "https://huggingface.co/docs/datasets-server/rows"
+        },
+        "operationId": "listRows",
+        "parameters": [
+          {
+            "name": "dataset",
+            "in": "query",
+            "description": "The identifier of the dataset on the Hub.",
+            "required": true,
+            "schema": { "type": "string" },
+            "examples": {
+              "glue": { "summary": "a canonical dataset", "value": "glue" },
+              "Helsinki-NLP/tatoeba_mt": {
+                "summary": "a namespaced dataset",
+                "value": "Helsinki-NLP/tatoeba_mt"
+              }
+            }
+          },
+          {
+            "name": "config",
+            "in": "query",
+            "description": "The dataset configuration (or subset).",
+            "required": true,
+            "schema": { "type": "string" },
+            "examples": {
+              "cola": {
+                "summary": "a subset of the glue dataset",
+                "value": "cola"
+              },
+              "yangdong/ecqa": {
+                "summary": "the default configuration given by the 🤗 Datasets library",
+                "value": "yangdong--ecqa"
+              }
+            }
+          },
+          {
+            "name": "split",
+            "in": "query",
+            "description": "The split name.",
+            "required": true,
+            "schema": { "type": "string" },
+            "examples": {
+              "train": {
+                "summary": "train split",
+                "value": "train"
+              },
+              "test": {
+                "summary": "test split",
+                "value": "test"
+              },
+              "validation": {
+                "summary": "validation split",
+                "value": "validation"
+              }
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The <a href='https://huggingface.co/docs/datasets/about_dataset_features'>features</a>, and the 100 first rows of the split.</br>Note: the response can be truncated (less rows, or truncated cell contents): see examples.",
+            "headers": {
+              "Cache-Control": {
+                "$ref": "#/components/headers/Cache-Control"
+              },
+              "Access-Control-Allow-Origin": {
+                "$ref": "#/components/headers/Access-Control-Allow-Origin"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FirstRowsResponse"
+                },
+                "examples": {
+                  "cola": {
+                    "summary": "text, and label column (only 3 rows are shown for brevity)",
+                    "value": {
+                      "features": [
+                        {
+                          "dataset": "glue",
+                          "config": "cola",
+                          "split": "train",
+                          "idx": 0,
+                          "name": "sentence",
+                          "type": {
+                            "dtype": "string",
+                            "id": null,
+                            "_type": "Value"
+                          }
+                        },
+                        {
+                          "dataset": "glue",
+                          "config": "cola",
+                          "split": "train",
+                          "idx": 1,
+                          "name": "label",
+                          "type": {
+                            "num_classes": 2,
+                            "names": ["unacceptable", "acceptable"],
+                            "id": null,
+                            "_type": "ClassLabel"
+                          }
+                        },
+                        {
+                          "dataset": "glue",
+                          "config": "cola",
+                          "split": "train",
+                          "idx": 2,
+                          "name": "idx",
+                          "type": {
+                            "dtype": "int32",
+                            "id": null,
+                            "_type": "Value"
+                          }
+                        }
+                      ],
+                      "rows": [
+                        {
+                          "dataset": "glue",
+                          "config": "cola",
+                          "split": "train",
+                          "row_idx": 0,
+                          "row": {
+                            "sentence": "Our friends won't buy this analysis, let alone the next one we propose.",
+                            "label": 1,
+                            "idx": 0
+                          },
+                          "truncated_cells": []
+                        },
+                        {
+                          "dataset": "glue",
+                          "config": "cola",
+                          "split": "train",
+                          "row_idx": 1,
+                          "row": {
+                            "sentence": "One more pseudo generalization and I'm giving up.",
+                            "label": 1,
+                            "idx": 1
+                          },
+                          "truncated_cells": []
+                        },
+                        {
+                          "dataset": "glue",
+                          "config": "cola",
+                          "split": "train",
+                          "row_idx": 2,
+                          "row": {
+                            "sentence": "One more pseudo generalization or I'm giving up.",
+                            "label": 1,
+                            "idx": 2
+                          },
+                          "truncated_cells": []
+                        },
+                        {
+                          "dataset": "glue",
+                          "config": "cola",
+                          "split": "train",
+                          "row_idx": 3,
+                          "row": {
+                            "sentence": "The more we study verbs, the crazier they get.",
+                            "label": 1,
+                            "idx": 3
+                          },
+                          "truncated_cells": []
+                        }
+                      ]
+                    }
+                  },
+                  "truncated": {
+                    "summary": "truncated cells due to the response size (has a timestamp column)",
+                    "value": {
+                      "features": [
+                        {
+                          "dataset": "ett",
+                          "config": "m2",
+                          "split": "test",
+                          "idx": 0,
+                          "name": "start",
+                          "type": {
+                            "dtype": "timestamp[s]",
+                            "id": null,
+                            "_type": "Value"
+                          }
+                        },
+                        {
+                          "dataset": "ett",
+                          "config": "m2",
+                          "split": "test",
+                          "idx": 1,
+                          "name": "target",
+                          "type": {
+                            "feature": {
+                              "dtype": "float32",
+                              "id": null,
+                              "_type": "Value"
+                            },
+                            "length": -1,
+                            "id": null,
+                            "_type": "Sequence"
+                          }
+                        },
+                        {
+                          "dataset": "ett",
+                          "config": "m2",
+                          "split": "test",
+                          "idx": 2,
+                          "name": "feat_static_cat",
+                          "type": {
+                            "feature": {
+                              "dtype": "uint64",
+                              "id": null,
+                              "_type": "Value"
+                            },
+                            "length": -1,
+                            "id": null,
+                            "_type": "Sequence"
+                          }
+                        },
+                        {
+                          "dataset": "ett",
+                          "config": "m2",
+                          "split": "test",
+                          "idx": 3,
+                          "name": "feat_dynamic_real",
+                          "type": {
+                            "feature": {
+                              "feature": {
+                                "dtype": "float32",
+                                "id": null,
+                                "_type": "Value"
+                              },
+                              "length": -1,
+                              "id": null,
+                              "_type": "Sequence"
+                            },
+                            "length": -1,
+                            "id": null,
+                            "_type": "Sequence"
+                          }
+                        },
+                        {
+                          "dataset": "ett",
+                          "config": "m2",
+                          "split": "test",
+                          "idx": 4,
+                          "name": "item_id",
+                          "type": {
+                            "dtype": "string",
+                            "id": null,
+                            "_type": "Value"
+                          }
+                        }
+                      ],
+                      "rows": [
+                        {
+                          "dataset": "ett",
+                          "config": "m2",
+                          "split": "test",
+                          "row_idx": 0,
+                          "row": {
+                            "start": "2016-07-01T00:00:00",
+                            "target": "[38.6619987487793,38.222999572753906,37.34400177001953,37.124000549316406,37.124000549316406,36.9039",
+                            "feat_static_cat": [0],
+                            "feat_dynamic_real": "[[41.130001068115234,39.62200164794922,38.86800003051758,35.518001556396484,37.52799987792969,37.611",
+                            "item_id": "OT"
+                          },
+                          "truncated_cells": ["target", "feat_dynamic_real"]
+                        },
+                        {
+                          "dataset": "ett",
+                          "config": "m2",
+                          "split": "test",
+                          "row_idx": 1,
+                          "row": {
+                            "start": "2016-07-01T00:00:00",
+                            "target": "[38.6619987487793,38.222999572753906,37.34400177001953,37.124000549316406,37.124000549316406,36.9039",
+                            "feat_static_cat": [0],
+                            "feat_dynamic_real": "[[41.130001068115234,39.62200164794922,38.86800003051758,35.518001556396484,37.52799987792969,37.611",
+                            "item_id": "OT"
+                          },
+                          "truncated_cells": ["target", "feat_dynamic_real"]
+                        },
+                        {
+                          "dataset": "ett",
+                          "config": "m2",
+                          "split": "test",
+                          "row_idx": 2,
+                          "row": {
+                            "start": "2016-07-01T00:00:00",
+                            "target": "[38.6619987487793,38.222999572753906,37.34400177001953,37.124000549316406,37.124000549316406,36.9039",
+                            "feat_static_cat": [0],
+                            "feat_dynamic_real": "[[41.130001068115234,39.62200164794922,38.86800003051758,35.518001556396484,37.52799987792969,37.611",
+                            "item_id": "OT"
+                          },
+                          "truncated_cells": ["target", "feat_dynamic_real"]
+                        },
+                        {
+                          "dataset": "ett",
+                          "config": "m2",
+                          "split": "test",
+                          "row_idx": 3,
+                          "row": {
+                            "start": "2016-07-01T00:00:00",
+                            "target": "[38.6619987487793,38.222999572753906,37.34400177001953,37.124000549316406,37.124000549316406,36.9039",
+                            "feat_static_cat": [0],
+                            "feat_dynamic_real": "[[41.130001068115234,39.62200164794922,38.86800003051758,35.518001556396484,37.52799987792969,37.611",
+                            "item_id": "OT"
+                          },
+                          "truncated_cells": ["target", "feat_dynamic_real"]
+                        },
+                        {
+                          "dataset": "ett",
+                          "config": "m2",
+                          "split": "test",
+                          "row_idx": 4,
+                          "row": {
+                            "start": "2016-07-01T00:00:00",
+                            "target": "[38.6619987487793,38.222999572753906,37.34400177001953,37.124000549316406,37.124000549316406,36.9039",
+                            "feat_static_cat": [0],
+                            "feat_dynamic_real": "[[41.130001068115234,39.62200164794922,38.86800003051758,35.518001556396484,37.52799987792969,37.611",
+                            "item_id": "OT"
+                          },
+                          "truncated_cells": ["target", "feat_dynamic_real"]
+                        },
+                        {
+                          "dataset": "ett",
+                          "config": "m2",
+                          "split": "test",
+                          "row_idx": 5,
+                          "row": {
+                            "start": "2016-07-01T00:00:00",
+                            "target": "[38.6619987487793,38.222999572753906,37.34400177001953,37.124000549316406,37.124000549316406,36.9039",
+                            "feat_static_cat": [0],
+                            "feat_dynamic_real": "[[41.130001068115234,39.62200164794922,38.86800003051758,35.518001556396484,37.52799987792969,37.611",
+                            "item_id": "OT"
+                          },
+                          "truncated_cells": ["target", "feat_dynamic_real"]
+                        },
+                        {
+                          "dataset": "ett",
+                          "config": "m2",
+                          "split": "test",
+                          "row_idx": 6,
+                          "row": {
+                            "start": "2016-07-01T00:00:00",
+                            "target": "[38.6619987487793,38.222999572753906,37.34400177001953,37.124000549316406,37.124000549316406,36.9039",
+                            "feat_static_cat": [0],
+                            "feat_dynamic_real": "[[41.130001068115234,39.62200164794922,38.86800003051758,35.518001556396484,37.52799987792969,37.611",
+                            "item_id": "OT"
+                          },
+                          "truncated_cells": ["target", "feat_dynamic_real"]
+                        },
+                        {
+                          "dataset": "ett",
+                          "config": "m2",
+                          "split": "test",
+                          "row_idx": 7,
+                          "row": {
+                            "start": "2016-07-01T00:00:00",
+                            "target": "[38.6619987487793,38.222999572753906,37.34400177001953,37.124000549316406,37.124000549316406,36.9039",
+                            "feat_static_cat": [0],
+                            "feat_dynamic_real": "[[41.130001068115234,39.62200164794922,38.86800003051758,35.518001556396484,37.52799987792969,37.611",
+                            "item_id": "OT"
+                          },
+                          "truncated_cells": ["target", "feat_dynamic_real"]
+                        },
+                        {
+                          "dataset": "ett",
+                          "config": "m2",
+                          "split": "test",
+                          "row_idx": 8,
+                          "row": {
+                            "start": "2016-07-01T00:00:00",
+                            "target": "[38.6619987487793,38.222999572753906,37.34400177001953,37.124000549316406,37.124000549316406,36.9039",
+                            "feat_static_cat": [0],
+                            "feat_dynamic_real": "[[41.130001068115234,39.62200164794922,38.86800003051758,35.518001556396484,37.52799987792969,37.611",
+                            "item_id": "OT"
+                          },
+                          "truncated_cells": ["target", "feat_dynamic_real"]
+                        },
+                        {
+                          "dataset": "ett",
+                          "config": "m2",
+                          "split": "test",
+                          "row_idx": 9,
+                          "row": {
+                            "start": "2016-07-01T00:00:00",
+                            "target": "[38.6619987487793,38.222999572753906,37.34400177001953,37.124000549316406,37.124000549316406,36.9039",
+                            "feat_static_cat": [0],
+                            "feat_dynamic_real": "[[41.130001068115234,39.62200164794922,38.86800003051758,35.518001556396484,37.52799987792969,37.611",
+                            "item_id": "OT"
+                          },
+                          "truncated_cells": ["target", "feat_dynamic_real"]
+                        }
+                      ]
+                    }
+                  },
+                  "image": {
+                    "summary": "a column with images (only 3 rows are shown for brevity)",
+                    "value": {
+                      "features": [
+                        {
+                          "dataset": "huggan/horse2zebra",
+                          "config": "huggan--horse2zebra-aligned",
+                          "split": "train",
+                          "idx": 0,
+                          "name": "imageA",
+                          "type": {
+                            "decode": true,
+                            "id": null,
+                            "_type": "Image"
+                          }
+                        },
+                        {
+                          "dataset": "huggan/horse2zebra",
+                          "config": "huggan--horse2zebra-aligned",
+                          "split": "train",
+                          "idx": 1,
+                          "name": "imageB",
+                          "type": {
+                            "decode": true,
+                            "id": null,
+                            "_type": "Image"
+                          }
+                        }
+                      ],
+                      "rows": [
+                        {
+                          "dataset": "huggan/horse2zebra",
+                          "config": "huggan--horse2zebra-aligned",
+                          "split": "train",
+                          "row_idx": 0,
+                          "row": {
+                            "imageA": "https://datasets-server.us.dev.moon.huggingface.tech/assets/huggan/horse2zebra/--/huggan--horse2zebra-aligned/train/0/imageA/image.jpg",
+                            "imageB": "https://datasets-server.us.dev.moon.huggingface.tech/assets/huggan/horse2zebra/--/huggan--horse2zebra-aligned/train/0/imageB/image.jpg"
+                          },
+                          "truncated_cells": []
+                        },
+                        {
+                          "dataset": "huggan/horse2zebra",
+                          "config": "huggan--horse2zebra-aligned",
+                          "split": "train",
+                          "row_idx": 1,
+                          "row": {
+                            "imageA": "https://datasets-server.us.dev.moon.huggingface.tech/assets/huggan/horse2zebra/--/huggan--horse2zebra-aligned/train/1/imageA/image.jpg",
+                            "imageB": "https://datasets-server.us.dev.moon.huggingface.tech/assets/huggan/horse2zebra/--/huggan--horse2zebra-aligned/train/1/imageB/image.jpg"
+                          },
+                          "truncated_cells": []
+                        },
+                        {
+                          "dataset": "huggan/horse2zebra",
+                          "config": "huggan--horse2zebra-aligned",
+                          "split": "train",
+                          "row_idx": 2,
+                          "row": {
+                            "imageA": "https://datasets-server.us.dev.moon.huggingface.tech/assets/huggan/horse2zebra/--/huggan--horse2zebra-aligned/train/2/imageA/image.jpg",
+                            "imageB": "https://datasets-server.us.dev.moon.huggingface.tech/assets/huggan/horse2zebra/--/huggan--horse2zebra-aligned/train/2/imageB/image.jpg"
+                          },
+                          "truncated_cells": []
+                        }
+                      ]
+                    }
+                  },
+                  "audio": {
+                    "summary": "a column with audio files (only 3 rows are shown for brevity)",
+                    "value": {
+                      "features": [
+                        {
+                          "dataset": "mozilla-foundation/common_voice_9_0",
+                          "config": "en",
+                          "split": "train",
+                          "idx": 0,
+                          "name": "client_id",
+                          "type": {
+                            "dtype": "string",
+                            "id": null,
+                            "_type": "Value"
+                          }
+                        },
+                        {
+                          "dataset": "mozilla-foundation/common_voice_9_0",
+                          "config": "en",
+                          "split": "train",
+                          "idx": 1,
+                          "name": "path",
+                          "type": {
+                            "dtype": "string",
+                            "id": null,
+                            "_type": "Value"
+                          }
+                        },
+                        {
+                          "dataset": "mozilla-foundation/common_voice_9_0",
+                          "config": "en",
+                          "split": "train",
+                          "idx": 2,
+                          "name": "audio",
+                          "type": {
+                            "sampling_rate": 48000,
+                            "mono": true,
+                            "decode": true,
+                            "id": null,
+                            "_type": "Audio"
+                          }
+                        },
+                        {
+                          "dataset": "mozilla-foundation/common_voice_9_0",
+                          "config": "en",
+                          "split": "train",
+                          "idx": 3,
+                          "name": "sentence",
+                          "type": {
+                            "dtype": "string",
+                            "id": null,
+                            "_type": "Value"
+                          }
+                        },
+                        {
+                          "dataset": "mozilla-foundation/common_voice_9_0",
+                          "config": "en",
+                          "split": "train",
+                          "idx": 4,
+                          "name": "up_votes",
+                          "type": {
+                            "dtype": "int64",
+                            "id": null,
+                            "_type": "Value"
+                          }
+                        },
+                        {
+                          "dataset": "mozilla-foundation/common_voice_9_0",
+                          "config": "en",
+                          "split": "train",
+                          "idx": 5,
+                          "name": "down_votes",
+                          "type": {
+                            "dtype": "int64",
+                            "id": null,
+                            "_type": "Value"
+                          }
+                        },
+                        {
+                          "dataset": "mozilla-foundation/common_voice_9_0",
+                          "config": "en",
+                          "split": "train",
+                          "idx": 6,
+                          "name": "age",
+                          "type": {
+                            "dtype": "string",
+                            "id": null,
+                            "_type": "Value"
+                          }
+                        },
+                        {
+                          "dataset": "mozilla-foundation/common_voice_9_0",
+                          "config": "en",
+                          "split": "train",
+                          "idx": 7,
+                          "name": "gender",
+                          "type": {
+                            "dtype": "string",
+                            "id": null,
+                            "_type": "Value"
+                          }
+                        },
+                        {
+                          "dataset": "mozilla-foundation/common_voice_9_0",
+                          "config": "en",
+                          "split": "train",
+                          "idx": 8,
+                          "name": "accent",
+                          "type": {
+                            "dtype": "string",
+                            "id": null,
+                            "_type": "Value"
+                          }
+                        },
+                        {
+                          "dataset": "mozilla-foundation/common_voice_9_0",
+                          "config": "en",
+                          "split": "train",
+                          "idx": 9,
+                          "name": "locale",
+                          "type": {
+                            "dtype": "string",
+                            "id": null,
+                            "_type": "Value"
+                          }
+                        },
+                        {
+                          "dataset": "mozilla-foundation/common_voice_9_0",
+                          "config": "en",
+                          "split": "train",
+                          "idx": 10,
+                          "name": "segment",
+                          "type": {
+                            "dtype": "string",
+                            "id": null,
+                            "_type": "Value"
+                          }
+                        }
+                      ],
+                      "rows": [
+                        {
+                          "dataset": "mozilla-foundation/common_voice_9_0",
+                          "config": "en",
+                          "split": "train",
+                          "row_idx": 0,
+                          "row": {
+                            "client_id": "04960d53cc851eeb6d93f21a09e09ab36fe16943acb226ced1211d7250ab2f1b9a1d655c1cc03d50006e396010851ad52d4c53f49dd77b080b01c4230704c68d",
+                            "path": null,
+                            "audio": [
+                              {
+                                "src": "https://datasets-server.us.dev.moon.huggingface.tech/assets/mozilla-foundation/common_voice_9_0/--/en/train/0/audio/audio.mp3",
+                                "type": "audio/mpeg"
+                              },
+                              {
+                                "src": "https://datasets-server.us.dev.moon.huggingface.tech/assets/mozilla-foundation/common_voice_9_0/--/en/train/0/audio/audio.wav",
+                                "type": "audio/wav"
+                              }
+                            ],
+                            "sentence": "Why does Melissandre look like she wants to consume Jon Snow on the ride up the wall?",
+                            "up_votes": 2,
+                            "down_votes": 0,
+                            "age": "fourties",
+                            "gender": "male",
+                            "accent": "United States English",
+                            "locale": "en",
+                            "segment": ""
+                          },
+                          "truncated_cells": []
+                        },
+                        {
+                          "dataset": "mozilla-foundation/common_voice_9_0",
+                          "config": "en",
+                          "split": "train",
+                          "row_idx": 1,
+                          "row": {
+                            "client_id": "f9f1f96bae1390dfe61ff298abb90975c079e913c712d57d97307ed797469eac446abb149daaad24cacffcc24e1e3275fefeb97f977eb74ce2233e0e5c1d437e",
+                            "path": null,
+                            "audio": [
+                              {
+                                "src": "https://datasets-server.us.dev.moon.huggingface.tech/assets/mozilla-foundation/common_voice_9_0/--/en/train/1/audio/audio.mp3",
+                                "type": "audio/mpeg"
+                              },
+                              {
+                                "src": "https://datasets-server.us.dev.moon.huggingface.tech/assets/mozilla-foundation/common_voice_9_0/--/en/train/1/audio/audio.wav",
+                                "type": "audio/wav"
+                              }
+                            ],
+                            "sentence": "\"I'm getting them for twelve dollars a night.\"",
+                            "up_votes": 2,
+                            "down_votes": 0,
+                            "age": "",
+                            "gender": "",
+                            "accent": "",
+                            "locale": "en",
+                            "segment": ""
+                          },
+                          "truncated_cells": []
+                        },
+                        {
+                          "dataset": "mozilla-foundation/common_voice_9_0",
+                          "config": "en",
+                          "split": "train",
+                          "row_idx": 2,
+                          "row": {
+                            "client_id": "a6c7706a220eeea7ee3687c1122fe7ac17962d2449d25b6db37cc41cdaace442683e11945b6f581e73941c3083cd4eecfafc938840459cd8c571dae7774ee687",
+                            "path": null,
+                            "audio": [
+                              {
+                                "src": "https://datasets-server.us.dev.moon.huggingface.tech/assets/mozilla-foundation/common_voice_9_0/--/en/train/2/audio/audio.mp3",
+                                "type": "audio/mpeg"
+                              },
+                              {
+                                "src": "https://datasets-server.us.dev.moon.huggingface.tech/assets/mozilla-foundation/common_voice_9_0/--/en/train/2/audio/audio.wav",
+                                "type": "audio/wav"
+                              }
+                            ],
+                            "sentence": "Tower of strength",
+                            "up_votes": 2,
+                            "down_votes": 0,
+                            "age": "",
+                            "gender": "",
+                            "accent": "",
+                            "locale": "en",
+                            "segment": ""
+                          },
+                          "truncated_cells": []
+                        }
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The dataset has some issue that prevents extracting the list of features, or the list of rows.<br/>The error response should give insights to help fix the issue.<br/>The client should not retry the request, because the response will not change until the dataset is fixed.",
+            "headers": {
+              "Cache-Control": {
+                "$ref": "#/components/headers/Cache-Control"
+              },
+              "Access-Control-Allow-Origin": {
+                "$ref": "#/components/headers/Access-Control-Allow-Origin"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Status400ErrorContent"
+                },
+                "examples": {
+                  "NonMatchingCheckError": {
+                    "summary": "NonMatchingCheckError",
+                    "value": {
+                      "status_code": 400,
+                      "message": "Cannot load the dataset split (in normal download mode) to extract the first rows.",
+                      "cause_exception": "NonMatchingChecksumError",
+                      "cause_message": "Checksums didn't match for dataset source files:\n['https://gitlab.com/bigirqu/ArCOV-19/-/archive/master/ArCOV-19-master.zip']",
+                      "cause_traceback": [
+                        "Traceback (most recent call last):\n",
+                        "  File \"/src/services/worker/src/worker/models/first_rows.py\", line 214, in get_first_rows\n    rows = get_rows(dataset_name, config_name, split_name, hf_token, True, rows_max_number)\n",
+                        "  File \"/src/services/worker/.venv/lib/python3.9/site-packages/libutils/utils.py\", line 82, in decorator\n    return func(*args, **kwargs)\n",
+                        "  File \"/src/services/worker/src/worker/models/row.py\", line 39, in get_rows\n    rows_plus_one = list(itertools.islice(dataset, rows_max_number + 1))\n",
+                        "  File \"/src/services/worker/.venv/lib/python3.9/site-packages/datasets/iterable_dataset.py\", line 718, in __iter__\n    for key, example in self._iter():\n",
+                        "  File \"/src/services/worker/.venv/lib/python3.9/site-packages/datasets/iterable_dataset.py\", line 708, in _iter\n    yield from ex_iterable\n",
+                        "  File \"/src/services/worker/.venv/lib/python3.9/site-packages/datasets/iterable_dataset.py\", line 112, in __iter__\n    yield from self.generate_examples_fn(**self.kwargs)\n",
+                        "  File \"/tmp/modules-cache/datasets_modules/datasets/ar_cov19/818d9b774f4b70542b6807e6ddb6db32c916aafeba4fbdcd228ec79d21edaeab/ar_cov19.py\", line 131, in _generate_examples\n    for fname in sorted(glob.glob(os.path.join(data_dir, \"ArCOV-19-master/dataset/all_tweets/2020-*\"))):\n",
+                        "  File \"/src/services/worker/.venv/lib/python3.9/site-packages/datasets/streaming.py\", line 67, in wrapper\n    return function(*args, use_auth_token=use_auth_token, **kwargs)\n",
+                        "  File \"/src/services/worker/.venv/lib/python3.9/site-packages/datasets/download/streaming_download_manager.py\", line 500, in xglob\n    fs, *_ = fsspec.get_fs_token_paths(urlpath, storage_options=storage_options)\n",
+                        "  File \"/src/services/worker/.venv/lib/python3.9/site-packages/fsspec/core.py\", line 632, in get_fs_token_paths\n    fs = filesystem(protocol, **inkwargs)\n",
+                        "  File \"/src/services/worker/.venv/lib/python3.9/site-packages/fsspec/registry.py\", line 262, in filesystem\n    return cls(**storage_options)\n",
+                        "  File \"/src/services/worker/.venv/lib/python3.9/site-packages/fsspec/spec.py\", line 76, in __call__\n    obj = super().__call__(*args, **kwargs)\n",
+                        "  File \"/src/services/worker/.venv/lib/python3.9/site-packages/fsspec/implementations/zip.py\", line 58, in __init__\n    self.zip = zipfile.ZipFile(self.fo)\n",
+                        "  File \"/usr/local/lib/python3.9/zipfile.py\", line 1257, in __init__\n    self._RealGetContents()\n",
+                        "  File \"/usr/local/lib/python3.9/zipfile.py\", line 1320, in _RealGetContents\n    endrec = _EndRecData(fp)\n",
+                        "  File \"/usr/local/lib/python3.9/zipfile.py\", line 263, in _EndRecData\n    fpin.seek(0, 2)\n",
+                        "  File \"/src/services/worker/.venv/lib/python3.9/site-packages/fsspec/implementations/http.py\", line 684, in seek\n    raise ValueError(\"Cannot seek streaming HTTP file\")\n",
+                        "ValueError: Cannot seek streaming HTTP file\n",
+                        "\nDuring handling of the above exception, another exception occurred:\n\n",
+                        "Traceback (most recent call last):\n",
+                        "  File \"/src/services/worker/src/worker/models/first_rows.py\", line 221, in get_first_rows\n    rows = get_rows(dataset_name, config_name, split_name, hf_token, False, rows_max_number)\n",
+                        "  File \"/src/services/worker/.venv/lib/python3.9/site-packages/libutils/utils.py\", line 82, in decorator\n    return func(*args, **kwargs)\n",
+                        "  File \"/src/services/worker/src/worker/models/row.py\", line 27, in get_rows\n    dataset = load_dataset(\n",
+                        "  File \"/src/services/worker/.venv/lib/python3.9/site-packages/datasets/load.py\", line 1732, in load_dataset\n    builder_instance.download_and_prepare(\n",
+                        "  File \"/src/services/worker/.venv/lib/python3.9/site-packages/datasets/builder.py\", line 704, in download_and_prepare\n    self._download_and_prepare(\n",
+                        "  File \"/src/services/worker/.venv/lib/python3.9/site-packages/datasets/builder.py\", line 1227, in _download_and_prepare\n    super()._download_and_prepare(dl_manager, verify_infos, check_duplicate_keys=verify_infos)\n",
+                        "  File \"/src/services/worker/.venv/lib/python3.9/site-packages/datasets/builder.py\", line 775, in _download_and_prepare\n    verify_checksums(\n",
+                        "  File \"/src/services/worker/.venv/lib/python3.9/site-packages/datasets/utils/info_utils.py\", line 40, in verify_checksums\n    raise NonMatchingChecksumError(error_msg + str(bad_urls))\n",
+                        "datasets.utils.info_utils.NonMatchingChecksumError: Checksums didn't match for dataset source files:\n['https://gitlab.com/bigirqu/ArCOV-19/-/archive/master/ArCOV-19-master.zip']\n"
+                      ]
+                    }
+                  },
+                  "FileNotFoundError": {
+                    "summary": "FileNotFoundError",
+                    "value": {
+                      "status_code": 400,
+                      "message": "Cannot load the dataset split (in normal download mode) to extract the first rows.",
+                      "cause_exception": "FileNotFoundError",
+                      "cause_message": "Couldn't find file at https://homes.cs.washington.edu/~msap/atomic/data/atomic_data.tgz",
+                      "cause_traceback": [
+                        "Traceback (most recent call last):\n",
+                        "  File \"/src/services/worker/.venv/lib/python3.9/site-packages/fsspec/implementations/http.py\", line 391, in _info\n    await _file_info(\n",
+                        "  File \"/src/services/worker/.venv/lib/python3.9/site-packages/fsspec/implementations/http.py\", line 772, in _file_info\n    r.raise_for_status()\n",
+                        "  File \"/src/services/worker/.venv/lib/python3.9/site-packages/aiohttp/client_reqrep.py\", line 1004, in raise_for_status\n    raise ClientResponseError(\n",
+                        "aiohttp.client_exceptions.ClientResponseError: 404, message='Not Found', url=URL('https://homes.cs.washington.edu/~msap/atomic/data/atomic_data.tgz')\n",
+                        "\nThe above exception was the direct cause of the following exception:\n\n",
+                        "Traceback (most recent call last):\n",
+                        "  File \"/src/services/worker/src/worker/models/first_rows.py\", line 214, in get_first_rows\n    rows = get_rows(dataset_name, config_name, split_name, hf_token, True, rows_max_number)\n",
+                        "  File \"/src/services/worker/.venv/lib/python3.9/site-packages/libutils/utils.py\", line 82, in decorator\n    return func(*args, **kwargs)\n",
+                        "  File \"/src/services/worker/src/worker/models/row.py\", line 39, in get_rows\n    rows_plus_one = list(itertools.islice(dataset, rows_max_number + 1))\n",
+                        "  File \"/src/services/worker/.venv/lib/python3.9/site-packages/datasets/iterable_dataset.py\", line 718, in __iter__\n    for key, example in self._iter():\n",
+                        "  File \"/src/services/worker/.venv/lib/python3.9/site-packages/datasets/iterable_dataset.py\", line 708, in _iter\n    yield from ex_iterable\n",
+                        "  File \"/src/services/worker/.venv/lib/python3.9/site-packages/datasets/iterable_dataset.py\", line 112, in __iter__\n    yield from self.generate_examples_fn(**self.kwargs)\n",
+                        "  File \"/tmp/modules-cache/datasets_modules/datasets/atomic/c0f0ec7d10713c41dfc87f0cf17f936b122d22e19216051217c99134d38f6d7b/atomic.py\", line 123, in _generate_examples\n    for path, f in files:\n",
+                        "  File \"/src/services/worker/.venv/lib/python3.9/site-packages/datasets/download/streaming_download_manager.py\", line 732, in __iter__\n    yield from self.generator(*self.args, **self.kwargs)\n",
+                        "  File \"/src/services/worker/.venv/lib/python3.9/site-packages/datasets/download/streaming_download_manager.py\", line 759, in _iter_from_urlpath\n    with xopen(urlpath, \"rb\", use_auth_token=use_auth_token) as f:\n",
+                        "  File \"/src/services/worker/.venv/lib/python3.9/site-packages/datasets/download/streaming_download_manager.py\", line 439, in xopen\n    file_obj = fsspec.open(file, mode=mode, *args, **kwargs).open()\n",
+                        "  File \"/src/services/worker/.venv/lib/python3.9/site-packages/fsspec/core.py\", line 141, in open\n    out = self.__enter__()\n",
+                        "  File \"/src/services/worker/.venv/lib/python3.9/site-packages/fsspec/core.py\", line 104, in __enter__\n    f = self.fs.open(self.path, mode=mode)\n",
+                        "  File \"/src/services/worker/.venv/lib/python3.9/site-packages/fsspec/spec.py\", line 1037, in open\n    f = self._open(\n",
+                        "  File \"/src/services/worker/.venv/lib/python3.9/site-packages/fsspec/implementations/http.py\", line 340, in _open\n    size = size or self.info(path, **kwargs)[\"size\"]\n",
+                        "  File \"/src/services/worker/.venv/lib/python3.9/site-packages/fsspec/asyn.py\", line 86, in wrapper\n    return sync(self.loop, func, *args, **kwargs)\n",
+                        "  File \"/src/services/worker/.venv/lib/python3.9/site-packages/fsspec/asyn.py\", line 66, in sync\n    raise return_result\n",
+                        "  File \"/src/services/worker/.venv/lib/python3.9/site-packages/fsspec/asyn.py\", line 26, in _runner\n    result[0] = await coro\n",
+                        "  File \"/src/services/worker/.venv/lib/python3.9/site-packages/fsspec/implementations/http.py\", line 404, in _info\n    raise FileNotFoundError(url) from exc\n",
+                        "FileNotFoundError: https://homes.cs.washington.edu/~msap/atomic/data/atomic_data.tgz\n",
+                        "\nDuring handling of the above exception, another exception occurred:\n\n",
+                        "Traceback (most recent call last):\n",
+                        "  File \"/src/services/worker/src/worker/models/first_rows.py\", line 221, in get_first_rows\n    rows = get_rows(dataset_name, config_name, split_name, hf_token, False, rows_max_number)\n",
+                        "  File \"/src/services/worker/.venv/lib/python3.9/site-packages/libutils/utils.py\", line 82, in decorator\n    return func(*args, **kwargs)\n",
+                        "  File \"/src/services/worker/src/worker/models/row.py\", line 27, in get_rows\n    dataset = load_dataset(\n",
+                        "  File \"/src/services/worker/.venv/lib/python3.9/site-packages/datasets/load.py\", line 1732, in load_dataset\n    builder_instance.download_and_prepare(\n",
+                        "  File \"/src/services/worker/.venv/lib/python3.9/site-packages/datasets/builder.py\", line 704, in download_and_prepare\n    self._download_and_prepare(\n",
+                        "  File \"/src/services/worker/.venv/lib/python3.9/site-packages/datasets/builder.py\", line 1227, in _download_and_prepare\n    super()._download_and_prepare(dl_manager, verify_infos, check_duplicate_keys=verify_infos)\n",
+                        "  File \"/src/services/worker/.venv/lib/python3.9/site-packages/datasets/builder.py\", line 771, in _download_and_prepare\n    split_generators = self._split_generators(dl_manager, **split_generators_kwargs)\n",
+                        "  File \"/tmp/modules-cache/datasets_modules/datasets/atomic/c0f0ec7d10713c41dfc87f0cf17f936b122d22e19216051217c99134d38f6d7b/atomic.py\", line 95, in _split_generators\n    archive = dl_manager.download(my_urls)\n",
+                        "  File \"/src/services/worker/.venv/lib/python3.9/site-packages/datasets/download/download_manager.py\", line 309, in download\n    downloaded_path_or_paths = map_nested(\n",
+                        "  File \"/src/services/worker/.venv/lib/python3.9/site-packages/datasets/utils/py_utils.py\", line 348, in map_nested\n    return function(data_struct)\n",
+                        "  File \"/src/services/worker/.venv/lib/python3.9/site-packages/datasets/download/download_manager.py\", line 335, in _download\n    return cached_path(url_or_filename, download_config=download_config)\n",
+                        "  File \"/src/services/worker/.venv/lib/python3.9/site-packages/datasets/utils/file_utils.py\", line 185, in cached_path\n    output_path = get_from_cache(\n",
+                        "  File \"/src/services/worker/.venv/lib/python3.9/site-packages/datasets/utils/file_utils.py\", line 530, in get_from_cache\n    raise FileNotFoundError(f\"Couldn't find file at {url}\")\n",
+                        "FileNotFoundError: Couldn't find file at https://homes.cs.washington.edu/~msap/atomic/data/atomic_data.tgz\n"
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "The server encountered an error, or the response still hasn't been generated (the process is asynchronous). The client should retry after a time, in particular in the case of the response still being processed. If the error does not vanish, it's possibly due to a bug in the API software and should be reported.",
+            "headers": {
+              "Cache-Control": {
+                "$ref": "#/components/headers/Cache-Control"
+              },
+              "Access-Control-Allow-Origin": {
+                "$ref": "#/components/headers/Access-Control-Allow-Origin"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Status500ErrorContent"
+                },
+                "examples": {
+                  "not-ready": {
+                    "summary": "the response is not ready yet.",
+                    "value": {
+                      "status_code": 500,
+                      "message": "The list of the first rows is not ready yet. Please retry later."
+                    }
+                  },
+                  "internal": {
+                    "summary": "internal error",
+                    "value": {
+                      "status_code": 500,
+                      "message": "Unexpected error."
                     }
                   }
                 }
