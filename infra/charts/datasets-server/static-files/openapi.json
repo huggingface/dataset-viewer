@@ -1969,7 +1969,7 @@
     },
     "/first-rows": {
       "get": {
-        "summary": "First rows of a split (will soon replace /rows)",
+        "summary": "First rows of a split (experimental)",
         "description": "The list of the 100 first rows of a dataset split.",
         "externalDocs": {
           "description": "See First rows (Hub docs)",
