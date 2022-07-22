@@ -9,8 +9,10 @@ from libcache.simple_cache import (
     delete_first_rows_responses,
     delete_splits_responses,
     get_first_rows_response,
+    get_first_rows_response_reports,
     get_first_rows_responses_count_by_status,
     get_splits_response,
+    get_splits_response_reports,
     get_splits_responses_count_by_status,
     get_valid_dataset_names,
     mark_first_rows_responses_as_stale,
@@ -187,3 +189,92 @@ def test_count_by_status() -> None:
     )
 
     assert get_first_rows_responses_count_by_status() == {"OK": 1, "BAD_REQUEST": 0, "INTERNAL_SERVER_ERROR": 0}
+
+
+def test_reports() -> None:
+    assert get_splits_response_reports() == []
+    upsert_splits_response(
+        "a",
+        {"key": "value"},
+        HTTPStatus.OK,
+    )
+    upsert_splits_response(
+        "b",
+        {
+            "status_code": 400,
+            "message": "Cannot get the split names for the dataset.",
+            "cause_exception": "FileNotFoundError",
+            "cause_message": (
+                "Couldn't find a dataset script at /src/services/worker/wikimedia/timit_asr/timit_asr.py or any data"
+                " file in the same directory. Couldn't find 'wikimedia/timit_asr' on the Hugging Face Hub either:"
+                " FileNotFoundError: Dataset 'wikimedia/timit_asr' doesn't exist on the Hub. If the repo is private,"
+                " make sure you are authenticated with `use_auth_token=True` after logging in with `huggingface-cli"
+                " login`."
+            ),
+            "cause_traceback": [
+                "Traceback (most recent call last):\n",
+                '  File "/src/services/worker/src/worker/models/dataset.py", line 17, in'
+                " get_dataset_split_full_names\n    for config_name in get_dataset_config_names(dataset_name,"
+                " use_auth_token=hf_token)\n",
+                '  File "/src/services/worker/.venv/lib/python3.9/site-packages/datasets/inspect.py", line 289, in'
+                " get_dataset_config_names\n    dataset_module = dataset_module_factory(\n",
+                '  File "/src/services/worker/.venv/lib/python3.9/site-packages/datasets/load.py", line 1242, in'
+                " dataset_module_factory\n    raise FileNotFoundError(\n",
+                "FileNotFoundError: Couldn't find a dataset script at"
+                " /src/services/worker/wikimedia/timit_asr/timit_asr.py or any data file in the same directory."
+                " Couldn't find 'wikimedia/timit_asr' on the Hugging Face Hub either: FileNotFoundError: Dataset"
+                " 'wikimedia/timit_asr' doesn't exist on the Hub. If the repo is private, make sure you are"
+                " authenticated with `use_auth_token=True` after logging in with `huggingface-cli login`.\n",
+            ],
+        },
+        HTTPStatus.BAD_REQUEST,
+    )
+    upsert_splits_response(
+        "c",
+        {
+            "status_code": 500,
+            "message": "cannot write mode RGBA as JPEG",
+        },
+        HTTPStatus.INTERNAL_SERVER_ERROR,
+        {
+            "status_code": 500,
+            "message": "cannot write mode RGBA as JPEG",
+            "cause_exception": "FileNotFoundError",
+            "cause_message": (
+                "Couldn't find a dataset script at /src/services/worker/wikimedia/timit_asr/timit_asr.py or any data"
+                " file in the same directory. Couldn't find 'wikimedia/timit_asr' on the Hugging Face Hub either:"
+                " FileNotFoundError: Dataset 'wikimedia/timit_asr' doesn't exist on the Hub. If the repo is private,"
+                " make sure you are authenticated with `use_auth_token=True` after logging in with `huggingface-cli"
+                " login`."
+            ),
+            "cause_traceback": [
+                "Traceback (most recent call last):\n",
+                '  File "/src/services/worker/src/worker/models/dataset.py", line 17, in'
+                " get_dataset_split_full_names\n    for config_name in get_dataset_config_names(dataset_name,"
+                " use_auth_token=hf_token)\n",
+                '  File "/src/services/worker/.venv/lib/python3.9/site-packages/datasets/inspect.py", line 289, in'
+                " get_dataset_config_names\n    dataset_module = dataset_module_factory(\n",
+                '  File "/src/services/worker/.venv/lib/python3.9/site-packages/datasets/load.py", line 1242, in'
+                " dataset_module_factory\n    raise FileNotFoundError(\n",
+                "FileNotFoundError: Couldn't find a dataset script at"
+                " /src/services/worker/wikimedia/timit_asr/timit_asr.py or any data file in the same directory."
+                " Couldn't find 'wikimedia/timit_asr' on the Hugging Face Hub either: FileNotFoundError: Dataset"
+                " 'wikimedia/timit_asr' doesn't exist on the Hub. If the repo is private, make sure you are"
+                " authenticated with `use_auth_token=True` after logging in with `huggingface-cli login`.\n",
+            ],
+        },
+    )
+    assert get_splits_response_reports() == [
+        {"dataset": "a", "error": None, "status": "200"},
+        {
+            "dataset": "b",
+            "error": {
+                "cause_exception": "FileNotFoundError",
+                "message": "Cannot get the split names for the dataset.",
+            },
+            "status": "400",
+        },
+        {"dataset": "c", "error": {"message": "cannot write mode RGBA as JPEG"}, "status": "500"},
+    ]
+
+    assert get_first_rows_response_reports() == []

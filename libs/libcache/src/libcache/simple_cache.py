@@ -2,7 +2,7 @@ import enum
 import logging
 import types
 from datetime import datetime, timezone
-from typing import Dict, Generic, List, Optional, Tuple, Type, TypedDict, TypeVar
+from typing import Dict, Generic, List, Optional, Tuple, Type, TypedDict, TypeVar, Union
 
 from mongoengine import Document, DoesNotExist, connect
 from mongoengine.fields import (
@@ -197,6 +197,9 @@ def get_valid_dataset_names() -> List[str]:
     return sorted(candidate_dataset_names)
 
 
+# /pending-jobs endpoint
+
+
 class CountByHTTPStatus(TypedDict):
     OK: int
     BAD_REQUEST: int
@@ -222,6 +225,66 @@ def get_splits_responses_count_by_status() -> CountByHTTPStatus:
 
 def get_first_rows_responses_count_by_status() -> CountByHTTPStatus:
     return get_entries_count_by_status(FirstRowsResponse.objects)
+
+
+# /cache-reports endpoints
+
+
+class _ErrorReport(TypedDict):
+    message: str
+
+
+class ErrorReport(_ErrorReport, total=False):
+    cause_exception: str
+
+
+class SplitsResponseReport(TypedDict):
+    dataset: str
+    status: str
+    error: Optional[ErrorReport]
+
+
+class FirstRowsResponseReport(TypedDict):
+    dataset: str
+    config: str
+    split: str
+    status: str
+    error: Optional[ErrorReport]
+
+
+def get_error(object: Union[SplitsResponse, FirstRowsResponse]) -> Optional[ErrorReport]:
+    if object.http_status == HTTPStatus.OK:
+        return None
+    if "message" not in object.response:
+        raise ValueError("Missing message in error response")
+    report: ErrorReport = {"message": object.response["message"]}
+    if "cause_exception" in object.response:
+        report["cause_exception"] = object.response["cause_exception"]
+    return report
+
+
+def get_splits_response_reports() -> List[SplitsResponseReport]:
+    return [
+        {
+            "dataset": response.dataset_name,
+            "status": response.http_status.value,
+            "error": get_error(response),
+        }
+        for response in SplitsResponse.objects()
+    ]
+
+
+def get_first_rows_response_reports() -> List[FirstRowsResponseReport]:
+    return [
+        {
+            "dataset": response.dataset_name,
+            "config": response.config_name,
+            "split": response.split_name,
+            "status": response.http_status.value,
+            "error": get_error(response),
+        }
+        for response in FirstRowsResponse.objects()
+    ]
 
 
 # only for the tests

@@ -71,59 +71,32 @@ Responses:
 
 ```json
 {
-  "datasets": {
-    "empty": [],
-    "error": [],
-    "stale": [],
-    "valid": [{ "dataset": "sent_comp", "status": "VALID", "error": null }]
-  },
-  "splits": {
-    "empty": [
-      {
-        "dataset": "sent_comp",
-        "config": "default",
-        "split": "train",
-        "status": "EMPTY",
-        "error": null
-      }
-    ],
-    "error": [
+  "/splits-next": [{ "dataset": "sent_comp", "status": "200", "error": null }],
+  "/first-rows": [
       {
         "dataset": "sent_comp",
         "config": "default",
         "split": "validation",
-        "status": "error",
+        "status": "400",
         "error": {
-          "status_code": 400,
-          "exception": "Status400Error",
           "message": "Cannot get the first rows for the split.",
           "cause_exception": "FileNotFoundError",
-          "cause_message": "[Errno 2] No such file or directory: 'https://github.com/google-research-datasets/sentence-compression/raw/master/data/comp-data.eval.json.gz'",
-          "cause_traceback": [
-            "Traceback (most recent call last):\n",
-            "  File \"/home/slesage/hf/datasets-server/src/datasets_server/models/row.py\", line 61, in get_rows\n    rows = extract_rows(dataset_name, config_name, split_name, num_rows, hf_token)\n",
-            "  File \"/home/slesage/hf/datasets-server/src/datasets_server/models/row.py\", line 32, in decorator\n    return func(*args, **kwargs)\n",
-            "  File \"/home/slesage/hf/datasets-server/src/datasets_server/models/row.py\", line 55, in extract_rows\n    return list(iterable_dataset.take(num_rows))\n",
-            "  File \"/home/slesage/hf/datasets-server/.venv/lib/python3.9/site-packages/datasets/iterable_dataset.py\", line 341, in __iter__\n    for key, example in self._iter():\n",
-            "  File \"/home/slesage/hf/datasets-server/.venv/lib/python3.9/site-packages/datasets/iterable_dataset.py\", line 338, in _iter\n    yield from ex_iterable\n",
-            "  File \"/home/slesage/hf/datasets-server/.venv/lib/python3.9/site-packages/datasets/iterable_dataset.py\", line 273, in __iter__\n    yield from islice(self.ex_iterable, self.n)\n",
-            "  File \"/home/slesage/hf/datasets-server/.venv/lib/python3.9/site-packages/datasets/iterable_dataset.py\", line 78, in __iter__\n    for key, example in self.generate_examples_fn(**self.kwargs):\n",
-            "  File \"/home/slesage/.cache/huggingface/modules/datasets_modules/datasets/sent_comp/512501fef5db888ec620cb9e4943420ea7c7c244c60de9222fb50bca1232f4b5/sent_comp.py\", line 136, in _generate_examples\n    with gzip.open(filepath, mode=\"rt\", encoding=\"utf-8\") as f:\n",
-            "  File \"/home/slesage/.pyenv/versions/3.9.6/lib/python3.9/gzip.py\", line 58, in open\n    binary_file = GzipFile(filename, gz_mode, compresslevel)\n",
-            "  File \"/home/slesage/.pyenv/versions/3.9.6/lib/python3.9/gzip.py\", line 173, in __init__\n    fileobj = self.myfileobj = builtins.open(filename, mode or 'rb')\n",
-            "FileNotFoundError: [Errno 2] No such file or directory: 'https://github.com/google-research-datasets/sentence-compression/raw/master/data/comp-data.eval.json.gz'\n"
-          ]
+        }
+      },
+      {
+        "dataset": "sent_comp",
+        "config": "default",
+        "split": "test",
+        "status": "500",
+        "error": {
+          "message": "Internal error.",
         }
       }
-    ],
-    "stale": [],
-    "valid": []
+    ]
   },
   "created_at": "2022-01-20T14:40:27Z"
 }
 ```
-
-Beware: a "dataset" is considered valid if it has fetched correctly the configs and splits. The splits themselves can have errors (ie: the rows or columns might have errors)
 
 ### /valid
 
@@ -168,47 +141,11 @@ Responses:
 }
 ```
 
-### /hf-datasets-count-by-cache-status
+### /pending-jobs
 
-> Give statistics about the datasets of the hub
+> Give the pending jobs, classed by queue and status (waiting or started)
 
-Example: https://datasets-server.huggingface.co/hf-datasets-count-by-cache-status
-
-Method: `GET`
-
-Parameters: none
-
-Responses:
-
-- `200`: JSON content which gives statistics about the status of the public datasets of the Hub, split by canonical or community, with the following structure:
-
-```json
-{
-  "canonical": {
-    "valid": 0,
-    "error": 0,
-    "missing": 1
-  },
-  "community": {
-    "valid": 0,
-    "error": 0,
-    "missing": 1
-  },
-  "created_at": "2022-01-20T13:52:05Z"
-}
-```
-
-The meaning is the following:
-
-- "valid": the list of splits and the 100 first rows of every split are available (maybe stale)
-- "error": the list of splits could not be fetched, or the rows could not be fetched for some splits
-- "missing": the list of splits is missing, or the rows are missing for some splits
-
-### /queue-dump
-
-> Give the queue entries, classed by status
-
-Example: https://datasets-server.huggingface.co/queue-dump
+Example: https://datasets-server.huggingface.co/pending-jobs
 
 Method: `GET`
 
@@ -216,67 +153,23 @@ Parameters: none
 
 Responses:
 
-- `200`: JSON content which the queue content, by status, with the following structure:
+- `200`: JSON content with the jobs by queue and status, with the following structure:
 
 ```json
 {
-  "datasets": {
-    "waiting": [],
-    "started": [],
-    "success": [
-      {
-        "dataset_name": "glue",
-        "status": "SUCCESS",
-        "created_at": "2022-01-20T13:48:06.705000",
-        "started_at": "2022-01-20T13:48:21.615000",
-        "finished_at": "2022-01-20T13:48:27.898000"
-      }
-    ],
-    "error": [],
-    "cancelled": []
-  },
-  "splits": {
-    "waiting": [],
-    "started": [],
-    "success": [],
-    "error": [],
-    "cancelled": [
-      {
-        "dataset_name": "glue",
-        "config_name": "cola",
-        "split_name": "test",
-        "status": "CANCELLED",
-        "created_at": "2022-01-20T13:48:27.846000",
-        "started_at": null,
-        "finished_at": "2022-01-20T13:51:51.411000"
-      }
-    ]
-  },
-  "created_at": "2022-01-20T13:59:03Z"
-}
-```
-
-### /queue-dump-waiting-started
-
-> Give the queue entries, classed by status, only for "waiting" and "started" statuses
-
-Example: https://datasets-server.huggingface.co/queue-dump-waiting-started
-
-Method: `GET`
-
-Parameters: none
-
-Responses:
-
-- `200`: JSON content which the queue content, by status, with the following structure:
-
-```json
-{
-  "datasets": {
+  "/splits": {
     "waiting": [],
     "started": []
   },
-  "splits": {
+  "/rows": {
+    "waiting": [],
+    "started": []
+  },
+  "/splits-next": {
+    "waiting": [],
+    "started": []
+  },
+  "/first-rows": {
     "waiting": [],
     "started": []
   },
@@ -323,104 +216,6 @@ Note: if you want to refresh multiple datasets at a time, you have to call the e
 MODELS=(amazon_polarity ami arabic_billion_words)
 for model in ${MODELS[@]}; do curl -X POST https://datasets-server.huggingface.co/webhook -H 'Content-Type: application/json' -d '{"update": "datasets/'$model'"}'; done;
 ```
-
-### /refresh-split
-
-> Refresh the cache of rows and columns of a split
-
-Example: https://datasets-server.huggingface.co/refresh-split
-
-Method: `POST`
-
-Body:
-
-```json
-{
-  "dataset": "glue",
-  "config": "ax",
-  "split": "test"
-}
-```
-
-Responses:
-
-- `200`: JSON content with the following structure:
-
-  ```json
-  {
-    "status": "ok"
-  }
-  ```
-
-- `400`: the payload is erroneous, or a 400 error raised during the cache operation
-- `500`: application error
-
-### /hf_datasets
-
-> Lists the HuggingFace [datasets](https://huggingface.co/docs/datasets/loading_datasets.html#selecting-a-configuration): canonical and community
-
-Example: https://datasets-server.huggingface.co/hf_datasets
-
-Method: `GET`
-
-Parameters: none
-
-Responses:
-
-- `200`: JSON content with the following structure:
-
-  ```json
-  {
-    "datasets": [
-      {
-        "id": "acronym_identification",
-        "tags": [
-          "annotations_creators:expert-generated",
-          "language_creators:found",
-          "languages:en",
-          "licenses:mit",
-          "multilinguality:monolingual",
-          "size_categories:10K<n<100K",
-          "source_datasets:original",
-          "task_categories:structure-prediction",
-          "task_ids:structure-prediction-other-acronym-identification"
-        ],
-        "citation": "@inproceedings{veyseh-et-al-2020-what,\n   title={{What Does This Acronym Mean? Introducing a New Dataset for Acronym Identification and Disambiguation}},\n   author={Amir Pouran Ben Veyseh and Franck Dernoncourt and Quan Hung Tran and Thien Huu Nguyen},\n   year={2020},\n   booktitle={Proceedings of COLING},\n   link={https://arxiv.org/pdf/2010.14678v1.pdf}\n}",
-        "description": "Acronym identification training and development sets for the acronym identification task at SDU@AAAI-21.",
-        "paperswithcode_id": "acronym-identification",
-        "downloads": 5174
-      },
-      {
-        "id": "aeslc",
-        "tags": ["languages:en"],
-        "citation": "@misc{zhang2019email,\n    title={This Email Could Save Your Life: Introducing the Task of Email Subject Line Generation},\n    author={Rui Zhang and Joel Tetreault},\n    year={2019},\n    eprint={1906.03497},\n    archivePrefix={arXiv},\n    primaryClass={cs.CL}\n}",
-        "description": "A collection of email messages of employees in the Enron Corporation.\n\nThere are two features:\n  - email_body: email body text.\n  - subject_line: email subject text.",
-        "paperswithcode_id": "aeslc",
-        "downloads": 3053
-      },
-      {
-        "id": "afrikaans_ner_corpus",
-        "tags": [
-          "annotations_creators:expert-generated",
-          "language_creators:expert-generated",
-          "languages:af",
-          "licenses:other-Creative Commons Attribution 2.5 South Africa License",
-          "multilinguality:monolingual",
-          "size_categories:1K<n<10K",
-          "source_datasets:original",
-          "task_categories:structure-prediction",
-          "task_ids:named-entity-recognition"
-        ],
-        "citation": "@inproceedings{afrikaans_ner_corpus,\n  author    = {\tGerhard van Huyssteen and\n                Martin Puttkammer and\n                E.B. Trollip and\n                J.C. Liversage and\n              Roald Eiselen},\n  title     = {NCHLT Afrikaans Named Entity Annotated Corpus},\n  booktitle = {Eiselen, R. 2016. Government domain named entity recognition for South African languages. Proceedings of the 10th      Language Resource and Evaluation Conference, Portorož, Slovenia.},\n  year      = {2016},\n  url       = {https://repo.sadilar.org/handle/20.500.12185/299},\n}",
-        "description": "Named entity annotated data from the NCHLT Text Resource Development: Phase II Project, annotated with PERSON, LOCATION, ORGANISATION and MISCELLANEOUS tags.",
-        "paperswithcode_id": null,
-        "downloads": 229
-      }
-    ]
-  }
-  ```
-
-- `500`: application error
 
 ### /splits
 

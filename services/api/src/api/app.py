@@ -1,3 +1,5 @@
+from typing import List
+
 import uvicorn  # type: ignore
 from libcache.asset import init_assets_dir, show_assets_dir
 from libcache.cache import connect_to_cache
@@ -6,7 +8,7 @@ from libutils.logger import init_logger
 from starlette.applications import Starlette
 from starlette.middleware import Middleware
 from starlette.middleware.gzip import GZipMiddleware
-from starlette.routing import Mount, Route
+from starlette.routing import BaseRoute, Mount, Route
 from starlette.staticfiles import StaticFiles
 from starlette_prometheus import PrometheusMiddleware
 
@@ -24,15 +26,7 @@ from api.prometheus import Prometheus
 from api.routes.cache_reports import cache_reports_endpoint
 from api.routes.first_rows import first_rows_endpoint
 from api.routes.healthcheck import healthcheck_endpoint
-from api.routes.hf_datasets import (
-    hf_datasets_count_by_cache_status_endpoint,
-    hf_datasets_endpoint,
-)
-from api.routes.queue_dump import (
-    queue_dump_endpoint,
-    queue_dump_waiting_started_endpoint,
-)
-from api.routes.refresh_split import refresh_split_endpoint
+from api.routes.pending_jobs import pending_jobs_endpoint
 from api.routes.rows import rows_endpoint
 from api.routes.splits import splits_endpoint
 from api.routes.splits_next import splits_endpoint_next
@@ -48,24 +42,35 @@ def create_app() -> Starlette:
     prometheus = Prometheus()
 
     middleware = [Middleware(GZipMiddleware), Middleware(PrometheusMiddleware, filter_unhandled_paths=True)]
-    routes = [
-        Mount("/assets", app=StaticFiles(directory=init_assets_dir(ASSETS_DIRECTORY), check_dir=True), name="assets"),
-        Route("/cache-reports", endpoint=cache_reports_endpoint),
-        Route("/first-rows", endpoint=first_rows_endpoint),
+    documented: List[BaseRoute] = [
         Route("/healthcheck", endpoint=healthcheck_endpoint),
-        Route("/hf_datasets", endpoint=hf_datasets_endpoint),
-        Route("/hf-datasets-count-by-cache-status", endpoint=hf_datasets_count_by_cache_status_endpoint),
-        Route("/is-valid", endpoint=is_valid_endpoint),
-        Route("/metrics", endpoint=prometheus.endpoint),
-        Route("/queue-dump-waiting-started", endpoint=queue_dump_waiting_started_endpoint),
-        Route("/queue-dump", endpoint=queue_dump_endpoint),
-        Route("/refresh-split", endpoint=refresh_split_endpoint, methods=["POST"]),
+        Route("/valid", endpoint=valid_datasets_endpoint),
+        Route("/first-rows", endpoint=first_rows_endpoint),
+        Route("/splits-next", endpoint=splits_endpoint_next),
+    ]
+    to_deprecate: List[BaseRoute] = [
         Route("/rows", endpoint=rows_endpoint),
         Route("/splits", endpoint=splits_endpoint),
-        Route("/splits-next", endpoint=splits_endpoint_next),
-        Route("/valid", endpoint=valid_datasets_endpoint),
-        Route("/webhook", endpoint=webhook_endpoint, methods=["POST"]),
     ]
+    to_document: List[BaseRoute] = [
+        # called by https://github.com/huggingface/model-evaluator
+        Route("/is-valid", endpoint=is_valid_endpoint),
+    ]
+    to_protect: List[BaseRoute] = [
+        # called by the Hub webhooks
+        Route("/webhook", endpoint=webhook_endpoint, methods=["POST"]),
+        # called by Prometheus
+        Route("/metrics", endpoint=prometheus.endpoint),
+        # only used by https://observablehq.com/@huggingface/quality-assessment-of-datasets-loading
+        Route("/cache-reports", endpoint=cache_reports_endpoint),
+        # used in a browser tab to monitor the queue
+        Route("/pending-jobs", endpoint=pending_jobs_endpoint),
+    ]
+    for_development_only: List[BaseRoute] = [
+        # it can only be accessed in development. In production the reverse-proxy serves the assets
+        Mount("/assets", app=StaticFiles(directory=init_assets_dir(ASSETS_DIRECTORY), check_dir=True), name="assets"),
+    ]
+    routes: List[BaseRoute] = documented + to_deprecate + to_document + to_protect + for_development_only
     return Starlette(routes=routes, middleware=middleware)
 
 
