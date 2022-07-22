@@ -406,3 +406,14 @@ def test_pending_jobs(client: TestClient) -> None:
     for e in ["/splits", "/rows", "/splits-next", "/first-rows"]:
         assert json[e] == {"waiting": [], "started": []}
     assert "created_at" in json
+
+
+def test_cache_reports(client: TestClient) -> None:
+    response = client.get("/cache-reports")
+    assert response.status_code == 200
+    json = response.json()
+    assert json["/splits-next"] == [{"dataset": "acronym_identification", "error": None, "status": "200"}]
+    assert json["/first-rows"] == [
+        {"dataset": "acronym_identification", "config": "default", "split": "train", "status": "200", "error": None}
+    ]
+    assert "created_at" in json
