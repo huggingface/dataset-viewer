@@ -26,7 +26,6 @@ from api.prometheus import Prometheus
 from api.routes.cache_reports import cache_reports_endpoint
 from api.routes.first_rows import first_rows_endpoint
 from api.routes.healthcheck import healthcheck_endpoint
-from api.routes.hf_datasets import hf_datasets_count_by_cache_status_endpoint
 from api.routes.queue_dump import (
     queue_dump_endpoint,
     queue_dump_waiting_started_endpoint,
@@ -69,7 +68,6 @@ def create_app() -> Starlette:
     ]
     technical_reports: List[BaseRoute] = [
         # only used by https://observablehq.com/@huggingface/quality-assessment-of-datasets-loading
-        Route("/hf-datasets-count-by-cache-status", endpoint=hf_datasets_count_by_cache_status_endpoint),
         Route("/cache-reports", endpoint=cache_reports_endpoint),
         Route("/queue-dump", endpoint=queue_dump_endpoint),
         # used in a browser tab to monitor the queue

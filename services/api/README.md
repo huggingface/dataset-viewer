@@ -168,42 +168,6 @@ Responses:
 }
 ```
 
-### /hf-datasets-count-by-cache-status
-
-> Give statistics about the datasets of the hub
-
-Example: https://datasets-server.huggingface.co/hf-datasets-count-by-cache-status
-
-Method: `GET`
-
-Parameters: none
-
-Responses:
-
-- `200`: JSON content which gives statistics about the status of the public datasets of the Hub, split by canonical or community, with the following structure:
-
-```json
-{
-  "canonical": {
-    "valid": 0,
-    "error": 0,
-    "missing": 1
-  },
-  "community": {
-    "valid": 0,
-    "error": 0,
-    "missing": 1
-  },
-  "created_at": "2022-01-20T13:52:05Z"
-}
-```
-
-The meaning is the following:
-
-- "valid": the list of splits and the 100 first rows of every split are available (maybe stale)
-- "error": the list of splits could not be fetched, or the rows could not be fetched for some splits
-- "missing": the list of splits is missing, or the rows are missing for some splits
-
 ### /queue-dump
 
 > Give the queue entries, classed by status
