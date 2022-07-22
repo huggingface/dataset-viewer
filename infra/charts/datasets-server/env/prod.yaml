@@ -151,7 +151,7 @@ worker:
     # Log level
     logLevel: "DEBUG"
     # Maximum number of jobs running at the same time for the same dataset
-    maxJobsPerDataset: 5
+    maxJobsPerDataset: 3
 
   splits:
     replicas: 10
@@ -164,13 +164,13 @@ worker:
         cpu: 1
         memory: "8Gi"
       limits:
-        cpu: 1
+        cpu: 2
         memory: "30Gi"
 
     # Log level
     logLevel: "DEBUG"
     # Maximum number of jobs running at the same time for the same dataset
-    maxJobsPerDataset: 5
+    maxJobsPerDataset: 3
 
 admin:
   replicas: 1
