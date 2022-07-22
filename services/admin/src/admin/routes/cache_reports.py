@@ -8,8 +8,8 @@ from libcache.simple_cache import (
 from starlette.requests import Request
 from starlette.responses import Response
 
-from api.config import MAX_AGE_SHORT_SECONDS
-from api.routes._utils import get_response
+from admin.config import MAX_AGE_SHORT_SECONDS
+from admin.routes._utils import get_response
 
 logger = logging.getLogger(__name__)
 
