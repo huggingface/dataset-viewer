@@ -42,33 +42,35 @@ def create_app() -> Starlette:
     prometheus = Prometheus()
 
     middleware = [Middleware(GZipMiddleware), Middleware(PrometheusMiddleware, filter_unhandled_paths=True)]
-    public: List[BaseRoute] = [
+    documented: List[BaseRoute] = [
         Route("/healthcheck", endpoint=healthcheck_endpoint),
         Route("/valid", endpoint=valid_datasets_endpoint),
         Route("/first-rows", endpoint=first_rows_endpoint),
         Route("/splits-next", endpoint=splits_endpoint_next),
     ]
-    public_to_deprecate: List[BaseRoute] = [
+    to_deprecate: List[BaseRoute] = [
         Route("/rows", endpoint=rows_endpoint),
         Route("/splits", endpoint=splits_endpoint),
     ]
-    public_undocumented: List[BaseRoute] = [
+    to_document: List[BaseRoute] = [
+        # called by https://github.com/huggingface/model-evaluator
+        Route("/is-valid", endpoint=is_valid_endpoint),
+    ]
+    to_protect: List[BaseRoute] = [
         # called by the Hub webhooks
         Route("/webhook", endpoint=webhook_endpoint, methods=["POST"]),
         # called by Prometheus
         Route("/metrics", endpoint=prometheus.endpoint),
-        # called by https://github.com/huggingface/model-evaluator
-        Route("/is-valid", endpoint=is_valid_endpoint),
-        # it can be used for development, but in production the reverse-proxy directly serves the assets
-        Mount("/assets", app=StaticFiles(directory=init_assets_dir(ASSETS_DIRECTORY), check_dir=True), name="assets"),
-    ]
-    technical_reports: List[BaseRoute] = [
         # only used by https://observablehq.com/@huggingface/quality-assessment-of-datasets-loading
         Route("/cache-reports", endpoint=cache_reports_endpoint),
         # used in a browser tab to monitor the queue
         Route("/pending-jobs", endpoint=pending_jobs_endpoint),
     ]
-    routes: List[BaseRoute] = public + public_to_deprecate + public_undocumented + technical_reports
+    for_development_only: List[BaseRoute] = [
+        # it can only be accessed in development. In production the reverse-proxy serves the assets
+        Mount("/assets", app=StaticFiles(directory=init_assets_dir(ASSETS_DIRECTORY), check_dir=True), name="assets"),
+    ]
+    routes: List[BaseRoute] = documented + to_deprecate + to_document + to_protect + for_development_only
     return Starlette(routes=routes, middleware=middleware)
 
 
