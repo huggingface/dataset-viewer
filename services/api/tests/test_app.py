@@ -107,12 +107,16 @@ def test_get_healthcheck(client: TestClient) -> None:
     assert response.text == "ok"
 
 
-def test_get_hf_datasets(client: TestClient) -> None:
-    response = client.get("/hf_datasets")
+def test_get_hf_datasets_count_by_cache_status(client: TestClient) -> None:
+    response = client.get("/hf-datasets-count-by-cache-status")
     assert response.status_code == 200
     json = response.json()
-    datasets = json["datasets"]
-    assert len(datasets) > 1000
+    assert json["canonical"]["valid"] == 0
+    assert json["canonical"]["error"] == 0
+    assert json["canonical"]["missing"] > 0
+    assert json["community"]["valid"] == 0
+    assert json["community"]["error"] == 0
+    assert json["community"]["missing"] > 0
 
 
 def test_get_splits(client: TestClient) -> None:

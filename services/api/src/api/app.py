@@ -1,3 +1,5 @@
+from typing import List
+
 import uvicorn  # type: ignore
 from libcache.asset import init_assets_dir, show_assets_dir
 from libcache.cache import connect_to_cache
@@ -9,7 +11,6 @@ from starlette.middleware.gzip import GZipMiddleware
 from starlette.routing import BaseRoute, Mount, Route
 from starlette.staticfiles import StaticFiles
 from starlette_prometheus import PrometheusMiddleware
-from typing import List
 
 from api.config import (
     APP_HOSTNAME,
@@ -25,10 +26,7 @@ from api.prometheus import Prometheus
 from api.routes.cache_reports import cache_reports_endpoint
 from api.routes.first_rows import first_rows_endpoint
 from api.routes.healthcheck import healthcheck_endpoint
-from api.routes.hf_datasets import (
-    hf_datasets_count_by_cache_status_endpoint,
-    hf_datasets_endpoint,
-)
+from api.routes.hf_datasets import hf_datasets_count_by_cache_status_endpoint
 from api.routes.queue_dump import (
     queue_dump_endpoint,
     queue_dump_waiting_started_endpoint,
@@ -78,8 +76,6 @@ def create_app() -> Starlette:
         Route("/queue-dump-waiting-started", endpoint=queue_dump_waiting_started_endpoint),
     ]
     deprecated: List[BaseRoute] = [
-        # just use https://huggingface.co/api/datasets
-        Route("/hf_datasets", endpoint=hf_datasets_endpoint),
         # never used
         Route("/refresh-split", endpoint=refresh_split_endpoint, methods=["POST"]),
     ]
