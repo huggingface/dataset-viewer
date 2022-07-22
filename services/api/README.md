@@ -184,11 +184,19 @@ Responses:
 
 ```json
 {
-  "datasets": {
+  "/splits": {
     "waiting": [],
     "started": []
   },
-  "splits": {
+  "/rows": {
+    "waiting": [],
+    "started": []
+  },
+  "/splits-next": {
+    "waiting": [],
+    "started": []
+  },
+  "/first-rows": {
     "waiting": [],
     "started": []
   },

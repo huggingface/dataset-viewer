@@ -397,3 +397,12 @@ def test_metrics(client: TestClient) -> None:
     # assert 'queue_jobs_total{queue="datasets",status="waiting"}' in metrics
     # assert 'cache_entries_total{cache="datasets",status="empty"}' in metrics
     assert 'starlette_requests_total{method="GET",path_template="/metrics"}' in metrics
+
+
+def test_pending_jobs(client: TestClient) -> None:
+    response = client.get("/pending-jobs")
+    assert response.status_code == 200
+    json = response.json()
+    for e in ["/splits", "/rows", "/splits-next", "/first-rows"]:
+        assert json[e] == {"waiting": [], "started": []}
+    assert "created_at" in json
