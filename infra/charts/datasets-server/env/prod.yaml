@@ -40,7 +40,7 @@ secrets:
 monitoring:
   enabled: true
 
-adminDomain: "datasets-server-admin.us.dev.moon.huggingface.tech"
+adminDomain: "admin-datasets-server.us.dev.moon.huggingface.tech"
 apiDomain: "datasets-server.huggingface.co"
 
 reverseProxy:
