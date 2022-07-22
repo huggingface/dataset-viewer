@@ -68,7 +68,6 @@ def create_app() -> Starlette:
     technical_reports: List[BaseRoute] = [
         # only used by https://observablehq.com/@huggingface/quality-assessment-of-datasets-loading
         Route("/cache-reports", endpoint=cache_reports_endpoint),
-        Route("/queue-dump", endpoint=queue_dump_endpoint),
         # used in a browser tab to monitor the queue
         Route("/queue-dump-waiting-started", endpoint=queue_dump_waiting_started_endpoint),
     ]

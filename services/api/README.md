@@ -168,58 +168,6 @@ Responses:
 }
 ```
 
-### /queue-dump
-
-> Give the queue entries, classed by status
-
-Example: https://datasets-server.huggingface.co/queue-dump
-
-Method: `GET`
-
-Parameters: none
-
-Responses:
-
-- `200`: JSON content which the queue content, by status, with the following structure:
-
-```json
-{
-  "datasets": {
-    "waiting": [],
-    "started": [],
-    "success": [
-      {
-        "dataset_name": "glue",
-        "status": "SUCCESS",
-        "created_at": "2022-01-20T13:48:06.705000",
-        "started_at": "2022-01-20T13:48:21.615000",
-        "finished_at": "2022-01-20T13:48:27.898000"
-      }
-    ],
-    "error": [],
-    "cancelled": []
-  },
-  "splits": {
-    "waiting": [],
-    "started": [],
-    "success": [],
-    "error": [],
-    "cancelled": [
-      {
-        "dataset_name": "glue",
-        "config_name": "cola",
-        "split_name": "test",
-        "status": "CANCELLED",
-        "created_at": "2022-01-20T13:48:27.846000",
-        "started_at": null,
-        "finished_at": "2022-01-20T13:51:51.411000"
-      }
-    ]
-  },
-  "created_at": "2022-01-20T13:59:03Z"
-}
-```
-
 ### /queue-dump-waiting-started
 
 > Give the queue entries, classed by status, only for "waiting" and "started" statuses
