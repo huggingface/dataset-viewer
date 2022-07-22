@@ -55,49 +55,6 @@ Responses:
 
 - `200`: text content `ok`
 
-### /cache-reports
-
-> Give detailed reports on the content of the cache
-
-Example: https://datasets-server.huggingface.co/cache-reports
-
-Method: `GET`
-
-Parameters: none
-
-Responses:
-
-- `200`: JSON content which the dataset cache reports, with the following structure:
-
-```json
-{
-  "/splits-next": [{ "dataset": "sent_comp", "status": "200", "error": null }],
-  "/first-rows": [
-      {
-        "dataset": "sent_comp",
-        "config": "default",
-        "split": "validation",
-        "status": "400",
-        "error": {
-          "message": "Cannot get the first rows for the split.",
-          "cause_exception": "FileNotFoundError",
-        }
-      },
-      {
-        "dataset": "sent_comp",
-        "config": "default",
-        "split": "test",
-        "status": "500",
-        "error": {
-          "message": "Internal error.",
-        }
-      }
-    ]
-  },
-  "created_at": "2022-01-20T14:40:27Z"
-}
-```
-
 ### /valid
 
 > Give the list of the valid datasets. Here, a dataset is considered valid if `/splits` returns a valid response, and if `/rows` returns a valid response for _at least one split_. Note that stale cache entries are considered valid.
@@ -138,42 +95,6 @@ Responses:
 ```json
 {
   "valid": true
-}
-```
-
-### /pending-jobs
-
-> Give the pending jobs, classed by queue and status (waiting or started)
-
-Example: https://datasets-server.huggingface.co/pending-jobs
-
-Method: `GET`
-
-Parameters: none
-
-Responses:
-
-- `200`: JSON content with the jobs by queue and status, with the following structure:
-
-```json
-{
-  "/splits": {
-    "waiting": [],
-    "started": []
-  },
-  "/rows": {
-    "waiting": [],
-    "started": []
-  },
-  "/splits-next": {
-    "waiting": [],
-    "started": []
-  },
-  "/first-rows": {
-    "waiting": [],
-    "started": []
-  },
-  "created_at": "2022-01-20T13:59:03Z"
 }
 ```
 

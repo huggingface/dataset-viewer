@@ -51,3 +51,21 @@ def test_metrics(client: TestClient) -> None:
     assert 'cache_entries_total{cache="splits/",status="BAD_REQUEST"}' in metrics
     assert 'cache_entries_total{cache="first-rows/",status="INTERNAL_SERVER_ERROR"}' in metrics
     assert 'starlette_requests_total{method="GET",path_template="/metrics"}' in metrics
+
+
+def test_pending_jobs(client: TestClient) -> None:
+    response = client.get("/pending-jobs")
+    assert response.status_code == 200
+    json = response.json()
+    for e in ["/splits", "/rows", "/splits-next", "/first-rows"]:
+        assert json[e] == {"waiting": [], "started": []}
+    assert "created_at" in json
+
+
+def test_cache_reports(client: TestClient) -> None:
+    response = client.get("/cache-reports")
+    assert response.status_code == 200
+    json = response.json()
+    assert json["/splits-next"] == []
+    assert json["/first-rows"] == []
+    assert "created_at" in json

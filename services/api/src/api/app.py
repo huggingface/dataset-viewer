@@ -23,10 +23,8 @@ from api.config import (
     MONGO_URL,
 )
 from api.prometheus import Prometheus
-from api.routes.cache_reports import cache_reports_endpoint
 from api.routes.first_rows import first_rows_endpoint
 from api.routes.healthcheck import healthcheck_endpoint
-from api.routes.pending_jobs import pending_jobs_endpoint
 from api.routes.rows import rows_endpoint
 from api.routes.splits import splits_endpoint
 from api.routes.splits_next import splits_endpoint_next
@@ -61,10 +59,6 @@ def create_app() -> Starlette:
         Route("/webhook", endpoint=webhook_endpoint, methods=["POST"]),
         # called by Prometheus
         Route("/metrics", endpoint=prometheus.endpoint),
-        # only used by https://observablehq.com/@huggingface/quality-assessment-of-datasets-loading
-        Route("/cache-reports", endpoint=cache_reports_endpoint),
-        # used in a browser tab to monitor the queue
-        Route("/pending-jobs", endpoint=pending_jobs_endpoint),
     ]
     for_development_only: List[BaseRoute] = [
         # it can only be accessed in development. In production the reverse-proxy serves the assets

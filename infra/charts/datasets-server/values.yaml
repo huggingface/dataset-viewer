@@ -300,5 +300,7 @@ admin:
   assetsDirectory: "/assets"
   # Log level
   logLevel: "INFO"
+  # Number of seconds to set in the `max-age` header on technical endpoints
+  maxAgeShortSeconds: "10"
 
   readinessPort: 80
