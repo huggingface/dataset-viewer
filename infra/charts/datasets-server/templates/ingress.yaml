@@ -3,7 +3,7 @@ kind: Ingress
 metadata:
   annotations:
     # to communicate with AWS
-    {{ toYaml .Values.reverseProxy.ingress.annotations | nindent 4 }}
+    {{ toYaml .Values.ingress.annotations | nindent 4 }}
   labels:
     {{ include "labels.reverseProxy" . | nindent 4 }}
   name: {{ include "release" . }}

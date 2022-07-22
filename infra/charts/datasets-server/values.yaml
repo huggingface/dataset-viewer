@@ -34,14 +34,15 @@ monitoring:
 uid: 1000
 gid: 3000
 
+
+ingress:
+  annotations: {}
+
 reverseProxy:
   replicas: 1
 
   service:
     type: NodePort
-    annotations: {}
-
-  ingress:
     annotations: {}
 
   resources:
@@ -70,9 +71,6 @@ api:
 
   service:
     type: NodePort
-    annotations: {}
-
-  ingress:
     annotations: {}
 
   resources:
@@ -277,9 +275,6 @@ admin:
 
   service:
     type: NodePort
-    annotations: {}
-
-  ingress:
     annotations: {}
 
   resources:
