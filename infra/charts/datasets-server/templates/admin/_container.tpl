@@ -11,6 +11,8 @@
     value: {{ .Values.admin.assetsDirectory | quote }}
   - name: LOG_LEVEL
     value: {{ .Values.admin.logLevel | quote }}
+  - name: MAX_AGE_SHORT_SECONDS
+    value: {{ .Values.admin.maxAgeShortSeconds | quote }}
   - name: MONGO_CACHE_DATABASE
     value: {{ .Values.mongodb.cacheDatabase | quote }}
   - name: MONGO_QUEUE_DATABASE
