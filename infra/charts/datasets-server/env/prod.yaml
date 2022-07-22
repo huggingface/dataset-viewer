@@ -145,7 +145,7 @@ worker:
         cpu: 1
         memory: "8Gi"
       limits:
-        cpu: 1
+        cpu: 2
         memory: "30Gi"
 
     # Log level
