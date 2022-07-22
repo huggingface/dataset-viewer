@@ -23,7 +23,7 @@ load_dotenv()
 
 
 def get_hf_dataset_names():
-    return [str(dataset.id) for dataset in list_datasets(full=True)]
+    return [str(dataset.id) for dataset in list_datasets(full=False)]
 
 
 def warm_cache(dataset_names: List[str]) -> None:
