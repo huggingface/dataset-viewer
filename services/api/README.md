@@ -168,11 +168,11 @@ Responses:
 }
 ```
 
-### /queue-dump-waiting-started
+### /pending-jobs
 
-> Give the queue entries, classed by status, only for "waiting" and "started" statuses
+> Give the pending jobs, classed by queue and status (waiting or started)
 
-Example: https://datasets-server.huggingface.co/queue-dump-waiting-started
+Example: https://datasets-server.huggingface.co/pending-jobs
 
 Method: `GET`
 
@@ -180,7 +180,7 @@ Parameters: none
 
 Responses:
 
-- `200`: JSON content which the queue content, by status, with the following structure:
+- `200`: JSON content with the jobs by queue and status, with the following structure:
 
 ```json
 {

@@ -26,10 +26,7 @@ from api.prometheus import Prometheus
 from api.routes.cache_reports import cache_reports_endpoint
 from api.routes.first_rows import first_rows_endpoint
 from api.routes.healthcheck import healthcheck_endpoint
-from api.routes.queue_dump import (
-    queue_dump_endpoint,
-    queue_dump_waiting_started_endpoint,
-)
+from api.routes.pending_jobs import pending_jobs_endpoint
 from api.routes.rows import rows_endpoint
 from api.routes.splits import splits_endpoint
 from api.routes.splits_next import splits_endpoint_next
@@ -69,7 +66,7 @@ def create_app() -> Starlette:
         # only used by https://observablehq.com/@huggingface/quality-assessment-of-datasets-loading
         Route("/cache-reports", endpoint=cache_reports_endpoint),
         # used in a browser tab to monitor the queue
-        Route("/queue-dump-waiting-started", endpoint=queue_dump_waiting_started_endpoint),
+        Route("/pending-jobs", endpoint=pending_jobs_endpoint),
     ]
     routes: List[BaseRoute] = public + public_to_deprecate + public_undocumented + technical_reports
     return Starlette(routes=routes, middleware=middleware)

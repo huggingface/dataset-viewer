@@ -11,8 +11,8 @@ from api.routes._utils import get_response
 logger = logging.getLogger(__name__)
 
 
-async def queue_dump_waiting_started_endpoint(_: Request) -> Response:
-    logger.info("/queue-dump-waiting-started")
+async def pending_jobs_endpoint(_: Request) -> Response:
+    logger.info("/pending-jobs")
     return get_response(
         {
             "datasets": get_dataset_dump_by_status(waiting_started=True),
