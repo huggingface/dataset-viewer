@@ -30,7 +30,6 @@ from api.routes.queue_dump import (
     queue_dump_endpoint,
     queue_dump_waiting_started_endpoint,
 )
-from api.routes.refresh_split import refresh_split_endpoint
 from api.routes.rows import rows_endpoint
 from api.routes.splits import splits_endpoint
 from api.routes.splits_next import splits_endpoint_next
@@ -73,11 +72,7 @@ def create_app() -> Starlette:
         # used in a browser tab to monitor the queue
         Route("/queue-dump-waiting-started", endpoint=queue_dump_waiting_started_endpoint),
     ]
-    deprecated: List[BaseRoute] = [
-        # never used
-        Route("/refresh-split", endpoint=refresh_split_endpoint, methods=["POST"]),
-    ]
-    routes: List[BaseRoute] = public + public_to_deprecate + public_undocumented + technical_reports + deprecated
+    routes: List[BaseRoute] = public + public_to_deprecate + public_undocumented + technical_reports
     return Starlette(routes=routes, middleware=middleware)
 
 

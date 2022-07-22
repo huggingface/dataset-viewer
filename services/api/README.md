@@ -288,37 +288,6 @@ MODELS=(amazon_polarity ami arabic_billion_words)
 for model in ${MODELS[@]}; do curl -X POST https://datasets-server.huggingface.co/webhook -H 'Content-Type: application/json' -d '{"update": "datasets/'$model'"}'; done;
 ```
 
-### /refresh-split
-
-> Refresh the cache of rows and columns of a split
-
-Example: https://datasets-server.huggingface.co/refresh-split
-
-Method: `POST`
-
-Body:
-
-```json
-{
-  "dataset": "glue",
-  "config": "ax",
-  "split": "test"
-}
-```
-
-Responses:
-
-- `200`: JSON content with the following structure:
-
-  ```json
-  {
-    "status": "ok"
-  }
-  ```
-
-- `400`: the payload is erroneous, or a 400 error raised during the cache operation
-- `500`: application error
-
 ### /splits
 
 > Lists the [splits](https://huggingface.co/docs/datasets/splits.html) names for a dataset
