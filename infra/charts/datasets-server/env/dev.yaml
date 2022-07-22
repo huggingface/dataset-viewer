@@ -13,7 +13,8 @@ secrets:
 monitoring:
   enabled: false
 
-apiDomain: "datasets-server.us.dev.moon.huggingface.tech"
+adminDomain: "admin-datasets-server-dev.us.dev.moon.huggingface.tech"
+apiDomain: "datasets-server-dev.us.dev.moon.huggingface.tech"
 
 reverseProxy:
   replicas: 1
