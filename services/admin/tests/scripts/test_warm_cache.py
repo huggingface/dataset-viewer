@@ -6,3 +6,4 @@ def test_get_hf_dataset_names() -> None:
     dataset_names = get_hf_dataset_names()
     assert len(dataset_names) > 1000
     assert "glue" in dataset_names
+    assert "Helsinki-NLP/tatoeba_mt" in dataset_names
