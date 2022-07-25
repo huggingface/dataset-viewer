@@ -29,13 +29,13 @@ def clean_mongo_databases() -> None:
 
 
 def test_get_healthcheck(client: TestClient) -> None:
-    response = client.get("/healthcheck")
+    response = client.get("/admin/healthcheck")
     assert response.status_code == 200
     assert response.text == "ok"
 
 
 def test_metrics(client: TestClient) -> None:
-    response = client.get("/metrics")
+    response = client.get("/admin/metrics")
     assert response.status_code == 200
     text = response.text
     lines = text.split("\n")
@@ -54,7 +54,7 @@ def test_metrics(client: TestClient) -> None:
 
 
 def test_pending_jobs(client: TestClient) -> None:
-    response = client.get("/pending-jobs")
+    response = client.get("/admin/pending-jobs")
     assert response.status_code == 200
     json = response.json()
     for e in ["/splits", "/rows", "/splits-next", "/first-rows"]:
@@ -63,7 +63,7 @@ def test_pending_jobs(client: TestClient) -> None:
 
 
 def test_cache_reports(client: TestClient) -> None:
-    response = client.get("/cache-reports")
+    response = client.get("/admin/cache-reports")
     assert response.status_code == 200
     json = response.json()
     assert json["/splits-next"] == []
