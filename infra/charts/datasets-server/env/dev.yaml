@@ -13,13 +13,12 @@ secrets:
 monitoring:
   enabled: false
 
-adminDomain: "admin-datasets-server-dev.us.dev.moon.huggingface.tech"
-apiDomain: "datasets-server-dev.us.dev.moon.huggingface.tech"
+apiDomain: "datasets-server.us.dev.moon.huggingface.tech"
 
 ingress:
   annotations:
     # Link to Route53 - we could set any subdomain to us.dev.moon.huggingface.tech (common zone to the k8s cluster)
-    external-dns.alpha.kubernetes.io/hostname: "datasets-server.us.dev.moon.huggingface.tech,admin-datasets-server-dev.us.dev.moon.huggingface.tech"
+    external-dns.alpha.kubernetes.io/hostname: "datasets-server.us.dev.moon.huggingface.tech"
     alb.ingress.kubernetes.io/healthcheck-path: "/healthcheck"
     alb.ingress.kubernetes.io/listen-ports: '[{"HTTP": 80, "HTTPS": 443}]'
     alb.ingress.kubernetes.io/load-balancer-name: "hub-datasets-server-dev"
@@ -47,7 +46,7 @@ api:
 
 worker:
   datasets:
-    replicas: 2
+    replicas: 1
 
     resources:
       requests:
@@ -56,7 +55,7 @@ worker:
         cpu: 1
 
   firstRows:
-    replicas: 5
+    replicas: 1
 
     resources:
       requests:
@@ -65,7 +64,7 @@ worker:
         cpu: 1
 
   splits:
-    replicas: 5
+    replicas: 1
 
     resources:
       requests:
@@ -74,7 +73,7 @@ worker:
         cpu: 1
 
   splitsNext:
-    replicas: 2
+    replicas: 1
 
     resources:
       requests:

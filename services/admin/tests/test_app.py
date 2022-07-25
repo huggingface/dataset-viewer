@@ -29,13 +29,13 @@ def clean_mongo_databases() -> None:
 
 
 def test_get_healthcheck(client: TestClient) -> None:
-    response = client.get("/healthcheck")
+    response = client.get("/admin/healthcheck")
     assert response.status_code == 200
     assert response.text == "ok"
 
 
 def test_metrics(client: TestClient) -> None:
-    response = client.get("/metrics")
+    response = client.get("/admin/metrics")
     assert response.status_code == 200
     text = response.text
     lines = text.split("\n")
@@ -50,11 +50,11 @@ def test_metrics(client: TestClient) -> None:
     assert 'cache_entries_total{cache="datasets",status="valid"}' in metrics
     assert 'cache_entries_total{cache="splits/",status="BAD_REQUEST"}' in metrics
     assert 'cache_entries_total{cache="first-rows/",status="INTERNAL_SERVER_ERROR"}' in metrics
-    assert 'starlette_requests_total{method="GET",path_template="/metrics"}' in metrics
+    assert 'starlette_requests_total{method="GET",path_template="/admin/metrics"}' in metrics
 
 
 def test_pending_jobs(client: TestClient) -> None:
-    response = client.get("/pending-jobs")
+    response = client.get("/admin/pending-jobs")
     assert response.status_code == 200
     json = response.json()
     for e in ["/splits", "/rows", "/splits-next", "/first-rows"]:
@@ -63,7 +63,7 @@ def test_pending_jobs(client: TestClient) -> None:
 
 
 def test_cache_reports(client: TestClient) -> None:
-    response = client.get("/cache-reports")
+    response = client.get("/admin/cache-reports")
     assert response.status_code == 200
     json = response.json()
     assert json["/splits-next"] == []

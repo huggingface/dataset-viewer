@@ -10,7 +10,7 @@ metadata:
   namespace: {{ .Release.Namespace }}
 spec:
   rules:
-    - host: {{ .Values.adminDomain }}
+    - host: {{ .Values.apiDomain }}
       http:
         paths:
           - backend:
@@ -18,10 +18,8 @@ spec:
                 name: "{{ include "release" . }}-admin"
                 port:
                   name: http
-            pathType: ImplementationSpecific
-    - host: {{ .Values.apiDomain }}
-      http:
-        paths:
+            pathType: Prefix
+            path: "/admin/"
           - backend:
               service:
                 name: "{{ include "release" . }}-reverse-proxy"

@@ -40,13 +40,10 @@ secrets:
 monitoring:
   enabled: true
 
-adminDomain: "admin-datasets-server.us.dev.moon.huggingface.tech"
 apiDomain: "datasets-server.huggingface.co"
 
 ingress:
   annotations:
-  # Link to Route53 - we could set any subdomain to us.dev.moon.huggingface.tech (common zone to the k8s cluster)
-    external-dns.alpha.kubernetes.io/hostname: "admin-datasets-server.us.dev.moon.huggingface.tech"
     alb.ingress.kubernetes.io/certificate-arn: arn:aws:acm:us-east-1:707930574880:certificate/777e3ae5-0c54-47ee-9b8c-d85eeb6ec4ae
     alb.ingress.kubernetes.io/healthcheck-path: "/healthcheck"
     alb.ingress.kubernetes.io/listen-ports: '[{"HTTP": 80, "HTTPS": 443}]'
