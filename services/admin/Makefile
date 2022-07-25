@@ -39,7 +39,7 @@ refresh-cache:
 	poetry run python src/admin/scripts/refresh_cache.py
 
 .PHONY: refresh-cache-canonical
-refresh-cache:
+refresh-cache-canonical:
 	poetry run python src/admin/scripts/refresh_cache_canonical.py
 
 .PHONY: warm-cache
