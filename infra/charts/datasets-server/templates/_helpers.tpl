@@ -129,6 +129,14 @@ It's named using the Release name
 {{- end }}
 
 {{/*
+The URL to access the admin service from another container
+See https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/#a-aaaa-records
+*/}}
+{{- define "admin.url" -}}
+{{- printf "http://%s-admin.%s.svc.cluster.local:80" ( include "release" . ) ( .Release.Namespace ) }}
+{{- end }}
+
+{{/*
 The URL to access the API service from another container
 See https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/#a-aaaa-records
 */}}

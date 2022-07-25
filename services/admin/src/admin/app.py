@@ -31,12 +31,12 @@ def create_app() -> Starlette:
 
     middleware = [Middleware(GZipMiddleware), Middleware(PrometheusMiddleware, filter_unhandled_paths=True)]
     routes = [
-        Route("/admin/healthcheck", endpoint=healthcheck_endpoint),
-        Route("/admin/metrics", endpoint=prometheus.endpoint),
+        Route("/healthcheck", endpoint=healthcheck_endpoint),
+        Route("/metrics", endpoint=prometheus.endpoint),
         # used by https://observablehq.com/@huggingface/quality-assessment-of-datasets-loading
-        Route("/admin/cache-reports", endpoint=cache_reports_endpoint),
+        Route("/cache-reports", endpoint=cache_reports_endpoint),
         # used in a browser tab to monitor the queue
-        Route("/admin/pending-jobs", endpoint=pending_jobs_endpoint),
+        Route("/pending-jobs", endpoint=pending_jobs_endpoint),
     ]
     return Starlette(routes=routes, middleware=middleware)
 

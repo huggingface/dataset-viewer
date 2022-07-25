@@ -17,7 +17,9 @@
     value: {{ .Values.reverseProxy.host | quote }}
   - name: PORT
     value: {{ .Values.reverseProxy.port | quote }}
-  - name: TARGET_URL
+  - name: URL_ADMIN
+    value: {{ include "admin.url" . | quote }}
+  - name: URL_API
     value: {{ include "api.url" . | quote }}
   volumeMounts:
   - name: nginx-templates
