@@ -49,12 +49,12 @@ The scripts:
 
 ## Run the API
 
-The admin service provides technical endpoints, all under the `/admin/` path:
+The admin service provides technical endpoints:
 
-- `/admin/healthcheck`
-- `/admin/metrics`: gives info about the cache and the queue
-- `/admin/cache-reports`: give detailed reports on the content of the cache
-- `/admin/pending-jobs`: give the pending jobs, classed by queue and status (waiting or started)
+- `/healthcheck`
+- `/metrics`: gives info about the cache and the queue
+- `/cache-reports`: give detailed reports on the content of the cache
+- `/pending-jobs`: give the pending jobs, classed by queue and status (waiting or started)
 
 ### /cache-reports
 
