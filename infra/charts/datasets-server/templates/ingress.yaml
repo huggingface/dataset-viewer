@@ -15,13 +15,6 @@ spec:
         paths:
           - backend:
               service:
-                name: "{{ include "release" . }}-admin"
-                port:
-                  name: http
-            pathType: Prefix
-            path: "/admin/"
-          - backend:
-              service:
                 name: "{{ include "release" . }}-reverse-proxy"
                 port:
                   name: http

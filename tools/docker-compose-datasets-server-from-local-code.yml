@@ -17,7 +17,8 @@ services:
       - CACHE_ZONE_SIZE=50m
       - HOST=localhost
       - PORT=80
-      - TARGET_URL=http://api:8080
+      - URL_ADMIN=http://admin:8081
+      - URL_API=http://api:8080
     depends_on:
       api:
         condition: service_started

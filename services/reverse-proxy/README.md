@@ -22,7 +22,8 @@ It takes various environment variables, all of them are mandatory:
 - `CACHE_ZONE_SIZE`: size of the cache index, eg `50m` (see [proxy_cache_path](https://nginx.org/en/docs/http/ngx_http_proxy_module.html#proxy_cache_path))
 - `HOST`: domain of the reverse proxy, eg `localhost`
 - `PORT`: port of the reverse proxy, eg `80`
-- `TARGET_URL`= URL of the API, eg `http://api:8080`
+- `URL_ADMIN`= URL of the admin, eg `http://admin:8080`
+- `URL_API`= URL of the API, eg `http://api:8080`
 
 The image requires three directories to be mounted (from volumes):
 
