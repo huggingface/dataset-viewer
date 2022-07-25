@@ -50,7 +50,7 @@ def test_metrics(client: TestClient) -> None:
     assert 'cache_entries_total{cache="datasets",status="valid"}' in metrics
     assert 'cache_entries_total{cache="splits/",status="BAD_REQUEST"}' in metrics
     assert 'cache_entries_total{cache="first-rows/",status="INTERNAL_SERVER_ERROR"}' in metrics
-    assert 'starlette_requests_total{method="GET",path_template="/metrics"}' in metrics
+    assert 'starlette_requests_total{method="GET",path_template="/admin/metrics"}' in metrics
 
 
 def test_pending_jobs(client: TestClient) -> None:
