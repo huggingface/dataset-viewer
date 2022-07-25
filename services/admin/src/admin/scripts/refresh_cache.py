@@ -18,6 +18,7 @@ def get_hf_dataset_names():
 
 def refresh_datasets_cache(dataset_names: List[str]) -> None:
     logger = logging.getLogger("refresh_cache")
+    connect_to_queue(MONGO_QUEUE_DATABASE, MONGO_URL)
     for dataset_name in dataset_names:
         # don't mark the cache entries as stale, because it's manually triggered
         add_dataset_job(dataset_name)
@@ -28,6 +29,5 @@ def refresh_datasets_cache(dataset_names: List[str]) -> None:
 if __name__ == "__main__":
     init_logger(LOG_LEVEL, "refresh_cache")
     logger = logging.getLogger("refresh_cache")
-    connect_to_queue(MONGO_QUEUE_DATABASE, MONGO_URL)
     refresh_datasets_cache(get_hf_dataset_names())
     logger.info("all the datasets of the Hub have been added to the queue to refresh the cache")

@@ -38,6 +38,10 @@ cancel-started-first-rows-jobs:
 refresh-cache:
 	poetry run python src/admin/scripts/refresh_cache.py
 
+.PHONY: refresh-cache-canonical
+refresh-cache:
+	poetry run python src/admin/scripts/refresh_cache_canonical.py
+
 .PHONY: warm-cache
 warm-cache:
 	poetry run python src/admin/scripts/warm_cache.py
