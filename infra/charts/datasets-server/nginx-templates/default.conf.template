@@ -21,7 +21,8 @@ server {
   }
 
   location /admin/ {
-    proxy_pass ${URL_ADMIN};
+    # note the trailing slash, to remove the /admin/ prefix
+    proxy_pass ${URL_ADMIN}/;
     proxy_set_header Host $proxy_host;
     proxy_set_header X-Real-IP $remote_addr;
     proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
