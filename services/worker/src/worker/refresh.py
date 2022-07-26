@@ -27,7 +27,10 @@ logger = logging.getLogger(__name__)
 
 def refresh_dataset(dataset_name: str, hf_token: Optional[str] = None) -> None:
     try:
-        split_full_names = get_dataset_split_full_names(dataset_name, hf_token)
+        try:
+            split_full_names = get_dataset_split_full_names(dataset_name, hf_token)
+        except Exception as err:
+            raise Status400Error("Cannot get the split names for the dataset.", err) from err
         upsert_dataset(dataset_name, split_full_names)
         logger.debug(f"dataset={dataset_name} is valid, cache updated")
         for split_full_name in split_full_names:
@@ -79,7 +82,10 @@ def refresh_split(
 
 def refresh_splits(dataset_name: str, hf_token: Optional[str] = None) -> HTTPStatus:
     try:
-        split_full_names = get_dataset_split_full_names(dataset_name, hf_token)
+        try:
+            split_full_names = get_dataset_split_full_names(dataset_name, hf_token)
+        except Exception as err:
+            raise Status400Error("Cannot get the split names for the dataset.", err) from err
         # get the number of bytes and examples for each split
         config_info: Dict[str, DatasetInfo] = {}
         splits: List[Dict] = []
