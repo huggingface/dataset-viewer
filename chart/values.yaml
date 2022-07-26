@@ -114,7 +114,7 @@ worker:
     # Directory of the "datasets" library cache (for the datasets, not the modules)
     cacheDirectory: "/cache"
     # Git reference for the canonical datasets on https://github.com/huggingface/datasets
-    datasetsRevision: "master"
+    datasetsRevision: "main"
     # User Access Token (see https://huggingface.co/settings/token, only the `read` role is required)
     hfToken: ""
     # Log level
@@ -158,7 +158,7 @@ worker:
     # Directory of the "datasets" library cache (for the datasets, not the modules)
     cacheDirectory: "/cache"
     # Git reference for the canonical datasets on https://github.com/huggingface/datasets
-    datasetsRevision: "master"
+    datasetsRevision: "main"
     # User Access Token (see https://huggingface.co/settings/token, only the `read` role is required)
     hfToken: ""
     # Log level
@@ -202,7 +202,7 @@ worker:
     # Directory of the "datasets" library cache (for the datasets, not the modules)
     cacheDirectory: "/cache"
     # Git reference for the canonical datasets on https://github.com/huggingface/datasets
-    datasetsRevision: "master"
+    datasetsRevision: "main"
     # Log level
     logLevel: "INFO"
     # Max number of job retries (for 500 errors) for the same job
@@ -244,7 +244,7 @@ worker:
     # Directory of the "datasets" library cache (for the datasets, not the modules)
     cacheDirectory: "/cache"
     # Git reference for the canonical datasets on https://github.com/huggingface/datasets
-    datasetsRevision: "master"
+    datasetsRevision: "main"
     # Log level
     logLevel: "INFO"
     # Max number of job retries (for 500 errors) for the same job
