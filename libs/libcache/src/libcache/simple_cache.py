@@ -227,6 +227,22 @@ def get_first_rows_responses_count_by_status() -> CountByHTTPStatus:
     return get_entries_count_by_status(FirstRowsResponse.objects)
 
 
+# for scripts
+
+
+def get_datasets_with_some_error() -> List[str]:
+    # - the /splits response is invalid
+    candidate_dataset_names = set(SplitsResponse.objects(http_status__ne=HTTPStatus.OK).distinct("dataset_name"))
+    # - or one of the /first-rows responses is invalid
+    candidate_dataset_names_in_first_rows = set(
+        FirstRowsResponse.objects(http_status__ne=HTTPStatus.OK).distinct("dataset_name")
+    )
+
+    candidate_dataset_names.intersection_update(candidate_dataset_names_in_first_rows)
+    # note that the list is sorted alphabetically for consistency
+    return sorted(candidate_dataset_names)
+
+
 # /cache-reports endpoints
 
 
