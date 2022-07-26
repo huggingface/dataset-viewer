@@ -8,7 +8,9 @@ SERVICE_REVERSE_PROXY_PORT = os.environ.get("SERVICE_REVERSE_PROXY_PORT", "8000"
 URL = f"http://localhost:{SERVICE_REVERSE_PROXY_PORT}"
 
 
-def poll_until_valid_response(url: str, timeout: int = 15, interval: int = 1, error_field: str="error") -> requests.Response:
+def poll_until_valid_response(
+    url: str, timeout: int = 15, interval: int = 1, error_field: str = "error"
+) -> requests.Response:
     retries = timeout // interval
     should_retry = True
     response = None
@@ -31,13 +33,19 @@ def poll_until_valid_response(url: str, timeout: int = 15, interval: int = 1, er
 
 
 def poll_splits_until_dataset_process_has_finished(
-    dataset: str, endpoint: str = "splits", timeout: int = 15, interval: int = 1, error_field: str="error"
+    dataset: str, endpoint: str = "splits", timeout: int = 15, interval: int = 1, error_field: str = "error"
 ) -> requests.Response:
     return poll_until_valid_response(f"{URL}/{endpoint}?dataset={dataset}", timeout, interval, error_field)
 
 
 def poll_rows_until_split_process_has_finished(
-    dataset: str, config: str, split: str, endpoint: str = "splits", timeout: int = 15, interval: int = 1, error_field: str="error"
+    dataset: str,
+    config: str,
+    split: str,
+    endpoint: str = "splits",
+    timeout: int = 15,
+    interval: int = 1,
+    error_field: str = "error",
 ) -> requests.Response:
     return poll_until_valid_response(
         f"{URL}/{endpoint}?dataset={dataset}&config={config}&split={split}", timeout, interval, error_field
