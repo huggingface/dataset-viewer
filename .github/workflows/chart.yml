@@ -1,10 +1,10 @@
-name: infra
+name: chart
 on:
   workflow_dispatch:
   push:
     paths:
-      - 'infra/charts/datasets-server/**'
-      - '.github/workflows/infra.yml'
+      - 'chart/**'
+      - '.github/workflows/chart.yml'
 jobs:
   code-quality-helm:
     runs-on: ubuntu-20.04
@@ -13,4 +13,4 @@ jobs:
         uses: actions/checkout@main
       - name: Lint chart
         run: helm lint
-        working-directory: infra/charts/datasets-server
+        working-directory: chart

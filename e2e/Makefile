@@ -8,7 +8,7 @@ export TEST_MONGO_QUEUE_DATABASE := datasets_server_queue_test
 export TEST_COMPOSE_PROJECT_NAME := e2e
 # makefile variables
 TEST_DOCKER_COMPOSE := ../tools/docker-compose-datasets-server-from-remote-images.yml
-DOCKER_IMAGES := ../infra/charts/datasets-server/docker-images.yaml
+DOCKER_IMAGES := ../chart/docker-images.yaml
 
 include ../tools/Python.mk
 include ../tools/DockerRemoteImages.mk

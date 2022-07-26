@@ -69,7 +69,7 @@ In case you wonder, the `poetry.lock` files must be versioned.
 
 We don't change the version of the libraries and services in `pyproject.toml`, because they are local dependencies and access to the current files anyway. But before deploying to prod, we:
 
-- increment the version (that we increment accordingly to the change: major/minor/bugfix) in the `appVersion` parameter of the [Helm chart](./infra/charts/datasets-server/Chart.yaml)
+- increment the version (that we increment accordingly to the change: major/minor/bugfix) in the `appVersion` parameter of the [Helm chart](./chart/Chart.yaml)
 - create a git tag with the same version, for example:
 
   ```
