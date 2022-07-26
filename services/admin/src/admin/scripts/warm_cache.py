@@ -1,7 +1,6 @@
 import logging
 from typing import List
 
-from dotenv import load_dotenv
 from huggingface_hub import list_datasets  # type: ignore
 from libcache.cache import (
     connect_to_cache,

@@ -1,6 +1,5 @@
 import logging
 
-from dotenv import load_dotenv
 from libcache.simple_cache import connect_to_cache, get_datasets_with_some_error
 from libutils.logger import init_logger
 

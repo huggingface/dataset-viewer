@@ -1,7 +1,6 @@
 import logging
 from typing import List
 
-from dotenv import load_dotenv
 from huggingface_hub import list_datasets  # type: ignore
 from libqueue.queue import add_dataset_job, add_splits_job, connect_to_queue
 from libutils.logger import init_logger

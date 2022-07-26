@@ -1,6 +1,5 @@
 import logging
 
-from dotenv import load_dotenv
 from huggingface_hub import list_datasets  # type: ignore
 from libutils.logger import init_logger
 
