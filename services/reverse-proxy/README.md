@@ -4,7 +4,7 @@
 
 See [docker-compose.yml](../../docker-compose.yml) for usage.
 
-Note that the template configuration is located in [infra/charts/datasets-server/nginx-templates/](../../infra/charts/datasets-server/nginx-templates/) in order to be reachable by the Helm chart to deploy on Kubernetes.
+Note that the template configuration is located in [chart/nginx-templates/](../../chart/nginx-templates/) in order to be reachable by the Helm chart to deploy on Kubernetes.
 
 The reverse proxy uses nginx:
 

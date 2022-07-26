@@ -13,7 +13,7 @@ export REMOTE_IMAGES_COMPOSE_PROJECT_NAME := remote-images
 # makefile variables
 LOCAL_CODE_DOCKER_COMPOSE := ./tools/docker-compose-datasets-server-from-local-code.yml
 REMOTE_IMAGES_DOCKER_COMPOSE := ./tools/docker-compose-datasets-server-from-remote-images.yml
-DOCKER_IMAGES := ./infra/charts/datasets-server/docker-images.yaml
+DOCKER_IMAGES := ./chart/docker-images.yaml
 
 include tools/DockerRemoteImages.mk
 include tools/Docker.mk
@@ -68,7 +68,7 @@ coverage:
 .PHONY: quality
 quality:
 	$(MAKE) -C e2e/ quality
-	$(MAKE) -C infra/charts/datasets-server/ quality
+	$(MAKE) -C chart/ quality
 	$(MAKE) -C services/worker/ quality
 	$(MAKE) -C services/api/ quality
 	$(MAKE) -C services/admin/ quality
