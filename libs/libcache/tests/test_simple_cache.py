@@ -1,9 +1,10 @@
+from http import HTTPStatus
+
 import pytest
 from pymongo.errors import DocumentTooLarge
 
 from libcache.simple_cache import (
     DoesNotExist,
-    HTTPStatus,
     _clean_database,
     connect_to_cache,
     delete_first_rows_responses,
@@ -45,13 +46,14 @@ def test_upsert_splits_response() -> None:
     dataset_name = "test_dataset"
     response = {"splits": [{"dataset_name": dataset_name, "config_name": "test_config", "split_name": "test_split"}]}
     upsert_splits_response(dataset_name, response, HTTPStatus.OK)
-    response1, http_status = get_splits_response(dataset_name)
+    response1, http_status, error_code = get_splits_response(dataset_name)
     assert http_status == HTTPStatus.OK
     assert response1 == response
+    assert error_code is None
 
     # ensure it's idempotent
     upsert_splits_response(dataset_name, response, HTTPStatus.OK)
-    (response2, _) = get_splits_response(dataset_name)
+    (response2, _, _) = get_splits_response(dataset_name)
     assert response2 == response1
 
     mark_splits_responses_as_stale(dataset_name)
@@ -66,6 +68,12 @@ def test_upsert_splits_response() -> None:
     with pytest.raises(DoesNotExist):
         get_splits_response(dataset_name)
 
+    upsert_splits_response(dataset_name, response, HTTPStatus.BAD_REQUEST, "error_code")
+    response3, http_status, error_code = get_splits_response(dataset_name)
+    assert response3 == response
+    assert http_status == HTTPStatus.BAD_REQUEST
+    assert error_code == "error_code"
+
 
 def test_upsert_first_rows_response() -> None:
     dataset_name = "test_dataset"
@@ -73,13 +81,13 @@ def test_upsert_first_rows_response() -> None:
     split_name = "test_split"
     response = {"key": "value"}
     upsert_first_rows_response(dataset_name, config_name, split_name, response, HTTPStatus.OK)
-    response1, http_status = get_first_rows_response(dataset_name, config_name, split_name)
+    response1, http_status, _ = get_first_rows_response(dataset_name, config_name, split_name)
     assert http_status == HTTPStatus.OK
     assert response1 == response
 
     # ensure it's idempotent
     upsert_first_rows_response(dataset_name, config_name, split_name, response, HTTPStatus.OK)
-    (response2, _) = get_first_rows_response(dataset_name, config_name, split_name)
+    (response2, _, _) = get_first_rows_response(dataset_name, config_name, split_name)
     assert response2 == response1
 
     mark_first_rows_responses_as_stale(dataset_name)
@@ -183,7 +191,7 @@ def test_valid() -> None:
 
 
 def test_count_by_status() -> None:
-    assert get_splits_responses_count_by_status() == {"OK": 0, "BAD_REQUEST": 0, "INTERNAL_SERVER_ERROR": 0}
+    assert "OK" not in get_splits_responses_count_by_status()
 
     upsert_splits_response(
         "test_dataset2",
@@ -191,8 +199,8 @@ def test_count_by_status() -> None:
         HTTPStatus.OK,
     )
 
-    assert get_splits_responses_count_by_status() == {"OK": 1, "BAD_REQUEST": 0, "INTERNAL_SERVER_ERROR": 0}
-    assert get_first_rows_responses_count_by_status() == {"OK": 0, "BAD_REQUEST": 0, "INTERNAL_SERVER_ERROR": 0}
+    assert get_splits_responses_count_by_status()["OK"] == 1
+    assert "OK" not in get_first_rows_responses_count_by_status()
 
     upsert_first_rows_response(
         "test_dataset",
@@ -204,7 +212,7 @@ def test_count_by_status() -> None:
         HTTPStatus.OK,
     )
 
-    assert get_first_rows_responses_count_by_status() == {"OK": 1, "BAD_REQUEST": 0, "INTERNAL_SERVER_ERROR": 0}
+    assert get_splits_responses_count_by_status()["OK"] == 1
 
 
 def test_reports() -> None:
@@ -250,6 +258,7 @@ def test_reports() -> None:
             "error": "cannot write mode RGBA as JPEG",
         },
         HTTPStatus.INTERNAL_SERVER_ERROR,
+        "RowsPostProcessingError",
         {
             "status_code": 500,
             "message": "cannot write mode RGBA as JPEG",
@@ -279,16 +288,20 @@ def test_reports() -> None:
         },
     )
     assert get_splits_response_reports() == [
-        {"dataset": "a", "error": None, "status": "200"},
+        {"dataset": "a", "error": None, "status": HTTPStatus.OK.value},
         {
             "dataset": "b",
             "error": {
                 "cause_exception": "FileNotFoundError",
                 "message": "Cannot get the split names for the dataset.",
             },
-            "status": "400",
+            "status": HTTPStatus.BAD_REQUEST.value,
         },
-        {"dataset": "c", "error": {"message": "cannot write mode RGBA as JPEG"}, "status": "500"},
+        {
+            "dataset": "c",
+            "error": {"message": "cannot write mode RGBA as JPEG"},
+            "status": HTTPStatus.INTERNAL_SERVER_ERROR.value,
+        },
     ]
 
     assert get_first_rows_response_reports() == []
