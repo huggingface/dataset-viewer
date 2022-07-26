@@ -67,12 +67,9 @@
       },
       "Status400ErrorContent": {
         "type": "object",
-        "required": ["status_code", "message"],
+        "required": ["error"],
         "properties": {
-          "status_code": {
-            "type": "integer"
-          },
-          "message": {
+          "error": {
             "type": "string"
           },
           "cause_exception": {
@@ -88,12 +85,9 @@
       },
       "Status500ErrorContent": {
         "type": "object",
-        "required": ["status_code", "message"],
+        "required": ["error"],
         "properties": {
-          "status_code": {
-            "type": "integer"
-          },
-          "message": {
+          "error": {
             "type": "string"
           }
         }
