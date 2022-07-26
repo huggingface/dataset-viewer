@@ -238,9 +238,8 @@ def get_datasets_with_some_error() -> List[str]:
         FirstRowsResponse.objects(http_status__ne=HTTPStatus.OK).distinct("dataset_name")
     )
 
-    candidate_dataset_names.intersection_update(candidate_dataset_names_in_first_rows)
     # note that the list is sorted alphabetically for consistency
-    return sorted(candidate_dataset_names)
+    return sorted(candidate_dataset_names.union(candidate_dataset_names_in_first_rows))
 
 
 # /cache-reports endpoints

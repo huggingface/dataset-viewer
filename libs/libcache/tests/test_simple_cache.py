@@ -8,6 +8,7 @@ from libcache.simple_cache import (
     connect_to_cache,
     delete_first_rows_responses,
     delete_splits_responses,
+    get_datasets_with_some_error,
     get_first_rows_response,
     get_first_rows_response_reports,
     get_first_rows_responses_count_by_status,
@@ -112,6 +113,7 @@ def test_big_row() -> None:
 
 def test_valid() -> None:
     assert get_valid_dataset_names() == []
+    assert get_datasets_with_some_error() == []
 
     upsert_splits_response(
         "test_dataset",
@@ -120,6 +122,7 @@ def test_valid() -> None:
     )
 
     assert get_valid_dataset_names() == []
+    assert get_datasets_with_some_error() == []
 
     upsert_first_rows_response(
         "test_dataset",
@@ -132,6 +135,7 @@ def test_valid() -> None:
     )
 
     assert get_valid_dataset_names() == ["test_dataset"]
+    assert get_datasets_with_some_error() == []
 
     upsert_splits_response(
         "test_dataset2",
@@ -140,6 +144,7 @@ def test_valid() -> None:
     )
 
     assert get_valid_dataset_names() == ["test_dataset"]
+    assert get_datasets_with_some_error() == []
 
     upsert_first_rows_response(
         "test_dataset2",
@@ -152,6 +157,7 @@ def test_valid() -> None:
     )
 
     assert get_valid_dataset_names() == ["test_dataset"]
+    assert get_datasets_with_some_error() == ["test_dataset2"]
 
     upsert_first_rows_response(
         "test_dataset2",
@@ -164,6 +170,16 @@ def test_valid() -> None:
     )
 
     assert get_valid_dataset_names() == ["test_dataset", "test_dataset2"]
+    assert get_datasets_with_some_error() == ["test_dataset2"]
+
+    upsert_splits_response(
+        "test_dataset3",
+        {"key": "value"},
+        HTTPStatus.BAD_REQUEST,
+    )
+
+    assert get_valid_dataset_names() == ["test_dataset", "test_dataset2"]
+    assert get_datasets_with_some_error() == ["test_dataset2", "test_dataset3"]
 
 
 def test_count_by_status() -> None:
