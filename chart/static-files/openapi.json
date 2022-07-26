@@ -67,12 +67,9 @@
       },
       "Status400ErrorContent": {
         "type": "object",
-        "required": ["status_code", "message"],
+        "required": ["error"],
         "properties": {
-          "status_code": {
-            "type": "integer"
-          },
-          "message": {
+          "error": {
             "type": "string"
           },
           "cause_exception": {
@@ -88,12 +85,9 @@
       },
       "Status500ErrorContent": {
         "type": "object",
-        "required": ["status_code", "message"],
+        "required": ["error"],
         "properties": {
-          "status_code": {
-            "type": "integer"
-          },
-          "message": {
+          "error": {
             "type": "string"
           }
         }
@@ -1890,8 +1884,7 @@
                   "TypeError": {
                     "summary": "SplitsNotFoundError",
                     "value": {
-                      "status_code": 400,
-                      "message": "Cannot get the split names for the dataset.",
+                      "error": "Cannot get the split names for the dataset.",
                       "cause_exception": "SplitsNotFoundError",
                       "cause_message": "The split names could not be parsed from the dataset config.",
                       "cause_traceback": [
@@ -1913,8 +1906,7 @@
                   "FileNotFoundError": {
                     "summary": "FileNotFoundError",
                     "value": {
-                      "status_code": 400,
-                      "message": "Cannot get the split names for the dataset.",
+                      "error": "Cannot get the split names for the dataset.",
                       "cause_exception": "FileNotFoundError",
                       "cause_message": "Couldn't find a dataset script at /src/services/worker/akhaliq/test/test.py or any data file in the same directory. Couldn't find 'akhaliq/test' on the Hugging Face Hub either: FileNotFoundError: The dataset repository at 'akhaliq/test' doesn't contain any data file.",
                       "cause_traceback": [
@@ -1949,15 +1941,13 @@
                   "not-ready": {
                     "summary": "the response is not ready yet.",
                     "value": {
-                      "status_code": 500,
-                      "message": "The list of splits is not ready yet. Please retry later."
+                      "error": "The list of splits is not ready yet. Please retry later."
                     }
                   },
                   "internal": {
                     "summary": "internal error",
                     "value": {
-                      "status_code": 500,
-                      "message": "Unexpected error."
+                      "error": "Unexpected error."
                     }
                   }
                 }
@@ -2689,8 +2679,7 @@
                   "NonMatchingCheckError": {
                     "summary": "NonMatchingCheckError",
                     "value": {
-                      "status_code": 400,
-                      "message": "Cannot load the dataset split (in normal download mode) to extract the first rows.",
+                      "error": "Cannot load the dataset split (in normal download mode) to extract the first rows.",
                       "cause_exception": "NonMatchingChecksumError",
                       "cause_message": "Checksums didn't match for dataset source files:\n['https://gitlab.com/bigirqu/ArCOV-19/-/archive/master/ArCOV-19-master.zip']",
                       "cause_traceback": [
@@ -2730,8 +2719,7 @@
                   "FileNotFoundError": {
                     "summary": "FileNotFoundError",
                     "value": {
-                      "status_code": 400,
-                      "message": "Cannot load the dataset split (in normal download mode) to extract the first rows.",
+                      "error": "Cannot load the dataset split (in normal download mode) to extract the first rows.",
                       "cause_exception": "FileNotFoundError",
                       "cause_message": "Couldn't find file at https://homes.cs.washington.edu/~msap/atomic/data/atomic_data.tgz",
                       "cause_traceback": [
@@ -2803,15 +2791,13 @@
                   "not-ready": {
                     "summary": "the response is not ready yet.",
                     "value": {
-                      "status_code": 500,
-                      "message": "The list of the first rows is not ready yet. Please retry later."
+                      "error": "The list of the first rows is not ready yet. Please retry later."
                     }
                   },
                   "internal": {
                     "summary": "internal error",
                     "value": {
-                      "status_code": 500,
-                      "message": "Unexpected error."
+                      "error": "Unexpected error."
                     }
                   }
                 }

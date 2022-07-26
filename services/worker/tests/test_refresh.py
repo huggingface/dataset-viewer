@@ -56,8 +56,7 @@ def test_doesnotexist() -> None:
     assert refresh_splits(dataset_name) == HTTPStatus.BAD_REQUEST
     response, http_status = get_splits_response(dataset_name)
     assert http_status == HTTPStatus.BAD_REQUEST
-    assert response["status_code"] == 400
-    assert response["message"] == "Cannot get the split names for the dataset."
+    assert response["error"] == "Cannot get the split names for the dataset."
 
 
 def test_e2e_examples() -> None:

@@ -8,7 +8,9 @@ SERVICE_REVERSE_PROXY_PORT = os.environ.get("SERVICE_REVERSE_PROXY_PORT", "8000"
 URL = f"http://localhost:{SERVICE_REVERSE_PROXY_PORT}"
 
 
-def poll_until_valid_response(url: str, timeout: int = 15, interval: int = 1) -> requests.Response:
+def poll_until_valid_response(
+    url: str, timeout: int = 15, interval: int = 1, error_field: str = "error"
+) -> requests.Response:
     retries = timeout // interval
     should_retry = True
     response = None
@@ -20,7 +22,7 @@ def poll_until_valid_response(url: str, timeout: int = 15, interval: int = 1) ->
             # special case for /splits and /rows. It should be removed once they are deprecated
             # it was an error to return 400 if the client should retry
             try:
-                should_retry = "retry" in response.json()["message"].lower()
+                should_retry = "retry" in response.json()[error_field].lower()
             except Exception:
                 should_retry = False
         else:
@@ -31,16 +33,22 @@ def poll_until_valid_response(url: str, timeout: int = 15, interval: int = 1) ->
 
 
 def poll_splits_until_dataset_process_has_finished(
-    dataset: str, endpoint: str = "splits", timeout: int = 15, interval: int = 1
+    dataset: str, endpoint: str = "splits", timeout: int = 15, interval: int = 1, error_field: str = "error"
 ) -> requests.Response:
-    return poll_until_valid_response(f"{URL}/{endpoint}?dataset={dataset}", timeout, interval)
+    return poll_until_valid_response(f"{URL}/{endpoint}?dataset={dataset}", timeout, interval, error_field)
 
 
 def poll_rows_until_split_process_has_finished(
-    dataset: str, config: str, split: str, endpoint: str = "splits", timeout: int = 15, interval: int = 1
+    dataset: str,
+    config: str,
+    split: str,
+    endpoint: str = "splits",
+    timeout: int = 15,
+    interval: int = 1,
+    error_field: str = "error",
 ) -> requests.Response:
     return poll_until_valid_response(
-        f"{URL}/{endpoint}?dataset={dataset}&config={config}&split={split}", timeout, interval
+        f"{URL}/{endpoint}?dataset={dataset}&config={config}&split={split}", timeout, interval, error_field
     )
 
 
@@ -69,11 +77,11 @@ def test_get_dataset():
     assert response.status_code == 200
 
     # poll the /splits endpoint until we get something else than "The dataset is being processed. Retry later."
-    response = poll_splits_until_dataset_process_has_finished(dataset, "splits", 60)
+    response = poll_splits_until_dataset_process_has_finished(dataset, "splits", 60, error_field="message")
     assert response.status_code == 200
 
     # poll the /rows endpoint until we get something else than "The split is being processed. Retry later."
-    response = poll_rows_until_split_process_has_finished(dataset, config, split, "rows", 60)
+    response = poll_rows_until_split_process_has_finished(dataset, config, split, "rows", 60, error_field="message")
     assert response.status_code == 200
     json = response.json()
     assert "rows" in json

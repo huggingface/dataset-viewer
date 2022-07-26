@@ -1,14 +1,10 @@
 import logging
 
-from dotenv import load_dotenv
 from huggingface_hub import list_datasets  # type: ignore
 from libutils.logger import init_logger
 
 from admin.config import LOG_LEVEL
 from admin.scripts.refresh_cache import refresh_datasets_cache
-
-# Load environment variables defined in .env, if any
-load_dotenv()
 
 
 def get_hf_canonical_dataset_names():

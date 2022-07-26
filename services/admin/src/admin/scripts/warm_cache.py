@@ -1,7 +1,6 @@
 import logging
 from typing import List
 
-from dotenv import load_dotenv
 from huggingface_hub import list_datasets  # type: ignore
 from libcache.cache import (
     connect_to_cache,
@@ -17,9 +16,6 @@ from admin.config import (
     MONGO_QUEUE_DATABASE,
     MONGO_URL,
 )
-
-# Load environment variables defined in .env, if any
-load_dotenv()
 
 
 def get_hf_dataset_names():

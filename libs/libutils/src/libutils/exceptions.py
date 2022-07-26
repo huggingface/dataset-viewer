@@ -13,16 +13,14 @@ class StatusErrorContent(TypedDict):
 
 
 class Status400ErrorResponse(TypedDict):
-    status_code: int
-    message: str
+    error: str
     cause_exception: Optional[str]
     cause_message: Optional[str]
     cause_traceback: Optional[List[str]]
 
 
 class Status500ErrorResponse(TypedDict):
-    status_code: int
-    message: str
+    error: str
 
 
 class StatusError(Exception):
@@ -67,8 +65,7 @@ class Status400Error(StatusError):
 
     def as_response(self) -> Status400ErrorResponse:
         return {
-            "status_code": self.status_code,
-            "message": self.message,
+            "error": self.message,
             # TODO: once /splits and /rows are deprecated, remove the conditionals
             "cause_exception": self.cause_exception if self.cause_message != self.message else None,
             "cause_message": self.cause_message if self.cause_message != self.message else None,
@@ -88,6 +85,5 @@ class Status500Error(StatusError):
 
     def as_response(self) -> Status500ErrorResponse:
         return {
-            "status_code": self.status_code,
-            "message": self.message,
+            "error": self.message,
         }

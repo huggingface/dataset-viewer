@@ -227,6 +227,21 @@ def get_first_rows_responses_count_by_status() -> CountByHTTPStatus:
     return get_entries_count_by_status(FirstRowsResponse.objects)
 
 
+# for scripts
+
+
+def get_datasets_with_some_error() -> List[str]:
+    # - the /splits response is invalid
+    candidate_dataset_names = set(SplitsResponse.objects(http_status__ne=HTTPStatus.OK).distinct("dataset_name"))
+    # - or one of the /first-rows responses is invalid
+    candidate_dataset_names_in_first_rows = set(
+        FirstRowsResponse.objects(http_status__ne=HTTPStatus.OK).distinct("dataset_name")
+    )
+
+    # note that the list is sorted alphabetically for consistency
+    return sorted(candidate_dataset_names.union(candidate_dataset_names_in_first_rows))
+
+
 # /cache-reports endpoints
 
 
@@ -255,9 +270,9 @@ class FirstRowsResponseReport(TypedDict):
 def get_error(object: Union[SplitsResponse, FirstRowsResponse]) -> Optional[ErrorReport]:
     if object.http_status == HTTPStatus.OK:
         return None
-    if "message" not in object.response:
+    if "error" not in object.response:
         raise ValueError("Missing message in error response")
-    report: ErrorReport = {"message": object.response["message"]}
+    report: ErrorReport = {"message": object.response["error"]}
     if "cause_exception" in object.response:
         report["cause_exception"] = object.response["cause_exception"]
     return report
