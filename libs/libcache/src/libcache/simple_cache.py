@@ -255,9 +255,9 @@ class FirstRowsResponseReport(TypedDict):
 def get_error(object: Union[SplitsResponse, FirstRowsResponse]) -> Optional[ErrorReport]:
     if object.http_status == HTTPStatus.OK:
         return None
-    if "message" not in object.response:
+    if "error" not in object.response:
         raise ValueError("Missing message in error response")
-    report: ErrorReport = {"message": object.response["message"]}
+    report: ErrorReport = {"message": object.response["error"]}
     if "cause_exception" in object.response:
         report["cause_exception"] = object.response["cause_exception"]
     return report

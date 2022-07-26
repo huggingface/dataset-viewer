@@ -201,8 +201,7 @@ def test_reports() -> None:
     upsert_splits_response(
         "b",
         {
-            "status_code": 400,
-            "message": "Cannot get the split names for the dataset.",
+            "error": "Cannot get the split names for the dataset.",
             "cause_exception": "FileNotFoundError",
             "cause_message": (
                 "Couldn't find a dataset script at /src/services/worker/wikimedia/timit_asr/timit_asr.py or any data"
@@ -232,8 +231,7 @@ def test_reports() -> None:
     upsert_splits_response(
         "c",
         {
-            "status_code": 500,
-            "message": "cannot write mode RGBA as JPEG",
+            "error": "cannot write mode RGBA as JPEG",
         },
         HTTPStatus.INTERNAL_SERVER_ERROR,
         {
