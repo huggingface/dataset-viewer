@@ -7,9 +7,6 @@ from libutils.logger import init_logger
 from admin.config import LOG_LEVEL
 from admin.scripts.refresh_cache import refresh_datasets_cache
 
-# Load environment variables defined in .env, if any
-load_dotenv()
-
 
 def get_hf_canonical_dataset_names():
     return [str(dataset.id) for dataset in list_datasets(full=False) if dataset.id.find("/") == -1]

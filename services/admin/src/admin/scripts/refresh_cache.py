@@ -8,9 +8,6 @@ from libutils.logger import init_logger
 
 from admin.config import LOG_LEVEL, MONGO_QUEUE_DATABASE, MONGO_URL
 
-# Load environment variables defined in .env, if any
-load_dotenv()
-
 
 def get_hf_dataset_names():
     return [str(dataset.id) for dataset in list_datasets(full=False)]

@@ -18,9 +18,6 @@ from admin.config import (
     MONGO_URL,
 )
 
-# Load environment variables defined in .env, if any
-load_dotenv()
-
 
 def get_hf_dataset_names():
     return [str(dataset.id) for dataset in list_datasets(full=False)]
