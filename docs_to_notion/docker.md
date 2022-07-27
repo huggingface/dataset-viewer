@@ -18,14 +18,7 @@ To create, modify or delete ECR repositories, ask the infra team.
 If you want to list, pull or push a docker image manually, you have to login before:
 
 ```
-aws ecr get-login-password --profile=hub | docker login --username AWS --password-stdin 707930574880.dkr.ecr.us-east-1.amazonaws.com
-```
-
-You can also use `aws ecr` to get the list of images of a repository, for example:
-
-```
-aws ecr list-images --profile=hub --repository-name=hub-datasets-server-api
-aws ecr describe-images --profile=hub --repository-name=hub-datasets-server-api
+aws ecr get-login-password --profile=tb | docker login --username AWS --password-stdin 707930574880.dkr.ecr.us-east-1.amazonaws.com
 ```
 
 The documentation for the `aws ecr` CLI is here: https://docs.aws.amazon.com/cli/latest/reference/ecr/index.html.
