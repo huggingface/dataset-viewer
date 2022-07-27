@@ -10,6 +10,8 @@ ENV PYTHONFAULTHANDLER=1 \
     # Versions:
     POETRY_VERSION=1.1.12 \
     POETRY_VIRTUALENVS_IN_PROJECT=true
+    # huggingface/datasets:
+    HF_UPDATE_DOWNLOAD_COUNTS=false
 
 # System deps:
 RUN apt-get update \
