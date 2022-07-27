@@ -6,7 +6,7 @@ from starlette.requests import Request
 from starlette.responses import Response
 
 from api.config import MAX_AGE_LONG_SECONDS, MAX_AGE_SHORT_SECONDS
-from api.routes._utils import get_response
+from api.utils import get_response
 
 logger = logging.getLogger(__name__)
 

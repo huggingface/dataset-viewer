@@ -12,7 +12,7 @@ from libqueue.queue import add_dataset_job, add_splits_job
 from starlette.requests import Request
 from starlette.responses import Response
 
-from api.routes._utils import get_response
+from api.utils import get_response
 
 logger = logging.getLogger(__name__)
 
