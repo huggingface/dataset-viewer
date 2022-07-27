@@ -39,7 +39,7 @@ def refresh_splits(dataset_name: str, hf_token: Optional[str] = None) -> HTTPSta
     except WorkerCustomError as err:
         upsert_splits_response(
             dataset_name,
-            dict(err.as_response_with_cause() if err.status_code >= 500 else err.as_response_without_cause()),
+            dict(err.as_response()),
             err.status_code,
             err.code,
             dict(err.as_response_with_cause()),
@@ -50,7 +50,7 @@ def refresh_splits(dataset_name: str, hf_token: Optional[str] = None) -> HTTPSta
         e = UnexpectedError(str(err), err)
         upsert_splits_response(
             dataset_name,
-            dict(e.as_response_without_cause()),
+            dict(e.as_response()),
             e.status_code,
             e.code,
             dict(e.as_response_with_cause()),
@@ -90,7 +90,7 @@ def refresh_first_rows(
             dataset_name,
             config_name,
             split_name,
-            dict(err.as_response_with_cause() if err.status_code >= 500 else err.as_response_without_cause()),
+            dict(err.as_response()),
             err.status_code,
             err.code,
             dict(err.as_response_with_cause()),
@@ -106,7 +106,7 @@ def refresh_first_rows(
             dataset_name,
             config_name,
             split_name,
-            dict(e.as_response_without_cause()),
+            dict(e.as_response()),
             e.status_code,
             e.code,
             dict(e.as_response_with_cause()),

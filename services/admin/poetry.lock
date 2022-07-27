@@ -453,7 +453,7 @@ plugins = ["setuptools"]
 
 [[package]]
 name = "libcache"
-version = "0.1.18"
+version = "0.1.20"
 description = "Library for the cache in mongodb"
 category = "main"
 optional = false
@@ -467,7 +467,7 @@ pymongo = {version = ">=3.12.3,<4.0.0", extras = ["srv"]}
 
 [package.source]
 type = "file"
-url = "../../libs/libcache/dist/libcache-0.1.18-py3-none-any.whl"
+url = "../../libs/libcache/dist/libcache-0.1.20-py3-none-any.whl"
 
 [[package]]
 name = "libqueue"
@@ -488,7 +488,7 @@ url = "../../libs/libqueue/dist/libqueue-0.1.9-py3-none-any.whl"
 
 [[package]]
 name = "libutils"
-version = "0.1.6"
+version = "0.1.8"
 description = "Library for utils"
 category = "main"
 optional = false
@@ -501,7 +501,7 @@ starlette = ">=0.16.0,<0.17.0"
 
 [package.source]
 type = "file"
-url = "../../libs/libutils/dist/libutils-0.1.6-py3-none-any.whl"
+url = "../../libs/libutils/dist/libutils-0.1.8-py3-none-any.whl"
 
 [[package]]
 name = "mccabe"
@@ -1198,7 +1198,7 @@ watchmedo = ["PyYAML (>=3.10)"]
 [metadata]
 lock-version = "1.1"
 python-versions = "3.9.6"
-content-hash = "e4ac0c347c9782a76c029fd49d6507a7bc7d8d25a83e76f90023d7146b4a49f5"
+content-hash = "9e953b9a46d5cb43e35cef46e473cee63759bf70b9b768a704a34b08929fbf00"
 
 [metadata.files]
 anyio = [
@@ -1468,13 +1468,13 @@ isort = [
     {file = "isort-5.10.1.tar.gz", hash = "sha256:e8443a5e7a020e9d7f97f1d7d9cd17c88bcb3bc7e218bf9cf5095fe550be2951"},
 ]
 libcache = [
-    {file = "libcache-0.1.18-py3-none-any.whl", hash = "sha256:977d26d4b4600a993cea870a8d871230e9b08230d72948ed6e33af632438c044"},
+    {file = "libcache-0.1.20-py3-none-any.whl", hash = "sha256:123bdff43def8cf00be3822d26df7b430fdbc941a47c986d66aed5185be4a374"},
 ]
 libqueue = [
     {file = "libqueue-0.1.9-py3-none-any.whl", hash = "sha256:ef88903c08b95c18b91d2c863c5add148aa8aee0a261e5039ec8ff18f8f17626"},
 ]
 libutils = [
-    {file = "libutils-0.1.6-py3-none-any.whl", hash = "sha256:165afa6fa1a2f1e37e2fecb55be5579f134b1c80432f98d0579deba52e18dd5b"},
+    {file = "libutils-0.1.8-py3-none-any.whl", hash = "sha256:7fd8f910670f59812a5a25cbcaf736b07e39d500d6e403c3e4143cc69c205b47"},
 ]
 mccabe = [
     {file = "mccabe-0.6.1-py2.py3-none-any.whl", hash = "sha256:ab8a6258860da4b6677da4bd2fe5dc2c659cff31b3ee4f7f5d64e79735b80d42"},

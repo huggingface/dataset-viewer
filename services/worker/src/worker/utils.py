@@ -24,80 +24,84 @@ class WorkerCustomError(CustomError):
     """Base class for exceptions in this module."""
 
     def __init__(
-        self, message: str, code: WorkerErrorCode, status_code: HTTPStatus, cause: Optional[BaseException] = None
+        self,
+        message: str,
+        status_code: HTTPStatus,
+        code: WorkerErrorCode,
+        cause: Optional[BaseException] = None,
+        disclose_cause: bool = False,
     ):
-        super().__init__(message, str(code), cause)
-        self.status_code = status_code
+        super().__init__(message, status_code, str(code), cause, disclose_cause)
 
 
 class DatasetNotFoundError(WorkerCustomError):
     """Raised when the dataset does not exist."""
 
     def __init__(self, message: str, cause: Optional[BaseException] = None):
-        super().__init__(message, "DatasetNotFoundError", HTTPStatus.NOT_FOUND, cause)
+        super().__init__(message, HTTPStatus.NOT_FOUND, "DatasetNotFoundError", cause, False)
 
 
 class ConfigNotFoundError(WorkerCustomError):
     """Raised when the config does not exist."""
 
     def __init__(self, message: str, cause: Optional[BaseException] = None):
-        super().__init__(message, "ConfigNotFoundError", HTTPStatus.NOT_FOUND, cause)
+        super().__init__(message, HTTPStatus.NOT_FOUND, "ConfigNotFoundError", cause, False)
 
 
 class SplitNotFoundError(WorkerCustomError):
     """Raised when the split does not exist."""
 
     def __init__(self, message: str, cause: Optional[BaseException] = None):
-        super().__init__(message, "SplitNotFoundError", HTTPStatus.NOT_FOUND, cause)
+        super().__init__(message, HTTPStatus.NOT_FOUND, "SplitNotFoundError", cause, False)
 
 
 class SplitsNamesError(WorkerCustomError):
     """Raised when the split names could not be fetched."""
 
     def __init__(self, message: str, cause: Optional[BaseException] = None):
-        super().__init__(message, "SplitsNamesError", HTTPStatus.BAD_GATEWAY, cause)
+        super().__init__(message, HTTPStatus.BAD_GATEWAY, "SplitsNamesError", cause, True)
 
 
 class InfoError(WorkerCustomError):
     """Raised when the info could not be fetched."""
 
     def __init__(self, message: str, cause: Optional[BaseException] = None):
-        super().__init__(message, "InfoError", HTTPStatus.BAD_GATEWAY, cause)
+        super().__init__(message, HTTPStatus.BAD_GATEWAY, "InfoError", cause, True)
 
 
 class FeaturesError(WorkerCustomError):
     """Raised when the features could not be fetched."""
 
     def __init__(self, message: str, cause: Optional[BaseException] = None):
-        super().__init__(message, "FeaturesError", HTTPStatus.BAD_GATEWAY, cause)
+        super().__init__(message, HTTPStatus.BAD_GATEWAY, "FeaturesError", cause, True)
 
 
 class StreamingRowsError(WorkerCustomError):
     """Raised when the rows could not be fetched in streaming mode."""
 
     def __init__(self, message: str, cause: Optional[BaseException] = None):
-        super().__init__(message, "StreamingRowsError", HTTPStatus.BAD_GATEWAY, cause)
+        super().__init__(message, HTTPStatus.BAD_GATEWAY, "StreamingRowsError", cause, True)
 
 
 class NormalRowsError(WorkerCustomError):
     """Raised when the rows could not be fetched in normal mode."""
 
     def __init__(self, message: str, cause: Optional[BaseException] = None):
-        super().__init__(message, "NormalRowsError", HTTPStatus.BAD_GATEWAY, cause)
+        super().__init__(message, HTTPStatus.BAD_GATEWAY, "NormalRowsError", cause, True)
 
 
 class RowsPostProcessingError(WorkerCustomError):
     """Raised when the rows could not be post-processed successfully."""
 
     def __init__(self, message: str, cause: Optional[BaseException] = None):
-        super().__init__(message, "RowsPostProcessingError", HTTPStatus.INTERNAL_SERVER_ERROR, cause)
+        super().__init__(message, HTTPStatus.INTERNAL_SERVER_ERROR, "RowsPostProcessingError", cause, False)
 
 
 class UnexpectedError(WorkerCustomError):
     """Raised when the response for the split has not been found."""
 
     def __init__(self, message: str, cause: Optional[BaseException] = None):
-        super().__init__(message, "UnexpectedError", HTTPStatus.INTERNAL_SERVER_ERROR, cause)
+        super().__init__(message, HTTPStatus.INTERNAL_SERVER_ERROR, "UnexpectedError", cause, False)
 
 
 def retry(logger: Logger):

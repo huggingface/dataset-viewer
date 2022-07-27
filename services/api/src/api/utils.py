@@ -21,52 +21,56 @@ class ApiCustomError(CustomError):
     """Base class for exceptions in this module."""
 
     def __init__(
-        self, message: str, code: ApiErrorCode, status_code: HTTPStatus, cause: Optional[BaseException] = None
+        self,
+        message: str,
+        status_code: HTTPStatus,
+        code: ApiErrorCode,
+        cause: Optional[BaseException] = None,
+        disclose_cause: bool = False,
     ):
-        super().__init__(message, str(code), cause)
-        self.status_code = status_code
+        super().__init__(message, status_code, str(code), cause, disclose_cause)
 
 
 class MissingRequiredParameterError(ApiCustomError):
     """Raised when a required parameter is missing."""
 
     def __init__(self, message: str):
-        super().__init__(message, "MissingRequiredParameter", HTTPStatus.UNPROCESSABLE_ENTITY, None)
+        super().__init__(message, HTTPStatus.UNPROCESSABLE_ENTITY, "MissingRequiredParameter")
 
 
 class SplitsResponseNotReadyError(ApiCustomError):
     """Raised when the /splits response has not been processed yet."""
 
     def __init__(self, message: str):
-        super().__init__(message, "SplitsResponseNotReady", HTTPStatus.BAD_GATEWAY, None)
+        super().__init__(message, HTTPStatus.BAD_GATEWAY, "SplitsResponseNotReady")
 
 
 class FirstRowsResponseNotReadyError(ApiCustomError):
     """Raised when the /first-rows response has not been processed yet."""
 
     def __init__(self, message: str):
-        super().__init__(message, "FirstRowsResponseNotReady", HTTPStatus.BAD_GATEWAY, None)
+        super().__init__(message, HTTPStatus.BAD_GATEWAY, "FirstRowsResponseNotReady")
 
 
 class FirstRowsResponseNotFoundError(ApiCustomError):
     """Raised when the response for /first-rows has not been found."""
 
     def __init__(self, message: str):
-        super().__init__(message, "FirstRowsResponseNotFound", HTTPStatus.NOT_FOUND, None)
+        super().__init__(message, HTTPStatus.NOT_FOUND, "FirstRowsResponseNotFound")
 
 
 class SplitsResponseNotFoundError(ApiCustomError):
     """Raised when the response for /splits has not been found."""
 
     def __init__(self, message: str):
-        super().__init__(message, "SplitsResponseNotFound", HTTPStatus.NOT_FOUND, None)
+        super().__init__(message, HTTPStatus.NOT_FOUND, "SplitsResponseNotFound")
 
 
 class UnexpectedError(ApiCustomError):
     """Raised when the response for the split has not been found."""
 
     def __init__(self, message: str):
-        super().__init__(message, "UnexpectedError", HTTPStatus.INTERNAL_SERVER_ERROR, None)
+        super().__init__(message, HTTPStatus.INTERNAL_SERVER_ERROR, "UnexpectedError")
 
 
 class OrjsonResponse(JSONResponse):
@@ -99,4 +103,4 @@ def get_json_error_response(
 
 
 def get_json_api_error_response(error: ApiCustomError) -> Response:
-    return get_json_error_response(error.as_response_without_cause(), error.status_code, error.code)
+    return get_json_error_response(error.as_response(), error.status_code, error.code)
