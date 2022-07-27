@@ -271,12 +271,22 @@ def get_first_rows_response(
         [`FirstRowsResponse`]: The list of first rows of the split.
     <Tip>
     Raises the following errors:
-        - [`~worker.utils.DoesNotExistError`]
+        - [`~worker.exceptions.DatasetNotFoundError`]
           If the repository to download from cannot be found. This may be because it doesn't exist,
           or because it is set to `private` and you do not have access.
-        - [`~worker.utils.DatasetError`]
-          If the config info, the split features, or the split rows could not be obtained using the datasets library.
-        - [`~worker.utils.ServerError`]
+        - [`~worker.exceptions.ConfigNotFoundError`]
+          If the config does not exist in the dataset.
+        - [`~worker.exceptions.SplitNotFoundError`]
+          If the split does not exist in the dataset.
+        - [`~worker.utils.InfoError`]
+          If the config info could not be obtained using the datasets library.
+        - [`~worker.utils.FeaturesError`]
+          If the split features could not be obtained using the datasets library.
+        - [`~worker.utils.StreamingRowsError`]
+          If the split rows could not be obtained using the datasets library in streaming mode.
+        - [`~worker.utils.NormalRowsError`]
+          If the split rows could not be obtained using the datasets library in normal mode.
+        - [`~worker.utils.RowsPostProcessingError`]
           If the post-processing of the split rows failed, e.g. while saving the images or audio files to the assets.
     </Tip>
     """
@@ -292,8 +302,13 @@ def get_first_rows_response(
     # ^ can raise DoesNotExistError or DatasetError
     if config_name not in [split_item["config_name"] for split_item in splits_response["splits"]]:
         raise ConfigNotFoundError(f"config {config_name} does not exist for dataset {dataset_name}")
-    if {"dataset_name": dataset_name, "config_name": config_name, "split_name": split_name} not in splits_response[
-        "splits"
+    if {"dataset_name": dataset_name, "config_name": config_name, "split_name": split_name} not in [
+        {
+            "dataset_name": split_item["dataset_name"],
+            "config_name": split_item["config_name"],
+            "split_name": split_item["split_name"],
+        }
+        for split_item in splits_response["splits"]
     ]:
         raise SplitNotFoundError("The config or the split does not exist in the dataset")
     # get the features

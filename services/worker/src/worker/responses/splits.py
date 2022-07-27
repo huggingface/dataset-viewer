@@ -56,10 +56,10 @@ def get_splits_response(
         [`SplitsResponse`]: The list of splits names.
     <Tip>
     Raises the following errors:
-        - [`~worker.exceptions.DoesNotExistError`]
+        - [`~worker.exceptions.DatasetNotFoundError`]
           If the repository to download from cannot be found. This may be because it doesn't exist,
           or because it is set to `private` and you do not have access.
-        - [`~worker.exceptions.DatasetError`]
+        - [`~worker.exceptions.SplitsNamesError`]
           If the list of splits could not be obtained using the datasets library.
     </Tip>
     """

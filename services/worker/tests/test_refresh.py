@@ -1,5 +1,6 @@
+from http import HTTPStatus
+
 import pytest
-from libcache.simple_cache import HTTPStatus
 from libcache.simple_cache import _clean_database as clean_cache_database
 from libcache.simple_cache import (
     connect_to_cache,
@@ -39,11 +40,11 @@ def clean_mongo_database() -> None:
 
 def test_doesnotexist() -> None:
     dataset_name = "doesnotexist"
-    assert refresh_splits(dataset_name) == HTTPStatus.BAD_REQUEST
+    assert refresh_splits(dataset_name) == HTTPStatus.NOT_FOUND
     response, http_status, error_code = get_splits_response(dataset_name)
-    assert http_status == HTTPStatus.BAD_REQUEST
-    assert response["error"] == "Cannot get the split names for the dataset."
-    assert error_code == "CannotGetSplitNames"
+    assert http_status == HTTPStatus.NOT_FOUND
+    assert response["error"] == "The dataset does not exist on the Hub."
+    assert error_code == "DatasetNotFoundError"
 
 
 def test_e2e_examples() -> None:
@@ -81,7 +82,7 @@ def test_first_rows() -> None:
     assert cached_http_status == HTTPStatus.OK
     assert error_code is None
 
-    assert response["features"][0]["idx"] == 0
+    assert response["features"][0]["feature_idx"] == 0
     assert response["features"][0]["name"] == "client_id"
     assert response["features"][0]["type"]["_type"] == "Value"
     assert response["features"][0]["type"]["dtype"] == "string"

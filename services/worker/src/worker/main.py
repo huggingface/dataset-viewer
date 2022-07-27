@@ -1,10 +1,10 @@
 import logging
 import random
 import time
+from http import HTTPStatus
 
 from libcache.asset import show_assets_dir
 from libcache.cache import connect_to_cache
-from libcache.simple_cache import HTTPStatus
 from libqueue.queue import (
     EmptyQueue,
     add_first_rows_job,
