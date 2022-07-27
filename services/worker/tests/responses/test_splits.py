@@ -1,7 +1,8 @@
 import pytest
 from datasets.inspect import SplitsNotFoundError
 
-from worker.responses.splits import get_dataset_split_full_names
+from worker.responses.splits import get_dataset_split_full_names, get_splits_response
+from worker.utils import SplitsNamesError
 
 from .._utils import HF_TOKEN
 
@@ -58,3 +59,19 @@ def test_gated() -> None:
         "config_name": "severo--embellishments",
         "split_name": "train",
     } in split_full_names
+
+
+def test_disclose_cause() -> None:
+    with pytest.raises(SplitsNamesError) as exc_info:
+        get_splits_response("akhaliq/test", HF_TOKEN)
+    assert exc_info.value.disclose_cause is True
+    assert exc_info.value.cause_exception == "FileNotFoundError"
+    response = exc_info.value.as_response()
+    assert set(response.keys()) == {"error", "cause_exception", "cause_message", "cause_traceback"}
+    assert response["error"] == "Cannot get the split names for the dataset."
+    response_dict = dict(response)
+    # ^ to remove mypy warnings
+    assert response_dict["cause_exception"] == "FileNotFoundError"
+    assert str(response_dict["cause_message"]).startswith("Couldn't find a dataset script at ")
+    assert isinstance(response_dict["cause_traceback"], list)
+    assert response_dict["cause_traceback"][0] == "Traceback (most recent call last):\n"
