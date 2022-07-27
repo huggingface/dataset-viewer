@@ -51,5 +51,7 @@ WORKER_SLEEP_SECONDS = get_int_value(os.environ, "WORKER_SLEEP_SECONDS", DEFAULT
 
 # Ensure the datasets library uses the expected revision for canonical datasets
 os.environ["HF_SCRIPTS_VERSION"] = DATASETS_REVISION
+# Don't increase the datasets download counts on huggingface.co
+os.environ["HF_UPDATE_DOWNLOAD_COUNTS"] = "false"
 # Set logs from the datasets library to the least verbose
 set_verbosity(log_levels["critical"])
