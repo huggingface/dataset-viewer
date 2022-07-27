@@ -965,7 +965,7 @@ python-versions = ">=3"
 
 [[package]]
 name = "libcache"
-version = "0.1.21"
+version = "0.1.22"
 description = "Library for the cache in mongodb"
 category = "main"
 optional = false
@@ -979,7 +979,7 @@ pymongo = {version = ">=3.12.3,<4.0.0", extras = ["srv"]}
 
 [package.source]
 type = "file"
-url = "../../libs/libcache/dist/libcache-0.1.21-py3-none-any.whl"
+url = "../../libs/libcache/dist/libcache-0.1.22-py3-none-any.whl"
 
 [[package]]
 name = "libclang"
@@ -1034,7 +1034,7 @@ tests = ["matplotlib (>=3.3.0)", "pytest-mpl", "pytest-cov", "pytest", "contextl
 
 [[package]]
 name = "libutils"
-version = "0.1.9"
+version = "0.1.10"
 description = "Library for utils"
 category = "main"
 optional = false
@@ -1047,7 +1047,7 @@ starlette = ">=0.16.0,<0.17.0"
 
 [package.source]
 type = "file"
-url = "../../libs/libutils/dist/libutils-0.1.9-py3-none-any.whl"
+url = "../../libs/libutils/dist/libutils-0.1.10-py3-none-any.whl"
 
 [[package]]
 name = "llvmlite"
@@ -2529,7 +2529,7 @@ cffi = ["cffi (>=1.11)"]
 [metadata]
 lock-version = "1.1"
 python-versions = "3.9.6"
-content-hash = "a715265d17e60cbe4dedf0b093e65c2c32f29e8a847b58f94df2bd3020e00309"
+content-hash = "0d451ae46a8624b7e2b043076b49b145db31fbf2fe1b0a455053cd19ad5b4c0d"
 
 [metadata.files]
 absl-py = [
@@ -3326,7 +3326,7 @@ kss = [
     {file = "kss-2.6.0-py3-none-any.whl", hash = "sha256:fedbdcd0bfc33111d7817866dd60346dab79f9f1ca5bab0026c4ee40e5941b0c"},
 ]
 libcache = [
-    {file = "libcache-0.1.21-py3-none-any.whl", hash = "sha256:a4413ba57a09f07c36118b230cb2d7900516b3403a5fd63c4b2e8c6e2ec01dfd"},
+    {file = "libcache-0.1.22-py3-none-any.whl", hash = "sha256:1c44c7a7483bfcf701be17290c7f0ae0167c8f256fc52b15a073ab38be1ff5ac"},
 ]
 libclang = [
     {file = "libclang-14.0.1-py2.py3-none-macosx_10_9_x86_64.whl", hash = "sha256:a00c5f433af032979ac0cf03bcba59cf5247cb01fa04ef2380bf9668e84d50a9"},
@@ -3345,7 +3345,7 @@ librosa = [
     {file = "librosa-0.9.1.tar.gz", hash = "sha256:7ed5d6e3f4546e5e3c2840691f9ddc56878f914a35a50060df5fca2b26d4b614"},
 ]
 libutils = [
-    {file = "libutils-0.1.9-py3-none-any.whl", hash = "sha256:eb6dacd24593246c432c2adefb4c2ead4773b219ec1d3cbcabdb9190671d0dfc"},
+    {file = "libutils-0.1.10-py3-none-any.whl", hash = "sha256:3d9aa29e8c19ec25fa959a9c57fdad38b93a213cc37f2970113efed282d2a2ac"},
 ]
 llvmlite = [
     {file = "llvmlite-0.38.1-cp310-cp310-macosx_10_9_x86_64.whl", hash = "sha256:a7dd2bd1d6406e7789273e3f8a304ed5d9adcfaa5768052fca7dc233a857be98"},

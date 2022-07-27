@@ -34,12 +34,15 @@ class CustomError(Exception):
         self.code = code
         self.message = str(self)
         if cause is not None:
-            self.cause_exception = type(cause).__name__
-            self.cause_message = str(cause)
+            self.cause_exception: Optional[str] = type(cause).__name__
+            self.cause_message: Optional[str] = str(cause)
             (t, v, tb) = sys.exc_info()
-            self.cause_traceback = traceback.format_exception(t, v, tb)
+            self.cause_traceback: Optional[List[str]] = traceback.format_exception(t, v, tb)
             self.disclose_cause = disclose_cause
         else:
+            self.cause_exception = None
+            self.cause_message = None
+            self.cause_traceback = None
             self.disclose_cause = False
 
     def as_response_with_cause(self) -> ErrorResponseWithCause:
