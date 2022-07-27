@@ -42,6 +42,9 @@ def refresh_splits(dataset_name: str, hf_token: Optional[str] = None) -> Tuple[H
             add_first_rows_job(d, c, s)
         logger.debug(f"{len(new_splits)} 'first-rows' jobs added for the splits of dataset={dataset_name}")
         return HTTPStatus.OK, False
+    except DatasetNotFoundError as err:
+        logger.debug(f"the dataset={dataset_name} could not be found, don't update the cache")
+        return err.status_code, False
     except WorkerCustomError as err:
         upsert_splits_response(
             dataset_name,
@@ -91,6 +94,12 @@ def refresh_first_rows(
         upsert_first_rows_response(dataset_name, config_name, split_name, dict(response), HTTPStatus.OK)
         logger.debug(f"dataset={dataset_name} config={config_name} split={split_name} is valid, cache updated")
         return HTTPStatus.OK, False
+    except (DatasetNotFoundError, ConfigNotFoundError, SplitNotFoundError) as err:
+        logger.debug(
+            f"the dataset={dataset_name}, config {config_name} or split {split_name} could not be found, don't update"
+            " the cache"
+        )
+        return err.status_code, False
     except WorkerCustomError as err:
         upsert_first_rows_response(
             dataset_name,
