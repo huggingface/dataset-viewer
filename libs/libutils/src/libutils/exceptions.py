@@ -59,7 +59,7 @@ class CustomError(Exception):
         return {"error": self.message}
 
     def as_response(self) -> ErrorResponse:
-        return self.as_response_without_cause() if self.disclose_cause else self.as_response_with_cause()
+        return self.as_response_with_cause() if self.disclose_cause else self.as_response_without_cause()
 
 
 # to be deprecated
