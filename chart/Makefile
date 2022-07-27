@@ -1,4 +1,5 @@
 CHART_NAME := datasets-server
+K8S_NAMESPACE := datasets-server
 
 .PHONY: init
 init:
@@ -18,27 +19,27 @@ upgrade:
 
 .PHONY: diff-dev
 diff-dev:
-	@make diff ENV=dev K8S_NAMESPACE=hub
+	@make diff ENV=dev
 
 .PHONY: uninstall-dev
 uninstall-dev:
-	@make uninstall ENV=dev K8S_NAMESPACE=hub
+	@make uninstall ENV=dev
 
 .PHONY: upgrade-dev
 upgrade-dev:
-	@make upgrade ENV=dev K8S_NAMESPACE=hub
+	@make upgrade ENV=dev
 
 .PHONY: diff-prod
 diff-prod:
-	@make diff ENV=prod K8S_NAMESPACE=datasets-server
+	@make diff ENV=prod
 
 .PHONY: uninstall-prod
 uninstall-prod:
-	@make uninstall ENV=prod K8S_NAMESPACE=datasets-server
+	@make uninstall ENV=prod
 
 .PHONY: upgrade-prod
 upgrade-prod:
-	@make upgrade ENV=prod K8S_NAMESPACE=datasets-server
+	@make upgrade ENV=prod
 
 .PHONY: quality
 quality:

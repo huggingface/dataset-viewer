@@ -20,17 +20,18 @@ $ aws eks list-clusters --profile=hub-pu
 {
     "clusters": [
         "hub-ephemeral",
+        "hub-preprod",
         "hub-prod"
     ]
 }
 ```
 
-Note that listing the clusters is not allowed for the `EKS-HUB-Hub` role of the `hub` account:
+Note that listing the clusters is not allowed for the `EKS-HUB-Tensorboard` role of the `hub` account:
 
 ```
-$ aws eks list-clusters --profile=hub
+$ aws eks list-clusters --profile=tb
 
-An error occurred (AccessDeniedException) when calling the ListClusters operation: User: arn:aws:sts::707930574880:assumed-role/AWSReservedSSO_EKS-HUB-Hub_3c94769b0752b7d7/sylvain.lesage@huggingface.co is not authorized to perform: eks:ListClusters on resource: arn:aws:eks:us-east-1:707930574880:cluster/*
+An error occurred (AccessDeniedException) when calling the ListClusters operation: User: arn:aws:sts::707930574880:assumed-role/AWSReservedSSO_EKS-HUB-Tensorboard_855674a9053d4044/sylvain.lesage@huggingface.co is not authorized to perform: eks:ListClusters on resource: arn:aws:eks:eu-west-3:707930574880:cluster/*
 ```
 
 We've had to use another role to do it: create another profile called `hub-pu` by using `HFPowerUserAccess` instead of `EKS-HUB-Hub` in `aws configure sso`. Beware: this role might be removed soon.
@@ -39,25 +40,16 @@ We've had to use another role to do it: create another profile called `hub-pu` b
 
 Setup `kubectl` to use a cluster:
 
-```
-$ aws eks update-kubeconfig --profile=hub --name=hub-ephemeral
-Updated context arn:aws:eks:us-east-1:707930574880:cluster/hub-ephemeral in /home/slesage/.kube/config
-```
-
-See the details of a cluster using `aws eks`:
-
-```
-$ aws eks describe-cluster --profile=hub --name=hub-ephemeral
-{
-    "cluster": {
-        "name": "hub-ephemeral",
-        "arn": "arn:aws:eks:us-east-1:707930574880:cluster/hub-ephemeral",
-        "createdAt": "2022-04-09T16:47:27.432000+00:00",
-        "version": "1.22",
-        ...
-    }
-}
-```
+- prod:
+  ```
+  $ aws eks update-kubeconfig --name "hub-prod" --alias "hub-prod-with-tb" --region us-east-1 --profile=tb
+  Updated context hub-prod-with-tb in /home/slesage/.kube/config
+  ```
+- ephemeral:
+  ```
+  $ aws eks update-kubeconfig --name "hub-ephemeral" --alias "hub-ephemeral-with-tb" --region us-east-1 --profile=tb
+  Updated context hub-ephemeral-with-tb in /home/slesage/.kube/config
+  ```
 
 ## Kubernetes objects
 
@@ -130,24 +122,24 @@ You can filter to get the info only for one object by adding its name as an argu
   kubectl get namespace -o json
   ```
 
-- only the `hub` namespace:
+- only the `datasets-server` namespace:
 
   ```
-  kubectl get namespace hub -o json
+  kubectl get namespace datasets-server -o json
   ```
 
 You can also filter by [label](https://kubernetes.io/docs/concepts/overview/working-with-objects/labels/):
 
-- get the namespace with the name `hub` (not very interesting):
+- get the namespace with the name `datasets-server` (not very interesting):
 
   ```
-  kubectl get namespace -l "kubernetes.io/metadata.name"==hub
+  kubectl get namespace -l "kubernetes.io/metadata.name"==datasets-server
   ```
 
-- get the pods of the `hub` application (note that `app` is a custom label specified when creating the pods in moonlanding):
+- get the pods of the `datasets-server-prod-api` application (note that `app` is a custom label specified in the Helm templates):
 
   ```
-  kubectl get pod -l app==hub
+  kubectl get pod -l app==datasets-server-prod-api --namespace datasets-server
   ```
 
 Use the `-w` option if you want to "watch" the values in real time.
@@ -174,48 +166,57 @@ Get the list of [namespaces](https://kubernetes.io/docs/concepts/overview/workin
 $ kubectl get namespace
 NAME                 STATUS   AGE
 dataset-server       Active   26h
-default              Active   24d
-gitaly               Active   24d
-hub                  Active   24d
-kube-node-lease      Active   24d
-kube-public          Active   24d
-kube-system          Active   24d
-repository-scanner   Active   9d
+...
 ```
-
-For now, this project will use the `hub` namespace. The infra team is working to setup a specific namespace for this project.
 
 ## Context
 
 Contexts are useful to set the default namespace, user and cluster we are working on (see https://kubernetes.io/docs/tasks/access-application-cluster/configure-access-multiple-clusters/).
 
-We can create a local context called `datasets-server-ephemeral` as:
+We can create a local context called `hub-prod-with-tb` as:
+
+```
+$ kubectl config set-context \
+    --cluster=arn:aws:eks:us-east-1:707930574880:cluster/hub-prod \
+    --user=arn:aws:eks:us-east-1:707930574880:cluster/hub-prod \
+    --namespace=datasets-server \
+    hub-prod-with-tb
+Context "hub-prod-with-tb" created.
+```
+
+or
 
 ```
 $ kubectl config set-context \
     --cluster=arn:aws:eks:us-east-1:707930574880:cluster/hub-ephemeral \
     --user=arn:aws:eks:us-east-1:707930574880:cluster/hub-ephemeral \
-    --namespace=hub \
-    datasets-server-ephemeral
-Context "datasets-server-ephemeral" created.
+    --namespace=datasets-server \
+    hub-ephemeral-with-tb
+Context "hub-ephemeral-with-tb" created.
+```
+
+Another way, seen before, is to use:
+
+```shell
+aws eks update-kubeconfig --name "hub-prod" --alias "hub-prod-with-tb" --region us-east-1 --profile=tb
+aws eks update-kubeconfig --name "hub-ephemeral" --alias "hub-ephemeral-with-tb" --region us-east-1 --profile=tb
 ```
 
 We set it as the current context with:
 
 ```
-$ kubectl config use-context datasets-server-ephemeral
+$ kubectl config use-context hub-ephemeral-with-tb
 
-Switched to context "datasets-server-ephemeral".
+Switched to context "hub-ephemeral-with-tb".
 ```
 
 If we list the contexts, we see that it is selected:
 
 ```
 $ kubectl config get-contexts
-CURRENT   NAME                                                       CLUSTER                                                    AUTHINFO                                                   NAMESPACE
-          arn:aws:eks:us-east-1:707930574880:cluster/hub-ephemeral   arn:aws:eks:us-east-1:707930574880:cluster/hub-ephemeral   arn:aws:eks:us-east-1:707930574880:cluster/hub-ephemeral   hub
-          arn:aws:eks:us-east-1:707930574880:cluster/hub-prod        arn:aws:eks:us-east-1:707930574880:cluster/hub-prod        arn:aws:eks:us-east-1:707930574880:cluster/hub-prod
-*         datasets-server-ephemeral                                  arn:aws:eks:us-east-1:707930574880:cluster/hub-ephemeral   arn:aws:eks:us-east-1:707930574880:cluster/hub-ephemeral   hub
+CURRENT   NAME                    CLUSTER                                                    AUTHINFO                                                   NAMESPACE
+*         hub-ephemeral-with-tb   arn:aws:eks:us-east-1:707930574880:cluster/hub-ephemeral   arn:aws:eks:us-east-1:707930574880:cluster/hub-ephemeral   datasets-server
+          hub-prod-with-tb        arn:aws:eks:us-east-1:707930574880:cluster/hub-prod        arn:aws:eks:us-east-1:707930574880:cluster/hub-prod        datasets-server
 ```
 
 Note that contexts are a help for the developer to get quickly in the correct configuration. It's not stored in the cluster.
