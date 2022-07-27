@@ -39,6 +39,8 @@ class CustomError(Exception):
             (t, v, tb) = sys.exc_info()
             self.cause_traceback = traceback.format_exception(t, v, tb)
             self.disclose_cause = disclose_cause
+        else:
+            self.disclose_cause = False
 
     def as_response_with_cause(self) -> ErrorResponseWithCause:
         error: ErrorResponseWithCause = {"error": self.message}
