@@ -26,7 +26,7 @@ async def splits_endpoint_next(request: Request) -> Response:
         logger.info(f"/splits-next, dataset={dataset_name}")
 
         if not isinstance(dataset_name, str):
-            raise MissingRequiredParameterError("Parameters 'dataset' is required")
+            raise MissingRequiredParameterError("Parameter 'dataset' is required")
         try:
             response, http_status, error_code = get_splits_response(dataset_name)
             if http_status == HTTPStatus.OK:
