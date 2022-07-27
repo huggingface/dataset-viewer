@@ -56,9 +56,9 @@ def process_next_splits_job() -> bool:
     retry = False
     try:
         logger.info(f"compute dataset={dataset_name}")
-        http_status = refresh_splits(dataset_name=dataset_name, hf_token=HF_TOKEN)
+        http_status, can_retry = refresh_splits(dataset_name=dataset_name, hf_token=HF_TOKEN)
         success = http_status == HTTPStatus.OK
-        if http_status == HTTPStatus.INTERNAL_SERVER_ERROR and retries < MAX_JOB_RETRIES:
+        if can_retry and retries < MAX_JOB_RETRIES:
             retry = True
     finally:
         finish_splits_job(job_id, success=success)
@@ -85,7 +85,7 @@ def process_next_first_rows_job() -> bool:
     retry = False
     try:
         logger.info(f"compute dataset={dataset_name} config={config_name} split={split_name}")
-        http_status = refresh_first_rows(
+        http_status, can_retry = refresh_first_rows(
             dataset_name=dataset_name,
             config_name=config_name,
             split_name=split_name,
@@ -97,7 +97,7 @@ def process_next_first_rows_job() -> bool:
             rows_min_number=ROWS_MIN_NUMBER,
         )
         success = http_status == HTTPStatus.OK
-        if http_status == HTTPStatus.INTERNAL_SERVER_ERROR and retries < MAX_JOB_RETRIES:
+        if can_retry and retries < MAX_JOB_RETRIES:
             retry = True
     finally:
         finish_first_rows_job(job_id, success=success)
