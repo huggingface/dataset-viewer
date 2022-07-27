@@ -42,14 +42,14 @@ class SplitsResponseNotReadyError(ApiCustomError):
     """Raised when the /splits response has not been processed yet."""
 
     def __init__(self, message: str):
-        super().__init__(message, HTTPStatus.BAD_GATEWAY, "SplitsResponseNotReady")
+        super().__init__(message, HTTPStatus.INTERNAL_SERVER_ERROR, "SplitsResponseNotReady")
 
 
 class FirstRowsResponseNotReadyError(ApiCustomError):
     """Raised when the /first-rows response has not been processed yet."""
 
     def __init__(self, message: str):
-        super().__init__(message, HTTPStatus.BAD_GATEWAY, "FirstRowsResponseNotReady")
+        super().__init__(message, HTTPStatus.INTERNAL_SERVER_ERROR, "FirstRowsResponseNotReady")
 
 
 class FirstRowsResponseNotFoundError(ApiCustomError):
