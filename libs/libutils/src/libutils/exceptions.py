@@ -3,6 +3,44 @@ import traceback
 from typing import List, Optional, TypedDict
 
 
+class ErrorResponseWithCause(TypedDict):
+    error: str
+    cause_exception: Optional[str]
+    cause_message: Optional[str]
+    cause_traceback: Optional[List[str]]
+
+
+class ErrorResponseWithoutCause(TypedDict):
+    error: str
+
+
+class CustomError(Exception):
+    """Base class for exceptions in this module."""
+
+    def __init__(self, message: str, code: str, cause: Optional[BaseException] = None):
+        super().__init__(message)
+        self.exception = type(self).__name__
+        self.code = code
+        self.message = str(self)
+        if cause is not None:
+            self.cause_exception = type(cause).__name__
+            self.cause_message = str(cause)
+            (t, v, tb) = sys.exc_info()
+            self.cause_traceback = traceback.format_exception(t, v, tb)
+
+    def as_response_with_cause(self) -> ErrorResponseWithCause:
+        return {
+            "error": self.message,
+            "cause_exception": self.cause_exception,
+            "cause_message": self.cause_message,
+            "cause_traceback": self.cause_traceback if len(self.cause_traceback) else None,
+        }
+
+    def as_response_without_cause(self) -> ErrorResponseWithoutCause:
+        return {"error": self.message}
+
+
+# to be deprecated
 class StatusErrorContent(TypedDict):
     status_code: int
     exception: str
