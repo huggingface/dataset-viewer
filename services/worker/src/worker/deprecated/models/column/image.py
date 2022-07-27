@@ -3,8 +3,8 @@ from typing import Any, List
 from datasets import Image
 from PIL import Image as PILImage  # type: ignore
 
-from worker.models.asset import create_image_file
-from worker.models.column.default import (
+from worker.deprecated.models.asset import create_image_file
+from worker.deprecated.models.column.default import (
     Cell,
     CellTypeError,
     ColumnInferenceError,

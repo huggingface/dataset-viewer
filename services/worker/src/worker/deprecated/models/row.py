@@ -3,9 +3,9 @@ import logging
 from typing import Any, Dict, List, Optional
 
 from datasets import Dataset, IterableDataset, load_dataset
-from libutils.utils import retry
 
 from worker.constants import DEFAULT_ROWS_MAX_NUMBER
+from worker.utils import retry
 
 logger = logging.getLogger(__name__)
 

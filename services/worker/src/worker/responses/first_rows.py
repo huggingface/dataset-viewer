@@ -1,18 +1,89 @@
+import itertools
 import logging
 import sys
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, TypedDict
 
-from datasets import Features, IterableDataset, load_dataset
-from libutils.exceptions import Status400Error, Status500Error
-from libutils.types import RowItem
+from datasets import (
+    Dataset,
+    Features,
+    IterableDataset,
+    get_dataset_config_info,
+    load_dataset,
+)
 from libutils.utils import orjson_dumps
 
 from worker.config import MIN_CELL_BYTES
-from worker.models.features import get_cell_value
-from worker.models.info import get_info
-from worker.models.row import Row, get_rows
+from worker.constants import DEFAULT_ROWS_MAX_BYTES, DEFAULT_ROWS_MAX_NUMBER
+from worker.features import get_cell_value
+from worker.responses.splits import get_splits_response
+from worker.utils import (
+    ConfigNotFoundError,
+    FeaturesError,
+    InfoError,
+    NormalRowsError,
+    RowsPostProcessingError,
+    SplitNotFoundError,
+    StreamingRowsError,
+    retry,
+)
 
 logger = logging.getLogger(__name__)
+
+
+Row = Dict[str, Any]
+
+
+class FeatureItem(TypedDict):
+    dataset: str
+    config: str
+    split: str
+    feature_idx: int
+    name: str
+    type: Dict[str, Any]
+
+
+class RowItem(TypedDict):
+    dataset: str
+    config: str
+    split: str
+    row_idx: int
+    row: Dict[str, Any]
+    truncated_cells: List[str]
+
+
+class FirstRowsResponse(TypedDict):
+    features: List[FeatureItem]
+    rows: List[RowItem]
+
+
+@retry(logger=logger)
+def get_rows(
+    dataset_name: str,
+    config_name: str,
+    split_name: str,
+    streaming: bool,
+    rows_max_number: int,
+    hf_token: Optional[str] = None,
+) -> List[Row]:
+    dataset = load_dataset(
+        dataset_name,
+        name=config_name,
+        split=split_name,
+        streaming=streaming,
+        use_auth_token=hf_token,
+    )
+    if streaming:
+        if not isinstance(dataset, IterableDataset):
+            raise TypeError("load_dataset should return an IterableDataset in streaming mode")
+    elif not isinstance(dataset, Dataset):
+        raise TypeError("load_dataset should return a Dataset in normal mode")
+    rows_plus_one = list(itertools.islice(dataset, rows_max_number + 1))
+    # ^^ to be able to detect if a split has exactly ROWS_MAX_NUMBER rows
+    if len(rows_plus_one) <= rows_max_number:
+        logger.debug(f"all the rows in the split have been fetched ({len(rows_plus_one)})")
+    else:
+        logger.debug(f"the rows in the split have been truncated ({rows_max_number} rows)")
+    return rows_plus_one[:rows_max_number]
 
 
 def get_size_in_bytes(obj: Any):
@@ -73,44 +144,16 @@ def to_row_item(dataset_name: str, config_name: str, split_name: str, row_idx: i
     }
 
 
-# in JSON, dicts do not carry any order, so we need to return a list
-#
-# > An object is an *unordered* collection of zero or more name/value pairs, where a name is a string and a value
-#   is a string, number, boolean, null, object, or array.
-# > An array is an *ordered* sequence of zero or more values.
-# > The terms "object" and "array" come from the conventions of JavaScript.
-# from https://stackoverflow.com/a/7214312/7351594 / https://www.rfc-editor.org/rfc/rfc7159.html
-def to_features_list(dataset_name: str, config_name: str, split_name: str, features: Features) -> List[Dict]:
-    features_dict = features.to_dict()
-    return [
-        {
-            "dataset": dataset_name,
-            "config": config_name,
-            "split": split_name,
-            "idx": idx,
-            "name": name,
-            "type": features_dict[name],
-        }
-        for idx, name in enumerate(features)
-    ]
-
-
 def create_truncated_row_items(
     dataset_name: str,
     config_name: str,
     split_name: str,
     rows: List[Row],
-    rows_max_bytes: Optional[int] = None,
-    rows_min_number: Optional[int] = None,
+    rows_max_bytes: int,
+    rows_min_number: int,
 ) -> List[RowItem]:
     row_items = []
     rows_bytes = 0
-    if rows_min_number is None:
-        rows_min_number = 0
-    else:
-        logger.debug(f"min number of rows in the response: '{rows_min_number}'")
-    if rows_max_bytes is not None:
-        logger.debug(f"max number of bytes in the response: '{rows_max_bytes}'")
 
     # two restrictions must be enforced:
     # - at least rows_min_number rows
@@ -119,13 +162,12 @@ def create_truncated_row_items(
     # 1. first get the first rows_min_number rows
     for row_idx, row in enumerate(rows[:rows_min_number]):
         row_item = to_row_item(dataset_name, config_name, split_name, row_idx, row)
-        if rows_max_bytes is not None:
-            rows_bytes += get_size_in_bytes(row_item)
+        rows_bytes += get_size_in_bytes(row_item)
         row_items.append(row_item)
 
     # 2. if the total is over the bytes limit, truncate the values, iterating backwards starting
     # from the last rows, until getting under the threshold
-    if rows_max_bytes is not None and rows_bytes >= rows_max_bytes:
+    if rows_bytes >= rows_max_bytes:
         logger.debug(
             f"the size of the first {rows_min_number} rows ({rows_bytes}) is above the max number of bytes"
             f" ({rows_max_bytes}), they will be truncated"
@@ -136,19 +178,18 @@ def create_truncated_row_items(
     for idx, row in enumerate(rows[rows_min_number:]):
         row_idx = rows_min_number + idx
         row_item = to_row_item(dataset_name, config_name, split_name, row_idx, row)
-        if rows_max_bytes is not None:
-            rows_bytes += get_size_in_bytes(row_item)
-            if rows_bytes >= rows_max_bytes:
-                logger.debug(
-                    f"the rows in the split have been truncated to {row_idx} row(s) to keep the size"
-                    f" ({rows_bytes}) under the limit ({rows_max_bytes})"
-                )
-                break
+        rows_bytes += get_size_in_bytes(row_item)
+        if rows_bytes >= rows_max_bytes:
+            logger.debug(
+                f"the rows in the split have been truncated to {row_idx} row(s) to keep the size"
+                f" ({rows_bytes}) under the limit ({rows_max_bytes})"
+            )
+            break
         row_items.append(row_item)
     return row_items
 
 
-def get_typed_rows(
+def transform_rows(
     dataset_name: str, config_name: str, split_name: str, rows: List[Row], features: Features, assets_base_url: str
 ) -> List[Row]:
     return [
@@ -169,7 +210,29 @@ def get_typed_rows(
     ]
 
 
-def get_first_rows(
+# in JSON, dicts do not carry any order, so we need to return a list
+#
+# > An object is an *unordered* collection of zero or more name/value pairs, where a name is a string and a value
+#   is a string, number, boolean, null, object, or array.
+# > An array is an *ordered* sequence of zero or more values.
+# > The terms "object" and "array" come from the conventions of JavaScript.
+# from https://stackoverflow.com/a/7214312/7351594 / https://www.rfc-editor.org/rfc/rfc7159.html
+def to_features_list(dataset_name: str, config_name: str, split_name: str, features: Features) -> List[FeatureItem]:
+    features_dict = features.to_dict()
+    return [
+        {
+            "dataset": dataset_name,
+            "config": config_name,
+            "split": split_name,
+            "feature_idx": idx,
+            "name": name,
+            "type": features_dict[name],
+        }
+        for idx, name in enumerate(features)
+    ]
+
+
+def get_first_rows_response(
     dataset_name: str,
     config_name: str,
     split_name: str,
@@ -179,11 +242,69 @@ def get_first_rows(
     rows_max_bytes: Optional[int] = None,
     rows_max_number: Optional[int] = None,
     rows_min_number: Optional[int] = None,
-) -> Dict:
+) -> FirstRowsResponse:
+    """
+    Get the response of /first-rows for one specific split of a dataset from huggingface.co.
+    Dataset can be private or gated if you pass an acceptable token.
+    Args:
+        dataset_name (`str`):
+            A namespace (user or an organization) and a repo name separated
+            by a `/`.
+        config_name (`str`):
+            A configuration name.
+        split_name (`str`):
+            A split name.
+        assets_base_url (`str`):
+            The base url of the assets.
+        hf_token (`str`, *optional*):
+            An authentication token (See https://huggingface.co/settings/token)
+        max_size_fallback (`int`, *optional*):
+            The maximum number of bytes of the split to fallback to normal mode if the streaming mode fails. If None,
+            it will not fallback to normal mode. Defaults to None.
+        rows_max_bytes (`int`, *optional*):
+            The maximum number of bytes of the response (else, the response is truncated). Defaults to 1_000_000 bytes.
+        rows_max_number (`int`, *optional*):
+            The maximum number of rows of the response. Defaults to 100.
+        rows_min_number (`int`, *optional*):
+            The minimum number of rows of the response. Defaults to 0.
+    Returns:
+        [`FirstRowsResponse`]: The list of first rows of the split.
+    <Tip>
+    Raises the following errors:
+        - [`~worker.utils.DoesNotExistError`]
+          If the repository to download from cannot be found. This may be because it doesn't exist,
+          or because it is set to `private` and you do not have access.
+        - [`~worker.utils.DatasetError`]
+          If the config info, the split features, or the split rows could not be obtained using the datasets library.
+        - [`~worker.utils.ServerError`]
+          If the post-processing of the split rows failed, e.g. while saving the images or audio files to the assets.
+    </Tip>
+    """
     logger.info(f"get first-rows for dataset={dataset_name} config={config_name} split={split_name}")
-
-    # features
-    info = get_info(dataset_name, config_name, hf_token)
+    if rows_max_bytes is None:
+        rows_max_bytes = DEFAULT_ROWS_MAX_BYTES
+    if rows_max_number is None:
+        rows_max_number = DEFAULT_ROWS_MAX_NUMBER
+    if rows_min_number is None:
+        rows_min_number = 0
+    # first ensure the tuple (dataset, config, split) exists on the Hub
+    splits_response = get_splits_response(dataset_name, hf_token)
+    # ^ can raise DoesNotExistError or DatasetError
+    if config_name not in [split_item["config_name"] for split_item in splits_response["splits"]]:
+        raise ConfigNotFoundError(f"config {config_name} does not exist for dataset {dataset_name}")
+    if {"dataset_name": dataset_name, "config_name": config_name, "split_name": split_name} not in splits_response[
+        "splits"
+    ]:
+        raise SplitNotFoundError("The config or the split does not exist in the dataset")
+    # get the features
+    try:
+        info = get_dataset_config_info(
+            path=dataset_name,
+            config_name=config_name,
+            use_auth_token=hf_token,
+        )
+    except Exception as err:
+        raise InfoError("The info cannot be fetched for the dataset config.", cause=err) from err
     if not info.features:
         try:
             # https://github.com/huggingface/datasets/blob/f5826eff9b06ab10dba1adfa52543341ef1e6009/src/datasets/iterable_dataset.py#L1255
@@ -201,37 +322,38 @@ def get_first_rows(
                 raise TypeError("load_dataset should return an IterableDataset")
             features = iterable_dataset.features
         except Exception as err:
-            raise Status400Error("The split features (columns) cannot be extracted.", err) from err
+            raise FeaturesError("The split features (columns) cannot be extracted.", cause=err) from err
     else:
         features = info.features
-
-    # rows
-    fallback = (
-        max_size_fallback is not None and info.size_in_bytes is not None and info.size_in_bytes < max_size_fallback
-    )
-
+    # get the rows
     try:
         rows = get_rows(dataset_name, config_name, split_name, hf_token, True, rows_max_number)
     except Exception as err:
-        if not fallback:
-            raise Status400Error(
-                "Cannot load the dataset split (in streaming mode) to extract the first rows.", err
+        if max_size_fallback is None or info.size_in_bytes is None or info.size_in_bytes > max_size_fallback:
+            raise StreamingRowsError(
+                "Cannot load the dataset split (in streaming mode) to extract the first rows.",
+                cause=err,
             ) from err
         try:
             rows = get_rows(dataset_name, config_name, split_name, hf_token, False, rows_max_number)
         except Exception as err:
-            raise Status400Error(
-                "Cannot load the dataset split (in normal download mode) to extract the first rows.", err
+            raise NormalRowsError(
+                "Cannot load the dataset split (in normal download mode) to extract the first rows.",
+                cause=err,
             ) from err
-
+    # transform the rows, if needed (e.g. save the images or audio to the assets, and return their URL)
     try:
-        typed_rows = get_typed_rows(dataset_name, config_name, split_name, rows, features, assets_base_url)
+        transformed_rows = transform_rows(dataset_name, config_name, split_name, rows, features, assets_base_url)
     except Exception as err:
-        raise Status500Error("The dataset values post-processing failed. Please report the issue.", err) from err
-
+        raise RowsPostProcessingError(
+            "Server error while post-processing the split rows. Please report the issue.",
+            cause=err,
+        ) from err
+    # truncate the rows to fit within the restrictions, and prepare them as RowItems
     row_items = create_truncated_row_items(
-        dataset_name, config_name, split_name, typed_rows, rows_max_bytes, rows_min_number
+        dataset_name, config_name, split_name, transformed_rows, rows_max_bytes, rows_min_number
     )
+    # return the response
     return {
         "features": to_features_list(dataset_name, config_name, split_name, features),
         "rows": row_items,

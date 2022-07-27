@@ -1,8 +1,8 @@
 from PIL import Image  # type: ignore
 
-from worker.models.row import get_rows
+from worker.deprecated.models.row import get_rows
 
-from .._utils import ROWS_MAX_NUMBER
+from ..._utils import ROWS_MAX_NUMBER
 
 
 # get_rows

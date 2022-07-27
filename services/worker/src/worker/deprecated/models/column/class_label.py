@@ -3,7 +3,12 @@ from typing import Any, List
 from datasets import ClassLabel
 from libutils.types import ClassLabelColumnType, ColumnDict
 
-from worker.models.column.default import Cell, CellTypeError, Column, ColumnTypeError
+from worker.deprecated.models.column.default import (
+    Cell,
+    CellTypeError,
+    Column,
+    ColumnTypeError,
+)
 
 
 def check_value(value: Any) -> None:

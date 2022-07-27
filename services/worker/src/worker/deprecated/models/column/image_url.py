@@ -1,6 +1,6 @@
 from typing import Any, List
 
-from worker.models.column.default import (
+from worker.deprecated.models.column.default import (
     Cell,
     CellTypeError,
     ColumnInferenceError,
@@ -9,10 +9,12 @@ from worker.models.column.default import (
     check_dtype,
 )
 
+COLUMN_NAMES = ["image_url"]
+
 
 def check_value(value: Any) -> None:
-    if value is not None and type(value) != float:
-        raise CellTypeError("value must be a float")
+    if value is not None and type(value) != str:
+        raise CellTypeError("image URL column must be a string")
 
 
 def infer_from_values(values: List[Any]) -> None:
@@ -22,23 +24,22 @@ def infer_from_values(values: List[Any]) -> None:
         raise ColumnInferenceError("all the values are None, cannot infer column type")
 
 
-class FloatColumn(CommonColumn):
+class ImageUrlColumn(CommonColumn):
     def __init__(self, name: str, feature: Any, values: List[Any]):
+        if name not in COLUMN_NAMES:
+            raise ColumnTypeError("feature name mismatch")
         if feature:
-            if not check_dtype(
-                feature,
-                [
-                    "float16",
-                    "float32",
-                    "float64",
-                ],
-            ):
+            if not check_dtype(feature, ["string"]):
                 raise ColumnTypeError("feature type mismatch")
         else:
+            # if values are strings, and the column name matches, let's say it's an image url
             infer_from_values(values)
+
         self.name = name
-        self.type = "FLOAT"
+        self.type = "IMAGE_URL"
 
     def get_cell_value(self, dataset_name: str, config_name: str, split_name: str, row_idx: int, value: Any) -> Cell:
+        if value is None:
+            return None
         check_value(value)
         return value

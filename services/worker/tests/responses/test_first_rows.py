@@ -1,12 +1,14 @@
-from worker.models.first_rows import get_first_rows
+from worker.responses.first_rows import get_first_rows_response
 
 from .._utils import ASSETS_BASE_URL
 
 
-def test_first_rows() -> None:
-    response = get_first_rows("common_voice", "tr", "train", rows_max_number=1, assets_base_url=ASSETS_BASE_URL)
+def test_get_first_rows_response() -> None:
+    response = get_first_rows_response(
+        "common_voice", "tr", "train", rows_max_number=1, assets_base_url=ASSETS_BASE_URL
+    )
 
-    assert response["features"][0]["idx"] == 0
+    assert response["features"][0]["feature_idx"] == 0
     assert response["features"][0]["name"] == "client_id"
     assert response["features"][0]["type"]["_type"] == "Value"
     assert response["features"][0]["type"]["dtype"] == "string"
@@ -24,11 +26,11 @@ def test_first_rows() -> None:
 
 
 def test_no_features() -> None:
-    response = get_first_rows(
+    response = get_first_rows_response(
         "severo/fix-401", "severo--fix-401", "train", rows_max_number=1, assets_base_url=ASSETS_BASE_URL
     )
 
-    assert response["features"][1]["idx"] == 1
+    assert response["features"][1]["feature_idx"] == 1
     assert response["features"][1]["name"] == "area_mean"
     assert response["features"][1]["type"]["_type"] == "Value"
     assert response["features"][1]["type"]["dtype"] == "float64"

@@ -1,6 +1,6 @@
 from typing import Any, List
 
-from worker.models.column.default import (
+from worker.deprecated.models.column.default import (
     Cell,
     CellTypeError,
     ColumnInferenceError,
@@ -11,7 +11,7 @@ from worker.models.column.default import (
 
 
 def check_value(value: Any) -> None:
-    if value is not None and type(value) != str:
+    if value is not None and type(value) != int:
         raise CellTypeError("value type mismatch")
 
 
@@ -22,15 +22,27 @@ def infer_from_values(values: List[Any]) -> None:
         raise ColumnInferenceError("all the values are None, cannot infer column type")
 
 
-class StringColumn(CommonColumn):
+class IntColumn(CommonColumn):
     def __init__(self, name: str, feature: Any, values: List[Any]):
         if feature:
-            if not check_dtype(feature, ["string", "large_string"]):
+            if not check_dtype(
+                feature,
+                [
+                    "int8",
+                    "int16",
+                    "int32",
+                    "int64",
+                    "uint8",
+                    "uint16",
+                    "uint32",
+                    "uint64",
+                ],
+            ):
                 raise ColumnTypeError("feature type mismatch")
         else:
             infer_from_values(values)
         self.name = name
-        self.type = "STRING"
+        self.type = "INT"
 
     def get_cell_value(self, dataset_name: str, config_name: str, split_name: str, row_idx: int, value: Any) -> Cell:
         check_value(value)

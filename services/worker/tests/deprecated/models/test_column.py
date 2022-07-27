@@ -1,7 +1,7 @@
-from worker.models.column import get_columns
-from worker.models.column.class_label import ClassLabelColumn
-from worker.models.column.timestamp import TimestampColumn
-from worker.models.info import get_info
+from worker.deprecated.models.column import get_columns
+from worker.deprecated.models.column.class_label import ClassLabelColumn
+from worker.deprecated.models.column.timestamp import TimestampColumn
+from worker.deprecated.models.info import get_info
 
 # TODO: add a test for each type
 

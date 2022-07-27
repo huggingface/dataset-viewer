@@ -1,4 +1,4 @@
-from worker.models.info import get_info
+from worker.deprecated.models.info import get_info
 
 
 def test_get_info() -> None:

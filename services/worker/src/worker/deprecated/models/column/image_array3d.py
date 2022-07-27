@@ -4,8 +4,8 @@ import numpy  # type: ignore
 from datasets import Array3D
 from PIL import Image  # type: ignore
 
-from worker.models.asset import create_image_file
-from worker.models.column.default import (
+from worker.deprecated.models.asset import create_image_file
+from worker.deprecated.models.column.default import (
     Cell,
     CellTypeError,
     ColumnInferenceError,

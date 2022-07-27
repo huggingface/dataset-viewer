@@ -1,126 +1,30 @@
 import logging
-from typing import Dict, List, Optional
+from http import HTTPStatus
+from typing import Optional
 
-from libcache.cache import (
-    upsert_dataset,
-    upsert_dataset_error,
-    upsert_split,
-    upsert_split_error,
-)
 from libcache.simple_cache import (
-    HTTPStatus,
     delete_first_rows_responses,
     get_dataset_first_rows_response_splits,
     upsert_first_rows_response,
     upsert_splits_response,
 )
-from libqueue.queue import add_first_rows_job, add_split_job
-from libutils.exceptions import Status400Error, Status500Error, StatusError
+from libqueue.queue import add_first_rows_job
 
-from worker.models.dataset import get_dataset_split_full_names
-from worker.models.first_rows import get_first_rows
-from worker.models.info import DatasetInfo, get_info
-from worker.models.split import get_split
+from worker.responses.first_rows import get_first_rows_response
+from worker.responses.splits import get_splits_response
+from worker.utils import UnexpectedError, WorkerCustomError
 
 logger = logging.getLogger(__name__)
 
 
-def refresh_dataset(dataset_name: str, hf_token: Optional[str] = None) -> None:
-    try:
-        try:
-            split_full_names = get_dataset_split_full_names(dataset_name, hf_token)
-        except Exception as err:
-            raise Status400Error("Cannot get the split names for the dataset.", err) from err
-        upsert_dataset(dataset_name, split_full_names)
-        logger.debug(f"dataset={dataset_name} is valid, cache updated")
-        for split_full_name in split_full_names:
-            add_split_job(
-                split_full_name["dataset_name"], split_full_name["config_name"], split_full_name["split_name"]
-            )
-    except StatusError as err:
-        upsert_dataset_error(dataset_name, err)
-        logger.debug(f"dataset={dataset_name} had error, cache updated")
-        raise
-    except Exception as err:
-        upsert_dataset_error(dataset_name, Status500Error(str(err)))
-        logger.debug(f"dataset={dataset_name} had error, cache updated")
-        raise
-
-
-def refresh_split(
-    dataset_name: str,
-    config_name: str,
-    split_name: str,
-    hf_token: Optional[str] = None,
-    max_size_fallback: Optional[int] = None,
-    rows_max_bytes: Optional[int] = None,
-    rows_max_number: Optional[int] = None,
-    rows_min_number: Optional[int] = None,
-):
-    try:
-        split = get_split(
-            dataset_name,
-            config_name,
-            split_name,
-            hf_token=hf_token,
-            max_size_fallback=max_size_fallback,
-            rows_max_bytes=rows_max_bytes,
-            rows_max_number=rows_max_number,
-            rows_min_number=rows_min_number,
-        )
-        upsert_split(dataset_name, config_name, split_name, split)
-        logger.debug(f"dataset={dataset_name} config={config_name} split={split_name} is valid, cache updated")
-    except StatusError as err:
-        upsert_split_error(dataset_name, config_name, split_name, err)
-        logger.debug(f"dataset={dataset_name} config={config_name} split={split_name} had error, cache updated")
-        raise
-    except Exception as err:
-        upsert_split_error(dataset_name, config_name, split_name, Status500Error(str(err)))
-        logger.debug(f"dataset={dataset_name} config={config_name} split={split_name} had error, cache updated")
-        raise
-
-
 def refresh_splits(dataset_name: str, hf_token: Optional[str] = None) -> HTTPStatus:
     try:
-        try:
-            split_full_names = get_dataset_split_full_names(dataset_name, hf_token)
-        except Exception as err:
-            raise Status400Error("Cannot get the split names for the dataset.", err) from err
-        # get the number of bytes and examples for each split
-        config_info: Dict[str, DatasetInfo] = {}
-        splits: List[Dict] = []
-        for split_full_name in split_full_names:
-            try:
-                dataset = split_full_name["dataset_name"]
-                config = split_full_name["config_name"]
-                split = split_full_name["split_name"]
-                if config not in config_info:
-                    config_info[config] = get_info(
-                        dataset_name=split_full_name["dataset_name"],
-                        config_name=split_full_name["config_name"],
-                        hf_token=hf_token,
-                    )
-                info = config_info[config]
-                num_bytes = info.splits[split].num_bytes if info.splits else None
-                num_examples = info.splits[split].num_examples if info.splits else None
-            except Exception:
-                num_bytes = None
-                num_examples = None
-            splits.append(
-                {
-                    "dataset_name": dataset,
-                    "config_name": config,
-                    "split_name": split,
-                    "num_bytes": num_bytes,
-                    "num_examples": num_examples,
-                }
-            )
-        response = {"splits": splits}
-        upsert_splits_response(dataset_name, response, HTTPStatus.OK)
+        response = get_splits_response(dataset_name, hf_token)
+        upsert_splits_response(dataset_name, dict(response), HTTPStatus.OK)
         logger.debug(f"dataset={dataset_name} is valid, cache updated")
 
         splits_in_cache = get_dataset_first_rows_response_splits(dataset_name)
-        new_splits = [(s["dataset_name"], s["config_name"], s["split_name"]) for s in split_full_names]
+        new_splits = [(s["dataset_name"], s["config_name"], s["split_name"]) for s in response["splits"]]
         splits_to_delete = [s for s in splits_in_cache if s not in new_splits]
         for d, c, s in splits_to_delete:
             delete_first_rows_responses(d, c, s)
@@ -132,20 +36,27 @@ def refresh_splits(dataset_name: str, hf_token: Optional[str] = None) -> HTTPSta
             add_first_rows_job(d, c, s)
         logger.debug(f"{len(new_splits)} 'first-rows' jobs added for the splits of dataset={dataset_name}")
         return HTTPStatus.OK
-    except Status400Error as err:
-        upsert_splits_response(dataset_name, dict(err.as_response()), HTTPStatus.BAD_REQUEST)
-        logger.debug(f"splits response for dataset={dataset_name} had BAD_REQUEST error, cache updated")
-        return HTTPStatus.BAD_REQUEST
-    except Exception as err:
-        err = err if isinstance(err, Status500Error) else Status500Error(str(err))
+    except WorkerCustomError as err:
         upsert_splits_response(
             dataset_name,
-            dict(err.as_response()),
-            HTTPStatus.INTERNAL_SERVER_ERROR,
-            dict(err.as_content()),
+            dict(err.as_response_with_cause() if err.status_code >= 500 else err.as_response_without_cause()),
+            err.status_code,
+            err.code,
+            dict(err.as_response_with_cause()),
         )
-        logger.debug(f"splits response for dataset={dataset_name} had INTERNAL_SERVER_ERROR error, cache updated")
-        return HTTPStatus.INTERNAL_SERVER_ERROR
+        logger.debug(f"splits response for dataset={dataset_name} had an error, cache updated")
+        return err.status_code
+    except Exception as err:
+        e = UnexpectedError(str(err), err)
+        upsert_splits_response(
+            dataset_name,
+            dict(e.as_response_without_cause()),
+            e.status_code,
+            e.code,
+            dict(e.as_response_with_cause()),
+        )
+        logger.debug(f"splits response for dataset={dataset_name} had a server error, cache updated")
+        return e.status_code
 
 
 def refresh_first_rows(
@@ -160,7 +71,7 @@ def refresh_first_rows(
     rows_min_number: Optional[int] = None,
 ) -> HTTPStatus:
     try:
-        response = get_first_rows(
+        response = get_first_rows_response(
             dataset_name,
             config_name,
             split_name,
@@ -171,30 +82,37 @@ def refresh_first_rows(
             rows_max_number=rows_max_number,
             rows_min_number=rows_min_number,
         )
-        upsert_first_rows_response(dataset_name, config_name, split_name, response, HTTPStatus.OK)
+        upsert_first_rows_response(dataset_name, config_name, split_name, dict(response), HTTPStatus.OK)
         logger.debug(f"dataset={dataset_name} config={config_name} split={split_name} is valid, cache updated")
         return HTTPStatus.OK
-    except Status400Error as err:
-        upsert_first_rows_response(
-            dataset_name, config_name, split_name, dict(err.as_response()), HTTPStatus.BAD_REQUEST
-        )
-        logger.debug(
-            f"first-rows response for dataset={dataset_name} config={config_name} split={split_name} had BAD_REQUEST"
-            " error, cache updated"
-        )
-        return HTTPStatus.BAD_REQUEST
-    except Exception as err:
-        err = err if isinstance(err, Status500Error) else Status500Error(str(err))
+    except WorkerCustomError as err:
         upsert_first_rows_response(
             dataset_name,
             config_name,
             split_name,
-            dict(err.as_response()),
-            HTTPStatus.INTERNAL_SERVER_ERROR,
-            dict(err.as_content()),
+            dict(err.as_response_with_cause() if err.status_code >= 500 else err.as_response_without_cause()),
+            err.status_code,
+            err.code,
+            dict(err.as_response_with_cause()),
         )
         logger.debug(
-            f"first-rows response for dataset={dataset_name} config={config_name} split={split_name} had"
-            " INTERNAL_SERVER_ERROR error, cache updated"
+            f"first-rows response for dataset={dataset_name} config={config_name} split={split_name} had an error,"
+            " cache updated"
         )
-        return HTTPStatus.INTERNAL_SERVER_ERROR
+        return err.status_code
+    except Exception as err:
+        e = UnexpectedError(str(err), err)
+        upsert_first_rows_response(
+            dataset_name,
+            config_name,
+            split_name,
+            dict(e.as_response_without_cause()),
+            e.status_code,
+            e.code,
+            dict(e.as_response_with_cause()),
+        )
+        logger.debug(
+            f"first-rows response for dataset={dataset_name} config={config_name} split={split_name} had a server"
+            " error, cache updated"
+        )
+        return e.status_code

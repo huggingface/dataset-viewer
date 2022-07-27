@@ -21,9 +21,9 @@ from datasets import (
     Value,
 )
 
-from worker.models.features import get_cell_value
+from worker.features import get_cell_value
 
-from .._utils import ASSETS_BASE_URL
+from ._utils import ASSETS_BASE_URL
 
 # we need to know the correspondence between the feature type and the cell value, in order to:
 # - document the API

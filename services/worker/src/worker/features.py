@@ -16,7 +16,7 @@ from datasets import (
 from numpy import ndarray  # type:ignore
 from PIL import Image as PILImage  # type: ignore
 
-from worker.models.asset import create_audio_files, create_image_file
+from worker.asset import create_audio_files, create_image_file
 
 
 def image(

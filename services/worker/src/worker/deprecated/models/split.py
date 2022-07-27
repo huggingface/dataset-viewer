@@ -7,9 +7,9 @@ from libutils.types import ColumnItem, RowItem, RowsResponse, Split
 from libutils.utils import orjson_dumps
 
 from worker.config import MIN_CELL_BYTES
-from worker.models.column import CellTypeError, Column, get_columns
-from worker.models.info import get_info
-from worker.models.row import Row, get_rows
+from worker.deprecated.models.column import CellTypeError, Column, get_columns
+from worker.deprecated.models.info import get_info
+from worker.deprecated.models.row import Row, get_rows
 
 logger = logging.getLogger(__name__)
 

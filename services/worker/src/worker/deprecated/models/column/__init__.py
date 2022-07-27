@@ -5,10 +5,10 @@ from datasets import DatasetInfo, Features
 from libutils.exceptions import Status400Error
 
 from worker.config import ROWS_MAX_NUMBER
-from worker.models.column.audio import AudioColumn
-from worker.models.column.bool import BoolColumn
-from worker.models.column.class_label import ClassLabelColumn
-from worker.models.column.default import (
+from worker.deprecated.models.column.audio import AudioColumn
+from worker.deprecated.models.column.bool import BoolColumn
+from worker.deprecated.models.column.class_label import ClassLabelColumn
+from worker.deprecated.models.column.default import (
     Cell,
     CellTypeError,
     Column,
@@ -16,15 +16,15 @@ from worker.models.column.default import (
     ColumnTypeError,
     CommonColumn,
 )
-from worker.models.column.float import FloatColumn
-from worker.models.column.image import ImageColumn
-from worker.models.column.image_array2d import ImageArray2DColumn
-from worker.models.column.image_array3d import ImageArray3DColumn
-from worker.models.column.image_url import ImageUrlColumn
-from worker.models.column.int import IntColumn
-from worker.models.column.string import StringColumn
-from worker.models.column.timestamp import TimestampColumn
-from worker.models.row import Row
+from worker.deprecated.models.column.float import FloatColumn
+from worker.deprecated.models.column.image import ImageColumn
+from worker.deprecated.models.column.image_array2d import ImageArray2DColumn
+from worker.deprecated.models.column.image_array3d import ImageArray3DColumn
+from worker.deprecated.models.column.image_url import ImageUrlColumn
+from worker.deprecated.models.column.int import IntColumn
+from worker.deprecated.models.column.string import StringColumn
+from worker.deprecated.models.column.timestamp import TimestampColumn
+from worker.deprecated.models.row import Row
 
 timestamp_column_classes = [
     TimestampColumn,

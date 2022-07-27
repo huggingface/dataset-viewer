@@ -5,7 +5,7 @@ import pandas  # type: ignore
 from datasets import Value
 from libutils.types import ColumnDict, TimestampColumnType, TimestampUnit
 
-from worker.models.column.default import (
+from worker.deprecated.models.column.default import (
     Cell,
     CellTypeError,
     Column,

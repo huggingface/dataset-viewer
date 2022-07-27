@@ -1,10 +1,9 @@
 import pytest
 from datasets.inspect import SplitsNotFoundError
-from libutils.exceptions import Status400Error
 
-from worker.models.dataset import get_dataset_split_full_names
+from worker.deprecated.models.dataset import get_dataset_split_full_names
 
-from .._utils import HF_TOKEN
+from ..._utils import HF_TOKEN
 
 
 def test_script_error() -> None:

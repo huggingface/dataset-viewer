@@ -146,7 +146,14 @@
       },
       "FeatureItem": {
         "type": "object",
-        "required": ["dataset", "config", "split", "idx", "name", "type"],
+        "required": [
+          "dataset",
+          "config",
+          "split",
+          "feature_idx",
+          "name",
+          "type"
+        ],
         "properties": {
           "dataset": {
             "type": "string"
@@ -157,7 +164,7 @@
           "split": {
             "type": "string"
           },
-          "idx": {
+          "feature_idx": {
             "type": "integer"
           },
           "name": {
@@ -2045,7 +2052,7 @@
                           "dataset": "glue",
                           "config": "cola",
                           "split": "train",
-                          "idx": 0,
+                          "feature_idx": 0,
                           "name": "sentence",
                           "type": {
                             "dtype": "string",
@@ -2057,7 +2064,7 @@
                           "dataset": "glue",
                           "config": "cola",
                           "split": "train",
-                          "idx": 1,
+                          "feature_idx": 1,
                           "name": "label",
                           "type": {
                             "num_classes": 2,
@@ -2070,8 +2077,8 @@
                           "dataset": "glue",
                           "config": "cola",
                           "split": "train",
-                          "idx": 2,
-                          "name": "idx",
+                          "feature_idx": 2,
+                          "name": "feature_idx",
                           "type": {
                             "dtype": "int32",
                             "id": null,
@@ -2139,7 +2146,7 @@
                           "dataset": "ett",
                           "config": "m2",
                           "split": "test",
-                          "idx": 0,
+                          "feature_idx": 0,
                           "name": "start",
                           "type": {
                             "dtype": "timestamp[s]",
@@ -2151,7 +2158,7 @@
                           "dataset": "ett",
                           "config": "m2",
                           "split": "test",
-                          "idx": 1,
+                          "feature_idx": 1,
                           "name": "target",
                           "type": {
                             "feature": {
@@ -2168,7 +2175,7 @@
                           "dataset": "ett",
                           "config": "m2",
                           "split": "test",
-                          "idx": 2,
+                          "feature_idx": 2,
                           "name": "feat_static_cat",
                           "type": {
                             "feature": {
@@ -2185,7 +2192,7 @@
                           "dataset": "ett",
                           "config": "m2",
                           "split": "test",
-                          "idx": 3,
+                          "feature_idx": 3,
                           "name": "feat_dynamic_real",
                           "type": {
                             "feature": {
@@ -2207,7 +2214,7 @@
                           "dataset": "ett",
                           "config": "m2",
                           "split": "test",
-                          "idx": 4,
+                          "feature_idx": 4,
                           "name": "item_id",
                           "type": {
                             "dtype": "string",
@@ -2368,7 +2375,7 @@
                           "dataset": "huggan/horse2zebra",
                           "config": "huggan--horse2zebra-aligned",
                           "split": "train",
-                          "idx": 0,
+                          "feature_idx": 0,
                           "name": "imageA",
                           "type": {
                             "decode": true,
@@ -2380,7 +2387,7 @@
                           "dataset": "huggan/horse2zebra",
                           "config": "huggan--horse2zebra-aligned",
                           "split": "train",
-                          "idx": 1,
+                          "feature_idx": 1,
                           "name": "imageB",
                           "type": {
                             "decode": true,
@@ -2434,7 +2441,7 @@
                           "dataset": "mozilla-foundation/common_voice_9_0",
                           "config": "en",
                           "split": "train",
-                          "idx": 0,
+                          "feature_idx": 0,
                           "name": "client_id",
                           "type": {
                             "dtype": "string",
@@ -2446,7 +2453,7 @@
                           "dataset": "mozilla-foundation/common_voice_9_0",
                           "config": "en",
                           "split": "train",
-                          "idx": 1,
+                          "feature_idx": 1,
                           "name": "path",
                           "type": {
                             "dtype": "string",
@@ -2458,7 +2465,7 @@
                           "dataset": "mozilla-foundation/common_voice_9_0",
                           "config": "en",
                           "split": "train",
-                          "idx": 2,
+                          "feature_idx": 2,
                           "name": "audio",
                           "type": {
                             "sampling_rate": 48000,
@@ -2472,7 +2479,7 @@
                           "dataset": "mozilla-foundation/common_voice_9_0",
                           "config": "en",
                           "split": "train",
-                          "idx": 3,
+                          "feature_idx": 3,
                           "name": "sentence",
                           "type": {
                             "dtype": "string",
@@ -2484,7 +2491,7 @@
                           "dataset": "mozilla-foundation/common_voice_9_0",
                           "config": "en",
                           "split": "train",
-                          "idx": 4,
+                          "feature_idx": 4,
                           "name": "up_votes",
                           "type": {
                             "dtype": "int64",
@@ -2496,7 +2503,7 @@
                           "dataset": "mozilla-foundation/common_voice_9_0",
                           "config": "en",
                           "split": "train",
-                          "idx": 5,
+                          "feature_idx": 5,
                           "name": "down_votes",
                           "type": {
                             "dtype": "int64",
@@ -2508,7 +2515,7 @@
                           "dataset": "mozilla-foundation/common_voice_9_0",
                           "config": "en",
                           "split": "train",
-                          "idx": 6,
+                          "feature_idx": 6,
                           "name": "age",
                           "type": {
                             "dtype": "string",
@@ -2520,7 +2527,7 @@
                           "dataset": "mozilla-foundation/common_voice_9_0",
                           "config": "en",
                           "split": "train",
-                          "idx": 7,
+                          "feature_idx": 7,
                           "name": "gender",
                           "type": {
                             "dtype": "string",
@@ -2532,7 +2539,7 @@
                           "dataset": "mozilla-foundation/common_voice_9_0",
                           "config": "en",
                           "split": "train",
-                          "idx": 8,
+                          "feature_idx": 8,
                           "name": "accent",
                           "type": {
                             "dtype": "string",
@@ -2544,7 +2551,7 @@
                           "dataset": "mozilla-foundation/common_voice_9_0",
                           "config": "en",
                           "split": "train",
-                          "idx": 9,
+                          "feature_idx": 9,
                           "name": "locale",
                           "type": {
                             "dtype": "string",
@@ -2556,7 +2563,7 @@
                           "dataset": "mozilla-foundation/common_voice_9_0",
                           "config": "en",
                           "split": "train",
-                          "idx": 10,
+                          "feature_idx": 10,
                           "name": "segment",
                           "type": {
                             "dtype": "string",

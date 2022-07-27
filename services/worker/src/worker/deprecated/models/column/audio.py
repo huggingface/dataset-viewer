@@ -3,8 +3,8 @@ from typing import Any, List
 from datasets import Audio
 from numpy import ndarray  # type:ignore
 
-from worker.models.asset import create_audio_files
-from worker.models.column.default import (
+from worker.deprecated.models.asset import create_audio_files
+from worker.deprecated.models.column.default import (
     Cell,
     CellTypeError,
     ColumnInferenceError,
