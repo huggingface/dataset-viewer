@@ -1,5 +1,5 @@
 from http import HTTPStatus
-from typing import Any, Literal, Optional
+from typing import Any, List, Literal, Optional
 
 from libutils.exceptions import CustomError
 from libutils.utils import orjson_dumps
@@ -104,3 +104,11 @@ def get_json_error_response(
 
 def get_json_api_error_response(error: ApiCustomError) -> Response:
     return get_json_error_response(error.as_response(), error.status_code, error.code)
+
+
+def is_non_empty_string(string: Any) -> bool:
+    return isinstance(string, str) and bool(string and string.strip())
+
+
+def are_valid_parameters(parameters: List[Any]) -> bool:
+    return all(is_non_empty_string(s) for s in parameters)

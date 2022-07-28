@@ -15,6 +15,7 @@ from api.utils import (
     get_json_api_error_response,
     get_json_error_response,
     get_json_ok_response,
+    are_valid_parameters,
 )
 
 logger = logging.getLogger(__name__)
@@ -27,7 +28,7 @@ async def first_rows_endpoint(request: Request) -> Response:
         split_name = request.query_params.get("split")
         logger.info(f"/rows, dataset={dataset_name}, config={config_name}, split={split_name}")
 
-        if not isinstance(dataset_name, str) or not isinstance(config_name, str) or not isinstance(split_name, str):
+        if not are_valid_parameters([dataset_name, config_name, split_name]):
             raise MissingRequiredParameterError("Parameters 'dataset', 'config' and 'split' are required")
         try:
             response, http_status, error_code = get_first_rows_response(dataset_name, config_name, split_name)

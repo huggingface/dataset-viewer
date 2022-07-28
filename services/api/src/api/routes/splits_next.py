@@ -15,6 +15,7 @@ from api.utils import (
     get_json_api_error_response,
     get_json_error_response,
     get_json_ok_response,
+    are_valid_parameters,
 )
 
 logger = logging.getLogger(__name__)
@@ -25,7 +26,7 @@ async def splits_endpoint_next(request: Request) -> Response:
         dataset_name = request.query_params.get("dataset")
         logger.info(f"/splits-next, dataset={dataset_name}")
 
-        if not isinstance(dataset_name, str):
+        if not are_valid_parameters([dataset_name]):
             raise MissingRequiredParameterError("Parameter 'dataset' is required")
         try:
             response, http_status, error_code = get_splits_response(dataset_name)

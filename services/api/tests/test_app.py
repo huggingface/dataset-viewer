@@ -147,6 +147,28 @@ def test_get_splits(client: TestClient) -> None:
     assert response.status_code == 400
 
 
+def test_get_splits_next(client: TestClient) -> None:
+    # missing parameter
+    response = client.get("/splits-next")
+    assert response.status_code == 422
+    # empty parameter
+    response = client.get("/splits-next?dataset=")
+    assert response.status_code == 422
+
+
+def test_get_first_rows(client: TestClient) -> None:
+    # missing parameter
+    response = client.get("/first-rows")
+    assert response.status_code == 422
+    response = client.get("/first-rows?dataset=a")
+    assert response.status_code == 422
+    response = client.get("/first-rows?dataset=a&config=b")
+    assert response.status_code == 422
+    # empty parameter
+    response = client.get("/first-rows?dataset=a&config=b&split=")
+    assert response.status_code == 422
+
+
 def test_get_rows(client: TestClient) -> None:
     # TODO: move to e2e tests
     # # dataset = "acronym_identification"
