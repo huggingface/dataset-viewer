@@ -7,13 +7,15 @@ import pytest
 import requests
 
 SERVICE_REVERSE_PROXY_PORT = os.environ.get("SERVICE_REVERSE_PROXY_PORT", "8000")
+INTERVAL = 1
+MAX_DURATION = 10 * 60
 
 URL = f"http://localhost:{SERVICE_REVERSE_PROXY_PORT}"
 
 
-def poll_until_valid_response(
-    url: str, timeout: int = 15, interval: int = 1, error_field: Optional[str] = None
-) -> requests.Response:
+def poll_until_valid_response(url: str, error_field: Optional[str] = None) -> requests.Response:
+    interval = INTERVAL
+    timeout = MAX_DURATION
     retries = timeout // interval
     should_retry = True
     response = None
@@ -35,37 +37,30 @@ def poll_until_valid_response(
     return response
 
 
-def poll_splits_until_dataset_process_has_finished(
-    dataset: str, endpoint: str = "splits", timeout: int = 15, interval: int = 1
-) -> requests.Response:
+def poll_splits_until_dataset_process_has_finished(dataset: str, endpoint: str = "splits") -> requests.Response:
     error_field = "message" if endpoint == "splits" else "error"
-    return poll_until_valid_response(f"{URL}/{endpoint}?dataset={dataset}", timeout, interval, error_field)
+    return poll_until_valid_response(f"{URL}/{endpoint}?dataset={dataset}", error_field=error_field)
 
 
 def poll_rows_until_split_process_has_finished(
-    dataset: str,
-    config: str,
-    split: str,
-    endpoint: str = "rows",
-    timeout: int = 15,
-    interval: int = 1,
+    dataset: str, config: str, split: str, endpoint: str = "rows"
 ) -> requests.Response:
     error_field = "message" if endpoint == "rows" else "error"
     return poll_until_valid_response(
-        f"{URL}/{endpoint}?dataset={dataset}&config={config}&split={split}", timeout, interval, error_field
+        f"{URL}/{endpoint}?dataset={dataset}&config={config}&split={split}", error_field=error_field
     )
 
 
 def test_healthcheck():
     # this tests ensures the nginx reverse proxy and the api are up
-    response = poll_until_valid_response(f"{URL}/healthcheck", 15, 1)
+    response = poll_until_valid_response(f"{URL}/healthcheck")
     assert response.status_code == 200
     assert response.text == "ok"
 
 
 def test_valid():
     # this test ensures that the mongo db can be accessed by the api
-    response = poll_until_valid_response(f"{URL}/valid", 15, 1)
+    response = poll_until_valid_response(f"{URL}/valid")
     assert response.status_code == 200
     # at this moment no dataset has been processed
     assert response.json()["valid"] == []
@@ -86,7 +81,7 @@ def test_splits_next_200(config):
     assert response.status_code == 200
 
     # poll the /splits endpoint until we get something else than "The dataset is being processed. Retry later."
-    response = poll_splits_until_dataset_process_has_finished(dataset, "splits-next", 60)
+    response = poll_splits_until_dataset_process_has_finished(dataset, "splits-next")
     assert response.status_code == 200
 
     response = requests.get(f"{URL}/splits-next?dataset={dataset}")
@@ -117,11 +112,11 @@ def test_get_dataset():
     assert response.status_code == 200
 
     # poll the /splits endpoint until we get something else than "The dataset is being processed. Retry later."
-    response = poll_splits_until_dataset_process_has_finished(dataset, "splits", 60)
+    response = poll_splits_until_dataset_process_has_finished(dataset, "splits")
     assert response.status_code == 200
 
     # poll the /rows endpoint until we get something else than "The split is being processed. Retry later."
-    response = poll_rows_until_split_process_has_finished(dataset, config, split, "rows", 60)
+    response = poll_rows_until_split_process_has_finished(dataset, config, split, "rows")
     assert response.status_code == 200
     json = response.json()
     assert "rows" in json
@@ -138,11 +133,11 @@ def test_get_dataset_next():
     assert response.status_code == 200
 
     # poll the /splits endpoint until we get something else than "The dataset is being processed. Retry later."
-    response = poll_splits_until_dataset_process_has_finished(dataset, "splits-next", 60)
+    response = poll_splits_until_dataset_process_has_finished(dataset, "splits-next")
     assert response.status_code == 200
 
     # poll the /rows endpoint until we get something else than "The split is being processed. Retry later."
-    response = poll_rows_until_split_process_has_finished(dataset, config, split, "first-rows", 60)
+    response = poll_rows_until_split_process_has_finished(dataset, config, split, "first-rows")
     assert response.status_code == 200
     json = response.json()
 
@@ -178,7 +173,7 @@ def test_bug_empty_split():
     assert response.status_code == 200
 
     # poll the /splits endpoint until we get something else than "The dataset is being processed. Retry later."
-    response = poll_splits_until_dataset_process_has_finished(dataset, "splits", 60)
+    response = poll_splits_until_dataset_process_has_finished(dataset, "splits")
     assert response.status_code == 200
 
     # at this point the splits should have been created in the dataset, and still be EMPTY
@@ -197,7 +192,7 @@ def test_bug_empty_split():
     # With the bug, if we polled again /rows until we have something else than "being processed",
     # we would have gotten a valid response, but with empty rows, which is incorrect
     # Now: it gives a correct list of elements
-    response = poll_rows_until_split_process_has_finished(dataset, config, split, "rows", 60)
+    response = poll_rows_until_split_process_has_finished(dataset, config, split, "rows")
     assert response.status_code == 200
     json = response.json()
     assert len(json["rows"]) == 100
@@ -244,10 +239,10 @@ def test_png_image():
     response = requests.post(f"{URL}/webhook", json={"update": f"datasets/{dataset}"})
     assert response.status_code == 200
 
-    response = poll_splits_until_dataset_process_has_finished(dataset, "splits", 60)
+    response = poll_splits_until_dataset_process_has_finished(dataset, "splits")
     assert response.status_code == 200
 
-    response = poll_rows_until_split_process_has_finished(dataset, config, split, "rows", 60 * 3)
+    response = poll_rows_until_split_process_has_finished(dataset, config, split, "rows")
     assert response.status_code == 200
     json = response.json()
     assert json["columns"][0]["column"]["type"] == "RELATIVE_IMAGE_URL"
@@ -268,10 +263,10 @@ def test_png_image_next():
     response = requests.post(f"{URL}/webhook", json={"update": f"datasets/{dataset}"})
     assert response.status_code == 200
 
-    response = poll_splits_until_dataset_process_has_finished(dataset, "splits-next", 60)
+    response = poll_splits_until_dataset_process_has_finished(dataset, "splits-next")
     assert response.status_code == 200
 
-    response = poll_rows_until_split_process_has_finished(dataset, config, split, "first-rows", 60 * 3)
+    response = poll_rows_until_split_process_has_finished(dataset, config, split, "first-rows")
     assert response.status_code == 200
     json = response.json()
 
