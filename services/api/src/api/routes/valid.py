@@ -12,6 +12,7 @@ from api.utils import (
     ApiCustomError,
     MissingRequiredParameterError,
     UnexpectedError,
+    are_valid_parameters,
     get_json_api_error_response,
     get_json_ok_response,
 )
@@ -35,8 +36,8 @@ async def is_valid_endpoint(request: Request) -> Response:
     try:
         dataset_name = request.query_params.get("dataset")
         logger.info(f"/is-valid, dataset={dataset_name}")
-        if not isinstance(dataset_name, str):
-            raise MissingRequiredParameterError("Parameters 'dataset' is required")
+        if not are_valid_parameters([dataset_name]):
+            raise MissingRequiredParameterError("Parameter 'dataset' is required")
         content = {
             "valid": is_dataset_name_valid_or_stale(dataset_name),
         }
