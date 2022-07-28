@@ -342,7 +342,9 @@ def get_first_rows_response(
         features = info.features
     # get the rows
     try:
-        rows = get_rows(dataset_name, config_name, split_name, hf_token, True, rows_max_number)
+        rows = get_rows(
+            dataset_name, config_name, split_name, streaming=True, rows_max_number=rows_max_number, hf_token=hf_token
+        )
     except Exception as err:
         if max_size_fallback is None or info.size_in_bytes is None or info.size_in_bytes > max_size_fallback:
             raise StreamingRowsError(
@@ -350,7 +352,14 @@ def get_first_rows_response(
                 cause=err,
             ) from err
         try:
-            rows = get_rows(dataset_name, config_name, split_name, hf_token, False, rows_max_number)
+            rows = get_rows(
+                dataset_name,
+                config_name,
+                split_name,
+                streaming=False,
+                rows_max_number=rows_max_number,
+                hf_token=hf_token,
+            )
         except Exception as err:
             raise NormalRowsError(
                 "Cannot load the dataset split (in normal download mode) to extract the first rows.",

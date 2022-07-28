@@ -3,9 +3,26 @@ from worker.responses.first_rows import get_first_rows_response
 from .._utils import ASSETS_BASE_URL
 
 
-def test_get_first_rows_response() -> None:
+def test_number_rows() -> None:
+    rows_max_number = 7
     response = get_first_rows_response(
-        "common_voice", "tr", "train", rows_max_number=1, assets_base_url=ASSETS_BASE_URL
+        "duorc",
+        "SelfRC",
+        "train",
+        rows_max_number=rows_max_number,
+        assets_base_url=ASSETS_BASE_URL,
+    )
+    assert len(response["rows"]) == rows_max_number
+
+
+def test_get_first_rows_response() -> None:
+    rows_max_number = 7
+    response = get_first_rows_response(
+        "common_voice",
+        "tr",
+        "train",
+        rows_max_number=rows_max_number,
+        assets_base_url=ASSETS_BASE_URL,
     )
 
     assert response["features"][0]["feature_idx"] == 0
@@ -17,6 +34,7 @@ def test_get_first_rows_response() -> None:
     assert response["features"][2]["type"]["_type"] == "Audio"
     assert response["features"][2]["type"]["sampling_rate"] == 48000
 
+    assert len(response["rows"]) == rows_max_number
     assert response["rows"][0]["row_idx"] == 0
     assert response["rows"][0]["row"]["client_id"].startswith("54fc2d015c27a057b")
     assert response["rows"][0]["row"]["audio"] == [
@@ -30,10 +48,11 @@ def test_no_features() -> None:
         "severo/fix-401", "severo--fix-401", "train", rows_max_number=1, assets_base_url=ASSETS_BASE_URL
     )
 
-    assert response["features"][1]["feature_idx"] == 1
-    assert response["features"][1]["name"] == "area_mean"
-    assert response["features"][1]["type"]["_type"] == "Value"
-    assert response["features"][1]["type"]["dtype"] == "float64"
+    assert response["features"][5]["feature_idx"] == 5
+    assert response["features"][5]["name"] == "area_mean"
+    assert response["features"][5]["type"]["_type"] == "Value"
+    assert response["features"][5]["type"]["dtype"] == "float64"
 
     assert response["rows"][0]["row_idx"] == 0
+    assert response["rows"][0]["row"]["diagnosis"] == "M"
     assert response["rows"][0]["row"]["area_mean"] == 1001.0
