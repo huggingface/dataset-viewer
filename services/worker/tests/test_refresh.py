@@ -1,9 +1,9 @@
 from http import HTTPStatus
 
 import pytest
+from libcache.simple_cache import DoesNotExist
 from libcache.simple_cache import _clean_database as clean_cache_database
 from libcache.simple_cache import (
-    DoesNotExist,
     connect_to_cache,
     get_first_rows_response,
     get_splits_response,
