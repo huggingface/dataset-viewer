@@ -1,10 +1,6 @@
-import pytest
-
 from .utils import (
     ROWS_MAX_NUMBER,
     URL,
-    get_openapi_body_example,
-    refresh_poll_splits_next,
     refresh_poll_splits_next_first_rows,
 )
 
@@ -60,18 +56,3 @@ def test_png_image_next():
         == f"{URL}/assets/wikimedia/wit_base/--/wikimedia--wit_base/train/20/image/image.png"
     )
 
-
-@pytest.mark.parametrize(
-    "dataset,status,name",
-    [
-        ("duorc", 200, "duorc"),
-        ("inexistent-dataset", 404, "inexistent-dataset"),
-    ],
-)
-def test_splits_next(dataset, status, name):
-    body = get_openapi_body_example("/splits-next", status, name)
-
-    r_splits = refresh_poll_splits_next(dataset)
-
-    assert r_splits.status_code == status
-    assert r_splits.json() == body
