@@ -1,8 +1,4 @@
-from .utils import (
-    ROWS_MAX_NUMBER,
-    URL,
-    refresh_poll_splits_next_first_rows,
-)
+from .utils import ROWS_MAX_NUMBER, URL, refresh_poll_splits_next_first_rows
 
 
 def test_get_dataset_next():
@@ -55,4 +51,3 @@ def test_png_image_next():
         json["rows"][20]["row"]["image"]
         == f"{URL}/assets/wikimedia/wit_base/--/wikimedia--wit_base/train/20/image/image.png"
     )
-

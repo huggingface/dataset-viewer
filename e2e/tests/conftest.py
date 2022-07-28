@@ -1,6 +1,6 @@
 import pytest
 
-from .utils import URL_ADMIN, URL, poll
+from .utils import URL, URL_ADMIN, poll
 
 
 @pytest.fixture(autouse=True, scope="session")

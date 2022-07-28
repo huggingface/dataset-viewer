@@ -2083,7 +2083,11 @@
                 "examples": {
                   "missing-parameter": {
                     "summary": "The dataset parameter is missing.",
-                    "value": { "error": "Parameters 'dataset' is required" }
+                    "value": { "error": "Parameter 'dataset' is required" }
+                  },
+                  "empty-parameter": {
+                    "summary": "The dataset parameter is empty (?dataset=).",
+                    "value": { "error": "Parameter 'dataset' is required" }
                   }
                 }
               }
@@ -2108,7 +2112,7 @@
                   "$ref": "#/components/schemas/CustomError"
                 },
                 "examples": {
-                  "TypeError": {
+                  "SplitsNotFoundError": {
                     "summary": "SplitsNotFoundError",
                     "value": {
                       "error": "Cannot get the split names for the dataset.",
@@ -2117,13 +2121,12 @@
                       "cause_traceback": [
                         "Traceback (most recent call last):\n",
                         "  File \"/src/services/worker/.venv/lib/python3.9/site-packages/datasets/inspect.py\", line 354, in get_dataset_config_info\n    for split_generator in builder._split_generators(\n",
-                        "  File \"/tmp/modules-cache/datasets_modules/datasets/timit_asr/43f9448dd5db58e95ee48a277f466481b151f112ea53e27f8173784da9254fb2/timit_asr.py\", line 117, in _split_generators\n    data_dir = os.path.abspath(os.path.expanduser(dl_manager.manual_dir))\n",
-                        "  File \"/usr/local/lib/python3.9/posixpath.py\", line 231, in expanduser\n    path = os.fspath(path)\n",
-                        "TypeError: expected str, bytes or os.PathLike object, not NoneType\n",
+                        "TypeError: _split_generators() missing 1 required positional argument: 'pipeline'\n",
                         "\nThe above exception was the direct cause of the following exception:\n\n",
                         "Traceback (most recent call last):\n",
-                        "  File \"/src/services/worker/src/worker/models/dataset.py\", line 15, in get_dataset_split_full_names\n    return [\n",
-                        "  File \"/src/services/worker/src/worker/models/dataset.py\", line 18, in <listcomp>\n    for split_name in get_dataset_split_names(dataset_name, config_name, use_auth_token=hf_token)\n",
+                        "  File \"/src/services/worker/src/worker/responses/splits.py\", line 74, in get_splits_response\n    split_full_names = get_dataset_split_full_names(dataset_name, hf_token)\n",
+                        "  File \"/src/services/worker/src/worker/responses/splits.py\", line 35, in get_dataset_split_full_names\n    return [\n",
+                        "  File \"/src/services/worker/src/worker/responses/splits.py\", line 38, in <listcomp>\n    for split_name in get_dataset_split_names(dataset_name, config_name, use_auth_token=hf_token)\n",
                         "  File \"/src/services/worker/.venv/lib/python3.9/site-packages/datasets/inspect.py\", line 404, in get_dataset_split_names\n    info = get_dataset_config_info(\n",
                         "  File \"/src/services/worker/.venv/lib/python3.9/site-packages/datasets/inspect.py\", line 359, in get_dataset_config_info\n    raise SplitsNotFoundError(\"The split names could not be parsed from the dataset config.\") from err\n",
                         "datasets.inspect.SplitsNotFoundError: The split names could not be parsed from the dataset config.\n"
@@ -2138,9 +2141,10 @@
                       "cause_message": "Couldn't find a dataset script at /src/services/worker/akhaliq/test/test.py or any data file in the same directory. Couldn't find 'akhaliq/test' on the Hugging Face Hub either: FileNotFoundError: The dataset repository at 'akhaliq/test' doesn't contain any data file.",
                       "cause_traceback": [
                         "Traceback (most recent call last):\n",
-                        "  File \"/src/services/worker/src/worker/models/dataset.py\", line 17, in get_dataset_split_full_names\n    for config_name in get_dataset_config_names(dataset_name, use_auth_token=hf_token)\n",
+                        "  File \"/src/services/worker/src/worker/responses/splits.py\", line 74, in get_splits_response\n    split_full_names = get_dataset_split_full_names(dataset_name, hf_token)\n",
+                        "  File \"/src/services/worker/src/worker/responses/splits.py\", line 37, in get_dataset_split_full_names\n    for config_name in get_dataset_config_names(dataset_name, use_auth_token=hf_token)\n",
                         "  File \"/src/services/worker/.venv/lib/python3.9/site-packages/datasets/inspect.py\", line 289, in get_dataset_config_names\n    dataset_module = dataset_module_factory(\n",
-                        "  File \"/src/services/worker/.venv/lib/python3.9/site-packages/datasets/load.py\", line 1242, in dataset_module_factory\n    raise FileNotFoundError(\n",
+                        "  File \"/src/services/worker/.venv/lib/python3.9/site-packages/datasets/load.py\", line 1243, in dataset_module_factory\n    raise FileNotFoundError(\n",
                         "FileNotFoundError: Couldn't find a dataset script at /src/services/worker/akhaliq/test/test.py or any data file in the same directory. Couldn't find 'akhaliq/test' on the Hugging Face Hub either: FileNotFoundError: The dataset repository at 'akhaliq/test' doesn't contain any data file.\n"
                       ]
                     }
@@ -2244,16 +2248,16 @@
                   "$ref": "#/components/schemas/FirstRowsResponse"
                 },
                 "examples": {
-                  "cola": {
+                  "imdb": {
                     "summary": "text, and label column (only 3 rows are shown for brevity)",
                     "value": {
                       "features": [
                         {
-                          "dataset": "glue",
-                          "config": "cola",
+                          "dataset": "imdb",
+                          "config": "plain_text",
                           "split": "train",
                           "feature_idx": 0,
-                          "name": "sentence",
+                          "name": "text",
                           "type": {
                             "dtype": "string",
                             "id": null,
@@ -2261,77 +2265,61 @@
                           }
                         },
                         {
-                          "dataset": "glue",
-                          "config": "cola",
+                          "dataset": "imdb",
+                          "config": "plain_text",
                           "split": "train",
                           "feature_idx": 1,
                           "name": "label",
                           "type": {
                             "num_classes": 2,
-                            "names": ["unacceptable", "acceptable"],
+                            "names": ["neg", "pos"],
                             "id": null,
                             "_type": "ClassLabel"
-                          }
-                        },
-                        {
-                          "dataset": "glue",
-                          "config": "cola",
-                          "split": "train",
-                          "feature_idx": 2,
-                          "name": "feature_idx",
-                          "type": {
-                            "dtype": "int32",
-                            "id": null,
-                            "_type": "Value"
                           }
                         }
                       ],
                       "rows": [
                         {
-                          "dataset": "glue",
-                          "config": "cola",
+                          "dataset": "imdb",
+                          "config": "plain_text",
                           "split": "train",
                           "row_idx": 0,
                           "row": {
-                            "sentence": "Our friends won't buy this analysis, let alone the next one we propose.",
-                            "label": 1,
-                            "idx": 0
+                            "text": "I rented I AM CURIOUS-YELLOW from my video store because of all the controversy that surrounded it when it was first released in 1967. I also heard that at first it was seized by U.S. customs if it ever tried to enter this country, therefore being a fan of films considered \"controversial\" I really had to see this for myself.<br /><br />The plot is centered around a young Swedish drama student named Lena who wants to learn everything she can about life. In particular she wants to focus her attentions to making some sort of documentary on what the average Swede thought about certain political issues such as the Vietnam War and race issues in the United States. In between asking politicians and ordinary denizens of Stockholm about their opinions on politics, she has sex with her drama teacher, classmates, and married men.<br /><br />What kills me about I AM CURIOUS-YELLOW is that 40 years ago, this was considered pornographic. Really, the sex and nudity scenes are few and far between, even then it's not shot like some cheaply made porno. While my countrymen mind find it shocking, in reality sex and nudity are a major staple in Swedish cinema. Even Ingmar Bergman, arguably their answer to good old boy John Ford, had sex scenes in his films.<br /><br />I do commend the filmmakers for the fact that any sex shown in the film is shown for artistic purposes rather than just to shock people and make money to be shown in pornographic theaters in America. I AM CURIOUS-YELLOW is a good film for anyone wanting to study the meat and potatoes (no pun intended) of Swedish cinema. But really, this film doesn't have much of a plot.",
+                            "label": 0
                           },
                           "truncated_cells": []
                         },
                         {
-                          "dataset": "glue",
-                          "config": "cola",
+                          "dataset": "imdb",
+                          "config": "plain_text",
                           "split": "train",
                           "row_idx": 1,
                           "row": {
-                            "sentence": "One more pseudo generalization and I'm giving up.",
-                            "label": 1,
-                            "idx": 1
+                            "text": "\"I Am Curious: Yellow\" is a risible and pretentious steaming pile. It doesn't matter what one's political views are because this film can hardly be taken seriously on any level. As for the claim that frontal male nudity is an automatic NC-17, that isn't true. I've seen R-rated films with male nudity. Granted, they only offer some fleeting views, but where are the R-rated films with gaping vulvas and flapping labia? Nowhere, because they don't exist. The same goes for those crappy cable shows: schlongs swinging in the breeze but not a clitoris in sight. And those pretentious indie movies like The Brown Bunny, in which we're treated to the site of Vincent Gallo's throbbing johnson, but not a trace of pink visible on Chloe Sevigny. Before crying (or implying) \"double-standard\" in matters of nudity, the mentally obtuse should take into account one unavoidably obvious anatomical difference between men and women: there are no genitals on display when actresses appears nude, and the same cannot be said for a man. In fact, you generally won't see female genitals in an American film in anything short of porn or explicit erotica. This alleged double-standard is less a double standard than an admittedly depressing ability to come to terms culturally with the insides of women's bodies.",
+                            "label": 0
                           },
                           "truncated_cells": []
                         },
                         {
-                          "dataset": "glue",
-                          "config": "cola",
+                          "dataset": "imdb",
+                          "config": "plain_text",
                           "split": "train",
                           "row_idx": 2,
                           "row": {
-                            "sentence": "One more pseudo generalization or I'm giving up.",
-                            "label": 1,
-                            "idx": 2
+                            "text": "If only to avoid making this type of film in the future. This film is interesting as an experiment but tells no cogent story.<br /><br />One might feel virtuous for sitting thru it because it touches on so many IMPORTANT issues but it does so without any discernable motive. The viewer comes away with no new perspectives (unless one comes up with one while one's mind wanders, as it will invariably do during this pointless film).<br /><br />One might better spend one's time staring out a window at a tree growing.<br /><br />",
+                            "label": 0
                           },
                           "truncated_cells": []
                         },
                         {
-                          "dataset": "glue",
-                          "config": "cola",
+                          "dataset": "imdb",
+                          "config": "plain_text",
                           "split": "train",
                           "row_idx": 3,
                           "row": {
-                            "sentence": "The more we study verbs, the crazier they get.",
-                            "label": 1,
-                            "idx": 3
+                            "text": "This film was probably inspired by Godard's Masculin, féminin and I urge you to see that film instead.<br /><br />The film has two strong elements and those are, (1) the realistic acting (2) the impressive, undeservedly good, photo. Apart from that, what strikes me most is the endless stream of silliness. Lena Nyman has to be most annoying actress in the world. She acts so stupid and with all the nudity in this film,...it's unattractive. Comparing to Godard's film, intellectuality has been replaced with stupidity. Without going too far on this subject, I would say that follows from the difference in ideals between the French and the Swedish society.<br /><br />A movie of its time, and place. 2/10.",
+                            "label": 0
                           },
                           "truncated_cells": []
                         }
@@ -2572,63 +2560,142 @@
                     "value": {
                       "features": [
                         {
-                          "dataset": "huggan/horse2zebra",
-                          "config": "huggan--horse2zebra-aligned",
-                          "split": "train",
+                          "dataset": "ett",
+                          "config": "m2",
+                          "split": "test",
                           "feature_idx": 0,
-                          "name": "imageA",
+                          "name": "start",
                           "type": {
-                            "decode": true,
+                            "dtype": "timestamp[s]",
                             "id": null,
-                            "_type": "Image"
+                            "_type": "Value"
                           }
                         },
                         {
-                          "dataset": "huggan/horse2zebra",
-                          "config": "huggan--horse2zebra-aligned",
-                          "split": "train",
+                          "dataset": "ett",
+                          "config": "m2",
+                          "split": "test",
                           "feature_idx": 1,
-                          "name": "imageB",
+                          "name": "target",
                           "type": {
-                            "decode": true,
+                            "feature": {
+                              "dtype": "float32",
+                              "id": null,
+                              "_type": "Value"
+                            },
+                            "length": -1,
                             "id": null,
-                            "_type": "Image"
+                            "_type": "Sequence"
+                          }
+                        },
+                        {
+                          "dataset": "ett",
+                          "config": "m2",
+                          "split": "test",
+                          "feature_idx": 2,
+                          "name": "feat_static_cat",
+                          "type": {
+                            "feature": {
+                              "dtype": "uint64",
+                              "id": null,
+                              "_type": "Value"
+                            },
+                            "length": -1,
+                            "id": null,
+                            "_type": "Sequence"
+                          }
+                        },
+                        {
+                          "dataset": "ett",
+                          "config": "m2",
+                          "split": "test",
+                          "feature_idx": 3,
+                          "name": "feat_dynamic_real",
+                          "type": {
+                            "feature": {
+                              "feature": {
+                                "dtype": "float32",
+                                "id": null,
+                                "_type": "Value"
+                              },
+                              "length": -1,
+                              "id": null,
+                              "_type": "Sequence"
+                            },
+                            "length": -1,
+                            "id": null,
+                            "_type": "Sequence"
+                          }
+                        },
+                        {
+                          "dataset": "ett",
+                          "config": "m2",
+                          "split": "test",
+                          "feature_idx": 4,
+                          "name": "item_id",
+                          "type": {
+                            "dtype": "string",
+                            "id": null,
+                            "_type": "Value"
                           }
                         }
                       ],
                       "rows": [
                         {
-                          "dataset": "huggan/horse2zebra",
-                          "config": "huggan--horse2zebra-aligned",
-                          "split": "train",
+                          "dataset": "ett",
+                          "config": "m2",
+                          "split": "test",
                           "row_idx": 0,
                           "row": {
-                            "imageA": "https://datasets-server.us.dev.moon.huggingface.tech/assets/huggan/horse2zebra/--/huggan--horse2zebra-aligned/train/0/imageA/image.jpg",
-                            "imageB": "https://datasets-server.us.dev.moon.huggingface.tech/assets/huggan/horse2zebra/--/huggan--horse2zebra-aligned/train/0/imageB/image.jpg"
+                            "start": "2016-07-01T00:00:00",
+                            "target": "[38.6619987487793,38.222999572753906,37.34400177001953,37.124000549316406,37.124000549316406,36.9039",
+                            "feat_static_cat": [0],
+                            "feat_dynamic_real": "[[41.130001068115234,39.62200164794922,38.86800003051758,35.518001556396484,37.52799987792969,37.611",
+                            "item_id": "OT"
                           },
-                          "truncated_cells": []
+                          "truncated_cells": ["target", "feat_dynamic_real"]
                         },
                         {
-                          "dataset": "huggan/horse2zebra",
-                          "config": "huggan--horse2zebra-aligned",
-                          "split": "train",
+                          "dataset": "ett",
+                          "config": "m2",
+                          "split": "test",
                           "row_idx": 1,
                           "row": {
-                            "imageA": "https://datasets-server.us.dev.moon.huggingface.tech/assets/huggan/horse2zebra/--/huggan--horse2zebra-aligned/train/1/imageA/image.jpg",
-                            "imageB": "https://datasets-server.us.dev.moon.huggingface.tech/assets/huggan/horse2zebra/--/huggan--horse2zebra-aligned/train/1/imageB/image.jpg"
+                            "start": "2016-07-01T00:00:00",
+                            "target": "[38.6619987487793,38.222999572753906,37.34400177001953,37.124000549316406,37.124000549316406,36.9039",
+                            "feat_static_cat": [0],
+                            "feat_dynamic_real": "[[41.130001068115234,39.62200164794922,38.86800003051758,35.518001556396484,37.52799987792969,37.611",
+                            "item_id": "OT"
                           },
-                          "truncated_cells": []
+                          "truncated_cells": ["target", "feat_dynamic_real"]
                         },
                         {
-                          "dataset": "huggan/horse2zebra",
-                          "config": "huggan--horse2zebra-aligned",
-                          "split": "train",
+                          "dataset": "ett",
+                          "config": "m2",
+                          "split": "test",
                           "row_idx": 2,
                           "row": {
-                            "imageA": "https://datasets-server.us.dev.moon.huggingface.tech/assets/huggan/horse2zebra/--/huggan--horse2zebra-aligned/train/2/imageA/image.jpg",
-                            "imageB": "https://datasets-server.us.dev.moon.huggingface.tech/assets/huggan/horse2zebra/--/huggan--horse2zebra-aligned/train/2/imageB/image.jpg"
+                            "start": "2016-07-01T00:00:00",
+                            "target": "[38.6619987487793,38.222999572753906,37.34400177001953,37.124000549316406,37.124000549316406,36.9039",
+                            "feat_static_cat": [0],
+                            "feat_dynamic_real": "[[41.130001068115234,39.62200164794922,38.86800003051758,35.518001556396484,37.52799987792969,37.611",
+                            "item_id": "OT"
                           },
-                          "truncated_cells": []
+                          "truncated_cells": ["target", "feat_dynamic_real"]
+                        },
+                        {
+                          "dataset": "ett",
+                          "config": "m2",
+                          "split": "test",
+                          "row_idx": 3,
+                          "row": {
+                            "start": "2016-07-01T00:00:00",
+                            "target": "[38.6619987487793,38.222999572753906,37.34400177001953,37.124000549316406,37.124000549316406,36.9039",
+                            "feat_static_cat": [0],
+                            "feat_dynamic_real": "[[41.130001068115234,39.62200164794922,38.86800003051758,35.518001556396484,37.52799987792969,37.611",
+                            "item_id": "OT"
+                          },
+                          "truncated_cells": ["target", "feat_dynamic_real"]
                         }
                       ]
                     }
@@ -2925,20 +2992,38 @@
                   "$ref": "#/components/schemas/CustomError"
                 },
                 "examples": {
-                  "missing_dataset": {
+                  "missing-dataset": {
                     "summary": "The dataset parameter is missing.",
                     "value": {
                       "error": "Parameters 'dataset', 'config' and 'split' are required"
                     }
                   },
-                  "missing_config": {
+                  "missing-config": {
                     "summary": "The config parameter is missing.",
                     "value": {
                       "error": "Parameters 'dataset', 'config' and 'split' are required"
                     }
                   },
-                  "missing_split": {
+                  "missing-split": {
                     "summary": "The split parameter is missing.",
+                    "value": {
+                      "error": "Parameters 'dataset', 'config' and 'split' are required"
+                    }
+                  },
+                  "empty-dataset": {
+                    "summary": "The dataset parameter is empty.",
+                    "value": {
+                      "error": "Parameters 'dataset', 'config' and 'split' are required"
+                    }
+                  },
+                  "empty-config": {
+                    "summary": "The config parameter is empty.",
+                    "value": {
+                      "error": "Parameters 'dataset', 'config' and 'split' are required"
+                    }
+                  },
+                  "empty-split": {
+                    "summary": "The split parameter is empty.",
                     "value": {
                       "error": "Parameters 'dataset', 'config' and 'split' are required"
                     }
@@ -2974,15 +3059,15 @@
                       "cause_message": "Checksums didn't match for dataset source files:\n['https://gitlab.com/bigirqu/ArCOV-19/-/archive/master/ArCOV-19-master.zip']",
                       "cause_traceback": [
                         "Traceback (most recent call last):\n",
-                        "  File \"/src/services/worker/src/worker/models/first_rows.py\", line 214, in get_first_rows\n    rows = get_rows(dataset_name, config_name, split_name, hf_token, True, rows_max_number)\n",
-                        "  File \"/src/services/worker/.venv/lib/python3.9/site-packages/libutils/utils.py\", line 82, in decorator\n    return func(*args, **kwargs)\n",
-                        "  File \"/src/services/worker/src/worker/models/row.py\", line 39, in get_rows\n    rows_plus_one = list(itertools.islice(dataset, rows_max_number + 1))\n",
+                        "  File \"/src/services/worker/src/worker/responses/first_rows.py\", line 345, in get_first_rows_response\n    rows = get_rows(\n",
+                        "  File \"/src/services/worker/src/worker/utils.py\", line 123, in decorator\n    return func(*args, **kwargs)\n",
+                        "  File \"/src/services/worker/src/worker/responses/first_rows.py\", line 80, in get_rows\n    rows_plus_one = list(itertools.islice(dataset, rows_max_number + 1))\n",
                         "  File \"/src/services/worker/.venv/lib/python3.9/site-packages/datasets/iterable_dataset.py\", line 718, in __iter__\n    for key, example in self._iter():\n",
                         "  File \"/src/services/worker/.venv/lib/python3.9/site-packages/datasets/iterable_dataset.py\", line 708, in _iter\n    yield from ex_iterable\n",
                         "  File \"/src/services/worker/.venv/lib/python3.9/site-packages/datasets/iterable_dataset.py\", line 112, in __iter__\n    yield from self.generate_examples_fn(**self.kwargs)\n",
-                        "  File \"/tmp/modules-cache/datasets_modules/datasets/ar_cov19/818d9b774f4b70542b6807e6ddb6db32c916aafeba4fbdcd228ec79d21edaeab/ar_cov19.py\", line 131, in _generate_examples\n    for fname in sorted(glob.glob(os.path.join(data_dir, \"ArCOV-19-master/dataset/all_tweets/2020-*\"))):\n",
+                        "  File \"/root/.cache/huggingface/modules/datasets_modules/datasets/ar_cov19/818d9b774f4b70542b6807e6ddb6db32c916aafeba4fbdcd228ec79d21edaeab/ar_cov19.py\", line 131, in _generate_examples\n    for fname in sorted(glob.glob(os.path.join(data_dir, \"ArCOV-19-master/dataset/all_tweets/2020-*\"))):\n",
                         "  File \"/src/services/worker/.venv/lib/python3.9/site-packages/datasets/streaming.py\", line 67, in wrapper\n    return function(*args, use_auth_token=use_auth_token, **kwargs)\n",
-                        "  File \"/src/services/worker/.venv/lib/python3.9/site-packages/datasets/download/streaming_download_manager.py\", line 500, in xglob\n    fs, *_ = fsspec.get_fs_token_paths(urlpath, storage_options=storage_options)\n",
+                        "  File \"/src/services/worker/.venv/lib/python3.9/site-packages/datasets/download/streaming_download_manager.py\", line 522, in xglob\n    fs, *_ = fsspec.get_fs_token_paths(urlpath, storage_options=storage_options)\n",
                         "  File \"/src/services/worker/.venv/lib/python3.9/site-packages/fsspec/core.py\", line 632, in get_fs_token_paths\n    fs = filesystem(protocol, **inkwargs)\n",
                         "  File \"/src/services/worker/.venv/lib/python3.9/site-packages/fsspec/registry.py\", line 262, in filesystem\n    return cls(**storage_options)\n",
                         "  File \"/src/services/worker/.venv/lib/python3.9/site-packages/fsspec/spec.py\", line 76, in __call__\n    obj = super().__call__(*args, **kwargs)\n",
@@ -2994,10 +3079,10 @@
                         "ValueError: Cannot seek streaming HTTP file\n",
                         "\nDuring handling of the above exception, another exception occurred:\n\n",
                         "Traceback (most recent call last):\n",
-                        "  File \"/src/services/worker/src/worker/models/first_rows.py\", line 221, in get_first_rows\n    rows = get_rows(dataset_name, config_name, split_name, hf_token, False, rows_max_number)\n",
-                        "  File \"/src/services/worker/.venv/lib/python3.9/site-packages/libutils/utils.py\", line 82, in decorator\n    return func(*args, **kwargs)\n",
-                        "  File \"/src/services/worker/src/worker/models/row.py\", line 27, in get_rows\n    dataset = load_dataset(\n",
-                        "  File \"/src/services/worker/.venv/lib/python3.9/site-packages/datasets/load.py\", line 1732, in load_dataset\n    builder_instance.download_and_prepare(\n",
+                        "  File \"/src/services/worker/src/worker/responses/first_rows.py\", line 355, in get_first_rows_response\n    rows = get_rows(\n",
+                        "  File \"/src/services/worker/src/worker/utils.py\", line 123, in decorator\n    return func(*args, **kwargs)\n",
+                        "  File \"/src/services/worker/src/worker/responses/first_rows.py\", line 68, in get_rows\n    dataset = load_dataset(\n",
+                        "  File \"/src/services/worker/.venv/lib/python3.9/site-packages/datasets/load.py\", line 1746, in load_dataset\n    builder_instance.download_and_prepare(\n",
                         "  File \"/src/services/worker/.venv/lib/python3.9/site-packages/datasets/builder.py\", line 704, in download_and_prepare\n    self._download_and_prepare(\n",
                         "  File \"/src/services/worker/.venv/lib/python3.9/site-packages/datasets/builder.py\", line 1227, in _download_and_prepare\n    super()._download_and_prepare(dl_manager, verify_infos, check_duplicate_keys=verify_infos)\n",
                         "  File \"/src/services/worker/.venv/lib/python3.9/site-packages/datasets/builder.py\", line 775, in _download_and_prepare\n    verify_checksums(\n",
@@ -3020,16 +3105,16 @@
                         "aiohttp.client_exceptions.ClientResponseError: 404, message='Not Found', url=URL('https://homes.cs.washington.edu/~msap/atomic/data/atomic_data.tgz')\n",
                         "\nThe above exception was the direct cause of the following exception:\n\n",
                         "Traceback (most recent call last):\n",
-                        "  File \"/src/services/worker/src/worker/models/first_rows.py\", line 214, in get_first_rows\n    rows = get_rows(dataset_name, config_name, split_name, hf_token, True, rows_max_number)\n",
-                        "  File \"/src/services/worker/.venv/lib/python3.9/site-packages/libutils/utils.py\", line 82, in decorator\n    return func(*args, **kwargs)\n",
-                        "  File \"/src/services/worker/src/worker/models/row.py\", line 39, in get_rows\n    rows_plus_one = list(itertools.islice(dataset, rows_max_number + 1))\n",
+                        "  File \"/src/services/worker/src/worker/responses/first_rows.py\", line 345, in get_first_rows_response\n    rows = get_rows(\n",
+                        "  File \"/src/services/worker/src/worker/utils.py\", line 123, in decorator\n    return func(*args, **kwargs)\n",
+                        "  File \"/src/services/worker/src/worker/responses/first_rows.py\", line 80, in get_rows\n    rows_plus_one = list(itertools.islice(dataset, rows_max_number + 1))\n",
                         "  File \"/src/services/worker/.venv/lib/python3.9/site-packages/datasets/iterable_dataset.py\", line 718, in __iter__\n    for key, example in self._iter():\n",
                         "  File \"/src/services/worker/.venv/lib/python3.9/site-packages/datasets/iterable_dataset.py\", line 708, in _iter\n    yield from ex_iterable\n",
                         "  File \"/src/services/worker/.venv/lib/python3.9/site-packages/datasets/iterable_dataset.py\", line 112, in __iter__\n    yield from self.generate_examples_fn(**self.kwargs)\n",
-                        "  File \"/tmp/modules-cache/datasets_modules/datasets/atomic/c0f0ec7d10713c41dfc87f0cf17f936b122d22e19216051217c99134d38f6d7b/atomic.py\", line 123, in _generate_examples\n    for path, f in files:\n",
-                        "  File \"/src/services/worker/.venv/lib/python3.9/site-packages/datasets/download/streaming_download_manager.py\", line 732, in __iter__\n    yield from self.generator(*self.args, **self.kwargs)\n",
-                        "  File \"/src/services/worker/.venv/lib/python3.9/site-packages/datasets/download/streaming_download_manager.py\", line 759, in _iter_from_urlpath\n    with xopen(urlpath, \"rb\", use_auth_token=use_auth_token) as f:\n",
-                        "  File \"/src/services/worker/.venv/lib/python3.9/site-packages/datasets/download/streaming_download_manager.py\", line 439, in xopen\n    file_obj = fsspec.open(file, mode=mode, *args, **kwargs).open()\n",
+                        "  File \"/root/.cache/huggingface/modules/datasets_modules/datasets/atomic/c0f0ec7d10713c41dfc87f0cf17f936b122d22e19216051217c99134d38f6d7b/atomic.py\", line 123, in _generate_examples\n    for path, f in files:\n",
+                        "  File \"/src/services/worker/.venv/lib/python3.9/site-packages/datasets/download/streaming_download_manager.py\", line 760, in __iter__\n    yield from self.generator(*self.args, **self.kwargs)\n",
+                        "  File \"/src/services/worker/.venv/lib/python3.9/site-packages/datasets/download/streaming_download_manager.py\", line 787, in _iter_from_urlpath\n    with xopen(urlpath, \"rb\", use_auth_token=use_auth_token) as f:\n",
+                        "  File \"/src/services/worker/.venv/lib/python3.9/site-packages/datasets/download/streaming_download_manager.py\", line 453, in xopen\n    file_obj = fsspec.open(file, mode=mode, *args, **kwargs).open()\n",
                         "  File \"/src/services/worker/.venv/lib/python3.9/site-packages/fsspec/core.py\", line 141, in open\n    out = self.__enter__()\n",
                         "  File \"/src/services/worker/.venv/lib/python3.9/site-packages/fsspec/core.py\", line 104, in __enter__\n    f = self.fs.open(self.path, mode=mode)\n",
                         "  File \"/src/services/worker/.venv/lib/python3.9/site-packages/fsspec/spec.py\", line 1037, in open\n    f = self._open(\n",
@@ -3041,16 +3126,16 @@
                         "FileNotFoundError: https://homes.cs.washington.edu/~msap/atomic/data/atomic_data.tgz\n",
                         "\nDuring handling of the above exception, another exception occurred:\n\n",
                         "Traceback (most recent call last):\n",
-                        "  File \"/src/services/worker/src/worker/models/first_rows.py\", line 221, in get_first_rows\n    rows = get_rows(dataset_name, config_name, split_name, hf_token, False, rows_max_number)\n",
-                        "  File \"/src/services/worker/.venv/lib/python3.9/site-packages/libutils/utils.py\", line 82, in decorator\n    return func(*args, **kwargs)\n",
-                        "  File \"/src/services/worker/src/worker/models/row.py\", line 27, in get_rows\n    dataset = load_dataset(\n",
-                        "  File \"/src/services/worker/.venv/lib/python3.9/site-packages/datasets/load.py\", line 1732, in load_dataset\n    builder_instance.download_and_prepare(\n",
+                        "  File \"/src/services/worker/src/worker/responses/first_rows.py\", line 355, in get_first_rows_response\n    rows = get_rows(\n",
+                        "  File \"/src/services/worker/src/worker/utils.py\", line 123, in decorator\n    return func(*args, **kwargs)\n",
+                        "  File \"/src/services/worker/src/worker/responses/first_rows.py\", line 68, in get_rows\n    dataset = load_dataset(\n",
+                        "  File \"/src/services/worker/.venv/lib/python3.9/site-packages/datasets/load.py\", line 1746, in load_dataset\n    builder_instance.download_and_prepare(\n",
                         "  File \"/src/services/worker/.venv/lib/python3.9/site-packages/datasets/builder.py\", line 704, in download_and_prepare\n    self._download_and_prepare(\n",
                         "  File \"/src/services/worker/.venv/lib/python3.9/site-packages/datasets/builder.py\", line 1227, in _download_and_prepare\n    super()._download_and_prepare(dl_manager, verify_infos, check_duplicate_keys=verify_infos)\n",
                         "  File \"/src/services/worker/.venv/lib/python3.9/site-packages/datasets/builder.py\", line 771, in _download_and_prepare\n    split_generators = self._split_generators(dl_manager, **split_generators_kwargs)\n",
-                        "  File \"/tmp/modules-cache/datasets_modules/datasets/atomic/c0f0ec7d10713c41dfc87f0cf17f936b122d22e19216051217c99134d38f6d7b/atomic.py\", line 95, in _split_generators\n    archive = dl_manager.download(my_urls)\n",
+                        "  File \"/root/.cache/huggingface/modules/datasets_modules/datasets/atomic/c0f0ec7d10713c41dfc87f0cf17f936b122d22e19216051217c99134d38f6d7b/atomic.py\", line 95, in _split_generators\n    archive = dl_manager.download(my_urls)\n",
                         "  File \"/src/services/worker/.venv/lib/python3.9/site-packages/datasets/download/download_manager.py\", line 309, in download\n    downloaded_path_or_paths = map_nested(\n",
-                        "  File \"/src/services/worker/.venv/lib/python3.9/site-packages/datasets/utils/py_utils.py\", line 348, in map_nested\n    return function(data_struct)\n",
+                        "  File \"/src/services/worker/.venv/lib/python3.9/site-packages/datasets/utils/py_utils.py\", line 385, in map_nested\n    return function(data_struct)\n",
                         "  File \"/src/services/worker/.venv/lib/python3.9/site-packages/datasets/download/download_manager.py\", line 335, in _download\n    return cached_path(url_or_filename, download_config=download_config)\n",
                         "  File \"/src/services/worker/.venv/lib/python3.9/site-packages/datasets/utils/file_utils.py\", line 185, in cached_path\n    output_path = get_from_cache(\n",
                         "  File \"/src/services/worker/.venv/lib/python3.9/site-packages/datasets/utils/file_utils.py\", line 530, in get_from_cache\n    raise FileNotFoundError(f\"Couldn't find file at {url}\")\n",
