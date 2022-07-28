@@ -2476,142 +2476,74 @@
                     "value": {
                       "features": [
                         {
-                          "dataset": "ett",
-                          "config": "m2",
-                          "split": "test",
+                          "dataset": "huggan/horse2zebra",
+                          "config": "huggan--horse2zebra-aligned",
+                          "split": "train",
                           "feature_idx": 0,
-                          "name": "start",
+                          "name": "imageA",
                           "type": {
-                            "dtype": "timestamp[s]",
+                            "decode": true,
                             "id": null,
-                            "_type": "Value"
+                            "_type": "Image"
                           }
                         },
                         {
-                          "dataset": "ett",
-                          "config": "m2",
-                          "split": "test",
+                          "dataset": "huggan/horse2zebra",
+                          "config": "huggan--horse2zebra-aligned",
+                          "split": "train",
                           "feature_idx": 1,
-                          "name": "target",
+                          "name": "imageB",
                           "type": {
-                            "feature": {
-                              "dtype": "float32",
-                              "id": null,
-                              "_type": "Value"
-                            },
-                            "length": -1,
+                            "decode": true,
                             "id": null,
-                            "_type": "Sequence"
-                          }
-                        },
-                        {
-                          "dataset": "ett",
-                          "config": "m2",
-                          "split": "test",
-                          "feature_idx": 2,
-                          "name": "feat_static_cat",
-                          "type": {
-                            "feature": {
-                              "dtype": "uint64",
-                              "id": null,
-                              "_type": "Value"
-                            },
-                            "length": -1,
-                            "id": null,
-                            "_type": "Sequence"
-                          }
-                        },
-                        {
-                          "dataset": "ett",
-                          "config": "m2",
-                          "split": "test",
-                          "feature_idx": 3,
-                          "name": "feat_dynamic_real",
-                          "type": {
-                            "feature": {
-                              "feature": {
-                                "dtype": "float32",
-                                "id": null,
-                                "_type": "Value"
-                              },
-                              "length": -1,
-                              "id": null,
-                              "_type": "Sequence"
-                            },
-                            "length": -1,
-                            "id": null,
-                            "_type": "Sequence"
-                          }
-                        },
-                        {
-                          "dataset": "ett",
-                          "config": "m2",
-                          "split": "test",
-                          "feature_idx": 4,
-                          "name": "item_id",
-                          "type": {
-                            "dtype": "string",
-                            "id": null,
-                            "_type": "Value"
+                            "_type": "Image"
                           }
                         }
                       ],
                       "rows": [
                         {
-                          "dataset": "ett",
-                          "config": "m2",
-                          "split": "test",
+                          "dataset": "huggan/horse2zebra",
+                          "config": "huggan--horse2zebra-aligned",
+                          "split": "train",
                           "row_idx": 0,
                           "row": {
-                            "start": "2016-07-01T00:00:00",
-                            "target": "[38.6619987487793,38.222999572753906,37.34400177001953,37.124000549316406,37.124000549316406,36.9039",
-                            "feat_static_cat": [0],
-                            "feat_dynamic_real": "[[41.130001068115234,39.62200164794922,38.86800003051758,35.518001556396484,37.52799987792969,37.611",
-                            "item_id": "OT"
+                            "imageA": "http://localhost:9000/assets/huggan/horse2zebra/--/huggan--horse2zebra-aligned/train/0/imageA/image.jpg",
+                            "imageB": "http://localhost:9000/assets/huggan/horse2zebra/--/huggan--horse2zebra-aligned/train/0/imageB/image.jpg"
                           },
-                          "truncated_cells": ["target", "feat_dynamic_real"]
+                          "truncated_cells": []
                         },
                         {
-                          "dataset": "ett",
-                          "config": "m2",
-                          "split": "test",
+                          "dataset": "huggan/horse2zebra",
+                          "config": "huggan--horse2zebra-aligned",
+                          "split": "train",
                           "row_idx": 1,
                           "row": {
-                            "start": "2016-07-01T00:00:00",
-                            "target": "[38.6619987487793,38.222999572753906,37.34400177001953,37.124000549316406,37.124000549316406,36.9039",
-                            "feat_static_cat": [0],
-                            "feat_dynamic_real": "[[41.130001068115234,39.62200164794922,38.86800003051758,35.518001556396484,37.52799987792969,37.611",
-                            "item_id": "OT"
+                            "imageA": "http://localhost:9000/assets/huggan/horse2zebra/--/huggan--horse2zebra-aligned/train/1/imageA/image.jpg",
+                            "imageB": "http://localhost:9000/assets/huggan/horse2zebra/--/huggan--horse2zebra-aligned/train/1/imageB/image.jpg"
                           },
-                          "truncated_cells": ["target", "feat_dynamic_real"]
+                          "truncated_cells": []
                         },
                         {
-                          "dataset": "ett",
-                          "config": "m2",
-                          "split": "test",
+                          "dataset": "huggan/horse2zebra",
+                          "config": "huggan--horse2zebra-aligned",
+                          "split": "train",
                           "row_idx": 2,
                           "row": {
-                            "start": "2016-07-01T00:00:00",
-                            "target": "[38.6619987487793,38.222999572753906,37.34400177001953,37.124000549316406,37.124000549316406,36.9039",
-                            "feat_static_cat": [0],
-                            "feat_dynamic_real": "[[41.130001068115234,39.62200164794922,38.86800003051758,35.518001556396484,37.52799987792969,37.611",
-                            "item_id": "OT"
+                            "imageA": "http://localhost:9000/assets/huggan/horse2zebra/--/huggan--horse2zebra-aligned/train/2/imageA/image.jpg",
+                            "imageB": "http://localhost:9000/assets/huggan/horse2zebra/--/huggan--horse2zebra-aligned/train/2/imageB/image.jpg"
                           },
-                          "truncated_cells": ["target", "feat_dynamic_real"]
+                          "truncated_cells": []
                         },
                         {
-                          "dataset": "ett",
-                          "config": "m2",
-                          "split": "test",
+                          "dataset": "huggan/horse2zebra",
+                          "config": "huggan--horse2zebra-aligned",
+                          "split": "train",
                           "row_idx": 3,
                           "row": {
-                            "start": "2016-07-01T00:00:00",
-                            "target": "[38.6619987487793,38.222999572753906,37.34400177001953,37.124000549316406,37.124000549316406,36.9039",
-                            "feat_static_cat": [0],
-                            "feat_dynamic_real": "[[41.130001068115234,39.62200164794922,38.86800003051758,35.518001556396484,37.52799987792969,37.611",
-                            "item_id": "OT"
+                            "imageA": "http://localhost:9000/assets/huggan/horse2zebra/--/huggan--horse2zebra-aligned/train/3/imageA/image.jpg",
+                            "imageB": "http://localhost:9000/assets/huggan/horse2zebra/--/huggan--horse2zebra-aligned/train/3/imageB/image.jpg"
                           },
-                          "truncated_cells": ["target", "feat_dynamic_real"]
+                          "truncated_cells": []
                         }
                       ]
                     }
