@@ -11,21 +11,21 @@ from .utils import (
 
 
 @pytest.mark.parametrize(
-    "status,name,dataset",
+    "status,name,dataset,error_code",
     [
-        (200, "duorc", "duorc"),
-        (200, "emotion", "emotion"),
-        (404, "inexistent-dataset", "severo/inexistent-dataset"),
-        (404, "private-dataset", "severo/dummy_private"),
-        (422, "empty-parameter", ""),
-        (422, "missing-parameter", None),
-        (500, "SplitsNotFoundError", "natural_questions"),
-        (500, "FileNotFoundError", "akhaliq/test"),
-        (500, "not-ready", "a_new_dataset"),
+        (200, "duorc", "duorc", None),
+        (200, "emotion", "emotion", None),
+        (404, "inexistent-dataset", "severo/inexistent-dataset", "SplitsResponseNotFound"),
+        (404, "private-dataset", "severo/dummy_private", "SplitsResponseNotFound"),
+        (422, "empty-parameter", "", "MissingRequiredParameter"),
+        (422, "missing-parameter", None, "MissingRequiredParameter"),
+        (500, "SplitsNotFoundError", "natural_questions", "SplitsNamesError"),
+        (500, "FileNotFoundError", "akhaliq/test", "SplitsNamesError"),
+        (500, "not-ready", "a_new_dataset", "SplitsResponseNotReady"),
         # not tested: 'internal_error'
     ],
 )
-def test_splits_next(status, name, dataset):
+def test_splits_next(status: int, name: str, dataset: str, error_code: str):
     body = get_openapi_body_example("/splits-next", status, name)
 
     if name == "empty-parameter":
@@ -41,3 +41,7 @@ def test_splits_next(status, name, dataset):
 
     assert r_splits.status_code == status
     assert r_splits.json() == body
+    if error_code is not None:
+        assert r_splits.headers["X-Error-Code"] == error_code
+    else:
+        assert "X-Error-Code" not in r_splits.headers

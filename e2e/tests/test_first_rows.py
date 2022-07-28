@@ -5,37 +5,49 @@ from .utils import (
     URL,
     get_openapi_body_example,
     poll,
-    post_refresh,
     refresh_poll_splits_next,
     refresh_poll_splits_next_first_rows,
 )
 
 
 @pytest.mark.parametrize(
-    "status,name,dataset,config,split",
+    "status,name,dataset,config,split,error_code",
     [
-        (200, "imdb", "imdb", "plain_text", "train"),
-        (200, "truncated", "ett", "m2", "test"),
-        (200, "image", "huggan/horse2zebra", "huggan--horse2zebra-aligned", "train"),
-        # (200, "audio", "mozilla-foundation/common_voice_9_0", "en", "train"),
+        (200, "imdb", "imdb", "plain_text", "train", None),
+        (200, "truncated", "ett", "m2", "test", None),
+        (200, "image", "huggan/horse2zebra", "huggan--horse2zebra-aligned", "train", None),
+        # (200, "audio", "mozilla-foundation/common_voice_9_0", "en", "train", None),
         # ^ awfully long
-        (404, "inexistent-dataset", "severo/inexistent-dataset", "plain_text", "train"),
-        (404, "private-dataset", "severo/dummy_private", "severo--embellishments", "train"),
-        (404, "inexistent-config", "imdb", "inexistent-config", "train"),
-        (404, "inexistent-split", "imdb", "plain_text", "inexistent-split"),
-        (422, "missing-dataset", None, "plain_text", "train"),
-        (422, "missing-config", "imdb", None, "train"),
-        (422, "missing-split", "imdb", "plain_text", None),
-        (422, "empty-dataset", "", "plain_text", "train"),
-        (422, "empty-config", "imdb", "", "train"),
-        (422, "empty-split", "imdb", "plain_text", ""),
-        (500, "NonMatchingCheckError", "ar_cov19", "ar_cov19", "train"),
-        (500, "FileNotFoundError", "atomic", "atomic", "train"),
-        (500, "not-ready", "anli", "plain_text", "train_r1"),
+        (404, "inexistent-dataset", "severo/inexistent-dataset", "plain_text", "train", "FirstRowsResponseNotFound"),
+        (
+            404,
+            "private-dataset",
+            "severo/dummy_private",
+            "severo--embellishments",
+            "train",
+            "FirstRowsResponseNotFound",
+        ),
+        (404, "inexistent-config", "imdb", "inexistent-config", "train", "FirstRowsResponseNotFound"),
+        (404, "inexistent-split", "imdb", "plain_text", "inexistent-split", "FirstRowsResponseNotFound"),
+        (422, "missing-dataset", None, "plain_text", "train", "MissingRequiredParameter"),
+        (422, "missing-config", "imdb", None, "train", "MissingRequiredParameter"),
+        (422, "missing-split", "imdb", "plain_text", None, "MissingRequiredParameter"),
+        (422, "empty-dataset", "", "plain_text", "train", "MissingRequiredParameter"),
+        (422, "empty-config", "imdb", "", "train", "MissingRequiredParameter"),
+        (422, "empty-split", "imdb", "plain_text", "", "MissingRequiredParameter"),
+        (500, "NonMatchingCheckError", "ar_cov19", "ar_cov19", "train", "NormalRowsError"),
+        (500, "FileNotFoundError", "atomic", "atomic", "train", "NormalRowsError"),
+        (500, "not-ready", "anli", "plain_text", "train_r1", "FirstRowsResponseNotReady"),
         # not tested: 'internal_error'
+        # TODO:
+        # "SplitsNamesError",
+        # "InfoError",
+        # "FeaturesError",
+        # "StreamingRowsError",
+        # "RowsPostProcessingError",
     ],
 )
-def test_first_rows(status: int, name: str, dataset: str, config: str, split: str):
+def test_first_rows(status: int, name: str, dataset: str, config: str, split: str, error_code: str):
     body = get_openapi_body_example("/first-rows", status, name)
 
     # the logic here is a bit convoluted, because we have no way to refresh a split, we have to refresh the whole
@@ -61,3 +73,7 @@ def test_first_rows(status: int, name: str, dataset: str, config: str, split: st
 
     assert r_rows.status_code == status
     assert r_rows.json() == body
+    if error_code is not None:
+        assert r_rows.headers["X-Error-Code"] == error_code
+    else:
+        assert "X-Error-Code" not in r_rows.headers

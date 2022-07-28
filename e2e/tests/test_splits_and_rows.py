@@ -80,7 +80,8 @@ def test_bug_empty_split():
 #         json["rows"][0]["row"]["image"] == "assets/wikimedia/wit_base/--/wikimedia--wit_base/train/0/image/image.jpg"
 #     )
 #     assert (
-#         json["rows"][20]["row"]["image"] == "assets/wikimedia/wit_base/--/wikimedia--wit_base/train/20/image/image.png"
+#         json["rows"][20]["row"]["image"] ==
+#               "assets/wikimedia/wit_base/--/wikimedia--wit_base/train/20/image/image.png"
 #     )
 
 
