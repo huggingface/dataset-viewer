@@ -7,15 +7,10 @@ from typing import Optional, Tuple
 import requests
 
 SERVICE_REVERSE_PROXY_PORT = os.environ.get("SERVICE_REVERSE_PROXY_PORT", "8000")
-SERVICE_ADMIN_PORT = os.environ.get("SERVICE_ADMIN_PORT", "8001")
-SERVICE_API_PORT = os.environ.get("SERVICE_API_PORT", "8002")
 ROWS_MAX_NUMBER = int(os.environ.get("ROWS_MAX_NUMBER", 100))
 INTERVAL = 1
 MAX_DURATION = 10 * 60
-URL_REVERSE_PROXY = f"http://localhost:{SERVICE_REVERSE_PROXY_PORT}"
-URL_ADMIN = f"http://localhost:{SERVICE_ADMIN_PORT}"
-URL_API = f"http://localhost:{SERVICE_API_PORT}"
-URL = URL_REVERSE_PROXY
+URL = f"http://localhost:{SERVICE_REVERSE_PROXY_PORT}"
 
 
 def poll(url: str, error_field: Optional[str] = None, expected_code: Optional[int] = 200) -> requests.Response:
