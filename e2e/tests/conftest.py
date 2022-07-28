@@ -1,9 +1,11 @@
-from os.path import dirname, join
-
 import pytest
 
+from .utils import URL_ADMIN, URL, poll
 
-@pytest.fixture(scope="session")
-def config():
-    root = dirname(dirname(dirname(__file__)))
-    return {"openapi": join(root, "chart", "static-files", "openapi.json")}
+
+@pytest.fixture(autouse=True, scope="session")
+def ensure_services_are_up() -> None:
+    assert poll(f"{URL}/", expected_code=404).status_code == 404
+    assert poll(f"{URL}/healthcheck").status_code == 200
+    assert poll(f"{URL_ADMIN}/healthcheck").status_code == 200
+    # TODO: add endpoints to check the workers are up?

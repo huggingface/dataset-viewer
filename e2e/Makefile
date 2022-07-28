@@ -5,6 +5,8 @@ export SERVICE_REVERSE_PROXY_PORT := 9000
 export TEST_MONGO_PORT := 27050
 export TEST_MONGO_CACHE_DATABASE := datasets_server_cache_test
 export TEST_MONGO_QUEUE_DATABASE := datasets_server_queue_test
+export TEST_ROWS_MAX_NUMBER := 21
+# ^ see test_splits_next_and_first_rows.py, we need the rows #20
 export TEST_COMPOSE_PROJECT_NAME := e2e
 # makefile variables
 TEST_DOCKER_COMPOSE := ../tools/docker-compose-datasets-server-from-remote-images.yml
