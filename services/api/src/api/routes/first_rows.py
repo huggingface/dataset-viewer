@@ -12,10 +12,10 @@ from api.utils import (
     FirstRowsResponseNotReadyError,
     MissingRequiredParameterError,
     UnexpectedError,
+    are_valid_parameters,
     get_json_api_error_response,
     get_json_error_response,
     get_json_ok_response,
-    are_valid_parameters,
 )
 
 logger = logging.getLogger(__name__)
