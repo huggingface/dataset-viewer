@@ -31,6 +31,12 @@
         "schema": { "type": "string" },
         "example": "*",
         "required": true
+      },
+      "X-Error-Code": {
+        "description": "A string that identifies the underlying error.",
+        "schema": { "type": "string" },
+        "example": "DatasetNotFoundError",
+        "required": true
       }
     },
     "schemas": {
@@ -62,6 +68,27 @@
           },
           "num_examples": {
             "type": "integer"
+          }
+        }
+      },
+      "CustomError": {
+        "type": "object",
+        "required": ["error"],
+        "properties": {
+          "error": {
+            "type": "string"
+          },
+          "cause_exception": {
+            "type": "string"
+          },
+          "cause_message": {
+            "type": "string"
+          },
+          "cause_traceback": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
           }
         }
       },
@@ -717,6 +744,15 @@
           "created_at": {
             "type": "string",
             "format": "date-time"
+          }
+        }
+      },
+      "IsValidResponse": {
+        "type": "object",
+        "required": ["valid"],
+        "properties": {
+          "valid": {
+            "type": "boolean"
           }
         }
       }
@@ -1706,7 +1742,7 @@
     },
     "/valid": {
       "get": {
-        "summary": " Valid datasets",
+        "summary": "Valid datasets",
         "description": "The list of the Hub datasets that work without an error (for /splits and /rows).",
         "externalDocs": {
           "description": "See  Valid datasets (Hub docs)",
@@ -1742,6 +1778,125 @@
                         "AHussain0418/day2_data"
                       ],
                       "created_at": "2022-06-28T16:04:24Z"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "The server crashed.",
+            "headers": {
+              "Cache-Control": {
+                "$ref": "#/components/headers/Cache-Control"
+              },
+              "Access-Control-Allow-Origin": {
+                "$ref": "#/components/headers/Access-Control-Allow-Origin"
+              },
+              "X-Error-Code": {
+                "$ref": "#/components/headers/X-Error-Code"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CustomError"
+                },
+                "examples": {
+                  "internal": {
+                    "summary": "internal error",
+                    "value": {
+                      "error": "Unexpected error."
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/is-valid": {
+      "get": {
+        "summary": "Check if a dataset is valid",
+        "description": "Check if a dataset works without an error (for /splits and /rows).",
+        "externalDocs": {
+          "description": "See Valid datasets (Hub docs)",
+          "url": "https://huggingface.co/docs/datasets-server/valid"
+        },
+        "operationId": "isValidDataset",
+        "parameters": [
+          {
+            "name": "dataset",
+            "in": "query",
+            "description": "The identifier of the dataset on the Hub.",
+            "required": true,
+            "schema": { "type": "string" },
+            "examples": {
+              "glue": { "summary": "a canonical dataset", "value": "glue" },
+              "Helsinki-NLP/tatoeba_mt": {
+                "summary": "a namespaced dataset",
+                "value": "Helsinki-NLP/tatoeba_mt"
+              }
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The valid datasets.",
+            "headers": {
+              "Cache-Control": {
+                "$ref": "#/components/headers/Cache-Control"
+              },
+              "Access-Control-Allow-Origin": {
+                "$ref": "#/components/headers/Access-Control-Allow-Origin"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IsValidResponse"
+                },
+                "examples": {
+                  "valid": {
+                    "summary": "valid dataset",
+                    "value": {
+                      "valid": true
+                    }
+                  },
+                  "invalid": {
+                    "summary": "invalid dataset",
+                    "value": {
+                      "valid": false
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "The server crashed.",
+            "headers": {
+              "Cache-Control": {
+                "$ref": "#/components/headers/Cache-Control"
+              },
+              "Access-Control-Allow-Origin": {
+                "$ref": "#/components/headers/Access-Control-Allow-Origin"
+              },
+              "X-Error-Code": {
+                "$ref": "#/components/headers/X-Error-Code"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CustomError"
+                },
+                "examples": {
+                  "internal": {
+                    "summary": "internal error",
+                    "value": {
+                      "error": "Unexpected error."
                     }
                   }
                 }
@@ -1796,44 +1951,44 @@
                     "value": {
                       "splits": [
                         {
-                          "dataset": "duorc",
-                          "config": "SelfRC",
-                          "split": "train",
+                          "dataset_name": "duorc",
+                          "config_name": "SelfRC",
+                          "split_name": "train",
                           "num_bytes": 239852925,
                           "num_examples": 60721
                         },
                         {
-                          "dataset": "duorc",
-                          "config": "SelfRC",
-                          "split": "validation",
+                          "dataset_name": "duorc",
+                          "config_name": "SelfRC",
+                          "split_name": "validation",
                           "num_bytes": 51662575,
                           "num_examples": 12961
                         },
                         {
-                          "dataset": "duorc",
-                          "config": "SelfRC",
-                          "split": "test",
+                          "dataset_name": "duorc",
+                          "config_name": "SelfRC",
+                          "split_name": "test",
                           "num_bytes": 49142766,
                           "num_examples": 12559
                         },
                         {
-                          "dataset": "duorc",
-                          "config": "ParaphraseRC",
-                          "split": "train",
+                          "dataset_name": "duorc",
+                          "config_name": "ParaphraseRC",
+                          "split_name": "train",
                           "num_bytes": 496683105,
                           "num_examples": 69524
                         },
                         {
-                          "dataset": "duorc",
-                          "config": "ParaphraseRC",
-                          "split": "validation",
+                          "dataset_name": "duorc",
+                          "config_name": "ParaphraseRC",
+                          "split_name": "validation",
                           "num_bytes": 106510545,
                           "num_examples": 15591
                         },
                         {
-                          "dataset": "duorc",
-                          "config": "ParaphraseRC",
-                          "split": "test",
+                          "dataset_name": "duorc",
+                          "config_name": "ParaphraseRC",
+                          "split_name": "test",
                           "num_bytes": 115215816,
                           "num_examples": 15857
                         }
@@ -1845,23 +2000,23 @@
                     "value": {
                       "splits": [
                         {
-                          "dataset": "emotion",
-                          "config": "default",
-                          "split": "train",
+                          "dataset_name": "emotion",
+                          "config_name": "default",
+                          "split_name": "train",
                           "num_bytes": 1741541,
                           "num_examples": 16000
                         },
                         {
-                          "dataset": "emotion",
-                          "config": "default",
-                          "split": "validation",
+                          "dataset_name": "emotion",
+                          "config_name": "default",
+                          "split_name": "validation",
                           "num_bytes": 214699,
                           "num_examples": 2000
                         },
                         {
-                          "dataset": "emotion",
-                          "config": "default",
-                          "split": "test",
+                          "dataset_name": "emotion",
+                          "config_name": "default",
+                          "split_name": "test",
                           "num_bytes": 217177,
                           "num_examples": 2000
                         }
@@ -1872,20 +2027,85 @@
               }
             }
           },
-          "400": {
-            "description": "The dataset has some issue that prevents extracting the list of splits.<br/>The error response should give insights to help fix the issue.<br/>The client should not retry the request, because the response will not change until the dataset is fixed.",
+          "404": {
+            "description": "If the repository to download from cannot be found. This may be because it doesn't exist, or because it is set to `private` and you do not have access.",
             "headers": {
               "Cache-Control": {
                 "$ref": "#/components/headers/Cache-Control"
               },
               "Access-Control-Allow-Origin": {
                 "$ref": "#/components/headers/Access-Control-Allow-Origin"
+              },
+              "X-Error-Code": {
+                "$ref": "#/components/headers/X-Error-Code"
               }
             },
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/Status400ErrorContent"
+                  "$ref": "#/components/schemas/CustomError"
+                },
+                "examples": {
+                  "inexistent-dataset": {
+                    "summary": "The dataset does not exist.",
+                    "value": {
+                      "error": "Not found."
+                    }
+                  },
+                  "private-dataset": {
+                    "summary": "The dataset is private.",
+                    "value": {
+                      "error": "Not found."
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "The `dataset` parameter has not been provided.",
+            "headers": {
+              "Cache-Control": {
+                "$ref": "#/components/headers/Cache-Control"
+              },
+              "Access-Control-Allow-Origin": {
+                "$ref": "#/components/headers/Access-Control-Allow-Origin"
+              },
+              "X-Error-Code": {
+                "$ref": "#/components/headers/X-Error-Code"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CustomError"
+                },
+                "examples": {
+                  "missing-parameter": {
+                    "summary": "The dataset parameter is missing.",
+                    "value": { "error": "Parameters 'dataset' is required" }
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "The server crashed, the response still hasn't been generated (the process is asynchronous), or the response couldn't be generated successfully due to an error in the dataset itself. The client can retry after a time, in particular in the case of the response still being processed. If the error does not vanish, it's possibly due to a bug in the API software or in the dataset, and should be reported.",
+            "headers": {
+              "Cache-Control": {
+                "$ref": "#/components/headers/Cache-Control"
+              },
+              "Access-Control-Allow-Origin": {
+                "$ref": "#/components/headers/Access-Control-Allow-Origin"
+              },
+              "X-Error-Code": {
+                "$ref": "#/components/headers/X-Error-Code"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CustomError"
                 },
                 "examples": {
                   "TypeError": {
@@ -1924,27 +2144,7 @@
                         "FileNotFoundError: Couldn't find a dataset script at /src/services/worker/akhaliq/test/test.py or any data file in the same directory. Couldn't find 'akhaliq/test' on the Hugging Face Hub either: FileNotFoundError: The dataset repository at 'akhaliq/test' doesn't contain any data file.\n"
                       ]
                     }
-                  }
-                }
-              }
-            }
-          },
-          "500": {
-            "description": "The server encountered an error, or the response still hasn't been generated (the process is asynchronous). The client should retry after a time, in particular in the case of the response still being processed. If the error does not vanish, it's possibly due to a bug in the API software and should be reported.",
-            "headers": {
-              "Cache-Control": {
-                "$ref": "#/components/headers/Cache-Control"
-              },
-              "Access-Control-Allow-Origin": {
-                "$ref": "#/components/headers/Access-Control-Allow-Origin"
-              }
-            },
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Status500ErrorContent"
-                },
-                "examples": {
+                  },
                   "not-ready": {
                     "summary": "the response is not ready yet.",
                     "value": {
@@ -2667,20 +2867,103 @@
               }
             }
           },
-          "400": {
-            "description": "The dataset has some issue that prevents extracting the list of features, or the list of rows.<br/>The error response should give insights to help fix the issue.<br/>The client should not retry the request, because the response will not change until the dataset is fixed.",
+          "404": {
+            "description": "If the repository to download from cannot be found, or if the config or split does not exist in the dataset. Note that this may be because the dataset doesn't exist, or because it is set to `private` and you do not have access.",
             "headers": {
               "Cache-Control": {
                 "$ref": "#/components/headers/Cache-Control"
               },
               "Access-Control-Allow-Origin": {
                 "$ref": "#/components/headers/Access-Control-Allow-Origin"
+              },
+              "X-Error-Code": {
+                "$ref": "#/components/headers/X-Error-Code"
               }
             },
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/Status400ErrorContent"
+                  "$ref": "#/components/schemas/CustomError"
+                },
+                "examples": {
+                  "inexistent-dataset": {
+                    "summary": "The dataset does not exist on the Hub.",
+                    "value": { "error": "Not found." }
+                  },
+                  "private-dataset": {
+                    "summary": "The dataset is private.",
+                    "value": { "error": "Not found." }
+                  },
+                  "inexistent-config": {
+                    "summary": "The config does not exist in the dataset.",
+                    "value": { "error": "Not found." }
+                  },
+                  "inexistent-split": {
+                    "summary": "The soplit does not exist in the dataset.",
+                    "value": { "error": "Not found." }
+                  }
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Some of the `dataset`, `config`, or `split` parameters have not been provided or are invalid.",
+            "headers": {
+              "Cache-Control": {
+                "$ref": "#/components/headers/Cache-Control"
+              },
+              "Access-Control-Allow-Origin": {
+                "$ref": "#/components/headers/Access-Control-Allow-Origin"
+              },
+              "X-Error-Code": {
+                "$ref": "#/components/headers/X-Error-Code"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CustomError"
+                },
+                "examples": {
+                  "missing_dataset": {
+                    "summary": "The dataset parameter is missing.",
+                    "value": {
+                      "error": "Parameters 'dataset', 'config' and 'split' are required"
+                    }
+                  },
+                  "missing_config": {
+                    "summary": "The config parameter is missing.",
+                    "value": {
+                      "error": "Parameters 'dataset', 'config' and 'split' are required"
+                    }
+                  },
+                  "missing_split": {
+                    "summary": "The split parameter is missing.",
+                    "value": {
+                      "error": "Parameters 'dataset', 'config' and 'split' are required"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "The server crashed, the response still hasn't been generated (the process is asynchronous), or the response couldn't be generated successfully due to an error in the dataset itself. The client can retry after a time, in particular in the case of the response still being processed. If the error does not vanish, it's possibly due to a bug in the API software or in the dataset, and should be reported.",
+            "headers": {
+              "Cache-Control": {
+                "$ref": "#/components/headers/Cache-Control"
+              },
+              "Access-Control-Allow-Origin": {
+                "$ref": "#/components/headers/Access-Control-Allow-Origin"
+              },
+              "X-Error-Code": {
+                "$ref": "#/components/headers/X-Error-Code"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CustomError"
                 },
                 "examples": {
                   "NonMatchingCheckError": {
@@ -2774,27 +3057,7 @@
                         "FileNotFoundError: Couldn't find file at https://homes.cs.washington.edu/~msap/atomic/data/atomic_data.tgz\n"
                       ]
                     }
-                  }
-                }
-              }
-            }
-          },
-          "500": {
-            "description": "The server encountered an error, or the response still hasn't been generated (the process is asynchronous). The client should retry after a time, in particular in the case of the response still being processed. If the error does not vanish, it's possibly due to a bug in the API software and should be reported.",
-            "headers": {
-              "Cache-Control": {
-                "$ref": "#/components/headers/Cache-Control"
-              },
-              "Access-Control-Allow-Origin": {
-                "$ref": "#/components/headers/Access-Control-Allow-Origin"
-              }
-            },
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Status500ErrorContent"
-                },
-                "examples": {
+                  },
                   "not-ready": {
                     "summary": "the response is not ready yet.",
                     "value": {

@@ -1,6 +1,9 @@
+import json
 import os
 import time
+from typing import Optional
 
+import pytest
 import requests
 
 SERVICE_REVERSE_PROXY_PORT = os.environ.get("SERVICE_REVERSE_PROXY_PORT", "8000")
@@ -9,7 +12,7 @@ URL = f"http://localhost:{SERVICE_REVERSE_PROXY_PORT}"
 
 
 def poll_until_valid_response(
-    url: str, timeout: int = 15, interval: int = 1, error_field: str = "error"
+    url: str, timeout: int = 15, interval: int = 1, error_field: Optional[str] = None
 ) -> requests.Response:
     retries = timeout // interval
     should_retry = True
@@ -18,23 +21,24 @@ def poll_until_valid_response(
         retries -= 1
         time.sleep(interval)
         response = requests.get(url)
-        if response.status_code == 400:
-            # special case for /splits and /rows. It should be removed once they are deprecated
-            # it was an error to return 400 if the client should retry
+        if error_field is not None:
+            # currently, when the dataset is being processed, the error message contains "Retry later"
             try:
-                should_retry = "retry" in response.json()[error_field].lower()
+                should_retry = "retry later" in response.json()[error_field].lower()
             except Exception:
                 should_retry = False
         else:
-            should_retry = response.status_code == 500
+            # just retry if the response is not 200
+            should_retry = response.status_code != 200
     if response is None:
         raise RuntimeError("no request has been done")
     return response
 
 
 def poll_splits_until_dataset_process_has_finished(
-    dataset: str, endpoint: str = "splits", timeout: int = 15, interval: int = 1, error_field: str = "error"
+    dataset: str, endpoint: str = "splits", timeout: int = 15, interval: int = 1
 ) -> requests.Response:
+    error_field = "message" if endpoint == "splits" else "error"
     return poll_until_valid_response(f"{URL}/{endpoint}?dataset={dataset}", timeout, interval, error_field)
 
 
@@ -42,11 +46,11 @@ def poll_rows_until_split_process_has_finished(
     dataset: str,
     config: str,
     split: str,
-    endpoint: str = "splits",
+    endpoint: str = "rows",
     timeout: int = 15,
     interval: int = 1,
-    error_field: str = "error",
 ) -> requests.Response:
+    error_field = "message" if endpoint == "rows" else "error"
     return poll_until_valid_response(
         f"{URL}/{endpoint}?dataset={dataset}&config={config}&split={split}", timeout, interval, error_field
     )
@@ -67,6 +71,42 @@ def test_valid():
     assert response.json()["valid"] == []
 
 
+@pytest.mark.usefixtures("config")
+def test_splits_next_200(config):
+    with open(config["openapi"]) as json_file:
+        openapi = json.load(json_file)
+    expected_status = 200
+    expected_body = openapi["paths"]["/splits-next"]["get"]["responses"][str(expected_status)]["content"][
+        "application/json"
+    ]["examples"]["duorc"]["value"]
+
+    # ask for the dataset to be refreshed
+    dataset = "duorc"
+    response = requests.post(f"{URL}/webhook", json={"update": f"datasets/{dataset}"})
+    assert response.status_code == 200
+
+    # poll the /splits endpoint until we get something else than "The dataset is being processed. Retry later."
+    response = poll_splits_until_dataset_process_has_finished(dataset, "splits-next", 60)
+    assert response.status_code == 200
+
+    response = requests.get(f"{URL}/splits-next?dataset={dataset}")
+    assert response.status_code == expected_status
+    assert response.json() == expected_body
+
+
+@pytest.mark.usefixtures("config")
+def test_splits_next_404(config):
+    with open(config["openapi"]) as json_file:
+        openapi = json.load(json_file)
+    expected_status = 404
+    expected_body = openapi["paths"]["/splits-next"]["get"]["responses"][str(expected_status)]["content"][
+        "application/json"
+    ]["examples"]["inexistent-dataset"]["value"]
+    response = requests.get(f"{URL}/splits-next?dataset=inexistent_dataset")
+    assert response.status_code == expected_status
+    assert response.json() == expected_body
+
+
 def test_get_dataset():
     dataset = "acronym_identification"
     config = "default"
@@ -77,11 +117,11 @@ def test_get_dataset():
     assert response.status_code == 200
 
     # poll the /splits endpoint until we get something else than "The dataset is being processed. Retry later."
-    response = poll_splits_until_dataset_process_has_finished(dataset, "splits", 60, error_field="message")
+    response = poll_splits_until_dataset_process_has_finished(dataset, "splits", 60)
     assert response.status_code == 200
 
     # poll the /rows endpoint until we get something else than "The split is being processed. Retry later."
-    response = poll_rows_until_split_process_has_finished(dataset, config, split, "rows", 60, error_field="message")
+    response = poll_rows_until_split_process_has_finished(dataset, config, split, "rows", 60)
     assert response.status_code == 200
     json = response.json()
     assert "rows" in json
@@ -163,12 +203,13 @@ def test_bug_empty_split():
     assert len(json["rows"]) == 100
 
 
-def test_valid_after_two_datasets_processed():
-    # this test ensures that the two datasets processed successfully are present in /valid
+def test_valid_after_datasets_processed():
+    # this test ensures that the datasets processed successfully are present in /valid
     response = requests.get(f"{URL}/valid")
     assert response.status_code == 200
     # at this moment various datasets have been processed
-    assert response.json()["valid"] == ["acronym_identification", "nielsr/CelebA-faces"]
+    assert "acronym_identification" in response.json()["valid"]
+    assert "nielsr/CelebA-faces" in response.json()["valid"]
 
 
 # TODO: enable this test (not sure why it fails)
