@@ -50,6 +50,7 @@ services:
       ASSETS_DIRECTORY: "/assets"
       HF_DATASETS_CACHE: "/datasets-cache"
       MONGO_URL: "mongodb://mongodb"
+      ROWS_MAX_NUMBER: ${ROWS_MAX_NUMBER-100}
       WORKER_SLEEP_SECONDS: "1"
       WORKER_QUEUE: "datasets"
     depends_on:
@@ -65,6 +66,7 @@ services:
       ASSETS_DIRECTORY: "/assets"
       HF_DATASETS_CACHE: "/datasets-cache"
       MONGO_URL: "mongodb://mongodb"
+      ROWS_MAX_NUMBER: ${ROWS_MAX_NUMBER-100}
       WORKER_SLEEP_SECONDS: "1"
       WORKER_QUEUE: "first_rows_responses"
     depends_on:
@@ -80,6 +82,7 @@ services:
       ASSETS_DIRECTORY: "/assets"
       HF_DATASETS_CACHE: "/datasets-cache"
       MONGO_URL: "mongodb://mongodb"
+      ROWS_MAX_NUMBER: ${ROWS_MAX_NUMBER-100}
       WORKER_SLEEP_SECONDS: "1"
       WORKER_QUEUE: "splits_responses"
     depends_on:
@@ -95,6 +98,7 @@ services:
       ASSETS_DIRECTORY: "/assets"
       HF_DATASETS_CACHE: "/datasets-cache"
       MONGO_URL: "mongodb://mongodb"
+      ROWS_MAX_NUMBER: ${ROWS_MAX_NUMBER-100}
       WORKER_SLEEP_SECONDS: "1"
       WORKER_QUEUE: "splits"
     depends_on:

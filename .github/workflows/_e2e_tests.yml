@@ -66,6 +66,7 @@ jobs:
             ${{ env.working-directory }}/poetry.lock
       - name: Launch the services
         env:
+          ROWS_MAX_NUMBER: 4
           SERVICE_ADMIN_DOCKER_IMAGE: "${{fromJson(needs.get-config.outputs.dockerConfig).dockerImage.admin}}"
           SERVICE_API_DOCKER_IMAGE: "${{fromJson(needs.get-config.outputs.dockerConfig).dockerImage.api}}"
           SERVICE_REVERSE_PROXY_DOCKER_IMAGE: "${{fromJson(needs.get-config.outputs.dockerConfig).dockerImage.reverseProxy}}"
@@ -80,5 +81,7 @@ jobs:
           poetry env use "${{ env.python-version }}"
           poetry install
       - name: End-to-end tests
+        env:
+          ROWS_MAX_NUMBER: 4
         run: |
-          poetry run python -m pytest -x tests
+          poetry run python -m pytest -vv -x tests

@@ -1,3 +1,5 @@
+from http import HTTPStatus
+
 import pytest
 
 # from libcache.cache import clean_database as clean_cache_database
@@ -7,7 +9,6 @@ from libcache.cache import (
     create_or_mark_split_as_stale,
 )
 from libcache.simple_cache import (
-    HTTPStatus,
     mark_first_rows_responses_as_stale,
     mark_splits_responses_as_stale,
     upsert_first_rows_response,
@@ -74,7 +75,7 @@ def test_get_valid_datasets(client: TestClient) -> None:
 
 def test_get_is_valid(client: TestClient) -> None:
     response = client.get("/is-valid")
-    assert response.status_code == 400
+    assert response.status_code == 422
 
     response = client.get("/is-valid", params={"dataset": "doesnotexist"})
     assert response.status_code == 200
@@ -144,6 +145,28 @@ def test_get_splits(client: TestClient) -> None:
     # missing parameter
     response = client.get("/splits")
     assert response.status_code == 400
+
+
+def test_get_splits_next(client: TestClient) -> None:
+    # missing parameter
+    response = client.get("/splits-next")
+    assert response.status_code == 422
+    # empty parameter
+    response = client.get("/splits-next?dataset=")
+    assert response.status_code == 422
+
+
+def test_get_first_rows(client: TestClient) -> None:
+    # missing parameter
+    response = client.get("/first-rows")
+    assert response.status_code == 422
+    response = client.get("/first-rows?dataset=a")
+    assert response.status_code == 422
+    response = client.get("/first-rows?dataset=a&config=b")
+    assert response.status_code == 422
+    # empty parameter
+    response = client.get("/first-rows?dataset=a&config=b&split=")
+    assert response.status_code == 422
 
 
 def test_get_rows(client: TestClient) -> None:

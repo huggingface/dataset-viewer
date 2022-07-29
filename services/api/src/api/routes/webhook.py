@@ -12,7 +12,7 @@ from libqueue.queue import add_dataset_job, add_splits_job
 from starlette.requests import Request
 from starlette.responses import Response
 
-from api.routes._utils import get_response
+from api.utils import are_valid_parameters, get_response
 
 logger = logging.getLogger(__name__)
 
@@ -45,6 +45,8 @@ def get_dataset_name(id: Optional[str]) -> Optional[str]:
     dataset_name = id.removeprefix("datasets/")
     if id == dataset_name:
         logger.info(f"ignored because a full dataset id must starts with 'datasets/': {id}")
+        return None
+    if not are_valid_parameters([dataset_name]):
         return None
     return dataset_name
 

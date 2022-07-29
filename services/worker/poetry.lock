@@ -819,8 +819,8 @@ pyparsing = ">=2.4.2,<3"
 
 [[package]]
 name = "huggingface-hub"
-version = "0.7.0"
-description = "Client library to download and publish models on the huggingface.co hub"
+version = "0.8.1"
+description = "Client library to download and publish models, datasets and other repos on the huggingface.co hub"
 category = "main"
 optional = false
 python-versions = ">=3.7.0"
@@ -834,13 +834,13 @@ tqdm = "*"
 typing-extensions = ">=3.7.4.3"
 
 [package.extras]
-all = ["pytest", "datasets", "soundfile", "black (>=22.0,<23.0)", "isort (>=5.5.4)", "flake8 (>=3.8.3)"]
-dev = ["pytest", "datasets", "soundfile", "black (>=22.0,<23.0)", "isort (>=5.5.4)", "flake8 (>=3.8.3)"]
-fastai = ["toml", "fastai (>=2.4)", "fastcore (>=1.3.27)"]
-quality = ["black (>=22.0,<23.0)", "isort (>=5.5.4)", "flake8 (>=3.8.3)"]
-tensorflow = ["tensorflow", "pydot", "graphviz"]
-testing = ["pytest", "datasets", "soundfile"]
 torch = ["torch"]
+testing = ["soundfile", "datasets", "pytest-cov", "pytest"]
+tensorflow = ["graphviz", "pydot", "tensorflow"]
+quality = ["flake8 (>=3.8.3)", "isort (>=5.5.4)", "black (>=22.0,<23.0)"]
+fastai = ["fastcore (>=1.3.27)", "fastai (>=2.4)", "toml"]
+dev = ["flake8 (>=3.8.3)", "isort (>=5.5.4)", "black (>=22.0,<23.0)", "soundfile", "datasets", "pytest-cov", "pytest"]
+all = ["flake8 (>=3.8.3)", "isort (>=5.5.4)", "black (>=22.0,<23.0)", "soundfile", "datasets", "pytest-cov", "pytest"]
 
 [[package]]
 name = "idna"
@@ -965,7 +965,7 @@ python-versions = ">=3"
 
 [[package]]
 name = "libcache"
-version = "0.1.14"
+version = "0.1.23"
 description = "Library for the cache in mongodb"
 category = "main"
 optional = false
@@ -979,7 +979,7 @@ pymongo = {version = ">=3.12.3,<4.0.0", extras = ["srv"]}
 
 [package.source]
 type = "file"
-url = "../../libs/libcache/dist/libcache-0.1.14-py3-none-any.whl"
+url = "../../libs/libcache/dist/libcache-0.1.23-py3-none-any.whl"
 
 [[package]]
 name = "libclang"
@@ -1034,7 +1034,7 @@ tests = ["matplotlib (>=3.3.0)", "pytest-mpl", "pytest-cov", "pytest", "contextl
 
 [[package]]
 name = "libutils"
-version = "0.1.5"
+version = "0.1.11"
 description = "Library for utils"
 category = "main"
 optional = false
@@ -1047,7 +1047,7 @@ starlette = ">=0.16.0,<0.17.0"
 
 [package.source]
 type = "file"
-url = "../../libs/libutils/dist/libutils-0.1.5-py3-none-any.whl"
+url = "../../libs/libutils/dist/libutils-0.1.11-py3-none-any.whl"
 
 [[package]]
 name = "llvmlite"
@@ -2529,7 +2529,7 @@ cffi = ["cffi (>=1.11)"]
 [metadata]
 lock-version = "1.1"
 python-versions = "3.9.6"
-content-hash = "98bda989cbdc2c286d9519efcd519a96853892e08ac038db846adcd242efb1b1"
+content-hash = "c4a829aac4358fdfc3dfb86caec17625ea8f251d23ac2549d304a0848447531f"
 
 [metadata.files]
 absl-py = [
@@ -3285,10 +3285,7 @@ httplib2 = [
     {file = "httplib2-0.19.1-py3-none-any.whl", hash = "sha256:2ad195faf9faf079723f6714926e9a9061f694d07724b846658ce08d40f522b4"},
     {file = "httplib2-0.19.1.tar.gz", hash = "sha256:0b12617eeca7433d4c396a100eaecfa4b08ee99aa881e6df6e257a7aad5d533d"},
 ]
-huggingface-hub = [
-    {file = "huggingface_hub-0.7.0-py3-none-any.whl", hash = "sha256:fd448fd0b738d803411c79bdf9f12f0ba171fecd24a59edf88c1391b473bc2c0"},
-    {file = "huggingface_hub-0.7.0.tar.gz", hash = "sha256:8154dc2fad84b32a4bca18372a647d9381ed8550a80b11050758357b8fcea639"},
-]
+huggingface-hub = []
 idna = [
     {file = "idna-3.3-py3-none-any.whl", hash = "sha256:84d9dd047ffa80596e0f246e2eab0b391788b0503584e8945f2368256d2735ff"},
     {file = "idna-3.3.tar.gz", hash = "sha256:9d643ff0a55b762d5cdb124b8eaa99c66322e2157b69160bc32796e824360e6d"},
@@ -3329,7 +3326,7 @@ kss = [
     {file = "kss-2.6.0-py3-none-any.whl", hash = "sha256:fedbdcd0bfc33111d7817866dd60346dab79f9f1ca5bab0026c4ee40e5941b0c"},
 ]
 libcache = [
-    {file = "libcache-0.1.14-py3-none-any.whl", hash = "sha256:ceeb8b8bdd801de64aad06c2a4bad77f99c647dfd381a3cf989fedd076b036d5"},
+    {file = "libcache-0.1.23-py3-none-any.whl", hash = "sha256:42975f96c0d1b68bd5f46ce4aa6e42b104d2de433388bb9a2bb4f952a30e1beb"},
 ]
 libclang = [
     {file = "libclang-14.0.1-py2.py3-none-macosx_10_9_x86_64.whl", hash = "sha256:a00c5f433af032979ac0cf03bcba59cf5247cb01fa04ef2380bf9668e84d50a9"},
@@ -3348,7 +3345,7 @@ librosa = [
     {file = "librosa-0.9.1.tar.gz", hash = "sha256:7ed5d6e3f4546e5e3c2840691f9ddc56878f914a35a50060df5fca2b26d4b614"},
 ]
 libutils = [
-    {file = "libutils-0.1.5-py3-none-any.whl", hash = "sha256:c7b2db87d0b8f5c29a4634e478a5724efc5a100f0f03ec0bdeb9b2d7048b87a9"},
+    {file = "libutils-0.1.11-py3-none-any.whl", hash = "sha256:fba2ca7384164af6b3395bfd122b9b434ccceb337bac3582b5660b24fcecf93c"},
 ]
 llvmlite = [
     {file = "llvmlite-0.38.1-cp310-cp310-macosx_10_9_x86_64.whl", hash = "sha256:a7dd2bd1d6406e7789273e3f8a304ed5d9adcfaa5768052fca7dc233a857be98"},

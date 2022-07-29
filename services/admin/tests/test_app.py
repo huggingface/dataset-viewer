@@ -48,8 +48,10 @@ def test_metrics(client: TestClient) -> None:
     assert 'queue_jobs_total{queue="splits/",status="success"}' in metrics
     assert 'queue_jobs_total{queue="first-rows/",status="started"}' in metrics
     assert 'cache_entries_total{cache="datasets",status="valid"}' in metrics
-    assert 'cache_entries_total{cache="splits/",status="BAD_REQUEST"}' in metrics
-    assert 'cache_entries_total{cache="first-rows/",status="INTERNAL_SERVER_ERROR"}' in metrics
+    # still empty
+    assert 'cache_entries_total{cache="splits/",status="BAD_REQUEST"}' not in metrics
+    # still empty
+    assert 'cache_entries_total{cache="first-rows/",status="INTERNAL_SERVER_ERROR"}' not in metrics
     assert 'starlette_requests_total{method="GET",path_template="/metrics"}' in metrics
 
 

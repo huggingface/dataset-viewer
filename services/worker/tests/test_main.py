@@ -1,15 +1,11 @@
 import pytest
-from libcache.cache import clean_database as clean_cache_database
-from libcache.cache import connect_to_cache
-from libqueue.queue import add_dataset_job, add_split_job, add_splits_job
+from libcache.simple_cache import _clean_database as clean_cache_database
+from libcache.simple_cache import connect_to_cache
+from libqueue.queue import add_first_rows_job, add_splits_job
 from libqueue.queue import clean_database as clean_queue_database
 from libqueue.queue import connect_to_queue
 
-from worker.main import (
-    process_next_dataset_job,
-    process_next_split_job,
-    process_next_splits_job,
-)
+from worker.main import process_next_first_rows_job, process_next_splits_job
 
 from ._utils import MONGO_CACHE_DATABASE, MONGO_QUEUE_DATABASE, MONGO_URL
 
@@ -32,17 +28,13 @@ def clean_mongo_database() -> None:
     clean_queue_database()
 
 
-def test_process_next_dataset_job():
-    add_dataset_job("acronym_identification")
-    result = process_next_dataset_job()
-    assert result is True
-
+def test_process_next_splits_job():
     add_splits_job("acronym_identification")
     result = process_next_splits_job()
     assert result is True
 
 
-def test_process_next_split_job():
-    add_split_job("acronym_identification", "default", "train")
-    result = process_next_split_job()
+def test_process_next_first_rows_job():
+    add_first_rows_job("acronym_identification", "default", "train")
+    result = process_next_first_rows_job()
     assert result is True
