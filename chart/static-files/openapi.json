@@ -1818,7 +1818,7 @@
     },
     "/is-valid": {
       "get": {
-        "summary": "Check if a dataset is valid",
+        "summary": "Check if a dataset is valid (experimental)",
         "description": "Check if a dataset works without an error (for /splits and /rows).",
         "externalDocs": {
           "description": "See Valid datasets (Hub docs)",
