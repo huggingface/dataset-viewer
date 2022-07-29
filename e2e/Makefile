@@ -17,4 +17,4 @@ include ../tools/Docker.mk
 
 .PHONY: e2e
 e2e:
-	make test
+	PYTEST_ARGS=-vv make test

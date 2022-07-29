@@ -82,4 +82,4 @@ jobs:
           poetry install
       - name: End-to-end tests
         run: |
-          poetry run python -m pytest -x tests
+          poetry run python -m pytest -vv -x tests
