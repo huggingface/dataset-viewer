@@ -18,7 +18,10 @@ from admin.config import (
     MONGO_URL,
 )
 from admin.prometheus import Prometheus
-from admin.routes.cache_reports import cache_reports_endpoint
+from admin.routes.cache_reports import (
+    cache_reports_first_rows_endpoint,
+    cache_reports_splits_next_endpoint,
+)
 from admin.routes.healthcheck import healthcheck_endpoint
 from admin.routes.pending_jobs import pending_jobs_endpoint
 
@@ -34,7 +37,8 @@ def create_app() -> Starlette:
         Route("/healthcheck", endpoint=healthcheck_endpoint),
         Route("/metrics", endpoint=prometheus.endpoint),
         # used by https://observablehq.com/@huggingface/quality-assessment-of-datasets-loading
-        Route("/cache-reports", endpoint=cache_reports_endpoint),
+        Route("/cache-reports/first-rows", endpoint=cache_reports_first_rows_endpoint),
+        Route("/cache-reports/splits-next", endpoint=cache_reports_splits_next_endpoint),
         # used in a browser tab to monitor the queue
         Route("/pending-jobs", endpoint=pending_jobs_endpoint),
     ]
