@@ -218,7 +218,7 @@ def test_count_by_status() -> None:
 
 
 def test_get_cache_reports_splits_next() -> None:
-    assert get_cache_reports_splits_next("", 2) == {"cache_reports": [], "next_cursor": None}
+    assert get_cache_reports_splits_next("", 2) == {"cache_reports": [], "next_cursor": ""}
     upsert_splits_response(
         "a",
         {"key": "value"},
@@ -254,7 +254,7 @@ def test_get_cache_reports_splits_next() -> None:
     )
     response = get_cache_reports_splits_next("", 2)
     assert response["cache_reports"] == [
-        {"dataset": "a", "error": None, "http_status": HTTPStatus.OK.value},
+        {"dataset": "a", "http_status": HTTPStatus.OK.value},
         {
             "dataset": "b",
             "http_status": HTTPStatus.INTERNAL_SERVER_ERROR.value,
@@ -267,7 +267,7 @@ def test_get_cache_reports_splits_next() -> None:
             },
         },
     ]
-    assert response["next_cursor"] is not None
+    assert response["next_cursor"] != ""
     next_cursor = response["next_cursor"]
 
     response = get_cache_reports_splits_next(next_cursor, 2)
@@ -285,7 +285,7 @@ def test_get_cache_reports_splits_next() -> None:
                 },
             },
         ],
-        "next_cursor": None,
+        "next_cursor": "",
     }
 
     with pytest.raises(InvalidCursor):
@@ -297,7 +297,7 @@ def test_get_cache_reports_splits_next() -> None:
 
 
 def test_get_cache_reports_first_rows() -> None:
-    assert get_cache_reports_first_rows("", 2) == {"cache_reports": [], "next_cursor": None}
+    assert get_cache_reports_first_rows("", 2) == {"cache_reports": [], "next_cursor": ""}
     upsert_first_rows_response(
         "a",
         "config",
@@ -339,7 +339,7 @@ def test_get_cache_reports_first_rows() -> None:
     )
     response = get_cache_reports_first_rows(None, 2)
     assert response["cache_reports"] == [
-        {"dataset": "a", "config": "config", "split": "split", "error": None, "http_status": HTTPStatus.OK.value},
+        {"dataset": "a", "config": "config", "split": "split", "http_status": HTTPStatus.OK.value},
         {
             "dataset": "b",
             "config": "config",
@@ -354,26 +354,28 @@ def test_get_cache_reports_first_rows() -> None:
             },
         },
     ]
-    assert response["next_cursor"] is not None
+    assert response["next_cursor"] != ""
     next_cursor = response["next_cursor"]
 
     response = get_cache_reports_first_rows(next_cursor, 2)
-    assert response["cache_reports"] == [
-        {
-            "dataset": "c",
-            "config": "config",
-            "split": "split",
-            "http_status": HTTPStatus.INTERNAL_SERVER_ERROR.value,
-            "error": {
-                "cause_exception": "ExceptionC",
-                "cause_message": "Cause message C",
-                "cause_traceback": ["C"],
-                "error_code": "ErrorCodeC",
-                "message": "error C",
+    assert response == {
+        "cache_reports": [
+            {
+                "dataset": "c",
+                "config": "config",
+                "split": "split",
+                "http_status": HTTPStatus.INTERNAL_SERVER_ERROR.value,
+                "error": {
+                    "cause_exception": "ExceptionC",
+                    "cause_message": "Cause message C",
+                    "cause_traceback": ["C"],
+                    "error_code": "ErrorCodeC",
+                    "message": "error C",
+                },
             },
-        },
-    ]
-    assert response["next_cursor"] is None
+        ],
+        "next_cursor": "",
+    }
 
     with pytest.raises(InvalidCursor):
         get_cache_reports_first_rows("not an objectid", 2)
