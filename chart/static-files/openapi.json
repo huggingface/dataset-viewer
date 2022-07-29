@@ -2507,8 +2507,8 @@
                           "split": "train",
                           "row_idx": 0,
                           "row": {
-                            "imageA": "http://localhost:9000/assets/huggan/horse2zebra/--/huggan--horse2zebra-aligned/train/0/imageA/image.jpg",
-                            "imageB": "http://localhost:9000/assets/huggan/horse2zebra/--/huggan--horse2zebra-aligned/train/0/imageB/image.jpg"
+                            "imageA": "https://datasets-server.huggingface.co/assets/huggan/horse2zebra/--/huggan--horse2zebra-aligned/train/0/imageA/image.jpg",
+                            "imageB": "https://datasets-server.huggingface.co/assets/huggan/horse2zebra/--/huggan--horse2zebra-aligned/train/0/imageB/image.jpg"
                           },
                           "truncated_cells": []
                         },
@@ -2518,8 +2518,8 @@
                           "split": "train",
                           "row_idx": 1,
                           "row": {
-                            "imageA": "http://localhost:9000/assets/huggan/horse2zebra/--/huggan--horse2zebra-aligned/train/1/imageA/image.jpg",
-                            "imageB": "http://localhost:9000/assets/huggan/horse2zebra/--/huggan--horse2zebra-aligned/train/1/imageB/image.jpg"
+                            "imageA": "https://datasets-server.huggingface.co/assets/huggan/horse2zebra/--/huggan--horse2zebra-aligned/train/1/imageA/image.jpg",
+                            "imageB": "https://datasets-server.huggingface.co/assets/huggan/horse2zebra/--/huggan--horse2zebra-aligned/train/1/imageB/image.jpg"
                           },
                           "truncated_cells": []
                         },
@@ -2529,8 +2529,8 @@
                           "split": "train",
                           "row_idx": 2,
                           "row": {
-                            "imageA": "http://localhost:9000/assets/huggan/horse2zebra/--/huggan--horse2zebra-aligned/train/2/imageA/image.jpg",
-                            "imageB": "http://localhost:9000/assets/huggan/horse2zebra/--/huggan--horse2zebra-aligned/train/2/imageB/image.jpg"
+                            "imageA": "https://datasets-server.huggingface.co/assets/huggan/horse2zebra/--/huggan--horse2zebra-aligned/train/2/imageA/image.jpg",
+                            "imageB": "https://datasets-server.huggingface.co/assets/huggan/horse2zebra/--/huggan--horse2zebra-aligned/train/2/imageB/image.jpg"
                           },
                           "truncated_cells": []
                         },
@@ -2540,8 +2540,8 @@
                           "split": "train",
                           "row_idx": 3,
                           "row": {
-                            "imageA": "http://localhost:9000/assets/huggan/horse2zebra/--/huggan--horse2zebra-aligned/train/3/imageA/image.jpg",
-                            "imageB": "http://localhost:9000/assets/huggan/horse2zebra/--/huggan--horse2zebra-aligned/train/3/imageB/image.jpg"
+                            "imageA": "https://datasets-server.huggingface.co/assets/huggan/horse2zebra/--/huggan--horse2zebra-aligned/train/3/imageA/image.jpg",
+                            "imageB": "https://datasets-server.huggingface.co/assets/huggan/horse2zebra/--/huggan--horse2zebra-aligned/train/3/imageB/image.jpg"
                           },
                           "truncated_cells": []
                         }

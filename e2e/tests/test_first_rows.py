@@ -1,3 +1,6 @@
+import json
+from typing import Any
+
 import pytest
 import requests
 
@@ -8,6 +11,10 @@ from .utils import (
     refresh_poll_splits_next,
     refresh_poll_splits_next_first_rows,
 )
+
+
+def prepare_json(response: requests.Response) -> Any:
+    return json.loads(response.text.replace(URL, "https://datasets-server.huggingface.co"))
 
 
 @pytest.mark.parametrize(
@@ -72,7 +79,7 @@ def test_first_rows(status: int, name: str, dataset: str, config: str, split: st
         _, r_rows = refresh_poll_splits_next_first_rows(dataset, config, split)
 
     assert r_rows.status_code == status
-    assert r_rows.json() == body
+    assert prepare_json(r_rows) == body
     if error_code is not None:
         assert r_rows.headers["X-Error-Code"] == error_code
     else:
