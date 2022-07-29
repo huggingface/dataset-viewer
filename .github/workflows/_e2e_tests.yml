@@ -81,5 +81,7 @@ jobs:
           poetry env use "${{ env.python-version }}"
           poetry install
       - name: End-to-end tests
+        env:
+          ROWS_MAX_NUMBER: 4
         run: |
           poetry run python -m pytest -vv -x tests
