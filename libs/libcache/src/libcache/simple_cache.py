@@ -4,12 +4,15 @@ from datetime import datetime, timezone
 from http import HTTPStatus
 from typing import Dict, Generic, List, Optional, Tuple, Type, TypedDict, TypeVar, Union
 
+from bson import ObjectId
+from bson.errors import InvalidId
 from mongoengine import Document, DoesNotExist, connect
 from mongoengine.fields import (
     BooleanField,
     DateTimeField,
     DictField,
     EnumField,
+    ObjectIdField,
     StringField,
 )
 from mongoengine.queryset.queryset import QuerySet
@@ -47,6 +50,7 @@ def get_datetime() -> datetime:
 
 # cache of the /splits endpoint
 class SplitsResponse(Document):
+    id = ObjectIdField(db_field="_id", primary_key=True, default=ObjectId)
     dataset_name = StringField(required=True, unique=True)
     http_status = EnumField(HTTPStatus, required=True)
     error_code = StringField(required=False)
@@ -65,6 +69,7 @@ class SplitsResponse(Document):
 
 # cache of the /first-rows endpoint
 class FirstRowsResponse(Document):
+    id = ObjectIdField(db_field="_id", primary_key=True, default=ObjectId)
     dataset_name = StringField(required=True, unique_with=["config_name", "split_name"])
     config_name = StringField(required=True)
     split_name = StringField(required=True)
@@ -258,7 +263,7 @@ def get_datasets_with_some_error() -> List[str]:
     return sorted(candidate_dataset_names.union(candidate_dataset_names_in_first_rows))
 
 
-# /cache-reports endpoints
+# /cache-reports/... endpoints
 
 
 class _ErrorReport(TypedDict):
@@ -266,56 +271,161 @@ class _ErrorReport(TypedDict):
 
 
 class ErrorReport(_ErrorReport, total=False):
+    error_code: str
     cause_exception: str
+    cause_message: str
+    cause_traceback: List[str]
 
 
-class SplitsResponseReport(TypedDict):
+class _ResponseReport(TypedDict):
     dataset: str
-    status: int
+    http_status: int
+
+
+class SplitsResponseReport(_ResponseReport, total=False):
     error: Optional[ErrorReport]
 
 
-class FirstRowsResponseReport(TypedDict):
-    dataset: str
+class FirstRowsResponseReport(SplitsResponseReport):
     config: str
     split: str
-    status: int
-    error: Optional[ErrorReport]
+
+
+class CacheReportSplitsNext(TypedDict):
+    cache_reports: List[SplitsResponseReport]
+    next_cursor: Optional[str]
+
+
+class CacheReportFirstRows(TypedDict):
+    cache_reports: List[FirstRowsResponseReport]
+    next_cursor: Optional[str]
 
 
 def get_error(object: Union[SplitsResponse, FirstRowsResponse]) -> Optional[ErrorReport]:
-    if object.http_status == HTTPStatus.OK:
+    details = object.details
+    if not details:
         return None
-    if "error" not in object.response:
-        raise ValueError("Missing message in error response")
-    report: ErrorReport = {"message": object.response["error"]}
-    if "cause_exception" in object.response:
-        report["cause_exception"] = object.response["cause_exception"]
+    if "error" not in details:
+        raise ValueError("Missing message in object details")
+    report: ErrorReport = {"message": details["error"]}
+    if "cause_exception" in details:
+        report["cause_exception"] = details["cause_exception"]
+    if "cause_message" in details:
+        report["cause_message"] = details["cause_message"]
+    if "cause_traceback" in details:
+        report["cause_traceback"] = details["cause_traceback"]
+    if object.error_code is not None:
+        report["error_code"] = object.error_code
     return report
 
 
-def get_splits_response_reports() -> List[SplitsResponseReport]:
-    return [
-        {
-            "dataset": response.dataset_name,
-            "status": response.http_status.value,
-            "error": get_error(response),
-        }
-        for response in SplitsResponse.objects()
-    ]
+class InvalidCursor(Exception):
+    pass
 
 
-def get_first_rows_response_reports() -> List[FirstRowsResponseReport]:
-    return [
-        {
-            "dataset": response.dataset_name,
-            "config": response.config_name,
-            "split": response.split_name,
-            "status": response.http_status.value,
-            "error": get_error(response),
-        }
-        for response in FirstRowsResponse.objects()
-    ]
+class InvalidLimit(Exception):
+    pass
+
+
+def get_cache_reports_splits_next(cursor: str, limit: int) -> CacheReportSplitsNext:
+    """
+    Get a list of reports about SplitsResponse cache entries, along with the next cursor.
+    See https://solovyov.net/blog/2020/api-pagination-design/.
+    Args:
+        cursor (`str`):
+            An opaque string value representing a pointer to a specific SplitsResponse item in the dataset. The
+            server returns results after the given pointer.
+            An empty string means to start from the beginning.
+        limit (strictly positive `int`):
+            The maximum number of results.
+    Returns:
+        [`CacheReportSplitsNext`]: A dict with the list of reports and the next cursor. The next cursor is
+        an empty string if there are no more items to be fetched.
+    <Tip>
+    Raises the following errors:
+        - [`~libcache.simple_cache.InvalidCursor`]
+          If the cursor is invalid.
+        - [`~libcache.simple_cache.InvalidLimit`]
+          If the limit is an invalid number.
+    </Tip>
+    """
+    if not cursor:
+        queryset = SplitsResponse.objects()
+    else:
+        try:
+            queryset = SplitsResponse.objects(id__gt=ObjectId(cursor))
+        except InvalidId as err:
+            raise InvalidCursor("Invalid cursor.") from err
+    if limit <= 0:
+        raise InvalidLimit("Invalid limit.")
+    objects = list(
+        queryset.order_by("+id")
+        .only("id", "dataset_name", "http_status", "response", "details", "error_code")
+        .limit(limit)
+    )
+
+    return {
+        "cache_reports": [
+            {
+                "dataset": object.dataset_name,
+                "http_status": object.http_status.value,
+                "error": get_error(object),
+            }
+            for object in objects
+        ],
+        "next_cursor": None if len(objects) < limit else str(objects[-1].id),
+    }
+
+
+def get_cache_reports_first_rows(cursor: Optional[str], limit: int) -> CacheReportFirstRows:
+    """
+    Get a list of reports about FirstRowsResponse cache entries, along with the next cursor.
+    See https://solovyov.net/blog/2020/api-pagination-design/.
+    Args:
+        cursor (`str`):
+            An opaque string value representing a pointer to a specific FirstRowsResponse item in the dataset. The
+            server returns results after the given pointer.
+            An empty string means to start from the beginning.
+        limit (strictly positive `int`):
+            The maximum number of results.
+    Returns:
+        [`CacheReportFirstRows`]: A dict with the list of reports and the next cursor. The next cursor is
+        an empty string if there are no more items to be fetched.
+    <Tip>
+    Raises the following errors:
+        - [`~libcache.simple_cache.InvalidCursor`]
+          If the cursor is invalid.
+        - [`~libcache.simple_cache.InvalidLimit`]
+          If the limit is an invalid number.
+    </Tip>
+    """
+    if not cursor:
+        queryset = FirstRowsResponse.objects()
+    else:
+        try:
+            queryset = FirstRowsResponse.objects(id__gt=ObjectId(cursor))
+        except InvalidId as err:
+            raise InvalidCursor("Invalid cursor.") from err
+    if limit <= 0:
+        raise InvalidLimit("Invalid limit.")
+    objects = list(
+        queryset.order_by("+id")
+        .only("id", "dataset_name", "config_name", "split_name", "http_status", "response", "details", "error_code")
+        .limit(limit)
+    )
+    return {
+        "cache_reports": [
+            {
+                "dataset": object.dataset_name,
+                "config": object.config_name,
+                "split": object.split_name,
+                "http_status": object.http_status.value,
+                "error": get_error(object),
+            }
+            for object in objects
+        ],
+        "next_cursor": None if len(objects) < limit else str(objects[-1].id),
+    }
 
 
 # only for the tests

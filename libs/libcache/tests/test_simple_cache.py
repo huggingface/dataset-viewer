@@ -5,16 +5,18 @@ from pymongo.errors import DocumentTooLarge
 
 from libcache.simple_cache import (
     DoesNotExist,
+    InvalidCursor,
+    InvalidLimit,
     _clean_database,
     connect_to_cache,
     delete_first_rows_responses,
     delete_splits_responses,
+    get_cache_reports_first_rows,
+    get_cache_reports_splits_next,
     get_datasets_with_some_error,
     get_first_rows_response,
-    get_first_rows_response_reports,
     get_first_rows_responses_count_by_status,
     get_splits_response,
-    get_splits_response_reports,
     get_splits_responses_count_by_status,
     get_valid_dataset_names,
     mark_first_rows_responses_as_stale,
@@ -215,93 +217,167 @@ def test_count_by_status() -> None:
     assert get_splits_responses_count_by_status()["OK"] == 1
 
 
-def test_reports() -> None:
-    assert get_splits_response_reports() == []
+def test_get_cache_reports_splits_next() -> None:
+    assert get_cache_reports_splits_next("", 2) == {"cache_reports": [], "next_cursor": None}
     upsert_splits_response(
         "a",
         {"key": "value"},
         HTTPStatus.OK,
     )
+    b_details = {
+        "error": "error B",
+        "cause_exception": "ExceptionB",
+        "cause_message": "Cause message B",
+        "cause_traceback": ["B"],
+    }
     upsert_splits_response(
         "b",
-        {
-            "error": "Cannot get the split names for the dataset.",
-            "cause_exception": "FileNotFoundError",
-            "cause_message": (
-                "Couldn't find a dataset script at /src/services/worker/wikimedia/timit_asr/timit_asr.py or any data"
-                " file in the same directory. Couldn't find 'wikimedia/timit_asr' on the Hugging Face Hub either:"
-                " FileNotFoundError: Dataset 'wikimedia/timit_asr' doesn't exist on the Hub. If the repo is private,"
-                " make sure you are authenticated with `use_auth_token=True` after logging in with `huggingface-cli"
-                " login`."
-            ),
-            "cause_traceback": [
-                "Traceback (most recent call last):\n",
-                '  File "/src/services/worker/src/worker/models/dataset.py", line 17, in'
-                " get_dataset_split_full_names\n    for config_name in get_dataset_config_names(dataset_name,"
-                " use_auth_token=hf_token)\n",
-                '  File "/src/services/worker/.venv/lib/python3.9/site-packages/datasets/inspect.py", line 289, in'
-                " get_dataset_config_names\n    dataset_module = dataset_module_factory(\n",
-                '  File "/src/services/worker/.venv/lib/python3.9/site-packages/datasets/load.py", line 1242, in'
-                " dataset_module_factory\n    raise FileNotFoundError(\n",
-                "FileNotFoundError: Couldn't find a dataset script at"
-                " /src/services/worker/wikimedia/timit_asr/timit_asr.py or any data file in the same directory."
-                " Couldn't find 'wikimedia/timit_asr' on the Hugging Face Hub either: FileNotFoundError: Dataset"
-                " 'wikimedia/timit_asr' doesn't exist on the Hub. If the repo is private, make sure you are"
-                " authenticated with `use_auth_token=True` after logging in with `huggingface-cli login`.\n",
-            ],
-        },
-        HTTPStatus.BAD_REQUEST,
+        b_details,
+        HTTPStatus.INTERNAL_SERVER_ERROR,
+        "ErrorCodeB",
+        b_details,
     )
+    c_details = {
+        "error": "error C",
+        "cause_exception": "ExceptionC",
+        "cause_message": "Cause message C",
+        "cause_traceback": ["C"],
+    }
     upsert_splits_response(
         "c",
         {
-            "error": "cannot write mode RGBA as JPEG",
+            "error": c_details["error"],
         },
         HTTPStatus.INTERNAL_SERVER_ERROR,
-        "RowsPostProcessingError",
-        {
-            "status_code": 500,
-            "message": "cannot write mode RGBA as JPEG",
-            "cause_exception": "FileNotFoundError",
-            "cause_message": (
-                "Couldn't find a dataset script at /src/services/worker/wikimedia/timit_asr/timit_asr.py or any data"
-                " file in the same directory. Couldn't find 'wikimedia/timit_asr' on the Hugging Face Hub either:"
-                " FileNotFoundError: Dataset 'wikimedia/timit_asr' doesn't exist on the Hub. If the repo is private,"
-                " make sure you are authenticated with `use_auth_token=True` after logging in with `huggingface-cli"
-                " login`."
-            ),
-            "cause_traceback": [
-                "Traceback (most recent call last):\n",
-                '  File "/src/services/worker/src/worker/models/dataset.py", line 17, in'
-                " get_dataset_split_full_names\n    for config_name in get_dataset_config_names(dataset_name,"
-                " use_auth_token=hf_token)\n",
-                '  File "/src/services/worker/.venv/lib/python3.9/site-packages/datasets/inspect.py", line 289, in'
-                " get_dataset_config_names\n    dataset_module = dataset_module_factory(\n",
-                '  File "/src/services/worker/.venv/lib/python3.9/site-packages/datasets/load.py", line 1242, in'
-                " dataset_module_factory\n    raise FileNotFoundError(\n",
-                "FileNotFoundError: Couldn't find a dataset script at"
-                " /src/services/worker/wikimedia/timit_asr/timit_asr.py or any data file in the same directory."
-                " Couldn't find 'wikimedia/timit_asr' on the Hugging Face Hub either: FileNotFoundError: Dataset"
-                " 'wikimedia/timit_asr' doesn't exist on the Hub. If the repo is private, make sure you are"
-                " authenticated with `use_auth_token=True` after logging in with `huggingface-cli login`.\n",
-            ],
-        },
+        "ErrorCodeC",
+        c_details,
     )
-    assert get_splits_response_reports() == [
-        {"dataset": "a", "error": None, "status": HTTPStatus.OK.value},
+    response = get_cache_reports_splits_next("", 2)
+    assert response["cache_reports"] == [
+        {"dataset": "a", "error": None, "http_status": HTTPStatus.OK.value},
         {
             "dataset": "b",
+            "http_status": HTTPStatus.INTERNAL_SERVER_ERROR.value,
             "error": {
-                "cause_exception": "FileNotFoundError",
-                "message": "Cannot get the split names for the dataset.",
+                "cause_exception": "ExceptionB",
+                "cause_message": "Cause message B",
+                "cause_traceback": ["B"],
+                "error_code": "ErrorCodeB",
+                "message": "error B",
             },
-            "status": HTTPStatus.BAD_REQUEST.value,
-        },
-        {
-            "dataset": "c",
-            "error": {"message": "cannot write mode RGBA as JPEG"},
-            "status": HTTPStatus.INTERNAL_SERVER_ERROR.value,
         },
     ]
+    assert response["next_cursor"] is not None
+    next_cursor = response["next_cursor"]
 
-    assert get_first_rows_response_reports() == []
+    response = get_cache_reports_splits_next(next_cursor, 2)
+    assert response == {
+        "cache_reports": [
+            {
+                "dataset": "c",
+                "http_status": HTTPStatus.INTERNAL_SERVER_ERROR.value,
+                "error": {
+                    "cause_exception": "ExceptionC",
+                    "cause_message": "Cause message C",
+                    "cause_traceback": ["C"],
+                    "error_code": "ErrorCodeC",
+                    "message": "error C",
+                },
+            },
+        ],
+        "next_cursor": None,
+    }
+
+    with pytest.raises(InvalidCursor):
+        get_cache_reports_splits_next("not an objectid", 2)
+    with pytest.raises(InvalidLimit):
+        get_cache_reports_splits_next(next_cursor, -1)
+    with pytest.raises(InvalidLimit):
+        get_cache_reports_splits_next(next_cursor, 0)
+
+
+def test_get_cache_reports_first_rows() -> None:
+    assert get_cache_reports_first_rows("", 2) == {"cache_reports": [], "next_cursor": None}
+    upsert_first_rows_response(
+        "a",
+        "config",
+        "split",
+        {"key": "value"},
+        HTTPStatus.OK,
+    )
+    b_details = {
+        "error": "error B",
+        "cause_exception": "ExceptionB",
+        "cause_message": "Cause message B",
+        "cause_traceback": ["B"],
+    }
+    upsert_first_rows_response(
+        "b",
+        "config",
+        "split",
+        b_details,
+        HTTPStatus.INTERNAL_SERVER_ERROR,
+        "ErrorCodeB",
+        b_details,
+    )
+    c_details = {
+        "error": "error C",
+        "cause_exception": "ExceptionC",
+        "cause_message": "Cause message C",
+        "cause_traceback": ["C"],
+    }
+    upsert_first_rows_response(
+        "c",
+        "config",
+        "split",
+        {
+            "error": c_details["error"],
+        },
+        HTTPStatus.INTERNAL_SERVER_ERROR,
+        "ErrorCodeC",
+        c_details,
+    )
+    response = get_cache_reports_first_rows(None, 2)
+    assert response["cache_reports"] == [
+        {"dataset": "a", "config": "config", "split": "split", "error": None, "http_status": HTTPStatus.OK.value},
+        {
+            "dataset": "b",
+            "config": "config",
+            "split": "split",
+            "http_status": HTTPStatus.INTERNAL_SERVER_ERROR.value,
+            "error": {
+                "cause_exception": "ExceptionB",
+                "cause_message": "Cause message B",
+                "cause_traceback": ["B"],
+                "error_code": "ErrorCodeB",
+                "message": "error B",
+            },
+        },
+    ]
+    assert response["next_cursor"] is not None
+    next_cursor = response["next_cursor"]
+
+    response = get_cache_reports_first_rows(next_cursor, 2)
+    assert response["cache_reports"] == [
+        {
+            "dataset": "c",
+            "config": "config",
+            "split": "split",
+            "http_status": HTTPStatus.INTERNAL_SERVER_ERROR.value,
+            "error": {
+                "cause_exception": "ExceptionC",
+                "cause_message": "Cause message C",
+                "cause_traceback": ["C"],
+                "error_code": "ErrorCodeC",
+                "message": "error C",
+            },
+        },
+    ]
+    assert response["next_cursor"] is None
+
+    with pytest.raises(InvalidCursor):
+        get_cache_reports_first_rows("not an objectid", 2)
+    with pytest.raises(InvalidLimit):
+        get_cache_reports_first_rows(next_cursor, -1)
+    with pytest.raises(InvalidLimit):
+        get_cache_reports_first_rows(next_cursor, 0)
