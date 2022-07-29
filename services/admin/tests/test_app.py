@@ -1,3 +1,5 @@
+from typing import Optional
+
 import pytest
 
 # from libcache.cache import clean_database as clean_cache_database
@@ -64,10 +66,26 @@ def test_pending_jobs(client: TestClient) -> None:
     assert "created_at" in json
 
 
-def test_cache_reports(client: TestClient) -> None:
-    response = client.get("/cache-reports")
-    assert response.status_code == 200
-    json = response.json()
-    assert json["/splits-next"] == []
-    assert json["/first-rows"] == []
-    assert "created_at" in json
+@pytest.mark.parametrize(
+    "path,cursor,http_status,error_code",
+    [
+        ("/splits-next", None, 200, None),
+        ("/splits-next", "", 200, None),
+        ("/splits-next", "invalid cursor", 422, "InvalidParameter"),
+        ("/first-rows", None, 200, None),
+        ("/first-rows", "", 200, None),
+        ("/first-rows", "invalid cursor", 422, "InvalidParameter"),
+    ],
+)
+def test_cache_reports(
+    client: TestClient, path: str, cursor: Optional[str], http_status: int, error_code: Optional[str]
+) -> None:
+    cursor_str = f"?cursor={cursor}" if cursor else ""
+    response = client.get(f"/cache-reports{path}{cursor_str}")
+    assert response.status_code == http_status
+    if error_code:
+        assert isinstance(response.json()["error"], str)
+        assert response.headers["X-Error-Code"] == error_code
+    else:
+        assert response.json() == {"cache_reports": [], "next_cursor": ""}
+        assert "X-Error-Code" not in response.headers
