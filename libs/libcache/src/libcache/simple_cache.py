@@ -62,7 +62,13 @@ class SplitsResponse(Document):
     meta = {
         "collection": "splitsResponse",
         "db_alias": "cache",
-        "indexes": ["dataset_name", "http_status", "stale", "error_code"],
+        "indexes": [
+            "dataset_name",
+            "http_status",
+            "stale",
+            ("http_status", "error_code"),
+            ("error_code", "http_status"),
+        ],
     }
     objects = QuerySetManager["SplitsResponse"]()
 
@@ -88,7 +94,8 @@ class FirstRowsResponse(Document):
             ("dataset_name", "http_status"),
             ("http_status", "dataset_name"),
             # ^ this index (reversed) is used for the "distinct" command to get the names of the valid datasets
-            "error_code",
+            ("http_status", "error_code"),
+            ("error_code", "http_status"),
         ],
     }
     objects = QuerySetManager["FirstRowsResponse"]()
@@ -213,39 +220,25 @@ def get_valid_dataset_names() -> List[str]:
 
 # admin /metrics endpoint
 
+CountByHttpStatusAndErrorCode = Dict[str, Dict[Optional[str], int]]
 
-CountByHTTPStatus = Dict[str, int]
 
-
-def get_entries_count_by_status(entries: QuerySet[AnyResponse]) -> CountByHTTPStatus:
-    # return {http_status.name: entries(http_status=http_status).count() for http_status in HTTPStatus}
+def get_entries_count_by_status_and_error_code(entries: QuerySet[AnyResponse]) -> CountByHttpStatusAndErrorCode:
     return {
-        HTTPStatus(http_status).name: entries(http_status=http_status).count()
+        str(http_status): {
+            error_code: entries(http_status=http_status, error_code=error_code).count()
+            for error_code in entries(http_status=http_status).distinct("error_code")
+        }
         for http_status in sorted(entries.distinct("http_status"))
     }
 
 
-def get_splits_responses_count_by_status() -> CountByHTTPStatus:
-    return get_entries_count_by_status(SplitsResponse.objects)
+def get_splits_responses_count_by_status_and_error_code() -> CountByHttpStatusAndErrorCode:
+    return get_entries_count_by_status_and_error_code(SplitsResponse.objects)
 
 
-def get_first_rows_responses_count_by_status() -> CountByHTTPStatus:
-    return get_entries_count_by_status(FirstRowsResponse.objects)
-
-
-CountByErrorCode = Dict[str, int]
-
-
-def get_entries_count_by_error_code(entries: QuerySet[AnyResponse]) -> CountByErrorCode:
-    return {error_code: entries(error_code=error_code).count() for error_code in entries.distinct("error_code")}
-
-
-def get_splits_responses_count_by_error_code() -> CountByErrorCode:
-    return get_entries_count_by_error_code(SplitsResponse.objects)
-
-
-def get_first_rows_responses_count_by_error_code() -> CountByErrorCode:
-    return get_entries_count_by_error_code(FirstRowsResponse.objects)
+def get_first_rows_responses_count_by_status_and_error_code() -> CountByHttpStatusAndErrorCode:
+    return get_entries_count_by_status_and_error_code(FirstRowsResponse.objects)
 
 
 # for scripts
