@@ -1,4 +1,5 @@
 from http import HTTPStatus
+from time import process_time
 
 import pytest
 from pymongo.errors import DocumentTooLarge
@@ -254,17 +255,11 @@ def test_get_cache_reports_splits_next() -> None:
     )
     response = get_cache_reports_splits_next("", 2)
     assert response["cache_reports"] == [
-        {"dataset": "a", "http_status": HTTPStatus.OK.value},
+        {"dataset": "a", "http_status": HTTPStatus.OK.value, "error_code": None},
         {
             "dataset": "b",
             "http_status": HTTPStatus.INTERNAL_SERVER_ERROR.value,
-            "error": {
-                "cause_exception": "ExceptionB",
-                "cause_message": "Cause message B",
-                "cause_traceback": ["B"],
-                "error_code": "ErrorCodeB",
-                "message": "error B",
-            },
+            "error_code": "ErrorCodeB",
         },
     ]
     assert response["next_cursor"] != ""
@@ -276,13 +271,7 @@ def test_get_cache_reports_splits_next() -> None:
             {
                 "dataset": "c",
                 "http_status": HTTPStatus.INTERNAL_SERVER_ERROR.value,
-                "error": {
-                    "cause_exception": "ExceptionC",
-                    "cause_message": "Cause message C",
-                    "cause_traceback": ["C"],
-                    "error_code": "ErrorCodeC",
-                    "message": "error C",
-                },
+                "error_code": "ErrorCodeC",
             },
         ],
         "next_cursor": "",
@@ -337,21 +326,15 @@ def test_get_cache_reports_first_rows() -> None:
         "ErrorCodeC",
         c_details,
     )
-    response = get_cache_reports_first_rows(None, 2)
+    response = get_cache_reports_first_rows("", 2)
     assert response["cache_reports"] == [
-        {"dataset": "a", "config": "config", "split": "split", "http_status": HTTPStatus.OK.value},
+        {"dataset": "a", "config": "config", "split": "split", "http_status": HTTPStatus.OK.value, "error_code": None},
         {
             "dataset": "b",
             "config": "config",
             "split": "split",
             "http_status": HTTPStatus.INTERNAL_SERVER_ERROR.value,
-            "error": {
-                "cause_exception": "ExceptionB",
-                "cause_message": "Cause message B",
-                "cause_traceback": ["B"],
-                "error_code": "ErrorCodeB",
-                "message": "error B",
-            },
+            "error_code": "ErrorCodeB",
         },
     ]
     assert response["next_cursor"] != ""
@@ -365,13 +348,7 @@ def test_get_cache_reports_first_rows() -> None:
                 "config": "config",
                 "split": "split",
                 "http_status": HTTPStatus.INTERNAL_SERVER_ERROR.value,
-                "error": {
-                    "cause_exception": "ExceptionC",
-                    "cause_message": "Cause message C",
-                    "cause_traceback": ["C"],
-                    "error_code": "ErrorCodeC",
-                    "message": "error C",
-                },
+                "error_code": "ErrorCodeC",
             },
         ],
         "next_cursor": "",
@@ -383,3 +360,27 @@ def test_get_cache_reports_first_rows() -> None:
         get_cache_reports_first_rows(next_cursor, -1)
     with pytest.raises(InvalidLimit):
         get_cache_reports_first_rows(next_cursor, 0)
+
+
+@pytest.mark.parametrize("num_entries", [100, 1_000])
+def test_stress_get_cache_reports_first_rows(num_entries: int) -> None:
+    MAX_SECONDS = 0.1
+    assert get_cache_reports_first_rows("", 2) == {"cache_reports": [], "next_cursor": ""}
+    split_names = [f"split{i}" for i in range(num_entries)]
+    for split_name in split_names:
+        upsert_first_rows_response(
+            "dataset",
+            "config",
+            split_name,
+            {"key": "value"},
+            HTTPStatus.OK,
+        )
+
+    next_cursor = ""
+    is_first: bool = True
+    while next_cursor != "" or is_first:
+        start = process_time()
+        is_first = False
+        response = get_cache_reports_first_rows(next_cursor, 100)
+        next_cursor = response["next_cursor"]
+        assert process_time() - start < MAX_SECONDS

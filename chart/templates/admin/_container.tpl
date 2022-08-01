@@ -9,6 +9,8 @@
     value: {{ .Values.admin.appPort | quote }}
   - name: ASSETS_DIRECTORY
     value: {{ .Values.admin.assetsDirectory | quote }}
+  - name: CACHE_REPORTS_NUM_RESULTS
+    value: {{ .Values.admin.cacheReportsNumResults | quote }}
   - name: LOG_LEVEL
     value: {{ .Values.admin.logLevel | quote }}
   - name: MAX_AGE_SHORT_SECONDS

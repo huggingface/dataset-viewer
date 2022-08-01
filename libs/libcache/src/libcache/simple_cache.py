@@ -2,7 +2,7 @@ import logging
 import types
 from datetime import datetime, timezone
 from http import HTTPStatus
-from typing import Dict, Generic, List, Optional, Tuple, Type, TypedDict, TypeVar, Union
+from typing import Dict, Generic, List, Optional, Tuple, Type, TypedDict, TypeVar
 
 from bson import ObjectId
 from bson.errors import InvalidId
@@ -266,24 +266,10 @@ def get_datasets_with_some_error() -> List[str]:
 # /cache-reports/... endpoints
 
 
-class _ErrorReport(TypedDict):
-    message: str
-
-
-class ErrorReport(_ErrorReport, total=False):
-    error_code: str
-    cause_exception: str
-    cause_message: str
-    cause_traceback: List[str]
-
-
-class _ResponseReport(TypedDict):
+class SplitsResponseReport(TypedDict):
     dataset: str
     http_status: int
-
-
-class SplitsResponseReport(_ResponseReport, total=False):
-    error: Optional[ErrorReport]
+    error_code: Optional[str]
 
 
 class FirstRowsResponseReport(SplitsResponseReport):
@@ -299,48 +285,6 @@ class CacheReportSplitsNext(TypedDict):
 class CacheReportFirstRows(TypedDict):
     cache_reports: List[FirstRowsResponseReport]
     next_cursor: str
-
-
-def get_error(object: Union[SplitsResponse, FirstRowsResponse]) -> Optional[ErrorReport]:
-    details = object.details
-    if not details:
-        return None
-    if "error" not in details:
-        raise ValueError("Missing message in object details")
-    report: ErrorReport = {"message": details["error"]}
-    if "cause_exception" in details:
-        report["cause_exception"] = details["cause_exception"]
-    if "cause_message" in details:
-        report["cause_message"] = details["cause_message"]
-    if "cause_traceback" in details:
-        report["cause_traceback"] = details["cause_traceback"]
-    if object.error_code is not None:
-        report["error_code"] = object.error_code
-    return report
-
-
-def get_splits_next_report(object: SplitsResponse) -> SplitsResponseReport:
-    report: SplitsResponseReport = {
-        "dataset": object.dataset_name,
-        "http_status": object.http_status.value,
-    }
-    error = get_error(object)
-    if error is not None:
-        report["error"] = error
-    return report
-
-
-def get_first_rows_report(object: FirstRowsResponse) -> FirstRowsResponseReport:
-    report: FirstRowsResponseReport = {
-        "dataset": object.dataset_name,
-        "config": object.config_name,
-        "split": object.split_name,
-        "http_status": object.http_status.value,
-    }
-    error = get_error(object)
-    if error is not None:
-        report["error"] = error
-    return report
 
 
 class InvalidCursor(Exception):
@@ -382,14 +326,17 @@ def get_cache_reports_splits_next(cursor: str, limit: int) -> CacheReportSplitsN
             raise InvalidCursor("Invalid cursor.") from err
     if limit <= 0:
         raise InvalidLimit("Invalid limit.")
-    objects = list(
-        queryset.order_by("+id")
-        .only("id", "dataset_name", "http_status", "response", "details", "error_code")
-        .limit(limit)
-    )
+    objects = list(queryset.order_by("+id").only("id", "dataset_name", "http_status", "error_code").limit(limit))
 
     return {
-        "cache_reports": [get_splits_next_report(object) for object in objects],
+        "cache_reports": [
+            {
+                "dataset": object.dataset_name,
+                "http_status": object.http_status.value,
+                "error_code": object.error_code,
+            }
+            for object in objects
+        ],
         "next_cursor": "" if len(objects) < limit else str(objects[-1].id),
     }
 
@@ -427,11 +374,20 @@ def get_cache_reports_first_rows(cursor: Optional[str], limit: int) -> CacheRepo
         raise InvalidLimit("Invalid limit.")
     objects = list(
         queryset.order_by("+id")
-        .only("id", "dataset_name", "config_name", "split_name", "http_status", "response", "details", "error_code")
+        .only("id", "dataset_name", "config_name", "split_name", "http_status", "error_code")
         .limit(limit)
     )
     return {
-        "cache_reports": [get_first_rows_report(object) for object in objects],
+        "cache_reports": [
+            {
+                "dataset": object.dataset_name,
+                "config": object.config_name,
+                "split": object.split_name,
+                "http_status": object.http_status.value,
+                "error_code": object.error_code,
+            }
+            for object in objects
+        ],
         "next_cursor": "" if len(objects) < limit else str(objects[-1].id),
     }
 

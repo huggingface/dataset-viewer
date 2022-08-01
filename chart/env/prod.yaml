@@ -184,5 +184,7 @@ admin:
       cpu: 1
 
   appNumWorkers: "1"
+  # Number of reports in /cache-reports/... endpoints
+  cacheReportsNumResults: 1000
   # Log level
   logLevel: "DEBUG"
