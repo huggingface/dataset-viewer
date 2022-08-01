@@ -3,8 +3,8 @@ from typing import Dict
 
 from libcache.cache import get_datasets_count_by_status, get_splits_count_by_status
 from libcache.simple_cache import (
-    get_first_rows_responses_count_by_status,
-    get_splits_responses_count_by_status,
+    get_first_rows_responses_count_by_status_and_error_code,
+    get_splits_responses_count_by_status_and_error_code,
 )
 from libqueue.queue import (
     get_dataset_jobs_count_by_status,
@@ -49,6 +49,11 @@ class Prometheus:
         self.metrics["cache_entries_total"] = Gauge(
             "cache_entries_total", "Number of entries in the cache", ["cache", "status"]
         )
+        self.metrics["cached_responses_total"] = Gauge(
+            "cached_responses_total",
+            "Number of cached responses in the cache",
+            ["endpoint", "http_status", "error_code"],
+        )
 
     def updateMetrics(self):
         for status, total in get_dataset_jobs_count_by_status().items():
@@ -63,10 +68,16 @@ class Prometheus:
             self.metrics["cache_entries_total"].labels(cache="datasets", status=status).set(total)
         for status, total in get_splits_count_by_status().items():
             self.metrics["cache_entries_total"].labels(cache="splits", status=status).set(total)
-        for status, total in get_splits_responses_count_by_status().items():
-            self.metrics["cache_entries_total"].labels(cache="splits/", status=status).set(total)
-        for status, total in get_first_rows_responses_count_by_status().items():
-            self.metrics["cache_entries_total"].labels(cache="first-rows/", status=status).set(total)
+        for http_status, by_error_code in get_splits_responses_count_by_status_and_error_code().items():
+            for error_code, total in by_error_code.items():
+                self.metrics["cached_responses_total"].labels(
+                    endpoint="/splits", http_status=http_status, error_code=error_code
+                ).set(total)
+        for http_status, by_error_code in get_first_rows_responses_count_by_status_and_error_code().items():
+            for error_code, total in by_error_code.items():
+                self.metrics["cached_responses_total"].labels(
+                    endpoint="/first-rows", http_status=http_status, error_code=error_code
+                ).set(total)
 
     def endpoint(self, request: Request) -> Response:
         self.updateMetrics()
