@@ -51,9 +51,9 @@ def test_metrics(client: TestClient) -> None:
     assert 'queue_jobs_total{queue="first-rows/",status="started"}' in metrics
     assert 'cache_entries_total{cache="datasets",status="valid"}' in metrics
     # still empty
-    assert 'cached_responses_total{endpoint="/splits",http_status="200",error_code=null}' not in metrics
+    assert 'responses_in_cache_total{path="/splits",http_status="200",error_code=null}' not in metrics
     # still empty
-    assert 'cached_responses_total{endpoint="/first-rows",http_status="200",error_code=null}' not in metrics
+    assert 'responses_in_cache_total{path="/first-rows",http_status="200",error_code=null}' not in metrics
     assert 'starlette_requests_total{method="GET",path_template="/metrics"}' in metrics
 
 
