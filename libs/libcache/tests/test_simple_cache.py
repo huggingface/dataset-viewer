@@ -16,9 +16,9 @@ from libcache.simple_cache import (
     get_cache_reports_splits_next,
     get_datasets_with_some_error,
     get_first_rows_response,
-    get_first_rows_responses_count_by_status,
+    get_first_rows_responses_count_by_status_and_error_code,
     get_splits_response,
-    get_splits_responses_count_by_status,
+    get_splits_responses_count_by_status_and_error_code,
     get_valid_dataset_names,
     mark_first_rows_responses_as_stale,
     mark_splits_responses_as_stale,
@@ -193,17 +193,17 @@ def test_valid() -> None:
     assert get_datasets_with_some_error() == ["test_dataset2", "test_dataset3"]
 
 
-def test_count_by_status() -> None:
-    assert "OK" not in get_splits_responses_count_by_status()
+def test_count_by_status_and_error_code() -> None:
+    assert "OK" not in get_splits_responses_count_by_status_and_error_code()
 
     upsert_splits_response(
-        "test_dataset2",
+        "test_dataset",
         {"key": "value"},
         HTTPStatus.OK,
     )
 
-    assert get_splits_responses_count_by_status()["OK"] == 1
-    assert "OK" not in get_first_rows_responses_count_by_status()
+    assert get_splits_responses_count_by_status_and_error_code() == {"200": {None: 1}}
+    assert get_first_rows_responses_count_by_status_and_error_code() == {}
 
     upsert_first_rows_response(
         "test_dataset",
@@ -215,7 +215,23 @@ def test_count_by_status() -> None:
         HTTPStatus.OK,
     )
 
-    assert get_splits_responses_count_by_status()["OK"] == 1
+    assert get_first_rows_responses_count_by_status_and_error_code() == {"200": {None: 1}}
+
+    upsert_first_rows_response(
+        "test_dataset",
+        "test_config",
+        "test_split2",
+        {
+            "key": "value",
+        },
+        HTTPStatus.INTERNAL_SERVER_ERROR,
+        error_code="error_code",
+    )
+
+    assert get_first_rows_responses_count_by_status_and_error_code() == {
+        "200": {None: 1},
+        "500": {"error_code": 1},
+    }
 
 
 def test_get_cache_reports_splits_next() -> None:
