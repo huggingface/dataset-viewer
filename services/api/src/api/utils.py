@@ -1,8 +1,9 @@
 from http import HTTPStatus
-from typing import Any, List, Literal, Optional
+from typing import Any, Callable, Coroutine, List, Literal, Optional
 
 from libutils.exceptions import CustomError
 from libutils.utils import orjson_dumps
+from starlette.requests import Request
 from starlette.responses import JSONResponse, Response
 
 from api.config import MAX_AGE_LONG_SECONDS, MAX_AGE_SHORT_SECONDS
@@ -16,9 +17,7 @@ ApiErrorCode = Literal[
     "UnexpectedError",
     "ExternalUnauthenticatedError",
     "ExternalAuthenticatedError",
-    "ExternalAuthCheckConnectionError",
     "ExternalAuthCheckResponseError",
-    "ExternalAuthCheckUrlFormatError",
 ]
 
 
@@ -75,8 +74,8 @@ class SplitsResponseNotFoundError(ApiCustomError):
 class UnexpectedError(ApiCustomError):
     """Raised when the server raised an unexpected error."""
 
-    def __init__(self, message: str):
-        super().__init__(message, HTTPStatus.INTERNAL_SERVER_ERROR, "UnexpectedError")
+    def __init__(self, message: str, cause: Optional[BaseException] = None):
+        super().__init__(message, HTTPStatus.INTERNAL_SERVER_ERROR, "UnexpectedError", cause)
 
 
 class ExternalUnauthenticatedError(ApiCustomError):
@@ -91,27 +90,6 @@ class ExternalAuthenticatedError(ApiCustomError):
 
     def __init__(self, message: str):
         super().__init__(message, HTTPStatus.FORBIDDEN, "ExternalAuthenticatedError")
-
-
-class ExternalAuthCheckConnectionError(ApiCustomError):
-    """Raised when the request to the external auth check endpoint failed."""
-
-    def __init__(self, message: str, cause: Optional[BaseException] = None):
-        super().__init__(message, HTTPStatus.INTERNAL_SERVER_ERROR, "ExternalAuthCheckConnectionError", cause)
-
-
-class ExternalAuthCheckResponseError(ApiCustomError):
-    """Raised when the response status code of the external auth check endpoint is invalid."""
-
-    def __init__(self, message: str):
-        super().__init__(message, HTTPStatus.INTERNAL_SERVER_ERROR, "ExternalAuthCheckResponseError")
-
-
-class ExternalAuthCheckUrlFormatError(ApiCustomError):
-    """Raised when the format of the external auth check URL is invalid."""
-
-    def __init__(self, message: str):
-        super().__init__(message, HTTPStatus.INTERNAL_SERVER_ERROR, "ExternalAuthCheckUrlFormatError")
 
 
 class OrjsonResponse(JSONResponse):
@@ -153,3 +131,6 @@ def is_non_empty_string(string: Any) -> bool:
 
 def are_valid_parameters(parameters: List[Any]) -> bool:
     return all(is_non_empty_string(s) for s in parameters)
+
+
+Endpoint = Callable[[Request], Coroutine[Any, Any, Response]]

@@ -17,17 +17,18 @@ from api.config import (
     APP_NUM_WORKERS,
     APP_PORT,
     ASSETS_DIRECTORY,
+    EXTERNAL_AUTH_URL,
     LOG_LEVEL,
     MONGO_CACHE_DATABASE,
     MONGO_QUEUE_DATABASE,
     MONGO_URL,
 )
 from api.prometheus import Prometheus
-from api.routes.first_rows import first_rows_endpoint
+from api.routes.first_rows import create_first_rows_endpoint
 from api.routes.healthcheck import healthcheck_endpoint
 from api.routes.rows import rows_endpoint
 from api.routes.splits import splits_endpoint
-from api.routes.splits_next import splits_endpoint_next
+from api.routes.splits_next import create_splits_next_endpoint
 from api.routes.valid import is_valid_endpoint, valid_datasets_endpoint
 from api.routes.webhook import webhook_endpoint
 
@@ -43,8 +44,8 @@ def create_app() -> Starlette:
     documented: List[BaseRoute] = [
         Route("/healthcheck", endpoint=healthcheck_endpoint),
         Route("/valid", endpoint=valid_datasets_endpoint),
-        Route("/first-rows", endpoint=first_rows_endpoint),
-        Route("/splits-next", endpoint=splits_endpoint_next),
+        Route("/first-rows", endpoint=create_first_rows_endpoint(EXTERNAL_AUTH_URL)),
+        Route("/splits-next", endpoint=create_splits_next_endpoint(EXTERNAL_AUTH_URL)),
     ]
     to_deprecate: List[BaseRoute] = [
         Route("/rows", endpoint=rows_endpoint),
