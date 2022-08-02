@@ -49,10 +49,10 @@ class Prometheus:
         self.metrics["cache_entries_total"] = Gauge(
             "cache_entries_total", "Number of entries in the cache", ["cache", "status"]
         )
-        self.metrics["cached_responses_total"] = Gauge(
-            "cached_responses_total",
+        self.metrics["responses_in_cache_total"] = Gauge(
+            "responses_in_cache_total",
             "Number of cached responses in the cache",
-            ["endpoint", "http_status", "error_code"],
+            ["path", "http_status", "error_code"],
         )
 
     def updateMetrics(self):
@@ -70,13 +70,13 @@ class Prometheus:
             self.metrics["cache_entries_total"].labels(cache="splits", status=status).set(total)
         for http_status, by_error_code in get_splits_responses_count_by_status_and_error_code().items():
             for error_code, total in by_error_code.items():
-                self.metrics["cached_responses_total"].labels(
-                    endpoint="/splits", http_status=http_status, error_code=error_code
+                self.metrics["responses_in_cache_total"].labels(
+                    path="/splits", http_status=http_status, error_code=error_code
                 ).set(total)
         for http_status, by_error_code in get_first_rows_responses_count_by_status_and_error_code().items():
             for error_code, total in by_error_code.items():
-                self.metrics["cached_responses_total"].labels(
-                    endpoint="/first-rows", http_status=http_status, error_code=error_code
+                self.metrics["responses_in_cache_total"].labels(
+                    path="/first-rows", http_status=http_status, error_code=error_code
                 ).set(total)
 
     def endpoint(self, request: Request) -> Response:
