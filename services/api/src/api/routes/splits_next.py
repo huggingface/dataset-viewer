@@ -1,5 +1,6 @@
 import logging
 from http import HTTPStatus
+from typing import Optional
 
 from libcache.simple_cache import DoesNotExist, get_splits_response
 from libqueue.queue import is_splits_response_in_process
@@ -23,7 +24,7 @@ from api.utils import (
 logger = logging.getLogger(__name__)
 
 
-def create_splits_next_endpoint(external_auth_url: str = "") -> Endpoint:
+def create_splits_next_endpoint(external_auth_url: Optional[str] = None) -> Endpoint:
     async def splits_next_endpoint(request: Request) -> Response:
         try:
             dataset_name = request.query_params.get("dataset")
