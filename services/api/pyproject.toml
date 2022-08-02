@@ -25,6 +25,7 @@ mypy = "0.812"
 poetryup = "^0.3.8"
 pytest = "^6.2.5"
 pytest-cov = "^2.12.1"
+responses = "^0.21.0"
 safety = "^1.10.3"
 
 [build-system]

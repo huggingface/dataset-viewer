@@ -14,6 +14,11 @@ ApiErrorCode = Literal[
     "SplitsResponseNotFound",
     "FirstRowsResponseNotFound",
     "UnexpectedError",
+    "ExternalUnauthenticatedError",
+    "ExternalAuthenticatedError",
+    "ExternalAuthCheckConnectionError",
+    "ExternalAuthCheckResponseError",
+    "ExternalAuthCheckUrlFormatError",
 ]
 
 
@@ -29,6 +34,7 @@ class ApiCustomError(CustomError):
         disclose_cause: bool = False,
     ):
         super().__init__(message, status_code, str(code), cause, disclose_cause)
+        # TODO: log the error and the cause
 
 
 class MissingRequiredParameterError(ApiCustomError):
@@ -67,10 +73,45 @@ class SplitsResponseNotFoundError(ApiCustomError):
 
 
 class UnexpectedError(ApiCustomError):
-    """Raised when the response for the split has not been found."""
+    """Raised when the server raised an unexpected error."""
 
     def __init__(self, message: str):
         super().__init__(message, HTTPStatus.INTERNAL_SERVER_ERROR, "UnexpectedError")
+
+
+class ExternalUnauthenticatedError(ApiCustomError):
+    """Raised when the external authentication check failed while the user was unauthenticated."""
+
+    def __init__(self, message: str):
+        super().__init__(message, HTTPStatus.UNAUTHORIZED, "ExternalUnauthenticatedError")
+
+
+class ExternalAuthenticatedError(ApiCustomError):
+    """Raised when the external authentication check failed while the user was authenticated."""
+
+    def __init__(self, message: str):
+        super().__init__(message, HTTPStatus.FORBIDDEN, "ExternalAuthenticatedError")
+
+
+class ExternalAuthCheckConnectionError(ApiCustomError):
+    """Raised when the request to the external auth check endpoint failed."""
+
+    def __init__(self, message: str, cause: Optional[BaseException] = None):
+        super().__init__(message, HTTPStatus.INTERNAL_SERVER_ERROR, "ExternalAuthCheckConnectionError", cause)
+
+
+class ExternalAuthCheckResponseError(ApiCustomError):
+    """Raised when the response status code of the external auth check endpoint is invalid."""
+
+    def __init__(self, message: str):
+        super().__init__(message, HTTPStatus.INTERNAL_SERVER_ERROR, "ExternalAuthCheckResponseError")
+
+
+class ExternalAuthCheckUrlFormatError(ApiCustomError):
+    """Raised when the format of the external auth check URL is invalid."""
+
+    def __init__(self, message: str):
+        super().__init__(message, HTTPStatus.INTERNAL_SERVER_ERROR, "ExternalAuthCheckUrlFormatError")
 
 
 class OrjsonResponse(JSONResponse):
