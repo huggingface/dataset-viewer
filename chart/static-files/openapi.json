@@ -40,6 +40,14 @@
       }
     },
     "schemas": {
+      "HealthCheckResponse": {
+        "type": "string",
+        "example": "OK"
+      },
+      "ServerErrorResponse": {
+        "type": "string",
+        "example": "Internal Server Error"
+      },
       "SplitsResponse": {
         "type": "object",
         "required": ["splits"],
@@ -773,6 +781,59 @@
     }
   },
   "paths": {
+    "/healthcheck": {
+      "get": {
+        "summary": "Healthcheck",
+        "description": "An endpoint to check if the API is up.",
+        "operationId": "healthCheck",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Valid response.",
+            "headers": {
+              "Cache-Control": {
+                "$ref": "#/components/headers/Cache-Control"
+              },
+              "Access-Control-Allow-Origin": {
+                "$ref": "#/components/headers/Access-Control-Allow-Origin"
+              }
+            },
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/HealthCheckResponse"
+                },
+                "examples": {
+                  "valid": {
+                    "summary": "Valid response",
+                    "value": "OK"
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "The server crashed.",
+            "headers": {},
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ServerErrorResponse"
+                },
+                "examples": {
+                  "internal": {
+                    "summary": "internal error",
+                    "value": {
+                      "error": "Internal Server Error"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/splits": {
       "get": {
         "summary": "List of splits",
@@ -979,6 +1040,19 @@
                       "message": "Tried to save duplicate unique keys (E11000 duplicate key error collection: datasets_server_cache.splits index: dataset_name_1_config_name_1_split_name_1 dup key: { dataset_name: \"csebuetnlp/xlsum\", config_name: \"chinese_traditional\", split_name: \"test\" }, full error: {'index': 0, 'code': 11000, 'keyPattern': {'dataset_name': 1, 'config_name': 1, 'split_name': 1}, 'keyValue': {'dataset_name': 'csebuetnlp/xlsum', 'config_name': 'chinese_traditional', 'split_name': 'test'}, 'errmsg': 'E11000 duplicate key error collection: datasets_server_cache.splits index: dataset_name_1_config_name_1_split_name_1 dup key: { dataset_name: \"csebuetnlp/xlsum\", config_name: \"chinese_traditional\", split_name: \"test\" }'})",
                       "cause_exception": "Status500Error",
                       "cause_message": "Tried to save duplicate unique keys (E11000 duplicate key error collection: datasets_server_cache.splits index: dataset_name_1_config_name_1_split_name_1 dup key: { dataset_name: \"csebuetnlp/xlsum\", config_name: \"chinese_traditional\", split_name: \"test\" }, full error: {'index': 0, 'code': 11000, 'keyPattern': {'dataset_name': 1, 'config_name': 1, 'split_name': 1}, 'keyValue': {'dataset_name': 'csebuetnlp/xlsum', 'config_name': 'chinese_traditional', 'split_name': 'test'}, 'errmsg': 'E11000 duplicate key error collection: datasets_server_cache.splits index: dataset_name_1_config_name_1_split_name_1 dup key: { dataset_name: \"csebuetnlp/xlsum\", config_name: \"chinese_traditional\", split_name: \"test\" }'})"
+                    }
+                  }
+                }
+              },
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ServerErrorResponse"
+                },
+                "examples": {
+                  "internal": {
+                    "summary": "internal error",
+                    "value": {
+                      "error": "Internal Server Error"
                     }
                   }
                 }
@@ -1748,6 +1822,19 @@
                     }
                   }
                 }
+              },
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ServerErrorResponse"
+                },
+                "examples": {
+                  "internal": {
+                    "summary": "internal error",
+                    "value": {
+                      "error": "Internal Server Error"
+                    }
+                  }
+                }
               }
             }
           }
@@ -1821,6 +1908,19 @@
                     "summary": "internal error",
                     "value": {
                       "error": "Unexpected error."
+                    }
+                  }
+                }
+              },
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ServerErrorResponse"
+                },
+                "examples": {
+                  "internal": {
+                    "summary": "internal error",
+                    "value": {
+                      "error": "Internal Server Error"
                     }
                   }
                 }
@@ -1911,6 +2011,19 @@
                     "summary": "internal error",
                     "value": {
                       "error": "Unexpected error."
+                    }
+                  }
+                }
+              },
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ServerErrorResponse"
+                },
+                "examples": {
+                  "internal": {
+                    "summary": "internal error",
+                    "value": {
+                      "error": "Internal Server Error"
                     }
                   }
                 }
@@ -2229,6 +2342,19 @@
                     "summary": "internal error",
                     "value": {
                       "error": "Unexpected error."
+                    }
+                  }
+                }
+              },
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ServerErrorResponse"
+                },
+                "examples": {
+                  "internal": {
+                    "summary": "internal error",
+                    "value": {
+                      "error": "Internal Server Error"
                     }
                   }
                 }
@@ -3131,6 +3257,19 @@
                     "summary": "internal error",
                     "value": {
                       "error": "Unexpected error."
+                    }
+                  }
+                }
+              },
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ServerErrorResponse"
+                },
+                "examples": {
+                  "internal": {
+                    "summary": "internal error",
+                    "value": {
+                      "error": "Internal Server Error"
                     }
                   }
                 }
