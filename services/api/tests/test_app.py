@@ -165,7 +165,7 @@ def test_get_splits_next(client: TestClient) -> None:
     "headers,status_code,error_code",
     [
         ({"Cookie": "some cookie"}, 401, "ExternalUnauthenticatedError"),
-        ({"Authorization": "Bearer invalid"}, 403, "ExternalAuthenticatedError"),
+        ({"Authorization": "Bearer invalid"}, 404, "ExternalAuthenticatedError"),
         ({}, 404, "SplitsResponseNotFound"),
     ],
 )

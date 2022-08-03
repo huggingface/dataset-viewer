@@ -86,10 +86,13 @@ class ExternalUnauthenticatedError(ApiCustomError):
 
 
 class ExternalAuthenticatedError(ApiCustomError):
-    """Raised when the external authentication check failed while the user was authenticated."""
+    """Raised when the external authentication check failed while the user was authenticated.
+
+    Even if the external authentication server returns 403 in that case, we return 404 because
+    we don't know if the dataset exist or not. It's also coherent with how the Hugging Face Hub works."""
 
     def __init__(self, message: str):
-        super().__init__(message, HTTPStatus.FORBIDDEN, "ExternalAuthenticatedError")
+        super().__init__(message, HTTPStatus.NOT_FOUND, "ExternalAuthenticatedError")
 
 
 class OrjsonResponse(JSONResponse):

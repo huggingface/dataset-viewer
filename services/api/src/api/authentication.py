@@ -60,13 +60,12 @@ def auth_check(
         return True
     elif response.status_code == 401:
         raise ExternalUnauthenticatedError(
-            "The dataset is not authorized for the request. Please retry with authentication."
+            "The dataset does not exist, or is not accessible without authentication (private or gated). Please retry"
+            " with authentication."
         )
-
     elif response.status_code == 403:
         raise ExternalAuthenticatedError(
-            "The dataset is not authorized for the request with the provided authentication."
+            "The dataset does not exist, or is not accessible with the current credentials (private or gated)."
         )
-
     else:
         raise ValueError(f"Unexpected status code {response.status_code}")
