@@ -39,11 +39,6 @@
     name: nfs
     subPath: "{{ include "assets.subpath" . }}"
     readOnly: false
-  - mountPath: {{ .Values.admin.prometheusMultiprocDirectory | quote }}
-    mountPropagation: None
-    name: nfs
-    subPath: "{{ include "prometheus.admin.subpath" . }}"
-    readOnly: false
   securityContext:
     allowPrivilegeEscalation: false
   readinessProbe:

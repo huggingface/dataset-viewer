@@ -304,6 +304,6 @@ admin:
   maxAgeShortSeconds: "10"
   # Directory where the uvicorn workers share their prometheus metrics
   # see https://github.com/prometheus/client_python#multiprocess-mode-eg-gunicorn
-  prometheusMultiprocDirectory: "/prometheus"
+  prometheusMultiprocDirectory: "/tmp"
 
   readinessPort: 80
