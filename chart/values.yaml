@@ -103,6 +103,9 @@ api:
   maxAgeLongSeconds: "120"
   # Number of seconds to set in the `max-age` header on technical endpoints
   maxAgeShortSeconds: "10"
+  # Directory where the uvicorn workers will write the prometheus metrics
+  # see https://github.com/prometheus/client_python#multiprocess-mode-eg-gunicorn
+  prometheusMultiprocDirectory: "/tmp"
 
 worker:
   datasets:
@@ -306,5 +309,8 @@ admin:
   logLevel: "INFO"
   # Number of seconds to set in the `max-age` header on technical endpoints
   maxAgeShortSeconds: "10"
+  # Directory where the uvicorn workers share their prometheus metrics
+  # see https://github.com/prometheus/client_python#multiprocess-mode-eg-gunicorn
+  prometheusMultiprocDirectory: "/tmp"
 
   readinessPort: 80

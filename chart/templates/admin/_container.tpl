@@ -29,6 +29,8 @@
         key: MONGO_URL
         optional: false
   {{- end }}
+  - name: PROMETHEUS_MULTIPROC_DIR
+    value:  {{ .Values.admin.prometheusMultiprocDirectory | quote }}
   image: {{ .Values.dockerImage.admin }}
   imagePullPolicy: IfNotPresent
   volumeMounts:
