@@ -42,7 +42,7 @@
     "schemas": {
       "HealthCheckResponse": {
         "type": "string",
-        "example": "OK"
+        "example": "ok"
       },
       "ServerErrorResponse": {
         "type": "string",
@@ -806,7 +806,7 @@
                 "examples": {
                   "valid": {
                     "summary": "Valid response",
-                    "value": "OK"
+                    "value": "ok"
                   }
                 }
               }
