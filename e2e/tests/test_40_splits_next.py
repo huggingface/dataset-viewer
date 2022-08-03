@@ -55,9 +55,9 @@ def test_splits_next(status: int, name: str, dataset: str, error_code: str):
     else:
         r_splits = refresh_poll_splits_next(dataset)
 
-    assert r_splits.status_code == status
+    assert r_splits.status_code == status, f"{r_splits.status_code} - {r_splits.text}"
     assert r_splits.json() == body
     if error_code is not None:
-        assert r_splits.headers["X-Error-Code"] == error_code
+        assert r_splits.headers["X-Error-Code"] == error_code, r_splits.headers["X-Error-Code"]
     else:
-        assert "X-Error-Code" not in r_splits.headers
+        assert "X-Error-Code" not in r_splits.headers, r_splits.headers["X-Error-Code"]

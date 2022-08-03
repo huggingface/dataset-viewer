@@ -9,7 +9,7 @@ def test_get_dataset_next():
     r_splits, r_rows = refresh_poll_splits_next_first_rows(dataset, config, split)
     assert r_splits.json()["splits"][0]["split_name"] == "train"
 
-    assert r_rows.status_code == 200
+    assert r_rows.status_code == 200, f"{r_rows.status_code} - {r_rows.text}"
     json = r_rows.json()
     assert "features" in json
     assert json["features"][0]["name"] == "id"
@@ -37,7 +37,7 @@ def test_png_image_next():
 
     _, r_rows = refresh_poll_splits_next_first_rows(dataset, config, split)
 
-    assert r_rows.status_code == 200
+    assert r_rows.status_code == 200, f"{r_rows.status_code} - {r_rows.text}"
     json = r_rows.json()
 
     assert "features" in json

@@ -35,22 +35,22 @@ def test_bug_empty_split():
 
     # ask for the dataset to be refreshed
     response = post_refresh(dataset)
-    assert response.status_code == 200
+    assert response.status_code == 200, f"{response.status_code} - {response.text}"
 
     # poll the /splits endpoint until we get something else than "The dataset is being processed. Retry later."
     response = poll_splits(dataset)
-    assert response.status_code == 200
+    assert response.status_code == 200, f"{response.status_code} - {response.text}"
 
     # at this point the splits should have been created in the dataset, and still be EMPTY
     url = f"{URL}/rows?dataset={dataset}&config={config}&split={split}"
     response = requests.get(url)
-    assert response.status_code == 400
+    assert response.status_code == 400, f"{response.status_code} - {response.text}"
     json = response.json()
     assert json["message"] == "The split is being processed. Retry later."
 
     # ask again for the dataset to be refreshed
     response = requests.post(f"{URL}/webhook", json={"update": f"datasets/{dataset}"})
-    assert response.status_code == 200
+    assert response.status_code == 200, f"{response.status_code} - {response.text}"
 
     # at this moment, there is a concurrency race between the datasets worker and the splits worker
     # but the dataset worker should finish before, because it's faster on this dataset
@@ -58,7 +58,7 @@ def test_bug_empty_split():
     # we would have gotten a valid response, but with empty rows, which is incorrect
     # Now: it gives a correct list of elements
     response = poll_rows(dataset, config, split)
-    assert response.status_code == 200
+    assert response.status_code == 200, f"{response.status_code} - {response.text}"
     json = response.json()
     assert len(json["rows"]) == ROWS_MAX_NUMBER
 
