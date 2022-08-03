@@ -15,13 +15,29 @@ from .utils import (
     [
         (200, "duorc", "duorc", None),
         (200, "emotion", "emotion", None),
-        (404, "inexistent-dataset", "severo/inexistent-dataset", "SplitsResponseNotFound"),
-        (404, "private-dataset", "severo/dummy_private", "SplitsResponseNotFound"),
+        (
+            401,
+            "inexistent-dataset",
+            "severo/inexistent-dataset",
+            "ExternalUnauthenticatedError",
+        ),
+        (
+            401,
+            "gated-dataset",
+            "severo/dummy_gated",
+            "ExternalUnauthenticatedError",
+        ),
+        (
+            401,
+            "private-dataset",
+            "severo/dummy_private",
+            "ExternalUnauthenticatedError",
+        ),
         (422, "empty-parameter", "", "MissingRequiredParameter"),
         (422, "missing-parameter", None, "MissingRequiredParameter"),
         (500, "SplitsNotFoundError", "natural_questions", "SplitsNamesError"),
         (500, "FileNotFoundError", "akhaliq/test", "SplitsNamesError"),
-        (500, "not-ready", "a_new_dataset", "SplitsResponseNotReady"),
+        (500, "not-ready", "severo/fix-401", "SplitsResponseNotReady"),
         # not tested: 'internal_error'
     ],
 )

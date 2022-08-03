@@ -90,6 +90,13 @@ api:
   appNumWorkers: "1"
   # Application endpoint port
   appPort: 80
+  # External authentication URL.
+  # %s will be replaced with the dataset name, for example:
+  # "https://huggingface.co/api/datasets/%s/auth-check"
+  # The authentication service must follow the specification in
+  # https://nginx.org/en/docs/http/ngx_http_auth_request_module.html
+  # and return 200, 401 or 403
+  externalAuthUrl: "https://huggingface.co/api/datasets/%s/auth-check"
   # Log level
   logLevel: "INFO"
   # Number of seconds to set in the `max-age` header on data endpoints

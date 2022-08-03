@@ -20,19 +20,34 @@ def prepare_json(response: requests.Response) -> Any:
 @pytest.mark.parametrize(
     "status,name,dataset,config,split,error_code",
     [
-        (200, "imdb", "imdb", "plain_text", "train", None),
-        (200, "truncated", "ett", "m2", "test", None),
-        (200, "image", "huggan/horse2zebra", "huggan--horse2zebra-aligned", "train", None),
-        # (200, "audio", "mozilla-foundation/common_voice_9_0", "en", "train", None),
-        # ^ awfully long
-        (404, "inexistent-dataset", "severo/inexistent-dataset", "plain_text", "train", "FirstRowsResponseNotFound"),
+        # (200, "imdb", "imdb", "plain_text", "train", None),
+        # (200, "truncated", "ett", "m2", "test", None),
+        # (200, "image", "huggan/horse2zebra", "huggan--horse2zebra-aligned", "train", None),
+        # # (200, "audio", "mozilla-foundation/common_voice_9_0", "en", "train", None),
+        # # ^ awfully long
+        # (
+        #     401,
+        #     "inexistent-dataset",
+        #     "severo/inexistent-dataset",
+        #     "plain_text",
+        #     "train",
+        #     "ExternalUnauthenticatedError",
+        # ),
         (
-            404,
+            401,
+            "gated-dataset",
+            "severo/dummy_gated",
+            "severo--embellishments",
+            "train",
+            "ExternalUnauthenticatedError",
+        ),
+        (
+            401,
             "private-dataset",
             "severo/dummy_private",
             "severo--embellishments",
             "train",
-            "FirstRowsResponseNotFound",
+            "ExternalUnauthenticatedError",
         ),
         (404, "inexistent-config", "imdb", "inexistent-config", "train", "FirstRowsResponseNotFound"),
         (404, "inexistent-split", "imdb", "plain_text", "inexistent-split", "FirstRowsResponseNotFound"),
@@ -67,7 +82,7 @@ def test_first_rows(status: int, name: str, dataset: str, config: str, split: st
         s = f"split={split}" if split is not None else ""
         params = "&".join([d, c, s])
         r_rows = poll(f"{URL}/first-rows?{params}", error_field="error")
-    elif name.startswith("inexistent-") or name.startswith("private-"):
+    elif name.startswith("inexistent-") or name.startswith("private-") or name.startswith("gated-"):
         refresh_poll_splits_next(dataset)
         # no need to retry
         r_rows = requests.get(f"{URL}/first-rows?dataset={dataset}&config={config}&split={split}")

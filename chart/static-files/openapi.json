@@ -2019,19 +2019,19 @@
                   "inexistent-dataset": {
                     "summary": "The dataset does not exist.",
                     "value": {
-                      "error": "The dataset does not exist, or is not accessible without authentication (private or gated). Please retry  with authentication."
+                      "error": "The dataset does not exist, or is not accessible without authentication (private or gated). Please retry with authentication."
                     }
                   },
                   "gated-dataset": {
                     "summary": "The dataset is gated.",
                     "value": {
-                      "error": "The dataset does not exist, or is not accessible without authentication (private or gated). Please retry  with authentication."
+                      "error": "The dataset does not exist, or is not accessible without authentication (private or gated). Please retry with authentication."
                     }
                   },
                   "private-dataset": {
                     "summary": "The dataset is private.",
                     "value": {
-                      "error": "The dataset does not exist, or is not accessible without authentication (private or gated). Please retry  with authentication."
+                      "error": "The dataset does not exist, or is not accessible without authentication (private or gated). Please retry with authentication."
                     }
                   }
                 }
@@ -2307,19 +2307,19 @@
                   "inexistent-dataset": {
                     "summary": "The dataset does not exist.",
                     "value": {
-                      "error": "The dataset does not exist, or is not accessible without authentication (private or gated). Please retry  with authentication."
+                      "error": "The dataset does not exist, or is not accessible without authentication (private or gated). Please retry with authentication."
                     }
                   },
                   "gated-dataset": {
                     "summary": "The dataset is gated.",
                     "value": {
-                      "error": "The dataset does not exist, or is not accessible without authentication (private or gated). Please retry  with authentication."
+                      "error": "The dataset does not exist, or is not accessible without authentication (private or gated). Please retry with authentication."
                     }
                   },
                   "private-dataset": {
                     "summary": "The dataset is private.",
                     "value": {
-                      "error": "The dataset does not exist, or is not accessible without authentication (private or gated). Please retry  with authentication."
+                      "error": "The dataset does not exist, or is not accessible without authentication (private or gated). Please retry with authentication."
                     }
                   }
                 }
@@ -3131,19 +3131,19 @@
                   "inexistent-dataset": {
                     "summary": "The dataset does not exist.",
                     "value": {
-                      "error": "The dataset does not exist, or is not accessible without authentication (private or gated). Please retry  with authentication."
+                      "error": "The dataset does not exist, or is not accessible without authentication (private or gated). Please retry with authentication."
                     }
                   },
                   "gated-dataset": {
                     "summary": "The dataset is gated.",
                     "value": {
-                      "error": "The dataset does not exist, or is not accessible without authentication (private or gated). Please retry  with authentication."
+                      "error": "The dataset does not exist, or is not accessible without authentication (private or gated). Please retry with authentication."
                     }
                   },
                   "private-dataset": {
                     "summary": "The dataset is private.",
                     "value": {
-                      "error": "The dataset does not exist, or is not accessible without authentication (private or gated). Please retry  with authentication."
+                      "error": "The dataset does not exist, or is not accessible without authentication (private or gated). Please retry with authentication."
                     }
                   }
                 }
