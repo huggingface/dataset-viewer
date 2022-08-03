@@ -29,7 +29,7 @@ from api.routes.healthcheck import healthcheck_endpoint
 from api.routes.rows import rows_endpoint
 from api.routes.splits import splits_endpoint
 from api.routes.splits_next import create_splits_next_endpoint
-from api.routes.valid import is_valid_endpoint, valid_datasets_endpoint
+from api.routes.valid import create_is_valid_endpoint, valid_datasets_endpoint
 from api.routes.webhook import webhook_endpoint
 
 
@@ -44,16 +44,14 @@ def create_app() -> Starlette:
     documented: List[BaseRoute] = [
         Route("/healthcheck", endpoint=healthcheck_endpoint),
         Route("/valid", endpoint=valid_datasets_endpoint),
+        Route("/is-valid", endpoint=create_is_valid_endpoint(EXTERNAL_AUTH_URL)),
+        # ^ called by https://github.com/huggingface/model-evaluator
         Route("/first-rows", endpoint=create_first_rows_endpoint(EXTERNAL_AUTH_URL)),
         Route("/splits-next", endpoint=create_splits_next_endpoint(EXTERNAL_AUTH_URL)),
     ]
     to_deprecate: List[BaseRoute] = [
         Route("/rows", endpoint=rows_endpoint),
         Route("/splits", endpoint=splits_endpoint),
-    ]
-    to_document: List[BaseRoute] = [
-        # called by https://github.com/huggingface/model-evaluator
-        Route("/is-valid", endpoint=is_valid_endpoint),
     ]
     to_protect: List[BaseRoute] = [
         # called by the Hub webhooks
@@ -65,7 +63,7 @@ def create_app() -> Starlette:
         # it can only be accessed in development. In production the reverse-proxy serves the assets
         Mount("/assets", app=StaticFiles(directory=init_assets_dir(ASSETS_DIRECTORY), check_dir=True), name="assets"),
     ]
-    routes: List[BaseRoute] = documented + to_deprecate + to_document + to_protect + for_development_only
+    routes: List[BaseRoute] = documented + to_deprecate + to_protect + for_development_only
     return Starlette(routes=routes, middleware=middleware)
 
 

@@ -1939,6 +1939,15 @@
           "url": "https://huggingface.co/docs/datasets-server/valid"
         },
         "operationId": "isValidDataset",
+        "security": [
+          {},
+          {
+            "HuggingFaceCookie": []
+          },
+          {
+            "HuggingFaceToken": []
+          }
+        ],
         "parameters": [
           {
             "name": "dataset",
@@ -1983,6 +1992,119 @@
                     "value": {
                       "valid": false
                     }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "If the external authentication step on the Hugging Face Hub failed, and no authentication mechanism has been provided. Retry with authentication.",
+            "headers": {
+              "Cache-Control": {
+                "$ref": "#/components/headers/Cache-Control"
+              },
+              "Access-Control-Allow-Origin": {
+                "$ref": "#/components/headers/Access-Control-Allow-Origin"
+              },
+              "X-Error-Code": {
+                "$ref": "#/components/headers/X-Error-Code"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CustomError"
+                },
+                "examples": {
+                  "inexistent-dataset": {
+                    "summary": "The dataset does not exist.",
+                    "value": {
+                      "error": "The dataset does not exist, or is not accessible without authentication (private or gated). Please retry  with authentication."
+                    }
+                  },
+                  "gated-dataset": {
+                    "summary": "The dataset is gated.",
+                    "value": {
+                      "error": "The dataset does not exist, or is not accessible without authentication (private or gated). Please retry  with authentication."
+                    }
+                  },
+                  "private-dataset": {
+                    "summary": "The dataset is private.",
+                    "value": {
+                      "error": "The dataset does not exist, or is not accessible without authentication (private or gated). Please retry  with authentication."
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "If the dataset cannot be found. This may be because it doesn't exist, or because it is set to `private` and you do not have access.",
+            "headers": {
+              "Cache-Control": {
+                "$ref": "#/components/headers/Cache-Control"
+              },
+              "Access-Control-Allow-Origin": {
+                "$ref": "#/components/headers/Access-Control-Allow-Origin"
+              },
+              "X-Error-Code": {
+                "$ref": "#/components/headers/X-Error-Code"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CustomError"
+                },
+                "examples": {
+                  "inexistent-dataset": {
+                    "summary": "The dataset does not exist, while authentication was provided in the request.",
+                    "value": {
+                      "error": "The dataset does not exist, or is not accessible with the current credentials (private or gated)."
+                    }
+                  },
+                  "gated-dataset": {
+                    "summary": "The dataset is private, while authentication was provided in the request.",
+                    "value": {
+                      "error": "The dataset does not exist, or is not accessible with the current credentials (private or gated)."
+                    }
+                  },
+                  "private-dataset": {
+                    "summary": "The dataset is private, while authentication was provided in the request.",
+                    "value": {
+                      "error": "The dataset does not exist, or is not accessible with the current credentials (private or gated)."
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "The `dataset` parameter has not been provided.",
+            "headers": {
+              "Cache-Control": {
+                "$ref": "#/components/headers/Cache-Control"
+              },
+              "Access-Control-Allow-Origin": {
+                "$ref": "#/components/headers/Access-Control-Allow-Origin"
+              },
+              "X-Error-Code": {
+                "$ref": "#/components/headers/X-Error-Code"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CustomError"
+                },
+                "examples": {
+                  "missing-parameter": {
+                    "summary": "The dataset parameter is missing.",
+                    "value": { "error": "Parameter 'dataset' is required" }
+                  },
+                  "empty-parameter": {
+                    "summary": "The dataset parameter is empty (?dataset=).",
+                    "value": { "error": "Parameter 'dataset' is required" }
                   }
                 }
               }

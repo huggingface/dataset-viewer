@@ -1,5 +1,5 @@
 from http import HTTPStatus
-from typing import Dict
+from typing import Dict, Optional
 
 import pytest
 import responses
@@ -77,11 +77,14 @@ def test_get_valid_datasets(client: TestClient) -> None:
     assert "valid" in json
 
 
+@responses.activate
 def test_get_is_valid(client: TestClient) -> None:
     response = client.get("/is-valid")
     assert response.status_code == 422
 
-    response = client.get("/is-valid", params={"dataset": "doesnotexist"})
+    dataset = "doesnotexist"
+    responses.add_callback(responses.GET, (EXTERNAL_AUTH_URL or "%s") % dataset, callback=request_callback)
+    response = client.get("/is-valid", params={"dataset": dataset})
     assert response.status_code == 200
     json = response.json()
     assert "valid" in json
@@ -104,6 +107,26 @@ def test_get_is_valid(client: TestClient) -> None:
     #     json = response.json()
     #     assert "valid" in json
     #     assert json["valid"] is True
+
+
+# the logic below is just to check the cookie and authorization headers are managed correctly
+@pytest.mark.parametrize(
+    "headers,status_code,error_code",
+    [
+        ({"Cookie": "some cookie"}, 401, "ExternalUnauthenticatedError"),
+        ({"Authorization": "Bearer invalid"}, 404, "ExternalAuthenticatedError"),
+        ({}, 200, None),
+    ],
+)
+@responses.activate
+def test_is_valid_auth(
+    client: TestClient, headers: Dict[str, str], status_code: int, error_code: Optional[str]
+) -> None:
+    dataset = "dataset-which-does-not-exist"
+    responses.add_callback(responses.GET, (EXTERNAL_AUTH_URL or "%s") % dataset, callback=request_callback)
+    response = client.get(f"/is-valid?dataset={dataset}", headers=headers)
+    assert response.status_code == status_code
+    assert response.headers.get("X-Error-Code") == error_code
 
 
 def test_get_healthcheck(client: TestClient) -> None:
