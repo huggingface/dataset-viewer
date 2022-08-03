@@ -25,14 +25,29 @@ def prepare_json(response: requests.Response) -> Any:
         (200, "image", "huggan/horse2zebra", "huggan--horse2zebra-aligned", "train", None),
         # (200, "audio", "mozilla-foundation/common_voice_9_0", "en", "train", None),
         # ^ awfully long
-        (404, "inexistent-dataset", "severo/inexistent-dataset", "plain_text", "train", "FirstRowsResponseNotFound"),
         (
-            404,
+            401,
+            "inexistent-dataset",
+            "severo/inexistent-dataset",
+            "plain_text",
+            "train",
+            "ExternalUnauthenticatedError",
+        ),
+        (
+            401,
+            "gated-dataset",
+            "severo/dummy_gated",
+            "severo--embellishments",
+            "train",
+            "ExternalUnauthenticatedError",
+        ),
+        (
+            401,
             "private-dataset",
             "severo/dummy_private",
             "severo--embellishments",
             "train",
-            "FirstRowsResponseNotFound",
+            "ExternalUnauthenticatedError",
         ),
         (404, "inexistent-config", "imdb", "inexistent-config", "train", "FirstRowsResponseNotFound"),
         (404, "inexistent-split", "imdb", "plain_text", "inexistent-split", "FirstRowsResponseNotFound"),
@@ -67,7 +82,7 @@ def test_first_rows(status: int, name: str, dataset: str, config: str, split: st
         s = f"split={split}" if split is not None else ""
         params = "&".join([d, c, s])
         r_rows = poll(f"{URL}/first-rows?{params}", error_field="error")
-    elif name.startswith("inexistent-") or name.startswith("private-"):
+    elif name.startswith("inexistent-") or name.startswith("private-") or name.startswith("gated-"):
         refresh_poll_splits_next(dataset)
         # no need to retry
         r_rows = requests.get(f"{URL}/first-rows?dataset={dataset}&config={config}&split={split}")
@@ -78,9 +93,9 @@ def test_first_rows(status: int, name: str, dataset: str, config: str, split: st
     else:
         _, r_rows = refresh_poll_splits_next_first_rows(dataset, config, split)
 
-    assert r_rows.status_code == status
-    assert prepare_json(r_rows) == body
+    assert r_rows.status_code == status, f"{r_rows.status_code} - {r_rows.text}"
+    assert prepare_json(r_rows) == body, r_rows.text
     if error_code is not None:
-        assert r_rows.headers["X-Error-Code"] == error_code
+        assert r_rows.headers["X-Error-Code"] == error_code, r_rows.headers["X-Error-Code"]
     else:
-        assert "X-Error-Code" not in r_rows.headers
+        assert "X-Error-Code" not in r_rows.headers, r_rows.headers["X-Error-Code"]

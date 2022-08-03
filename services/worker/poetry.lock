@@ -611,7 +611,7 @@ python-versions = ">=3.7"
 
 [[package]]
 name = "fsspec"
-version = "2022.5.0"
+version = "2022.7.1"
 description = "File-system specification"
 category = "main"
 optional = false
@@ -3160,10 +3160,7 @@ frozenlist = [
     {file = "frozenlist-1.3.0-cp39-cp39-win_amd64.whl", hash = "sha256:772965f773757a6026dea111a15e6e2678fbd6216180f82a48a40b27de1ee2ab"},
     {file = "frozenlist-1.3.0.tar.gz", hash = "sha256:ce6f2ba0edb7b0c1d8976565298ad2deba6f8064d2bebb6ffce2ca896eb35b0b"},
 ]
-fsspec = [
-    {file = "fsspec-2022.5.0-py3-none-any.whl", hash = "sha256:2c198c50eb541a80bbd03540b07602c4a957366f3fb416a1f270d34bd4ff0926"},
-    {file = "fsspec-2022.5.0.tar.gz", hash = "sha256:7a5459c75c44e760fbe6a3ccb1f37e81e023cde7da8ba20401258d877ec483b4"},
-]
+fsspec = []
 function-parser = [
     {file = "function_parser-0.0.3-py3-none-any.whl", hash = "sha256:c09e4ddb1d9c7783cf5ec7aac72d858f16565552135854844948a67861a15571"},
     {file = "function_parser-0.0.3.tar.gz", hash = "sha256:cdbd9ffa2d02edc9273fec543d9f95d382036ab270e57660c6310020c3211346"},

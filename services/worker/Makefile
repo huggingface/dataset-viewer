@@ -8,7 +8,8 @@ export TEST_COMPOSE_PROJECT_NAME := worker
 TEST_DOCKER_COMPOSE := ../../tools/docker-compose-mongo.yml
 # pillow <9.0.0
 PILLOW_EXCEPTIONS := -i 44525 -i 44524 -i 44486 -i 44485 -i 45356 -i 44487
-SAFETY_EXCEPTIONS := $(PILLOW_EXCEPTIONS)
+UJSON_EXCEPTIONS := -i 49754 -i 49755
+SAFETY_EXCEPTIONS := $(PILLOW_EXCEPTIONS) $(UJSON_EXCEPTIONS)
 
 # Ensure to specify HF_TOKEN when calling make test, ie HF_TOKEN=hf_app_xxx make test
 include ../../tools/Python.mk

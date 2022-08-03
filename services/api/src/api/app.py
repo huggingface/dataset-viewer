@@ -17,18 +17,19 @@ from api.config import (
     APP_NUM_WORKERS,
     APP_PORT,
     ASSETS_DIRECTORY,
+    EXTERNAL_AUTH_URL,
     LOG_LEVEL,
     MONGO_CACHE_DATABASE,
     MONGO_QUEUE_DATABASE,
     MONGO_URL,
 )
 from api.prometheus import Prometheus
-from api.routes.first_rows import first_rows_endpoint
+from api.routes.first_rows import create_first_rows_endpoint
 from api.routes.healthcheck import healthcheck_endpoint
 from api.routes.rows import rows_endpoint
 from api.routes.splits import splits_endpoint
-from api.routes.splits_next import splits_endpoint_next
-from api.routes.valid import is_valid_endpoint, valid_datasets_endpoint
+from api.routes.splits_next import create_splits_next_endpoint
+from api.routes.valid import create_is_valid_endpoint, valid_datasets_endpoint
 from api.routes.webhook import webhook_endpoint
 
 
@@ -43,16 +44,14 @@ def create_app() -> Starlette:
     documented: List[BaseRoute] = [
         Route("/healthcheck", endpoint=healthcheck_endpoint),
         Route("/valid", endpoint=valid_datasets_endpoint),
-        Route("/first-rows", endpoint=first_rows_endpoint),
-        Route("/splits-next", endpoint=splits_endpoint_next),
+        Route("/is-valid", endpoint=create_is_valid_endpoint(EXTERNAL_AUTH_URL)),
+        # ^ called by https://github.com/huggingface/model-evaluator
+        Route("/first-rows", endpoint=create_first_rows_endpoint(EXTERNAL_AUTH_URL)),
+        Route("/splits-next", endpoint=create_splits_next_endpoint(EXTERNAL_AUTH_URL)),
     ]
     to_deprecate: List[BaseRoute] = [
         Route("/rows", endpoint=rows_endpoint),
         Route("/splits", endpoint=splits_endpoint),
-    ]
-    to_document: List[BaseRoute] = [
-        # called by https://github.com/huggingface/model-evaluator
-        Route("/is-valid", endpoint=is_valid_endpoint),
     ]
     to_protect: List[BaseRoute] = [
         # called by the Hub webhooks
@@ -64,7 +63,7 @@ def create_app() -> Starlette:
         # it can only be accessed in development. In production the reverse-proxy serves the assets
         Mount("/assets", app=StaticFiles(directory=init_assets_dir(ASSETS_DIRECTORY), check_dir=True), name="assets"),
     ]
-    routes: List[BaseRoute] = documented + to_deprecate + to_document + to_protect + for_development_only
+    routes: List[BaseRoute] = documented + to_deprecate + to_protect + for_development_only
     return Starlette(routes=routes, middleware=middleware)
 
 

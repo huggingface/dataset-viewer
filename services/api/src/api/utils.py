@@ -1,8 +1,9 @@
 from http import HTTPStatus
-from typing import Any, List, Literal, Optional
+from typing import Any, Callable, Coroutine, List, Literal, Optional
 
 from libutils.exceptions import CustomError
 from libutils.utils import orjson_dumps
+from starlette.requests import Request
 from starlette.responses import JSONResponse, Response
 
 from api.config import MAX_AGE_LONG_SECONDS, MAX_AGE_SHORT_SECONDS
@@ -14,6 +15,9 @@ ApiErrorCode = Literal[
     "SplitsResponseNotFound",
     "FirstRowsResponseNotFound",
     "UnexpectedError",
+    "ExternalUnauthenticatedError",
+    "ExternalAuthenticatedError",
+    "ExternalAuthCheckResponseError",
 ]
 
 
@@ -29,6 +33,7 @@ class ApiCustomError(CustomError):
         disclose_cause: bool = False,
     ):
         super().__init__(message, status_code, str(code), cause, disclose_cause)
+        # TODO: log the error and the cause
 
 
 class MissingRequiredParameterError(ApiCustomError):
@@ -67,10 +72,27 @@ class SplitsResponseNotFoundError(ApiCustomError):
 
 
 class UnexpectedError(ApiCustomError):
-    """Raised when the response for the split has not been found."""
+    """Raised when the server raised an unexpected error."""
+
+    def __init__(self, message: str, cause: Optional[BaseException] = None):
+        super().__init__(message, HTTPStatus.INTERNAL_SERVER_ERROR, "UnexpectedError", cause)
+
+
+class ExternalUnauthenticatedError(ApiCustomError):
+    """Raised when the external authentication check failed while the user was unauthenticated."""
 
     def __init__(self, message: str):
-        super().__init__(message, HTTPStatus.INTERNAL_SERVER_ERROR, "UnexpectedError")
+        super().__init__(message, HTTPStatus.UNAUTHORIZED, "ExternalUnauthenticatedError")
+
+
+class ExternalAuthenticatedError(ApiCustomError):
+    """Raised when the external authentication check failed while the user was authenticated.
+
+    Even if the external authentication server returns 403 in that case, we return 404 because
+    we don't know if the dataset exist or not. It's also coherent with how the Hugging Face Hub works."""
+
+    def __init__(self, message: str):
+        super().__init__(message, HTTPStatus.NOT_FOUND, "ExternalAuthenticatedError")
 
 
 class OrjsonResponse(JSONResponse):
@@ -112,3 +134,6 @@ def is_non_empty_string(string: Any) -> bool:
 
 def are_valid_parameters(parameters: List[Any]) -> bool:
     return all(is_non_empty_string(s) for s in parameters)
+
+
+Endpoint = Callable[[Request], Coroutine[Any, Any, Response]]

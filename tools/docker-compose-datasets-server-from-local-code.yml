@@ -33,6 +33,7 @@ services:
       APP_NUM_WORKERS: 1
       APP_PORT: 8080
       ASSETS_DIRECTORY: "/assets"
+      EXTERNAL_AUTH_URL: ${EXTERNAL_AUTH_URL}
       MONGO_URL: "mongodb://mongodb"
     ports:
       # for debug

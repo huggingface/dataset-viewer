@@ -52,15 +52,15 @@ def poll_rows(dataset: str, config: str, split: str) -> requests.Response:
 def refresh_poll_splits_rows(dataset: str, config: str, split: str) -> Tuple[requests.Response, requests.Response]:
     # ask for the dataset to be refreshed
     response = post_refresh(dataset)
-    assert response.status_code == 200
+    assert response.status_code == 200, f"{response.status_code} - {response.text}"
 
     # poll the /splits endpoint until we get something else than "The dataset is being processed. Retry later."
     response_splits = poll_splits(dataset)
-    assert response.status_code == 200
+    assert response.status_code == 200, f"{response_splits.status_code} - {response_splits.text}"
 
     # poll the /rows endpoint until we get something else than "The split is being processed. Retry later."
     response_rows = poll_rows(dataset, config, split)
-    assert response.status_code == 200
+    assert response.status_code == 200, f"{response_rows.status_code} - {response_rows.text}"
 
     return response_splits, response_rows
 
@@ -76,7 +76,7 @@ def poll_first_rows(dataset: str, config: str, split: str) -> requests.Response:
 def refresh_poll_splits_next(dataset: str) -> requests.Response:
     # ask for the dataset to be refreshed
     response = post_refresh(dataset)
-    assert response.status_code == 200
+    assert response.status_code == 200, f"{response.status_code} - {response.text}"
 
     # poll the /splits endpoint until we get something else than "The dataset is being processed. Retry later."
     return poll_splits_next(dataset)
@@ -86,7 +86,7 @@ def refresh_poll_splits_next_first_rows(
     dataset: str, config: str, split: str
 ) -> Tuple[requests.Response, requests.Response]:
     response_splits = refresh_poll_splits_next(dataset)
-    assert response_splits.status_code == 200
+    assert response_splits.status_code == 200, f"{response_splits.status_code} - {response_splits.text}"
 
     response_rows = poll_first_rows(dataset, config, split)
 

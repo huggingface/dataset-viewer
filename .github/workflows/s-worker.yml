@@ -15,8 +15,8 @@ jobs:
     uses: ./.github/workflows/_quality-python.yml
     with:
       working-directory: services/worker
-      # pillow <9.0.0
-      safety-exceptions: "-i 44525 -i 44524 -i 44486 -i 44485 -i 45356 -i 44487"
+      # pillow <9.0.0, ujson<5.4.0
+      safety-exceptions: "-i 44525 -i 44524 -i 44486 -i 44485 -i 45356 -i 44487 -i 49754 -i 49755"
       is-worker: true
   unit-tests:
     uses: ./.github/workflows/_unit-tests-python.yml

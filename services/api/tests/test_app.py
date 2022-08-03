@@ -1,6 +1,8 @@
 from http import HTTPStatus
+from typing import Dict, Optional
 
 import pytest
+import responses
 
 # from libcache.cache import clean_database as clean_cache_database
 from libcache.cache import clean_database as clean_cache_database
@@ -24,7 +26,9 @@ from libqueue.queue import clean_database as clean_queue_database
 from starlette.testclient import TestClient
 
 from api.app import create_app
-from api.config import MONGO_QUEUE_DATABASE
+from api.config import EXTERNAL_AUTH_URL, MONGO_QUEUE_DATABASE
+
+from .utils import request_callback
 
 
 @pytest.fixture(autouse=True, scope="module")
@@ -73,11 +77,14 @@ def test_get_valid_datasets(client: TestClient) -> None:
     assert "valid" in json
 
 
+@responses.activate
 def test_get_is_valid(client: TestClient) -> None:
     response = client.get("/is-valid")
     assert response.status_code == 422
 
-    response = client.get("/is-valid", params={"dataset": "doesnotexist"})
+    dataset = "doesnotexist"
+    responses.add_callback(responses.GET, (EXTERNAL_AUTH_URL or "%s") % dataset, callback=request_callback)
+    response = client.get("/is-valid", params={"dataset": dataset})
     assert response.status_code == 200
     json = response.json()
     assert "valid" in json
@@ -100,6 +107,26 @@ def test_get_is_valid(client: TestClient) -> None:
     #     json = response.json()
     #     assert "valid" in json
     #     assert json["valid"] is True
+
+
+# the logic below is just to check the cookie and authorization headers are managed correctly
+@pytest.mark.parametrize(
+    "headers,status_code,error_code",
+    [
+        ({"Cookie": "some cookie"}, 401, "ExternalUnauthenticatedError"),
+        ({"Authorization": "Bearer invalid"}, 404, "ExternalAuthenticatedError"),
+        ({}, 200, None),
+    ],
+)
+@responses.activate
+def test_is_valid_auth(
+    client: TestClient, headers: Dict[str, str], status_code: int, error_code: Optional[str]
+) -> None:
+    dataset = "dataset-which-does-not-exist"
+    responses.add_callback(responses.GET, (EXTERNAL_AUTH_URL or "%s") % dataset, callback=request_callback)
+    response = client.get(f"/is-valid?dataset={dataset}", headers=headers)
+    assert response.status_code == status_code
+    assert response.headers.get("X-Error-Code") == error_code
 
 
 def test_get_healthcheck(client: TestClient) -> None:
@@ -154,6 +181,24 @@ def test_get_splits_next(client: TestClient) -> None:
     # empty parameter
     response = client.get("/splits-next?dataset=")
     assert response.status_code == 422
+
+
+# the logic below is just to check the cookie and authorization headers are managed correctly
+@pytest.mark.parametrize(
+    "headers,status_code,error_code",
+    [
+        ({"Cookie": "some cookie"}, 401, "ExternalUnauthenticatedError"),
+        ({"Authorization": "Bearer invalid"}, 404, "ExternalAuthenticatedError"),
+        ({}, 404, "SplitsResponseNotFound"),
+    ],
+)
+@responses.activate
+def test_splits_next_auth(client: TestClient, headers: Dict[str, str], status_code: int, error_code: str) -> None:
+    dataset = "dataset-which-does-not-exist"
+    responses.add_callback(responses.GET, (EXTERNAL_AUTH_URL or "%s") % dataset, callback=request_callback)
+    response = client.get(f"/splits-next?dataset={dataset}", headers=headers)
+    assert response.status_code == status_code
+    assert response.headers.get("X-Error-Code") == error_code
 
 
 def test_get_first_rows(client: TestClient) -> None:
@@ -278,8 +323,11 @@ def test_split_cache_refreshing(client: TestClient) -> None:
     assert response.json()["message"] == "The split is being processed. Retry later."
 
 
+@responses.activate
 def test_splits_cache_refreshing(client: TestClient) -> None:
     dataset = "acronym_identification"
+    responses.add_callback(responses.GET, (EXTERNAL_AUTH_URL or "%s") % dataset, callback=request_callback)
+
     response = client.get("/splits-next", params={"dataset": dataset})
     assert response.json()["error"] == "Not found."
     add_splits_job(dataset)
@@ -294,10 +342,13 @@ def test_splits_cache_refreshing(client: TestClient) -> None:
     assert response.status_code == 200
 
 
+@responses.activate
 def test_first_rows_cache_refreshing(client: TestClient) -> None:
     dataset = "acronym_identification"
     config = "default"
     split = "train"
+    responses.add_callback(responses.GET, (EXTERNAL_AUTH_URL or "%s") % dataset, callback=request_callback)
+
     response = client.get("/first-rows", params={"dataset": dataset, "config": config, "split": split})
     assert response.json()["error"] == "Not found."
     add_first_rows_job(dataset, config, split)

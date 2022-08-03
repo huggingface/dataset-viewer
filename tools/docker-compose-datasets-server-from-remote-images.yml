@@ -30,6 +30,7 @@ services:
       APP_NUM_WORKERS: 1
       APP_PORT: 8080
       ASSETS_DIRECTORY: "/assets"
+      EXTERNAL_AUTH_URL: ${EXTERNAL_AUTH_URL-""}
       # use shorter cache durations for the e2e tests
       MAX_AGE_SHORT_SECONDS: 1
       MAX_AGE_LONG_SECONDS: 2
