@@ -8,5 +8,5 @@ def test_valid_after_datasets_processed():
     response = requests.get(f"{URL}/valid")
     assert response.status_code == 200, f"{response.status_code} - {response.text}"
     # at this moment various datasets have been processed (due to the alphabetic order of the test files)
-    assert "acronym_identification" in response.json()["valid"]
-    assert "nielsr/CelebA-faces" in response.json()["valid"]
+    assert "acronym_identification" in response.json()["valid"], response.text
+    assert "nielsr/CelebA-faces" in response.json()["valid"], response.text

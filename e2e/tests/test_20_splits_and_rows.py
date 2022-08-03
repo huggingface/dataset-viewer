@@ -16,8 +16,8 @@ def test_get_dataset():
     split = "train"
 
     r_splits, r_rows = refresh_poll_splits_rows(dataset, config, split)
-    assert r_splits.json()["splits"][0]["split"] == "train"
-    assert r_rows.json()["rows"][0]["row"]["id"] == "TR-0"
+    assert r_splits.json()["splits"][0]["split"] == "train", r_splits.text
+    assert r_rows.json()["rows"][0]["row"]["id"] == "TR-0", r_splits.text
 
 
 # TODO: find a dataset that can be processed faster
@@ -46,7 +46,7 @@ def test_bug_empty_split():
     response = requests.get(url)
     assert response.status_code == 400, f"{response.status_code} - {response.text}"
     json = response.json()
-    assert json["message"] == "The split is being processed. Retry later."
+    assert json["message"] == "The split is being processed. Retry later.", json
 
     # ask again for the dataset to be refreshed
     response = requests.post(f"{URL}/webhook", json={"update": f"datasets/{dataset}"})
@@ -60,7 +60,7 @@ def test_bug_empty_split():
     response = poll_rows(dataset, config, split)
     assert response.status_code == 200, f"{response.status_code} - {response.text}"
     json = response.json()
-    assert len(json["rows"]) == ROWS_MAX_NUMBER
+    assert len(json["rows"]) == ROWS_MAX_NUMBER, json
 
 
 # TODO: enable again when we will have the same behavior with 4 rows (ROWS_MAX_NUMBER)

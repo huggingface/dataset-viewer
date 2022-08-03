@@ -94,7 +94,7 @@ def test_first_rows(status: int, name: str, dataset: str, config: str, split: st
         _, r_rows = refresh_poll_splits_next_first_rows(dataset, config, split)
 
     assert r_rows.status_code == status, f"{r_rows.status_code} - {r_rows.text}"
-    assert prepare_json(r_rows) == body
+    assert prepare_json(r_rows) == body, r_rows.text
     if error_code is not None:
         assert r_rows.headers["X-Error-Code"] == error_code, r_rows.headers["X-Error-Code"]
     else:
