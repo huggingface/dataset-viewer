@@ -45,9 +45,9 @@ def test_png_image_next():
     assert json["features"][0]["type"]["_type"] == "Image", json
     assert (
         json["rows"][0]["row"]["image"]
-        == f"{URL}/assets/wikimedia/wit_base/--/wikimedia--wit_base/train/0/image/image.jpg",
-        json,
-    )
+        == f"{URL}/assets/wikimedia/wit_base/--/wikimedia--wit_base/train/0/image/image.jpg"
+    ), json
+
     # assert (
     #     json["rows"][20]["row"]["image"]
     #     == f"{URL}/assets/wikimedia/wit_base/--/wikimedia--wit_base/train/20/image/image.png"
