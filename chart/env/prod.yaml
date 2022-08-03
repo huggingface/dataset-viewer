@@ -179,11 +179,17 @@ admin:
 
   resources:
     requests:
-      cpu: 1
+      cpu: 4
+      memory: "512Mi"
     limits:
-      cpu: 1
+      cpu: 4
+      memory: "1Gi"
 
-  appNumWorkers: "1"
+
+  # Number of uvicorn workers for running the application
+  # (2 x $num_cores) + 1
+  # https://docs.gunicorn.org/en/stable/design.html#how-many-workers
+  appNumWorkers: 9
   # Number of reports in /cache-reports/... endpoints
   cacheReportsNumResults: 1000
   # Log level

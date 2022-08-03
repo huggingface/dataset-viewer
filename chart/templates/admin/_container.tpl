@@ -29,6 +29,8 @@
         key: MONGO_URL
         optional: false
   {{- end }}
+  - name: PROMETHEUS_MULTIPROC_DIR
+    value:  {{ .Values.admin.prometheusMultiprocDirectory | quote }}
   image: {{ .Values.dockerImage.admin }}
   imagePullPolicy: IfNotPresent
   volumeMounts:
@@ -36,6 +38,11 @@
     mountPropagation: None
     name: nfs
     subPath: "{{ include "assets.subpath" . }}"
+    readOnly: false
+  - mountPath: {{ .Values.admin.prometheusMultiprocDirectory | quote }}
+    mountPropagation: None
+    name: nfs
+    subPath: "{{ include "prometheus.admin.subpath" . }}"
     readOnly: false
   securityContext:
     allowPrivilegeEscalation: false
