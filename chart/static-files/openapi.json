@@ -756,6 +756,20 @@
           }
         }
       }
+    },
+    "securitySchemes": {
+      "HuggingFaceCookie": {
+        "type": "apiKey",
+        "description": "The HuggingFace cookie. Get it by logging in to https://huggingface.co/. It can only be used from the huggingface.co domain, and can thus only be used by Hub features like the [dataset viewer](https://huggingface.co/docs/hub/datasets-viewer), for example.",
+        "name": "token",
+        "in": "cookie"
+      },
+      "HuggingFaceToken": {
+        "type": "http",
+        "description": "The HuggingFace API token. Create a User Access Token with read access at https://huggingface.co/settings/tokens. You can also use an Organization API token. It gives access to the public datasets, and to the [gated datasets](https://huggingface.co/docs/hub/datasets-gated) for which you have accepted the conditions.",
+        "scheme": "bearer",
+        "bearerFormat": "A User Access Token is prefixed with `hf_`, while an Organization API token is prefixed with `api_org_`."
+      }
     }
   },
   "paths": {
@@ -1915,6 +1929,15 @@
           "url": "https://huggingface.co/docs/datasets-server/splits"
         },
         "operationId": "listSplitsNext",
+        "security": [
+          {},
+          {
+            "HuggingFaceCookie": []
+          },
+          {
+            "HuggingFaceToken": []
+          }
+        ],
         "parameters": [
           {
             "name": "dataset",
@@ -2027,8 +2050,8 @@
               }
             }
           },
-          "404": {
-            "description": "If the repository to download from cannot be found. This may be because it doesn't exist, or because it is set to `private` and you do not have access.",
+          "401": {
+            "description": "If the external authentication step on the Hugging Face Hub failed, and no authentication mechanism has been provided. Retry with authentication.",
             "headers": {
               "Cache-Control": {
                 "$ref": "#/components/headers/Cache-Control"
@@ -2049,13 +2072,60 @@
                   "inexistent-dataset": {
                     "summary": "The dataset does not exist.",
                     "value": {
-                      "error": "Not found."
+                      "error": "The dataset does not exist, or is not accessible without authentication (private or gated). Please retry  with authentication."
+                    }
+                  },
+                  "gated-dataset": {
+                    "summary": "The dataset is gated.",
+                    "value": {
+                      "error": "The dataset does not exist, or is not accessible without authentication (private or gated). Please retry  with authentication."
                     }
                   },
                   "private-dataset": {
                     "summary": "The dataset is private.",
                     "value": {
-                      "error": "Not found."
+                      "error": "The dataset does not exist, or is not accessible without authentication (private or gated). Please retry  with authentication."
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "If the repository to download from cannot be found. This may be because it doesn't exist, or because it is set to `private` and you do not have access.",
+            "headers": {
+              "Cache-Control": {
+                "$ref": "#/components/headers/Cache-Control"
+              },
+              "Access-Control-Allow-Origin": {
+                "$ref": "#/components/headers/Access-Control-Allow-Origin"
+              },
+              "X-Error-Code": {
+                "$ref": "#/components/headers/X-Error-Code"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CustomError"
+                },
+                "examples": {
+                  "inexistent-dataset": {
+                    "summary": "The dataset does not exist, while authentication was provided in the request.",
+                    "value": {
+                      "error": "The dataset does not exist, or is not accessible with the current credentials (private or gated)."
+                    }
+                  },
+                  "gated-dataset": {
+                    "summary": "The dataset is private, while authentication was provided in the request.",
+                    "value": {
+                      "error": "The dataset does not exist, or is not accessible with the current credentials (private or gated)."
+                    }
+                  },
+                  "private-dataset": {
+                    "summary": "The dataset is private, while authentication was provided in the request.",
+                    "value": {
+                      "error": "The dataset does not exist, or is not accessible with the current credentials (private or gated)."
                     }
                   }
                 }
@@ -2177,6 +2247,15 @@
           "url": "https://huggingface.co/docs/datasets-server/rows"
         },
         "operationId": "listFirstRows",
+        "security": [
+          {},
+          {
+            "HuggingFaceCookie": []
+          },
+          {
+            "HuggingFaceToken": []
+          }
+        ],
         "parameters": [
           {
             "name": "dataset",
@@ -2782,6 +2861,47 @@
               }
             }
           },
+          "401": {
+            "description": "If the external authentication step on the Hugging Face Hub failed, and no authentication mechanism has been provided. Retry with authentication.",
+            "headers": {
+              "Cache-Control": {
+                "$ref": "#/components/headers/Cache-Control"
+              },
+              "Access-Control-Allow-Origin": {
+                "$ref": "#/components/headers/Access-Control-Allow-Origin"
+              },
+              "X-Error-Code": {
+                "$ref": "#/components/headers/X-Error-Code"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CustomError"
+                },
+                "examples": {
+                  "inexistent-dataset": {
+                    "summary": "The dataset does not exist.",
+                    "value": {
+                      "error": "The dataset does not exist, or is not accessible without authentication (private or gated). Please retry  with authentication."
+                    }
+                  },
+                  "gated-dataset": {
+                    "summary": "The dataset is gated.",
+                    "value": {
+                      "error": "The dataset does not exist, or is not accessible without authentication (private or gated). Please retry  with authentication."
+                    }
+                  },
+                  "private-dataset": {
+                    "summary": "The dataset is private.",
+                    "value": {
+                      "error": "The dataset does not exist, or is not accessible without authentication (private or gated). Please retry  with authentication."
+                    }
+                  }
+                }
+              }
+            }
+          },
           "404": {
             "description": "If the repository to download from cannot be found, or if the config or split does not exist in the dataset. Note that this may be because the dataset doesn't exist, or because it is set to `private` and you do not have access.",
             "headers": {
@@ -2802,12 +2922,22 @@
                 },
                 "examples": {
                   "inexistent-dataset": {
-                    "summary": "The dataset does not exist on the Hub.",
-                    "value": { "error": "Not found." }
+                    "summary": "The dataset does not exist, while authentication was provided in the request.",
+                    "value": {
+                      "error": "The dataset does not exist, or is not accessible with the current credentials (private or gated)."
+                    }
+                  },
+                  "gated-dataset": {
+                    "summary": "The dataset is private, while authentication was provided in the request.",
+                    "value": {
+                      "error": "The dataset does not exist, or is not accessible with the current credentials (private or gated)."
+                    }
                   },
                   "private-dataset": {
-                    "summary": "The dataset is private.",
-                    "value": { "error": "Not found." }
+                    "summary": "The dataset is private, while authentication was provided in the request.",
+                    "value": {
+                      "error": "The dataset does not exist, or is not accessible with the current credentials (private or gated)."
+                    }
                   },
                   "inexistent-config": {
                     "summary": "The config does not exist in the dataset.",
