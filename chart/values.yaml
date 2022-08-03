@@ -98,7 +98,7 @@ api:
   maxAgeShortSeconds: "10"
   # Directory where the uvicorn workers will write the prometheus metrics
   # see https://github.com/prometheus/client_python#multiprocess-mode-eg-gunicorn
-  prometheusMultiprocDirectory: "/prometheus"
+  prometheusMultiprocDirectory: "/tmp"
 
 worker:
   datasets:

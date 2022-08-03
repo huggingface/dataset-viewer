@@ -121,28 +121,6 @@ The nginx-cache/ subpath in the NFS
 {{- end }}
 
 {{/*
-The directory in the NFS where the uvicorn workers share their prometheus metrics
-See https://github.com/prometheus/client_python#multiprocess-mode-eg-gunicorn
-For the admin service
-- in a subdirectory named as the chart (datasets-server/), and below it,
-- in a subdirectory named as the Release, so that Releases will not share the same dir
-*/}}
-{{- define "prometheus.admin.subpath" -}}
-{{- printf "%s/%s/%s/" .Chart.Name .Release.Name "prometheus-admin" }}
-{{- end }}
-
-{{/*
-The directory in the NFS where the uvicorn workers share their prometheus metrics
-See https://github.com/prometheus/client_python#multiprocess-mode-eg-gunicorn
-For the api service
-- in a subdirectory named as the chart (datasets-server/), and below it,
-- in a subdirectory named as the Release, so that Releases will not share the same dir
-*/}}
-{{- define "prometheus.api.subpath" -}}
-{{- printf "%s/%s/%s/" .Chart.Name .Release.Name "prometheus-api" }}
-{{- end }}
-
-{{/*
 The URL to access the mongodb instance created if mongodb.enable is true
 It's named using the Release name
 */}}
