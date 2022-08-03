@@ -20,19 +20,19 @@ def prepare_json(response: requests.Response) -> Any:
 @pytest.mark.parametrize(
     "status,name,dataset,config,split,error_code",
     [
-        # (200, "imdb", "imdb", "plain_text", "train", None),
-        # (200, "truncated", "ett", "m2", "test", None),
-        # (200, "image", "huggan/horse2zebra", "huggan--horse2zebra-aligned", "train", None),
-        # # (200, "audio", "mozilla-foundation/common_voice_9_0", "en", "train", None),
-        # # ^ awfully long
-        # (
-        #     401,
-        #     "inexistent-dataset",
-        #     "severo/inexistent-dataset",
-        #     "plain_text",
-        #     "train",
-        #     "ExternalUnauthenticatedError",
-        # ),
+        (200, "imdb", "imdb", "plain_text", "train", None),
+        (200, "truncated", "ett", "m2", "test", None),
+        (200, "image", "huggan/horse2zebra", "huggan--horse2zebra-aligned", "train", None),
+        # (200, "audio", "mozilla-foundation/common_voice_9_0", "en", "train", None),
+        # ^ awfully long
+        (
+            401,
+            "inexistent-dataset",
+            "severo/inexistent-dataset",
+            "plain_text",
+            "train",
+            "ExternalUnauthenticatedError",
+        ),
         (
             401,
             "gated-dataset",
