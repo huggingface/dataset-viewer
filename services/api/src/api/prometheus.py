@@ -16,7 +16,7 @@ from starlette.responses import Response
 class Prometheus:
     def getRegistry(self) -> CollectorRegistry:
         # taken from https://github.com/perdy/starlette-prometheus/blob/master/starlette_prometheus/view.py
-        if "prometheus_multiproc_dir" in os.environ:
+        if "PROMETHEUS_MULTIPROC_DIR" in os.environ:
             registry = CollectorRegistry()
             MultiProcessCollector(registry)
         else:
