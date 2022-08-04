@@ -1,6 +1,6 @@
 import logging
 
-from huggingface_hub import HfApi
+from huggingface_hub.hf_api import HfApi  # type: ignore
 from libutils.logger import init_logger
 
 from admin.config import HF_ENDPOINT, LOG_LEVEL

@@ -1,7 +1,7 @@
 import logging
 from typing import List
 
-from huggingface_hub import HfApi
+from huggingface_hub.hf_api import HfApi  # type: ignore
 from libqueue.queue import add_dataset_job, add_splits_job, connect_to_queue
 from libutils.logger import init_logger
 

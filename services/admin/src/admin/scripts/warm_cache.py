@@ -1,7 +1,7 @@
 import logging
 from typing import List
 
-from huggingface_hub import HfApi
+from huggingface_hub.hf_api import HfApi  # type: ignore
 from libcache.cache import (
     connect_to_cache,
     list_split_full_names_to_refresh,
