@@ -7,8 +7,6 @@ from datasets import (
     get_dataset_config_names,
     get_dataset_split_names,
 )
-from huggingface_hub import dataset_info  # type:ignore
-from huggingface_hub.utils import RepositoryNotFoundError  # type:ignore
 
 from worker.utils import DatasetNotFoundError, SplitsNamesError
 
@@ -64,15 +62,12 @@ def get_splits_response(
     </Tip>
     """
     logger.info(f"get splits for dataset={dataset_name}")
-    # first ensure the dataset exists on the Hub
-    try:
-        dataset_info(dataset_name, token=hf_token)
-    except RepositoryNotFoundError as err:
-        raise DatasetNotFoundError("The dataset does not exist on the Hub.") from err
     # get the list of splits
     try:
         split_full_names = get_dataset_split_full_names(dataset_name, hf_token)
     except Exception as err:
+        if isinstance(err, FileNotFoundError) and "doesn't exist on the Hub" in str(err):
+            raise DatasetNotFoundError("The dataset does not exist on the Hub.") from err
         raise SplitsNamesError("Cannot get the split names for the dataset.", cause=err) from err
     # get the number of bytes and examples for each split
     config_info: Dict[str, DatasetInfo] = {}
