@@ -3,6 +3,7 @@ from typing import Optional
 DEFAULT_ASSETS_BASE_URL: str = "assets"
 DEFAULT_ASSETS_DIRECTORY: None = None
 DEFAULT_DATASETS_REVISION: str = "main"
+DEFAULT_HF_ENDPOINT: str = "https://huggingface.co"
 DEFAULT_HF_TOKEN: Optional[str] = None
 DEFAULT_LOG_LEVEL: str = "INFO"
 DEFAULT_MAX_JOB_RETRIES: int = 3
