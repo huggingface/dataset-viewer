@@ -1,15 +1,15 @@
 import logging
 from typing import List
 
-from huggingface_hub import list_datasets  # type: ignore
+from huggingface_hub import HfApi
 from libqueue.queue import add_dataset_job, add_splits_job, connect_to_queue
 from libutils.logger import init_logger
 
-from admin.config import LOG_LEVEL, MONGO_QUEUE_DATABASE, MONGO_URL
+from admin.config import HF_ENDPOINT, LOG_LEVEL, MONGO_QUEUE_DATABASE, MONGO_URL
 
 
 def get_hf_dataset_names():
-    return [str(dataset.id) for dataset in list_datasets(full=False)]
+    return [str(dataset.id) for dataset in HfApi(HF_ENDPOINT).list_datasets(full=False)]
 
 
 def refresh_datasets_cache(dataset_names: List[str]) -> None:

@@ -1,14 +1,14 @@
 import logging
 
-from huggingface_hub import list_datasets  # type: ignore
+from huggingface_hub import HfApi
 from libutils.logger import init_logger
 
-from admin.config import LOG_LEVEL
+from admin.config import HF_ENDPOINT, LOG_LEVEL
 from admin.scripts.refresh_cache import refresh_datasets_cache
 
 
 def get_hf_canonical_dataset_names():
-    return [str(dataset.id) for dataset in list_datasets(full=False) if dataset.id.find("/") == -1]
+    return [str(dataset.id) for dataset in HfApi(HF_ENDPOINT).list_datasets(full=False) if dataset.id.find("/") == -1]
 
 
 if __name__ == "__main__":
