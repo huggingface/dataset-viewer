@@ -15,6 +15,7 @@ from worker.refresh import refresh_first_rows, refresh_splits
 
 from ._utils import (
     ASSETS_BASE_URL,
+    HF_ENDPOINT,
     MONGO_CACHE_DATABASE,
     MONGO_QUEUE_DATABASE,
     MONGO_URL,
@@ -41,7 +42,7 @@ def clean_mongo_database() -> None:
 
 def test_doesnotexist() -> None:
     dataset_name = "doesnotexist"
-    assert refresh_splits(dataset_name) == (HTTPStatus.NOT_FOUND, False)
+    assert refresh_splits(dataset_name, hf_endpoint=HF_ENDPOINT) == (HTTPStatus.NOT_FOUND, False)
     with pytest.raises(DoesNotExist):
         get_splits_response(dataset_name)
 
@@ -50,14 +51,14 @@ def test_e2e_examples() -> None:
     # see https://github.com/huggingface/datasets-server/issues/78
     dataset_name = "Check/region_1"
 
-    assert refresh_splits(dataset_name) == (HTTPStatus.OK, False)
+    assert refresh_splits(dataset_name, hf_endpoint=HF_ENDPOINT) == (HTTPStatus.OK, False)
     response, _, _ = get_splits_response(dataset_name)
     assert len(response["splits"]) == 1
     assert response["splits"][0]["num_bytes"] is None
     assert response["splits"][0]["num_examples"] is None
 
     dataset_name = "acronym_identification"
-    assert refresh_splits(dataset_name) == (HTTPStatus.OK, False)
+    assert refresh_splits(dataset_name, hf_endpoint=HF_ENDPOINT) == (HTTPStatus.OK, False)
     response, _, _ = get_splits_response(dataset_name)
     assert len(response["splits"]) == 3
     assert response["splits"][0]["num_bytes"] == 7792803
@@ -68,14 +69,14 @@ def test_large_document() -> None:
     # see https://github.com/huggingface/datasets-server/issues/89
     dataset_name = "SaulLu/Natural_Questions_HTML"
 
-    assert refresh_splits(dataset_name) == (HTTPStatus.OK, False)
+    assert refresh_splits(dataset_name, hf_endpoint=HF_ENDPOINT) == (HTTPStatus.OK, False)
     _, http_status, error_code = get_splits_response(dataset_name)
     assert http_status == HTTPStatus.OK
     assert error_code is None
 
 
 def test_first_rows() -> None:
-    http_status, _ = refresh_first_rows("common_voice", "tr", "train", ASSETS_BASE_URL)
+    http_status, _ = refresh_first_rows("common_voice", "tr", "train", ASSETS_BASE_URL, hf_endpoint=HF_ENDPOINT)
     response, cached_http_status, error_code = get_first_rows_response("common_voice", "tr", "train")
     assert http_status == HTTPStatus.OK
     assert cached_http_status == HTTPStatus.OK

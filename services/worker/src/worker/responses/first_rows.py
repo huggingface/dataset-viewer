@@ -237,6 +237,7 @@ def get_first_rows_response(
     config_name: str,
     split_name: str,
     assets_base_url: str,
+    hf_endpoint: str,
     hf_token: Optional[str] = None,
     max_size_fallback: Optional[int] = None,
     rows_max_bytes: Optional[int] = None,
@@ -298,7 +299,7 @@ def get_first_rows_response(
     if rows_min_number is None:
         rows_min_number = 0
     # first ensure the tuple (dataset, config, split) exists on the Hub
-    splits_response = get_splits_response(dataset_name, hf_token)
+    splits_response = get_splits_response(dataset_name, hf_endpoint, hf_token)
     # ^ can raise DoesNotExistError or DatasetError
     if config_name not in [split_item["config_name"] for split_item in splits_response["splits"]]:
         raise ConfigNotFoundError(f"config {config_name} does not exist for dataset {dataset_name}")
