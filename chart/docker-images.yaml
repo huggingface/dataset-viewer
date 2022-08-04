@@ -4,10 +4,10 @@
     "api": "707930574880.dkr.ecr.us-east-1.amazonaws.com/hub-datasets-server-api:sha-70dca73",
     "reverseProxy": "docker.io/nginx:1.20",
     "worker": {
-      "datasets": "707930574880.dkr.ecr.us-east-1.amazonaws.com/hub-datasets-server-worker:sha-a0a031b",
-      "firstRows": "707930574880.dkr.ecr.us-east-1.amazonaws.com/hub-datasets-server-worker:sha-a0a031b",
-      "splits": "707930574880.dkr.ecr.us-east-1.amazonaws.com/hub-datasets-server-worker:sha-a0a031b",
-      "splitsNext": "707930574880.dkr.ecr.us-east-1.amazonaws.com/hub-datasets-server-worker:sha-a0a031b"
+      "datasets": "707930574880.dkr.ecr.us-east-1.amazonaws.com/hub-datasets-server-worker:sha-92af911",
+      "firstRows": "707930574880.dkr.ecr.us-east-1.amazonaws.com/hub-datasets-server-worker:sha-92af911",
+      "splits": "707930574880.dkr.ecr.us-east-1.amazonaws.com/hub-datasets-server-worker:sha-92af911",
+      "splitsNext": "707930574880.dkr.ecr.us-east-1.amazonaws.com/hub-datasets-server-worker:sha-92af911"
     }
   }  
 }
