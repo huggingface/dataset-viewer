@@ -1,8 +1,7 @@
 import pytest
-import requests
 
 from .utils import (
-    URL,
+    get,
     get_openapi_body_example,
     poll,
     post_refresh,
@@ -45,13 +44,13 @@ def test_splits_next(status: int, name: str, dataset: str, error_code: str):
     body = get_openapi_body_example("/splits-next", status, name)
 
     if name == "empty-parameter":
-        r_splits = poll(f"{URL}/splits-next?dataset=", error_field="error")
+        r_splits = poll("/splits-next?dataset=", error_field="error")
     elif name == "missing-parameter":
-        r_splits = poll(f"{URL}/splits-next", error_field="error")
+        r_splits = poll("/splits-next", error_field="error")
     elif name == "not-ready":
         post_refresh(dataset)
         # poll the endpoint before the worker had the chance to process it
-        r_splits = requests.get(f"{URL}/splits-next?dataset={dataset}")
+        r_splits = get(f"/splits-next?dataset={dataset}")
     else:
         r_splits = refresh_poll_splits_next(dataset)
 

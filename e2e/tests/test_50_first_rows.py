@@ -6,6 +6,7 @@ import requests
 
 from .utils import (
     URL,
+    get,
     get_openapi_body_example,
     poll,
     refresh_poll_splits_next,
@@ -75,21 +76,21 @@ def test_first_rows(status: int, name: str, dataset: str, config: str, split: st
     # the logic here is a bit convoluted, because we have no way to refresh a split, we have to refresh the whole
     # dataset and depend on the result of /splits-next
     if name.startswith("empty-"):
-        r_rows = poll(f"{URL}/first-rows?dataset={dataset}&config={config}&split={split}", error_field="error")
+        r_rows = poll(f"/first-rows?dataset={dataset}&config={config}&split={split}", error_field="error")
     elif name.startswith("missing-"):
         d = f"dataset={dataset}" if dataset is not None else ""
         c = f"config={config}" if config is not None else ""
         s = f"split={split}" if split is not None else ""
         params = "&".join([d, c, s])
-        r_rows = poll(f"{URL}/first-rows?{params}", error_field="error")
+        r_rows = poll(f"/first-rows?{params}", error_field="error")
     elif name.startswith("inexistent-") or name.startswith("private-") or name.startswith("gated-"):
         refresh_poll_splits_next(dataset)
         # no need to retry
-        r_rows = requests.get(f"{URL}/first-rows?dataset={dataset}&config={config}&split={split}")
+        r_rows = get(f"/first-rows?dataset={dataset}&config={config}&split={split}")
     elif name == "not-ready":
         refresh_poll_splits_next(dataset)
         # poll the endpoint before the worker had the chance to process it
-        r_rows = requests.get(f"{URL}/first-rows?dataset={dataset}&config={config}&split={split}")
+        r_rows = get(f"/first-rows?dataset={dataset}&config={config}&split={split}")
     else:
         _, r_rows = refresh_poll_splits_next_first_rows(dataset, config, split)
 

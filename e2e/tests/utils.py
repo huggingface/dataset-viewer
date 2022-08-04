@@ -2,7 +2,7 @@ import json
 import os
 import time
 from os.path import dirname, join
-from typing import Optional, Tuple
+from typing import Any, Dict, Optional, Tuple
 
 import requests
 
@@ -12,8 +12,26 @@ INTERVAL = 1
 MAX_DURATION = 10 * 60
 URL = f"http://localhost:{SERVICE_REVERSE_PROXY_PORT}"
 
+Headers = Dict[str, str]
 
-def poll(url: str, error_field: Optional[str] = None, expected_code: Optional[int] = 200) -> requests.Response:
+
+def get(relative_url: str, headers: Headers = None) -> requests.Response:
+    if headers is None:
+        headers = {}
+    return requests.get(f"{URL}{relative_url}", headers=headers)
+
+
+def post(relative_url: str, json: Optional[Any] = None, headers: Headers = None) -> requests.Response:
+    if headers is None:
+        headers = {}
+    return requests.post(f"{URL}{relative_url}", json=json, headers=headers)
+
+
+def poll(
+    relative_url: str, error_field: Optional[str] = None, expected_code: Optional[int] = 200, headers: Headers = None
+) -> requests.Response:
+    if headers is None:
+        headers = {}
     interval = INTERVAL
     timeout = MAX_DURATION
     retries = timeout // interval
@@ -22,7 +40,7 @@ def poll(url: str, error_field: Optional[str] = None, expected_code: Optional[in
     while retries > 0 and should_retry:
         retries -= 1
         time.sleep(interval)
-        response = requests.get(url)
+        response = get(relative_url, headers)
         if error_field is not None:
             # currently, when the dataset is being processed, the error message contains "Retry later"
             try:
@@ -37,58 +55,62 @@ def poll(url: str, error_field: Optional[str] = None, expected_code: Optional[in
     return response
 
 
-def post_refresh(dataset: str) -> requests.Response:
-    return requests.post(f"{URL}/webhook", json={"update": f"datasets/{dataset}"})
+def post_refresh(dataset: str, headers: Headers = None) -> requests.Response:
+    if headers is None:
+        headers = {}
+    return post("/webhook", json={"update": f"datasets/{dataset}"}, headers=headers)
 
 
-def poll_splits(dataset: str) -> requests.Response:
-    return poll(f"{URL}/splits?dataset={dataset}", error_field="message")
+def poll_splits(dataset: str, headers: Headers = None) -> requests.Response:
+    return poll(f"/splits?dataset={dataset}", error_field="message", headers=headers)
 
 
-def poll_rows(dataset: str, config: str, split: str) -> requests.Response:
-    return poll(f"{URL}/rows?dataset={dataset}&config={config}&split={split}", error_field="message")
+def poll_rows(dataset: str, config: str, split: str, headers: Headers = None) -> requests.Response:
+    return poll(f"/rows?dataset={dataset}&config={config}&split={split}", error_field="message", headers=headers)
 
 
-def refresh_poll_splits_rows(dataset: str, config: str, split: str) -> Tuple[requests.Response, requests.Response]:
+def refresh_poll_splits_rows(
+    dataset: str, config: str, split: str, headers: Headers = None
+) -> Tuple[requests.Response, requests.Response]:
     # ask for the dataset to be refreshed
-    response = post_refresh(dataset)
+    response = post_refresh(dataset, headers=headers)
     assert response.status_code == 200, f"{response.status_code} - {response.text}"
 
     # poll the /splits endpoint until we get something else than "The dataset is being processed. Retry later."
-    response_splits = poll_splits(dataset)
+    response_splits = poll_splits(dataset, headers=headers)
     assert response.status_code == 200, f"{response_splits.status_code} - {response_splits.text}"
 
     # poll the /rows endpoint until we get something else than "The split is being processed. Retry later."
-    response_rows = poll_rows(dataset, config, split)
+    response_rows = poll_rows(dataset, config, split, headers=headers)
     assert response.status_code == 200, f"{response_rows.status_code} - {response_rows.text}"
 
     return response_splits, response_rows
 
 
-def poll_splits_next(dataset: str) -> requests.Response:
-    return poll(f"{URL}/splits-next?dataset={dataset}", error_field="error")
+def poll_splits_next(dataset: str, headers: Headers = None) -> requests.Response:
+    return poll(f"/splits-next?dataset={dataset}", error_field="error", headers=headers)
 
 
-def poll_first_rows(dataset: str, config: str, split: str) -> requests.Response:
-    return poll(f"{URL}/first-rows?dataset={dataset}&config={config}&split={split}", error_field="error")
+def poll_first_rows(dataset: str, config: str, split: str, headers: Headers = None) -> requests.Response:
+    return poll(f"/first-rows?dataset={dataset}&config={config}&split={split}", error_field="error", headers=headers)
 
 
-def refresh_poll_splits_next(dataset: str) -> requests.Response:
+def refresh_poll_splits_next(dataset: str, headers: Headers = None) -> requests.Response:
     # ask for the dataset to be refreshed
-    response = post_refresh(dataset)
+    response = post_refresh(dataset, headers=headers)
     assert response.status_code == 200, f"{response.status_code} - {response.text}"
 
     # poll the /splits endpoint until we get something else than "The dataset is being processed. Retry later."
-    return poll_splits_next(dataset)
+    return poll_splits_next(dataset, headers=headers)
 
 
 def refresh_poll_splits_next_first_rows(
-    dataset: str, config: str, split: str
+    dataset: str, config: str, split: str, headers: Headers = None
 ) -> Tuple[requests.Response, requests.Response]:
-    response_splits = refresh_poll_splits_next(dataset)
+    response_splits = refresh_poll_splits_next(dataset, headers=headers)
     assert response_splits.status_code == 200, f"{response_splits.status_code} - {response_splits.text}"
 
-    response_rows = poll_first_rows(dataset, config, split)
+    response_rows = poll_first_rows(dataset, config, split, headers=headers)
 
     return response_splits, response_rows
 

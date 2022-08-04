@@ -1,10 +1,9 @@
-import requests
-
 from .utils import (
     ROWS_MAX_NUMBER,
-    URL,
+    get,
     poll_rows,
     poll_splits,
+    post,
     post_refresh,
     refresh_poll_splits_rows,
 )
@@ -42,14 +41,13 @@ def test_bug_empty_split():
     assert response.status_code == 200, f"{response.status_code} - {response.text}"
 
     # at this point the splits should have been created in the dataset, and still be EMPTY
-    url = f"{URL}/rows?dataset={dataset}&config={config}&split={split}"
-    response = requests.get(url)
+    response = get(f"/rows?dataset={dataset}&config={config}&split={split}")
     assert response.status_code == 400, f"{response.status_code} - {response.text}"
     json = response.json()
     assert json["message"] == "The split is being processed. Retry later.", json
 
     # ask again for the dataset to be refreshed
-    response = requests.post(f"{URL}/webhook", json={"update": f"datasets/{dataset}"})
+    response = post("/webhook", json={"update": f"datasets/{dataset}"})
     assert response.status_code == 200, f"{response.status_code} - {response.text}"
 
     # at this moment, there is a concurrency race between the datasets worker and the splits worker
