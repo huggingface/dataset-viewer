@@ -1,3 +1,5 @@
+# build with
+#   docker build -t some_tag_worker -f Dockerfile ../..
 FROM python:3.9.6-slim
 
 ENV PYTHONFAULTHANDLER=1 \
@@ -34,12 +36,14 @@ RUN pip install -U --no-cache-dir pip
 RUN pip install "poetry==$POETRY_VERSION"
 
 WORKDIR /src
-COPY libs ./libs/
-COPY services ./services/
-COPY tools ./tools/
+COPY libs/libcache/dist ./libs/libcache/dist
+COPY libs/libqueue/dist ./libs/libqueue/dist
+COPY libs/libutils/dist ./libs/libutils/dist
+COPY services/worker/src ./services/worker/src
+COPY services/worker/poetry.lock ./services/worker/poetry.lock
+COPY services/worker/pyproject.toml ./services/worker/pyproject.toml
 COPY vendors ./vendors/
 WORKDIR /src/services/worker/
 RUN poetry install
 
-ENTRYPOINT ["make"]
-CMD ["run"]
+ENTRYPOINT ["poetry run python src/worker/main.py"]
