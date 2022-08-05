@@ -7,7 +7,6 @@ on:
       - '.github/workflows/s-api.yml'
       - '.github/workflows/_quality-python.yml'
       - '.github/workflows/_unit-tests-python.yml'
-      - '.github/workflows/_docker.yml'
       - 'tools/Python.mk'
       - 'tools/docker-compose-mongo.yml'
 jobs:
@@ -21,10 +20,3 @@ jobs:
       working-directory: services/api
     secrets:
       codecov-token: ${{ secrets.CODECOV_TOKEN }}
-  docker:
-    uses: ./.github/workflows/_docker.yml
-    with:
-      service: api
-    secrets:
-      aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-      aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
