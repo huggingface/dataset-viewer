@@ -54,6 +54,7 @@ services:
       ASSETS_DIRECTORY: "/assets"
       HF_DATASETS_CACHE: "/datasets-cache"
       HF_ENDPOINT: ${HF_ENDPOINT}
+      HF_TOKEN: ${HF_TOKEN}
       MONGO_URL: "mongodb://mongodb"
       WORKER_QUEUE: "datasets"
     depends_on:
@@ -72,6 +73,7 @@ services:
       ASSETS_DIRECTORY: "/assets"
       HF_DATASETS_CACHE: "/datasets-cache"
       HF_ENDPOINT: ${HF_ENDPOINT}
+      HF_TOKEN: ${HF_TOKEN}
       MONGO_URL: "mongodb://mongodb"
       WORKER_QUEUE: "first_rows_responses"
     depends_on:
@@ -90,6 +92,7 @@ services:
       ASSETS_DIRECTORY: "/assets"
       HF_DATASETS_CACHE: "/datasets-cache"
       HF_ENDPOINT: ${HF_ENDPOINT}
+      HF_TOKEN: ${HF_TOKEN}
       MONGO_URL: "mongodb://mongodb"
       WORKER_QUEUE: "splits_responses"
     depends_on:
@@ -108,6 +111,7 @@ services:
       ASSETS_DIRECTORY: "/assets"
       HF_DATASETS_CACHE: "/datasets-cache"
       HF_ENDPOINT: ${HF_ENDPOINT}
+      HF_TOKEN: ${HF_TOKEN}
       MONGO_URL: "mongodb://mongodb"
       WORKER_QUEUE: "splits"
     depends_on:

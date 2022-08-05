@@ -51,6 +51,7 @@ services:
       ASSETS_DIRECTORY: "/assets"
       HF_DATASETS_CACHE: "/datasets-cache"
       HF_ENDPOINT: ${HF_ENDPOINT}
+      HF_TOKEN: ${HF_TOKEN}
       MONGO_URL: "mongodb://mongodb"
       ROWS_MAX_NUMBER: ${ROWS_MAX_NUMBER-100}
       WORKER_SLEEP_SECONDS: "1"
@@ -68,6 +69,7 @@ services:
       ASSETS_DIRECTORY: "/assets"
       HF_DATASETS_CACHE: "/datasets-cache"
       HF_ENDPOINT: ${HF_ENDPOINT}
+      HF_TOKEN: ${HF_TOKEN}
       MONGO_URL: "mongodb://mongodb"
       ROWS_MAX_NUMBER: ${ROWS_MAX_NUMBER-100}
       WORKER_SLEEP_SECONDS: "1"
@@ -85,6 +87,7 @@ services:
       ASSETS_DIRECTORY: "/assets"
       HF_DATASETS_CACHE: "/datasets-cache"
       HF_ENDPOINT: ${HF_ENDPOINT}
+      HF_TOKEN: ${HF_TOKEN}
       MONGO_URL: "mongodb://mongodb"
       ROWS_MAX_NUMBER: ${ROWS_MAX_NUMBER-100}
       WORKER_SLEEP_SECONDS: "1"
@@ -102,6 +105,7 @@ services:
       ASSETS_DIRECTORY: "/assets"
       HF_DATASETS_CACHE: "/datasets-cache"
       HF_ENDPOINT: ${HF_ENDPOINT}
+      HF_TOKEN: ${HF_TOKEN}
       MONGO_URL: "mongodb://mongodb"
       ROWS_MAX_NUMBER: ${ROWS_MAX_NUMBER-100}
       WORKER_SLEEP_SECONDS: "1"
