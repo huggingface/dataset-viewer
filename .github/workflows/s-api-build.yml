@@ -1,0 +1,19 @@
+name: services/api
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - 'services/api/Dockerfile'
+      - 'services/api/src'
+      - 'services/api/poetry.lock'
+      - 'services/api/pyproject.toml'
+      - '.github/workflows/s-api-build.yml'
+      - '.github/workflows/_docker.yml'
+jobs:
+  docker:
+    uses: ./.github/workflows/_docker.yml
+    with:
+      service: api
+    secrets:
+      aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+      aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}

@@ -1,0 +1,19 @@
+name: services/admin
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - 'services/admin/Dockerfile'
+      - 'services/admin/src'
+      - 'services/admin/poetry.lock'
+      - 'services/admin/pyproject.toml'
+      - '.github/workflows/s-admin-build.yml'
+      - '.github/workflows/_docker.yml'
+jobs:
+  docker:
+    uses: ./.github/workflows/_docker.yml
+    with:
+      service: admin
+    secrets:
+      aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+      aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
