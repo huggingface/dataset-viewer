@@ -29,7 +29,7 @@ Note that two job queues exist:
 - `datasets`: the job is to refresh a dataset, namely to get the list of [config](https://huggingface.co/docs/datasets/v2.1.0/en/load_hub#select-a-configuration) and [split](https://huggingface.co/docs/datasets/v2.1.0/en/load_hub#select-a-split) names, then to create a new job for every split
 - `splits`: the job is to get the columns and the first 100 rows of the split
 
-Note also that the workers create local files when the dataset contains images or audios. A shared directory (`ASSETS_DIRECTORY`) must therefore be provisioned with sufficient space for the generated files. The `/rows` endpoint responses contain URLs to these files, served by the API under the `/assets/` endpooint.
+Note also that the workers create local files when the dataset contains images or audios. A shared directory (`ASSETS_DIRECTORY`) must therefore be provisioned with sufficient space for the generated files. The `/rows` endpoint responses contain URLs to these files, served by the API under the `/assets/` endpoint.
 
 Hence, the working application has:
 
