@@ -4,6 +4,7 @@ on:
   pull_request:
     paths:
       - 'docs/**'
+      - '.github/workflows/doc-pr-build.yml'
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.head_ref || github.run_id }}
