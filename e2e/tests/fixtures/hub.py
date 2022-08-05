@@ -167,7 +167,14 @@ def hf_public_dataset_repo_csv_data(hf_api: HfApi, hf_token: str, csv_path: str)
         hf_api.delete_repo(repo_id=repo_id, token=hf_token, repo_type="dataset")
 
 
-# https://docs.pytest.org/en/6.2.x/fixture.html#yield-fixtures-recommended
+@pytest.fixture(scope="session", autouse=True)
+def hf_public_2_dataset_repo_csv_data(hf_api: HfApi, hf_token: str, csv_path: str) -> Iterable[str]:
+    repo_id = create_hf_dataset_repo_csv_data(hf_api=hf_api, hf_token=hf_token, csv_path=csv_path)
+    yield repo_id
+    with suppress(requests.exceptions.HTTPError, ValueError):
+        hf_api.delete_repo(repo_id=repo_id, token=hf_token, repo_type="dataset")
+
+
 @pytest.fixture(scope="session", autouse=True)
 def hf_private_dataset_repo_csv_data(hf_api: HfApi, hf_token: str, csv_path: str) -> Iterable[str]:
     repo_id = create_hf_dataset_repo_csv_data(hf_api=hf_api, hf_token=hf_token, csv_path=csv_path, private=True)
@@ -176,7 +183,6 @@ def hf_private_dataset_repo_csv_data(hf_api: HfApi, hf_token: str, csv_path: str
         hf_api.delete_repo(repo_id=repo_id, token=hf_token, repo_type="dataset")
 
 
-# https://docs.pytest.org/en/6.2.x/fixture.html#yield-fixtures-recommended
 @pytest.fixture(scope="session", autouse=True)
 def hf_gated_dataset_repo_csv_data(hf_api: HfApi, hf_token: str, csv_path: str) -> Iterable[str]:
     repo_id = create_hf_dataset_repo_csv_data(hf_api=hf_api, hf_token=hf_token, csv_path=csv_path, gated=True)
@@ -187,20 +193,24 @@ def hf_gated_dataset_repo_csv_data(hf_api: HfApi, hf_token: str, csv_path: str) 
 
 class DatasetRepos(TypedDict):
     public: str
+    public2: str
     private: str
     gated: str
 
 
-DatasetReposType = Literal["public", "private", "gated"]
+DatasetReposType = Literal["public", "public2", "private", "gated"]
 
 
-# https://docs.pytest.org/en/6.2.x/fixture.html#yield-fixtures-recommended
 @pytest.fixture(scope="session", autouse=True)
 def hf_dataset_repos_csv_data(
-    hf_public_dataset_repo_csv_data, hf_private_dataset_repo_csv_data, hf_gated_dataset_repo_csv_data
+    hf_public_dataset_repo_csv_data,
+    hf_public_2_dataset_repo_csv_data,
+    hf_private_dataset_repo_csv_data,
+    hf_gated_dataset_repo_csv_data,
 ) -> DatasetRepos:
     return {
         "public": hf_public_dataset_repo_csv_data,
+        "public2": hf_public_2_dataset_repo_csv_data,
         "private": hf_private_dataset_repo_csv_data,
         "gated": hf_gated_dataset_repo_csv_data,
     }

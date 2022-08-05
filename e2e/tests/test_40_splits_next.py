@@ -1,6 +1,5 @@
 import pytest
 
-from .fixtures.hub import AuthHeaders, AuthType, DatasetRepos, DatasetReposType
 from .utils import (
     get,
     get_openapi_body_example,
@@ -8,46 +7,6 @@ from .utils import (
     post_refresh,
     refresh_poll_splits_next,
 )
-
-
-@pytest.mark.parametrize(
-    "type,auth,status_code,error_code",
-    [
-        ("public", "none", 200, None),
-        ("public", "token", 200, None),
-        ("public", "cookie", 200, None),
-        ("gated", "none", 401, "ExternalUnauthenticatedError"),
-        ("gated", "token", 200, None),
-        ("gated", "cookie", 200, None),
-        ("private", "none", 401, "ExternalUnauthenticatedError"),
-        ("private", "token", 404, "SplitsResponseNotFound"),
-        ("private", "cookie", 404, "SplitsResponseNotFound"),
-    ],
-)
-def test_splits_next_public_auth(
-    auth_headers: AuthHeaders,
-    hf_dataset_repos_csv_data: DatasetRepos,
-    type: DatasetReposType,
-    auth: AuthType,
-    status_code: int,
-    error_code: str,
-) -> None:
-    if auth not in auth_headers:
-        # ignore the test case if the auth type is not configured
-        pytest.skip(f"auth {auth} has not been configured")
-    if type == "private":
-        # no need to refresh, it's not implemented.
-        # TODO: the webhook should respond 501 Not implemented when provided with a private dataset
-        # (and delete the cache if existing)
-        response = get(f"/splits-next?dataset={hf_dataset_repos_csv_data[type]}", headers=auth_headers[auth])
-    else:
-        response = refresh_poll_splits_next(hf_dataset_repos_csv_data[type], headers=auth_headers[auth])
-    assert (
-        response.status_code == status_code
-    ), f"{response.status_code} - {response.text} - {hf_dataset_repos_csv_data[type]}"
-    assert (
-        response.headers.get("X-Error-Code") == error_code
-    ), f"{response.status_code} - {response.text} - {hf_dataset_repos_csv_data[type]}"
 
 
 @pytest.mark.parametrize(

@@ -100,3 +100,33 @@ def test_first_rows(status: int, name: str, dataset: str, config: str, split: st
         assert r_rows.headers["X-Error-Code"] == error_code, r_rows.headers["X-Error-Code"]
     else:
         assert "X-Error-Code" not in r_rows.headers, r_rows.headers["X-Error-Code"]
+
+
+# from .utils import ROWS_MAX_NUMBER, URL, refresh_poll_splits_next_first_rows
+
+# # TODO: find a dataset that can be processed faster
+# def test_png_image_next():
+#     # this test ensures that an image is saved as PNG if it cannot be saved as PNG
+#     # https://github.com/huggingface/datasets-server/issues/191
+#     dataset = "wikimedia/wit_base"
+#     config = "wikimedia--wit_base"
+#     split = "train"
+
+#     _, r_rows = refresh_poll_splits_next_first_rows(dataset, config, split)
+
+#     assert r_rows.status_code == 200, f"{r_rows.status_code} - {r_rows.text}"
+#     json = r_rows.json()
+
+#     assert "features" in json, json
+#     assert json["features"][0]["name"] == "image", json
+#     assert json["features"][0]["type"]["_type"] == "Image", json
+#     assert (
+#         json["rows"][0]["row"]["image"]
+#         == f"{URL}/assets/wikimedia/wit_base/--/wikimedia--wit_base/train/0/image/image.jpg"
+#     ), json
+
+#     # assert (
+#     #     json["rows"][20]["row"]["image"]
+#     #     == f"{URL}/assets/wikimedia/wit_base/--/wikimedia--wit_base/train/20/image/image.png"
+#     # )
+#     # ^only four rows for now

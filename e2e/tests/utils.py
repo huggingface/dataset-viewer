@@ -5,6 +5,7 @@ from os.path import dirname, join
 from typing import Any, Dict, Optional, Tuple
 
 import requests
+from requests import Response
 
 PORT_REVERSE_PROXY = os.environ.get("PORT_REVERSE_PROXY", "8000")
 ROWS_MAX_NUMBER = int(os.environ.get("ROWS_MAX_NUMBER", 100))
@@ -15,13 +16,13 @@ URL = f"http://localhost:{PORT_REVERSE_PROXY}"
 Headers = Dict[str, str]
 
 
-def get(relative_url: str, headers: Headers = None) -> requests.Response:
+def get(relative_url: str, headers: Headers = None) -> Response:
     if headers is None:
         headers = {}
     return requests.get(f"{URL}{relative_url}", headers=headers)
 
 
-def post(relative_url: str, json: Optional[Any] = None, headers: Headers = None) -> requests.Response:
+def post(relative_url: str, json: Optional[Any] = None, headers: Headers = None) -> Response:
     if headers is None:
         headers = {}
     return requests.post(f"{URL}{relative_url}", json=json, headers=headers)
@@ -29,7 +30,7 @@ def post(relative_url: str, json: Optional[Any] = None, headers: Headers = None)
 
 def poll(
     relative_url: str, error_field: Optional[str] = None, expected_code: Optional[int] = 200, headers: Headers = None
-) -> requests.Response:
+) -> Response:
     if headers is None:
         headers = {}
     interval = INTERVAL
@@ -55,23 +56,23 @@ def poll(
     return response
 
 
-def post_refresh(dataset: str, headers: Headers = None) -> requests.Response:
+def post_refresh(dataset: str, headers: Headers = None) -> Response:
     if headers is None:
         headers = {}
     return post("/webhook", json={"update": f"datasets/{dataset}"}, headers=headers)
 
 
-def poll_splits(dataset: str, headers: Headers = None) -> requests.Response:
+def poll_splits(dataset: str, headers: Headers = None) -> Response:
     return poll(f"/splits?dataset={dataset}", error_field="message", headers=headers)
 
 
-def poll_rows(dataset: str, config: str, split: str, headers: Headers = None) -> requests.Response:
+def poll_rows(dataset: str, config: str, split: str, headers: Headers = None) -> Response:
     return poll(f"/rows?dataset={dataset}&config={config}&split={split}", error_field="message", headers=headers)
 
 
 def refresh_poll_splits_rows(
     dataset: str, config: str, split: str, headers: Headers = None
-) -> Tuple[requests.Response, requests.Response]:
+) -> Tuple[Response, Response]:
     # ask for the dataset to be refreshed
     response = post_refresh(dataset, headers=headers)
     assert response.status_code == 200, f"{response.status_code} - {response.text}"
@@ -87,15 +88,15 @@ def refresh_poll_splits_rows(
     return response_splits, response_rows
 
 
-def poll_splits_next(dataset: str, headers: Headers = None) -> requests.Response:
+def poll_splits_next(dataset: str, headers: Headers = None) -> Response:
     return poll(f"/splits-next?dataset={dataset}", error_field="error", headers=headers)
 
 
-def poll_first_rows(dataset: str, config: str, split: str, headers: Headers = None) -> requests.Response:
+def poll_first_rows(dataset: str, config: str, split: str, headers: Headers = None) -> Response:
     return poll(f"/first-rows?dataset={dataset}&config={config}&split={split}", error_field="error", headers=headers)
 
 
-def refresh_poll_splits_next(dataset: str, headers: Headers = None) -> requests.Response:
+def refresh_poll_splits_next(dataset: str, headers: Headers = None) -> Response:
     # ask for the dataset to be refreshed
     response = post_refresh(dataset, headers=headers)
     assert response.status_code == 200, f"{response.status_code} - {response.text}"
@@ -106,7 +107,7 @@ def refresh_poll_splits_next(dataset: str, headers: Headers = None) -> requests.
 
 def refresh_poll_splits_next_first_rows(
     dataset: str, config: str, split: str, headers: Headers = None
-) -> Tuple[requests.Response, requests.Response]:
+) -> Tuple[Response, Response]:
     response_splits = refresh_poll_splits_next(dataset, headers=headers)
     assert response_splits.status_code == 200, f"{response_splits.status_code} - {response_splits.text}"
 
@@ -123,3 +124,13 @@ def get_openapi_body_example(path, status, example_name):
     return openapi["paths"][path]["get"]["responses"][str(status)]["content"]["application/json"]["examples"][
         example_name
     ]["value"]
+
+
+def get_default_config_split(dataset: str) -> Tuple[str, str, str]:
+    config = dataset.replace("/", "--")
+    split = "train"
+    return dataset, config, split
+
+
+# explicit re-export
+__all__ = ["Response"]
