@@ -68,13 +68,13 @@ jobs:
         env:
           ROWS_MAX_NUMBER: 4
           EXTERNAL_AUTH_URL: "https://huggingface.co/api/datasets/%s/auth-check"
-          SERVICE_ADMIN_DOCKER_IMAGE: "${{fromJson(needs.get-config.outputs.dockerConfig).dockerImage.admin}}"
-          SERVICE_API_DOCKER_IMAGE: "${{fromJson(needs.get-config.outputs.dockerConfig).dockerImage.api}}"
-          SERVICE_REVERSE_PROXY_DOCKER_IMAGE: "${{fromJson(needs.get-config.outputs.dockerConfig).dockerImage.reverseProxy}}"
-          SERVICE_WORKER_DATASETS_DOCKER_IMAGE: "${{fromJson(needs.get-config.outputs.dockerConfig).dockerImage.worker.datasets}}"
-          SERVICE_WORKER_FIRST_ROWS_DOCKER_IMAGE: "${{fromJson(needs.get-config.outputs.dockerConfig).dockerImage.worker.firstRows}}"
-          SERVICE_WORKER_SPLITS_DOCKER_IMAGE: "${{fromJson(needs.get-config.outputs.dockerConfig).dockerImage.worker.splits}}"
-          SERVICE_WORKER_SPLITS_NEXT_DOCKER_IMAGE: "${{fromJson(needs.get-config.outputs.dockerConfig).dockerImage.worker.splitsNext}}"
+          IMAGE_ADMIN: "${{fromJson(needs.get-config.outputs.dockerConfig).dockerImage.admin}}"
+          IMAGE_API: "${{fromJson(needs.get-config.outputs.dockerConfig).dockerImage.api}}"
+          IMAGE_REVERSE_PROXY: "${{fromJson(needs.get-config.outputs.dockerConfig).dockerImage.reverseProxy}}"
+          IMAGE_WORKER_DATASETS: "${{fromJson(needs.get-config.outputs.dockerConfig).dockerImage.worker.datasets}}"
+          IMAGE_WORKER_FIRST_ROWS: "${{fromJson(needs.get-config.outputs.dockerConfig).dockerImage.worker.firstRows}}"
+          IMAGE_WORKER_SPLITS: "${{fromJson(needs.get-config.outputs.dockerConfig).dockerImage.worker.splits}}"
+          IMAGE_WORKER_SPLITS_NEXT: "${{fromJson(needs.get-config.outputs.dockerConfig).dockerImage.worker.splitsNext}}"
         working-directory: tools
         run: docker-compose -f ./docker-compose-datasets-server-from-remote-images.yml up -d
       - name: Install dependencies

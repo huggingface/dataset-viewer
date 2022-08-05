@@ -1,7 +1,7 @@
 # environment variables for the commands (docker-compose, poetry)
-export SERVICE_ADMIN_PORT := 9081
-export SERVICE_API_PORT := 9080
-export SERVICE_REVERSE_PROXY_PORT := 9000
+export PORT_ADMIN := 9081
+export PORT_API := 9080
+export PORT_REVERSE_PROXY := 9000
 export TEST_MONGO_PORT := 27050
 export TEST_ROWS_MAX_NUMBER := 4
 export TEST_COMPOSE_PROJECT_NAME := e2e

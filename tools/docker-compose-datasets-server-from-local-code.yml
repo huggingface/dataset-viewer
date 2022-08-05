@@ -8,7 +8,7 @@ services:
       - assets:/assets:ro
       - ../chart/static-files/openapi.json:/static-files/openapi.json:ro
     ports:
-      - "${SERVICE_REVERSE_PROXY_PORT-8000}:80"
+      - "${PORT_REVERSE_PROXY-8000}:80"
     environment:
       - ASSETS_DIRECTORY=/assets
       - CACHE_DIRECTORY=/nginx-cache
@@ -37,7 +37,7 @@ services:
       MONGO_URL: "mongodb://mongodb"
     ports:
       # for debug
-      - ${SERVICE_API_PORT-8080}:8080
+      - ${PORT_API-8080}:8080
     depends_on:
       mongodb:
         condition: service_started
@@ -50,7 +50,7 @@ services:
       - assets:/assets:rw
       - datasets-cache:/datasets-cache:rw
     environment:
-      ASSETS_BASE_URL: "http://localhost:${SERVICE_REVERSE_PROXY_PORT-8000}/assets"
+      ASSETS_BASE_URL: "http://localhost:${PORT_REVERSE_PROXY-8000}/assets"
       ASSETS_DIRECTORY: "/assets"
       HF_DATASETS_CACHE: "/datasets-cache"
       MONGO_URL: "mongodb://mongodb"
@@ -67,7 +67,7 @@ services:
       - assets:/assets:rw
       - datasets-cache:/datasets-cache:rw
     environment:
-      ASSETS_BASE_URL: "http://localhost:${SERVICE_REVERSE_PROXY_PORT-8000}/assets"
+      ASSETS_BASE_URL: "http://localhost:${PORT_REVERSE_PROXY-8000}/assets"
       ASSETS_DIRECTORY: "/assets"
       HF_DATASETS_CACHE: "/datasets-cache"
       MONGO_URL: "mongodb://mongodb"
@@ -84,7 +84,7 @@ services:
       - assets:/assets:rw
       - datasets-cache:/datasets-cache:rw
     environment:
-      ASSETS_BASE_URL: "http://localhost:${SERVICE_REVERSE_PROXY_PORT-8000}/assets"
+      ASSETS_BASE_URL: "http://localhost:${PORT_REVERSE_PROXY-8000}/assets"
       ASSETS_DIRECTORY: "/assets"
       HF_DATASETS_CACHE: "/datasets-cache"
       MONGO_URL: "mongodb://mongodb"
@@ -101,7 +101,7 @@ services:
       - assets:/assets:rw
       - datasets-cache:/datasets-cache:rw
     environment:
-      ASSETS_BASE_URL: "http://localhost:${SERVICE_REVERSE_PROXY_PORT-8000}/assets"
+      ASSETS_BASE_URL: "http://localhost:${PORT_REVERSE_PROXY-8000}/assets"
       ASSETS_DIRECTORY: "/assets"
       HF_DATASETS_CACHE: "/datasets-cache"
       MONGO_URL: "mongodb://mongodb"
@@ -122,7 +122,7 @@ services:
       MONGO_URL: "mongodb://mongodb"
     ports:
       # for debug
-      - ${SERVICE_ADMIN_PORT-8081}:8081
+      - ${PORT_ADMIN-8081}:8081
     depends_on:
       mongodb:
         condition: service_started
