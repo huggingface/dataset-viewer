@@ -1,5 +1,5 @@
-from .utils import get
 from .fixtures.hub import DatasetRepos
+from .utils import get
 
 
 def test_valid_after_datasets_processed(hf_dataset_repos_csv_data: DatasetRepos):

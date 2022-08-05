@@ -1,20 +1,18 @@
 # Adapted from https://github.com/huggingface/datasets/blob/main/tests/fixtures/hub.py
 
 import time
-from contextlib import contextmanager
+from contextlib import contextmanager, suppress
 from typing import Dict, Iterable, Literal, Optional, TypedDict
 
 import pytest
 import requests
-from contextlib import suppress
-from huggingface_hub.hf_api import (
+from huggingface_hub.hf_api import (  # type: ignore
+    REPO_TYPES,
+    REPO_TYPES_URL_PREFIXES,
     HfApi,
     HfFolder,
-    REPO_TYPES,
     _raise_for_status,
-    REPO_TYPES_URL_PREFIXES,
 )
-
 
 CI_HUB_USER = "__DUMMY_TRANSFORMERS_USER__"
 CI_HUB_USER_TOKEN = "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"

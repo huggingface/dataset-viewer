@@ -1,5 +1,4 @@
-from .utils import ROWS_MAX_NUMBER, URL, refresh_poll_splits_next_first_rows
-
+# from .utils import ROWS_MAX_NUMBER, URL, refresh_poll_splits_next_first_rows
 
 # def test_get_dataset_next():
 #     dataset = "acronym_identification"

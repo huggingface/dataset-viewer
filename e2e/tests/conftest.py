@@ -2,7 +2,6 @@ import pytest
 
 from .utils import poll
 
-
 # Import fixture modules as plugins
 pytest_plugins = ["tests.fixtures.files", "tests.fixtures.hub"]
 

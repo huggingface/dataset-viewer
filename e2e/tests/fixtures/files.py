@@ -2,7 +2,6 @@ import csv
 
 import pytest
 
-
 DATA = [
     {"col_1": "0", "col_2": 0, "col_3": 0.0},
     {"col_1": "1", "col_2": 1, "col_3": 1.0},
