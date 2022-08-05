@@ -37,3 +37,24 @@ Hence, the working application has:
 - M instances of the `datasets` worker and N instances of the `splits` worker (N should generally be higher than M)
 - a Mongo server with two databases: "cache" and "queue"
 - a shared directory for the assets
+
+## Environments
+
+The following environments contain all the modules: reverse proxy, API server, admin API server, workers, and the Mongo database.
+
+| Environment              | URL                                                  | Type              | How to deploy                                                        |
+| ------------------------ | ---------------------------------------------------- | ----------------- | -------------------------------------------------------------------- |
+| Production               | https://datasets-server.huggingface.co               | Helm / Kubernetes | `make upgrade-prod` in [chart](./chart)                              |
+| Development              | https://datasets-server.us.dev.moon.huggingface.tech | Helm / Kubernetes | `make upgrade-dev` in [chart](./chart)                               |
+| Local from remote images | http://localhost:8100                                | Docker compose    | `make start-from-remote-images` (fetches docker images from AWS ECR) |
+| Local build              | http://localhost:8000                                | Docker compose    | `make start-from-local-code` (builds docker images)                  |
+
+The Hugging Face Hub instance can be configured thanks to `HF_ENDPOINT`, so that the datasets server can access the Hub, a private Hub, or the instance dedicated to CI (https://hub-ci.huggingface.co/). The `HF_TOKEN` environment variable used by the workers to access the gated datasets must be set accordingly.
+
+| Where             | `HF_ENDPOINT` (api, worker)                                             | `HF_TOKEN` (worker)                                           |
+| ----------------- | ----------------------------------------------------------------------- | ------------------------------------------------------------- |
+| production        | https://huggingface.co/                                                 | Kubernetes secret                                             |
+| development       | https://huggingface.co/                                                 | Kubernetes secret                                             |
+| local docker      | https://huggingface.co/. Override with `HF_ENDPOINT=... make start-...` | Enable the gated datasets with `HF_TOKEN=... make start-...`  |
+| e2e               | https://hub-ci.huggingface.co/                                          | Hard-coded: `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`           |
+| worker unit tests | https://huggingface.co/                                                 | GitHub secret (CI). Run locally with `HF_TOKEN=... make test` |
