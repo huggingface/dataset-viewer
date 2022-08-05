@@ -7,8 +7,8 @@ from datasets import (
     get_dataset_config_names,
     get_dataset_split_names,
 )
-from huggingface_hub import dataset_info  # type:ignore
-from huggingface_hub.utils import RepositoryNotFoundError  # type:ignore
+from huggingface_hub.hf_api import HfApi  # type: ignore
+from huggingface_hub.utils import RepositoryNotFoundError  # type: ignore
 
 from worker.utils import DatasetNotFoundError, SplitsNamesError
 
@@ -41,6 +41,7 @@ def get_dataset_split_full_names(dataset_name: str, hf_token: Optional[str] = No
 
 def get_splits_response(
     dataset_name: str,
+    hf_endpoint: str,
     hf_token: Optional[str] = None,
 ) -> SplitsResponse:
     """
@@ -64,9 +65,9 @@ def get_splits_response(
     </Tip>
     """
     logger.info(f"get splits for dataset={dataset_name}")
-    # first ensure the dataset exists on the Hub
+    # first try to get the dataset config info
     try:
-        dataset_info(dataset_name, token=hf_token)
+        HfApi(endpoint=hf_endpoint).dataset_info(dataset_name, token=hf_token)
     except RepositoryNotFoundError as err:
         raise DatasetNotFoundError("The dataset does not exist on the Hub.") from err
     # get the list of splits

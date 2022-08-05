@@ -21,6 +21,7 @@ from psutil import cpu_count, getloadavg, swap_memory, virtual_memory
 from worker.config import (
     ASSETS_BASE_URL,
     ASSETS_DIRECTORY,
+    HF_ENDPOINT,
     HF_TOKEN,
     LOG_LEVEL,
     MAX_JOB_RETRIES,
@@ -56,7 +57,7 @@ def process_next_splits_job() -> bool:
     retry = False
     try:
         logger.info(f"compute dataset={dataset_name}")
-        http_status, can_retry = refresh_splits(dataset_name=dataset_name, hf_token=HF_TOKEN)
+        http_status, can_retry = refresh_splits(dataset_name=dataset_name, hf_endpoint=HF_ENDPOINT, hf_token=HF_TOKEN)
         success = http_status == HTTPStatus.OK
         if can_retry and retries < MAX_JOB_RETRIES:
             retry = True
@@ -90,6 +91,7 @@ def process_next_first_rows_job() -> bool:
             config_name=config_name,
             split_name=split_name,
             assets_base_url=ASSETS_BASE_URL,
+            hf_endpoint=HF_ENDPOINT,
             hf_token=HF_TOKEN,
             max_size_fallback=MAX_SIZE_FALLBACK,
             rows_max_bytes=ROWS_MAX_BYTES,

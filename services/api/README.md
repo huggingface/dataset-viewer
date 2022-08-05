@@ -20,7 +20,8 @@ Set environment variables to configure the following aspects:
 - `API_NUM_WORKERS`: the number of workers of the API endpoint. Defaults to `2`.
 - `API_PORT`: the port used by the API endpoint. Defaults to `8000`.
 - `ASSETS_DIRECTORY`: directory where the asset files are stored. Defaults to empty, in which case the assets are located in the `datasets_server_assets` subdirectory inside the OS default cache directory.
-- `EXTERNAL_AUTH_URL`: the URL of the external authentication service. The string must contain `%s` which will be replaced with the dataset name, e.g. "https://huggingface.co/api/datasets/%s/auth-check". The external authentication service must follow the specification in https://nginx.org/en/docs/http/ngx_http_auth_request_module.html and return 200, 401 or 403. Defaults to empty, in which case the authentication is disabled.
+- `HF_AUTH_PATH`: the path of the external authentication service, on the hub (see `HF_ENDPOINT`). The string must contain `%s` which will be replaced with the dataset name. The external authentication service must follow the specification in https://nginx.org/en/docs/http/ngx_http_auth_request_module.html and return 200, 401 or 403. If empty, the authentication is disabled. Defaults to "/api/datasets/%s/auth-check".
+- `HF_ENDPOINT`: URL of the HuggingFace Hub. Defaults to `https://huggingface.co`.
 - `LOG_LEVEL`: log level, among `DEBUG`, `INFO`, `WARNING`, `ERROR` and `CRITICAL`. Defaults to `INFO`.
 - `MAX_AGE_LONG_SECONDS`: number of seconds to set in the `max-age` header on data endpoints. Defaults to `120` (2 minutes).
 - `MAX_AGE_SHORT_SECONDS`: number of seconds to set in the `max-age` header on technical endpoints. Defaults to `10` (10 seconds).

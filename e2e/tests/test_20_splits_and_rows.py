@@ -1,27 +1,18 @@
-import requests
-
+from .fixtures.hub import DatasetRepos
 from .utils import (
     ROWS_MAX_NUMBER,
-    URL,
+    get,
+    get_default_config_split,
     poll_rows,
     poll_splits,
+    post,
     post_refresh,
     refresh_poll_splits_rows,
 )
 
 
-def test_get_dataset():
-    dataset = "acronym_identification"
-    config = "default"
-    split = "train"
-
-    r_splits, r_rows = refresh_poll_splits_rows(dataset, config, split)
-    assert r_splits.json()["splits"][0]["split"] == "train", r_splits.text
-    assert r_rows.json()["rows"][0]["row"]["id"] == "TR-0", r_splits.text
-
-
 # TODO: find a dataset that can be processed faster
-def test_bug_empty_split():
+def test_bug_empty_split(hf_dataset_repos_csv_data: DatasetRepos):
     # see #185 and #177
     # we get an error when:
     # - the dataset has been processed and the splits have been created in the database
@@ -29,9 +20,8 @@ def test_bug_empty_split():
     # - the dataset is processed again, and the splits are marked as STALE
     # - they are thus returned with an empty content, instead of an error message
     # (waiting for being processsed)
-    dataset = "nielsr/CelebA-faces"
-    config = "nielsr--CelebA-faces"
-    split = "train"
+
+    dataset, config, split = get_default_config_split(hf_dataset_repos_csv_data["public2"])
 
     # ask for the dataset to be refreshed
     response = post_refresh(dataset)
@@ -42,14 +32,13 @@ def test_bug_empty_split():
     assert response.status_code == 200, f"{response.status_code} - {response.text}"
 
     # at this point the splits should have been created in the dataset, and still be EMPTY
-    url = f"{URL}/rows?dataset={dataset}&config={config}&split={split}"
-    response = requests.get(url)
+    response = get(f"/rows?dataset={dataset}&config={config}&split={split}")
     assert response.status_code == 400, f"{response.status_code} - {response.text}"
     json = response.json()
     assert json["message"] == "The split is being processed. Retry later.", json
 
     # ask again for the dataset to be refreshed
-    response = requests.post(f"{URL}/webhook", json={"update": f"datasets/{dataset}"})
+    response = post("/webhook", json={"update": f"datasets/{dataset}"})
     assert response.status_code == 200, f"{response.status_code} - {response.text}"
 
     # at this moment, there is a concurrency race between the datasets worker and the splits worker
@@ -61,6 +50,14 @@ def test_bug_empty_split():
     assert response.status_code == 200, f"{response.status_code} - {response.text}"
     json = response.json()
     assert len(json["rows"]) == ROWS_MAX_NUMBER, json
+
+
+def test_get_dataset(hf_dataset_repos_csv_data: DatasetRepos):
+    dataset, config, split = get_default_config_split(hf_dataset_repos_csv_data["public2"])
+
+    r_splits, r_rows = refresh_poll_splits_rows(dataset, config, split)
+    assert r_splits.json()["splits"][0]["split"] == "train", r_splits.text
+    assert r_rows.json()["rows"][0]["row"]["col_1"] == 0, r_splits.text
 
 
 # TODO: enable again when we will have the same behavior with 4 rows (ROWS_MAX_NUMBER)

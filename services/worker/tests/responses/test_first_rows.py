@@ -1,6 +1,6 @@
 from worker.responses.first_rows import get_first_rows_response
 
-from .._utils import ASSETS_BASE_URL
+from .._utils import ASSETS_BASE_URL, HF_ENDPOINT
 
 
 def test_number_rows() -> None:
@@ -11,6 +11,7 @@ def test_number_rows() -> None:
         "train",
         rows_max_number=rows_max_number,
         assets_base_url=ASSETS_BASE_URL,
+        hf_endpoint=HF_ENDPOINT,
     )
     assert len(response["rows"]) == rows_max_number
 
@@ -23,6 +24,7 @@ def test_get_first_rows_response() -> None:
         "train",
         rows_max_number=rows_max_number,
         assets_base_url=ASSETS_BASE_URL,
+        hf_endpoint=HF_ENDPOINT,
     )
 
     assert response["features"][0]["feature_idx"] == 0
@@ -45,7 +47,12 @@ def test_get_first_rows_response() -> None:
 
 def test_no_features() -> None:
     response = get_first_rows_response(
-        "severo/fix-401", "severo--fix-401", "train", rows_max_number=1, assets_base_url=ASSETS_BASE_URL
+        "severo/fix-401",
+        "severo--fix-401",
+        "train",
+        rows_max_number=1,
+        assets_base_url=ASSETS_BASE_URL,
+        hf_endpoint=HF_ENDPOINT,
     )
 
     # TODO: re-enable when we understand why it works locally but not in the CI (order of the features)

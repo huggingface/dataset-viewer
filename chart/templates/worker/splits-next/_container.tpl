@@ -9,6 +9,8 @@
     value: {{ .Values.worker.splitsNext.datasetsRevision | quote }}
   - name: HF_DATASETS_CACHE
     value: "{{ .Values.worker.splitsNext.cacheDirectory }}/datasets"
+  - name: HF_ENDPOINT
+    value: "{{ .Values.hfEndpoint }}"
   - name: HF_MODULES_CACHE
     value: "/tmp/modules-cache"
   # the size should remain so small that we don't need to worry about putting it on an external storage

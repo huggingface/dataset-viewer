@@ -102,6 +102,7 @@ def test_get_split() -> None:
 
 
 # disabled since the dataset has a problem unrelated to the gated status
+# disable until https://github.com/huggingface/datasets-server/pull/499 is done
 # see https://github.com/huggingface/datasets-server/pull/375#issuecomment-1156425010
 # def test_gated() -> None:
 #     dataset_name = "severo/dummy_gated"

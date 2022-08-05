@@ -23,9 +23,9 @@ from worker.utils import (
 logger = logging.getLogger(__name__)
 
 
-def refresh_splits(dataset_name: str, hf_token: Optional[str] = None) -> Tuple[HTTPStatus, bool]:
+def refresh_splits(dataset_name: str, hf_endpoint: str, hf_token: Optional[str] = None) -> Tuple[HTTPStatus, bool]:
     try:
-        response = get_splits_response(dataset_name, hf_token)
+        response = get_splits_response(dataset_name, hf_endpoint, hf_token)
         upsert_splits_response(dataset_name, dict(response), HTTPStatus.OK)
         logger.debug(f"dataset={dataset_name} is valid, cache updated")
 
@@ -73,6 +73,7 @@ def refresh_first_rows(
     config_name: str,
     split_name: str,
     assets_base_url: str,
+    hf_endpoint: str,
     hf_token: Optional[str] = None,
     max_size_fallback: Optional[int] = None,
     rows_max_bytes: Optional[int] = None,
@@ -85,6 +86,7 @@ def refresh_first_rows(
             config_name,
             split_name,
             assets_base_url=assets_base_url,
+            hf_endpoint=hf_endpoint,
             hf_token=hf_token,
             max_size_fallback=max_size_fallback,
             rows_max_bytes=rows_max_bytes,

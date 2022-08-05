@@ -1,7 +1,7 @@
 import logging
 from typing import List
 
-from huggingface_hub import list_datasets  # type: ignore
+from huggingface_hub.hf_api import HfApi  # type: ignore
 from libcache.cache import (
     connect_to_cache,
     list_split_full_names_to_refresh,
@@ -11,6 +11,7 @@ from libqueue.queue import add_dataset_job, add_split_job, connect_to_queue
 from libutils.logger import init_logger
 
 from admin.config import (
+    HF_ENDPOINT,
     LOG_LEVEL,
     MONGO_CACHE_DATABASE,
     MONGO_QUEUE_DATABASE,
@@ -19,7 +20,7 @@ from admin.config import (
 
 
 def get_hf_dataset_names():
-    return [str(dataset.id) for dataset in list_datasets(full=False)]
+    return [str(dataset.id) for dataset in HfApi(HF_ENDPOINT).list_datasets(full=False)]
 
 
 def warm_cache(dataset_names: List[str]) -> None:

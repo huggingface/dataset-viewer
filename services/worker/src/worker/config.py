@@ -8,6 +8,7 @@ from worker.constants import (
     DEFAULT_ASSETS_BASE_URL,
     DEFAULT_ASSETS_DIRECTORY,
     DEFAULT_DATASETS_REVISION,
+    DEFAULT_HF_ENDPOINT,
     DEFAULT_HF_TOKEN,
     DEFAULT_LOG_LEVEL,
     DEFAULT_MAX_JOB_RETRIES,
@@ -32,6 +33,7 @@ load_dotenv()
 ASSETS_BASE_URL = get_str_value(d=os.environ, key="ASSETS_BASE_URL", default=DEFAULT_ASSETS_BASE_URL)
 ASSETS_DIRECTORY = get_str_or_none_value(d=os.environ, key="ASSETS_DIRECTORY", default=DEFAULT_ASSETS_DIRECTORY)
 DATASETS_REVISION = get_str_value(d=os.environ, key="DATASETS_REVISION", default=DEFAULT_DATASETS_REVISION)
+HF_ENDPOINT = get_str_value(d=os.environ, key="HF_ENDPOINT", default=DEFAULT_HF_ENDPOINT)
 HF_TOKEN = get_str_or_none_value(d=os.environ, key="HF_TOKEN", default=DEFAULT_HF_TOKEN)
 LOG_LEVEL = get_str_value(d=os.environ, key="LOG_LEVEL", default=DEFAULT_LOG_LEVEL)
 MAX_JOB_RETRIES = get_int_value(os.environ, "MAX_JOB_RETRIES", DEFAULT_MAX_JOB_RETRIES)
@@ -51,6 +53,8 @@ WORKER_SLEEP_SECONDS = get_int_value(os.environ, "WORKER_SLEEP_SECONDS", DEFAULT
 
 # Ensure the datasets library uses the expected revision for canonical datasets
 os.environ["HF_SCRIPTS_VERSION"] = DATASETS_REVISION
+# Ensure the datasets library uses the expected HuggingFace endpoint
+os.environ["HF_ENDPOINT"] = HF_ENDPOINT
 # Don't increase the datasets download counts on huggingface.co
 os.environ["HF_UPDATE_DOWNLOAD_COUNTS"] = "false"
 # Set logs from the datasets library to the least verbose
