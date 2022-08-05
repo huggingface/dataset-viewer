@@ -33,7 +33,7 @@ services:
       APP_NUM_WORKERS: 1
       APP_PORT: 8080
       ASSETS_DIRECTORY: "/assets"
-      EXTERNAL_AUTH_URL: ${EXTERNAL_AUTH_URL}
+      HF_ENDPOINT: ${HF_ENDPOINT}
       MONGO_URL: "mongodb://mongodb"
     ports:
       # for debug
@@ -53,6 +53,7 @@ services:
       ASSETS_BASE_URL: "http://localhost:${PORT_REVERSE_PROXY-8000}/assets"
       ASSETS_DIRECTORY: "/assets"
       HF_DATASETS_CACHE: "/datasets-cache"
+      HF_ENDPOINT: ${HF_ENDPOINT}
       MONGO_URL: "mongodb://mongodb"
       WORKER_QUEUE: "datasets"
     depends_on:
@@ -70,6 +71,7 @@ services:
       ASSETS_BASE_URL: "http://localhost:${PORT_REVERSE_PROXY-8000}/assets"
       ASSETS_DIRECTORY: "/assets"
       HF_DATASETS_CACHE: "/datasets-cache"
+      HF_ENDPOINT: ${HF_ENDPOINT}
       MONGO_URL: "mongodb://mongodb"
       WORKER_QUEUE: "first_rows_responses"
     depends_on:
@@ -87,6 +89,7 @@ services:
       ASSETS_BASE_URL: "http://localhost:${PORT_REVERSE_PROXY-8000}/assets"
       ASSETS_DIRECTORY: "/assets"
       HF_DATASETS_CACHE: "/datasets-cache"
+      HF_ENDPOINT: ${HF_ENDPOINT}
       MONGO_URL: "mongodb://mongodb"
       WORKER_QUEUE: "splits_responses"
     depends_on:
@@ -104,6 +107,7 @@ services:
       ASSETS_BASE_URL: "http://localhost:${PORT_REVERSE_PROXY-8000}/assets"
       ASSETS_DIRECTORY: "/assets"
       HF_DATASETS_CACHE: "/datasets-cache"
+      HF_ENDPOINT: ${HF_ENDPOINT}
       MONGO_URL: "mongodb://mongodb"
       WORKER_QUEUE: "splits"
     depends_on:

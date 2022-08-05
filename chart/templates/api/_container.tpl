@@ -9,8 +9,8 @@
     value: {{ .Values.api.appPort | quote }}
   - name: ASSETS_DIRECTORY
     value: {{ .Values.api.assetsDirectory | quote }}
-  - name: EXTERNAL_AUTH_URL
-    value: {{ .Values.api.externalAuthUrl | quote }}
+  - name: HF_ENDPOINT
+    value: {{ .Values.hfEndpoint | quote }}
   - name: LOG_LEVEL
     value: {{ .Values.api.logLevel | quote }}
   - name: MAX_AGE_LONG_SECONDS

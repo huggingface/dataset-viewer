@@ -67,7 +67,7 @@ jobs:
       - name: Launch the services
         env:
           ROWS_MAX_NUMBER: 4
-          EXTERNAL_AUTH_URL: "https://huggingface.co/api/datasets/%s/auth-check"
+          HF_ENDPOINT: "https://hub-ci.huggingface.co"
           IMAGE_ADMIN: "${{fromJson(needs.get-config.outputs.dockerConfig).dockerImage.admin}}"
           IMAGE_API: "${{fromJson(needs.get-config.outputs.dockerConfig).dockerImage.api}}"
           IMAGE_REVERSE_PROXY: "${{fromJson(needs.get-config.outputs.dockerConfig).dockerImage.reverseProxy}}"

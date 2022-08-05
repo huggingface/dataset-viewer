@@ -5,7 +5,7 @@ export PORT_REVERSE_PROXY := 9000
 export TEST_MONGO_PORT := 27050
 export TEST_ROWS_MAX_NUMBER := 4
 export TEST_COMPOSE_PROJECT_NAME := e2e
-export TEST_EXTERNAL_AUTH_URL := https://huggingface.co/api/datasets/%s/auth-check
+export TEST_HF_ENDPOINT := https://hub-ci.huggingface.co
 # makefile variables
 TEST_DOCKER_COMPOSE := ../tools/docker-compose-datasets-server-from-remote-images.yml
 DOCKER_IMAGES := ../chart/docker-images.yaml
