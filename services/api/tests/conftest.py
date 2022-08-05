@@ -1,3 +1,4 @@
 import os
 
-os.environ["EXTERNAL_AUTH_URL"] = "https://auth.check/%s"
+os.environ["HF_AUTH_PATH"] = "/%s"
+os.environ["HF_ENDPOINT"] = "https://fake.url"
