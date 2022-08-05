@@ -2,11 +2,11 @@ from .fixtures.hub import DatasetRepos
 from .utils import (
     ROWS_MAX_NUMBER,
     get,
+    get_default_config_split,
     poll_rows,
     poll_splits,
     post,
     post_refresh,
-    get_default_config_split,
     refresh_poll_splits_rows,
 )
 

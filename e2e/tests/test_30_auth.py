@@ -1,6 +1,13 @@
-from .fixtures.hub import AuthHeaders, AuthType, DatasetRepos, DatasetReposType
-from .utils import get, refresh_poll_splits_next, get_default_config_split, poll_first_rows, Response
 import pytest
+
+from .fixtures.hub import AuthHeaders, AuthType, DatasetRepos, DatasetReposType
+from .utils import (
+    Response,
+    get,
+    get_default_config_split,
+    poll_first_rows,
+    refresh_poll_splits_next,
+)
 
 
 def log(response: Response, dataset: str) -> str:
