@@ -4,7 +4,7 @@ on:
   push:
     paths:
       - 'services/api/Dockerfile'
-      - 'services/api/src'
+      - 'services/api/src/**'
       - 'services/api/poetry.lock'
       - 'services/api/pyproject.toml'
       - '.github/workflows/s-api-build.yml'
