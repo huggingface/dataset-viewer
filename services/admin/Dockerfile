@@ -1,3 +1,5 @@
+# build with
+#   docker build -t some_tag_admin -f Dockerfile ../..
 FROM python:3.9.6-slim
 
 ENV PYTHONFAULTHANDLER=1 \
@@ -19,11 +21,13 @@ RUN pip install -U --no-cache-dir pip
 RUN pip install "poetry==$POETRY_VERSION"
 
 WORKDIR /src
-COPY libs ./libs/
-COPY services ./services/
-COPY tools ./tools/
+COPY libs/libcache/dist ./libs/libcache/dist
+COPY libs/libqueue/dist ./libs/libqueue/dist
+COPY libs/libutils/dist ./libs/libutils/dist
+COPY services/admin/src ./services/admin/src
+COPY services/admin/poetry.lock ./services/admin/poetry.lock
+COPY services/admin/pyproject.toml ./services/admin/pyproject.toml
 WORKDIR /src/services/admin/
 RUN poetry install
 
-ENTRYPOINT ["make"]
-CMD ["run"]
+ENTRYPOINT ["poetry", "run", "python", "src/admin/main.py"]
