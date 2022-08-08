@@ -32,10 +32,264 @@
         "example": "*",
         "required": true
       },
-      "X-Error-Code": {
-        "description": "A string that identifies the underlying error.",
-        "schema": { "type": "string" },
-        "example": "DatasetNotFoundError",
+      "X-Error-Code-splits-next-401": {
+        "description": "A string that identifies the underlying error for 401 on /splits-next.",
+        "schema": {
+          "type": "string",
+          "enum": ["ExternalUnauthenticatedError"]
+        },
+        "examples": {
+          "ExternalUnauthenticatedError": {
+            "summary": "The dataset does not exist, or is not accessible without authentication (private or gated). Please retry with authentication.",
+            "value": "ExternalUnauthenticatedError"
+          }
+        },
+        "required": true
+      },
+      "X-Error-Code-splits-next-404": {
+        "description": "A string that identifies the underlying error for 404 on /splits-next.",
+        "schema": {
+          "type": "string",
+          "enum": [
+            "ExternalAuthenticatedError",
+            "DatasetNotFoundError",
+            "SplitsResponseNotFound"
+          ]
+        },
+        "examples": {
+          "ExternalAuthenticatedError": {
+            "summary": "The dataset does not exist, or is not accessible with the current credentials (private or gated).",
+            "value": "ExternalAuthenticatedError"
+          },
+          "DatasetNotFoundError": {
+            "summary": "The dataset does not exist on the Hub.",
+            "value": "DatasetNotFoundError"
+          },
+          "SplitsResponseNotFound": {
+            "summary": "Not found.",
+            "value": "SplitsResponseNotFound"
+          }
+        },
+        "required": true
+      },
+      "X-Error-Code-splits-next-422": {
+        "description": "A string that identifies the underlying error for 422 on /splits-next.",
+        "schema": {
+          "type": "string",
+          "enum": ["MissingRequiredParameter"]
+        },
+        "examples": {
+          "MissingRequiredParameter": {
+            "summary": "Parameter 'dataset' is required",
+            "value": "MissingRequiredParameter"
+          }
+        },
+        "required": true
+      },
+      "X-Error-Code-splits-next-500": {
+        "description": "A string that identifies the underlying error for 500 on /splits-next.",
+        "schema": {
+          "type": "string",
+          "enum": [
+            "SplitsResponseNotReadyError",
+            "SplitsNamesError",
+            "UnexpectedError"
+          ]
+        },
+        "examples": {
+          "SplitsResponseNotReadyError": {
+            "summary": "The list of splits is not ready yet. Please retry later.",
+            "value": "SplitsResponseNotReadyError"
+          },
+          "SplitsNamesError": {
+            "summary": "Cannot get the split names for the dataset.",
+            "value": "SplitsNamesError"
+          },
+          "UnexpectedError": {
+            "summary": "Unexpected error.",
+            "value": "UnexpectedError"
+          }
+        },
+        "required": true
+      },
+      "X-Error-Code-first-rows-401": {
+        "description": "A string that identifies the underlying error for 401 on /first-rows.",
+        "schema": {
+          "type": "string",
+          "enum": ["ExternalUnauthenticatedError"]
+        },
+        "examples": {
+          "ExternalUnauthenticatedError": {
+            "summary": "The dataset does not exist, or is not accessible without authentication (private or gated). Please retry with authentication.",
+            "value": "ExternalUnauthenticatedError"
+          }
+        },
+        "required": true
+      },
+      "X-Error-Code-first-rows-404": {
+        "description": "A string that identifies the underlying error for 404 on /first-rows.",
+        "schema": {
+          "type": "string",
+          "enum": [
+            "ExternalAuthenticatedError",
+            "DatasetNotFoundError",
+            "ConfigNotFoundError",
+            "SplitNotFoundError",
+            "FirstRowsResponseNotFound"
+          ]
+        },
+        "examples": {
+          "ExternalAuthenticatedError": {
+            "summary": "The dataset does not exist, or is not accessible with the current credentials (private or gated).",
+            "value": "ExternalAuthenticatedError"
+          },
+          "DatasetNotFoundError": {
+            "summary": "The dataset does not exist on the Hub.",
+            "value": "DatasetNotFoundError"
+          },
+          "ConfigNotFoundError": {
+            "summary": "config yyy does not exist for dataset xxx",
+            "value": "ConfigNotFoundError"
+          },
+          "SplitNotFoundError": {
+            "summary": "The config or the split does not exist in the dataset",
+            "value": "SplitNotFoundError"
+          },
+          "FirstRowsResponseNotFound": {
+            "summary": "Not found.",
+            "value": "FirstRowsResponseNotFound"
+          }
+        },
+        "required": true
+      },
+      "X-Error-Code-first-rows-422": {
+        "description": "A string that identifies the underlying error for 422 on /first-rows.",
+        "schema": {
+          "type": "string",
+          "enum": ["MissingRequiredParameter"]
+        },
+        "examples": {
+          "MissingRequiredParameter": {
+            "summary": "Parameters 'dataset', 'config' and 'split' are required",
+            "value": "MissingRequiredParameter"
+          }
+        },
+        "required": true
+      },
+      "X-Error-Code-first-rows-500": {
+        "description": "A string that identifies the underlying error for 500 on /first-rows.",
+        "schema": {
+          "type": "string",
+          "enum": [
+            "FirstRowsResponseNotReady",
+            "InfoError",
+            "FeaturesError",
+            "StreamingRowsError",
+            "NormalRowsError",
+            "RowsPostProcessingError",
+            "UnexpectedError"
+          ]
+        },
+        "examples": {
+          "FirstRowsResponseNotReady": {
+            "summary": "The list of the first rows is not ready yet. Please retry later.",
+            "value": "FirstRowsResponseNotReady"
+          },
+          "InfoError": {
+            "summary": "The info cannot be fetched for the dataset config.",
+            "value": "InfoError"
+          },
+          "FeaturesError": {
+            "summary": "The split features (columns) cannot be extracted.",
+            "value": "FeaturesError"
+          },
+          "StreamingRowsError": {
+            "summary": "Cannot load the dataset split (in streaming mode) to extract the first rows.",
+            "value": "StreamingRowsError"
+          },
+          "NormalRowsError": {
+            "summary": "Cannot load the dataset split (in normal download mode) to extract the first rows.",
+            "value": "NormalRowsError"
+          },
+          "RowsPostProcessingError": {
+            "summary": "Server error while post-processing the split rows. Please report the issue.",
+            "value": "RowsPostProcessingError"
+          },
+          "UnexpectedError": {
+            "summary": "Unexpected error.",
+            "value": "UnexpectedError"
+          }
+        },
+        "required": true
+      },
+      "X-Error-Code-valid-next-500": {
+        "description": "A string that identifies the underlying error for 500 on /valid-next.",
+        "schema": {
+          "type": "string",
+          "enum": ["UnexpectedError"]
+        },
+        "examples": {
+          "UnexpectedError": {
+            "summary": "Unexpected error.",
+            "value": "UnexpectedError"
+          }
+        },
+        "required": true
+      },
+      "X-Error-Code-is-valid-next-401": {
+        "description": "A string that identifies the underlying error for 401 on /is-valid-next.",
+        "schema": {
+          "type": "string",
+          "enum": ["ExternalUnauthenticatedError"]
+        },
+        "examples": {
+          "ExternalUnauthenticatedError": {
+            "summary": "The dataset does not exist, or is not accessible without authentication (private or gated). Please retry with authentication.",
+            "value": "ExternalUnauthenticatedError"
+          }
+        },
+        "required": true
+      },
+      "X-Error-Code-is-valid-next-404": {
+        "description": "A string that identifies the underlying error for 404 on /is-valid-next.",
+        "schema": {
+          "type": "string",
+          "enum": ["ExternalAuthenticatedError"]
+        },
+        "examples": {
+          "ExternalAuthenticatedError": {
+            "summary": "The dataset does not exist, or is not accessible with the current credentials (private or gated).",
+            "value": "ExternalAuthenticatedError"
+          }
+        },
+        "required": true
+      },
+      "X-Error-Code-is-valid-next-422": {
+        "description": "A string that identifies the underlying error for 422 on /is-valid-next.",
+        "schema": {
+          "type": "string",
+          "enum": ["MissingRequiredParameter"]
+        },
+        "examples": {
+          "MissingRequiredParameter": {
+            "summary": "Parameter 'dataset' is required",
+            "value": "MissingRequiredParameter"
+          }
+        },
+        "required": true
+      },
+      "X-Error-Code-is-valid-next-500": {
+        "description": "A string that identifies the underlying error for 500 on /is-valid-next.",
+        "schema": {
+          "type": "string",
+          "enum": ["UnexpectedError"]
+        },
+        "examples": {
+          "UnexpectedError": {
+            "summary": "Unexpected error.",
+            "value": "UnexpectedError"
+          }
+        },
         "required": true
       }
     },
@@ -1905,7 +2159,7 @@
                 "$ref": "#/components/headers/Access-Control-Allow-Origin"
               },
               "X-Error-Code": {
-                "$ref": "#/components/headers/X-Error-Code"
+                "$ref": "#/components/headers/X-Error-Code-valid-next-500"
               }
             },
             "content": {
@@ -2017,7 +2271,7 @@
                 "$ref": "#/components/headers/Access-Control-Allow-Origin"
               },
               "X-Error-Code": {
-                "$ref": "#/components/headers/X-Error-Code"
+                "$ref": "#/components/headers/X-Error-Code-is-valid-next-401"
               }
             },
             "content": {
@@ -2058,7 +2312,7 @@
                 "$ref": "#/components/headers/Access-Control-Allow-Origin"
               },
               "X-Error-Code": {
-                "$ref": "#/components/headers/X-Error-Code"
+                "$ref": "#/components/headers/X-Error-Code-is-valid-next-404"
               }
             },
             "content": {
@@ -2099,7 +2353,7 @@
                 "$ref": "#/components/headers/Access-Control-Allow-Origin"
               },
               "X-Error-Code": {
-                "$ref": "#/components/headers/X-Error-Code"
+                "$ref": "#/components/headers/X-Error-Code-is-valid-next-422"
               }
             },
             "content": {
@@ -2130,7 +2384,7 @@
                 "$ref": "#/components/headers/Access-Control-Allow-Origin"
               },
               "X-Error-Code": {
-                "$ref": "#/components/headers/X-Error-Code"
+                "$ref": "#/components/headers/X-Error-Code-is-valid-next-500"
               }
             },
             "content": {
@@ -2305,13 +2559,7 @@
                 "$ref": "#/components/headers/Access-Control-Allow-Origin"
               },
               "X-Error-Code": {
-                "$ref": "#/components/headers/X-Error-Code",
-                "examples": {
-                  "ExternalUnauthenticatedError": {
-                    "summary": "The dataset does not exist, or is not accessible without authentication (private or gated). Please retry with authentication.",
-                    "value": "ExternalUnauthenticatedError"
-                  }
-                }
+                "$ref": "#/components/headers/X-Error-Code-splits-next-401"
               }
             },
             "content": {
@@ -2352,21 +2600,7 @@
                 "$ref": "#/components/headers/Access-Control-Allow-Origin"
               },
               "X-Error-Code": {
-                "$ref": "#/components/headers/X-Error-Code",
-                "examples": {
-                  "ExternalAuthenticatedError": {
-                    "summary": "The dataset does not exist, or is not accessible with the current credentials (private or gated).",
-                    "value": "ExternalAuthenticatedError"
-                  },
-                  "DatasetNotFoundError": {
-                    "summary": "The dataset does not exist on the Hub.",
-                    "value": "DatasetNotFoundError"
-                  },
-                  "SplitsResponseNotFound": {
-                    "summary": "Not found.",
-                    "value": "SplitsResponseNotFound"
-                  }
-                }
+                "$ref": "#/components/headers/X-Error-Code-splits-next-404"
               }
             },
             "content": {
@@ -2407,13 +2641,7 @@
                 "$ref": "#/components/headers/Access-Control-Allow-Origin"
               },
               "X-Error-Code": {
-                "$ref": "#/components/headers/X-Error-Code",
-                "examples": {
-                  "MissingRequiredParameter": {
-                    "summary": "Parameter 'dataset' is required",
-                    "value": "MissingRequiredParameter"
-                  }
-                }
+                "$ref": "#/components/headers/X-Error-Code-splits-next-422"
               }
             },
             "content": {
@@ -2444,21 +2672,7 @@
                 "$ref": "#/components/headers/Access-Control-Allow-Origin"
               },
               "X-Error-Code": {
-                "$ref": "#/components/headers/X-Error-Code",
-                "examples": {
-                  "SplitsResponseNotReadyError": {
-                    "summary": "The list of splits is not ready yet. Please retry later.",
-                    "value": "SplitsResponseNotReadyError"
-                  },
-                  "SplitsNamesError": {
-                    "summary": "Cannot get the split names for the dataset.",
-                    "value": "SplitsNamesError"
-                  },
-                  "UnexpectedError": {
-                    "summary": "Unexpected error.",
-                    "value": "UnexpectedError"
-                  }
-                }
+                "$ref": "#/components/headers/X-Error-Code-splits-next-500"
               }
             },
             "content": {
@@ -3169,13 +3383,7 @@
                 "$ref": "#/components/headers/Access-Control-Allow-Origin"
               },
               "X-Error-Code": {
-                "$ref": "#/components/headers/X-Error-Code",
-                "examples": {
-                  "ExternalUnauthenticatedError": {
-                    "summary": "The dataset does not exist, or is not accessible without authentication (private or gated). Please retry with authentication.",
-                    "value": "ExternalUnauthenticatedError"
-                  }
-                }
+                "$ref": "#/components/headers/X-Error-Code-first-rows-401"
               }
             },
             "content": {
@@ -3216,29 +3424,7 @@
                 "$ref": "#/components/headers/Access-Control-Allow-Origin"
               },
               "X-Error-Code": {
-                "$ref": "#/components/headers/X-Error-Code",
-                "examples": {
-                  "ExternalAuthenticatedError": {
-                    "summary": "The dataset does not exist, or is not accessible with the current credentials (private or gated).",
-                    "value": "ExternalAuthenticatedError"
-                  },
-                  "DatasetNotFoundError": {
-                    "summary": "The dataset does not exist on the Hub.",
-                    "value": "DatasetNotFoundError"
-                  },
-                  "ConfigNotFoundError": {
-                    "summary": "config yyy does not exist for dataset xxx",
-                    "value": "ConfigNotFoundError"
-                  },
-                  "SplitNotFoundError": {
-                    "summary": "The config or the split does not exist in the dataset",
-                    "value": "SplitNotFoundError"
-                  },
-                  "FirstRowsResponseNotFound": {
-                    "summary": "Not found.",
-                    "value": "FirstRowsResponseNotFound"
-                  }
-                }
+                "$ref": "#/components/headers/X-Error-Code-first-rows-404"
               }
             },
             "content": {
@@ -3287,13 +3473,7 @@
                 "$ref": "#/components/headers/Access-Control-Allow-Origin"
               },
               "X-Error-Code": {
-                "$ref": "#/components/headers/X-Error-Code",
-                "examples": {
-                  "MissingRequiredParameter": {
-                    "summary": "Parameters 'dataset', 'config' and 'split' are required",
-                    "value": "MissingRequiredParameter"
-                  }
-                }
+                "$ref": "#/components/headers/X-Error-Code-first-rows-422"
               }
             },
             "content": {
@@ -3352,37 +3532,7 @@
                 "$ref": "#/components/headers/Access-Control-Allow-Origin"
               },
               "X-Error-Code": {
-                "$ref": "#/components/headers/X-Error-Code",
-                "examples": {
-                  "FirstRowsResponseNotReady": {
-                    "summary": "The list of the first rows is not ready yet. Please retry later.",
-                    "value": "FirstRowsResponseNotReady"
-                  },
-                  "InfoError": {
-                    "summary": "The info cannot be fetched for the dataset config.",
-                    "value": "InfoError"
-                  },
-                  "FeaturesError": {
-                    "summary": "The split features (columns) cannot be extracted.",
-                    "value": "FeaturesError"
-                  },
-                  "StreamingRowsError": {
-                    "summary": "Cannot load the dataset split (in streaming mode) to extract the first rows.",
-                    "value": "StreamingRowsError"
-                  },
-                  "NormalRowsError": {
-                    "summary": "Cannot load the dataset split (in normal download mode) to extract the first rows.",
-                    "value": "NormalRowsError"
-                  },
-                  "RowsPostProcessingError": {
-                    "summary": "Server error while post-processing the split rows. Please report the issue.",
-                    "value": "RowsPostProcessingError"
-                  },
-                  "UnexpectedError": {
-                    "summary": "Unexpected error.",
-                    "value": "UnexpectedError"
-                  }
-                }
+                "$ref": "#/components/headers/X-Error-Code-first-rows-500"
               }
             },
             "content": {
@@ -3568,13 +3718,7 @@
                 "$ref": "#/components/headers/Access-Control-Allow-Origin"
               },
               "X-Error-Code": {
-                "$ref": "#/components/headers/X-Error-Code",
-                "examples": {
-                  "UnexpectedError": {
-                    "summary": "Unexpected error.",
-                    "value": "UnexpectedError"
-                  }
-                }
+                "$ref": "#/components/headers/X-Error-Code-valid-next-500"
               }
             },
             "content": {
@@ -3686,13 +3830,7 @@
                 "$ref": "#/components/headers/Access-Control-Allow-Origin"
               },
               "X-Error-Code": {
-                "$ref": "#/components/headers/X-Error-Code",
-                "examples": {
-                  "ExternalUnauthenticatedError": {
-                    "summary": "The dataset does not exist, or is not accessible without authentication (private or gated). Please retry with authentication.",
-                    "value": "ExternalUnauthenticatedError"
-                  }
-                }
+                "$ref": "#/components/headers/X-Error-Code-is-valid-next-401"
               }
             },
             "content": {
@@ -3733,13 +3871,7 @@
                 "$ref": "#/components/headers/Access-Control-Allow-Origin"
               },
               "X-Error-Code": {
-                "$ref": "#/components/headers/X-Error-Code",
-                "examples": {
-                  "ExternalAuthenticatedError": {
-                    "summary": "The dataset does not exist, or is not accessible with the current credentials (private or gated).",
-                    "value": "ExternalAuthenticatedError"
-                  }
-                }
+                "$ref": "#/components/headers/X-Error-Code-is-valid-next-404"
               }
             },
             "content": {
@@ -3780,13 +3912,7 @@
                 "$ref": "#/components/headers/Access-Control-Allow-Origin"
               },
               "X-Error-Code": {
-                "$ref": "#/components/headers/X-Error-Code",
-                "examples": {
-                  "MissingRequiredParameter": {
-                    "summary": "Parameter 'dataset' is required",
-                    "value": "MissingRequiredParameter"
-                  }
-                }
+                "$ref": "#/components/headers/X-Error-Code-is-valid-next-422"
               }
             },
             "content": {
@@ -3817,13 +3943,7 @@
                 "$ref": "#/components/headers/Access-Control-Allow-Origin"
               },
               "X-Error-Code": {
-                "$ref": "#/components/headers/X-Error-Code",
-                "examples": {
-                  "UnexpectedError": {
-                    "summary": "Unexpected error.",
-                    "value": "UnexpectedError"
-                  }
-                }
+                "$ref": "#/components/headers/X-Error-Code-is-valid-next-500"
               }
             },
             "content": {

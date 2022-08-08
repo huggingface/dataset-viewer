@@ -5,6 +5,7 @@ name = "e2e"
 version = "0.1.0"
 
 [tool.poetry.dependencies]
+openapi-spec-validator = "^0.4.0"
 pytest = "^6.2.5"
 python = "3.9.6"
 requests = "^2.27.1"
