@@ -218,6 +218,20 @@ def get_valid_dataset_names() -> List[str]:
     return sorted(candidate_dataset_names)
 
 
+# /is-valid endpoint
+
+
+def is_dataset_name_valid(dataset_name: str) -> bool:
+    # a dataset is considered valid if:
+    # - the /splits response is valid
+    # - at least one of the /first-rows responses is valid
+    valid_split_responses = SplitsResponse.objects(dataset_name=dataset_name, http_status=HTTPStatus.OK).count()
+    valid_first_rows_responses = FirstRowsResponse.objects(
+        dataset_name=dataset_name, http_status=HTTPStatus.OK
+    ).count()
+    return (valid_split_responses == 1) and (valid_first_rows_responses > 0)
+
+
 # admin /metrics endpoint
 
 CountByHttpStatusAndErrorCode = Dict[str, Dict[Optional[str], int]]

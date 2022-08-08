@@ -30,6 +30,7 @@ from api.routes.rows import rows_endpoint
 from api.routes.splits import splits_endpoint
 from api.routes.splits_next import create_splits_next_endpoint
 from api.routes.valid import create_is_valid_endpoint, valid_datasets_endpoint
+from api.routes.valid_next import create_is_valid_next_endpoint, valid_next_endpoint
 from api.routes.webhook import webhook_endpoint
 
 
@@ -48,6 +49,8 @@ def create_app() -> Starlette:
         # ^ called by https://github.com/huggingface/model-evaluator
         Route("/first-rows", endpoint=create_first_rows_endpoint(EXTERNAL_AUTH_URL)),
         Route("/splits-next", endpoint=create_splits_next_endpoint(EXTERNAL_AUTH_URL)),
+        Route("/valid-next", endpoint=valid_next_endpoint),
+        Route("/is-valid-next", endpoint=create_is_valid_next_endpoint(EXTERNAL_AUTH_URL)),
     ]
     to_deprecate: List[BaseRoute] = [
         Route("/rows", endpoint=rows_endpoint),

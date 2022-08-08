@@ -755,6 +755,16 @@
           }
         }
       },
+      "ValidNextResponse": {
+        "type": "object",
+        "required": ["valid"],
+        "properties": {
+          "valid": {
+            "type": "array",
+            "items": { "type": "string" }
+          }
+        }
+      },
       "IsValidResponse": {
         "type": "object",
         "required": ["valid"],
@@ -3375,6 +3385,319 @@
                       "error": "The list of the first rows is not ready yet. Please retry later."
                     }
                   },
+                  "internal": {
+                    "summary": "internal error",
+                    "value": {
+                      "error": "Unexpected error."
+                    }
+                  }
+                }
+              },
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ServerErrorResponse"
+                },
+                "examples": {
+                  "internal": {
+                    "summary": "internal error",
+                    "value": {
+                      "error": "Internal Server Error"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/valid-next": {
+      "get": {
+        "summary": "Valid datasets (experimental)",
+        "description": "The list of the Hub datasets that work without an error (for /splits-next and /first-rows).",
+        "externalDocs": {
+          "description": "See  Valid datasets (Hub docs)",
+          "url": "https://huggingface.co/docs/datasets-server/valid"
+        },
+        "operationId": "listValidDatasetsNext",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "The valid datasets.",
+            "headers": {
+              "Cache-Control": {
+                "$ref": "#/components/headers/Cache-Control"
+              },
+              "Access-Control-Allow-Origin": {
+                "$ref": "#/components/headers/Access-Control-Allow-Origin"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidNextResponse"
+                },
+                "examples": {
+                  "valid": {
+                    "summary": "list of datasets",
+                    "value": {
+                      "valid": [
+                        "0n1xus/codexglue",
+                        "0n1xus/pytorrent-standalone",
+                        "0x7194633/rupile",
+                        "51la5/keyword-extraction",
+                        "AHussain0418/day2_data"
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "The server crashed.",
+            "headers": {
+              "Cache-Control": {
+                "$ref": "#/components/headers/Cache-Control"
+              },
+              "Access-Control-Allow-Origin": {
+                "$ref": "#/components/headers/Access-Control-Allow-Origin"
+              },
+              "X-Error-Code": {
+                "$ref": "#/components/headers/X-Error-Code"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CustomError"
+                },
+                "examples": {
+                  "internal": {
+                    "summary": "internal error",
+                    "value": {
+                      "error": "Unexpected error."
+                    }
+                  }
+                }
+              },
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ServerErrorResponse"
+                },
+                "examples": {
+                  "internal": {
+                    "summary": "internal error",
+                    "value": {
+                      "error": "Internal Server Error"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/is-valid-next": {
+      "get": {
+        "summary": "Check if a dataset is valid (experimental)",
+        "description": "Check if a dataset works without an error (for /splits-next and /first-rows).",
+        "externalDocs": {
+          "description": "See Valid datasets (Hub docs)",
+          "url": "https://huggingface.co/docs/datasets-server/valid"
+        },
+        "operationId": "isValidDatasetNext",
+        "security": [
+          {},
+          {
+            "HuggingFaceCookie": []
+          },
+          {
+            "HuggingFaceToken": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "dataset",
+            "in": "query",
+            "description": "The identifier of the dataset on the Hub.",
+            "required": true,
+            "schema": { "type": "string" },
+            "examples": {
+              "glue": { "summary": "a canonical dataset", "value": "glue" },
+              "Helsinki-NLP/tatoeba_mt": {
+                "summary": "a namespaced dataset",
+                "value": "Helsinki-NLP/tatoeba_mt"
+              }
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The valid datasets.",
+            "headers": {
+              "Cache-Control": {
+                "$ref": "#/components/headers/Cache-Control"
+              },
+              "Access-Control-Allow-Origin": {
+                "$ref": "#/components/headers/Access-Control-Allow-Origin"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IsValidResponse"
+                },
+                "examples": {
+                  "valid": {
+                    "summary": "valid dataset",
+                    "value": {
+                      "valid": true
+                    }
+                  },
+                  "invalid": {
+                    "summary": "invalid dataset",
+                    "value": {
+                      "valid": false
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "If the external authentication step on the Hugging Face Hub failed, and no authentication mechanism has been provided. Retry with authentication.",
+            "headers": {
+              "Cache-Control": {
+                "$ref": "#/components/headers/Cache-Control"
+              },
+              "Access-Control-Allow-Origin": {
+                "$ref": "#/components/headers/Access-Control-Allow-Origin"
+              },
+              "X-Error-Code": {
+                "$ref": "#/components/headers/X-Error-Code"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CustomError"
+                },
+                "examples": {
+                  "inexistent-dataset": {
+                    "summary": "The dataset does not exist.",
+                    "value": {
+                      "error": "The dataset does not exist, or is not accessible without authentication (private or gated). Please retry with authentication."
+                    }
+                  },
+                  "gated-dataset": {
+                    "summary": "The dataset is gated.",
+                    "value": {
+                      "error": "The dataset does not exist, or is not accessible without authentication (private or gated). Please retry with authentication."
+                    }
+                  },
+                  "private-dataset": {
+                    "summary": "The dataset is private.",
+                    "value": {
+                      "error": "The dataset does not exist, or is not accessible without authentication (private or gated). Please retry with authentication."
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "If the dataset cannot be found. This may be because it doesn't exist, or because it is set to `private` and you do not have access.",
+            "headers": {
+              "Cache-Control": {
+                "$ref": "#/components/headers/Cache-Control"
+              },
+              "Access-Control-Allow-Origin": {
+                "$ref": "#/components/headers/Access-Control-Allow-Origin"
+              },
+              "X-Error-Code": {
+                "$ref": "#/components/headers/X-Error-Code"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CustomError"
+                },
+                "examples": {
+                  "inexistent-dataset": {
+                    "summary": "The dataset does not exist, while authentication was provided in the request.",
+                    "value": {
+                      "error": "The dataset does not exist, or is not accessible with the current credentials (private or gated)."
+                    }
+                  },
+                  "gated-dataset": {
+                    "summary": "The dataset is gated, while authentication was provided in the request.",
+                    "value": {
+                      "error": "The dataset does not exist, or is not accessible with the current credentials (private or gated)."
+                    }
+                  },
+                  "private-dataset": {
+                    "summary": "The dataset is private, while authentication was provided in the request.",
+                    "value": {
+                      "error": "The dataset does not exist, or is not accessible with the current credentials (private or gated)."
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "The `dataset` parameter has not been provided.",
+            "headers": {
+              "Cache-Control": {
+                "$ref": "#/components/headers/Cache-Control"
+              },
+              "Access-Control-Allow-Origin": {
+                "$ref": "#/components/headers/Access-Control-Allow-Origin"
+              },
+              "X-Error-Code": {
+                "$ref": "#/components/headers/X-Error-Code"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CustomError"
+                },
+                "examples": {
+                  "missing-parameter": {
+                    "summary": "The dataset parameter is missing.",
+                    "value": { "error": "Parameter 'dataset' is required" }
+                  },
+                  "empty-parameter": {
+                    "summary": "The dataset parameter is empty (?dataset=).",
+                    "value": { "error": "Parameter 'dataset' is required" }
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "The server crashed.",
+            "headers": {
+              "Cache-Control": {
+                "$ref": "#/components/headers/Cache-Control"
+              },
+              "Access-Control-Allow-Origin": {
+                "$ref": "#/components/headers/Access-Control-Allow-Origin"
+              },
+              "X-Error-Code": {
+                "$ref": "#/components/headers/X-Error-Code"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CustomError"
+                },
+                "examples": {
                   "internal": {
                     "summary": "internal error",
                     "value": {
