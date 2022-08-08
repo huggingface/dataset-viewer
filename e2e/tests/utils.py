@@ -1,7 +1,7 @@
 import json
 import os
 import time
-from os.path import dirname, join
+from pathlib import Path
 from typing import Any, Dict, Optional, Tuple
 
 import requests
@@ -117,8 +117,8 @@ def refresh_poll_splits_next_first_rows(
 
 
 def get_openapi_body_example(path, status, example_name):
-    root = dirname(dirname(dirname(__file__)))
-    openapi_filename = join(root, "chart", "static-files", "openapi.json")
+    root = Path(__file__).resolve().parent.parent.parent
+    openapi_filename = root / "chart" / "static-files" / "openapi.json"
     with open(openapi_filename) as json_file:
         openapi = json.load(json_file)
     return openapi["paths"][path]["get"]["responses"][str(status)]["content"]["application/json"]["examples"][
