@@ -765,16 +765,6 @@
           }
         }
       },
-      "ValidNextResponse": {
-        "type": "object",
-        "required": ["valid"],
-        "properties": {
-          "valid": {
-            "type": "array",
-            "items": { "type": "string" }
-          }
-        }
-      },
       "IsValidResponse": {
         "type": "object",
         "required": ["valid"],
