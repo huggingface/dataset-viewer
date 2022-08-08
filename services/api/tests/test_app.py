@@ -79,6 +79,13 @@ def test_get_valid_datasets(client: TestClient) -> None:
     assert "valid" in json
 
 
+def test_get_valid__next_datasets(client: TestClient) -> None:
+    response = client.get("/valid-next")
+    assert response.status_code == 200
+    json = response.json()
+    assert "valid" in json
+
+
 @responses.activate
 def test_get_is_valid(client: TestClient) -> None:
     response = client.get("/is-valid")
@@ -111,6 +118,20 @@ def test_get_is_valid(client: TestClient) -> None:
     #     assert json["valid"] is True
 
 
+@responses.activate
+def test_get_is_valid_next(client: TestClient) -> None:
+    response = client.get("/is-valid-next")
+    assert response.status_code == 422
+
+    dataset = "doesnotexist"
+    responses.add_callback(responses.GET, external_auth_url % dataset, callback=request_callback)
+    response = client.get("/is-valid-next", params={"dataset": dataset})
+    assert response.status_code == 200
+    json = response.json()
+    assert "valid" in json
+    assert json["valid"] is False
+
+
 # the logic below is just to check the cookie and authorization headers are managed correctly
 @pytest.mark.parametrize(
     "headers,status_code,error_code",
@@ -126,7 +147,7 @@ def test_is_valid_auth(
 ) -> None:
     dataset = "dataset-which-does-not-exist"
     responses.add_callback(responses.GET, external_auth_url % dataset, callback=request_callback)
-    response = client.get(f"/is-valid?dataset={dataset}", headers=headers)
+    response = client.get(f"/is-valid-next?dataset={dataset}", headers=headers)
     assert response.status_code == status_code
     assert response.headers.get("X-Error-Code") == error_code
 
