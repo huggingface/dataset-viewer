@@ -18,3 +18,7 @@ include ../tools/Docker.mk
 .PHONY: e2e
 e2e:
 	make test
+
+.PHONY: openapi
+openapi:
+	poetry run python -m openapi_spec_validator ../chart/static-files/openapi.json

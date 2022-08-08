@@ -1,0 +1,38 @@
+name: Check openapi specification
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - 'chart/static-files/opanapi.json'
+      - '.github/workflows/openapi.yml'
+env:
+  python-version: 3.9.6
+  poetry-version: 1.1.13
+  # required to get access to use a cached poetry venv in "/home/runner/.cache/pypoetry/virtualenvs"
+  POETRY_VIRTUALENVS_IN_PROJECT: false
+  working-directory: e2e
+jobs:
+  check-openapi-spec:
+    defaults:
+      run:
+        shell: bash
+        working-directory: e2e
+    runs-on: "ubuntu-latest"
+    steps:
+      - uses: actions/checkout@v3
+      - name: Install poetry
+        run: pipx install poetry==${{ env.poetry-version }}
+      - name: Use Python
+        uses: actions/setup-python@v3
+        with:
+          python-version: ${{ env.python-version }}
+          cache: 'poetry'
+          cache-dependency-path: |
+            ${{ env.working-directory }}/poetry.lock
+      - name: Install dependencies
+        run: |
+          poetry env use "${{ env.python-version }}"
+          poetry install
+      - name: Check openapi spec
+        run: |
+          poetry run python -m openapi_spec_validator ../chart/static-files/openapi.json
