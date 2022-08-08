@@ -300,7 +300,7 @@ def get_first_rows_response(
         rows_min_number = 0
     # first ensure the tuple (dataset, config, split) exists on the Hub
     splits_response = get_splits_response(dataset_name, hf_endpoint, hf_token)
-    # ^ can raise DoesNotExistError or DatasetError
+    # ^ can raise DatasetNotFoundError or SplitsNamesError
     if config_name not in [split_item["config_name"] for split_item in splits_response["splits"]]:
         raise ConfigNotFoundError(f"config {config_name} does not exist for dataset {dataset_name}")
     if {"dataset_name": dataset_name, "config_name": config_name, "split_name": split_name} not in [

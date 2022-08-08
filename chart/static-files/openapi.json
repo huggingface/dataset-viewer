@@ -2305,7 +2305,13 @@
                 "$ref": "#/components/headers/Access-Control-Allow-Origin"
               },
               "X-Error-Code": {
-                "$ref": "#/components/headers/X-Error-Code"
+                "$ref": "#/components/headers/X-Error-Code",
+                "examples": {
+                  "ExternalUnauthenticatedError": {
+                    "summary": "The dataset does not exist, or is not accessible without authentication (private or gated). Please retry with authentication.",
+                    "value": "ExternalUnauthenticatedError"
+                  }
+                }
               }
             },
             "content": {
@@ -2346,7 +2352,21 @@
                 "$ref": "#/components/headers/Access-Control-Allow-Origin"
               },
               "X-Error-Code": {
-                "$ref": "#/components/headers/X-Error-Code"
+                "$ref": "#/components/headers/X-Error-Code",
+                "examples": {
+                  "ExternalAuthenticatedError": {
+                    "summary": "The dataset does not exist, or is not accessible with the current credentials (private or gated).",
+                    "value": "ExternalAuthenticatedError"
+                  },
+                  "DatasetNotFoundError": {
+                    "summary": "The dataset does not exist on the Hub.",
+                    "value": "DatasetNotFoundError"
+                  },
+                  "SplitsResponseNotFound": {
+                    "summary": "Not found.",
+                    "value": "SplitsResponseNotFound"
+                  }
+                }
               }
             },
             "content": {
@@ -2387,7 +2407,13 @@
                 "$ref": "#/components/headers/Access-Control-Allow-Origin"
               },
               "X-Error-Code": {
-                "$ref": "#/components/headers/X-Error-Code"
+                "$ref": "#/components/headers/X-Error-Code",
+                "examples": {
+                  "MissingRequiredParameter": {
+                    "summary": "Parameter 'dataset' is required",
+                    "value": "MissingRequiredParameter"
+                  }
+                }
               }
             },
             "content": {
@@ -2418,7 +2444,21 @@
                 "$ref": "#/components/headers/Access-Control-Allow-Origin"
               },
               "X-Error-Code": {
-                "$ref": "#/components/headers/X-Error-Code"
+                "$ref": "#/components/headers/X-Error-Code",
+                "examples": {
+                  "SplitsResponseNotReadyError": {
+                    "summary": "The list of splits is not ready yet. Please retry later.",
+                    "value": "SplitsResponseNotReadyError"
+                  },
+                  "SplitsNamesError": {
+                    "summary": "Cannot get the split names for the dataset.",
+                    "value": "SplitsNamesError"
+                  },
+                  "UnexpectedError": {
+                    "summary": "Unexpected error.",
+                    "value": "UnexpectedError"
+                  }
+                }
               }
             },
             "content": {
@@ -3129,7 +3169,13 @@
                 "$ref": "#/components/headers/Access-Control-Allow-Origin"
               },
               "X-Error-Code": {
-                "$ref": "#/components/headers/X-Error-Code"
+                "$ref": "#/components/headers/X-Error-Code",
+                "examples": {
+                  "ExternalUnauthenticatedError": {
+                    "summary": "The dataset does not exist, or is not accessible without authentication (private or gated). Please retry with authentication.",
+                    "value": "ExternalUnauthenticatedError"
+                  }
+                }
               }
             },
             "content": {
@@ -3170,7 +3216,29 @@
                 "$ref": "#/components/headers/Access-Control-Allow-Origin"
               },
               "X-Error-Code": {
-                "$ref": "#/components/headers/X-Error-Code"
+                "$ref": "#/components/headers/X-Error-Code",
+                "examples": {
+                  "ExternalAuthenticatedError": {
+                    "summary": "The dataset does not exist, or is not accessible with the current credentials (private or gated).",
+                    "value": "ExternalAuthenticatedError"
+                  },
+                  "DatasetNotFoundError": {
+                    "summary": "The dataset does not exist on the Hub.",
+                    "value": "DatasetNotFoundError"
+                  },
+                  "ConfigNotFoundError": {
+                    "summary": "config yyy does not exist for dataset xxx",
+                    "value": "ConfigNotFoundError"
+                  },
+                  "SplitNotFoundError": {
+                    "summary": "The config or the split does not exist in the dataset",
+                    "value": "SplitNotFoundError"
+                  },
+                  "FirstRowsResponseNotFound": {
+                    "summary": "Not found.",
+                    "value": "FirstRowsResponseNotFound"
+                  }
+                }
               }
             },
             "content": {
@@ -3219,7 +3287,13 @@
                 "$ref": "#/components/headers/Access-Control-Allow-Origin"
               },
               "X-Error-Code": {
-                "$ref": "#/components/headers/X-Error-Code"
+                "$ref": "#/components/headers/X-Error-Code",
+                "examples": {
+                  "MissingRequiredParameter": {
+                    "summary": "Parameters 'dataset', 'config' and 'split' are required",
+                    "value": "MissingRequiredParameter"
+                  }
+                }
               }
             },
             "content": {
@@ -3278,7 +3352,37 @@
                 "$ref": "#/components/headers/Access-Control-Allow-Origin"
               },
               "X-Error-Code": {
-                "$ref": "#/components/headers/X-Error-Code"
+                "$ref": "#/components/headers/X-Error-Code",
+                "examples": {
+                  "FirstRowsResponseNotReady": {
+                    "summary": "The list of the first rows is not ready yet. Please retry later.",
+                    "value": "FirstRowsResponseNotReady"
+                  },
+                  "InfoError": {
+                    "summary": "The info cannot be fetched for the dataset config.",
+                    "value": "InfoError"
+                  },
+                  "FeaturesError": {
+                    "summary": "The split features (columns) cannot be extracted.",
+                    "value": "FeaturesError"
+                  },
+                  "StreamingRowsError": {
+                    "summary": "Cannot load the dataset split (in streaming mode) to extract the first rows.",
+                    "value": "StreamingRowsError"
+                  },
+                  "NormalRowsError": {
+                    "summary": "Cannot load the dataset split (in normal download mode) to extract the first rows.",
+                    "value": "NormalRowsError"
+                  },
+                  "RowsPostProcessingError": {
+                    "summary": "Server error while post-processing the split rows. Please report the issue.",
+                    "value": "RowsPostProcessingError"
+                  },
+                  "UnexpectedError": {
+                    "summary": "Unexpected error.",
+                    "value": "UnexpectedError"
+                  }
+                }
               }
             },
             "content": {
@@ -3464,7 +3568,13 @@
                 "$ref": "#/components/headers/Access-Control-Allow-Origin"
               },
               "X-Error-Code": {
-                "$ref": "#/components/headers/X-Error-Code"
+                "$ref": "#/components/headers/X-Error-Code",
+                "examples": {
+                  "UnexpectedError": {
+                    "summary": "Unexpected error.",
+                    "value": "UnexpectedError"
+                  }
+                }
               }
             },
             "content": {
@@ -3576,7 +3686,13 @@
                 "$ref": "#/components/headers/Access-Control-Allow-Origin"
               },
               "X-Error-Code": {
-                "$ref": "#/components/headers/X-Error-Code"
+                "$ref": "#/components/headers/X-Error-Code",
+                "examples": {
+                  "ExternalUnauthenticatedError": {
+                    "summary": "The dataset does not exist, or is not accessible without authentication (private or gated). Please retry with authentication.",
+                    "value": "ExternalUnauthenticatedError"
+                  }
+                }
               }
             },
             "content": {
@@ -3617,7 +3733,13 @@
                 "$ref": "#/components/headers/Access-Control-Allow-Origin"
               },
               "X-Error-Code": {
-                "$ref": "#/components/headers/X-Error-Code"
+                "$ref": "#/components/headers/X-Error-Code",
+                "examples": {
+                  "ExternalAuthenticatedError": {
+                    "summary": "The dataset does not exist, or is not accessible with the current credentials (private or gated).",
+                    "value": "ExternalAuthenticatedError"
+                  }
+                }
               }
             },
             "content": {
@@ -3658,7 +3780,13 @@
                 "$ref": "#/components/headers/Access-Control-Allow-Origin"
               },
               "X-Error-Code": {
-                "$ref": "#/components/headers/X-Error-Code"
+                "$ref": "#/components/headers/X-Error-Code",
+                "examples": {
+                  "MissingRequiredParameter": {
+                    "summary": "Parameter 'dataset' is required",
+                    "value": "MissingRequiredParameter"
+                  }
+                }
               }
             },
             "content": {
@@ -3689,7 +3817,13 @@
                 "$ref": "#/components/headers/Access-Control-Allow-Origin"
               },
               "X-Error-Code": {
-                "$ref": "#/components/headers/X-Error-Code"
+                "$ref": "#/components/headers/X-Error-Code",
+                "examples": {
+                  "UnexpectedError": {
+                    "summary": "Unexpected error.",
+                    "value": "UnexpectedError"
+                  }
+                }
               }
             },
             "content": {
