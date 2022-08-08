@@ -30,4 +30,4 @@ COPY services/api/pyproject.toml ./services/api/pyproject.toml
 WORKDIR /src/services/api/
 RUN poetry install
 
-ENTRYPOINT ["poetry run python src/api/main.py"]
+ENTRYPOINT ["poetry", "run", "python", "src/api/main.py"]

@@ -46,4 +46,4 @@ COPY vendors ./vendors/
 WORKDIR /src/services/worker/
 RUN poetry install
 
-ENTRYPOINT ["poetry run python src/worker/main.py"]
+ENTRYPOINT ["poetry", "run", "python", "src/worker/main.py"]
