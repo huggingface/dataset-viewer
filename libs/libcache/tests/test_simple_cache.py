@@ -20,6 +20,7 @@ from libcache.simple_cache import (
     get_splits_response,
     get_splits_responses_count_by_status_and_error_code,
     get_valid_dataset_names,
+    is_dataset_name_valid,
     mark_first_rows_responses_as_stale,
     mark_splits_responses_as_stale,
     upsert_first_rows_response,
@@ -134,6 +135,9 @@ def test_valid() -> None:
 
     assert get_valid_dataset_names() == []
     assert get_datasets_with_some_error() == []
+    assert is_dataset_name_valid("test_dataset") is False
+    assert is_dataset_name_valid("test_dataset2") is False
+    assert is_dataset_name_valid("test_dataset3") is False
 
     upsert_first_rows_response(
         "test_dataset",
@@ -147,6 +151,9 @@ def test_valid() -> None:
 
     assert get_valid_dataset_names() == ["test_dataset"]
     assert get_datasets_with_some_error() == []
+    assert is_dataset_name_valid("test_dataset") is True
+    assert is_dataset_name_valid("test_dataset2") is False
+    assert is_dataset_name_valid("test_dataset3") is False
 
     upsert_splits_response(
         "test_dataset2",
@@ -156,6 +163,9 @@ def test_valid() -> None:
 
     assert get_valid_dataset_names() == ["test_dataset"]
     assert get_datasets_with_some_error() == []
+    assert is_dataset_name_valid("test_dataset") is True
+    assert is_dataset_name_valid("test_dataset2") is False
+    assert is_dataset_name_valid("test_dataset3") is False
 
     upsert_first_rows_response(
         "test_dataset2",
@@ -169,6 +179,9 @@ def test_valid() -> None:
 
     assert get_valid_dataset_names() == ["test_dataset"]
     assert get_datasets_with_some_error() == ["test_dataset2"]
+    assert is_dataset_name_valid("test_dataset") is True
+    assert is_dataset_name_valid("test_dataset2") is False
+    assert is_dataset_name_valid("test_dataset3") is False
 
     upsert_first_rows_response(
         "test_dataset2",
@@ -182,6 +195,9 @@ def test_valid() -> None:
 
     assert get_valid_dataset_names() == ["test_dataset", "test_dataset2"]
     assert get_datasets_with_some_error() == ["test_dataset2"]
+    assert is_dataset_name_valid("test_dataset") is True
+    assert is_dataset_name_valid("test_dataset2") is True
+    assert is_dataset_name_valid("test_dataset3") is False
 
     upsert_splits_response(
         "test_dataset3",
@@ -191,6 +207,9 @@ def test_valid() -> None:
 
     assert get_valid_dataset_names() == ["test_dataset", "test_dataset2"]
     assert get_datasets_with_some_error() == ["test_dataset2", "test_dataset3"]
+    assert is_dataset_name_valid("test_dataset") is True
+    assert is_dataset_name_valid("test_dataset2") is True
+    assert is_dataset_name_valid("test_dataset3") is False
 
 
 def test_count_by_status_and_error_code() -> None:
