@@ -644,7 +644,7 @@
             "type": "integer"
           },
           "feature": {
-            "$ref": "#/components/schemas/DictFeature"
+            "$ref": "#/components/schemas/Feature"
           }
         }
       },
@@ -657,7 +657,7 @@
       "ListFeature": {
         "type": "array",
         "items": {
-          "$ref": "#/components/schemas/DictFeature"
+          "$ref": "#/components/schemas/Feature"
         }
       },
       "AudioFeature": {
