@@ -1,8 +1,11 @@
+import pytest
+
 from worker.responses.first_rows import get_first_rows_response
 
 from .._utils import ASSETS_BASE_URL, HF_ENDPOINT
 
 
+@pytest.mark.real_dataset
 def test_number_rows() -> None:
     rows_max_number = 7
     response = get_first_rows_response(
@@ -16,6 +19,7 @@ def test_number_rows() -> None:
     assert len(response["rows"]) == rows_max_number
 
 
+@pytest.mark.real_dataset
 def test_get_first_rows_response() -> None:
     rows_max_number = 7
     response = get_first_rows_response(
@@ -45,6 +49,7 @@ def test_get_first_rows_response() -> None:
     ]
 
 
+@pytest.mark.real_dataset
 def test_no_features() -> None:
     response = get_first_rows_response(
         "severo/fix-401",

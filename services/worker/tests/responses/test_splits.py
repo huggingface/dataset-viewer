@@ -7,6 +7,7 @@ from worker.utils import SplitsNamesError
 from .._utils import HF_ENDPOINT, HF_TOKEN
 
 
+@pytest.mark.real_dataset
 def test_script_error() -> None:
     # raises "ModuleNotFoundError: No module named 'datasets_modules.datasets.br-quad-2'"
     # which should be caught and raised as DatasetBuilderScriptError
@@ -14,12 +15,14 @@ def test_script_error() -> None:
         get_dataset_split_full_names(dataset_name="piEsposito/br-quad-2.0")
 
 
+@pytest.mark.real_dataset
 def test_no_dataset() -> None:
     # the dataset does not exist
     with pytest.raises(FileNotFoundError):
         get_dataset_split_full_names(dataset_name="doesnotexist")
 
 
+@pytest.mark.real_dataset
 def test_no_dataset_no_script() -> None:
     # the dataset does not contain a script
     with pytest.raises(FileNotFoundError):
@@ -28,6 +31,7 @@ def test_no_dataset_no_script() -> None:
         get_dataset_split_full_names(dataset_name="TimTreasure4/Test")
 
 
+@pytest.mark.real_dataset
 def test_builder_config_error() -> None:
     with pytest.raises(SplitsNotFoundError):
         get_dataset_split_full_names(dataset_name="KETI-AIR/nikl")
@@ -38,12 +42,14 @@ def test_builder_config_error() -> None:
 
 
 # get_split
+@pytest.mark.real_dataset
 def test_get_split() -> None:
     split_full_names = get_dataset_split_full_names("glue")
     assert len(split_full_names) == 34
     assert {"dataset_name": "glue", "config_name": "ax", "split_name": "test"} in split_full_names
 
 
+@pytest.mark.real_dataset
 def test_splits_fallback() -> None:
     # uses the fallback to call "builder._split_generators" while https://github.com/huggingface/datasets/issues/2743
     split_full_names = get_dataset_split_full_names("hda_nli_hindi")
@@ -52,6 +58,7 @@ def test_splits_fallback() -> None:
 
 
 # disable until https://github.com/huggingface/datasets-server/pull/499 is done
+# @pytest.mark.real_dataset
 # def test_gated() -> None:
 #     split_full_names = get_dataset_split_full_names("severo/dummy_gated", HF_TOKEN)
 #     assert len(split_full_names) == 1
@@ -62,6 +69,7 @@ def test_splits_fallback() -> None:
 #     } in split_full_names
 
 
+@pytest.mark.real_dataset
 def test_disclose_cause() -> None:
     with pytest.raises(SplitsNamesError) as exc_info:
         get_splits_response("akhaliq/test", HF_ENDPOINT, HF_TOKEN)

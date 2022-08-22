@@ -28,12 +28,14 @@ def clean_mongo_database() -> None:
     clean_queue_database()
 
 
+@pytest.mark.real_dataset
 def test_process_next_splits_job():
     add_splits_job("acronym_identification")
     result = process_next_splits_job()
     assert result is True
 
 
+@pytest.mark.real_dataset
 def test_process_next_first_rows_job():
     add_first_rows_job("acronym_identification", "default", "train")
     result = process_next_first_rows_job()

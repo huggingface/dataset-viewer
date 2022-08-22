@@ -59,8 +59,8 @@ requires = ["poetry-core>=1.0.0"]
 [tool.pytest.ini_options]
 filterwarnings = ["ignore::DeprecationWarning"]
 markers = [
-    "slow: marks tests as slow (deselect with '-m \"not slow\"')",
     "deprecated: tests on deprecated code (deselect with '-m \"not deprecated\"')",
+    "real_dataset: tests on real datasets (from the Hub)",
 ]
 
 [tool.coverage.run]

@@ -47,6 +47,7 @@ def test_doesnotexist() -> None:
         get_splits_response(dataset_name)
 
 
+@pytest.mark.real_dataset
 def test_e2e_examples() -> None:
     # see https://github.com/huggingface/datasets-server/issues/78
     dataset_name = "Check/region_1"
@@ -65,6 +66,7 @@ def test_e2e_examples() -> None:
     assert response["splits"][0]["num_examples"] == 14006
 
 
+@pytest.mark.real_dataset
 def test_large_document() -> None:
     # see https://github.com/huggingface/datasets-server/issues/89
     dataset_name = "SaulLu/Natural_Questions_HTML"
@@ -75,6 +77,7 @@ def test_large_document() -> None:
     assert error_code is None
 
 
+@pytest.mark.real_dataset
 def test_first_rows() -> None:
     http_status, _ = refresh_first_rows("common_voice", "tr", "train", ASSETS_BASE_URL, hf_endpoint=HF_ENDPOINT)
     response, cached_http_status, error_code = get_first_rows_response("common_voice", "tr", "train")
