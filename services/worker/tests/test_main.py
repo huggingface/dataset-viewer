@@ -33,14 +33,12 @@ def clean_mongo_database() -> None:
     clean_queue_database()
 
 
-@pytest.mark.wip
 def test_process_next_splits_job(hf_public_dataset_repo_csv_data: str) -> None:
     add_splits_job(hf_public_dataset_repo_csv_data)
     result = process_next_splits_job()
     assert result is True
 
 
-@pytest.mark.wip
 def test_process_next_first_rows_job(hf_public_dataset_repo_csv_data: str) -> None:
     dataset, config, split = get_default_config_split(hf_public_dataset_repo_csv_data)
     add_first_rows_job(dataset, config, split)

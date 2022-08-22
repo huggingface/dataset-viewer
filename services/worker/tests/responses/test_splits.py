@@ -104,3 +104,6 @@ def test_get_splits_response_simple_csv(
 #         get_dataset_split_full_names(dataset_name="nateraw/image-folder")
 #     with pytest.raises(TypeError):
 #         get_dataset_split_full_names(dataset_name="Valahaar/wsdmt")
+
+
+# TODO: test a dataset with num_bytes and num_examples

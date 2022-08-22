@@ -13,6 +13,7 @@ from libqueue.queue import connect_to_queue
 
 from worker.refresh import refresh_first_rows, refresh_splits
 
+from .fixtures.files import DATA
 from .utils import (
     ASSETS_BASE_URL,
     DEFAULT_HF_ENDPOINT,
@@ -20,6 +21,8 @@ from .utils import (
     MONGO_CACHE_DATABASE,
     MONGO_QUEUE_DATABASE,
     MONGO_URL,
+    ROWS_MAX_NUMBER,
+    get_default_config_split,
 )
 
 
@@ -48,23 +51,31 @@ def test_doesnotexist() -> None:
         get_splits_response(dataset_name)
 
 
-@pytest.mark.real_dataset
-def test_e2e_examples() -> None:
-    # see https://github.com/huggingface/datasets-server/issues/78
-    dataset_name = "Check/region_1"
-
-    assert refresh_splits(dataset_name, hf_endpoint=DEFAULT_HF_ENDPOINT) == (HTTPStatus.OK, False)
-    response, _, _ = get_splits_response(dataset_name)
+def test_refresh_splits(hf_public_dataset_repo_csv_data: str) -> None:
+    assert refresh_splits(hf_public_dataset_repo_csv_data, hf_endpoint=HF_ENDPOINT) == (HTTPStatus.OK, False)
+    response, _, _ = get_splits_response(hf_public_dataset_repo_csv_data)
     assert len(response["splits"]) == 1
     assert response["splits"][0]["num_bytes"] is None
     assert response["splits"][0]["num_examples"] is None
 
-    dataset_name = "acronym_identification"
-    assert refresh_splits(dataset_name, hf_endpoint=DEFAULT_HF_ENDPOINT) == (HTTPStatus.OK, False)
-    response, _, _ = get_splits_response(dataset_name)
-    assert len(response["splits"]) == 3
-    assert response["splits"][0]["num_bytes"] == 7792803
-    assert response["splits"][0]["num_examples"] == 14006
+
+def test_refresh_first_rows(hf_public_dataset_repo_csv_data: str) -> None:
+    dataset, config, split = get_default_config_split(hf_public_dataset_repo_csv_data)
+    http_status, _ = refresh_first_rows(dataset, config, split, ASSETS_BASE_URL, hf_endpoint=HF_ENDPOINT)
+    response, cached_http_status, error_code = get_first_rows_response(dataset, config, split)
+    assert http_status == HTTPStatus.OK
+    assert cached_http_status == HTTPStatus.OK
+    assert error_code is None
+    assert response["features"][0]["feature_idx"] == 0
+    assert response["features"][0]["name"] == "col_1"
+    assert response["features"][0]["type"]["_type"] == "Value"
+    assert response["features"][0]["type"]["dtype"] == "int64"  # <---|
+    assert response["features"][1]["type"]["dtype"] == "int64"  # <---|- auto-detected by the datasets library
+    assert response["features"][2]["type"]["dtype"] == "float64"  # <-|
+
+    assert len(response["rows"]) == min(len(DATA), ROWS_MAX_NUMBER)
+    assert response["rows"][0]["row_idx"] == 0
+    assert response["rows"][0]["row"] == {"col_1": 0, "col_2": 0, "col_3": 0.0}
 
 
 @pytest.mark.real_dataset
