@@ -1,5 +1,4 @@
 import pytest
-from datasets.inspect import SplitsNotFoundError
 from libutils.exceptions import CustomError
 
 from worker.responses.splits import get_dataset_split_full_names, get_splits_response
