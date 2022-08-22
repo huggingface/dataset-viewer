@@ -13,7 +13,7 @@ from libqueue.queue import connect_to_queue
 
 from worker.refresh import refresh_first_rows, refresh_splits
 
-from ._utils import (
+from .utils import (
     ASSETS_BASE_URL,
     HF_ENDPOINT,
     MONGO_CACHE_DATABASE,

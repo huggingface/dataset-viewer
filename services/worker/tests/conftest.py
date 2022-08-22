@@ -3,7 +3,10 @@ from pathlib import Path
 
 import pytest
 
-from ._utils import HF_ENDPOINT
+from .utils import HF_ENDPOINT
+
+# Import fixture modules as plugins
+pytest_plugins = ["tests.fixtures.files", "tests.fixtures.hub"]
 
 
 @pytest.fixture(scope="session")

@@ -61,6 +61,7 @@ filterwarnings = ["ignore::DeprecationWarning"]
 markers = [
     "deprecated: tests on deprecated code (deselect with '-m \"not deprecated\"')",
     "real_dataset: tests on real datasets (from the Hub)",
+    "wip: tests being developed"
 ]
 
 [tool.coverage.run]

@@ -1,10 +1,95 @@
 import pytest
 from datasets.inspect import SplitsNotFoundError
 
+from libutils.exceptions import CustomError
 from worker.responses.splits import get_dataset_split_full_names, get_splits_response
-from worker.utils import SplitsNamesError
 
-from .._utils import HF_ENDPOINT, HF_TOKEN
+from ..fixtures.hub import DatasetRepos, DatasetReposType
+from ..utils import HF_ENDPOINT, HF_TOKEN, get_default_config_split
+
+
+# TODO: remove this test? It's an internal function after all
+@pytest.mark.parametrize(
+    "type,use_token,exception",
+    [
+        ("does_not_exist", False, FileNotFoundError),
+        ("does_not_exist", True, FileNotFoundError),
+        ("public", False, None),
+        ("public", True, None),
+        ("gated", False, FileNotFoundError),
+        ("gated", True, None),
+        ("private", False, FileNotFoundError),
+        ("private", True, None),  # <- TODO: should we disable accessing private datasets?
+    ],
+)
+def test_get_dataset_split_full_names_simple_csv(
+    hf_dataset_repos_csv_data: DatasetRepos, type: DatasetReposType, use_token: bool, exception: BaseException
+) -> None:
+    if exception:
+        with pytest.raises(FileNotFoundError):
+            get_dataset_split_full_names(
+                dataset_name=hf_dataset_repos_csv_data[type], hf_token=HF_TOKEN if use_token else None
+            )
+        return
+    split_full_names = get_dataset_split_full_names(
+        dataset_name=hf_dataset_repos_csv_data[type], hf_token=HF_TOKEN if use_token else None
+    )
+    dataset, config, split = get_default_config_split(hf_dataset_repos_csv_data[type])
+    assert split_full_names == [{"dataset_name": dataset, "config_name": config, "split_name": split}]
+
+
+@pytest.mark.wip
+@pytest.mark.parametrize(
+    "type,use_token,error_code,cause",
+    [
+        ("does_not_exist", False, "DatasetNotFoundError", None),
+        ("does_not_exist", True, "DatasetNotFoundError", None),
+        ("public", False, None, None),
+        ("public", True, None, None),
+        ("gated", False, "SplitsNamesError", "FileNotFoundError"),
+        ("gated", True, None, None),
+        ("private", False, "SplitsNamesError", "FileNotFoundError"),
+        ("private", True, None, None),  # <- TODO: should we disable accessing private datasets?
+    ],
+)
+def test_get_splits_response_simple_csv(
+    hf_dataset_repos_csv_data: DatasetRepos, type: DatasetReposType, use_token: bool, error_code: str, cause: str
+) -> None:
+    if error_code:
+        with pytest.raises(CustomError) as exc_info:
+            get_splits_response(hf_dataset_repos_csv_data[type], HF_ENDPOINT, HF_TOKEN if use_token else None)
+        assert exc_info.value.code == error_code
+        if cause is None:
+            assert exc_info.value.disclose_cause is False
+            assert exc_info.value.cause_exception is None
+        else:
+            assert exc_info.value.disclose_cause is True
+            assert exc_info.value.cause_exception == cause
+            response = exc_info.value.as_response()
+            assert set(response.keys()) == {"error", "cause_exception", "cause_message", "cause_traceback"}
+            assert response["error"] == "Cannot get the split names for the dataset."
+            response_dict = dict(response)
+            # ^ to remove mypy warnings
+            assert response_dict["cause_exception"] == "FileNotFoundError"
+            assert str(response_dict["cause_message"]).startswith("Couldn't find a dataset script at ")
+            assert isinstance(response_dict["cause_traceback"], list)
+            assert response_dict["cause_traceback"][0] == "Traceback (most recent call last):\n"
+        return
+    splits_response = get_splits_response(
+        hf_dataset_repos_csv_data[type], HF_ENDPOINT, HF_TOKEN if use_token else None
+    )
+    dataset, config, split = get_default_config_split(hf_dataset_repos_csv_data[type])
+    assert splits_response == {
+        "splits": [
+            {
+                "dataset_name": dataset,
+                "config_name": config,
+                "split_name": split,
+                "num_bytes": None,
+                "num_examples": None,
+            }
+        ]
+    }
 
 
 @pytest.mark.real_dataset
@@ -13,13 +98,6 @@ def test_script_error() -> None:
     # which should be caught and raised as DatasetBuilderScriptError
     with pytest.raises(ModuleNotFoundError):
         get_dataset_split_full_names(dataset_name="piEsposito/br-quad-2.0")
-
-
-@pytest.mark.real_dataset
-def test_no_dataset() -> None:
-    # the dataset does not exist
-    with pytest.raises(FileNotFoundError):
-        get_dataset_split_full_names(dataset_name="doesnotexist")
 
 
 @pytest.mark.real_dataset
@@ -39,48 +117,3 @@ def test_builder_config_error() -> None:
         get_dataset_split_full_names(dataset_name="nateraw/image-folder")
     with pytest.raises(TypeError):
         get_dataset_split_full_names(dataset_name="Valahaar/wsdmt")
-
-
-# get_split
-@pytest.mark.real_dataset
-def test_get_split() -> None:
-    split_full_names = get_dataset_split_full_names("glue")
-    assert len(split_full_names) == 34
-    assert {"dataset_name": "glue", "config_name": "ax", "split_name": "test"} in split_full_names
-
-
-@pytest.mark.real_dataset
-def test_splits_fallback() -> None:
-    # uses the fallback to call "builder._split_generators" while https://github.com/huggingface/datasets/issues/2743
-    split_full_names = get_dataset_split_full_names("hda_nli_hindi")
-    assert len(split_full_names) == 3
-    assert {"dataset_name": "hda_nli_hindi", "config_name": "HDA nli hindi", "split_name": "train"} in split_full_names
-
-
-# disable until https://github.com/huggingface/datasets-server/pull/499 is done
-# @pytest.mark.real_dataset
-# def test_gated() -> None:
-#     split_full_names = get_dataset_split_full_names("severo/dummy_gated", HF_TOKEN)
-#     assert len(split_full_names) == 1
-#     assert {
-#         "dataset_name": "severo/dummy_gated",
-#         "config_name": "severo--embellishments",
-#         "split_name": "train",
-#     } in split_full_names
-
-
-@pytest.mark.real_dataset
-def test_disclose_cause() -> None:
-    with pytest.raises(SplitsNamesError) as exc_info:
-        get_splits_response("akhaliq/test", HF_ENDPOINT, HF_TOKEN)
-    assert exc_info.value.disclose_cause is True
-    assert exc_info.value.cause_exception == "FileNotFoundError"
-    response = exc_info.value.as_response()
-    assert set(response.keys()) == {"error", "cause_exception", "cause_message", "cause_traceback"}
-    assert response["error"] == "Cannot get the split names for the dataset."
-    response_dict = dict(response)
-    # ^ to remove mypy warnings
-    assert response_dict["cause_exception"] == "FileNotFoundError"
-    assert str(response_dict["cause_message"]).startswith("Couldn't find a dataset script at ")
-    assert isinstance(response_dict["cause_traceback"], list)
-    assert response_dict["cause_traceback"][0] == "Traceback (most recent call last):\n"

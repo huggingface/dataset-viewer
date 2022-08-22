@@ -2,7 +2,7 @@ import pytest
 
 from worker.responses.first_rows import get_first_rows_response
 
-from .._utils import ASSETS_BASE_URL, HF_ENDPOINT
+from ..utils import ASSETS_BASE_URL, HF_ENDPOINT
 
 
 @pytest.mark.real_dataset

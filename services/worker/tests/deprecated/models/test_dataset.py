@@ -3,7 +3,7 @@ from datasets.inspect import SplitsNotFoundError
 
 from worker.deprecated.models.dataset import get_dataset_split_full_names
 
-# from ..._utils import HF_TOKEN
+# from ...utils import HF_TOKEN
 pytestmark = pytest.mark.deprecated
 
 

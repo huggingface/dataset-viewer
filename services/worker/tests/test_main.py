@@ -7,7 +7,7 @@ from libqueue.queue import connect_to_queue
 
 from worker.main import process_next_first_rows_job, process_next_splits_job
 
-from ._utils import MONGO_CACHE_DATABASE, MONGO_QUEUE_DATABASE, MONGO_URL
+from .utils import MONGO_CACHE_DATABASE, MONGO_QUEUE_DATABASE, MONGO_URL
 
 
 @pytest.fixture(autouse=True, scope="module")
