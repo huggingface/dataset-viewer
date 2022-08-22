@@ -1,7 +1,6 @@
 import os
 from typing import Tuple
 
-
 from libutils.utils import get_int_value, get_str_value
 
 DEFAULT_ASSETS_BASE_URL: str = "http://localhost/assets"

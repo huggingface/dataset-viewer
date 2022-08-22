@@ -2,7 +2,7 @@ import pytest
 
 from worker.responses.first_rows import get_first_rows_response
 
-from ..utils import ASSETS_BASE_URL, HF_ENDPOINT
+from ..utils import ASSETS_BASE_URL, DEFAULT_HF_ENDPOINT
 
 
 @pytest.mark.real_dataset
@@ -14,7 +14,7 @@ def test_number_rows() -> None:
         "train",
         rows_max_number=rows_max_number,
         assets_base_url=ASSETS_BASE_URL,
-        hf_endpoint=HF_ENDPOINT,
+        hf_endpoint=DEFAULT_HF_ENDPOINT,
     )
     assert len(response["rows"]) == rows_max_number
 
@@ -28,7 +28,7 @@ def test_get_first_rows_response() -> None:
         "train",
         rows_max_number=rows_max_number,
         assets_base_url=ASSETS_BASE_URL,
-        hf_endpoint=HF_ENDPOINT,
+        hf_endpoint=DEFAULT_HF_ENDPOINT,
     )
 
     assert response["features"][0]["feature_idx"] == 0
@@ -57,7 +57,7 @@ def test_no_features() -> None:
         "train",
         rows_max_number=1,
         assets_base_url=ASSETS_BASE_URL,
-        hf_endpoint=HF_ENDPOINT,
+        hf_endpoint=DEFAULT_HF_ENDPOINT,
     )
 
     # TODO: re-enable when we understand why it works locally but not in the CI (order of the features)

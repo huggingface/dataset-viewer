@@ -142,11 +142,20 @@ def create_unique_repo_name(prefix: str, user: str) -> str:
     return f"{user}/{repo_name}"
 
 
+def create_hf_dataset_repo(
+    hf_api: HfApi, hf_token: str, prefix: str, *, private=False, gated=False, user=CI_HUB_USER
+) -> str:
+    repo_id = create_unique_repo_name(prefix, user)
+    hf_api.create_repo(repo_id=repo_id, token=hf_token, repo_type="dataset", private=private)
+    if gated:
+        update_repo_settings(hf_api, repo_id, token=hf_token, gated=gated, repo_type="dataset")
+    return repo_id
+
+
 def create_hf_dataset_repo_csv_data(
     hf_api: HfApi, hf_token: str, csv_path: str, *, private=False, gated=False, user=CI_HUB_USER
 ) -> str:
-    repo_id = create_unique_repo_name("repo_csv_data", user)
-    hf_api.create_repo(repo_id=repo_id, token=hf_token, repo_type="dataset", private=private)
+    repo_id = create_hf_dataset_repo(hf_api, hf_token, prefix="repo_csv_data", private=private, gated=gated, user=user)
     hf_api.upload_file(
         token=hf_token,
         path_or_fileobj=csv_path,
@@ -154,12 +163,18 @@ def create_hf_dataset_repo_csv_data(
         repo_id=repo_id,
         repo_type="dataset",
     )
-    if gated:
-        update_repo_settings(hf_api, repo_id, token=hf_token, gated=gated, repo_type="dataset")
     return repo_id
 
 
 # https://docs.pytest.org/en/6.2.x/fixture.html#yield-fixtures-recommended
+@pytest.fixture(scope="session", autouse=True)
+def hf_public_dataset_repo_empty(hf_api: HfApi, hf_token: str) -> Iterable[str]:
+    repo_id = create_hf_dataset_repo(hf_api=hf_api, hf_token=hf_token, prefix="repo_empty")
+    yield repo_id
+    with suppress(requests.exceptions.HTTPError, ValueError):
+        hf_api.delete_repo(repo_id=repo_id, token=hf_token, repo_type="dataset")
+
+
 @pytest.fixture(scope="session", autouse=True)
 def hf_public_dataset_repo_csv_data(hf_api: HfApi, hf_token: str, csv_path: str) -> Iterable[str]:
     repo_id = create_hf_dataset_repo_csv_data(hf_api=hf_api, hf_token=hf_token, csv_path=csv_path)
@@ -186,22 +201,25 @@ def hf_gated_dataset_repo_csv_data(hf_api: HfApi, hf_token: str, csv_path: str) 
 
 class DatasetRepos(TypedDict):
     does_not_exist: str
+    empty: str
     public: str
     private: str
     gated: str
 
 
-DatasetReposType = Literal["does_not_exist", "public", "private", "gated"]
+DatasetReposType = Literal["does_not_exist", "empty", "public", "private", "gated"]
 
 
 @pytest.fixture(scope="session", autouse=True)
 def hf_dataset_repos_csv_data(
+    hf_public_dataset_repo_empty,
     hf_public_dataset_repo_csv_data,
     hf_private_dataset_repo_csv_data,
     hf_gated_dataset_repo_csv_data,
 ) -> DatasetRepos:
     return {
         "does_not_exist": "does_not_exist",
+        "empty": hf_public_dataset_repo_empty,
         "public": hf_public_dataset_repo_csv_data,
         "private": hf_private_dataset_repo_csv_data,
         "gated": hf_gated_dataset_repo_csv_data,

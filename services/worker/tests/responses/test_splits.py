@@ -1,7 +1,7 @@
 import pytest
 from datasets.inspect import SplitsNotFoundError
-
 from libutils.exceptions import CustomError
+
 from worker.responses.splits import get_dataset_split_full_names, get_splits_response
 
 from ..fixtures.hub import DatasetRepos, DatasetReposType
@@ -12,10 +12,9 @@ from ..utils import HF_ENDPOINT, HF_TOKEN, get_default_config_split
 @pytest.mark.parametrize(
     "type,use_token,exception",
     [
+        ("empty", False, FileNotFoundError),
         ("does_not_exist", False, FileNotFoundError),
-        ("does_not_exist", True, FileNotFoundError),
         ("public", False, None),
-        ("public", True, None),
         ("gated", False, FileNotFoundError),
         ("gated", True, None),
         ("private", False, FileNotFoundError),
@@ -42,10 +41,9 @@ def test_get_dataset_split_full_names_simple_csv(
 @pytest.mark.parametrize(
     "type,use_token,error_code,cause",
     [
+        ("empty", False, "SplitsNamesError", "FileNotFoundError"),
         ("does_not_exist", False, "DatasetNotFoundError", None),
-        ("does_not_exist", True, "DatasetNotFoundError", None),
         ("public", False, None, None),
-        ("public", True, None, None),
         ("gated", False, "SplitsNamesError", "FileNotFoundError"),
         ("gated", True, None, None),
         ("private", False, "SplitsNamesError", "FileNotFoundError"),
@@ -92,28 +90,19 @@ def test_get_splits_response_simple_csv(
     }
 
 
-@pytest.mark.real_dataset
-def test_script_error() -> None:
-    # raises "ModuleNotFoundError: No module named 'datasets_modules.datasets.br-quad-2'"
-    # which should be caught and raised as DatasetBuilderScriptError
-    with pytest.raises(ModuleNotFoundError):
-        get_dataset_split_full_names(dataset_name="piEsposito/br-quad-2.0")
+# @pytest.mark.real_dataset
+# def test_script_error() -> None:
+#     # raises "ModuleNotFoundError: No module named 'datasets_modules.datasets.br-quad-2'"
+#     # which should be caught and raised as DatasetBuilderScriptError
+#     with pytest.raises(ModuleNotFoundError):
+#         get_dataset_split_full_names(dataset_name="piEsposito/br-quad-2.0")
 
 
-@pytest.mark.real_dataset
-def test_no_dataset_no_script() -> None:
-    # the dataset does not contain a script
-    with pytest.raises(FileNotFoundError):
-        get_dataset_split_full_names(dataset_name="AConsApart/anime_subtitles_DialoGPT")
-    with pytest.raises(FileNotFoundError):
-        get_dataset_split_full_names(dataset_name="TimTreasure4/Test")
-
-
-@pytest.mark.real_dataset
-def test_builder_config_error() -> None:
-    with pytest.raises(SplitsNotFoundError):
-        get_dataset_split_full_names(dataset_name="KETI-AIR/nikl")
-    with pytest.raises(RuntimeError):
-        get_dataset_split_full_names(dataset_name="nateraw/image-folder")
-    with pytest.raises(TypeError):
-        get_dataset_split_full_names(dataset_name="Valahaar/wsdmt")
+# @pytest.mark.real_dataset
+# def test_builder_config_error() -> None:
+#     with pytest.raises(SplitsNotFoundError):
+#         get_dataset_split_full_names(dataset_name="KETI-AIR/nikl")
+#     with pytest.raises(RuntimeError):
+#         get_dataset_split_full_names(dataset_name="nateraw/image-folder")
+#     with pytest.raises(TypeError):
+#         get_dataset_split_full_names(dataset_name="Valahaar/wsdmt")
