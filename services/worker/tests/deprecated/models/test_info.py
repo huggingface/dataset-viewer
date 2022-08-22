@@ -1,4 +1,8 @@
+import pytest
+
 from worker.deprecated.models.info import get_info
+
+pytestmark = pytest.mark.deprecated
 
 
 def test_get_info() -> None:

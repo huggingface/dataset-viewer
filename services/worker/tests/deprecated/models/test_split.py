@@ -1,3 +1,5 @@
+import pytest
+
 # import pandas  # type: ignore
 
 from worker.deprecated.models.split import get_split
@@ -5,6 +7,8 @@ from worker.deprecated.models.split import get_split
 from ..._utils import HF_TOKEN, ROWS_MAX_NUMBER
 
 # pandas types: see https://github.com/VirtusLab/pandas-stubs/issues/172
+
+pytestmark = pytest.mark.deprecated
 
 
 # TODO: test fallback

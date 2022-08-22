@@ -11,6 +11,8 @@ from worker.deprecated.refresh import refresh_dataset, refresh_split
 
 from .._utils import MONGO_CACHE_DATABASE, MONGO_QUEUE_DATABASE, MONGO_URL
 
+pytestmark = pytest.mark.deprecated
+
 
 @pytest.fixture(autouse=True, scope="module")
 def safe_guard() -> None:

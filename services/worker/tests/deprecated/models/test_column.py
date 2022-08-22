@@ -1,7 +1,11 @@
+import pytest
+
 from worker.deprecated.models.column import get_columns
 from worker.deprecated.models.column.class_label import ClassLabelColumn
 from worker.deprecated.models.column.timestamp import TimestampColumn
 from worker.deprecated.models.info import get_info
+
+pytestmark = pytest.mark.deprecated
 
 # TODO: add a test for each type
 
