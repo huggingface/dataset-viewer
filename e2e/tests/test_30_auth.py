@@ -42,18 +42,21 @@ def test_splits_next_public_auth(
         # ignore the test case if the auth type is not configured
         pytest.skip(f"auth {auth} has not been configured")
     dataset, config, split = get_default_config_split(hf_dataset_repos_csv_data[type])
-    if type == "private":
-        # no need to refresh, it's not implemented.
-        # TODO: the webhook should respond 501 Not implemented when provided with a private dataset
-        # (and delete the cache if existing)
-        r_splits = get(f"/splits-next?dataset={dataset}", headers=auth_headers[auth])
-        r_rows = get(f"/first-rows?dataset={dataset}&config={config}&split={split}", headers=auth_headers[auth])
-    else:
-        r_splits = refresh_poll_splits_next(dataset, headers=auth_headers[auth])
-        r_rows = poll_first_rows(dataset, config, split, headers=auth_headers[auth])
+    # pivate: no need to refresh, it's not implemented.
+    # TODO: the webhook should respond 501 Not implemented when provided with a private dataset
+    # (and delete the cache if existing)
+    r_splits = (
+        get(f"/splits-next?dataset={dataset}", headers=auth_headers[auth])
+        if type == "private"
+        else refresh_poll_splits_next(dataset, headers=auth_headers[auth])
+    )
+    assert r_splits.status_code == status_code, log(r_splits, dataset)
+    assert r_splits.headers.get("X-Error-Code") == error_code_splits_next, log(r_splits, dataset)
 
-    assert r_splits.status_code == status_code, log(r_rows, dataset)
+    r_rows = (
+        get(f"/first-rows?dataset={dataset}&config={config}&split={split}", headers=auth_headers[auth])
+        if type == "private"
+        else poll_first_rows(dataset, config, split, headers=auth_headers[auth])
+    )
     assert r_rows.status_code == status_code, log(r_rows, dataset)
-
-    assert r_splits.headers.get("X-Error-Code") == error_code_splits_next, log(r_rows, dataset)
     assert r_rows.headers.get("X-Error-Code") == error_code_first_rows, log(r_rows, dataset)
