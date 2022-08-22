@@ -69,7 +69,7 @@ jobs:
           ROWS_MAX_NUMBER: 4
           # hard coded, see e2e/tests/fixtures/hub.py
           HF_ENDPOINT: "https://hub-ci.huggingface.co"
-          HF_TOKEN: "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"
+          HF_TOKEN: "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"
           IMAGE_ADMIN: "${{fromJson(needs.get-config.outputs.dockerConfig).dockerImage.admin}}"
           IMAGE_API: "${{fromJson(needs.get-config.outputs.dockerConfig).dockerImage.api}}"
           IMAGE_REVERSE_PROXY: "${{fromJson(needs.get-config.outputs.dockerConfig).dockerImage.reverseProxy}}"

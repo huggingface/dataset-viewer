@@ -14,8 +14,13 @@ from huggingface_hub.hf_api import (  # type: ignore
     _raise_for_status,
 )
 
-CI_HUB_USER = "__DUMMY_TRANSFORMERS_USER__"
-CI_HUB_USER_TOKEN = "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"
+# see https://github.com/huggingface/moon-landing/blob/main/server/scripts/staging-seed-db.ts
+CI_HUB_USER = "__DUMMY_DATASETS_SERVER_USER__"
+CI_HUB_USER_API_TOKEN = "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"
+CI_HUB_USER_SESSION_TOKEN = (
+    "oMidckPVQYumfKrAHNYKqnbacRoLaMppHRRlfNbupNahzAHCz"
+    "InBVbhgGosDneYXHVTKkkWygoMDxBfFUkFPIPiVWBtZtSTYIYTScnEKAJYkyGBAcbVTbokAygCCTWvH"
+)
 
 CI_HUB_ENDPOINT = "https://hub-ci.huggingface.co"
 CI_HUB_DATASETS_URL = CI_HUB_ENDPOINT + "/datasets/{repo_id}/resolve/{revision}/{path}"
@@ -95,8 +100,8 @@ def update_repo_settings(
 @pytest.fixture
 def set_ci_hub_access_token() -> Iterable[None]:
     _api = HfApi(endpoint=CI_HUB_ENDPOINT)
-    _api.set_access_token(CI_HUB_USER_TOKEN)
-    HfFolder.save_token(CI_HUB_USER_TOKEN)
+    _api.set_access_token(CI_HUB_USER_API_TOKEN)
+    HfFolder.save_token(CI_HUB_USER_API_TOKEN)
     yield
     HfFolder.delete_token()
     _api.unset_access_token()
@@ -109,9 +114,9 @@ def hf_api():
 
 @pytest.fixture(scope="session")
 def hf_token(hf_api: HfApi) -> Iterable[str]:
-    hf_api.set_access_token(CI_HUB_USER_TOKEN)
-    HfFolder.save_token(CI_HUB_USER_TOKEN)
-    yield CI_HUB_USER_TOKEN
+    hf_api.set_access_token(CI_HUB_USER_API_TOKEN)
+    HfFolder.save_token(CI_HUB_USER_API_TOKEN)
+    yield CI_HUB_USER_API_TOKEN
     with suppress(requests.exceptions.HTTPError):
         hf_api.unset_access_token()
 
@@ -119,7 +124,7 @@ def hf_token(hf_api: HfApi) -> Iterable[str]:
 @pytest.fixture
 def cleanup_repo(hf_api: HfApi):
     def _cleanup_repo(repo_id):
-        hf_api.delete_repo(repo_id=repo_id, token=CI_HUB_USER_TOKEN, repo_type="dataset")
+        hf_api.delete_repo(repo_id=repo_id, token=CI_HUB_USER_API_TOKEN, repo_type="dataset")
 
     return _cleanup_repo
 
@@ -216,10 +221,14 @@ def hf_dataset_repos_csv_data(
     }
 
 
-AuthType = Literal["token", "none"]
+AuthType = Literal["cookie", "token", "none"]
 AuthHeaders = Dict[AuthType, Dict[str, str]]
 
 
 @pytest.fixture(autouse=True, scope="session")
 def auth_headers() -> AuthHeaders:
-    return {"none": {}, "token": {"Authorization": f"Bearer {CI_HUB_USER_TOKEN}"}}
+    return {
+        "none": {},
+        "token": {"Authorization": f"Bearer {CI_HUB_USER_API_TOKEN}"},
+        "cookie": {"Cookie": f"token={CI_HUB_USER_SESSION_TOKEN}"},
+    }

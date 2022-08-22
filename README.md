@@ -56,5 +56,5 @@ The Hugging Face Hub instance can be configured thanks to `HF_ENDPOINT`, so that
 | production        | https://huggingface.co/                                                 | Kubernetes secret                                             |
 | development       | https://huggingface.co/                                                 | Kubernetes secret                                             |
 | local docker      | https://huggingface.co/. Override with `HF_ENDPOINT=... make start-...` | Enable the gated datasets with `HF_TOKEN=... make start-...`  |
-| e2e               | https://hub-ci.huggingface.co/                                          | Hard-coded: `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`           |
+| e2e               | https://hub-ci.huggingface.co/                                          | Hard-coded: `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`           |
 | worker unit tests | https://huggingface.co/                                                 | GitHub secret (CI). Run locally with `HF_TOKEN=... make test` |
