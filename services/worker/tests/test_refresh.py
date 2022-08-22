@@ -49,6 +49,13 @@ def test_doesnotexist() -> None:
     assert refresh_splits(dataset_name, hf_endpoint=HF_ENDPOINT) == (HTTPStatus.NOT_FOUND, False)
     with pytest.raises(DoesNotExist):
         get_splits_response(dataset_name)
+    dataset, config, split = get_default_config_split(dataset_name)
+    assert refresh_first_rows(dataset, config, split, ASSETS_BASE_URL, hf_endpoint=HF_ENDPOINT) == (
+        HTTPStatus.NOT_FOUND,
+        False,
+    )
+    with pytest.raises(DoesNotExist):
+        get_first_rows_response(dataset, config, split)
 
 
 def test_refresh_splits(hf_public_dataset_repo_csv_data: str) -> None:
