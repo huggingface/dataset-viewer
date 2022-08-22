@@ -36,7 +36,6 @@ def test_get_dataset_split_full_names_simple_csv(
     assert split_full_names == [{"dataset_name": dataset, "config_name": config, "split_name": split}]
 
 
-@pytest.mark.wip
 @pytest.mark.parametrize(
     "type,use_token,error_code,cause",
     [

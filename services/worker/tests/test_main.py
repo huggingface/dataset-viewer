@@ -7,7 +7,12 @@ from libqueue.queue import connect_to_queue
 
 from worker.main import process_next_first_rows_job, process_next_splits_job
 
-from .utils import MONGO_CACHE_DATABASE, MONGO_QUEUE_DATABASE, MONGO_URL
+from .utils import (
+    MONGO_CACHE_DATABASE,
+    MONGO_QUEUE_DATABASE,
+    MONGO_URL,
+    get_default_config_split,
+)
 
 
 @pytest.fixture(autouse=True, scope="module")
@@ -28,15 +33,16 @@ def clean_mongo_database() -> None:
     clean_queue_database()
 
 
-# @pytest.mark.real_dataset
-# def test_process_next_splits_job():
-#     add_splits_job("acronym_identification")
-#     result = process_next_splits_job()
-#     assert result is True
+@pytest.mark.wip
+def test_process_next_splits_job(hf_public_dataset_repo_csv_data: str) -> None:
+    add_splits_job(hf_public_dataset_repo_csv_data)
+    result = process_next_splits_job()
+    assert result is True
 
 
-# @pytest.mark.real_dataset
-# def test_process_next_first_rows_job():
-#     add_first_rows_job("acronym_identification", "default", "train")
-#     result = process_next_first_rows_job()
-#     assert result is True
+@pytest.mark.wip
+def test_process_next_first_rows_job(hf_public_dataset_repo_csv_data: str) -> None:
+    dataset, config, split = get_default_config_split(hf_public_dataset_repo_csv_data)
+    add_first_rows_job(dataset, config, split)
+    result = process_next_first_rows_job()
+    assert result is True
