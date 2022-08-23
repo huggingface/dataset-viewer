@@ -219,6 +219,14 @@ def hf_public_audio(hf_api: HfApi, hf_token: str, audio_dataset: Dataset) -> Ite
         hf_api.delete_repo(repo_id=repo_id, token=hf_token, repo_type="dataset")
 
 
+@pytest.fixture(scope="session", autouse=True)
+def hf_public_image(hf_api: HfApi, hf_token: str, image_dataset: Dataset) -> Iterable[str]:
+    repo_id = create_hf_dataset_repo(hf_api=hf_api, hf_token=hf_token, prefix="image", dataset=image_dataset)
+    yield repo_id
+    with suppress(requests.exceptions.HTTPError, ValueError):
+        hf_api.delete_repo(repo_id=repo_id, token=hf_token, repo_type="dataset")
+
+
 class DatasetRepos(TypedDict):
     does_not_exist: str
     empty: str
@@ -226,14 +234,15 @@ class DatasetRepos(TypedDict):
     private: str
     gated: str
     audio: str
+    image: str
 
 
-DatasetReposType = Literal["does_not_exist", "empty", "public", "private", "gated"]
+DatasetReposType = Literal["does_not_exist", "empty", "public", "private", "gated", "audio", "image"]
 
 
 @pytest.fixture(scope="session", autouse=True)
 def hf_dataset_repos_csv_data(
-    hf_public_empty, hf_public_csv, hf_private_csv, hf_gated_csv, hf_public_audio
+    hf_public_empty, hf_public_csv, hf_private_csv, hf_gated_csv, hf_public_audio, hf_public_image
 ) -> DatasetRepos:
     return {
         "does_not_exist": "does_not_exist",
@@ -242,4 +251,5 @@ def hf_dataset_repos_csv_data(
         "private": hf_private_csv,
         "gated": hf_gated_csv,
         "audio": hf_public_audio,
+        "image": hf_public_image
     }

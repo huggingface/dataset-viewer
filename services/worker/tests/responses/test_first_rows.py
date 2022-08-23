@@ -8,7 +8,6 @@ from ..fixtures.files import DATA
 from ..fixtures.hub import DatasetRepos, DatasetReposType
 from ..utils import (
     ASSETS_BASE_URL,
-    DEFAULT_HF_ENDPOINT,
     HF_ENDPOINT,
     HF_TOKEN,
     get_default_config_split,
@@ -20,6 +19,7 @@ from ..utils import (
     [
         ("public", False, None, None),
         ("audio", False, None, None),
+        ("image", False, None, None),
         # TODO: re-enable both when https://github.com/huggingface/datasets/issues/4875 is fixed
         # ("gated", True, None, None),
         # ("private", True, None, None),  # <- TODO: should we disable accessing private datasets?
@@ -36,6 +36,7 @@ def test_number_rows(
     error_code: str,
     cause: str,
     audio_dataset: Dataset,
+    image_dataset: Dataset,
 ) -> None:
     rows_max_number = 7
     dataset, config, split = get_default_config_split(hf_dataset_repos_csv_data[type])
@@ -96,6 +97,15 @@ def test_number_rows(
                     "type": "audio/wav",
                 },
             ]
+        }
+    elif type == "image":
+        column = "image_column"
+        assert response["features"][0]["name"] == column
+        assert response["features"][0]["type"]["_type"] == "Image"
+
+        assert len(response["rows"]) == min(rows_max_number, len(image_dataset))
+        assert response["rows"][0]["row"] == {
+            column: f"http://localhost/assets/{dataset}/--/{config}/{split}/0/{column}/image.jpg",
         }
     else:
         assert response["features"][0]["name"] == "col_1"
