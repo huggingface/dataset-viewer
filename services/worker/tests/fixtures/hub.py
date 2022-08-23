@@ -2,10 +2,12 @@
 
 import time
 from contextlib import contextmanager, suppress
-from typing import Dict, Iterable, Literal, Optional, TypedDict
+from pathlib import Path
+from typing import Dict, Iterable, List, Literal, Optional, TypedDict
 
 import pytest
 import requests
+from datasets import Dataset
 from huggingface_hub.hf_api import (  # type: ignore
     REPO_TYPES,
     REPO_TYPES_URL_PREFIXES,
@@ -143,57 +145,75 @@ def create_unique_repo_name(prefix: str, user: str) -> str:
 
 
 def create_hf_dataset_repo(
-    hf_api: HfApi, hf_token: str, prefix: str, *, private=False, gated=False, user=CI_HUB_USER
+    *,
+    hf_api: HfApi,
+    hf_token: str,
+    prefix: str,
+    file_paths: List[str] = None,
+    dataset: Dataset = None,
+    private=False,
+    gated=False,
+    user=CI_HUB_USER,
 ) -> str:
     repo_id = create_unique_repo_name(prefix, user)
-    hf_api.create_repo(repo_id=repo_id, token=hf_token, repo_type="dataset", private=private)
+    if dataset is not None:
+        dataset.push_to_hub(repo_id=repo_id, private=private, token=hf_token, embed_external_files=True)
+    else:
+        hf_api.create_repo(repo_id=repo_id, token=hf_token, repo_type="dataset", private=private)
     if gated:
         update_repo_settings(hf_api, repo_id, token=hf_token, gated=gated, repo_type="dataset")
-    return repo_id
-
-
-def create_hf_dataset_repo_csv_data(
-    hf_api: HfApi, hf_token: str, csv_path: str, *, private=False, gated=False, user=CI_HUB_USER
-) -> str:
-    repo_id = create_hf_dataset_repo(hf_api, hf_token, prefix="repo_csv_data", private=private, gated=gated, user=user)
-    hf_api.upload_file(
-        token=hf_token,
-        path_or_fileobj=csv_path,
-        path_in_repo="data/csv_data.csv",
-        repo_id=repo_id,
-        repo_type="dataset",
-    )
+    if file_paths is not None:
+        for file_path in file_paths:
+            hf_api.upload_file(
+                token=hf_token,
+                path_or_fileobj=file_path,
+                path_in_repo=Path(file_path).name,
+                repo_id=repo_id,
+                repo_type="dataset",
+            )
     return repo_id
 
 
 # https://docs.pytest.org/en/6.2.x/fixture.html#yield-fixtures-recommended
 @pytest.fixture(scope="session", autouse=True)
-def hf_public_dataset_repo_empty(hf_api: HfApi, hf_token: str) -> Iterable[str]:
-    repo_id = create_hf_dataset_repo(hf_api=hf_api, hf_token=hf_token, prefix="repo_empty")
+def hf_public_empty(hf_api: HfApi, hf_token: str) -> Iterable[str]:
+    repo_id = create_hf_dataset_repo(hf_api=hf_api, hf_token=hf_token, prefix="empty")
     yield repo_id
     with suppress(requests.exceptions.HTTPError, ValueError):
         hf_api.delete_repo(repo_id=repo_id, token=hf_token, repo_type="dataset")
 
 
 @pytest.fixture(scope="session", autouse=True)
-def hf_public_dataset_repo_csv_data(hf_api: HfApi, hf_token: str, csv_path: str) -> Iterable[str]:
-    repo_id = create_hf_dataset_repo_csv_data(hf_api=hf_api, hf_token=hf_token, csv_path=csv_path)
+def hf_public_csv(hf_api: HfApi, hf_token: str, csv_path: str) -> Iterable[str]:
+    repo_id = create_hf_dataset_repo(hf_api=hf_api, hf_token=hf_token, prefix="csv", file_paths=[csv_path])
     yield repo_id
     with suppress(requests.exceptions.HTTPError, ValueError):
         hf_api.delete_repo(repo_id=repo_id, token=hf_token, repo_type="dataset")
 
 
 @pytest.fixture(scope="session", autouse=True)
-def hf_private_dataset_repo_csv_data(hf_api: HfApi, hf_token: str, csv_path: str) -> Iterable[str]:
-    repo_id = create_hf_dataset_repo_csv_data(hf_api=hf_api, hf_token=hf_token, csv_path=csv_path, private=True)
+def hf_private_csv(hf_api: HfApi, hf_token: str, csv_path: str) -> Iterable[str]:
+    repo_id = create_hf_dataset_repo(
+        hf_api=hf_api, hf_token=hf_token, prefix="csv_private", file_paths=[csv_path], private=True
+    )
     yield repo_id
     with suppress(requests.exceptions.HTTPError, ValueError):
         hf_api.delete_repo(repo_id=repo_id, token=hf_token, repo_type="dataset")
 
 
 @pytest.fixture(scope="session", autouse=True)
-def hf_gated_dataset_repo_csv_data(hf_api: HfApi, hf_token: str, csv_path: str) -> Iterable[str]:
-    repo_id = create_hf_dataset_repo_csv_data(hf_api=hf_api, hf_token=hf_token, csv_path=csv_path, gated=True)
+def hf_gated_csv(hf_api: HfApi, hf_token: str, csv_path: str) -> Iterable[str]:
+    repo_id = create_hf_dataset_repo(
+        hf_api=hf_api, hf_token=hf_token, prefix="csv_gated", file_paths=[csv_path], gated=True
+    )
+    yield repo_id
+    with suppress(requests.exceptions.HTTPError, ValueError):
+        hf_api.delete_repo(repo_id=repo_id, token=hf_token, repo_type="dataset")
+
+
+@pytest.fixture(scope="session", autouse=True)
+def hf_public_audio(hf_api: HfApi, hf_token: str, audio_dataset: Dataset) -> Iterable[str]:
+    repo_id = create_hf_dataset_repo(hf_api=hf_api, hf_token=hf_token, prefix="audio", dataset=audio_dataset)
     yield repo_id
     with suppress(requests.exceptions.HTTPError, ValueError):
         hf_api.delete_repo(repo_id=repo_id, token=hf_token, repo_type="dataset")
@@ -205,6 +225,7 @@ class DatasetRepos(TypedDict):
     public: str
     private: str
     gated: str
+    audio: str
 
 
 DatasetReposType = Literal["does_not_exist", "empty", "public", "private", "gated"]
@@ -212,15 +233,13 @@ DatasetReposType = Literal["does_not_exist", "empty", "public", "private", "gate
 
 @pytest.fixture(scope="session", autouse=True)
 def hf_dataset_repos_csv_data(
-    hf_public_dataset_repo_empty,
-    hf_public_dataset_repo_csv_data,
-    hf_private_dataset_repo_csv_data,
-    hf_gated_dataset_repo_csv_data,
+    hf_public_empty, hf_public_csv, hf_private_csv, hf_gated_csv, hf_public_audio
 ) -> DatasetRepos:
     return {
         "does_not_exist": "does_not_exist",
-        "empty": hf_public_dataset_repo_empty,
-        "public": hf_public_dataset_repo_csv_data,
-        "private": hf_private_dataset_repo_csv_data,
-        "gated": hf_gated_dataset_repo_csv_data,
+        "empty": hf_public_empty,
+        "public": hf_public_csv,
+        "private": hf_private_csv,
+        "gated": hf_gated_csv,
+        "audio": hf_public_audio,
     }

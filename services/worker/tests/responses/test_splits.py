@@ -12,6 +12,7 @@ from ..utils import HF_ENDPOINT, HF_TOKEN, get_default_config_split
     "type,use_token,exception",
     [
         ("public", False, None),
+        ("audio", False, None),
         ("gated", True, None),
         ("private", True, None),  # <- TODO: should we disable accessing private datasets?
         ("empty", False, FileNotFoundError),
@@ -40,6 +41,7 @@ def test_get_dataset_split_full_names_simple_csv(
     "type,use_token,error_code,cause",
     [
         ("public", False, None, None),
+        ("audio", False, None, None),
         ("gated", True, None, None),
         ("private", True, None, None),  # <- TODO: should we disable accessing private datasets?
         ("empty", False, "SplitsNamesError", "FileNotFoundError"),
@@ -75,17 +77,30 @@ def test_get_splits_response_simple_csv(
         hf_dataset_repos_csv_data[type], HF_ENDPOINT, HF_TOKEN if use_token else None
     )
     dataset, config, split = get_default_config_split(hf_dataset_repos_csv_data[type])
-    assert splits_response == {
-        "splits": [
-            {
-                "dataset_name": dataset,
-                "config_name": config,
-                "split_name": split,
-                "num_bytes": None,
-                "num_examples": None,
-            }
-        ]
-    }
+    if type == "audio":
+        assert splits_response == {
+            "splits": [
+                {
+                    "dataset_name": dataset,
+                    "config_name": config,
+                    "split_name": split,
+                    "num_bytes": 54.0,
+                    "num_examples": 1,
+                }
+            ]
+        }
+    else:
+        assert splits_response == {
+            "splits": [
+                {
+                    "dataset_name": dataset,
+                    "config_name": config,
+                    "split_name": split,
+                    "num_bytes": None,
+                    "num_examples": None,
+                }
+            ]
+        }
 
 
 # @pytest.mark.real_dataset
@@ -104,6 +119,3 @@ def test_get_splits_response_simple_csv(
 #         get_dataset_split_full_names(dataset_name="nateraw/image-folder")
 #     with pytest.raises(TypeError):
 #         get_dataset_split_full_names(dataset_name="Valahaar/wsdmt")
-
-
-# TODO: test a dataset with num_bytes and num_examples

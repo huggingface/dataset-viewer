@@ -1,4 +1,5 @@
 import pytest
+from datasets import Dataset
 from libutils.exceptions import CustomError
 
 from worker.responses.first_rows import get_first_rows_response
@@ -18,6 +19,7 @@ from ..utils import (
     "type,use_token,error_code,cause",
     [
         ("public", False, None, None),
+        ("audio", False, None, None),
         # TODO: re-enable both when https://github.com/huggingface/datasets/issues/4875 is fixed
         # ("gated", True, None, None),
         # ("private", True, None, None),  # <- TODO: should we disable accessing private datasets?
@@ -33,6 +35,7 @@ def test_number_rows(
     use_token: bool,
     error_code: str,
     cause: str,
+    audio_dataset: Dataset,
 ) -> None:
     rows_max_number = 7
     dataset, config, split = get_default_config_split(hf_dataset_repos_csv_data[type])
@@ -73,44 +76,34 @@ def test_number_rows(
         hf_token=HF_TOKEN if use_token else None,
         rows_max_number=rows_max_number,
     )
-    assert len(response["rows"]) == min(rows_max_number, len(DATA))
     assert response["features"][0]["feature_idx"] == 0
-    assert response["features"][0]["name"] == "col_1"
-    assert response["features"][0]["type"]["_type"] == "Value"
-    assert response["features"][0]["type"]["dtype"] == "int64"  # <---|
-    assert response["features"][1]["type"]["dtype"] == "int64"  # <---|- auto-detected by the datasets library
-    assert response["features"][2]["type"]["dtype"] == "float64"  # <-|
-
-    assert len(response["rows"]) == min(len(DATA), rows_max_number)
     assert response["rows"][0]["row_idx"] == 0
-    assert response["rows"][0]["row"] == {"col_1": 0, "col_2": 0, "col_3": 0.0}
+    if type == "audio":
+        column = "audio_column"
+        assert response["features"][0]["name"] == column
+        assert response["features"][0]["type"]["_type"] == "Audio"
+        assert response["features"][0]["type"]["sampling_rate"] == audio_dataset.features[column].sampling_rate
 
+        assert len(response["rows"]) == min(rows_max_number, len(audio_dataset))
+        assert response["rows"][0]["row"] == {
+            column: [
+                {
+                    "src": f"http://localhost/assets/{dataset}/--/{config}/{split}/0/{column}/audio.mp3",
+                    "type": "audio/mpeg",
+                },
+                {
+                    "src": f"http://localhost/assets/{dataset}/--/{config}/{split}/0/{column}/audio.wav",
+                    "type": "audio/wav",
+                },
+            ]
+        }
+    else:
+        assert response["features"][0]["name"] == "col_1"
+        assert response["features"][0]["type"]["_type"] == "Value"
+        assert response["features"][0]["type"]["dtype"] == "int64"  # <---|
+        assert response["features"][1]["type"]["dtype"] == "int64"  # <---|- auto-detected by the datasets library
+        assert response["features"][2]["type"]["dtype"] == "float64"  # <-|
 
-@pytest.mark.real_dataset
-def test_get_first_rows_response() -> None:
-    rows_max_number = 7
-    response = get_first_rows_response(
-        "common_voice",
-        "tr",
-        "train",
-        rows_max_number=rows_max_number,
-        assets_base_url=ASSETS_BASE_URL,
-        hf_endpoint=DEFAULT_HF_ENDPOINT,
-    )
-
-    assert response["features"][0]["feature_idx"] == 0
-    assert response["features"][0]["name"] == "client_id"
-    assert response["features"][0]["type"]["_type"] == "Value"
-    assert response["features"][0]["type"]["dtype"] == "string"
-
-    assert response["features"][2]["name"] == "audio"
-    assert response["features"][2]["type"]["_type"] == "Audio"
-    assert response["features"][2]["type"]["sampling_rate"] == 48000
-
-    assert len(response["rows"]) == rows_max_number
-    assert response["rows"][0]["row_idx"] == 0
-    assert response["rows"][0]["row"]["client_id"].startswith("54fc2d015c27a057b")
-    assert response["rows"][0]["row"]["audio"] == [
-        {"src": f"{ASSETS_BASE_URL}/common_voice/--/tr/train/0/audio/audio.mp3", "type": "audio/mpeg"},
-        {"src": f"{ASSETS_BASE_URL}/common_voice/--/tr/train/0/audio/audio.wav", "type": "audio/wav"},
-    ]
+        assert len(response["rows"]) == min(rows_max_number, len(DATA))
+        assert response["rows"][0]["row_idx"] == 0
+        assert response["rows"][0]["row"] == {"col_1": 0, "col_2": 0, "col_3": 0.0}

@@ -6,7 +6,7 @@ import pytest
 from .utils import HF_ENDPOINT
 
 # Import fixture modules as plugins
-pytest_plugins = ["tests.fixtures.files", "tests.fixtures.hub"]
+pytest_plugins = ["tests.fixtures.datasets", "tests.fixtures.files", "tests.fixtures.hub"]
 
 
 @pytest.fixture(scope="session")
