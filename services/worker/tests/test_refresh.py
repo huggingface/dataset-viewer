@@ -94,30 +94,3 @@ def test_large_document() -> None:
     _, http_status, error_code = get_splits_response(dataset_name)
     assert http_status == HTTPStatus.OK
     assert error_code is None
-
-
-@pytest.mark.real_dataset
-def test_first_rows() -> None:
-    http_status, _ = refresh_first_rows(
-        "common_voice", "tr", "train", ASSETS_BASE_URL, hf_endpoint=DEFAULT_HF_ENDPOINT
-    )
-    response, cached_http_status, error_code = get_first_rows_response("common_voice", "tr", "train")
-    assert http_status == HTTPStatus.OK
-    assert cached_http_status == HTTPStatus.OK
-    assert error_code is None
-
-    assert response["features"][0]["feature_idx"] == 0
-    assert response["features"][0]["name"] == "client_id"
-    assert response["features"][0]["type"]["_type"] == "Value"
-    assert response["features"][0]["type"]["dtype"] == "string"
-
-    assert response["features"][2]["name"] == "audio"
-    assert response["features"][2]["type"]["_type"] == "Audio"
-    assert response["features"][2]["type"]["sampling_rate"] == 48000
-
-    assert response["rows"][0]["row_idx"] == 0
-    assert response["rows"][0]["row"]["client_id"].startswith("54fc2d015c27a057b")
-    assert response["rows"][0]["row"]["audio"] == [
-        {"src": f"{ASSETS_BASE_URL}/common_voice/--/tr/train/0/audio/audio.mp3", "type": "audio/mpeg"},
-        {"src": f"{ASSETS_BASE_URL}/common_voice/--/tr/train/0/audio/audio.wav", "type": "audio/wav"},
-    ]
