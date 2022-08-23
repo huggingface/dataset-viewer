@@ -8,6 +8,7 @@ from ..utils import HF_ENDPOINT, HF_TOKEN, get_default_config_split
 
 
 # TODO: remove this test? It's an internal function after all
+@pytest.mark.wip
 @pytest.mark.parametrize(
     "type,use_token,exception",
     [
@@ -37,6 +38,7 @@ def test_get_dataset_split_full_names_simple_csv(
     assert split_full_names == [{"dataset_name": dataset, "config_name": config, "split_name": split}]
 
 
+@pytest.mark.wip
 @pytest.mark.parametrize(
     "type,use_token,error_code,cause",
     [

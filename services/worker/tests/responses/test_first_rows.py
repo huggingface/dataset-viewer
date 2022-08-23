@@ -1,7 +1,4 @@
-from typing import Dict
-
 import pytest
-from datasets import Dataset
 from libutils.exceptions import CustomError
 
 from worker.responses.first_rows import get_first_rows_response
@@ -10,6 +7,7 @@ from ..fixtures.hub import DatasetRepos, DatasetReposType
 from ..utils import ASSETS_BASE_URL, HF_ENDPOINT, HF_TOKEN, get_default_config_split
 
 
+@pytest.mark.wip
 @pytest.mark.parametrize(
     "type,use_token,error_code,cause",
     [
@@ -31,7 +29,6 @@ def test_number_rows(
     use_token: bool,
     error_code: str,
     cause: str,
-    datasets: Dict[str, Dataset],
 ) -> None:
     rows_max_number = 7
     dataset, config, split = get_default_config_split(hf_dataset_repos_csv_data[type])
@@ -89,7 +86,7 @@ def test_number_rows(
                         "decode": True,
                         "id": None,
                         "mono": True,
-                        "sampling_rate": datasets["audio"].features[column].sampling_rate,
+                        "sampling_rate": 16_000,
                     },
                 }
             ],

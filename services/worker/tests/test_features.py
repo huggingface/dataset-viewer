@@ -1,30 +1,16 @@
-import datetime
+# import datetime
 from typing import Any, Dict
-from zoneinfo import ZoneInfo
 
 import numpy as np
-import pandas as pd  # type: ignore
-import pyarrow as pa  # type: ignore
 import pytest
-from datasets import (
-    Array2D,
-    Array3D,
-    Array4D,
-    Array5D,
-    Audio,
-    ClassLabel,
-    Dataset,
-    Features,
-    Image,
-    Sequence,
-    Translation,
-    TranslationVariableLanguages,
-    Value,
-)
+from datasets import Dataset, Value
 
 from worker.features import get_cell_value
 
 from .utils import ASSETS_BASE_URL
+
+# from zoneinfo import ZoneInfo
+
 
 # we need to know the correspondence between the feature type and the cell value, in order to:
 # - document the API
@@ -35,104 +21,82 @@ from .utils import ASSETS_BASE_URL
 #     src/datasets/features/features.py#L1469
 # ``FieldType`` can be one of the following:
 # - a :class:`datasets.Value` feature specifies a single typed value, e.g. ``int64`` or ``string``
+@pytest.mark.wip
 @pytest.mark.parametrize(
-    "input_value,input_dtype,output_value,output_dtype",
+    "dataset_type,output_value,output_dtype",
     [
-        # null
-        (None, None, None, "null"),
-        # bool
-        (False, pd.BooleanDtype(), False, "bool"),
-        # int8
-        (-7, pd.Int8Dtype(), -7, "int8"),
-        # int16
-        (-7, pd.Int16Dtype(), -7, "int16"),
-        # int32
-        (-7, pd.Int32Dtype(), -7, "int32"),
-        # int64
-        (-7, pd.Int64Dtype(), -7, "int64"),
-        # uint8
-        (7, pd.UInt8Dtype(), 7, "uint8"),
-        # uint16
-        (7, pd.UInt16Dtype(), 7, "uint16"),
-        # uint32
-        (7, pd.UInt32Dtype(), 7, "uint32"),
-        # uint64
-        (7, pd.UInt64Dtype(), 7, "uint64"),
-        # float16
-        (-3.14, np.float16, np.float16(-3.14), "float16"),
+        ("null", None, "null"),
+        ("bool", False, "bool"),
+        ("int8", -7, "int8"),
+        ("int16", -7, "int16"),
+        ("int32", -7, "int32"),
+        ("int64", -7, "int64"),
+        ("uint8", 7, "uint8"),
+        ("uint16", 7, "uint16"),
+        ("uint32", 7, "uint32"),
+        ("uint64", 7, "uint64"),
+        ("float16", np.float16(-3.14), "float16"),
         # ^ TODO: is it a datasets bug?
-        # float32 (alias float)
-        (-3.14, np.float32, np.float32(-3.14), "float32"),
+        # (alias float)
+        ("float32", np.float32(-3.14), "float32"),
         # ^ TODO: is it a datasets bug?
-        # float64 (alias double)
-        (-3.14, np.float64, -3.14, "float64"),
+        # (alias double)
+        ("float64", -3.14, "float64"),
         # time32[(s|ms)]
-        # TODO
         # time64[(us|ns)]
         # (time(1, 1, 1), None, datetime.datetime(1, 1, 1), "time64[us]"),
         # ^ TODO: add after https://github.com/huggingface/datasets/issues/4620 is fixed
         # timestamp[(s|ms|us|ns)]
-        (pd.Timestamp(2020, 1, 1), None, datetime.datetime(2020, 1, 1, 0, 0), "timestamp[ns]"),
-        (
-            pd.Timestamp(1513393355.5, unit="s"),
-            None,
-            datetime.datetime(2017, 12, 16, 3, 2, 35, 500000),
-            "timestamp[ns]",
-        ),
-        (
-            pd.Timestamp(1513393355500, unit="ms"),
-            None,
-            datetime.datetime(2017, 12, 16, 3, 2, 35, 500000),
-            "timestamp[ns]",
-        ),
-        # timestamp[(s|ms|us|ns), tz=(tzstring)]
-        (
-            pd.Timestamp(year=2020, month=1, day=1, tz="US/Pacific"),
-            None,
-            datetime.datetime(2020, 1, 1, 0, 0, tzinfo=ZoneInfo("US/Pacific")),
-            "timestamp[ns, tz=US/Pacific]",
-        ),
+        # (pd.Timestamp(2020, 1, 1), None, datetime.datetime(2020, 1, 1, 0, 0), "timestamp[ns]"),
+        # (
+        #     pd.Timestamp(1513393355.5, unit="s"),
+        #     None,
+        #     datetime.datetime(2017, 12, 16, 3, 2, 35, 500000),
+        #     "timestamp[ns]",
+        # ),
+        # (
+        #     pd.Timestamp(1513393355500, unit="ms"),
+        #     None,
+        #     datetime.datetime(2017, 12, 16, 3, 2, 35, 500000),
+        #     "timestamp[ns]",
+        # ),
+        # # timestamp[(s|ms|us|ns), tz=(tzstring)]
+        # (
+        #     pd.Timestamp(year=2020, month=1, day=1, tz="US/Pacific"),
+        #     None,
+        #     datetime.datetime(2020, 1, 1, 0, 0, tzinfo=ZoneInfo("US/Pacific")),
+        #     "timestamp[ns, tz=US/Pacific]",
+        # ),
         # date32
-        # TODO
         # date64
-        # TODO
         # duration[(s|ms|us|ns)]
-        # TODO
         # decimal128(precision, scale)
-        # TODO
         # decimal256(precision, scale)
-        # TODO
         # binary
-        # TODO
         # large_binary
-        # TODO
-        # string
-        ("a string", pd.StringDtype(), "a string", "string"),
+        ("string", "a string", "string"),
         # large_string
-        # TODO
     ],
 )
-def test_value(input_value, input_dtype, output_value, output_dtype) -> None:
-    if input_dtype == "datetime64[ns]":
-        a = pa.array(
-            [
-                datetime.datetime(2022, 7, 4, 3, 2, 1),
-            ],
-            type=pa.date64(),
-        )
-        dataset = Dataset.from_buffer(a.to_buffer())
-    else:
-        df = pd.DataFrame({"feature_name": [input_value]}, dtype=input_dtype)
-        dataset = Dataset.from_pandas(df)
-    feature = dataset.features["feature_name"]
+def test_value(dataset_type, output_value, output_dtype, datasets) -> None:
+    # if input_dtype == "datetime64[ns]":
+    #     a = pa.array(
+    #         [
+    #             datetime.datetime(2022, 7, 4, 3, 2, 1),
+    #         ],
+    #         type=pa.date64(),
+    #     )
+    #     dataset = Dataset.from_buffer(a.to_buffer())
+    # else:
+    dataset = datasets[dataset_type]
+    feature = dataset.features["col"]
     assert feature._type == "Value"
     assert feature.dtype == output_dtype
-    value = get_cell_value(
-        "dataset", "config", "split", 7, dataset[0]["feature_name"], "feature_name", feature, ASSETS_BASE_URL
-    )
+    value = get_cell_value("dataset", "config", "split", 7, dataset[0]["col"], "col", feature, ASSETS_BASE_URL)
     assert value == output_value
 
 
+@pytest.mark.wip
 @pytest.mark.parametrize(
     "dataset_type,output_value,output_type",
     [
