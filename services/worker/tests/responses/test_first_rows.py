@@ -33,12 +33,9 @@ def test_number_rows(
     use_token: bool,
     error_code: str,
     cause: str,
-    capsys,
 ) -> None:
     rows_max_number = 7
     dataset, config, split = get_default_config_split(hf_dataset_repos_csv_data[type])
-    with capsys.disabled():
-        print(f"{dataset} {config} {split}")
     if error_code is not None:
         with pytest.raises(CustomError) as exc_info:
             get_first_rows_response(
@@ -77,6 +74,16 @@ def test_number_rows(
         rows_max_number=rows_max_number,
     )
     assert len(response["rows"]) == min(rows_max_number, len(DATA))
+    assert response["features"][0]["feature_idx"] == 0
+    assert response["features"][0]["name"] == "col_1"
+    assert response["features"][0]["type"]["_type"] == "Value"
+    assert response["features"][0]["type"]["dtype"] == "int64"  # <---|
+    assert response["features"][1]["type"]["dtype"] == "int64"  # <---|- auto-detected by the datasets library
+    assert response["features"][2]["type"]["dtype"] == "float64"  # <-|
+
+    assert len(response["rows"]) == min(len(DATA), rows_max_number)
+    assert response["rows"][0]["row_idx"] == 0
+    assert response["rows"][0]["row"] == {"col_1": 0, "col_2": 0, "col_3": 0.0}
 
 
 @pytest.mark.real_dataset
@@ -107,25 +114,3 @@ def test_get_first_rows_response() -> None:
         {"src": f"{ASSETS_BASE_URL}/common_voice/--/tr/train/0/audio/audio.mp3", "type": "audio/mpeg"},
         {"src": f"{ASSETS_BASE_URL}/common_voice/--/tr/train/0/audio/audio.wav", "type": "audio/wav"},
     ]
-
-
-@pytest.mark.real_dataset
-def test_no_features() -> None:
-    response = get_first_rows_response(
-        "severo/fix-401",
-        "severo--fix-401",
-        "train",
-        rows_max_number=1,
-        assets_base_url=ASSETS_BASE_URL,
-        hf_endpoint=DEFAULT_HF_ENDPOINT,
-    )
-
-    # TODO: re-enable when we understand why it works locally but not in the CI (order of the features)
-    # assert response["features"][5]["feature_idx"] == 5
-    # assert response["features"][5]["name"] == "area_mean"
-    # assert response["features"][5]["type"]["_type"] == "Value"
-    # assert response["features"][5]["type"]["dtype"] == "float64"
-
-    assert response["rows"][0]["row_idx"] == 0
-    assert response["rows"][0]["row"]["diagnosis"] == "M"
-    assert response["rows"][0]["row"]["area_mean"] == 1001.0
