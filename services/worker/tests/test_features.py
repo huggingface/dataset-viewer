@@ -1,5 +1,6 @@
 import datetime
 from zoneinfo import ZoneInfo
+from typing import Any, Dict
 
 import numpy as np
 import pandas as pd  # type: ignore
@@ -132,22 +133,15 @@ def test_value(input_value, input_dtype, output_value, output_dtype) -> None:
     assert value == output_value
 
 
-@pytest.mark.usefixtures("config")
 @pytest.mark.parametrize(
-    "get_data_tuple",
+    "dataset_type,output_value,output_type",
     [
-        # (input value, input feature, output value, output _type)
         # - a :class:`datasets.ClassLabel` feature specifies a field with a predefined set of classes
         #   which can have labels associated to them and will be stored as integers in the dataset
-        lambda config: ("positive", ClassLabel(names=["negative", "positive"]), 1, "ClassLabel"),
+        ("class_label", 1, "ClassLabel"),
         # - a python :obj:`dict` which specifies that the field is a nested field containing a mapping of sub-fields
         #   to sub-fields features. It's possible to have nested fields of nested fields in an arbitrary manner
-        lambda config: (
-            {"a": 0},
-            None,
-            {"a": 0},
-            {"a": Value(dtype="int64", id=None)},
-        ),
+        ("dict", {"a": 0}, {"a": Value(dtype="int64", id=None)}),
         # - a python :obj:`list` or a :class:`datasets.Sequence` specifies that the field contains a list of objects.
         #    The python :obj:`list` or :class:`datasets.Sequence` should be provided with a single sub-feature as an
         #    example of the feature type hosted in this list
@@ -157,72 +151,53 @@ def test_value(input_value, input_dtype, output_value, output_dtype) -> None:
         #   library but may be un-wanted in some cases. If you don't want this behavior, you can use a python
         #   :obj:`list` instead of the :class:`datasets.Sequence`.
         #   </Tip>
-        lambda config: (
-            [{"a": 0}],
-            None,
-            [{"a": 0}],
-            [{"a": Value(dtype="int64", id=None)}],
-        ),
-        lambda config: (
-            [0],
-            None,
-            [0],
-            "Sequence",
-        ),
-        lambda config: (
-            [{"a": 0}],
-            Sequence(feature={"a": Value(dtype="int64")}),
-            {"a": [0]},
-            "Sequence",
-        ),
-        # lambda config: (
-        #     [
-        #         {"array": [0.1, 0.2, 0.3], "sampling_rate": 16_000},
-        #     ],
-        #     Sequence(feature=Audio()),
+        ("list", [{"a": 0}], [{"a": Value(dtype="int64", id=None)}]),
+        ("sequence_simple", [0], "Sequence"),
+        ("sequence", {"a": [0]}, "Sequence"),
+        # (
+        #     "sequence_audio"
         #     # ^ corner case: an Audio in a Sequence
         #     [{"path": None, "array": np.array([0.09997559, 0.19998169, 0.29998779]), "sampling_rate": 16_000}],
-        #     "Sequence",
+        #     "Sequence"
         # ),
         # - a :class:`Array2D`, :class:`Array3D`, :class:`Array4D` or :class:`Array5D` feature for multidimensional
         #   arrays
-        lambda config: (
-            np.zeros((2, 2)),
-            Array2D(shape=(2, 2), dtype="float32"),
-            [[0.0, 0.0], [0.0, 0.0]],
-            "Array2D",
-        ),
-        lambda config: (
-            np.zeros((2, 2, 2)),
-            Array3D(shape=(2, 2, 2), dtype="float32"),
-            [[[0.0, 0.0], [0.0, 0.0]], [[0.0, 0.0], [0.0, 0.0]]],
-            "Array3D",
-        ),
-        lambda config: (
-            np.zeros((1, 1, 1, 1)),
-            Array4D(shape=(1, 1, 1, 1), dtype="int32"),
-            [[[[0]]]],
+        ("array2d", [[0.0, 0.0], [0.0, 0.0]], "Array2D"),
+        ("array3d", [[[0.0, 0.0], [0.0, 0.0]], [[0.0, 0.0], [0.0, 0.0]]], "Array3D"),
+        (
+            "array4d",
+            [
+                [[[0.0, 0.0], [0.0, 0.0]], [[0.0, 0.0], [0.0, 0.0]]],
+                [[[0.0, 0.0], [0.0, 0.0]], [[0.0, 0.0], [0.0, 0.0]]],
+            ],
             "Array4D",
         ),
-        lambda config: (
-            np.zeros((1, 1, 1, 1, 1)),
-            Array5D(shape=(1, 1, 1, 1, 1), dtype="int32"),
-            [[[[[0]]]]],
+        (
+            "array5d",
+            [
+                [
+                    [[[0.0, 0.0], [0.0, 0.0]], [[0.0, 0.0], [0.0, 0.0]]],
+                    [[[0.0, 0.0], [0.0, 0.0]], [[0.0, 0.0], [0.0, 0.0]]],
+                ],
+                [
+                    [[[0.0, 0.0], [0.0, 0.0]], [[0.0, 0.0], [0.0, 0.0]]],
+                    [[[0.0, 0.0], [0.0, 0.0]], [[0.0, 0.0], [0.0, 0.0]]],
+                ],
+            ],
             "Array5D",
         ),
         # - an :class:`Audio` feature to store the absolute path to an audio file or a dictionary with the relative
         #   path to an audio file ("path" key) and its bytes content ("bytes" key). This feature extracts the audio
         #   data.
-        lambda config: (
-            {"array": [0.1, 0.2, 0.3], "sampling_rate": 16_000},
-            Audio(),
+        (
+            "audio",
             [
                 {
-                    "src": "http://localhost/assets/dataset/--/config/split/7/feature_name/audio.mp3",
+                    "src": "http://localhost/assets/dataset/--/config/split/7/col/audio.mp3",
                     "type": "audio/mpeg",
                 },
                 {
-                    "src": "http://localhost/assets/dataset/--/config/split/7/feature_name/audio.wav",
+                    "src": "http://localhost/assets/dataset/--/config/split/7/col/audio.wav",
                     "type": "audio/wav",
                 },
             ],
@@ -231,41 +206,23 @@ def test_value(input_value, input_dtype, output_value, output_dtype) -> None:
         # - an :class:`Image` feature to store the absolute path to an image file, an :obj:`np.ndarray` object, a
         #   :obj:`PIL.Image.Image` object or a dictionary with the relative path to an image file ("path" key) and
         #   its bytes content ("bytes" key). This feature extracts the image data.
-        lambda config: (
-            {"path": config["image_file"]},
-            Image(),
-            "http://localhost/assets/dataset/--/config/split/7/feature_name/image.jpg",
-            "Image",
-        ),
+        ("image", "http://localhost/assets/dataset/--/config/split/7/col/image.jpg", "Image"),
         # - :class:`datasets.Translation` and :class:`datasets.TranslationVariableLanguages`, the two features
         #   specific to Machine Translation
-        lambda config: (
-            {"en": "the cat", "fr": "le chat"},
-            Translation(languages=["en", "fr"]),
-            {"en": "the cat", "fr": "le chat"},
-            "Translation",
-        ),
-        lambda config: (
-            {"en": "the cat", "fr": ["le chat", "la chatte"]},
-            TranslationVariableLanguages(languages=["en", "fr"]),
+        ("translation", {"en": "the cat", "fr": "le chat"}, "Translation"),
+        (
+            "translation_variable_languages",
             {"language": ["en", "fr", "fr"], "translation": ["the cat", "la chatte", "le chat"]},
             "TranslationVariableLanguages",
         ),
     ],
 )
-def test_others(config, get_data_tuple) -> None:
-    (input_value, input_feature, output_value, output__type) = get_data_tuple(config)
-    if input_feature is None:
-        dataset = Dataset.from_dict({"feature_name": [input_value]})
+def test_others(dataset_type: str, output_value: Any, output_type: Any, datasets: Dict[str, Dataset]) -> None:
+    dataset = datasets[dataset_type]
+    feature = dataset.features["col"]
+    if type(output_type) in [list, dict]:
+        assert feature == output_type
     else:
-        features = Features({"feature_name": input_feature})
-        dataset = Dataset.from_dict({"feature_name": [input_value]}, features)
-    feature = dataset.features["feature_name"]
-    if type(output__type) in [list, dict]:
-        assert feature == output__type
-    else:
-        assert feature._type == output__type
-    value = get_cell_value(
-        "dataset", "config", "split", 7, dataset[0]["feature_name"], "feature_name", feature, ASSETS_BASE_URL
-    )
+        assert feature._type == output_type
+    value = get_cell_value("dataset", "config", "split", 7, dataset[0]["col"], "col", feature, ASSETS_BASE_URL)
     assert value == output_value

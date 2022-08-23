@@ -212,16 +212,16 @@ def hf_gated_csv(hf_api: HfApi, hf_token: str, csv_path: str) -> Iterable[str]:
 
 
 @pytest.fixture(scope="session", autouse=True)
-def hf_public_audio(hf_api: HfApi, hf_token: str, audio_dataset: Dataset) -> Iterable[str]:
-    repo_id = create_hf_dataset_repo(hf_api=hf_api, hf_token=hf_token, prefix="audio", dataset=audio_dataset)
+def hf_public_audio(hf_api: HfApi, hf_token: str, datasets: Dict[str, Dataset]) -> Iterable[str]:
+    repo_id = create_hf_dataset_repo(hf_api=hf_api, hf_token=hf_token, prefix="audio", dataset=datasets["audio"])
     yield repo_id
     with suppress(requests.exceptions.HTTPError, ValueError):
         hf_api.delete_repo(repo_id=repo_id, token=hf_token, repo_type="dataset")
 
 
 @pytest.fixture(scope="session", autouse=True)
-def hf_public_image(hf_api: HfApi, hf_token: str, image_dataset: Dataset) -> Iterable[str]:
-    repo_id = create_hf_dataset_repo(hf_api=hf_api, hf_token=hf_token, prefix="image", dataset=image_dataset)
+def hf_public_image(hf_api: HfApi, hf_token: str, datasets: Dict[str, Dataset]) -> Iterable[str]:
+    repo_id = create_hf_dataset_repo(hf_api=hf_api, hf_token=hf_token, prefix="image", dataset=datasets["image"])
     yield repo_id
     with suppress(requests.exceptions.HTTPError, ValueError):
         hf_api.delete_repo(repo_id=repo_id, token=hf_token, repo_type="dataset")
@@ -251,5 +251,5 @@ def hf_dataset_repos_csv_data(
         "private": hf_private_csv,
         "gated": hf_gated_csv,
         "audio": hf_public_audio,
-        "image": hf_public_image
+        "image": hf_public_image,
     }

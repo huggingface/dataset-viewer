@@ -1,6 +1,7 @@
 import pytest
 from datasets import Dataset
 from libutils.exceptions import CustomError
+from typing import Dict
 
 from worker.responses.first_rows import get_first_rows_response
 
@@ -35,8 +36,7 @@ def test_number_rows(
     use_token: bool,
     error_code: str,
     cause: str,
-    audio_dataset: Dataset,
-    image_dataset: Dataset,
+    datasets: Dict[str, Dataset],
 ) -> None:
     rows_max_number = 7
     dataset, config, split = get_default_config_split(hf_dataset_repos_csv_data[type])
@@ -80,12 +80,12 @@ def test_number_rows(
     assert response["features"][0]["feature_idx"] == 0
     assert response["rows"][0]["row_idx"] == 0
     if type == "audio":
-        column = "audio_column"
+        column = "col"
         assert response["features"][0]["name"] == column
         assert response["features"][0]["type"]["_type"] == "Audio"
-        assert response["features"][0]["type"]["sampling_rate"] == audio_dataset.features[column].sampling_rate
+        assert response["features"][0]["type"]["sampling_rate"] == datasets["audio"].features[column].sampling_rate
 
-        assert len(response["rows"]) == min(rows_max_number, len(audio_dataset))
+        assert len(response["rows"]) == min(rows_max_number, len(datasets["audio"]))
         assert response["rows"][0]["row"] == {
             column: [
                 {
@@ -99,11 +99,11 @@ def test_number_rows(
             ]
         }
     elif type == "image":
-        column = "image_column"
+        column = "col"
         assert response["features"][0]["name"] == column
         assert response["features"][0]["type"]["_type"] == "Image"
 
-        assert len(response["rows"]) == min(rows_max_number, len(image_dataset))
+        assert len(response["rows"]) == min(rows_max_number, len(datasets["image"]))
         assert response["rows"][0]["row"] == {
             column: f"http://localhost/assets/{dataset}/--/{config}/{split}/0/{column}/image.jpg",
         }
