@@ -11,13 +11,13 @@ from ..utils import HF_ENDPOINT, HF_TOKEN, get_default_config_split
 @pytest.mark.parametrize(
     "type,use_token,exception",
     [
+        ("public", False, None),
+        ("gated", True, None),
+        ("private", True, None),  # <- TODO: should we disable accessing private datasets?
         ("empty", False, FileNotFoundError),
         ("does_not_exist", False, FileNotFoundError),
-        ("public", False, None),
         ("gated", False, FileNotFoundError),
-        ("gated", True, None),
         ("private", False, FileNotFoundError),
-        ("private", True, None),  # <- TODO: should we disable accessing private datasets?
     ],
 )
 def test_get_dataset_split_full_names_simple_csv(
@@ -39,13 +39,13 @@ def test_get_dataset_split_full_names_simple_csv(
 @pytest.mark.parametrize(
     "type,use_token,error_code,cause",
     [
+        ("public", False, None, None),
+        ("gated", True, None, None),
+        ("private", True, None, None),  # <- TODO: should we disable accessing private datasets?
         ("empty", False, "SplitsNamesError", "FileNotFoundError"),
         ("does_not_exist", False, "DatasetNotFoundError", None),
-        ("public", False, None, None),
         ("gated", False, "SplitsNamesError", "FileNotFoundError"),
-        ("gated", True, None, None),
         ("private", False, "SplitsNamesError", "FileNotFoundError"),
-        ("private", True, None, None),  # <- TODO: should we disable accessing private datasets?
     ],
 )
 def test_get_splits_response_simple_csv(

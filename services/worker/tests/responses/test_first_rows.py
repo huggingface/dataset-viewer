@@ -1,22 +1,82 @@
 import pytest
+from libutils.exceptions import CustomError
 
 from worker.responses.first_rows import get_first_rows_response
 
-from ..utils import ASSETS_BASE_URL, DEFAULT_HF_ENDPOINT
+from ..fixtures.files import DATA
+from ..fixtures.hub import DatasetRepos, DatasetReposType
+from ..utils import (
+    ASSETS_BASE_URL,
+    DEFAULT_HF_ENDPOINT,
+    HF_ENDPOINT,
+    HF_TOKEN,
+    get_default_config_split,
+)
 
 
-@pytest.mark.real_dataset
-def test_number_rows() -> None:
+@pytest.mark.parametrize(
+    "type,use_token,error_code,cause",
+    [
+        ("public", False, None, None),
+        # TODO: re-enable both when https://github.com/huggingface/datasets/issues/4875 is fixed
+        # ("gated", True, None, None),
+        # ("private", True, None, None),  # <- TODO: should we disable accessing private datasets?
+        ("empty", False, "SplitsNamesError", "FileNotFoundError"),
+        ("does_not_exist", False, "DatasetNotFoundError", None),
+        ("gated", False, "SplitsNamesError", "FileNotFoundError"),
+        ("private", False, "SplitsNamesError", "FileNotFoundError"),
+    ],
+)
+def test_number_rows(
+    hf_dataset_repos_csv_data: DatasetRepos,
+    type: DatasetReposType,
+    use_token: bool,
+    error_code: str,
+    cause: str,
+    capsys,
+) -> None:
     rows_max_number = 7
+    dataset, config, split = get_default_config_split(hf_dataset_repos_csv_data[type])
+    with capsys.disabled():
+        print(f"{dataset} {config} {split}")
+    if error_code is not None:
+        with pytest.raises(CustomError) as exc_info:
+            get_first_rows_response(
+                dataset_name=dataset,
+                config_name=config,
+                split_name=split,
+                assets_base_url=ASSETS_BASE_URL,
+                hf_endpoint=HF_ENDPOINT,
+                hf_token=HF_TOKEN if use_token else None,
+                rows_max_number=rows_max_number,
+            )
+        assert exc_info.value.code == error_code
+        if cause is None:
+            assert exc_info.value.disclose_cause is False
+            assert exc_info.value.cause_exception is None
+        else:
+            assert exc_info.value.disclose_cause is True
+            assert exc_info.value.cause_exception == cause
+            response = exc_info.value.as_response()
+            assert set(response.keys()) == {"error", "cause_exception", "cause_message", "cause_traceback"}
+            assert response["error"] == "Cannot get the split names for the dataset."
+            response_dict = dict(response)
+            # ^ to remove mypy warnings
+            assert response_dict["cause_exception"] == "FileNotFoundError"
+            assert str(response_dict["cause_message"]).startswith("Couldn't find a dataset script at ")
+            assert isinstance(response_dict["cause_traceback"], list)
+            assert response_dict["cause_traceback"][0] == "Traceback (most recent call last):\n"
+        return
     response = get_first_rows_response(
-        "duorc",
-        "SelfRC",
-        "train",
-        rows_max_number=rows_max_number,
+        dataset_name=dataset,
+        config_name=config,
+        split_name=split,
         assets_base_url=ASSETS_BASE_URL,
-        hf_endpoint=DEFAULT_HF_ENDPOINT,
+        hf_endpoint=HF_ENDPOINT,
+        hf_token=HF_TOKEN if use_token else None,
+        rows_max_number=rows_max_number,
     )
-    assert len(response["rows"]) == rows_max_number
+    assert len(response["rows"]) == min(rows_max_number, len(DATA))
 
 
 @pytest.mark.real_dataset
