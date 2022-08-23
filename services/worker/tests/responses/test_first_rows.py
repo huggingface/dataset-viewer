@@ -1,18 +1,13 @@
+from typing import Dict
+
 import pytest
 from datasets import Dataset
 from libutils.exceptions import CustomError
-from typing import Dict
 
 from worker.responses.first_rows import get_first_rows_response
 
-from ..fixtures.files import DATA
 from ..fixtures.hub import DatasetRepos, DatasetReposType
-from ..utils import (
-    ASSETS_BASE_URL,
-    HF_ENDPOINT,
-    HF_TOKEN,
-    get_default_config_split,
-)
+from ..utils import ASSETS_BASE_URL, HF_ENDPOINT, HF_TOKEN, get_default_config_split
 
 
 @pytest.mark.parametrize(
@@ -79,41 +74,136 @@ def test_number_rows(
     )
     assert response["features"][0]["feature_idx"] == 0
     assert response["rows"][0]["row_idx"] == 0
+    column = "col"
     if type == "audio":
-        column = "col"
-        assert response["features"][0]["name"] == column
-        assert response["features"][0]["type"]["_type"] == "Audio"
-        assert response["features"][0]["type"]["sampling_rate"] == datasets["audio"].features[column].sampling_rate
-
-        assert len(response["rows"]) == min(rows_max_number, len(datasets["audio"]))
-        assert response["rows"][0]["row"] == {
-            column: [
+        assert response == {
+            "features": [
                 {
-                    "src": f"http://localhost/assets/{dataset}/--/{config}/{split}/0/{column}/audio.mp3",
-                    "type": "audio/mpeg",
-                },
+                    "dataset": dataset,
+                    "config": config,
+                    "split": split,
+                    "feature_idx": 0,
+                    "name": column,
+                    "type": {
+                        "_type": "Audio",
+                        "decode": True,
+                        "id": None,
+                        "mono": True,
+                        "sampling_rate": datasets["audio"].features[column].sampling_rate,
+                    },
+                }
+            ],
+            "rows": [
                 {
-                    "src": f"http://localhost/assets/{dataset}/--/{config}/{split}/0/{column}/audio.wav",
-                    "type": "audio/wav",
-                },
-            ]
+                    "dataset": dataset,
+                    "config": config,
+                    "split": split,
+                    "row_idx": 0,
+                    "truncated_cells": [],
+                    "row": {
+                        column: [
+                            {
+                                "src": f"http://localhost/assets/{dataset}/--/{config}/{split}/0/{column}/audio.mp3",
+                                "type": "audio/mpeg",
+                            },
+                            {
+                                "src": f"http://localhost/assets/{dataset}/--/{config}/{split}/0/{column}/audio.wav",
+                                "type": "audio/wav",
+                            },
+                        ]
+                    },
+                }
+            ],
         }
     elif type == "image":
-        column = "col"
-        assert response["features"][0]["name"] == column
-        assert response["features"][0]["type"]["_type"] == "Image"
-
-        assert len(response["rows"]) == min(rows_max_number, len(datasets["image"]))
-        assert response["rows"][0]["row"] == {
-            column: f"http://localhost/assets/{dataset}/--/{config}/{split}/0/{column}/image.jpg",
+        assert response == {
+            "features": [
+                {
+                    "dataset": dataset,
+                    "config": config,
+                    "split": split,
+                    "feature_idx": 0,
+                    "name": column,
+                    "type": {
+                        "_type": "Image",
+                        "decode": True,
+                        "id": None,
+                    },
+                }
+            ],
+            "rows": [
+                {
+                    "dataset": dataset,
+                    "config": config,
+                    "split": split,
+                    "row_idx": 0,
+                    "truncated_cells": [],
+                    "row": {
+                        column: f"http://localhost/assets/{dataset}/--/{config}/{split}/0/{column}/image.jpg",
+                    },
+                }
+            ],
         }
     else:
-        assert response["features"][0]["name"] == "col_1"
-        assert response["features"][0]["type"]["_type"] == "Value"
-        assert response["features"][0]["type"]["dtype"] == "int64"  # <---|
-        assert response["features"][1]["type"]["dtype"] == "int64"  # <---|- auto-detected by the datasets library
-        assert response["features"][2]["type"]["dtype"] == "float64"  # <-|
-
-        assert len(response["rows"]) == min(rows_max_number, len(DATA))
-        assert response["rows"][0]["row_idx"] == 0
-        assert response["rows"][0]["row"] == {"col_1": 0, "col_2": 0, "col_3": 0.0}
+        assert response == {
+            "features": [
+                {
+                    "dataset": dataset,
+                    "config": config,
+                    "split": split,
+                    "feature_idx": 0,
+                    "name": "col_1",
+                    "type": {"_type": "Value", "id": None, "dtype": "int64"},
+                },
+                {
+                    "dataset": dataset,
+                    "config": config,
+                    "split": split,
+                    "feature_idx": 1,
+                    "name": "col_2",
+                    "type": {"_type": "Value", "id": None, "dtype": "int64"},
+                },
+                {
+                    "dataset": dataset,
+                    "config": config,
+                    "split": split,
+                    "feature_idx": 2,
+                    "name": "col_3",
+                    "type": {"_type": "Value", "id": None, "dtype": "float64"},
+                },
+            ],
+            "rows": [
+                {
+                    "dataset": dataset,
+                    "config": config,
+                    "split": split,
+                    "row_idx": 0,
+                    "truncated_cells": [],
+                    "row": {"col_1": 0, "col_2": 0, "col_3": 0.0},
+                },
+                {
+                    "dataset": dataset,
+                    "config": config,
+                    "split": split,
+                    "row_idx": 1,
+                    "truncated_cells": [],
+                    "row": {"col_1": 1, "col_2": 1, "col_3": 1.0},
+                },
+                {
+                    "dataset": dataset,
+                    "config": config,
+                    "split": split,
+                    "row_idx": 2,
+                    "truncated_cells": [],
+                    "row": {"col_1": 2, "col_2": 2, "col_3": 2.0},
+                },
+                {
+                    "dataset": dataset,
+                    "config": config,
+                    "split": split,
+                    "row_idx": 3,
+                    "truncated_cells": [],
+                    "row": {"col_1": 3, "col_2": 3, "col_3": 3.0},
+                },
+            ],
+        }

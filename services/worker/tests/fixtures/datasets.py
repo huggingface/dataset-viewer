@@ -1,5 +1,8 @@
-import pytest
+from pathlib import Path
 from typing import Any, Dict
+
+import numpy as np
+import pytest
 from datasets import (
     Array2D,
     Array3D,
@@ -16,8 +19,6 @@ from datasets import (
     Value,
 )
 from datasets.features.features import FeatureType
-from pathlib import Path
-import numpy as np
 
 
 def create_dataset(content: Any, feature_type: FeatureType = None) -> Dataset:
