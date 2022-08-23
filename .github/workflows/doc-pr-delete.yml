@@ -11,3 +11,5 @@ jobs:
     with:
       pr_number: ${{ github.event.number }}
       package: datasets-server
+    secrets:
+      token: ${{ secrets.HUGGINGFACE_PUSH }}
