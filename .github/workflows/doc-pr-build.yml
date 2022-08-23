@@ -12,9 +12,10 @@ concurrency:
 
 jobs:
   build:
-    uses: huggingface/doc-builder/.github/workflows/build_pr_documentation.yml@main
+    uses: LysandreJik/doc-builder/.github/workflows/build_pr_documentation.yml@main
     with:
       commit_sha: ${{ github.event.pull_request.head.sha }}
       pr_number: ${{ github.event.number }}
       package: datasets-server
       additional_args: --not_python_module
+      push_token: ${{ secrets.HUGGINGFACE_PUSH }}
