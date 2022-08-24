@@ -7,7 +7,6 @@ from ..fixtures.hub import HubDatasets
 from ..utils import ASSETS_BASE_URL, HF_ENDPOINT, HF_TOKEN, get_default_config_split
 
 
-@pytest.mark.wip
 @pytest.mark.parametrize(
     "name,use_token,error_code,cause",
     [
