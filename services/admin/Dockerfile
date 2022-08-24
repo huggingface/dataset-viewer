@@ -27,6 +27,7 @@ COPY libs/libutils/dist ./libs/libutils/dist
 COPY services/admin/src ./services/admin/src
 COPY services/admin/poetry.lock ./services/admin/poetry.lock
 COPY services/admin/pyproject.toml ./services/admin/pyproject.toml
+COPY services/admin/Makefile ./services/admin/Makefile
 WORKDIR /src/services/admin/
 RUN poetry install
 
