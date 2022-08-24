@@ -1,8 +1,11 @@
+import pytest
 from PIL import Image  # type: ignore
 
 from worker.deprecated.models.row import get_rows
 
-from ..._utils import ROWS_MAX_NUMBER
+from ...utils import ROWS_MAX_NUMBER
+
+pytestmark = pytest.mark.deprecated
 
 
 # get_rows

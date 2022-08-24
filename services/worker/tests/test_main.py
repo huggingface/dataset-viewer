@@ -7,7 +7,12 @@ from libqueue.queue import connect_to_queue
 
 from worker.main import process_next_first_rows_job, process_next_splits_job
 
-from ._utils import MONGO_CACHE_DATABASE, MONGO_QUEUE_DATABASE, MONGO_URL
+from .utils import (
+    MONGO_CACHE_DATABASE,
+    MONGO_QUEUE_DATABASE,
+    MONGO_URL,
+    get_default_config_split,
+)
 
 
 @pytest.fixture(autouse=True, scope="module")
@@ -28,13 +33,14 @@ def clean_mongo_database() -> None:
     clean_queue_database()
 
 
-def test_process_next_splits_job():
-    add_splits_job("acronym_identification")
+def test_process_next_splits_job(hub_public_csv: str) -> None:
+    add_splits_job(hub_public_csv)
     result = process_next_splits_job()
     assert result is True
 
 
-def test_process_next_first_rows_job():
-    add_first_rows_job("acronym_identification", "default", "train")
+def test_process_next_first_rows_job(hub_public_csv: str) -> None:
+    dataset, config, split = get_default_config_split(hub_public_csv)
+    add_first_rows_job(dataset, config, split)
     result = process_next_first_rows_job()
     assert result is True

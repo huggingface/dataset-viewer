@@ -3,6 +3,7 @@ export TEST_MONGO_PORT := 27030
 export TEST_MONGO_CACHE_DATABASE := datasets_server_cache_test
 export TEST_MONGO_QUEUE_DATABASE := datasets_server_queue_test
 export TEST_COMPOSE_PROJECT_NAME := admin
+export TEST_HF_ENDPOINT := https://hub-ci.huggingface.co
 # makefile variables
 TEST_DOCKER_COMPOSE := ../../tools/docker-compose-mongo.yml
 

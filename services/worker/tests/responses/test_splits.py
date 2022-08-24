@@ -1,78 +1,68 @@
 import pytest
-from datasets.inspect import SplitsNotFoundError
+from libutils.exceptions import CustomError
 
-from worker.responses.splits import get_dataset_split_full_names, get_splits_response
-from worker.utils import SplitsNamesError
+from worker.responses.splits import get_splits_response
 
-from .._utils import HF_ENDPOINT, HF_TOKEN
-
-
-def test_script_error() -> None:
-    # raises "ModuleNotFoundError: No module named 'datasets_modules.datasets.br-quad-2'"
-    # which should be caught and raised as DatasetBuilderScriptError
-    with pytest.raises(ModuleNotFoundError):
-        get_dataset_split_full_names(dataset_name="piEsposito/br-quad-2.0")
+from ..fixtures.hub import HubDatasets
+from ..utils import HF_ENDPOINT, HF_TOKEN
 
 
-def test_no_dataset() -> None:
-    # the dataset does not exist
-    with pytest.raises(FileNotFoundError):
-        get_dataset_split_full_names(dataset_name="doesnotexist")
+@pytest.mark.parametrize(
+    "name,use_token,error_code,cause",
+    [
+        ("public", False, None, None),
+        ("audio", False, None, None),
+        ("gated", True, None, None),
+        ("private", True, None, None),  # <- TODO: should we disable accessing private datasets?
+        ("empty", False, "SplitsNamesError", "FileNotFoundError"),
+        ("does_not_exist", False, "DatasetNotFoundError", None),
+        ("gated", False, "SplitsNamesError", "FileNotFoundError"),
+        ("private", False, "SplitsNamesError", "FileNotFoundError"),
+    ],
+)
+def test_get_splits_response_simple_csv(
+    hub_datasets: HubDatasets, name: str, use_token: bool, error_code: str, cause: str
+) -> None:
+    dataset = hub_datasets[name]["name"]
+    expected_splits_response = hub_datasets[name]["splits_response"]
+    if error_code is None:
+        splits_response = get_splits_response(dataset, HF_ENDPOINT, HF_TOKEN if use_token else None)
+        assert splits_response == expected_splits_response
+        return
+
+    with pytest.raises(CustomError) as exc_info:
+        get_splits_response(dataset, HF_ENDPOINT, HF_TOKEN if use_token else None)
+    assert exc_info.value.code == error_code
+    if cause is None:
+        assert exc_info.value.disclose_cause is False
+        assert exc_info.value.cause_exception is None
+    else:
+        assert exc_info.value.disclose_cause is True
+        assert exc_info.value.cause_exception == cause
+        response = exc_info.value.as_response()
+        assert set(response.keys()) == {"error", "cause_exception", "cause_message", "cause_traceback"}
+        assert response["error"] == "Cannot get the split names for the dataset."
+        response_dict = dict(response)
+        # ^ to remove mypy warnings
+        assert response_dict["cause_exception"] == "FileNotFoundError"
+        assert str(response_dict["cause_message"]).startswith("Couldn't find a dataset script at ")
+        assert isinstance(response_dict["cause_traceback"], list)
+        assert response_dict["cause_traceback"][0] == "Traceback (most recent call last):\n"
 
 
-def test_no_dataset_no_script() -> None:
-    # the dataset does not contain a script
-    with pytest.raises(FileNotFoundError):
-        get_dataset_split_full_names(dataset_name="AConsApart/anime_subtitles_DialoGPT")
-    with pytest.raises(FileNotFoundError):
-        get_dataset_split_full_names(dataset_name="TimTreasure4/Test")
+# @pytest.mark.real_dataset
+# def test_script_error() -> None:
+#     # raises "ModuleNotFoundError: No module named 'datasets_modules.datasets.br-quad-2'"
+#     # which should be caught and raised as DatasetBuilderScriptError
+#     with pytest.raises(ModuleNotFoundError):
+#         get_dataset_split_full_names(dataset_name="piEsposito/br-quad-2.0")
 
 
-def test_builder_config_error() -> None:
-    with pytest.raises(SplitsNotFoundError):
-        get_dataset_split_full_names(dataset_name="KETI-AIR/nikl")
-    with pytest.raises(RuntimeError):
-        get_dataset_split_full_names(dataset_name="nateraw/image-folder")
-    with pytest.raises(TypeError):
-        get_dataset_split_full_names(dataset_name="Valahaar/wsdmt")
-
-
-# get_split
-def test_get_split() -> None:
-    split_full_names = get_dataset_split_full_names("glue")
-    assert len(split_full_names) == 34
-    assert {"dataset_name": "glue", "config_name": "ax", "split_name": "test"} in split_full_names
-
-
-def test_splits_fallback() -> None:
-    # uses the fallback to call "builder._split_generators" while https://github.com/huggingface/datasets/issues/2743
-    split_full_names = get_dataset_split_full_names("hda_nli_hindi")
-    assert len(split_full_names) == 3
-    assert {"dataset_name": "hda_nli_hindi", "config_name": "HDA nli hindi", "split_name": "train"} in split_full_names
-
-
-# disable until https://github.com/huggingface/datasets-server/pull/499 is done
-# def test_gated() -> None:
-#     split_full_names = get_dataset_split_full_names("severo/dummy_gated", HF_TOKEN)
-#     assert len(split_full_names) == 1
-#     assert {
-#         "dataset_name": "severo/dummy_gated",
-#         "config_name": "severo--embellishments",
-#         "split_name": "train",
-#     } in split_full_names
-
-
-def test_disclose_cause() -> None:
-    with pytest.raises(SplitsNamesError) as exc_info:
-        get_splits_response("akhaliq/test", HF_ENDPOINT, HF_TOKEN)
-    assert exc_info.value.disclose_cause is True
-    assert exc_info.value.cause_exception == "FileNotFoundError"
-    response = exc_info.value.as_response()
-    assert set(response.keys()) == {"error", "cause_exception", "cause_message", "cause_traceback"}
-    assert response["error"] == "Cannot get the split names for the dataset."
-    response_dict = dict(response)
-    # ^ to remove mypy warnings
-    assert response_dict["cause_exception"] == "FileNotFoundError"
-    assert str(response_dict["cause_message"]).startswith("Couldn't find a dataset script at ")
-    assert isinstance(response_dict["cause_traceback"], list)
-    assert response_dict["cause_traceback"][0] == "Traceback (most recent call last):\n"
+# @pytest.mark.real_dataset
+# def test_builder_config_error() -> None:
+#     with pytest.raises(SplitsNotFoundError):
+#         get_dataset_split_full_names(dataset_name="KETI-AIR/nikl")
+#     with pytest.raises(RuntimeError):
+#         get_dataset_split_full_names(dataset_name="nateraw/image-folder")
+#     with pytest.raises(TypeError):
+#         get_dataset_split_full_names(dataset_name="Valahaar/wsdmt")

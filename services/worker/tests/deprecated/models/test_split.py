@@ -1,10 +1,15 @@
-# import pandas  # type: ignore
+import pytest
 
 from worker.deprecated.models.split import get_split
 
-from ..._utils import HF_TOKEN, ROWS_MAX_NUMBER
+from ...utils import HF_TOKEN, ROWS_MAX_NUMBER
+
+# import pandas  # type: ignore
+
 
 # pandas types: see https://github.com/VirtusLab/pandas-stubs/issues/172
+
+pytestmark = pytest.mark.deprecated
 
 
 # TODO: test fallback

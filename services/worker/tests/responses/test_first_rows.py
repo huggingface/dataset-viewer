@@ -1,66 +1,73 @@
+import pytest
+from libutils.exceptions import CustomError
+
 from worker.responses.first_rows import get_first_rows_response
 
-from .._utils import ASSETS_BASE_URL, HF_ENDPOINT
+from ..fixtures.hub import HubDatasets
+from ..utils import ASSETS_BASE_URL, HF_ENDPOINT, HF_TOKEN, get_default_config_split
 
 
-def test_number_rows() -> None:
+@pytest.mark.parametrize(
+    "name,use_token,error_code,cause",
+    [
+        ("public", False, None, None),
+        ("audio", False, None, None),
+        ("image", False, None, None),
+        # TODO: re-enable both when https://github.com/huggingface/datasets/issues/4875 is fixed
+        # ("gated", True, None, None),
+        # ("private", True, None, None),  # <- TODO: should we disable accessing private datasets?
+        ("empty", False, "SplitsNamesError", "FileNotFoundError"),
+        ("does_not_exist", False, "DatasetNotFoundError", None),
+        ("gated", False, "SplitsNamesError", "FileNotFoundError"),
+        ("private", False, "SplitsNamesError", "FileNotFoundError"),
+    ],
+)
+def test_number_rows(
+    hub_datasets: HubDatasets,
+    name: str,
+    use_token: bool,
+    error_code: str,
+    cause: str,
+) -> None:
+    dataset = hub_datasets[name]["name"]
+    expected_first_rows_response = hub_datasets[name]["first_rows_response"]
     rows_max_number = 7
-    response = get_first_rows_response(
-        "duorc",
-        "SelfRC",
-        "train",
-        rows_max_number=rows_max_number,
-        assets_base_url=ASSETS_BASE_URL,
-        hf_endpoint=HF_ENDPOINT,
-    )
-    assert len(response["rows"]) == rows_max_number
-
-
-def test_get_first_rows_response() -> None:
-    rows_max_number = 7
-    response = get_first_rows_response(
-        "common_voice",
-        "tr",
-        "train",
-        rows_max_number=rows_max_number,
-        assets_base_url=ASSETS_BASE_URL,
-        hf_endpoint=HF_ENDPOINT,
-    )
-
-    assert response["features"][0]["feature_idx"] == 0
-    assert response["features"][0]["name"] == "client_id"
-    assert response["features"][0]["type"]["_type"] == "Value"
-    assert response["features"][0]["type"]["dtype"] == "string"
-
-    assert response["features"][2]["name"] == "audio"
-    assert response["features"][2]["type"]["_type"] == "Audio"
-    assert response["features"][2]["type"]["sampling_rate"] == 48000
-
-    assert len(response["rows"]) == rows_max_number
-    assert response["rows"][0]["row_idx"] == 0
-    assert response["rows"][0]["row"]["client_id"].startswith("54fc2d015c27a057b")
-    assert response["rows"][0]["row"]["audio"] == [
-        {"src": f"{ASSETS_BASE_URL}/common_voice/--/tr/train/0/audio/audio.mp3", "type": "audio/mpeg"},
-        {"src": f"{ASSETS_BASE_URL}/common_voice/--/tr/train/0/audio/audio.wav", "type": "audio/wav"},
-    ]
-
-
-def test_no_features() -> None:
-    response = get_first_rows_response(
-        "severo/fix-401",
-        "severo--fix-401",
-        "train",
-        rows_max_number=1,
-        assets_base_url=ASSETS_BASE_URL,
-        hf_endpoint=HF_ENDPOINT,
-    )
-
-    # TODO: re-enable when we understand why it works locally but not in the CI (order of the features)
-    # assert response["features"][5]["feature_idx"] == 5
-    # assert response["features"][5]["name"] == "area_mean"
-    # assert response["features"][5]["type"]["_type"] == "Value"
-    # assert response["features"][5]["type"]["dtype"] == "float64"
-
-    assert response["rows"][0]["row_idx"] == 0
-    assert response["rows"][0]["row"]["diagnosis"] == "M"
-    assert response["rows"][0]["row"]["area_mean"] == 1001.0
+    dataset, config, split = get_default_config_split(dataset)
+    if error_code is None:
+        response = get_first_rows_response(
+            dataset_name=dataset,
+            config_name=config,
+            split_name=split,
+            assets_base_url=ASSETS_BASE_URL,
+            hf_endpoint=HF_ENDPOINT,
+            hf_token=HF_TOKEN if use_token else None,
+            rows_max_number=rows_max_number,
+        )
+        assert response == expected_first_rows_response
+        return
+    with pytest.raises(CustomError) as exc_info:
+        get_first_rows_response(
+            dataset_name=dataset,
+            config_name=config,
+            split_name=split,
+            assets_base_url=ASSETS_BASE_URL,
+            hf_endpoint=HF_ENDPOINT,
+            hf_token=HF_TOKEN if use_token else None,
+            rows_max_number=rows_max_number,
+        )
+    assert exc_info.value.code == error_code
+    if cause is None:
+        assert exc_info.value.disclose_cause is False
+        assert exc_info.value.cause_exception is None
+    else:
+        assert exc_info.value.disclose_cause is True
+        assert exc_info.value.cause_exception == cause
+        response = exc_info.value.as_response()
+        assert set(response.keys()) == {"error", "cause_exception", "cause_message", "cause_traceback"}
+        assert response["error"] == "Cannot get the split names for the dataset."
+        response_dict = dict(response)
+        # ^ to remove mypy warnings
+        assert response_dict["cause_exception"] == "FileNotFoundError"
+        assert str(response_dict["cause_message"]).startswith("Couldn't find a dataset script at ")
+        assert isinstance(response_dict["cause_traceback"], list)
+        assert response_dict["cause_traceback"][0] == "Traceback (most recent call last):\n"
