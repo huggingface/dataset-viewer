@@ -23,55 +23,55 @@ from worker.utils import (
 logger = logging.getLogger(__name__)
 
 
-def refresh_splits(dataset_name: str, hf_endpoint: str, hf_token: Optional[str] = None) -> Tuple[HTTPStatus, bool]:
+def refresh_splits(dataset: str, hf_endpoint: str, hf_token: Optional[str] = None) -> Tuple[HTTPStatus, bool]:
     try:
-        response = get_splits_response(dataset_name, hf_endpoint, hf_token)
-        upsert_splits_response(dataset_name, dict(response), HTTPStatus.OK)
-        logger.debug(f"dataset={dataset_name} is valid, cache updated")
+        response = get_splits_response(dataset, hf_endpoint, hf_token)
+        upsert_splits_response(dataset, dict(response), HTTPStatus.OK)
+        logger.debug(f"dataset={dataset} is valid, cache updated")
 
-        splits_in_cache = get_dataset_first_rows_response_splits(dataset_name)
-        new_splits = [(s["dataset_name"], s["config_name"], s["split_name"]) for s in response["splits"]]
+        splits_in_cache = get_dataset_first_rows_response_splits(dataset)
+        new_splits = [(s["dataset"], s["config"], s["split"]) for s in response["splits"]]
         splits_to_delete = [s for s in splits_in_cache if s not in new_splits]
         for d, c, s in splits_to_delete:
             delete_first_rows_responses(d, c, s)
         logger.debug(
             f"{len(splits_to_delete)} 'first-rows' responses deleted from the cache for obsolete splits of"
-            f" dataset={dataset_name}"
+            f" dataset={dataset}"
         )
         for d, c, s in new_splits:
             add_first_rows_job(d, c, s)
-        logger.debug(f"{len(new_splits)} 'first-rows' jobs added for the splits of dataset={dataset_name}")
+        logger.debug(f"{len(new_splits)} 'first-rows' jobs added for the splits of dataset={dataset}")
         return HTTPStatus.OK, False
     except DatasetNotFoundError as err:
-        logger.debug(f"the dataset={dataset_name} could not be found, don't update the cache")
+        logger.debug(f"the dataset={dataset} could not be found, don't update the cache")
         return err.status_code, False
     except WorkerCustomError as err:
         upsert_splits_response(
-            dataset_name,
+            dataset,
             dict(err.as_response()),
             err.status_code,
             err.code,
             dict(err.as_response_with_cause()),
         )
-        logger.debug(f"splits response for dataset={dataset_name} had an error, cache updated")
+        logger.debug(f"splits response for dataset={dataset} had an error, cache updated")
         return err.status_code, False
     except Exception as err:
         e = UnexpectedError(str(err), err)
         upsert_splits_response(
-            dataset_name,
+            dataset,
             dict(e.as_response()),
             e.status_code,
             e.code,
             dict(e.as_response_with_cause()),
         )
-        logger.debug(f"splits response for dataset={dataset_name} had a server error, cache updated")
+        logger.debug(f"splits response for dataset={dataset} had a server error, cache updated")
         return e.status_code, True
 
 
 def refresh_first_rows(
-    dataset_name: str,
-    config_name: str,
-    split_name: str,
+    dataset: str,
+    config: str,
+    split: str,
     assets_base_url: str,
     hf_endpoint: str,
     hf_token: Optional[str] = None,
@@ -82,9 +82,9 @@ def refresh_first_rows(
 ) -> Tuple[HTTPStatus, bool]:
     try:
         response = get_first_rows_response(
-            dataset_name,
-            config_name,
-            split_name,
+            dataset,
+            config,
+            split,
             assets_base_url=assets_base_url,
             hf_endpoint=hf_endpoint,
             hf_token=hf_token,
@@ -93,43 +93,41 @@ def refresh_first_rows(
             rows_max_number=rows_max_number,
             rows_min_number=rows_min_number,
         )
-        upsert_first_rows_response(dataset_name, config_name, split_name, dict(response), HTTPStatus.OK)
-        logger.debug(f"dataset={dataset_name} config={config_name} split={split_name} is valid, cache updated")
+        upsert_first_rows_response(dataset, config, split, dict(response), HTTPStatus.OK)
+        logger.debug(f"dataset={dataset} config={config} split={split} is valid, cache updated")
         return HTTPStatus.OK, False
     except (DatasetNotFoundError, ConfigNotFoundError, SplitNotFoundError) as err:
         logger.debug(
-            f"the dataset={dataset_name}, config {config_name} or split {split_name} could not be found, don't update"
-            " the cache"
+            f"the dataset={dataset}, config {config} or split {split} could not be found, don't update the cache"
         )
         return err.status_code, False
     except WorkerCustomError as err:
         upsert_first_rows_response(
-            dataset_name,
-            config_name,
-            split_name,
+            dataset,
+            config,
+            split,
             dict(err.as_response()),
             err.status_code,
             err.code,
             dict(err.as_response_with_cause()),
         )
         logger.debug(
-            f"first-rows response for dataset={dataset_name} config={config_name} split={split_name} had an error,"
-            " cache updated"
+            f"first-rows response for dataset={dataset} config={config} split={split} had an error, cache updated"
         )
         return err.status_code, False
     except Exception as err:
         e = UnexpectedError(str(err), err)
         upsert_first_rows_response(
-            dataset_name,
-            config_name,
-            split_name,
+            dataset,
+            config,
+            split,
             dict(e.as_response()),
             e.status_code,
             e.code,
             dict(e.as_response_with_cause()),
         )
         logger.debug(
-            f"first-rows response for dataset={dataset_name} config={config_name} split={split_name} had a server"
+            f"first-rows response for dataset={dataset} config={config} split={split} had a server"
             " error, cache updated"
         )
         return e.status_code, True

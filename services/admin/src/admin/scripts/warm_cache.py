@@ -25,24 +25,21 @@ def get_hf_dataset_names():
 
 def warm_cache(dataset_names: List[str]) -> None:
     logger = logging.getLogger("warm_cache")
-    for dataset_name in dataset_names:
-        if should_dataset_be_refreshed(dataset_name):
+    for dataset in dataset_names:
+        if should_dataset_be_refreshed(dataset):
             # don't mark the cache entries as stale, because it's manually triggered
-            add_dataset_job(dataset_name)
-            logger.info(f"added a job to refresh '{dataset_name}'")
-        elif split_full_names := list_split_full_names_to_refresh(dataset_name):
+            add_dataset_job(dataset)
+            logger.info(f"added a job to refresh '{dataset}'")
+        elif split_full_names := list_split_full_names_to_refresh(dataset):
             for split_full_name in split_full_names:
-                dataset_name = split_full_name["dataset_name"]
-                config_name = split_full_name["config_name"]
-                split_name = split_full_name["split_name"]
+                dataset = split_full_name["dataset"]
+                config = split_full_name["config"]
+                split = split_full_name["split"]
                 # don't mark the cache entries as stale, because it's manually triggered
-                add_split_job(dataset_name, config_name, split_name)
-                logger.info(
-                    f"added a job to refresh split '{split_name}' from dataset '{dataset_name}' with config"
-                    f" '{config_name}'"
-                )
+                add_split_job(dataset, config, split)
+                logger.info(f"added a job to refresh split '{split}' from dataset '{dataset}' with config '{config}'")
         else:
-            logger.debug(f"dataset already in the cache: '{dataset_name}'")
+            logger.debug(f"dataset already in the cache: '{dataset}'")
 
     # TODO? also warm splits/ and first-rows/ caches. For now, there are no methods to
     # get access to the stale status, and there is no more logic relation between both cache,

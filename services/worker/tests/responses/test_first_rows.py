@@ -35,9 +35,9 @@ def test_number_rows(
     dataset, config, split = get_default_config_split(dataset)
     if error_code is None:
         response = get_first_rows_response(
-            dataset_name=dataset,
-            config_name=config,
-            split_name=split,
+            dataset=dataset,
+            config=config,
+            split=split,
             assets_base_url=ASSETS_BASE_URL,
             hf_endpoint=HF_ENDPOINT,
             hf_token=HF_TOKEN if use_token else None,
@@ -47,9 +47,9 @@ def test_number_rows(
         return
     with pytest.raises(CustomError) as exc_info:
         get_first_rows_response(
-            dataset_name=dataset,
-            config_name=config,
-            split_name=split,
+            dataset=dataset,
+            config=config,
+            split=split,
             assets_base_url=ASSETS_BASE_URL,
             hf_endpoint=HF_ENDPOINT,
             hf_token=HF_TOKEN if use_token else None,

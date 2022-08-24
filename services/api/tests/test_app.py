@@ -52,26 +52,6 @@ def clean_mongo_databases() -> None:
     clean_queue_database()
 
 
-# TODO: move to e2e tests
-# def test_get_cache_reports(client: TestClient) -> None:
-#     refresh_dataset_split_full_names("acronym_identification")
-#     response = client.get("/cache-reports")
-#     assert response.status_code == 200
-#     json = response.json()
-#     assert "datasets" in json
-#     assert "splits" in json
-#     datasets = json["datasets"]
-#     assert "empty" in datasets
-#     assert "error" in datasets
-#     assert "stale" in datasets
-#     assert "valid" in datasets
-#     assert len(datasets["valid"]) == 1
-#     report = datasets["valid"][0]
-#     assert "dataset" in report
-#     assert "status" in report
-#     assert "error" in report
-
-
 def test_get_valid_datasets(client: TestClient) -> None:
     response = client.get("/valid")
     assert response.status_code == 200

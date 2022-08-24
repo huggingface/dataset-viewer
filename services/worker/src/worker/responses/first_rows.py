@@ -34,50 +34,47 @@ Row = Dict[str, Any]
 
 
 class FeatureItem(TypedDict):
-    dataset: str
-    config: str
-    split: str
     feature_idx: int
     name: str
     type: Dict[str, Any]
 
 
 class RowItem(TypedDict):
-    dataset: str
-    config: str
-    split: str
     row_idx: int
     row: Dict[str, Any]
     truncated_cells: List[str]
 
 
 class FirstRowsResponse(TypedDict):
+    dataset: str
+    config: str
+    split: str
     features: List[FeatureItem]
     rows: List[RowItem]
 
 
 @retry(logger=logger)
 def get_rows(
-    dataset_name: str,
-    config_name: str,
-    split_name: str,
+    dataset: str,
+    config: str,
+    split: str,
     streaming: bool,
     rows_max_number: int,
     hf_token: Optional[str] = None,
 ) -> List[Row]:
-    dataset = load_dataset(
-        dataset_name,
-        name=config_name,
-        split=split_name,
+    ds = load_dataset(
+        dataset,
+        name=config,
+        split=split,
         streaming=streaming,
         use_auth_token=hf_token,
     )
     if streaming:
-        if not isinstance(dataset, IterableDataset):
+        if not isinstance(ds, IterableDataset):
             raise TypeError("load_dataset should return an IterableDataset in streaming mode")
-    elif not isinstance(dataset, Dataset):
+    elif not isinstance(ds, Dataset):
         raise TypeError("load_dataset should return a Dataset in normal mode")
-    rows_plus_one = list(itertools.islice(dataset, rows_max_number + 1))
+    rows_plus_one = list(itertools.islice(ds, rows_max_number + 1))
     # ^^ to be able to detect if a split has exactly ROWS_MAX_NUMBER rows
     if len(rows_plus_one) <= rows_max_number:
         logger.debug(f"all the rows in the split have been fetched ({len(rows_plus_one)})")
@@ -133,11 +130,8 @@ def truncate_row_items(row_items: List[RowItem], rows_max_bytes: int) -> List[Ro
     return row_items
 
 
-def to_row_item(dataset_name: str, config_name: str, split_name: str, row_idx: int, row: Row) -> RowItem:
+def to_row_item(dataset: str, config: str, split: str, row_idx: int, row: Row) -> RowItem:
     return {
-        "dataset": dataset_name,
-        "config": config_name,
-        "split": split_name,
         "row_idx": row_idx,
         "row": row,
         "truncated_cells": [],
@@ -145,9 +139,9 @@ def to_row_item(dataset_name: str, config_name: str, split_name: str, row_idx: i
 
 
 def create_truncated_row_items(
-    dataset_name: str,
-    config_name: str,
-    split_name: str,
+    dataset: str,
+    config: str,
+    split: str,
     rows: List[Row],
     rows_max_bytes: int,
     rows_min_number: int,
@@ -161,7 +155,7 @@ def create_truncated_row_items(
     # To enforce this:
     # 1. first get the first rows_min_number rows
     for row_idx, row in enumerate(rows[:rows_min_number]):
-        row_item = to_row_item(dataset_name, config_name, split_name, row_idx, row)
+        row_item = to_row_item(dataset, config, split, row_idx, row)
         rows_bytes += get_size_in_bytes(row_item)
         row_items.append(row_item)
 
@@ -177,7 +171,7 @@ def create_truncated_row_items(
     # 3. else: add the remaining rows until the end, or until the bytes threshold
     for idx, row in enumerate(rows[rows_min_number:]):
         row_idx = rows_min_number + idx
-        row_item = to_row_item(dataset_name, config_name, split_name, row_idx, row)
+        row_item = to_row_item(dataset, config, split, row_idx, row)
         rows_bytes += get_size_in_bytes(row_item)
         if rows_bytes >= rows_max_bytes:
             logger.debug(
@@ -190,14 +184,14 @@ def create_truncated_row_items(
 
 
 def transform_rows(
-    dataset_name: str, config_name: str, split_name: str, rows: List[Row], features: Features, assets_base_url: str
+    dataset: str, config: str, split: str, rows: List[Row], features: Features, assets_base_url: str
 ) -> List[Row]:
     return [
         {
             featureName: get_cell_value(
-                dataset_name,
-                config_name,
-                split_name,
+                dataset,
+                config,
+                split,
                 row_idx,
                 row[featureName],
                 featureName,
@@ -217,13 +211,10 @@ def transform_rows(
 # > An array is an *ordered* sequence of zero or more values.
 # > The terms "object" and "array" come from the conventions of JavaScript.
 # from https://stackoverflow.com/a/7214312/7351594 / https://www.rfc-editor.org/rfc/rfc7159.html
-def to_features_list(dataset_name: str, config_name: str, split_name: str, features: Features) -> List[FeatureItem]:
+def to_features_list(dataset: str, config: str, split: str, features: Features) -> List[FeatureItem]:
     features_dict = features.to_dict()
     return [
         {
-            "dataset": dataset_name,
-            "config": config_name,
-            "split": split_name,
             "feature_idx": idx,
             "name": name,
             "type": features_dict[name],
@@ -233,9 +224,9 @@ def to_features_list(dataset_name: str, config_name: str, split_name: str, featu
 
 
 def get_first_rows_response(
-    dataset_name: str,
-    config_name: str,
-    split_name: str,
+    dataset: str,
+    config: str,
+    split: str,
     assets_base_url: str,
     hf_endpoint: str,
     hf_token: Optional[str] = None,
@@ -248,12 +239,12 @@ def get_first_rows_response(
     Get the response of /first-rows for one specific split of a dataset from huggingface.co.
     Dataset can be private or gated if you pass an acceptable token.
     Args:
-        dataset_name (`str`):
+        dataset (`str`):
             A namespace (user or an organization) and a repo name separated
             by a `/`.
-        config_name (`str`):
+        config (`str`):
             A configuration name.
-        split_name (`str`):
+        split (`str`):
             A split name.
         assets_base_url (`str`):
             The base url of the assets.
@@ -291,7 +282,7 @@ def get_first_rows_response(
           If the post-processing of the split rows failed, e.g. while saving the images or audio files to the assets.
     </Tip>
     """
-    logger.info(f"get first-rows for dataset={dataset_name} config={config_name} split={split_name}")
+    logger.info(f"get first-rows for dataset={dataset} config={config} split={split}")
     if rows_max_bytes is None:
         rows_max_bytes = DEFAULT_ROWS_MAX_BYTES
     if rows_max_number is None:
@@ -299,15 +290,15 @@ def get_first_rows_response(
     if rows_min_number is None:
         rows_min_number = 0
     # first ensure the tuple (dataset, config, split) exists on the Hub
-    splits_response = get_splits_response(dataset_name, hf_endpoint, hf_token)
+    splits_response = get_splits_response(dataset, hf_endpoint, hf_token)
     # ^ can raise DatasetNotFoundError or SplitsNamesError
-    if config_name not in [split_item["config_name"] for split_item in splits_response["splits"]]:
-        raise ConfigNotFoundError(f"config {config_name} does not exist for dataset {dataset_name}")
-    if {"dataset_name": dataset_name, "config_name": config_name, "split_name": split_name} not in [
+    if config not in [split_item["config"] for split_item in splits_response["splits"]]:
+        raise ConfigNotFoundError(f"config {config} does not exist for dataset {dataset}")
+    if {"dataset": dataset, "config": config, "split": split} not in [
         {
-            "dataset_name": split_item["dataset_name"],
-            "config_name": split_item["config_name"],
-            "split_name": split_item["split_name"],
+            "dataset": split_item["dataset"],
+            "config": split_item["config"],
+            "split": split_item["split"],
         }
         for split_item in splits_response["splits"]
     ]:
@@ -315,8 +306,8 @@ def get_first_rows_response(
     # get the features
     try:
         info = get_dataset_config_info(
-            path=dataset_name,
-            config_name=config_name,
+            path=dataset,
+            config_name=config,
             use_auth_token=hf_token,
         )
     except Exception as err:
@@ -325,9 +316,9 @@ def get_first_rows_response(
         try:
             # https://github.com/huggingface/datasets/blob/f5826eff9b06ab10dba1adfa52543341ef1e6009/src/datasets/iterable_dataset.py#L1255
             iterable_dataset = load_dataset(
-                dataset_name,
-                name=config_name,
-                split=split_name,
+                dataset,
+                name=config,
+                split=split,
                 streaming=True,
                 use_auth_token=hf_token,
             )
@@ -343,9 +334,7 @@ def get_first_rows_response(
         features = info.features
     # get the rows
     try:
-        rows = get_rows(
-            dataset_name, config_name, split_name, streaming=True, rows_max_number=rows_max_number, hf_token=hf_token
-        )
+        rows = get_rows(dataset, config, split, streaming=True, rows_max_number=rows_max_number, hf_token=hf_token)
     except Exception as err:
         if max_size_fallback is None or info.size_in_bytes is None or info.size_in_bytes > max_size_fallback:
             raise StreamingRowsError(
@@ -354,9 +343,9 @@ def get_first_rows_response(
             ) from err
         try:
             rows = get_rows(
-                dataset_name,
-                config_name,
-                split_name,
+                dataset,
+                config,
+                split,
                 streaming=False,
                 rows_max_number=rows_max_number,
                 hf_token=hf_token,
@@ -368,18 +357,19 @@ def get_first_rows_response(
             ) from err
     # transform the rows, if needed (e.g. save the images or audio to the assets, and return their URL)
     try:
-        transformed_rows = transform_rows(dataset_name, config_name, split_name, rows, features, assets_base_url)
+        transformed_rows = transform_rows(dataset, config, split, rows, features, assets_base_url)
     except Exception as err:
         raise RowsPostProcessingError(
             "Server error while post-processing the split rows. Please report the issue.",
             cause=err,
         ) from err
     # truncate the rows to fit within the restrictions, and prepare them as RowItems
-    row_items = create_truncated_row_items(
-        dataset_name, config_name, split_name, transformed_rows, rows_max_bytes, rows_min_number
-    )
+    row_items = create_truncated_row_items(dataset, config, split, transformed_rows, rows_max_bytes, rows_min_number)
     # return the response
     return {
-        "features": to_features_list(dataset_name, config_name, split_name, features),
+        "dataset": dataset,
+        "config": config,
+        "split": split,
+        "features": to_features_list(dataset, config, split, features),
         "rows": row_items,
     }
