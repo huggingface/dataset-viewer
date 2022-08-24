@@ -6,7 +6,7 @@
   - name: ASSETS_DIRECTORY
     value: {{ .Values.worker.splits.assetsDirectory | quote }}
   - name: splits_REVISION
-    value: {{ .Values.worker.datasets.datasetsRevision | quote }}
+    value: {{ .Values.worker.splits.datasetsRevision | quote }}
   - name: HF_DATASETS_CACHE
     value: "{{ .Values.worker.splits.cacheDirectory }}/datasets"
   - name: HF_ENDPOINT
