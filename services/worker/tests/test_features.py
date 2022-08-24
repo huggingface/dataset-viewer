@@ -40,41 +40,29 @@ from .utils import ASSETS_BASE_URL
         # ^ TODO: is it a datasets bug?
         # (alias double)
         ("float64", -3.14, "float64"),
-        # time32[(s|ms)]
-        # time64[(us|ns)]
-        # (time(1, 1, 1), None, datetime.datetime(1, 1, 1), "time64[us]"),
-        # ^ TODO: add after https://github.com/huggingface/datasets/issues/4620 is fixed
-        # timestamp[(s|ms|us|ns)]
+        # TODO: time32[(s|ms)]
+        # TODO: time64[(us|ns)]
+        ("time", datetime.time(1, 1, 1), "time64[us]"),
         ("timestamp_1", datetime.datetime(2020, 1, 1, 0, 0), "timestamp[ns]"),
         ("timestamp_2", datetime.datetime(2017, 12, 16, 3, 2, 35, 500000), "timestamp[ns]"),
         ("timestamp_3", datetime.datetime(2017, 12, 16, 3, 2, 35, 500000), "timestamp[ns]"),
-        # timestamp[(s|ms|us|ns), tz=(tzstring)]
         (
-            "timestamp_4",
+            "timestamp_tz",
             datetime.datetime(2020, 1, 1, 0, 0, tzinfo=ZoneInfo("US/Pacific")),
             "timestamp[ns, tz=US/Pacific]",
         ),
-        # date32
-        # date64
-        # duration[(s|ms|us|ns)]
-        # decimal128(precision, scale)
-        # decimal256(precision, scale)
-        # binary
-        # large_binary
+        # TODO: date32
+        # TODO: date64
+        # TODO: duration[(s|ms|us|ns)]
+        # TODO: decimal128(precision, scale)
+        # TODO: decimal256(precision, scale)
+        # TODO: binary
+        # TODO: large_binary
         ("string", "a string", "string"),
-        # large_string
+        # TODO: large_string
     ],
 )
 def test_value(dataset_type, output_value, output_dtype, datasets) -> None:
-    # if input_dtype == "datetime64[ns]":
-    #     a = pa.array(
-    #         [
-    #             datetime.datetime(2022, 7, 4, 3, 2, 1),
-    #         ],
-    #         type=pa.date64(),
-    #     )
-    #     dataset = Dataset.from_buffer(a.to_buffer())
-    # else:
     dataset = datasets[dataset_type]
     feature = dataset.features["col"]
     assert feature._type == "Value"

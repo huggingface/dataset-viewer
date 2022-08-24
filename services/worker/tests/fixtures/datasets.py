@@ -1,6 +1,7 @@
 from pathlib import Path
 from typing import Any, Dict
 
+import datetime
 import numpy as np
 import pandas as pd  # type: ignore
 import pytest
@@ -38,6 +39,7 @@ def other(content: Any, feature_type: FeatureType = None) -> Dataset:
 def datasets() -> Dict[str, Dataset]:
     sampling_rate = 16_000
     return {
+        # Value feature
         "null": value(None, None),
         "bool": value(False, pd.BooleanDtype()),
         "int8": value(-7, pd.Int8Dtype()),
@@ -51,11 +53,13 @@ def datasets() -> Dict[str, Dataset]:
         "float16": value(-3.14, np.float16),
         "float32": value(-3.14, np.float32),
         "float64": value(-3.14, np.float64),
+        "time": value(datetime.time(1, 1, 1), None),
         "timestamp_1": value(pd.Timestamp(2020, 1, 1), None),
         "timestamp_2": value(pd.Timestamp(1513393355.5, unit="s"), None),
         "timestamp_3": value(pd.Timestamp(1513393355500, unit="ms"), None),
-        "timestamp_4": value(pd.Timestamp(year=2020, month=1, day=1, tz="US/Pacific"), None),
+        "timestamp_tz": value(pd.Timestamp(year=2020, month=1, day=1, tz="US/Pacific"), None),
         "string": value("a string", pd.StringDtype()),
+        # other types of features
         "class_label": other("positive", ClassLabel(names=["negative", "positive"])),
         "dict": other({"a": 0}, None),
         "list": other([{"a": 0}], None),

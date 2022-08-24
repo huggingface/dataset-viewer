@@ -7,7 +7,6 @@ from ..fixtures.hub import DatasetRepos, DatasetReposType
 from ..utils import ASSETS_BASE_URL, HF_ENDPOINT, HF_TOKEN, get_default_config_split
 
 
-@pytest.mark.wip
 @pytest.mark.parametrize(
     "type,use_token,error_code,cause",
     [

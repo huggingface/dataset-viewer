@@ -1,44 +1,12 @@
 import pytest
 from libutils.exceptions import CustomError
 
-from worker.responses.splits import get_dataset_split_full_names, get_splits_response
+from worker.responses.splits import get_splits_response
 
 from ..fixtures.hub import DatasetRepos, DatasetReposType
 from ..utils import HF_ENDPOINT, HF_TOKEN, get_default_config_split
 
 
-# TODO: remove this test? It's an internal function after all
-@pytest.mark.wip
-@pytest.mark.parametrize(
-    "type,use_token,exception",
-    [
-        ("public", False, None),
-        ("audio", False, None),
-        ("gated", True, None),
-        ("private", True, None),  # <- TODO: should we disable accessing private datasets?
-        ("empty", False, FileNotFoundError),
-        ("does_not_exist", False, FileNotFoundError),
-        ("gated", False, FileNotFoundError),
-        ("private", False, FileNotFoundError),
-    ],
-)
-def test_get_dataset_split_full_names_simple_csv(
-    hf_dataset_repos_csv_data: DatasetRepos, type: DatasetReposType, use_token: bool, exception: BaseException
-) -> None:
-    if exception:
-        with pytest.raises(FileNotFoundError):
-            get_dataset_split_full_names(
-                dataset_name=hf_dataset_repos_csv_data[type], hf_token=HF_TOKEN if use_token else None
-            )
-        return
-    split_full_names = get_dataset_split_full_names(
-        dataset_name=hf_dataset_repos_csv_data[type], hf_token=HF_TOKEN if use_token else None
-    )
-    dataset, config, split = get_default_config_split(hf_dataset_repos_csv_data[type])
-    assert split_full_names == [{"dataset_name": dataset, "config_name": config, "split_name": split}]
-
-
-@pytest.mark.wip
 @pytest.mark.parametrize(
     "type,use_token,error_code,cause",
     [
