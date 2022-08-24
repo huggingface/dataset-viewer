@@ -16,7 +16,6 @@ from worker.refresh import refresh_first_rows, refresh_splits
 from .fixtures.files import DATA
 from .utils import (
     ASSETS_BASE_URL,
-    DEFAULT_HF_ENDPOINT,
     HF_ENDPOINT,
     MONGO_CACHE_DATABASE,
     MONGO_QUEUE_DATABASE,
@@ -83,14 +82,3 @@ def test_refresh_first_rows(hf_public_dataset_repo_csv_data: str) -> None:
     assert len(response["rows"]) == min(len(DATA), ROWS_MAX_NUMBER)
     assert response["rows"][0]["row_idx"] == 0
     assert response["rows"][0]["row"] == {"col_1": 0, "col_2": 0, "col_3": 0.0}
-
-
-@pytest.mark.real_dataset
-def test_large_document() -> None:
-    # see https://github.com/huggingface/datasets-server/issues/89
-    dataset_name = "SaulLu/Natural_Questions_HTML"
-
-    assert refresh_splits(dataset_name, hf_endpoint=DEFAULT_HF_ENDPOINT) == (HTTPStatus.OK, False)
-    _, http_status, error_code = get_splits_response(dataset_name)
-    assert http_status == HTTPStatus.OK
-    assert error_code is None
