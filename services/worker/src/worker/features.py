@@ -20,9 +20,9 @@ from worker.asset import create_audio_files, create_image_file
 
 
 def image(
-    dataset_name: str,
-    config_name: str,
-    split_name: str,
+    dataset: str,
+    config: str,
+    split: str,
     row_idx: int,
     value: Any,
     featureName: str,
@@ -36,7 +36,7 @@ def image(
     for ext in [".jpg", ".png"]:
         try:
             return create_image_file(
-                dataset_name, config_name, split_name, row_idx, featureName, f"image{ext}", value, assets_base_url
+                dataset, config, split, row_idx, featureName, f"image{ext}", value, assets_base_url
             )
         except OSError:
             # if wrong format, try the next one, see https://github.com/huggingface/datasets-server/issues/191
@@ -47,9 +47,9 @@ def image(
 
 
 def audio(
-    dataset_name: str,
-    config_name: str,
-    split_name: str,
+    dataset: str,
+    config: str,
+    split: str,
     row_idx: int,
     value: Any,
     featureName: str,
@@ -67,18 +67,16 @@ def audio(
     if type(sampling_rate) != int:
         raise TypeError("'sampling_rate' field must be an integer")
     # this function can raise, we don't catch it
-    return create_audio_files(
-        dataset_name, config_name, split_name, row_idx, featureName, array, sampling_rate, assets_base_url
-    )
+    return create_audio_files(dataset, config, split, row_idx, featureName, array, sampling_rate, assets_base_url)
 
 
 # should we return both the value (as given by datasets) and the additional contents (audio files, image files)?
 # in the case of the images or audio, if the value contains the raw data, it would take too much space and would
 # trigger the response truncation -> less rows would be viewable
 def get_cell_value(
-    dataset_name: str,
-    config_name: str,
-    split_name: str,
+    dataset: str,
+    config: str,
+    split: str,
     row_idx: int,
     cell: Any,
     featureName: str,
@@ -86,9 +84,9 @@ def get_cell_value(
     assets_base_url: str,
 ) -> Any:
     if isinstance(fieldType, Image):
-        return image(dataset_name, config_name, split_name, row_idx, cell, featureName, assets_base_url)
+        return image(dataset, config, split, row_idx, cell, featureName, assets_base_url)
     elif isinstance(fieldType, Audio):
-        return audio(dataset_name, config_name, split_name, row_idx, cell, featureName, assets_base_url)
+        return audio(dataset, config, split, row_idx, cell, featureName, assets_base_url)
     elif (
         isinstance(fieldType, Value)
         or isinstance(fieldType, ClassLabel)

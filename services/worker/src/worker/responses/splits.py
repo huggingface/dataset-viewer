@@ -16,9 +16,9 @@ logger = logging.getLogger(__name__)
 
 
 class SplitFullName(TypedDict):
-    dataset_name: str
-    config_name: str
-    split_name: str
+    dataset: str
+    config: str
+    split: str
 
 
 class SplitItem(SplitFullName):
@@ -30,17 +30,17 @@ class SplitsResponse(TypedDict):
     splits: List[SplitItem]
 
 
-def get_dataset_split_full_names(dataset_name: str, hf_token: Optional[str] = None) -> List[SplitFullName]:
-    logger.info(f"get dataset '{dataset_name}' split full names")
+def get_dataset_split_full_names(dataset: str, hf_token: Optional[str] = None) -> List[SplitFullName]:
+    logger.info(f"get dataset '{dataset}' split full names")
     return [
-        {"dataset_name": dataset_name, "config_name": config_name, "split_name": split_name}
-        for config_name in get_dataset_config_names(dataset_name, use_auth_token=hf_token)
-        for split_name in get_dataset_split_names(dataset_name, config_name, use_auth_token=hf_token)
+        {"dataset": dataset, "config": config, "split": split}
+        for config in get_dataset_config_names(dataset, use_auth_token=hf_token)
+        for split in get_dataset_split_names(dataset, config, use_auth_token=hf_token)
     ]
 
 
 def get_splits_response(
-    dataset_name: str,
+    dataset: str,
     hf_endpoint: str,
     hf_token: Optional[str] = None,
 ) -> SplitsResponse:
@@ -48,7 +48,7 @@ def get_splits_response(
     Get the response of /splits for one specific dataset on huggingface.co.
     Dataset can be private or gated if you pass an acceptable token.
     Args:
-        dataset_name (`str`):
+        dataset (`str`):
             A namespace (user or an organization) and a repo name separated
             by a `/`.
         hf_token (`str`, *optional*):
@@ -64,24 +64,24 @@ def get_splits_response(
           If the list of splits could not be obtained using the datasets library.
     </Tip>
     """
-    logger.info(f"get splits for dataset={dataset_name}")
+    logger.info(f"get splits for dataset={dataset}")
     # first try to get the dataset config info
     try:
-        HfApi(endpoint=hf_endpoint).dataset_info(dataset_name, token=hf_token)
+        HfApi(endpoint=hf_endpoint).dataset_info(dataset, token=hf_token)
     except RepositoryNotFoundError as err:
         raise DatasetNotFoundError("The dataset does not exist on the Hub.") from err
     # get the list of splits
     try:
-        split_full_names = get_dataset_split_full_names(dataset_name, hf_token)
+        split_full_names = get_dataset_split_full_names(dataset, hf_token)
     except Exception as err:
         raise SplitsNamesError("Cannot get the split names for the dataset.", cause=err) from err
     # get the number of bytes and examples for each split
     config_info: Dict[str, DatasetInfo] = {}
     split_items: List[SplitItem] = []
     for split_full_name in split_full_names:
-        dataset = split_full_name["dataset_name"]
-        config = split_full_name["config_name"]
-        split = split_full_name["split_name"]
+        dataset = split_full_name["dataset"]
+        config = split_full_name["config"]
+        split = split_full_name["split"]
         try:
             if config not in config_info:
                 config_info[config] = get_dataset_config_info(
@@ -97,9 +97,9 @@ def get_splits_response(
             num_examples = None
         split_items.append(
             {
-                "dataset_name": dataset,
-                "config_name": config,
-                "split_name": split,
+                "dataset": dataset,
+                "config": config,
+                "split": split,
                 "num_bytes": num_bytes,
                 "num_examples": num_examples,
             }

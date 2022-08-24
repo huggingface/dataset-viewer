@@ -243,9 +243,9 @@ def get_splits_response(dataset: str, num_bytes: float = None, num_examples: int
     return {
         "splits": [
             {
-                "dataset_name": dataset,
-                "config_name": config,
-                "split_name": split,
+                "dataset": dataset,
+                "config": config,
+                "split": split,
                 "num_bytes": num_bytes,
                 "num_examples": num_examples,
             }
@@ -256,11 +256,11 @@ def get_splits_response(dataset: str, num_bytes: float = None, num_examples: int
 def get_first_rows_response(dataset: str, cols: Dict[str, Any], rows: List[Any]):
     dataset, config, split = get_default_config_split(dataset)
     return {
+        "dataset": dataset,
+        "config": config,
+        "split": split,
         "features": [
             {
-                "dataset": dataset,
-                "config": config,
-                "split": split,
                 "feature_idx": feature_idx,
                 "name": name,
                 "type": type,
@@ -269,9 +269,6 @@ def get_first_rows_response(dataset: str, cols: Dict[str, Any], rows: List[Any])
         ],
         "rows": [
             {
-                "dataset": dataset,
-                "config": config,
-                "split": split,
                 "row_idx": row_idx,
                 "truncated_cells": [],
                 "row": row,

@@ -47,8 +47,8 @@ def process_next_splits_job() -> bool:
     logger.debug("try to process a splits/ job")
 
     try:
-        job_id, dataset_name, retries = get_splits_job(MAX_JOBS_PER_DATASET)
-        logger.debug(f"job assigned: {job_id} for dataset={dataset_name}")
+        job_id, dataset, retries = get_splits_job(MAX_JOBS_PER_DATASET)
+        logger.debug(f"job assigned: {job_id} for dataset={dataset}")
     except EmptyQueue:
         logger.debug("no job in the queue")
         return False
@@ -56,18 +56,18 @@ def process_next_splits_job() -> bool:
     success = False
     retry = False
     try:
-        logger.info(f"compute dataset={dataset_name}")
-        http_status, can_retry = refresh_splits(dataset_name=dataset_name, hf_endpoint=HF_ENDPOINT, hf_token=HF_TOKEN)
+        logger.info(f"compute dataset={dataset}")
+        http_status, can_retry = refresh_splits(dataset=dataset, hf_endpoint=HF_ENDPOINT, hf_token=HF_TOKEN)
         success = http_status == HTTPStatus.OK
         if can_retry and retries < MAX_JOB_RETRIES:
             retry = True
     finally:
         finish_splits_job(job_id, success=success)
         result = "success" if success else "error"
-        logger.debug(f"job finished with {result}: {job_id} for dataset={dataset_name}")
+        logger.debug(f"job finished with {result}: {job_id} for dataset={dataset}")
         if retry:
-            add_splits_job(dataset_name, retries=retries + 1)
-            logger.debug(f"job re-enqueued (retries: {retries}) for dataset={dataset_name}")
+            add_splits_job(dataset, retries=retries + 1)
+            logger.debug(f"job re-enqueued (retries: {retries}) for dataset={dataset}")
     return True
 
 
@@ -76,8 +76,8 @@ def process_next_first_rows_job() -> bool:
     logger.debug("try to process a first-rows job")
 
     try:
-        job_id, dataset_name, config_name, split_name, retries = get_first_rows_job(MAX_JOBS_PER_DATASET)
-        logger.debug(f"job assigned: {job_id} for dataset={dataset_name} config={config_name} split={split_name}")
+        job_id, dataset, config, split, retries = get_first_rows_job(MAX_JOBS_PER_DATASET)
+        logger.debug(f"job assigned: {job_id} for dataset={dataset} config={config} split={split}")
     except EmptyQueue:
         logger.debug("no job in the queue")
         return False
@@ -85,11 +85,11 @@ def process_next_first_rows_job() -> bool:
     success = False
     retry = False
     try:
-        logger.info(f"compute dataset={dataset_name} config={config_name} split={split_name}")
+        logger.info(f"compute dataset={dataset} config={config} split={split}")
         http_status, can_retry = refresh_first_rows(
-            dataset_name=dataset_name,
-            config_name=config_name,
-            split_name=split_name,
+            dataset=dataset,
+            config=config,
+            split=split,
             assets_base_url=ASSETS_BASE_URL,
             hf_endpoint=HF_ENDPOINT,
             hf_token=HF_TOKEN,
@@ -104,15 +104,10 @@ def process_next_first_rows_job() -> bool:
     finally:
         finish_first_rows_job(job_id, success=success)
         result = "success" if success else "error"
-        logger.debug(
-            f"job finished with {result}: {job_id} for dataset={dataset_name} config={config_name} split={split_name}"
-        )
+        logger.debug(f"job finished with {result}: {job_id} for dataset={dataset} config={config} split={split}")
         if retry:
-            add_first_rows_job(dataset_name, config_name, split_name, retries=retries + 1)
-            logger.debug(
-                f"job re-enqueued (retries: {retries}) for"
-                f" dataset={dataset_name} config={config_name} split={split_name}"
-            )
+            add_first_rows_job(dataset, config, split, retries=retries + 1)
+            logger.debug(f"job re-enqueued (retries: {retries}) for dataset={dataset} config={config} split={split}")
     return True
 
 
