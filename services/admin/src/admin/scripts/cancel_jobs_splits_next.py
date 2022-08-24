@@ -10,4 +10,4 @@ if __name__ == "__main__":
     logger = logging.getLogger("cancel_jobs_splits_next")
     connect_to_queue(MONGO_QUEUE_DATABASE, MONGO_URL)
     cancel_started_splits_jobs()
-    logger.info("all the started jobs in the splits/ queue have been cancelled and re-enqueued")
+    logger.info("all the started jobs in the splits-next/ queue have been cancelled and re-enqueued")
