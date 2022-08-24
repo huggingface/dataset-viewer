@@ -7,7 +7,7 @@ from libcache.cache import (
     list_split_full_names_to_refresh,
     should_dataset_be_refreshed,
 )
-from libqueue.queue import add_dataset_job, add_split_job, connect_to_queue
+from libqueue.queue import add_first_rows_job, add_splits_job, connect_to_queue
 from libutils.logger import init_logger
 
 from admin.config import (
@@ -28,7 +28,7 @@ def warm_cache(dataset_names: List[str]) -> None:
     for dataset in dataset_names:
         if should_dataset_be_refreshed(dataset):
             # don't mark the cache entries as stale, because it's manually triggered
-            add_dataset_job(dataset)
+            add_splits_job(dataset)
             logger.info(f"added a job to refresh '{dataset}'")
         elif split_full_names := list_split_full_names_to_refresh(dataset):
             for split_full_name in split_full_names:
@@ -36,7 +36,7 @@ def warm_cache(dataset_names: List[str]) -> None:
                 config = split_full_name["config"]
                 split = split_full_name["split"]
                 # don't mark the cache entries as stale, because it's manually triggered
-                add_split_job(dataset, config, split)
+                add_first_rows_job(dataset, config, split)
                 logger.info(f"added a job to refresh split '{split}' from dataset '{dataset}' with config '{config}'")
         else:
             logger.debug(f"dataset already in the cache: '{dataset}'")

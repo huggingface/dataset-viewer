@@ -31,7 +31,7 @@ from api.routes.splits import splits_endpoint
 from api.routes.splits_next import create_splits_next_endpoint
 from api.routes.valid import create_is_valid_endpoint, valid_datasets_endpoint
 from api.routes.valid_next import create_is_valid_next_endpoint, valid_next_endpoint
-from api.routes.webhook import webhook_endpoint
+from api.routes.webhook import webhook_endpoint, webhook_endpoint_with_deprecated
 
 
 def create_app() -> Starlette:
@@ -58,7 +58,8 @@ def create_app() -> Starlette:
     ]
     to_protect: List[BaseRoute] = [
         # called by the Hub webhooks
-        Route("/webhook", endpoint=webhook_endpoint, methods=["POST"]),
+        Route("/webhook", endpoint=webhook_endpoint_with_deprecated, methods=["POST"]),
+        Route("/webhook-next", endpoint=webhook_endpoint, methods=["POST"]),
         # called by Prometheus
         Route("/metrics", endpoint=prometheus.endpoint),
     ]
