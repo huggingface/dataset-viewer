@@ -3,12 +3,12 @@ from libutils.exceptions import CustomError
 
 from worker.responses.splits import get_splits_response
 
-from ..fixtures.hub import DatasetRepos, DatasetReposType
-from ..utils import HF_ENDPOINT, HF_TOKEN, get_default_config_split
+from ..fixtures.hub import HubDatasets
+from ..utils import HF_ENDPOINT, HF_TOKEN
 
 
 @pytest.mark.parametrize(
-    "type,use_token,error_code,cause",
+    "name,use_token,error_code,cause",
     [
         ("public", False, None, None),
         ("audio", False, None, None),
@@ -21,56 +21,33 @@ from ..utils import HF_ENDPOINT, HF_TOKEN, get_default_config_split
     ],
 )
 def test_get_splits_response_simple_csv(
-    hf_dataset_repos_csv_data: DatasetRepos, type: DatasetReposType, use_token: bool, error_code: str, cause: str
+    hub_datasets: HubDatasets, name: str, use_token: bool, error_code: str, cause: str
 ) -> None:
-    if error_code:
-        with pytest.raises(CustomError) as exc_info:
-            get_splits_response(hf_dataset_repos_csv_data[type], HF_ENDPOINT, HF_TOKEN if use_token else None)
-        assert exc_info.value.code == error_code
-        if cause is None:
-            assert exc_info.value.disclose_cause is False
-            assert exc_info.value.cause_exception is None
-        else:
-            assert exc_info.value.disclose_cause is True
-            assert exc_info.value.cause_exception == cause
-            response = exc_info.value.as_response()
-            assert set(response.keys()) == {"error", "cause_exception", "cause_message", "cause_traceback"}
-            assert response["error"] == "Cannot get the split names for the dataset."
-            response_dict = dict(response)
-            # ^ to remove mypy warnings
-            assert response_dict["cause_exception"] == "FileNotFoundError"
-            assert str(response_dict["cause_message"]).startswith("Couldn't find a dataset script at ")
-            assert isinstance(response_dict["cause_traceback"], list)
-            assert response_dict["cause_traceback"][0] == "Traceback (most recent call last):\n"
+    dataset = hub_datasets[name]["name"]
+    expected_splits_response = hub_datasets[name]["splits_response"]
+    if error_code is None:
+        splits_response = get_splits_response(dataset, HF_ENDPOINT, HF_TOKEN if use_token else None)
+        assert splits_response == expected_splits_response
         return
-    splits_response = get_splits_response(
-        hf_dataset_repos_csv_data[type], HF_ENDPOINT, HF_TOKEN if use_token else None
-    )
-    dataset, config, split = get_default_config_split(hf_dataset_repos_csv_data[type])
-    if type == "audio":
-        assert splits_response == {
-            "splits": [
-                {
-                    "dataset_name": dataset,
-                    "config_name": config,
-                    "split_name": split,
-                    "num_bytes": 54.0,
-                    "num_examples": 1,
-                }
-            ]
-        }
+
+    with pytest.raises(CustomError) as exc_info:
+        get_splits_response(dataset, HF_ENDPOINT, HF_TOKEN if use_token else None)
+    assert exc_info.value.code == error_code
+    if cause is None:
+        assert exc_info.value.disclose_cause is False
+        assert exc_info.value.cause_exception is None
     else:
-        assert splits_response == {
-            "splits": [
-                {
-                    "dataset_name": dataset,
-                    "config_name": config,
-                    "split_name": split,
-                    "num_bytes": None,
-                    "num_examples": None,
-                }
-            ]
-        }
+        assert exc_info.value.disclose_cause is True
+        assert exc_info.value.cause_exception == cause
+        response = exc_info.value.as_response()
+        assert set(response.keys()) == {"error", "cause_exception", "cause_message", "cause_traceback"}
+        assert response["error"] == "Cannot get the split names for the dataset."
+        response_dict = dict(response)
+        # ^ to remove mypy warnings
+        assert response_dict["cause_exception"] == "FileNotFoundError"
+        assert str(response_dict["cause_message"]).startswith("Couldn't find a dataset script at ")
+        assert isinstance(response_dict["cause_traceback"], list)
+        assert response_dict["cause_traceback"][0] == "Traceback (most recent call last):\n"
 
 
 # @pytest.mark.real_dataset

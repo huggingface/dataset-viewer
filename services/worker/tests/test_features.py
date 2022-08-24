@@ -19,7 +19,6 @@ from .utils import ASSETS_BASE_URL
 #     src/datasets/features/features.py#L1469
 # ``FieldType`` can be one of the following:
 # - a :class:`datasets.Value` feature specifies a single typed value, e.g. ``int64`` or ``string``
-@pytest.mark.wip
 @pytest.mark.parametrize(
     "dataset_type,output_value,output_dtype",
     [

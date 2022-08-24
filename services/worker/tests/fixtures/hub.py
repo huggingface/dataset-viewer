@@ -3,7 +3,7 @@
 import time
 from contextlib import contextmanager, suppress
 from pathlib import Path
-from typing import Dict, Iterable, List, Literal, Optional, TypedDict
+from typing import Any, Dict, Iterable, List, Optional, TypedDict
 
 import pytest
 import requests
@@ -15,6 +15,8 @@ from huggingface_hub.hf_api import (  # type: ignore
     HfFolder,
     _raise_for_status,
 )
+
+from ..utils import get_default_config_split
 
 # see https://github.com/huggingface/moon-landing/blob/main/server/scripts/staging-seed-db.ts
 CI_HUB_USER = "__DUMMY_DATASETS_SERVER_USER__"
@@ -227,29 +229,161 @@ def hf_public_image(hf_api: HfApi, hf_token: str, datasets: Dict[str, Dataset]) 
         hf_api.delete_repo(repo_id=repo_id, token=hf_token, repo_type="dataset")
 
 
-class DatasetRepos(TypedDict):
-    does_not_exist: str
-    empty: str
-    public: str
-    private: str
-    gated: str
-    audio: str
-    image: str
+class HubDatasetTest(TypedDict):
+    name: str
+    splits_response: Any
+    first_rows_response: Any
 
 
-DatasetReposType = Literal["does_not_exist", "empty", "public", "private", "gated", "audio", "image"]
+HubDatasets = Dict[str, HubDatasetTest]
+
+
+def get_splits_response(dataset: str, num_bytes: float = None, num_examples: int = None):
+    dataset, config, split = get_default_config_split(dataset)
+    return {
+        "splits": [
+            {
+                "dataset_name": dataset,
+                "config_name": config,
+                "split_name": split,
+                "num_bytes": num_bytes,
+                "num_examples": num_examples,
+            }
+        ]
+    }
+
+
+def get_first_rows_response(dataset: str, cols: Dict[str, Any], rows: List[Any]):
+    dataset, config, split = get_default_config_split(dataset)
+    return {
+        "features": [
+            {
+                "dataset": dataset,
+                "config": config,
+                "split": split,
+                "feature_idx": feature_idx,
+                "name": name,
+                "type": type,
+            }
+            for feature_idx, (name, type) in enumerate(cols.items())
+        ],
+        "rows": [
+            {
+                "dataset": dataset,
+                "config": config,
+                "split": split,
+                "row_idx": row_idx,
+                "truncated_cells": [],
+                "row": row,
+            }
+            for row_idx, row in enumerate(rows)
+        ],
+    }
+
+
+#        # column = "col"
+
+DATA_cols = {
+    "col_1": {"_type": "Value", "id": None, "dtype": "int64"},
+    "col_2": {"_type": "Value", "id": None, "dtype": "int64"},
+    "col_3": {"_type": "Value", "id": None, "dtype": "float64"},
+}
+DATA_rows = [
+    {"col_1": 0, "col_2": 0, "col_3": 0.0},
+    {"col_1": 1, "col_2": 1, "col_3": 1.0},
+    {"col_1": 2, "col_2": 2, "col_3": 2.0},
+    {"col_1": 3, "col_2": 3, "col_3": 3.0},
+]
+
+AUDIO_cols = {
+    "col": {
+        "_type": "Audio",
+        "decode": True,
+        "id": None,
+        "mono": True,
+        "sampling_rate": 16_000,
+    },
+}
+
+
+def get_AUDIO_rows(dataset: str):
+    dataset, config, split = get_default_config_split(dataset)
+    return [
+        {
+            "col": [
+                {
+                    "src": f"http://localhost/assets/{dataset}/--/{config}/{split}/0/col/audio.mp3",
+                    "type": "audio/mpeg",
+                },
+                {
+                    "src": f"http://localhost/assets/{dataset}/--/{config}/{split}/0/col/audio.wav",
+                    "type": "audio/wav",
+                },
+            ]
+        }
+    ]
+
+
+IMAGE_cols = {
+    "col": {
+        "_type": "Image",
+        "decode": True,
+        "id": None,
+    },
+}
+
+
+def get_IMAGE_rows(dataset: str):
+    dataset, config, split = get_default_config_split(dataset)
+    return [
+        {
+            "col": f"http://localhost/assets/{dataset}/--/{config}/{split}/0/col/image.jpg",
+        }
+    ]
 
 
 @pytest.fixture(scope="session", autouse=True)
-def hf_dataset_repos_csv_data(
+def hub_datasets(
     hf_public_empty, hf_public_csv, hf_private_csv, hf_gated_csv, hf_public_audio, hf_public_image
-) -> DatasetRepos:
+) -> HubDatasets:
     return {
-        "does_not_exist": "does_not_exist",
-        "empty": hf_public_empty,
-        "public": hf_public_csv,
-        "private": hf_private_csv,
-        "gated": hf_gated_csv,
-        "audio": hf_public_audio,
-        "image": hf_public_image,
+        "does_not_exist": {
+            "name": "does_not_exist",
+            "splits_response": None,
+            "first_rows_response": None,
+        },
+        "empty": {
+            "name": hf_public_empty,
+            "splits_response": None,
+            "first_rows_response": None,
+        },
+        "public": {
+            "name": hf_public_csv,
+            "splits_response": get_splits_response(hf_public_csv, None, None),
+            "first_rows_response": get_first_rows_response(hf_public_csv, DATA_cols, DATA_rows),
+        },
+        "private": {
+            "name": hf_private_csv,
+            "splits_response": get_splits_response(hf_private_csv, None, None),
+            "first_rows_response": get_first_rows_response(hf_private_csv, DATA_cols, DATA_rows),
+        },
+        "gated": {
+            "name": hf_gated_csv,
+            "splits_response": get_splits_response(hf_gated_csv, None, None),
+            "first_rows_response": get_first_rows_response(hf_gated_csv, DATA_cols, DATA_rows),
+        },
+        "audio": {
+            "name": hf_public_audio,
+            "splits_response": get_splits_response(hf_public_audio, 54.0, 1),
+            "first_rows_response": get_first_rows_response(
+                hf_public_audio, AUDIO_cols, get_AUDIO_rows(hf_public_audio)
+            ),
+        },
+        "image": {
+            "name": hf_public_image,
+            "splits_response": get_splits_response(hf_public_image, 0, 1),
+            "first_rows_response": get_first_rows_response(
+                hf_public_image, IMAGE_cols, get_IMAGE_rows(hf_public_image)
+            ),
+        },
     }
