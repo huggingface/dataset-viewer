@@ -2,33 +2,33 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   labels:
-    {{ include "labels.worker.datasets" . | nindent 4 }}
-  name: "{{ include "release" . }}-worker-datasets"
+    {{ include "labels.worker.rows" . | nindent 4 }}
+  name: "{{ include "release" . }}-worker-rows"
   namespace: {{ .Release.Namespace }}
 spec:
   progressDeadlineSeconds: 600
-  replicas: {{ .Values.worker.datasets.replicas }}
+  replicas: {{ .Values.worker.rows.replicas }}
   revisionHistoryLimit: 10
   selector:
     matchLabels:
-      {{ include "labels.worker.datasets" . | nindent 6 }}
+      {{ include "labels.worker.rows" . | nindent 6 }}
   strategy:
     type: Recreate
   template:
     metadata:
       labels:
-        {{ include "labels.worker.datasets" . | nindent 8 }}
+        {{ include "labels.worker.rows" . | nindent 8 }}
     spec:
       initContainers:
         {{ include "initContainerAssets" . | nindent 8 }}
         {{ include "initContainerCache" . | nindent 8 }}
         {{ include "initContainerNumbaCache" . | nindent 8 }}
       containers:
-        {{ include "containerWorkerDatasets" . | nindent 8 }}
+        {{ include "containerWorkerRows" . | nindent 8 }}
       nodeSelector:
-        {{ toYaml .Values.worker.datasets.nodeSelector | nindent 8 }}
+        {{ toYaml .Values.worker.rows.nodeSelector | nindent 8 }}
       tolerations:
-        {{ toYaml .Values.worker.datasets.tolerations | nindent 8 }}
+        {{ toYaml .Values.worker.rows.tolerations | nindent 8 }}
       volumes:
         - name: nfs
           nfs:

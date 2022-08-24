@@ -1,16 +1,17 @@
-{{- define "containerWorkerDatasets" -}}
-- name: "{{ include "name" . }}-worker-datasets"
+{{- define "containerWorkerRows" -}}
+- name: "{{ include "name" . }}-worker-rows"
   env:
   - name: ASSETS_BASE_URL
     value: "{{ include "assets.baseUrl" . }}"
   - name: ASSETS_DIRECTORY
-    value: {{ .Values.worker.datasets.assetsDirectory | quote }}
+    value: {{ .Values.worker.rows.assetsDirectory | quote }}
   - name: DATASETS_REVISION
-    value: {{ .Values.worker.datasets.datasetsRevision | quote }}
+    value: {{ .Values.worker.rows.datasetsRevision | quote }}
   - name: HF_DATASETS_CACHE
-    value: "{{ .Values.worker.datasets.cacheDirectory }}/datasets"
+    value: "{{ .Values.worker.rows.cacheDirectory }}/datasets"
   - name: HF_ENDPOINT
     value: "{{ .Values.hfEndpoint }}"
+  # note: HF_MODULES_CACHE is not set to a shared directory
   - name: HF_MODULES_CACHE
     value: "/tmp/modules-cache"
   # the size should remain so small that we don't need to worry about putting it on an external storage
@@ -24,19 +25,19 @@
         key: HF_TOKEN
         optional: false
   - name: LOG_LEVEL
-    value: {{ .Values.worker.datasets.logLevel | quote }}
+    value: {{ .Values.worker.rows.logLevel | quote }}
   - name: MAX_JOB_RETRIES
-    value: {{ .Values.worker.datasets.maxJobRetries | quote }}
+    value: {{ .Values.worker.rows.maxJobRetries | quote }}
   - name: MAX_JOBS_PER_DATASET
-    value: {{ .Values.worker.datasets.maxJobsPerDataset | quote }}
+    value: {{ .Values.worker.rows.maxJobsPerDataset | quote }}
   - name: MAX_LOAD_PCT
-    value: {{ .Values.worker.datasets.maxLoadPct | quote }}
+    value: {{ .Values.worker.rows.maxLoadPct | quote }}
   - name: MAX_MEMORY_PCT
-    value: {{ .Values.worker.datasets.maxMemoryPct | quote }}
+    value: {{ .Values.worker.rows.maxMemoryPct | quote }}
   - name: MAX_SIZE_FALLBACK
-    value: {{ .Values.worker.datasets.maxSizeFallback | quote }}
+    value: {{ .Values.worker.rows.maxSizeFallback | quote }}
   - name: MIN_CELL_BYTES
-    value: {{ .Values.worker.datasets.minCellBytes | quote }}
+    value: {{ .Values.worker.rows.minCellBytes | quote }}
   - name: MONGO_CACHE_DATABASE
     value: {{ .Values.mongodb.cacheDatabase | quote }}
   - name: MONGO_QUEUE_DATABASE
@@ -52,32 +53,34 @@
         optional: false
   {{- end }}
   - name: NUMBA_CACHE_DIR
-    value: {{ .Values.worker.datasets.numbaCacheDirectory | quote }}
+    value: {{ .Values.worker.rows.numbaCacheDirectory | quote }}
   - name: ROWS_MAX_BYTES
-    value: {{ .Values.worker.datasets.rowsMaxBytes | quote }}
+    value: {{ .Values.worker.rows.rowsMaxBytes | quote }}
   - name: ROWS_MAX_NUMBER
-    value: {{ .Values.worker.datasets.rowsMaxNumber | quote }}
+    value: {{ .Values.worker.rows.rowsMaxNumber | quote }}
   - name: ROWS_MIN_NUMBER
-    value: {{ .Values.worker.datasets.rowsMinNumber| quote }}
+    value: {{ .Values.worker.rows.rowsMinNumber| quote }}
   - name: WORKER_SLEEP_SECONDS
-    value: {{ .Values.worker.datasets.workerSleepSeconds | quote }}
+    value: {{ .Values.worker.rows.workerSleepSeconds | quote }}
   - name: WORKER_QUEUE
-    # Job queue the worker will pull jobs from: 'datasets' or 'splits'
-    value: "datasets"
-  image: {{ .Values.dockerImage.worker.datasets }}
+    # Job queue the worker will pull jobs from:
+    # Note that the names might be confusing but have a historical reason
+    # /splits -> 'datasets', /rows -> 'splits'
+    value: "splits"
+  image: {{ .Values.dockerImage.worker.rows }}
   imagePullPolicy: IfNotPresent
   volumeMounts:
-  - mountPath: {{ .Values.worker.datasets.assetsDirectory | quote }}
+  - mountPath: {{ .Values.worker.rows.assetsDirectory | quote }}
     mountPropagation: None
     name: nfs
     subPath: "{{ include "assets.subpath" . }}"
     readOnly: false
-  - mountPath: {{ .Values.worker.datasets.cacheDirectory | quote }}
+  - mountPath: {{ .Values.worker.rows.cacheDirectory | quote }}
     mountPropagation: None
     name: nfs
     subPath: "{{ include "cache.datasets.subpath" . }}"
     readOnly: false
-  - mountPath: {{ .Values.worker.datasets.numbaCacheDirectory | quote }}
+  - mountPath: {{ .Values.worker.rows.numbaCacheDirectory | quote }}
     mountPropagation: None
     name: nfs
     subPath: "{{ include "cache.numba.subpath" . }}"
@@ -87,10 +90,10 @@
   # TODO: provide readiness and liveness probes
   # readinessProbe:
   #   tcpSocket:
-  #     port: {{ .Values.worker.datasets.readinessPort }}
+  #     port: {{ .Values.worker.rows.readinessPort }}
   # livenessProbe:
   #   tcpSocket:
-  #     port: {{ .Values.worker.datasets.readinessPort }}
+  #     port: {{ .Values.worker.rows.readinessPort }}
   resources:
-    {{ toYaml .Values.worker.datasets.resources | nindent 4 }}
+    {{ toYaml .Values.worker.rows.resources | nindent 4 }}
 {{- end -}}

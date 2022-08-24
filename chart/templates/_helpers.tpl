@@ -52,14 +52,14 @@ app: "{{ .Release.Name }}-reverse-proxy"
 app: "{{ include "release" . }}-api"
 {{- end -}}
 
-{{- define "labels.worker.datasets" -}}
-{{ include "labels" . }}
-app: "{{ include "release" . }}-worker-datasets"
-{{- end -}}
-
 {{- define "labels.worker.splits" -}}
 {{ include "labels" . }}
 app: "{{ include "release" . }}-worker-splits"
+{{- end -}}
+
+{{- define "labels.worker.rows" -}}
+{{ include "labels" . }}
+app: "{{ include "release" . }}-worker-rows"
 {{- end -}}
 
 {{- define "labels.worker.firstRows" -}}

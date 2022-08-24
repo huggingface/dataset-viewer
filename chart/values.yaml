@@ -16,8 +16,10 @@ dockerImage:
   api: ""
   reverseProxy: ""
   worker:
-    datasets: ""
     splits: ""
+    rows: ""
+    splits-next: ""
+    first-rows: ""
 
 storage:
   nfs: {}
@@ -102,7 +104,7 @@ api:
   prometheusMultiprocDirectory: "/tmp"
 
 worker:
-  datasets:
+  splits:
     replicas: 1
 
     resources:
@@ -146,7 +148,7 @@ worker:
     # Number of seconds a worker will sleep before trying to process a new job
     workerSleepSeconds: 15
 
-  firstRows:
+  rows:
     replicas: 1
 
     resources:
@@ -163,8 +165,6 @@ worker:
     cacheDirectory: "/cache"
     # Git reference for the canonical datasets on https://github.com/huggingface/datasets
     datasetsRevision: "main"
-    # User Access Token (see https://huggingface.co/settings/token, only the `read` role is required)
-    hfToken: ""
     # Log level
     logLevel: "INFO"
     # Max number of job retries (for 500 errors) for the same job
@@ -232,7 +232,7 @@ worker:
     # Number of seconds a worker will sleep before trying to process a new job
     workerSleepSeconds: 15
 
-  splits:
+  firstRows:
     replicas: 1
 
     resources:
@@ -249,6 +249,8 @@ worker:
     cacheDirectory: "/cache"
     # Git reference for the canonical datasets on https://github.com/huggingface/datasets
     datasetsRevision: "main"
+    # User Access Token (see https://huggingface.co/settings/token, only the `read` role is required)
+    hfToken: ""
     # Log level
     logLevel: "INFO"
     # Max number of job retries (for 500 errors) for the same job

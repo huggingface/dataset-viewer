@@ -41,8 +41,8 @@ services:
     depends_on:
       - mongodb
     restart: unless-stopped
-  worker-datasets:
-    image: ${IMAGE_WORKER_DATASETS?IMAGE_WORKER_DATASETS env var must be provided}
+  worker-splits:
+    image: ${IMAGE_WORKER_SPLITS?IMAGE_WORKER_SPLITS env var must be provided}
     volumes:
       - assets:/assets:rw
       - datasets-cache:/datasets-cache:rw
@@ -59,8 +59,8 @@ services:
     depends_on:
       - mongodb
     restart: always
-  worker-first-rows:
-    image: ${IMAGE_WORKER_FIRST_ROWS?IMAGE_WORKER_FIRST_ROWS env var must be provided}
+  worker-rows:
+    image: ${IMAGE_WORKER_ROWS?IMAGE_WORKER_ROWS env var must be provided}
     volumes:
       - assets:/assets:rw
       - datasets-cache:/datasets-cache:rw
@@ -73,7 +73,7 @@ services:
       MONGO_URL: "mongodb://mongodb"
       ROWS_MAX_NUMBER: ${ROWS_MAX_NUMBER-100}
       WORKER_SLEEP_SECONDS: "1"
-      WORKER_QUEUE: "first_rows_responses"
+      WORKER_QUEUE: "splits"
     depends_on:
       - mongodb
     restart: always
@@ -95,8 +95,8 @@ services:
     depends_on:
       - mongodb
     restart: always
-  worker-splits:
-    image: ${IMAGE_WORKER_SPLITS?IMAGE_WORKER_SPLITS env var must be provided}
+  worker-first-rows:
+    image: ${IMAGE_WORKER_FIRST_ROWS?IMAGE_WORKER_FIRST_ROWS env var must be provided}
     volumes:
       - assets:/assets:rw
       - datasets-cache:/datasets-cache:rw
@@ -109,7 +109,7 @@ services:
       MONGO_URL: "mongodb://mongodb"
       ROWS_MAX_NUMBER: ${ROWS_MAX_NUMBER-100}
       WORKER_SLEEP_SECONDS: "1"
-      WORKER_QUEUE: "splits"
+      WORKER_QUEUE: "first_rows_responses"
     depends_on:
       - mongodb
     restart: always

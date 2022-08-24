@@ -5,13 +5,12 @@
     value: "{{ include "assets.baseUrl" . }}"
   - name: ASSETS_DIRECTORY
     value: {{ .Values.worker.splits.assetsDirectory | quote }}
-  - name: DATASETS_REVISION
-    value: {{ .Values.worker.splits.datasetsRevision | quote }}
+  - name: splits_REVISION
+    value: {{ .Values.worker.datasets.datasetsRevision | quote }}
   - name: HF_DATASETS_CACHE
     value: "{{ .Values.worker.splits.cacheDirectory }}/datasets"
   - name: HF_ENDPOINT
     value: "{{ .Values.hfEndpoint }}"
-  # note: HF_MODULES_CACHE is not set to a shared directory
   - name: HF_MODULES_CACHE
     value: "/tmp/modules-cache"
   # the size should remain so small that we don't need to worry about putting it on an external storage
@@ -63,8 +62,10 @@
   - name: WORKER_SLEEP_SECONDS
     value: {{ .Values.worker.splits.workerSleepSeconds | quote }}
   - name: WORKER_QUEUE
-    # Job queue the worker will pull jobs from: 'datasets' or 'splits'
-    value: "splits"
+    # Job queue the worker will pull jobs from:
+    # Note that the names might be confusing but have a historical reason
+    # /splits -> 'datasets', /rows -> 'splits'
+    value: "datasets"
   image: {{ .Values.dockerImage.worker.splits }}
   imagePullPolicy: IfNotPresent
   volumeMounts:
