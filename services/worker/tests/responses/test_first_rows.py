@@ -7,15 +7,15 @@ from ..fixtures.hub import HubDatasets
 from ..utils import ASSETS_BASE_URL, HF_ENDPOINT, HF_TOKEN, get_default_config_split
 
 
+@pytest.mark.wip
 @pytest.mark.parametrize(
     "name,use_token,error_code,cause",
     [
         ("public", False, None, None),
         ("audio", False, None, None),
         ("image", False, None, None),
-        # TODO: re-enable both when https://github.com/huggingface/datasets/issues/4875 is fixed
-        # ("gated", True, None, None),
-        # ("private", True, None, None),  # <- TODO: should we disable accessing private datasets?
+        ("gated", True, None, None),
+        ("private", True, None, None),  # <- TODO: should we disable accessing private datasets?
         ("empty", False, "SplitsNamesError", "FileNotFoundError"),
         ("does_not_exist", False, "DatasetNotFoundError", None),
         ("gated", False, "SplitsNamesError", "FileNotFoundError"),
