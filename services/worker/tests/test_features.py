@@ -1,5 +1,6 @@
-# import datetime
+import datetime
 from typing import Any, Dict
+from zoneinfo import ZoneInfo
 
 import numpy as np
 import pytest
@@ -8,9 +9,6 @@ from datasets import Dataset, Value
 from worker.features import get_cell_value
 
 from .utils import ASSETS_BASE_URL
-
-# from zoneinfo import ZoneInfo
-
 
 # we need to know the correspondence between the feature type and the cell value, in order to:
 # - document the API
@@ -47,26 +45,15 @@ from .utils import ASSETS_BASE_URL
         # (time(1, 1, 1), None, datetime.datetime(1, 1, 1), "time64[us]"),
         # ^ TODO: add after https://github.com/huggingface/datasets/issues/4620 is fixed
         # timestamp[(s|ms|us|ns)]
-        # (pd.Timestamp(2020, 1, 1), None, datetime.datetime(2020, 1, 1, 0, 0), "timestamp[ns]"),
-        # (
-        #     pd.Timestamp(1513393355.5, unit="s"),
-        #     None,
-        #     datetime.datetime(2017, 12, 16, 3, 2, 35, 500000),
-        #     "timestamp[ns]",
-        # ),
-        # (
-        #     pd.Timestamp(1513393355500, unit="ms"),
-        #     None,
-        #     datetime.datetime(2017, 12, 16, 3, 2, 35, 500000),
-        #     "timestamp[ns]",
-        # ),
-        # # timestamp[(s|ms|us|ns), tz=(tzstring)]
-        # (
-        #     pd.Timestamp(year=2020, month=1, day=1, tz="US/Pacific"),
-        #     None,
-        #     datetime.datetime(2020, 1, 1, 0, 0, tzinfo=ZoneInfo("US/Pacific")),
-        #     "timestamp[ns, tz=US/Pacific]",
-        # ),
+        ("timestamp_1", datetime.datetime(2020, 1, 1, 0, 0), "timestamp[ns]"),
+        ("timestamp_2", datetime.datetime(2017, 12, 16, 3, 2, 35, 500000), "timestamp[ns]"),
+        ("timestamp_3", datetime.datetime(2017, 12, 16, 3, 2, 35, 500000), "timestamp[ns]"),
+        # timestamp[(s|ms|us|ns), tz=(tzstring)]
+        (
+            "timestamp_4",
+            datetime.datetime(2020, 1, 1, 0, 0, tzinfo=ZoneInfo("US/Pacific")),
+            "timestamp[ns, tz=US/Pacific]",
+        ),
         # date32
         # date64
         # duration[(s|ms|us|ns)]
@@ -96,7 +83,6 @@ def test_value(dataset_type, output_value, output_dtype, datasets) -> None:
     assert value == output_value
 
 
-@pytest.mark.wip
 @pytest.mark.parametrize(
     "dataset_type,output_value,output_type",
     [
