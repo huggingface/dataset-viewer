@@ -102,7 +102,7 @@ api:
   logLevel: "DEBUG"
 
 worker:
-  datasets:
+  splits:
     replicas: 4
 
     nodeSelector:
@@ -118,6 +118,25 @@ worker:
 
     # Log level
     logLevel: "DEBUG"
+
+  rows:
+    replicas: 10
+
+    nodeSelector:
+      role-datasets-server: "true"
+
+    resources:
+      requests:
+        cpu: 1
+        memory: "8Gi"
+      limits:
+        cpu: 2
+        memory: "30Gi"
+
+    # Log level
+    logLevel: "DEBUG"
+    # Maximum number of jobs running at the same time for the same dataset
+    maxJobsPerDataset: 3
 
   splitsNext:
     replicas: 4
@@ -153,26 +172,8 @@ worker:
     # Log level
     logLevel: "DEBUG"
     # Maximum number of jobs running at the same time for the same dataset
-    maxJobsPerDataset: 3
+    maxJobsPerDataset: 5
 
-  splits:
-    replicas: 10
-
-    nodeSelector:
-      role-datasets-server: "true"
-
-    resources:
-      requests:
-        cpu: 1
-        memory: "8Gi"
-      limits:
-        cpu: 2
-        memory: "30Gi"
-
-    # Log level
-    logLevel: "DEBUG"
-    # Maximum number of jobs running at the same time for the same dataset
-    maxJobsPerDataset: 3
 
 admin:
   replicas: 1

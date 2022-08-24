@@ -45,24 +45,6 @@ api:
       cpu: 1
 
 worker:
-  datasets:
-    replicas: 1
-
-    resources:
-      requests:
-        cpu: 0.01
-      limits:
-        cpu: 1
-
-  firstRows:
-    replicas: 1
-
-    resources:
-      requests:
-        cpu: 0.01
-      limits:
-        cpu: 1
-
   splits:
     replicas: 1
 
@@ -72,7 +54,25 @@ worker:
       limits:
         cpu: 1
 
+  rows:
+    replicas: 1
+
+    resources:
+      requests:
+        cpu: 0.01
+      limits:
+        cpu: 1
+
   splitsNext:
+    replicas: 1
+
+    resources:
+      requests:
+        cpu: 0.01
+      limits:
+        cpu: 1
+
+  firstRows:
     replicas: 1
 
     resources:
