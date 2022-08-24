@@ -56,18 +56,20 @@ class Prometheus:
         )
 
     def updateMetrics(self):
+        # Queue metrics
         for status, total in get_dataset_jobs_count_by_status().items():
-            self.metrics["queue_jobs_total"].labels(queue="datasets", status=status).set(total)
+            self.metrics["queue_jobs_total"].labels(queue="/splits", status=status).set(total)
         for status, total in get_split_jobs_count_by_status().items():
-            self.metrics["queue_jobs_total"].labels(queue="splits", status=status).set(total)
+            self.metrics["queue_jobs_total"].labels(queue="/rows", status=status).set(total)
         for status, total in get_splits_jobs_count_by_status().items():
-            self.metrics["queue_jobs_total"].labels(queue="splits/", status=status).set(total)
+            self.metrics["queue_jobs_total"].labels(queue="/splits-next", status=status).set(total)
         for status, total in get_first_rows_jobs_count_by_status().items():
-            self.metrics["queue_jobs_total"].labels(queue="first-rows/", status=status).set(total)
+            self.metrics["queue_jobs_total"].labels(queue="/first-rows", status=status).set(total)
+        # Cache metrics
         for status, total in get_datasets_count_by_status().items():
-            self.metrics["cache_entries_total"].labels(cache="datasets", status=status).set(total)
+            self.metrics["cache_entries_total"].labels(cache="/splits", status=status).set(total)
         for status, total in get_splits_count_by_status().items():
-            self.metrics["cache_entries_total"].labels(cache="splits", status=status).set(total)
+            self.metrics["cache_entries_total"].labels(cache="/rows", status=status).set(total)
         for http_status, by_error_code in get_splits_responses_count_by_status_and_error_code().items():
             for error_code, total in by_error_code.items():
                 self.metrics["responses_in_cache_total"].labels(

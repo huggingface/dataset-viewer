@@ -46,13 +46,15 @@ def test_metrics(client: TestClient) -> None:
     assert name in metrics
     assert metrics[name] > 0
     name = "process_start_time_seconds"
-    assert 'queue_jobs_total{queue="datasets",status="waiting"}' in metrics
-    assert 'queue_jobs_total{queue="splits/",status="success"}' in metrics
-    assert 'queue_jobs_total{queue="first-rows/",status="started"}' in metrics
-    assert 'cache_entries_total{cache="datasets",status="valid"}' in metrics
+    assert 'queue_jobs_total{queue="/splits",status="waiting"}' in metrics
+    assert 'queue_jobs_total{queue="/rows",status="success"}' in metrics
+    assert 'queue_jobs_total{queue="/splits-next",status="started"}' in metrics
+    assert 'queue_jobs_total{queue="/first-rows",status="started"}' in metrics
+    assert 'cache_entries_total{cache="/splits",status="valid"}' in metrics
     # still empty
-    assert 'responses_in_cache_total{path="/splits",http_status="200",error_code=null}' not in metrics
+    assert 'responses_in_cache_total{path="/rows",http_status="200",error_code=null}' not in metrics
     # still empty
+    assert 'responses_in_cache_total{path="/splits-next",http_status="200",error_code=null}' not in metrics
     assert 'responses_in_cache_total{path="/first-rows",http_status="200",error_code=null}' not in metrics
     assert 'starlette_requests_total{method="GET",path_template="/metrics"}' in metrics
 
