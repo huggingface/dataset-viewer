@@ -19,21 +19,21 @@ run:
 watch:
 	poetry run watchmedo auto-restart -d src/admin -p "*.py" -R python src/admin/main.py
 
-.PHONY: cancel-started-split-jobs
-cancel-started-split-jobs:
-	poetry run python src/admin/scripts/cancel_started_split_jobs.py
+.PHONY: cancel-jobs-splits
+cancel-jobs-splits:
+	poetry run python src/admin/scripts/cancel_jobs_splits.py
 
-.PHONY: cancel-started-dataset-jobs
-cancel-started-dataset-jobs:
-	poetry run python src/admin/scripts/cancel_started_dataset_jobs.py
+.PHONY: cancel-jobs-rows
+cancel-jobs-rows:
+	poetry run python src/admin/scripts/cancel_jobs_rows.py
 
-.PHONY: cancel-started-splits-jobs
-cancel-started-splits-jobs:
-	poetry run python src/admin/scripts/cancel_started_splits_jobs.py
+.PHONY: cancel-jobs-splits-next
+cancel-jobs-splits-next:
+	poetry run python src/admin/scripts/cancel_jobs_splits_next.py
 
-.PHONY: cancel-started-first-rows-jobs
-cancel-started-first-rows-jobs:
-	poetry run python src/admin/scripts/cancel_started_first_rows_jobs.py
+.PHONY: cancel-jobs-first-rows
+cancel-jobs-first-rows:
+	poetry run python src/admin/scripts/cancel_jobs_first_rows.py
 
 .PHONY: refresh-cache
 refresh-cache:

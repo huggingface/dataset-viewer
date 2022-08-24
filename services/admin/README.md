@@ -42,13 +42,14 @@ To launch the scripts:
 
 The scripts:
 
-- `cancel-started-split-jobs`: cancel all the started split jobs (stop the workers before!)
-- `cancel-started-dataset-jobs`: cancel all the started dataset jobs (stop the workers before!)
-- `cancel-started-splits-jobs`: cancel all the started splits/ jobs (stop the workers before!)
-- `cancel-started-first-rows-jobs`: cancel all the started first-rows/ jobs (stop the workers before!)
-- `refresh-cache`: add a job for every HF dataset
-- `refresh-cache-canonical`: add a job for every HF canonical dataset
-- `warm-cache`: create jobs for all the missing datasets and/or splits
+- `cancel-jobs-splits`: cancel all the started jobs for /splits (stop the workers before!)
+- `cancel-jobs-rows`: cancel all the started jobs for /rows (stop the workers before!)
+- `cancel-jobs-splits-next`: cancel all the started jobs for /splits-next (stop the workers before!)
+- `cancel-jobs-first-rows`: cancel all the started jobs for /first-rows (stop the workers before!)
+- `refresh-cache`: add a /splits-next job for every HF dataset
+- `refresh-cache-canonical`: add a /splits-next job for every HF canonical dataset
+- `refresh-cache-errors`: add a /splits-next job for every erroneous HF dataset
+- `warm-cache`: create /splits-next and /first-rows jobs for all the missing datasets and/or splits
 
 ## Run the API
 
