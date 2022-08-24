@@ -33,14 +33,14 @@ def clean_mongo_database() -> None:
     clean_queue_database()
 
 
-def test_process_next_splits_job(hf_public_dataset_repo_csv_data: str) -> None:
-    add_splits_job(hf_public_dataset_repo_csv_data)
+def test_process_next_splits_job(hub_public_csv: str) -> None:
+    add_splits_job(hub_public_csv)
     result = process_next_splits_job()
     assert result is True
 
 
-def test_process_next_first_rows_job(hf_public_dataset_repo_csv_data: str) -> None:
-    dataset, config, split = get_default_config_split(hf_public_dataset_repo_csv_data)
+def test_process_next_first_rows_job(hub_public_csv: str) -> None:
+    dataset, config, split = get_default_config_split(hub_public_csv)
     add_first_rows_job(dataset, config, split)
     result = process_next_first_rows_job()
     assert result is True

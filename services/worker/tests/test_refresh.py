@@ -57,16 +57,16 @@ def test_doesnotexist() -> None:
         get_first_rows_response(dataset, config, split)
 
 
-def test_refresh_splits(hf_public_dataset_repo_csv_data: str) -> None:
-    assert refresh_splits(hf_public_dataset_repo_csv_data, hf_endpoint=HF_ENDPOINT) == (HTTPStatus.OK, False)
-    response, _, _ = get_splits_response(hf_public_dataset_repo_csv_data)
+def test_refresh_splits(hub_public_csv: str) -> None:
+    assert refresh_splits(hub_public_csv, hf_endpoint=HF_ENDPOINT) == (HTTPStatus.OK, False)
+    response, _, _ = get_splits_response(hub_public_csv)
     assert len(response["splits"]) == 1
     assert response["splits"][0]["num_bytes"] is None
     assert response["splits"][0]["num_examples"] is None
 
 
-def test_refresh_first_rows(hf_public_dataset_repo_csv_data: str) -> None:
-    dataset, config, split = get_default_config_split(hf_public_dataset_repo_csv_data)
+def test_refresh_first_rows(hub_public_csv: str) -> None:
+    dataset, config, split = get_default_config_split(hub_public_csv)
     http_status, _ = refresh_first_rows(dataset, config, split, ASSETS_BASE_URL, hf_endpoint=HF_ENDPOINT)
     response, cached_http_status, error_code = get_first_rows_response(dataset, config, split)
     assert http_status == HTTPStatus.OK

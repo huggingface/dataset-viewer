@@ -146,7 +146,7 @@ def create_unique_repo_name(prefix: str, user: str) -> str:
     return f"{user}/{repo_name}"
 
 
-def create_hf_dataset_repo(
+def create_hub_dataset_repo(
     *,
     hf_api: HfApi,
     hf_token: str,
@@ -178,24 +178,24 @@ def create_hf_dataset_repo(
 
 # https://docs.pytest.org/en/6.2.x/fixture.html#yield-fixtures-recommended
 @pytest.fixture(scope="session", autouse=True)
-def hf_public_empty(hf_api: HfApi, hf_token: str) -> Iterable[str]:
-    repo_id = create_hf_dataset_repo(hf_api=hf_api, hf_token=hf_token, prefix="empty")
+def hub_public_empty(hf_api: HfApi, hf_token: str) -> Iterable[str]:
+    repo_id = create_hub_dataset_repo(hf_api=hf_api, hf_token=hf_token, prefix="empty")
     yield repo_id
     with suppress(requests.exceptions.HTTPError, ValueError):
         hf_api.delete_repo(repo_id=repo_id, token=hf_token, repo_type="dataset")
 
 
 @pytest.fixture(scope="session", autouse=True)
-def hf_public_csv(hf_api: HfApi, hf_token: str, csv_path: str) -> Iterable[str]:
-    repo_id = create_hf_dataset_repo(hf_api=hf_api, hf_token=hf_token, prefix="csv", file_paths=[csv_path])
+def hub_public_csv(hf_api: HfApi, hf_token: str, csv_path: str) -> Iterable[str]:
+    repo_id = create_hub_dataset_repo(hf_api=hf_api, hf_token=hf_token, prefix="csv", file_paths=[csv_path])
     yield repo_id
     with suppress(requests.exceptions.HTTPError, ValueError):
         hf_api.delete_repo(repo_id=repo_id, token=hf_token, repo_type="dataset")
 
 
 @pytest.fixture(scope="session", autouse=True)
-def hf_private_csv(hf_api: HfApi, hf_token: str, csv_path: str) -> Iterable[str]:
-    repo_id = create_hf_dataset_repo(
+def hub_private_csv(hf_api: HfApi, hf_token: str, csv_path: str) -> Iterable[str]:
+    repo_id = create_hub_dataset_repo(
         hf_api=hf_api, hf_token=hf_token, prefix="csv_private", file_paths=[csv_path], private=True
     )
     yield repo_id
@@ -204,8 +204,8 @@ def hf_private_csv(hf_api: HfApi, hf_token: str, csv_path: str) -> Iterable[str]
 
 
 @pytest.fixture(scope="session", autouse=True)
-def hf_gated_csv(hf_api: HfApi, hf_token: str, csv_path: str) -> Iterable[str]:
-    repo_id = create_hf_dataset_repo(
+def hub_gated_csv(hf_api: HfApi, hf_token: str, csv_path: str) -> Iterable[str]:
+    repo_id = create_hub_dataset_repo(
         hf_api=hf_api, hf_token=hf_token, prefix="csv_gated", file_paths=[csv_path], gated=True
     )
     yield repo_id
@@ -214,16 +214,16 @@ def hf_gated_csv(hf_api: HfApi, hf_token: str, csv_path: str) -> Iterable[str]:
 
 
 @pytest.fixture(scope="session", autouse=True)
-def hf_public_audio(hf_api: HfApi, hf_token: str, datasets: Dict[str, Dataset]) -> Iterable[str]:
-    repo_id = create_hf_dataset_repo(hf_api=hf_api, hf_token=hf_token, prefix="audio", dataset=datasets["audio"])
+def hub_public_audio(hf_api: HfApi, hf_token: str, datasets: Dict[str, Dataset]) -> Iterable[str]:
+    repo_id = create_hub_dataset_repo(hf_api=hf_api, hf_token=hf_token, prefix="audio", dataset=datasets["audio"])
     yield repo_id
     with suppress(requests.exceptions.HTTPError, ValueError):
         hf_api.delete_repo(repo_id=repo_id, token=hf_token, repo_type="dataset")
 
 
 @pytest.fixture(scope="session", autouse=True)
-def hf_public_image(hf_api: HfApi, hf_token: str, datasets: Dict[str, Dataset]) -> Iterable[str]:
-    repo_id = create_hf_dataset_repo(hf_api=hf_api, hf_token=hf_token, prefix="image", dataset=datasets["image"])
+def hub_public_image(hf_api: HfApi, hf_token: str, datasets: Dict[str, Dataset]) -> Iterable[str]:
+    repo_id = create_hub_dataset_repo(hf_api=hf_api, hf_token=hf_token, prefix="image", dataset=datasets["image"])
     yield repo_id
     with suppress(requests.exceptions.HTTPError, ValueError):
         hf_api.delete_repo(repo_id=repo_id, token=hf_token, repo_type="dataset")
@@ -344,7 +344,7 @@ def get_IMAGE_rows(dataset: str):
 
 @pytest.fixture(scope="session", autouse=True)
 def hub_datasets(
-    hf_public_empty, hf_public_csv, hf_private_csv, hf_gated_csv, hf_public_audio, hf_public_image
+    hub_public_empty, hub_public_csv, hub_private_csv, hub_gated_csv, hub_public_audio, hub_public_image
 ) -> HubDatasets:
     return {
         "does_not_exist": {
@@ -353,37 +353,37 @@ def hub_datasets(
             "first_rows_response": None,
         },
         "empty": {
-            "name": hf_public_empty,
+            "name": hub_public_empty,
             "splits_response": None,
             "first_rows_response": None,
         },
         "public": {
-            "name": hf_public_csv,
-            "splits_response": get_splits_response(hf_public_csv, None, None),
-            "first_rows_response": get_first_rows_response(hf_public_csv, DATA_cols, DATA_rows),
+            "name": hub_public_csv,
+            "splits_response": get_splits_response(hub_public_csv, None, None),
+            "first_rows_response": get_first_rows_response(hub_public_csv, DATA_cols, DATA_rows),
         },
         "private": {
-            "name": hf_private_csv,
-            "splits_response": get_splits_response(hf_private_csv, None, None),
-            "first_rows_response": get_first_rows_response(hf_private_csv, DATA_cols, DATA_rows),
+            "name": hub_private_csv,
+            "splits_response": get_splits_response(hub_private_csv, None, None),
+            "first_rows_response": get_first_rows_response(hub_private_csv, DATA_cols, DATA_rows),
         },
         "gated": {
-            "name": hf_gated_csv,
-            "splits_response": get_splits_response(hf_gated_csv, None, None),
-            "first_rows_response": get_first_rows_response(hf_gated_csv, DATA_cols, DATA_rows),
+            "name": hub_gated_csv,
+            "splits_response": get_splits_response(hub_gated_csv, None, None),
+            "first_rows_response": get_first_rows_response(hub_gated_csv, DATA_cols, DATA_rows),
         },
         "audio": {
-            "name": hf_public_audio,
-            "splits_response": get_splits_response(hf_public_audio, 54.0, 1),
+            "name": hub_public_audio,
+            "splits_response": get_splits_response(hub_public_audio, 54.0, 1),
             "first_rows_response": get_first_rows_response(
-                hf_public_audio, AUDIO_cols, get_AUDIO_rows(hf_public_audio)
+                hub_public_audio, AUDIO_cols, get_AUDIO_rows(hub_public_audio)
             ),
         },
         "image": {
-            "name": hf_public_image,
-            "splits_response": get_splits_response(hf_public_image, 0, 1),
+            "name": hub_public_image,
+            "splits_response": get_splits_response(hub_public_image, 0, 1),
             "first_rows_response": get_first_rows_response(
-                hf_public_image, IMAGE_cols, get_IMAGE_rows(hf_public_image)
+                hub_public_image, IMAGE_cols, get_IMAGE_rows(hub_public_image)
             ),
         },
     }
