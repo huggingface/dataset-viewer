@@ -407,8 +407,17 @@
       },
       "FirstRowsResponse": {
         "type": "object",
-        "required": ["features", "rows"],
+        "required": ["dataset", "config", "split", "features", "rows"],
         "properties": {
+          "dataset": {
+            "type": "string"
+          },
+          "config": {
+            "type": "string"
+          },
+          "split": {
+            "type": "string"
+          },
           "features": {
             "type": "array",
             "items": { "$ref": "#/components/schemas/FeatureItem" }
@@ -435,24 +444,8 @@
       },
       "FeatureItem": {
         "type": "object",
-        "required": [
-          "dataset",
-          "config",
-          "split",
-          "feature_idx",
-          "name",
-          "type"
-        ],
+        "required": ["feature_idx", "name", "type"],
         "properties": {
-          "dataset": {
-            "type": "string"
-          },
-          "config": {
-            "type": "string"
-          },
-          "split": {
-            "type": "string"
-          },
           "feature_idx": {
             "type": "integer"
           },
@@ -826,24 +819,8 @@
       },
       "FirstRowItem": {
         "type": "object",
-        "required": [
-          "dataset",
-          "config",
-          "split",
-          "row_idx",
-          "row",
-          "truncated_cells"
-        ],
+        "required": ["row_idx", "row", "truncated_cells"],
         "properties": {
-          "dataset": {
-            "type": "string"
-          },
-          "config": {
-            "type": "string"
-          },
-          "split": {
-            "type": "string"
-          },
           "row_idx": {
             "type": "integer"
           },
@@ -1252,7 +1229,7 @@
                         "\nThe above exception was the direct cause of the following exception:\n\n",
                         "Traceback (most recent call last):\n",
                         "  File \"/src/services/worker/src/worker/models/dataset.py\", line 16, in get_dataset_split_full_names\n    return [\n",
-                        "  File \"/src/services/worker/src/worker/models/dataset.py\", line 21, in <listcomp>\n    for split_name in get_dataset_split_names(dataset_name, config_name, use_auth_token=hf_token)\n",
+                        "  File \"/src/services/worker/src/worker/models/dataset.py\", line 21, in <listcomp>\n    for split in get_dataset_split_names(dataset, config, use_auth_token=hf_token)\n",
                         "  File \"/src/services/worker/.venv/lib/python3.9/site-packages/datasets/inspect.py\", line 404, in get_dataset_split_names\n    info = get_dataset_config_info(\n",
                         "  File \"/src/services/worker/.venv/lib/python3.9/site-packages/datasets/inspect.py\", line 359, in get_dataset_config_info\n    raise SplitsNotFoundError(\"The split names could not be parsed from the dataset config.\") from err\n",
                         "datasets.inspect.SplitsNotFoundError: The split names could not be parsed from the dataset config.\n"
@@ -2473,44 +2450,44 @@
                     "value": {
                       "splits": [
                         {
-                          "dataset_name": "duorc",
-                          "config_name": "SelfRC",
-                          "split_name": "train",
+                          "dataset": "duorc",
+                          "config": "SelfRC",
+                          "split": "train",
                           "num_bytes": 239852925,
                           "num_examples": 60721
                         },
                         {
-                          "dataset_name": "duorc",
-                          "config_name": "SelfRC",
-                          "split_name": "validation",
+                          "dataset": "duorc",
+                          "config": "SelfRC",
+                          "split": "validation",
                           "num_bytes": 51662575,
                           "num_examples": 12961
                         },
                         {
-                          "dataset_name": "duorc",
-                          "config_name": "SelfRC",
-                          "split_name": "test",
+                          "dataset": "duorc",
+                          "config": "SelfRC",
+                          "split": "test",
                           "num_bytes": 49142766,
                           "num_examples": 12559
                         },
                         {
-                          "dataset_name": "duorc",
-                          "config_name": "ParaphraseRC",
-                          "split_name": "train",
+                          "dataset": "duorc",
+                          "config": "ParaphraseRC",
+                          "split": "train",
                           "num_bytes": 496683105,
                           "num_examples": 69524
                         },
                         {
-                          "dataset_name": "duorc",
-                          "config_name": "ParaphraseRC",
-                          "split_name": "validation",
+                          "dataset": "duorc",
+                          "config": "ParaphraseRC",
+                          "split": "validation",
                           "num_bytes": 106510545,
                           "num_examples": 15591
                         },
                         {
-                          "dataset_name": "duorc",
-                          "config_name": "ParaphraseRC",
-                          "split_name": "test",
+                          "dataset": "duorc",
+                          "config": "ParaphraseRC",
+                          "split": "test",
                           "num_bytes": 115215816,
                           "num_examples": 15857
                         }
@@ -2522,23 +2499,23 @@
                     "value": {
                       "splits": [
                         {
-                          "dataset_name": "emotion",
-                          "config_name": "default",
-                          "split_name": "train",
+                          "dataset": "emotion",
+                          "config": "default",
+                          "split": "train",
                           "num_bytes": 1741541,
                           "num_examples": 16000
                         },
                         {
-                          "dataset_name": "emotion",
-                          "config_name": "default",
-                          "split_name": "validation",
+                          "dataset": "emotion",
+                          "config": "default",
+                          "split": "validation",
                           "num_bytes": 214699,
                           "num_examples": 2000
                         },
                         {
-                          "dataset_name": "emotion",
-                          "config_name": "default",
-                          "split_name": "test",
+                          "dataset": "emotion",
+                          "config": "default",
+                          "split": "test",
                           "num_bytes": 217177,
                           "num_examples": 2000
                         }
@@ -2693,9 +2670,9 @@
                         "TypeError: _split_generators() missing 1 required positional argument: 'pipeline'\n",
                         "\nThe above exception was the direct cause of the following exception:\n\n",
                         "Traceback (most recent call last):\n",
-                        "  File \"/src/services/worker/src/worker/responses/splits.py\", line 74, in get_splits_response\n    split_full_names = get_dataset_split_full_names(dataset_name, hf_token)\n",
+                        "  File \"/src/services/worker/src/worker/responses/splits.py\", line 74, in get_splits_response\n    split_full_names = get_dataset_split_full_names(dataset, hf_token)\n",
                         "  File \"/src/services/worker/src/worker/responses/splits.py\", line 35, in get_dataset_split_full_names\n    return [\n",
-                        "  File \"/src/services/worker/src/worker/responses/splits.py\", line 38, in <listcomp>\n    for split_name in get_dataset_split_names(dataset_name, config_name, use_auth_token=hf_token)\n",
+                        "  File \"/src/services/worker/src/worker/responses/splits.py\", line 38, in <listcomp>\n    for split in get_dataset_split_names(dataset, config, use_auth_token=hf_token)\n",
                         "  File \"/src/services/worker/.venv/lib/python3.9/site-packages/datasets/inspect.py\", line 404, in get_dataset_split_names\n    info = get_dataset_config_info(\n",
                         "  File \"/src/services/worker/.venv/lib/python3.9/site-packages/datasets/inspect.py\", line 359, in get_dataset_config_info\n    raise SplitsNotFoundError(\"The split names could not be parsed from the dataset config.\") from err\n",
                         "datasets.inspect.SplitsNotFoundError: The split names could not be parsed from the dataset config.\n"
@@ -2710,8 +2687,8 @@
                       "cause_message": "Couldn't find a dataset script at /src/services/worker/akhaliq/test/test.py or any data file in the same directory. Couldn't find 'akhaliq/test' on the Hugging Face Hub either: FileNotFoundError: The dataset repository at 'akhaliq/test' doesn't contain any data file.",
                       "cause_traceback": [
                         "Traceback (most recent call last):\n",
-                        "  File \"/src/services/worker/src/worker/responses/splits.py\", line 74, in get_splits_response\n    split_full_names = get_dataset_split_full_names(dataset_name, hf_token)\n",
-                        "  File \"/src/services/worker/src/worker/responses/splits.py\", line 37, in get_dataset_split_full_names\n    for config_name in get_dataset_config_names(dataset_name, use_auth_token=hf_token)\n",
+                        "  File \"/src/services/worker/src/worker/responses/splits.py\", line 74, in get_splits_response\n    split_full_names = get_dataset_split_full_names(dataset, hf_token)\n",
+                        "  File \"/src/services/worker/src/worker/responses/splits.py\", line 37, in get_dataset_split_full_names\n    for config in get_dataset_config_names(dataset, use_auth_token=hf_token)\n",
                         "  File \"/src/services/worker/.venv/lib/python3.9/site-packages/datasets/inspect.py\", line 289, in get_dataset_config_names\n    dataset_module = dataset_module_factory(\n",
                         "  File \"/src/services/worker/.venv/lib/python3.9/site-packages/datasets/load.py\", line 1243, in dataset_module_factory\n    raise FileNotFoundError(\n",
                         "FileNotFoundError: Couldn't find a dataset script at /src/services/worker/akhaliq/test/test.py or any data file in the same directory. Couldn't find 'akhaliq/test' on the Hugging Face Hub either: FileNotFoundError: The dataset repository at 'akhaliq/test' doesn't contain any data file.\n"
@@ -2842,11 +2819,11 @@
                   "imdb": {
                     "summary": "text, and label column (only 3 rows are shown for brevity)",
                     "value": {
+                      "dataset": "imdb",
+                      "config": "plain_text",
+                      "split": "train",
                       "features": [
                         {
-                          "dataset": "imdb",
-                          "config": "plain_text",
-                          "split": "train",
                           "feature_idx": 0,
                           "name": "text",
                           "type": {
@@ -2856,9 +2833,6 @@
                           }
                         },
                         {
-                          "dataset": "imdb",
-                          "config": "plain_text",
-                          "split": "train",
                           "feature_idx": 1,
                           "name": "label",
                           "type": {
@@ -2871,9 +2845,6 @@
                       ],
                       "rows": [
                         {
-                          "dataset": "imdb",
-                          "config": "plain_text",
-                          "split": "train",
                           "row_idx": 0,
                           "row": {
                             "text": "I rented I AM CURIOUS-YELLOW from my video store because of all the controversy that surrounded it when it was first released in 1967. I also heard that at first it was seized by U.S. customs if it ever tried to enter this country, therefore being a fan of films considered \"controversial\" I really had to see this for myself.<br /><br />The plot is centered around a young Swedish drama student named Lena who wants to learn everything she can about life. In particular she wants to focus her attentions to making some sort of documentary on what the average Swede thought about certain political issues such as the Vietnam War and race issues in the United States. In between asking politicians and ordinary denizens of Stockholm about their opinions on politics, she has sex with her drama teacher, classmates, and married men.<br /><br />What kills me about I AM CURIOUS-YELLOW is that 40 years ago, this was considered pornographic. Really, the sex and nudity scenes are few and far between, even then it's not shot like some cheaply made porno. While my countrymen mind find it shocking, in reality sex and nudity are a major staple in Swedish cinema. Even Ingmar Bergman, arguably their answer to good old boy John Ford, had sex scenes in his films.<br /><br />I do commend the filmmakers for the fact that any sex shown in the film is shown for artistic purposes rather than just to shock people and make money to be shown in pornographic theaters in America. I AM CURIOUS-YELLOW is a good film for anyone wanting to study the meat and potatoes (no pun intended) of Swedish cinema. But really, this film doesn't have much of a plot.",
@@ -2882,9 +2853,6 @@
                           "truncated_cells": []
                         },
                         {
-                          "dataset": "imdb",
-                          "config": "plain_text",
-                          "split": "train",
                           "row_idx": 1,
                           "row": {
                             "text": "\"I Am Curious: Yellow\" is a risible and pretentious steaming pile. It doesn't matter what one's political views are because this film can hardly be taken seriously on any level. As for the claim that frontal male nudity is an automatic NC-17, that isn't true. I've seen R-rated films with male nudity. Granted, they only offer some fleeting views, but where are the R-rated films with gaping vulvas and flapping labia? Nowhere, because they don't exist. The same goes for those crappy cable shows: schlongs swinging in the breeze but not a clitoris in sight. And those pretentious indie movies like The Brown Bunny, in which we're treated to the site of Vincent Gallo's throbbing johnson, but not a trace of pink visible on Chloe Sevigny. Before crying (or implying) \"double-standard\" in matters of nudity, the mentally obtuse should take into account one unavoidably obvious anatomical difference between men and women: there are no genitals on display when actresses appears nude, and the same cannot be said for a man. In fact, you generally won't see female genitals in an American film in anything short of porn or explicit erotica. This alleged double-standard is less a double standard than an admittedly depressing ability to come to terms culturally with the insides of women's bodies.",
@@ -2893,9 +2861,6 @@
                           "truncated_cells": []
                         },
                         {
-                          "dataset": "imdb",
-                          "config": "plain_text",
-                          "split": "train",
                           "row_idx": 2,
                           "row": {
                             "text": "If only to avoid making this type of film in the future. This film is interesting as an experiment but tells no cogent story.<br /><br />One might feel virtuous for sitting thru it because it touches on so many IMPORTANT issues but it does so without any discernable motive. The viewer comes away with no new perspectives (unless one comes up with one while one's mind wanders, as it will invariably do during this pointless film).<br /><br />One might better spend one's time staring out a window at a tree growing.<br /><br />",
@@ -2904,9 +2869,6 @@
                           "truncated_cells": []
                         },
                         {
-                          "dataset": "imdb",
-                          "config": "plain_text",
-                          "split": "train",
                           "row_idx": 3,
                           "row": {
                             "text": "This film was probably inspired by Godard's Masculin, féminin and I urge you to see that film instead.<br /><br />The film has two strong elements and those are, (1) the realistic acting (2) the impressive, undeservedly good, photo. Apart from that, what strikes me most is the endless stream of silliness. Lena Nyman has to be most annoying actress in the world. She acts so stupid and with all the nudity in this film,...it's unattractive. Comparing to Godard's film, intellectuality has been replaced with stupidity. Without going too far on this subject, I would say that follows from the difference in ideals between the French and the Swedish society.<br /><br />A movie of its time, and place. 2/10.",
@@ -2920,11 +2882,11 @@
                   "truncated": {
                     "summary": "truncated cells due to the response size (has a timestamp column)",
                     "value": {
+                      "dataset": "ett",
+                      "config": "m2",
+                      "split": "test",
                       "features": [
                         {
-                          "dataset": "ett",
-                          "config": "m2",
-                          "split": "test",
                           "feature_idx": 0,
                           "name": "start",
                           "type": {
@@ -2934,9 +2896,6 @@
                           }
                         },
                         {
-                          "dataset": "ett",
-                          "config": "m2",
-                          "split": "test",
                           "feature_idx": 1,
                           "name": "target",
                           "type": {
@@ -2951,9 +2910,6 @@
                           }
                         },
                         {
-                          "dataset": "ett",
-                          "config": "m2",
-                          "split": "test",
                           "feature_idx": 2,
                           "name": "feat_static_cat",
                           "type": {
@@ -2968,9 +2924,6 @@
                           }
                         },
                         {
-                          "dataset": "ett",
-                          "config": "m2",
-                          "split": "test",
                           "feature_idx": 3,
                           "name": "feat_dynamic_real",
                           "type": {
@@ -2990,9 +2943,6 @@
                           }
                         },
                         {
-                          "dataset": "ett",
-                          "config": "m2",
-                          "split": "test",
                           "feature_idx": 4,
                           "name": "item_id",
                           "type": {
@@ -3004,9 +2954,6 @@
                       ],
                       "rows": [
                         {
-                          "dataset": "ett",
-                          "config": "m2",
-                          "split": "test",
                           "row_idx": 0,
                           "row": {
                             "start": "2016-07-01T00:00:00",
@@ -3018,9 +2965,6 @@
                           "truncated_cells": ["target", "feat_dynamic_real"]
                         },
                         {
-                          "dataset": "ett",
-                          "config": "m2",
-                          "split": "test",
                           "row_idx": 1,
                           "row": {
                             "start": "2016-07-01T00:00:00",
@@ -3032,9 +2976,6 @@
                           "truncated_cells": ["target", "feat_dynamic_real"]
                         },
                         {
-                          "dataset": "ett",
-                          "config": "m2",
-                          "split": "test",
                           "row_idx": 2,
                           "row": {
                             "start": "2016-07-01T00:00:00",
@@ -3046,9 +2987,6 @@
                           "truncated_cells": ["target", "feat_dynamic_real"]
                         },
                         {
-                          "dataset": "ett",
-                          "config": "m2",
-                          "split": "test",
                           "row_idx": 3,
                           "row": {
                             "start": "2016-07-01T00:00:00",
@@ -3065,11 +3003,11 @@
                   "image": {
                     "summary": "a column with images (only 3 rows are shown for brevity)",
                     "value": {
+                      "dataset": "huggan/horse2zebra",
+                      "config": "huggan--horse2zebra-aligned",
+                      "split": "train",
                       "features": [
                         {
-                          "dataset": "huggan/horse2zebra",
-                          "config": "huggan--horse2zebra-aligned",
-                          "split": "train",
                           "feature_idx": 0,
                           "name": "imageA",
                           "type": {
@@ -3079,9 +3017,6 @@
                           }
                         },
                         {
-                          "dataset": "huggan/horse2zebra",
-                          "config": "huggan--horse2zebra-aligned",
-                          "split": "train",
                           "feature_idx": 1,
                           "name": "imageB",
                           "type": {
@@ -3093,9 +3028,6 @@
                       ],
                       "rows": [
                         {
-                          "dataset": "huggan/horse2zebra",
-                          "config": "huggan--horse2zebra-aligned",
-                          "split": "train",
                           "row_idx": 0,
                           "row": {
                             "imageA": "https://datasets-server.huggingface.co/assets/huggan/horse2zebra/--/huggan--horse2zebra-aligned/train/0/imageA/image.jpg",
@@ -3104,9 +3036,6 @@
                           "truncated_cells": []
                         },
                         {
-                          "dataset": "huggan/horse2zebra",
-                          "config": "huggan--horse2zebra-aligned",
-                          "split": "train",
                           "row_idx": 1,
                           "row": {
                             "imageA": "https://datasets-server.huggingface.co/assets/huggan/horse2zebra/--/huggan--horse2zebra-aligned/train/1/imageA/image.jpg",
@@ -3115,9 +3044,6 @@
                           "truncated_cells": []
                         },
                         {
-                          "dataset": "huggan/horse2zebra",
-                          "config": "huggan--horse2zebra-aligned",
-                          "split": "train",
                           "row_idx": 2,
                           "row": {
                             "imageA": "https://datasets-server.huggingface.co/assets/huggan/horse2zebra/--/huggan--horse2zebra-aligned/train/2/imageA/image.jpg",
@@ -3126,9 +3052,6 @@
                           "truncated_cells": []
                         },
                         {
-                          "dataset": "huggan/horse2zebra",
-                          "config": "huggan--horse2zebra-aligned",
-                          "split": "train",
                           "row_idx": 3,
                           "row": {
                             "imageA": "https://datasets-server.huggingface.co/assets/huggan/horse2zebra/--/huggan--horse2zebra-aligned/train/3/imageA/image.jpg",
@@ -3142,11 +3065,11 @@
                   "audio": {
                     "summary": "a column with audio files (only 3 rows are shown for brevity)",
                     "value": {
+                      "dataset": "mozilla-foundation/common_voice_9_0",
+                      "config": "en",
+                      "split": "train",
                       "features": [
                         {
-                          "dataset": "mozilla-foundation/common_voice_9_0",
-                          "config": "en",
-                          "split": "train",
                           "feature_idx": 0,
                           "name": "client_id",
                           "type": {
@@ -3156,9 +3079,6 @@
                           }
                         },
                         {
-                          "dataset": "mozilla-foundation/common_voice_9_0",
-                          "config": "en",
-                          "split": "train",
                           "feature_idx": 1,
                           "name": "path",
                           "type": {
@@ -3168,9 +3088,6 @@
                           }
                         },
                         {
-                          "dataset": "mozilla-foundation/common_voice_9_0",
-                          "config": "en",
-                          "split": "train",
                           "feature_idx": 2,
                           "name": "audio",
                           "type": {
@@ -3182,9 +3099,6 @@
                           }
                         },
                         {
-                          "dataset": "mozilla-foundation/common_voice_9_0",
-                          "config": "en",
-                          "split": "train",
                           "feature_idx": 3,
                           "name": "sentence",
                           "type": {
@@ -3194,9 +3108,6 @@
                           }
                         },
                         {
-                          "dataset": "mozilla-foundation/common_voice_9_0",
-                          "config": "en",
-                          "split": "train",
                           "feature_idx": 4,
                           "name": "up_votes",
                           "type": {
@@ -3206,9 +3117,6 @@
                           }
                         },
                         {
-                          "dataset": "mozilla-foundation/common_voice_9_0",
-                          "config": "en",
-                          "split": "train",
                           "feature_idx": 5,
                           "name": "down_votes",
                           "type": {
@@ -3218,9 +3126,6 @@
                           }
                         },
                         {
-                          "dataset": "mozilla-foundation/common_voice_9_0",
-                          "config": "en",
-                          "split": "train",
                           "feature_idx": 6,
                           "name": "age",
                           "type": {
@@ -3230,9 +3135,6 @@
                           }
                         },
                         {
-                          "dataset": "mozilla-foundation/common_voice_9_0",
-                          "config": "en",
-                          "split": "train",
                           "feature_idx": 7,
                           "name": "gender",
                           "type": {
@@ -3242,9 +3144,6 @@
                           }
                         },
                         {
-                          "dataset": "mozilla-foundation/common_voice_9_0",
-                          "config": "en",
-                          "split": "train",
                           "feature_idx": 8,
                           "name": "accent",
                           "type": {
@@ -3254,9 +3153,6 @@
                           }
                         },
                         {
-                          "dataset": "mozilla-foundation/common_voice_9_0",
-                          "config": "en",
-                          "split": "train",
                           "feature_idx": 9,
                           "name": "locale",
                           "type": {
@@ -3266,9 +3162,6 @@
                           }
                         },
                         {
-                          "dataset": "mozilla-foundation/common_voice_9_0",
-                          "config": "en",
-                          "split": "train",
                           "feature_idx": 10,
                           "name": "segment",
                           "type": {
@@ -3280,9 +3173,6 @@
                       ],
                       "rows": [
                         {
-                          "dataset": "mozilla-foundation/common_voice_9_0",
-                          "config": "en",
-                          "split": "train",
                           "row_idx": 0,
                           "row": {
                             "client_id": "04960d53cc851eeb6d93f21a09e09ab36fe16943acb226ced1211d7250ab2f1b9a1d655c1cc03d50006e396010851ad52d4c53f49dd77b080b01c4230704c68d",
@@ -3309,9 +3199,6 @@
                           "truncated_cells": []
                         },
                         {
-                          "dataset": "mozilla-foundation/common_voice_9_0",
-                          "config": "en",
-                          "split": "train",
                           "row_idx": 1,
                           "row": {
                             "client_id": "f9f1f96bae1390dfe61ff298abb90975c079e913c712d57d97307ed797469eac446abb149daaad24cacffcc24e1e3275fefeb97f977eb74ce2233e0e5c1d437e",
@@ -3338,9 +3225,6 @@
                           "truncated_cells": []
                         },
                         {
-                          "dataset": "mozilla-foundation/common_voice_9_0",
-                          "config": "en",
-                          "split": "train",
                           "row_idx": 2,
                           "row": {
                             "client_id": "a6c7706a220eeea7ee3687c1122fe7ac17962d2449d25b6db37cc41cdaace442683e11945b6f581e73941c3083cd4eecfafc938840459cd8c571dae7774ee687",
