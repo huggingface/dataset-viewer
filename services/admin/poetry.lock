@@ -471,7 +471,7 @@ url = "../../libs/libcache/dist/libcache-0.1.27-py3-none-any.whl"
 
 [[package]]
 name = "libqueue"
-version = "0.1.9"
+version = "0.1.10"
 description = "Library for the jobs queue in mongodb"
 category = "main"
 optional = false
@@ -484,7 +484,7 @@ pymongo = {version = ">=3.12.3,<4.0.0", extras = ["srv"]}
 
 [package.source]
 type = "file"
-url = "../../libs/libqueue/dist/libqueue-0.1.9-py3-none-any.whl"
+url = "../../libs/libqueue/dist/libqueue-0.1.10-py3-none-any.whl"
 
 [[package]]
 name = "libutils"
@@ -1198,7 +1198,7 @@ watchmedo = ["PyYAML (>=3.10)"]
 [metadata]
 lock-version = "1.1"
 python-versions = "3.9.6"
-content-hash = "74e577b2d1902d87de00736c6455c5be4f1c788fd1c81c4f37b901aa935f190f"
+content-hash = "d752b15e4218940e85ab8eb765d5dc7bae4925d75bc16a4cc345a06ca7ff427b"
 
 [metadata.files]
 anyio = [
@@ -1468,7 +1468,7 @@ libcache = [
     {file = "libcache-0.1.27-py3-none-any.whl", hash = "sha256:55207cdd76475dc3bd7d8f60b2d053b6101401ca4ad44570d74e40e7e240e607"},
 ]
 libqueue = [
-    {file = "libqueue-0.1.9-py3-none-any.whl", hash = "sha256:ef88903c08b95c18b91d2c863c5add148aa8aee0a261e5039ec8ff18f8f17626"},
+    {file = "libqueue-0.1.10-py3-none-any.whl", hash = "sha256:95bf4adcbe35a146fbc797a95a0cd0650f83f9a64612bbf254ea017bda44f36b"},
 ]
 libutils = [
     {file = "libutils-0.1.11-py3-none-any.whl", hash = "sha256:fba2ca7384164af6b3395bfd122b9b434ccceb337bac3582b5660b24fcecf93c"},
