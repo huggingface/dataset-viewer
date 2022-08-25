@@ -5,6 +5,7 @@ from datetime import datetime, timezone
 from typing import Generic, List, Optional, Tuple, Type, TypedDict, TypeVar
 
 from mongoengine import Document, DoesNotExist, connect
+from mongoengine.errors import MultipleObjectsReturned
 from mongoengine.fields import DateTimeField, EnumField, IntField, StringField
 from mongoengine.queryset.queryset import QuerySet
 
@@ -245,13 +246,20 @@ def get_datetime() -> datetime:
     return datetime.now(timezone.utc)
 
 
-def add_job(existing_jobs: QuerySet[AnyJob], new_job: AnyJob):
+def add_job(existing_jobs: QuerySet[AnyJob], new_job: AnyJob) -> AnyJob:
+    pending_jobs = existing_jobs.filter(status__in=[Status.WAITING, Status.STARTED])
     try:
-        # Check if a non-finished job already exists
-        existing_jobs.filter(status__in=[Status.WAITING, Status.STARTED]).get()
+        # If one non-finished job exists, return it
+        return pending_jobs.get()
     except DoesNotExist:
-        new_job.save()
-    # raises MultipleObjectsReturned if more than one entry -> should never occur, we let it raise
+        # None exist, create one
+        return new_job.save()
+    except MultipleObjectsReturned:
+        # should not happen, but it's not enforced in the database
+        # (we could have one in WAITING status and another one in STARTED status)
+        # it it happens, we "cancel" all of them, and re-run the same function
+        pending_jobs.update(finished_at=get_datetime(), status=Status.CANCELLED)
+        return add_job(existing_jobs, new_job)
 
 
 def add_dataset_job(dataset_name: str, retries: Optional[int] = 0) -> None:

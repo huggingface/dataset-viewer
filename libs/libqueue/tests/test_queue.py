@@ -2,12 +2,15 @@ import pytest
 
 from libqueue.queue import (
     EmptyQueue,
+    FirstRowsJob,
+    Status,
     add_first_rows_job,
     add_splits_job,
     clean_database,
     connect_to_queue,
     finish_first_rows_job,
     finish_splits_job,
+    get_datetime,
     get_first_rows_job,
     get_first_rows_jobs_count_by_status,
     get_splits_job,
@@ -66,6 +69,41 @@ def test_add_job() -> None:
     finish_splits_job(other_job_id, success=True)
     # ^ fails silently (with a log)
     finish_splits_job(job_id, success=True)
+
+
+def test_add_job_with_broken_collection() -> None:
+    dataset_name = "dataset_broken"
+    config_name = "config_broken"
+    split_name = "split_broken"
+    # ensure the jobs are cancelled with more than one exist in a "pending" status
+    # we "manually" create two jobs in a "pending" status for the same split
+    # (we normally cannot do that with the exposed methods)
+    job_1 = FirstRowsJob(
+        dataset_name=dataset_name,
+        config_name=config_name,
+        split_name=split_name,
+        created_at=get_datetime(),
+        status=Status.WAITING,
+    ).save()
+    job_2 = FirstRowsJob(
+        dataset_name=dataset_name,
+        config_name=config_name,
+        split_name=split_name,
+        created_at=get_datetime(),
+        started_at=get_datetime(),
+        status=Status.STARTED,
+    ).save()
+    # then we add a job: it should create a new job in the "WAITING" status
+    # and the two other jobs should be cancelled
+    add_first_rows_job(dataset_name=dataset_name, config_name=config_name, split_name=split_name)
+    assert (
+        FirstRowsJob.objects(
+            dataset_name=dataset_name, config_name=config_name, split_name=split_name, status__in=[Status.WAITING]
+        ).count()
+        == 1
+    )
+    assert FirstRowsJob.objects(pk=job_1.pk).get().status == Status.CANCELLED
+    assert FirstRowsJob.objects(pk=job_2.pk).get().status == Status.CANCELLED
 
 
 def test_max_jobs_per_dataset() -> None:
