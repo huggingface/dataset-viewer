@@ -324,24 +324,35 @@ def get_finished(jobs: QuerySet[AnyJob]) -> QuerySet[AnyJob]:
     return jobs(status__nin=[Status.WAITING, Status.STARTED])
 
 
-def get_excluded_dataset_names(jobs: QuerySet[AnyJob], max_jobs_per_dataset: Optional[int] = None) -> List[str]:
+def get_started_dataset_names(jobs: QuerySet[AnyJob]) -> List[str]:
+    return [job.dataset_name for job in jobs(status=Status.STARTED).only("dataset_name")]
+
+
+def get_excluded_dataset_names(dataset_names: List[str], max_jobs_per_dataset: Optional[int] = None) -> List[str]:
     if max_jobs_per_dataset is None:
         return []
-    dataset_names = [job.dataset_name for job in jobs(status=Status.STARTED).only("dataset_name")]
     return list(
         {dataset_name for dataset_name in dataset_names if dataset_names.count(dataset_name) >= max_jobs_per_dataset}
     )
 
 
 def start_job(jobs: QuerySet[AnyJob], max_jobs_per_dataset: Optional[int] = None) -> AnyJob:
-    excluded_dataset_names = get_excluded_dataset_names(jobs, max_jobs_per_dataset)
+    # try to get a job for a dataset that has still no started job
+    started_dataset_names = get_started_dataset_names(jobs)
     next_waiting_job = (
-        jobs(status=Status.WAITING, dataset_name__nin=excluded_dataset_names)
-        .order_by("+created_at")
-        .no_cache()
-        .first()
+        jobs(status=Status.WAITING, dataset_name__nin=started_dataset_names).order_by("+created_at").no_cache().first()
     )
     # ^ no_cache should generate a query on every iteration, which should solve concurrency issues between workers
+    if next_waiting_job is None:
+        # the waiting jobs are all for datasets that already have started jobs.
+        # let's take the next one, in the limit of max_jobs_per_dataset
+        excluded_dataset_names = get_excluded_dataset_names(started_dataset_names, max_jobs_per_dataset)
+        next_waiting_job = (
+            jobs(status=Status.WAITING, dataset_name__nin=excluded_dataset_names)
+            .order_by("+created_at")
+            .no_cache()
+            .first()
+        )
     if next_waiting_job is None:
         raise EmptyQueue("no job available (within the limit of {max_jobs_per_dataset} started jobs per dataset)")
     next_waiting_job.update(started_at=get_datetime(), status=Status.STARTED)

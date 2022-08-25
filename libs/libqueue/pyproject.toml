@@ -2,7 +2,7 @@
 authors = ["Sylvain Lesage <sylvain.lesage@huggingface.co>"]
 description = "Library for the jobs queue in mongodb"
 name = "libqueue"
-version = "0.1.10"
+version = "0.1.11"
 
 [tool.poetry.dependencies]
 mongo-types = "0.15.1"

@@ -106,6 +106,35 @@ def test_add_job_with_broken_collection() -> None:
     assert FirstRowsJob.objects(pk=job_2.pk).get().status == Status.CANCELLED
 
 
+def test_priority_to_non_started_datasets() -> None:
+    add_first_rows_job("dataset1", "config", "split1")
+    add_first_rows_job("dataset1", "config", "split2")
+    add_first_rows_job("dataset1", "config", "split3")
+    add_first_rows_job("dataset2", "config", "split1")
+    add_first_rows_job("dataset2", "config", "split2")
+    add_first_rows_job("dataset3", "config", "split1")
+    job_id, dataset_name, _, split_name, __ = get_first_rows_job()
+    assert dataset_name == "dataset1"
+    assert split_name == "split1"
+    job_id, dataset_name, _, split_name, __ = get_first_rows_job()
+    assert dataset_name == "dataset2"
+    assert split_name == "split1"
+    job_id, dataset_name, _, split_name, __ = get_first_rows_job()
+    assert dataset_name == "dataset3"
+    assert split_name == "split1"
+    job_id, dataset_name, _, split_name, __ = get_first_rows_job()
+    assert dataset_name == "dataset1"
+    assert split_name == "split2"
+    job_id, dataset_name, _, split_name, __ = get_first_rows_job()
+    assert dataset_name == "dataset1"
+    assert split_name == "split3"
+    job_id, dataset_name, _, split_name, __ = get_first_rows_job()
+    assert dataset_name == "dataset2"
+    assert split_name == "split2"
+    with pytest.raises(EmptyQueue):
+        get_first_rows_job()
+
+
 def test_max_jobs_per_dataset() -> None:
     add_first_rows_job("dataset", "config", "split1")
     assert is_first_rows_response_in_process("dataset", "config", "split1") is True
