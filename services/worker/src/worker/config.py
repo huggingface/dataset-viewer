@@ -53,7 +53,8 @@ WORKER_QUEUE = get_str_value(os.environ, "WORKER_QUEUE", DEFAULT_WORKER_QUEUE)
 WORKER_SLEEP_SECONDS = get_int_value(os.environ, "WORKER_SLEEP_SECONDS", DEFAULT_WORKER_SLEEP_SECONDS)
 
 # Ensure the datasets library uses the expected revision for canonical datasets
-datasets.config.HF_SCRIPTS_VERSION = DATASETS_REVISION
+# this one has to be set via an env variable unlike the others - this might be fixed in `datasets` at one point
+os.environ["HF_SCRIPTS_VERSION"] = DATASETS_REVISION
 # Ensure the datasets library uses the expected HuggingFace endpoint
 datasets.config.HF_ENDPOINT = HF_ENDPOINT
 # Don't increase the datasets download counts on huggingface.co
