@@ -1,5 +1,6 @@
 import os
 
+import datasets.config
 from datasets.utils.logging import log_levels, set_verbosity
 from dotenv import load_dotenv
 from libutils.utils import get_int_value, get_str_or_none_value, get_str_value
@@ -52,10 +53,10 @@ WORKER_QUEUE = get_str_value(os.environ, "WORKER_QUEUE", DEFAULT_WORKER_QUEUE)
 WORKER_SLEEP_SECONDS = get_int_value(os.environ, "WORKER_SLEEP_SECONDS", DEFAULT_WORKER_SLEEP_SECONDS)
 
 # Ensure the datasets library uses the expected revision for canonical datasets
-os.environ["HF_SCRIPTS_VERSION"] = DATASETS_REVISION
+datasets.config.HF_SCRIPTS_VERSION = DATASETS_REVISION
 # Ensure the datasets library uses the expected HuggingFace endpoint
-os.environ["HF_ENDPOINT"] = HF_ENDPOINT
+datasets.config.HF_ENDPOINT = HF_ENDPOINT
 # Don't increase the datasets download counts on huggingface.co
-os.environ["HF_UPDATE_DOWNLOAD_COUNTS"] = "false"
+datasets.config.HF_UPDATE_DOWNLOAD_COUNTS = False
 # Set logs from the datasets library to the least verbose
 set_verbosity(log_levels["critical"])
