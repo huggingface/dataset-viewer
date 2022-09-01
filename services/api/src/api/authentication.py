@@ -37,8 +37,7 @@ def auth_check(
         dataset (str): the dataset name
         external_auth_url (str|None): the URL of an external authentication service. The URL must contain `%s`,
           which will be replaced with the dataset name, for example: https://huggingface.co/api/datasets/%s/auth-check
-          The authentication service must follow the specification in
-          https://nginx.org/en/docs/http/ngx_http_auth_request_module.html and return 200, 401 or 403.
+          The authentication service must return 200, 401, 403 or 404.
           If None, the dataset is always authorized.
         request (Request | None): the request which optionally bears authentication headers: "cookie" or
           "authorization"
@@ -63,7 +62,7 @@ def auth_check(
             "The dataset does not exist, or is not accessible without authentication (private or gated). Please retry"
             " with authentication."
         )
-    elif response.status_code == 403:
+    elif response.status_code == 403 or response.status_code == 404:
         raise ExternalAuthenticatedError(
             "The dataset does not exist, or is not accessible with the current credentials (private or gated)."
         )
