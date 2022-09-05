@@ -41,6 +41,10 @@ def test_external_auth_responses_without_request() -> None:
         auth_check(dataset, external_auth_url=url)
 
     responses.add(responses.GET, url % dataset, status=404)
+    with pytest.raises(ExternalAuthenticatedError):
+        auth_check(dataset, external_auth_url=url)
+
+    responses.add(responses.GET, url % dataset, status=429)
     with pytest.raises(ValueError):
         auth_check(dataset, external_auth_url=url)
 
