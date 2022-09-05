@@ -1,13 +1,13 @@
 {
   "dockerImage": {
-    "admin": "707930574880.dkr.ecr.us-east-1.amazonaws.com/hub-datasets-server-admin:sha-93472fb",
-    "api": "707930574880.dkr.ecr.us-east-1.amazonaws.com/hub-datasets-server-api:sha-93472fb",
+    "admin": "707930574880.dkr.ecr.us-east-1.amazonaws.com/hub-datasets-server-admin:sha-f83bf76",
+    "api": "707930574880.dkr.ecr.us-east-1.amazonaws.com/hub-datasets-server-api:sha-f83bf76",
     "reverseProxy": "docker.io/nginx:1.20",
     "worker": {
-      "splits": "707930574880.dkr.ecr.us-east-1.amazonaws.com/hub-datasets-server-worker:sha-c660cd0",
-      "rows": "707930574880.dkr.ecr.us-east-1.amazonaws.com/hub-datasets-server-worker:sha-c660cd0",
-      "splitsNext": "707930574880.dkr.ecr.us-east-1.amazonaws.com/hub-datasets-server-worker:sha-c660cd0",
-      "firstRows": "707930574880.dkr.ecr.us-east-1.amazonaws.com/hub-datasets-server-worker:sha-c660cd0"
+      "splits": "707930574880.dkr.ecr.us-east-1.amazonaws.com/hub-datasets-server-worker:sha-f83bf76",
+      "rows": "707930574880.dkr.ecr.us-east-1.amazonaws.com/hub-datasets-server-worker:sha-f83bf76",
+      "splitsNext": "707930574880.dkr.ecr.us-east-1.amazonaws.com/hub-datasets-server-worker:sha-f83bf76",
+      "firstRows": "707930574880.dkr.ecr.us-east-1.amazonaws.com/hub-datasets-server-worker:sha-f83bf76"
     }
   }
 }
