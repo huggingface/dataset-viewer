@@ -19,7 +19,7 @@ mypy = "0.812"
 poetryup = "^0.3.8"
 pytest = "^6.2.5"
 pytest-cov = "^2.12.1"
-safety = "^1.10.3"
+safety = "^2.1.1"
 
 [build-system]
 build-backend = "poetry.core.masonry.api"

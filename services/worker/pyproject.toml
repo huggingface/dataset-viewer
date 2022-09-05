@@ -5,7 +5,7 @@ name = "worker"
 version = "0.1.1"
 
 [tool.poetry.dependencies]
-Pillow = "^8.4.0"
+Pillow = "^9.0.0"
 PyICU = "^2.7.4"
 aiohttp = "^3.7.4.post0"
 apache-beam = "^2.33.0"
@@ -50,7 +50,7 @@ mypy = "0.812"
 poetryup = "^0.3.8"
 pytest = "^6.2.5"
 pytest-cov = "^2.12.1"
-safety = "^1.10.3"
+safety = "^2.1.1"
 
 [build-system]
 build-backend = "poetry.core.masonry.api"

@@ -9,7 +9,7 @@ openapi-spec-validator = "^0.4.0"
 pytest = "^6.2.5"
 python = "3.9.6"
 requests = "^2.27.1"
-safety = "^1.10.3"
+safety = "^2.1.1"
 
 [tool.poetry.dev-dependencies]
 bandit = "^1.7.0"
