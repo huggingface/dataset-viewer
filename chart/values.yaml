@@ -58,12 +58,7 @@ reverseProxy:
 
   # Directory of assets (audio files and images that will be served for the web)
   assetsDirectory: "/assets"
-  # Directory of the nginx cache
-  cacheDirectory: "/nginx-cache"
   readinessPort: 80
-  cacheInactive: 24h
-  cacheMaxSize: 1g
-  cacheZoneSize: 50m
   host: localhost
   nginxTemplateFile: "nginx-templates/default.conf.template"
   openapiFile: "static-files/openapi.json"

@@ -112,15 +112,6 @@ The numba-cache/ subpath in the NFS
 {{- end }}
 
 {{/*
-The nginx-cache/ subpath in the NFS
-- in a subdirectory named as the chart (datasets-server/), and below it,
-- in a subdirectory named as the Release, so that Releases will not share the same dir
-*/}}
-{{- define "cache.nginx.subpath" -}}
-{{- printf "%s/%s/%s/" .Chart.Name .Release.Name "cache-nginx-2" }}
-{{- end }}
-
-{{/*
 The URL to access the mongodb instance created if mongodb.enable is true
 It's named using the Release name
 */}}

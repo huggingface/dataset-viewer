@@ -5,14 +5,6 @@
   env:
   - name: ASSETS_DIRECTORY
     value: {{ .Values.reverseProxy.assetsDirectory | quote }}
-  - name: CACHE_DIRECTORY
-    value: {{ .Values.reverseProxy.cacheDirectory | quote }}
-  - name: CACHE_INACTIVE
-    value: {{ .Values.reverseProxy.cacheInactive | quote }}
-  - name: CACHE_MAX_SIZE
-    value: {{ .Values.reverseProxy.cacheMaxSize | quote }}
-  - name: CACHE_ZONE_SIZE
-    value: {{ .Values.reverseProxy.cacheZoneSize | quote }}
   - name: HOST
     value: {{ .Values.reverseProxy.host | quote }}
   - name: PORT
@@ -35,11 +27,6 @@
     name: nfs
     subPath: "{{ include "assets.subpath" . }}"
     readOnly: true
-  - mountPath: {{ .Values.reverseProxy.cacheDirectory | quote }}
-    mountPropagation: None
-    name: nfs
-    subPath: "{{ include "cache.nginx.subpath" . }}"
-    readOnly: false
   readinessProbe:
     tcpSocket:
       port: {{ .Values.reverseProxy.readinessPort }}
