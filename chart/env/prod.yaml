@@ -44,7 +44,7 @@ apiDomain: "datasets-server.huggingface.co"
 
 ingress:
   annotations:
-    alb.ingress.kubernetes.io/certificate-arn: arn:aws:acm:us-east-1:707930574880:certificate/777e3ae5-0c54-47ee-9b8c-d85eeb6ec4ae
+    alb.ingress.kubernetes.io/certificate-arn: arn:aws:acm:us-east-1:707930574880:certificate/971187a3-2baa-40e5-bcae-94d6ec55cd24
     alb.ingress.kubernetes.io/load-balancer-name: "hub-datasets-server-prod"
     alb.ingress.kubernetes.io/tags: "Env=prod,Project=datasets-server,Terraform=true"
     alb.ingress.kubernetes.io/target-node-labels: role-datasets-server=true
