@@ -39,7 +39,12 @@ gid: 3000
 hfEndpoint: "https://huggingface.co"
 
 ingress:
-  annotations: {}
+  annotations:
+    alb.ingress.kubernetes.io/healthcheck-path: "/healthcheck"
+    alb.ingress.kubernetes.io/listen-ports: '[{"HTTP": 80, "HTTPS": 443}]'
+    alb.ingress.kubernetes.io/scheme: "internet-facing"
+    alb.ingress.kubernetes.io/group.name: "datasets-server"
+    kubernetes.io/ingress.class: "alb"
 
 reverseProxy:
   replicas: 1
