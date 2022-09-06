@@ -19,13 +19,8 @@ ingress:
   annotations:
     # Link to Route53 - we could set any subdomain to us.dev.moon.huggingface.tech (common zone to the k8s cluster)
     external-dns.alpha.kubernetes.io/hostname: "datasets-server.us.dev.moon.huggingface.tech"
-    alb.ingress.kubernetes.io/healthcheck-path: "/healthcheck"
-    alb.ingress.kubernetes.io/listen-ports: '[{"HTTP": 80, "HTTPS": 443}]'
     alb.ingress.kubernetes.io/load-balancer-name: "hub-datasets-server-dev"
-    alb.ingress.kubernetes.io/scheme: "internet-facing"
     alb.ingress.kubernetes.io/tags: "Env=dev,Project=datasets-server,Terraform=true"
-    alb.ingress.kubernetes.io/group.name: "datasets-server"
-    kubernetes.io/ingress.class: "alb"
 
 reverseProxy:
   replicas: 1

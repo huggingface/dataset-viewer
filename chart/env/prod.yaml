@@ -45,13 +45,9 @@ apiDomain: "datasets-server.huggingface.co"
 ingress:
   annotations:
     alb.ingress.kubernetes.io/certificate-arn: arn:aws:acm:us-east-1:707930574880:certificate/777e3ae5-0c54-47ee-9b8c-d85eeb6ec4ae
-    alb.ingress.kubernetes.io/healthcheck-path: "/healthcheck"
-    alb.ingress.kubernetes.io/listen-ports: '[{"HTTP": 80, "HTTPS": 443}]'
     alb.ingress.kubernetes.io/load-balancer-name: "hub-datasets-server-prod"
-    alb.ingress.kubernetes.io/scheme: "internet-facing"
     alb.ingress.kubernetes.io/tags: "Env=prod,Project=datasets-server,Terraform=true"
     alb.ingress.kubernetes.io/target-node-labels: role-datasets-server=true
-    kubernetes.io/ingress.class: "alb"
 
 reverseProxy:
   replicas: 2
