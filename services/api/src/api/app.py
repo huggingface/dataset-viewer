@@ -7,6 +7,7 @@ from libqueue.queue import connect_to_queue
 from libutils.logger import init_logger
 from starlette.applications import Starlette
 from starlette.middleware import Middleware
+from starlette.middleware.cors import CORSMiddleware
 from starlette.middleware.gzip import GZipMiddleware
 from starlette.routing import BaseRoute, Mount, Route
 from starlette.staticfiles import StaticFiles
@@ -41,7 +42,13 @@ def create_app() -> Starlette:
     show_assets_dir(ASSETS_DIRECTORY)
     prometheus = Prometheus()
 
-    middleware = [Middleware(GZipMiddleware), Middleware(PrometheusMiddleware, filter_unhandled_paths=True)]
+    middleware = [
+        Middleware(
+            CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"], allow_credentials=True
+        ),
+        Middleware(GZipMiddleware),
+        Middleware(PrometheusMiddleware, filter_unhandled_paths=True),
+    ]
     documented: List[BaseRoute] = [
         Route("/healthcheck", endpoint=healthcheck_endpoint),
         Route("/valid", endpoint=valid_datasets_endpoint),
