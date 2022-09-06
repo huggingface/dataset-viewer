@@ -30,6 +30,34 @@ def clean_mongo_databases() -> None:
     clean_queue_database()
 
 
+def test_cors(client: TestClient) -> None:
+    origin = "http://localhost:3000"
+    method = "GET"
+    header = "X-Requested-With"
+    response = client.options(
+        "/pending-jobs",
+        headers={
+            "Origin": origin,
+            "Access-Control-Request-Method": method,
+            "Access-Control-Request-Headers": header,
+        },
+    )
+    assert response.status_code == 200
+    assert (
+        origin in [o.strip() for o in response.headers["Access-Control-Allow-Origin"].split(",")]
+        or response.headers["Access-Control-Allow-Origin"] == "*"
+    )
+    assert (
+        header in [o.strip() for o in response.headers["Access-Control-Allow-Headers"].split(",")]
+        or response.headers["Access-Control-Expose-Headers"] == "*"
+    )
+    assert (
+        method in [o.strip() for o in response.headers["Access-Control-Allow-Methods"].split(",")]
+        or response.headers["Access-Control-Expose-Headers"] == "*"
+    )
+    assert response.headers["Access-Control-Allow-Credentials"] == "true"
+
+
 def test_get_healthcheck(client: TestClient) -> None:
     response = client.get("/healthcheck")
     assert response.status_code == 200

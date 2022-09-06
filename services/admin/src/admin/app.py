@@ -4,6 +4,7 @@ from libqueue.queue import connect_to_queue
 from libutils.logger import init_logger
 from starlette.applications import Starlette
 from starlette.middleware import Middleware
+from starlette.middleware.cors import CORSMiddleware
 from starlette.middleware.gzip import GZipMiddleware
 from starlette.routing import Route
 from starlette_prometheus import PrometheusMiddleware
@@ -32,7 +33,13 @@ def create_app() -> Starlette:
     connect_to_queue(database=MONGO_QUEUE_DATABASE, host=MONGO_URL)
     prometheus = Prometheus()
 
-    middleware = [Middleware(GZipMiddleware), Middleware(PrometheusMiddleware, filter_unhandled_paths=True)]
+    middleware = [
+        Middleware(
+            CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"], allow_credentials=True
+        ),
+        Middleware(GZipMiddleware),
+        Middleware(PrometheusMiddleware, filter_unhandled_paths=True),
+    ]
     routes = [
         Route("/healthcheck", endpoint=healthcheck_endpoint),
         Route("/metrics", endpoint=prometheus.endpoint),
