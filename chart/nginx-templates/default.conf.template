@@ -8,8 +8,6 @@ server {
   listen [::]:${PORT};
   server_name ${HOST};
 
-  add_header 'Access-Control-Allow-Origin' '*' always;
-
   location /openapi.json {
     alias /static-files/openapi.json;
   }
