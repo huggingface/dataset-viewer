@@ -24,7 +24,7 @@ ingress:
     alb.ingress.kubernetes.io/load-balancer-name: "hub-datasets-server-dev"
     alb.ingress.kubernetes.io/scheme: "internet-facing"
     alb.ingress.kubernetes.io/tags: "Env=dev,Project=datasets-server,Terraform=true"
-    alb.ingress.kubernetes.io/group.name: "hub-ephemeral"
+    alb.ingress.kubernetes.io/group.name: "datasets-server"
     kubernetes.io/ingress.class: "alb"
 
 reverseProxy:

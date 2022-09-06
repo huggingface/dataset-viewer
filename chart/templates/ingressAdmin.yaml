@@ -6,7 +6,7 @@ metadata:
     {{ toYaml .Values.ingress.annotations | nindent 4 }}
     alb.ingress.kubernetes.io/auth-type: "oidc"
     alb.ingress.kubernetes.io/auth-idp-oidc: '{"issuer":"https://hugging-face.okta.com","authorizationEndpoint":"https://hugging-face.okta.com/oauth2/v1/authorize","tokenEndpoint":"https://hugging-face.okta.com/oauth2/v1/token","userInfoEndpoint":"https://hugging-face.okta.com/oauth2/v1/userinfo","secretName":"sso-secret"}'
-    alb.ingress.kubernetes.io/group.order: '0'
+    alb.ingress.kubernetes.io/group.order: '1'
   labels:
     {{ include "labels.reverseProxy" . | nindent 4 }}
   name: "{{ include "release" . }}-admin"
