@@ -43,6 +43,14 @@ spec:
           items:
             - key: "default.conf.template"
               path: "default.conf.template"
+      - name: error-pages
+        configMap:
+          name: "{{ include "release" . }}-reverse-proxy"
+          defaultMode: 420
+          optional: false
+          items:
+            - key: "404.html"
+              path: "404.html"
       - name: static-files
         configMap:
           name: "{{ include "release" . }}-reverse-proxy"

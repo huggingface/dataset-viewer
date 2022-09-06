@@ -26,6 +26,10 @@
     mountPath: /etc/nginx/templates
     mountPropagation: None
     readOnly: true
+  - name: error-pages
+    mountPath: /error-pages
+    mountPropagation: None
+    readOnly: true
   - name: static-files
     mountPath: /static-files
     mountPropagation: None
