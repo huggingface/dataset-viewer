@@ -67,6 +67,7 @@ reverseProxy:
   host: localhost
   nginxTemplateFile: "nginx-templates/default.conf.template"
   openapiFile: "static-files/openapi.json"
+  error404File: "nginx-templates/404.html"
   port: 80
 
 api:

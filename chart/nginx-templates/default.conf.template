@@ -37,5 +37,15 @@ server {
     proxy_http_version 1.1;
   }
 
-  access_log  /var/log/nginx/access.log  datasetsserver;
+  error_page 404 /404.html;
+  location = /404.html {
+    root /error-pages;
+    internal;
+  }
+
+  location ~* ^(/admin)?(/healthcheck|/metrics)$ {
+    return 404;
+  }
+
+  access_log /var/log/nginx/access.log datasetsserver;
 }

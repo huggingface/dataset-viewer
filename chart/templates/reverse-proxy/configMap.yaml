@@ -8,5 +8,7 @@ metadata:
 data:
   default.conf.template: |-
     {{ .Files.Get .Values.reverseProxy.nginxTemplateFile | nindent 4 }}
+  404.html: |-
+    {{ .Files.Get .Values.reverseProxy.error404File | nindent 4 }}
   openapi.json: |-
     {{ .Files.Get .Values.reverseProxy.openapiFile | nindent 4 }}
