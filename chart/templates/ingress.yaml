@@ -4,7 +4,6 @@ metadata:
   annotations:
     # to communicate with AWS
     {{ toYaml .Values.ingress.annotations | nindent 4 }}
-    alb.ingress.kubernetes.io/group.order: '2'
   labels:
     {{ include "labels.reverseProxy" . | nindent 4 }}
   name: {{ include "release" . }}

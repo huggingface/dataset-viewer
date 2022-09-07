@@ -1,15 +1,15 @@
 from http import HTTPStatus
-from typing import Any, Literal, Optional
+from typing import Any, Callable, Coroutine, Literal, Optional
 
 from libutils.exceptions import CustomError
 from libutils.utils import orjson_dumps
+from starlette.requests import Request
 from starlette.responses import JSONResponse, Response
 
 from admin.config import MAX_AGE_SHORT_SECONDS
 
 AdminErrorCode = Literal[
-    "InvalidParameter",
-    "UnexpectedError",
+    "InvalidParameter", "UnexpectedError", "ExternalUnauthenticatedError", "ExternalAuthenticatedError"
 ]
 
 
@@ -39,6 +39,20 @@ class UnexpectedError(AdminCustomError):
 
     def __init__(self, message: str):
         super().__init__(message, HTTPStatus.INTERNAL_SERVER_ERROR, "UnexpectedError")
+
+
+class ExternalUnauthenticatedError(AdminCustomError):
+    """Raised when the external authentication check failed while the user was unauthenticated."""
+
+    def __init__(self, message: str):
+        super().__init__(message, HTTPStatus.UNAUTHORIZED, "ExternalUnauthenticatedError")
+
+
+class ExternalAuthenticatedError(AdminCustomError):
+    """Raised when the external authentication check failed while the user was authenticated."""
+
+    def __init__(self, message: str):
+        super().__init__(message, HTTPStatus.NOT_FOUND, "ExternalAuthenticatedError")
 
 
 class OrjsonResponse(JSONResponse):
@@ -72,3 +86,6 @@ def get_json_error_response(
 
 def get_json_admin_error_response(error: AdminCustomError) -> Response:
     return get_json_error_response(error.as_response(), error.status_code, error.code)
+
+
+Endpoint = Callable[[Request], Coroutine[Any, Any, Response]]

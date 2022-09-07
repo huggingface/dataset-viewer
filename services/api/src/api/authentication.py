@@ -62,7 +62,7 @@ def auth_check(
             "The dataset does not exist, or is not accessible without authentication (private or gated). Please retry"
             " with authentication."
         )
-    elif response.status_code == 403 or response.status_code == 404:
+    elif response.status_code in [403, 404]:
         raise ExternalAuthenticatedError(
             "The dataset does not exist, or is not accessible with the current credentials (private or gated)."
         )

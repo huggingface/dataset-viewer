@@ -11,6 +11,10 @@
     value: {{ .Values.admin.assetsDirectory | quote }}
   - name: CACHE_REPORTS_NUM_RESULTS
     value: {{ .Values.admin.cacheReportsNumResults | quote }}
+  - name: HF_ORGANIZATION
+    value: {{ .Values.admin.hfOrganization | quote }}
+  - name: HF_WHOAMI_PATH
+    value: {{ .Values.admin.hfWhoamiPath | quote }}
   - name: LOG_LEVEL
     value: {{ .Values.admin.logLevel | quote }}
   - name: MAX_AGE_SHORT_SECONDS

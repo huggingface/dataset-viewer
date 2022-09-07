@@ -13,6 +13,8 @@ from admin.config import (
     APP_HOSTNAME,
     APP_NUM_WORKERS,
     APP_PORT,
+    EXTERNAL_AUTH_URL,
+    HF_ORGANIZATION,
     LOG_LEVEL,
     MONGO_CACHE_DATABASE,
     MONGO_QUEUE_DATABASE,
@@ -20,11 +22,11 @@ from admin.config import (
 )
 from admin.prometheus import Prometheus
 from admin.routes.cache_reports import (
-    cache_reports_first_rows_endpoint,
-    cache_reports_splits_endpoint,
+    create_cache_reports_first_rows_endpoint,
+    create_cache_reports_splits_endpoint,
 )
 from admin.routes.healthcheck import healthcheck_endpoint
-from admin.routes.pending_jobs import pending_jobs_endpoint
+from admin.routes.pending_jobs import create_pending_jobs_endpoint
 
 
 def create_app() -> Starlette:
@@ -44,10 +46,15 @@ def create_app() -> Starlette:
         Route("/healthcheck", endpoint=healthcheck_endpoint),
         Route("/metrics", endpoint=prometheus.endpoint),
         # used by https://observablehq.com/@huggingface/quality-assessment-of-datasets-loading
-        Route("/cache-reports/first-rows", endpoint=cache_reports_first_rows_endpoint),
-        Route("/cache-reports/splits", endpoint=cache_reports_splits_endpoint),
+        Route(
+            "/cache-reports/first-rows",
+            endpoint=create_cache_reports_first_rows_endpoint(EXTERNAL_AUTH_URL, HF_ORGANIZATION),
+        ),
+        Route(
+            "/cache-reports/splits", endpoint=create_cache_reports_splits_endpoint(EXTERNAL_AUTH_URL, HF_ORGANIZATION)
+        ),
         # used in a browser tab to monitor the queue
-        Route("/pending-jobs", endpoint=pending_jobs_endpoint),
+        Route("/pending-jobs", endpoint=create_pending_jobs_endpoint(EXTERNAL_AUTH_URL, HF_ORGANIZATION)),
     ]
     return Starlette(routes=routes, middleware=middleware)
 
