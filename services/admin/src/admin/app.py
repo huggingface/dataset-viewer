@@ -1,5 +1,5 @@
 import uvicorn  # type: ignore
-from libcache.cache import connect_to_cache
+from libcache.simple_cache import connect_to_cache
 from libqueue.queue import connect_to_queue
 from libutils.logger import init_logger
 from starlette.applications import Starlette
@@ -21,7 +21,7 @@ from admin.config import (
 from admin.prometheus import Prometheus
 from admin.routes.cache_reports import (
     cache_reports_first_rows_endpoint,
-    cache_reports_splits_next_endpoint,
+    cache_reports_splits_endpoint,
 )
 from admin.routes.healthcheck import healthcheck_endpoint
 from admin.routes.pending_jobs import pending_jobs_endpoint
@@ -45,7 +45,7 @@ def create_app() -> Starlette:
         Route("/metrics", endpoint=prometheus.endpoint),
         # used by https://observablehq.com/@huggingface/quality-assessment-of-datasets-loading
         Route("/cache-reports/first-rows", endpoint=cache_reports_first_rows_endpoint),
-        Route("/cache-reports/splits-next", endpoint=cache_reports_splits_next_endpoint),
+        Route("/cache-reports/splits", endpoint=cache_reports_splits_endpoint),
         # used in a browser tab to monitor the queue
         Route("/pending-jobs", endpoint=pending_jobs_endpoint),
     ]

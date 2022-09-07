@@ -1,14 +1,13 @@
 import logging
 from typing import Any, Optional, TypedDict
 
-from libcache.cache import create_or_mark_dataset_as_stale, delete_dataset_cache
 from libcache.simple_cache import (
     delete_first_rows_responses,
     delete_splits_responses,
     mark_first_rows_responses_as_stale,
     mark_splits_responses_as_stale,
 )
-from libqueue.queue import add_dataset_job, add_splits_job
+from libqueue.queue import add_splits_job
 from starlette.requests import Request
 from starlette.responses import Response
 
@@ -49,52 +48,29 @@ def get_dataset_name(id: Optional[str]) -> Optional[str]:
     return dataset_name if are_valid_parameters([dataset_name]) else None
 
 
-def try_to_update(id: Optional[str], with_deprecated: bool) -> None:
+def try_to_update(id: Optional[str]) -> None:
     dataset_name = get_dataset_name(id)
     if dataset_name is not None:
         logger.debug(f"webhook: refresh {dataset_name}")
-        if with_deprecated:
-            create_or_mark_dataset_as_stale(dataset_name)
-            add_dataset_job(dataset_name)
         # new implementation for the /splits endpoint
         mark_splits_responses_as_stale(dataset_name)
         mark_first_rows_responses_as_stale(dataset_name)
         add_splits_job(dataset_name)
 
 
-def try_to_delete(id: Optional[str], with_deprecated: bool) -> None:
+def try_to_delete(id: Optional[str]) -> None:
     dataset_name = get_dataset_name(id)
     if dataset_name is not None:
         logger.debug(f"webhook: delete {dataset_name}")
-        if with_deprecated:
-            delete_dataset_cache(dataset_name)
         # new implementation for the /splits endpoint
         delete_splits_responses(dataset_name)
         delete_first_rows_responses(dataset_name)
 
 
-def process_payload(payload: MoonWebhookV2Payload, with_deprecated=False) -> None:
-    try_to_update(payload["add"], with_deprecated)
-    try_to_update(payload["update"], with_deprecated)
-    try_to_delete(payload["remove"], with_deprecated)
-
-
-async def webhook_endpoint_with_deprecated(request: Request) -> Response:
-    try:
-        json = await request.json()
-    except Exception:
-        content = {"status": "error", "error": "the body could not be parsed as a JSON"}
-        return get_response(content, 400)
-    logger.info(f"/webhook: {json}")
-    try:
-        payload = parse_payload(json)
-    except Exception:
-        content = {"status": "error", "error": "the JSON payload is invalid"}
-        return get_response(content, 400)
-
-    process_payload(payload, with_deprecated=True)
-    content = {"status": "ok"}
-    return get_response(content, 200)
+def process_payload(payload: MoonWebhookV2Payload) -> None:
+    try_to_update(payload["add"])
+    try_to_update(payload["update"])
+    try_to_delete(payload["remove"])
 
 
 async def webhook_endpoint(request: Request) -> Response:
@@ -103,7 +79,7 @@ async def webhook_endpoint(request: Request) -> Response:
     except Exception:
         content = {"status": "error", "error": "the body could not be parsed as a JSON"}
         return get_response(content, 400)
-    logger.info(f"/webhook-next: {json}")
+    logger.info(f"/webhook: {json}")
     try:
         payload = parse_payload(json)
     except Exception:

@@ -38,7 +38,6 @@ from worker.config import (
     WORKER_QUEUE,
     WORKER_SLEEP_SECONDS,
 )
-from worker.deprecated.main import process_next_dataset_job, process_next_split_job
 from worker.refresh import refresh_first_rows, refresh_splits
 
 
@@ -112,12 +111,8 @@ def process_next_first_rows_job() -> bool:
 
 
 def process_next_job() -> bool:
-    if WORKER_QUEUE == "datasets":
-        return process_next_dataset_job()
-    elif WORKER_QUEUE == "first_rows_responses":
+    if WORKER_QUEUE == "first_rows_responses":
         return process_next_first_rows_job()
-    elif WORKER_QUEUE == "splits":
-        return process_next_split_job()
     elif WORKER_QUEUE == "splits_responses":
         return process_next_splits_job()
     raise NotImplementedError(f"Job queue {WORKER_QUEUE} does not exist")

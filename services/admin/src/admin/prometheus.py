@@ -1,15 +1,12 @@
 import os
 from typing import Dict
 
-from libcache.cache import get_datasets_count_by_status, get_splits_count_by_status
 from libcache.simple_cache import (
     get_first_rows_responses_count_by_status_and_error_code,
     get_splits_responses_count_by_status_and_error_code,
 )
 from libqueue.queue import (
-    get_dataset_jobs_count_by_status,
     get_first_rows_jobs_count_by_status,
-    get_split_jobs_count_by_status,
     get_splits_jobs_count_by_status,
 )
 from prometheus_client import (  # type: ignore # https://github.com/prometheus/client_python/issues/491
@@ -57,19 +54,11 @@ class Prometheus:
 
     def updateMetrics(self):
         # Queue metrics
-        for status, total in get_dataset_jobs_count_by_status().items():
-            self.metrics["queue_jobs_total"].labels(queue="/splits", status=status).set(total)
-        for status, total in get_split_jobs_count_by_status().items():
-            self.metrics["queue_jobs_total"].labels(queue="/rows", status=status).set(total)
         for status, total in get_splits_jobs_count_by_status().items():
-            self.metrics["queue_jobs_total"].labels(queue="/splits-next", status=status).set(total)
+            self.metrics["queue_jobs_total"].labels(queue="/splits", status=status).set(total)
         for status, total in get_first_rows_jobs_count_by_status().items():
             self.metrics["queue_jobs_total"].labels(queue="/first-rows", status=status).set(total)
         # Cache metrics
-        for status, total in get_datasets_count_by_status().items():
-            self.metrics["cache_entries_total"].labels(cache="/splits", status=status).set(total)
-        for status, total in get_splits_count_by_status().items():
-            self.metrics["cache_entries_total"].labels(cache="/rows", status=status).set(total)
         for http_status, by_error_code in get_splits_responses_count_by_status_and_error_code().items():
             for error_code, total in by_error_code.items():
                 self.metrics["responses_in_cache_total"].labels(

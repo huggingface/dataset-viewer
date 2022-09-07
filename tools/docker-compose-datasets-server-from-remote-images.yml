@@ -55,42 +55,6 @@ services:
       MONGO_URL: "mongodb://mongodb"
       ROWS_MAX_NUMBER: ${ROWS_MAX_NUMBER-100}
       WORKER_SLEEP_SECONDS: "1"
-      WORKER_QUEUE: "datasets"
-    depends_on:
-      - mongodb
-    restart: always
-  worker-rows:
-    image: ${IMAGE_WORKER_ROWS?IMAGE_WORKER_ROWS env var must be provided}
-    volumes:
-      - assets:/assets:rw
-      - datasets-cache:/datasets-cache:rw
-    environment:
-      ASSETS_BASE_URL: "http://localhost:${PORT_REVERSE_PROXY-8000}/assets"
-      ASSETS_DIRECTORY: "/assets"
-      HF_DATASETS_CACHE: "/datasets-cache"
-      HF_ENDPOINT: ${HF_ENDPOINT}
-      HF_TOKEN: ${HF_TOKEN}
-      MONGO_URL: "mongodb://mongodb"
-      ROWS_MAX_NUMBER: ${ROWS_MAX_NUMBER-100}
-      WORKER_SLEEP_SECONDS: "1"
-      WORKER_QUEUE: "splits"
-    depends_on:
-      - mongodb
-    restart: always
-  worker-splits-next:
-    image: ${IMAGE_WORKER_SPLITS_NEXT?IMAGE_WORKER_SPLITS_NEXT env var must be provided}
-    volumes:
-      - assets:/assets:rw
-      - datasets-cache:/datasets-cache:rw
-    environment:
-      ASSETS_BASE_URL: "http://localhost:${PORT_REVERSE_PROXY-8000}/assets"
-      ASSETS_DIRECTORY: "/assets"
-      HF_DATASETS_CACHE: "/datasets-cache"
-      HF_ENDPOINT: ${HF_ENDPOINT}
-      HF_TOKEN: ${HF_TOKEN}
-      MONGO_URL: "mongodb://mongodb"
-      ROWS_MAX_NUMBER: ${ROWS_MAX_NUMBER-100}
-      WORKER_SLEEP_SECONDS: "1"
       WORKER_QUEUE: "splits_responses"
     depends_on:
       - mongodb

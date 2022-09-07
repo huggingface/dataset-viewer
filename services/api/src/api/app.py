@@ -2,7 +2,7 @@ from typing import List
 
 import uvicorn  # type: ignore
 from libcache.asset import init_assets_dir, show_assets_dir
-from libcache.cache import connect_to_cache
+from libcache.simple_cache import connect_to_cache
 from libqueue.queue import connect_to_queue
 from libutils.logger import init_logger
 from starlette.applications import Starlette
@@ -27,12 +27,9 @@ from api.config import (
 from api.prometheus import Prometheus
 from api.routes.first_rows import create_first_rows_endpoint
 from api.routes.healthcheck import healthcheck_endpoint
-from api.routes.rows import rows_endpoint
-from api.routes.splits import splits_endpoint
-from api.routes.splits_next import create_splits_next_endpoint
-from api.routes.valid import create_is_valid_endpoint, valid_datasets_endpoint
-from api.routes.valid_next import create_is_valid_next_endpoint, valid_next_endpoint
-from api.routes.webhook import webhook_endpoint, webhook_endpoint_with_deprecated
+from api.routes.splits import create_splits_endpoint
+from api.routes.valid import create_is_valid_endpoint, valid_endpoint
+from api.routes.webhook import webhook_endpoint
 
 
 def create_app() -> Starlette:
@@ -51,22 +48,20 @@ def create_app() -> Starlette:
     ]
     documented: List[BaseRoute] = [
         Route("/healthcheck", endpoint=healthcheck_endpoint),
-        Route("/valid", endpoint=valid_datasets_endpoint),
+        Route("/valid", endpoint=valid_endpoint),
         Route("/is-valid", endpoint=create_is_valid_endpoint(EXTERNAL_AUTH_URL)),
         # ^ called by https://github.com/huggingface/model-evaluator
         Route("/first-rows", endpoint=create_first_rows_endpoint(EXTERNAL_AUTH_URL)),
-        Route("/splits-next", endpoint=create_splits_next_endpoint(EXTERNAL_AUTH_URL)),
-        Route("/valid-next", endpoint=valid_next_endpoint),
-        Route("/is-valid-next", endpoint=create_is_valid_next_endpoint(EXTERNAL_AUTH_URL)),
+        Route("/splits", endpoint=create_splits_endpoint(EXTERNAL_AUTH_URL)),
     ]
     to_deprecate: List[BaseRoute] = [
-        Route("/rows", endpoint=rows_endpoint),
-        Route("/splits", endpoint=splits_endpoint),
+        Route("/valid-next", endpoint=valid_endpoint),
+        Route("/is-valid-next", endpoint=create_is_valid_endpoint(EXTERNAL_AUTH_URL)),
+        Route("/splits-next", endpoint=create_splits_endpoint(EXTERNAL_AUTH_URL)),
     ]
     to_protect: List[BaseRoute] = [
         # called by the Hub webhooks
-        Route("/webhook", endpoint=webhook_endpoint_with_deprecated, methods=["POST"]),
-        Route("/webhook-next", endpoint=webhook_endpoint, methods=["POST"]),
+        Route("/webhook", endpoint=webhook_endpoint, methods=["POST"]),
         # called by Prometheus
         Route("/metrics", endpoint=prometheus.endpoint),
     ]

@@ -57,19 +57,9 @@ app: "{{ include "release" . }}-api"
 app: "{{ include "release" . }}-worker-splits"
 {{- end -}}
 
-{{- define "labels.worker.rows" -}}
-{{ include "labels" . }}
-app: "{{ include "release" . }}-worker-rows"
-{{- end -}}
-
 {{- define "labels.worker.firstRows" -}}
 {{ include "labels" . }}
 app: "{{ include "release" . }}-worker-first-rows"
-{{- end -}}
-
-{{- define "labels.worker.splitsNext" -}}
-{{ include "labels" . }}
-app: "{{ include "release" . }}-worker-splits-next"
 {{- end -}}
 
 {{- define "labels.admin" -}}

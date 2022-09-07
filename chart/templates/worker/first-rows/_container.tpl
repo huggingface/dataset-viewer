@@ -63,7 +63,7 @@
   - name: WORKER_SLEEP_SECONDS
     value: {{ .Values.worker.firstRows.workerleepSeconds | quote }}
   - name: WORKER_QUEUE
-    # Job queue the worker will pull jobs from: 'datasets' or 'splits'
+    # Job queue the worker will pull jobs from: 'splits_responses' or 'first_rows_responses'
     value: "first_rows_responses"
   image: {{ .Values.dockerImage.worker.firstRows }}
   imagePullPolicy: IfNotPresent

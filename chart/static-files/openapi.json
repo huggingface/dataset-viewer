@@ -32,8 +32,8 @@
         "example": "*",
         "required": true
       },
-      "X-Error-Code-splits-next-401": {
-        "description": "A string that identifies the underlying error for 401 on /splits-next.",
+      "X-Error-Code-splits-401": {
+        "description": "A string that identifies the underlying error for 401 on /splits.",
         "schema": {
           "type": "string",
           "enum": ["ExternalUnauthenticatedError"]
@@ -46,8 +46,8 @@
         },
         "required": true
       },
-      "X-Error-Code-splits-next-404": {
-        "description": "A string that identifies the underlying error for 404 on /splits-next.",
+      "X-Error-Code-splits-404": {
+        "description": "A string that identifies the underlying error for 404 on /splits.",
         "schema": {
           "type": "string",
           "enum": [
@@ -72,8 +72,8 @@
         },
         "required": true
       },
-      "X-Error-Code-splits-next-422": {
-        "description": "A string that identifies the underlying error for 422 on /splits-next.",
+      "X-Error-Code-splits-422": {
+        "description": "A string that identifies the underlying error for 422 on /splits.",
         "schema": {
           "type": "string",
           "enum": ["MissingRequiredParameter"]
@@ -86,8 +86,8 @@
         },
         "required": true
       },
-      "X-Error-Code-splits-next-500": {
-        "description": "A string that identifies the underlying error for 500 on /splits-next.",
+      "X-Error-Code-splits-500": {
+        "description": "A string that identifies the underlying error for 500 on /splits.",
         "schema": {
           "type": "string",
           "enum": [
@@ -222,8 +222,8 @@
         },
         "required": true
       },
-      "X-Error-Code-valid-next-500": {
-        "description": "A string that identifies the underlying error for 500 on /valid-next.",
+      "X-Error-Code-valid-500": {
+        "description": "A string that identifies the underlying error for 500 on /valid.",
         "schema": {
           "type": "string",
           "enum": ["UnexpectedError"]
@@ -236,8 +236,8 @@
         },
         "required": true
       },
-      "X-Error-Code-is-valid-next-401": {
-        "description": "A string that identifies the underlying error for 401 on /is-valid-next.",
+      "X-Error-Code-is-valid-401": {
+        "description": "A string that identifies the underlying error for 401 on /is-valid.",
         "schema": {
           "type": "string",
           "enum": ["ExternalUnauthenticatedError"]
@@ -250,8 +250,8 @@
         },
         "required": true
       },
-      "X-Error-Code-is-valid-next-404": {
-        "description": "A string that identifies the underlying error for 404 on /is-valid-next.",
+      "X-Error-Code-is-valid-404": {
+        "description": "A string that identifies the underlying error for 404 on /is-valid.",
         "schema": {
           "type": "string",
           "enum": ["ExternalAuthenticatedError"]
@@ -264,8 +264,8 @@
         },
         "required": true
       },
-      "X-Error-Code-is-valid-next-422": {
-        "description": "A string that identifies the underlying error for 422 on /is-valid-next.",
+      "X-Error-Code-is-valid-422": {
+        "description": "A string that identifies the underlying error for 422 on /is-valid.",
         "schema": {
           "type": "string",
           "enum": ["MissingRequiredParameter"]
@@ -278,8 +278,8 @@
         },
         "required": true
       },
-      "X-Error-Code-is-valid-next-500": {
-        "description": "A string that identifies the underlying error for 500 on /is-valid-next.",
+      "X-Error-Code-is-valid-500": {
+        "description": "A string that identifies the underlying error for 500 on /is-valid.",
         "schema": {
           "type": "string",
           "enum": ["UnexpectedError"]
@@ -294,10 +294,6 @@
       }
     },
     "schemas": {
-      "HealthCheckResponse": {
-        "type": "string",
-        "example": "ok"
-      },
       "ServerErrorResponse": {
         "type": "string",
         "example": "Internal Server Error"
@@ -354,57 +350,6 @@
           }
         }
       },
-      "Status400ErrorContent": {
-        "type": "object",
-        "required": ["error"],
-        "properties": {
-          "error": {
-            "type": "string"
-          },
-          "cause_exception": {
-            "type": "string"
-          },
-          "cause_message": {
-            "type": "string"
-          },
-          "cause_traceback": {
-            "type": "string"
-          }
-        }
-      },
-      "Status500ErrorContent": {
-        "type": "object",
-        "required": ["error"],
-        "properties": {
-          "error": {
-            "type": "string"
-          }
-        }
-      },
-      "StatusErrorContent": {
-        "type": "object",
-        "required": ["status_code", "exception", "message"],
-        "properties": {
-          "status_code": {
-            "type": "integer"
-          },
-          "exception": {
-            "type": "string"
-          },
-          "message": {
-            "type": "string"
-          },
-          "cause_exception": {
-            "type": "string"
-          },
-          "cause_message": {
-            "type": "string"
-          },
-          "cause_traceback": {
-            "type": "string"
-          }
-        }
-      },
       "FirstRowsResponse": {
         "type": "object",
         "required": ["dataset", "config", "split", "features", "rows"],
@@ -425,20 +370,6 @@
           "rows": {
             "type": "array",
             "items": { "$ref": "#/components/schemas/FirstRowItem" }
-          }
-        }
-      },
-      "RowsResponse": {
-        "type": "object",
-        "required": ["columns", "rows"],
-        "properties": {
-          "columns": {
-            "type": "array",
-            "items": { "$ref": "#/components/schemas/ColumnItem" }
-          },
-          "rows": {
-            "type": "array",
-            "items": { "$ref": "#/components/schemas/RowItem" }
           }
         }
       },
@@ -695,128 +626,6 @@
           }
         }
       },
-      "ColumnItem": {
-        "type": "object",
-        "required": ["dataset", "config", "split", "column_idx", "column"],
-        "properties": {
-          "dataset": {
-            "type": "string"
-          },
-          "config": {
-            "type": "string"
-          },
-          "split": {
-            "type": "string"
-          },
-          "column_idx": {
-            "type": "integer"
-          },
-          "column": {
-            "$ref": "#/components/schemas/ColumnDict"
-          }
-        }
-      },
-      "ColumnDict": {
-        "oneOf": [
-          { "$ref": "#/components/schemas/CommonColumnDict" },
-          { "$ref": "#/components/schemas/ClassLabelColumnDict" },
-          { "$ref": "#/components/schemas/TimestampColumnDict" }
-        ],
-        "discriminator": {
-          "propertyName": "type"
-        }
-      },
-      "CommonColumnDict": {
-        "type": "object",
-        "required": ["name", "type"],
-        "properties": {
-          "name": {
-            "type": "string"
-          },
-          "type": { "$ref": "#/components/schemas/CommonColumnType" }
-        }
-      },
-      "CommonColumnType": {
-        "type": "string",
-        "enum": [
-          "JSON",
-          "BOOL",
-          "INT",
-          "FLOAT",
-          "STRING",
-          "IMAGE_URL",
-          "RELATIVE_IMAGE_URL",
-          "AUDIO_RELATIVE_SOURCES"
-        ]
-      },
-      "ClassLabelColumnDict": {
-        "type": "object",
-        "required": ["name", "type", "labels"],
-        "properties": {
-          "name": {
-            "type": "string"
-          },
-          "type": { "$ref": "#/components/schemas/ClassLabelColumnType" },
-          "labels": {
-            "type": "array",
-            "items": {
-              "type": "string"
-            }
-          }
-        }
-      },
-      "ClassLabelColumnType": {
-        "type": "string",
-        "enum": ["CLASS_LABEL"]
-      },
-      "TimestampColumnDict": {
-        "type": "object",
-        "required": ["name", "type", "unit", "tz"],
-        "properties": {
-          "name": {
-            "type": "string"
-          },
-          "type": { "$ref": "#/components/schemas/TimestampColumnType" },
-          "unit": { "type": "string" },
-          "tz": { "type": "string", "nullable": true }
-        }
-      },
-      "TimestampColumnType": {
-        "type": "string",
-        "enum": ["TIMESTAMP"]
-      },
-      "RowItem": {
-        "type": "object",
-        "required": [
-          "dataset",
-          "config",
-          "split",
-          "row_idx",
-          "row",
-          "truncated_cells"
-        ],
-        "properties": {
-          "dataset": {
-            "type": "string"
-          },
-          "config": {
-            "type": "string"
-          },
-          "split": {
-            "type": "string"
-          },
-          "row_idx": {
-            "type": "integer"
-          },
-          "row": {
-            "type": "object"
-          },
-          "truncated_cells": {
-            "type": "array",
-            "items": { "type": "string" }
-          }
-        }
-      },
       "FirstRowItem": {
         "type": "object",
         "required": ["row_idx", "row", "truncated_cells"],
@@ -974,20 +783,6 @@
       },
       "ValidResponse": {
         "type": "object",
-        "required": ["valid", "created_at"],
-        "properties": {
-          "valid": {
-            "type": "array",
-            "items": { "type": "string" }
-          },
-          "created_at": {
-            "type": "string",
-            "format": "date-time"
-          }
-        }
-      },
-      "ValidNextResponse": {
-        "type": "object",
         "required": ["valid"],
         "properties": {
           "valid": {
@@ -1022,59 +817,6 @@
     }
   },
   "paths": {
-    "/healthcheck": {
-      "get": {
-        "summary": "Healthcheck",
-        "description": "An endpoint to check if the API is up.",
-        "operationId": "healthCheck",
-        "parameters": [],
-        "responses": {
-          "200": {
-            "description": "Valid response.",
-            "headers": {
-              "Cache-Control": {
-                "$ref": "#/components/headers/Cache-Control"
-              },
-              "Access-Control-Allow-Origin": {
-                "$ref": "#/components/headers/Access-Control-Allow-Origin"
-              }
-            },
-            "content": {
-              "text/plain": {
-                "schema": {
-                  "$ref": "#/components/schemas/HealthCheckResponse"
-                },
-                "examples": {
-                  "valid": {
-                    "summary": "Valid response",
-                    "value": "ok"
-                  }
-                }
-              }
-            }
-          },
-          "500": {
-            "description": "The server crashed.",
-            "headers": {},
-            "content": {
-              "text/plain": {
-                "schema": {
-                  "$ref": "#/components/schemas/ServerErrorResponse"
-                },
-                "examples": {
-                  "internal": {
-                    "summary": "internal error",
-                    "value": {
-                      "error": "Internal Server Error"
-                    }
-                  }
-                }
-              }
-            }
-          }
-        }
-      }
-    },
     "/splits": {
       "get": {
         "summary": "List of splits",
@@ -1084,1327 +826,6 @@
           "url": "https://huggingface.co/docs/datasets-server/splits"
         },
         "operationId": "listSplits",
-        "parameters": [
-          {
-            "name": "dataset",
-            "in": "query",
-            "description": "The identifier of the dataset on the Hub.",
-            "required": true,
-            "schema": { "type": "string" },
-            "examples": {
-              "glue": { "summary": "a canonical dataset", "value": "glue" },
-              "Helsinki-NLP/tatoeba_mt": {
-                "summary": "a namespaced dataset",
-                "value": "Helsinki-NLP/tatoeba_mt"
-              }
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "A list of splits.</br>Beware: the response is not paginated.",
-            "headers": {
-              "Cache-Control": { "$ref": "#/components/headers/Cache-Control" },
-              "Access-Control-Allow-Origin": {
-                "$ref": "#/components/headers/Access-Control-Allow-Origin"
-              }
-            },
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/SplitsResponse"
-                },
-                "examples": {
-                  "duorc": {
-                    "summary": "duorc: two configs, six splits",
-                    "value": {
-                      "splits": [
-                        {
-                          "dataset": "duorc",
-                          "config": "SelfRC",
-                          "split": "train",
-                          "num_bytes": 239852925,
-                          "num_examples": 60721
-                        },
-                        {
-                          "dataset": "duorc",
-                          "config": "SelfRC",
-                          "split": "validation",
-                          "num_bytes": 51662575,
-                          "num_examples": 12961
-                        },
-                        {
-                          "dataset": "duorc",
-                          "config": "SelfRC",
-                          "split": "test",
-                          "num_bytes": 49142766,
-                          "num_examples": 12559
-                        },
-                        {
-                          "dataset": "duorc",
-                          "config": "ParaphraseRC",
-                          "split": "train",
-                          "num_bytes": 496683105,
-                          "num_examples": 69524
-                        },
-                        {
-                          "dataset": "duorc",
-                          "config": "ParaphraseRC",
-                          "split": "validation",
-                          "num_bytes": 106510545,
-                          "num_examples": 15591
-                        },
-                        {
-                          "dataset": "duorc",
-                          "config": "ParaphraseRC",
-                          "split": "test",
-                          "num_bytes": 115215816,
-                          "num_examples": 15857
-                        }
-                      ]
-                    }
-                  },
-                  "emotion": {
-                    "summary": "emotion: one config, three splits",
-                    "value": {
-                      "splits": [
-                        {
-                          "dataset": "emotion",
-                          "config": "default",
-                          "split": "train",
-                          "num_bytes": 1741541,
-                          "num_examples": 16000
-                        },
-                        {
-                          "dataset": "emotion",
-                          "config": "default",
-                          "split": "validation",
-                          "num_bytes": 214699,
-                          "num_examples": 2000
-                        },
-                        {
-                          "dataset": "emotion",
-                          "config": "default",
-                          "split": "test",
-                          "num_bytes": 217177,
-                          "num_examples": 2000
-                        }
-                      ]
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "The dataset has some issue that prevents extracting the list of splits.<br/>The error response should give insights to help fix the issue.",
-            "headers": {
-              "Cache-Control": {
-                "$ref": "#/components/headers/Cache-Control"
-              },
-              "Access-Control-Allow-Origin": {
-                "$ref": "#/components/headers/Access-Control-Allow-Origin"
-              }
-            },
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/StatusErrorContent"
-                },
-                "examples": {
-                  "TypeError": {
-                    "summary": "TypeError",
-                    "value": {
-                      "status_code": 400,
-                      "exception": "Status400Error",
-                      "message": "Cannot get the split names for the dataset.",
-                      "cause_exception": "TypeError",
-                      "cause_message": "expected str, bytes or os.PathLike object, not NoneType",
-                      "cause_traceback": [
-                        "Traceback (most recent call last):\n",
-                        "  File \"/src/services/worker/.venv/lib/python3.9/site-packages/datasets/inspect.py\", line 354, in get_dataset_config_info\n    for split_generator in builder._split_generators(\n",
-                        "  File \"/cache/modules/datasets_modules/datasets/superb/b8183f71eabe8c559d7f3f528ab37a6a21ad1ee088fd3423574cecad8b3ec67e/superb.py\", line 427, in _split_generators\n    manual_dir = os.path.abspath(os.path.expanduser(dl_manager.manual_dir))\n",
-                        "  File \"/usr/local/lib/python3.9/posixpath.py\", line 231, in expanduser\n    path = os.fspath(path)\n",
-                        "TypeError: expected str, bytes or os.PathLike object, not NoneType\n",
-                        "\nThe above exception was the direct cause of the following exception:\n\n",
-                        "Traceback (most recent call last):\n",
-                        "  File \"/src/services/worker/src/worker/models/dataset.py\", line 16, in get_dataset_split_full_names\n    return [\n",
-                        "  File \"/src/services/worker/src/worker/models/dataset.py\", line 21, in <listcomp>\n    for split in get_dataset_split_names(dataset, config, use_auth_token=hf_token)\n",
-                        "  File \"/src/services/worker/.venv/lib/python3.9/site-packages/datasets/inspect.py\", line 404, in get_dataset_split_names\n    info = get_dataset_config_info(\n",
-                        "  File \"/src/services/worker/.venv/lib/python3.9/site-packages/datasets/inspect.py\", line 359, in get_dataset_config_info\n    raise SplitsNotFoundError(\"The split names could not be parsed from the dataset config.\") from err\n",
-                        "datasets.inspect.SplitsNotFoundError: The split names could not be parsed from the dataset config.\n"
-                      ]
-                    }
-                  },
-                  "FileNotFoundError": {
-                    "summary": "FileNotFoundError",
-                    "value": {
-                      "status_code": 400,
-                      "exception": "Status400Error",
-                      "message": "Cannot get the split names for the dataset.",
-                      "cause_exception": "FileNotFoundError",
-                      "cause_message": "Couldn't find a dataset script at /src/services/worker/akhaliq/test/test.py or any data file in the same directory. Couldn't find 'akhaliq/test' on the Hugging Face Hub either: FileNotFoundError: The dataset repository at 'akhaliq/test' doesn't contain any data file.",
-                      "cause_traceback": [
-                        "Traceback (most recent call last):\n",
-                        "  File \"/src/services/worker/src/worker/models/dataset.py\", line 18, in get_dataset_split_full_names\n    for config_name in get_dataset_config_names(\n",
-                        "  File \"/src/services/worker/.venv/lib/python3.9/site-packages/datasets/inspect.py\", line 289, in get_dataset_config_names\n    dataset_module = dataset_module_factory(\n",
-                        "  File \"/src/services/worker/.venv/lib/python3.9/site-packages/datasets/load.py\", line 1189, in dataset_module_factory\n    raise FileNotFoundError(\n",
-                        "FileNotFoundError: Couldn't find a dataset script at /src/services/worker/akhaliq/test/test.py or any data file in the same directory. Couldn't find 'akhaliq/test' on the Hugging Face Hub either: FileNotFoundError: The dataset repository at 'akhaliq/test' doesn't contain any data file.\n"
-                      ]
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "500": {
-            "description": "The server encountered an error.",
-            "headers": {
-              "Cache-Control": {
-                "$ref": "#/components/headers/Cache-Control"
-              },
-              "Access-Control-Allow-Origin": {
-                "$ref": "#/components/headers/Access-Control-Allow-Origin"
-              }
-            },
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/StatusErrorContent"
-                },
-                "examples": {
-                  "mongo": {
-                    "summary": "internal error",
-                    "value": {
-                      "status_code": 500,
-                      "exception": "Status500Error",
-                      "message": "Tried to save duplicate unique keys (E11000 duplicate key error collection: datasets_server_cache.splits index: dataset_name_1_config_name_1_split_name_1 dup key: { dataset_name: \"csebuetnlp/xlsum\", config_name: \"chinese_traditional\", split_name: \"test\" }, full error: {'index': 0, 'code': 11000, 'keyPattern': {'dataset_name': 1, 'config_name': 1, 'split_name': 1}, 'keyValue': {'dataset_name': 'csebuetnlp/xlsum', 'config_name': 'chinese_traditional', 'split_name': 'test'}, 'errmsg': 'E11000 duplicate key error collection: datasets_server_cache.splits index: dataset_name_1_config_name_1_split_name_1 dup key: { dataset_name: \"csebuetnlp/xlsum\", config_name: \"chinese_traditional\", split_name: \"test\" }'})",
-                      "cause_exception": "Status500Error",
-                      "cause_message": "Tried to save duplicate unique keys (E11000 duplicate key error collection: datasets_server_cache.splits index: dataset_name_1_config_name_1_split_name_1 dup key: { dataset_name: \"csebuetnlp/xlsum\", config_name: \"chinese_traditional\", split_name: \"test\" }, full error: {'index': 0, 'code': 11000, 'keyPattern': {'dataset_name': 1, 'config_name': 1, 'split_name': 1}, 'keyValue': {'dataset_name': 'csebuetnlp/xlsum', 'config_name': 'chinese_traditional', 'split_name': 'test'}, 'errmsg': 'E11000 duplicate key error collection: datasets_server_cache.splits index: dataset_name_1_config_name_1_split_name_1 dup key: { dataset_name: \"csebuetnlp/xlsum\", config_name: \"chinese_traditional\", split_name: \"test\" }'})"
-                    }
-                  }
-                }
-              },
-              "text/plain": {
-                "schema": {
-                  "$ref": "#/components/schemas/ServerErrorResponse"
-                },
-                "examples": {
-                  "internal": {
-                    "summary": "internal error",
-                    "value": {
-                      "error": "Internal Server Error"
-                    }
-                  }
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/rows": {
-      "get": {
-        "summary": "First rows of a split",
-        "description": "The list of the 100 first rows of a dataset split.",
-        "externalDocs": {
-          "description": "See First rows (Hub docs)",
-          "url": "https://huggingface.co/docs/datasets-server/rows"
-        },
-        "operationId": "listRows",
-        "parameters": [
-          {
-            "name": "dataset",
-            "in": "query",
-            "description": "The identifier of the dataset on the Hub.",
-            "required": true,
-            "schema": { "type": "string" },
-            "examples": {
-              "glue": { "summary": "a canonical dataset", "value": "glue" },
-              "Helsinki-NLP/tatoeba_mt": {
-                "summary": "a namespaced dataset",
-                "value": "Helsinki-NLP/tatoeba_mt"
-              }
-            }
-          },
-          {
-            "name": "config",
-            "in": "query",
-            "description": "The dataset configuration (or subset).",
-            "required": true,
-            "schema": { "type": "string" },
-            "examples": {
-              "cola": {
-                "summary": "a subset of the glue dataset",
-                "value": "cola"
-              },
-              "yangdong/ecqa": {
-                "summary": "the default configuration given by the 🤗 Datasets library",
-                "value": "yangdong--ecqa"
-              }
-            }
-          },
-          {
-            "name": "split",
-            "in": "query",
-            "description": "The split name.",
-            "required": true,
-            "schema": { "type": "string" },
-            "examples": {
-              "train": {
-                "summary": "train split",
-                "value": "train"
-              },
-              "test": {
-                "summary": "test split",
-                "value": "test"
-              },
-              "validation": {
-                "summary": "validation split",
-                "value": "validation"
-              }
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "The columns, and the 100 first rows of the split.</br>Note: the response can be truncated (less rows, or truncated cell contents): see examples.",
-            "headers": {
-              "Cache-Control": {
-                "$ref": "#/components/headers/Cache-Control"
-              },
-              "Access-Control-Allow-Origin": {
-                "$ref": "#/components/headers/Access-Control-Allow-Origin"
-              }
-            },
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/RowsResponse"
-                },
-                "examples": {
-                  "cola": {
-                    "summary": "text, and label column (only 3 rows are shown for brevity)",
-                    "value": {
-                      "columns": [
-                        {
-                          "dataset": "glue",
-                          "config": "cola",
-                          "split": "train",
-                          "column_idx": 0,
-                          "column": { "name": "sentence", "type": "STRING" }
-                        },
-                        {
-                          "dataset": "glue",
-                          "config": "cola",
-                          "split": "train",
-                          "column_idx": 1,
-                          "column": {
-                            "name": "label",
-                            "type": "CLASS_LABEL",
-                            "labels": ["unacceptable", "acceptable"]
-                          }
-                        },
-                        {
-                          "dataset": "glue",
-                          "config": "cola",
-                          "split": "train",
-                          "column_idx": 2,
-                          "column": { "name": "idx", "type": "INT" }
-                        }
-                      ],
-                      "rows": [
-                        {
-                          "dataset": "glue",
-                          "config": "cola",
-                          "split": "train",
-                          "row_idx": 0,
-                          "row": {
-                            "sentence": "Our friends won't buy this analysis, let alone the next one we propose.",
-                            "label": 1,
-                            "idx": 0
-                          },
-                          "truncated_cells": []
-                        },
-                        {
-                          "dataset": "glue",
-                          "config": "cola",
-                          "split": "train",
-                          "row_idx": 1,
-                          "row": {
-                            "sentence": "One more pseudo generalization and I'm giving up.",
-                            "label": 1,
-                            "idx": 1
-                          },
-                          "truncated_cells": []
-                        },
-                        {
-                          "dataset": "glue",
-                          "config": "cola",
-                          "split": "train",
-                          "row_idx": 2,
-                          "row": {
-                            "sentence": "One more pseudo generalization or I'm giving up.",
-                            "label": 1,
-                            "idx": 2
-                          },
-                          "truncated_cells": []
-                        },
-                        {
-                          "dataset": "glue",
-                          "config": "cola",
-                          "split": "train",
-                          "row_idx": 3,
-                          "row": {
-                            "sentence": "The more we study verbs, the crazier they get.",
-                            "label": 1,
-                            "idx": 3
-                          },
-                          "truncated_cells": []
-                        }
-                      ]
-                    }
-                  },
-                  "truncated": {
-                    "summary": "truncated cells due to the response size (has a timestamp column)",
-                    "value": {
-                      "columns": [
-                        {
-                          "dataset": "ett",
-                          "config": "m2",
-                          "split": "test",
-                          "column_idx": 0,
-                          "column": {
-                            "name": "start",
-                            "type": "TIMESTAMP",
-                            "tz": null,
-                            "unit": "s"
-                          }
-                        },
-                        {
-                          "dataset": "ett",
-                          "config": "m2",
-                          "split": "test",
-                          "column_idx": 1,
-                          "column": { "name": "target", "type": "JSON" }
-                        },
-                        {
-                          "dataset": "ett",
-                          "config": "m2",
-                          "split": "test",
-                          "column_idx": 2,
-                          "column": {
-                            "name": "feat_static_cat",
-                            "type": "JSON"
-                          }
-                        },
-                        {
-                          "dataset": "ett",
-                          "config": "m2",
-                          "split": "test",
-                          "column_idx": 3,
-                          "column": {
-                            "name": "feat_dynamic_real",
-                            "type": "JSON"
-                          }
-                        },
-                        {
-                          "dataset": "ett",
-                          "config": "m2",
-                          "split": "test",
-                          "column_idx": 4,
-                          "column": { "name": "item_id", "type": "STRING" }
-                        }
-                      ],
-                      "rows": [
-                        {
-                          "dataset": "ett",
-                          "config": "m2",
-                          "split": "test",
-                          "row_idx": 0,
-                          "row": {
-                            "start": 1467331200.0,
-                            "target": "[38.6619987487793,38.222999572753906,37.34400177001953,37.124000549316406,37.124000549316406,36.9039",
-                            "feat_static_cat": [0],
-                            "feat_dynamic_real": "[[41.130001068115234,39.62200164794922,38.86800003051758,35.518001556396484,37.52799987792969,37.611",
-                            "item_id": "OT"
-                          },
-                          "truncated_cells": ["target", "feat_dynamic_real"]
-                        },
-                        {
-                          "dataset": "ett",
-                          "config": "m2",
-                          "split": "test",
-                          "row_idx": 1,
-                          "row": {
-                            "start": 1467331200.0,
-                            "target": "[38.6619987487793,38.222999572753906,37.34400177001953,37.124000549316406,37.124000549316406,36.9039",
-                            "feat_static_cat": [0],
-                            "feat_dynamic_real": "[[41.130001068115234,39.62200164794922,38.86800003051758,35.518001556396484,37.52799987792969,37.611",
-                            "item_id": "OT"
-                          },
-                          "truncated_cells": ["target", "feat_dynamic_real"]
-                        },
-                        {
-                          "dataset": "ett",
-                          "config": "m2",
-                          "split": "test",
-                          "row_idx": 2,
-                          "row": {
-                            "start": 1467331200.0,
-                            "target": "[38.6619987487793,38.222999572753906,37.34400177001953,37.124000549316406,37.124000549316406,36.9039",
-                            "feat_static_cat": [0],
-                            "feat_dynamic_real": "[[41.130001068115234,39.62200164794922,38.86800003051758,35.518001556396484,37.52799987792969,37.611",
-                            "item_id": "OT"
-                          },
-                          "truncated_cells": ["target", "feat_dynamic_real"]
-                        },
-                        {
-                          "dataset": "ett",
-                          "config": "m2",
-                          "split": "test",
-                          "row_idx": 3,
-                          "row": {
-                            "start": 1467331200.0,
-                            "target": "[38.6619987487793,38.222999572753906,37.34400177001953,37.124000549316406,37.124000549316406,36.9039",
-                            "feat_static_cat": [0],
-                            "feat_dynamic_real": "[[41.130001068115234,39.62200164794922,38.86800003051758,35.518001556396484,37.52799987792969,37.611",
-                            "item_id": "OT"
-                          },
-                          "truncated_cells": ["target", "feat_dynamic_real"]
-                        },
-                        {
-                          "dataset": "ett",
-                          "config": "m2",
-                          "split": "test",
-                          "row_idx": 4,
-                          "row": {
-                            "start": 1467331200.0,
-                            "target": "[38.6619987487793,38.222999572753906,37.34400177001953,37.124000549316406,37.124000549316406,36.9039",
-                            "feat_static_cat": [0],
-                            "feat_dynamic_real": "[[41.130001068115234,39.62200164794922,38.86800003051758,35.518001556396484,37.52799987792969,37.611",
-                            "item_id": "OT"
-                          },
-                          "truncated_cells": ["target", "feat_dynamic_real"]
-                        },
-                        {
-                          "dataset": "ett",
-                          "config": "m2",
-                          "split": "test",
-                          "row_idx": 5,
-                          "row": {
-                            "start": 1467331200.0,
-                            "target": "[38.6619987487793,38.222999572753906,37.34400177001953,37.124000549316406,37.124000549316406,36.9039",
-                            "feat_static_cat": [0],
-                            "feat_dynamic_real": "[[41.130001068115234,39.62200164794922,38.86800003051758,35.518001556396484,37.52799987792969,37.611",
-                            "item_id": "OT"
-                          },
-                          "truncated_cells": ["target", "feat_dynamic_real"]
-                        },
-                        {
-                          "dataset": "ett",
-                          "config": "m2",
-                          "split": "test",
-                          "row_idx": 6,
-                          "row": {
-                            "start": 1467331200.0,
-                            "target": "[38.6619987487793,38.222999572753906,37.34400177001953,37.124000549316406,37.124000549316406,36.9039",
-                            "feat_static_cat": [0],
-                            "feat_dynamic_real": "[[41.130001068115234,39.62200164794922,38.86800003051758,35.518001556396484,37.52799987792969,37.611",
-                            "item_id": "OT"
-                          },
-                          "truncated_cells": ["target", "feat_dynamic_real"]
-                        },
-                        {
-                          "dataset": "ett",
-                          "config": "m2",
-                          "split": "test",
-                          "row_idx": 7,
-                          "row": {
-                            "start": 1467331200.0,
-                            "target": "[38.6619987487793,38.222999572753906,37.34400177001953,37.124000549316406,37.124000549316406,36.9039",
-                            "feat_static_cat": [0],
-                            "feat_dynamic_real": "[[41.130001068115234,39.62200164794922,38.86800003051758,35.518001556396484,37.52799987792969,37.611",
-                            "item_id": "OT"
-                          },
-                          "truncated_cells": ["target", "feat_dynamic_real"]
-                        },
-                        {
-                          "dataset": "ett",
-                          "config": "m2",
-                          "split": "test",
-                          "row_idx": 8,
-                          "row": {
-                            "start": 1467331200.0,
-                            "target": "[38.6619987487793,38.222999572753906,37.34400177001953,37.124000549316406,37.124000549316406,36.9039",
-                            "feat_static_cat": [0],
-                            "feat_dynamic_real": "[[41.130001068115234,39.62200164794922,38.86800003051758,35.518001556396484,37.52799987792969,37.611",
-                            "item_id": "OT"
-                          },
-                          "truncated_cells": ["target", "feat_dynamic_real"]
-                        },
-                        {
-                          "dataset": "ett",
-                          "config": "m2",
-                          "split": "test",
-                          "row_idx": 9,
-                          "row": {
-                            "start": 1467331200.0,
-                            "target": "[38.6619987487793,38.222999572753906,37.34400177001953,37.124000549316406,37.124000549316406,36.9039",
-                            "feat_static_cat": [0],
-                            "feat_dynamic_real": "[[41.130001068115234,39.62200164794922,38.86800003051758,35.518001556396484,37.52799987792969,37.611",
-                            "item_id": "OT"
-                          },
-                          "truncated_cells": ["target", "feat_dynamic_real"]
-                        }
-                      ]
-                    }
-                  },
-                  "image": {
-                    "summary": "a column with images (only 3 rows are shown for brevity)",
-                    "value": {
-                      "columns": [
-                        {
-                          "dataset": "huggan/horse2zebra",
-                          "config": "huggan--horse2zebra-aligned",
-                          "split": "train",
-                          "column_idx": 0,
-                          "column": {
-                            "name": "imageA",
-                            "type": "RELATIVE_IMAGE_URL"
-                          }
-                        },
-                        {
-                          "dataset": "huggan/horse2zebra",
-                          "config": "huggan--horse2zebra-aligned",
-                          "split": "train",
-                          "column_idx": 1,
-                          "column": {
-                            "name": "imageB",
-                            "type": "RELATIVE_IMAGE_URL"
-                          }
-                        }
-                      ],
-                      "rows": [
-                        {
-                          "dataset": "huggan/horse2zebra",
-                          "config": "huggan--horse2zebra-aligned",
-                          "split": "train",
-                          "row_idx": 0,
-                          "row": {
-                            "imageA": "assets/huggan/horse2zebra/--/huggan--horse2zebra-aligned/train/0/imageA/image.jpg",
-                            "imageB": "assets/huggan/horse2zebra/--/huggan--horse2zebra-aligned/train/0/imageB/image.jpg"
-                          },
-                          "truncated_cells": []
-                        },
-                        {
-                          "dataset": "huggan/horse2zebra",
-                          "config": "huggan--horse2zebra-aligned",
-                          "split": "train",
-                          "row_idx": 1,
-                          "row": {
-                            "imageA": "assets/huggan/horse2zebra/--/huggan--horse2zebra-aligned/train/1/imageA/image.jpg",
-                            "imageB": "assets/huggan/horse2zebra/--/huggan--horse2zebra-aligned/train/1/imageB/image.jpg"
-                          },
-                          "truncated_cells": []
-                        },
-                        {
-                          "dataset": "huggan/horse2zebra",
-                          "config": "huggan--horse2zebra-aligned",
-                          "split": "train",
-                          "row_idx": 2,
-                          "row": {
-                            "imageA": "assets/huggan/horse2zebra/--/huggan--horse2zebra-aligned/train/2/imageA/image.jpg",
-                            "imageB": "assets/huggan/horse2zebra/--/huggan--horse2zebra-aligned/train/2/imageB/image.jpg"
-                          },
-                          "truncated_cells": []
-                        }
-                      ]
-                    }
-                  },
-                  "audio": {
-                    "summary": "a column with audio files (only 3 rows are shown for brevity)",
-                    "value": {
-                      "columns": [
-                        {
-                          "dataset": "mozilla-foundation/common_voice_9_0",
-                          "config": "en",
-                          "split": "train",
-                          "column_idx": 0,
-                          "column": { "name": "client_id", "type": "STRING" }
-                        },
-                        {
-                          "dataset": "mozilla-foundation/common_voice_9_0",
-                          "config": "en",
-                          "split": "train",
-                          "column_idx": 1,
-                          "column": { "name": "path", "type": "STRING" }
-                        },
-                        {
-                          "dataset": "mozilla-foundation/common_voice_9_0",
-                          "config": "en",
-                          "split": "train",
-                          "column_idx": 2,
-                          "column": {
-                            "name": "audio",
-                            "type": "AUDIO_RELATIVE_SOURCES"
-                          }
-                        },
-                        {
-                          "dataset": "mozilla-foundation/common_voice_9_0",
-                          "config": "en",
-                          "split": "train",
-                          "column_idx": 3,
-                          "column": { "name": "sentence", "type": "STRING" }
-                        },
-                        {
-                          "dataset": "mozilla-foundation/common_voice_9_0",
-                          "config": "en",
-                          "split": "train",
-                          "column_idx": 4,
-                          "column": { "name": "up_votes", "type": "INT" }
-                        },
-                        {
-                          "dataset": "mozilla-foundation/common_voice_9_0",
-                          "config": "en",
-                          "split": "train",
-                          "column_idx": 5,
-                          "column": { "name": "down_votes", "type": "INT" }
-                        },
-                        {
-                          "dataset": "mozilla-foundation/common_voice_9_0",
-                          "config": "en",
-                          "split": "train",
-                          "column_idx": 6,
-                          "column": { "name": "age", "type": "STRING" }
-                        },
-                        {
-                          "dataset": "mozilla-foundation/common_voice_9_0",
-                          "config": "en",
-                          "split": "train",
-                          "column_idx": 7,
-                          "column": { "name": "gender", "type": "STRING" }
-                        },
-                        {
-                          "dataset": "mozilla-foundation/common_voice_9_0",
-                          "config": "en",
-                          "split": "train",
-                          "column_idx": 8,
-                          "column": { "name": "accent", "type": "STRING" }
-                        },
-                        {
-                          "dataset": "mozilla-foundation/common_voice_9_0",
-                          "config": "en",
-                          "split": "train",
-                          "column_idx": 9,
-                          "column": { "name": "locale", "type": "STRING" }
-                        },
-                        {
-                          "dataset": "mozilla-foundation/common_voice_9_0",
-                          "config": "en",
-                          "split": "train",
-                          "column_idx": 10,
-                          "column": { "name": "segment", "type": "STRING" }
-                        }
-                      ],
-                      "rows": [
-                        {
-                          "dataset": "mozilla-foundation/common_voice_9_0",
-                          "config": "en",
-                          "split": "train",
-                          "row_idx": 0,
-                          "row": {
-                            "client_id": "04960d53cc851eeb6d93f21a09e09ab36fe16943acb226ced1211d7250ab2f1b9a1d655c1cc03d50006e396010851ad52d4c53f49dd77b080b01c4230704c68d",
-                            "path": null,
-                            "audio": [
-                              {
-                                "src": "assets/mozilla-foundation/common_voice_9_0/--/en/train/0/audio/audio.mp3",
-                                "type": "audio/mpeg"
-                              },
-                              {
-                                "src": "assets/mozilla-foundation/common_voice_9_0/--/en/train/0/audio/audio.wav",
-                                "type": "audio/wav"
-                              }
-                            ],
-                            "sentence": "Why does Melissandre look like she wants to consume Jon Snow on the ride up the wall?",
-                            "up_votes": 2,
-                            "down_votes": 0,
-                            "age": "fourties",
-                            "gender": "male",
-                            "accent": "United States English",
-                            "locale": "en",
-                            "segment": ""
-                          },
-                          "truncated_cells": []
-                        },
-                        {
-                          "dataset": "mozilla-foundation/common_voice_9_0",
-                          "config": "en",
-                          "split": "train",
-                          "row_idx": 1,
-                          "row": {
-                            "client_id": "f9f1f96bae1390dfe61ff298abb90975c079e913c712d57d97307ed797469eac446abb149daaad24cacffcc24e1e3275fefeb97f977eb74ce2233e0e5c1d437e",
-                            "path": null,
-                            "audio": [
-                              {
-                                "src": "assets/mozilla-foundation/common_voice_9_0/--/en/train/1/audio/audio.mp3",
-                                "type": "audio/mpeg"
-                              },
-                              {
-                                "src": "assets/mozilla-foundation/common_voice_9_0/--/en/train/1/audio/audio.wav",
-                                "type": "audio/wav"
-                              }
-                            ],
-                            "sentence": "\"I'm getting them for twelve dollars a night.\"",
-                            "up_votes": 2,
-                            "down_votes": 0,
-                            "age": "",
-                            "gender": "",
-                            "accent": "",
-                            "locale": "en",
-                            "segment": ""
-                          },
-                          "truncated_cells": []
-                        },
-                        {
-                          "dataset": "mozilla-foundation/common_voice_9_0",
-                          "config": "en",
-                          "split": "train",
-                          "row_idx": 2,
-                          "row": {
-                            "client_id": "a6c7706a220eeea7ee3687c1122fe7ac17962d2449d25b6db37cc41cdaace442683e11945b6f581e73941c3083cd4eecfafc938840459cd8c571dae7774ee687",
-                            "path": null,
-                            "audio": [
-                              {
-                                "src": "assets/mozilla-foundation/common_voice_9_0/--/en/train/2/audio/audio.mp3",
-                                "type": "audio/mpeg"
-                              },
-                              {
-                                "src": "assets/mozilla-foundation/common_voice_9_0/--/en/train/2/audio/audio.wav",
-                                "type": "audio/wav"
-                              }
-                            ],
-                            "sentence": "Tower of strength",
-                            "up_votes": 2,
-                            "down_votes": 0,
-                            "age": "",
-                            "gender": "",
-                            "accent": "",
-                            "locale": "en",
-                            "segment": ""
-                          },
-                          "truncated_cells": []
-                        }
-                      ]
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "The dataset has some issue that prevents extracting the list of rows.<br/>The error response should give insights to help fix the issue.",
-            "headers": {
-              "Cache-Control": {
-                "$ref": "#/components/headers/Cache-Control"
-              },
-              "Access-Control-Allow-Origin": {
-                "$ref": "#/components/headers/Access-Control-Allow-Origin"
-              }
-            },
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/StatusErrorContent"
-                },
-                "examples": {
-                  "NonMatchingCheckError": {
-                    "summary": "NonMatchingCheckError",
-                    "value": {
-                      "status_code": 400,
-                      "exception": "Status400Error",
-                      "message": "Cannot get the first rows for the split.",
-                      "cause_exception": "NonMatchingChecksumError",
-                      "cause_message": "Checksums didn't match for dataset source files:\n['https://gitlab.com/bigirqu/ArCOV-19/-/archive/master/ArCOV-19-master.zip']",
-                      "cause_traceback": [
-                        "Traceback (most recent call last):\n",
-                        "  File \"/src/services/worker/src/worker/models/split.py\", line 180, in get_split\n    rows = get_rows(dataset_name, config_name, split_name, hf_token, True, rows_max_number)\n",
-                        "  File \"/src/services/worker/.venv/lib/python3.9/site-packages/libutils/utils.py\", line 82, in decorator\n    return func(*args, **kwargs)\n",
-                        "  File \"/src/services/worker/src/worker/models/row.py\", line 40, in get_rows\n    rows_plus_one = list(itertools.islice(dataset, rows_max_number + 1))\n",
-                        "  File \"/src/services/worker/.venv/lib/python3.9/site-packages/datasets/iterable_dataset.py\", line 599, in __iter__\n    for key, example in self._iter():\n",
-                        "  File \"/src/services/worker/.venv/lib/python3.9/site-packages/datasets/iterable_dataset.py\", line 579, in _iter\n    yield from ex_iterable\n",
-                        "  File \"/src/services/worker/.venv/lib/python3.9/site-packages/datasets/iterable_dataset.py\", line 110, in __iter__\n    yield from self.generate_examples_fn(**self.kwargs)\n",
-                        "  File \"/cache/modules/datasets_modules/datasets/ar_cov19/818d9b774f4b70542b6807e6ddb6db32c916aafeba4fbdcd228ec79d21edaeab/ar_cov19.py\", line 131, in _generate_examples\n    for fname in sorted(glob.glob(os.path.join(data_dir, \"ArCOV-19-master/dataset/all_tweets/2020-*\"))):\n",
-                        "  File \"/src/services/worker/.venv/lib/python3.9/site-packages/datasets/streaming.py\", line 67, in wrapper\n    return function(*args, use_auth_token=use_auth_token, **kwargs)\n",
-                        "  File \"/src/services/worker/.venv/lib/python3.9/site-packages/datasets/download/streaming_download_manager.py\", line 500, in xglob\n    fs, *_ = fsspec.get_fs_token_paths(urlpath, storage_options=storage_options)\n",
-                        "  File \"/src/services/worker/.venv/lib/python3.9/site-packages/fsspec/core.py\", line 632, in get_fs_token_paths\n    fs = filesystem(protocol, **inkwargs)\n",
-                        "  File \"/src/services/worker/.venv/lib/python3.9/site-packages/fsspec/registry.py\", line 262, in filesystem\n    return cls(**storage_options)\n",
-                        "  File \"/src/services/worker/.venv/lib/python3.9/site-packages/fsspec/spec.py\", line 76, in __call__\n    obj = super().__call__(*args, **kwargs)\n",
-                        "  File \"/src/services/worker/.venv/lib/python3.9/site-packages/fsspec/implementations/zip.py\", line 58, in __init__\n    self.zip = zipfile.ZipFile(self.fo)\n",
-                        "  File \"/usr/local/lib/python3.9/zipfile.py\", line 1257, in __init__\n    self._RealGetContents()\n",
-                        "  File \"/usr/local/lib/python3.9/zipfile.py\", line 1320, in _RealGetContents\n    endrec = _EndRecData(fp)\n",
-                        "  File \"/usr/local/lib/python3.9/zipfile.py\", line 263, in _EndRecData\n    fpin.seek(0, 2)\n",
-                        "  File \"/src/services/worker/.venv/lib/python3.9/site-packages/fsspec/implementations/http.py\", line 684, in seek\n    raise ValueError(\"Cannot seek streaming HTTP file\")\n",
-                        "ValueError: Cannot seek streaming HTTP file\n",
-                        "\nDuring handling of the above exception, another exception occurred:\n\n",
-                        "Traceback (most recent call last):\n",
-                        "  File \"/src/services/worker/src/worker/models/split.py\", line 183, in get_split\n    rows = get_rows(dataset_name, config_name, split_name, hf_token, False, rows_max_number)\n",
-                        "  File \"/src/services/worker/.venv/lib/python3.9/site-packages/libutils/utils.py\", line 82, in decorator\n    return func(*args, **kwargs)\n",
-                        "  File \"/src/services/worker/src/worker/models/row.py\", line 27, in get_rows\n    dataset = load_dataset(\n",
-                        "  File \"/src/services/worker/.venv/lib/python3.9/site-packages/datasets/load.py\", line 1679, in load_dataset\n    builder_instance.download_and_prepare(\n",
-                        "  File \"/src/services/worker/.venv/lib/python3.9/site-packages/datasets/builder.py\", line 704, in download_and_prepare\n    self._download_and_prepare(\n",
-                        "  File \"/src/services/worker/.venv/lib/python3.9/site-packages/datasets/builder.py\", line 1221, in _download_and_prepare\n    super()._download_and_prepare(dl_manager, verify_infos, check_duplicate_keys=verify_infos)\n",
-                        "  File \"/src/services/worker/.venv/lib/python3.9/site-packages/datasets/builder.py\", line 775, in _download_and_prepare\n    verify_checksums(\n",
-                        "  File \"/src/services/worker/.venv/lib/python3.9/site-packages/datasets/utils/info_utils.py\", line 40, in verify_checksums\n    raise NonMatchingChecksumError(error_msg + str(bad_urls))\n",
-                        "datasets.utils.info_utils.NonMatchingChecksumError: Checksums didn't match for dataset source files:\n['https://gitlab.com/bigirqu/ArCOV-19/-/archive/master/ArCOV-19-master.zip']\n"
-                      ]
-                    }
-                  },
-                  "FileNotFoundError": {
-                    "summary": "FileNotFoundError",
-                    "value": {
-                      "status_code": 400,
-                      "exception": "Status400Error",
-                      "message": "Cannot get the first rows for the split.",
-                      "cause_exception": "FileNotFoundError",
-                      "cause_message": "Couldn't find file at https://homes.cs.washington.edu/~msap/atomic/data/atomic_data.tgz",
-                      "cause_traceback": [
-                        "Traceback (most recent call last):\n",
-                        "  File \"/src/services/worker/.venv/lib/python3.9/site-packages/fsspec/implementations/http.py\", line 391, in _info\n    await _file_info(\n",
-                        "  File \"/src/services/worker/.venv/lib/python3.9/site-packages/fsspec/implementations/http.py\", line 772, in _file_info\n    r.raise_for_status()\n",
-                        "  File \"/src/services/worker/.venv/lib/python3.9/site-packages/aiohttp/client_reqrep.py\", line 1004, in raise_for_status\n    raise ClientResponseError(\n",
-                        "aiohttp.client_exceptions.ClientResponseError: 404, message='Not Found', url=URL('https://homes.cs.washington.edu/~msap/atomic/data/atomic_data.tgz')\n",
-                        "\nThe above exception was the direct cause of the following exception:\n\n",
-                        "Traceback (most recent call last):\n",
-                        "  File \"/src/services/worker/src/worker/models/split.py\", line 180, in get_split\n    rows = get_rows(dataset_name, config_name, split_name, hf_token, True, rows_max_number)\n",
-                        "  File \"/src/services/worker/.venv/lib/python3.9/site-packages/libutils/utils.py\", line 82, in decorator\n    return func(*args, **kwargs)\n",
-                        "  File \"/src/services/worker/src/worker/models/row.py\", line 40, in get_rows\n    rows_plus_one = list(itertools.islice(dataset, rows_max_number + 1))\n",
-                        "  File \"/src/services/worker/.venv/lib/python3.9/site-packages/datasets/iterable_dataset.py\", line 599, in __iter__\n    for key, example in self._iter():\n",
-                        "  File \"/src/services/worker/.venv/lib/python3.9/site-packages/datasets/iterable_dataset.py\", line 579, in _iter\n    yield from ex_iterable\n",
-                        "  File \"/src/services/worker/.venv/lib/python3.9/site-packages/datasets/iterable_dataset.py\", line 110, in __iter__\n    yield from self.generate_examples_fn(**self.kwargs)\n",
-                        "  File \"/cache/modules/datasets_modules/datasets/atomic/c0f0ec7d10713c41dfc87f0cf17f936b122d22e19216051217c99134d38f6d7b/atomic.py\", line 123, in _generate_examples\n    for path, f in files:\n",
-                        "  File \"/src/services/worker/.venv/lib/python3.9/site-packages/datasets/download/streaming_download_manager.py\", line 732, in __iter__\n    yield from self.generator(*self.args, **self.kwargs)\n",
-                        "  File \"/src/services/worker/.venv/lib/python3.9/site-packages/datasets/download/streaming_download_manager.py\", line 759, in _iter_from_urlpath\n    with xopen(urlpath, \"rb\", use_auth_token=use_auth_token) as f:\n",
-                        "  File \"/src/services/worker/.venv/lib/python3.9/site-packages/datasets/download/streaming_download_manager.py\", line 439, in xopen\n    file_obj = fsspec.open(file, mode=mode, *args, **kwargs).open()\n",
-                        "  File \"/src/services/worker/.venv/lib/python3.9/site-packages/fsspec/core.py\", line 141, in open\n    out = self.__enter__()\n",
-                        "  File \"/src/services/worker/.venv/lib/python3.9/site-packages/fsspec/core.py\", line 104, in __enter__\n    f = self.fs.open(self.path, mode=mode)\n",
-                        "  File \"/src/services/worker/.venv/lib/python3.9/site-packages/fsspec/spec.py\", line 1037, in open\n    f = self._open(\n",
-                        "  File \"/src/services/worker/.venv/lib/python3.9/site-packages/fsspec/implementations/http.py\", line 340, in _open\n    size = size or self.info(path, **kwargs)[\"size\"]\n",
-                        "  File \"/src/services/worker/.venv/lib/python3.9/site-packages/fsspec/asyn.py\", line 86, in wrapper\n    return sync(self.loop, func, *args, **kwargs)\n",
-                        "  File \"/src/services/worker/.venv/lib/python3.9/site-packages/fsspec/asyn.py\", line 66, in sync\n    raise return_result\n",
-                        "  File \"/src/services/worker/.venv/lib/python3.9/site-packages/fsspec/asyn.py\", line 26, in _runner\n    result[0] = await coro\n",
-                        "  File \"/src/services/worker/.venv/lib/python3.9/site-packages/fsspec/implementations/http.py\", line 404, in _info\n    raise FileNotFoundError(url) from exc\n",
-                        "FileNotFoundError: https://homes.cs.washington.edu/~msap/atomic/data/atomic_data.tgz\n",
-                        "\nDuring handling of the above exception, another exception occurred:\n\n",
-                        "Traceback (most recent call last):\n",
-                        "  File \"/src/services/worker/src/worker/models/split.py\", line 183, in get_split\n    rows = get_rows(dataset_name, config_name, split_name, hf_token, False, rows_max_number)\n",
-                        "  File \"/src/services/worker/.venv/lib/python3.9/site-packages/libutils/utils.py\", line 82, in decorator\n    return func(*args, **kwargs)\n",
-                        "  File \"/src/services/worker/src/worker/models/row.py\", line 27, in get_rows\n    dataset = load_dataset(\n",
-                        "  File \"/src/services/worker/.venv/lib/python3.9/site-packages/datasets/load.py\", line 1679, in load_dataset\n    builder_instance.download_and_prepare(\n",
-                        "  File \"/src/services/worker/.venv/lib/python3.9/site-packages/datasets/builder.py\", line 704, in download_and_prepare\n    self._download_and_prepare(\n",
-                        "  File \"/src/services/worker/.venv/lib/python3.9/site-packages/datasets/builder.py\", line 1221, in _download_and_prepare\n    super()._download_and_prepare(dl_manager, verify_infos, check_duplicate_keys=verify_infos)\n",
-                        "  File \"/src/services/worker/.venv/lib/python3.9/site-packages/datasets/builder.py\", line 771, in _download_and_prepare\n    split_generators = self._split_generators(dl_manager, **split_generators_kwargs)\n",
-                        "  File \"/cache/modules/datasets_modules/datasets/atomic/c0f0ec7d10713c41dfc87f0cf17f936b122d22e19216051217c99134d38f6d7b/atomic.py\", line 95, in _split_generators\n    archive = dl_manager.download(my_urls)\n",
-                        "  File \"/src/services/worker/.venv/lib/python3.9/site-packages/datasets/download/download_manager.py\", line 309, in download\n    downloaded_path_or_paths = map_nested(\n",
-                        "  File \"/src/services/worker/.venv/lib/python3.9/site-packages/datasets/utils/py_utils.py\", line 348, in map_nested\n    return function(data_struct)\n",
-                        "  File \"/src/services/worker/.venv/lib/python3.9/site-packages/datasets/download/download_manager.py\", line 335, in _download\n    return cached_path(url_or_filename, download_config=download_config)\n",
-                        "  File \"/src/services/worker/.venv/lib/python3.9/site-packages/datasets/utils/file_utils.py\", line 185, in cached_path\n    output_path = get_from_cache(\n",
-                        "  File \"/src/services/worker/.venv/lib/python3.9/site-packages/datasets/utils/file_utils.py\", line 530, in get_from_cache\n    raise FileNotFoundError(f\"Couldn't find file at {url}\")\n",
-                        "FileNotFoundError: Couldn't find file at https://homes.cs.washington.edu/~msap/atomic/data/atomic_data.tgz\n"
-                      ]
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "500": {
-            "description": "The server encountered an error.",
-            "headers": {
-              "Cache-Control": {
-                "$ref": "#/components/headers/Cache-Control"
-              },
-              "Access-Control-Allow-Origin": {
-                "$ref": "#/components/headers/Access-Control-Allow-Origin"
-              }
-            },
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/StatusErrorContent"
-                },
-                "examples": {
-                  "mongo": {
-                    "summary": "internal error",
-                    "value": {
-                      "status_code": 500,
-                      "exception": "Status500Error",
-                      "message": "could not store the rows/ cache entry.",
-                      "cause_exception": "DocumentTooLarge",
-                      "cause_message": "'update' command document too large",
-                      "cause_traceback": [
-                        "Traceback (most recent call last):\n",
-                        "  File \"/src/services/worker/.venv/lib/python3.9/site-packages/libcache/cache.py\", line 245, in upsert_split\n    DbSplit.objects(dataset_name=dataset_name, config_name=config_name, split_name=split_name).upsert_one(\n",
-                        "  File \"/src/services/worker/.venv/lib/python3.9/site-packages/mongoengine/queryset/base.py\", line 606, in upsert_one\n    atomic_update = self.update(\n",
-                        "  File \"/src/services/worker/.venv/lib/python3.9/site-packages/mongoengine/queryset/base.py\", line 578, in update\n    result = update_func(query, update, upsert=upsert)\n",
-                        "  File \"/src/services/worker/.venv/lib/python3.9/site-packages/pymongo/collection.py\", line 1028, in update_one\n    self._update_retryable(\n",
-                        "  File \"/src/services/worker/.venv/lib/python3.9/site-packages/pymongo/collection.py\", line 877, in _update_retryable\n    return self.__database.client._retryable_write(\n",
-                        "  File \"/src/services/worker/.venv/lib/python3.9/site-packages/pymongo/mongo_client.py\", line 1552, in _retryable_write\n    return self._retry_with_session(retryable, func, s, None)\n",
-                        "  File \"/src/services/worker/.venv/lib/python3.9/site-packages/pymongo/mongo_client.py\", line 1438, in _retry_with_session\n    return self._retry_internal(retryable, func, session, bulk)\n",
-                        "  File \"/src/services/worker/.venv/lib/python3.9/site-packages/pymongo/mongo_client.py\", line 1470, in _retry_internal\n    return func(session, sock_info, retryable)\n",
-                        "  File \"/src/services/worker/.venv/lib/python3.9/site-packages/pymongo/collection.py\", line 869, in _update\n    return self._update(\n",
-                        "  File \"/src/services/worker/.venv/lib/python3.9/site-packages/pymongo/collection.py\", line 838, in _update\n    result = sock_info.command(\n",
-                        "  File \"/src/services/worker/.venv/lib/python3.9/site-packages/pymongo/pool.py\", line 726, in command\n    self._raise_connection_failure(error)\n",
-                        "  File \"/src/services/worker/.venv/lib/python3.9/site-packages/pymongo/pool.py\", line 710, in command\n    return command(self, dbname, spec, secondary_ok,\n",
-                        "  File \"/src/services/worker/.venv/lib/python3.9/site-packages/pymongo/network.py\", line 136, in command\n    message._raise_document_too_large(\n",
-                        "  File \"/src/services/worker/.venv/lib/python3.9/site-packages/pymongo/message.py\", line 1140, in _raise_document_too_large\n    raise DocumentTooLarge(\"%r command document too large\" % (operation,))\n",
-                        "pymongo.errors.DocumentTooLarge: 'update' command document too large\n"
-                      ]
-                    }
-                  }
-                }
-              },
-              "text/plain": {
-                "schema": {
-                  "$ref": "#/components/schemas/ServerErrorResponse"
-                },
-                "examples": {
-                  "internal": {
-                    "summary": "internal error",
-                    "value": {
-                      "error": "Internal Server Error"
-                    }
-                  }
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/valid": {
-      "get": {
-        "summary": "Valid datasets",
-        "description": "The list of the Hub datasets that work without an error (for /splits and /rows).",
-        "externalDocs": {
-          "description": "See  Valid datasets (Hub docs)",
-          "url": "https://huggingface.co/docs/datasets-server/valid"
-        },
-        "operationId": "listValidDatasets",
-        "parameters": [],
-        "responses": {
-          "200": {
-            "description": "The valid datasets.",
-            "headers": {
-              "Cache-Control": {
-                "$ref": "#/components/headers/Cache-Control"
-              },
-              "Access-Control-Allow-Origin": {
-                "$ref": "#/components/headers/Access-Control-Allow-Origin"
-              }
-            },
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ValidResponse"
-                },
-                "examples": {
-                  "valid": {
-                    "summary": "list of datasets",
-                    "value": {
-                      "valid": [
-                        "0n1xus/codexglue",
-                        "0n1xus/pytorrent-standalone",
-                        "0x7194633/rupile",
-                        "51la5/keyword-extraction",
-                        "AHussain0418/day2_data"
-                      ],
-                      "created_at": "2022-06-28T16:04:24Z"
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "500": {
-            "description": "The server crashed.",
-            "headers": {
-              "Cache-Control": {
-                "$ref": "#/components/headers/Cache-Control"
-              },
-              "Access-Control-Allow-Origin": {
-                "$ref": "#/components/headers/Access-Control-Allow-Origin"
-              },
-              "X-Error-Code": {
-                "$ref": "#/components/headers/X-Error-Code-valid-next-500"
-              }
-            },
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/CustomError"
-                },
-                "examples": {
-                  "internal": {
-                    "summary": "internal error",
-                    "value": {
-                      "error": "Unexpected error."
-                    }
-                  }
-                }
-              },
-              "text/plain": {
-                "schema": {
-                  "$ref": "#/components/schemas/ServerErrorResponse"
-                },
-                "examples": {
-                  "internal": {
-                    "summary": "internal error",
-                    "value": {
-                      "error": "Internal Server Error"
-                    }
-                  }
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/is-valid": {
-      "get": {
-        "summary": "Check if a dataset is valid (experimental)",
-        "description": "Check if a dataset works without an error (for /splits and /rows).",
-        "externalDocs": {
-          "description": "See Valid datasets (Hub docs)",
-          "url": "https://huggingface.co/docs/datasets-server/valid"
-        },
-        "operationId": "isValidDataset",
-        "security": [
-          {},
-          {
-            "HuggingFaceCookie": []
-          },
-          {
-            "HuggingFaceToken": []
-          }
-        ],
-        "parameters": [
-          {
-            "name": "dataset",
-            "in": "query",
-            "description": "The identifier of the dataset on the Hub.",
-            "required": true,
-            "schema": { "type": "string" },
-            "examples": {
-              "glue": { "summary": "a canonical dataset", "value": "glue" },
-              "Helsinki-NLP/tatoeba_mt": {
-                "summary": "a namespaced dataset",
-                "value": "Helsinki-NLP/tatoeba_mt"
-              }
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "The valid datasets.",
-            "headers": {
-              "Cache-Control": {
-                "$ref": "#/components/headers/Cache-Control"
-              },
-              "Access-Control-Allow-Origin": {
-                "$ref": "#/components/headers/Access-Control-Allow-Origin"
-              }
-            },
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/IsValidResponse"
-                },
-                "examples": {
-                  "valid": {
-                    "summary": "valid dataset",
-                    "value": {
-                      "valid": true
-                    }
-                  },
-                  "invalid": {
-                    "summary": "invalid dataset",
-                    "value": {
-                      "valid": false
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "If the external authentication step on the Hugging Face Hub failed, and no authentication mechanism has been provided. Retry with authentication.",
-            "headers": {
-              "Cache-Control": {
-                "$ref": "#/components/headers/Cache-Control"
-              },
-              "Access-Control-Allow-Origin": {
-                "$ref": "#/components/headers/Access-Control-Allow-Origin"
-              },
-              "X-Error-Code": {
-                "$ref": "#/components/headers/X-Error-Code-is-valid-next-401"
-              }
-            },
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/CustomError"
-                },
-                "examples": {
-                  "inexistent-dataset": {
-                    "summary": "The dataset does not exist.",
-                    "value": {
-                      "error": "The dataset does not exist, or is not accessible without authentication (private or gated). Please retry with authentication."
-                    }
-                  },
-                  "gated-dataset": {
-                    "summary": "The dataset is gated.",
-                    "value": {
-                      "error": "The dataset does not exist, or is not accessible without authentication (private or gated). Please retry with authentication."
-                    }
-                  },
-                  "private-dataset": {
-                    "summary": "The dataset is private.",
-                    "value": {
-                      "error": "The dataset does not exist, or is not accessible without authentication (private or gated). Please retry with authentication."
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "If the dataset cannot be found. This may be because it doesn't exist, or because it is set to `private` and you do not have access.",
-            "headers": {
-              "Cache-Control": {
-                "$ref": "#/components/headers/Cache-Control"
-              },
-              "Access-Control-Allow-Origin": {
-                "$ref": "#/components/headers/Access-Control-Allow-Origin"
-              },
-              "X-Error-Code": {
-                "$ref": "#/components/headers/X-Error-Code-is-valid-next-404"
-              }
-            },
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/CustomError"
-                },
-                "examples": {
-                  "inexistent-dataset": {
-                    "summary": "The dataset does not exist, while authentication was provided in the request.",
-                    "value": {
-                      "error": "The dataset does not exist, or is not accessible with the current credentials (private or gated)."
-                    }
-                  },
-                  "gated-dataset": {
-                    "summary": "The dataset is private, while authentication was provided in the request.",
-                    "value": {
-                      "error": "The dataset does not exist, or is not accessible with the current credentials (private or gated)."
-                    }
-                  },
-                  "private-dataset": {
-                    "summary": "The dataset is private, while authentication was provided in the request.",
-                    "value": {
-                      "error": "The dataset does not exist, or is not accessible with the current credentials (private or gated)."
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "The `dataset` parameter has not been provided.",
-            "headers": {
-              "Cache-Control": {
-                "$ref": "#/components/headers/Cache-Control"
-              },
-              "Access-Control-Allow-Origin": {
-                "$ref": "#/components/headers/Access-Control-Allow-Origin"
-              },
-              "X-Error-Code": {
-                "$ref": "#/components/headers/X-Error-Code-is-valid-next-422"
-              }
-            },
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/CustomError"
-                },
-                "examples": {
-                  "missing-parameter": {
-                    "summary": "The dataset parameter is missing.",
-                    "value": { "error": "Parameter 'dataset' is required" }
-                  },
-                  "empty-parameter": {
-                    "summary": "The dataset parameter is empty (?dataset=).",
-                    "value": { "error": "Parameter 'dataset' is required" }
-                  }
-                }
-              }
-            }
-          },
-          "500": {
-            "description": "The server crashed.",
-            "headers": {
-              "Cache-Control": {
-                "$ref": "#/components/headers/Cache-Control"
-              },
-              "Access-Control-Allow-Origin": {
-                "$ref": "#/components/headers/Access-Control-Allow-Origin"
-              },
-              "X-Error-Code": {
-                "$ref": "#/components/headers/X-Error-Code-is-valid-next-500"
-              }
-            },
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/CustomError"
-                },
-                "examples": {
-                  "internal": {
-                    "summary": "internal error",
-                    "value": {
-                      "error": "Unexpected error."
-                    }
-                  }
-                }
-              },
-              "text/plain": {
-                "schema": {
-                  "$ref": "#/components/schemas/ServerErrorResponse"
-                },
-                "examples": {
-                  "internal": {
-                    "summary": "internal error",
-                    "value": {
-                      "error": "Internal Server Error"
-                    }
-                  }
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/splits-next": {
-      "get": {
-        "summary": "List of splits (experimental)",
-        "description": "The list of splits of a dataset.",
-        "externalDocs": {
-          "description": "See Splits (Hub docs)",
-          "url": "https://huggingface.co/docs/datasets-server/splits"
-        },
-        "operationId": "listSplitsNext",
         "security": [
           {},
           {
@@ -2536,7 +957,7 @@
                 "$ref": "#/components/headers/Access-Control-Allow-Origin"
               },
               "X-Error-Code": {
-                "$ref": "#/components/headers/X-Error-Code-splits-next-401"
+                "$ref": "#/components/headers/X-Error-Code-splits-401"
               }
             },
             "content": {
@@ -2577,7 +998,7 @@
                 "$ref": "#/components/headers/Access-Control-Allow-Origin"
               },
               "X-Error-Code": {
-                "$ref": "#/components/headers/X-Error-Code-splits-next-404"
+                "$ref": "#/components/headers/X-Error-Code-splits-404"
               }
             },
             "content": {
@@ -2618,7 +1039,7 @@
                 "$ref": "#/components/headers/Access-Control-Allow-Origin"
               },
               "X-Error-Code": {
-                "$ref": "#/components/headers/X-Error-Code-splits-next-422"
+                "$ref": "#/components/headers/X-Error-Code-splits-422"
               }
             },
             "content": {
@@ -2649,7 +1070,7 @@
                 "$ref": "#/components/headers/Access-Control-Allow-Origin"
               },
               "X-Error-Code": {
-                "$ref": "#/components/headers/X-Error-Code-splits-next-500"
+                "$ref": "#/components/headers/X-Error-Code-splits-500"
               }
             },
             "content": {
@@ -3549,15 +1970,15 @@
         }
       }
     },
-    "/valid-next": {
+    "/valid": {
       "get": {
         "summary": "Valid datasets (experimental)",
-        "description": "The list of the Hub datasets that work without an error (for /splits-next and /first-rows).",
+        "description": "The list of the Hub datasets that work without an error (for /splits and /first-rows).",
         "externalDocs": {
           "description": "See  Valid datasets (Hub docs)",
           "url": "https://huggingface.co/docs/datasets-server/valid"
         },
-        "operationId": "listValidDatasetsNext",
+        "operationId": "listValidDatasets",
         "parameters": [],
         "responses": {
           "200": {
@@ -3573,7 +1994,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ValidNextResponse"
+                  "$ref": "#/components/schemas/ValidResponse"
                 },
                 "examples": {
                   "valid": {
@@ -3602,7 +2023,7 @@
                 "$ref": "#/components/headers/Access-Control-Allow-Origin"
               },
               "X-Error-Code": {
-                "$ref": "#/components/headers/X-Error-Code-valid-next-500"
+                "$ref": "#/components/headers/X-Error-Code-valid-500"
               }
             },
             "content": {
@@ -3637,15 +2058,15 @@
         }
       }
     },
-    "/is-valid-next": {
+    "/is-valid": {
       "get": {
         "summary": "Check if a dataset is valid (experimental)",
-        "description": "Check if a dataset works without an error (for /splits-next and /first-rows).",
+        "description": "Check if a dataset works without an error (for /splits and /first-rows).",
         "externalDocs": {
           "description": "See Valid datasets (Hub docs)",
           "url": "https://huggingface.co/docs/datasets-server/valid"
         },
-        "operationId": "isValidDatasetNext",
+        "operationId": "isValidDataset",
         "security": [
           {},
           {
@@ -3714,7 +2135,7 @@
                 "$ref": "#/components/headers/Access-Control-Allow-Origin"
               },
               "X-Error-Code": {
-                "$ref": "#/components/headers/X-Error-Code-is-valid-next-401"
+                "$ref": "#/components/headers/X-Error-Code-is-valid-401"
               }
             },
             "content": {
@@ -3755,7 +2176,7 @@
                 "$ref": "#/components/headers/Access-Control-Allow-Origin"
               },
               "X-Error-Code": {
-                "$ref": "#/components/headers/X-Error-Code-is-valid-next-404"
+                "$ref": "#/components/headers/X-Error-Code-is-valid-404"
               }
             },
             "content": {
@@ -3796,7 +2217,7 @@
                 "$ref": "#/components/headers/Access-Control-Allow-Origin"
               },
               "X-Error-Code": {
-                "$ref": "#/components/headers/X-Error-Code-is-valid-next-422"
+                "$ref": "#/components/headers/X-Error-Code-is-valid-422"
               }
             },
             "content": {
@@ -3827,7 +2248,7 @@
                 "$ref": "#/components/headers/Access-Control-Allow-Origin"
               },
               "X-Error-Code": {
-                "$ref": "#/components/headers/X-Error-Code-is-valid-next-500"
+                "$ref": "#/components/headers/X-Error-Code-is-valid-500"
               }
             },
             "content": {

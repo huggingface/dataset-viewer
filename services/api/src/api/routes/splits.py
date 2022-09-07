@@ -1,32 +1,55 @@
 import logging
+from http import HTTPStatus
+from typing import Optional
 
-from libcache.cache import get_splits_response
-from libutils.exceptions import Status400Error, Status500Error, StatusError
+from libcache.simple_cache import DoesNotExist, get_splits_response
+from libqueue.queue import is_splits_response_in_process
 from starlette.requests import Request
 from starlette.responses import Response
 
-from api.config import MAX_AGE_LONG_SECONDS, MAX_AGE_SHORT_SECONDS
-from api.utils import get_response
+from api.authentication import auth_check
+from api.utils import (
+    ApiCustomError,
+    Endpoint,
+    MissingRequiredParameterError,
+    SplitsResponseNotFoundError,
+    SplitsResponseNotReadyError,
+    UnexpectedError,
+    are_valid_parameters,
+    get_json_api_error_response,
+    get_json_error_response,
+    get_json_ok_response,
+)
 
 logger = logging.getLogger(__name__)
 
 
-async def splits_endpoint(request: Request) -> Response:
-    try:
-        dataset_name = request.query_params.get("dataset")
-        logger.info(f"/splits, dataset={dataset_name}")
-
+def create_splits_endpoint(external_auth_url: Optional[str] = None) -> Endpoint:
+    async def splits_endpoint(request: Request) -> Response:
         try:
-            if not isinstance(dataset_name, str):
-                raise Status400Error("Parameter 'dataset' is required")
-            splits_response, splits_error, status_code = get_splits_response(dataset_name)
-            return get_response(splits_response or splits_error, status_code, MAX_AGE_LONG_SECONDS)
-        except StatusError as err:
-            e = (
-                Status400Error("The dataset is being processed. Retry later.")
-                if err.message == "The dataset cache is empty."
-                else err
-            )
-            return get_response(e.as_content(), e.status_code, MAX_AGE_SHORT_SECONDS)
-    except Exception as err:
-        return get_response(Status500Error("Unexpected error.", err).as_content(), 500, MAX_AGE_SHORT_SECONDS)
+            dataset_name = request.query_params.get("dataset")
+            logger.info(f"/splits, dataset={dataset_name}")
+
+            if not are_valid_parameters([dataset_name]):
+                raise MissingRequiredParameterError("Parameter 'dataset' is required")
+            # if auth_check fails, it will raise an exception that will be caught below
+            auth_check(dataset_name, external_auth_url=external_auth_url, request=request)
+            try:
+                response, http_status, error_code = get_splits_response(dataset_name)
+                if http_status == HTTPStatus.OK:
+                    return get_json_ok_response(response)
+                else:
+                    return get_json_error_response(response, http_status, error_code)
+            except DoesNotExist as e:
+                if is_splits_response_in_process(dataset_name):
+                    raise SplitsResponseNotReadyError(
+                        "The list of splits is not ready yet. Please retry later."
+                    ) from e
+                else:
+                    raise SplitsResponseNotFoundError("Not found.") from e
+        except ApiCustomError as e:
+            return get_json_api_error_response(e)
+        except Exception as err:
+            return get_json_api_error_response(UnexpectedError("Unexpected error.", err))
+
+    return splits_endpoint
