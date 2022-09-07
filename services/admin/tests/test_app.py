@@ -3,7 +3,7 @@ from typing import Optional
 import pytest
 
 # from libcache.cache import clean_database as clean_cache_database
-from libcache.cache import clean_database as clean_cache_database
+from libcache.simple_cache import _clean_database as clean_cache_database
 from libqueue.queue import clean_database as clean_queue_database
 from starlette.testclient import TestClient
 
@@ -74,10 +74,10 @@ def test_metrics(client: TestClient) -> None:
     assert name in metrics
     assert metrics[name] > 0
     name = "process_start_time_seconds"
-    assert 'queue_jobs_total{queue="/splits-next",status="started"}' in metrics
+    assert 'queue_jobs_total{queue="/splits",status="started"}' in metrics
     assert 'queue_jobs_total{queue="/first-rows",status="started"}' in metrics
     # still empty
-    assert 'responses_in_cache_total{path="/splits-next",http_status="200",error_code=null}' not in metrics
+    assert 'responses_in_cache_total{path="/splits",http_status="200",error_code=null}' not in metrics
     assert 'responses_in_cache_total{path="/first-rows",http_status="200",error_code=null}' not in metrics
     assert 'starlette_requests_total{method="GET",path_template="/metrics"}' in metrics
 
@@ -86,7 +86,7 @@ def test_pending_jobs(client: TestClient) -> None:
     response = client.get("/pending-jobs")
     assert response.status_code == 200
     json = response.json()
-    for e in ["/splits-next", "/first-rows"]:
+    for e in ["/splits", "/first-rows"]:
         assert json[e] == {"waiting": [], "started": []}
     assert "created_at" in json
 
@@ -94,9 +94,9 @@ def test_pending_jobs(client: TestClient) -> None:
 @pytest.mark.parametrize(
     "path,cursor,http_status,error_code",
     [
-        ("/splits-next", None, 200, None),
-        ("/splits-next", "", 200, None),
-        ("/splits-next", "invalid cursor", 422, "InvalidParameter"),
+        ("/splits", None, 200, None),
+        ("/splits", "", 200, None),
+        ("/splits", "invalid cursor", 422, "InvalidParameter"),
         ("/first-rows", None, 200, None),
         ("/first-rows", "", 200, None),
         ("/first-rows", "invalid cursor", 422, "InvalidParameter"),

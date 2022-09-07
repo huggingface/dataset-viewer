@@ -55,7 +55,7 @@ class Prometheus:
     def updateMetrics(self):
         # Queue metrics
         for status, total in get_splits_jobs_count_by_status().items():
-            self.metrics["queue_jobs_total"].labels(queue="/splits-next", status=status).set(total)
+            self.metrics["queue_jobs_total"].labels(queue="/splits", status=status).set(total)
         for status, total in get_first_rows_jobs_count_by_status().items():
             self.metrics["queue_jobs_total"].labels(queue="/first-rows", status=status).set(total)
         # Cache metrics

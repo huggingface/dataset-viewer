@@ -4,7 +4,7 @@ from libcache.simple_cache import (
     InvalidCursor,
     InvalidLimit,
     get_cache_reports_first_rows,
-    get_cache_reports_splits_next,
+    get_cache_reports_splits,
 )
 from starlette.requests import Request
 from starlette.responses import Response
@@ -39,12 +39,12 @@ async def cache_reports_first_rows_endpoint(request: Request) -> Response:
         return get_json_admin_error_response(UnexpectedError("Unexpected error."))
 
 
-async def cache_reports_splits_next_endpoint(request: Request) -> Response:
+async def cache_reports_splits_endpoint(request: Request) -> Response:
     try:
         cursor = request.query_params.get("cursor") or ""
-        logger.info(f"/cache-reports/splits-next, cursor={cursor}")
+        logger.info(f"/cache-reports/splits, cursor={cursor}")
         try:
-            return get_json_ok_response(get_cache_reports_splits_next(cursor, CACHE_REPORTS_NUM_RESULTS))
+            return get_json_ok_response(get_cache_reports_splits(cursor, CACHE_REPORTS_NUM_RESULTS))
         except InvalidCursor as e:
             raise InvalidParameterError("Invalid cursor.") from e
         except InvalidLimit as e:
