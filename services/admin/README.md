@@ -42,14 +42,11 @@ To launch the scripts:
 
 The scripts:
 
-- `cancel-jobs-splits`: cancel all the started jobs for /splits (stop the workers before!)
-- `cancel-jobs-rows`: cancel all the started jobs for /rows (stop the workers before!)
 - `cancel-jobs-splits-next`: cancel all the started jobs for /splits-next (stop the workers before!)
 - `cancel-jobs-first-rows`: cancel all the started jobs for /first-rows (stop the workers before!)
 - `refresh-cache`: add a /splits-next job for every HF dataset
 - `refresh-cache-canonical`: add a /splits-next job for every HF canonical dataset
 - `refresh-cache-errors`: add a /splits-next job for every erroneous HF dataset
-- `warm-cache`: create /splits-next and /first-rows jobs for all the missing datasets and/or splits
 
 ## Run the API
 
@@ -119,14 +116,6 @@ Responses:
 
 ```json
 {
-  "/splits": {
-    "waiting": [],
-    "started": []
-  },
-  "/rows": {
-    "waiting": [],
-    "started": []
-  },
   "/splits-next": {
     "waiting": [],
     "started": []

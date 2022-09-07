@@ -74,13 +74,8 @@ def test_metrics(client: TestClient) -> None:
     assert name in metrics
     assert metrics[name] > 0
     name = "process_start_time_seconds"
-    assert 'queue_jobs_total{queue="/splits",status="waiting"}' in metrics
-    assert 'queue_jobs_total{queue="/rows",status="success"}' in metrics
     assert 'queue_jobs_total{queue="/splits-next",status="started"}' in metrics
     assert 'queue_jobs_total{queue="/first-rows",status="started"}' in metrics
-    assert 'cache_entries_total{cache="/splits",status="valid"}' in metrics
-    # still empty
-    assert 'responses_in_cache_total{path="/rows",http_status="200",error_code=null}' not in metrics
     # still empty
     assert 'responses_in_cache_total{path="/splits-next",http_status="200",error_code=null}' not in metrics
     assert 'responses_in_cache_total{path="/first-rows",http_status="200",error_code=null}' not in metrics
@@ -91,7 +86,7 @@ def test_pending_jobs(client: TestClient) -> None:
     response = client.get("/pending-jobs")
     assert response.status_code == 200
     json = response.json()
-    for e in ["/splits", "/rows", "/splits-next", "/first-rows"]:
+    for e in ["/splits-next", "/first-rows"]:
         assert json[e] == {"waiting": [], "started": []}
     assert "created_at" in json
 

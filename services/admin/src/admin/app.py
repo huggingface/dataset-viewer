@@ -1,5 +1,5 @@
 import uvicorn  # type: ignore
-from libcache.cache import connect_to_cache
+from libcache.simple_cache import connect_to_cache
 from libqueue.queue import connect_to_queue
 from libutils.logger import init_logger
 from starlette.applications import Starlette
