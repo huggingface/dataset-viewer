@@ -8,7 +8,7 @@ See [INSTALL](./INSTALL.md#Install)
 
 ## Run
 
-Launch the worker to preprocess the splits-next/ responses:
+Launch the worker to preprocess the splits/ responses:
 
 ```bash
 WORKER_QUEUE=splits_responses make run
