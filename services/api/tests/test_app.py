@@ -71,21 +71,21 @@ def test_cors(client: TestClient) -> None:
     assert response.headers["Access-Control-Allow-Credentials"] == "true"
 
 
-def test_get_valid__next_datasets(client: TestClient) -> None:
-    response = client.get("/valid-next")
+def test_get_valid_datasets(client: TestClient) -> None:
+    response = client.get("/valid")
     assert response.status_code == 200
     json = response.json()
     assert "valid" in json
 
 
 @responses.activate
-def test_get_is_valid_next(client: TestClient) -> None:
-    response = client.get("/is-valid-next")
+def test_get_is_valid(client: TestClient) -> None:
+    response = client.get("/is-valid")
     assert response.status_code == 422
 
     dataset = "doesnotexist"
     responses.add_callback(responses.GET, external_auth_url % dataset, callback=request_callback)
-    response = client.get("/is-valid-next", params={"dataset": dataset})
+    response = client.get("/is-valid", params={"dataset": dataset})
     assert response.status_code == 200
     json = response.json()
     assert "valid" in json
@@ -107,7 +107,7 @@ def test_is_valid_auth(
 ) -> None:
     dataset = "dataset-which-does-not-exist"
     responses.add_callback(responses.GET, external_auth_url % dataset, callback=request_callback)
-    response = client.get(f"/is-valid-next?dataset={dataset}", headers=headers)
+    response = client.get(f"/is-valid?dataset={dataset}", headers=headers)
     assert response.status_code == status_code
     assert response.headers.get("X-Error-Code") == error_code
 
@@ -118,12 +118,12 @@ def test_get_healthcheck(client: TestClient) -> None:
     assert response.text == "ok"
 
 
-def test_get_splits_next(client: TestClient) -> None:
+def test_get_splits(client: TestClient) -> None:
     # missing parameter
-    response = client.get("/splits-next")
+    response = client.get("/splits")
     assert response.status_code == 422
     # empty parameter
-    response = client.get("/splits-next?dataset=")
+    response = client.get("/splits?dataset=")
     assert response.status_code == 422
 
 
@@ -137,10 +137,10 @@ def test_get_splits_next(client: TestClient) -> None:
     ],
 )
 @responses.activate
-def test_splits_next_auth(client: TestClient, headers: Dict[str, str], status_code: int, error_code: str) -> None:
+def test_splits_auth(client: TestClient, headers: Dict[str, str], status_code: int, error_code: str) -> None:
     dataset = "dataset-which-does-not-exist"
     responses.add_callback(responses.GET, external_auth_url % dataset, callback=request_callback)
-    response = client.get(f"/splits-next?dataset={dataset}", headers=headers)
+    response = client.get(f"/splits?dataset={dataset}", headers=headers)
     assert response.status_code == status_code
     assert response.headers.get("X-Error-Code") == error_code
 
@@ -163,16 +163,16 @@ def test_splits_cache_refreshing(client: TestClient) -> None:
     dataset = "acronym_identification"
     responses.add_callback(responses.GET, external_auth_url % dataset, callback=request_callback)
 
-    response = client.get("/splits-next", params={"dataset": dataset})
+    response = client.get("/splits", params={"dataset": dataset})
     assert response.json()["error"] == "Not found."
     add_splits_job(dataset)
     mark_splits_responses_as_stale(dataset)
     # ^ has no effect for the moment (no entry for the dataset, and anyway: no way to know the value of the stale flag)
-    response = client.get("/splits-next", params={"dataset": dataset})
+    response = client.get("/splits", params={"dataset": dataset})
     assert response.json()["error"] == "The list of splits is not ready yet. Please retry later."
     # simulate the worker
     upsert_splits_response(dataset, {"key": "value"}, HTTPStatus.OK)
-    response = client.get("/splits-next", params={"dataset": dataset})
+    response = client.get("/splits", params={"dataset": dataset})
     assert response.json()["key"] == "value"
     assert response.status_code == 200
 

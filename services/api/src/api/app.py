@@ -27,8 +27,8 @@ from api.config import (
 from api.prometheus import Prometheus
 from api.routes.first_rows import create_first_rows_endpoint
 from api.routes.healthcheck import healthcheck_endpoint
-from api.routes.splits_next import create_splits_next_endpoint
-from api.routes.valid_next import create_is_valid_next_endpoint, valid_next_endpoint
+from api.routes.splits import create_splits_endpoint
+from api.routes.valid import create_is_valid_endpoint, valid_endpoint
 from api.routes.webhook import webhook_endpoint
 
 
@@ -48,16 +48,16 @@ def create_app() -> Starlette:
     ]
     documented: List[BaseRoute] = [
         Route("/healthcheck", endpoint=healthcheck_endpoint),
-        Route("/valid", endpoint=valid_next_endpoint),
-        Route("/is-valid", endpoint=create_is_valid_next_endpoint(EXTERNAL_AUTH_URL)),
+        Route("/valid", endpoint=valid_endpoint),
+        Route("/is-valid", endpoint=create_is_valid_endpoint(EXTERNAL_AUTH_URL)),
         # ^ called by https://github.com/huggingface/model-evaluator
         Route("/first-rows", endpoint=create_first_rows_endpoint(EXTERNAL_AUTH_URL)),
-        Route("/splits", endpoint=create_splits_next_endpoint(EXTERNAL_AUTH_URL)),
+        Route("/splits", endpoint=create_splits_endpoint(EXTERNAL_AUTH_URL)),
     ]
     to_deprecate: List[BaseRoute] = [
-        Route("/valid-next", endpoint=valid_next_endpoint),
-        Route("/is-valid-next", endpoint=create_is_valid_next_endpoint(EXTERNAL_AUTH_URL)),
-        Route("/splits-next", endpoint=create_splits_next_endpoint(EXTERNAL_AUTH_URL)),
+        Route("/valid-next", endpoint=valid_endpoint),
+        Route("/is-valid-next", endpoint=create_is_valid_endpoint(EXTERNAL_AUTH_URL)),
+        Route("/splits-next", endpoint=create_splits_endpoint(EXTERNAL_AUTH_URL)),
     ]
     to_protect: List[BaseRoute] = [
         # called by the Hub webhooks

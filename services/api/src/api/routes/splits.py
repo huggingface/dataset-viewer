@@ -24,8 +24,8 @@ from api.utils import (
 logger = logging.getLogger(__name__)
 
 
-def create_splits_next_endpoint(external_auth_url: Optional[str] = None) -> Endpoint:
-    async def splits_next_endpoint(request: Request) -> Response:
+def create_splits_endpoint(external_auth_url: Optional[str] = None) -> Endpoint:
+    async def splits_endpoint(request: Request) -> Response:
         try:
             dataset_name = request.query_params.get("dataset")
             logger.info(f"/splits-next, dataset={dataset_name}")
@@ -52,4 +52,4 @@ def create_splits_next_endpoint(external_auth_url: Optional[str] = None) -> Endp
         except Exception as err:
             return get_json_api_error_response(UnexpectedError("Unexpected error.", err))
 
-    return splits_next_endpoint
+    return splits_endpoint

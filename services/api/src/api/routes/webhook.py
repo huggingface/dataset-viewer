@@ -79,7 +79,7 @@ async def webhook_endpoint(request: Request) -> Response:
     except Exception:
         content = {"status": "error", "error": "the body could not be parsed as a JSON"}
         return get_response(content, 400)
-    logger.info(f"/webhook-next: {json}")
+    logger.info(f"/webhook: {json}")
     try:
         payload = parse_payload(json)
     except Exception:
