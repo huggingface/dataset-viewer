@@ -51,16 +51,6 @@ class JobDict(TypedDict):
     retries: int
 
 
-class DatasetJobDict(JobDict):
-    dataset_name: str
-
-
-class SplitJobDict(JobDict):
-    dataset_name: str
-    config_name: str
-    split_name: str
-
-
 class SplitsJobDict(JobDict):
     dataset_name: str
 
@@ -99,72 +89,6 @@ def connect_to_queue(database, host) -> None:
 # - cancelled: cancelled_at is not None: cancelled jobs
 # For a given dataset_name, any number of finished and cancelled jobs are allowed,
 # but only 0 or 1 job for the set of the other states
-class DatasetJob(Document):
-    meta = {
-        "collection": "dataset_jobs",
-        "db_alias": "queue",
-        "indexes": ["status", ("dataset_name", "status")],
-    }
-    dataset_name = StringField(required=True)
-    created_at = DateTimeField(required=True)
-    started_at = DateTimeField()
-    finished_at = DateTimeField()
-    status = EnumField(Status, default=Status.WAITING)
-    retries = IntField(required=False, default=0)
-
-    def to_dict(self) -> DatasetJobDict:
-        return {
-            "dataset_name": self.dataset_name,
-            "status": self.status.value,
-            "created_at": self.created_at,
-            "started_at": self.started_at,
-            "finished_at": self.finished_at,
-            "retries": self.retries,
-        }
-
-    def to_id(self) -> str:
-        return f"DatasetJob[{self.dataset_name}]"
-
-    objects = QuerySetManager["DatasetJob"]()
-
-
-class SplitJob(Document):
-    meta = {
-        "collection": "split_jobs",
-        "db_alias": "queue",
-        "indexes": [
-            "status",
-            ("dataset_name", "status"),
-            ("dataset_name", "config_name", "split_name", "status"),
-        ],
-    }
-    dataset_name = StringField(required=True)
-    config_name = StringField(required=True)
-    split_name = StringField(required=True)
-    status = EnumField(Status, default=Status.WAITING)
-    created_at = DateTimeField(required=True)
-    started_at = DateTimeField()
-    finished_at = DateTimeField()
-    retries = IntField(required=False, default=0)
-
-    def to_dict(self) -> SplitJobDict:
-        return {
-            "dataset_name": self.dataset_name,
-            "config_name": self.config_name,
-            "split_name": self.split_name,
-            "status": self.status.value,
-            "created_at": self.created_at,
-            "started_at": self.started_at,
-            "finished_at": self.finished_at,
-            "retries": self.retries,
-        }
-
-    def to_id(self) -> str:
-        return f"SplitJob[{self.dataset_name}, {self.config_name}, {self.split_name}]"
-
-    objects = QuerySetManager["SplitJob"]()
-
-
 class SplitsJob(Document):
     meta = {
         "collection": "splits_jobs",
@@ -231,7 +155,7 @@ class FirstRowsJob(Document):
     objects = QuerySetManager["FirstRowsJob"]()
 
 
-AnyJob = TypeVar("AnyJob", DatasetJob, SplitJob, SplitsJob, FirstRowsJob)
+AnyJob = TypeVar("AnyJob", SplitsJob, FirstRowsJob)
 
 
 class EmptyQueue(Exception):
@@ -260,27 +184,6 @@ def add_job(existing_jobs: QuerySet[AnyJob], new_job: AnyJob) -> AnyJob:
         # it it happens, we "cancel" all of them, and re-run the same function
         pending_jobs.update(finished_at=get_datetime(), status=Status.CANCELLED)
         return add_job(existing_jobs, new_job)
-
-
-def add_dataset_job(dataset_name: str, retries: Optional[int] = 0) -> None:
-    add_job(
-        DatasetJob.objects(dataset_name=dataset_name),
-        DatasetJob(dataset_name=dataset_name, created_at=get_datetime(), status=Status.WAITING, retries=retries),
-    )
-
-
-def add_split_job(dataset_name: str, config_name: str, split_name: str, retries: Optional[int] = 0) -> None:
-    add_job(
-        SplitJob.objects(dataset_name=dataset_name, config_name=config_name, split_name=split_name),
-        SplitJob(
-            dataset_name=dataset_name,
-            config_name=config_name,
-            split_name=split_name,
-            created_at=get_datetime(),
-            status=Status.WAITING,
-            retries=retries,
-        ),
-    )
 
 
 def add_splits_job(dataset_name: str, retries: Optional[int] = 0) -> None:
@@ -359,21 +262,6 @@ def start_job(jobs: QuerySet[AnyJob], max_jobs_per_dataset: Optional[int] = None
     return next_waiting_job
 
 
-def get_dataset_job(max_jobs_per_dataset: Optional[int] = None) -> Tuple[str, str, int]:
-    job = start_job(DatasetJob.objects, max_jobs_per_dataset)
-    # ^ max_jobs_per_dataset is not very useful for the DatasetJob queue
-    # since only one job per dataset can exist anyway
-    # It's here for consistency and safeguard
-    return str(job.pk), job.dataset_name, job.retries
-    # ^ job.pk is the id. job.id is not recognized by mypy
-
-
-def get_split_job(max_jobs_per_dataset: Optional[int] = None) -> Tuple[str, str, str, str, int]:
-    job = start_job(SplitJob.objects, max_jobs_per_dataset)
-    return str(job.pk), job.dataset_name, job.config_name, job.split_name, job.retries
-    # ^ job.pk is the id. job.id is not recognized by mypy
-
-
 def get_splits_job(max_jobs_per_dataset: Optional[int] = None) -> Tuple[str, str, int]:
     job = start_job(SplitsJob.objects, max_jobs_per_dataset)
     # ^ max_jobs_per_dataset is not very useful for the SplitsJob queue
@@ -407,14 +295,6 @@ def finish_started_job(jobs: QuerySet[AnyJob], job_id: str, success: bool) -> No
     job.update(finished_at=get_datetime(), status=status)
 
 
-def finish_dataset_job(job_id: str, success: bool) -> None:
-    finish_started_job(DatasetJob.objects, job_id, success)
-
-
-def finish_split_job(job_id: str, success: bool) -> None:
-    finish_started_job(SplitJob.objects, job_id, success)
-
-
 def finish_splits_job(job_id: str, success: bool) -> None:
     finish_started_job(SplitsJob.objects, job_id, success)
 
@@ -424,24 +304,8 @@ def finish_first_rows_job(job_id: str, success: bool) -> None:
 
 
 def clean_database() -> None:
-    DatasetJob.drop_collection()  # type: ignore
-    SplitJob.drop_collection()  # type: ignore
     SplitsJob.drop_collection()  # type: ignore
     FirstRowsJob.drop_collection()  # type: ignore
-
-
-def cancel_started_dataset_jobs() -> None:
-    for job in get_started(DatasetJob.objects):
-        job.update(finished_at=get_datetime(), status=Status.CANCELLED)
-        add_dataset_job(dataset_name=job.dataset_name, retries=job.retries)
-
-
-def cancel_started_split_jobs() -> None:
-    for job in get_started(SplitJob.objects):
-        job.update(finished_at=get_datetime(), status=Status.CANCELLED)
-        add_split_job(
-            dataset_name=job.dataset_name, config_name=job.config_name, split_name=job.split_name, retries=job.retries
-        )
 
 
 def cancel_started_splits_jobs() -> None:
@@ -491,14 +355,6 @@ def get_jobs_count_by_status(jobs: QuerySet[AnyJob]) -> CountByStatus:
     }
 
 
-def get_dataset_jobs_count_by_status() -> CountByStatus:
-    return get_jobs_count_by_status(DatasetJob.objects)
-
-
-def get_split_jobs_count_by_status() -> CountByStatus:
-    return get_jobs_count_by_status(SplitJob.objects)
-
-
 def get_splits_jobs_count_by_status() -> CountByStatus:
     return get_jobs_count_by_status(SplitsJob.objects)
 
@@ -524,14 +380,6 @@ def get_dump_by_status(jobs: QuerySet[AnyJob], waiting_started: bool = False) ->
         "error": get_dump_with_status(jobs, Status.ERROR),
         "cancelled": get_dump_with_status(jobs, Status.CANCELLED),
     }
-
-
-def get_dataset_dump_by_status(waiting_started: bool = False) -> DumpByStatus:
-    return get_dump_by_status(DatasetJob.objects, waiting_started)
-
-
-def get_split_dump_by_status(waiting_started: bool = False) -> DumpByStatus:
-    return get_dump_by_status(SplitJob.objects, waiting_started)
 
 
 def get_splits_dump_by_status(waiting_started: bool = False) -> DumpByStatus:
