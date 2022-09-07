@@ -47,21 +47,18 @@ def create_app() -> Starlette:
         Middleware(PrometheusMiddleware, filter_unhandled_paths=True),
     ]
     documented: List[BaseRoute] = [
-        Route("/healthcheck", endpoint=healthcheck_endpoint),
         Route("/valid", endpoint=valid_endpoint),
         Route("/is-valid", endpoint=create_is_valid_endpoint(EXTERNAL_AUTH_URL)),
         # ^ called by https://github.com/huggingface/model-evaluator
         Route("/first-rows", endpoint=create_first_rows_endpoint(EXTERNAL_AUTH_URL)),
         Route("/splits", endpoint=create_splits_endpoint(EXTERNAL_AUTH_URL)),
     ]
-    to_deprecate: List[BaseRoute] = [
-        Route("/valid-next", endpoint=valid_endpoint),
-        Route("/is-valid-next", endpoint=create_is_valid_endpoint(EXTERNAL_AUTH_URL)),
-        Route("/splits-next", endpoint=create_splits_endpoint(EXTERNAL_AUTH_URL)),
-    ]
     to_protect: List[BaseRoute] = [
         # called by the Hub webhooks
         Route("/webhook", endpoint=webhook_endpoint, methods=["POST"]),
+    ]
+    protected: List[BaseRoute] = [
+        Route("/healthcheck", endpoint=healthcheck_endpoint),
         # called by Prometheus
         Route("/metrics", endpoint=prometheus.endpoint),
     ]
@@ -69,7 +66,7 @@ def create_app() -> Starlette:
         # it can only be accessed in development. In production the reverse-proxy serves the assets
         Mount("/assets", app=StaticFiles(directory=init_assets_dir(ASSETS_DIRECTORY), check_dir=True), name="assets"),
     ]
-    routes: List[BaseRoute] = documented + to_deprecate + to_protect + for_development_only
+    routes: List[BaseRoute] = documented + to_protect + protected + for_development_only
     return Starlette(routes=routes, middleware=middleware)
 
 
