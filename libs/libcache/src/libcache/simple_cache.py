@@ -284,7 +284,7 @@ class FirstRowsResponseReport(SplitsResponseReport):
     split: str
 
 
-class CacheReportSplitsNext(TypedDict):
+class CacheReportSplits(TypedDict):
     cache_reports: List[SplitsResponseReport]
     next_cursor: str
 
@@ -302,7 +302,7 @@ class InvalidLimit(Exception):
     pass
 
 
-def get_cache_reports_splits_next(cursor: str, limit: int) -> CacheReportSplitsNext:
+def get_cache_reports_splits(cursor: str, limit: int) -> CacheReportSplits:
     """
     Get a list of reports about SplitsResponse cache entries, along with the next cursor.
     See https://solovyov.net/blog/2020/api-pagination-design/.
@@ -314,7 +314,7 @@ def get_cache_reports_splits_next(cursor: str, limit: int) -> CacheReportSplitsN
         limit (strictly positive `int`):
             The maximum number of results.
     Returns:
-        [`CacheReportSplitsNext`]: A dict with the list of reports and the next cursor. The next cursor is
+        [`CacheReportSplits`]: A dict with the list of reports and the next cursor. The next cursor is
         an empty string if there are no more items to be fetched.
     <Tip>
     Raises the following errors:
