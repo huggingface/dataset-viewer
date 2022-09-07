@@ -214,6 +214,10 @@ admin:
   assetsDirectory: "/assets"
   # Number of reports in /cache-reports/... endpoints
   cacheReportsNumResults: 100
+  # HF organization
+  hfOrganization: "huggingface"
+  # External authentication path.
+  hfWhoamiPath: "/api/whoami-v2"
   # Log level
   logLevel: "INFO"
   # Number of seconds to set in the `max-age` header on technical endpoints
