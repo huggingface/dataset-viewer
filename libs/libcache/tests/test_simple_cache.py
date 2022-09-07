@@ -13,7 +13,7 @@ from libcache.simple_cache import (
     delete_first_rows_responses,
     delete_splits_responses,
     get_cache_reports_first_rows,
-    get_cache_reports_splits_next,
+    get_cache_reports_splits,
     get_datasets_with_some_error,
     get_first_rows_response,
     get_first_rows_responses_count_by_status_and_error_code,
@@ -253,8 +253,8 @@ def test_count_by_status_and_error_code() -> None:
     }
 
 
-def test_get_cache_reports_splits_next() -> None:
-    assert get_cache_reports_splits_next("", 2) == {"cache_reports": [], "next_cursor": ""}
+def test_get_cache_reports_splits() -> None:
+    assert get_cache_reports_splits("", 2) == {"cache_reports": [], "next_cursor": ""}
     upsert_splits_response(
         "a",
         {"key": "value"},
@@ -288,7 +288,7 @@ def test_get_cache_reports_splits_next() -> None:
         "ErrorCodeC",
         c_details,
     )
-    response = get_cache_reports_splits_next("", 2)
+    response = get_cache_reports_splits("", 2)
     assert response["cache_reports"] == [
         {"dataset": "a", "http_status": HTTPStatus.OK.value, "error_code": None},
         {
@@ -300,7 +300,7 @@ def test_get_cache_reports_splits_next() -> None:
     assert response["next_cursor"] != ""
     next_cursor = response["next_cursor"]
 
-    response = get_cache_reports_splits_next(next_cursor, 2)
+    response = get_cache_reports_splits(next_cursor, 2)
     assert response == {
         "cache_reports": [
             {
@@ -313,11 +313,11 @@ def test_get_cache_reports_splits_next() -> None:
     }
 
     with pytest.raises(InvalidCursor):
-        get_cache_reports_splits_next("not an objectid", 2)
+        get_cache_reports_splits("not an objectid", 2)
     with pytest.raises(InvalidLimit):
-        get_cache_reports_splits_next(next_cursor, -1)
+        get_cache_reports_splits(next_cursor, -1)
     with pytest.raises(InvalidLimit):
-        get_cache_reports_splits_next(next_cursor, 0)
+        get_cache_reports_splits(next_cursor, 0)
 
 
 def test_get_cache_reports_first_rows() -> None:
