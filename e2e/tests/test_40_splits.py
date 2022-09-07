@@ -5,7 +5,7 @@ from .utils import (
     get_openapi_body_example,
     poll,
     post_refresh,
-    refresh_poll_splits_next,
+    refresh_poll_splits,
 )
 
 
@@ -40,19 +40,19 @@ from .utils import (
         # not tested: 'internal_error'
     ],
 )
-def test_splits_next(status: int, name: str, dataset: str, error_code: str):
-    body = get_openapi_body_example("/splits-next", status, name)
+def test_splits(status: int, name: str, dataset: str, error_code: str):
+    body = get_openapi_body_example("/splits", status, name)
 
     if name == "empty-parameter":
-        r_splits = poll("/splits-next?dataset=", error_field="error")
+        r_splits = poll("/splits?dataset=", error_field="error")
     elif name == "missing-parameter":
-        r_splits = poll("/splits-next", error_field="error")
+        r_splits = poll("/splits", error_field="error")
     elif name == "not-ready":
         post_refresh(dataset)
         # poll the endpoint before the worker had the chance to process it
-        r_splits = get(f"/splits-next?dataset={dataset}")
+        r_splits = get(f"/splits?dataset={dataset}")
     else:
-        r_splits = refresh_poll_splits_next(dataset)
+        r_splits = refresh_poll_splits(dataset)
 
     assert r_splits.status_code == status, f"{r_splits.status_code} - {r_splits.text}"
     assert r_splits.json() == body, r_splits.text

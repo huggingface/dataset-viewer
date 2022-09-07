@@ -16,6 +16,7 @@ then install:
 - [libs/libcache](./libs/libcache/INSTALL.md)
 - [libs/libqueue](./libs/libcache/INSTALL.md)
 - [libs/libutils](./libs/libutils/INSTALL.md)
+- [services/admin](./services/admin/INSTALL.md)
 - [services/api](./services/api/INSTALL.md)
 - [services/worker](./services/worker/INSTALL.md)
 

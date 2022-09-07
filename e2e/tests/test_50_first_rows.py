@@ -9,8 +9,8 @@ from .utils import (
     get,
     get_openapi_body_example,
     poll,
-    refresh_poll_splits_next,
-    refresh_poll_splits_next_first_rows,
+    refresh_poll_splits,
+    refresh_poll_splits_first_rows,
 )
 
 
@@ -74,7 +74,7 @@ def test_first_rows(status: int, name: str, dataset: str, config: str, split: st
     body = get_openapi_body_example("/first-rows", status, name)
 
     # the logic here is a bit convoluted, because we have no way to refresh a split, we have to refresh the whole
-    # dataset and depend on the result of /splits-next
+    # dataset and depend on the result of /splits
     if name.startswith("empty-"):
         r_rows = poll(f"/first-rows?dataset={dataset}&config={config}&split={split}", error_field="error")
     elif name.startswith("missing-"):
@@ -84,15 +84,15 @@ def test_first_rows(status: int, name: str, dataset: str, config: str, split: st
         params = "&".join([d, c, s])
         r_rows = poll(f"/first-rows?{params}", error_field="error")
     elif name.startswith("inexistent-") or name.startswith("private-") or name.startswith("gated-"):
-        refresh_poll_splits_next(dataset)
+        refresh_poll_splits(dataset)
         # no need to retry
         r_rows = get(f"/first-rows?dataset={dataset}&config={config}&split={split}")
     elif name == "not-ready":
-        refresh_poll_splits_next(dataset)
+        refresh_poll_splits(dataset)
         # poll the endpoint before the worker had the chance to process it
         r_rows = get(f"/first-rows?dataset={dataset}&config={config}&split={split}")
     else:
-        _, r_rows = refresh_poll_splits_next_first_rows(dataset, config, split)
+        _, r_rows = refresh_poll_splits_first_rows(dataset, config, split)
 
     assert r_rows.status_code == status, f"{r_rows.status_code} - {r_rows.text}"
     assert prepare_json(r_rows) == body, r_rows.text
@@ -102,17 +102,17 @@ def test_first_rows(status: int, name: str, dataset: str, config: str, split: st
         assert "X-Error-Code" not in r_rows.headers, r_rows.headers["X-Error-Code"]
 
 
-# from .utils import ROWS_MAX_NUMBER, URL, refresh_poll_splits_next_first_rows
+# from .utils import ROWS_MAX_NUMBER, URL, refresh_poll_splits_first_rows
 
 # # TODO: find a dataset that can be processed faster
-# def test_png_image_next():
+# def test_png_image():
 #     # this test ensures that an image is saved as PNG if it cannot be saved as PNG
 #     # https://github.com/huggingface/datasets-server/issues/191
 #     dataset = "wikimedia/wit_base"
 #     config = "wikimedia--wit_base"
 #     split = "train"
 
-#     _, r_rows = refresh_poll_splits_next_first_rows(dataset, config, split)
+#     _, r_rows = refresh_poll_splits_first_rows(dataset, config, split)
 
 #     assert r_rows.status_code == 200, f"{r_rows.status_code} - {r_rows.text}"
 #     json = r_rows.json()

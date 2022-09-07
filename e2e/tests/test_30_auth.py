@@ -6,7 +6,7 @@ from .utils import (
     get,
     get_default_config_split,
     poll_first_rows,
-    refresh_poll_splits_next,
+    refresh_poll_splits,
 )
 
 
@@ -16,7 +16,7 @@ def log(response: Response, dataset: str) -> str:
 
 
 @pytest.mark.parametrize(
-    "type,auth,status_code,error_code_splits_next,error_code_first_rows",
+    "type,auth,status_code,error_code_splits,error_code_first_rows",
     [
         ("public", "none", 200, None, None),
         ("public", "token", 200, None, None),
@@ -29,13 +29,13 @@ def log(response: Response, dataset: str) -> str:
         ("private", "cookie", 404, "SplitsResponseNotFound", "FirstRowsResponseNotFound"),
     ],
 )
-def test_splits_next_public_auth(
+def test_split_public_auth(
     auth_headers: AuthHeaders,
     hf_dataset_repos_csv_data: DatasetRepos,
     type: DatasetReposType,
     auth: AuthType,
     status_code: int,
-    error_code_splits_next: str,
+    error_code_splits: str,
     error_code_first_rows: str,
 ) -> None:
     if auth not in auth_headers:
@@ -46,12 +46,12 @@ def test_splits_next_public_auth(
     # TODO: the webhook should respond 501 Not implemented when provided with a private dataset
     # (and delete the cache if existing)
     r_splits = (
-        get(f"/splits-next?dataset={dataset}", headers=auth_headers[auth])
+        get(f"/splits?dataset={dataset}", headers=auth_headers[auth])
         if type == "private"
-        else refresh_poll_splits_next(dataset, headers=auth_headers[auth])
+        else refresh_poll_splits(dataset, headers=auth_headers[auth])
     )
     assert r_splits.status_code == status_code, log(r_splits, dataset)
-    assert r_splits.headers.get("X-Error-Code") == error_code_splits_next, log(r_splits, dataset)
+    assert r_splits.headers.get("X-Error-Code") == error_code_splits, log(r_splits, dataset)
 
     r_rows = (
         get(f"/first-rows?dataset={dataset}&config={config}&split={split}", headers=auth_headers[auth])

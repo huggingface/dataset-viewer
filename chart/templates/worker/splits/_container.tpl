@@ -5,7 +5,7 @@
     value: "{{ include "assets.baseUrl" . }}"
   - name: ASSETS_DIRECTORY
     value: {{ .Values.worker.splits.assetsDirectory | quote }}
-  - name: splits_REVISION
+  - name: DATASETS_REVISION
     value: {{ .Values.worker.splits.datasetsRevision | quote }}
   - name: HF_DATASETS_CACHE
     value: "{{ .Values.worker.splits.cacheDirectory }}/datasets"
@@ -60,12 +60,10 @@
   - name: ROWS_MIN_NUMBER
     value: {{ .Values.worker.splits.rowsMinNumber| quote }}
   - name: WORKER_SLEEP_SECONDS
-    value: {{ .Values.worker.splits.workerSleepSeconds | quote }}
+    value: {{ .Values.worker.splits.workerleepSeconds | quote }}
   - name: WORKER_QUEUE
-    # Job queue the worker will pull jobs from:
-    # Note that the names might be confusing but have a historical reason
-    # /splits -> 'datasets', /rows -> 'splits'
-    value: "datasets"
+    # Job queue the worker will pull jobs from: 'splits_responses' or 'first_rows_responses'
+    value: "splits_responses"
   image: {{ .Values.dockerImage.worker.splits }}
   imagePullPolicy: IfNotPresent
   volumeMounts:

@@ -42,7 +42,7 @@ services:
       mongodb:
         condition: service_started
     restart: unless-stopped
-  worker-datasets:
+  worker-splits:
     build:
       context: ..
       dockerfile: ./services/worker/Dockerfile
@@ -56,7 +56,7 @@ services:
       HF_ENDPOINT: ${HF_ENDPOINT}
       HF_TOKEN: ${HF_TOKEN}
       MONGO_URL: "mongodb://mongodb"
-      WORKER_QUEUE: "datasets"
+      WORKER_QUEUE: "splits_responses"
     depends_on:
       mongodb:
         condition: service_started
@@ -76,44 +76,6 @@ services:
       HF_TOKEN: ${HF_TOKEN}
       MONGO_URL: "mongodb://mongodb"
       WORKER_QUEUE: "first_rows_responses"
-    depends_on:
-      mongodb:
-        condition: service_started
-    restart: always
-  worker-splits-next:
-    build:
-      context: ..
-      dockerfile: ./services/worker/Dockerfile
-    volumes:
-      - assets:/assets:rw
-      - datasets-cache:/datasets-cache:rw
-    environment:
-      ASSETS_BASE_URL: "http://localhost:${PORT_REVERSE_PROXY-8000}/assets"
-      ASSETS_DIRECTORY: "/assets"
-      HF_DATASETS_CACHE: "/datasets-cache"
-      HF_ENDPOINT: ${HF_ENDPOINT}
-      HF_TOKEN: ${HF_TOKEN}
-      MONGO_URL: "mongodb://mongodb"
-      WORKER_QUEUE: "splits_responses"
-    depends_on:
-      mongodb:
-        condition: service_started
-    restart: always
-  worker-splits:
-    build:
-      context: ..
-      dockerfile: ./services/worker/Dockerfile
-    volumes:
-      - assets:/assets:rw
-      - datasets-cache:/datasets-cache:rw
-    environment:
-      ASSETS_BASE_URL: "http://localhost:${PORT_REVERSE_PROXY-8000}/assets"
-      ASSETS_DIRECTORY: "/assets"
-      HF_DATASETS_CACHE: "/datasets-cache"
-      HF_ENDPOINT: ${HF_ENDPOINT}
-      HF_TOKEN: ${HF_TOKEN}
-      MONGO_URL: "mongodb://mongodb"
-      WORKER_QUEUE: "splits"
     depends_on:
       mongodb:
         condition: service_started
