@@ -21,7 +21,7 @@ logger = logging.getLogger(__name__)
 
 async def valid_endpoint(_: Request) -> Response:
     try:
-        logger.info("/valid-next")
+        logger.info("/valid")
         content = {"valid": get_valid_dataset_names()}
         return get_json_ok_response(content)
     except Exception:

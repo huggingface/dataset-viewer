@@ -28,7 +28,7 @@ def create_splits_endpoint(external_auth_url: Optional[str] = None) -> Endpoint:
     async def splits_endpoint(request: Request) -> Response:
         try:
             dataset_name = request.query_params.get("dataset")
-            logger.info(f"/splits-next, dataset={dataset_name}")
+            logger.info(f"/splits, dataset={dataset_name}")
 
             if not are_valid_parameters([dataset_name]):
                 raise MissingRequiredParameterError("Parameter 'dataset' is required")
