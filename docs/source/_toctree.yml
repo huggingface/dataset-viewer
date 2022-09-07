@@ -4,7 +4,7 @@
     title: 🤗 Datasets server
   - local: splits
     title: Splits
-  - local: rows
+  - local: first_rows
     title: First rows
   - local: valid
     title: Valid datasets

@@ -1,75 +1,70 @@
 # First rows
 
-The endpoint `/rows` provides the columns and the first rows of a dataset [split](./splits):
+The endpoint `/first-rows` provides the columns and the first rows of a dataset [split](./splits):
 
   ```
-  https://datasets-server.huggingface.co/rows?dataset={dataset_name}&config={config_name}&split={split_name}
+  https://datasets-server.huggingface.co/first-rows?dataset={dataset_name}&config={config_name}&split={split_name}
   ```
 
-The first 100 rows, or all the rows if the split contains less than 100 rows, are returned. The list of columns contain the data type.
+The first 100 rows, or all the rows if the split contains less than 100 rows, are returned. The list of columns (called [features](https://huggingface.co/docs/datasets/about_dataset_features) to stick with the `datasets` library) contain the data type.
 
-For example, here are the columns and the first rows of the `duorc` / `SelfRC` train split.
+<Tip warning={true}>
+ Currently, the API only returns rows of the <a href="https://huggingface.co/docs/datasets/stream">"streamable" datasets</a>. By loading a dataset in streaming mode, the first rows can be extracted without downloading the whole dataset.
+</Tip>
 
-https://datasets-server.huggingface.co/rows?dataset=duorc&config=SelfRC&split=train
+For example, here are the features and the first rows of the `duorc` / `SelfRC` train split.
+
+https://datasets-server.huggingface.co/first-rows?dataset=duorc&config=SelfRC&split=train
 
 ```json
-{
-  "columns": [
+{{
+  "dataset": "duorc",
+  "config": "SelfRC",
+  "split": "train",
+  "features": [
     {
-      "dataset": "duorc",
-      "config": "SelfRC",
-      "split": "train",
-      "column_idx": 0,
-      "column": { "name": "plot_id", "type": "STRING" }
+      "feature_idx": 0,
+      "name": "plot_id",
+      "type": { "dtype": "string", "id": null, "_type": "Value" }
     },
     {
-      "dataset": "duorc",
-      "config": "SelfRC",
-      "split": "train",
-      "column_idx": 1,
-      "column": { "name": "plot", "type": "STRING" }
+      "feature_idx": 1,
+      "name": "plot",
+      "type": { "dtype": "string", "id": null, "_type": "Value" }
     },
     {
-      "dataset": "duorc",
-      "config": "SelfRC",
-      "split": "train",
-      "column_idx": 2,
-      "column": { "name": "title", "type": "STRING" }
+      "feature_idx": 2,
+      "name": "title",
+      "type": { "dtype": "string", "id": null, "_type": "Value" }
     },
     {
-      "dataset": "duorc",
-      "config": "SelfRC",
-      "split": "train",
-      "column_idx": 3,
-      "column": { "name": "question_id", "type": "STRING" }
+      "feature_idx": 3,
+      "name": "question_id",
+      "type": { "dtype": "string", "id": null, "_type": "Value" }
     },
     {
-      "dataset": "duorc",
-      "config": "SelfRC",
-      "split": "train",
-      "column_idx": 4,
-      "column": { "name": "question", "type": "STRING" }
+      "feature_idx": 4,
+      "name": "question",
+      "type": { "dtype": "string", "id": null, "_type": "Value" }
     },
     {
-      "dataset": "duorc",
-      "config": "SelfRC",
-      "split": "train",
-      "column_idx": 5,
-      "column": { "name": "answers", "type": "JSON" }
+      "feature_idx": 5,
+      "name": "answers",
+      "type": {
+        "feature": { "dtype": "string", "id": null, "_type": "Value" },
+        "length": -1,
+        "id": null,
+        "_type": "Sequence"
+      }
     },
     {
-      "dataset": "duorc",
-      "config": "SelfRC",
-      "split": "train",
-      "column_idx": 6,
-      "column": { "name": "no_answer", "type": "BOOL" }
+      "feature_idx": 6,
+      "name": "no_answer",
+      "type": { "dtype": "bool", "id": null, "_type": "Value" }
     }
   ],
   "rows": [
     {
-      "dataset": "duorc",
-      "config": "SelfRC",
-      "split": "train",
       "row_idx": 0,
       "row": {
         "plot_id": "/m/03vyhn",
@@ -83,9 +78,6 @@ https://datasets-server.huggingface.co/rows?dataset=duorc&config=SelfRC&split=tr
       "truncated_cells": []
     },
     {
-      "dataset": "duorc",
-      "config": "SelfRC",
-      "split": "train",
       "row_idx": 1,
       "row": {
         "plot_id": "/m/03vyhn",
@@ -99,8 +91,10 @@ https://datasets-server.huggingface.co/rows?dataset=duorc&config=SelfRC&split=tr
         "no_answer": false
       },
       "truncated_cells": []
-    },
+    }
     ...
+  ]
+}
 ```
 
 ## Truncated responses
@@ -111,18 +105,15 @@ If even the first rows generate a response that does not fit within the limit, t
 
 See for example the [`ett`](https://huggingface.co/datasets/ett/viewer/m2/test) dataset: only 10 rows are returned, and the content of two of the columns are truncated.
 
-https://datasets-server.huggingface.co/rows?dataset=ett&config=m2&split=test
+https://datasets-server.huggingface.co/first-rows?dataset=ett&config=m2&split=test
 
 ```json
   ...
   "rows": [
     {
-      "dataset": "ett",
-      "config": "m2",
-      "split": "test",
       "row_idx": 0,
       "row": {
-        "start": 1467331200.0,
+        "start": "2016-07-01T00:00:00",
         "target": "[38.6619987487793,38.222999572753906,37.34400177001953,37.124000549316406,37.124000549316406,36.9039",
         "feat_static_cat": [0],
         "feat_dynamic_real": "[[41.130001068115234,39.62200164794922,38.86800003051758,35.518001556396484,37.52799987792969,37.611",
@@ -131,18 +122,15 @@ https://datasets-server.huggingface.co/rows?dataset=ett&config=m2&split=test
       "truncated_cells": ["target", "feat_dynamic_real"]
     },
     {
-      "dataset": "ett",
-      "config": "m2",
-      "split": "test",
       "row_idx": 1,
       "row": {
-        "start": 1467331200.0,
+        "start": "2016-07-01T00:00:00",
         "target": "[38.6619987487793,38.222999572753906,37.34400177001953,37.124000549316406,37.124000549316406,36.9039",
         "feat_static_cat": [0],
         "feat_dynamic_real": "[[41.130001068115234,39.62200164794922,38.86800003051758,35.518001556396484,37.52799987792969,37.611",
         "item_id": "OT"
       },
       "truncated_cells": ["target", "feat_dynamic_real"]
-    }
+    },
   ...
 ```
