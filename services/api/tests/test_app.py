@@ -5,23 +5,14 @@ import pytest
 import responses
 
 # from libcache.cache import clean_database as clean_cache_database
-from libcache.cache import clean_database as clean_cache_database
-from libcache.cache import (
-    create_or_mark_dataset_as_stale,
-    create_or_mark_split_as_stale,
-)
+from libcache.simple_cache import _clean_database as clean_cache_database
 from libcache.simple_cache import (
     mark_first_rows_responses_as_stale,
     mark_splits_responses_as_stale,
     upsert_first_rows_response,
     upsert_splits_response,
 )
-from libqueue.queue import (
-    add_dataset_job,
-    add_first_rows_job,
-    add_split_job,
-    add_splits_job,
-)
+from libqueue.queue import add_first_rows_job, add_splits_job
 from libqueue.queue import clean_database as clean_queue_database
 from starlette.testclient import TestClient
 
@@ -80,32 +71,11 @@ def test_cors(client: TestClient) -> None:
     assert response.headers["Access-Control-Allow-Credentials"] == "true"
 
 
-def test_get_valid_datasets(client: TestClient) -> None:
-    response = client.get("/valid")
-    assert response.status_code == 200
-    json = response.json()
-    assert "valid" in json
-
-
 def test_get_valid__next_datasets(client: TestClient) -> None:
     response = client.get("/valid-next")
     assert response.status_code == 200
     json = response.json()
     assert "valid" in json
-
-
-@responses.activate
-def test_get_is_valid(client: TestClient) -> None:
-    response = client.get("/is-valid")
-    assert response.status_code == 422
-
-    dataset = "doesnotexist"
-    responses.add_callback(responses.GET, external_auth_url % dataset, callback=request_callback)
-    response = client.get("/is-valid", params={"dataset": dataset})
-    assert response.status_code == 200
-    json = response.json()
-    assert "valid" in json
-    assert json["valid"] is False
 
 
 @responses.activate
@@ -148,12 +118,6 @@ def test_get_healthcheck(client: TestClient) -> None:
     assert response.text == "ok"
 
 
-def test_get_splits(client: TestClient) -> None:
-    # missing parameter
-    response = client.get("/splits")
-    assert response.status_code == 400
-
-
 def test_get_splits_next(client: TestClient) -> None:
     # missing parameter
     response = client.get("/splits-next")
@@ -192,37 +156,6 @@ def test_get_first_rows(client: TestClient) -> None:
     # empty parameter
     response = client.get("/first-rows?dataset=a&config=b&split=")
     assert response.status_code == 422
-
-
-def test_get_rows(client: TestClient) -> None:
-    response = client.get("/rows")
-    assert response.status_code == 400
-
-    # not found
-    response = client.get("/rows", params={"dataset": "doesnotexist", "config": "default", "split": "doesnotexist"})
-    assert response.status_code == 400
-
-
-def test_dataset_cache_refreshing(client: TestClient) -> None:
-    dataset = "acronym_identification"
-    response = client.get("/splits", params={"dataset": dataset})
-    assert response.json()["message"] == "The dataset does not exist."
-    add_dataset_job(dataset)
-    create_or_mark_dataset_as_stale(dataset)
-    response = client.get("/splits", params={"dataset": dataset})
-    assert response.json()["message"] == "The dataset is being processed. Retry later."
-
-
-def test_split_cache_refreshing(client: TestClient) -> None:
-    dataset = "acronym_identification"
-    config = "default"
-    split = "train"
-    response = client.get("/rows", params={"dataset": dataset, "config": config, "split": split})
-    assert response.json()["message"] == "The split does not exist."
-    add_split_job(dataset, config, split)
-    create_or_mark_split_as_stale({"dataset_name": dataset, "config_name": config, "split_name": split}, 0)
-    response = client.get("/rows", params={"dataset": dataset, "config": config, "split": split})
-    assert response.json()["message"] == "The split is being processed. Retry later."
 
 
 @responses.activate
