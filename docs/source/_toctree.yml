@@ -2,12 +2,12 @@
 - sections: 
   - local: index
     title: 🤗 Datasets server
+  - local: api_basics
+    title: API basics
+  - local: valid
+    title: Valid datasets
   - local: splits
     title: Splits
   - local: first_rows
     title: First rows
-  - local: valid
-    title: Valid datasets
-  - local: api_reference
-    title: API reference
   title: Get started
