@@ -3,10 +3,10 @@
 Some Hub repositories cannot be loaded with the [🤗 Datasets](https://github.com/huggingface/datasets) library, for example because the data has still to be uploaded, or the format is not supported. The API endpoints will return an error for such datasets.
 
 <Tip warning={true}>
-  Currently, only the \"{""}
-  <a href="https://huggingface.co/docs/datasets/stream">streamable</a>
-  {""}\" datasets are supported, to allow extracting the 100 first rows without
-  downloading the whole dataset.
+  Currently, only the{" "}
+  <a href="https://huggingface.co/docs/datasets/stream">streamable</a> datasets
+  are supported, to allow extracting the 100 first rows without downloading the
+  whole dataset.
 </Tip>
 
 The `/valid` endpoint gives the list of the Hub datasets that work without an error:
