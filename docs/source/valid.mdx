@@ -1,16 +1,65 @@
 # Valid datasets
 
-An error may be returned if an issue occurs during extraction of the [splits](./splits) or [first rows](./first_rows) of some datasets.
+The dataset API supports all the datasets handled by the [🤗 Datasets](https://github.com/huggingface/datasets) library. But part of the Hub dataset repositories cannot be loaded, for example because the data has still to be uploaded, or the format is not suppported. All the API endpoints will return an error for such datasets.
 
-The `/valid` endpoints gives the list of the Hub datasets that work without an error:
+<Tip warning={true}>
+  Currently, only the{" "}
+  <a href="https://huggingface.co/docs/datasets/stream">
+    "streamable" datasets
+  </a>{" "}
+  are supported. This enables extracting the 100 first rows without downloading
+  the whole dataset.
+</Tip>
 
-  ```
-  https://datasets-server.huggingface.co/valid
-  ```
+The `/valid` endpoint gives the list of the Hub datasets that work without an error:
 
-The response looks like:
-
+```
 https://datasets-server.huggingface.co/valid
+```
+
+The endpoint takes no parameters.
+
+Try it:
+
+- in your browser: https://datasets-server.huggingface.co/valid,
+- with [Postman](https://www.postman.com/huggingface/workspace/hugging-face-apis/request/23242779-17b761d0-b2b8-4638-a4f7-73be9049c324),
+- with [RapidAPI](https://rapidapi.com/hugging-face-hugging-face-default/api/hugging-face-datasets-api),
+- with [Redoc](https://redocly.github.io/redoc/?url=https://datasets-server.huggingface.co/openapi.json#operation/listValidDatasets),
+- or programmatically:
+
+<inferencesnippet>
+<python>
+import json
+import requests
+API_URL = "https://datasets-server.huggingface.co/valid"
+def query():
+    response = requests.request("GET", API_URL)
+    return json.loads(response.content.decode("utf-8"))
+data = query()
+</python>
+<js>
+import fetch from "node-fetch";
+async function query(data) {
+    const response = await fetch(
+        "https://datasets-server.huggingface.co/valid",
+        {
+            method: "GET"
+        }
+    );
+    const result = await response.json();
+    return result;
+}
+query().then((response) => {
+    console.log(JSON.stringify(response));
+});
+</js>
+<curl>
+curl https://datasets-server.huggingface.co/valid \
+        -X GET
+</curl>
+</inferencesnippet>
+
+The JSON response includes the list of valid dataset names under the `valid` key:
 
 ```json
 {
