@@ -14,9 +14,9 @@ https://datasets-server.huggingface.co/splits?dataset={dataset}
 
 The endpoint takes one query parameter:
 
-| Query parameter         |                                                                                |
-| :---------------------- | :----------------------------------------------------------------------------- |
-| **dataset** (required): | the dataset name, for example `glue` or `mozilla-foundation/common_voice_10_0` |
+| Query parameter        |                                                                                |
+| :--------------------- | :----------------------------------------------------------------------------- |
+| **dataset** (required) | the dataset name, for example `glue` or `mozilla-foundation/common_voice_10_0` |
 
 Try it in your [browser](https://huggingface.co/datasets/splits?dataset=duorc), with [Postman](https://www.postman.com/huggingface/workspace/hugging-face-apis/request/23242779-f0cde3b9-c2ee-4062-aaca-65c4cfdd96f8), with [RapidAPI](https://rapidapi.com/hugging-face-hugging-face-default/api/hugging-face-datasets-api), with [ReDoc](https://redocly.github.io/redoc/?url=https://datasets-server.huggingface.co/openapi.json#operation/listSplits), or programmatically. Pass your API token if you query a [gated dataset](https://huggingface.co/docs/hub/datasets-gated).
 
@@ -65,11 +65,11 @@ The response is a JSON. The list of splits is nested under the `splits` key. The
 
 | Response: split fields |                                        |
 | :--------------------- | :------------------------------------- |
-| **dataset**:           | the name of the dataset                |
-| **config**:            | the name of the configuration          |
-| **split**:             | the name of the split                  |
-| **num_bytes**:         | the size in bytes (can be `null`)      |
-| **num_examples**:      | the number of examples (can be `null`) |
+| **dataset**            | the name of the dataset                |
+| **config**             | the name of the configuration          |
+| **split**              | the name of the split                  |
+| **num_bytes**          | the size in bytes (can be `null`)      |
+| **num_examples**       | the number of examples (can be `null`) |
 
 For example, the [duorc](https://huggingface.co/datasets/duorc) dataset has six splits and two configurations:
 

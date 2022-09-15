@@ -8,11 +8,11 @@ https://datasets-server.huggingface.co/first-rows?dataset={dataset}&config={conf
 
 The endpoint takes three query parameters:
 
-| Query parameter         |                                                                                |
-| :---------------------- | :----------------------------------------------------------------------------- |
-| **dataset** (required): | the dataset name, for example `glue` or `mozilla-foundation/common_voice_10_0` |
-| **config** (required):  | the configuration name, for example `cola`                                     |
-| **split** (required):   | the split name, for example `train`                                            |
+| Query parameters       |                                                                                |
+| :--------------------- | :----------------------------------------------------------------------------- |
+| **dataset** (required) | the dataset name, for example `glue` or `mozilla-foundation/common_voice_10_0` |
+| **config** (required)  | the configuration name, for example `cola`                                     |
+| **split** (required)   | the split name, for example `train`                                            |
 
 Try it in your [browser](https://datasets-server.huggingface.co/first-rows?dataset=duorc&config=SelfRC&split=train), with [Postman](https://www.postman.com/huggingface/workspace/hugging-face-apis/request/23242779-32d6a8be-b800-446a-8cee-f6b5ca1710df), with [RapidAPI](https://rapidapi.com/hugging-face-hugging-face-default/api/hugging-face-datasets-api), with [ReDoc](https://redocly.github.io/redoc/?url=https://datasets-server.huggingface.co/openapi.json#operation/listFirstRows), or programmatically. Pass your API token if you query a [gated dataset](https://huggingface.co/docs/hub/datasets-gated).
 
@@ -59,29 +59,29 @@ curl https://datasets-server.huggingface.co/first-rows?dataset=duorc&config=Self
 
 The response is a JSON. The first 100 rows, or all the rows if the split contains less than 100 rows, are returned under the `rows` key. The list of columns (called [features](https://huggingface.co/docs/datasets/about_dataset_features) to stick with the `datasets` library) contain the data type and are returned under the `features` key. The `dataset`, `config` and `split` fields are also provided in the response.
 
-| Response      |                        |
-| :------------ | :--------------------- |
-| **dataset**:  | the dataset name       |
-| **config**:   | the configuration name |
-| **split**:    | the split name         |
-| **features**: | the list of features   |
-| **rows**:     | the list of rows       |
+| Response     |                        |
+| :----------- | :--------------------- |
+| **dataset**  | the dataset name       |
+| **config**   | the configuration name |
+| **split**    | the split name         |
+| **features** | the list of features   |
+| **rows**     | the list of rows       |
 
 The detail of every feature is:
 
 | Response: feature fields |                                                                                                                       |
 | :----------------------- | :-------------------------------------------------------------------------------------------------------------------- |
-| **feature_idx**:         | the order of the column                                                                                               |
-| **name**:                | the name of the column                                                                                                |
-| **type**:                | the [feature type](https://huggingface.co/docs/datasets/about_dataset_features) as defined by the 🤗 Datasets library |
+| **feature_idx**          | the index of the column                                                                                               |
+| **name**                 | the name of the column                                                                                                |
+| **type**                 | the [feature type](https://huggingface.co/docs/datasets/about_dataset_features) as defined by the 🤗 Datasets library |
 
 The detail of every row is:
 
 | Response: row fields |                                                                               |
 | :------------------- | :---------------------------------------------------------------------------- |
-| **row_idx**:         | the index of the row                                                          |
-| **row**:             | the content of the row, with one field for each column                        |
-| **truncated_cells**: | the list of truncated cells. See [Truncated responses](#truncated-responses). |
+| **row_idx**          | the index of the row                                                          |
+| **row**              | the content of the row, with one field for each column                        |
+| **truncated_cells**  | the list of truncated cells. See [Truncated responses](#truncated-responses). |
 
 For example, here are the features and the first rows of the `duorc` / `SelfRC` train split.
 
