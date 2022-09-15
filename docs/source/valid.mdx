@@ -1,14 +1,12 @@
 # Valid datasets
 
-The dataset API supports all the datasets handled by the [🤗 Datasets](https://github.com/huggingface/datasets) library. But part of the Hub dataset repositories cannot be loaded, for example because the data has still to be uploaded, or the format is not suppported. All the API endpoints will return an error for such datasets.
+Some Hub repositories cannot be loaded with the [🤗 Datasets](https://github.com/huggingface/datasets) library, for example because the data has still to be uploaded, or the format is not supported. The API endpoints will return an error for such datasets.
 
 <Tip warning={true}>
-  Currently, only the{" "}
-  <a href="https://huggingface.co/docs/datasets/stream">
-    "streamable" datasets
-  </a>{" "}
-  are supported. This enables extracting the 100 first rows without downloading
-  the whole dataset.
+  Currently, only the \"{""}
+  <a href="https://huggingface.co/docs/datasets/stream">streamable</a>
+  {""}\" datasets are supported, to allow extracting the 100 first rows without
+  downloading the whole dataset.
 </Tip>
 
 The `/valid` endpoint gives the list of the Hub datasets that work without an error:
@@ -17,15 +15,9 @@ The `/valid` endpoint gives the list of the Hub datasets that work without an er
 https://datasets-server.huggingface.co/valid
 ```
 
-The endpoint takes no parameters.
+The endpoint takes no query parameters.
 
-Try it:
-
-- in your browser: https://datasets-server.huggingface.co/valid,
-- with [Postman](https://www.postman.com/huggingface/workspace/hugging-face-apis/request/23242779-17b761d0-b2b8-4638-a4f7-73be9049c324),
-- with [RapidAPI](https://rapidapi.com/hugging-face-hugging-face-default/api/hugging-face-datasets-api),
-- with [Redoc](https://redocly.github.io/redoc/?url=https://datasets-server.huggingface.co/openapi.json#operation/listValidDatasets),
-- or programmatically:
+Try it in your [browser](https://datasets-server.huggingface.co/valid), with [Postman](https://www.postman.com/huggingface/workspace/hugging-face-apis/request/23242779-17b761d0-b2b8-4638-a4f7-73be9049c324), with [RapidAPI](https://rapidapi.com/hugging-face-hugging-face-default/api/hugging-face-datasets-api), with [ReDoc](https://redocly.github.io/redoc/?url=https://datasets-server.huggingface.co/openapi.json#operation/listValidDatasets), or programmatically:
 
 <inferencesnippet>
 <python>
@@ -65,7 +57,7 @@ curl https://datasets-server.huggingface.co/valid \
 </curl>
 </inferencesnippet>
 
-The JSON response includes the list of valid dataset names under the `valid` key:
+The response is a JSON. The list of names of the valid datasets is nested under the `valid` key:
 
 ```json
 {

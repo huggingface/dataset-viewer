@@ -1,18 +1,77 @@
 # Splits
 
-A dataset generally contains multiple _[splits](https://huggingface.co/docs/datasets/load_hub#splits)_, a specific subset of a dataset like `train` and `test`. The dataset can also contain _[configurations](https://huggingface.co/docs/datasets/load_hub#configurations)_, a sub-dataset of the larger dataset.
+The datasets aimed at training and evaluating a Machine Learning model are generally divided into multiple _[splits](https://huggingface.co/docs/datasets/load_hub#splits)_, generally `train`, `test` and `validation.
 
-See the [documentation](https://huggingface.co/docs/datasets) of the [🤗 Datasets](https://github.com/huggingface/datasets) library to read more in depth about the concepts.
+Some datasets also using _[configurations](https://huggingface.co/docs/datasets/load_hub#configurations)_ (sub-datasets) to group similar examples: [CommonVoice](https://huggingface.co/datasets/mozilla-foundation/common_voice_10_0) groups the audio recordings of each language in their own configuration ; [GLUE](https://huggingface.co/datasets/glue) provides one configuration for every evaluation task.
 
-To get the list of splits and configurations of a dataset:
+Read more in depth about the concepts in the the [🤗 Datasets library documentation](https://huggingface.co/docs/datasets).
+
+The /splits endpoints gives the list of configurations and splits of a dataset:
 
 ```
 https://datasets-server.huggingface.co/splits?dataset={dataset_name}
 ```
 
-For example, the [duorc](https://huggingface.co/datasets/duorc) dataset has six splits and two configurations:
+The endpoint takes one query parameter:
 
-https://datasets-server.huggingface.co/splits?dataset=duorc
+| Query parameter         |                                                                                |
+| :---------------------- | :----------------------------------------------------------------------------- |
+| **dataset** (required): | the dataset name, for example `glue` or `mozilla-foundation/common_voice_10_0` |
+
+Try it in your [browser](https://huggingface.co/datasets/splits?dataset=duorc), with [Postman](https://www.postman.com/huggingface/workspace/hugging-face-apis/request/23242779-f0cde3b9-c2ee-4062-aaca-65c4cfdd96f8), with [RapidAPI](https://rapidapi.com/hugging-face-hugging-face-default/api/hugging-face-datasets-api), with [ReDoc](https://redocly.github.io/redoc/?url=https://datasets-server.huggingface.co/openapi.json#operation/listSplits), or programmatically:
+
+<inferencesnippet>
+<python>
+```python
+import json
+import requests
+headers = {"Authorization": f"Bearer {API_TOKEN}"}
+API_URL = "https://datasets-server.huggingface.co/splits?dataset=duorc"
+def query():
+    response = requests.request("GET", API_URL, headers=headers)
+    return json.loads(response.content.decode("utf-8"))
+data = query()
+```
+</python>
+<js>
+```js
+import fetch from "node-fetch";
+async function query(data) {
+    const response = await fetch(
+        "https://datasets-server.huggingface.co/splits?dataset=duorc",
+        {
+            headers: { Authorization: `Bearer ${API_TOKEN}` },
+            method: "GET"
+        }
+    );
+    const result = await response.json();
+    return result;
+}
+query().then((response) => {
+    console.log(JSON.stringify(response));
+});
+```
+</js>
+<curl>
+```curl
+curl https://datasets-server.huggingface.co/splits?dataset=duorc \
+        -X GET \
+        -H "Authorization: Bearer ${API_TOKEN}"
+```
+</curl>
+</inferencesnippet>
+
+The response is a JSON. The list of splits is nested under the `splits` key. The fields of every split are:
+
+| Split fields     |                                        |
+| :--------------- | :------------------------------------- |
+| **dataset**      | The name of the dataset                |
+| **config**       | The name of the configuration          |
+| **split**        | The name of the split                  |
+| **num_bytes**    | The size in bytes (can be `null`)      |
+| **num_examples** | The number of examples (can be `null`) |
+
+For example, the [duorc](https://huggingface.co/datasets/duorc) dataset has six splits and two configurations:
 
 ```json
 {
