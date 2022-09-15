@@ -2,14 +2,19 @@
 
 The endpoint `/first-rows` provides the columns and the first rows of a dataset [split](./splits):
 
-  ```
-  https://datasets-server.huggingface.co/first-rows?dataset={dataset_name}&config={config_name}&split={split_name}
-  ```
+```
+https://datasets-server.huggingface.co/first-rows?dataset={dataset}&config={config}&split={split}
+```
 
 The first 100 rows, or all the rows if the split contains less than 100 rows, are returned. The list of columns (called [features](https://huggingface.co/docs/datasets/about_dataset_features) to stick with the `datasets` library) contain the data type.
 
 <Tip warning={true}>
- Currently, the API only returns rows of the <a href="https://huggingface.co/docs/datasets/stream">"streamable" datasets</a>. By loading a dataset in streaming mode, the first rows can be extracted without downloading the whole dataset.
+  Currently, the API only returns rows of the{" "}
+  <a href="https://huggingface.co/docs/datasets/stream">
+    "streamable" datasets
+  </a>
+  . By loading a dataset in streaming mode, the first rows can be extracted
+  without downloading the whole dataset.
 </Tip>
 
 For example, here are the features and the first rows of the `duorc` / `SelfRC` train split.
