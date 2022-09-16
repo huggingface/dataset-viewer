@@ -1,11 +1,45 @@
-# Datasets server
+# Datasets API
 
-The 🤗 Datasets server gives access to the contents, metadata and basic statistics of the [Hugging Face Hub datasets](https://huggingface.co/datasets) via a REST API.
+Integrate into your apps over 10,000 [datasets](https://huggingface.co/datasets) via simple HTTP requests, with pre-processed responses and scalability built-in.
 
-Try it with [Postman](https://www.postman.com/huggingface/workspace/hugging-face-apis/documentation/23242779-d068584e-96d1-4d92-a703-7cb12cbd8053) or [RapidAPI](https://rapidapi.com/hugging-face-hugging-face-default/api/hugging-face-datasets-api/).
+## Main features
 
-## History
+- Access **10,000+ Machine Learning datasets**
+- Get instantaneous responses to **pre-processed** long-running queries
+- Access **metadata and data**: list of splits, list of columns and data types, 100 first rows
+- Download **images and audio files** (first 100 rows)
+- Handle **any kind of dataset** thanks to the [🤗 Datasets](https://github.com/huggingface/datasets) library
+- See it in action in the [dataset viewer](https://huggingface.co/docs/hub/datasets-viewer) on the Hub.
 
-The API has originally been developed to provide data to the [Dataset viewer](https://huggingface.co/docs/hub/datasets-viewer) on the Hub. Because of the large volume of data, the information about the datasets cannot be extracted on-the-fly, and must be preprocessed and stored beforehand in order to later be accessed quickly on the Hub.
+## Endpoints
 
-We decided to make the API public to provide programmatic access to the information about datasets.
+The base URL of the REST API is
+
+```
+https://datasets-server.huggingface.co
+```
+
+The API provides the following endpoints:
+
+| Endpoint                    | Method | Description                                                                      | Query parameters                                                                                   |
+| --------------------------- | ------ | -------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------- |
+| [/valid](./valid)           | GET    | Get the list of datasets hosted in the Hub and supported by the datasets server. |                                                                                                    |
+| [/splits](./splits)         | GET    | Get the list of configurations and splits of a dataset.                          | `dataset`: name of the dataset                                                                     |
+| [/first-rows](./first-rows) | GET    | Get the columns (with data type) and first rows of a dataset split.              | - `dataset`: name of the dataset<br>- `config`: name of the config<br>- `split`: name of the split |
+
+## Get your API Token
+
+To get started you need to:
+
+- [Register](https://huggingface.co/join) or [Login](https://huggingface.co/login).
+- Get your API token [in your Hugging Face profile](https://huggingface.co/settings/tokens).
+
+You should see a token `hf_xxxxx`.
+
+If you do not submit your API token when sending requests to the API, you will not be able to access [gated datasets](https://huggingface.co/docs/hub/datasets-gated), such as [Common Voice](https://huggingface.co/datasets/mozilla-foundation/common_voice_10_0), [OSCAR](oscar-corpus/OSCAR-2109) or [ImageNet](https://huggingface.co/datasets/imagenet-1k).
+
+## OpenAPI specification
+
+The OpenAPI specification (fka Swagger) is published at https://datasets-server.huggingface.co/openapi.json.
+
+Explore it and **run the queries** with [ReDoc](https://redocly.github.io/redoc/?url=https://datasets-server.huggingface.co/openapi.json), [Postman](https://www.postman.com/huggingface/workspace/hugging-face-apis/documentation/23242779-d068584e-96d1-4d92-a703-7cb12cbd8053) or [RapidAPI](https://rapidapi.com/hugging-face-hugging-face-default/api/hugging-face-datasets-api/).
