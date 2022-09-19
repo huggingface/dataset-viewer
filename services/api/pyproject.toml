@@ -9,7 +9,6 @@ libcache = { path = "../../libs/libcache/dist/libcache-0.2.1-py3-none-any.whl", 
 libqueue = { path = "../../libs/libqueue/dist/libqueue-0.2.0-py3-none-any.whl", develop = false }
 libutils = { path = "../../libs/libutils/dist/libutils-0.2.0-py3-none-any.whl", develop = false }
 python = "3.9.6"
-python-dotenv = "^0.20.0"
 starlette = "^0.16.0"
 starlette-prometheus = "^0.9.0"
 uvicorn = "^0.14.0"
