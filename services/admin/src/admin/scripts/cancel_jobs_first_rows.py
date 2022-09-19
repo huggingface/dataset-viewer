@@ -1,3 +1,6 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2022 The HuggingFace Authors.
+
 import logging
 
 from libqueue.queue import cancel_started_first_rows_jobs, connect_to_queue

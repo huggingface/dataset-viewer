@@ -1,3 +1,6 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2022 The HuggingFace Authors.
+
 {{- define "containerReverseProxy" -}}
 - name: "{{ include "name" . }}-reverse-proxy"    
   image: {{ .Values.dockerImage.reverseProxy }}

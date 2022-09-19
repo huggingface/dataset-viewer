@@ -1,3 +1,6 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2022 The HuggingFace Authors.
+
 apiVersion: v2
 name: datasets-server
 description: A Helm chart for the datasets-server application

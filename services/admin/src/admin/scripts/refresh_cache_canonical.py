@@ -1,3 +1,6 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2022 The HuggingFace Authors.
+
 import logging
 
 from huggingface_hub.hf_api import HfApi  # type: ignore

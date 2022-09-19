@@ -1,3 +1,6 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2022 The HuggingFace Authors.
+
 # Adapted from https://github.com/huggingface/datasets/blob/main/tests/fixtures/hub.py
 
 import time

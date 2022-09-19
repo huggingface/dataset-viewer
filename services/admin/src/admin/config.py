@@ -1,3 +1,6 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2022 The HuggingFace Authors.
+
 import os
 
 from libutils.utils import get_int_value, get_str_or_none_value, get_str_value
