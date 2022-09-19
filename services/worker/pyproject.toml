@@ -3,6 +3,7 @@ authors = ["Sylvain Lesage <sylvain.lesage@huggingface.co>"]
 description = "Worker that refreshes datasets and splits"
 name = "worker"
 version = "0.1.1"
+license = "Apache-2.0"
 
 [tool.poetry.dependencies]
 Pillow = "^9.0.0"

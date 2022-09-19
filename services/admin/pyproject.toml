@@ -3,6 +3,7 @@ authors = ["Sylvain Lesage <sylvain.lesage@huggingface.co>"]
 description = "Admin scripts and API"
 name = "admin"
 version = "0.1.2"
+license = "Apache-2.0"
 
 [tool.poetry.dependencies]
 huggingface-hub = "^0.8.1"
