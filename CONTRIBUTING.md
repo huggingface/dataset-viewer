@@ -2,6 +2,8 @@
 
 The repository is structured as a monorepo, with Python applications in [services/](./services/) and Python libraries in [libs/](./libs/).
 
+If you have access to the internal HF notion, see https://www.notion.so/huggingface2/Datasets-server-464848da2a984e999c540a4aa7f0ece5.
+
 ## Install
 
 To start working on the project:
@@ -11,14 +13,44 @@ git clone git@github.com:huggingface/datasets-server.git
 cd datasets-server
 ```
 
-then install:
+Install docker (see https://docs.docker.com/engine/install/ubuntu/#install-using-the-repository and https://docs.docker.com/engine/install/linux-postinstall/)
 
-- [libs/libcache](./libs/libcache/INSTALL.md)
-- [libs/libqueue](./libs/libcache/INSTALL.md)
-- [libs/libutils](./libs/libutils/INSTALL.md)
-- [services/admin](./services/admin/INSTALL.md)
-- [services/api](./services/api/INSTALL.md)
-- [services/worker](./services/worker/INSTALL.md)
+```
+make install
+make start-from-local-code
+```
+
+To use the docker images already compiled using the CI:
+
+```
+make start-from-remote-images
+```
+
+Note that you must login to AWS to be able to download the docker images:
+
+```
+aws ecr get-login-password --region us-east-1 --profile=hub-prod \
+    | docker login --username AWS --password-stdin 707930574880.dkr.ecr.us-east-1.amazonaws.com
+```
+
+To install a single library (in [libs](./libs)) or service (in [services](./services)), install Python 3.9 (consider [pyenv](https://github.com/pyenv/pyenv)) and [poetry]](https://python-poetry.org/docs/master/#installation) (don't forget to add `poetry` to the `PATH` environment variable).
+
+If you use pyenv:
+
+```bash
+cd libs/libutils/
+pyenv install 3.9.6
+pyenv local 3.9.6
+poetry env use python3.9
+```
+
+then:
+
+```
+make install
+```
+
+It will create a virtual environment in a `./.venv/` subdirectory.
 
 If you use VSCode, it might be useful to use the ["monorepo" workspace](./.vscode/monorepo.code-workspace) (see a [blogpost](https://medium.com/rewrite-tech/visual-studio-code-tips-for-monorepo-development-with-multi-root-workspaces-and-extension-6b69420ecd12) for more explanations). It is a multi-root workspace, with one folder for each library and service (note that we hide them from the ROOT to avoid editing there). Each folder has its own Python interpreter, with access to the dependencies installed by Poetry. You might have to manually select the interpreter in every folder though on first access, then VSCode stores the information in its local storage.
 
@@ -44,45 +76,35 @@ The CI checks the tests a [GitHub action](./.github/workflows/unit-tests.yml). T
 make test
 ```
 
-Note that it requires the resources to be ready, ie. mongo and the storage for assets. See [INSTALL.md](./INSTALL.md).
+Note that it requires the resources to be ready, ie. mongo and the storage for assets.
+
+To launch the end to end tests:
+
+```bash
+make e2e
+```
 
 ## Poetry
 
-### Hack: reference through the root
+### Versions
 
-The structure is a monorepo, and the dependencies to the libraries are local (see the poetry doc on [`path` dependencies](https://python-poetry.org/docs/dependency-specification/#path-dependencies], note that we set `develop=true`). To have this work as expected, we have to use a little trick: to refer to all the libraries going down to the root, then going to the library directory. For example, to declare `libutils` as a dependency of `libcache`, even if they are in the same directory, we use `../../libs/libutils`:
+We version the [libraries](./libs) as they are dependencies of the [services](./services). To update a library:
 
-```toml
-libutils = { path = "../../libs/libutils", develop = true }
+- change the version in its pyproject.yaml file
+- build with `make build`
+- version the new files in `dist/`
+
+And then update the library version in the services that require the update, for example if the library is `libcache`:
+
+```
+poetry update libcache
 ```
 
-Otherwise, if we only used `../libutils`, the dependencies would break in the `poetry.lock` file of the services that depend on `libcache` for example. Possibly it's a bug in poetry.
-
-### Lock
-
-Poetry keeps the exact version of all the dependencies in `poetry.lock`. If you manually change `pyproject.toml`, you will have to call `poetry lock` (or `make lock`) to update `poetry.lock`. Beware: it might also upgrade the dependencies (use [`--no-update`](https://python-poetry.org/docs/cli/#options-9) if you want to avoid this).
-
-If you update the dependencies of a library, you will have to run `poetry lock` (or `make lock`) in every library or service that depend on it. Beware, refreshing the lock on [services/worker](./services/worker) takes a lot of time.
-
-In case you wonder, the `poetry.lock` files must be versioned.
-
-## Versions
-
-We don't change the version of the libraries and services in `pyproject.toml`, because they are local dependencies and access to the current files anyway. But before deploying to prod, we:
-
-- increment the version (that we increment accordingly to the change: major/minor/bugfix) in the `appVersion` parameter of the [Helm chart](./chart/Chart.yaml)
-- create a git tag with the same version, for example:
-
-  ```
-  git tag 0.20.2
-  git push --tags
-  ```
-
-- create a release at https://github.com/huggingface/datasets-server/releases/new, choosing a tag, then using the button "+ Auto-generate release notes".
+If service is updated, we don't update its version in the `pyproject.yaml` file. But we have to update the [docker images file](./chart/docker-images.yaml) with the new image tag. Then the CI will test the new docker images, and we will be able to deploy them to the infrastructure.
 
 ## Pull requests
 
-All the contributions should go through a pull request. The pull requests must be "squashed" (ie: one commit per pull request). Take care of the squash commit title and message, because it's what is included in the autogenerated release notes.
+All the contributions should go through a pull request. The pull requests must be "squashed" (ie: one commit per pull request).
 
 ## GitHub Actions
 

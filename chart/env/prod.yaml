@@ -1,3 +1,18 @@
+## Production
+#
+# datasets-server is installed on a [kubernetes cluster](https://us-east-1.console.aws.amazon.com/eks/home?region=us-east-1#/clusters)
+#
+# Grafana:
+#
+# - https://grafana.huggingface.tech/d/SaHl2KX7z/datasets-server-admin-cache-and-queue
+# - https://grafana.huggingface.tech/d/iPuzZbrnk/datasets-server-api-routes
+# - https://grafana.huggingface.tech/d/85a562078cdf77779eaa1add43ccec1e/kubernetes-compute-resources-namespace-pods?var-datasource=Prometheus%20EKS%20Hub%20Prod&var-namespace=datasets-server
+#
+# BetterUptime:
+#
+# - https://betteruptime.com/team/14149/monitors/389098
+# - https://betteruptime.com/team/14149/monitors/691070
+#
 # resources for the prod namespace are defined here: https://us-east-1.console.aws.amazon.com/eks/home?region=us-east-1#/clusters/hub-prod/nodegroups/datasets-server-20220513085103612000000001
 # the nodes are up to 20 t3.2xlarge instances (8 vCPUs, 32 GiB), with autoscale
 # (see https://github.com/huggingface/infra/pull/239/files)

@@ -1,24 +1,18 @@
 # Datasets server
 
-> Stores the hub datasets, and provides an internal API to query their contents, metadata and basic statistics.
+> Integrate into your apps over 10,000 datasets via simple HTTP requests, with pre-processed responses and scalability built-in.
 
-For now, it just provides an API to get the first rows of the Hugging Face Hub datasets (previously known as `datasets-preview-backend`)
+Documentation: https://huggingface.co/docs/datasets-server
 
-Caveat: only the [streamable datasets](https://huggingface.co/docs/datasets/stream) and the small datasets (less than 100MB) are supported at the moment.
+## Install and development setup
 
-## Install
-
-To install, deploy, and manage the application in production, see [INSTALL.md](./INSTALL.md)
-
-## Dev setup
-
-To develop, see [CONTRIBUTING.md](./CONTRIBUTING.md)
+To develop or deploy, see [CONTRIBUTING.md](./CONTRIBUTING.md)
 
 ## Architecture
 
 The application is distributed in several components.
 
-([api](./services/api)) is an API web server that exposes [endpoints](./services/api/README.md#endpoints) to access the first rows of the Hugging Face Hub datasets. Some of the endpoints generate responses on the fly, but the two main endpoints (`/splits` and `/first-rows`) only serve precomputed responses, because generating these responses takes time.
+[api](./services/api) is a web server that exposes the [API endpoints](https://huggingface.co/docs/datasets-server). Apart from some endpoints (`valid`, `is-valid`), all the responses are served from pre-computed responses. That's the main point of this project: generating these responses takes time, and the API server provides this service to the users.
 
 The precomputed responses are stored in a Mongo database called "cache" (see [libcache](./libs/libcache)). They are computed by workers ([worker](./services/worker)) which take their jobs from a job queue stored in a Mongo database called "queue" (see [libqueue](./libs/libqueue)), and store the results (error or valid response) into the "cache".
 
@@ -38,6 +32,11 @@ Hence, the working application has:
 - a Mongo server with two databases: "cache" and "queue"
 - a shared directory for the assets
 
+The application also has:
+
+- a reverse proxy in front of the API to serve static files and proxy the rest to the API server
+- an admin server to serve technical endpoints
+
 ## Environments
 
 The following environments contain all the modules: reverse proxy, API server, admin API server, workers, and the Mongo database.
@@ -51,10 +50,10 @@ The following environments contain all the modules: reverse proxy, API server, a
 
 The Hugging Face Hub instance can be configured thanks to `HF_ENDPOINT`, so that the datasets server can access the Hub, a private Hub, or the instance dedicated to CI (https://hub-ci.huggingface.co/). The `HF_TOKEN` environment variable used by the workers to access the gated datasets must be set accordingly.
 
-| Where             | `HF_ENDPOINT` (api, worker)                                             | `HF_TOKEN` (worker)                                           |
-| ----------------- | ----------------------------------------------------------------------- | ------------------------------------------------------------- |
-| production        | https://huggingface.co/                                                 | Kubernetes secret                                             |
-| development       | https://huggingface.co/                                                 | Kubernetes secret                                             |
-| local docker      | https://huggingface.co/. Override with `HF_ENDPOINT=... make start-...` | Enable the gated datasets with `HF_TOKEN=... make start-...`  |
-| e2e               | https://hub-ci.huggingface.co/                                          | Hard-coded: `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`           |
-| worker unit tests | https://huggingface.co/                                                 | GitHub secret (CI). Run locally with `HF_TOKEN=... make test` |
+| Where             | `HF_ENDPOINT` (api, worker)                                             | `HF_TOKEN` (worker)                                          |
+| ----------------- | ----------------------------------------------------------------------- | ------------------------------------------------------------ |
+| production        | https://huggingface.co/                                                 | Kubernetes secret                                            |
+| development       | https://huggingface.co/                                                 | Kubernetes secret                                            |
+| local docker      | https://huggingface.co/. Override with `HF_ENDPOINT=... make start-...` | Enable the gated datasets with `HF_TOKEN=... make start-...` |
+| e2e               | https://hub-ci.huggingface.co/                                          | Hard-coded: `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`          |
+| worker unit tests | https://hub-ci.huggingface.co/                                          | Hard-coded: `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`          |

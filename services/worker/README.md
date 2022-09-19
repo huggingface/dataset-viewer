@@ -2,23 +2,7 @@
 
 > Worker to pre-process datasets and splits
 
-## Install
-
-See [INSTALL](./INSTALL.md#Install)
-
-## Run
-
-Launch the worker to preprocess the splits/ responses:
-
-```bash
-WORKER_QUEUE=splits_responses make run
-```
-
-Launch the worker to preprocess the first-rows/ responses:
-
-```bash
-WORKER_QUEUE=first_rows_responses make run
-```
+## Configuration
 
 Set environment variables to configure the following aspects:
 
@@ -45,9 +29,3 @@ Set environment variables to configure the following aspects:
 - `ROWS_MIN_NUMBER`: the min number of rows fetched by the worker for the split, and provided in the /rows endpoint response. Defaults to `10`.
 - `WORKER_QUEUE`: name of the queue the worker will pull jobs from. It can be equal to `splits_responses` or `first_rows_responses`. The `splits_responses` jobs should be a lot faster than the `first_rows_responses` ones, so that we should need a lot more workers for `first_rows_responses` than for `splits_responses`. Defaults to `splits_responses`.
 - `WORKER_SLEEP_SECONDS`: duration in seconds of a worker wait loop iteration, before checking if resources are available and processing a job if any is available. Note that the worker does not sleep on the first loop after finishing a job. Defaults to `15`.
-
-For example:
-
-```bash
-LOG_LEVEL=DEBUG WORKER_QUEUE=datasets make run
-```
