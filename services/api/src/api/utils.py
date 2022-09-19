@@ -16,8 +16,7 @@ ApiErrorCode = Literal[
     "FirstRowsResponseNotFound",
     "UnexpectedError",
     "ExternalUnauthenticatedError",
-    "ExternalAuthenticatedError",
-    "ExternalAuthCheckResponseError",
+    "ExternalAuthenticatedError"
 ]
 
 
