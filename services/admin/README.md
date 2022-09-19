@@ -1,18 +1,8 @@
 # Datasets server admin machine
 
-> Admin scripts
+> Admin scripts and endpoints
 
-## Install
-
-See [INSTALL](./INSTALL.md#Install)
-
-## Run the scripts
-
-Launch the scripts with:
-
-```shell
-make <SCRIPT>
-```
+## Configuration
 
 Set environment variables to configure the following aspects:
 
@@ -28,6 +18,25 @@ Set environment variables to configure the following aspects:
 - `MONGO_URL`: the URL used to connect to the mongo db server. Defaults to `"mongodb://localhost:27017"`.
 - `PROMETHEUS_MULTIPROC_DIR`: the directory where the uvicorn workers share their prometheus metrics. See https://github.com/prometheus/client_python#multiprocess-mode-eg-gunicorn. Defaults to empty, in which case every worker manages its own metrics, and the /metrics endpoint returns the metrics of a random worker.
 
+## Endpoints
+
+The admin service provides endpoints:
+
+- `/healthcheck`
+- `/metrics`: gives info about the cache and the queue
+- `/cache-reports`: give detailed reports on the content of the cache
+- `/pending-jobs`: give the pending jobs, classed by queue and status (waiting or started)
+
+## Scripts
+
+The scripts:
+
+- `cancel-jobs-splits`: cancel all the started jobs for /splits (stop the workers before!)
+- `cancel-jobs-first-rows`: cancel all the started jobs for /first-rows (stop the workers before!)
+- `refresh-cache`: add a /splits job for every HF dataset
+- `refresh-cache-canonical`: add a /splits job for every HF canonical dataset
+- `refresh-cache-errors`: add a /splits job for every erroneous HF dataset
+
 To launch the scripts:
 
 - if the image runs in a docker container:
@@ -41,91 +50,3 @@ To launch the scripts:
   ```shell
   kubectl exec datasets-server-prod-admin-5cc8f8fcd7-k7jfc -- make <SCRIPT>
   ```
-
-The scripts:
-
-- `cancel-jobs-splits`: cancel all the started jobs for /splits (stop the workers before!)
-- `cancel-jobs-first-rows`: cancel all the started jobs for /first-rows (stop the workers before!)
-- `refresh-cache`: add a /splits job for every HF dataset
-- `refresh-cache-canonical`: add a /splits job for every HF canonical dataset
-- `refresh-cache-errors`: add a /splits job for every erroneous HF dataset
-
-## Run the API
-
-The admin service provides technical endpoints:
-
-- `/healthcheck`
-- `/metrics`: gives info about the cache and the queue
-- `/cache-reports`: give detailed reports on the content of the cache
-- `/pending-jobs`: give the pending jobs, classed by queue and status (waiting or started)
-
-### /cache-reports
-
-> Give detailed reports on the content of the cache
-
-Example: https://datasets-server.huggingface.co/cache-reports
-
-Method: `GET`
-
-Parameters: none
-
-Responses:
-
-- `200`: JSON content which the dataset cache reports, with the following structure:
-
-```json
-{
-  "/splits": [{ "dataset": "sent_comp", "status": "200", "error": null }],
-  "/first-rows": [
-      {
-        "dataset": "sent_comp",
-        "config": "default",
-        "split": "validation",
-        "status": "400",
-        "error": {
-          "message": "Cannot get the first rows for the split.",
-          "cause_exception": "FileNotFoundError",
-        }
-      },
-      {
-        "dataset": "sent_comp",
-        "config": "default",
-        "split": "test",
-        "status": "500",
-        "error": {
-          "message": "Internal error.",
-        }
-      }
-    ]
-  },
-  "created_at": "2022-01-20T14:40:27Z"
-}
-```
-
-### /pending-jobs
-
-> Give the pending jobs, classed by queue and status (waiting or started)
-
-Example: https://datasets-server.huggingface.co/pending-jobs
-
-Method: `GET`
-
-Parameters: none
-
-Responses:
-
-- `200`: JSON content with the jobs by queue and status, with the following structure:
-
-```json
-{
-  "/splits": {
-    "waiting": [],
-    "started": []
-  },
-  "/first-rows": {
-    "waiting": [],
-    "started": []
-  },
-  "created_at": "2022-01-20T13:59:03Z"
-}
-```

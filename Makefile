@@ -68,6 +68,7 @@ coverage:
 .PHONY: quality
 quality:
 	$(MAKE) -C e2e/ quality
+	$(MAKE) -C e2e/ openapi
 	$(MAKE) -C chart/ quality
 	$(MAKE) -C services/worker/ quality
 	$(MAKE) -C services/api/ quality

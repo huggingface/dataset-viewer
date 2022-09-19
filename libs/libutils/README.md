@@ -1,3 +1,3 @@
 # libutils
 
-A Python library with common code used by the services: utils, logger, exceptions, types.
+A Python library with common code (utils, logger, exceptions) used by the services.
