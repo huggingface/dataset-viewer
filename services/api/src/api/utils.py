@@ -17,7 +17,6 @@ ApiErrorCode = Literal[
     "UnexpectedError",
     "ExternalUnauthenticatedError",
     "ExternalAuthenticatedError",
-    "ExternalAuthCheckResponseError",
 ]
 
 
