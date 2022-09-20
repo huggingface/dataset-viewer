@@ -17,7 +17,7 @@ from ..utils import ASSETS_BASE_URL, HF_ENDPOINT, HF_TOKEN, get_default_config_s
         ("audio", False, None, None),
         ("image", False, None, None),
         ("gated", True, None, None),
-        ("private", True, None, None),  # <- TODO: should we disable accessing private datasets?
+        ("private", True, None, None),
         ("empty", False, "SplitsNamesError", "FileNotFoundError"),
         ("does_not_exist", False, "DatasetNotFoundError", None),
         ("gated", False, "SplitsNamesError", "FileNotFoundError"),

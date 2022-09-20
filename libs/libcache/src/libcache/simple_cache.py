@@ -106,8 +106,6 @@ class FirstRowsResponse(Document):
 
 AnyResponse = TypeVar("AnyResponse", SplitsResponse, FirstRowsResponse)
 
-# TODO: add logger.debug for each operation?
-
 
 # /splits endpoint
 # Note: we let the exceptions throw (ie DocumentTooLarge): it's the responsibility of the caller to manage them

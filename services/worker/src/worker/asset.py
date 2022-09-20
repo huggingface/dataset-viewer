@@ -71,6 +71,3 @@ def create_audio_files(
         {"src": f"{assets_base_url}/{url_dir_path}/{mp3_filename}", "type": "audio/mpeg"},
         {"src": f"{assets_base_url}/{url_dir_path}/{wav_filename}", "type": "audio/wav"},
     ]
-
-
-# TODO: add a function to flush all the assets of a dataset

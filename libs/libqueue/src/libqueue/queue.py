@@ -33,10 +33,6 @@ class QuerySetManager(Generic[U]):
 
 logger = logging.getLogger(__name__)
 
-# TODO: DRY and use the template method pattern to separate the specifics of each queue
-# (the list of arguments of a job) from the logics (status, retries, etc.)
-# (https://roadmap.sh/guides/design-patterns-for-humans#-template-method)
-
 
 class Status(enum.Enum):
     WAITING = "waiting"

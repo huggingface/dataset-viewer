@@ -36,14 +36,10 @@ from .utils import ASSETS_BASE_URL
         ("uint32", 7, "uint32"),
         ("uint64", 7, "uint64"),
         ("float16", np.float16(-3.14), "float16"),
-        # ^ TODO: is it a datasets bug?
         # (alias float)
         ("float32", np.float32(-3.14), "float32"),
-        # ^ TODO: is it a datasets bug?
         # (alias double)
         ("float64", -3.14, "float64"),
-        # TODO: time32[(s|ms)]
-        # TODO: time64[(us|ns)]
         ("time", datetime.time(1, 1, 1), "time64[us]"),
         ("timestamp_1", datetime.datetime(2020, 1, 1, 0, 0), "timestamp[ns]"),
         ("timestamp_2", datetime.datetime(2017, 12, 16, 3, 2, 35, 500000), "timestamp[ns]"),
@@ -53,15 +49,7 @@ from .utils import ASSETS_BASE_URL
             datetime.datetime(2020, 1, 1, 0, 0, tzinfo=ZoneInfo("US/Pacific")),
             "timestamp[ns, tz=US/Pacific]",
         ),
-        # TODO: date32
-        # TODO: date64
-        # TODO: duration[(s|ms|us|ns)]
-        # TODO: decimal128(precision, scale)
-        # TODO: decimal256(precision, scale)
-        # TODO: binary
-        # TODO: large_binary
         ("string", "a string", "string"),
-        # TODO: large_string
     ],
 )
 def test_value(dataset_type, output_value, output_dtype, datasets) -> None:

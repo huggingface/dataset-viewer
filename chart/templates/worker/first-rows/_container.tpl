@@ -88,13 +88,6 @@
     readOnly: false
   securityContext:
     allowPrivilegeEscalation: false
-  # TODO: provide readiness and liveness probes
-  # readinessProbe:
-  #   tcpSocket:
-  #     port: {{ .Values.worker.firstRows.readinessPort }}
-  # livenessProbe:
-  #   tcpSocket:
-  #     port: {{ .Values.worker.firstRows.readinessPort }}
   resources:
     {{ toYaml .Values.worker.firstRows.resources | nindent 4 }}
 {{- end -}}
