@@ -1,7 +1,7 @@
 - title: Get started
   sections:
   - local: index
-    title: 🤗 Datasets API
+    title: 🤗 Datasets server
   - local: valid
     title: Valid datasets
   - local: splits
