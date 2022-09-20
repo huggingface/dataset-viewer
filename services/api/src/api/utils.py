@@ -35,7 +35,6 @@ class ApiCustomError(CustomError):
         disclose_cause: bool = False,
     ):
         super().__init__(message, status_code, str(code), cause, disclose_cause)
-        # TODO: log the error and the cause
 
 
 class MissingRequiredParameterError(ApiCustomError):

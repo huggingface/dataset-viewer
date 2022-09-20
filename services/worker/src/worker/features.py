@@ -99,11 +99,10 @@ def get_cell_value(
         or isinstance(fieldType, Array5D)
         or isinstance(fieldType, Translation)
         or isinstance(fieldType, TranslationVariableLanguages)
-        or isinstance(fieldType, Sequence)  # TODO: what if it's a Sequence of Audio or Image? -> JSON for now
-        or isinstance(fieldType, list)  # TODO: what if it's a list of Audio or Image? -> JSON for now
-        or isinstance(fieldType, dict)  # TODO: what if it's a dict of Audio or Image? -> JSON for now
+        or isinstance(fieldType, Sequence)
+        or isinstance(fieldType, list)
+        or isinstance(fieldType, dict)
     ):
-        # TODO: check the type?
         return cell
     else:
         raise TypeError("could not determine the type of the data cell.")

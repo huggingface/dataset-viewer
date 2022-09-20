@@ -45,9 +45,7 @@ def test_split_public_auth(
         # ignore the test case if the auth type is not configured
         pytest.skip(f"auth {auth} has not been configured")
     dataset, config, split = get_default_config_split(hf_dataset_repos_csv_data[type])
-    # pivate: no need to refresh, it's not implemented.
-    # TODO: the webhook should respond 501 Not implemented when provided with a private dataset
-    # (and delete the cache if existing)
+    # private: no need to refresh, it's not implemented.
     r_splits = (
         get(f"/splits?dataset={dataset}", headers=auth_headers[auth])
         if type == "private"
