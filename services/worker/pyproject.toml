@@ -20,7 +20,7 @@ libcache = { path = "../../libs/libcache/dist/libcache-0.2.1-py3-none-any.whl", 
 libqueue = { path = "../../libs/libqueue/dist/libqueue-0.2.0-py3-none-any.whl", develop = false }
 libutils = { path = "../../libs/libutils/dist/libutils-0.2.0-py3-none-any.whl", develop = false }
 lm-dataformat = "^0.0.20"
-lxml = "^4.6.3"
+lxml = "^4.9.1"
 nlp = "^0.4.0"
 nltk = "^3.6.5"
 openpyxl = "^3.0.9"
