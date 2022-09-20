@@ -1,3 +1,6 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2022 The HuggingFace Authors.
+
 import os
 
 DEFAULT_MONGO_QUEUE_DATABASE: str = "datasets_server_queue_test"

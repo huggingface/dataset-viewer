@@ -1,3 +1,6 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2022 The HuggingFace Authors.
+
 import uvicorn  # type: ignore
 from libcache.simple_cache import connect_to_cache
 from libqueue.queue import connect_to_queue

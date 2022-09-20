@@ -1,3 +1,6 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2022 The HuggingFace Authors.
+
 import os
 
 from prometheus_client import (  # type: ignore # https://github.com/prometheus/client_python/issues/491

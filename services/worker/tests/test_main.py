@@ -1,3 +1,6 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2022 The HuggingFace Authors.
+
 import pytest
 from libcache.simple_cache import _clean_database as clean_cache_database
 from libcache.simple_cache import connect_to_cache

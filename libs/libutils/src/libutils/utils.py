@@ -1,3 +1,6 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2022 The HuggingFace Authors.
+
 import base64
 from distutils.util import strtobool
 from os import _Environ

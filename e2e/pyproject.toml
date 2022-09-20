@@ -3,6 +3,7 @@ authors = ["Sylvain Lesage <sylvain.lesage@huggingface.co>"]
 description = "End to end tests"
 name = "e2e"
 version = "0.1.0"
+license = "Apache-2.0"
 
 [tool.poetry.dependencies]
 openapi-spec-validator = "^0.4.0"

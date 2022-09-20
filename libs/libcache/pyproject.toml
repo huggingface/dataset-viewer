@@ -3,6 +3,7 @@ authors = ["Sylvain Lesage <sylvain.lesage@huggingface.co>"]
 description = "Library for the cache in mongodb"
 name = "libcache"
 version = "0.2.1"
+license = "Apache-2.0"
 
 [tool.poetry.dependencies]
 appdirs = "^1.4.4"

@@ -1,3 +1,6 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2022 The HuggingFace Authors.
+
 from admin.scripts.refresh_cache_canonical import get_hf_canonical_dataset_names
 
 from ..fixtures.hub import DatasetRepos
