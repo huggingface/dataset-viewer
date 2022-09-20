@@ -2,7 +2,6 @@ import os
 
 import datasets.config
 from datasets.utils.logging import log_levels, set_verbosity
-from dotenv import load_dotenv
 from libutils.utils import get_int_value, get_str_or_none_value, get_str_value
 
 from worker.constants import (
@@ -27,9 +26,6 @@ from worker.constants import (
     DEFAULT_WORKER_QUEUE,
     DEFAULT_WORKER_SLEEP_SECONDS,
 )
-
-# Load environment variables defined in .env, if any
-load_dotenv()
 
 ASSETS_BASE_URL = get_str_value(d=os.environ, key="ASSETS_BASE_URL", default=DEFAULT_ASSETS_BASE_URL)
 ASSETS_DIRECTORY = get_str_or_none_value(d=os.environ, key="ASSETS_DIRECTORY", default=DEFAULT_ASSETS_DIRECTORY)

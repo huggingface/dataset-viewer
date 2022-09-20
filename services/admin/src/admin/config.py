@@ -1,6 +1,5 @@
 import os
 
-from dotenv import load_dotenv
 from libutils.utils import get_int_value, get_str_or_none_value, get_str_value
 
 from admin.constants import (
@@ -18,9 +17,6 @@ from admin.constants import (
     DEFAULT_MONGO_QUEUE_DATABASE,
     DEFAULT_MONGO_URL,
 )
-
-# Load environment variables defined in .env, if any
-load_dotenv()
 
 APP_HOSTNAME = get_str_value(d=os.environ, key="APP_HOSTNAME", default=DEFAULT_APP_HOSTNAME)
 APP_NUM_WORKERS = get_int_value(d=os.environ, key="APP_NUM_WORKERS", default=DEFAULT_APP_NUM_WORKERS)
