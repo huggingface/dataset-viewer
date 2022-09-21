@@ -17,7 +17,7 @@ from ..utils import HF_ENDPOINT, HF_TOKEN
         ("audio", False, None, None),
         ("gated", True, None, None),
         ("private", True, None, None),
-        ("empty", False, "SplitsNamesError", "FileNotFoundError"),
+        ("empty", False, "SplitsNamesError", "EmptyDatasetError"),
         ("does_not_exist", False, "DatasetNotFoundError", None),
         ("gated", False, "SplitsNamesError", "FileNotFoundError"),
         ("private", False, "SplitsNamesError", "FileNotFoundError"),
@@ -47,25 +47,6 @@ def test_get_splits_response_simple_csv(
         assert response["error"] == "Cannot get the split names for the dataset."
         response_dict = dict(response)
         # ^ to remove mypy warnings
-        assert response_dict["cause_exception"] == "FileNotFoundError"
-        assert str(response_dict["cause_message"]).startswith("Couldn't find a dataset script at ")
+        assert response_dict["cause_exception"] == cause
         assert isinstance(response_dict["cause_traceback"], list)
         assert response_dict["cause_traceback"][0] == "Traceback (most recent call last):\n"
-
-
-# @pytest.mark.real_dataset
-# def test_script_error() -> None:
-#     # raises "ModuleNotFoundError: No module named 'datasets_modules.datasets.br-quad-2'"
-#     # which should be caught and raised as DatasetBuilderScriptError
-#     with pytest.raises(ModuleNotFoundError):
-#         get_dataset_split_full_names(dataset_name="piEsposito/br-quad-2.0")
-
-
-# @pytest.mark.real_dataset
-# def test_builder_config_error() -> None:
-#     with pytest.raises(SplitsNotFoundError):
-#         get_dataset_split_full_names(dataset_name="KETI-AIR/nikl")
-#     with pytest.raises(RuntimeError):
-#         get_dataset_split_full_names(dataset_name="nateraw/image-folder")
-#     with pytest.raises(TypeError):
-#         get_dataset_split_full_names(dataset_name="Valahaar/wsdmt")
