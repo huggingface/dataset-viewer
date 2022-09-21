@@ -18,7 +18,7 @@ from ..utils import ASSETS_BASE_URL, HF_ENDPOINT, HF_TOKEN, get_default_config_s
         ("image", False, None, None),
         ("gated", True, None, None),
         ("private", True, None, None),
-        ("empty", False, "SplitsNamesError", "EmptyDatasetError"),
+        ("empty", False, "EmptyDatasetError", "EmptyDatasetError"),
         ("does_not_exist", False, "DatasetNotFoundError", None),
         ("gated", False, "SplitsNamesError", "FileNotFoundError"),
         ("private", False, "SplitsNamesError", "FileNotFoundError"),

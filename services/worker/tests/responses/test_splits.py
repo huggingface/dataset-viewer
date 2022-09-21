@@ -17,7 +17,7 @@ from ..utils import HF_ENDPOINT, HF_TOKEN
         ("audio", False, None, None),
         ("gated", True, None, None),
         ("private", True, None, None),
-        ("empty", False, "SplitsNamesError", "EmptyDatasetError"),
+        ("empty", False, "EmptyDatasetError", "EmptyDatasetError"),
         ("does_not_exist", False, "DatasetNotFoundError", None),
         ("gated", False, "SplitsNamesError", "FileNotFoundError"),
         ("private", False, "SplitsNamesError", "FileNotFoundError"),
