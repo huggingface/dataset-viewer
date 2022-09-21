@@ -44,7 +44,6 @@ def test_get_splits_response_simple_csv(
         assert exc_info.value.cause_exception == cause
         response = exc_info.value.as_response()
         assert set(response.keys()) == {"error", "cause_exception", "cause_message", "cause_traceback"}
-        assert response["error"] == "Cannot get the split names for the dataset."
         response_dict = dict(response)
         # ^ to remove mypy warnings
         assert response_dict["cause_exception"] == cause
