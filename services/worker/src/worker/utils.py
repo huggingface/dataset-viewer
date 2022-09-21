@@ -14,6 +14,7 @@ WorkerErrorCode = Literal[
     "ConfigNotFoundError",
     "SplitNotFoundError",
     "SplitsNamesError",
+    "EmptyDatasetError",
     "InfoError",
     "FeaturesError",
     "StreamingRowsError",
@@ -63,6 +64,13 @@ class SplitsNamesError(WorkerCustomError):
 
     def __init__(self, message: str, cause: Optional[BaseException] = None):
         super().__init__(message, HTTPStatus.INTERNAL_SERVER_ERROR, "SplitsNamesError", cause, True)
+
+
+class EmptyDatasetError(WorkerCustomError):
+    """Raised when the dataset has no data."""
+
+    def __init__(self, message: str, cause: Optional[BaseException] = None):
+        super().__init__(message, HTTPStatus.INTERNAL_SERVER_ERROR, "EmptyDatasetError", cause, True)
 
 
 class InfoError(WorkerCustomError):

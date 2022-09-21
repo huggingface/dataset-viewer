@@ -10,10 +10,11 @@ from datasets import (
     get_dataset_config_names,
     get_dataset_split_names,
 )
+from datasets.data_files import EmptyDatasetError as _EmptyDatasetError
 from huggingface_hub.hf_api import HfApi  # type: ignore
 from huggingface_hub.utils import RepositoryNotFoundError  # type: ignore
 
-from worker.utils import DatasetNotFoundError, SplitsNamesError
+from worker.utils import DatasetNotFoundError, EmptyDatasetError, SplitsNamesError
 
 logger = logging.getLogger(__name__)
 
@@ -76,6 +77,8 @@ def get_splits_response(
     # get the list of splits
     try:
         split_full_names = get_dataset_split_full_names(dataset, hf_token)
+    except _EmptyDatasetError as err:
+        raise EmptyDatasetError("The dataset is empty.", cause=err) from err
     except Exception as err:
         raise SplitsNamesError("Cannot get the split names for the dataset.", cause=err) from err
     # get the number of bytes and examples for each split

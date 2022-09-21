@@ -18,7 +18,7 @@ from ..utils import ASSETS_BASE_URL, HF_ENDPOINT, HF_TOKEN, get_default_config_s
         ("image", False, None, None),
         ("gated", True, None, None),
         ("private", True, None, None),
-        ("empty", False, "SplitsNamesError", "FileNotFoundError"),
+        ("empty", False, "EmptyDatasetError", "EmptyDatasetError"),
         ("does_not_exist", False, "DatasetNotFoundError", None),
         ("gated", False, "SplitsNamesError", "FileNotFoundError"),
         ("private", False, "SplitsNamesError", "FileNotFoundError"),
@@ -66,10 +66,8 @@ def test_number_rows(
         assert exc_info.value.cause_exception == cause
         response = exc_info.value.as_response()
         assert set(response.keys()) == {"error", "cause_exception", "cause_message", "cause_traceback"}
-        assert response["error"] == "Cannot get the split names for the dataset."
         response_dict = dict(response)
         # ^ to remove mypy warnings
-        assert response_dict["cause_exception"] == "FileNotFoundError"
-        assert str(response_dict["cause_message"]).startswith("Couldn't find a dataset script at ")
+        assert response_dict["cause_exception"] == cause
         assert isinstance(response_dict["cause_traceback"], list)
         assert response_dict["cause_traceback"][0] == "Traceback (most recent call last):\n"
