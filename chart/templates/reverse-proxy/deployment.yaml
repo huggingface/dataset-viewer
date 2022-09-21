@@ -24,6 +24,8 @@ spec:
     metadata:
       labels:
         {{ include "labels.reverseProxy" . | nindent 8 }}
+      annotations:
+        checksum/config: {{ include (print $.Template.BasePath "/reverse-proxy/configMap.yaml") . | sha256sum }}
     spec:
       initContainers:
         {{ include "initContainerAssets" . | nindent 8 }}
