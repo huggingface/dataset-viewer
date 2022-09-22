@@ -27,7 +27,11 @@ from api.utils import (
 logger = logging.getLogger(__name__)
 
 
-def create_first_rows_endpoint(external_auth_url: Optional[str] = None) -> Endpoint:
+def create_first_rows_endpoint(
+    hf_endpoint: str,
+    hf_token: Optional[str] = None,
+    external_auth_url: Optional[str] = None,
+) -> Endpoint:
     async def first_rows_endpoint(request: Request) -> Response:
         try:
             dataset_name = request.query_params.get("dataset")

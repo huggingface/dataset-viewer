@@ -27,7 +27,9 @@ from api.utils import (
 logger = logging.getLogger(__name__)
 
 
-def create_splits_endpoint(external_auth_url: Optional[str] = None) -> Endpoint:
+def create_splits_endpoint(
+    hf_endpoint: str, hf_token: Optional[str] = None, external_auth_url: Optional[str] = None
+) -> Endpoint:
     async def splits_endpoint(request: Request) -> Response:
         try:
             dataset_name = request.query_params.get("dataset")
@@ -49,6 +51,9 @@ def create_splits_endpoint(external_auth_url: Optional[str] = None) -> Endpoint:
                         "The list of splits is not ready yet. Please retry later."
                     ) from e
                 else:
+                    # let's double-check if the response should exist
+                    # see https://github.com/huggingface/datasets-server/issues/380
+                    # no webhook is sent when a private dataset goes public
                     raise SplitsResponseNotFoundError("Not found.") from e
         except ApiCustomError as e:
             return get_json_api_error_response(e)

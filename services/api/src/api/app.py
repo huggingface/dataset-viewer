@@ -22,6 +22,8 @@ from api.config import (
     APP_PORT,
     ASSETS_DIRECTORY,
     EXTERNAL_AUTH_URL,
+    HF_ENDPOINT,
+    HF_TOKEN,
     LOG_LEVEL,
     MONGO_CACHE_DATABASE,
     MONGO_QUEUE_DATABASE,
@@ -32,7 +34,7 @@ from api.routes.first_rows import create_first_rows_endpoint
 from api.routes.healthcheck import healthcheck_endpoint
 from api.routes.splits import create_splits_endpoint
 from api.routes.valid import create_is_valid_endpoint, valid_endpoint
-from api.routes.webhook import webhook_endpoint
+from api.routes.webhook import create_webhook_endpoint
 
 
 def create_app() -> Starlette:
@@ -53,12 +55,24 @@ def create_app() -> Starlette:
         Route("/valid", endpoint=valid_endpoint),
         Route("/is-valid", endpoint=create_is_valid_endpoint(EXTERNAL_AUTH_URL)),
         # ^ called by https://github.com/huggingface/model-evaluator
-        Route("/first-rows", endpoint=create_first_rows_endpoint(EXTERNAL_AUTH_URL)),
-        Route("/splits", endpoint=create_splits_endpoint(EXTERNAL_AUTH_URL)),
+        Route(
+            "/first-rows",
+            endpoint=create_first_rows_endpoint(
+                external_auth_url=EXTERNAL_AUTH_URL, hf_endpoint=HF_ENDPOINT, hf_token=HF_TOKEN
+            ),
+        ),
+        Route(
+            "/splits",
+            endpoint=create_splits_endpoint(
+                external_auth_url=EXTERNAL_AUTH_URL, hf_endpoint=HF_ENDPOINT, hf_token=HF_TOKEN
+            ),
+        ),
     ]
     to_protect: List[BaseRoute] = [
         # called by the Hub webhooks
-        Route("/webhook", endpoint=webhook_endpoint, methods=["POST"]),
+        Route(
+            "/webhook", endpoint=create_webhook_endpoint(hf_endpoint=HF_ENDPOINT, hf_token=HF_TOKEN), methods=["POST"]
+        ),
     ]
     protected: List[BaseRoute] = [
         Route("/healthcheck", endpoint=healthcheck_endpoint),
