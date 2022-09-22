@@ -19,7 +19,7 @@ from api.utils import are_valid_parameters, get_response
 logger = logging.getLogger(__name__)
 
 
-class MoonWebhookV2Payload(TypedDict):
+class MoonWebhookV1Payload(TypedDict):
     """
     Payload from a moon-landing webhook call.
     """
@@ -33,7 +33,7 @@ class WebHookContent(TypedDict):
     status: str
 
 
-def parse_payload(json: Any) -> MoonWebhookV2Payload:
+def parse_payload(json: Any) -> MoonWebhookV1Payload:
     return {
         "add": str(json["add"]) if "add" in json else None,
         "remove": str(json["remove"]) if "remove" in json else None,
@@ -70,7 +70,7 @@ def try_to_delete(id: Optional[str]) -> None:
         delete_first_rows_responses(dataset_name)
 
 
-def process_payload(payload: MoonWebhookV2Payload) -> None:
+def process_payload(payload: MoonWebhookV1Payload) -> None:
     try_to_update(payload["add"])
     try_to_update(payload["update"])
     try_to_delete(payload["remove"])
