@@ -251,6 +251,8 @@ def get_first_rows_response(
             A split name.
         assets_base_url (`str`):
             The base url of the assets.
+        hf_endpoint (`str`):
+            The Hub endpoint (for example: "https://huggingface.co")
         hf_token (`str`, *optional*):
             An authentication token (See https://huggingface.co/settings/token)
         max_size_fallback (`int`, *optional*):
