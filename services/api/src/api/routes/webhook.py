@@ -45,9 +45,11 @@ def get_dataset_name(id: Optional[str]) -> Optional[str]:
     if id is None:
         return None
     dataset_name = id.removeprefix("datasets/")
-    if id == dataset_name:
-        logger.info(f"ignored because a full dataset id must starts with 'datasets/': {id}")
-        return None
+    # temporarily disabled to fix a bug with the webhook
+    # (see https://github.com/huggingface/datasets-server/issues/380#issuecomment-1254670923)
+    # if id == dataset_name:
+    #     logger.info(f"ignored because a full dataset id must starts with 'datasets/': {id}")
+    #     return None
     return dataset_name if are_valid_parameters([dataset_name]) else None
 
 
