@@ -22,12 +22,11 @@ Try it in your [browser](https://datasets-server.huggingface.co/valid), with [Po
 <inferencesnippet>
 <python>
 ```python
-import json
 import requests
 API_URL = "https://datasets-server.huggingface.co/valid"
 def query():
     response = requests.request("GET", API_URL)
-    return json.loads(response.content.decode("utf-8"))
+    return response.json()
 data = query()
 ```
 </python>
