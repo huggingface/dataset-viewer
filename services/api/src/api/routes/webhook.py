@@ -19,7 +19,7 @@ from api.utils import are_valid_parameters, get_response
 logger = logging.getLogger(__name__)
 
 
-class MoonWebhookV2Payload(TypedDict):
+class MoonWebhookV1Payload(TypedDict):
     """
     Payload from a moon-landing webhook call.
     """
@@ -33,7 +33,7 @@ class WebHookContent(TypedDict):
     status: str
 
 
-def parse_payload(json: Any) -> MoonWebhookV2Payload:
+def parse_payload(json: Any) -> MoonWebhookV1Payload:
     return {
         "add": str(json["add"]) if "add" in json else None,
         "remove": str(json["remove"]) if "remove" in json else None,
@@ -45,9 +45,11 @@ def get_dataset_name(id: Optional[str]) -> Optional[str]:
     if id is None:
         return None
     dataset_name = id.removeprefix("datasets/")
-    if id == dataset_name:
-        logger.info(f"ignored because a full dataset id must starts with 'datasets/': {id}")
-        return None
+    # temporarily disabled to fix a bug with the webhook
+    # (see https://github.com/huggingface/datasets-server/issues/380#issuecomment-1254670923)
+    # if id == dataset_name:
+    #     logger.info(f"ignored because a full dataset id must starts with 'datasets/': {id}")
+    #     return None
     return dataset_name if are_valid_parameters([dataset_name]) else None
 
 
@@ -70,7 +72,7 @@ def try_to_delete(id: Optional[str]) -> None:
         delete_first_rows_responses(dataset_name)
 
 
-def process_payload(payload: MoonWebhookV2Payload) -> None:
+def process_payload(payload: MoonWebhookV1Payload) -> None:
     try_to_update(payload["add"])
     try_to_update(payload["update"])
     try_to_delete(payload["remove"])
