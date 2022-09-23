@@ -4,17 +4,10 @@
 import logging
 from typing import Any, Optional, TypedDict
 
-from libcache.simple_cache import (
-    delete_first_rows_responses,
-    delete_splits_responses,
-    mark_first_rows_responses_as_stale,
-    mark_splits_responses_as_stale,
-)
-from libqueue.queue import add_splits_job
 from starlette.requests import Request
 from starlette.responses import Response
 
-from api.hub import is_dataset_supported
+from api.dataset import delete, is_supported, update
 from api.utils import Endpoint, get_response, is_non_empty_string
 
 logger = logging.getLogger(__name__)
@@ -54,32 +47,17 @@ def get_dataset_name(id: Optional[str]) -> Optional[str]:
     return dataset_name if is_non_empty_string(dataset_name) else None
 
 
-def update(dataset_name: str) -> None:
-    logger.debug(f"webhook: refresh {dataset_name}")
-    mark_splits_responses_as_stale(dataset_name)
-    mark_first_rows_responses_as_stale(dataset_name)
-    add_splits_job(dataset_name)
-
-
-def delete(dataset_name: str) -> None:
-    logger.debug(f"webhook: delete {dataset_name}")
-    delete_splits_responses(dataset_name)
-    delete_first_rows_responses(dataset_name)
-
-
 def process_payload(payload: MoonWebhookV1Payload, hf_endpoint: str, hf_token: Optional[str] = None) -> None:
     unique_dataset_names = {get_dataset_name(id) for id in {payload["add"], payload["remove"], payload["update"]}}
     for dataset_name in unique_dataset_names:
         if dataset_name is not None:
-            if is_dataset_supported(dataset_name, hf_endpoint, hf_token):
-                update(dataset_name)
+            if is_supported(dataset=dataset_name, hf_endpoint=hf_endpoint, hf_token=hf_token):
+                update(dataset=dataset_name)
             else:
-                delete(dataset_name)
+                delete(dataset=dataset_name)
 
 
-def create_webhook_endpoint(
-    hf_endpoint: str, hf_token: Optional[str] = None, external_auth_url: Optional[str] = None
-) -> Endpoint:
+def create_webhook_endpoint(hf_endpoint: str, hf_token: Optional[str] = None) -> Endpoint:
     async def webhook_endpoint(request: Request) -> Response:
         try:
             json = await request.json()

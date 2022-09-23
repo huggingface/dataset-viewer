@@ -1,28 +1,23 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2022 The HuggingFace Authors.
 
+import json
 from http import HTTPStatus
 from typing import Dict, Optional
 
 import pytest
-import responses
 
-# from libcache.cache import clean_database as clean_cache_database
 from libcache.simple_cache import _clean_database as clean_cache_database
-from libcache.simple_cache import (
-    mark_first_rows_responses_as_stale,
-    mark_splits_responses_as_stale,
-    upsert_first_rows_response,
-    upsert_splits_response,
-)
-from libqueue.queue import add_first_rows_job, add_splits_job
+from libcache.simple_cache import upsert_splits_response
 from libqueue.queue import clean_database as clean_queue_database
+from pytest_httpserver import HTTPServer
 from starlette.testclient import TestClient
 
 from api.app import create_app
 from api.config import EXTERNAL_AUTH_URL, MONGO_QUEUE_DATABASE
 
-from .utils import request_callback
+from .utils import auth_callback
+
 
 external_auth_url = EXTERNAL_AUTH_URL or "%s"  # for mypy
 
@@ -81,21 +76,32 @@ def test_get_valid_datasets(client: TestClient) -> None:
     assert "valid" in json
 
 
-@responses.activate
-def test_get_is_valid(client: TestClient) -> None:
-    response = client.get("/is-valid")
-    assert response.status_code == 422
-
-    dataset = "doesnotexist"
-    responses.add_callback(responses.GET, external_auth_url % dataset, callback=request_callback)
+@pytest.mark.parametrize(
+    "dataset,exists_on_the_hub,expected_status_code,expected_is_valid",
+    [
+        (None, True, 422, None),
+        ("notinthecache", True, 200, False),
+        ("notinthecache", False, 404, None),
+    ],
+)
+def test_get_is_valid(
+    client: TestClient,
+    httpserver: HTTPServer,
+    hf_auth_path: str,
+    dataset: Optional[str],
+    exists_on_the_hub: bool,
+    expected_status_code: int,
+    expected_is_valid: Optional[bool],
+) -> None:
+    httpserver.expect_request(hf_auth_path % dataset).respond_with_data(status=200 if exists_on_the_hub else 404)
     response = client.get("/is-valid", params={"dataset": dataset})
-    assert response.status_code == 200
-    json = response.json()
-    assert "valid" in json
-    assert json["valid"] is False
+    assert response.status_code == expected_status_code
+    if expected_is_valid is not None:
+        assert response.json()["valid"] == expected_is_valid
 
 
-# the logic below is just to check the cookie and authorization headers are managed correctly
+# caveat: the returned status codes don't simulate the reality
+# they're just used to check every case
 @pytest.mark.parametrize(
     "headers,status_code,error_code",
     [
@@ -104,12 +110,16 @@ def test_get_is_valid(client: TestClient) -> None:
         ({}, 200, None),
     ],
 )
-@responses.activate
 def test_is_valid_auth(
-    client: TestClient, headers: Dict[str, str], status_code: int, error_code: Optional[str]
+    client: TestClient,
+    httpserver: HTTPServer,
+    hf_auth_path: str,
+    headers: Dict[str, str],
+    status_code: int,
+    error_code: Optional[str],
 ) -> None:
     dataset = "dataset-which-does-not-exist"
-    responses.add_callback(responses.GET, external_auth_url % dataset, callback=request_callback)
+    httpserver.expect_request(hf_auth_path % dataset, headers=headers).respond_with_handler(auth_callback)
     response = client.get(f"/is-valid?dataset={dataset}", headers=headers)
     assert response.status_code == status_code
     assert response.headers.get("X-Error-Code") == error_code
@@ -130,7 +140,8 @@ def test_get_splits(client: TestClient) -> None:
     assert response.status_code == 422
 
 
-# the logic below is just to check the cookie and authorization headers are managed correctly
+# caveat: the returned status codes don't simulate the reality
+# they're just used to check every case
 @pytest.mark.parametrize(
     "headers,status_code,error_code",
     [
@@ -139,66 +150,106 @@ def test_get_splits(client: TestClient) -> None:
         ({}, 404, "SplitsResponseNotFound"),
     ],
 )
-@responses.activate
-def test_splits_auth(client: TestClient, headers: Dict[str, str], status_code: int, error_code: str) -> None:
+def test_splits_auth(
+    client: TestClient,
+    httpserver: HTTPServer,
+    hf_auth_path: str,
+    headers: Dict[str, str],
+    status_code: int,
+    error_code: str,
+) -> None:
     dataset = "dataset-which-does-not-exist"
-    responses.add_callback(responses.GET, external_auth_url % dataset, callback=request_callback)
+    httpserver.expect_request(hf_auth_path % dataset, headers=headers).respond_with_handler(auth_callback)
+    httpserver.expect_request(f"/api/datasets/{dataset}").respond_with_data(
+        json.dumps({}), headers={"X-Error-Code": "RepoNotFound"}
+    )
     response = client.get(f"/splits?dataset={dataset}", headers=headers)
-    assert response.status_code == status_code
+    assert response.status_code == status_code, f"{response.headers}, {response.json()}"
     assert response.headers.get("X-Error-Code") == error_code
 
 
-def test_get_first_rows(client: TestClient) -> None:
-    # missing parameter
-    response = client.get("/first-rows")
-    assert response.status_code == 422
-    response = client.get("/first-rows?dataset=a")
-    assert response.status_code == 422
-    response = client.get("/first-rows?dataset=a&config=b")
-    assert response.status_code == 422
-    # empty parameter
-    response = client.get("/first-rows?dataset=a&config=b&split=")
+@pytest.mark.parametrize(
+    "dataset,config,split",
+    [
+        (None, None, None),
+        ("a", None, None),
+        ("a", "b", None),
+        ("a", "b", ""),
+    ],
+)
+def test_get_first_rows_missing_parameter(
+    client: TestClient, dataset: Optional[str], config: Optional[str], split: Optional[str]
+) -> None:
+    response = client.get("/first-rows", params={"dataset": dataset, "config": config, "split": split})
     assert response.status_code == 422
 
 
-@responses.activate
-def test_splits_cache_refreshing(client: TestClient) -> None:
-    dataset = "acronym_identification"
-    responses.add_callback(responses.GET, external_auth_url % dataset, callback=request_callback)
+@pytest.mark.parametrize(
+    "exists,is_private,expected_error_code",
+    [
+        (False, None, "ExternalAuthenticatedError"),
+        (True, True, "SplitsResponseNotFound"),
+        (True, False, "SplitsResponseNotReady"),
+    ],
+)
+def test_splits_cache_refreshing(
+    client: TestClient,
+    httpserver: HTTPServer,
+    hf_auth_path: str,
+    exists: bool,
+    is_private: Optional[bool],
+    expected_error_code: str,
+) -> None:
+    dataset = "dataset-to-be-processed"
+    httpserver.expect_request(hf_auth_path % dataset).respond_with_data(status=200 if exists else 404)
+    httpserver.expect_request(f"/api/datasets/{dataset}").respond_with_data(
+        json.dumps({"private": is_private}), headers={} if exists else {"X-Error-Code": "RepoNotFound"}
+    )
 
     response = client.get("/splits", params={"dataset": dataset})
-    assert response.json()["error"] == "Not found."
-    add_splits_job(dataset)
-    mark_splits_responses_as_stale(dataset)
-    # ^ has no effect for the moment (no entry for the dataset, and anyway: no way to know the value of the stale flag)
-    response = client.get("/splits", params={"dataset": dataset})
-    assert response.json()["error"] == "The list of splits is not ready yet. Please retry later."
-    # simulate the worker
-    upsert_splits_response(dataset, {"key": "value"}, HTTPStatus.OK)
-    response = client.get("/splits", params={"dataset": dataset})
-    assert response.json()["key"] == "value"
-    assert response.status_code == 200
+    assert response.headers["X-Error-Code"] == expected_error_code
+
+    if expected_error_code == "SplitsResponseNotReady":
+        # simulate the worker
+        upsert_splits_response(dataset, {"key": "value"}, HTTPStatus.OK)
+        response = client.get("/splits", params={"dataset": dataset})
+        assert response.json()["key"] == "value"
+        assert response.status_code == 200
 
 
-@responses.activate
-def test_first_rows_cache_refreshing(client: TestClient) -> None:
-    dataset = "acronym_identification"
+@pytest.mark.parametrize(
+    "exists,is_private,expected_error_code",
+    [
+        (False, None, "ExternalAuthenticatedError"),
+        (True, True, "FirstRowsResponseNotFound"),
+        (True, False, "FirstRowsResponseNotFound"),
+    ],
+)
+def test_first_rows_cache_refreshing(
+    client: TestClient,
+    httpserver: HTTPServer,
+    hf_auth_path: str,
+    exists: bool,
+    is_private: Optional[bool],
+    expected_error_code: str,
+) -> None:
+    dataset = "dataset-to-be-processed"
     config = "default"
     split = "train"
-    responses.add_callback(responses.GET, external_auth_url % dataset, callback=request_callback)
+    httpserver.expect_request(hf_auth_path % dataset).respond_with_data(status=200 if exists else 404)
+    httpserver.expect_request(f"/api/datasets/{dataset}").respond_with_data(
+        json.dumps({"private": is_private}), headers={} if exists else {"X-Error-Code": "RepoNotFound"}
+    )
 
     response = client.get("/first-rows", params={"dataset": dataset, "config": config, "split": split})
-    assert response.json()["error"] == "Not found."
-    add_first_rows_job(dataset, config, split)
-    mark_first_rows_responses_as_stale(dataset, config, split)
-    # ^ has no effect for the moment (no entry for the split, and anyway: no way to know the value of the stale flag)
-    response = client.get("/first-rows", params={"dataset": dataset, "config": config, "split": split})
-    assert response.json()["error"] == "The list of the first rows is not ready yet. Please retry later."
-    # simulate the worker
-    upsert_first_rows_response(dataset, config, split, {"key": "value"}, HTTPStatus.OK)
-    response = client.get("/first-rows", params={"dataset": dataset, "config": config, "split": split})
-    assert response.json()["key"] == "value"
-    assert response.status_code == 200
+    assert response.headers["X-Error-Code"] == expected_error_code
+
+    # if expected_error_code == "FirstRowsResponseNotReady":
+    #     # simulate the worker
+    #     upsert_first_rows_response(dataset, config, split, {"key": "value"}, HTTPStatus.OK)
+    #     response = client.get("/first-rows", params={"dataset": dataset, "config": config, "split": split})
+    #     assert response.json()["key"] == "value"
+    #     assert response.status_code == 200
 
 
 def test_metrics(client: TestClient) -> None:

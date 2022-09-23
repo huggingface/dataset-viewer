@@ -6,11 +6,11 @@ from http import HTTPStatus
 from typing import Optional
 
 from libcache.simple_cache import DoesNotExist, get_splits_response
-from libqueue.queue import is_splits_response_in_process
 from starlette.requests import Request
 from starlette.responses import Response
 
 from api.authentication import auth_check
+from api.dataset import is_splits_in_process
 from api.utils import (
     ApiCustomError,
     Endpoint,
@@ -46,15 +46,12 @@ def create_splits_endpoint(
                 else:
                     return get_json_error_response(response, http_status, error_code)
             except DoesNotExist as e:
-                if is_splits_response_in_process(dataset_name):
+                # maybe the splits response is in process
+                if is_splits_in_process(dataset=dataset_name, hf_endpoint=hf_endpoint, hf_token=hf_token):
                     raise SplitsResponseNotReadyError(
                         "The list of splits is not ready yet. Please retry later."
                     ) from e
-                else:
-                    # let's double-check if the response should exist
-                    # see https://github.com/huggingface/datasets-server/issues/380
-                    # no webhook is sent when a private dataset goes public
-                    raise SplitsResponseNotFoundError("Not found.") from e
+                raise SplitsResponseNotFoundError("Not found.") from e
         except ApiCustomError as e:
             return get_json_api_error_response(e)
         except Exception as err:
