@@ -20,7 +20,7 @@ To install the server and start contributing to the code, see [DEVELOPER_GUIDE.m
 
 ## Community 🤗
 
-You can star and watch this repository to follow the updates.
+You can star and watch this [GitHub repository](https://github.com/huggingface/datasets-server) to follow the updates.
 
 You can ask for help or answer questions on the [Forum](https://discuss.huggingface.co/c/datasets/10) and [Discord](https://discord.com/channels/879548962464493619/1019883044724822016).
 
