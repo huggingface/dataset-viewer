@@ -23,13 +23,12 @@ Try it in your [browser](https://huggingface.co/datasets/splits?dataset=duorc), 
 <inferencesnippet>
 <python>
 ```python
-import json
 import requests
 headers = {"Authorization": f"Bearer {API_TOKEN}"}
 API_URL = "https://datasets-server.huggingface.co/splits?dataset=duorc"
 def query():
     response = requests.request("GET", API_URL, headers=headers)
-    return json.loads(response.content.decode("utf-8"))
+    return response.json()
 data = query()
 ```
 </python>

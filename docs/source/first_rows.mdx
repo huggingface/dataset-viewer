@@ -19,13 +19,12 @@ Try it in your [browser](https://datasets-server.huggingface.co/first-rows?datas
 <inferencesnippet>
 <python>
 ```python
-import json
 import requests
 headers = {"Authorization": f"Bearer {API_TOKEN}"}
 API_URL = "https://datasets-server.huggingface.co/first-rows?dataset=duorc&config=SelfRC&split=train"
 def query():
     response = requests.request("GET", API_URL, headers=headers)
-    return json.loads(response.content.decode("utf-8"))
+    return response.json()
 data = query()
 ```
 </python>
