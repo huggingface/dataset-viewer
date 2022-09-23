@@ -32,22 +32,22 @@ def create_splits_endpoint(
 ) -> Endpoint:
     async def splits_endpoint(request: Request) -> Response:
         try:
-            dataset_name = request.query_params.get("dataset")
-            logger.info(f"/splits, dataset={dataset_name}")
+            dataset = request.query_params.get("dataset")
+            logger.info(f"/splits, dataset={dataset}")
 
-            if not are_valid_parameters([dataset_name]):
+            if not are_valid_parameters([dataset]):
                 raise MissingRequiredParameterError("Parameter 'dataset' is required")
             # if auth_check fails, it will raise an exception that will be caught below
-            auth_check(dataset_name, external_auth_url=external_auth_url, request=request)
+            auth_check(dataset, external_auth_url=external_auth_url, request=request)
             try:
-                response, http_status, error_code = get_splits_response(dataset_name)
+                response, http_status, error_code = get_splits_response(dataset)
                 if http_status == HTTPStatus.OK:
                     return get_json_ok_response(response)
                 else:
                     return get_json_error_response(response, http_status, error_code)
             except DoesNotExist as e:
                 # maybe the splits response is in process
-                if is_splits_in_process(dataset=dataset_name, hf_endpoint=hf_endpoint, hf_token=hf_token):
+                if is_splits_in_process(dataset=dataset, hf_endpoint=hf_endpoint, hf_token=hf_token):
                     raise SplitsResponseNotReadyError(
                         "The list of splits is not ready yet. Please retry later."
                     ) from e

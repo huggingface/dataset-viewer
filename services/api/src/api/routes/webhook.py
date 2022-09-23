@@ -48,13 +48,13 @@ def get_dataset_name(id: Optional[str]) -> Optional[str]:
 
 
 def process_payload(payload: MoonWebhookV1Payload, hf_endpoint: str, hf_token: Optional[str] = None) -> None:
-    unique_dataset_names = {get_dataset_name(id) for id in {payload["add"], payload["remove"], payload["update"]}}
-    for dataset_name in unique_dataset_names:
-        if dataset_name is not None:
-            if is_supported(dataset=dataset_name, hf_endpoint=hf_endpoint, hf_token=hf_token):
-                update(dataset=dataset_name)
+    unique_datasets = {get_dataset_name(id) for id in {payload["add"], payload["remove"], payload["update"]}}
+    for dataset in unique_datasets:
+        if dataset is not None:
+            if is_supported(dataset=dataset, hf_endpoint=hf_endpoint, hf_token=hf_token):
+                update(dataset=dataset)
             else:
-                delete(dataset=dataset_name)
+                delete(dataset=dataset)
 
 
 def create_webhook_endpoint(hf_endpoint: str, hf_token: Optional[str] = None) -> Endpoint:
