@@ -14,6 +14,14 @@
     value: {{ .Values.api.assetsDirectory | quote }}
   - name: HF_ENDPOINT
     value: {{ .Values.hfEndpoint | quote }}
+  - name: HF_TOKEN
+    # see https://kubernetes.io/docs/concepts/configuration/secret/#creating-a-secret
+    # and https://kubernetes.io/docs/concepts/configuration/secret/#using-secrets-as-environment-variables
+    valueFrom:
+      secretKeyRef:
+        name: {{ .Values.secrets.hfToken | quote }}
+        key: HF_TOKEN
+        optional: false
   - name: LOG_LEVEL
     value: {{ .Values.api.logLevel | quote }}
   - name: MAX_AGE_LONG_SECONDS
