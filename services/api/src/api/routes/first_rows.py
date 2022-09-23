@@ -51,7 +51,9 @@ def create_first_rows_endpoint(
                     return get_json_error_response(response, http_status, error_code)
             except DoesNotExist as e:
                 # maybe the first-rows response is in process
-                if is_first_rows_in_process(dataset=dataset, config=config, split=split):
+                if is_first_rows_in_process(
+                    dataset=dataset, config=config, split=split, hf_endpoint=hf_endpoint, hf_token=hf_token
+                ):
                     raise FirstRowsResponseNotReadyError(
                         "The list of the first rows is not ready yet. Please retry later."
                     ) from e

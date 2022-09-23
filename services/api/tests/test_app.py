@@ -7,13 +7,13 @@ from typing import Dict, Optional
 
 import pytest
 from libcache.simple_cache import _clean_database as clean_cache_database
-from libcache.simple_cache import upsert_splits_response
+from libcache.simple_cache import upsert_first_rows_response, upsert_splits_response
 from libqueue.queue import clean_database as clean_queue_database
 from pytest_httpserver import HTTPServer
 from starlette.testclient import TestClient
 
 from api.app import create_app
-from api.config import EXTERNAL_AUTH_URL, MONGO_QUEUE_DATABASE
+from api.config import EXTERNAL_AUTH_URL, MONGO_CACHE_DATABASE, MONGO_QUEUE_DATABASE
 
 from .utils import auth_callback
 
@@ -22,8 +22,8 @@ external_auth_url = EXTERNAL_AUTH_URL or "%s"  # for mypy
 
 @pytest.fixture(autouse=True, scope="module")
 def safe_guard() -> None:
-    # if "test" not in MONGO_CACHE_DATABASE:
-    #     raise ValueError("Tests on cache must be launched on a test mongo database")
+    if "test" not in MONGO_CACHE_DATABASE:
+        raise ValueError("Tests on cache must be launched on a test mongo database")
     if "test" not in MONGO_QUEUE_DATABASE:
         raise ValueError("Tests on queue must be launched on a test mongo database")
 
@@ -208,6 +208,10 @@ def test_splits_cache_refreshing(
     assert response.headers["X-Error-Code"] == expected_error_code
 
     if expected_error_code == "SplitsResponseNotReady":
+        # a subsequent request should return the same error code
+        response = client.get("/splits", params={"dataset": dataset})
+        assert response.headers["X-Error-Code"] == expected_error_code
+
         # simulate the worker
         upsert_splits_response(dataset, {"key": "value"}, HTTPStatus.OK)
         response = client.get("/splits", params={"dataset": dataset})
@@ -220,7 +224,7 @@ def test_splits_cache_refreshing(
     [
         (False, None, "ExternalAuthenticatedError"),
         (True, True, "FirstRowsResponseNotFound"),
-        (True, False, "FirstRowsResponseNotFound"),
+        (True, False, "FirstRowsResponseNotReady"),
     ],
 )
 def test_first_rows_cache_refreshing(
@@ -242,12 +246,16 @@ def test_first_rows_cache_refreshing(
     response = client.get("/first-rows", params={"dataset": dataset, "config": config, "split": split})
     assert response.headers["X-Error-Code"] == expected_error_code
 
-    # if expected_error_code == "FirstRowsResponseNotReady":
-    #     # simulate the worker
-    #     upsert_first_rows_response(dataset, config, split, {"key": "value"}, HTTPStatus.OK)
-    #     response = client.get("/first-rows", params={"dataset": dataset, "config": config, "split": split})
-    #     assert response.json()["key"] == "value"
-    #     assert response.status_code == 200
+    if expected_error_code == "FirstRowsResponseNotReady":
+        # a subsequent request should return the same error code
+        response = client.get("/first-rows", params={"dataset": dataset, "config": config, "split": split})
+        assert response.headers["X-Error-Code"] == expected_error_code
+
+        # simulate the worker
+        upsert_first_rows_response(dataset, config, split, {"key": "value"}, HTTPStatus.OK)
+        response = client.get("/first-rows", params={"dataset": dataset, "config": config, "split": split})
+        assert response.json()["key"] == "value"
+        assert response.status_code == 200
 
 
 def test_metrics(client: TestClient) -> None:
