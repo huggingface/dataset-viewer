@@ -1,127 +1,87 @@
-# Contributing guide
+# How to contribute to the Datasets Server?
 
-The repository is structured as a monorepo, with Python applications in [services/](./services/) and Python libraries in [libs/](./libs/).
+[![Contributor Covenant](https://img.shields.io/badge/Contributor%20Covenant-2.0-4baaaa.svg)](CODE_OF_CONDUCT.md)
 
-If you have access to the internal HF notion, see https://www.notion.so/huggingface2/Datasets-server-464848da2a984e999c540a4aa7f0ece5.
+The Datasets Server is an open source project, so all contributions and suggestions are welcome.
 
-## Install
+You can contribute in many different ways: giving ideas, answering questions, reporting bugs, proposing enhancements,
+improving the documentation, fixing bugs...
 
-To start working on the project:
+Many thanks in advance to every contributor.
 
-```bash
-git clone git@github.com:huggingface/datasets-server.git
-cd datasets-server
-```
+In order to facilitate healthy, constructive behavior in an open and inclusive community, we all respect and abide by
+our [code of conduct](CODE_OF_CONDUCT.md).
 
-Install docker (see https://docs.docker.com/engine/install/ubuntu/#install-using-the-repository and https://docs.docker.com/engine/install/linux-postinstall/)
+## How to work on an open Issue?
 
-```
-make install
-make start-from-local-code
-```
+You have the list of open Issues at: https://github.com/huggingface/datasets/issues
 
-To use the docker images already compiled using the CI:
+Some of them may have the label `help wanted`: that means that any contributor is welcomed!
 
-```
-make start-from-remote-images
-```
+If you would like to work on any of the open Issues:
 
-Note that you must login to AWS to be able to download the docker images:
+1. Make sure it is not already assigned to someone else. You have the assignee (if any) on the top of the right column of the Issue page.
 
-```
-aws ecr get-login-password --region us-east-1 --profile=hub-prod \
-    | docker login --username AWS --password-stdin 707930574880.dkr.ecr.us-east-1.amazonaws.com
-```
+2. You can self-assign it by commenting on the Issue page with one of the keywords: `#take` or `#self-assign`.
 
-To install a single library (in [libs](./libs)) or service (in [services](./services)), install Python 3.9 (consider [pyenv](https://github.com/pyenv/pyenv)) and [poetry]](https://python-poetry.org/docs/master/#installation) (don't forget to add `poetry` to the `PATH` environment variable).
+3. Work on your self-assigned issue and eventually create a Pull Request.
 
-If you use pyenv:
+## How to create a Pull Request?
 
-```bash
-cd libs/libutils/
-pyenv install 3.9.6
-pyenv local 3.9.6
-poetry env use python3.9
-```
+1. Fork the [repository](https://github.com/huggingface/datasets-server) by clicking on the 'Fork' button on the repository's page. This creates a copy of the code under your GitHub user account.
 
-then:
+2. Clone your fork to your local disk, and add the base repository as a remote:
 
-```
-make install
-```
+   ```bash
+   git clone git@github.com:<your Github handle>/datasets-server.git
+   cd datasets-server
+   git remote add upstream https://github.com/huggingface/datasets-server.git
+   ```
 
-It will create a virtual environment in a `./.venv/` subdirectory.
+3. Create a new branch to hold your development changes:
 
-If you use VSCode, it might be useful to use the ["monorepo" workspace](./.vscode/monorepo.code-workspace) (see a [blogpost](https://medium.com/rewrite-tech/visual-studio-code-tips-for-monorepo-development-with-multi-root-workspaces-and-extension-6b69420ecd12) for more explanations). It is a multi-root workspace, with one folder for each library and service (note that we hide them from the ROOT to avoid editing there). Each folder has its own Python interpreter, with access to the dependencies installed by Poetry. You might have to manually select the interpreter in every folder though on first access, then VSCode stores the information in its local storage.
+   ```bash
+   git checkout -b a-descriptive-name-for-my-changes
+   ```
 
-## Quality
+   **do not** work on the `main` branch.
 
-The CI checks the quality of the code through a [GitHub action](./.github/workflows/quality.yml). To manually format the code of a library or a service:
+4. Set up a development environment by following the [developer guide](./DEVELOPER_GUIDE.md)
 
-```bash
-make style
-```
+5. Develop the features on your branch.
 
-To check the quality (which includes checking the style, but also security vulnerabilities):
+6. Format your code. Run black and isort so that your newly added files look nice with the following command:
 
-```bash
-make quality
-```
+   ```bash
+   make style
+   ```
 
-## Tests
+7. Once you're happy with your code, add your changes and make a commit to record your changes locally:
 
-The CI checks the tests a [GitHub action](./.github/workflows/unit-tests.yml). To manually test a library or a service:
+   ```bash
+   git add -p
+   git commit
+   ```
 
-```bash
-make test
-```
+   It is a good idea to sync your copy of the code with the original
+   repository regularly. This way you can quickly account for changes:
 
-Note that it requires the resources to be ready, ie. mongo and the storage for assets.
+   ```bash
+   git fetch upstream
+   git rebase upstream/main
+   ```
 
-To launch the end to end tests:
+   Push the changes to your account using:
 
-```bash
-make e2e
-```
+   ```bash
+   git push -u origin a-descriptive-name-for-my-changes
+   ```
 
-## Poetry
+8. Once you are satisfied, go the webpage of your fork on GitHub. Click on "Pull request" to send your to the project maintainers for review.
 
-### Versions
+Thank you for your contribution!
 
-We version the [libraries](./libs) as they are dependencies of the [services](./services). To update a library:
+## Code of conduct
 
-- change the version in its pyproject.yaml file
-- build with `make build`
-- version the new files in `dist/`
-
-And then update the library version in the services that require the update, for example if the library is `libcache`:
-
-```
-poetry update libcache
-```
-
-If service is updated, we don't update its version in the `pyproject.yaml` file. But we have to update the [docker images file](./chart/docker-images.yaml) with the new image tag. Then the CI will test the new docker images, and we will be able to deploy them to the infrastructure.
-
-## Pull requests
-
-All the contributions should go through a pull request. The pull requests must be "squashed" (ie: one commit per pull request).
-
-## GitHub Actions
-
-You can use [act](https://github.com/nektos/act) to test the GitHub Actions (see [.github/workflows/](.github/workflows/)) locally. It reduces the retroaction loop when working on the GitHub Actions, avoid polluting the branches with empty pushes only meant to trigger the CI, and allows to only run specific actions.
-
-For example, to launch the build and push of the docker images to ECR:
-
-```
-act -j build-and-push-image --secret-file my.secrets
-```
-
-with `my.secrets` a file with the secrets:
-
-```
-AWS_ACCESS_KEY_ID=xxx
-AWS_SECRET_ACCESS_KEY=xxx
-GITHUB_TOKEN=xxx
-```
-
-You might prefer to use [aws-vault](https://github.com/99designs/aws-vault) instead to set the environment variables, but you will still have to pass the GitHub token as a secret.
+This project adheres to the HuggingFace [code of conduct](CODE_OF_CONDUCT.md).
+By participating, you are expected to uphold this code.
