@@ -4,44 +4,24 @@
 
 Documentation: https://huggingface.co/docs/datasets-server
 
-## Install and development setup
+## Ask for a new feature 🎁
 
-To develop or deploy, see [CONTRIBUTING.md](./CONTRIBUTING.md)
+The datasets server pre-processes the [Hugging Face Hub datasets](https://huggingface.co/datasets) to make them ready to use in your apps using the API: list of the splits, first rows.
 
-## Architecture
+We plan to [add more features](https://github.com/huggingface/datasets-server/issues?q=is%3Aissue+is%3Aopen+label%3A%22feature+request%22) to the server. Please comment there and upvote your favorite requests.
 
-The application is distributed in several components.
+If you think about a new feature, please [open a new issue](https://github.com/huggingface/datasets-server/issues/new).
 
-[api](./services/api) is a web server that exposes the [API endpoints](https://huggingface.co/docs/datasets-server). Apart from some endpoints (`valid`, `is-valid`), all the responses are served from pre-computed responses. That's the main point of this project: generating these responses takes time, and the API server provides this service to the users.
+## Contribute 🤝
 
-The precomputed responses are stored in a Mongo database called "cache" (see [libcache](./libs/libcache)). They are computed by workers ([worker](./services/worker)) which take their jobs from a job queue stored in a Mongo database called "queue" (see [libqueue](./libs/libqueue)), and store the results (error or valid response) into the "cache".
+You can help by giving ideas, answering questions, reporting bugs, proposing enhancements, improving the documentation, and fixing bugs. See [CONTRIBUTING.md](./CONTRIBUTING.md) for more details.
 
-The API service exposes the `/webhook` endpoint which is called by the Hub on every creation, update or deletion of a dataset on the Hub. On deletion, the cached responses are deleted. On creation or update, a new job is appended in the "queue" database.
+To install the server and start contributing to the code, see [DEVELOPER_GUIDE.md](./DEVELOPER_GUIDE.md)
 
-Note that two job queues exist:
+## Community 🤗
 
-- `splits`: the job is to refresh a dataset, namely to get the list of [config](https://huggingface.co/docs/datasets/v2.1.0/en/load_hub#select-a-configuration) and [split](https://huggingface.co/docs/datasets/v2.1.0/en/load_hub#select-a-split) names, then to create a new job for every split
-- `first-rows`: the job is to get the columns and the first 100 rows of the split
+You can star and watch this [GitHub repository](https://github.com/huggingface/datasets-server) to follow the updates.
 
-Note also that the workers create local files when the dataset contains images or audios. A shared directory (`ASSETS_DIRECTORY`) must therefore be provisioned with sufficient space for the generated files. The `/first-rows` endpoint responses contain URLs to these files, served by the API under the `/assets/` endpoint.
+You can ask for help or answer questions on the [Forum](https://discuss.huggingface.co/c/datasets/10) and [Discord](https://discord.com/channels/879548962464493619/1019883044724822016).
 
-Hence, the working application has:
-
-- one instance of the API service which exposes a port
-- M instances of the `splits` worker and N instances of the `first-rows` worker (N should generally be higher than M)
-- a Mongo server with two databases: "cache" and "queue"
-- a shared directory for the assets
-
-The application also has:
-
-- a reverse proxy in front of the API to serve static files and proxy the rest to the API server
-- an admin server to serve technical endpoints
-
-The following environments contain all the modules: reverse proxy, API server, admin API server, workers, and the Mongo database.
-
-| Environment              | URL                                                  | Type              | How to deploy                                                        |
-| ------------------------ | ---------------------------------------------------- | ----------------- | -------------------------------------------------------------------- |
-| Production               | https://datasets-server.huggingface.co               | Helm / Kubernetes | `make upgrade-prod` in [chart](./chart)                              |
-| Development              | https://datasets-server.us.dev.moon.huggingface.tech | Helm / Kubernetes | `make upgrade-dev` in [chart](./chart)                               |
-| Local from remote images | http://localhost:8100                                | Docker compose    | `make start-from-remote-images` (fetches docker images from AWS ECR) |
-| Local build              | http://localhost:8000                                | Docker compose    | `make start-from-local-code` (builds docker images)                  |
+You can also report bugs and propose enhancements on the code, or the documentation, in the [GitHub issues](https://github.com/huggingface/datasets-server/issues).
