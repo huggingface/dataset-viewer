@@ -13,7 +13,7 @@
   - name: HF_DATASETS_CACHE
     value: "{{ .Values.worker.splits.cacheDirectory }}/datasets"
   - name: HF_ENDPOINT
-    value: "{{ .Values.hfEndpoint }}"
+    value: {{ .Values.hfEndpoint | quote }}
   - name: HF_MODULES_CACHE
     value: "/tmp/modules-cache"
   # the size should remain so small that we don't need to worry about putting it on an external storage

@@ -55,6 +55,8 @@ def get_splits_response(
         dataset (`str`):
             A namespace (user or an organization) and a repo name separated
             by a `/`.
+        hf_endpoint (`str`):
+            The Hub endpoint (for example: "https://huggingface.co")
         hf_token (`str`, *optional*):
             An authentication token (See https://huggingface.co/settings/token)
     Returns:

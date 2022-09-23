@@ -1,19 +1,16 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2022 The HuggingFace Authors.
 
-from typing import Mapping, Tuple, Union
-
-from requests import PreparedRequest
-from responses import _Body
+from werkzeug.wrappers.request import Request
+from werkzeug.wrappers.response import Response
 
 
-def request_callback(request: PreparedRequest) -> Union[Exception, Tuple[int, Mapping[str, str], _Body]]:
+def auth_callback(request: Request) -> Response:
     # return 401 if a cookie has been provided, 404 if a token has been provided,
-    # and 401 if none has been provided
-    # there is no logic behind this behavior, it's just to test if the cookie and
-    # token are correctly passed to the auth_check service
-    if request.headers.get("cookie"):
-        return (401, {"Content-Type": "text/plain"}, "OK")
-    if request.headers.get("authorization"):
-        return (404, {"Content-Type": "text/plain"}, "OK")
-    return (200, {"Content-Type": "text/plain"}, "OK")
+    # and 200 if none has been provided
+    #
+    # caveat: the returned status codes don't simulate the reality
+    # they're just used to check every case
+    return Response(
+        status=401 if request.headers.get("cookie") else 404 if request.headers.get("authorization") else 200
+    )

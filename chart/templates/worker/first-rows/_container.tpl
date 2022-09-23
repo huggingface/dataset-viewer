@@ -13,7 +13,7 @@
   - name: HF_DATASETS_CACHE
     value: "{{ .Values.worker.firstRows.cacheDirectory }}/datasets"
   - name: HF_ENDPOINT
-    value: "{{ .Values.hfEndpoint }}"
+    value: {{ .Values.hfEndpoint | quote }}
   # note: HF_MODULES_CACHE is not set to a shared directory
   - name: HF_MODULES_CACHE
     value: "/tmp/modules-cache"
