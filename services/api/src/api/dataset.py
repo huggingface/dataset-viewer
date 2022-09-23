@@ -14,8 +14,9 @@ from libcache.simple_cache import (  # DoesNotExist,; get_splits_response,
     mark_first_rows_responses_as_stale,
     mark_splits_responses_as_stale,
 )
-from libqueue.queue import (  # is_first_rows_response_in_process,
+from libqueue.queue import (
     add_splits_job,
+    is_first_rows_response_in_process,
     is_splits_response_in_process,
 )
 
@@ -74,30 +75,9 @@ def is_splits_in_process(
     return False
 
 
-# def is_first_rows_in_process(
-#     dataset: str,
-#     config: str,
-#     split: str,
-#     hf_endpoint: str,
-#     hf_token: Optional[str] = None,
-# ) -> bool:
-#     if is_first_rows_response_in_process(dataset_name=dataset, config_name=config, split_name=split):
-#         return True
-#     # a bit convoluted, but we need to check if the first-rows response should be exist
-#     if is_splits_response_in_process(dataset_name=dataset):
-#         return True
-#     try:
-#         response, http_status, _ = get_splits_response(dataset)
-#         if http_status == HTTPStatus.OK and any(
-#             split_item["dataset"] == dataset or split_item["config"] == config or split_item["split"] == split
-#             for split_item in response["splits"]
-#         ):
-#             # it's listed in the splits response.
-#             # we assume that it does not exist in the cache (it's why one call this function)
-#             # relaunch the whole /splits job, because something did not work
-#             update(dataset=dataset)
-#             return True
-#     except DoesNotExist:
-#         # the splits responses does not exist, let's check if it should
-#         return is_splits_in_process(dataset=dataset, hf_endpoint=hf_endpoint, hf_token=hf_token)
-#     return False
+def is_first_rows_in_process(
+    dataset: str,
+    config: str,
+    split: str,
+) -> bool:
+    return is_first_rows_response_in_process(dataset_name=dataset, config_name=config, split_name=split)

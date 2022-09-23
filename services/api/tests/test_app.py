@@ -6,7 +6,6 @@ from http import HTTPStatus
 from typing import Dict, Optional
 
 import pytest
-
 from libcache.simple_cache import _clean_database as clean_cache_database
 from libcache.simple_cache import upsert_splits_response
 from libqueue.queue import clean_database as clean_queue_database
@@ -17,7 +16,6 @@ from api.app import create_app
 from api.config import EXTERNAL_AUTH_URL, MONGO_QUEUE_DATABASE
 
 from .utils import auth_callback
-
 
 external_auth_url = EXTERNAL_AUTH_URL or "%s"  # for mypy
 
