@@ -1154,7 +1154,7 @@
         "description": "The list of the 100 first rows of a dataset split.",
         "externalDocs": {
           "description": "See First rows (Hub docs)",
-          "url": "https://huggingface.co/docs/datasets-server/rows"
+          "url": "https://huggingface.co/docs/datasets-server/first-rows"
         },
         "operationId": "listFirstRows",
         "security": [

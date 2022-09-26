@@ -37,7 +37,7 @@ def create_first_rows_endpoint(
             dataset = request.query_params.get("dataset")
             config = request.query_params.get("config")
             split = request.query_params.get("split")
-            logger.info(f"/rows, dataset={dataset}, config={config}, split={split}")
+            logger.info(f"/first-rows, dataset={dataset}, config={config}, split={split}")
 
             if not are_valid_parameters([dataset, config, split]):
                 raise MissingRequiredParameterError("Parameters 'dataset', 'config' and 'split' are required")
