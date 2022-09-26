@@ -73,9 +73,6 @@ def audio(
     return create_audio_files(dataset, config, split, row_idx, featureName, array, sampling_rate, assets_base_url)
 
 
-# should we return both the value (as given by datasets) and the additional contents (audio files, image files)?
-# in the case of the images or audio, if the value contains the raw data, it would take too much space and would
-# trigger the response truncation -> less rows would be viewable
 def get_cell_value(
     dataset: str,
     config: str,
