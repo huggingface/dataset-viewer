@@ -90,18 +90,21 @@ def get_cell_value(
         return image(dataset, config, split, row_idx, cell, featureName, assets_base_url)
     elif isinstance(fieldType, Audio):
         return audio(dataset, config, split, row_idx, cell, featureName, assets_base_url)
-    elif (
-        isinstance(fieldType, Value)
-        or isinstance(fieldType, ClassLabel)
-        or isinstance(fieldType, Array2D)
-        or isinstance(fieldType, Array3D)
-        or isinstance(fieldType, Array4D)
-        or isinstance(fieldType, Array5D)
-        or isinstance(fieldType, Translation)
-        or isinstance(fieldType, TranslationVariableLanguages)
-        or isinstance(fieldType, Sequence)
-        or isinstance(fieldType, list)
-        or isinstance(fieldType, dict)
+    elif isinstance(
+        fieldType,
+        (
+            Value,
+            ClassLabel,
+            Array2D,
+            Array3D,
+            Array4D,
+            Array5D,
+            Translation,
+            TranslationVariableLanguages,
+            Sequence,
+            list,
+            dict,
+        ),
     ):
         return cell
     else:
