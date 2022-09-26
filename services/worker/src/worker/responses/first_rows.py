@@ -89,7 +89,7 @@ def get_rows(
 def get_size_in_bytes(obj: Any):
     return sys.getsizeof(orjson_dumps(obj))
     # ^^ every row is transformed here in a string, because it corresponds to
-    # the size the row will contribute in the JSON response to /rows endpoint.
+    # the size the row will contribute in the JSON response to /first-rows endpoint.
     # The size of the string is measured in bytes.
     # An alternative would have been to look at the memory consumption (pympler) but it's
     # less related to what matters here (size of the JSON, number of characters in the
