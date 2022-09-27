@@ -85,4 +85,26 @@ def datasets() -> Dict[str, Dataset]:
             {"en": "the cat", "fr": ["le chat", "la chatte"]},
             TranslationVariableLanguages(languages=["en", "fr"]),
         ),
+        "images_list": Dataset.from_dict(
+            {
+                "col": [
+                    [
+                        str(Path(__file__).resolve().parent / "data" / "test_image_rgb.jpg"),
+                        str(Path(__file__).resolve().parent / "data" / "test_image_rgb.jpg"),
+                    ]
+                ]
+            },
+            features=Features({"col": [Image()]}),
+        ),
+        "audios_list": Dataset.from_dict(
+            {
+                "col": [
+                    [
+                        {"array": [0.1, 0.2, 0.3], "sampling_rate": 16_000},
+                        {"array": [0.1, 0.2, 0.3], "sampling_rate": 16_000},
+                    ]
+                ]
+            },
+            features=Features({"col": [Audio()]}),
+        ),
     }

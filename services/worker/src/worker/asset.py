@@ -58,9 +58,10 @@ def create_audio_files(
     array: ndarray,
     sampling_rate: int,
     assets_base_url: str,
+    filename_base: str,
 ) -> List[AudioSource]:
-    wav_filename = "audio.wav"
-    mp3_filename = "audio.mp3"
+    wav_filename = f"{filename_base}.wav"
+    mp3_filename = f"{filename_base}.mp3"
     dir_path, url_dir_path = create_asset_dir(dataset, config, split, row_idx, column)
     wav_file_path = dir_path / wav_filename
     mp3_file_path = dir_path / mp3_filename

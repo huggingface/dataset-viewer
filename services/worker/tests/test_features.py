@@ -7,7 +7,7 @@ from zoneinfo import ZoneInfo
 
 import numpy as np
 import pytest
-from datasets import Dataset, Value
+from datasets import Audio, Dataset, Image, Value
 
 from worker.features import get_cell_value
 
@@ -142,6 +142,41 @@ def test_value(dataset_type, output_value, output_dtype, datasets) -> None:
             "translation_variable_languages",
             {"language": ["en", "fr", "fr"], "translation": ["the cat", "la chatte", "le chat"]},
             "TranslationVariableLanguages",
+        ),
+        # special cases
+        (
+            "images_list",
+            [
+                "http://localhost/assets/dataset/--/config/split/7/col/image-1d100e9.jpg",
+                "http://localhost/assets/dataset/--/config/split/7/col/image-1d300ea.jpg",
+            ],
+            [Image(decode=True, id=None)],
+        ),
+        (
+            "audios_list",
+            [
+                [
+                    {
+                        "src": "http://localhost/assets/dataset/--/config/split/7/col/audio-1d100e9.mp3",
+                        "type": "audio/mpeg",
+                    },
+                    {
+                        "src": "http://localhost/assets/dataset/--/config/split/7/col/audio-1d100e9.wav",
+                        "type": "audio/wav",
+                    },
+                ],
+                [
+                    {
+                        "src": "http://localhost/assets/dataset/--/config/split/7/col/audio-1d300ea.mp3",
+                        "type": "audio/mpeg",
+                    },
+                    {
+                        "src": "http://localhost/assets/dataset/--/config/split/7/col/audio-1d300ea.wav",
+                        "type": "audio/wav",
+                    },
+                ],
+            ],
+            [Audio()],
         ),
     ],
 )

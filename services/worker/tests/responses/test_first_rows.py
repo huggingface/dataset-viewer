@@ -16,6 +16,7 @@ from ..utils import ASSETS_BASE_URL, HF_ENDPOINT, HF_TOKEN, get_default_config_s
         ("public", False, None, None),
         ("audio", False, None, None),
         ("image", False, None, None),
+        ("images_list", False, None, None),
         ("gated", True, None, None),
         ("private", True, None, None),
         ("empty", False, "EmptyDatasetError", "EmptyDatasetError"),
