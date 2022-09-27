@@ -146,6 +146,23 @@ def get_cell_value(
             )
             for (idx, subCell) in enumerate(cell)
         ]
+    elif isinstance(fieldType, dict):
+        if type(cell) != dict:
+            raise TypeError("dict cell must be a dict.")
+        return {
+            key: get_cell_value(
+                dataset,
+                config,
+                split,
+                row_idx,
+                subCell,
+                featureName,
+                fieldType[key],
+                assets_base_url,
+                json_path + [key] if json_path else [key],
+            )
+            for (key, subCell) in cell.items()
+        }
     elif isinstance(
         fieldType,
         (
@@ -158,7 +175,6 @@ def get_cell_value(
             Translation,
             TranslationVariableLanguages,
             Sequence,
-            dict,
         ),
     ):
         return cell

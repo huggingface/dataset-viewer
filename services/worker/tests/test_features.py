@@ -178,6 +178,41 @@ def test_value(dataset_type, output_value, output_dtype, datasets) -> None:
             ],
             [Audio()],
         ),
+        (
+            "dict_of_audios_and_images",
+            {
+                "a": 0,
+                "b": [
+                    "http://localhost/assets/dataset/--/config/split/7/col/image-89101db.jpg",
+                    "http://localhost/assets/dataset/--/config/split/7/col/image-89301dc.jpg",
+                ],
+                "c": {
+                    "ca": [
+                        [
+                            {
+                                "src": "http://localhost/assets/dataset/--/config/split/7/col/audio-18360330.mp3",
+                                "type": "audio/mpeg",
+                            },
+                            {
+                                "src": "http://localhost/assets/dataset/--/config/split/7/col/audio-18360330.wav",
+                                "type": "audio/wav",
+                            },
+                        ],
+                        [
+                            {
+                                "src": "http://localhost/assets/dataset/--/config/split/7/col/audio-18380331.mp3",
+                                "type": "audio/mpeg",
+                            },
+                            {
+                                "src": "http://localhost/assets/dataset/--/config/split/7/col/audio-18380331.wav",
+                                "type": "audio/wav",
+                            },
+                        ],
+                    ]
+                },
+            },
+            {"a": Value(dtype="int64"), "b": [Image(decode=True, id=None)], "c": {"ca": [Audio()]}},
+        ),
     ],
 )
 def test_others(dataset_type: str, output_value: Any, output_type: Any, datasets: Dict[str, Dataset]) -> None:

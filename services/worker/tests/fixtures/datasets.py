@@ -85,26 +85,34 @@ def datasets() -> Dict[str, Dataset]:
             {"en": "the cat", "fr": ["le chat", "la chatte"]},
             TranslationVariableLanguages(languages=["en", "fr"]),
         ),
-        "images_list": Dataset.from_dict(
-            {
-                "col": [
-                    [
-                        str(Path(__file__).resolve().parent / "data" / "test_image_rgb.jpg"),
-                        str(Path(__file__).resolve().parent / "data" / "test_image_rgb.jpg"),
-                    ]
-                ]
-            },
-            features=Features({"col": [Image()]}),
+        "images_list": other(
+            [
+                str(Path(__file__).resolve().parent / "data" / "test_image_rgb.jpg"),
+                str(Path(__file__).resolve().parent / "data" / "test_image_rgb.jpg"),
+            ],
+            [Image()],
         ),
-        "audios_list": Dataset.from_dict(
+        "audios_list": other(
+            [
+                {"array": [0.1, 0.2, 0.3], "sampling_rate": 16_000},
+                {"array": [0.1, 0.2, 0.3], "sampling_rate": 16_000},
+            ],
+            [Audio()],
+        ),
+        "dict_of_audios_and_images": other(
             {
-                "col": [
-                    [
+                "a": 0,
+                "b": [
+                    str(Path(__file__).resolve().parent / "data" / "test_image_rgb.jpg"),
+                    str(Path(__file__).resolve().parent / "data" / "test_image_rgb.jpg"),
+                ],
+                "c": {
+                    "ca": [
                         {"array": [0.1, 0.2, 0.3], "sampling_rate": 16_000},
                         {"array": [0.1, 0.2, 0.3], "sampling_rate": 16_000},
                     ]
-                ]
+                },
             },
-            features=Features({"col": [Audio()]}),
+            {"a": Value(dtype="int64"), "b": [Image()], "c": {"ca": [Audio()]}},
         ),
     }
