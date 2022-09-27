@@ -68,12 +68,6 @@ def datasets() -> Dict[str, Dataset]:
         "list": other([{"a": 0}], None),
         "sequence_simple": other([0], None),
         "sequence": other([{"a": 0}], Sequence(feature={"a": Value(dtype="int64")})),
-        "sequence_audio": other(
-            [
-                {"array": [0.1, 0.2, 0.3], "sampling_rate": 16_000},
-            ],
-            Sequence(feature=Audio()),
-        ),
         "array2d": other(np.zeros((2, 2), dtype="float32"), Array2D(shape=(2, 2), dtype="float32")),
         "array3d": other(np.zeros((2, 2, 2), dtype="float32"), Array3D(shape=(2, 2, 2), dtype="float32")),
         "array4d": other(np.zeros((2, 2, 2, 2), dtype="float32"), Array4D(shape=(2, 2, 2, 2), dtype="float32")),
@@ -98,6 +92,20 @@ def datasets() -> Dict[str, Dataset]:
                 {"array": [0.1, 0.2, 0.3], "sampling_rate": 16_000},
             ],
             [Audio()],
+        ),
+        "images_sequence": other(
+            [
+                str(Path(__file__).resolve().parent / "data" / "test_image_rgb.jpg"),
+                str(Path(__file__).resolve().parent / "data" / "test_image_rgb.jpg"),
+            ],
+            Sequence(feature=Image()),
+        ),
+        "audios_sequence": other(
+            [
+                {"array": [0.1, 0.2, 0.3], "sampling_rate": 16_000},
+                {"array": [0.1, 0.2, 0.3], "sampling_rate": 16_000},
+            ],
+            Sequence(feature=Audio()),
         ),
         "dict_of_audios_and_images": other(
             {
