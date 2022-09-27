@@ -7,7 +7,7 @@ from zoneinfo import ZoneInfo
 
 import numpy as np
 import pytest
-from datasets import Dataset, Value
+from datasets import Audio, Dataset, Image, Value
 
 from worker.features import get_cell_value
 
@@ -82,12 +82,6 @@ def test_value(dataset_type, output_value, output_dtype, datasets) -> None:
         ("list", [{"a": 0}], [{"a": Value(dtype="int64", id=None)}]),
         ("sequence_simple", [0], "Sequence"),
         ("sequence", {"a": [0]}, "Sequence"),
-        # (
-        #     "sequence_audio"
-        #     # ^ corner case: an Audio in a Sequence
-        #     [{"path": None, "array": np.array([0.09997559, 0.19998169, 0.29998779]), "sampling_rate": 16_000}],
-        #     "Sequence"
-        # ),
         # - a :class:`Array2D`, :class:`Array3D`, :class:`Array4D` or :class:`Array5D` feature for multidimensional
         #   arrays
         ("array2d", [[0.0, 0.0], [0.0, 0.0]], "Array2D"),
@@ -142,6 +136,110 @@ def test_value(dataset_type, output_value, output_dtype, datasets) -> None:
             "translation_variable_languages",
             {"language": ["en", "fr", "fr"], "translation": ["the cat", "la chatte", "le chat"]},
             "TranslationVariableLanguages",
+        ),
+        # special cases
+        (
+            "images_list",
+            [
+                "http://localhost/assets/dataset/--/config/split/7/col/image-1d100e9.jpg",
+                "http://localhost/assets/dataset/--/config/split/7/col/image-1d300ea.jpg",
+            ],
+            [Image(decode=True, id=None)],
+        ),
+        (
+            "audios_list",
+            [
+                [
+                    {
+                        "src": "http://localhost/assets/dataset/--/config/split/7/col/audio-1d100e9.mp3",
+                        "type": "audio/mpeg",
+                    },
+                    {
+                        "src": "http://localhost/assets/dataset/--/config/split/7/col/audio-1d100e9.wav",
+                        "type": "audio/wav",
+                    },
+                ],
+                [
+                    {
+                        "src": "http://localhost/assets/dataset/--/config/split/7/col/audio-1d300ea.mp3",
+                        "type": "audio/mpeg",
+                    },
+                    {
+                        "src": "http://localhost/assets/dataset/--/config/split/7/col/audio-1d300ea.wav",
+                        "type": "audio/wav",
+                    },
+                ],
+            ],
+            [Audio()],
+        ),
+        (
+            "images_sequence",
+            [
+                "http://localhost/assets/dataset/--/config/split/7/col/image-1d100e9.jpg",
+                "http://localhost/assets/dataset/--/config/split/7/col/image-1d300ea.jpg",
+            ],
+            "Sequence",
+        ),
+        (
+            "audios_sequence",
+            [
+                [
+                    {
+                        "src": "http://localhost/assets/dataset/--/config/split/7/col/audio-1d100e9.mp3",
+                        "type": "audio/mpeg",
+                    },
+                    {
+                        "src": "http://localhost/assets/dataset/--/config/split/7/col/audio-1d100e9.wav",
+                        "type": "audio/wav",
+                    },
+                ],
+                [
+                    {
+                        "src": "http://localhost/assets/dataset/--/config/split/7/col/audio-1d300ea.mp3",
+                        "type": "audio/mpeg",
+                    },
+                    {
+                        "src": "http://localhost/assets/dataset/--/config/split/7/col/audio-1d300ea.wav",
+                        "type": "audio/wav",
+                    },
+                ],
+            ],
+            "Sequence",
+        ),
+        (
+            "dict_of_audios_and_images",
+            {
+                "a": 0,
+                "b": [
+                    "http://localhost/assets/dataset/--/config/split/7/col/image-89101db.jpg",
+                    "http://localhost/assets/dataset/--/config/split/7/col/image-89301dc.jpg",
+                ],
+                "c": {
+                    "ca": [
+                        [
+                            {
+                                "src": "http://localhost/assets/dataset/--/config/split/7/col/audio-18360330.mp3",
+                                "type": "audio/mpeg",
+                            },
+                            {
+                                "src": "http://localhost/assets/dataset/--/config/split/7/col/audio-18360330.wav",
+                                "type": "audio/wav",
+                            },
+                        ],
+                        [
+                            {
+                                "src": "http://localhost/assets/dataset/--/config/split/7/col/audio-18380331.mp3",
+                                "type": "audio/mpeg",
+                            },
+                            {
+                                "src": "http://localhost/assets/dataset/--/config/split/7/col/audio-18380331.wav",
+                                "type": "audio/wav",
+                            },
+                        ],
+                    ]
+                },
+            },
+            {"a": Value(dtype="int64"), "b": [Image(decode=True, id=None)], "c": {"ca": [Audio()]}},
         ),
     ],
 )

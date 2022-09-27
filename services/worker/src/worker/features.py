@@ -1,7 +1,9 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2022 The HuggingFace Authors.
 
-from typing import Any
+import json
+from typing import Any, List, Union
+from zlib import adler32
 
 from datasets import (
     Array2D,
@@ -22,6 +24,23 @@ from PIL import Image as PILImage  # type: ignore
 from worker.asset import create_audio_files, create_image_file
 
 
+def append_hash_suffix(string, json_path: List[Union[str, int]] = None) -> str:
+    """
+    Hash the json path to a string.
+    Args:
+        string (``str``): The string to append the hash to.
+        json_path (``list(str|int)``): the json path, which is a list of keys and indices
+    Returns:
+        the string suffixed with the hash of the json path
+
+    Details:
+    - no suffix if the list is empty
+    - converted to hexadecimal to make the hash shorter
+    - the 0x prefix is removed
+    """
+    return f"{string}-{hex(adler32(json.dumps(json_path).encode()))[2:]}" if json_path else string
+
+
 def image(
     dataset: str,
     config: str,
@@ -30,6 +49,7 @@ def image(
     value: Any,
     featureName: str,
     assets_base_url: str,
+    json_path: List[Union[str, int]] = None,
 ) -> Any:
     if value is None:
         return None
@@ -39,7 +59,14 @@ def image(
     for ext in [".jpg", ".png"]:
         try:
             return create_image_file(
-                dataset, config, split, row_idx, featureName, f"image{ext}", value, assets_base_url
+                dataset,
+                config,
+                split,
+                row_idx,
+                featureName,
+                f"{append_hash_suffix('image', json_path)}{ext}",
+                value,
+                assets_base_url,
             )
         except OSError:
             # if wrong format, try the next one, see https://github.com/huggingface/datasets-server/issues/191
@@ -57,6 +84,7 @@ def audio(
     value: Any,
     featureName: str,
     assets_base_url: str,
+    json_path: List[Union[str, int]] = None,
 ) -> Any:
     if value is None:
         return None
@@ -70,12 +98,19 @@ def audio(
     if type(sampling_rate) != int:
         raise TypeError("'sampling_rate' field must be an integer")
     # this function can raise, we don't catch it
-    return create_audio_files(dataset, config, split, row_idx, featureName, array, sampling_rate, assets_base_url)
+    return create_audio_files(
+        dataset,
+        config,
+        split,
+        row_idx,
+        featureName,
+        array,
+        sampling_rate,
+        assets_base_url,
+        append_hash_suffix("audio", json_path),
+    )
 
 
-# should we return both the value (as given by datasets) and the additional contents (audio files, image files)?
-# in the case of the images or audio, if the value contains the raw data, it would take too much space and would
-# trigger the response truncation -> less rows would be viewable
 def get_cell_value(
     dataset: str,
     config: str,
@@ -85,23 +120,97 @@ def get_cell_value(
     featureName: str,
     fieldType: Any,
     assets_base_url: str,
+    json_path: List[Union[str, int]] = None,
 ) -> Any:
     if isinstance(fieldType, Image):
-        return image(dataset, config, split, row_idx, cell, featureName, assets_base_url)
+        return image(dataset, config, split, row_idx, cell, featureName, assets_base_url, json_path)
     elif isinstance(fieldType, Audio):
-        return audio(dataset, config, split, row_idx, cell, featureName, assets_base_url)
-    elif (
-        isinstance(fieldType, Value)
-        or isinstance(fieldType, ClassLabel)
-        or isinstance(fieldType, Array2D)
-        or isinstance(fieldType, Array3D)
-        or isinstance(fieldType, Array4D)
-        or isinstance(fieldType, Array5D)
-        or isinstance(fieldType, Translation)
-        or isinstance(fieldType, TranslationVariableLanguages)
-        or isinstance(fieldType, Sequence)
-        or isinstance(fieldType, list)
-        or isinstance(fieldType, dict)
+        return audio(dataset, config, split, row_idx, cell, featureName, assets_base_url, json_path)
+    elif isinstance(fieldType, list):
+        if type(cell) != list:
+            raise TypeError("list cell must be a list.")
+        if len(fieldType) != 1:
+            raise TypeError("the feature type should be a 1-element list.")
+        subFieldType = fieldType[0]
+        return [
+            get_cell_value(
+                dataset,
+                config,
+                split,
+                row_idx,
+                subCell,
+                featureName,
+                subFieldType,
+                assets_base_url,
+                json_path + [idx] if json_path else [idx],
+            )
+            for (idx, subCell) in enumerate(cell)
+        ]
+    elif isinstance(fieldType, Sequence):
+        # sequence value can be a list or a dict, see
+        # https://huggingface.co/docs/datasets/v2.5.1/en/package_reference/main_classes#datasets.Features
+        if type(cell) == list:
+            if fieldType.length >= 0 and len(cell) != fieldType.length:
+                raise TypeError("the cell length should be the same as the Sequence length.")
+            return [
+                get_cell_value(
+                    dataset,
+                    config,
+                    split,
+                    row_idx,
+                    subCell,
+                    featureName,
+                    fieldType.feature,
+                    assets_base_url,
+                    json_path + [idx] if json_path else [idx],
+                )
+                for (idx, subCell) in enumerate(cell)
+            ]
+        elif type(cell) == dict:
+            return {
+                key: get_cell_value(
+                    dataset,
+                    config,
+                    split,
+                    row_idx,
+                    subCell,
+                    featureName,
+                    fieldType.feature[key],
+                    assets_base_url,
+                    json_path + [key] if json_path else [key],
+                )
+                for (key, subCell) in cell.items()
+            }
+        raise TypeError("Sequence cell must be a list or a dict.")
+    elif isinstance(fieldType, dict):
+        if type(cell) != dict:
+            raise TypeError("dict cell must be a dict.")
+        return {
+            key: get_cell_value(
+                dataset,
+                config,
+                split,
+                row_idx,
+                subCell,
+                featureName,
+                fieldType[key],
+                assets_base_url,
+                json_path + [key] if json_path else [key],
+            )
+            for (key, subCell) in cell.items()
+        }
+    elif isinstance(
+        fieldType,
+        (
+            Value,
+            ClassLabel,
+            Array2D,
+            Array3D,
+            Array4D,
+            Array5D,
+            Translation,
+            TranslationVariableLanguages,
+        ),
     ):
         return cell
     else:

@@ -232,6 +232,16 @@ def hub_public_image(hf_api: HfApi, hf_token: str, datasets: Dict[str, Dataset])
         hf_api.delete_repo(repo_id=repo_id, token=hf_token, repo_type="dataset")
 
 
+@pytest.fixture(scope="session", autouse=True)
+def hub_public_images_list(hf_api: HfApi, hf_token: str, datasets: Dict[str, Dataset]) -> Iterable[str]:
+    repo_id = create_hub_dataset_repo(
+        hf_api=hf_api, hf_token=hf_token, prefix="images_list", dataset=datasets["images_list"]
+    )
+    yield repo_id
+    with suppress(requests.exceptions.HTTPError, ValueError):
+        hf_api.delete_repo(repo_id=repo_id, token=hf_token, repo_type="dataset")
+
+
 class HubDatasetTest(TypedDict):
     name: str
     splits_response: Any
@@ -342,9 +352,38 @@ def get_IMAGE_rows(dataset: str):
     ]
 
 
+IMAGES_LIST_cols = {
+    "col": [
+        {
+            "_type": "Image",
+            "decode": True,
+            "id": None,
+        }
+    ],
+}
+
+
+def get_IMAGES_LIST_rows(dataset: str):
+    dataset, config, split = get_default_config_split(dataset)
+    return [
+        {
+            "col": [
+                f"http://localhost/assets/{dataset}/--/{config}/{split}/0/col/image-1d100e9.jpg",
+                f"http://localhost/assets/{dataset}/--/{config}/{split}/0/col/image-1d300ea.jpg",
+            ]
+        }
+    ]
+
+
 @pytest.fixture(scope="session", autouse=True)
 def hub_datasets(
-    hub_public_empty, hub_public_csv, hub_private_csv, hub_gated_csv, hub_public_audio, hub_public_image
+    hub_public_empty,
+    hub_public_csv,
+    hub_private_csv,
+    hub_gated_csv,
+    hub_public_audio,
+    hub_public_image,
+    hub_public_images_list,
 ) -> HubDatasets:
     return {
         "does_not_exist": {
@@ -384,6 +423,13 @@ def hub_datasets(
             "splits_response": get_splits_response(hub_public_image, 0, 1),
             "first_rows_response": get_first_rows_response(
                 hub_public_image, IMAGE_cols, get_IMAGE_rows(hub_public_image)
+            ),
+        },
+        "images_list": {
+            "name": hub_public_images_list,
+            "splits_response": get_splits_response(hub_public_images_list, 0, 1),
+            "first_rows_response": get_first_rows_response(
+                hub_public_images_list, IMAGES_LIST_cols, get_IMAGES_LIST_rows(hub_public_images_list)
             ),
         },
     }
