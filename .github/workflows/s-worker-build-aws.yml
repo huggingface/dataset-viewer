@@ -10,11 +10,11 @@ on:
       - 'services/worker/src/**'
       - 'services/worker/poetry.lock'
       - 'services/worker/pyproject.toml'
-      - '.github/workflows/s-worker-build.yml'
-      - '.github/workflows/_docker.yml'
+      - '.github/workflows/s-worker-build-aws.yml'
+      - '.github/workflows/_build_push_docker_aws.yml'
 jobs:
   docker:
-    uses: ./.github/workflows/_docker.yml
+    uses: ./.github/workflows/_build_push_docker_aws.yml
     with:
       service: worker
     secrets:
