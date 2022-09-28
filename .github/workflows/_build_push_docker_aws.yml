@@ -1,8 +1,8 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2022 The HuggingFace Authors.
 
-name: Build and push service docker image
-on: 
+name: Build and push service docker image to private AWS ECR
+on:
   workflow_call:
     inputs:
       service:
