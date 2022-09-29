@@ -24,13 +24,6 @@ To use the docker images already compiled using the CI:
 make start-from-remote-images
 ```
 
-Note that you must login to AWS to be able to download the docker images:
-
-```
-aws ecr get-login-password --region us-east-1 --profile=hub-prod \
-    | docker login --username AWS --password-stdin 707930574880.dkr.ecr.us-east-1.amazonaws.com
-```
-
 To install a single library (in [libs](./libs)) or service (in [services](./services)), install Python 3.9 (consider [pyenv](https://github.com/pyenv/pyenv)) and [poetry]](https://python-poetry.org/docs/master/#installation) (don't forget to add `poetry` to the `PATH` environment variable).
 
 If you use pyenv:
@@ -87,12 +80,12 @@ The application also has:
 
 The following environments contain all the modules: reverse proxy, API server, admin API server, workers, and the Mongo database.
 
-| Environment              | URL                                                  | Type              | How to deploy                                                        |
-| ------------------------ | ---------------------------------------------------- | ----------------- | -------------------------------------------------------------------- |
-| Production               | https://datasets-server.huggingface.co               | Helm / Kubernetes | `make upgrade-prod` in [chart](./chart)                              |
-| Development              | https://datasets-server.us.dev.moon.huggingface.tech | Helm / Kubernetes | `make upgrade-dev` in [chart](./chart)                               |
-| Local from remote images | http://localhost:8100                                | Docker compose    | `make start-from-remote-images` (fetches docker images from AWS ECR) |
-| Local build              | http://localhost:8000                                | Docker compose    | `make start-from-local-code` (builds docker images)                  |
+| Environment              | URL                                                  | Type              | How to deploy                                                           |
+| ------------------------ | ---------------------------------------------------- | ----------------- | ----------------------------------------------------------------------- |
+| Production               | https://datasets-server.huggingface.co               | Helm / Kubernetes | `make upgrade-prod` in [chart](./chart)                                 |
+| Development              | https://datasets-server.us.dev.moon.huggingface.tech | Helm / Kubernetes | `make upgrade-dev` in [chart](./chart)                                  |
+| Local from remote images | http://localhost:8100                                | Docker compose    | `make start-from-remote-images` (fetches docker images from Docker Hub) |
+| Local build              | http://localhost:8000                                | Docker compose    | `make start-from-local-code` (builds docker images)                     |
 
 ## Quality
 
@@ -150,18 +143,16 @@ All the contributions should go through a pull request. The pull requests must b
 
 You can use [act](https://github.com/nektos/act) to test the GitHub Actions (see [.github/workflows/](.github/workflows/)) locally. It reduces the retroaction loop when working on the GitHub Actions, avoid polluting the branches with empty pushes only meant to trigger the CI, and allows to only run specific actions.
 
-For example, to launch the build and push of the docker images to ECR:
+For example, to launch the build and push of the docker images to Docker Hub:
 
 ```
-act -j build-and-push-image --secret-file my.secrets
+act -j build-and-push-image-to-docker-hub --secret-file my.secrets
 ```
 
 with `my.secrets` a file with the secrets:
 
 ```
-AWS_ACCESS_KEY_ID=xxx
-AWS_SECRET_ACCESS_KEY=xxx
+DOCKERHUB_USERNAME=xxx
+DOCKERHUB_PASSWORD=xxx
 GITHUB_TOKEN=xxx
 ```
-
-You might prefer to use [aws-vault](https://github.com/99designs/aws-vault) instead to set the environment variables, but you will still have to pass the GitHub token as a secret.

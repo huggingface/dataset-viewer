@@ -8,17 +8,11 @@ on:
       config-file:
         required: true
         type: string
-    secrets:
-      aws-access-key-id:
-        required: true
-      aws-secret-access-key:
-        required: true
 env:
   python-version: 3.9.6
   poetry-version: 1.1.13
   # required to get access to use a cached poetry venv in "/home/runner/.cache/pypoetry/virtualenvs"
   POETRY_VIRTUALENVS_IN_PROJECT: false
-  region: us-east-1
   working-directory: e2e
 jobs:
   get-config:
@@ -49,15 +43,6 @@ jobs:
     runs-on: "ubuntu-latest"
     steps:
       - uses: actions/checkout@v3
-      - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v1
-        with:
-          aws-access-key-id: ${{ secrets.aws-access-key-id }}
-          aws-secret-access-key: ${{ secrets.aws-secret-access-key }}
-          aws-region: ${{ env.region }}
-      - name: Login to Amazon ECR
-        id: login-ecr
-        uses: aws-actions/amazon-ecr-login@v1
       - name: Install poetry
         run: pipx install poetry==${{ env.poetry-version }}
       - name: Use Python

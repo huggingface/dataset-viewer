@@ -10,13 +10,13 @@ on:
       - 'services/api/src/**'
       - 'services/api/poetry.lock'
       - 'services/api/pyproject.toml'
-      - '.github/workflows/s-api-build.yml'
-      - '.github/workflows/_docker.yml'
+      - '.github/workflows/s-api-build-docker.yml'
+      - '.github/workflows/_build_push_docker_hub.yml'
 jobs:
   docker:
-    uses: ./.github/workflows/_docker.yml
+    uses: ./.github/workflows/_build_push_docker_hub.yml
     with:
       service: api
     secrets:
-      aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-      aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+      dockerhub-username: ${{ secrets.DOCKERHUB_USERNAME }}
+      dockerhub-password: ${{ secrets.DOCKERHUB_PASSWORD }}

@@ -6,7 +6,7 @@ If you have access to the internal HF notion, see https://www.notion.so/huggingf
 
 The cloud infrastructure for the datasets-server uses:
 
-- Amazon ECR to store the docker images of the datasets-server services.
+- Docker Hub to store the docker images of the datasets-server services.
 - Amazon EKS for the Kubernetes clusters.
 
 Note that this Helm chart is used to manage the deployment of the `datasets-server` services to the cloud infrastructure (AWS) using Kubernetes. The infrastructure in itself is not created here, but in https://github.com/huggingface/infra/ using terraform. If you need to create or modify some resources, contact the infra team.
