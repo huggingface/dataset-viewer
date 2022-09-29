@@ -1,1 +1,16 @@
 # Data types
+
+All the datasets supported by the Datasets Server have a tabular format, with rows and columns. The columns are formalized as [Features](https://huggingface.co/docs/datasets/about_dataset_features) and bear a data type.
+
+Among the supported data types:
+
+- [scalar types](https://huggingface.co/docs/datasets/v2.5.1/en/package_reference/main_classes#datasets.Value): numbers, strings, dates
+- list, array of numbers (from [2D](https://huggingface.co/docs/datasets/v2.5.1/en/package_reference/main_classes#datasets.Array2D) to [5D](https://huggingface.co/docs/datasets/v2.5.1/en/package_reference/main_classes#datasets.Array5D)) and [sequence](https://huggingface.co/docs/datasets/v2.5.1/en/package_reference/main_classes#datasets.Sequence)
+- dict
+- [image](https://huggingface.co/docs/datasets/v2.5.1/en/package_reference/main_classes#datasets.Image)
+- [audio](https://huggingface.co/docs/datasets/v2.5.1/en/package_reference/main_classes#datasets.Audio)
+- specific to Natural Language Processing: [ClassLabel](https://huggingface.co/docs/datasets/v2.5.1/en/package_reference/main_classes#datasets.ClassLabel), [Translation](https://huggingface.co/docs/datasets/v2.5.1/en/package_reference/main_classes#datasets.Translation), [TranslationVariableLanguages](https://huggingface.co/docs/datasets/v2.5.1/en/package_reference/main_classes#datasets.TranslationVariableLanguages)
+
+See the [Features](https://huggingface.co/docs/datasets/v2.5.1/en/package_reference/main_classes#datasets.Features) class reference for the details.
+
+The detail of the features for a split are given by the [`/first-rows`](./first_rows) endpoint.

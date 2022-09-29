@@ -1,12 +1,6 @@
 # List configs and splits
 
-The datasets aimed at training and evaluating a Machine Learning model are generally divided into multiple _[splits](https://huggingface.co/docs/datasets/load_hub#splits)_, for example `train`, `test` and `validation`.
-
-Some datasets also use _[configurations](https://huggingface.co/docs/datasets/load_hub#configurations)_ (sub-datasets) to group similar examples: [CommonVoice](https://huggingface.co/datasets/mozilla-foundation/common_voice_10_0)'s configurations embed the audio recordings of each language ; [GLUE](https://huggingface.co/datasets/glue) provides one configuration for every evaluation task.
-
-Read more in depth about the concepts in the [🤗 Datasets library documentation](https://huggingface.co/docs/datasets).
-
-The /splits endpoints gives the **list of configurations and splits** of a dataset.
+The /splits endpoints gives the **list of [configurations and splits](./configs_and_splits)** of a dataset.
 
 ```
 https://datasets-server.huggingface.co/splits?dataset={dataset}

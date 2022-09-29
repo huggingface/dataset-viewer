@@ -1,0 +1,15 @@
+# Add a new task
+
+The datasets server runs long-lasting tasks and stores the result to later serve it quickly through a REST API. For now, two tasks have been implemented:
+
+- get the list the configurations and splits, and
+- get the list of columns and first 100 rows.
+
+The [datasets server project](https://github.com/huggingface/datasets-server) is open source and the next tasks to be implemented are listed in the issues with the tag [`new task`](https://github.com/huggingface/datasets-server/issues?q=is%3Aissue+is%3Aopen+label%3A%22new+task%22). Among them:
+
+- create and upload a parquet file on the Hub for a dataset,
+- provide random access to the rows,
+- provide statistics of a column,
+- provide a list of similar datasets (proximity).
+
+To propose a new task, [open an issue](https://github.com/huggingface/datasets-server/issues/new). If you want to contribute to the development of a task, consult the [CONTRIBUTING guide](https://github.com/huggingface/datasets-server/blob/main/CONTRIBUTING.md) and the [DEVELOPER guide](https://github.com/huggingface/datasets-server/blob/main/DEVELOPER_GUIDE.md).

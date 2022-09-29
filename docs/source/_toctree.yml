@@ -20,3 +20,5 @@
     title: Configs and splits
   - local: data_types
     title: Data types
+  - local: add_task
+    title: Add a new task

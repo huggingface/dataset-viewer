@@ -1,1 +1,21 @@
 # Quick start
+
+The base URL of the REST API is
+
+```
+https://datasets-server.huggingface.co
+```
+
+The API provides the following endpoints:
+
+| Endpoint                    | Method | Description                                                                      | Query parameters                                                                                   |
+| --------------------------- | ------ | -------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------- |
+| [/valid](./valid)           | GET    | Get the list of datasets hosted in the Hub and supported by the datasets server. |                                                                                                    |
+| [/splits](./splits)         | GET    | Get the list of configurations and splits of a dataset.                          | `dataset`: name of the dataset                                                                     |
+| [/first-rows](./first-rows) | GET    | Get the columns (with data type) and first rows of a dataset split.              | - `dataset`: name of the dataset<br>- `config`: name of the config<br>- `split`: name of the split |
+
+## OpenAPI specification
+
+The OpenAPI specification (fka Swagger) is published at https://datasets-server.huggingface.co/openapi.json.
+
+Explore it and **run the queries** with [ReDoc](https://redocly.github.io/redoc/?url=https://datasets-server.huggingface.co/openapi.json), [Postman](https://www.postman.com/huggingface/workspace/hugging-face-apis/documentation/23242779-d068584e-96d1-4d92-a703-7cb12cbd8053) or [RapidAPI](https://rapidapi.com/hugging-face-hugging-face-default/api/hugging-face-datasets-api/).
