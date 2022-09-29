@@ -10,7 +10,7 @@ on:
       - 'services/worker/src/**'
       - 'services/worker/poetry.lock'
       - 'services/worker/pyproject.toml'
-      - '.github/workflows/s-worker-build-aws.yml'
+      - '.github/workflows/s-worker-build-docker.yml'
       - '.github/workflows/_build_push_docker_hub.yml'
 jobs:
   docker:
