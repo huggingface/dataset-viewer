@@ -23,6 +23,3 @@ jobs:
     uses: ./.github/workflows/_e2e_tests.yml
     with:
       config-file: chart/docker-images.yaml
-    secrets:
-      aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-      aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
