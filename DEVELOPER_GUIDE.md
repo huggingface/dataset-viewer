@@ -156,3 +156,110 @@ DOCKERHUB_USERNAME=xxx
 DOCKERHUB_PASSWORD=xxx
 GITHUB_TOKEN=xxx
 ```
+
+## Mac OS
+
+To install the [worker service](./services/worker) on Mac OS, you can follow the next steps.
+
+### First: as an administrator
+
+Install brew:
+
+```bash
+$ /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+```
+
+Install ICU:
+
+```bash
+$ brew install icu4c
+
+
+==> Caveats
+icu4c is keg-only, which means it was not symlinked into /opt/homebrew,
+because macOS provides libicucore.dylib (but nothing else).
+
+If you need to have icu4c first in your PATH, run:
+  echo 'export PATH="/opt/homebrew/opt/icu4c/bin:$PATH"' >> ~/.zshrc
+  echo 'export PATH="/opt/homebrew/opt/icu4c/sbin:$PATH"' >> ~/.zshrc
+
+For compilers to find icu4c you may need to set:
+  export LDFLAGS="-L/opt/homebrew/opt/icu4c/lib"
+  export CPPFLAGS="-I/opt/homebrew/opt/icu4c/include"
+```
+
+### Then: as a normal user
+
+Add ICU to the path:
+
+```bash
+$ echo 'export PATH="/opt/homebrew/opt/icu4c/bin:$PATH"' >> ~/.zshrc
+$ echo 'export PATH="/opt/homebrew/opt/icu4c/sbin:$PATH"' >> ~/.zshrc
+```
+
+Install pyenv:
+
+```bash
+$ curl https://pyenv.run | bash
+```
+
+append the following lines to ~/.zshrc:
+
+```bash
+export PYENV_ROOT="$HOME/.pyenv"
+command -v pyenv >/dev/null || export PATH="$PYENV_ROOT/bin:$PATH"
+eval "$(pyenv init -)"
+```
+
+Logout and login again.
+
+Install Python 3.9.6:
+
+```bash
+$ pyenv install 3.9.6
+```
+
+Check that the expected local version of Python is used:
+
+```bash
+$ cd services/workers
+$ python --version
+Python 3.9.6
+```
+
+Install poetry:
+
+```bash
+curl -sSL https://install.python-poetry.org | python3 -
+```
+
+append the following lines to ~/.zshrc:
+
+```bash
+export PATH="/Users/slesage2/.local/bin:$PATH"
+```
+
+Install rust:
+
+```bash
+$ curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
+$ source $HOME/.cargo/env
+```
+
+Set the python version to use with poetry:
+
+```bash
+poetry env use 3.9.6
+```
+
+Avoid an issue with Apache beam (https://github.com/python-poetry/poetry/issues/4888#issuecomment-1208408509):
+
+```bash
+poetry config experimental.new-installer false
+```
+
+Install the dependencies:
+
+```bash
+make install
+```
