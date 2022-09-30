@@ -286,7 +286,7 @@ plugins = ["setuptools"]
 
 [[package]]
 name = "libcache"
-version = "0.2.1"
+version = "0.2.2"
 description = "Library for the cache in mongodb"
 category = "main"
 optional = false
@@ -300,7 +300,7 @@ pymongo = {version = ">=3.12.3,<4.0.0", extras = ["srv"]}
 
 [package.source]
 type = "file"
-url = "../../libs/libcache/dist/libcache-0.2.1-py3-none-any.whl"
+url = "../../libs/libcache/dist/libcache-0.2.2-py3-none-any.whl"
 
 [[package]]
 name = "libqueue"
@@ -795,7 +795,7 @@ watchmedo = ["PyYAML (>=3.10)"]
 [metadata]
 lock-version = "1.1"
 python-versions = "3.9.6"
-content-hash = "cf09e082676bb258b556347289a0d3fa7d0d629879107d3deaf82de0bd10a7d1"
+content-hash = "02ecb4f6d1a72a749e9ef3c55cc27c117e3955cb239c00b8d36bebbd440b74e5"
 
 [metadata.files]
 anyio = [
@@ -948,7 +948,7 @@ isort = [
     {file = "isort-5.10.1.tar.gz", hash = "sha256:e8443a5e7a020e9d7f97f1d7d9cd17c88bcb3bc7e218bf9cf5095fe550be2951"},
 ]
 libcache = [
-    {file = "libcache-0.2.1-py3-none-any.whl", hash = "sha256:62c57b8e12a70241106cd9bcc7b845b40ba5ff9dd6423691de269a42f507943f"},
+    {file = "libcache-0.2.2-py3-none-any.whl", hash = "sha256:682aecaedf5782d7048b0ab0fed7bdd1e399cd06dbe2a3db31d1b3951a328559"},
 ]
 libqueue = [
     {file = "libqueue-0.2.0-py3-none-any.whl", hash = "sha256:ec4d47a4b577528f4d414d32e9c8861ce42934c5a0bd362c70b17dd0d9dc5e16"},
