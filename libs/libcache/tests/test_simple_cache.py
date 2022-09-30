@@ -15,6 +15,7 @@ from libcache.simple_cache import (
     connect_to_cache,
     delete_first_rows_responses,
     delete_splits_responses,
+    get_cache_reports_features,
     get_cache_reports_first_rows,
     get_cache_reports_splits,
     get_datasets_with_some_error,
@@ -420,5 +421,98 @@ def test_stress_get_cache_reports_first_rows(num_entries: int) -> None:
         start = process_time()
         is_first = False
         response = get_cache_reports_first_rows(next_cursor, 100)
+        next_cursor = response["next_cursor"]
+        assert process_time() - start < MAX_SECONDS
+
+
+def test_get_cache_reports_features() -> None:
+    assert get_cache_reports_features("", 2) == {"cache_reports": [], "next_cursor": ""}
+    upsert_first_rows_response(
+        "a",
+        "config",
+        "split",
+        {"key": "value"},
+        HTTPStatus.OK,
+    )
+    b_details = {
+        "error": "error B",
+        "cause_exception": "ExceptionB",
+        "cause_message": "Cause message B",
+        "cause_traceback": ["B"],
+    }
+    upsert_first_rows_response(
+        "b",
+        "config",
+        "split",
+        b_details,
+        HTTPStatus.INTERNAL_SERVER_ERROR,
+        "ErrorCodeB",
+        b_details,
+    )
+    upsert_first_rows_response(
+        "c",
+        "config",
+        "split",
+        {"features": "value"},
+        HTTPStatus.OK,
+    )
+    upsert_first_rows_response(
+        "d",
+        "config",
+        "split",
+        {"features": "value2"},
+        HTTPStatus.OK,
+    )
+    upsert_first_rows_response(
+        "e",
+        "config",
+        "split",
+        {"features": "value3"},
+        HTTPStatus.OK,
+    )
+    response = get_cache_reports_features("", 2)
+    assert response["cache_reports"] == [
+        {"dataset": "c", "config": "config", "split": "split", "features": "value"},
+        {"dataset": "d", "config": "config", "split": "split", "features": "value2"},
+    ]
+    assert response["next_cursor"] != ""
+    next_cursor = response["next_cursor"]
+
+    response = get_cache_reports_features(next_cursor, 2)
+    assert response == {
+        "cache_reports": [
+            {"dataset": "e", "config": "config", "split": "split", "features": "value3"},
+        ],
+        "next_cursor": "",
+    }
+
+    with pytest.raises(InvalidCursor):
+        get_cache_reports_features("not an objectid", 2)
+    with pytest.raises(InvalidLimit):
+        get_cache_reports_features(next_cursor, -1)
+    with pytest.raises(InvalidLimit):
+        get_cache_reports_features(next_cursor, 0)
+
+
+@pytest.mark.parametrize("num_entries", [100, 1_000])
+def test_stress_get_cache_reports_features(num_entries: int) -> None:
+    MAX_SECONDS = 0.1
+    assert get_cache_reports_features("", 2) == {"cache_reports": [], "next_cursor": ""}
+    split_names = [f"split{i}" for i in range(num_entries)]
+    for split_name in split_names:
+        upsert_first_rows_response(
+            "dataset",
+            "config",
+            split_name,
+            {"features": "value"},
+            HTTPStatus.OK,
+        )
+
+    next_cursor = ""
+    is_first: bool = True
+    while next_cursor != "" or is_first:
+        start = process_time()
+        is_first = False
+        response = get_cache_reports_features(next_cursor, 100)
         next_cursor = response["next_cursor"]
         assert process_time() - start < MAX_SECONDS

@@ -160,7 +160,7 @@ IDNA = ["idna (>=2.1)"]
 
 [[package]]
 name = "dparse"
-version = "0.5.1"
+version = "0.6.2"
 description = "A parser for Python dependency files"
 category = "dev"
 optional = false
@@ -168,11 +168,11 @@ python-versions = ">=3.5"
 
 [package.dependencies]
 packaging = "*"
-pyyaml = "*"
 toml = "*"
 
 [package.extras]
 pipenv = ["pipenv"]
+conda = ["pyyaml"]
 
 [[package]]
 name = "filelock"
@@ -286,7 +286,7 @@ plugins = ["setuptools"]
 
 [[package]]
 name = "libcache"
-version = "0.2.1"
+version = "0.2.2"
 description = "Library for the cache in mongodb"
 category = "main"
 optional = false
@@ -300,7 +300,7 @@ pymongo = {version = ">=3.12.3,<4.0.0", extras = ["srv"]}
 
 [package.source]
 type = "file"
-url = "../../libs/libcache/dist/libcache-0.2.1-py3-none-any.whl"
+url = "../../libs/libcache/dist/libcache-0.2.2-py3-none-any.whl"
 
 [[package]]
 name = "libqueue"
@@ -626,7 +626,7 @@ python-versions = ">=3.5"
 
 [[package]]
 name = "safety"
-version = "2.1.1"
+version = "2.2.0"
 description = "Checks installed dependencies for known vulnerabilities and licenses."
 category = "dev"
 optional = false
@@ -634,7 +634,7 @@ python-versions = "*"
 
 [package.dependencies]
 Click = ">=8.0.2"
-dparse = ">=0.5.1"
+dparse = ">=0.6.2"
 packaging = ">=21.0"
 requests = "*"
 "ruamel.yaml" = ">=0.17.21"
@@ -795,7 +795,7 @@ watchmedo = ["PyYAML (>=3.10)"]
 [metadata]
 lock-version = "1.1"
 python-versions = "3.9.6"
-content-hash = "cf09e082676bb258b556347289a0d3fa7d0d629879107d3deaf82de0bd10a7d1"
+content-hash = "02ecb4f6d1a72a749e9ef3c55cc27c117e3955cb239c00b8d36bebbd440b74e5"
 
 [metadata.files]
 anyio = [
@@ -910,10 +910,7 @@ dnspython = [
     {file = "dnspython-1.16.0-py2.py3-none-any.whl", hash = "sha256:f69c21288a962f4da86e56c4905b49d11aba7938d3d740e80d9e366ee4f1632d"},
     {file = "dnspython-1.16.0.zip", hash = "sha256:36c5e8e38d4369a08b6780b7f27d790a292b2b08eea01607865bf0936c558e01"},
 ]
-dparse = [
-    {file = "dparse-0.5.1-py3-none-any.whl", hash = "sha256:e953a25e44ebb60a5c6efc2add4420c177f1d8404509da88da9729202f306994"},
-    {file = "dparse-0.5.1.tar.gz", hash = "sha256:a1b5f169102e1c894f9a7d5ccf6f9402a836a5d24be80a986c7ce9eaed78f367"},
-]
+dparse = []
 filelock = [
     {file = "filelock-3.7.1-py3-none-any.whl", hash = "sha256:37def7b658813cda163b56fc564cdc75e86d338246458c4c28ae84cabefa2404"},
     {file = "filelock-3.7.1.tar.gz", hash = "sha256:3a0fd85166ad9dbab54c9aec96737b744106dc5f15c0b09a6744a445299fcf04"},
@@ -948,7 +945,7 @@ isort = [
     {file = "isort-5.10.1.tar.gz", hash = "sha256:e8443a5e7a020e9d7f97f1d7d9cd17c88bcb3bc7e218bf9cf5095fe550be2951"},
 ]
 libcache = [
-    {file = "libcache-0.2.1-py3-none-any.whl", hash = "sha256:62c57b8e12a70241106cd9bcc7b845b40ba5ff9dd6423691de269a42f507943f"},
+    {file = "libcache-0.2.2-py3-none-any.whl", hash = "sha256:682aecaedf5782d7048b0ab0fed7bdd1e399cd06dbe2a3db31d1b3951a328559"},
 ]
 libqueue = [
     {file = "libqueue-0.2.0-py3-none-any.whl", hash = "sha256:ec4d47a4b577528f4d414d32e9c8861ce42934c5a0bd362c70b17dd0d9dc5e16"},

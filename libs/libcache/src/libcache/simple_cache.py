@@ -5,7 +5,7 @@ import logging
 import types
 from datetime import datetime, timezone
 from http import HTTPStatus
-from typing import Dict, Generic, List, Optional, Tuple, Type, TypedDict, TypeVar
+from typing import Any, Dict, Generic, List, Optional, Tuple, Type, TypedDict, TypeVar
 
 from bson import ObjectId
 from bson.errors import InvalidId
@@ -393,6 +393,69 @@ def get_cache_reports_first_rows(cursor: Optional[str], limit: int) -> CacheRepo
                 "split": object.split_name,
                 "http_status": object.http_status.value,
                 "error_code": object.error_code,
+            }
+            for object in objects
+        ],
+        "next_cursor": "" if len(objects) < limit else str(objects[-1].id),
+    }
+
+
+class FeaturesResponseReport(TypedDict):
+    dataset: str
+    config: str
+    split: str
+    features: Optional[List[Any]]
+
+
+class CacheReportFeatures(TypedDict):
+    cache_reports: List[FeaturesResponseReport]
+    next_cursor: str
+
+
+def get_cache_reports_features(cursor: Optional[str], limit: int) -> CacheReportFeatures:
+    """
+    Get a list of reports on the features (columns), grouped by splits, along with the next cursor.
+    See https://solovyov.net/blog/2020/api-pagination-design/.
+    Args:
+        cursor (`str`):
+            An opaque string value representing a pointer to a specific FirstRowsResponse item in the dataset. The
+            server returns results after the given pointer.
+            An empty string means to start from the beginning.
+        limit (strictly positive `int`):
+            The maximum number of results.
+    Returns:
+        [`CacheReportFeatures`]: A dict with the list of reports and the next cursor. The next cursor is
+        an empty string if there are no more items to be fetched.
+    <Tip>
+    Raises the following errors:
+        - [`~libcache.simple_cache.InvalidCursor`]
+          If the cursor is invalid.
+        - [`~libcache.simple_cache.InvalidLimit`]
+          If the limit is an invalid number.
+    </Tip>
+    """
+    if not cursor:
+        queryset = FirstRowsResponse.objects()
+    else:
+        try:
+            queryset = FirstRowsResponse.objects(id__gt=ObjectId(cursor))
+        except InvalidId as err:
+            raise InvalidCursor("Invalid cursor.") from err
+    if limit <= 0:
+        raise InvalidLimit("Invalid limit.")
+    objects = list(
+        queryset(response__features__exists=True)
+        .order_by("+id")
+        .only("id", "dataset_name", "config_name", "split_name", "response.features")
+        .limit(limit)
+    )
+    return {
+        "cache_reports": [
+            {
+                "dataset": object.dataset_name,
+                "config": object.config_name,
+                "split": object.split_name,
+                "features": object.response["features"],
             }
             for object in objects
         ],

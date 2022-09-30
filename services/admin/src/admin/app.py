@@ -24,10 +24,7 @@ from admin.config import (
     MONGO_URL,
 )
 from admin.prometheus import Prometheus
-from admin.routes.cache_reports import (
-    create_cache_reports_first_rows_endpoint,
-    create_cache_reports_splits_endpoint,
-)
+from admin.routes.cache_reports import create_cache_reports_endpoint
 from admin.routes.healthcheck import healthcheck_endpoint
 from admin.routes.pending_jobs import create_pending_jobs_endpoint
 
@@ -50,11 +47,16 @@ def create_app() -> Starlette:
         Route("/metrics", endpoint=prometheus.endpoint),
         # used by https://observablehq.com/@huggingface/quality-assessment-of-datasets-loading
         Route(
-            "/cache-reports/first-rows",
-            endpoint=create_cache_reports_first_rows_endpoint(EXTERNAL_AUTH_URL, HF_ORGANIZATION),
+            "/cache-reports/features",
+            endpoint=create_cache_reports_endpoint("features", EXTERNAL_AUTH_URL, HF_ORGANIZATION),
         ),
         Route(
-            "/cache-reports/splits", endpoint=create_cache_reports_splits_endpoint(EXTERNAL_AUTH_URL, HF_ORGANIZATION)
+            "/cache-reports/first-rows",
+            endpoint=create_cache_reports_endpoint("first-rows", EXTERNAL_AUTH_URL, HF_ORGANIZATION),
+        ),
+        Route(
+            "/cache-reports/splits",
+            endpoint=create_cache_reports_endpoint("splits", EXTERNAL_AUTH_URL, HF_ORGANIZATION),
         ),
         # used in a browser tab to monitor the queue
         Route("/pending-jobs", endpoint=create_pending_jobs_endpoint(EXTERNAL_AUTH_URL, HF_ORGANIZATION)),
