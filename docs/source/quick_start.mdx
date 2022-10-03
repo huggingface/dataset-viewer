@@ -1,12 +1,12 @@
-# Quick start
+# Quickstart
 
-The base URL of the REST API is
+In this quickstart, you'll learn how to use the Datasets Server's REST API to:
 
-```
-https://datasets-server.huggingface.co
-```
+* Check whether a dataset on the Hub is functional.
+* Return the configuration and splits of a dataset.
+* Preview the first 100 rows of a dataset.
 
-The API provides the following endpoints:
+Each feature is served through an endpoint summarized in the table below:
 
 | Endpoint                    | Method | Description                                                                      | Query parameters                                                                                   |
 | --------------------------- | ------ | -------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------- |
@@ -14,8 +14,82 @@ The API provides the following endpoints:
 | [/splits](./splits)         | GET    | Get the list of configurations and splits of a dataset.                          | `dataset`: name of the dataset                                                                     |
 | [/first-rows](./first-rows) | GET    | Get the columns (with data type) and first rows of a dataset split.              | - `dataset`: name of the dataset<br>- `config`: name of the config<br>- `split`: name of the split |
 
-## OpenAPI specification
+There is no installation or setup required to use Datasets Server.
 
-The OpenAPI specification (fka Swagger) is published at https://datasets-server.huggingface.co/openapi.json.
+<Tip>
+  
+Sign up for a [Hugging Face account](hf.co/join) if you don't already have one! While you can use Datasets Server without a Hugging Face account, you won't be able to access [gated datasets](https://huggingface.co/docs/hub/datasets-gated) like [CommonVoice](https://huggingface.co/datasets/mozilla-foundation/common_voice_10_0) and [ImageNet](https://huggingface.co/datasets/imagenet-1k) without providing a [user token](https://huggingface.co/settings/tokens) which you can find in your user settings.
+  
+</Tip>
 
-Explore it and **run the queries** with [ReDoc](https://redocly.github.io/redoc/?url=https://datasets-server.huggingface.co/openapi.json), [Postman](https://www.postman.com/huggingface/workspace/hugging-face-apis/documentation/23242779-d068584e-96d1-4d92-a703-7cb12cbd8053) or [RapidAPI](https://rapidapi.com/hugging-face-hugging-face-default/api/hugging-face-datasets-api/).
+Feel free to try out the API in [Postman](https://www.postman.com/huggingface/workspace/hugging-face-apis/documentation/23242779-d068584e-96d1-4d92-a703-7cb12cbd8053), [ReDoc](https://redocly.github.io/redoc/?url=https://datasets-server.huggingface.co/openapi.json) or [RapidAPI](https://rapidapi.com/hugging-face-hugging-face-default/api/hugging-face-datasets-api/). This quickstart will show you how to query the endpoints programmatically.
+
+The base URL of the REST API is:
+
+```
+https://datasets-server.huggingface.co
+```
+
+## Gated datasets
+
+For gated datasets, you'll need to provide your user token in `headers` of your query. Otherwise, you'll get an error message to retry with authentication.
+
+```py
+import requests
+headers = {"Authorization": f"Bearer {API_TOKEN}"}
+API_URL = "https://datasets-server.huggingface.co/is-valid?dataset=mozilla-foundation/common_voice_10_0"
+def query():
+    response = requests.request("GET", API_URL, headers=headers)
+    return response.json()
+data = query()
+```
+
+## Check dataset validity
+
+The `/valid` endpoint returns a JSON list of datasets stored on the Hub that load without any errors:
+
+```py
+import requests
+API_URL = "https://datasets-server.huggingface.co/valid"
+def query():
+    response = requests.request("GET", API_URL)
+    return response.json()
+data = query()
+```
+
+To check whether a specific dataset is valid, for example, [Rotten Tomatoes](https://huggingface.co/datasets/rotten_tomatoes), use the `/is-valid` endpoint instead:
+
+```py
+import requests
+API_URL = "https://datasets-server.huggingface.co/is-valid?dataset=rotten_tomatoes"
+def query():
+    response = requests.request("GET", API_URL)
+    return response.json()
+data = query()
+```
+
+## List configurations and splits
+
+The `/splits` endpoint returns a JSON list of the splits in a dataset:
+
+```py
+import requests
+API_URL = "https://datasets-server.huggingface.co/splits?dataset=rotten_tomatoes"
+def query():
+    response = requests.request("GET", API_URL)
+    return response.json()
+data = query()
+```
+
+## Preview a dataset
+
+The `/first-rows` endpoint returns a JSON list of the first 100 rows of a dataset. You should specify the dataset name, configuration name (you can find out the configuration name from the `/splits` endpoint), and split name of the dataset you'd like to preview:
+
+```py
+import requests
+API_URL = "https://datasets-server.huggingface.co/first-rows?dataset=rotten_tomatoes&config=default&split=train"
+def query():
+    response = requests.request("GET", API_URL)
+    return response.json()
+data = query()
+```
