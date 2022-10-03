@@ -1,16 +1,8 @@
-# Datasets server
+# Datasets Server
 
-Integrate into your apps over 10,000 [datasets](https://huggingface.co/datasets) via simple HTTP requests, with pre-processed responses and scalability built-in.
+Datasets Server is a lightweight web API for visualizing and exploring all types of datasets - computer vision, speech, text, and tabular - stored on the Hugging Face [Hub](https://huggingface.co/datasets). As datasets increase in size and data type richness, the cost of preprocessing (storage and compute) these datasets can be a challenge, holding you back from learning more about them. Datasets Server aims to take care of the heavy lifting so you can:
 
-The datasets server runs long-lasting tasks and stores the result to later serve it quickly through a REST API:
+* Get instantaneous responses to information, such as the dataset splits, column and data types, about a dataset through a simple REST API.
+* Download and preview the first 100 rows of any dataset.
 
-> It processes the datasets ⚙️ / you consume the API 🍹
-
-## Main features
-
-- Access **10,000+ Machine Learning datasets**
-- Get instantaneous responses to **pre-processed** long-running queries
-- Access **metadata and data**: list of splits, list of columns and data types, 100 first rows
-- Download **images and audio files** (first 100 rows)
-- Handle **any kind of dataset** thanks to the [🤗 Datasets](https://github.com/huggingface/datasets) library
-- See it in action in the [dataset viewer](https://huggingface.co/docs/hub/datasets-viewer) on the Hub.
+Join the growing community on the [forum](https://discuss.huggingface.co/) or [Discord](https://discord.com/invite/JfAtkvEtRb) today, and give the [Datasets Server repository](https://huggingface.co/docs/datasets-server/index) a ⭐️ if you're interested in the latest updates!
