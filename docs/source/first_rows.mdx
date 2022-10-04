@@ -10,7 +10,7 @@ Datasets Server provides a `/first-rows` endpoint for visualizing the first 100 
   an entire dataset may take hours!
 </Tip>
 
-This guide shows you how to use Datasets Server's `/first-rows` endpoint to preview a dataset. Feel free to also try it out with [Postman](https://www.postman.com/huggingface/workspace/hugging-face-apis/request/23242779-32d6a8be-b800-446a-8cee-f6b5ca1710df), [RapidAPI](https://rapidapi.com/hugging-face-hugging-face-default/api/hugging-face-datasets-api), or [ReDoc]([https://redocly.github.io/redoc/?url=https://datasets-server.huggingface.co/openapi.json#operation/listSplits](https://redocly.github.io/redoc/?url=https://datasets-server.huggingface.co/openapi.json#operation/listFirstRows).
+This guide shows you how to use Datasets Server's `/first-rows` endpoint to preview a dataset. Feel free to also try it out with [Postman](https://www.postman.com/huggingface/workspace/hugging-face-apis/request/23242779-32d6a8be-b800-446a-8cee-f6b5ca1710df), [RapidAPI](https://rapidapi.com/hugging-face-hugging-face-default/api/hugging-face-datasets-api), or [ReDoc](https://redocly.github.io/redoc/?url=https://datasets-server.huggingface.co/openapi.json#operation/listFirstRows).
 
 The `/first-rows` endpoint accepts three query parameters:
 
@@ -61,7 +61,7 @@ curl https://datasets-server.huggingface.co/first-rows?dataset=duorc&config=Self
 The endpoint response is a JSON containing two keys:
 
 - The [`features`](https://huggingface.co/docs/datasets/about_dataset_features) of a dataset, including the column's name and data type.
-- The first 100 [`rows`] of a dataset and the content contained in each column of a specific row.
+- The first 100 `rows` of a dataset and the content contained in each column of a specific row.
 
 For example, here are the `features` and the first 100 `rows` of the `duorc`/`SelfRC` train split:
 
