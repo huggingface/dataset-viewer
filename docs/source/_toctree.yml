@@ -11,9 +11,9 @@
   - local: valid
     title: Check dataset validity
   - local: splits
-    title: List configs and splits
+    title: List splits and configurations
   - local: first_rows
-    title: Preview data
+    title: Preview a dataset
 - title: Conceptual Guides
   sections:
   - local: configs_and_splits
