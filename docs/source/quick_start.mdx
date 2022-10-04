@@ -8,11 +8,12 @@ In this quickstart, you'll learn how to use the Datasets Server's REST API to:
 
 Each feature is served through an endpoint summarized in the table below:
 
-| Endpoint                    | Method | Description                                                                      | Query parameters                                                                                   |
-| --------------------------- | ------ | -------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------- |
-| [/valid](./valid)           | GET    | Get the list of datasets hosted in the Hub and supported by the datasets server. |                                                                                                    |
-| [/splits](./splits)         | GET    | Get the list of configurations and splits of a dataset.                          | `dataset`: name of the dataset                                                                     |
-| [/first-rows](./first-rows) | GET    | Get the columns (with data type) and first rows of a dataset split.              | - `dataset`: name of the dataset<br>- `config`: name of the config<br>- `split`: name of the split |
+| Endpoint                    | Method | Description                                                                      | Query parameters                                                                                   |   |
+|-----------------------------|--------|----------------------------------------------------------------------------------|----------------------------------------------------------------------------------------------------|---|
+| [/valid](.valid)            | GET    | Get the list of datasets hosted in the Hub and supported by the datasets server. | none                                                                                               |   |
+| [/is-valid](.valid)         | GET    | Check whether a specific dataset is valid.                                       | `dataset`: name of the dataset                                                                     |   |
+| [/splits](./splits)         | GET    | Get the list of configurations and splits of a dataset.                          | `dataset`: name of the dataset                                                                     |   |
+| [/first-rows](./first-rows) | GET    | Get the columns (with data type) and first rows of a dataset split.              | - `dataset`: name of the dataset<br>- `config`: name of the config<br>- `split`: name of the split |   |
 
 There is no installation or setup required to use Datasets Server.
 
