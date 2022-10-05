@@ -80,9 +80,10 @@ On the other hand, `/is-valid` checks whether a specific dataset loads without a
 <python>
 ```python
 import requests
+headers = {"Authorization": f"Bearer {API_TOKEN}"}
 API_URL = "https://datasets-server.huggingface.co/is-valid?dataset=rotten_tomatoes"
 def query():
-    response = requests.request("GET", API_URL)
+    response = requests.request("GET", API_URL, headers=headers)
     return response.json()
 data = query()
 ```
@@ -94,6 +95,7 @@ async function query(data) {
     const response = await fetch(
         "https://datasets-server.huggingface.co/is-valid?dataset=rotten_tomatoes",
         {
+            headers: { Authorization: `Bearer ${API_TOKEN}` },
             method: "GET"
         }
     );
@@ -108,7 +110,8 @@ query().then((response) => {
 <curl>
 ```curl
 curl https://datasets-server.huggingface.co/is-valid?dataset=rotten_tomatoes \
-        -X GET
+        -X GET \
+        -H "Authorization: Bearer ${API_TOKEN}"
 ```
 </curl>
 </inferencesnippet>
