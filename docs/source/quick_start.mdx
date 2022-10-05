@@ -35,7 +35,9 @@ https://datasets-server.huggingface.co
 
 For gated datasets, you'll need to provide your user token in `headers` of your query. Otherwise, you'll get an error message to retry with authentication.
 
-```py
+<inferencesnippet>
+<python>
+```python
 import requests
 headers = {"Authorization": f"Bearer {API_TOKEN}"}
 API_URL = "https://datasets-server.huggingface.co/is-valid?dataset=mozilla-foundation/common_voice_10_0"
@@ -44,12 +46,42 @@ def query():
     return response.json()
 data = query()
 ```
+</python>
+<js>
+```js
+import fetch from "node-fetch";
+async function query(data) {
+    const response = await fetch(
+        "https://datasets-server.huggingface.co/is-valid?dataset=rotten_tomatoes",
+        {
+            headers: { Authorization: `Bearer ${API_TOKEN}` },
+            method: "GET",
+        }
+    );
+    const result = await response.json();
+    return result;
+}
+query().then((response) => {
+    console.log(JSON.stringify(response));
+});
+```
+</js>
+<curl>
+```curl
+curl https://datasets-server.huggingface.co/is-valid?dataset=rotten_tomatoes \
+        -X GET \
+        -H "Authorization: Bearer ${API_TOKEN}"
+```
+</curl>
+</inferencesnippet>
 
 ## Check dataset validity
 
 The `/valid` endpoint returns a JSON list of datasets stored on the Hub that load without any errors:
 
-```py
+<inferencesnippet>
+<python>
+```python
 import requests
 API_URL = "https://datasets-server.huggingface.co/valid"
 def query():
@@ -57,10 +89,38 @@ def query():
     return response.json()
 data = query()
 ```
+</python>
+<js>
+```js
+import fetch from "node-fetch";
+async function query(data) {
+    const response = await fetch(
+        "https://datasets-server.huggingface.co/valid",
+        {
+            method: "GET"
+        }
+    );
+    const result = await response.json();
+    return result;
+}
+query().then((response) => {
+    console.log(JSON.stringify(response));
+});
+```
+</js>
+<curl>
+```curl
+curl https://datasets-server.huggingface.co/valid \
+        -X GET
+```
+</curl>
+</inferencesnippet>
 
 To check whether a specific dataset is valid, for example, [Rotten Tomatoes](https://huggingface.co/datasets/rotten_tomatoes), use the `/is-valid` endpoint instead:
 
-```py
+<inferencesnippet>
+<python>
+```python
 import requests
 API_URL = "https://datasets-server.huggingface.co/is-valid?dataset=rotten_tomatoes"
 def query():
@@ -68,12 +128,40 @@ def query():
     return response.json()
 data = query()
 ```
+</python>
+<js>
+```js
+import fetch from "node-fetch";
+async function query(data) {
+    const response = await fetch(
+        "https://datasets-server.huggingface.co/is-valid?dataset=rotten_tomatoes",
+        {
+            method: "GET"
+        }
+    );
+    const result = await response.json();
+    return result;
+}
+query().then((response) => {
+    console.log(JSON.stringify(response));
+});
+```
+</js>
+<curl>
+```curl
+curl https://datasets-server.huggingface.co/is-valid?dataset=rotten_tomatoes \
+        -X GET
+```
+</curl>
+</inferencesnippet>
 
 ## List configurations and splits
 
 The `/splits` endpoint returns a JSON list of the splits in a dataset:
 
-```py
+<inferencesnippet>
+<python>
+```python
 import requests
 API_URL = "https://datasets-server.huggingface.co/splits?dataset=rotten_tomatoes"
 def query():
@@ -81,12 +169,40 @@ def query():
     return response.json()
 data = query()
 ```
+</python>
+<js>
+```js
+import fetch from "node-fetch";
+async function query(data) {
+    const response = await fetch(
+        "https://datasets-server.huggingface.co/splits?dataset=rotten_tomatoes",
+        {
+            method: "GET"
+        }
+    );
+    const result = await response.json();
+    return result;
+}
+query().then((response) => {
+    console.log(JSON.stringify(response));
+});
+```
+</js>
+<curl>
+```curl
+curl https://datasets-server.huggingface.co/splits?dataset=rotten_tomatoes \
+        -X GET
+```
+</curl>
+</inferencesnippet>
 
 ## Preview a dataset
 
 The `/first-rows` endpoint returns a JSON list of the first 100 rows of a dataset. You should specify the dataset name, configuration name (you can find out the configuration name from the `/splits` endpoint), and split name of the dataset you'd like to preview:
 
-```py
+<inferencesnippet>
+<python>
+```python
 import requests
 API_URL = "https://datasets-server.huggingface.co/first-rows?dataset=rotten_tomatoes&config=default&split=train"
 def query():
@@ -94,3 +210,29 @@ def query():
     return response.json()
 data = query()
 ```
+</python>
+<js>
+```js
+import fetch from "node-fetch";
+async function query(data) {
+    const response = await fetch(
+        "https://datasets-server.huggingface.co/first-rows?dataset=rotten_tomatoes&config=default&split=train",
+        {
+            method: "GET"
+        }
+    );
+    const result = await response.json();
+    return result;
+}
+query().then((response) => {
+    console.log(JSON.stringify(response));
+});
+```
+</js>
+<curl>
+```curl
+curl https://datasets-server.huggingface.co/first-rows?dataset=rotten_tomatoes&config=default&split=train \
+        -X GET
+```
+</curl>
+</inferencesnippet>
