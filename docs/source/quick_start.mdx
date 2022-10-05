@@ -10,8 +10,8 @@ Each feature is served through an endpoint summarized in the table below:
 
 | Endpoint                    | Method | Description                                                                      | Query parameters                                                                                   |   |
 |-----------------------------|--------|----------------------------------------------------------------------------------|----------------------------------------------------------------------------------------------------|---|
-| [/valid](.valid)            | GET    | Get the list of datasets hosted in the Hub and supported by the datasets server. | none                                                                                               |   |
-| [/is-valid](.valid)         | GET    | Check whether a specific dataset is valid.                                       | `dataset`: name of the dataset                                                                     |   |
+| [/valid](./valid)           | GET    | Get the list of datasets hosted in the Hub and supported by the datasets server. | none                                                                                               |   |
+| [/is-valid](./valid)        | GET    | Check whether a specific dataset is valid.                                       | `dataset`: name of the dataset                                                                     |   |
 | [/splits](./splits)         | GET    | Get the list of configurations and splits of a dataset.                          | `dataset`: name of the dataset                                                                     |   |
 | [/first-rows](./first-rows) | GET    | Get the columns (with data type) and first rows of a dataset split.              | - `dataset`: name of the dataset<br>- `config`: name of the config<br>- `split`: name of the split |   |
 
@@ -19,7 +19,7 @@ There is no installation or setup required to use Datasets Server.
 
 <Tip>
   
-Sign up for a [Hugging Face account](hf.co/join) if you don't already have one! While you can use Datasets Server without a Hugging Face account, you won't be able to access [gated datasets](https://huggingface.co/docs/hub/datasets-gated) like [CommonVoice](https://huggingface.co/datasets/mozilla-foundation/common_voice_10_0) and [ImageNet](https://huggingface.co/datasets/imagenet-1k) without providing a [user token](https://huggingface.co/settings/tokens) which you can find in your user settings.
+Sign up for a <a href="https://huggingface.co/join">Hugging Face account</a> if you don't already have one! While you can use Datasets Server without a Hugging Face account, you won't be able to access <a href="https://huggingface.co/docs/hub/datasets-gated">gated datasets</a> like <a href="https://huggingface.co/datasets/mozilla-foundation/common_voice_10_0">CommonVoice</a> and <a href="https://huggingface.co/datasets/imagenet-1k">ImageNet</a> without providing a <a href="https://huggingface.co/settings/tokens">user token</a> which you can find in your user settings.
   
 </Tip>
 
