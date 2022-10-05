@@ -347,7 +347,11 @@ def get_IMAGE_rows(dataset: str):
     dataset, config, split = get_default_config_split(dataset)
     return [
         {
-            "col": f"http://localhost/assets/{dataset}/--/{config}/{split}/0/col/image.jpg",
+            "col": {
+                "src": f"http://localhost/assets/{dataset}/--/{config}/{split}/0/col/image.jpg",
+                "height": 480,
+                "width": 640,
+            },
         }
     ]
 
@@ -368,8 +372,16 @@ def get_IMAGES_LIST_rows(dataset: str):
     return [
         {
             "col": [
-                f"http://localhost/assets/{dataset}/--/{config}/{split}/0/col/image-1d100e9.jpg",
-                f"http://localhost/assets/{dataset}/--/{config}/{split}/0/col/image-1d300ea.jpg",
+                {
+                    "src": f"http://localhost/assets/{dataset}/--/{config}/{split}/0/col/image-1d100e9.jpg",
+                    "height": 480,
+                    "width": 640,
+                },
+                {
+                    "src": f"http://localhost/assets/{dataset}/--/{config}/{split}/0/col/image-1d300ea.jpg",
+                    "height": 480,
+                    "width": 640,
+                },
             ]
         }
     ]

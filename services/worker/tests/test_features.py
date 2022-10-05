@@ -128,7 +128,15 @@ def test_value(dataset_type, output_value, output_dtype, datasets) -> None:
         # - an :class:`Image` feature to store the absolute path to an image file, an :obj:`np.ndarray` object, a
         #   :obj:`PIL.Image.Image` object or a dictionary with the relative path to an image file ("path" key) and
         #   its bytes content ("bytes" key). This feature extracts the image data.
-        ("image", "http://localhost/assets/dataset/--/config/split/7/col/image.jpg", "Image"),
+        (
+            "image",
+            {
+                "src": "http://localhost/assets/dataset/--/config/split/7/col/image.jpg",
+                "height": 480,
+                "width": 640,
+            },
+            "Image",
+        ),
         # - :class:`datasets.Translation` and :class:`datasets.TranslationVariableLanguages`, the two features
         #   specific to Machine Translation
         ("translation", {"en": "the cat", "fr": "le chat"}, "Translation"),
@@ -141,8 +149,16 @@ def test_value(dataset_type, output_value, output_dtype, datasets) -> None:
         (
             "images_list",
             [
-                "http://localhost/assets/dataset/--/config/split/7/col/image-1d100e9.jpg",
-                "http://localhost/assets/dataset/--/config/split/7/col/image-1d300ea.jpg",
+                {
+                    "src": "http://localhost/assets/dataset/--/config/split/7/col/image-1d100e9.jpg",
+                    "height": 480,
+                    "width": 640,
+                },
+                {
+                    "src": "http://localhost/assets/dataset/--/config/split/7/col/image-1d300ea.jpg",
+                    "height": 480,
+                    "width": 640,
+                },
             ],
             [Image(decode=True, id=None)],
         ),
@@ -175,8 +191,16 @@ def test_value(dataset_type, output_value, output_dtype, datasets) -> None:
         (
             "images_sequence",
             [
-                "http://localhost/assets/dataset/--/config/split/7/col/image-1d100e9.jpg",
-                "http://localhost/assets/dataset/--/config/split/7/col/image-1d300ea.jpg",
+                {
+                    "src": "http://localhost/assets/dataset/--/config/split/7/col/image-1d100e9.jpg",
+                    "height": 480,
+                    "width": 640,
+                },
+                {
+                    "src": "http://localhost/assets/dataset/--/config/split/7/col/image-1d300ea.jpg",
+                    "height": 480,
+                    "width": 640,
+                },
             ],
             "Sequence",
         ),
@@ -211,8 +235,16 @@ def test_value(dataset_type, output_value, output_dtype, datasets) -> None:
             {
                 "a": 0,
                 "b": [
-                    "http://localhost/assets/dataset/--/config/split/7/col/image-89101db.jpg",
-                    "http://localhost/assets/dataset/--/config/split/7/col/image-89301dc.jpg",
+                    {
+                        "src": "http://localhost/assets/dataset/--/config/split/7/col/image-89101db.jpg",
+                        "height": 480,
+                        "width": 640,
+                    },
+                    {
+                        "src": "http://localhost/assets/dataset/--/config/split/7/col/image-89301dc.jpg",
+                        "height": 480,
+                        "width": 640,
+                    },
                 ],
                 "c": {
                     "ca": [

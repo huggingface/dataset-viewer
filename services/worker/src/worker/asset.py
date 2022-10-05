@@ -28,6 +28,12 @@ def create_asset_dir(dataset: str, config: str, split: str, row_idx: int, column
     return dir_path, url_dir_path
 
 
+class ImageSource(TypedDict):
+    src: str
+    height: int
+    width: int
+
+
 def create_image_file(
     dataset: str,
     config: str,
@@ -37,11 +43,15 @@ def create_image_file(
     filename: str,
     image: Image.Image,
     assets_base_url: str,
-) -> str:
+) -> ImageSource:
     dir_path, url_dir_path = create_asset_dir(dataset, config, split, row_idx, column)
     file_path = dir_path / filename
     image.save(file_path)
-    return f"{assets_base_url}/{url_dir_path}/{filename}"
+    return {
+        "src": f"{assets_base_url}/{url_dir_path}/{filename}",
+        "height": image.height,
+        "width": image.width,
+    }
 
 
 class AudioSource(TypedDict):
