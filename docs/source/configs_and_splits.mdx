@@ -1,7 +1,19 @@
-# Configurations and splits
+# Splits and configurations
 
-The datasets aimed at training and evaluating a Machine Learning model are generally divided into multiple _[splits](https://huggingface.co/docs/datasets/load_hub#splits)_, for example `train`, `test` and `validation`.
+Machine learning datasets are commonly organized in *splits* and they may also have *configurations*. These internal structures provide the scaffolding for building out a dataset, and determines how a dataset should be split and organized. Understanding a dataset's structure can help you create your own dataset, and know which subset of data you should use when during model training and evaluation.
 
-Some datasets also use _[configurations](https://huggingface.co/docs/datasets/load_hub#configurations)_ (sub-datasets) to group similar examples: [CommonVoice](https://huggingface.co/datasets/mozilla-foundation/common_voice_10_0)'s configurations embed the audio recordings of each language ; [GLUE](https://huggingface.co/datasets/glue) provides one configuration for every evaluation task.
+## Splits
 
-Read more in depth about the concepts in the [🤗 Datasets library documentation](https://huggingface.co/docs/datasets).
+Every processed and cleaned dataset contains *splits*, specific subsets of data reserved for specific needs. The most common splits are:
+
+* `train`: data used to train a model; this data is exposed to the model
+* `validation`: data reserved for evaluation and improving model hyperparameters; this data is hidden from the model
+* `test`: data reserved for evaluation only; this data is completely hidden from the model and ourselves
+
+The `validation` and `test` sets are especially important to ensure a model is actually learning instead of *overfitting*, or just memorizing the data.
+
+## Configurations
+
+A *configuration* is a higher-level internal structure than a split, and a configuration contains splits. You can think of a configuration as a sub-dataset contained within a larger dataset. It is a useful structure for adding additional layers of organization to a dataset. For example, if you take a look at the [Multilingual LibriSpeech (MLS)](https://huggingface.co/datasets/facebook/multilingual_librispeech) dataset, you'll notice there are eight different languages. While you can create a dataset containing all eight languages, it's probably neater to create a dataset with each language as a configuration. This way, users can instantly load a dataset with their language of interest instead of preprocessing the dataset to filter for a specific language.
+
+Configurations are flexible, and can be used to organize a dataset along whatever objective you'd like. For example, the [SceneParse150](https://huggingface.co/datasets/scene_parse_150) dataset uses configurations to organize the dataset by task. One configuration is dedicated to segmenting the whole image, while the other configuration is for instance segmentation.
