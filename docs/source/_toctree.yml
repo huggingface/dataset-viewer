@@ -3,9 +3,7 @@
   - local: index
     title: 🤗 Datasets server
   - local: quick_start
-    title: Quick start
-  - local: setup
-    title: Setup
+    title: Quickstart
 - title: Guides
   sections:
   - local: valid
@@ -17,8 +15,6 @@
 - title: Conceptual Guides
   sections:
   - local: configs_and_splits
-    title: Configs and splits
+    title: Splits and configurations
   - local: data_types
     title: Data types
-  - local: add_task
-    title: Add a new task
