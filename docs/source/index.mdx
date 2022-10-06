@@ -1,6 +1,8 @@
 # Datasets Server
 
-Datasets Server is a lightweight web API for visualizing and exploring all types of datasets - computer vision, speech, text, and tabular - stored on the Hugging Face [Hub](https://huggingface.co/datasets). As datasets increase in size and data type richness, the cost of preprocessing (storage and compute) these datasets can be a challenge, holding you back from learning more about them. Datasets Server aims to take care of the heavy lifting so you can:
+Datasets Server is a lightweight web API for visualizing and exploring all types of datasets - computer vision, speech, text, and tabular - stored on the Hugging Face [Hub](https://huggingface.co/datasets). As datasets increase in size and data type richness, the cost of preprocessing (storage and compute) these datasets can be challenging and time-consuming. To help users access these modern datasets, Datasets Server runs a server behind the scenes to generate the API responses ahead of time and stores it in a database so they are instantly returned when you make a query through the API. 
+
+Let Datasets Server take care of the heavy lifting so you can:
 
 * Get instantaneous responses to information, such as the dataset splits, column and data types, about a dataset through a simple REST API.
 * Download and preview the first 100 rows of any dataset.
