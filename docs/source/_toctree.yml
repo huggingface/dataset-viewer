@@ -18,3 +18,5 @@
     title: Splits and configurations
   - local: data_types
     title: Data types
+  - local: server
+    title: Server infrastructure
