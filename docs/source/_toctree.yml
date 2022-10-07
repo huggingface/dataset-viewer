@@ -1,10 +1,22 @@
-- title: Get started
+- title: Get Started
   sections:
   - local: index
     title: 🤗 Datasets server
+  - local: quick_start
+    title: Quickstart
+- title: Guides
+  sections:
   - local: valid
-    title: Valid datasets
+    title: Check dataset validity
   - local: splits
-    title: Splits
+    title: List splits and configurations
   - local: first_rows
-    title: First rows
+    title: Preview a dataset
+- title: Conceptual Guides
+  sections:
+  - local: configs_and_splits
+    title: Splits and configurations
+  - local: data_types
+    title: Data types
+  - local: server
+    title: Server infrastructure

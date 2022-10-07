@@ -1,0 +1,238 @@
+# Quickstart
+
+In this quickstart, you'll learn how to use the Datasets Server's REST API to:
+
+* Check whether a dataset on the Hub is functional.
+* Return the configuration and splits of a dataset.
+* Preview the first 100 rows of a dataset.
+
+Each feature is served through an endpoint summarized in the table below:
+
+| Endpoint                    | Method | Description                                                                      | Query parameters                                                                                   |   |
+|-----------------------------|--------|----------------------------------------------------------------------------------|----------------------------------------------------------------------------------------------------|---|
+| [/valid](./valid)           | GET    | Get the list of datasets hosted in the Hub and supported by the datasets server. | none                                                                                               |   |
+| [/is-valid](./valid)        | GET    | Check whether a specific dataset is valid.                                       | `dataset`: name of the dataset                                                                     |   |
+| [/splits](./splits)         | GET    | Get the list of configurations and splits of a dataset.                          | `dataset`: name of the dataset                                                                     |   |
+| [/first-rows](./first-rows) | GET    | Get the columns (with data type) and first rows of a dataset split.              | - `dataset`: name of the dataset<br>- `config`: name of the config<br>- `split`: name of the split |   |
+
+There is no installation or setup required to use Datasets Server.
+
+<Tip>
+  
+Sign up for a <a href="https://huggingface.co/join">Hugging Face account</a> if you don't already have one! While you can use Datasets Server without a Hugging Face account, you won't be able to access <a href="https://huggingface.co/docs/hub/datasets-gated">gated datasets</a> like <a href="https://huggingface.co/datasets/mozilla-foundation/common_voice_10_0">CommonVoice</a> and <a href="https://huggingface.co/datasets/imagenet-1k">ImageNet</a> without providing a <a href="https://huggingface.co/settings/tokens">user token</a> which you can find in your user settings.
+  
+</Tip>
+
+Feel free to try out the API in [Postman](https://www.postman.com/huggingface/workspace/hugging-face-apis/documentation/23242779-d068584e-96d1-4d92-a703-7cb12cbd8053), [ReDoc](https://redocly.github.io/redoc/?url=https://datasets-server.huggingface.co/openapi.json) or [RapidAPI](https://rapidapi.com/hugging-face-hugging-face-default/api/hugging-face-datasets-api/). This quickstart will show you how to query the endpoints programmatically.
+
+The base URL of the REST API is:
+
+```
+https://datasets-server.huggingface.co
+```
+
+## Gated datasets
+
+For gated datasets, you'll need to provide your user token in `headers` of your query. Otherwise, you'll get an error message to retry with authentication.
+
+<inferencesnippet>
+<python>
+```python
+import requests
+headers = {"Authorization": f"Bearer {API_TOKEN}"}
+API_URL = "https://datasets-server.huggingface.co/is-valid?dataset=mozilla-foundation/common_voice_10_0"
+def query():
+    response = requests.request("GET", API_URL, headers=headers)
+    return response.json()
+data = query()
+```
+</python>
+<js>
+```js
+import fetch from "node-fetch";
+async function query(data) {
+    const response = await fetch(
+        "https://datasets-server.huggingface.co/is-valid?dataset=rotten_tomatoes",
+        {
+            headers: { Authorization: `Bearer ${API_TOKEN}` },
+            method: "GET",
+        }
+    );
+    const result = await response.json();
+    return result;
+}
+query().then((response) => {
+    console.log(JSON.stringify(response));
+});
+```
+</js>
+<curl>
+```curl
+curl https://datasets-server.huggingface.co/is-valid?dataset=rotten_tomatoes \
+        -X GET \
+        -H "Authorization: Bearer ${API_TOKEN}"
+```
+</curl>
+</inferencesnippet>
+
+## Check dataset validity
+
+The `/valid` endpoint returns a JSON list of datasets stored on the Hub that load without any errors:
+
+<inferencesnippet>
+<python>
+```python
+import requests
+API_URL = "https://datasets-server.huggingface.co/valid"
+def query():
+    response = requests.request("GET", API_URL)
+    return response.json()
+data = query()
+```
+</python>
+<js>
+```js
+import fetch from "node-fetch";
+async function query(data) {
+    const response = await fetch(
+        "https://datasets-server.huggingface.co/valid",
+        {
+            method: "GET"
+        }
+    );
+    const result = await response.json();
+    return result;
+}
+query().then((response) => {
+    console.log(JSON.stringify(response));
+});
+```
+</js>
+<curl>
+```curl
+curl https://datasets-server.huggingface.co/valid \
+        -X GET
+```
+</curl>
+</inferencesnippet>
+
+To check whether a specific dataset is valid, for example, [Rotten Tomatoes](https://huggingface.co/datasets/rotten_tomatoes), use the `/is-valid` endpoint instead:
+
+<inferencesnippet>
+<python>
+```python
+import requests
+API_URL = "https://datasets-server.huggingface.co/is-valid?dataset=rotten_tomatoes"
+def query():
+    response = requests.request("GET", API_URL)
+    return response.json()
+data = query()
+```
+</python>
+<js>
+```js
+import fetch from "node-fetch";
+async function query(data) {
+    const response = await fetch(
+        "https://datasets-server.huggingface.co/is-valid?dataset=rotten_tomatoes",
+        {
+            method: "GET"
+        }
+    );
+    const result = await response.json();
+    return result;
+}
+query().then((response) => {
+    console.log(JSON.stringify(response));
+});
+```
+</js>
+<curl>
+```curl
+curl https://datasets-server.huggingface.co/is-valid?dataset=rotten_tomatoes \
+        -X GET
+```
+</curl>
+</inferencesnippet>
+
+## List configurations and splits
+
+The `/splits` endpoint returns a JSON list of the splits in a dataset:
+
+<inferencesnippet>
+<python>
+```python
+import requests
+API_URL = "https://datasets-server.huggingface.co/splits?dataset=rotten_tomatoes"
+def query():
+    response = requests.request("GET", API_URL)
+    return response.json()
+data = query()
+```
+</python>
+<js>
+```js
+import fetch from "node-fetch";
+async function query(data) {
+    const response = await fetch(
+        "https://datasets-server.huggingface.co/splits?dataset=rotten_tomatoes",
+        {
+            method: "GET"
+        }
+    );
+    const result = await response.json();
+    return result;
+}
+query().then((response) => {
+    console.log(JSON.stringify(response));
+});
+```
+</js>
+<curl>
+```curl
+curl https://datasets-server.huggingface.co/splits?dataset=rotten_tomatoes \
+        -X GET
+```
+</curl>
+</inferencesnippet>
+
+## Preview a dataset
+
+The `/first-rows` endpoint returns a JSON list of the first 100 rows of a dataset. You should specify the dataset name, configuration name (you can find out the configuration name from the `/splits` endpoint), and split name of the dataset you'd like to preview:
+
+<inferencesnippet>
+<python>
+```python
+import requests
+API_URL = "https://datasets-server.huggingface.co/first-rows?dataset=rotten_tomatoes&config=default&split=train"
+def query():
+    response = requests.request("GET", API_URL)
+    return response.json()
+data = query()
+```
+</python>
+<js>
+```js
+import fetch from "node-fetch";
+async function query(data) {
+    const response = await fetch(
+        "https://datasets-server.huggingface.co/first-rows?dataset=rotten_tomatoes&config=default&split=train",
+        {
+            method: "GET"
+        }
+    );
+    const result = await response.json();
+    return result;
+}
+query().then((response) => {
+    console.log(JSON.stringify(response));
+});
+```
+</js>
+<curl>
+```curl
+curl https://datasets-server.huggingface.co/first-rows?dataset=rotten_tomatoes&config=default&split=train \
+        -X GET
+```
+</curl>
+</inferencesnippet>

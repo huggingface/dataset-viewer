@@ -1,0 +1,34 @@
+# Data types
+
+Datasets supported by Datasets Server have a tabular format, meaning a data point is represented in a row and its features are contained in columns. Using the `/first-rows` endpoint allows you to preview the first 100 rows of a dataset and information about each feature. Within the `features` key, you'll notice it returns a `_type` field. This value describes the data type of the column, and it is also known as a dataset's [`Features`](https://huggingface.co/docs/datasets/about_dataset_features). 
+
+There are several different data `Features` for representing different data formats such as [`Audio`](https://huggingface.co/docs/datasets/v2.5.2/en/package_reference/main_classes#datasets.Audio) and [`Image`](https://huggingface.co/docs/datasets/v2.5.2/en/package_reference/main_classes#datasets.Image) for speech and image data respectively. Knowing a dataset feature gives you a better understanding of the data type you're working with, and how you can preprocess it.
+
+For example, the `/first-rows` endpoint for the [Rotten Tomatoes](https://huggingface.co/datasets/rotten_tomatoes) dataset returns the following:
+
+```json
+{"dataset": "rotten_tomatoes",
+ "config": "default",
+ "split": "train",
+ "features": [{"feature_idx": 0,
+   "name": "text",
+   "type": {"dtype": "string", 
+   "id": null,
+   "_type": "Value"}},
+  {"feature_idx": 1,
+   "name": "label",
+   "type": {"num_classes": 2,
+    "names": ["neg", "pos"],
+    "id": null,
+    "_type": "ClassLabel"}}],
+  ...
+ }
+```
+
+This dataset has two columns, `text` and `label`:
+
+- The `text` column has a type of `Value`. The [`Value`](https://huggingface.co/docs/datasets/v2.5.2/en/package_reference/main_classes#datasets.Value) type is extremely versatile and represents scalar values such as strings, integers, dates, and even timestamp values.
+
+- The `label` column has a type of `ClassLabel`. The [`ClassLabel`](https://huggingface.co/docs/datasets/v2.5.2/en/package_reference/main_classes#datasets.ClassLabel) type represents the number of classes in a dataset and their label names. Naturally, this means you'll frequently see `ClassLabel` used in classification datasets.
+
+For a complete list of available data types, take a look at the [`Features`](https://huggingface.co/docs/datasets/v2.5.2/en/package_reference/main_classes#datasets.Features) documentation.

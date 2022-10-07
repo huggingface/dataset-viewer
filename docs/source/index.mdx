@@ -1,45 +1,10 @@
-# Datasets server
+# Datasets Server
 
-Integrate into your apps over 10,000 [datasets](https://huggingface.co/datasets) via simple HTTP requests, with pre-processed responses and scalability built-in.
+Datasets Server is a lightweight web API for visualizing and exploring all types of datasets - computer vision, speech, text, and tabular - stored on the Hugging Face [Hub](https://huggingface.co/datasets). As datasets increase in size and data type richness, the cost of preprocessing (storage and compute) these datasets can be challenging and time-consuming. To help users access these modern datasets, Datasets Server runs a server behind the scenes to generate the API responses ahead of time and stores it in a database so they are instantly returned when you make a query through the API. 
 
-## Main features
+Let Datasets Server take care of the heavy lifting so you can:
 
-- Access **10,000+ Machine Learning datasets**
-- Get instantaneous responses to **pre-processed** long-running queries
-- Access **metadata and data**: list of splits, list of columns and data types, 100 first rows
-- Download **images and audio files** (first 100 rows)
-- Handle **any kind of dataset** thanks to the [🤗 Datasets](https://github.com/huggingface/datasets) library
-- See it in action in the [dataset viewer](https://huggingface.co/docs/hub/datasets-viewer) on the Hub.
+* Get instantaneous responses to information, such as the dataset splits, column and data types, about a dataset through a simple REST API.
+* Download and preview the first 100 rows of any dataset.
 
-## Endpoints
-
-The base URL of the REST API is
-
-```
-https://datasets-server.huggingface.co
-```
-
-The API provides the following endpoints:
-
-| Endpoint                    | Method | Description                                                                      | Query parameters                                                                                   |
-| --------------------------- | ------ | -------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------- |
-| [/valid](./valid)           | GET    | Get the list of datasets hosted in the Hub and supported by the datasets server. |                                                                                                    |
-| [/splits](./splits)         | GET    | Get the list of configurations and splits of a dataset.                          | `dataset`: name of the dataset                                                                     |
-| [/first-rows](./first-rows) | GET    | Get the columns (with data type) and first rows of a dataset split.              | - `dataset`: name of the dataset<br>- `config`: name of the config<br>- `split`: name of the split |
-
-## Get your API Token
-
-To get started you need to:
-
-- [Register](https://huggingface.co/join) or [Login](https://huggingface.co/login).
-- Get your API token [in your Hugging Face profile](https://huggingface.co/settings/tokens).
-
-You should see a token `hf_xxxxx`.
-
-If you do not submit your API token when sending requests to the API, you will not be able to access [gated datasets](https://huggingface.co/docs/hub/datasets-gated), such as [Common Voice](https://huggingface.co/datasets/mozilla-foundation/common_voice_10_0), [OSCAR](oscar-corpus/OSCAR-2109) or [ImageNet](https://huggingface.co/datasets/imagenet-1k).
-
-## OpenAPI specification
-
-The OpenAPI specification (fka Swagger) is published at https://datasets-server.huggingface.co/openapi.json.
-
-Explore it and **run the queries** with [ReDoc](https://redocly.github.io/redoc/?url=https://datasets-server.huggingface.co/openapi.json), [Postman](https://www.postman.com/huggingface/workspace/hugging-face-apis/documentation/23242779-d068584e-96d1-4d92-a703-7cb12cbd8053) or [RapidAPI](https://rapidapi.com/hugging-face-hugging-face-default/api/hugging-face-datasets-api/).
+Join the growing community on the [forum](https://discuss.huggingface.co/) or [Discord](https://discord.com/invite/JfAtkvEtRb) today, and give the [Datasets Server repository](https://huggingface.co/docs/datasets-server/index) a ⭐️ if you're interested in the latest updates!
