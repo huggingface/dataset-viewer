@@ -152,7 +152,7 @@ def get_cell_value(
         # https://huggingface.co/docs/datasets/v2.5.1/en/package_reference/main_classes#datasets.Features
         if type(fieldType.feature) == dict:
             if type(cell) != dict or any(type(k) != list for k in cell.values()):
-                raise TypeError("The value of a Sequence of dicts should have be a dictionary of lists.")
+                raise TypeError("The value of a Sequence of dicts should be a dictionary of lists.")
             return {
                 key: [
                     get_cell_value(
