@@ -4,7 +4,7 @@
 import itertools
 import logging
 import sys
-from typing import Any, Dict, List, Optional, TypedDict
+from typing import Any, Dict, List, Optional, TypedDict, Union
 
 from datasets import (
     Dataset,
@@ -63,14 +63,14 @@ def get_rows(
     split: str,
     streaming: bool,
     rows_max_number: int,
-    hf_token: Optional[str] = None,
+    use_auth_token: Union[bool, str, None] = False,
 ) -> List[Row]:
     ds = load_dataset(
         dataset,
         name=config,
         split=split,
         streaming=streaming,
-        use_auth_token=hf_token,
+        use_auth_token=use_auth_token,
     )
     if streaming:
         if not isinstance(ds, IterableDataset):
@@ -288,6 +288,7 @@ def get_first_rows_response(
     </Tip>
     """
     logger.info(f"get first-rows for dataset={dataset} config={config} split={split}")
+    use_auth_token: Union[bool, str, None] = hf_token if hf_token is not None else False
     if rows_max_bytes is None:
         rows_max_bytes = DEFAULT_ROWS_MAX_BYTES
     if rows_max_number is None:
@@ -313,7 +314,7 @@ def get_first_rows_response(
         info = get_dataset_config_info(
             path=dataset,
             config_name=config,
-            use_auth_token=hf_token,
+            use_auth_token=use_auth_token,
         )
     except Exception as err:
         raise InfoError("The info cannot be fetched for the dataset config.", cause=err) from err
@@ -325,7 +326,7 @@ def get_first_rows_response(
                 name=config,
                 split=split,
                 streaming=True,
-                use_auth_token=hf_token,
+                use_auth_token=use_auth_token,
             )
             if not isinstance(iterable_dataset, IterableDataset):
                 raise TypeError("load_dataset should return an IterableDataset")
@@ -339,7 +340,9 @@ def get_first_rows_response(
         features = info.features
     # get the rows
     try:
-        rows = get_rows(dataset, config, split, streaming=True, rows_max_number=rows_max_number, hf_token=hf_token)
+        rows = get_rows(
+            dataset, config, split, streaming=True, rows_max_number=rows_max_number, use_auth_token=use_auth_token
+        )
     except Exception as err:
         if max_size_fallback is None or info.size_in_bytes is None or info.size_in_bytes > max_size_fallback:
             raise StreamingRowsError(
@@ -353,7 +356,7 @@ def get_first_rows_response(
                 split,
                 streaming=False,
                 rows_max_number=rows_max_number,
-                hf_token=hf_token,
+                use_auth_token=use_auth_token,
             )
         except Exception as err:
             raise NormalRowsError(

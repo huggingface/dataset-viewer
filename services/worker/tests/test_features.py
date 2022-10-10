@@ -273,6 +273,7 @@ def test_value(dataset_type, output_value, output_dtype, datasets) -> None:
             },
             {"a": Value(dtype="int64"), "b": [Image(decode=True, id=None)], "c": {"ca": [Audio()]}},
         ),
+        ("sequence_of_dicts", {"a": [{"b": 0}, {"b": 1}]}, "Sequence"),
     ],
 )
 def test_others(dataset_type: str, output_value: Any, output_type: Any, datasets: Dict[str, Dataset]) -> None:

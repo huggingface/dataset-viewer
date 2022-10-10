@@ -21,8 +21,8 @@ from ..utils import ASSETS_BASE_URL, HF_ENDPOINT, HF_TOKEN, get_default_config_s
         ("private", True, None, None),
         ("empty", False, "EmptyDatasetError", "EmptyDatasetError"),
         ("does_not_exist", False, "DatasetNotFoundError", None),
-        ("gated", False, "SplitsNamesError", "FileNotFoundError"),
-        ("private", False, "SplitsNamesError", "FileNotFoundError"),
+        ("gated", False, "DatasetNotFoundError", None),
+        ("private", False, "DatasetNotFoundError", None),
     ],
 )
 def test_number_rows(
