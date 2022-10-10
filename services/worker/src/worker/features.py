@@ -147,11 +147,28 @@ def get_cell_value(
             for (idx, subCell) in enumerate(cell)
         ]
     elif isinstance(fieldType, Sequence):
+        if type(cell) == list:
+            if fieldType.length >= 0 and len(cell) != fieldType.length:
+                raise TypeError("the cell length should be the same as the Sequence length.")
+            return [
+                get_cell_value(
+                    dataset,
+                    config,
+                    split,
+                    row_idx,
+                    subCell,
+                    featureName,
+                    fieldType.feature,
+                    assets_base_url,
+                    json_path + [idx] if json_path else [idx],
+                )
+                for (idx, subCell) in enumerate(cell)
+            ]
         # if the internal feature of the Sequence is a dict, then the value will automatically
         # be converted into a dictionary of lists. See
         # https://huggingface.co/docs/datasets/v2.5.1/en/package_reference/main_classes#datasets.Features
-        if type(fieldType.feature) == dict:
-            if type(cell) != dict or any(type(k) != list for k in cell.values()):
+        if type(cell) == dict:
+            if any((type(v) != list) or (k not in fieldType.feature) for k, v in cell.items()):
                 raise TypeError("The value of a Sequence of dicts should be a dictionary of lists.")
             return {
                 key: [
@@ -170,25 +187,7 @@ def get_cell_value(
                 ]
                 for (key, subCell) in cell.items()
             }
-        # else: it must be a list
-        if type(cell) != list:
-            raise TypeError("Sequence cell must be a list or a dict.")
-        if fieldType.length >= 0 and len(cell) != fieldType.length:
-            raise TypeError("the cell length should be the same as the Sequence length.")
-        return [
-            get_cell_value(
-                dataset,
-                config,
-                split,
-                row_idx,
-                subCell,
-                featureName,
-                fieldType.feature,
-                assets_base_url,
-                json_path + [idx] if json_path else [idx],
-            )
-            for (idx, subCell) in enumerate(cell)
-        ]
+        raise TypeError("Sequence cell must be a list or a dict.")
 
     elif isinstance(fieldType, dict):
         if type(cell) != dict:
