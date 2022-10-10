@@ -16,7 +16,7 @@ from huggingface_hub.hf_api import (  # type: ignore
     REPO_TYPES_URL_PREFIXES,
     HfApi,
     HfFolder,
-    _raise_for_status,
+    hf_raise_for_status,
 )
 
 from ..utils import get_default_config_split
@@ -72,8 +72,6 @@ def update_repo_settings(
 
     organization, name = repo_id.split("/") if "/" in repo_id else (None, repo_id)
 
-    token, name = hf_api._validate_or_retrieve_token(token, name, function_name="update_repo_settings")
-
     if organization is None:
         namespace = hf_api.whoami(token)["name"]
     else:
@@ -96,7 +94,7 @@ def update_repo_settings(
         headers={"authorization": f"Bearer {token}"},
         json=json,
     )
-    _raise_for_status(r)
+    hf_raise_for_status(r)
     return r.json()
 
 

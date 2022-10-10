@@ -73,7 +73,7 @@ def get_splits_response(
     logger.info(f"get splits for dataset={dataset}")
     # first try to get the dataset config info
     try:
-        HfApi(endpoint=hf_endpoint).dataset_info(dataset, token=hf_token)
+        HfApi(endpoint=hf_endpoint).dataset_info(dataset, use_auth_token=hf_token)
     except RepositoryNotFoundError as err:
         raise DatasetNotFoundError("The dataset does not exist on the Hub.") from err
     # get the list of splits
