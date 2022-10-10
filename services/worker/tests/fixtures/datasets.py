@@ -123,4 +123,7 @@ def datasets() -> Dict[str, Dataset]:
             },
             {"a": Value(dtype="int64"), "b": [Image()], "c": {"ca": [Audio()]}},
         ),
+        "sequence_of_dicts": other(
+            [{"a": {"b": 0}}, {"a": {"b": 1}}], Sequence(feature={"a": {"b": Value(dtype="int64")}})
+        ),
     }
