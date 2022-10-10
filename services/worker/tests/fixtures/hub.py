@@ -215,6 +215,14 @@ def hub_gated_csv(hf_api: HfApi, hf_token: str, csv_path: str) -> Iterable[str]:
 
 
 @pytest.fixture(scope="session", autouse=True)
+def hub_public_jsonl(hf_api: HfApi, hf_token: str, jsonl_path: str) -> Iterable[str]:
+    repo_id = create_hub_dataset_repo(hf_api=hf_api, hf_token=hf_token, prefix="jsonl", file_paths=[jsonl_path])
+    yield repo_id
+    with suppress(requests.exceptions.HTTPError, ValueError):
+        hf_api.delete_repo(repo_id=repo_id, token=hf_token, repo_type="dataset")
+
+
+@pytest.fixture(scope="session", autouse=True)
 def hub_public_audio(hf_api: HfApi, hf_token: str, datasets: Dict[str, Dataset]) -> Iterable[str]:
     repo_id = create_hub_dataset_repo(hf_api=hf_api, hf_token=hf_token, prefix="audio", dataset=datasets["audio"])
     yield repo_id
@@ -289,8 +297,6 @@ def get_first_rows_response(dataset: str, cols: Dict[str, Any], rows: List[Any])
     }
 
 
-#        # column = "col"
-
 DATA_cols = {
     "col_1": {"_type": "Value", "id": None, "dtype": "int64"},
     "col_2": {"_type": "Value", "id": None, "dtype": "int64"},
@@ -301,6 +307,19 @@ DATA_rows = [
     {"col_1": 1, "col_2": 1, "col_3": 1.0},
     {"col_1": 2, "col_2": 2, "col_3": 2.0},
     {"col_1": 3, "col_2": 3, "col_3": 3.0},
+]
+
+
+JSONL_cols = {
+    "col_1": {"_type": "Value", "id": None, "dtype": "string"},
+    "col_2": {"_type": "Value", "id": None, "dtype": "int64"},
+    "col_3": {"_type": "Value", "id": None, "dtype": "float64"},
+}
+JSONL_rows = [
+    {"col_1": "0", "col_2": 0, "col_3": 0.0},
+    {"col_1": None, "col_2": 1, "col_3": 1.0},
+    {"col_1": None, "col_2": 2, "col_3": 2.0},
+    {"col_1": "3", "col_2": 3, "col_3": 3.0},
 ]
 
 AUDIO_cols = {
@@ -391,6 +410,7 @@ def hub_datasets(
     hub_public_csv,
     hub_private_csv,
     hub_gated_csv,
+    hub_public_jsonl,
     hub_public_audio,
     hub_public_image,
     hub_public_images_list,
@@ -420,6 +440,11 @@ def hub_datasets(
             "name": hub_gated_csv,
             "splits_response": get_splits_response(hub_gated_csv, None, None),
             "first_rows_response": get_first_rows_response(hub_gated_csv, DATA_cols, DATA_rows),
+        },
+        "jsonl": {
+            "name": hub_public_jsonl,
+            "splits_response": get_splits_response(hub_public_jsonl, None, None),
+            "first_rows_response": get_first_rows_response(hub_public_jsonl, JSONL_cols, JSONL_rows),
         },
         "audio": {
             "name": hub_public_audio,

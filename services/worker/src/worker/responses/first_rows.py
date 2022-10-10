@@ -196,7 +196,7 @@ def transform_rows(
                 config,
                 split,
                 row_idx,
-                row[featureName],
+                row[featureName] if featureName in row else None,
                 featureName,
                 fieldType,
                 assets_base_url,

@@ -122,6 +122,9 @@ def get_cell_value(
     assets_base_url: str,
     json_path: List[Union[str, int]] = None,
 ) -> Any:
+    # always allow None values in the cells
+    if cell is None:
+        return cell
     if isinstance(fieldType, Image):
         return image(dataset, config, split, row_idx, cell, featureName, assets_base_url, json_path)
     elif isinstance(fieldType, Audio):
