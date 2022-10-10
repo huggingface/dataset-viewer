@@ -19,8 +19,8 @@ from ..utils import HF_ENDPOINT, HF_TOKEN
         ("private", True, None, None),
         ("empty", False, "EmptyDatasetError", "EmptyDatasetError"),
         ("does_not_exist", False, "DatasetNotFoundError", None),
-        ("gated", False, "SplitsNamesError", "FileNotFoundError"),
-        ("private", False, "SplitsNamesError", "FileNotFoundError"),
+        ("gated", False, "DatasetNotFoundError", None),
+        ("private", False, "DatasetNotFoundError", None),
     ],
 )
 def test_get_splits_response_simple_csv(

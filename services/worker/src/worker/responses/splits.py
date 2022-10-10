@@ -2,7 +2,7 @@
 # Copyright 2022 The HuggingFace Authors.
 
 import logging
-from typing import Dict, List, Optional, TypedDict
+from typing import Dict, List, Optional, TypedDict, Union
 
 from datasets import (
     DatasetInfo,
@@ -34,12 +34,12 @@ class SplitsResponse(TypedDict):
     splits: List[SplitItem]
 
 
-def get_dataset_split_full_names(dataset: str, hf_token: Optional[str] = None) -> List[SplitFullName]:
+def get_dataset_split_full_names(dataset: str, use_auth_token: Union[bool, str, None] = False) -> List[SplitFullName]:
     logger.info(f"get dataset '{dataset}' split full names")
     return [
         {"dataset": dataset, "config": config, "split": split}
-        for config in get_dataset_config_names(dataset, use_auth_token=hf_token)
-        for split in get_dataset_split_names(dataset, config, use_auth_token=hf_token)
+        for config in get_dataset_config_names(dataset, use_auth_token=use_auth_token)
+        for split in get_dataset_split_names(dataset, config, use_auth_token=use_auth_token)
     ]
 
 
@@ -71,14 +71,15 @@ def get_splits_response(
     </Tip>
     """
     logger.info(f"get splits for dataset={dataset}")
+    use_auth_token: Union[bool, str, None] = hf_token if hf_token is not None else False
     # first try to get the dataset config info
     try:
-        HfApi(endpoint=hf_endpoint).dataset_info(dataset, use_auth_token=hf_token)
+        HfApi(endpoint=hf_endpoint).dataset_info(dataset, use_auth_token=use_auth_token)
     except RepositoryNotFoundError as err:
         raise DatasetNotFoundError("The dataset does not exist on the Hub.") from err
     # get the list of splits
     try:
-        split_full_names = get_dataset_split_full_names(dataset, hf_token)
+        split_full_names = get_dataset_split_full_names(dataset, use_auth_token)
     except _EmptyDatasetError as err:
         raise EmptyDatasetError("The dataset is empty.", cause=err) from err
     except Exception as err:
@@ -95,7 +96,7 @@ def get_splits_response(
                 config_info[config] = get_dataset_config_info(
                     path=dataset,
                     config_name=config,
-                    use_auth_token=hf_token,
+                    use_auth_token=use_auth_token,
                 )
             info = config_info[config]
             num_bytes = info.splits[split].num_bytes if info.splits else None
