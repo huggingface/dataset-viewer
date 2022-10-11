@@ -75,23 +75,6 @@ def test_get_valid_datasets(client: TestClient) -> None:
     assert "valid" in json
 
 
-from api.dataset import is_supported
-
-
-@pytest.mark.parametrize(
-    "private,exists,expected",
-    [(True, False, False), (False, False, True), (True, False, False)],
-)
-def test_is_supported(httpserver: HTTPServer, hf_endpoint: str, private: bool, exists: bool, expected: bool) -> None:
-    dataset = "dataset"
-    endpoint = f"/api/datasets/{dataset}"
-    hf_token = "dummy_token"
-
-    headers = None if exists else {"X-Error-Code": "RepoNotFound"}
-    httpserver.expect_request(endpoint).respond_with_data(json.dumps({"private": private}), headers=headers)
-    assert is_supported(dataset=dataset, hf_endpoint=hf_endpoint, hf_token=hf_token) is expected
-
-
 # caveat: the returned status codes don't simulate the reality
 # they're just used to check every case
 @pytest.mark.parametrize(
