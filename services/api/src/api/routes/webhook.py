@@ -4,7 +4,7 @@
 import logging
 from typing import Any, List, Literal, Optional, TypedDict
 
-from jsonschema import validate, ValidationError  # type: ignore
+from jsonschema import ValidationError, validate  # type: ignore
 from starlette.requests import Request
 from starlette.responses import Response
 

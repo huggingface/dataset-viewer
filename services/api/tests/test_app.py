@@ -8,7 +8,8 @@ from typing import Dict, Optional
 import pytest
 from libcache.simple_cache import _clean_database as clean_cache_database
 from libcache.simple_cache import upsert_first_rows_response, upsert_splits_response
-from libqueue.queue import clean_database as clean_queue_database, is_splits_response_in_process
+from libqueue.queue import clean_database as clean_queue_database
+from libqueue.queue import is_splits_response_in_process
 from pytest_httpserver import HTTPServer
 from starlette.testclient import TestClient
 
