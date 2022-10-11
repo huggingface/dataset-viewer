@@ -62,7 +62,11 @@ def poll(
 def post_refresh(dataset: str, headers: Headers = None) -> Response:
     if headers is None:
         headers = {}
-    return post("/webhook", json={"update": f"datasets/{dataset}"}, headers=headers)
+    return post(
+        "/webhook",
+        json={"event": "update", "repo": {"type": "dataset", "name": dataset}},
+        headers=headers,
+    )
 
 
 def poll_splits(dataset: str, headers: Headers = None) -> Response:
