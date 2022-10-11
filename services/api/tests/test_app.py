@@ -8,7 +8,7 @@ from typing import Dict, Optional
 import pytest
 from libcache.simple_cache import _clean_database as clean_cache_database
 from libcache.simple_cache import upsert_first_rows_response, upsert_splits_response
-from libqueue.queue import clean_database as clean_queue_database
+from libqueue.queue import clean_database as clean_queue_database, is_splits_response_in_process
 from pytest_httpserver import HTTPServer
 from starlette.testclient import TestClient
 
@@ -74,28 +74,21 @@ def test_get_valid_datasets(client: TestClient) -> None:
     assert "valid" in json
 
 
+from api.dataset import is_supported
+
+
 @pytest.mark.parametrize(
-    "dataset,exists_on_the_hub,expected_status_code,expected_is_valid",
-    [
-        (None, True, 422, None),
-        ("notinthecache", True, 200, False),
-        ("notinthecache", False, 404, None),
-    ],
+    "private,exists,expected",
+    [(True, False, False), (False, False, True), (True, False, False)],
 )
-def test_get_is_valid(
-    client: TestClient,
-    httpserver: HTTPServer,
-    hf_auth_path: str,
-    dataset: Optional[str],
-    exists_on_the_hub: bool,
-    expected_status_code: int,
-    expected_is_valid: Optional[bool],
-) -> None:
-    httpserver.expect_request(hf_auth_path % dataset).respond_with_data(status=200 if exists_on_the_hub else 404)
-    response = client.get("/is-valid", params={"dataset": dataset})
-    assert response.status_code == expected_status_code
-    if expected_is_valid is not None:
-        assert response.json()["valid"] == expected_is_valid
+def test_is_supported(httpserver: HTTPServer, hf_endpoint: str, private: bool, exists: bool, expected: bool) -> None:
+    dataset = "dataset"
+    endpoint = f"/api/datasets/{dataset}"
+    hf_token = "dummy_token"
+
+    headers = None if exists else {"X-Error-Code": "RepoNotFound"}
+    httpserver.expect_request(endpoint).respond_with_data(json.dumps({"private": private}), headers=headers)
+    assert is_supported(dataset=dataset, hf_endpoint=hf_endpoint, hf_token=hf_token) is expected
 
 
 # caveat: the returned status codes don't simulate the reality
@@ -269,3 +262,41 @@ def test_metrics(client: TestClient) -> None:
     assert metrics[name] > 0
     name = "process_start_time_seconds"
     assert 'starlette_requests_total{method="GET",path_template="/metrics"}' in metrics
+
+
+@pytest.mark.parametrize(
+    "payload,exists_on_the_hub,expected_status,expected_is_updated",
+    [
+        ({"event": "add", "repo": {"type": "dataset", "name": "webhook-test", "gitalyUid": "123"}}, True, 200, True),
+        (
+            {"event": "doesnotexist", "repo": {"type": "dataset", "name": "webhook-test", "gitalyUid": "123"}},
+            True,
+            400,
+            False,
+        ),
+        (
+            {"event": "add", "repo": {"type": "dataset", "name": "webhook-test"}},
+            True,
+            400,
+            False,
+        ),
+        ({"event": "add", "repo": {"type": "dataset", "name": "webhook-test", "gitalyUid": "123"}}, False, 200, False),
+    ],
+)
+def test_webhook(
+    client: TestClient,
+    httpserver: HTTPServer,
+    payload: Dict,
+    exists_on_the_hub: bool,
+    expected_status: int,
+    expected_is_updated: bool,
+) -> None:
+    dataset = "webhook-test"
+    headers = None if exists_on_the_hub else {"X-Error-Code": "RepoNotFound"}
+    status = 200 if exists_on_the_hub else 404
+    httpserver.expect_request(f"/api/datasets/{dataset}").respond_with_data(
+        json.dumps({"private": False}), headers=headers, status=status
+    )
+    response = client.post("/webhook", json=payload)
+    assert response.status_code == expected_status, response.text
+    assert is_splits_response_in_process(dataset) is expected_is_updated
