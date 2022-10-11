@@ -1,7 +1,7 @@
 {
   "dockerImage": {
     "admin": "huggingface/datasets-server-admin:sha-7210df0",
-    "api": "huggingface/datasets-server-api:sha-7210df0",
+    "api": "huggingface/datasets-server-api:sha-8b5b0f9",
     "reverseProxy": "docker.io/nginx:1.20",
     "worker": {
       "splits": "huggingface/datasets-server-worker:sha-06c9c4b",
