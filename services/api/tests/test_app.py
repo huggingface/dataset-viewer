@@ -253,6 +253,16 @@ def test_metrics(client: TestClient) -> None:
     [
         ({"event": "add", "repo": {"type": "dataset", "name": "webhook-test", "gitalyUid": "123"}}, True, 200, True),
         (
+            {
+                "event": "move",
+                "movedTo": "webhook-test",
+                "repo": {"type": "dataset", "name": "previous-name", "gitalyUid": "123"},
+            },
+            True,
+            200,
+            True,
+        ),
+        (
             {"event": "doesnotexist", "repo": {"type": "dataset", "name": "webhook-test", "gitalyUid": "123"}},
             True,
             400,
@@ -261,8 +271,8 @@ def test_metrics(client: TestClient) -> None:
         (
             {"event": "add", "repo": {"type": "dataset", "name": "webhook-test"}},
             True,
-            400,
-            False,
+            200,
+            True,
         ),
         ({"event": "add", "repo": {"type": "dataset", "name": "webhook-test", "gitalyUid": "123"}}, False, 200, False),
     ],

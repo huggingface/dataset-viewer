@@ -28,7 +28,7 @@ schema = {
                 "gitalyUid": {"type": "string"},
                 "tags": {"type": "array", "items": {"type": "string"}},
             },
-            "required": ["type", "name", "gitalyUid"],
+            "required": ["type", "name"],
         },
     },
     "required": ["event", "repo"],
