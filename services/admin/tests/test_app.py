@@ -90,7 +90,6 @@ def test_pending_jobs(client: TestClient) -> None:
     json = response.json()
     for e in ["/splits", "/first-rows"]:
         assert json[e] == {"waiting": [], "started": []}
-    assert "created_at" in json
 
 
 @pytest.mark.parametrize(

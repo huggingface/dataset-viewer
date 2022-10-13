@@ -33,7 +33,6 @@ def create_pending_jobs_endpoint(
                 {
                     "/splits": get_dump_by_pending_status(type="/splits"),
                     "/first-rows": get_dump_by_pending_status(type="/first-rows"),
-                    "created_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
                 }
             )
         except AdminCustomError as e:
