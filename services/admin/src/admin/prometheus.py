@@ -8,10 +8,7 @@ from libcache.simple_cache import (
     get_first_rows_responses_count_by_status_and_error_code,
     get_splits_responses_count_by_status_and_error_code,
 )
-from libqueue.queue import (
-    get_first_rows_jobs_count_by_status,
-    get_splits_jobs_count_by_status,
-)
+from libqueue.queue import get_jobs_count_by_status
 from prometheus_client import (  # type: ignore # https://github.com/prometheus/client_python/issues/491
     CONTENT_TYPE_LATEST,
     REGISTRY,
@@ -57,9 +54,9 @@ class Prometheus:
 
     def updateMetrics(self):
         # Queue metrics
-        for status, total in get_splits_jobs_count_by_status().items():
+        for status, total in get_jobs_count_by_status(type="/splits").items():
             self.metrics["queue_jobs_total"].labels(queue="/splits", status=status).set(total)
-        for status, total in get_first_rows_jobs_count_by_status().items():
+        for status, total in get_jobs_count_by_status(type="/first-rows").items():
             self.metrics["queue_jobs_total"].labels(queue="/first-rows", status=status).set(total)
         # Cache metrics
         for http_status, by_error_code in get_splits_responses_count_by_status_and_error_code().items():

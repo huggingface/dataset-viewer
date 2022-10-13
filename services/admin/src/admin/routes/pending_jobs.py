@@ -5,7 +5,7 @@ import logging
 import time
 from typing import Optional
 
-from libqueue.queue import get_first_rows_dump_by_status, get_splits_dump_by_status
+from libqueue.queue import get_dump_by_pending_status
 from starlette.requests import Request
 from starlette.responses import Response
 
@@ -31,8 +31,8 @@ def create_pending_jobs_endpoint(
             auth_check(external_auth_url=external_auth_url, request=request, organization=organization)
             return get_json_ok_response(
                 {
-                    "/splits": get_splits_dump_by_status(waiting_started=True),
-                    "/first-rows": get_first_rows_dump_by_status(waiting_started=True),
+                    "/splits": get_dump_by_pending_status(type="/splits"),
+                    "/first-rows": get_dump_by_pending_status(type="/first-rows"),
                     "created_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
                 }
             )

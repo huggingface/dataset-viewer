@@ -5,9 +5,8 @@ from typing import Optional
 
 import pytest
 
-# from libcache.cache import clean_database as clean_cache_database
-from libcache.simple_cache import _clean_database as clean_cache_database
-from libqueue.queue import clean_database as clean_queue_database
+from libcache.simple_cache import _clean_database as _clean_cache_database
+from libqueue.queue import _clean_queue_database
 from starlette.testclient import TestClient
 
 from admin.app import create_app
@@ -29,8 +28,8 @@ def client() -> TestClient:
 
 @pytest.fixture(autouse=True)
 def clean_mongo_databases() -> None:
-    clean_cache_database()
-    clean_queue_database()
+    _clean_cache_database()
+    _clean_queue_database()
 
 
 def test_cors(client: TestClient) -> None:

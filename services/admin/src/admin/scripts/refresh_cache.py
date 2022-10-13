@@ -5,7 +5,7 @@ import logging
 from typing import List
 
 from huggingface_hub.hf_api import HfApi  # type: ignore
-from libqueue.queue import add_splits_job, connect_to_queue
+from libqueue.queue import add_job, connect_to_queue
 from libutils.logger import init_logger
 
 from admin.config import HF_ENDPOINT, LOG_LEVEL, MONGO_QUEUE_DATABASE, MONGO_URL
@@ -20,7 +20,7 @@ def refresh_datasets_cache(dataset_names: List[str]) -> None:
     connect_to_queue(MONGO_QUEUE_DATABASE, MONGO_URL)
     for dataset_name in dataset_names:
         # don't mark the cache entries as stale, because it's manually triggered
-        add_splits_job(dataset_name)
+        add_job(type="/splits", dataset=dataset_name)
         logger.info(f"added a job to refresh '{dataset_name}'")
 
 
