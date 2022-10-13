@@ -5,14 +5,13 @@ from http import HTTPStatus
 
 import pytest
 from libcache.simple_cache import DoesNotExist
-from libcache.simple_cache import _clean_database as clean_cache_database
+from libcache.simple_cache import _clean_database as _clean_cache_database
 from libcache.simple_cache import (
     connect_to_cache,
     get_first_rows_response,
     get_splits_response,
 )
-from libqueue.queue import clean_database as clean_queue_database
-from libqueue.queue import connect_to_queue
+from libqueue.queue import _clean_queue_database, connect_to_queue
 
 from worker.refresh import refresh_first_rows, refresh_splits
 
@@ -42,26 +41,23 @@ def client() -> None:
 
 @pytest.fixture(autouse=True)
 def clean_mongo_database() -> None:
-    clean_cache_database()
-    clean_queue_database()
+    _clean_cache_database()
+    _clean_queue_database()
 
 
 def test_doesnotexist() -> None:
     dataset_name = "doesnotexist"
-    assert refresh_splits(dataset_name, hf_endpoint=HF_ENDPOINT) == (HTTPStatus.NOT_FOUND, False)
+    assert refresh_splits(dataset_name, hf_endpoint=HF_ENDPOINT) == HTTPStatus.NOT_FOUND
     with pytest.raises(DoesNotExist):
         get_splits_response(dataset_name)
     dataset, config, split = get_default_config_split(dataset_name)
-    assert refresh_first_rows(dataset, config, split, ASSETS_BASE_URL, hf_endpoint=HF_ENDPOINT) == (
-        HTTPStatus.NOT_FOUND,
-        False,
-    )
+    assert refresh_first_rows(dataset, config, split, ASSETS_BASE_URL, hf_endpoint=HF_ENDPOINT) == HTTPStatus.NOT_FOUND
     with pytest.raises(DoesNotExist):
         get_first_rows_response(dataset, config, split)
 
 
 def test_refresh_splits(hub_public_csv: str) -> None:
-    assert refresh_splits(hub_public_csv, hf_endpoint=HF_ENDPOINT) == (HTTPStatus.OK, False)
+    assert refresh_splits(hub_public_csv, hf_endpoint=HF_ENDPOINT) == HTTPStatus.OK
     response, _, _ = get_splits_response(hub_public_csv)
     assert len(response["splits"]) == 1
     assert response["splits"][0]["num_bytes"] is None
@@ -70,7 +66,7 @@ def test_refresh_splits(hub_public_csv: str) -> None:
 
 def test_refresh_first_rows(hub_public_csv: str) -> None:
     dataset, config, split = get_default_config_split(hub_public_csv)
-    http_status, _ = refresh_first_rows(dataset, config, split, ASSETS_BASE_URL, hf_endpoint=HF_ENDPOINT)
+    http_status = refresh_first_rows(dataset, config, split, ASSETS_BASE_URL, hf_endpoint=HF_ENDPOINT)
     response, cached_http_status, error_code = get_first_rows_response(dataset, config, split)
     assert http_status == HTTPStatus.OK
     assert cached_http_status == HTTPStatus.OK

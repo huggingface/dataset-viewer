@@ -8,16 +8,7 @@ from http import HTTPStatus
 
 from libcache.asset import show_assets_dir
 from libcache.simple_cache import connect_to_cache
-from libqueue.queue import (
-    EmptyQueue,
-    add_first_rows_job,
-    add_splits_job,
-    connect_to_queue,
-    finish_first_rows_job,
-    finish_splits_job,
-    get_first_rows_job,
-    get_splits_job,
-)
+from libqueue.queue import EmptyQueue, connect_to_queue, finish_job, start_job
 from libutils.logger import init_logger
 from psutil import cpu_count, getloadavg, swap_memory, virtual_memory
 
@@ -27,7 +18,6 @@ from worker.config import (
     HF_ENDPOINT,
     HF_TOKEN,
     LOG_LEVEL,
-    MAX_JOB_RETRIES,
     MAX_JOBS_PER_DATASET,
     MAX_LOAD_PCT,
     MAX_MEMORY_PCT,
@@ -43,33 +33,29 @@ from worker.config import (
 )
 from worker.refresh import refresh_first_rows, refresh_splits
 
+from .utils import JobType
+
 
 def process_next_splits_job() -> bool:
     logger = logging.getLogger("datasets_server.worker")
     logger.debug("try to process a splits/ job")
 
     try:
-        job_id, dataset, retries = get_splits_job(MAX_JOBS_PER_DATASET)
+        job_id, dataset, *_ = start_job(type=JobType.SPLITS.value, max_jobs_per_dataset=MAX_JOBS_PER_DATASET)
         logger.debug(f"job assigned: {job_id} for dataset={dataset}")
     except EmptyQueue:
         logger.debug("no job in the queue")
         return False
 
     success = False
-    retry = False
     try:
         logger.info(f"compute dataset={dataset}")
-        http_status, can_retry = refresh_splits(dataset=dataset, hf_endpoint=HF_ENDPOINT, hf_token=HF_TOKEN)
+        http_status = refresh_splits(dataset=dataset, hf_endpoint=HF_ENDPOINT, hf_token=HF_TOKEN)
         success = http_status == HTTPStatus.OK
-        if can_retry and retries < MAX_JOB_RETRIES:
-            retry = True
     finally:
-        finish_splits_job(job_id, success=success)
+        finish_job(job_id, success=success)
         result = "success" if success else "error"
         logger.debug(f"job finished with {result}: {job_id} for dataset={dataset}")
-        if retry:
-            add_splits_job(dataset, retries=retries + 1)
-            logger.debug(f"job re-enqueued (retries: {retries}) for dataset={dataset}")
     return True
 
 
@@ -78,17 +64,20 @@ def process_next_first_rows_job() -> bool:
     logger.debug("try to process a first-rows job")
 
     try:
-        job_id, dataset, config, split, retries = get_first_rows_job(MAX_JOBS_PER_DATASET)
+        job_id, dataset, config, split = start_job(
+            type=JobType.FIRST_ROWS.value, max_jobs_per_dataset=MAX_JOBS_PER_DATASET
+        )
         logger.debug(f"job assigned: {job_id} for dataset={dataset} config={config} split={split}")
     except EmptyQueue:
         logger.debug("no job in the queue")
         return False
 
     success = False
-    retry = False
     try:
         logger.info(f"compute dataset={dataset} config={config} split={split}")
-        http_status, can_retry = refresh_first_rows(
+        if config is None or split is None:
+            raise ValueError("config and split are required")
+        http_status = refresh_first_rows(
             dataset=dataset,
             config=config,
             split=split,
@@ -101,15 +90,10 @@ def process_next_first_rows_job() -> bool:
             rows_min_number=ROWS_MIN_NUMBER,
         )
         success = http_status == HTTPStatus.OK
-        if can_retry and retries < MAX_JOB_RETRIES:
-            retry = True
     finally:
-        finish_first_rows_job(job_id, success=success)
+        finish_job(job_id, success=success)
         result = "success" if success else "error"
         logger.debug(f"job finished with {result}: {job_id} for dataset={dataset} config={config} split={split}")
-        if retry:
-            add_first_rows_job(dataset, config, split, retries=retries + 1)
-            logger.debug(f"job re-enqueued (retries: {retries}) for dataset={dataset} config={config} split={split}")
     return True
 
 

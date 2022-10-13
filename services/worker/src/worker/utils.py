@@ -3,6 +3,7 @@
 
 import functools
 import time
+from enum import Enum
 from http import HTTPStatus
 from logging import Logger
 from typing import Literal, Optional
@@ -141,3 +142,8 @@ def retry(logger: Logger):
         return decorator
 
     return decorator_retry
+
+
+class JobType(Enum):
+    SPLITS = "/splits"
+    FIRST_ROWS = "/first-rows"

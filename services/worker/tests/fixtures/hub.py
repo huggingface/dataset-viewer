@@ -298,9 +298,9 @@ def get_first_rows_response(dataset: str, cols: Dict[str, Any], rows: List[Any])
 
 
 DATA_cols = {
-    "col_1": {"_type": "Value", "id": None, "dtype": "int64"},
-    "col_2": {"_type": "Value", "id": None, "dtype": "int64"},
-    "col_3": {"_type": "Value", "id": None, "dtype": "float64"},
+    "col_1": {"_type": "Value", "dtype": "int64"},
+    "col_2": {"_type": "Value", "dtype": "int64"},
+    "col_3": {"_type": "Value", "dtype": "float64"},
 }
 DATA_rows = [
     {"col_1": 0, "col_2": 0, "col_3": 0.0},
@@ -311,9 +311,9 @@ DATA_rows = [
 
 
 JSONL_cols = {
-    "col_1": {"_type": "Value", "id": None, "dtype": "string"},
-    "col_2": {"_type": "Value", "id": None, "dtype": "int64"},
-    "col_3": {"_type": "Value", "id": None, "dtype": "float64"},
+    "col_1": {"_type": "Value", "dtype": "string"},
+    "col_2": {"_type": "Value", "dtype": "int64"},
+    "col_3": {"_type": "Value", "dtype": "float64"},
 }
 JSONL_rows = [
     {"col_1": "0", "col_2": 0, "col_3": 0.0},
@@ -325,9 +325,6 @@ JSONL_rows = [
 AUDIO_cols = {
     "col": {
         "_type": "Audio",
-        "decode": True,
-        "id": None,
-        "mono": True,
         "sampling_rate": 16_000,
     },
 }

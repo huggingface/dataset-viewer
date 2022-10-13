@@ -14,7 +14,6 @@ Set environment variables to configure the following aspects:
 - `HF_ENDPOINT`: URL of the HuggingFace Hub. Defaults to `https://huggingface.co`.
 - `HF_TOKEN`: App Access Token (ask moonlanding administrators to get one, only the `read` role is required), to access the gated datasets. Defaults to empty.
 - `LOG_LEVEL`: log level, among `DEBUG`, `INFO`, `WARNING`, `ERROR` and `CRITICAL`. Defaults to `INFO`.
-- `MAX_JOB_RETRIES`: the maximum number of job retries (for uncaught errors, such as RAM shortage) for the same job. The job is re-enqueued if an unexpected server error occurred and if its "retries" number is under `MAX_JOB_RETRIES`. Defaults to 3.
 - `MAX_JOBS_PER_DATASET`: the maximum number of started jobs for the same dataset. Defaults to 1.
 - `MAX_LOAD_PCT`: the maximum load of the machine (in percentage: the max between the 1m load and the 5m load divided by the number of cpus \*100) allowed to start a job. Set to 0 to disable the test. Defaults to 70.
 - `MAX_MEMORY_PCT`: the maximum memory (RAM + SWAP) usage of the machine (in percentage) allowed to start a job. Set to 0 to disable the test. Defaults to 80.

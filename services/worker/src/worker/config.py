@@ -14,7 +14,6 @@ from worker.constants import (
     DEFAULT_HF_ENDPOINT,
     DEFAULT_HF_TOKEN,
     DEFAULT_LOG_LEVEL,
-    DEFAULT_MAX_JOB_RETRIES,
     DEFAULT_MAX_JOBS_PER_DATASET,
     DEFAULT_MAX_LOAD_PCT,
     DEFAULT_MAX_MEMORY_PCT,
@@ -36,7 +35,6 @@ DATASETS_REVISION = get_str_value(d=os.environ, key="DATASETS_REVISION", default
 HF_ENDPOINT = get_str_value(d=os.environ, key="HF_ENDPOINT", default=DEFAULT_HF_ENDPOINT)
 HF_TOKEN = get_str_or_none_value(d=os.environ, key="HF_TOKEN", default=DEFAULT_HF_TOKEN)
 LOG_LEVEL = get_str_value(d=os.environ, key="LOG_LEVEL", default=DEFAULT_LOG_LEVEL)
-MAX_JOB_RETRIES = get_int_value(os.environ, "MAX_JOB_RETRIES", DEFAULT_MAX_JOB_RETRIES)
 MAX_JOBS_PER_DATASET = get_int_value(os.environ, "MAX_JOBS_PER_DATASET", DEFAULT_MAX_JOBS_PER_DATASET)
 MAX_LOAD_PCT = get_int_value(os.environ, "MAX_LOAD_PCT", DEFAULT_MAX_LOAD_PCT)
 MAX_MEMORY_PCT = get_int_value(os.environ, "MAX_MEMORY_PCT", DEFAULT_MAX_MEMORY_PCT)

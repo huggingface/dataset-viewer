@@ -3,7 +3,7 @@
 
 import logging
 from http import HTTPStatus
-from typing import Optional, Tuple
+from typing import Optional
 
 from libcache.simple_cache import (
     delete_first_rows_responses,
@@ -11,13 +11,14 @@ from libcache.simple_cache import (
     upsert_first_rows_response,
     upsert_splits_response,
 )
-from libqueue.queue import add_first_rows_job
+from libqueue.queue import add_job
 
 from worker.responses.first_rows import get_first_rows_response
 from worker.responses.splits import get_splits_response
 from worker.utils import (
     ConfigNotFoundError,
     DatasetNotFoundError,
+    JobType,
     SplitNotFoundError,
     UnexpectedError,
     WorkerCustomError,
@@ -26,7 +27,7 @@ from worker.utils import (
 logger = logging.getLogger(__name__)
 
 
-def refresh_splits(dataset: str, hf_endpoint: str, hf_token: Optional[str] = None) -> Tuple[HTTPStatus, bool]:
+def refresh_splits(dataset: str, hf_endpoint: str, hf_token: Optional[str] = None) -> HTTPStatus:
     try:
         response = get_splits_response(dataset, hf_endpoint, hf_token)
         upsert_splits_response(dataset, dict(response), HTTPStatus.OK)
@@ -42,12 +43,12 @@ def refresh_splits(dataset: str, hf_endpoint: str, hf_token: Optional[str] = Non
             f" dataset={dataset}"
         )
         for d, c, s in new_splits:
-            add_first_rows_job(d, c, s)
+            add_job(type=JobType.FIRST_ROWS.value, dataset=d, config=c, split=s)
         logger.debug(f"{len(new_splits)} 'first-rows' jobs added for the splits of dataset={dataset}")
-        return HTTPStatus.OK, False
+        return HTTPStatus.OK
     except DatasetNotFoundError as err:
         logger.debug(f"the dataset={dataset} could not be found, don't update the cache")
-        return err.status_code, False
+        return err.status_code
     except WorkerCustomError as err:
         upsert_splits_response(
             dataset,
@@ -57,7 +58,7 @@ def refresh_splits(dataset: str, hf_endpoint: str, hf_token: Optional[str] = Non
             dict(err.as_response_with_cause()),
         )
         logger.debug(f"splits response for dataset={dataset} had an error, cache updated")
-        return err.status_code, False
+        return err.status_code
     except Exception as err:
         e = UnexpectedError(str(err), err)
         upsert_splits_response(
@@ -68,7 +69,7 @@ def refresh_splits(dataset: str, hf_endpoint: str, hf_token: Optional[str] = Non
             dict(e.as_response_with_cause()),
         )
         logger.debug(f"splits response for dataset={dataset} had a server error, cache updated")
-        return e.status_code, True
+        return e.status_code
 
 
 def refresh_first_rows(
@@ -82,7 +83,7 @@ def refresh_first_rows(
     rows_max_bytes: Optional[int] = None,
     rows_max_number: Optional[int] = None,
     rows_min_number: Optional[int] = None,
-) -> Tuple[HTTPStatus, bool]:
+) -> HTTPStatus:
     try:
         response = get_first_rows_response(
             dataset,
@@ -98,12 +99,12 @@ def refresh_first_rows(
         )
         upsert_first_rows_response(dataset, config, split, dict(response), HTTPStatus.OK)
         logger.debug(f"dataset={dataset} config={config} split={split} is valid, cache updated")
-        return HTTPStatus.OK, False
+        return HTTPStatus.OK
     except (DatasetNotFoundError, ConfigNotFoundError, SplitNotFoundError) as err:
         logger.debug(
             f"the dataset={dataset}, config {config} or split {split} could not be found, don't update the cache"
         )
-        return err.status_code, False
+        return err.status_code
     except WorkerCustomError as err:
         upsert_first_rows_response(
             dataset,
@@ -117,7 +118,7 @@ def refresh_first_rows(
         logger.debug(
             f"first-rows response for dataset={dataset} config={config} split={split} had an error, cache updated"
         )
-        return err.status_code, False
+        return err.status_code
     except Exception as err:
         e = UnexpectedError(str(err), err)
         upsert_first_rows_response(
@@ -133,4 +134,4 @@ def refresh_first_rows(
             f"first-rows response for dataset={dataset} config={config} split={split} had a server"
             " error, cache updated"
         )
-        return e.status_code, True
+        return e.status_code
