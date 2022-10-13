@@ -1,6 +1,7 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2022 The HuggingFace Authors.
 
+from enum import Enum
 from http import HTTPStatus
 from typing import Any, Callable, Coroutine, Literal, Optional
 
@@ -92,3 +93,8 @@ def get_json_admin_error_response(error: AdminCustomError) -> Response:
 
 
 Endpoint = Callable[[Request], Coroutine[Any, Any, Response]]
+
+
+class JobType(Enum):
+    SPLITS = "/splits"
+    FIRST_ROWS = "/first-rows"

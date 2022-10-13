@@ -8,9 +8,11 @@ from libutils.logger import init_logger
 
 from admin.config import LOG_LEVEL, MONGO_QUEUE_DATABASE, MONGO_URL
 
+from ..utils import JobType
+
 if __name__ == "__main__":
     init_logger(LOG_LEVEL, "cancel_jobs_splits")
     logger = logging.getLogger("cancel_jobs_splits")
     connect_to_queue(MONGO_QUEUE_DATABASE, MONGO_URL)
-    cancel_started_jobs("/splits")
+    cancel_started_jobs(type=JobType.SPLITS.value)
     logger.info("all the started jobs in the splits/ queue have been cancelled and re-enqueued")

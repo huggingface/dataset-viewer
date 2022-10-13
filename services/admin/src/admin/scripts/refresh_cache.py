@@ -20,7 +20,7 @@ def refresh_datasets_cache(dataset_names: List[str]) -> None:
     connect_to_queue(MONGO_QUEUE_DATABASE, MONGO_URL)
     for dataset_name in dataset_names:
         # don't mark the cache entries as stale, because it's manually triggered
-        add_job(type="/splits", dataset=dataset_name)
+        add_job(type=JobType.SPLITS.value, dataset=dataset_name)
         logger.info(f"added a job to refresh '{dataset_name}'")
 
 

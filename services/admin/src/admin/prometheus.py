@@ -22,6 +22,8 @@ from prometheus_client.multiprocess import (  # type: ignore # https://github.co
 from starlette.requests import Request
 from starlette.responses import Response
 
+from .utils import JobType
+
 
 class Prometheus:
     metrics: Dict[str, Gauge] = {}
@@ -54,10 +56,10 @@ class Prometheus:
 
     def updateMetrics(self):
         # Queue metrics
-        for status, total in get_jobs_count_by_status(type="/splits").items():
-            self.metrics["queue_jobs_total"].labels(queue="/splits", status=status).set(total)
-        for status, total in get_jobs_count_by_status(type="/first-rows").items():
-            self.metrics["queue_jobs_total"].labels(queue="/first-rows", status=status).set(total)
+        for status, total in get_jobs_count_by_status(type=JobType.SPLITS.value).items():
+            self.metrics["queue_jobs_total"].labels(queue=JobType.SPLITS.value, status=status).set(total)
+        for status, total in get_jobs_count_by_status(type=JobType.FIRST_ROWS.value).items():
+            self.metrics["queue_jobs_total"].labels(queue=JobType.FIRST_ROWS.value, status=status).set(total)
         # Cache metrics
         for http_status, by_error_code in get_splits_responses_count_by_status_and_error_code().items():
             for error_code, total in by_error_code.items():

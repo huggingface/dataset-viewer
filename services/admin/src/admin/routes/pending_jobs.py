@@ -2,7 +2,6 @@
 # Copyright 2022 The HuggingFace Authors.
 
 import logging
-import time
 from typing import Optional
 
 from libqueue.queue import get_dump_by_pending_status
@@ -13,6 +12,7 @@ from admin.authentication import auth_check
 from admin.utils import (
     AdminCustomError,
     Endpoint,
+    JobType,
     UnexpectedError,
     get_json_admin_error_response,
     get_json_ok_response,
@@ -31,8 +31,8 @@ def create_pending_jobs_endpoint(
             auth_check(external_auth_url=external_auth_url, request=request, organization=organization)
             return get_json_ok_response(
                 {
-                    "/splits": get_dump_by_pending_status(type="/splits"),
-                    "/first-rows": get_dump_by_pending_status(type="/first-rows"),
+                    JobType.SPLITS.value: get_dump_by_pending_status(type=JobType.SPLITS.value),
+                    JobType.FIRST_ROWS.value: get_dump_by_pending_status(type=JobType.FIRST_ROWS.value),
                 }
             )
         except AdminCustomError as e:
