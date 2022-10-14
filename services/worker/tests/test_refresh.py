@@ -14,6 +14,7 @@ from libcache.simple_cache import (
 from libqueue.queue import _clean_queue_database, connect_to_queue
 
 from worker.refresh import refresh_first_rows, refresh_splits
+from worker.utils import Queues
 
 from .fixtures.files import DATA
 from .utils import (
@@ -45,9 +46,12 @@ def clean_mongo_database() -> None:
     _clean_queue_database()
 
 
+queues = Queues()
+
+
 def test_doesnotexist() -> None:
     dataset_name = "doesnotexist"
-    assert refresh_splits(dataset_name, hf_endpoint=HF_ENDPOINT) == HTTPStatus.NOT_FOUND
+    assert refresh_splits(queues, dataset_name, hf_endpoint=HF_ENDPOINT) == HTTPStatus.NOT_FOUND
     with pytest.raises(DoesNotExist):
         get_splits_response(dataset_name)
     dataset, config, split = get_default_config_split(dataset_name)
@@ -57,7 +61,7 @@ def test_doesnotexist() -> None:
 
 
 def test_refresh_splits(hub_public_csv: str) -> None:
-    assert refresh_splits(hub_public_csv, hf_endpoint=HF_ENDPOINT) == HTTPStatus.OK
+    assert refresh_splits(queues, hub_public_csv, hf_endpoint=HF_ENDPOINT) == HTTPStatus.OK
     response, _, _ = get_splits_response(hub_public_csv)
     assert len(response["splits"]) == 1
     assert response["splits"][0]["num_bytes"] is None

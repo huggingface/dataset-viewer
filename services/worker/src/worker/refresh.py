@@ -11,14 +11,13 @@ from libcache.simple_cache import (
     upsert_first_rows_response,
     upsert_splits_response,
 )
-from libqueue.queue import add_job
 
 from .responses.first_rows import get_first_rows_response
 from .responses.splits import get_splits_response
 from .utils import (
     ConfigNotFoundError,
     DatasetNotFoundError,
-    JobType,
+    Queues,
     SplitNotFoundError,
     UnexpectedError,
     WorkerCustomError,
@@ -27,7 +26,7 @@ from .utils import (
 logger = logging.getLogger(__name__)
 
 
-def refresh_splits(dataset: str, hf_endpoint: str, hf_token: Optional[str] = None) -> HTTPStatus:
+def refresh_splits(queues: Queues, dataset: str, hf_endpoint: str, hf_token: Optional[str] = None) -> HTTPStatus:
     try:
         response = get_splits_response(dataset, hf_endpoint, hf_token)
         upsert_splits_response(dataset, dict(response), HTTPStatus.OK)
@@ -43,7 +42,7 @@ def refresh_splits(dataset: str, hf_endpoint: str, hf_token: Optional[str] = Non
             f" dataset={dataset}"
         )
         for d, c, s in new_splits:
-            add_job(type=JobType.FIRST_ROWS.value, dataset=d, config=c, split=s)
+            queues.first_rows.add_job(dataset=d, config=c, split=s)
         logger.debug(f"{len(new_splits)} 'first-rows' jobs added for the splits of dataset={dataset}")
         return HTTPStatus.OK
     except DatasetNotFoundError as err:

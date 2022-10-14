@@ -8,6 +8,7 @@ from http import HTTPStatus
 from logging import Logger
 from typing import Literal, Optional
 
+from libqueue.queue import Queue
 from libutils.exceptions import CustomError
 
 WorkerErrorCode = Literal[
@@ -147,3 +148,12 @@ def retry(logger: Logger):
 class JobType(Enum):
     SPLITS = "/splits"
     FIRST_ROWS = "/first-rows"
+
+
+class Queues:
+    splits: Queue
+    first_rows: Queue
+
+    def __init__(self, max_jobs_per_dataset: Optional[int] = None):
+        self.splits = Queue(type=JobType.SPLITS.value, max_jobs_per_dataset=max_jobs_per_dataset)
+        self.first_rows = Queue(type=JobType.FIRST_ROWS.value, max_jobs_per_dataset=max_jobs_per_dataset)

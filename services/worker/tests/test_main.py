@@ -4,10 +4,10 @@
 import pytest
 from libcache.simple_cache import _clean_database as _clean_cache_database
 from libcache.simple_cache import connect_to_cache
-from libqueue.queue import _clean_queue_database, add_job, connect_to_queue
+from libqueue.queue import _clean_queue_database, connect_to_queue
 
 from worker.main import process_next_first_rows_job, process_next_splits_job
-from worker.utils import JobType
+from worker.utils import Queues
 
 from .utils import (
     MONGO_CACHE_DATABASE,
@@ -35,14 +35,17 @@ def clean_mongo_database() -> None:
     _clean_queue_database()
 
 
+queues = Queues()
+
+
 def test_process_next_splits_job(hub_public_csv: str) -> None:
-    add_job(JobType.SPLITS.value, dataset=hub_public_csv)
-    result = process_next_splits_job()
+    queues.splits.add_job(dataset=hub_public_csv)
+    result = process_next_splits_job(queues)
     assert result is True
 
 
 def test_process_next_first_rows_job(hub_public_csv: str) -> None:
     dataset, config, split = get_default_config_split(hub_public_csv)
-    add_job(JobType.FIRST_ROWS.value, dataset=dataset, config=config, split=split)
-    result = process_next_first_rows_job()
+    queues.first_rows.add_job(dataset=dataset, config=config, split=split)
+    result = process_next_first_rows_job(queues)
     assert result is True

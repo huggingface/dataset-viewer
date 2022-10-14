@@ -8,7 +8,7 @@ from http import HTTPStatus
 
 from libcache.asset import show_assets_dir
 from libcache.simple_cache import connect_to_cache
-from libqueue.queue import EmptyQueue, connect_to_queue, finish_job, start_job
+from libqueue.queue import EmptyQueue, connect_to_queue
 from libutils.logger import init_logger
 from psutil import cpu_count, getloadavg, swap_memory, virtual_memory
 
@@ -32,15 +32,15 @@ from .config import (
     WORKER_SLEEP_SECONDS,
 )
 from .refresh import refresh_first_rows, refresh_splits
-from .utils import JobType
+from .utils import Queues
 
 
-def process_next_splits_job() -> bool:
+def process_next_splits_job(queues: Queues) -> bool:
     logger = logging.getLogger("datasets_server.worker")
     logger.debug("try to process a splits/ job")
 
     try:
-        job_id, dataset, *_ = start_job(type=JobType.SPLITS.value, max_jobs_per_dataset=MAX_JOBS_PER_DATASET)
+        job_id, dataset, *_ = queues.splits.start_job()
         logger.debug(f"job assigned: {job_id} for dataset={dataset}")
     except EmptyQueue:
         logger.debug("no job in the queue")
@@ -49,23 +49,21 @@ def process_next_splits_job() -> bool:
     success = False
     try:
         logger.info(f"compute dataset={dataset}")
-        http_status = refresh_splits(dataset=dataset, hf_endpoint=HF_ENDPOINT, hf_token=HF_TOKEN)
+        http_status = refresh_splits(queues, dataset=dataset, hf_endpoint=HF_ENDPOINT, hf_token=HF_TOKEN)
         success = http_status == HTTPStatus.OK
     finally:
-        finish_job(job_id, success=success)
+        queues.splits.finish_job(job_id=job_id, success=success)
         result = "success" if success else "error"
         logger.debug(f"job finished with {result}: {job_id} for dataset={dataset}")
     return True
 
 
-def process_next_first_rows_job() -> bool:
+def process_next_first_rows_job(queues: Queues) -> bool:
     logger = logging.getLogger("datasets_server.worker")
     logger.debug("try to process a first-rows job")
 
     try:
-        job_id, dataset, config, split = start_job(
-            type=JobType.FIRST_ROWS.value, max_jobs_per_dataset=MAX_JOBS_PER_DATASET
-        )
+        job_id, dataset, config, split = queues.first_rows.start_job()
         logger.debug(f"job assigned: {job_id} for dataset={dataset} config={config} split={split}")
     except EmptyQueue:
         logger.debug("no job in the queue")
@@ -90,17 +88,17 @@ def process_next_first_rows_job() -> bool:
         )
         success = http_status == HTTPStatus.OK
     finally:
-        finish_job(job_id, success=success)
+        queues.first_rows.finish_job(job_id=job_id, success=success)
         result = "success" if success else "error"
         logger.debug(f"job finished with {result}: {job_id} for dataset={dataset} config={config} split={split}")
     return True
 
 
-def process_next_job() -> bool:
+def process_next_job(queues: Queues) -> bool:
     if WORKER_QUEUE == "first_rows_responses":
-        return process_next_first_rows_job()
+        return process_next_first_rows_job(queues)
     elif WORKER_QUEUE == "splits_responses":
-        return process_next_splits_job()
+        return process_next_splits_job(queues)
     raise NotImplementedError(f"Job queue {WORKER_QUEUE} does not exist")
 
 
@@ -142,11 +140,11 @@ def sleep() -> None:
     time.sleep(duration)
 
 
-def loop() -> None:
+def loop(queues: Queues) -> None:
     logger = logging.getLogger("datasets_server.worker")
     try:
         while True:
-            if has_resources() and process_next_job():
+            if has_resources() and process_next_job(queues):
                 # loop immediately to try another job
                 # see https://github.com/huggingface/datasets-server/issues/265
                 continue
@@ -161,4 +159,4 @@ if __name__ == "__main__":
     connect_to_cache(database=MONGO_CACHE_DATABASE, host=MONGO_URL)
     connect_to_queue(database=MONGO_QUEUE_DATABASE, host=MONGO_URL)
     show_assets_dir(ASSETS_DIRECTORY)
-    loop()
+    loop(queues=Queues(max_jobs_per_dataset=MAX_JOBS_PER_DATASET))
