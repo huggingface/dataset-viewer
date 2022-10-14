@@ -54,8 +54,10 @@ def worker() -> SplitsWorker:
 
 def test_compute(worker: SplitsWorker, hub_public_csv: str) -> None:
     dataset = hub_public_csv
-    assert worker.compute(dataset) == HTTPStatus.OK
-    response, _, _ = get_splits_response(hub_public_csv)
+    assert worker.compute(dataset=dataset) is True
+    response, cached_http_status, error_code = get_splits_response(dataset_name=hub_public_csv)
+    assert cached_http_status == HTTPStatus.OK
+    assert error_code is None
     assert len(response["splits"]) == 1
     assert response["splits"][0]["num_bytes"] is None
     assert response["splits"][0]["num_examples"] is None
@@ -63,9 +65,9 @@ def test_compute(worker: SplitsWorker, hub_public_csv: str) -> None:
 
 def test_doesnotexist(worker: SplitsWorker) -> None:
     dataset = "doesnotexist"
-    assert worker.compute(dataset) == HTTPStatus.NOT_FOUND
+    assert worker.compute(dataset=dataset) is False
     with pytest.raises(DoesNotExist):
-        worker.compute(dataset)
+        get_splits_response(dataset_name=dataset)
 
 
 def test_process_job(worker: SplitsWorker, hub_public_csv: str) -> None:

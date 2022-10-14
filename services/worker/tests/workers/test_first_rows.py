@@ -70,8 +70,10 @@ def worker() -> FirstRowsWorker:
 
 def test_compute(worker: FirstRowsWorker, hub_public_csv: str) -> None:
     dataset, config, split = get_default_config_split(hub_public_csv)
-    assert worker.compute(dataset, config, split) == HTTPStatus.OK
-    response, cached_http_status, error_code = get_first_rows_response(dataset, config, split)
+    assert worker.compute(dataset=dataset, config=config, split=split) is True
+    response, cached_http_status, error_code = get_first_rows_response(
+        dataset_name=dataset, config_name=config, split_name=split
+    )
     assert cached_http_status == HTTPStatus.OK
     assert error_code is None
     assert response["features"][0]["feature_idx"] == 0
@@ -85,9 +87,9 @@ def test_compute(worker: FirstRowsWorker, hub_public_csv: str) -> None:
 def test_doesnotexist(worker: FirstRowsWorker) -> None:
     dataset = "doesnotexist"
     dataset, config, split = get_default_config_split(dataset)
-    assert worker.compute(dataset, config, split) == HTTPStatus.NOT_FOUND
+    assert worker.compute(dataset=dataset, config=config, split=split) is False
     with pytest.raises(DoesNotExist):
-        worker.compute(dataset)
+        get_first_rows_response(dataset_name=dataset, config_name=config, split_name=split)
 
 
 def test_process_job(worker: FirstRowsWorker, hub_public_csv: str) -> None:
