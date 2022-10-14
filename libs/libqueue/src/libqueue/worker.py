@@ -7,7 +7,7 @@ import time
 from abc import ABC, abstractmethod
 from typing import Optional
 
-from psutil import cpu_count, getloadavg, swap_memory, virtual_memory  # type: ignore
+from psutil import cpu_count, getloadavg, swap_memory, virtual_memory
 
 from libqueue.queue import EmptyQueue, Queue
 
