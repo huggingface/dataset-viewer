@@ -2,7 +2,6 @@
 # Copyright 2022 The HuggingFace Authors.
 
 import logging
-from http import HTTPStatus
 from typing import Optional
 
 from libqueue.queue import EmptyQueue
@@ -45,13 +44,11 @@ class SplitsWorker(Worker):
             logger.debug("no job in the queue")
             return False
 
-        success = False
         try:
             logger.info(f"compute dataset={dataset}")
-            http_status = refresh_splits(
+            success = refresh_splits(
                 self.queues, dataset=dataset, hf_endpoint=self.hf_endpoint, hf_token=self.hf_token
             )
-            success = http_status == HTTPStatus.OK
         finally:
             self.queues.splits.finish_job(job_id=job_id, success=success)
             result = "success" if success else "error"

@@ -2,7 +2,6 @@
 # Copyright 2022 The HuggingFace Authors.
 
 import logging
-from http import HTTPStatus
 from typing import Optional
 
 from libqueue.queue import EmptyQueue
@@ -60,12 +59,11 @@ class FirstRowsWorker(Worker):
             logger.debug("no job in the queue")
             return False
 
-        success = False
         try:
             logger.info(f"compute dataset={dataset} config={config} split={split}")
             if config is None or split is None:
                 raise ValueError("config and split are required")
-            http_status = refresh_first_rows(
+            success = refresh_first_rows(
                 dataset=dataset,
                 config=config,
                 split=split,
@@ -77,7 +75,6 @@ class FirstRowsWorker(Worker):
                 rows_max_number=self.rows_max_number,
                 rows_min_number=self.rows_min_number,
             )
-            success = http_status == HTTPStatus.OK
         finally:
             self.queues.first_rows.finish_job(job_id=job_id, success=success)
             result = "success" if success else "error"
