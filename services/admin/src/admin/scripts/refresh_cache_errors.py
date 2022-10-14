@@ -6,8 +6,8 @@ import logging
 from libcache.simple_cache import connect_to_cache, get_datasets_with_some_error
 from libutils.logger import init_logger
 
-from admin.config import LOG_LEVEL, MONGO_CACHE_DATABASE, MONGO_URL
-from admin.scripts.refresh_cache import refresh_datasets_cache
+from ..config import LOG_LEVEL, MONGO_CACHE_DATABASE, MONGO_URL
+from .refresh_cache import refresh_datasets_cache
 
 if __name__ == "__main__":
     init_logger(LOG_LEVEL, "refresh_cache_canonical")

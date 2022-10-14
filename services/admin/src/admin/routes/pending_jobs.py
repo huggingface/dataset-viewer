@@ -4,12 +4,12 @@
 import logging
 from typing import Optional
 
-from libqueue.queue import get_dump_by_pending_status
+from libqueue.queue import Queue
 from starlette.requests import Request
 from starlette.responses import Response
 
-from admin.authentication import auth_check
-from admin.utils import (
+from ..authentication import auth_check
+from ..utils import (
     AdminCustomError,
     Endpoint,
     JobType,

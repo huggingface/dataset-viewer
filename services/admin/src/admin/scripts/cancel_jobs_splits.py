@@ -6,8 +6,7 @@ import logging
 from libqueue.queue import cancel_started_jobs, connect_to_queue
 from libutils.logger import init_logger
 
-from admin.config import LOG_LEVEL, MONGO_QUEUE_DATABASE, MONGO_URL
-
+from ..config import LOG_LEVEL, MONGO_QUEUE_DATABASE, MONGO_URL
 from ..utils import JobType
 
 if __name__ == "__main__":

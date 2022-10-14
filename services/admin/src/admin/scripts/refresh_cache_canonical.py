@@ -6,8 +6,8 @@ import logging
 from huggingface_hub.hf_api import HfApi  # type: ignore
 from libutils.logger import init_logger
 
-from admin.config import HF_ENDPOINT, LOG_LEVEL
-from admin.scripts.refresh_cache import refresh_datasets_cache
+from ..config import HF_ENDPOINT, LOG_LEVEL
+from .refresh_cache import refresh_datasets_cache
 
 
 def get_hf_canonical_dataset_names():

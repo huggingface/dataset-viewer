@@ -8,7 +8,7 @@ from requests import PreparedRequest
 from requests.auth import AuthBase
 from starlette.requests import Request
 
-from admin.utils import ExternalAuthenticatedError, ExternalUnauthenticatedError
+from .utils import ExternalAuthenticatedError, ExternalUnauthenticatedError
 
 
 class RequestAuth(AuthBase):

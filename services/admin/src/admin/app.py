@@ -12,7 +12,7 @@ from starlette.middleware.gzip import GZipMiddleware
 from starlette.routing import Route
 from starlette_prometheus import PrometheusMiddleware
 
-from admin.config import (
+from .config import (
     APP_HOSTNAME,
     APP_NUM_WORKERS,
     APP_PORT,
@@ -23,10 +23,10 @@ from admin.config import (
     MONGO_QUEUE_DATABASE,
     MONGO_URL,
 )
-from admin.prometheus import Prometheus
-from admin.routes.cache_reports import create_cache_reports_endpoint
-from admin.routes.healthcheck import healthcheck_endpoint
-from admin.routes.pending_jobs import create_pending_jobs_endpoint
+from .prometheus import Prometheus
+from .routes.cache_reports import create_cache_reports_endpoint
+from .routes.healthcheck import healthcheck_endpoint
+from .routes.pending_jobs import create_pending_jobs_endpoint
 
 
 def create_app() -> Starlette:
