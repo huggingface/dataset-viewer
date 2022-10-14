@@ -4,8 +4,8 @@
     "api": "huggingface/datasets-server-services-api:sha-d41b141",
     "reverseProxy": "docker.io/nginx:1.20",
     "worker": {
-      "splits": "huggingface/datasets-server-workers-splits:sha-06c9c4b",
-      "firstRows": "huggingface/datasets-server-workers-first_rows:sha-06c9c4b"
+      "splits": "huggingface/datasets-server-workers-splits:sha-1694b08",
+      "firstRows": "huggingface/datasets-server-workers-first_rows:sha-1694b08"
     }
   }
 }
