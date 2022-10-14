@@ -122,7 +122,7 @@ api:
 
 worker:
   splits:
-    replicas: 4
+    replicas: 8
 
     nodeSelector:
       role-datasets-server: "true"
