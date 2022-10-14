@@ -8,7 +8,7 @@ on:
       working-directory:
         required: true
         type: string
-      is-worker:
+      is-datasets-worker:
         required: false
         type: boolean
     secrets:
@@ -38,11 +38,11 @@ jobs:
           cache: 'poetry'
           cache-dependency-path: |
             ${{ inputs.working-directory }}/poetry.lock
-      - name: Install packages
-        if: ${{ inputs.is-worker }}
+      - name: Install packages for workers that use datasets
+        if: ${{ inputs.is-datasets-worker }}
         run: sudo apt update; sudo apt install -y libicu-dev ffmpeg libavcodec-extra llvm
       - name: Install libsndfile
-        if: ${{ inputs.is-worker }}
+        if: ${{ inputs.is-datasets-worker }}
         run: >
           sudo apt install -y autoconf autogen automake build-essential libasound2-dev libflac-dev libogg-dev libtool libvorbis-dev libopus-dev libmp3lame-dev libmpg123-dev pkg-config;
           cd /tmp;

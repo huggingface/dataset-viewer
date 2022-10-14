@@ -33,16 +33,12 @@
       "path": "../services/reverse-proxy"
     },
     {
-      "name": "services/worker",
-      "path": "../services/worker"
+      "name": "workers/splits",
+      "path": "../workers/splits"
     },
     {
-      "name": "workers/worker_splits",
-      "path": "../workers/worker_splits"
-    },
-    {
-      "name": "workers/worker_first_rows",
-      "path": "../workers/worker_first_rows"
+      "name": "workers/first_rows",
+      "path": "../workers/first_rows"
     }
   ],
   "settings": {

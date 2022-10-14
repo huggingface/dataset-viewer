@@ -23,7 +23,6 @@ spec:
         {{ include "labels.worker.splits" . | nindent 8 }}
     spec:
       initContainers:
-        {{ include "initContainerAssets" . | nindent 8 }}
         {{ include "initContainerCache" . | nindent 8 }}
         {{ include "initContainerNumbaCache" . | nindent 8 }}
       containers:

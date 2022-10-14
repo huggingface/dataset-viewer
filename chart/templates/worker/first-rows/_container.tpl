@@ -29,8 +29,6 @@
         optional: false
   - name: LOG_LEVEL
     value: {{ .Values.worker.firstRows.logLevel | quote }}
-  - name: MAX_JOB_RETRIES
-    value: {{ .Values.worker.firstRows.maxJobRetries | quote }}
   - name: MAX_JOBS_PER_DATASET
     value: {{ .Values.worker.firstRows.maxJobsPerDataset | quote }}
   - name: MAX_LOAD_PCT
@@ -65,9 +63,6 @@
     value: {{ .Values.worker.firstRows.rowsMinNumber| quote }}
   - name: WORKER_SLEEP_SECONDS
     value: {{ .Values.worker.firstRows.workerleepSeconds | quote }}
-  - name: WORKER_QUEUE
-    # Job queue the worker will pull jobs from: 'splits_responses' or 'first_rows_responses'
-    value: "first_rows_responses"
   image: {{ .Values.dockerImage.worker.firstRows }}
   imagePullPolicy: IfNotPresent
   volumeMounts:
