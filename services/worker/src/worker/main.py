@@ -12,7 +12,7 @@ from libqueue.queue import EmptyQueue, connect_to_queue, finish_job, start_job
 from libutils.logger import init_logger
 from psutil import cpu_count, getloadavg, swap_memory, virtual_memory
 
-from worker.config import (
+from .config import (
     ASSETS_BASE_URL,
     ASSETS_DIRECTORY,
     HF_ENDPOINT,
@@ -31,8 +31,7 @@ from worker.config import (
     WORKER_QUEUE,
     WORKER_SLEEP_SECONDS,
 )
-from worker.refresh import refresh_first_rows, refresh_splits
-
+from .refresh import refresh_first_rows, refresh_splits
 from .utils import JobType
 
 

@@ -15,11 +15,10 @@ from datasets import (
 )
 from libutils.utils import orjson_dumps
 
-from worker.config import MIN_CELL_BYTES
-from worker.constants import DEFAULT_ROWS_MAX_BYTES, DEFAULT_ROWS_MAX_NUMBER
-from worker.features import get_cell_value
-from worker.responses.splits import get_splits_response
-from worker.utils import (
+from ..config import MIN_CELL_BYTES
+from ..constants import DEFAULT_ROWS_MAX_BYTES, DEFAULT_ROWS_MAX_NUMBER
+from ..features import get_cell_value
+from ..utils import (
     ConfigNotFoundError,
     FeaturesError,
     InfoError,
@@ -29,6 +28,7 @@ from worker.utils import (
     StreamingRowsError,
     retry,
 )
+from .splits import get_splits_response
 
 logger = logging.getLogger(__name__)
 

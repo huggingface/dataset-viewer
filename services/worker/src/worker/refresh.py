@@ -13,9 +13,9 @@ from libcache.simple_cache import (
 )
 from libqueue.queue import add_job
 
-from worker.responses.first_rows import get_first_rows_response
-from worker.responses.splits import get_splits_response
-from worker.utils import (
+from .responses.first_rows import get_first_rows_response
+from .responses.splits import get_splits_response
+from .utils import (
     ConfigNotFoundError,
     DatasetNotFoundError,
     JobType,

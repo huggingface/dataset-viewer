@@ -7,7 +7,7 @@ import datasets.config
 from datasets.utils.logging import log_levels, set_verbosity
 from libutils.utils import get_int_value, get_str_or_none_value, get_str_value
 
-from worker.constants import (
+from .constants import (
     DEFAULT_ASSETS_BASE_URL,
     DEFAULT_ASSETS_DIRECTORY,
     DEFAULT_DATASETS_REVISION,
