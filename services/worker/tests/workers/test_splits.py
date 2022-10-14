@@ -6,15 +6,17 @@ from libcache.simple_cache import _clean_database as _clean_cache_database
 from libcache.simple_cache import connect_to_cache
 from libqueue.queue import _clean_queue_database, connect_to_queue
 
-from worker.main import process_next_first_rows_job, process_next_splits_job
-from worker.utils import Queues
-
-from .utils import (
-    MONGO_CACHE_DATABASE,
-    MONGO_QUEUE_DATABASE,
-    MONGO_URL,
-    get_default_config_split,
+from worker.config import (
+    HF_ENDPOINT,
+    HF_TOKEN,
+    MAX_JOBS_PER_DATASET,
+    MAX_LOAD_PCT,
+    MAX_MEMORY_PCT,
+    WORKER_SLEEP_SECONDS,
 )
+from worker.workers.splits import SplitsWorker
+
+from ..utils import MONGO_CACHE_DATABASE, MONGO_QUEUE_DATABASE, MONGO_URL
 
 
 @pytest.fixture(autouse=True, scope="module")
@@ -35,17 +37,15 @@ def clean_mongo_database() -> None:
     _clean_queue_database()
 
 
-queues = Queues()
-
-
-def test_process_next_splits_job(hub_public_csv: str) -> None:
-    queues.splits.add_job(dataset=hub_public_csv)
-    result = process_next_splits_job(queues)
-    assert result is True
-
-
-def test_process_next_first_rows_job(hub_public_csv: str) -> None:
-    dataset, config, split = get_default_config_split(hub_public_csv)
-    queues.first_rows.add_job(dataset=dataset, config=config, split=split)
-    result = process_next_first_rows_job(queues)
+def test_first_rows_worker(hub_public_csv: str) -> None:
+    worker = SplitsWorker(
+        hf_endpoint=HF_ENDPOINT,
+        hf_token=HF_TOKEN,
+        max_jobs_per_dataset=MAX_JOBS_PER_DATASET,
+        max_load_pct=MAX_LOAD_PCT,
+        max_memory_pct=MAX_MEMORY_PCT,
+        sleep_seconds=WORKER_SLEEP_SECONDS,
+    )
+    worker.queues.splits.add_job(dataset=hub_public_csv)
+    result = worker.process_next_job()
     assert result is True
