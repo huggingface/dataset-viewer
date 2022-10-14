@@ -9,7 +9,7 @@ from libutils.utils import orjson_dumps
 from starlette.requests import Request
 from starlette.responses import JSONResponse, Response
 
-from api.config import MAX_AGE_LONG_SECONDS, MAX_AGE_SHORT_SECONDS
+from .config import MAX_AGE_LONG_SECONDS, MAX_AGE_SHORT_SECONDS
 
 ApiErrorCode = Literal[
     "MissingRequiredParameter",

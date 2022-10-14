@@ -9,9 +9,9 @@ from libcache.simple_cache import DoesNotExist, get_first_rows_response
 from starlette.requests import Request
 from starlette.responses import Response
 
-from api.authentication import auth_check
-from api.dataset import is_first_rows_in_process
-from api.utils import (
+from ..authentication import auth_check
+from ..dataset import is_first_rows_in_process
+from ..utils import (
     ApiCustomError,
     Endpoint,
     FirstRowsResponseNotFoundError,

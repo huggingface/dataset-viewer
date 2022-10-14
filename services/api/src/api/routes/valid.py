@@ -8,8 +8,8 @@ from libcache.simple_cache import get_valid_dataset_names, is_dataset_name_valid
 from starlette.requests import Request
 from starlette.responses import Response
 
-from api.authentication import auth_check
-from api.utils import (
+from ..authentication import auth_check
+from ..utils import (
     ApiCustomError,
     Endpoint,
     MissingRequiredParameterError,

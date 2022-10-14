@@ -5,7 +5,7 @@ import os
 
 from libutils.utils import get_int_value, get_str_or_none_value, get_str_value
 
-from api.constants import (
+from .constants import (
     DEFAULT_APP_HOSTNAME,
     DEFAULT_APP_NUM_WORKERS,
     DEFAULT_APP_PORT,

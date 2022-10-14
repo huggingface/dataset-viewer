@@ -8,8 +8,8 @@ from jsonschema import ValidationError, validate  # type: ignore
 from starlette.requests import Request
 from starlette.responses import Response
 
-from api.dataset import delete, is_supported, update
-from api.utils import Endpoint, get_response
+from ..dataset import delete, is_supported, update
+from ..utils import Endpoint, get_response
 
 logger = logging.getLogger(__name__)
 
