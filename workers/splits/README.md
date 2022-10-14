@@ -1,6 +1,6 @@
 # Datasets server - worker
 
-> Worker to pre-process datasets and splits
+> Worker that pre-computes and caches the response to /splits
 
 ## Configuration
 
