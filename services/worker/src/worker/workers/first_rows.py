@@ -2,11 +2,19 @@
 # Copyright 2022 The HuggingFace Authors.
 
 import logging
+from http import HTTPStatus
 from typing import Optional
 
-from libqueue.queue import EmptyQueue
+from libcache.simple_cache import upsert_first_rows_response
 
-from ..refresh import refresh_first_rows
+from ..responses.first_rows import get_first_rows_response
+from ..utils import (
+    ConfigNotFoundError,
+    DatasetNotFoundError,
+    SplitNotFoundError,
+    UnexpectedError,
+    WorkerCustomError,
+)
 from ..worker import Worker
 
 logger = logging.getLogger(__name__)
@@ -49,24 +57,23 @@ class FirstRowsWorker(Worker):
         self.rows_max_number = rows_max_number
         self.rows_min_number = rows_min_number
 
-    def process_next_job(self) -> bool:
-        logger.debug("try to process a first-rows job")
+    @property
+    def queue(self):
+        return self.queues.first_rows
 
+    def compute(
+        self,
+        dataset: str,
+        config: Optional[str] = None,
+        split: Optional[str] = None,
+    ) -> bool:
+        if config is None or split is None:
+            raise ValueError("config and split are required")
         try:
-            job_id, dataset, config, split = self.queues.first_rows.start_job()
-            logger.debug(f"job assigned: {job_id} for dataset={dataset} config={config} split={split}")
-        except EmptyQueue:
-            logger.debug("no job in the queue")
-            return False
-
-        try:
-            logger.info(f"compute dataset={dataset} config={config} split={split}")
-            if config is None or split is None:
-                raise ValueError("config and split are required")
-            success = refresh_first_rows(
-                dataset=dataset,
-                config=config,
-                split=split,
+            response = get_first_rows_response(
+                dataset,
+                config,
+                split,
                 assets_base_url=self.assets_base_url,
                 hf_endpoint=self.hf_endpoint,
                 hf_token=self.hf_token,
@@ -75,8 +82,41 @@ class FirstRowsWorker(Worker):
                 rows_max_number=self.rows_max_number,
                 rows_min_number=self.rows_min_number,
             )
-        finally:
-            self.queues.first_rows.finish_job(job_id=job_id, success=success)
-            result = "success" if success else "error"
-            logger.debug(f"job finished with {result}: {job_id} for dataset={dataset} config={config} split={split}")
-        return True
+            upsert_first_rows_response(dataset, config, split, dict(response), HTTPStatus.OK)
+            logger.debug(f"dataset={dataset} config={config} split={split} is valid, cache updated")
+            return True
+        except (DatasetNotFoundError, ConfigNotFoundError, SplitNotFoundError):
+            logger.debug(
+                f"the dataset={dataset}, config {config} or split {split} could not be found, don't update the cache"
+            )
+            return False
+        except WorkerCustomError as err:
+            upsert_first_rows_response(
+                dataset,
+                config,
+                split,
+                dict(err.as_response()),
+                err.status_code,
+                err.code,
+                dict(err.as_response_with_cause()),
+            )
+            logger.debug(
+                f"first-rows response for dataset={dataset} config={config} split={split} had an error, cache updated"
+            )
+            return False
+        except Exception as err:
+            e = UnexpectedError(str(err), err)
+            upsert_first_rows_response(
+                dataset,
+                config,
+                split,
+                dict(e.as_response()),
+                e.status_code,
+                e.code,
+                dict(e.as_response_with_cause()),
+            )
+            logger.debug(
+                f"first-rows response for dataset={dataset} config={config} split={split} had a server"
+                " error, cache updated"
+            )
+            return False

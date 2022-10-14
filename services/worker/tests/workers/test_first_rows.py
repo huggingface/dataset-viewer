@@ -1,9 +1,13 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2022 The HuggingFace Authors.
 
+
+from http import HTTPStatus
+
 import pytest
+from libcache.simple_cache import DoesNotExist
 from libcache.simple_cache import _clean_database as _clean_cache_database
-from libcache.simple_cache import connect_to_cache
+from libcache.simple_cache import connect_to_cache, get_first_rows_response
 from libqueue.queue import _clean_queue_database, connect_to_queue
 
 from worker.config import (
@@ -47,9 +51,9 @@ def clean_mongo_database() -> None:
     _clean_queue_database()
 
 
-def test_first_rows_worker(hub_public_csv: str) -> None:
-    dataset, config, split = get_default_config_split(hub_public_csv)
-    worker = FirstRowsWorker(
+@pytest.fixture(autouse=True, scope="module")
+def worker() -> FirstRowsWorker:
+    return FirstRowsWorker(
         assets_base_url=ASSETS_BASE_URL,
         hf_endpoint=HF_ENDPOINT,
         hf_token=HF_TOKEN,
@@ -62,6 +66,32 @@ def test_first_rows_worker(hub_public_csv: str) -> None:
         max_memory_pct=MAX_MEMORY_PCT,
         sleep_seconds=WORKER_SLEEP_SECONDS,
     )
-    worker.queues.first_rows.add_job(dataset=dataset, config=config, split=split)
+
+
+def test_compute(worker: FirstRowsWorker, hub_public_csv: str) -> None:
+    dataset, config, split = get_default_config_split(hub_public_csv)
+    assert worker.compute(dataset, config, split) == HTTPStatus.OK
+    response, cached_http_status, error_code = get_first_rows_response(dataset, config, split)
+    assert cached_http_status == HTTPStatus.OK
+    assert error_code is None
+    assert response["features"][0]["feature_idx"] == 0
+    assert response["features"][0]["name"] == "col_1"
+    assert response["features"][0]["type"]["_type"] == "Value"
+    assert response["features"][0]["type"]["dtype"] == "int64"  # <---|
+    assert response["features"][1]["type"]["dtype"] == "int64"  # <---|- auto-detected by the datasets library
+    assert response["features"][2]["type"]["dtype"] == "float64"  # <-|
+
+
+def test_doesnotexist(worker: FirstRowsWorker) -> None:
+    dataset = "doesnotexist"
+    dataset, config, split = get_default_config_split(dataset)
+    assert worker.compute(dataset, config, split) == HTTPStatus.NOT_FOUND
+    with pytest.raises(DoesNotExist):
+        worker.compute(dataset)
+
+
+def test_process_job(worker: FirstRowsWorker, hub_public_csv: str) -> None:
+    dataset, config, split = get_default_config_split(hub_public_csv)
+    worker.queue.add_job(dataset=dataset, config=config, split=split)
     result = worker.process_next_job()
     assert result is True

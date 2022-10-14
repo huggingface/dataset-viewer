@@ -2,11 +2,17 @@
 # Copyright 2022 The HuggingFace Authors.
 
 import logging
+from http import HTTPStatus
 from typing import Optional
 
-from libqueue.queue import EmptyQueue
+from libcache.simple_cache import (
+    delete_first_rows_responses,
+    get_dataset_first_rows_response_splits,
+    upsert_splits_response,
+)
 
-from ..refresh import refresh_splits
+from ..responses.splits import get_splits_response
+from ..utils import DatasetNotFoundError, UnexpectedError, WorkerCustomError
 from ..worker import Worker
 
 logger = logging.getLogger(__name__)
@@ -34,23 +40,55 @@ class SplitsWorker(Worker):
         self.hf_endpoint = hf_endpoint
         self.hf_token = hf_token
 
-    def process_next_job(self) -> bool:
-        logger.debug("try to process a splits/ job")
+    @property
+    def queue(self):
+        return self.queues.splits
 
+    def compute(
+        self,
+        dataset: str,
+        config: Optional[str] = None,
+        split: Optional[str] = None,
+    ) -> bool:
         try:
-            job_id, dataset, *_ = self.queues.splits.start_job()
-            logger.debug(f"job assigned: {job_id} for dataset={dataset}")
-        except EmptyQueue:
-            logger.debug("no job in the queue")
-            return False
+            response = get_splits_response(dataset, self.hf_endpoint, self.hf_token)
+            upsert_splits_response(dataset, dict(response), HTTPStatus.OK)
+            logger.debug(f"dataset={dataset} is valid, cache updated")
 
-        try:
-            logger.info(f"compute dataset={dataset}")
-            success = refresh_splits(
-                self.queues, dataset=dataset, hf_endpoint=self.hf_endpoint, hf_token=self.hf_token
+            splits_in_cache = get_dataset_first_rows_response_splits(dataset)
+            new_splits = [(s["dataset"], s["config"], s["split"]) for s in response["splits"]]
+            splits_to_delete = [s for s in splits_in_cache if s not in new_splits]
+            for d, c, s in splits_to_delete:
+                delete_first_rows_responses(d, c, s)
+            logger.debug(
+                f"{len(splits_to_delete)} 'first-rows' responses deleted from the cache for obsolete splits of"
+                f" dataset={dataset}"
             )
-        finally:
-            self.queues.splits.finish_job(job_id=job_id, success=success)
-            result = "success" if success else "error"
-            logger.debug(f"job finished with {result}: {job_id} for dataset={dataset}")
-        return True
+            for d, c, s in new_splits:
+                self.queues.first_rows.add_job(dataset=d, config=c, split=s)
+            logger.debug(f"{len(new_splits)} 'first-rows' jobs added for the splits of dataset={dataset}")
+            return True
+        except DatasetNotFoundError:
+            logger.debug(f"the dataset={dataset} could not be found, don't update the cache")
+            return False
+        except WorkerCustomError as err:
+            upsert_splits_response(
+                dataset,
+                dict(err.as_response()),
+                err.status_code,
+                err.code,
+                dict(err.as_response_with_cause()),
+            )
+            logger.debug(f"splits response for dataset={dataset} had an error, cache updated")
+            return False
+        except Exception as err:
+            e = UnexpectedError(str(err), err)
+            upsert_splits_response(
+                dataset,
+                dict(e.as_response()),
+                e.status_code,
+                e.code,
+                dict(e.as_response_with_cause()),
+            )
+            logger.debug(f"splits response for dataset={dataset} had a server error, cache updated")
+            return False

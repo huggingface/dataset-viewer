@@ -7,6 +7,7 @@ import time
 from abc import ABC, abstractmethod
 from typing import Optional
 
+from libqueue.queue import EmptyQueue, Queue
 from psutil import cpu_count, getloadavg, swap_memory, virtual_memory
 
 from .constants import (
@@ -24,6 +25,11 @@ class Worker(ABC):
     max_load_pct: int
     max_memory_pct: int
     sleep_seconds: int
+
+    @property
+    @abstractmethod
+    def queue(self) -> Queue:
+        pass
 
     def __init__(
         self,
@@ -77,6 +83,35 @@ class Worker(ABC):
             logger.critical(f"quit due to an uncaught error while processing the job: {e}")
             raise
 
-    @abstractmethod
     def process_next_job(self) -> bool:
+        logger.debug("try to process a job")
+
+        try:
+            job_id, dataset, config, split = self.queue.start_job()
+            parameters_for_log = "dataset={dataset}" + ("" if split is None else f"config={config} split={split}")
+            logger.debug(f"job assigned: {job_id} for {parameters_for_log}")
+        except EmptyQueue:
+            logger.debug("no job in the queue")
+            return False
+
+        try:
+            logger.info(f"compute {parameters_for_log}")
+            success = self.compute(
+                dataset=dataset,
+                config=config,
+                split=split,
+            )
+        finally:
+            self.queue.finish_job(job_id=job_id, success=success)
+            result = "success" if success else "error"
+            logger.debug(f"job finished with {result}: {job_id} for {parameters_for_log}")
+        return True
+
+    @abstractmethod
+    def compute(
+        self,
+        dataset: str,
+        config: Optional[str] = None,
+        split: Optional[str] = None,
+    ) -> bool:
         pass
