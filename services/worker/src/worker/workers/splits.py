@@ -10,10 +10,10 @@ from libcache.simple_cache import (
     get_dataset_first_rows_response_splits,
     upsert_splits_response,
 )
+from libqueue.worker import Worker
 
 from ..responses.splits import get_splits_response
-from ..utils import DatasetNotFoundError, UnexpectedError, WorkerCustomError
-from ..worker import Worker
+from ..utils import DatasetNotFoundError, Queues, UnexpectedError, WorkerCustomError
 
 logger = logging.getLogger(__name__)
 
@@ -32,17 +32,17 @@ class SplitsWorker(Worker):
         max_load_pct: Optional[int] = None,
     ):
         super().__init__(
-            max_jobs_per_dataset=max_jobs_per_dataset,
             sleep_seconds=sleep_seconds,
             max_memory_pct=max_memory_pct,
             max_load_pct=max_load_pct,
         )
+        self._queues = Queues(max_jobs_per_dataset=max_jobs_per_dataset)
         self.hf_endpoint = hf_endpoint
         self.hf_token = hf_token
 
     @property
     def queue(self):
-        return self.queues.splits
+        return self._queues.splits
 
     def compute(
         self,
@@ -65,7 +65,7 @@ class SplitsWorker(Worker):
                 f" dataset={dataset}"
             )
             for d, c, s in new_splits:
-                self.queues.first_rows.add_job(dataset=d, config=c, split=s)
+                self._queues.first_rows.add_job(dataset=d, config=c, split=s)
             logger.debug(f"{len(new_splits)} 'first-rows' jobs added for the splits of dataset={dataset}")
             return True
         except DatasetNotFoundError:

@@ -6,16 +6,17 @@ from http import HTTPStatus
 from typing import Optional
 
 from libcache.simple_cache import upsert_first_rows_response
+from libqueue.worker import Worker
 
 from ..responses.first_rows import get_first_rows_response
 from ..utils import (
     ConfigNotFoundError,
     DatasetNotFoundError,
+    Queues,
     SplitNotFoundError,
     UnexpectedError,
     WorkerCustomError,
 )
-from ..worker import Worker
 
 logger = logging.getLogger(__name__)
 
@@ -44,11 +45,11 @@ class FirstRowsWorker(Worker):
         max_load_pct: Optional[int] = None,
     ):
         super().__init__(
-            max_jobs_per_dataset=max_jobs_per_dataset,
             sleep_seconds=sleep_seconds,
             max_memory_pct=max_memory_pct,
             max_load_pct=max_load_pct,
         )
+        self._queues = Queues(max_jobs_per_dataset=max_jobs_per_dataset)
         self.assets_base_url = assets_base_url
         self.hf_endpoint = hf_endpoint
         self.hf_token = hf_token
@@ -59,7 +60,7 @@ class FirstRowsWorker(Worker):
 
     @property
     def queue(self):
-        return self.queues.first_rows
+        return self._queues.first_rows
 
     def compute(
         self,
