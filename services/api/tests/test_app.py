@@ -8,12 +8,13 @@ from typing import Dict, Optional
 import pytest
 from libcache.simple_cache import _clean_database as _clean_cache_database
 from libcache.simple_cache import upsert_first_rows_response, upsert_splits_response
-from libqueue.queue import _clean_queue_database, is_job_in_process
+from libqueue.queue import Queue, _clean_queue_database
 from pytest_httpserver import HTTPServer
 from starlette.testclient import TestClient
 
 from api.app import create_app
 from api.config import EXTERNAL_AUTH_URL, MONGO_CACHE_DATABASE, MONGO_QUEUE_DATABASE
+from api.utils import JobType
 
 from .utils import auth_callback
 
@@ -37,6 +38,9 @@ def client() -> TestClient:
 def clean_mongo_databases() -> None:
     _clean_cache_database()
     _clean_queue_database()
+
+
+splits_queue = Queue(type=JobType.SPLITS.value)
 
 
 def test_cors(client: TestClient) -> None:
@@ -292,4 +296,4 @@ def test_webhook(
     )
     response = client.post("/webhook", json=payload)
     assert response.status_code == expected_status, response.text
-    assert is_job_in_process(type="/splits", dataset=dataset) is expected_is_updated
+    assert splits_queue.is_job_in_process(dataset=dataset) is expected_is_updated

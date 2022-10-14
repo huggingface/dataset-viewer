@@ -2,7 +2,6 @@
 # Copyright 2022 The HuggingFace Authors.
 
 import logging
-from enum import Enum
 from http import HTTPStatus
 from typing import Optional
 
@@ -16,14 +15,13 @@ from libcache.simple_cache import (
     mark_first_rows_responses_as_stale,
     mark_splits_responses_as_stale,
 )
-from libqueue.queue import add_job, is_job_in_process
+from libqueue.queue import Queue
+
+from .utils import JobType
 
 logger = logging.getLogger(__name__)
 
-
-class JobType(Enum):
-    SPLITS = "/splits"
-    FIRST_ROWS = "/first-rows"
+splits_queue = Queue(type=JobType.SPLITS.value)
 
 
 def is_supported(
@@ -56,7 +54,7 @@ def update(dataset: str) -> None:
     logger.debug(f"webhook: refresh {dataset}")
     mark_splits_responses_as_stale(dataset)
     mark_first_rows_responses_as_stale(dataset)
-    add_job(type=JobType.SPLITS.value, dataset=dataset)
+    splits_queue.add_job(dataset=dataset)
 
 
 def delete(dataset: str) -> None:
@@ -70,7 +68,7 @@ def is_splits_in_process(
     hf_endpoint: str,
     hf_token: Optional[str] = None,
 ) -> bool:
-    if is_job_in_process(type=JobType.SPLITS.value, dataset=dataset):
+    if splits_queue.is_job_in_process(dataset=dataset):
         return True
     if is_supported(dataset=dataset, hf_endpoint=hf_endpoint, hf_token=hf_token):
         update(dataset=dataset)
@@ -81,12 +79,12 @@ def is_splits_in_process(
 def is_first_rows_in_process(
     dataset: str, config: str, split: str, hf_endpoint: str, hf_token: Optional[str] = None
 ) -> bool:
-    if is_job_in_process(type=JobType.FIRST_ROWS.value, dataset=dataset, config=config, split=split):
+    if splits_queue.is_job_in_process(dataset=dataset, config=config, split=split):
         return True
 
     # a bit convoluted, but checking if the first-rows response should exist
     # requires to first parse the /splits response for the same dataset
-    if is_job_in_process(type=JobType.SPLITS.value, dataset=dataset):
+    if splits_queue.is_job_in_process(dataset=dataset):
         return True
     try:
         response, http_status, _ = get_splits_response(dataset)
