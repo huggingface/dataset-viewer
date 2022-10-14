@@ -24,6 +24,9 @@ logger = logging.getLogger(__name__)
 def create_pending_jobs_endpoint(
     external_auth_url: Optional[str] = None, organization: Optional[str] = None
 ) -> Endpoint:
+    splits_queue = Queue(type=JobType.SPLITS.value)
+    first_rows_queue = Queue(type=JobType.FIRST_ROWS.value)
+
     async def pending_jobs_endpoint(request: Request) -> Response:
         logger.info("/pending-jobs")
         try:
@@ -31,8 +34,8 @@ def create_pending_jobs_endpoint(
             auth_check(external_auth_url=external_auth_url, request=request, organization=organization)
             return get_json_ok_response(
                 {
-                    JobType.SPLITS.value: get_dump_by_pending_status(type=JobType.SPLITS.value),
-                    JobType.FIRST_ROWS.value: get_dump_by_pending_status(type=JobType.FIRST_ROWS.value),
+                    JobType.SPLITS.value: splits_queue.get_dump_by_pending_status(),
+                    JobType.FIRST_ROWS.value: first_rows_queue.get_dump_by_pending_status(),
                 }
             )
         except AdminCustomError as e:

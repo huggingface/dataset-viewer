@@ -8,7 +8,7 @@ from libcache.simple_cache import (
     get_first_rows_responses_count_by_status_and_error_code,
     get_splits_responses_count_by_status_and_error_code,
 )
-from libqueue.queue import get_jobs_count_by_status
+from libqueue.queue import Queue
 from prometheus_client import (  # type: ignore # https://github.com/prometheus/client_python/issues/491
     CONTENT_TYPE_LATEST,
     REGISTRY,
@@ -30,6 +30,8 @@ class Prometheus:
 
     def __init__(self):
         self.initMetrics()
+        self.split_queue = Queue(type=JobType.SPLITS.value)
+        self.first_rows_queue = Queue(type=JobType.FIRST_ROWS.value)
 
     def getRegistry(self) -> CollectorRegistry:
         # taken from https://github.com/perdy/starlette-prometheus/blob/master/starlette_prometheus/view.py
@@ -56,9 +58,9 @@ class Prometheus:
 
     def updateMetrics(self):
         # Queue metrics
-        for status, total in get_jobs_count_by_status(type=JobType.SPLITS.value).items():
+        for status, total in self.split_queue.get_jobs_count_by_status().items():
             self.metrics["queue_jobs_total"].labels(queue=JobType.SPLITS.value, status=status).set(total)
-        for status, total in get_jobs_count_by_status(type=JobType.FIRST_ROWS.value).items():
+        for status, total in self.first_rows_queue.get_jobs_count_by_status().items():
             self.metrics["queue_jobs_total"].labels(queue=JobType.FIRST_ROWS.value, status=status).set(total)
         # Cache metrics
         for http_status, by_error_code in get_splits_responses_count_by_status_and_error_code().items():
