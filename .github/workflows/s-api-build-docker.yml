@@ -17,7 +17,7 @@ jobs:
     uses: ./.github/workflows/_build_push_docker_hub.yml
     with:
       directory: services
-      service: api
+      project: api
     secrets:
       dockerhub-username: ${{ secrets.DOCKERHUB_USERNAME }}
       dockerhub-password: ${{ secrets.DOCKERHUB_PASSWORD }}
