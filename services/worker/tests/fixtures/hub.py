@@ -349,11 +349,7 @@ def get_AUDIO_rows(dataset: str):
 
 
 IMAGE_cols = {
-    "col": {
-        "_type": "Image",
-        "decode": True,
-        "id": None,
-    },
+    "col": {"_type": "Image"},
 }
 
 
@@ -371,13 +367,7 @@ def get_IMAGE_rows(dataset: str):
 
 
 IMAGES_LIST_cols = {
-    "col": [
-        {
-            "_type": "Image",
-            "decode": True,
-            "id": None,
-        }
-    ],
+    "col": [{"_type": "Image"}],
 }
 
 
