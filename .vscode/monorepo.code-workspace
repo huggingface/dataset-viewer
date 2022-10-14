@@ -37,6 +37,10 @@
       "path": "../services/worker"
     },
     {
+      "name": "workers/worker_splits",
+      "path": "../workers/worker_splits"
+    },
+    {
       "name": "workers/worker_first_rows",
       "path": "../workers/worker_first_rows"
     }
