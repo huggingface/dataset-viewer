@@ -13,13 +13,13 @@ from .utils import ASSETS_BASE_URL, HF_ENDPOINT, HF_TOKEN, get_default_config_sp
 @pytest.mark.parametrize(
     "name,use_token,error_code,cause",
     [
+        ("gated", True, None, None),
+        ("private", True, None, None),
         ("public", False, None, None),
         ("audio", False, None, None),
         ("image", False, None, None),
         ("images_list", False, None, None),
         ("jsonl", False, None, None),
-        # ("gated", True, None, None),
-        # ("private", True, None, None),
         ("empty", False, "EmptyDatasetError", "EmptyDatasetError"),
         ("does_not_exist", False, "DatasetNotFoundError", None),
         ("gated", False, "DatasetNotFoundError", None),
