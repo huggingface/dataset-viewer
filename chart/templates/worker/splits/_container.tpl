@@ -4,8 +4,6 @@
 {{- define "containerWorkerSplits" -}}
 - name: "{{ include "name" . }}-worker-splits"
   env:
-  - name: DATASETS_REVISION
-    value: {{ .Values.worker.splits.datasetsRevision | quote }}
   - name: HF_DATASETS_CACHE
     value: "{{ .Values.worker.splits.cacheDirectory }}/datasets"
   - name: HF_ENDPOINT
