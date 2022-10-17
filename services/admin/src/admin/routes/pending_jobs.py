@@ -2,10 +2,9 @@
 # Copyright 2022 The HuggingFace Authors.
 
 import logging
-import time
 from typing import Optional
 
-from libqueue.queue import get_first_rows_dump_by_status, get_splits_dump_by_status
+from libqueue.queue import Queue
 from starlette.requests import Request
 from starlette.responses import Response
 
@@ -13,6 +12,7 @@ from admin.authentication import auth_check
 from admin.utils import (
     AdminCustomError,
     Endpoint,
+    JobType,
     UnexpectedError,
     get_json_admin_error_response,
     get_json_ok_response,
@@ -24,6 +24,9 @@ logger = logging.getLogger(__name__)
 def create_pending_jobs_endpoint(
     external_auth_url: Optional[str] = None, organization: Optional[str] = None
 ) -> Endpoint:
+    splits_queue = Queue(type=JobType.SPLITS.value)
+    first_rows_queue = Queue(type=JobType.FIRST_ROWS.value)
+
     async def pending_jobs_endpoint(request: Request) -> Response:
         logger.info("/pending-jobs")
         try:
@@ -31,9 +34,8 @@ def create_pending_jobs_endpoint(
             auth_check(external_auth_url=external_auth_url, request=request, organization=organization)
             return get_json_ok_response(
                 {
-                    "/splits": get_splits_dump_by_status(waiting_started=True),
-                    "/first-rows": get_first_rows_dump_by_status(waiting_started=True),
-                    "created_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+                    JobType.SPLITS.value: splits_queue.get_dump_by_pending_status(),
+                    JobType.FIRST_ROWS.value: first_rows_queue.get_dump_by_pending_status(),
                 }
             )
         except AdminCustomError as e:

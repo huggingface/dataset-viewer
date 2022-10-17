@@ -33,15 +33,20 @@
       "path": "../services/reverse-proxy"
     },
     {
-      "name": "services/worker",
-      "path": "../services/worker"
+      "name": "workers/splits",
+      "path": "../workers/splits"
+    },
+    {
+      "name": "workers/first_rows",
+      "path": "../workers/first_rows"
     }
   ],
   "settings": {
     "files.exclude": {
       "e2e": true,
       "libs": true,
-      "services": true
+      "services": true,
+      "workers": true
     },
     "python.formatting.provider": "black",
     "python.linting.enabled": true,

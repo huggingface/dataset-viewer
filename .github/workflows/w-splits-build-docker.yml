@@ -1,0 +1,23 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2022 The HuggingFace Authors.
+
+name: workers/splits
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - 'workers/splits/Dockerfile'
+      - 'workers/splits/src/**'
+      - 'workers/splits/poetry.lock'
+      - 'workers/splits/pyproject.toml'
+      - '.github/workflows/w-workers/splits-build-docker.yml'
+      - '.github/workflows/_build_push_docker_hub.yml'
+jobs:
+  docker:
+    uses: ./.github/workflows/_build_push_docker_hub.yml
+    with:
+      directory: workers
+      project: splits
+    secrets:
+      dockerhub-username: ${{ secrets.DOCKERHUB_USERNAME }}
+      dockerhub-password: ${{ secrets.DOCKERHUB_PASSWORD }}

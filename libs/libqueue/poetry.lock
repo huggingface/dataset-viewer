@@ -317,6 +317,17 @@ python-versions = ">=3.6,<4.0"
 tomlkit = ">=0.7.2,<0.8.0"
 
 [[package]]
+name = "psutil"
+version = "5.9.2"
+description = "Cross-platform lib for process and system monitoring in Python."
+category = "main"
+optional = false
+python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*"
+
+[package.extras]
+test = ["ipaddress", "mock", "enum34", "pywin32", "wmi"]
+
+[[package]]
 name = "py"
 version = "1.11.0"
 description = "library with cross-python path, ini-parsing, io, code, log facilities"
@@ -529,6 +540,14 @@ optional = false
 python-versions = "*"
 
 [[package]]
+name = "types-psutil"
+version = "5.9.5.1"
+description = "Typing stubs for psutil"
+category = "dev"
+optional = false
+python-versions = "*"
+
+[[package]]
 name = "typing-extensions"
 version = "4.2.0"
 description = "Backported and Experimental Type Hints for Python 3.7+"
@@ -552,7 +571,7 @@ socks = ["PySocks (>=1.5.6,!=1.5.7,<2.0)"]
 [metadata]
 lock-version = "1.1"
 python-versions = "3.9.6"
-content-hash = "b0149b3dc630dbb2a2576b3f6bb5b4323204f2f4dfb130c83f108a7380b4e173"
+content-hash = "f1e5c2314c537ad7fe31443ebb167ebbb89dd978e1176f75798602de0616e9b1"
 
 [metadata.files]
 atomicwrites = [
@@ -744,6 +763,7 @@ poetryup = [
     {file = "poetryup-0.3.15-py3-none-any.whl", hash = "sha256:db068f55d10c0f89c76ea2b62c6bb81c0b0512454f7a83bdc0a13c146e5fb13e"},
     {file = "poetryup-0.3.15.tar.gz", hash = "sha256:efa4e7bb0cd005db4aff3cc678c8bfba9474ef42d5759c0168f2a55fc0f17bc3"},
 ]
+psutil = []
 py = [
     {file = "py-1.11.0-py2.py3-none-any.whl", hash = "sha256:607c53218732647dff4acdfcd50cb62615cedf612e72d1724fb1a0cc6405b378"},
     {file = "py-1.11.0.tar.gz", hash = "sha256:51c75c4126074b472f746a24399ad32f6053d1b34b68d2fa41e558e6f4a98719"},
@@ -971,6 +991,7 @@ typed-ast = [
     {file = "typed_ast-1.4.3-cp39-cp39-win_amd64.whl", hash = "sha256:9c6d1a54552b5330bc657b7ef0eae25d00ba7ffe85d9ea8ae6540d2197a3788c"},
     {file = "typed_ast-1.4.3.tar.gz", hash = "sha256:fb1bbeac803adea29cedd70781399c99138358c26d05fcbd23c13016b7f5ec65"},
 ]
+types-psutil = []
 typing-extensions = [
     {file = "typing_extensions-4.2.0-py3-none-any.whl", hash = "sha256:6657594ee297170d19f67d55c05852a874e7eb634f4f753dbd667855e07c1708"},
     {file = "typing_extensions-4.2.0.tar.gz", hash = "sha256:f1c24655a0da0d1b67f07e17a5e6b2a105894e6824b92096378bb3668ef02376"},

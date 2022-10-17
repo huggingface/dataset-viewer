@@ -9,7 +9,7 @@ from typing import Generic, List, Optional, Tuple, Type, TypedDict, TypeVar
 
 from mongoengine import Document, DoesNotExist, connect
 from mongoengine.errors import MultipleObjectsReturned
-from mongoengine.fields import DateTimeField, EnumField, IntField, StringField
+from mongoengine.fields import DateTimeField, EnumField, StringField
 from mongoengine.queryset.queryset import QuerySet
 
 # START monkey patching ### hack ###
@@ -43,21 +43,14 @@ class Status(enum.Enum):
 
 
 class JobDict(TypedDict):
+    type: str
+    dataset: str
+    config: Optional[str]
+    split: Optional[str]
     status: str
     created_at: datetime
     started_at: Optional[datetime]
     finished_at: Optional[datetime]
-    retries: int
-
-
-class SplitsJobDict(JobDict):
-    dataset_name: str
-
-
-class FirstRowsJobDict(JobDict):
-    dataset_name: str
-    config_name: str
-    split_name: str
 
 
 class CountByStatus(TypedDict):
@@ -68,93 +61,9 @@ class CountByStatus(TypedDict):
     cancelled: int
 
 
-# All the fields are optional
-class DumpByStatus(TypedDict, total=False):
+class DumpByPendingStatus(TypedDict):
     waiting: List[JobDict]
     started: List[JobDict]
-    success: List[JobDict]
-    error: List[JobDict]
-    cancelled: List[JobDict]
-
-
-def connect_to_queue(database, host) -> None:
-    connect(database, alias="queue", host=host)
-
-
-# States:
-# - waiting: started_at is None and finished_at is None: waiting jobs
-# - started: started_at is not None and finished_at is None: started jobs
-# - finished: started_at is not None and finished_at is not None: finished jobs
-# - cancelled: cancelled_at is not None: cancelled jobs
-# For a given dataset_name, any number of finished and cancelled jobs are allowed,
-# but only 0 or 1 job for the set of the other states
-class SplitsJob(Document):
-    meta = {
-        "collection": "splits_jobs",
-        "db_alias": "queue",
-        "indexes": ["status", ("dataset_name", "status")],
-    }
-    dataset_name = StringField(required=True)
-    created_at = DateTimeField(required=True)
-    started_at = DateTimeField()
-    finished_at = DateTimeField()
-    status = EnumField(Status, default=Status.WAITING)
-    retries = IntField(required=False, default=0)
-
-    def to_dict(self) -> SplitsJobDict:
-        return {
-            "dataset_name": self.dataset_name,
-            "status": self.status.value,
-            "created_at": self.created_at,
-            "started_at": self.started_at,
-            "finished_at": self.finished_at,
-            "retries": self.retries,
-        }
-
-    def to_id(self) -> str:
-        return f"SplitsJob[{self.dataset_name}]"
-
-    objects = QuerySetManager["SplitsJob"]()
-
-
-class FirstRowsJob(Document):
-    meta = {
-        "collection": "first_rows_jobs",
-        "db_alias": "queue",
-        "indexes": [
-            "status",
-            ("dataset_name", "status"),
-            ("dataset_name", "config_name", "split_name", "status"),
-        ],
-    }
-    dataset_name = StringField(required=True)
-    config_name = StringField(required=True)
-    split_name = StringField(required=True)
-    status = EnumField(Status, default=Status.WAITING)
-    created_at = DateTimeField(required=True)
-    started_at = DateTimeField()
-    finished_at = DateTimeField()
-    retries = IntField(required=False, default=0)
-
-    def to_dict(self) -> FirstRowsJobDict:
-        return {
-            "dataset_name": self.dataset_name,
-            "config_name": self.config_name,
-            "split_name": self.split_name,
-            "status": self.status.value,
-            "created_at": self.created_at,
-            "started_at": self.started_at,
-            "finished_at": self.finished_at,
-            "retries": self.retries,
-        }
-
-    def to_id(self) -> str:
-        return f"FirstRowsJob[{self.dataset_name}, {self.config_name}, {self.split_name}]"
-
-    objects = QuerySetManager["FirstRowsJob"]()
-
-
-AnyJob = TypeVar("AnyJob", SplitsJob, FirstRowsJob)
 
 
 class EmptyQueue(Exception):
@@ -169,221 +78,286 @@ def get_datetime() -> datetime:
     return datetime.now(timezone.utc)
 
 
-def add_job(existing_jobs: QuerySet[AnyJob], new_job: AnyJob) -> AnyJob:
-    pending_jobs = existing_jobs.filter(status__in=[Status.WAITING, Status.STARTED])
-    try:
-        # If one non-finished job exists, return it
-        return pending_jobs.get()
-    except DoesNotExist:
-        # None exist, create one
-        return new_job.save()
-    except MultipleObjectsReturned:
-        # should not happen, but it's not enforced in the database
-        # (we could have one in WAITING status and another one in STARTED status)
-        # it it happens, we "cancel" all of them, and re-run the same function
-        pending_jobs.update(finished_at=get_datetime(), status=Status.CANCELLED)
-        return add_job(existing_jobs, new_job)
+def connect_to_queue(database, host) -> None:
+    connect(database, alias="queue", host=host)
 
 
-def add_splits_job(dataset_name: str, retries: Optional[int] = 0) -> None:
-    add_job(
-        SplitsJob.objects(dataset_name=dataset_name),
-        SplitsJob(dataset_name=dataset_name, created_at=get_datetime(), status=Status.WAITING, retries=retries),
-    )
+# States:
+# - waiting: started_at is None and finished_at is None: waiting jobs
+# - started: started_at is not None and finished_at is None: started jobs
+# - finished: started_at is not None and finished_at is not None: finished jobs
+# - cancelled: cancelled_at is not None: cancelled jobs
+# For a given set of arguments, any number of finished and cancelled jobs are allowed,
+# but only 0 or 1 job for the set of the other states
+class Job(Document):
+    """A job in the mongoDB database
+
+    Args:
+        type (`str`): The type of the job, identifies the queue
+        dataset (`str`): The dataset on which to apply the job.
+        config (`str`, optional): The config on which to apply the job.
+        split (`str`, optional): The config on which to apply the job.
+        status (`Status`, optional): The status of the job. Defaults to Status.WAITING.
+        created_at (`datetime`): The creation date of the job.
+        started_at (`datetime`, optional): When the job has started.
+        finished_at (`datetime`, optional): When the job has finished.
+    """
+
+    meta = {
+        "collection": "jobs",
+        "db_alias": "queue",
+        "indexes": [
+            "status",
+            ("type", "status"),
+            ("type", "dataset", "status"),
+            ("type", "dataset", "config", "split", "status"),
+        ],
+    }
+    type = StringField(required=True)
+    dataset = StringField(required=True)
+    config = StringField()
+    split = StringField()
+    status = EnumField(Status, default=Status.WAITING)
+    created_at = DateTimeField(required=True)
+    started_at = DateTimeField()
+    finished_at = DateTimeField()
+
+    def to_dict(self) -> JobDict:
+        return {
+            "type": self.type,
+            "dataset": self.dataset,
+            "config": self.config,
+            "split": self.split,
+            "status": self.status.value,
+            "created_at": self.created_at,
+            "started_at": self.started_at,
+            "finished_at": self.finished_at,
+        }
+
+    def to_id(self) -> str:
+        return f"Job[{self.type}][{self.dataset}][{self.config}][{self.split}]"
+
+    objects = QuerySetManager["Job"]()
 
 
-def add_first_rows_job(dataset_name: str, config_name: str, split_name: str, retries: Optional[int] = 0) -> None:
-    add_job(
-        FirstRowsJob.objects(dataset_name=dataset_name, config_name=config_name, split_name=split_name),
-        FirstRowsJob(
-            dataset_name=dataset_name,
-            config_name=config_name,
-            split_name=split_name,
+class Queue:
+    """A queue manages jobs of a given type.
+
+    Note that creating a Queue object does not create the queue in the database. It's a view that allows to manipulate
+    the jobs. You can create multiple Queue objects, it has no effect on the database.
+
+    It's a FIFO queue, with the following properties:
+    - a job is identified by its input arguments: dataset, and optionally config and split
+    - a job can be in one of the following states: waiting, started, success, error, cancelled
+    - a job can be in the queue only once in a pending state (waiting or started)
+    - a job can be in the queue multiple times in a finished state (success, error, cancelled)
+    - the queue is ordered by the creation date of the jobs
+    - datasets that already have started job are de-prioritized
+    - datasets cannot have more than `max_jobs_per_dataset` started jobs
+
+    Args:
+        type (`str`, required): Type of the job. It identifies the queue.
+        max_jobs_per_dataset (`int`): Maximum number of started jobs for the same dataset. 0 or a negative value
+          are ignored. Defaults to None.
+    """
+
+    def __init__(self, type: str, max_jobs_per_dataset: Optional[int] = None):
+        self.type = type
+        self.max_jobs_per_dataset = (
+            None if max_jobs_per_dataset is None or max_jobs_per_dataset < 1 else max_jobs_per_dataset
+        )
+
+    def add_job(self, dataset: str, config: Optional[str] = None, split: Optional[str] = None) -> Job:
+        """Add a job to the queue in the waiting state.
+
+        If a job with the same arguments already exists in the queue in a pending state (waiting, started), no new job
+        is created and the existing job is returned.
+
+        Returns: the job
+        """
+        existing_jobs = Job.objects(type=self.type, dataset=dataset, config=config, split=split)
+        new_job = Job(
+            type=self.type,
+            dataset=dataset,
+            config=config,
+            split=split,
             created_at=get_datetime(),
             status=Status.WAITING,
-            retries=retries,
-        ),
-    )
+        )
+        pending_jobs = existing_jobs.filter(status__in=[Status.WAITING, Status.STARTED])
+        try:
+            # If one non-finished job exists, return it
+            return pending_jobs.get()
+        except DoesNotExist:
+            # None exist, create one
+            return new_job.save()
+        except MultipleObjectsReturned:
+            # should not happen, but it's not enforced in the database
+            # (we could have one in WAITING status and another one in STARTED status)
+            # if it happens, we "cancel" all of them, and re-run the same function
+            pending_jobs.update(finished_at=get_datetime(), status=Status.CANCELLED)
+            return self.add_job(dataset=dataset, config=config, split=split)
 
+    def start_job(self) -> Tuple[str, str, Optional[str], Optional[str]]:
+        """Start the next job in the queue.
 
-def get_jobs_with_status(jobs: QuerySet[AnyJob], status: Status) -> QuerySet[AnyJob]:
-    return jobs(status=status)
+        Get the next job in the queue, among the datasets that still have no started job.
+        If no job is available, get the next job in the queue, among the datasets that already have a started job,
+        but not more than `max_jobs_per_dataset` jobs per dataset.
 
+        The job is moved from the waiting state to the started state.
 
-def get_waiting(jobs: QuerySet[AnyJob]) -> QuerySet[AnyJob]:
-    return get_jobs_with_status(jobs, Status.WAITING)
+        Raises:
+            EmptyQueue: if there is no job in the queue, within the limit of the maximum number of started jobs for a
+              dataset
 
-
-def get_started(jobs: QuerySet[AnyJob]) -> QuerySet[AnyJob]:
-    return get_jobs_with_status(jobs, Status.STARTED)
-
-
-def get_num_started_for_dataset(jobs: QuerySet[AnyJob], dataset_name: str) -> int:
-    return jobs(status=Status.STARTED, dataset_name=dataset_name).count()
-
-
-def get_finished(jobs: QuerySet[AnyJob]) -> QuerySet[AnyJob]:
-    return jobs(status__nin=[Status.WAITING, Status.STARTED])
-
-
-def get_started_dataset_names(jobs: QuerySet[AnyJob]) -> List[str]:
-    return [job.dataset_name for job in jobs(status=Status.STARTED).only("dataset_name")]
-
-
-def get_excluded_dataset_names(dataset_names: List[str], max_jobs_per_dataset: Optional[int] = None) -> List[str]:
-    if max_jobs_per_dataset is None:
-        return []
-    return list(
-        {dataset_name for dataset_name in dataset_names if dataset_names.count(dataset_name) >= max_jobs_per_dataset}
-    )
-
-
-def start_job(jobs: QuerySet[AnyJob], max_jobs_per_dataset: Optional[int] = None) -> AnyJob:
-    # try to get a job for a dataset that has still no started job
-    started_dataset_names = get_started_dataset_names(jobs)
-    next_waiting_job = (
-        jobs(status=Status.WAITING, dataset_name__nin=started_dataset_names).order_by("+created_at").no_cache().first()
-    )
-    # ^ no_cache should generate a query on every iteration, which should solve concurrency issues between workers
-    if next_waiting_job is None:
-        # the waiting jobs are all for datasets that already have started jobs.
-        # let's take the next one, in the limit of max_jobs_per_dataset
-        excluded_dataset_names = get_excluded_dataset_names(started_dataset_names, max_jobs_per_dataset)
+        Returns: the job id and the input arguments: dataset, config and split
+        """
+        # try to get a job for a dataset that still has no started job
+        started_datasets = [job.dataset for job in Job.objects(type=self.type, status=Status.STARTED).only("dataset")]
         next_waiting_job = (
-            jobs(status=Status.WAITING, dataset_name__nin=excluded_dataset_names)
+            Job.objects(type=self.type, status=Status.WAITING, dataset__nin=started_datasets)
             .order_by("+created_at")
             .no_cache()
             .first()
         )
-    if next_waiting_job is None:
-        raise EmptyQueue("no job available (within the limit of {max_jobs_per_dataset} started jobs per dataset)")
-    next_waiting_job.update(started_at=get_datetime(), status=Status.STARTED)
-    return next_waiting_job
+        # ^ no_cache should generate a query on every iteration, which should solve concurrency issues between workers
+        if next_waiting_job is None:
+            # the waiting jobs are all for datasets that already have started jobs.
+            # let's take the next one, in the limit of max_jobs_per_dataset
+            excluded_datasets = (
+                []
+                if self.max_jobs_per_dataset is None
+                else list(
+                    {
+                        dataset
+                        for dataset in started_datasets
+                        if started_datasets.count(dataset) >= self.max_jobs_per_dataset
+                    }
+                )
+            )
+            next_waiting_job = (
+                Job.objects(type=self.type, status=Status.WAITING, dataset__nin=excluded_datasets)
+                .order_by("+created_at")
+                .no_cache()
+                .first()
+            )
+        if next_waiting_job is None:
+            raise EmptyQueue("no job available (within the limit of {max_jobs_per_dataset} started jobs per dataset)")
+        next_waiting_job.update(started_at=get_datetime(), status=Status.STARTED)
+        return str(next_waiting_job.pk), next_waiting_job.dataset, next_waiting_job.config, next_waiting_job.split
+        # ^ job.pk is the id. job.id is not recognized by mypy
 
+    def finish_job(self, job_id: str, success: bool) -> None:
+        """Finish a job in the queue.
 
-def get_splits_job(max_jobs_per_dataset: Optional[int] = None) -> Tuple[str, str, int]:
-    job = start_job(SplitsJob.objects, max_jobs_per_dataset)
-    # ^ max_jobs_per_dataset is not very useful for the SplitsJob queue
-    # since only one job per dataset can exist anyway
-    # It's here for consistency and safeguard
-    return str(job.pk), job.dataset_name, job.retries
-    # ^ job.pk is the id. job.id is not recognized by mypy
+        The job is moved from the started state to the success or error state.
 
+        Args:
+            job_id (`str`, required): id of the job
+            success (`bool`, required): whether the job succeeded or not
 
-def get_first_rows_job(max_jobs_per_dataset: Optional[int] = None) -> Tuple[str, str, str, str, int]:
-    job = start_job(FirstRowsJob.objects, max_jobs_per_dataset)
-    return str(job.pk), job.dataset_name, job.config_name, job.split_name, job.retries
-    # ^ job.pk is the id. job.id is not recognized by mypy
+        Returns: nothing
+        """
+        try:
+            job = Job.objects(pk=job_id).get()
+        except DoesNotExist:
+            logger.error(f"job {job_id} does not exist. Aborting.")
+            return
+        if job.status is not Status.STARTED:
+            logger.warning(
+                f"job {job.to_id()} has a not the STARTED status ({job.status.value}). Force finishing anyway."
+            )
+        if job.finished_at is not None:
+            logger.warning(f"job {job.to_id()} has a non-empty finished_at field. Force finishing anyway.")
+        if job.started_at is None:
+            logger.warning(f"job {job.to_id()} has an empty started_at field. Force finishing anyway.")
+        status = Status.SUCCESS if success else Status.ERROR
+        job.update(finished_at=get_datetime(), status=status)
 
+    def is_job_in_process(self, dataset: str, config: Optional[str] = None, split: Optional[str] = None) -> bool:
+        """Check if a job is in process (waiting or started).
 
-def finish_started_job(jobs: QuerySet[AnyJob], job_id: str, success: bool) -> None:
-    try:
-        job = jobs(pk=job_id).get()
-    except DoesNotExist:
-        logger.error(f"started job {job_id} does not exist. Aborting.")
-        return
-    if job.status is not Status.STARTED:
-        logger.warning(
-            f"started job {job.to_id()} has a not the STARTED status ({job.status.value}). Force finishing anyway."
+        Args:
+            dataset (`str`, required): dataset name
+            config (`str`, optional): config name. Defaults to None.
+            split (`str`, optional): split name. Defaults to None.
+
+        Returns:
+            `bool`: whether the job is in process (waiting or started)
+        """
+        return (
+            Job.objects(
+                type=self.type,
+                dataset=dataset,
+                config=config,
+                split=split,
+                status__in=[Status.WAITING, Status.STARTED],
+            ).count()
+            > 0
         )
-    if job.finished_at is not None:
-        logger.warning(f"started job {job.to_id()} has a non-empty finished_at field. Force finishing anyway.")
-    if job.started_at is None:
-        logger.warning(f"started job {job.to_id()} has an empty started_at field. Force finishing anyway.")
-    status = Status.SUCCESS if success else Status.ERROR
-    job.update(finished_at=get_datetime(), status=status)
 
+    def cancel_started_jobs(self) -> None:
+        """Cancel all started jobs."""
+        for job in Job.objects(type=self.type, status=Status.STARTED.value):
+            job.update(finished_at=get_datetime(), status=Status.CANCELLED)
+            self.add_job(dataset=job.dataset, config=job.config, split=job.split)
 
-def finish_splits_job(job_id: str, success: bool) -> None:
-    finish_started_job(SplitsJob.objects, job_id, success)
+    # special reports
+    def count_jobs(self, status: Status) -> int:
+        """Count the number of jobs with a given status.
 
+        Args:
+            status (`Status`, required): status of the jobs
 
-def finish_first_rows_job(job_id: str, success: bool) -> None:
-    finish_started_job(FirstRowsJob.objects, job_id, success)
+        Returns: the number of jobs with the given status
+        """
+        return Job.objects(type=self.type, status=status.value).count()
 
+    def get_jobs_count_by_status(self) -> CountByStatus:
+        """Count the number of jobs by status.
 
-def clean_database() -> None:
-    SplitsJob.drop_collection()  # type: ignore
-    FirstRowsJob.drop_collection()  # type: ignore
-
-
-def cancel_started_splits_jobs() -> None:
-    for job in get_started(SplitsJob.objects):
-        job.update(finished_at=get_datetime(), status=Status.CANCELLED)
-        add_splits_job(dataset_name=job.dataset_name, retries=job.retries)
-
-
-def cancel_started_first_rows_jobs() -> None:
-    for job in get_started(FirstRowsJob.objects):
-        job.update(finished_at=get_datetime(), status=Status.CANCELLED)
-        add_first_rows_job(
-            dataset_name=job.dataset_name, config_name=job.config_name, split_name=job.split_name, retries=job.retries
-        )
-
-
-def is_splits_response_in_process(dataset_name: str) -> bool:
-    return SplitsJob.objects(dataset_name=dataset_name, status__in=[Status.WAITING, Status.STARTED]).count() > 0
-
-
-def is_first_rows_response_in_process(dataset_name: str, config_name: str, split_name: str) -> bool:
-    return (
-        FirstRowsJob.objects(
-            dataset_name=dataset_name,
-            config_name=config_name,
-            split_name=split_name,
-            status__in=[Status.WAITING, Status.STARTED],
-        ).count()
-        > 0
-    )
-
-
-# special reports
-
-
-def get_jobs_count_by_status(jobs: QuerySet[AnyJob]) -> CountByStatus:
-    # ensure that all the statuses are present, even if equal to zero
-    # note: we repeat the values instead of looping on Status because we don't know how to get the types right in mypy
-    # result: CountByStatus = {s.value: jobs(status=s.value).count() for s in Status} # <- doesn't work in mypy
-    # see https://stackoverflow.com/a/67292548/7351594
-    return {
-        "waiting": jobs(status=Status.WAITING.value).count(),
-        "started": jobs(status=Status.STARTED.value).count(),
-        "success": jobs(status=Status.SUCCESS.value).count(),
-        "error": jobs(status=Status.ERROR.value).count(),
-        "cancelled": jobs(status=Status.CANCELLED.value).count(),
-    }
-
-
-def get_splits_jobs_count_by_status() -> CountByStatus:
-    return get_jobs_count_by_status(SplitsJob.objects)
-
-
-def get_first_rows_jobs_count_by_status() -> CountByStatus:
-    return get_jobs_count_by_status(FirstRowsJob.objects)
-
-
-def get_dump_with_status(jobs: QuerySet[AnyJob], status: Status) -> List[JobDict]:
-    return [d.to_dict() for d in get_jobs_with_status(jobs, status)]
-
-
-def get_dump_by_status(jobs: QuerySet[AnyJob], waiting_started: bool = False) -> DumpByStatus:
-    if waiting_started:
+        Returns: a dictionary with the number of jobs for each status
+        """
+        # ensure that all the statuses are present, even if equal to zero
+        # note: we repeat the values instead of looping on Status because we don't know how to get the types right
+        # in mypy
+        # result: CountByStatus = {s.value: jobs(status=s.value).count() for s in Status} # <- doesn't work in mypy
+        # see https://stackoverflow.com/a/67292548/7351594
         return {
-            "waiting": get_dump_with_status(jobs, Status.WAITING),
-            "started": get_dump_with_status(jobs, Status.STARTED),
+            "waiting": self.count_jobs(status=Status.WAITING),
+            "started": self.count_jobs(status=Status.STARTED),
+            "success": self.count_jobs(status=Status.SUCCESS),
+            "error": self.count_jobs(status=Status.ERROR),
+            "cancelled": self.count_jobs(status=Status.CANCELLED),
         }
-    return {
-        "waiting": get_dump_with_status(jobs, Status.WAITING),
-        "started": get_dump_with_status(jobs, Status.STARTED),
-        "success": get_dump_with_status(jobs, Status.SUCCESS),
-        "error": get_dump_with_status(jobs, Status.ERROR),
-        "cancelled": get_dump_with_status(jobs, Status.CANCELLED),
-    }
+
+    def get_dump_with_status(self, status: Status) -> List[JobDict]:
+        """Get the dump of the jobs with a given status.
+
+        Args:
+            status (`Status`, required): status of the jobs
+
+        Returns: a list of jobs with the given status
+        """
+        return [d.to_dict() for d in Job.objects(type=self.type, status=status.value)]
+
+    def get_dump_by_pending_status(self) -> DumpByPendingStatus:
+        """Get the dump of the jobs by pending status.
+
+        Returns: a dictionary with the dump of the jobs for each pending status
+        """
+        return {
+            "waiting": self.get_dump_with_status(status=Status.WAITING),
+            "started": self.get_dump_with_status(status=Status.STARTED),
+        }
 
 
-def get_splits_dump_by_status(waiting_started: bool = False) -> DumpByStatus:
-    return get_dump_by_status(SplitsJob.objects, waiting_started)
+# only for the tests
+def _clean_queue_database() -> None:
+    """Delete all the jobs in the database"""
+    Job.drop_collection()  # type: ignore
 
 
-def get_first_rows_dump_by_status(waiting_started: bool = False) -> DumpByStatus:
-    return get_dump_by_status(FirstRowsJob.objects, waiting_started)
+# explicit re-export
+__all__ = ["DoesNotExist"]

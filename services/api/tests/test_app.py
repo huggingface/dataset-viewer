@@ -6,15 +6,15 @@ from http import HTTPStatus
 from typing import Dict, Optional
 
 import pytest
-from libcache.simple_cache import _clean_database as clean_cache_database
+from libcache.simple_cache import _clean_database as _clean_cache_database
 from libcache.simple_cache import upsert_first_rows_response, upsert_splits_response
-from libqueue.queue import clean_database as clean_queue_database
-from libqueue.queue import is_splits_response_in_process
+from libqueue.queue import Queue, _clean_queue_database
 from pytest_httpserver import HTTPServer
 from starlette.testclient import TestClient
 
 from api.app import create_app
 from api.config import EXTERNAL_AUTH_URL, MONGO_CACHE_DATABASE, MONGO_QUEUE_DATABASE
+from api.utils import JobType
 
 from .utils import auth_callback
 
@@ -36,8 +36,11 @@ def client() -> TestClient:
 
 @pytest.fixture(autouse=True)
 def clean_mongo_databases() -> None:
-    clean_cache_database()
-    clean_queue_database()
+    _clean_cache_database()
+    _clean_queue_database()
+
+
+splits_queue = Queue(type=JobType.SPLITS.value)
 
 
 def test_cors(client: TestClient) -> None:
@@ -293,4 +296,4 @@ def test_webhook(
     )
     response = client.post("/webhook", json=payload)
     assert response.status_code == expected_status, response.text
-    assert is_splits_response_in_process(dataset) is expected_is_updated
+    assert splits_queue.is_job_in_process(dataset=dataset) is expected_is_updated

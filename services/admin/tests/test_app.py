@@ -4,14 +4,13 @@
 from typing import Optional
 
 import pytest
-
-# from libcache.cache import clean_database as clean_cache_database
-from libcache.simple_cache import _clean_database as clean_cache_database
-from libqueue.queue import clean_database as clean_queue_database
+from libcache.simple_cache import _clean_database as _clean_cache_database
+from libqueue.queue import _clean_queue_database
 from starlette.testclient import TestClient
 
 from admin.app import create_app
 from admin.config import MONGO_CACHE_DATABASE, MONGO_QUEUE_DATABASE
+from admin.utils import JobType
 
 
 @pytest.fixture(autouse=True, scope="module")
@@ -29,8 +28,8 @@ def client() -> TestClient:
 
 @pytest.fixture(autouse=True)
 def clean_mongo_databases() -> None:
-    clean_cache_database()
-    clean_queue_database()
+    _clean_cache_database()
+    _clean_queue_database()
 
 
 def test_cors(client: TestClient) -> None:
@@ -77,8 +76,8 @@ def test_metrics(client: TestClient) -> None:
     assert name in metrics
     assert metrics[name] > 0
     name = "process_start_time_seconds"
-    assert 'queue_jobs_total{queue="/splits",status="started"}' in metrics
-    assert 'queue_jobs_total{queue="/first-rows",status="started"}' in metrics
+    for _, job_type in JobType.__members__.items():
+        assert 'queue_jobs_total{queue="' + job_type.value + '",status="started"}' in metrics
     # still empty
     assert 'responses_in_cache_total{path="/splits",http_status="200",error_code=null}' not in metrics
     assert 'responses_in_cache_total{path="/first-rows",http_status="200",error_code=null}' not in metrics
@@ -89,9 +88,8 @@ def test_pending_jobs(client: TestClient) -> None:
     response = client.get("/pending-jobs")
     assert response.status_code == 200
     json = response.json()
-    for e in ["/splits", "/first-rows"]:
-        assert json[e] == {"waiting": [], "started": []}
-    assert "created_at" in json
+    for _, job_type in JobType.__members__.items():
+        assert json[job_type.value] == {"waiting": [], "started": []}
 
 
 @pytest.mark.parametrize(

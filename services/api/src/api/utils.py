@@ -1,6 +1,7 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2022 The HuggingFace Authors.
 
+from enum import Enum
 from http import HTTPStatus
 from typing import Any, Callable, Coroutine, List, Literal, Optional
 
@@ -138,3 +139,8 @@ def are_valid_parameters(parameters: List[Any]) -> bool:
 
 
 Endpoint = Callable[[Request], Coroutine[Any, Any, Response]]
+
+
+class JobType(Enum):
+    SPLITS = "/splits"
+    FIRST_ROWS = "/first-rows"

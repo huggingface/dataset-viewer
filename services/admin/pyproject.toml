@@ -8,7 +8,7 @@ license = "Apache-2.0"
 [tool.poetry.dependencies]
 huggingface-hub = "^0.8.1"
 libcache = { path = "../../libs/libcache/dist/libcache-0.2.2-py3-none-any.whl", develop = false }
-libqueue = { path = "../../libs/libqueue/dist/libqueue-0.2.0-py3-none-any.whl", develop = false }
+libqueue = { path = "../../libs/libqueue/dist/libqueue-0.3.1-py3-none-any.whl", develop = false }
 libutils = { path = "../../libs/libutils/dist/libutils-0.2.0-py3-none-any.whl", develop = false }
 python = "3.9.6"
 starlette = "^0.16.0"
