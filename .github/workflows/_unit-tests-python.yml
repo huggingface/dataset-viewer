@@ -40,7 +40,7 @@ jobs:
             ${{ inputs.working-directory }}/poetry.lock
       - name: Install packages for workers that use datasets
         if: ${{ inputs.is-datasets-worker }}
-        run: sudo apt update; sudo apt install -y libicu-dev ffmpeg libavcodec-extra libsndfile1 llvm
+        run: sudo apt update; sudo apt install -y libicu-dev ffmpeg libavcodec-extra libsndfile1 llvm pkg-config
       - name: Install dependencies
         # "poetry env use" is required: https://github.com/actions/setup-python/issues/374#issuecomment-1088938718
         run: |
