@@ -3,7 +3,6 @@
 
 from typing import Optional
 
-DEFAULT_DATASETS_REVISION: str = "main"
 DEFAULT_HF_ENDPOINT: str = "https://huggingface.co"
 DEFAULT_HF_TOKEN: Optional[str] = None
 DEFAULT_LOG_LEVEL: str = "INFO"

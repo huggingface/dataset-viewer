@@ -6,7 +6,6 @@
 
 Set environment variables to configure the following aspects:
 
-- `DATASETS_REVISION`: git reference for the canonical datasets on https://github.com/huggingface/datasets. Defaults to `main`.
 - `HF_DATASETS_CACHE`: directory where the `datasets` library will store the cached datasets data. Defaults to `~/.cache/huggingface/datasets`.
 - `HF_MODULES_CACHE`: directory where the `datasets` library will store the cached datasets scripts. Defaults to `~/.cache/huggingface/modules`.
 - `HF_ENDPOINT`: URL of the HuggingFace Hub. Defaults to `https://huggingface.co`.

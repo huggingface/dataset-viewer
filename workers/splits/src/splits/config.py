@@ -8,7 +8,6 @@ from datasets.utils.logging import log_levels, set_verbosity
 from libutils.utils import get_int_value, get_str_or_none_value, get_str_value
 
 from splits.constants import (
-    DEFAULT_DATASETS_REVISION,
     DEFAULT_HF_ENDPOINT,
     DEFAULT_HF_TOKEN,
     DEFAULT_LOG_LEVEL,
@@ -21,7 +20,6 @@ from splits.constants import (
     DEFAULT_WORKER_SLEEP_SECONDS,
 )
 
-DATASETS_REVISION = get_str_value(d=os.environ, key="DATASETS_REVISION", default=DEFAULT_DATASETS_REVISION)
 HF_ENDPOINT = get_str_value(d=os.environ, key="HF_ENDPOINT", default=DEFAULT_HF_ENDPOINT)
 HF_TOKEN = get_str_or_none_value(d=os.environ, key="HF_TOKEN", default=DEFAULT_HF_TOKEN)
 LOG_LEVEL = get_str_value(d=os.environ, key="LOG_LEVEL", default=DEFAULT_LOG_LEVEL)
@@ -33,9 +31,6 @@ MONGO_QUEUE_DATABASE = get_str_value(d=os.environ, key="MONGO_QUEUE_DATABASE", d
 MONGO_URL = get_str_value(d=os.environ, key="MONGO_URL", default=DEFAULT_MONGO_URL)
 WORKER_SLEEP_SECONDS = get_int_value(os.environ, "WORKER_SLEEP_SECONDS", DEFAULT_WORKER_SLEEP_SECONDS)
 
-# Ensure the datasets library uses the expected revision for canonical datasets
-# this one has to be set via an env variable unlike the others - this might be fixed in `datasets` at one point
-os.environ["HF_SCRIPTS_VERSION"] = DATASETS_REVISION
 # Ensure the datasets library uses the expected HuggingFace endpoint
 datasets.config.HF_ENDPOINT = HF_ENDPOINT
 # Don't increase the datasets download counts on huggingface.co
