@@ -116,8 +116,6 @@ worker:
 
     # Directory of the "datasets" library cache (for the datasets, not the modules)
     cacheDirectory: "/cache"
-    # Git reference for the canonical datasets on https://github.com/huggingface/datasets
-    datasetsRevision: "main"
     # Log level
     logLevel: "INFO"
     # Maximum number of jobs running at the same time for the same dataset
@@ -146,8 +144,6 @@ worker:
     assetsDirectory: "/assets"
     # Directory of the "datasets" library cache (for the datasets, not the modules)
     cacheDirectory: "/cache"
-    # Git reference for the canonical datasets on https://github.com/huggingface/datasets
-    datasetsRevision: "main"
     # User Access Token (see https://huggingface.co/settings/token, only the `read` role is required)
     hfToken: ""
     # Log level

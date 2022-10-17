@@ -8,8 +8,6 @@
     value: "{{ include "assets.baseUrl" . }}"
   - name: ASSETS_DIRECTORY
     value: {{ .Values.worker.firstRows.assetsDirectory | quote }}
-  - name: DATASETS_REVISION
-    value: {{ .Values.worker.firstRows.datasetsRevision | quote }}
   - name: HF_DATASETS_CACHE
     value: "{{ .Values.worker.firstRows.cacheDirectory }}/datasets"
   - name: HF_ENDPOINT
