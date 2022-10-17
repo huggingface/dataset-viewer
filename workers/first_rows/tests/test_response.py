@@ -2,9 +2,9 @@
 # Copyright 2022 The HuggingFace Authors.
 
 import pytest
+from datasets.packaged_modules import csv
 from libutils.exceptions import CustomError
 
-from datasets.packaged_modules import csv
 from first_rows.response import get_first_rows_response
 
 from .fixtures.hub import HubDatasets
@@ -34,7 +34,8 @@ def test_number_rows(
     error_code: str,
     cause: str,
 ) -> None:
-    # temporary patch to remove the effect of: https://github.com/huggingface/datasets/issues/4875#issuecomment-1280744233
+    # temporary patch to remove the effect of
+    # https://github.com/huggingface/datasets/issues/4875#issuecomment-1280744233
     # note: it fixes the tests, but it does not fix the bug in the "real world"
     if hasattr(csv, "_patched_for_streaming") and csv._patched_for_streaming:  # type: ignore
         csv._patched_for_streaming = False  # type: ignore
