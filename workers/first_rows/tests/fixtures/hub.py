@@ -15,7 +15,6 @@ from huggingface_hub.hf_api import (  # type: ignore
     REPO_TYPES,
     REPO_TYPES_URL_PREFIXES,
     HfApi,
-    HfFolder,
     hf_raise_for_status,
 )
 
@@ -98,28 +97,14 @@ def update_repo_settings(
     return r.json()
 
 
-@pytest.fixture
-def set_ci_hub_access_token() -> Iterable[None]:
-    _api = HfApi(endpoint=CI_HUB_ENDPOINT)
-    _api.set_access_token(CI_HUB_USER_API_TOKEN)
-    HfFolder.save_token(CI_HUB_USER_API_TOKEN)
-    yield
-    HfFolder.delete_token()
-    _api.unset_access_token()
-
-
 @pytest.fixture(scope="session")
 def hf_api():
     return HfApi(endpoint=CI_HUB_ENDPOINT)
 
 
 @pytest.fixture(scope="session")
-def hf_token(hf_api: HfApi) -> Iterable[str]:
-    hf_api.set_access_token(CI_HUB_USER_API_TOKEN)
-    HfFolder.save_token(CI_HUB_USER_API_TOKEN)
-    yield CI_HUB_USER_API_TOKEN
-    with suppress(requests.exceptions.HTTPError):
-        hf_api.unset_access_token()
+def hf_token() -> str:
+    return CI_HUB_USER_API_TOKEN
 
 
 @pytest.fixture
