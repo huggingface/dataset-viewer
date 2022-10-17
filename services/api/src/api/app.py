@@ -16,7 +16,7 @@ from starlette.routing import BaseRoute, Mount, Route
 from starlette.staticfiles import StaticFiles
 from starlette_prometheus import PrometheusMiddleware
 
-from .config import (
+from api.config import (
     APP_HOSTNAME,
     APP_NUM_WORKERS,
     APP_PORT,
@@ -29,12 +29,12 @@ from .config import (
     MONGO_QUEUE_DATABASE,
     MONGO_URL,
 )
-from .prometheus import Prometheus
-from .routes.first_rows import create_first_rows_endpoint
-from .routes.healthcheck import healthcheck_endpoint
-from .routes.splits import create_splits_endpoint
-from .routes.valid import create_is_valid_endpoint, valid_endpoint
-from .routes.webhook import create_webhook_endpoint
+from api.prometheus import Prometheus
+from api.routes.first_rows import create_first_rows_endpoint
+from api.routes.healthcheck import healthcheck_endpoint
+from api.routes.splits import create_splits_endpoint
+from api.routes.valid import create_is_valid_endpoint, valid_endpoint
+from api.routes.webhook import create_webhook_endpoint
 
 
 def create_app() -> Starlette:

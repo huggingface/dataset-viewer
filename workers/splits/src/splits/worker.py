@@ -12,8 +12,13 @@ from libcache.simple_cache import (
 )
 from libqueue.worker import Worker
 
-from .response import get_splits_response
-from .utils import DatasetNotFoundError, Queues, UnexpectedError, WorkerCustomError
+from splits.response import get_splits_response
+from splits.utils import (
+    DatasetNotFoundError,
+    Queues,
+    UnexpectedError,
+    WorkerCustomError,
+)
 
 logger = logging.getLogger(__name__)
 

@@ -8,8 +8,8 @@ from huggingface_hub.hf_api import HfApi  # type: ignore
 from libqueue.queue import Queue, connect_to_queue
 from libutils.logger import init_logger
 
-from ..config import HF_ENDPOINT, LOG_LEVEL, MONGO_QUEUE_DATABASE, MONGO_URL
-from ..utils import JobType
+from admin.config import HF_ENDPOINT, LOG_LEVEL, MONGO_QUEUE_DATABASE, MONGO_URL
+from admin.utils import JobType
 
 
 def get_hf_dataset_names():

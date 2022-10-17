@@ -14,9 +14,9 @@ from libcache.simple_cache import (
 from starlette.requests import Request
 from starlette.responses import Response
 
-from ..authentication import auth_check
-from ..config import CACHE_REPORTS_NUM_RESULTS
-from ..utils import (
+from admin.authentication import auth_check
+from admin.config import CACHE_REPORTS_NUM_RESULTS
+from admin.utils import (
     AdminCustomError,
     Endpoint,
     InvalidParameterError,

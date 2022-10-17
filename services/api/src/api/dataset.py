@@ -17,7 +17,7 @@ from libcache.simple_cache import (
 )
 from libqueue.queue import Queue
 
-from .utils import JobType
+from api.utils import JobType
 
 logger = logging.getLogger(__name__)
 

@@ -14,7 +14,7 @@ from datasets.data_files import EmptyDatasetError as _EmptyDatasetError
 from huggingface_hub.hf_api import HfApi  # type: ignore
 from huggingface_hub.utils import RepositoryNotFoundError  # type: ignore
 
-from .utils import DatasetNotFoundError, EmptyDatasetError, SplitsNamesError
+from splits.utils import DatasetNotFoundError, EmptyDatasetError, SplitsNamesError
 
 logger = logging.getLogger(__name__)
 

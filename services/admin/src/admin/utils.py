@@ -10,7 +10,7 @@ from libutils.utils import orjson_dumps
 from starlette.requests import Request
 from starlette.responses import JSONResponse, Response
 
-from .config import MAX_AGE_SHORT_SECONDS
+from admin.config import MAX_AGE_SHORT_SECONDS
 
 AdminErrorCode = Literal[
     "InvalidParameter", "UnexpectedError", "ExternalUnauthenticatedError", "ExternalAuthenticatedError"

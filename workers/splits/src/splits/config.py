@@ -7,7 +7,7 @@ import datasets.config
 from datasets.utils.logging import log_levels, set_verbosity
 from libutils.utils import get_int_value, get_str_or_none_value, get_str_value
 
-from .constants import (
+from splits.constants import (
     DEFAULT_DATASETS_REVISION,
     DEFAULT_HF_ENDPOINT,
     DEFAULT_HF_TOKEN,

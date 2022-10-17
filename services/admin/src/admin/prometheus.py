@@ -22,7 +22,7 @@ from prometheus_client.multiprocess import (  # type: ignore # https://github.co
 from starlette.requests import Request
 from starlette.responses import Response
 
-from .utils import JobType
+from admin.utils import JobType
 
 
 class Prometheus:

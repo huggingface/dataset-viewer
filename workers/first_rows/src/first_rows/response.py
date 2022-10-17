@@ -19,10 +19,10 @@ from datasets.data_files import EmptyDatasetError as _EmptyDatasetError
 from huggingface_hub.hf_api import HfApi, RepositoryNotFoundError  # type: ignore
 from libutils.utils import orjson_dumps
 
-from .config import MIN_CELL_BYTES
-from .constants import DEFAULT_ROWS_MAX_BYTES, DEFAULT_ROWS_MAX_NUMBER
-from .features import get_cell_value
-from .utils import (
+from first_rows.config import MIN_CELL_BYTES
+from first_rows.constants import DEFAULT_ROWS_MAX_BYTES, DEFAULT_ROWS_MAX_NUMBER
+from first_rows.features import get_cell_value
+from first_rows.utils import (
     ConfigNotFoundError,
     DatasetNotFoundError,
     EmptyDatasetError,

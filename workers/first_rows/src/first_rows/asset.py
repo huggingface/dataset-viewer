@@ -12,7 +12,7 @@ from numpy import ndarray  # type:ignore
 from PIL import Image  # type: ignore
 from pydub import AudioSegment  # type:ignore
 
-from .config import ASSETS_DIRECTORY
+from first_rows.config import ASSETS_DIRECTORY
 
 logger = logging.getLogger(__name__)
 

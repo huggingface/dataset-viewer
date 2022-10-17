@@ -5,7 +5,7 @@ from libcache.simple_cache import connect_to_cache
 from libqueue.queue import connect_to_queue
 from libutils.logger import init_logger
 
-from .config import (
+from splits.config import (
     HF_ENDPOINT,
     HF_TOKEN,
     LOG_LEVEL,
@@ -17,7 +17,7 @@ from .config import (
     MONGO_URL,
     WORKER_SLEEP_SECONDS,
 )
-from .worker import SplitsWorker
+from splits.worker import SplitsWorker
 
 if __name__ == "__main__":
     init_logger(LOG_LEVEL)

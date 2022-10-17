@@ -6,7 +6,7 @@ from libcache.simple_cache import connect_to_cache
 from libqueue.queue import connect_to_queue
 from libutils.logger import init_logger
 
-from .config import (
+from first_rows.config import (
     ASSETS_BASE_URL,
     ASSETS_DIRECTORY,
     HF_ENDPOINT,
@@ -24,7 +24,7 @@ from .config import (
     ROWS_MIN_NUMBER,
     WORKER_SLEEP_SECONDS,
 )
-from .worker import FirstRowsWorker
+from first_rows.worker import FirstRowsWorker
 
 if __name__ == "__main__":
     init_logger(LOG_LEVEL)

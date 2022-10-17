@@ -8,8 +8,8 @@ from typing import Optional
 from libcache.simple_cache import upsert_first_rows_response
 from libqueue.worker import Worker
 
-from .response import get_first_rows_response
-from .utils import (
+from first_rows.response import get_first_rows_response
+from first_rows.utils import (
     ConfigNotFoundError,
     DatasetNotFoundError,
     Queues,
