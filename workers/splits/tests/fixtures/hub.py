@@ -8,6 +8,7 @@ from contextlib import contextmanager, suppress
 from pathlib import Path
 from typing import Any, Dict, Iterable, List, Optional, TypedDict
 
+import datasets.config
 import pytest
 import requests
 from datasets import Dataset
@@ -26,6 +27,12 @@ CI_HUB_USER_API_TOKEN = "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"
 
 CI_HUB_ENDPOINT = "https://hub-ci.huggingface.co"
 CI_HUB_DATASETS_URL = CI_HUB_ENDPOINT + "/datasets/{repo_id}/resolve/{revision}/{path}"
+
+# Ensure the datasets library uses the expected HuggingFace endpoint
+datasets.config.HF_ENDPOINT = CI_HUB_ENDPOINT
+datasets.config.HUB_DATASETS_URL = CI_HUB_DATASETS_URL
+# Don't increase the datasets download counts on huggingface.co
+datasets.config.HF_UPDATE_DOWNLOAD_COUNTS = False
 
 
 def update_repo_settings(

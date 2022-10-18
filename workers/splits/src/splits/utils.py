@@ -5,8 +5,8 @@ from enum import Enum
 from http import HTTPStatus
 from typing import Literal, Optional
 
+from libcommon.exceptions import CustomError
 from libqueue.queue import Queue
-from libutils.exceptions import CustomError
 
 WorkerErrorCode = Literal[
     "DatasetNotFoundError",
