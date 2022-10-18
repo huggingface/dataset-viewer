@@ -2,11 +2,12 @@
 authors = ["Sylvain Lesage <sylvain.lesage@huggingface.co>"]
 description = "Library for the cache in mongodb"
 name = "libcache"
-version = "0.2.2"
+version = "0.3.0"
 license = "Apache-2.0"
 
 [tool.poetry.dependencies]
 appdirs = "^1.4.4"
+environs = "^9.5.0"
 mongo-types = "0.15.1"
 mongoengine = "^0.24.1"
 pymongo = { extras = ["srv"], version = "^3.12.3" }
