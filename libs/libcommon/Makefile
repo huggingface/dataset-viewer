@@ -1,7 +1,7 @@
 # environment variables for the commands (docker-compose, poetry)
-export TEST_COMPOSE_PROJECT_NAME := libutils
+export COMPOSE_PROJECT_NAME := libcommon
 # makefile variables
-TEST_DOCKER_COMPOSE := ../../tools/docker-compose-empty.yml
+DOCKER_COMPOSE := ../../tools/docker-compose-empty.yml
 
 include ../../tools/Python.mk
 include ../../tools/Docker.mk
