@@ -8,6 +8,7 @@ from typing import Optional
 from libcache.simple_cache import upsert_first_rows_response
 from libqueue.worker import Worker
 
+from first_rows.config import WorkerConfig
 from first_rows.response import get_first_rows_response
 from first_rows.utils import (
     ConfigNotFoundError,
@@ -22,41 +23,12 @@ logger = logging.getLogger(__name__)
 
 
 class FirstRowsWorker(Worker):
-    assets_base_url: str
-    hf_endpoint: str
-    hf_token: Optional[str]
-    max_size_fallback: Optional[int]
-    rows_max_bytes: Optional[int]
-    rows_max_number: Optional[int]
-    rows_min_number: Optional[int]
+    config: WorkerConfig
 
-    def __init__(
-        self,
-        assets_base_url: str,
-        hf_endpoint: str,
-        hf_token: Optional[str] = None,
-        max_size_fallback: Optional[int] = None,
-        rows_max_bytes: Optional[int] = None,
-        rows_max_number: Optional[int] = None,
-        rows_min_number: Optional[int] = None,
-        max_jobs_per_dataset: Optional[int] = None,
-        sleep_seconds: Optional[int] = None,
-        max_memory_pct: Optional[int] = None,
-        max_load_pct: Optional[int] = None,
-    ):
-        super().__init__(
-            sleep_seconds=sleep_seconds,
-            max_memory_pct=max_memory_pct,
-            max_load_pct=max_load_pct,
-        )
-        self._queues = Queues(max_jobs_per_dataset=max_jobs_per_dataset)
-        self.assets_base_url = assets_base_url
-        self.hf_endpoint = hf_endpoint
-        self.hf_token = hf_token
-        self.max_size_fallback = max_size_fallback
-        self.rows_max_bytes = rows_max_bytes
-        self.rows_max_number = rows_max_number
-        self.rows_min_number = rows_min_number
+    def __init__(self, worker_config: WorkerConfig):
+        super().__init__(worker_config.queue)
+        self._queues = Queues(max_jobs_per_dataset=worker_config.queue.max_jobs_per_dataset)
+        self.config = worker_config
 
     @property
     def queue(self):
@@ -72,16 +44,18 @@ class FirstRowsWorker(Worker):
             raise ValueError("config and split are required")
         try:
             response = get_first_rows_response(
-                dataset,
-                config,
-                split,
-                assets_base_url=self.assets_base_url,
-                hf_endpoint=self.hf_endpoint,
-                hf_token=self.hf_token,
-                max_size_fallback=self.max_size_fallback,
-                rows_max_bytes=self.rows_max_bytes,
-                rows_max_number=self.rows_max_number,
-                rows_min_number=self.rows_min_number,
+                dataset=dataset,
+                config=config,
+                split=split,
+                assets_base_url=self.config.common.assets_base_url,
+                hf_endpoint=self.config.common.hf_endpoint,
+                hf_token=self.config.common.hf_token,
+                min_cell_bytes=self.config.first_rows.min_cell_bytes,
+                max_size_fallback=self.config.first_rows.fallback_max_dataset_size,
+                rows_max_bytes=self.config.first_rows.max_bytes,
+                rows_max_number=self.config.first_rows.max_number,
+                rows_min_number=self.config.first_rows.min_number,
+                assets_directory=self.config.cache.assets_directory,
             )
             upsert_first_rows_response(dataset, config, split, dict(response), HTTPStatus.OK)
             logger.debug(f"dataset={dataset} config={config} split={split} is valid, cache updated")

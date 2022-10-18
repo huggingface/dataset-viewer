@@ -2,7 +2,7 @@
 # Copyright 2022 The HuggingFace Authors.
 
 import json
-from typing import Any, List, Union
+from typing import Any, List, Optional, Union
 from zlib import adler32
 
 from datasets import (
@@ -49,6 +49,7 @@ def image(
     value: Any,
     featureName: str,
     assets_base_url: str,
+    assets_directory: Optional[str],
     json_path: List[Union[str, int]] = None,
 ) -> Any:
     if value is None:
@@ -59,14 +60,15 @@ def image(
     for ext in [".jpg", ".png"]:
         try:
             return create_image_file(
-                dataset,
-                config,
-                split,
-                row_idx,
-                featureName,
-                f"{append_hash_suffix('image', json_path)}{ext}",
-                value,
-                assets_base_url,
+                dataset=dataset,
+                config=config,
+                split=split,
+                row_idx=row_idx,
+                column=featureName,
+                filename=f"{append_hash_suffix('image', json_path)}{ext}",
+                image=value,
+                assets_base_url=assets_base_url,
+                assets_directory=assets_directory,
             )
         except OSError:
             # if wrong format, try the next one, see https://github.com/huggingface/datasets-server/issues/191
@@ -84,6 +86,7 @@ def audio(
     value: Any,
     featureName: str,
     assets_base_url: str,
+    assets_directory: Optional[str],
     json_path: List[Union[str, int]] = None,
 ) -> Any:
     if value is None:
@@ -99,15 +102,16 @@ def audio(
         raise TypeError("'sampling_rate' field must be an integer")
     # this function can raise, we don't catch it
     return create_audio_files(
-        dataset,
-        config,
-        split,
-        row_idx,
-        featureName,
-        array,
-        sampling_rate,
-        assets_base_url,
-        append_hash_suffix("audio", json_path),
+        dataset=dataset,
+        config=config,
+        split=split,
+        row_idx=row_idx,
+        column=featureName,
+        array=array,
+        sampling_rate=sampling_rate,
+        assets_base_url=assets_base_url,
+        filename_base=append_hash_suffix("audio", json_path),
+        assets_directory=assets_directory,
     )
 
 
@@ -120,15 +124,36 @@ def get_cell_value(
     featureName: str,
     fieldType: Any,
     assets_base_url: str,
+    assets_directory: Optional[str],
     json_path: List[Union[str, int]] = None,
 ) -> Any:
     # always allow None values in the cells
     if cell is None:
         return cell
     if isinstance(fieldType, Image):
-        return image(dataset, config, split, row_idx, cell, featureName, assets_base_url, json_path)
+        return image(
+            dataset=dataset,
+            config=config,
+            split=split,
+            row_idx=row_idx,
+            value=cell,
+            featureName=featureName,
+            assets_base_url=assets_base_url,
+            assets_directory=assets_directory,
+            json_path=json_path,
+        )
     elif isinstance(fieldType, Audio):
-        return audio(dataset, config, split, row_idx, cell, featureName, assets_base_url, json_path)
+        return audio(
+            dataset=dataset,
+            config=config,
+            split=split,
+            row_idx=row_idx,
+            value=cell,
+            featureName=featureName,
+            assets_base_url=assets_base_url,
+            assets_directory=assets_directory,
+            json_path=json_path,
+        )
     elif isinstance(fieldType, list):
         if type(cell) != list:
             raise TypeError("list cell must be a list.")
@@ -137,15 +162,16 @@ def get_cell_value(
         subFieldType = fieldType[0]
         return [
             get_cell_value(
-                dataset,
-                config,
-                split,
-                row_idx,
-                subCell,
-                featureName,
-                subFieldType,
-                assets_base_url,
-                json_path + [idx] if json_path else [idx],
+                dataset=dataset,
+                config=config,
+                split=split,
+                row_idx=row_idx,
+                cell=subCell,
+                featureName=featureName,
+                fieldType=subFieldType,
+                assets_base_url=assets_base_url,
+                assets_directory=assets_directory,
+                json_path=json_path + [idx] if json_path else [idx],
             )
             for (idx, subCell) in enumerate(cell)
         ]
@@ -155,15 +181,16 @@ def get_cell_value(
                 raise TypeError("the cell length should be the same as the Sequence length.")
             return [
                 get_cell_value(
-                    dataset,
-                    config,
-                    split,
-                    row_idx,
-                    subCell,
-                    featureName,
-                    fieldType.feature,
-                    assets_base_url,
-                    json_path + [idx] if json_path else [idx],
+                    dataset=dataset,
+                    config=config,
+                    split=split,
+                    row_idx=row_idx,
+                    cell=subCell,
+                    featureName=featureName,
+                    fieldType=fieldType.feature,
+                    assets_base_url=assets_base_url,
+                    assets_directory=assets_directory,
+                    json_path=json_path + [idx] if json_path else [idx],
                 )
                 for (idx, subCell) in enumerate(cell)
             ]
@@ -176,15 +203,16 @@ def get_cell_value(
             return {
                 key: [
                     get_cell_value(
-                        dataset,
-                        config,
-                        split,
-                        row_idx,
-                        subCellItem,
-                        featureName,
-                        fieldType.feature[key],
-                        assets_base_url,
-                        json_path + [key, idx] if json_path else [key, idx],
+                        dataset=dataset,
+                        config=config,
+                        split=split,
+                        row_idx=row_idx,
+                        cell=subCellItem,
+                        featureName=featureName,
+                        fieldType=fieldType.feature[key],
+                        assets_base_url=assets_base_url,
+                        assets_directory=assets_directory,
+                        json_path=json_path + [key, idx] if json_path else [key, idx],
                     )
                     for (idx, subCellItem) in enumerate(subCell)
                 ]
@@ -197,15 +225,16 @@ def get_cell_value(
             raise TypeError("dict cell must be a dict.")
         return {
             key: get_cell_value(
-                dataset,
-                config,
-                split,
-                row_idx,
-                subCell,
-                featureName,
-                fieldType[key],
-                assets_base_url,
-                json_path + [key] if json_path else [key],
+                dataset=dataset,
+                config=config,
+                split=split,
+                row_idx=row_idx,
+                cell=subCell,
+                featureName=featureName,
+                fieldType=fieldType[key],
+                assets_base_url=assets_base_url,
+                assets_directory=assets_directory,
+                json_path=json_path + [key] if json_path else [key],
             )
             for (key, subCell) in cell.items()
         }

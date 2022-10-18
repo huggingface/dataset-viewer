@@ -9,9 +9,8 @@ import numpy as np
 import pytest
 from datasets import Audio, Dataset, Image, Value
 
+from first_rows.config import WorkerConfig
 from first_rows.features import get_cell_value
-
-from .utils import ASSETS_BASE_URL
 
 # we need to know the correspondence between the feature type and the cell value, in order to:
 # - document the API
@@ -52,12 +51,24 @@ from .utils import ASSETS_BASE_URL
         ("string", "a string", "string"),
     ],
 )
-def test_value(dataset_type, output_value, output_dtype, datasets) -> None:
+def test_value(
+    dataset_type: str, output_value: Any, output_dtype: str, datasets: Dict[str, Dataset], worker_config: WorkerConfig
+) -> None:
     dataset = datasets[dataset_type]
     feature = dataset.features["col"]
     assert feature._type == "Value"
     assert feature.dtype == output_dtype
-    value = get_cell_value("dataset", "config", "split", 7, dataset[0]["col"], "col", feature, ASSETS_BASE_URL)
+    value = get_cell_value(
+        dataset="dataset",
+        config="config",
+        split="split",
+        row_idx=7,
+        cell=dataset[0]["col"],
+        featureName="col",
+        fieldType=feature,
+        assets_base_url=worker_config.common.assets_base_url,
+        assets_directory=worker_config.cache.assets_directory,
+    )
     assert value == output_value
 
 
@@ -277,12 +288,24 @@ def test_value(dataset_type, output_value, output_dtype, datasets) -> None:
         ("none_value", {"a": None}, {"a": Value(dtype="int64", id=None)}),
     ],
 )
-def test_others(dataset_type: str, output_value: Any, output_type: Any, datasets: Dict[str, Dataset]) -> None:
+def test_others(
+    dataset_type: str, output_value: Any, output_type: Any, datasets: Dict[str, Dataset], worker_config: WorkerConfig
+) -> None:
     dataset = datasets[dataset_type]
     feature = dataset.features["col"]
     if type(output_type) in [list, dict]:
         assert feature == output_type
     else:
         assert feature._type == output_type
-    value = get_cell_value("dataset", "config", "split", 7, dataset[0]["col"], "col", feature, ASSETS_BASE_URL)
+    value = get_cell_value(
+        dataset="dataset",
+        config="config",
+        split="split",
+        row_idx=7,
+        cell=dataset[0]["col"],
+        featureName="col",
+        fieldType=feature,
+        assets_base_url=worker_config.common.assets_base_url,
+        assets_directory=worker_config.cache.assets_directory,
+    )
     assert value == output_value

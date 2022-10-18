@@ -17,10 +17,8 @@ from datasets import (
 )
 from datasets.data_files import EmptyDatasetError as _EmptyDatasetError
 from huggingface_hub.hf_api import HfApi, RepositoryNotFoundError  # type: ignore
-from libutils.utils import orjson_dumps
+from libcommon.utils import orjson_dumps
 
-from first_rows.config import MIN_CELL_BYTES
-from first_rows.constants import DEFAULT_ROWS_MAX_BYTES, DEFAULT_ROWS_MAX_NUMBER
 from first_rows.features import get_cell_value
 from first_rows.utils import (
     ConfigNotFoundError,
@@ -107,14 +105,14 @@ def truncate_cell(cell: Any, min_cell_bytes: int) -> str:
 
 
 # Mutates row_item, and returns it anyway
-def truncate_row_item(row_item: RowItem) -> RowItem:
+def truncate_row_item(row_item: RowItem, min_cell_bytes: int) -> RowItem:
     row = {}
     for column_name, cell in row_item["row"].items():
         # for now: all the cells, but the smallest ones, are truncated
         cell_bytes = get_size_in_bytes(cell)
-        if cell_bytes > MIN_CELL_BYTES:
+        if cell_bytes > min_cell_bytes:
             row_item["truncated_cells"].append(column_name)
-            row[column_name] = truncate_cell(cell, MIN_CELL_BYTES)
+            row[column_name] = truncate_cell(cell=cell, min_cell_bytes=min_cell_bytes)
         else:
             row[column_name] = cell
     row_item["row"] = row
@@ -122,7 +120,7 @@ def truncate_row_item(row_item: RowItem) -> RowItem:
 
 
 # Mutates row_items, and returns them anyway
-def truncate_row_items(row_items: List[RowItem], rows_max_bytes: int) -> List[RowItem]:
+def truncate_row_items(row_items: List[RowItem], min_cell_bytes: int, rows_max_bytes: int) -> List[RowItem]:
     # compute the current size
     rows_bytes = sum(get_size_in_bytes(row_item) for row_item in row_items)
 
@@ -131,7 +129,7 @@ def truncate_row_items(row_items: List[RowItem], rows_max_bytes: int) -> List[Ro
         if rows_bytes < rows_max_bytes:
             break
         previous_size = get_size_in_bytes(row_item)
-        row_item = truncate_row_item(row_item)
+        row_item = truncate_row_item(row_item=row_item, min_cell_bytes=min_cell_bytes)
         new_size = get_size_in_bytes(row_item)
         rows_bytes += new_size - previous_size
         row_idx = row_item["row_idx"]
@@ -152,6 +150,7 @@ def create_truncated_row_items(
     config: str,
     split: str,
     rows: List[Row],
+    min_cell_bytes: int,
     rows_max_bytes: int,
     rows_min_number: int,
 ) -> List[RowItem]:
@@ -175,7 +174,7 @@ def create_truncated_row_items(
             f"the size of the first {rows_min_number} rows ({rows_bytes}) is above the max number of bytes"
             f" ({rows_max_bytes}), they will be truncated"
         )
-        return truncate_row_items(row_items, rows_max_bytes)
+        return truncate_row_items(row_items=row_items, min_cell_bytes=min_cell_bytes, rows_max_bytes=rows_max_bytes)
 
     # 3. else: add the remaining rows until the end, or until the bytes threshold
     for idx, row in enumerate(rows[rows_min_number:]):
@@ -193,19 +192,26 @@ def create_truncated_row_items(
 
 
 def transform_rows(
-    dataset: str, config: str, split: str, rows: List[Row], features: Features, assets_base_url: str
+    dataset: str,
+    config: str,
+    split: str,
+    rows: List[Row],
+    features: Features,
+    assets_base_url: str,
+    assets_directory: Optional[str],
 ) -> List[Row]:
     return [
         {
             featureName: get_cell_value(
-                dataset,
-                config,
-                split,
-                row_idx,
-                row[featureName] if featureName in row else None,
-                featureName,
-                fieldType,
-                assets_base_url,
+                dataset=dataset,
+                config=config,
+                split=split,
+                row_idx=row_idx,
+                cell=row[featureName] if featureName in row else None,
+                featureName=featureName,
+                fieldType=fieldType,
+                assets_base_url=assets_base_url,
+                assets_directory=assets_directory,
             )
             for (featureName, fieldType) in features.items()
         }
@@ -242,8 +248,8 @@ def get_dataset_split_full_names(dataset: str, use_auth_token: Union[bool, str, 
     logger.info(f"get dataset '{dataset}' split full names")
     return [
         {"dataset": dataset, "config": config, "split": split}
-        for config in get_dataset_config_names(dataset, use_auth_token=use_auth_token)
-        for split in get_dataset_split_names(dataset, config, use_auth_token=use_auth_token)
+        for config in get_dataset_config_names(path=dataset, use_auth_token=use_auth_token)
+        for split in get_dataset_split_names(path=dataset, config_name=config, use_auth_token=use_auth_token)
     ]
 
 
@@ -253,11 +259,13 @@ def get_first_rows_response(
     split: str,
     assets_base_url: str,
     hf_endpoint: str,
-    hf_token: Optional[str] = None,
-    max_size_fallback: Optional[int] = None,
-    rows_max_bytes: Optional[int] = None,
-    rows_max_number: Optional[int] = None,
-    rows_min_number: Optional[int] = None,
+    hf_token: Optional[str],
+    min_cell_bytes: int,
+    max_size_fallback: int,
+    rows_max_bytes: int,
+    rows_max_number: int,
+    rows_min_number: int,
+    assets_directory: Optional[str],
 ) -> FirstRowsResponse:
     """
     Get the response of /first-rows for one specific split of a dataset from huggingface.co.
@@ -274,17 +282,16 @@ def get_first_rows_response(
             The base url of the assets.
         hf_endpoint (`str`):
             The Hub endpoint (for example: "https://huggingface.co")
-        hf_token (`str`, *optional*):
+        hf_token (`str` or `None`):
             An authentication token (See https://huggingface.co/settings/token)
-        max_size_fallback (`int`, *optional*):
-            The maximum number of bytes of the split to fallback to normal mode if the streaming mode fails. If None,
-            it will not fallback to normal mode. Defaults to None.
-        rows_max_bytes (`int`, *optional*):
-            The maximum number of bytes of the response (else, the response is truncated). Defaults to 1_000_000 bytes.
-        rows_max_number (`int`, *optional*):
-            The maximum number of rows of the response. Defaults to 100.
-        rows_min_number (`int`, *optional*):
-            The minimum number of rows of the response. Defaults to 0.
+        max_size_fallback (`int`):
+            The maximum number of bytes of the split to fallback to normal mode if the streaming mode fails.
+        rows_max_bytes (`int`):
+            The maximum number of bytes of the response (else, the response is truncated).
+        rows_max_number (`int`):
+            The maximum number of rows of the response.
+        rows_min_number (`int`):
+            The minimum number of rows of the response.
     Returns:
         [`FirstRowsResponse`]: The list of first rows of the split.
     <Tip>
@@ -310,20 +317,14 @@ def get_first_rows_response(
     """
     logger.info(f"get first-rows for dataset={dataset} config={config} split={split}")
     use_auth_token: Union[bool, str, None] = hf_token if hf_token is not None else False
-    if rows_max_bytes is None:
-        rows_max_bytes = DEFAULT_ROWS_MAX_BYTES
-    if rows_max_number is None:
-        rows_max_number = DEFAULT_ROWS_MAX_NUMBER
-    if rows_min_number is None:
-        rows_min_number = 0
     # first ensure the tuple (dataset, config, split) exists on the Hub
     try:
-        HfApi(endpoint=hf_endpoint).dataset_info(dataset, use_auth_token=use_auth_token)
+        HfApi(endpoint=hf_endpoint).dataset_info(repo_id=dataset, use_auth_token=use_auth_token)
     except RepositoryNotFoundError as err:
         raise DatasetNotFoundError("The dataset does not exist on the Hub.") from err
     # get the list of splits
     try:
-        split_full_names = get_dataset_split_full_names(dataset, use_auth_token)
+        split_full_names = get_dataset_split_full_names(dataset=dataset, use_auth_token=use_auth_token)
     except _EmptyDatasetError as err:
         raise EmptyDatasetError("The dataset is empty.", cause=err) from err
     except Exception as err:
@@ -353,7 +354,7 @@ def get_first_rows_response(
         try:
             # https://github.com/huggingface/datasets/blob/f5826eff9b06ab10dba1adfa52543341ef1e6009/src/datasets/iterable_dataset.py#L1255
             iterable_dataset = load_dataset(
-                dataset,
+                path=dataset,
                 name=config,
                 split=split,
                 streaming=True,
@@ -372,19 +373,24 @@ def get_first_rows_response(
     # get the rows
     try:
         rows = get_rows(
-            dataset, config, split, streaming=True, rows_max_number=rows_max_number, use_auth_token=use_auth_token
+            dataset=dataset,
+            config=config,
+            split=split,
+            streaming=True,
+            rows_max_number=rows_max_number,
+            use_auth_token=use_auth_token,
         )
     except Exception as err:
-        if max_size_fallback is None or info.size_in_bytes is None or info.size_in_bytes > max_size_fallback:
+        if info.size_in_bytes is None or info.size_in_bytes > max_size_fallback:
             raise StreamingRowsError(
                 "Cannot load the dataset split (in streaming mode) to extract the first rows.",
                 cause=err,
             ) from err
         try:
             rows = get_rows(
-                dataset,
-                config,
-                split,
+                dataset=dataset,
+                config=config,
+                split=split,
                 streaming=False,
                 rows_max_number=rows_max_number,
                 use_auth_token=use_auth_token,
@@ -396,14 +402,30 @@ def get_first_rows_response(
             ) from err
     # transform the rows, if needed (e.g. save the images or audio to the assets, and return their URL)
     try:
-        transformed_rows = transform_rows(dataset, config, split, rows, features, assets_base_url)
+        transformed_rows = transform_rows(
+            dataset=dataset,
+            config=config,
+            split=split,
+            rows=rows,
+            features=features,
+            assets_base_url=assets_base_url,
+            assets_directory=assets_directory,
+        )
     except Exception as err:
         raise RowsPostProcessingError(
             "Server error while post-processing the split rows. Please report the issue.",
             cause=err,
         ) from err
     # truncate the rows to fit within the restrictions, and prepare them as RowItems
-    row_items = create_truncated_row_items(dataset, config, split, transformed_rows, rows_max_bytes, rows_min_number)
+    row_items = create_truncated_row_items(
+        dataset=dataset,
+        config=config,
+        split=split,
+        rows=transformed_rows,
+        min_cell_bytes=min_cell_bytes,
+        rows_max_bytes=rows_max_bytes,
+        rows_min_number=rows_min_number,
+    )
     # return the response
     return {
         "dataset": dataset,
