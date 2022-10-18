@@ -26,7 +26,7 @@ class FirstRowsWorker(Worker):
     config: WorkerConfig
 
     def __init__(self, worker_config: WorkerConfig):
-        super().__init__(worker_config.queue)
+        super().__init__(queue_config=worker_config.queue)
         self._queues = Queues(max_jobs_per_dataset=worker_config.queue.max_jobs_per_dataset)
         self.config = worker_config
 
@@ -57,7 +57,13 @@ class FirstRowsWorker(Worker):
                 rows_min_number=self.config.first_rows.min_number,
                 assets_directory=self.config.cache.assets_directory,
             )
-            upsert_first_rows_response(dataset, config, split, dict(response), HTTPStatus.OK)
+            upsert_first_rows_response(
+                dataset_name=dataset,
+                config_name=config,
+                split_name=split,
+                response=dict(response),
+                http_status=HTTPStatus.OK,
+            )
             logger.debug(f"dataset={dataset} config={config} split={split} is valid, cache updated")
             return True
         except (DatasetNotFoundError, ConfigNotFoundError, SplitNotFoundError):
@@ -67,13 +73,13 @@ class FirstRowsWorker(Worker):
             return False
         except WorkerCustomError as err:
             upsert_first_rows_response(
-                dataset,
-                config,
-                split,
-                dict(err.as_response()),
-                err.status_code,
-                err.code,
-                dict(err.as_response_with_cause()),
+                dataset_name=dataset,
+                config_name=config,
+                split_name=split,
+                response=dict(err.as_response()),
+                http_status=err.status_code,
+                error_code=err.code,
+                details=dict(err.as_response_with_cause()),
             )
             logger.debug(
                 f"first-rows response for dataset={dataset} config={config} split={split} had an error, cache updated"
@@ -82,13 +88,13 @@ class FirstRowsWorker(Worker):
         except Exception as err:
             e = UnexpectedError(str(err), err)
             upsert_first_rows_response(
-                dataset,
-                config,
-                split,
-                dict(e.as_response()),
-                e.status_code,
-                e.code,
-                dict(e.as_response_with_cause()),
+                dataset_name=dataset,
+                config_name=config,
+                split_name=split,
+                response=dict(e.as_response()),
+                http_status=e.status_code,
+                error_code=e.code,
+                details=dict(e.as_response_with_cause()),
             )
             logger.debug(
                 f"first-rows response for dataset={dataset} config={config} split={split} had a server"

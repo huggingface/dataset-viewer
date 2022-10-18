@@ -8,7 +8,7 @@ from contextlib import contextmanager, suppress
 from pathlib import Path
 from typing import Any, Dict, Iterable, List, Optional, TypedDict
 
-import datasets
+import datasets.config
 import pytest
 import requests
 from datasets import Dataset
