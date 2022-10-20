@@ -54,6 +54,7 @@ jobs:
             ${{ env.working-directory }}/poetry.lock
       - name: Launch the services
         env:
+          QUEUE_SLEEP_TIME: "1"
           # hard coded, see e2e/tests/fixtures/hub.py
           COMMON_HF_ENDPOINT: "https://hub-ci.huggingface.co"
           COMMON_HF_TOKEN: "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"

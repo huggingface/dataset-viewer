@@ -2,6 +2,7 @@
 export COMPOSE_PROJECT_NAME := e2e
 export PORT_REVERSE_PROXY := 9000
 export MONGO_PORT := 27050
+export QUEUE_SLEEP_TIME := 1
 export COMMON_HF_ENDPOINT := https://hub-ci.huggingface.co
 export COMMON_HF_TOKEN := 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
 export ADMIN_UVICORN_PORT := 9081
