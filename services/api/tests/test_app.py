@@ -13,20 +13,9 @@ from pytest_httpserver import HTTPServer
 from starlette.testclient import TestClient
 
 from api.app import create_app
-from api.config import EXTERNAL_AUTH_URL, MONGO_CACHE_DATABASE, MONGO_QUEUE_DATABASE
 from api.utils import JobType
 
 from .utils import auth_callback
-
-external_auth_url = EXTERNAL_AUTH_URL or "%s"  # for mypy
-
-
-@pytest.fixture(autouse=True, scope="module")
-def safe_guard() -> None:
-    if "test" not in MONGO_CACHE_DATABASE:
-        raise ValueError("Tests on cache must be launched on a test mongo database")
-    if "test" not in MONGO_QUEUE_DATABASE:
-        raise ValueError("Tests on queue must be launched on a test mongo database")
 
 
 @pytest.fixture(scope="module")

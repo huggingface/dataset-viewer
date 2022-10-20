@@ -31,7 +31,9 @@ async def valid_endpoint(_: Request) -> Response:
         return get_json_api_error_response(UnexpectedError("Unexpected error."))
 
 
-def create_is_valid_endpoint(external_auth_url: Optional[str] = None) -> Endpoint:
+def create_is_valid_endpoint(
+    external_auth_url: Optional[str] = None, max_age_long: int = 0, max_age_short: int = 0
+) -> Endpoint:
     async def is_valid_endpoint(request: Request) -> Response:
         try:
             dataset_name = request.query_params.get("dataset")
@@ -43,10 +45,10 @@ def create_is_valid_endpoint(external_auth_url: Optional[str] = None) -> Endpoin
             content = {
                 "valid": is_dataset_name_valid(dataset_name),
             }
-            return get_json_ok_response(content)
+            return get_json_ok_response(content=content, max_age=max_age_long)
         except ApiCustomError as e:
-            return get_json_api_error_response(e)
+            return get_json_api_error_response(error=e, max_age=max_age_short)
         except Exception:
-            return get_json_api_error_response(UnexpectedError("Unexpected error."))
+            return get_json_api_error_response(error=UnexpectedError("Unexpected error."), max_age=max_age_short)
 
     return is_valid_endpoint

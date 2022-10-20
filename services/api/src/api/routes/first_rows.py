@@ -31,6 +31,8 @@ def create_first_rows_endpoint(
     hf_endpoint: str,
     hf_token: Optional[str] = None,
     external_auth_url: Optional[str] = None,
+    max_age_long: int = 0,
+    max_age_short: int = 0,
 ) -> Endpoint:
     async def first_rows_endpoint(request: Request) -> Response:
         try:
@@ -46,9 +48,11 @@ def create_first_rows_endpoint(
             try:
                 response, http_status, error_code = get_first_rows_response(dataset, config, split)
                 if http_status == HTTPStatus.OK:
-                    return get_json_ok_response(response)
+                    return get_json_ok_response(content=response, max_age=max_age_long)
                 else:
-                    return get_json_error_response(response, http_status, error_code)
+                    return get_json_error_response(
+                        content=response, status_code=http_status, max_age=max_age_short, error_code=error_code
+                    )
             except DoesNotExist as e:
                 # maybe the first-rows response is in process
                 if is_first_rows_in_process(
@@ -59,8 +63,8 @@ def create_first_rows_endpoint(
                     ) from e
                 raise FirstRowsResponseNotFoundError("Not found.") from e
         except ApiCustomError as e:
-            return get_json_api_error_response(e)
+            return get_json_api_error_response(error=e, max_age=max_age_short)
         except Exception as e:
-            return get_json_api_error_response(UnexpectedError("Unexpected error.", e))
+            return get_json_api_error_response(error=UnexpectedError("Unexpected error.", e), max_age=max_age_short)
 
     return first_rows_endpoint

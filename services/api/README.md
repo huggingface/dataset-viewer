@@ -4,22 +4,36 @@
 
 ## Configuration
 
-Set environment variables to configure the following aspects:
+The worker con be configured using environment variables. They are grouped by scope.
 
-- `API_HOSTNAME`: the hostname used by the API endpoint. Defaults to `"localhost"`.
-- `API_NUM_WORKERS`: the number of workers of the API endpoint. Defaults to `2`.
-- `API_PORT`: the port used by the API endpoint. Defaults to `8000`.
-- `ASSETS_DIRECTORY`: directory where the asset files are stored. Defaults to empty, in which case the assets are located in the `datasets_server_assets` subdirectory inside the OS default cache directory.
-- `HF_AUTH_PATH`: the path of the external authentication service, on the hub (see `HF_ENDPOINT`). The string must contain `%s` which will be replaced with the dataset name. The external authentication service must return 200, 401, 403 or 404. If empty, the authentication is disabled. Defaults to "/api/datasets/%s/auth-check".
-- `HF_ENDPOINT`: URL of the HuggingFace Hub. Defaults to `https://huggingface.co`.
-- `HF_TOKEN`: App Access Token (ask moonlanding administrators to get one, only the `read` role is required), to access the gated datasets. Defaults to empty.
-- `LOG_LEVEL`: log level, among `DEBUG`, `INFO`, `WARNING`, `ERROR` and `CRITICAL`. Defaults to `INFO`.
-- `MAX_AGE_LONG_SECONDS`: number of seconds to set in the `max-age` header on data endpoints. Defaults to `120` (2 minutes).
-- `MAX_AGE_SHORT_SECONDS`: number of seconds to set in the `max-age` header on technical endpoints. Defaults to `10` (10 seconds).
-- `MONGO_CACHE_DATABASE`: the name of the database used for storing the cache. Defaults to `"datasets_server_cache"`.
-- `MONGO_QUEUE_DATABASE`: the name of the database used for storing the queue. Defaults to `"datasets_server_queue"`.
-- `MONGO_URL`: the URL used to connect to the mongo db server. Defaults to `"mongodb://localhost:27017"`.
-- `PROMETHEUS_MULTIPROC_DIR`: the directory where the uvicorn workers share their prometheus metrics. See https://github.com/prometheus/client_python#multiprocess-mode-eg-gunicorn. Defaults to empty, in which case every worker manages its own metrics, and the /metrics endpoint returns the metrics of a random worker.
+### App
+
+Set environment variables to configure the application (`APP_` prefix):
+
+- `APP_HF_AUTH_PATH`: the path of the external authentication service, on the hub (see `HF_ENDPOINT`). The string must contain `%s` which will be replaced with the dataset name. The external authentication service must return 200, 401, 403 or 404. Defaults to "/api/datasets/%s/auth-check".
+- `APP_MAX_AGE_LONG`: number of seconds to set in the `max-age` header on data endpoints. Defaults to `120` (2 minutes).
+- `APP_MAX_AGE_SHORT`: number of seconds to set in the `max-age` header on technical endpoints. Defaults to `10` (10 seconds).
+- `APP_PROMETHEUS_MULTIPROC_DIR`: the directory where the uvicorn workers share their prometheus metrics. See https://github.com/prometheus/client_python#multiprocess-mode-eg-gunicorn. Defaults to empty, in which case every worker manages its own metrics, and the /metrics endpoint returns the metrics of a random worker.
+
+### Uvicorn
+
+The following environment variables are used to configure the Uvicorn server (`UVICORN_` prefix):
+
+- `UVICORN_HOSTNAME`: the hostname. Defaults to `"localhost"`.
+- `UVICORN_NUM_WORKERS`: the number of uvicorn workers. Defaults to `2`.
+- `UVICORN_PORT`: the port. Defaults to `8000`.
+
+### Cache
+
+See [../../libs/libcache/README.md](../../libs/libcache/README.md) for more information about the cache configuration.
+
+### Queue
+
+See [../../libs/libqueue/README.md](../../libs/libqueue/README.md) for more information about the queue configuration.
+
+### Common
+
+See [../../libs/libcommon/README.md](../../libs/libcommon/README.md) for more information about the common configuration.
 
 ## Endpoints
 

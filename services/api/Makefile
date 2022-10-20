@@ -1,11 +1,15 @@
 # environment variables for the commands (docker-compose, poetry)
-export TEST_MONGO_PORT := 27031
-export TEST_MONGO_CACHE_DATABASE := datasets_server_cache_test
-export TEST_MONGO_QUEUE_DATABASE := datasets_server_queue_test
-export TEST_COMPOSE_PROJECT_NAME := api
-export TEST_HF_ENDPOINT := https://hub-ci.huggingface.co
+export COMPOSE_PROJECT_NAME := api
+export MONGO_PORT := 27031
+export CACHE_MONGO_URL := mongodb://localhost:${MONGO_PORT}
+export CACHE_MONGO_DATABASE := datasets_server_cache_test
+export QUEUE_MONGO_URL := mongodb://localhost:${MONGO_PORT}
+export QUEUE_MONGO_DATABASE := datasets_server_queue_test
+export UVICORN_HOST := localhost
+export UVICORN_PORT := 8888
+export COMMON_HF_ENDPOINT := http://${UVICORN_HOST}:${UVICORN_PORT}
 # makefile variables
-TEST_DOCKER_COMPOSE := ../../tools/docker-compose-mongo.yml
+DOCKER_COMPOSE := ../../tools/docker-compose-mongo.yml
 
 # Ensure to specify HF_TOKEN when calling make test, ie HF_TOKEN=hf_app_xxx make test
 include ../../tools/Python.mk
