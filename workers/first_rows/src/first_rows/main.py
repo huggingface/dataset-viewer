@@ -14,6 +14,6 @@ if __name__ == "__main__":
     init_logger(worker_config.common.log_level)
     connect_to_cache(database=worker_config.cache.mongo_database, host=worker_config.cache.mongo_url)
     connect_to_queue(database=worker_config.queue.mongo_database, host=worker_config.cache.mongo_url)
-    show_assets_dir(worker_config.cache.assets_directory)
+    show_assets_dir(assets_directory=worker_config.cache.assets_directory)
 
     FirstRowsWorker(worker_config).loop()

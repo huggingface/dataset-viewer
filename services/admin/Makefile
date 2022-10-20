@@ -8,7 +8,6 @@ export QUEUE_MONGO_URL := mongodb://localhost:${MONGO_PORT}
 export QUEUE_MONGO_DATABASE := datasets_server_queue_test
 # makefile variables
 DOCKER_COMPOSE := ../../tools/docker-compose-mongo.yml
-#SAFETY_EXCEPTIONS :=
 
 include ../../tools/Python.mk
 include ../../tools/Docker.mk
