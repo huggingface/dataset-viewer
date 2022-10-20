@@ -6,22 +6,22 @@
 
 The worker con be configured using environment variables. They are grouped by scope.
 
-### App
+### API service
 
-Set environment variables to configure the application (`APP_` prefix):
+Set environment variables to configure the application (`API_` prefix):
 
-- `APP_HF_AUTH_PATH`: the path of the external authentication service, on the hub (see `HF_ENDPOINT`). The string must contain `%s` which will be replaced with the dataset name. The external authentication service must return 200, 401, 403 or 404. Defaults to "/api/datasets/%s/auth-check".
-- `APP_MAX_AGE_LONG`: number of seconds to set in the `max-age` header on data endpoints. Defaults to `120` (2 minutes).
-- `APP_MAX_AGE_SHORT`: number of seconds to set in the `max-age` header on technical endpoints. Defaults to `10` (10 seconds).
-- `APP_PROMETHEUS_MULTIPROC_DIR`: the directory where the uvicorn workers share their prometheus metrics. See https://github.com/prometheus/client_python#multiprocess-mode-eg-gunicorn. Defaults to empty, in which case every worker manages its own metrics, and the /metrics endpoint returns the metrics of a random worker.
+- `API_HF_AUTH_PATH`: the path of the external authentication service, on the hub (see `HF_ENDPOINT`). The string must contain `%s` which will be replaced with the dataset name. The external authentication service must return 200, 401, 403 or 404. Defaults to "/api/datasets/%s/auth-check".
+- `API_MAX_AGE_LONG`: number of seconds to set in the `max-age` header on data endpoints. Defaults to `120` (2 minutes).
+- `API_MAX_AGE_SHORT`: number of seconds to set in the `max-age` header on technical endpoints. Defaults to `10` (10 seconds).
+- `API_PROMETHEUS_MULTIPROC_DIR`: the directory where the uvicorn workers share their prometheus metrics. See https://github.com/prometheus/client_python#multiprocess-mode-eg-gunicorn. Defaults to empty, in which case every worker manages its own metrics, and the /metrics endpoint returns the metrics of a random worker.
 
 ### Uvicorn
 
-The following environment variables are used to configure the Uvicorn server (`UVICORN_` prefix):
+The following environment variables are used to configure the Uvicorn server (`API_UVICORN_` prefix):
 
-- `UVICORN_HOSTNAME`: the hostname. Defaults to `"localhost"`.
-- `UVICORN_NUM_WORKERS`: the number of uvicorn workers. Defaults to `2`.
-- `UVICORN_PORT`: the port. Defaults to `8000`.
+- `API_UVICORN_HOSTNAME`: the hostname. Defaults to `"localhost"`.
+- `API_UVICORN_NUM_WORKERS`: the number of uvicorn workers. Defaults to `2`.
+- `API_UVICORN_PORT`: the port. Defaults to `8000`.
 
 ### Cache
 
