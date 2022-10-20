@@ -25,16 +25,17 @@ services:
     volumes:
       - assets:/assets:ro
     environment:
-      APP_HOSTNAME: 0.0.0.0
-      APP_NUM_WORKERS: 1
-      APP_PORT: 8080
-      ASSETS_DIRECTORY: "/assets"
-      HF_ENDPOINT: ${HF_ENDPOINT}
-      HF_TOKEN: ${HF_TOKEN}
-      MONGO_URL: "mongodb://mongodb"
+      API_UVICORN_HOSTNAME: 0.0.0.0
+      API_UVICORN_NUM_WORKERS: 1
+      API_UVICORN_PORT: 8080
+      CACHE_ASSETS_DIRECTORY: "/assets"
+      COMMON_HF_ENDPOINT: ${COMMON_HF_ENDPOINT}
+      COMMON_HF_TOKEN: ${COMMON_HF_TOKEN}
+      CACHE_MONGO_URL: "mongodb://mongodb"
+      QUEUE_MONGO_URL: "mongodb://mongodb"
     ports:
       # for debug
-      - ${PORT_API-8080}:8080
+      - ${API_UVICORN_PORT-8080}:8080
     depends_on:
       mongodb:
         condition: service_started
@@ -47,9 +48,10 @@ services:
       - datasets-cache:/datasets-cache:rw
     environment:
       HF_DATASETS_CACHE: "/datasets-cache"
-      HF_ENDPOINT: ${HF_ENDPOINT}
-      HF_TOKEN: ${HF_TOKEN}
-      MONGO_URL: "mongodb://mongodb"
+      COMMON_HF_ENDPOINT: ${COMMON_HF_ENDPOINT}
+      COMMON_HF_TOKEN: ${COMMON_HF_TOKEN}
+      CACHE_MONGO_URL: "mongodb://mongodb"
+      QUEUE_MONGO_URL: "mongodb://mongodb"
     depends_on:
       mongodb:
         condition: service_started
@@ -62,12 +64,13 @@ services:
       - assets:/assets:rw
       - datasets-cache:/datasets-cache:rw
     environment:
-      ASSETS_BASE_URL: "http://localhost:${PORT_REVERSE_PROXY-8000}/assets"
-      ASSETS_DIRECTORY: "/assets"
+      COMMON_ASSETS_BASE_URL: "http://localhost:${PORT_REVERSE_PROXY-8000}/assets"
+      CACHE_ASSETS_DIRECTORY: "/assets"
       HF_DATASETS_CACHE: "/datasets-cache"
-      HF_ENDPOINT: ${HF_ENDPOINT}
-      HF_TOKEN: ${HF_TOKEN}
-      MONGO_URL: "mongodb://mongodb"
+      COMMON_HF_ENDPOINT: ${COMMON_HF_ENDPOINT}
+      COMMON_HF_TOKEN: ${COMMON_HF_TOKEN}
+      CACHE_MONGO_URL: "mongodb://mongodb"
+      QUEUE_MONGO_URL: "mongodb://mongodb"
     depends_on:
       mongodb:
         condition: service_started
@@ -77,14 +80,15 @@ services:
       context: ..
       dockerfile: ./services/admin/Dockerfile
     environment:
-      APP_HOSTNAME: 0.0.0.0
-      APP_NUM_WORKERS: 1
-      APP_PORT: 8081
-      ASSETS_DIRECTORY: "/assets"
-      MONGO_URL: "mongodb://mongodb"
+      ADMIN_UVICORN_HOSTNAME: 0.0.0.0
+      ADMIN_UVICORN_NUM_WORKERS: 1
+      ADMIN_UVICORN_PORT: 8081
+      CACHE_ASSETS_DIRECTORY: "/assets"
+      CACHE_MONGO_URL: "mongodb://mongodb"
+      QUEUE_MONGO_URL: "mongodb://mongodb"
     ports:
       # for debug
-      - ${PORT_ADMIN-8081}:8081
+      - ${ADMIN_UVICORN_PORT-8081}:8081
     depends_on:
       mongodb:
         condition: service_started

@@ -17,8 +17,8 @@
       "path": "../libs/libqueue"
     },
     {
-      "name": "libs/libutils",
-      "path": "../libs/libutils"
+      "name": "libs/libcommon",
+      "path": "../libs/libcommon"
     },
     {
       "name": "services/admin",
