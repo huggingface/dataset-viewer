@@ -9,12 +9,11 @@ from libqueue.queue import _clean_queue_database
 from starlette.testclient import TestClient
 
 from admin.app import create_app
-
 from admin.utils import JobType
 
 
 @pytest.fixture(scope="module")
-def client() -> TestClient:
+def client(monkeypatch_session: pytest.MonkeyPatch) -> TestClient:
     return TestClient(create_app())
 
 

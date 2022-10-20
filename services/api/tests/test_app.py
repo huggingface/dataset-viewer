@@ -19,7 +19,7 @@ from .utils import auth_callback
 
 
 @pytest.fixture(scope="module")
-def client() -> TestClient:
+def client(monkeypatch_session: pytest.MonkeyPatch) -> TestClient:
     return TestClient(create_app())
 
 

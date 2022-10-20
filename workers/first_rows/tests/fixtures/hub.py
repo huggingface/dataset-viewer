@@ -114,6 +114,11 @@ def hf_token() -> str:
     return CI_HUB_USER_API_TOKEN
 
 
+@pytest.fixture(scope="session")
+def hf_endpoint() -> str:
+    return CI_HUB_ENDPOINT
+
+
 @pytest.fixture
 def cleanup_repo(hf_api: HfApi):
     def _cleanup_repo(repo_id):

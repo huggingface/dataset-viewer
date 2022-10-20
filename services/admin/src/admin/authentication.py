@@ -37,12 +37,13 @@ def auth_check(
         authorized.
         request (Request | None): the request which optionally bears authentication headers: "cookie" or
           "authorization"
-        organization (str | None): the organization name
+        organization (str | None): the organization name. If None, the dataset is always
+        authorized.
 
     Returns:
         None: the user is authorized
     """
-    if external_auth_url is None:
+    if organization is None or external_auth_url is None:
         return True
     try:
         response = requests.get(external_auth_url, auth=RequestAuth(request))
