@@ -11,7 +11,6 @@ import requests
 from requests import Response
 
 PORT_REVERSE_PROXY = os.environ.get("PORT_REVERSE_PROXY", "8000")
-ROWS_MAX_NUMBER = int(os.environ.get("ROWS_MAX_NUMBER", 100))
 INTERVAL = 1
 MAX_DURATION = 10 * 60
 URL = f"http://localhost:{PORT_REVERSE_PROXY}"

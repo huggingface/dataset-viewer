@@ -1,13 +1,11 @@
 # environment variables for the commands (docker-compose, poetry)
 export COMPOSE_PROJECT_NAME := e2e
-export PORT_ADMIN := 9081
-export PORT_API := 9080
 export PORT_REVERSE_PROXY := 9000
 export MONGO_PORT := 27050
 export COMMON_HF_ENDPOINT := https://hub-ci.huggingface.co
 export COMMON_HF_TOKEN := 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
-export ADMIN_UVICORN_PORT := ${PORT_ADMIN}
-export API_UVICORN_PORT := ${PORT_API}
+export ADMIN_UVICORN_PORT := 9081
+export API_UVICORN_PORT := 9080
 export FIRST_ROWS_MAX_NUMBER := 4
 
 # makefile variables
