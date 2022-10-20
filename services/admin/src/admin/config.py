@@ -33,11 +33,13 @@ class AdminConfig:
     def __init__(self, hf_endpoint: str):
         env = Env(expand_vars=True)
         with env.prefixed("ADMIN_"):
-            self.hf_organization = env.str(name="HF_ORGANIZATION", default=None)
+            hf_organization = env.str(name="HF_ORGANIZATION", default="")
+            self.hf_organization = None if hf_organization == "" else hf_organization
             self.cache_reports_num_results = env.int(name="CACHE_REPORTS_NUM_RESULTS", default=100)
             self.hf_whoami_path = env.str(name="HF_WHOAMI_PATH", default="/api/whoami-v2")
             self.max_age = env.int(name="MAX_AGE", default=10)  # 10 seconds
-            self.prometheus_multiproc_dir = env.str(name="PROMETHEUS_MULTIPROC_DIR", default=None)
+            prometheus_multiproc_dir = env.str(name="PROMETHEUS_MULTIPROC_DIR", default="")
+            self.prometheus_multiproc_dir = None if prometheus_multiproc_dir == "" else prometheus_multiproc_dir
             self.external_auth_url = None if self.hf_whoami_path is None else f"{hf_endpoint}{self.hf_whoami_path}"
 
 

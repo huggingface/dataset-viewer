@@ -25,7 +25,7 @@ RUN pip install "poetry==$POETRY_VERSION"
 WORKDIR /src
 COPY libs/libcache/dist ./libs/libcache/dist
 COPY libs/libqueue/dist ./libs/libqueue/dist
-COPY libs/libutils/dist ./libs/libutils/dist
+COPY libs/libcommon/dist ./libs/libcommon/dist
 COPY workers/first_rows/src ./workers/first_rows/src
 COPY workers/first_rows/poetry.lock ./workers/first_rows/poetry.lock
 COPY workers/first_rows/pyproject.toml ./workers/first_rows/pyproject.toml

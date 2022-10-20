@@ -35,7 +35,8 @@ class ApiConfig:
             self.hf_auth_path = env.str(name="HF_AUTH_PATH", default="/api/datasets/%s/auth-check")
             self.max_age_long = env.int(name="MAX_AGE_LONG", default=120)  # 2 minutes
             self.max_age_short = env.int(name="MAX_AGE_SHORT", default=10)  # 10 seconds
-            self.prometheus_multiproc_dir = env.str(name="PROMETHEUS_MULTIPROC_DIR", default=None)
+            prometheus_multiproc_dir = env.str(name="PROMETHEUS_MULTIPROC_DIR", default="")
+            self.prometheus_multiproc_dir = None if prometheus_multiproc_dir == "" else prometheus_multiproc_dir
             self.external_auth_url = None if self.hf_auth_path is None else f"{hf_endpoint}{self.hf_auth_path}"
 
 

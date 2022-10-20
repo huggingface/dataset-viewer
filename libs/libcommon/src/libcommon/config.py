@@ -17,5 +17,6 @@ class CommonConfig:
         with env.prefixed("COMMON_"):
             self.assets_base_url = env.str(name="ASSETS_BASE_URL", default="assets")
             self.hf_endpoint = env.str(name="HF_ENDPOINT", default="https://huggingface.co")
-            self.hf_token = env.str(name="HF_TOKEN", default=None)
             self.log_level = env.log_level(name="LOG_LEVEL", default="INFO")
+            hf_token = env.str(name="HF_TOKEN", default="")
+            self.hf_token = None if hf_token == "" else hf_token
