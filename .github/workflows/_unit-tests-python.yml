@@ -50,11 +50,8 @@ jobs:
         run: sudo docker run -d -p ${{ env.mongo-port }}:27017 mongo:latest
       - name: Run unit tests
         env:
-          MONGO_CACHE_DATABASE: datasets_server_cache_test
-          MONGO_QUEUE_DATABASE: datasets_server_queue_test
-          MONGO_URL: mongodb://localhost:${{ env.mongo-port }}
-          HF_TOKEN: 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
-          HF_ENDPOINT: https://hub-ci.huggingface.co
+          CACHE_MONGO_URL: mongodb://localhost:${{ env.mongo-port }}
+          QUEUE_MONGO_URL: mongodb://localhost:${{ env.mongo-port }}
         run: poetry run python -m pytest -s --cov --cov-report xml:coverage.xml --cov-report=term tests
       - uses: codecov/codecov-action@v2
         with:
