@@ -8,17 +8,13 @@ services:
       - assets:/assets:ro
       - ../chart/static-files/openapi.json:/static-files/openapi.json:ro
     ports:
-      - "${PORT_REVERSE_PROXY-8000}:80"
+      - ${PORT_REVERSE_PROXY-8000}:80
     environment:
-      - ASSETS_DIRECTORY=/assets
-      - CACHE_DIRECTORY=/nginx-cache
-      - CACHE_INACTIVE=24h
-      - CACHE_MAX_SIZE=1g
-      - CACHE_ZONE_SIZE=50m
-      - HOST=localhost
-      - PORT=80
-      - URL_ADMIN=http://admin:8081
-      - URL_API=http://api:8080
+      ASSETS_DIRECTORY: "/assets"
+      HOST: localhost"
+      PORT: 80
+      URL_ADMIN: "http://admin:8081"
+      URL_API: "http://api:8080"
     depends_on:
       api:
         condition: service_started
