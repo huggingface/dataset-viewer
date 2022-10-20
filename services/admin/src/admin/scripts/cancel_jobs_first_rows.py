@@ -3,15 +3,16 @@
 
 import logging
 
+from libcommon.logger import init_logger
 from libqueue.queue import Queue, connect_to_queue
-from libutils.logger import init_logger
 
-from admin.config import LOG_LEVEL, MONGO_QUEUE_DATABASE, MONGO_URL
+from admin.config import AppConfig
 from admin.utils import JobType
 
 if __name__ == "__main__":
-    init_logger(LOG_LEVEL, "cancel_jobs_first_rows")
+    app_config = AppConfig()
+    init_logger(app_config.common.log_level, "cancel_jobs_first_rows")
     logger = logging.getLogger("cancel_jobs_first_rows")
-    connect_to_queue(MONGO_QUEUE_DATABASE, MONGO_URL)
+    connect_to_queue(database=app_config.queue.mongo_database, host=app_config.cache.mongo_url)
     Queue(type=JobType.FIRST_ROWS.value).cancel_started_jobs()
     logger.info("all the started jobs in the first_rows/ queue have been cancelled and re-enqueued")

@@ -9,16 +9,8 @@ from libqueue.queue import _clean_queue_database
 from starlette.testclient import TestClient
 
 from admin.app import create_app
-from admin.config import MONGO_CACHE_DATABASE, MONGO_QUEUE_DATABASE
+
 from admin.utils import JobType
-
-
-@pytest.fixture(autouse=True, scope="module")
-def safe_guard() -> None:
-    if "test" not in MONGO_CACHE_DATABASE:
-        raise ValueError("Tests on cache must be launched on a test mongo database")
-    if "test" not in MONGO_QUEUE_DATABASE:
-        raise ValueError("Tests on queue must be launched on a test mongo database")
 
 
 @pytest.fixture(scope="module")

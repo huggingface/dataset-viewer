@@ -4,19 +4,37 @@
 
 ## Configuration
 
-Set environment variables to configure the following aspects:
+The worker con be configured using environment variables. They are grouped by scope.
 
-- `ASSETS_DIRECTORY`: directory where the asset files are stored. Defaults to empty, in which case the assets are located in the `datasets_server_assets` subdirectory inside the OS default cache directory.
-- `CACHE_REPORTS_NUM_RESULTS`: the number of results in /cache-reports/... endpoints. Defaults to `100`.
-- `HF_ENDPOINT`: URL of the HuggingFace Hub. Defaults to `https://huggingface.co`.
-- `HF_ORGANIZATION`: the huggingface organization from which the authenticated user must be part of in order to access the protected routes, eg. "huggingface". If empty, the authentication is disabled. Defaults to None.
-- `HF_WHOAMI_PATH`: the path of the external whoami service, on the hub (see `HF_ENDPOINT`), eg. "/api/whoami-v2". If empty, the authentication is disabled. Defaults to None.
-- `LOG_LEVEL`: log level, among `DEBUG`, `INFO`, `WARNING`, `ERROR` and `CRITICAL`. Defaults to `INFO`.
-- `MAX_AGE_SHORT_SECONDS`: number of seconds to set in the `max-age` header on technical endpoints. Defaults to `10` (10 seconds).
-- `MONGO_CACHE_DATABASE`: the name of the database used for storing the cache. Defaults to `"datasets_server_cache"`.
-- `MONGO_QUEUE_DATABASE`: the name of the database used for storing the queue. Defaults to `"datasets_server_queue"`.
-- `MONGO_URL`: the URL used to connect to the mongo db server. Defaults to `"mongodb://localhost:27017"`.
-- `PROMETHEUS_MULTIPROC_DIR`: the directory where the uvicorn workers share their prometheus metrics. See https://github.com/prometheus/client_python#multiprocess-mode-eg-gunicorn. Defaults to empty, in which case every worker manages its own metrics, and the /metrics endpoint returns the metrics of a random worker.
+### App
+
+Set environment variables to configure the application (`APP_` prefix):
+
+- `APP_CACHE_REPORTS_NUM_RESULTS`: the number of results in /cache-reports/... endpoints. Defaults to `100`.
+- `APP_HF_ORGANIZATION`: the huggingface organization from which the authenticated user must be part of in order to access the protected routes, eg. "huggingface". If empty, the authentication is disabled. Defaults to None.
+- `APP_HF_WHOAMI_PATH`: the path of the external whoami service, on the hub (see `HF_ENDPOINT`), eg. "/api/whoami-v2". If empty, the authentication is disabled. Defaults to None.
+- `APP_MAX_AGE`: number of seconds to set in the `max-age` header on technical endpoints. Defaults to `10` (10 seconds).
+- `APP_PROMETHEUS_MULTIPROC_DIR`: the directory where the uvicorn workers share their prometheus metrics. See https://github.com/prometheus/client_python#multiprocess-mode-eg-gunicorn. Defaults to empty, in which case every worker manages its own metrics, and the /metrics endpoint returns the metrics of a random worker.
+
+### Uvicorn
+
+The following environment variables are used to configure the Uvicorn server (`UVICORN_` prefix):
+
+- `UVICORN_HOSTNAME`: the hostname. Defaults to `"localhost"`.
+- `UVICORN_NUM_WORKERS`: the number of uvicorn workers. Defaults to `2`.
+- `UVICORN_PORT`: the port. Defaults to `8000`.
+
+### Cache
+
+See [../../libs/libcache/README.md](../../libs/libcache/README.md) for more information about the cache configuration.
+
+### Queue
+
+See [../../libs/libqueue/README.md](../../libs/libqueue/README.md) for more information about the queue configuration.
+
+### Common
+
+See [../../libs/libcommon/README.md](../../libs/libcommon/README.md) for more information about the common configuration.
 
 ## Endpoints
 

@@ -22,7 +22,7 @@ logger = logging.getLogger(__name__)
 
 
 def create_pending_jobs_endpoint(
-    external_auth_url: Optional[str] = None, organization: Optional[str] = None
+    max_age: int, external_auth_url: Optional[str] = None, organization: Optional[str] = None
 ) -> Endpoint:
     splits_queue = Queue(type=JobType.SPLITS.value)
     first_rows_queue = Queue(type=JobType.FIRST_ROWS.value)
@@ -36,11 +36,12 @@ def create_pending_jobs_endpoint(
                 {
                     JobType.SPLITS.value: splits_queue.get_dump_by_pending_status(),
                     JobType.FIRST_ROWS.value: first_rows_queue.get_dump_by_pending_status(),
-                }
+                },
+                max_age=max_age,
             )
         except AdminCustomError as e:
-            return get_json_admin_error_response(e)
+            return get_json_admin_error_response(e, max_age=max_age)
         except Exception:
-            return get_json_admin_error_response(UnexpectedError("Unexpected error."))
+            return get_json_admin_error_response(UnexpectedError("Unexpected error."), max_age=max_age)
 
     return pending_jobs_endpoint
