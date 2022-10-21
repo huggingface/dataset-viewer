@@ -57,7 +57,7 @@ class FirstRowsResponse(TypedDict):
     rows: List[RowItem]
 
 
-@retry(logging=logging)
+@retry()
 def get_rows(
     dataset: str,
     config: str,
@@ -195,7 +195,7 @@ def transform_rows(
     rows: List[Row],
     features: Features,
     assets_base_url: str,
-    assets_directory: Optional[str],
+    assets_directory: str,
 ) -> List[Row]:
     return [
         {
@@ -262,7 +262,7 @@ def get_first_rows_response(
     rows_max_bytes: int,
     rows_max_number: int,
     rows_min_number: int,
-    assets_directory: Optional[str],
+    assets_directory: str,
 ) -> FirstRowsResponse:
     """
     Get the response of /first-rows for one specific split of a dataset from huggingface.co.

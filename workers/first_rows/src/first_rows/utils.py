@@ -2,10 +2,10 @@
 # Copyright 2022 The HuggingFace Authors.
 
 import functools
+import logging
 import time
 from enum import Enum
 from http import HTTPStatus
-from logging import Logger
 from typing import Literal, Optional
 
 from libcommon.exceptions import CustomError
@@ -117,7 +117,7 @@ class UnexpectedError(WorkerCustomError):
         super().__init__(message, HTTPStatus.INTERNAL_SERVER_ERROR, "UnexpectedError", cause, False)
 
 
-def retry(logging: Logger):
+def retry():
     def decorator_retry(func):
         """retries with an increasing sleep before every attempt"""
         SLEEPS = [1, 7, 70, 7 * 60, 70 * 60]
