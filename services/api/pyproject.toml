@@ -8,14 +8,15 @@ license = "Apache-2.0"
 [tool.poetry.dependencies]
 huggingface-hub = "^0.9.1"
 jsonschema = "^4.16.0"
-libcache = { path = "../../libs/libcache/dist/libcache-0.2.1-py3-none-any.whl", develop = false }
-libqueue = { path = "../../libs/libqueue/dist/libqueue-0.3.1-py3-none-any.whl", develop = false }
-libutils = { path = "../../libs/libutils/dist/libutils-0.2.0-py3-none-any.whl", develop = false }
+libcache = { path = "../../libs/libcache/dist/libcache-0.3.0-py3-none-any.whl", develop = false }
+libcommon = { path = "../../libs/libcommon/dist/libcommon-0.3.1-py3-none-any.whl", develop = false }
+libqueue = { path = "../../libs/libqueue/dist/libqueue-0.4.1-py3-none-any.whl", develop = false }
 python = "3.9.6"
 starlette = "^0.16.0"
 starlette-prometheus = "^0.9.0"
 uvicorn = "^0.14.0"
 watchdog = { extras = ["watchmedo"], version = "^2.1.3" }
+environs = "^9.5.0"
 
 [tool.poetry.dev-dependencies]
 bandit = "^1.7.0"

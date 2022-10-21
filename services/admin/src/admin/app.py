@@ -3,8 +3,8 @@
 
 import uvicorn  # type: ignore
 from libcache.simple_cache import connect_to_cache
+from libcommon.logger import init_logger
 from libqueue.queue import connect_to_queue
-from libutils.logger import init_logger
 from starlette.applications import Starlette
 from starlette.middleware import Middleware
 from starlette.middleware.cors import CORSMiddleware
@@ -12,17 +12,7 @@ from starlette.middleware.gzip import GZipMiddleware
 from starlette.routing import Route
 from starlette_prometheus import PrometheusMiddleware
 
-from admin.config import (
-    APP_HOSTNAME,
-    APP_NUM_WORKERS,
-    APP_PORT,
-    EXTERNAL_AUTH_URL,
-    HF_ORGANIZATION,
-    LOG_LEVEL,
-    MONGO_CACHE_DATABASE,
-    MONGO_QUEUE_DATABASE,
-    MONGO_URL,
-)
+from admin.config import AppConfig, UvicornConfig
 from admin.prometheus import Prometheus
 from admin.routes.cache_reports import create_cache_reports_endpoint
 from admin.routes.healthcheck import healthcheck_endpoint
@@ -30,10 +20,11 @@ from admin.routes.pending_jobs import create_pending_jobs_endpoint
 
 
 def create_app() -> Starlette:
-    init_logger(log_level=LOG_LEVEL)
-    connect_to_cache(database=MONGO_CACHE_DATABASE, host=MONGO_URL)
-    connect_to_queue(database=MONGO_QUEUE_DATABASE, host=MONGO_URL)
-    prometheus = Prometheus()
+    app_config = AppConfig()
+    init_logger(app_config.common.log_level)
+    connect_to_cache(database=app_config.cache.mongo_database, host=app_config.cache.mongo_url)
+    connect_to_queue(database=app_config.queue.mongo_database, host=app_config.cache.mongo_url)
+    prometheus = Prometheus(prometheus_multiproc_dir=app_config.admin.prometheus_multiproc_dir)
 
     middleware = [
         Middleware(
@@ -48,21 +39,53 @@ def create_app() -> Starlette:
         # used by https://observablehq.com/@huggingface/quality-assessment-of-datasets-loading
         Route(
             "/cache-reports/features",
-            endpoint=create_cache_reports_endpoint("features", EXTERNAL_AUTH_URL, HF_ORGANIZATION),
+            endpoint=create_cache_reports_endpoint(
+                endpoint="features",
+                cache_reports_num_results=app_config.admin.cache_reports_num_results,
+                max_age=app_config.admin.max_age,
+                external_auth_url=app_config.admin.external_auth_url,
+                organization=app_config.admin.hf_organization,
+            ),
         ),
         Route(
             "/cache-reports/first-rows",
-            endpoint=create_cache_reports_endpoint("first-rows", EXTERNAL_AUTH_URL, HF_ORGANIZATION),
+            endpoint=create_cache_reports_endpoint(
+                endpoint="first-rows",
+                cache_reports_num_results=app_config.admin.cache_reports_num_results,
+                max_age=app_config.admin.max_age,
+                external_auth_url=app_config.admin.external_auth_url,
+                organization=app_config.admin.hf_organization,
+            ),
         ),
         Route(
             "/cache-reports/splits",
-            endpoint=create_cache_reports_endpoint("splits", EXTERNAL_AUTH_URL, HF_ORGANIZATION),
+            endpoint=create_cache_reports_endpoint(
+                endpoint="splits",
+                cache_reports_num_results=app_config.admin.cache_reports_num_results,
+                max_age=app_config.admin.max_age,
+                external_auth_url=app_config.admin.external_auth_url,
+                organization=app_config.admin.hf_organization,
+            ),
         ),
         # used in a browser tab to monitor the queue
-        Route("/pending-jobs", endpoint=create_pending_jobs_endpoint(EXTERNAL_AUTH_URL, HF_ORGANIZATION)),
+        Route(
+            "/pending-jobs",
+            endpoint=create_pending_jobs_endpoint(
+                max_age=app_config.admin.max_age,
+                external_auth_url=app_config.admin.external_auth_url,
+                organization=app_config.admin.hf_organization,
+            ),
+        ),
     ]
     return Starlette(routes=routes, middleware=middleware)
 
 
 def start() -> None:
-    uvicorn.run("app:create_app", host=APP_HOSTNAME, port=APP_PORT, factory=True, workers=APP_NUM_WORKERS)
+    uvicorn_config = UvicornConfig()
+    uvicorn.run(
+        "app:create_app",
+        host=uvicorn_config.hostname,
+        port=uvicorn_config.port,
+        factory=True,
+        workers=uvicorn_config.num_workers,
+    )

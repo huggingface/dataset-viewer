@@ -29,7 +29,7 @@ To install a single library (in [libs](./libs)) or service (in [services](./serv
 If you use pyenv:
 
 ```bash
-cd libs/libutils/
+cd libs/libcommon/
 pyenv install 3.9.6
 pyenv local 3.9.6
 poetry env use python3.9
@@ -47,7 +47,7 @@ If you use VSCode, it might be useful to use the ["monorepo" workspace](./.vscod
 
 ## Architecture
 
-The repository is structured as a monorepo, with Python applications in [services/](./services/) and Python libraries in [libs/](./libs/).
+The repository is structured as a monorepo, with Python applications in [services/](./services/) and [workers/](./workers/), and Python libraries in [libs/](./libs/).
 
 If you have access to the internal HF notion, see https://www.notion.so/huggingface2/Datasets-server-464848da2a984e999c540a4aa7f0ece5.
 
@@ -55,7 +55,7 @@ The application is distributed in several components.
 
 [api](./services/api) is a web server that exposes the [API endpoints](https://huggingface.co/docs/datasets-server). Apart from some endpoints (`valid`, `is-valid`), all the responses are served from pre-computed responses. That's the main point of this project: generating these responses takes time, and the API server provides this service to the users.
 
-The precomputed responses are stored in a Mongo database called "cache" (see [libcache](./libs/libcache)). They are computed by workers ([worker](./services/worker)) which take their jobs from a job queue stored in a Mongo database called "queue" (see [libqueue](./libs/libqueue)), and store the results (error or valid response) into the "cache".
+The precomputed responses are stored in a Mongo database called "cache" (see [libcache](./libs/libcache)). They are computed by [workers](./workers) which take their jobs from a job queue stored in a Mongo database called "queue" (see [libqueue](./libs/libqueue)), and store the results (error or valid response) into the "cache".
 
 The API service exposes the `/webhook` endpoint which is called by the Hub on every creation, update or deletion of a dataset on the Hub. On deletion, the cached responses are deleted. On creation or update, a new job is appended in the "queue" database.
 
@@ -64,7 +64,7 @@ Note that two job queues exist:
 - `splits`: the job is to refresh a dataset, namely to get the list of [config](https://huggingface.co/docs/datasets/v2.1.0/en/load_hub#select-a-configuration) and [split](https://huggingface.co/docs/datasets/v2.1.0/en/load_hub#select-a-split) names, then to create a new job for every split
 - `first-rows`: the job is to get the columns and the first 100 rows of the split
 
-Note also that the workers create local files when the dataset contains images or audios. A shared directory (`ASSETS_DIRECTORY`) must therefore be provisioned with sufficient space for the generated files. The `/first-rows` endpoint responses contain URLs to these files, served by the API under the `/assets/` endpoint.
+Note also that the workers create local files when the dataset contains images or audios. A shared directory (`COMMON_ASSETS_DIRECTORY`) must therefore be provisioned with sufficient space for the generated files. The `/first-rows` endpoint responses contain URLs to these files, served by the API under the `/assets/` endpoint.
 
 Hence, the working application has:
 

@@ -1,11 +1,13 @@
 {
   "dockerImage": {
-    "admin": "huggingface/datasets-server-services-admin:sha-db1a233",
-    "api": "huggingface/datasets-server-services-api:sha-db1a233",
     "reverseProxy": "docker.io/nginx:1.20",
-    "worker": {
-      "splits": "huggingface/datasets-server-workers-splits:sha-68b31e3",
-      "firstRows": "huggingface/datasets-server-workers-first_rows:sha-f7cfa4a"
+    "services": {
+      "admin": "huggingface/datasets-server-services-admin:sha-ccfbc0c",
+      "api": "huggingface/datasets-server-services-api:sha-ccfbc0c",
+    },
+    "workers": {
+      "splits": "huggingface/datasets-server-workers-splits:sha-ccfbc0c",
+      "firstRows": "huggingface/datasets-server-workers-first_rows:sha-ccfbc0c"
     }
   }
 }

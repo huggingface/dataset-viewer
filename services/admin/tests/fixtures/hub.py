@@ -101,6 +101,11 @@ def hf_api():
 
 
 @pytest.fixture(scope="session")
+def hf_endpoint() -> str:
+    return CI_HUB_ENDPOINT
+
+
+@pytest.fixture(scope="session")
 def hf_token() -> str:
     return CI_HUB_USER_API_TOKEN
 

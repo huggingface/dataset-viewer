@@ -1,22 +1,38 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2022 The HuggingFace Authors.
 
-mongodb:
-  enabled: true
+# --- common parameters ---
+
+hostname: "datasets-server.us.dev.moon.huggingface.tech"
+
+secrets:
+  hfToken: datasets-server-hf-token
+  mongoUrl: false
 
 storage:
   nfs:
     path: "/fsx"
     server: "svm-08a37cf73026f0b5c.fs-097afa9688029b62a.fsx.us-east-1.amazonaws.com"
 
-secrets:
-  hfToken: datasets-server-hf-token
-  mongoUrl: false
-
 monitoring:
   enabled: false
 
-apiDomain: "datasets-server.us.dev.moon.huggingface.tech"
+mongodb:
+  enabled: true
+
+common:
+  # Log level
+  logLevel: "DEBUG"
+
+# --- reverse proxy ---
+
+reverseProxy:
+  replicas: 1
+  resources:
+    requests:
+      cpu: 0.01
+    limits:
+      cpu: 1
 
 ingress:
   annotations:
@@ -30,9 +46,10 @@ ingress:
     alb.ingress.kubernetes.io/group.name: "datasets-server"
     kubernetes.io/ingress.class: "alb"
 
-reverseProxy:
-  replicas: 1
+# --- services ---
 
+admin:
+  replicas: 1
   resources:
     requests:
       cpu: 0.01
@@ -41,35 +58,24 @@ reverseProxy:
 
 api:
   replicas: 1
-
   resources:
     requests:
       cpu: 0.01
     limits:
       cpu: 1
 
-worker:
-  splits:
-    replicas: 1
+# --- workers ---
 
-    resources:
-      requests:
-        cpu: 0.01
-      limits:
-        cpu: 1
-
-  firstRows:
-    replicas: 1
-
-    resources:
-      requests:
-        cpu: 0.01
-      limits:
-        cpu: 1
-
-admin:
+splits:
   replicas: 1
+  resources:
+    requests:
+      cpu: 0.01
+    limits:
+      cpu: 1
 
+firstRows:
+  replicas: 1
   resources:
     requests:
       cpu: 0.01

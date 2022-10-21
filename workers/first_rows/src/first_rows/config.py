@@ -1,53 +1,49 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2022 The HuggingFace Authors.
 
-import os
-
 import datasets.config
 from datasets.utils.logging import log_levels, set_verbosity
-from libutils.utils import get_int_value, get_str_or_none_value, get_str_value
+from environs import Env
+from libcache.config import CacheConfig
+from libcommon.config import CommonConfig
+from libqueue.config import QueueConfig
 
-from first_rows.constants import (
-    DEFAULT_ASSETS_BASE_URL,
-    DEFAULT_ASSETS_DIRECTORY,
-    DEFAULT_HF_ENDPOINT,
-    DEFAULT_HF_TOKEN,
-    DEFAULT_LOG_LEVEL,
-    DEFAULT_MAX_JOBS_PER_DATASET,
-    DEFAULT_MAX_LOAD_PCT,
-    DEFAULT_MAX_MEMORY_PCT,
-    DEFAULT_MAX_SIZE_FALLBACK,
-    DEFAULT_MIN_CELL_BYTES,
-    DEFAULT_MONGO_CACHE_DATABASE,
-    DEFAULT_MONGO_QUEUE_DATABASE,
-    DEFAULT_MONGO_URL,
-    DEFAULT_ROWS_MAX_BYTES,
-    DEFAULT_ROWS_MAX_NUMBER,
-    DEFAULT_ROWS_MIN_NUMBER,
-    DEFAULT_WORKER_SLEEP_SECONDS,
-)
 
-ASSETS_BASE_URL = get_str_value(d=os.environ, key="ASSETS_BASE_URL", default=DEFAULT_ASSETS_BASE_URL)
-ASSETS_DIRECTORY = get_str_or_none_value(d=os.environ, key="ASSETS_DIRECTORY", default=DEFAULT_ASSETS_DIRECTORY)
-HF_ENDPOINT = get_str_value(d=os.environ, key="HF_ENDPOINT", default=DEFAULT_HF_ENDPOINT)
-HF_TOKEN = get_str_or_none_value(d=os.environ, key="HF_TOKEN", default=DEFAULT_HF_TOKEN)
-LOG_LEVEL = get_str_value(d=os.environ, key="LOG_LEVEL", default=DEFAULT_LOG_LEVEL)
-MAX_JOBS_PER_DATASET = get_int_value(os.environ, "MAX_JOBS_PER_DATASET", DEFAULT_MAX_JOBS_PER_DATASET)
-MAX_LOAD_PCT = get_int_value(os.environ, "MAX_LOAD_PCT", DEFAULT_MAX_LOAD_PCT)
-MAX_MEMORY_PCT = get_int_value(os.environ, "MAX_MEMORY_PCT", DEFAULT_MAX_MEMORY_PCT)
-MAX_SIZE_FALLBACK = get_int_value(os.environ, "MAX_SIZE_FALLBACK", DEFAULT_MAX_SIZE_FALLBACK)
-MIN_CELL_BYTES = get_int_value(os.environ, "MIN_CELL_BYTES", DEFAULT_MIN_CELL_BYTES)
-MONGO_CACHE_DATABASE = get_str_value(d=os.environ, key="MONGO_CACHE_DATABASE", default=DEFAULT_MONGO_CACHE_DATABASE)
-MONGO_QUEUE_DATABASE = get_str_value(d=os.environ, key="MONGO_QUEUE_DATABASE", default=DEFAULT_MONGO_QUEUE_DATABASE)
-MONGO_URL = get_str_value(d=os.environ, key="MONGO_URL", default=DEFAULT_MONGO_URL)
-ROWS_MAX_BYTES = get_int_value(os.environ, "ROWS_MAX_BYTES", DEFAULT_ROWS_MAX_BYTES)
-ROWS_MAX_NUMBER = get_int_value(os.environ, "ROWS_MAX_NUMBER", DEFAULT_ROWS_MAX_NUMBER)
-ROWS_MIN_NUMBER = get_int_value(os.environ, "ROWS_MIN_NUMBER", DEFAULT_ROWS_MIN_NUMBER)
-WORKER_SLEEP_SECONDS = get_int_value(os.environ, "WORKER_SLEEP_SECONDS", DEFAULT_WORKER_SLEEP_SECONDS)
+class FirstRowsConfig:
+    fallback_max_dataset_size: int
+    max_bytes: int
+    max_number: int
+    min_cell_bytes: int
+    min_number: int
 
-# Ensure the datasets library uses the expected HuggingFace endpoint
-datasets.config.HF_ENDPOINT = HF_ENDPOINT
-# Don't increase the datasets download counts on huggingface.co
-datasets.config.HF_UPDATE_DOWNLOAD_COUNTS = False
-# Set logs from the datasets library to the least verbose
-set_verbosity(log_levels["critical"])
+    def __init__(self):
+        env = Env(expand_vars=True)
+        with env.prefixed("FIRST_ROWS_"):
+            self.fallback_max_dataset_size = env.int(name="FALLBACK_MAX_DATASET_SIZE", default=100_000_000)
+            self.max_bytes = env.int(name="MAX_BYTES", default=1_000_000)
+            self.max_number = env.int(name="MAX_NUMBER", default=100)
+            self.min_cell_bytes = env.int(name="CELL_MIN_BYTES", default=100)
+            self.min_number = env.int(name="MIN_NUMBER", default=10)
+
+
+class WorkerConfig:
+    cache: CacheConfig
+    common: CommonConfig
+    first_rows: FirstRowsConfig
+    queue: QueueConfig
+
+    def __init__(self):
+        self.cache = CacheConfig()
+        self.common = CommonConfig()
+        self.first_rows = FirstRowsConfig()
+        self.queue = QueueConfig()
+        self.setup()
+
+    def setup(self):
+        # Ensure the datasets library uses the expected HuggingFace endpoint
+        datasets.config.HF_ENDPOINT = self.common.hf_endpoint
+        datasets.config.HUB_DATASETS_URL = self.common.hf_endpoint + "/datasets/{repo_id}/resolve/{revision}/{path}"
+        # Don't increase the datasets download counts on huggingface.co
+        datasets.config.HF_UPDATE_DOWNLOAD_COUNTS = False
+        # Set logs from the datasets library to the least verbose
+        set_verbosity(log_levels["critical"])

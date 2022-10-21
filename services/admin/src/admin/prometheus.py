@@ -1,8 +1,7 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2022 The HuggingFace Authors.
 
-import os
-from typing import Dict
+from typing import Dict, Optional
 
 from libcache.simple_cache import (
     get_first_rows_responses_count_by_status_and_error_code,
@@ -26,18 +25,22 @@ from admin.utils import JobType
 
 
 class Prometheus:
+    first_rows_queue: Queue
     metrics: Dict[str, Gauge] = {}
+    split_queue: Queue
+    prometheus_multiproc_dir: Optional[str]
 
-    def __init__(self):
+    def __init__(self, prometheus_multiproc_dir: Optional[str]):
+        self.prometheus_multiproc_dir = prometheus_multiproc_dir
         self.initMetrics()
         self.split_queue = Queue(type=JobType.SPLITS.value)
         self.first_rows_queue = Queue(type=JobType.FIRST_ROWS.value)
 
     def getRegistry(self) -> CollectorRegistry:
         # taken from https://github.com/perdy/starlette-prometheus/blob/master/starlette_prometheus/view.py
-        if "PROMETHEUS_MULTIPROC_DIR" in os.environ:
+        if self.prometheus_multiproc_dir is not None:
             registry = CollectorRegistry()
-            MultiProcessCollector(registry)
+            MultiProcessCollector(registry=registry, path=self.prometheus_multiproc_dir)
         else:
             registry = REGISTRY
         return registry

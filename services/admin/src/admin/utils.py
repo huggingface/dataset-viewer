@@ -5,12 +5,10 @@ from enum import Enum
 from http import HTTPStatus
 from typing import Any, Callable, Coroutine, Literal, Optional
 
-from libutils.exceptions import CustomError
-from libutils.utils import orjson_dumps
+from libcommon.exceptions import CustomError
+from libcommon.utils import orjson_dumps
 from starlette.requests import Request
 from starlette.responses import JSONResponse, Response
-
-from admin.config import MAX_AGE_SHORT_SECONDS
 
 AdminErrorCode = Literal[
     "InvalidParameter", "UnexpectedError", "ExternalUnauthenticatedError", "ExternalAuthenticatedError"
@@ -78,18 +76,20 @@ def get_json_response(
     return OrjsonResponse(content, status_code=status_code.value, headers=headers)
 
 
-def get_json_ok_response(content: Any) -> Response:
-    return get_json_response(content, max_age=MAX_AGE_SHORT_SECONDS)
+def get_json_ok_response(content: Any, max_age: int) -> Response:
+    return get_json_response(content=content, max_age=max_age)
 
 
 def get_json_error_response(
-    content: Any, status_code: HTTPStatus = HTTPStatus.OK, error_code: Optional[str] = None
+    content: Any, max_age: int, status_code: HTTPStatus = HTTPStatus.OK, error_code: Optional[str] = None
 ) -> Response:
-    return get_json_response(content, status_code=status_code, max_age=MAX_AGE_SHORT_SECONDS, error_code=error_code)
+    return get_json_response(content=content, status_code=status_code, max_age=max_age, error_code=error_code)
 
 
-def get_json_admin_error_response(error: AdminCustomError) -> Response:
-    return get_json_error_response(error.as_response(), error.status_code, error.code)
+def get_json_admin_error_response(error: AdminCustomError, max_age: int) -> Response:
+    return get_json_error_response(
+        content=error.as_response(), status_code=error.status_code, max_age=max_age, error_code=error.code
+    )
 
 
 Endpoint = Callable[[Request], Coroutine[Any, Any, Response]]

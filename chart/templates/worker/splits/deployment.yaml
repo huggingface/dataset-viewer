@@ -5,22 +5,22 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   labels:
-    {{ include "labels.worker.splits" . | nindent 4 }}
+    {{ include "labels.splits" . | nindent 4 }}
   name: "{{ include "release" . }}-worker-splits"
   namespace: {{ .Release.Namespace }}
 spec:
   progressDeadlineSeconds: 600
-  replicas: {{ .Values.worker.splits.replicas }}
+  replicas: {{ .Values.splits.replicas }}
   revisionHistoryLimit: 10
   selector:
     matchLabels:
-      {{ include "labels.worker.splits" . | nindent 6 }}
+      {{ include "labels.splits" . | nindent 6 }}
   strategy:
     type: Recreate
   template:
     metadata:
       labels:
-        {{ include "labels.worker.splits" . | nindent 8 }}
+        {{ include "labels.splits" . | nindent 8 }}
     spec:
       initContainers:
         {{ include "initContainerCache" . | nindent 8 }}
@@ -28,9 +28,9 @@ spec:
       containers:
         {{ include "containerWorkerSplits" . | nindent 8 }}
       nodeSelector:
-        {{ toYaml .Values.worker.splits.nodeSelector | nindent 8 }}
+        {{ toYaml .Values.splits.nodeSelector | nindent 8 }}
       tolerations:
-        {{ toYaml .Values.worker.splits.tolerations | nindent 8 }}
+        {{ toYaml .Values.splits.tolerations | nindent 8 }}
       volumes:
         - name: nfs
           nfs:

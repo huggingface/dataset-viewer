@@ -12,6 +12,7 @@ from libcache.simple_cache import (
 )
 from libqueue.worker import Worker
 
+from splits.config import WorkerConfig
 from splits.response import get_splits_response
 from splits.utils import (
     DatasetNotFoundError,
@@ -24,26 +25,12 @@ logger = logging.getLogger(__name__)
 
 
 class SplitsWorker(Worker):
-    hf_endpoint: str
-    hf_token: Optional[str]
+    config: WorkerConfig
 
-    def __init__(
-        self,
-        hf_endpoint: str,
-        hf_token: Optional[str] = None,
-        max_jobs_per_dataset: Optional[int] = None,
-        sleep_seconds: Optional[int] = None,
-        max_memory_pct: Optional[int] = None,
-        max_load_pct: Optional[int] = None,
-    ):
-        super().__init__(
-            sleep_seconds=sleep_seconds,
-            max_memory_pct=max_memory_pct,
-            max_load_pct=max_load_pct,
-        )
-        self._queues = Queues(max_jobs_per_dataset=max_jobs_per_dataset)
-        self.hf_endpoint = hf_endpoint
-        self.hf_token = hf_token
+    def __init__(self, worker_config: WorkerConfig):
+        super().__init__(queue_config=worker_config.queue)
+        self._queues = Queues(max_jobs_per_dataset=worker_config.queue.max_jobs_per_dataset)
+        self.config = worker_config
 
     @property
     def queue(self):
@@ -56,15 +43,17 @@ class SplitsWorker(Worker):
         split: Optional[str] = None,
     ) -> bool:
         try:
-            response = get_splits_response(dataset, self.hf_endpoint, self.hf_token)
-            upsert_splits_response(dataset, dict(response), HTTPStatus.OK)
+            response = get_splits_response(
+                dataset=dataset, hf_endpoint=self.config.common.hf_endpoint, hf_token=self.config.common.hf_token
+            )
+            upsert_splits_response(dataset_name=dataset, response=dict(response), http_status=HTTPStatus.OK)
             logger.debug(f"dataset={dataset} is valid, cache updated")
 
-            splits_in_cache = get_dataset_first_rows_response_splits(dataset)
+            splits_in_cache = get_dataset_first_rows_response_splits(dataset_name=dataset)
             new_splits = [(s["dataset"], s["config"], s["split"]) for s in response["splits"]]
             splits_to_delete = [s for s in splits_in_cache if s not in new_splits]
             for d, c, s in splits_to_delete:
-                delete_first_rows_responses(d, c, s)
+                delete_first_rows_responses(dataset_name=d, config_name=c, split_name=s)
             logger.debug(
                 f"{len(splits_to_delete)} 'first-rows' responses deleted from the cache for obsolete splits of"
                 f" dataset={dataset}"
@@ -78,22 +67,22 @@ class SplitsWorker(Worker):
             return False
         except WorkerCustomError as err:
             upsert_splits_response(
-                dataset,
-                dict(err.as_response()),
-                err.status_code,
-                err.code,
-                dict(err.as_response_with_cause()),
+                dataset_name=dataset,
+                response=dict(err.as_response()),
+                http_status=err.status_code,
+                error_code=err.code,
+                details=dict(err.as_response_with_cause()),
             )
             logger.debug(f"splits response for dataset={dataset} had an error, cache updated")
             return False
         except Exception as err:
             e = UnexpectedError(str(err), err)
             upsert_splits_response(
-                dataset,
-                dict(e.as_response()),
-                e.status_code,
-                e.code,
-                dict(e.as_response_with_cause()),
+                dataset_name=dataset,
+                response=dict(e.as_response()),
+                http_status=e.status_code,
+                error_code=e.code,
+                details=dict(e.as_response_with_cause()),
             )
             logger.debug(f"splits response for dataset={dataset} had a server error, cache updated")
             return False

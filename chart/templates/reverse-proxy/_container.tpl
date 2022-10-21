@@ -2,12 +2,12 @@
 # Copyright 2022 The HuggingFace Authors.
 
 {{- define "containerReverseProxy" -}}
-- name: "{{ include "name" . }}-reverse-proxy"    
+- name: "{{ include "name" . }}-reverse-proxy"
   image: {{ .Values.dockerImage.reverseProxy }}
   imagePullPolicy: IfNotPresent
   env:
   - name: ASSETS_DIRECTORY
-    value: {{ .Values.reverseProxy.assetsDirectory | quote }}
+    value: {{ .Values.cache.assetsDirectory | quote }}
   - name: HOST
     value: {{ .Values.reverseProxy.host | quote }}
   - name: PORT
@@ -29,7 +29,7 @@
     mountPath: /static-files
     mountPropagation: None
     readOnly: true
-  - mountPath: {{ .Values.reverseProxy.assetsDirectory | quote }}
+  - mountPath: {{ .Values.cache.assetsDirectory | quote }}
     mountPropagation: None
     name: nfs
     subPath: "{{ include "assets.subpath" . }}"

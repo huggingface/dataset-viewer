@@ -1,14 +1,14 @@
 [tool.poetry]
 authors = ["Sylvain Lesage <sylvain.lesage@huggingface.co>"]
-description = "Library for utils"
-name = "libutils"
-version = "0.2.0"
+description = "Library for utils, common to all the services and workers"
+name = "libcommon"
+version = "0.3.1"
 license = "Apache-2.0"
 
 [tool.poetry.dependencies]
+environs = "^9.5.0"
 orjson = "^3.6.4"
 python = "3.9.6"
-starlette = "^0.16.0"
 
 [tool.poetry.dev-dependencies]
 bandit = "^1.7.0"
@@ -29,7 +29,7 @@ requires = ["poetry-core>=1.0.0"]
 filterwarnings = ["ignore::DeprecationWarning"]
 
 [tool.coverage.run]
-source = ["libutils"]
+source = ["libcommon"]
 
 [tool.isort]
 profile = "black"

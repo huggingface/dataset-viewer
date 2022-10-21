@@ -1,7 +1,7 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2022 The HuggingFace Authors.
 
-from typing import Dict
+from typing import Dict, Optional, Type
 
 import pytest
 import responses
@@ -20,43 +20,45 @@ def test_no_auth_check() -> None:
 @responses.activate
 def test_unreachable_external_auth_check_service() -> None:
     with pytest.raises(RuntimeError):
-        auth_check(external_auth_url="https://auth.check")
+        auth_check(external_auth_url="https://auth.check", organization="org")
 
 
 @responses.activate
-def test_external_auth_responses_without_request() -> None:
+@pytest.mark.parametrize(
+    "status,error",
+    [
+        (200, None),
+        (401, ExternalUnauthenticatedError),
+        (403, ExternalAuthenticatedError),
+        (404, ExternalAuthenticatedError),
+        (429, ValueError),
+    ],
+)
+def test_external_auth_responses_without_request(status: int, error: Optional[Type[Exception]]) -> None:
     url = "https://auth.check"
     body = '{"orgs": [{"name": "org1"}]}'
-    responses.add(responses.GET, url, status=200, body=body)
-    assert auth_check(external_auth_url=url, organization=None) is True
-
-    responses.add(responses.GET, url, status=401, body=body)
-    with pytest.raises(ExternalUnauthenticatedError):
-        auth_check(external_auth_url=url, organization=None)
-
-    responses.add(responses.GET, url, status=403, body=body)
-    with pytest.raises(ExternalAuthenticatedError):
-        auth_check(external_auth_url=url, organization=None)
-
-    responses.add(responses.GET, url, status=404, body=body)
-    with pytest.raises(ExternalAuthenticatedError):
-        auth_check(external_auth_url=url, organization=None)
-
-    responses.add(responses.GET, url, status=429, body=body)
-    with pytest.raises(ValueError):
-        auth_check(external_auth_url=url, organization=None)
+    responses.add(responses.GET, url, status=status, body=body)
+    if error is None:
+        assert auth_check(external_auth_url=url, organization="org1") is True
+    else:
+        with pytest.raises(error):
+            auth_check(external_auth_url=url, organization="org1")
 
 
 @responses.activate
-def test_org() -> None:
+@pytest.mark.parametrize(
+    "org,status,error",
+    [("org1", 200, None), ("org2", 403, ExternalAuthenticatedError)],
+)
+def test_org(org: str, status: int, error: Optional[Type[Exception]]) -> None:
     url = "https://auth.check"
     body = '{"orgs": [{"name": "org1"}]}'
-    responses.add(responses.GET, url, status=200, body=body)
-    assert auth_check(external_auth_url=url, organization="org1") is True
-
-    responses.add(responses.GET, url, status=403, body=body)
-    with pytest.raises(ExternalAuthenticatedError):
-        auth_check(external_auth_url=url, organization="org2")
+    responses.add(responses.GET, url, status=status, body=body)
+    if error is None:
+        assert auth_check(external_auth_url=url, organization=org) is True
+    else:
+        with pytest.raises(error):
+            auth_check(external_auth_url=url, organization=org)
 
 
 def create_request(headers: Dict[str, str]) -> Request:

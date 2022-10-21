@@ -1,40 +1,56 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2022 The HuggingFace Authors.
 
-import os
+from typing import Optional
 
-from libutils.utils import get_int_value, get_str_or_none_value, get_str_value
+from environs import Env
+from libcache.config import CacheConfig
+from libcommon.config import CommonConfig
+from libqueue.config import QueueConfig
 
-from admin.constants import (
-    DEFAULT_APP_HOSTNAME,
-    DEFAULT_APP_NUM_WORKERS,
-    DEFAULT_APP_PORT,
-    DEFAULT_ASSETS_DIRECTORY,
-    DEFAULT_CACHE_REPORTS_NUM_RESULTS,
-    DEFAULT_HF_ENDPOINT,
-    DEFAULT_HF_ORGANIZATION,
-    DEFAULT_HF_WHOAMI_PATH,
-    DEFAULT_LOG_LEVEL,
-    DEFAULT_MAX_AGE_SHORT_SECONDS,
-    DEFAULT_MONGO_CACHE_DATABASE,
-    DEFAULT_MONGO_QUEUE_DATABASE,
-    DEFAULT_MONGO_URL,
-)
 
-APP_HOSTNAME = get_str_value(d=os.environ, key="APP_HOSTNAME", default=DEFAULT_APP_HOSTNAME)
-APP_NUM_WORKERS = get_int_value(d=os.environ, key="APP_NUM_WORKERS", default=DEFAULT_APP_NUM_WORKERS)
-APP_PORT = get_int_value(d=os.environ, key="APP_PORT", default=DEFAULT_APP_PORT)
-ASSETS_DIRECTORY = get_str_or_none_value(d=os.environ, key="ASSETS_DIRECTORY", default=DEFAULT_ASSETS_DIRECTORY)
-CACHE_REPORTS_NUM_RESULTS = get_int_value(
-    d=os.environ, key="CACHE_REPORTS_NUM_RESULTS", default=DEFAULT_CACHE_REPORTS_NUM_RESULTS
-)
-HF_ENDPOINT = get_str_value(d=os.environ, key="HF_ENDPOINT", default=DEFAULT_HF_ENDPOINT)
-HF_ORGANIZATION = get_str_or_none_value(d=os.environ, key="HF_ORGANIZATION", default=DEFAULT_HF_ORGANIZATION)
-HF_WHOAMI_PATH = get_str_or_none_value(d=os.environ, key="HF_WHOAMI_PATH", default=DEFAULT_HF_WHOAMI_PATH)
-LOG_LEVEL = get_str_value(d=os.environ, key="LOG_LEVEL", default=DEFAULT_LOG_LEVEL)
-MAX_AGE_SHORT_SECONDS = get_int_value(d=os.environ, key="MAX_AGE_SHORT_SECONDS", default=DEFAULT_MAX_AGE_SHORT_SECONDS)
-MONGO_CACHE_DATABASE = get_str_value(d=os.environ, key="MONGO_CACHE_DATABASE", default=DEFAULT_MONGO_CACHE_DATABASE)
-MONGO_QUEUE_DATABASE = get_str_value(d=os.environ, key="MONGO_QUEUE_DATABASE", default=DEFAULT_MONGO_QUEUE_DATABASE)
-MONGO_URL = get_str_value(d=os.environ, key="MONGO_URL", default=DEFAULT_MONGO_URL)
+class UvicornConfig:
+    hostname: str
+    num_workers: int
+    port: int
 
-EXTERNAL_AUTH_URL = None if HF_WHOAMI_PATH is None else f"{HF_ENDPOINT}{HF_WHOAMI_PATH}"
+    def __init__(self):
+        env = Env(expand_vars=True)
+        with env.prefixed("ADMIN_UVICORN_"):
+            self.hostname = env.str(name="HOSTNAME", default="localhost")
+            self.num_workers = env.int(name="NUM_WORKERS", default=2)
+            self.port = env.int(name="PORT", default=8000)
+
+
+class AdminConfig:
+    cache_reports_num_results: int
+    external_auth_url: str
+    hf_organization: Optional[str]
+    hf_whoami_path: str
+    max_age: int
+    prometheus_multiproc_dir: Optional[str]
+
+    def __init__(self, hf_endpoint: str):
+        env = Env(expand_vars=True)
+        with env.prefixed("ADMIN_"):
+            hf_organization = env.str(name="HF_ORGANIZATION", default="")
+            self.hf_organization = None if hf_organization == "" else hf_organization
+            self.cache_reports_num_results = env.int(name="CACHE_REPORTS_NUM_RESULTS", default=100)
+            self.hf_whoami_path = env.str(name="HF_WHOAMI_PATH", default="/api/whoami-v2")
+            self.max_age = env.int(name="MAX_AGE", default=10)  # 10 seconds
+            prometheus_multiproc_dir = env.str(name="PROMETHEUS_MULTIPROC_DIR", default="")
+            self.prometheus_multiproc_dir = None if prometheus_multiproc_dir == "" else prometheus_multiproc_dir
+            self.external_auth_url = None if self.hf_whoami_path is None else f"{hf_endpoint}{self.hf_whoami_path}"
+
+
+class AppConfig:
+    admin: AdminConfig
+    cache: CacheConfig
+    common: CommonConfig
+    queue: QueueConfig
+
+    def __init__(self):
+        self.cache = CacheConfig()
+        self.common = CommonConfig()
+        self.queue = QueueConfig()
+        self.admin = AdminConfig(hf_endpoint=self.common.hf_endpoint)

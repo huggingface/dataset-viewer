@@ -7,6 +7,7 @@ from time import process_time
 import pytest
 from pymongo.errors import DocumentTooLarge
 
+from libcache.config import CacheConfig
 from libcache.simple_cache import (
     DoesNotExist,
     InvalidCursor,
@@ -31,18 +32,10 @@ from libcache.simple_cache import (
     upsert_splits_response,
 )
 
-from ._utils import MONGO_CACHE_DATABASE, MONGO_URL
-
 
 @pytest.fixture(autouse=True, scope="module")
-def safe_guard() -> None:
-    if "test" not in MONGO_CACHE_DATABASE:
-        raise ValueError("Test must be launched on a test mongo database")
-
-
-@pytest.fixture(autouse=True, scope="module")
-def client() -> None:
-    connect_to_cache(database=MONGO_CACHE_DATABASE, host=MONGO_URL)
+def client(cache_config: CacheConfig) -> None:
+    connect_to_cache(database=cache_config.mongo_database, host=cache_config.mongo_url)
 
 
 @pytest.fixture(autouse=True)

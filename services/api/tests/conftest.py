@@ -1,29 +1,49 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2022 The HuggingFace Authors.
 
-import os
+from pytest import MonkeyPatch, fixture
 
-import pytest
-
-port = 8888
-host = "localhost"
-HF_ENDPOINT = f"http://{host}:{port}"
-HF_AUTH_PATH = "/api/datasets/%s/auth-check"
-
-os.environ["HF_ENDPOINT"] = HF_ENDPOINT
-os.environ["HF_AUTH_PATH"] = HF_AUTH_PATH
+from api.config import AppConfig, UvicornConfig
 
 
-@pytest.fixture(scope="session")
-def httpserver_listen_address():
-    return (host, 8888)
+# see https://github.com/pytest-dev/pytest/issues/363#issuecomment-406536200
+@fixture(scope="session")
+def monkeypatch_session():
+    monkeypatch_session = MonkeyPatch()
+    monkeypatch_session.setenv("CACHE_MONGO_DATABASE", "datasets_server_cache_test")
+    monkeypatch_session.setenv("QUEUE_MONGO_DATABASE", "datasets_server_queue_test")
+    hostname = "localhost"
+    port = "8888"
+    monkeypatch_session.setenv("API_UVICORN_HOSTNAME", hostname)
+    monkeypatch_session.setenv("API_UVICORN_PORT", port)
+    monkeypatch_session.setenv("COMMON_HF_ENDPOINT", f"http://{hostname}:{port}")
+    yield monkeypatch_session
+    monkeypatch_session.undo()
 
 
-@pytest.fixture(scope="session")
-def hf_endpoint():
-    return HF_ENDPOINT
+@fixture(scope="session")
+def app_config(monkeypatch_session: MonkeyPatch) -> AppConfig:
+    app_config = AppConfig()
+    if "test" not in app_config.cache.mongo_database or "test" not in app_config.queue.mongo_database:
+        raise ValueError("Test must be launched on a test mongo database")
+    return app_config
 
 
-@pytest.fixture(scope="session")
-def hf_auth_path():
-    return HF_AUTH_PATH
+@fixture(scope="session")
+def uvicorn_config(monkeypatch_session: MonkeyPatch):
+    return UvicornConfig()
+
+
+@fixture(scope="session")
+def httpserver_listen_address(uvicorn_config: UvicornConfig):
+    return (uvicorn_config.hostname, uvicorn_config.port)
+
+
+@fixture(scope="session")
+def hf_endpoint(app_config: AppConfig):
+    return app_config.common.hf_endpoint
+
+
+@fixture(scope="session")
+def hf_auth_path(app_config: AppConfig):
+    return app_config.api.hf_auth_path

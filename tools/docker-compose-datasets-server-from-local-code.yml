@@ -1,97 +1,147 @@
 version: "3.9"
 services:
   reverse-proxy:
-    image: nginx:1.20
+    image: ${IMAGE_REVERSE_PROXY?IMAGE_REVERSE_PROXY env var must be provided}
     volumes:
       - ../chart/nginx-templates/:/etc/nginx/templates:ro
-      - reverse-proxy-cache:/nginx-cache
-      - assets:/assets:ro
+      - assets:${CACHE_ASSETS_DIRECTORY-/assets}:ro
       - ../chart/static-files/openapi.json:/static-files/openapi.json:ro
     ports:
       - "${PORT_REVERSE_PROXY-8000}:80"
     environment:
-      - ASSETS_DIRECTORY=/assets
-      - CACHE_DIRECTORY=/nginx-cache
-      - CACHE_INACTIVE=24h
-      - CACHE_MAX_SIZE=1g
-      - CACHE_ZONE_SIZE=50m
-      - HOST=localhost
-      - PORT=80
-      - URL_ADMIN=http://admin:8081
-      - URL_API=http://api:8080
+      ASSETS_DIRECTORY: ${CACHE_ASSETS_DIRECTORY-/assets}
+      HOST: localhost
+      PORT: 80
+      URL_ADMIN: http://admin:${ADMIN_UVICORN_PORT-8081}
+      URL_API: http://api:${API_UVICORN_PORT-8080}
     depends_on:
-      api:
-        condition: service_started
+      - api
+      - admin
+  admin:
+    build:
+      context: ..
+      dockerfile: services/admin/Dockerfile
+    environment:
+      CACHE_ASSETS_DIRECTORY: ${CACHE_ASSETS_DIRECTORY-/assets}
+      CACHE_MONGO_URL: ${CACHE_MONGO_URL-mongodb://mongodb} # use mongo container by default
+      CACHE_MONGO_DATABASE: ${CACHE_MONGO_DATABASE-datasets_server_cache}
+      QUEUE_MAX_JOBS_PER_DATASET: ${QUEUE_MAX_JOBS_PER_DATASET-1}
+      QUEUE_MAX_LOAD_PCT: ${QUEUE_MAX_LOAD_PCT-70}
+      QUEUE_MAX_MEMORY_PCT: ${QUEUE_MAX_MEMORY_PCT-80}
+      QUEUE_MONGO_URL: ${QUEUE_MONGO_URL-mongodb://mongodb} # use mongo container by default
+      QUEUE_MONGO_DATABASE: ${QUEUE_MONGO_DATABASE-datasets_server_queue}
+      QUEUE_SLEEP_SECONDS: ${QUEUE_SLEEP_SECONDS-15}
+      COMMON_ASSETS_BASE_URL: "http://localhost:${PORT_REVERSE_PROXY-8000}/assets" # hard-coded to work with the reverse-proxy
+      COMMON_HF_ENDPOINT: ${COMMON_HF_ENDPOINT-https://huggingface.co}
+      COMMON_HF_TOKEN: ${COMMON_HF_TOKEN-}
+      COMMON_LOG_LEVEL: ${COMMON_LOG_LEVEL-INFO}
+      ADMIN_HF_ORGANIZATION: ${ADMIN_HF_ORGANIZATION-}
+      ADMIN_CACHE_REPORTS_NUM_RESULTS: ${ADMIN_CACHE_REPORTS_NUM_RESULTS-100}
+      ADMIN_HF_WHOAMI_PATH: ${ADMIN_HF_WHOAMI_PATH-/api/whoami-v2}
+      ADMIN_MAX_AGE: ${ADMIN_MAX_AGE-10}
+      ADMIN_PROMETHEUS_MULTIPROC_DIR: ${ADMIN_PROMETHEUS_MULTIPROC_DIR-}
+      ADMIN_UVICORN_HOSTNAME: 0.0.0.0 # required for docker-compose
+      ADMIN_UVICORN_NUM_WORKERS: ${ADMIN_UVICORN_NUM_WORKERS-2}
+      ADMIN_UVICORN_PORT: ${ADMIN_UVICORN_PORT-8081}
+    depends_on:
+      - mongodb
+    restart: always
+    ports:
+      # for debug
+      - ${ADMIN_UVICORN_PORT-8081}:${ADMIN_UVICORN_PORT-8081}
   api:
     build:
       context: ..
       dockerfile: services/api/Dockerfile
     volumes:
-      - assets:/assets:ro
+      - assets:${CACHE_ASSETS_DIRECTORY-/assets}:ro
     environment:
-      APP_HOSTNAME: 0.0.0.0
-      APP_NUM_WORKERS: 1
-      APP_PORT: 8080
-      ASSETS_DIRECTORY: "/assets"
-      HF_ENDPOINT: ${HF_ENDPOINT}
-      HF_TOKEN: ${HF_TOKEN}
-      MONGO_URL: "mongodb://mongodb"
+      CACHE_ASSETS_DIRECTORY: ${CACHE_ASSETS_DIRECTORY-/assets}
+      CACHE_MONGO_URL: ${CACHE_MONGO_URL-mongodb://mongodb} # use mongo container by default
+      CACHE_MONGO_DATABASE: ${CACHE_MONGO_DATABASE-datasets_server_cache}
+      QUEUE_MAX_JOBS_PER_DATASET: ${QUEUE_MAX_JOBS_PER_DATASET-1}
+      QUEUE_MAX_LOAD_PCT: ${QUEUE_MAX_LOAD_PCT-70}
+      QUEUE_MAX_MEMORY_PCT: ${QUEUE_MAX_MEMORY_PCT-80}
+      QUEUE_MONGO_URL: ${QUEUE_MONGO_URL-mongodb://mongodb} # use mongo container by default
+      QUEUE_MONGO_DATABASE: ${QUEUE_MONGO_DATABASE-datasets_server_queue}
+      QUEUE_SLEEP_SECONDS: ${QUEUE_SLEEP_SECONDS-15}
+      COMMON_ASSETS_BASE_URL: "http://localhost:${PORT_REVERSE_PROXY-8000}/assets" # hard-coded to work with the reverse-proxy
+      COMMON_HF_ENDPOINT: ${COMMON_HF_ENDPOINT-https://huggingface.co}
+      COMMON_HF_TOKEN: ${COMMON_HF_TOKEN-}
+      COMMON_LOG_LEVEL: ${COMMON_LOG_LEVEL-INFO}
+      API_HF_AUTH_PATH: ${API_HF_AUTH_PATH-/api/datasets/%s/auth-check}
+      API_MAX_AGE_LONG: ${API_MAX_AGE_LONG-120}
+      API_MAX_AGE_SHORT: ${API_MAX_AGE_SHORT-10}
+      API_PROMETHEUS_MULTIPROC_DIR: ${API_PROMETHEUS_MULTIPROC_DIR-}
+      API_UVICORN_HOSTNAME: 0.0.0.0 # required for docker-compose
+      API_UVICORN_NUM_WORKERS: ${API_UVICORN_NUM_WORKERS-2}
+      API_UVICORN_PORT: ${API_UVICORN_PORT-8080}
     ports:
       # for debug
-      - ${PORT_API-8080}:8080
+      - ${API_UVICORN_PORT-8080}:${API_UVICORN_PORT-8080}
     depends_on:
-      mongodb:
-        condition: service_started
+      - mongodb
     restart: unless-stopped
   worker-splits:
     build:
       context: ..
-      dockerfile: ./workers/splits/Dockerfile
+      dockerfile: workers/splits/Dockerfile
     volumes:
-      - datasets-cache:/datasets-cache:rw
+      - splits-datasets-cache:${HF_DATASETS_CACHE-/datasets-cache}:rw
+      - splits-modules-cache:${HF_DATASETS_CACHE-/modules-cache}:rw
+      - splits-numba-cache:${NUMBA_CACHE_DIR-/numba-cache}:rw
     environment:
-      HF_DATASETS_CACHE: "/datasets-cache"
-      HF_ENDPOINT: ${HF_ENDPOINT}
-      HF_TOKEN: ${HF_TOKEN}
-      MONGO_URL: "mongodb://mongodb"
+      CACHE_ASSETS_DIRECTORY: ${CACHE_ASSETS_DIRECTORY-/assets}
+      CACHE_MONGO_URL: ${CACHE_MONGO_URL-mongodb://mongodb} # use mongo container by default
+      CACHE_MONGO_DATABASE: ${CACHE_MONGO_DATABASE-datasets_server_cache}
+      QUEUE_MAX_JOBS_PER_DATASET: ${QUEUE_MAX_JOBS_PER_DATASET-1}
+      QUEUE_MAX_LOAD_PCT: ${QUEUE_MAX_LOAD_PCT-70}
+      QUEUE_MAX_MEMORY_PCT: ${QUEUE_MAX_MEMORY_PCT-80}
+      QUEUE_MONGO_URL: ${QUEUE_MONGO_URL-mongodb://mongodb} # use mongo container by default
+      QUEUE_MONGO_DATABASE: ${QUEUE_MONGO_DATABASE-datasets_server_queue}
+      QUEUE_SLEEP_SECONDS: ${QUEUE_SLEEP_SECONDS-15}
+      COMMON_ASSETS_BASE_URL: "http://localhost:${PORT_REVERSE_PROXY-8000}/assets" # hard-coded to work with the reverse-proxy
+      COMMON_HF_ENDPOINT: ${COMMON_HF_ENDPOINT-https://huggingface.co}
+      COMMON_HF_TOKEN: ${COMMON_HF_TOKEN-}
+      COMMON_LOG_LEVEL: ${COMMON_LOG_LEVEL-INFO}
+      HF_DATASETS_CACHE: ${HF_DATASETS_CACHE-/datasets-cache}
+      HF_MODULES_CACHE: ${HF_MODULES_CACHE-/modules-cache}
+      NUMBA_CACHE_DIR: ${NUMBA_CACHE_DIR-/numba-cache}
     depends_on:
-      mongodb:
-        condition: service_started
+      - mongodb
     restart: always
   worker-first-rows:
     build:
       context: ..
-      dockerfile: ./workers/first_rows/Dockerfile
+      dockerfile: workers/first-rows/Dockerfile
     volumes:
-      - assets:/assets:rw
-      - datasets-cache:/datasets-cache:rw
+      - first-rows-datasets-cache:${HF_DATASETS_CACHE-/datasets-cache}:rw
+      - first-rows-modules-cache:${HF_DATASETS_CACHE-/modules-cache}:rw
+      - first-rows-numba-cache:${NUMBA_CACHE_DIR-/numba-cache}:rw
     environment:
-      ASSETS_BASE_URL: "http://localhost:${PORT_REVERSE_PROXY-8000}/assets"
-      ASSETS_DIRECTORY: "/assets"
-      HF_DATASETS_CACHE: "/datasets-cache"
-      HF_ENDPOINT: ${HF_ENDPOINT}
-      HF_TOKEN: ${HF_TOKEN}
-      MONGO_URL: "mongodb://mongodb"
+      CACHE_ASSETS_DIRECTORY: ${CACHE_ASSETS_DIRECTORY-/assets}
+      CACHE_MONGO_URL: ${CACHE_MONGO_URL-mongodb://mongodb} # use mongo container by default
+      CACHE_MONGO_DATABASE: ${CACHE_MONGO_DATABASE-datasets_server_cache}
+      QUEUE_MAX_JOBS_PER_DATASET: ${QUEUE_MAX_JOBS_PER_DATASET-1}
+      QUEUE_MAX_LOAD_PCT: ${QUEUE_MAX_LOAD_PCT-70}
+      QUEUE_MAX_MEMORY_PCT: ${QUEUE_MAX_MEMORY_PCT-80}
+      QUEUE_MONGO_URL: ${QUEUE_MONGO_URL-mongodb://mongodb} # use mongo container by default
+      QUEUE_MONGO_DATABASE: ${QUEUE_MONGO_DATABASE-datasets_server_queue}
+      QUEUE_SLEEP_SECONDS: ${QUEUE_SLEEP_SECONDS-15}
+      COMMON_ASSETS_BASE_URL: "http://localhost:${PORT_REVERSE_PROXY-8000}/assets" # hard-coded to work with the reverse-proxy
+      COMMON_HF_ENDPOINT: ${COMMON_HF_ENDPOINT-https://huggingface.co}
+      COMMON_HF_TOKEN: ${COMMON_HF_TOKEN-}
+      COMMON_LOG_LEVEL: ${COMMON_LOG_LEVEL-INFO}
+      HF_DATASETS_CACHE: ${HF_DATASETS_CACHE-/datasets-cache}
+      HF_MODULES_CACHE: ${HF_MODULES_CACHE-/modules-cache}
+      NUMBA_CACHE_DIR: ${NUMBA_CACHE_DIR-/numba-cache}
+      FIRST_ROWS_FALLBACK_MAX_DATASET_SIZE: ${FIRST_ROWS_FALLBACK_MAX_DATASET_SIZE-100_000_000}
+      FIRST_ROWS_MAX_BYTES: ${FIRST_ROWS_MAX_BYTES-1_000_000}
+      FIRST_ROWS_MAX_NUMBER: ${FIRST_ROWS_MAX_NUMBER-100}
+      FIRST_ROWS_MIN_CELL_BYTES: ${FIRST_ROWS_MIN_CELL_BYTES-100}
+      FIRST_ROWS_MIN_NUMBER: ${FIRST_ROWS_MIN_NUMBER-10}
     depends_on:
-      mongodb:
-        condition: service_started
-    restart: always
-  admin:
-    build:
-      context: ..
-      dockerfile: ./services/admin/Dockerfile
-    environment:
-      APP_HOSTNAME: 0.0.0.0
-      APP_NUM_WORKERS: 1
-      APP_PORT: 8081
-      ASSETS_DIRECTORY: "/assets"
-      MONGO_URL: "mongodb://mongodb"
-    ports:
-      # for debug
-      - ${PORT_ADMIN-8081}:8081
-    depends_on:
-      mongodb:
-        condition: service_started
+      - mongodb
     restart: always
   mongodb:
     image: mongo
@@ -102,6 +152,10 @@ services:
       - "${MONGO_PORT-27017}:27017"
 volumes:
   assets:
-  datasets-cache:
   mongo:
-  reverse-proxy-cache:
+  splits-datasets-cache:
+  splits-modules-cache:
+  splits-numba-cache:
+  first-rows-datasets-cache:
+  first-rows-modules-cache:
+  first-rows-numba-cache:

@@ -2,10 +2,11 @@
 authors = ["Sylvain Lesage <sylvain.lesage@huggingface.co>"]
 description = "Library for the jobs queue in mongodb"
 name = "libqueue"
-version = "0.3.2"
+version = "0.4.1"
 license = "Apache-2.0"
 
 [tool.poetry.dependencies]
+environs = "^9.5.0"
 mongo-types = "0.15.1"
 mongoengine = "^0.24.1"
 psutil = "^5.9.2"

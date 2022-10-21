@@ -5,6 +5,7 @@ from typing import Optional
 
 import pytest
 
+from libqueue.config import QueueConfig
 from libqueue.queue import (
     EmptyQueue,
     Job,
@@ -15,18 +16,10 @@ from libqueue.queue import (
     get_datetime,
 )
 
-from ._utils import MONGO_QUEUE_DATABASE, MONGO_URL
-
 
 @pytest.fixture(autouse=True, scope="module")
-def safe_guard() -> None:
-    if "test" not in MONGO_QUEUE_DATABASE:
-        raise ValueError("Test must be launched on a test mongo database")
-
-
-@pytest.fixture(autouse=True, scope="module")
-def client() -> None:
-    connect_to_queue(database=MONGO_QUEUE_DATABASE, host=MONGO_URL)
+def client(queue_config: QueueConfig) -> None:
+    connect_to_queue(database=queue_config.mongo_database, host=queue_config.mongo_url)
 
 
 @pytest.fixture(autouse=True)

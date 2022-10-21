@@ -1,13 +1,13 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2022 The HuggingFace Authors.
 
-name: libs/libutils
+name: libs/libcommon
 on:
   workflow_dispatch:
   push:
     paths:
-      - 'libs/libutils/**'
-      - '.github/workflows/l-libutils.yml'
+      - 'libs/libcommon/**'
+      - '.github/workflows/l-libcommon.yml'
       - '.github/workflows/_quality-python.yml'
       - '.github/workflows/_unit-tests-python.yml'
       - 'tools/Python.mk'
@@ -16,10 +16,10 @@ jobs:
   quality:
     uses: ./.github/workflows/_quality-python.yml
     with:
-      working-directory: libs/libutils
+      working-directory: libs/libcommon
   unit-tests:
     uses: ./.github/workflows/_unit-tests-python.yml
     with:
-      working-directory: libs/libutils
+      working-directory: libs/libcommon
     secrets:
       codecov-token: ${{ secrets.CODECOV_TOKEN }}

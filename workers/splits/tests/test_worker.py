@@ -9,29 +9,14 @@ from libcache.simple_cache import _clean_database as _clean_cache_database
 from libcache.simple_cache import connect_to_cache, get_splits_response
 from libqueue.queue import _clean_queue_database, connect_to_queue
 
-from splits.config import (
-    HF_ENDPOINT,
-    HF_TOKEN,
-    MAX_JOBS_PER_DATASET,
-    MAX_LOAD_PCT,
-    MAX_MEMORY_PCT,
-    WORKER_SLEEP_SECONDS,
-)
+from splits.config import WorkerConfig
 from splits.worker import SplitsWorker
 
-from .utils import MONGO_CACHE_DATABASE, MONGO_QUEUE_DATABASE, MONGO_URL
-
 
 @pytest.fixture(autouse=True, scope="module")
-def safe_guard() -> None:
-    if "test" not in MONGO_CACHE_DATABASE:
-        raise ValueError("Test must be launched on a test mongo database")
-
-
-@pytest.fixture(autouse=True, scope="module")
-def client() -> None:
-    connect_to_cache(database=MONGO_CACHE_DATABASE, host=MONGO_URL)
-    connect_to_queue(database=MONGO_QUEUE_DATABASE, host=MONGO_URL)
+def client(worker_config: WorkerConfig) -> None:
+    connect_to_cache(database=worker_config.cache.mongo_database, host=worker_config.cache.mongo_url)
+    connect_to_queue(database=worker_config.queue.mongo_database, host=worker_config.queue.mongo_url)
 
 
 @pytest.fixture(autouse=True)
@@ -41,15 +26,8 @@ def clean_mongo_database() -> None:
 
 
 @pytest.fixture(autouse=True, scope="module")
-def worker() -> SplitsWorker:
-    return SplitsWorker(
-        hf_endpoint=HF_ENDPOINT,
-        hf_token=HF_TOKEN,
-        max_jobs_per_dataset=MAX_JOBS_PER_DATASET,
-        max_load_pct=MAX_LOAD_PCT,
-        max_memory_pct=MAX_MEMORY_PCT,
-        sleep_seconds=WORKER_SLEEP_SECONDS,
-    )
+def worker(worker_config: WorkerConfig) -> SplitsWorker:
+    return SplitsWorker(worker_config)
 
 
 def test_compute(worker: SplitsWorker, hub_public_csv: str) -> None:

@@ -1,7 +1,7 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2022 The HuggingFace Authors.
 
-import os
+from typing import Optional
 
 from prometheus_client import (  # type: ignore # https://github.com/prometheus/client_python/issues/491
     CONTENT_TYPE_LATEST,
@@ -17,11 +17,16 @@ from starlette.responses import Response
 
 
 class Prometheus:
+    prometheus_multiproc_dir: Optional[str]
+
+    def __init__(self, prometheus_multiproc_dir: Optional[str]):
+        self.prometheus_multiproc_dir = prometheus_multiproc_dir
+
     def getRegistry(self) -> CollectorRegistry:
         # taken from https://github.com/perdy/starlette-prometheus/blob/master/starlette_prometheus/view.py
-        if "PROMETHEUS_MULTIPROC_DIR" in os.environ:
+        if self.prometheus_multiproc_dir is not None:
             registry = CollectorRegistry()
-            MultiProcessCollector(registry)
+            MultiProcessCollector(registry=registry, path=self.prometheus_multiproc_dir)
         else:
             registry = REGISTRY
         return registry

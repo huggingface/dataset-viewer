@@ -54,15 +54,16 @@ jobs:
             ${{ env.working-directory }}/poetry.lock
       - name: Launch the services
         env:
-          ROWS_MAX_NUMBER: 4
+          QUEUE_SLEEP_TIME: "1"
           # hard coded, see e2e/tests/fixtures/hub.py
-          HF_ENDPOINT: "https://hub-ci.huggingface.co"
-          HF_TOKEN: "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"
-          IMAGE_ADMIN: "${{fromJson(needs.get-config.outputs.dockerConfig).dockerImage.admin}}"
-          IMAGE_API: "${{fromJson(needs.get-config.outputs.dockerConfig).dockerImage.api}}"
+          COMMON_HF_ENDPOINT: "https://hub-ci.huggingface.co"
+          COMMON_HF_TOKEN: "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"
+          FIRST_ROWS_MAX_NUMBER: "4"
           IMAGE_REVERSE_PROXY: "${{fromJson(needs.get-config.outputs.dockerConfig).dockerImage.reverseProxy}}"
-          IMAGE_WORKER_SPLITS: "${{fromJson(needs.get-config.outputs.dockerConfig).dockerImage.worker.splits}}"
-          IMAGE_WORKER_FIRST_ROWS: "${{fromJson(needs.get-config.outputs.dockerConfig).dockerImage.worker.firstRows}}"
+          IMAGE_ADMIN: "${{fromJson(needs.get-config.outputs.dockerConfig).dockerImage.services.admin}}"
+          IMAGE_API: "${{fromJson(needs.get-config.outputs.dockerConfig).dockerImage.services.api}}"
+          IMAGE_WORKER_SPLITS: "${{fromJson(needs.get-config.outputs.dockerConfig).dockerImage.workers.splits}}"
+          IMAGE_WORKER_FIRST_ROWS: "${{fromJson(needs.get-config.outputs.dockerConfig).dockerImage.workers.firstRows}}"
         working-directory: tools
         run: docker-compose -f ./docker-compose-datasets-server-from-remote-images.yml up -d
       - name: Install dependencies
@@ -70,7 +71,5 @@ jobs:
           poetry env use "${{ env.python-version }}"
           poetry install
       - name: End-to-end tests
-        env:
-          ROWS_MAX_NUMBER: 4
         run: |
           poetry run python -m pytest -vv -x tests

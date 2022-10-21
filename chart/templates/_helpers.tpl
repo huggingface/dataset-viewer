@@ -50,31 +50,32 @@ chart: "{{ include "name" . }}"
 app: "{{ .Release.Name }}-reverse-proxy"
 {{- end -}}
 
-{{- define "labels.api" -}}
-{{ include "labels" . }}
-app: "{{ include "release" . }}-api"
-{{- end -}}
-
-{{- define "labels.worker.splits" -}}
-{{ include "labels" . }}
-app: "{{ include "release" . }}-worker-splits"
-{{- end -}}
-
-{{- define "labels.worker.firstRows" -}}
-{{ include "labels" . }}
-app: "{{ include "release" . }}-worker-first-rows"
-{{- end -}}
-
 {{- define "labels.admin" -}}
 {{ include "labels" . }}
 app: "{{ include "release" . }}-admin"
 {{- end -}}
 
+{{- define "labels.api" -}}
+{{ include "labels" . }}
+app: "{{ include "release" . }}-api"
+{{- end -}}
+
+{{- define "labels.splits" -}}
+{{ include "labels" . }}
+app: "{{ include "release" . }}-worker-splits"
+{{- end -}}
+
+{{- define "labels.firstRows" -}}
+{{ include "labels" . }}
+app: "{{ include "release" . }}-worker-first-rows"
+{{- end -}}
+
+
 {{/*
 The assets base URL
 */}}
 {{- define "assets.baseUrl" -}}
-{{- printf "https://%s/assets" .Values.apiDomain }}
+{{- printf "https://%s/assets" .Values.hostname }}
 {{- end }}
 
 {{/*

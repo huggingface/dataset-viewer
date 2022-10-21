@@ -10,7 +10,7 @@ metadata:
   namespace: {{ .Release.Namespace }}
 spec:
   rules:
-    - host: {{ .Values.apiDomain }}
+    - host: {{ .Values.hostname }}
       http:
         paths:
           - backend:
