@@ -40,9 +40,13 @@
 # or
 #  kubectl scale --replicas=32 deploy/datasets-server-prod-worker-first-rows
 
-mongodb:
-  enabled: false
-  # we use the secret instead to get the mongo URL
+# --- common parameters ---
+
+hostname: "datasets-server.huggingface.co"
+
+secrets:
+  hfToken: hf-token
+  mongoUrl: mongo-url
 
 storage:
   nfs:
@@ -51,14 +55,45 @@ storage:
     # https://us-east-1.console.aws.amazon.com/fsx/home?region=us-east-1#file-system-details/fs-02050b8d555063cde
     # Alarm: https://us-east-1.console.aws.amazon.com/cloudwatch/home?region=us-east-1#alarmsV2:alarm/Low+disk+on+datasets+server?
 
-secrets:
-  hfToken: hf-token
-  mongoUrl: mongo-url
-
 monitoring:
   enabled: true
 
-apiDomain: "datasets-server.huggingface.co"
+mongodb:
+  # we use the secret instead to get the mongo URL
+  enabled: false
+
+queue:
+  # Maximum number of jobs running at the same time for the same dataset
+  maxJobsPerDataset: 5
+
+common:
+  # Log level
+  logLevel: "DEBUG"
+
+# --- reverse proxy ---
+
+reverseProxy:
+  nodeSelector:
+    role-datasets-server: "true"
+  replicas: 2
+  resources:
+    requests:
+      cpu: 1
+      memory: "256Mi"
+    limits:
+      cpu: 1
+      memory: "256Mi"
+  service:
+    annotations:
+      service.beta.kubernetes.io/aws-load-balancer-additional-resource-tags: Env=prod,Project=datasets-server,Terraform=true
+      service.beta.kubernetes.io/aws-load-balancer-name: hub-prod-datasets-server-nlb
+      service.beta.kubernetes.io/aws-load-balancer-nlb-target-type: instance
+      service.beta.kubernetes.io/aws-load-balancer-scheme: internal
+      service.beta.kubernetes.io/aws-load-balancer-type: external
+      service.beta.kubernetes.io/aws-load-balancer-target-node-labels: role-datasets-server=true
+  tolerations:
+    - key: CriticalAddonsOnly
+      operator: Equal
 
 ingress:
   annotations:
@@ -72,98 +107,19 @@ ingress:
     alb.ingress.kubernetes.io/group.name: "datasets-server"
     kubernetes.io/ingress.class: "alb"
 
-reverseProxy:
-  replicas: 2
-
-  service:
-    annotations:
-      service.beta.kubernetes.io/aws-load-balancer-additional-resource-tags: Env=prod,Project=datasets-server,Terraform=true
-      service.beta.kubernetes.io/aws-load-balancer-name: hub-prod-datasets-server-nlb
-      service.beta.kubernetes.io/aws-load-balancer-nlb-target-type: instance
-      service.beta.kubernetes.io/aws-load-balancer-scheme: internal
-      service.beta.kubernetes.io/aws-load-balancer-type: external
-      service.beta.kubernetes.io/aws-load-balancer-target-node-labels: role-datasets-server=true
-
-  nodeSelector:
-    role-datasets-server: "true"
-
-  tolerations:
-    - key: CriticalAddonsOnly
-      operator: Equal
-
-  resources:
-    requests:
-      cpu: 1
-      memory: "256Mi"
-    limits:
-      cpu: 1
-      memory: "256Mi"
-
-api:
-  replicas: 4
-
-  nodeSelector:
-    role-datasets-server: "true"
-
-  resources:
-    requests:
-      cpu: 4
-      memory: "512Mi"
-    limits:
-      cpu: 4
-      memory: "4Gi"
-
-  # Number of uvicorn workers for running the application
-  # (2 x $num_cores) + 1
-  # https://docs.gunicorn.org/en/stable/design.html#how-many-workers
-  appNumWorkers: 9
-  # Log level
-  logLevel: "DEBUG"
-
-worker:
-  splits:
-    replicas: 8
-
-    nodeSelector:
-      role-datasets-server: "true"
-
-    resources:
-      requests:
-        cpu: 1
-        memory: "8Gi"
-      limits:
-        cpu: 2
-        memory: "30Gi"
-
-    # Log level
-    logLevel: "DEBUG"
-
-  firstRows:
-    replicas: 34
-
-    nodeSelector:
-      role-datasets-server: "true"
-
-    resources:
-      requests:
-        cpu: 1
-        memory: "8Gi"
-      limits:
-        cpu: 2
-        memory: "30Gi"
-
-    # Log level
-    logLevel: "DEBUG"
-    # Maximum number of jobs running at the same time for the same dataset
-    maxJobsPerDataset: 17
-
+# --- services ---
 
 admin:
-  replicas: 1
+  # Number of reports in /cache-reports/... endpoints
+  cacheReportsNumResults: 1000
+  # Number of uvicorn workers for running the application
+  # (2 x $num_cores) + 1
+  # https://docs.gunicorn.org/en/stable/design.html#how-many-workers
+  uvicornNumWorkers: "9"
 
   nodeSelector:
     role-datasets-server: "true"
-
+  replicas: 1
   resources:
     requests:
       cpu: 4
@@ -172,12 +128,45 @@ admin:
       cpu: 4
       memory: "4Gi"
 
-
+api:
   # Number of uvicorn workers for running the application
   # (2 x $num_cores) + 1
   # https://docs.gunicorn.org/en/stable/design.html#how-many-workers
-  appNumWorkers: 9
-  # Number of reports in /cache-reports/... endpoints
-  cacheReportsNumResults: 1000
-  # Log level
-  logLevel: "DEBUG"
+  uvicornNumWorkers: "9"
+
+  nodeSelector:
+    role-datasets-server: "true"
+  replicas: 4
+  resources:
+    requests:
+      cpu: 4
+      memory: "512Mi"
+    limits:
+      cpu: 4
+      memory: "4Gi"
+
+# --- workers ---
+
+splits:
+  nodeSelector:
+    role-datasets-server: "true"
+  replicas: 8
+  resources:
+    requests:
+      cpu: 1
+      memory: "8Gi"
+    limits:
+      cpu: 2
+      memory: "30Gi"
+
+firstRows:
+  nodeSelector:
+    role-datasets-server: "true"
+  replicas: 34
+  resources:
+    requests:
+      cpu: 1
+      memory: "8Gi"
+    limits:
+      cpu: 2
+      memory: "30Gi"

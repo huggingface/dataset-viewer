@@ -4,44 +4,11 @@
 {{- define "containerWorkerFirstRows" -}}
 - name: "{{ include "name" . }}-worker-first-rows"
   env:
-  - name: ASSETS_BASE_URL
-    value: "{{ include "assets.baseUrl" . }}"
-  - name: ASSETS_DIRECTORY
-    value: {{ .Values.worker.firstRows.assetsDirectory | quote }}
-  - name: HF_DATASETS_CACHE
-    value: "{{ .Values.worker.firstRows.cacheDirectory }}/datasets"
-  - name: HF_ENDPOINT
-    value: {{ .Values.hfEndpoint | quote }}
-  # note: HF_MODULES_CACHE is not set to a shared directory
-  - name: HF_MODULES_CACHE
-    value: "/tmp/modules-cache"
-  # the size should remain so small that we don't need to worry about putting it on an external storage
-  # see https://github.com/huggingface/datasets-server/issues/248
-  - name: HF_TOKEN
-    # see https://kubernetes.io/docs/concepts/configuration/secret/#creating-a-secret
-    # and https://kubernetes.io/docs/concepts/configuration/secret/#using-secrets-as-environment-variables
-    valueFrom:
-      secretKeyRef:
-        name: {{ .Values.secrets.hfToken | quote }}
-        key: HF_TOKEN
-        optional: false
-  - name: LOG_LEVEL
-    value: {{ .Values.worker.firstRows.logLevel | quote }}
-  - name: MAX_JOBS_PER_DATASET
-    value: {{ .Values.worker.firstRows.maxJobsPerDataset | quote }}
-  - name: MAX_LOAD_PCT
-    value: {{ .Values.worker.firstRows.maxLoadPct | quote }}
-  - name: MAX_MEMORY_PCT
-    value: {{ .Values.worker.firstRows.maxMemoryPct | quote }}
-  - name: MAX_SIZE_FALLBACK
-    value: {{ .Values.worker.firstRows.maxSizeFallback | quote }}
-  - name: MIN_CELL_BYTES
-    value: {{ .Values.worker.firstRows.minCellBytes | quote }}
-  - name: MONGO_CACHE_DATABASE
-    value: {{ .Values.mongodb.cacheDatabase | quote }}
-  - name: MONGO_QUEUE_DATABASE
-    value: {{ .Values.mongodb.queueDatabase | quote }}
-  - name: MONGO_URL
+  - name: CACHE_ASSETS_DIRECTORY
+    value: {{ .Values.cache.assetsDirectory | quote }}
+  - name: CACHE_MONGO_DATABASE
+    value: {{ .Values.cache.mongoDatabase | quote }}
+  - name: CACHE_MONGO_URL
   {{- if .Values.mongodb.enabled }}
     value: mongodb://{{.Release.Name}}-mongodb
   {{- else }}
@@ -51,30 +18,66 @@
         key: MONGO_URL
         optional: false
   {{- end }}
+  - name: QUEUE_MAX_JOBS_PER_DATASET
+    value: {{ .Values.queue.maxJobsPerDataset | quote }}
+  - name: QUEUE_MAX_LOAD_PCT
+    value: {{ .Values.queue.maxLoadPct | quote }}
+  - name: QUEUE_MAX_MEMORY_PCT
+    value: {{ .Values.queue.maxMemoryPct | quote }}
+  - name: QUEUE_MONGO_DATABASE
+    value: {{ .Values.queue.mongoDatabase | quote }}
+  - name: QUEUE_MONGO_URL
+  {{- if .Values.mongodb.enabled }}
+    value: mongodb://{{.Release.Name}}-mongodb
+  {{- else }}
+    valueFrom:
+      secretKeyRef:
+        name: {{ .Values.secrets.mongoUrl | quote }}
+        key: MONGO_URL
+        optional: false
+  {{- end }}
+  - name: QUEUE_WORKER_SLEEP_SECONDS
+    value: {{ .Values.queue.sleepSeconds | quote }}
+  - name: COMMON_ASSETS_BASE_URL
+    value: "{{ include "assets.baseUrl" . }}"
+  - name: COMMON_HF_ENDPOINT
+    value: {{ .Values.common.hfEndpoint | quote }}
+  - name: COMMON_HF_TOKEN
+    value: {{ .Values.secrets.hfToken | quote }}
+  - name: COMMON_LOG_LEVEL
+    value: {{ .Values.common.logLevel | quote }}
+  - name: HF_DATASETS_CACHE
+    value: {{ .Values.hfDatasetsCache | quote }}
+  - name: HF_MODULES_CACHE
+    value: "/tmp/modules-cache"
+    # the size should remain so small that we don't need to worry about putting it on an external storage
+    # see https://github.com/huggingface/datasets-server/issues/248
   - name: NUMBA_CACHE_DIR
-    value: {{ .Values.worker.firstRows.numbaCacheDirectory | quote }}
-  - name: ROWS_MAX_BYTES
-    value: {{ .Values.worker.firstRows.rowsMaxBytes | quote }}
-  - name: ROWS_MAX_NUMBER
-    value: {{ .Values.worker.firstRows.rowsMaxNumber | quote }}
-  - name: ROWS_MIN_NUMBER
-    value: {{ .Values.worker.firstRows.rowsMinNumber| quote }}
-  - name: WORKER_SLEEP_SECONDS
-    value: {{ .Values.worker.firstRows.workerleepSeconds | quote }}
-  image: {{ .Values.dockerImage.worker.firstRows }}
+    value: {{ .Values.numbaCacheDirectory | quote }}
+  - name: FIRST_ROWS_FALLBACK_MAX_DATASET_SIZE
+    value: {{ .Values.firstRows.fallbackMaxDatasetSize | quote }}
+  - name: FIRST_ROWS_MAX_BYTES
+    value: {{ .Values.firstRows.maxBytes | quote }}
+  - name: FIRST_ROWS_MAX_NUMBER
+    value: {{ .Values.firstRows.maxNumber | quote }}
+  - name: FIRST_ROWS_MIN_CELL_BYTES
+    value: {{ .Values.firstRows.minCellBytes | quote }}
+  - name: FIRST_ROWS_MIN_NUMBER
+    value: {{ .Values.firstRows.minNumber| quote }}
+  image: {{ .Values.dockerImage.firstRows }}
   imagePullPolicy: IfNotPresent
   volumeMounts:
-  - mountPath: {{ .Values.worker.firstRows.assetsDirectory | quote }}
+  - mountPath: {{ .Values.cache.assetsDirectory | quote }}
     mountPropagation: None
     name: nfs
     subPath: "{{ include "assets.subpath" . }}"
     readOnly: false
-  - mountPath: {{ .Values.worker.firstRows.cacheDirectory | quote }}
+  - mountPath: {{ .Values.hfDatasetsCache | quote }}
     mountPropagation: None
     name: nfs
     subPath: "{{ include "cache.datasets.subpath" . }}"
     readOnly: false
-  - mountPath: {{ .Values.worker.firstRows.numbaCacheDirectory | quote }}
+  - mountPath: {{ .Values.numbaCacheDirectory | quote }}
     mountPropagation: None
     name: nfs
     subPath: "{{ include "cache.numba.subpath" . }}"
@@ -82,5 +85,5 @@
   securityContext:
     allowPrivilegeEscalation: false
   resources:
-    {{ toYaml .Values.worker.firstRows.resources | nindent 4 }}
+    {{ toYaml .Values.firstRows.resources | nindent 4 }}
 {{- end -}}

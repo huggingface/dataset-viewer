@@ -1,8 +1,8 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2022 The HuggingFace Authors.
 
-{{- define "containerWorkerSplits" -}}
-- name: "{{ include "name" . }}-worker-splits"
+{{- define "containerApi" -}}
+- name: "{{ include "name" . }}-api"
   env:
   - name: CACHE_ASSETS_DIRECTORY
     value: {{ .Values.cache.assetsDirectory | quote }}
@@ -18,12 +18,6 @@
         key: MONGO_URL
         optional: false
   {{- end }}
-  - name: QUEUE_MAX_JOBS_PER_DATASET
-    value: {{ .Values.queue.maxJobsPerDataset | quote }}
-  - name: QUEUE_MAX_LOAD_PCT
-    value: {{ .Values.queue.maxLoadPct | quote }}
-  - name: QUEUE_MAX_MEMORY_PCT
-    value: {{ .Values.queue.maxMemoryPct | quote }}
   - name: QUEUE_MONGO_DATABASE
     value: {{ .Values.queue.mongoDatabase | quote }}
   - name: QUEUE_MONGO_URL
@@ -36,8 +30,6 @@
         key: MONGO_URL
         optional: false
   {{- end }}
-  - name: QUEUE_WORKER_SLEEP_SECONDS
-    value: {{ .Values.queue.sleepSeconds | quote }}
   - name: COMMON_ASSETS_BASE_URL
     value: "{{ include "assets.baseUrl" . }}"
   - name: COMMON_HF_ENDPOINT
@@ -46,29 +38,40 @@
     value: {{ .Values.secrets.hfToken | quote }}
   - name: COMMON_LOG_LEVEL
     value: {{ .Values.common.logLevel | quote }}
-  - name: HF_DATASETS_CACHE
-    value: {{ .Values.hfDatasetsCache | quote }}
-  - name: HF_MODULES_CACHE
-    value: "/tmp/modules-cache"
-    # the size should remain so small that we don't need to worry about putting it on an external storage
-    # see https://github.com/huggingface/datasets-server/issues/248
-  - name: NUMBA_CACHE_DIR
-    value: {{ .Values.numbaCacheDirectory | quote }}
-  image: {{ .Values.dockerImage.splits }}
+  - name: API_HF_AUTH_PATH
+    value: {{ .Values.api.hfAuthPath | quote }}
+  - name: API_MAX_AGE_LONG
+    value: {{ .Values.api.maxAgeLong | quote }}
+  - name: API_MAX_AGE_SHORT
+    value: {{ .Values.api.maxAgeShort | quote }}
+  - name: API_PROMETHEUS_MULTIPROC_DIR
+    value:  {{ .Values.api.prometheusMultiprocDirectory | quote }}
+  - name: API_UVICORN_HOSTNAME
+    value: {{ .Values.api.uvicornHostname | quote }}
+  - name: API_UVICORN_NUM_WORKERS
+    value: {{ .Values.api.uvicornNumWorkers | quote }}
+  - name: API_UVICORN_PORT
+    value: {{ .Values.api.uvicornPort | quote }}
+  image: {{ .Values.dockerImage.api }}
   imagePullPolicy: IfNotPresent
   volumeMounts:
-  - mountPath: {{ .Values.hfDatasetsCache | quote }}
+  - mountPath: {{ .Values.cache.assetsDirectory | quote }}
     mountPropagation: None
     name: nfs
-    subPath: "{{ include "cache.datasets.subpath" . }}"
-    readOnly: false
-  - mountPath: {{ .Values.numbaCacheDirectory | quote }}
-    mountPropagation: None
-    name: nfs
-    subPath: "{{ include "cache.numba.subpath" . }}"
-    readOnly: false
+    subPath: "{{ include "assets.subpath" . }}"
+    readOnly: true
   securityContext:
     allowPrivilegeEscalation: false
+  readinessProbe:
+    tcpSocket:
+      port: {{ .Values.api.readinessPort }}
+  livenessProbe:
+    tcpSocket:
+      port: {{ .Values.api.readinessPort }}
+  ports:
+  - containerPort: {{ .Values.api.uvicornPort }}
+    name: http
+    protocol: TCP
   resources:
-    {{ toYaml .Values.splits.resources | nindent 4 }}
+    {{ toYaml .Values.api.resources | nindent 4 }}
 {{- end -}}

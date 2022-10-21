@@ -15,7 +15,7 @@ spec:
   - name: http
     port: 80
     protocol: TCP
-    targetPort: {{ .Values.admin.appPort }}
+    targetPort: {{ .Values.admin.uvicornPort }}
   selector:
     {{ include "labels.admin" . | nindent 4 }}
   type: {{ .Values.admin.service.type }}

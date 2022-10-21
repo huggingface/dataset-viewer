@@ -1,8 +1,8 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2022 The HuggingFace Authors.
 
-{{- define "containerWorkerSplits" -}}
-- name: "{{ include "name" . }}-worker-splits"
+{{- define "containerAdmin" -}}
+- name: "{{ include "name" . }}-admin"
   env:
   - name: CACHE_ASSETS_DIRECTORY
     value: {{ .Values.cache.assetsDirectory | quote }}
@@ -18,12 +18,6 @@
         key: MONGO_URL
         optional: false
   {{- end }}
-  - name: QUEUE_MAX_JOBS_PER_DATASET
-    value: {{ .Values.queue.maxJobsPerDataset | quote }}
-  - name: QUEUE_MAX_LOAD_PCT
-    value: {{ .Values.queue.maxLoadPct | quote }}
-  - name: QUEUE_MAX_MEMORY_PCT
-    value: {{ .Values.queue.maxMemoryPct | quote }}
   - name: QUEUE_MONGO_DATABASE
     value: {{ .Values.queue.mongoDatabase | quote }}
   - name: QUEUE_MONGO_URL
@@ -36,8 +30,6 @@
         key: MONGO_URL
         optional: false
   {{- end }}
-  - name: QUEUE_WORKER_SLEEP_SECONDS
-    value: {{ .Values.queue.sleepSeconds | quote }}
   - name: COMMON_ASSETS_BASE_URL
     value: "{{ include "assets.baseUrl" . }}"
   - name: COMMON_HF_ENDPOINT
@@ -46,29 +38,42 @@
     value: {{ .Values.secrets.hfToken | quote }}
   - name: COMMON_LOG_LEVEL
     value: {{ .Values.common.logLevel | quote }}
-  - name: HF_DATASETS_CACHE
-    value: {{ .Values.hfDatasetsCache | quote }}
-  - name: HF_MODULES_CACHE
-    value: "/tmp/modules-cache"
-    # the size should remain so small that we don't need to worry about putting it on an external storage
-    # see https://github.com/huggingface/datasets-server/issues/248
-  - name: NUMBA_CACHE_DIR
-    value: {{ .Values.numbaCacheDirectory | quote }}
-  image: {{ .Values.dockerImage.splits }}
+  - name: ADMIN_HF_ORGANIZATION
+    value: {{ .Values.admin.hfOrganization | quote }}
+  - name: ADMIN_CACHE_REPORTS_NUM_RESULTS
+    value: {{ .Values.admin.cacheReportsNumResults | quote }}
+  - name: ADMIN_HF_WHOAMI_PATH
+    value: {{ .Values.admin.hfWhoamiPath | quote }}
+  - name: ADMIN_MAX_AGE
+    value: {{ .Values.admin.maxAge | quote }}
+  - name: ADMIN_PROMETHEUS_MULTIPROC_DIR
+    value:  {{ .Values.admin.prometheusMultiprocDirectory | quote }}
+  - name: ADMIN_UVICORN_HOSTNAME
+    value: {{ .Values.admin.uvicornHostname | quote }}
+  - name: ADMIN_UVICORN_NUM_WORKERS
+    value: {{ .Values.admin.uvicornNumWorkers | quote }}
+  - name: ADMIN_UVICORN_PORT
+    value: {{ .Values.admin.uvicornPort | quote }}
+  image: {{ .Values.dockerImage.admin }}
   imagePullPolicy: IfNotPresent
   volumeMounts:
-  - mountPath: {{ .Values.hfDatasetsCache | quote }}
+  - mountPath: {{ .Values.cache.assetsDirectory | quote }}
     mountPropagation: None
     name: nfs
-    subPath: "{{ include "cache.datasets.subpath" . }}"
-    readOnly: false
-  - mountPath: {{ .Values.numbaCacheDirectory | quote }}
-    mountPropagation: None
-    name: nfs
-    subPath: "{{ include "cache.numba.subpath" . }}"
+    subPath: "{{ include "assets.subpath" . }}"
     readOnly: false
   securityContext:
     allowPrivilegeEscalation: false
+  readinessProbe:
+    tcpSocket:
+      port: {{ .Values.admin.readinessPort }}
+  livenessProbe:
+    tcpSocket:
+      port: {{ .Values.admin.readinessPort }}
+  ports:
+  - containerPort: {{ .Values.admin.uvicornPort }}
+    name: http
+    protocol: TCP
   resources:
-    {{ toYaml .Values.splits.resources | nindent 4 }}
+    {{ toYaml .Values.admin.resources | nindent 4 }}
 {{- end -}}
