@@ -62,10 +62,6 @@ mongodb:
   # we use the secret instead to get the mongo URL
   enabled: false
 
-queue:
-  # Maximum number of jobs running at the same time for the same dataset
-  maxJobsPerDataset: 5
-
 common:
   # Log level
   logLevel: "DEBUG"
@@ -148,6 +144,11 @@ api:
 # --- workers ---
 
 splits:
+  # override the common queue parameters
+  queue:
+    # Maximum number of jobs running at the same time for the same dataset
+    maxJobsPerDataset: 4
+
   nodeSelector:
     role-datasets-server: "true"
   replicas: 8
@@ -160,6 +161,11 @@ splits:
       memory: "30Gi"
 
 firstRows:
+  # override the common queue parameters
+  queue:
+    # Maximum number of jobs running at the same time for the same dataset
+    maxJobsPerDataset: 17
+
   nodeSelector:
     role-datasets-server: "true"
   replicas: 34

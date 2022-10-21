@@ -21,7 +21,9 @@
         optional: false
   {{- end }}
   - name: QUEUE_MAX_JOBS_PER_DATASET
-    value: {{ .Values.queue.maxJobsPerDataset | quote }}
+    # value: {{ .Values.queue.maxJobsPerDataset | quote }}
+    # overridden
+    value: {{ .Values.firstRows.queue.maxJobsPerDataset | quote }}
   - name: QUEUE_MAX_LOAD_PCT
     value: {{ .Values.queue.maxLoadPct | quote }}
   - name: QUEUE_MAX_MEMORY_PCT

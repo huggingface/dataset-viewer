@@ -164,6 +164,11 @@ api:
 # --- workers ---
 
 splits:
+  # override the common queue parameters
+  queue:
+    # Maximum number of jobs running at the same time for the same dataset
+    maxJobsPerDataset: 1
+
   nodeSelector: {}
   replicas: 1
   resources:
@@ -184,6 +189,10 @@ firstRows:
   minCellBytes: 100
   # Min number of rows in the /first-rows endpoint response
   minNumber: 10
+  # override the common queue parameters
+  queue:
+    # Maximum number of jobs running at the same time for the same dataset
+    maxJobsPerDataset: 1
 
   nodeSelector: {}
   replicas: 1
