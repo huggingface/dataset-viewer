@@ -6,7 +6,7 @@ from typing import Optional
 import pytest
 
 from libqueue.queue import (
-    EmptyQueue,
+    EmptyQueueError,
     Job,
     Queue,
     Status,
@@ -38,14 +38,14 @@ def test_add_job() -> None:
     assert queue.is_job_in_process(dataset=test_dataset) is True
     # adding the job while the first one has not finished yet is ignored
     queue.add_job(dataset=test_dataset)
-    with pytest.raises(EmptyQueue):
+    with pytest.raises(EmptyQueueError):
         # thus: no new job available
         queue.start_job()
     # finish the first job
     queue.finish_job(job_id=job_id, success=True)
     # the queue is empty
     assert queue.is_job_in_process(dataset=test_dataset) is False
-    with pytest.raises(EmptyQueue):
+    with pytest.raises(EmptyQueueError):
         queue.start_job()
     # add a job again
     queue.add_job(dataset=test_dataset)
@@ -123,7 +123,7 @@ def test_priority_to_non_started_datasets() -> None:
     _, dataset, __, split = queue.start_job()
     assert dataset == "dataset2"
     assert split == "split2"
-    with pytest.raises(EmptyQueue):
+    with pytest.raises(EmptyQueueError):
         queue.start_job()
 
 
@@ -144,13 +144,13 @@ def test_max_jobs_per_dataset(max_jobs_per_dataset: Optional[int]) -> None:
     assert queue.is_job_in_process(dataset=test_dataset, config=test_config, split="split1") is True
     if max_jobs_per_dataset == 1:
 
-        with pytest.raises(EmptyQueue):
+        with pytest.raises(EmptyQueueError):
             queue.start_job()
         return
     _, dataset, config, split = queue.start_job()
     assert split == "split2"
     if max_jobs_per_dataset == 2:
-        with pytest.raises(EmptyQueue):
+        with pytest.raises(EmptyQueueError):
             queue.start_job()
         return
     # max_jobs_per_dataset <= 0 and max_jobs_per_dataset == None are the same
