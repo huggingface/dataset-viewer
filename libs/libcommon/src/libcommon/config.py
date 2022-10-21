@@ -5,6 +5,8 @@ from typing import Optional
 
 from environs import Env
 
+from libcommon.log import init_logging
+
 
 class CommonConfig:
     assets_base_url: str
@@ -20,3 +22,7 @@ class CommonConfig:
             self.log_level = env.log_level(name="LOG_LEVEL", default="INFO")
             hf_token = env.str(name="HF_TOKEN", default="")
             self.hf_token = None if hf_token == "" else hf_token  # nosec
+        self.setup()
+
+    def setup(self):
+        init_logging(self.log_level)

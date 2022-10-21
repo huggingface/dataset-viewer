@@ -5,21 +5,14 @@ from typing import Optional
 
 import pytest
 
-from libqueue.config import QueueConfig
 from libqueue.queue import (
     EmptyQueue,
     Job,
     Queue,
     Status,
     _clean_queue_database,
-    connect_to_queue,
     get_datetime,
 )
-
-
-@pytest.fixture(autouse=True, scope="module")
-def client(queue_config: QueueConfig) -> None:
-    connect_to_queue(database=queue_config.mongo_database, host=queue_config.mongo_url)
 
 
 @pytest.fixture(autouse=True)

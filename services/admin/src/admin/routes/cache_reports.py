@@ -24,9 +24,6 @@ from admin.utils import (
     get_json_ok_response,
 )
 
-logger = logging.getLogger(__name__)
-
-
 EndpointName = Literal["features", "first-rows", "splits"]
 
 
@@ -49,7 +46,7 @@ def create_cache_reports_endpoint(
     async def cache_reports_endpoint(request: Request) -> Response:
         try:
             cursor = request.query_params.get("cursor") or ""
-            logger.info(f"/cache-reports/{endpoint}, cursor={cursor}")
+            logging.info(f"/cache-reports/{endpoint}, cursor={cursor}")
             # if auth_check fails, it will raise an exception that will be caught below
             auth_check(external_auth_url=external_auth_url, request=request, organization=organization)
             try:

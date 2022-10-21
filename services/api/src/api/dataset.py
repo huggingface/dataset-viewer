@@ -19,8 +19,6 @@ from libqueue.queue import Queue
 
 from api.utils import JobType
 
-logger = logging.getLogger(__name__)
-
 splits_queue = Queue(type=JobType.SPLITS.value)
 
 
@@ -51,14 +49,14 @@ def is_supported(
 
 
 def update(dataset: str) -> None:
-    logger.debug(f"webhook: refresh {dataset}")
+    logging.debug(f"webhook: refresh {dataset}")
     mark_splits_responses_as_stale(dataset)
     mark_first_rows_responses_as_stale(dataset)
     splits_queue.add_job(dataset=dataset)
 
 
 def delete(dataset: str) -> None:
-    logger.debug(f"webhook: delete {dataset}")
+    logging.debug(f"webhook: delete {dataset}")
     delete_splits_responses(dataset)
     delete_first_rows_responses(dataset)
 

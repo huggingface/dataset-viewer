@@ -6,17 +6,11 @@ from http import HTTPStatus
 import pytest
 from libcache.simple_cache import DoesNotExist
 from libcache.simple_cache import _clean_database as _clean_cache_database
-from libcache.simple_cache import connect_to_cache, get_splits_response
-from libqueue.queue import _clean_queue_database, connect_to_queue
+from libcache.simple_cache import get_splits_response
+from libqueue.queue import _clean_queue_database
 
 from splits.config import WorkerConfig
 from splits.worker import SplitsWorker
-
-
-@pytest.fixture(autouse=True, scope="module")
-def client(worker_config: WorkerConfig) -> None:
-    connect_to_cache(database=worker_config.cache.mongo_database, host=worker_config.cache.mongo_url)
-    connect_to_queue(database=worker_config.queue.mongo_database, host=worker_config.queue.mongo_url)
 
 
 @pytest.fixture(autouse=True)

@@ -3,6 +3,8 @@
 
 from environs import Env
 
+from libqueue.queue import connect_to_database
+
 
 class QueueConfig:
     max_jobs_per_dataset: int
@@ -21,3 +23,7 @@ class QueueConfig:
             self.max_load_pct = env.int(name="MAX_LOAD_PCT", default=70)
             self.max_memory_pct = env.int(name="MAX_MEMORY_PCT", default=80)
             self.sleep_seconds = env.int(name="SLEEP_SECONDS", default=15)
+        self.setup()
+
+    def setup(self):
+        connect_to_database(database=self.mongo_database, host=self.mongo_url)

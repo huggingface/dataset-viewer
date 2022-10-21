@@ -2,10 +2,10 @@
 # Copyright 2022 The HuggingFace Authors.
 
 import functools
+import logging
 import time
 from enum import Enum
 from http import HTTPStatus
-from logging import Logger
 from typing import Literal, Optional
 
 from libcommon.exceptions import CustomError
@@ -117,7 +117,7 @@ class UnexpectedError(WorkerCustomError):
         super().__init__(message, HTTPStatus.INTERNAL_SERVER_ERROR, "UnexpectedError", cause, False)
 
 
-def retry(logger: Logger):
+def retry():
     def decorator_retry(func):
         """retries with an increasing sleep before every attempt"""
         SLEEPS = [1, 7, 70, 7 * 60, 70 * 60]
@@ -131,11 +131,11 @@ def retry(logger: Logger):
                 try:
                     """always sleep before calling the function. It will prevent rate limiting in the first place"""
                     duration = SLEEPS[attempt]
-                    logger.info(f"Sleep during {duration} seconds to preventively mitigate rate limiting.")
+                    logging.info(f"Sleep during {duration} seconds to preventively mitigate rate limiting.")
                     time.sleep(duration)
                     return func(*args, **kwargs)
                 except ConnectionError as err:
-                    logger.info("Got a ConnectionError, possibly due to rate limiting. Let's retry.")
+                    logging.info("Got a ConnectionError, possibly due to rate limiting. Let's retry.")
                     last_err = err
                     attempt += 1
             raise RuntimeError(f"Give up after {attempt} attempts with ConnectionError") from last_err

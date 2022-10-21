@@ -820,7 +820,7 @@ python-versions = ">=3"
 
 [[package]]
 name = "libcache"
-version = "0.3.0"
+version = "0.3.1"
 description = "Library for the cache in mongodb"
 category = "main"
 optional = false
@@ -835,7 +835,7 @@ pymongo = {version = ">=3.12.3,<4.0.0", extras = ["srv"]}
 
 [package.source]
 type = "file"
-url = "../../libs/libcache/dist/libcache-0.3.0-py3-none-any.whl"
+url = "../../libs/libcache/dist/libcache-0.3.1-py3-none-any.whl"
 
 [[package]]
 name = "libclang"
@@ -847,7 +847,7 @@ python-versions = "*"
 
 [[package]]
 name = "libcommon"
-version = "0.3.1"
+version = "0.3.2"
 description = "Library for utils, common to all the services and workers"
 category = "main"
 optional = false
@@ -859,11 +859,11 @@ orjson = ">=3.6.4,<4.0.0"
 
 [package.source]
 type = "file"
-url = "../../libs/libcommon/dist/libcommon-0.3.1-py3-none-any.whl"
+url = "../../libs/libcommon/dist/libcommon-0.3.2-py3-none-any.whl"
 
 [[package]]
 name = "libqueue"
-version = "0.4.1"
+version = "0.4.2"
 description = "Library for the jobs queue in mongodb"
 category = "main"
 optional = false
@@ -878,7 +878,7 @@ pymongo = {version = ">=3.12.3,<4.0.0", extras = ["srv"]}
 
 [package.source]
 type = "file"
-url = "../../libs/libqueue/dist/libqueue-0.4.1-py3-none-any.whl"
+url = "../../libs/libqueue/dist/libqueue-0.4.2-py3-none-any.whl"
 
 [[package]]
 name = "librosa"
@@ -2290,7 +2290,7 @@ cffi = ["cffi (>=1.11)"]
 [metadata]
 lock-version = "1.1"
 python-versions = "3.9.6"
-content-hash = "7205adaa92829e625bdb89fa7a67c192aaaadd242cca0d45cb2cf5aed455631d"
+content-hash = "2aa2e60943104aea6952a60cdb35c4b05e790723bf35597739125c972afaa4b6"
 
 [metadata.files]
 absl-py = []
@@ -2620,14 +2620,14 @@ kss = [
     {file = "kss-2.6.0-py3-none-any.whl", hash = "sha256:fedbdcd0bfc33111d7817866dd60346dab79f9f1ca5bab0026c4ee40e5941b0c"},
 ]
 libcache = [
-    {file = "libcache-0.3.0-py3-none-any.whl", hash = "sha256:dcfe41d72e7d69b131f9f1f43ed1c6fbcc6cdfe9e8607fd4f5ac211548e74378"},
+    {file = "libcache-0.3.1-py3-none-any.whl", hash = "sha256:b2e6a479961d8f5ac408ee0bd9bd4e826a9f2cbc2df973fd26b77a9263a98190"},
 ]
 libclang = []
 libcommon = [
-    {file = "libcommon-0.3.1-py3-none-any.whl", hash = "sha256:0a7c58ef9f4b69ca8ced5c9a0e8e21956b4e4c5f671dcdcc6c33c7123f630caa"},
+    {file = "libcommon-0.3.2-py3-none-any.whl", hash = "sha256:774292c9ea2d9ab50c4bf2a3eb212bfaf924096a4279ecf117b70618702d978d"},
 ]
 libqueue = [
-    {file = "libqueue-0.4.1-py3-none-any.whl", hash = "sha256:b94d97b3842e5e54b5b2da5cd77f4b5931bdd7980e61c261ebfb8c1a1c8eba7b"},
+    {file = "libqueue-0.4.2-py3-none-any.whl", hash = "sha256:9d5627f96ec3cd967ed4e331e4b4c5c125be2e2943fe6b10ddc927905f86c441"},
 ]
 librosa = []
 llvmlite = []

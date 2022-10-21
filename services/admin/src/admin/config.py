@@ -50,7 +50,8 @@ class AppConfig:
     queue: QueueConfig
 
     def __init__(self):
-        self.cache = CacheConfig()
+        # First process the common configuration to setup the logging
         self.common = CommonConfig()
+        self.cache = CacheConfig()
         self.queue = QueueConfig()
         self.admin = AdminConfig(hf_endpoint=self.common.hf_endpoint)

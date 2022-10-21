@@ -34,9 +34,6 @@ from first_rows.utils import (
     retry,
 )
 
-logger = logging.getLogger(__name__)
-
-
 Row = Dict[str, Any]
 
 
@@ -60,7 +57,7 @@ class FirstRowsResponse(TypedDict):
     rows: List[RowItem]
 
 
-@retry(logger=logger)
+@retry()
 def get_rows(
     dataset: str,
     config: str,
@@ -84,9 +81,9 @@ def get_rows(
     rows_plus_one = list(itertools.islice(ds, rows_max_number + 1))
     # ^^ to be able to detect if a split has exactly ROWS_MAX_NUMBER rows
     if len(rows_plus_one) <= rows_max_number:
-        logger.debug(f"all the rows in the split have been fetched ({len(rows_plus_one)})")
+        logging.debug(f"all the rows in the split have been fetched ({len(rows_plus_one)})")
     else:
-        logger.debug(f"the rows in the split have been truncated ({rows_max_number} rows)")
+        logging.debug(f"the rows in the split have been truncated ({rows_max_number} rows)")
     return rows_plus_one[:rows_max_number]
 
 
@@ -133,7 +130,7 @@ def truncate_row_items(row_items: List[RowItem], min_cell_bytes: int, rows_max_b
         new_size = get_size_in_bytes(row_item)
         rows_bytes += new_size - previous_size
         row_idx = row_item["row_idx"]
-        logger.debug(f"the size of the rows is now ({rows_bytes}) after truncating row idx={row_idx}")
+        logging.debug(f"the size of the rows is now ({rows_bytes}) after truncating row idx={row_idx}")
     return row_items
 
 
@@ -170,7 +167,7 @@ def create_truncated_row_items(
     # 2. if the total is over the bytes limit, truncate the values, iterating backwards starting
     # from the last rows, until getting under the threshold
     if rows_bytes >= rows_max_bytes:
-        logger.debug(
+        logging.debug(
             f"the size of the first {rows_min_number} rows ({rows_bytes}) is above the max number of bytes"
             f" ({rows_max_bytes}), they will be truncated"
         )
@@ -182,7 +179,7 @@ def create_truncated_row_items(
         row_item = to_row_item(dataset, config, split, row_idx, row)
         rows_bytes += get_size_in_bytes(row_item)
         if rows_bytes >= rows_max_bytes:
-            logger.debug(
+            logging.debug(
                 f"the rows in the split have been truncated to {row_idx} row(s) to keep the size"
                 f" ({rows_bytes}) under the limit ({rows_max_bytes})"
             )
@@ -198,7 +195,7 @@ def transform_rows(
     rows: List[Row],
     features: Features,
     assets_base_url: str,
-    assets_directory: Optional[str],
+    assets_directory: str,
 ) -> List[Row]:
     return [
         {
@@ -245,7 +242,7 @@ class SplitFullName(TypedDict):
 
 
 def get_dataset_split_full_names(dataset: str, use_auth_token: Union[bool, str, None] = False) -> List[SplitFullName]:
-    logger.info(f"get dataset '{dataset}' split full names")
+    logging.info(f"get dataset '{dataset}' split full names")
     return [
         {"dataset": dataset, "config": config, "split": split}
         for config in get_dataset_config_names(path=dataset, use_auth_token=use_auth_token)
@@ -265,7 +262,7 @@ def get_first_rows_response(
     rows_max_bytes: int,
     rows_max_number: int,
     rows_min_number: int,
-    assets_directory: Optional[str],
+    assets_directory: str,
 ) -> FirstRowsResponse:
     """
     Get the response of /first-rows for one specific split of a dataset from huggingface.co.
@@ -315,7 +312,7 @@ def get_first_rows_response(
           If the post-processing of the split rows failed, e.g. while saving the images or audio files to the assets.
     </Tip>
     """
-    logger.info(f"get first-rows for dataset={dataset} config={config} split={split}")
+    logging.info(f"get first-rows for dataset={dataset} config={config} split={split}")
     use_auth_token: Union[bool, str, None] = hf_token if hf_token is not None else False
     # first ensure the tuple (dataset, config, split) exists on the Hub
     try:

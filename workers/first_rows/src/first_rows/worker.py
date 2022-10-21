@@ -19,8 +19,6 @@ from first_rows.utils import (
     WorkerCustomError,
 )
 
-logger = logging.getLogger(__name__)
-
 
 class FirstRowsWorker(Worker):
     config: WorkerConfig
@@ -64,10 +62,10 @@ class FirstRowsWorker(Worker):
                 response=dict(response),
                 http_status=HTTPStatus.OK,
             )
-            logger.debug(f"dataset={dataset} config={config} split={split} is valid, cache updated")
+            logging.debug(f"dataset={dataset} config={config} split={split} is valid, cache updated")
             return True
         except (DatasetNotFoundError, ConfigNotFoundError, SplitNotFoundError):
-            logger.debug(
+            logging.debug(
                 f"the dataset={dataset}, config {config} or split {split} could not be found, don't update the cache"
             )
             return False
@@ -81,7 +79,7 @@ class FirstRowsWorker(Worker):
                 error_code=err.code,
                 details=dict(err.as_response_with_cause()),
             )
-            logger.debug(
+            logging.debug(
                 f"first-rows response for dataset={dataset} config={config} split={split} had an error, cache updated"
             )
             return False
@@ -96,7 +94,7 @@ class FirstRowsWorker(Worker):
                 error_code=e.code,
                 details=dict(e.as_response_with_cause()),
             )
-            logger.debug(
+            logging.debug(
                 f"first-rows response for dataset={dataset} config={config} split={split} had a server"
                 " error, cache updated"
             )

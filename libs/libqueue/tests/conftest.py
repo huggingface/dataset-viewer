@@ -15,7 +15,7 @@ def monkeypatch_session():
     monkeypatch_session.undo()
 
 
-@fixture(scope="session")
+@fixture(scope="session", autouse=True)
 def queue_config(monkeypatch_session: MonkeyPatch) -> QueueConfig:
     queue_config = QueueConfig()
     if "test" not in queue_config.mongo_database:

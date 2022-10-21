@@ -31,8 +31,6 @@ class QuerySetManager(Generic[U]):
 
 # END monkey patching ### hack ###
 
-logger = logging.getLogger(__name__)
-
 
 class Status(enum.Enum):
     WAITING = "waiting"
@@ -78,8 +76,8 @@ def get_datetime() -> datetime:
     return datetime.now(timezone.utc)
 
 
-def connect_to_queue(database, host) -> None:
-    connect(database, alias="queue", host=host)
+def connect_to_database(database: str, host: str) -> None:
+    connect(db=database, alias="queue", host=host)
 
 
 # States:
@@ -262,16 +260,16 @@ class Queue:
         try:
             job = Job.objects(pk=job_id).get()
         except DoesNotExist:
-            logger.error(f"job {job_id} does not exist. Aborting.")
+            logging.error(f"job {job_id} does not exist. Aborting.")
             return
         if job.status is not Status.STARTED:
-            logger.warning(
+            logging.warning(
                 f"job {job.to_id()} has a not the STARTED status ({job.status.value}). Force finishing anyway."
             )
         if job.finished_at is not None:
-            logger.warning(f"job {job.to_id()} has a non-empty finished_at field. Force finishing anyway.")
+            logging.warning(f"job {job.to_id()} has a non-empty finished_at field. Force finishing anyway.")
         if job.started_at is None:
-            logger.warning(f"job {job.to_id()} has an empty started_at field. Force finishing anyway.")
+            logging.warning(f"job {job.to_id()} has an empty started_at field. Force finishing anyway.")
         status = Status.SUCCESS if success else Status.ERROR
         job.update(finished_at=get_datetime(), status=status)
 

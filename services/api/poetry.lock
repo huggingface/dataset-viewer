@@ -320,7 +320,7 @@ format-nongpl = ["fqdn", "idna", "isoduration", "jsonpointer (>1.13)", "rfc3339-
 
 [[package]]
 name = "libcache"
-version = "0.3.0"
+version = "0.3.1"
 description = "Library for the cache in mongodb"
 category = "main"
 optional = false
@@ -335,11 +335,11 @@ pymongo = {version = ">=3.12.3,<4.0.0", extras = ["srv"]}
 
 [package.source]
 type = "file"
-url = "../../libs/libcache/dist/libcache-0.3.0-py3-none-any.whl"
+url = "../../libs/libcache/dist/libcache-0.3.1-py3-none-any.whl"
 
 [[package]]
 name = "libcommon"
-version = "0.3.1"
+version = "0.3.2"
 description = "Library for utils, common to all the services and workers"
 category = "main"
 optional = false
@@ -351,11 +351,11 @@ orjson = ">=3.6.4,<4.0.0"
 
 [package.source]
 type = "file"
-url = "../../libs/libcommon/dist/libcommon-0.3.1-py3-none-any.whl"
+url = "../../libs/libcommon/dist/libcommon-0.3.2-py3-none-any.whl"
 
 [[package]]
 name = "libqueue"
-version = "0.4.1"
+version = "0.4.2"
 description = "Library for the jobs queue in mongodb"
 category = "main"
 optional = false
@@ -370,7 +370,7 @@ pymongo = {version = ">=3.12.3,<4.0.0", extras = ["srv"]}
 
 [package.source]
 type = "file"
-url = "../../libs/libqueue/dist/libqueue-0.4.1-py3-none-any.whl"
+url = "../../libs/libqueue/dist/libqueue-0.4.2-py3-none-any.whl"
 
 [[package]]
 name = "markupsafe"
@@ -901,7 +901,7 @@ watchdog = ["watchdog"]
 [metadata]
 lock-version = "1.1"
 python-versions = "3.9.6"
-content-hash = "0f241acb38c4931b5f2e9ae27adfff99e98536f4fc5c005b0afe673fbf95f495"
+content-hash = "8ef5a2fce9713c54622d086aafcc10d434fc8ec13430d22a715845c4206b8f19"
 
 [metadata.files]
 anyio = []
@@ -960,13 +960,13 @@ isort = [
 ]
 jsonschema = []
 libcache = [
-    {file = "libcache-0.3.0-py3-none-any.whl", hash = "sha256:dcfe41d72e7d69b131f9f1f43ed1c6fbcc6cdfe9e8607fd4f5ac211548e74378"},
+    {file = "libcache-0.3.1-py3-none-any.whl", hash = "sha256:b2e6a479961d8f5ac408ee0bd9bd4e826a9f2cbc2df973fd26b77a9263a98190"},
 ]
 libcommon = [
-    {file = "libcommon-0.3.1-py3-none-any.whl", hash = "sha256:0a7c58ef9f4b69ca8ced5c9a0e8e21956b4e4c5f671dcdcc6c33c7123f630caa"},
+    {file = "libcommon-0.3.2-py3-none-any.whl", hash = "sha256:774292c9ea2d9ab50c4bf2a3eb212bfaf924096a4279ecf117b70618702d978d"},
 ]
 libqueue = [
-    {file = "libqueue-0.4.1-py3-none-any.whl", hash = "sha256:b94d97b3842e5e54b5b2da5cd77f4b5931bdd7980e61c261ebfb8c1a1c8eba7b"},
+    {file = "libqueue-0.4.2-py3-none-any.whl", hash = "sha256:9d5627f96ec3cd967ed4e331e4b4c5c125be2e2943fe6b10ddc927905f86c441"},
 ]
 markupsafe = []
 marshmallow = []

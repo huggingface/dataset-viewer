@@ -1,28 +1,23 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2022 The HuggingFace Authors.
 
-import logging
 from os import makedirs
 from pathlib import Path
-from typing import List, Optional, Tuple, TypedDict
+from typing import List, Tuple, TypedDict
 
 import soundfile  # type:ignore
-from libcache.asset import init_assets_dir
 from numpy import ndarray  # type:ignore
 from PIL import Image  # type: ignore
 from pydub import AudioSegment  # type:ignore
-
-logger = logging.getLogger(__name__)
 
 DATASET_SEPARATOR = "--"
 ASSET_DIR_MODE = 0o755
 
 
 def create_asset_dir(
-    dataset: str, config: str, split: str, row_idx: int, column: str, assets_directory: Optional[str]
+    dataset: str, config: str, split: str, row_idx: int, column: str, assets_directory: str
 ) -> Tuple[Path, str]:
-    assets_dir = init_assets_dir(assets_directory)
-    dir_path = Path(assets_dir).resolve() / dataset / DATASET_SEPARATOR / config / split / str(row_idx) / column
+    dir_path = Path(assets_directory).resolve() / dataset / DATASET_SEPARATOR / config / split / str(row_idx) / column
     url_dir_path = f"{dataset}/{DATASET_SEPARATOR}/{config}/{split}/{row_idx}/{column}"
     makedirs(dir_path, ASSET_DIR_MODE, exist_ok=True)
     return dir_path, url_dir_path
@@ -43,7 +38,7 @@ def create_image_file(
     filename: str,
     image: Image.Image,
     assets_base_url: str,
-    assets_directory: Optional[str],
+    assets_directory: str,
 ) -> ImageSource:
     dir_path, url_dir_path = create_asset_dir(
         dataset=dataset, config=config, split=split, row_idx=row_idx, column=column, assets_directory=assets_directory
@@ -72,7 +67,7 @@ def create_audio_files(
     sampling_rate: int,
     assets_base_url: str,
     filename_base: str,
-    assets_directory: Optional[str],
+    assets_directory: str,
 ) -> List[AudioSource]:
     wav_filename = f"{filename_base}.wav"
     mp3_filename = f"{filename_base}.mp3"

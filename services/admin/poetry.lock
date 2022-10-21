@@ -304,7 +304,7 @@ plugins = ["setuptools"]
 
 [[package]]
 name = "libcache"
-version = "0.3.0"
+version = "0.3.1"
 description = "Library for the cache in mongodb"
 category = "main"
 optional = false
@@ -319,11 +319,11 @@ pymongo = {version = ">=3.12.3,<4.0.0", extras = ["srv"]}
 
 [package.source]
 type = "file"
-url = "../../libs/libcache/dist/libcache-0.3.0-py3-none-any.whl"
+url = "../../libs/libcache/dist/libcache-0.3.1-py3-none-any.whl"
 
 [[package]]
 name = "libcommon"
-version = "0.3.1"
+version = "0.3.2"
 description = "Library for utils, common to all the services and workers"
 category = "main"
 optional = false
@@ -335,11 +335,11 @@ orjson = ">=3.6.4,<4.0.0"
 
 [package.source]
 type = "file"
-url = "../../libs/libcommon/dist/libcommon-0.3.1-py3-none-any.whl"
+url = "../../libs/libcommon/dist/libcommon-0.3.2-py3-none-any.whl"
 
 [[package]]
 name = "libqueue"
-version = "0.4.1"
+version = "0.4.2"
 description = "Library for the jobs queue in mongodb"
 category = "main"
 optional = false
@@ -354,7 +354,7 @@ pymongo = {version = ">=3.12.3,<4.0.0", extras = ["srv"]}
 
 [package.source]
 type = "file"
-url = "../../libs/libqueue/dist/libqueue-0.4.1-py3-none-any.whl"
+url = "../../libs/libqueue/dist/libqueue-0.4.2-py3-none-any.whl"
 
 [[package]]
 name = "marshmallow"
@@ -859,7 +859,7 @@ watchmedo = ["PyYAML (>=3.10)"]
 [metadata]
 lock-version = "1.1"
 python-versions = "3.9.6"
-content-hash = "84c8c8207b78423217d0bded3a27686d73ba83c7797afce314e96214e4dbd3e0"
+content-hash = "3b9dd1abc61cff1ada376c6fd38e78f0a500f63181966e98e0c7a98994573459"
 
 [metadata.files]
 anyio = [
@@ -920,13 +920,13 @@ isort = [
     {file = "isort-5.10.1.tar.gz", hash = "sha256:e8443a5e7a020e9d7f97f1d7d9cd17c88bcb3bc7e218bf9cf5095fe550be2951"},
 ]
 libcache = [
-    {file = "libcache-0.3.0-py3-none-any.whl", hash = "sha256:dcfe41d72e7d69b131f9f1f43ed1c6fbcc6cdfe9e8607fd4f5ac211548e74378"},
+    {file = "libcache-0.3.1-py3-none-any.whl", hash = "sha256:b2e6a479961d8f5ac408ee0bd9bd4e826a9f2cbc2df973fd26b77a9263a98190"},
 ]
 libcommon = [
-    {file = "libcommon-0.3.1-py3-none-any.whl", hash = "sha256:0a7c58ef9f4b69ca8ced5c9a0e8e21956b4e4c5f671dcdcc6c33c7123f630caa"},
+    {file = "libcommon-0.3.2-py3-none-any.whl", hash = "sha256:774292c9ea2d9ab50c4bf2a3eb212bfaf924096a4279ecf117b70618702d978d"},
 ]
 libqueue = [
-    {file = "libqueue-0.4.1-py3-none-any.whl", hash = "sha256:b94d97b3842e5e54b5b2da5cd77f4b5931bdd7980e61c261ebfb8c1a1c8eba7b"},
+    {file = "libqueue-0.4.2-py3-none-any.whl", hash = "sha256:9d5627f96ec3cd967ed4e331e4b4c5c125be2e2943fe6b10ddc927905f86c441"},
 ]
 marshmallow = []
 mccabe = [

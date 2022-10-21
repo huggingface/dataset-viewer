@@ -24,8 +24,6 @@ from api.utils import (
     get_json_ok_response,
 )
 
-logger = logging.getLogger(__name__)
-
 
 def create_splits_endpoint(
     hf_endpoint: str,
@@ -37,7 +35,7 @@ def create_splits_endpoint(
     async def splits_endpoint(request: Request) -> Response:
         try:
             dataset = request.query_params.get("dataset")
-            logger.info(f"/splits, dataset={dataset}")
+            logging.info(f"/splits, dataset={dataset}")
 
             if not are_valid_parameters([dataset]):
                 raise MissingRequiredParameterError("Parameter 'dataset' is required")

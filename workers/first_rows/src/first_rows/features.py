@@ -2,7 +2,7 @@
 # Copyright 2022 The HuggingFace Authors.
 
 import json
-from typing import Any, List, Optional, Union
+from typing import Any, List, Union
 from zlib import adler32
 
 from datasets import (
@@ -49,7 +49,7 @@ def image(
     value: Any,
     featureName: str,
     assets_base_url: str,
-    assets_directory: Optional[str],
+    assets_directory: str,
     json_path: List[Union[str, int]] = None,
 ) -> Any:
     if value is None:
@@ -86,7 +86,7 @@ def audio(
     value: Any,
     featureName: str,
     assets_base_url: str,
-    assets_directory: Optional[str],
+    assets_directory: str,
     json_path: List[Union[str, int]] = None,
 ) -> Any:
     if value is None:
@@ -124,7 +124,7 @@ def get_cell_value(
     featureName: str,
     fieldType: Any,
     assets_base_url: str,
-    assets_directory: Optional[str],
+    assets_directory: str,
     json_path: List[Union[str, int]] = None,
 ) -> Any:
     # always allow None values in the cells

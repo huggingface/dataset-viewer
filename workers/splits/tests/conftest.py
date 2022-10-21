@@ -21,7 +21,7 @@ def monkeypatch_session(hf_endpoint: str, hf_token: str):
     monkeypatch_session.undo()
 
 
-@fixture(scope="session")
+@fixture(scope="session", autouse=True)
 def worker_config(monkeypatch_session: MonkeyPatch) -> WorkerConfig:
     worker_config = WorkerConfig()
     if "test" not in worker_config.cache.mongo_database or "test" not in worker_config.queue.mongo_database:
