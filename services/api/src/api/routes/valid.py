@@ -19,12 +19,10 @@ from api.utils import (
     get_json_ok_response,
 )
 
-logger = logging.getLogger(__name__)
-
 
 async def valid_endpoint(_: Request) -> Response:
     try:
-        logger.info("/valid")
+        logging.info("/valid")
         content = {"valid": get_valid_dataset_names()}
         return get_json_ok_response(content)
     except Exception:
@@ -37,7 +35,7 @@ def create_is_valid_endpoint(
     async def is_valid_endpoint(request: Request) -> Response:
         try:
             dataset_name = request.query_params.get("dataset")
-            logger.info(f"/is-valid, dataset={dataset_name}")
+            logging.info(f"/is-valid, dataset={dataset_name}")
             if not are_valid_parameters([dataset_name]):
                 raise MissingRequiredParameterError("Parameter 'dataset' is required")
             # if auth_check fails, it will raise an exception that will be caught below

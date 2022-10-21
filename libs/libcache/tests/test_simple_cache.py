@@ -7,13 +7,11 @@ from time import process_time
 import pytest
 from pymongo.errors import DocumentTooLarge
 
-from libcache.config import CacheConfig
 from libcache.simple_cache import (
     DoesNotExist,
     InvalidCursor,
     InvalidLimit,
     _clean_database,
-    connect_to_cache,
     delete_first_rows_responses,
     delete_splits_responses,
     get_cache_reports_features,
@@ -31,11 +29,6 @@ from libcache.simple_cache import (
     upsert_first_rows_response,
     upsert_splits_response,
 )
-
-
-@pytest.fixture(autouse=True, scope="module")
-def client(cache_config: CacheConfig) -> None:
-    connect_to_cache(database=cache_config.mongo_database, host=cache_config.mongo_url)
 
 
 @pytest.fixture(autouse=True)

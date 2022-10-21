@@ -24,8 +24,6 @@ from api.utils import (
     get_json_ok_response,
 )
 
-logger = logging.getLogger(__name__)
-
 
 def create_first_rows_endpoint(
     hf_endpoint: str,
@@ -39,7 +37,7 @@ def create_first_rows_endpoint(
             dataset = request.query_params.get("dataset")
             config = request.query_params.get("config")
             split = request.query_params.get("split")
-            logger.info(f"/first-rows, dataset={dataset}, config={config}, split={split}")
+            logging.info(f"/first-rows, dataset={dataset}, config={config}, split={split}")
 
             if not are_valid_parameters([dataset, config, split]):
                 raise MissingRequiredParameterError("Parameters 'dataset', 'config' and 'split' are required")

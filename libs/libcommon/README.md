@@ -1,6 +1,6 @@
 # libcommon
 
-A Python library with common code (configuration, utils, logger, exceptions) used by the services and the workers
+A Python library with common code (configuration, utils, logging, exceptions) used by the services and the workers
 
 ## Configuration
 

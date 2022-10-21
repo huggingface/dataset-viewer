@@ -16,8 +16,6 @@ from huggingface_hub.utils import RepositoryNotFoundError  # type: ignore
 
 from splits.utils import DatasetNotFoundError, EmptyDatasetError, SplitsNamesError
 
-logger = logging.getLogger(__name__)
-
 
 class SplitFullName(TypedDict):
     dataset: str
@@ -35,7 +33,7 @@ class SplitsResponse(TypedDict):
 
 
 def get_dataset_split_full_names(dataset: str, use_auth_token: Union[bool, str, None] = False) -> List[SplitFullName]:
-    logger.info(f"get dataset '{dataset}' split full names")
+    logging.info(f"get dataset '{dataset}' split full names")
     return [
         {"dataset": dataset, "config": config, "split": split}
         for config in get_dataset_config_names(path=dataset, use_auth_token=use_auth_token)
@@ -70,7 +68,7 @@ def get_splits_response(
           If the list of splits could not be obtained using the datasets library.
     </Tip>
     """
-    logger.info(f"get splits for dataset={dataset}")
+    logging.info(f"get splits for dataset={dataset}")
     use_auth_token: Union[bool, str, None] = hf_token if hf_token is not None else False
     # first try to get the dataset config info
     try:

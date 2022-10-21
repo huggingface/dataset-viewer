@@ -1,7 +1,6 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2022 The HuggingFace Authors.
 
-import logging
 import types
 from datetime import datetime, timezone
 from http import HTTPStatus
@@ -32,9 +31,6 @@ def no_op(self, x):  # type: ignore
 QuerySet.__class_getitem__ = types.MethodType(no_op, QuerySet)
 
 
-logger = logging.getLogger(__name__)
-
-
 class QuerySetManager(Generic[U]):
     def __get__(self, instance: object, cls: Type[U]) -> QuerySet[U]:
         return QuerySet(cls, cls._get_collection())
@@ -43,7 +39,7 @@ class QuerySetManager(Generic[U]):
 # END monkey patching ### hack ###
 
 
-def connect_to_cache(database, host) -> None:
+def connect_to_database(database: str, host: str) -> None:
     connect(database, alias="cache", host=host)
 
 

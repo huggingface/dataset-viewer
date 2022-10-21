@@ -2,9 +2,6 @@
 # Copyright 2022 The HuggingFace Authors.
 
 import uvicorn  # type: ignore
-from libcache.simple_cache import connect_to_cache
-from libcommon.logger import init_logger
-from libqueue.queue import connect_to_queue
 from starlette.applications import Starlette
 from starlette.middleware import Middleware
 from starlette.middleware.cors import CORSMiddleware
@@ -21,9 +18,6 @@ from admin.routes.pending_jobs import create_pending_jobs_endpoint
 
 def create_app() -> Starlette:
     app_config = AppConfig()
-    init_logger(app_config.common.log_level)
-    connect_to_cache(database=app_config.cache.mongo_database, host=app_config.cache.mongo_url)
-    connect_to_queue(database=app_config.queue.mongo_database, host=app_config.cache.mongo_url)
     prometheus = Prometheus(prometheus_multiproc_dir=app_config.admin.prometheus_multiproc_dir)
 
     middleware = [

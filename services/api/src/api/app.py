@@ -4,10 +4,6 @@
 from typing import List
 
 import uvicorn  # type: ignore
-from libcache.asset import init_assets_dir, show_assets_dir
-from libcache.simple_cache import connect_to_cache
-from libcommon.logger import init_logger
-from libqueue.queue import connect_to_queue
 from starlette.applications import Starlette
 from starlette.middleware import Middleware
 from starlette.middleware.cors import CORSMiddleware
@@ -27,10 +23,6 @@ from api.routes.webhook import create_webhook_endpoint
 
 def create_app() -> Starlette:
     app_config = AppConfig()
-    init_logger(app_config.common.log_level)
-    connect_to_cache(database=app_config.cache.mongo_database, host=app_config.cache.mongo_url)
-    connect_to_queue(database=app_config.queue.mongo_database, host=app_config.cache.mongo_url)
-    show_assets_dir(assets_directory=app_config.cache.assets_directory)
     prometheus = Prometheus(prometheus_multiproc_dir=app_config.api.prometheus_multiproc_dir)
 
     middleware = [
@@ -85,9 +77,7 @@ def create_app() -> Starlette:
         # it can only be accessed in development. In production the reverse-proxy serves the assets
         Mount(
             "/assets",
-            app=StaticFiles(
-                directory=init_assets_dir(assets_directory=app_config.cache.assets_directory), check_dir=True
-            ),
+            app=StaticFiles(directory=app_config.cache.assets_directory, check_dir=True),
             name="assets",
         ),
     ]

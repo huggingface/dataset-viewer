@@ -18,8 +18,6 @@ from admin.utils import (
     get_json_ok_response,
 )
 
-logger = logging.getLogger(__name__)
-
 
 def create_pending_jobs_endpoint(
     max_age: int, external_auth_url: Optional[str] = None, organization: Optional[str] = None
@@ -28,7 +26,7 @@ def create_pending_jobs_endpoint(
     first_rows_queue = Queue(type=JobType.FIRST_ROWS.value)
 
     async def pending_jobs_endpoint(request: Request) -> Response:
-        logger.info("/pending-jobs")
+        logging.info("/pending-jobs")
         try:
             # if auth_check fails, it will raise an exception that will be caught below
             auth_check(external_auth_url=external_auth_url, request=request, organization=organization)

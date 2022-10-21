@@ -15,7 +15,7 @@ def monkeypatch_session():
     monkeypatch_session.undo()
 
 
-@fixture(scope="session")
+@fixture(scope="session", autouse=True)
 def cache_config(monkeypatch_session: MonkeyPatch) -> CacheConfig:
     cache_config = CacheConfig()
     if "test" not in cache_config.mongo_database:

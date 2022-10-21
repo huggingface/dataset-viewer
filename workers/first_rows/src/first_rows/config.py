@@ -33,8 +33,9 @@ class WorkerConfig:
     queue: QueueConfig
 
     def __init__(self):
-        self.cache = CacheConfig()
+        # First process the common configuration to setup the logging
         self.common = CommonConfig()
+        self.cache = CacheConfig()
         self.first_rows = FirstRowsConfig()
         self.queue = QueueConfig()
         self.setup()

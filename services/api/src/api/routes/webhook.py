@@ -11,9 +11,6 @@ from starlette.responses import Response
 from api.dataset import delete, is_supported, update
 from api.utils import Endpoint, get_response
 
-logger = logging.getLogger(__name__)
-
-
 schema = {
     "$schema": "https://json-schema.org/draft/2020-12/schema",
     "type": "object",
@@ -86,7 +83,7 @@ def create_webhook_endpoint(hf_endpoint: str, hf_token: Optional[str] = None) ->
         except Exception:
             content = {"status": "error", "error": "the body could not be parsed as a JSON"}
             return get_response(content, 400)
-        logger.info(f"/webhook: {json}")
+        logging.info(f"/webhook: {json}")
         try:
             payload = parse_payload(json)
         except ValidationError:
