@@ -3,6 +3,8 @@
 
 {{- define "containerWorkerFirstRows" -}}
 - name: "{{ include "name" . }}-worker-first-rows"
+  image: {{ .Values.dockerImage.workers.firstRows }}
+  imagePullPolicy: IfNotPresent
   env:
   - name: CACHE_ASSETS_DIRECTORY
     value: {{ .Values.cache.assetsDirectory | quote }}
@@ -64,8 +66,6 @@
     value: {{ .Values.firstRows.minCellBytes | quote }}
   - name: FIRST_ROWS_MIN_NUMBER
     value: {{ .Values.firstRows.minNumber| quote }}
-  image: {{ .Values.dockerImage.firstRows }}
-  imagePullPolicy: IfNotPresent
   volumeMounts:
   - mountPath: {{ .Values.cache.assetsDirectory | quote }}
     mountPropagation: None

@@ -3,6 +3,8 @@
 
 {{- define "containerWorkerSplits" -}}
 - name: "{{ include "name" . }}-worker-splits"
+  image: {{ .Values.dockerImage.workers.splits }}
+  imagePullPolicy: IfNotPresent
   env:
   - name: CACHE_ASSETS_DIRECTORY
     value: {{ .Values.cache.assetsDirectory | quote }}
@@ -54,8 +56,6 @@
     # see https://github.com/huggingface/datasets-server/issues/248
   - name: NUMBA_CACHE_DIR
     value: {{ .Values.numbaCacheDirectory | quote }}
-  image: {{ .Values.dockerImage.splits }}
-  imagePullPolicy: IfNotPresent
   volumeMounts:
   - mountPath: {{ .Values.hfDatasetsCache | quote }}
     mountPropagation: None

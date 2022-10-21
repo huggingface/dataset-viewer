@@ -25,10 +25,11 @@ mongodb:
 
 # overriden by docker-images.yaml (which must be in JSON format!)
 dockerImage:
-  admin: ""
-  api: ""
   reverseProxy: ""
-  worker:
+  services:
+    admin: ""
+    api: ""
+  workers:
     splits: ""
     firstRows: ""
 

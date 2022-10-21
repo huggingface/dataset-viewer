@@ -3,6 +3,8 @@
 
 {{- define "containerApi" -}}
 - name: "{{ include "name" . }}-api"
+  image: {{ .Values.dockerImage.services.api }}
+  imagePullPolicy: IfNotPresent
   env:
   - name: CACHE_ASSETS_DIRECTORY
     value: {{ .Values.cache.assetsDirectory | quote }}
@@ -52,8 +54,6 @@
     value: {{ .Values.api.uvicornNumWorkers | quote }}
   - name: API_UVICORN_PORT
     value: {{ .Values.api.uvicornPort | quote }}
-  image: {{ .Values.dockerImage.api }}
-  imagePullPolicy: IfNotPresent
   volumeMounts:
   - mountPath: {{ .Values.cache.assetsDirectory | quote }}
     mountPropagation: None

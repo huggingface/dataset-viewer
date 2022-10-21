@@ -3,6 +3,8 @@
 
 {{- define "containerAdmin" -}}
 - name: "{{ include "name" . }}-admin"
+  image: {{ .Values.dockerImage.services.admin }}
+  imagePullPolicy: IfNotPresent
   env:
   - name: CACHE_ASSETS_DIRECTORY
     value: {{ .Values.cache.assetsDirectory | quote }}
@@ -54,8 +56,6 @@
     value: {{ .Values.admin.uvicornNumWorkers | quote }}
   - name: ADMIN_UVICORN_PORT
     value: {{ .Values.admin.uvicornPort | quote }}
-  image: {{ .Values.dockerImage.admin }}
-  imagePullPolicy: IfNotPresent
   volumeMounts:
   - mountPath: {{ .Values.cache.assetsDirectory | quote }}
     mountPropagation: None
