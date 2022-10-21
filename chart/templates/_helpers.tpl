@@ -52,12 +52,12 @@ app: "{{ .Release.Name }}-reverse-proxy"
 
 {{- define "labels.admin" -}}
 {{ include "labels" . }}
-app: "{{ include "release" . }}-service-admin"
+app: "{{ include "release" . }}-admin"
 {{- end -}}
 
 {{- define "labels.api" -}}
 {{ include "labels" . }}
-app: "{{ include "release" . }}-service-api"
+app: "{{ include "release" . }}-api"
 {{- end -}}
 
 {{- define "labels.splits" -}}
