@@ -33,7 +33,7 @@ jobs:
           content="${content//$'\n'/'%0A'}"
           content="${content//$'\r'/'%0D'}"
           # end of optional handling for multi line json
-          echo "::set-output name=dockerConfig::$content"
+          echo "dockerConfig=$content" >> $GITHUB_OUTPUT
   e2e-tests:
     needs: get-config
     defaults:
