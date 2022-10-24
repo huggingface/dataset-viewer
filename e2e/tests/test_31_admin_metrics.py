@@ -23,8 +23,6 @@ def test_metrics():
     metrics = {line.split(" ")[0] for line in lines if line and line[0] != "#"}
     # see https://github.com/prometheus/client_python#multiprocess-mode-eg-gunicorn
     assert "process_start_time_seconds" not in metrics
-    assert "starlette_requests_total" in metrics
-    assert "starlette_responses_total" in metrics
 
     for endpoint in ["/splits", "/first-rows"]:
         # eg. 'queue_jobs_total{pid="10",queue="/first-rows",status="started"}'
