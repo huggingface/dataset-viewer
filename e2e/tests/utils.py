@@ -11,27 +11,33 @@ import requests
 from requests import Response
 
 PORT_REVERSE_PROXY = os.environ.get("PORT_REVERSE_PROXY", "8000")
+ADMIN_UVICORN_PORT = os.environ.get("ADMIN_UVICORN_PORT", "8080")
 INTERVAL = 1
 MAX_DURATION = 10 * 60
 URL = f"http://localhost:{PORT_REVERSE_PROXY}"
+ADMIN_URL = f"http://localhost:{ADMIN_UVICORN_PORT}"
 
 Headers = Dict[str, str]
 
 
-def get(relative_url: str, headers: Headers = None) -> Response:
+def get(relative_url: str, headers: Headers = None, url: str = URL) -> Response:
     if headers is None:
         headers = {}
-    return requests.get(f"{URL}{relative_url}", headers=headers)
+    return requests.get(f"{url}{relative_url}", headers=headers)
 
 
-def post(relative_url: str, json: Optional[Any] = None, headers: Headers = None) -> Response:
+def post(relative_url: str, json: Optional[Any] = None, headers: Headers = None, url: str = URL) -> Response:
     if headers is None:
         headers = {}
-    return requests.post(f"{URL}{relative_url}", json=json, headers=headers)
+    return requests.post(f"{url}{relative_url}", json=json, headers=headers)
 
 
 def poll(
-    relative_url: str, error_field: Optional[str] = None, expected_code: Optional[int] = 200, headers: Headers = None
+    relative_url: str,
+    error_field: Optional[str] = None,
+    expected_code: Optional[int] = 200,
+    headers: Headers = None,
+    url: str = URL,
 ) -> Response:
     if headers is None:
         headers = {}
@@ -43,7 +49,7 @@ def poll(
     while retries > 0 and should_retry:
         retries -= 1
         time.sleep(interval)
-        response = get(relative_url, headers)
+        response = get(relative_url=relative_url, headers=headers, url=url)
         if error_field is not None:
             # currently, when the dataset is being processed, the error message contains "Retry later"
             try:

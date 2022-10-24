@@ -34,7 +34,11 @@ build-backend = "poetry.core.masonry.api"
 requires = ["poetry-core>=1.0.0"]
 
 [tool.pytest.ini_options]
+#addopts = "-k 'wip'"
 filterwarnings = ["ignore::DeprecationWarning"]
+markers = [
+    "wip: tests being developed"
+]
 
 [tool.coverage.run]
 source = ["admin"]

@@ -26,14 +26,12 @@ jobs:
       - name: Get docker images
         id: set-var
         run: |
-          # from https://stackoverflow.com/a/61919791/7351594
-          content=`cat ${{ inputs.config-file }}`
-          # the following lines are only required for multi line json
-          content="${content//'%'/'%25'}"
-          content="${content//$'\n'/'%0A'}"
-          content="${content//$'\r'/'%0D'}"
+          # from https://trstringer.com/github-actions-multiline-strings/
+          dockerConfig=`cat ${{ inputs.config-file }}`
           # end of optional handling for multi line json
-          echo "::set-output name=dockerConfig::$content"
+          echo "dockerConfig<<EOF" >> $GITHUB_OUTPUT
+          echo "$dockerConfig" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
   e2e-tests:
     needs: get-config
     defaults:
@@ -46,7 +44,7 @@ jobs:
       - name: Install poetry
         run: pipx install poetry==${{ env.poetry-version }}
       - name: Use Python
-        uses: actions/setup-python@v3
+        uses: actions/setup-python@v4
         with:
           python-version: ${{ env.python-version }}
           cache: 'poetry'
@@ -64,6 +62,10 @@ jobs:
           IMAGE_API: "${{fromJson(needs.get-config.outputs.dockerConfig).dockerImage.services.api}}"
           IMAGE_WORKER_SPLITS: "${{fromJson(needs.get-config.outputs.dockerConfig).dockerImage.workers.splits}}"
           IMAGE_WORKER_FIRST_ROWS: "${{fromJson(needs.get-config.outputs.dockerConfig).dockerImage.workers.firstRows}}"
+          PORT_REVERSE_PROXY: "8000"
+          PROMETHEUS_MULTIPROC_DIR: "/tmp"
+          ADMIN_UVICORN_NUM_WORKERS: "2"
+          ADMIN_UVICORN_PORT: "8081"
         working-directory: tools
         run: docker-compose -f ./docker-compose-datasets-server-from-remote-images.yml up -d
       - name: Install dependencies
@@ -71,5 +73,15 @@ jobs:
           poetry env use "${{ env.python-version }}"
           poetry install
       - name: End-to-end tests
+        env:
+          QUEUE_SLEEP_TIME: "1"
+          # hard coded, see e2e/tests/fixtures/hub.py
+          COMMON_HF_ENDPOINT: "https://hub-ci.huggingface.co"
+          COMMON_HF_TOKEN: "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"
+          FIRST_ROWS_MAX_NUMBER: "4"
+          PORT_REVERSE_PROXY: "8000"
+          PROMETHEUS_MULTIPROC_DIR: "/tmp"
+          ADMIN_UVICORN_NUM_WORKERS: "2"
+          ADMIN_UVICORN_PORT: "8081"
         run: |
           poetry run python -m pytest -vv -x tests

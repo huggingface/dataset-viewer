@@ -32,7 +32,7 @@ jobs:
       - name: Install poetry
         run: pipx install poetry==${{ env.poetry-version }}
       - name: Use Python
-        uses: actions/setup-python@v3
+        uses: actions/setup-python@v4
         with:
           python-version: ${{ env.python-version }}
           cache: 'poetry'
@@ -53,7 +53,7 @@ jobs:
           CACHE_MONGO_URL: mongodb://localhost:${{ env.mongo-port }}
           QUEUE_MONGO_URL: mongodb://localhost:${{ env.mongo-port }}
         run: poetry run python -m pytest -s --cov --cov-report xml:coverage.xml --cov-report=term tests
-      - uses: codecov/codecov-action@v2
+      - uses: codecov/codecov-action@v3
         with:
           token: ${{ secrets.codecov-token }}
           files: ./coverage.xml

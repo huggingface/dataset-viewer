@@ -48,14 +48,14 @@
     value: {{ .Values.admin.hfWhoamiPath | quote }}
   - name: ADMIN_MAX_AGE
     value: {{ .Values.admin.maxAge | quote }}
-  - name: ADMIN_PROMETHEUS_MULTIPROC_DIR
-    value:  {{ .Values.admin.prometheusMultiprocDirectory | quote }}
   - name: ADMIN_UVICORN_HOSTNAME
     value: {{ .Values.admin.uvicornHostname | quote }}
   - name: ADMIN_UVICORN_NUM_WORKERS
     value: {{ .Values.admin.uvicornNumWorkers | quote }}
   - name: ADMIN_UVICORN_PORT
     value: {{ .Values.admin.uvicornPort | quote }}
+  - name: PROMETHEUS_MULTIPROC_DIR
+    value:  {{ .Values.admin.prometheusMultiprocDirectory | quote }}
   volumeMounts:
   - mountPath: {{ .Values.cache.assetsDirectory | quote }}
     mountPropagation: None

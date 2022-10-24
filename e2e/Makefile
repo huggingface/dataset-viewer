@@ -8,12 +8,15 @@ export COMMON_HF_TOKEN := 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
 export ADMIN_UVICORN_PORT := 9081
 export API_UVICORN_PORT := 9080
 export FIRST_ROWS_MAX_NUMBER := 4
+export PROMETHEUS_MULTIPROC_DIR := /tmp
+export ADMIN_UVICORN_NUM_WORKERS := 2
 
 # makefile variables
 DOCKER_COMPOSE := ../tools/docker-compose-datasets-server-from-remote-images.yml
 DOCKER_IMAGES := ../chart/docker-images.yaml
 
 include ../tools/Python.mk
+include ../tools/PythonTest.mk
 include ../tools/DockerRemoteImages.mk
 include ../tools/Docker.mk
 
