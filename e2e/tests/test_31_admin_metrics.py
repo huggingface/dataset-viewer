@@ -9,7 +9,6 @@ from .utils import ADMIN_URL, get
 
 
 def has_metric(name: str, labels: Dict[str, str], metrics: set[str]) -> bool:
-    labels = dict({"pid": "[0-9]*"}, **labels)
     label_str = ",".join([f'{k}="{v}"' for k, v in labels.items()])
     s = name + "{" + label_str + "}"
     return any(re.match(s, metric) is not None for metric in metrics)
@@ -24,12 +23,20 @@ def test_metrics():
     metrics = {line.split(" ")[0] for line in lines if line and line[0] != "#"}
     # see https://github.com/prometheus/client_python#multiprocess-mode-eg-gunicorn
     assert "process_start_time_seconds" not in metrics
+    assert "starlette_requests_in_progress" in metrics
+    assert "starlette_requests_processing_time_seconds_bucket" in metrics
+    assert "starlette_requests_total" in metrics
+    assert "starlette_responses_total" in metrics
 
     for endpoint in ["/splits", "/first-rows"]:
-        assert has_metric(name="queue_jobs_total", labels={"queue": endpoint, "status": "started"}, metrics=metrics)
+        # eg. 'queue_jobs_total{pid="10",queue="/first-rows",status="started"}'
+        assert has_metric(
+            name="queue_jobs_total", labels={"pid": "[0-9]*", "queue": endpoint, "status": "started"}, metrics=metrics
+        ), f"queue_jobs_total - endpoint={endpoint} not found in {metrics}"
         # cache should have been filled by the previous tests
+        # eg. 'responses_in_cache_total{error_code="None",http_status="200",path="/splits",pid="10"}'
         assert has_metric(
             name="responses_in_cache_total",
-            labels={"path": endpoint, "http_status": "200", "error_code": "null"},
+            labels={"error_code": "None", "http_status": "200", "path": endpoint, "pid": "[0-9]*"},
             metrics=metrics,
-        )
+        ), f"responses_in_cache_total - endpoint {endpoint} not found in {metrics}"
