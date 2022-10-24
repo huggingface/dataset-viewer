@@ -64,11 +64,7 @@ class DumpByPendingStatus(TypedDict):
     started: List[JobDict]
 
 
-class EmptyQueue(Exception):
-    pass
-
-
-class JobNotFound(Exception):
+class EmptyQueueError(Exception):
     pass
 
 
@@ -206,8 +202,8 @@ class Queue:
         The job is moved from the waiting state to the started state.
 
         Raises:
-            EmptyQueue: if there is no job in the queue, within the limit of the maximum number of started jobs for a
-              dataset
+            EmptyQueueError: if there is no job in the queue, within the limit of the maximum number of started jobs
+            for a dataset
 
         Returns: the job id and the input arguments: dataset, config and split
         """
@@ -241,7 +237,9 @@ class Queue:
                 .first()
             )
         if next_waiting_job is None:
-            raise EmptyQueue("no job available (within the limit of {max_jobs_per_dataset} started jobs per dataset)")
+            raise EmptyQueueError(
+                "no job available (within the limit of {max_jobs_per_dataset} started jobs per dataset)"
+            )
         next_waiting_job.update(started_at=get_datetime(), status=Status.STARTED)
         return str(next_waiting_job.pk), next_waiting_job.dataset, next_waiting_job.config, next_waiting_job.split
         # ^ job.pk is the id. job.id is not recognized by mypy
