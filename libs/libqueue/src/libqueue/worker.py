@@ -10,7 +10,7 @@ from typing import Optional
 from psutil import cpu_count, getloadavg, swap_memory, virtual_memory
 
 from libqueue.config import QueueConfig
-from libqueue.queue import EmptyQueue, Queue
+from libqueue.queue import EmptyQueueError, Queue
 
 
 class Worker(ABC):
@@ -73,7 +73,7 @@ class Worker(ABC):
             job_id, dataset, config, split = self.queue.start_job()
             parameters_for_log = "dataset={dataset}" + ("" if split is None else f"config={config} split={split}")
             logging.debug(f"job assigned: {job_id} for {parameters_for_log}")
-        except EmptyQueue:
+        except EmptyQueueError:
             logging.debug("no job in the queue")
             return False
 
