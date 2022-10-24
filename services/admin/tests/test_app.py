@@ -1,6 +1,7 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2022 The HuggingFace Authors.
 
+import os
 from typing import Optional
 
 import pytest
@@ -58,20 +59,29 @@ def test_get_healthcheck(client: TestClient) -> None:
 
 
 def test_metrics(client: TestClient) -> None:
+    is_multiprocess = "PROMETHEUS_MULTIPROC_DIR" in os.environ
+
     response = client.get("/metrics")
     assert response.status_code == 200
     text = response.text
     lines = text.split("\n")
     metrics = {line.split(" ")[0]: float(line.split(" ")[1]) for line in lines if line and line[0] != "#"}
-    name = "process_start_time_seconds"
-    assert name in metrics
-    assert metrics[name] > 0
-    name = "process_start_time_seconds"
+    if not is_multiprocess:
+        name = "process_start_time_seconds"
+        assert name in metrics
+        assert metrics[name] > 0
+    additional_field = ('pid="' + str(os.getpid()) + '",') if is_multiprocess else ""
     for _, job_type in JobType.__members__.items():
-        assert 'queue_jobs_total{queue="' + job_type.value + '",status="started"}' in metrics
+        assert "queue_jobs_total{" + additional_field + 'queue="' + job_type.value + '",status="started"}' in metrics
     # still empty
-    assert 'responses_in_cache_total{path="/splits",http_status="200",error_code=null}' not in metrics
-    assert 'responses_in_cache_total{path="/first-rows",http_status="200",error_code=null}' not in metrics
+    assert (
+        "responses_in_cache_total{" + additional_field + 'path="/splits",http_status="200",error_code=null}'
+        not in metrics
+    )
+    assert (
+        "responses_in_cache_total{" + additional_field + 'path="/first-rows",http_status="200",error_code=null}'
+        not in metrics
+    )
     assert 'starlette_requests_total{method="GET",path_template="/metrics"}' in metrics
 
 

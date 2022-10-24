@@ -18,7 +18,7 @@ from admin.routes.pending_jobs import create_pending_jobs_endpoint
 
 def create_app() -> Starlette:
     app_config = AppConfig()
-    prometheus = Prometheus(prometheus_multiproc_dir=app_config.admin.prometheus_multiproc_dir)
+    prometheus = Prometheus()
 
     middleware = [
         Middleware(

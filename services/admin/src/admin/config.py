@@ -28,7 +28,6 @@ class AdminConfig:
     hf_organization: Optional[str]
     hf_whoami_path: str
     max_age: int
-    prometheus_multiproc_dir: Optional[str]
 
     def __init__(self, hf_endpoint: str):
         env = Env(expand_vars=True)
@@ -38,8 +37,6 @@ class AdminConfig:
             self.cache_reports_num_results = env.int(name="CACHE_REPORTS_NUM_RESULTS", default=100)
             self.hf_whoami_path = env.str(name="HF_WHOAMI_PATH", default="/api/whoami-v2")
             self.max_age = env.int(name="MAX_AGE", default=10)  # 10 seconds
-            prometheus_multiproc_dir = env.str(name="PROMETHEUS_MULTIPROC_DIR", default="")
-            self.prometheus_multiproc_dir = None if prometheus_multiproc_dir == "" else prometheus_multiproc_dir
             self.external_auth_url = None if self.hf_whoami_path is None else f"{hf_endpoint}{self.hf_whoami_path}"
 
 
