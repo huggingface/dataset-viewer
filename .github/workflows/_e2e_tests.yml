@@ -79,7 +79,7 @@ jobs:
           COMMON_HF_TOKEN: "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"
           FIRST_ROWS_MAX_NUMBER: "4"
           PORT_REVERSE_PROXY: "8000"
-          PROMETHEUS_MULTIPROC_DIR := /tmp
-          ADMIN_UVICORN_NUM_WORKERS := 2
+          PROMETHEUS_MULTIPROC_DIR: "/tmp"
+          ADMIN_UVICORN_NUM_WORKERS: "2"
         run: |
           poetry run python -m pytest -vv -x tests
