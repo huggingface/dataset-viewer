@@ -8,6 +8,7 @@ DOCKER_COMPOSE := ../../tools/docker-compose-mongo.yml
 #SAFETY_EXCEPTIONS :=
 
 include ../../tools/Python.mk
+include ../../tools/PythonTest.mk
 include ../../tools/Docker.mk
 
 .PHONY: run
