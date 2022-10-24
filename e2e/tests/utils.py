@@ -18,16 +18,16 @@ URL = f"http://localhost:{PORT_REVERSE_PROXY}"
 Headers = Dict[str, str]
 
 
-def get(relative_url: str, headers: Headers = None) -> Response:
+def get(relative_url: str, headers: Headers = None, url: str = URL) -> Response:
     if headers is None:
         headers = {}
-    return requests.get(f"{URL}{relative_url}", headers=headers)
+    return requests.get(f"{url}{relative_url}", headers=headers)
 
 
-def post(relative_url: str, json: Optional[Any] = None, headers: Headers = None) -> Response:
+def post(relative_url: str, json: Optional[Any] = None, headers: Headers = None, url: str = URL) -> Response:
     if headers is None:
         headers = {}
-    return requests.post(f"{URL}{relative_url}", json=json, headers=headers)
+    return requests.post(f"{url}{relative_url}", json=json, headers=headers)
 
 
 def poll(

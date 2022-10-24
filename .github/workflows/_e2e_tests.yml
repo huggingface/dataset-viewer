@@ -62,6 +62,9 @@ jobs:
           IMAGE_API: "${{fromJson(needs.get-config.outputs.dockerConfig).dockerImage.services.api}}"
           IMAGE_WORKER_SPLITS: "${{fromJson(needs.get-config.outputs.dockerConfig).dockerImage.workers.splits}}"
           IMAGE_WORKER_FIRST_ROWS: "${{fromJson(needs.get-config.outputs.dockerConfig).dockerImage.workers.firstRows}}"
+          PORT_REVERSE_PROXY: "8000"
+          PROMETHEUS_MULTIPROC_DIR: "/tmp"
+          ADMIN_UVICORN_NUM_WORKERS: "2"
         working-directory: tools
         run: docker-compose -f ./docker-compose-datasets-server-from-remote-images.yml up -d
       - name: Install dependencies
@@ -69,5 +72,14 @@ jobs:
           poetry env use "${{ env.python-version }}"
           poetry install
       - name: End-to-end tests
+        env:
+          QUEUE_SLEEP_TIME: "1"
+          # hard coded, see e2e/tests/fixtures/hub.py
+          COMMON_HF_ENDPOINT: "https://hub-ci.huggingface.co"
+          COMMON_HF_TOKEN: "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"
+          FIRST_ROWS_MAX_NUMBER: "4"
+          PORT_REVERSE_PROXY: "8000"
+          PROMETHEUS_MULTIPROC_DIR := /tmp
+          ADMIN_UVICORN_NUM_WORKERS := 2
         run: |
           poetry run python -m pytest -vv -x tests
