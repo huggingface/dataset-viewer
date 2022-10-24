@@ -65,6 +65,7 @@ jobs:
           PORT_REVERSE_PROXY: "8000"
           PROMETHEUS_MULTIPROC_DIR: "/tmp"
           ADMIN_UVICORN_NUM_WORKERS: "2"
+          ADMIN_UVICORN_PORT: "8081"
         working-directory: tools
         run: docker-compose -f ./docker-compose-datasets-server-from-remote-images.yml up -d
       - name: Install dependencies
@@ -81,5 +82,6 @@ jobs:
           PORT_REVERSE_PROXY: "8000"
           PROMETHEUS_MULTIPROC_DIR: "/tmp"
           ADMIN_UVICORN_NUM_WORKERS: "2"
+          ADMIN_UVICORN_PORT: "8081"
         run: |
           poetry run python -m pytest -vv -x tests
