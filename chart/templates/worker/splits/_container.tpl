@@ -59,6 +59,11 @@
   - name: NUMBA_CACHE_DIR
     value: {{ .Values.numbaCacheDirectory | quote }}
   volumeMounts:
+  - mountPath: {{ .Values.cache.assetsDirectory | quote }}
+    mountPropagation: None
+    name: nfs
+    subPath: "{{ include "assets.subpath" . }}"
+    readOnly: false
   - mountPath: {{ .Values.hfDatasetsCache | quote }}
     mountPropagation: None
     name: nfs
