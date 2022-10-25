@@ -1,6 +1,5 @@
 from typing import Optional
 
-
 from libqueue.config import QueueConfig
 from libqueue.queue import Queue
 from libqueue.worker import Worker
