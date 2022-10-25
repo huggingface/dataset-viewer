@@ -7,22 +7,52 @@ import time
 from abc import ABC, abstractmethod
 from typing import Optional
 
+from packaging import version
 from psutil import cpu_count, getloadavg, swap_memory, virtual_memory
 
 from libqueue.config import QueueConfig
 from libqueue.queue import EmptyQueueError, Queue
 
 
+def parse_version(string_version: str) -> version.Version:
+    parsed_version = version.parse(string_version)
+    if isinstance(parsed_version, version.LegacyVersion):
+        raise ValueError(f"LegacyVersion is not supported: {parsed_version}")
+    return parsed_version
+
+
+def compare_major_version(semver_a: str, semver_b: str) -> int:
+    """
+    Compare the major version of both semver arguments.
+
+    Args:
+        semver_a (:obj:`str`): the first semantic version
+        semver_b (:obj:`str`): the second semantic version
+
+    Returns:
+        :obj:`int`: the difference between the major version of both semver arguments.
+          0 if they are equal. Negative if semver_a is lower than semver_b, positive otherwise.
+    Raises:
+        :obj:`ValueError`: if a version passed as an argument is not a valid semantic version.
+    """
+    try:
+        return parse_version(semver_a).major - parse_version(semver_b).major
+    except Exception as err:
+        raise RuntimeError(f"Could not get major versions: {err}") from err
+
+
 class Worker(ABC):
     queue_config: QueueConfig
+    version: str
 
     @property
     @abstractmethod
     def queue(self) -> Queue:
         pass
 
-    def __init__(self, queue_config: QueueConfig) -> None:
+    def __init__(self, queue_config: QueueConfig, version: str) -> None:
         self.queue_config = queue_config
+        self.version = version
 
     def has_memory(self) -> bool:
         if self.queue_config.max_memory_pct <= 0:
@@ -89,6 +119,21 @@ class Worker(ABC):
             result = "success" if success else "error"
             logging.debug(f"job finished with {result}: {job_id} for {parameters_for_log}")
         return True
+
+    def is_major_version_lower_than_worker(self, version: str) -> bool:
+        """
+        Checks if the version passed as an argument has a strictly lower major version than the worker's version.
+
+        Args:
+            version (:obj:`str`): the version to compare to the worker's version
+
+        Returns:
+            :obj:`bool`: True if the version passed as an argument has a strictly lower major version than the
+              worker's version.
+        Raises:
+            :obj:`ValueError`: if a version passed as an argument is not a valid semantic version.
+        """
+        return compare_major_version(version, self.version) < 0
 
     @abstractmethod
     def compute(

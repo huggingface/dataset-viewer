@@ -9,6 +9,7 @@ license = "Apache-2.0"
 environs = "^9.5.0"
 mongo-types = "0.15.1"
 mongoengine = "^0.24.1"
+packaging = "^21.3"
 psutil = "^5.9.2"
 pymongo = { extras = ["srv"], version = "^3.12.3" }
 python = "3.9.6"
