@@ -1,7 +1,7 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2022 The HuggingFace Authors.
 
-from typing import Optional
+import os
 
 from prometheus_client import (  # type: ignore # https://github.com/prometheus/client_python/issues/491
     CONTENT_TYPE_LATEST,
@@ -17,19 +17,18 @@ from starlette.responses import Response
 
 
 class Prometheus:
-    prometheus_multiproc_dir: Optional[str]
-
-    def __init__(self, prometheus_multiproc_dir: Optional[str]):
-        self.prometheus_multiproc_dir = prometheus_multiproc_dir
-
     def getRegistry(self) -> CollectorRegistry:
         # taken from https://github.com/perdy/starlette-prometheus/blob/master/starlette_prometheus/view.py
-        if self.prometheus_multiproc_dir is not None:
+        # see https://github.com/prometheus/client_python#multiprocess-mode-eg-gunicorn
+        if "PROMETHEUS_MULTIPROC_DIR" in os.environ:
             registry = CollectorRegistry()
-            MultiProcessCollector(registry=registry, path=self.prometheus_multiproc_dir)
+            MultiProcessCollector(registry=registry)
         else:
             registry = REGISTRY
         return registry
 
+    def getLatestContent(self) -> str:
+        return generate_latest(self.getRegistry()).decode("utf-8")
+
     def endpoint(self, request: Request) -> Response:
-        return Response(generate_latest(self.getRegistry()), headers={"Content-Type": CONTENT_TYPE_LATEST})
+        return Response(self.getLatestContent(), headers={"Content-Type": CONTENT_TYPE_LATEST})

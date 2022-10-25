@@ -23,7 +23,7 @@ from api.routes.webhook import create_webhook_endpoint
 
 def create_app() -> Starlette:
     app_config = AppConfig()
-    prometheus = Prometheus(prometheus_multiproc_dir=app_config.api.prometheus_multiproc_dir)
+    prometheus = Prometheus()
 
     middleware = [
         Middleware(

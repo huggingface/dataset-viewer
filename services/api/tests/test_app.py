@@ -233,11 +233,11 @@ def test_metrics(client: TestClient) -> None:
     text = response.text
     lines = text.split("\n")
     metrics = {line.split(" ")[0]: float(line.split(" ")[1]) for line in lines if line and line[0] != "#"}
-    name = "process_start_time_seconds"
-    assert name in metrics
-    assert metrics[name] > 0
-    name = "process_start_time_seconds"
-    assert 'starlette_requests_total{method="GET",path_template="/metrics"}' in metrics
+
+    # the middleware should have recorded the request
+    name = 'starlette_requests_total{method="GET",path_template="/metrics"}'
+    assert name in metrics, metrics
+    assert metrics[name] > 0, metrics
 
 
 @pytest.mark.parametrize(
