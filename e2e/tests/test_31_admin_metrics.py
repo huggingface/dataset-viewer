@@ -20,10 +20,16 @@ def test_metrics():
     assert response.status_code == 200, f"{response.status_code} - {response.text}"
     content = response.text
     lines = content.split("\n")
-    metrics = {line.split(" ")[0] for line in lines if line and line[0] != "#"}
+    metrics = {line.split(" ")[0]: float(line.split(" ")[1]) for line in lines if line and line[0] != "#"}
     # see https://github.com/prometheus/client_python#multiprocess-mode-eg-gunicorn
     assert "process_start_time_seconds" not in metrics
 
+    # the middleware should have recorded the request
+    name = 'starlette_requests_total{method="GET",path_template="/metrics"}'
+    assert name in metrics, metrics
+    assert metrics[name] > 0, metrics
+
+    metrics = set(metrics.keys())
     for endpoint in ["/splits", "/first-rows"]:
         # eg. 'queue_jobs_total{pid="10",queue="/first-rows",status="started"}'
         assert has_metric(
