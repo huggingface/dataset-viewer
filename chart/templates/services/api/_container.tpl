@@ -46,14 +46,14 @@
     value: {{ .Values.api.maxAgeLong | quote }}
   - name: API_MAX_AGE_SHORT
     value: {{ .Values.api.maxAgeShort | quote }}
-  - name: API_PROMETHEUS_MULTIPROC_DIR
-    value:  {{ .Values.api.prometheusMultiprocDirectory | quote }}
   - name: API_UVICORN_HOSTNAME
     value: {{ .Values.api.uvicornHostname | quote }}
   - name: API_UVICORN_NUM_WORKERS
     value: {{ .Values.api.uvicornNumWorkers | quote }}
   - name: API_UVICORN_PORT
     value: {{ .Values.api.uvicornPort | quote }}
+  - name: PROMETHEUS_MULTIPROC_DIR
+    value:  {{ .Values.api.prometheusMultiprocDirectory | quote }}
   volumeMounts:
   - mountPath: {{ .Values.cache.assetsDirectory | quote }}
     mountPropagation: None

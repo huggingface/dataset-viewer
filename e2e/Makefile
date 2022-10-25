@@ -5,11 +5,12 @@ export MONGO_PORT := 27050
 export QUEUE_SLEEP_TIME := 1
 export COMMON_HF_ENDPOINT := https://hub-ci.huggingface.co
 export COMMON_HF_TOKEN := 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
-export ADMIN_UVICORN_PORT := 9081
 export API_UVICORN_PORT := 9080
+export ADMIN_UVICORN_PORT := 9081
 export FIRST_ROWS_MAX_NUMBER := 4
 export PROMETHEUS_MULTIPROC_DIR := /tmp
 export ADMIN_UVICORN_NUM_WORKERS := 2
+export API_UVICORN_NUM_WORKERS := 2
 
 # makefile variables
 DOCKER_COMPOSE := ../tools/docker-compose-datasets-server-from-remote-images.yml

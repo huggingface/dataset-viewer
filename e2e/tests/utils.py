@@ -11,11 +11,13 @@ import requests
 from requests import Response
 
 PORT_REVERSE_PROXY = os.environ.get("PORT_REVERSE_PROXY", "8000")
-ADMIN_UVICORN_PORT = os.environ.get("ADMIN_UVICORN_PORT", "8080")
+API_UVICORN_PORT = os.environ.get("API_UVICORN_PORT", "8080")
+ADMIN_UVICORN_PORT = os.environ.get("ADMIN_UVICORN_PORT", "8081")
 INTERVAL = 1
 MAX_DURATION = 10 * 60
 URL = f"http://localhost:{PORT_REVERSE_PROXY}"
 ADMIN_URL = f"http://localhost:{ADMIN_UVICORN_PORT}"
+API_URL = f"http://localhost:{API_UVICORN_PORT}"
 
 Headers = Dict[str, str]
 

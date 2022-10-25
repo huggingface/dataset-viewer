@@ -52,18 +52,20 @@ jobs:
             ${{ env.working-directory }}/poetry.lock
       - name: Launch the services
         env:
-          QUEUE_SLEEP_TIME: "1"
-          # hard coded, see e2e/tests/fixtures/hub.py
-          COMMON_HF_ENDPOINT: "https://hub-ci.huggingface.co"
-          COMMON_HF_TOKEN: "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"
-          FIRST_ROWS_MAX_NUMBER: "4"
           IMAGE_REVERSE_PROXY: "${{fromJson(needs.get-config.outputs.dockerConfig).dockerImage.reverseProxy}}"
           IMAGE_ADMIN: "${{fromJson(needs.get-config.outputs.dockerConfig).dockerImage.services.admin}}"
           IMAGE_API: "${{fromJson(needs.get-config.outputs.dockerConfig).dockerImage.services.api}}"
           IMAGE_WORKER_SPLITS: "${{fromJson(needs.get-config.outputs.dockerConfig).dockerImage.workers.splits}}"
           IMAGE_WORKER_FIRST_ROWS: "${{fromJson(needs.get-config.outputs.dockerConfig).dockerImage.workers.firstRows}}"
+          QUEUE_SLEEP_TIME: "1"
+          # hard coded, see e2e/tests/fixtures/hub.py
+          COMMON_HF_ENDPOINT: "https://hub-ci.huggingface.co"
+          COMMON_HF_TOKEN: "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"
+          FIRST_ROWS_MAX_NUMBER: "4"
           PORT_REVERSE_PROXY: "8000"
           PROMETHEUS_MULTIPROC_DIR: "/tmp"
+          API_UVICORN_NUM_WORKERS: "2"
+          API_UVICORN_PORT: "8080"
           ADMIN_UVICORN_NUM_WORKERS: "2"
           ADMIN_UVICORN_PORT: "8081"
         working-directory: tools
@@ -81,6 +83,8 @@ jobs:
           FIRST_ROWS_MAX_NUMBER: "4"
           PORT_REVERSE_PROXY: "8000"
           PROMETHEUS_MULTIPROC_DIR: "/tmp"
+          API_UVICORN_NUM_WORKERS: "2"
+          API_UVICORN_PORT: "8080"
           ADMIN_UVICORN_NUM_WORKERS: "2"
           ADMIN_UVICORN_PORT: "8081"
         run: |
