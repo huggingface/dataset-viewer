@@ -33,10 +33,23 @@ class SplitsResponse(TypedDict):
 
 
 def get_dataset_split_full_names(dataset: str, use_auth_token: Union[bool, str, None] = False) -> List[SplitFullName]:
+    """Get the list of splits full names (split and config) for a dataset.
+
+    Args:
+        dataset (str): A dataset name. If the repository is namespaced (a user or an organization), the namespace and
+          the dataset name are separated with a slash (`/`), for example: `user/dataset`.
+        use_auth_token (Union[bool, str, None], optional): user token. It allows to retrieve the splits for gated
+          datasets. Defaults to False (no authentication).
+
+    Returns:
+        List[SplitFullName]: a list of splits full names: objects with the keys `dataset`, `config` and `split`. They
+          are sorted alphabetically by configuration (config), but the splits order for a given configuration is
+          preserved.
+    """
     logging.info(f"get dataset '{dataset}' split full names")
     return [
         {"dataset": dataset, "config": config, "split": split}
-        for config in get_dataset_config_names(path=dataset, use_auth_token=use_auth_token)
+        for config in sorted(get_dataset_config_names(path=dataset, use_auth_token=use_auth_token))
         for split in get_dataset_split_names(path=dataset, config_name=config, use_auth_token=use_auth_token)
     ]
 
