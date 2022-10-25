@@ -47,7 +47,11 @@
   - name: COMMON_HF_ENDPOINT
     value: {{ .Values.common.hfEndpoint | quote }}
   - name: COMMON_HF_TOKEN
-    value: {{ .Values.secrets.hfToken | quote }}
+    valueFrom:
+      secretKeyRef:
+        name: {{ .Values.secrets.hfToken | quote }}
+        key: HF_TOKEN
+        optional: false
   - name: COMMON_LOG_LEVEL
     value: {{ .Values.common.logLevel | quote }}
   - name: HF_DATASETS_CACHE
