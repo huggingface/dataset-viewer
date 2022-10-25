@@ -5,7 +5,7 @@ import os
 import re
 from typing import Dict
 
-from .utils import ADMIN_URL, get
+from .utils import API_URL, get
 
 
 def has_metric(name: str, labels: Dict[str, str], metrics: set[str]) -> bool:
@@ -16,7 +16,7 @@ def has_metric(name: str, labels: Dict[str, str], metrics: set[str]) -> bool:
 
 def test_metrics():
     assert "PROMETHEUS_MULTIPROC_DIR" in os.environ
-    response = get("/metrics", url=ADMIN_URL)
+    response = get("/metrics", url=API_URL)
     assert response.status_code == 200, f"{response.status_code} - {response.text}"
     content = response.text
     lines = content.split("\n")
