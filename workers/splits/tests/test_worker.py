@@ -24,6 +24,12 @@ def worker(worker_config: WorkerConfig) -> SplitsWorker:
     return SplitsWorker(worker_config)
 
 
+def test_version(worker: SplitsWorker) -> None:
+    assert len(worker.version.split(".")) == 3
+    assert worker.is_major_version_lower_than_worker(version="0.0.0") is True
+    assert worker.is_major_version_lower_than_worker(version="1000.0.0") is False
+
+
 def test_compute(worker: SplitsWorker, hub_public_csv: str) -> None:
     dataset = hub_public_csv
     assert worker.compute(dataset=dataset) is True

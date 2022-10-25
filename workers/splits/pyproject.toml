@@ -2,7 +2,7 @@
 authors = ["Sylvain Lesage <sylvain.lesage@huggingface.co>"]
 description = "Worker that pre-computes and caches the response to /splits"
 name = "splits"
-version = "0.1.1"
+version = "1.0.0"
 license = "Apache-2.0"
 
 [tool.poetry.dependencies]
@@ -18,7 +18,7 @@ kenlm = { url = "https://github.com/kpu/kenlm/archive/master.zip" }
 kss = "^2.6.0"
 libcache = { path = "../../libs/libcache/dist/libcache-0.3.1-py3-none-any.whl", develop = false }
 libcommon = { path = "../../libs/libcommon/dist/libcommon-0.3.2-py3-none-any.whl", develop = false }
-libqueue = { path = "../../libs/libqueue/dist/libqueue-0.4.2-py3-none-any.whl", develop = false }
+libqueue = { path = "../../libs/libqueue/dist/libqueue-0.4.3-py3-none-any.whl", develop = false }
 lm-dataformat = "^0.0.20"
 lxml = "^4.9.1"
 nlp = "^0.4.0"
@@ -56,11 +56,9 @@ build-backend = "poetry.core.masonry.api"
 requires = ["poetry-core>=1.0.0"]
 
 [tool.pytest.ini_options]
-addopts = "-k 'not deprecated'"
+# addopts = "-k 'wip'"
 filterwarnings = ["ignore::DeprecationWarning"]
 markers = [
-    "deprecated: tests on deprecated code (deselect with '-m \"not deprecated\"')",
-    "real_dataset: tests on real datasets (from the Hub)",
     "wip: tests being developed"
 ]
 

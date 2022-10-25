@@ -1,6 +1,7 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2022 The HuggingFace Authors.
 
+import importlib.metadata
 import logging
 from http import HTTPStatus
 from typing import Optional
@@ -26,7 +27,7 @@ class SplitsWorker(Worker):
     config: WorkerConfig
 
     def __init__(self, worker_config: WorkerConfig):
-        super().__init__(queue_config=worker_config.queue)
+        super().__init__(queue_config=worker_config.queue, version=importlib.metadata.version(__package__))
         self._queues = Queues(max_jobs_per_dataset=worker_config.queue.max_jobs_per_dataset)
         self.config = worker_config
 
