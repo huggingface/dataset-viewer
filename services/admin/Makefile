@@ -25,8 +25,7 @@ test:
 	$(MAKE) down
 	$(MAKE) up
 	poetry run python -m pytest -vv -x tests
-	poetry run python -m pytest -vv -x tests/test_prometheus.py
-	PROMETHEUS_MULTIPROC_DIR=/tmp poetry run python -m pytest -vv -x tests/test_prometheus.py
+	PROMETHEUS_MULTIPROC_DIR=/tmp poetry run python -m pytest -vv -x -k "test_metrics or test_prometheus" tests
 	$(MAKE) down
 
 .PHONY: coverage
