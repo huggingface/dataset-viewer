@@ -140,7 +140,7 @@ def mark_splits_responses_as_stale(dataset_name: str):
 
 class SplitsCacheEntry(TypedDict):
     response: Dict
-    http_status: int
+    http_status: HTTPStatus
     error_code: Optional[str]
     worker_version: Optional[str]
     dataset_git_revision: Optional[str]
@@ -208,7 +208,7 @@ def mark_first_rows_responses_as_stale(
 # Note: it's the same definition as SplitsCacheEntry
 class FirstRowsCacheEntry(TypedDict):
     response: Dict
-    http_status: int
+    http_status: HTTPStatus
     error_code: Optional[str]
     worker_version: Optional[str]
     dataset_git_revision: Optional[str]
