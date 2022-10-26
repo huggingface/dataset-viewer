@@ -5,7 +5,7 @@ import pytest
 from libcommon.exceptions import CustomError
 
 from splits.config import WorkerConfig
-from splits.response import get_splits_response
+from splits.response import compute_splits_response
 
 from .fixtures.hub import HubDatasets
 
@@ -29,16 +29,17 @@ def test_get_splits_response_simple_csv(
     dataset = hub_datasets[name]["name"]
     expected_splits_response = hub_datasets[name]["splits_response"]
     if error_code is None:
-        splits_response = get_splits_response(
+        result = compute_splits_response(
             dataset=dataset,
             hf_endpoint=worker_config.common.hf_endpoint,
             hf_token=worker_config.common.hf_token if use_token else None,
         )
-        assert splits_response == expected_splits_response
+        assert result["splits_response"] == expected_splits_response
+        assert result["dataset_git_revision"] is not None
         return
 
     with pytest.raises(CustomError) as exc_info:
-        get_splits_response(
+        compute_splits_response(
             dataset=dataset,
             hf_endpoint=worker_config.common.hf_endpoint,
             hf_token=worker_config.common.hf_token if use_token else None,

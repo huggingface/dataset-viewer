@@ -9,14 +9,13 @@ from typing import Optional
 from libcache.simple_cache import (
     delete_first_rows_responses,
     get_dataset_first_rows_response_splits,
-    get_splits_response as get_splits_response_from_cache,
+    get_splits_response,
     upsert_splits_response,
 )
-
 from libqueue.worker import Worker
 
 from splits.config import WorkerConfig
-from splits.response import get_splits_response
+from splits.response import compute_splits_response, get_dataset_git_revision
 from splits.utils import (
     DatasetNotFoundError,
     Queues,
@@ -27,13 +26,11 @@ from splits.utils import (
 
 class SplitsWorker(Worker):
     config: WorkerConfig
-    datasets_version: str
 
     def __init__(self, worker_config: WorkerConfig):
         super().__init__(queue_config=worker_config.queue, version=importlib.metadata.version(__package__))
         self._queues = Queues(max_jobs_per_dataset=worker_config.queue.max_jobs_per_dataset)
         self.config = worker_config
-        self.datasets_version = importlib.metadata.version("datasets")
 
     @property
     def queue(self):
@@ -46,7 +43,7 @@ class SplitsWorker(Worker):
         - a cache entry exists for the dataset
         - and the result was successful
         - and it has been created with the same major version of the worker
-        - and it has been created with the exact same version of datasets
+        - and it has been created with the exact same git commit of the dataset repository
 
         Args:
             dataset (:obj:`str`): The name of the dataset.
@@ -57,13 +54,16 @@ class SplitsWorker(Worker):
             :obj:`bool`: True if the job should be skipped, False otherwise.
         """
         try:
-            response, http_status, _ = get_splits_response_from_cache(dataset)
+            cache_entry = get_splits_response(dataset)
+            dataset_git_revision = get_dataset_git_revision(
+                dataset=dataset, hf_endpoint=self.config.common.hf_endpoint, hf_token=self.config.common.hf_token
+            )
             return (
-                http_status == HTTPStatus.OK
-                and "cache_worker_version" in response
-                and self.compare_major_version(response["cache_worker_version"]) == 0
-                and "cache_datasets_version" in response
-                and self.datasets_version != response["cache_datasets_version"]
+                cache_entry["http_status"] == HTTPStatus.OK
+                and cache_entry["worker_version"] is not None
+                and self.compare_major_version(cache_entry["worker_version"]) == 0
+                and cache_entry["dataset_git_revision"] is not None
+                and cache_entry["dataset_git_revision"] == dataset_git_revision
             )
         except Exception:
             return False
@@ -75,10 +75,17 @@ class SplitsWorker(Worker):
         split: Optional[str] = None,
     ) -> bool:
         try:
-            response = get_splits_response(
+            splits_response_result = compute_splits_response(
                 dataset=dataset, hf_endpoint=self.config.common.hf_endpoint, hf_token=self.config.common.hf_token
             )
-            upsert_splits_response(dataset_name=dataset, response=dict(response), http_status=HTTPStatus.OK)
+            response = splits_response_result["splits_response"]
+            upsert_splits_response(
+                dataset_name=dataset,
+                response=dict(response),
+                http_status=HTTPStatus.OK,
+                worker_version=self.version,
+                dataset_git_revision=splits_response_result["dataset_git_revision"],
+            )
             logging.debug(f"dataset={dataset} is valid, cache updated")
 
             splits_in_cache = get_dataset_first_rows_response_splits(dataset_name=dataset)

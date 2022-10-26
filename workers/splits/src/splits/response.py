@@ -32,6 +32,11 @@ class SplitsResponse(TypedDict):
     splits: List[SplitItem]
 
 
+class SplitsResponseResult(TypedDict):
+    splits_response: SplitsResponse
+    dataset_git_revision: Optional[str]
+
+
 def get_dataset_split_full_names(dataset: str, use_auth_token: Union[bool, str, None] = False) -> List[SplitFullName]:
     """Get the list of splits full names (split and config) for a dataset.
 
@@ -54,11 +59,43 @@ def get_dataset_split_full_names(dataset: str, use_auth_token: Union[bool, str, 
     ]
 
 
-def get_splits_response(
+def get_dataset_git_revision(
     dataset: str,
     hf_endpoint: str,
     hf_token: Optional[str] = None,
-) -> SplitsResponse:
+) -> Union[str, None]:
+    """
+    Get the git revision of the dataset.
+    Args:
+        dataset (`str`):
+            A namespace (user or an organization) and a repo name separated
+            by a `/`.
+        hf_endpoint (`str`):
+            The Hub endpoint (for example: "https://huggingface.co")
+        hf_token (`str`, *optional*):
+            An authentication token (See https://huggingface.co/settings/token)
+    Returns:
+        `Union[str, None]`: the dataset git revision (sha) if any.
+    <Tip>
+    Raises the following errors:
+        - [`~worker.exceptions.DatasetNotFoundError`]
+          If the repository to download from cannot be found. This may be because it doesn't exist,
+          or because it is set to `private` and you do not have access.
+    </Tip>
+    """
+    use_auth_token: Union[bool, str, None] = hf_token if hf_token is not None else False
+    try:
+        dataset_info = HfApi(endpoint=hf_endpoint).dataset_info(repo_id=dataset, use_auth_token=use_auth_token)
+    except RepositoryNotFoundError as err:
+        raise DatasetNotFoundError("The dataset does not exist on the Hub.") from err
+    return dataset_info.sha
+
+
+def compute_splits_response(
+    dataset: str,
+    hf_endpoint: str,
+    hf_token: Optional[str] = None,
+) -> SplitsResponseResult:
     """
     Get the response of /splits for one specific dataset on huggingface.co.
     Dataset can be private or gated if you pass an acceptable token.
@@ -71,7 +108,8 @@ def get_splits_response(
         hf_token (`str`, *optional*):
             An authentication token (See https://huggingface.co/settings/token)
     Returns:
-        [`SplitsResponse`]: The list of splits names.
+        `SplitsResponseResult`: An object with the splits_response
+          (list of splits names) and the dataset_git_revision (sha) if any.
     <Tip>
     Raises the following errors:
         - [`~worker.exceptions.DatasetNotFoundError`]
@@ -83,11 +121,8 @@ def get_splits_response(
     """
     logging.info(f"get splits for dataset={dataset}")
     use_auth_token: Union[bool, str, None] = hf_token if hf_token is not None else False
-    # first try to get the dataset config info
-    try:
-        HfApi(endpoint=hf_endpoint).dataset_info(repo_id=dataset, use_auth_token=use_auth_token)
-    except RepositoryNotFoundError as err:
-        raise DatasetNotFoundError("The dataset does not exist on the Hub.") from err
+    # first try to get the dataset config info. It raises if the dataset does not exist or is private
+    dataset_git_revision = get_dataset_git_revision(dataset=dataset, hf_endpoint=hf_endpoint, hf_token=hf_token)
     # get the list of splits
     try:
         split_full_names = get_dataset_split_full_names(dataset=dataset, use_auth_token=use_auth_token)
@@ -124,4 +159,7 @@ def get_splits_response(
                 "num_examples": num_examples,
             }
         )
-    return {"splits": split_items}
+    return {
+        "splits_response": {"splits": split_items},
+        "dataset_git_revision": dataset_git_revision,
+    }
