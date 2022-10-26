@@ -5,14 +5,7 @@ from typing import Optional
 
 import pytest
 
-from libqueue.queue import (
-    EmptyQueueError,
-    Job,
-    Queue,
-    Status,
-    _clean_queue_database,
-    get_datetime,
-)
+from libqueue.queue import EmptyQueueError, Queue, Status, _clean_queue_database
 
 
 @pytest.fixture(autouse=True)
@@ -27,7 +20,7 @@ def test_add_job() -> None:
     queue = Queue(test_type)
     # add a job
     queue.add_job(dataset=test_dataset)
-    # a second call is ignored
+    # a second call adds a second waiting job
     queue.add_job(dataset=test_dataset)
     assert queue.is_job_in_process(dataset=test_dataset) is True
     # get and start the first job
@@ -36,69 +29,37 @@ def test_add_job() -> None:
     assert config is None
     assert split is None
     assert queue.is_job_in_process(dataset=test_dataset) is True
-    # adding the job while the first one has not finished yet is ignored
+    # adding the job while the first one has not finished yet adds another waiting job
+    # (there are no limits to the number of waiting jobs)
     queue.add_job(dataset=test_dataset)
     with pytest.raises(EmptyQueueError):
-        # thus: no new job available
+        # but: it's not possible to start two jobs with the same arguments
         queue.start_job()
     # finish the first job
+    queue.finish_job(job_id=job_id, finished_status=Status.SUCCESS)
+    # the queue is not empty
+    assert queue.is_job_in_process(dataset=test_dataset) is True
+    # process the second job
+    job_id, *_ = queue.start_job()
+    queue.finish_job(job_id=job_id, finished_status=Status.SUCCESS)
+    # and the third one
+    job_id, *_ = queue.start_job()
+    other_job_id = ("1" if job_id[0] == "0" else "0") + job_id[1:]
+    # trying to finish another job fails silently (with a log)
+    queue.finish_job(job_id=other_job_id, finished_status=Status.SUCCESS)
+    # finish it
     queue.finish_job(job_id=job_id, finished_status=Status.SUCCESS)
     # the queue is empty
     assert queue.is_job_in_process(dataset=test_dataset) is False
     with pytest.raises(EmptyQueueError):
+        # an error is raised if we try to start a job
         queue.start_job()
-    # add a job again
-    queue.add_job(dataset=test_dataset)
-    # start it
-    job_id, *_ = queue.start_job()
-    other_job_id = ("1" if job_id[0] == "0" else "0") + job_id[1:]
-    queue.finish_job(job_id=other_job_id, finished_status=Status.SUCCESS)
-    # ^ fails silently (with a log)
-    queue.finish_job(job_id=job_id, finished_status=Status.SUCCESS)
-
-
-def test_add_job_with_broken_collection() -> None:
-    test_type = "test_type"
-    test_dataset = "dataset_broken"
-    test_config = "config_broken"
-    test_split = "split_broken"
-    # ensure the jobs are cancelled with more than one exist in a "pending" status
-    # we "manually" create two jobs in a "pending" status for the same split
-    # (we normally cannot do that with the exposed methods)
-    job_1 = Job(
-        type=test_type,
-        dataset=test_dataset,
-        config=test_config,
-        split=test_split,
-        created_at=get_datetime(),
-        status=Status.WAITING,
-    ).save()
-    job_2 = Job(
-        type=test_type,
-        dataset=test_dataset,
-        config=test_config,
-        split=test_split,
-        created_at=get_datetime(),
-        started_at=get_datetime(),
-        status=Status.STARTED,
-    ).save()
-    # then we add a job: it should create a new job in the "WAITING" status
-    # and the two other jobs should be cancelled
-    queue = Queue(test_type)
-    queue.add_job(dataset=test_dataset, config=test_config, split=test_split)
-    assert (
-        Job.objects(
-            type=test_type, dataset=test_dataset, config=test_config, split=test_split, status__in=[Status.WAITING]
-        ).count()
-        == 1
-    )
-    assert Job.objects(pk=job_1.pk).get().status == Status.CANCELLED
-    assert Job.objects(pk=job_2.pk).get().status == Status.CANCELLED
 
 
 def test_priority_to_non_started_datasets() -> None:
     test_type = "test_type"
     queue = Queue(test_type)
+    queue.add_job(dataset="dataset1", config="config", split="split1")
     queue.add_job(dataset="dataset1", config="config", split="split1")
     queue.add_job(dataset="dataset1", config="config", split="split2")
     queue.add_job(dataset="dataset1", config="config", split="split3")
@@ -124,6 +85,9 @@ def test_priority_to_non_started_datasets() -> None:
     assert dataset == "dataset2"
     assert split == "split2"
     with pytest.raises(EmptyQueueError):
+        # raises even if there is still a waiting job
+        # (dataset="dataset1", config="config", split="split1")
+        # because a job with the same arguments is already started
         queue.start_job()
 
 
@@ -143,7 +107,6 @@ def test_max_jobs_per_dataset(max_jobs_per_dataset: Optional[int]) -> None:
     assert split == "split1"
     assert queue.is_job_in_process(dataset=test_dataset, config=test_config, split="split1") is True
     if max_jobs_per_dataset == 1:
-
         with pytest.raises(EmptyQueueError):
             queue.start_job()
         return
