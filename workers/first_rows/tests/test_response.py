@@ -6,7 +6,7 @@ from datasets.packaged_modules import csv
 from libcommon.exceptions import CustomError
 
 from first_rows.config import WorkerConfig
-from first_rows.response import get_first_rows_response
+from first_rows.response import compute_first_rows_response
 
 from .fixtures.hub import HubDatasets
 from .utils import get_default_config_split
@@ -46,7 +46,7 @@ def test_number_rows(
     expected_first_rows_response = hub_datasets[name]["first_rows_response"]
     dataset, config, split = get_default_config_split(dataset)
     if error_code is None:
-        response = get_first_rows_response(
+        result = compute_first_rows_response(
             dataset=dataset,
             config=config,
             split=split,
@@ -60,10 +60,11 @@ def test_number_rows(
             min_cell_bytes=worker_config.first_rows.min_cell_bytes,
             assets_directory=worker_config.cache.assets_directory,
         )
-        assert response == expected_first_rows_response
+        assert result["first_rows_response"] == expected_first_rows_response
+        assert result["dataset_git_revision"] is not None
         return
     with pytest.raises(CustomError) as exc_info:
-        get_first_rows_response(
+        compute_first_rows_response(
             dataset=dataset,
             config=config,
             split=split,

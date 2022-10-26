@@ -23,7 +23,7 @@ from .fixtures.hub import HubDatasets
         ("private", False, "DatasetNotFoundError", None),
     ],
 )
-def test_get_splits_response_simple_csv(
+def test_compute_splits_response_simple_csv(
     hub_datasets: HubDatasets, name: str, use_token: bool, error_code: str, cause: str, worker_config: WorkerConfig
 ) -> None:
     dataset = hub_datasets[name]["name"]
