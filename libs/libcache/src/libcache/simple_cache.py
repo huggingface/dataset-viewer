@@ -57,6 +57,8 @@ class SplitsResponse(Document):
     details = DictField(required=False)  # can be a detailed error when we don't want to put it in the response.
     stale = BooleanField(required=False, default=False)
     updated_at = DateTimeField(default=get_datetime)
+    worker_version = StringField(required=False)
+    dataset_git_revision = StringField(required=False)
 
     meta = {
         "collection": "splitsResponse",
@@ -84,6 +86,8 @@ class FirstRowsResponse(Document):
     details = DictField(required=False)  # can be a detailed error when we don't want to put it in the response.
     stale = BooleanField(required=False, default=False)
     updated_at = DateTimeField(default=get_datetime)
+    worker_version = StringField(required=False)
+    dataset_git_revision = StringField(required=False)
 
     meta = {
         "collection": "firstRowsResponse",
@@ -111,6 +115,8 @@ def upsert_splits_response(
     http_status: HTTPStatus,
     error_code: Optional[str] = None,
     details: Optional[Dict] = None,
+    worker_version: Optional[str] = None,
+    dataset_git_revision: Optional[str] = None,
 ) -> None:
     SplitsResponse.objects(dataset_name=dataset_name).upsert_one(
         http_status=http_status,
@@ -119,6 +125,8 @@ def upsert_splits_response(
         stale=False,
         details=details,
         updated_at=get_datetime(),
+        worker_version=worker_version,
+        dataset_git_revision=dataset_git_revision,
     )
 
 
@@ -130,10 +138,24 @@ def mark_splits_responses_as_stale(dataset_name: str):
     SplitsResponse.objects(dataset_name=dataset_name).update(stale=True, updated_at=get_datetime())
 
 
+class SplitsCacheEntry(TypedDict):
+    response: Dict
+    http_status: int
+    error_code: Optional[str]
+    worker_version: Optional[str]
+    dataset_git_revision: Optional[str]
+
+
 # Note: we let the exceptions throw (ie DoesNotExist): it's the responsibility of the caller to manage them
-def get_splits_response(dataset_name: str) -> Tuple[Dict, HTTPStatus, Optional[str]]:
+def get_splits_response(dataset_name: str) -> SplitsCacheEntry:
     split_response = SplitsResponse.objects(dataset_name=dataset_name).get()
-    return split_response.response, split_response.http_status, split_response.error_code
+    return {
+        "response": split_response.response,
+        "http_status": split_response.http_status,
+        "error_code": split_response.error_code,
+        "worker_version": split_response.worker_version,
+        "dataset_git_revision": split_response.dataset_git_revision,
+    }
 
 
 # /first-rows endpoint
@@ -146,6 +168,8 @@ def upsert_first_rows_response(
     http_status: HTTPStatus,
     error_code: Optional[str] = None,
     details: Optional[Dict] = None,
+    worker_version: Optional[str] = None,
+    dataset_git_revision: Optional[str] = None,
 ) -> None:
     FirstRowsResponse.objects(dataset_name=dataset_name, config_name=config_name, split_name=split_name).upsert_one(
         http_status=http_status,
@@ -154,6 +178,8 @@ def upsert_first_rows_response(
         stale=False,
         details=details,
         updated_at=get_datetime(),
+        worker_version=worker_version,
+        dataset_git_revision=dataset_git_revision,
     )
 
 
@@ -179,14 +205,27 @@ def mark_first_rows_responses_as_stale(
     objects.update(stale=True, updated_at=get_datetime())
 
 
+# Note: it's the same definition as SplitsCacheEntry
+class FirstRowsCacheEntry(TypedDict):
+    response: Dict
+    http_status: int
+    error_code: Optional[str]
+    worker_version: Optional[str]
+    dataset_git_revision: Optional[str]
+
+
 # Note: we let the exceptions throw (ie DoesNotExist): it's the responsibility of the caller to manage them
-def get_first_rows_response(
-    dataset_name: str, config_name: str, split_name: str
-) -> Tuple[Dict, HTTPStatus, Optional[str]]:
+def get_first_rows_response(dataset_name: str, config_name: str, split_name: str) -> FirstRowsCacheEntry:
     first_rows_response = FirstRowsResponse.objects(
         dataset_name=dataset_name, config_name=config_name, split_name=split_name
     ).get()
-    return first_rows_response.response, first_rows_response.http_status, first_rows_response.error_code
+    return {
+        "response": first_rows_response.response,
+        "http_status": first_rows_response.http_status,
+        "error_code": first_rows_response.error_code,
+        "worker_version": first_rows_response.worker_version,
+        "dataset_git_revision": first_rows_response.dataset_git_revision,
+    }
 
 
 def get_dataset_first_rows_response_splits(dataset_name: str) -> List[Tuple[str, str, str]]:
@@ -274,6 +313,8 @@ class SplitsResponseReport(TypedDict):
     dataset: str
     http_status: int
     error_code: Optional[str]
+    worker_version: Optional[str]
+    dataset_git_revision: Optional[str]
 
 
 class FirstRowsResponseReport(SplitsResponseReport):
@@ -330,7 +371,11 @@ def get_cache_reports_splits(cursor: str, limit: int) -> CacheReportSplits:
             raise InvalidCursor("Invalid cursor.") from err
     if limit <= 0:
         raise InvalidLimit("Invalid limit.")
-    objects = list(queryset.order_by("+id").only("id", "dataset_name", "http_status", "error_code").limit(limit))
+    objects = list(
+        queryset.order_by("+id")
+        .only("id", "dataset_name", "http_status", "error_code", "worker_version", "dataset_git_revision")
+        .limit(limit)
+    )
 
     return {
         "cache_reports": [
@@ -338,6 +383,8 @@ def get_cache_reports_splits(cursor: str, limit: int) -> CacheReportSplits:
                 "dataset": object.dataset_name,
                 "http_status": object.http_status.value,
                 "error_code": object.error_code,
+                "worker_version": object.worker_version,
+                "dataset_git_revision": object.dataset_git_revision,
             }
             for object in objects
         ],
@@ -378,7 +425,16 @@ def get_cache_reports_first_rows(cursor: Optional[str], limit: int) -> CacheRepo
         raise InvalidLimit("Invalid limit.")
     objects = list(
         queryset.order_by("+id")
-        .only("id", "dataset_name", "config_name", "split_name", "http_status", "error_code")
+        .only(
+            "id",
+            "dataset_name",
+            "config_name",
+            "split_name",
+            "http_status",
+            "error_code",
+            "worker_version",
+            "dataset_git_revision",
+        )
         .limit(limit)
     )
     return {
@@ -389,6 +445,8 @@ def get_cache_reports_first_rows(cursor: Optional[str], limit: int) -> CacheRepo
                 "split": object.split_name,
                 "http_status": object.http_status.value,
                 "error_code": object.error_code,
+                "worker_version": object.worker_version,
+                "dataset_git_revision": object.dataset_git_revision,
             }
             for object in objects
         ],
