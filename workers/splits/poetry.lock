@@ -863,7 +863,7 @@ url = "../../libs/libcommon/dist/libcommon-0.3.2-py3-none-any.whl"
 
 [[package]]
 name = "libqueue"
-version = "0.4.3"
+version = "0.4.4"
 description = "Library for the jobs queue in mongodb"
 category = "main"
 optional = false
@@ -879,7 +879,7 @@ pymongo = {version = ">=3.12.3,<4.0.0", extras = ["srv"]}
 
 [package.source]
 type = "file"
-url = "../../libs/libqueue/dist/libqueue-0.4.3-py3-none-any.whl"
+url = "../../libs/libqueue/dist/libqueue-0.4.4-py3-none-any.whl"
 
 [[package]]
 name = "librosa"
@@ -2291,7 +2291,7 @@ cffi = ["cffi (>=1.11)"]
 [metadata]
 lock-version = "1.1"
 python-versions = "3.9.6"
-content-hash = "5093ab39cfe7beeb387eeedb62bfc9da83dc74cccd01c32d591da373e3bbbf5f"
+content-hash = "8edd36732d3bc14fc6858962aab4901b245ae42e9dcecd1346839ae73715e084"
 
 [metadata.files]
 absl-py = []
@@ -2628,7 +2628,7 @@ libcommon = [
     {file = "libcommon-0.3.2-py3-none-any.whl", hash = "sha256:774292c9ea2d9ab50c4bf2a3eb212bfaf924096a4279ecf117b70618702d978d"},
 ]
 libqueue = [
-    {file = "libqueue-0.4.3-py3-none-any.whl", hash = "sha256:0cd201ecb5b0d28bf413489acc374332515289c717d216c44ddb6dc3eff52374"},
+    {file = "libqueue-0.4.4-py3-none-any.whl", hash = "sha256:d059f36fdbd85978d95862af9cfc1e5d8473f1aafad7025719b31e319fddc5a5"},
 ]
 librosa = []
 llvmlite = []

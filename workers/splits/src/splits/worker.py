@@ -35,6 +35,9 @@ class SplitsWorker(Worker):
     def queue(self):
         return self._queues.splits
 
+    def should_skip_job(self, dataset: str, config: Optional[str] = None, split: Optional[str] = None) -> bool:
+        return False
+
     def compute(
         self,
         dataset: str,
