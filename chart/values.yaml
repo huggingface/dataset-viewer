@@ -49,7 +49,7 @@ queue:
   # Name of the mongo db database used to store the jobs queue
   mongoDatabase: "datasets_server_queue"
   # Number of seconds a worker will sleep before trying to process a new job
-  sleepSeconds: 15
+  sleepSeconds: 5
 
 common:
   # base URL for the assets files. It should be set accordingly to the datasets-server domain, eg https://datasets-server.huggingface.co/assets
