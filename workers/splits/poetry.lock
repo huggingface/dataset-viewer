@@ -356,13 +356,13 @@ xxhash = "*"
 apache-beam = ["apache-beam (>=2.26.0)"]
 audio = ["librosa"]
 benchmarks = ["numpy (==1.18.5)", "tensorflow (==2.3.0)", "torch (==1.7.1)", "transformers (==3.0.2)"]
-dev = ["absl-py", "pytest", "pytest-datadir", "pytest-xdist", "apache-beam (>=2.26.0)", "elasticsearch (<8.0.0)", "aiobotocore (>=2.0.1)", "boto3 (>=1.19.8)", "botocore (>=1.22.8)", "faiss-cpu (>=1.6.4)", "fsspec", "lz4", "moto[s3,server] (==2.0.4)", "py7zr", "rarfile (>=4.0)", "s3fs (>=2021.11.1)", "tensorflow (>=2.3,!=2.6.0,!=2.6.1)", "torch", "torchaudio (<0.12.0)", "soundfile", "transformers", "zstandard", "bert-score (>=0.3.6)", "jiwer", "langdetect", "mauve-text", "nltk", "rouge-score", "sacrebleu", "sacremoses", "scikit-learn", "scipy", "sentencepiece", "seqeval", "sqlalchemy", "tldextract", "toml (>=0.10.1)", "requests-file (>=1.5.1)", "tldextract (>=3.1.0)", "texttable (>=1.6.3)", "Werkzeug (>=1.0.1)", "six (>=1.15.0,<1.16.0)", "Pillow (>=6.2.1)", "librosa", "black (>=22.0,<23.0)", "flake8 (>=3.8.3)", "isort (>=5.0.0)", "pyyaml (>=5.3.1)"]
+dev = ["absl-py", "pytest", "pytest-datadir", "pytest-xdist", "apache-beam (>=2.26.0)", "elasticsearch (<8.0.0)", "aiobotocore (>=2.0.1)", "boto3 (>=1.19.8)", "botocore (>=1.22.8)", "faiss-cpu (>=1.6.4)", "fsspec", "lz4", "moto[server,s3] (==2.0.4)", "py7zr", "rarfile (>=4.0)", "s3fs (>=2021.11.1)", "tensorflow (>=2.3,!=2.6.0,!=2.6.1)", "torch", "torchaudio (<0.12.0)", "soundfile", "transformers", "zstandard", "bert-score (>=0.3.6)", "jiwer", "langdetect", "mauve-text", "nltk", "rouge-score", "sacrebleu", "sacremoses", "scikit-learn", "scipy", "sentencepiece", "seqeval", "sqlalchemy", "tldextract", "toml (>=0.10.1)", "requests-file (>=1.5.1)", "tldextract (>=3.1.0)", "texttable (>=1.6.3)", "Werkzeug (>=1.0.1)", "six (>=1.15.0,<1.16.0)", "Pillow (>=6.2.1)", "librosa", "black (>=22.0,<23.0)", "flake8 (>=3.8.3)", "isort (>=5.0.0)", "pyyaml (>=5.3.1)"]
 docs = ["s3fs"]
 quality = ["black (>=22.0,<23.0)", "flake8 (>=3.8.3)", "isort (>=5.0.0)", "pyyaml (>=5.3.1)"]
 s3 = ["fsspec", "boto3", "botocore", "s3fs"]
 tensorflow = ["tensorflow (>=2.2.0,!=2.6.0,!=2.6.1)"]
 tensorflow_gpu = ["tensorflow-gpu (>=2.2.0,!=2.6.0,!=2.6.1)"]
-tests = ["absl-py", "pytest", "pytest-datadir", "pytest-xdist", "apache-beam (>=2.26.0)", "elasticsearch (<8.0.0)", "aiobotocore (>=2.0.1)", "boto3 (>=1.19.8)", "botocore (>=1.22.8)", "faiss-cpu (>=1.6.4)", "fsspec", "lz4", "moto[s3,server] (==2.0.4)", "py7zr", "rarfile (>=4.0)", "s3fs (>=2021.11.1)", "tensorflow (>=2.3,!=2.6.0,!=2.6.1)", "torch", "torchaudio (<0.12.0)", "soundfile", "transformers", "zstandard", "bert-score (>=0.3.6)", "jiwer", "langdetect", "mauve-text", "nltk", "rouge-score", "sacrebleu", "sacremoses", "scikit-learn", "scipy", "sentencepiece", "seqeval", "sqlalchemy", "tldextract", "toml (>=0.10.1)", "requests-file (>=1.5.1)", "tldextract (>=3.1.0)", "texttable (>=1.6.3)", "Werkzeug (>=1.0.1)", "six (>=1.15.0,<1.16.0)", "Pillow (>=6.2.1)", "librosa"]
+tests = ["absl-py", "pytest", "pytest-datadir", "pytest-xdist", "apache-beam (>=2.26.0)", "elasticsearch (<8.0.0)", "aiobotocore (>=2.0.1)", "boto3 (>=1.19.8)", "botocore (>=1.22.8)", "faiss-cpu (>=1.6.4)", "fsspec", "lz4", "moto[server,s3] (==2.0.4)", "py7zr", "rarfile (>=4.0)", "s3fs (>=2021.11.1)", "tensorflow (>=2.3,!=2.6.0,!=2.6.1)", "torch", "torchaudio (<0.12.0)", "soundfile", "transformers", "zstandard", "bert-score (>=0.3.6)", "jiwer", "langdetect", "mauve-text", "nltk", "rouge-score", "sacrebleu", "sacremoses", "scikit-learn", "scipy", "sentencepiece", "seqeval", "sqlalchemy", "tldextract", "toml (>=0.10.1)", "requests-file (>=1.5.1)", "tldextract (>=3.1.0)", "texttable (>=1.6.3)", "Werkzeug (>=1.0.1)", "six (>=1.15.0,<1.16.0)", "Pillow (>=6.2.1)", "librosa"]
 torch = ["torch"]
 vision = ["Pillow (>=6.2.1)"]
 
@@ -784,6 +784,7 @@ python-versions = "*"
 [package.source]
 type = "url"
 url = "https://github.com/kpu/kenlm/archive/master.zip"
+
 [[package]]
 name = "keras"
 version = "2.10.0"
@@ -819,7 +820,7 @@ python-versions = ">=3"
 
 [[package]]
 name = "libcache"
-version = "0.3.1"
+version = "0.3.3"
 description = "Library for the cache in mongodb"
 category = "main"
 optional = false
@@ -834,7 +835,7 @@ pymongo = {version = ">=3.12.3,<4.0.0", extras = ["srv"]}
 
 [package.source]
 type = "file"
-url = "../../libs/libcache/dist/libcache-0.3.1-py3-none-any.whl"
+url = "../../libs/libcache/dist/libcache-0.3.3-py3-none-any.whl"
 
 [[package]]
 name = "libclang"
@@ -862,7 +863,7 @@ url = "../../libs/libcommon/dist/libcommon-0.3.2-py3-none-any.whl"
 
 [[package]]
 name = "libqueue"
-version = "0.4.2"
+version = "0.4.6"
 description = "Library for the jobs queue in mongodb"
 category = "main"
 optional = false
@@ -872,12 +873,13 @@ python-versions = "==3.9.6"
 environs = ">=9.5.0,<10.0.0"
 mongo-types = "0.15.1"
 mongoengine = ">=0.24.1,<0.25.0"
+packaging = ">=21.3,<22.0"
 psutil = ">=5.9.2,<6.0.0"
 pymongo = {version = ">=3.12.3,<4.0.0", extras = ["srv"]}
 
 [package.source]
 type = "file"
-url = "../../libs/libqueue/dist/libqueue-0.4.2-py3-none-any.whl"
+url = "../../libs/libqueue/dist/libqueue-0.4.6-py3-none-any.whl"
 
 [[package]]
 name = "librosa"
@@ -2289,7 +2291,7 @@ cffi = ["cffi (>=1.11)"]
 [metadata]
 lock-version = "1.1"
 python-versions = "3.9.6"
-content-hash = "cf5836d4de1661adb7edad80e268a276fafad82aaa7ba5e0c6bbe70d9c2f5a49"
+content-hash = "5530681c1178a328bc5f4c896e35ec8a6276cdc75e2fbb39e8e1ea481641f228"
 
 [metadata.files]
 absl-py = []
@@ -2619,14 +2621,14 @@ kss = [
     {file = "kss-2.6.0-py3-none-any.whl", hash = "sha256:fedbdcd0bfc33111d7817866dd60346dab79f9f1ca5bab0026c4ee40e5941b0c"},
 ]
 libcache = [
-    {file = "libcache-0.3.1-py3-none-any.whl", hash = "sha256:b2e6a479961d8f5ac408ee0bd9bd4e826a9f2cbc2df973fd26b77a9263a98190"},
+    {file = "libcache-0.3.3-py3-none-any.whl", hash = "sha256:bf43a71767d263849f989ef6bd28fc9f143ef2c5502b4d1ec2de2fe3af6e5d09"},
 ]
 libclang = []
 libcommon = [
     {file = "libcommon-0.3.2-py3-none-any.whl", hash = "sha256:774292c9ea2d9ab50c4bf2a3eb212bfaf924096a4279ecf117b70618702d978d"},
 ]
 libqueue = [
-    {file = "libqueue-0.4.2-py3-none-any.whl", hash = "sha256:9d5627f96ec3cd967ed4e331e4b4c5c125be2e2943fe6b10ddc927905f86c441"},
+    {file = "libqueue-0.4.6-py3-none-any.whl", hash = "sha256:f84c76d79f6e42138ae2abe6726c03f2684e79c757b532611babafe8fc4cd387"},
 ]
 librosa = []
 llvmlite = []

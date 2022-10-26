@@ -5,24 +5,34 @@ import logging
 import random
 import time
 from abc import ABC, abstractmethod
-from typing import Optional
+from typing import Literal, Optional
 
+from packaging import version
 from psutil import cpu_count, getloadavg, swap_memory, virtual_memory
 
 from libqueue.config import QueueConfig
-from libqueue.queue import EmptyQueueError, Queue
+from libqueue.queue import EmptyQueueError, Queue, Status
+
+
+def parse_version(string_version: str) -> version.Version:
+    parsed_version = version.parse(string_version)
+    if isinstance(parsed_version, version.LegacyVersion):
+        raise ValueError(f"LegacyVersion is not supported: {parsed_version}")
+    return parsed_version
 
 
 class Worker(ABC):
     queue_config: QueueConfig
+    version: str
 
     @property
     @abstractmethod
     def queue(self) -> Queue:
         pass
 
-    def __init__(self, queue_config: QueueConfig) -> None:
+    def __init__(self, queue_config: QueueConfig, version: str) -> None:
         self.queue_config = queue_config
+        self.version = version
 
     def has_memory(self) -> bool:
         if self.queue_config.max_memory_pct <= 0:
@@ -77,18 +87,54 @@ class Worker(ABC):
             logging.debug("no job in the queue")
             return False
 
+        finished_status: Literal[Status.SUCCESS, Status.ERROR, Status.SKIPPED]
         try:
             logging.info(f"compute {parameters_for_log}")
-            success = self.compute(
-                dataset=dataset,
-                config=config,
-                split=split,
+            finished_status = (
+                Status.SKIPPED
+                if self.should_skip_job(dataset=dataset, config=config, split=split)
+                else Status.SUCCESS
+                if self.compute(
+                    dataset=dataset,
+                    config=config,
+                    split=split,
+                )
+                else Status.ERROR
             )
+        except Exception:
+            logging.exception(f"error while computing {parameters_for_log}")
+            finished_status = Status.ERROR
         finally:
-            self.queue.finish_job(job_id=job_id, success=success)
-            result = "success" if success else "error"
-            logging.debug(f"job finished with {result}: {job_id} for {parameters_for_log}")
+            self.queue.finish_job(job_id=job_id, finished_status=finished_status)
+            logging.debug(f"job finished with {finished_status.value}: {job_id} for {parameters_for_log}")
         return True
+
+    def compare_major_version(self, other_version: str) -> int:
+        """
+        Compare the major version of worker's self version and the other version's.
+
+        Args:
+            other_version (:obj:`str`): the other semantic version
+
+        Returns:
+            :obj:`int`: the difference between the major version of both versions.
+            0 if they are equal. Negative if worker's major version is lower than other_version, positive otherwise.
+        Raises:
+            :obj:`ValueError`: if worker's version or other_version is not a valid semantic version.
+        """
+        try:
+            return parse_version(self.version).major - parse_version(other_version).major
+        except Exception as err:
+            raise RuntimeError(f"Could not get major versions: {err}") from err
+
+    @abstractmethod
+    def should_skip_job(
+        self,
+        dataset: str,
+        config: Optional[str] = None,
+        split: Optional[str] = None,
+    ) -> bool:
+        pass
 
     @abstractmethod
     def compute(

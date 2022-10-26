@@ -5,10 +5,9 @@ import enum
 import logging
 import types
 from datetime import datetime, timezone
-from typing import Generic, List, Optional, Tuple, Type, TypedDict, TypeVar
+from typing import Generic, List, Literal, Optional, Tuple, Type, TypedDict, TypeVar
 
 from mongoengine import Document, DoesNotExist, connect
-from mongoengine.errors import MultipleObjectsReturned
 from mongoengine.fields import DateTimeField, EnumField, StringField
 from mongoengine.queryset.queryset import QuerySet
 
@@ -38,6 +37,7 @@ class Status(enum.Enum):
     SUCCESS = "success"
     ERROR = "error"
     CANCELLED = "cancelled"
+    SKIPPED = "skipped"
 
 
 class JobDict(TypedDict):
@@ -57,6 +57,7 @@ class CountByStatus(TypedDict):
     success: int
     error: int
     cancelled: int
+    skipped: int
 
 
 class DumpByPendingStatus(TypedDict):
@@ -80,9 +81,8 @@ def connect_to_database(database: str, host: str) -> None:
 # - waiting: started_at is None and finished_at is None: waiting jobs
 # - started: started_at is not None and finished_at is None: started jobs
 # - finished: started_at is not None and finished_at is not None: finished jobs
-# - cancelled: cancelled_at is not None: cancelled jobs
-# For a given set of arguments, any number of finished and cancelled jobs are allowed,
-# but only 0 or 1 job for the set of the other states
+# For a given set of arguments, only one job is allowed in the started state. No
+# restriction for the other states
 class Job(Document):
     """A job in the mongoDB database
 
@@ -143,10 +143,10 @@ class Queue:
     It's a FIFO queue, with the following properties:
     - a job is identified by its input arguments: dataset, and optionally config and split
     - a job can be in one of the following states: waiting, started, success, error, cancelled
-    - a job can be in the queue only once in a pending state (waiting or started)
-    - a job can be in the queue multiple times in a finished state (success, error, cancelled)
+    - a job can be in the queue only once in the "started" state
+    - a job can be in the queue multiple times in the other states (waiting, success, error, cancelled, skipped)
     - the queue is ordered by the creation date of the jobs
-    - datasets that already have started job are de-prioritized
+    - datasets that already have started jobs are de-prioritized
     - datasets cannot have more than `max_jobs_per_dataset` started jobs
 
     Args:
@@ -164,40 +164,24 @@ class Queue:
     def add_job(self, dataset: str, config: Optional[str] = None, split: Optional[str] = None) -> Job:
         """Add a job to the queue in the waiting state.
 
-        If a job with the same arguments already exists in the queue in a pending state (waiting, started), no new job
-        is created and the existing job is returned.
-
         Returns: the job
         """
-        existing_jobs = Job.objects(type=self.type, dataset=dataset, config=config, split=split)
-        new_job = Job(
+        return Job(
             type=self.type,
             dataset=dataset,
             config=config,
             split=split,
             created_at=get_datetime(),
             status=Status.WAITING,
-        )
-        pending_jobs = existing_jobs.filter(status__in=[Status.WAITING, Status.STARTED])
-        try:
-            # If one non-finished job exists, return it
-            return pending_jobs.get()
-        except DoesNotExist:
-            # None exist, create one
-            return new_job.save()
-        except MultipleObjectsReturned:
-            # should not happen, but it's not enforced in the database
-            # (we could have one in WAITING status and another one in STARTED status)
-            # if it happens, we "cancel" all of them, and re-run the same function
-            pending_jobs.update(finished_at=get_datetime(), status=Status.CANCELLED)
-            return self.add_job(dataset=dataset, config=config, split=split)
+        ).save()
 
     def start_job(self) -> Tuple[str, str, Optional[str], Optional[str]]:
         """Start the next job in the queue.
 
         Get the next job in the queue, among the datasets that still have no started job.
         If no job is available, get the next job in the queue, among the datasets that already have a started job,
-        but not more than `max_jobs_per_dataset` jobs per dataset.
+        but not more than `max_jobs_per_dataset` jobs per dataset, and not with the same set of arguments
+        (dataset, config, split).
 
         The job is moved from the waiting state to the started state.
 
@@ -208,7 +192,11 @@ class Queue:
         Returns: the job id and the input arguments: dataset, config and split
         """
         # try to get a job for a dataset that still has no started job
-        started_datasets = [job.dataset for job in Job.objects(type=self.type, status=Status.STARTED).only("dataset")]
+        started_job_arguments = {
+            (job.dataset, job.config, job.split)
+            for job in Job.objects(type=self.type, status=Status.STARTED).only("dataset", "config", "split")
+        }
+        started_datasets = [job_arguments[0] for job_arguments in started_job_arguments]
         next_waiting_job = (
             Job.objects(type=self.type, status=Status.WAITING, dataset__nin=started_datasets)
             .order_by("+created_at")
@@ -219,6 +207,7 @@ class Queue:
         if next_waiting_job is None:
             # the waiting jobs are all for datasets that already have started jobs.
             # let's take the next one, in the limit of max_jobs_per_dataset
+            # and without the same arguments (dataset, config, split)
             excluded_datasets = (
                 []
                 if self.max_jobs_per_dataset is None
@@ -230,21 +219,29 @@ class Queue:
                     }
                 )
             )
-            next_waiting_job = (
+            # probably sub-optimal: ideally we should not loop here, neither create a list of all the waiting jobs
+            waiting_jobs = list(
                 Job.objects(type=self.type, status=Status.WAITING, dataset__nin=excluded_datasets)
                 .order_by("+created_at")
                 .no_cache()
-                .first()
             )
-        if next_waiting_job is None:
-            raise EmptyQueueError(
-                "no job available (within the limit of {max_jobs_per_dataset} started jobs per dataset)"
-            )
+            while waiting_jobs:
+                next_waiting_job = waiting_jobs.pop(0)
+                if (
+                    next_waiting_job.dataset,
+                    next_waiting_job.config,
+                    next_waiting_job.split,
+                ) not in started_job_arguments:
+                    break
+            else:
+                raise EmptyQueueError(
+                    "no job available (within the limit of {max_jobs_per_dataset} started jobs per dataset)"
+                )
         next_waiting_job.update(started_at=get_datetime(), status=Status.STARTED)
         return str(next_waiting_job.pk), next_waiting_job.dataset, next_waiting_job.config, next_waiting_job.split
         # ^ job.pk is the id. job.id is not recognized by mypy
 
-    def finish_job(self, job_id: str, success: bool) -> None:
+    def finish_job(self, job_id: str, finished_status: Literal[Status.SUCCESS, Status.ERROR, Status.SKIPPED]) -> None:
         """Finish a job in the queue.
 
         The job is moved from the started state to the success or error state.
@@ -268,8 +265,7 @@ class Queue:
             logging.warning(f"job {job.to_id()} has a non-empty finished_at field. Force finishing anyway.")
         if job.started_at is None:
             logging.warning(f"job {job.to_id()} has an empty started_at field. Force finishing anyway.")
-        status = Status.SUCCESS if success else Status.ERROR
-        job.update(finished_at=get_datetime(), status=status)
+        job.update(finished_at=get_datetime(), status=finished_status)
 
     def is_job_in_process(self, dataset: str, config: Optional[str] = None, split: Optional[str] = None) -> bool:
         """Check if a job is in process (waiting or started).
@@ -326,6 +322,7 @@ class Queue:
             "success": self.count_jobs(status=Status.SUCCESS),
             "error": self.count_jobs(status=Status.ERROR),
             "cancelled": self.count_jobs(status=Status.CANCELLED),
+            "skipped": self.count_jobs(status=Status.SKIPPED),
         }
 
     def get_dump_with_status(self, status: Status) -> List[JobDict]:

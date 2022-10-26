@@ -254,7 +254,7 @@ class HubDatasetTest(TypedDict):
 HubDatasets = Dict[str, HubDatasetTest]
 
 
-def get_splits_response(dataset: str, num_bytes: float = None, num_examples: int = None):
+def create_splits_response(dataset: str, num_bytes: float = None, num_examples: int = None):
     dataset, config, split = get_default_config_split(dataset)
     return {
         "splits": [
@@ -269,7 +269,7 @@ def get_splits_response(dataset: str, num_bytes: float = None, num_examples: int
     }
 
 
-def get_first_rows_response(dataset: str, cols: Dict[str, Any], rows: List[Any]):
+def create_first_rows_response(dataset: str, cols: Dict[str, Any], rows: List[Any]):
     dataset, config, split = get_default_config_split(dataset)
     return {
         "dataset": dataset,
@@ -412,42 +412,42 @@ def hub_datasets(
         },
         "public": {
             "name": hub_public_csv,
-            "splits_response": get_splits_response(hub_public_csv, None, None),
-            "first_rows_response": get_first_rows_response(hub_public_csv, DATA_cols, DATA_rows),
+            "splits_response": create_splits_response(hub_public_csv, None, None),
+            "first_rows_response": create_first_rows_response(hub_public_csv, DATA_cols, DATA_rows),
         },
         "private": {
             "name": hub_private_csv,
-            "splits_response": get_splits_response(hub_private_csv, None, None),
-            "first_rows_response": get_first_rows_response(hub_private_csv, DATA_cols, DATA_rows),
+            "splits_response": create_splits_response(hub_private_csv, None, None),
+            "first_rows_response": create_first_rows_response(hub_private_csv, DATA_cols, DATA_rows),
         },
         "gated": {
             "name": hub_gated_csv,
-            "splits_response": get_splits_response(hub_gated_csv, None, None),
-            "first_rows_response": get_first_rows_response(hub_gated_csv, DATA_cols, DATA_rows),
+            "splits_response": create_splits_response(hub_gated_csv, None, None),
+            "first_rows_response": create_first_rows_response(hub_gated_csv, DATA_cols, DATA_rows),
         },
         "jsonl": {
             "name": hub_public_jsonl,
-            "splits_response": get_splits_response(hub_public_jsonl, None, None),
-            "first_rows_response": get_first_rows_response(hub_public_jsonl, JSONL_cols, JSONL_rows),
+            "splits_response": create_splits_response(hub_public_jsonl, None, None),
+            "first_rows_response": create_first_rows_response(hub_public_jsonl, JSONL_cols, JSONL_rows),
         },
         "audio": {
             "name": hub_public_audio,
-            "splits_response": get_splits_response(hub_public_audio, 54.0, 1),
-            "first_rows_response": get_first_rows_response(
+            "splits_response": create_splits_response(hub_public_audio, 54.0, 1),
+            "first_rows_response": create_first_rows_response(
                 hub_public_audio, AUDIO_cols, get_AUDIO_rows(hub_public_audio)
             ),
         },
         "image": {
             "name": hub_public_image,
-            "splits_response": get_splits_response(hub_public_image, 0, 1),
-            "first_rows_response": get_first_rows_response(
+            "splits_response": create_splits_response(hub_public_image, 0, 1),
+            "first_rows_response": create_first_rows_response(
                 hub_public_image, IMAGE_cols, get_IMAGE_rows(hub_public_image)
             ),
         },
         "images_list": {
             "name": hub_public_images_list,
-            "splits_response": get_splits_response(hub_public_images_list, 0, 1),
-            "first_rows_response": get_first_rows_response(
+            "splits_response": create_splits_response(hub_public_images_list, 0, 1),
+            "first_rows_response": create_first_rows_response(
                 hub_public_images_list, IMAGES_LIST_cols, get_IMAGES_LIST_rows(hub_public_images_list)
             ),
         },

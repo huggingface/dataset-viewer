@@ -85,10 +85,10 @@ def is_first_rows_in_process(
     if splits_queue.is_job_in_process(dataset=dataset):
         return True
     try:
-        response, http_status, _ = get_splits_response(dataset)
-        if http_status == HTTPStatus.OK and any(
+        result = get_splits_response(dataset)
+        if result["http_status"] == HTTPStatus.OK and any(
             split_item["dataset"] == dataset or split_item["config"] == config or split_item["split"] == split
-            for split_item in response["splits"]
+            for split_item in result["response"]["splits"]
         ):
             # The splits is listed in the /splits response.
             # Let's refresh *the whole dataset*, because something did not work

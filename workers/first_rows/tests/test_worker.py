@@ -30,11 +30,12 @@ def worker(worker_config: WorkerConfig) -> FirstRowsWorker:
 def test_compute(worker: FirstRowsWorker, hub_public_csv: str) -> None:
     dataset, config, split = get_default_config_split(hub_public_csv)
     assert worker.compute(dataset=dataset, config=config, split=split) is True
-    response, cached_http_status, error_code = get_first_rows_response(
-        dataset_name=dataset, config_name=config, split_name=split
-    )
-    assert cached_http_status == HTTPStatus.OK
-    assert error_code is None
+    cache_entry = get_first_rows_response(dataset_name=dataset, config_name=config, split_name=split)
+    assert cache_entry["http_status"] == HTTPStatus.OK
+    assert cache_entry["error_code"] is None
+    assert cache_entry["worker_version"] == worker.version
+    assert cache_entry["dataset_git_revision"] is not None
+    response = cache_entry["response"]
     assert response["features"][0]["feature_idx"] == 0
     assert response["features"][0]["name"] == "col_1"
     assert response["features"][0]["type"]["_type"] == "Value"

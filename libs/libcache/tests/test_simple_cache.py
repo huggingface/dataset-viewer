@@ -40,15 +40,17 @@ def test_upsert_splits_response() -> None:
     dataset_name = "test_dataset"
     response = {"splits": [{"dataset_name": dataset_name, "config_name": "test_config", "split_name": "test_split"}]}
     upsert_splits_response(dataset_name, response, HTTPStatus.OK)
-    response1, http_status, error_code = get_splits_response(dataset_name)
-    assert http_status == HTTPStatus.OK
-    assert response1 == response
-    assert error_code is None
+    cache_entry = get_splits_response(dataset_name)
+    assert cache_entry["http_status"] == HTTPStatus.OK
+    assert cache_entry["response"] == response
+    assert cache_entry["error_code"] is None
+    assert cache_entry["worker_version"] is None
+    assert cache_entry["dataset_git_revision"] is None
 
     # ensure it's idempotent
     upsert_splits_response(dataset_name, response, HTTPStatus.OK)
-    (response2, _, _) = get_splits_response(dataset_name)
-    assert response2 == response1
+    cache_entry2 = get_splits_response(dataset_name)
+    assert cache_entry2 == cache_entry
 
     mark_splits_responses_as_stale(dataset_name)
     # we don't have access to the stale field
@@ -62,11 +64,23 @@ def test_upsert_splits_response() -> None:
     with pytest.raises(DoesNotExist):
         get_splits_response(dataset_name)
 
-    upsert_splits_response(dataset_name, response, HTTPStatus.BAD_REQUEST, "error_code")
-    response3, http_status, error_code = get_splits_response(dataset_name)
-    assert response3 == response
-    assert http_status == HTTPStatus.BAD_REQUEST
-    assert error_code == "error_code"
+    error_code = "error_code"
+    worker_version = "0.1.2"
+    dataset_git_revision = "123456"
+    upsert_splits_response(
+        dataset_name,
+        response,
+        HTTPStatus.BAD_REQUEST,
+        error_code=error_code,
+        worker_version=worker_version,
+        dataset_git_revision=dataset_git_revision,
+    )
+    cache_entry3 = get_splits_response(dataset_name)
+    assert cache_entry3["http_status"] == HTTPStatus.BAD_REQUEST
+    assert cache_entry3["response"] == response
+    assert cache_entry3["error_code"] == error_code
+    assert cache_entry3["worker_version"] == worker_version
+    assert cache_entry3["dataset_git_revision"] == dataset_git_revision
 
 
 def test_upsert_first_rows_response() -> None:
@@ -75,14 +89,17 @@ def test_upsert_first_rows_response() -> None:
     split_name = "test_split"
     response = {"key": "value"}
     upsert_first_rows_response(dataset_name, config_name, split_name, response, HTTPStatus.OK)
-    response1, http_status, _ = get_first_rows_response(dataset_name, config_name, split_name)
-    assert http_status == HTTPStatus.OK
-    assert response1 == response
+    cache_entry = get_first_rows_response(dataset_name, config_name, split_name)
+    assert cache_entry["http_status"] == HTTPStatus.OK
+    assert cache_entry["response"] == response
+    assert cache_entry["error_code"] is None
+    assert cache_entry["worker_version"] is None
+    assert cache_entry["dataset_git_revision"] is None
 
     # ensure it's idempotent
     upsert_first_rows_response(dataset_name, config_name, split_name, response, HTTPStatus.OK)
-    (response2, _, _) = get_first_rows_response(dataset_name, config_name, split_name)
-    assert response2 == response1
+    cache_entry2 = get_first_rows_response(dataset_name, config_name, split_name)
+    assert cache_entry2 == cache_entry
 
     mark_first_rows_responses_as_stale(dataset_name)
     mark_first_rows_responses_as_stale(dataset_name, config_name, split_name)
@@ -101,6 +118,26 @@ def test_upsert_first_rows_response() -> None:
     mark_first_rows_responses_as_stale(dataset_name, config_name, split_name)
     with pytest.raises(DoesNotExist):
         get_first_rows_response(dataset_name, config_name, split_name)
+
+    error_code = "error_code"
+    worker_version = "0.1.2"
+    dataset_git_revision = "123456"
+    upsert_first_rows_response(
+        dataset_name,
+        config_name,
+        split_name,
+        response,
+        HTTPStatus.BAD_REQUEST,
+        error_code=error_code,
+        worker_version=worker_version,
+        dataset_git_revision=dataset_git_revision,
+    )
+    cache_entry3 = get_first_rows_response(dataset_name, config_name, split_name)
+    assert cache_entry3["http_status"] == HTTPStatus.BAD_REQUEST
+    assert cache_entry3["response"] == response
+    assert cache_entry3["error_code"] == error_code
+    assert cache_entry3["worker_version"] == worker_version
+    assert cache_entry3["dataset_git_revision"] == dataset_git_revision
 
 
 def test_big_row() -> None:
@@ -256,12 +293,16 @@ def test_get_cache_reports_splits() -> None:
         "cause_message": "Cause message B",
         "cause_traceback": ["B"],
     }
+    worker_version = "0.1.2"
+    dataset_git_revision = "123456"
     upsert_splits_response(
         "b",
         b_details,
         HTTPStatus.INTERNAL_SERVER_ERROR,
-        "ErrorCodeB",
-        b_details,
+        error_code="ErrorCodeB",
+        details=b_details,
+        worker_version=worker_version,
+        dataset_git_revision=dataset_git_revision,
     )
     c_details = {
         "error": "error C",
@@ -280,11 +321,19 @@ def test_get_cache_reports_splits() -> None:
     )
     response = get_cache_reports_splits("", 2)
     assert response["cache_reports"] == [
-        {"dataset": "a", "http_status": HTTPStatus.OK.value, "error_code": None},
+        {
+            "dataset": "a",
+            "http_status": HTTPStatus.OK.value,
+            "error_code": None,
+            "worker_version": None,
+            "dataset_git_revision": None,
+        },
         {
             "dataset": "b",
             "http_status": HTTPStatus.INTERNAL_SERVER_ERROR.value,
             "error_code": "ErrorCodeB",
+            "worker_version": "0.1.2",
+            "dataset_git_revision": "123456",
         },
     ]
     assert response["next_cursor"] != ""
@@ -297,6 +346,8 @@ def test_get_cache_reports_splits() -> None:
                 "dataset": "c",
                 "http_status": HTTPStatus.INTERNAL_SERVER_ERROR.value,
                 "error_code": "ErrorCodeC",
+                "worker_version": None,
+                "dataset_git_revision": None,
             },
         ],
         "next_cursor": "",
@@ -325,14 +376,18 @@ def test_get_cache_reports_first_rows() -> None:
         "cause_message": "Cause message B",
         "cause_traceback": ["B"],
     }
+    worker_version = "0.1.2"
+    dataset_git_revision = "123456"
     upsert_first_rows_response(
         "b",
         "config",
         "split",
         b_details,
         HTTPStatus.INTERNAL_SERVER_ERROR,
-        "ErrorCodeB",
-        b_details,
+        error_code="ErrorCodeB",
+        details=b_details,
+        worker_version=worker_version,
+        dataset_git_revision=dataset_git_revision,
     )
     c_details = {
         "error": "error C",
@@ -353,13 +408,23 @@ def test_get_cache_reports_first_rows() -> None:
     )
     response = get_cache_reports_first_rows("", 2)
     assert response["cache_reports"] == [
-        {"dataset": "a", "config": "config", "split": "split", "http_status": HTTPStatus.OK.value, "error_code": None},
+        {
+            "dataset": "a",
+            "config": "config",
+            "split": "split",
+            "http_status": HTTPStatus.OK.value,
+            "error_code": None,
+            "worker_version": None,
+            "dataset_git_revision": None,
+        },
         {
             "dataset": "b",
             "config": "config",
             "split": "split",
             "http_status": HTTPStatus.INTERNAL_SERVER_ERROR.value,
             "error_code": "ErrorCodeB",
+            "worker_version": "0.1.2",
+            "dataset_git_revision": "123456",
         },
     ]
     assert response["next_cursor"] != ""
@@ -374,6 +439,8 @@ def test_get_cache_reports_first_rows() -> None:
                 "split": "split",
                 "http_status": HTTPStatus.INTERNAL_SERVER_ERROR.value,
                 "error_code": "ErrorCodeC",
+                "worker_version": None,
+                "dataset_git_revision": None,
             },
         ],
         "next_cursor": "",

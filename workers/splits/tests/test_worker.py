@@ -24,12 +24,30 @@ def worker(worker_config: WorkerConfig) -> SplitsWorker:
     return SplitsWorker(worker_config)
 
 
+def test_version(worker: SplitsWorker) -> None:
+    assert len(worker.version.split(".")) == 3
+    assert worker.compare_major_version(other_version="0.0.0") > 0
+    assert worker.compare_major_version(other_version="1000.0.0") < 0
+
+
+def should_skip_job(worker: SplitsWorker, hub_public_csv: str) -> None:
+    dataset = hub_public_csv
+    assert worker.should_skip_job(dataset=dataset) is False
+    # we add an entry to the cache
+    worker.compute(dataset=dataset)
+    assert worker.should_skip_job(dataset=dataset) is True
+
+
 def test_compute(worker: SplitsWorker, hub_public_csv: str) -> None:
     dataset = hub_public_csv
     assert worker.compute(dataset=dataset) is True
-    response, cached_http_status, error_code = get_splits_response(dataset_name=hub_public_csv)
-    assert cached_http_status == HTTPStatus.OK
-    assert error_code is None
+    cache_entry = get_splits_response(dataset_name=hub_public_csv)
+    assert cache_entry["http_status"] == HTTPStatus.OK
+    assert cache_entry["error_code"] is None
+    assert cache_entry["worker_version"] == worker.version
+    assert cache_entry["dataset_git_revision"] is not None
+    assert cache_entry["error_code"] is None
+    response = cache_entry["response"]
     assert len(response["splits"]) == 1
     assert response["splits"][0]["num_bytes"] is None
     assert response["splits"][0]["num_examples"] is None

@@ -227,7 +227,7 @@ class HubDatasetTest(TypedDict):
 HubDatasets = Dict[str, HubDatasetTest]
 
 
-def get_splits_response(dataset: str, num_bytes: float = None, num_examples: int = None):
+def create_splits_response(dataset: str, num_bytes: float = None, num_examples: int = None):
     dataset, config, split = get_default_config_split(dataset)
     return {
         "splits": [
@@ -239,31 +239,6 @@ def get_splits_response(dataset: str, num_bytes: float = None, num_examples: int
                 "num_examples": num_examples,
             }
         ]
-    }
-
-
-def get_first_rows_response(dataset: str, cols: Dict[str, Any], rows: List[Any]):
-    dataset, config, split = get_default_config_split(dataset)
-    return {
-        "dataset": dataset,
-        "config": config,
-        "split": split,
-        "features": [
-            {
-                "feature_idx": feature_idx,
-                "name": name,
-                "type": type,
-            }
-            for feature_idx, (name, type) in enumerate(cols.items())
-        ],
-        "rows": [
-            {
-                "row_idx": row_idx,
-                "truncated_cells": [],
-                "row": row,
-            }
-            for row_idx, row in enumerate(rows)
-        ],
     }
 
 
@@ -325,18 +300,18 @@ def hub_datasets(
         },
         "public": {
             "name": hub_public_csv,
-            "splits_response": get_splits_response(hub_public_csv, None, None),
+            "splits_response": create_splits_response(hub_public_csv, None, None),
         },
         "private": {
             "name": hub_private_csv,
-            "splits_response": get_splits_response(hub_private_csv, None, None),
+            "splits_response": create_splits_response(hub_private_csv, None, None),
         },
         "gated": {
             "name": hub_gated_csv,
-            "splits_response": get_splits_response(hub_gated_csv, None, None),
+            "splits_response": create_splits_response(hub_gated_csv, None, None),
         },
         "audio": {
             "name": hub_public_audio,
-            "splits_response": get_splits_response(hub_public_audio, 54.0, 1),
+            "splits_response": create_splits_response(hub_public_audio, 54.0, 1),
         },
     }

@@ -1,15 +1,16 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2022 The HuggingFace Authors.
 
+import importlib.metadata
 import logging
 from http import HTTPStatus
 from typing import Optional
 
-from libcache.simple_cache import upsert_first_rows_response
+from libcache.simple_cache import get_first_rows_response, upsert_first_rows_response
 from libqueue.worker import Worker
 
 from first_rows.config import WorkerConfig
-from first_rows.response import get_first_rows_response
+from first_rows.response import compute_first_rows_response, get_dataset_git_revision
 from first_rows.utils import (
     ConfigNotFoundError,
     DatasetNotFoundError,
@@ -24,13 +25,47 @@ class FirstRowsWorker(Worker):
     config: WorkerConfig
 
     def __init__(self, worker_config: WorkerConfig):
-        super().__init__(queue_config=worker_config.queue)
+        super().__init__(queue_config=worker_config.queue, version=importlib.metadata.version(__package__))
         self._queues = Queues(max_jobs_per_dataset=worker_config.queue.max_jobs_per_dataset)
         self.config = worker_config
 
     @property
     def queue(self):
         return self._queues.first_rows
+
+    def should_skip_job(self, dataset: str, config: Optional[str] = None, split: Optional[str] = None) -> bool:
+        """Return True if the job should be skipped, False otherwise.
+
+        The job must be skipped if:
+        - a cache entry exists for the dataset
+        - and the result was successful
+        - and it has been created with the same major version of the worker
+        - and it has been created with the exact same git commit of the dataset repository
+
+        Args:
+            dataset (:obj:`str`): The name of the dataset.
+            config (:obj:`str`, `optional`): The name of the configuration.
+            split (:obj:`str`, `optional`): The name of the split.
+
+        Returns:
+            :obj:`bool`: True if the job should be skipped, False otherwise.
+        """
+        if config is None or split is None:
+            return False
+        try:
+            cache_entry = get_first_rows_response(dataset_name=dataset, config_name=config, split_name=split)
+            dataset_git_revision = get_dataset_git_revision(
+                dataset=dataset, hf_endpoint=self.config.common.hf_endpoint, hf_token=self.config.common.hf_token
+            )
+            return (
+                cache_entry["http_status"] == HTTPStatus.OK
+                and cache_entry["worker_version"] is not None
+                and self.compare_major_version(cache_entry["worker_version"]) == 0
+                and cache_entry["dataset_git_revision"] is not None
+                and cache_entry["dataset_git_revision"] == dataset_git_revision
+            )
+        except Exception:
+            return False
 
     def compute(
         self,
@@ -41,7 +76,7 @@ class FirstRowsWorker(Worker):
         if config is None or split is None:
             raise ValueError("config and split are required")
         try:
-            response = get_first_rows_response(
+            result = compute_first_rows_response(
                 dataset=dataset,
                 config=config,
                 split=split,
@@ -59,8 +94,10 @@ class FirstRowsWorker(Worker):
                 dataset_name=dataset,
                 config_name=config,
                 split_name=split,
-                response=dict(response),
+                response=dict(result["first_rows_response"]),
                 http_status=HTTPStatus.OK,
+                worker_version=self.version,
+                dataset_git_revision=result["dataset_git_revision"],
             )
             logging.debug(f"dataset={dataset} config={config} split={split} is valid, cache updated")
             return True

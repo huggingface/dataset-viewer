@@ -44,7 +44,10 @@ def create_first_rows_endpoint(
             # if auth_check fails, it will raise an exception that will be caught below
             auth_check(dataset, external_auth_url=external_auth_url, request=request)
             try:
-                response, http_status, error_code = get_first_rows_response(dataset, config, split)
+                result = get_first_rows_response(dataset, config, split)
+                response = result["response"]
+                http_status = result["http_status"]
+                error_code = result["error_code"]
                 if http_status == HTTPStatus.OK:
                     return get_json_ok_response(content=response, max_age=max_age_long)
                 else:
