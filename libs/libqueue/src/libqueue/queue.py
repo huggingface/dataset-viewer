@@ -5,7 +5,7 @@ import enum
 import logging
 import types
 from datetime import datetime, timezone
-from typing import Generic, List, Optional, Tuple, Type, TypedDict, TypeVar
+from typing import Generic, List, Literal, Optional, Tuple, Type, TypedDict, TypeVar
 
 from mongoengine import Document, DoesNotExist, connect
 from mongoengine.errors import MultipleObjectsReturned
@@ -38,6 +38,7 @@ class Status(enum.Enum):
     SUCCESS = "success"
     ERROR = "error"
     CANCELLED = "cancelled"
+    SKIPPED = "skipped"
 
 
 class JobDict(TypedDict):
@@ -57,6 +58,7 @@ class CountByStatus(TypedDict):
     success: int
     error: int
     cancelled: int
+    skipped: int
 
 
 class DumpByPendingStatus(TypedDict):
@@ -80,7 +82,6 @@ def connect_to_database(database: str, host: str) -> None:
 # - waiting: started_at is None and finished_at is None: waiting jobs
 # - started: started_at is not None and finished_at is None: started jobs
 # - finished: started_at is not None and finished_at is not None: finished jobs
-# - cancelled: cancelled_at is not None: cancelled jobs
 # For a given set of arguments, any number of finished and cancelled jobs are allowed,
 # but only 0 or 1 job for the set of the other states
 class Job(Document):
@@ -244,7 +245,7 @@ class Queue:
         return str(next_waiting_job.pk), next_waiting_job.dataset, next_waiting_job.config, next_waiting_job.split
         # ^ job.pk is the id. job.id is not recognized by mypy
 
-    def finish_job(self, job_id: str, success: bool) -> None:
+    def finish_job(self, job_id: str, finished_status: Literal[Status.SUCCESS, Status.ERROR, Status.SKIPPED]) -> None:
         """Finish a job in the queue.
 
         The job is moved from the started state to the success or error state.
@@ -268,8 +269,7 @@ class Queue:
             logging.warning(f"job {job.to_id()} has a non-empty finished_at field. Force finishing anyway.")
         if job.started_at is None:
             logging.warning(f"job {job.to_id()} has an empty started_at field. Force finishing anyway.")
-        status = Status.SUCCESS if success else Status.ERROR
-        job.update(finished_at=get_datetime(), status=status)
+        job.update(finished_at=get_datetime(), status=finished_status)
 
     def is_job_in_process(self, dataset: str, config: Optional[str] = None, split: Optional[str] = None) -> bool:
         """Check if a job is in process (waiting or started).
@@ -326,6 +326,7 @@ class Queue:
             "success": self.count_jobs(status=Status.SUCCESS),
             "error": self.count_jobs(status=Status.ERROR),
             "cancelled": self.count_jobs(status=Status.CANCELLED),
+            "skipped": self.count_jobs(status=Status.SKIPPED),
         }
 
     def get_dump_with_status(self, status: Status) -> List[JobDict]:

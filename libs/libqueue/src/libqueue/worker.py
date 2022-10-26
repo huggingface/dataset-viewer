@@ -5,13 +5,13 @@ import logging
 import random
 import time
 from abc import ABC, abstractmethod
-from typing import Optional
+from typing import Literal, Optional
 
 from packaging import version
 from psutil import cpu_count, getloadavg, swap_memory, virtual_memory
 
 from libqueue.config import QueueConfig
-from libqueue.queue import EmptyQueueError, Queue
+from libqueue.queue import EmptyQueueError, Queue, Status
 
 
 def parse_version(string_version: str) -> version.Version:
@@ -107,17 +107,26 @@ class Worker(ABC):
             logging.debug("no job in the queue")
             return False
 
+        finished_status: Literal[Status.SUCCESS, Status.ERROR, Status.SKIPPED]
         try:
             logging.info(f"compute {parameters_for_log}")
-            success = self.compute(
-                dataset=dataset,
-                config=config,
-                split=split,
+            finished_status = (
+                Status.SKIPPED
+                if self.should_skip_job(dataset=dataset, config=config, split=split)
+                else Status.SUCCESS
+                if self.compute(
+                    dataset=dataset,
+                    config=config,
+                    split=split,
+                )
+                else Status.ERROR
             )
+        except Exception:
+            logging.exception(f"error while computing {parameters_for_log}")
+            finished_status = Status.ERROR
         finally:
-            self.queue.finish_job(job_id=job_id, success=success)
-            result = "success" if success else "error"
-            logging.debug(f"job finished with {result}: {job_id} for {parameters_for_log}")
+            self.queue.finish_job(job_id=job_id, finished_status=finished_status)
+            logging.debug(f"job finished with {finished_status.value}: {job_id} for {parameters_for_log}")
         return True
 
     def is_major_version_lower_than_worker(self, version: str) -> bool:
@@ -134,6 +143,15 @@ class Worker(ABC):
             :obj:`ValueError`: if a version passed as an argument is not a valid semantic version.
         """
         return compare_major_version(version, self.version) < 0
+
+    @abstractmethod
+    def should_skip_job(
+        self,
+        dataset: str,
+        config: Optional[str] = None,
+        split: Optional[str] = None,
+    ) -> bool:
+        pass
 
     @abstractmethod
     def compute(

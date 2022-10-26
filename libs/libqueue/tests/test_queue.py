@@ -42,7 +42,7 @@ def test_add_job() -> None:
         # thus: no new job available
         queue.start_job()
     # finish the first job
-    queue.finish_job(job_id=job_id, success=True)
+    queue.finish_job(job_id=job_id, finished_status=Status.SUCCESS)
     # the queue is empty
     assert queue.is_job_in_process(dataset=test_dataset) is False
     with pytest.raises(EmptyQueueError):
@@ -52,9 +52,9 @@ def test_add_job() -> None:
     # start it
     job_id, *_ = queue.start_job()
     other_job_id = ("1" if job_id[0] == "0" else "0") + job_id[1:]
-    queue.finish_job(job_id=other_job_id, success=True)
+    queue.finish_job(job_id=other_job_id, finished_status=Status.SUCCESS)
     # ^ fails silently (with a log)
-    queue.finish_job(job_id=job_id, success=True)
+    queue.finish_job(job_id=job_id, finished_status=Status.SUCCESS)
 
 
 def test_add_job_with_broken_collection() -> None:
@@ -155,7 +155,7 @@ def test_max_jobs_per_dataset(max_jobs_per_dataset: Optional[int]) -> None:
         return
     # max_jobs_per_dataset <= 0 and max_jobs_per_dataset == None are the same
     # finish the first job
-    queue.finish_job(job_id, success=True)
+    queue.finish_job(job_id, finished_status=Status.SUCCESS)
     assert queue.is_job_in_process(dataset=test_dataset, config=test_config, split="split1") is False
 
 
@@ -166,8 +166,8 @@ def test_count_by_status() -> None:
     queue = Queue(test_type)
     queue_other = Queue(test_other_type)
 
-    expected_empty = {"waiting": 0, "started": 0, "success": 0, "error": 0, "cancelled": 0}
-    expected_one_waiting = {"waiting": 1, "started": 0, "success": 0, "error": 0, "cancelled": 0}
+    expected_empty = {"waiting": 0, "started": 0, "success": 0, "error": 0, "cancelled": 0, "skipped": 0}
+    expected_one_waiting = {"waiting": 1, "started": 0, "success": 0, "error": 0, "cancelled": 0, "skipped": 0}
 
     assert queue.get_jobs_count_by_status() == expected_empty
     assert queue_other.get_jobs_count_by_status() == expected_empty
