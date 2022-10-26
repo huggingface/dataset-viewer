@@ -21,26 +21,6 @@ def parse_version(string_version: str) -> version.Version:
     return parsed_version
 
 
-def compare_major_version(semver_a: str, semver_b: str) -> int:
-    """
-    Compare the major version of both semver arguments.
-
-    Args:
-        semver_a (:obj:`str`): the first semantic version
-        semver_b (:obj:`str`): the second semantic version
-
-    Returns:
-        :obj:`int`: the difference between the major version of both semver arguments.
-          0 if they are equal. Negative if semver_a is lower than semver_b, positive otherwise.
-    Raises:
-        :obj:`ValueError`: if a version passed as an argument is not a valid semantic version.
-    """
-    try:
-        return parse_version(semver_a).major - parse_version(semver_b).major
-    except Exception as err:
-        raise RuntimeError(f"Could not get major versions: {err}") from err
-
-
 class Worker(ABC):
     queue_config: QueueConfig
     version: str
@@ -129,20 +109,23 @@ class Worker(ABC):
             logging.debug(f"job finished with {finished_status.value}: {job_id} for {parameters_for_log}")
         return True
 
-    def is_major_version_lower_than_worker(self, version: str) -> bool:
+    def compare_major_version(self, other_version: str) -> int:
         """
-        Checks if the version passed as an argument has a strictly lower major version than the worker's version.
+        Compare the major version of worker's self version and the other version's.
 
         Args:
-            version (:obj:`str`): the version to compare to the worker's version
+            other_version (:obj:`str`): the other semantic version
 
         Returns:
-            :obj:`bool`: True if the version passed as an argument has a strictly lower major version than the
-              worker's version.
+            :obj:`int`: the difference between the major version of both versions.
+            0 if they are equal. Negative if worker's major version is lower than other_version, positive otherwise.
         Raises:
-            :obj:`ValueError`: if a version passed as an argument is not a valid semantic version.
+            :obj:`ValueError`: if worker's version or other_version is not a valid semantic version.
         """
-        return compare_major_version(version, self.version) < 0
+        try:
+            return parse_version(self.version).major - parse_version(other_version).major
+        except Exception as err:
+            raise RuntimeError(f"Could not get major versions: {err}") from err
 
     @abstractmethod
     def should_skip_job(

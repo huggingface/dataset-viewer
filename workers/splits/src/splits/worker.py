@@ -9,8 +9,10 @@ from typing import Optional
 from libcache.simple_cache import (
     delete_first_rows_responses,
     get_dataset_first_rows_response_splits,
+    get_splits_response as get_splits_response_from_cache,
     upsert_splits_response,
 )
+
 from libqueue.worker import Worker
 
 from splits.config import WorkerConfig
@@ -25,18 +27,46 @@ from splits.utils import (
 
 class SplitsWorker(Worker):
     config: WorkerConfig
+    datasets_version: str
 
     def __init__(self, worker_config: WorkerConfig):
         super().__init__(queue_config=worker_config.queue, version=importlib.metadata.version(__package__))
         self._queues = Queues(max_jobs_per_dataset=worker_config.queue.max_jobs_per_dataset)
         self.config = worker_config
+        self.datasets_version = importlib.metadata.version("datasets")
 
     @property
     def queue(self):
         return self._queues.splits
 
     def should_skip_job(self, dataset: str, config: Optional[str] = None, split: Optional[str] = None) -> bool:
-        return False
+        """Return True if the job should be skipped, False otherwise.
+
+        The job must be skipped if:
+        - a cache entry exists for the dataset
+        - and the result was successful
+        - and it has been created with the same major version of the worker
+        - and it has been created with the exact same version of datasets
+
+        Args:
+            dataset (:obj:`str`): The name of the dataset.
+            config (:obj:`str`, `optional`): The name of the configuration.
+            split (:obj:`str`, `optional`): The name of the split.
+
+        Returns:
+            :obj:`bool`: True if the job should be skipped, False otherwise.
+        """
+        try:
+            response, http_status, _ = get_splits_response_from_cache(dataset)
+            return (
+                http_status == HTTPStatus.OK
+                and "cache_worker_version" in response
+                and self.compare_major_version(response["cache_worker_version"]) == 0
+                and "cache_datasets_version" in response
+                and self.datasets_version != response["cache_datasets_version"]
+            )
+        except Exception:
+            return False
 
     def compute(
         self,

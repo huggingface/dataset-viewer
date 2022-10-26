@@ -1,6 +1,6 @@
 import pytest
 
-from libqueue.worker import compare_major_version, parse_version
+from libqueue.worker import parse_version
 
 from .utils import DummyWorker
 
@@ -23,7 +23,7 @@ def test_parse_version(string_version: str, expected_major_version: int, should_
 
 
 @pytest.mark.parametrize(
-    "semver_a, semver_b, expected, should_raise",
+    "worker_version, other_version, expected, should_raise",
     [
         ("1.0.0", "1.0.1", 0, False),
         ("1.0.0", "2.0.1", -1, False),
@@ -31,29 +31,10 @@ def test_parse_version(string_version: str, expected_major_version: int, should_
         ("not a version", "1.0.1", None, True),
     ],
 )
-def test_compare_major_version(semver_a: str, semver_b: str, expected: int, should_raise: bool) -> None:
-    if should_raise:
-        with pytest.raises(Exception):
-            compare_major_version(semver_a, semver_b)
-    else:
-        assert compare_major_version(semver_a, semver_b) == expected
-
-
-@pytest.mark.parametrize(
-    "old_version, worker_version, expected, should_raise",
-    [
-        ("1.0.0", "1.0.1", False, False),
-        ("1.0.0", "2.0.1", True, False),
-        ("2.0.0", "1.0.1", False, False),
-        ("not a version", "1.0.1", None, True),
-    ],
-)
-def test_is_major_version_lower_than_worker(
-    old_version: str, worker_version: str, expected: int, should_raise: bool
-) -> None:
+def test_compare_major_version(worker_version: str, other_version: str, expected: int, should_raise: bool) -> None:
     worker = DummyWorker(version=worker_version)
     if should_raise:
         with pytest.raises(Exception):
-            worker.is_major_version_lower_than_worker(old_version)
+            worker.compare_major_version(other_version)
     else:
-        assert worker.is_major_version_lower_than_worker(old_version) == expected
+        assert worker.compare_major_version(other_version) == expected
