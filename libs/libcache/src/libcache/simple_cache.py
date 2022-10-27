@@ -65,10 +65,8 @@ class SplitsResponse(Document):
         "db_alias": "cache",
         "indexes": [
             "dataset_name",
-            "http_status",
-            "stale",
             ("http_status", "error_code"),
-            ("error_code", "http_status"),
+            ("dataset_name", "-updated_at"),
         ],
     }
     objects = QuerySetManager["SplitsResponse"]()
@@ -98,7 +96,7 @@ class FirstRowsResponse(Document):
             ("http_status", "dataset_name"),
             # ^ this index (reversed) is used for the "distinct" command to get the names of the valid datasets
             ("http_status", "error_code"),
-            ("error_code", "http_status"),
+            ("dataset_name", "-updated_at"),
         ],
     }
     objects = QuerySetManager["FirstRowsResponse"]()

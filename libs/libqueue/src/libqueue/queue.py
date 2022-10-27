@@ -106,14 +106,15 @@ class Job(Document):
     """
 
     meta = {
-        "collection": "jobs_blue",
-        # ^ https://en.wikipedia.org/wiki/Blue-green_deployment
+        "collection": "jobsBlue",
         "db_alias": "queue",
         "indexes": [
             "status",
             ("type", "status"),
             ("type", "dataset", "status"),
             ("type", "dataset", "config", "split", "status"),
+            ("status", "type", "created_at", "namespace"),
+            "-created_at",
         ],
     }
     type = StringField(required=True)
