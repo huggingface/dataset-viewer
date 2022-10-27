@@ -67,6 +67,6 @@ class Queues:
     splits: Queue
     first_rows: Queue
 
-    def __init__(self, max_jobs_per_dataset: Optional[int] = None):
-        self.splits = Queue(type=JobType.SPLITS.value, max_jobs_per_dataset=max_jobs_per_dataset)
-        self.first_rows = Queue(type=JobType.FIRST_ROWS.value, max_jobs_per_dataset=max_jobs_per_dataset)
+    def __init__(self, max_jobs_per_namespace: Optional[int] = None):
+        self.splits = Queue(type=JobType.SPLITS.value, max_jobs_per_namespace=max_jobs_per_namespace)
+        self.first_rows = Queue(type=JobType.FIRST_ROWS.value, max_jobs_per_namespace=max_jobs_per_namespace)

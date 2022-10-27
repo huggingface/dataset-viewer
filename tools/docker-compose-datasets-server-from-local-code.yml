@@ -25,7 +25,7 @@ services:
       CACHE_ASSETS_DIRECTORY: ${CACHE_ASSETS_DIRECTORY-/assets}
       CACHE_MONGO_URL: ${CACHE_MONGO_URL-mongodb://mongodb} # use mongo container by default
       CACHE_MONGO_DATABASE: ${CACHE_MONGO_DATABASE-datasets_server_cache}
-      QUEUE_MAX_JOBS_PER_DATASET: ${QUEUE_MAX_JOBS_PER_DATASET-1}
+      QUEUE_MAX_JOBS_PER_NAMESPACE: ${QUEUE_MAX_JOBS_PER_NAMESPACE-1}
       QUEUE_MAX_LOAD_PCT: ${QUEUE_MAX_LOAD_PCT-70}
       QUEUE_MAX_MEMORY_PCT: ${QUEUE_MAX_MEMORY_PCT-80}
       QUEUE_MONGO_URL: ${QUEUE_MONGO_URL-mongodb://mongodb} # use mongo container by default
@@ -59,7 +59,7 @@ services:
       CACHE_ASSETS_DIRECTORY: ${CACHE_ASSETS_DIRECTORY-/assets}
       CACHE_MONGO_URL: ${CACHE_MONGO_URL-mongodb://mongodb} # use mongo container by default
       CACHE_MONGO_DATABASE: ${CACHE_MONGO_DATABASE-datasets_server_cache}
-      QUEUE_MAX_JOBS_PER_DATASET: ${QUEUE_MAX_JOBS_PER_DATASET-1}
+      QUEUE_MAX_JOBS_PER_NAMESPACE: ${QUEUE_MAX_JOBS_PER_NAMESPACE-1}
       QUEUE_MAX_LOAD_PCT: ${QUEUE_MAX_LOAD_PCT-70}
       QUEUE_MAX_MEMORY_PCT: ${QUEUE_MAX_MEMORY_PCT-80}
       QUEUE_MONGO_URL: ${QUEUE_MONGO_URL-mongodb://mongodb} # use mongo container by default
@@ -94,7 +94,7 @@ services:
       CACHE_ASSETS_DIRECTORY: ${CACHE_ASSETS_DIRECTORY-/assets}
       CACHE_MONGO_URL: ${CACHE_MONGO_URL-mongodb://mongodb} # use mongo container by default
       CACHE_MONGO_DATABASE: ${CACHE_MONGO_DATABASE-datasets_server_cache}
-      QUEUE_MAX_JOBS_PER_DATASET: ${QUEUE_MAX_JOBS_PER_DATASET-1}
+      QUEUE_MAX_JOBS_PER_NAMESPACE: ${QUEUE_MAX_JOBS_PER_NAMESPACE-1}
       QUEUE_MAX_LOAD_PCT: ${QUEUE_MAX_LOAD_PCT-70}
       QUEUE_MAX_MEMORY_PCT: ${QUEUE_MAX_MEMORY_PCT-80}
       QUEUE_MONGO_URL: ${QUEUE_MONGO_URL-mongodb://mongodb} # use mongo container by default
@@ -122,7 +122,7 @@ services:
       CACHE_ASSETS_DIRECTORY: ${CACHE_ASSETS_DIRECTORY-/assets}
       CACHE_MONGO_URL: ${CACHE_MONGO_URL-mongodb://mongodb} # use mongo container by default
       CACHE_MONGO_DATABASE: ${CACHE_MONGO_DATABASE-datasets_server_cache}
-      QUEUE_MAX_JOBS_PER_DATASET: ${QUEUE_MAX_JOBS_PER_DATASET-1}
+      QUEUE_MAX_JOBS_PER_NAMESPACE: ${QUEUE_MAX_JOBS_PER_NAMESPACE-1}
       QUEUE_MAX_LOAD_PCT: ${QUEUE_MAX_LOAD_PCT-70}
       QUEUE_MAX_MEMORY_PCT: ${QUEUE_MAX_MEMORY_PCT-80}
       QUEUE_MONGO_URL: ${QUEUE_MONGO_URL-mongodb://mongodb} # use mongo container by default
