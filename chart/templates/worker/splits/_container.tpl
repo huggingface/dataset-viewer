@@ -20,10 +20,10 @@
         key: MONGO_URL
         optional: false
   {{- end }}
-  - name: QUEUE_MAX_JOBS_PER_DATASET
-    # value: {{ .Values.queue.maxJobsPerDataset | quote }}
+  - name: QUEUE_MAX_JOBS_PER_NAMESPACE
+    # value: {{ .Values.queue.maxJobsPerNamespace | quote }}
     # overridden
-    value: {{ .Values.splits.queue.maxJobsPerDataset | quote }}
+    value: {{ .Values.splits.queue.maxJobsPerNamespace | quote }}
   - name: QUEUE_MAX_LOAD_PCT
     value: {{ .Values.queue.maxLoadPct | quote }}
   - name: QUEUE_MAX_MEMORY_PCT

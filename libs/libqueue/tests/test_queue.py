@@ -61,8 +61,8 @@ def test_priority_to_non_started_datasets() -> None:
     queue = Queue(test_type)
     queue.add_job(dataset="dataset1", config="config", split="split1")
     queue.add_job(dataset="dataset1", config="config", split="split1")
+    queue.add_job(dataset="dataset1/dataset", config="config", split="split1")
     queue.add_job(dataset="dataset1", config="config", split="split2")
-    queue.add_job(dataset="dataset1", config="config", split="split3")
     queue.add_job(dataset="dataset2", config="config", split="split1")
     queue.add_job(dataset="dataset2", config="config", split="split2")
     queue.add_job(dataset="dataset3", config="config", split="split1")
@@ -76,13 +76,13 @@ def test_priority_to_non_started_datasets() -> None:
     assert dataset == "dataset3"
     assert split == "split1"
     _, dataset, __, split = queue.start_job()
-    assert dataset == "dataset1"
+    assert dataset == "dataset1/dataset"
+    assert split == "split1"
+    _, dataset, __, split = queue.start_job()
+    assert dataset == "dataset2"
     assert split == "split2"
     _, dataset, __, split = queue.start_job()
     assert dataset == "dataset1"
-    assert split == "split3"
-    _, dataset, __, split = queue.start_job()
-    assert dataset == "dataset2"
     assert split == "split2"
     with pytest.raises(EmptyQueueError):
         # raises even if there is still a waiting job
@@ -91,12 +91,12 @@ def test_priority_to_non_started_datasets() -> None:
         queue.start_job()
 
 
-@pytest.mark.parametrize("max_jobs_per_dataset", [(None), (-5), (0), (1), (2)])
-def test_max_jobs_per_dataset(max_jobs_per_dataset: Optional[int]) -> None:
+@pytest.mark.parametrize("max_jobs_per_namespace", [(None), (-5), (0), (1), (2)])
+def test_max_jobs_per_namespace(max_jobs_per_namespace: Optional[int]) -> None:
     test_type = "test_type"
     test_dataset = "test_dataset"
     test_config = "test_config"
-    queue = Queue(test_type, max_jobs_per_dataset=max_jobs_per_dataset)
+    queue = Queue(test_type, max_jobs_per_namespace=max_jobs_per_namespace)
     queue.add_job(dataset=test_dataset, config=test_config, split="split1")
     assert queue.is_job_in_process(dataset=test_dataset, config=test_config, split="split1") is True
     queue.add_job(dataset=test_dataset, config=test_config, split="split2")
@@ -106,17 +106,17 @@ def test_max_jobs_per_dataset(max_jobs_per_dataset: Optional[int]) -> None:
     assert config == test_config
     assert split == "split1"
     assert queue.is_job_in_process(dataset=test_dataset, config=test_config, split="split1") is True
-    if max_jobs_per_dataset == 1:
+    if max_jobs_per_namespace == 1:
         with pytest.raises(EmptyQueueError):
             queue.start_job()
         return
     _, dataset, config, split = queue.start_job()
     assert split == "split2"
-    if max_jobs_per_dataset == 2:
+    if max_jobs_per_namespace == 2:
         with pytest.raises(EmptyQueueError):
             queue.start_job()
         return
-    # max_jobs_per_dataset <= 0 and max_jobs_per_dataset == None are the same
+    # max_jobs_per_namespace <= 0 and max_jobs_per_namespace == None are the same
     # finish the first job
     queue.finish_job(job_id, finished_status=Status.SUCCESS)
     assert queue.is_job_in_process(dataset=test_dataset, config=test_config, split="split1") is False

@@ -146,8 +146,8 @@ api:
 splits:
   # override the common queue parameters
   queue:
-    # Maximum number of jobs running at the same time for the same dataset
-    maxJobsPerDataset: 4
+    # Maximum number of jobs running at the same time for the same namespace
+    maxJobsPerNamespace: 4
 
   nodeSelector:
     role-datasets-server: "true"
@@ -163,8 +163,8 @@ splits:
 firstRows:
   # override the common queue parameters
   queue:
-    # Maximum number of jobs running at the same time for the same dataset
-    maxJobsPerDataset: 17
+    # Maximum number of jobs running at the same time for the same namespace
+    maxJobsPerNamespace: 17
 
   nodeSelector:
     role-datasets-server: "true"

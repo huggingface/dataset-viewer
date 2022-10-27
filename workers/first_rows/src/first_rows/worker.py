@@ -26,7 +26,7 @@ class FirstRowsWorker(Worker):
 
     def __init__(self, worker_config: WorkerConfig):
         super().__init__(queue_config=worker_config.queue, version=importlib.metadata.version(__package__))
-        self._queues = Queues(max_jobs_per_dataset=worker_config.queue.max_jobs_per_dataset)
+        self._queues = Queues(max_jobs_per_namespace=worker_config.queue.max_jobs_per_namespace)
         self.config = worker_config
 
     @property

@@ -6,7 +6,7 @@ A Python library to manage the job queues to precompute API responses. The job q
 
 Set environment variables to configure the following aspects:
 
-- `QUEUE_MAX_JOBS_PER_DATASET`: the maximum number of started jobs for the same dataset. Defaults to 1.
+- `QUEUE_MAX_JOBS_PER_NAMESPACE`: the maximum number of started jobs for the same namespace (the user or organization, before the `/` separator in the dataset name, or the "canonical" dataset name if not present). Defaults to 1.
 - `QUEUE_MAX_LOAD_PCT`: the maximum load of the machine (in percentage: the max between the 1m load and the 5m load divided by the number of cpus \*100) allowed to start a job. Set to 0 to disable the test. Defaults to 70.
 - `QUEUE_MAX_MEMORY_PCT`: the maximum memory (RAM + SWAP) usage of the machine (in percentage) allowed to start a job. Set to 0 to disable the test. Defaults to 80.
 - `QUEUE_MONGO_DATABASE`: the name of the database used for storing the queue. Defaults to `"datasets_server_queue"`.
