@@ -4,7 +4,10 @@
 import enum
 import logging
 import types
+from collections import Counter
 from datetime import datetime, timezone
+from itertools import groupby
+from operator import itemgetter
 from typing import Generic, List, Literal, Optional, Tuple, Type, TypedDict, TypeVar
 
 from mongoengine import Document, DoesNotExist, connect
@@ -45,6 +48,8 @@ class JobDict(TypedDict):
     dataset: str
     config: Optional[str]
     split: Optional[str]
+    unicity_id: str
+    namespace: str
     status: str
     created_at: datetime
     started_at: Optional[datetime]
@@ -91,6 +96,9 @@ class Job(Document):
         dataset (`str`): The dataset on which to apply the job.
         config (`str`, optional): The config on which to apply the job.
         split (`str`, optional): The config on which to apply the job.
+        unicity_id (`str`): A string that identifies the job uniquely. Only one job with the same unicity_id can be in
+          the started state.
+        namespace (`str`): The dataset namespace (user or organization) if any, else the dataset name (canonical name).
         status (`Status`, optional): The status of the job. Defaults to Status.WAITING.
         created_at (`datetime`): The creation date of the job.
         started_at (`datetime`, optional): When the job has started.
@@ -98,7 +106,8 @@ class Job(Document):
     """
 
     meta = {
-        "collection": "jobs",
+        "collection": "jobs_blue",
+        # ^ https://en.wikipedia.org/wiki/Blue-green_deployment
         "db_alias": "queue",
         "indexes": [
             "status",
@@ -111,6 +120,9 @@ class Job(Document):
     dataset = StringField(required=True)
     config = StringField()
     split = StringField()
+    unicity_id = StringField(required=True)
+    namespace = StringField(required=True)
+    split = StringField()
     status = EnumField(Status, default=Status.WAITING)
     created_at = DateTimeField(required=True)
     started_at = DateTimeField()
@@ -122,14 +134,13 @@ class Job(Document):
             "dataset": self.dataset,
             "config": self.config,
             "split": self.split,
+            "unicity_id": self.unicity_id,
+            "namespace": self.namespace,
             "status": self.status.value,
             "created_at": self.created_at,
             "started_at": self.started_at,
             "finished_at": self.finished_at,
         }
-
-    def to_id(self) -> str:
-        return f"Job[{self.type}][{self.dataset}][{self.config}][{self.split}]"
 
     objects = QuerySetManager["Job"]()
 
@@ -141,24 +152,26 @@ class Queue:
     the jobs. You can create multiple Queue objects, it has no effect on the database.
 
     It's a FIFO queue, with the following properties:
-    - a job is identified by its input arguments: dataset, and optionally config and split
-    - a job can be in one of the following states: waiting, started, success, error, cancelled
-    - a job can be in the queue only once in the "started" state
+    - a job is identified by its input arguments: unicity_id (type, dataset, config and split)
+    - a job can be in one of the following states: waiting, started, success, error, cancelled, skipped
+    - a job can be in the queue only once (unicity_id) in the "started" state
     - a job can be in the queue multiple times in the other states (waiting, success, error, cancelled, skipped)
     - the queue is ordered by the creation date of the jobs
-    - datasets that already have started jobs are de-prioritized
-    - datasets cannot have more than `max_jobs_per_dataset` started jobs
+    - datasets and users that already have started jobs are de-prioritized (using namespace)
+    - no more than `max_jobs_per_namespace` started jobs can exist for the same namespace
 
     Args:
         type (`str`, required): Type of the job. It identifies the queue.
-        max_jobs_per_dataset (`int`): Maximum number of started jobs for the same dataset. 0 or a negative value
-          are ignored. Defaults to None.
+        max_jobs_per_namespace (`int`): Maximum number of started jobs for the same namespace. We call a namespace the
+          part of the dataset name that is before the `/` separator (user or organization). If `/` is not present,
+          which is the case for the "canonical" datasets, the namespace is the dataset name.
+          0 or a negative value are ignored. Defaults to None.
     """
 
-    def __init__(self, type: str, max_jobs_per_dataset: Optional[int] = None):
+    def __init__(self, type: str, max_jobs_per_namespace: Optional[int] = None):
         self.type = type
-        self.max_jobs_per_dataset = (
-            None if max_jobs_per_dataset is None or max_jobs_per_dataset < 1 else max_jobs_per_dataset
+        self.max_jobs_per_namespace = (
+            None if max_jobs_per_namespace is None or max_jobs_per_namespace < 1 else max_jobs_per_namespace
         )
 
     def add_job(self, dataset: str, config: Optional[str] = None, split: Optional[str] = None) -> Job:
@@ -171,17 +184,83 @@ class Queue:
             dataset=dataset,
             config=config,
             split=split,
+            unicity_id=f"Job[{self.type}][{dataset}][{config}][{split}]",
+            namespace=dataset.split("/")[0],
             created_at=get_datetime(),
             status=Status.WAITING,
         ).save()
 
+    def get_next_waiting_job(self) -> Job:
+        """Get the next job in the queue.
+
+        Get the waiting job with the oldest creation date:
+        - first, among the datasets that still have no started job.
+        - if none, among the datasets that have the least started jobs:
+          - in the limit of `max_jobs_per_namespace` jobs per namespace
+          - ensuring that the unicity_id field is unique among the started jobs.
+
+        Raises:
+            EmptyQueueError: if there is no waiting job in the queue that satisfies the restrictions above.
+
+        Returns: the job
+        """
+        started_jobs = Job.objects(type=self.type, status=Status.STARTED)
+        started_job_namespaces = [job.namespace for job in started_jobs.only("namespace")]
+
+        next_waiting_job = (
+            Job.objects(
+                type=self.type,
+                status=Status.WAITING,
+                namespace__nin=set(started_job_namespaces),
+            )
+            .order_by("+created_at")
+            .only("dataset", "config", "split")
+            .no_cache()
+            .first()
+        )
+        # ^ no_cache should generate a query on every iteration, which should solve concurrency issues between workers
+        if next_waiting_job is not None:
+            return next_waiting_job
+
+        # all the waiting jobs, if any, are for namespaces that already have started jobs.
+        #
+        # Let's:
+        # - exclude the waiting jobs for datasets that already have too many started jobs (max_jobs_per_namespace)
+        # - exclude the waiting jobs which unicity_id is already in a started job
+        # and, among the remaining waiting jobs, let's:
+        # - select the oldest waiting job for the namespace with the least number of started jobs
+        started_unicity_ids = {job.unicity_id for job in started_jobs.only("unicity_id")}
+        descending_frequency_namespace_counts = [
+            [namespace, count]
+            for namespace, count in Counter(started_job_namespaces).most_common()
+            if self.max_jobs_per_namespace is None or count < self.max_jobs_per_namespace
+        ]
+        descending_frequency_namespace_groups = [
+            [item[0] for item in data] for (_, data) in groupby(descending_frequency_namespace_counts, itemgetter(1))
+        ]
+        # maybe we could get rid of this loop
+        while descending_frequency_namespace_groups:
+            least_common_namespaces_group = descending_frequency_namespace_groups.pop()
+            next_waiting_job = (
+                Job.objects(
+                    type=self.type,
+                    status=Status.WAITING,
+                    namespace__in=least_common_namespaces_group,
+                    unicity_id__nin=started_unicity_ids,
+                )
+                .order_by("+created_at")
+                .only("dataset", "config", "split")
+                .no_cache()
+                .first()
+            )
+            if next_waiting_job is not None:
+                return next_waiting_job
+        raise EmptyQueueError(
+            f"no job available (within the limit of {self.max_jobs_per_namespace} started jobs per namespace)"
+        )
+
     def start_job(self) -> Tuple[str, str, Optional[str], Optional[str]]:
         """Start the next job in the queue.
-
-        Get the next job in the queue, among the datasets that still have no started job.
-        If no job is available, get the next job in the queue, among the datasets that already have a started job,
-        but not more than `max_jobs_per_dataset` jobs per dataset, and not with the same set of arguments
-        (dataset, config, split).
 
         The job is moved from the waiting state to the started state.
 
@@ -191,52 +270,8 @@ class Queue:
 
         Returns: the job id and the input arguments: dataset, config and split
         """
-        # try to get a job for a dataset that still has no started job
-        started_job_arguments = {
-            (job.dataset, job.config, job.split)
-            for job in Job.objects(type=self.type, status=Status.STARTED).only("dataset", "config", "split")
-        }
-        started_datasets = [job_arguments[0] for job_arguments in started_job_arguments]
-        next_waiting_job = (
-            Job.objects(type=self.type, status=Status.WAITING, dataset__nin=started_datasets)
-            .order_by("+created_at")
-            .no_cache()
-            .first()
-        )
-        # ^ no_cache should generate a query on every iteration, which should solve concurrency issues between workers
-        if next_waiting_job is None:
-            # the waiting jobs are all for datasets that already have started jobs.
-            # let's take the next one, in the limit of max_jobs_per_dataset
-            # and without the same arguments (dataset, config, split)
-            excluded_datasets = (
-                []
-                if self.max_jobs_per_dataset is None
-                else list(
-                    {
-                        dataset
-                        for dataset in started_datasets
-                        if started_datasets.count(dataset) >= self.max_jobs_per_dataset
-                    }
-                )
-            )
-            # probably sub-optimal: ideally we should not loop here, neither create a list of all the waiting jobs
-            waiting_jobs = list(
-                Job.objects(type=self.type, status=Status.WAITING, dataset__nin=excluded_datasets)
-                .order_by("+created_at")
-                .no_cache()
-            )
-            while waiting_jobs:
-                next_waiting_job = waiting_jobs.pop(0)
-                if (
-                    next_waiting_job.dataset,
-                    next_waiting_job.config,
-                    next_waiting_job.split,
-                ) not in started_job_arguments:
-                    break
-            else:
-                raise EmptyQueueError(
-                    "no job available (within the limit of {max_jobs_per_dataset} started jobs per dataset)"
-                )
+        next_waiting_job = self.get_next_waiting_job()
+        # ^ can raise EmptyQueueError
         next_waiting_job.update(started_at=get_datetime(), status=Status.STARTED)
         return str(next_waiting_job.pk), next_waiting_job.dataset, next_waiting_job.config, next_waiting_job.split
         # ^ job.pk is the id. job.id is not recognized by mypy
@@ -259,12 +294,12 @@ class Queue:
             return
         if job.status is not Status.STARTED:
             logging.warning(
-                f"job {job.to_id()} has a not the STARTED status ({job.status.value}). Force finishing anyway."
+                f"job {job.unicity_id} has a not the STARTED status ({job.status.value}). Force finishing anyway."
             )
         if job.finished_at is not None:
-            logging.warning(f"job {job.to_id()} has a non-empty finished_at field. Force finishing anyway.")
+            logging.warning(f"job {job.unicity_id} has a non-empty finished_at field. Force finishing anyway.")
         if job.started_at is None:
-            logging.warning(f"job {job.to_id()} has an empty started_at field. Force finishing anyway.")
+            logging.warning(f"job {job.unicity_id} has an empty started_at field. Force finishing anyway.")
         job.update(finished_at=get_datetime(), status=finished_status)
 
     def is_job_in_process(self, dataset: str, config: Optional[str] = None, split: Optional[str] = None) -> bool:
