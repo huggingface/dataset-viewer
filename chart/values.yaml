@@ -40,8 +40,8 @@ cache:
   mongoDatabase: "datasets_server_cache"
 
 queue:
-  # Maximum number of jobs running at the same time for the same dataset
-  maxJobsPerDataset: 1
+  # Maximum number of jobs running at the same time for the same namespace
+  maxJobsPerNamespace: 1
   # Max CPU load (%) - if reached, sleeps until it comes back under the limit
   maxLoadPct: 0
   # Max memory (RAM + SWAP) (%) - if reached, sleeps until it comes back under the limit
@@ -166,8 +166,8 @@ api:
 splits:
   # override the common queue parameters
   queue:
-    # Maximum number of jobs running at the same time for the same dataset
-    maxJobsPerDataset: 1
+    # Maximum number of jobs running at the same time for the same namespace
+    maxJobsPerNamespace: 1
 
   nodeSelector: {}
   replicas: 1
@@ -191,8 +191,8 @@ firstRows:
   minNumber: 10
   # override the common queue parameters
   queue:
-    # Maximum number of jobs running at the same time for the same dataset
-    maxJobsPerDataset: 1
+    # Maximum number of jobs running at the same time for the same namespace
+    maxJobsPerNamespace: 1
 
   nodeSelector: {}
   replicas: 1
