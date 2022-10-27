@@ -320,7 +320,7 @@ format-nongpl = ["fqdn", "idna", "isoduration", "jsonpointer (>1.13)", "rfc3339-
 
 [[package]]
 name = "libcache"
-version = "0.3.3"
+version = "0.3.4"
 description = "Library for the cache in mongodb"
 category = "main"
 optional = false
@@ -335,7 +335,7 @@ pymongo = {version = ">=3.12.3,<4.0.0", extras = ["srv"]}
 
 [package.source]
 type = "file"
-url = "../../libs/libcache/dist/libcache-0.3.3-py3-none-any.whl"
+url = "../../libs/libcache/dist/libcache-0.3.4-py3-none-any.whl"
 
 [[package]]
 name = "libcommon"
@@ -355,7 +355,7 @@ url = "../../libs/libcommon/dist/libcommon-0.3.2-py3-none-any.whl"
 
 [[package]]
 name = "libqueue"
-version = "0.4.7"
+version = "0.4.8"
 description = "Library for the jobs queue in mongodb"
 category = "main"
 optional = false
@@ -371,7 +371,7 @@ pymongo = {version = ">=3.12.3,<4.0.0", extras = ["srv"]}
 
 [package.source]
 type = "file"
-url = "../../libs/libqueue/dist/libqueue-0.4.7-py3-none-any.whl"
+url = "../../libs/libqueue/dist/libqueue-0.4.8-py3-none-any.whl"
 
 [[package]]
 name = "markupsafe"
@@ -902,7 +902,7 @@ watchdog = ["watchdog"]
 [metadata]
 lock-version = "1.1"
 python-versions = "3.9.6"
-content-hash = "50b8e3501d30bea0fbcc237aebe4db07cbfa1556ba9107880e6a811b4b4101f0"
+content-hash = "1231a8dff4cb257231da7de69a8b0ec09597a935dc8edf207470b39c3f590adb"
 
 [metadata.files]
 anyio = []
@@ -961,13 +961,13 @@ isort = [
 ]
 jsonschema = []
 libcache = [
-    {file = "libcache-0.3.3-py3-none-any.whl", hash = "sha256:bf43a71767d263849f989ef6bd28fc9f143ef2c5502b4d1ec2de2fe3af6e5d09"},
+    {file = "libcache-0.3.4-py3-none-any.whl", hash = "sha256:efd9a0a3912dd71d60f174e0238e49af377e87088349c5fb87fef9126f83641b"},
 ]
 libcommon = [
     {file = "libcommon-0.3.2-py3-none-any.whl", hash = "sha256:774292c9ea2d9ab50c4bf2a3eb212bfaf924096a4279ecf117b70618702d978d"},
 ]
 libqueue = [
-    {file = "libqueue-0.4.7-py3-none-any.whl", hash = "sha256:0c6e5ca692786d86228bcebef54344004d9edccc0f499accf27bdc4ed3277b9e"},
+    {file = "libqueue-0.4.8-py3-none-any.whl", hash = "sha256:ea2376efb371dce391f4574d8a9595e99e20b318a3399e910d32251676f5cb24"},
 ]
 markupsafe = []
 marshmallow = []
