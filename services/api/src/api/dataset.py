@@ -14,6 +14,7 @@ from api.utils import CacheKind, JobType
 
 splits_queue = Queue(type=JobType.SPLITS.value)
 first_rows_queue = Queue(type=JobType.FIRST_ROWS.value)
+parquet_queue = Queue(type=JobType.PARQUET.value)
 
 
 def is_supported(
@@ -46,6 +47,7 @@ def update(dataset: str, hf_endpoint: str, hf_token: Optional[str] = None, force
     if is_supported(dataset=dataset, hf_endpoint=hf_endpoint, hf_token=hf_token):
         logging.debug(f"refresh dataset='{dataset}'")
         splits_queue.add_job(dataset=dataset, force=force)
+        parquet_queue.add_job(dataset=dataset, force=force)
         return True
     else:
         logging.debug(f"can't refresh dataset='{dataset}', it's not supported (does not exist, private, etc.)")
@@ -75,6 +77,17 @@ def is_splits_in_process(
 ) -> bool:
     if splits_queue.is_job_in_process(dataset=dataset):
         # the /splits response is not ready yet
+        return True
+    return update(dataset=dataset, hf_endpoint=hf_endpoint, hf_token=hf_token, force=False)
+
+
+def is_parquet_in_process(
+    dataset: str,
+    hf_endpoint: str,
+    hf_token: Optional[str] = None,
+) -> bool:
+    if parquet_queue.is_job_in_process(dataset=dataset):
+        # the /parquet response is not ready yet
         return True
     return update(dataset=dataset, hf_endpoint=hf_endpoint, hf_token=hf_token, force=False)
 

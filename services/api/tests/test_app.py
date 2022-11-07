@@ -29,6 +29,7 @@ def clean_mongo_databases() -> None:
 
 
 splits_queue = Queue(type=JobType.SPLITS.value)
+parquet_queue = Queue(type=JobType.PARQUET.value)
 
 
 def test_cors(client: TestClient) -> None:
@@ -193,6 +194,44 @@ def test_splits_cache_refreshing(
     "exists,is_private,expected_error_code",
     [
         (False, None, "ExternalAuthenticatedError"),
+        (True, True, "ParquetResponseNotFound"),
+        (True, False, "ParquetResponseNotReady"),
+    ],
+)
+def test_parquet_cache_refreshing(
+    client: TestClient,
+    httpserver: HTTPServer,
+    hf_auth_path: str,
+    exists: bool,
+    is_private: Optional[bool],
+    expected_error_code: str,
+) -> None:
+    dataset = "dataset-to-be-processed"
+    httpserver.expect_request(hf_auth_path % dataset).respond_with_data(status=200 if exists else 404)
+    httpserver.expect_request(f"/api/datasets/{dataset}").respond_with_data(
+        json.dumps({"private": is_private}), headers={} if exists else {"X-Error-Code": "RepoNotFound"}
+    )
+
+    response = client.get("/parquet", params={"dataset": dataset})
+    assert response.headers["X-Error-Code"] == expected_error_code
+
+    if expected_error_code == "ParquetResponseNotReady":
+        # a subsequent request should return the same error code
+        response = client.get("/parquet", params={"dataset": dataset})
+        assert response.headers["X-Error-Code"] == expected_error_code
+        # simulate the worker
+        upsert_response(
+            kind=CacheKind.PARQUET.value, dataset=dataset, content={"key": "value"}, http_status=HTTPStatus.OK
+        )
+        response = client.get("/parquet", params={"dataset": dataset})
+        assert response.json()["key"] == "value"
+        assert response.status_code == 200
+
+
+@pytest.mark.parametrize(
+    "exists,is_private,expected_error_code",
+    [
+        (False, None, "ExternalAuthenticatedError"),
         (True, True, "FirstRowsResponseNotFound"),
         (True, False, "FirstRowsResponseNotReady"),
     ],
@@ -294,3 +333,4 @@ def test_webhook(
     response = client.post("/webhook", json=payload)
     assert response.status_code == expected_status, response.text
     assert splits_queue.is_job_in_process(dataset=dataset) is expected_is_updated
+    assert parquet_queue.is_job_in_process(dataset=dataset) is expected_is_updated

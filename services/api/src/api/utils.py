@@ -14,8 +14,10 @@ ApiErrorCode = Literal[
     "MissingRequiredParameter",
     "SplitsResponseNotReady",
     "FirstRowsResponseNotReady",
+    "ParquetResponseNotReady",
     "SplitsResponseNotFound",
     "FirstRowsResponseNotFound",
+    "ParquetResponseNotFound",
     "UnexpectedError",
     "ExternalUnauthenticatedError",
     "ExternalAuthenticatedError",
@@ -57,6 +59,13 @@ class FirstRowsResponseNotReadyError(ApiCustomError):
         super().__init__(message, HTTPStatus.INTERNAL_SERVER_ERROR, "FirstRowsResponseNotReady")
 
 
+class ParquetResponseNotReadyError(ApiCustomError):
+    """Raised when the /parquet response has not been processed yet."""
+
+    def __init__(self, message: str):
+        super().__init__(message, HTTPStatus.INTERNAL_SERVER_ERROR, "ParquetResponseNotReady")
+
+
 class FirstRowsResponseNotFoundError(ApiCustomError):
     """Raised when the response for /first-rows has not been found."""
 
@@ -69,6 +78,13 @@ class SplitsResponseNotFoundError(ApiCustomError):
 
     def __init__(self, message: str):
         super().__init__(message, HTTPStatus.NOT_FOUND, "SplitsResponseNotFound")
+
+
+class ParquetResponseNotFoundError(ApiCustomError):
+    """Raised when the response for /parquet has not been found."""
+
+    def __init__(self, message: str):
+        super().__init__(message, HTTPStatus.NOT_FOUND, "ParquetResponseNotFound")
 
 
 class UnexpectedError(ApiCustomError):
@@ -144,8 +160,10 @@ Endpoint = Callable[[Request], Coroutine[Any, Any, Response]]
 class JobType(Enum):
     SPLITS = "/splits"
     FIRST_ROWS = "/first-rows"
+    PARQUET = "/parquet"
 
 
 class CacheKind(Enum):
     SPLITS = "/splits"
     FIRST_ROWS = "/first-rows"
+    PARQUET = "/parquet"

@@ -48,5 +48,6 @@ See https://huggingface.co/docs/datasets-server
 - /webhook: add, update or remove a dataset
 - /splits: list the [splits](https://huggingface.co/docs/datasets/splits.html) names for a dataset
 - /first-rows: extract the first [rows](https://huggingface.co/docs/datasets/splits.html) for a dataset split
+- /parquet: list the parquet files for a dataset
 - /assets: return a static asset, ej. https://datasets-server.huggingface.co/assets/food101/--/default/train/0/image/2885220.jpg
 - /metrics: return a list of metrics in the Prometheus format

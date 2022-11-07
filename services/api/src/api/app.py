@@ -16,6 +16,7 @@ from api.config import AppConfig, UvicornConfig
 from api.prometheus import Prometheus
 from api.routes.first_rows import create_first_rows_endpoint
 from api.routes.healthcheck import healthcheck_endpoint
+from api.routes.parquet import create_parquet_endpoint
 from api.routes.splits import create_splits_endpoint
 from api.routes.valid import create_is_valid_endpoint, valid_endpoint
 from api.routes.webhook import create_webhook_endpoint
@@ -44,6 +45,14 @@ def create_app() -> Starlette:
         Route(
             "/first-rows",
             endpoint=create_first_rows_endpoint(
+                external_auth_url=app_config.api.external_auth_url,
+                hf_endpoint=app_config.common.hf_endpoint,
+                hf_token=app_config.common.hf_token,
+            ),
+        ),
+        Route(
+            "/parquet",
+            endpoint=create_parquet_endpoint(
                 external_auth_url=app_config.api.external_auth_url,
                 hf_endpoint=app_config.common.hf_endpoint,
                 hf_token=app_config.common.hf_token,
