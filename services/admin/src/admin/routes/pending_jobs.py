@@ -24,6 +24,7 @@ def create_pending_jobs_endpoint(
 ) -> Endpoint:
     splits_queue = Queue(type=JobType.SPLITS.value)
     first_rows_queue = Queue(type=JobType.FIRST_ROWS.value)
+    parquet_queue = Queue(type=JobType.PARQUET.value)
 
     async def pending_jobs_endpoint(request: Request) -> Response:
         logging.info("/pending-jobs")
@@ -34,6 +35,7 @@ def create_pending_jobs_endpoint(
                 {
                     JobType.SPLITS.value: splits_queue.get_dump_by_pending_status(),
                     JobType.FIRST_ROWS.value: first_rows_queue.get_dump_by_pending_status(),
+                    JobType.PARQUET.value: parquet_queue.get_dump_by_pending_status(),
                 },
                 max_age=max_age,
             )

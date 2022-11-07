@@ -37,11 +37,13 @@ RESPONSES_IN_CACHE_TOTAL = Gauge(
 
 class Prometheus:
     first_rows_queue: Queue
+    parquet_queue: Queue
     split_queue: Queue
 
     def __init__(self):
         self.split_queue = Queue(type=JobType.SPLITS.value)
         self.first_rows_queue = Queue(type=JobType.FIRST_ROWS.value)
+        self.parquet_queue = Queue(type=JobType.PARQUET.value)
 
     def getRegistry(self) -> CollectorRegistry:
         # taken from https://github.com/perdy/starlette-prometheus/blob/master/starlette_prometheus/view.py
@@ -59,6 +61,8 @@ class Prometheus:
             QUEUE_JOBS_TOTAL.labels(queue=JobType.SPLITS.value, status=status).set(total)
         for status, total in self.first_rows_queue.get_jobs_count_by_status().items():
             QUEUE_JOBS_TOTAL.labels(queue=JobType.FIRST_ROWS.value, status=status).set(total)
+        for status, total in self.parquet_queue.get_jobs_count_by_status().items():
+            QUEUE_JOBS_TOTAL.labels(queue=JobType.PARQUET.value, status=status).set(total)
         # Cache metrics
         for metric in get_responses_count_by_kind_status_and_error_code():
             RESPONSES_IN_CACHE_TOTAL.labels(

@@ -124,9 +124,11 @@ Endpoint = Callable[[Request], Coroutine[Any, Any, Response]]
 
 class JobType(Enum):
     SPLITS = "/splits"
+    PARQUET = "/parquet"
     FIRST_ROWS = "/first-rows"
 
 
 class CacheKind(Enum):
     SPLITS = "/splits"
+    PARQUET = "/parquet"
     FIRST_ROWS = "/first-rows"

@@ -78,6 +78,16 @@ def create_app() -> Starlette:
             ),
         ),
         Route(
+            "/cache-reports/parquet",
+            endpoint=create_cache_reports_endpoint(
+                kind=CacheKind.PARQUET,
+                cache_reports_num_results=app_config.admin.cache_reports_num_results,
+                max_age=app_config.admin.max_age,
+                external_auth_url=app_config.admin.external_auth_url,
+                organization=app_config.admin.hf_organization,
+            ),
+        ),
+        Route(
             "/cache-reports/splits",
             endpoint=create_cache_reports_endpoint(
                 kind=CacheKind.SPLITS,

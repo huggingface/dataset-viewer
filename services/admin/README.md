@@ -60,6 +60,7 @@ The scripts:
 
 - `cancel-jobs-splits`: cancel all the started jobs for /splits (stop the workers before!)
 - `cancel-jobs-first-rows`: cancel all the started jobs for /first-rows (stop the workers before!)
+- `cancel-jobs-parquet`: cancel all the started jobs for /parquet (stop the workers before!)
 
 To launch the scripts:
 
