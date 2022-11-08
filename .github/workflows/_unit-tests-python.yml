@@ -55,5 +55,4 @@ jobs:
         run: poetry run python -m pytest -s --cov --cov-report xml:coverage.xml --cov-report=term tests
       - uses: codecov/codecov-action@v3
         with:
-          token: ${{ secrets.codecov-token }}
           files: ./coverage.xml
