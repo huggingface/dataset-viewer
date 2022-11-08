@@ -57,4 +57,4 @@ jobs:
         with:
           files: ${{ inputs.working-directory }}/coverage.xml
           fail_ci_if_error: true
-          flag: ${{ inputs.working-directory }}
+          flags: ${{ inputs.working-directory }}
