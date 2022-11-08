@@ -41,6 +41,10 @@
       "path": "../workers/first_rows"
     },
     {
+      "name": "workers/parquet",
+      "path": "../workers/parquet"
+    },
+    {
       "name": "workers/splits",
       "path": "../workers/splits"
     }
