@@ -53,8 +53,14 @@ jobs:
           CACHE_MONGO_URL: mongodb://localhost:${{ env.mongo-port }}
           QUEUE_MONGO_URL: mongodb://localhost:${{ env.mongo-port }}
         run: poetry run python -m pytest -s --cov=./ --cov-report=xml:./coverage.xml --cov-report=term tests
+      - name: Prepare codecov flag (slash "/" is not allowed)
+        id: remove-slash
+        run: |
+          dir = ${{ inputs.working-directory }}
+          echo "codecov_flag=${dir/\//_}" >> $GITHUB_ENV
       - uses: codecov/codecov-action@v3
         with:
-          files: ${{ inputs.working-directory }}/coverage.xml
+          working-directory: ${{ inputs.working-directory }}
+          files: ./coverage.xml
           fail_ci_if_error: true
-          flags: ${{ inputs.working-directory }}
+          flags: ${{ env.codecov_flag }}
