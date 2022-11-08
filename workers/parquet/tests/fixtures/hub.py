@@ -19,6 +19,8 @@ from huggingface_hub.hf_api import (  # type: ignore
     hf_raise_for_status,
 )
 
+from ..utils import get_default_config_split
+
 # see https://github.com/huggingface/moon-landing/blob/main/server/scripts/staging-seed-db.ts
 CI_HUB_USER = "__DUMMY_DATASETS_SERVER_USER__"
 CI_HUB_USER_API_TOKEN = "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"
@@ -226,10 +228,13 @@ HubDatasets = Dict[str, HubDatasetTest]
 
 
 def create_parquet_response(dataset: str, filename: str, size: int):
+    dataset, config, split = get_default_config_split(dataset)
     return {
-        "dataset": dataset,
         "parquet_files": [
             {
+                "dataset": dataset,
+                "config": config,
+                "split": split,
                 "url": CI_HUB_DATASETS_URL.format(repo_id=dataset, revision="refs/convert/parquet", path=filename),
                 "filename": filename,
                 "size": size,

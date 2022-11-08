@@ -3,8 +3,9 @@
 
 import glob
 import logging
+import re
 from pathlib import Path
-from typing import List, Optional, TypedDict, Union, cast
+from typing import List, Optional, Tuple, TypedDict, Union
 from urllib.parse import quote
 
 from datasets import get_dataset_config_names, load_dataset_builder
@@ -14,20 +15,23 @@ from huggingface_hub.hf_api import (  # type: ignore
     CommitOperationAdd,
     CommitOperationDelete,
     HfApi,
+    RepoFile,
 )
 from huggingface_hub.utils import RepositoryNotFoundError  # type: ignore
 
 from parquet.utils import ConfigNamesError, DatasetNotFoundError, EmptyDatasetError
 
 
-class ParquetFileItem:
+class ParquetFileItem(TypedDict):
+    dataset: str
+    config: str
+    split: str
     url: str
     filename: str
     size: int
 
 
 class ParquetResponse(TypedDict):
-    dataset: str
     parquet_files: List[ParquetFileItem]
 
 
@@ -89,6 +93,47 @@ def hf_hub_url(repo_id: str, filename: str, hf_endpoint: str, revision: str, url
     )
 
 
+p = re.compile(r"[\w]+-(?P<split>[\w]+?)-[0-9]{5}-of-[0-9]{5}.parquet")
+
+
+def parse_repo_filename(filename: str) -> Tuple[str, str]:
+    parts = filename.split("/")
+    if len(parts) != 2:
+        raise ValueError(f"Invalid filename: {filename}")
+    config, fname = parts
+    m = p.match(fname)
+    if not m:
+        raise ValueError(f"Cannot parse {filename}")
+    split = m.group("split")
+    return config, split
+
+
+def create_parquet_file_item(
+    repo_file: RepoFile,
+    dataset: str,
+    hf_endpoint: str,
+    target_revision: str,
+    url_template: str,
+) -> ParquetFileItem:
+    if repo_file.size is None:
+        raise ValueError(f"Cannot get size of {repo_file.rfilename}")
+    config, split = parse_repo_filename(repo_file.rfilename)
+    return {
+        "dataset": dataset,
+        "config": config,
+        "split": split,
+        "url": hf_hub_url(
+            repo_id=dataset,
+            filename=repo_file.rfilename,
+            hf_endpoint=hf_endpoint,
+            revision=target_revision,
+            url_template=url_template,
+        ),
+        "filename": Path(repo_file.rfilename).name,
+        "size": repo_file.size,
+    }
+
+
 def compute_parquet_response(
     dataset: str,
     hf_endpoint: str,
@@ -141,10 +186,6 @@ def compute_parquet_response(
     except Exception as err:
         raise ConfigNamesError("Cannot get the configuration names for the dataset.", cause=err) from err
 
-    # for simplicity, we first compute all the parquet files and store them locally, then we upload them to the hub
-    # as datasets does not give the list of files per split, we don't retro-engineer the split names
-    # and just avoid associating a split to a parquet file
-
     # first get the current sha (to be able to use parent_commit in create_commit)
     hf_api = HfApi(endpoint=hf_endpoint)
 
@@ -191,24 +232,19 @@ def compute_parquet_response(
         ).siblings
         if repo_file.rfilename.endswith(".parquet")
     ]
-
+    # we might want to check if the sha of the parquet files is the same as the one we just uploaded
+    # we could also check that the list of parquet files is exactly what we expect
+    # let's not over engineer this for now. After all, what is on the Hub is the source of truth
+    # and the /parquet response is more a helper to get the list of parquet files
     return {
         "parquet_response": {
-            "dataset": dataset,
             "parquet_files": [
-                cast(
-                    ParquetFileItem,
-                    {
-                        "url": hf_hub_url(
-                            repo_id=dataset,
-                            filename=repo_file.rfilename,
-                            hf_endpoint=hf_endpoint,
-                            revision=target_revision,
-                            url_template=url_template,
-                        ),
-                        "filename": Path(repo_file.rfilename).name,
-                        "size": repo_file.size,
-                    },
+                create_parquet_file_item(
+                    repo_file=repo_file,
+                    dataset=dataset,
+                    hf_endpoint=hf_endpoint,
+                    target_revision=target_revision,
+                    url_template=url_template,
                 )
                 for repo_file in repo_files
             ],
