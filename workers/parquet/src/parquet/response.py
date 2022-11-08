@@ -93,7 +93,7 @@ def hf_hub_url(repo_id: str, filename: str, hf_endpoint: str, revision: str, url
     )
 
 
-p = re.compile(r"[\w]+-(?P<split>[\w]+?)-[0-9]{5}-of-[0-9]{5}.parquet")
+p = re.compile(r"[\w]+-(?P<split>[\w]+?)(-[0-9]{5}-of-[0-9]{5})?.parquet")
 
 
 def parse_repo_filename(filename: str) -> Tuple[str, str]:

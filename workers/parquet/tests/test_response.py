@@ -5,7 +5,7 @@ import pytest
 from libcommon.exceptions import CustomError
 
 from parquet.config import WorkerConfig
-from parquet.response import compute_parquet_response
+from parquet.response import compute_parquet_response, parse_repo_filename
 
 from .fixtures.hub import HubDatasets
 
@@ -66,3 +66,20 @@ def test_compute_splits_response_simple_csv(
         assert response_dict["cause_exception"] == cause
         assert isinstance(response_dict["cause_traceback"], list)
         assert response_dict["cause_traceback"][0] == "Traceback (most recent call last):\n"
+
+
+@pytest.mark.parametrize(
+    "filename,split,config,raises",
+    [
+        ("config/builder-split.parquet", "split", "config", False),
+        ("config/builder-split-00000-of-00001.parquet", "split", "config", False),
+        ("builder-split-00000-of-00001.parquet", "split", "config", True),
+        ("config/builder-not-supported.parquet", "not-supported", "config", True),
+    ],
+)
+def test_parse_repo_filename(filename: str, split: str, config: str, raises: bool) -> None:
+    if raises:
+        with pytest.raises(Exception):
+            parse_repo_filename(filename)
+    else:
+        assert parse_repo_filename(filename) == (config, split)
