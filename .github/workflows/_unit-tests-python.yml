@@ -52,7 +52,9 @@ jobs:
         env:
           CACHE_MONGO_URL: mongodb://localhost:${{ env.mongo-port }}
           QUEUE_MONGO_URL: mongodb://localhost:${{ env.mongo-port }}
-        run: poetry run python -m pytest -s --cov --cov-report xml:coverage.xml --cov-report=term tests
+        run: poetry run python -m pytest -s --cov=./ --cov-report=xml:./coverage.xml --cov-report=term tests
       - uses: codecov/codecov-action@v3
         with:
           files: ./coverage.xml
+          fail_ci_if_error: true
+          flag: ${{ inputs.working-directory }}
