@@ -13,7 +13,7 @@ from libcache.simple_cache import (
     InvalidCursor,
     InvalidLimit,
     _clean_database,
-    delete_responses,
+    delete_dataset_responses,
     get_cache_reports,
     get_response,
     get_responses_count_by_kind_status_and_error_code,
@@ -57,13 +57,9 @@ def test_upsert_response(config: Optional[str], split: Optional[str]) -> None:
     upsert_response(
         kind=kind, dataset=dataset, config=another_config, split=split, content=content, http_status=HTTPStatus.OK
     )
-    delete_responses(kind=kind, dataset=dataset, config=another_config, split=split)
     get_response(kind=kind, dataset=dataset, config=config, split=split)
 
-    delete_responses(kind=kind, dataset=dataset, config=config, split=split)
-    with pytest.raises(DoesNotExist):
-        get_response(kind=kind, dataset=dataset, config=config, split=split)
-
+    delete_dataset_responses(dataset=dataset)
     with pytest.raises(DoesNotExist):
         get_response(kind=kind, dataset=dataset, config=config, split=split)
 

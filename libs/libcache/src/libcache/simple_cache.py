@@ -119,20 +119,8 @@ def upsert_response(
     )
 
 
-def get_objects(
-    kind: str, dataset: str, config: Optional[str] = None, split: Optional[str] = None
-) -> QuerySet[CachedResponse]:
-    return (
-        CachedResponse.objects(kind=kind, dataset=dataset)
-        if config is None
-        else CachedResponse.objects(kind=kind, dataset=dataset, config=config)
-        if split is None
-        else CachedResponse.objects(kind=kind, dataset=dataset, config=config, split=split)
-    )
-
-
-def delete_responses(kind: str, dataset: str, config: Optional[str] = None, split: Optional[str] = None):
-    get_objects(kind=kind, dataset=dataset, config=config, split=split).delete()
+def delete_dataset_responses(dataset: str):
+    CachedResponse.objects(dataset=dataset).delete()
 
 
 class CacheEntry(TypedDict):
