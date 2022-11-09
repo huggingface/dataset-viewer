@@ -7,8 +7,7 @@ from http import HTTPStatus
 from typing import Dict, Generic, List, Optional, Tuple, Type, TypedDict, TypeVar
 
 from bson import ObjectId
-
-# from bson.errors import InvalidId
+from bson.errors import InvalidId
 from mongoengine import Document, DoesNotExist, connect
 from mongoengine.fields import (
     BooleanField,
@@ -206,253 +205,131 @@ def get_dataset_response_ids(dataset: str) -> List[Tuple[str, str, Optional[str]
 #     return (valid_split_responses == 1) and (valid_first_rows_responses > 0)
 
 
-# # admin /metrics endpoint
-
-# CountByHttpStatusAndErrorCode = Dict[str, Dict[Optional[str], int]]
+# admin /metrics endpoint
 
 
-# def get_entries_count_by_status_and_error_code(entries: QuerySet[AnyResponse]) -> CountByHttpStatusAndErrorCode:
-#     return {
-#         str(http_status): {
-#             error_code: entries(http_status=http_status, error_code=error_code).count()
-#             for error_code in entries(http_status=http_status).distinct("error_code")
-#         }
-#         for http_status in sorted(entries.distinct("http_status"))
-#     }
+class CountEntry(TypedDict):
+    kind: str
+    http_status: int
+    error_code: Optional[str]
+    count: int
 
 
-# def get_splits_responses_count_by_status_and_error_code() -> CountByHttpStatusAndErrorCode:
-#     return get_entries_count_by_status_and_error_code(SplitsResponse.objects)
+def get_responses_count_by_kind_status_and_error_code() -> List[CountEntry]:
+    # TODO: rework with aggregate
+    # see
+    # https://stackoverflow.com/questions/47301829/mongodb-distinct-count-for-combination-of-two-fields?noredirect=1&lq=1#comment81555081_47301829
+    # and https://docs.mongoengine.org/guide/querying.html#mongodb-aggregation-api
+    entries = CachedResponse.objects().only("kind", "http_status", "error_code")
+    return [
+        {
+            "kind": str(kind),
+            "http_status": int(http_status),
+            "error_code": error_code,
+            "count": entries(kind=kind, http_status=http_status, error_code=error_code).count(),
+        }
+        for kind in sorted(entries.distinct("kind"))
+        for http_status in sorted(entries(kind=kind).distinct("http_status"))
+        for error_code in entries(kind=kind, http_status=http_status).distinct("error_code")
+    ]
 
 
-# def get_first_rows_responses_count_by_status_and_error_code() -> CountByHttpStatusAndErrorCode:
-#     return get_entries_count_by_status_and_error_code(FirstRowsResponse.objects)
+# /cache-reports/... endpoints
 
 
-# # for scripts
+class ResponseReport(TypedDict):
+    kind: str
+    dataset: str
+    config: Optional[str]
+    split: Optional[str]
+    http_status: int
+    error_code: Optional[str]
+    worker_version: Optional[str]
+    dataset_git_revision: Optional[str]
+    stale: bool
 
 
-# def get_datasets_with_some_error() -> List[str]:
-#     # - the /splits response is invalid
-#     candidate_dataset_names = set(SplitsResponse.objects(http_status__ne=HTTPStatus.OK).distinct("dataset_name"))
-#     # - or one of the /first-rows responses is invalid
-#     candidate_dataset_names_in_first_rows = set(
-#         FirstRowsResponse.objects(http_status__ne=HTTPStatus.OK).distinct("dataset_name")
-#     )
-
-#     # note that the list is sorted alphabetically for consistency
-#     return sorted(candidate_dataset_names.union(candidate_dataset_names_in_first_rows))
+class CacheReport(TypedDict):
+    cache_reports: List[ResponseReport]
+    next_cursor: str
 
 
-# # /cache-reports/... endpoints
+class InvalidCursor(Exception):
+    pass
 
 
-# class SplitsResponseReport(TypedDict):
-#     dataset: str
-#     http_status: int
-#     error_code: Optional[str]
-#     worker_version: Optional[str]
-#     dataset_git_revision: Optional[str]
+class InvalidLimit(Exception):
+    pass
 
 
-# class FirstRowsResponseReport(SplitsResponseReport):
-#     config: str
-#     split: str
+def get_cache_reports(kind: str, cursor: Optional[str], limit: int) -> CacheReport:
+    """
+    Get a list of reports of the cache entries, along with the next cursor.
+    See https://solovyov.net/blog/2020/api-pagination-design/.
 
+    The "reports" are the cached entries, without the "content", "details" and "updated_at" fields.
 
-# class CacheReportSplits(TypedDict):
-#     cache_reports: List[SplitsResponseReport]
-#     next_cursor: str
-
-
-# class CacheReportFirstRows(TypedDict):
-#     cache_reports: List[FirstRowsResponseReport]
-#     next_cursor: str
-
-
-# class InvalidCursor(Exception):
-#     pass
-
-
-# class InvalidLimit(Exception):
-#     pass
-
-
-# def get_cache_reports_splits(cursor: str, limit: int) -> CacheReportSplits:
-#     """
-#     Get a list of reports about SplitsResponse cache entries, along with the next cursor.
-#     See https://solovyov.net/blog/2020/api-pagination-design/.
-#     Args:
-#         cursor (`str`):
-#             An opaque string value representing a pointer to a specific SplitsResponse item in the dataset. The
-#             server returns results after the given pointer.
-#             An empty string means to start from the beginning.
-#         limit (strictly positive `int`):
-#             The maximum number of results.
-#     Returns:
-#         [`CacheReportSplits`]: A dict with the list of reports and the next cursor. The next cursor is
-#         an empty string if there are no more items to be fetched.
-#     <Tip>
-#     Raises the following errors:
-#         - [`~libcache.simple_cache.InvalidCursor`]
-#           If the cursor is invalid.
-#         - [`~libcache.simple_cache.InvalidLimit`]
-#           If the limit is an invalid number.
-#     </Tip>
-#     """
-#     if not cursor:
-#         queryset = SplitsResponse.objects()
-#     else:
-#         try:
-#             queryset = SplitsResponse.objects(id__gt=ObjectId(cursor))
-#         except InvalidId as err:
-#             raise InvalidCursor("Invalid cursor.") from err
-#     if limit <= 0:
-#         raise InvalidLimit("Invalid limit.")
-#     objects = list(
-#         queryset.order_by("+id")
-#         .only("id", "dataset_name", "http_status", "error_code", "worker_version", "dataset_git_revision")
-#         .limit(limit)
-#     )
-
-#     return {
-#         "cache_reports": [
-#             {
-#                 "dataset": object.dataset_name,
-#                 "http_status": object.http_status.value,
-#                 "error_code": object.error_code,
-#                 "worker_version": object.worker_version,
-#                 "dataset_git_revision": object.dataset_git_revision,
-#             }
-#             for object in objects
-#         ],
-#         "next_cursor": "" if len(objects) < limit else str(objects[-1].id),
-#     }
-
-
-# def get_cache_reports_first_rows(cursor: Optional[str], limit: int) -> CacheReportFirstRows:
-#     """
-#     Get a list of reports about FirstRowsResponse cache entries, along with the next cursor.
-#     See https://solovyov.net/blog/2020/api-pagination-design/.
-#     Args:
-#         cursor (`str`):
-#             An opaque string value representing a pointer to a specific FirstRowsResponse item in the dataset. The
-#             server returns results after the given pointer.
-#             An empty string means to start from the beginning.
-#         limit (strictly positive `int`):
-#             The maximum number of results.
-#     Returns:
-#         [`CacheReportFirstRows`]: A dict with the list of reports and the next cursor. The next cursor is
-#         an empty string if there are no more items to be fetched.
-#     <Tip>
-#     Raises the following errors:
-#         - [`~libcache.simple_cache.InvalidCursor`]
-#           If the cursor is invalid.
-#         - [`~libcache.simple_cache.InvalidLimit`]
-#           If the limit is an invalid number.
-#     </Tip>
-#     """
-#     if not cursor:
-#         queryset = FirstRowsResponse.objects()
-#     else:
-#         try:
-#             queryset = FirstRowsResponse.objects(id__gt=ObjectId(cursor))
-#         except InvalidId as err:
-#             raise InvalidCursor("Invalid cursor.") from err
-#     if limit <= 0:
-#         raise InvalidLimit("Invalid limit.")
-#     objects = list(
-#         queryset.order_by("+id")
-#         .only(
-#             "id",
-#             "dataset_name",
-#             "config_name",
-#             "split_name",
-#             "http_status",
-#             "error_code",
-#             "worker_version",
-#             "dataset_git_revision",
-#         )
-#         .limit(limit)
-#     )
-#     return {
-#         "cache_reports": [
-#             {
-#                 "dataset": object.dataset_name,
-#                 "config": object.config_name,
-#                 "split": object.split_name,
-#                 "http_status": object.http_status.value,
-#                 "error_code": object.error_code,
-#                 "worker_version": object.worker_version,
-#                 "dataset_git_revision": object.dataset_git_revision,
-#             }
-#             for object in objects
-#         ],
-#         "next_cursor": "" if len(objects) < limit else str(objects[-1].id),
-#     }
-
-
-# class FeaturesResponseReport(TypedDict):
-#     dataset: str
-#     config: str
-#     split: str
-#     features: Optional[List[Any]]
-
-
-# class CacheReportFeatures(TypedDict):
-#     cache_reports: List[FeaturesResponseReport]
-#     next_cursor: str
-
-
-# def get_cache_reports_features(cursor: Optional[str], limit: int) -> CacheReportFeatures:
-#     """
-#     Get a list of reports on the features (columns), grouped by splits, along with the next cursor.
-#     See https://solovyov.net/blog/2020/api-pagination-design/.
-#     Args:
-#         cursor (`str`):
-#             An opaque string value representing a pointer to a specific FirstRowsResponse item in the dataset. The
-#             server returns results after the given pointer.
-#             An empty string means to start from the beginning.
-#         limit (strictly positive `int`):
-#             The maximum number of results.
-#     Returns:
-#         [`CacheReportFeatures`]: A dict with the list of reports and the next cursor. The next cursor is
-#         an empty string if there are no more items to be fetched.
-#     <Tip>
-#     Raises the following errors:
-#         - [`~libcache.simple_cache.InvalidCursor`]
-#           If the cursor is invalid.
-#         - [`~libcache.simple_cache.InvalidLimit`]
-#           If the limit is an invalid number.
-#     </Tip>
-#     """
-#     if not cursor:
-#         queryset = FirstRowsResponse.objects()
-#     else:
-#         try:
-#             queryset = FirstRowsResponse.objects(id__gt=ObjectId(cursor))
-#         except InvalidId as err:
-#             raise InvalidCursor("Invalid cursor.") from err
-#     if limit <= 0:
-#         raise InvalidLimit("Invalid limit.")
-#     objects = list(
-#         queryset(response__features__exists=True)
-#         .order_by("+id")
-#         .only("id", "dataset_name", "config_name", "split_name", "response.features")
-#         .limit(limit)
-#     )
-#     return {
-#         "cache_reports": [
-#             {
-#                 "dataset": object.dataset_name,
-#                 "config": object.config_name,
-#                 "split": object.split_name,
-#                 "features": object.response["features"],
-#             }
-#             for object in objects
-#         ],
-#         "next_cursor": "" if len(objects) < limit else str(objects[-1].id),
-#     }
+    Args:
+        kind (str): the kind of the cache entries
+        cursor (`str`):
+            An opaque string value representing a pointer to a specific FirstRowsResponse item in the dataset. The
+            server returns results after the given pointer.
+            An empty string means to start from the beginning.
+        limit (strictly positive `int`):
+            The maximum number of results.
+    Returns:
+        [`CacheReport`]: A dict with the list of reports and the next cursor. The next cursor is
+        an empty string if there are no more items to be fetched.
+    <Tip>
+    Raises the following errors:
+        - [`~libcache.simple_cache.InvalidCursor`]
+          If the cursor is invalid.
+        - [`~libcache.simple_cache.InvalidLimit`]
+          If the limit is an invalid number.
+    </Tip>
+    """
+    if not cursor:
+        queryset = CachedResponse.objects(kind=kind)
+    else:
+        try:
+            queryset = CachedResponse.objects(kind=kind, id__gt=ObjectId(cursor))
+        except InvalidId as err:
+            raise InvalidCursor("Invalid cursor.") from err
+    if limit <= 0:
+        raise InvalidLimit("Invalid limit.")
+    objects = list(
+        queryset.order_by("+id")
+        .only(
+            "id",
+            "kind",
+            "dataset",
+            "config",
+            "split",
+            "http_status",
+            "error_code",
+            "worker_version",
+            "dataset_git_revision",
+            "stale",
+        )
+        .limit(limit)
+    )
+    return {
+        "cache_reports": [
+            {
+                "kind": kind,
+                "dataset": object.dataset,
+                "config": object.config,
+                "split": object.split,
+                "http_status": object.http_status.value,
+                "error_code": object.error_code,
+                "worker_version": object.worker_version,
+                "dataset_git_revision": object.dataset_git_revision,
+                "stale": object.stale,
+            }
+            for object in objects
+        ],
+        "next_cursor": "" if len(objects) < limit else str(objects[-1].id),
+    }
 
 
 # only for the tests
