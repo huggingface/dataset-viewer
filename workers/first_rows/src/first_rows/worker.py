@@ -6,12 +6,13 @@ import logging
 from http import HTTPStatus
 from typing import Optional
 
-from libcache.simple_cache import get_first_rows_response, upsert_first_rows_response
+from libcache.simple_cache import get_response_without_content, upsert_response
 from libqueue.worker import Worker
 
 from first_rows.config import WorkerConfig
 from first_rows.response import compute_first_rows_response, get_dataset_git_revision
 from first_rows.utils import (
+    CacheKind,
     ConfigNotFoundError,
     DatasetNotFoundError,
     Queues,
@@ -57,16 +58,19 @@ class FirstRowsWorker(Worker):
         if force or config is None or split is None:
             return False
         try:
-            cache_entry = get_first_rows_response(dataset_name=dataset, config_name=config, split_name=split)
+            cached_response = get_response_without_content(
+                kind=CacheKind.FIRST_ROWS.value, dataset=dataset, config=config, split=split
+            )
             dataset_git_revision = get_dataset_git_revision(
                 dataset=dataset, hf_endpoint=self.config.common.hf_endpoint, hf_token=self.config.common.hf_token
             )
             return (
-                cache_entry["http_status"] == HTTPStatus.OK
-                and cache_entry["worker_version"] is not None
-                and self.compare_major_version(cache_entry["worker_version"]) == 0
-                and cache_entry["dataset_git_revision"] is not None
-                and cache_entry["dataset_git_revision"] == dataset_git_revision
+                # TODO: use "error_code" to decide if the job should be skipped (ex: retry if temporary error)
+                cached_response["http_status"] == HTTPStatus.OK
+                and cached_response["worker_version"] is not None
+                and self.compare_major_version(cached_response["worker_version"]) == 0
+                and cached_response["dataset_git_revision"] is not None
+                and cached_response["dataset_git_revision"] == dataset_git_revision
             )
         except Exception:
             return False
@@ -95,11 +99,12 @@ class FirstRowsWorker(Worker):
                 rows_min_number=self.config.first_rows.min_number,
                 assets_directory=self.config.cache.assets_directory,
             )
-            upsert_first_rows_response(
-                dataset_name=dataset,
-                config_name=config,
-                split_name=split,
-                response=dict(result["first_rows_response"]),
+            upsert_response(
+                kind=CacheKind.FIRST_ROWS.value,
+                dataset=dataset,
+                config=config,
+                split=split,
+                content=dict(result["first_rows_response"]),
                 http_status=HTTPStatus.OK,
                 worker_version=self.version,
                 dataset_git_revision=result["dataset_git_revision"],
@@ -112,11 +117,12 @@ class FirstRowsWorker(Worker):
             )
             return False
         except WorkerCustomError as err:
-            upsert_first_rows_response(
-                dataset_name=dataset,
-                config_name=config,
-                split_name=split,
-                response=dict(err.as_response()),
+            upsert_response(
+                kind=CacheKind.FIRST_ROWS.value,
+                dataset=dataset,
+                config=config,
+                split=split,
+                content=dict(err.as_response()),
                 http_status=err.status_code,
                 error_code=err.code,
                 details=dict(err.as_response_with_cause()),
@@ -127,11 +133,12 @@ class FirstRowsWorker(Worker):
             return False
         except Exception as err:
             e = UnexpectedError(str(err), err)
-            upsert_first_rows_response(
-                dataset_name=dataset,
-                config_name=config,
-                split_name=split,
-                response=dict(e.as_response()),
+            upsert_response(
+                kind=CacheKind.FIRST_ROWS.value,
+                dataset=dataset,
+                config=config,
+                split=split,
+                content=dict(e.as_response()),
                 http_status=e.status_code,
                 error_code=e.code,
                 details=dict(e.as_response_with_cause()),
