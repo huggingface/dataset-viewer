@@ -17,7 +17,6 @@ from libcache.simple_cache import (
     get_cache_reports,
     get_response,
     get_responses_count_by_kind_status_and_error_code,
-    mark_responses_as_stale,
     upsert_response,
 )
 
@@ -54,11 +53,6 @@ def test_upsert_response(config: Optional[str], split: Optional[str]) -> None:
     cached_response2 = get_response(kind=kind, dataset=dataset, config=config, split=split)
     assert cached_response2 == cached_response
 
-    mark_responses_as_stale(kind=kind, dataset=dataset)
-    mark_responses_as_stale(kind=kind, dataset=dataset, config=config, split=split)
-    # we don't have access to the stale field
-    # we also don't have access to the updated_at field
-
     another_config = "another_config"
     upsert_response(
         kind=kind, dataset=dataset, config=another_config, split=split, content=content, http_status=HTTPStatus.OK
@@ -70,7 +64,6 @@ def test_upsert_response(config: Optional[str], split: Optional[str]) -> None:
     with pytest.raises(DoesNotExist):
         get_response(kind=kind, dataset=dataset, config=config, split=split)
 
-    mark_responses_as_stale(kind=kind, dataset=dataset, config=config, split=split)
     with pytest.raises(DoesNotExist):
         get_response(kind=kind, dataset=dataset, config=config, split=split)
 
@@ -287,8 +280,6 @@ def test_get_cache_reports() -> None:
         http_status=http_status_c,
         error_code=error_code_c,
     )
-    mark_responses_as_stale(kind=kind, dataset=dataset_c, config=config_c, split=split_c)
-
     upsert_response(
         kind=kind_2,
         dataset=dataset_c,
@@ -309,7 +300,6 @@ def test_get_cache_reports() -> None:
             "error_code": None,
             "worker_version": None,
             "dataset_git_revision": None,
-            "stale": False,
         },
         {
             "kind": kind,
@@ -320,7 +310,6 @@ def test_get_cache_reports() -> None:
             "error_code": error_code_b,
             "worker_version": worker_version_b,
             "dataset_git_revision": dataset_git_revision_b,
-            "stale": False,
         },
     ]
     assert response["next_cursor"] != ""
@@ -338,7 +327,6 @@ def test_get_cache_reports() -> None:
                 "error_code": error_code_c,
                 "worker_version": None,
                 "dataset_git_revision": None,
-                "stale": True,
             },
         ],
         "next_cursor": "",

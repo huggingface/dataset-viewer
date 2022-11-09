@@ -10,7 +10,6 @@ from bson import ObjectId
 from bson.errors import InvalidId
 from mongoengine import Document, DoesNotExist, connect
 from mongoengine.fields import (
-    BooleanField,
     DateTimeField,
     DictField,
     EnumField,
@@ -60,7 +59,6 @@ class CachedResponse(Document):
         error_code (`str`, optional): The error code, if any.
         content (`dict`): The content of the cached response. Can be an error or a valid content.
         details (`dict`, optional): Additional details, eg. a detailed error that we don't want to send as a response.
-        stale (`bool`, optional): Whether the cached response is stale or not.
         updated_at (`datetime`): When the cache entry has been last updated.
         worker_version (`str`): The semver version of the worker that cached the response.
         dataset_git_revision (`str`): The commit (of the git dataset repo) used to generate the response.
@@ -80,7 +78,6 @@ class CachedResponse(Document):
     dataset_git_revision = StringField()
 
     details = DictField()
-    stale = BooleanField(default=False)
     updated_at = DateTimeField(default=get_datetime)
 
     meta = {
@@ -118,7 +115,6 @@ def upsert_response(
         details=details,
         worker_version=worker_version,
         dataset_git_revision=dataset_git_revision,
-        stale=False,
         updated_at=get_datetime(),
     )
 
@@ -137,10 +133,6 @@ def get_objects(
 
 def delete_responses(kind: str, dataset: str, config: Optional[str] = None, split: Optional[str] = None):
     get_objects(kind=kind, dataset=dataset, config=config, split=split).delete()
-
-
-def mark_responses_as_stale(kind: str, dataset: str, config: Optional[str] = None, split: Optional[str] = None):
-    get_objects(kind=kind, dataset=dataset, config=config, split=split).update(stale=True, updated_at=get_datetime())
 
 
 class CacheEntry(TypedDict):
@@ -246,7 +238,6 @@ class ResponseReport(TypedDict):
     error_code: Optional[str]
     worker_version: Optional[str]
     dataset_git_revision: Optional[str]
-    stale: bool
 
 
 class CacheReport(TypedDict):
@@ -309,7 +300,6 @@ def get_cache_reports(kind: str, cursor: Optional[str], limit: int) -> CacheRepo
             "error_code",
             "worker_version",
             "dataset_git_revision",
-            "stale",
         )
         .limit(limit)
     )
@@ -324,7 +314,6 @@ def get_cache_reports(kind: str, cursor: Optional[str], limit: int) -> CacheRepo
                 "error_code": object.error_code,
                 "worker_version": object.worker_version,
                 "dataset_git_revision": object.dataset_git_revision,
-                "stale": object.stale,
             }
             for object in objects
         ],
