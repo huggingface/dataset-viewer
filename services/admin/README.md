@@ -60,9 +60,6 @@ The scripts:
 
 - `cancel-jobs-splits`: cancel all the started jobs for /splits (stop the workers before!)
 - `cancel-jobs-first-rows`: cancel all the started jobs for /first-rows (stop the workers before!)
-- `refresh-cache`: add a /splits job for every HF dataset
-- `refresh-cache-canonical`: add a /splits job for every HF canonical dataset
-- `refresh-cache-errors`: add a /splits job for every erroneous HF dataset
 
 To launch the scripts:
 
