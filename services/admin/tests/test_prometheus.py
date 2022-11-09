@@ -28,12 +28,3 @@ def test_prometheus(app_config: AppConfig) -> None:
     additional_field = ('pid="' + str(os.getpid()) + '",') if is_multiprocess else ""
     for _, job_type in JobType.__members__.items():
         assert "queue_jobs_total{" + additional_field + 'queue="' + job_type.value + '",status="started"}' in metrics
-    # still empty
-    assert (
-        "responses_in_cache_total{" + additional_field + 'path="/splits",http_status="200",error_code=null}'
-        not in metrics
-    )
-    assert (
-        "responses_in_cache_total{" + additional_field + 'path="/first-rows",http_status="200",error_code=null}'
-        not in metrics
-    )

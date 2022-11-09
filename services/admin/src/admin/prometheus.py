@@ -3,10 +3,7 @@
 
 import os
 
-from libcache.simple_cache import (
-    get_first_rows_responses_count_by_status_and_error_code,
-    get_splits_responses_count_by_status_and_error_code,
-)
+from libcache.simple_cache import get_responses_count_by_kind_status_and_error_code
 from libqueue.queue import Queue
 from prometheus_client import (  # type: ignore # https://github.com/prometheus/client_python/issues/491
     CONTENT_TYPE_LATEST,
@@ -33,7 +30,7 @@ QUEUE_JOBS_TOTAL = Gauge(
 RESPONSES_IN_CACHE_TOTAL = Gauge(
     name="responses_in_cache_total",
     documentation="Number of cached responses in the cache",
-    labelnames=["path", "http_status", "error_code"],
+    labelnames=["kind", "http_status", "error_code"],
     multiprocess_mode="liveall",
 )
 
@@ -63,16 +60,10 @@ class Prometheus:
         for status, total in self.first_rows_queue.get_jobs_count_by_status().items():
             QUEUE_JOBS_TOTAL.labels(queue=JobType.FIRST_ROWS.value, status=status).set(total)
         # Cache metrics
-        for http_status, by_error_code in get_splits_responses_count_by_status_and_error_code().items():
-            for error_code, total in by_error_code.items():
-                RESPONSES_IN_CACHE_TOTAL.labels(path="/splits", http_status=http_status, error_code=error_code).set(
-                    total
-                )
-        for http_status, by_error_code in get_first_rows_responses_count_by_status_and_error_code().items():
-            for error_code, total in by_error_code.items():
-                RESPONSES_IN_CACHE_TOTAL.labels(
-                    path="/first-rows", http_status=http_status, error_code=error_code
-                ).set(total)
+        for metric in get_responses_count_by_kind_status_and_error_code():
+            RESPONSES_IN_CACHE_TOTAL.labels(
+                kind=metric["kind"], http_status=metric["http_status"], error_code=metric["error_code"]
+            ).set(metric["count"])
 
     def getLatestContent(self) -> str:
         self.updateMetrics()

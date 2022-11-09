@@ -2,15 +2,9 @@
 # Copyright 2022 The HuggingFace Authors.
 
 import logging
-from typing import Callable, Dict, Literal, Optional
+from typing import Optional
 
-from libcache.simple_cache import (
-    InvalidCursor,
-    InvalidLimit,
-    get_cache_reports_features,
-    get_cache_reports_first_rows,
-    get_cache_reports_splits,
-)
+from libcache.simple_cache import InvalidCursor, InvalidLimit, get_cache_reports
 from starlette.requests import Request
 from starlette.responses import Response
 
@@ -24,34 +18,23 @@ from admin.utils import (
     get_json_ok_response,
 )
 
-EndpointName = Literal["features", "first-rows", "splits"]
-
-
-get_cache_reports: Dict[EndpointName, Callable] = {
-    "features": get_cache_reports_features,
-    "first-rows": get_cache_reports_first_rows,
-    "splits": get_cache_reports_splits,
-}
-
 
 def create_cache_reports_endpoint(
-    endpoint: EndpointName,
+    kind: str,
     cache_reports_num_results: int,
     max_age: int,
     external_auth_url: Optional[str] = None,
     organization: Optional[str] = None,
 ) -> Endpoint:
-    get_cache_reports = get_cache_reports_features if endpoint == "features" else get_cache_reports_first_rows
-
     async def cache_reports_endpoint(request: Request) -> Response:
         try:
             cursor = request.query_params.get("cursor") or ""
-            logging.info(f"/cache-reports/{endpoint}, cursor={cursor}")
+            logging.info(f"Cache reports for {kind}, cursor={cursor}")
             # if auth_check fails, it will raise an exception that will be caught below
             auth_check(external_auth_url=external_auth_url, request=request, organization=organization)
             try:
                 return get_json_ok_response(
-                    get_cache_reports(cursor=cursor, limit=cache_reports_num_results),
+                    get_cache_reports(kind=kind, cursor=cursor, limit=cache_reports_num_results),
                     max_age=max_age,
                 )
             except InvalidCursor as e:

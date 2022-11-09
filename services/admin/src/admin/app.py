@@ -54,21 +54,22 @@ def create_app() -> Starlette:
             ),
             methods=["POST"],
         ),
+        # TODO: re-enable. Possibly using tags
         # used by https://observablehq.com/@huggingface/quality-assessment-of-datasets-loading
-        Route(
-            "/cache-reports/features",
-            endpoint=create_cache_reports_endpoint(
-                endpoint="features",
-                cache_reports_num_results=app_config.admin.cache_reports_num_results,
-                max_age=app_config.admin.max_age,
-                external_auth_url=app_config.admin.external_auth_url,
-                organization=app_config.admin.hf_organization,
-            ),
-        ),
+        # Route(
+        #     "/cache-reports/features",
+        #     endpoint=create_cache_reports_endpoint(
+        #         cache_kind="features",
+        #         cache_reports_num_results=app_config.admin.cache_reports_num_results,
+        #         max_age=app_config.admin.max_age,
+        #         external_auth_url=app_config.admin.external_auth_url,
+        #         organization=app_config.admin.hf_organization,
+        #     ),
+        # ),
         Route(
             "/cache-reports/first-rows",
             endpoint=create_cache_reports_endpoint(
-                endpoint="first-rows",
+                kind="first-rows",
                 cache_reports_num_results=app_config.admin.cache_reports_num_results,
                 max_age=app_config.admin.max_age,
                 external_auth_url=app_config.admin.external_auth_url,
@@ -78,7 +79,7 @@ def create_app() -> Starlette:
         Route(
             "/cache-reports/splits",
             endpoint=create_cache_reports_endpoint(
-                endpoint="splits",
+                kind="splits",
                 cache_reports_num_results=app_config.admin.cache_reports_num_results,
                 max_age=app_config.admin.max_age,
                 external_auth_url=app_config.admin.external_auth_url,
