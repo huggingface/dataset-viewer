@@ -119,16 +119,42 @@ def upsert_response(
     )
 
 
-def delete_dataset_responses(dataset: str):
-    CachedResponse.objects(dataset=dataset).delete()
+def delete_response(
+    kind: str, dataset: str, config: Optional[str] = None, split: Optional[str] = None
+) -> Optional[int]:
+    return CachedResponse.objects(kind=kind, dataset=dataset, config=config, split=split).delete()
 
 
-class CacheEntry(TypedDict):
-    content: Dict
+def delete_dataset_responses(dataset: str) -> Optional[int]:
+    return CachedResponse.objects(dataset=dataset).delete()
+
+
+class CacheEntryWithoutContent(TypedDict):
     http_status: HTTPStatus
     error_code: Optional[str]
     worker_version: Optional[str]
     dataset_git_revision: Optional[str]
+
+
+# Note: we let the exceptions throw (ie DoesNotExist): it's the responsibility of the caller to manage them
+def get_response_without_content(
+    kind: str, dataset: str, config: Optional[str] = None, split: Optional[str] = None
+) -> CacheEntryWithoutContent:
+    response = (
+        CachedResponse.objects(kind=kind, dataset=dataset, config=config, split=split)
+        .only("http_status", "error_code", "worker_version", "dataset_git_revision")
+        .get()
+    )
+    return {
+        "http_status": response.http_status,
+        "error_code": response.error_code,
+        "worker_version": response.worker_version,
+        "dataset_git_revision": response.dataset_git_revision,
+    }
+
+
+class CacheEntry(CacheEntryWithoutContent):
+    content: Dict
 
 
 # Note: we let the exceptions throw (ie DoesNotExist): it's the responsibility of the caller to manage them

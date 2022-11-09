@@ -14,8 +14,10 @@ from libcache.simple_cache import (
     InvalidLimit,
     _clean_cache_database,
     delete_dataset_responses,
+    delete_response,
     get_cache_reports,
     get_response,
+    get_response_without_content,
     get_responses_count_by_kind_status_and_error_code,
     get_valid_datasets,
     get_validity_by_kind,
@@ -44,11 +46,22 @@ def test_upsert_response(config: Optional[str], split: Optional[str]) -> None:
     content = {"some": "content"}
     upsert_response(kind=kind, dataset=dataset, config=config, split=split, content=content, http_status=HTTPStatus.OK)
     cached_response = get_response(kind=kind, dataset=dataset, config=config, split=split)
-    assert cached_response["http_status"] == HTTPStatus.OK
-    assert cached_response["content"] == content
-    assert cached_response["error_code"] is None
-    assert cached_response["worker_version"] is None
-    assert cached_response["dataset_git_revision"] is None
+    assert cached_response == {
+        "http_status": HTTPStatus.OK,
+        "content": content,
+        "error_code": None,
+        "worker_version": None,
+        "dataset_git_revision": None,
+    }
+    cached_response_without_content = get_response_without_content(
+        kind=kind, dataset=dataset, config=config, split=split
+    )
+    assert cached_response_without_content == {
+        "http_status": HTTPStatus.OK,
+        "error_code": None,
+        "worker_version": None,
+        "dataset_git_revision": None,
+    }
 
     # ensure it's idempotent
     upsert_response(kind=kind, dataset=dataset, config=config, split=split, content=content, http_status=HTTPStatus.OK)
@@ -81,11 +94,50 @@ def test_upsert_response(config: Optional[str], split: Optional[str]) -> None:
     )
 
     cached_response3 = get_response(kind=kind, dataset=dataset, config=config, split=split)
-    assert cached_response3["http_status"] == HTTPStatus.BAD_REQUEST
-    assert cached_response3["content"] == content
-    assert cached_response3["error_code"] == error_code
-    assert cached_response3["worker_version"] == worker_version
-    assert cached_response3["dataset_git_revision"] == dataset_git_revision
+    assert cached_response3 == {
+        "http_status": HTTPStatus.BAD_REQUEST,
+        "content": content,
+        "error_code": error_code,
+        "worker_version": worker_version,
+        "dataset_git_revision": dataset_git_revision,
+    }
+
+
+def test_delete_response() -> None:
+    kind = "test_kind"
+    dataset_a = "test_dataset_a"
+    dataset_b = "test_dataset_b"
+    config = None
+    split = "test_split"
+    upsert_response(kind=kind, dataset=dataset_a, config=config, split=split, content={}, http_status=HTTPStatus.OK)
+    upsert_response(kind=kind, dataset=dataset_b, config=config, split=split, content={}, http_status=HTTPStatus.OK)
+    get_response(kind=kind, dataset=dataset_a, config=config, split=split)
+    get_response(kind=kind, dataset=dataset_b, config=config, split=split)
+    delete_response(kind=kind, dataset=dataset_a, config=config, split=split)
+    with pytest.raises(DoesNotExist):
+        get_response(kind=kind, dataset=dataset_a, config=config, split=split)
+    get_response(kind=kind, dataset=dataset_b, config=config, split=split)
+
+
+def test_delete_dataset_responses() -> None:
+    kind_a = "test_kind_a"
+    kind_b = "test_kind_b"
+    dataset_a = "test_dataset_a"
+    dataset_b = "test_dataset_b"
+    config = "test_config"
+    split = "test_split"
+    upsert_response(kind=kind_a, dataset=dataset_a, content={}, http_status=HTTPStatus.OK)
+    upsert_response(kind=kind_b, dataset=dataset_a, config=config, split=split, content={}, http_status=HTTPStatus.OK)
+    upsert_response(kind=kind_a, dataset=dataset_b, content={}, http_status=HTTPStatus.OK)
+    get_response(kind=kind_a, dataset=dataset_a)
+    get_response(kind=kind_b, dataset=dataset_a, config=config, split=split)
+    get_response(kind=kind_a, dataset=dataset_b)
+    delete_dataset_responses(dataset=dataset_a)
+    with pytest.raises(DoesNotExist):
+        get_response(kind=kind_a, dataset=dataset_a)
+    with pytest.raises(DoesNotExist):
+        get_response(kind=kind_b, dataset=dataset_a, config=config, split=split)
+    get_response(kind=kind_a, dataset=dataset_b)
 
 
 def test_big_row() -> None:
