@@ -1,6 +1,6 @@
 from http import HTTPStatus
-import pytest
 
+import pytest
 from libcache.simple_cache import _clean_cache_database, upsert_response
 
 from api.routes.valid import get_valid, is_valid
