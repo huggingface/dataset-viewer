@@ -6,14 +6,13 @@ from http import HTTPStatus
 from typing import Dict, Optional
 
 import pytest
-from libcache.simple_cache import _clean_database as _clean_cache_database
-from libcache.simple_cache import upsert_first_rows_response, upsert_splits_response
+from libcache.simple_cache import _clean_cache_database, upsert_response
 from libqueue.queue import Queue, _clean_queue_database
 from pytest_httpserver import HTTPServer
 from starlette.testclient import TestClient
 
 from api.app import create_app
-from api.utils import JobType
+from api.utils import CacheKind, JobType
 
 from .utils import auth_callback
 
@@ -182,7 +181,9 @@ def test_splits_cache_refreshing(
         assert response.headers["X-Error-Code"] == expected_error_code
 
         # simulate the worker
-        upsert_splits_response(dataset, {"key": "value"}, HTTPStatus.OK)
+        upsert_response(
+            kind=CacheKind.SPLITS.value, dataset=dataset, content={"key": "value"}, http_status=HTTPStatus.OK
+        )
         response = client.get("/splits", params={"dataset": dataset})
         assert response.json()["key"] == "value"
         assert response.status_code == 200
@@ -221,7 +222,14 @@ def test_first_rows_cache_refreshing(
         assert response.headers["X-Error-Code"] == expected_error_code
 
         # simulate the worker
-        upsert_first_rows_response(dataset, config, split, {"key": "value"}, HTTPStatus.OK)
+        upsert_response(
+            kind=CacheKind.FIRST_ROWS.value,
+            dataset=dataset,
+            config=config,
+            split=split,
+            content={"key": "value"},
+            http_status=HTTPStatus.OK,
+        )
         response = client.get("/first-rows", params={"dataset": dataset, "config": config, "split": split})
         assert response.json()["key"] == "value"
         assert response.status_code == 200

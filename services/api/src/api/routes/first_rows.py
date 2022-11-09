@@ -5,7 +5,7 @@ import logging
 from http import HTTPStatus
 from typing import Optional
 
-from libcache.simple_cache import DoesNotExist, get_first_rows_response
+from libcache.simple_cache import DoesNotExist, get_response
 from starlette.requests import Request
 from starlette.responses import Response
 
@@ -13,6 +13,7 @@ from api.authentication import auth_check
 from api.dataset import is_first_rows_in_process
 from api.utils import (
     ApiCustomError,
+    CacheKind,
     Endpoint,
     FirstRowsResponseNotFoundError,
     FirstRowsResponseNotReadyError,
@@ -44,15 +45,15 @@ def create_first_rows_endpoint(
             # if auth_check fails, it will raise an exception that will be caught below
             auth_check(dataset, external_auth_url=external_auth_url, request=request)
             try:
-                result = get_first_rows_response(dataset, config, split)
-                response = result["response"]
+                result = get_response(kind=CacheKind.FIRST_ROWS.value, dataset=dataset, config=config, split=split)
+                content = result["content"]
                 http_status = result["http_status"]
                 error_code = result["error_code"]
                 if http_status == HTTPStatus.OK:
-                    return get_json_ok_response(content=response, max_age=max_age_long)
+                    return get_json_ok_response(content=content, max_age=max_age_long)
                 else:
                     return get_json_error_response(
-                        content=response, status_code=http_status, max_age=max_age_short, error_code=error_code
+                        content=content, status_code=http_status, max_age=max_age_short, error_code=error_code
                     )
             except DoesNotExist as e:
                 # maybe the first-rows response is in process
