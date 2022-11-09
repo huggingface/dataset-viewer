@@ -4,7 +4,7 @@
 import types
 from datetime import datetime, timezone
 from http import HTTPStatus
-from typing import Dict, Generic, List, Optional, Tuple, Type, TypedDict, TypeVar
+from typing import Dict, Generic, List, Optional, Set, Tuple, Type, TypedDict, TypeVar
 
 from bson import ObjectId
 from bson.errors import InvalidId
@@ -154,35 +154,17 @@ def get_dataset_response_ids(dataset: str) -> List[Tuple[str, str, Optional[str]
     ]
 
 
-# /valid endpoint
-
-# STILL TO BE MIGRATED
-# def get_valid_dataset_names() -> List[str]:
-#     # a dataset is considered valid if:
-#     # - the /splits response is valid
-#     candidate_dataset_names = set(SplitsResponse.objects(http_status=HTTPStatus.OK).distinct("dataset_name"))
-#     # - at least one of the /first-rows responses is valid
-#     candidate_dataset_names_in_first_rows = set(
-#         FirstRowsResponse.objects(http_status=HTTPStatus.OK).distinct("dataset_name")
-#     )
-
-#     candidate_dataset_names.intersection_update(candidate_dataset_names_in_first_rows)
-#     # note that the list is sorted alphabetically for consistency
-#     return sorted(candidate_dataset_names)
+def get_valid_datasets(kind: str) -> Set[str]:
+    return set(CachedResponse.objects(kind=kind, http_status=HTTPStatus.OK).distinct("dataset"))
 
 
-# /is-valid endpoint
-
-# STILL TO BE MIGRATED
-# def is_dataset_name_valid(dataset_name: str) -> bool:
-#     # a dataset is considered valid if:
-#     # - the /splits response is valid
-#     # - at least one of the /first-rows responses is valid
-#     valid_split_responses = SplitsResponse.objects(dataset_name=dataset_name, http_status=HTTPStatus.OK).count()
-#     valid_first_rows_responses = FirstRowsResponse.objects(
-#         dataset_name=dataset_name, http_status=HTTPStatus.OK
-#     ).count()
-#     return (valid_split_responses == 1) and (valid_first_rows_responses > 0)
+def get_validity_by_kind(dataset: str) -> Dict[str, bool]:
+    # TODO: rework with aggregate
+    entries = CachedResponse.objects(dataset=dataset).only("kind", "http_status")
+    return {
+        str(kind): entries(kind=kind, http_status=HTTPStatus.OK).first() is not None
+        for kind in sorted(entries.distinct("kind"))
+    }
 
 
 # admin /metrics endpoint
@@ -310,7 +292,7 @@ def get_cache_reports(kind: str, cursor: Optional[str], limit: int) -> CacheRepo
 
 
 # only for the tests
-def _clean_database() -> None:
+def _clean_cache_database() -> None:
     CachedResponse.drop_collection()  # type: ignore
 
 

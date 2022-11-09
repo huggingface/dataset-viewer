@@ -12,18 +12,20 @@ from libcache.simple_cache import (
     DoesNotExist,
     InvalidCursor,
     InvalidLimit,
-    _clean_database,
+    _clean_cache_database,
     delete_dataset_responses,
     get_cache_reports,
     get_response,
     get_responses_count_by_kind_status_and_error_code,
+    get_valid_datasets,
+    get_validity_by_kind,
     upsert_response,
 )
 
 
 @pytest.fixture(autouse=True)
 def clean_mongo_database() -> None:
-    _clean_database()
+    _clean_cache_database()
 
 
 @pytest.mark.parametrize(
@@ -99,93 +101,103 @@ def test_big_row() -> None:
         )
 
 
-# def test_valid() -> None:
-#     assert get_valid_datasets() == []
-#     assert get_datasets_with_some_error() == []
+def test_get_valid_dataset_names_empty() -> None:
+    assert not get_valid_datasets(kind="test_kind")
 
-#     upsert_splits_response(
-#         "test_dataset",
-#         {"key": "value"},
-#         HTTPStatus.OK,
-#     )
 
-#     assert get_valid_datasets() == []
-#     assert get_datasets_with_some_error() == []
-#     assert is_dataset_valid("test_dataset") is False
-#     assert is_dataset_valid("test_dataset2") is False
-#     assert is_dataset_valid("test_dataset3") is False
+def test_get_valid_dataset_names_two_valid_datasets() -> None:
+    kind = "test_kind"
+    dataset_a = "test_dataset_a"
+    dataset_b = "test_dataset_b"
+    upsert_response(kind=kind, dataset=dataset_a, content={}, http_status=HTTPStatus.OK)
+    upsert_response(kind=kind, dataset=dataset_b, content={}, http_status=HTTPStatus.OK)
+    assert get_valid_datasets(kind=kind) == {dataset_a, dataset_b}
 
-#     upsert_first_rows_response(
-#         "test_dataset",
-#         "test_config",
-#         "test_split",
-#         {
-#             "key": "value",
-#         },
-#         HTTPStatus.OK,
-#     )
 
-#     assert get_valid_datasets() == ["test_dataset"]
-#     assert get_datasets_with_some_error() == []
-#     assert is_dataset_valid("test_dataset") is True
-#     assert is_dataset_valid("test_dataset2") is False
-#     assert is_dataset_valid("test_dataset3") is False
+def test_get_valid_dataset_names_filtered_by_kind() -> None:
+    kind_a = "test_kind_a"
+    kind_b = "test_kind_b"
+    dataset_a = "test_dataset_a"
+    dataset_b = "test_dataset_b"
+    upsert_response(kind=kind_a, dataset=dataset_a, content={}, http_status=HTTPStatus.OK)
+    upsert_response(kind=kind_b, dataset=dataset_b, content={}, http_status=HTTPStatus.OK)
+    assert get_valid_datasets(kind=kind_a) == {dataset_a}
+    assert get_valid_datasets(kind=kind_b) == {dataset_b}
 
-#     upsert_splits_response(
-#         "test_dataset2",
-#         {"key": "value"},
-#         HTTPStatus.OK,
-#     )
 
-#     assert get_valid_datasets() == ["test_dataset"]
-#     assert get_datasets_with_some_error() == []
-#     assert is_dataset_valid("test_dataset") is True
-#     assert is_dataset_valid("test_dataset2") is False
-#     assert is_dataset_valid("test_dataset3") is False
+def test_get_valid_dataset_names_at_least_one_valid_response() -> None:
+    kind = "test_kind"
+    dataset = "test_dataset"
+    config_a = "test_config_a"
+    config_b = "test_config_b"
+    upsert_response(kind=kind, dataset=dataset, config=config_a, content={}, http_status=HTTPStatus.OK)
+    upsert_response(
+        kind=kind, dataset=dataset, config=config_b, content={}, http_status=HTTPStatus.INTERNAL_SERVER_ERROR
+    )
+    assert get_valid_datasets(kind=kind) == {dataset}
 
-#     upsert_first_rows_response(
-#         "test_dataset2",
-#         "test_config2",
-#         "test_split2",
-#         {
-#             "key": "value",
-#         },
-#         HTTPStatus.BAD_REQUEST,
-#     )
 
-#     assert get_valid_datasets() == ["test_dataset"]
-#     assert get_datasets_with_some_error() == ["test_dataset2"]
-#     assert is_dataset_valid("test_dataset") is True
-#     assert is_dataset_valid("test_dataset2") is False
-#     assert is_dataset_valid("test_dataset3") is False
+def test_get_valid_dataset_names_only_invalid_responses() -> None:
+    kind = "test_kind"
+    dataset = "test_dataset"
+    config_a = "test_config_a"
+    config_b = "test_config_b"
+    upsert_response(
+        kind=kind, dataset=dataset, config=config_a, content={}, http_status=HTTPStatus.INTERNAL_SERVER_ERROR
+    )
+    upsert_response(
+        kind=kind, dataset=dataset, config=config_b, content={}, http_status=HTTPStatus.INTERNAL_SERVER_ERROR
+    )
+    assert not get_valid_datasets(kind=kind)
 
-#     upsert_first_rows_response(
-#         "test_dataset2",
-#         "test_config2",
-#         "test_split3",
-#         {
-#             "key": "value",
-#         },
-#         HTTPStatus.OK,
-#     )
 
-#     assert get_valid_datasets() == ["test_dataset", "test_dataset2"]
-#     assert get_datasets_with_some_error() == ["test_dataset2"]
-#     assert is_dataset_valid("test_dataset") is True
-#     assert is_dataset_valid("test_dataset2") is True
-#     assert is_dataset_valid("test_dataset3") is False
+def test_get_validity_by_kind_empty() -> None:
+    assert not get_validity_by_kind(dataset="dataset")
 
-#     upsert_splits_response(
-#         "test_dataset3",
-#         {"key": "value"},
-#         HTTPStatus.BAD_REQUEST,
-#     )
 
-#     assert get_valid_datasets() == ["test_dataset", "test_dataset2"]
-#     assert get_datasets_with_some_error() == ["test_dataset2", "test_dataset3"]
-#     assert is_dataset_valid("test_dataset") is True
-#     assert is_dataset_valid("test_dataset2") is True
-#     assert is_dataset_valid("test_dataset3") is False
+def test_get_validity_by_kind_two_valid_datasets() -> None:
+    kind = "test_kind"
+    dataset_a = "test_dataset_a"
+    dataset_b = "test_dataset_b"
+    upsert_response(kind=kind, dataset=dataset_a, content={}, http_status=HTTPStatus.OK)
+    upsert_response(kind=kind, dataset=dataset_b, content={}, http_status=HTTPStatus.OK)
+    assert get_validity_by_kind(dataset=dataset_a) == {kind: True}
+    assert get_validity_by_kind(dataset=dataset_b) == {kind: True}
+
+
+def test_get_validity_by_kind_two_valid_kinds() -> None:
+    kind_a = "test_kind_a"
+    kind_b = "test_kind_b"
+    dataset = "test_dataset"
+    upsert_response(kind=kind_a, dataset=dataset, content={}, http_status=HTTPStatus.OK)
+    upsert_response(kind=kind_b, dataset=dataset, content={}, http_status=HTTPStatus.OK)
+    assert get_validity_by_kind(dataset=dataset) == {kind_a: True, kind_b: True}
+
+
+def test_get_validity_by_kind_at_least_one_valid_response() -> None:
+    kind = "test_kind"
+    dataset = "test_dataset"
+    config_a = "test_config_a"
+    config_b = "test_config_b"
+    upsert_response(kind=kind, dataset=dataset, config=config_a, content={}, http_status=HTTPStatus.OK)
+    upsert_response(
+        kind=kind, dataset=dataset, config=config_b, content={}, http_status=HTTPStatus.INTERNAL_SERVER_ERROR
+    )
+    assert get_validity_by_kind(dataset=dataset) == {kind: True}
+
+
+def test_get_validity_by_kind_only_invalid_responses() -> None:
+    kind = "test_kind"
+    dataset = "test_dataset"
+    config_a = "test_config_a"
+    config_b = "test_config_b"
+    upsert_response(
+        kind=kind, dataset=dataset, config=config_a, content={}, http_status=HTTPStatus.INTERNAL_SERVER_ERROR
+    )
+    upsert_response(
+        kind=kind, dataset=dataset, config=config_b, content={}, http_status=HTTPStatus.INTERNAL_SERVER_ERROR
+    )
+    assert get_validity_by_kind(dataset=dataset) == {kind: False}
 
 
 def test_count_by_status_and_error_code() -> None:
