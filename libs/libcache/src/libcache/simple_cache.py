@@ -4,7 +4,7 @@
 import types
 from datetime import datetime, timezone
 from http import HTTPStatus
-from typing import Dict, Generic, List, Optional, Set, Tuple, Type, TypedDict, TypeVar
+from typing import Dict, Generic, List, Optional, Set, Type, TypedDict, TypeVar
 
 from bson import ObjectId
 from bson.errors import InvalidId
@@ -173,9 +173,21 @@ def get_response(kind: str, dataset: str, config: Optional[str] = None, split: O
     }
 
 
-def get_dataset_response_ids(dataset: str) -> List[Tuple[str, str, Optional[str], Optional[str]]]:
+class ResponseId(TypedDict):
+    kind: str
+    dataset: str
+    config: Optional[str]
+    split: Optional[str]
+
+
+def get_dataset_response_ids(dataset: str) -> List[ResponseId]:
     return [
-        (response.kind, response.dataset, response.config, response.split)
+        {
+            "kind": response.kind,
+            "dataset": response.dataset,
+            "config": response.config,
+            "split": response.split,
+        }
         for response in CachedResponse.objects(dataset=dataset).only("kind", "dataset", "config", "split")
     ]
 

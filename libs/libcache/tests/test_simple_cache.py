@@ -16,6 +16,7 @@ from libcache.simple_cache import (
     delete_dataset_responses,
     delete_response,
     get_cache_reports,
+    get_dataset_response_ids,
     get_response,
     get_response_without_content,
     get_responses_count_by_kind_status_and_error_code,
@@ -151,6 +152,39 @@ def test_big_row() -> None:
         upsert_response(
             kind=kind, dataset=dataset, config=config, split=split, content=big_content, http_status=HTTPStatus.OK
         )
+
+
+def test_get_dataset_response_ids() -> None:
+    kind_a = "test_kind_a"
+    kind_b = "test_kind_b"
+    dataset_a = "test_dataset_a"
+    dataset_b = "test_dataset_b"
+    dataset_c = "test_dataset_c"
+    config_a = "test_config_a"
+    config_b = "test_config_b"
+    split_a = "test_split_a"
+    split_b = None
+    upsert_response(kind=kind_a, dataset=dataset_a, content={}, http_status=HTTPStatus.OK)
+    upsert_response(
+        kind=kind_b, dataset=dataset_a, config=config_a, split=split_a, content={}, http_status=HTTPStatus.OK
+    )
+    upsert_response(
+        kind=kind_b, dataset=dataset_a, config=config_b, split=split_a, content={}, http_status=HTTPStatus.OK
+    )
+    upsert_response(
+        kind=kind_b, dataset=dataset_a, config=config_b, split=split_b, content={}, http_status=HTTPStatus.OK
+    )
+    upsert_response(kind=kind_a, dataset=dataset_b, content={}, http_status=HTTPStatus.OK)
+    assert get_dataset_response_ids(dataset=dataset_a) == [
+        {"kind": kind_a, "dataset": dataset_a, "config": None, "split": None},
+        {"kind": kind_b, "dataset": dataset_a, "config": config_a, "split": split_a},
+        {"kind": kind_b, "dataset": dataset_a, "config": config_b, "split": split_b},
+        {"kind": kind_b, "dataset": dataset_a, "config": config_b, "split": split_a},
+    ]
+    assert get_dataset_response_ids(dataset=dataset_b) == [
+        {"kind": kind_a, "dataset": dataset_b, "config": None, "split": None}
+    ]
+    assert get_dataset_response_ids(dataset=dataset_c) == []
 
 
 def test_get_valid_dataset_names_empty() -> None:
