@@ -24,5 +24,3 @@ jobs:
     with:
       working-directory: workers/first_rows
       is-datasets-worker: true
-    secrets:
-      codecov-token: ${{ secrets.CODECOV_TOKEN }}
