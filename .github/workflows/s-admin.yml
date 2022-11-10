@@ -10,7 +10,6 @@ on:
       - '.github/workflows/s-admin.yml'
       - '.github/workflows/_quality-python.yml'
       - '.github/workflows/_unit-tests-python.yml'
-      - 'tools/Python.mk'
       - 'tools/docker-compose-mongo.yml'
 jobs:
   quality:

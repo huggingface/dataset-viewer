@@ -12,6 +12,7 @@ on:
       - 'workers/first_rows/pyproject.toml'
       - '.github/workflows/w-workers/first_rows-build-docker.yml'
       - '.github/workflows/_build_push_docker_hub.yml'
+      - 'vendors/'
 jobs:
   docker:
     uses: ./.github/workflows/_build_push_docker_hub.yml
