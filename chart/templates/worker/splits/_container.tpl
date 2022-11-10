@@ -65,17 +65,17 @@
   volumeMounts:
   - mountPath: {{ .Values.cache.assetsDirectory | quote }}
     mountPropagation: None
-    name: nfs
+    name: data
     subPath: "{{ include "assets.subpath" . }}"
     readOnly: false
   - mountPath: {{ .Values.hfDatasetsCache | quote }}
     mountPropagation: None
-    name: nfs
+    name: data
     subPath: "{{ include "cache.datasets.subpath" . }}"
     readOnly: false
   - mountPath: {{ .Values.numbaCacheDirectory | quote }}
     mountPropagation: None
-    name: nfs
+    name: data
     subPath: "{{ include "cache.numba.subpath" . }}"
     readOnly: false
   securityContext:

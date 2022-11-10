@@ -31,7 +31,7 @@
     readOnly: true
   - mountPath: {{ .Values.cache.assetsDirectory | quote }}
     mountPropagation: None
-    name: nfs
+    name: data
     subPath: "{{ include "assets.subpath" . }}"
     readOnly: true
   readinessProbe:

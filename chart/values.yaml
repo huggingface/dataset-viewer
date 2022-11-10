@@ -9,8 +9,10 @@ secrets:
 uid: 1000
 gid: 3000
 
-storage:
-  nfs: {}
+persistence:
+  existingClaim: ""
+  storageClass: ""
+  size: 20Gi
 
 monitoring:
   enabled: false
@@ -22,6 +24,8 @@ mongodb:
     enabled: false
   serviceAccount:
     create: false
+
+imagePullSecrets: []
 
 # overriden by docker-images.yaml (which must be in JSON format!)
 dockerImage:
@@ -105,6 +109,9 @@ reverseProxy:
   tolerations: []
 
 ingress:
+  tls:
+    enabled: false
+    secretName: ""
   annotations:
     alb.ingress.kubernetes.io/healthcheck-path: "/healthcheck"
     alb.ingress.kubernetes.io/listen-ports: '[{"HTTP": 80, "HTTPS": 443}]'
