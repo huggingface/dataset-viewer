@@ -29,7 +29,7 @@ spec:
       volumes:
         - name: data
           persistentVolumeClaim:
-            claimName: {{ .Values.persistence.existingClaim | default (include "name" .) }}
+            claimName: {{ .Values.persistence.existingClaim | default (include "release" .) }}
       securityContext:
         runAsUser: {{ .Values.uid }}
         runAsGroup: {{ .Values.gid }}

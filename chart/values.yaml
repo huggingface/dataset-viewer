@@ -3,8 +3,14 @@
 hostname: "datasets-server.huggingface.co"
 
 secrets:
-  hfToken: datasets-server-hf-token
-  mongoUrl: false
+  mongoUrl:
+    fromSecret: false
+    secretName: "mongo-url"
+    value: mongo://
+  token:
+    fromSecret: false
+    secretName: "datasets-server-hf-token"
+    value: hf_app
 
 uid: 1000
 gid: 3000

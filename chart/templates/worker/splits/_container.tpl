@@ -11,14 +11,34 @@
   - name: CACHE_MONGO_DATABASE
     value: {{ .Values.cache.mongoDatabase | quote }}
   - name: CACHE_MONGO_URL
-  {{- if .Values.mongodb.enabled }}
-    value: mongodb://{{.Release.Name}}-mongodb
-  {{- else }}
+  {{- if .Values.secrets.mongoUrl.fromSecret }}
     valueFrom:
       secretKeyRef:
-        name: {{ .Values.secrets.mongoUrl | quote }}
+        name: {{ .Values.secrets.mongoUrl.secretName | quote }}
         key: MONGO_URL
         optional: false
+  {{- else }}
+    {{- if .Values.mongodb.enabled }}
+    value: mongodb://{{.Release.Name}}-mongodb
+    {{- else }}
+    value: {{ .Values.secrets.mongoUrl.value }}
+    {{- end }}
+  {{- end }}
+  - name: QUEUE_MONGO_DATABASE
+    value: {{ .Values.queue.mongoDatabase | quote }}
+  - name: QUEUE_MONGO_URL
+  {{- if .Values.secrets.mongoUrl.fromSecret }}
+    valueFrom:
+      secretKeyRef:
+        name: {{ .Values.secrets.mongoUrl.secretName | quote }}
+        key: MONGO_URL
+        optional: false
+  {{- else }}
+    {{- if .Values.mongodb.enabled }}
+    value: mongodb://{{.Release.Name}}-mongodb
+    {{- else }}
+    value: {{ .Values.secrets.mongoUrl.value }}
+    {{- end }}
   {{- end }}
   - name: QUEUE_MAX_JOBS_PER_NAMESPACE
     # value: {{ .Values.queue.maxJobsPerNamespace | quote }}
@@ -28,30 +48,23 @@
     value: {{ .Values.queue.maxLoadPct | quote }}
   - name: QUEUE_MAX_MEMORY_PCT
     value: {{ .Values.queue.maxMemoryPct | quote }}
-  - name: QUEUE_MONGO_DATABASE
-    value: {{ .Values.queue.mongoDatabase | quote }}
-  - name: QUEUE_MONGO_URL
-  {{- if .Values.mongodb.enabled }}
-    value: mongodb://{{.Release.Name}}-mongodb
-  {{- else }}
-    valueFrom:
-      secretKeyRef:
-        name: {{ .Values.secrets.mongoUrl | quote }}
-        key: MONGO_URL
-        optional: false
-  {{- end }}
   - name: QUEUE_WORKER_SLEEP_SECONDS
     value: {{ .Values.queue.sleepSeconds | quote }}
   - name: COMMON_ASSETS_BASE_URL
     value: "{{ include "assets.baseUrl" . }}"
   - name: COMMON_HF_ENDPOINT
     value: {{ .Values.common.hfEndpoint | quote }}
+
   - name: COMMON_HF_TOKEN
+  {{- if .Values.secrets.token.fromSecret }}
     valueFrom:
       secretKeyRef:
-        name: {{ .Values.secrets.hfToken | quote }}
+        name: {{ .Values.secrets.token.secretName | quote }}
         key: HF_TOKEN
         optional: false
+  {{- else }}
+    value: {{ .Values.secrets.token.value }}
+  {{- end }}
   - name: COMMON_LOG_LEVEL
     value: {{ .Values.common.logLevel | quote }}
   - name: HF_DATASETS_CACHE
