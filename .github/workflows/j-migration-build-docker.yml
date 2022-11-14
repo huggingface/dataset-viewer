@@ -1,0 +1,23 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2022 The HuggingFace Authors.
+
+name: jobs/migration
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - 'jobs/migration/Dockerfile'
+      - 'jobs/migration/src/**'
+      - 'jobs/migration/poetry.lock'
+      - 'jobs/migration/pyproject.toml'
+      - '.github/workflows/j-migration-build-docker.yml'
+      - '.github/workflows/_build_push_docker_hub.yml'
+jobs:
+  docker:
+    uses: ./.github/workflows/_build_push_docker_hub.yml
+    with:
+      directory: jobs
+      project: migration
+    secrets:
+      dockerhub-username: ${{ secrets.DOCKERHUB_USERNAME }}
+      dockerhub-password: ${{ secrets.DOCKERHUB_PASSWORD }}
