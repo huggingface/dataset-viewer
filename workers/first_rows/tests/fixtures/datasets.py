@@ -127,4 +127,5 @@ def datasets() -> Dict[str, Dataset]:
             [{"a": {"b": 0}}, {"a": {"b": 1}}], Sequence(feature={"a": {"b": Value(dtype="int64")}})
         ),
         "none_value": other({"a": None}, {"a": Value(dtype="int64")}),
+        "big": Dataset.from_pandas(pd.DataFrame({"col": ["a" * 1_234 for _ in range(4_567)]}, dtype=pd.StringDtype())),
     }

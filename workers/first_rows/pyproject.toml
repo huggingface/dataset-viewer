@@ -56,11 +56,9 @@ build-backend = "poetry.core.masonry.api"
 requires = ["poetry-core>=1.0.0"]
 
 [tool.pytest.ini_options]
-addopts = "-k 'not deprecated'"
+# addopts = "-k 'wip'"
 filterwarnings = ["ignore::DeprecationWarning"]
 markers = [
-    "deprecated: tests on deprecated code (deselect with '-m \"not deprecated\"')",
-    "real_dataset: tests on real datasets (from the Hub)",
     "wip: tests being developed"
 ]
 

@@ -245,6 +245,14 @@ def hub_public_images_list(hf_api: HfApi, hf_token: str, datasets: Dict[str, Dat
         hf_api.delete_repo(repo_id=repo_id, token=hf_token, repo_type="dataset")
 
 
+@pytest.fixture(scope="session", autouse=True)
+def hub_public_big(hf_api: HfApi, hf_token: str, datasets: Dict[str, Dataset]) -> Iterable[str]:
+    repo_id = create_hub_dataset_repo(hf_api=hf_api, hf_token=hf_token, prefix="big", dataset=datasets["big"])
+    yield repo_id
+    with suppress(requests.exceptions.HTTPError, ValueError):
+        hf_api.delete_repo(repo_id=repo_id, token=hf_token, repo_type="dataset")
+
+
 class HubDatasetTest(TypedDict):
     name: str
     splits_response: Any
@@ -388,6 +396,13 @@ def get_IMAGES_LIST_rows(dataset: str):
     ]
 
 
+BIG_cols = {
+    "col": [{"_type": "Value", "dtype": "string"}],
+}
+
+BIG_rows = ["a" * 1_234 for _ in range(4_567)]
+
+
 @pytest.fixture(scope="session", autouse=True)
 def hub_datasets(
     hub_public_empty,
@@ -398,6 +413,7 @@ def hub_datasets(
     hub_public_audio,
     hub_public_image,
     hub_public_images_list,
+    hub_public_big,
 ) -> HubDatasets:
     return {
         "does_not_exist": {
@@ -450,5 +466,10 @@ def hub_datasets(
             "first_rows_response": create_first_rows_response(
                 hub_public_images_list, IMAGES_LIST_cols, get_IMAGES_LIST_rows(hub_public_images_list)
             ),
+        },
+        "big": {
+            "name": hub_public_big,
+            "splits_response": create_splits_response(hub_public_big, 0, 1),
+            "first_rows_response": create_first_rows_response(hub_public_big, BIG_cols, BIG_rows),
         },
     }
