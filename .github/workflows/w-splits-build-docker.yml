@@ -12,6 +12,7 @@ on:
       - 'workers/splits/pyproject.toml'
       - '.github/workflows/w-workers/splits-build-docker.yml'
       - '.github/workflows/_build_push_docker_hub.yml'
+      - 'vendors/'
 jobs:
   docker:
     uses: ./.github/workflows/_build_push_docker_hub.yml

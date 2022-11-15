@@ -1,24 +1,23 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2022 The HuggingFace Authors.
 
-name: workers/first_rows
+name: jobs/mongodb_migration
 on:
   workflow_dispatch:
   push:
     paths:
-      - 'workers/first_rows/Dockerfile'
-      - 'workers/first_rows/src/**'
-      - 'workers/first_rows/poetry.lock'
-      - 'workers/first_rows/pyproject.toml'
-      - '.github/workflows/w-workers/first_rows-build-docker.yml'
+      - 'jobs/mongodb_migration/Dockerfile'
+      - 'jobs/mongodb_migration/src/**'
+      - 'jobs/mongodb_migration/poetry.lock'
+      - 'jobs/mongodb_migration/pyproject.toml'
+      - '.github/workflows/j-mongodb_migration-build-docker.yml'
       - '.github/workflows/_build_push_docker_hub.yml'
-      - 'vendors/'
 jobs:
   docker:
     uses: ./.github/workflows/_build_push_docker_hub.yml
     with:
-      directory: workers
-      project: first_rows
+      directory: jobs
+      project: mongodb_migration
     secrets:
       dockerhub-username: ${{ secrets.DOCKERHUB_USERNAME }}
       dockerhub-password: ${{ secrets.DOCKERHUB_PASSWORD }}

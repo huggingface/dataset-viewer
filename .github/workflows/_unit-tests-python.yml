@@ -11,9 +11,6 @@ on:
       is-datasets-worker:
         required: false
         type: boolean
-    secrets:
-      codecov-token:
-        required: true
 env:
   # required to get access to use a cached poetry venv in "/home/runner/.cache/pypoetry/virtualenvs"
   POETRY_VIRTUALENVS_IN_PROJECT: false

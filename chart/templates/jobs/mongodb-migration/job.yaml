@@ -1,0 +1,39 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2022 The HuggingFace Authors.
+
+apiVersion: batch/v1
+kind: Job
+metadata:
+  labels:
+    {{ include "labels.mongodbMigration" . | nindent 4 }}
+  name: "{{ include "release" . }}-job-mongodb-migration"
+  namespace: {{ .Release.Namespace }}
+  annotations:
+    "helm.sh/hook": pre-install,pre-upgrade
+    "helm.sh/hook-weight": "-1"
+    "helm.sh/hook-delete-policy": before-hook-creation,hook-succeeded
+spec:
+  template:
+    metadata:
+      labels:
+        {{ include "labels.mongodbMigration" . | nindent 8 }}
+    spec:
+      restartPolicy: Never
+      initContainers:
+        {{ include "initContainerAssets" . | nindent 8 }}
+      containers:
+        {{ include "containerMongodbMigration" . | nindent 8 }}
+      nodeSelector:
+        {{ toYaml .Values.mongodbMigration.nodeSelector | nindent 8 }}
+      tolerations:
+        {{ toYaml .Values.mongodbMigration.tolerations | nindent 8 }}
+      volumes:
+        - name: nfs
+          nfs:
+            server: {{ .Values.storage.nfs.server }}
+            path: {{ .Values.storage.nfs.path }}
+      securityContext:
+        runAsUser: {{ .Values.uid }}
+        runAsGroup: {{ .Values.gid }}
+        runAsNonRoot: true
+  backoffLimit: 0

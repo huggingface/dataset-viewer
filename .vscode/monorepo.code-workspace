@@ -9,6 +9,10 @@
       "path": "../e2e"
     },
     {
+      "name": "jobs/mongodb_migration",
+      "path": "../jobs/mongodb_migration"
+    },
+    {
       "name": "libs/libcache",
       "path": "../libs/libcache"
     },
@@ -44,6 +48,7 @@
   "settings": {
     "files.exclude": {
       "e2e": true,
+      "jobs": true,
       "libs": true,
       "services": true,
       "workers": true

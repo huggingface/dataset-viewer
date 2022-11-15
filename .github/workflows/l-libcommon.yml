@@ -10,7 +10,6 @@ on:
       - '.github/workflows/l-libcommon.yml'
       - '.github/workflows/_quality-python.yml'
       - '.github/workflows/_unit-tests-python.yml'
-      - 'tools/Python.mk'
       - 'tools/docker-compose-empty.yml'
 jobs:
   quality:
@@ -21,5 +20,3 @@ jobs:
     uses: ./.github/workflows/_unit-tests-python.yml
     with:
       working-directory: libs/libcommon
-    secrets:
-      codecov-token: ${{ secrets.CODECOV_TOKEN }}

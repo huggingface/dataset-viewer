@@ -10,7 +10,6 @@ on:
       - '.github/workflows/w-first_rows.yml'
       - '.github/workflows/_quality-python.yml'
       - '.github/workflows/_unit-tests-python.yml'
-      - 'tools/Python.mk'
       - 'tools/docker-compose-mongo.yml'
       - 'vendors/'
 jobs:
@@ -25,5 +24,3 @@ jobs:
     with:
       working-directory: workers/first_rows
       is-datasets-worker: true
-    secrets:
-      codecov-token: ${{ secrets.CODECOV_TOKEN }}

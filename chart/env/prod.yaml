@@ -66,6 +66,12 @@ common:
   # Log level
   logLevel: "DEBUG"
 
+# --- jobs (pre-install/upgrade hooks) ---
+
+mongodbMigration:
+  nodeSelector:
+    role-datasets-server: "true"
+
 # --- reverse proxy ---
 
 reverseProxy:
