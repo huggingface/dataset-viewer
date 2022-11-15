@@ -68,7 +68,7 @@ common:
 
 # --- jobs (pre-install/upgrade hooks) ---
 
-mongodb_migration:
+mongodbMigration:
   nodeSelector:
     role-datasets-server: "true"
 

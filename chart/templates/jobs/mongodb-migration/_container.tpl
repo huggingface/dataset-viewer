@@ -2,8 +2,8 @@
 # Copyright 2022 The HuggingFace Authors.
 
 {{- define "containerMongodbMigration" -}}
-- name: "{{ include "name" . }}-mongodb_migration"
-  image: {{ .Values.dockerImage.jobs.mongodb_migration }}
+- name: "{{ include "name" . }}-mongodb-migration"
+  image: {{ .Values.dockerImage.jobs.mongodbMigration }}
   imagePullPolicy: IfNotPresent
   env:
   - name: CACHE_ASSETS_DIRECTORY
@@ -45,7 +45,7 @@
   - name: COMMON_LOG_LEVEL
     value: {{ .Values.common.logLevel | quote }}
   - name: MONGODB_MIGRATION_MONGO_DATABASE
-    value: {{ .Values.migration.mongoDatabase | quote }}
+    value: {{ .Values.mongodbMigration.mongoDatabase | quote }}
   - name: MONGODB_MIGRATION_MONGO_URL
   {{- if .Values.mongodb.enabled }}
     value: mongodb://{{.Release.Name}}-mongodb
@@ -59,5 +59,5 @@
   securityContext:
     allowPrivilegeEscalation: false  
   resources:
-    {{ toYaml .Values.mongodb_migration.resources | nindent 4 }}
+    {{ toYaml .Values.mongodbMigration.resources | nindent 4 }}
 {{- end -}}
