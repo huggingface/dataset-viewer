@@ -19,12 +19,19 @@ spec:
         {{ include "labels.mongodbMigration" . | nindent 8 }}
     spec:
       restartPolicy: Never
+      initContainers:
+        {{ include "initContainerAssets" . | nindent 8 }}
       containers:
         {{ include "containerMongodbMigration" . | nindent 8 }}
       nodeSelector:
         {{ toYaml .Values.mongodbMigration.nodeSelector | nindent 8 }}
       tolerations:
         {{ toYaml .Values.mongodbMigration.tolerations | nindent 8 }}
+      volumes:
+        - name: nfs
+          nfs:
+            server: {{ .Values.storage.nfs.server }}
+            path: {{ .Values.storage.nfs.path }}
       securityContext:
         runAsUser: {{ .Values.uid }}
         runAsGroup: {{ .Values.gid }}

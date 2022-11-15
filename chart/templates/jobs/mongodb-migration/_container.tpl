@@ -56,6 +56,12 @@
         key: MONGO_URL
         optional: false
   {{- end }}
+  volumeMounts:
+  - mountPath: {{ .Values.cache.assetsDirectory | quote }}
+    mountPropagation: None
+    name: nfs
+    subPath: "{{ include "assets.subpath" . }}"
+    readOnly: false
   securityContext:
     allowPrivilegeEscalation: false  
   resources:
