@@ -1,6 +1,9 @@
 {
   "dockerImage": {
     "reverseProxy": "docker.io/nginx:1.20",
+    "jobs": {
+      "migration": "huggingface/datasets-server-jobs-migration:sha-b1a1e84"
+    },
     "services": {
       "admin": "huggingface/datasets-server-services-admin:sha-a9824d5",
       "api": "huggingface/datasets-server-services-api:sha-a9824d5"
