@@ -10,7 +10,7 @@ The script con be configured using environment variables. They are grouped by sc
 
 Set environment variables to configure the job (`MIGRATION_` prefix):
 
-- `MIGRATION_MONGO_DATABASE`: the name of the database used for storing the queue. Defaults to `"datasets_server_maintenance"`.
+- `MIGRATION_MONGO_DATABASE`: the name of the database used for storing the migrations history. Defaults to `"datasets_server_maintenance"`.
 - `MIGRATION_MONGO_URL`: the URL used to connect to the mongo db server. Defaults to `"mongodb://localhost:27017"`.
 
 ### Cache

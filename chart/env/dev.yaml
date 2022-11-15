@@ -24,6 +24,9 @@ common:
   # Log level
   logLevel: "DEBUG"
 
+# --- jobs (pre-install/upgrade hooks) ---
+
+
 # --- reverse proxy ---
 
 reverseProxy:

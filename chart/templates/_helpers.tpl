@@ -50,6 +50,11 @@ chart: "{{ include "name" . }}"
 app: "{{ .Release.Name }}-reverse-proxy"
 {{- end -}}
 
+{{- define "labels.migration" -}}
+{{ include "labels" . }}
+app: "{{ include "release" . }}-migration"
+{{- end -}}
+
 {{- define "labels.admin" -}}
 {{ include "labels" . }}
 app: "{{ include "release" . }}-admin"
