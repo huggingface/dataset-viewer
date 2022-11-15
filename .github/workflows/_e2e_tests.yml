@@ -53,8 +53,8 @@ jobs:
       - name: Launch the services
         env:
           IMAGE_REVERSE_PROXY: "${{fromJson(needs.get-config.outputs.dockerConfig).dockerImage.reverseProxy}}"
-          IMAGE_ADMIN: "${{fromJson(needs.get-config.outputs.dockerConfig).dockerImage.services.admin}}"
-          IMAGE_API: "${{fromJson(needs.get-config.outputs.dockerConfig).dockerImage.services.api}}"
+          IMAGE_SERVICE_ADMIN: "${{fromJson(needs.get-config.outputs.dockerConfig).dockerImage.services.admin}}"
+          IMAGE_SERVICE_API: "${{fromJson(needs.get-config.outputs.dockerConfig).dockerImage.services.api}}"
           IMAGE_WORKER_SPLITS: "${{fromJson(needs.get-config.outputs.dockerConfig).dockerImage.workers.splits}}"
           IMAGE_WORKER_FIRST_ROWS: "${{fromJson(needs.get-config.outputs.dockerConfig).dockerImage.workers.firstRows}}"
           QUEUE_SLEEP_TIME: "1"

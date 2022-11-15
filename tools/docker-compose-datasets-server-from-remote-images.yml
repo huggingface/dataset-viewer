@@ -18,7 +18,7 @@ services:
       - api
       - admin
   admin:
-    image: ${IMAGE_ADMIN?IMAGE_ADMIN env var must be provided}
+    image: ${IMAGE_SERVICE_ADMIN?IMAGE_SERVICE_ADMIN env var must be provided}
     environment:
       CACHE_ASSETS_DIRECTORY: ${CACHE_ASSETS_DIRECTORY-/assets}
       CACHE_MONGO_URL: ${CACHE_MONGO_URL-mongodb://mongodb} # use mongo container by default
@@ -48,7 +48,7 @@ services:
       # for debug
       - ${ADMIN_UVICORN_PORT-8081}:${ADMIN_UVICORN_PORT-8081}
   api:
-    image: ${IMAGE_API?IMAGE_API env var must be provided}
+    image: ${IMAGE_SERVICE_API?IMAGE_SERVICE_API env var must be provided}
     volumes:
       - assets:${CACHE_ASSETS_DIRECTORY-/assets}:ro
     environment:
