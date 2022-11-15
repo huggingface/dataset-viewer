@@ -9,8 +9,8 @@
       "path": "../e2e"
     },
     {
-      "name": "jobs/migration",
-      "path": "../jobs/migration"
+      "name": "jobs/mongodb_migration",
+      "path": "../jobs/mongodb_migration"
     },
     {
       "name": "libs/libcache",

@@ -3,8 +3,8 @@
 
 from typing import List
 
-from migration.migration import Migration
-from migration.migrations._20221110230400_example import MigrationExample
+from mongodb_migration.migration import Migration
+from mongodb_migration.migrations._20221110230400_example import MigrationExample
 
 
 # TODO: add a way to automatically collect migrations from the migrations/ folder

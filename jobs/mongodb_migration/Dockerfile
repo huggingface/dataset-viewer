@@ -24,10 +24,10 @@ WORKDIR /src
 COPY libs/libcache/dist ./libs/libcache/dist
 COPY libs/libqueue/dist ./libs/libqueue/dist
 COPY libs/libcommon/dist ./libs/libcommon/dist
-COPY jobs/migration/src ./jobs/migration/src
-COPY jobs/migration/poetry.lock ./jobs/migration/poetry.lock
-COPY jobs/migration/pyproject.toml ./jobs/migration/pyproject.toml
-WORKDIR /src/jobs/migration/
+COPY jobs/mongodb_migration/src ./jobs/mongodb_migration/src
+COPY jobs/mongodb_migration/poetry.lock ./jobs/mongodb_migration/poetry.lock
+COPY jobs/mongodb_migration/pyproject.toml ./jobs/mongodb_migration/pyproject.toml
+WORKDIR /src/jobs/mongodb_migration/
 RUN poetry install
 
-ENTRYPOINT ["poetry", "run", "python", "src/migration/main.py"]
+ENTRYPOINT ["poetry", "run", "python", "src/mongodb_migration/main.py"]

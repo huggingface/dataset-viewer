@@ -5,7 +5,7 @@ from typing import Optional, Type
 
 import pytest
 
-from migration.migration import Migration
+from mongodb_migration.migration import Migration
 
 
 class MigrationOK(Migration):

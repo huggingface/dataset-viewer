@@ -1,12 +1,12 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2022 The HuggingFace Authors.
 
-apiVersion: apps/v1
+apiVersion: batch/v1
 kind: Job
 metadata:
   labels:
-    {{ include "labels.migration" . | nindent 4 }}
-  name: "{{ include "release" . }}-job-migration"
+    {{ include "labels.mongodb_migration" . | nindent 4 }}
+  name: "{{ include "release" . }}-job-mongodb_migration"
   namespace: {{ .Release.Namespace }}
   annotations:
     "helm.sh/hook": pre-install,pre-upgrade
@@ -16,15 +16,15 @@ spec:
   template:
     metadata:
       labels:
-        {{ include "labels.migration" . | nindent 8 }}
+        {{ include "labels.mongodb_migration" . | nindent 8 }}
     spec:
       restartPolicy: Never
       containers:
-        {{ include "containerMigration" . | nindent 8 }}
+        {{ include "containerMongodbMigration" . | nindent 8 }}
       nodeSelector:
-        {{ toYaml .Values.migration.nodeSelector | nindent 8 }}
+        {{ toYaml .Values.mongodb_migration.nodeSelector | nindent 8 }}
       tolerations:
-        {{ toYaml .Values.migration.tolerations | nindent 8 }}
+        {{ toYaml .Values.mongodb_migration.tolerations | nindent 8 }}
       securityContext:
         runAsUser: {{ .Values.uid }}
         runAsGroup: {{ .Values.gid }}

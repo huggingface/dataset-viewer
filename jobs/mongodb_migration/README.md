@@ -8,10 +8,10 @@ The script con be configured using environment variables. They are grouped by sc
 
 ### Admin service
 
-Set environment variables to configure the job (`MIGRATION_` prefix):
+Set environment variables to configure the job (`MONGODB_MIGRATION_` prefix):
 
-- `MIGRATION_MONGO_DATABASE`: the name of the database used for storing the migrations history. Defaults to `"datasets_server_maintenance"`.
-- `MIGRATION_MONGO_URL`: the URL used to connect to the mongo db server. Defaults to `"mongodb://localhost:27017"`.
+- `MONGODB_MIGRATION_MONGO_DATABASE`: the name of the database used for storing the migrations history. Defaults to `"datasets_server_maintenance"`.
+- `MONGODB_MIGRATION_MONGO_URL`: the URL used to connect to the mongo db server. Defaults to `"mongodb://localhost:27017"`.
 
 ### Cache
 
@@ -36,11 +36,11 @@ To launch the scripts:
 - if the image runs in a docker container:
 
   ```shell
-  docker exec -it datasets-server_migration_1 make <SCRIPT>
+  docker exec -it datasets-server_mongodb_migration_1 make <SCRIPT>
   ```
 
 - if the image runs in a kube pod:
 
   ```shell
-  kubectl exec datasets-server-prod-migration-5cc8f8fcd7-k7jfc -- make <SCRIPT>
+  kubectl exec datasets-server-prod-mongodb_migration-5cc8f8fcd7-k7jfc -- make <SCRIPT>
   ```

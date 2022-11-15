@@ -3,7 +3,7 @@
 
 from pytest import MonkeyPatch, fixture
 
-from migration.config import JobConfig
+from mongodb_migration.config import JobConfig
 
 
 # see https://github.com/pytest-dev/pytest/issues/363#issuecomment-406536200
@@ -12,7 +12,7 @@ def monkeypatch_session():
     monkeypatch_session = MonkeyPatch()
     monkeypatch_session.setenv("CACHE_MONGO_DATABASE", "datasets_server_cache_test")
     monkeypatch_session.setenv("QUEUE_MONGO_DATABASE", "datasets_server_queue_test")
-    monkeypatch_session.setenv("MIGRATION_MONGO_DATABASE", "datasets_server_maintenance_test")
+    monkeypatch_session.setenv("MONGODB_MIGRATION_MONGO_DATABASE", "datasets_server_maintenance_test")
     yield monkeypatch_session
     monkeypatch_session.undo()
 
@@ -23,7 +23,7 @@ def app_config(monkeypatch_session: MonkeyPatch) -> JobConfig:
     if (
         "test" not in job_config.cache.mongo_database
         or "test" not in job_config.queue.mongo_database
-        or "test" not in job_config.migration.mongo_database
+        or "test" not in job_config.mongodb_migration.mongo_database
     ):
         raise ValueError("Test must be launched on a test mongo database")
     return job_config

@@ -1,9 +1,9 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2022 The HuggingFace Authors.
 
-from migration.collector import MigrationsCollector
-from migration.config import JobConfig
-from migration.plan import Plan
+from mongodb_migration.collector import MigrationsCollector
+from mongodb_migration.config import JobConfig
+from mongodb_migration.plan import Plan
 
 if __name__ == "__main__":
     job_config = JobConfig()

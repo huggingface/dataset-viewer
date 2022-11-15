@@ -8,10 +8,13 @@ import pytest
 from libcache.simple_cache import SplitsResponse
 from libqueue.queue import Job, Status
 
-from migration.check import check_documents
-from migration.database_migrations import DatabaseMigration, _clean_maintenance_database
-from migration.migration import IrreversibleMigration, Migration
-from migration.plan import Plan, SavedMigrationsError
+from mongodb_migration.check import check_documents
+from mongodb_migration.database_migrations import (
+    DatabaseMigration,
+    _clean_maintenance_database,
+)
+from mongodb_migration.migration import IrreversibleMigration, Migration
+from mongodb_migration.plan import Plan, SavedMigrationsError
 
 
 @pytest.fixture(autouse=True)

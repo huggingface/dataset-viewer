@@ -4,8 +4,8 @@
 import logging
 from typing import List
 
-from migration.database_migrations import DatabaseMigration
-from migration.migration import Migration
+from mongodb_migration.database_migrations import DatabaseMigration
+from mongodb_migration.migration import Migration
 
 
 class SavedMigrationsError(Exception):

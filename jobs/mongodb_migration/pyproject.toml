@@ -1,7 +1,7 @@
 [tool.poetry]
 authors = ["Sylvain Lesage <sylvain.lesage@huggingface.co>"]
-description = "Database migration job"
-name = "migration"
+description = "MongoDB database migration job"
+name = "mongodb_migration"
 version = "0.0.1"
 license = "Apache-2.0"
 
@@ -35,7 +35,7 @@ markers = [
 ]
 
 [tool.coverage.run]
-source = ["migration"]
+source = ["mongodb_migration"]
 
 [tool.isort]
 profile = "black"

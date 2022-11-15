@@ -1,9 +1,9 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2022 The HuggingFace Authors.
 
-{{- define "containerMigration" -}}
-- name: "{{ include "name" . }}-migration"
-  image: {{ .Values.dockerImage.jobs.migration }}
+{{- define "containerMongodbMigration" -}}
+- name: "{{ include "name" . }}-mongodb_migration"
+  image: {{ .Values.dockerImage.jobs.mongodb_migration }}
   imagePullPolicy: IfNotPresent
   env:
   - name: CACHE_ASSETS_DIRECTORY
@@ -44,9 +44,9 @@
         optional: false
   - name: COMMON_LOG_LEVEL
     value: {{ .Values.common.logLevel | quote }}
-  - name: MIGRATION_MONGO_DATABASE
+  - name: MONGODB_MIGRATION_MONGO_DATABASE
     value: {{ .Values.migration.mongoDatabase | quote }}
-  - name: MIGRATION_MONGO_URL
+  - name: MONGODB_MIGRATION_MONGO_URL
   {{- if .Values.mongodb.enabled }}
     value: mongodb://{{.Release.Name}}-mongodb
   {{- else }}
@@ -59,5 +59,5 @@
   securityContext:
     allowPrivilegeEscalation: false  
   resources:
-    {{ toYaml .Values.migration.resources | nindent 4 }}
+    {{ toYaml .Values.mongodb_migration.resources | nindent 4 }}
 {{- end -}}

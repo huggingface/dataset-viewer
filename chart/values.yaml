@@ -27,7 +27,7 @@ mongodb:
 dockerImage:
   reverseProxy: ""
   jobs:
-    migration: ""
+    mongodb_migration: ""
   services:
     admin: ""
     api: ""
@@ -70,7 +70,7 @@ numbaCacheDirectory: "/numba-cache"
 
 # --- jobs (pre-install/upgrade hooks) ---
 
-migration:
+mongodb_migration:
   # Name of the mongo db database used for storing the migrations history
   mongoDatabase: "datasets_server_maintenance"
 
