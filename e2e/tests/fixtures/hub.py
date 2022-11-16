@@ -13,7 +13,7 @@ from huggingface_hub.hf_api import (  # type: ignore
     REPO_TYPES,
     REPO_TYPES_URL_PREFIXES,
     HfApi,
-    _raise_for_status,
+    hf_raise_for_status,
 )
 
 # see https://github.com/huggingface/moon-landing/blob/main/server/scripts/staging-seed-db.ts
@@ -71,10 +71,8 @@ def update_repo_settings(
 
     organization, name = repo_id.split("/") if "/" in repo_id else (None, repo_id)
 
-    token, name = hf_api._validate_or_retrieve_token(token, name, function_name="update_repo_settings")
-
     if organization is None:
-        namespace = hf_api.whoami(token)["name"]
+        namespace = hf_api.whoami(token=token)["name"]
     else:
         namespace = organization
 
@@ -95,7 +93,7 @@ def update_repo_settings(
         headers={"authorization": f"Bearer {token}"},
         json=json,
     )
-    _raise_for_status(r)
+    hf_raise_for_status(r)
     return r.json()
 
 
