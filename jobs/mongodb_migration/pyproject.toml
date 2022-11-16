@@ -19,7 +19,7 @@ flake8 = "^3.9.2"
 isort = "^5.9.3"
 mypy = "0.812"
 poetryup = "^0.3.8"
-pytest = "^6.2.5"
+pytest = "^7.2.0"
 pytest-cov = "^2.12.1"
 safety = "^2.1.1"
 
