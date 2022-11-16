@@ -6,7 +6,7 @@ version = "1.0.0"
 license = "Apache-2.0"
 
 [tool.poetry.dependencies]
-Pillow = "^9.0.0"
+Pillow = "^9.3.0"
 PyICU = "^2.7.4"
 aiohttp = "^3.7.4.post0"
 apache-beam = "2.41.0" # ^2 gives a InvalidWheelName error because it tries to install 2.42 that has not been released...
@@ -46,7 +46,7 @@ flake8 = "^3.9.2"
 isort = "^5.9.3"
 mypy = "0.812"
 poetryup = "^0.3.8"
-pytest = "^6.2.5"
+pytest = "^7.2.0"
 pytest-cov = "^2.12.1"
 safety = "^2.1.1"
 types-requests = "^2.28.11"
