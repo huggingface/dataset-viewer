@@ -9,7 +9,7 @@ from typing import Dict, Iterable, Literal, Optional, TypedDict
 
 import pytest
 import requests
-from huggingface_hub.hf_api import (  # type: ignore
+from huggingface_hub.hf_api import (
     REPO_TYPES,
     REPO_TYPES_URL_PREFIXES,
     HfApi,

@@ -4,7 +4,7 @@
 import logging
 from typing import List
 
-from huggingface_hub.hf_api import HfApi  # type: ignore
+from huggingface_hub.hf_api import HfApi
 from libqueue.queue import Queue
 
 from admin.config import AppConfig

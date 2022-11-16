@@ -11,8 +11,8 @@ from datasets import (
     get_dataset_split_names,
 )
 from datasets.data_files import EmptyDatasetError as _EmptyDatasetError
-from huggingface_hub.hf_api import HfApi  # type: ignore
-from huggingface_hub.utils import RepositoryNotFoundError  # type: ignore
+from huggingface_hub.hf_api import HfApi
+from huggingface_hub.utils import RepositoryNotFoundError
 
 from splits.utils import DatasetNotFoundError, EmptyDatasetError, SplitsNamesError
 

@@ -4,8 +4,8 @@
 import logging
 from typing import Optional
 
-from huggingface_hub.hf_api import HfApi  # type: ignore
-from huggingface_hub.utils import RepositoryNotFoundError  # type: ignore
+from huggingface_hub.hf_api import HfApi
+from huggingface_hub.utils import RepositoryNotFoundError
 from libcache.simple_cache import (
     mark_first_rows_responses_as_stale,
     mark_splits_responses_as_stale,

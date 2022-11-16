@@ -3,7 +3,7 @@
 
 import logging
 
-from huggingface_hub.hf_api import HfApi  # type: ignore
+from huggingface_hub.hf_api import HfApi
 
 from admin.config import AppConfig
 from admin.scripts.refresh_cache import refresh_datasets_cache

@@ -15,7 +15,7 @@ from datasets import (
     load_dataset,
 )
 from datasets.data_files import EmptyDatasetError as _EmptyDatasetError
-from huggingface_hub.hf_api import HfApi, RepositoryNotFoundError  # type: ignore
+from huggingface_hub.hf_api import HfApi, RepositoryNotFoundError
 from libcommon.utils import orjson_dumps
 
 from first_rows.features import get_cell_value
