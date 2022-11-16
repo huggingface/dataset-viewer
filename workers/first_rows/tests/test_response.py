@@ -6,7 +6,7 @@ from datasets.packaged_modules import csv
 from libcommon.exceptions import CustomError
 
 from first_rows.config import WorkerConfig
-from first_rows.response import compute_first_rows_response
+from first_rows.response import compute_first_rows_response, get_json_size
 
 from .fixtures.hub import HubDatasets
 from .utils import get_default_config_split
@@ -92,3 +92,41 @@ def test_number_rows(
         assert response_dict["cause_exception"] == cause
         assert isinstance(response_dict["cause_traceback"], list)
         assert response_dict["cause_traceback"][0] == "Traceback (most recent call last):\n"
+
+
+@pytest.mark.parametrize(
+    "name,rows_max_bytes,successful_truncation",
+    [
+        # not-truncated public response is 687 bytes
+        ("public", 10, False),  # too small limit, even with truncation
+        ("public", 1_000, True),  # not truncated
+        # not-truncated big response is 5_885_989 bytes
+        ("big", 10, False),  # too small limit, even with truncation
+        ("big", 1_000, True),  # truncated successfully
+        ("big", 10_000_000, True),  # not truncated
+    ],
+)
+def test_truncation(
+    hub_datasets: HubDatasets,
+    worker_config: WorkerConfig,
+    name: str,
+    rows_max_bytes: int,
+    successful_truncation: bool,
+) -> None:
+    dataset, config, split = get_default_config_split(hub_datasets[name]["name"])
+    response = compute_first_rows_response(
+        dataset=dataset,
+        config=config,
+        split=split,
+        assets_base_url=worker_config.common.assets_base_url,
+        hf_endpoint=worker_config.common.hf_endpoint,
+        hf_token=None,
+        max_size_fallback=worker_config.first_rows.fallback_max_dataset_size,
+        rows_max_number=1_000_000,
+        rows_min_number=10,
+        rows_max_bytes=rows_max_bytes,
+        min_cell_bytes=10,
+        assets_directory=worker_config.cache.assets_directory,
+    )["first_rows_response"]
+    print(get_json_size(response))
+    assert (get_json_size(response) <= rows_max_bytes) is successful_truncation
