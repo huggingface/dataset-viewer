@@ -167,6 +167,9 @@ splits:
       memory: "30Gi"
 
 firstRows:
+  # Max size of the /first-rows endpoint response in bytes
+  maxBytes: "200_000"
+
   # override the common queue parameters
   queue:
     # Maximum number of jobs running at the same time for the same namespace
