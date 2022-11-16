@@ -20,6 +20,7 @@ from libqueue.queue import Queue
 from api.utils import JobType
 
 splits_queue = Queue(type=JobType.SPLITS.value)
+first_rows_queue = Queue(type=JobType.FIRST_ROWS.value)
 
 
 def is_supported(
@@ -48,11 +49,11 @@ def is_supported(
     return info.private is False
 
 
-def update(dataset: str) -> None:
+def update(dataset: str, force: bool = False) -> None:
     logging.debug(f"webhook: refresh {dataset}")
     mark_splits_responses_as_stale(dataset)
     mark_first_rows_responses_as_stale(dataset)
-    splits_queue.add_job(dataset=dataset)
+    splits_queue.add_job(dataset=dataset, force=force)
 
 
 def delete(dataset: str) -> None:
@@ -67,9 +68,11 @@ def is_splits_in_process(
     hf_token: Optional[str] = None,
 ) -> bool:
     if splits_queue.is_job_in_process(dataset=dataset):
+        # the /splits response is not ready yet
         return True
     if is_supported(dataset=dataset, hf_endpoint=hf_endpoint, hf_token=hf_token):
-        update(dataset=dataset)
+        # the dataset is supported, let's refresh it
+        update(dataset=dataset, force=False)
         return True
     return False
 
@@ -77,12 +80,14 @@ def is_splits_in_process(
 def is_first_rows_in_process(
     dataset: str, config: str, split: str, hf_endpoint: str, hf_token: Optional[str] = None
 ) -> bool:
-    if splits_queue.is_job_in_process(dataset=dataset, config=config, split=split):
+    if first_rows_queue.is_job_in_process(dataset=dataset, config=config, split=split):
+        # the /first-rows response is not ready yet
         return True
 
     # a bit convoluted, but checking if the first-rows response should exist
     # requires to first parse the /splits response for the same dataset
     if splits_queue.is_job_in_process(dataset=dataset):
+        # the /splits response is not ready yet
         return True
     try:
         result = get_splits_response(dataset)
@@ -92,10 +97,11 @@ def is_first_rows_in_process(
         ):
             # The splits is listed in the /splits response.
             # Let's refresh *the whole dataset*, because something did not work
+            # Note that we "force" the refresh
             #
             # Caveat: we don't check if the /first-rows response already exists in the cache,
             # because we assume it's the reason why one would call this function
-            update(dataset=dataset)
+            update(dataset=dataset, force=True)
             return True
     except DoesNotExist:
         # the splits responses does not exist, let's check if it should

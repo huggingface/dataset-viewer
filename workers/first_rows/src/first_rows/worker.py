@@ -33,11 +33,14 @@ class FirstRowsWorker(Worker):
     def queue(self):
         return self._queues.first_rows
 
-    def should_skip_job(self, dataset: str, config: Optional[str] = None, split: Optional[str] = None) -> bool:
+    def should_skip_job(
+        self, dataset: str, config: Optional[str] = None, split: Optional[str] = None, force: bool = False
+    ) -> bool:
         """Return True if the job should be skipped, False otherwise.
 
         The job must be skipped if:
-        - a cache entry exists for the dataset
+        - force is False
+        - and a cache entry exists for the dataset
         - and the result was successful
         - and it has been created with the same major version of the worker
         - and it has been created with the exact same git commit of the dataset repository
@@ -46,11 +49,12 @@ class FirstRowsWorker(Worker):
             dataset (:obj:`str`): The name of the dataset.
             config (:obj:`str`, `optional`): The name of the configuration.
             split (:obj:`str`, `optional`): The name of the split.
+            force (:obj:`bool`, `optional`, defaults to :obj:`False`): Whether to force the job to be run.
 
         Returns:
             :obj:`bool`: True if the job should be skipped, False otherwise.
         """
-        if config is None or split is None:
+        if force or config is None or split is None:
             return False
         try:
             cache_entry = get_first_rows_response(dataset_name=dataset, config_name=config, split_name=split)
@@ -72,6 +76,7 @@ class FirstRowsWorker(Worker):
         dataset: str,
         config: Optional[str] = None,
         split: Optional[str] = None,
+        force: bool = False,
     ) -> bool:
         if config is None or split is None:
             raise ValueError("config and split are required")

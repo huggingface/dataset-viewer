@@ -358,7 +358,7 @@ url = "../../libs/libcommon/dist/libcommon-0.3.2-py3-none-any.whl"
 
 [[package]]
 name = "libqueue"
-version = "0.4.8"
+version = "0.4.10"
 description = "Library for the jobs queue in mongodb"
 category = "main"
 optional = false
@@ -374,7 +374,7 @@ pymongo = {version = ">=3.12.3,<4.0.0", extras = ["srv"]}
 
 [package.source]
 type = "file"
-url = "../../libs/libqueue/dist/libqueue-0.4.8-py3-none-any.whl"
+url = "../../libs/libqueue/dist/libqueue-0.4.10-py3-none-any.whl"
 
 [[package]]
 name = "markupsafe"
@@ -896,7 +896,7 @@ watchdog = ["watchdog"]
 [metadata]
 lock-version = "1.1"
 python-versions = "3.9.6"
-content-hash = "5c145b2208384d3c4c41fcf1e88adc2c189c7bc16b5622427c6fc87fa81169aa"
+content-hash = "b6605d97e1dc8c57c112f61b61bb7aece4369555bb43995d5830daa41064b86b"
 
 [metadata.files]
 anyio = []
@@ -961,7 +961,7 @@ libcommon = [
     {file = "libcommon-0.3.2-py3-none-any.whl", hash = "sha256:774292c9ea2d9ab50c4bf2a3eb212bfaf924096a4279ecf117b70618702d978d"},
 ]
 libqueue = [
-    {file = "libqueue-0.4.8-py3-none-any.whl", hash = "sha256:ea2376efb371dce391f4574d8a9595e99e20b318a3399e910d32251676f5cb24"},
+    {file = "libqueue-0.4.10-py3-none-any.whl", hash = "sha256:38d15ed5797cf2e90d11e09e2570e4430ee774496d2bb54f19530b5466f33690"},
 ]
 markupsafe = []
 marshmallow = []

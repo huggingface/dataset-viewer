@@ -27,6 +27,15 @@ def worker(worker_config: WorkerConfig) -> FirstRowsWorker:
     return FirstRowsWorker(worker_config)
 
 
+def should_skip_job(worker: FirstRowsWorker, hub_public_csv: str) -> None:
+    dataset, config, split = get_default_config_split(hub_public_csv)
+    assert worker.should_skip_job(dataset=dataset, config=config, split=split) is False
+    # we add an entry to the cache
+    worker.compute(dataset=dataset, config=config, split=split)
+    assert worker.should_skip_job(dataset=dataset, config=config, split=split) is True
+    assert worker.should_skip_job(dataset=dataset, config=config, split=split, force=False) is False
+
+
 def test_compute(worker: FirstRowsWorker, hub_public_csv: str) -> None:
     dataset, config, split = get_default_config_split(hub_public_csv)
     assert worker.compute(dataset=dataset, config=config, split=split) is True

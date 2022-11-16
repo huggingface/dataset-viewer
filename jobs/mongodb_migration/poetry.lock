@@ -269,7 +269,7 @@ url = "../../libs/libcommon/dist/libcommon-0.3.2-py3-none-any.whl"
 
 [[package]]
 name = "libqueue"
-version = "0.4.8"
+version = "0.4.10"
 description = "Library for the jobs queue in mongodb"
 category = "main"
 optional = false
@@ -285,7 +285,7 @@ pymongo = {version = ">=3.12.3,<4.0.0", extras = ["srv"]}
 
 [package.source]
 type = "file"
-url = "../../libs/libqueue/dist/libqueue-0.4.8-py3-none-any.whl"
+url = "../../libs/libqueue/dist/libqueue-0.4.10-py3-none-any.whl"
 
 [[package]]
 name = "marshmallow"
@@ -674,7 +674,7 @@ socks = ["PySocks (>=1.5.6,!=1.5.7,<2.0)"]
 [metadata]
 lock-version = "1.1"
 python-versions = "3.9.6"
-content-hash = "1406e01f36b3a97a1ac5a6e5ede76e0a63583893e59435680b678d629e8ffb46"
+content-hash = "27f59b12b7c1b7cc620d908dd09859ce5c59393bac5a13587773838bf49f4a99"
 
 [metadata.files]
 appdirs = [
@@ -727,7 +727,7 @@ libcommon = [
     {file = "libcommon-0.3.2-py3-none-any.whl", hash = "sha256:774292c9ea2d9ab50c4bf2a3eb212bfaf924096a4279ecf117b70618702d978d"},
 ]
 libqueue = [
-    {file = "libqueue-0.4.8-py3-none-any.whl", hash = "sha256:ea2376efb371dce391f4574d8a9595e99e20b318a3399e910d32251676f5cb24"},
+    {file = "libqueue-0.4.10-py3-none-any.whl", hash = "sha256:38d15ed5797cf2e90d11e09e2570e4430ee774496d2bb54f19530b5466f33690"},
 ]
 marshmallow = []
 mccabe = [

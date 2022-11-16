@@ -866,7 +866,7 @@ url = "../../libs/libcommon/dist/libcommon-0.3.2-py3-none-any.whl"
 
 [[package]]
 name = "libqueue"
-version = "0.4.8"
+version = "0.4.10"
 description = "Library for the jobs queue in mongodb"
 category = "main"
 optional = false
@@ -882,7 +882,7 @@ pymongo = {version = ">=3.12.3,<4.0.0", extras = ["srv"]}
 
 [package.source]
 type = "file"
-url = "../../libs/libqueue/dist/libqueue-0.4.8-py3-none-any.whl"
+url = "../../libs/libqueue/dist/libqueue-0.4.10-py3-none-any.whl"
 
 [[package]]
 name = "librosa"
@@ -1316,7 +1316,7 @@ python-versions = ">=3.5"
 
 [[package]]
 name = "psutil"
-version = "5.9.3"
+version = "5.9.4"
 description = "Cross-platform lib for process and system monitoring in Python."
 category = "main"
 optional = false
@@ -2285,7 +2285,7 @@ cffi = ["cffi (>=1.11)"]
 [metadata]
 lock-version = "1.1"
 python-versions = "3.9.6"
-content-hash = "dddb081818eeb960f20dcdfeb38b8b7ab5c5d5c466e07e6ff3bce681357f661b"
+content-hash = "7ad5f0d9ac949dab60378f6974037a6a2deed213755f83064b8450d2cea6d55f"
 
 [metadata.files]
 absl-py = []
@@ -2622,7 +2622,7 @@ libcommon = [
     {file = "libcommon-0.3.2-py3-none-any.whl", hash = "sha256:774292c9ea2d9ab50c4bf2a3eb212bfaf924096a4279ecf117b70618702d978d"},
 ]
 libqueue = [
-    {file = "libqueue-0.4.8-py3-none-any.whl", hash = "sha256:ea2376efb371dce391f4574d8a9595e99e20b318a3399e910d32251676f5cb24"},
+    {file = "libqueue-0.4.10-py3-none-any.whl", hash = "sha256:38d15ed5797cf2e90d11e09e2570e4430ee774496d2bb54f19530b5466f33690"},
 ]
 librosa = []
 llvmlite = []

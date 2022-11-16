@@ -5,6 +5,9 @@ from typing import List
 
 from mongodb_migration.migration import Migration
 from mongodb_migration.migrations._20221110230400_example import MigrationExample
+from mongodb_migration.migrations._20221116133500_queue_job_add_force import (
+    MigrationAddForceToJob,
+)
 
 
 # TODO: add a way to automatically collect migrations from the migrations/ folder
@@ -12,4 +15,7 @@ class MigrationsCollector:
     def get_migrations(self) -> List[Migration]:
         return [
             MigrationExample(version="20221110230400", description="example"),
+            MigrationAddForceToJob(
+                version="20221116133500", description="add 'force' field to jobs in queue database"
+            ),
         ]

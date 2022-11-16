@@ -80,7 +80,12 @@ class Worker(ABC):
         logging.debug("try to process a job")
 
         try:
-            job_id, dataset, config, split = self.queue.start_job()
+            started_job_info = self.queue.start_job()
+            job_id = started_job_info["job_id"]
+            dataset = started_job_info["dataset"]
+            config = started_job_info["config"]
+            split = started_job_info["split"]
+            force = started_job_info["force"]
             parameters_for_log = "dataset={dataset}" + ("" if split is None else f"config={config} split={split}")
             logging.debug(f"job assigned: {job_id} for {parameters_for_log}")
         except EmptyQueueError:
@@ -92,13 +97,9 @@ class Worker(ABC):
             logging.info(f"compute {parameters_for_log}")
             finished_status = (
                 Status.SKIPPED
-                if self.should_skip_job(dataset=dataset, config=config, split=split)
+                if self.should_skip_job(dataset=dataset, config=config, split=split, force=force)
                 else Status.SUCCESS
-                if self.compute(
-                    dataset=dataset,
-                    config=config,
-                    split=split,
-                )
+                if self.compute(dataset=dataset, config=config, split=split, force=force)
                 else Status.ERROR
             )
         except Exception:
@@ -133,6 +134,7 @@ class Worker(ABC):
         dataset: str,
         config: Optional[str] = None,
         split: Optional[str] = None,
+        force: bool = False,
     ) -> bool:
         pass
 
@@ -142,5 +144,6 @@ class Worker(ABC):
         dataset: str,
         config: Optional[str] = None,
         split: Optional[str] = None,
+        force: bool = False,
     ) -> bool:
         pass

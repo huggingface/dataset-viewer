@@ -8,10 +8,10 @@ from collections import Counter
 from datetime import datetime, timezone
 from itertools import groupby
 from operator import itemgetter
-from typing import Generic, List, Literal, Optional, Tuple, Type, TypedDict, TypeVar
+from typing import Generic, List, Literal, Optional, Type, TypedDict, TypeVar
 
 from mongoengine import Document, DoesNotExist, connect
-from mongoengine.fields import DateTimeField, EnumField, StringField
+from mongoengine.fields import BooleanField, DateTimeField, EnumField, StringField
 from mongoengine.queryset.queryset import QuerySet
 
 # START monkey patching ### hack ###
@@ -50,10 +50,19 @@ class JobDict(TypedDict):
     split: Optional[str]
     unicity_id: str
     namespace: str
+    force: bool
     status: str
     created_at: datetime
     started_at: Optional[datetime]
     finished_at: Optional[datetime]
+
+
+class StartedJobInfo(TypedDict):
+    job_id: str
+    dataset: str
+    config: Optional[str]
+    split: Optional[str]
+    force: bool
 
 
 class CountByStatus(TypedDict):
@@ -99,6 +108,7 @@ class Job(Document):
         unicity_id (`str`): A string that identifies the job uniquely. Only one job with the same unicity_id can be in
           the started state.
         namespace (`str`): The dataset namespace (user or organization) if any, else the dataset name (canonical name).
+        force (`bool`, optional): If True, the job SHOULD not be skipped. Defaults to False.
         status (`Status`, optional): The status of the job. Defaults to Status.WAITING.
         created_at (`datetime`): The creation date of the job.
         started_at (`datetime`, optional): When the job has started.
@@ -123,7 +133,7 @@ class Job(Document):
     split = StringField()
     unicity_id = StringField(required=True)
     namespace = StringField(required=True)
-    split = StringField()
+    force = BooleanField(default=False)
     status = EnumField(Status, default=Status.WAITING)
     created_at = DateTimeField(required=True)
     started_at = DateTimeField()
@@ -137,6 +147,7 @@ class Job(Document):
             "split": self.split,
             "unicity_id": self.unicity_id,
             "namespace": self.namespace,
+            "force": self.force,
             "status": self.status.value,
             "created_at": self.created_at,
             "started_at": self.started_at,
@@ -175,8 +186,16 @@ class Queue:
             None if max_jobs_per_namespace is None or max_jobs_per_namespace < 1 else max_jobs_per_namespace
         )
 
-    def add_job(self, dataset: str, config: Optional[str] = None, split: Optional[str] = None) -> Job:
+    def add_job(
+        self, dataset: str, config: Optional[str] = None, split: Optional[str] = None, force: bool = False
+    ) -> Job:
         """Add a job to the queue in the waiting state.
+
+        Args:
+            dataset (`str`): The dataset on which to apply the job.
+            config (`str`, optional): The config on which to apply the job.
+            split (`str`, optional): The config on which to apply the job.
+            force (`bool`, optional): If True, the job SHOULD not be skipped. Defaults to False.
 
         Returns: the job
         """
@@ -187,6 +206,7 @@ class Queue:
             split=split,
             unicity_id=f"Job[{self.type}][{dataset}][{config}][{split}]",
             namespace=dataset.split("/")[0],
+            force=force,
             created_at=get_datetime(),
             status=Status.WAITING,
         ).save()
@@ -215,7 +235,7 @@ class Queue:
                 namespace__nin=set(started_job_namespaces),
             )
             .order_by("+created_at")
-            .only("dataset", "config", "split")
+            .only("dataset", "config", "split", "force")
             .no_cache()
             .first()
         )
@@ -250,7 +270,7 @@ class Queue:
                     unicity_id__nin=started_unicity_ids,
                 )
                 .order_by("+created_at")
-                .only("dataset", "config", "split")
+                .only("dataset", "config", "split", "force")
                 .no_cache()
                 .first()
             )
@@ -260,7 +280,7 @@ class Queue:
             f"no job available (within the limit of {self.max_jobs_per_namespace} started jobs per namespace)"
         )
 
-    def start_job(self) -> Tuple[str, str, Optional[str], Optional[str]]:
+    def start_job(self) -> StartedJobInfo:
         """Start the next job in the queue.
 
         The job is moved from the waiting state to the started state.
@@ -274,8 +294,13 @@ class Queue:
         next_waiting_job = self.get_next_waiting_job()
         # ^ can raise EmptyQueueError
         next_waiting_job.update(started_at=get_datetime(), status=Status.STARTED)
-        return str(next_waiting_job.pk), next_waiting_job.dataset, next_waiting_job.config, next_waiting_job.split
-        # ^ job.pk is the id. job.id is not recognized by mypy
+        return {
+            "job_id": str(next_waiting_job.pk),  # job.pk is the id. job.id is not recognized by mypy
+            "dataset": next_waiting_job.dataset,
+            "config": next_waiting_job.config,
+            "split": next_waiting_job.split,
+            "force": next_waiting_job.force,
+        }
 
     def finish_job(self, job_id: str, finished_status: Literal[Status.SUCCESS, Status.ERROR, Status.SKIPPED]) -> None:
         """Finish a job in the queue.

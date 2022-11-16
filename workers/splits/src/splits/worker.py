@@ -36,11 +36,14 @@ class SplitsWorker(Worker):
     def queue(self):
         return self._queues.splits
 
-    def should_skip_job(self, dataset: str, config: Optional[str] = None, split: Optional[str] = None) -> bool:
+    def should_skip_job(
+        self, dataset: str, config: Optional[str] = None, split: Optional[str] = None, force: bool = False
+    ) -> bool:
         """Return True if the job should be skipped, False otherwise.
 
         The job must be skipped if:
-        - a cache entry exists for the dataset
+        - force is False
+        - and a cache entry exists for the dataset
         - and the result was successful
         - and it has been created with the same major version of the worker
         - and it has been created with the exact same git commit of the dataset repository
@@ -49,10 +52,13 @@ class SplitsWorker(Worker):
             dataset (:obj:`str`): The name of the dataset.
             config (:obj:`str`, `optional`): The name of the configuration.
             split (:obj:`str`, `optional`): The name of the split.
+            force (:obj:`bool`, `optional`, defaults to :obj:`False`): Whether to force the job to be run.
 
         Returns:
             :obj:`bool`: True if the job should be skipped, False otherwise.
         """
+        if force:
+            return False
         try:
             cache_entry = get_splits_response(dataset)
             dataset_git_revision = get_dataset_git_revision(
@@ -73,6 +79,7 @@ class SplitsWorker(Worker):
         dataset: str,
         config: Optional[str] = None,
         split: Optional[str] = None,
+        force: bool = False,
     ) -> bool:
         try:
             splits_response_result = compute_splits_response(
@@ -98,7 +105,8 @@ class SplitsWorker(Worker):
                 f" dataset={dataset}"
             )
             for d, c, s in new_splits:
-                self._queues.first_rows.add_job(dataset=d, config=c, split=s)
+                # we force the refresh of the /first_rows responses if the /splits refresh was forced
+                self._queues.first_rows.add_job(dataset=d, config=c, split=s, force=force)
             logging.debug(f"{len(new_splits)} 'first-rows' jobs added for the splits of dataset={dataset}")
             return True
         except DatasetNotFoundError:

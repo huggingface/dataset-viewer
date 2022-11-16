@@ -3,7 +3,7 @@
 
 from enum import Enum
 from http import HTTPStatus
-from typing import Any, Callable, Coroutine, Literal, Optional
+from typing import Any, Callable, Coroutine, List, Literal, Optional
 
 from libcommon.exceptions import CustomError
 from libcommon.utils import orjson_dumps
@@ -11,7 +11,12 @@ from starlette.requests import Request
 from starlette.responses import JSONResponse, Response
 
 AdminErrorCode = Literal[
-    "InvalidParameter", "UnexpectedError", "ExternalUnauthenticatedError", "ExternalAuthenticatedError"
+    "MissingRequiredParameter",
+    "InvalidParameter",
+    "UnsupportedDatasetError",
+    "UnexpectedError",
+    "ExternalUnauthenticatedError",
+    "ExternalAuthenticatedError",
 ]
 
 
@@ -29,11 +34,25 @@ class AdminCustomError(CustomError):
         super().__init__(message, status_code, str(code), cause, disclose_cause)
 
 
+class MissingRequiredParameterError(AdminCustomError):
+    """Raised when a required parameter is missing."""
+
+    def __init__(self, message: str):
+        super().__init__(message, HTTPStatus.UNPROCESSABLE_ENTITY, "MissingRequiredParameter")
+
+
 class InvalidParameterError(AdminCustomError):
     """Raised when a parameter is invalid."""
 
     def __init__(self, message: str):
         super().__init__(message, HTTPStatus.UNPROCESSABLE_ENTITY, "InvalidParameter")
+
+
+class UnsupportedDatasetError(AdminCustomError):
+    """Raised when a dataset is not supported (private dataset, for example)."""
+
+    def __init__(self, message: str):
+        super().__init__(message, HTTPStatus.NOT_IMPLEMENTED, "UnsupportedDatasetError")
 
 
 class UnexpectedError(AdminCustomError):
@@ -90,6 +109,14 @@ def get_json_admin_error_response(error: AdminCustomError, max_age: int) -> Resp
     return get_json_error_response(
         content=error.as_response(), status_code=error.status_code, max_age=max_age, error_code=error.code
     )
+
+
+def is_non_empty_string(string: Any) -> bool:
+    return isinstance(string, str) and bool(string and string.strip())
+
+
+def are_valid_parameters(parameters: List[Any]) -> bool:
+    return all(is_non_empty_string(s) for s in parameters)
 
 
 Endpoint = Callable[[Request], Coroutine[Any, Any, Response]]
