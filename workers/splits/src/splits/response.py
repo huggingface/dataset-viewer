@@ -11,8 +11,8 @@ from datasets import (
     get_dataset_split_names,
 )
 from datasets.data_files import EmptyDatasetError as _EmptyDatasetError
-from huggingface_hub.hf_api import HfApi  # type: ignore
-from huggingface_hub.utils import RepositoryNotFoundError  # type: ignore
+from huggingface_hub.hf_api import HfApi
+from huggingface_hub.utils import RepositoryNotFoundError
 
 from splits.utils import DatasetNotFoundError, EmptyDatasetError, SplitsNamesError
 
@@ -83,9 +83,8 @@ def get_dataset_git_revision(
           or because it is set to `private` and you do not have access.
     </Tip>
     """
-    use_auth_token: Union[bool, str, None] = hf_token if hf_token is not None else False
     try:
-        dataset_info = HfApi(endpoint=hf_endpoint).dataset_info(repo_id=dataset, use_auth_token=use_auth_token)
+        dataset_info = HfApi(endpoint=hf_endpoint).dataset_info(repo_id=dataset, token=hf_token)
     except RepositoryNotFoundError as err:
         raise DatasetNotFoundError("The dataset does not exist on the Hub.") from err
     return dataset_info.sha

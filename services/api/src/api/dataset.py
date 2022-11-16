@@ -5,8 +5,8 @@ import logging
 from http import HTTPStatus
 from typing import Optional
 
-from huggingface_hub.hf_api import HfApi  # type: ignore
-from huggingface_hub.utils import RepositoryNotFoundError  # type: ignore
+from huggingface_hub.hf_api import HfApi
+from huggingface_hub.utils import RepositoryNotFoundError
 from libcache.simple_cache import (
     DoesNotExist,
     delete_first_rows_responses,

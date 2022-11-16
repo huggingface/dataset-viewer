@@ -12,7 +12,7 @@ import datasets.config
 import pytest
 import requests
 from datasets import Dataset
-from huggingface_hub.hf_api import (  # type: ignore
+from huggingface_hub.hf_api import (
     REPO_TYPES,
     REPO_TYPES_URL_PREFIXES,
     HfApi,

@@ -15,7 +15,7 @@ from datasets import (
     load_dataset,
 )
 from datasets.data_files import EmptyDatasetError as _EmptyDatasetError
-from huggingface_hub.hf_api import HfApi, RepositoryNotFoundError  # type: ignore
+from huggingface_hub.hf_api import HfApi, RepositoryNotFoundError
 from libcommon.utils import orjson_dumps
 
 from first_rows.features import get_cell_value
@@ -304,9 +304,8 @@ def get_dataset_git_revision(
           or because it is set to `private` and you do not have access.
     </Tip>
     """
-    use_auth_token: Union[bool, str, None] = hf_token if hf_token is not None else False
     try:
-        dataset_info = HfApi(endpoint=hf_endpoint).dataset_info(repo_id=dataset, use_auth_token=use_auth_token)
+        dataset_info = HfApi(endpoint=hf_endpoint).dataset_info(repo_id=dataset, token=hf_token)
     except RepositoryNotFoundError as err:
         raise DatasetNotFoundError("The dataset does not exist on the Hub.") from err
     return dataset_info.sha
