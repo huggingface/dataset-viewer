@@ -45,8 +45,14 @@ The admin service provides endpoints:
 
 - `/healthcheck`
 - `/metrics`: gives info about the cache and the queue
-- `/cache-reports`: give detailed reports on the content of the cache
+- `/cache-reports`: give detailed reports on the content of the cache:
+  - `/cache-reports/features`
+  - `/cache-reports/first-rows`
+  - `/cache-reports/splits`
 - `/pending-jobs`: give the pending jobs, classed by queue and status (waiting or started)
+- `/force-refresh`: force refresh cache entries. It's a POST endpoint:
+  - `/force-refresh/splits?dataset={dataset}`
+  - `/force-refresh/first-rows?dataset={dataset}&config={config}&split={split}`
 
 ## Scripts
 
