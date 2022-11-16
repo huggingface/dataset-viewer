@@ -342,7 +342,7 @@ url = "../../libs/libcommon/dist/libcommon-0.3.2-py3-none-any.whl"
 
 [[package]]
 name = "libqueue"
-version = "0.4.8"
+version = "0.4.9"
 description = "Library for the jobs queue in mongodb"
 category = "main"
 optional = false
@@ -358,7 +358,7 @@ pymongo = {version = ">=3.12.3,<4.0.0", extras = ["srv"]}
 
 [package.source]
 type = "file"
-url = "../../libs/libqueue/dist/libqueue-0.4.8-py3-none-any.whl"
+url = "../../libs/libqueue/dist/libqueue-0.4.9-py3-none-any.whl"
 
 [[package]]
 name = "marshmallow"
@@ -511,7 +511,7 @@ twisted = ["twisted"]
 
 [[package]]
 name = "psutil"
-version = "5.9.2"
+version = "5.9.4"
 description = "Cross-platform lib for process and system monitoring in Python."
 category = "main"
 optional = false
@@ -854,7 +854,7 @@ watchmedo = ["PyYAML (>=3.10)"]
 [metadata]
 lock-version = "1.1"
 python-versions = "3.9.6"
-content-hash = "6de5688374b0debaceff7658a2a4ec3f6cf0b780aba68a68a0034cc3250725ef"
+content-hash = "dcf3994522bc0e8f5396d69465dc43c39537b1d987cb6bd0de7037f3f7c9305a"
 
 [metadata.files]
 anyio = [
@@ -921,7 +921,7 @@ libcommon = [
     {file = "libcommon-0.3.2-py3-none-any.whl", hash = "sha256:774292c9ea2d9ab50c4bf2a3eb212bfaf924096a4279ecf117b70618702d978d"},
 ]
 libqueue = [
-    {file = "libqueue-0.4.8-py3-none-any.whl", hash = "sha256:ea2376efb371dce391f4574d8a9595e99e20b318a3399e910d32251676f5cb24"},
+    {file = "libqueue-0.4.9-py3-none-any.whl", hash = "sha256:e37a85fca03d2c05b99068c3d0b4b198d011637a26102637c5cc4f8b0d1ac966"},
 ]
 marshmallow = []
 mccabe = [

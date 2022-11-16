@@ -36,6 +36,7 @@ def should_skip_job(worker: SplitsWorker, hub_public_csv: str) -> None:
     # we add an entry to the cache
     worker.compute(dataset=dataset)
     assert worker.should_skip_job(dataset=dataset) is True
+    assert worker.should_skip_job(dataset=dataset, force=True) is False
 
 
 def test_compute(worker: SplitsWorker, hub_public_csv: str) -> None:

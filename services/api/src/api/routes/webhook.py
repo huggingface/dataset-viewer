@@ -63,7 +63,7 @@ def process_payload(payload: MoonWebhookV2Payload, hf_endpoint: str, hf_token: O
     event = payload["event"]
     if event in ["add", "update"]:
         if is_supported(dataset=dataset, hf_endpoint=hf_endpoint, hf_token=hf_token):
-            update(dataset=dataset)
+            update(dataset=dataset, force=False)
     elif event == "remove":
         delete(dataset=dataset)
     elif event == "move":
@@ -72,7 +72,7 @@ def process_payload(payload: MoonWebhookV2Payload, hf_endpoint: str, hf_token: O
             return
         if is_supported(dataset=moved_to, hf_endpoint=hf_endpoint, hf_token=hf_token):
             # not optimal as we might try to rename instead
-            update(dataset=moved_to)
+            update(dataset=moved_to, force=False)
             delete(dataset=dataset)
 
 

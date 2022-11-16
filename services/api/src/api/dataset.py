@@ -48,11 +48,11 @@ def is_supported(
     return info.private is False
 
 
-def update(dataset: str) -> None:
+def update(dataset: str, force: bool = False) -> None:
     logging.debug(f"webhook: refresh {dataset}")
     mark_splits_responses_as_stale(dataset)
     mark_first_rows_responses_as_stale(dataset)
-    splits_queue.add_job(dataset=dataset)
+    splits_queue.add_job(dataset=dataset, force=force)
 
 
 def delete(dataset: str) -> None:
@@ -69,7 +69,7 @@ def is_splits_in_process(
     if splits_queue.is_job_in_process(dataset=dataset):
         return True
     if is_supported(dataset=dataset, hf_endpoint=hf_endpoint, hf_token=hf_token):
-        update(dataset=dataset)
+        update(dataset=dataset, force=False)
         return True
     return False
 
@@ -95,7 +95,7 @@ def is_first_rows_in_process(
             #
             # Caveat: we don't check if the /first-rows response already exists in the cache,
             # because we assume it's the reason why one would call this function
-            update(dataset=dataset)
+            update(dataset=dataset, force=False)
             return True
     except DoesNotExist:
         # the splits responses does not exist, let's check if it should

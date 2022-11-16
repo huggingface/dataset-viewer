@@ -10,7 +10,7 @@ environs = "^9.5.0"
 huggingface-hub = "^0.8.1"
 libcache = { path = "../../libs/libcache/dist/libcache-0.3.4-py3-none-any.whl", develop = false }
 libcommon = { path = "../../libs/libcommon/dist/libcommon-0.3.2-py3-none-any.whl", develop = false }
-libqueue = { path = "../../libs/libqueue/dist/libqueue-0.4.8-py3-none-any.whl", develop = false }
+libqueue = { path = "../../libs/libqueue/dist/libqueue-0.4.9-py3-none-any.whl", develop = false }
 python = "3.9.6"
 starlette = "^0.16.0"
 starlette-prometheus = "^0.9.0"
