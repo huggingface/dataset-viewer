@@ -13,8 +13,10 @@ class DummyWorker(Worker):
     def queue(self) -> Queue:
         return Queue("queue_type")
 
-    def should_skip_job(self, dataset: str, config: Optional[str] = None, split: Optional[str] = None) -> bool:
-        return super().should_skip_job(dataset, config, split)
+    def should_skip_job(
+        self, force: bool, dataset: str, config: Optional[str] = None, split: Optional[str] = None
+    ) -> bool:
+        return super().should_skip_job(force=force, dataset=dataset, config=config, split=split)
 
     def compute(
         self,
