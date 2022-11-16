@@ -79,6 +79,7 @@ class SplitsWorker(Worker):
         dataset: str,
         config: Optional[str] = None,
         split: Optional[str] = None,
+        force: bool = False,
     ) -> bool:
         try:
             splits_response_result = compute_splits_response(
@@ -104,7 +105,8 @@ class SplitsWorker(Worker):
                 f" dataset={dataset}"
             )
             for d, c, s in new_splits:
-                self._queues.first_rows.add_job(dataset=d, config=c, split=s)
+                # we force the refresh of the /first_rows responses if the /splits refresh was forced
+                self._queues.first_rows.add_job(dataset=d, config=c, split=s, force=force)
             logging.debug(f"{len(new_splits)} 'first-rows' jobs added for the splits of dataset={dataset}")
             return True
         except DatasetNotFoundError:

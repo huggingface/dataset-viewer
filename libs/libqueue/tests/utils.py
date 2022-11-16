@@ -16,12 +16,9 @@ class DummyWorker(Worker):
     def should_skip_job(
         self, dataset: str, config: Optional[str] = None, split: Optional[str] = None, force: bool = False
     ) -> bool:
-        return super().should_skip_job(force=force, dataset=dataset, config=config, split=split)
+        return super().should_skip_job(dataset=dataset, config=config, split=split, force=force)
 
     def compute(
-        self,
-        dataset: str,
-        config: Optional[str] = None,
-        split: Optional[str] = None,
+        self, dataset: str, config: Optional[str] = None, split: Optional[str] = None, force: bool = False
     ) -> bool:
-        return super().compute(dataset, config, split)
+        return super().compute(dataset=dataset, config=config, split=split, force=force)

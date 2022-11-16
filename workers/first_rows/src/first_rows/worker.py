@@ -76,6 +76,7 @@ class FirstRowsWorker(Worker):
         dataset: str,
         config: Optional[str] = None,
         split: Optional[str] = None,
+        force: bool = False,
     ) -> bool:
         if config is None or split is None:
             raise ValueError("config and split are required")

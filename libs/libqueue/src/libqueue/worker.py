@@ -99,11 +99,7 @@ class Worker(ABC):
                 Status.SKIPPED
                 if self.should_skip_job(dataset=dataset, config=config, split=split, force=force)
                 else Status.SUCCESS
-                if self.compute(
-                    dataset=dataset,
-                    config=config,
-                    split=split,
-                )
+                if self.compute(dataset=dataset, config=config, split=split, force=force)
                 else Status.ERROR
             )
         except Exception:
@@ -148,5 +144,6 @@ class Worker(ABC):
         dataset: str,
         config: Optional[str] = None,
         split: Optional[str] = None,
+        force: bool = False,
     ) -> bool:
         pass
