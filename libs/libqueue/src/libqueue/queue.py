@@ -134,7 +134,6 @@ class Job(Document):
     unicity_id = StringField(required=True)
     namespace = StringField(required=True)
     force = BooleanField(default=False)
-    split = StringField()
     status = EnumField(Status, default=Status.WAITING)
     created_at = DateTimeField(required=True)
     started_at = DateTimeField()
@@ -187,8 +186,16 @@ class Queue:
             None if max_jobs_per_namespace is None or max_jobs_per_namespace < 1 else max_jobs_per_namespace
         )
 
-    def add_job(self, dataset: str, config: Optional[str] = None, split: Optional[str] = None) -> Job:
+    def add_job(
+        self, dataset: str, config: Optional[str] = None, split: Optional[str] = None, force: bool = False
+    ) -> Job:
         """Add a job to the queue in the waiting state.
+
+        Args:
+            dataset (`str`): The dataset on which to apply the job.
+            config (`str`, optional): The config on which to apply the job.
+            split (`str`, optional): The config on which to apply the job.
+            force (`bool`, optional): If True, the job SHOULD not be skipped. Defaults to False.
 
         Returns: the job
         """
@@ -199,6 +206,7 @@ class Queue:
             split=split,
             unicity_id=f"Job[{self.type}][{dataset}][{config}][{split}]",
             namespace=dataset.split("/")[0],
+            force=force,
             created_at=get_datetime(),
             status=Status.WAITING,
         ).save()
@@ -227,7 +235,7 @@ class Queue:
                 namespace__nin=set(started_job_namespaces),
             )
             .order_by("+created_at")
-            .only("dataset", "config", "split")
+            .only("dataset", "config", "split", "force")
             .no_cache()
             .first()
         )
@@ -262,7 +270,7 @@ class Queue:
                     unicity_id__nin=started_unicity_ids,
                 )
                 .order_by("+created_at")
-                .only("dataset", "config", "split")
+                .only("dataset", "config", "split", "force")
                 .no_cache()
                 .first()
             )
