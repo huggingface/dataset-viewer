@@ -14,7 +14,7 @@ class DummyWorker(Worker):
         return Queue("queue_type")
 
     def should_skip_job(
-        self, force: bool, dataset: str, config: Optional[str] = None, split: Optional[str] = None
+        self, dataset: str, config: Optional[str] = None, split: Optional[str] = None, force: bool = False
     ) -> bool:
         return super().should_skip_job(force=force, dataset=dataset, config=config, split=split)
 

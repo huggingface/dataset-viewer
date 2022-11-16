@@ -135,10 +135,10 @@ class Worker(ABC):
     @abstractmethod
     def should_skip_job(
         self,
-        force: bool,
         dataset: str,
         config: Optional[str] = None,
         split: Optional[str] = None,
+        force: bool = False,
     ) -> bool:
         pass
 
