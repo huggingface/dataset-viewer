@@ -38,7 +38,7 @@
   - name: FIRST_ROWS_MIN_NUMBER
     value: {{ .Values.firstRows.minNumber| quote }}
   volumeMounts:
-  {{ include "volumeMountAssets" . | nindent 2 }}
+  {{ include "volumeMountAssetsRW" . | nindent 2 }}
   {{ include "volumeMountDatasetsCache" . | nindent 2 }}
   {{ include "volumeMountNumbaCache" . | nindent 2 }}
   securityContext:

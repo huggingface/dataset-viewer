@@ -22,7 +22,7 @@
         optional: false
   {{- end }}
   volumeMounts:
-  {{ include "volumeMountAssets" . | nindent 2 }}
+  {{ include "volumeMountAssetsRO" . | nindent 2 }}
   securityContext:
     allowPrivilegeEscalation: false  
   resources: {{ toYaml .Values.mongodbMigration.resources | nindent 4 }}

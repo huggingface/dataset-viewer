@@ -7,7 +7,7 @@ hostname: "datasets-server.us.dev.moon.huggingface.tech"
 
 secrets:
   mongoUrl:
-    fromSecret: true
+    fromSecret: false
     secretName: "mongo-url"
     value: mongo://
   token:

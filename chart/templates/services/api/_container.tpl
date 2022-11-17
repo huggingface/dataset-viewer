@@ -23,7 +23,7 @@
     value: {{ .Values.api.uvicornPort | quote }}
   - name: PROMETHEUS_MULTIPROC_DIR
     value:  {{ .Values.api.prometheusMultiprocDirectory | quote }}
-  volumeMounts: {{ include "volumeMountAssets" . | nindent 2 }}
+  volumeMounts: {{ include "volumeMountAssetsRO" . | nindent 2 }}
   securityContext:
     allowPrivilegeEscalation: false
   readinessProbe:
