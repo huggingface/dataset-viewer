@@ -4,8 +4,7 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  labels:
-    {{ include "labels.api" . | nindent 4 }}
+  labels: {{ include "labels.api" . | nindent 4 }}
   name: "{{ include "release" . }}-api"
   namespace: {{ .Release.Namespace }}
 spec:
@@ -13,8 +12,7 @@ spec:
   replicas: {{ .Values.api.replicas }}
   revisionHistoryLimit: 10
   selector:
-    matchLabels:
-      {{ include "labels.api" . | nindent 6 }}
+    matchLabels: {{ include "labels.api" . | nindent 6 }}
   strategy:
     rollingUpdate:
       maxSurge: 25%
@@ -22,23 +20,12 @@ spec:
     type: RollingUpdate
   template:
     metadata:
-      labels:
-        {{ include "labels.api" . | nindent 8 }}
+      labels: {{ include "labels.api" . | nindent 8 }}
     spec:
-      initContainers:
-        {{ include "initContainerAssets" . | nindent 8 }}
-      containers:
-        {{ include "containerApi" . | nindent 8 }}
-      nodeSelector:
-        {{ toYaml .Values.api.nodeSelector | nindent 8 }}
-      tolerations:
-        {{ toYaml .Values.api.tolerations | nindent 8 }}
-      volumes:
-      - name: nfs
-        nfs:
-          server: {{ .Values.storage.nfs.server }}
-          path: {{ .Values.storage.nfs.path }}
-      securityContext:
-        runAsUser: {{ .Values.uid }}
-        runAsGroup: {{ .Values.gid }}
-        runAsNonRoot: true
+      imagePullSecrets: {{ toYaml .Values.imagePullSecrets | nindent 8 }}
+      initContainers: {{ include "initContainerAssets" . | nindent 8 }}
+      containers: {{ include "containerApi" . | nindent 8 }}
+      nodeSelector: {{ toYaml .Values.api.nodeSelector | nindent 8 }}
+      tolerations: {{ toYaml .Values.api.tolerations | nindent 8 }}
+      volumes: {{ include "volumeData" . | nindent 8 }}
+      securityContext: {{ include "securityContext" . | nindent 8 }}

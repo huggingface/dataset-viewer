@@ -6,13 +6,17 @@
 hostname: "datasets-server.us.dev.moon.huggingface.tech"
 
 secrets:
-  hfToken: datasets-server-hf-token
-  mongoUrl: false
+  mongoUrl:
+    fromSecret: false
+    secretName: "mongo-url"
+    value: mongo://
+  token:
+    fromSecret: true
+    secretName: "datasets-server-hf-token"
 
-storage:
-  nfs:
-    path: "/fsx"
-    server: "svm-08a37cf73026f0b5c.fs-097afa9688029b62a.fsx.us-east-1.amazonaws.com"
+persistence:
+  existingClaim: "nfs-datasets-server-pvc"
+
 
 monitoring:
   enabled: false

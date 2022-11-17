@@ -4,8 +4,7 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  labels:
-    {{ include "labels.firstRows" . | nindent 4 }}
+  labels: {{ include "labels.firstRows" . | nindent 4 }}
   name: "{{ include "release" . }}-worker-first-rows"
   namespace: {{ .Release.Namespace }}
 spec:
@@ -13,31 +12,20 @@ spec:
   replicas: {{ .Values.firstRows.replicas }}
   revisionHistoryLimit: 10
   selector:
-    matchLabels:
-      {{ include "labels.firstRows" . | nindent 6 }}
+    matchLabels: {{ include "labels.firstRows" . | nindent 6 }}
   strategy:
     type: Recreate
   template:
     metadata:
-      labels:
-        {{ include "labels.firstRows" . | nindent 8 }}
+      labels: {{ include "labels.firstRows" . | nindent 8 }}
     spec:
+      imagePullSecrets: {{ toYaml .Values.imagePullSecrets | nindent 8 }}
       initContainers:
         {{ include "initContainerAssets" . | nindent 8 }}
         {{ include "initContainerCache" . | nindent 8 }}
         {{ include "initContainerNumbaCache" . | nindent 8 }}
-      containers:
-        {{ include "containerWorkerFirstRows" . | nindent 8 }}
-      nodeSelector:
-        {{ toYaml .Values.firstRows.nodeSelector | nindent 8 }}
-      tolerations:
-        {{ toYaml .Values.firstRows.tolerations | nindent 8 }}
-      volumes:
-        - name: nfs
-          nfs:
-            server: {{ .Values.storage.nfs.server }}
-            path: {{ .Values.storage.nfs.path }}
-      securityContext:
-        runAsUser: {{ .Values.uid }}
-        runAsGroup: {{ .Values.gid }}
-        runAsNonRoot: true
+      containers: {{ include "containerWorkerFirstRows" . | nindent 8 }}
+      nodeSelector: {{ toYaml .Values.firstRows.nodeSelector | nindent 8 }}
+      tolerations: {{ toYaml .Values.firstRows.tolerations | nindent 8 }}
+      volumes: {{ include "volumeData" . | nindent 8 }}
+      securityContext: {{ include "securityContext" . | nindent 8 }}

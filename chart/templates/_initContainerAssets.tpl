@@ -11,7 +11,7 @@
   volumeMounts:
   - mountPath: /mounted-path
     mountPropagation: None
-    name: nfs
+    name: data
     subPath: "{{ include "assets.subpath" . }}"
     readOnly: false
   securityContext:

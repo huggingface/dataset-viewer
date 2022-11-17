@@ -4,8 +4,7 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  labels:
-    {{ include "labels.reverseProxy" . | nindent 4 }}
+  labels: {{ include "labels.reverseProxy" . | nindent 4 }}
   name: "{{ include "release" . }}-reverse-proxy"
   namespace: {{ .Release.Namespace }}
 spec:
@@ -13,8 +12,7 @@ spec:
   replicas: {{ .Values.reverseProxy.replicas }}
   revisionHistoryLimit: 10
   selector:
-    matchLabels:
-      {{ include "labels.reverseProxy" . | nindent 6 }}
+    matchLabels: {{ include "labels.reverseProxy" . | nindent 6 }}
   strategy:
     rollingUpdate:
       maxSurge: 25%
@@ -22,25 +20,18 @@ spec:
     type: RollingUpdate
   template:
     metadata:
-      labels:
-        {{ include "labels.reverseProxy" . | nindent 8 }}
+      labels: {{ include "labels.reverseProxy" . | nindent 8 }}
       annotations:
         co.elastic.logs/json.expand_keys: "true"
         checksum/config: {{ include (print $.Template.BasePath "/reverse-proxy/configMap.yaml") . | sha256sum }}
     spec:
-      initContainers:
-        {{ include "initContainerAssets" . | nindent 8 }}
-      containers:
-        {{ include "containerReverseProxy" . | nindent 8 }}
-      nodeSelector:
-        {{ toYaml .Values.reverseProxy.nodeSelector | nindent 8 }}
-      tolerations:
-        {{ toYaml .Values.reverseProxy.tolerations | nindent 8 }}
+      imagePullSecrets: {{ toYaml .Values.imagePullSecrets | nindent 8 }}
+      initContainers: {{ include "initContainerAssets" . | nindent 8 }}
+      containers: {{ include "containerReverseProxy" . | nindent 8 }}
+      nodeSelector: {{ toYaml .Values.reverseProxy.nodeSelector | nindent 8 }}
+      tolerations: {{ toYaml .Values.reverseProxy.tolerations | nindent 8 }}
       volumes:
-      - name: nfs
-        nfs:
-          server: {{ .Values.storage.nfs.server }}
-          path: {{ .Values.storage.nfs.path }}
+      {{ include "volumeData" . | nindent 6 }}
       - name: nginx-templates
         configMap:
           name: "{{ include "release" . }}-reverse-proxy"

@@ -4,8 +4,7 @@
 apiVersion: batch/v1
 kind: Job
 metadata:
-  labels:
-    {{ include "labels.mongodbMigration" . | nindent 4 }}
+  labels: {{ include "labels.mongodbMigration" . | nindent 4 }}
   name: "{{ include "release" . }}-job-mongodb-migration"
   namespace: {{ .Release.Namespace }}
   annotations:
@@ -15,25 +14,14 @@ metadata:
 spec:
   template:
     metadata:
-      labels:
-        {{ include "labels.mongodbMigration" . | nindent 8 }}
+      labels: {{ include "labels.mongodbMigration" . | nindent 8 }}
     spec:
       restartPolicy: Never
-      initContainers:
-        {{ include "initContainerAssets" . | nindent 8 }}
-      containers:
-        {{ include "containerMongodbMigration" . | nindent 8 }}
-      nodeSelector:
-        {{ toYaml .Values.mongodbMigration.nodeSelector | nindent 8 }}
-      tolerations:
-        {{ toYaml .Values.mongodbMigration.tolerations | nindent 8 }}
-      volumes:
-        - name: nfs
-          nfs:
-            server: {{ .Values.storage.nfs.server }}
-            path: {{ .Values.storage.nfs.path }}
-      securityContext:
-        runAsUser: {{ .Values.uid }}
-        runAsGroup: {{ .Values.gid }}
-        runAsNonRoot: true
+      imagePullSecrets: {{ toYaml .Values.imagePullSecrets | nindent 8 }}
+      initContainers: {{ include "initContainerAssets" . | nindent 8 }}
+      containers: {{ include "containerMongodbMigration" . | nindent 8 }}
+      nodeSelector: {{ toYaml .Values.mongodbMigration.nodeSelector | nindent 8 }}
+      tolerations: {{ toYaml .Values.mongodbMigration.tolerations | nindent 8 }}
+      volumes: {{ include "volumeData" . | nindent 8 }}
+      securityContext: {{ include "securityContext" . | nindent 8 }}
   backoffLimit: 0

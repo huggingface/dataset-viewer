@@ -5,17 +5,14 @@ apiVersion: v1
 kind: Service
 metadata:
   name: "{{ include "release" . }}-api"
-  annotations:
-    {{ toYaml .Values.api.service.annotations | nindent 4 }}
+  annotations: {{ toYaml .Values.api.service.annotations | nindent 4 }}
   namespace: {{ .Release.Namespace }}
-  labels:
-    {{ include "labels.api" . | nindent 4 }}
+  labels: {{ include "labels.api" . | nindent 4 }}
 spec:
   ports:
   - name: http
     port: 80
     protocol: TCP
     targetPort: {{ .Values.api.uvicornPort }}
-  selector:
-    {{ include "labels.api" . | nindent 4 }}
+  selector: {{ include "labels.api" . | nindent 4 }}
   type: {{ .Values.api.service.type }}

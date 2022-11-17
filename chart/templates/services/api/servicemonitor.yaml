@@ -5,8 +5,7 @@
 apiVersion: monitoring.coreos.com/v1
 kind: ServiceMonitor
 metadata:
-  labels:
-    {{ include "labels.api" . | nindent 4 }}
+  labels: {{ include "labels.api" . | nindent 4 }}
   name: "{{ include "release" . }}-api"
   namespace: {{ .Release.Namespace }}
 spec:
@@ -17,6 +16,5 @@ spec:
     matchNames:
       - {{ .Release.Namespace }}
   selector:
-    matchLabels:
-      {{ include "labels.api" . | nindent 6 }}
+    matchLabels: {{ include "labels.api" . | nindent 6 }}
 {{- end }}

@@ -17,6 +17,7 @@
   - name: URL_API
     value: {{ include "api.url" . | quote }}
   volumeMounts:
+  {{ include "volumeMountAssetsRO" . | nindent 2 }}
   - name: nginx-templates
     mountPath: /etc/nginx/templates
     mountPropagation: None
@@ -28,11 +29,6 @@
   - name: static-files
     mountPath: /static-files
     mountPropagation: None
-    readOnly: true
-  - mountPath: {{ .Values.cache.assetsDirectory | quote }}
-    mountPropagation: None
-    name: nfs
-    subPath: "{{ include "assets.subpath" . }}"
     readOnly: true
   readinessProbe:
     tcpSocket:

@@ -1,14 +1,17 @@
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
-  annotations:
-    # to communicate with AWS
-    {{ toYaml .Values.ingress.annotations | nindent 4 }}
-  labels:
-    {{ include "labels.reverseProxy" . | nindent 4 }}
+  annotations: {{ toYaml .Values.ingress.annotations | nindent 4 }}
+  labels: {{ include "labels.reverseProxy" . | nindent 4 }}
   name: {{ include "release" . }}
   namespace: {{ .Release.Namespace }}
 spec:
+  {{- if .Values.ingress.tls.enabled }}
+  tls:
+    - hosts:
+        - {{ .Values.hostname }}
+      secretName: {{ .Values.ingress.tls.secretName }}
+  {{- end}}
   rules:
     - host: {{ .Values.hostname }}
       http:
