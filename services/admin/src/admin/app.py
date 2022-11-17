@@ -18,6 +18,7 @@ from admin.routes.force_refresh_first_rows import (
 from admin.routes.force_refresh_splits import create_force_refresh_splits_endpoint
 from admin.routes.healthcheck import healthcheck_endpoint
 from admin.routes.pending_jobs import create_pending_jobs_endpoint
+from admin.utils import CacheKind
 
 
 def create_app() -> Starlette:
@@ -69,7 +70,7 @@ def create_app() -> Starlette:
         Route(
             "/cache-reports/first-rows",
             endpoint=create_cache_reports_endpoint(
-                kind="first-rows",
+                kind=CacheKind.FIRST_ROWS,
                 cache_reports_num_results=app_config.admin.cache_reports_num_results,
                 max_age=app_config.admin.max_age,
                 external_auth_url=app_config.admin.external_auth_url,
@@ -79,7 +80,7 @@ def create_app() -> Starlette:
         Route(
             "/cache-reports/splits",
             endpoint=create_cache_reports_endpoint(
-                kind="splits",
+                kind=CacheKind.SPLITS,
                 cache_reports_num_results=app_config.admin.cache_reports_num_results,
                 max_age=app_config.admin.max_age,
                 external_auth_url=app_config.admin.external_auth_url,

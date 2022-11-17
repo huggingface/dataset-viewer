@@ -160,5 +160,5 @@ class Queues:
 
 
 class CacheKind(Enum):
-    SPLITS = "splits"
-    FIRST_ROWS = "first-rows"
+    SPLITS = "/splits"
+    FIRST_ROWS = "/first-rows"
