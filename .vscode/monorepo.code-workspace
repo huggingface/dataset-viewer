@@ -17,12 +17,12 @@
       "path": "../libs/libcache"
     },
     {
-      "name": "libs/libqueue",
-      "path": "../libs/libqueue"
-    },
-    {
       "name": "libs/libcommon",
       "path": "../libs/libcommon"
+    },
+    {
+      "name": "libs/libqueue",
+      "path": "../libs/libqueue"
     },
     {
       "name": "services/admin",
@@ -37,12 +37,12 @@
       "path": "../services/reverse-proxy"
     },
     {
-      "name": "workers/splits",
-      "path": "../workers/splits"
-    },
-    {
       "name": "workers/first_rows",
       "path": "../workers/first_rows"
+    },
+    {
+      "name": "workers/splits",
+      "path": "../workers/splits"
     }
   ],
   "settings": {
