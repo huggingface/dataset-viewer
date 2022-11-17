@@ -4,6 +4,7 @@
 from typing import List, Optional, Type
 
 import pytest
+
 from mongodb_migration.database_migrations import (
     DatabaseMigration,
     _clean_maintenance_database,
