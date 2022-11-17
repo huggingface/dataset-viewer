@@ -31,9 +31,7 @@ spec:
       nodeSelector: {{ toYaml .Values.reverseProxy.nodeSelector | nindent 8 }}
       tolerations: {{ toYaml .Values.reverseProxy.tolerations | nindent 8 }}
       volumes:
-      - name: data
-        persistentVolumeClaim:
-          claimName: {{ .Values.persistence.existingClaim | default (include "release" .) }}
+      {{ include "volumeData" . | nindent 6 }}
       - name: nginx-templates
         configMap:
           name: "{{ include "release" . }}-reverse-proxy"

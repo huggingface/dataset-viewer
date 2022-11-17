@@ -22,12 +22,6 @@ spec:
       containers: {{ include "containerMongodbMigration" . | nindent 8 }}
       nodeSelector: {{ toYaml .Values.mongodbMigration.nodeSelector | nindent 8 }}
       tolerations: {{ toYaml .Values.mongodbMigration.tolerations | nindent 8 }}
-      volumes:
-        - name: data
-          persistentVolumeClaim:
-            claimName: {{ .Values.persistence.existingClaim | default (include "release" .) }}
-      securityContext:
-        runAsUser: {{ .Values.uid }}
-        runAsGroup: {{ .Values.gid }}
-        runAsNonRoot: true
+      volumes: {{ include "volumeData" . | nindent 8 }}
+      securityContext: {{ include "securityContext" . | nindent 8 }}
   backoffLimit: 0

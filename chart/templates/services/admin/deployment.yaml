@@ -27,11 +27,5 @@ spec:
       containers: {{ include "containerAdmin" . | nindent 8 }}
       nodeSelector: {{ toYaml .Values.admin.nodeSelector | nindent 8 }}
       tolerations: {{ toYaml .Values.admin.tolerations | nindent 8 }}
-      volumes:
-        - name: data
-          persistentVolumeClaim:
-            claimName: {{ .Values.persistence.existingClaim | default (include "release" .) }}
-      securityContext:
-        runAsUser: {{ .Values.uid }}
-        runAsGroup: {{ .Values.gid }}
-        runAsNonRoot: true
+      volumes: {{ include "volumeData" . | nindent 8 }}
+      securityContext: {{ include "securityContext" . | nindent 8 }}
