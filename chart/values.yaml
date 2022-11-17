@@ -33,7 +33,7 @@ mongodb:
 
 imagePullSecrets: []
 
-# overriden by docker-images.yaml (which must be in JSON format!)
+# overridden by docker-images.yaml (which must be in JSON format!)
 dockerImage:
   reverseProxy: ""
   jobs:
