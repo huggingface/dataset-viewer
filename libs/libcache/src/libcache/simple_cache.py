@@ -84,12 +84,11 @@ class CachedResponse(Document):
         "collection": "cachedResponsesBlue",
         "db_alias": "cache",
         "indexes": [
-            ("dataset", "config", "split"),
-            ("dataset", "http_status"),
-            ("http_status", "dataset"),
-            # ^ this index (reversed) is used for the "distinct" command to get the names of the valid datasets
-            ("http_status", "error_code"),
-            ("dataset", "-updated_at"),
+            ("kind", "dataset", "config", "split"),
+            ("dataset", "kind", "http_status"),
+            ("kind", "http_status", "dataset"),
+            ("kind", "http_status", "error_code"),
+            ("kind", "id"),
         ],
     }
     objects = QuerySetManager["CachedResponse"]()
