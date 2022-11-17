@@ -175,12 +175,15 @@ def test_get_dataset_response_ids() -> None:
         kind=kind_b, dataset=dataset_a, config=config_b, split=split_b, content={}, http_status=HTTPStatus.OK
     )
     upsert_response(kind=kind_a, dataset=dataset_b, content={}, http_status=HTTPStatus.OK)
-    assert get_dataset_response_ids(dataset=dataset_a) == [
+    result = get_dataset_response_ids(dataset=dataset_a)
+    expected = [
         {"kind": kind_a, "dataset": dataset_a, "config": None, "split": None},
         {"kind": kind_b, "dataset": dataset_a, "config": config_a, "split": split_a},
         {"kind": kind_b, "dataset": dataset_a, "config": config_b, "split": split_b},
         {"kind": kind_b, "dataset": dataset_a, "config": config_b, "split": split_a},
     ]
+    assert len(result) == len(expected) and all(x in expected for x in result)
+    # ^ compare the contents of the lists without caring about the order
     assert get_dataset_response_ids(dataset=dataset_b) == [
         {"kind": kind_a, "dataset": dataset_b, "config": None, "split": None}
     ]
