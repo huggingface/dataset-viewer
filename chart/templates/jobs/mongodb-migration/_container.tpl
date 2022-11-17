@@ -12,15 +12,19 @@
   - name: MONGODB_MIGRATION_MONGO_DATABASE
     value: {{ .Values.mongodbMigration.mongoDatabase | quote }}
   - name: MONGODB_MIGRATION_MONGO_URL
-  {{- if .Values.mongodb.enabled }}
-    value: mongodb://{{.Release.Name}}-mongodb
-  {{- else }}
+    {{- if .Values.secrets.mongoUrl.fromSecret }}
     valueFrom:
       secretKeyRef:
-        name: {{ .Values.secrets.mongoUrl | quote }}
+        name: {{ .Values.secrets.mongoUrl.secretName | quote }}
         key: MONGO_URL
         optional: false
-  {{- end }}
+    {{- else }}
+      {{- if .Values.mongodb.enabled }}
+    value: mongodb://{{.Release.Name}}-mongodb
+      {{- else }}
+    value: {{ .Values.secrets.mongoUrl.value }}
+      {{- end }}
+    {{- end }}
   volumeMounts:
   {{ include "volumeMountAssetsRO" . | nindent 2 }}
   securityContext:
