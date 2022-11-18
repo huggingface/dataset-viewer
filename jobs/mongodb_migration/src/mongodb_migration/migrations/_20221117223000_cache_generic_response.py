@@ -29,17 +29,20 @@ class CacheKind(Enum):
     FIRST_ROWS = "/first-rows"
 
 
+db_name = "cache"
 splitsResponseCollection = "splitsResponse"
 firstRowsResponseCollection = "firstRowsResponse"
-cachedResponseCollection = "cachedResponseBlue"
+cachedResponseCollection = "cachedResponsesBlue"
 
 
 # connection already occurred in the main.py (caveat: we use globals)
 class MigrationMoveToGenericCachedResponse(Migration):
     def up(self) -> None:
         # See https://docs.mongoengine.org/guide/migration.html#example-1-addition-of-a-field
-        logging.info("Create the cachedResponseBlue collection, and fill it with the data from splits and first-rows")
-        db = get_db("cache")
+        logging.info(
+            f"Create the {cachedResponseCollection} collection, and fill it with the data from splits and first-rows"
+        )
+        db = get_db(db_name)
         # Copy the data from the previous collections (splitsResponse, firstRowsResponse) to
         # the new generic collection (cachedResponse)
         for splits_response in db[splitsResponseCollection].find():
@@ -95,12 +98,12 @@ class MigrationMoveToGenericCachedResponse(Migration):
         # request.
 
     def down(self) -> None:
-        logging.info("Delete the cachedResponseBlue collection")
-        db = get_db("cache")
-        db["cachedResponseBlue"].drop()
+        logging.info(f"Delete the {cachedResponseCollection} collection")
+        db = get_db(db_name)
+        db[cachedResponseCollection].drop()
 
     def validate(self) -> None:
-        logging.info("Ensure that a random selection of jobs have the 'force' field set to False")
+        logging.info("Validate the migrated documents")
 
         def custom_validation(doc: CachedResponseSnapshot) -> None:
             if doc.kind not in (CacheKind.SPLITS.value, CacheKind.FIRST_ROWS.value):
@@ -108,12 +111,15 @@ class MigrationMoveToGenericCachedResponse(Migration):
 
         check_documents(DocCls=CachedResponseSnapshot, sample_size=10, custom_validation=custom_validation)
 
-        db = get_db("cache")
-        if (
-            db[splitsResponseCollection].count_documents({}) + db[firstRowsResponseCollection].count_documents({})
-            > CachedResponseSnapshot.objects.count()
-        ):
-            raise ValueError("Some documents are missing in the new collection")
+        db = get_db(db_name)
+        splits_responses_count = db[splitsResponseCollection].count_documents({})
+        first_rows_responses_count = db[firstRowsResponseCollection].count_documents({})
+        cached_responses_count = CachedResponseSnapshot.objects.count()
+        if splits_responses_count + first_rows_responses_count > cached_responses_count:
+            raise ValueError(
+                f"Some documents are missing in the new collection: splitsResponse ({splits_responses_count}),"
+                f" firstRowsResponse ({first_rows_responses_count}), cachedResponseBlue ({cached_responses_count})"
+            )
 
 
 # --- CachedResponseSnapshot ---
@@ -177,8 +183,8 @@ class CachedResponseSnapshot(Document):
     updated_at = DateTimeField(default=get_datetime)
 
     meta = {
-        "collection": "cachedResponsesBlue",
-        "db_alias": "cache",
+        "collection": cachedResponseCollection,
+        "db_alias": db_name,
         "indexes": [
             ("dataset", "config", "split"),
             ("dataset", "http_status"),
