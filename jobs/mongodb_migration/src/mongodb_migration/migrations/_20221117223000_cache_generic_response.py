@@ -63,7 +63,7 @@ class MigrationMoveToGenericCachedResponse(Migration):
                     "content": splits_response.get("response"),
                     # ^ "response" field has been renamed to "content"
                     "worker_version": splits_response.get("worker_version"),
-                    "dataset_git_version": splits_response.get("dataset_git_version"),
+                    "dataset_git_revision": splits_response.get("dataset_git_revision"),
                     "details": splits_response.get("details"),
                     "updated_at": splits_response.get("updated_at"),
                     # "stale" field is not used anymore
@@ -87,7 +87,7 @@ class MigrationMoveToGenericCachedResponse(Migration):
                     "content": first_rows_response.get("response"),
                     # ^ "response" field has been renamed to "content"
                     "worker_version": first_rows_response.get("worker_version"),
-                    "dataset_git_version": first_rows_response.get("dataset_git_version"),
+                    "dataset_git_revision": first_rows_response.get("dataset_git_revision"),
                     "details": first_rows_response.get("details"),
                     "updated_at": first_rows_response.get("updated_at"),
                     # "stale" field is not used anymore
