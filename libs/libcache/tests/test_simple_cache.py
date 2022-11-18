@@ -9,6 +9,7 @@ import pytest
 from pymongo.errors import DocumentTooLarge
 
 from libcache.simple_cache import (
+    CachedResponse,
     DoesNotExist,
     InvalidCursor,
     InvalidLimit,
@@ -29,6 +30,54 @@ from libcache.simple_cache import (
 @pytest.fixture(autouse=True)
 def clean_mongo_database() -> None:
     _clean_cache_database()
+
+
+def test_insert_null_values() -> None:
+    kind = "test_kind"
+    dataset_a = "test_dataset_a"
+    dataset_b = "test_dataset_b"
+    dataset_c = "test_dataset_c"
+    config = None
+    split = None
+    content = {"some": "content"}
+    http_status = HTTPStatus.OK
+
+    CachedResponse.objects(kind=kind, dataset=dataset_a, config=config, split=split).upsert_one(
+        content=content,
+        http_status=http_status,
+    )
+    assert CachedResponse.objects.count() == 1
+    cached_response = CachedResponse.objects.get()
+    assert cached_response is not None
+    assert cached_response.config is None
+    assert "config" not in cached_response.to_json()
+    cached_response.validate()
+
+    CachedResponse(
+        kind=kind, dataset=dataset_b, config=config, split=split, content=content, http_status=http_status
+    ).save()
+    assert CachedResponse.objects.count() == 2
+    cached_response = CachedResponse.objects(dataset=dataset_b).get()
+    assert cached_response is not None
+    assert cached_response.config is None
+    assert "config" not in cached_response.to_json()
+
+    coll = CachedResponse._get_collection()
+    coll.insert_one(
+        {
+            "kind": kind,
+            "dataset": dataset_c,
+            "config": None,
+            "split": None,
+            "content": content,
+            "http_status": http_status,
+        }
+    )
+    assert CachedResponse.objects.count() == 3
+    cached_response = CachedResponse.objects(dataset=dataset_c).get()
+    assert cached_response is not None
+    assert cached_response.config is None
+    assert "config" not in cached_response.to_json()
 
 
 @pytest.mark.parametrize(

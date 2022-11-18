@@ -94,6 +94,14 @@ class CachedResponse(Document):
     objects = QuerySetManager["CachedResponse"]()
 
 
+# Fix issue with mongoengine: https://github.com/MongoEngine/mongoengine/issues/1242#issuecomment-810501601
+# mongoengine automatically sets "config" and "splits" as required fields, because they are listed in the unique_with
+# field of the "kind" field. But it's an error, since unique indexes (which are used to enforce unique_with) accept
+# null values, see https://www.mongodb.com/docs/v5.0/core/index-unique/#unique-index-and-missing-field.
+CachedResponse.config.required = False  # type: ignore
+CachedResponse.split.required = False  # type: ignore
+
+
 # Note: we let the exceptions throw (ie DocumentTooLarge): it's the responsibility of the caller to manage them
 def upsert_response(
     kind: str,
