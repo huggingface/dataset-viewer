@@ -113,11 +113,11 @@ def test_collected_migrations_order_dont_matter(collected_migrations: List[Migra
 @pytest.mark.parametrize(
     "collected_migrations,executed_migrations,exception",
     [
-        ([migration_error_in_up], [], None),
-        ([migration_error_in_validate], [], None),
+        ([migration_error_in_up], [], RuntimeError),
+        ([migration_error_in_validate], [], RuntimeError),
         ([migration_error_in_up_and_down], [migration_error_in_up_and_down], RuntimeError),
         ([migration_error_irreversible], [migration_error_irreversible], IrreversibleMigration),
-        ([migration_ok_a, migration_error_in_up], [], None),
+        ([migration_ok_a, migration_error_in_up], [], RuntimeError),
         (
             [migration_ok_a, migration_error_in_up_and_down],
             [migration_ok_a, migration_error_in_up_and_down],
