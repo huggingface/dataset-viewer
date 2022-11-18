@@ -126,6 +126,8 @@ class FirstRowsWorker(Worker):
                 http_status=err.status_code,
                 error_code=err.code,
                 details=dict(err.as_response_with_cause()),
+                worker_version=self.version,
+                dataset_git_revision=result["dataset_git_revision"],
             )
             logging.debug(
                 f"first-rows response for dataset={dataset} config={config} split={split} had an error, cache updated"
@@ -142,6 +144,8 @@ class FirstRowsWorker(Worker):
                 http_status=e.status_code,
                 error_code=e.code,
                 details=dict(e.as_response_with_cause()),
+                worker_version=self.version,
+                dataset_git_revision=result["dataset_git_revision"],
             )
             logging.debug(
                 f"first-rows response for dataset={dataset} config={config} split={split} had a server"

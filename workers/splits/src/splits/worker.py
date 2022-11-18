@@ -129,6 +129,8 @@ class SplitsWorker(Worker):
                 http_status=err.status_code,
                 error_code=err.code,
                 details=dict(err.as_response_with_cause()),
+                worker_version=self.version,
+                dataset_git_revision=splits_response_result["dataset_git_revision"],
             )
             logging.debug(f"splits response for dataset={dataset} had an error, cache updated")
             return False
@@ -141,6 +143,8 @@ class SplitsWorker(Worker):
                 http_status=e.status_code,
                 error_code=e.code,
                 details=dict(e.as_response_with_cause()),
+                worker_version=self.version,
+                dataset_git_revision=splits_response_result["dataset_git_revision"],
             )
             logging.debug(f"splits response for dataset={dataset} had a server error, cache updated")
             return False
