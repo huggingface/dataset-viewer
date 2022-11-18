@@ -53,6 +53,8 @@ class Plan:
         except Exception as e:
             logging.error(f"Migration failed: {e}")
             self.rollback()
+            raise e
+            # ^ the script must stop with an error code
 
     def apply(self):
         logging.info("Start migrations")

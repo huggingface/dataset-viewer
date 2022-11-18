@@ -157,3 +157,8 @@ class Queues:
     def __init__(self, max_jobs_per_namespace: Optional[int] = None):
         self.splits = Queue(type=JobType.SPLITS.value, max_jobs_per_namespace=max_jobs_per_namespace)
         self.first_rows = Queue(type=JobType.FIRST_ROWS.value, max_jobs_per_namespace=max_jobs_per_namespace)
+
+
+class CacheKind(Enum):
+    SPLITS = "/splits"
+    FIRST_ROWS = "/first-rows"

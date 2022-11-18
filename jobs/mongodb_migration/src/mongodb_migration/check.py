@@ -2,6 +2,7 @@
 # Copyright 2022 The HuggingFace Authors.
 # adapted from https://docs.mongoengine.org/guide/migration.html#post-processing-checks
 
+import logging
 from typing import Callable, Iterator, List, Optional, Type, TypeVar
 
 from mongoengine import Document
@@ -32,19 +33,23 @@ def get_random_documents(DocCls: DocumentClass, sample_size: int) -> Iterator[Do
 
 def check_documents(DocCls: DocumentClass, sample_size: int, custom_validation: Optional[CustomValidation] = None):
     for doc in get_random_documents(DocCls, sample_size):
-        # general validation (types and values)
-        doc.validate()
+        try:
+            # general validation (types and values)
+            doc.validate()
 
-        # load all subfields,
-        # this may trigger additional queries if you have ReferenceFields
-        # so it may be slow
-        for field in doc._fields:
-            try:
-                getattr(doc, field)
-            except Exception:
-                print(f"Could not load field {field} in Document {doc.id}")
-                raise
+            # load all subfields,
+            # this may trigger additional queries if you have ReferenceFields
+            # so it may be slow
+            for field in doc._fields:
+                try:
+                    getattr(doc, field)
+                except Exception:
+                    logging.error(f"Could not load field {field} in Document {doc.id}. Document: {doc.to_json()}")
+                    raise
 
-        # custom validation
-        if custom_validation is not None:
-            custom_validation(doc)
+            # custom validation
+            if custom_validation is not None:
+                custom_validation(doc)
+        except Exception as e:
+            logging.error(f"Validation error on document {doc.id}: {e}. Document: {doc.to_json()}")
+            raise e

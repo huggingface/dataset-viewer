@@ -104,7 +104,7 @@ class Job(Document):
         type (`str`): The type of the job, identifies the queue
         dataset (`str`): The dataset on which to apply the job.
         config (`str`, optional): The config on which to apply the job.
-        split (`str`, optional): The config on which to apply the job.
+        split (`str`, optional): The split on which to apply the job.
         unicity_id (`str`): A string that identifies the job uniquely. Only one job with the same unicity_id can be in
           the started state.
         namespace (`str`): The dataset namespace (user or organization) if any, else the dataset name (canonical name).

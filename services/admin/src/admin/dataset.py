@@ -6,10 +6,6 @@ from typing import Optional
 
 from huggingface_hub.hf_api import HfApi
 from huggingface_hub.utils import RepositoryNotFoundError
-from libcache.simple_cache import (
-    mark_first_rows_responses_as_stale,
-    mark_splits_responses_as_stale,
-)
 from libqueue.queue import Queue
 
 from admin.utils import JobType
@@ -46,12 +42,9 @@ def is_supported(
 
 def update_splits(dataset: str, force: bool = False) -> None:
     logging.debug(f"refresh /splits for {dataset}")
-    mark_splits_responses_as_stale(dataset_name=dataset)
-    mark_first_rows_responses_as_stale(dataset_name=dataset)
     splits_queue.add_job(dataset=dataset, force=force)
 
 
 def update_first_rows(dataset: str, config: str, split: str, force: bool = False) -> None:
     logging.debug(f"refresh /first-rows for {dataset}, {config}, {split}")
-    mark_first_rows_responses_as_stale(dataset_name=dataset, config_name=config, split_name=split)
     first_rows_queue.add_job(dataset=dataset, config=config, split=split, force=force)

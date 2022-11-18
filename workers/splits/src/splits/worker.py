@@ -7,16 +7,17 @@ from http import HTTPStatus
 from typing import Optional
 
 from libcache.simple_cache import (
-    delete_first_rows_responses,
-    get_dataset_first_rows_response_splits,
-    get_splits_response,
-    upsert_splits_response,
+    delete_response,
+    get_dataset_response_ids,
+    get_response_without_content,
+    upsert_response,
 )
 from libqueue.worker import Worker
 
 from splits.config import WorkerConfig
 from splits.response import compute_splits_response, get_dataset_git_revision
 from splits.utils import (
+    CacheKind,
     DatasetNotFoundError,
     Queues,
     UnexpectedError,
@@ -60,16 +61,17 @@ class SplitsWorker(Worker):
         if force:
             return False
         try:
-            cache_entry = get_splits_response(dataset)
+            cached_response = get_response_without_content(kind=CacheKind.SPLITS.value, dataset=dataset)
             dataset_git_revision = get_dataset_git_revision(
                 dataset=dataset, hf_endpoint=self.config.common.hf_endpoint, hf_token=self.config.common.hf_token
             )
             return (
-                cache_entry["http_status"] == HTTPStatus.OK
-                and cache_entry["worker_version"] is not None
-                and self.compare_major_version(cache_entry["worker_version"]) == 0
-                and cache_entry["dataset_git_revision"] is not None
-                and cache_entry["dataset_git_revision"] == dataset_git_revision
+                # TODO: use "error_code" to decide if the job should be skipped (ex: retry if temporary error)
+                cached_response["http_status"] == HTTPStatus.OK
+                and cached_response["worker_version"] is not None
+                and self.compare_major_version(cached_response["worker_version"]) == 0
+                and cached_response["dataset_git_revision"] is not None
+                and cached_response["dataset_git_revision"] == dataset_git_revision
             )
         except Exception:
             return False
@@ -85,25 +87,32 @@ class SplitsWorker(Worker):
             splits_response_result = compute_splits_response(
                 dataset=dataset, hf_endpoint=self.config.common.hf_endpoint, hf_token=self.config.common.hf_token
             )
-            response = splits_response_result["splits_response"]
-            upsert_splits_response(
-                dataset_name=dataset,
-                response=dict(response),
+            content = splits_response_result["splits_response"]
+            upsert_response(
+                kind=CacheKind.SPLITS.value,
+                dataset=dataset,
+                content=dict(content),
                 http_status=HTTPStatus.OK,
                 worker_version=self.version,
                 dataset_git_revision=splits_response_result["dataset_git_revision"],
             )
             logging.debug(f"dataset={dataset} is valid, cache updated")
 
-            splits_in_cache = get_dataset_first_rows_response_splits(dataset_name=dataset)
-            new_splits = [(s["dataset"], s["config"], s["split"]) for s in response["splits"]]
-            splits_to_delete = [s for s in splits_in_cache if s not in new_splits]
-            for d, c, s in splits_to_delete:
-                delete_first_rows_responses(dataset_name=d, config_name=c, split_name=s)
+            new_splits = [(s["dataset"], s["config"], s["split"]) for s in content["splits"]]
+            # remove obsolete first-rows responses from the cache
+            first_rows_responses_in_cache = [
+                (s["dataset"], s["config"], s["split"])
+                for s in get_dataset_response_ids(dataset=dataset)
+                if s["kind"] == CacheKind.FIRST_ROWS.value
+            ]
+            first_rows_responses_to_delete = [s for s in first_rows_responses_in_cache if s not in new_splits]
+            for d, c, s in first_rows_responses_to_delete:
+                delete_response(kind=CacheKind.FIRST_ROWS.value, dataset=d, config=c, split=s)
             logging.debug(
-                f"{len(splits_to_delete)} 'first-rows' responses deleted from the cache for obsolete splits of"
-                f" dataset={dataset}"
+                f"{len(first_rows_responses_to_delete)} 'first-rows' responses deleted from the cache for obsolete"
+                f" splits of dataset={dataset}"
             )
+            # compute the 'first-rows' responses for the new splits
             for d, c, s in new_splits:
                 # we force the refresh of the /first_rows responses if the /splits refresh was forced
                 self._queues.first_rows.add_job(dataset=d, config=c, split=s, force=force)
@@ -113,9 +122,10 @@ class SplitsWorker(Worker):
             logging.debug(f"the dataset={dataset} could not be found, don't update the cache")
             return False
         except WorkerCustomError as err:
-            upsert_splits_response(
-                dataset_name=dataset,
-                response=dict(err.as_response()),
+            upsert_response(
+                kind=CacheKind.SPLITS.value,
+                dataset=dataset,
+                content=dict(err.as_response()),
                 http_status=err.status_code,
                 error_code=err.code,
                 details=dict(err.as_response_with_cause()),
@@ -124,9 +134,10 @@ class SplitsWorker(Worker):
             return False
         except Exception as err:
             e = UnexpectedError(str(err), err)
-            upsert_splits_response(
-                dataset_name=dataset,
-                response=dict(e.as_response()),
+            upsert_response(
+                kind=CacheKind.SPLITS.value,
+                dataset=dataset,
+                content=dict(e.as_response()),
                 http_status=e.status_code,
                 error_code=e.code,
                 details=dict(e.as_response_with_cause()),

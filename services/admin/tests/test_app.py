@@ -4,7 +4,7 @@
 from typing import Optional
 
 import pytest
-from libcache.simple_cache import _clean_database as _clean_cache_database
+from libcache.simple_cache import _clean_cache_database
 from libqueue.queue import _clean_queue_database
 from starlette.testclient import TestClient
 

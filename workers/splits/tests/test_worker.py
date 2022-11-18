@@ -4,12 +4,11 @@
 from http import HTTPStatus
 
 import pytest
-from libcache.simple_cache import DoesNotExist
-from libcache.simple_cache import _clean_database as _clean_cache_database
-from libcache.simple_cache import get_splits_response
+from libcache.simple_cache import DoesNotExist, _clean_cache_database, get_response
 from libqueue.queue import _clean_queue_database
 
 from splits.config import WorkerConfig
+from splits.utils import CacheKind
 from splits.worker import SplitsWorker
 
 
@@ -42,23 +41,23 @@ def should_skip_job(worker: SplitsWorker, hub_public_csv: str) -> None:
 def test_compute(worker: SplitsWorker, hub_public_csv: str) -> None:
     dataset = hub_public_csv
     assert worker.compute(dataset=dataset) is True
-    cache_entry = get_splits_response(dataset_name=hub_public_csv)
-    assert cache_entry["http_status"] == HTTPStatus.OK
-    assert cache_entry["error_code"] is None
-    assert cache_entry["worker_version"] == worker.version
-    assert cache_entry["dataset_git_revision"] is not None
-    assert cache_entry["error_code"] is None
-    response = cache_entry["response"]
-    assert len(response["splits"]) == 1
-    assert response["splits"][0]["num_bytes"] is None
-    assert response["splits"][0]["num_examples"] is None
+    cached_response = get_response(kind=CacheKind.SPLITS.value, dataset=hub_public_csv)
+    assert cached_response["http_status"] == HTTPStatus.OK
+    assert cached_response["error_code"] is None
+    assert cached_response["worker_version"] == worker.version
+    assert cached_response["dataset_git_revision"] is not None
+    assert cached_response["error_code"] is None
+    content = cached_response["content"]
+    assert len(content["splits"]) == 1
+    assert content["splits"][0]["num_bytes"] is None
+    assert content["splits"][0]["num_examples"] is None
 
 
 def test_doesnotexist(worker: SplitsWorker) -> None:
     dataset = "doesnotexist"
     assert worker.compute(dataset=dataset) is False
     with pytest.raises(DoesNotExist):
-        get_splits_response(dataset_name=dataset)
+        get_response(kind=CacheKind.SPLITS.value, dataset=dataset)
 
 
 def test_process_job(worker: SplitsWorker, hub_public_csv: str) -> None:

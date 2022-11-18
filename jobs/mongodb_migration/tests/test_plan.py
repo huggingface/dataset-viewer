@@ -1,14 +1,10 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2022 The HuggingFace Authors.
 
-import datetime
 from typing import List, Optional, Type
 
 import pytest
-from libcache.simple_cache import SplitsResponse
-from libqueue.queue import Job, Status
 
-from mongodb_migration.check import check_documents
 from mongodb_migration.database_migrations import (
     DatabaseMigration,
     _clean_maintenance_database,
@@ -117,11 +113,11 @@ def test_collected_migrations_order_dont_matter(collected_migrations: List[Migra
 @pytest.mark.parametrize(
     "collected_migrations,executed_migrations,exception",
     [
-        ([migration_error_in_up], [], None),
-        ([migration_error_in_validate], [], None),
+        ([migration_error_in_up], [], RuntimeError),
+        ([migration_error_in_validate], [], RuntimeError),
         ([migration_error_in_up_and_down], [migration_error_in_up_and_down], RuntimeError),
         ([migration_error_irreversible], [migration_error_irreversible], IrreversibleMigration),
-        ([migration_ok_a, migration_error_in_up], [], None),
+        ([migration_ok_a, migration_error_in_up], [], RuntimeError),
         (
             [migration_ok_a, migration_error_in_up_and_down],
             [migration_ok_a, migration_error_in_up_and_down],
@@ -202,62 +198,3 @@ def test_execute_is_idempotent():
     plan.execute()
     plan.execute()
     Plan(collected_migrations=[migration_ok_a, migration_ok_b]).execute()
-
-
-def test_queue_and_cache():
-    # prepare
-    for i in range(100):
-        Job(
-            type="queue_a",
-            dataset=f"dataset{i}",
-            config="config",
-            split="split",
-            unicity_id=f"abc{str(i)}",
-            namespace="dataset",
-            created_at=datetime.datetime.now(),
-            status=Status.WAITING,
-        ).save()
-    # Remove the field "stale", to simulate that we add it now
-    splits_response_collection = SplitsResponse._get_collection()
-    splits_response_collection.update_many({}, {"$unset": {"stale": False}})
-
-    class MigrationQueue(Migration):
-        def up(self) -> None:
-            job_collection = Job._get_collection()
-            job_collection.update_many({}, {"$set": {"status": Status.CANCELLED.value}})
-
-        def down(self) -> None:
-            raise IrreversibleMigration()
-
-        def validate(self) -> None:
-            def custom_validation(doc: Job) -> None:
-                if doc.status != Status.CANCELLED:
-                    raise ValueError("status is not cancelled")
-
-            check_documents(DocCls=Job, sample_size=10, custom_validation=custom_validation)
-            if Job.objects(unicity_id="abc0").count() != 1:
-                raise ValueError('Job "abc0" not found')
-
-    class MigrationCache(Migration):
-        def up(self) -> None:
-            splits_response_collection = SplitsResponse._get_collection()
-            splits_response_collection.update_many({}, {"$set": {"stale": False}})
-
-        def down(self) -> None:
-            splits_response_collection = SplitsResponse._get_collection()
-            splits_response_collection.update_many({}, {"$unset": {"stale": False}})
-
-        def validate(self) -> None:
-            def custom_validation(doc: SplitsResponse) -> None:
-                if not hasattr(doc, "stale"):
-                    raise ValueError("Missing field 'stale'")
-
-            check_documents(DocCls=SplitsResponse, sample_size=10, custom_validation=custom_validation)
-
-    plan = Plan(
-        collected_migrations=[
-            MigrationQueue(version="20221114223000", description="cancel jobs"),
-            MigrationCache(version="20221114223001", description="add stale field"),
-        ]
-    )
-    plan.execute()
