@@ -43,44 +43,50 @@ class MigrationMoveToGenericCachedResponse(Migration):
         # Copy the data from the previous collections (splitsResponse, firstRowsResponse) to
         # the new generic collection (cachedResponse)
         for splits_response in db[splitsResponseCollection].find():
+            if not isinstance(splits_response, dict):
+                # for mypy
+                raise ValueError("splits_response should be a dict")
             db[cachedResponseCollection].insert_one(
                 {
-                    "_id": splits_response["_id"],
+                    "_id": splits_response.get("_id"),
                     "kind": CacheKind.SPLITS.value,
                     # ^ "kind" is a new field
-                    "dataset": splits_response["dataset_name"],
+                    "dataset": splits_response.get("dataset_name"),
                     "config": None,
                     "split": None,
                     # ^ "config" and "split" are None for kind=/splits
-                    "http_status": splits_response["http_status"],
-                    "error_code": splits_response["error_code"],
-                    "content": splits_response["response"],
+                    "http_status": splits_response.get("http_status"),
+                    "error_code": splits_response.get("error_code"),
+                    "content": splits_response.get("response"),
                     # ^ "response" field has been renamed to "content"
-                    "worker_version": splits_response["worker_version"],
-                    "dataset_git_version": splits_response["dataset_git_version"],
-                    "details": splits_response["details"],
-                    "updated_at": splits_response["updated_at"],
+                    "worker_version": splits_response.get("worker_version"),
+                    "dataset_git_version": splits_response.get("dataset_git_version"),
+                    "details": splits_response.get("details"),
+                    "updated_at": splits_response.get("updated_at"),
                     # "stale" field is not used anymore
                 }
             )
         for first_rows_response in db[firstRowsResponseCollection].find():
+            if not isinstance(first_rows_response, dict):
+                # for mypy
+                raise ValueError("first_rows_response should be a dict")
             db[cachedResponseCollection].insert_one(
                 {
-                    "_id": first_rows_response["_id"],
+                    "_id": first_rows_response.get("_id"),
                     "kind": CacheKind.FIRST_ROWS.value,
                     # ^ "kind" is a new field
-                    "dataset": first_rows_response["dataset_name"],
-                    "config": first_rows_response["config_name"],
-                    "split": first_rows_response["split_name"],
+                    "dataset": first_rows_response.get("dataset_name"),
+                    "config": first_rows_response.get("config_name"),
+                    "split": first_rows_response.get("split_name"),
                     # ^ "config" and "split" are None for kind=/splits
-                    "http_status": first_rows_response["http_status"],
-                    "error_code": first_rows_response["error_code"],
-                    "content": first_rows_response["response"],
+                    "http_status": first_rows_response.get("http_status"),
+                    "error_code": first_rows_response.get("error_code"),
+                    "content": first_rows_response.get("response"),
                     # ^ "response" field has been renamed to "content"
-                    "worker_version": first_rows_response["worker_version"],
-                    "dataset_git_version": first_rows_response["dataset_git_version"],
-                    "details": first_rows_response["details"],
-                    "updated_at": first_rows_response["updated_at"],
+                    "worker_version": first_rows_response.get("worker_version"),
+                    "dataset_git_version": first_rows_response.get("dataset_git_version"),
+                    "details": first_rows_response.get("details"),
+                    "updated_at": first_rows_response.get("updated_at"),
                     # "stale" field is not used anymore
                 }
             )
