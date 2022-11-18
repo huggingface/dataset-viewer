@@ -38,14 +38,14 @@ cachedResponseCollection = "cachedResponseBlue"
 class MigrationMoveToGenericCachedResponse(Migration):
     def up(self) -> None:
         # See https://docs.mongoengine.org/guide/migration.html#example-1-addition-of-a-field
-        logging.info("Add the force field, with the default value (False), to all the jobs")
+        logging.info("Create the cachedResponseBlue collection, and fill it with the data from splits and first-rows")
         db = get_db("cache")
         # Copy the data from the previous collections (splitsResponse, firstRowsResponse) to
         # the new generic collection (cachedResponse)
         for splits_response in db[splitsResponseCollection].find():
             db[cachedResponseCollection].insert_one(
                 {
-                    "id": splits_response["id"],
+                    "_id": splits_response["_id"],
                     "kind": CacheKind.SPLITS.value,
                     # ^ "kind" is a new field
                     "dataset": splits_response["dataset_name"],
@@ -66,7 +66,7 @@ class MigrationMoveToGenericCachedResponse(Migration):
         for first_rows_response in db[firstRowsResponseCollection].find():
             db[cachedResponseCollection].insert_one(
                 {
-                    "id": first_rows_response["id"],
+                    "_id": first_rows_response["_id"],
                     "kind": CacheKind.FIRST_ROWS.value,
                     # ^ "kind" is a new field
                     "dataset": first_rows_response["dataset_name"],
