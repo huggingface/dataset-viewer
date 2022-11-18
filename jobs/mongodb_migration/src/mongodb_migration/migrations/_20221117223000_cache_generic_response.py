@@ -186,12 +186,19 @@ class CachedResponseSnapshot(Document):
         "collection": cachedResponseCollection,
         "db_alias": db_name,
         "indexes": [
-            ("dataset", "config", "split"),
-            ("dataset", "http_status"),
-            ("http_status", "dataset"),
-            # ^ this index (reversed) is used for the "distinct" command to get the names of the valid datasets
-            ("http_status", "error_code"),
-            ("dataset", "-updated_at"),
+            ("kind", "dataset", "config", "split"),
+            ("dataset", "kind", "http_status"),
+            ("kind", "http_status", "dataset"),
+            ("kind", "http_status", "error_code"),
+            ("kind", "id"),
         ],
     }
     objects = QuerySetManager["CachedResponseSnapshot"]()
+
+
+# Fix issue with mongoengine: https://github.com/MongoEngine/mongoengine/issues/1242#issuecomment-810501601
+# mongoengine automatically sets "config" and "splits" as required fields, because they are listed in the unique_with
+# field of the "kind" field. But it's an error, since unique indexes (which are used to enforce unique_with) accept
+# null values, see https://www.mongodb.com/docs/v5.0/core/index-unique/#unique-index-and-missing-field.
+CachedResponseSnapshot.config.required = False  # type: ignore
+CachedResponseSnapshot.split.required = False  # type: ignore
