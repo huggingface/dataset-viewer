@@ -25,5 +25,3 @@ jobs:
     with:
       working-directory: workers/parquet
       is-datasets-worker: true
-    secrets:
-      codecov-token: ${{ secrets.CODECOV_TOKEN }}
