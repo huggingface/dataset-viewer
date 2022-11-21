@@ -9,8 +9,8 @@
       "api": "huggingface/datasets-server-services-api:sha-dfa89b1"
     },
     "workers": {
-      "splits": "huggingface/datasets-server-workers-splits:sha-dfa89b1",
-      "firstRows": "huggingface/datasets-server-workers-first_rows:sha-dfa89b1"
+      "splits": "huggingface/datasets-server-workers-splits:sha-a0d80a3",
+      "firstRows": "huggingface/datasets-server-workers-first_rows:sha-319bbb8"
     }
   }
 }

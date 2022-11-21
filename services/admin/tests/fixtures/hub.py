@@ -21,7 +21,6 @@ CI_HUB_USER = "__DUMMY_DATASETS_SERVER_USER__"
 CI_HUB_USER_API_TOKEN = "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"
 
 CI_HUB_ENDPOINT = "https://hub-ci.huggingface.co"
-CI_HUB_DATASETS_URL = CI_HUB_ENDPOINT + "/datasets/{repo_id}/resolve/{revision}/{path}"
 
 
 def update_repo_settings(
