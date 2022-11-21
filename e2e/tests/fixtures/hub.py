@@ -25,7 +25,6 @@ CI_HUB_USER_SESSION_TOKEN = (
 )
 
 CI_HUB_ENDPOINT = "https://hub-ci.huggingface.co"
-CI_HUB_DATASETS_URL = CI_HUB_ENDPOINT + "/datasets/{repo_id}/resolve/{revision}/{path}"
 
 
 def update_repo_settings(
