@@ -26,11 +26,18 @@ CI_HUB_USER = "__DUMMY_DATASETS_SERVER_USER__"
 CI_HUB_USER_API_TOKEN = "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"
 
 CI_HUB_ENDPOINT = "https://hub-ci.huggingface.co"
-CI_HUB_DATASETS_URL = CI_HUB_ENDPOINT + "/datasets/{repo_id}/resolve/{revision}/{path}"
+CI_HFH_HUGGINGFACE_CO_URL_TEMPLATE = CI_HUB_ENDPOINT + "/{repo_id}/resolve/{revision}/{filename}"
+
+
+@pytest.fixture(autouse=True)
+def ci_hfh_hf_hub_url(monkeypatch: pytest.MonkeyPatch):
+    monkeypatch.setattr(
+        "huggingface_hub.file_download.HUGGINGFACE_CO_URL_TEMPLATE", CI_HFH_HUGGINGFACE_CO_URL_TEMPLATE
+    )
+
 
 # Ensure the datasets library uses the expected HuggingFace endpoint
 datasets.config.HF_ENDPOINT = CI_HUB_ENDPOINT
-datasets.config.HUB_DATASETS_URL = CI_HUB_DATASETS_URL
 # Don't increase the datasets download counts on huggingface.co
 datasets.config.HF_UPDATE_DOWNLOAD_COUNTS = False
 

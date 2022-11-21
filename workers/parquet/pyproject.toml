@@ -12,7 +12,7 @@ aiohttp = "^3.7.4.post0"
 apache-beam = "2.41.0" # ^2 gives a InvalidWheelName error because it tries to install 2.42 that has not been released...
 bs4 = "^0.0.1"
 conllu = "^4.4.1"
-datasets = { extras = ["audio", "vision"], version = "~2.6.1" }
+datasets = { extras = ["audio", "vision"], version = "~2.7.0" }
 gdown = "^4.2.0"
 kenlm = { url = "https://github.com/kpu/kenlm/archive/master.zip" }
 kss = "^2.6.0"
