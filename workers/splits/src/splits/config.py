@@ -23,8 +23,12 @@ class WorkerConfig:
     def setup(self):
         # Ensure the datasets library uses the expected HuggingFace endpoint
         datasets.config.HF_ENDPOINT = self.common.hf_endpoint
-        datasets.config.HUB_DATASETS_URL = self.common.hf_endpoint + "/datasets/{repo_id}/resolve/{revision}/{path}"
         # Don't increase the datasets download counts on huggingface.co
         datasets.config.HF_UPDATE_DOWNLOAD_COUNTS = False
         # Set logs from the datasets library to the least verbose
         set_verbosity(log_levels["critical"])
+
+        # Note: self.common.hf_endpoint is ignored by the huggingface_hub library for now (see
+        # the discussion at https://github.com/huggingface/datasets/pull/5196), and this breaks
+        # various of the datasets functions. The fix, for now, is to set the HF_ENDPOINT
+        # environment variable to the desired value.
