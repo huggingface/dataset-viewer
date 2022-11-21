@@ -9,6 +9,8 @@
   {{ include "envCache" . | nindent 2 }}
   {{ include "envQueue" . | nindent 2 }}
   {{ include "envCommon" . | nindent 2 }}
+  - name: HF_ENDPOINT # see https://github.com/huggingface/datasets/pull/5196#issuecomment-1322191411
+    value: {{ .Values.common.hfEndpoint | quote }}
   - name: QUEUE_MAX_JOBS_PER_NAMESPACE
     # value: {{ .Values.queue.maxJobsPerNamespace | quote }}
     # overridden

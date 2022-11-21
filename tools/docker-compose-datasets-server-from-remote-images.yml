@@ -96,6 +96,7 @@ services:
       QUEUE_SLEEP_SECONDS: ${QUEUE_SLEEP_SECONDS-15}
       COMMON_ASSETS_BASE_URL: "http://localhost:${PORT_REVERSE_PROXY-8000}/assets" # hard-coded to work with the reverse-proxy
       COMMON_HF_ENDPOINT: ${COMMON_HF_ENDPOINT-https://huggingface.co}
+      HF_ENDPOINT: ${COMMON_HF_ENDPOINT-https://huggingface.co} # see https://github.com/huggingface/datasets/pull/5196#issuecomment-1322191411
       COMMON_HF_TOKEN: ${COMMON_HF_TOKEN-}
       COMMON_LOG_LEVEL: ${COMMON_LOG_LEVEL-INFO}
       HF_DATASETS_CACHE: ${HF_DATASETS_CACHE-/datasets-cache}
@@ -122,6 +123,7 @@ services:
       QUEUE_SLEEP_SECONDS: ${QUEUE_SLEEP_SECONDS-15}
       COMMON_ASSETS_BASE_URL: "http://localhost:${PORT_REVERSE_PROXY-8000}/assets" # hard-coded to work with the reverse-proxy
       COMMON_HF_ENDPOINT: ${COMMON_HF_ENDPOINT-https://huggingface.co}
+      HF_ENDPOINT: ${COMMON_HF_ENDPOINT-https://huggingface.co} # see https://github.com/huggingface/datasets/pull/5196#issuecomment-1322191411
       COMMON_HF_TOKEN: ${COMMON_HF_TOKEN-}
       COMMON_LOG_LEVEL: ${COMMON_LOG_LEVEL-INFO}
       HF_DATASETS_CACHE: ${HF_DATASETS_CACHE-/datasets-cache}
