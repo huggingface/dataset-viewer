@@ -242,7 +242,9 @@ def create_parquet_response(dataset: str, filename: str, size: int):
                 "dataset": dataset,
                 "config": config,
                 "split": split,
-                "url": CI_HUB_DATASETS_URL.format(repo_id=dataset, revision="refs/convert/parquet", path=filename),
+                "url": CI_HFH_HUGGINGFACE_CO_URL_TEMPLATE.format(
+                    repo_id=f"datasets/{dataset}", revision="refs/convert/parquet", filename=filename
+                ),
                 "filename": filename,
                 "size": size,
             }

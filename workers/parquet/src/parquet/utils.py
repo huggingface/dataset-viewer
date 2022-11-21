@@ -9,6 +9,7 @@ from libcommon.exceptions import CustomError
 
 WorkerErrorCode = Literal[
     "DatasetNotFoundError",
+    "RevisionNotFoundError",
     "EmptyDatasetError",
     "ConfigNamesError",
     "UnexpectedError",
@@ -34,6 +35,13 @@ class DatasetNotFoundError(WorkerCustomError):
 
     def __init__(self, message: str, cause: Optional[BaseException] = None):
         super().__init__(message, HTTPStatus.NOT_FOUND, "DatasetNotFoundError", cause, False)
+
+
+class RevisionNotFoundError(WorkerCustomError):
+    """Raised when the revision of a dataset repository does not exist."""
+
+    def __init__(self, message: str, cause: Optional[BaseException] = None):
+        super().__init__(message, HTTPStatus.NOT_FOUND, "RevisionNotFoundError", cause, False)
 
 
 class ConfigNamesError(WorkerCustomError):

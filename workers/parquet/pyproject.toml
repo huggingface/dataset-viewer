@@ -14,6 +14,7 @@ bs4 = "^0.0.1"
 conllu = "^4.4.1"
 datasets = { extras = ["audio", "vision"], version = "~2.7.0" }
 gdown = "^4.2.0"
+huggingface-hub = "^0.11.0"
 kenlm = { url = "https://github.com/kpu/kenlm/archive/master.zip" }
 kss = "^2.6.0"
 libcache = { path = "../../libs/libcache/dist/libcache-0.4.0-py3-none-any.whl", develop = false }

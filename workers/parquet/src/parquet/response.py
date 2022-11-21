@@ -10,14 +10,14 @@ from urllib.parse import quote
 
 from datasets import get_dataset_config_names, load_dataset_builder
 from datasets.data_files import EmptyDatasetError as _EmptyDatasetError
-from huggingface_hub.hf_api import (  # type: ignore
+from huggingface_hub.hf_api import (
     CommitOperation,
     CommitOperationAdd,
     CommitOperationDelete,
     HfApi,
     RepoFile,
 )
-from huggingface_hub.utils import RepositoryNotFoundError  # type: ignore
+from huggingface_hub.utils import RepositoryNotFoundError, RevisionNotFoundError
 
 from parquet.utils import ConfigNamesError, DatasetNotFoundError, EmptyDatasetError
 
@@ -38,6 +38,9 @@ class ParquetResponse(TypedDict):
 class ParquetResponseResult(TypedDict):
     parquet_response: ParquetResponse
     dataset_git_revision: Optional[str]
+
+
+DATASET_TYPE = "dataset"
 
 
 def get_dataset_git_revision(
@@ -155,9 +158,9 @@ def compute_parquet_response(
         hf_token (`str`, *optional*):
             An authentication token (See https://huggingface.co/settings/token)
         source_revision (`str`):
-            The git revision (sha) of the dataset used to prepare the parquet files
+            The git revision (e.g. "main" or sha) of the dataset used to prepare the parquet files
         target_revision (`str`):
-            The target git revision (sha) of the dataset where to store the parquet files
+            The target git revision (e.g. "ref/convert/parquet") of the dataset where to store the parquet files
         commit_message (`str`):
             The commit message to use when storing the parquet files
         url_template (`str`):
@@ -176,8 +179,27 @@ def compute_parquet_response(
     """
     logging.info(f"get splits for dataset={dataset}")
     use_auth_token: Union[bool, str, None] = hf_token if hf_token is not None else False
-    # first try to get the dataset config info. It raises if the dataset does not exist or is private
-    dataset_git_revision = get_dataset_git_revision(dataset=dataset, hf_endpoint=hf_endpoint, hf_token=hf_token)
+
+    hf_api = HfApi(endpoint=hf_endpoint, token=hf_token)
+
+    # get the SHA of the source revision
+    try:
+        source_dataset_info = hf_api.dataset_info(repo_id=dataset, revision=source_revision, files_metadata=False)
+        source_sha = source_dataset_info.sha
+    except RepositoryNotFoundError as err:
+        raise DatasetNotFoundError("The dataset does not exist on the Hub.") from err
+    except RevisionNotFoundError as err:
+        raise DatasetNotFoundError("The dataset revision does not exist on the Hub.") from err
+
+    # create the target revision if it does not exist yet
+    try:
+        target_dataset_info = hf_api.dataset_info(repo_id=dataset, revision=source_revision, files_metadata=False)
+        target_sha = target_dataset_info.sha
+        previous_files = [f.rfilename for f in target_dataset_info.siblings]
+    except RevisionNotFoundError:
+        # create the parquet_ref (refs/convert/parquet)
+        hf_api.create_branch(repo_id=dataset, branch="refs/convert/parquet", repo_type=DATASET_TYPE)
+
     # get the sorted list of configurations
     try:
         config_names = sorted(get_dataset_config_names(path=dataset, use_auth_token=use_auth_token))
@@ -186,16 +208,7 @@ def compute_parquet_response(
     except Exception as err:
         raise ConfigNamesError("Cannot get the configuration names for the dataset.", cause=err) from err
 
-    # first get the current sha (to be able to use parent_commit in create_commit)
-    hf_api = HfApi(endpoint=hf_endpoint)
-
-    # We assume that the parquet_ref (refs/convert/parquet) already exists.
-    # See https://github.com/huggingface/huggingface_hub/issues/1165
-
-    dataset_info = hf_api.dataset_info(repo_id=dataset, revision=target_revision, files_metadata=False)
-    parent_commit = dataset_info.sha
-    previous_files = [f.rfilename for f in dataset_info.siblings]
-
+    # prepare the parquet files locally
     parquet_files: List[ParquetFile] = []
     for config in config_names:
         builder = load_dataset_builder(path=dataset, name=config, revision=source_revision)
@@ -205,6 +218,7 @@ def compute_parquet_response(
             for local_file in glob.glob(f"{builder.cache_dir}**/*.parquet")
         )
 
+    # send the files to the target revision
     files_to_add = {parquet_file.repo_file(): parquet_file.local_file for parquet_file in parquet_files}
     # don't delete the files we will update
     files_to_delete = [file for file in previous_files if file not in files_to_add]
@@ -213,25 +227,18 @@ def compute_parquet_response(
         CommitOperationAdd(path_in_repo=file, path_or_fileobj=local_file)
         for (file, local_file) in files_to_add.items()
     ]
-
     hf_api.create_commit(
         repo_id=dataset,
-        token=hf_token,
-        repo_type="dataset",
+        repo_type=DATASET_TYPE,
         revision=target_revision,
         operations=delete_operations + add_operations,
         commit_message=commit_message,
-        parent_commit=parent_commit,
+        parent_commit=target_sha,
     )
 
-    # call the API to get the list of parquet files
-    repo_files = [
-        repo_file
-        for repo_file in hf_api.dataset_info(
-            repo_id=dataset, revision=target_revision, files_metadata=True, token=hf_token
-        ).siblings
-        if repo_file.rfilename.endswith(".parquet")
-    ]
+    # call the API again to get the list of parquet files
+    target_dataset_info = hf_api.dataset_info(repo_id=dataset, revision=target_revision, files_metadata=True)
+    repo_files = [repo_file for repo_file in target_dataset_info.siblings if repo_file.rfilename.endswith(".parquet")]
     # we might want to check if the sha of the parquet files is the same as the one we just uploaded
     # we could also check that the list of parquet files is exactly what we expect
     # let's not over engineer this for now. After all, what is on the Hub is the source of truth
@@ -249,5 +256,5 @@ def compute_parquet_response(
                 for repo_file in repo_files
             ],
         },
-        "dataset_git_revision": dataset_git_revision,
+        "dataset_git_revision": source_sha,
     }
