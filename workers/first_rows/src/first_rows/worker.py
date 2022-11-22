@@ -84,6 +84,19 @@ class FirstRowsWorker(Worker):
     ) -> bool:
         if config is None or split is None:
             raise ValueError("config and split are required")
+
+        dataset_git_revision = None
+        try:
+            dataset_git_revision = get_dataset_git_revision(
+                dataset=dataset, hf_endpoint=self.config.common.hf_endpoint, hf_token=self.config.common.hf_token
+            )
+        except DatasetNotFoundError:
+            logging.debug(f"the dataset={dataset} could not be found, don't update the cache")
+            return False
+        if dataset_git_revision is None:
+            logging.debug(f"the dataset={dataset} has no git revision, don't update the cache")
+            return False
+
         try:
             result = compute_first_rows_response(
                 dataset=dataset,
@@ -99,6 +112,8 @@ class FirstRowsWorker(Worker):
                 rows_min_number=self.config.first_rows.min_number,
                 assets_directory=self.config.cache.assets_directory,
             )
+            if result["dataset_git_revision"] != dataset_git_revision:
+                raise UnexpectedError("The dataset git revision has changed during the job")
             upsert_response(
                 kind=CacheKind.FIRST_ROWS.value,
                 dataset=dataset,
@@ -107,7 +122,7 @@ class FirstRowsWorker(Worker):
                 content=dict(result["first_rows_response"]),
                 http_status=HTTPStatus.OK,
                 worker_version=self.version,
-                dataset_git_revision=result["dataset_git_revision"],
+                dataset_git_revision=dataset_git_revision,
             )
             logging.debug(f"dataset={dataset} config={config} split={split} is valid, cache updated")
             return True
@@ -127,7 +142,7 @@ class FirstRowsWorker(Worker):
                 error_code=err.code,
                 details=dict(err.as_response_with_cause()),
                 worker_version=self.version,
-                dataset_git_revision=result["dataset_git_revision"],
+                dataset_git_revision=dataset_git_revision,
             )
             logging.debug(
                 f"first-rows response for dataset={dataset} config={config} split={split} had an error, cache updated"
@@ -145,7 +160,7 @@ class FirstRowsWorker(Worker):
                 error_code=e.code,
                 details=dict(e.as_response_with_cause()),
                 worker_version=self.version,
-                dataset_git_revision=result["dataset_git_revision"],
+                dataset_git_revision=dataset_git_revision,
             )
             logging.debug(
                 f"first-rows response for dataset={dataset} config={config} split={split} had a server"
