@@ -233,14 +233,16 @@ def compute_parquet_response(
 
     # create the target revision if it does not exist yet
     try:
-        target_dataset_info = hf_api.dataset_info(repo_id=dataset, revision=source_revision, files_metadata=False)
-        target_sha = target_dataset_info.sha
-        previous_files = [f.rfilename for f in target_dataset_info.siblings]
+        target_dataset_info = hf_api.dataset_info(repo_id=dataset, revision=target_revision, files_metadata=False)
     except RepositoryNotFoundError as err:
         raise DatasetNotFoundError("The dataset does not exist on the Hub.") from err
     except RevisionNotFoundError:
         # create the parquet_ref (refs/convert/parquet)
-        hf_api.create_branch(repo_id=dataset, branch="refs/convert/parquet", repo_type=DATASET_TYPE)
+        hf_api.create_branch(repo_id=dataset, branch=target_revision, repo_type=DATASET_TYPE)
+        target_dataset_info = hf_api.dataset_info(repo_id=dataset, revision=target_revision, files_metadata=False)
+
+    target_sha = target_dataset_info.sha
+    previous_files = [f.rfilename for f in target_dataset_info.siblings]
 
     # get the sorted list of configurations
     try:
