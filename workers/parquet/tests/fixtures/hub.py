@@ -290,13 +290,13 @@ def hub_datasets(
         "private": {
             "name": hub_private_csv,
             "parquet_response": create_parquet_response(
-                dataset=hub_public_csv, filename="csv-train.parquet", size=CSV_PARQUET_SIZE
+                dataset=hub_private_csv, filename="csv-train.parquet", size=CSV_PARQUET_SIZE
             ),
         },
         "gated": {
             "name": hub_gated_csv,
             "parquet_response": create_parquet_response(
-                dataset=hub_public_csv, filename="csv-train.parquet", size=CSV_PARQUET_SIZE
+                dataset=hub_gated_csv, filename="csv-train.parquet", size=CSV_PARQUET_SIZE
             ),
         },
         "audio": {

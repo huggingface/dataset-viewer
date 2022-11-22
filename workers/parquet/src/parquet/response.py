@@ -162,8 +162,8 @@ def ask_access(dataset: str, hf_endpoint: str, token: Optional[str]) -> None:
             ) from err
         if r.status_code == 403:
             raise GatedDisabledError("The dataset is gated and access is disabled.") from err
-        if r.status_code == 404:
-            raise DatasetNotFoundError("The dataset does not exist on the Hub.") from err
+        if r.status_code in [401, 404]:
+            raise DatasetNotFoundError("The dataset does not exist on the Hub, or is private.") from err
         raise err
 
 
@@ -255,8 +255,10 @@ def compute_parquet_response(
     # prepare the parquet files locally
     parquet_files: List[ParquetFile] = []
     for config in config_names:
-        builder = load_dataset_builder(path=dataset, name=config, revision=source_revision)
-        builder.download_and_prepare(file_format="parquet")  # the parquet files are stored in the cache dir
+        builder = load_dataset_builder(path=dataset, name=config, revision=source_revision, use_auth_token=hf_token)
+        builder.download_and_prepare(
+            file_format="parquet", use_auth_token=hf_token
+        )  # the parquet files are stored in the cache dir
         parquet_files.extend(
             ParquetFile(local_file=local_file, local_dir=builder.cache_dir, config=config)
             for local_file in glob.glob(f"{builder.cache_dir}**/*.parquet")
