@@ -46,7 +46,7 @@ class WorkerConfig:
         self.common = CommonConfig()
         self.cache = CacheConfig()
         self.queue = QueueConfig()
-        self.parquet = ParquetConfig()
+        self.parquet = ParquetConfig(hf_token=self.common.hf_token)
         self.setup()
 
     def setup(self):
