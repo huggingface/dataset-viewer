@@ -11,20 +11,18 @@ from .fixtures.hub import HubDatasets
 
 
 @pytest.mark.parametrize(
-    "name,use_token,error_code,cause",
+    "name,error_code,cause",
     [
-        ("public", False, None, None),
-        ("audio", False, None, None),
-        ("gated", True, None, None),
-        ("private", True, None, None),
-        ("empty", False, "EmptyDatasetError", "EmptyDatasetError"),
-        ("does_not_exist", False, "DatasetNotFoundError", None),
-        ("gated", False, "DatasetNotFoundError", None),
-        ("private", False, "DatasetNotFoundError", None),
+        ("public", None, None),
+        ("audio", None, None),
+        ("gated", None, None),
+        ("private", None, None),
+        ("empty", "EmptyDatasetError", "EmptyDatasetError"),
+        ("does_not_exist", "DatasetNotFoundError", None),
     ],
 )
 def test_compute_splits_response_simple_csv(
-    hub_datasets: HubDatasets, name: str, use_token: bool, error_code: str, cause: str, worker_config: WorkerConfig
+    hub_datasets: HubDatasets, name: str, error_code: str, cause: str, worker_config: WorkerConfig
 ) -> None:
     dataset = hub_datasets[name]["name"]
     expected_parquet_response = hub_datasets[name]["parquet_response"]
@@ -32,7 +30,7 @@ def test_compute_splits_response_simple_csv(
         result = compute_parquet_response(
             dataset=dataset,
             hf_endpoint=worker_config.common.hf_endpoint,
-            hf_token=worker_config.common.hf_token if use_token else None,
+            hf_token=worker_config.parquet.hf_token,
             source_revision=worker_config.parquet.source_revision,
             target_revision=worker_config.parquet.target_revision,
             commit_message=worker_config.parquet.commit_message,
@@ -46,7 +44,7 @@ def test_compute_splits_response_simple_csv(
         compute_parquet_response(
             dataset=dataset,
             hf_endpoint=worker_config.common.hf_endpoint,
-            hf_token=worker_config.common.hf_token if use_token else None,
+            hf_token=worker_config.parquet.hf_token,
             source_revision=worker_config.parquet.source_revision,
             target_revision=worker_config.parquet.target_revision,
             commit_message=worker_config.parquet.commit_message,

@@ -12,6 +12,9 @@ WorkerErrorCode = Literal[
     "RevisionNotFoundError",
     "EmptyDatasetError",
     "ConfigNamesError",
+    "GatedDisabledError",
+    "GatedExtraFieldsError",
+    "DatasetNotSupportedError",
     "UnexpectedError",
 ]
 
@@ -56,6 +59,27 @@ class EmptyDatasetError(WorkerCustomError):
 
     def __init__(self, message: str, cause: Optional[BaseException] = None):
         super().__init__(message, HTTPStatus.INTERNAL_SERVER_ERROR, "EmptyDatasetError", cause, True)
+
+
+class GatedDisabledError(WorkerCustomError):
+    """Raised when /ask-access fails with 403."""
+
+    def __init__(self, message: str, cause: Optional[BaseException] = None):
+        super().__init__(message, HTTPStatus.FORBIDDEN, "GatedDisabledError", cause, False)
+
+
+class GatedExtraFieldsError(WorkerCustomError):
+    """Raised when /ask-access fails with 400."""
+
+    def __init__(self, message: str, cause: Optional[BaseException] = None):
+        super().__init__(message, HTTPStatus.NOT_IMPLEMENTED, "GatedExtraFieldsError", cause, False)
+
+
+class DatasetNotSupportedError(WorkerCustomError):
+    """Raised when the dataset is not in the list of supported datasets."""
+
+    def __init__(self, message: str, cause: Optional[BaseException] = None):
+        super().__init__(message, HTTPStatus.NOT_IMPLEMENTED, "DatasetNotSupportedError", cause, False)
 
 
 class UnexpectedError(WorkerCustomError):

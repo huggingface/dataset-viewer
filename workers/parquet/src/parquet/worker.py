@@ -15,6 +15,7 @@ from parquet.response import compute_parquet_response, get_dataset_git_revision
 from parquet.utils import (
     CacheKind,
     DatasetNotFoundError,
+    DatasetNotSupportedError,
     JobType,
     UnexpectedError,
     WorkerCustomError,
@@ -60,7 +61,7 @@ class ParquetWorker(Worker):
         try:
             cached_response = get_response_without_content(kind=CacheKind.SPLITS.value, dataset=dataset)
             dataset_git_revision = get_dataset_git_revision(
-                dataset=dataset, hf_endpoint=self.config.common.hf_endpoint, hf_token=self.config.common.hf_token
+                dataset=dataset, hf_endpoint=self.config.common.hf_endpoint, hf_token=self.config.parquet.hf_token
             )
             return (
                 # TODO: use "error_code" to decide if the job should be skipped (ex: retry if temporary error)
@@ -80,10 +81,12 @@ class ParquetWorker(Worker):
         split: Optional[str] = None,
     ) -> bool:
         try:
+            if len(self.config.parquet.supported_datasets) and dataset not in self.config.parquet.supported_datasets:
+                raise DatasetNotSupportedError("The dataset is not in the list of supported datasets.")
             parquet_response_result = compute_parquet_response(
                 dataset=dataset,
                 hf_endpoint=self.config.common.hf_endpoint,
-                hf_token=self.config.common.hf_token,
+                hf_token=self.config.parquet.hf_token,
                 source_revision=self.config.parquet.source_revision,
                 target_revision=self.config.parquet.target_revision,
                 commit_message=self.config.parquet.commit_message,

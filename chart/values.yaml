@@ -11,6 +11,10 @@ secrets:
     fromSecret: false
     secretName: "datasets-server-hf-token"
     value: hf_app
+  token-francky:
+    fromSecret: false
+    secretName: "hf-token-francky"
+    value: hf_xxx
 
 uid: 1000
 gid: 3000

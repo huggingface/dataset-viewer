@@ -52,6 +52,9 @@ secrets:
   token:
     fromSecret: true
     secretName: "hf-token"
+  token-francky:
+    fromSecret: false
+    secretName: "hf-token-francky"
 
 persistence:
   # https://us-east-1.console.aws.amazon.com/fsx/home?region=us-east-1#file-system-details/fs-02050b8d555063cde

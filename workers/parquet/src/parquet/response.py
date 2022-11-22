@@ -8,6 +8,7 @@ from pathlib import Path
 from typing import List, Optional, Tuple, TypedDict, Union
 from urllib.parse import quote
 
+import requests
 from datasets import get_dataset_config_names, load_dataset_builder
 from datasets.data_files import EmptyDatasetError as _EmptyDatasetError
 from huggingface_hub.hf_api import (
@@ -17,9 +18,20 @@ from huggingface_hub.hf_api import (
     HfApi,
     RepoFile,
 )
-from huggingface_hub.utils import RepositoryNotFoundError, RevisionNotFoundError
+from huggingface_hub.utils import (
+    RepositoryNotFoundError,
+    RevisionNotFoundError,
+    build_hf_headers,
+    hf_raise_for_status,
+)
 
-from parquet.utils import ConfigNamesError, DatasetNotFoundError, EmptyDatasetError
+from parquet.utils import (
+    ConfigNamesError,
+    DatasetNotFoundError,
+    EmptyDatasetError,
+    GatedDisabledError,
+    GatedExtraFieldsError,
+)
 
 
 class ParquetFileItem(TypedDict):
@@ -46,7 +58,7 @@ DATASET_TYPE = "dataset"
 def get_dataset_git_revision(
     dataset: str,
     hf_endpoint: str,
-    hf_token: Optional[str] = None,
+    hf_token: str = None,
 ) -> Union[str, None]:
     """
     Get the git revision of the dataset.
@@ -56,7 +68,7 @@ def get_dataset_git_revision(
             by a `/`.
         hf_endpoint (`str`):
             The Hub endpoint (for example: "https://huggingface.co")
-        hf_token (`str`, *optional*):
+        hf_token (`str`):
             An authentication token (See https://huggingface.co/settings/token)
     Returns:
         `Union[str, None]`: the dataset git revision (sha) if any.
@@ -137,10 +149,27 @@ def create_parquet_file_item(
     }
 
 
+def ask_access(dataset: str, hf_endpoint: str, token: Optional[str]) -> None:
+    path = f"{hf_endpoint}/datasets/{dataset}/ask-access"
+    r = requests.post(path, headers=build_hf_headers(token=token))
+    try:
+        hf_raise_for_status(r)
+    except requests.exceptions.HTTPError as err:
+        if r.status_code == 400:
+            raise GatedExtraFieldsError(
+                "The dataset is gated with extra fields: not supported at the moment."
+            ) from err
+        if r.status_code == 403:
+            raise GatedDisabledError("The dataset is gated and access is disabled.") from err
+        if r.status_code == 404:
+            raise DatasetNotFoundError("The dataset does not exist on the Hub.") from err
+        raise err
+
+
 def compute_parquet_response(
     dataset: str,
     hf_endpoint: str,
-    hf_token: Optional[str],
+    hf_token: str,
     source_revision: str,
     target_revision: str,
     commit_message: str,
@@ -155,8 +184,11 @@ def compute_parquet_response(
             by a `/`.
         hf_endpoint (`str`):
             The Hub endpoint (for example: "https://huggingface.co")
-        hf_token (`str`, *optional*):
-            An authentication token (See https://huggingface.co/settings/token)
+        hf_token (`str`):
+            An authentication token (See https://huggingface.co/settings/token). It must:
+            - be a user token (to get access to the gated datasets, and do the other operations)
+            - be part of the `huggingface` organization (to create the ref/convert/parquet "branch")
+            - be part of the `datasets-maintainers` organization (to push to the ref/convert/parquet "branch")
         source_revision (`str`):
             The git revision (e.g. "main" or sha) of the dataset used to prepare the parquet files
         target_revision (`str`):
@@ -178,7 +210,9 @@ def compute_parquet_response(
     </Tip>
     """
     logging.info(f"get splits for dataset={dataset}")
-    use_auth_token: Union[bool, str, None] = hf_token if hf_token is not None else False
+
+    # unlock access to the dataset if it is gated
+    ask_access(dataset=dataset, token=hf_token, hf_endpoint=hf_endpoint)
 
     hf_api = HfApi(endpoint=hf_endpoint, token=hf_token)
 
@@ -196,13 +230,15 @@ def compute_parquet_response(
         target_dataset_info = hf_api.dataset_info(repo_id=dataset, revision=source_revision, files_metadata=False)
         target_sha = target_dataset_info.sha
         previous_files = [f.rfilename for f in target_dataset_info.siblings]
+    except RepositoryNotFoundError as err:
+        raise DatasetNotFoundError("The dataset does not exist on the Hub.") from err
     except RevisionNotFoundError:
         # create the parquet_ref (refs/convert/parquet)
         hf_api.create_branch(repo_id=dataset, branch="refs/convert/parquet", repo_type=DATASET_TYPE)
 
     # get the sorted list of configurations
     try:
-        config_names = sorted(get_dataset_config_names(path=dataset, use_auth_token=use_auth_token))
+        config_names = sorted(get_dataset_config_names(path=dataset, use_auth_token=hf_token))
     except _EmptyDatasetError as err:
         raise EmptyDatasetError("The dataset is empty.", cause=err) from err
     except Exception as err:

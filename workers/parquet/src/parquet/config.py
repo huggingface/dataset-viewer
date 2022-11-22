@@ -1,6 +1,8 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2022 The HuggingFace Authors.
 
+from typing import List, Optional
+
 import datasets.config
 from datasets.utils.logging import log_levels, set_verbosity
 from environs import Env
@@ -10,14 +12,21 @@ from libqueue.config import QueueConfig
 
 
 class ParquetConfig:
+    supported_datasets: List[str]
     commit_message: str
+    hf_token: str
     source_revision: str
     target_revision: str
     url_template: str
 
-    def __init__(self):
+    def __init__(self, hf_token: Optional[str]):
+        if hf_token is None:
+            raise ValueError("The COMMON_HF_TOKEN environment variable must be set.")
+        self.hf_token = hf_token
+
         env = Env(expand_vars=True)
         with env.prefixed("PARQUET_"):
+            self.supported_datasets = env.list(name="SUPPORTED_DATASETS")
             self.commit_message = env.str(name="COMMIT_MESSAGE", default="Update parquet files")
             self.source_revision = env.str(name="SOURCE_REVISION", default="main")
             self.target_revision = env.str(name="TARGET_REVISION", default="refs/convert/parquet")

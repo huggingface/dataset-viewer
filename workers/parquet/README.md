@@ -12,6 +12,7 @@ Set environment variables to configure the parquet worker (`PARQUET_` prefix):
 
 - `COMMIT_MESSAGE`: the git commit message when the parquet files are uploaded to the Hub. Defaults to `Update parquet files`.
 - `SOURCE_REVISION`: the git revision of the dataset to use to prepare the parquet files. Defaults to `main`.
+- `SUPPORTED_DATASETS`: comma-separated list of the supported datasets. If empty, all the datasets are processed. Defaults to empty.
 - `TARGET_REVISION`: the git revision of the dataset where to store the parquet files. Make sure the hf_token (see the "Common" section) allows to write there. Defaults to `refs/convert/parquet`.
 - `URL_TEMPLATE`: the URL template to build the parquet file URLs. Defaults to `/datasets/{repo_id}/resolve/{revision}/{filename}`.
 
@@ -36,3 +37,5 @@ See [../../libs/libqueue/README.md](../../libs/libqueue/README.md) for more info
 ### Common
 
 See [../../libs/libcommon/README.md](../../libs/libcommon/README.md) for more information about the common configuration.
+
+Note that the `HF_TOKEN` is not optional; if empty, the worker will exit immediately. It must be a "write" user token, and the user must be part of the `huggingface` and the `datasets-maintainers` organizations.
