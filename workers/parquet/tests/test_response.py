@@ -35,6 +35,7 @@ def test_compute_splits_response_simple_csv(
             target_revision=worker_config.parquet.target_revision,
             commit_message=worker_config.parquet.commit_message,
             url_template=worker_config.parquet.url_template,
+            supported_datasets=worker_config.parquet.supported_datasets,
         )
         assert result["parquet_response"] == expected_parquet_response
         assert result["dataset_git_revision"] is not None
@@ -49,6 +50,7 @@ def test_compute_splits_response_simple_csv(
             target_revision=worker_config.parquet.target_revision,
             commit_message=worker_config.parquet.commit_message,
             url_template=worker_config.parquet.url_template,
+            supported_datasets=worker_config.parquet.supported_datasets,
         )
     assert exc_info.value.code == error_code
     if cause is None:

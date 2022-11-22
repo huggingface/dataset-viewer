@@ -28,6 +28,7 @@ from huggingface_hub.utils import (
 from parquet.utils import (
     ConfigNamesError,
     DatasetNotFoundError,
+    DatasetNotSupportedError,
     EmptyDatasetError,
     GatedDisabledError,
     GatedExtraFieldsError,
@@ -174,6 +175,7 @@ def compute_parquet_response(
     target_revision: str,
     commit_message: str,
     url_template: str,
+    supported_datasets: List[str],
 ) -> ParquetResponseResult:
     """
     Get the response of /parquet for one specific dataset on huggingface.co.
@@ -211,8 +213,12 @@ def compute_parquet_response(
     """
     logging.info(f"get splits for dataset={dataset}")
 
-    # unlock access to the dataset if it is gated
+    # unlock access to the dataset if it is gated. Note that an error is raised if the dataset does not exist.
     ask_access(dataset=dataset, token=hf_token, hf_endpoint=hf_endpoint)
+
+    # only process the supported datasets
+    if len(supported_datasets) and dataset not in supported_datasets:
+        raise DatasetNotSupportedError("The dataset is not in the list of supported datasets.")
 
     hf_api = HfApi(endpoint=hf_endpoint, token=hf_token)
 

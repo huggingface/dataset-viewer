@@ -45,7 +45,6 @@ def test_compute(worker: ParquetWorker, hub_public_csv: str) -> None:
     assert cached_response["error_code"] is None
     assert cached_response["worker_version"] == worker.version
     assert cached_response["dataset_git_revision"] is not None
-    assert cached_response["error_code"] is None
     content = cached_response["content"]
     assert content["dataset"] == dataset
     assert len(content["parquet_files"]) == 1
@@ -56,6 +55,13 @@ def test_doesnotexist(worker: ParquetWorker) -> None:
     assert worker.compute(dataset=dataset) is False
     with pytest.raises(DoesNotExist):
         get_response(kind=CacheKind.PARQUET.value, dataset=dataset)
+
+
+def test_not_supported(worker: ParquetWorker, hub_not_supported_csv: str) -> None:
+    assert worker.compute(dataset=hub_not_supported_csv) is False
+    cached_response = get_response(kind=CacheKind.PARQUET.value, dataset=hub_not_supported_csv)
+    assert cached_response["http_status"] == HTTPStatus.NOT_IMPLEMENTED
+    assert cached_response["error_code"] == "DatasetNotSupportedError"
 
 
 def test_process_job(worker: ParquetWorker, hub_public_csv: str) -> None:

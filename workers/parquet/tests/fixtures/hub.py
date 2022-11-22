@@ -226,6 +226,14 @@ def hub_public_audio(hf_api: HfApi, hf_token: str, datasets: Dict[str, Dataset])
         hf_api.delete_repo(repo_id=repo_id, token=hf_token, repo_type="dataset")
 
 
+@pytest.fixture(scope="session", autouse=True)
+def hub_not_supported_csv(hf_api: HfApi, hf_token: str, csv_path: str) -> Iterable[str]:
+    repo_id = create_hub_dataset_repo(hf_api=hf_api, hf_token=hf_token, prefix="not_supported", file_paths=[csv_path])
+    yield repo_id
+    with suppress(requests.exceptions.HTTPError, ValueError):
+        hf_api.delete_repo(repo_id=repo_id, token=hf_token, repo_type="dataset")
+
+
 class HubDatasetTest(TypedDict):
     name: str
     parquet_response: Any
