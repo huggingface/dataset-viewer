@@ -22,3 +22,20 @@ def csv_path(tmp_path_factory: pytest.TempPathFactory) -> str:
         for item in DATA:
             writer.writerow(item)
     return path
+
+
+@pytest.fixture(scope="session")
+def extra_fields_readme(tmp_path_factory: pytest.TempPathFactory) -> str:
+    path = str(tmp_path_factory.mktemp("data") / "README.md")
+    lines = [
+        "---",
+        'extra_gated_prompt: "You agree not to attempt to determine the identity of individuals in this dataset"',
+        "extra_gated_fields:",
+        "  Company: text",
+        "  Country: text",
+        "  I agree to use this model for non-commercial use ONLY: checkbox",
+        "---",
+    ]
+    with open(path, "w", newline="") as f:
+        f.writelines(f"{line}\n" for line in lines)
+    return path

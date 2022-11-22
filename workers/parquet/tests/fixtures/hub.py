@@ -219,6 +219,20 @@ def hub_gated_csv(hf_api: HfApi, hf_token: str, csv_path: str) -> Iterable[str]:
 
 
 @pytest.fixture(scope="session", autouse=True)
+def hub_gated_extra_fields_csv(hf_api: HfApi, hf_token: str, csv_path: str, extra_fields_readme: str) -> Iterable[str]:
+    repo_id = create_hub_dataset_repo(
+        hf_api=hf_api,
+        hf_token=hf_token,
+        prefix="csv_extra_fields_gated",
+        file_paths=[csv_path, extra_fields_readme],
+        gated=True,
+    )
+    yield repo_id
+    with suppress(requests.exceptions.HTTPError, ValueError):
+        hf_api.delete_repo(repo_id=repo_id, token=hf_token, repo_type="dataset")
+
+
+@pytest.fixture(scope="session", autouse=True)
 def hub_public_audio(hf_api: HfApi, hf_token: str, datasets: Dict[str, Dataset]) -> Iterable[str]:
     repo_id = create_hub_dataset_repo(hf_api=hf_api, hf_token=hf_token, prefix="audio", dataset=datasets["audio"])
     yield repo_id
@@ -270,6 +284,7 @@ def hub_datasets(
     hub_public_csv,
     hub_private_csv,
     hub_gated_csv,
+    hub_gated_extra_fields_csv,
     hub_public_audio,
 ) -> HubDatasets:
     return {
@@ -297,6 +312,12 @@ def hub_datasets(
             "name": hub_gated_csv,
             "parquet_response": create_parquet_response(
                 dataset=hub_gated_csv, filename="csv-train.parquet", size=CSV_PARQUET_SIZE
+            ),
+        },
+        "gated_extra_fields": {
+            "name": hub_gated_extra_fields_csv,
+            "parquet_response": create_parquet_response(
+                dataset=hub_gated_extra_fields_csv, filename="csv-train.parquet", size=CSV_PARQUET_SIZE
             ),
         },
         "audio": {
