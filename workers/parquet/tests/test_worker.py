@@ -11,6 +11,8 @@ from parquet.config import WorkerConfig
 from parquet.utils import CacheKind
 from parquet.worker import ParquetWorker
 
+from .fixtures.hub import HubDatasets
+
 
 @pytest.fixture(autouse=True)
 def clean_mongo_database() -> None:
@@ -37,17 +39,17 @@ def should_skip_job(worker: ParquetWorker, hub_public_csv: str) -> None:
     assert worker.should_skip_job(dataset=dataset) is True
 
 
-def test_compute(worker: ParquetWorker, hub_public_csv: str) -> None:
-    dataset = hub_public_csv
+def test_compute(worker: ParquetWorker, hub_datasets: HubDatasets) -> None:
+    dataset = hub_datasets["public"]["name"]
     assert worker.compute(dataset=dataset) is True
-    cached_response = get_response(kind=CacheKind.PARQUET.value, dataset=hub_public_csv)
+    cached_response = get_response(kind=CacheKind.PARQUET.value, dataset=dataset)
     assert cached_response["http_status"] == HTTPStatus.OK
     assert cached_response["error_code"] is None
     assert cached_response["worker_version"] == worker.version
     assert cached_response["dataset_git_revision"] is not None
     content = cached_response["content"]
-    assert content["dataset"] == dataset
     assert len(content["parquet_files"]) == 1
+    assert content == hub_datasets["public"]["parquet_response"]
 
 
 def test_doesnotexist(worker: ParquetWorker) -> None:

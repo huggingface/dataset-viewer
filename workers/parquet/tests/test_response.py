@@ -15,8 +15,8 @@ from .fixtures.hub import HubDatasets
     [
         ("public", None, None),
         ("audio", None, None),
-        ("gated", None, None),
-        ("private", None, None),
+        # ("gated", None, None),
+        # ("private", None, None),
         ("empty", "EmptyDatasetError", "EmptyDatasetError"),
         ("does_not_exist", "DatasetNotFoundError", None),
     ],

@@ -79,6 +79,18 @@ class ParquetWorker(Worker):
         config: Optional[str] = None,
         split: Optional[str] = None,
     ) -> bool:
+        dataset_git_revision = None
+        try:
+            dataset_git_revision = get_dataset_git_revision(
+                dataset=dataset, hf_endpoint=self.config.common.hf_endpoint, hf_token=self.config.parquet.hf_token
+            )
+        except DatasetNotFoundError:
+            logging.debug(f"the dataset={dataset} could not be found, don't update the cache")
+            return False
+        if dataset_git_revision is None:
+            logging.debug(f"the dataset={dataset} has no git revision, don't update the cache")
+            return False
+
         try:
             parquet_response_result = compute_parquet_response(
                 dataset=dataset,
@@ -91,13 +103,15 @@ class ParquetWorker(Worker):
                 supported_datasets=self.config.parquet.supported_datasets,
             )
             content = parquet_response_result["parquet_response"]
+            if parquet_response_result["dataset_git_revision"] != dataset_git_revision:
+                raise UnexpectedError("The dataset git revision has changed during the job")
             upsert_response(
                 kind=CacheKind.PARQUET.value,
                 dataset=dataset,
                 content=dict(content),
                 http_status=HTTPStatus.OK,
                 worker_version=self.version,
-                dataset_git_revision=parquet_response_result["dataset_git_revision"],
+                dataset_git_revision=dataset_git_revision,
             )
             logging.debug(f"dataset={dataset} is valid, cache updated")
             return True
@@ -113,7 +127,7 @@ class ParquetWorker(Worker):
                 error_code=err.code,
                 details=dict(err.as_response_with_cause()),
                 worker_version=self.version,
-                dataset_git_revision=parquet_response_result["dataset_git_revision"],
+                dataset_git_revision=dataset_git_revision,
             )
             logging.debug(f"parquet response for dataset={dataset} had an error, cache updated")
             return False
@@ -127,7 +141,7 @@ class ParquetWorker(Worker):
                 error_code=e.code,
                 details=dict(e.as_response_with_cause()),
                 worker_version=self.version,
-                dataset_git_revision=parquet_response_result["dataset_git_revision"],
+                dataset_git_revision=dataset_git_revision,
             )
             logging.debug(f"parquet response for dataset={dataset} had a server error, cache updated")
             return False

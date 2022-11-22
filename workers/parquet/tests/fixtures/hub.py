@@ -251,13 +251,17 @@ def create_parquet_response(dataset: str, filename: str, size: int):
                 "config": config,
                 "split": split,
                 "url": CI_HFH_HUGGINGFACE_CO_URL_TEMPLATE.format(
-                    repo_id=f"datasets/{dataset}", revision="refs/convert/parquet", filename=filename
+                    repo_id=f"datasets/{dataset}", revision="refs%2Fconvert%2Fparquet", filename=f"{config}/{filename}"
                 ),
                 "filename": filename,
                 "size": size,
             }
         ],
     }
+
+
+CSV_PARQUET_SIZE = 1_865
+AUDIO_PARQUET_SIZE = 1_383
 
 
 @pytest.fixture(scope="session", autouse=True)
@@ -280,25 +284,27 @@ def hub_datasets(
         "public": {
             "name": hub_public_csv,
             "parquet_response": create_parquet_response(
-                dataset=hub_public_csv, filename="default/public_train.parquet", size=100
+                dataset=hub_public_csv, filename="csv-train.parquet", size=CSV_PARQUET_SIZE
             ),
         },
         "private": {
             "name": hub_private_csv,
             "parquet_response": create_parquet_response(
-                dataset=hub_public_csv, filename="default/private_train.parquet", size=100
+                dataset=hub_public_csv, filename="csv-train.parquet", size=CSV_PARQUET_SIZE
             ),
         },
         "gated": {
             "name": hub_gated_csv,
             "parquet_response": create_parquet_response(
-                dataset=hub_public_csv, filename="default/gated_train.parquet", size=100
+                dataset=hub_public_csv, filename="csv-train.parquet", size=CSV_PARQUET_SIZE
             ),
         },
         "audio": {
             "name": hub_public_audio,
             "parquet_response": create_parquet_response(
-                dataset=hub_public_csv, filename="default/audio_train.parquet", size=100
+                dataset=hub_public_audio,
+                filename="parquet-train.parquet",
+                size=AUDIO_PARQUET_SIZE,
             ),
         },
     }
