@@ -10,7 +10,7 @@ from starlette.requests import Request
 from starlette.responses import Response
 
 from api.authentication import auth_check
-from api.dataset import is_parquet_in_process
+from api.dataset import UnsupportedDatasetError, check_parquet_in_process
 from api.utils import (
     ApiCustomError,
     CacheKind,
@@ -55,11 +55,13 @@ def create_parquet_endpoint(
                     )
             except DoesNotExist as e:
                 # maybe the parquet response is in process
-                if is_parquet_in_process(dataset=dataset, hf_endpoint=hf_endpoint, hf_token=hf_token):
-                    raise ParquetResponseNotReadyError(
-                        "The parquet/ response is not ready yet. Please retry later."
-                    ) from e
-                raise ParquetResponseNotFoundError("Not found.") from e
+                try:
+                    check_parquet_in_process(dataset=dataset, hf_endpoint=hf_endpoint, hf_token=hf_token)
+                except UnsupportedDatasetError:
+                    raise ParquetResponseNotFoundError("Not found.") from e
+                raise ParquetResponseNotReadyError(
+                    "The parquet/ response is not ready yet. Please retry later."
+                ) from e
         except ApiCustomError as e:
             return get_json_api_error_response(error=e, max_age=max_age_short)
         except Exception as err:

@@ -10,7 +10,12 @@ from starlette.requests import Request
 from starlette.responses import Response
 
 from api.authentication import auth_check
-from api.dataset import is_first_rows_in_process
+from api.dataset import (
+    MissingSplitError,
+    SplitsResponseError,
+    UnsupportedDatasetError,
+    check_first_rows_in_process,
+)
 from api.utils import (
     ApiCustomError,
     CacheKind,
@@ -57,13 +62,15 @@ def create_first_rows_endpoint(
                     )
             except DoesNotExist as e:
                 # maybe the first-rows response is in process
-                if is_first_rows_in_process(
-                    dataset=dataset, config=config, split=split, hf_endpoint=hf_endpoint, hf_token=hf_token
-                ):
-                    raise FirstRowsResponseNotReadyError(
-                        "The list of the first rows is not ready yet. Please retry later."
-                    ) from e
-                raise FirstRowsResponseNotFoundError("Not found.") from e
+                try:
+                    check_first_rows_in_process(
+                        dataset=dataset, config=config, split=split, hf_endpoint=hf_endpoint, hf_token=hf_token
+                    )
+                except (MissingSplitError, SplitsResponseError, UnsupportedDatasetError):
+                    raise FirstRowsResponseNotFoundError("Not found.") from e
+                raise FirstRowsResponseNotReadyError(
+                    "The list of the first rows is not ready yet. Please retry later."
+                ) from e
         except ApiCustomError as e:
             return get_json_api_error_response(error=e, max_age=max_age_short)
         except Exception as e:

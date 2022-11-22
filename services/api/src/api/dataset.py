@@ -17,11 +17,33 @@ first_rows_queue = Queue(type=JobType.FIRST_ROWS.value)
 parquet_queue = Queue(type=JobType.PARQUET.value)
 
 
-def is_supported(
+class LoggedError(Exception):
+    def __init__(self, message: str):
+        self.message = message
+        logging.debug(self.message)
+        super().__init__(self.message)
+
+
+class UnsupportedDatasetError(LoggedError):
+    def __init__(self, dataset: str):
+        super().__init__(f"Dataset '{dataset}' is not supported (does not exist or is private)")
+
+
+class SplitsResponseError(LoggedError):
+    def __init__(self, dataset: str):
+        super().__init__(f"Splits response for dataset '{dataset}' is an error")
+
+
+class MissingSplitError(LoggedError):
+    def __init__(self, dataset: str):
+        super().__init__(f"Split does not exist in the /splits response for dataset '{dataset}'")
+
+
+def check_support(
     dataset: str,
     hf_endpoint: str,
     hf_token: Optional[str] = None,
-) -> bool:
+) -> None:
     """
     Check if the dataset exists on the Hub and is supported by the datasets-server.
     Args:
@@ -33,72 +55,69 @@ def is_supported(
         hf_token (`str`, *optional*):
             An authentication token (See https://huggingface.co/settings/token)
     Returns:
-        [`bool`]: True if the dataset is supported by the datasets-server.
+        `None`
+    Raises:
+        UnsupportedDatasetError: if the dataset is not supported
     """
     try:
         # note that token is required to access gated dataset info
         info = HfApi(endpoint=hf_endpoint).dataset_info(dataset, token=hf_token)
-    except RepositoryNotFoundError:
-        return False
-    return info.private is False
+        if info.private is True:
+            raise UnsupportedDatasetError(dataset=dataset)
+    except RepositoryNotFoundError as e:
+        raise UnsupportedDatasetError(dataset=dataset) from e
 
 
-def update_dataset(dataset: str, hf_endpoint: str, hf_token: Optional[str] = None, force: bool = False) -> bool:
-    if is_supported(dataset=dataset, hf_endpoint=hf_endpoint, hf_token=hf_token):
-        logging.debug(f"refresh dataset='{dataset}'")
-        splits_queue.add_job(dataset=dataset, force=force)
-        parquet_queue.add_job(dataset=dataset, force=force)
-        return True
-    else:
-        logging.debug(f"can't refresh dataset='{dataset}', it's not supported (does not exist, private, etc.)")
-        return False
+def update_dataset(dataset: str, hf_endpoint: str, hf_token: Optional[str] = None, force: bool = False) -> None:
+    check_support(dataset=dataset, hf_endpoint=hf_endpoint, hf_token=hf_token)
+    logging.debug(f"refresh dataset='{dataset}'")
+    splits_queue.add_job(dataset=dataset, force=force)
+    parquet_queue.add_job(dataset=dataset, force=force)
 
 
-def delete_dataset(dataset: str) -> bool:
+def delete_dataset(dataset: str) -> None:
     logging.debug(f"delete cache for dataset='{dataset}'")
     delete_dataset_responses(dataset=dataset)
-    return True
 
 
 def move_dataset(
     from_dataset: str, to_dataset: str, hf_endpoint: str, hf_token: Optional[str] = None, force: bool = False
-) -> bool:
-    # not optimal as we might try to rename instead
-    if update_dataset(dataset=to_dataset, hf_endpoint=hf_endpoint, hf_token=hf_token, force=force):
-        return delete_dataset(dataset=from_dataset)
-    else:
-        return False
+) -> None:
+    logging.debug(f"move dataset '{from_dataset}' to '{to_dataset}'")
+    update_dataset(dataset=to_dataset, hf_endpoint=hf_endpoint, hf_token=hf_token, force=force)
+    # ^ can raise UnsupportedDatasetError
+    delete_dataset(dataset=from_dataset)
 
 
-def is_splits_in_process(
+def check_splits_in_process(
     dataset: str,
     hf_endpoint: str,
     hf_token: Optional[str] = None,
-) -> bool:
+) -> None:
     if splits_queue.is_job_in_process(dataset=dataset):
         # the /splits response is not ready yet
-        return True
-    return update_dataset(dataset=dataset, hf_endpoint=hf_endpoint, hf_token=hf_token, force=False)
+        return
+    update_dataset(dataset=dataset, hf_endpoint=hf_endpoint, hf_token=hf_token, force=False)
 
 
-def is_parquet_in_process(
+def check_parquet_in_process(
     dataset: str,
     hf_endpoint: str,
     hf_token: Optional[str] = None,
-) -> bool:
+) -> None:
     if parquet_queue.is_job_in_process(dataset=dataset):
         # the /parquet response is not ready yet
-        return True
-    return update_dataset(dataset=dataset, hf_endpoint=hf_endpoint, hf_token=hf_token, force=False)
+        return
+    update_dataset(dataset=dataset, hf_endpoint=hf_endpoint, hf_token=hf_token, force=False)
 
 
-def is_first_rows_in_process(
+def check_first_rows_in_process(
     dataset: str, config: str, split: str, hf_endpoint: str, hf_token: Optional[str] = None
-) -> bool:
+) -> None:
     if first_rows_queue.is_job_in_process(
         dataset=dataset, config=config, split=split
     ) or splits_queue.is_job_in_process(dataset=dataset):
-        return True
+        return
 
     # a bit convoluted, but to check if the first-rows response should exist,
     # we have to check the content of the /splits response for the same dataset
@@ -106,18 +125,19 @@ def is_first_rows_in_process(
         result = get_response(kind=CacheKind.SPLITS.value, dataset=dataset)
     except DoesNotExist:
         # the splits responses does not exist, update
-        return update_dataset(dataset=dataset, hf_endpoint=hf_endpoint, hf_token=hf_token)
+        update_dataset(dataset=dataset, hf_endpoint=hf_endpoint, hf_token=hf_token)
+        return
 
     if result["http_status"] != HTTPStatus.OK:
         # the /splits response is an error, the first rows response should not exist
-        return False
+        raise SplitsResponseError(dataset=dataset)
 
     if all(
         split_item["dataset"] != dataset or split_item["config"] != config or split_item["split"] != split
         for split_item in result["content"]["splits"]
     ):
         # the split is not listed in the /splits response, so it's normal that it's not in the cache
-        return False
+        raise MissingSplitError(dataset=dataset)
 
     # The split is listed in the /splits response.
     # Let's refresh *the whole dataset*, because something did not work
@@ -125,4 +145,4 @@ def is_first_rows_in_process(
     #
     # Caveat: we don't even check if the /first-rows response already exists in the cache,
     # because we assume it's the reason why one would call this function
-    return update_dataset(dataset=dataset, hf_endpoint=hf_endpoint, hf_token=hf_token, force=True)
+    update_dataset(dataset=dataset, hf_endpoint=hf_endpoint, hf_token=hf_token, force=True)

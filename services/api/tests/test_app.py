@@ -313,7 +313,7 @@ def test_metrics(client: TestClient) -> None:
             200,
             True,
         ),
-        ({"event": "add", "repo": {"type": "dataset", "name": "webhook-test", "gitalyUid": "123"}}, False, 200, False),
+        ({"event": "add", "repo": {"type": "dataset", "name": "webhook-test", "gitalyUid": "123"}}, False, 400, False),
     ],
 )
 def test_webhook(

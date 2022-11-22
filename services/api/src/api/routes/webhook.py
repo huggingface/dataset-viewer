@@ -8,7 +8,12 @@ from jsonschema import ValidationError, validate  # type: ignore
 from starlette.requests import Request
 from starlette.responses import Response
 
-from api.dataset import delete_dataset, move_dataset, update_dataset
+from api.dataset import (
+    UnsupportedDatasetError,
+    delete_dataset,
+    move_dataset,
+    update_dataset,
+)
 from api.utils import Endpoint, get_response
 
 schema = {
@@ -91,7 +96,11 @@ def create_webhook_endpoint(hf_endpoint: str, hf_token: Optional[str] = None) ->
             content = {"status": "error", "error": "unexpected error"}
             return get_response(content, 500)
 
-        process_payload(payload, hf_endpoint, hf_token)
+        try:
+            process_payload(payload, hf_endpoint, hf_token)
+        except UnsupportedDatasetError:
+            content = {"status": "error", "error": "the dataset is not supported"}
+            return get_response(content, 400)
         content = {"status": "ok"}
         return get_response(content, 200)
 
