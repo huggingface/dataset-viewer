@@ -11,6 +11,7 @@ from libqueue.queue import Queue
 from admin.utils import JobType
 
 splits_queue = Queue(type=JobType.SPLITS.value)
+parquet_queue = Queue(type=JobType.PARQUET.value)
 first_rows_queue = Queue(type=JobType.FIRST_ROWS.value)
 
 
@@ -43,6 +44,11 @@ def is_supported(
 def update_splits(dataset: str, force: bool = False) -> None:
     logging.debug(f"refresh /splits for {dataset}")
     splits_queue.add_job(dataset=dataset, force=force)
+
+
+def update_parquet(dataset: str, force: bool = False) -> None:
+    logging.debug(f"refresh /parquet for {dataset}")
+    parquet_queue.add_job(dataset=dataset, force=force)
 
 
 def update_first_rows(dataset: str, config: str, split: str, force: bool = False) -> None:

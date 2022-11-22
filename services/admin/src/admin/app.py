@@ -15,6 +15,7 @@ from admin.routes.cache_reports import create_cache_reports_endpoint
 from admin.routes.force_refresh_first_rows import (
     create_force_refresh_first_rows_endpoint,
 )
+from admin.routes.force_refresh_parquet import create_force_refresh_parquet_endpoint
 from admin.routes.force_refresh_splits import create_force_refresh_splits_endpoint
 from admin.routes.healthcheck import healthcheck_endpoint
 from admin.routes.pending_jobs import create_pending_jobs_endpoint
@@ -48,6 +49,16 @@ def create_app() -> Starlette:
         Route(
             "/force-refresh/splits",
             endpoint=create_force_refresh_splits_endpoint(
+                hf_endpoint=app_config.common.hf_endpoint,
+                hf_token=app_config.common.hf_token,
+                external_auth_url=app_config.admin.external_auth_url,
+                organization=app_config.admin.hf_organization,
+            ),
+            methods=["POST"],
+        ),
+        Route(
+            "/force-refresh/parquet",
+            endpoint=create_force_refresh_parquet_endpoint(
                 hf_endpoint=app_config.common.hf_endpoint,
                 hf_token=app_config.common.hf_token,
                 external_auth_url=app_config.admin.external_auth_url,
