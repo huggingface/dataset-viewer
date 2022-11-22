@@ -320,7 +320,7 @@ python-versions = "*"
 
 [[package]]
 name = "datasets"
-version = "2.7.0"
+version = "2.7.1"
 description = "HuggingFace community-driven open-source library of datasets"
 category = "main"
 optional = false
