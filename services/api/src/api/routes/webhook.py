@@ -8,7 +8,7 @@ from jsonschema import ValidationError, validate  # type: ignore
 from starlette.requests import Request
 from starlette.responses import Response
 
-from api.dataset import delete, move, update
+from api.dataset import delete_dataset, move_dataset, update_dataset
 from api.utils import Endpoint, get_response
 
 schema = {
@@ -62,14 +62,16 @@ def process_payload(payload: MoonWebhookV2Payload, hf_endpoint: str, hf_token: O
         return
     event = payload["event"]
     if event in ["add", "update"]:
-        update(dataset=dataset, hf_endpoint=hf_endpoint, hf_token=hf_token, force=False)
+        update_dataset(dataset=dataset, hf_endpoint=hf_endpoint, hf_token=hf_token, force=False)
     elif event == "remove":
-        delete(dataset=dataset)
+        delete_dataset(dataset=dataset)
     elif event == "move":
         moved_to = payload["movedTo"]
         if moved_to is None:
             return
-        move(from_dataset=dataset, to_dataset=moved_to, hf_endpoint=hf_endpoint, hf_token=hf_token, force=False)
+        move_dataset(
+            from_dataset=dataset, to_dataset=moved_to, hf_endpoint=hf_endpoint, hf_token=hf_token, force=False
+        )
 
 
 def create_webhook_endpoint(hf_endpoint: str, hf_token: Optional[str] = None) -> Endpoint:
