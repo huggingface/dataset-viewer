@@ -10,7 +10,6 @@ appdirs = "^1.4.4"
 environs = "^9.5.0"
 mongo-types = "0.15.1"
 mongoengine = "^0.24.1"
-pymongo = { extras = ["srv"], version = "^3.12.3" }
 python = "3.9.6"
 
 [tool.poetry.group.dev.dependencies]
