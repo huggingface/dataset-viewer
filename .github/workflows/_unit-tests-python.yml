@@ -16,7 +16,7 @@ env:
   POETRY_VIRTUALENVS_IN_PROJECT: false
   mongo-port: "27017"
   python-version: "3.9.6"
-  poetry-version: "1.1.13"
+  poetry-version: "1.2.2"
 jobs:
   unit-tests:
     defaults:

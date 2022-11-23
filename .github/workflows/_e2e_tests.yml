@@ -10,7 +10,7 @@ on:
         type: string
 env:
   python-version: 3.9.6
-  poetry-version: 1.1.13
+  poetry-version: 1.2.2
   # required to get access to use a cached poetry venv in "/home/runner/.cache/pypoetry/virtualenvs"
   POETRY_VIRTUALENVS_IN_PROJECT: false
   working-directory: e2e

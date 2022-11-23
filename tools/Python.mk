@@ -22,7 +22,7 @@ quality:
 	poetry run flake8 tests src
 	poetry run mypy tests src
 	poetry run bandit -r src
-	poetry run safety check $(SAFETY_EXCEPTIONS)
+	bash -c 'poetry run pip-audit -r <(poetry export -f requirements.txt --with dev)'
 
 # Format source code automatically
 .PHONY: style
