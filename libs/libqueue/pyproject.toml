@@ -2,7 +2,7 @@
 authors = ["Sylvain Lesage <sylvain.lesage@huggingface.co>"]
 description = "Library for the jobs queue in mongodb"
 name = "libqueue"
-version = "0.4.12"
+version = "0.4.13"
 license = "Apache-2.0"
 
 [tool.poetry.dependencies]
@@ -11,7 +11,7 @@ mongo-types = "0.15.1"
 mongoengine = "^0.24.1"
 packaging = "^21.3"
 psutil = "^5.9.2"
-pymongo = { extras = ["srv"], version = "^4.3.3" }
+pymongo = { extras = ["srv"], version = "^3.13.0" }
 python = "3.9.6"
 
 [tool.poetry.group.dev.dependencies]

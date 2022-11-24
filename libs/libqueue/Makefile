@@ -11,5 +11,5 @@ include ../../tools/Docker.mk
 
 .PHONY: pip-audit
 pip-audit:
-	bash -c "poetry run pip-audit -r <(poetry export -f requirements.txt --with dev | sed '/^pymongo==4.3.3 ;/,+74 d')"
+	bash -c "poetry run pip-audit -r <(poetry export -f requirements.txt --with dev | sed '/^pymongo==/,+110 d')"
 # ^ we remove problematic lines to have a working pip-audit. See https://github.com/pypa/pip-audit/issues/84#issuecomment-1326203111 for "requests"
