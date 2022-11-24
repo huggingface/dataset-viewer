@@ -580,11 +580,11 @@ tqdm = "*"
 
 [[package]]
 name = "gitdb"
-version = "4.0.9"
+version = "4.0.10"
 description = "Git Object Database"
 category = "dev"
 optional = false
-python-versions = ">=3.6"
+python-versions = ">=3.7"
 
 [package.dependencies]
 smmap = ">=3.0.1,<6"
@@ -1873,7 +1873,7 @@ test = ["asv", "gmpy2", "mpmath", "pytest", "pytest-cov", "pytest-xdist", "sciki
 
 [[package]]
 name = "setuptools"
-version = "65.6.2"
+version = "65.6.3"
 description = "Easily download, build, install, upgrade, and uninstall Python packages"
 category = "main"
 optional = false
@@ -2439,7 +2439,7 @@ cffi = ["cffi (>=1.11)"]
 [metadata]
 lock-version = "1.1"
 python-versions = "3.9.6"
-content-hash = "933e7c451621da1022d41a9bdefa348ca97ca3740590ed5daacb58e433e980ea"
+content-hash = "a1e1b7767291bb8b0c8e539245532a35e0494ef5926280d5071c3566500e3179"
 
 [metadata.files]
 absl-py = [
@@ -3117,8 +3117,8 @@ gdown = [
     {file = "gdown-4.5.3.tar.gz", hash = "sha256:6cbf7dd4108588c734aa588131d8e1d52e64f0873870f71f74cbac195f0c60ef"},
 ]
 gitdb = [
-    {file = "gitdb-4.0.9-py3-none-any.whl", hash = "sha256:8033ad4e853066ba6ca92050b9df2f89301b8fc8bf7e9324d412a63f8bf1a8fd"},
-    {file = "gitdb-4.0.9.tar.gz", hash = "sha256:bac2fd45c0a1c9cf619e63a90d62bdc63892ef92387424b855792a6cabe789aa"},
+    {file = "gitdb-4.0.10-py3-none-any.whl", hash = "sha256:c286cf298426064079ed96a9e4a9d39e7f3e9bf15ba60701e95f5492f28415c7"},
+    {file = "gitdb-4.0.10.tar.gz", hash = "sha256:6eb990b69df4e15bad899ea868dc46572c3f75339735663b81de79b06f17eb9a"},
 ]
 gitpython = [
     {file = "GitPython-3.1.29-py3-none-any.whl", hash = "sha256:41eea0deec2deea139b459ac03656f0dd28fc4a3387240ec1d3c259a2c47850f"},
@@ -4639,8 +4639,8 @@ scipy = [
     {file = "scipy-1.9.3.tar.gz", hash = "sha256:fbc5c05c85c1a02be77b1ff591087c83bc44579c6d2bd9fb798bb64ea5e1a027"},
 ]
 setuptools = [
-    {file = "setuptools-65.6.2-py3-none-any.whl", hash = "sha256:97a4a824325146ebc8dc29b0aa5f3b1eaa590a0f00cacbfdf81831670f07862d"},
-    {file = "setuptools-65.6.2.tar.gz", hash = "sha256:41fa68ecac9e099122990d7437bc10683b966c32a591caa2824dffcffd5dea7a"},
+    {file = "setuptools-65.6.3-py3-none-any.whl", hash = "sha256:57f6f22bde4e042978bcd50176fdb381d7c21a9efa4041202288d3737a0c6a54"},
+    {file = "setuptools-65.6.3.tar.gz", hash = "sha256:a7620757bf984b58deaf32fc8a4577a9bbc0850cf92c20e1ce41c38c19e5fb75"},
 ]
 six = [
     {file = "six-1.16.0-py2.py3-none-any.whl", hash = "sha256:8abb2f1d86890a2dfb989f9a77cfcfd3e47c2a354b01111771326f8aa26e0254"},
