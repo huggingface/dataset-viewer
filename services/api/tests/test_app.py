@@ -7,7 +7,13 @@ from typing import Dict, Optional
 
 import pytest
 from libcache.simple_cache import _clean_cache_database, upsert_response
-from libcommon.processing_steps import ProcessingStep, Parameters, first_rows_step, parquet_step, splits_step
+from libcommon.processing_steps import (
+    Parameters,
+    ProcessingStep,
+    first_rows_step,
+    parquet_step,
+    splits_step,
+)
 from libqueue.queue import Queue, _clean_queue_database
 from pytest_httpserver import HTTPServer
 from starlette.testclient import TestClient

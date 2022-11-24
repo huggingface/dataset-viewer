@@ -3,7 +3,7 @@ from typing import List
 
 import pytest
 from libcache.simple_cache import _clean_cache_database, upsert_response
-from libcommon.processing_steps import ProcessingStep, Parameters
+from libcommon.processing_steps import Parameters, ProcessingStep
 
 from api.config import AppConfig
 from api.routes.valid import get_valid, is_valid
