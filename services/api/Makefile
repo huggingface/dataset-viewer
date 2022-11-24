@@ -6,8 +6,8 @@ export QUEUE_MONGO_URL := mongodb://localhost:${MONGO_PORT}
 # makefile variables
 DOCKER_COMPOSE := ../../tools/docker-compose-mongo.yml
 
-# Ensure to specify HF_TOKEN when calling make test, ie HF_TOKEN=hf_app_xxx make test
 include ../../tools/Python.mk
+include ../../tools/PythonAudit.mk
 #include ../../tools/PythonTest.mk
 include ../../tools/Docker.mk
 
