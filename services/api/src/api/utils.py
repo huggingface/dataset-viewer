@@ -1,7 +1,6 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2022 The HuggingFace Authors.
 
-from enum import Enum
 from http import HTTPStatus
 from typing import Any, Callable, Coroutine, List, Literal, Optional
 
@@ -12,12 +11,8 @@ from starlette.responses import JSONResponse, Response
 
 ApiErrorCode = Literal[
     "MissingRequiredParameter",
-    "SplitsResponseNotReady",
-    "FirstRowsResponseNotReady",
-    "ParquetResponseNotReady",
-    "SplitsResponseNotFound",
-    "FirstRowsResponseNotFound",
-    "ParquetResponseNotFound",
+    "ResponseNotReady",
+    "ResponseNotFound",
     "UnexpectedError",
     "ExternalUnauthenticatedError",
     "ExternalAuthenticatedError",
@@ -45,46 +40,18 @@ class MissingRequiredParameterError(ApiCustomError):
         super().__init__(message, HTTPStatus.UNPROCESSABLE_ENTITY, "MissingRequiredParameter")
 
 
-class SplitsResponseNotReadyError(ApiCustomError):
-    """Raised when the /splits response has not been processed yet."""
-
-    def __init__(self, message: str):
-        super().__init__(message, HTTPStatus.INTERNAL_SERVER_ERROR, "SplitsResponseNotReady")
-
-
-class FirstRowsResponseNotReadyError(ApiCustomError):
-    """Raised when the /first-rows response has not been processed yet."""
-
-    def __init__(self, message: str):
-        super().__init__(message, HTTPStatus.INTERNAL_SERVER_ERROR, "FirstRowsResponseNotReady")
-
-
-class ParquetResponseNotReadyError(ApiCustomError):
+class ResponseNotReadyError(ApiCustomError):
     """Raised when the /parquet response has not been processed yet."""
 
     def __init__(self, message: str):
-        super().__init__(message, HTTPStatus.INTERNAL_SERVER_ERROR, "ParquetResponseNotReady")
+        super().__init__(message, HTTPStatus.INTERNAL_SERVER_ERROR, "ResponseNotReady")
 
 
-class FirstRowsResponseNotFoundError(ApiCustomError):
-    """Raised when the response for /first-rows has not been found."""
-
-    def __init__(self, message: str):
-        super().__init__(message, HTTPStatus.NOT_FOUND, "FirstRowsResponseNotFound")
-
-
-class SplitsResponseNotFoundError(ApiCustomError):
-    """Raised when the response for /splits has not been found."""
+class ResponseNotFoundError(ApiCustomError):
+    """Raised when the response has not been found."""
 
     def __init__(self, message: str):
-        super().__init__(message, HTTPStatus.NOT_FOUND, "SplitsResponseNotFound")
-
-
-class ParquetResponseNotFoundError(ApiCustomError):
-    """Raised when the response for /parquet has not been found."""
-
-    def __init__(self, message: str):
-        super().__init__(message, HTTPStatus.NOT_FOUND, "ParquetResponseNotFound")
+        super().__init__(message, HTTPStatus.NOT_FOUND, "ResponseNotFound")
 
 
 class UnexpectedError(ApiCustomError):
@@ -155,15 +122,3 @@ def are_valid_parameters(parameters: List[Any]) -> bool:
 
 
 Endpoint = Callable[[Request], Coroutine[Any, Any, Response]]
-
-
-class JobType(Enum):
-    SPLITS = "/splits"
-    FIRST_ROWS = "/first-rows"
-    PARQUET = "/parquet"
-
-
-class CacheKind(Enum):
-    SPLITS = "/splits"
-    FIRST_ROWS = "/first-rows"
-    PARQUET = "/parquet"

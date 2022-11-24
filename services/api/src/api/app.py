@@ -4,6 +4,11 @@
 from typing import List
 
 import uvicorn  # type: ignore
+from libcommon.processing_steps import (
+    INIT_PROCESSING_STEPS,
+    PROCESSING_STEPS,
+    PROCESSING_STEPS_FOR_VALID,
+)
 from starlette.applications import Starlette
 from starlette.middleware import Middleware
 from starlette.middleware.cors import CORSMiddleware
@@ -14,11 +19,9 @@ from starlette_prometheus import PrometheusMiddleware
 
 from api.config import AppConfig, UvicornConfig
 from api.prometheus import Prometheus
-from api.routes.first_rows import create_first_rows_endpoint
 from api.routes.healthcheck import healthcheck_endpoint
-from api.routes.parquet import create_parquet_endpoint
-from api.routes.splits import create_splits_endpoint
-from api.routes.valid import create_is_valid_endpoint, valid_endpoint
+from api.routes.processing_step import create_processing_step_endpoint
+from api.routes.valid import create_is_valid_endpoint, create_valid_endpoint
 from api.routes.webhook import create_webhook_endpoint
 
 
@@ -33,46 +36,49 @@ def create_app() -> Starlette:
         Middleware(GZipMiddleware),
         Middleware(PrometheusMiddleware, filter_unhandled_paths=True),
     ]
-    documented: List[BaseRoute] = [
-        Route("/valid", endpoint=valid_endpoint),
+    valid: List[BaseRoute] = [
+        Route(
+            "/valid",
+            endpoint=create_valid_endpoint(
+                processing_steps_for_valid=PROCESSING_STEPS_FOR_VALID,
+                max_age_long=app_config.api.max_age_long,
+                max_age_short=app_config.api.max_age_short,
+            ),
+        ),
         Route(
             "/is-valid",
             endpoint=create_is_valid_endpoint(
                 external_auth_url=app_config.api.external_auth_url,
+                processing_steps_for_valid=PROCESSING_STEPS_FOR_VALID,
+                max_age_long=app_config.api.max_age_long,
+                max_age_short=app_config.api.max_age_short,
             ),
-        ),
+        )
         # ^ called by https://github.com/huggingface/model-evaluator
+    ]
+    processing_steps: List[BaseRoute] = [
         Route(
-            "/first-rows",
-            endpoint=create_first_rows_endpoint(
-                external_auth_url=app_config.api.external_auth_url,
+            processing_step.endpoint,
+            endpoint=create_processing_step_endpoint(
+                processing_step=processing_step,
+                init_processing_steps=INIT_PROCESSING_STEPS,
                 hf_endpoint=app_config.common.hf_endpoint,
                 hf_token=app_config.common.hf_token,
-            ),
-        ),
-        Route(
-            "/parquet",
-            endpoint=create_parquet_endpoint(
                 external_auth_url=app_config.api.external_auth_url,
-                hf_endpoint=app_config.common.hf_endpoint,
-                hf_token=app_config.common.hf_token,
+                max_age_long=app_config.api.max_age_long,
+                max_age_short=app_config.api.max_age_short,
             ),
-        ),
-        Route(
-            "/splits",
-            endpoint=create_splits_endpoint(
-                external_auth_url=app_config.api.external_auth_url,
-                hf_endpoint=app_config.common.hf_endpoint,
-                hf_token=app_config.common.hf_token,
-            ),
-        ),
+        )
+        for processing_step in PROCESSING_STEPS
     ]
     to_protect: List[BaseRoute] = [
         # called by the Hub webhooks
         Route(
             "/webhook",
             endpoint=create_webhook_endpoint(
-                hf_endpoint=app_config.common.hf_endpoint, hf_token=app_config.common.hf_token
+                init_processing_steps=INIT_PROCESSING_STEPS,
+                hf_endpoint=app_config.common.hf_endpoint,
+                hf_token=app_config.common.hf_token,
             ),
             methods=["POST"],
         ),
@@ -90,7 +96,7 @@ def create_app() -> Starlette:
             name="assets",
         ),
     ]
-    routes: List[BaseRoute] = documented + to_protect + protected + for_development_only
+    routes: List[BaseRoute] = valid + processing_steps + to_protect + protected + for_development_only
     return Starlette(routes=routes, middleware=middleware)
 
 

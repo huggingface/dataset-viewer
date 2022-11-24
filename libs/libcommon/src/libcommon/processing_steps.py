@@ -26,22 +26,24 @@ class ProcessingStep:
     """
 
     endpoint: str
-    job_type: str
-    cache_kind: str
     parameters: Parameters
     dependencies: List[ProcessingStep]
 
+    @property
+    def job_type(self):
+        """The job type (ie. the job to run to compute the response)."""
+        return self.endpoint
 
-splits_step = ProcessingStep(
-    endpoint="/splits", job_type="/splits", cache_kind="/splits", parameters=Parameters.DATASET, dependencies=[]
-)
-parquet_step = ProcessingStep(
-    endpoint="/parquet", job_type="/parquet", cache_kind="/parquet", parameters=Parameters.DATASET, dependencies=[]
-)
+    @property
+    def cache_kind(self):
+        """The cache kind (ie. the key in the cache)."""
+        return self.endpoint
+
+
+splits_step = ProcessingStep(endpoint="/splits", parameters=Parameters.DATASET, dependencies=[])
+parquet_step = ProcessingStep(endpoint="/parquet", parameters=Parameters.DATASET, dependencies=[])
 first_rows_step = ProcessingStep(
     endpoint="/first-rows",
-    job_type="/first-rows",
-    cache_kind="/first-rows",
     parameters=Parameters.SPLIT,
     dependencies=[splits_step],
 )
@@ -52,6 +54,7 @@ PROCESSING_STEPS: List[ProcessingStep] = [
     first_rows_step,
 ]
 
+# /valid and /is-valid indicate whether the dataset viewer will work
 PROCESSING_STEPS_FOR_VALID: List[ProcessingStep] = [
     splits_step,
     first_rows_step,

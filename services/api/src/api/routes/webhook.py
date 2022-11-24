@@ -5,6 +5,7 @@ import logging
 from typing import Any, List, Literal, Optional, TypedDict
 
 from jsonschema import ValidationError, validate  # type: ignore
+from libcommon.processing_steps import ProcessingStep
 from starlette.requests import Request
 from starlette.responses import Response
 
@@ -59,7 +60,12 @@ def parse_payload(json: Any) -> MoonWebhookV2Payload:
     return json
 
 
-def process_payload(payload: MoonWebhookV2Payload, hf_endpoint: str, hf_token: Optional[str] = None) -> None:
+def process_payload(
+    init_processing_steps: List[ProcessingStep],
+    payload: MoonWebhookV2Payload,
+    hf_endpoint: str,
+    hf_token: Optional[str] = None,
+) -> None:
     if payload["repo"]["type"] != "dataset":
         return
     dataset = payload["repo"]["name"]
@@ -67,7 +73,13 @@ def process_payload(payload: MoonWebhookV2Payload, hf_endpoint: str, hf_token: O
         return
     event = payload["event"]
     if event in ["add", "update"]:
-        update_dataset(dataset=dataset, hf_endpoint=hf_endpoint, hf_token=hf_token, force=False)
+        update_dataset(
+            dataset=dataset,
+            init_processing_steps=init_processing_steps,
+            hf_endpoint=hf_endpoint,
+            hf_token=hf_token,
+            force=False,
+        )
     elif event == "remove":
         delete_dataset(dataset=dataset)
     elif event == "move":
@@ -75,11 +87,18 @@ def process_payload(payload: MoonWebhookV2Payload, hf_endpoint: str, hf_token: O
         if moved_to is None:
             return
         move_dataset(
-            from_dataset=dataset, to_dataset=moved_to, hf_endpoint=hf_endpoint, hf_token=hf_token, force=False
+            from_dataset=dataset,
+            to_dataset=moved_to,
+            init_processing_steps=init_processing_steps,
+            hf_endpoint=hf_endpoint,
+            hf_token=hf_token,
+            force=False,
         )
 
 
-def create_webhook_endpoint(hf_endpoint: str, hf_token: Optional[str] = None) -> Endpoint:
+def create_webhook_endpoint(
+    init_processing_steps: List[ProcessingStep], hf_endpoint: str, hf_token: Optional[str] = None
+) -> Endpoint:
     async def webhook_endpoint(request: Request) -> Response:
         try:
             json = await request.json()
@@ -97,7 +116,12 @@ def create_webhook_endpoint(hf_endpoint: str, hf_token: Optional[str] = None) ->
             return get_response(content, 500)
 
         try:
-            process_payload(payload, hf_endpoint, hf_token)
+            process_payload(
+                init_processing_steps=init_processing_steps,
+                payload=payload,
+                hf_endpoint=hf_endpoint,
+                hf_token=hf_token,
+            )
         except UnsupportedDatasetError:
             content = {"status": "error", "error": "the dataset is not supported"}
             return get_response(content, 400)
