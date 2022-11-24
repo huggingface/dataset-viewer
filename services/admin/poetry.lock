@@ -372,7 +372,7 @@ url = "../../libs/libcache/dist/libcache-0.4.3-py3-none-any.whl"
 
 [[package]]
 name = "libcommon"
-version = "0.3.3"
+version = "0.3.4"
 description = "Library for utils, common to all the services and workers"
 category = "main"
 optional = false
@@ -384,7 +384,7 @@ orjson = ">=3.6.4,<4.0.0"
 
 [package.source]
 type = "file"
-url = "../../libs/libcommon/dist/libcommon-0.3.3-py3-none-any.whl"
+url = "../../libs/libcommon/dist/libcommon-0.3.4-py3-none-any.whl"
 
 [[package]]
 name = "libqueue"
@@ -1021,7 +1021,7 @@ python-versions = "*"
 [metadata]
 lock-version = "1.1"
 python-versions = "3.9.6"
-content-hash = "fea2b0d92b950310e73d15ef4a4029a600fd183996ad2c28259a2c846ade8c40"
+content-hash = "9f65f58259a2025715e348a17893dad96e0cbb98d8c75f99ac1d3f2aa6aa7c5f"
 
 [metadata.files]
 anyio = [
@@ -1203,7 +1203,7 @@ libcache = [
     {file = "libcache-0.4.3-py3-none-any.whl", hash = "sha256:d21c278aa72be395fe5a541eadfab3e33e9565f821a58aa161386f1ec9346041"},
 ]
 libcommon = [
-    {file = "libcommon-0.3.3-py3-none-any.whl", hash = "sha256:b56b6e48bb2c92c3dfc619fc25718db930bc356f1e54fb9f8a67ba4597cb499d"},
+    {file = "libcommon-0.3.4-py3-none-any.whl", hash = "sha256:243034630f3d47247ccdbaaed2763074bc88b8e7dd38133077f54de756ff2020"},
 ]
 libqueue = [
     {file = "libqueue-0.4.13-py3-none-any.whl", hash = "sha256:6aeec523eff05f1ee07cbc6bcf870ec301e5ce32913964f6fc385760d2ef954c"},

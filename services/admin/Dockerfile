@@ -27,7 +27,6 @@ COPY libs/libcommon/dist ./libs/libcommon/dist
 COPY services/admin/src ./services/admin/src
 COPY services/admin/poetry.lock ./services/admin/poetry.lock
 COPY services/admin/pyproject.toml ./services/admin/pyproject.toml
-COPY services/admin/Scripts.mk ./services/admin/Makefile
 WORKDIR /src/services/admin/
 RUN poetry install
 

@@ -1,10 +1,10 @@
 # Datasets server admin machine
 
-> Admin scripts and endpoints
+> Admin endpoints
 
 ## Configuration
 
-The worker con be configured using environment variables. They are grouped by scope.
+The worker can be configured using environment variables. They are grouped by scope.
 
 ### Admin service
 
@@ -54,25 +54,7 @@ The admin service provides endpoints:
   - `/force-refresh/splits?dataset={dataset}`
   - `/force-refresh/first-rows?dataset={dataset}&config={config}&split={split}`
   - `/force-refresh/parquet?dataset={dataset}`
-
-## Scripts
-
-The scripts:
-
-- `cancel-jobs-splits`: cancel all the started jobs for /splits (stop the workers before!)
-- `cancel-jobs-first-rows`: cancel all the started jobs for /first-rows (stop the workers before!)
-- `cancel-jobs-parquet`: cancel all the started jobs for /parquet (stop the workers before!)
-
-To launch the scripts:
-
-- if the image runs in a docker container:
-
-  ```shell
-  docker exec -it datasets-server_admin_1 make <SCRIPT>
-  ```
-
-- if the image runs in a kube pod:
-
-  ```shell
-  kubectl exec datasets-server-prod-admin-5cc8f8fcd7-k7jfc -- make <SCRIPT>
-  ```
+- `/cancel-jobs`: cancel all the started jobs. It's a POST endpoint:
+  - `/cancel-jobs/splits`: cancel the /splits jobs (stop the workers before!)
+  - `/cancel-jobs/first-rows`: cancel the /first-rows jobs (stop the workers before!)
+  - `/cancel-jobs/parquet`: cancel the /parquet jobs (stop the workers before!)

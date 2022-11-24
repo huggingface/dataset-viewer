@@ -1,8 +1,9 @@
 import os
 
+from libcommon.processing_steps import PROCESSING_STEPS
+
 from admin.config import AppConfig
 from admin.prometheus import Prometheus
-from admin.utils import JobType
 
 
 def test_prometheus(app_config: AppConfig) -> None:
@@ -26,5 +27,8 @@ def test_prometheus(app_config: AppConfig) -> None:
         assert metrics[name] > 0
 
     additional_field = ('pid="' + str(os.getpid()) + '",') if is_multiprocess else ""
-    for _, job_type in JobType.__members__.items():
-        assert "queue_jobs_total{" + additional_field + 'queue="' + job_type.value + '",status="started"}' in metrics
+    for processing_step in PROCESSING_STEPS:
+        assert (
+            "queue_jobs_total{" + additional_field + 'queue="' + processing_step.job_type + '",status="started"}'
+            in metrics
+        )

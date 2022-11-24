@@ -4,41 +4,33 @@
 import logging
 from typing import Optional
 
+from libcommon.processing_steps import ProcessingStep
+from libqueue.queue import Queue
 from starlette.requests import Request
 from starlette.responses import Response
 
 from admin.authentication import auth_check
-from admin.dataset import is_supported, update_parquet
 from admin.utils import (
     AdminCustomError,
     Endpoint,
-    MissingRequiredParameterError,
     UnexpectedError,
-    UnsupportedDatasetError,
-    are_valid_parameters,
     get_json_admin_error_response,
     get_json_ok_response,
 )
 
 
-def create_force_refresh_parquet_endpoint(
-    hf_endpoint: str,
-    hf_token: Optional[str] = None,
+def create_cancel_jobs_endpoint(
+    processing_step: ProcessingStep,
     external_auth_url: Optional[str] = None,
     organization: Optional[str] = None,
 ) -> Endpoint:
-    async def force_refresh_parquet_endpoint(request: Request) -> Response:
+    async def cancel_jobs_endpoint(request: Request) -> Response:
         try:
-            dataset = request.query_params.get("dataset")
-            logging.info("/force-refresh/parquet, dataset={dataset}")
+            logging.info(f"/cancel-jobs{processing_step.endpoint}")
 
-            if not are_valid_parameters([dataset]):
-                raise MissingRequiredParameterError("Parameter 'dataset' is required")
             # if auth_check fails, it will raise an exception that will be caught below
             auth_check(external_auth_url=external_auth_url, request=request, organization=organization)
-            if not is_supported(dataset=dataset, hf_endpoint=hf_endpoint, hf_token=hf_token):
-                raise UnsupportedDatasetError(f"Dataset '{dataset}' is not supported.")
-            update_parquet(dataset=dataset, force=True)
+            Queue(type=processing_step.job_type).cancel_started_jobs()
             return get_json_ok_response(
                 {"status": "ok"},
                 max_age=0,
@@ -48,4 +40,4 @@ def create_force_refresh_parquet_endpoint(
         except Exception:
             return get_json_admin_error_response(UnexpectedError("Unexpected error."), max_age=0)
 
-    return force_refresh_parquet_endpoint
+    return cancel_jobs_endpoint

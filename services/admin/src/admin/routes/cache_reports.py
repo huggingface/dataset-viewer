@@ -5,13 +5,13 @@ import logging
 from typing import Optional
 
 from libcache.simple_cache import InvalidCursor, InvalidLimit, get_cache_reports
+from libcommon.processing_steps import ProcessingStep
 from starlette.requests import Request
 from starlette.responses import Response
 
 from admin.authentication import auth_check
 from admin.utils import (
     AdminCustomError,
-    CacheKind,
     Endpoint,
     InvalidParameterError,
     UnexpectedError,
@@ -21,7 +21,7 @@ from admin.utils import (
 
 
 def create_cache_reports_endpoint(
-    kind: CacheKind,
+    processing_step: ProcessingStep,
     cache_reports_num_results: int,
     max_age: int,
     external_auth_url: Optional[str] = None,
@@ -30,12 +30,12 @@ def create_cache_reports_endpoint(
     async def cache_reports_endpoint(request: Request) -> Response:
         try:
             cursor = request.query_params.get("cursor") or ""
-            logging.info(f"Cache reports for {kind.value}, cursor={cursor}")
+            logging.info(f"Cache reports for {processing_step.cache_kind}, cursor={cursor}")
             # if auth_check fails, it will raise an exception that will be caught below
             auth_check(external_auth_url=external_auth_url, request=request, organization=organization)
             try:
                 return get_json_ok_response(
-                    get_cache_reports(kind=kind.value, cursor=cursor, limit=cache_reports_num_results),
+                    get_cache_reports(kind=processing_step.cache_kind, cursor=cursor, limit=cache_reports_num_results),
                     max_age=max_age,
                 )
             except InvalidCursor as e:

@@ -4,6 +4,7 @@
 import logging
 from typing import Optional
 
+from libcommon.processing_steps import ProcessingStep
 from libqueue.queue import Queue
 from starlette.requests import Request
 from starlette.responses import Response
@@ -12,7 +13,6 @@ from admin.authentication import auth_check
 from admin.utils import (
     AdminCustomError,
     Endpoint,
-    JobType,
     UnexpectedError,
     get_json_admin_error_response,
     get_json_ok_response,
@@ -20,12 +20,11 @@ from admin.utils import (
 
 
 def create_pending_jobs_endpoint(
-    max_age: int, external_auth_url: Optional[str] = None, organization: Optional[str] = None
+    processing_steps: list[ProcessingStep],
+    max_age: int,
+    external_auth_url: Optional[str] = None,
+    organization: Optional[str] = None,
 ) -> Endpoint:
-    splits_queue = Queue(type=JobType.SPLITS.value)
-    first_rows_queue = Queue(type=JobType.FIRST_ROWS.value)
-    parquet_queue = Queue(type=JobType.PARQUET.value)
-
     async def pending_jobs_endpoint(request: Request) -> Response:
         logging.info("/pending-jobs")
         try:
@@ -33,9 +32,8 @@ def create_pending_jobs_endpoint(
             auth_check(external_auth_url=external_auth_url, request=request, organization=organization)
             return get_json_ok_response(
                 {
-                    JobType.SPLITS.value: splits_queue.get_dump_by_pending_status(),
-                    JobType.FIRST_ROWS.value: first_rows_queue.get_dump_by_pending_status(),
-                    JobType.PARQUET.value: parquet_queue.get_dump_by_pending_status(),
+                    processing_step.endpoint: Queue(type=processing_step.job_type).get_dump_by_pending_status()
+                    for processing_step in processing_steps
                 },
                 max_age=max_age,
             )
