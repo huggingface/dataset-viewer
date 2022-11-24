@@ -4,5 +4,6 @@ export COMPOSE_PROJECT_NAME := libcommon
 DOCKER_COMPOSE := ../../tools/docker-compose-empty.yml
 
 include ../../tools/Python.mk
+include ../../tools/PythonAudit.mk
 include ../../tools/PythonTest.mk
 include ../../tools/Docker.mk

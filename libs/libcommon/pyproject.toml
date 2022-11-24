@@ -2,7 +2,7 @@
 authors = ["Sylvain Lesage <sylvain.lesage@huggingface.co>"]
 description = "Library for utils, common to all the services and workers"
 name = "libcommon"
-version = "0.3.2"
+version = "0.3.3"
 license = "Apache-2.0"
 
 [tool.poetry.dependencies]
@@ -10,16 +10,16 @@ environs = "^9.5.0"
 orjson = "^3.6.4"
 python = "3.9.6"
 
-[tool.poetry.dev-dependencies]
+[tool.poetry.group.dev.dependencies]
 bandit = "^1.7.0"
 black = "^22.1.0"
 flake8 = "^3.9.2"
 isort = "^5.9.3"
 mypy = "0.812"
+pip-audit = "^2.4.6"
 poetryup = "^0.3.8"
 pytest = "^7.2.0"
 pytest-cov = "^2.12.1"
-safety = "^2.1.1"
 
 [build-system]
 build-backend = "poetry.core.masonry.api"

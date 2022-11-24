@@ -8,9 +8,6 @@ on:
       working-directory:
         required: true
         type: string
-      safety-exceptions:
-        required: false
-        type: string
       is-datasets-worker:
         required: false
         type: boolean
@@ -18,7 +15,7 @@ env:
   # required to get access to use a cached poetry venv in "/home/runner/.cache/pypoetry/virtualenvs"
   POETRY_VIRTUALENVS_IN_PROJECT: false
   python-version: "3.9.6"
-  poetry-version: "1.1.13"
+  poetry-version: "1.2.2"
 jobs:
   code-quality:
     defaults:
@@ -55,5 +52,9 @@ jobs:
         run: poetry run mypy tests src
       - name: Run bandit
         run: poetry run bandit -r src
-      - name: Run safety
-        run: poetry run safety check ${{ inputs.safety-exceptions }}
+      - name: Run pip-audit (datasets worker)
+        if: ${{ inputs.is-datasets-worker == true }}
+        run: bash -c "poetry run pip-audit -r <(poetry export -f requirements.txt --with dev | sed '/^requests==2.28.1 ;/,+2 d' | sed '/^kenlm @/d' | sed '/^trec-car-tools @/d')"
+      - name: Run pip-audit
+        if: ${{ inputs.is-datasets-worker == false }}
+        run: bash -c 'poetry run pip-audit -r <(poetry export -f requirements.txt --with dev)'

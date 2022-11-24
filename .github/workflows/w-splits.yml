@@ -17,7 +17,6 @@ jobs:
     uses: ./.github/workflows/_quality-python.yml
     with:
       working-directory: workers/splits
-      safety-exceptions: ""
       is-datasets-worker: true
   unit-tests:
     uses: ./.github/workflows/_unit-tests-python.yml
