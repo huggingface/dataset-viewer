@@ -78,6 +78,7 @@ class ParquetWorker(Worker):
         dataset: str,
         config: Optional[str] = None,
         split: Optional[str] = None,
+        force: bool = False,
     ) -> bool:
         dataset_git_revision = None
         try:
