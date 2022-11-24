@@ -421,6 +421,18 @@ python-versions = ">=2.6, !=3.0.*"
 graph = ["objgraph (>=1.7.2)"]
 
 [[package]]
+name = "dnspython"
+version = "1.16.0"
+description = "DNS toolkit"
+category = "main"
+optional = false
+python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*"
+
+[package.extras]
+dnssec = ["ecdsa (>=0.13)", "pycryptodome"]
+idna = ["idna (>=2.1)"]
+
+[[package]]
 name = "docopt"
 version = "0.6.2"
 description = "Pythonic argument parser, that will make you smile"
@@ -857,7 +869,7 @@ python-versions = ">=3"
 
 [[package]]
 name = "libcache"
-version = "0.4.1"
+version = "0.4.3"
 description = "Library for the cache in mongodb"
 category = "main"
 optional = false
@@ -868,10 +880,11 @@ appdirs = ">=1.4.4,<2.0.0"
 environs = ">=9.5.0,<10.0.0"
 mongo-types = "0.15.1"
 mongoengine = ">=0.24.1,<0.25.0"
+pymongo = {version = ">=3.13.0,<4.0.0", extras = ["srv"]}
 
 [package.source]
 type = "file"
-url = "../../libs/libcache/dist/libcache-0.4.1-py3-none-any.whl"
+url = "../../libs/libcache/dist/libcache-0.4.3-py3-none-any.whl"
 
 [[package]]
 name = "libclang"
@@ -899,7 +912,7 @@ url = "../../libs/libcommon/dist/libcommon-0.3.3-py3-none-any.whl"
 
 [[package]]
 name = "libqueue"
-version = "0.4.11"
+version = "0.4.13"
 description = "Library for the jobs queue in mongodb"
 category = "main"
 optional = false
@@ -911,10 +924,11 @@ mongo-types = "0.15.1"
 mongoengine = ">=0.24.1,<0.25.0"
 packaging = ">=21.3,<22.0"
 psutil = ">=5.9.2,<6.0.0"
+pymongo = {version = ">=3.13.0,<4.0.0", extras = ["srv"]}
 
 [package.source]
 type = "file"
-url = "../../libs/libqueue/dist/libqueue-0.4.11-py3-none-any.whl"
+url = "../../libs/libqueue/dist/libqueue-0.4.13-py3-none-any.whl"
 
 [[package]]
 name = "librosa"
@@ -1588,6 +1602,9 @@ description = "Python driver for MongoDB <http://www.mongodb.org>"
 category = "main"
 optional = false
 python-versions = "*"
+
+[package.dependencies]
+dnspython = {version = ">=1.16.0,<1.17.0", optional = true, markers = "extra == \"srv\""}
 
 [package.extras]
 aws = ["pymongo-auth-aws (<2.0.0)"]
@@ -2440,7 +2457,7 @@ cffi = ["cffi (>=1.11)"]
 [metadata]
 lock-version = "1.1"
 python-versions = "3.9.6"
-content-hash = "b796826426df1bb68b8b652b369c0500dacdee574fca3f18a480cc74b7462eb4"
+content-hash = "6e12ec014e04f388b4a2fdd4af6be9075e9ecf7aa38f49ec9c167e2c2d2ed33f"
 
 [metadata.files]
 absl-py = [
@@ -2980,6 +2997,10 @@ decorator = [
 dill = [
     {file = "dill-0.3.1.1.tar.gz", hash = "sha256:42d8ef819367516592a825746a18073ced42ca169ab1f5f4044134703e7a049c"},
 ]
+dnspython = [
+    {file = "dnspython-1.16.0-py2.py3-none-any.whl", hash = "sha256:f69c21288a962f4da86e56c4905b49d11aba7938d3d740e80d9e366ee4f1632d"},
+    {file = "dnspython-1.16.0.zip", hash = "sha256:36c5e8e38d4369a08b6780b7f27d790a292b2b08eea01607865bf0936c558e01"},
+]
 docopt = [
     {file = "docopt-0.6.2.tar.gz", hash = "sha256:49b3a825280bd66b3aa83585ef59c4a8c82f2c8a522dbe754a8bc8d08c85c491"},
 ]
@@ -3259,7 +3280,7 @@ kss = [
     {file = "kss-2.6.0-py3-none-any.whl", hash = "sha256:fedbdcd0bfc33111d7817866dd60346dab79f9f1ca5bab0026c4ee40e5941b0c"},
 ]
 libcache = [
-    {file = "libcache-0.4.1-py3-none-any.whl", hash = "sha256:cbd2dc8050d96a933fd5806d1153b7d3deee828b80a47ddb33782f712ecf6483"},
+    {file = "libcache-0.4.3-py3-none-any.whl", hash = "sha256:d21c278aa72be395fe5a541eadfab3e33e9565f821a58aa161386f1ec9346041"},
 ]
 libclang = [
     {file = "libclang-14.0.6-py2.py3-none-macosx_10_9_x86_64.whl", hash = "sha256:8791cf3c3b087c373a6d61e9199da7a541da922c9ddcfed1122090586b996d6e"},
@@ -3277,7 +3298,7 @@ libcommon = [
     {file = "libcommon-0.3.3-py3-none-any.whl", hash = "sha256:b56b6e48bb2c92c3dfc619fc25718db930bc356f1e54fb9f8a67ba4597cb499d"},
 ]
 libqueue = [
-    {file = "libqueue-0.4.11-py3-none-any.whl", hash = "sha256:4bc6f021571e4f1b2bd0e3062677d20809335efd6715532f6099ba76a3c3a8a1"},
+    {file = "libqueue-0.4.13-py3-none-any.whl", hash = "sha256:6aeec523eff05f1ee07cbc6bcf870ec301e5ce32913964f6fc385760d2ef954c"},
 ]
 librosa = [
     {file = "librosa-0.9.2-py3-none-any.whl", hash = "sha256:322a813e6d37af9fbc369e6a637dcf5fdc5c6925ce806a0d27c68de61a81350f"},
