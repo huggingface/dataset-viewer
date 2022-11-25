@@ -2,8 +2,10 @@
 # Copyright 2022 The HuggingFace Authors.
 
 import os
+from dataclasses import dataclass
+from typing import List
 
-from libcommon.processing_steps import PROCESSING_STEPS
+from libcommon.processing_graph import ProcessingStep
 from libcommon.queue import Queue
 from libcommon.simple_cache import get_responses_count_by_kind_status_and_error_code
 from prometheus_client import (  # type: ignore # https://github.com/prometheus/client_python/issues/491
@@ -34,7 +36,10 @@ RESPONSES_IN_CACHE_TOTAL = Gauge(
 )
 
 
+@dataclass
 class Prometheus:
+    processing_steps: List[ProcessingStep]
+
     def getRegistry(self) -> CollectorRegistry:
         # taken from https://github.com/perdy/starlette-prometheus/blob/master/starlette_prometheus/view.py
         # see https://github.com/prometheus/client_python#multiprocess-mode-eg-gunicorn
@@ -47,7 +52,7 @@ class Prometheus:
 
     def updateMetrics(self):
         # Queue metrics
-        for processing_step in PROCESSING_STEPS:
+        for processing_step in self.processing_steps:
             for status, total in Queue(type=processing_step.job_type).get_jobs_count_by_status().items():
                 QUEUE_JOBS_TOTAL.labels(queue=processing_step.job_type, status=status).set(total)
         # Cache metrics

@@ -6,7 +6,7 @@ from typing import Optional
 
 from huggingface_hub.hf_api import HfApi
 from huggingface_hub.utils import RepositoryNotFoundError
-from libcommon.processing_steps import Parameters, ProcessingStep
+from libcommon.processing_graph import ProcessingStep
 from libcommon.queue import Queue
 from starlette.requests import Request
 from starlette.responses import Response
@@ -65,7 +65,7 @@ def create_force_refresh_endpoint(
             dataset = request.query_params.get("dataset")
             if not are_valid_parameters([dataset]):
                 raise MissingRequiredParameterError("Parameter 'dataset' is required")
-            if processing_step.parameters == Parameters.DATASET:
+            if processing_step.input_type == "dataset":
                 config = None
                 split = None
             else:

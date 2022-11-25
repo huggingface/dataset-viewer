@@ -1,10 +1,10 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2022 The HuggingFace Authors.
 
-from typing import Optional
+from typing import List, Optional
 
 import pytest
-from libcommon.processing_steps import PROCESSING_STEPS
+from libcommon.processing_graph import ProcessingStep
 from libcommon.queue import _clean_queue_database
 from libcommon.simple_cache import _clean_cache_database
 from starlette.testclient import TestClient
@@ -71,11 +71,11 @@ def test_metrics(client: TestClient) -> None:
     assert metrics[name] > 0, metrics
 
 
-def test_pending_jobs(client: TestClient) -> None:
+def test_pending_jobs(client: TestClient, processing_steps: List[ProcessingStep]) -> None:
     response = client.get("/pending-jobs")
     assert response.status_code == 200
     json = response.json()
-    for processing_step in PROCESSING_STEPS:
+    for processing_step in processing_steps:
         assert json[processing_step.job_type] == {"waiting": [], "started": []}
 
 
@@ -87,8 +87,14 @@ def test_pending_jobs(client: TestClient) -> None:
         ("invalid cursor", 422, "InvalidParameter"),
     ],
 )
-def test_cache_reports(client: TestClient, cursor: Optional[str], http_status: int, error_code: Optional[str]) -> None:
-    path = PROCESSING_STEPS[0].endpoint
+def test_cache_reports(
+    client: TestClient,
+    processing_steps: List[ProcessingStep],
+    cursor: Optional[str],
+    http_status: int,
+    error_code: Optional[str],
+) -> None:
+    path = processing_steps[0].endpoint
     cursor_str = f"?cursor={cursor}" if cursor else ""
     response = client.get(f"/cache-reports{path}{cursor_str}")
     assert response.status_code == http_status

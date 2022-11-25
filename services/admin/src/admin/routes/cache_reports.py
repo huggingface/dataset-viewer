@@ -4,7 +4,7 @@
 import logging
 from typing import Optional
 
-from libcommon.processing_steps import ProcessingStep
+from libcommon.processing_graph import ProcessingStep
 from libcommon.simple_cache import InvalidCursor, InvalidLimit, get_cache_reports
 from starlette.requests import Request
 from starlette.responses import Response

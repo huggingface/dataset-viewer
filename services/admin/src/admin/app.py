@@ -2,7 +2,6 @@
 # Copyright 2022 The HuggingFace Authors.
 
 import uvicorn  # type: ignore
-from libcommon.processing_steps import PROCESSING_STEPS
 from starlette.applications import Starlette
 from starlette.middleware import Middleware
 from starlette.middleware.cors import CORSMiddleware
@@ -21,7 +20,8 @@ from admin.routes.pending_jobs import create_pending_jobs_endpoint
 
 def create_app() -> Starlette:
     app_config = AppConfig()
-    prometheus = Prometheus()
+    processing_steps = list(app_config.processing_graph.graph.steps.values())
+    prometheus = Prometheus(processing_steps=processing_steps)
 
     middleware = [
         Middleware(
@@ -38,7 +38,7 @@ def create_app() -> Starlette:
             Route(
                 "/pending-jobs",
                 endpoint=create_pending_jobs_endpoint(
-                    processing_steps=PROCESSING_STEPS,
+                    processing_steps=processing_steps,
                     max_age=app_config.admin.max_age,
                     external_auth_url=app_config.admin.external_auth_url,
                     organization=app_config.admin.hf_organization,
@@ -57,7 +57,7 @@ def create_app() -> Starlette:
                 ),
                 methods=["POST"],
             )
-            for processing_step in PROCESSING_STEPS
+            for processing_step in processing_steps
         ]
         + [
             Route(
@@ -70,7 +70,7 @@ def create_app() -> Starlette:
                     organization=app_config.admin.hf_organization,
                 ),
             )
-            for processing_step in PROCESSING_STEPS
+            for processing_step in processing_steps
         ]
         + [
             Route(
@@ -81,7 +81,7 @@ def create_app() -> Starlette:
                     organization=app_config.admin.hf_organization,
                 ),
             )
-            for processing_step in PROCESSING_STEPS
+            for processing_step in processing_steps
         ]
     )
     return Starlette(routes=routes, middleware=middleware)

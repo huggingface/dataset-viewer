@@ -2,9 +2,9 @@
 # Copyright 2022 The HuggingFace Authors.
 
 import logging
-from typing import Optional
+from typing import List, Optional
 
-from libcommon.processing_steps import ProcessingStep
+from libcommon.processing_graph import ProcessingStep
 from libcommon.queue import Queue
 from starlette.requests import Request
 from starlette.responses import Response
@@ -20,7 +20,7 @@ from admin.utils import (
 
 
 def create_pending_jobs_endpoint(
-    processing_steps: list[ProcessingStep],
+    processing_steps: List[ProcessingStep],
     max_age: int,
     external_auth_url: Optional[str] = None,
     organization: Optional[str] = None,
