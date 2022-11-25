@@ -4,6 +4,7 @@
 from pytest import MonkeyPatch, fixture
 
 from libcommon.config import CacheConfig, CommonConfig, QueueConfig
+from libcommon.processing_steps import Parameters, ProcessingStep
 
 
 @fixture(scope="session")
@@ -35,3 +36,8 @@ def queue_config(monkeypatch_session: MonkeyPatch) -> QueueConfig:
     if "test" not in queue_config.mongo_database:
         raise ValueError("Test must be launched on a test mongo database")
     return queue_config
+
+
+@fixture(scope="session")
+def test_processing_step(monkeypatch_session: MonkeyPatch) -> ProcessingStep:
+    return ProcessingStep(endpoint="/test", parameters=Parameters.DATASET, dependencies=[])
