@@ -7,7 +7,7 @@ import itertools
 import logging
 import time
 from http import HTTPStatus
-from typing import Any, Dict, List, Literal, Mapping, Optional, TypedDict, Union
+from typing import Any, List, Literal, Mapping, Optional, TypedDict, Union
 
 from datasets import (
     Dataset,
@@ -129,18 +129,18 @@ def retry():
     return decorator_retry
 
 
-Row = Dict[str, Any]
+Row = Mapping[str, Any]
 
 
 class FeatureItem(TypedDict):
     feature_idx: int
     name: str
-    type: Dict[str, Any]
+    type: Mapping[str, Any]
 
 
 class RowItem(TypedDict):
     row_idx: int
-    row: Dict[str, Any]
+    row: Mapping[str, Any]
     truncated_cells: List[str]
 
 

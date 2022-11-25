@@ -2,7 +2,7 @@
 # Copyright 2022 The HuggingFace Authors.
 
 import datetime
-from typing import Any, Dict
+from typing import Any, Mapping
 from zoneinfo import ZoneInfo
 
 import numpy as np
@@ -52,7 +52,11 @@ from first_rows.features import get_cell_value
     ],
 )
 def test_value(
-    dataset_type: str, output_value: Any, output_dtype: str, datasets: Dict[str, Dataset], worker_config: WorkerConfig
+    dataset_type: str,
+    output_value: Any,
+    output_dtype: str,
+    datasets: Mapping[str, Dataset],
+    worker_config: WorkerConfig,
 ) -> None:
     dataset = datasets[dataset_type]
     feature = dataset.features["col"]
@@ -289,7 +293,11 @@ def test_value(
     ],
 )
 def test_others(
-    dataset_type: str, output_value: Any, output_type: Any, datasets: Dict[str, Dataset], worker_config: WorkerConfig
+    dataset_type: str,
+    output_value: Any,
+    output_type: Any,
+    datasets: Mapping[str, Dataset],
+    worker_config: WorkerConfig,
 ) -> None:
     dataset = datasets[dataset_type]
     feature = dataset.features["col"]

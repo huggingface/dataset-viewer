@@ -1,7 +1,7 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2022 The HuggingFace Authors.
 
-from typing import Any, Dict
+from typing import Any, Mapping
 
 import pytest
 from datasets import Audio, Dataset, Features
@@ -17,7 +17,7 @@ def other(content: Any, feature_type: FeatureType = None) -> Dataset:
 
 
 @pytest.fixture(scope="session")
-def datasets() -> Dict[str, Dataset]:
+def datasets() -> Mapping[str, Dataset]:
     sampling_rate = 16_000
     return {
         "audio": other({"array": [0.1, 0.2, 0.3], "sampling_rate": sampling_rate}, Audio(sampling_rate=sampling_rate)),

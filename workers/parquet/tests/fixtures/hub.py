@@ -6,7 +6,7 @@
 import time
 from contextlib import contextmanager, suppress
 from pathlib import Path
-from typing import Any, Dict, Iterable, List, Optional, Tuple, TypedDict
+from typing import Any, Iterable, List, Mapping, Optional, Tuple, TypedDict
 
 import datasets.config
 import pytest
@@ -56,7 +56,7 @@ def update_repo_settings(
     organization: Optional[str] = None,
     repo_type: Optional[str] = None,
     name: str = None,
-) -> Dict[str, bool]:
+) -> Mapping[str, bool]:
     """Update the settings of a repository.
     Args:
         repo_id (`str`, *optional*):
@@ -237,7 +237,7 @@ def hub_gated_extra_fields_csv(hf_api: HfApi, hf_token: str, csv_path: str, extr
 
 
 @pytest.fixture(scope="session", autouse=True)
-def hub_public_audio(hf_api: HfApi, hf_token: str, datasets: Dict[str, Dataset]) -> Iterable[str]:
+def hub_public_audio(hf_api: HfApi, hf_token: str, datasets: Mapping[str, Dataset]) -> Iterable[str]:
     repo_id = create_hub_dataset_repo(hf_api=hf_api, hf_token=hf_token, prefix="audio", dataset=datasets["audio"])
     yield repo_id
     with suppress(requests.exceptions.HTTPError, ValueError):
@@ -257,7 +257,7 @@ class HubDatasetTest(TypedDict):
     parquet_response: Any
 
 
-HubDatasets = Dict[str, HubDatasetTest]
+HubDatasets = Mapping[str, HubDatasetTest]
 
 
 def create_parquet_response(dataset: str, filename: str, size: int):

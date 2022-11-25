@@ -3,7 +3,7 @@
 
 import datetime
 from pathlib import Path
-from typing import Any, Dict
+from typing import Any, Mapping
 
 import numpy as np
 import pandas as pd  # type: ignore
@@ -39,7 +39,7 @@ def other(content: Any, feature_type: FeatureType = None) -> Dataset:
 
 
 @pytest.fixture(scope="session")
-def datasets() -> Dict[str, Dataset]:
+def datasets() -> Mapping[str, Dataset]:
     sampling_rate = 16_000
     return {
         # Value feature

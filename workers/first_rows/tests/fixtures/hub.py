@@ -6,7 +6,7 @@
 import time
 from contextlib import contextmanager, suppress
 from pathlib import Path
-from typing import Any, Dict, Iterable, List, Optional, Tuple, TypedDict
+from typing import Any, Iterable, List, Mapping, Optional, Tuple, TypedDict
 
 import datasets.config
 import pytest
@@ -57,7 +57,7 @@ def update_repo_settings(
     organization: Optional[str] = None,
     repo_type: Optional[str] = None,
     name: str = None,
-) -> Dict[str, bool]:
+) -> Mapping[str, bool]:
     """Update the settings of a repository.
     Args:
         repo_id (`str`, *optional*):
@@ -232,7 +232,7 @@ def hub_public_jsonl(hf_api: HfApi, hf_token: str, jsonl_path: str) -> Iterable[
 
 
 @pytest.fixture(scope="session", autouse=True)
-def hub_public_audio(hf_api: HfApi, hf_token: str, datasets: Dict[str, Dataset]) -> Iterable[str]:
+def hub_public_audio(hf_api: HfApi, hf_token: str, datasets: Mapping[str, Dataset]) -> Iterable[str]:
     repo_id = create_hub_dataset_repo(hf_api=hf_api, hf_token=hf_token, prefix="audio", dataset=datasets["audio"])
     yield repo_id
     with suppress(requests.exceptions.HTTPError, ValueError):
@@ -240,7 +240,7 @@ def hub_public_audio(hf_api: HfApi, hf_token: str, datasets: Dict[str, Dataset])
 
 
 @pytest.fixture(scope="session", autouse=True)
-def hub_public_image(hf_api: HfApi, hf_token: str, datasets: Dict[str, Dataset]) -> Iterable[str]:
+def hub_public_image(hf_api: HfApi, hf_token: str, datasets: Mapping[str, Dataset]) -> Iterable[str]:
     repo_id = create_hub_dataset_repo(hf_api=hf_api, hf_token=hf_token, prefix="image", dataset=datasets["image"])
     yield repo_id
     with suppress(requests.exceptions.HTTPError, ValueError):
@@ -248,7 +248,7 @@ def hub_public_image(hf_api: HfApi, hf_token: str, datasets: Dict[str, Dataset])
 
 
 @pytest.fixture(scope="session", autouse=True)
-def hub_public_images_list(hf_api: HfApi, hf_token: str, datasets: Dict[str, Dataset]) -> Iterable[str]:
+def hub_public_images_list(hf_api: HfApi, hf_token: str, datasets: Mapping[str, Dataset]) -> Iterable[str]:
     repo_id = create_hub_dataset_repo(
         hf_api=hf_api, hf_token=hf_token, prefix="images_list", dataset=datasets["images_list"]
     )
@@ -258,7 +258,7 @@ def hub_public_images_list(hf_api: HfApi, hf_token: str, datasets: Dict[str, Dat
 
 
 @pytest.fixture(scope="session", autouse=True)
-def hub_public_big(hf_api: HfApi, hf_token: str, datasets: Dict[str, Dataset]) -> Iterable[str]:
+def hub_public_big(hf_api: HfApi, hf_token: str, datasets: Mapping[str, Dataset]) -> Iterable[str]:
     repo_id = create_hub_dataset_repo(hf_api=hf_api, hf_token=hf_token, prefix="big", dataset=datasets["big"])
     yield repo_id
     with suppress(requests.exceptions.HTTPError, ValueError):
@@ -271,7 +271,7 @@ class HubDatasetTest(TypedDict):
     first_rows_response: Any
 
 
-HubDatasets = Dict[str, HubDatasetTest]
+HubDatasets = Mapping[str, HubDatasetTest]
 
 
 def create_splits_response(dataset: str, num_bytes: float = None, num_examples: int = None):
@@ -289,7 +289,7 @@ def create_splits_response(dataset: str, num_bytes: float = None, num_examples: 
     }
 
 
-def create_first_rows_response(dataset: str, cols: Dict[str, Any], rows: List[Any]):
+def create_first_rows_response(dataset: str, cols: Mapping[str, Any], rows: List[Any]):
     dataset, config, split = get_default_config_split(dataset)
     return {
         "dataset": dataset,
