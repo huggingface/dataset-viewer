@@ -35,7 +35,7 @@ WorkerErrorCode = Literal[
 ]
 
 
-class WorkerCustomError(CustomError):
+class WorkerError(CustomError):
     """Base class for worker exceptions."""
 
     def __init__(
@@ -51,7 +51,7 @@ class WorkerCustomError(CustomError):
         )
 
 
-class DatasetNotFoundError(WorkerCustomError):
+class DatasetNotFoundError(WorkerError):
     """Raised when the dataset does not exist."""
 
     def __init__(self, message: str, cause: Optional[BaseException] = None):
@@ -64,7 +64,7 @@ class DatasetNotFoundError(WorkerCustomError):
         )
 
 
-class ConfigNotFoundError(WorkerCustomError):
+class ConfigNotFoundError(WorkerError):
     """Raised when the config does not exist."""
 
     def __init__(self, message: str, cause: Optional[BaseException] = None):
@@ -77,7 +77,7 @@ class ConfigNotFoundError(WorkerCustomError):
         )
 
 
-class SplitNotFoundError(WorkerCustomError):
+class SplitNotFoundError(WorkerError):
     """Raised when the split does not exist."""
 
     def __init__(self, message: str, cause: Optional[BaseException] = None):
@@ -90,7 +90,7 @@ class SplitNotFoundError(WorkerCustomError):
         )
 
 
-class GitRevisionChangeError(WorkerCustomError):
+class GitRevisionChangeError(WorkerError):
     """Raised when the git revision of a dataset has changed during the computation."""
 
     def __init__(self, message: str, cause: Optional[BaseException] = None):
@@ -103,7 +103,7 @@ class GitRevisionChangeError(WorkerCustomError):
         )
 
 
-class UnexpectedError(WorkerCustomError):
+class UnexpectedError(WorkerError):
     """Raised when the response for the split has not been found."""
 
     def __init__(self, message: str, cause: Optional[BaseException] = None):
@@ -369,7 +369,7 @@ class Worker(ABC):
             )
             return False
         except Exception as err:
-            e = err if isinstance(err, WorkerCustomError) else UnexpectedError(str(err), err)
+            e = err if isinstance(err, CustomError) else UnexpectedError(str(err), err)
             upsert_response(
                 kind=self.processing_step.cache_kind,
                 dataset=dataset,
