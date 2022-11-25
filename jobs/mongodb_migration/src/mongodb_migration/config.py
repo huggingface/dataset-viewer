@@ -2,9 +2,7 @@
 # Copyright 2022 The HuggingFace Authors.
 
 from environs import Env
-from libcache.config import CacheConfig
-from libcommon.config import CommonConfig
-from libqueue.config import QueueConfig
+from libcommon.config import CacheConfig, CommonConfig, QueueConfig
 
 from mongodb_migration.database_migrations import connect_to_database
 

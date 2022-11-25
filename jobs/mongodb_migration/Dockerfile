@@ -21,8 +21,6 @@ RUN pip install -U --no-cache-dir pip
 RUN pip install "poetry==$POETRY_VERSION"
 
 WORKDIR /src
-COPY libs/libcache/dist ./libs/libcache/dist
-COPY libs/libqueue/dist ./libs/libqueue/dist
 COPY libs/libcommon/dist ./libs/libcommon/dist
 COPY jobs/mongodb_migration/src ./jobs/mongodb_migration/src
 COPY jobs/mongodb_migration/poetry.lock ./jobs/mongodb_migration/poetry.lock
