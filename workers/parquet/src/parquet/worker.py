@@ -1,75 +1,345 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2022 The HuggingFace Authors.
 
+import glob
 import importlib.metadata
 import logging
+import re
 from http import HTTPStatus
-from typing import Optional
+from pathlib import Path
+from typing import Any, List, Literal, Mapping, Optional, Tuple, TypedDict
+from urllib.parse import quote
 
-from libcommon.processing_steps import ProcessingStep, parquet_step
-from libcommon.queue import Queue
-from libcommon.simple_cache import get_response_without_content, upsert_response
-from libcommon.worker import Worker
+import requests
+from datasets import get_dataset_config_names, load_dataset_builder
+from datasets.data_files import EmptyDatasetError as _EmptyDatasetError
+from huggingface_hub.hf_api import (
+    CommitOperation,
+    CommitOperationAdd,
+    CommitOperationDelete,
+    HfApi,
+    RepoFile,
+)
+from huggingface_hub.utils import (
+    RepositoryNotFoundError,
+    RevisionNotFoundError,
+    build_hf_headers,
+    hf_raise_for_status,
+)
+from libcommon.exceptions import CustomError
+from libcommon.processing_steps import parquet_step
+from libcommon.worker import DatasetNotFoundError, Worker
 
-from parquet.config import WorkerConfig
-from parquet.response import compute_parquet_response, get_dataset_git_revision
-from parquet.utils import DatasetNotFoundError, UnexpectedError, WorkerCustomError
+from parquet.config import ParquetConfig, WorkerConfig
+
+ParquetWorkerErrorCode = Literal[
+    "DatasetRevisionNotFoundError",
+    "EmptyDatasetError",
+    "ConfigNamesError",
+    "GatedDisabledError",
+    "GatedExtraFieldsError",
+    "DatasetNotSupportedError",
+]
+
+
+class ParquetWorkerError(CustomError):
+    """Base class for exceptions in this module."""
+
+    def __init__(
+        self,
+        message: str,
+        status_code: HTTPStatus,
+        code: ParquetWorkerErrorCode,
+        cause: Optional[BaseException] = None,
+        disclose_cause: bool = False,
+    ):
+        super().__init__(message, status_code, str(code), cause, disclose_cause)
+
+
+class DatasetRevisionNotFoundError(ParquetWorkerError):
+    """Raised when the revision of a dataset repository does not exist."""
+
+    def __init__(self, message: str, cause: Optional[BaseException] = None):
+        super().__init__(message, HTTPStatus.NOT_FOUND, "DatasetRevisionNotFoundError", cause, False)
+
+
+class ConfigNamesError(ParquetWorkerError):
+    """Raised when the configuration names could not be fetched."""
+
+    def __init__(self, message: str, cause: Optional[BaseException] = None):
+        super().__init__(message, HTTPStatus.INTERNAL_SERVER_ERROR, "ConfigNamesError", cause, True)
+
+
+class EmptyDatasetError(ParquetWorkerError):
+    """Raised when the dataset has no data."""
+
+    def __init__(self, message: str, cause: Optional[BaseException] = None):
+        super().__init__(message, HTTPStatus.INTERNAL_SERVER_ERROR, "EmptyDatasetError", cause, True)
+
+
+class GatedDisabledError(ParquetWorkerError):
+    """Raised when /ask-access fails with 403."""
+
+    def __init__(self, message: str, cause: Optional[BaseException] = None):
+        super().__init__(message, HTTPStatus.FORBIDDEN, "GatedDisabledError", cause, False)
+
+
+class GatedExtraFieldsError(ParquetWorkerError):
+    """Raised when /ask-access fails with 400."""
+
+    def __init__(self, message: str, cause: Optional[BaseException] = None):
+        super().__init__(message, HTTPStatus.NOT_IMPLEMENTED, "GatedExtraFieldsError", cause, False)
+
+
+class DatasetNotSupportedError(ParquetWorkerError):
+    """Raised when the dataset is not in the list of supported datasets."""
+
+    def __init__(self, message: str, cause: Optional[BaseException] = None):
+        super().__init__(message, HTTPStatus.NOT_IMPLEMENTED, "DatasetNotSupportedError", cause, False)
+
+
+class ParquetFileItem(TypedDict):
+    dataset: str
+    config: str
+    split: str
+    url: str
+    filename: str
+    size: int
+
+
+class ParquetResponse(TypedDict):
+    parquet_files: List[ParquetFileItem]
+
+
+DATASET_TYPE = "dataset"
+
+
+class ParquetFile:
+    def __init__(self, local_file: str, local_dir: str, config: str):
+        if not local_file.startswith(local_dir):
+            raise ValueError(f"{local_file} is not in {local_dir}")
+        self.local_file = local_file
+        self.local_dir = local_dir
+        self.config = config
+
+    def repo_file(self) -> str:
+        return f'{self.config}/{self.local_file.removeprefix(f"{self.local_dir}/")}'
+
+
+# TODO: use huggingface_hub's hf_hub_url after
+# https://github.com/huggingface/huggingface_hub/issues/1082
+def hf_hub_url(repo_id: str, filename: str, hf_endpoint: str, revision: str, url_template: str) -> str:
+    return (hf_endpoint + url_template).format(
+        repo_id=repo_id,
+        revision=quote(revision, safe=""),
+        filename=filename,
+    )
+
+
+p = re.compile(r"[\w]+-(?P<split>[\w]+?)(-[0-9]{5}-of-[0-9]{5})?.parquet")
+
+
+def parse_repo_filename(filename: str) -> Tuple[str, str]:
+    parts = filename.split("/")
+    if len(parts) != 2:
+        raise ValueError(f"Invalid filename: {filename}")
+    config, fname = parts
+    m = p.match(fname)
+    if not m:
+        raise ValueError(f"Cannot parse {filename}")
+    split = m.group("split")
+    return config, split
+
+
+def create_parquet_file_item(
+    repo_file: RepoFile,
+    dataset: str,
+    hf_endpoint: str,
+    target_revision: str,
+    url_template: str,
+) -> ParquetFileItem:
+    if repo_file.size is None:
+        raise ValueError(f"Cannot get size of {repo_file.rfilename}")
+    config, split = parse_repo_filename(repo_file.rfilename)
+    return {
+        "dataset": dataset,
+        "config": config,
+        "split": split,
+        "url": hf_hub_url(
+            repo_id=dataset,
+            filename=repo_file.rfilename,
+            hf_endpoint=hf_endpoint,
+            revision=target_revision,
+            url_template=url_template,
+        ),
+        "filename": Path(repo_file.rfilename).name,
+        "size": repo_file.size,
+    }
+
+
+def ask_access(dataset: str, hf_endpoint: str, token: Optional[str]) -> None:
+    path = f"{hf_endpoint}/datasets/{dataset}/ask-access"
+    r = requests.post(path, headers=build_hf_headers(token=token))
+    try:
+        hf_raise_for_status(r)
+    except requests.exceptions.HTTPError as err:
+        if r.status_code == 400:
+            raise GatedExtraFieldsError(
+                "The dataset is gated with extra fields: not supported at the moment."
+            ) from err
+        if r.status_code == 403:
+            raise GatedDisabledError("The dataset is gated and access is disabled.") from err
+        if r.status_code in [401, 404]:
+            raise DatasetNotFoundError("The dataset does not exist on the Hub, or is private.") from err
+        raise err
+
+
+def compute_parquet_response(
+    dataset: str,
+    hf_endpoint: str,
+    hf_token: str,
+    source_revision: str,
+    target_revision: str,
+    commit_message: str,
+    url_template: str,
+    supported_datasets: List[str],
+) -> ParquetResponse:
+    """
+    Get the response of /parquet for one specific dataset on huggingface.co.
+    Dataset can be private or gated if you pass an acceptable token.
+    Args:
+        dataset (`str`):
+            A namespace (user or an organization) and a repo name separated
+            by a `/`.
+        hf_endpoint (`str`):
+            The Hub endpoint (for example: "https://huggingface.co")
+        hf_token (`str`):
+            An authentication token (See https://huggingface.co/settings/token). It must:
+            - be a user token (to get access to the gated datasets, and do the other operations)
+            - be part of the `huggingface` organization (to create the ref/convert/parquet "branch")
+            - be part of the `datasets-maintainers` organization (to push to the ref/convert/parquet "branch")
+        source_revision (`str`):
+            The git revision (e.g. "main" or sha) of the dataset used to prepare the parquet files
+        target_revision (`str`):
+            The target git revision (e.g. "ref/convert/parquet") of the dataset where to store the parquet files
+        commit_message (`str`):
+            The commit message to use when storing the parquet files
+        url_template (`str`):
+            The template to use to build the parquet file url
+    Returns:
+        `ParquetResponseResult`: An object with the parquet_response
+          (dataset and list of parquet files) and the dataset_git_revision (sha) if any.
+    <Tip>
+    Raises the following errors:
+        - [`~worker.exceptions.DatasetNotFoundError`]
+          If the repository to download from cannot be found. This may be because it doesn't exist,
+          or because it is set to `private` and you do not have access.
+        - [`~worker.exceptions.ConfigNamesError`]
+          If the list of configurations could not be obtained using the datasets library.
+    </Tip>
+    """
+    logging.info(f"get splits for dataset={dataset}")
+
+    # unlock access to the dataset if it is gated. Note that an error is raised if the dataset does not exist.
+    ask_access(dataset=dataset, token=hf_token, hf_endpoint=hf_endpoint)
+
+    # only process the supported datasets
+    if len(supported_datasets) and dataset not in supported_datasets:
+        raise DatasetNotSupportedError("The dataset is not in the list of supported datasets.")
+
+    hf_api = HfApi(endpoint=hf_endpoint, token=hf_token)
+
+    # check that the revision exists for the dataset and is accessible using the token
+    try:
+        hf_api.dataset_info(repo_id=dataset, revision=source_revision, files_metadata=False)
+    except RepositoryNotFoundError as err:
+        raise DatasetNotFoundError("The dataset does not exist on the Hub.") from err
+    except RevisionNotFoundError as err:
+        raise DatasetRevisionNotFoundError("The dataset revision does not exist on the Hub.") from err
+
+    # create the target revision if it does not exist yet
+    try:
+        target_dataset_info = hf_api.dataset_info(repo_id=dataset, revision=target_revision, files_metadata=False)
+    except RepositoryNotFoundError as err:
+        raise DatasetNotFoundError("The dataset does not exist on the Hub.") from err
+    except RevisionNotFoundError:
+        # create the parquet_ref (refs/convert/parquet)
+        hf_api.create_branch(repo_id=dataset, branch=target_revision, repo_type=DATASET_TYPE)
+        target_dataset_info = hf_api.dataset_info(repo_id=dataset, revision=target_revision, files_metadata=False)
+
+    target_sha = target_dataset_info.sha
+    previous_files = [f.rfilename for f in target_dataset_info.siblings]
+
+    # get the sorted list of configurations
+    try:
+        config_names = sorted(get_dataset_config_names(path=dataset, use_auth_token=hf_token))
+    except _EmptyDatasetError as err:
+        raise EmptyDatasetError("The dataset is empty.", cause=err) from err
+    except Exception as err:
+        raise ConfigNamesError("Cannot get the configuration names for the dataset.", cause=err) from err
+
+    # prepare the parquet files locally
+    parquet_files: List[ParquetFile] = []
+    for config in config_names:
+        builder = load_dataset_builder(path=dataset, name=config, revision=source_revision, use_auth_token=hf_token)
+        builder.download_and_prepare(
+            file_format="parquet", use_auth_token=hf_token
+        )  # the parquet files are stored in the cache dir
+        parquet_files.extend(
+            ParquetFile(local_file=local_file, local_dir=builder.cache_dir, config=config)
+            for local_file in glob.glob(f"{builder.cache_dir}**/*.parquet")
+        )
+
+    # send the files to the target revision
+    files_to_add = {parquet_file.repo_file(): parquet_file.local_file for parquet_file in parquet_files}
+    # don't delete the files we will update
+    files_to_delete = [file for file in previous_files if file not in files_to_add]
+    delete_operations: List[CommitOperation] = [CommitOperationDelete(path_in_repo=file) for file in files_to_delete]
+    add_operations: List[CommitOperation] = [
+        CommitOperationAdd(path_in_repo=file, path_or_fileobj=local_file)
+        for (file, local_file) in files_to_add.items()
+    ]
+    hf_api.create_commit(
+        repo_id=dataset,
+        repo_type=DATASET_TYPE,
+        revision=target_revision,
+        operations=delete_operations + add_operations,
+        commit_message=commit_message,
+        parent_commit=target_sha,
+    )
+
+    # call the API again to get the list of parquet files
+    target_dataset_info = hf_api.dataset_info(repo_id=dataset, revision=target_revision, files_metadata=True)
+    repo_files = [repo_file for repo_file in target_dataset_info.siblings if repo_file.rfilename.endswith(".parquet")]
+    # we might want to check if the sha of the parquet files is the same as the one we just uploaded
+    # we could also check that the list of parquet files is exactly what we expect
+    # let's not over engineer this for now. After all, what is on the Hub is the source of truth
+    # and the /parquet response is more a helper to get the list of parquet files
+    return {
+        "parquet_files": [
+            create_parquet_file_item(
+                repo_file=repo_file,
+                dataset=dataset,
+                hf_endpoint=hf_endpoint,
+                target_revision=target_revision,
+                url_template=url_template,
+            )
+            for repo_file in repo_files
+        ],
+    }
 
 
 class ParquetWorker(Worker):
-    config: WorkerConfig
-    processing_step: ProcessingStep
+    parquet_config: ParquetConfig
 
     def __init__(self, worker_config: WorkerConfig):
-        super().__init__(queue_config=worker_config.queue, version=importlib.metadata.version(__package__))
-        self.config = worker_config
-        self.processing_step = parquet_step
-
-    @property
-    def queue(self):
-        return Queue(
-            type=self.processing_step.job_type, max_jobs_per_namespace=self.config.queue.max_jobs_per_namespace
+        super().__init__(
+            processing_step=parquet_step,
+            common_config=worker_config.common,
+            queue_config=worker_config.queue,
+            version=importlib.metadata.version(__package__),
         )
-
-    def should_skip_job(
-        self, dataset: str, config: Optional[str] = None, split: Optional[str] = None, force: bool = None
-    ) -> bool:
-        """Return True if the job should be skipped, False otherwise.
-
-        The job must be skipped if:
-        - a cache entry exists for the dataset
-        - and the result was successful
-        - and it has been created with the same major version of the worker
-        - and it has been created with the exact same git commit of the dataset repository
-
-        Args:
-            dataset (:obj:`str`): The name of the dataset.
-            config (:obj:`str`, `optional`): The name of the configuration.
-            split (:obj:`str`, `optional`): The name of the split.
-            force (:obj:`bool`, `optional`, defaults to :obj:`False`): Whether to force the job to be run.
-
-        Returns:
-            :obj:`bool`: True if the job should be skipped, False otherwise.
-        """
-        if force:
-            return False
-        try:
-            cached_response = get_response_without_content(
-                kind=self.processing_step.cache_kind, dataset=dataset, config=config, split=split
-            )
-            dataset_git_revision = get_dataset_git_revision(
-                dataset=dataset, hf_endpoint=self.config.common.hf_endpoint, hf_token=self.config.parquet.hf_token
-            )
-            return (
-                # TODO: use "error_code" to decide if the job should be skipped (ex: retry if temporary error)
-                cached_response["http_status"] == HTTPStatus.OK
-                and cached_response["worker_version"] is not None
-                and self.compare_major_version(cached_response["worker_version"]) == 0
-                and cached_response["dataset_git_revision"] is not None
-                and cached_response["dataset_git_revision"] == dataset_git_revision
-            )
-        except Exception:
-            return False
+        self.parquet_config = worker_config.parquet
 
     def compute(
         self,
@@ -77,61 +347,14 @@ class ParquetWorker(Worker):
         config: Optional[str] = None,
         split: Optional[str] = None,
         force: bool = False,
-    ) -> bool:
-        dataset_git_revision = None
-        try:
-            dataset_git_revision = get_dataset_git_revision(
-                dataset=dataset, hf_endpoint=self.config.common.hf_endpoint, hf_token=self.config.parquet.hf_token
-            )
-        except DatasetNotFoundError:
-            logging.debug(f"the dataset={dataset} could not be found, don't update the cache")
-            return False
-        if dataset_git_revision is None:
-            logging.debug(f"the dataset={dataset} has no git revision, don't update the cache")
-            return False
-
-        try:
-            parquet_response_result = compute_parquet_response(
-                dataset=dataset,
-                hf_endpoint=self.config.common.hf_endpoint,
-                hf_token=self.config.parquet.hf_token,
-                source_revision=self.config.parquet.source_revision,
-                target_revision=self.config.parquet.target_revision,
-                commit_message=self.config.parquet.commit_message,
-                url_template=self.config.parquet.url_template,
-                supported_datasets=self.config.parquet.supported_datasets,
-            )
-            content = parquet_response_result["parquet_response"]
-            if parquet_response_result["dataset_git_revision"] != dataset_git_revision:
-                raise UnexpectedError("The dataset git revision has changed during the job")
-            upsert_response(
-                kind=self.processing_step.cache_kind,
-                dataset=dataset,
-                config=config,
-                split=split,
-                content=dict(content),
-                http_status=HTTPStatus.OK,
-                worker_version=self.version,
-                dataset_git_revision=dataset_git_revision,
-            )
-            logging.debug(f"dataset={dataset} is valid, cache updated")
-            return True
-        except DatasetNotFoundError:
-            logging.debug(f"the dataset={dataset} could not be found, don't update the cache")
-            return False
-        except Exception as err:
-            e = err if isinstance(err, WorkerCustomError) else UnexpectedError(str(err), err)
-            upsert_response(
-                kind=self.processing_step.cache_kind,
-                dataset=dataset,
-                config=config,
-                split=split,
-                content=dict(e.as_response()),
-                http_status=e.status_code,
-                error_code=e.code,
-                details=dict(e.as_response_with_cause()),
-                worker_version=self.version,
-                dataset_git_revision=dataset_git_revision,
-            )
-            logging.debug(f"parquet response for dataset={dataset} had an error, cache updated")
-            return False
+    ) -> Mapping[str, Any]:
+        return compute_parquet_response(
+            dataset=dataset,
+            hf_endpoint=self.common_config.hf_endpoint,
+            hf_token=self.parquet_config.hf_token,
+            source_revision=self.parquet_config.source_revision,
+            target_revision=self.parquet_config.target_revision,
+            commit_message=self.parquet_config.commit_message,
+            url_template=self.parquet_config.url_template,
+            supported_datasets=self.parquet_config.supported_datasets,
+        )
