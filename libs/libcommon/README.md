@@ -24,8 +24,13 @@ Set environment variables to configure the storage of precomputed API responses 
 Set environment variables to configure the job queues to precompute API responses. The job queues are stored in a MongoDB database.
 
 - `QUEUE_MAX_JOBS_PER_NAMESPACE`: maximum number of started jobs for the same namespace (the user or organization, before the `/` separator in the dataset name, or the "canonical" dataset name if not present). Defaults to 1.
-- `QUEUE_MAX_LOAD_PCT`: maximum load of the machine (in percentage: the max between the 1m load and the 5m load divided by the number of CPUs \*100) allowed to start a job. Set to 0 to disable the test. Defaults to 70.
-- `QUEUE_MAX_MEMORY_PCT`: maximum memory (RAM + SWAP) usage of the machine (in percentage) allowed to start a job. Set to 0 to disable the test. Defaults to 80.
 - `QUEUE_MONGO_DATABASE`: name of the database used for storing the queue. Defaults to `datasets_server_queue`.
 - `QUEUE_MONGO_URL`: URL used to connect to the MongoDB server. Defaults to `mongodb://localhost:27017`.
-- `QUEUE_SLEEP_SECONDS`: duration in seconds that a worker waits at each loop iteration before checking if resources are available and processing a job if any is available. Note that the worker does not sleep on the first loop after finishing a job. Defaults to `15`.
+
+## Worker configuration
+
+Set environment variables to configure the worker that processes the queue.
+
+- `WORKER_MAX_LOAD_PCT`: maximum load of the machine (in percentage: the max between the 1m load and the 5m load divided by the number of CPUs \*100) allowed to start a job. Set to 0 to disable the test. Defaults to 70.
+- `WORKER_MAX_MEMORY_PCT`: maximum memory (RAM + SWAP) usage of the machine (in percentage) allowed to start a job. Set to 0 to disable the test. Defaults to 80.
+- `WORKER_SLEEP_SECONDS`: duration in seconds that a worker waits at each loop iteration before checking if resources are available and processing a job if any is available. Note that the worker does not sleep on the first loop after finishing a job. Defaults to `15`.

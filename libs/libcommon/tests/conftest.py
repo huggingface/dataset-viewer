@@ -3,8 +3,8 @@
 
 from pytest import MonkeyPatch, fixture
 
-from libcommon.config import CacheConfig, CommonConfig, QueueConfig
-from libcommon.processing_steps import Parameters, ProcessingStep
+from libcommon.config import CacheConfig, CommonConfig, QueueConfig, WorkerConfig
+from libcommon.processing_graph import ProcessingStep
 
 
 @fixture(scope="session")
@@ -38,6 +38,19 @@ def queue_config(monkeypatch_session: MonkeyPatch) -> QueueConfig:
     return queue_config
 
 
+@fixture(scope="session", autouse=True)
+def worker_config(monkeypatch_session: MonkeyPatch) -> WorkerConfig:
+    return WorkerConfig()
+
+
 @fixture(scope="session")
 def test_processing_step(monkeypatch_session: MonkeyPatch) -> ProcessingStep:
-    return ProcessingStep(endpoint="/test", parameters=Parameters.DATASET, previous_step=None, next_steps=[])
+    return ProcessingStep(
+        endpoint="/test",
+        input_type="dataset",
+        requires=None,
+        required_by_dataset_viewer=False,
+        parent=None,
+        ancestors=[],
+        children=[],
+    )

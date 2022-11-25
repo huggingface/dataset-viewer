@@ -1,10 +1,32 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2022 The HuggingFace Authors.
 
-from libcommon.processing_steps import FIRST_ROWS_STEP, PARQUET_STEP, SPLITS_STEP
+from libcommon.config import ProcessingGraphConfig
 
 
-def test_next_steps():
-    assert SPLITS_STEP.next_steps == [FIRST_ROWS_STEP]
-    assert PARQUET_STEP.next_steps == []
-    assert FIRST_ROWS_STEP.next_steps == []
+def test_default_graph():
+    config = ProcessingGraphConfig()
+    graph = config.graph
+
+    splits = graph.get_step("/splits")
+    first_rows = graph.get_step("/first-rows")
+    parquet = graph.get_step("/parquet")
+
+    assert splits is not None
+    assert first_rows is not None
+    assert parquet is not None
+
+    assert splits.parent is None
+    assert first_rows.parent is splits
+    assert parquet.parent is None
+
+    assert splits.children == [first_rows]
+    assert first_rows.children == []
+    assert parquet.children == []
+
+    assert splits.get_ancestors() == []
+    assert first_rows.get_ancestors() == [splits]
+    assert parquet.get_ancestors() == []
+
+    assert graph.get_first_steps() == [splits, parquet]
+    assert graph.get_steps_required_by_dataset_viewer() == [splits, first_rows]

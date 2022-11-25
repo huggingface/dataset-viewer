@@ -12,9 +12,9 @@ from huggingface_hub.hf_api import HfApi, RepositoryNotFoundError
 from packaging import version
 from psutil import cpu_count, getloadavg, swap_memory, virtual_memory
 
-from libcommon.config import CommonConfig, QueueConfig
+from libcommon.config import CommonConfig, QueueConfig, WorkerConfig
 from libcommon.exceptions import CustomError
-from libcommon.processing_steps import ProcessingStep
+from libcommon.processing_graph import ProcessingStep
 from libcommon.queue import EmptyQueueError, Queue, Status
 from libcommon.simple_cache import get_response_without_content, upsert_response
 
@@ -138,14 +138,21 @@ class Worker(ABC):
     queue: Queue
     common_config: CommonConfig
     queue_config: QueueConfig
+    worker_config: WorkerConfig
     version: str
 
     def __init__(
-        self, processing_step: ProcessingStep, common_config: CommonConfig, queue_config: QueueConfig, version: str
+        self,
+        processing_step: ProcessingStep,
+        common_config: CommonConfig,
+        queue_config: QueueConfig,
+        worker_config: WorkerConfig,
+        version: str,
     ) -> None:
         self.processing_step = processing_step
         self.common_config = common_config
         self.queue_config = queue_config
+        self.worker_config = worker_config
         self.version = version
         self.setup()
 
@@ -170,32 +177,32 @@ class Worker(ABC):
         self.log(level=logging.ERROR, msg=msg)
 
     def has_memory(self) -> bool:
-        if self.queue_config.max_memory_pct <= 0:
+        if self.worker_config.max_memory_pct <= 0:
             return True
         virtual_memory_used: int = virtual_memory().used  # type: ignore
         virtual_memory_total: int = virtual_memory().total  # type: ignore
         percent = (swap_memory().used + virtual_memory_used) / (swap_memory().total + virtual_memory_total)
-        ok = percent < self.queue_config.max_memory_pct
+        ok = percent < self.worker_config.max_memory_pct
         if not ok:
             self.info(
-                f"memory usage (RAM + SWAP) is too high: {percent:.0f}% - max is {self.queue_config.max_memory_pct}%"
+                f"memory usage (RAM + SWAP) is too high: {percent:.0f}% - max is {self.worker_config.max_memory_pct}%"
             )
         return ok
 
     def has_cpu(self) -> bool:
-        if self.queue_config.max_load_pct <= 0:
+        if self.worker_config.max_load_pct <= 0:
             return True
         load_pct = max(getloadavg()[:2]) / cpu_count() * 100
         # ^ only current load and 5m load. 15m load is not relevant to decide to launch a new job
-        ok = load_pct < self.queue_config.max_load_pct
+        ok = load_pct < self.worker_config.max_load_pct
         if not ok:
-            self.info(f"cpu load is too high: {load_pct:.0f}% - max is {self.queue_config.max_load_pct}%")
+            self.info(f"cpu load is too high: {load_pct:.0f}% - max is {self.worker_config.max_load_pct}%")
         return ok
 
     def sleep(self) -> None:
         jitter = 0.75 + random.random() / 2  # nosec
         # ^ between 0.75 and 1.25
-        duration = self.queue_config.sleep_seconds * jitter
+        duration = self.worker_config.sleep_seconds * jitter
         self.debug(f"sleep during {duration:.2f} seconds")
         time.sleep(duration)
 

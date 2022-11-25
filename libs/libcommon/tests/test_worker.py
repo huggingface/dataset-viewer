@@ -2,8 +2,8 @@ from typing import Any, Mapping, Optional
 
 import pytest
 
-from libcommon.config import CommonConfig, QueueConfig
-from libcommon.processing_steps import ProcessingStep
+from libcommon.config import CommonConfig, QueueConfig, WorkerConfig
+from libcommon.processing_graph import ProcessingStep
 from libcommon.worker import Worker, parse_version
 
 
@@ -44,6 +44,7 @@ def test_compare_major_version(
     test_processing_step: ProcessingStep,
     common_config: CommonConfig,
     queue_config: QueueConfig,
+    worker_config: WorkerConfig,
     worker_version: str,
     other_version: str,
     expected: int,
@@ -53,6 +54,7 @@ def test_compare_major_version(
         processing_step=test_processing_step,
         common_config=common_config,
         queue_config=queue_config,
+        worker_config=worker_config,
         version=worker_version,
     )
     if should_raise:
@@ -67,9 +69,14 @@ def should_skip_job(
     test_processing_step: ProcessingStep,
     common_config: CommonConfig,
     queue_config: QueueConfig,
+    worker_config: WorkerConfig,
 ) -> None:
     worker = DummyWorker(
-        processing_step=test_processing_step, common_config=common_config, queue_config=queue_config, version="1.0.0"
+        processing_step=test_processing_step,
+        common_config=common_config,
+        queue_config=queue_config,
+        worker_config=worker_config,
+        version="1.0.0",
     )
     dataset = hub_public_csv
     assert worker.should_skip_job(dataset=dataset) is False
