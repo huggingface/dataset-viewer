@@ -5,7 +5,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from enum import Enum, auto
-from typing import List
+from typing import List, Optional
 
 
 class Parameters(Enum):
@@ -22,12 +22,14 @@ class ProcessingStep:
     - the cache kind (ie. the key in the cache)
     - the job type (ie. the job to run to compute the response)
     - the job parameters (mainly: ['dataset'] or ['dataset', 'config', 'split'])
-    - the other steps required to compute the response (ie. the dependencies)
+    - the previous step required to compute the response
+    - the next steps (the steps which previous step is the current one)
     """
 
     endpoint: str
     parameters: Parameters
-    dependencies: List[ProcessingStep]
+    previous_step: Optional[ProcessingStep]
+    next_steps: List[ProcessingStep]
 
     @property
     def job_type(self):
@@ -40,24 +42,28 @@ class ProcessingStep:
         return self.endpoint
 
 
-splits_step = ProcessingStep(endpoint="/splits", parameters=Parameters.DATASET, dependencies=[])
-parquet_step = ProcessingStep(endpoint="/parquet", parameters=Parameters.DATASET, dependencies=[])
-first_rows_step = ProcessingStep(
+SPLITS_STEP = ProcessingStep(endpoint="/splits", parameters=Parameters.DATASET, previous_step=None, next_steps=[])
+PARQUET_STEP = ProcessingStep(endpoint="/parquet", parameters=Parameters.DATASET, previous_step=None, next_steps=[])
+FIRST_ROWS_STEP = ProcessingStep(
     endpoint="/first-rows",
     parameters=Parameters.SPLIT,
-    dependencies=[splits_step],
+    previous_step=SPLITS_STEP,
+    next_steps=[],
 )
-
 PROCESSING_STEPS: List[ProcessingStep] = [
-    splits_step,
-    parquet_step,
-    first_rows_step,
+    SPLITS_STEP,
+    PARQUET_STEP,
+    FIRST_ROWS_STEP,
 ]
+# fill the next_steps attribute
+for step in PROCESSING_STEPS:
+    if step.previous_step is not None:
+        step.previous_step.next_steps.append(step)
 
 # /valid and /is-valid indicate whether the dataset viewer will work
 PROCESSING_STEPS_FOR_VALID: List[ProcessingStep] = [
-    splits_step,
-    first_rows_step,
+    SPLITS_STEP,
+    FIRST_ROWS_STEP,
 ]
 
-INIT_PROCESSING_STEPS = [step for step in PROCESSING_STEPS if step.parameters == Parameters.DATASET]
+INIT_PROCESSING_STEPS = [step for step in PROCESSING_STEPS if step.previous_step is None]

@@ -40,4 +40,4 @@ def queue_config(monkeypatch_session: MonkeyPatch) -> QueueConfig:
 
 @fixture(scope="session")
 def test_processing_step(monkeypatch_session: MonkeyPatch) -> ProcessingStep:
-    return ProcessingStep(endpoint="/test", parameters=Parameters.DATASET, dependencies=[])
+    return ProcessingStep(endpoint="/test", parameters=Parameters.DATASET, previous_step=None, next_steps=[])
