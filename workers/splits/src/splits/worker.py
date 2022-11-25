@@ -116,10 +116,9 @@ def compute_splits_response(
           (list of splits names) and the dataset_git_revision (sha) if any.
     <Tip>
     Raises the following errors:
-        - [`~worker.exceptions.DatasetNotFoundError`]
-          If the repository to download from cannot be found. This may be because it doesn't exist,
-          or because it is set to `private` and you do not have access.
-        - [`~worker.exceptions.SplitsNamesError`]
+        - [`~splits.worker.EmptyDatasetError`]
+          The dataset is empty.
+        - [`~splits.worker.SplitsNamesError`]
           If the list of splits could not be obtained using the datasets library.
     </Tip>
     """

@@ -231,10 +231,18 @@ def compute_parquet_response(
           (dataset and list of parquet files) and the dataset_git_revision (sha) if any.
     <Tip>
     Raises the following errors:
-        - [`~worker.exceptions.DatasetNotFoundError`]
+        - [`~parquet.worker.GatedExtraFieldsError`]
+          If the dataset is gated and has "extra fields". This is not supported at the moment.
+        - [`~parquet.worker.GatedDisabledError`]
+          If the dataset is gated and the access is disabled.
+        - [`~libcommon.worker.DatasetNotFoundError`]
           If the repository to download from cannot be found. This may be because it doesn't exist,
           or because it is set to `private` and you do not have access.
-        - [`~worker.exceptions.ConfigNamesError`]
+        - [`~parquet.worker.DatasetRevisionNotFoundError`]
+          If the revision does not exist or cannot be accessed using the token.
+        - [`~splits.worker.EmptyDatasetError`]
+          The dataset is empty.
+        - [`~splits.worker.ConfigNamesError`]
           If the list of configurations could not be obtained using the datasets library.
     </Tip>
     """
