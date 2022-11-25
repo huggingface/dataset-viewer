@@ -4,7 +4,7 @@
 import importlib.metadata
 import logging
 from http import HTTPStatus
-from typing import Any, List, Literal, Mapping, Optional, TypedDict, Union
+from typing import Any, Dict, List, Literal, Optional, TypedDict, Union
 
 from datasets import (
     DatasetInfo,
@@ -132,7 +132,7 @@ def compute_splits_response(
     except Exception as err:
         raise SplitsNamesError("Cannot get the split names for the dataset.", cause=err) from err
     # get the number of bytes and examples for each split
-    config_info: Mapping[str, DatasetInfo] = {}
+    config_info: Dict[str, DatasetInfo] = {}
     split_items: List[SplitItem] = []
     for split_full_name in split_full_names:
         dataset = split_full_name["dataset"]
