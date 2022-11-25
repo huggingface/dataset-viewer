@@ -4,7 +4,7 @@
 import types
 from datetime import datetime, timezone
 from http import HTTPStatus
-from typing import Dict, Generic, List, Optional, Set, Type, TypedDict, TypeVar
+from typing import Any, Generic, List, Mapping, Optional, Set, Type, TypedDict, TypeVar
 
 from bson import ObjectId
 from bson.errors import InvalidId
@@ -106,12 +106,12 @@ CachedResponse.split.required = False  # type: ignore
 def upsert_response(
     kind: str,
     dataset: str,
-    content: Dict,
+    content: Mapping[str, Any],
     http_status: HTTPStatus,
     config: Optional[str] = None,
     split: Optional[str] = None,
     error_code: Optional[str] = None,
-    details: Optional[Dict] = None,
+    details: Optional[Mapping[str, Any]] = None,
     worker_version: Optional[str] = None,
     dataset_git_revision: Optional[str] = None,
 ) -> None:
@@ -161,7 +161,7 @@ def get_response_without_content(
 
 
 class CacheEntry(CacheEntryWithoutContent):
-    content: Dict
+    content: Mapping[str, Any]
 
 
 # Note: we let the exceptions throw (ie DoesNotExist): it's the responsibility of the caller to manage them
@@ -203,7 +203,7 @@ def get_valid_datasets(kind: str) -> Set[str]:
     return set(CachedResponse.objects(kind=kind, http_status=HTTPStatus.OK).distinct("dataset"))
 
 
-def get_validity_by_kind(dataset: str) -> Dict[str, bool]:
+def get_validity_by_kind(dataset: str) -> Mapping[str, bool]:
     # TODO: rework with aggregate
     entries = CachedResponse.objects(dataset=dataset).only("kind", "http_status")
     return {

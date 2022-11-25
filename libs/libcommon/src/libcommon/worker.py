@@ -6,7 +6,7 @@ import random
 import time
 from abc import ABC, abstractmethod
 from http import HTTPStatus
-from typing import Dict, Literal, Optional
+from typing import Any, Literal, Mapping, Optional
 
 from huggingface_hub.hf_api import HfApi, RepositoryNotFoundError
 from packaging import version
@@ -369,5 +369,5 @@ class Worker(ABC):
         config: Optional[str] = None,
         split: Optional[str] = None,
         force: bool = False,
-    ) -> Dict:
+    ) -> Mapping[str, Any]:
         pass

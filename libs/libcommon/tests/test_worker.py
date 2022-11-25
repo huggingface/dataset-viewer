@@ -1,4 +1,4 @@
-from typing import Dict, Optional
+from typing import Any, Mapping, Optional
 
 import pytest
 
@@ -10,7 +10,7 @@ from libcommon.worker import Worker, parse_version
 class DummyWorker(Worker):
     def compute(
         self, dataset: str, config: Optional[str] = None, split: Optional[str] = None, force: bool = False
-    ) -> Dict:
+    ) -> Mapping[str, Any]:
         return {"key": "value"}
 
 
