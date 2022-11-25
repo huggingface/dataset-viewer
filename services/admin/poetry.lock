@@ -248,11 +248,11 @@ pyflakes = ">=2.3.0,<2.4.0"
 
 [[package]]
 name = "gitdb"
-version = "4.0.9"
+version = "4.0.10"
 description = "Git Object Database"
 category = "dev"
 optional = false
-python-versions = ">=3.6"
+python-versions = ">=3.7"
 
 [package.dependencies]
 smmap = ">=3.0.1,<6"
@@ -352,9 +352,9 @@ plugins = ["setuptools"]
 requirements-deprecated-finder = ["pip-api", "pipreqs"]
 
 [[package]]
-name = "libcache"
-version = "0.4.3"
-description = "Library for the cache in mongodb"
+name = "libcommon"
+version = "0.4.0"
+description = "Library for utils, common to all the services and workers"
 category = "main"
 optional = false
 python-versions = "==3.9.6"
@@ -364,47 +364,13 @@ appdirs = ">=1.4.4,<2.0.0"
 environs = ">=9.5.0,<10.0.0"
 mongo-types = "0.15.1"
 mongoengine = ">=0.24.1,<0.25.0"
-pymongo = {version = ">=3.13.0,<4.0.0", extras = ["srv"]}
-
-[package.source]
-type = "file"
-url = "../../libs/libcache/dist/libcache-0.4.3-py3-none-any.whl"
-
-[[package]]
-name = "libcommon"
-version = "0.3.4"
-description = "Library for utils, common to all the services and workers"
-category = "main"
-optional = false
-python-versions = "==3.9.6"
-
-[package.dependencies]
-environs = ">=9.5.0,<10.0.0"
 orjson = ">=3.6.4,<4.0.0"
-
-[package.source]
-type = "file"
-url = "../../libs/libcommon/dist/libcommon-0.3.4-py3-none-any.whl"
-
-[[package]]
-name = "libqueue"
-version = "0.4.13"
-description = "Library for the jobs queue in mongodb"
-category = "main"
-optional = false
-python-versions = "==3.9.6"
-
-[package.dependencies]
-environs = ">=9.5.0,<10.0.0"
-mongo-types = "0.15.1"
-mongoengine = ">=0.24.1,<0.25.0"
-packaging = ">=21.3,<22.0"
 psutil = ">=5.9.2,<6.0.0"
 pymongo = {version = ">=3.13.0,<4.0.0", extras = ["srv"]}
 
 [package.source]
 type = "file"
-url = "../../libs/libqueue/dist/libqueue-0.4.13-py3-none-any.whl"
+url = "../../libs/libcommon/dist/libcommon-0.4.0-py3-none-any.whl"
 
 [[package]]
 name = "lockfile"
@@ -830,7 +796,7 @@ jupyter = ["ipywidgets (>=7.5.1,<8.0.0)"]
 
 [[package]]
 name = "setuptools"
-version = "65.6.2"
+version = "65.6.3"
 description = "Easily download, build, install, upgrade, and uninstall Python packages"
 category = "dev"
 optional = false
@@ -1021,7 +987,7 @@ python-versions = "*"
 [metadata]
 lock-version = "1.1"
 python-versions = "3.9.6"
-content-hash = "9f65f58259a2025715e348a17893dad96e0cbb98d8c75f99ac1d3f2aa6aa7c5f"
+content-hash = "92291de0a9229d13770461c8147e0dd773337777369e3575ac51d0774cab555a"
 
 [metadata.files]
 anyio = [
@@ -1168,8 +1134,8 @@ flake8 = [
     {file = "flake8-3.9.2.tar.gz", hash = "sha256:07528381786f2a6237b061f6e96610a4167b226cb926e2aa2b6b1d78057c576b"},
 ]
 gitdb = [
-    {file = "gitdb-4.0.9-py3-none-any.whl", hash = "sha256:8033ad4e853066ba6ca92050b9df2f89301b8fc8bf7e9324d412a63f8bf1a8fd"},
-    {file = "gitdb-4.0.9.tar.gz", hash = "sha256:bac2fd45c0a1c9cf619e63a90d62bdc63892ef92387424b855792a6cabe789aa"},
+    {file = "gitdb-4.0.10-py3-none-any.whl", hash = "sha256:c286cf298426064079ed96a9e4a9d39e7f3e9bf15ba60701e95f5492f28415c7"},
+    {file = "gitdb-4.0.10.tar.gz", hash = "sha256:6eb990b69df4e15bad899ea868dc46572c3f75339735663b81de79b06f17eb9a"},
 ]
 gitpython = [
     {file = "GitPython-3.1.29-py3-none-any.whl", hash = "sha256:41eea0deec2deea139b459ac03656f0dd28fc4a3387240ec1d3c259a2c47850f"},
@@ -1199,14 +1165,8 @@ isort = [
     {file = "isort-5.10.1-py3-none-any.whl", hash = "sha256:6f62d78e2f89b4500b080fe3a81690850cd254227f27f75c3a0c491a1f351ba7"},
     {file = "isort-5.10.1.tar.gz", hash = "sha256:e8443a5e7a020e9d7f97f1d7d9cd17c88bcb3bc7e218bf9cf5095fe550be2951"},
 ]
-libcache = [
-    {file = "libcache-0.4.3-py3-none-any.whl", hash = "sha256:d21c278aa72be395fe5a541eadfab3e33e9565f821a58aa161386f1ec9346041"},
-]
 libcommon = [
-    {file = "libcommon-0.3.4-py3-none-any.whl", hash = "sha256:243034630f3d47247ccdbaaed2763074bc88b8e7dd38133077f54de756ff2020"},
-]
-libqueue = [
-    {file = "libqueue-0.4.13-py3-none-any.whl", hash = "sha256:6aeec523eff05f1ee07cbc6bcf870ec301e5ce32913964f6fc385760d2ef954c"},
+    {file = "libcommon-0.4.0-py3-none-any.whl", hash = "sha256:eebc4b4b91e4886314584f1f437e04f70e65b7f5ef76d4b6fe43c7542a3a1dad"},
 ]
 lockfile = [
     {file = "lockfile-0.12.2-py2.py3-none-any.whl", hash = "sha256:6c3cb24f344923d30b2785d5ad75182c8ea7ac1b6171b08657258ec7429d50fa"},
@@ -1623,8 +1583,8 @@ rich = [
     {file = "rich-12.6.0.tar.gz", hash = "sha256:ba3a3775974105c221d31141f2c116f4fd65c5ceb0698657a11e9f295ec93fd0"},
 ]
 setuptools = [
-    {file = "setuptools-65.6.2-py3-none-any.whl", hash = "sha256:97a4a824325146ebc8dc29b0aa5f3b1eaa590a0f00cacbfdf81831670f07862d"},
-    {file = "setuptools-65.6.2.tar.gz", hash = "sha256:41fa68ecac9e099122990d7437bc10683b966c32a591caa2824dffcffd5dea7a"},
+    {file = "setuptools-65.6.3-py3-none-any.whl", hash = "sha256:57f6f22bde4e042978bcd50176fdb381d7c21a9efa4041202288d3737a0c6a54"},
+    {file = "setuptools-65.6.3.tar.gz", hash = "sha256:a7620757bf984b58deaf32fc8a4577a9bbc0850cf92c20e1ce41c38c19e5fb75"},
 ]
 six = [
     {file = "six-1.16.0-py2.py3-none-any.whl", hash = "sha256:8abb2f1d86890a2dfb989f9a77cfcfd3e47c2a354b01111771326f8aa26e0254"},

@@ -4,9 +4,9 @@
 from typing import Optional
 
 import pytest
-from libcache.simple_cache import _clean_cache_database
 from libcommon.processing_steps import PROCESSING_STEPS
-from libqueue.queue import _clean_queue_database
+from libcommon.queue import _clean_queue_database
+from libcommon.simple_cache import _clean_cache_database
 from starlette.testclient import TestClient
 
 from admin.app import create_app

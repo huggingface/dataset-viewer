@@ -3,9 +3,9 @@
 
 import os
 
-from libcache.simple_cache import get_responses_count_by_kind_status_and_error_code
 from libcommon.processing_steps import PROCESSING_STEPS
-from libqueue.queue import Queue
+from libcommon.queue import Queue
+from libcommon.simple_cache import get_responses_count_by_kind_status_and_error_code
 from prometheus_client import (  # type: ignore # https://github.com/prometheus/client_python/issues/491
     CONTENT_TYPE_LATEST,
     REGISTRY,

@@ -6,9 +6,9 @@ import logging
 from http import HTTPStatus
 from typing import Optional
 
-from libcache.simple_cache import get_response_without_content, upsert_response
-from libqueue.queue import Queue
-from libqueue.worker import Worker
+from libcommon.queue import Queue
+from libcommon.simple_cache import get_response_without_content, upsert_response
+from libcommon.worker import Worker
 
 from parquet.config import WorkerConfig
 from parquet.response import compute_parquet_response, get_dataset_git_revision

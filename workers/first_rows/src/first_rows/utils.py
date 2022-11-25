@@ -9,7 +9,7 @@ from http import HTTPStatus
 from typing import Literal, Optional
 
 from libcommon.exceptions import CustomError
-from libqueue.queue import Queue
+from libcommon.queue import Queue
 
 WorkerErrorCode = Literal[
     "DatasetNotFoundError",

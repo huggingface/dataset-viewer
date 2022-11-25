@@ -4,9 +4,7 @@
 import datasets.config
 from datasets.utils.logging import log_levels, set_verbosity
 from environs import Env
-from libcache.config import CacheConfig
-from libcommon.config import CommonConfig
-from libqueue.config import QueueConfig
+from libcommon.config import CacheConfig, CommonConfig, QueueConfig
 
 
 class FirstRowsConfig:

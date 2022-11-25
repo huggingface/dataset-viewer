@@ -41,7 +41,7 @@ class MigrationAddForceToJob(Migration):
 
 
 # --- JobSnapshot ---
-# copied from libqueue.queue.Job, as a snapshot of when the migration was created
+# copied from libcommon.queue.Job, as a snapshot of when the migration was created
 class Status(enum.Enum):
     WAITING = "waiting"
     STARTED = "started"

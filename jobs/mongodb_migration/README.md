@@ -13,14 +13,6 @@ Set environment variables to configure the job (`MONGODB_MIGRATION_` prefix):
 - `MONGODB_MIGRATION_MONGO_DATABASE`: the name of the database used for storing the migrations history. Defaults to `"datasets_server_maintenance"`.
 - `MONGODB_MIGRATION_MONGO_URL`: the URL used to connect to the mongo db server. Defaults to `"mongodb://localhost:27017"`.
 
-### Cache
-
-See [../../libs/libcache/README.md](../../libs/libcache/README.md) for more information about the cache configuration.
-
-### Queue
-
-See [../../libs/libqueue/README.md](../../libs/libqueue/README.md) for more information about the queue configuration.
-
 ### Common
 
 See [../../libs/libcommon/README.md](../../libs/libcommon/README.md) for more information about the common configuration.

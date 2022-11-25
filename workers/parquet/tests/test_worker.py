@@ -4,8 +4,8 @@
 from http import HTTPStatus
 
 import pytest
-from libcache.simple_cache import DoesNotExist, _clean_cache_database, get_response
-from libqueue.queue import _clean_queue_database
+from libcommon.queue import _clean_queue_database
+from libcommon.simple_cache import DoesNotExist, _clean_cache_database, get_response
 
 from parquet.config import WorkerConfig
 from parquet.utils import CacheKind

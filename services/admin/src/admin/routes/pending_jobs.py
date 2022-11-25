@@ -5,7 +5,7 @@ import logging
 from typing import Optional
 
 from libcommon.processing_steps import ProcessingStep
-from libqueue.queue import Queue
+from libcommon.queue import Queue
 from starlette.requests import Request
 from starlette.responses import Response
 

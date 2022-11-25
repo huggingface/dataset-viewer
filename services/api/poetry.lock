@@ -368,9 +368,9 @@ format = ["fqdn", "idna", "isoduration", "jsonpointer (>1.13)", "rfc3339-validat
 format-nongpl = ["fqdn", "idna", "isoduration", "jsonpointer (>1.13)", "rfc3339-validator", "rfc3986-validator (>0.1.0)", "uri-template", "webcolors (>=1.11)"]
 
 [[package]]
-name = "libcache"
-version = "0.4.3"
-description = "Library for the cache in mongodb"
+name = "libcommon"
+version = "0.4.0"
+description = "Library for utils, common to all the services and workers"
 category = "main"
 optional = false
 python-versions = "==3.9.6"
@@ -380,47 +380,13 @@ appdirs = ">=1.4.4,<2.0.0"
 environs = ">=9.5.0,<10.0.0"
 mongo-types = "0.15.1"
 mongoengine = ">=0.24.1,<0.25.0"
-pymongo = {version = ">=3.13.0,<4.0.0", extras = ["srv"]}
-
-[package.source]
-type = "file"
-url = "../../libs/libcache/dist/libcache-0.4.3-py3-none-any.whl"
-
-[[package]]
-name = "libcommon"
-version = "0.3.4"
-description = "Library for utils, common to all the services and workers"
-category = "main"
-optional = false
-python-versions = "==3.9.6"
-
-[package.dependencies]
-environs = ">=9.5.0,<10.0.0"
 orjson = ">=3.6.4,<4.0.0"
-
-[package.source]
-type = "file"
-url = "../../libs/libcommon/dist/libcommon-0.3.4-py3-none-any.whl"
-
-[[package]]
-name = "libqueue"
-version = "0.4.13"
-description = "Library for the jobs queue in mongodb"
-category = "main"
-optional = false
-python-versions = "==3.9.6"
-
-[package.dependencies]
-environs = ">=9.5.0,<10.0.0"
-mongo-types = "0.15.1"
-mongoengine = ">=0.24.1,<0.25.0"
-packaging = ">=21.3,<22.0"
 psutil = ">=5.9.2,<6.0.0"
 pymongo = {version = ">=3.13.0,<4.0.0", extras = ["srv"]}
 
 [package.source]
 type = "file"
-url = "../../libs/libqueue/dist/libqueue-0.4.13-py3-none-any.whl"
+url = "../../libs/libcommon/dist/libcommon-0.4.0-py3-none-any.whl"
 
 [[package]]
 name = "lockfile"
@@ -1063,7 +1029,7 @@ watchdog = ["watchdog"]
 [metadata]
 lock-version = "1.1"
 python-versions = "3.9.6"
-content-hash = "b68dc051640ffd7213b57c1c95eebd9ee44ad2eba156c72c55866d4f8528c644"
+content-hash = "8cea65c1f7539bf3c8481246727fa5f875f2e3a740f961af589a342569bcce01"
 
 [metadata.files]
 anyio = [
@@ -1245,14 +1211,8 @@ jsonschema = [
     {file = "jsonschema-4.17.1-py3-none-any.whl", hash = "sha256:410ef23dcdbca4eaedc08b850079179883c2ed09378bd1f760d4af4aacfa28d7"},
     {file = "jsonschema-4.17.1.tar.gz", hash = "sha256:05b2d22c83640cde0b7e0aa329ca7754fbd98ea66ad8ae24aa61328dfe057fa3"},
 ]
-libcache = [
-    {file = "libcache-0.4.3-py3-none-any.whl", hash = "sha256:d21c278aa72be395fe5a541eadfab3e33e9565f821a58aa161386f1ec9346041"},
-]
 libcommon = [
-    {file = "libcommon-0.3.4-py3-none-any.whl", hash = "sha256:243034630f3d47247ccdbaaed2763074bc88b8e7dd38133077f54de756ff2020"},
-]
-libqueue = [
-    {file = "libqueue-0.4.13-py3-none-any.whl", hash = "sha256:6aeec523eff05f1ee07cbc6bcf870ec301e5ce32913964f6fc385760d2ef954c"},
+    {file = "libcommon-0.4.0-py3-none-any.whl", hash = "sha256:eebc4b4b91e4886314584f1f437e04f70e65b7f5ef76d4b6fe43c7542a3a1dad"},
 ]
 lockfile = [
     {file = "lockfile-0.12.2-py2.py3-none-any.whl", hash = "sha256:6c3cb24f344923d30b2785d5ad75182c8ea7ac1b6171b08657258ec7429d50fa"},

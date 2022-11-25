@@ -55,7 +55,7 @@ The application is distributed in several components.
 
 [api](./services/api) is a web server that exposes the [API endpoints](https://huggingface.co/docs/datasets-server). Apart from some endpoints (`valid`, `is-valid`), all the responses are served from pre-computed responses. That's the main point of this project: generating these responses takes time, and the API server provides this service to the users.
 
-The precomputed responses are stored in a Mongo database called "cache" (see [libcache](./libs/libcache)). They are computed by [workers](./workers) which take their jobs from a job queue stored in a Mongo database called "queue" (see [libqueue](./libs/libqueue)), and store the results (error or valid response) into the "cache".
+The precomputed responses are stored in a Mongo database called "cache". They are computed by [workers](./workers) which take their jobs from a job queue stored in a Mongo database called "queue", and store the results (error or valid response) into the "cache" (see [libcommon](./libs/libcommon)).
 
 The API service exposes the `/webhook` endpoint which is called by the Hub on every creation, update or deletion of a dataset on the Hub. On deletion, the cached responses are deleted. On creation or update, a new job is appended in the "queue" database.
 
@@ -127,10 +127,10 @@ We version the [libraries](./libs) as they are dependencies of the [services](./
 - build with `make build`
 - version the new files in `dist/`
 
-And then update the library version in the services that require the update, for example if the library is `libcache`:
+And then update the library version in the services that require the update, for example if the library is `libcommon`:
 
 ```
-poetry update libcache
+poetry update libcommon
 ```
 
 If service is updated, we don't update its version in the `pyproject.yaml` file. But we have to update the [docker images file](./chart/docker-images.yaml) with the new image tag. Then the CI will test the new docker images, and we will be able to deploy them to the infrastructure.

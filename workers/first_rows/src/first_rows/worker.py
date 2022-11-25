@@ -6,8 +6,8 @@ import logging
 from http import HTTPStatus
 from typing import Optional
 
-from libcache.simple_cache import get_response_without_content, upsert_response
-from libqueue.worker import Worker
+from libcommon.simple_cache import get_response_without_content, upsert_response
+from libcommon.worker import Worker
 
 from first_rows.config import WorkerConfig
 from first_rows.response import compute_first_rows_response, get_dataset_git_revision

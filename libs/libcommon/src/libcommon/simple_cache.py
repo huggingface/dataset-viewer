@@ -288,9 +288,9 @@ def get_cache_reports(kind: str, cursor: Optional[str], limit: int) -> CacheRepo
         an empty string if there are no more items to be fetched.
     <Tip>
     Raises the following errors:
-        - [`~libcache.simple_cache.InvalidCursor`]
+        - [`~libcommon.simple_cache.InvalidCursor`]
           If the cursor is invalid.
-        - [`~libcache.simple_cache.InvalidLimit`]
+        - [`~libcommon.simple_cache.InvalidLimit`]
           If the limit is an invalid number.
     </Tip>
     """

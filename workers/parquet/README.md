@@ -26,14 +26,6 @@ The following environment variables are used to configure two dependencies: the 
 
 If the Hub is not https://huggingface.co (i.e. if you set the `COMMON_HF_ENDPOINT` environment variable), you should also set the `HF_ENDPOINT` environment variable to the same value. See https://github.com/huggingface/datasets/pull/5196 for more details.
 
-### Cache
-
-See [../../libs/libcache/README.md](../../libs/libcache/README.md) for more information about the cache configuration.
-
-### Queue
-
-See [../../libs/libqueue/README.md](../../libs/libqueue/README.md) for more information about the queue configuration.
-
 ### Common
 
 See [../../libs/libcommon/README.md](../../libs/libcommon/README.md) for more information about the common configuration.

@@ -7,7 +7,7 @@ from typing import Optional
 from huggingface_hub.hf_api import HfApi
 from huggingface_hub.utils import RepositoryNotFoundError
 from libcommon.processing_steps import Parameters, ProcessingStep
-from libqueue.queue import Queue
+from libcommon.queue import Queue
 from starlette.requests import Request
 from starlette.responses import Response
 
