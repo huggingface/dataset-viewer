@@ -3,7 +3,7 @@
 
 import json
 from http import HTTPStatus
-from typing import Dict, Optional
+from typing import Any, Mapping, Optional
 
 import pytest
 from libcommon.processing_steps import (
@@ -84,7 +84,7 @@ def test_is_valid_auth(
     client: TestClient,
     httpserver: HTTPServer,
     hf_auth_path: str,
-    headers: Dict[str, str],
+    headers: Mapping[str, str],
     status_code: int,
     error_code: Optional[str],
 ) -> None:
@@ -124,7 +124,7 @@ def test_splits_auth(
     client: TestClient,
     httpserver: HTTPServer,
     hf_auth_path: str,
-    headers: Dict[str, str],
+    headers: Mapping[str, str],
     status_code: int,
     error_code: str,
 ) -> None:
@@ -252,7 +252,7 @@ def test_metrics(client: TestClient) -> None:
 def test_webhook(
     client: TestClient,
     httpserver: HTTPServer,
-    payload: Dict,
+    payload: Mapping[str, Any],
     exists_on_the_hub: bool,
     expected_status: int,
     expected_is_updated: bool,

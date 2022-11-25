@@ -1,7 +1,7 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2022 The HuggingFace Authors.
 
-from typing import Dict, Optional, Type
+from typing import Mapping, Optional, Type
 
 import pytest
 import responses
@@ -61,7 +61,7 @@ def test_org(org: str, status: int, error: Optional[Type[Exception]]) -> None:
             auth_check(external_auth_url=url, organization=org)
 
 
-def create_request(headers: Dict[str, str]) -> Request:
+def create_request(headers: Mapping[str, str]) -> Request:
     return Request(
         {
             "type": "http",

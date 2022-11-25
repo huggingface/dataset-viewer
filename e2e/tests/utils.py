@@ -5,7 +5,7 @@ import json
 import os
 import time
 from pathlib import Path
-from typing import Any, Dict, Optional, Tuple
+from typing import Any, Mapping, Optional, Tuple
 
 import requests
 from requests import Response
@@ -19,7 +19,7 @@ URL = f"http://localhost:{PORT_REVERSE_PROXY}"
 ADMIN_URL = f"http://localhost:{ADMIN_UVICORN_PORT}"
 API_URL = f"http://localhost:{API_UVICORN_PORT}"
 
-Headers = Dict[str, str]
+Headers = Mapping[str, str]
 
 
 def get(relative_url: str, headers: Headers = None, url: str = URL) -> Response:

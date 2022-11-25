@@ -2,7 +2,7 @@
 # Copyright 2022 The HuggingFace Authors.
 
 from contextlib import nullcontext as does_not_raise
-from typing import Any, Dict
+from typing import Any, Mapping
 
 import pytest
 from pytest_httpserver import HTTPServer
@@ -52,7 +52,7 @@ def test_external_auth_responses_without_request(
         auth_check(dataset, external_auth_url=external_auth_url)
 
 
-def create_request(headers: Dict[str, str]) -> Request:
+def create_request(headers: Mapping[str, str]) -> Request:
     return Request(
         {
             "type": "http",
@@ -79,7 +79,7 @@ def test_valid_responses_with_request(
     httpserver: HTTPServer,
     hf_endpoint: str,
     hf_auth_path: str,
-    headers: Dict[str, str],
+    headers: Mapping[str, str],
     expectation: Any,
 ) -> None:
     dataset = "dataset"

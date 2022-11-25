@@ -5,7 +5,7 @@
 
 import time
 from contextlib import contextmanager, suppress
-from typing import Dict, Iterable, Literal, Optional, TypedDict
+from typing import Iterable, Literal, Mapping, Optional, TypedDict
 
 import pytest
 import requests
@@ -37,7 +37,7 @@ def update_repo_settings(
     organization: Optional[str] = None,
     repo_type: Optional[str] = None,
     name: str = None,
-) -> Dict[str, bool]:
+) -> Mapping[str, bool]:
     """Update the settings of a repository.
     Args:
         repo_id (`str`, *optional*):
@@ -207,7 +207,7 @@ def hf_dataset_repos_csv_data(
 
 
 AuthType = Literal["cookie", "token", "none"]
-AuthHeaders = Dict[AuthType, Dict[str, str]]
+AuthHeaders = Mapping[AuthType, Mapping[str, str]]
 
 
 @pytest.fixture(autouse=True, scope="session")
