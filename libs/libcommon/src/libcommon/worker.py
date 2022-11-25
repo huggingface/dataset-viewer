@@ -311,9 +311,6 @@ class Worker(ABC):
         split: Optional[str] = None,
         force: bool = False,
     ) -> bool:
-        if config is None or split is None:
-            raise ValueError("config and split are required")
-
         dataset_git_revision = None
         try:
             dataset_git_revision = get_dataset_git_revision(
