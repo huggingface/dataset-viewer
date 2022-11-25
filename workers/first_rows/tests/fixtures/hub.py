@@ -6,7 +6,7 @@
 import time
 from contextlib import contextmanager, suppress
 from pathlib import Path
-from typing import Any, Dict, Iterable, List, Optional, TypedDict
+from typing import Any, Dict, Iterable, List, Optional, Tuple, TypedDict
 
 import datasets.config
 import pytest
@@ -19,7 +19,12 @@ from huggingface_hub.hf_api import (
     hf_raise_for_status,
 )
 
-from ..utils import get_default_config_split
+
+def get_default_config_split(dataset: str) -> Tuple[str, str, str]:
+    config = dataset.replace("/", "--")
+    split = "train"
+    return dataset, config, split
+
 
 # see https://github.com/huggingface/moon-landing/blob/main/server/scripts/staging-seed-db.ts
 CI_HUB_USER = "__DUMMY_DATASETS_SERVER_USER__"
