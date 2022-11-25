@@ -1,12 +1,10 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2022 The HuggingFace Authors.
 
-from enum import Enum
 from http import HTTPStatus
 from typing import Literal, Optional
 
 from libcommon.exceptions import CustomError
-from libqueue.queue import Queue
 
 WorkerErrorCode = Literal[
     "DatasetNotFoundError",
@@ -56,22 +54,3 @@ class UnexpectedError(WorkerCustomError):
 
     def __init__(self, message: str, cause: Optional[BaseException] = None):
         super().__init__(message, HTTPStatus.INTERNAL_SERVER_ERROR, "UnexpectedError", cause, False)
-
-
-class JobType(Enum):
-    SPLITS = "/splits"
-    FIRST_ROWS = "/first-rows"
-
-
-class Queues:
-    splits: Queue
-    first_rows: Queue
-
-    def __init__(self, max_jobs_per_namespace: Optional[int] = None):
-        self.splits = Queue(type=JobType.SPLITS.value, max_jobs_per_namespace=max_jobs_per_namespace)
-        self.first_rows = Queue(type=JobType.FIRST_ROWS.value, max_jobs_per_namespace=max_jobs_per_namespace)
-
-
-class CacheKind(Enum):
-    SPLITS = "/splits"
-    FIRST_ROWS = "/first-rows"

@@ -8,7 +8,6 @@ from libcache.simple_cache import DoesNotExist, _clean_cache_database, get_respo
 from libqueue.queue import _clean_queue_database
 
 from splits.config import WorkerConfig
-from splits.utils import CacheKind
 from splits.worker import SplitsWorker
 
 
@@ -41,7 +40,7 @@ def should_skip_job(worker: SplitsWorker, hub_public_csv: str) -> None:
 def test_compute(worker: SplitsWorker, hub_public_csv: str) -> None:
     dataset = hub_public_csv
     assert worker.compute(dataset=dataset) is True
-    cached_response = get_response(kind=CacheKind.SPLITS.value, dataset=hub_public_csv)
+    cached_response = get_response(kind=worker.processing_step.cache_kind, dataset=hub_public_csv)
     assert cached_response["http_status"] == HTTPStatus.OK
     assert cached_response["error_code"] is None
     assert cached_response["worker_version"] == worker.version
@@ -57,7 +56,7 @@ def test_doesnotexist(worker: SplitsWorker) -> None:
     dataset = "doesnotexist"
     assert worker.compute(dataset=dataset) is False
     with pytest.raises(DoesNotExist):
-        get_response(kind=CacheKind.SPLITS.value, dataset=dataset)
+        get_response(kind=worker.processing_step.cache_kind, dataset=dataset)
 
 
 def test_process_job(worker: SplitsWorker, hub_public_csv: str) -> None:

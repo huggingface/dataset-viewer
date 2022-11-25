@@ -12,30 +12,28 @@ from libcache.simple_cache import (
     get_response_without_content,
     upsert_response,
 )
-from libqueue.worker import Worker
+from libcommon.processing_steps import ProcessingStep, first_rows_step, splits_step
+from libqueue.worker import Queue, Worker
 
 from splits.config import WorkerConfig
 from splits.response import compute_splits_response, get_dataset_git_revision
-from splits.utils import (
-    CacheKind,
-    DatasetNotFoundError,
-    Queues,
-    UnexpectedError,
-    WorkerCustomError,
-)
+from splits.utils import DatasetNotFoundError, UnexpectedError, WorkerCustomError
 
 
 class SplitsWorker(Worker):
     config: WorkerConfig
+    processing_step: ProcessingStep
 
     def __init__(self, worker_config: WorkerConfig):
         super().__init__(queue_config=worker_config.queue, version=importlib.metadata.version(__package__))
-        self._queues = Queues(max_jobs_per_namespace=worker_config.queue.max_jobs_per_namespace)
+
+        # self._queues = Queues(max_jobs_per_namespace=worker_config.queue.max_jobs_per_namespace)
         self.config = worker_config
+        self.processing_step = splits_step
 
     @property
     def queue(self):
-        return self._queues.splits
+        return Queue(type=self.processing_step.job_type)
 
     def should_skip_job(
         self, dataset: str, config: Optional[str] = None, split: Optional[str] = None, force: bool = False
@@ -61,7 +59,9 @@ class SplitsWorker(Worker):
         if force:
             return False
         try:
-            cached_response = get_response_without_content(kind=CacheKind.SPLITS.value, dataset=dataset)
+            cached_response = get_response_without_content(
+                kind=self.processing_step.cache_kind, dataset=dataset, config=config, split=split
+            )
             dataset_git_revision = get_dataset_git_revision(
                 dataset=dataset, hf_endpoint=self.config.common.hf_endpoint, hf_token=self.config.common.hf_token
             )
@@ -103,8 +103,10 @@ class SplitsWorker(Worker):
             if splits_response_result["dataset_git_revision"] != dataset_git_revision:
                 raise UnexpectedError("The dataset git revision has changed during the job")
             upsert_response(
-                kind=CacheKind.SPLITS.value,
+                kind=self.processing_step.cache_kind,
                 dataset=dataset,
+                config=config,
+                split=split,
                 content=dict(content),
                 http_status=HTTPStatus.OK,
                 worker_version=self.version,
@@ -117,11 +119,11 @@ class SplitsWorker(Worker):
             first_rows_responses_in_cache = [
                 (s["dataset"], s["config"], s["split"])
                 for s in get_dataset_response_ids(dataset=dataset)
-                if s["kind"] == CacheKind.FIRST_ROWS.value
+                if s["kind"] == first_rows_step.cache_kind
             ]
             first_rows_responses_to_delete = [s for s in first_rows_responses_in_cache if s not in new_splits]
             for d, c, s in first_rows_responses_to_delete:
-                delete_response(kind=CacheKind.FIRST_ROWS.value, dataset=d, config=c, split=s)
+                delete_response(kind=first_rows_step.cache_kind, dataset=d, config=c, split=s)
             logging.debug(
                 f"{len(first_rows_responses_to_delete)} 'first-rows' responses deleted from the cache for obsolete"
                 f" splits of dataset={dataset}"
@@ -129,30 +131,19 @@ class SplitsWorker(Worker):
             # compute the 'first-rows' responses for the new splits
             for d, c, s in new_splits:
                 # we force the refresh of the /first_rows responses if the /splits refresh was forced
-                self._queues.first_rows.add_job(dataset=d, config=c, split=s, force=force)
+                Queue(type=first_rows_step.job_type).add_job(dataset=d, config=c, split=s, force=force)
             logging.debug(f"{len(new_splits)} 'first-rows' jobs added for the splits of dataset={dataset}")
             return True
         except DatasetNotFoundError:
             logging.debug(f"the dataset={dataset} could not be found, don't update the cache")
             return False
-        except WorkerCustomError as err:
-            upsert_response(
-                kind=CacheKind.SPLITS.value,
-                dataset=dataset,
-                content=dict(err.as_response()),
-                http_status=err.status_code,
-                error_code=err.code,
-                details=dict(err.as_response_with_cause()),
-                worker_version=self.version,
-                dataset_git_revision=dataset_git_revision,
-            )
-            logging.debug(f"splits response for dataset={dataset} had an error, cache updated")
-            return False
         except Exception as err:
-            e = UnexpectedError(str(err), err)
+            e = err if isinstance(err, WorkerCustomError) else UnexpectedError(str(err), err)
             upsert_response(
-                kind=CacheKind.SPLITS.value,
+                kind=self.processing_step.cache_kind,
                 dataset=dataset,
+                config=config,
+                split=split,
                 content=dict(e.as_response()),
                 http_status=e.status_code,
                 error_code=e.code,
@@ -160,5 +151,5 @@ class SplitsWorker(Worker):
                 worker_version=self.version,
                 dataset_git_revision=dataset_git_revision,
             )
-            logging.debug(f"splits response for dataset={dataset} had a server error, cache updated")
+            logging.debug(f"splits response for dataset={dataset} had an error, cache updated")
             return False
