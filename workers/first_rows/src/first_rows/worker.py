@@ -6,16 +6,16 @@ import logging
 from http import HTTPStatus
 from typing import Optional
 
+from libcommon.processing_steps import ProcessingStep, first_rows_step
+from libcommon.queue import Queue
 from libcommon.simple_cache import get_response_without_content, upsert_response
 from libcommon.worker import Worker
 
 from first_rows.config import WorkerConfig
 from first_rows.response import compute_first_rows_response, get_dataset_git_revision
 from first_rows.utils import (
-    CacheKind,
     ConfigNotFoundError,
     DatasetNotFoundError,
-    Queues,
     SplitNotFoundError,
     UnexpectedError,
     WorkerCustomError,
@@ -24,15 +24,16 @@ from first_rows.utils import (
 
 class FirstRowsWorker(Worker):
     config: WorkerConfig
+    processing_step: ProcessingStep
 
     def __init__(self, worker_config: WorkerConfig):
         super().__init__(queue_config=worker_config.queue, version=importlib.metadata.version(__package__))
-        self._queues = Queues(max_jobs_per_namespace=worker_config.queue.max_jobs_per_namespace)
         self.config = worker_config
+        self.processing_step = first_rows_step
 
     @property
     def queue(self):
-        return self._queues.first_rows
+        return Queue(self.processing_step.job_type, max_jobs_per_namespace=self.config.queue.max_jobs_per_namespace)
 
     def should_skip_job(
         self, dataset: str, config: Optional[str] = None, split: Optional[str] = None, force: bool = False
@@ -59,7 +60,7 @@ class FirstRowsWorker(Worker):
             return False
         try:
             cached_response = get_response_without_content(
-                kind=CacheKind.FIRST_ROWS.value, dataset=dataset, config=config, split=split
+                kind=self.processing_step.cache_kind, dataset=dataset, config=config, split=split
             )
             dataset_git_revision = get_dataset_git_revision(
                 dataset=dataset, hf_endpoint=self.config.common.hf_endpoint, hf_token=self.config.common.hf_token
@@ -115,7 +116,7 @@ class FirstRowsWorker(Worker):
             if result["dataset_git_revision"] != dataset_git_revision:
                 raise UnexpectedError("The dataset git revision has changed during the job")
             upsert_response(
-                kind=CacheKind.FIRST_ROWS.value,
+                kind=self.processing_step.cache_kind,
                 dataset=dataset,
                 config=config,
                 split=split,
@@ -131,27 +132,10 @@ class FirstRowsWorker(Worker):
                 f"the dataset={dataset}, config {config} or split {split} could not be found, don't update the cache"
             )
             return False
-        except WorkerCustomError as err:
-            upsert_response(
-                kind=CacheKind.FIRST_ROWS.value,
-                dataset=dataset,
-                config=config,
-                split=split,
-                content=dict(err.as_response()),
-                http_status=err.status_code,
-                error_code=err.code,
-                details=dict(err.as_response_with_cause()),
-                worker_version=self.version,
-                dataset_git_revision=dataset_git_revision,
-            )
-            logging.debug(
-                f"first-rows response for dataset={dataset} config={config} split={split} had an error, cache updated"
-            )
-            return False
         except Exception as err:
-            e = UnexpectedError(str(err), err)
+            e = err if isinstance(err, WorkerCustomError) else UnexpectedError(str(err), err)
             upsert_response(
-                kind=CacheKind.FIRST_ROWS.value,
+                kind=self.processing_step.cache_kind,
                 dataset=dataset,
                 config=config,
                 split=split,
@@ -163,7 +147,6 @@ class FirstRowsWorker(Worker):
                 dataset_git_revision=dataset_git_revision,
             )
             logging.debug(
-                f"first-rows response for dataset={dataset} config={config} split={split} had a server"
-                " error, cache updated"
+                f"first-rows response for dataset={dataset} config={config} split={split} had an error, cache updated"
             )
             return False

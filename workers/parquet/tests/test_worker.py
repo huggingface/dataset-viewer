@@ -4,11 +4,11 @@
 from http import HTTPStatus
 
 import pytest
+from libcommon.processing_steps import parquet_step
 from libcommon.queue import _clean_queue_database
 from libcommon.simple_cache import DoesNotExist, _clean_cache_database, get_response
 
 from parquet.config import WorkerConfig
-from parquet.utils import CacheKind
 from parquet.worker import ParquetWorker
 
 from .fixtures.hub import HubDatasets
@@ -42,7 +42,7 @@ def should_skip_job(worker: ParquetWorker, hub_public_csv: str) -> None:
 def test_compute(worker: ParquetWorker, hub_datasets: HubDatasets) -> None:
     dataset = hub_datasets["public"]["name"]
     assert worker.compute(dataset=dataset) is True
-    cached_response = get_response(kind=CacheKind.PARQUET.value, dataset=dataset)
+    cached_response = get_response(kind=parquet_step.cache_kind, dataset=dataset)
     assert cached_response["http_status"] == HTTPStatus.OK
     assert cached_response["error_code"] is None
     assert cached_response["worker_version"] == worker.version
@@ -56,12 +56,12 @@ def test_doesnotexist(worker: ParquetWorker) -> None:
     dataset = "doesnotexist"
     assert worker.compute(dataset=dataset) is False
     with pytest.raises(DoesNotExist):
-        get_response(kind=CacheKind.PARQUET.value, dataset=dataset)
+        get_response(kind=parquet_step.cache_kind, dataset=dataset)
 
 
 def test_not_supported(worker: ParquetWorker, hub_not_supported_csv: str) -> None:
     assert worker.compute(dataset=hub_not_supported_csv) is False
-    cached_response = get_response(kind=CacheKind.PARQUET.value, dataset=hub_not_supported_csv)
+    cached_response = get_response(kind=parquet_step.cache_kind, dataset=hub_not_supported_csv)
     assert cached_response["http_status"] == HTTPStatus.NOT_IMPLEMENTED
     assert cached_response["error_code"] == "DatasetNotSupportedError"
 

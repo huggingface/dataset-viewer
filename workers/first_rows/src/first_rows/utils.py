@@ -4,12 +4,10 @@
 import functools
 import logging
 import time
-from enum import Enum
 from http import HTTPStatus
 from typing import Literal, Optional
 
 from libcommon.exceptions import CustomError
-from libcommon.queue import Queue
 
 WorkerErrorCode = Literal[
     "DatasetNotFoundError",
@@ -143,22 +141,3 @@ def retry():
         return decorator
 
     return decorator_retry
-
-
-class JobType(Enum):
-    SPLITS = "/splits"
-    FIRST_ROWS = "/first-rows"
-
-
-class Queues:
-    splits: Queue
-    first_rows: Queue
-
-    def __init__(self, max_jobs_per_namespace: Optional[int] = None):
-        self.splits = Queue(type=JobType.SPLITS.value, max_jobs_per_namespace=max_jobs_per_namespace)
-        self.first_rows = Queue(type=JobType.FIRST_ROWS.value, max_jobs_per_namespace=max_jobs_per_namespace)
-
-
-class CacheKind(Enum):
-    SPLITS = "/splits"
-    FIRST_ROWS = "/first-rows"

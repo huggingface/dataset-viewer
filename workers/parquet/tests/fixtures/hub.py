@@ -6,7 +6,7 @@
 import time
 from contextlib import contextmanager, suppress
 from pathlib import Path
-from typing import Any, Dict, Iterable, List, Optional, TypedDict
+from typing import Any, Dict, Iterable, List, Optional, Tuple, TypedDict
 
 import datasets.config
 import pytest
@@ -18,8 +18,6 @@ from huggingface_hub.hf_api import (  # type: ignore
     HfApi,
     hf_raise_for_status,
 )
-
-from ..utils import get_default_config_split
 
 # see https://github.com/huggingface/moon-landing/blob/main/server/scripts/staging-seed-db.ts
 CI_HUB_USER = "__DUMMY_DATASETS_SERVER_USER__"
@@ -40,6 +38,12 @@ def ci_hfh_hf_hub_url(monkeypatch: pytest.MonkeyPatch):
 datasets.config.HF_ENDPOINT = CI_HUB_ENDPOINT
 # Don't increase the datasets download counts on huggingface.co
 datasets.config.HF_UPDATE_DOWNLOAD_COUNTS = False
+
+
+def get_default_config_split(dataset: str) -> Tuple[str, str, str]:
+    config = dataset.replace("/", "--")
+    split = "train"
+    return dataset, config, split
 
 
 def update_repo_settings(

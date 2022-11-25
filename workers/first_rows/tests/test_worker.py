@@ -5,11 +5,11 @@
 from http import HTTPStatus
 
 import pytest
+from libcommon.processing_steps import first_rows_step
 from libcommon.queue import _clean_queue_database
 from libcommon.simple_cache import DoesNotExist, _clean_cache_database, get_response
 
 from first_rows.config import WorkerConfig
-from first_rows.utils import CacheKind
 from first_rows.worker import FirstRowsWorker
 
 from .utils import get_default_config_split
@@ -38,7 +38,7 @@ def should_skip_job(worker: FirstRowsWorker, hub_public_csv: str) -> None:
 def test_compute(worker: FirstRowsWorker, hub_public_csv: str) -> None:
     dataset, config, split = get_default_config_split(hub_public_csv)
     assert worker.compute(dataset=dataset, config=config, split=split) is True
-    cached_response = get_response(kind=CacheKind.FIRST_ROWS.value, dataset=dataset, config=config, split=split)
+    cached_response = get_response(kind=first_rows_step.cache_kind, dataset=dataset, config=config, split=split)
     assert cached_response["http_status"] == HTTPStatus.OK
     assert cached_response["error_code"] is None
     assert cached_response["worker_version"] == worker.version
@@ -57,7 +57,7 @@ def test_doesnotexist(worker: FirstRowsWorker) -> None:
     dataset, config, split = get_default_config_split(dataset)
     assert worker.compute(dataset=dataset, config=config, split=split) is False
     with pytest.raises(DoesNotExist):
-        get_response(kind=CacheKind.FIRST_ROWS.value, dataset=dataset, config=config, split=split)
+        get_response(kind=first_rows_step.cache_kind, dataset=dataset, config=config, split=split)
 
 
 def test_process_job(worker: FirstRowsWorker, hub_public_csv: str) -> None:

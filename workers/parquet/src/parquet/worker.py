@@ -6,34 +6,30 @@ import logging
 from http import HTTPStatus
 from typing import Optional
 
+from libcommon.processing_steps import ProcessingStep, parquet_step
 from libcommon.queue import Queue
 from libcommon.simple_cache import get_response_without_content, upsert_response
 from libcommon.worker import Worker
 
 from parquet.config import WorkerConfig
 from parquet.response import compute_parquet_response, get_dataset_git_revision
-from parquet.utils import (
-    CacheKind,
-    DatasetNotFoundError,
-    JobType,
-    UnexpectedError,
-    WorkerCustomError,
-)
+from parquet.utils import DatasetNotFoundError, UnexpectedError, WorkerCustomError
 
 
 class ParquetWorker(Worker):
     config: WorkerConfig
+    processing_step: ProcessingStep
 
     def __init__(self, worker_config: WorkerConfig):
         super().__init__(queue_config=worker_config.queue, version=importlib.metadata.version(__package__))
-        self._queue = Queue(
-            type=JobType.PARQUET.value, max_jobs_per_namespace=worker_config.queue.max_jobs_per_namespace
-        )
         self.config = worker_config
+        self.processing_step = parquet_step
 
     @property
     def queue(self):
-        return self._queue
+        return Queue(
+            type=self.processing_step.job_type, max_jobs_per_namespace=self.config.queue.max_jobs_per_namespace
+        )
 
     def should_skip_job(
         self, dataset: str, config: Optional[str] = None, split: Optional[str] = None, force: bool = None
@@ -58,7 +54,9 @@ class ParquetWorker(Worker):
         if force:
             return False
         try:
-            cached_response = get_response_without_content(kind=CacheKind.SPLITS.value, dataset=dataset)
+            cached_response = get_response_without_content(
+                kind=self.processing_step.cache_kind, dataset=dataset, config=config, split=split
+            )
             dataset_git_revision = get_dataset_git_revision(
                 dataset=dataset, hf_endpoint=self.config.common.hf_endpoint, hf_token=self.config.parquet.hf_token
             )
@@ -107,8 +105,10 @@ class ParquetWorker(Worker):
             if parquet_response_result["dataset_git_revision"] != dataset_git_revision:
                 raise UnexpectedError("The dataset git revision has changed during the job")
             upsert_response(
-                kind=CacheKind.PARQUET.value,
+                kind=self.processing_step.cache_kind,
                 dataset=dataset,
+                config=config,
+                split=split,
                 content=dict(content),
                 http_status=HTTPStatus.OK,
                 worker_version=self.version,
@@ -119,24 +119,13 @@ class ParquetWorker(Worker):
         except DatasetNotFoundError:
             logging.debug(f"the dataset={dataset} could not be found, don't update the cache")
             return False
-        except WorkerCustomError as err:
-            upsert_response(
-                kind=CacheKind.PARQUET.value,
-                dataset=dataset,
-                content=dict(err.as_response()),
-                http_status=err.status_code,
-                error_code=err.code,
-                details=dict(err.as_response_with_cause()),
-                worker_version=self.version,
-                dataset_git_revision=dataset_git_revision,
-            )
-            logging.debug(f"parquet response for dataset={dataset} had an error, cache updated")
-            return False
         except Exception as err:
-            e = UnexpectedError(str(err), err)
+            e = err if isinstance(err, WorkerCustomError) else UnexpectedError(str(err), err)
             upsert_response(
-                kind=CacheKind.PARQUET.value,
+                kind=self.processing_step.cache_kind,
                 dataset=dataset,
+                config=config,
+                split=split,
                 content=dict(e.as_response()),
                 http_status=e.status_code,
                 error_code=e.code,
@@ -144,5 +133,5 @@ class ParquetWorker(Worker):
                 worker_version=self.version,
                 dataset_git_revision=dataset_git_revision,
             )
-            logging.debug(f"parquet response for dataset={dataset} had a server error, cache updated")
+            logging.debug(f"parquet response for dataset={dataset} had an error, cache updated")
             return False

@@ -33,7 +33,9 @@ class SplitsWorker(Worker):
 
     @property
     def queue(self):
-        return Queue(type=self.processing_step.job_type)
+        return Queue(
+            type=self.processing_step.job_type, max_jobs_per_namespace=self.config.queue.max_jobs_per_namespace
+        )
 
     def should_skip_job(
         self, dataset: str, config: Optional[str] = None, split: Optional[str] = None, force: bool = False

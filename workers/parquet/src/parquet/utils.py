@@ -1,7 +1,6 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2022 The HuggingFace Authors.
 
-from enum import Enum
 from http import HTTPStatus
 from typing import Literal, Optional
 
@@ -87,15 +86,3 @@ class UnexpectedError(WorkerCustomError):
 
     def __init__(self, message: str, cause: Optional[BaseException] = None):
         super().__init__(message, HTTPStatus.INTERNAL_SERVER_ERROR, "UnexpectedError", cause, False)
-
-
-class JobType(Enum):
-    SPLITS = "/splits"
-    FIRST_ROWS = "/first-rows"
-    PARQUET = "/parquet"
-
-
-class CacheKind(Enum):
-    SPLITS = "/splits"
-    FIRST_ROWS = "/first-rows"
-    PARQUET = "/parquet"
