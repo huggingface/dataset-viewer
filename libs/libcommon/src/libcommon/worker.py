@@ -6,7 +6,7 @@ import random
 import time
 from abc import ABC, abstractmethod
 from http import HTTPStatus
-from typing import Any, Dict, Literal, Optional, TypedDict
+from typing import Dict, Literal, Optional
 
 from huggingface_hub.hf_api import HfApi, RepositoryNotFoundError
 from packaging import version
@@ -30,7 +30,6 @@ WorkerErrorCode = Literal[
     "DatasetNotFoundError",
     "ConfigNotFoundError",
     "SplitNotFoundError",
-    "GitRevisionChangeError",
     "UnexpectedError",
 ]
 
@@ -90,19 +89,6 @@ class SplitNotFoundError(WorkerError):
         )
 
 
-class GitRevisionChangeError(WorkerError):
-    """Raised when the git revision of a dataset has changed during the computation."""
-
-    def __init__(self, message: str, cause: Optional[BaseException] = None):
-        super().__init__(
-            message=message,
-            status_code=HTTPStatus.INTERNAL_SERVER_ERROR,
-            code="GitRevisionChangeError",
-            cause=cause,
-            disclose_cause=False,
-        )
-
-
 class UnexpectedError(WorkerError):
     """Raised when the response for the split has not been found."""
 
@@ -114,13 +100,6 @@ class UnexpectedError(WorkerError):
             cause=cause,
             disclose_cause=False,
         )
-
-
-class ComputedResponse(TypedDict):
-    """The response of a worker after the computation."""
-
-    dataset_git_revision: Optional[str]
-    content: Dict[str, Any]
 
 
 def get_dataset_git_revision(
@@ -348,15 +327,13 @@ class Worker(ABC):
             return False
 
         try:
-            result = self.compute(dataset=dataset, config=config, split=split, force=force)
-            if result["dataset_git_revision"] != dataset_git_revision:
-                raise GitRevisionChangeError("The dataset git revision has changed during the job")
+            content = self.compute(dataset=dataset, config=config, split=split, force=force)
             upsert_response(
                 kind=self.processing_step.cache_kind,
                 dataset=dataset,
                 config=config,
                 split=split,
-                content=result["content"],
+                content=content,
                 http_status=HTTPStatus.OK,
                 worker_version=self.version,
                 dataset_git_revision=dataset_git_revision,
@@ -392,5 +369,5 @@ class Worker(ABC):
         config: Optional[str] = None,
         split: Optional[str] = None,
         force: bool = False,
-    ) -> ComputedResponse:
+    ) -> Dict:
         pass

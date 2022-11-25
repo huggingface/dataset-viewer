@@ -1,19 +1,17 @@
-from typing import Optional
+from typing import Dict, Optional
 
 import pytest
 
 from libcommon.config import CommonConfig, QueueConfig
 from libcommon.processing_steps import ProcessingStep
-from libcommon.worker import ComputedResponse, Worker, parse_version
-
-DATASET_GIT_REVISION = "1234567890"
+from libcommon.worker import Worker, parse_version
 
 
 class DummyWorker(Worker):
     def compute(
         self, dataset: str, config: Optional[str] = None, split: Optional[str] = None, force: bool = False
-    ) -> ComputedResponse:
-        return {"dataset_git_revision": DATASET_GIT_REVISION, "content": {"key": "value"}}
+    ) -> Dict:
+        return {"key": "value"}
 
 
 @pytest.mark.parametrize(
