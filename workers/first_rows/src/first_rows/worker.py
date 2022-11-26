@@ -20,11 +20,10 @@ from datasets import (
 )
 from datasets.data_files import EmptyDatasetError as _EmptyDatasetError
 from libcommon.exceptions import CustomError
-from libcommon.processing_steps import first_rows_step
 from libcommon.utils import orjson_dumps
 from libcommon.worker import ConfigNotFoundError, SplitNotFoundError, Worker
 
-from first_rows.config import CacheConfig, FirstRowsConfig, WorkerConfig
+from first_rows.config import AppConfig, CacheConfig, FirstRowsConfig
 from first_rows.features import get_cell_value
 
 FirstRowsWorkerErrorCode = Literal[
@@ -552,15 +551,17 @@ class FirstRowsWorker(Worker):
     cache_config: CacheConfig
     first_rows_config: FirstRowsConfig
 
-    def __init__(self, worker_config: WorkerConfig):
+    def __init__(self, app_config: AppConfig, endpoint: str):
         super().__init__(
-            processing_step=first_rows_step,
-            common_config=worker_config.common,
-            queue_config=worker_config.queue,
+            processing_step=app_config.processing_graph.graph.get_step(endpoint),
+            # ^ raises if the step is not found
+            common_config=app_config.common,
+            queue_config=app_config.queue,
+            worker_config=app_config.worker,
             version=importlib.metadata.version(__package__),
         )
-        self.cache_config = worker_config.cache
-        self.first_rows_config = worker_config.first_rows
+        self.cache_config = app_config.cache
+        self.first_rows_config = app_config.first_rows
 
     def compute(
         self,

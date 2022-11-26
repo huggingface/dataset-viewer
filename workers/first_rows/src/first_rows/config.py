@@ -4,7 +4,13 @@
 import datasets.config
 from datasets.utils.logging import log_levels, set_verbosity
 from environs import Env
-from libcommon.config import CacheConfig, CommonConfig, QueueConfig
+from libcommon.config import (
+    CacheConfig,
+    CommonConfig,
+    ProcessingGraphConfig,
+    QueueConfig,
+    WorkerConfig,
+)
 
 
 class FirstRowsConfig:
@@ -24,18 +30,22 @@ class FirstRowsConfig:
             self.min_number = env.int(name="MIN_NUMBER", default=10)
 
 
-class WorkerConfig:
+class AppConfig:
     cache: CacheConfig
     common: CommonConfig
     first_rows: FirstRowsConfig
+    processing_graph: ProcessingGraphConfig
     queue: QueueConfig
+    worker: WorkerConfig
 
     def __init__(self):
         # First process the common configuration to setup the logging
         self.common = CommonConfig()
         self.cache = CacheConfig()
         self.first_rows = FirstRowsConfig()
+        self.processing_graph = ProcessingGraphConfig()
         self.queue = QueueConfig()
+        self.worker = WorkerConfig()
         self.setup()
 
     def setup(self):

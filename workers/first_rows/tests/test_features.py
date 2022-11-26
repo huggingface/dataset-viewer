@@ -9,7 +9,7 @@ import numpy as np
 import pytest
 from datasets import Audio, Dataset, Image, Value
 
-from first_rows.config import WorkerConfig
+from first_rows.config import AppConfig
 from first_rows.features import get_cell_value
 
 # we need to know the correspondence between the feature type and the cell value, in order to:
@@ -56,7 +56,7 @@ def test_value(
     output_value: Any,
     output_dtype: str,
     datasets: Mapping[str, Dataset],
-    worker_config: WorkerConfig,
+    app_config: AppConfig,
 ) -> None:
     dataset = datasets[dataset_type]
     feature = dataset.features["col"]
@@ -70,8 +70,8 @@ def test_value(
         cell=dataset[0]["col"],
         featureName="col",
         fieldType=feature,
-        assets_base_url=worker_config.common.assets_base_url,
-        assets_directory=worker_config.cache.assets_directory,
+        assets_base_url=app_config.common.assets_base_url,
+        assets_directory=app_config.cache.assets_directory,
     )
     assert value == output_value
 
@@ -297,7 +297,7 @@ def test_others(
     output_value: Any,
     output_type: Any,
     datasets: Mapping[str, Dataset],
-    worker_config: WorkerConfig,
+    app_config: AppConfig,
 ) -> None:
     dataset = datasets[dataset_type]
     feature = dataset.features["col"]
@@ -313,7 +313,7 @@ def test_others(
         cell=dataset[0]["col"],
         featureName="col",
         fieldType=feature,
-        assets_base_url=worker_config.common.assets_base_url,
-        assets_directory=worker_config.cache.assets_directory,
+        assets_base_url=app_config.common.assets_base_url,
+        assets_directory=app_config.cache.assets_directory,
     )
     assert value == output_value

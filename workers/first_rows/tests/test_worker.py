@@ -7,11 +7,10 @@ from http import HTTPStatus
 import pytest
 from datasets.packaged_modules import csv
 from libcommon.exceptions import CustomError
-from libcommon.processing_steps import first_rows_step
 from libcommon.queue import _clean_queue_database
 from libcommon.simple_cache import DoesNotExist, _clean_cache_database, get_response
 
-from first_rows.config import WorkerConfig
+from first_rows.config import AppConfig
 from first_rows.worker import (
     FirstRowsWorker,
     compute_first_rows_response,
@@ -28,8 +27,8 @@ def clean_mongo_database() -> None:
 
 
 @pytest.fixture(autouse=True, scope="module")
-def worker(worker_config: WorkerConfig) -> FirstRowsWorker:
-    return FirstRowsWorker(worker_config)
+def worker(app_config: AppConfig) -> FirstRowsWorker:
+    return FirstRowsWorker(app_config=app_config, endpoint="/first-rows")
 
 
 def should_skip_job(worker: FirstRowsWorker, hub_public_csv: str) -> None:
@@ -44,7 +43,7 @@ def should_skip_job(worker: FirstRowsWorker, hub_public_csv: str) -> None:
 def test_compute(worker: FirstRowsWorker, hub_public_csv: str) -> None:
     dataset, config, split = get_default_config_split(hub_public_csv)
     assert worker.process(dataset=dataset, config=config, split=split) is True
-    cached_response = get_response(kind=first_rows_step.cache_kind, dataset=dataset, config=config, split=split)
+    cached_response = get_response(kind=worker.processing_step.cache_kind, dataset=dataset, config=config, split=split)
     assert cached_response["http_status"] == HTTPStatus.OK
     assert cached_response["error_code"] is None
     assert cached_response["worker_version"] == worker.version
@@ -63,7 +62,7 @@ def test_doesnotexist(worker: FirstRowsWorker) -> None:
     dataset, config, split = get_default_config_split(dataset)
     assert worker.process(dataset=dataset, config=config, split=split) is False
     with pytest.raises(DoesNotExist):
-        get_response(kind=first_rows_step.cache_kind, dataset=dataset, config=config, split=split)
+        get_response(kind=worker.processing_step.cache_kind, dataset=dataset, config=config, split=split)
 
 
 def test_process_job(worker: FirstRowsWorker, hub_public_csv: str) -> None:
@@ -97,7 +96,7 @@ def test_number_rows(
     use_token: bool,
     error_code: str,
     cause: str,
-    worker_config: WorkerConfig,
+    app_config: AppConfig,
 ) -> None:
     # temporary patch to remove the effect of
     # https://github.com/huggingface/datasets/issues/4875#issuecomment-1280744233
@@ -113,14 +112,14 @@ def test_number_rows(
             dataset=dataset,
             config=config,
             split=split,
-            assets_base_url=worker_config.common.assets_base_url,
-            hf_token=worker_config.common.hf_token if use_token else None,
-            max_size_fallback=worker_config.first_rows.fallback_max_dataset_size,
-            rows_max_number=worker_config.first_rows.max_number,
-            rows_min_number=worker_config.first_rows.min_number,
-            rows_max_bytes=worker_config.first_rows.max_bytes,
-            min_cell_bytes=worker_config.first_rows.min_cell_bytes,
-            assets_directory=worker_config.cache.assets_directory,
+            assets_base_url=app_config.common.assets_base_url,
+            hf_token=app_config.common.hf_token if use_token else None,
+            max_size_fallback=app_config.first_rows.fallback_max_dataset_size,
+            rows_max_number=app_config.first_rows.max_number,
+            rows_min_number=app_config.first_rows.min_number,
+            rows_max_bytes=app_config.first_rows.max_bytes,
+            min_cell_bytes=app_config.first_rows.min_cell_bytes,
+            assets_directory=app_config.cache.assets_directory,
         )
         assert result == expected_first_rows_response
         return
@@ -129,14 +128,14 @@ def test_number_rows(
             dataset=dataset,
             config=config,
             split=split,
-            assets_base_url=worker_config.common.assets_base_url,
-            hf_token=worker_config.common.hf_token if use_token else None,
-            max_size_fallback=worker_config.first_rows.fallback_max_dataset_size,
-            rows_max_number=worker_config.first_rows.max_number,
-            rows_min_number=worker_config.first_rows.min_number,
-            rows_max_bytes=worker_config.first_rows.max_bytes,
-            min_cell_bytes=worker_config.first_rows.min_cell_bytes,
-            assets_directory=worker_config.cache.assets_directory,
+            assets_base_url=app_config.common.assets_base_url,
+            hf_token=app_config.common.hf_token if use_token else None,
+            max_size_fallback=app_config.first_rows.fallback_max_dataset_size,
+            rows_max_number=app_config.first_rows.max_number,
+            rows_min_number=app_config.first_rows.min_number,
+            rows_max_bytes=app_config.first_rows.max_bytes,
+            min_cell_bytes=app_config.first_rows.min_cell_bytes,
+            assets_directory=app_config.cache.assets_directory,
         )
     assert exc_info.value.code == error_code
     if cause is None:
@@ -168,7 +167,7 @@ def test_number_rows(
 )
 def test_truncation(
     hub_datasets: HubDatasets,
-    worker_config: WorkerConfig,
+    app_config: AppConfig,
     name: str,
     rows_max_bytes: int,
     successful_truncation: bool,
@@ -178,14 +177,14 @@ def test_truncation(
         dataset=dataset,
         config=config,
         split=split,
-        assets_base_url=worker_config.common.assets_base_url,
+        assets_base_url=app_config.common.assets_base_url,
         hf_token=None,
-        max_size_fallback=worker_config.first_rows.fallback_max_dataset_size,
+        max_size_fallback=app_config.first_rows.fallback_max_dataset_size,
         rows_max_number=1_000_000,
         rows_min_number=10,
         rows_max_bytes=rows_max_bytes,
         min_cell_bytes=10,
-        assets_directory=worker_config.cache.assets_directory,
+        assets_directory=app_config.cache.assets_directory,
     )
     print(get_json_size(response))
     assert (get_json_size(response) <= rows_max_bytes) is successful_truncation
