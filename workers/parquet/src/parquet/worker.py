@@ -27,10 +27,9 @@ from huggingface_hub.utils import (
     hf_raise_for_status,
 )
 from libcommon.exceptions import CustomError
-from libcommon.processing_steps import parquet_step
 from libcommon.worker import DatasetNotFoundError, Worker
 
-from parquet.config import ParquetConfig, WorkerConfig
+from parquet.config import AppConfig, ParquetConfig
 
 ParquetWorkerErrorCode = Literal[
     "DatasetRevisionNotFoundError",
@@ -340,14 +339,16 @@ def compute_parquet_response(
 class ParquetWorker(Worker):
     parquet_config: ParquetConfig
 
-    def __init__(self, worker_config: WorkerConfig):
+    def __init__(self, app_config: AppConfig, endpoint: str):
         super().__init__(
-            processing_step=parquet_step,
-            common_config=worker_config.common,
-            queue_config=worker_config.queue,
+            processing_step=app_config.processing_graph.graph.get_step(endpoint),
+            # ^ raises if the step is not found
+            common_config=app_config.common,
+            queue_config=app_config.queue,
+            worker_config=app_config.worker,
             version=importlib.metadata.version(__package__),
         )
-        self.parquet_config = worker_config.parquet
+        self.parquet_config = app_config.parquet
 
     def compute(
         self,

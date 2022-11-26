@@ -5,11 +5,10 @@ from http import HTTPStatus
 
 import pytest
 from libcommon.exceptions import CustomError
-from libcommon.processing_steps import parquet_step
 from libcommon.queue import _clean_queue_database
 from libcommon.simple_cache import DoesNotExist, _clean_cache_database, get_response
 
-from parquet.config import WorkerConfig
+from parquet.config import AppConfig
 from parquet.worker import ParquetWorker, compute_parquet_response, parse_repo_filename
 
 from .fixtures.hub import HubDatasets
@@ -22,8 +21,8 @@ def clean_mongo_database() -> None:
 
 
 @pytest.fixture(autouse=True, scope="module")
-def worker(worker_config: WorkerConfig) -> ParquetWorker:
-    return ParquetWorker(worker_config)
+def worker(app_config: AppConfig) -> ParquetWorker:
+    return ParquetWorker(app_config=app_config, endpoint="/parquet")
 
 
 def test_version(worker: ParquetWorker) -> None:
@@ -35,7 +34,7 @@ def test_version(worker: ParquetWorker) -> None:
 def test_compute(worker: ParquetWorker, hub_datasets: HubDatasets) -> None:
     dataset = hub_datasets["public"]["name"]
     assert worker.process(dataset=dataset) is True
-    cached_response = get_response(kind=parquet_step.cache_kind, dataset=dataset)
+    cached_response = get_response(kind=worker.processing_step.cache_kind, dataset=dataset)
     assert cached_response["http_status"] == HTTPStatus.OK
     assert cached_response["error_code"] is None
     assert cached_response["worker_version"] == worker.version
@@ -49,12 +48,12 @@ def test_doesnotexist(worker: ParquetWorker) -> None:
     dataset = "doesnotexist"
     assert worker.process(dataset=dataset) is False
     with pytest.raises(DoesNotExist):
-        get_response(kind=parquet_step.cache_kind, dataset=dataset)
+        get_response(kind=worker.processing_step.cache_kind, dataset=dataset)
 
 
 def test_not_supported(worker: ParquetWorker, hub_not_supported_csv: str) -> None:
     assert worker.process(dataset=hub_not_supported_csv) is False
-    cached_response = get_response(kind=parquet_step.cache_kind, dataset=hub_not_supported_csv)
+    cached_response = get_response(kind=worker.processing_step.cache_kind, dataset=hub_not_supported_csv)
     assert cached_response["http_status"] == HTTPStatus.NOT_IMPLEMENTED
     assert cached_response["error_code"] == "DatasetNotSupportedError"
 
@@ -78,20 +77,20 @@ def test_process_job(worker: ParquetWorker, hub_public_csv: str) -> None:
     ],
 )
 def test_compute_splits_response_simple_csv(
-    hub_datasets: HubDatasets, name: str, error_code: str, cause: str, worker_config: WorkerConfig
+    hub_datasets: HubDatasets, name: str, error_code: str, cause: str, app_config: AppConfig
 ) -> None:
     dataset = hub_datasets[name]["name"]
     expected_parquet_response = hub_datasets[name]["parquet_response"]
     if error_code is None:
         result = compute_parquet_response(
             dataset=dataset,
-            hf_endpoint=worker_config.common.hf_endpoint,
-            hf_token=worker_config.parquet.hf_token,
-            source_revision=worker_config.parquet.source_revision,
-            target_revision=worker_config.parquet.target_revision,
-            commit_message=worker_config.parquet.commit_message,
-            url_template=worker_config.parquet.url_template,
-            supported_datasets=worker_config.parquet.supported_datasets,
+            hf_endpoint=app_config.common.hf_endpoint,
+            hf_token=app_config.parquet.hf_token,
+            source_revision=app_config.parquet.source_revision,
+            target_revision=app_config.parquet.target_revision,
+            commit_message=app_config.parquet.commit_message,
+            url_template=app_config.parquet.url_template,
+            supported_datasets=app_config.parquet.supported_datasets,
         )
         assert result == expected_parquet_response
         return
@@ -99,13 +98,13 @@ def test_compute_splits_response_simple_csv(
     with pytest.raises(CustomError) as exc_info:
         compute_parquet_response(
             dataset=dataset,
-            hf_endpoint=worker_config.common.hf_endpoint,
-            hf_token=worker_config.parquet.hf_token,
-            source_revision=worker_config.parquet.source_revision,
-            target_revision=worker_config.parquet.target_revision,
-            commit_message=worker_config.parquet.commit_message,
-            url_template=worker_config.parquet.url_template,
-            supported_datasets=worker_config.parquet.supported_datasets,
+            hf_endpoint=app_config.common.hf_endpoint,
+            hf_token=app_config.parquet.hf_token,
+            source_revision=app_config.parquet.source_revision,
+            target_revision=app_config.parquet.target_revision,
+            commit_message=app_config.parquet.commit_message,
+            url_template=app_config.parquet.url_template,
+            supported_datasets=app_config.parquet.supported_datasets,
         )
     assert exc_info.value.code == error_code
     if cause is None:

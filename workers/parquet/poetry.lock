@@ -877,7 +877,7 @@ python-versions = "*"
 
 [[package]]
 name = "libcommon"
-version = "0.4.2"
+version = "0.5.0"
 description = "Library for utils, common to all the services and workers"
 category = "main"
 optional = false
@@ -895,7 +895,7 @@ pymongo = {version = ">=3.13.0,<4.0.0", extras = ["srv"]}
 
 [package.source]
 type = "file"
-url = "../../libs/libcommon/dist/libcommon-0.4.2-py3-none-any.whl"
+url = "../../libs/libcommon/dist/libcommon-0.5.0-py3-none-any.whl"
 
 [[package]]
 name = "librosa"
@@ -2424,7 +2424,7 @@ cffi = ["cffi (>=1.11)"]
 [metadata]
 lock-version = "1.1"
 python-versions = "3.9.6"
-content-hash = "7be2394c8f01afad15248abb06cc57daeee76e0c41190967e4c523e39e6fa9ac"
+content-hash = "cc9dd0a2905d92b6e7cbbcf1a59c0c768a9115bc1e88bae4ae6a9b9f5001c00e"
 
 [metadata.files]
 absl-py = [
@@ -3259,7 +3259,7 @@ libclang = [
     {file = "libclang-14.0.6.tar.gz", hash = "sha256:9052a8284d8846984f6fa826b1d7460a66d3b23a486d782633b42b6e3b418789"},
 ]
 libcommon = [
-    {file = "libcommon-0.4.2-py3-none-any.whl", hash = "sha256:8892f58c31b96fa30f1176f97e8165555cee6932fd294cb1536f3b0f3bd4f56e"},
+    {file = "libcommon-0.5.0-py3-none-any.whl", hash = "sha256:0267504716992f562382ff5029ace87444fd12793f2393f3800921d384a0fd52"},
 ]
 librosa = [
     {file = "librosa-0.9.2-py3-none-any.whl", hash = "sha256:322a813e6d37af9fbc369e6a637dcf5fdc5c6925ce806a0d27c68de61a81350f"},

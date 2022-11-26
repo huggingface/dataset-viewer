@@ -6,7 +6,13 @@ from typing import List, Optional
 import datasets.config
 from datasets.utils.logging import log_levels, set_verbosity
 from environs import Env
-from libcommon.config import CacheConfig, CommonConfig, QueueConfig
+from libcommon.config import (
+    CacheConfig,
+    CommonConfig,
+    ProcessingGraphConfig,
+    QueueConfig,
+    WorkerConfig,
+)
 
 
 class ParquetConfig:
@@ -33,11 +39,13 @@ class ParquetConfig:
             )
 
 
-class WorkerConfig:
+class AppConfig:
     cache: CacheConfig
     common: CommonConfig
     parquet: ParquetConfig
+    processing_graph: ProcessingGraphConfig
     queue: QueueConfig
+    worker: WorkerConfig
 
     def __init__(self):
         # First process the common configuration to setup the logging
@@ -45,6 +53,8 @@ class WorkerConfig:
         self.cache = CacheConfig()
         self.queue = QueueConfig()
         self.parquet = ParquetConfig(hf_token=self.common.hf_token)
+        self.processing_graph = ProcessingGraphConfig()
+        self.worker = WorkerConfig()
         self.setup()
 
     def setup(self):

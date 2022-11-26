@@ -3,7 +3,7 @@
 
 from pytest import MonkeyPatch, fixture
 
-from parquet.config import WorkerConfig
+from parquet.config import AppConfig
 
 from .fixtures.hub import HubDatasets
 
@@ -25,8 +25,8 @@ def monkeypatch_session(hf_endpoint: str, hf_token: str, hub_datasets: HubDatase
 
 
 @fixture(scope="session", autouse=True)
-def worker_config(monkeypatch_session: MonkeyPatch) -> WorkerConfig:
-    worker_config = WorkerConfig()
-    if "test" not in worker_config.cache.mongo_database or "test" not in worker_config.queue.mongo_database:
+def app_config(monkeypatch_session: MonkeyPatch) -> AppConfig:
+    app_config = AppConfig()
+    if "test" not in app_config.cache.mongo_database or "test" not in app_config.queue.mongo_database:
         raise ValueError("Test must be launched on a test mongo database")
-    return worker_config
+    return app_config
