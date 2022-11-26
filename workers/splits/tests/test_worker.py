@@ -8,7 +8,7 @@ from libcommon.exceptions import CustomError
 from libcommon.queue import _clean_queue_database
 from libcommon.simple_cache import DoesNotExist, _clean_cache_database, get_response
 
-from splits.config import WorkerConfig
+from splits.config import AppConfig
 from splits.worker import SplitsWorker, compute_splits_response
 
 from .fixtures.hub import HubDatasets
@@ -21,8 +21,8 @@ def clean_mongo_database() -> None:
 
 
 @pytest.fixture(autouse=True, scope="module")
-def worker(worker_config: WorkerConfig) -> SplitsWorker:
-    return SplitsWorker(worker_config)
+def worker(app_config: AppConfig) -> SplitsWorker:
+    return SplitsWorker(app_config=app_config, endpoint="/splits")
 
 
 def test_version(worker: SplitsWorker) -> None:
@@ -84,14 +84,14 @@ def test_process_job(worker: SplitsWorker, hub_public_csv: str) -> None:
     ],
 )
 def test_compute_splits_response_simple_csv(
-    hub_datasets: HubDatasets, name: str, use_token: bool, error_code: str, cause: str, worker_config: WorkerConfig
+    hub_datasets: HubDatasets, name: str, use_token: bool, error_code: str, cause: str, app_config: AppConfig
 ) -> None:
     dataset = hub_datasets[name]["name"]
     expected_splits_response = hub_datasets[name]["splits_response"]
     if error_code is None:
         result = compute_splits_response(
             dataset=dataset,
-            hf_token=worker_config.common.hf_token if use_token else None,
+            hf_token=app_config.common.hf_token if use_token else None,
         )
         assert result == expected_splits_response
         return
@@ -99,7 +99,7 @@ def test_compute_splits_response_simple_csv(
     with pytest.raises(CustomError) as exc_info:
         compute_splits_response(
             dataset=dataset,
-            hf_token=worker_config.common.hf_token if use_token else None,
+            hf_token=app_config.common.hf_token if use_token else None,
         )
     assert exc_info.value.code == error_code
     if cause is None:

@@ -14,11 +14,10 @@ from datasets import (
 )
 from datasets.data_files import EmptyDatasetError as _EmptyDatasetError
 from libcommon.exceptions import CustomError
-from libcommon.processing_steps import first_rows_step, splits_step
 from libcommon.simple_cache import delete_response, get_dataset_response_ids
 from libcommon.worker import Queue, Worker
 
-from splits.config import WorkerConfig
+from splits.config import AppConfig
 
 SplitsWorkerErrorCode = Literal[
     "EmptyDatasetError",
@@ -164,11 +163,13 @@ def compute_splits_response(
 
 
 class SplitsWorker(Worker):
-    def __init__(self, worker_config: WorkerConfig):
+    def __init__(self, app_config: AppConfig, endpoint: str):
         super().__init__(
-            processing_step=splits_step,
-            common_config=worker_config.common,
-            queue_config=worker_config.queue,
+            processing_step=app_config.processing_graph.graph.get_step(endpoint),
+            # ^ raises if the step is not found
+            common_config=app_config.common,
+            queue_config=app_config.queue,
+            worker_config=app_config.worker,
             version=importlib.metadata.version(__package__),
         )
 
@@ -181,25 +182,28 @@ class SplitsWorker(Worker):
     ) -> Mapping[str, Any]:
         content = compute_splits_response(dataset=dataset, hf_token=self.common_config.hf_token)
 
-        # TODO: create a "hook" instead, so that we don't refer to first_rows here
         new_splits = [(s["dataset"], s["config"], s["split"]) for s in content["splits"]]
-        # remove obsolete first-rows responses from the cache
-        first_rows_responses_in_cache = [
-            (s["dataset"], s["config"], s["split"])
-            for s in get_dataset_response_ids(dataset=dataset)
-            if s["kind"] == first_rows_step.cache_kind
-        ]
-        first_rows_responses_to_delete = [s for s in first_rows_responses_in_cache if s not in new_splits]
-        for d, c, s in first_rows_responses_to_delete:
-            delete_response(kind=first_rows_step.cache_kind, dataset=d, config=c, split=s)
-        logging.debug(
-            f"{len(first_rows_responses_to_delete)} 'first-rows' responses deleted from the cache for obsolete"
-            f" splits of dataset={dataset}"
-        )
-        # compute the 'first-rows' responses for the new splits
-        for d, c, s in new_splits:
-            # we force the refresh of the /first_rows responses if the /splits refresh was forced
-            Queue(type=first_rows_step.job_type).add_job(dataset=d, config=c, split=s, force=force)
-        logging.debug(f"{len(new_splits)} 'first-rows' jobs added for the splits of dataset={dataset}")
+        for step in self.processing_step.children:
+            if step.input_type == "dataset":
+                Queue(type=step.job_type).add_job(dataset=dataset, config=config, split=split, force=force)
+            else:
+                # remove obsolete responses from the cache
+                responses_in_cache = [
+                    (s["dataset"], s["config"], s["split"])
+                    for s in get_dataset_response_ids(dataset=dataset)
+                    if s["kind"] == step.cache_kind
+                ]
+                responses_to_delete = [s for s in responses_in_cache if s not in new_splits]
+                for d, c, s in responses_to_delete:
+                    delete_response(kind=step.cache_kind, dataset=d, config=c, split=s)
+                logging.debug(
+                    f"{len(responses_to_delete)} {step.endpoint} responses deleted from the cache for obsolete"
+                    f" splits of dataset={dataset}"
+                )
+                # compute the responses for the new splits
+                for d, c, s in new_splits:
+                    # we force the refresh of the /first_rows responses if the /splits refresh was forced
+                    Queue(type=step.job_type).add_job(dataset=d, config=c, split=s, force=force)
+                logging.debug(f"{len(new_splits)} {step.endpoint} jobs added for the splits of dataset={dataset}")
 
         return content

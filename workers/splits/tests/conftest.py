@@ -3,7 +3,7 @@
 
 from pytest import MonkeyPatch, fixture
 
-from splits.config import WorkerConfig
+from splits.config import AppConfig
 
 # Import fixture modules as plugins
 pytest_plugins = ["tests.fixtures.datasets", "tests.fixtures.files", "tests.fixtures.hub"]
@@ -22,8 +22,8 @@ def monkeypatch_session(hf_endpoint: str, hf_token: str):
 
 
 @fixture(scope="session", autouse=True)
-def worker_config(monkeypatch_session: MonkeyPatch) -> WorkerConfig:
-    worker_config = WorkerConfig()
-    if "test" not in worker_config.cache.mongo_database or "test" not in worker_config.queue.mongo_database:
+def app_config(monkeypatch_session: MonkeyPatch) -> AppConfig:
+    app_config = AppConfig()
+    if "test" not in app_config.cache.mongo_database or "test" not in app_config.queue.mongo_database:
         raise ValueError("Test must be launched on a test mongo database")
-    return worker_config
+    return app_config
