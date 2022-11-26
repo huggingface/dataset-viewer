@@ -5,7 +5,7 @@ import logging
 from typing import Any, List, Literal, Optional, TypedDict
 
 from jsonschema import ValidationError, validate  # type: ignore
-from libcommon.processing_steps import ProcessingStep
+from libcommon.processing_graph import ProcessingStep
 from starlette.requests import Request
 from starlette.responses import Response
 

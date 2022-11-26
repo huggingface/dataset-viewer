@@ -2,14 +2,30 @@ from http import HTTPStatus
 from typing import List
 
 import pytest
-from libcommon.processing_steps import Parameters, ProcessingStep
+from libcommon.processing_graph import ProcessingStep
 from libcommon.simple_cache import _clean_cache_database, upsert_response
 
 from api.config import AppConfig
 from api.routes.valid import get_valid, is_valid
 
-dataset_step = ProcessingStep(endpoint="/dataset-step", parameters=Parameters.DATASET, dependencies=[])
-split_step = ProcessingStep(endpoint="/split-step", parameters=Parameters.SPLIT, dependencies=[])
+dataset_step = ProcessingStep(
+    endpoint="/dataset-step",
+    input_type="dataset",
+    requires=None,
+    required_by_dataset_viewer=False,
+    parent=None,
+    ancestors=[],
+    children=[],
+)
+split_step = ProcessingStep(
+    endpoint="/split-step",
+    input_type="split",
+    requires=None,
+    required_by_dataset_viewer=False,
+    parent=None,
+    ancestors=[],
+    children=[],
+)
 
 
 @pytest.fixture(autouse=True)

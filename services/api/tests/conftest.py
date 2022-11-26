@@ -47,3 +47,13 @@ def hf_endpoint(app_config: AppConfig):
 @fixture(scope="session")
 def hf_auth_path(app_config: AppConfig):
     return app_config.api.hf_auth_path
+
+
+@fixture(scope="session")
+def first_dataset_processing_step(app_config: AppConfig):
+    return next(step for step in app_config.processing_graph.graph.steps.values() if step.input_type == "dataset")
+
+
+@fixture(scope="session")
+def first_split_processing_step(app_config: AppConfig):
+    return next(step for step in app_config.processing_graph.graph.steps.values() if step.input_type == "split")

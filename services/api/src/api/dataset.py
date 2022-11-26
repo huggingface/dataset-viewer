@@ -7,7 +7,7 @@ from typing import List, Optional
 
 from huggingface_hub.hf_api import HfApi
 from huggingface_hub.utils import RepositoryNotFoundError
-from libcommon.processing_steps import Parameters, ProcessingStep
+from libcommon.processing_graph import ProcessingStep
 from libcommon.queue import Queue
 from libcommon.simple_cache import DoesNotExist, delete_dataset_responses, get_response
 
@@ -24,7 +24,7 @@ class UnsupportedDatasetError(LoggedError):
         super().__init__(f"Dataset '{dataset}' is not supported (does not exist or is private)")
 
 
-class DependencyError(LoggedError):
+class PreviousStepError(LoggedError):
     def __init__(self, dataset: str, step: ProcessingStep, config: Optional[str] = None, split: Optional[str] = None):
         super().__init__(
             f"Response for {step.endpoint} for dataset={dataset}, config={config}, split={split} is an error."
@@ -78,7 +78,7 @@ def update_dataset(
     check_support(dataset=dataset, hf_endpoint=hf_endpoint, hf_token=hf_token)
     logging.debug(f"refresh dataset='{dataset}'")
     for init_processing_step in init_processing_steps:
-        if init_processing_step.parameters == Parameters.DATASET:
+        if init_processing_step.input_type == "dataset":
             Queue(type=init_processing_step.job_type).add_job(dataset=dataset, force=force)
 
 
@@ -130,20 +130,20 @@ def check_in_process(
     Returns: None. Does not raise if the processing step is running.
 
     Raises:
-        StepError: some dependency step (or the same step) had an error
+        PreviousStepError: a previous step has an error
         UnsupportedDatasetError: the dataset is not supported (private, or does not exist)
     """
-    all_steps = processing_step.dependencies + [processing_step]
+    all_steps = processing_step.get_ancestors() + [processing_step]
     if any(
         Queue(type=step.job_type).is_job_in_process(dataset=dataset, config=config, split=split) for step in all_steps
     ):
         # the processing step, or a previous one, is still being computed
         return
-    for step in processing_step.dependencies:
+    for step in processing_step.get_ancestors():
         try:
             result = get_response(kind=step.cache_kind, dataset=dataset, config=config, split=split)
         except DoesNotExist:
-            # a dependency has not been computed, update the dataset
+            # a previous step has not been computed, update the dataset
             update_dataset(
                 dataset=dataset,
                 init_processing_steps=init_processing_steps,
@@ -152,8 +152,7 @@ def check_in_process(
             )
             return
         if result["http_status"] != HTTPStatus.OK:
-            # a dependency, or the same  has an error
-            raise DependencyError(dataset=dataset, config=config, split=split, step=step)
+            raise PreviousStepError(dataset=dataset, config=config, split=split, step=step)
     # all the dependencies (if any) have been computed successfully, the processing step should be in process
     # if the dataset is supported. Check if it is supported and update it if so.
     update_dataset(

@@ -4,11 +4,6 @@
 from typing import List
 
 import uvicorn  # type: ignore
-from libcommon.processing_steps import (
-    INIT_PROCESSING_STEPS,
-    PROCESSING_STEPS,
-    PROCESSING_STEPS_FOR_VALID,
-)
 from starlette.applications import Starlette
 from starlette.middleware import Middleware
 from starlette.middleware.cors import CORSMiddleware
@@ -40,7 +35,7 @@ def create_app() -> Starlette:
         Route(
             "/valid",
             endpoint=create_valid_endpoint(
-                processing_steps_for_valid=PROCESSING_STEPS_FOR_VALID,
+                processing_steps_for_valid=app_config.processing_graph.graph.get_steps_required_by_dataset_viewer(),
                 max_age_long=app_config.api.max_age_long,
                 max_age_short=app_config.api.max_age_short,
             ),
@@ -49,7 +44,7 @@ def create_app() -> Starlette:
             "/is-valid",
             endpoint=create_is_valid_endpoint(
                 external_auth_url=app_config.api.external_auth_url,
-                processing_steps_for_valid=PROCESSING_STEPS_FOR_VALID,
+                processing_steps_for_valid=app_config.processing_graph.graph.get_steps_required_by_dataset_viewer(),
                 max_age_long=app_config.api.max_age_long,
                 max_age_short=app_config.api.max_age_short,
             ),
@@ -61,7 +56,7 @@ def create_app() -> Starlette:
             processing_step.endpoint,
             endpoint=create_processing_step_endpoint(
                 processing_step=processing_step,
-                init_processing_steps=INIT_PROCESSING_STEPS,
+                init_processing_steps=app_config.processing_graph.graph.get_first_steps(),
                 hf_endpoint=app_config.common.hf_endpoint,
                 hf_token=app_config.common.hf_token,
                 external_auth_url=app_config.api.external_auth_url,
@@ -69,14 +64,14 @@ def create_app() -> Starlette:
                 max_age_short=app_config.api.max_age_short,
             ),
         )
-        for processing_step in PROCESSING_STEPS
+        for processing_step in list(app_config.processing_graph.graph.steps.values())
     ]
     to_protect: List[BaseRoute] = [
         # called by the Hub webhooks
         Route(
             "/webhook",
             endpoint=create_webhook_endpoint(
-                init_processing_steps=INIT_PROCESSING_STEPS,
+                init_processing_steps=app_config.processing_graph.graph.get_first_steps(),
                 hf_endpoint=app_config.common.hf_endpoint,
                 hf_token=app_config.common.hf_token,
             ),

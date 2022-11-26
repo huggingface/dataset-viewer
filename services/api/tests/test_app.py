@@ -6,13 +6,7 @@ from http import HTTPStatus
 from typing import Any, Mapping, Optional
 
 import pytest
-from libcommon.processing_steps import (
-    Parameters,
-    ProcessingStep,
-    first_rows_step,
-    parquet_step,
-    splits_step,
-)
+from libcommon.processing_graph import ProcessingStep
 from libcommon.queue import Queue, _clean_queue_database
 from libcommon.simple_cache import _clean_cache_database, upsert_response
 from pytest_httpserver import HTTPServer
@@ -35,12 +29,12 @@ def clean_mongo_databases(app_config: AppConfig) -> None:
     _clean_queue_database()
 
 
-def test_cors(client: TestClient) -> None:
+def test_cors(client: TestClient, first_dataset_processing_step: ProcessingStep) -> None:
     origin = "http://localhost:3000"
     method = "GET"
     header = "X-Requested-With"
     response = client.options(
-        f"{splits_step.endpoint}?dataset=dataset1",
+        f"{first_dataset_processing_step.endpoint}?dataset=dataset1",
         headers={
             "Origin": origin,
             "Access-Control-Request-Method": method,
@@ -101,12 +95,12 @@ def test_get_healthcheck(client: TestClient) -> None:
     assert response.text == "ok"
 
 
-def test_get_splits(client: TestClient) -> None:
+def test_get_splits(client: TestClient, first_dataset_processing_step: ProcessingStep) -> None:
     # missing parameter
-    response = client.get(splits_step.endpoint)
+    response = client.get(first_dataset_processing_step.endpoint)
     assert response.status_code == 422
     # empty parameter
-    response = client.get(f"{splits_step.endpoint}?dataset=")
+    response = client.get(f"{first_dataset_processing_step.endpoint}?dataset=")
     assert response.status_code == 422
 
 
@@ -127,13 +121,14 @@ def test_splits_auth(
     headers: Mapping[str, str],
     status_code: int,
     error_code: str,
+    first_dataset_processing_step: ProcessingStep,
 ) -> None:
     dataset = "dataset-which-does-not-exist"
     httpserver.expect_request(hf_auth_path % dataset, headers=headers).respond_with_handler(auth_callback)
     httpserver.expect_request(f"/api/datasets/{dataset}").respond_with_data(
         json.dumps({}), headers={"X-Error-Code": "RepoNotFound"}
     )
-    response = client.get(f"{splits_step.endpoint}?dataset={dataset}", headers=headers)
+    response = client.get(f"{first_dataset_processing_step.endpoint}?dataset={dataset}", headers=headers)
     assert response.status_code == status_code, f"{response.headers}, {response.json()}"
     assert response.headers.get("X-Error-Code") == error_code
 
@@ -148,63 +143,64 @@ def test_splits_auth(
     ],
 )
 def test_get_first_rows_missing_parameter(
-    client: TestClient, dataset: Optional[str], config: Optional[str], split: Optional[str]
+    client: TestClient,
+    dataset: Optional[str],
+    config: Optional[str],
+    split: Optional[str],
+    first_split_processing_step: ProcessingStep,
 ) -> None:
-    response = client.get(first_rows_step.endpoint, params={"dataset": dataset, "config": config, "split": split})
+    response = client.get(
+        first_split_processing_step.endpoint, params={"dataset": dataset, "config": config, "split": split}
+    )
     assert response.status_code == 422
 
 
 @pytest.mark.parametrize(
-    "processing_step,exists,is_private,expected_error_code",
+    "exists,is_private,expected_error_code",
     [
-        (splits_step, False, None, "ExternalAuthenticatedError"),
-        (splits_step, True, True, "ResponseNotFound"),
-        (splits_step, True, False, "ResponseNotReady"),
-        (parquet_step, False, None, "ExternalAuthenticatedError"),
-        (parquet_step, True, True, "ResponseNotFound"),
-        (parquet_step, True, False, "ResponseNotReady"),
-        (first_rows_step, False, None, "ExternalAuthenticatedError"),
-        (first_rows_step, True, True, "ResponseNotFound"),
-        (first_rows_step, True, False, "ResponseNotReady"),
+        (False, None, "ExternalAuthenticatedError"),
+        (True, True, "ResponseNotFound"),
+        (True, False, "ResponseNotReady"),
     ],
 )
 def test_cache_refreshing(
     client: TestClient,
     httpserver: HTTPServer,
     hf_auth_path: str,
-    processing_step: ProcessingStep,
     exists: bool,
     is_private: Optional[bool],
     expected_error_code: str,
+    app_config: AppConfig,
 ) -> None:
     dataset = "dataset-to-be-processed"
-    config = None if processing_step.parameters == Parameters.DATASET else "config"
-    split = None if processing_step.parameters == Parameters.DATASET else "split"
-    httpserver.expect_request(hf_auth_path % dataset).respond_with_data(status=200 if exists else 404)
-    httpserver.expect_request(f"/api/datasets/{dataset}").respond_with_data(
-        json.dumps({"private": is_private}), headers={} if exists else {"X-Error-Code": "RepoNotFound"}
-    )
+    for step in app_config.processing_graph.graph.steps.values():
+        config = None if step.input_type == "dataset" else "config"
+        split = None if step.input_type == "dataset" else "split"
+        httpserver.expect_request(hf_auth_path % dataset).respond_with_data(status=200 if exists else 404)
+        httpserver.expect_request(f"/api/datasets/{dataset}").respond_with_data(
+            json.dumps({"private": is_private}), headers={} if exists else {"X-Error-Code": "RepoNotFound"}
+        )
 
-    response = client.get(processing_step.endpoint, params={"dataset": dataset, "config": config, "split": split})
-    assert response.headers["X-Error-Code"] == expected_error_code
-
-    if expected_error_code == "ResponseNotReady":
-        # a subsequent request should return the same error code
-        response = client.get(processing_step.endpoint, params={"dataset": dataset, "config": config, "split": split})
+        response = client.get(step.endpoint, params={"dataset": dataset, "config": config, "split": split})
         assert response.headers["X-Error-Code"] == expected_error_code
 
-        # simulate the worker
-        upsert_response(
-            kind=processing_step.cache_kind,
-            dataset=dataset,
-            config=config,
-            split=split,
-            content={"key": "value"},
-            http_status=HTTPStatus.OK,
-        )
-        response = client.get(processing_step.endpoint, params={"dataset": dataset, "config": config, "split": split})
-        assert response.json()["key"] == "value"
-        assert response.status_code == 200
+        if expected_error_code == "ResponseNotReady":
+            # a subsequent request should return the same error code
+            response = client.get(step.endpoint, params={"dataset": dataset, "config": config, "split": split})
+            assert response.headers["X-Error-Code"] == expected_error_code
+
+            # simulate the worker
+            upsert_response(
+                kind=step.cache_kind,
+                dataset=dataset,
+                config=config,
+                split=split,
+                content={"key": "value"},
+                http_status=HTTPStatus.OK,
+            )
+            response = client.get(step.endpoint, params={"dataset": dataset, "config": config, "split": split})
+            assert response.json()["key"] == "value"
+            assert response.status_code == 200
 
 
 def test_metrics(client: TestClient) -> None:
@@ -256,6 +252,7 @@ def test_webhook(
     exists_on_the_hub: bool,
     expected_status: int,
     expected_is_updated: bool,
+    app_config: AppConfig,
 ) -> None:
     dataset = "webhook-test"
     headers = None if exists_on_the_hub else {"X-Error-Code": "RepoNotFound"}
@@ -265,6 +262,8 @@ def test_webhook(
     )
     response = client.post("/webhook", json=payload)
     assert response.status_code == expected_status, response.text
-    assert Queue(type=splits_step.job_type).is_job_in_process(dataset=dataset) is expected_is_updated
-    assert Queue(type=parquet_step.job_type).is_job_in_process(dataset=dataset) is expected_is_updated
-    assert Queue(type=first_rows_step.job_type).is_job_in_process(dataset=dataset) is False
+    for step in app_config.processing_graph.graph.steps.values():
+        if not step.parent:
+            assert Queue(type=step.job_type).is_job_in_process(dataset=dataset) is expected_is_updated
+        else:
+            assert Queue(type=step.job_type).is_job_in_process(dataset=dataset) is False

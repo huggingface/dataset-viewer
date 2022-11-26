@@ -4,7 +4,7 @@
 import logging
 from typing import List, Optional, Set
 
-from libcommon.processing_steps import ProcessingStep
+from libcommon.processing_graph import ProcessingStep
 from libcommon.simple_cache import get_valid_datasets, get_validity_by_kind
 from starlette.requests import Request
 from starlette.responses import Response
