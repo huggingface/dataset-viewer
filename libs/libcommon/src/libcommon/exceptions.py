@@ -1,6 +1,7 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2022 The HuggingFace Authors.
 
+import logging
 import sys
 import traceback
 from http import HTTPStatus
@@ -20,7 +21,14 @@ class ErrorResponseWithCause(ErrorResponseWithoutCause, total=False):
 ErrorResponse = Union[ErrorResponseWithoutCause, ErrorResponseWithCause]
 
 
-class CustomError(Exception):
+class LoggedError(Exception):
+    def __init__(self, message: str):
+        self.message = message
+        logging.debug(self.message)
+        super().__init__(self.message)
+
+
+class CustomError(LoggedError):
     """Base class for exceptions in this module."""
 
     def __init__(

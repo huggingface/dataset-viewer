@@ -8,11 +8,11 @@ from abc import ABC, abstractmethod
 from http import HTTPStatus
 from typing import Any, Literal, Mapping, Optional
 
-from huggingface_hub.hf_api import HfApi, RepositoryNotFoundError
 from packaging import version
 from psutil import cpu_count, getloadavg, swap_memory, virtual_memory
 
 from libcommon.config import CommonConfig, QueueConfig, WorkerConfig
+from libcommon.dataset import DatasetNotFoundError, get_dataset_git_revision
 from libcommon.exceptions import CustomError
 from libcommon.processing_graph import ProcessingStep
 from libcommon.queue import EmptyQueueError, Queue, Status
@@ -27,8 +27,8 @@ def parse_version(string_version: str) -> version.Version:
 
 
 WorkerErrorCode = Literal[
-    "DatasetNotFoundError",
     "ConfigNotFoundError",
+    "NoGitRevisionError",
     "SplitNotFoundError",
     "UnexpectedError",
 ]
@@ -47,19 +47,6 @@ class WorkerError(CustomError):
     ):
         super().__init__(
             message=message, status_code=status_code, code=str(code), cause=cause, disclose_cause=disclose_cause
-        )
-
-
-class DatasetNotFoundError(WorkerError):
-    """Raised when the dataset does not exist."""
-
-    def __init__(self, message: str, cause: Optional[BaseException] = None):
-        super().__init__(
-            message=message,
-            status_code=HTTPStatus.NOT_FOUND,
-            code="DatasetNotFoundError",
-            cause=cause,
-            disclose_cause=False,
         )
 
 
@@ -89,6 +76,19 @@ class SplitNotFoundError(WorkerError):
         )
 
 
+class NoGitRevisionError(WorkerError):
+    """Raised when the git revision returned by huggingface_hub is None."""
+
+    def __init__(self, message: str, cause: Optional[BaseException] = None):
+        super().__init__(
+            message=message,
+            status_code=HTTPStatus.NOT_FOUND,
+            code="NoGitRevisionError",
+            cause=cause,
+            disclose_cause=False,
+        )
+
+
 class UnexpectedError(WorkerError):
     """Raised when the response for the split has not been found."""
 
@@ -100,37 +100,6 @@ class UnexpectedError(WorkerError):
             cause=cause,
             disclose_cause=False,
         )
-
-
-def get_dataset_git_revision(
-    dataset: str,
-    hf_endpoint: str,
-    hf_token: Optional[str] = None,
-) -> Optional[str]:
-    """
-    Get the git revision of the dataset.
-    Args:
-        dataset (`str`):
-            A namespace (user or an organization) and a repo name separated
-            by a `/`.
-        hf_endpoint (`str`):
-            The Hub endpoint (for example: "https://huggingface.co")
-        hf_token (`str`, *optional*):
-            An authentication token (See https://huggingface.co/settings/token)
-    Returns:
-        `Union[str, None]`: the dataset git revision (sha) if any.
-    <Tip>
-    Raises the following errors:
-        - [`~libcommon.worker.DatasetNotFoundError`]
-          If the repository to download from cannot be found. This may be because it doesn't exist,
-          or because it is set to `private` and you do not have access.
-    </Tip>
-    """
-    try:
-        dataset_info = HfApi(endpoint=hf_endpoint).dataset_info(repo_id=dataset, token=hf_token)
-    except RepositoryNotFoundError as err:
-        raise DatasetNotFoundError("The dataset does not exist on the Hub, or is private.") from err
-    return dataset_info.sha
 
 
 class Worker(ABC):
@@ -237,13 +206,11 @@ class Worker(ABC):
         finished_status: Literal[Status.SUCCESS, Status.ERROR, Status.SKIPPED]
         try:
             self.info(f"compute {parameters_for_log}")
-            finished_status = (
-                Status.SKIPPED
-                if self.should_skip_job(dataset=dataset, config=config, split=split, force=force)
-                else Status.SUCCESS
-                if self.process(dataset=dataset, config=config, split=split, force=force)
-                else Status.ERROR
-            )
+            if self.should_skip_job(dataset=dataset, config=config, split=split, force=force):
+                finished_status = Status.SKIPPED
+            else:
+                self.process(dataset=dataset, config=config, split=split, force=force)
+                finished_status = Status.SUCCESS
         except Exception:
             self.exception(f"error while computing {parameters_for_log}")
             finished_status = Status.ERROR
@@ -323,14 +290,9 @@ class Worker(ABC):
             dataset_git_revision = get_dataset_git_revision(
                 dataset=dataset, hf_endpoint=self.common_config.hf_endpoint, hf_token=self.common_config.hf_token
             )
-        except DatasetNotFoundError:
-            self.debug(f"the dataset={dataset} could not be found, don't update the cache")
-            return False
-        if dataset_git_revision is None:
-            self.debug(f"the dataset={dataset} has no git revision, don't update the cache")
-            return False
-
-        try:
+            if dataset_git_revision is None:
+                self.debug(f"the dataset={dataset} has no git revision, don't update the cache")
+                raise NoGitRevisionError(f"Could not get git revision for dataset {dataset}")
             content = self.compute(dataset=dataset, config=config, split=split, force=force)
             upsert_response(
                 kind=self.processing_step.cache_kind,
@@ -344,7 +306,12 @@ class Worker(ABC):
             )
             self.debug(f"dataset={dataset} config={config} split={split} is valid, cache updated")
             return True
-        except (DatasetNotFoundError, ConfigNotFoundError, SplitNotFoundError):
+        except (
+            DatasetNotFoundError,
+            ConfigNotFoundError,
+            SplitNotFoundError,
+        ):
+            # To avoid filling the cache, we don't save these errors. Otherwise, DoS is possible.
             self.debug(
                 f"the dataset={dataset}, config {config} or split {split} could not be found, don't update the cache"
             )
