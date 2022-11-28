@@ -36,17 +36,10 @@ See [../../libs/libcommon/README.md](../../libs/libcommon/README.md) for more in
 The admin service provides endpoints:
 
 - `/healthcheck`
-- `/metrics`: gives info about the cache and the queue
-- `/cache-reports`: give detailed reports on the content of the cache:
-  - `/cache-reports/splits`
-  - `/cache-reports/first-rows`
-  - `/cache-reports/parquet`
+- `/metrics`: give info about the cache and the queue
+- `/cache-reports/{processing_step}`: give detailed reports on the content of the cache for a processing step
 - `/pending-jobs`: give the pending jobs, classed by queue and status (waiting or started)
-- `/force-refresh`: force refresh cache entries. It's a POST endpoint:
-  - `/force-refresh/splits?dataset={dataset}`
-  - `/force-refresh/first-rows?dataset={dataset}&config={config}&split={split}`
-  - `/force-refresh/parquet?dataset={dataset}`
-- `/cancel-jobs`: cancel all the started jobs. It's a POST endpoint:
-  - `/cancel-jobs/splits`: cancel the /splits jobs (stop the workers before!)
-  - `/cancel-jobs/first-rows`: cancel the /first-rows jobs (stop the workers before!)
-  - `/cancel-jobs/parquet`: cancel the /parquet jobs (stop the workers before!)
+- `/force-refresh/{processing_step}`: force refresh cache entries for the processing step. It's a POST endpoint. Pass the requested parameters, depending on the processing step's input type:
+  - `dataset`: `?dataset={dataset}`
+  - `split`: `?dataset={dataset}&config={config}&split={split}`
+- `/cancel-jobs/{processing_step}`: cancel all the started jobs for the processing step (stop the corresponding workers before!). It's a POST endpoint.:

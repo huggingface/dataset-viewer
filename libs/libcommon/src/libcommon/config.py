@@ -89,7 +89,6 @@ class ProcessingGraphConfig:
         # TODO: allow passing the graph via env vars
         self.specification = {
             "/splits": {"input_type": "dataset", "required_by_dataset_viewer": True},
-            "/parquet": {"input_type": "dataset"},
             "/first-rows": {"input_type": "split", "requires": "/splits", "required_by_dataset_viewer": True},
         }
 

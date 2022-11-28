@@ -41,7 +41,7 @@ class MissingRequiredParameterError(ApiCustomError):
 
 
 class ResponseNotReadyError(ApiCustomError):
-    """Raised when the /parquet response has not been processed yet."""
+    """Raised when the response has not been processed yet."""
 
     def __init__(self, message: str):
         super().__init__(message, HTTPStatus.INTERNAL_SERVER_ERROR, "ResponseNotReady")
