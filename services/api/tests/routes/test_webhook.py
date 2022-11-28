@@ -1,8 +1,10 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2022 The HuggingFace Authors.
 
-import pytest
 from typing import Any, Mapping
+
+import pytest
+
 from api.routes.webhook import parse_payload
 
 
