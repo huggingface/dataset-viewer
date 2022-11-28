@@ -369,7 +369,7 @@ format-nongpl = ["fqdn", "idna", "isoduration", "jsonpointer (>1.13)", "rfc3339-
 
 [[package]]
 name = "libcommon"
-version = "0.5.0"
+version = "0.5.1"
 description = "Library for utils, common to all the services and workers"
 category = "main"
 optional = false
@@ -387,7 +387,7 @@ pymongo = {version = ">=3.13.0,<4.0.0", extras = ["srv"]}
 
 [package.source]
 type = "file"
-url = "../../libs/libcommon/dist/libcommon-0.5.0-py3-none-any.whl"
+url = "../../libs/libcommon/dist/libcommon-0.5.1-py3-none-any.whl"
 
 [[package]]
 name = "lockfile"
@@ -1030,7 +1030,7 @@ watchdog = ["watchdog"]
 [metadata]
 lock-version = "1.1"
 python-versions = "3.9.6"
-content-hash = "217bc021e1a672446f238cd201a06e428e057add19c675280b68b05446759072"
+content-hash = "169c56202dc047e7954fb71768fc1a06ad1b2e4cdbe14bb2e3e73c271ca9b83d"
 
 [metadata.files]
 anyio = [
@@ -1213,7 +1213,7 @@ jsonschema = [
     {file = "jsonschema-4.17.1.tar.gz", hash = "sha256:05b2d22c83640cde0b7e0aa329ca7754fbd98ea66ad8ae24aa61328dfe057fa3"},
 ]
 libcommon = [
-    {file = "libcommon-0.5.0-py3-none-any.whl", hash = "sha256:0267504716992f562382ff5029ace87444fd12793f2393f3800921d384a0fd52"},
+    {file = "libcommon-0.5.1-py3-none-any.whl", hash = "sha256:a8d585735a14eb4a1df02fe9e2444627541c5cf7a8a10d9c79ca2d36cf90aff8"},
 ]
 lockfile = [
     {file = "lockfile-0.12.2-py2.py3-none-any.whl", hash = "sha256:6c3cb24f344923d30b2785d5ad75182c8ea7ac1b6171b08657258ec7429d50fa"},

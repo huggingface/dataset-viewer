@@ -5,16 +5,12 @@ import logging
 from typing import Any, List, Literal, Optional, TypedDict
 
 from jsonschema import ValidationError, validate  # type: ignore
+from libcommon.dataset import DatasetError
+from libcommon.operations import delete_dataset, move_dataset, update_dataset
 from libcommon.processing_graph import ProcessingStep
 from starlette.requests import Request
 from starlette.responses import Response
 
-from api.dataset import (
-    UnsupportedDatasetError,
-    delete_dataset,
-    move_dataset,
-    update_dataset,
-)
 from api.utils import Endpoint, get_response
 
 schema = {
@@ -122,7 +118,7 @@ def create_webhook_endpoint(
                 hf_endpoint=hf_endpoint,
                 hf_token=hf_token,
             )
-        except UnsupportedDatasetError:
+        except DatasetError:
             content = {"status": "error", "error": "the dataset is not supported"}
             return get_response(content, 400)
         content = {"status": "ok"}

@@ -5,13 +5,14 @@ import logging
 from http import HTTPStatus
 from typing import List, Optional
 
+from libcommon.dataset import DatasetError
+from libcommon.operations import PreviousStepError, check_in_process
 from libcommon.processing_graph import ProcessingStep
 from libcommon.simple_cache import DoesNotExist, get_response
 from starlette.requests import Request
 from starlette.responses import Response
 
 from api.authentication import auth_check
-from api.dataset import PreviousStepError, UnsupportedDatasetError, check_in_process
 from api.utils import (
     ApiCustomError,
     Endpoint,
@@ -75,7 +76,7 @@ def create_processing_step_endpoint(
                         hf_endpoint=hf_endpoint,
                         hf_token=hf_token,
                     )
-                except (PreviousStepError, UnsupportedDatasetError):
+                except (PreviousStepError, DatasetError):
                     raise ResponseNotFoundError("Not found.") from e
                 raise ResponseNotReadyError("The response is not ready yet. Please retry later.") from e
         except ApiCustomError as e:

@@ -10,7 +10,6 @@ from pathlib import Path
 from typing import Any, List, Literal, Mapping, Optional, Tuple, TypedDict
 from urllib.parse import quote
 
-import requests
 from datasets import get_dataset_config_names, load_dataset_builder
 from datasets.data_files import EmptyDatasetError as _EmptyDatasetError
 from huggingface_hub.hf_api import (
@@ -20,12 +19,7 @@ from huggingface_hub.hf_api import (
     HfApi,
     RepoFile,
 )
-from huggingface_hub.utils import (
-    RepositoryNotFoundError,
-    RevisionNotFoundError,
-    build_hf_headers,
-    hf_raise_for_status,
-)
+from huggingface_hub.utils import RepositoryNotFoundError, RevisionNotFoundError
 from libcommon.exceptions import CustomError
 from libcommon.worker import DatasetNotFoundError, Worker
 
@@ -35,8 +29,6 @@ ParquetWorkerErrorCode = Literal[
     "DatasetRevisionNotFoundError",
     "EmptyDatasetError",
     "ConfigNamesError",
-    "GatedDisabledError",
-    "GatedExtraFieldsError",
     "DatasetNotSupportedError",
 ]
 
@@ -74,20 +66,6 @@ class EmptyDatasetError(ParquetWorkerError):
 
     def __init__(self, message: str, cause: Optional[BaseException] = None):
         super().__init__(message, HTTPStatus.INTERNAL_SERVER_ERROR, "EmptyDatasetError", cause, True)
-
-
-class GatedDisabledError(ParquetWorkerError):
-    """Raised when /ask-access fails with 403."""
-
-    def __init__(self, message: str, cause: Optional[BaseException] = None):
-        super().__init__(message, HTTPStatus.FORBIDDEN, "GatedDisabledError", cause, False)
-
-
-class GatedExtraFieldsError(ParquetWorkerError):
-    """Raised when /ask-access fails with 400."""
-
-    def __init__(self, message: str, cause: Optional[BaseException] = None):
-        super().__init__(message, HTTPStatus.NOT_IMPLEMENTED, "GatedExtraFieldsError", cause, False)
 
 
 class DatasetNotSupportedError(ParquetWorkerError):
@@ -176,23 +154,6 @@ def create_parquet_file_item(
     }
 
 
-def ask_access(dataset: str, hf_endpoint: str, token: Optional[str]) -> None:
-    path = f"{hf_endpoint}/datasets/{dataset}/ask-access"
-    r = requests.post(path, headers=build_hf_headers(token=token))
-    try:
-        hf_raise_for_status(r)
-    except requests.exceptions.HTTPError as err:
-        if r.status_code == 400:
-            raise GatedExtraFieldsError(
-                "The dataset is gated with extra fields: not supported at the moment."
-            ) from err
-        if r.status_code == 403:
-            raise GatedDisabledError("The dataset is gated and access is disabled.") from err
-        if r.status_code in [401, 404]:
-            raise DatasetNotFoundError("The dataset does not exist on the Hub, or is private.") from err
-        raise err
-
-
 def compute_parquet_response(
     dataset: str,
     hf_endpoint: str,
@@ -205,7 +166,7 @@ def compute_parquet_response(
 ) -> ParquetResponse:
     """
     Get the response of /parquet for one specific dataset on huggingface.co.
-    Dataset can be private or gated if you pass an acceptable token.
+    It is assumed that the dataset can be accessed with the token.
     Args:
         dataset (`str`):
             A namespace (user or an organization) and a repo name separated
@@ -246,9 +207,6 @@ def compute_parquet_response(
     </Tip>
     """
     logging.info(f"get splits for dataset={dataset}")
-
-    # unlock access to the dataset if it is gated. Note that an error is raised if the dataset does not exist.
-    ask_access(dataset=dataset, token=hf_token, hf_endpoint=hf_endpoint)
 
     # only process the supported datasets
     if len(supported_datasets) and dataset not in supported_datasets:
