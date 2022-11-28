@@ -4,8 +4,7 @@
 import logging
 from typing import Optional
 
-from huggingface_hub.hf_api import HfApi
-from huggingface_hub.utils import RepositoryNotFoundError
+from libcommon.dataset import DatasetError, check_support
 from libcommon.processing_graph import ProcessingStep
 from libcommon.queue import Queue
 from starlette.requests import Request
@@ -17,40 +16,10 @@ from admin.utils import (
     Endpoint,
     MissingRequiredParameterError,
     UnexpectedError,
-    UnsupportedDatasetError,
     are_valid_parameters,
     get_json_admin_error_response,
     get_json_ok_response,
 )
-
-
-def check_support(
-    dataset: str,
-    hf_endpoint: str,
-    hf_token: Optional[str] = None,
-) -> None:
-    """
-    Check if the dataset exists on the Hub and is supported by the datasets-server.
-    Args:
-        dataset (`str`):
-            A namespace (user or an organization) and a repo name separated
-            by a `/`.
-        hf_endpoint (`str`):
-            The Hub endpoint (for example: "https://huggingface.co")
-        hf_token (`str`, *optional*):
-            An authentication token (See https://huggingface.co/settings/token)
-    Returns:
-        `None`
-    Raises:
-        UnsupportedDatasetError: if the dataset is not supported
-    """
-    try:
-        # note that token is required to access gated dataset info
-        info = HfApi(endpoint=hf_endpoint).dataset_info(dataset, token=hf_token)
-        if info.private is True:
-            raise UnsupportedDatasetError(f"Dataset '{dataset}' is not supported.")
-    except RepositoryNotFoundError as e:
-        raise UnsupportedDatasetError(f"Dataset '{dataset}' is not supported.") from e
 
 
 def create_force_refresh_endpoint(
@@ -85,7 +54,7 @@ def create_force_refresh_endpoint(
                 {"status": "ok"},
                 max_age=0,
             )
-        except AdminCustomError as e:
+        except (DatasetError, AdminCustomError) as e:
             return get_json_admin_error_response(e, max_age=0)
         except Exception:
             return get_json_admin_error_response(UnexpectedError("Unexpected error."), max_age=0)

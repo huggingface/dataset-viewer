@@ -296,7 +296,7 @@ lxml = ["lxml"]
 
 [[package]]
 name = "huggingface-hub"
-version = "0.11.0"
+version = "0.11.1"
 description = "Client library to download and publish models, datasets and other repos on the huggingface.co hub"
 category = "main"
 optional = false
@@ -353,7 +353,7 @@ requirements-deprecated-finder = ["pip-api", "pipreqs"]
 
 [[package]]
 name = "libcommon"
-version = "0.5.0"
+version = "0.5.1"
 description = "Library for utils, common to all the services and workers"
 category = "main"
 optional = false
@@ -371,7 +371,7 @@ pymongo = {version = ">=3.13.0,<4.0.0", extras = ["srv"]}
 
 [package.source]
 type = "file"
-url = "../../libs/libcommon/dist/libcommon-0.5.0-py3-none-any.whl"
+url = "../../libs/libcommon/dist/libcommon-0.5.1-py3-none-any.whl"
 
 [[package]]
 name = "lockfile"
@@ -525,7 +525,7 @@ pip = "*"
 
 [[package]]
 name = "pip-audit"
-version = "2.4.6"
+version = "2.4.7"
 description = "A tool for scanning Python environments for known vulnerabilities"
 category = "dev"
 optional = false
@@ -988,7 +988,7 @@ python-versions = "*"
 [metadata]
 lock-version = "1.1"
 python-versions = "3.9.6"
-content-hash = "cfaa5fec98f5a1d1f04214a2cc8656e9275cb3cee50e14e0dfcc0cbd749c9d9c"
+content-hash = "d819cdf3b8a0c01bb42c4ffb7b524e25a4009709aaa82602ff83879f57e7ace0"
 
 [metadata.files]
 anyio = [
@@ -1151,8 +1151,8 @@ html5lib = [
     {file = "html5lib-1.1.tar.gz", hash = "sha256:b2e5b40261e20f354d198eae92afc10d750afb487ed5e50f9c4eaf07c184146f"},
 ]
 huggingface-hub = [
-    {file = "huggingface_hub-0.11.0-py3-none-any.whl", hash = "sha256:1f540c6d57cb1684d3578d7bf2d35041a5145b17e8af932505db7f4fbcc7640d"},
-    {file = "huggingface_hub-0.11.0.tar.gz", hash = "sha256:b48860d791502c2b8a0e6c841214df19c67999198a75d1417512b45752508ac6"},
+    {file = "huggingface_hub-0.11.1-py3-none-any.whl", hash = "sha256:11eed7aab4fa4d1fb532f2aea3379ef4998d9f6bc24a330834dfedd3dac7f441"},
+    {file = "huggingface_hub-0.11.1.tar.gz", hash = "sha256:8b9ebf9bbb1782f6f0419ec490973a6487c6c4ed84293a8a325d34c4f898f53f"},
 ]
 idna = [
     {file = "idna-3.4-py3-none-any.whl", hash = "sha256:90b77e79eaa3eba6de819a0c442c0b4ceefc341a7a2ab77d7562bf49f425c5c2"},
@@ -1167,7 +1167,7 @@ isort = [
     {file = "isort-5.10.1.tar.gz", hash = "sha256:e8443a5e7a020e9d7f97f1d7d9cd17c88bcb3bc7e218bf9cf5095fe550be2951"},
 ]
 libcommon = [
-    {file = "libcommon-0.5.0-py3-none-any.whl", hash = "sha256:0267504716992f562382ff5029ace87444fd12793f2393f3800921d384a0fd52"},
+    {file = "libcommon-0.5.1-py3-none-any.whl", hash = "sha256:a8d585735a14eb4a1df02fe9e2444627541c5cf7a8a10d9c79ca2d36cf90aff8"},
 ]
 lockfile = [
     {file = "lockfile-0.12.2-py2.py3-none-any.whl", hash = "sha256:6c3cb24f344923d30b2785d5ad75182c8ea7ac1b6171b08657258ec7429d50fa"},
@@ -1347,8 +1347,8 @@ pip-api = [
     {file = "pip_api-0.0.30-py3-none-any.whl", hash = "sha256:2a0314bd31522eb9ffe8a99668b0d07fee34ebc537931e7b6483001dbedcbdc9"},
 ]
 pip-audit = [
-    {file = "pip_audit-2.4.6-py3-none-any.whl", hash = "sha256:d6d830bdbe3fd3efaf54f4a203451f286e75aecb7e44f9f84f7bfbd38aba26ac"},
-    {file = "pip_audit-2.4.6.tar.gz", hash = "sha256:00ebef2a52884627f255b879135e28001de4378b8005318b66cc3a802459ee0a"},
+    {file = "pip_audit-2.4.7-py3-none-any.whl", hash = "sha256:a99f825ee431a89b89981c4e9e6eaacff5af3233783f2f5d79fe03306dc378ce"},
+    {file = "pip_audit-2.4.7.tar.gz", hash = "sha256:f87b37b6db5317a3f5ecebc202b5d4401958b5e4bd05b39d7b230bdc6f63c34b"},
 ]
 pip-requirements-parser = [
     {file = "pip-requirements-parser-31.2.0.tar.gz", hash = "sha256:8c2a6f8e091ac2693824a5ef4e3b250226e34f74a20a91a87b9ab0714b47788f"},
