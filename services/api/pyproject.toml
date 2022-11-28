@@ -9,9 +9,7 @@ license = "Apache-2.0"
 environs = "^9.5.0"
 huggingface-hub = "^0.11.0"
 jsonschema = "^4.16.0"
-libcache = { path = "../../libs/libcache/dist/libcache-0.4.3-py3-none-any.whl", develop = false }
-libcommon = { path = "../../libs/libcommon/dist/libcommon-0.3.3-py3-none-any.whl", develop = false }
-libqueue = { path = "../../libs/libqueue/dist/libqueue-0.4.13-py3-none-any.whl", develop = false }
+libcommon = { path = "../../libs/libcommon/dist/libcommon-0.5.1-py3-none-any.whl", develop = false }
 python = "3.9.6"
 starlette = "^0.16.0"
 starlette-prometheus = "^0.9.0"
@@ -24,21 +22,20 @@ black = "^22.1.0"
 flake8 = "^3.9.2"
 isort = "^5.9.3"
 mypy = "0.812"
+pip-audit = "^2.4.6"
 poetryup = "^0.3.8"
 pytest = "^7.2.0"
 pytest-cov = "^2.12.1"
 pytest-httpserver = "^1.0.6"
-pip-audit = "^2.4.6"
 
 [build-system]
 build-backend = "poetry.core.masonry.api"
 requires = ["poetry-core>=1.0.0"]
 
 [tool.pytest.ini_options]
-addopts = "-k 'not deprecated'"
+# addopts = "-k 'wip'"
 filterwarnings = ["ignore::DeprecationWarning"]
 markers = [
-    "deprecated: tests on deprecated code (deselect with '-m \"not deprecated\"')",
     "wip: tests being developed"
 ]
 

@@ -7,9 +7,7 @@ license = "Apache-2.0"
 
 [tool.poetry.dependencies]
 environs = "^9.5.0"
-libcache = { path = "../../libs/libcache/dist/libcache-0.4.3-py3-none-any.whl", develop = false }
-libcommon = { path = "../../libs/libcommon/dist/libcommon-0.3.3-py3-none-any.whl", develop = false }
-libqueue = { path = "../../libs/libqueue/dist/libqueue-0.4.13-py3-none-any.whl", develop = false }
+libcommon = { path = "../../libs/libcommon/dist/libcommon-0.5.0-py3-none-any.whl", develop = false }
 python = "3.9.6"
 
 [tool.poetry.group.dev.dependencies]

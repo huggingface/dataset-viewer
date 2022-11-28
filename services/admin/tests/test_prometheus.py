@@ -1,15 +1,17 @@
 import os
+from typing import List
+
+from libcommon.processing_graph import ProcessingStep
 
 from admin.config import AppConfig
 from admin.prometheus import Prometheus
-from admin.utils import JobType
 
 
-def test_prometheus(app_config: AppConfig) -> None:
+def test_prometheus(app_config: AppConfig, processing_steps: List[ProcessingStep]) -> None:
     # we depend on app_config to be sure we already connected to the database
     is_multiprocess = "PROMETHEUS_MULTIPROC_DIR" in os.environ
 
-    prometheus = Prometheus()
+    prometheus = Prometheus(processing_steps=processing_steps)
     registry = prometheus.getRegistry()
     assert registry is not None
 
@@ -26,5 +28,8 @@ def test_prometheus(app_config: AppConfig) -> None:
         assert metrics[name] > 0
 
     additional_field = ('pid="' + str(os.getpid()) + '",') if is_multiprocess else ""
-    for _, job_type in JobType.__members__.items():
-        assert "queue_jobs_total{" + additional_field + 'queue="' + job_type.value + '",status="started"}' in metrics
+    for processing_step in processing_steps:
+        assert (
+            "queue_jobs_total{" + additional_field + 'queue="' + processing_step.job_type + '",status="started"}'
+            in metrics
+        )

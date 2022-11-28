@@ -3,12 +3,12 @@
 
 import os
 import re
-from typing import Dict
+from typing import Mapping
 
 from .utils import ADMIN_URL, get
 
 
-def has_metric(name: str, labels: Dict[str, str], metrics: set[str]) -> bool:
+def has_metric(name: str, labels: Mapping[str, str], metrics: set[str]) -> bool:
     label_str = ",".join([f'{k}="{v}"' for k, v in labels.items()])
     s = name + "{" + label_str + "}"
     return any(re.match(s, metric) is not None for metric in metrics)

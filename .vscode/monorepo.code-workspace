@@ -13,16 +13,8 @@
       "path": "../jobs/mongodb_migration"
     },
     {
-      "name": "libs/libcache",
-      "path": "../libs/libcache"
-    },
-    {
       "name": "libs/libcommon",
       "path": "../libs/libcommon"
-    },
-    {
-      "name": "libs/libqueue",
-      "path": "../libs/libqueue"
     },
     {
       "name": "services/admin",
@@ -39,6 +31,10 @@
     {
       "name": "workers/first_rows",
       "path": "../workers/first_rows"
+    },
+    {
+      "name": "workers/parquet",
+      "path": "../workers/parquet"
     },
     {
       "name": "workers/splits",

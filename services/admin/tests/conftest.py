@@ -1,6 +1,9 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2022 The HuggingFace Authors.
 
+from typing import List
+
+from libcommon.processing_graph import ProcessingStep
 from pytest import MonkeyPatch, fixture
 
 from admin.config import AppConfig
@@ -27,3 +30,8 @@ def app_config(monkeypatch_session: MonkeyPatch) -> AppConfig:
     if "test" not in app_config.cache.mongo_database or "test" not in app_config.queue.mongo_database:
         raise ValueError("Test must be launched on a test mongo database")
     return app_config
+
+
+@fixture(scope="session")
+def processing_steps(app_config: AppConfig) -> List[ProcessingStep]:
+    return list(app_config.processing_graph.graph.steps.values())

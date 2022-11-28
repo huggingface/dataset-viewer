@@ -12,18 +12,16 @@ from starlette_prometheus import PrometheusMiddleware
 from admin.config import AppConfig, UvicornConfig
 from admin.prometheus import Prometheus
 from admin.routes.cache_reports import create_cache_reports_endpoint
-from admin.routes.force_refresh_first_rows import (
-    create_force_refresh_first_rows_endpoint,
-)
-from admin.routes.force_refresh_splits import create_force_refresh_splits_endpoint
+from admin.routes.cancel_jobs import create_cancel_jobs_endpoint
+from admin.routes.force_refresh import create_force_refresh_endpoint
 from admin.routes.healthcheck import healthcheck_endpoint
 from admin.routes.pending_jobs import create_pending_jobs_endpoint
-from admin.utils import CacheKind
 
 
 def create_app() -> Starlette:
     app_config = AppConfig()
-    prometheus = Prometheus()
+    processing_steps = list(app_config.processing_graph.graph.steps.values())
+    prometheus = Prometheus(processing_steps=processing_steps)
 
     middleware = [
         Middleware(
@@ -32,71 +30,60 @@ def create_app() -> Starlette:
         Middleware(GZipMiddleware),
         Middleware(PrometheusMiddleware, filter_unhandled_paths=True),
     ]
-    routes = [
-        Route("/healthcheck", endpoint=healthcheck_endpoint),
-        Route("/metrics", endpoint=prometheus.endpoint),
-        Route(
-            "/force-refresh/first-rows",
-            endpoint=create_force_refresh_first_rows_endpoint(
-                hf_endpoint=app_config.common.hf_endpoint,
-                hf_token=app_config.common.hf_token,
-                external_auth_url=app_config.admin.external_auth_url,
-                organization=app_config.admin.hf_organization,
+    routes = (
+        [
+            Route("/healthcheck", endpoint=healthcheck_endpoint),
+            Route("/metrics", endpoint=prometheus.endpoint),
+            # used in a browser tab to monitor the queue
+            Route(
+                "/pending-jobs",
+                endpoint=create_pending_jobs_endpoint(
+                    processing_steps=processing_steps,
+                    max_age=app_config.admin.max_age,
+                    external_auth_url=app_config.admin.external_auth_url,
+                    organization=app_config.admin.hf_organization,
+                ),
             ),
-            methods=["POST"],
-        ),
-        Route(
-            "/force-refresh/splits",
-            endpoint=create_force_refresh_splits_endpoint(
-                hf_endpoint=app_config.common.hf_endpoint,
-                hf_token=app_config.common.hf_token,
-                external_auth_url=app_config.admin.external_auth_url,
-                organization=app_config.admin.hf_organization,
-            ),
-            methods=["POST"],
-        ),
-        # TODO: re-enable. Possibly using tags
-        # used by https://observablehq.com/@huggingface/quality-assessment-of-datasets-loading
-        # Route(
-        #     "/cache-reports/features",
-        #     endpoint=create_cache_reports_endpoint(
-        #         cache_kind="features",
-        #         cache_reports_num_results=app_config.admin.cache_reports_num_results,
-        #         max_age=app_config.admin.max_age,
-        #         external_auth_url=app_config.admin.external_auth_url,
-        #         organization=app_config.admin.hf_organization,
-        #     ),
-        # ),
-        Route(
-            "/cache-reports/first-rows",
-            endpoint=create_cache_reports_endpoint(
-                kind=CacheKind.FIRST_ROWS,
-                cache_reports_num_results=app_config.admin.cache_reports_num_results,
-                max_age=app_config.admin.max_age,
-                external_auth_url=app_config.admin.external_auth_url,
-                organization=app_config.admin.hf_organization,
-            ),
-        ),
-        Route(
-            "/cache-reports/splits",
-            endpoint=create_cache_reports_endpoint(
-                kind=CacheKind.SPLITS,
-                cache_reports_num_results=app_config.admin.cache_reports_num_results,
-                max_age=app_config.admin.max_age,
-                external_auth_url=app_config.admin.external_auth_url,
-                organization=app_config.admin.hf_organization,
-            ),
-        ),
-        # used in a browser tab to monitor the queue
-        Route(
-            "/pending-jobs",
-            endpoint=create_pending_jobs_endpoint(
-                max_age=app_config.admin.max_age,
-                external_auth_url=app_config.admin.external_auth_url,
-                organization=app_config.admin.hf_organization,
-            ),
-        ),
-    ]
+        ]
+        + [
+            Route(
+                f"/force-refresh{processing_step.endpoint}",
+                endpoint=create_force_refresh_endpoint(
+                    processing_step=processing_step,
+                    hf_endpoint=app_config.common.hf_endpoint,
+                    hf_token=app_config.common.hf_token,
+                    external_auth_url=app_config.admin.external_auth_url,
+                    organization=app_config.admin.hf_organization,
+                ),
+                methods=["POST"],
+            )
+            for processing_step in processing_steps
+        ]
+        + [
+            Route(
+                f"/cache-reports{processing_step.endpoint}",
+                endpoint=create_cache_reports_endpoint(
+                    processing_step=processing_step,
+                    cache_reports_num_results=app_config.admin.cache_reports_num_results,
+                    max_age=app_config.admin.max_age,
+                    external_auth_url=app_config.admin.external_auth_url,
+                    organization=app_config.admin.hf_organization,
+                ),
+            )
+            for processing_step in processing_steps
+        ]
+        + [
+            Route(
+                f"/cancel-jobs{processing_step.endpoint}",
+                endpoint=create_cancel_jobs_endpoint(
+                    processing_step=processing_step,
+                    external_auth_url=app_config.admin.external_auth_url,
+                    organization=app_config.admin.hf_organization,
+                ),
+            )
+            for processing_step in processing_steps
+        ]
+    )
     return Starlette(routes=routes, middleware=middleware)
 
 

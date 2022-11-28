@@ -4,9 +4,12 @@
 from typing import Optional
 
 from environs import Env
-from libcache.config import CacheConfig
-from libcommon.config import CommonConfig
-from libqueue.config import QueueConfig
+from libcommon.config import (
+    CacheConfig,
+    CommonConfig,
+    ProcessingGraphConfig,
+    QueueConfig,
+)
 
 
 class UvicornConfig:
@@ -44,11 +47,13 @@ class AppConfig:
     admin: AdminConfig
     cache: CacheConfig
     common: CommonConfig
+    processing_graph: ProcessingGraphConfig
     queue: QueueConfig
 
     def __init__(self):
         # First process the common configuration to setup the logging
         self.common = CommonConfig()
         self.cache = CacheConfig()
+        self.processing_graph = ProcessingGraphConfig()
         self.queue = QueueConfig()
         self.admin = AdminConfig(hf_endpoint=self.common.hf_endpoint)

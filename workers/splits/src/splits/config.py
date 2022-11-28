@@ -3,21 +3,29 @@
 
 import datasets.config
 from datasets.utils.logging import log_levels, set_verbosity
-from libcache.config import CacheConfig
-from libcommon.config import CommonConfig
-from libqueue.config import QueueConfig
+from libcommon.config import (
+    CacheConfig,
+    CommonConfig,
+    ProcessingGraphConfig,
+    QueueConfig,
+    WorkerConfig,
+)
 
 
-class WorkerConfig:
+class AppConfig:
     cache: CacheConfig
     common: CommonConfig
+    processing_graph: ProcessingGraphConfig
     queue: QueueConfig
+    worker: WorkerConfig
 
     def __init__(self):
         # First process the common configuration to setup the logging
         self.common = CommonConfig()
         self.cache = CacheConfig()
         self.queue = QueueConfig()
+        self.processing_graph = ProcessingGraphConfig()
+        self.worker = WorkerConfig()
         self.setup()
 
     def setup(self):

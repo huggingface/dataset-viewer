@@ -2,9 +2,12 @@
 # Copyright 2022 The HuggingFace Authors.
 
 import os
+from dataclasses import dataclass
+from typing import List
 
-from libcache.simple_cache import get_responses_count_by_kind_status_and_error_code
-from libqueue.queue import Queue
+from libcommon.processing_graph import ProcessingStep
+from libcommon.queue import Queue
+from libcommon.simple_cache import get_responses_count_by_kind_status_and_error_code
 from prometheus_client import (  # type: ignore # https://github.com/prometheus/client_python/issues/491
     CONTENT_TYPE_LATEST,
     REGISTRY,
@@ -17,8 +20,6 @@ from prometheus_client.multiprocess import (  # type: ignore # https://github.co
 )
 from starlette.requests import Request
 from starlette.responses import Response
-
-from admin.utils import JobType
 
 # the metrics are global to the process
 QUEUE_JOBS_TOTAL = Gauge(
@@ -35,13 +36,9 @@ RESPONSES_IN_CACHE_TOTAL = Gauge(
 )
 
 
+@dataclass
 class Prometheus:
-    first_rows_queue: Queue
-    split_queue: Queue
-
-    def __init__(self):
-        self.split_queue = Queue(type=JobType.SPLITS.value)
-        self.first_rows_queue = Queue(type=JobType.FIRST_ROWS.value)
+    processing_steps: List[ProcessingStep]
 
     def getRegistry(self) -> CollectorRegistry:
         # taken from https://github.com/perdy/starlette-prometheus/blob/master/starlette_prometheus/view.py
@@ -55,10 +52,9 @@ class Prometheus:
 
     def updateMetrics(self):
         # Queue metrics
-        for status, total in self.split_queue.get_jobs_count_by_status().items():
-            QUEUE_JOBS_TOTAL.labels(queue=JobType.SPLITS.value, status=status).set(total)
-        for status, total in self.first_rows_queue.get_jobs_count_by_status().items():
-            QUEUE_JOBS_TOTAL.labels(queue=JobType.FIRST_ROWS.value, status=status).set(total)
+        for processing_step in self.processing_steps:
+            for status, total in Queue(type=processing_step.job_type).get_jobs_count_by_status().items():
+                QUEUE_JOBS_TOTAL.labels(queue=processing_step.job_type, status=status).set(total)
         # Cache metrics
         for metric in get_responses_count_by_kind_status_and_error_code():
             RESPONSES_IN_CACHE_TOTAL.labels(

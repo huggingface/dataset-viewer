@@ -1,7 +1,6 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2022 The HuggingFace Authors.
 
-from enum import Enum
 from http import HTTPStatus
 from typing import Any, Callable, Coroutine, List, Literal, Optional
 
@@ -105,7 +104,7 @@ def get_json_error_response(
     return get_json_response(content=content, status_code=status_code, max_age=max_age, error_code=error_code)
 
 
-def get_json_admin_error_response(error: AdminCustomError, max_age: int) -> Response:
+def get_json_admin_error_response(error: CustomError, max_age: int) -> Response:
     return get_json_error_response(
         content=error.as_response(), status_code=error.status_code, max_age=max_age, error_code=error.code
     )
@@ -120,13 +119,3 @@ def are_valid_parameters(parameters: List[Any]) -> bool:
 
 
 Endpoint = Callable[[Request], Coroutine[Any, Any, Response]]
-
-
-class JobType(Enum):
-    SPLITS = "/splits"
-    FIRST_ROWS = "/first-rows"
-
-
-class CacheKind(Enum):
-    SPLITS = "/splits"
-    FIRST_ROWS = "/first-rows"

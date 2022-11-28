@@ -1,10 +1,10 @@
 # Datasets server admin machine
 
-> Admin scripts and endpoints
+> Admin endpoints
 
 ## Configuration
 
-The worker con be configured using environment variables. They are grouped by scope.
+The worker can be configured using environment variables. They are grouped by scope.
 
 ### Admin service
 
@@ -27,14 +27,6 @@ The following environment variables are used to configure the Uvicorn server (`A
 
 - `PROMETHEUS_MULTIPROC_DIR`: the directory where the uvicorn workers share their prometheus metrics. See https://github.com/prometheus/client_python#multiprocess-mode-eg-gunicorn. Defaults to empty, in which case every worker manages its own metrics, and the /metrics endpoint returns the metrics of a random worker.
 
-### Cache
-
-See [../../libs/libcache/README.md](../../libs/libcache/README.md) for more information about the cache configuration.
-
-### Queue
-
-See [../../libs/libqueue/README.md](../../libs/libqueue/README.md) for more information about the queue configuration.
-
 ### Common
 
 See [../../libs/libcommon/README.md](../../libs/libcommon/README.md) for more information about the common configuration.
@@ -44,33 +36,10 @@ See [../../libs/libcommon/README.md](../../libs/libcommon/README.md) for more in
 The admin service provides endpoints:
 
 - `/healthcheck`
-- `/metrics`: gives info about the cache and the queue
-- `/cache-reports`: give detailed reports on the content of the cache:
-  - `/cache-reports/features`
-  - `/cache-reports/first-rows`
-  - `/cache-reports/splits`
+- `/metrics`: give info about the cache and the queue
+- `/cache-reports/{processing_step}`: give detailed reports on the content of the cache for a processing step
 - `/pending-jobs`: give the pending jobs, classed by queue and status (waiting or started)
-- `/force-refresh`: force refresh cache entries. It's a POST endpoint:
-  - `/force-refresh/splits?dataset={dataset}`
-  - `/force-refresh/first-rows?dataset={dataset}&config={config}&split={split}`
-
-## Scripts
-
-The scripts:
-
-- `cancel-jobs-splits`: cancel all the started jobs for /splits (stop the workers before!)
-- `cancel-jobs-first-rows`: cancel all the started jobs for /first-rows (stop the workers before!)
-
-To launch the scripts:
-
-- if the image runs in a docker container:
-
-  ```shell
-  docker exec -it datasets-server_admin_1 make <SCRIPT>
-  ```
-
-- if the image runs in a kube pod:
-
-  ```shell
-  kubectl exec datasets-server-prod-admin-5cc8f8fcd7-k7jfc -- make <SCRIPT>
-  ```
+- `/force-refresh/{processing_step}`: force refresh cache entries for the processing step. It's a POST endpoint. Pass the requested parameters, depending on the processing step's input type:
+  - `dataset`: `?dataset={dataset}`
+  - `split`: `?dataset={dataset}&config={config}&split={split}`
+- `/cancel-jobs/{processing_step}`: cancel all the started jobs for the processing step (stop the corresponding workers before!). It's a POST endpoint.:

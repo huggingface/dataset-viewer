@@ -26,14 +26,6 @@ The following environment variables are used to configure the Uvicorn server (`A
 
 - `PROMETHEUS_MULTIPROC_DIR`: the directory where the uvicorn workers share their prometheus metrics. See https://github.com/prometheus/client_python#multiprocess-mode-eg-gunicorn. Defaults to empty, in which case every worker manages its own metrics, and the /metrics endpoint returns the metrics of a random worker.
 
-### Cache
-
-See [../../libs/libcache/README.md](../../libs/libcache/README.md) for more information about the cache configuration.
-
-### Queue
-
-See [../../libs/libqueue/README.md](../../libs/libqueue/README.md) for more information about the queue configuration.
-
 ### Common
 
 See [../../libs/libcommon/README.md](../../libs/libcommon/README.md) for more information about the common configuration.

@@ -23,8 +23,6 @@ install:
 	$(MAKE) -C e2e/ install
 	$(MAKE) -C services/api/ install
 	$(MAKE) -C services/admin/ install
-	$(MAKE) -C libs/libcache/ install
-	$(MAKE) -C libs/libqueue/ install
 	$(MAKE) -C libs/libcommon/ install
 	$(MAKE) -C workers/first_rows install
 	$(MAKE) -C workers/splits install
@@ -51,8 +49,6 @@ stop-from-remote-images:
 test:
 	$(MAKE) -C services/admin/ test
 	$(MAKE) -C services/api/ test
-	$(MAKE) -C libs/libcache/ test
-	$(MAKE) -C libs/libqueue/ test
 	$(MAKE) -C libs/libcommon/ test
 	$(MAKE) -C workers/first_rows test
 	$(MAKE) -C workers/splits test
@@ -61,8 +57,6 @@ test:
 coverage:
 	$(MAKE) -C services/admin/ coverage
 	$(MAKE) -C services/api/ coverage
-	$(MAKE) -C libs/libcache/ coverage
-	$(MAKE) -C libs/libqueue/ coverage
 	$(MAKE) -C libs/libcommon/ coverage
 	$(MAKE) -C workers/first_rows coverage
 	$(MAKE) -C workers/splits coverage
@@ -75,8 +69,6 @@ quality:
 	$(MAKE) -C chart/ quality
 	$(MAKE) -C services/api/ quality
 	$(MAKE) -C services/admin/ quality
-	$(MAKE) -C libs/libcache/ quality
-	$(MAKE) -C libs/libqueue/ quality
 	$(MAKE) -C libs/libcommon/ quality
 	$(MAKE) -C workers/first_rows quality
 	$(MAKE) -C workers/splits quality
@@ -87,8 +79,6 @@ style:
 	$(MAKE) -C e2e/ style
 	$(MAKE) -C services/api/ style
 	$(MAKE) -C services/admin/ style
-	$(MAKE) -C libs/libcache/ style
-	$(MAKE) -C libs/libqueue/ style
 	$(MAKE) -C libs/libcommon/ style
 	$(MAKE) -C workers/first_rows style
 	$(MAKE) -C workers/splits style

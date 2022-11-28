@@ -12,8 +12,9 @@ from .utils import (
     get,
     get_openapi_body_example,
     poll,
-    refresh_poll_splits,
-    refresh_poll_splits_first_rows,
+    poll_first_rows,
+    poll_splits,
+    post_refresh,
 )
 
 
@@ -53,16 +54,14 @@ def test_first_rows(status: int, name: str, dataset: str, config: str, split: st
         s = f"split={split}" if split is not None else ""
         params = "&".join([d, c, s])
         r_rows = poll(f"/first-rows?{params}", error_field="error")
-    elif name.startswith("inexistent-") or name.startswith("private-") or name.startswith("gated-"):
-        refresh_poll_splits(dataset)
-        # no need to retry
-        r_rows = get(f"/first-rows?dataset={dataset}&config={config}&split={split}")
-    elif name == "not-ready":
-        refresh_poll_splits(dataset)
-        # poll the endpoint before the worker had the chance to process it
-        r_rows = get(f"/first-rows?dataset={dataset}&config={config}&split={split}")
     else:
-        _, r_rows = refresh_poll_splits_first_rows(dataset, config, split)
+        post_refresh(dataset)
+        poll_splits(dataset)
+        if name == "not-ready":
+            # poll the endpoint before the worker had the chance to process it
+            r_rows = get(f"/first-rows?dataset={dataset}&config={config}&split={split}")
+        else:
+            r_rows = poll_first_rows(dataset, config, split)
 
     assert r_rows.status_code == status, f"{r_rows.status_code} - {r_rows.text}"
     assert prepare_json(r_rows) == body, r_rows.text

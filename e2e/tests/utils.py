@@ -5,7 +5,7 @@ import json
 import os
 import time
 from pathlib import Path
-from typing import Any, Dict, Optional, Tuple
+from typing import Any, Mapping, Optional, Tuple
 
 import requests
 from requests import Response
@@ -19,7 +19,7 @@ URL = f"http://localhost:{PORT_REVERSE_PROXY}"
 ADMIN_URL = f"http://localhost:{ADMIN_UVICORN_PORT}"
 API_URL = f"http://localhost:{API_UVICORN_PORT}"
 
-Headers = Dict[str, str]
+Headers = Mapping[str, str]
 
 
 def get(relative_url: str, headers: Headers = None, url: str = URL) -> Response:
@@ -66,14 +66,8 @@ def poll(
     return response
 
 
-def post_refresh(dataset: str, headers: Headers = None) -> Response:
-    if headers is None:
-        headers = {}
-    return post(
-        "/webhook",
-        json={"event": "update", "repo": {"type": "dataset", "name": dataset}},
-        headers=headers,
-    )
+def post_refresh(dataset: str) -> Response:
+    return post("/webhook", json={"event": "update", "repo": {"type": "dataset", "name": dataset}})
 
 
 def poll_splits(dataset: str, headers: Headers = None) -> Response:
@@ -82,26 +76,6 @@ def poll_splits(dataset: str, headers: Headers = None) -> Response:
 
 def poll_first_rows(dataset: str, config: str, split: str, headers: Headers = None) -> Response:
     return poll(f"/first-rows?dataset={dataset}&config={config}&split={split}", error_field="error", headers=headers)
-
-
-def refresh_poll_splits(dataset: str, headers: Headers = None) -> Response:
-    # ask for the dataset to be refreshed
-    response = post_refresh(dataset, headers=headers)
-    assert response.status_code == 200, f"{response.status_code} - {response.text}"
-
-    # poll the /splits endpoint until we get something else than "The dataset is being processed. Retry later."
-    return poll_splits(dataset, headers=headers)
-
-
-def refresh_poll_splits_first_rows(
-    dataset: str, config: str, split: str, headers: Headers = None
-) -> Tuple[Response, Response]:
-    response_splits = refresh_poll_splits(dataset, headers=headers)
-    assert response_splits.status_code == 200, f"{response_splits.status_code} - {response_splits.text}"
-
-    response_rows = poll_first_rows(dataset, config, split, headers=headers)
-
-    return response_splits, response_rows
 
 
 def get_openapi_body_example(path, status, example_name):

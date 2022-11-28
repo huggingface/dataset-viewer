@@ -1,15 +1,16 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2022 The HuggingFace Authors.
 
-from typing import Optional
+from typing import List, Optional
 
 import pytest
-from libcache.simple_cache import _clean_cache_database
-from libqueue.queue import _clean_queue_database
+from libcommon.processing_graph import ProcessingStep
+from libcommon.queue import _clean_queue_database
+from libcommon.simple_cache import _clean_cache_database
 from starlette.testclient import TestClient
 
 from admin.app import create_app
-from admin.utils import JobType
+from admin.config import AppConfig
 
 
 @pytest.fixture(scope="module")
@@ -18,7 +19,7 @@ def client(monkeypatch_session: pytest.MonkeyPatch) -> TestClient:
 
 
 @pytest.fixture(autouse=True)
-def clean_mongo_databases() -> None:
+def clean_mongo_databases(app_config: AppConfig) -> None:
     _clean_cache_database()
     _clean_queue_database()
 
@@ -70,28 +71,30 @@ def test_metrics(client: TestClient) -> None:
     assert metrics[name] > 0, metrics
 
 
-def test_pending_jobs(client: TestClient) -> None:
+def test_pending_jobs(client: TestClient, processing_steps: List[ProcessingStep]) -> None:
     response = client.get("/pending-jobs")
     assert response.status_code == 200
     json = response.json()
-    for _, job_type in JobType.__members__.items():
-        assert json[job_type.value] == {"waiting": [], "started": []}
+    for processing_step in processing_steps:
+        assert json[processing_step.job_type] == {"waiting": [], "started": []}
 
 
 @pytest.mark.parametrize(
-    "path,cursor,http_status,error_code",
+    "cursor,http_status,error_code",
     [
-        ("/splits", None, 200, None),
-        ("/splits", "", 200, None),
-        ("/splits", "invalid cursor", 422, "InvalidParameter"),
-        ("/first-rows", None, 200, None),
-        ("/first-rows", "", 200, None),
-        ("/first-rows", "invalid cursor", 422, "InvalidParameter"),
+        (None, 200, None),
+        ("", 200, None),
+        ("invalid cursor", 422, "InvalidParameter"),
     ],
 )
 def test_cache_reports(
-    client: TestClient, path: str, cursor: Optional[str], http_status: int, error_code: Optional[str]
+    client: TestClient,
+    processing_steps: List[ProcessingStep],
+    cursor: Optional[str],
+    http_status: int,
+    error_code: Optional[str],
 ) -> None:
+    path = processing_steps[0].endpoint
     cursor_str = f"?cursor={cursor}" if cursor else ""
     response = client.get(f"/cache-reports{path}{cursor_str}")
     assert response.status_code == http_status

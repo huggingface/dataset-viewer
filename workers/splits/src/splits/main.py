@@ -1,9 +1,10 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2022 The HuggingFace Authors.
 
-from splits.config import WorkerConfig
+from splits.config import AppConfig
 from splits.worker import SplitsWorker
 
 if __name__ == "__main__":
-    worker_config = WorkerConfig()
-    SplitsWorker(worker_config).loop()
+    app_config = AppConfig()
+    SPLITS_ENDPOINT = "/splits"
+    SplitsWorker(app_config=app_config, endpoint=SPLITS_ENDPOINT).loop()
