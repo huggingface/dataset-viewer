@@ -1,0 +1,26 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2022 The HuggingFace Authors.
+
+name: workers/parquet
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - 'workers/parquet/**'
+      - '.github/workflows/w-parquet.yml'
+      - '.github/workflows/_quality-python.yml'
+      - '.github/workflows/_unit-tests-python.yml'
+      - 'tools/Python.mk'
+      - 'tools/docker-compose-mongo.yml'
+      - 'vendors/'
+jobs:
+  quality:
+    uses: ./.github/workflows/_quality-python.yml
+    with:
+      working-directory: workers/parquet
+      is-datasets-worker: true
+  unit-tests:
+    uses: ./.github/workflows/_unit-tests-python.yml
+    with:
+      working-directory: workers/parquet
+      is-datasets-worker: true

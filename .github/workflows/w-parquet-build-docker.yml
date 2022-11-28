@@ -1,0 +1,23 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2022 The HuggingFace Authors.
+
+name: workers/parquet
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - 'workers/parquet/Dockerfile'
+      - 'workers/parquet/src/**'
+      - 'workers/parquet/poetry.lock'
+      - 'workers/parquet/pyproject.toml'
+      - '.github/workflows/w-workers/parquet-build-docker.yml'
+      - '.github/workflows/_build_push_docker_hub.yml'
+jobs:
+  docker:
+    uses: ./.github/workflows/_build_push_docker_hub.yml
+    with:
+      directory: workers
+      project: parquet
+    secrets:
+      dockerhub-username: ${{ secrets.DOCKERHUB_USERNAME }}
+      dockerhub-password: ${{ secrets.DOCKERHUB_PASSWORD }}
