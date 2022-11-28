@@ -123,7 +123,12 @@ def ensure_services_are_up() -> None:
 #             200,
 #             True,
 #         ),
-#         ({"event": "add", "repo": {"type": "dataset", "name": "webhook-test", "gitalyUid": "123"}}, False, 400, False),
+#         (
+#             {"event": "add", "repo": {"type": "dataset", "name": "webhook-test", "gitalyUid": "123"}},
+#             False,
+#             400,
+#             False
+#         ),
 #     ],
 # )
 # def test_webhook(
