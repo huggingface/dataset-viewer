@@ -118,6 +118,8 @@ reverseProxy:
       operator: Equal
 
 ingress:
+  tls:
+    hosts: "datasets-server.huggingface.co"
   annotations:
     alb.ingress.kubernetes.io/certificate-arn: arn:aws:acm:us-east-1:707930574880:certificate/971187a3-2baa-40e5-bcae-94d6ec55cd24
     alb.ingress.kubernetes.io/load-balancer-name: "hub-datasets-server-prod"

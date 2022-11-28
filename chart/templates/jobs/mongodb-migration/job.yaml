@@ -1,6 +1,7 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2022 The HuggingFace Authors.
 
+{{- if .Values.dockerImage.jobs.mongodbMigration }}
 apiVersion: batch/v1
 kind: Job
 metadata:
@@ -24,3 +25,4 @@ spec:
       volumes: {{ include "volumeData" . | nindent 8 }}
       securityContext: {{ include "securityContext" . | nindent 8 }}
   backoffLimit: 0
+{{- end}}

@@ -6,12 +6,7 @@ metadata:
   name: {{ include "release" . }}
   namespace: {{ .Release.Namespace }}
 spec:
-  {{- if .Values.ingress.tls.enabled }}
-  tls:
-    - hosts:
-        - {{ .Values.hostname }}
-      secretName: {{ .Values.ingress.tls.secretName }}
-  {{- end}}
+  tls: {{ toYaml .Values.ingress.tls | nindent 4 }}
   rules:
     - host: {{ .Values.hostname }}
       http:
