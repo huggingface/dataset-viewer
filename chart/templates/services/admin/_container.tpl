@@ -9,6 +9,7 @@
   {{ include "envCache" . | nindent 2 }}
   {{ include "envQueue" . | nindent 2 }}
   {{ include "envCommon" . | nindent 2 }}
+  # service
   - name: ADMIN_HF_ORGANIZATION
     value: {{ .Values.admin.hfOrganization | quote }}
   - name: ADMIN_CACHE_REPORTS_NUM_RESULTS
@@ -17,14 +18,16 @@
     value: {{ .Values.admin.hfWhoamiPath | quote }}
   - name: ADMIN_MAX_AGE
     value: {{ .Values.admin.maxAge | quote }}
+  # prometheus
+  - name: PROMETHEUS_MULTIPROC_DIR
+    value:  {{ .Values.admin.prometheusMultiprocDirectory | quote }}
+  # uvicorn
   - name: ADMIN_UVICORN_HOSTNAME
     value: {{ .Values.admin.uvicornHostname | quote }}
   - name: ADMIN_UVICORN_NUM_WORKERS
     value: {{ .Values.admin.uvicornNumWorkers | quote }}
   - name: ADMIN_UVICORN_PORT
     value: {{ .Values.admin.uvicornPort | quote }}
-  - name: PROMETHEUS_MULTIPROC_DIR
-    value:  {{ .Values.admin.prometheusMultiprocDirectory | quote }}
   volumeMounts: {{ include "volumeMountAssetsRO" . | nindent 2 }}
   securityContext:
     allowPrivilegeEscalation: false
