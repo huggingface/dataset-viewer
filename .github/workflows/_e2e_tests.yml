@@ -57,7 +57,7 @@ jobs:
           IMAGE_SERVICE_API: "${{fromJson(needs.get-config.outputs.dockerConfig).dockerImage.services.api}}"
           IMAGE_WORKER_SPLITS: "${{fromJson(needs.get-config.outputs.dockerConfig).dockerImage.workers.splits}}"
           IMAGE_WORKER_FIRST_ROWS: "${{fromJson(needs.get-config.outputs.dockerConfig).dockerImage.workers.firstRows}}"
-          QUEUE_SLEEP_TIME: "1"
+          WORKER_SLEEP_TIME: "1"
           # hard coded, see e2e/tests/fixtures/hub.py
           COMMON_HF_ENDPOINT: "https://hub-ci.huggingface.co"
           COMMON_HF_TOKEN: "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"
@@ -69,7 +69,7 @@ jobs:
           ADMIN_UVICORN_NUM_WORKERS: "2"
           ADMIN_UVICORN_PORT: "8081"
         working-directory: tools
-        run: docker-compose -f ./docker-compose-datasets-server-from-remote-images.yml up -d
+        run: docker compose -f ./docker-compose-datasets-server.yml up -d
       - name: Install dependencies
         run: |
           poetry env use "${{ env.python-version }}"

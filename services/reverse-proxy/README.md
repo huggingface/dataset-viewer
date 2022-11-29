@@ -2,7 +2,7 @@
 
 > Reverse-proxy in front of the API
 
-See [docker-compose.yml](../../docker-compose.yml) for usage.
+See [docker-compose-datasets-server.yml](../../tools/docker-compose-datasets-server.yml) for usage.
 
 Note that the template configuration is located in [chart/nginx-templates/](../../chart/nginx-templates/) in order to be reachable by the Helm chart to deploy on Kubernetes.
 

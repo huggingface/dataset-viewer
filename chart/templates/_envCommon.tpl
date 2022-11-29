@@ -6,6 +6,8 @@
   value: "{{ include "assets.baseUrl" . }}"
 - name: COMMON_HF_ENDPOINT
   value: {{ .Values.common.hfEndpoint | quote }}
+- name: HF_ENDPOINT # see https://github.com/huggingface/datasets/pull/5196#issuecomment-1322191411
+  value: {{ .Values.common.hfEndpoint | quote }}
 - name: COMMON_HF_TOKEN
   {{- if .Values.secrets.token.fromSecret }}
   valueFrom:

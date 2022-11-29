@@ -9,26 +9,12 @@
   {{ include "envCache" . | nindent 2 }}
   {{ include "envQueue" . | nindent 2 }}
   {{ include "envCommon" . | nindent 2 }}
-  - name: HF_ENDPOINT # see https://github.com/huggingface/datasets/pull/5196#issuecomment-1322191411
-    value: {{ .Values.common.hfEndpoint | quote }}
+  {{ include "envWorker" . | nindent 2 }}
+  {{ include "envDatasetsWorker" . | nindent 2 }}
   - name: QUEUE_MAX_JOBS_PER_NAMESPACE
     # value: {{ .Values.queue.maxJobsPerNamespace | quote }}
     # overridden
     value: {{ .Values.firstRows.queue.maxJobsPerNamespace | quote }}
-  - name: QUEUE_MAX_LOAD_PCT
-    value: {{ .Values.queue.maxLoadPct | quote }}
-  - name: QUEUE_MAX_MEMORY_PCT
-    value: {{ .Values.queue.maxMemoryPct | quote }}
-  - name: QUEUE_WORKER_SLEEP_SECONDS
-    value: {{ .Values.queue.sleepSeconds | quote }}
-  - name: HF_DATASETS_CACHE
-    value: {{ .Values.hfDatasetsCache | quote }}
-  - name: HF_MODULES_CACHE
-    value: "/tmp/modules-cache"
-    # the size should remain so small that we don't need to worry about putting it on an external storage
-    # see https://github.com/huggingface/datasets-server/issues/248
-  - name: NUMBA_CACHE_DIR
-    value: {{ .Values.numbaCacheDirectory | quote }}
   - name: FIRST_ROWS_FALLBACK_MAX_DATASET_SIZE
     value: {{ .Values.firstRows.fallbackMaxDatasetSize | quote }}
   - name: FIRST_ROWS_MAX_BYTES

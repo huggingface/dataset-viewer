@@ -14,17 +14,10 @@ cd datasets-server
 Install docker (see https://docs.docker.com/engine/install/ubuntu/#install-using-the-repository and https://docs.docker.com/engine/install/linux-postinstall/)
 
 ```
-make install
-make start-from-local-code
+make start
 ```
 
-To use the docker images already compiled using the CI:
-
-```
-make start-from-remote-images
-```
-
-To install a single library (in [libs](./libs)) or service (in [services](./services)), install Python 3.9 (consider [pyenv](https://github.com/pyenv/pyenv)) and [poetry](https://python-poetry.org/docs/master/#installation) (don't forget to add `poetry` to the `PATH` environment variable).
+To install a single job (in [jobs](./jobs)), library (in [libs](./libs)), service (in [services](./services)) or worker (in [workers](./workers)), go to their respective directory, and install Python 3.9 (consider [pyenv](https://github.com/pyenv/pyenv)) and [poetry](https://python-poetry.org/docs/master/#installation) (don't forget to add `poetry` to the `PATH` environment variable).
 
 If you use pyenv:
 
@@ -47,7 +40,12 @@ If you use VSCode, it might be useful to use the ["monorepo" workspace](./.vscod
 
 ## Architecture
 
-The repository is structured as a monorepo, with Python applications in [services/](./services/) and [workers/](./workers/), and Python libraries in [libs/](./libs/).
+The repository is structured as a monorepo, with Python libraries and applications in [jobs](./jobs)), [libs](./libs), [services](./services) and [workers](./workers):
+
+- [jobs](./jobs) contains the one-time jobs run by Helm before deploying the pods. For now, the only job migrates the databases when needed.
+- [libs](./libs) contains the Python libraries used by the services and workers. For now, the only library is [libcommon](./libs/libcommon), which contains the common code for the services and workers.
+- [services](./services) contains the applications: the public API, the admin API (which is separated from the public API and might be published under its own domain at some point) and the reverse proxy.
+- [workers](./workers) contains the workers that process the queue asynchronously: they get a "job" (caution: not the Helm jobs, but the jobs stored in the queue), process the expected response for the associated endpoint, and store the response in the cache.
 
 If you have access to the internal HF notion, see https://www.notion.so/huggingface2/Datasets-server-464848da2a984e999c540a4aa7f0ece5.
 
@@ -89,7 +87,7 @@ The following environments contain all the modules: reverse proxy, API server, a
 
 ## Quality
 
-The CI checks the quality of the code through a [GitHub action](./.github/workflows/quality.yml). To manually format the code of a library or a service:
+The CI checks the quality of the code through a [GitHub action](./.github/workflows/quality.yml). To manually format the code of a job, library, service or worker:
 
 ```bash
 make style
@@ -103,7 +101,7 @@ make quality
 
 ## Tests
 
-The CI checks the tests a [GitHub action](./.github/workflows/unit-tests.yml). To manually test a library or a service:
+The CI checks the tests a [GitHub action](./.github/workflows/unit-tests.yml). To manually test a job, library, service or worker:
 
 ```bash
 make test
