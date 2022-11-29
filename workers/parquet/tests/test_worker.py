@@ -1,9 +1,12 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2022 The HuggingFace Authors.
 
+import io
 from http import HTTPStatus
 
+import pandas as pd
 import pytest
+import requests
 from libcommon.exceptions import CustomError
 from libcommon.queue import _clean_queue_database
 from libcommon.simple_cache import DoesNotExist, _clean_cache_database, get_response
@@ -64,41 +67,68 @@ def test_process_job(worker: ParquetWorker, hub_public_csv: str) -> None:
     assert result is True
 
 
+@pytest.mark.wip
 @pytest.mark.parametrize(
-    "name,error_code,cause",
+    "name",
     [
-        ("public", None, None),
-        ("audio", None, None),
-        ("gated", None, None),
-        ("empty", "EmptyDatasetError", "EmptyDatasetError"),
-        ("does_not_exist", "DatasetNotFoundError", None),
+        "public",
+        "audio",
+        "gated",
         # working because the user has created these datasets, thus has access
         # TODO: test on a dataset that does not belong to the user
         # ("gated_extra_fields", "GatedExtraFieldsError", None),
         # ("private", "DatasetNotFoundError", None),
-        ("gated_extra_fields", None, None),
-        ("private", None, None),
+        "gated_extra_fields",
+        "private",
     ],
 )
-def test_compute_splits_response_simple_csv(
-    hub_datasets: HubDatasets, name: str, error_code: str, cause: str, app_config: AppConfig
+def test_compute_splits_response_simple_csv_ok(
+    hub_datasets: HubDatasets, name: str, app_config: AppConfig, data_df: pd.DataFrame
 ) -> None:
     dataset = hub_datasets[name]["name"]
     expected_parquet_response = hub_datasets[name]["parquet_response"]
-    if error_code is None:
-        result = compute_parquet_response(
-            dataset=dataset,
-            hf_endpoint=app_config.common.hf_endpoint,
-            hf_token=app_config.parquet.hf_token,
-            source_revision=app_config.parquet.source_revision,
-            target_revision=app_config.parquet.target_revision,
-            commit_message=app_config.parquet.commit_message,
-            url_template=app_config.parquet.url_template,
-            supported_datasets=app_config.parquet.supported_datasets,
-        )
-        assert result == expected_parquet_response
+    result = compute_parquet_response(
+        dataset=dataset,
+        hf_endpoint=app_config.common.hf_endpoint,
+        hf_token=app_config.parquet.hf_token,
+        source_revision=app_config.parquet.source_revision,
+        target_revision=app_config.parquet.target_revision,
+        commit_message=app_config.parquet.commit_message,
+        url_template=app_config.parquet.url_template,
+        supported_datasets=app_config.parquet.supported_datasets,
+    )
+    assert result == expected_parquet_response
+
+    # download the parquet file and check that it is valid
+    if name == "audio":
         return
 
+    if name == "public":
+        df = pd.read_parquet(result["parquet_files"][0]["url"], engine="auto")
+    else:
+        # in all these cases, the parquet files are not accessible without a token
+        with pytest.raises(Exception):
+            pd.read_parquet(result["parquet_files"][0]["url"], engine="auto")
+        r = requests.get(
+            result["parquet_files"][0]["url"], headers={"Authorization": f"Bearer {app_config.parquet.hf_token}"}
+        )
+        assert r.status_code == HTTPStatus.OK, r.text
+        df = pd.read_parquet(io.BytesIO(r.content), engine="auto")
+    assert df.equals(data_df), df
+
+
+@pytest.mark.wip
+@pytest.mark.parametrize(
+    "name,error_code,cause",
+    [
+        ("empty", "EmptyDatasetError", "EmptyDatasetError"),
+        ("does_not_exist", "DatasetNotFoundError", None),
+    ],
+)
+def test_compute_splits_response_simple_csv_error(
+    hub_datasets: HubDatasets, name: str, error_code: str, cause: str, app_config: AppConfig
+) -> None:
+    dataset = hub_datasets[name]["name"]
     with pytest.raises(CustomError) as exc_info:
         compute_parquet_response(
             dataset=dataset,

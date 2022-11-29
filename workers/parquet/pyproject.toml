@@ -43,6 +43,7 @@ black = "^22.1.0"
 flake8 = "^3.9.2"
 isort = "^5.9.3"
 mypy = "0.812"
+pandas-stubs = "^1.5.2.221124"
 poetryup = "^0.3.8"
 pytest = "^7.2.0"
 pytest-cov = "^2.12.1"
@@ -57,6 +58,7 @@ requires = ["poetry-core>=1.0.0"]
 # addopts = "-k 'wip'"
 filterwarnings = ["ignore::DeprecationWarning"]
 markers = [
+    "real_dataset: mark test as a real dataset test",
     "wip: tests being developed"
 ]
 

@@ -2,10 +2,12 @@
 # Copyright 2022 The HuggingFace Authors.
 
 import csv
+from typing import Any, List, Mapping
 
+import pandas as pd
 import pytest
 
-DATA = [
+DATA: List[Mapping[str, Any]] = [
     {"col_1": "0", "col_2": 0, "col_3": 0.0},
     {"col_1": "1", "col_2": 1, "col_3": 1.0},
     {"col_1": "2", "col_2": 2, "col_3": 2.0},
@@ -22,6 +24,13 @@ def csv_path(tmp_path_factory: pytest.TempPathFactory) -> str:
         for item in DATA:
             writer.writerow(item)
     return path
+
+
+@pytest.fixture(scope="session")
+def data_df(csv_path: str) -> pd.DataFrame:
+    # from the CSV file, not the DATA variable, because the CSV file does not respect the first column type
+    # we have to follow the same behavior
+    return pd.read_csv(csv_path)
 
 
 @pytest.fixture(scope="session")
