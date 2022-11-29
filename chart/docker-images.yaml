@@ -10,7 +10,8 @@
     },
     "workers": {
       "splits": "huggingface/datasets-server-workers-splits:sha-5b9a872",
-      "firstRows": "huggingface/datasets-server-workers-first_rows:sha-5b9a872"
+      "firstRows": "huggingface/datasets-server-workers-first_rows:sha-5b9a872",
+      "parquet": "huggingface/datasets-server-workers-parquet:sha-e546e73",
     }
   }
 }

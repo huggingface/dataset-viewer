@@ -48,6 +48,7 @@ dockerImage:
   workers:
     splits: ""
     firstRows: ""
+    parquet: ""
 
 cache:
   # Directory on the shared storage (audio files and images)
