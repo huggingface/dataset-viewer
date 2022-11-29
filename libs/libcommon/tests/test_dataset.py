@@ -6,7 +6,6 @@ import pytest
 from libcommon.dataset import check_support
 
 
-@pytest.mark.wip
 @pytest.mark.real_dataset
 def test_check_support() -> None:
     dataset = "glue"
