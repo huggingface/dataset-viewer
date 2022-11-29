@@ -111,6 +111,27 @@ services:
     depends_on:
       - mongodb
     restart: always
+  worker-parquet:
+    # build:
+    #   context: ..
+    #   dockerfile: workers/parquet/Dockerfile
+    image: ${IMAGE_WORKER_PARQUET?IMAGE_WORKER_PARQUET env var must be provided}
+    volumes:
+      - parquet-datasets-cache:${HF_DATASETS_CACHE-/datasets-cache}:rw
+      - parquet-modules-cache:${HF_DATASETS_CACHE-/modules-cache}:rw
+      - parquet-numba-cache:${NUMBA_CACHE_DIR-/numba-cache}:rw
+    extends:
+      file: docker-compose-base.yml
+      service: datasets-worker
+    environment:
+      PARQUET_COMMIT_MESSAGE: ${PARQUET_COMMIT_MESSAGE-Update parquet files}
+      PARQUET_SOURCE_REVISION: ${PARQUET_SOURCE_REVISION-main}
+      PARQUET_SUPPORTED_DATASETS: ${PARQUET_SUPPORTED_DATASETS-}
+      PARQUET_TARGET_REVISION: ${PARQUET_TARGET_REVISION-refs/convert/parquet}
+      PARQUET_URL_TEMPLATE: ${PARQUET_URL_TEMPLATE-/datasets/\{repo_id\}/resolve/\{revision\}/\{filename\}}
+    depends_on:
+      - mongodb
+    restart: always
   mongodb:
     image: mongo
     volumes:
@@ -127,3 +148,6 @@ volumes:
   first-rows-datasets-cache:
   first-rows-modules-cache:
   first-rows-numba-cache:
+  parquet-datasets-cache:
+  parquet-modules-cache:
+  parquet-numba-cache:

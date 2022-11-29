@@ -3,3 +3,4 @@ export IMAGE_SERVICE_ADMIN := $(shell jq -r '.dockerImage.services.admin' ${DOCK
 export IMAGE_SERVICE_API := $(shell jq -r '.dockerImage.services.api' ${DOCKER_IMAGES})
 export IMAGE_WORKER_SPLITS := $(shell jq -r '.dockerImage.workers.splits' ${DOCKER_IMAGES})
 export IMAGE_WORKER_FIRST_ROWS := $(shell jq -r '.dockerImage.workers.firstRows' ${DOCKER_IMAGES})
+export IMAGE_WORKER_PARQUET := $(shell jq -r '.dockerImage.workers.parquet' ${DOCKER_IMAGES})
