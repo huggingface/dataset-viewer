@@ -80,6 +80,7 @@ def create_app() -> Starlette:
                     external_auth_url=app_config.admin.external_auth_url,
                     organization=app_config.admin.hf_organization,
                 ),
+                methods=["POST"],
             )
             for processing_step in processing_steps
         ]
