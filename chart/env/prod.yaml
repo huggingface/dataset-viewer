@@ -179,7 +179,7 @@ firstRows:
   # override the common queue parameters
   queue:
     # Maximum number of jobs running at the same time for the same namespace
-    maxJobsPerNamespace: 17
+    maxJobsPerNamespace: 15
 
   nodeSelector:
     role-datasets-server: "true"
@@ -191,3 +191,21 @@ firstRows:
     limits:
       cpu: 2
       memory: "30Gi"
+
+parquet:
+  # comma-separated list of the supported datasets. If empty, all the datasets are processed. Defaults to empty.
+  supportedDatasets: "glue,mnist"
+  # override the common queue parameters
+  queue:
+    # Maximum number of jobs running at the same time for the same namespace
+    maxJobsPerNamespace: 1
+  nodeSelector: {}
+  replicas: 2
+  resources:
+    requests:
+      cpu: 1
+      memory: "8Gi"
+    limits:
+      cpu: 2
+      memory: "30Gi"
+  tolerations: []

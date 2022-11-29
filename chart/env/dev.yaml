@@ -91,3 +91,11 @@ firstRows:
       cpu: 0.01
     limits:
       cpu: 1
+
+parquet:
+  replicas: 1
+  resources:
+    requests:
+      cpu: 0.01
+    limits:
+      cpu: 1

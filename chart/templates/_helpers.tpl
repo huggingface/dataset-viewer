@@ -75,6 +75,11 @@ app: "{{ include "release" . }}-worker-splits"
 app: "{{ include "release" . }}-worker-first-rows"
 {{- end -}}
 
+{{- define "labels.parquet" -}}
+{{ include "labels" . }}
+app: "{{ include "release" . }}-worker-parquet"
+{{- end -}}
+
 
 {{/*
 The assets base URL
