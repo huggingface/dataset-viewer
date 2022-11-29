@@ -30,7 +30,7 @@ def test_metrics():
     assert metrics[name] > 0, metrics
 
     metrics = set(metrics.keys())
-    for endpoint in ["/splits", "/first-rows"]:
+    for endpoint in ["/splits", "/first-rows", "/parquet"]:
         # these metrics are only available in the admin API
         assert not has_metric(
             name="queue_jobs_total", labels={"pid": "[0-9]*", "queue": endpoint, "status": "started"}, metrics=metrics
