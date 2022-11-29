@@ -9,13 +9,7 @@ from libcommon.queue import _clean_queue_database
 from libcommon.simple_cache import DoesNotExist, _clean_cache_database, get_response
 
 from parquet.config import AppConfig
-from parquet.worker import (
-    ParquetWorkerError,
-    EmptyDatasetError,
-    ParquetWorker,
-    compute_parquet_response,
-    parse_repo_filename,
-)
+from parquet.worker import ParquetWorker, compute_parquet_response, parse_repo_filename
 
 from .fixtures.hub import HubDatasets
 
@@ -105,7 +99,7 @@ def test_compute_splits_response_simple_csv(
         assert result == expected_parquet_response
         return
 
-    with pytest.raises(Exception) as exc_info:
+    with pytest.raises(CustomError) as exc_info:
         compute_parquet_response(
             dataset=dataset,
             hf_endpoint=app_config.common.hf_endpoint,
