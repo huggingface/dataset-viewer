@@ -1,4 +1,4 @@
-# environment variables for the commands (docker-compose, poetry)
+# environment variables for the commands (docker compose, poetry)
 export MONGO_PORT := 27020
 export CACHE_MONGO_URL := mongodb://localhost:${MONGO_PORT}
 export QUEUE_MONGO_URL := mongodb://localhost:${MONGO_PORT}

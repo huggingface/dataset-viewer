@@ -1,4 +1,4 @@
-# environment variables for the commands (docker-compose, poetry)
+# environment variables for the commands (docker compose, poetry)
 export COMPOSE_PROJECT_NAME := e2e
 export PORT_REVERSE_PROXY := 9000
 export MONGO_PORT := 27050
@@ -13,7 +13,7 @@ export ADMIN_UVICORN_NUM_WORKERS := 2
 export API_UVICORN_NUM_WORKERS := 2
 
 # makefile variables
-DOCKER_COMPOSE := ../tools/docker-compose-datasets-server-from-remote-images.yml
+DOCKER_COMPOSE := ../tools/docker-compose-datasets-server.yml
 DOCKER_IMAGES := ../chart/docker-images.yaml
 
 include ../tools/Python.mk

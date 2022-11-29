@@ -1,4 +1,4 @@
-# environment variables for the commands (docker-compose, poetry)
+# environment variables for the commands (docker compose, poetry)
 export COMPOSE_PROJECT_NAME := mongodb_migration
 export MONGO_PORT := 27060
 export CACHE_MONGO_URL := mongodb://localhost:${MONGO_PORT}
