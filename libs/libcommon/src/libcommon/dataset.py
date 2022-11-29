@@ -5,7 +5,12 @@ from http import HTTPStatus
 from typing import Literal, Optional
 
 import requests
-from huggingface_hub.hf_api import DatasetInfo, HfApi, build_hf_headers
+from huggingface_hub.hf_api import (
+    DatasetInfo,
+    HfApi,
+    RepositoryNotFoundError,
+    build_hf_headers,
+)
 
 from libcommon.exceptions import CustomError
 
@@ -151,9 +156,10 @@ def get_dataset_info_for_supported_datasets(
             are not supported in datasets-server.
     </Tip>
     """
-    ask_access(dataset=dataset, hf_endpoint=hf_endpoint, hf_token=hf_token)
-    dataset_info = HfApi(endpoint=hf_endpoint).dataset_info(repo_id=dataset, token=hf_token)
-    # ^ should not raise, since it would have raised before when reaching ask_access
+    try:
+        dataset_info = HfApi(endpoint=hf_endpoint).dataset_info(repo_id=dataset, token=hf_token)
+    except RepositoryNotFoundError:
+        ask_access(dataset=dataset, hf_endpoint=hf_endpoint, hf_token=hf_token)
     if dataset_info.private is True:
         raise PrivateDatasetError(f"Dataset '{dataset}' is not supported.")
     return dataset_info
