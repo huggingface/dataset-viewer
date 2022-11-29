@@ -57,17 +57,18 @@ The precomputed responses are stored in a Mongo database called "cache". They ar
 
 The API service exposes the `/webhook` endpoint which is called by the Hub on every creation, update or deletion of a dataset on the Hub. On deletion, the cached responses are deleted. On creation or update, a new job is appended in the "queue" database.
 
-Note that two job queues exist:
+Note that every worker has its own job queue:
 
-- `splits`: the job is to refresh a dataset, namely to get the list of [config](https://huggingface.co/docs/datasets/v2.1.0/en/load_hub#select-a-configuration) and [split](https://huggingface.co/docs/datasets/v2.1.0/en/load_hub#select-a-split) names, then to create a new job for every split
-- `first-rows`: the job is to get the columns and the first 100 rows of the split
+- `/splits`: the job is to refresh a dataset, namely to get the list of [config](https://huggingface.co/docs/datasets/v2.1.0/en/load_hub#select-a-configuration) and [split](https://huggingface.co/docs/datasets/v2.1.0/en/load_hub#select-a-split) names, then to create a new job for every split for the workers that depend on it.
+- `/first-rows`: the job is to get the columns and the first 100 rows of the split.
+- `/parquet`: the job is to download the dataset, prepare a parquet version of every split (various sharded parquet files), and upload them to the `ref/convert/parquet` "branch" of the dataset repository on the Hub.
 
 Note also that the workers create local files when the dataset contains images or audios. A shared directory (`COMMON_ASSETS_DIRECTORY`) must therefore be provisioned with sufficient space for the generated files. The `/first-rows` endpoint responses contain URLs to these files, served by the API under the `/assets/` endpoint.
 
 Hence, the working application has:
 
 - one instance of the API service which exposes a port
-- M instances of the `splits` worker and N instances of the `first-rows` worker (N should generally be higher than M)
+- N1 instances of the `splits` worker, N2 instances of the `first-rows` worker (N2 should generally be higher than N1), N3 instances of the `parquet` worker
 - a Mongo server with two databases: "cache" and "queue"
 - a shared directory for the assets
 
