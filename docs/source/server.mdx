@@ -13,10 +13,11 @@ There are three elements that keep the server running: the job queue, workers, a
 
 The job queue is a list of jobs stored in a Mongo database that should be completed by the workers. The jobs are practically identical to the endpoints the user uses; only the server runs the jobs ahead of time, and the user gets the results when they use the endpoint.
 
-There are two jobs:
+There are three jobs:
 
-- `splits` corresponds to the `/splits` endpoint. It refreshes a dataset and then returns that dataset's splits and configurations. For every split in the dataset, it'll create a new job.
-- `first-rows` corresponds to the `/first-rows` endpoint. It gets the first 100 rows and columns of a dataset split.
+- `/splits` corresponds to the `/splits` endpoint. It refreshes a dataset and then returns that dataset's splits and configurations. For every split in the dataset, it'll create a new job.
+- `/first-rows` corresponds to the `/first-rows` endpoint. It gets the first 100 rows and columns of a dataset split.
+- `/parquet` corresponds to the `/parquet` endpoint. It downloads the whole dataset, converts it to parquet](https://parquet.apache.org/) and publishes the parquet files to the Hub.
 
 You might've noticed the `/valid` and `/is-valid` endpoints don't have a job in the queue. The responses from these endpoints are generated on demand.
 
