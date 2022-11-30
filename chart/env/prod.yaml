@@ -199,7 +199,8 @@ parquet:
   queue:
     # Maximum number of jobs running at the same time for the same namespace
     maxJobsPerNamespace: 1
-  nodeSelector: {}
+  nodeSelector:
+    role-datasets-server: "true"
   replicas: 2
   resources:
     requests:
