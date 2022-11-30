@@ -5,7 +5,6 @@ name: Build PR Documentation
 
 on:
   pull_request:
-  push:
     paths:
       - 'docs/**'
       - '.github/workflows/doc-pr-build.yml'
