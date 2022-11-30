@@ -240,6 +240,15 @@ class Worker(ABC):
         except Exception as err:
             raise RuntimeError(f"Could not get major versions: {err}") from err
 
+    def get_dataset_git_revision(
+        self,
+        dataset: str,
+        hf_endpoint: str,
+        hf_token: Optional[str] = None,
+    ) -> Optional[str]:
+        """Get the git revision of the dataset repository."""
+        return get_dataset_git_revision(dataset=dataset, hf_endpoint=hf_endpoint, hf_token=hf_token)
+
     def should_skip_job(
         self, dataset: str, config: Optional[str] = None, split: Optional[str] = None, force: bool = False
     ) -> bool:
@@ -261,13 +270,13 @@ class Worker(ABC):
         Returns:
             :obj:`bool`: True if the job should be skipped, False otherwise.
         """
-        if force or config is None or split is None:
+        if force:
             return False
         try:
             cached_response = get_response_without_content(
                 kind=self.processing_step.cache_kind, dataset=dataset, config=config, split=split
             )
-            dataset_git_revision = get_dataset_git_revision(
+            dataset_git_revision = self.get_dataset_git_revision(
                 dataset=dataset, hf_endpoint=self.common_config.hf_endpoint, hf_token=self.common_config.hf_token
             )
             return (
@@ -290,7 +299,7 @@ class Worker(ABC):
     ) -> bool:
         dataset_git_revision = None
         try:
-            dataset_git_revision = get_dataset_git_revision(
+            dataset_git_revision = self.get_dataset_git_revision(
                 dataset=dataset, hf_endpoint=self.common_config.hf_endpoint, hf_token=self.common_config.hf_token
             )
             if dataset_git_revision is None:

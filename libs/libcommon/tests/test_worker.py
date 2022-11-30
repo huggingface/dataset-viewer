@@ -4,10 +4,27 @@ import pytest
 
 from libcommon.config import CommonConfig, QueueConfig, WorkerConfig
 from libcommon.processing_graph import ProcessingStep
+from libcommon.queue import _clean_queue_database
+from libcommon.simple_cache import _clean_cache_database
 from libcommon.worker import Worker, parse_version
 
 
+@pytest.fixture(autouse=True)
+def clean_mongo_database() -> None:
+    _clean_queue_database()
+    _clean_cache_database()
+
+
 class DummyWorker(Worker):
+    # override get_dataset_git_revision to avoid making a request to the Hub
+    def get_dataset_git_revision(
+        self,
+        dataset: str,
+        hf_endpoint: str,
+        hf_token: Optional[str] = None,
+    ) -> Optional[str]:
+        return "0.1.2"
+
     def compute(
         self, dataset: str, config: Optional[str] = None, split: Optional[str] = None, force: bool = False
     ) -> Mapping[str, Any]:
@@ -64,8 +81,8 @@ def test_compare_major_version(
         assert worker.compare_major_version(other_version) == expected
 
 
-def should_skip_job(
-    hub_public_csv: str,
+@pytest.mark.wip
+def test_should_skip_job(
     test_processing_step: ProcessingStep,
     common_config: CommonConfig,
     queue_config: QueueConfig,
@@ -78,7 +95,15 @@ def should_skip_job(
         worker_config=worker_config,
         version="1.0.0",
     )
-    dataset = hub_public_csv
+    dataset = "dataset"
+    config = "config"
+    split = "split"
+
+    assert worker.should_skip_job(dataset=dataset, config=config, split=split) is False
+    # we add an entry to the cache
+    worker.process(dataset=dataset, config=config, split=split)
+    assert worker.should_skip_job(dataset=dataset, config=config, split=split) is True
+
     assert worker.should_skip_job(dataset=dataset) is False
     # we add an entry to the cache
     worker.process(dataset=dataset)
