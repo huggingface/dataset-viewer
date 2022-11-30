@@ -52,8 +52,8 @@ secrets:
   token:
     fromSecret: true
     secretName: "hf-token"
-  token-francky:
-    fromSecret: false
+  tokenFrancky:
+    fromSecret: true
     secretName: "hf-token-francky"
 
 persistence:

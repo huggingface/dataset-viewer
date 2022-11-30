@@ -9,6 +9,9 @@
   {{ include "envCache" . | nindent 2 }}
   {{ include "envQueue" . | nindent 2 }}
   {{ include "envCommon" . | nindent 2 }}
+  {{ include "envCommonTokenFrancky" . | nindent 2 }}
+  # ^ parquet requires a special token to be able to create the ref/convert/parquet
+  # branch, and push to it
   {{ include "envWorker" . | nindent 2 }}
   {{ include "envDatasetsWorker" . | nindent 2 }}
   - name: QUEUE_MAX_JOBS_PER_NAMESPACE

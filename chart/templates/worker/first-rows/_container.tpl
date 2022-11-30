@@ -9,6 +9,7 @@
   {{ include "envCache" . | nindent 2 }}
   {{ include "envQueue" . | nindent 2 }}
   {{ include "envCommon" . | nindent 2 }}
+  {{ include "envCommonToken" . | nindent 2 }}
   {{ include "envWorker" . | nindent 2 }}
   {{ include "envDatasetsWorker" . | nindent 2 }}
   - name: QUEUE_MAX_JOBS_PER_NAMESPACE

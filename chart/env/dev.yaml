@@ -13,7 +13,7 @@ secrets:
   token:
     fromSecret: true
     secretName: "datasets-server-hf-token"
-  token-francky:
+  tokenFrancky:
     fromSecret: false
     secretName: "hf-token-francky"
 
