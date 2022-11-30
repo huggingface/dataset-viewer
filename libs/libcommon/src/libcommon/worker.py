@@ -209,8 +209,11 @@ class Worker(ABC):
             if self.should_skip_job(dataset=dataset, config=config, split=split, force=force):
                 finished_status = Status.SKIPPED
             else:
-                self.process(dataset=dataset, config=config, split=split, force=force)
-                finished_status = Status.SUCCESS
+                finished_status = (
+                    Status.SUCCESS
+                    if self.process(dataset=dataset, config=config, split=split, force=force)
+                    else Status.ERROR
+                )
         except Exception:
             self.exception(f"error while computing {parameters_for_log}")
             finished_status = Status.ERROR
