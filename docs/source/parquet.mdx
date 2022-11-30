@@ -105,8 +105,6 @@ The endpoint response is a JSON containing a list of the dataset's parquet files
 
 The dataset can then be accessed directly through the parquet files:
 
-<inferencesnippet>
-<python>
 ```python
 import pandas as pd
 url = "https://huggingface.co/datasets/duorc/resolve/refs%2Fconvert%2Fparquet/ParaphraseRC/duorc-train.parquet"
@@ -118,8 +116,6 @@ pd.read_parquet(url).title.value_counts().head()
 # The Thing               189
 # Name: title, dtype: int64
 ```
-</python>
-</inferencesnippet>
 
 ## Sharded parquet files
 
@@ -222,8 +218,6 @@ The big datasets are partitioned in parquet files (shards) of about 1 GiB. The f
 
 The shards can be concatenated:
 
-<inferencesnippet>
-<python>
 ```python
 import pandas as pd
 import requests
@@ -240,5 +234,3 @@ df.mime_type.value_counts().head()
 # image/webp            1
 # Name: mime_type, dtype: int64
 ```
-</python>
-</inferencesnippet>
