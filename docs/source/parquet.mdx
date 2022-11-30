@@ -219,3 +219,26 @@ The big datasets are partitioned in parquet files (shards) of about 1 GiB. The f
   ]
 }
 ```
+
+The shards can be concatenated:
+
+<inferencesnippet>
+<python>
+```python
+import pandas as pd
+import requests
+r = requests.get("https://datasets-server.huggingface.co/parquet?dataset=alexandrainst/danish-wit")
+j = r.json()
+urls = [f['url'] for f in j['parquet_files'] if f['split'] == 'train']
+dfs = [pd.read_parquet(url) for url in urls]
+df = pd.concat(dfs)
+df.mime_type.value_counts().head()
+# image/jpeg       140919
+# image/png         18608
+# image/svg+xml      6171
+# image/gif          1030
+# image/webp            1
+# Name: mime_type, dtype: int64
+```
+</python>
+</inferencesnippet>
