@@ -194,7 +194,7 @@ firstRows:
 
 parquet:
   # comma-separated list of the supported datasets. If empty, all the datasets are processed. Defaults to empty.
-  supportedDatasets: "severo/glue,severo/danish-wit,severo/mnist,severo/LILA,severo/embellishments,severo/winogavil,severo/wit"
+  supportedDatasets: "severo/glue,severo/danish-wit,severo/mnist,severo/LILA,severo/embellishments,severo/winogavil,severo/wit,duorc,rotten_tomatoes,alexandrainst/danish-wit"
   # override the common queue parameters
   queue:
     # Maximum number of jobs running at the same time for the same namespace
