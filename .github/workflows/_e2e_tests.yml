@@ -55,8 +55,7 @@ jobs:
           IMAGE_REVERSE_PROXY: "${{fromJson(needs.get-config.outputs.dockerConfig).dockerImage.reverseProxy}}"
           IMAGE_SERVICE_ADMIN: "${{fromJson(needs.get-config.outputs.dockerConfig).dockerImage.services.admin}}"
           IMAGE_SERVICE_API: "${{fromJson(needs.get-config.outputs.dockerConfig).dockerImage.services.api}}"
-          IMAGE_WORKER_SPLITS: "${{fromJson(needs.get-config.outputs.dockerConfig).dockerImage.workers.splits}}"
-          IMAGE_WORKER_FIRST_ROWS: "${{fromJson(needs.get-config.outputs.dockerConfig).dockerImage.workers.firstRows}}"
+          IMAGE_WORKER_DATASETS_BASED: "${{fromJson(needs.get-config.outputs.dockerConfig).dockerImage.workers.datasets_based}}"
           WORKER_SLEEP_TIME: "1"
           # hard coded, see e2e/tests/fixtures/hub.py
           COMMON_HF_ENDPOINT: "https://hub-ci.huggingface.co"
