@@ -106,11 +106,7 @@ class ParquetFile:
 # TODO: use huggingface_hub's hf_hub_url after
 # https://github.com/huggingface/huggingface_hub/issues/1082
 def hf_hub_url(repo_id: str, filename: str, hf_endpoint: str, revision: str, url_template: str) -> str:
-    return (hf_endpoint + url_template).format(
-        repo_id=repo_id,
-        revision=quote(revision, safe=""),
-        filename=filename,
-    )
+    return (hf_endpoint + url_template) % (repo_id, quote(revision, safe=""), filename)
 
 
 p = re.compile(r"[\w]+-(?P<split>[\w]+?)(-[0-9]{5}-of-[0-9]{5})?.parquet")

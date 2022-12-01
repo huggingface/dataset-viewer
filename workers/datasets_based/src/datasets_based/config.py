@@ -60,9 +60,7 @@ class ParquetConfig:
             self.commit_message = env.str(name="COMMIT_MESSAGE", default="Update parquet files")
             self.source_revision = env.str(name="SOURCE_REVISION", default="main")
             self.target_revision = env.str(name="TARGET_REVISION", default="refs/convert/parquet")
-            self.url_template = env.str(
-                name="URL_TEMPLATE", default="/datasets/{repo_id}/resolve/{revision}/{filename}"
-            )
+            self.url_template = env.str(name="URL_TEMPLATE", default="/datasets/%s/resolve/%s/%s")
 
 
 class AppConfig:
