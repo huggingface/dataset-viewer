@@ -10,14 +10,14 @@ from libcommon.exceptions import CustomError
 from libcommon.queue import _clean_queue_database
 from libcommon.simple_cache import DoesNotExist, _clean_cache_database, get_response
 
-from first_rows.config import AppConfig
-from first_rows.worker import (
+from datasets_based.config import AppConfig
+from datasets_based.workers.first_rows import (
     FirstRowsWorker,
     compute_first_rows_response,
     get_json_size,
 )
 
-from .fixtures.hub import HubDatasets, get_default_config_split
+from ..fixtures.hub import HubDatasets, get_default_config_split
 
 
 @pytest.fixture(autouse=True)

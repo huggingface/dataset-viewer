@@ -224,8 +224,42 @@ def hub_gated_csv(hf_api: HfApi, hf_token: str, csv_path: str) -> Iterable[str]:
 
 
 @pytest.fixture(scope="session", autouse=True)
+def hub_public_jsonl(hf_api: HfApi, hf_token: str, jsonl_path: str) -> Iterable[str]:
+    repo_id = create_hub_dataset_repo(hf_api=hf_api, hf_token=hf_token, prefix="jsonl", file_paths=[jsonl_path])
+    yield repo_id
+    with suppress(requests.exceptions.HTTPError, ValueError):
+        hf_api.delete_repo(repo_id=repo_id, token=hf_token, repo_type="dataset")
+
+
+@pytest.fixture(scope="session", autouse=True)
 def hub_public_audio(hf_api: HfApi, hf_token: str, datasets: Mapping[str, Dataset]) -> Iterable[str]:
     repo_id = create_hub_dataset_repo(hf_api=hf_api, hf_token=hf_token, prefix="audio", dataset=datasets["audio"])
+    yield repo_id
+    with suppress(requests.exceptions.HTTPError, ValueError):
+        hf_api.delete_repo(repo_id=repo_id, token=hf_token, repo_type="dataset")
+
+
+@pytest.fixture(scope="session", autouse=True)
+def hub_public_image(hf_api: HfApi, hf_token: str, datasets: Mapping[str, Dataset]) -> Iterable[str]:
+    repo_id = create_hub_dataset_repo(hf_api=hf_api, hf_token=hf_token, prefix="image", dataset=datasets["image"])
+    yield repo_id
+    with suppress(requests.exceptions.HTTPError, ValueError):
+        hf_api.delete_repo(repo_id=repo_id, token=hf_token, repo_type="dataset")
+
+
+@pytest.fixture(scope="session", autouse=True)
+def hub_public_images_list(hf_api: HfApi, hf_token: str, datasets: Mapping[str, Dataset]) -> Iterable[str]:
+    repo_id = create_hub_dataset_repo(
+        hf_api=hf_api, hf_token=hf_token, prefix="images_list", dataset=datasets["images_list"]
+    )
+    yield repo_id
+    with suppress(requests.exceptions.HTTPError, ValueError):
+        hf_api.delete_repo(repo_id=repo_id, token=hf_token, repo_type="dataset")
+
+
+@pytest.fixture(scope="session", autouse=True)
+def hub_public_big(hf_api: HfApi, hf_token: str, datasets: Mapping[str, Dataset]) -> Iterable[str]:
+    repo_id = create_hub_dataset_repo(hf_api=hf_api, hf_token=hf_token, prefix="big", dataset=datasets["big"])
     yield repo_id
     with suppress(requests.exceptions.HTTPError, ValueError):
         hf_api.delete_repo(repo_id=repo_id, token=hf_token, repo_type="dataset")
@@ -234,6 +268,7 @@ def hub_public_audio(hf_api: HfApi, hf_token: str, datasets: Mapping[str, Datase
 class HubDatasetTest(TypedDict):
     name: str
     splits_response: Any
+    first_rows_response: Any
 
 
 HubDatasets = Mapping[str, HubDatasetTest]
@@ -254,6 +289,31 @@ def create_splits_response(dataset: str, num_bytes: float = None, num_examples: 
     }
 
 
+def create_first_rows_response(dataset: str, cols: Mapping[str, Any], rows: List[Any]):
+    dataset, config, split = get_default_config_split(dataset)
+    return {
+        "dataset": dataset,
+        "config": config,
+        "split": split,
+        "features": [
+            {
+                "feature_idx": feature_idx,
+                "name": name,
+                "type": type,
+            }
+            for feature_idx, (name, type) in enumerate(cols.items())
+        ],
+        "rows": [
+            {
+                "row_idx": row_idx,
+                "truncated_cells": [],
+                "row": row,
+            }
+            for row_idx, row in enumerate(rows)
+        ],
+    }
+
+
 DATA_cols = {
     "col_1": {"_type": "Value", "dtype": "int64"},
     "col_2": {"_type": "Value", "dtype": "int64"},
@@ -266,6 +326,18 @@ DATA_rows = [
     {"col_1": 3, "col_2": 3, "col_3": 3.0},
 ]
 
+
+JSONL_cols = {
+    "col_1": {"_type": "Value", "dtype": "string"},
+    "col_2": {"_type": "Value", "dtype": "int64"},
+    "col_3": {"_type": "Value", "dtype": "float64"},
+}
+JSONL_rows = [
+    {"col_1": "0", "col_2": 0, "col_3": 0.0},
+    {"col_1": None, "col_2": 1, "col_3": 1.0},
+    {"col_1": None, "col_2": 2, "col_3": 2.0},
+    {"col_1": "3", "col_2": 3, "col_3": 3.0},
+]
 
 AUDIO_cols = {
     "col": {
@@ -293,37 +365,123 @@ def get_AUDIO_rows(dataset: str):
     ]
 
 
+IMAGE_cols = {
+    "col": {"_type": "Image"},
+}
+
+
+def get_IMAGE_rows(dataset: str):
+    dataset, config, split = get_default_config_split(dataset)
+    return [
+        {
+            "col": {
+                "src": f"http://localhost/assets/{dataset}/--/{config}/{split}/0/col/image.jpg",
+                "height": 480,
+                "width": 640,
+            },
+        }
+    ]
+
+
+IMAGES_LIST_cols = {
+    "col": [{"_type": "Image"}],
+}
+
+
+def get_IMAGES_LIST_rows(dataset: str):
+    dataset, config, split = get_default_config_split(dataset)
+    return [
+        {
+            "col": [
+                {
+                    "src": f"http://localhost/assets/{dataset}/--/{config}/{split}/0/col/image-1d100e9.jpg",
+                    "height": 480,
+                    "width": 640,
+                },
+                {
+                    "src": f"http://localhost/assets/{dataset}/--/{config}/{split}/0/col/image-1d300ea.jpg",
+                    "height": 480,
+                    "width": 640,
+                },
+            ]
+        }
+    ]
+
+
+BIG_cols = {
+    "col": [{"_type": "Value", "dtype": "string"}],
+}
+
+BIG_rows = ["a" * 1_234 for _ in range(4_567)]
+
+
 @pytest.fixture(scope="session", autouse=True)
 def hub_datasets(
     hub_public_empty,
     hub_public_csv,
     hub_private_csv,
     hub_gated_csv,
+    hub_public_jsonl,
     hub_public_audio,
+    hub_public_image,
+    hub_public_images_list,
+    hub_public_big,
 ) -> HubDatasets:
     return {
         "does_not_exist": {
             "name": "does_not_exist",
             "splits_response": None,
+            "first_rows_response": None,
         },
         "empty": {
             "name": hub_public_empty,
             "splits_response": None,
+            "first_rows_response": None,
         },
         "public": {
             "name": hub_public_csv,
             "splits_response": create_splits_response(hub_public_csv, None, None),
+            "first_rows_response": create_first_rows_response(hub_public_csv, DATA_cols, DATA_rows),
         },
         "private": {
             "name": hub_private_csv,
             "splits_response": create_splits_response(hub_private_csv, None, None),
+            "first_rows_response": create_first_rows_response(hub_private_csv, DATA_cols, DATA_rows),
         },
         "gated": {
             "name": hub_gated_csv,
             "splits_response": create_splits_response(hub_gated_csv, None, None),
+            "first_rows_response": create_first_rows_response(hub_gated_csv, DATA_cols, DATA_rows),
+        },
+        "jsonl": {
+            "name": hub_public_jsonl,
+            "splits_response": create_splits_response(hub_public_jsonl, None, None),
+            "first_rows_response": create_first_rows_response(hub_public_jsonl, JSONL_cols, JSONL_rows),
         },
         "audio": {
             "name": hub_public_audio,
             "splits_response": create_splits_response(hub_public_audio, 54.0, 1),
+            "first_rows_response": create_first_rows_response(
+                hub_public_audio, AUDIO_cols, get_AUDIO_rows(hub_public_audio)
+            ),
+        },
+        "image": {
+            "name": hub_public_image,
+            "splits_response": create_splits_response(hub_public_image, 0, 1),
+            "first_rows_response": create_first_rows_response(
+                hub_public_image, IMAGE_cols, get_IMAGE_rows(hub_public_image)
+            ),
+        },
+        "images_list": {
+            "name": hub_public_images_list,
+            "splits_response": create_splits_response(hub_public_images_list, 0, 1),
+            "first_rows_response": create_first_rows_response(
+                hub_public_images_list, IMAGES_LIST_cols, get_IMAGES_LIST_rows(hub_public_images_list)
+            ),
+        },
+        "big": {
+            "name": hub_public_big,
+            "splits_response": create_splits_response(hub_public_big, 0, 1),
+            "first_rows_response": create_first_rows_response(hub_public_big, BIG_cols, BIG_rows),
         },
     }

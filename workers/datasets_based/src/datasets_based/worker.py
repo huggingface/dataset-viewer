@@ -1,18 +1,22 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2022 The HuggingFace Authors.
 
-from typing import Mapping, Type
+from typing import Mapping, Type, Union
 
 from datasets_based.config import AppConfig
+from datasets_based.workers.first_rows import FirstRowsWorker
 from datasets_based.workers.splits import SplitsWorker
 
-DatasetsBasedWorker = SplitsWorker
+DatasetsBasedWorker = Union[SplitsWorker, FirstRowsWorker]
 
 
 def get_worker(app_config: AppConfig) -> DatasetsBasedWorker:
     """Get the worker for the current environment."""
 
-    datasets_based_worker_classes: Mapping[str, Type[DatasetsBasedWorker]] = {"/splits": SplitsWorker}
+    datasets_based_worker_classes: Mapping[str, Type[DatasetsBasedWorker]] = {
+        "/splits": SplitsWorker,
+        "/first-rows": FirstRowsWorker,
+    }
     try:
         endpoint = app_config.datasets_based.endpoint
         worker = datasets_based_worker_classes[endpoint](app_config=app_config, endpoint=endpoint)

@@ -21,7 +21,7 @@ from datasets import (
 from numpy import ndarray  # type:ignore
 from PIL import Image as PILImage  # type: ignore
 
-from first_rows.asset import create_audio_files, create_image_file
+from datasets_based.asset import create_audio_files, create_image_file
 
 
 def append_hash_suffix(string, json_path: List[Union[str, int]] = None) -> str:

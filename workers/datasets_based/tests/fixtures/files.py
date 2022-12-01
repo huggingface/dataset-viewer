@@ -2,6 +2,7 @@
 # Copyright 2022 The HuggingFace Authors.
 
 import csv
+import json
 
 import pytest
 
@@ -21,4 +22,20 @@ def csv_path(tmp_path_factory: pytest.TempPathFactory) -> str:
         writer.writeheader()
         for item in DATA:
             writer.writerow(item)
+    return path
+
+
+JSONL = [
+    {"col_1": "0", "col_2": 0, "col_3": 0.0},
+    {"col_1": None, "col_2": 1, "col_3": 1.0},
+    {"col_2": 2, "col_3": 2.0},
+    {"col_1": "3", "col_2": 3, "col_3": 3.0},
+]
+
+
+@pytest.fixture(scope="session")
+def jsonl_path(tmp_path_factory: pytest.TempPathFactory) -> str:
+    path = str(tmp_path_factory.mktemp("data") / "dataset.jsonl")
+    with open(path, "w", newline="") as f:
+        f.writelines(json.dumps(o) for o in JSONL)
     return path

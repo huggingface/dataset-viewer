@@ -17,6 +17,8 @@ def monkeypatch_session(hf_endpoint: str, hf_token: str):
     monkeypatch_session.setenv("QUEUE_MONGO_DATABASE", "datasets_server_queue_test")
     monkeypatch_session.setenv("COMMON_HF_ENDPOINT", hf_endpoint)
     monkeypatch_session.setenv("COMMON_HF_TOKEN", hf_token)
+    monkeypatch_session.setenv("COMMON_ASSETS_BASE_URL", "http://localhost/assets")
+    monkeypatch_session.setenv("FIRST_ROWS_MAX_NUMBER", "7")
     yield monkeypatch_session
     monkeypatch_session.undo()
 

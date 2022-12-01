@@ -9,8 +9,8 @@ import numpy as np
 import pytest
 from datasets import Audio, Dataset, Image, Value
 
-from first_rows.config import AppConfig
-from first_rows.features import get_cell_value
+from datasets_based.config import AppConfig
+from datasets_based.features import get_cell_value
 
 # we need to know the correspondence between the feature type and the cell value, in order to:
 # - document the API
