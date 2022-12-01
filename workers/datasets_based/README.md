@@ -1,6 +1,6 @@
 # Datasets server - worker
 
-> Worker that pre-computes and caches the response to /splits
+> Worker that pre-computes and caches the response to /splits, /first-rows or /parquet.
 
 ## Configuration
 
@@ -30,7 +30,7 @@ Only needed when the `DATASETS_BASED_ENDPOINT` is set to `/parquet`: set environ
 - `SOURCE_REVISION`: the git revision of the dataset to use to prepare the parquet files. Defaults to `main`.
 - `SUPPORTED_DATASETS`: comma-separated list of the supported datasets. If empty, all the datasets are processed. Defaults to empty.
 - `TARGET_REVISION`: the git revision of the dataset where to store the parquet files. Make sure the hf_token (see the "Common" section) allows to write there. Defaults to `refs/convert/parquet`.
-- `URL_TEMPLATE`: the URL template to build the parquet file URLs. Defaults to `/datasets/{repo_id}/resolve/{revision}/{filename}`.
+- `URL_TEMPLATE`: the URL template to build the parquet file URLs. Defaults to `/datasets/%s/resolve/%s/%s`.
 
 ### Datasets library
 
