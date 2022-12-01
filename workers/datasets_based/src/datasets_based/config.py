@@ -56,7 +56,7 @@ class ParquetConfig:
 
         env = Env(expand_vars=True)
         with env.prefixed("PARQUET_"):
-            self.supported_datasets = env.list(name="SUPPORTED_DATASETS")
+            self.supported_datasets = env.list(name="SUPPORTED_DATASETS", default=[])
             self.commit_message = env.str(name="COMMIT_MESSAGE", default="Update parquet files")
             self.source_revision = env.str(name="SOURCE_REVISION", default="main")
             self.target_revision = env.str(name="TARGET_REVISION", default="refs/convert/parquet")
