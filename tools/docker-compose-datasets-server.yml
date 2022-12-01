@@ -131,7 +131,7 @@ services:
       PARQUET_SOURCE_REVISION: ${PARQUET_SOURCE_REVISION-main}
       PARQUET_SUPPORTED_DATASETS: ${PARQUET_SUPPORTED_DATASETS-}
       PARQUET_TARGET_REVISION: ${PARQUET_TARGET_REVISION-refs/convert/parquet}
-      PARQUET_URL_TEMPLATE: ${PARQUET_URL_TEMPLATE-/datasets/\{repo_id\}/resolve/\{revision\}/\{filename\}}
+      PARQUET_URL_TEMPLATE: ${PARQUET_URL_TEMPLATE-/datasets/%s/resolve/%s/%s}
     depends_on:
       - mongodb
     restart: always

@@ -58,5 +58,5 @@ def test_split_public_auth(
     assert r_rows.headers.get("X-Error-Code") == error_code_first_rows, log(r_rows, dataset)
     r_parquet = poll_parquet(dataset, headers=auth_headers[auth])
     error_code_parquet = error_code_splits
-    assert r_parquet.status_code == response_status_code, log(r_splits, dataset)
+    assert r_parquet.status_code == response_status_code, log(r_parquet, dataset)
     assert r_parquet.headers.get("X-Error-Code") == error_code_parquet, log(r_parquet, dataset)
