@@ -3,9 +3,12 @@
 
 {{- define "containerWorkerSplits" -}}
 - name: "{{ include "name" . }}-worker-splits"
-  image: {{ .Values.dockerImage.workers.splits }}
+  image: {{ .Values.dockerImage.workers.datasets_based }}
   imagePullPolicy: IfNotPresent
   env:
+  - name: DATASETS_BASED_ENDPOINT
+    value: "/splits"
+    # ^ hard-coded
   {{ include "envCache" . | nindent 2 }}
   {{ include "envQueue" . | nindent 2 }}
   {{ include "envCommon" . | nindent 2 }}

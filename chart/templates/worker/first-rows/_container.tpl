@@ -6,6 +6,9 @@
   image: {{ .Values.dockerImage.workers.firstRows }}
   imagePullPolicy: IfNotPresent
   env:
+  - name: DATASETS_BASED_ENDPOINT
+    value: "/first-rows"
+    # ^ hard-coded
   {{ include "envCache" . | nindent 2 }}
   {{ include "envQueue" . | nindent 2 }}
   {{ include "envCommon" . | nindent 2 }}

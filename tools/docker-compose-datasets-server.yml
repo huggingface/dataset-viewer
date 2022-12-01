@@ -73,8 +73,8 @@ services:
   worker-splits:
     # build:
     #   context: ..
-    #   dockerfile: workers/splits/Dockerfile
-    image: ${IMAGE_WORKER_SPLITS?IMAGE_WORKER_SPLITS env var must be provided}
+    #   dockerfile: workers/datasets_based/Dockerfile
+    image: ${IMAGE_WORKER_DATASETS_BASED?IMAGE_WORKER_DATASETS_BASED env var must be provided}
     volumes:
       - splits-datasets-cache:${HF_DATASETS_CACHE-/datasets-cache}:rw
       - splits-modules-cache:${HF_DATASETS_CACHE-/modules-cache}:rw
@@ -83,6 +83,7 @@ services:
       file: docker-compose-base.yml
       service: datasets-worker
     environment:
+      DATASETS_BASED_ENDPOINT: "/splits" # hard-coded
       HF_ENDPOINT: ${COMMON_HF_ENDPOINT-https://huggingface.co} # see https://github.com/huggingface/datasets/pull/5196#issuecomment-1322191411
       HF_DATASETS_CACHE: ${HF_DATASETS_CACHE-/datasets-cache}
       HF_MODULES_CACHE: ${HF_MODULES_CACHE-/modules-cache}
@@ -93,8 +94,8 @@ services:
   worker-first-rows:
     # build:
     #   context: ..
-    #   dockerfile: workers/first-rows/Dockerfile
-    image: ${IMAGE_WORKER_FIRST_ROWS?IMAGE_WORKER_FIRST_ROWS env var must be provided}
+    #   dockerfile: workers/datasets_based/Dockerfile
+    image: ${IMAGE_WORKER_DATASETS_BASED?IMAGE_WORKER_DATASETS_BASED env var must be provided}
     volumes:
       - first-rows-datasets-cache:${HF_DATASETS_CACHE-/datasets-cache}:rw
       - first-rows-modules-cache:${HF_DATASETS_CACHE-/modules-cache}:rw
@@ -103,6 +104,7 @@ services:
       file: docker-compose-base.yml
       service: datasets-worker
     environment:
+      DATASETS_BASED_ENDPOINT: "/first-rows" # hard-coded
       FIRST_ROWS_FALLBACK_MAX_DATASET_SIZE: ${FIRST_ROWS_FALLBACK_MAX_DATASET_SIZE-100_000_000}
       FIRST_ROWS_MAX_BYTES: ${FIRST_ROWS_MAX_BYTES-1_000_000}
       FIRST_ROWS_MAX_NUMBER: ${FIRST_ROWS_MAX_NUMBER-100}
@@ -115,7 +117,7 @@ services:
     # build:
     #   context: ..
     #   dockerfile: workers/parquet/Dockerfile
-    image: ${IMAGE_WORKER_PARQUET?IMAGE_WORKER_PARQUET env var must be provided}
+    image: ${IMAGE_WORKER_DATASETS_BASED?IMAGE_WORKER_DATASETS_BASED env var must be provided}
     volumes:
       - parquet-datasets-cache:${HF_DATASETS_CACHE-/datasets-cache}:rw
       - parquet-modules-cache:${HF_DATASETS_CACHE-/modules-cache}:rw
@@ -124,6 +126,7 @@ services:
       file: docker-compose-base.yml
       service: datasets-worker
     environment:
+      DATASETS_BASED_ENDPOINT: "/parquet" # hard-coded
       PARQUET_COMMIT_MESSAGE: ${PARQUET_COMMIT_MESSAGE-Update parquet files}
       PARQUET_SOURCE_REVISION: ${PARQUET_SOURCE_REVISION-main}
       PARQUET_SUPPORTED_DATASETS: ${PARQUET_SUPPORTED_DATASETS-}

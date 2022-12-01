@@ -29,16 +29,8 @@
       "path": "../services/reverse-proxy"
     },
     {
-      "name": "workers/first_rows",
-      "path": "../workers/first_rows"
-    },
-    {
-      "name": "workers/parquet",
-      "path": "../workers/parquet"
-    },
-    {
-      "name": "workers/splits",
-      "path": "../workers/splits"
+      "name": "workers/datasets_based",
+      "path": "../workers/datasets_based"
     }
   ],
   "settings": {

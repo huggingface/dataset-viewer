@@ -3,9 +3,12 @@
 
 {{- define "containerWorkerParquet" -}}
 - name: "{{ include "name" . }}-worker-parquet"
-  image: {{ .Values.dockerImage.workers.parquet }}
+  image: {{ .Values.dockerImage.workers.datasets_based }}
   imagePullPolicy: IfNotPresent
   env:
+  - name: DATASETS_BASED_ENDPOINT
+    value: "/parquet"
+    # ^ hard-coded
   {{ include "envCache" . | nindent 2 }}
   {{ include "envQueue" . | nindent 2 }}
   {{ include "envCommon" . | nindent 2 }}

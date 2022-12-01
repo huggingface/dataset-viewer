@@ -158,7 +158,7 @@ GITHUB_TOKEN=xxx
 
 ## Mac OS
 
-To install the [worker service](./services/worker) on Mac OS, you can follow the next steps.
+To install the [datasets based worker](./workers/datasets_based) on Mac OS, you can follow the next steps.
 
 ### First: as an administrator
 
@@ -221,7 +221,7 @@ $ pyenv install 3.9.6
 Check that the expected local version of Python is used:
 
 ```bash
-$ cd services/workers
+$ cd workers/datasets_based
 $ python --version
 Python 3.9.6
 ```

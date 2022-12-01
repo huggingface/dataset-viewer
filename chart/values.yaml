@@ -46,9 +46,7 @@ dockerImage:
     admin: ""
     api: ""
   workers:
-    splits: ""
-    firstRows: ""
-    parquet: ""
+    datasets_based: ""
 
 cache:
   # Directory on the shared storage (audio files and images)
