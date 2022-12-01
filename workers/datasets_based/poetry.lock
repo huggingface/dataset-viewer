@@ -2247,7 +2247,7 @@ numpy = ">=1.11.2"
 
 [package.source]
 type = "directory"
-url = "../../vendors/trec-car-tools/python3"
+url = "vendors/trec-car-tools/python3"
 
 [[package]]
 name = "typed-ast"
@@ -2420,7 +2420,7 @@ cffi = ["cffi (>=1.11)"]
 [metadata]
 lock-version = "1.1"
 python-versions = "3.9.6"
-content-hash = "152c9759656a3e25a2a16751584007e49545a1a227320371fec492a39e29ae59"
+content-hash = "4936f0f9a97645d2ec0deb9125e8db4ab7ec97254658f2de765b7fd537d544de"
 
 [metadata.files]
 absl-py = [
