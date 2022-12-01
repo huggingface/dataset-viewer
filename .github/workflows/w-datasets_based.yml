@@ -1,13 +1,13 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2022 The HuggingFace Authors.
 
-name: workers/splits
+name: workers/datasets_based
 on:
   workflow_dispatch:
   push:
     paths:
-      - 'workers/splits/**'
-      - '.github/workflows/w-splits.yml'
+      - 'workers/datasets_based/**'
+      - '.github/workflows/w-datasets_based.yml'
       - '.github/workflows/_quality-python.yml'
       - '.github/workflows/_unit-tests-python.yml'
       - 'tools/docker-compose-mongo.yml'
@@ -16,10 +16,10 @@ jobs:
   quality:
     uses: ./.github/workflows/_quality-python.yml
     with:
-      working-directory: workers/splits
+      working-directory: workers/datasets_based
       is-datasets-worker: true
   unit-tests:
     uses: ./.github/workflows/_unit-tests-python.yml
     with:
-      working-directory: workers/splits
+      working-directory: workers/datasets_based
       is-datasets-worker: true
