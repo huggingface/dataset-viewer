@@ -3,6 +3,7 @@
 
 import datasets.config
 from datasets.utils.logging import log_levels, set_verbosity
+from environs import Env
 from libcommon.config import (
     CacheConfig,
     CommonConfig,
@@ -12,9 +13,19 @@ from libcommon.config import (
 )
 
 
+class DatasetsBasedConfig:
+    endpoint: str
+
+    def __init__(self):
+        env = Env(expand_vars=True)
+        with env.prefixed("DATASETS_BASED_"):
+            self.processing_step = env.str(name="ENDPOINT", default="/splits")
+
+
 class AppConfig:
     cache: CacheConfig
     common: CommonConfig
+    datasets_based: DatasetsBasedConfig
     processing_graph: ProcessingGraphConfig
     queue: QueueConfig
     worker: WorkerConfig
@@ -23,8 +34,9 @@ class AppConfig:
         # First process the common configuration to setup the logging
         self.common = CommonConfig()
         self.cache = CacheConfig()
-        self.queue = QueueConfig()
+        self.datasets_based = DatasetsBasedConfig()
         self.processing_graph = ProcessingGraphConfig()
+        self.queue = QueueConfig()
         self.worker = WorkerConfig()
         self.setup()
 

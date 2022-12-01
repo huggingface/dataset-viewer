@@ -1,7 +1,7 @@
 [tool.poetry]
 authors = ["Sylvain Lesage <sylvain.lesage@huggingface.co>"]
-description = "Worker that pre-computes and caches the response to /splits"
-name = "splits"
+description = "Worker for processing steps that need the datasets library"
+name = "datasets_based"
 version = "1.0.0"
 license = "Apache-2.0"
 
@@ -61,7 +61,7 @@ markers = [
 ]
 
 [tool.coverage.run]
-source = ["splits"]
+source = ["datasets_based"]
 
 [tool.isort]
 profile = "black"

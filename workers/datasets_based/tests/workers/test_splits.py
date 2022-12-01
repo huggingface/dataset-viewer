@@ -8,10 +8,10 @@ from libcommon.exceptions import CustomError
 from libcommon.queue import _clean_queue_database
 from libcommon.simple_cache import DoesNotExist, _clean_cache_database, get_response
 
-from splits.config import AppConfig
-from splits.worker import SplitsWorker, compute_splits_response
+from datasets_based.config import AppConfig
+from datasets_based.workers.splits import SplitsWorker, compute_splits_response
 
-from .fixtures.hub import HubDatasets
+from ..fixtures.hub import HubDatasets
 
 
 @pytest.fixture(autouse=True)

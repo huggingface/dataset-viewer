@@ -17,7 +17,7 @@ from libcommon.exceptions import CustomError
 from libcommon.simple_cache import delete_response, get_dataset_response_ids
 from libcommon.worker import Queue, Worker
 
-from splits.config import AppConfig
+from datasets_based.config import AppConfig
 
 SplitsWorkerErrorCode = Literal[
     "EmptyDatasetError",
@@ -170,7 +170,7 @@ class SplitsWorker(Worker):
             common_config=app_config.common,
             queue_config=app_config.queue,
             worker_config=app_config.worker,
-            version=importlib.metadata.version(__package__),
+            version=importlib.metadata.version(__package__.split(".")[0]),
         )
 
     def compute(

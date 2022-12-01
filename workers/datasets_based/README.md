@@ -6,6 +6,12 @@
 
 The worker can be configured using environment variables. They are grouped by scope.
 
+### Datasets based worker
+
+The same worker is used for different endpoints to reuse shared code and dependencies. But at runtime, the worker is assigned only one endpoint. The endpoint is configured using the `DATASETS_BASED_ENDPOINT` environment variable:
+
+- `DATASETS_BASED_ENDPOINT`: the endpoint on which the worker will work (pre-compute and cache the response). It can only be `/splits` at the moment.
+
 ### Datasets library
 
 The following environment variables are used to configure two dependencies: the `datasets` and `numba` libraries:

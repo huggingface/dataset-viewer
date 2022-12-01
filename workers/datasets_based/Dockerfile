@@ -24,11 +24,11 @@ RUN pip install "poetry==$POETRY_VERSION"
 
 WORKDIR /src
 COPY libs/libcommon/dist ./libs/libcommon/dist
-COPY workers/splits/src ./workers/splits/src
-COPY workers/splits/poetry.lock ./workers/splits/poetry.lock
-COPY workers/splits/pyproject.toml ./workers/splits/pyproject.toml
+COPY workers/datasets_based/src ./workers/datasets_based/src
+COPY workers/datasets_based/poetry.lock ./workers/datasets_based/poetry.lock
+COPY workers/datasets_based/pyproject.toml ./workers/datasets_based/pyproject.toml
 COPY vendors ./vendors/
-WORKDIR /src/workers/splits/
+WORKDIR /src/workers/datasets_based/
 RUN poetry install
 
-ENTRYPOINT ["poetry", "run", "python", "src/splits/main.py"]
+ENTRYPOINT ["poetry", "run", "python", "src/datasets_based/main.py"]

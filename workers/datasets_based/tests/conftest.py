@@ -3,7 +3,7 @@
 
 from pytest import MonkeyPatch, fixture
 
-from splits.config import AppConfig
+from datasets_based.config import AppConfig
 
 # Import fixture modules as plugins
 pytest_plugins = ["tests.fixtures.datasets", "tests.fixtures.files", "tests.fixtures.hub"]
