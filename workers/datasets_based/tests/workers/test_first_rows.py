@@ -16,6 +16,7 @@ from datasets_based.workers.first_rows import (
     get_json_size,
 )
 
+from ..conftest import _clean_datasets_cache
 from ..fixtures.hub import HubDatasets, get_default_config_split
 
 
@@ -23,6 +24,7 @@ from ..fixtures.hub import HubDatasets, get_default_config_split
 def clean_mongo_database() -> None:
     _clean_cache_database()
     _clean_queue_database()
+    _clean_datasets_cache()
 
 
 @pytest.fixture(autouse=True, scope="module")

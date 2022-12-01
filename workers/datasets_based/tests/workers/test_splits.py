@@ -11,6 +11,7 @@ from libcommon.simple_cache import DoesNotExist, _clean_cache_database, get_resp
 from datasets_based.config import AppConfig
 from datasets_based.workers.splits import SplitsWorker, compute_splits_response
 
+from ..conftest import _clean_datasets_cache
 from ..fixtures.hub import HubDatasets
 
 
@@ -18,6 +19,7 @@ from ..fixtures.hub import HubDatasets
 def clean_mongo_database() -> None:
     _clean_cache_database()
     _clean_queue_database()
+    _clean_datasets_cache()
 
 
 @pytest.fixture(autouse=True, scope="module")
