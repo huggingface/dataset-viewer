@@ -30,12 +30,12 @@ def test_metrics():
     assert metrics[name] > 0, metrics
 
     metrics = set(metrics.keys())
-    for queue in ["/splits", "/first-rows", "parquet"]:
+    for queue in ["/splits", "/first-rows", "/parquet"]:
         # eg. 'queue_jobs_total{pid="10",queue="/first-rows",status="started"}'
         assert has_metric(
             name="queue_jobs_total", labels={"pid": "[0-9]*", "queue": queue, "status": "started"}, metrics=metrics
         ), f"queue_jobs_total - queue={queue} not found in {metrics}"
-    for cache_kind in ["/splits", "/first-rows", "parquet"]:
+    for cache_kind in ["/splits", "/first-rows", "/parquet"]:
         # cache should have been filled by the previous tests
         # eg. 'responses_in_cache_total{error_code="None",http_status="200",path="/splits",pid="10"}'
         assert has_metric(
