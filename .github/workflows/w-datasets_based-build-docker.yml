@@ -10,7 +10,7 @@ on:
       - 'workers/datasets_based/src/**'
       - 'workers/datasets_based/poetry.lock'
       - 'workers/datasets_based/pyproject.toml'
-      - '.github/workflows/w-workers/datasets_based-build-docker.yml'
+      - '.github/workflows/w-datasets_based-build-docker.yml'
       - '.github/workflows/_build_push_docker_hub.yml'
       - 'vendors/'
 jobs:
