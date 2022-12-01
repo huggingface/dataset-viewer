@@ -21,6 +21,7 @@ spec:
     spec:
       imagePullSecrets: {{ toYaml .Values.imagePullSecrets | nindent 8 }}
       initContainers:
+        {{ include "initContainerAssets" . | nindent 8 }}
         {{ include "initContainerCache" . | nindent 8 }}
         {{ include "initContainerNumbaCache" . | nindent 8 }}
       containers: {{ include "containerWorkerSplits" . | nindent 8 }}
