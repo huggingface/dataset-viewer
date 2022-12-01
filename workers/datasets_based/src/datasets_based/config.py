@@ -19,7 +19,7 @@ class DatasetsBasedConfig:
     def __init__(self):
         env = Env(expand_vars=True)
         with env.prefixed("DATASETS_BASED_"):
-            self.processing_step = env.str(name="ENDPOINT", default="/splits")
+            self.endpoint = env.str(name="ENDPOINT", default="/splits")
 
 
 class FirstRowsConfig:
