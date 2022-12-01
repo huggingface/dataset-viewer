@@ -848,7 +848,7 @@
             "type": "integer"
           }
         }
-      },
+      }
     },
     "securitySchemes": {
       "HuggingFaceCookie": {
