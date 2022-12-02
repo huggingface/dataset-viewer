@@ -45,6 +45,7 @@ class ParquetConfig:
     supported_datasets: List[str]
     commit_message: str
     hf_token: str
+    max_dataset_size: int
     source_revision: str
     target_revision: str
     url_template: str
@@ -58,6 +59,7 @@ class ParquetConfig:
         with env.prefixed("PARQUET_"):
             self.supported_datasets = env.list(name="SUPPORTED_DATASETS", default=[])
             self.commit_message = env.str(name="COMMIT_MESSAGE", default="Update parquet files")
+            self.max_dataset_size = env.int(name="MAX_DATASET_SIZE", default=100_000_000)
             self.source_revision = env.str(name="SOURCE_REVISION", default="main")
             self.target_revision = env.str(name="TARGET_REVISION", default="refs/convert/parquet")
             self.url_template = env.str(name="URL_TEMPLATE", default="/datasets/%s/resolve/%s/%s")

@@ -10,7 +10,7 @@ from pathlib import Path
 from typing import Any, List, Literal, Mapping, Optional, Tuple, TypedDict
 from urllib.parse import quote
 
-from datasets import get_dataset_config_names, load_dataset_builder
+from datasets import get_dataset_config_names, get_dataset_infos, load_dataset_builder
 from datasets.data_files import EmptyDatasetError as _EmptyDatasetError
 from huggingface_hub.hf_api import (
     CommitOperation,
@@ -159,6 +159,7 @@ def compute_parquet_response(
     commit_message: str,
     url_template: str,
     supported_datasets: List[str],
+    max_dataset_size: int,
 ) -> ParquetResponse:
     """
     Get the response of /parquet for one specific dataset on huggingface.co.
@@ -204,9 +205,20 @@ def compute_parquet_response(
     """
     logging.info(f"get splits for dataset={dataset}")
 
-    # only process the supported datasets
-    if len(supported_datasets) and dataset not in supported_datasets:
-        raise DatasetNotSupportedError("The dataset is not in the list of supported datasets.")
+    # only process the supported datasets:
+    # if it's in the list
+    supported_from_list = len(supported_datasets) == 0 or dataset in supported_datasets
+    # or if we can get its size and the size is under a threshold
+    try:
+        infos = get_dataset_infos(path=dataset, revision=source_revision, use_auth_token=hf_token)
+        config_sizes = [value.dataset_size for _, value in infos.items()]
+        if any(config_size is None for config_size in config_sizes):
+            raise ValueError("Cannot get dataset size")
+        supported_from_size = sum(config_sizes) < max_dataset_size
+    except Exception:
+        supported_from_size = False
+    if not supported_from_list and not supported_from_size:
+        raise DatasetNotSupportedError("The dataset is not supported.")
 
     hf_api = HfApi(endpoint=hf_endpoint, token=hf_token)
 
@@ -320,4 +332,5 @@ class ParquetWorker(Worker):
             commit_message=self.parquet_config.commit_message,
             url_template=self.parquet_config.url_template,
             supported_datasets=self.parquet_config.supported_datasets,
+            max_dataset_size=self.parquet_config.max_dataset_size,
         )

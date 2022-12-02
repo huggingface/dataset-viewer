@@ -27,6 +27,7 @@ Only needed when the `DATASETS_BASED_ENDPOINT` is set to `/first-rows`: set envi
 Only needed when the `DATASETS_BASED_ENDPOINT` is set to `/parquet`: set environment variables to configure the parquet worker (`PARQUET_` prefix):
 
 - `COMMIT_MESSAGE`: the git commit message when the parquet files are uploaded to the Hub. Defaults to `Update parquet files`.
+- `MAX_DATASET_SIZE`: the maximum size in bytes of the dataset to pre-compute the parquet files. Bigger datasets, or datasets without that information, are ignored. Defaults to `100_000_000`.
 - `SOURCE_REVISION`: the git revision of the dataset to use to prepare the parquet files. Defaults to `main`.
 - `SUPPORTED_DATASETS`: comma-separated list of the supported datasets. If empty, all the datasets are processed. Defaults to empty.
 - `TARGET_REVISION`: the git revision of the dataset where to store the parquet files. Make sure the hf_token (see the "Common" section) allows to write there. Defaults to `refs/convert/parquet`.

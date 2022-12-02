@@ -101,6 +101,7 @@ def test_compute_splits_response_simple_csv_ok(
         commit_message=app_config.parquet.commit_message,
         url_template=app_config.parquet.url_template,
         supported_datasets=app_config.parquet.supported_datasets,
+        max_dataset_size=app_config.parquet.max_dataset_size,
     )
     assert result == expected_parquet_response
 
@@ -143,6 +144,7 @@ def test_compute_splits_response_simple_csv_error(
             commit_message=app_config.parquet.commit_message,
             url_template=app_config.parquet.url_template,
             supported_datasets=app_config.parquet.supported_datasets,
+            max_dataset_size=app_config.parquet.max_dataset_size,
         )
     assert exc_info.value.code == error_code
     if cause is None:
