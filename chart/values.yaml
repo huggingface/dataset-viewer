@@ -240,6 +240,8 @@ firstRows:
 parquet:
   # the git commit message when the parquet files are uploaded to the Hub. Defaults to `Update parquet files`.
   commitMessage: "Update parquet files"
+  # the maximum size of the supported datasets. Bigger datasets, or datasets that cannot provide the size, are ignored.
+  maxDatasetSize: "100_000_000"
   # the git revision of the dataset to use to prepare the parquet files. Defaults to `main`.
   sourceRevision: "main"
   # comma-separated list of the supported datasets. If empty, all the datasets are processed. Defaults to empty.

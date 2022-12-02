@@ -23,6 +23,8 @@
     value: {{ .Values.parquet.queue.maxJobsPerNamespace | quote }}
   - name: PARQUET_COMMIT_MESSAGE
     value: {{ .Values.parquet.commitMessage | quote }}
+  - name: PARQUET_MAX_DATASET_SIZE
+    value: {{ .Values.parquet.maxDatasetSize | quote }}
   - name: PARQUET_SOURCE_REVISION
     value: {{ .Values.parquet.sourceRevision | quote }}
   - name: PARQUET_SUPPORTED_DATASETS
