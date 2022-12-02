@@ -3,7 +3,7 @@
 
 {{- define "containerWorkerFirstRows" -}}
 - name: "{{ include "name" . }}-worker-first-rows"
-  image: {{ .Values.dockerImage.workers.firstRows }}
+  image: {{ .Values.dockerImage.workers.datasets_based }}
   imagePullPolicy: IfNotPresent
   env:
   - name: DATASETS_BASED_ENDPOINT
