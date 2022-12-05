@@ -14,7 +14,7 @@ on:
 env:
   # required to get access to use a cached poetry venv in "/home/runner/.cache/pypoetry/virtualenvs"
   POETRY_VIRTUALENVS_IN_PROJECT: false
-  python-version: "3.9.6"
+  python-version: "3.9.15"
   poetry-version: "1.2.2"
 jobs:
   code-quality:
@@ -54,7 +54,7 @@ jobs:
         run: poetry run bandit -r src
       - name: Run pip-audit (datasets worker)
         if: ${{ inputs.is-datasets-worker == true }}
-        run: bash -c "poetry run pip-audit -r <(poetry export -f requirements.txt --with dev | sed '/^pymongo==/,+110 d' | sed '/^requests==2.28.1 ;/,+2 d' | sed '/^kenlm @/d' | sed '/^trec-car-tools @/d')"
+        run: bash -c "poetry run pip-audit  --ignore-vuln GHSA-47fc-vmwq-366v -r <(poetry export -f requirements.txt --with dev | sed '/^pymongo==/,+109 d' | sed '/^requests==2.28.1 ;/,+2 d' | sed '/^kenlm @/d' | sed '/^trec-car-tools @/d')"
       - name: Run pip-audit
         if: ${{ inputs.is-datasets-worker == false && inputs.is-library-with-pymongo == false }}
-        run: bash -c "poetry run pip-audit -r <(poetry export -f requirements.txt --with dev | sed '/^pymongo==/,+110 d')"
+        run: bash -c "poetry run pip-audit -r <(poetry export -f requirements.txt --with dev | sed '/^pymongo==/,+109 d')"
