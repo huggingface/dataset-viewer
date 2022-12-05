@@ -10,7 +10,11 @@ from pathlib import Path
 from typing import Any, List, Literal, Mapping, Optional, Tuple, TypedDict
 from urllib.parse import quote
 
-from datasets import get_dataset_config_names, get_dataset_infos, load_dataset_builder
+from datasets import (
+    get_dataset_config_info,
+    get_dataset_config_names,
+    load_dataset_builder,
+)
 from datasets.data_files import EmptyDatasetError as _EmptyDatasetError
 from huggingface_hub.hf_api import (
     CommitOperation,
@@ -103,6 +107,35 @@ class ParquetFile:
         return f'{self.config}/{self.local_file.removeprefix(f"{self.local_dir}/")}'
 
 
+# until https://github.com/huggingface/datasets/pull/5333 is merged
+def get_dataset_infos(path: str, revision: Optional[str] = None, use_auth_token: Optional[str] = None):
+    """Get the meta information about a dataset, returned as a dict mapping config name to DatasetInfoDict.
+
+    Args:
+        path (``str``): a dataset identifier on the Hugging Face Hub (list all available datasets and ids with
+            ``datasets.list_datasets()``)  e.g. ``'squad'``, ``'glue'`` or ``'openai/webtext'``
+        revision (Optional ``str``):
+            If specified, the dataset module will be loaded from the datasets repository at this version.
+            By default:
+            - it is set to the local version of the lib.
+            - it will also try to load it from the main branch if it's not available at the local version of the lib.
+            Specifying a version that is different from your local version of the lib might cause compatibility issues.
+        use_auth_token (``str``, optional): Optional string to use as Bearer token for remote files on the Datasets
+            Hub.
+    """
+    config_names = get_dataset_config_names(
+        path=path,
+        revision=revision,
+        use_auth_token=use_auth_token,
+    )
+    return {
+        config_name: get_dataset_config_info(
+            path=path, config_name=config_name, revision=revision, use_auth_token=use_auth_token
+        )
+        for config_name in config_names
+    }
+
+
 # TODO: use huggingface_hub's hf_hub_url after
 # https://github.com/huggingface/huggingface_hub/issues/1082
 def hf_hub_url(repo_id: str, filename: str, hf_endpoint: str, revision: str, url_template: str) -> str:
@@ -153,7 +186,8 @@ def create_parquet_file_item(
 def compute_parquet_response(
     dataset: str,
     hf_endpoint: str,
-    hf_token: str,
+    hf_token: Optional[str],
+    committer_hf_token: Optional[str],
     source_revision: str,
     target_revision: str,
     commit_message: str,
@@ -170,9 +204,10 @@ def compute_parquet_response(
             by a `/`.
         hf_endpoint (`str`):
             The Hub endpoint (for example: "https://huggingface.co")
-        hf_token (`str`):
-            An authentication token (See https://huggingface.co/settings/token). It must:
-            - be a user token (to get access to the gated datasets, and do the other operations)
+        hf_token (`str`, `optional`):
+            An app authentication token with read access to all the datasets.
+        committer_hf_token (`str`, `optional`):
+            A user authentication token (See https://huggingface.co/settings/token) with write access. It must:
             - be part of the `huggingface` organization (to create the ref/convert/parquet "branch")
             - be part of the `datasets-maintainers` organization (to push to the ref/convert/parquet "branch")
         source_revision (`str`):
@@ -221,6 +256,7 @@ def compute_parquet_response(
         raise DatasetNotSupportedError("The dataset is not supported.")
 
     hf_api = HfApi(endpoint=hf_endpoint, token=hf_token)
+    committer_hf_api = HfApi(endpoint=hf_endpoint, token=committer_hf_token)
 
     # check that the revision exists for the dataset and is accessible using the token
     try:
@@ -237,7 +273,7 @@ def compute_parquet_response(
         raise DatasetNotFoundError("The dataset does not exist on the Hub.") from err
     except RevisionNotFoundError:
         # create the parquet_ref (refs/convert/parquet)
-        hf_api.create_branch(repo_id=dataset, branch=target_revision, repo_type=DATASET_TYPE)
+        committer_hf_api.create_branch(repo_id=dataset, branch=target_revision, repo_type=DATASET_TYPE)
         target_dataset_info = hf_api.dataset_info(repo_id=dataset, revision=target_revision, files_metadata=False)
 
     target_sha = target_dataset_info.sha
@@ -272,7 +308,7 @@ def compute_parquet_response(
         CommitOperationAdd(path_in_repo=file, path_or_fileobj=local_file)
         for (file, local_file) in files_to_add.items()
     ]
-    hf_api.create_commit(
+    committer_hf_api.create_commit(
         repo_id=dataset,
         repo_type=DATASET_TYPE,
         revision=target_revision,
@@ -326,7 +362,8 @@ class ParquetWorker(Worker):
         return compute_parquet_response(
             dataset=dataset,
             hf_endpoint=self.common_config.hf_endpoint,
-            hf_token=self.parquet_config.hf_token,
+            hf_token=self.common_config.hf_token,
+            committer_hf_token=self.parquet_config.committer_hf_token,
             source_revision=self.parquet_config.source_revision,
             target_revision=self.parquet_config.target_revision,
             commit_message=self.parquet_config.commit_message,

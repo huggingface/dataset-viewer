@@ -95,7 +95,8 @@ def test_compute_splits_response_simple_csv_ok(
     result = compute_parquet_response(
         dataset=dataset,
         hf_endpoint=app_config.common.hf_endpoint,
-        hf_token=app_config.parquet.hf_token,
+        hf_token=app_config.common.hf_token,
+        committer_hf_token=app_config.parquet.committer_hf_token,
         source_revision=app_config.parquet.source_revision,
         target_revision=app_config.parquet.target_revision,
         commit_message=app_config.parquet.commit_message,
@@ -116,7 +117,7 @@ def test_compute_splits_response_simple_csv_ok(
         with pytest.raises(Exception):
             pd.read_parquet(result["parquet_files"][0]["url"], engine="auto")
         r = requests.get(
-            result["parquet_files"][0]["url"], headers={"Authorization": f"Bearer {app_config.parquet.hf_token}"}
+            result["parquet_files"][0]["url"], headers={"Authorization": f"Bearer {app_config.common.hf_token}"}
         )
         assert r.status_code == HTTPStatus.OK, r.text
         df = pd.read_parquet(io.BytesIO(r.content), engine="auto")
@@ -138,7 +139,8 @@ def test_compute_splits_response_simple_csv_error(
         compute_parquet_response(
             dataset=dataset,
             hf_endpoint=app_config.common.hf_endpoint,
-            hf_token=app_config.parquet.hf_token,
+            hf_token=app_config.common.hf_token,
+            committer_hf_token=app_config.parquet.committer_hf_token,
             source_revision=app_config.parquet.source_revision,
             target_revision=app_config.parquet.target_revision,
             commit_message=app_config.parquet.commit_message,

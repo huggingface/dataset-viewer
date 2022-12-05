@@ -121,7 +121,12 @@ def hf_api():
 
 
 @pytest.fixture(scope="session")
-def hf_token() -> str:
+def app_hf_token() -> str:
+    return "hf_datasets-server_token"
+
+
+@pytest.fixture(scope="session")
+def user_hf_token() -> str:
     return CI_HUB_USER_API_TOKEN
 
 
@@ -187,103 +192,107 @@ def create_hub_dataset_repo(
 
 # https://docs.pytest.org/en/6.2.x/fixture.html#yield-fixtures-recommended
 @pytest.fixture(scope="session", autouse=True)
-def hub_public_empty(hf_api: HfApi, hf_token: str) -> Iterable[str]:
-    repo_id = create_hub_dataset_repo(hf_api=hf_api, hf_token=hf_token, prefix="empty")
+def hub_public_empty(hf_api: HfApi, user_hf_token: str) -> Iterable[str]:
+    repo_id = create_hub_dataset_repo(hf_api=hf_api, hf_token=user_hf_token, prefix="empty")
     yield repo_id
     with suppress(requests.exceptions.HTTPError, ValueError):
-        hf_api.delete_repo(repo_id=repo_id, token=hf_token, repo_type="dataset")
+        hf_api.delete_repo(repo_id=repo_id, token=user_hf_token, repo_type="dataset")
 
 
 @pytest.fixture(scope="session", autouse=True)
-def hub_public_csv(hf_api: HfApi, hf_token: str, csv_path: str) -> Iterable[str]:
-    repo_id = create_hub_dataset_repo(hf_api=hf_api, hf_token=hf_token, prefix="csv", file_paths=[csv_path])
+def hub_public_csv(hf_api: HfApi, user_hf_token: str, csv_path: str) -> Iterable[str]:
+    repo_id = create_hub_dataset_repo(hf_api=hf_api, hf_token=user_hf_token, prefix="csv", file_paths=[csv_path])
     yield repo_id
     with suppress(requests.exceptions.HTTPError, ValueError):
-        hf_api.delete_repo(repo_id=repo_id, token=hf_token, repo_type="dataset")
+        hf_api.delete_repo(repo_id=repo_id, token=user_hf_token, repo_type="dataset")
 
 
 @pytest.fixture(scope="session", autouse=True)
-def hub_private_csv(hf_api: HfApi, hf_token: str, csv_path: str) -> Iterable[str]:
+def hub_private_csv(hf_api: HfApi, user_hf_token: str, csv_path: str) -> Iterable[str]:
     repo_id = create_hub_dataset_repo(
-        hf_api=hf_api, hf_token=hf_token, prefix="csv_private", file_paths=[csv_path], private=True
+        hf_api=hf_api, hf_token=user_hf_token, prefix="csv_private", file_paths=[csv_path], private=True
     )
     yield repo_id
     with suppress(requests.exceptions.HTTPError, ValueError):
-        hf_api.delete_repo(repo_id=repo_id, token=hf_token, repo_type="dataset")
+        hf_api.delete_repo(repo_id=repo_id, token=user_hf_token, repo_type="dataset")
 
 
 @pytest.fixture(scope="session", autouse=True)
-def hub_gated_csv(hf_api: HfApi, hf_token: str, csv_path: str) -> Iterable[str]:
+def hub_gated_csv(hf_api: HfApi, user_hf_token: str, csv_path: str) -> Iterable[str]:
     repo_id = create_hub_dataset_repo(
-        hf_api=hf_api, hf_token=hf_token, prefix="csv_gated", file_paths=[csv_path], gated=True
+        hf_api=hf_api, hf_token=user_hf_token, prefix="csv_gated", file_paths=[csv_path], gated=True
     )
     yield repo_id
     with suppress(requests.exceptions.HTTPError, ValueError):
-        hf_api.delete_repo(repo_id=repo_id, token=hf_token, repo_type="dataset")
+        hf_api.delete_repo(repo_id=repo_id, token=user_hf_token, repo_type="dataset")
 
 
 @pytest.fixture(scope="session", autouse=True)
-def hub_public_jsonl(hf_api: HfApi, hf_token: str, jsonl_path: str) -> Iterable[str]:
-    repo_id = create_hub_dataset_repo(hf_api=hf_api, hf_token=hf_token, prefix="jsonl", file_paths=[jsonl_path])
+def hub_public_jsonl(hf_api: HfApi, user_hf_token: str, jsonl_path: str) -> Iterable[str]:
+    repo_id = create_hub_dataset_repo(hf_api=hf_api, hf_token=user_hf_token, prefix="jsonl", file_paths=[jsonl_path])
     yield repo_id
     with suppress(requests.exceptions.HTTPError, ValueError):
-        hf_api.delete_repo(repo_id=repo_id, token=hf_token, repo_type="dataset")
+        hf_api.delete_repo(repo_id=repo_id, token=user_hf_token, repo_type="dataset")
 
 
 @pytest.fixture(scope="session", autouse=True)
-def hub_gated_extra_fields_csv(hf_api: HfApi, hf_token: str, csv_path: str, extra_fields_readme: str) -> Iterable[str]:
+def hub_gated_extra_fields_csv(
+    hf_api: HfApi, user_hf_token: str, csv_path: str, extra_fields_readme: str
+) -> Iterable[str]:
     repo_id = create_hub_dataset_repo(
         hf_api=hf_api,
-        hf_token=hf_token,
+        hf_token=user_hf_token,
         prefix="csv_extra_fields_gated",
         file_paths=[csv_path, extra_fields_readme],
         gated=True,
     )
     yield repo_id
     with suppress(requests.exceptions.HTTPError, ValueError):
-        hf_api.delete_repo(repo_id=repo_id, token=hf_token, repo_type="dataset")
+        hf_api.delete_repo(repo_id=repo_id, token=user_hf_token, repo_type="dataset")
 
 
 @pytest.fixture(scope="session", autouse=True)
-def hub_public_audio(hf_api: HfApi, hf_token: str, datasets: Mapping[str, Dataset]) -> Iterable[str]:
-    repo_id = create_hub_dataset_repo(hf_api=hf_api, hf_token=hf_token, prefix="audio", dataset=datasets["audio"])
+def hub_public_audio(hf_api: HfApi, user_hf_token: str, datasets: Mapping[str, Dataset]) -> Iterable[str]:
+    repo_id = create_hub_dataset_repo(hf_api=hf_api, hf_token=user_hf_token, prefix="audio", dataset=datasets["audio"])
     yield repo_id
     with suppress(requests.exceptions.HTTPError, ValueError):
-        hf_api.delete_repo(repo_id=repo_id, token=hf_token, repo_type="dataset")
+        hf_api.delete_repo(repo_id=repo_id, token=user_hf_token, repo_type="dataset")
 
 
 @pytest.fixture(scope="session", autouse=True)
-def hub_public_image(hf_api: HfApi, hf_token: str, datasets: Mapping[str, Dataset]) -> Iterable[str]:
-    repo_id = create_hub_dataset_repo(hf_api=hf_api, hf_token=hf_token, prefix="image", dataset=datasets["image"])
+def hub_public_image(hf_api: HfApi, user_hf_token: str, datasets: Mapping[str, Dataset]) -> Iterable[str]:
+    repo_id = create_hub_dataset_repo(hf_api=hf_api, hf_token=user_hf_token, prefix="image", dataset=datasets["image"])
     yield repo_id
     with suppress(requests.exceptions.HTTPError, ValueError):
-        hf_api.delete_repo(repo_id=repo_id, token=hf_token, repo_type="dataset")
+        hf_api.delete_repo(repo_id=repo_id, token=user_hf_token, repo_type="dataset")
 
 
 @pytest.fixture(scope="session", autouse=True)
-def hub_public_images_list(hf_api: HfApi, hf_token: str, datasets: Mapping[str, Dataset]) -> Iterable[str]:
+def hub_public_images_list(hf_api: HfApi, user_hf_token: str, datasets: Mapping[str, Dataset]) -> Iterable[str]:
     repo_id = create_hub_dataset_repo(
-        hf_api=hf_api, hf_token=hf_token, prefix="images_list", dataset=datasets["images_list"]
+        hf_api=hf_api, hf_token=user_hf_token, prefix="images_list", dataset=datasets["images_list"]
     )
     yield repo_id
     with suppress(requests.exceptions.HTTPError, ValueError):
-        hf_api.delete_repo(repo_id=repo_id, token=hf_token, repo_type="dataset")
+        hf_api.delete_repo(repo_id=repo_id, token=user_hf_token, repo_type="dataset")
 
 
 @pytest.fixture(scope="session", autouse=True)
-def hub_public_big(hf_api: HfApi, hf_token: str, datasets: Mapping[str, Dataset]) -> Iterable[str]:
-    repo_id = create_hub_dataset_repo(hf_api=hf_api, hf_token=hf_token, prefix="big", dataset=datasets["big"])
+def hub_public_big(hf_api: HfApi, user_hf_token: str, datasets: Mapping[str, Dataset]) -> Iterable[str]:
+    repo_id = create_hub_dataset_repo(hf_api=hf_api, hf_token=user_hf_token, prefix="big", dataset=datasets["big"])
     yield repo_id
     with suppress(requests.exceptions.HTTPError, ValueError):
-        hf_api.delete_repo(repo_id=repo_id, token=hf_token, repo_type="dataset")
+        hf_api.delete_repo(repo_id=repo_id, token=user_hf_token, repo_type="dataset")
 
 
 @pytest.fixture(scope="session", autouse=True)
-def hub_not_supported_csv(hf_api: HfApi, hf_token: str, csv_path: str) -> Iterable[str]:
-    repo_id = create_hub_dataset_repo(hf_api=hf_api, hf_token=hf_token, prefix="not_supported", file_paths=[csv_path])
+def hub_not_supported_csv(hf_api: HfApi, user_hf_token: str, csv_path: str) -> Iterable[str]:
+    repo_id = create_hub_dataset_repo(
+        hf_api=hf_api, hf_token=user_hf_token, prefix="not_supported", file_paths=[csv_path]
+    )
     yield repo_id
     with suppress(requests.exceptions.HTTPError, ValueError):
-        hf_api.delete_repo(repo_id=repo_id, token=hf_token, repo_type="dataset")
+        hf_api.delete_repo(repo_id=repo_id, token=user_hf_token, repo_type="dataset")
 
 
 class HubDatasetTest(TypedDict):

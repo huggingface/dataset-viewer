@@ -44,21 +44,18 @@ class FirstRowsConfig:
 class ParquetConfig:
     supported_datasets: List[str]
     commit_message: str
-    hf_token: str
+    committer_hf_token: Optional[str]
     max_dataset_size: int
     source_revision: str
     target_revision: str
     url_template: str
 
-    def __init__(self, hf_token: Optional[str]):
-        if hf_token is None:
-            raise ValueError("The COMMON_HF_TOKEN environment variable must be set.")
-        self.hf_token = hf_token
-
+    def __init__(self):
         env = Env(expand_vars=True)
         with env.prefixed("PARQUET_"):
             self.supported_datasets = env.list(name="SUPPORTED_DATASETS", default=[])
             self.commit_message = env.str(name="COMMIT_MESSAGE", default="Update parquet files")
+            self.committer_hf_token = env.str(name="COMMITTER_HF_TOKEN", default=None)
             self.max_dataset_size = env.int(name="MAX_DATASET_SIZE", default=100_000_000)
             self.source_revision = env.str(name="SOURCE_REVISION", default="main")
             self.target_revision = env.str(name="TARGET_REVISION", default="refs/convert/parquet")
@@ -81,7 +78,7 @@ class AppConfig:
         self.cache = CacheConfig()
         self.datasets_based = DatasetsBasedConfig()
         self.first_rows = FirstRowsConfig()
-        self.parquet = ParquetConfig(hf_token=self.common.hf_token)
+        self.parquet = ParquetConfig()
         self.processing_graph = ProcessingGraphConfig()
         self.queue = QueueConfig()
         self.worker = WorkerConfig()

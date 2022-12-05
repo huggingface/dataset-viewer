@@ -10,7 +10,7 @@ The worker can be configured using environment variables. They are grouped by sc
 
 The same worker is used for different endpoints to reuse shared code and dependencies. But at runtime, the worker is assigned only one endpoint. The endpoint is configured using the `DATASETS_BASED_ENDPOINT` environment variable:
 
-- `DATASETS_BASED_ENDPOINT`: the endpoint on which the worker will work (pre-compute and cache the response). It can only be `/splits` at the moment.
+- `DATASETS_BASED_ENDPOINT`: the endpoint on which the worker will work (pre-compute and cache the response). Allowed values: `/splits`, `/first_rows` and `/parquet`. Defaults to `/splits`.
 
 ### First rows worker
 
@@ -26,12 +26,13 @@ Only needed when the `DATASETS_BASED_ENDPOINT` is set to `/first-rows`: set envi
 
 Only needed when the `DATASETS_BASED_ENDPOINT` is set to `/parquet`: set environment variables to configure the parquet worker (`PARQUET_` prefix):
 
-- `COMMIT_MESSAGE`: the git commit message when the parquet files are uploaded to the Hub. Defaults to `Update parquet files`.
-- `MAX_DATASET_SIZE`: the maximum size in bytes of the dataset to pre-compute the parquet files. Bigger datasets, or datasets without that information, are ignored. Defaults to `100_000_000`.
-- `SOURCE_REVISION`: the git revision of the dataset to use to prepare the parquet files. Defaults to `main`.
-- `SUPPORTED_DATASETS`: comma-separated list of the supported datasets. If empty, all the datasets are processed. Defaults to empty.
-- `TARGET_REVISION`: the git revision of the dataset where to store the parquet files. Make sure the hf_token (see the "Common" section) allows to write there. Defaults to `refs/convert/parquet`.
-- `URL_TEMPLATE`: the URL template to build the parquet file URLs. Defaults to `/datasets/%s/resolve/%s/%s`.
+- `PARQUET_COMMIT_MESSAGE`: the git commit message when the parquet files are uploaded to the Hub. Defaults to `Update parquet files`.
+- `PARQUET_COMMITTER_HF_TOKEN`: the user token (https://huggingface.co/settings/tokens) to commit the parquet files to the Hub. The user must be allowed to create the `refs/convert/parquet` branch (see `PARQUET_TARGET_REVISION`) ([Hugging Face organization](https://huggingface.co/huggingface) members have this right). It must also have the right to push to the `refs/convert/parquet` branch ([Datasets maintainers](https://huggingface.co/datasets-maintainers) members have this right). It must have the `write` permission. If not set, the worker will fail. Defaults to None.
+- `PARQUET_MAX_DATASET_SIZE`: the maximum size in bytes of the dataset to pre-compute the parquet files. Bigger datasets, or datasets without that information, are ignored. Defaults to `100_000_000`.
+- `PARQUET_SOURCE_REVISION`: the git revision of the dataset to use to prepare the parquet files. Defaults to `main`.
+- `PARQUET_SUPPORTED_DATASETS`: comma-separated list of the supported datasets. If empty, all the datasets are processed. Defaults to empty.
+- `PARQUET_TARGET_REVISION`: the git revision of the dataset where to store the parquet files. Make sure the hf_token (see the "Common" section) allows to write there. Defaults to `refs/convert/parquet`.
+- `PARQUET_URL_TEMPLATE`: the URL template to build the parquet file URLs. Defaults to `/datasets/%s/resolve/%s/%s`.
 
 ### Datasets library
 
