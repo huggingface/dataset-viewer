@@ -7,8 +7,8 @@ license = "Apache-2.0"
 
 [tool.poetry.dependencies]
 environs = "^9.5.0"
-libcommon = { path = "../../libs/libcommon/dist/libcommon-0.5.2-py3-none-any.whl", develop = false }
-python = "3.9.6"
+libcommon = { path = "../../libs/libcommon/dist/libcommon-0.5.3-py3-none-any.whl", develop = false }
+python = "3.9.15"
 starlette = "^0.16.0"
 starlette-prometheus = "^0.9.0"
 uvicorn = "^0.14.0"

@@ -6,7 +6,7 @@ from pathlib import Path
 from typing import Any, Mapping
 
 import numpy as np
-import pandas as pd  # type: ignore
+import pandas as pd
 import pytest
 from datasets import (
     Array2D,

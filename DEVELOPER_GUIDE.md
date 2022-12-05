@@ -23,8 +23,8 @@ If you use pyenv:
 
 ```bash
 cd libs/libcommon/
-pyenv install 3.9.6
-pyenv local 3.9.6
+pyenv install 3.9.15
+pyenv local 3.9.15
 poetry env use python3.9
 ```
 
@@ -211,10 +211,10 @@ eval "$(pyenv init -)"
 
 Logout and login again.
 
-Install Python 3.9.6:
+Install Python 3.9.15:
 
 ```bash
-$ pyenv install 3.9.6
+$ pyenv install 3.9.15
 ```
 
 Check that the expected local version of Python is used:
@@ -222,7 +222,7 @@ Check that the expected local version of Python is used:
 ```bash
 $ cd workers/datasets_based
 $ python --version
-Python 3.9.6
+Python 3.9.15
 ```
 
 Install poetry:
@@ -247,7 +247,7 @@ $ source $HOME/.cargo/env
 Set the python version to use with poetry:
 
 ```bash
-poetry env use 3.9.6
+poetry env use 3.9.15
 ```
 
 Avoid an issue with Apache beam (https://github.com/python-poetry/poetry/issues/4888#issuecomment-1208408509):

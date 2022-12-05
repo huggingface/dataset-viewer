@@ -15,7 +15,7 @@ env:
   # required to get access to use a cached poetry venv in "/home/runner/.cache/pypoetry/virtualenvs"
   POETRY_VIRTUALENVS_IN_PROJECT: false
   mongo-port: "27017"
-  python-version: "3.9.6"
+  python-version: "3.9.15"
   poetry-version: "1.2.2"
 jobs:
   unit-tests:
