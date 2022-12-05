@@ -12,9 +12,6 @@
   {{ include "envCache" . | nindent 2 }}
   {{ include "envQueue" . | nindent 2 }}
   {{ include "envCommon" . | nindent 2 }}
-  {{ include "envCommonTokenFrancky" . | nindent 2 }}
-  # ^ parquet requires a special token to be able to create the ref/convert/parquet
-  # branch, and push to it
   {{ include "envWorker" . | nindent 2 }}
   {{ include "envDatasetsWorker" . | nindent 2 }}
   - name: QUEUE_MAX_JOBS_PER_NAMESPACE
@@ -23,6 +20,16 @@
     value: {{ .Values.parquet.queue.maxJobsPerNamespace | quote }}
   - name: PARQUET_COMMIT_MESSAGE
     value: {{ .Values.parquet.commitMessage | quote }}
+  - name: PARQUET_COMMITTER_HF_TOKEN
+    {{- if .Values.secrets.userHfToken.fromSecret }}
+    valueFrom:
+      secretKeyRef:
+        name: {{ .Values.secrets.userHfToken.secretName | quote }}
+        key: HF_TOKEN
+        optional: false
+    {{- else }}
+    value: {{ .Values.secrets.userHfToken.value }}
+    {{- end }}
   - name: PARQUET_MAX_DATASET_SIZE
     value: {{ .Values.parquet.maxDatasetSize | quote }}
   - name: PARQUET_SOURCE_REVISION

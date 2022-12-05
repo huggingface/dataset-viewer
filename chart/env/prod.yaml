@@ -49,10 +49,10 @@ secrets:
     fromSecret: true
     secretName: "mongo-url"
     value: mongo://
-  token:
+  appHfToken:
     fromSecret: true
     secretName: "hf-token"
-  tokenFrancky:
+  userHfToken:
     fromSecret: true
     secretName: "hf-token-francky"
 

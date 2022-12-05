@@ -9,7 +9,6 @@
   {{ include "envCache" . | nindent 2 }}
   {{ include "envQueue" . | nindent 2 }}
   {{ include "envCommon" . | nindent 2 }}
-  {{ include "envCommonToken" . | nindent 2 }}
   - name: MONGODB_MIGRATION_MONGO_DATABASE
     value: {{ .Values.mongodbMigration.mongoDatabase | quote }}
   - name: MONGODB_MIGRATION_MONGO_URL

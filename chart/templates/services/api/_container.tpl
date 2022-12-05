@@ -9,7 +9,6 @@
   {{ include "envCache" . | nindent 2 }}
   {{ include "envQueue" . | nindent 2 }}
   {{ include "envCommon" . | nindent 2 }}
-  {{ include "envCommonToken" . | nindent 2 }}
   # service
   - name: API_HF_AUTH_PATH
     value: {{ .Values.api.hfAuthPath | quote }}

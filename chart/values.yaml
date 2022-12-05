@@ -7,11 +7,11 @@ secrets:
     fromSecret: false
     secretName: "mongo-url"
     value: mongo://
-  token:
+  appHfToken:
     fromSecret: false
     secretName: "datasets-server-hf-token"
     value: hf_app
-  tokenFrancky:
+  userHfToken:
     fromSecret: false
     secretName: "hf-token-francky"
     value: hf_

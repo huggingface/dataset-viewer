@@ -59,7 +59,8 @@ jobs:
           WORKER_SLEEP_TIME: "1"
           # hard coded, see e2e/tests/fixtures/hub.py
           COMMON_HF_ENDPOINT: "https://hub-ci.huggingface.co"
-          COMMON_HF_TOKEN: "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"
+          COMMON_HF_TOKEN: "hf_datasets-server_token"
+          PARQUET_COMMITTER_HF_TOKEN: "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"
           FIRST_ROWS_MAX_NUMBER: "4"
           PORT_REVERSE_PROXY: "8000"
           PROMETHEUS_MULTIPROC_DIR: "/tmp"
@@ -78,7 +79,8 @@ jobs:
           QUEUE_SLEEP_TIME: "1"
           # hard coded, see e2e/tests/fixtures/hub.py
           COMMON_HF_ENDPOINT: "https://hub-ci.huggingface.co"
-          COMMON_HF_TOKEN: "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"
+          COMMON_HF_TOKEN: "hf_datasets-server_token"
+          PARQUET_COMMITTER_HF_TOKEN: "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"
           FIRST_ROWS_MAX_NUMBER: "4"
           PORT_REVERSE_PROXY: "8000"
           PROMETHEUS_MULTIPROC_DIR: "/tmp"

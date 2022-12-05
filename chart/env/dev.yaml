@@ -10,10 +10,10 @@ secrets:
     fromSecret: false
     secretName: "mongo-url"
     value: mongo://
-  token:
+  appHfToken:
     fromSecret: true
     secretName: "datasets-server-hf-token"
-  tokenFrancky:
+  userHfToken:
     fromSecret: false
     secretName: "hf-token-francky"
 
