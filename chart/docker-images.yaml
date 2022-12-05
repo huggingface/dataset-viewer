@@ -2,14 +2,14 @@
   "dockerImage": {
     "reverseProxy": "docker.io/nginx:1.20",
     "jobs": {
-      "mongodbMigration": "huggingface/datasets-server-jobs-mongodb_migration:sha-18f56cb"
+      "mongodbMigration": "huggingface/datasets-server-jobs-mongodb_migration:sha-3697ecb"
     },
     "services": {
-      "admin": "huggingface/datasets-server-services-admin:sha-18f56cb",
-      "api": "huggingface/datasets-server-services-api:sha-18f56cb"
+      "admin": "huggingface/datasets-server-services-admin:sha-3697ecb",
+      "api": "huggingface/datasets-server-services-api:sha-3697ecb"
     },
     "workers": {
-      "datasets_based": "huggingface/datasets-server-workers-datasets_based:sha-b7b5c19"
+      "datasets_based": "huggingface/datasets-server-workers-datasets_based:sha-3697ecb"
     }
   }
 }
