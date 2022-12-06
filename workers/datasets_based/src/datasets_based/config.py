@@ -13,6 +13,7 @@ from libcommon.config import (
     QueueConfig,
     WorkerConfig,
 )
+from libcommon.storage import init_dir
 
 
 class DatasetsBasedConfig:
@@ -25,6 +26,8 @@ class DatasetsBasedConfig:
 
 
 class FirstRowsConfig:
+    _assets_directory: Optional[str]
+    assets_directory: str
     fallback_max_dataset_size: int
     max_bytes: int
     max_number: int
@@ -34,11 +37,16 @@ class FirstRowsConfig:
     def __init__(self):
         env = Env(expand_vars=True)
         with env.prefixed("FIRST_ROWS_"):
+            self._assets_directory = env.str(name="ASSETS_DIRECTORY", default=None)
             self.fallback_max_dataset_size = env.int(name="FALLBACK_MAX_DATASET_SIZE", default=100_000_000)
             self.max_bytes = env.int(name="MAX_BYTES", default=1_000_000)
             self.max_number = env.int(name="MAX_NUMBER", default=100)
             self.min_cell_bytes = env.int(name="CELL_MIN_BYTES", default=100)
             self.min_number = env.int(name="MIN_NUMBER", default=10)
+        self.setup()
+
+    def setup(self):
+        self.assets_directory = init_dir(directory=self._assets_directory, appname="datasets_server_assets")
 
 
 class ParquetConfig:

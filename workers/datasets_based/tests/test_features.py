@@ -71,7 +71,7 @@ def test_value(
         featureName="col",
         fieldType=feature,
         assets_base_url=app_config.common.assets_base_url,
-        assets_directory=app_config.cache.assets_directory,
+        assets_directory=app_config.first_rows.assets_directory,
     )
     assert value == output_value
 
@@ -314,6 +314,6 @@ def test_others(
         featureName="col",
         fieldType=feature,
         assets_base_url=app_config.common.assets_base_url,
-        assets_directory=app_config.cache.assets_directory,
+        assets_directory=app_config.first_rows.assets_directory,
     )
     assert value == output_value

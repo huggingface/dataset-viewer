@@ -15,7 +15,6 @@ Set the common environment variables to configure the following aspects:
 
 Set environment variables to configure the storage of precomputed API responses in a MongoDB database (the "cache"):
 
-- `CACHE_ASSETS_DIRECTORY`: directory where the asset files are stored. Defaults to empty, which means the assets are located in the `datasets_server_assets` subdirectory inside the OS default cache directory.
 - `CACHE_MONGO_DATABASE`: name of the database used for storing the cache. Defaults to `datasets_server_cache`.
 - `CACHE_MONGO_URL`: URL used to connect to the MongoDB server. Defaults to `mongodb://localhost:27017`.
 

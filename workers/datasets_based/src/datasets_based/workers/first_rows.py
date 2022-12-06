@@ -23,7 +23,7 @@ from libcommon.exceptions import CustomError
 from libcommon.utils import orjson_dumps
 from libcommon.worker import ConfigNotFoundError, SplitNotFoundError, Worker
 
-from datasets_based.config import AppConfig, CacheConfig, FirstRowsConfig
+from datasets_based.config import AppConfig, FirstRowsConfig
 from datasets_based.features import get_cell_value
 
 FirstRowsWorkerErrorCode = Literal[
@@ -548,7 +548,6 @@ def compute_first_rows_response(
 
 
 class FirstRowsWorker(Worker):
-    cache_config: CacheConfig
     first_rows_config: FirstRowsConfig
 
     def __init__(self, app_config: AppConfig, endpoint: str):
@@ -560,7 +559,6 @@ class FirstRowsWorker(Worker):
             worker_config=app_config.worker,
             version=importlib.metadata.version(__package__.split(".")[0]),
         )
-        self.cache_config = app_config.cache
         self.first_rows_config = app_config.first_rows
 
     def compute(
@@ -583,5 +581,5 @@ class FirstRowsWorker(Worker):
             rows_max_bytes=self.first_rows_config.max_bytes,
             rows_max_number=self.first_rows_config.max_number,
             rows_min_number=self.first_rows_config.min_number,
-            assets_directory=self.cache_config.assets_directory,
+            assets_directory=self.first_rows_config.assets_directory,
         )

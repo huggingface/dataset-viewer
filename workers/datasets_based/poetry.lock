@@ -830,6 +830,7 @@ python-versions = "*"
 [package.source]
 type = "url"
 url = "https://github.com/kpu/kenlm/archive/master.zip"
+
 [[package]]
 name = "keras"
 version = "2.10.0"
@@ -873,7 +874,7 @@ python-versions = "*"
 
 [[package]]
 name = "libcommon"
-version = "0.5.5"
+version = "0.5.6"
 description = "Library for utils, common to all the services and workers"
 category = "main"
 optional = false
@@ -891,7 +892,7 @@ pymongo = {version = ">=3.13.0,<4.0.0", extras = ["srv"]}
 
 [package.source]
 type = "file"
-url = "../../libs/libcommon/dist/libcommon-0.5.5-py3-none-any.whl"
+url = "../../libs/libcommon/dist/libcommon-0.5.6-py3-none-any.whl"
 
 [[package]]
 name = "librosa"
@@ -2432,7 +2433,7 @@ cffi = ["cffi (>=1.11)"]
 [metadata]
 lock-version = "1.1"
 python-versions = "3.9.15"
-content-hash = "26db696e405240cef9a2e6d9a02980ad667401265c6f45cfa520eeabc8301a95"
+content-hash = "eeb87bf26c987806cae36b449dd367d9368a4585830b9f34f97b9d793c1c9ebd"
 
 [metadata.files]
 absl-py = [
@@ -3268,7 +3269,7 @@ libclang = [
     {file = "libclang-14.0.6.tar.gz", hash = "sha256:9052a8284d8846984f6fa826b1d7460a66d3b23a486d782633b42b6e3b418789"},
 ]
 libcommon = [
-    {file = "libcommon-0.5.5-py3-none-any.whl", hash = "sha256:c136ac372b85cd704c7a949856454eeca6490809678960e8084ac30b56562eb1"},
+    {file = "libcommon-0.5.6-py3-none-any.whl", hash = "sha256:f4ef42b8693a10392e12689e846e866adfd3242c9cad045941bc759ee06844ff"},
 ]
 librosa = [
     {file = "librosa-0.9.2-py3-none-any.whl", hash = "sha256:322a813e6d37af9fbc369e6a637dcf5fdc5c6925ce806a0d27c68de61a81350f"},

@@ -81,7 +81,6 @@ def test_compare_major_version(
         assert worker.compare_major_version(other_version) == expected
 
 
-@pytest.mark.wip
 def test_should_skip_job(
     test_processing_step: ProcessingStep,
     common_config: CommonConfig,

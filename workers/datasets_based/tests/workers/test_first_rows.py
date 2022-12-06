@@ -120,7 +120,7 @@ def test_number_rows(
             rows_min_number=app_config.first_rows.min_number,
             rows_max_bytes=app_config.first_rows.max_bytes,
             min_cell_bytes=app_config.first_rows.min_cell_bytes,
-            assets_directory=app_config.cache.assets_directory,
+            assets_directory=app_config.first_rows.assets_directory,
         )
         assert result == expected_first_rows_response
         return
@@ -136,7 +136,7 @@ def test_number_rows(
             rows_min_number=app_config.first_rows.min_number,
             rows_max_bytes=app_config.first_rows.max_bytes,
             min_cell_bytes=app_config.first_rows.min_cell_bytes,
-            assets_directory=app_config.cache.assets_directory,
+            assets_directory=app_config.first_rows.assets_directory,
         )
     assert exc_info.value.code == error_code
     if cause is None:
@@ -185,7 +185,7 @@ def test_truncation(
         rows_min_number=10,
         rows_max_bytes=rows_max_bytes,
         min_cell_bytes=10,
-        assets_directory=app_config.cache.assets_directory,
+        assets_directory=app_config.first_rows.assets_directory,
     )
     print(get_json_size(response))
     assert (get_json_size(response) <= rows_max_bytes) is successful_truncation
