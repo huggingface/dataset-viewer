@@ -49,8 +49,6 @@ dockerImage:
     datasets_based: ""
 
 cache:
-  # Directory on the shared storage (audio files and images)
-  assetsDirectory: "/assets"
   # Name of the mongo db database used to cache the API responses
   mongoDatabase: "datasets_server_cache"
 
@@ -213,6 +211,8 @@ splits:
   tolerations: []
 
 firstRows:
+  # Directory on the shared storage (audio files and images)
+  assetsDirectory: "/assets"
   # Max size (in bytes) of the dataset to fallback in normal mode if streaming fails
   fallbackMaxDatasetSize: "100_000_000"
   # Max size of the /first-rows endpoint response in bytes

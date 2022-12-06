@@ -19,7 +19,6 @@
     # overridden
     value: {{ .Values.splits.queue.maxJobsPerNamespace | quote }}
   volumeMounts:
-  {{ include "volumeMountAssetsRO" . | nindent 2 }}
   {{ include "volumeMountDatasetsCache" . | nindent 2 }}
   {{ include "volumeMountNumbaCache" . | nindent 2 }}
   securityContext:

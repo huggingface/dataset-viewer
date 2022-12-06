@@ -2,7 +2,7 @@
 # Copyright 2022 The HuggingFace Authors.
 
 {{- define "volumeMountAssetsRO" -}}
-- mountPath: {{ .Values.cache.assetsDirectory | quote }}
+- mountPath: {{ .Values.firstRows.assetsDirectory | quote }}
   mountPropagation: None
   name: data
   subPath: "{{ include "assets.subpath" . }}"
@@ -10,7 +10,7 @@
 {{- end -}}
 
 {{- define "volumeMountAssetsRW" -}}
-- mountPath: {{ .Values.cache.assetsDirectory | quote }}
+- mountPath: {{ .Values.firstRows.assetsDirectory | quote }}
   mountPropagation: None
   name: data
   subPath: "{{ include "assets.subpath" . }}"

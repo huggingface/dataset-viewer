@@ -28,7 +28,6 @@
     value: {{ .Values.admin.uvicornNumWorkers | quote }}
   - name: ADMIN_UVICORN_PORT
     value: {{ .Values.admin.uvicornPort | quote }}
-  volumeMounts: {{ include "volumeMountAssetsRO" . | nindent 2 }}
   securityContext:
     allowPrivilegeEscalation: false
   readinessProbe:

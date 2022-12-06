@@ -2,8 +2,6 @@
 # Copyright 2022 The HuggingFace Authors.
 
 {{- define "envCache" -}}
-- name: CACHE_ASSETS_DIRECTORY
-  value: {{ .Values.cache.assetsDirectory | quote }}
 - name: CACHE_MONGO_DATABASE
   value: {{ .Values.cache.mongoDatabase | quote }}
 - name: CACHE_MONGO_URL

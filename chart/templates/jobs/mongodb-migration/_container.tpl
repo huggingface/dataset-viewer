@@ -25,8 +25,6 @@
     value: {{ .Values.secrets.mongoUrl.value }}
       {{- end }}
     {{- end }}
-  volumeMounts:
-  {{ include "volumeMountAssetsRO" . | nindent 2 }}
   securityContext:
     allowPrivilegeEscalation: false  
   resources: {{ toYaml .Values.mongodbMigration.resources | nindent 4 }}

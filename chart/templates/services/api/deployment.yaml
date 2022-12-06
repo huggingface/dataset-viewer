@@ -23,7 +23,6 @@ spec:
       labels: {{ include "labels.api" . | nindent 8 }}
     spec:
       imagePullSecrets: {{ toYaml .Values.imagePullSecrets | nindent 8 }}
-      initContainers: {{ include "initContainerAssets" . | nindent 8 }}
       containers: {{ include "containerApi" . | nindent 8 }}
       nodeSelector: {{ toYaml .Values.api.nodeSelector | nindent 8 }}
       tolerations: {{ toYaml .Values.api.tolerations | nindent 8 }}

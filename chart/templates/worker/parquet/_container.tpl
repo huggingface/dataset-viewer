@@ -41,7 +41,6 @@
   - name: PARQUET_URL_TEMPLATE
     value: {{ .Values.parquet.urlTemplate | quote }}
   volumeMounts:
-  {{ include "volumeMountAssetsRO" . | nindent 2 }}
   {{ include "volumeMountDatasetsCache" . | nindent 2 }}
   {{ include "volumeMountNumbaCache" . | nindent 2 }}
   securityContext:
