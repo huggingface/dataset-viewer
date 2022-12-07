@@ -8,13 +8,13 @@ import datasets.config
 from datasets.utils.logging import log_levels, set_verbosity
 from environs import Env
 from libcommon.config import (
+    AssetsConfig,
     CacheConfig,
     CommonConfig,
     ProcessingGraphConfig,
     QueueConfig,
     WorkerConfig,
 )
-from libcommon.storage import init_dir
 
 
 class DatasetsBasedConfig:
@@ -26,19 +26,20 @@ class DatasetsBasedConfig:
         env = Env(expand_vars=True)
         with env.prefixed("DATASETS_BASED_"):
             self.endpoint = env.str(name="ENDPOINT", default="/splits")
-            _hf_datasets_cache = env.str(name="HF_DATASETS_CACHE", default=None)
-            self.hf_datasets_cache = (
-                datasets.config.HF_DATASETS_CACHE if _hf_datasets_cache is None else Path(_hf_datasets_cache)
-            )
-            _hf_modules_cache = env.str(name="HF_MODULES_CACHE", default=None)
-            self.hf_modules_cache = (
-                datasets.config.HF_MODULES_CACHE if _hf_modules_cache is None else Path(_hf_modules_cache)
-            )
+            self._hf_datasets_cache = env.str(name="HF_DATASETS_CACHE", default=None)
+            self._hf_modules_cache = env.str(name="HF_MODULES_CACHE", default=None)
+        self.setup()
+
+    def setup(self) -> None:
+        self.hf_datasets_cache = (
+            datasets.config.HF_DATASETS_CACHE if self._hf_datasets_cache is None else Path(self._hf_datasets_cache)
+        )
+        self.hf_modules_cache = (
+            datasets.config.HF_MODULES_CACHE if self._hf_modules_cache is None else Path(self._hf_modules_cache)
+        )
 
 
 class FirstRowsConfig:
-    _assets_directory: Optional[str]
-    assets_directory: str
     fallback_max_dataset_size: int
     max_bytes: int
     max_number: int
@@ -48,16 +49,11 @@ class FirstRowsConfig:
     def __init__(self):
         env = Env(expand_vars=True)
         with env.prefixed("FIRST_ROWS_"):
-            self._assets_directory = env.str(name="ASSETS_DIRECTORY", default=None)
             self.fallback_max_dataset_size = env.int(name="FALLBACK_MAX_DATASET_SIZE", default=100_000_000)
             self.max_bytes = env.int(name="MAX_BYTES", default=1_000_000)
             self.max_number = env.int(name="MAX_NUMBER", default=100)
             self.min_cell_bytes = env.int(name="CELL_MIN_BYTES", default=100)
             self.min_number = env.int(name="MIN_NUMBER", default=10)
-        self.setup()
-
-    def setup(self):
-        self.assets_directory = init_dir(directory=self._assets_directory, appname="datasets_server_assets")
 
 
 class ParquetConfig:
@@ -82,6 +78,7 @@ class ParquetConfig:
 
 
 class AppConfig:
+    assets: AssetsConfig
     cache: CacheConfig
     common: CommonConfig
     datasets_based: DatasetsBasedConfig
@@ -93,6 +90,7 @@ class AppConfig:
 
     def __init__(self):
         # First process the common configuration to setup the logging
+        self.assets = AssetsConfig()
         self.common = CommonConfig()
         self.cache = CacheConfig()
         self.datasets_based = DatasetsBasedConfig()

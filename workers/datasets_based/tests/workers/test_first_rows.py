@@ -104,14 +104,14 @@ def test_number_rows(
             dataset=dataset,
             config=config,
             split=split,
-            assets_base_url=app_config.common.assets_base_url,
+            assets_base_url=app_config.assets.base_url,
+            assets_directory=app_config.assets.storage_directory,
             hf_token=app_config.common.hf_token if use_token else None,
             max_size_fallback=app_config.first_rows.fallback_max_dataset_size,
             rows_max_number=app_config.first_rows.max_number,
             rows_min_number=app_config.first_rows.min_number,
             rows_max_bytes=app_config.first_rows.max_bytes,
             min_cell_bytes=app_config.first_rows.min_cell_bytes,
-            assets_directory=app_config.first_rows.assets_directory,
         )
         assert result == expected_first_rows_response
         return
@@ -120,14 +120,14 @@ def test_number_rows(
             dataset=dataset,
             config=config,
             split=split,
-            assets_base_url=app_config.common.assets_base_url,
+            assets_base_url=app_config.assets.base_url,
+            assets_directory=app_config.assets.storage_directory,
             hf_token=app_config.common.hf_token if use_token else None,
             max_size_fallback=app_config.first_rows.fallback_max_dataset_size,
             rows_max_number=app_config.first_rows.max_number,
             rows_min_number=app_config.first_rows.min_number,
             rows_max_bytes=app_config.first_rows.max_bytes,
             min_cell_bytes=app_config.first_rows.min_cell_bytes,
-            assets_directory=app_config.first_rows.assets_directory,
         )
     assert exc_info.value.code == error_code
     if cause is None:
@@ -169,14 +169,14 @@ def test_truncation(
         dataset=dataset,
         config=config,
         split=split,
-        assets_base_url=app_config.common.assets_base_url,
+        assets_base_url=app_config.assets.base_url,
+        assets_directory=app_config.assets.storage_directory,
         hf_token=None,
         max_size_fallback=app_config.first_rows.fallback_max_dataset_size,
         rows_max_number=1_000_000,
         rows_min_number=10,
         rows_max_bytes=rows_max_bytes,
         min_cell_bytes=10,
-        assets_directory=app_config.first_rows.assets_directory,
     )
     print(get_json_size(response))
     assert (get_json_size(response) <= rows_max_bytes) is successful_truncation

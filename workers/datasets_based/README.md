@@ -32,7 +32,6 @@ Only needed when the `DATASETS_BASED_ENDPOINT` is set to `/first-rows`.
 
 Set environment variables to configure the first rows worker (`FIRST_ROWS_` prefix):
 
-- `FIRST_ROWS_ASSETS_DIRECTORY`: directory where the asset files are stored. Defaults to empty, which means the assets are located in the `datasets_server_assets` subdirectory inside the OS default cache directory.
 - `FIRST_ROWS_FALLBACK_MAX_DATASET_SIZE`: the maximum size in bytes of the dataset to fall back into normal mode if streaming fails. Note that it requires to have the size in the info metadata. Set to `0` to disable the fallback. Defaults to `100_000_000`.
 - `FIRST_ROWS_MAX_BYTES`: the max size of the /first-rows endpoint response in bytes. Defaults to `1_000_000` (1 MB).
 - `FIRST_ROWS_MAX_NUMBER`: the max number of rows fetched by the worker for the split and provided in the /first-rows endpoint response. Defaults to `100`.
