@@ -31,7 +31,7 @@ def clean_mongo_database() -> None:
 
 @pytest.fixture(autouse=True, scope="module")
 def worker(app_config: AppConfig) -> ParquetWorker:
-    return ParquetWorker(app_config=app_config, endpoint="/parquet")
+    return ParquetWorker(app_config=app_config)
 
 
 def test_version(worker: ParquetWorker) -> None:

@@ -29,7 +29,7 @@ def clean_mongo_database() -> None:
 
 @pytest.fixture(autouse=True, scope="module")
 def worker(app_config: AppConfig) -> FirstRowsWorker:
-    return FirstRowsWorker(app_config=app_config, endpoint="/first-rows")
+    return FirstRowsWorker(app_config=app_config)
 
 
 def should_skip_job(worker: FirstRowsWorker, hub_public_csv: str) -> None:

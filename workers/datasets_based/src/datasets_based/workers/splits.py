@@ -1,7 +1,6 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2022 The HuggingFace Authors.
 
-import importlib.metadata
 import logging
 from http import HTTPStatus
 from typing import Any, Dict, List, Literal, Mapping, Optional, TypedDict, Union
@@ -15,9 +14,9 @@ from datasets import (
 from datasets.data_files import EmptyDatasetError as _EmptyDatasetError
 from libcommon.exceptions import CustomError
 from libcommon.simple_cache import delete_response, get_dataset_response_ids
-from libcommon.worker import Queue, Worker
+from libcommon.worker import Queue
 
-from datasets_based.config import AppConfig
+from datasets_based.workers._datasets_based_worker import DatasetsBasedWorker
 
 SplitsWorkerErrorCode = Literal[
     "EmptyDatasetError",
@@ -162,16 +161,10 @@ def compute_splits_response(
     return {"splits": split_items}
 
 
-class SplitsWorker(Worker):
-    def __init__(self, app_config: AppConfig, endpoint: str):
-        super().__init__(
-            processing_step=app_config.processing_graph.graph.get_step(endpoint),
-            # ^ raises if the step is not found
-            common_config=app_config.common,
-            queue_config=app_config.queue,
-            worker_config=app_config.worker,
-            version=importlib.metadata.version(__package__.split(".")[0]),
-        )
+class SplitsWorker(DatasetsBasedWorker):
+    @staticmethod
+    def get_endpoint() -> str:
+        return "/splits"
 
     def compute(
         self,

@@ -24,7 +24,7 @@ def clean_mongo_database() -> None:
 
 @pytest.fixture(autouse=True, scope="module")
 def worker(app_config: AppConfig) -> SplitsWorker:
-    return SplitsWorker(app_config=app_config, endpoint="/splits")
+    return SplitsWorker(app_config=app_config)
 
 
 def test_version(worker: SplitsWorker) -> None:

@@ -2,7 +2,6 @@
 # Copyright 2022 The HuggingFace Authors.
 
 import glob
-import importlib.metadata
 import logging
 import re
 from http import HTTPStatus
@@ -25,9 +24,10 @@ from huggingface_hub.hf_api import (
 )
 from huggingface_hub.utils import RepositoryNotFoundError, RevisionNotFoundError
 from libcommon.exceptions import CustomError
-from libcommon.worker import DatasetNotFoundError, Worker
+from libcommon.worker import DatasetNotFoundError
 
 from datasets_based.config import AppConfig, ParquetConfig
+from datasets_based.workers._datasets_based_worker import DatasetsBasedWorker
 
 ParquetWorkerErrorCode = Literal[
     "DatasetRevisionNotFoundError",
@@ -338,18 +338,15 @@ def compute_parquet_response(
     }
 
 
-class ParquetWorker(Worker):
+class ParquetWorker(DatasetsBasedWorker):
     parquet_config: ParquetConfig
 
-    def __init__(self, app_config: AppConfig, endpoint: str):
-        super().__init__(
-            processing_step=app_config.processing_graph.graph.get_step(endpoint),
-            # ^ raises if the step is not found
-            common_config=app_config.common,
-            queue_config=app_config.queue,
-            worker_config=app_config.worker,
-            version=importlib.metadata.version(__package__.split(".")[0]),
-        )
+    @staticmethod
+    def get_endpoint() -> str:
+        return "/parquet"
+
+    def __init__(self, app_config: AppConfig):
+        super().__init__(app_config=app_config)
         self.parquet_config = app_config.parquet
 
     def compute(

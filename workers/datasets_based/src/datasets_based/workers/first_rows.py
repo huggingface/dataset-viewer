@@ -2,7 +2,6 @@
 # Copyright 2022 The HuggingFace Authors.
 
 import functools
-import importlib.metadata
 import itertools
 import logging
 import time
@@ -21,10 +20,11 @@ from datasets import (
 from datasets.data_files import EmptyDatasetError as _EmptyDatasetError
 from libcommon.exceptions import CustomError
 from libcommon.utils import orjson_dumps
-from libcommon.worker import ConfigNotFoundError, SplitNotFoundError, Worker
+from libcommon.worker import ConfigNotFoundError, SplitNotFoundError
 
 from datasets_based.config import AppConfig, FirstRowsConfig
 from datasets_based.features import get_cell_value
+from datasets_based.workers._datasets_based_worker import DatasetsBasedWorker
 
 FirstRowsWorkerErrorCode = Literal[
     "SplitsNamesError",
@@ -547,18 +547,15 @@ def compute_first_rows_response(
     return response
 
 
-class FirstRowsWorker(Worker):
+class FirstRowsWorker(DatasetsBasedWorker):
     first_rows_config: FirstRowsConfig
 
-    def __init__(self, app_config: AppConfig, endpoint: str):
-        super().__init__(
-            processing_step=app_config.processing_graph.graph.get_step(endpoint),
-            # ^ raises if the step is not found
-            common_config=app_config.common,
-            queue_config=app_config.queue,
-            worker_config=app_config.worker,
-            version=importlib.metadata.version(__package__.split(".")[0]),
-        )
+    @staticmethod
+    def get_endpoint() -> str:
+        return "/first-rows"
+
+    def __init__(self, app_config: AppConfig):
+        super().__init__(app_config=app_config)
         self.first_rows_config = app_config.first_rows
 
     def compute(
