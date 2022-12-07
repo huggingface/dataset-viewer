@@ -4,24 +4,23 @@
 from pathlib import Path
 from typing import Iterator
 
-from pytest import MonkeyPatch, fixture
-
-import datasets.config
-from datasets_based.config import AppConfig
 from libcommon.queue import _clean_queue_database
 from libcommon.simple_cache import _clean_cache_database
+from pytest import MonkeyPatch, fixture
+
+from datasets_based.config import AppConfig
 
 from .constants import CI_APP_TOKEN, CI_HUB_ENDPOINT, CI_URL_TEMPLATE, CI_USER_TOKEN
 
 
 @fixture
 def datasets_cache_directory(tmp_path: Path) -> Path:
-    return tmp_path
+    return tmp_path / "datasets"
 
 
 @fixture
 def modules_cache_directory(tmp_path: Path) -> Path:
-    return tmp_path
+    return tmp_path / "modules"
 
 
 # see https://github.com/pytest-dev/pytest/issues/363#issuecomment-406536200
@@ -38,7 +37,7 @@ def monkeypatch_session() -> Iterator[MonkeyPatch]:
 
 # see https://github.com/pytest-dev/pytest/issues/363#issuecomment-406536200
 @fixture
-def set_env_vars() -> Iterator[MonkeyPatch]:
+def set_env_vars(datasets_cache_directory: Path, modules_cache_directory: Path) -> Iterator[MonkeyPatch]:
     mp = MonkeyPatch()
     mp.setenv("CACHE_MONGO_DATABASE", "datasets_server_cache_test")
     mp.setenv("QUEUE_MONGO_DATABASE", "datasets_server_queue_test")
@@ -48,27 +47,14 @@ def set_env_vars() -> Iterator[MonkeyPatch]:
     mp.setenv("FIRST_ROWS_MAX_NUMBER", "7")
     mp.setenv("PARQUET_MAX_DATASET_SIZE", "10_000")
     mp.setenv("PARQUET_COMMITTER_HF_TOKEN", CI_USER_TOKEN)
+    mp.setenv("DATASETS_BASED_HF_DATASETS_CACHE", str(datasets_cache_directory))
+    mp.setenv("DATASETS_BASED_HF_MODULES_CACHE", str(modules_cache_directory))
     yield mp
     mp.undo()
 
 
 @fixture
-def set_datasets_dirs(
-    datasets_cache_directory: Path,
-    modules_cache_directory: Path,
-) -> None:
-    datasets.config.HF_DATASETS_CACHE = datasets_cache_directory
-    datasets.config.DOWNLOADED_DATASETS_PATH = (
-        datasets.config.HF_DATASETS_CACHE / datasets.config.DOWNLOADED_DATASETS_DIR
-    )
-    datasets.config.EXTRACTED_DATASETS_PATH = (
-        datasets.config.HF_DATASETS_CACHE / datasets.config.EXTRACTED_DATASETS_DIR
-    )
-    datasets.config.HF_MODULES_CACHE = modules_cache_directory
-
-
-@fixture
-def app_config(set_env_vars: MonkeyPatch, set_datasets_dirs: None) -> Iterator[AppConfig]:
+def app_config(set_env_vars: MonkeyPatch) -> Iterator[AppConfig]:
     app_config = AppConfig()
     if "test" not in app_config.cache.mongo_database or "test" not in app_config.queue.mongo_database:
         raise ValueError("Test must be launched on a test mongo database")

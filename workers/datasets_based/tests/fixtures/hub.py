@@ -4,7 +4,7 @@
 # Adapted from https://github.com/huggingface/datasets/blob/main/tests/fixtures/hub.py
 
 import time
-from contextlib import contextmanager, suppress
+from contextlib import suppress
 from pathlib import Path
 from typing import Any, Iterable, List, Mapping, Optional, Tuple, TypedDict
 

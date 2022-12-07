@@ -1,6 +1,7 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2022 The HuggingFace Authors.
 
+from pathlib import Path
 from typing import List, Optional
 
 import datasets.config
@@ -18,11 +19,21 @@ from libcommon.storage import init_dir
 
 class DatasetsBasedConfig:
     endpoint: str
+    hf_datasets_cache: Path
+    hf_modules_cache: Path
 
     def __init__(self):
         env = Env(expand_vars=True)
         with env.prefixed("DATASETS_BASED_"):
             self.endpoint = env.str(name="ENDPOINT", default="/splits")
+            _hf_datasets_cache = env.str(name="HF_DATASETS_CACHE", default=None)
+            self.hf_datasets_cache = (
+                datasets.config.HF_DATASETS_CACHE if _hf_datasets_cache is None else Path(_hf_datasets_cache)
+            )
+            _hf_modules_cache = env.str(name="HF_MODULES_CACHE", default=None)
+            self.hf_modules_cache = (
+                datasets.config.HF_MODULES_CACHE if _hf_modules_cache is None else Path(_hf_modules_cache)
+            )
 
 
 class FirstRowsConfig:
