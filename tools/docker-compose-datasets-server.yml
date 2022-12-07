@@ -4,12 +4,12 @@ services:
     image: ${IMAGE_REVERSE_PROXY?IMAGE_REVERSE_PROXY env var must be provided}
     volumes:
       - ../chart/nginx-templates/:/etc/nginx/templates:ro
-      - assets:${FIRST_ROWS_ASSETS_DIRECTORY-/assets}:ro
+      - assets:${ASSETS_STORAGE_DIRECTORY-/assets}:ro
       - ../chart/static-files/openapi.json:/static-files/openapi.json:ro
     ports:
       - "${PORT_REVERSE_PROXY-8000}:80"
     environment:
-      ASSETS_DIRECTORY: ${FIRST_ROWS_ASSETS_DIRECTORY-/assets}
+      ASSETS_DIRECTORY: ${ASSETS_STORAGE_DIRECTORY-/assets}
       HOST: localhost
       PORT: 80
       URL_ADMIN: http://admin:${ADMIN_UVICORN_PORT-8081}
@@ -95,7 +95,7 @@ services:
     #   dockerfile: workers/datasets_based/Dockerfile
     image: ${IMAGE_WORKER_DATASETS_BASED?IMAGE_WORKER_DATASETS_BASED env var must be provided}
     volumes:
-      - assets:${FIRST_ROWS_ASSETS_DIRECTORY-/assets}:rw
+      - assets:${ASSETS_STORAGE_DIRECTORY-/assets}:rw
       - first-rows-datasets-cache:${HF_DATASETS_CACHE-/datasets-cache}:rw
       - first-rows-modules-cache:${HF_DATASETS_CACHE-/modules-cache}:rw
       - first-rows-numba-cache:${NUMBA_CACHE_DIR-/numba-cache}:rw
@@ -103,8 +103,9 @@ services:
       file: docker-compose-base.yml
       service: datasets-worker
     environment:
+      ASSETS_BASE_URL: "http://localhost:${PORT_REVERSE_PROXY-8000}/assets" # hard-coded to work with the reverse-proxy
+      ASSETS_STORAGE_DIRECTORY: ${ASSETS_STORAGE_DIRECTORY-/assets}
       DATASETS_BASED_ENDPOINT: "/first-rows" # hard-coded
-      FIRST_ROWS_ASSETS_DIRECTORY: ${FIRST_ROWS_ASSETS_DIRECTORY-/assets}
       FIRST_ROWS_FALLBACK_MAX_DATASET_SIZE: ${FIRST_ROWS_FALLBACK_MAX_DATASET_SIZE-100_000_000}
       FIRST_ROWS_MAX_BYTES: ${FIRST_ROWS_MAX_BYTES-1_000_000}
       FIRST_ROWS_MAX_NUMBER: ${FIRST_ROWS_MAX_NUMBER-100}

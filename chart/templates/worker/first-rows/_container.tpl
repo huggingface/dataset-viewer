@@ -9,6 +9,7 @@
   - name: DATASETS_BASED_ENDPOINT
     value: "/first-rows"
     # ^ hard-coded
+  {{ include "envAssets" . | nindent 2 }}
   {{ include "envCache" . | nindent 2 }}
   {{ include "envQueue" . | nindent 2 }}
   {{ include "envCommon" . | nindent 2 }}
@@ -18,8 +19,6 @@
     # value: {{ .Values.queue.maxJobsPerNamespace | quote }}
     # overridden
     value: {{ .Values.firstRows.queue.maxJobsPerNamespace | quote }}
-  - name: FIRST_ROWS_ASSETS_DIRECTORY
-    value: {{ .Values.firstRows.assetsDirectory | quote }}
   - name: FIRST_ROWS_FALLBACK_MAX_DATASET_SIZE
     value: {{ .Values.firstRows.fallbackMaxDatasetSize | quote }}
   - name: FIRST_ROWS_MAX_BYTES

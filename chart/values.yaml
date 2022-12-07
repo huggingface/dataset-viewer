@@ -66,9 +66,13 @@ worker:
   # Number of seconds a worker will sleep before trying to process a new job
   sleepSeconds: 5
 
-common:
+assets:
   # base URL for the assets files. It should be set accordingly to the datasets-server domain, eg https://datasets-server.huggingface.co/assets
-  # assetsBaseUrl: "not used for now"
+  # baseUrl: "not used for now"
+  # Directory on the shared storage (audio files and images)
+  storageDirectory: "/assets"
+
+common:
   # URL of the HuggingFace Hub
   hfEndpoint: "https://huggingface.co"
   # Log level
@@ -211,8 +215,6 @@ splits:
   tolerations: []
 
 firstRows:
-  # Directory on the shared storage (audio files and images)
-  assetsDirectory: "/assets"
   # Max size (in bytes) of the dataset to fallback in normal mode if streaming fails
   fallbackMaxDatasetSize: "100_000_000"
   # Max size of the /first-rows endpoint response in bytes

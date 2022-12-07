@@ -63,7 +63,7 @@ Note that every worker has its own job queue:
 - `/first-rows`: the job is to get the columns and the first 100 rows of the split.
 - `/parquet`: the job is to download the dataset, prepare a parquet version of every split (various sharded parquet files), and upload them to the `ref/convert/parquet` "branch" of the dataset repository on the Hub.
 
-Note also that the workers create local files when the dataset contains images or audios. A shared directory (`COMMON_ASSETS_DIRECTORY`) must therefore be provisioned with sufficient space for the generated files. The `/first-rows` endpoint responses contain URLs to these files, served by the API under the `/assets/` endpoint.
+Note also that the workers create local files when the dataset contains images or audios. A shared directory (`ASSETS_STORAGE_DIRECTORY`) must therefore be provisioned with sufficient space for the generated files. The `/first-rows` endpoint responses contain URLs to these files, served by the API under the `/assets/` endpoint.
 
 Hence, the working application has:
 

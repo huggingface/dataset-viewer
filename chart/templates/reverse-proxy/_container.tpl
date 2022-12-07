@@ -7,7 +7,7 @@
   imagePullPolicy: IfNotPresent
   env:
   - name: ASSETS_DIRECTORY
-    value: {{ .Values.firstRows.assetsDirectory | quote }}
+    value: {{ .Values.assets.storageDirectory | quote }}
   - name: HOST
     value: {{ .Values.reverseProxy.host | quote }}
   - name: PORT

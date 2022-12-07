@@ -2,8 +2,6 @@
 # Copyright 2022 The HuggingFace Authors.
 
 {{- define "envCommon" -}}
-- name: COMMON_ASSETS_BASE_URL
-  value: "{{ include "assets.baseUrl" . }}"
 - name: COMMON_HF_ENDPOINT
   value: {{ .Values.common.hfEndpoint | quote }}
 - name: HF_ENDPOINT # see https://github.com/huggingface/datasets/pull/5196#issuecomment-1322191411

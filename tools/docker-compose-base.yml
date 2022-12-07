@@ -3,7 +3,6 @@ services:
   common:
     environment:
       # common
-      COMMON_ASSETS_BASE_URL: "http://localhost:${PORT_REVERSE_PROXY-8000}/assets" # hard-coded to work with the reverse-proxy
       COMMON_HF_ENDPOINT: ${COMMON_HF_ENDPOINT-https://huggingface.co}
       COMMON_HF_TOKEN: ${COMMON_HF_TOKEN-}
       COMMON_LOG_LEVEL: ${COMMON_LOG_LEVEL-INFO}
