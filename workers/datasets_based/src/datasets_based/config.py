@@ -90,8 +90,8 @@ class AppConfig:
 
     def __init__(self):
         # First process the common configuration to setup the logging
-        self.assets = AssetsConfig()
         self.common = CommonConfig()
+        self.assets = AssetsConfig()
         self.cache = CacheConfig()
         self.datasets_based = DatasetsBasedConfig()
         self.first_rows = FirstRowsConfig()
