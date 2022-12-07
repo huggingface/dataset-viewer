@@ -32,14 +32,13 @@ def init_dir(directory: Optional[StrPath] = None, appname: Optional[str] = None)
     return directory
 
 
-def empty_dir(directory: StrPath) -> None:
-    """Empty a directory.
+def remove_dir(directory: StrPath) -> None:
+    """Remove a directory.
 
-    If the directory does not exist, it will be created.
+    If the directory does not exist, don't raise.
 
     Args:
-        directory (Union[str, PathLike[str]]): The directory to empty.
+        directory (Union[str, PathLike[str]]): The directory to remove.
     """
     shutil.rmtree(directory, ignore_errors=True)
-    makedirs(directory, exist_ok=True)
-    logging.debug(f"Directory emptied: {directory}")
+    logging.debug(f"Directory removed: {directory}")

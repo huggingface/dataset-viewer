@@ -6,7 +6,7 @@ from typing import Optional
 
 import pytest
 
-from libcommon.storage import StrPath, empty_dir, init_dir
+from libcommon.storage import StrPath, init_dir, remove_dir
 
 
 @pytest.mark.wip
@@ -61,7 +61,7 @@ def test_init_dir(
         (True, True),
     ],
 )
-def test_empty_dir(tmp_path_factory: pytest.TempPathFactory, exists: bool, is_string: bool) -> None:
+def test_remove_dir(tmp_path_factory: pytest.TempPathFactory, exists: bool, is_string: bool) -> None:
     subdirectory = "subdirectory"
     tmp_path = tmp_path_factory.mktemp("test") / subdirectory
     tmp_file = tmp_path / "file.txt"
@@ -73,9 +73,8 @@ def test_empty_dir(tmp_path_factory: pytest.TempPathFactory, exists: bool, is_st
     assert tmp_file.exists() is exists
     assert tmp_file.is_file() is exists
     directory: StrPath = str(tmp_path) if is_string else tmp_path
-    empty_dir(directory)
-    assert tmp_path.exists()
-    assert tmp_path.is_dir()
+    remove_dir(directory)
+    assert tmp_path.exists() is False
+    assert tmp_path.is_dir() is False
     assert tmp_file.exists() is False
     assert tmp_file.is_file() is False
-    assert len(list(tmp_path.iterdir())) == 0
