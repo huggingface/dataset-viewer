@@ -305,7 +305,12 @@ class Worker(ABC):
             if dataset_git_revision is None:
                 self.debug(f"the dataset={dataset} has no git revision, don't update the cache")
                 raise NoGitRevisionError(f"Could not get git revision for dataset {dataset}")
-            content = self.compute(dataset=dataset, config=config, split=split, force=force)
+            try:
+                self.pre_compute(dataset=dataset, config=config, split=split, force=force)
+                content = self.compute(dataset=dataset, config=config, split=split, force=force)
+            finally:
+                # ensure the post_compute hook is called even if the compute raises an exception
+                self.post_compute(dataset=dataset, config=config, split=split, force=force)
             upsert_response(
                 kind=self.processing_step.cache_kind,
                 dataset=dataset,
@@ -345,6 +350,16 @@ class Worker(ABC):
             self.debug(f"response for dataset={dataset} config={config} split={split} had an error, cache updated")
             return False
 
+    def pre_compute(
+        self,
+        dataset: str,
+        config: Optional[str] = None,
+        split: Optional[str] = None,
+        force: bool = False,
+    ) -> Mapping[str, Any]:
+        """Hook method called before the compute method."""
+        pass
+
     @abstractmethod
     def compute(
         self,
@@ -353,4 +368,14 @@ class Worker(ABC):
         split: Optional[str] = None,
         force: bool = False,
     ) -> Mapping[str, Any]:
+        pass
+
+    def post_compute(
+        self,
+        dataset: str,
+        config: Optional[str] = None,
+        split: Optional[str] = None,
+        force: bool = False,
+    ) -> Mapping[str, Any]:
+        """Hook method called after the compute method."""
         pass
