@@ -356,7 +356,7 @@ class Worker(ABC):
         config: Optional[str] = None,
         split: Optional[str] = None,
         force: bool = False,
-    ) -> Mapping[str, Any]:
+    ) -> None:
         """Hook method called before the compute method."""
         pass
 
@@ -376,6 +376,6 @@ class Worker(ABC):
         config: Optional[str] = None,
         split: Optional[str] = None,
         force: bool = False,
-    ) -> Mapping[str, Any]:
+    ) -> None:
         """Hook method called after the compute method."""
         pass
