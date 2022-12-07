@@ -9,10 +9,25 @@ from libcommon.log import init_logging
 from libcommon.processing_graph import ProcessingGraph, ProcessingGraphSpecification
 from libcommon.queue import connect_to_queue_database
 from libcommon.simple_cache import connect_to_cache_database
+from libcommon.storage import init_dir
+
+
+class AssetsConfig:
+    base_url: str
+    storage_directory: str
+
+    def __init__(self):
+        env = Env(expand_vars=True)
+        with env.prefixed("ASSETS_"):
+            self.base_url = env.str(name="BASE_URL", default="assets")
+            self._storage_directory = env.str(name="STORAGE_DIRECTORY", default=None)
+        self.setup()
+
+    def setup(self):
+        self.storage_directory = init_dir(directory=self._storage_directory, appname="datasets_server_assets")
 
 
 class CommonConfig:
-    assets_base_url: str
     hf_endpoint: str
     hf_token: Optional[str]
     log_level: int
@@ -20,7 +35,6 @@ class CommonConfig:
     def __init__(self):
         env = Env(expand_vars=True)
         with env.prefixed("COMMON_"):
-            self.assets_base_url = env.str(name="ASSETS_BASE_URL", default="assets")
             self.hf_endpoint = env.str(name="HF_ENDPOINT", default="https://huggingface.co")
             self.log_level = env.log_level(name="LOG_LEVEL", default="INFO")
             hf_token = env.str(name="HF_TOKEN", default="")
