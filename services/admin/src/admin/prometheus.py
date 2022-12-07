@@ -18,6 +18,7 @@ from prometheus_client import (  # type: ignore # https://github.com/prometheus/
 from prometheus_client.multiprocess import (  # type: ignore # https://github.com/prometheus/client_python/issues/491
     MultiProcessCollector,
 )
+from psutil import disk_usage
 from starlette.requests import Request
 from starlette.responses import Response
 
@@ -34,11 +35,18 @@ RESPONSES_IN_CACHE_TOTAL = Gauge(
     labelnames=["kind", "http_status", "error_code"],
     multiprocess_mode="liveall",
 )
+ASSETS_DISK_USAGE = Gauge(
+    name="assets_disk_usage",
+    documentation="Usage of the disk where the assets are stored",
+    labelnames=["type"],
+    multiprocess_mode="liveall",
+)
 
 
 @dataclass
 class Prometheus:
     processing_steps: List[ProcessingStep]
+    assets_storage_directory: str
 
     def getRegistry(self) -> CollectorRegistry:
         # taken from https://github.com/perdy/starlette-prometheus/blob/master/starlette_prometheus/view.py
@@ -60,6 +68,12 @@ class Prometheus:
             RESPONSES_IN_CACHE_TOTAL.labels(
                 kind=metric["kind"], http_status=metric["http_status"], error_code=metric["error_code"]
             ).set(metric["count"])
+        # Assets storage metrics
+        total, used, free, percent = disk_usage(self.assets_storage_directory)
+        ASSETS_DISK_USAGE.labels(type="total").set(total)
+        ASSETS_DISK_USAGE.labels(type="used").set(used)
+        ASSETS_DISK_USAGE.labels(type="free").set(free)
+        ASSETS_DISK_USAGE.labels(type="percent").set(percent)
 
     def getLatestContent(self) -> str:
         self.updateMetrics()

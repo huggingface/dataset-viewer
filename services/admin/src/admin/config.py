@@ -5,6 +5,7 @@ from typing import Optional
 
 from environs import Env
 from libcommon.config import (
+    AssetsConfig,
     CacheConfig,
     CommonConfig,
     ProcessingGraphConfig,
@@ -45,6 +46,7 @@ class AdminConfig:
 
 class AppConfig:
     admin: AdminConfig
+    assets: AssetsConfig
     cache: CacheConfig
     common: CommonConfig
     processing_graph: ProcessingGraphConfig
@@ -53,6 +55,7 @@ class AppConfig:
     def __init__(self):
         # First process the common configuration to setup the logging
         self.common = CommonConfig()
+        self.assets = AssetsConfig()
         self.cache = CacheConfig()
         self.processing_graph = ProcessingGraphConfig()
         self.queue = QueueConfig()
