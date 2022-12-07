@@ -6,11 +6,13 @@ from abc import ABC, abstractmethod
 
 from libcommon.worker import Worker
 
-from datasets_based.config import AppConfig
+from datasets_based.config import AppConfig, DatasetsBasedConfig
 
 
 class DatasetsBasedWorker(Worker, ABC):
     """Base class for workers that use datasets."""
+
+    datasets_based_config: DatasetsBasedConfig
 
     @staticmethod
     @abstractmethod
@@ -26,3 +28,4 @@ class DatasetsBasedWorker(Worker, ABC):
             worker_config=app_config.worker,
             version=importlib.metadata.version(__package__.split(".")[0]),
         )
+        self.datasets_based_config = app_config.datasets_based

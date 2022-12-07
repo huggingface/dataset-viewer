@@ -3,13 +3,13 @@
 
 import io
 from http import HTTPStatus
+from typing import Iterator
 
 import pandas as pd
 import pytest
 import requests
 from libcommon.exceptions import CustomError
-from libcommon.queue import _clean_queue_database
-from libcommon.simple_cache import DoesNotExist, _clean_cache_database, get_response
+from libcommon.simple_cache import DoesNotExist, get_response
 
 from datasets_based.config import AppConfig
 from datasets_based.workers.parquet import (
@@ -18,26 +18,24 @@ from datasets_based.workers.parquet import (
     parse_repo_filename,
 )
 
-from ..conftest import _clean_datasets_cache
 from ..fixtures.hub import HubDatasets
 
 
-@pytest.fixture(autouse=True)
-def clean_mongo_database() -> None:
-    _clean_cache_database()
-    _clean_queue_database()
-    _clean_datasets_cache()
+# see https://github.com/pytest-dev/pytest/issues/363#issuecomment-406536200
+@pytest.fixture(scope="module", autouse=True)
+def set_supported_datasets(hub_datasets: HubDatasets) -> Iterator[pytest.MonkeyPatch]:
+    mp = pytest.MonkeyPatch()
+    mp.setenv(
+        "PARQUET_SUPPORTED_DATASETS",
+        ",".join(value["name"] for value in hub_datasets.values() if "big" not in value["name"]),
+    )
+    yield mp
+    mp.undo()
 
 
-@pytest.fixture(autouse=True, scope="module")
+@pytest.fixture
 def worker(app_config: AppConfig) -> ParquetWorker:
     return ParquetWorker(app_config=app_config)
-
-
-def test_version(worker: ParquetWorker) -> None:
-    assert len(worker.version.split(".")) == 3
-    assert worker.compare_major_version(other_version="0.0.0") > 0
-    assert worker.compare_major_version(other_version="1000.0.0") < 0
 
 
 def test_compute(worker: ParquetWorker, hub_datasets: HubDatasets) -> None:
@@ -60,9 +58,10 @@ def test_doesnotexist(worker: ParquetWorker) -> None:
         get_response(kind=worker.processing_step.cache_kind, dataset=dataset)
 
 
-def test_not_supported(worker: ParquetWorker, hub_not_supported_csv: str) -> None:
-    assert worker.process(dataset=hub_not_supported_csv) is False
-    cached_response = get_response(kind=worker.processing_step.cache_kind, dataset=hub_not_supported_csv)
+def test_not_supported(worker: ParquetWorker, hub_public_big: str) -> None:
+    # Not in the list of supported datasets and bigger than the maximum size
+    assert worker.process(dataset=hub_public_big) is False
+    cached_response = get_response(kind=worker.processing_step.cache_kind, dataset=hub_public_big)
     assert cached_response["http_status"] == HTTPStatus.NOT_IMPLEMENTED
     assert cached_response["error_code"] == "DatasetNotSupportedError"
 

@@ -6,8 +6,7 @@ from http import HTTPStatus
 import pytest
 from datasets.packaged_modules import csv
 from libcommon.exceptions import CustomError
-from libcommon.queue import _clean_queue_database
-from libcommon.simple_cache import DoesNotExist, _clean_cache_database, get_response
+from libcommon.simple_cache import DoesNotExist, get_response
 
 from datasets_based.config import AppConfig
 from datasets_based.workers.first_rows import (
@@ -16,18 +15,10 @@ from datasets_based.workers.first_rows import (
     get_json_size,
 )
 
-from ..conftest import _clean_datasets_cache
 from ..fixtures.hub import HubDatasets, get_default_config_split
 
 
-@pytest.fixture(autouse=True)
-def clean_mongo_database() -> None:
-    _clean_cache_database()
-    _clean_queue_database()
-    _clean_datasets_cache()
-
-
-@pytest.fixture(autouse=True, scope="module")
+@pytest.fixture
 def worker(app_config: AppConfig) -> FirstRowsWorker:
     return FirstRowsWorker(app_config=app_config)
 
