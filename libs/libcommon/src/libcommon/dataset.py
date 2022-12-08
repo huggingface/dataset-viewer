@@ -18,7 +18,6 @@ DatasetErrorCode = Literal[
     "DatasetNotFoundError",
     "GatedDisabledError",
     "GatedExtraFieldsError",
-    "PrivateDatasetError",
 ]
 
 
@@ -77,17 +76,6 @@ class GatedExtraFieldsError(DatasetError):
         )
 
 
-class PrivateDatasetError(DatasetError):
-    def __init__(self, message: str, cause: Optional[BaseException] = None):
-        super().__init__(
-            message=message,
-            status_code=HTTPStatus.NOT_FOUND,
-            code="PrivateDatasetError",
-            cause=cause,
-            disclose_cause=False,
-        )
-
-
 def ask_access(dataset: str, hf_endpoint: str, hf_token: Optional[str]) -> None:
     """
     Ask access to the dataset repository.
@@ -107,7 +95,8 @@ def ask_access(dataset: str, hf_endpoint: str, hf_token: Optional[str]) -> None:
             way to get the list of extra fields.
         - [`~libcommon.dataset.GatedDisabledError`]: if the dataset is gated, but disabled.
         - [`~libcommon.dataset.DatasetNotFoundError`]: if the dataset does not exist, or if the
-            token does not give the sufficient access to the dataset (private, for example).
+            token does not give the sufficient access to the dataset, or if the dataset is private
+            (private datasets are not supported by the datasets server)
         - ['~requests.exceptions.HTTPError']: any other error when asking access
     """
     path = f"{hf_endpoint}/datasets/{dataset}/ask-access"
@@ -150,10 +139,9 @@ def get_dataset_info_for_supported_datasets(
             way to get the list of extra fields.
         - [`~libcommon.dataset.GatedDisabledError`]: if the dataset is gated, but disabled.
         - [`~libcommon.dataset.DatasetNotFoundError`]: if the dataset does not exist, or if the
-            token does not give the sufficient access to the dataset (private, for example).
+            token does not give the sufficient access to the dataset, or if the dataset is private
+            (private datasets are not supported by the datasets server)
         - ['~requests.exceptions.HTTPError']: any other error when asking access
-        - ['~libcommon.dataset.PrivateDatasetError']: if the dataset is private, since private datasets
-            are not supported in datasets-server.
     </Tip>
     """
     try:
@@ -161,7 +149,7 @@ def get_dataset_info_for_supported_datasets(
     except RepositoryNotFoundError:
         ask_access(dataset=dataset, hf_endpoint=hf_endpoint, hf_token=hf_token)
     if dataset_info.private is True:
-        raise PrivateDatasetError(f"Dataset '{dataset}' is not supported.")
+        raise DatasetNotFoundError("The dataset does not exist on the Hub, or is private.")
     return dataset_info
 
 
@@ -189,10 +177,9 @@ def get_dataset_git_revision(
             way to get the list of extra fields.
         - [`~libcommon.dataset.GatedDisabledError`]: if the dataset is gated, but disabled.
         - [`~libcommon.dataset.DatasetNotFoundError`]: if the dataset does not exist, or if the
-            token does not give the sufficient access to the dataset (private, for example).
+            token does not give the sufficient access to the dataset, or if the dataset is private
+            (private datasets are not supported by the datasets server)
         - ['~requests.exceptions.HTTPError']: any other error when asking access
-        - ['~libcommon.dataset.PrivateDatasetError']: if the dataset is private, since private datasets
-            are not supported in datasets-server.
     </Tip>
     """
     return get_dataset_info_for_supported_datasets(dataset=dataset, hf_endpoint=hf_endpoint, hf_token=hf_token).sha
@@ -221,9 +208,8 @@ def check_support(
             way to get the list of extra fields.
         - [`~libcommon.dataset.GatedDisabledError`]: if the dataset is gated, but disabled.
         - [`~libcommon.dataset.DatasetNotFoundError`]: if the dataset does not exist, or if the
-            token does not give the sufficient access to the dataset (private, for example).
+            token does not give the sufficient access to the dataset, or if the dataset is private
+            (private datasets are not supported by the datasets server)
         - ['~requests.exceptions.HTTPError']: any other error when asking access
-        - ['~libcommon.dataset.PrivateDatasetError']: if the dataset is private, since private datasets
-            are not supported in datasets-server.
     """
     get_dataset_info_for_supported_datasets(dataset=dataset, hf_endpoint=hf_endpoint, hf_token=hf_token)
