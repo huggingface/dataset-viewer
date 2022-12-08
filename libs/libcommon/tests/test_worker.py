@@ -66,7 +66,7 @@ def test_has_storage(
         worker_config=worker_config,
         version="1.0.0",
     )
-    assert worker.has_resources() is True
+    assert worker.has_storage() is True
     worker = NoStorageWorker(
         processing_step=test_processing_step,
         common_config=common_config,
@@ -74,7 +74,7 @@ def test_has_storage(
         worker_config=worker_config,
         version="1.0.0",
     )
-    assert worker.has_resources() is False
+    assert worker.has_storage() is False
 
 
 @pytest.mark.parametrize(
