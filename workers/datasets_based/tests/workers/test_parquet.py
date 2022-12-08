@@ -26,6 +26,10 @@ from ..fixtures.hub import HubDatasets
 def set_supported_datasets(hub_datasets: HubDatasets) -> Iterator[pytest.MonkeyPatch]:
     mp = pytest.MonkeyPatch()
     mp.setenv(
+        "PARQUET_BLOCKED_DATASETS",
+        ",".join(value["name"] for value in hub_datasets.values() if "jsonl" in value["name"]),
+    )
+    mp.setenv(
         "PARQUET_SUPPORTED_DATASETS",
         ",".join(value["name"] for value in hub_datasets.values() if "big" not in value["name"]),
     )
@@ -66,6 +70,14 @@ def test_not_supported(worker: ParquetWorker, hub_public_big: str) -> None:
     assert cached_response["error_code"] == "DatasetNotSupportedError"
 
 
+def test_blocked(worker: ParquetWorker, hub_public_jsonl: str) -> None:
+    # In the list of blocked datasets
+    assert worker.process(dataset=hub_public_jsonl) is False
+    cached_response = get_response(kind=worker.processing_step.cache_kind, dataset=hub_public_jsonl)
+    assert cached_response["http_status"] == HTTPStatus.NOT_IMPLEMENTED
+    assert cached_response["error_code"] == "DatasetNotSupportedError"
+
+
 def test_process_job(worker: ParquetWorker, hub_public_csv: str) -> None:
     worker.queue.add_job(dataset=hub_public_csv)
     result = worker.process_next_job()
@@ -101,6 +113,7 @@ def test_compute_splits_response_simple_csv_ok(
         commit_message=parquet_config.commit_message,
         url_template=parquet_config.url_template,
         supported_datasets=parquet_config.supported_datasets,
+        blocked_datasets=parquet_config.blocked_datasets,
         max_dataset_size=parquet_config.max_dataset_size,
     )
     assert result == expected_parquet_response
@@ -150,6 +163,7 @@ def test_compute_splits_response_simple_csv_error(
             commit_message=parquet_config.commit_message,
             url_template=parquet_config.url_template,
             supported_datasets=parquet_config.supported_datasets,
+            blocked_datasets=parquet_config.blocked_datasets,
             max_dataset_size=parquet_config.max_dataset_size,
         )
     assert exc_info.value.code == error_code

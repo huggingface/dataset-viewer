@@ -59,6 +59,7 @@ class FirstRowsConfig:
 
 
 class ParquetConfig:
+    blocked_datasets: List[str]
     supported_datasets: List[str]
     commit_message: str
     committer_hf_token: Optional[str]
@@ -70,6 +71,7 @@ class ParquetConfig:
     def __init__(self):
         env = Env(expand_vars=True)
         with env.prefixed("PARQUET_"):
+            self.blocked_datasets = env.list(name="BLOCKED_DATASETS", default=[])
             self.supported_datasets = env.list(name="SUPPORTED_DATASETS", default=[])
             self.commit_message = env.str(name="COMMIT_MESSAGE", default="Update parquet files")
             self.committer_hf_token = env.str(name="COMMITTER_HF_TOKEN", default=None)

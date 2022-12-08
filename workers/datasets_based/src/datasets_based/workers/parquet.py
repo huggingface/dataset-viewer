@@ -193,6 +193,7 @@ def compute_parquet_response(
     commit_message: str,
     url_template: str,
     supported_datasets: List[str],
+    blocked_datasets: List[str],
     max_dataset_size: int,
 ) -> ParquetResponse:
     """
@@ -218,6 +219,14 @@ def compute_parquet_response(
             The commit message to use when storing the parquet files
         url_template (`str`):
             The template to use to build the parquet file url
+        supported_datasets (`List[str]`):
+            The list of supported datasets, saving the blocked datasets. If empty, all datasets are supported
+            (saving the blocked datasets).
+        blocked_datasets (`List[str]`):
+            The list of blocked datasets. If empty, no dataset is blocked.
+        max_dataset_size (`int`):
+            The maximum size of a dataset in bytes. If the dataset is under the limit (which means that the size
+            can be fetched), it will be allowed.
     Returns:
         `ParquetResponseResult`: An object with the parquet_response
           (dataset and list of parquet files) and the dataset_git_revision (sha) if any.
@@ -241,9 +250,11 @@ def compute_parquet_response(
     logging.info(f"get splits for dataset={dataset}")
 
     # only process the supported datasets:
-    # if it's in the list
+    # if it's not in the list of blocked datasets
+    blocked_from_list = dataset in blocked_datasets
+    # and if it's in the list
     supported_from_list = len(supported_datasets) == 0 or dataset in supported_datasets
-    # or if we can get its size and the size is under a threshold
+    #     or if we can get its size and the size is under a threshold
     try:
         infos = get_dataset_infos(path=dataset, revision=source_revision, use_auth_token=hf_token)
         config_sizes = [value.dataset_size for _, value in infos.items()]
@@ -252,7 +263,9 @@ def compute_parquet_response(
         supported_from_size = sum(config_sizes) < max_dataset_size
     except Exception:
         supported_from_size = False
-    if not supported_from_list and not supported_from_size:
+    blocked = blocked_from_list
+    supported = supported_from_list or supported_from_size
+    if blocked or not supported:
         raise DatasetNotSupportedError("The dataset is not supported.")
 
     hf_api = HfApi(endpoint=hf_endpoint, token=hf_token)
@@ -366,5 +379,6 @@ class ParquetWorker(DatasetsBasedWorker):
             commit_message=self.parquet_config.commit_message,
             url_template=self.parquet_config.url_template,
             supported_datasets=self.parquet_config.supported_datasets,
+            blocked_datasets=self.parquet_config.blocked_datasets,
             max_dataset_size=self.parquet_config.max_dataset_size,
         )
