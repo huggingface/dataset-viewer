@@ -3,7 +3,7 @@
 
 import io
 from http import HTTPStatus
-from typing import Iterator
+from typing import Iterator, List
 
 import pandas as pd
 import pytest
@@ -13,9 +13,17 @@ from libcommon.simple_cache import DoesNotExist, get_response
 
 from datasets_based.config import AppConfig, ParquetConfig
 from datasets_based.workers.parquet import (
+    DatasetInBlockListError,
+    DatasetTooBigFromDatasetsError,
+    DatasetTooBigFromHubError,
     ParquetWorker,
     compute_parquet_response,
+    get_dataset_info_or_raise,
     parse_repo_filename,
+    raise_if_blocked,
+    raise_if_too_big_from_datasets,
+    raise_if_too_big_from_hub,
+    raise_if_not_supported,
 )
 
 from ..fixtures.hub import HubDatasets
@@ -62,12 +70,112 @@ def test_doesnotexist(worker: ParquetWorker) -> None:
         get_response(kind=worker.processing_step.cache_kind, dataset=dataset)
 
 
+@pytest.mark.parametrize(
+    "dataset,blocked,raises",
+    [
+        ("public", ["public"], True),
+        ("public", ["public", "audio"], True),
+        ("public", ["audio"], False),
+        ("public", [], False),
+    ],
+)
+def test_raise_if_blocked(dataset: str, blocked: List[str], raises: bool) -> None:
+    if raises:
+        with pytest.raises(DatasetInBlockListError):
+            raise_if_blocked(dataset=dataset, blocked_datasets=blocked)
+    else:
+        raise_if_blocked(dataset=dataset, blocked_datasets=blocked)
+
+
+@pytest.mark.parametrize(
+    "name,raises",
+    [("public", False), ("big", True)],
+)
+def test_raise_if_too_big_from_hub(
+    hub_datasets: HubDatasets, name: str, raises: bool, app_config: AppConfig, parquet_config: ParquetConfig
+) -> None:
+    dataset = hub_datasets[name]["name"]
+    dataset_info = get_dataset_info_or_raise(
+        dataset=dataset,
+        hf_endpoint=app_config.common.hf_endpoint,
+        hf_token=app_config.common.hf_token,
+        revision="main",
+    )
+    if raises:
+        with pytest.raises(DatasetTooBigFromHubError):
+            raise_if_too_big_from_hub(dataset_info=dataset_info, max_dataset_size=parquet_config.max_dataset_size)
+    else:
+        raise_if_too_big_from_hub(dataset_info=dataset_info, max_dataset_size=parquet_config.max_dataset_size)
+
+
+@pytest.mark.parametrize(
+    "name,raises",
+    [("public", False), ("big", False)],
+)
+def test_raise_if_too_big_from_datasets(
+    hub_datasets: HubDatasets, name: str, raises: bool, app_config: AppConfig, parquet_config: ParquetConfig
+) -> None:
+    # TODO: add info about the size of the big dataset in the README
+    dataset = hub_datasets[name]["name"]
+    if raises:
+        with pytest.raises(DatasetTooBigFromDatasetsError):
+            raise_if_too_big_from_datasets(
+                dataset=dataset,
+                hf_endpoint=app_config.common.hf_endpoint,
+                hf_token=app_config.common.hf_token,
+                revision="main",
+                max_dataset_size=parquet_config.max_dataset_size,
+            )
+    else:
+        raise_if_too_big_from_datasets(
+            dataset=dataset,
+            hf_endpoint=app_config.common.hf_endpoint,
+            hf_token=app_config.common.hf_token,
+            revision="main",
+            max_dataset_size=parquet_config.max_dataset_size,
+        )
+
+
+@pytest.mark.wip
+@pytest.mark.parametrize(
+    "in_list,raises",
+    [
+        (True, False),
+        (False, True),
+    ],
+)
+def test_raise_if_not_supported(
+    hub_public_big: str, app_config: AppConfig, parquet_config: ParquetConfig, in_list: bool, raises: bool
+) -> None:
+    if raises:
+        with pytest.raises(DatasetTooBigFromHubError):
+            raise_if_not_supported(
+                dataset=hub_public_big,
+                hf_endpoint=app_config.common.hf_endpoint,
+                hf_token=app_config.common.hf_token,
+                revision="main",
+                max_dataset_size=parquet_config.max_dataset_size,
+                supported_datasets=[hub_public_big] if in_list else ["another_dataset"],
+                blocked_datasets=[],
+            )
+    else:
+        raise_if_not_supported(
+            dataset=hub_public_big,
+            hf_endpoint=app_config.common.hf_endpoint,
+            hf_token=app_config.common.hf_token,
+            revision="main",
+            max_dataset_size=parquet_config.max_dataset_size,
+            supported_datasets=[hub_public_big] if in_list else ["another_dataset"],
+            blocked_datasets=[],
+        )
+
+
 def test_not_supported(worker: ParquetWorker, hub_public_big: str) -> None:
     # Not in the list of supported datasets and bigger than the maximum size
     assert worker.process(dataset=hub_public_big) is False
     cached_response = get_response(kind=worker.processing_step.cache_kind, dataset=hub_public_big)
     assert cached_response["http_status"] == HTTPStatus.NOT_IMPLEMENTED
-    assert cached_response["error_code"] == "DatasetNotSupportedError"
+    assert cached_response["error_code"] == "DatasetTooBigFromHubError"
 
 
 def test_blocked(worker: ParquetWorker, hub_public_jsonl: str) -> None:
@@ -75,7 +183,7 @@ def test_blocked(worker: ParquetWorker, hub_public_jsonl: str) -> None:
     assert worker.process(dataset=hub_public_jsonl) is False
     cached_response = get_response(kind=worker.processing_step.cache_kind, dataset=hub_public_jsonl)
     assert cached_response["http_status"] == HTTPStatus.NOT_IMPLEMENTED
-    assert cached_response["error_code"] == "DatasetNotSupportedError"
+    assert cached_response["error_code"] == "DatasetInBlockListError"
 
 
 def test_process_job(worker: ParquetWorker, hub_public_csv: str) -> None:
