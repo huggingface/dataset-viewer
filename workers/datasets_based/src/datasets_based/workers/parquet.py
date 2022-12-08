@@ -405,7 +405,7 @@ def raise_if_not_supported(
     dataset_info = get_dataset_info_or_raise(
         dataset=dataset, hf_endpoint=hf_endpoint, hf_token=hf_token, revision=revision
     )
-    if len(supported_datasets) == 0 or dataset in supported_datasets:
+    if dataset in supported_datasets:
         return
     raise_if_too_big_from_datasets(
         dataset=dataset,

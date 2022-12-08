@@ -51,7 +51,7 @@ Set environment variables to configure the parquet worker (`PARQUET_` prefix):
 - `PARQUET_COMMITTER_HF_TOKEN`: the user token (https://huggingface.co/settings/tokens) to commit the parquet files to the Hub. The user must be allowed to create the `refs/convert/parquet` branch (see `PARQUET_TARGET_REVISION`) ([Hugging Face organization](https://huggingface.co/huggingface) members have this right). It must also have the right to push to the `refs/convert/parquet` branch ([Datasets maintainers](https://huggingface.co/datasets-maintainers) members have this right). It must have permission to write. If not set, the worker will fail. Defaults to None.
 - `PARQUET_MAX_DATASET_SIZE`: the maximum size in bytes of the dataset to pre-compute the parquet files. Bigger datasets, or datasets without that information, are ignored. Defaults to `100_000_000`.
 - `PARQUET_SOURCE_REVISION`: the git revision of the dataset to use to prepare the parquet files. Defaults to `main`.
-- `PARQUET_SUPPORTED_DATASETS`: comma-separated list of the supported datasets. If empty, all the datasets are processed. Defaults to empty.
+- `PARQUET_SUPPORTED_DATASETS`: comma-separated list of the supported datasets. The worker does not test the size of supported datasets against the maximum dataset size. Defaults to empty.
 - `PARQUET_TARGET_REVISION`: the git revision of the dataset where to store the parquet files. Make sure the committer token (`PARQUET_COMMITTER_HF_TOKEN`) has the permission to write there. Defaults to `refs/convert/parquet`.
 - `PARQUET_URL_TEMPLATE`: the URL template to build the parquet file URLs. Defaults to `/datasets/%s/resolve/%s/%s`.
 
