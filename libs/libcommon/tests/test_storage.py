@@ -9,7 +9,6 @@ import pytest
 from libcommon.storage import StrPath, init_dir, remove_dir
 
 
-@pytest.mark.wip
 @pytest.mark.parametrize(
     "has_directory,is_directory_string,has_appname",
     [
@@ -51,7 +50,6 @@ def test_init_dir(
     Path(result).is_dir()
 
 
-@pytest.mark.wip
 @pytest.mark.parametrize(
     "exists,is_string",
     [

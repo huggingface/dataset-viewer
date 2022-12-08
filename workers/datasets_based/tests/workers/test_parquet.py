@@ -136,7 +136,6 @@ def test_raise_if_too_big_from_datasets(
         )
 
 
-@pytest.mark.wip
 @pytest.mark.parametrize(
     "in_list,raises",
     [
