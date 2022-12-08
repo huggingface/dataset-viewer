@@ -8,7 +8,7 @@ from libcommon.queue import _clean_queue_database
 from libcommon.simple_cache import _clean_cache_database
 from pytest import MonkeyPatch, fixture
 
-from datasets_based.config import AppConfig
+from datasets_based.config import AppConfig, FirstRowsConfig, ParquetConfig
 
 from .constants import CI_APP_TOKEN, CI_HUB_ENDPOINT, CI_URL_TEMPLATE, CI_USER_TOKEN
 
@@ -64,6 +64,16 @@ def app_config(set_env_vars: MonkeyPatch) -> Iterator[AppConfig]:
     # managed by mongoengine
     _clean_cache_database()
     _clean_queue_database()
+
+
+@fixture
+def first_rows_config() -> FirstRowsConfig:
+    return FirstRowsConfig()
+
+
+@fixture
+def parquet_config() -> ParquetConfig:
+    return ParquetConfig()
 
 
 # Import fixture modules as plugins

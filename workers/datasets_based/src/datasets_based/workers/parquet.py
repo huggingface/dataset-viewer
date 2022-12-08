@@ -347,7 +347,7 @@ class ParquetWorker(DatasetsBasedWorker):
 
     def __init__(self, app_config: AppConfig):
         super().__init__(app_config=app_config)
-        self.parquet_config = app_config.parquet
+        self.parquet_config = ParquetConfig()
 
     def compute(
         self,

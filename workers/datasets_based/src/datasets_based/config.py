@@ -83,8 +83,6 @@ class AppConfig:
     cache: CacheConfig
     common: CommonConfig
     datasets_based: DatasetsBasedConfig
-    first_rows: FirstRowsConfig
-    parquet: ParquetConfig
     processing_graph: ProcessingGraphConfig
     queue: QueueConfig
     worker: WorkerConfig
@@ -94,8 +92,6 @@ class AppConfig:
         self.common = CommonConfig()
         self.cache = CacheConfig()
         self.datasets_based = DatasetsBasedConfig()
-        self.first_rows = FirstRowsConfig()
-        self.parquet = ParquetConfig()
         self.processing_graph = ProcessingGraphConfig()
         self.queue = QueueConfig()
         self.worker = WorkerConfig()

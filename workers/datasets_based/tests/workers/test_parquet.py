@@ -11,7 +11,7 @@ import requests
 from libcommon.exceptions import CustomError
 from libcommon.simple_cache import DoesNotExist, get_response
 
-from datasets_based.config import AppConfig
+from datasets_based.config import AppConfig, ParquetConfig
 from datasets_based.workers.parquet import (
     ParquetWorker,
     compute_parquet_response,
@@ -87,7 +87,7 @@ def test_process_job(worker: ParquetWorker, hub_public_csv: str) -> None:
     ],
 )
 def test_compute_splits_response_simple_csv_ok(
-    hub_datasets: HubDatasets, name: str, app_config: AppConfig, data_df: pd.DataFrame
+    hub_datasets: HubDatasets, name: str, app_config: AppConfig, parquet_config: ParquetConfig, data_df: pd.DataFrame
 ) -> None:
     dataset = hub_datasets[name]["name"]
     expected_parquet_response = hub_datasets[name]["parquet_response"]
@@ -95,13 +95,13 @@ def test_compute_splits_response_simple_csv_ok(
         dataset=dataset,
         hf_endpoint=app_config.common.hf_endpoint,
         hf_token=app_config.common.hf_token,
-        committer_hf_token=app_config.parquet.committer_hf_token,
-        source_revision=app_config.parquet.source_revision,
-        target_revision=app_config.parquet.target_revision,
-        commit_message=app_config.parquet.commit_message,
-        url_template=app_config.parquet.url_template,
-        supported_datasets=app_config.parquet.supported_datasets,
-        max_dataset_size=app_config.parquet.max_dataset_size,
+        committer_hf_token=parquet_config.committer_hf_token,
+        source_revision=parquet_config.source_revision,
+        target_revision=parquet_config.target_revision,
+        commit_message=parquet_config.commit_message,
+        url_template=parquet_config.url_template,
+        supported_datasets=parquet_config.supported_datasets,
+        max_dataset_size=parquet_config.max_dataset_size,
     )
     assert result == expected_parquet_response
 
@@ -131,7 +131,12 @@ def test_compute_splits_response_simple_csv_ok(
     ],
 )
 def test_compute_splits_response_simple_csv_error(
-    hub_datasets: HubDatasets, name: str, error_code: str, cause: str, app_config: AppConfig
+    hub_datasets: HubDatasets,
+    name: str,
+    error_code: str,
+    cause: str,
+    app_config: AppConfig,
+    parquet_config: ParquetConfig,
 ) -> None:
     dataset = hub_datasets[name]["name"]
     with pytest.raises(CustomError) as exc_info:
@@ -139,13 +144,13 @@ def test_compute_splits_response_simple_csv_error(
             dataset=dataset,
             hf_endpoint=app_config.common.hf_endpoint,
             hf_token=app_config.common.hf_token,
-            committer_hf_token=app_config.parquet.committer_hf_token,
-            source_revision=app_config.parquet.source_revision,
-            target_revision=app_config.parquet.target_revision,
-            commit_message=app_config.parquet.commit_message,
-            url_template=app_config.parquet.url_template,
-            supported_datasets=app_config.parquet.supported_datasets,
-            max_dataset_size=app_config.parquet.max_dataset_size,
+            committer_hf_token=parquet_config.committer_hf_token,
+            source_revision=parquet_config.source_revision,
+            target_revision=parquet_config.target_revision,
+            commit_message=parquet_config.commit_message,
+            url_template=parquet_config.url_template,
+            supported_datasets=parquet_config.supported_datasets,
+            max_dataset_size=parquet_config.max_dataset_size,
         )
     assert exc_info.value.code == error_code
     if cause is None:

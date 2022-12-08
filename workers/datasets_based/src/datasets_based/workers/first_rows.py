@@ -556,7 +556,7 @@ class FirstRowsWorker(DatasetsBasedWorker):
 
     def __init__(self, app_config: AppConfig):
         super().__init__(app_config=app_config)
-        self.first_rows_config = app_config.first_rows
+        self.first_rows_config = FirstRowsConfig()
 
     def compute(
         self,
