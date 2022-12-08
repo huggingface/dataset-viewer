@@ -340,12 +340,12 @@ def raise_if_too_big_from_datasets(
         )
     with contextlib.suppress(Exception):
         infos = get_dataset_infos(path=dataset, revision=revision, use_auth_token=hf_token)
-        dataset_size = sum(value.dataset_size for value in infos.values() if value.dataset_size is not None)
-        if dataset_size > max_dataset_size:
-            raise DatasetTooBigFromDatasetsError(
-                f"The conversion to parquet is limited to datasets under {max_dataset_size} bytes. "
-                f"Current size as given per the datasets library is {dataset_size} bytes."
-            )
+    dataset_size = sum(value.dataset_size for value in infos.values() if value.dataset_size is not None)
+    if dataset_size > max_dataset_size:
+        raise DatasetTooBigFromDatasetsError(
+            f"The conversion to parquet is limited to datasets under {max_dataset_size} bytes. "
+            f"Current size as given per the datasets library is {dataset_size} bytes."
+        )
 
 
 def raise_if_not_supported(
