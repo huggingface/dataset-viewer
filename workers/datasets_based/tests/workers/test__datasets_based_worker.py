@@ -1,6 +1,7 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2022 The HuggingFace Authors.
 
+import os
 from datetime import datetime
 from pathlib import Path
 from typing import Any, Mapping, Optional
@@ -37,6 +38,15 @@ def test_version(worker: DummyWorker) -> None:
     assert len(worker.version.split(".")) == 3
     assert worker.compare_major_version(other_version="0.0.0") > 0
     assert worker.compare_major_version(other_version="1000.0.0") < 0
+
+
+def test_has_storage(worker: DummyWorker) -> None:
+    assert worker.has_storage() is True
+    worker.datasets_based_config.max_disk_usage_percent = 0
+    # the directory does not exist yet, so it should return True
+    assert worker.has_storage() is True
+    os.makedirs(worker.datasets_based_config.hf_datasets_cache, exist_ok=True)
+    assert worker.has_storage() is False
 
 
 @pytest.mark.parametrize(

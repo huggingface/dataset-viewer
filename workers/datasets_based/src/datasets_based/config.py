@@ -21,6 +21,7 @@ class DatasetsBasedConfig:
     endpoint: str
     hf_datasets_cache: Path
     hf_modules_cache: Path
+    max_disk_usage_percent = 90  # hard-coded, not configurable
 
     def __init__(self):
         env = Env(expand_vars=True)

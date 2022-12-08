@@ -14,6 +14,7 @@ from typing import Optional
 import datasets.config
 from libcommon.storage import init_dir, remove_dir
 from libcommon.worker import Worker
+from psutil import disk_usage
 
 from datasets_based.config import AppConfig, DatasetsBasedConfig
 
@@ -44,6 +45,14 @@ class DatasetsBasedWorker(Worker, ABC):
             version=importlib.metadata.version(__package__.split(".")[0]),
         )
         self.datasets_based_config = app_config.datasets_based
+
+    def has_storage(self) -> bool:
+        try:
+            usage = disk_usage(str(self.datasets_based_config.hf_datasets_cache))
+            return usage.percent < self.datasets_based_config.max_disk_usage_percent
+        except Exception:
+            # if we can't get the disk usage, we let the process continue
+            return True
 
     def get_cache_subdirectory(
         self,
