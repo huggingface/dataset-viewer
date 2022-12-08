@@ -13,15 +13,18 @@
   {{ include "envQueue" . | nindent 2 }}
   {{ include "envCommon" . | nindent 2 }}
   {{ include "envWorker" . | nindent 2 }}
-  {{ include "envDatasetsWorker" . | nindent 2 }}
+  - name: HF_DATASETS_CACHE
+    value: {{ printf "%s/splits/datasets" .Values.cacheDirectory | quote }}
+  - name: HF_MODULES_CACHE
+    value: {{ printf "%s/splits/modules" .Values.cacheDirectory | quote }}
+  - name: NUMBA_CACHE_DIR
+    value: {{ printf "%s/splits/numba" .Values.cacheDirectory | quote }}
   - name: QUEUE_MAX_JOBS_PER_NAMESPACE
     # value: {{ .Values.queue.maxJobsPerNamespace | quote }}
     # overridden
     value: {{ .Values.splits.queue.maxJobsPerNamespace | quote }}
   volumeMounts:
-  {{ include "volumeMountCacheDatasets" . | nindent 2 }}
-  {{ include "volumeMountCacheModules" . | nindent 2 }}
-  {{ include "volumeMountCacheNumba" . | nindent 2 }}
+  {{ include "volumeMountCache" . | nindent 2 }}
   securityContext:
     allowPrivilegeEscalation: false
   resources: {{ toYaml .Values.splits.resources | nindent 4 }}
