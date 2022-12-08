@@ -21,9 +21,9 @@ from datasets_based.workers.parquet import (
     get_dataset_info_or_raise,
     parse_repo_filename,
     raise_if_blocked,
+    raise_if_not_supported,
     raise_if_too_big_from_datasets,
     raise_if_too_big_from_hub,
-    raise_if_not_supported,
 )
 
 from ..fixtures.hub import HubDatasets
