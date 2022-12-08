@@ -197,7 +197,7 @@ class Worker(ABC):
             config = started_job_info["config"]
             split = started_job_info["split"]
             force = started_job_info["force"]
-            parameters_for_log = "dataset={dataset}" + ("" if split is None else f"config={config} split={split}")
+            parameters_for_log = f"dataset={dataset}" + ("" if split is None else f"config={config} split={split}")
             self.debug(f"job assigned: {job_id} for {parameters_for_log}")
         except EmptyQueueError:
             self.debug("no job in the queue")
