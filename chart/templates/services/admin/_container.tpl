@@ -6,6 +6,7 @@
   image: {{ .Values.dockerImage.services.admin }}
   imagePullPolicy: IfNotPresent
   env:
+  {{ include "envAssets" . | nindent 2 }}
   {{ include "envCache" . | nindent 2 }}
   {{ include "envQueue" . | nindent 2 }}
   {{ include "envCommon" . | nindent 2 }}
@@ -28,6 +29,7 @@
     value: {{ .Values.admin.uvicornNumWorkers | quote }}
   - name: ADMIN_UVICORN_PORT
     value: {{ .Values.admin.uvicornPort | quote }}
+  volumeMounts: {{ include "volumeMountAssetsRO" . | nindent 2 }}
   securityContext:
     allowPrivilegeEscalation: false
   readinessProbe:
