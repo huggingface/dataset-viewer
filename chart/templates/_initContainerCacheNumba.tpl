@@ -1,8 +1,8 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2022 The HuggingFace Authors.
 
-{{- define "initContainerCache" -}}
-- name: prepare-cache
+{{- define "initContainerCacheNumba" -}}
+- name: prepare-cache-numba
   image: ubuntu:focal
   imagePullPolicy: IfNotPresent
   command: ["/bin/sh", "-c"]
@@ -12,7 +12,7 @@
   - mountPath: /mounted-path
     mountPropagation: None
     name: data
-    subPath: "{{ include "cache.datasets.subpath" . }}"
+    subPath: "{{ include "cache.numba.subpath" . }}"
     readOnly: false
   securityContext:
     runAsNonRoot: false

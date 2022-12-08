@@ -79,11 +79,11 @@ common:
   logLevel: "INFO"
 
 # Directory where the `datasets` library will store the cached datasets data
-hfDatasetsCache: "/hf-datasets-cache"
+hfDatasetsCache: "/datasets-server-cache/datasets"
 # Directory where the `datasets` library will store the cached datasets scripts
-#hfModulesCache: "not used"
+hfModulesCache: "/datasets-server-cache/modules"
 # Directory where the `numba` decorators (used by `librosa`) can write cache
-numbaCacheDirectory: "/numba-cache"
+numbaCacheDirectory: "/datasets-server-cache/numba"
 
 # --- jobs (pre-install/upgrade hooks) ---
 

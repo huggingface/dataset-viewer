@@ -103,21 +103,30 @@ The assets/ subpath in the NFS
 {{- end }}
 
 {{/*
-The cache/ subpath in the NFS
+The HF datasets data cache subpath in the NFS
 - in a subdirectory named as the chart (datasets-server/), and below it,
 - in a subdirectory named as the Release, so that Releases will not share the same dir
 */}}
 {{- define "cache.datasets.subpath" -}}
-{{- printf "%s/%s/%s/" .Chart.Name .Release.Name "cache-datasets-2" }}
+{{- printf "%s/%s/%s/" .Chart.Name .Release.Name "cache/datasets" }}
 {{- end }}
 
 {{/*
-The numba-cache/ subpath in the NFS
+The HF datasets modules cache subpath in the NFS
+- in a subdirectory named as the chart (datasets-server/), and below it,
+- in a subdirectory named as the Release, so that Releases will not share the same dir
+*/}}
+{{- define "cache.modules.subpath" -}}
+{{- printf "%s/%s/%s/" .Chart.Name .Release.Name "cache/modules" }}
+{{- end }}
+
+{{/*
+The mumba subpath in the NFS
 - in a subdirectory named as the chart (datasets-server/), and below it,
 - in a subdirectory named as the Release, so that Releases will not share the same dir
 */}}
 {{- define "cache.numba.subpath" -}}
-{{- printf "%s/%s/%s/" .Chart.Name .Release.Name "cache-numba-2" }}
+{{- printf "%s/%s/%s/" .Chart.Name .Release.Name "cache/numba" }}
 {{- end }}
 
 {{/*

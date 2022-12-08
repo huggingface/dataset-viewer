@@ -5,9 +5,7 @@
 - name: HF_DATASETS_CACHE
   value: {{ .Values.hfDatasetsCache | quote }}
 - name: HF_MODULES_CACHE
-  value: "/tmp/modules-cache"
-  # the size should remain so small that we don't need to worry about putting it on an external storage
-  # see https://github.com/huggingface/datasets-server/issues/248
+  value: {{ .Values.hfModulesCache | quote }}
 - name: NUMBA_CACHE_DIR
   value: {{ .Values.numbaCacheDirectory | quote }}
 {{- end -}}

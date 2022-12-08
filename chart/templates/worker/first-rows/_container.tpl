@@ -31,8 +31,9 @@
     value: {{ .Values.firstRows.minNumber| quote }}
   volumeMounts:
   {{ include "volumeMountAssetsRW" . | nindent 2 }}
-  {{ include "volumeMountDatasetsCache" . | nindent 2 }}
-  {{ include "volumeMountNumbaCache" . | nindent 2 }}
+  {{ include "volumeMountCacheDatasets" . | nindent 2 }}
+  {{ include "volumeMountCacheModules" . | nindent 2 }}
+  {{ include "volumeMountCacheNumba" . | nindent 2 }}
   securityContext:
     allowPrivilegeEscalation: false
   resources: {{ toYaml .Values.firstRows.resources | nindent 4 }}
