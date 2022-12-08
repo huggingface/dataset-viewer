@@ -18,7 +18,6 @@ from datasets import (
     load_dataset,
 )
 from datasets.data_files import EmptyDatasetError as _EmptyDatasetError
-from libcommon.config import AssetsConfig
 from libcommon.exceptions import CustomError
 from libcommon.utils import orjson_dumps
 from libcommon.worker import ConfigNotFoundError, SplitNotFoundError
@@ -549,7 +548,6 @@ def compute_first_rows_response(
 
 
 class FirstRowsWorker(DatasetsBasedWorker):
-    assets_config: AssetsConfig
     first_rows_config: FirstRowsConfig
 
     @staticmethod
@@ -559,7 +557,6 @@ class FirstRowsWorker(DatasetsBasedWorker):
     def __init__(self, app_config: AppConfig):
         super().__init__(app_config=app_config)
         self.first_rows_config = app_config.first_rows
-        self.assets_config = app_config.assets
 
     def compute(
         self,
@@ -574,12 +571,12 @@ class FirstRowsWorker(DatasetsBasedWorker):
             dataset=dataset,
             config=config,
             split=split,
-            assets_base_url=self.assets_config.base_url,
+            assets_base_url=self.first_rows_config.assets.base_url,
+            assets_directory=self.first_rows_config.assets.storage_directory,
             hf_token=self.common_config.hf_token,
             min_cell_bytes=self.first_rows_config.min_cell_bytes,
             max_size_fallback=self.first_rows_config.fallback_max_dataset_size,
             rows_max_bytes=self.first_rows_config.max_bytes,
             rows_max_number=self.first_rows_config.max_number,
             rows_min_number=self.first_rows_config.min_number,
-            assets_directory=self.assets_config.storage_directory,
         )

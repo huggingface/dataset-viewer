@@ -70,8 +70,8 @@ def test_value(
         cell=dataset[0]["col"],
         featureName="col",
         fieldType=feature,
-        assets_base_url=app_config.assets.base_url,
-        assets_directory=app_config.assets.storage_directory,
+        assets_base_url=app_config.first_rows.assets.base_url,
+        assets_directory=app_config.first_rows.assets.storage_directory,
     )
     assert value == output_value
 
@@ -313,7 +313,7 @@ def test_others(
         cell=dataset[0]["col"],
         featureName="col",
         fieldType=feature,
-        assets_base_url=app_config.assets.base_url,
-        assets_directory=app_config.assets.storage_directory,
+        assets_base_url=app_config.first_rows.assets.base_url,
+        assets_directory=app_config.first_rows.assets.storage_directory,
     )
     assert value == output_value

@@ -40,6 +40,7 @@ class DatasetsBasedConfig:
 
 
 class FirstRowsConfig:
+    assets: AssetsConfig
     fallback_max_dataset_size: int
     max_bytes: int
     max_number: int
@@ -54,6 +55,7 @@ class FirstRowsConfig:
             self.max_number = env.int(name="MAX_NUMBER", default=100)
             self.min_cell_bytes = env.int(name="CELL_MIN_BYTES", default=100)
             self.min_number = env.int(name="MIN_NUMBER", default=10)
+        self.assets = AssetsConfig()
 
 
 class ParquetConfig:
@@ -78,7 +80,6 @@ class ParquetConfig:
 
 
 class AppConfig:
-    assets: AssetsConfig
     cache: CacheConfig
     common: CommonConfig
     datasets_based: DatasetsBasedConfig
@@ -91,7 +92,6 @@ class AppConfig:
     def __init__(self):
         # First process the common configuration to setup the logging
         self.common = CommonConfig()
-        self.assets = AssetsConfig()
         self.cache = CacheConfig()
         self.datasets_based = DatasetsBasedConfig()
         self.first_rows = FirstRowsConfig()
