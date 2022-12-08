@@ -168,6 +168,13 @@ class Worker(ABC):
             self.info(f"cpu load is too high: {load_pct:.0f}% - max is {self.worker_config.max_load_pct}%")
         return ok
 
+    def has_storage(self) -> bool:
+        # placeholder, to be overridden by workers if needed
+        return True
+
+    def has_resources(self) -> bool:
+        return self.has_memory() and self.has_cpu() and self.has_storage()
+
     def sleep(self) -> None:
         jitter = 0.75 + random.random() / 2  # nosec
         # ^ between 0.75 and 1.25
@@ -178,7 +185,7 @@ class Worker(ABC):
     def loop(self) -> None:
         try:
             while True:
-                if self.has_memory() and self.has_cpu() and self.process_next_job():
+                if self.has_resources() and self.process_next_job():
                     # loop immediately to try another job
                     # see https://github.com/huggingface/datasets-server/issues/265
                     continue

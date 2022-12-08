@@ -31,6 +31,11 @@ class DummyWorker(Worker):
         return {"key": "value"}
 
 
+class NoStorageWorker(DummyWorker):
+    def has_storage(self) -> bool:
+        return False
+
+
 @pytest.mark.parametrize(
     "string_version, expected_major_version, should_raise",
     [
@@ -46,6 +51,30 @@ def test_parse_version(string_version: str, expected_major_version: int, should_
             parse_version(string_version)
     else:
         assert parse_version(string_version).major == expected_major_version
+
+
+def test_has_storage(
+    test_processing_step: ProcessingStep,
+    common_config: CommonConfig,
+    queue_config: QueueConfig,
+    worker_config: WorkerConfig,
+) -> None:
+    worker = DummyWorker(
+        processing_step=test_processing_step,
+        common_config=common_config,
+        queue_config=queue_config,
+        worker_config=worker_config,
+        version="1.0.0",
+    )
+    assert worker.has_resources() is True
+    worker = NoStorageWorker(
+        processing_step=test_processing_step,
+        common_config=common_config,
+        queue_config=queue_config,
+        worker_config=worker_config,
+        version="1.0.0",
+    )
+    assert worker.has_resources() is False
 
 
 @pytest.mark.parametrize(
