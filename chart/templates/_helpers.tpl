@@ -50,6 +50,11 @@ chart: "{{ include "name" . }}"
 app: "{{ .Release.Name }}-reverse-proxy"
 {{- end -}}
 
+{{- define "labels.storageAdmin" -}}
+{{ include "labels" . }}
+app: "{{ .Release.Name }}-storage-admin"
+{{- end -}}
+
 {{- define "labels.mongodbMigration" -}}
 {{ include "labels" . }}
 app: "{{ include "release" . }}-mongodb-migration"

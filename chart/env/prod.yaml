@@ -78,6 +78,20 @@ mongodbMigration:
   nodeSelector:
     role-datasets-server: "true"
 
+# --- storage admin (to manually inspect the storage, in /data) ---
+
+storageAdmin:
+  nodeSelector:
+    role-datasets-server: "true"
+  replicas: 1
+  resources:
+    requests:
+      cpu: 1
+      memory: "256Mi"
+    limits:
+      cpu: 1
+      memory: "256Mi"
+
 # --- reverse proxy ---
 
 reverseProxy:
