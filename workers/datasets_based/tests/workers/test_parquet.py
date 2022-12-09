@@ -151,6 +151,7 @@ def test_raise_if_not_supported(
                 dataset=hub_public_big,
                 hf_endpoint=app_config.common.hf_endpoint,
                 hf_token=app_config.common.hf_token,
+                committer_hf_token=parquet_config.committer_hf_token,
                 revision="main",
                 max_dataset_size=parquet_config.max_dataset_size,
                 supported_datasets=[hub_public_big] if in_list else ["another_dataset"],
@@ -161,6 +162,7 @@ def test_raise_if_not_supported(
             dataset=hub_public_big,
             hf_endpoint=app_config.common.hf_endpoint,
             hf_token=app_config.common.hf_token,
+            committer_hf_token=parquet_config.committer_hf_token,
             revision="main",
             max_dataset_size=parquet_config.max_dataset_size,
             supported_datasets=[hub_public_big] if in_list else ["another_dataset"],
@@ -168,7 +170,7 @@ def test_raise_if_not_supported(
         )
 
 
-def test_not_supported(worker: ParquetWorker, hub_public_big: str) -> None:
+def test_not_supported_if_big(worker: ParquetWorker, hub_public_big: str) -> None:
     # Not in the list of supported datasets and bigger than the maximum size
     assert worker.process(dataset=hub_public_big) is False
     cached_response = get_response(kind=worker.processing_step.cache_kind, dataset=hub_public_big)
@@ -176,6 +178,24 @@ def test_not_supported(worker: ParquetWorker, hub_public_big: str) -> None:
     assert cached_response["error_code"] == "DatasetTooBigFromDatasetsError"
 
 
+def test_supported_if_gated(worker: ParquetWorker, hub_gated_csv: str) -> None:
+    # Access should must be granted
+    assert worker.process(dataset=hub_gated_csv) is True
+    cached_response = get_response(kind=worker.processing_step.cache_kind, dataset=hub_gated_csv)
+    assert cached_response["http_status"] == HTTPStatus.OK
+    assert cached_response["error_code"] is None
+
+
+@pytest.mark.wip
+def test_not_supported_if_gated_with_extra_fields(worker: ParquetWorker, hub_gated_extra_fields_csv: str) -> None:
+    # Access request should fail because extra fields in gated datasets are not supported
+    assert worker.process(dataset=hub_gated_extra_fields_csv) is False
+    cached_response = get_response(kind=worker.processing_step.cache_kind, dataset=hub_gated_extra_fields_csv)
+    assert cached_response["http_status"] == HTTPStatus.NOT_FOUND
+    assert cached_response["error_code"] == "GatedExtraFieldsError"
+
+
+@pytest.mark.wip
 def test_blocked(worker: ParquetWorker, hub_public_jsonl: str) -> None:
     # In the list of blocked datasets
     assert worker.process(dataset=hub_public_jsonl) is False
@@ -184,25 +204,17 @@ def test_blocked(worker: ParquetWorker, hub_public_jsonl: str) -> None:
     assert cached_response["error_code"] == "DatasetInBlockListError"
 
 
+@pytest.mark.wip
 def test_process_job(worker: ParquetWorker, hub_public_csv: str) -> None:
     worker.queue.add_job(dataset=hub_public_csv)
     result = worker.process_next_job()
     assert result is True
 
 
+@pytest.mark.wip
 @pytest.mark.parametrize(
     "name",
-    [
-        "public",
-        "audio",
-        "gated",
-        # working because the user has created these datasets, thus has access
-        # TODO: test on a dataset that does not belong to the user
-        # ("gated_extra_fields", "GatedExtraFieldsError", None),
-        # ("private", "DatasetNotFoundError", None),
-        "gated_extra_fields",
-        "private",
-    ],
+    ["public", "audio", "gated"],
 )
 def test_compute_splits_response_simple_csv_ok(
     hub_datasets: HubDatasets, name: str, app_config: AppConfig, parquet_config: ParquetConfig, data_df: pd.DataFrame
@@ -242,11 +254,14 @@ def test_compute_splits_response_simple_csv_ok(
     assert df.equals(data_df), df
 
 
+@pytest.mark.wip
 @pytest.mark.parametrize(
     "name,error_code,cause",
     [
         ("empty", "EmptyDatasetError", "EmptyDatasetError"),
         ("does_not_exist", "DatasetNotFoundError", None),
+        ("gated_extra_fields", "GatedExtraFieldsError", None),
+        ("private", "DatasetNotFoundError", None),
     ],
 )
 def test_compute_splits_response_simple_csv_error(

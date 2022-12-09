@@ -26,6 +26,7 @@ from huggingface_hub.hf_api import (
     RepoFile,
 )
 from huggingface_hub.utils import RepositoryNotFoundError, RevisionNotFoundError
+from libcommon.dataset import ask_access
 from libcommon.exceptions import CustomError
 from libcommon.worker import DatasetNotFoundError
 
@@ -353,6 +354,7 @@ def raise_if_not_supported(
     dataset: str,
     hf_endpoint: str,
     hf_token: Optional[str],
+    committer_hf_token: Optional[str],
     revision: str,
     supported_datasets: List[str],
     blocked_datasets: List[str],
@@ -372,6 +374,10 @@ def raise_if_not_supported(
             The Hub endpoint (for example: "https://huggingface.co")
         hf_token (`str`, `optional`):
             An app authentication token with read access to all the datasets.
+        committer_hf_token (`str`, `optional`):
+            A user authentication token (See https://huggingface.co/settings/token) with write access. It must:
+            - be part of the `huggingface` organization (to create the ref/convert/parquet "branch")
+            - be part of the `datasets-maintainers` organization (to push to the ref/convert/parquet "branch")
         revision (`str`):
             The git revision (e.g. "main" or sha) of the dataset
         supported_datasets (`List[str]`):
@@ -389,9 +395,14 @@ def raise_if_not_supported(
     Raises the following errors:
         - [`~parquet.worker.DatasetInBlockListError`]
           If the dataset is in the list of blocked datasets.
-        - [`~libcommon.worker.DatasetNotFoundError`]
-          If the repository to download from cannot be found. This may be because it doesn't exist,
-          or because it is set to `private` and you do not have access.
+        - [`~libcommon.dataset.GatedExtraFieldsError`]: if the dataset is gated, with extra fields.
+            Programmatic access is not implemented for this type of dataset because there is no easy
+            way to get the list of extra fields.
+        - [`~libcommon.dataset.GatedDisabledError`]: if the dataset is gated, but disabled.
+        - [`~libcommon.dataset.DatasetNotFoundError`]: if the dataset does not exist, or if the
+            token does not give the sufficient access to the dataset, or if the dataset is private
+            (private datasets are not supported by the datasets server)
+        - ['~requests.exceptions.HTTPError']: any other error when asking access
         - [`~parquet.worker.DatasetRevisionNotFoundError`]
           If the revision does not exist or cannot be accessed using the token.
         - [`~parquet.worker.DatasetTooBigFromHubError`]
@@ -403,6 +414,7 @@ def raise_if_not_supported(
     </Tip>
     """
     raise_if_blocked(dataset=dataset, blocked_datasets=blocked_datasets)
+    ask_access(dataset=dataset, hf_endpoint=hf_endpoint, hf_token=committer_hf_token)
     dataset_info = get_dataset_info_or_raise(
         dataset=dataset, hf_endpoint=hf_endpoint, hf_token=hf_token, revision=revision
     )
@@ -469,9 +481,14 @@ def compute_parquet_response(
     Raises the following errors:
         - [`~parquet.worker.DatasetInBlockListError`]
           If the dataset is in the list of blocked datasets.
-        - [`~libcommon.worker.DatasetNotFoundError`]
-          If the repository to download from cannot be found. This may be because it doesn't exist,
-          or because it is set to `private` and you do not have access.
+        - [`~libcommon.dataset.GatedExtraFieldsError`]: if the dataset is gated, with extra fields.
+            Programmatic access is not implemented for this type of dataset because there is no easy
+            way to get the list of extra fields.
+        - [`~libcommon.dataset.GatedDisabledError`]: if the dataset is gated, but disabled.
+        - [`~libcommon.dataset.DatasetNotFoundError`]: if the dataset does not exist, or if the
+            token does not give the sufficient access to the dataset, or if the dataset is private
+            (private datasets are not supported by the datasets server)
+        - ['~requests.exceptions.HTTPError']: any other error when asking access
         - [`~parquet.worker.DatasetRevisionNotFoundError`]
           If the revision does not exist or cannot be accessed using the token.
         - [`~parquet.worker.DatasetTooBigFromHubError`]
@@ -494,6 +511,7 @@ def compute_parquet_response(
         dataset=dataset,
         hf_endpoint=hf_endpoint,
         hf_token=hf_token,
+        committer_hf_token=committer_hf_token,
         revision=source_revision,
         supported_datasets=supported_datasets,
         blocked_datasets=blocked_datasets,
