@@ -70,6 +70,10 @@ def post_refresh(dataset: str) -> Response:
     return post("/webhook", json={"event": "update", "repo": {"type": "dataset", "name": dataset}})
 
 
+def poll_parquet(dataset: str, headers: Headers = None) -> Response:
+    return poll(f"/parquet?dataset={dataset}", error_field="error", headers=headers)
+
+
 def poll_splits(dataset: str, headers: Headers = None) -> Response:
     return poll(f"/splits?dataset={dataset}", error_field="error", headers=headers)
 

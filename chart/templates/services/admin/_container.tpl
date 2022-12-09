@@ -6,6 +6,7 @@
   image: {{ .Values.dockerImage.services.admin }}
   imagePullPolicy: IfNotPresent
   env:
+  {{ include "envAssets" . | nindent 2 }}
   {{ include "envCache" . | nindent 2 }}
   {{ include "envQueue" . | nindent 2 }}
   {{ include "envCommon" . | nindent 2 }}

@@ -21,7 +21,9 @@ from admin.routes.pending_jobs import create_pending_jobs_endpoint
 def create_app() -> Starlette:
     app_config = AppConfig()
     processing_steps = list(app_config.processing_graph.graph.steps.values())
-    prometheus = Prometheus(processing_steps=processing_steps)
+    prometheus = Prometheus(
+        processing_steps=processing_steps, assets_storage_directory=app_config.assets.storage_directory
+    )
 
     middleware = [
         Middleware(

@@ -108,7 +108,7 @@ redis = ["redis (>=2.10.5)"]
 
 [[package]]
 name = "certifi"
-version = "2022.9.24"
+version = "2022.12.7"
 description = "Python package for providing Mozilla's CA Bundle."
 category = "main"
 optional = false
@@ -369,7 +369,7 @@ format-nongpl = ["fqdn", "idna", "isoduration", "jsonpointer (>1.13)", "rfc3339-
 
 [[package]]
 name = "libcommon"
-version = "0.5.3"
+version = "0.5.10"
 description = "Library for utils, common to all the services and workers"
 category = "main"
 optional = false
@@ -387,7 +387,7 @@ pymongo = {version = ">=3.13.0,<4.0.0", extras = ["srv"]}
 
 [package.source]
 type = "file"
-url = "../../libs/libcommon/dist/libcommon-0.5.3-py3-none-any.whl"
+url = "../../libs/libcommon/dist/libcommon-0.5.10-py3-none-any.whl"
 
 [[package]]
 name = "lockfile"
@@ -1030,7 +1030,7 @@ watchdog = ["watchdog"]
 [metadata]
 lock-version = "1.1"
 python-versions = "3.9.15"
-content-hash = "20c63e31801f3652a9b58587ed63d240d790be6c40d313f118f21a4b4e34caca"
+content-hash = "0288367cb9b868444331cdbdf2eb6095c5d939a475811c612e30f4cdb7aa8785"
 
 [metadata.files]
 anyio = [
@@ -1081,8 +1081,8 @@ cachecontrol = [
     {file = "CacheControl-0.12.11.tar.gz", hash = "sha256:a5b9fcc986b184db101aa280b42ecdcdfc524892596f606858e0b7a8b4d9e144"},
 ]
 certifi = [
-    {file = "certifi-2022.9.24-py3-none-any.whl", hash = "sha256:90c1a32f1d68f940488354e36370f6cca89f0f106db09518524c88d6ed83f382"},
-    {file = "certifi-2022.9.24.tar.gz", hash = "sha256:0d9c601124e5a6ba9712dbc60d9c53c21e34f5f641fe83002317394311bdce14"},
+    {file = "certifi-2022.12.7-py3-none-any.whl", hash = "sha256:4ad3232f5e926d6718ec31cfc1fcadfde020920e278684144551c91769c7bc18"},
+    {file = "certifi-2022.12.7.tar.gz", hash = "sha256:35824b4c3a97115964b408844d64aa14db1cc518f6562e8d7261699d1350a9e3"},
 ]
 charset-normalizer = [
     {file = "charset-normalizer-2.1.1.tar.gz", hash = "sha256:5a3d016c7c547f69d6f81fb0db9449ce888b418b5b9952cc5e6e66843e9dd845"},
@@ -1213,7 +1213,7 @@ jsonschema = [
     {file = "jsonschema-4.17.3.tar.gz", hash = "sha256:0f864437ab8b6076ba6707453ef8f98a6a0d512a80e93f8abdb676f737ecb60d"},
 ]
 libcommon = [
-    {file = "libcommon-0.5.3-py3-none-any.whl", hash = "sha256:bd80da9b2b320d8e0cf9339f89c4b64e8898e3a14e60ebec21cfee667e0cae94"},
+    {file = "libcommon-0.5.10-py3-none-any.whl", hash = "sha256:020c37fe46713f2f06c0cc5d6a45ac1e5e16c239311b0b5a89991038873f3c30"},
 ]
 lockfile = [
     {file = "lockfile-0.12.2-py2.py3-none-any.whl", hash = "sha256:6c3cb24f344923d30b2785d5ad75182c8ea7ac1b6171b08657258ec7429d50fa"},

@@ -17,17 +17,17 @@ gdown = "^4.2.0"
 huggingface-hub = "^0.11.0"
 kenlm = { url = "https://github.com/kpu/kenlm/archive/master.zip" }
 kss = "^2.6.0"
-libcommon = { path = "../../libs/libcommon/dist/libcommon-0.5.3-py3-none-any.whl", develop = false }
+libcommon = { path = "../../libs/libcommon/dist/libcommon-0.5.10-py3-none-any.whl", develop = false }
 lm-dataformat = "^0.0.20"
 lxml = "^4.9.1"
 nlp = "^0.4.0"
 nltk = "^3.6.5"
 openpyxl = "^3.0.9"
-py7zr = "^0.17.4"
+py7zr = "^0.20.1"
 pydub = "^0.25.1"
 python = "3.9.15"
 rarfile = "^4.0"
-sklearn = "^0.0"
+scikit-learn = "^1.0"
 tensorflow = {version = "^2.9.1", markers = "sys_platform != 'darwin' or platform_machine != 'arm64'"}
 tensorflow-macos = {version = "^2.9.1", markers = "sys_platform == 'darwin' and platform_machine == 'arm64'"}
 tfrecord = "^1.14.1"
@@ -48,6 +48,7 @@ poetryup = "^0.3.8"
 pytest = "^7.2.0"
 pytest-cov = "^2.12.1"
 pip-audit = "^2.4.6"
+types-psutil = "^5.9.5.5"
 types-requests = "^2.28.11"
 
 [build-system]
@@ -55,7 +56,6 @@ build-backend = "poetry.core.masonry.api"
 requires = ["poetry-core>=1.0.0"]
 
 [tool.pytest.ini_options]
-# addopts = "-k 'wip'"
 filterwarnings = ["ignore::DeprecationWarning"]
 markers = [
     "wip: tests being developed"

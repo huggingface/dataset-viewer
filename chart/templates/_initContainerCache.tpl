@@ -12,7 +12,7 @@
   - mountPath: /mounted-path
     mountPropagation: None
     name: data
-    subPath: "{{ include "cache.datasets.subpath" . }}"
+    subPath: "{{ include "cache.subpath" . }}"
     readOnly: false
   securityContext:
     runAsNonRoot: false

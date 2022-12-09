@@ -80,7 +80,7 @@ redis = ["redis (>=2.10.5)"]
 
 [[package]]
 name = "certifi"
-version = "2022.9.24"
+version = "2022.12.7"
 description = "Python package for providing Mozilla's CA Bundle."
 category = "main"
 optional = false
@@ -195,7 +195,7 @@ test = ["pytest (>=6)"]
 
 [[package]]
 name = "filelock"
-version = "3.8.1"
+version = "3.8.2"
 description = "A platform independent file lock."
 category = "main"
 optional = false
@@ -317,7 +317,7 @@ requirements-deprecated-finder = ["pip-api", "pipreqs"]
 
 [[package]]
 name = "libcommon"
-version = "0.5.3"
+version = "0.5.10"
 description = "Library for utils, common to all the services and workers"
 category = "main"
 optional = false
@@ -335,7 +335,7 @@ pymongo = {version = ">=3.13.0,<4.0.0", extras = ["srv"]}
 
 [package.source]
 type = "file"
-url = "../../libs/libcommon/dist/libcommon-0.5.3-py3-none-any.whl"
+url = "../../libs/libcommon/dist/libcommon-0.5.10-py3-none-any.whl"
 
 [[package]]
 name = "lockfile"
@@ -862,7 +862,7 @@ python-versions = "*"
 [metadata]
 lock-version = "1.1"
 python-versions = "3.9.15"
-content-hash = "f50de0b55e954056cf522ef2b71dfa3677488f11668cd1479a478d7e544a9263"
+content-hash = "bbaaeaa2093464c1e5204af154045c1b0524614bc886bc543f7ee469572f55b6"
 
 [metadata.files]
 appdirs = [
@@ -905,8 +905,8 @@ cachecontrol = [
     {file = "CacheControl-0.12.11.tar.gz", hash = "sha256:a5b9fcc986b184db101aa280b42ecdcdfc524892596f606858e0b7a8b4d9e144"},
 ]
 certifi = [
-    {file = "certifi-2022.9.24-py3-none-any.whl", hash = "sha256:90c1a32f1d68f940488354e36370f6cca89f0f106db09518524c88d6ed83f382"},
-    {file = "certifi-2022.9.24.tar.gz", hash = "sha256:0d9c601124e5a6ba9712dbc60d9c53c21e34f5f641fe83002317394311bdce14"},
+    {file = "certifi-2022.12.7-py3-none-any.whl", hash = "sha256:4ad3232f5e926d6718ec31cfc1fcadfde020920e278684144551c91769c7bc18"},
+    {file = "certifi-2022.12.7.tar.gz", hash = "sha256:35824b4c3a97115964b408844d64aa14db1cc518f6562e8d7261699d1350a9e3"},
 ]
 charset-normalizer = [
     {file = "charset-normalizer-2.1.1.tar.gz", hash = "sha256:5a3d016c7c547f69d6f81fb0db9449ce888b418b5b9952cc5e6e66843e9dd845"},
@@ -993,8 +993,8 @@ exceptiongroup = [
     {file = "exceptiongroup-1.0.4.tar.gz", hash = "sha256:bd14967b79cd9bdb54d97323216f8fdf533e278df937aa2a90089e7d6e06e5ec"},
 ]
 filelock = [
-    {file = "filelock-3.8.1-py3-none-any.whl", hash = "sha256:3156639b1454b5f828255abf5710f7fc1e10dac69bde3e09e6189b29a91f2505"},
-    {file = "filelock-3.8.1.tar.gz", hash = "sha256:9255d3cd8de8fcb2a441444f7a4f1949ae826da36cd070dc3e0c883614b4bbad"},
+    {file = "filelock-3.8.2-py3-none-any.whl", hash = "sha256:8df285554452285f79c035efb0c861eb33a4bcfa5b7a137016e32e6a90f9792c"},
+    {file = "filelock-3.8.2.tar.gz", hash = "sha256:7565f628ea56bfcd8e54e42bdc55da899c85c1abfe1b5bcfd147e9188cebb3b2"},
 ]
 flake8 = [
     {file = "flake8-3.9.2-py2.py3-none-any.whl", hash = "sha256:bf8fd333346d844f616e8d47905ef3a3384edae6b4e9beb0c5101e25e3110907"},
@@ -1029,7 +1029,7 @@ isort = [
     {file = "isort-5.10.1.tar.gz", hash = "sha256:e8443a5e7a020e9d7f97f1d7d9cd17c88bcb3bc7e218bf9cf5095fe550be2951"},
 ]
 libcommon = [
-    {file = "libcommon-0.5.3-py3-none-any.whl", hash = "sha256:bd80da9b2b320d8e0cf9339f89c4b64e8898e3a14e60ebec21cfee667e0cae94"},
+    {file = "libcommon-0.5.10-py3-none-any.whl", hash = "sha256:020c37fe46713f2f06c0cc5d6a45ac1e5e16c239311b0b5a89991038873f3c30"},
 ]
 lockfile = [
     {file = "lockfile-0.12.2-py2.py3-none-any.whl", hash = "sha256:6c3cb24f344923d30b2785d5ad75182c8ea7ac1b6171b08657258ec7429d50fa"},

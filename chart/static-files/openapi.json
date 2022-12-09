@@ -813,6 +813,41 @@
             "type": "boolean"
           }
         }
+      },
+      "ParquetFilesResponse": {
+        "type": "object",
+        "required": ["parquet_files"],
+        "properties": {
+          "parquet_files": {
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/ParquetFileItem" }
+          }
+        }
+      },
+      "ParquetFileItem": {
+        "type": "object",
+        "required": ["dataset", "config", "split", "url", "filename", "size"],
+        "properties": {
+          "dataset": {
+            "type": "string"
+          },
+          "config": {
+            "type": "string"
+          },
+          "split": {
+            "type": "string"
+          },
+          "url": {
+            "type": "string",
+            "format": "uri"
+          },
+          "filename": {
+            "type": "string"
+          },
+          "size": {
+            "type": "integer"
+          }
+        }
       }
     },
     "securitySchemes": {
@@ -1988,6 +2023,373 @@
                     "summary": "the response is not ready yet.",
                     "value": {
                       "error": "The list of the first rows is not ready yet. Please retry later."
+                    }
+                  },
+                  "internal": {
+                    "summary": "internal error",
+                    "value": {
+                      "error": "Unexpected error."
+                    }
+                  }
+                }
+              },
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ServerErrorResponse"
+                },
+                "examples": {
+                  "internal": {
+                    "summary": "internal error",
+                    "value": {
+                      "error": "Internal Server Error"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/parquet": {
+      "get": {
+        "summary": "List of parquet files",
+        "description": "The dataset is converted to the parquet format. The endpoint gives the list of the parquet files.",
+        "externalDocs": {
+          "description": "See Parquet (Hub docs)",
+          "url": "https://huggingface.co/docs/datasets-server/parquet"
+        },
+        "operationId": "listParquetFiles",
+        "security": [
+          {},
+          {
+            "HuggingFaceCookie": []
+          },
+          {
+            "HuggingFaceToken": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "dataset",
+            "in": "query",
+            "description": "The identifier of the dataset on the Hub.",
+            "required": true,
+            "schema": { "type": "string" },
+            "examples": {
+              "glue": { "summary": "a canonical dataset", "value": "glue" },
+              "Helsinki-NLP/tatoeba_mt": {
+                "summary": "a namespaced dataset",
+                "value": "Helsinki-NLP/tatoeba_mt"
+              }
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A list of parquet files.</br>Beware: the response is not paginated.",
+            "headers": {
+              "Cache-Control": { "$ref": "#/components/headers/Cache-Control" },
+              "Access-Control-Allow-Origin": {
+                "$ref": "#/components/headers/Access-Control-Allow-Origin"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ParquetFilesResponse"
+                },
+                "examples": {
+                  "duorc": {
+                    "summary": "duorc: six parquet files, one per split",
+                    "value": {
+                      "parquet_files": [
+                        {
+                          "dataset": "duorc",
+                          "config": "ParaphraseRC",
+                          "split": "test",
+                          "url": "https://huggingface.co/datasets/duorc/resolve/refs%2Fconvert%2Fparquet/ParaphraseRC/duorc-test.parquet",
+                          "filename": "duorc-test.parquet",
+                          "size": 6136590
+                        },
+                        {
+                          "dataset": "duorc",
+                          "config": "ParaphraseRC",
+                          "split": "train",
+                          "url": "https://huggingface.co/datasets/duorc/resolve/refs%2Fconvert%2Fparquet/ParaphraseRC/duorc-train.parquet",
+                          "filename": "duorc-train.parquet",
+                          "size": 26005667
+                        },
+                        {
+                          "dataset": "duorc",
+                          "config": "ParaphraseRC",
+                          "split": "validation",
+                          "url": "https://huggingface.co/datasets/duorc/resolve/refs%2Fconvert%2Fparquet/ParaphraseRC/duorc-validation.parquet",
+                          "filename": "duorc-validation.parquet",
+                          "size": 5566867
+                        },
+                        {
+                          "dataset": "duorc",
+                          "config": "SelfRC",
+                          "split": "test",
+                          "url": "https://huggingface.co/datasets/duorc/resolve/refs%2Fconvert%2Fparquet/SelfRC/duorc-test.parquet",
+                          "filename": "duorc-test.parquet",
+                          "size": 3035735
+                        },
+                        {
+                          "dataset": "duorc",
+                          "config": "SelfRC",
+                          "split": "train",
+                          "url": "https://huggingface.co/datasets/duorc/resolve/refs%2Fconvert%2Fparquet/SelfRC/duorc-train.parquet",
+                          "filename": "duorc-train.parquet",
+                          "size": 14851719
+                        },
+                        {
+                          "dataset": "duorc",
+                          "config": "SelfRC",
+                          "split": "validation",
+                          "url": "https://huggingface.co/datasets/duorc/resolve/refs%2Fconvert%2Fparquet/SelfRC/duorc-validation.parquet",
+                          "filename": "duorc-validation.parquet",
+                          "size": 3114389
+                        }
+                      ]
+                    }
+                  },
+                  "sharded": {
+                    "summary": "alexandrainst/danish-wit: the parquet file for the train split is partitioned into 9 shards",
+                    "value": {
+                      "parquet_files": [
+                        {
+                          "dataset": "alexandrainst/danish-wit",
+                          "config": "alexandrainst--danish-wit",
+                          "split": "test",
+                          "url": "https://huggingface.co/datasets/alexandrainst/danish-wit/resolve/refs%2Fconvert%2Fparquet/alexandrainst--danish-wit/parquet-test.parquet",
+                          "filename": "parquet-test.parquet",
+                          "size": 48781933
+                        },
+                        {
+                          "dataset": "alexandrainst/danish-wit",
+                          "config": "alexandrainst--danish-wit",
+                          "split": "train",
+                          "url": "https://huggingface.co/datasets/alexandrainst/danish-wit/resolve/refs%2Fconvert%2Fparquet/alexandrainst--danish-wit/parquet-train-00000-of-00009.parquet",
+                          "filename": "parquet-train-00000-of-00009.parquet",
+                          "size": 937127291
+                        },
+                        {
+                          "dataset": "alexandrainst/danish-wit",
+                          "config": "alexandrainst--danish-wit",
+                          "split": "train",
+                          "url": "https://huggingface.co/datasets/alexandrainst/danish-wit/resolve/refs%2Fconvert%2Fparquet/alexandrainst--danish-wit/parquet-train-00001-of-00009.parquet",
+                          "filename": "parquet-train-00001-of-00009.parquet",
+                          "size": 925920565
+                        },
+                        {
+                          "dataset": "alexandrainst/danish-wit",
+                          "config": "alexandrainst--danish-wit",
+                          "split": "train",
+                          "url": "https://huggingface.co/datasets/alexandrainst/danish-wit/resolve/refs%2Fconvert%2Fparquet/alexandrainst--danish-wit/parquet-train-00002-of-00009.parquet",
+                          "filename": "parquet-train-00002-of-00009.parquet",
+                          "size": 940390661
+                        },
+                        {
+                          "dataset": "alexandrainst/danish-wit",
+                          "config": "alexandrainst--danish-wit",
+                          "split": "train",
+                          "url": "https://huggingface.co/datasets/alexandrainst/danish-wit/resolve/refs%2Fconvert%2Fparquet/alexandrainst--danish-wit/parquet-train-00003-of-00009.parquet",
+                          "filename": "parquet-train-00003-of-00009.parquet",
+                          "size": 934549621
+                        },
+                        {
+                          "dataset": "alexandrainst/danish-wit",
+                          "config": "alexandrainst--danish-wit",
+                          "split": "train",
+                          "url": "https://huggingface.co/datasets/alexandrainst/danish-wit/resolve/refs%2Fconvert%2Fparquet/alexandrainst--danish-wit/parquet-train-00004-of-00009.parquet",
+                          "filename": "parquet-train-00004-of-00009.parquet",
+                          "size": 493004154
+                        },
+                        {
+                          "dataset": "alexandrainst/danish-wit",
+                          "config": "alexandrainst--danish-wit",
+                          "split": "train",
+                          "url": "https://huggingface.co/datasets/alexandrainst/danish-wit/resolve/refs%2Fconvert%2Fparquet/alexandrainst--danish-wit/parquet-train-00005-of-00009.parquet",
+                          "filename": "parquet-train-00005-of-00009.parquet",
+                          "size": 942848888
+                        },
+                        {
+                          "dataset": "alexandrainst/danish-wit",
+                          "config": "alexandrainst--danish-wit",
+                          "split": "train",
+                          "url": "https://huggingface.co/datasets/alexandrainst/danish-wit/resolve/refs%2Fconvert%2Fparquet/alexandrainst--danish-wit/parquet-train-00006-of-00009.parquet",
+                          "filename": "parquet-train-00006-of-00009.parquet",
+                          "size": 933373843
+                        },
+                        {
+                          "dataset": "alexandrainst/danish-wit",
+                          "config": "alexandrainst--danish-wit",
+                          "split": "train",
+                          "url": "https://huggingface.co/datasets/alexandrainst/danish-wit/resolve/refs%2Fconvert%2Fparquet/alexandrainst--danish-wit/parquet-train-00007-of-00009.parquet",
+                          "filename": "parquet-train-00007-of-00009.parquet",
+                          "size": 936939176
+                        },
+                        {
+                          "dataset": "alexandrainst/danish-wit",
+                          "config": "alexandrainst--danish-wit",
+                          "split": "train",
+                          "url": "https://huggingface.co/datasets/alexandrainst/danish-wit/resolve/refs%2Fconvert%2Fparquet/alexandrainst--danish-wit/parquet-train-00008-of-00009.parquet",
+                          "filename": "parquet-train-00008-of-00009.parquet",
+                          "size": 946933048
+                        },
+                        {
+                          "dataset": "alexandrainst/danish-wit",
+                          "config": "alexandrainst--danish-wit",
+                          "split": "val",
+                          "url": "https://huggingface.co/datasets/alexandrainst/danish-wit/resolve/refs%2Fconvert%2Fparquet/alexandrainst--danish-wit/parquet-val.parquet",
+                          "filename": "parquet-val.parquet",
+                          "size": 11437355
+                        }
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "If the external authentication step on the Hugging Face Hub failed, and no authentication mechanism has been provided. Retry with authentication.",
+            "headers": {
+              "Cache-Control": {
+                "$ref": "#/components/headers/Cache-Control"
+              },
+              "Access-Control-Allow-Origin": {
+                "$ref": "#/components/headers/Access-Control-Allow-Origin"
+              },
+              "X-Error-Code": {
+                "$ref": "#/components/headers/X-Error-Code-splits-401"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CustomError"
+                },
+                "examples": {
+                  "inexistent-dataset": {
+                    "summary": "The dataset does not exist.",
+                    "value": {
+                      "error": "The dataset does not exist, or is not accessible without authentication (private or gated). Please retry with authentication."
+                    }
+                  },
+                  "gated-dataset": {
+                    "summary": "The dataset is gated.",
+                    "value": {
+                      "error": "The dataset does not exist, or is not accessible without authentication (private or gated). Please retry with authentication."
+                    }
+                  },
+                  "private-dataset": {
+                    "summary": "The dataset is private.",
+                    "value": {
+                      "error": "The dataset does not exist, or is not accessible without authentication (private or gated). Please retry with authentication."
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "If the repository to download from cannot be found. This may be because it doesn't exist, or because it is set to `private` and you do not have access.",
+            "headers": {
+              "Cache-Control": {
+                "$ref": "#/components/headers/Cache-Control"
+              },
+              "Access-Control-Allow-Origin": {
+                "$ref": "#/components/headers/Access-Control-Allow-Origin"
+              },
+              "X-Error-Code": {
+                "$ref": "#/components/headers/X-Error-Code-splits-404"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CustomError"
+                },
+                "examples": {
+                  "inexistent-dataset": {
+                    "summary": "The dataset does not exist, while authentication was provided in the request.",
+                    "value": {
+                      "error": "The dataset does not exist, or is not accessible with the current credentials (private or gated)."
+                    }
+                  },
+                  "gated-dataset": {
+                    "summary": "The dataset is private, while authentication was provided in the request.",
+                    "value": {
+                      "error": "The dataset does not exist, or is not accessible with the current credentials (private or gated)."
+                    }
+                  },
+                  "private-dataset": {
+                    "summary": "The dataset is private, while authentication was provided in the request.",
+                    "value": {
+                      "error": "The dataset does not exist, or is not accessible with the current credentials (private or gated)."
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "The `dataset` parameter has not been provided.",
+            "headers": {
+              "Cache-Control": {
+                "$ref": "#/components/headers/Cache-Control"
+              },
+              "Access-Control-Allow-Origin": {
+                "$ref": "#/components/headers/Access-Control-Allow-Origin"
+              },
+              "X-Error-Code": {
+                "$ref": "#/components/headers/X-Error-Code-splits-422"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CustomError"
+                },
+                "examples": {
+                  "missing-parameter": {
+                    "summary": "The dataset parameter is missing.",
+                    "value": { "error": "Parameter 'dataset' is required" }
+                  },
+                  "empty-parameter": {
+                    "summary": "The dataset parameter is empty (?dataset=).",
+                    "value": { "error": "Parameter 'dataset' is required" }
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "The server crashed, the response still hasn't been generated (the process is asynchronous), or the response couldn't be generated successfully due to an error in the dataset itself. The client can retry after a time, in particular in the case of the response still being processed. If the error does not vanish, it's possibly due to a bug in the API software or in the dataset, and should be reported.",
+            "headers": {
+              "Cache-Control": {
+                "$ref": "#/components/headers/Cache-Control"
+              },
+              "Access-Control-Allow-Origin": {
+                "$ref": "#/components/headers/Access-Control-Allow-Origin"
+              },
+              "X-Error-Code": {
+                "$ref": "#/components/headers/X-Error-Code-splits-500"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CustomError"
+                },
+                "examples": {
+                  "not-ready": {
+                    "summary": "the response is not ready yet.",
+                    "value": {
+                      "error": "The response is not ready yet. Please retry later."
                     }
                   },
                   "internal": {

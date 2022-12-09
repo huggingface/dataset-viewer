@@ -5,8 +5,7 @@ from http import HTTPStatus
 
 import pytest
 from libcommon.exceptions import CustomError
-from libcommon.queue import _clean_queue_database
-from libcommon.simple_cache import DoesNotExist, _clean_cache_database, get_response
+from libcommon.simple_cache import DoesNotExist, get_response
 
 from datasets_based.config import AppConfig
 from datasets_based.workers.splits import SplitsWorker, compute_splits_response
@@ -14,21 +13,9 @@ from datasets_based.workers.splits import SplitsWorker, compute_splits_response
 from ..fixtures.hub import HubDatasets
 
 
-@pytest.fixture(autouse=True)
-def clean_mongo_database() -> None:
-    _clean_cache_database()
-    _clean_queue_database()
-
-
-@pytest.fixture(autouse=True, scope="module")
+@pytest.fixture
 def worker(app_config: AppConfig) -> SplitsWorker:
-    return SplitsWorker(app_config=app_config, endpoint="/splits")
-
-
-def test_version(worker: SplitsWorker) -> None:
-    assert len(worker.version.split(".")) == 3
-    assert worker.compare_major_version(other_version="0.0.0") > 0
-    assert worker.compare_major_version(other_version="1000.0.0") < 0
+    return SplitsWorker(app_config=app_config)
 
 
 def should_skip_job(worker: SplitsWorker, hub_public_csv: str) -> None:

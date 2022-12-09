@@ -12,6 +12,8 @@
     title: List splits and configurations
   - local: first_rows
     title: Preview a dataset
+  - local: parquet
+    title: List parquet files
 - title: Conceptual Guides
   sections:
   - local: configs_and_splits

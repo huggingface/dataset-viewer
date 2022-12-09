@@ -168,6 +168,13 @@ class Worker(ABC):
             self.info(f"cpu load is too high: {load_pct:.0f}% - max is {self.worker_config.max_load_pct}%")
         return ok
 
+    def has_storage(self) -> bool:
+        # placeholder, to be overridden by workers if needed
+        return True
+
+    def has_resources(self) -> bool:
+        return self.has_memory() and self.has_cpu() and self.has_storage()
+
     def sleep(self) -> None:
         jitter = 0.75 + random.random() / 2  # nosec
         # ^ between 0.75 and 1.25
@@ -178,7 +185,7 @@ class Worker(ABC):
     def loop(self) -> None:
         try:
             while True:
-                if self.has_memory() and self.has_cpu() and self.process_next_job():
+                if self.has_resources() and self.process_next_job():
                     # loop immediately to try another job
                     # see https://github.com/huggingface/datasets-server/issues/265
                     continue
@@ -197,7 +204,7 @@ class Worker(ABC):
             config = started_job_info["config"]
             split = started_job_info["split"]
             force = started_job_info["force"]
-            parameters_for_log = "dataset={dataset}" + ("" if split is None else f"config={config} split={split}")
+            parameters_for_log = f"dataset={dataset}" + ("" if split is None else f"config={config} split={split}")
             self.debug(f"job assigned: {job_id} for {parameters_for_log}")
         except EmptyQueueError:
             self.debug("no job in the queue")
@@ -209,8 +216,11 @@ class Worker(ABC):
             if self.should_skip_job(dataset=dataset, config=config, split=split, force=force):
                 finished_status = Status.SKIPPED
             else:
-                self.process(dataset=dataset, config=config, split=split, force=force)
-                finished_status = Status.SUCCESS
+                finished_status = (
+                    Status.SUCCESS
+                    if self.process(dataset=dataset, config=config, split=split, force=force)
+                    else Status.ERROR
+                )
         except Exception:
             self.exception(f"error while computing {parameters_for_log}")
             finished_status = Status.ERROR
@@ -237,6 +247,15 @@ class Worker(ABC):
         except Exception as err:
             raise RuntimeError(f"Could not get major versions: {err}") from err
 
+    def get_dataset_git_revision(
+        self,
+        dataset: str,
+        hf_endpoint: str,
+        hf_token: Optional[str] = None,
+    ) -> Optional[str]:
+        """Get the git revision of the dataset repository."""
+        return get_dataset_git_revision(dataset=dataset, hf_endpoint=hf_endpoint, hf_token=hf_token)
+
     def should_skip_job(
         self, dataset: str, config: Optional[str] = None, split: Optional[str] = None, force: bool = False
     ) -> bool:
@@ -258,13 +277,13 @@ class Worker(ABC):
         Returns:
             :obj:`bool`: True if the job should be skipped, False otherwise.
         """
-        if force or config is None or split is None:
+        if force:
             return False
         try:
             cached_response = get_response_without_content(
                 kind=self.processing_step.cache_kind, dataset=dataset, config=config, split=split
             )
-            dataset_git_revision = get_dataset_git_revision(
+            dataset_git_revision = self.get_dataset_git_revision(
                 dataset=dataset, hf_endpoint=self.common_config.hf_endpoint, hf_token=self.common_config.hf_token
             )
             return (
@@ -287,13 +306,18 @@ class Worker(ABC):
     ) -> bool:
         dataset_git_revision = None
         try:
-            dataset_git_revision = get_dataset_git_revision(
+            dataset_git_revision = self.get_dataset_git_revision(
                 dataset=dataset, hf_endpoint=self.common_config.hf_endpoint, hf_token=self.common_config.hf_token
             )
             if dataset_git_revision is None:
                 self.debug(f"the dataset={dataset} has no git revision, don't update the cache")
                 raise NoGitRevisionError(f"Could not get git revision for dataset {dataset}")
-            content = self.compute(dataset=dataset, config=config, split=split, force=force)
+            try:
+                self.pre_compute(dataset=dataset, config=config, split=split, force=force)
+                content = self.compute(dataset=dataset, config=config, split=split, force=force)
+            finally:
+                # ensure the post_compute hook is called even if the compute raises an exception
+                self.post_compute(dataset=dataset, config=config, split=split, force=force)
             upsert_response(
                 kind=self.processing_step.cache_kind,
                 dataset=dataset,
@@ -333,6 +357,16 @@ class Worker(ABC):
             self.debug(f"response for dataset={dataset} config={config} split={split} had an error, cache updated")
             return False
 
+    def pre_compute(
+        self,
+        dataset: str,
+        config: Optional[str] = None,
+        split: Optional[str] = None,
+        force: bool = False,
+    ) -> None:
+        """Hook method called before the compute method."""
+        pass
+
     @abstractmethod
     def compute(
         self,
@@ -341,4 +375,14 @@ class Worker(ABC):
         split: Optional[str] = None,
         force: bool = False,
     ) -> Mapping[str, Any]:
+        pass
+
+    def post_compute(
+        self,
+        dataset: str,
+        config: Optional[str] = None,
+        split: Optional[str] = None,
+        force: bool = False,
+    ) -> None:
+        """Hook method called after the compute method."""
         pass

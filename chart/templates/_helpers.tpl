@@ -50,6 +50,11 @@ chart: "{{ include "name" . }}"
 app: "{{ .Release.Name }}-reverse-proxy"
 {{- end -}}
 
+{{- define "labels.storageAdmin" -}}
+{{ include "labels" . }}
+app: "{{ .Release.Name }}-storage-admin"
+{{- end -}}
+
 {{- define "labels.mongodbMigration" -}}
 {{ include "labels" . }}
 app: "{{ include "release" . }}-mongodb-migration"
@@ -75,6 +80,11 @@ app: "{{ include "release" . }}-worker-splits"
 app: "{{ include "release" . }}-worker-first-rows"
 {{- end -}}
 
+{{- define "labels.parquet" -}}
+{{ include "labels" . }}
+app: "{{ include "release" . }}-worker-parquet"
+{{- end -}}
+
 
 {{/*
 The assets base URL
@@ -93,21 +103,12 @@ The assets/ subpath in the NFS
 {{- end }}
 
 {{/*
-The cache/ subpath in the NFS
+The datasets library will use this directory as a cache
 - in a subdirectory named as the chart (datasets-server/), and below it,
 - in a subdirectory named as the Release, so that Releases will not share the same dir
 */}}
-{{- define "cache.datasets.subpath" -}}
-{{- printf "%s/%s/%s/" .Chart.Name .Release.Name "cache-datasets-2" }}
-{{- end }}
-
-{{/*
-The numba-cache/ subpath in the NFS
-- in a subdirectory named as the chart (datasets-server/), and below it,
-- in a subdirectory named as the Release, so that Releases will not share the same dir
-*/}}
-{{- define "cache.numba.subpath" -}}
-{{- printf "%s/%s/%s/" .Chart.Name .Release.Name "cache-numba-2" }}
+{{- define "cache.subpath" -}}
+{{- printf "%s/%s/%s/" .Chart.Name .Release.Name "cache" }}
 {{- end }}
 
 {{/*

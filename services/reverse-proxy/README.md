@@ -14,7 +14,7 @@ The reverse proxy uses nginx:
 
 It takes various environment variables, all of them are mandatory:
 
-- `COMMON_ASSETS_DIRECTORY`: the directory that contains the static assets, eg `/assets`
+- `ASSETS_DIRECTORY`: the directory that contains the static assets, eg `/assets`
 - `HOST`: domain of the reverse proxy, eg `localhost`
 - `PORT`: port of the reverse proxy, eg `80`
 - `URL_ADMIN`= URL of the admin, eg `http://admin:8080`
@@ -22,6 +22,6 @@ It takes various environment variables, all of them are mandatory:
 
 The image requires three directories to be mounted (from volumes):
 
-- `$COMMON_ASSETS_DIRECTORY` (read-only): the directory that contains the static assets.
+- `$ASSETS_DIRECTORY` (read-only): the directory that contains the static assets.
 - `/etc/nginx/templates` (read-only): the directory that contains the nginx configuration template ([templates](./templates/))
 - `/staticfiles` (read-only): the directory that contains the static files (`openapi.json`).

@@ -1,7 +1,13 @@
 .PHONY: test
 test:
 	$(MAKE) up
-	poetry run python -m pytest -vv -x tests
+	poetry run python -m pytest -vv -x ${ADDOPTS} tests
+	$(MAKE) down
+
+.PHONY: debug
+debug:
+	$(MAKE) up
+	poetry run python -m pytest -vv -x --log-cli-level=DEBUG --capture=tee-sys --pdb ${ADDOPTS} tests
 	$(MAKE) down
 
 .PHONY: coverage

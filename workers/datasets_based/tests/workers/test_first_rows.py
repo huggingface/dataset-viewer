@@ -1,16 +1,14 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2022 The HuggingFace Authors.
 
-
 from http import HTTPStatus
 
 import pytest
 from datasets.packaged_modules import csv
 from libcommon.exceptions import CustomError
-from libcommon.queue import _clean_queue_database
-from libcommon.simple_cache import DoesNotExist, _clean_cache_database, get_response
+from libcommon.simple_cache import DoesNotExist, get_response
 
-from datasets_based.config import AppConfig
+from datasets_based.config import AppConfig, FirstRowsConfig
 from datasets_based.workers.first_rows import (
     FirstRowsWorker,
     compute_first_rows_response,
@@ -20,15 +18,9 @@ from datasets_based.workers.first_rows import (
 from ..fixtures.hub import HubDatasets, get_default_config_split
 
 
-@pytest.fixture(autouse=True)
-def clean_mongo_database() -> None:
-    _clean_cache_database()
-    _clean_queue_database()
-
-
-@pytest.fixture(autouse=True, scope="module")
+@pytest.fixture
 def worker(app_config: AppConfig) -> FirstRowsWorker:
-    return FirstRowsWorker(app_config=app_config, endpoint="/first-rows")
+    return FirstRowsWorker(app_config=app_config)
 
 
 def should_skip_job(worker: FirstRowsWorker, hub_public_csv: str) -> None:
@@ -97,6 +89,7 @@ def test_number_rows(
     error_code: str,
     cause: str,
     app_config: AppConfig,
+    first_rows_config: FirstRowsConfig,
 ) -> None:
     # temporary patch to remove the effect of
     # https://github.com/huggingface/datasets/issues/4875#issuecomment-1280744233
@@ -112,14 +105,14 @@ def test_number_rows(
             dataset=dataset,
             config=config,
             split=split,
-            assets_base_url=app_config.common.assets_base_url,
+            assets_base_url=first_rows_config.assets.base_url,
+            assets_directory=first_rows_config.assets.storage_directory,
             hf_token=app_config.common.hf_token if use_token else None,
-            max_size_fallback=app_config.first_rows.fallback_max_dataset_size,
-            rows_max_number=app_config.first_rows.max_number,
-            rows_min_number=app_config.first_rows.min_number,
-            rows_max_bytes=app_config.first_rows.max_bytes,
-            min_cell_bytes=app_config.first_rows.min_cell_bytes,
-            assets_directory=app_config.cache.assets_directory,
+            max_size_fallback=first_rows_config.fallback_max_dataset_size,
+            rows_max_number=first_rows_config.max_number,
+            rows_min_number=first_rows_config.min_number,
+            rows_max_bytes=first_rows_config.max_bytes,
+            min_cell_bytes=first_rows_config.min_cell_bytes,
         )
         assert result == expected_first_rows_response
         return
@@ -128,14 +121,14 @@ def test_number_rows(
             dataset=dataset,
             config=config,
             split=split,
-            assets_base_url=app_config.common.assets_base_url,
+            assets_base_url=first_rows_config.assets.base_url,
+            assets_directory=first_rows_config.assets.storage_directory,
             hf_token=app_config.common.hf_token if use_token else None,
-            max_size_fallback=app_config.first_rows.fallback_max_dataset_size,
-            rows_max_number=app_config.first_rows.max_number,
-            rows_min_number=app_config.first_rows.min_number,
-            rows_max_bytes=app_config.first_rows.max_bytes,
-            min_cell_bytes=app_config.first_rows.min_cell_bytes,
-            assets_directory=app_config.cache.assets_directory,
+            max_size_fallback=first_rows_config.fallback_max_dataset_size,
+            rows_max_number=first_rows_config.max_number,
+            rows_min_number=first_rows_config.min_number,
+            rows_max_bytes=first_rows_config.max_bytes,
+            min_cell_bytes=first_rows_config.min_cell_bytes,
         )
     assert exc_info.value.code == error_code
     if cause is None:
@@ -168,6 +161,7 @@ def test_number_rows(
 def test_truncation(
     hub_datasets: HubDatasets,
     app_config: AppConfig,
+    first_rows_config: FirstRowsConfig,
     name: str,
     rows_max_bytes: int,
     successful_truncation: bool,
@@ -177,14 +171,14 @@ def test_truncation(
         dataset=dataset,
         config=config,
         split=split,
-        assets_base_url=app_config.common.assets_base_url,
+        assets_base_url=first_rows_config.assets.base_url,
+        assets_directory=first_rows_config.assets.storage_directory,
         hf_token=None,
-        max_size_fallback=app_config.first_rows.fallback_max_dataset_size,
+        max_size_fallback=first_rows_config.fallback_max_dataset_size,
         rows_max_number=1_000_000,
         rows_min_number=10,
         rows_max_bytes=rows_max_bytes,
         min_cell_bytes=10,
-        assets_directory=app_config.cache.assets_directory,
     )
     print(get_json_size(response))
     assert (get_json_size(response) <= rows_max_bytes) is successful_truncation

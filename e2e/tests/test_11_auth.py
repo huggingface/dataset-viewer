@@ -8,6 +8,7 @@ from .utils import (
     Response,
     get_default_config_split,
     poll_first_rows,
+    poll_parquet,
     poll_splits,
     post_refresh,
 )
@@ -55,3 +56,7 @@ def test_split_public_auth(
     r_rows = poll_first_rows(dataset, config, split, headers=auth_headers[auth])
     assert r_rows.status_code == response_status_code, log(r_rows, dataset)
     assert r_rows.headers.get("X-Error-Code") == error_code_first_rows, log(r_rows, dataset)
+    r_parquet = poll_parquet(dataset, headers=auth_headers[auth])
+    error_code_parquet = error_code_splits
+    assert r_parquet.status_code == response_status_code, log(r_parquet, dataset)
+    assert r_parquet.headers.get("X-Error-Code") == error_code_parquet, log(r_parquet, dataset)

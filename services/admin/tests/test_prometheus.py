@@ -11,7 +11,9 @@ def test_prometheus(app_config: AppConfig, processing_steps: List[ProcessingStep
     # we depend on app_config to be sure we already connected to the database
     is_multiprocess = "PROMETHEUS_MULTIPROC_DIR" in os.environ
 
-    prometheus = Prometheus(processing_steps=processing_steps)
+    prometheus = Prometheus(
+        processing_steps=processing_steps, assets_storage_directory=app_config.assets.storage_directory
+    )
     registry = prometheus.getRegistry()
     assert registry is not None
 
@@ -33,3 +35,8 @@ def test_prometheus(app_config: AppConfig, processing_steps: List[ProcessingStep
             "queue_jobs_total{" + additional_field + 'queue="' + processing_step.job_type + '",status="started"}'
             in metrics
         )
+
+    for type in ["total", "used", "free", "percent"]:
+        assert "assets_disk_usage{" + additional_field + 'type="' + type + '"}' in metrics
+        assert metrics["assets_disk_usage{" + additional_field + 'type="' + type + '"}'] >= 0
+    assert metrics["assets_disk_usage{" + additional_field + 'type="percent"}'] <= 100

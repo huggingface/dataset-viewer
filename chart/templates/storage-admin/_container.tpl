@@ -1,21 +1,21 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2022 The HuggingFace Authors.
 
-{{- define "initContainerNumbaCache" -}}
-- name: prepare-numba-cache
+{{- define "containerStorageAdmin" -}}
+- name: "{{ include "name" . }}-storage-admin"
   image: ubuntu:focal
   imagePullPolicy: IfNotPresent
-  command: ["/bin/sh", "-c"]
-  args:
-  - chown {{ .Values.uid }}:{{ .Values.gid }} /mounted-path;
-  volumeMounts:
-  - mountPath: /mounted-path
+  volumeMounts: 
+  - mountPath: /data
     mountPropagation: None
     name: data
-    subPath: "{{ include "cache.numba.subpath" . }}"
     readOnly: false
   securityContext:
     runAsNonRoot: false
     runAsUser: 0
     runAsGroup: 0
+  resources: {{ toYaml .Values.storageAdmin.resources | nindent 4 }}
+  command:
+  - 'sleep'
+  - 'infinity'
 {{- end -}}

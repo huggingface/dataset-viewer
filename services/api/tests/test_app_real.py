@@ -44,7 +44,6 @@ def real_clean_mongo_databases(real_app_config: AppConfig) -> None:
     _clean_queue_database()
 
 
-@mark.wip
 @mark.real_dataset
 def test_webhook(
     real_client: TestClient,

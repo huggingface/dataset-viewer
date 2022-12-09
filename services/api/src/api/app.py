@@ -8,8 +8,7 @@ from starlette.applications import Starlette
 from starlette.middleware import Middleware
 from starlette.middleware.cors import CORSMiddleware
 from starlette.middleware.gzip import GZipMiddleware
-from starlette.routing import BaseRoute, Mount, Route
-from starlette.staticfiles import StaticFiles
+from starlette.routing import BaseRoute, Route
 from starlette_prometheus import PrometheusMiddleware
 
 from api.config import AppConfig, UvicornConfig
@@ -83,15 +82,7 @@ def create_app() -> Starlette:
         # called by Prometheus
         Route("/metrics", endpoint=prometheus.endpoint),
     ]
-    for_development_only: List[BaseRoute] = [
-        # it can only be accessed in development. In production the reverse-proxy serves the assets
-        Mount(
-            "/assets",
-            app=StaticFiles(directory=app_config.cache.assets_directory, check_dir=True),
-            name="assets",
-        ),
-    ]
-    routes: List[BaseRoute] = valid + processing_steps + to_protect + protected + for_development_only
+    routes: List[BaseRoute] = valid + processing_steps + to_protect + protected
     return Starlette(routes=routes, middleware=middleware)
 
 

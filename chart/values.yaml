@@ -7,10 +7,14 @@ secrets:
     fromSecret: false
     secretName: "mongo-url"
     value: mongo://
-  token:
+  appHfToken:
     fromSecret: false
     secretName: "datasets-server-hf-token"
     value: hf_app
+  userHfToken:
+    fromSecret: false
+    secretName: "hf-token-francky"
+    value: hf_
 
 uid: 1000
 gid: 3000
@@ -42,12 +46,9 @@ dockerImage:
     admin: ""
     api: ""
   workers:
-    splits: ""
-    firstRows: ""
+    datasets_based: ""
 
 cache:
-  # Directory on the shared storage (audio files and images)
-  assetsDirectory: "/assets"
   # Name of the mongo db database used to cache the API responses
   mongoDatabase: "datasets_server_cache"
 
@@ -65,20 +66,20 @@ worker:
   # Number of seconds a worker will sleep before trying to process a new job
   sleepSeconds: 5
 
-common:
+assets:
   # base URL for the assets files. It should be set accordingly to the datasets-server domain, eg https://datasets-server.huggingface.co/assets
-  # assetsBaseUrl: "not used for now"
+  # baseUrl: "not used for now"
+  # Directory on the shared storage (audio files and images)
+  storageDirectory: "/assets"
+
+common:
   # URL of the HuggingFace Hub
   hfEndpoint: "https://huggingface.co"
   # Log level
   logLevel: "INFO"
 
-# Directory where the `datasets` library will store the cached datasets data
-hfDatasetsCache: "/hf-datasets-cache"
-# Directory where the `datasets` library will store the cached datasets scripts
-#hfModulesCache: "not used"
-# Directory where the `numba` decorators (used by `librosa`) can write cache
-numbaCacheDirectory: "/numba-cache"
+# Directory where the cache data will be stored
+cacheDirectory: "/datasets-server-cache"
 
 # --- jobs (pre-install/upgrade hooks) ---
 
@@ -92,6 +93,21 @@ mongodbMigration:
       cpu: 1
     limits:
       cpu: 1
+  tolerations: []
+
+# --- storage admin (to manually inspect the storage, in /data) ---
+
+storageAdmin:
+  nodeSelector: {}
+  replicas: 1
+  resources:
+    requests:
+      cpu: 1
+    limits:
+      cpu: 1
+  service:
+    type: NodePort
+    annotations: {}
   tolerations: []
 
 # --- reverse proxy ---
@@ -225,6 +241,34 @@ firstRows:
     # Maximum number of jobs running at the same time for the same namespace
     maxJobsPerNamespace: 1
 
+  nodeSelector: {}
+  replicas: 1
+  resources:
+    requests:
+      cpu: 1
+    limits:
+      cpu: 1
+  tolerations: []
+
+parquet:
+  # comma-separated list of the blocked datasets. Defaults to empty.
+  blockedDatasets: ""
+  # the git commit message when the parquet files are uploaded to the Hub. Defaults to `Update parquet files`.
+  commitMessage: "Update parquet files"
+  # the maximum size of the supported datasets. Bigger datasets, or datasets that cannot provide the size, are ignored.
+  maxDatasetSize: "100_000_000"
+  # the git revision of the dataset to use to prepare the parquet files. Defaults to `main`.
+  sourceRevision: "main"
+  # comma-separated list of the supported datasets. If empty, all the datasets are processed. Defaults to empty.
+  supportedDatasets: ""
+  # the git revision of the dataset where to store the parquet files. Make sure the hf_token (see the "Common" section) allows to write there. Defaults to `refs/convert/parquet`.
+  targetRevision: "refs/convert/parquet"
+  # the URL template to build the parquet file URLs. Defaults to `/datasets/%s/resolve/%s/%s`.
+  urlTemplate: "/datasets/%s/resolve/%s/%s"
+  # override the common queue parameters
+  queue:
+    # Maximum number of jobs running at the same time for the same namespace
+    maxJobsPerNamespace: 1
   nodeSelector: {}
   replicas: 1
   resources:

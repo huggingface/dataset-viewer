@@ -108,7 +108,7 @@ redis = ["redis (>=2.10.5)"]
 
 [[package]]
 name = "certifi"
-version = "2022.9.24"
+version = "2022.12.7"
 description = "Python package for providing Mozilla's CA Bundle."
 category = "main"
 optional = false
@@ -353,7 +353,7 @@ requirements-deprecated-finder = ["pip-api", "pipreqs"]
 
 [[package]]
 name = "libcommon"
-version = "0.5.3"
+version = "0.5.10"
 description = "Library for utils, common to all the services and workers"
 category = "main"
 optional = false
@@ -371,7 +371,7 @@ pymongo = {version = ">=3.13.0,<4.0.0", extras = ["srv"]}
 
 [package.source]
 type = "file"
-url = "../../libs/libcommon/dist/libcommon-0.5.3-py3-none-any.whl"
+url = "../../libs/libcommon/dist/libcommon-0.5.10-py3-none-any.whl"
 
 [[package]]
 name = "lockfile"
@@ -927,6 +927,14 @@ optional = false
 python-versions = "*"
 
 [[package]]
+name = "types-psutil"
+version = "5.9.5.5"
+description = "Typing stubs for psutil"
+category = "dev"
+optional = false
+python-versions = "*"
+
+[[package]]
 name = "typing-extensions"
 version = "4.4.0"
 description = "Backported and Experimental Type Hints for Python 3.7+"
@@ -988,7 +996,7 @@ python-versions = "*"
 [metadata]
 lock-version = "1.1"
 python-versions = "3.9.15"
-content-hash = "a2bd3c8191be9b63471f3e41338400451db039c50d15c1afeb8f262fd0071457"
+content-hash = "f315ae701811672df27b0efc97cc4141c2c051cc858a1836a429506b27fba778"
 
 [metadata.files]
 anyio = [
@@ -1039,8 +1047,8 @@ cachecontrol = [
     {file = "CacheControl-0.12.11.tar.gz", hash = "sha256:a5b9fcc986b184db101aa280b42ecdcdfc524892596f606858e0b7a8b4d9e144"},
 ]
 certifi = [
-    {file = "certifi-2022.9.24-py3-none-any.whl", hash = "sha256:90c1a32f1d68f940488354e36370f6cca89f0f106db09518524c88d6ed83f382"},
-    {file = "certifi-2022.9.24.tar.gz", hash = "sha256:0d9c601124e5a6ba9712dbc60d9c53c21e34f5f641fe83002317394311bdce14"},
+    {file = "certifi-2022.12.7-py3-none-any.whl", hash = "sha256:4ad3232f5e926d6718ec31cfc1fcadfde020920e278684144551c91769c7bc18"},
+    {file = "certifi-2022.12.7.tar.gz", hash = "sha256:35824b4c3a97115964b408844d64aa14db1cc518f6562e8d7261699d1350a9e3"},
 ]
 charset-normalizer = [
     {file = "charset-normalizer-2.1.1.tar.gz", hash = "sha256:5a3d016c7c547f69d6f81fb0db9449ce888b418b5b9952cc5e6e66843e9dd845"},
@@ -1167,7 +1175,7 @@ isort = [
     {file = "isort-5.10.1.tar.gz", hash = "sha256:e8443a5e7a020e9d7f97f1d7d9cd17c88bcb3bc7e218bf9cf5095fe550be2951"},
 ]
 libcommon = [
-    {file = "libcommon-0.5.3-py3-none-any.whl", hash = "sha256:bd80da9b2b320d8e0cf9339f89c4b64e8898e3a14e60ebec21cfee667e0cae94"},
+    {file = "libcommon-0.5.10-py3-none-any.whl", hash = "sha256:020c37fe46713f2f06c0cc5d6a45ac1e5e16c239311b0b5a89991038873f3c30"},
 ]
 lockfile = [
     {file = "lockfile-0.12.2-py2.py3-none-any.whl", hash = "sha256:6c3cb24f344923d30b2785d5ad75182c8ea7ac1b6171b08657258ec7429d50fa"},
@@ -1657,6 +1665,10 @@ typed-ast = [
     {file = "typed_ast-1.4.3-cp39-cp39-win32.whl", hash = "sha256:209596a4ec71d990d71d5e0d312ac935d86930e6eecff6ccc7007fe54d703808"},
     {file = "typed_ast-1.4.3-cp39-cp39-win_amd64.whl", hash = "sha256:9c6d1a54552b5330bc657b7ef0eae25d00ba7ffe85d9ea8ae6540d2197a3788c"},
     {file = "typed_ast-1.4.3.tar.gz", hash = "sha256:fb1bbeac803adea29cedd70781399c99138358c26d05fcbd23c13016b7f5ec65"},
+]
+types-psutil = [
+    {file = "types-psutil-5.9.5.5.tar.gz", hash = "sha256:4f26fdb2cb064b274cbc6359fba4abf3b3a2993d7d4abc336ad0947568212c62"},
+    {file = "types_psutil-5.9.5.5-py3-none-any.whl", hash = "sha256:e576bb81c74f7443b067e94f92435894d5dd561161bec3d6401727b63df009f0"},
 ]
 typing-extensions = [
     {file = "typing_extensions-4.4.0-py3-none-any.whl", hash = "sha256:16fa4864408f655d35ec496218b85f79b3437c829e93320c7c9215ccfd92489e"},
