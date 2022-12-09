@@ -14,12 +14,9 @@
   {{ include "envQueue" . | nindent 2 }}
   {{ include "envCommon" . | nindent 2 }}
   {{ include "envWorker" . | nindent 2 }}
+  {{ include "envDatasetsBased" . | nindent 2 }}
   - name: DATASETS_BASED_HF_DATASETS_CACHE
     value: {{ printf "%s/first-rows/datasets" .Values.cacheDirectory | quote }}
-  - name: DATASETS_BASED_HF_MODULES_CACHE
-    value: {{ printf "%s/first-rows/modules" .Values.cacheDirectory | quote }}
-  - name: NUMBA_CACHE_DIR
-    value: {{ printf "%s/first-rows/numba" .Values.cacheDirectory | quote }}
   - name: QUEUE_MAX_JOBS_PER_NAMESPACE
     # value: {{ .Values.queue.maxJobsPerNamespace | quote }}
     # overridden

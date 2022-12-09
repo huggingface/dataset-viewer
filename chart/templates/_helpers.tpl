@@ -103,7 +103,7 @@ The assets/ subpath in the NFS
 {{- end }}
 
 {{/*
-The datasets and numba libraries will use this directory as a cache
+The datasets library will use this directory as a cache
 - in a subdirectory named as the chart (datasets-server/), and below it,
 - in a subdirectory named as the Release, so that Releases will not share the same dir
 */}}
