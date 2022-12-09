@@ -29,11 +29,10 @@ class DatasetsBasedWorker(Worker, ABC):
     def get_endpoint() -> str:
         pass
 
-    # the datasets library cache directories (for data, downloads, extraction, and modules)
+    # the datasets library cache directories (for data, downloads, extraction, NOT for modules)
     # the worker should have only one running job at the same time, then it should
     # be safe to use a global variable (and to set the datasets cache globally)
     datasets_cache: Optional[Path] = None
-    modules_cache: Optional[Path] = None
 
     def __init__(self, app_config: AppConfig):
         super().__init__(
@@ -88,19 +87,6 @@ class DatasetsBasedWorker(Worker, ABC):
             logging.debug(f"temporary datasets data cache deleted: {previous_datasets_cache}")
         self.datasets_cache = None
 
-    def set_modules_cache(self, modules_cache: Path) -> None:
-        self.modules_cache = Path(init_dir(modules_cache))
-        datasets.config.HF_MODULES_CACHE = self.modules_cache
-        logging.debug(f"datasets modules cache set to: {datasets.config.HF_MODULES_CACHE}")
-
-    def unset_modules_cache(self) -> None:
-        previous_modules_cache = self.modules_cache
-        self.set_modules_cache(self.datasets_based_config.hf_modules_cache)
-        if previous_modules_cache is not None and self.modules_cache != previous_modules_cache:
-            remove_dir(previous_modules_cache)
-            logging.debug(f"temporary datasets modules cache deleted: {previous_modules_cache}")
-        self.modules_cache = None
-
     def set_cache(
         self, dataset: str, config: Optional[str] = None, split: Optional[str] = None, force: bool = False
     ) -> None:
@@ -108,11 +94,9 @@ class DatasetsBasedWorker(Worker, ABC):
             date=datetime.now(), dataset=dataset, config=config, split=split, force=force
         )
         self.set_datasets_cache(self.datasets_based_config.hf_datasets_cache / cache_subdirectory)
-        self.set_modules_cache(self.datasets_based_config.hf_modules_cache / cache_subdirectory)
 
     def unset_cache(self) -> None:
         self.unset_datasets_cache()
-        self.unset_modules_cache()
 
     def pre_compute(
         self, dataset: str, config: Optional[str] = None, split: Optional[str] = None, force: bool = False

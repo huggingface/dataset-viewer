@@ -48,7 +48,7 @@ def set_env_vars(datasets_cache_directory: Path, modules_cache_directory: Path) 
     mp.setenv("PARQUET_MAX_DATASET_SIZE", "10_000")
     mp.setenv("PARQUET_COMMITTER_HF_TOKEN", CI_USER_TOKEN)
     mp.setenv("DATASETS_BASED_HF_DATASETS_CACHE", str(datasets_cache_directory))
-    mp.setenv("DATASETS_BASED_HF_MODULES_CACHE", str(modules_cache_directory))
+    mp.setenv("HF_MODULES_CACHE", str(modules_cache_directory))
     yield mp
     mp.undo()
 

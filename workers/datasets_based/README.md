@@ -12,7 +12,10 @@ Set environment variables to configure the datasets-based worker (`DATASETS_BASE
 
 - `DATASETS_BASED_ENDPOINT`: the endpoint on which the worker will work (pre-compute and cache the response). The same worker is used for different endpoints to reuse shared code and dependencies. But at runtime, the worker is assigned only one endpoint. Allowed values: `/splits`, `/first_rows`, and ` /parquet``. Defaults to  `/splits`.
 - `DATASETS_BASED_HF_DATASETS_CACHE`: directory where the `datasets` library will store the cached datasets' data. If not set, the datasets library will choose the default location. Defaults to None.
-- `DATASETS_BASED_HF_MODULES_CACHE`: directory where the `datasets` library will store the cached dataset scripts. If not set, the datasets library will choose the default location. Defaults to None.
+
+Also, set the modules cache configuration for the datasets-based worker. See [../../libs/libcommon/README.md](../../libs/libcommon/README.md). Note that this variable has no `DATASETS_BASED_` prefix:
+
+- `HF_MODULES_CACHE`: directory where the `datasets` library will store the cached dataset scripts. If not set, the datasets library will choose the default location. Defaults to None.
 
 ### Numba library
 

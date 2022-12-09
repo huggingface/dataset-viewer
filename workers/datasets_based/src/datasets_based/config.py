@@ -20,7 +20,6 @@ from libcommon.config import (
 class DatasetsBasedConfig:
     endpoint: str
     hf_datasets_cache: Path
-    hf_modules_cache: Path
     max_disk_usage_percent = 90  # hard-coded, not configurable
 
     def __init__(self):
@@ -28,15 +27,11 @@ class DatasetsBasedConfig:
         with env.prefixed("DATASETS_BASED_"):
             self.endpoint = env.str(name="ENDPOINT", default="/splits")
             self._hf_datasets_cache = env.str(name="HF_DATASETS_CACHE", default=None)
-            self._hf_modules_cache = env.str(name="HF_MODULES_CACHE", default=None)
         self.setup()
 
     def setup(self) -> None:
         self.hf_datasets_cache = (
             datasets.config.HF_DATASETS_CACHE if self._hf_datasets_cache is None else Path(self._hf_datasets_cache)
-        )
-        self.hf_modules_cache = (
-            datasets.config.HF_MODULES_CACHE if self._hf_modules_cache is None else Path(self._hf_modules_cache)
         )
 
 

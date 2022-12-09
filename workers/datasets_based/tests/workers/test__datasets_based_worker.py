@@ -86,24 +86,13 @@ def test_set_and_unset_datasets_cache(worker: DummyWorker) -> None:
     assert_datasets_cache_path(path=base_path, exists=True)
 
 
-def test_set_and_unset_modules_cache(worker: DummyWorker) -> None:
-    base_path = worker.datasets_based_config.hf_modules_cache
-    dummy_path = base_path / "dummy"
-    worker.set_modules_cache(dummy_path)
-    assert_modules_cache_path(path=dummy_path, exists=True)
-    worker.unset_modules_cache()
-    assert_modules_cache_path(path=base_path, exists=True)
-
-
 def test_set_and_unset_cache(worker: DummyWorker) -> None:
     datasets_base_path = worker.datasets_based_config.hf_datasets_cache
-    modules_base_path = worker.datasets_based_config.hf_modules_cache
     worker.set_cache(dataset="user/dataset", config="config", split="split", force=True)
     assert str(datasets.config.HF_DATASETS_CACHE).startswith(str(datasets_base_path))
     assert "-splits-user-dataset" in str(datasets.config.HF_DATASETS_CACHE)
     worker.unset_cache()
     assert_datasets_cache_path(path=datasets_base_path, exists=True)
-    assert_modules_cache_path(path=modules_base_path, exists=True)
 
 
 @pytest.mark.parametrize("config", ["raise", "dont_raise"])
@@ -111,15 +100,12 @@ def test_process(worker: DummyWorker, hub_public_csv: str, config: str) -> None:
     # ^ this test requires an existing dataset, otherwise .process fails before setting the cache
     # it must work in both cases: when the job fails and when it succeeds
     datasets_base_path = worker.datasets_based_config.hf_datasets_cache
-    modules_base_path = worker.datasets_based_config.hf_modules_cache
     # the datasets library sets the cache to its own default
     assert_datasets_cache_path(path=datasets_base_path, exists=False, equals=False)
-    assert_modules_cache_path(path=modules_base_path, exists=False, equals=False)
     result = worker.process(dataset=hub_public_csv, config=config, force=True)
     assert result is (config != "raise")
     # the configured cache is now set (after having deleted a subdirectory used for the job)
     assert_datasets_cache_path(path=datasets_base_path, exists=True)
-    assert_modules_cache_path(path=modules_base_path, exists=True)
 
 
 def assert_datasets_cache_path(path: Path, exists: bool, equals: bool = True) -> None:
@@ -127,8 +113,3 @@ def assert_datasets_cache_path(path: Path, exists: bool, equals: bool = True) ->
     assert (datasets.config.HF_DATASETS_CACHE == path) is equals
     assert (datasets.config.DOWNLOADED_DATASETS_PATH == path / datasets.config.DOWNLOADED_DATASETS_DIR) is equals
     assert (datasets.config.EXTRACTED_DATASETS_PATH == path / datasets.config.EXTRACTED_DATASETS_DIR) is equals
-
-
-def assert_modules_cache_path(path: Path, exists: bool, equals: bool = True) -> None:
-    assert path.exists() is exists
-    assert (datasets.config.HF_MODULES_CACHE == path) is equals
