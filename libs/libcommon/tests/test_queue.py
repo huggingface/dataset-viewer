@@ -1,6 +1,7 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2022 The HuggingFace Authors.
 
+import time
 from typing import Optional
 
 import pytest
@@ -147,3 +148,29 @@ def test_count_by_status() -> None:
 
     assert queue.get_jobs_count_by_status() == expected_one_waiting
     assert queue_other.get_jobs_count_by_status() == expected_one_waiting
+
+
+def test_get_total_duration_per_dataset() -> None:
+    test_type = "test_type"
+    test_dataset = "test_dataset"
+    test_config = "test_config"
+    queue = Queue(test_type)
+    queue.add_job(dataset=test_dataset, config=test_config, split="split1")
+    queue.add_job(dataset=test_dataset, config=test_config, split="split2")
+    queue.add_job(dataset=test_dataset, config=test_config, split="split3")
+    queue.add_job(dataset=test_dataset, config=test_config, split="split4")
+    queue.add_job(dataset=test_dataset, config=test_config, split="split5")
+    started_job_info = queue.start_job()
+    started_job_info_2 = queue.start_job()
+    started_job_info_3 = queue.start_job()
+    _ = queue.start_job()
+    duration = 2
+    time.sleep(duration)
+    # finish three jobs
+    queue.finish_job(started_job_info["job_id"], finished_status=Status.SUCCESS)
+    queue.finish_job(started_job_info_2["job_id"], finished_status=Status.ERROR)
+    queue.finish_job(started_job_info_3["job_id"], finished_status=Status.SUCCESS)
+    # cancel one remaining job
+    queue.cancel_started_jobs()
+    # check the total duration
+    assert queue.get_total_duration_per_dataset() == {test_dataset: duration * 3}

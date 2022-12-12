@@ -8,7 +8,7 @@ from collections import Counter
 from datetime import datetime, timezone
 from itertools import groupby
 from operator import itemgetter
-from typing import Generic, List, Literal, Optional, Type, TypedDict, TypeVar
+from typing import Dict, Generic, List, Literal, Optional, Type, TypedDict, TypeVar
 
 from mongoengine import Document, DoesNotExist, connect
 from mongoengine.fields import BooleanField, DateTimeField, EnumField, StringField
@@ -404,6 +404,28 @@ class Queue:
         return {
             "waiting": self.get_dump_with_status(status=Status.WAITING),
             "started": self.get_dump_with_status(status=Status.STARTED),
+        }
+
+    def get_total_duration_per_dataset(self) -> Dict[str, int]:
+        """Get the total duration of the finished jobs for every dataset.
+
+        Returns: a dictionary where the keys are the dataset names and the values are the total duration of its
+        finished jobs, in seconds (integer)
+        """
+        return {
+            d["_id"]: d["total_duration"]
+            for d in Job.objects(type=self.type, status__in=[Status.SUCCESS, Status.ERROR]).aggregate(
+                {
+                    "$group": {
+                        "_id": "$dataset",
+                        "total_duration": {
+                            "$sum": {
+                                "$dateDiff": {"startDate": "$started_at", "endDate": "$finished_at", "unit": "second"}
+                            }
+                        },
+                    }
+                }
+            )
         }
 
 
