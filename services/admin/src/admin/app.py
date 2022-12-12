@@ -15,6 +15,7 @@ from admin.routes.cache_reports import create_cache_reports_endpoint
 from admin.routes.cancel_jobs import create_cancel_jobs_endpoint
 from admin.routes.force_refresh import create_force_refresh_endpoint
 from admin.routes.healthcheck import healthcheck_endpoint
+from admin.routes.jobs_duration import create_jobs_duration_per_dataset_endpoint
 from admin.routes.pending_jobs import create_pending_jobs_endpoint
 
 
@@ -83,6 +84,18 @@ def create_app() -> Starlette:
                     organization=app_config.admin.hf_organization,
                 ),
                 methods=["POST"],
+            )
+            for processing_step in processing_steps
+        ]
+        + [
+            Route(
+                f"/jobs-duration-per-dataset{processing_step.endpoint}",
+                endpoint=create_jobs_duration_per_dataset_endpoint(
+                    processing_step=processing_step,
+                    max_age=app_config.admin.max_age,
+                    external_auth_url=app_config.admin.external_auth_url,
+                    organization=app_config.admin.hf_organization,
+                ),
             )
             for processing_step in processing_steps
         ]
