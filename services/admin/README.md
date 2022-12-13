@@ -43,3 +43,4 @@ The admin service provides endpoints:
   - `dataset`: `?dataset={dataset}`
   - `split`: `?dataset={dataset}&config={config}&split={split}`
 - `/cancel-jobs/{processing_step}`: cancel all the started jobs for the processing step (stop the corresponding workers before!). It's a POST endpoint.:
+- `/jobs-duration-per-dataset/{processing_step}`: give the sum of the jobs duration for every dataset, for all the jobs finished in the last 30 days.
