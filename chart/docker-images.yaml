@@ -5,7 +5,7 @@
       "mongodbMigration": "huggingface/datasets-server-jobs-mongodb_migration:sha-7b4762b"
     },
     "services": {
-      "admin": "huggingface/datasets-server-services-admin:sha-7b4762b",
+      "admin": "huggingface/datasets-server-services-admin:sha-adde39b",
       "api": "huggingface/datasets-server-services-api:sha-7b4762b"
     },
     "workers": {
