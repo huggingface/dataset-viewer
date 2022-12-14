@@ -1,6 +1,6 @@
 # Server infrastructure
 
-The Datasets Server has two main components that work together to return queries about a dataset instantly:
+The [Datasets Server](https://github.com/huggingface/datasets-server) has two main components that work together to return queries about a dataset instantly:
 
 - a user-facing web API for exploring and returning information about a dataset
 - a server runs the queries ahead of time and caches them in a database
@@ -17,7 +17,7 @@ There are three jobs:
 
 - `/splits` corresponds to the `/splits` endpoint. It refreshes a dataset and then returns that dataset's splits and configurations. For every split in the dataset, it'll create a new job.
 - `/first-rows` corresponds to the `/first-rows` endpoint. It gets the first 100 rows and columns of a dataset split.
-- `/parquet` corresponds to the `/parquet` endpoint. It downloads the whole dataset, converts it to parquet](https://parquet.apache.org/) and publishes the parquet files to the Hub.
+- `/parquet` corresponds to the `/parquet` endpoint. It downloads the whole dataset, converts it to [parquet](https://parquet.apache.org/) and publishes the parquet files to the Hub.
 
 You might've noticed the `/valid` and `/is-valid` endpoints don't have a job in the queue. The responses from these endpoints are generated on demand.
 
@@ -25,7 +25,7 @@ You might've noticed the `/valid` and `/is-valid` endpoints don't have a job in 
 
 Workers are responsible for executing the jobs in the queue. They complete the actual preprocessing requests, such as getting a list of splits and configurations. The workers can be controlled by configurable environment variables, like the minimum or the maximum number of rows returned by a worker or the maximum number of jobs to start per dataset user or organization.
 
-Take a look at the [workers configuration](https://github.com/huggingface/datasets-server/tree/main/workers/first_rows#configuration) for a complete list of the environment variables if you're interested in learning more.
+Take a look at the [workers configuration](https://github.com/huggingface/datasets-server/tree/main/workers/datasets_based#configuration) for a complete list of the environment variables if you're interested in learning more.
 
 ## Cache
 
