@@ -521,19 +521,6 @@ def compute_parquet_response(
     hf_api = HfApi(endpoint=hf_endpoint, token=hf_token)
     committer_hf_api = HfApi(endpoint=hf_endpoint, token=committer_hf_token)
 
-    # create the target revision if it does not exist yet
-    try:
-        target_dataset_info = hf_api.dataset_info(repo_id=dataset, revision=target_revision, files_metadata=False)
-    except RepositoryNotFoundError as err:
-        raise DatasetNotFoundError("The dataset does not exist on the Hub.") from err
-    except RevisionNotFoundError:
-        # create the parquet_ref (refs/convert/parquet)
-        committer_hf_api.create_branch(repo_id=dataset, branch=target_revision, repo_type=DATASET_TYPE)
-        target_dataset_info = hf_api.dataset_info(repo_id=dataset, revision=target_revision, files_metadata=False)
-
-    target_sha = target_dataset_info.sha
-    previous_files = [f.rfilename for f in target_dataset_info.siblings]
-
     # get the sorted list of configurations
     try:
         config_names = sorted(
@@ -555,6 +542,19 @@ def compute_parquet_response(
             ParquetFile(local_file=local_file, local_dir=builder.cache_dir, config=config)
             for local_file in glob.glob(f"{builder.cache_dir}**/*.parquet")
         )
+
+    # create the target revision if it does not exist yet
+    try:
+        target_dataset_info = hf_api.dataset_info(repo_id=dataset, revision=target_revision, files_metadata=False)
+    except RepositoryNotFoundError as err:
+        raise DatasetNotFoundError("The dataset does not exist on the Hub.") from err
+    except RevisionNotFoundError:
+        # create the parquet_ref (refs/convert/parquet)
+        committer_hf_api.create_branch(repo_id=dataset, branch=target_revision, repo_type=DATASET_TYPE)
+        target_dataset_info = hf_api.dataset_info(repo_id=dataset, revision=target_revision, files_metadata=False)
+
+    target_sha = target_dataset_info.sha
+    previous_files = [f.rfilename for f in target_dataset_info.siblings]
 
     # send the files to the target revision
     files_to_add = {parquet_file.repo_file(): parquet_file.local_file for parquet_file in parquet_files}
