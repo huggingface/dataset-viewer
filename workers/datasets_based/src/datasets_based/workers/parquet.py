@@ -553,7 +553,6 @@ def compute_parquet_response(
         committer_hf_api.create_branch(repo_id=dataset, branch=target_revision, repo_type=DATASET_TYPE)
         target_dataset_info = hf_api.dataset_info(repo_id=dataset, revision=target_revision, files_metadata=False)
 
-    target_sha = target_dataset_info.sha
     previous_files = [f.rfilename for f in target_dataset_info.siblings]
 
     # send the files to the target revision
@@ -571,7 +570,7 @@ def compute_parquet_response(
         revision=target_revision,
         operations=delete_operations + add_operations,
         commit_message=commit_message,
-        parent_commit=target_sha,
+        parent_commit=target_dataset_info.sha,
     )
 
     # call the API again to get the list of parquet files
