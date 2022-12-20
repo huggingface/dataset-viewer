@@ -559,7 +559,8 @@ def compute_parquet_response(
     # except:
     # - the files we will update,
     files_to_add = {parquet_file.repo_file(): parquet_file.local_file for parquet_file in parquet_files}
-    files_to_delete = previous_files - set(files_to_add.keys())
+    # - .gitattributes if present.
+    files_to_delete = previous_files - set(files_to_add.keys()).union({".gitattributes"})
     delete_operations: List[CommitOperation] = [CommitOperationDelete(path_in_repo=file) for file in files_to_delete]
     add_operations: List[CommitOperation] = [
         CommitOperationAdd(path_in_repo=file, path_or_fileobj=local_file)
