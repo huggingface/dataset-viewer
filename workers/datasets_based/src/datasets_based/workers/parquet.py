@@ -562,10 +562,15 @@ def compute_parquet_response(
     # - .gitattributes if present.
     files_to_delete = previous_files - set(files_to_add.keys()).union({".gitattributes"})
     delete_operations: List[CommitOperation] = [CommitOperationDelete(path_in_repo=file) for file in files_to_delete]
+    logging.debug(f"delete_operations={delete_operations}")
+
+    # send the files to the target revision
     add_operations: List[CommitOperation] = [
         CommitOperationAdd(path_in_repo=file, path_or_fileobj=local_file)
         for (file, local_file) in files_to_add.items()
     ]
+    logging.debug(f"add_operations={add_operations}")
+
     committer_hf_api.create_commit(
         repo_id=dataset,
         repo_type=DATASET_TYPE,
