@@ -16,6 +16,7 @@ from libcommon.exceptions import CustomError
 from libcommon.simple_cache import delete_response, get_dataset_response_ids
 from libcommon.worker import Queue
 
+from datasets_based.config import AppConfig
 from datasets_based.workers._datasets_based_worker import DatasetsBasedWorker
 
 SplitsWorkerErrorCode = Literal[
@@ -161,10 +162,16 @@ def compute_splits_response(
     return {"splits": split_items}
 
 
+SPLITS_VERSION = "2.0.0"
+
+
 class SplitsWorker(DatasetsBasedWorker):
     @staticmethod
     def get_endpoint() -> str:
         return "/splits"
+
+    def __init__(self, app_config: AppConfig):
+        super().__init__(version=SPLITS_VERSION, app_config=app_config)
 
     def compute(
         self,

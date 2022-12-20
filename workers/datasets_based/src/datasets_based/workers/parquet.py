@@ -566,6 +566,9 @@ def compute_parquet_response(
     }
 
 
+PARQUET_VERSION = "2.0.0"
+
+
 class ParquetWorker(DatasetsBasedWorker):
     parquet_config: ParquetConfig
 
@@ -574,7 +577,7 @@ class ParquetWorker(DatasetsBasedWorker):
         return "/parquet"
 
     def __init__(self, app_config: AppConfig):
-        super().__init__(app_config=app_config)
+        super().__init__(version=PARQUET_VERSION, app_config=app_config)
         self.parquet_config = ParquetConfig()
 
     def compute(
