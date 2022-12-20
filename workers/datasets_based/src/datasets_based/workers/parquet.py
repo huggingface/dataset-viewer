@@ -11,11 +11,7 @@ from typing import Any, List, Literal, Mapping, Optional, Tuple, TypedDict
 from urllib.parse import quote
 
 import datasets.config
-from datasets import (
-    get_dataset_config_info,
-    get_dataset_config_names,
-    load_dataset_builder,
-)
+from datasets import get_dataset_config_names, get_dataset_infos, load_dataset_builder
 from datasets.data_files import EmptyDatasetError as _EmptyDatasetError
 from huggingface_hub.hf_api import (
     CommitOperation,
@@ -125,35 +121,6 @@ class ParquetFile:
 
     def repo_file(self) -> str:
         return f'{self.config}/{self.local_file.removeprefix(f"{self.local_dir}/")}'
-
-
-# until https://github.com/huggingface/datasets/pull/5333 is merged
-def get_dataset_infos(path: str, revision: Optional[str] = None, use_auth_token: Optional[str] = None):
-    """Get the meta information about a dataset, returned as a dict mapping config name to DatasetInfoDict.
-
-    Args:
-        path (``str``): a dataset identifier on the Hugging Face Hub (list all available datasets and ids with
-            ``datasets.list_datasets()``)  e.g. ``'squad'``, ``'glue'`` or ``'openai/webtext'``
-        revision (Optional ``str``):
-            If specified, the dataset module will be loaded from the datasets repository at this version.
-            By default:
-            - it is set to the local version of the lib.
-            - it will also try to load it from the main branch if it's not available at the local version of the lib.
-            Specifying a version that is different from your local version of the lib might cause compatibility issues.
-        use_auth_token (``str``, optional): Optional string to use as Bearer token for remote files on the Datasets
-            Hub.
-    """
-    config_names = get_dataset_config_names(
-        path=path,
-        revision=revision,
-        use_auth_token=use_auth_token,
-    )
-    return {
-        config_name: get_dataset_config_info(
-            path=path, config_name=config_name, revision=revision, use_auth_token=use_auth_token
-        )
-        for config_name in config_names
-    }
 
 
 # TODO: use huggingface_hub's hf_hub_url after
@@ -535,9 +502,7 @@ def compute_parquet_response(
     parquet_files: List[ParquetFile] = []
     for config in config_names:
         builder = load_dataset_builder(path=dataset, name=config, revision=source_revision, use_auth_token=hf_token)
-        builder.download_and_prepare(
-            file_format="parquet", use_auth_token=hf_token
-        )  # the parquet files are stored in the cache dir
+        builder.download_and_prepare(file_format="parquet")  # the parquet files are stored in the cache dir
         parquet_files.extend(
             ParquetFile(local_file=local_file, local_dir=builder.cache_dir, config=config)
             for local_file in glob.glob(f"{builder.cache_dir}**/*.parquet")
