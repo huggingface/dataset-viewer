@@ -521,19 +521,6 @@ def compute_parquet_response(
     hf_api = HfApi(endpoint=hf_endpoint, token=hf_token)
     committer_hf_api = HfApi(endpoint=hf_endpoint, token=committer_hf_token)
 
-    # create the target revision if it does not exist yet
-    try:
-        target_dataset_info = hf_api.dataset_info(repo_id=dataset, revision=target_revision, files_metadata=False)
-    except RepositoryNotFoundError as err:
-        raise DatasetNotFoundError("The dataset does not exist on the Hub.") from err
-    except RevisionNotFoundError:
-        # create the parquet_ref (refs/convert/parquet)
-        committer_hf_api.create_branch(repo_id=dataset, branch=target_revision, repo_type=DATASET_TYPE)
-        target_dataset_info = hf_api.dataset_info(repo_id=dataset, revision=target_revision, files_metadata=False)
-
-    target_sha = target_dataset_info.sha
-    previous_files = [f.rfilename for f in target_dataset_info.siblings]
-
     # get the sorted list of configurations
     try:
         config_names = sorted(
@@ -556,22 +543,41 @@ def compute_parquet_response(
             for local_file in glob.glob(f"{builder.cache_dir}**/*.parquet")
         )
 
-    # send the files to the target revision
+    # create the target revision if it does not exist yet
+    try:
+        target_dataset_info = hf_api.dataset_info(repo_id=dataset, revision=target_revision, files_metadata=False)
+    except RepositoryNotFoundError as err:
+        raise DatasetNotFoundError("The dataset does not exist on the Hub.") from err
+    except RevisionNotFoundError:
+        # create the parquet_ref (refs/convert/parquet)
+        committer_hf_api.create_branch(repo_id=dataset, branch=target_revision, repo_type=DATASET_TYPE)
+        target_dataset_info = hf_api.dataset_info(repo_id=dataset, revision=target_revision, files_metadata=False)
+
+    # delete:
+    # - the previous files,
+    previous_files = {f.rfilename for f in target_dataset_info.siblings}
+    # except:
+    # - the files we will update,
     files_to_add = {parquet_file.repo_file(): parquet_file.local_file for parquet_file in parquet_files}
-    # don't delete the files we will update
-    files_to_delete = [file for file in previous_files if file not in files_to_add]
+    # - .gitattributes if present.
+    files_to_delete = previous_files - set(files_to_add.keys()).union({".gitattributes"})
     delete_operations: List[CommitOperation] = [CommitOperationDelete(path_in_repo=file) for file in files_to_delete]
+    logging.debug(f"delete_operations={delete_operations}")
+
+    # send the files to the target revision
     add_operations: List[CommitOperation] = [
         CommitOperationAdd(path_in_repo=file, path_or_fileobj=local_file)
         for (file, local_file) in files_to_add.items()
     ]
+    logging.debug(f"add_operations={add_operations}")
+
     committer_hf_api.create_commit(
         repo_id=dataset,
         repo_type=DATASET_TYPE,
         revision=target_revision,
         operations=delete_operations + add_operations,
         commit_message=commit_message,
-        parent_commit=target_sha,
+        parent_commit=target_dataset_info.sha,
     )
 
     # call the API again to get the list of parquet files
