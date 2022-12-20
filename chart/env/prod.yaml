@@ -197,7 +197,7 @@ firstRows:
 
   nodeSelector:
     role-datasets-server: "true"
-  replicas: 20
+  replicas: 16
   resources:
     requests:
       cpu: 1
@@ -212,14 +212,14 @@ parquet:
   # comma-separated list of the supported datasets. If empty, all the datasets are processed. Defaults to empty.
   supportedDatasets: ""
   # the maximum size of the supported datasets. Bigger datasets, or datasets that cannot provide the size, are ignored.
-  maxDatasetSize: "500_000_000" # support up to 500 MiB
+  maxDatasetSize: "5_000_000_000" # support up to 5 GB
   # override the common queue parameters
   queue:
     # Maximum number of jobs running at the same time for the same namespace
     maxJobsPerNamespace: 2
   nodeSelector:
     role-datasets-server: "true"
-  replicas: 10
+  replicas: 16
   resources:
     requests:
       cpu: 1
