@@ -547,6 +547,9 @@ def compute_first_rows_response(
     return response
 
 
+FIRST_ROWS_VERSION = "2.0.0"
+
+
 class FirstRowsWorker(DatasetsBasedWorker):
     first_rows_config: FirstRowsConfig
 
@@ -555,7 +558,7 @@ class FirstRowsWorker(DatasetsBasedWorker):
         return "/first-rows"
 
     def __init__(self, app_config: AppConfig):
-        super().__init__(app_config=app_config)
+        super().__init__(version=FIRST_ROWS_VERSION, app_config=app_config)
         self.first_rows_config = FirstRowsConfig()
 
     def compute(

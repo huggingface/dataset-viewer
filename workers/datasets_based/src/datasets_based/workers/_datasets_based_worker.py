@@ -1,7 +1,6 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2022 The HuggingFace Authors.
 
-import importlib.metadata
 import json
 import logging
 import re
@@ -34,14 +33,14 @@ class DatasetsBasedWorker(Worker, ABC):
     # be safe to use a global variable (and to set the datasets cache globally)
     datasets_cache: Optional[Path] = None
 
-    def __init__(self, app_config: AppConfig):
+    def __init__(self, app_config: AppConfig, version: str = "1.0.0"):
         super().__init__(
             processing_step=app_config.processing_graph.graph.get_step(self.get_endpoint()),
             # ^ raises if the step is not found
             common_config=app_config.common,
             queue_config=app_config.queue,
             worker_config=app_config.worker,
-            version=importlib.metadata.version(__package__.split(".")[0]),
+            version=version,
         )
         self.datasets_based_config = app_config.datasets_based
 
