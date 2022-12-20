@@ -553,12 +553,12 @@ def compute_parquet_response(
         committer_hf_api.create_branch(repo_id=dataset, branch=target_revision, repo_type=DATASET_TYPE)
         target_dataset_info = hf_api.dataset_info(repo_id=dataset, revision=target_revision, files_metadata=False)
 
-    previous_files = [f.rfilename for f in target_dataset_info.siblings]
+    previous_files = {f.rfilename for f in target_dataset_info.siblings}
 
     # send the files to the target revision
     files_to_add = {parquet_file.repo_file(): parquet_file.local_file for parquet_file in parquet_files}
     # don't delete the files we will update
-    files_to_delete = [file for file in previous_files if file not in files_to_add]
+    files_to_delete = previous_files - set(files_to_add.keys())
     delete_operations: List[CommitOperation] = [CommitOperationDelete(path_in_repo=file) for file in files_to_delete]
     add_operations: List[CommitOperation] = [
         CommitOperationAdd(path_in_repo=file, path_or_fileobj=local_file)
