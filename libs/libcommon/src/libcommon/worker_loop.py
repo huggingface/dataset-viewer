@@ -7,7 +7,7 @@ import time
 from dataclasses import dataclass, field
 from typing import Type
 
-from psutil import cpu_count, getloadavg, swap_memory, virtual_memory
+from psutil import cpu_count, disk_usage, getloadavg, swap_memory, virtual_memory
 
 from libcommon.config import CommonConfig, QueueConfig, WorkerLoopConfig
 from libcommon.processing_graph import ProcessingStep
@@ -93,7 +93,16 @@ class WorkerLoop:
         return ok
 
     def has_storage(self) -> bool:
-        # placeholder, to be overridden if needed
+        if self.worker_loop_config.max_disk_usage_pct <= 0:
+            return True
+        for path in self.worker_loop_config.storage_paths:
+            try:
+                usage = disk_usage(path)
+                if usage.percent >= self.worker_loop_config.max_disk_usage_pct:
+                    return False
+            except Exception:
+                # if we can't get the disk usage, we let the process continue
+                return True
         return True
 
     def has_resources(self) -> bool:

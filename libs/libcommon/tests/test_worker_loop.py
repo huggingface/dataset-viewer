@@ -33,12 +33,7 @@ class DummyWorker(Worker):
         return {"key": "value"}
 
 
-class NoStorageWorkerLoop(WorkerLoop):
-    def has_storage(self) -> bool:
-        return False
-
-
-def test_has_storage(
+def test_process_next_job(
     test_processing_step: ProcessingStep,
     common_config: CommonConfig,
     queue_config: QueueConfig,
@@ -51,12 +46,11 @@ def test_has_storage(
         queue_config=queue_config,
         worker_loop_config=worker_loop_config,
     )
-    assert worker_loop.has_storage() is True
-    worker_loop = NoStorageWorkerLoop(
-        worker_class=DummyWorker,
-        processing_step=test_processing_step,
-        common_config=common_config,
-        queue_config=queue_config,
-        worker_loop_config=worker_loop_config,
-    )
-    assert worker_loop.has_storage() is False
+    assert worker_loop.process_next_job() is False
+    dataset = "dataset"
+    config = "config"
+    split = "split"
+    worker_loop.queue.add_job(dataset=dataset, config=config, split=split)
+    worker_loop.queue.is_job_in_process(dataset=dataset, config=config, split=split) is True
+    assert worker_loop.process_next_job() is True
+    worker_loop.queue.is_job_in_process(dataset=dataset, config=config, split=split) is False

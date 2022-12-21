@@ -1,7 +1,7 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2022 The HuggingFace Authors.
 
-from typing import Optional
+from typing import List, Optional
 
 from environs import Env
 
@@ -78,16 +78,20 @@ class QueueConfig:
 
 
 class WorkerLoopConfig:
+    max_disk_usage_pct: int
     max_load_pct: int
     max_memory_pct: int
     sleep_seconds: int
+    storage_paths: List[str]
 
     def __init__(self):
         env = Env(expand_vars=True)
         with env.prefixed("WORKER_LOOP_"):
+            self.max_disk_usage_pct = env.int(name="MAX_DISK_USAGE_PCT", default=90)
             self.max_load_pct = env.int(name="MAX_LOAD_PCT", default=70)
             self.max_memory_pct = env.int(name="MAX_MEMORY_PCT", default=80)
             self.sleep_seconds = env.int(name="SLEEP_SECONDS", default=15)
+            self.storage_paths = env.list(name="STORAGE_PATHS", default=[])
 
 
 class ProcessingGraphConfig:
