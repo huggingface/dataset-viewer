@@ -40,4 +40,5 @@ See https://huggingface.co/docs/datasets-server
 - /webhook: add, update or remove a dataset
 - /splits: list the [splits](https://huggingface.co/docs/datasets/splits.html) names for a dataset
 - /first-rows: extract the first [rows](https://huggingface.co/docs/datasets/splits.html) for a dataset split
+- /parquet: list the parquet files auto-converted for a dataset
 - /metrics: return a list of metrics in the Prometheus format

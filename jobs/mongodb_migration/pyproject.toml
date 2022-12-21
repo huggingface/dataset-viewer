@@ -7,7 +7,7 @@ license = "Apache-2.0"
 
 [tool.poetry.dependencies]
 environs = "^9.5.0"
-libcommon = { path = "../../libs/libcommon/dist/libcommon-0.5.10-py3-none-any.whl", develop = false }
+libcommon = { path = "../../libs/libcommon/dist/libcommon-0.6.0-py3-none-any.whl", develop = false }
 python = "3.9.15"
 
 [tool.poetry.group.dev.dependencies]
