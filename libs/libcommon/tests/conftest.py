@@ -3,7 +3,7 @@
 
 from pytest import MonkeyPatch, fixture
 
-from libcommon.config import CacheConfig, CommonConfig, QueueConfig, WorkerConfig
+from libcommon.config import CacheConfig, CommonConfig, QueueConfig, WorkerLoopConfig
 from libcommon.processing_graph import ProcessingStep
 
 
@@ -39,14 +39,14 @@ def queue_config(monkeypatch_session: MonkeyPatch) -> QueueConfig:
 
 
 @fixture(scope="session", autouse=True)
-def worker_config(monkeypatch_session: MonkeyPatch) -> WorkerConfig:
-    return WorkerConfig()
+def worker_loop_config(monkeypatch_session: MonkeyPatch) -> WorkerLoopConfig:
+    return WorkerLoopConfig()
 
 
 @fixture(scope="session")
 def test_processing_step(monkeypatch_session: MonkeyPatch) -> ProcessingStep:
     return ProcessingStep(
-        endpoint="/test",
+        endpoint="/dummy",
         input_type="dataset",
         requires=None,
         required_by_dataset_viewer=False,

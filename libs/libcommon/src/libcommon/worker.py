@@ -2,20 +2,17 @@
 # Copyright 2022 The HuggingFace Authors.
 
 import logging
-import random
-import time
 from abc import ABC, abstractmethod
 from http import HTTPStatus
 from typing import Any, Literal, Mapping, Optional
 
 from packaging import version
-from psutil import cpu_count, getloadavg, swap_memory, virtual_memory
 
-from libcommon.config import CommonConfig, QueueConfig, WorkerConfig
+from libcommon.config import CommonConfig
 from libcommon.dataset import DatasetNotFoundError, get_dataset_git_revision
 from libcommon.exceptions import CustomError
 from libcommon.processing_graph import ProcessingStep
-from libcommon.queue import EmptyQueueError, Queue, Status
+from libcommon.queue import StartedJobInfo, Status
 from libcommon.simple_cache import get_response_without_content, upsert_response
 
 
@@ -103,31 +100,64 @@ class UnexpectedError(WorkerError):
 
 
 class Worker(ABC):
-    processing_step: ProcessingStep
-    queue: Queue
+    """
+    Base class for workers. A worker is a class that processes a job, for a specific processing step.
+
+    It cannot be instantiated directly, but must be subclassed.
+
+    Args:
+        started_job_info (:obj:`StartedJobInfo`):
+            The job to process. It contains the job_id, the dataset, the config, the split and the force flag.
+        common_config (:obj:`CommonConfig`):
+            The common config.
+        processing_step (:obj:`ProcessingStep`):
+            The processing step to process.
+    """
+
+    job_id: str
+    dataset: str
+    config: Optional[str] = None
+    split: Optional[str] = None
+    force: bool
     common_config: CommonConfig
-    queue_config: QueueConfig
-    worker_config: WorkerConfig
-    version: str
+    processing_step: ProcessingStep
+
+    @staticmethod
+    @abstractmethod
+    def get_endpoint() -> str:
+        pass
+
+    @staticmethod
+    @abstractmethod
+    def get_version() -> str:
+        pass
 
     def __init__(
         self,
-        processing_step: ProcessingStep,
+        started_job_info: StartedJobInfo,
         common_config: CommonConfig,
-        queue_config: QueueConfig,
-        worker_config: WorkerConfig,
-        version: str,
+        processing_step: ProcessingStep,
     ) -> None:
-        self.processing_step = processing_step
+        self.job_id = started_job_info["job_id"]
+        self.dataset = started_job_info["dataset"]
+        self.config = started_job_info["config"]
+        self.split = started_job_info["split"]
+        self.force = started_job_info["force"]
         self.common_config = common_config
-        self.queue_config = queue_config
-        self.worker_config = worker_config
-        self.version = version
+        self.processing_step = processing_step
         self.setup()
 
     def setup(self) -> None:
-        self.queue = Queue(
-            type=self.processing_step.job_type, max_jobs_per_namespace=self.queue_config.max_jobs_per_namespace
+        worker_endpoint = self.get_endpoint()
+        if self.processing_step.endpoint != worker_endpoint:
+            raise ValueError(
+                f"The processing step is {self.processing_step.endpoint}, but the worker processes {worker_endpoint}"
+            )
+
+    def __str__(self):
+        return (
+            f"JobRunner(job_id={self.job_id} dataset={self.dataset} config={self.config}"
+            + f" split={self.split} force={self.force})"
         )
 
     def log(self, level: int, msg: str) -> None:
@@ -145,89 +175,18 @@ class Worker(ABC):
     def exception(self, msg: str) -> None:
         self.log(level=logging.ERROR, msg=msg)
 
-    def has_memory(self) -> bool:
-        if self.worker_config.max_memory_pct <= 0:
-            return True
-        virtual_memory_used: int = virtual_memory().used  # type: ignore
-        virtual_memory_total: int = virtual_memory().total  # type: ignore
-        percent = (swap_memory().used + virtual_memory_used) / (swap_memory().total + virtual_memory_total)
-        ok = percent < self.worker_config.max_memory_pct
-        if not ok:
-            self.info(
-                f"memory usage (RAM + SWAP) is too high: {percent:.0f}% - max is {self.worker_config.max_memory_pct}%"
-            )
-        return ok
-
-    def has_cpu(self) -> bool:
-        if self.worker_config.max_load_pct <= 0:
-            return True
-        load_pct = max(getloadavg()[:2]) / cpu_count() * 100
-        # ^ only current load and 5m load. 15m load is not relevant to decide to launch a new job
-        ok = load_pct < self.worker_config.max_load_pct
-        if not ok:
-            self.info(f"cpu load is too high: {load_pct:.0f}% - max is {self.worker_config.max_load_pct}%")
-        return ok
-
-    def has_storage(self) -> bool:
-        # placeholder, to be overridden by workers if needed
-        return True
-
-    def has_resources(self) -> bool:
-        return self.has_memory() and self.has_cpu() and self.has_storage()
-
-    def sleep(self) -> None:
-        jitter = 0.75 + random.random() / 2  # nosec
-        # ^ between 0.75 and 1.25
-        duration = self.worker_config.sleep_seconds * jitter
-        self.debug(f"sleep during {duration:.2f} seconds")
-        time.sleep(duration)
-
-    def loop(self) -> None:
+    def run(self) -> Literal[Status.SUCCESS, Status.ERROR, Status.SKIPPED]:
         try:
-            while True:
-                if self.has_resources() and self.process_next_job():
-                    # loop immediately to try another job
-                    # see https://github.com/huggingface/datasets-server/issues/265
-                    continue
-                self.sleep()
-        except BaseException as e:
-            self.critical(f"quit due to an uncaught error while processing the job: {e}")
-            raise
-
-    def process_next_job(self) -> bool:
-        self.debug("try to process a job")
-
-        try:
-            started_job_info = self.queue.start_job()
-            job_id = started_job_info["job_id"]
-            dataset = started_job_info["dataset"]
-            config = started_job_info["config"]
-            split = started_job_info["split"]
-            force = started_job_info["force"]
-            parameters_for_log = f"dataset={dataset}" + ("" if split is None else f"config={config} split={split}")
-            self.debug(f"job assigned: {job_id} for {parameters_for_log}")
-        except EmptyQueueError:
-            self.debug("no job in the queue")
-            return False
-
-        finished_status: Literal[Status.SUCCESS, Status.ERROR, Status.SKIPPED]
-        try:
-            self.info(f"compute {parameters_for_log}")
-            if self.should_skip_job(dataset=dataset, config=config, split=split, force=force):
-                finished_status = Status.SKIPPED
+            self.info(f"compute {self}")
+            if self.should_skip_job():
+                return Status.SKIPPED
+            elif self.process():
+                return Status.SUCCESS
             else:
-                finished_status = (
-                    Status.SUCCESS
-                    if self.process(dataset=dataset, config=config, split=split, force=force)
-                    else Status.ERROR
-                )
+                return Status.ERROR
         except Exception:
-            self.exception(f"error while computing {parameters_for_log}")
-            finished_status = Status.ERROR
-        finally:
-            self.queue.finish_job(job_id=job_id, finished_status=finished_status)
-            self.debug(f"job finished with {finished_status.value}: {job_id} for {parameters_for_log}")
-        return True
+            self.exception(f"error while computing {self}")
+            return Status.ERROR
 
     def compare_major_version(self, other_version: str) -> int:
         """
@@ -243,22 +202,17 @@ class Worker(ABC):
             :obj:`ValueError`: if worker's version or other_version is not a valid semantic version.
         """
         try:
-            return parse_version(self.version).major - parse_version(other_version).major
+            return parse_version(self.get_version()).major - parse_version(other_version).major
         except Exception as err:
             raise RuntimeError(f"Could not get major versions: {err}") from err
 
-    def get_dataset_git_revision(
-        self,
-        dataset: str,
-        hf_endpoint: str,
-        hf_token: Optional[str] = None,
-    ) -> Optional[str]:
+    def get_dataset_git_revision(self) -> Optional[str]:
         """Get the git revision of the dataset repository."""
-        return get_dataset_git_revision(dataset=dataset, hf_endpoint=hf_endpoint, hf_token=hf_token)
+        return get_dataset_git_revision(
+            dataset=self.dataset, hf_endpoint=self.common_config.hf_endpoint, hf_token=self.common_config.hf_token
+        )
 
-    def should_skip_job(
-        self, dataset: str, config: Optional[str] = None, split: Optional[str] = None, force: bool = False
-    ) -> bool:
+    def should_skip_job(self) -> bool:
         """Return True if the job should be skipped, False otherwise.
 
         The job must be skipped if:
@@ -268,24 +222,16 @@ class Worker(ABC):
         - and it has been created with the same major version of the worker
         - and it has been created with the exact same git commit of the dataset repository
 
-        Args:
-            dataset (:obj:`str`): The name of the dataset.
-            config (:obj:`str`, `optional`): The name of the configuration.
-            split (:obj:`str`, `optional`): The name of the split.
-            force (:obj:`bool`, `optional`, defaults to :obj:`False`): Whether to force the job to be run.
-
         Returns:
             :obj:`bool`: True if the job should be skipped, False otherwise.
         """
-        if force:
+        if self.force:
             return False
         try:
             cached_response = get_response_without_content(
-                kind=self.processing_step.cache_kind, dataset=dataset, config=config, split=split
+                kind=self.processing_step.cache_kind, dataset=self.dataset, config=self.config, split=self.split
             )
-            dataset_git_revision = self.get_dataset_git_revision(
-                dataset=dataset, hf_endpoint=self.common_config.hf_endpoint, hf_token=self.common_config.hf_token
-            )
+            dataset_git_revision = self.get_dataset_git_revision()
             return (
                 # TODO: use "error_code" to decide if the job should be skipped (ex: retry if temporary error)
                 cached_response["http_status"] == HTTPStatus.OK
@@ -299,36 +245,30 @@ class Worker(ABC):
 
     def process(
         self,
-        dataset: str,
-        config: Optional[str] = None,
-        split: Optional[str] = None,
-        force: bool = False,
     ) -> bool:
         dataset_git_revision = None
         try:
-            dataset_git_revision = self.get_dataset_git_revision(
-                dataset=dataset, hf_endpoint=self.common_config.hf_endpoint, hf_token=self.common_config.hf_token
-            )
+            dataset_git_revision = self.get_dataset_git_revision()
             if dataset_git_revision is None:
-                self.debug(f"the dataset={dataset} has no git revision, don't update the cache")
-                raise NoGitRevisionError(f"Could not get git revision for dataset {dataset}")
+                self.debug(f"the dataset={self.dataset} has no git revision, don't update the cache")
+                raise NoGitRevisionError(f"Could not get git revision for dataset {self.dataset}")
             try:
-                self.pre_compute(dataset=dataset, config=config, split=split, force=force)
-                content = self.compute(dataset=dataset, config=config, split=split, force=force)
+                self.pre_compute()
+                content = self.compute()
             finally:
                 # ensure the post_compute hook is called even if the compute raises an exception
-                self.post_compute(dataset=dataset, config=config, split=split, force=force)
+                self.post_compute()
             upsert_response(
                 kind=self.processing_step.cache_kind,
-                dataset=dataset,
-                config=config,
-                split=split,
+                dataset=self.dataset,
+                config=self.config,
+                split=self.split,
                 content=content,
                 http_status=HTTPStatus.OK,
-                worker_version=self.version,
+                worker_version=self.get_version(),
                 dataset_git_revision=dataset_git_revision,
             )
-            self.debug(f"dataset={dataset} config={config} split={split} is valid, cache updated")
+            self.debug(f"dataset={self.dataset} config={self.config} split={self.split} is valid, cache updated")
             return True
         except (
             DatasetNotFoundError,
@@ -337,52 +277,38 @@ class Worker(ABC):
         ):
             # To avoid filling the cache, we don't save these errors. Otherwise, DoS is possible.
             self.debug(
-                f"the dataset={dataset}, config {config} or split {split} could not be found, don't update the cache"
+                f"the dataset={self.dataset}, config {self.config} or split {self.split} could not be found, don't"
+                " update the cache"
             )
             return False
         except Exception as err:
             e = err if isinstance(err, CustomError) else UnexpectedError(str(err), err)
             upsert_response(
                 kind=self.processing_step.cache_kind,
-                dataset=dataset,
-                config=config,
-                split=split,
+                dataset=self.dataset,
+                config=self.config,
+                split=self.split,
                 content=dict(e.as_response()),
                 http_status=e.status_code,
                 error_code=e.code,
                 details=dict(e.as_response_with_cause()),
-                worker_version=self.version,
+                worker_version=self.get_version(),
                 dataset_git_revision=dataset_git_revision,
             )
-            self.debug(f"response for dataset={dataset} config={config} split={split} had an error, cache updated")
+            self.debug(
+                f"response for dataset={self.dataset} config={self.config} split={self.split} had an error, cache"
+                " updated"
+            )
             return False
 
-    def pre_compute(
-        self,
-        dataset: str,
-        config: Optional[str] = None,
-        split: Optional[str] = None,
-        force: bool = False,
-    ) -> None:
+    def pre_compute(self) -> None:
         """Hook method called before the compute method."""
         pass
 
     @abstractmethod
-    def compute(
-        self,
-        dataset: str,
-        config: Optional[str] = None,
-        split: Optional[str] = None,
-        force: bool = False,
-    ) -> Mapping[str, Any]:
+    def compute(self) -> Mapping[str, Any]:
         pass
 
-    def post_compute(
-        self,
-        dataset: str,
-        config: Optional[str] = None,
-        split: Optional[str] = None,
-        force: bool = False,
-    ) -> None:
+    def post_compute(self) -> None:
         """Hook method called after the compute method."""
         pass

@@ -77,14 +77,14 @@ class QueueConfig:
         connect_to_queue_database(database=self.mongo_database, host=self.mongo_url)
 
 
-class WorkerConfig:
+class WorkerLoopConfig:
     max_load_pct: int
     max_memory_pct: int
     sleep_seconds: int
 
     def __init__(self):
         env = Env(expand_vars=True)
-        with env.prefixed("WORKER_"):
+        with env.prefixed("WORKER_LOOP_"):
             self.max_load_pct = env.int(name="MAX_LOAD_PCT", default=70)
             self.max_memory_pct = env.int(name="MAX_MEMORY_PCT", default=80)
             self.sleep_seconds = env.int(name="SLEEP_SECONDS", default=15)
