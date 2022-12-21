@@ -312,3 +312,18 @@ class Worker(ABC):
     def post_compute(self) -> None:
         """Hook method called after the compute method."""
         pass
+
+
+class WorkerFactory(ABC):
+    """
+    Base class for worker factories. A worker factory is a class that creates a worker.
+
+    It cannot be instantiated directly, but must be subclassed.
+    """
+
+    def create_worker(self, started_job_info: StartedJobInfo, processing_step: ProcessingStep) -> Worker:
+        return self._create_worker(started_job_info=started_job_info, processing_step=processing_step)
+
+    @abstractmethod
+    def _create_worker(self, started_job_info: StartedJobInfo, processing_step: ProcessingStep) -> Worker:
+        pass

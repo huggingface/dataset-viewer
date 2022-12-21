@@ -6,7 +6,7 @@ from libcommon.config import CommonConfig, QueueConfig, WorkerLoopConfig
 from libcommon.processing_graph import ProcessingStep
 from libcommon.queue import _clean_queue_database
 from libcommon.simple_cache import _clean_cache_database
-from libcommon.worker import Worker
+from libcommon.worker import StartedJobInfo, Worker, WorkerFactory
 from libcommon.worker_loop import WorkerLoop
 
 
@@ -33,16 +33,26 @@ class DummyWorker(Worker):
         return {"key": "value"}
 
 
+class DummyWorkerFactory(WorkerFactory):
+    def __init__(self, common_config: Any) -> None:
+        self.common_config = common_config
+
+    def _create_worker(self, started_job_info: StartedJobInfo, processing_step: ProcessingStep) -> Worker:
+        return DummyWorker(
+            started_job_info=started_job_info, common_config=self.common_config, processing_step=processing_step
+        )
+
+
 def test_process_next_job(
     test_processing_step: ProcessingStep,
     common_config: CommonConfig,
     queue_config: QueueConfig,
     worker_loop_config: WorkerLoopConfig,
 ) -> None:
+    worker_factory = DummyWorkerFactory(common_config=common_config)
     worker_loop = WorkerLoop(
-        worker_class=DummyWorker,
+        worker_factory=worker_factory,
         processing_step=test_processing_step,
-        common_config=common_config,
         queue_config=queue_config,
         worker_loop_config=worker_loop_config,
     )

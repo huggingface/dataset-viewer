@@ -5,14 +5,13 @@ import logging
 import random
 import time
 from dataclasses import dataclass, field
-from typing import Type
 
 from psutil import cpu_count, disk_usage, getloadavg, swap_memory, virtual_memory
 
-from libcommon.config import CommonConfig, QueueConfig, WorkerLoopConfig
+from libcommon.config import QueueConfig, WorkerLoopConfig
 from libcommon.processing_graph import ProcessingStep
 from libcommon.queue import EmptyQueueError, Queue
-from libcommon.worker import Worker
+from libcommon.worker import WorkerFactory
 
 
 @dataclass
@@ -24,8 +23,6 @@ class WorkerLoop:
     is raised.
 
     Args:
-        common_config (`CommonConfig`):
-            Common configuration.
         processing_step (`ProcessingStep`):
             The processing step supported by the worker loop (a worker loop can only process one step).
         queue_config (`QueueConfig`):
@@ -36,19 +33,13 @@ class WorkerLoop:
             Worker loop configuration.
     """
 
-    common_config: CommonConfig
     processing_step: ProcessingStep
     queue_config: QueueConfig
-    worker_class: Type[Worker]
+    worker_factory: WorkerFactory
     worker_loop_config: WorkerLoopConfig
     queue: Queue = field(init=False)
 
     def __post_init__(self) -> None:
-        worker_endpoint = self.worker_class.get_endpoint()
-        if self.processing_step.endpoint != worker_endpoint:
-            raise ValueError(
-                f"The processing step is {self.processing_step.endpoint}, but the worker processes {worker_endpoint}"
-            )
         self.queue = Queue(
             type=self.processing_step.job_type, max_jobs_per_namespace=self.queue_config.max_jobs_per_namespace
         )
@@ -131,9 +122,7 @@ class WorkerLoop:
         self.debug("try to process a job")
 
         try:
-            worker = self.worker_class(
-                self.queue.start_job(), common_config=self.common_config, processing_step=self.processing_step
-            )
+            worker = self.worker_factory.create_worker(self.queue.start_job(), processing_step=self.processing_step)
             self.debug(f"job assigned: {worker}")
         except EmptyQueueError:
             self.debug("no job in the queue")
