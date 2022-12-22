@@ -71,7 +71,14 @@ def test_compare_major_version(
     split = "split"
     force = False
     worker = DummyWorker(
-        started_job_info={"job_id": job_id, "dataset": dataset, "config": config, "split": split, "force": force},
+        job_info={
+            "job_id": job_id,
+            "type": test_processing_step.job_type,
+            "dataset": dataset,
+            "config": config,
+            "split": split,
+            "force": force,
+        },
         processing_step=test_processing_step,
         common_config=common_config,
     )
@@ -92,7 +99,14 @@ def test_should_skip_job(
     split = "split"
     force = False
     worker = DummyWorker(
-        started_job_info={"job_id": job_id, "dataset": dataset, "config": config, "split": split, "force": force},
+        job_info={
+            "job_id": job_id,
+            "type": test_processing_step.job_type,
+            "dataset": dataset,
+            "config": config,
+            "split": split,
+            "force": force,
+        },
         processing_step=test_processing_step,
         common_config=common_config,
     )
@@ -100,3 +114,52 @@ def test_should_skip_job(
     # we add an entry to the cache
     worker.process()
     assert worker.should_skip_job() is True
+
+
+def test_check_type(
+    test_processing_step: ProcessingStep,
+    common_config: CommonConfig,
+) -> None:
+    job_id = "job_id"
+    dataset = "dataset"
+    config = "config"
+    split = "split"
+    force = False
+
+    job_type = f"not-{test_processing_step.job_type}"
+    with pytest.raises(ValueError):
+        DummyWorker(
+            job_info={
+                "job_id": job_id,
+                "type": job_type,
+                "dataset": dataset,
+                "config": config,
+                "split": split,
+                "force": force,
+            },
+            processing_step=test_processing_step,
+            common_config=common_config,
+        )
+
+    another_processing_step = ProcessingStep(
+        endpoint=f"not-{test_processing_step.endpoint}",
+        input_type="dataset",
+        requires=None,
+        required_by_dataset_viewer=False,
+        parent=None,
+        ancestors=[],
+        children=[],
+    )
+    with pytest.raises(ValueError):
+        DummyWorker(
+            job_info={
+                "job_id": job_id,
+                "type": test_processing_step.job_type,
+                "dataset": dataset,
+                "config": config,
+                "split": split,
+                "force": force,
+            },
+            processing_step=another_processing_step,
+            common_config=common_config,
+        )

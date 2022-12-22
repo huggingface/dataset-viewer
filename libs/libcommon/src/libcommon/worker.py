@@ -12,7 +12,7 @@ from libcommon.config import CommonConfig
 from libcommon.dataset import DatasetNotFoundError, get_dataset_git_revision
 from libcommon.exceptions import CustomError
 from libcommon.processing_graph import ProcessingStep
-from libcommon.queue import StartedJobInfo, Status
+from libcommon.queue import JobInfo, Status
 from libcommon.simple_cache import get_response_without_content, upsert_response
 
 
@@ -106,8 +106,9 @@ class Worker(ABC):
     It cannot be instantiated directly, but must be subclassed.
 
     Args:
-        started_job_info (:obj:`StartedJobInfo`):
-            The job to process. It contains the job_id, the dataset, the config, the split and the force flag.
+        job_info (:obj:`JobInfo`):
+            The job to process. It contains the job_id, the job type, the dataset, the config, the split
+            and the force flag.
         common_config (:obj:`CommonConfig`):
             The common config.
         processing_step (:obj:`ProcessingStep`):
@@ -134,15 +135,16 @@ class Worker(ABC):
 
     def __init__(
         self,
-        started_job_info: StartedJobInfo,
+        job_info: JobInfo,
         common_config: CommonConfig,
         processing_step: ProcessingStep,
     ) -> None:
-        self.job_id = started_job_info["job_id"]
-        self.dataset = started_job_info["dataset"]
-        self.config = started_job_info["config"]
-        self.split = started_job_info["split"]
-        self.force = started_job_info["force"]
+        self.job_type = job_info["type"]
+        self.job_id = job_info["job_id"]
+        self.dataset = job_info["dataset"]
+        self.config = job_info["config"]
+        self.split = job_info["split"]
+        self.force = job_info["force"]
         self.common_config = common_config
         self.processing_step = processing_step
         self.setup()
@@ -152,6 +154,11 @@ class Worker(ABC):
         if self.processing_step.endpoint != worker_endpoint:
             raise ValueError(
                 f"The processing step is {self.processing_step.endpoint}, but the worker processes {worker_endpoint}"
+            )
+        if self.processing_step.job_type != self.job_type:
+            raise ValueError(
+                f"The processing step job type is: {self.processing_step.job_type}, but the submitted job type is"
+                f" {self.job_type}"
             )
 
     def __str__(self):
@@ -321,9 +328,9 @@ class WorkerFactory(ABC):
     It cannot be instantiated directly, but must be subclassed.
     """
 
-    def create_worker(self, started_job_info: StartedJobInfo, processing_step: ProcessingStep) -> Worker:
-        return self._create_worker(started_job_info=started_job_info, processing_step=processing_step)
+    def create_worker(self, job_info: JobInfo) -> Worker:
+        return self._create_worker(job_info=job_info)
 
     @abstractmethod
-    def _create_worker(self, started_job_info: StartedJobInfo, processing_step: ProcessingStep) -> Worker:
+    def _create_worker(self, job_info: JobInfo) -> Worker:
         pass

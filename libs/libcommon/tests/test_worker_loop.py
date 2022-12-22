@@ -4,9 +4,9 @@ import pytest
 
 from libcommon.config import CommonConfig, QueueConfig, WorkerLoopConfig
 from libcommon.processing_graph import ProcessingStep
-from libcommon.queue import _clean_queue_database
+from libcommon.queue import Queue, _clean_queue_database
 from libcommon.simple_cache import _clean_cache_database
-from libcommon.worker import StartedJobInfo, Worker, WorkerFactory
+from libcommon.worker import JobInfo, Worker, WorkerFactory
 from libcommon.worker_loop import WorkerLoop
 
 
@@ -34,13 +34,12 @@ class DummyWorker(Worker):
 
 
 class DummyWorkerFactory(WorkerFactory):
-    def __init__(self, common_config: Any) -> None:
+    def __init__(self, common_config: CommonConfig, processing_step: ProcessingStep) -> None:
         self.common_config = common_config
+        self.processing_step = processing_step
 
-    def _create_worker(self, started_job_info: StartedJobInfo, processing_step: ProcessingStep) -> Worker:
-        return DummyWorker(
-            started_job_info=started_job_info, common_config=self.common_config, processing_step=processing_step
-        )
+    def _create_worker(self, job_info: JobInfo) -> Worker:
+        return DummyWorker(job_info=job_info, common_config=self.common_config, processing_step=self.processing_step)
 
 
 def test_process_next_job(
@@ -49,11 +48,11 @@ def test_process_next_job(
     queue_config: QueueConfig,
     worker_loop_config: WorkerLoopConfig,
 ) -> None:
-    worker_factory = DummyWorkerFactory(common_config=common_config)
+    worker_factory = DummyWorkerFactory(common_config=common_config, processing_step=test_processing_step)
+    queue = Queue(type=test_processing_step.endpoint, max_jobs_per_namespace=queue_config.max_jobs_per_namespace)
     worker_loop = WorkerLoop(
         worker_factory=worker_factory,
-        processing_step=test_processing_step,
-        queue_config=queue_config,
+        queue=queue,
         worker_loop_config=worker_loop_config,
     )
     assert worker_loop.process_next_job() is False

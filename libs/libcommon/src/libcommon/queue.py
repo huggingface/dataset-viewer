@@ -57,8 +57,9 @@ class JobDict(TypedDict):
     finished_at: Optional[datetime]
 
 
-class StartedJobInfo(TypedDict):
+class JobInfo(TypedDict):
     job_id: str
+    type: str
     dataset: str
     config: Optional[str]
     split: Optional[str]
@@ -280,7 +281,7 @@ class Queue:
             f"no job available (within the limit of {self.max_jobs_per_namespace} started jobs per namespace)"
         )
 
-    def start_job(self) -> StartedJobInfo:
+    def start_job(self) -> JobInfo:
         """Start the next job in the queue.
 
         The job is moved from the waiting state to the started state.
@@ -289,13 +290,14 @@ class Queue:
             EmptyQueueError: if there is no job in the queue, within the limit of the maximum number of started jobs
             for a dataset
 
-        Returns: the job id and the input arguments: dataset, config and split
+        Returns: the job id, the type (endpoint), the input arguments: dataset, config and split and the force flag
         """
         next_waiting_job = self.get_next_waiting_job()
         # ^ can raise EmptyQueueError
         next_waiting_job.update(started_at=get_datetime(), status=Status.STARTED)
         return {
             "job_id": str(next_waiting_job.pk),  # job.pk is the id. job.id is not recognized by mypy
+            "type": self.type,
             "dataset": next_waiting_job.dataset,
             "config": next_waiting_job.config,
             "split": next_waiting_job.split,

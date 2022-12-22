@@ -4,12 +4,11 @@
 import logging
 import random
 import time
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 
 from psutil import cpu_count, disk_usage, getloadavg, swap_memory, virtual_memory
 
-from libcommon.config import QueueConfig, WorkerLoopConfig
-from libcommon.processing_graph import ProcessingStep
+from libcommon.config import WorkerLoopConfig
 from libcommon.queue import EmptyQueueError, Queue
 from libcommon.worker import WorkerFactory
 
@@ -23,29 +22,20 @@ class WorkerLoop:
     is raised.
 
     Args:
-        processing_step (`ProcessingStep`):
-            The processing step supported by the worker loop (a worker loop can only process one step).
-        queue_config (`QueueConfig`):
-            Queue configuration.
-        worker_class (`Type[Worker]`):
-            The worker class to use to process the jobs. It must be compatible with the processing step.
+        queue (`Queue`):
+            The job queue.
+        worker_factory (`WorkerFactory`):
+            The worker factory that will create a worker for each job. Must be able to process the jobs of the queue.
         worker_loop_config (`WorkerLoopConfig`):
             Worker loop configuration.
     """
 
-    processing_step: ProcessingStep
-    queue_config: QueueConfig
+    queue: Queue
     worker_factory: WorkerFactory
     worker_loop_config: WorkerLoopConfig
-    queue: Queue = field(init=False)
-
-    def __post_init__(self) -> None:
-        self.queue = Queue(
-            type=self.processing_step.job_type, max_jobs_per_namespace=self.queue_config.max_jobs_per_namespace
-        )
 
     def log(self, level: int, msg: str) -> None:
-        logging.log(level=level, msg=f"[{self.processing_step.endpoint}] {msg}")
+        logging.log(level=level, msg=f"[{self.queue.type}] {msg}")
 
     def debug(self, msg: str) -> None:
         self.log(level=logging.DEBUG, msg=msg)
@@ -122,7 +112,7 @@ class WorkerLoop:
         self.debug("try to process a job")
 
         try:
-            worker = self.worker_factory.create_worker(self.queue.start_job(), processing_step=self.processing_step)
+            worker = self.worker_factory.create_worker(self.queue.start_job())
             self.debug(f"job assigned: {worker}")
         except EmptyQueueError:
             self.debug("no job in the queue")
