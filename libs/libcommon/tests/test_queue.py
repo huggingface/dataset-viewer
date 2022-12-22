@@ -6,11 +6,12 @@ from typing import Optional
 
 import pytest
 
+from libcommon.config import QueueConfig
 from libcommon.queue import EmptyQueueError, Queue, Status, _clean_queue_database
 
 
 @pytest.fixture(autouse=True)
-def clean_mongo_database() -> None:
+def clean_mongo_database(queue_config: QueueConfig) -> None:
     _clean_queue_database()
 
 

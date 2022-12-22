@@ -8,6 +8,7 @@ from typing import Optional
 import pytest
 from pymongo.errors import DocumentTooLarge
 
+from libcommon.config import CacheConfig
 from libcommon.simple_cache import (
     CachedResponse,
     DoesNotExist,
@@ -28,7 +29,7 @@ from libcommon.simple_cache import (
 
 
 @pytest.fixture(autouse=True)
-def clean_mongo_database() -> None:
+def clean_mongo_database(cache_config: CacheConfig) -> None:
     _clean_cache_database()
 
 

@@ -34,8 +34,8 @@ class DummyWorker(Worker):
 
 
 class DummyWorkerFactory(WorkerFactory):
-    def __init__(self, common_config: CommonConfig, processing_step: ProcessingStep) -> None:
-        self.common_config = common_config
+    def __init__(self, processing_step: ProcessingStep) -> None:
+        self.common_config = CommonConfig()
         self.processing_step = processing_step
 
     def _create_worker(self, job_info: JobInfo) -> Worker:
@@ -44,16 +44,14 @@ class DummyWorkerFactory(WorkerFactory):
 
 def test_process_next_job(
     test_processing_step: ProcessingStep,
-    common_config: CommonConfig,
     queue_config: QueueConfig,
-    worker_loop_config: WorkerLoopConfig,
 ) -> None:
-    worker_factory = DummyWorkerFactory(common_config=common_config, processing_step=test_processing_step)
+    worker_factory = DummyWorkerFactory(processing_step=test_processing_step)
     queue = Queue(type=test_processing_step.endpoint, max_jobs_per_namespace=queue_config.max_jobs_per_namespace)
     worker_loop = WorkerLoop(
         worker_factory=worker_factory,
         queue=queue,
-        worker_loop_config=worker_loop_config,
+        worker_loop_config=WorkerLoopConfig(),
     )
     assert worker_loop.process_next_job() is False
     dataset = "dataset"

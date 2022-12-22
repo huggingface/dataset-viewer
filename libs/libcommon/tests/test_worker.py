@@ -60,7 +60,6 @@ def test_parse_version(string_version: str, expected_major_version: int, should_
 )
 def test_compare_major_version(
     test_processing_step: ProcessingStep,
-    common_config: CommonConfig,
     other_version: str,
     expected: int,
     should_raise: bool,
@@ -80,7 +79,7 @@ def test_compare_major_version(
             "force": force,
         },
         processing_step=test_processing_step,
-        common_config=common_config,
+        common_config=CommonConfig(),
     )
     if should_raise:
         with pytest.raises(Exception):
@@ -91,7 +90,6 @@ def test_compare_major_version(
 
 def test_should_skip_job(
     test_processing_step: ProcessingStep,
-    common_config: CommonConfig,
 ) -> None:
     job_id = "job_id"
     dataset = "dataset"
@@ -108,7 +106,7 @@ def test_should_skip_job(
             "force": force,
         },
         processing_step=test_processing_step,
-        common_config=common_config,
+        common_config=CommonConfig(),
     )
     assert worker.should_skip_job() is False
     # we add an entry to the cache
@@ -118,7 +116,6 @@ def test_should_skip_job(
 
 def test_check_type(
     test_processing_step: ProcessingStep,
-    common_config: CommonConfig,
 ) -> None:
     job_id = "job_id"
     dataset = "dataset"
@@ -138,7 +135,7 @@ def test_check_type(
                 "force": force,
             },
             processing_step=test_processing_step,
-            common_config=common_config,
+            common_config=CommonConfig(),
         )
 
     another_processing_step = ProcessingStep(
@@ -161,5 +158,5 @@ def test_check_type(
                 "force": force,
             },
             processing_step=another_processing_step,
-            common_config=common_config,
+            common_config=CommonConfig(),
         )

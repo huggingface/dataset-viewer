@@ -1,50 +1,34 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2022 The HuggingFace Authors.
 
-from pytest import MonkeyPatch, fixture
+from environs import Env
+from pytest import fixture
 
-from libcommon.config import CacheConfig, CommonConfig, QueueConfig, WorkerLoopConfig
+from libcommon.config import CacheConfig, QueueConfig
 from libcommon.processing_graph import ProcessingStep
 
-
-@fixture(scope="session")
-def common_config():
-    return CommonConfig()
-
-
-# see https://github.com/pytest-dev/pytest/issues/363#issuecomment-406536200
-@fixture(scope="session")
-def monkeypatch_session():
-    monkeypatch_session = MonkeyPatch()
-    monkeypatch_session.setenv("CACHE_MONGO_DATABASE", "datasets_server_cache_test")
-    monkeypatch_session.setenv("QUEUE_MONGO_DATABASE", "datasets_server_queue_test")
-    yield monkeypatch_session
-    monkeypatch_session.undo()
+# CACHE_MONGO_URL and QUEUE_MONGO_URL must be set in the environment, and correspond to a running mongo database
+env = Env(expand_vars=True)
 
 
 @fixture(scope="session", autouse=True)
-def cache_config(monkeypatch_session: MonkeyPatch) -> CacheConfig:
-    cache_config = CacheConfig()
+def cache_config() -> CacheConfig:
+    cache_config = CacheConfig(mongo_database="datasets_server_cache_test", mongo_url=env.str("CACHE_MONGO_URL"))
     if "test" not in cache_config.mongo_database:
         raise ValueError("Test must be launched on a test mongo database")
     return cache_config
 
 
 @fixture(scope="session", autouse=True)
-def queue_config(monkeypatch_session: MonkeyPatch) -> QueueConfig:
-    queue_config = QueueConfig()
+def queue_config() -> QueueConfig:
+    queue_config = QueueConfig(mongo_database="datasets_server_queue_test", mongo_url=env.str("QUEUE_MONGO_URL"))
     if "test" not in queue_config.mongo_database:
         raise ValueError("Test must be launched on a test mongo database")
     return queue_config
 
 
-@fixture(scope="session", autouse=True)
-def worker_loop_config(monkeypatch_session: MonkeyPatch) -> WorkerLoopConfig:
-    return WorkerLoopConfig()
-
-
 @fixture(scope="session")
-def test_processing_step(monkeypatch_session: MonkeyPatch) -> ProcessingStep:
+def test_processing_step() -> ProcessingStep:
     return ProcessingStep(
         endpoint="/dummy",
         input_type="dataset",
