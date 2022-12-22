@@ -1,7 +1,7 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2022 The HuggingFace Authors.
 
-from typing import Optional
+from dataclasses import dataclass
 
 from environs import Env
 from libcommon.config import (
@@ -11,35 +11,51 @@ from libcommon.config import (
     QueueConfig,
 )
 
+API_UVICORN_HOSTNAME = "localhost"
+API_UVICORN_NUM_WORKERS = 2
+API_UVICORN_PORT = 8000
 
+
+@dataclass
 class UvicornConfig:
-    hostname: str
-    num_workers: int
-    port: int
+    hostname: str = API_UVICORN_HOSTNAME
+    num_workers: int = API_UVICORN_NUM_WORKERS
+    port: int = API_UVICORN_PORT
 
-    def __init__(self):
+    @staticmethod
+    def from_env() -> "UvicornConfig":
         env = Env(expand_vars=True)
         with env.prefixed("API_UVICORN_"):
-            self.hostname = env.str(name="HOSTNAME", default="localhost")
-            self.num_workers = env.int(name="NUM_WORKERS", default=2)
-            self.port = env.int(name="PORT", default=8000)
+            return UvicornConfig(
+                hostname=env.str(name="HOSTNAME", default=API_UVICORN_HOSTNAME),
+                num_workers=env.int(name="NUM_WORKERS", default=API_UVICORN_NUM_WORKERS),
+                port=env.int(name="PORT", default=API_UVICORN_PORT),
+            )
 
 
+API_HF_AUTH_PATH = "/api/datasets/%s/auth-check"
+API_MAX_AGE_LONG = 120  # 2 minutes
+API_MAX_AGE_SHORT = 10  # 10 seconds
+
+
+@dataclass
 class ApiConfig:
-    external_auth_url: Optional[str]
-    hf_auth_path: str
-    max_age_long: int
-    max_age_short: int
+    hf_auth_path: str = API_HF_AUTH_PATH
+    max_age_long: int = API_MAX_AGE_LONG
+    max_age_short: int = API_MAX_AGE_SHORT
 
-    def __init__(self, hf_endpoint: str):
+    @staticmethod
+    def from_env() -> "ApiConfig":
         env = Env(expand_vars=True)
         with env.prefixed("API_"):
-            self.hf_auth_path = env.str(name="HF_AUTH_PATH", default="/api/datasets/%s/auth-check")
-            self.max_age_long = env.int(name="MAX_AGE_LONG", default=120)  # 2 minutes
-            self.max_age_short = env.int(name="MAX_AGE_SHORT", default=10)  # 10 seconds
-            self.external_auth_url = None if self.hf_auth_path is None else f"{hf_endpoint}{self.hf_auth_path}"
+            return ApiConfig(
+                hf_auth_path=env.str(name="HF_AUTH_PATH", default=API_HF_AUTH_PATH),
+                max_age_long=env.int(name="MAX_AGE_LONG", default=API_MAX_AGE_LONG),
+                max_age_short=env.int(name="MAX_AGE_SHORT", default=API_MAX_AGE_SHORT),
+            )
 
 
+@dataclass
 class AppConfig:
     api: ApiConfig
     cache: CacheConfig
@@ -47,10 +63,18 @@ class AppConfig:
     queue: QueueConfig
     processing_graph: ProcessingGraphConfig
 
-    def __init__(self):
+    def __post_init__(self):
+        self.external_auth_url = (
+            None if self.api.hf_auth_path is None else f"{self.common.hf_endpoint}{self.api.hf_auth_path}"
+        )
+
+    @staticmethod
+    def from_env() -> "AppConfig":
         # First process the common configuration to setup the logging
-        self.common = CommonConfig()
-        self.cache = CacheConfig()
-        self.processing_graph = ProcessingGraphConfig()
-        self.queue = QueueConfig()
-        self.api = ApiConfig(hf_endpoint=self.common.hf_endpoint)
+        return AppConfig(
+            common=CommonConfig.from_env(),
+            cache=CacheConfig.from_env(),
+            processing_graph=ProcessingGraphConfig.from_env(),
+            queue=QueueConfig.from_env(),
+            api=ApiConfig.from_env(),
+        )

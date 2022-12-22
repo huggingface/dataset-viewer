@@ -14,11 +14,14 @@ from libcommon.queue import connect_to_queue_database
 from libcommon.simple_cache import connect_to_cache_database
 from libcommon.storage import init_dir
 
+ASSETS_BASE_URL = "assets"
+ASSETS_STORE_DIRECTORY = None
+
 
 @dataclass
 class AssetsConfig:
-    base_url: str = "assets"
-    _storage_directory: Optional[str] = None
+    base_url: str = ASSETS_BASE_URL
+    _storage_directory: Optional[str] = ASSETS_STORE_DIRECTORY
 
     def __post_init__(self):
         self.storage_directory = init_dir(directory=self._storage_directory, appname="datasets_server_assets")
@@ -28,16 +31,21 @@ class AssetsConfig:
         env = Env(expand_vars=True)
         with env.prefixed("ASSETS_"):
             return AssetsConfig(
-                base_url=env.str(name="BASE_URL", default=None),
-                _storage_directory=env.str(name="STORAGE_DIRECTORY", default=None),
+                base_url=env.str(name="BASE_URL", default=ASSETS_BASE_URL),
+                _storage_directory=env.str(name="STORAGE_DIRECTORY", default=ASSETS_STORE_DIRECTORY),
             )
+
+
+COMMON_HF_ENDPOINT = "https://huggingface.co"
+COMMON_HF_TOKEN = None
+COMMON_LOG_LEVEL = logging.INFO
 
 
 @dataclass
 class CommonConfig:
-    hf_endpoint: str = "https://huggingface.co"
-    hf_token: Optional[str] = None
-    log_level: int = logging.INFO
+    hf_endpoint: str = COMMON_HF_ENDPOINT
+    hf_token: Optional[str] = COMMON_HF_TOKEN
+    log_level: int = COMMON_LOG_LEVEL
 
     def __post_init__(self):
         init_logging(self.log_level)
@@ -47,16 +55,20 @@ class CommonConfig:
         env = Env(expand_vars=True)
         with env.prefixed("COMMON_"):
             return CommonConfig(
-                hf_endpoint=env.str(name="HF_ENDPOINT", default=None),
-                log_level=env.log_level(name="LOG_LEVEL", default=None),
-                hf_token=env.str(name="HF_TOKEN", default=None),  # nosec
+                hf_endpoint=env.str(name="HF_ENDPOINT", default=COMMON_HF_ENDPOINT),
+                hf_token=env.str(name="HF_TOKEN", default=COMMON_HF_TOKEN),  # nosec
+                log_level=env.log_level(name="LOG_LEVEL", default=COMMON_LOG_LEVEL),
             )
+
+
+CACHE_MONGO_DATABASE = "datasets_server_cache"
+CACHE_MONGO_URL = "mongodb://localhost:27017"
 
 
 @dataclass
 class CacheConfig:
-    mongo_database: str = "datasets_server_cache"
-    mongo_url: str = "mongodb://localhost:27017"
+    mongo_database: str = CACHE_MONGO_DATABASE
+    mongo_url: str = CACHE_MONGO_URL
 
     def __post_init__(self):
         connect_to_cache_database(database=self.mongo_database, host=self.mongo_url)
@@ -66,16 +78,21 @@ class CacheConfig:
         env = Env(expand_vars=True)
         with env.prefixed("CACHE_"):
             return CacheConfig(
-                mongo_database=env.str(name="MONGO_DATABASE", default=None),
-                mongo_url=env.str(name="MONGO_URL", default=None),
+                mongo_database=env.str(name="MONGO_DATABASE", default=CACHE_MONGO_DATABASE),
+                mongo_url=env.str(name="MONGO_URL", default=CACHE_MONGO_URL),
             )
+
+
+QUEUE_MAX_JOBS_PER_NAMESPACE = 1
+QUEUE_MONGO_DATABASE = "datasets_server_queue"
+QUEUE_MONGO_URL = "mongodb://localhost:27017"
 
 
 @dataclass
 class QueueConfig:
-    max_jobs_per_namespace: int = 1
-    mongo_database: str = "datasets_server_queue"
-    mongo_url: str = "mongodb://localhost:27017"
+    max_jobs_per_namespace: int = QUEUE_MAX_JOBS_PER_NAMESPACE
+    mongo_database: str = QUEUE_MONGO_DATABASE
+    mongo_url: str = QUEUE_MONGO_URL
 
     def __post_init__(self):
         connect_to_queue_database(database=self.mongo_database, host=self.mongo_url)
@@ -85,30 +102,40 @@ class QueueConfig:
         env = Env(expand_vars=True)
         with env.prefixed("QUEUE_"):
             return QueueConfig(
-                max_jobs_per_namespace=env.int(name="MAX_JOBS_PER_NAMESPACE", default=None),
-                mongo_database=env.str(name="MONGO_DATABASE", default=None),
-                mongo_url=env.str(name="MONGO_URL", default=None),
+                max_jobs_per_namespace=env.int(name="MAX_JOBS_PER_NAMESPACE", default=QUEUE_MAX_JOBS_PER_NAMESPACE),
+                mongo_database=env.str(name="MONGO_DATABASE", default=QUEUE_MONGO_DATABASE),
+                mongo_url=env.str(name="MONGO_URL", default=QUEUE_MONGO_URL),
             )
+
+
+WORKER_LOOP_MAX_DISK_USAGE_PCT = 90
+WORKER_LOOP_MAX_LOAD_PCT = 70
+WORKER_LOOP_MAX_MEMORY_PCT = 80
+WORKER_LOOP_SLEEP_SECONDS = 15
+
+
+def get_empty_str_list() -> List[str]:
+    return []
 
 
 @dataclass
 class WorkerLoopConfig:
-    max_disk_usage_pct: int = 90
-    max_load_pct: int = 70
-    max_memory_pct: int = 80
-    sleep_seconds: int = 15
-    storage_paths: List[str] = field(default_factory=lambda: [])
+    max_disk_usage_pct: int = WORKER_LOOP_MAX_DISK_USAGE_PCT
+    max_load_pct: int = WORKER_LOOP_MAX_LOAD_PCT
+    max_memory_pct: int = WORKER_LOOP_MAX_MEMORY_PCT
+    sleep_seconds: int = WORKER_LOOP_SLEEP_SECONDS
+    storage_paths: List[str] = field(default_factory=get_empty_str_list)
 
     @staticmethod
     def from_env() -> "WorkerLoopConfig":
         env = Env(expand_vars=True)
         with env.prefixed("WORKER_LOOP_"):
             return WorkerLoopConfig(
-                max_disk_usage_pct=env.int(name="MAX_DISK_USAGE_PCT", default=None),
-                max_load_pct=env.int(name="MAX_LOAD_PCT", default=None),
-                max_memory_pct=env.int(name="MAX_MEMORY_PCT", default=None),
-                sleep_seconds=env.int(name="SLEEP_SECONDS", default=None),
-                storage_paths=env.list(name="STORAGE_PATHS", default=None),
+                max_disk_usage_pct=env.int(name="MAX_DISK_USAGE_PCT", default=WORKER_LOOP_MAX_DISK_USAGE_PCT),
+                max_load_pct=env.int(name="MAX_LOAD_PCT", default=WORKER_LOOP_MAX_LOAD_PCT),
+                max_memory_pct=env.int(name="MAX_MEMORY_PCT", default=WORKER_LOOP_MAX_MEMORY_PCT),
+                sleep_seconds=env.int(name="SLEEP_SECONDS", default=WORKER_LOOP_SLEEP_SECONDS),
+                storage_paths=env.list(name="STORAGE_PATHS", default=get_empty_str_list()),
             )
 
 

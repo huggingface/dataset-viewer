@@ -29,7 +29,7 @@ def real_client(real_monkeypatch: MonkeyPatch) -> TestClient:
 
 @fixture(scope="module")
 def real_app_config(real_monkeypatch: MonkeyPatch) -> AppConfig:
-    app_config = AppConfig()
+    app_config = AppConfig.from_env()
     if "test" not in app_config.cache.mongo_database or "test" not in app_config.queue.mongo_database:
         raise ValueError("Test must be launched on a test mongo database")
     if app_config.common.hf_endpoint != "https://huggingface.co":

@@ -23,7 +23,7 @@ def monkeypatch_session():
 
 @fixture(scope="session")
 def app_config(monkeypatch_session: MonkeyPatch) -> AppConfig:
-    app_config = AppConfig()
+    app_config = AppConfig.from_env()
     if "test" not in app_config.cache.mongo_database or "test" not in app_config.queue.mongo_database:
         raise ValueError("Test must be launched on a test mongo database")
     return app_config
@@ -31,7 +31,7 @@ def app_config(monkeypatch_session: MonkeyPatch) -> AppConfig:
 
 @fixture(scope="session")
 def uvicorn_config(monkeypatch_session: MonkeyPatch):
-    return UvicornConfig()
+    return UvicornConfig.from_env()
 
 
 @fixture(scope="session")
