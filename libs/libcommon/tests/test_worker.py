@@ -21,7 +21,7 @@ class DummyWorker(Worker):
         return "0.1.2"
 
     @staticmethod
-    def get_endpoint() -> str:
+    def get_job_type() -> str:
         return "/dummy"
 
     @staticmethod

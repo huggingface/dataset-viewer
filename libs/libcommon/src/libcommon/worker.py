@@ -125,7 +125,7 @@ class Worker(ABC):
 
     @staticmethod
     @abstractmethod
-    def get_endpoint() -> str:
+    def get_job_type() -> str:
         pass
 
     @staticmethod
@@ -150,15 +150,15 @@ class Worker(ABC):
         self.setup()
 
     def setup(self) -> None:
-        worker_endpoint = self.get_endpoint()
-        if self.processing_step.endpoint != worker_endpoint:
+        worker_job_type = self.get_job_type()
+        if self.processing_step.job_type != worker_job_type:
             raise ValueError(
-                f"The processing step is {self.processing_step.endpoint}, but the worker processes {worker_endpoint}"
+                f"The processing step's job type is {self.processing_step.job_type}, but the worker only processes"
+                f" {worker_job_type}"
             )
-        if self.processing_step.job_type != self.job_type:
+        if self.job_type != worker_job_type:
             raise ValueError(
-                f"The processing step job type is: {self.processing_step.job_type}, but the submitted job type is"
-                f" {self.job_type}"
+                f"The submitted job type is {self.job_type}, but the worker only processes {worker_job_type}"
             )
 
     def __str__(self):
