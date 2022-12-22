@@ -1,7 +1,7 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2022 The HuggingFace Authors.
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 from environs import Env
 from libcommon.config import (
@@ -57,11 +57,11 @@ class ApiConfig:
 
 @dataclass
 class AppConfig:
-    api: ApiConfig
-    cache: CacheConfig
-    common: CommonConfig
-    queue: QueueConfig
-    processing_graph: ProcessingGraphConfig
+    api: ApiConfig = field(default_factory=ApiConfig)
+    cache: CacheConfig = field(default_factory=CacheConfig)
+    common: CommonConfig = field(default_factory=CommonConfig)
+    queue: QueueConfig = field(default_factory=QueueConfig)
+    processing_graph: ProcessingGraphConfig = field(default_factory=ProcessingGraphConfig)
 
     def __post_init__(self):
         self.external_auth_url = (

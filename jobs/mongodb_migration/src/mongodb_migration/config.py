@@ -1,7 +1,7 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2022 The HuggingFace Authors.
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 from environs import Env
 from libcommon.config import CacheConfig, CommonConfig, QueueConfig
@@ -32,10 +32,10 @@ class MongodbMigrationConfig:
 
 @dataclass
 class JobConfig:
-    cache: CacheConfig
-    common: CommonConfig
-    mongodb_migration: MongodbMigrationConfig
-    queue: QueueConfig
+    cache: CacheConfig = field(default_factory=CacheConfig)
+    common: CommonConfig = field(default_factory=CommonConfig)
+    mongodb_migration: MongodbMigrationConfig = field(default_factory=MongodbMigrationConfig)
+    queue: QueueConfig = field(default_factory=QueueConfig)
 
     @staticmethod
     def from_env() -> "JobConfig":
