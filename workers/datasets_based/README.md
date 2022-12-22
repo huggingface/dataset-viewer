@@ -17,11 +17,15 @@ Also, set the modules cache configuration for the datasets-based worker. See [..
 
 - `HF_MODULES_CACHE`: directory where the `datasets` library will store the cached dataset scripts. If not set, the datasets library will choose the default location. Defaults to None.
 
+Note that both directories will be appended to `WORKER_LOOP_STORAGE_PATHS` (see [../../libs/libcommon/README.md](../../libs/libcommon/README.md)) to hold the workers when the disk is full.
+
 ### Numba library
 
 Numba requires setting the `NUMBA_CACHE_DIR` environment variable to a writable directory to cache the compiled functions. Required on cloud infrastructure (see https://stackoverflow.com/a/63367171/7351594):
 
 - `NUMBA_CACHE_DIR`: directory where the `numba` decorators (used by `librosa`) can write cache.
+
+Note that this directory will be appended to `WORKER_LOOP_STORAGE_PATHS` (see [../../libs/libcommon/README.md](../../libs/libcommon/README.md)) to hold the workers when the disk is full.
 
 ### Huggingface_hub library
 

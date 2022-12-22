@@ -8,7 +8,7 @@ from libcommon.queue import _clean_queue_database
 from libcommon.simple_cache import _clean_cache_database
 from pytest import MonkeyPatch, fixture
 
-from datasets_based.config import AppConfig, FirstRowsConfig, ParquetConfig
+from datasets_based.config import AppConfig, FirstRowsConfig
 
 from .constants import CI_APP_TOKEN, CI_HUB_ENDPOINT, CI_URL_TEMPLATE, CI_USER_TOKEN
 
@@ -55,7 +55,7 @@ def set_env_vars(datasets_cache_directory: Path, modules_cache_directory: Path) 
 
 @fixture
 def app_config(set_env_vars: MonkeyPatch) -> Iterator[AppConfig]:
-    app_config = AppConfig()
+    app_config = AppConfig.from_env()
     if "test" not in app_config.cache.mongo_database or "test" not in app_config.queue.mongo_database:
         raise ValueError("Test must be launched on a test mongo database")
     yield app_config
@@ -67,13 +67,8 @@ def app_config(set_env_vars: MonkeyPatch) -> Iterator[AppConfig]:
 
 
 @fixture
-def first_rows_config() -> FirstRowsConfig:
-    return FirstRowsConfig()
-
-
-@fixture
-def parquet_config() -> ParquetConfig:
-    return ParquetConfig()
+def first_rows_config(set_env_vars: MonkeyPatch) -> FirstRowsConfig:
+    return FirstRowsConfig.from_env()
 
 
 # Import fixture modules as plugins

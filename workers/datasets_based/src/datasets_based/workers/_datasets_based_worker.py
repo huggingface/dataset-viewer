@@ -4,7 +4,6 @@
 import json
 import logging
 import re
-from abc import ABC, abstractmethod
 from datetime import datetime
 from hashlib import sha1
 from pathlib import Path
@@ -12,58 +11,38 @@ from typing import Optional
 
 import datasets.config
 from libcommon.storage import init_dir, remove_dir
-from libcommon.worker import Worker
-from psutil import disk_usage
+from libcommon.worker import JobInfo, Worker
 
 from datasets_based.config import AppConfig, DatasetsBasedConfig
 
 
-class DatasetsBasedWorker(Worker, ABC):
+class DatasetsBasedWorker(Worker):
     """Base class for workers that use datasets."""
 
     datasets_based_config: DatasetsBasedConfig
-
-    @staticmethod
-    @abstractmethod
-    def get_endpoint() -> str:
-        pass
 
     # the datasets library cache directories (for data, downloads, extraction, NOT for modules)
     # the worker should have only one running job at the same time, then it should
     # be safe to use a global variable (and to set the datasets cache globally)
     datasets_cache: Optional[Path] = None
 
-    def __init__(self, app_config: AppConfig, version: str = "1.0.0"):
-        super().__init__(
-            processing_step=app_config.processing_graph.graph.get_step(self.get_endpoint()),
-            # ^ raises if the step is not found
-            common_config=app_config.common,
-            queue_config=app_config.queue,
-            worker_config=app_config.worker,
-            version=version,
-        )
+    def __init__(self, job_info: JobInfo, app_config: AppConfig) -> None:
+        job_type = job_info["type"]
+        try:
+            processing_step = app_config.processing_graph.graph.get_step_by_job_type(job_type)
+        except ValueError as e:
+            raise ValueError(
+                f"Unsupported job type: '{job_type}'. The job types declared in the processing graph are:"
+                f" {[step.job_type for step in app_config.processing_graph.graph.steps.values()]}"
+            ) from e
+        super().__init__(job_info=job_info, common_config=app_config.common, processing_step=processing_step)
         self.datasets_based_config = app_config.datasets_based
 
-    def has_storage(self) -> bool:
-        try:
-            usage = disk_usage(str(self.datasets_based_config.hf_datasets_cache))
-            return usage.percent < self.datasets_based_config.max_disk_usage_percent
-        except Exception:
-            # if we can't get the disk usage, we let the process continue
-            return True
-
-    def get_cache_subdirectory(
-        self,
-        date: datetime,
-        dataset: str,
-        config: Optional[str] = None,
-        split: Optional[str] = None,
-        force: bool = False,
-    ) -> str:
+    def get_cache_subdirectory(self, date: datetime) -> str:
         date_str = date.strftime("%Y-%m-%d-%H-%M-%S")
-        payload = (date_str, self.get_endpoint(), dataset, config, split, force)
+        payload = (date_str, self.get_job_type(), self.dataset, self.config, self.split, self.force)
         hash_suffix = sha1(json.dumps(payload, sort_keys=True).encode(), usedforsecurity=False).hexdigest()[:8]
-        prefix = f"{date_str}-{self.get_endpoint()}-{dataset}"[:64]
+        prefix = f"{date_str}-{self.get_job_type()}-{self.dataset}"[:64]
         subdirectory = f"{prefix}-{hash_suffix}"
         return "".join([c if re.match(r"[\w-]", c) else "-" for c in subdirectory])
 
@@ -86,24 +65,16 @@ class DatasetsBasedWorker(Worker, ABC):
             logging.debug(f"temporary datasets data cache deleted: {previous_datasets_cache}")
         self.datasets_cache = None
 
-    def set_cache(
-        self, dataset: str, config: Optional[str] = None, split: Optional[str] = None, force: bool = False
-    ) -> None:
-        cache_subdirectory = self.get_cache_subdirectory(
-            date=datetime.now(), dataset=dataset, config=config, split=split, force=force
-        )
+    def set_cache(self) -> None:
+        cache_subdirectory = self.get_cache_subdirectory(date=datetime.now())
         self.set_datasets_cache(self.datasets_based_config.hf_datasets_cache / cache_subdirectory)
 
     def unset_cache(self) -> None:
         self.unset_datasets_cache()
 
-    def pre_compute(
-        self, dataset: str, config: Optional[str] = None, split: Optional[str] = None, force: bool = False
-    ) -> None:
-        self.set_cache(dataset=dataset, config=config, split=split, force=force)
+    def pre_compute(self) -> None:
+        self.set_cache()
 
-    def post_compute(
-        self, dataset: str, config: Optional[str] = None, split: Optional[str] = None, force: bool = False
-    ) -> None:
+    def post_compute(self) -> None:
         # empty the cache after the job to save storage space
         self.unset_cache()

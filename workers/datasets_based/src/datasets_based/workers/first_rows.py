@@ -20,7 +20,7 @@ from datasets import (
 from datasets.data_files import EmptyDatasetError as _EmptyDatasetError
 from libcommon.exceptions import CustomError
 from libcommon.utils import orjson_dumps
-from libcommon.worker import ConfigNotFoundError, SplitNotFoundError
+from libcommon.worker import ConfigNotFoundError, JobInfo, SplitNotFoundError
 
 from datasets_based.config import AppConfig, FirstRowsConfig
 from datasets_based.features import get_cell_value
@@ -547,33 +547,28 @@ def compute_first_rows_response(
     return response
 
 
-FIRST_ROWS_VERSION = "2.0.0"
-
-
 class FirstRowsWorker(DatasetsBasedWorker):
     first_rows_config: FirstRowsConfig
 
     @staticmethod
-    def get_endpoint() -> str:
+    def get_job_type() -> str:
         return "/first-rows"
 
-    def __init__(self, app_config: AppConfig):
-        super().__init__(version=FIRST_ROWS_VERSION, app_config=app_config)
-        self.first_rows_config = FirstRowsConfig()
+    @staticmethod
+    def get_version() -> str:
+        return "2.0.0"
 
-    def compute(
-        self,
-        dataset: str,
-        config: Optional[str] = None,
-        split: Optional[str] = None,
-        force: bool = False,
-    ) -> Mapping[str, Any]:
-        if config is None or split is None:
+    def __init__(self, job_info: JobInfo, app_config: AppConfig, first_rows_config: FirstRowsConfig) -> None:
+        super().__init__(job_info=job_info, app_config=app_config)
+        self.first_rows_config = first_rows_config
+
+    def compute(self) -> Mapping[str, Any]:
+        if self.config is None or self.split is None:
             raise ValueError("config and split are required")
         return compute_first_rows_response(
-            dataset=dataset,
-            config=config,
-            split=split,
+            dataset=self.dataset,
+            config=self.config,
+            split=self.split,
             assets_base_url=self.first_rows_config.assets.base_url,
             assets_directory=self.first_rows_config.assets.storage_directory,
             hf_token=self.common_config.hf_token,

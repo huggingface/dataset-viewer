@@ -13,10 +13,9 @@ from datasets import (
 )
 from datasets.data_files import EmptyDatasetError as _EmptyDatasetError
 from libcommon.exceptions import CustomError
+from libcommon.queue import Queue
 from libcommon.simple_cache import delete_response, get_dataset_response_ids
-from libcommon.worker import Queue
 
-from datasets_based.config import AppConfig
 from datasets_based.workers._datasets_based_worker import DatasetsBasedWorker
 
 SplitsWorkerErrorCode = Literal[
@@ -162,35 +161,29 @@ def compute_splits_response(
     return {"splits": split_items}
 
 
-SPLITS_VERSION = "2.0.0"
-
-
 class SplitsWorker(DatasetsBasedWorker):
     @staticmethod
-    def get_endpoint() -> str:
+    def get_job_type() -> str:
         return "/splits"
 
-    def __init__(self, app_config: AppConfig):
-        super().__init__(version=SPLITS_VERSION, app_config=app_config)
+    @staticmethod
+    def get_version() -> str:
+        return "2.0.0"
 
-    def compute(
-        self,
-        dataset: str,
-        config: Optional[str] = None,
-        split: Optional[str] = None,
-        force: bool = False,
-    ) -> Mapping[str, Any]:
-        content = compute_splits_response(dataset=dataset, hf_token=self.common_config.hf_token)
+    def compute(self) -> Mapping[str, Any]:
+        content = compute_splits_response(dataset=self.dataset, hf_token=self.common_config.hf_token)
 
         new_splits = [(s["dataset"], s["config"], s["split"]) for s in content["splits"]]
         for step in self.processing_step.children:
             if step.input_type == "dataset":
-                Queue(type=step.job_type).add_job(dataset=dataset, config=config, split=split, force=force)
+                Queue(type=step.job_type).add_job(
+                    dataset=self.dataset, config=self.config, split=self.split, force=self.force
+                )
             else:
                 # remove obsolete responses from the cache
                 responses_in_cache = [
                     (s["dataset"], s["config"], s["split"])
-                    for s in get_dataset_response_ids(dataset=dataset)
+                    for s in get_dataset_response_ids(dataset=self.dataset)
                     if s["kind"] == step.cache_kind
                 ]
                 responses_to_delete = [s for s in responses_in_cache if s not in new_splits]
@@ -198,12 +191,12 @@ class SplitsWorker(DatasetsBasedWorker):
                     delete_response(kind=step.cache_kind, dataset=d, config=c, split=s)
                 logging.debug(
                     f"{len(responses_to_delete)} {step.endpoint} responses deleted from the cache for obsolete"
-                    f" splits of dataset={dataset}"
+                    f" splits of dataset={self.dataset}"
                 )
                 # compute the responses for the new splits
                 for d, c, s in new_splits:
                     # we force the refresh of the /first_rows responses if the /splits refresh was forced
-                    Queue(type=step.job_type).add_job(dataset=d, config=c, split=s, force=force)
-                logging.debug(f"{len(new_splits)} {step.endpoint} jobs added for the splits of dataset={dataset}")
+                    Queue(type=step.job_type).add_job(dataset=d, config=c, split=s, force=self.force)
+                logging.debug(f"{len(new_splits)} {step.job_type} jobs added for the splits of dataset={self.dataset}")
 
         return content

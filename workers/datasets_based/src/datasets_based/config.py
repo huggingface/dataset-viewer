@@ -1,8 +1,9 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2022 The HuggingFace Authors.
 
+from dataclasses import dataclass, field
 from pathlib import Path
-from typing import List, Optional
+from typing import List, Optional, Union
 
 import datasets.config
 from datasets.utils.logging import log_levels, set_verbosity
@@ -13,89 +14,114 @@ from libcommon.config import (
     CommonConfig,
     ProcessingGraphConfig,
     QueueConfig,
-    WorkerConfig,
+    WorkerLoopConfig,
 )
 
+DATASETS_BASED_ENDPOINT = "/splits"
+DATASETS_BASED_HF_DATASETS_CACHE = None
 
+
+@dataclass
 class DatasetsBasedConfig:
-    endpoint: str
-    hf_datasets_cache: Path
-    max_disk_usage_percent = 90  # hard-coded, not configurable
+    endpoint: str = DATASETS_BASED_ENDPOINT
+    _hf_datasets_cache: Union[str, Path, None] = DATASETS_BASED_HF_DATASETS_CACHE
 
-    def __init__(self):
-        env = Env(expand_vars=True)
-        with env.prefixed("DATASETS_BASED_"):
-            self.endpoint = env.str(name="ENDPOINT", default="/splits")
-            self._hf_datasets_cache = env.str(name="HF_DATASETS_CACHE", default=None)
-        self.setup()
-
-    def setup(self) -> None:
+    def __post_init__(self) -> None:
         self.hf_datasets_cache = (
             datasets.config.HF_DATASETS_CACHE if self._hf_datasets_cache is None else Path(self._hf_datasets_cache)
         )
 
+    @staticmethod
+    def from_env() -> "DatasetsBasedConfig":
+        env = Env(expand_vars=True)
+        with env.prefixed("DATASETS_BASED_"):
+            return DatasetsBasedConfig(
+                endpoint=env.str(name="ENDPOINT", default=DATASETS_BASED_ENDPOINT),
+                _hf_datasets_cache=env.str(name="HF_DATASETS_CACHE", default=DATASETS_BASED_HF_DATASETS_CACHE),
+            )
 
+
+FIRST_ROWS_FALLBACK_MAX_DATASET_SIZE = 100_000_000
+FIRST_ROWS_MAX_BYTES = 1_000_000
+FIRST_ROWS_MAX_NUMBER = 100
+FIRST_ROWS_CELL_MIN_BYTES = 100
+FIRST_ROWS_MIN_NUMBER = 10
+
+
+@dataclass
 class FirstRowsConfig:
-    assets: AssetsConfig
-    fallback_max_dataset_size: int
-    max_bytes: int
-    max_number: int
-    min_cell_bytes: int
-    min_number: int
+    assets: AssetsConfig = field(default_factory=AssetsConfig)
+    fallback_max_dataset_size: int = FIRST_ROWS_FALLBACK_MAX_DATASET_SIZE
+    max_bytes: int = FIRST_ROWS_MAX_BYTES
+    max_number: int = FIRST_ROWS_MAX_NUMBER
+    min_cell_bytes: int = FIRST_ROWS_CELL_MIN_BYTES
+    min_number: int = FIRST_ROWS_MIN_NUMBER
 
-    def __init__(self):
+    @staticmethod
+    def from_env() -> "FirstRowsConfig":
         env = Env(expand_vars=True)
         with env.prefixed("FIRST_ROWS_"):
-            self.fallback_max_dataset_size = env.int(name="FALLBACK_MAX_DATASET_SIZE", default=100_000_000)
-            self.max_bytes = env.int(name="MAX_BYTES", default=1_000_000)
-            self.max_number = env.int(name="MAX_NUMBER", default=100)
-            self.min_cell_bytes = env.int(name="CELL_MIN_BYTES", default=100)
-            self.min_number = env.int(name="MIN_NUMBER", default=10)
-        self.assets = AssetsConfig()
+            return FirstRowsConfig(
+                assets=AssetsConfig.from_env(),
+                fallback_max_dataset_size=env.int(
+                    name="FALLBACK_MAX_DATASET_SIZE", default=FIRST_ROWS_FALLBACK_MAX_DATASET_SIZE
+                ),
+                max_bytes=env.int(name="MAX_BYTES", default=FIRST_ROWS_MAX_BYTES),
+                max_number=env.int(name="MAX_NUMBER", default=FIRST_ROWS_MAX_NUMBER),
+                min_cell_bytes=env.int(name="CELL_MIN_BYTES", default=FIRST_ROWS_CELL_MIN_BYTES),
+                min_number=env.int(name="MIN_NUMBER", default=FIRST_ROWS_MIN_NUMBER),
+            )
 
 
+PARQUET_COMMIT_MESSAGE = "Update parquet files"
+PARQUET_COMMITTER_HF_TOKEN = None
+PARQUET_MAX_DATASET_SIZE = 100_000_000
+PARQUET_SOURCE_REVISION = "main"
+PARQUET_TARGET_REVISION = "refs/convert/parquet"
+PARQUET_URL_TEMPLATE = "/datasets/%s/resolve/%s/%s"
+
+
+def get_empty_str_list() -> List[str]:
+    return []
+
+
+@dataclass
 class ParquetConfig:
-    blocked_datasets: List[str]
-    supported_datasets: List[str]
-    commit_message: str
-    committer_hf_token: Optional[str]
-    max_dataset_size: int
-    source_revision: str
-    target_revision: str
-    url_template: str
+    blocked_datasets: List[str] = field(default_factory=get_empty_str_list)
+    supported_datasets: List[str] = field(default_factory=get_empty_str_list)
+    commit_message: str = PARQUET_COMMIT_MESSAGE
+    committer_hf_token: Optional[str] = PARQUET_COMMITTER_HF_TOKEN
+    max_dataset_size: int = PARQUET_MAX_DATASET_SIZE
+    source_revision: str = PARQUET_SOURCE_REVISION
+    target_revision: str = PARQUET_TARGET_REVISION
+    url_template: str = PARQUET_URL_TEMPLATE
 
-    def __init__(self):
+    @staticmethod
+    def from_env() -> "ParquetConfig":
         env = Env(expand_vars=True)
         with env.prefixed("PARQUET_"):
-            self.blocked_datasets = env.list(name="BLOCKED_DATASETS", default=[])
-            self.supported_datasets = env.list(name="SUPPORTED_DATASETS", default=[])
-            self.commit_message = env.str(name="COMMIT_MESSAGE", default="Update parquet files")
-            self.committer_hf_token = env.str(name="COMMITTER_HF_TOKEN", default=None)
-            self.max_dataset_size = env.int(name="MAX_DATASET_SIZE", default=100_000_000)
-            self.source_revision = env.str(name="SOURCE_REVISION", default="main")
-            self.target_revision = env.str(name="TARGET_REVISION", default="refs/convert/parquet")
-            self.url_template = env.str(name="URL_TEMPLATE", default="/datasets/%s/resolve/%s/%s")
+            return ParquetConfig(
+                blocked_datasets=env.list(name="BLOCKED_DATASETS", default=get_empty_str_list()),
+                supported_datasets=env.list(name="SUPPORTED_DATASETS", default=get_empty_str_list()),
+                commit_message=env.str(name="COMMIT_MESSAGE", default=PARQUET_COMMIT_MESSAGE),
+                committer_hf_token=env.str(name="COMMITTER_HF_TOKEN", default=PARQUET_COMMITTER_HF_TOKEN),
+                max_dataset_size=env.int(name="MAX_DATASET_SIZE", default=PARQUET_MAX_DATASET_SIZE),
+                source_revision=env.str(name="SOURCE_REVISION", default=PARQUET_SOURCE_REVISION),
+                target_revision=env.str(name="TARGET_REVISION", default=PARQUET_TARGET_REVISION),
+                url_template=env.str(name="URL_TEMPLATE", default=PARQUET_URL_TEMPLATE),
+            )
 
 
+@dataclass
 class AppConfig:
-    cache: CacheConfig
-    common: CommonConfig
-    datasets_based: DatasetsBasedConfig
-    processing_graph: ProcessingGraphConfig
-    queue: QueueConfig
-    worker: WorkerConfig
+    cache: CacheConfig = field(default_factory=CacheConfig)
+    common: CommonConfig = field(default_factory=CommonConfig)
+    datasets_based: DatasetsBasedConfig = field(default_factory=DatasetsBasedConfig)
+    processing_graph: ProcessingGraphConfig = field(default_factory=ProcessingGraphConfig)
+    queue: QueueConfig = field(default_factory=QueueConfig)
+    worker_loop: WorkerLoopConfig = field(default_factory=WorkerLoopConfig)
 
-    def __init__(self):
-        # First process the common configuration to setup the logging
-        self.common = CommonConfig()
-        self.cache = CacheConfig()
-        self.datasets_based = DatasetsBasedConfig()
-        self.processing_graph = ProcessingGraphConfig()
-        self.queue = QueueConfig()
-        self.worker = WorkerConfig()
-        self.setup()
-
-    def setup(self):
+    def __post_init__(self):
         # Ensure the datasets library uses the expected HuggingFace endpoint
         datasets.config.HF_ENDPOINT = self.common.hf_endpoint
         # Don't increase the datasets download counts on huggingface.co
@@ -107,3 +133,23 @@ class AppConfig:
         # the discussion at https://github.com/huggingface/datasets/pull/5196), and this breaks
         # various of the datasets functions. The fix, for now, is to set the HF_ENDPOINT
         # environment variable to the desired value.
+
+        # Add the datasets and numba cache paths to the list of storage paths, to ensure the disk is not full
+        env = Env(expand_vars=True)
+        numba_path = env.str(name="NUMBA_CACHE_DIR", default=None)
+        additional_paths = {str(self.datasets_based.hf_datasets_cache), str(datasets.config.HF_MODULES_CACHE)}
+        if numba_path:
+            additional_paths.add(numba_path)
+        self.worker_loop.storage_paths = list(set(self.worker_loop.storage_paths).union(additional_paths))
+
+    @staticmethod
+    def from_env() -> "AppConfig":
+        return AppConfig(
+            # First process the common configuration to setup the logging
+            common=CommonConfig.from_env(),
+            cache=CacheConfig.from_env(),
+            datasets_based=DatasetsBasedConfig.from_env(),
+            processing_graph=ProcessingGraphConfig.from_env(),
+            queue=QueueConfig.from_env(),
+            worker_loop=WorkerLoopConfig.from_env(),
+        )

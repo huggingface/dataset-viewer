@@ -17,7 +17,6 @@ from datasets_based.workers.parquet import (
     DatasetTooBigFromDatasetsError,
     DatasetTooBigFromHubError,
     ParquetWorker,
-    compute_parquet_response,
     get_dataset_info_or_raise,
     parse_repo_filename,
     raise_if_blocked,
@@ -46,26 +45,48 @@ def set_supported_datasets(hub_datasets: HubDatasets) -> Iterator[pytest.MonkeyP
 
 
 @pytest.fixture
-def worker(app_config: AppConfig) -> ParquetWorker:
-    return ParquetWorker(app_config=app_config)
+def parquet_config(set_env_vars: pytest.MonkeyPatch, set_supported_datasets: pytest.MonkeyPatch) -> ParquetConfig:
+    return ParquetConfig.from_env()
 
 
-def test_compute(worker: ParquetWorker, hub_datasets: HubDatasets) -> None:
+def get_worker(
+    dataset: str,
+    app_config: AppConfig,
+    parquet_config: ParquetConfig,
+    force: bool = False,
+) -> ParquetWorker:
+    return ParquetWorker(
+        job_info={
+            "type": ParquetWorker.get_job_type(),
+            "dataset": dataset,
+            "config": None,
+            "split": None,
+            "job_id": "job_id",
+            "force": force,
+        },
+        app_config=app_config,
+        parquet_config=parquet_config,
+    )
+
+
+def test_compute(app_config: AppConfig, parquet_config: ParquetConfig, hub_datasets: HubDatasets) -> None:
     dataset = hub_datasets["public"]["name"]
-    assert worker.process(dataset=dataset) is True
+    worker = get_worker(dataset=dataset, app_config=app_config, parquet_config=parquet_config)
+    assert worker.process() is True
     cached_response = get_response(kind=worker.processing_step.cache_kind, dataset=dataset)
     assert cached_response["http_status"] == HTTPStatus.OK
     assert cached_response["error_code"] is None
-    assert cached_response["worker_version"] == worker.version
+    assert cached_response["worker_version"] == worker.get_version()
     assert cached_response["dataset_git_revision"] is not None
     content = cached_response["content"]
     assert len(content["parquet_files"]) == 1
     assert content == hub_datasets["public"]["parquet_response"]
 
 
-def test_doesnotexist(worker: ParquetWorker) -> None:
+def test_doesnotexist(app_config: AppConfig, parquet_config: ParquetConfig) -> None:
     dataset = "doesnotexist"
-    assert worker.process(dataset=dataset) is False
+    worker = get_worker(dataset=dataset, app_config=app_config, parquet_config=parquet_config)
+    assert worker.process() is False
     with pytest.raises(DoesNotExist):
         get_response(kind=worker.processing_step.cache_kind, dataset=dataset)
 
@@ -170,48 +191,48 @@ def test_raise_if_not_supported(
         )
 
 
-def test_not_supported_if_big(worker: ParquetWorker, hub_public_big: str) -> None:
+def test_not_supported_if_big(app_config: AppConfig, parquet_config: ParquetConfig, hub_public_big: str) -> None:
     # Not in the list of supported datasets and bigger than the maximum size
-    assert worker.process(dataset=hub_public_big) is False
-    cached_response = get_response(kind=worker.processing_step.cache_kind, dataset=hub_public_big)
+    dataset = hub_public_big
+    worker = get_worker(dataset=dataset, app_config=app_config, parquet_config=parquet_config)
+    assert worker.process() is False
+    cached_response = get_response(kind=worker.processing_step.cache_kind, dataset=dataset)
     assert cached_response["http_status"] == HTTPStatus.NOT_IMPLEMENTED
     assert cached_response["error_code"] == "DatasetTooBigFromDatasetsError"
 
 
-def test_supported_if_gated(worker: ParquetWorker, hub_gated_csv: str) -> None:
+def test_supported_if_gated(app_config: AppConfig, parquet_config: ParquetConfig, hub_gated_csv: str) -> None:
     # Access should must be granted
-    assert worker.process(dataset=hub_gated_csv) is True
-    cached_response = get_response(kind=worker.processing_step.cache_kind, dataset=hub_gated_csv)
+    dataset = hub_gated_csv
+    worker = get_worker(dataset=dataset, app_config=app_config, parquet_config=parquet_config)
+    assert worker.process() is True
+    cached_response = get_response(kind=worker.processing_step.cache_kind, dataset=dataset)
     assert cached_response["http_status"] == HTTPStatus.OK
     assert cached_response["error_code"] is None
 
 
-@pytest.mark.wip
-def test_not_supported_if_gated_with_extra_fields(worker: ParquetWorker, hub_gated_extra_fields_csv: str) -> None:
+def test_not_supported_if_gated_with_extra_fields(
+    app_config: AppConfig, parquet_config: ParquetConfig, hub_gated_extra_fields_csv: str
+) -> None:
     # Access request should fail because extra fields in gated datasets are not supported
-    assert worker.process(dataset=hub_gated_extra_fields_csv) is False
-    cached_response = get_response(kind=worker.processing_step.cache_kind, dataset=hub_gated_extra_fields_csv)
+    dataset = hub_gated_extra_fields_csv
+    worker = get_worker(dataset=dataset, app_config=app_config, parquet_config=parquet_config)
+    assert worker.process() is False
+    cached_response = get_response(kind=worker.processing_step.cache_kind, dataset=dataset)
     assert cached_response["http_status"] == HTTPStatus.NOT_FOUND
     assert cached_response["error_code"] == "GatedExtraFieldsError"
 
 
-@pytest.mark.wip
-def test_blocked(worker: ParquetWorker, hub_public_jsonl: str) -> None:
+def test_blocked(app_config: AppConfig, parquet_config: ParquetConfig, hub_public_jsonl: str) -> None:
     # In the list of blocked datasets
-    assert worker.process(dataset=hub_public_jsonl) is False
-    cached_response = get_response(kind=worker.processing_step.cache_kind, dataset=hub_public_jsonl)
+    dataset = hub_public_jsonl
+    worker = get_worker(dataset=dataset, app_config=app_config, parquet_config=parquet_config)
+    assert worker.process() is False
+    cached_response = get_response(kind=worker.processing_step.cache_kind, dataset=dataset)
     assert cached_response["http_status"] == HTTPStatus.NOT_IMPLEMENTED
     assert cached_response["error_code"] == "DatasetInBlockListError"
 
 
-@pytest.mark.wip
-def test_process_job(worker: ParquetWorker, hub_public_csv: str) -> None:
-    worker.queue.add_job(dataset=hub_public_csv)
-    result = worker.process_next_job()
-    assert result is True
-
-
-@pytest.mark.wip
 @pytest.mark.parametrize(
     "name",
     ["public", "audio", "gated"],
@@ -221,19 +242,8 @@ def test_compute_splits_response_simple_csv_ok(
 ) -> None:
     dataset = hub_datasets[name]["name"]
     expected_parquet_response = hub_datasets[name]["parquet_response"]
-    result = compute_parquet_response(
-        dataset=dataset,
-        hf_endpoint=app_config.common.hf_endpoint,
-        hf_token=app_config.common.hf_token,
-        committer_hf_token=parquet_config.committer_hf_token,
-        source_revision=parquet_config.source_revision,
-        target_revision=parquet_config.target_revision,
-        commit_message=parquet_config.commit_message,
-        url_template=parquet_config.url_template,
-        supported_datasets=parquet_config.supported_datasets,
-        blocked_datasets=parquet_config.blocked_datasets,
-        max_dataset_size=parquet_config.max_dataset_size,
-    )
+    worker = get_worker(dataset=dataset, app_config=app_config, parquet_config=parquet_config)
+    result = worker.compute()
     assert result == expected_parquet_response
 
     # download the parquet file and check that it is valid
@@ -254,7 +264,6 @@ def test_compute_splits_response_simple_csv_ok(
     assert df.equals(data_df), df
 
 
-@pytest.mark.wip
 @pytest.mark.parametrize(
     "name,error_code,cause",
     [
@@ -273,20 +282,9 @@ def test_compute_splits_response_simple_csv_error(
     parquet_config: ParquetConfig,
 ) -> None:
     dataset = hub_datasets[name]["name"]
+    worker = get_worker(dataset=dataset, app_config=app_config, parquet_config=parquet_config)
     with pytest.raises(CustomError) as exc_info:
-        compute_parquet_response(
-            dataset=dataset,
-            hf_endpoint=app_config.common.hf_endpoint,
-            hf_token=app_config.common.hf_token,
-            committer_hf_token=parquet_config.committer_hf_token,
-            source_revision=parquet_config.source_revision,
-            target_revision=parquet_config.target_revision,
-            commit_message=parquet_config.commit_message,
-            url_template=parquet_config.url_template,
-            supported_datasets=parquet_config.supported_datasets,
-            blocked_datasets=parquet_config.blocked_datasets,
-            max_dataset_size=parquet_config.max_dataset_size,
-        )
+        worker.compute()
     assert exc_info.value.code == error_code
     if cause is None:
         assert exc_info.value.disclose_cause is False
