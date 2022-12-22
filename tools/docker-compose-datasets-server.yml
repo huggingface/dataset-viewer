@@ -107,6 +107,8 @@ services:
       FIRST_ROWS_MAX_NUMBER: ${FIRST_ROWS_MAX_NUMBER-100}
       FIRST_ROWS_MIN_CELL_BYTES: ${FIRST_ROWS_MIN_CELL_BYTES-100}
       FIRST_ROWS_MIN_NUMBER: ${FIRST_ROWS_MIN_NUMBER-10}
+      WORKER_LOOP_STORAGE_PATHS: ${ASSETS_STORAGE_DIRECTORY-/assets}
+      # ^ note: the datasets cache is automatically added, so no need to add it here
     depends_on:
       - mongodb
     restart: always
