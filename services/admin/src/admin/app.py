@@ -20,7 +20,7 @@ from admin.routes.pending_jobs import create_pending_jobs_endpoint
 
 
 def create_app() -> Starlette:
-    app_config = AppConfig()
+    app_config = AppConfig.from_env()
     processing_steps = list(app_config.processing_graph.graph.steps.values())
     prometheus = Prometheus(
         processing_steps=processing_steps, assets_storage_directory=app_config.assets.storage_directory
@@ -43,7 +43,7 @@ def create_app() -> Starlette:
                 endpoint=create_pending_jobs_endpoint(
                     processing_steps=processing_steps,
                     max_age=app_config.admin.max_age,
-                    external_auth_url=app_config.admin.external_auth_url,
+                    external_auth_url=app_config.external_auth_url,
                     organization=app_config.admin.hf_organization,
                 ),
             ),
@@ -55,7 +55,7 @@ def create_app() -> Starlette:
                     processing_step=processing_step,
                     hf_endpoint=app_config.common.hf_endpoint,
                     hf_token=app_config.common.hf_token,
-                    external_auth_url=app_config.admin.external_auth_url,
+                    external_auth_url=app_config.external_auth_url,
                     organization=app_config.admin.hf_organization,
                 ),
                 methods=["POST"],
@@ -69,7 +69,7 @@ def create_app() -> Starlette:
                     processing_step=processing_step,
                     cache_reports_num_results=app_config.admin.cache_reports_num_results,
                     max_age=app_config.admin.max_age,
-                    external_auth_url=app_config.admin.external_auth_url,
+                    external_auth_url=app_config.external_auth_url,
                     organization=app_config.admin.hf_organization,
                 ),
             )
@@ -80,7 +80,7 @@ def create_app() -> Starlette:
                 f"/cancel-jobs{processing_step.endpoint}",
                 endpoint=create_cancel_jobs_endpoint(
                     processing_step=processing_step,
-                    external_auth_url=app_config.admin.external_auth_url,
+                    external_auth_url=app_config.external_auth_url,
                     organization=app_config.admin.hf_organization,
                 ),
                 methods=["POST"],
@@ -93,7 +93,7 @@ def create_app() -> Starlette:
                 endpoint=create_jobs_duration_per_dataset_endpoint(
                     processing_step=processing_step,
                     max_age=app_config.admin.max_age,
-                    external_auth_url=app_config.admin.external_auth_url,
+                    external_auth_url=app_config.external_auth_url,
                     organization=app_config.admin.hf_organization,
                 ),
             )
@@ -104,7 +104,7 @@ def create_app() -> Starlette:
 
 
 def start() -> None:
-    uvicorn_config = UvicornConfig()
+    uvicorn_config = UvicornConfig.from_env()
     uvicorn.run(
         "app:create_app",
         host=uvicorn_config.hostname,

@@ -1,6 +1,7 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2022 The HuggingFace Authors.
 
+from dataclasses import replace
 from http import HTTPStatus
 
 import pytest
@@ -9,36 +10,52 @@ from libcommon.exceptions import CustomError
 from libcommon.simple_cache import DoesNotExist, get_response
 
 from datasets_based.config import AppConfig, FirstRowsConfig
-from datasets_based.workers.first_rows import (
-    FirstRowsWorker,
-    compute_first_rows_response,
-    get_json_size,
-)
+from datasets_based.workers.first_rows import FirstRowsWorker, get_json_size
 
 from ..fixtures.hub import HubDatasets, get_default_config_split
 
 
-@pytest.fixture
-def worker(app_config: AppConfig) -> FirstRowsWorker:
-    return FirstRowsWorker(app_config=app_config)
+def get_worker(
+    dataset: str,
+    config: str,
+    split: str,
+    app_config: AppConfig,
+    first_rows_config: FirstRowsConfig,
+    force: bool = False,
+) -> FirstRowsWorker:
+    return FirstRowsWorker(
+        job_info={
+            "type": FirstRowsWorker.get_job_type(),
+            "dataset": dataset,
+            "config": config,
+            "split": split,
+            "job_id": "job_id",
+            "force": force,
+        },
+        app_config=app_config,
+        first_rows_config=first_rows_config,
+    )
 
 
-def should_skip_job(worker: FirstRowsWorker, hub_public_csv: str) -> None:
+def should_skip_job(app_config: AppConfig, first_rows_config: FirstRowsConfig, hub_public_csv: str) -> None:
     dataset, config, split = get_default_config_split(hub_public_csv)
-    assert worker.should_skip_job(dataset=dataset, config=config, split=split) is False
+    worker = get_worker(dataset, config, split, app_config, first_rows_config)
+    assert worker.should_skip_job() is False
     # we add an entry to the cache
-    worker.process(dataset=dataset, config=config, split=split)
-    assert worker.should_skip_job(dataset=dataset, config=config, split=split) is True
-    assert worker.should_skip_job(dataset=dataset, config=config, split=split, force=False) is False
+    worker.process()
+    assert worker.should_skip_job() is True
+    worker = get_worker(dataset, config, split, app_config, first_rows_config, force=True)
+    assert worker.should_skip_job() is False
 
 
-def test_compute(worker: FirstRowsWorker, hub_public_csv: str) -> None:
+def test_compute(app_config: AppConfig, first_rows_config: FirstRowsConfig, hub_public_csv: str) -> None:
     dataset, config, split = get_default_config_split(hub_public_csv)
-    assert worker.process(dataset=dataset, config=config, split=split) is True
+    worker = get_worker(dataset, config, split, app_config, first_rows_config)
+    assert worker.process() is True
     cached_response = get_response(kind=worker.processing_step.cache_kind, dataset=dataset, config=config, split=split)
     assert cached_response["http_status"] == HTTPStatus.OK
     assert cached_response["error_code"] is None
-    assert cached_response["worker_version"] == worker.version
+    assert cached_response["worker_version"] == worker.get_version()
     assert cached_response["dataset_git_revision"] is not None
     content = cached_response["content"]
     assert content["features"][0]["feature_idx"] == 0
@@ -49,19 +66,13 @@ def test_compute(worker: FirstRowsWorker, hub_public_csv: str) -> None:
     assert content["features"][2]["type"]["dtype"] == "float64"  # <-|
 
 
-def test_doesnotexist(worker: FirstRowsWorker) -> None:
+def test_doesnotexist(app_config: AppConfig, first_rows_config: FirstRowsConfig) -> None:
     dataset = "doesnotexist"
     dataset, config, split = get_default_config_split(dataset)
-    assert worker.process(dataset=dataset, config=config, split=split) is False
+    worker = get_worker(dataset, config, split, app_config, first_rows_config)
+    assert worker.process() is False
     with pytest.raises(DoesNotExist):
         get_response(kind=worker.processing_step.cache_kind, dataset=dataset, config=config, split=split)
-
-
-def test_process_job(worker: FirstRowsWorker, hub_public_csv: str) -> None:
-    dataset, config, split = get_default_config_split(hub_public_csv)
-    worker.queue.add_job(dataset=dataset, config=config, split=split)
-    result = worker.process_next_job()
-    assert result is True
 
 
 @pytest.mark.parametrize(
@@ -100,36 +111,19 @@ def test_number_rows(
     dataset = hub_datasets[name]["name"]
     expected_first_rows_response = hub_datasets[name]["first_rows_response"]
     dataset, config, split = get_default_config_split(dataset)
+    worker = get_worker(
+        dataset,
+        config,
+        split,
+        app_config if use_token else replace(app_config, common=replace(app_config.common, hf_token=None)),
+        first_rows_config,
+    )
     if error_code is None:
-        result = compute_first_rows_response(
-            dataset=dataset,
-            config=config,
-            split=split,
-            assets_base_url=first_rows_config.assets.base_url,
-            assets_directory=first_rows_config.assets.storage_directory,
-            hf_token=app_config.common.hf_token if use_token else None,
-            max_size_fallback=first_rows_config.fallback_max_dataset_size,
-            rows_max_number=first_rows_config.max_number,
-            rows_min_number=first_rows_config.min_number,
-            rows_max_bytes=first_rows_config.max_bytes,
-            min_cell_bytes=first_rows_config.min_cell_bytes,
-        )
+        result = worker.compute()
         assert result == expected_first_rows_response
         return
     with pytest.raises(CustomError) as exc_info:
-        compute_first_rows_response(
-            dataset=dataset,
-            config=config,
-            split=split,
-            assets_base_url=first_rows_config.assets.base_url,
-            assets_directory=first_rows_config.assets.storage_directory,
-            hf_token=app_config.common.hf_token if use_token else None,
-            max_size_fallback=first_rows_config.fallback_max_dataset_size,
-            rows_max_number=first_rows_config.max_number,
-            rows_min_number=first_rows_config.min_number,
-            rows_max_bytes=first_rows_config.max_bytes,
-            min_cell_bytes=first_rows_config.min_cell_bytes,
-        )
+        worker.compute()
     assert exc_info.value.code == error_code
     if cause is None:
         assert exc_info.value.disclose_cause is False
@@ -167,18 +161,19 @@ def test_truncation(
     successful_truncation: bool,
 ) -> None:
     dataset, config, split = get_default_config_split(hub_datasets[name]["name"])
-    response = compute_first_rows_response(
-        dataset=dataset,
-        config=config,
-        split=split,
-        assets_base_url=first_rows_config.assets.base_url,
-        assets_directory=first_rows_config.assets.storage_directory,
-        hf_token=None,
-        max_size_fallback=first_rows_config.fallback_max_dataset_size,
-        rows_max_number=1_000_000,
-        rows_min_number=10,
-        rows_max_bytes=rows_max_bytes,
-        min_cell_bytes=10,
+    worker = get_worker(
+        dataset,
+        config,
+        split,
+        app_config=replace(app_config, common=replace(app_config.common, hf_token=None)),
+        first_rows_config=replace(
+            first_rows_config,
+            max_number=1_000_000,
+            min_number=10,
+            max_bytes=rows_max_bytes,
+            min_cell_bytes=10,
+        ),
     )
+    response = worker.compute()
     print(get_json_size(response))
     assert (get_json_size(response) <= rows_max_bytes) is successful_truncation

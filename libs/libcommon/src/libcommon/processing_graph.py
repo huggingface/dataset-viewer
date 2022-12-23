@@ -118,6 +118,10 @@ class ProcessingGraph:
             raise ValueError(f"Unknown endpoint: {endpoint}")
         return self.steps[endpoint]
 
+    def get_step_by_job_type(self, job_type: str) -> ProcessingStep:
+        # for now: the job_type is just an alias for the endpoint
+        return self.get_step(job_type)
+
     def get_first_steps(self) -> List[ProcessingStep]:
         """Get the first steps."""
         return self.roots

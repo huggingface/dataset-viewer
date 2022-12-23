@@ -1,7 +1,6 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2022 The HuggingFace Authors.
 
-import os
 from datetime import datetime
 from pathlib import Path
 from typing import Any, Mapping, Optional
@@ -12,41 +11,53 @@ import pytest
 from datasets_based.config import AppConfig
 from datasets_based.workers._datasets_based_worker import DatasetsBasedWorker
 
+from ..fixtures.hub import get_default_config_split
+
 
 class DummyWorker(DatasetsBasedWorker):
     @staticmethod
-    def get_endpoint() -> str:
+    def get_job_type() -> str:
         return "/splits"
         # ^ borrowing the endpoint, so that the processing step exists and the worker can be initialized
         # refactoring libcommon.processing_graph might help avoiding this
 
-    def compute(
-        self, dataset: str, config: Optional[str] = None, split: Optional[str] = None, force: bool = False
-    ) -> Mapping[str, Any]:
-        if config == "raise":
+    @staticmethod
+    def get_version() -> str:
+        return "1.0.0"
+
+    def compute(self) -> Mapping[str, Any]:
+        if self.config == "raise":
             raise ValueError("This is a test")
         else:
             return {}
 
 
-@pytest.fixture
-def worker(app_config: AppConfig) -> DummyWorker:
-    return DummyWorker(app_config=app_config)
+def get_worker(
+    dataset: str,
+    config: Optional[str],
+    split: Optional[str],
+    app_config: AppConfig,
+    force: bool = False,
+) -> DummyWorker:
+    return DummyWorker(
+        job_info={
+            "type": DummyWorker.get_job_type(),
+            "dataset": dataset,
+            "config": config,
+            "split": split,
+            "job_id": "job_id",
+            "force": force,
+        },
+        app_config=app_config,
+    )
 
 
-def test_version(worker: DummyWorker) -> None:
-    assert len(worker.version.split(".")) == 3
+def test_version(app_config: AppConfig) -> None:
+    dataset, config, split = get_default_config_split("dataset")
+    worker = get_worker(dataset, config, split, app_config)
+    assert len(worker.get_version().split(".")) == 3
     assert worker.compare_major_version(other_version="0.0.0") > 0
     assert worker.compare_major_version(other_version="1000.0.0") < 0
-
-
-def test_has_storage(worker: DummyWorker) -> None:
-    assert worker.has_storage() is True
-    worker.datasets_based_config.max_disk_usage_percent = 0
-    # the directory does not exist yet, so it should return True
-    assert worker.has_storage() is True
-    os.makedirs(worker.datasets_based_config.hf_datasets_cache, exist_ok=True)
-    assert worker.has_storage() is False
 
 
 @pytest.mark.parametrize(
@@ -70,14 +81,16 @@ def test_has_storage(worker: DummyWorker) -> None:
     ],
 )
 def test_get_cache_subdirectory(
-    worker: DummyWorker, dataset: str, config: Optional[str], split: Optional[str], force: bool, expected: str
+    app_config: AppConfig, dataset: str, config: Optional[str], split: Optional[str], force: bool, expected: str
 ) -> None:
     date = datetime(2022, 11, 7, 12, 34, 56)
-    subdirectory = worker.get_cache_subdirectory(date=date, dataset=dataset, config=config, split=split, force=force)
-    assert subdirectory == expected
+    worker = get_worker(dataset, config, split, app_config, force=force)
+    assert worker.get_cache_subdirectory(date=date) == expected
 
 
-def test_set_and_unset_datasets_cache(worker: DummyWorker) -> None:
+def test_set_and_unset_datasets_cache(app_config: AppConfig) -> None:
+    dataset, config, split = get_default_config_split("dataset")
+    worker = get_worker(dataset, config, split, app_config)
     base_path = worker.datasets_based_config.hf_datasets_cache
     dummy_path = base_path / "dummy"
     worker.set_datasets_cache(dummy_path)
@@ -86,9 +99,11 @@ def test_set_and_unset_datasets_cache(worker: DummyWorker) -> None:
     assert_datasets_cache_path(path=base_path, exists=True)
 
 
-def test_set_and_unset_cache(worker: DummyWorker) -> None:
+def test_set_and_unset_cache(app_config: AppConfig) -> None:
+    dataset, config, split = get_default_config_split("user/dataset")
+    worker = get_worker(dataset, config, split, app_config)
     datasets_base_path = worker.datasets_based_config.hf_datasets_cache
-    worker.set_cache(dataset="user/dataset", config="config", split="split", force=True)
+    worker.set_cache()
     assert str(datasets.config.HF_DATASETS_CACHE).startswith(str(datasets_base_path))
     assert "-splits-user-dataset" in str(datasets.config.HF_DATASETS_CACHE)
     worker.unset_cache()
@@ -96,13 +111,16 @@ def test_set_and_unset_cache(worker: DummyWorker) -> None:
 
 
 @pytest.mark.parametrize("config", ["raise", "dont_raise"])
-def test_process(worker: DummyWorker, hub_public_csv: str, config: str) -> None:
+def test_process(app_config: AppConfig, hub_public_csv: str, config: str) -> None:
     # ^ this test requires an existing dataset, otherwise .process fails before setting the cache
     # it must work in both cases: when the job fails and when it succeeds
+    dataset = hub_public_csv
+    split = "split"
+    worker = get_worker(dataset, config, split, app_config)
     datasets_base_path = worker.datasets_based_config.hf_datasets_cache
     # the datasets library sets the cache to its own default
     assert_datasets_cache_path(path=datasets_base_path, exists=False, equals=False)
-    result = worker.process(dataset=hub_public_csv, config=config, force=True)
+    result = worker.process()
     assert result is (config != "raise")
     # the configured cache is now set (after having deleted a subdirectory used for the job)
     assert_datasets_cache_path(path=datasets_base_path, exists=True)

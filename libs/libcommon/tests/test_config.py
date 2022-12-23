@@ -4,5 +4,6 @@
 from libcommon.config import CommonConfig
 
 
-def test_common_config(common_config: CommonConfig):
+def test_common_config():
+    common_config = CommonConfig()
     assert common_config.log_level == 20

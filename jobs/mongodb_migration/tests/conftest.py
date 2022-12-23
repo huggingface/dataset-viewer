@@ -19,7 +19,7 @@ def monkeypatch_session():
 
 @fixture(scope="session", autouse=True)
 def app_config(monkeypatch_session: MonkeyPatch) -> JobConfig:
-    job_config = JobConfig()
+    job_config = JobConfig.from_env()
     if (
         "test" not in job_config.cache.mongo_database
         or "test" not in job_config.queue.mongo_database

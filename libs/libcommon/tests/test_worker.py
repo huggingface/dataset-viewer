@@ -2,7 +2,7 @@ from typing import Any, Mapping, Optional
 
 import pytest
 
-from libcommon.config import CommonConfig, QueueConfig, WorkerConfig
+from libcommon.config import CommonConfig
 from libcommon.processing_graph import ProcessingStep
 from libcommon.queue import _clean_queue_database
 from libcommon.simple_cache import _clean_cache_database
@@ -17,23 +17,19 @@ def clean_mongo_database() -> None:
 
 class DummyWorker(Worker):
     # override get_dataset_git_revision to avoid making a request to the Hub
-    def get_dataset_git_revision(
-        self,
-        dataset: str,
-        hf_endpoint: str,
-        hf_token: Optional[str] = None,
-    ) -> Optional[str]:
+    def get_dataset_git_revision(self) -> Optional[str]:
         return "0.1.2"
 
-    def compute(
-        self, dataset: str, config: Optional[str] = None, split: Optional[str] = None, force: bool = False
-    ) -> Mapping[str, Any]:
+    @staticmethod
+    def get_job_type() -> str:
+        return "/dummy"
+
+    @staticmethod
+    def get_version() -> str:
+        return "1.0.1"
+
+    def compute(self) -> Mapping[str, Any]:
         return {"key": "value"}
-
-
-class NoStorageWorker(DummyWorker):
-    def has_storage(self) -> bool:
-        return False
 
 
 @pytest.mark.parametrize(
@@ -53,55 +49,37 @@ def test_parse_version(string_version: str, expected_major_version: int, should_
         assert parse_version(string_version).major == expected_major_version
 
 
-def test_has_storage(
-    test_processing_step: ProcessingStep,
-    common_config: CommonConfig,
-    queue_config: QueueConfig,
-    worker_config: WorkerConfig,
-) -> None:
-    worker = DummyWorker(
-        processing_step=test_processing_step,
-        common_config=common_config,
-        queue_config=queue_config,
-        worker_config=worker_config,
-        version="1.0.0",
-    )
-    assert worker.has_storage() is True
-    worker = NoStorageWorker(
-        processing_step=test_processing_step,
-        common_config=common_config,
-        queue_config=queue_config,
-        worker_config=worker_config,
-        version="1.0.0",
-    )
-    assert worker.has_storage() is False
-
-
 @pytest.mark.parametrize(
-    "worker_version, other_version, expected, should_raise",
+    "other_version, expected, should_raise",
     [
-        ("1.0.0", "1.0.1", 0, False),
-        ("1.0.0", "2.0.1", -1, False),
-        ("2.0.0", "1.0.1", 1, False),
-        ("not a version", "1.0.1", None, True),
+        ("1.0.0", 0, False),
+        ("0.1.0", 1, False),
+        ("2.0.0", -1, False),
+        ("not a version", None, True),
     ],
 )
 def test_compare_major_version(
     test_processing_step: ProcessingStep,
-    common_config: CommonConfig,
-    queue_config: QueueConfig,
-    worker_config: WorkerConfig,
-    worker_version: str,
     other_version: str,
     expected: int,
     should_raise: bool,
 ) -> None:
+    job_id = "job_id"
+    dataset = "dataset"
+    config = "config"
+    split = "split"
+    force = False
     worker = DummyWorker(
+        job_info={
+            "job_id": job_id,
+            "type": test_processing_step.job_type,
+            "dataset": dataset,
+            "config": config,
+            "split": split,
+            "force": force,
+        },
         processing_step=test_processing_step,
-        common_config=common_config,
-        queue_config=queue_config,
-        worker_config=worker_config,
-        version=worker_version,
+        common_config=CommonConfig(),
     )
     if should_raise:
         with pytest.raises(Exception):
@@ -112,27 +90,73 @@ def test_compare_major_version(
 
 def test_should_skip_job(
     test_processing_step: ProcessingStep,
-    common_config: CommonConfig,
-    queue_config: QueueConfig,
-    worker_config: WorkerConfig,
 ) -> None:
-    worker = DummyWorker(
-        processing_step=test_processing_step,
-        common_config=common_config,
-        queue_config=queue_config,
-        worker_config=worker_config,
-        version="1.0.0",
-    )
+    job_id = "job_id"
     dataset = "dataset"
     config = "config"
     split = "split"
-
-    assert worker.should_skip_job(dataset=dataset, config=config, split=split) is False
+    force = False
+    worker = DummyWorker(
+        job_info={
+            "job_id": job_id,
+            "type": test_processing_step.job_type,
+            "dataset": dataset,
+            "config": config,
+            "split": split,
+            "force": force,
+        },
+        processing_step=test_processing_step,
+        common_config=CommonConfig(),
+    )
+    assert worker.should_skip_job() is False
     # we add an entry to the cache
-    worker.process(dataset=dataset, config=config, split=split)
-    assert worker.should_skip_job(dataset=dataset, config=config, split=split) is True
+    worker.process()
+    assert worker.should_skip_job() is True
 
-    assert worker.should_skip_job(dataset=dataset) is False
-    # we add an entry to the cache
-    worker.process(dataset=dataset)
-    assert worker.should_skip_job(dataset=dataset) is True
+
+def test_check_type(
+    test_processing_step: ProcessingStep,
+) -> None:
+    job_id = "job_id"
+    dataset = "dataset"
+    config = "config"
+    split = "split"
+    force = False
+
+    job_type = f"not-{test_processing_step.job_type}"
+    with pytest.raises(ValueError):
+        DummyWorker(
+            job_info={
+                "job_id": job_id,
+                "type": job_type,
+                "dataset": dataset,
+                "config": config,
+                "split": split,
+                "force": force,
+            },
+            processing_step=test_processing_step,
+            common_config=CommonConfig(),
+        )
+
+    another_processing_step = ProcessingStep(
+        endpoint=f"not-{test_processing_step.endpoint}",
+        input_type="dataset",
+        requires=None,
+        required_by_dataset_viewer=False,
+        parent=None,
+        ancestors=[],
+        children=[],
+    )
+    with pytest.raises(ValueError):
+        DummyWorker(
+            job_info={
+                "job_id": job_id,
+                "type": test_processing_step.job_type,
+                "dataset": dataset,
+                "config": config,
+                "split": split,
+                "force": force,
+            },
+            processing_step=another_processing_step,
+            common_config=CommonConfig(),
+        )

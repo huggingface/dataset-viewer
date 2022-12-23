@@ -1,6 +1,7 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2022 The HuggingFace Authors.
 
+from dataclasses import replace
 from http import HTTPStatus
 
 import pytest
@@ -8,32 +9,48 @@ from libcommon.exceptions import CustomError
 from libcommon.simple_cache import DoesNotExist, get_response
 
 from datasets_based.config import AppConfig
-from datasets_based.workers.splits import SplitsWorker, compute_splits_response
+from datasets_based.workers.splits import SplitsWorker
 
 from ..fixtures.hub import HubDatasets
 
 
-@pytest.fixture
-def worker(app_config: AppConfig) -> SplitsWorker:
-    return SplitsWorker(app_config=app_config)
+def get_worker(
+    dataset: str,
+    app_config: AppConfig,
+    force: bool = False,
+) -> SplitsWorker:
+    return SplitsWorker(
+        job_info={
+            "type": SplitsWorker.get_job_type(),
+            "dataset": dataset,
+            "config": None,
+            "split": None,
+            "job_id": "job_id",
+            "force": force,
+        },
+        app_config=app_config,
+    )
 
 
-def should_skip_job(worker: SplitsWorker, hub_public_csv: str) -> None:
+def should_skip_job(app_config: AppConfig, hub_public_csv: str) -> None:
     dataset = hub_public_csv
-    assert worker.should_skip_job(dataset=dataset) is False
+    worker = get_worker(dataset, app_config)
+    assert worker.should_skip_job() is False
     # we add an entry to the cache
-    worker.process(dataset=dataset)
-    assert worker.should_skip_job(dataset=dataset) is True
-    assert worker.should_skip_job(dataset=dataset, force=True) is False
+    worker.process()
+    assert worker.should_skip_job() is True
+    worker = get_worker(dataset, app_config, force=True)
+    assert worker.should_skip_job() is False
 
 
-def test_process(worker: SplitsWorker, hub_public_csv: str) -> None:
+def test_process(app_config: AppConfig, hub_public_csv: str) -> None:
     dataset = hub_public_csv
-    assert worker.process(dataset=dataset) is True
+    worker = get_worker(dataset, app_config)
+    assert worker.process() is True
     cached_response = get_response(kind=worker.processing_step.cache_kind, dataset=hub_public_csv)
     assert cached_response["http_status"] == HTTPStatus.OK
     assert cached_response["error_code"] is None
-    assert cached_response["worker_version"] == worker.version
+    assert cached_response["worker_version"] == worker.get_version()
     assert cached_response["dataset_git_revision"] is not None
     assert cached_response["error_code"] is None
     content = cached_response["content"]
@@ -42,17 +59,12 @@ def test_process(worker: SplitsWorker, hub_public_csv: str) -> None:
     assert content["splits"][0]["num_examples"] is None
 
 
-def test_doesnotexist(worker: SplitsWorker) -> None:
+def test_doesnotexist(app_config: AppConfig) -> None:
     dataset = "doesnotexist"
-    assert worker.process(dataset=dataset) is False
+    worker = get_worker(dataset, app_config)
+    assert worker.process() is False
     with pytest.raises(DoesNotExist):
         get_response(kind=worker.processing_step.cache_kind, dataset=dataset)
-
-
-def test_process_job(worker: SplitsWorker, hub_public_csv: str) -> None:
-    worker.queue.add_job(dataset=hub_public_csv)
-    result = worker.process_next_job()
-    assert result is True
 
 
 @pytest.mark.parametrize(
@@ -75,19 +87,17 @@ def test_compute_splits_response_simple_csv(
 ) -> None:
     dataset = hub_datasets[name]["name"]
     expected_splits_response = hub_datasets[name]["splits_response"]
+    worker = get_worker(
+        dataset,
+        app_config if use_token else replace(app_config, common=replace(app_config.common, hf_token=None)),
+    )
     if error_code is None:
-        result = compute_splits_response(
-            dataset=dataset,
-            hf_token=app_config.common.hf_token if use_token else None,
-        )
+        result = worker.compute()
         assert result == expected_splits_response
         return
 
     with pytest.raises(CustomError) as exc_info:
-        compute_splits_response(
-            dataset=dataset,
-            hf_token=app_config.common.hf_token if use_token else None,
-        )
+        worker.compute()
     assert exc_info.value.code == error_code
     if cause is None:
         assert exc_info.value.disclose_cause is False

@@ -20,7 +20,7 @@ from api.routes.webhook import create_webhook_endpoint
 
 
 def create_app() -> Starlette:
-    app_config = AppConfig()
+    app_config = AppConfig.from_env()
     prometheus = Prometheus()
 
     middleware = [
@@ -42,7 +42,7 @@ def create_app() -> Starlette:
         Route(
             "/is-valid",
             endpoint=create_is_valid_endpoint(
-                external_auth_url=app_config.api.external_auth_url,
+                external_auth_url=app_config.external_auth_url,
                 processing_steps_for_valid=app_config.processing_graph.graph.get_steps_required_by_dataset_viewer(),
                 max_age_long=app_config.api.max_age_long,
                 max_age_short=app_config.api.max_age_short,
@@ -58,7 +58,7 @@ def create_app() -> Starlette:
                 init_processing_steps=app_config.processing_graph.graph.get_first_steps(),
                 hf_endpoint=app_config.common.hf_endpoint,
                 hf_token=app_config.common.hf_token,
-                external_auth_url=app_config.api.external_auth_url,
+                external_auth_url=app_config.external_auth_url,
                 max_age_long=app_config.api.max_age_long,
                 max_age_short=app_config.api.max_age_short,
             ),
@@ -87,7 +87,7 @@ def create_app() -> Starlette:
 
 
 def start() -> None:
-    uvicorn_config = UvicornConfig()
+    uvicorn_config = UvicornConfig.from_env()
     uvicorn.run(
         "app:create_app",
         host=uvicorn_config.hostname,

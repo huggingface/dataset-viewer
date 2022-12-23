@@ -24,7 +24,7 @@ from huggingface_hub.hf_api import (
 from huggingface_hub.utils import RepositoryNotFoundError, RevisionNotFoundError
 from libcommon.dataset import ask_access
 from libcommon.exceptions import CustomError
-from libcommon.worker import DatasetNotFoundError
+from libcommon.worker import DatasetNotFoundError, JobInfo
 
 from datasets_based.config import AppConfig, ParquetConfig
 from datasets_based.workers._datasets_based_worker import DatasetsBasedWorker
@@ -566,29 +566,24 @@ def compute_parquet_response(
     }
 
 
-PARQUET_VERSION = "2.0.0"
-
-
 class ParquetWorker(DatasetsBasedWorker):
     parquet_config: ParquetConfig
 
     @staticmethod
-    def get_endpoint() -> str:
+    def get_job_type() -> str:
         return "/parquet"
 
-    def __init__(self, app_config: AppConfig):
-        super().__init__(version=PARQUET_VERSION, app_config=app_config)
-        self.parquet_config = ParquetConfig()
+    @staticmethod
+    def get_version() -> str:
+        return "2.0.0"
 
-    def compute(
-        self,
-        dataset: str,
-        config: Optional[str] = None,
-        split: Optional[str] = None,
-        force: bool = False,
-    ) -> Mapping[str, Any]:
+    def __init__(self, job_info: JobInfo, app_config: AppConfig, parquet_config: ParquetConfig) -> None:
+        super().__init__(job_info=job_info, app_config=app_config)
+        self.parquet_config = parquet_config
+
+    def compute(self) -> Mapping[str, Any]:
         return compute_parquet_response(
-            dataset=dataset,
+            dataset=self.dataset,
             hf_endpoint=self.common_config.hf_endpoint,
             hf_token=self.common_config.hf_token,
             committer_hf_token=self.parquet_config.committer_hf_token,

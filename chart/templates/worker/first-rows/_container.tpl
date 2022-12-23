@@ -13,7 +13,10 @@
   {{ include "envCache" . | nindent 2 }}
   {{ include "envQueue" . | nindent 2 }}
   {{ include "envCommon" . | nindent 2 }}
-  {{ include "envWorker" . | nindent 2 }}
+  {{ include "envWorkerLoop" . | nindent 2 }}
+  - name: WORKER_LOOP_STORAGE_PATHS
+    value: {{ .Values.assets.storageDirectory | quote }}
+    # ^ note: the datasets cache is automatically added, so no need to add it here
   {{ include "envDatasetsBased" . | nindent 2 }}
   - name: DATASETS_BASED_HF_DATASETS_CACHE
     value: {{ printf "%s/first-rows/datasets" .Values.cacheDirectory | quote }}

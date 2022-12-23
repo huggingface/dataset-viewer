@@ -8,7 +8,7 @@ from mongodb_migration.config import JobConfig
 from mongodb_migration.plan import Plan
 
 if __name__ == "__main__":
-    job_config = JobConfig()
+    job_config = JobConfig.from_env()
     collected_migrations = MigrationsCollector().get_migrations()
     try:
         Plan(collected_migrations=collected_migrations).execute()

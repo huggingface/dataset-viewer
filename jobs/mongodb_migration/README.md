@@ -4,7 +4,7 @@
 
 ## Configuration
 
-The script con be configured using environment variables. They are grouped by scope.
+The script can be configured using environment variables. They are grouped by scope.
 
 ### Admin service
 
