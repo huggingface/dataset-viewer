@@ -1,0 +1,49 @@
+[tool.poetry]
+authors = ["Sylvain Lesage <sylvain.lesage@huggingface.co>"]
+description = "Worker for processing steps that need the dataset in parquet format (see /parquet endpoint)"
+name = "parquet_based"
+version = "1.0.0"
+license = "Apache-2.0"
+
+[tool.poetry.dependencies]
+huggingface-hub = "^0.11.0"
+libcommon = { path = "../../libs/libcommon/dist/libcommon-0.6.1-py3-none-any.whl", develop = false }
+python = "3.9.15"
+pyarrow = "^10.0.1"
+hffs = {git = "git@github.com:huggingface/hffs.git"}
+
+[tool.poetry.group.dev.dependencies]
+bandit = "^1.7.0"
+black = "^22.1.0"
+flake8 = "^3.9.2"
+isort = "^5.9.3"
+mypy = "0.812"
+poetryup = "^0.3.8"
+pytest = "^7.2.0"
+pytest-cov = "^2.12.1"
+pip-audit = "^2.4.6"
+requests = "^2.28.1"
+
+[build-system]
+build-backend = "poetry.core.masonry.api"
+requires = ["poetry-core>=1.0.0"]
+
+[tool.pytest.ini_options]
+filterwarnings = ["ignore::DeprecationWarning"]
+markers = [
+    "real_dataset: tests on the Hub",
+    "wip: tests being developed"
+]
+
+[tool.coverage.run]
+source = ["parquet_based"]
+
+[tool.isort]
+profile = "black"
+
+[tool.black]
+line-length = 119
+preview = true
+
+[tool.mypy]
+strict = true
