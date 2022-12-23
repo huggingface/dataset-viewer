@@ -21,11 +21,11 @@ RUN pip install -U --no-cache-dir pip
 RUN pip install "poetry==$POETRY_VERSION"
 
 WORKDIR /src
-COPY libs/libcommon/dist ./libs/libcommon/dist
-COPY services/admin/src ./services/admin/src
 COPY services/admin/poetry.lock ./services/admin/poetry.lock
 COPY services/admin/pyproject.toml ./services/admin/pyproject.toml
+COPY libs/libcommon/dist ./libs/libcommon/dist
 WORKDIR /src/services/admin/
 RUN poetry install
+COPY services/admin/src ./src
 
 ENTRYPOINT ["poetry", "run", "python", "src/admin/main.py"]

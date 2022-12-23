@@ -23,12 +23,12 @@ RUN pip install -U --no-cache-dir pip
 RUN pip install "poetry==$POETRY_VERSION"
 
 WORKDIR /src
-COPY libs/libcommon/dist ./libs/libcommon/dist
-COPY workers/datasets_based/src ./workers/datasets_based/src
+COPY workers/datasets_based/vendors ./workers/datasets_based/vendors/
 COPY workers/datasets_based/poetry.lock ./workers/datasets_based/poetry.lock
 COPY workers/datasets_based/pyproject.toml ./workers/datasets_based/pyproject.toml
-COPY workers/datasets_based/vendors ./workers/datasets_based/vendors/
+COPY libs/libcommon/dist ./libs/libcommon/dist
 WORKDIR /src/workers/datasets_based/
 RUN poetry install
+COPY workers/datasets_based/src ./src
 
 ENTRYPOINT ["poetry", "run", "python", "src/datasets_based/main.py"]
