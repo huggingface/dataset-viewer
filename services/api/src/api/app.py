@@ -87,7 +87,7 @@ def create_app() -> Starlette:
 
 
 def start() -> None:
-    uvicorn_config = UvicornConfig()
+    uvicorn_config = UvicornConfig.from_env()
     uvicorn.run(
         "app:create_app",
         host=uvicorn_config.hostname,
