@@ -30,6 +30,5 @@ COPY libs/libcommon/dist ./libs/libcommon/dist
 WORKDIR /src/workers/datasets_based/
 RUN poetry install
 COPY workers/datasets_based/src ./src
-RUN poetry install
 
 ENTRYPOINT ["poetry", "run", "python", "src/datasets_based/main.py"]

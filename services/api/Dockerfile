@@ -27,6 +27,5 @@ COPY libs/libcommon/dist ./libs/libcommon/dist
 WORKDIR /src/services/api/
 RUN poetry install
 COPY services/api/src ./src
-RUN poetry install
 
 ENTRYPOINT ["poetry", "run", "python", "src/api/main.py"]

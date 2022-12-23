@@ -27,6 +27,5 @@ COPY libs/libcommon/dist ./libs/libcommon/dist
 WORKDIR /src/jobs/mongodb_migration/
 RUN poetry install
 COPY jobs/mongodb_migration/src ./src
-RUN poetry install
 
 ENTRYPOINT ["poetry", "run", "python", "src/mongodb_migration/main.py"]
