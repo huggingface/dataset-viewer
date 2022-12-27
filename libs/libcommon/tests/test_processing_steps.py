@@ -21,17 +21,17 @@ def test_default_graph():
     assert splits.parent is None
     assert first_rows.parent is splits
     assert parquet.parent is None
-    assert size.parent is None
+    assert size.parent is parquet
 
     assert splits.children == [first_rows]
     assert first_rows.children == []
-    assert parquet.children == []
+    assert parquet.children == [size]
     assert size.children == []
 
     assert splits.get_ancestors() == []
     assert first_rows.get_ancestors() == [splits]
     assert parquet.get_ancestors() == []
-    assert size.get_ancestors() == []
+    assert size.get_ancestors() == [parquet]
 
-    assert graph.get_first_steps() == [splits, parquet, size]
+    assert graph.get_first_steps() == [splits, parquet]
     assert graph.get_steps_required_by_dataset_viewer() == [splits, first_rows]
