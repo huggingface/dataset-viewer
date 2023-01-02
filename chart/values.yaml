@@ -37,9 +37,11 @@ mongodb:
 
 imagePullSecrets: []
 
-# overridden by docker-images.yaml (which must be in JSON format!)
-dockerImage:
+docker:
   pullPolicy: IfNotPresent
+
+# overridden by docker-images.yaml (which must be in JSON format!). See Makefile for details.
+dockerImage:
   reverseProxy: ""
   jobs:
     mongodb_migration: ""
