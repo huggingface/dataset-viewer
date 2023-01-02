@@ -4,7 +4,7 @@
 {{- define "containerWorkerSplits" -}}
 - name: "{{ include "name" . }}-worker-splits"
   image: {{ .Values.dockerImage.workers.datasets_based }}
-  imagePullPolicy: IfNotPresent
+  imagePullPolicy: {{ .Values.docker.pullPolicy }}
   env:
   - name: DATASETS_BASED_ENDPOINT
     value: "/splits"
