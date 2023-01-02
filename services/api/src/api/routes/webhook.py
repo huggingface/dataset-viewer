@@ -19,13 +19,22 @@ schema = {
     "properties": {
         "event": {"type": "string", "enum": ["add", "remove", "update", "move"]},
         "movedTo": {"type": "string"},
+        "movedToAuthorId": {"type": "string"},
         "repo": {
             "type": "object",
             "properties": {
-                "type": {"type": "string", "enum": ["dataset", "model", "space"]},
-                "name": {"type": "string"},
+                "id": {"type": "string"},
+                "authorId": {"type": "string"},
                 "gitalyUid": {"type": "string"},
+                "headSha": {"type": "string"},
+                "name": {"type": "string"},
+                "private": {"type": "boolean"},
+                "subdomain": {"type": "string"},
+                # ^ subdomain is for spaces
                 "tags": {"type": "array", "items": {"type": "string"}},
+                # ^ tags are only sent for models
+                "type": {"type": "string", "enum": ["dataset", "model", "space"]},
+                "url": {"type": "string", "format": "uri"},
             },
             "required": ["type", "name"],
         },
