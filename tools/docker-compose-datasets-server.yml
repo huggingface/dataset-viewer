@@ -14,9 +14,17 @@ services:
       PORT: 80
       URL_ADMIN: http://admin:${ADMIN_UVICORN_PORT-8081}
       URL_API: http://api:${API_UVICORN_PORT-8080}
+      URL_ORCHESTRATOR: http://orchestrator:3000/admin/orchestrator
     depends_on:
       - api
       - admin
+      - orchestrator
+  orchestrator:
+    image: ${IMAGE_SERVICE_ORCHESTRATOR?IMAGE_SERVICE_ORCHESTRATOR env var must be provided}
+    restart: always
+    ports:
+      # for debug
+      - 3000:3000
   admin:
     # build:
     #   context: ..
