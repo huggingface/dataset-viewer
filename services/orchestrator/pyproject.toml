@@ -1,0 +1,42 @@
+[tool.poetry]
+authors = ["Sylvain Lesage <sylvain.lesage@huggingface.co>"]
+description = "Instance of Dagster that runs the datasets pipelines"
+name = "orchestrator"
+version = "1.0.0"
+license = "Apache-2.0"
+
+[tool.poetry.dependencies]
+python = "3.9.15"
+dagster = "^1.1.7"
+
+[tool.poetry.group.dev.dependencies]
+bandit = "^1.7.0"
+black = "^22.1.0"
+flake8 = "^3.9.2"
+isort = "^5.9.3"
+mypy = "0.812"
+poetryup = "^0.3.8"
+pytest = "^7.2.0"
+pytest-cov = "^2.12.1"
+pip-audit = "^2.4.6"
+types-requests = "^2.28.11"
+
+[build-system]
+build-backend = "poetry.core.masonry.api"
+requires = ["poetry-core>=1.0.0"]
+
+[tool.pytest.ini_options]
+filterwarnings = ["ignore::DeprecationWarning"]
+markers = [
+    "wip: tests being developed"
+]
+
+[tool.coverage.run]
+source = ["orchestrator"]
+
+[tool.isort]
+profile = "black"
+
+[tool.black]
+line-length = 119
+preview = true

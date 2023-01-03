@@ -25,6 +25,10 @@
       "path": "../services/api"
     },
     {
+      "name": "services/orchestrator",
+      "path": "../services/orchestrator"
+    },
+    {
       "name": "services/reverse-proxy",
       "path": "../services/reverse-proxy"
     },
