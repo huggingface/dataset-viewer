@@ -18,4 +18,4 @@ WORKDIR /opt/dagster/app
 
 EXPOSE 3000
 
-ENTRYPOINT ["dagit", "--host", "0.0.0.0", "--port", "3000", "--path-prefix", "/admin/orchestrator/"]
+ENTRYPOINT ["dagit", "--host", "0.0.0.0", "--port", "3000", "--path-prefix", "/admin/orchestrator"]
