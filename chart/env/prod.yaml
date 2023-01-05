@@ -176,7 +176,7 @@ splits:
   # override the common queue parameters
   queue:
     # Maximum number of jobs running at the same time for the same namespace
-    maxJobsPerNamespace: 1
+    maxJobsPerNamespace: 4
 
   nodeSelector:
     role-datasets-server: "true"
@@ -219,7 +219,7 @@ parquet:
   # override the common queue parameters
   queue:
     # Maximum number of jobs running at the same time for the same namespace
-    maxJobsPerNamespace: 2
+    maxJobsPerNamespace: 4
   nodeSelector:
     role-datasets-server: "true"
   replicas: 16
