@@ -6,7 +6,7 @@
     },
     "services": {
       "admin": "huggingface/datasets-server-services-admin:sha-6a36caa",
-      "api": "huggingface/datasets-server-services-api:sha-6a36caa"
+      "api": "huggingface/datasets-server-services-api:sha-a36b651"
     },
     "workers": {
       "datasets_based": "huggingface/datasets-server-workers-datasets_based:sha-6a36caa"
