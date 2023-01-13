@@ -4,7 +4,18 @@
 import types
 from datetime import datetime, timezone
 from http import HTTPStatus
-from typing import Any, Generic, List, Mapping, Optional, Set, Type, TypedDict, TypeVar
+from typing import (
+    Any,
+    Generic,
+    List,
+    Mapping,
+    NamedTuple,
+    Optional,
+    Set,
+    Type,
+    TypedDict,
+    TypeVar,
+)
 
 from bson import ObjectId
 from bson.errors import InvalidId
@@ -44,6 +55,14 @@ def connect_to_cache_database(database: str, host: str) -> None:
 
 def get_datetime() -> datetime:
     return datetime.now(timezone.utc)
+
+
+class SplitFullName(NamedTuple):
+    """A split full name is a tuple of (dataset, config, split)."""
+
+    dataset: str
+    config: Optional[str]
+    split: Optional[str]
 
 
 # cache of any endpoint
@@ -180,23 +199,11 @@ def get_response(kind: str, dataset: str, config: Optional[str] = None, split: O
     }
 
 
-class ResponseId(TypedDict):
-    kind: str
-    dataset: str
-    config: Optional[str]
-    split: Optional[str]
-
-
-def get_dataset_response_ids(dataset: str) -> List[ResponseId]:
-    return [
-        {
-            "kind": response.kind,
-            "dataset": response.dataset,
-            "config": response.config,
-            "split": response.split,
-        }
-        for response in CachedResponse.objects(dataset=dataset).only("kind", "dataset", "config", "split")
-    ]
+def get_split_full_names_for_dataset_and_kind(dataset: str, kind: str) -> set[SplitFullName]:
+    return {
+        SplitFullName(dataset=response.dataset, config=response.config, split=response.split)
+        for response in CachedResponse.objects(dataset=dataset, kind=kind).only("dataset", "config", "split")
+    }
 
 
 def get_valid_datasets(kind: str) -> Set[str]:

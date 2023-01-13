@@ -12,8 +12,14 @@ from libcommon.config import CommonConfig
 from libcommon.dataset import DatasetNotFoundError, get_dataset_git_revision
 from libcommon.exceptions import CustomError
 from libcommon.processing_graph import ProcessingStep
-from libcommon.queue import JobInfo, Status
-from libcommon.simple_cache import get_response_without_content, upsert_response
+from libcommon.queue import JobInfo, Queue, Status
+from libcommon.simple_cache import (
+    SplitFullName,
+    delete_response,
+    get_response_without_content,
+    get_split_full_names_for_dataset_and_kind,
+    upsert_response,
+)
 
 
 def parse_version(string_version: str) -> version.Version:
@@ -262,6 +268,7 @@ class Worker(ABC):
             try:
                 self.pre_compute()
                 content = self.compute()
+                self.create_children_jobs(self.get_new_splits(content))
             finally:
                 # ensure the post_compute hook is called even if the compute raises an exception
                 self.post_compute()
@@ -315,6 +322,56 @@ class Worker(ABC):
     @abstractmethod
     def compute(self) -> Mapping[str, Any]:
         pass
+
+    # should be overridden if the job has children jobs of type "split"
+    def get_new_splits(self, content: Mapping[str, Any]) -> set[SplitFullName]:
+        """Get the set of new splits, from the content created by the compute.
+
+        Can be empty."""
+        return set()
+
+    def create_children_jobs(self, new_split_full_names: set[SplitFullName]) -> None:
+        """Create children jobs for the current job.
+
+        Args:
+            new_split_full_names (:obj:`set[SplitFullName]`): the set of new splits, from the content created by the
+                compute. Can be empty.
+        """
+        for processing_step in self.processing_step.children:
+            if processing_step.input_type == "dataset":
+                Queue(type=processing_step.job_type).add_job(
+                    dataset=self.dataset, config=None, split=None, force=self.force
+                )
+            elif processing_step.input_type == "split":
+                # remove obsolete responses from the cache
+                split_full_names_in_cache = get_split_full_names_for_dataset_and_kind(
+                    dataset=self.dataset, kind=processing_step.cache_kind
+                )
+                split_full_names_to_delete = split_full_names_in_cache.difference(new_split_full_names)
+                for split_full_name in split_full_names_to_delete:
+                    delete_response(
+                        kind=processing_step.cache_kind,
+                        dataset=split_full_name.dataset,
+                        config=split_full_name.config,
+                        split=split_full_name.split,
+                    )
+                logging.debug(
+                    f"{len(split_full_names_to_delete)} {processing_step.endpoint} responses deleted from the cache"
+                    f" for obsolete splits of dataset={self.dataset}"
+                )
+                # compute the responses for the new splits
+                for split_full_name in new_split_full_names:
+                    # we force the refresh of the children step responses if the current step refresh was forced
+                    Queue(type=processing_step.job_type).add_job(
+                        dataset=split_full_name.dataset,
+                        config=split_full_name.config,
+                        split=split_full_name.split,
+                        force=self.force,
+                    )
+                logging.debug(
+                    f"{len(new_split_full_names)} {processing_step.job_type} jobs added for the splits of"
+                    f" dataset={self.dataset}"
+                )
 
     def post_compute(self) -> None:
         """Hook method called after the compute method."""

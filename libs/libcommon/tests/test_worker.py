@@ -3,9 +3,9 @@ from typing import Any, Mapping, Optional
 import pytest
 
 from libcommon.config import CommonConfig
-from libcommon.processing_graph import ProcessingStep
-from libcommon.queue import _clean_queue_database
-from libcommon.simple_cache import _clean_cache_database
+from libcommon.processing_graph import ProcessingGraph, ProcessingStep
+from libcommon.queue import Queue, Status, _clean_queue_database
+from libcommon.simple_cache import SplitFullName, _clean_cache_database
 from libcommon.worker import Worker, parse_version
 
 
@@ -30,6 +30,9 @@ class DummyWorker(Worker):
 
     def compute(self) -> Mapping[str, Any]:
         return {"key": "value"}
+
+    def get_new_splits(self, content: Mapping[str, Any]) -> set[SplitFullName]:
+        return {SplitFullName(self.dataset, "config", "split1"), SplitFullName(self.dataset, "config", "split2")}
 
 
 @pytest.mark.parametrize(
@@ -160,3 +163,41 @@ def test_check_type(
             processing_step=another_processing_step,
             common_config=CommonConfig(),
         )
+
+
+def test_create_children_jobs() -> None:
+    graph = ProcessingGraph(
+        {
+            "/dummy": {"input_type": "dataset"},
+            "/child-dataset": {"input_type": "dataset", "requires": "/dummy"},
+            "/child-split": {"input_type": "split", "requires": "/dummy"},
+        }
+    )
+    root_step = graph.get_step("/dummy")
+    worker = DummyWorker(
+        job_info={
+            "job_id": "job_id",
+            "type": root_step.job_type,
+            "dataset": "dataset",
+            "config": None,
+            "split": None,
+            "force": False,
+        },
+        processing_step=root_step,
+        common_config=CommonConfig(),
+    )
+    assert worker.should_skip_job() is False
+    # we add an entry to the cache
+    worker.process()
+    assert worker.should_skip_job() is True
+    # check that the children jobs have been created
+    child_dataset_jobs = Queue(type="/child-dataset").get_dump_with_status(status=Status.WAITING)
+    assert len(child_dataset_jobs) == 1
+    assert child_dataset_jobs[0]["dataset"] == "dataset"
+    assert child_dataset_jobs[0]["config"] is None
+    assert child_dataset_jobs[0]["split"] is None
+    child_split_jobs = Queue(type="/child-split").get_dump_with_status(status=Status.WAITING)
+    assert len(child_split_jobs) == 2
+    assert all(job["dataset"] == "dataset" and job["config"] == "config" for job in child_split_jobs)
+    # we don't know the order
+    assert {child_split_jobs[0]["split"], child_split_jobs[1]["split"]} == {"split1", "split2"}
