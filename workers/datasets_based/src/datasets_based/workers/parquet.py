@@ -24,6 +24,7 @@ from huggingface_hub.hf_api import (
 from huggingface_hub.utils import RepositoryNotFoundError, RevisionNotFoundError
 from libcommon.dataset import ask_access
 from libcommon.exceptions import CustomError
+from libcommon.simple_cache import SplitFullName
 from libcommon.worker import DatasetNotFoundError, JobInfo
 
 from datasets_based.config import AppConfig, ParquetConfig
@@ -595,3 +596,10 @@ class ParquetWorker(DatasetsBasedWorker):
             blocked_datasets=self.parquet_config.blocked_datasets,
             max_dataset_size=self.parquet_config.max_dataset_size,
         )
+
+    def get_new_splits(self, content: Mapping[str, Any]) -> set[SplitFullName]:
+        """Get the set of new splits, from the content created by the compute."""
+        return {
+            SplitFullName(dataset=parquet_file["dataset"], config=parquet_file["config"], split=parquet_file["split"])
+            for parquet_file in content["parquet_files"]
+        }

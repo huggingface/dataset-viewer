@@ -19,6 +19,7 @@ from datasets import (
 )
 from datasets.data_files import EmptyDatasetError as _EmptyDatasetError
 from libcommon.exceptions import CustomError
+from libcommon.simple_cache import SplitFullName as _SplitFullName
 from libcommon.utils import orjson_dumps
 from libcommon.worker import ConfigNotFoundError, JobInfo, SplitNotFoundError
 
@@ -578,3 +579,9 @@ class FirstRowsWorker(DatasetsBasedWorker):
             rows_max_number=self.first_rows_config.max_number,
             rows_min_number=self.first_rows_config.min_number,
         )
+
+    def get_new_splits(self, _: Mapping[str, Any]) -> set[_SplitFullName]:
+        """Get the set of new splits, from the content created by the compute."""
+        if self.config is None or self.split is None:
+            raise ValueError("config and split are required")
+        return {_SplitFullName(dataset=self.dataset, config=self.config, split=self.split)}
