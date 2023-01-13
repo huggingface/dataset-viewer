@@ -9,6 +9,10 @@ include ../../tools/PythonAudit.mk
 include ../../tools/PythonTest.mk
 include ../../tools/Docker.mk
 
-.PHONY: run
-run:
-	poetry run python src/orchestrator/main.py
+.PHONY: run-webapp
+run-webapp:
+	cd src/orchestrator; DAGSTER_HOME="$(shell pwd)/src/orchestrator" poetry run dagit --host 0.0.0.0 --port 3001 --path-prefix /admin/orchestrator
+
+.PHONY: run-daemon
+run-daemon:
+	DAGSTER_HOME="$(shell pwd)/src/orchestrator" poetry run dagster-daemon run -f src/orchestrator/repo_assets.py

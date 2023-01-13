@@ -8,6 +8,7 @@ license = "Apache-2.0"
 [tool.poetry.dependencies]
 python = "3.9.15"
 dagster = "^1.1.7"
+dagit = "^1.1.7"
 
 [tool.poetry.group.dev.dependencies]
 bandit = "^1.7.0"
