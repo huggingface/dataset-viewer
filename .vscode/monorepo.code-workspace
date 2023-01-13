@@ -31,10 +31,6 @@
     {
       "name": "workers/datasets_based",
       "path": "../workers/datasets_based"
-    },
-    {
-      "name": "workers/parquet_based",
-      "path": "../workers/parquet_based"
     }
   ],
   "settings": {
