@@ -7,8 +7,6 @@ export QUEUE_MONGO_URL := mongodb://localhost:${MONGO_PORT}
 DOCKER_COMPOSE := ../../tools/docker-compose-mongo.yml
 
 include ../../tools/Python.mk
-include ../../tools/PythonAudit.mk
-#include ../../tools/PythonTest.mk
 include ../../tools/Docker.mk
 
 .PHONY: run
