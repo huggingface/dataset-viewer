@@ -17,11 +17,7 @@ gdown = "^4.2.0"
 huggingface-hub = "^0.11.0"
 kenlm = { url = "https://github.com/kpu/kenlm/archive/master.zip" }
 kss = "^2.6.0"
-<<<<<<< HEAD
-libcommon = { path = "../../libs/libcommon/dist/libcommon-0.6.1-py3-none-any.whl", develop = false }
-=======
 libcommon = { path = "../../libs/libcommon/dist/libcommon-0.6.2-py3-none-any.whl", develop = false }
->>>>>>> caeef50 (refactor: 💡 implement get_new_splits for all workers)
 lm-dataformat = "^0.0.20"
 lxml = "^4.9.1"
 nlp = "^0.4.0"
@@ -35,7 +31,7 @@ scikit-learn = "^1.0"
 tensorflow = {version = "^2.9.1", markers = "sys_platform != 'darwin' or platform_machine != 'arm64'"}
 tensorflow-macos = {version = "^2.9.1", markers = "sys_platform == 'darwin' and platform_machine == 'arm64'"}
 tfrecord = "^1.14.1"
-torchaudio = "^0.10.1"
+torchaudio = "^0.13.1"
 transformers = "^4.11.3"
 trec-car-tools = { path = "vendors/trec-car-tools/python3" }
 typer = "^0.4.0"
