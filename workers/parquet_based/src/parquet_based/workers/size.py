@@ -20,12 +20,9 @@ class ParquetFileWithSize(ParquetFile):
     url: str
     filename: str
     size: int
-    num_bytes: int = 0
     num_rows: int = 0
     num_columns: int = 0
-
-    def __post_init__(self):
-        self.num_bytes = self.size
+    serialized_size: int = 0
 
     def compute_size(self) -> "ParquetFileWithSize":
         REVISION = "refs/convert/parquet"
@@ -34,6 +31,7 @@ class ParquetFileWithSize(ParquetFile):
         # ^ are we streaming to only read the metadata in the footer, or is the whole parquet file read?
         self.num_rows = metadata.num_rows
         self.num_columns = metadata.num_columns
+        self.serialized_size = metadata.serialized_size
         return self
 
     def as_item(self) -> "ParquetFileItem":
@@ -43,9 +41,11 @@ class ParquetFileWithSize(ParquetFile):
             "split": self.split,
             "url": self.url,
             "filename": self.filename,
-            "num_bytes": self.num_bytes,
+            "num_bytes": self.size,
             "num_rows": self.num_rows,
             "num_columns": self.num_columns,
+            "serialized_size": self.serialized_size,
+            "size": self.size,
         }
 
 
@@ -58,6 +58,8 @@ class ParquetFileItem(TypedDict):
     num_bytes: int
     num_rows: int
     num_columns: int
+    serialized_size: int
+    size: int
 
 
 class SplitItem(TypedDict):
