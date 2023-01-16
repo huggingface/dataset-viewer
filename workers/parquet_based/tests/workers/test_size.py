@@ -5,7 +5,7 @@ from http import HTTPStatus
 
 import pytest
 import requests
-from libcommon.simple_cache import get_response, upsert_response
+from libcommon.simple_cache import upsert_response
 
 from parquet_based.config import AppConfig
 from parquet_based.workers.size import SizeWorker

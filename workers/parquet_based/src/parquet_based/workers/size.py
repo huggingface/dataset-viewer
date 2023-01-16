@@ -5,7 +5,9 @@ from dataclasses import asdict, dataclass
 from typing import Any, List, Mapping, TypedDict
 
 import hffs
-import pyarrow.parquet as pq
+
+# https://github.com/apache/arrow/issues/32609
+import pyarrow.parquet as pq  # type: ignore
 
 from parquet_based.workers._parquet_based_worker import ParquetBasedWorker, ParquetFile
 

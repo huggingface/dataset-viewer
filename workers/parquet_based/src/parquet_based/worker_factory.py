@@ -15,6 +15,5 @@ class ParquetBasedWorkerFactory(WorkerFactory):
         job_type = job_info["type"]
         if job_type == SizeWorker.get_job_type():
             return SizeWorker(job_info=job_info, app_config=self.app_config)
-        else:
-            supported_job_types = [SizeWorker.get_job_type()]
-            raise ValueError(f"Unsupported job type: '{job_type}'. The supported job types are: {supported_job_types}")
+        supported_job_types = [SizeWorker.get_job_type()]
+        raise ValueError(f"Unsupported job type: '{job_type}'. The supported job types are: {supported_job_types}")
