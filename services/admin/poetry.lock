@@ -351,7 +351,7 @@ requirements-deprecated-finder = ["pip-api", "pipreqs"]
 
 [[package]]
 name = "libcommon"
-version = "0.6.2"
+version = "0.6.3"
 description = "Library for utils, common to all the services and workers"
 category = "main"
 optional = false
@@ -369,7 +369,7 @@ pymongo = {version = ">=3.13.0,<4.0.0", extras = ["srv"]}
 
 [package.source]
 type = "file"
-url = "../../libs/libcommon/dist/libcommon-0.6.2-py3-none-any.whl"
+url = "../../libs/libcommon/dist/libcommon-0.6.3-py3-none-any.whl"
 
 [[package]]
 name = "lockfile"
@@ -992,7 +992,7 @@ python-versions = "*"
 [metadata]
 lock-version = "1.1"
 python-versions = "3.9.15"
-content-hash = "7c9dfa73a5e5c67ecee9dc9cc7723c9d8848ee9be7525db8f539a7826cd64dc0"
+content-hash = "4ead95204f058efa92bb5331d826f7b16c6a2faed43bed763002e3ecd7da69f7"
 
 [metadata.files]
 anyio = [
@@ -1249,7 +1249,7 @@ isort = [
     {file = "isort-5.11.4.tar.gz", hash = "sha256:6db30c5ded9815d813932c04c2f85a360bcdd35fed496f4d8f35495ef0a261b6"},
 ]
 libcommon = [
-    {file = "libcommon-0.6.2-py3-none-any.whl", hash = "sha256:0b5b90a890d81ba988310e518cdf8bd37dd9d175caeaba15eba2f730c17bc226"},
+    {file = "libcommon-0.6.3-py3-none-any.whl", hash = "sha256:2f500db82d84a97fbe671662477a225b25505892db0eb9057527d7e3e3f331bd"},
 ]
 lockfile = [
     {file = "lockfile-0.12.2-py2.py3-none-any.whl", hash = "sha256:6c3cb24f344923d30b2785d5ad75182c8ea7ac1b6171b08657258ec7429d50fa"},

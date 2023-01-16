@@ -16,6 +16,6 @@ run:
 
 .PHONY: pip-audit
 pip-audit:
-	bash -c "poetry run pip-audit --ignore-vuln GHSA-47fc-vmwq-366v --ignore-vuln GHSA-hcpj-qp55-gfph -r <(poetry export -f requirements.txt --with dev | sed '/^pymongo==/,+109 d' | sed '/^requests==2.28.1 ;/,+2 d')"
+	bash -c "poetry run pip-audit --ignore-vuln GHSA-47fc-vmwq-366v --ignore-vuln GHSA-hcpj-qp55-gfph -r <(poetry export -f requirements.txt --with dev | sed '/^pymongo==/,+109 d' | sed '/^requests==2.28.2 ;/,+2 d')"
 # ^ we remove problematic lines to have a working pip-audit. See https://github.com/pypa/pip-audit/issues/84#issuecomment-1326203111 for "requests"
 # ^ we also ignore GHSA-47fc-vmwq-366v vulnerability because it has no fix for the moment

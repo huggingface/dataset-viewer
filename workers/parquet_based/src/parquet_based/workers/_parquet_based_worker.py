@@ -3,14 +3,13 @@
 
 from dataclasses import dataclass
 from http import HTTPStatus
+from typing import List, Literal, Optional
 
 from libcommon.exceptions import CustomError
 from libcommon.simple_cache import DoesNotExist, get_response
 from libcommon.worker import JobInfo, Worker
-from typing import List, Literal, Optional
 
 from parquet_based.config import AppConfig, ParquetBasedConfig
-
 
 ParquetBasedWorkerErrorCode = Literal[
     "ErroneousCachedParquetFilesError", "MalformedCachedParquetFilesError", "NoCachedParquetFilesError"

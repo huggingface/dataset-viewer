@@ -21,14 +21,6 @@ from libcommon.simple_cache import (
     upsert_response,
 )
 
-
-def parse_version(string_version: str) -> version.Version:
-    parsed_version = version.parse(string_version)
-    if isinstance(parsed_version, version.LegacyVersion):
-        raise ValueError(f"LegacyVersion is not supported: {parsed_version}")
-    return parsed_version
-
-
 WorkerErrorCode = Literal[
     "ConfigNotFoundError",
     "NoGitRevisionError",
@@ -215,7 +207,7 @@ class Worker(ABC):
             :obj:`ValueError`: if worker's version or other_version is not a valid semantic version.
         """
         try:
-            return parse_version(self.get_version()).major - parse_version(other_version).major
+            return version.parse(self.get_version()).major - version.parse(other_version).major
         except Exception as err:
             raise RuntimeError(f"Could not get major versions: {err}") from err
 

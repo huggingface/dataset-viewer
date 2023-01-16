@@ -3,6 +3,7 @@
 
 
 from dataclasses import dataclass, field
+
 from environs import Env
 from libcommon.config import (
     CacheConfig,
@@ -11,7 +12,6 @@ from libcommon.config import (
     QueueConfig,
     WorkerLoopConfig,
 )
-
 
 PARQUET_BASED_ENDPOINT = "/size"
 
