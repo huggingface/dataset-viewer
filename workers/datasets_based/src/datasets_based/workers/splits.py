@@ -13,8 +13,7 @@ from datasets import (
 )
 from datasets.data_files import EmptyDatasetError as _EmptyDatasetError
 from libcommon.exceptions import CustomError
-from libcommon.queue import Queue
-from libcommon.simple_cache import delete_response, get_dataset_response_ids
+from libcommon.simple_cache import SplitFullName as _SplitFullName
 
 from datasets_based.workers._datasets_based_worker import DatasetsBasedWorker
 
@@ -85,7 +84,7 @@ def get_dataset_split_full_names(dataset: str, use_auth_token: Union[bool, str, 
     """
     logging.info(f"get dataset '{dataset}' split full names")
     return [
-        {"dataset": dataset, "config": config, "split": split}
+        {"dataset": dataset, "config": str(config), "split": str(split)}
         for config in sorted(get_dataset_config_names(path=dataset, use_auth_token=use_auth_token))
         for split in get_dataset_split_names(path=dataset, config_name=config, use_auth_token=use_auth_token)
     ]
@@ -171,32 +170,8 @@ class SplitsWorker(DatasetsBasedWorker):
         return "2.0.0"
 
     def compute(self) -> Mapping[str, Any]:
-        content = compute_splits_response(dataset=self.dataset, hf_token=self.common_config.hf_token)
+        return compute_splits_response(dataset=self.dataset, hf_token=self.common_config.hf_token)
 
-        new_splits = [(s["dataset"], s["config"], s["split"]) for s in content["splits"]]
-        for step in self.processing_step.children:
-            if step.input_type == "dataset":
-                Queue(type=step.job_type).add_job(
-                    dataset=self.dataset, config=self.config, split=self.split, force=self.force
-                )
-            else:
-                # remove obsolete responses from the cache
-                responses_in_cache = [
-                    (s["dataset"], s["config"], s["split"])
-                    for s in get_dataset_response_ids(dataset=self.dataset)
-                    if s["kind"] == step.cache_kind
-                ]
-                responses_to_delete = [s for s in responses_in_cache if s not in new_splits]
-                for d, c, s in responses_to_delete:
-                    delete_response(kind=step.cache_kind, dataset=d, config=c, split=s)
-                logging.debug(
-                    f"{len(responses_to_delete)} {step.endpoint} responses deleted from the cache for obsolete"
-                    f" splits of dataset={self.dataset}"
-                )
-                # compute the responses for the new splits
-                for d, c, s in new_splits:
-                    # we force the refresh of the /first_rows responses if the /splits refresh was forced
-                    Queue(type=step.job_type).add_job(dataset=d, config=c, split=s, force=self.force)
-                logging.debug(f"{len(new_splits)} {step.job_type} jobs added for the splits of dataset={self.dataset}")
-
-        return content
+    def get_new_splits(self, content: Mapping[str, Any]) -> set[_SplitFullName]:
+        """Get the set of new splits, from the content created by the compute."""
+        return {_SplitFullName(dataset=s["dataset"], config=s["config"], split=s["split"]) for s in content["splits"]}
