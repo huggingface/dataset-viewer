@@ -2,7 +2,7 @@
 authors = ["Sylvain Lesage <sylvain.lesage@huggingface.co>"]
 description = "Library for utils, common to all the services and workers"
 name = "libcommon"
-version = "0.6.3"
+version = "0.6.4"
 license = "Apache-2.0"
 
 [tool.poetry.dependencies]
