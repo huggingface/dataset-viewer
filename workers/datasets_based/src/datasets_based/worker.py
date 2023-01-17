@@ -6,8 +6,6 @@ from abc import ABC, abstractmethod
 from http import HTTPStatus
 from typing import Any, Literal, Mapping, Optional
 
-from packaging import version
-
 from libcommon.config import CommonConfig
 from libcommon.dataset import DatasetNotFoundError, get_dataset_git_revision
 from libcommon.exceptions import CustomError
@@ -20,6 +18,7 @@ from libcommon.simple_cache import (
     get_split_full_names_for_dataset_and_kind,
     upsert_response,
 )
+from packaging import version
 
 WorkerErrorCode = Literal[
     "ConfigNotFoundError",

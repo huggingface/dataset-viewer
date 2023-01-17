@@ -1,12 +1,12 @@
 from typing import Any, Mapping, Optional
 
 import pytest
-
 from libcommon.config import CommonConfig
 from libcommon.processing_graph import ProcessingGraph, ProcessingStep
 from libcommon.queue import Queue, Status, _clean_queue_database
 from libcommon.simple_cache import SplitFullName, _clean_cache_database
-from libcommon.worker import Worker
+
+from datasets_based.worker import Worker
 
 
 @pytest.fixture(autouse=True)

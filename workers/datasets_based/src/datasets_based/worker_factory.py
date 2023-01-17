@@ -1,9 +1,8 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2022 The HuggingFace Authors.
 
-from libcommon.worker import JobInfo, Worker, WorkerFactory
-
 from datasets_based.config import AppConfig, FirstRowsConfig, ParquetConfig
+from datasets_based.worker import JobInfo, Worker, WorkerFactory
 from datasets_based.workers.first_rows import FirstRowsWorker
 from datasets_based.workers.parquet import ParquetWorker
 from datasets_based.workers.splits import SplitsWorker

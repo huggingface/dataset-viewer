@@ -6,11 +6,11 @@ import random
 import time
 from dataclasses import dataclass
 
-from psutil import cpu_count, disk_usage, getloadavg, swap_memory, virtual_memory
-
 from libcommon.config import WorkerLoopConfig
 from libcommon.queue import EmptyQueueError, Queue
-from libcommon.worker import WorkerFactory
+from psutil import cpu_count, disk_usage, getloadavg, swap_memory, virtual_memory
+
+from datasets_based.worker import WorkerFactory
 
 
 @dataclass

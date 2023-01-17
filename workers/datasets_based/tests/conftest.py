@@ -4,6 +4,8 @@
 from pathlib import Path
 from typing import Iterator
 
+from libcommon.config import CacheConfig, QueueConfig
+from libcommon.processing_graph import ProcessingStep
 from libcommon.queue import _clean_queue_database
 from libcommon.simple_cache import _clean_cache_database
 from pytest import MonkeyPatch, fixture
@@ -73,3 +75,32 @@ def first_rows_config(set_env_vars: MonkeyPatch) -> FirstRowsConfig:
 
 # Import fixture modules as plugins
 pytest_plugins = ["tests.fixtures.datasets", "tests.fixtures.files", "tests.fixtures.hub"]
+
+
+@fixture()
+def test_processing_step() -> ProcessingStep:
+    return ProcessingStep(
+        endpoint="/dummy",
+        input_type="dataset",
+        requires=None,
+        required_by_dataset_viewer=False,
+        parent=None,
+        ancestors=[],
+        children=[],
+    )
+
+
+@fixture()
+def cache_config(app_config: AppConfig) -> CacheConfig:
+    cache_config = app_config.cache
+    if "test" not in cache_config.mongo_database:
+        raise ValueError("Test must be launched on a test mongo database")
+    return cache_config
+
+
+@fixture()
+def queue_config(app_config: AppConfig) -> QueueConfig:
+    queue_config = app_config.queue
+    if "test" not in queue_config.mongo_database:
+        raise ValueError("Test must be launched on a test mongo database")
+    return queue_config

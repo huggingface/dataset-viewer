@@ -25,9 +25,9 @@ from huggingface_hub.utils import RepositoryNotFoundError, RevisionNotFoundError
 from libcommon.dataset import ask_access
 from libcommon.exceptions import CustomError
 from libcommon.simple_cache import SplitFullName
-from libcommon.worker import DatasetNotFoundError, JobInfo
 
 from datasets_based.config import AppConfig, ParquetConfig
+from datasets_based.worker import DatasetNotFoundError, JobInfo
 from datasets_based.workers._datasets_based_worker import DatasetsBasedWorker
 
 ParquetWorkerErrorCode = Literal[

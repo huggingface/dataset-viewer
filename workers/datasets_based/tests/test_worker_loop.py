@@ -1,13 +1,13 @@
 from typing import Any, Mapping, Optional
 
 import pytest
-
 from libcommon.config import CommonConfig, QueueConfig, WorkerLoopConfig
 from libcommon.processing_graph import ProcessingStep
 from libcommon.queue import Queue, _clean_queue_database
 from libcommon.simple_cache import _clean_cache_database
-from libcommon.worker import JobInfo, Worker, WorkerFactory
-from libcommon.worker_loop import WorkerLoop
+
+from datasets_based.worker import JobInfo, Worker, WorkerFactory
+from datasets_based.worker_loop import WorkerLoop
 
 
 @pytest.fixture(autouse=True)

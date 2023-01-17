@@ -4,9 +4,9 @@
 from typing import Optional
 
 import pytest
-from libcommon.worker import JobInfo
 
 from datasets_based.config import AppConfig
+from datasets_based.worker import JobInfo
 from datasets_based.worker_factory import DatasetBasedWorkerFactory
 
 
