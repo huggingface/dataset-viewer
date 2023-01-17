@@ -55,8 +55,7 @@ def test_process(app_config: AppConfig, hub_public_csv: str) -> None:
     assert cached_response["error_code"] is None
     content = cached_response["content"]
     assert len(content["splits"]) == 1
-    assert content["splits"][0]["num_bytes"] is None
-    assert content["splits"][0]["num_examples"] is None
+    assert "stats" not in content["splits"][0]
 
 
 def test_doesnotexist(app_config: AppConfig) -> None:

@@ -211,7 +211,7 @@ class HubDatasetTest(TypedDict):
 HubDatasets = Mapping[str, HubDatasetTest]
 
 
-def create_splits_response(dataset: str, num_bytes: float = None, num_examples: int = None):
+def create_splits_response(dataset: str):
     dataset, config, split = get_default_config_split(dataset)
     return {
         "splits": [
@@ -219,8 +219,6 @@ def create_splits_response(dataset: str, num_bytes: float = None, num_examples: 
                 "dataset": dataset,
                 "config": config,
                 "split": split,
-                "num_bytes": num_bytes,
-                "num_examples": num_examples,
             }
         ]
     }
@@ -401,7 +399,7 @@ def hub_datasets(
         },
         "public": {
             "name": hub_public_csv,
-            "splits_response": create_splits_response(hub_public_csv, None, None),
+            "splits_response": create_splits_response(hub_public_csv),
             "first_rows_response": create_first_rows_response(hub_public_csv, DATA_cols, DATA_rows),
             "parquet_response": create_parquet_response(
                 dataset=hub_public_csv, filename="csv-train.parquet", size=CSV_PARQUET_SIZE
@@ -409,7 +407,7 @@ def hub_datasets(
         },
         "private": {
             "name": hub_private_csv,
-            "splits_response": create_splits_response(hub_private_csv, None, None),
+            "splits_response": create_splits_response(hub_private_csv),
             "first_rows_response": create_first_rows_response(hub_private_csv, DATA_cols, DATA_rows),
             "parquet_response": create_parquet_response(
                 dataset=hub_private_csv, filename="csv-train.parquet", size=CSV_PARQUET_SIZE
@@ -417,7 +415,7 @@ def hub_datasets(
         },
         "gated": {
             "name": hub_gated_csv,
-            "splits_response": create_splits_response(hub_gated_csv, None, None),
+            "splits_response": create_splits_response(hub_gated_csv),
             "first_rows_response": create_first_rows_response(hub_gated_csv, DATA_cols, DATA_rows),
             "parquet_response": create_parquet_response(
                 dataset=hub_gated_csv, filename="csv-train.parquet", size=CSV_PARQUET_SIZE
@@ -425,13 +423,13 @@ def hub_datasets(
         },
         "jsonl": {
             "name": hub_public_jsonl,
-            "splits_response": create_splits_response(hub_public_jsonl, None, None),
+            "splits_response": create_splits_response(hub_public_jsonl),
             "first_rows_response": create_first_rows_response(hub_public_jsonl, JSONL_cols, JSONL_rows),
             "parquet_response": None,
         },
         "gated_extra_fields": {
             "name": hub_gated_extra_fields_csv,
-            "splits_response": create_splits_response(hub_gated_extra_fields_csv, None, None),
+            "splits_response": create_splits_response(hub_gated_extra_fields_csv),
             "first_rows_response": create_first_rows_response(hub_gated_extra_fields_csv, DATA_cols, DATA_rows),
             "parquet_response": create_parquet_response(
                 dataset=hub_gated_extra_fields_csv, filename="csv-train.parquet", size=CSV_PARQUET_SIZE
@@ -439,7 +437,7 @@ def hub_datasets(
         },
         "audio": {
             "name": hub_public_audio,
-            "splits_response": create_splits_response(hub_public_audio, 54.0, 1),
+            "splits_response": create_splits_response(hub_public_audio),
             "first_rows_response": create_first_rows_response(
                 hub_public_audio, AUDIO_cols, get_AUDIO_rows(hub_public_audio)
             ),
@@ -449,7 +447,7 @@ def hub_datasets(
         },
         "image": {
             "name": hub_public_image,
-            "splits_response": create_splits_response(hub_public_image, 0, 1),
+            "splits_response": create_splits_response(hub_public_image),
             "first_rows_response": create_first_rows_response(
                 hub_public_image, IMAGE_cols, get_IMAGE_rows(hub_public_image)
             ),
@@ -457,7 +455,7 @@ def hub_datasets(
         },
         "images_list": {
             "name": hub_public_images_list,
-            "splits_response": create_splits_response(hub_public_images_list, 0, 1),
+            "splits_response": create_splits_response(hub_public_images_list),
             "first_rows_response": create_first_rows_response(
                 hub_public_images_list, IMAGES_LIST_cols, get_IMAGES_LIST_rows(hub_public_images_list)
             ),
@@ -465,7 +463,7 @@ def hub_datasets(
         },
         "big": {
             "name": hub_public_big,
-            "splits_response": create_splits_response(hub_public_big, 0, 1),
+            "splits_response": create_splits_response(hub_public_big),
             "first_rows_response": create_first_rows_response(hub_public_big, BIG_cols, BIG_rows),
             "parquet_response": None,
         },
