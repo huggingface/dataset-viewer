@@ -8,8 +8,8 @@ from datasets_based.config import (
 )
 from datasets_based.worker import JobInfo, Worker, WorkerFactory
 from datasets_based.workers.first_rows import FirstRowsWorker
-from datasets_based.workers.parquet_and_dataset_info import ParquetAndDatasetInfoWorker
 from datasets_based.workers.parquet import ParquetWorker
+from datasets_based.workers.parquet_and_dataset_info import ParquetAndDatasetInfoWorker
 from datasets_based.workers.splits import SplitsWorker
 
 

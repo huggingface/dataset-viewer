@@ -2,18 +2,17 @@
 # Copyright 2022 The HuggingFace Authors.
 
 from http import HTTPStatus
-
 from typing import Any
 
 import pytest
-from libcommon.simple_cache import upsert_response, _clean_cache_database
+from libcommon.simple_cache import _clean_cache_database, upsert_response
 
 from datasets_based.config import AppConfig
 from datasets_based.workers.parquet import (
+    DatasetNotFoundError,
     ParquetWorker,
     PreviousStepFormatError,
     PreviousStepStatusError,
-    DatasetNotFoundError,
 )
 
 
