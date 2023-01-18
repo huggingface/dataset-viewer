@@ -181,5 +181,5 @@ class SizesWorker(Worker):
         """Get the set of new splits, from the content created by the compute."""
         return {
             SplitFullName(dataset=split_size["dataset"], config=split_size["config"], split=split_size["split"])
-            for split_size in content["splits"]
+            for split_size in content["sizes"]["splits"]
         }
