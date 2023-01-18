@@ -7,6 +7,7 @@ from datasets_based.config import (
     ParquetAndDatasetInfoConfig,
 )
 from datasets_based.worker import JobInfo, Worker, WorkerFactory
+from datasets_based.workers.dataset_info import DatasetInfoWorker
 from datasets_based.workers.first_rows import FirstRowsWorker
 from datasets_based.workers.parquet import ParquetWorker
 from datasets_based.workers.parquet_and_dataset_info import ParquetAndDatasetInfoWorker
@@ -33,6 +34,8 @@ class DatasetBasedWorkerFactory(WorkerFactory):
             )
         elif job_type == ParquetWorker.get_job_type():
             return ParquetWorker(job_info=job_info, app_config=self.app_config)
+        elif job_type == DatasetInfoWorker.get_job_type():
+            return DatasetInfoWorker(job_info=job_info, app_config=self.app_config)
         else:
             supported_job_types = [
                 SplitsWorker.get_job_type(),

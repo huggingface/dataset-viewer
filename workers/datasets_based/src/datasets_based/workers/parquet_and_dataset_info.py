@@ -514,7 +514,7 @@ def compute_parquet_and_dataset_info_response(
             The maximum size of a dataset in bytes. If the dataset is under the limit (which means that the size
             can be fetched), it will be allowed.
     Returns:
-        `ParquetAndDatasetInfoResponseResult`: An object with the parquet_and_dataset_info_response
+        `ParquetAndDatasetInfoResponse`: An object with the parquet_and_dataset_info_response
           (dataset info and list of parquet files).
     <Tip>
     Raises the following errors:

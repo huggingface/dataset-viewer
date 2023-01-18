@@ -8,9 +8,9 @@ import pytest
 from libcommon.simple_cache import _clean_cache_database, upsert_response
 
 from datasets_based.config import AppConfig
-from datasets_based.workers.parquet import (
+from datasets_based.workers.dataset_info import (
+    DatasetInfoWorker,
     DatasetNotFoundError,
-    ParquetWorker,
     PreviousStepFormatError,
     PreviousStepStatusError,
 )
@@ -21,10 +21,10 @@ def clean_mongo_database(app_config: AppConfig) -> None:
     _clean_cache_database()
 
 
-def get_worker(dataset: str, app_config: AppConfig, force: bool = False) -> ParquetWorker:
-    return ParquetWorker(
+def get_worker(dataset: str, app_config: AppConfig, force: bool = False) -> DatasetInfoWorker:
+    return DatasetInfoWorker(
         job_info={
-            "type": ParquetWorker.get_job_type(),
+            "type": DatasetInfoWorker.get_job_type(),
             "dataset": dataset,
             "config": None,
             "split": None,
@@ -43,14 +43,14 @@ def get_worker(dataset: str, app_config: AppConfig, force: bool = False) -> Parq
             HTTPStatus.OK,
             {"parquet_files": [{"key": "value"}], "dataset_info": {"key": "value"}},
             None,
-            {"parquet_files": [{"key": "value"}]},
+            {"dataset_info": {"key": "value"}},
             False,
         ),
         ("status_error", HTTPStatus.NOT_FOUND, {"error": "error"}, PreviousStepStatusError.__name__, None, True),
         (
             "format_error",
             HTTPStatus.OK,
-            {"not_parquet_files": "wrong_format"},
+            {"not_dataset_info": "wrong_format"},
             PreviousStepFormatError.__name__,
             None,
             True,
