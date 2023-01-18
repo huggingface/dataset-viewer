@@ -102,7 +102,23 @@ firstRows:
     limits:
       cpu: 1
 
+parquetAndDatasetInfo:
+  replicas: 1
+  resources:
+    requests:
+      cpu: 0.01
+    limits:
+      cpu: 1
+
 parquet:
+  replicas: 1
+  resources:
+    requests:
+      cpu: 0.01
+    limits:
+      cpu: 1
+
+datasetInfo:
   replicas: 1
   resources:
     requests:
