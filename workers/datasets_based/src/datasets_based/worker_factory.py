@@ -42,5 +42,6 @@ class DatasetBasedWorkerFactory(WorkerFactory):
                 FirstRowsWorker.get_job_type(),
                 ParquetAndDatasetInfoWorker.get_job_type(),
                 ParquetWorker.get_job_type(),
+                DatasetInfoWorker.get_job_type(),
             ]
             raise ValueError(f"Unsupported job type: '{job_type}'. The supported job types are: {supported_job_types}")
