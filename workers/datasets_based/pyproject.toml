@@ -17,7 +17,7 @@ gdown = "^4.2.0"
 huggingface-hub = "^0.11.0"
 kenlm = { url = "https://github.com/kpu/kenlm/archive/master.zip" }
 kss = "^2.6.0"
-libcommon = { path = "../../libs/libcommon/dist/libcommon-0.6.4-py3-none-any.whl", develop = false }
+libcommon = { path = "../../libs/libcommon/dist/libcommon-0.6.5-py3-none-any.whl", develop = false }
 lm-dataformat = "^0.0.20"
 lxml = "^4.9.1"
 nlp = "^0.4.0"

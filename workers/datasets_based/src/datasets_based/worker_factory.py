@@ -11,6 +11,7 @@ from datasets_based.workers.dataset_info import DatasetInfoWorker
 from datasets_based.workers.first_rows import FirstRowsWorker
 from datasets_based.workers.parquet import ParquetWorker
 from datasets_based.workers.parquet_and_dataset_info import ParquetAndDatasetInfoWorker
+from datasets_based.workers.sizes import SizesWorker
 from datasets_based.workers.splits import SplitsWorker
 
 
@@ -36,6 +37,8 @@ class DatasetBasedWorkerFactory(WorkerFactory):
             return ParquetWorker(job_info=job_info, app_config=self.app_config)
         elif job_type == DatasetInfoWorker.get_job_type():
             return DatasetInfoWorker(job_info=job_info, app_config=self.app_config)
+        elif job_type == SizesWorker.get_job_type():
+            return SizesWorker(job_info=job_info, app_config=self.app_config)
         else:
             supported_job_types = [
                 SplitsWorker.get_job_type(),
@@ -43,5 +46,6 @@ class DatasetBasedWorkerFactory(WorkerFactory):
                 ParquetAndDatasetInfoWorker.get_job_type(),
                 ParquetWorker.get_job_type(),
                 DatasetInfoWorker.get_job_type(),
+                SizesWorker.get_job_type(),
             ]
             raise ValueError(f"Unsupported job type: '{job_type}'. The supported job types are: {supported_job_types}")

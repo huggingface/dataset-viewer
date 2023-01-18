@@ -18,6 +18,7 @@ from datasets_based.worker_factory import DatasetBasedWorkerFactory
         ("/parquet-and-dataset-info", "ParquetAndDatasetInfoWorker"),
         ("/parquet", "ParquetWorker"),
         ("/dataset-info", "DatasetInfoWorker"),
+        ("/sizes", "SizesWorker"),
         ("/unknown", None),
     ],
 )
