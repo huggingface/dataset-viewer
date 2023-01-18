@@ -163,6 +163,19 @@ services:
     depends_on:
       - mongodb
     restart: always
+  worker-sizes:
+    # build:
+    #   context: ..
+    #   dockerfile: workers/dataset_based/Dockerfile
+    image: ${IMAGE_WORKER_DATASETS_BASED?IMAGE_WORKER_DATASETS_BASED env var must be provided}
+    extends:
+      file: docker-compose-base.yml
+      service: datasets-worker
+    environment:
+      DATASETS_BASED_ENDPOINT: "/sizes" # hard-coded
+    depends_on:
+      - mongodb
+    restart: always
   mongodb:
     image: mongo
     volumes:

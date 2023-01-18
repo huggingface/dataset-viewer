@@ -44,6 +44,7 @@ def test_auth_e2e(
         f"/parquet-and-dataset-info?dataset={dataset}",
         f"/parquet?dataset={dataset}",
         f"/dataset-info?dataset={dataset}",
+        f"/sizes?dataset={dataset}",
     ]
     for endpoint in endpoints:
         poll_until_ready_and_assert(

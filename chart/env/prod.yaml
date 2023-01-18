@@ -265,3 +265,20 @@ datasetInfo:
       cpu: 2
       memory: "1Gi"
   tolerations: []
+
+sizes:
+  # override the common queue parameters
+  queue:
+    # Maximum number of jobs running at the same time for the same namespace
+    maxJobsPerNamespace: 2
+  nodeSelector:
+    role-datasets-server: "true"
+  replicas: 2
+  resources:
+    requests:
+      cpu: 1
+      memory: "0.1Gi"
+    limits:
+      cpu: 2
+      memory: "1Gi"
+  tolerations: []

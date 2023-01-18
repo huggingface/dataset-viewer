@@ -95,6 +95,11 @@ app: "{{ include "release" . }}-worker-parquet"
 app: "{{ include "release" . }}-worker-dataset-info"
 {{- end -}}
 
+{{- define "labels.sizes" -}}
+{{ include "labels" . }}
+app: "{{ include "release" . }}-worker-sizes"
+{{- end -}}
+
 
 {{/*
 The assets base URL
