@@ -112,10 +112,10 @@ services:
     depends_on:
       - mongodb
     restart: always
-  worker-parquet:
+  worker-parquet-and-dataset-info:
     # build:
     #   context: ..
-    #   dockerfile: workers/parquet/Dockerfile
+    #   dockerfile: workers/dataset_based/Dockerfile
     image: ${IMAGE_WORKER_DATASETS_BASED?IMAGE_WORKER_DATASETS_BASED env var must be provided}
     volumes:
       - parquet-datasets-cache:${HF_DATASETS_CACHE-/datasets-cache}:rw
@@ -125,15 +125,41 @@ services:
       file: docker-compose-base.yml
       service: datasets-worker
     environment:
+      DATASETS_BASED_ENDPOINT: "/parquet-and-dataset-info" # hard-coded
+      PARQUET_AND_DATASET_INFO_BLOCKED_DATASETS: ${PARQUET_AND_DATASET_INFO_BLOCKED_DATASETS-}
+      PARQUET_AND_DATASET_INFO_COMMIT_MESSAGE: ${PARQUET_AND_DATASET_INFO_COMMIT_MESSAGE-Update parquet files}
+      PARQUET_AND_DATASET_INFO_COMMITTER_HF_TOKEN: ${PARQUET_AND_DATASET_INFO_COMMITTER_HF_TOKEN-}
+      PARQUET_AND_DATASET_INFO_MAX_DATASET_SIZE: ${PARQUET_AND_DATASET_INFO_MAX_DATASET_SIZE-100_000_000}
+      PARQUET_AND_DATASET_INFO_SOURCE_REVISION: ${PARQUET_AND_DATASET_INFO_SOURCE_REVISION-main}
+      PARQUET_AND_DATASET_INFO_SUPPORTED_DATASETS: ${PARQUET_AND_DATASET_INFO_SUPPORTED_DATASETS-}
+      PARQUET_AND_DATASET_INFO_TARGET_REVISION: ${PARQUET_AND_DATASET_INFO_TARGET_REVISION-refs/convert/parquet}
+      PARQUET_AND_DATASET_INFO_URL_TEMPLATE: ${PARQUET_AND_DATASET_INFO_URL_TEMPLATE-/datasets/%s/resolve/%s/%s}
+    depends_on:
+      - mongodb
+    restart: always
+  worker-parquet:
+    # build:
+    #   context: ..
+    #   dockerfile: workers/dataset_based/Dockerfile
+    image: ${IMAGE_WORKER_DATASETS_BASED?IMAGE_WORKER_DATASETS_BASED env var must be provided}
+    extends:
+      file: docker-compose-base.yml
+      service: datasets-worker
+    environment:
       DATASETS_BASED_ENDPOINT: "/parquet" # hard-coded
-      PARQUET_BLOCKED_DATASETS: ${PARQUET_BLOCKED_DATASETS-}
-      PARQUET_COMMIT_MESSAGE: ${PARQUET_COMMIT_MESSAGE-Update parquet files}
-      PARQUET_COMMITTER_HF_TOKEN: ${PARQUET_COMMITTER_HF_TOKEN-}
-      PARQUET_MAX_DATASET_SIZE: ${PARQUET_MAX_DATASET_SIZE-100_000_000}
-      PARQUET_SOURCE_REVISION: ${PARQUET_SOURCE_REVISION-main}
-      PARQUET_SUPPORTED_DATASETS: ${PARQUET_SUPPORTED_DATASETS-}
-      PARQUET_TARGET_REVISION: ${PARQUET_TARGET_REVISION-refs/convert/parquet}
-      PARQUET_URL_TEMPLATE: ${PARQUET_URL_TEMPLATE-/datasets/%s/resolve/%s/%s}
+    depends_on:
+      - mongodb
+    restart: always
+  worker-dataset-info:
+    # build:
+    #   context: ..
+    #   dockerfile: workers/dataset_based/Dockerfile
+    image: ${IMAGE_WORKER_DATASETS_BASED?IMAGE_WORKER_DATASETS_BASED env var must be provided}
+    extends:
+      file: docker-compose-base.yml
+      service: datasets-worker
+    environment:
+      DATASETS_BASED_ENDPOINT: "/dataset-info" # hard-coded
     depends_on:
       - mongodb
     restart: always

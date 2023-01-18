@@ -61,7 +61,7 @@ def datasets() -> Mapping[str, Dataset]:
         "timestamp_2": value(pd.Timestamp(1513393355.5, unit="s"), None),
         "timestamp_3": value(pd.Timestamp(1513393355500, unit="ms"), None),
         "timestamp_tz": value(pd.Timestamp(year=2020, month=1, day=1, tz="US/Pacific"), None),
-        "string": value("a string", pd.StringDtype()),
+        "string": value("a string", pd.StringDtype(storage="python")),
         # other types of features
         "class_label": other("positive", ClassLabel(names=["negative", "positive"])),
         "dict": other({"a": 0}, None),
@@ -127,5 +127,7 @@ def datasets() -> Mapping[str, Dataset]:
             [{"a": {"b": 0}}, {"a": {"b": 1}}], Sequence(feature={"a": {"b": Value(dtype="int64")}})
         ),
         "none_value": other({"a": None}, {"a": Value(dtype="int64")}),
-        "big": Dataset.from_pandas(pd.DataFrame({"col": ["a" * 1_234 for _ in range(4_567)]}, dtype=pd.StringDtype())),
+        "big": Dataset.from_pandas(
+            pd.DataFrame({"col": ["a" * 1_234 for _ in range(4_567)]}, dtype=pd.StringDtype(storage="python"))
+        ),
     }

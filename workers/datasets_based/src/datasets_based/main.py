@@ -2,10 +2,10 @@
 # Copyright 2022 The HuggingFace Authors.
 
 from libcommon.queue import Queue
-from libcommon.worker_loop import WorkerLoop
 
 from datasets_based.config import AppConfig
 from datasets_based.worker_factory import DatasetBasedWorkerFactory
+from datasets_based.worker_loop import WorkerLoop
 
 if __name__ == "__main__":
     app_config = AppConfig.from_env()

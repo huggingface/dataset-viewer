@@ -5,7 +5,7 @@ import json
 import os
 import time
 from pathlib import Path
-from typing import Any, Mapping, Optional, Tuple
+from typing import Any, Literal, Mapping, Optional, Tuple
 
 import requests
 from requests import Response
@@ -96,6 +96,45 @@ def get_default_config_split(dataset: str) -> Tuple[str, str, str]:
     config = dataset.replace("/", "--")
     split = "train"
     return dataset, config, split
+
+
+def post_webhook(
+    dataset: str, event: Literal["add", "remove", "update", "move"], movedTo: Optional[str] = None
+) -> Response:
+    json: dict[str, Any] = {"event": event, "repo": {"type": "dataset", "name": dataset}}
+    if movedTo is not None:
+        json["movedTo"] = movedTo
+    return post("/webhook", json=json)
+
+
+def log(response: Response, url: str) -> str:
+    return f"{response.status_code} - {response.headers} - {response.text} - {url}"
+
+
+def poll_until_ready_and_assert(
+    relative_url: str,
+    expected_status_code: int,
+    expected_error_code: Optional[str],
+    headers: Headers = None,
+    url: str = URL,
+) -> None:
+    if headers is None:
+        headers = {}
+    interval = INTERVAL
+    timeout = MAX_DURATION
+    retries = timeout // interval
+    should_retry = True
+    response = None
+    while retries > 0 and should_retry:
+        retries -= 1
+        time.sleep(interval)
+        response = get(relative_url=relative_url, headers=headers, url=url)
+        print(response.headers.get("X-Error-Code"))
+        should_retry = response.headers.get("X-Error-Code") == "ResponseNotReady"
+    if retries == 0 or response is None:
+        raise RuntimeError("Poll timeout")
+    assert response.status_code == expected_status_code, log(response, url)
+    assert response.headers.get("X-Error-Code") == expected_error_code, log(response, url)
 
 
 # explicit re-export

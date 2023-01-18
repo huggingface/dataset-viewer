@@ -4,9 +4,9 @@
 from typing import Optional
 
 import pytest
-from libcommon.worker import JobInfo
 
 from datasets_based.config import AppConfig
+from datasets_based.worker import JobInfo
 from datasets_based.worker_factory import DatasetBasedWorkerFactory
 
 
@@ -15,7 +15,9 @@ from datasets_based.worker_factory import DatasetBasedWorkerFactory
     [
         ("/splits", "SplitsWorker"),
         ("/first-rows", "FirstRowsWorker"),
+        ("/parquet-and-dataset-info", "ParquetAndDatasetInfoWorker"),
         ("/parquet", "ParquetWorker"),
+        ("/dataset-info", "DatasetInfoWorker"),
         ("/unknown", None),
     ],
 )

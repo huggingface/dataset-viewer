@@ -60,7 +60,7 @@ jobs:
           # hard coded, see e2e/tests/fixtures/hub.py
           COMMON_HF_ENDPOINT: "https://hub-ci.huggingface.co"
           COMMON_HF_TOKEN: "hf_app_datasets-server_token"
-          PARQUET_COMMITTER_HF_TOKEN: "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"
+          PARQUET_AND_DATASET_INFO_COMMITTER_HF_TOKEN: "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"
           FIRST_ROWS_MAX_NUMBER: "4"
           PORT_REVERSE_PROXY: "8000"
           PROMETHEUS_MULTIPROC_DIR: "/tmp"
@@ -68,6 +68,7 @@ jobs:
           API_UVICORN_PORT: "8080"
           ADMIN_UVICORN_NUM_WORKERS: "2"
           ADMIN_UVICORN_PORT: "8081"
+          COMMON_LOG_LEVEL: "DEBUG"
         working-directory: tools
         run: docker compose -f ./docker-compose-datasets-server.yml up -d
       - name: Install dependencies
@@ -80,7 +81,7 @@ jobs:
           # hard coded, see e2e/tests/fixtures/hub.py
           COMMON_HF_ENDPOINT: "https://hub-ci.huggingface.co"
           COMMON_HF_TOKEN: "hf_app_datasets-server_token"
-          PARQUET_COMMITTER_HF_TOKEN: "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"
+          PARQUET_AND_DATASET_INFO_COMMITTER_HF_TOKEN: "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"
           FIRST_ROWS_MAX_NUMBER: "4"
           PORT_REVERSE_PROXY: "8000"
           PROMETHEUS_MULTIPROC_DIR: "/tmp"
@@ -88,5 +89,6 @@ jobs:
           API_UVICORN_PORT: "8080"
           ADMIN_UVICORN_NUM_WORKERS: "2"
           ADMIN_UVICORN_PORT: "8081"
+          COMMON_LOG_LEVEL: "DEBUG"
         run: |
           poetry run python -m pytest -vv -x tests

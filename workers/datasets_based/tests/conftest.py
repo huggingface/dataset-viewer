@@ -4,6 +4,8 @@
 from pathlib import Path
 from typing import Iterator
 
+from libcommon.config import CacheConfig, QueueConfig
+from libcommon.processing_graph import ProcessingStep
 from libcommon.queue import _clean_queue_database
 from libcommon.simple_cache import _clean_cache_database
 from pytest import MonkeyPatch, fixture
@@ -45,8 +47,8 @@ def set_env_vars(datasets_cache_directory: Path, modules_cache_directory: Path) 
     mp.setenv("COMMON_HF_TOKEN", CI_APP_TOKEN)
     mp.setenv("ASSETS_BASE_URL", "http://localhost/assets")
     mp.setenv("FIRST_ROWS_MAX_NUMBER", "7")
-    mp.setenv("PARQUET_MAX_DATASET_SIZE", "10_000")
-    mp.setenv("PARQUET_COMMITTER_HF_TOKEN", CI_USER_TOKEN)
+    mp.setenv("PARQUET_AND_DATASET_INFO_MAX_DATASET_SIZE", "10_000")
+    mp.setenv("PARQUET_AND_DATASET_INFO_COMMITTER_HF_TOKEN", CI_USER_TOKEN)
     mp.setenv("DATASETS_BASED_HF_DATASETS_CACHE", str(datasets_cache_directory))
     mp.setenv("HF_MODULES_CACHE", str(modules_cache_directory))
     yield mp
@@ -73,3 +75,32 @@ def first_rows_config(set_env_vars: MonkeyPatch) -> FirstRowsConfig:
 
 # Import fixture modules as plugins
 pytest_plugins = ["tests.fixtures.datasets", "tests.fixtures.files", "tests.fixtures.hub"]
+
+
+@fixture()
+def test_processing_step() -> ProcessingStep:
+    return ProcessingStep(
+        endpoint="/dummy",
+        input_type="dataset",
+        requires=None,
+        required_by_dataset_viewer=False,
+        parent=None,
+        ancestors=[],
+        children=[],
+    )
+
+
+@fixture()
+def cache_config(app_config: AppConfig) -> CacheConfig:
+    cache_config = app_config.cache
+    if "test" not in cache_config.mongo_database:
+        raise ValueError("Test must be launched on a test mongo database")
+    return cache_config
+
+
+@fixture()
+def queue_config(app_config: AppConfig) -> QueueConfig:
+    queue_config = app_config.queue
+    if "test" not in queue_config.mongo_database:
+        raise ValueError("Test must be launched on a test mongo database")
+    return queue_config

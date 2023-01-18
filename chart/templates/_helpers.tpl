@@ -80,9 +80,19 @@ app: "{{ include "release" . }}-worker-splits"
 app: "{{ include "release" . }}-worker-first-rows"
 {{- end -}}
 
+{{- define "labels.parquetAndDatasetInfo" -}}
+{{ include "labels" . }}
+app: "{{ include "release" . }}-worker-parquet-and-dataset-info"
+{{- end -}}
+
 {{- define "labels.parquet" -}}
 {{ include "labels" . }}
 app: "{{ include "release" . }}-worker-parquet"
+{{- end -}}
+
+{{- define "labels.datasetInfo" -}}
+{{ include "labels" . }}
+app: "{{ include "release" . }}-worker-dataset-info"
 {{- end -}}
 
 

@@ -11,9 +11,9 @@ from typing import Optional
 
 import datasets.config
 from libcommon.storage import init_dir, remove_dir
-from libcommon.worker import JobInfo, Worker
 
 from datasets_based.config import AppConfig, DatasetsBasedConfig
+from datasets_based.worker import JobInfo, Worker
 
 
 class DatasetsBasedWorker(Worker):

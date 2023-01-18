@@ -6,8 +6,6 @@ from abc import ABC, abstractmethod
 from http import HTTPStatus
 from typing import Any, Literal, Mapping, Optional
 
-from packaging import version
-
 from libcommon.config import CommonConfig
 from libcommon.dataset import DatasetNotFoundError, get_dataset_git_revision
 from libcommon.exceptions import CustomError
@@ -20,14 +18,7 @@ from libcommon.simple_cache import (
     get_split_full_names_for_dataset_and_kind,
     upsert_response,
 )
-
-
-def parse_version(string_version: str) -> version.Version:
-    parsed_version = version.parse(string_version)
-    if isinstance(parsed_version, version.LegacyVersion):
-        raise ValueError(f"LegacyVersion is not supported: {parsed_version}")
-    return parsed_version
-
+from packaging import version
 
 WorkerErrorCode = Literal[
     "ConfigNotFoundError",
@@ -215,7 +206,7 @@ class Worker(ABC):
             :obj:`ValueError`: if worker's version or other_version is not a valid semantic version.
         """
         try:
-            return parse_version(self.get_version()).major - parse_version(other_version).major
+            return version.parse(self.get_version()).major - version.parse(other_version).major
         except Exception as err:
             raise RuntimeError(f"Could not get major versions: {err}") from err
 
@@ -268,10 +259,10 @@ class Worker(ABC):
             try:
                 self.pre_compute()
                 content = self.compute()
-                self.create_children_jobs(self.get_new_splits(content))
             finally:
                 # ensure the post_compute hook is called even if the compute raises an exception
                 self.post_compute()
+            self.create_children_jobs(self.get_new_splits(content))
             upsert_response(
                 kind=self.processing_step.cache_kind,
                 dataset=self.dataset,

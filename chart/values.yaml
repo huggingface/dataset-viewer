@@ -248,7 +248,7 @@ firstRows:
       cpu: 1
   tolerations: []
 
-parquet:
+parquetAndDatasetInfo:
   # comma-separated list of the blocked datasets. Defaults to empty.
   blockedDatasets: ""
   # the git commit message when the parquet files are uploaded to the Hub. Defaults to `Update parquet files`.
@@ -263,6 +263,34 @@ parquet:
   targetRevision: "refs/convert/parquet"
   # the URL template to build the parquet file URLs. Defaults to `/datasets/%s/resolve/%s/%s`.
   urlTemplate: "/datasets/%s/resolve/%s/%s"
+  # override the common queue parameters
+  queue:
+    # Maximum number of jobs running at the same time for the same namespace
+    maxJobsPerNamespace: 1
+  nodeSelector: {}
+  replicas: 1
+  resources:
+    requests:
+      cpu: 1
+    limits:
+      cpu: 1
+  tolerations: []
+
+parquet:
+  # override the common queue parameters
+  queue:
+    # Maximum number of jobs running at the same time for the same namespace
+    maxJobsPerNamespace: 1
+  nodeSelector: {}
+  replicas: 1
+  resources:
+    requests:
+      cpu: 1
+    limits:
+      cpu: 1
+  tolerations: []
+
+datasetInfo:
   # override the common queue parameters
   queue:
     # Maximum number of jobs running at the same time for the same namespace
