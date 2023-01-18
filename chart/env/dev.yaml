@@ -14,7 +14,7 @@ secrets:
     fromSecret: true
     secretName: "datasets-server-hf-token"
   userHfToken:
-    fromSecret: false
+    fromSecret: true
     secretName: "hf-token-francky"
 
 persistence:
