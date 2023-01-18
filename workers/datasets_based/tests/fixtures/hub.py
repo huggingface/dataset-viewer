@@ -281,7 +281,7 @@ def create_dataset_info_response_for_audio(dataset: str, config: str):
         "features": AUDIO_cols,
         "splits": {"train": {"name": "train", "num_bytes": 59, "num_examples": 1, "dataset_name": "parquet"}},
         "download_checksums": {
-            "https://hub-ci.huggingface.co/datasets/{dataset}/resolve/__COMMIT__/data/train-00000-of-00001-__STR__.parquet": {
+            "SOME_KEY": {
                 "num_bytes": 1124,
                 "checksum": "3b630ef6ede66c5ced336df78fd99d98f835b459baadbe88a2cdf180709e9543",
             }
