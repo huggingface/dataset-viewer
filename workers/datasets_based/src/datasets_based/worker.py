@@ -259,10 +259,10 @@ class Worker(ABC):
             try:
                 self.pre_compute()
                 content = self.compute()
-                self.create_children_jobs(self.get_new_splits(content))
             finally:
                 # ensure the post_compute hook is called even if the compute raises an exception
                 self.post_compute()
+            self.create_children_jobs(self.get_new_splits(content))
             upsert_response(
                 kind=self.processing_step.cache_kind,
                 dataset=self.dataset,
