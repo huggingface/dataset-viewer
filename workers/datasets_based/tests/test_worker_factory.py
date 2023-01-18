@@ -15,7 +15,7 @@ from datasets_based.worker_factory import DatasetBasedWorkerFactory
     [
         ("/splits", "SplitsWorker"),
         ("/first-rows", "FirstRowsWorker"),
-        ("/parquet", "ParquetWorker"),
+        ("/parquet-and-dataset-info", "ParquetAndDatasetInfoWorker"),
         ("/unknown", None),
     ],
 )

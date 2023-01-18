@@ -10,9 +10,11 @@ from pathlib import Path
 from typing import Any, List, Literal, Mapping, Optional, Tuple, TypedDict
 from urllib.parse import quote
 
+import datasets
 import datasets.config
 from datasets import get_dataset_config_names, get_dataset_infos, load_dataset_builder
 from datasets.data_files import EmptyDatasetError as _EmptyDatasetError
+from datasets.utils.py_utils import asdict
 from huggingface_hub.hf_api import (
     CommitOperation,
     CommitOperationAdd,
@@ -26,7 +28,7 @@ from libcommon.dataset import ask_access
 from libcommon.exceptions import CustomError
 from libcommon.simple_cache import SplitFullName
 
-from datasets_based.config import AppConfig, ParquetConfig
+from datasets_based.config import AppConfig, ParquetAndDatasetInfoConfig
 from datasets_based.worker import DatasetNotFoundError, JobInfo
 from datasets_based.workers._datasets_based_worker import DatasetsBasedWorker
 
@@ -105,8 +107,9 @@ class ParquetFileItem(TypedDict):
     size: int
 
 
-class ParquetResponse(TypedDict):
+class ParquetAndDatasetInfoResponse(TypedDict):
     parquet_files: List[ParquetFileItem]
+    dataset_info: dict[str, Any]
 
 
 DATASET_TYPE = "dataset"
@@ -398,7 +401,75 @@ def raise_if_not_supported(
     raise_if_too_big_from_hub(dataset_info=dataset_info, max_dataset_size=max_dataset_size)
 
 
-def compute_parquet_response(
+class EmptySplitsError(Exception):
+    pass
+
+
+class SplitInfoFormatError(Exception):
+    pass
+
+
+class EmptyConfigNameError(Exception):
+    pass
+
+
+class EmptyDownloadSizeError(Exception):
+    pass
+
+
+class EmptyFeaturesError(Exception):
+    pass
+
+
+# def dataset_info_to_splits_response(dataset: str, config_infos: List[DatasetInfo]):
+#     split_items: List[SplitItem] = []
+#     for config_info in config_infos:
+#         config = config_info.config_name
+#         if config is None:
+#             raise EmptyConfigNameError(f"Dataset info for dataset='{dataset}' has no config name.")
+#         if config_info.splits is None:
+#             raise EmptySplitsError(f"Dataset info for dataset='{dataset}', config='{config}' has no splits.")
+#         if config_info.download_size is None:
+#             raise EmptyDownloadSizeError(
+#                 f"Dataset info for dataset='{dataset}', config='{config}' has no download_size."
+#             )
+#         if config_info.features is None:
+#             raise EmptyFeaturesError(f"Dataset info for dataset='{dataset}', config='{config}' has no features.")
+#         for split_info in config_info.splits.values():
+#             if not isinstance(split_info, SplitInfo):
+#                 raise SplitInfoFormatError(
+#                     f"Split info for dataset='{dataset}', config='{config}' has an unknown format."
+#                 )
+#             split = split_info.name
+#             split_items.append(
+#                 # {'train': SplitInfo(name='train', num_bytes=148581, num_examples=569, shard_lengths=None,
+# #dataset_name='csv')}
+#                 {
+#                     "dataset": dataset,
+#                     "config": config,
+#                     "split": split,
+#                     "stats": {
+#                       "config_download_size": config_info.download_size,
+#                       "parquet_size": split_info.num_bytes,
+#                       "num_examples": split_info.num_examples,
+#                       "num_columns": len(config_info.features),
+#   TODO: shard?
+#                     },
+#                     "links": {
+#                         ...
+#                     }
+#                 }
+#             )
+
+#     # # original_size
+#     # # parquet_size
+#     # # num_rows
+#     # # num_columns
+#     # # links to: columns (features), first-rows, parquet files
+#     # config_info: Dict[str, DatasetInfo] = {}
+
+
+def compute_parquet_and_dataset_info_response(
     dataset: str,
     hf_endpoint: str,
     hf_token: Optional[str],
@@ -410,9 +481,9 @@ def compute_parquet_response(
     supported_datasets: List[str],
     blocked_datasets: List[str],
     max_dataset_size: int,
-) -> ParquetResponse:
+) -> ParquetAndDatasetInfoResponse:
     """
-    Get the response of /parquet for one specific dataset on huggingface.co.
+    Get the response of /parquet-and-dataset-info for one specific dataset on huggingface.co.
     It is assumed that the dataset can be accessed with the token.
     Args:
         dataset (`str`):
@@ -492,7 +563,8 @@ def compute_parquet_response(
     # get the sorted list of configurations
     try:
         config_names = sorted(
-            get_dataset_config_names(path=dataset, revision=source_revision, use_auth_token=hf_token)
+            str(config)
+            for config in get_dataset_config_names(path=dataset, revision=source_revision, use_auth_token=hf_token)
         )
     except _EmptyDatasetError as err:
         raise EmptyDatasetError("The dataset is empty.", cause=err) from err
@@ -501,9 +573,14 @@ def compute_parquet_response(
 
     # prepare the parquet files locally
     parquet_files: List[ParquetFile] = []
+    dataset_info: dict[str, Any] = {}
     for config in config_names:
+        # TODO: run the loop in parallel, in different workers? with dagster?
         builder = load_dataset_builder(path=dataset, name=config, revision=source_revision, use_auth_token=hf_token)
         builder.download_and_prepare(file_format="parquet")  # the parquet files are stored in the cache dir
+        dataset_info[config] = asdict(builder.info)
+        # ^ see
+        # https://github.dev/huggingface/datasets/blob/e183a269067575db8765ee979bd8523d14a1adae/src/datasets/info.py#L244-L245
         parquet_files.extend(
             ParquetFile(local_file=local_file, local_dir=builder.cache_dir, config=config)
             for local_file in glob.glob(f"{builder.cache_dir}**/*.parquet")
@@ -564,37 +641,40 @@ def compute_parquet_response(
             )
             for repo_file in repo_files
         ],
+        "dataset_info": dataset_info,
     }
 
 
-class ParquetWorker(DatasetsBasedWorker):
-    parquet_config: ParquetConfig
+class ParquetAndDatasetInfoWorker(DatasetsBasedWorker):
+    parquet_and_dataset_info_config: ParquetAndDatasetInfoConfig
 
     @staticmethod
     def get_job_type() -> str:
-        return "/parquet"
+        return "/parquet-and-dataset-info"
 
     @staticmethod
     def get_version() -> str:
         return "2.0.0"
 
-    def __init__(self, job_info: JobInfo, app_config: AppConfig, parquet_config: ParquetConfig) -> None:
+    def __init__(
+        self, job_info: JobInfo, app_config: AppConfig, parquet_and_dataset_info_config: ParquetAndDatasetInfoConfig
+    ) -> None:
         super().__init__(job_info=job_info, app_config=app_config)
-        self.parquet_config = parquet_config
+        self.parquet_and_dataset_info_config = parquet_and_dataset_info_config
 
     def compute(self) -> Mapping[str, Any]:
-        return compute_parquet_response(
+        return compute_parquet_and_dataset_info_response(
             dataset=self.dataset,
             hf_endpoint=self.common_config.hf_endpoint,
             hf_token=self.common_config.hf_token,
-            committer_hf_token=self.parquet_config.committer_hf_token,
-            source_revision=self.parquet_config.source_revision,
-            target_revision=self.parquet_config.target_revision,
-            commit_message=self.parquet_config.commit_message,
-            url_template=self.parquet_config.url_template,
-            supported_datasets=self.parquet_config.supported_datasets,
-            blocked_datasets=self.parquet_config.blocked_datasets,
-            max_dataset_size=self.parquet_config.max_dataset_size,
+            committer_hf_token=self.parquet_and_dataset_info_config.committer_hf_token,
+            source_revision=self.parquet_and_dataset_info_config.source_revision,
+            target_revision=self.parquet_and_dataset_info_config.target_revision,
+            commit_message=self.parquet_and_dataset_info_config.commit_message,
+            url_template=self.parquet_and_dataset_info_config.url_template,
+            supported_datasets=self.parquet_and_dataset_info_config.supported_datasets,
+            blocked_datasets=self.parquet_and_dataset_info_config.blocked_datasets,
+            max_dataset_size=self.parquet_and_dataset_info_config.max_dataset_size,
         )
 
     def get_new_splits(self, content: Mapping[str, Any]) -> set[SplitFullName]:
