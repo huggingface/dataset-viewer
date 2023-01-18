@@ -32,7 +32,7 @@ from datasets_based.config import AppConfig, ParquetAndDatasetInfoConfig
 from datasets_based.worker import DatasetNotFoundError, JobInfo
 from datasets_based.workers._datasets_based_worker import DatasetsBasedWorker
 
-ParquetWorkerErrorCode = Literal[
+ParquetAndDatasetInfoWorkerErrorCode = Literal[
     "DatasetRevisionNotFoundError",
     "EmptyDatasetError",
     "ConfigNamesError",
@@ -42,56 +42,56 @@ ParquetWorkerErrorCode = Literal[
 ]
 
 
-class ParquetWorkerError(CustomError):
+class ParquetAndDatasetInfoWorkerError(CustomError):
     """Base class for exceptions in this module."""
 
     def __init__(
         self,
         message: str,
         status_code: HTTPStatus,
-        code: ParquetWorkerErrorCode,
+        code: ParquetAndDatasetInfoWorkerErrorCode,
         cause: Optional[BaseException] = None,
         disclose_cause: bool = False,
     ):
         super().__init__(message, status_code, str(code), cause, disclose_cause)
 
 
-class DatasetRevisionNotFoundError(ParquetWorkerError):
+class DatasetRevisionNotFoundError(ParquetAndDatasetInfoWorkerError):
     """Raised when the revision of a dataset repository does not exist."""
 
     def __init__(self, message: str, cause: Optional[BaseException] = None):
         super().__init__(message, HTTPStatus.NOT_FOUND, "DatasetRevisionNotFoundError", cause, False)
 
 
-class ConfigNamesError(ParquetWorkerError):
+class ConfigNamesError(ParquetAndDatasetInfoWorkerError):
     """Raised when the configuration names could not be fetched."""
 
     def __init__(self, message: str, cause: Optional[BaseException] = None):
         super().__init__(message, HTTPStatus.INTERNAL_SERVER_ERROR, "ConfigNamesError", cause, True)
 
 
-class EmptyDatasetError(ParquetWorkerError):
+class EmptyDatasetError(ParquetAndDatasetInfoWorkerError):
     """Raised when the dataset has no data."""
 
     def __init__(self, message: str, cause: Optional[BaseException] = None):
         super().__init__(message, HTTPStatus.INTERNAL_SERVER_ERROR, "EmptyDatasetError", cause, True)
 
 
-class DatasetInBlockListError(ParquetWorkerError):
+class DatasetInBlockListError(ParquetAndDatasetInfoWorkerError):
     """Raised when the dataset is in the list of blocked datasets."""
 
     def __init__(self, message: str, cause: Optional[BaseException] = None):
         super().__init__(message, HTTPStatus.NOT_IMPLEMENTED, "DatasetInBlockListError", cause, False)
 
 
-class DatasetTooBigFromHubError(ParquetWorkerError):
+class DatasetTooBigFromHubError(ParquetAndDatasetInfoWorkerError):
     """Raised when the dataset size (sum of files on the Hub) is too big."""
 
     def __init__(self, message: str, cause: Optional[BaseException] = None):
         super().__init__(message, HTTPStatus.NOT_IMPLEMENTED, "DatasetTooBigFromHubError", cause, False)
 
 
-class DatasetTooBigFromDatasetsError(ParquetWorkerError):
+class DatasetTooBigFromDatasetsError(ParquetAndDatasetInfoWorkerError):
     """Raised when the dataset size (sum of config sizes given by the datasets library) is too big."""
 
     def __init__(self, message: str, cause: Optional[BaseException] = None):
@@ -514,11 +514,11 @@ def compute_parquet_and_dataset_info_response(
             The maximum size of a dataset in bytes. If the dataset is under the limit (which means that the size
             can be fetched), it will be allowed.
     Returns:
-        `ParquetResponseResult`: An object with the parquet_response
-          (dataset and list of parquet files) and the dataset_git_revision (sha) if any.
+        `ParquetAndDatasetInfoResponseResult`: An object with the parquet_and_dataset_info_response
+          (dataset info and list of parquet files).
     <Tip>
     Raises the following errors:
-        - [`~parquet.worker.DatasetInBlockListError`]
+        - [`~parquet_and_dataset_info.worker.DatasetInBlockListError`]
           If the dataset is in the list of blocked datasets.
         - [`~libcommon.dataset.GatedExtraFieldsError`]: if the dataset is gated, with extra fields.
             Programmatic access is not implemented for this type of dataset because there is no easy
@@ -528,23 +528,23 @@ def compute_parquet_and_dataset_info_response(
             token does not give the sufficient access to the dataset, or if the dataset is private
             (private datasets are not supported by the datasets server)
         - ['~requests.exceptions.HTTPError']: any other error when asking access
-        - [`~parquet.worker.DatasetRevisionNotFoundError`]
+        - [`~parquet_and_dataset_info.worker.DatasetRevisionNotFoundError`]
           If the revision does not exist or cannot be accessed using the token.
-        - [`~parquet.worker.DatasetTooBigFromHubError`]
+        - [`~parquet_and_dataset_info.worker.DatasetTooBigFromHubError`]
           If the dataset is too big to be converted to parquet
         - [`ValueError`]
             If the datasets.config.HF_ENDPOINT is not set to the expected value
-        - [`~parquet.worker.DatasetTooBigFromDatasetsError`]
+        - [`~parquet_and_dataset_info.worker.DatasetTooBigFromDatasetsError`]
             If the dataset is too big to be converted to parquet
-        - [`~parquet.worker.EmptyDatasetError`]
+        - [`~parquet_and_dataset_info.worker.EmptyDatasetError`]
           The dataset is empty.
-        - [`~parquet.worker.ConfigNamesError`]
+        - [`~parquet_and_dataset_info.worker.ConfigNamesError`]
           If the list of configurations could not be obtained using the datasets library.
-        - [`~parquet.worker.DatasetInBlockListError`]
+        - [`~parquet_and_dataset_info.worker.DatasetInBlockListError`]
           If the dataset is in the list of blocked datasets.
     </Tip>
     """
-    logging.info(f"get splits for dataset={dataset}")
+    logging.info(f"get parquet files and dataset info for dataset={dataset}")
 
     raise_if_not_supported(
         dataset=dataset,
