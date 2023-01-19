@@ -222,7 +222,7 @@ parquetAndDatasetInfo:
     maxJobsPerNamespace: 4
   nodeSelector:
     role-datasets-server: "true"
-  replicas: 16
+  replicas: 40
   resources:
     requests:
       cpu: 1
