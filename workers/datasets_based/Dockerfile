@@ -20,7 +20,7 @@ RUN apt-get update \
     && rm -rf /var/lib/apt/lists/*
 
 RUN pip install -U --no-cache-dir pip
-RUN pip install "poetry==$POETRY_VERSION"
+RUN pip install --no-cache-dir "poetry==$POETRY_VERSION"
 
 WORKDIR /src
 COPY workers/datasets_based/vendors ./workers/datasets_based/vendors/
@@ -28,8 +28,8 @@ COPY workers/datasets_based/poetry.lock ./workers/datasets_based/poetry.lock
 COPY workers/datasets_based/pyproject.toml ./workers/datasets_based/pyproject.toml
 COPY libs/libcommon/dist ./libs/libcommon/dist
 WORKDIR /src/workers/datasets_based/
-RUN poetry install
+RUN poetry install --no-cache
 COPY workers/datasets_based/src ./src
-RUN poetry install
+RUN poetry install --no-cache
 
 ENTRYPOINT ["poetry", "run", "python", "src/datasets_based/main.py"]
