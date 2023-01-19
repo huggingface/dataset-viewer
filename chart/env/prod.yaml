@@ -180,7 +180,7 @@ splits:
 
   nodeSelector:
     role-datasets-server: "true"
-  replicas: 12
+  replicas: 20
   resources:
     requests:
       cpu: 1
@@ -200,7 +200,7 @@ firstRows:
 
   nodeSelector:
     role-datasets-server: "true"
-  replicas: 16
+  replicas: 32
   resources:
     requests:
       cpu: 1
