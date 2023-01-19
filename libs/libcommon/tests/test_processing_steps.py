@@ -27,13 +27,13 @@ def test_default_graph():
     assert parquet_and_dataset_info.parent is None
     assert parquet.parent is parquet_and_dataset_info
     assert dataset_info.parent is parquet_and_dataset_info
-    assert sizes.parent is dataset_info
+    assert sizes.parent is parquet_and_dataset_info
 
     assert splits.children == [first_rows]
     assert first_rows.children == []
-    assert parquet_and_dataset_info.children == [parquet, dataset_info]
+    assert parquet_and_dataset_info.children == [parquet, dataset_info, sizes]
     assert parquet.children == []
-    assert dataset_info.children == [sizes]
+    assert dataset_info.children == []
     assert sizes.children == []
 
     assert splits.get_ancestors() == []
@@ -41,7 +41,7 @@ def test_default_graph():
     assert parquet_and_dataset_info.get_ancestors() == []
     assert parquet.get_ancestors() == [parquet_and_dataset_info]
     assert dataset_info.get_ancestors() == [parquet_and_dataset_info]
-    assert sizes.get_ancestors() == [parquet_and_dataset_info, dataset_info]
+    assert sizes.get_ancestors() == [parquet_and_dataset_info]
 
     assert graph.get_first_steps() == [splits, parquet_and_dataset_info]
     assert graph.get_steps_required_by_dataset_viewer() == [splits, first_rows]

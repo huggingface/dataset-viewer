@@ -42,6 +42,13 @@ def get_worker(dataset: str, app_config: AppConfig, force: bool = False) -> Size
             "dataset_ok",
             HTTPStatus.OK,
             {
+                "parquet_files": [
+                    {"dataset": "dataset_ok", "config": "config_1", "split": "train", "size": 14281188},
+                    {"dataset": "dataset_ok", "config": "config_1", "split": "test", "size": 2383903},
+                    {"dataset": "dataset_ok", "config": "config_2", "split": "train", "size": 1234},
+                    {"dataset": "dataset_ok", "config": "config_2", "split": "train", "size": 6789},
+                    {"dataset": "dataset_ok", "config": "config_2", "split": "test", "size": 2383903},
+                ],
                 "dataset_info": {
                     "config_1": {
                         "features": {
@@ -120,31 +127,34 @@ def get_worker(dataset: str, app_config: AppConfig, force: bool = False) -> Size
                         "dataset_size": 6912,
                         "size_in_bytes": 9919334,
                     },
-                }
+                },
             },
             None,
             {
                 "sizes": {
                     "dataset": {
                         "dataset": "dataset_ok",
-                        "original_size_in_bytes": 21507144,
-                        "parquet_size_in_bytes": 20394144,
+                        "num_bytes_original_files": 21507144,
+                        "num_bytes_parquet_files": 19057017,
+                        "num_bytes_memory": 20394144,
                         "num_rows": 74000,
                     },
                     "configs": [
                         {
                             "dataset": "dataset_ok",
                             "config": "config_1",
-                            "original_size_in_bytes": 11594722,
-                            "parquet_size_in_bytes": 20387232,
+                            "num_bytes_original_files": 11594722,
+                            "num_bytes_parquet_files": 16665091,
+                            "num_bytes_memory": 20387232,
                             "num_rows": 70000,
                             "num_columns": 2,
                         },
                         {
                             "dataset": "dataset_ok",
                             "config": "config_2",
-                            "original_size_in_bytes": 9912422,
-                            "parquet_size_in_bytes": 6912,
+                            "num_bytes_original_files": 9912422,
+                            "num_bytes_parquet_files": 2391926,
+                            "num_bytes_memory": 6912,
                             "num_rows": 4000,
                             "num_columns": 3,
                         },
@@ -154,7 +164,8 @@ def get_worker(dataset: str, app_config: AppConfig, force: bool = False) -> Size
                             "dataset": "dataset_ok",
                             "config": "config_1",
                             "split": "train",
-                            "parquet_size_in_bytes": 17470800,
+                            "num_bytes_parquet_files": 14281188,
+                            "num_bytes_memory": 17470800,
                             "num_rows": 60000,
                             "num_columns": 2,
                         },
@@ -162,7 +173,8 @@ def get_worker(dataset: str, app_config: AppConfig, force: bool = False) -> Size
                             "dataset": "dataset_ok",
                             "config": "config_1",
                             "split": "test",
-                            "parquet_size_in_bytes": 2916432,
+                            "num_bytes_parquet_files": 2383903,
+                            "num_bytes_memory": 2916432,
                             "num_rows": 10000,
                             "num_columns": 2,
                         },
@@ -170,7 +182,8 @@ def get_worker(dataset: str, app_config: AppConfig, force: bool = False) -> Size
                             "dataset": "dataset_ok",
                             "config": "config_2",
                             "split": "train",
-                            "parquet_size_in_bytes": 5678,
+                            "num_bytes_parquet_files": 8023,
+                            "num_bytes_memory": 5678,
                             "num_rows": 3000,
                             "num_columns": 3,
                         },
@@ -178,7 +191,8 @@ def get_worker(dataset: str, app_config: AppConfig, force: bool = False) -> Size
                             "dataset": "dataset_ok",
                             "config": "config_2",
                             "split": "test",
-                            "parquet_size_in_bytes": 1234,
+                            "num_bytes_parquet_files": 2383903,
+                            "num_bytes_memory": 1234,
                             "num_rows": 1000,
                             "num_columns": 3,
                         },
@@ -207,7 +221,9 @@ def test_compute(
     expected_content: Any,
     should_raise: bool,
 ) -> None:
-    upsert_response(kind="/dataset-info", dataset=dataset, content=upstream_content, http_status=upstream_status)
+    upsert_response(
+        kind="/parquet-and-dataset-info", dataset=dataset, content=upstream_content, http_status=upstream_status
+    )
     worker = get_worker(dataset=dataset, app_config=app_config)
     if should_raise:
         with pytest.raises(Exception) as e:

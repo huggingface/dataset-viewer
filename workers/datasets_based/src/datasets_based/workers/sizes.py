@@ -20,16 +20,18 @@ SizesWorkerErrorCode = Literal[
 
 class DatasetSize(TypedDict):
     dataset: str
-    original_size_in_bytes: int
-    parquet_size_in_bytes: int
+    num_bytes_original_files: int
+    num_bytes_parquet_files: int
+    num_bytes_memory: int
     num_rows: int
 
 
 class ConfigSize(TypedDict):
     dataset: str
     config: str
-    original_size_in_bytes: int
-    parquet_size_in_bytes: int
+    num_bytes_original_files: int
+    num_bytes_parquet_files: int
+    num_bytes_memory: int
     num_rows: int
     num_columns: int
 
@@ -38,7 +40,8 @@ class SplitSize(TypedDict):
     dataset: str
     config: str
     split: str
-    parquet_size_in_bytes: int
+    num_bytes_parquet_files: int
+    num_bytes_memory: int
     num_rows: int
     num_columns: int
 
@@ -89,7 +92,7 @@ def compute_sizes_response(dataset: str) -> SizesResponse:
             A namespace (user or an organization) and a repo name separated
             by a `/`.
     Returns:
-        `SizesResponse`: An object with the parquet_response (list of parquet files).
+        `SizesResponse`: An object with the sizes_response.
     <Tip>
     Raises the following errors:
         - [`~sizes.worker.PreviousStepStatusError`]
@@ -101,7 +104,7 @@ def compute_sizes_response(dataset: str) -> SizesResponse:
     logging.info(f"get sizes for dataset={dataset}")
 
     try:
-        response = get_response(kind="/dataset-info", dataset=dataset)
+        response = get_response(kind="/parquet-and-dataset-info", dataset=dataset)
     except DoesNotExist as e:
         raise DatasetNotFoundError("No response found in previous step for this dataset.", e) from e
     if response["http_status"] != HTTPStatus.OK:
@@ -109,41 +112,53 @@ def compute_sizes_response(dataset: str) -> SizesResponse:
             f"Previous step gave an error: {response['http_status']}. This job should not have been created."
         )
     content = response["content"]
-    if "dataset_info" not in content:
-        raise PreviousStepFormatError("Previous step did not return the expected content.")
-    split_sizes: list[SplitSize] = []
-    config_sizes: list[ConfigSize] = []
-    for config in content["dataset_info"].keys():
-        config_dataset_info = content["dataset_info"][config]
-        num_columns = len(config_dataset_info["features"])
-        config_split_sizes: list[SplitSize] = [
-            {
-                "dataset": dataset,
-                "config": config,
-                "split": split_info["name"],
-                "parquet_size_in_bytes": split_info["num_bytes"],
-                "num_rows": split_info["num_examples"],
-                "num_columns": num_columns,
-            }
-            for split_info in config_dataset_info["splits"].values()
-        ]
-        config_sizes.append(
-            {
-                "dataset": dataset,
-                "config": config,
-                "original_size_in_bytes": config_dataset_info["download_size"],
-                "parquet_size_in_bytes": config_dataset_info["dataset_size"],
-                "num_rows": sum(split_size["num_rows"] for split_size in config_split_sizes),
-                "num_columns": len(config_dataset_info["features"]),
-            }
-        )
-        split_sizes.extend(config_split_sizes)
-    dataset_size: DatasetSize = {
-        "dataset": dataset,
-        "original_size_in_bytes": sum(config_size["original_size_in_bytes"] for config_size in config_sizes),
-        "parquet_size_in_bytes": sum(config_size["parquet_size_in_bytes"] for config_size in config_sizes),
-        "num_rows": sum(config_size["num_rows"] for config_size in config_sizes),
-    }
+    try:
+        split_sizes: list[SplitSize] = []
+        config_sizes: list[ConfigSize] = []
+        for config in content["dataset_info"].keys():
+            config_dataset_info = content["dataset_info"][config]
+            num_columns = len(config_dataset_info["features"])
+            config_split_sizes: list[SplitSize] = [
+                {
+                    "dataset": dataset,
+                    "config": config,
+                    "split": split_info["name"],
+                    "num_bytes_parquet_files": sum(
+                        x["size"]
+                        for x in content["parquet_files"]
+                        if x["config"] == config and x["split"] == split_info["name"]
+                    ),
+                    "num_bytes_memory": split_info["num_bytes"],
+                    "num_rows": split_info["num_examples"],
+                    "num_columns": num_columns,
+                }
+                for split_info in config_dataset_info["splits"].values()
+            ]
+            config_sizes.append(
+                {
+                    "dataset": dataset,
+                    "config": config,
+                    "num_bytes_original_files": config_dataset_info["download_size"],
+                    "num_bytes_parquet_files": sum(
+                        split_size["num_bytes_parquet_files"] for split_size in config_split_sizes
+                    ),
+                    "num_bytes_memory": sum(
+                        split_size["num_bytes_memory"] for split_size in config_split_sizes
+                    ),  # or "num_bytes_memory": config_dataset_info["dataset_size"],
+                    "num_rows": sum(split_size["num_rows"] for split_size in config_split_sizes),
+                    "num_columns": len(config_dataset_info["features"]),
+                }
+            )
+            split_sizes.extend(config_split_sizes)
+        dataset_size: DatasetSize = {
+            "dataset": dataset,
+            "num_bytes_original_files": sum(config_size["num_bytes_original_files"] for config_size in config_sizes),
+            "num_bytes_parquet_files": sum(config_size["num_bytes_parquet_files"] for config_size in config_sizes),
+            "num_bytes_memory": sum(config_size["num_bytes_memory"] for config_size in config_sizes),
+            "num_rows": sum(config_size["num_rows"] for config_size in config_sizes),
+        }
+    except Exception as e:
+        raise PreviousStepFormatError("Previous step did not return the expected content.", e) from e
 
     return {
         "sizes": {
