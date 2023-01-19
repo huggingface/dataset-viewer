@@ -95,7 +95,7 @@ class ParquetWorker(Worker):
 
     @staticmethod
     def get_version() -> str:
-        return "2.0.0"
+        return "3.0.0"
 
     def __init__(self, job_info: JobInfo, app_config: AppConfig) -> None:
         job_type = job_info["type"]

@@ -103,6 +103,8 @@ firstRows:
       cpu: 1
 
 parquetAndDatasetInfo:
+  # the maximum size of the supported datasets. Bigger datasets, or datasets that cannot provide the size, are ignored.
+  maxDatasetSize: "500_000_000" # support up to 500 MB
   replicas: 1
   resources:
     requests:
@@ -119,6 +121,14 @@ parquet:
       cpu: 1
 
 datasetInfo:
+  replicas: 1
+  resources:
+    requests:
+      cpu: 0.01
+    limits:
+      cpu: 1
+
+sizes:
   replicas: 1
   resources:
     requests:

@@ -654,7 +654,7 @@ class ParquetAndDatasetInfoWorker(DatasetsBasedWorker):
 
     @staticmethod
     def get_version() -> str:
-        return "2.0.0"
+        return "1.0.0"
 
     def __init__(
         self, job_info: JobInfo, app_config: AppConfig, parquet_and_dataset_info_config: ParquetAndDatasetInfoConfig

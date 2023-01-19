@@ -58,7 +58,7 @@ def compute_dataset_info_response(dataset: str) -> DatasetInfoResponse:
             A namespace (user or an organization) and a repo name separated
             by a `/`.
     Returns:
-        `DatasetInfoResponse`: An object with the parquet_response (list of parquet files).
+        `DatasetInfoResponse`: An object with the dataset_info response.
     <Tip>
     Raises the following errors:
         - [`~dataset_info.worker.PreviousStepStatusError`]
@@ -92,7 +92,7 @@ class DatasetInfoWorker(Worker):
 
     @staticmethod
     def get_version() -> str:
-        return "2.0.0"
+        return "1.0.0"
 
     def __init__(self, job_info: JobInfo, app_config: AppConfig) -> None:
         job_type = job_info["type"]
