@@ -18,15 +18,15 @@ RUN apt-get update \
     && apt-get install -y build-essential python3-dev make \
     && rm -rf /var/lib/apt/lists/*
 RUN pip install -U --no-cache-dir pip
-RUN pip install "poetry==$POETRY_VERSION"
+RUN pip install --no-cache-dir "poetry==$POETRY_VERSION"
 
 WORKDIR /src
 COPY services/admin/poetry.lock ./services/admin/poetry.lock
 COPY services/admin/pyproject.toml ./services/admin/pyproject.toml
 COPY libs/libcommon/dist ./libs/libcommon/dist
 WORKDIR /src/services/admin/
-RUN poetry install
+RUN poetry install --no-cache
 COPY services/admin/src ./src
-RUN poetry install
+RUN poetry install --no-cache
 
 ENTRYPOINT ["poetry", "run", "python", "src/admin/main.py"]

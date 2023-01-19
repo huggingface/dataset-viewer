@@ -18,15 +18,15 @@ RUN apt-get update \
     && apt-get install -y build-essential python3-dev make \
     && rm -rf /var/lib/apt/lists/*
 RUN pip install -U --no-cache-dir pip
-RUN pip install "poetry==$POETRY_VERSION"
+RUN pip install --no-cache-dir "poetry==$POETRY_VERSION"
 
 WORKDIR /src
 COPY jobs/mongodb_migration/poetry.lock ./jobs/mongodb_migration/poetry.lock
 COPY jobs/mongodb_migration/pyproject.toml ./jobs/mongodb_migration/pyproject.toml
 COPY libs/libcommon/dist ./libs/libcommon/dist
 WORKDIR /src/jobs/mongodb_migration/
-RUN poetry install
+RUN poetry install --no-cache
 COPY jobs/mongodb_migration/src ./src
-RUN poetry install
+RUN poetry install --no-cache
 
 ENTRYPOINT ["poetry", "run", "python", "src/mongodb_migration/main.py"]
