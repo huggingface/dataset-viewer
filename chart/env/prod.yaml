@@ -239,11 +239,11 @@ parquet:
     maxJobsPerNamespace: 2
   nodeSelector:
     role-datasets-server: "true"
-  replicas: 2
+  replicas: 4
   resources:
     requests:
       cpu: 1
-      memory: "0.1Gi"
+      memory: "100Mi"
     limits:
       cpu: 2
       memory: "1Gi"
@@ -256,11 +256,11 @@ datasetInfo:
     maxJobsPerNamespace: 2
   nodeSelector:
     role-datasets-server: "true"
-  replicas: 2
+  replicas: 4
   resources:
     requests:
       cpu: 1
-      memory: "0.1Gi"
+      memory: "100Mi"
     limits:
       cpu: 2
       memory: "1Gi"
@@ -273,11 +273,11 @@ sizes:
     maxJobsPerNamespace: 2
   nodeSelector:
     role-datasets-server: "true"
-  replicas: 2
+  replicas: 4
   resources:
     requests:
       cpu: 1
-      memory: "0.1Gi"
+      memory: "100Mi"
     limits:
       cpu: 2
       memory: "1Gi"
