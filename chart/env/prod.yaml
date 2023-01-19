@@ -236,10 +236,10 @@ parquet:
   # override the common queue parameters
   queue:
     # Maximum number of jobs running at the same time for the same namespace
-    maxJobsPerNamespace: 5
+    maxJobsPerNamespace: 2
   nodeSelector:
     role-datasets-server: "true"
-  replicas: 20
+  replicas: 4
   resources:
     requests:
       cpu: 1
@@ -256,7 +256,7 @@ datasetInfo:
     maxJobsPerNamespace: 2
   nodeSelector:
     role-datasets-server: "true"
-  replicas: 2
+  replicas: 4
   resources:
     requests:
       cpu: 1
@@ -273,7 +273,7 @@ sizes:
     maxJobsPerNamespace: 2
   nodeSelector:
     role-datasets-server: "true"
-  replicas: 2
+  replicas: 4
   resources:
     requests:
       cpu: 1
