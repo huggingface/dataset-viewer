@@ -6,7 +6,7 @@ apiVersion: batch/v1
 kind: Job
 metadata:
   labels: {{ include "labels.mongodbMigration" . | nindent 4 }}
-  name: "{{ include "release" . }}-job-mongodb-migration"
+  name: "{{ include "name" . }}-job-mongodb-migration"
   namespace: {{ .Release.Namespace }}
   annotations:
     "helm.sh/hook": pre-install,pre-upgrade
@@ -18,7 +18,7 @@ spec:
       labels: {{ include "labels.mongodbMigration" . | nindent 8 }}
     spec:
       restartPolicy: Never
-      imagePullSecrets: {{ toYaml .Values.imagePullSecrets | nindent 8 }}
+      {{- include "image.imagePullSecrets" . | nindent 6 }}
       containers: {{ include "containerMongodbMigration" . | nindent 8 }}
       nodeSelector: {{ toYaml .Values.mongodbMigration.nodeSelector | nindent 8 }}
       tolerations: {{ toYaml .Values.mongodbMigration.tolerations | nindent 8 }}

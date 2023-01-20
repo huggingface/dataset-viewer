@@ -3,8 +3,8 @@
 
 {{- define "containerWorkerParquet" -}}
 - name: "{{ include "name" . }}-worker-parquet"
-  image: {{ .Values.dockerImage.workers.datasets_based }}
-  imagePullPolicy: {{ .Values.docker.pullPolicy }}
+  image: {{ include "workers.datasetsBased.image" . }}
+  imagePullPolicy: {{ .Values.image.pullPolicy }}
   env:
   - name: DATASETS_BASED_ENDPOINT
     value: "/parquet"

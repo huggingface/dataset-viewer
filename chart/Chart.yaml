@@ -20,7 +20,7 @@ type: application
 # Versions are expected to follow Semantic Versioning (https://semver.org/)
 #
 # We don't increment it, as it will not be distributed.
-version: 0.1.0
+version: 1.0.0
 
 # This is the version number of the application being deployed. This version number should be
 # incremented each time you make changes to the application. Versions are not expected to
@@ -32,6 +32,6 @@ appVersion: "0.20.2"
 
 dependencies:
   - name: mongodb
-    version: 12.0.0
+    version: 13.6.4
     condition: mongodb.enabled
     repository: https://charts.bitnami.com/bitnami

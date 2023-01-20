@@ -2,8 +2,8 @@
 kind: PersistentVolumeClaim
 apiVersion: v1
 metadata:
-  labels: {{ include "labels" . | nindent 4 }}
-  name: {{ include "release" . }}
+  labels: {{ include "datasetServer.labels" . | nindent 4 }}
+  name: {{ include "name" . }}
   namespace: {{ .Release.Namespace }}
 spec:
   accessModes:
@@ -11,5 +11,7 @@ spec:
   resources:
     requests:
       storage: {{ .Values.persistence.size }}
+  {{ if ne "" .Values.persistence.storageClass }}
   storageClassName: {{ .Values.persistence.storageClass }}
+  {{ end }}
 {{- end }}

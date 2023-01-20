@@ -3,7 +3,7 @@
 
 {{- define "containerAdmin" -}}
 - name: "{{ include "name" . }}-admin"
-  image: {{ .Values.dockerImage.services.admin }}
+  image: {{ include "services.admin.image" . }}
   imagePullPolicy: IfNotPresent
   env:
   {{ include "envAssets" . | nindent 2 }}
@@ -34,10 +34,10 @@
     allowPrivilegeEscalation: false
   readinessProbe:
     tcpSocket:
-      port: {{ .Values.admin.readinessPort }}
+      port: {{ .Values.admin.uvicornPort }}
   livenessProbe:
     tcpSocket:
-      port: {{ .Values.admin.readinessPort }}
+      port: {{ .Values.admin.uvicornPort }}
   ports:
   - containerPort: {{ .Values.admin.uvicornPort }}
     name: http

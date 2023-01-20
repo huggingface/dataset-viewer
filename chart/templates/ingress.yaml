@@ -1,19 +1,28 @@
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
-  annotations: {{ toYaml .Values.ingress.annotations | nindent 4 }}
+  {{- $annotations := fromYaml (include "datasetsServer.ingress.annotations" .) }}
+  annotations: {{ toYaml $annotations | nindent 4 }}
   labels: {{ include "labels.reverseProxy" . | nindent 4 }}
-  name: {{ include "release" . }}
+  name: {{ include "name" . }}
   namespace: {{ .Release.Namespace }}
 spec:
-  tls: {{ toYaml .Values.ingress.tls | nindent 4 }}
   rules:
-    - host: {{ .Values.hostname }}
+    - host: {{ include "datasetsServer.ingress.hostname" . }}
       http:
         paths:
           - backend:
               service:
-                name: "{{ include "release" . }}-reverse-proxy"
+                name: "{{ include "name" . }}-reverse-proxy"
                 port:
                   name: http
+            path: /
             pathType: ImplementationSpecific
+  {{- if include "common.ingress.certManagerRequest" ( dict "annotations" $annotations ) }}
+  tls:
+    - hosts:
+        - {{ include "datasetsServer.ingress.hostname" . }}
+      secretName: {{ printf "%s-tls" (include "datasetsServer.ingress.hostname" .) }}
+  {{- else if .Values.ingress.tls -}}
+  tls: {{toYaml .Values.ingress.tls | nindent 4 }}
+  {{- end }}
