@@ -4,7 +4,7 @@
 {{- define "containerStorageAdmin" -}}
 - name: "{{ include "name" . }}-storage-admin"
   image: ubuntu:focal
-  imagePullPolicy: IfNotPresent
+  {{- include "image.imagePullSecrets" . | nindent 2 }}
   volumeMounts: 
   - mountPath: /data
     mountPropagation: None

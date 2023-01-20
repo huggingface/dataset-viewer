@@ -4,7 +4,7 @@
 {{- define "containerApi" -}}
 - name: "{{ include "name" . }}-api"
   image: {{ include "services.api.image" . }}
-  imagePullPolicy: IfNotPresent
+  {{- include "image.imagePullSecrets" . | nindent 2 }}
   env:
   {{ include "envCache" . | nindent 2 }}
   {{ include "envQueue" . | nindent 2 }}

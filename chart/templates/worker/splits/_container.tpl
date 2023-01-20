@@ -4,7 +4,7 @@
 {{- define "containerWorkerSplits" -}}
 - name: "{{ include "name" . }}-worker-splits"
   image: {{ include "workers.datasetsBased.image" . }}
-  imagePullPolicy: {{ .Values.image.pullPolicy }}
+  {{- include "image.imagePullSecrets" . | nindent 2 }}
   env:
   - name: DATASETS_BASED_ENDPOINT
     value: "/splits"
