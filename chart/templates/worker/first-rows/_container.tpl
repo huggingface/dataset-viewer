@@ -4,7 +4,7 @@
 {{- define "containerWorkerFirstRows" -}}
 - name: "{{ include "name" . }}-worker-first-rows"
   image: {{ include "workers.datasetsBased.image" . }}
-  imagePullPolicy: {{ .Values.image.pullPolicy }}
+  imagePullPolicy: {{ .Values.images.pullPolicy }}
   env:
   - name: DATASETS_BASED_ENDPOINT
     value: "/first-rows"

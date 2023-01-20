@@ -4,7 +4,7 @@
 {{- define "containerMongodbMigration" -}}
 - name: "{{ include "name" . }}-mongodb-migration"
   image: {{ include "jobs.mongodbMigration.image" . }}
-  imagePullPolicy: IfNotPresent
+  imagePullPolicy: {{ .Values.images.pullPolicy }}
   env:
   {{ include "envCache" . | nindent 2 }}
   {{ include "envQueue" . | nindent 2 }}

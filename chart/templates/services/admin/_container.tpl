@@ -4,7 +4,7 @@
 {{- define "containerAdmin" -}}
 - name: "{{ include "name" . }}-admin"
   image: {{ include "services.admin.image" . }}
-  imagePullPolicy: IfNotPresent
+  imagePullPolicy: {{ .Values.images.pullPolicy }}
   env:
   {{ include "envAssets" . | nindent 2 }}
   {{ include "envCache" . | nindent 2 }}

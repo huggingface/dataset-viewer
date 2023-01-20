@@ -4,7 +4,7 @@
 {{- define "containerReverseProxy" -}}
 - name: "{{ include "name" . }}-reverse-proxy"
   image: {{ include "reverseproxy.image" . }}
-  imagePullPolicy: IfNotPresent
+  imagePullPolicy: {{ .Values.images.pullPolicy }}
   env:
   - name: ASSETS_DIRECTORY
     value: {{ .Values.assets.storageDirectory | quote }}
