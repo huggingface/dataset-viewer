@@ -17,10 +17,13 @@ from api.routes.healthcheck import healthcheck_endpoint
 from api.routes.processing_step import create_processing_step_endpoint
 from api.routes.valid import create_is_valid_endpoint, create_valid_endpoint
 from api.routes.webhook import create_webhook_endpoint
+from api.routes.rows import create_rows_endpoint
 
 
 def create_app() -> Starlette:
     app_config = AppConfig.from_env()
+    parquet_processing_step = app_config.processing_graph.graph.get_step("/parquet")
+    # ^ can raise an exception. We don't catch it here because we want the app to crash if the config is invalid
     prometheus = Prometheus()
 
     middleware = [
@@ -82,7 +85,18 @@ def create_app() -> Starlette:
         # called by Prometheus
         Route("/metrics", endpoint=prometheus.endpoint),
     ]
-    routes: List[BaseRoute] = valid + processing_steps + to_protect + protected
+    random_access: List[BaseRoute] = [
+        Route(
+            "/rows",
+            endpoint=create_rows_endpoint(
+                parquet_processing_step=parquet_processing_step,
+                external_auth_url=app_config.external_auth_url,
+                max_age_long=app_config.api.max_age_long,
+                max_age_short=app_config.api.max_age_short,
+            ),
+        ),
+    ]
+    routes: List[BaseRoute] = valid + processing_steps + to_protect + protected + random_access
     return Starlette(routes=routes, middleware=middleware)
 
 
