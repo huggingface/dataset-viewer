@@ -104,3 +104,30 @@ def test_cache_reports(
     else:
         assert response.json() == {"cache_reports": [], "next_cursor": ""}
         assert "X-Error-Code" not in response.headers
+
+
+@pytest.mark.parametrize(
+    "cursor,http_status,error_code",
+    [
+        (None, 200, None),
+        ("", 200, None),
+        ("invalid cursor", 422, "InvalidParameter"),
+    ],
+)
+def test_cache_reports_with_content(
+    client: TestClient,
+    processing_steps: List[ProcessingStep],
+    cursor: Optional[str],
+    http_status: int,
+    error_code: Optional[str],
+) -> None:
+    path = processing_steps[0].endpoint
+    cursor_str = f"?cursor={cursor}" if cursor else ""
+    response = client.get(f"/cache-reports-with-content{path}{cursor_str}")
+    assert response.status_code == http_status
+    if error_code:
+        assert isinstance(response.json()["error"], str)
+        assert response.headers["X-Error-Code"] == error_code
+    else:
+        assert response.json() == {"cache_reports_with_content": [], "next_cursor": ""}
+        assert "X-Error-Code" not in response.headers

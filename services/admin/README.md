@@ -12,6 +12,7 @@ Set environment variables to configure the application (`ADMIN_` prefix):
 
 - `ADMIN_HF_ORGANIZATION`: the huggingface organization from which the authenticated user must be part of in order to access the protected routes, eg. "huggingface". If empty, the authentication is disabled. Defaults to None.
 - `ADMIN_CACHE_REPORTS_NUM_RESULTS`: the number of results in /cache-reports/... endpoints. Defaults to `100`.
+- `ADMIN_CACHE_REPORTS_WITH_CONTENT_NUM_RESULTS`: the number of results in /cache-reports-with-content/... endpoints. Defaults to `100`.
 - `ADMIN_HF_WHOAMI_PATH`: the path of the external whoami service, on the hub (see `HF_ENDPOINT`), eg. "/api/whoami-v2". Defaults to `/api/whoami-v2`.
 - `ADMIN_MAX_AGE`: number of seconds to set in the `max-age` header on technical endpoints. Defaults to `10` (10 seconds).
 
@@ -38,6 +39,7 @@ The admin service provides endpoints:
 - `/healthcheck`
 - `/metrics`: give info about the cache and the queue
 - `/cache-reports/{processing_step}`: give detailed reports on the content of the cache for a processing step
+- `/cache-reports-with-content/{processing_step}`: give detailed reports on the content of the cache for a processing step, including the content itself, which can be heavy
 - `/pending-jobs`: give the pending jobs, classed by queue and status (waiting or started)
 - `/force-refresh/{processing_step}`: force refresh cache entries for the processing step. It's a POST endpoint. Pass the requested parameters, depending on the processing step's input type:
   - `dataset`: `?dataset={dataset}`

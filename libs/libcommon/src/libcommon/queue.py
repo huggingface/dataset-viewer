@@ -124,7 +124,7 @@ class Job(Document):
             ("type", "status"),
             ("type", "dataset", "status"),
             ("type", "dataset", "config", "split", "status"),
-            ("status", "type", "created_at", "namespace"),
+            ("status", "type", "created_at", "namespace", "unicity_id"),
             "-created_at",
         ],
     }
