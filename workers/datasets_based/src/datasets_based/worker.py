@@ -12,7 +12,6 @@ from libcommon.exceptions import CustomError
 from libcommon.processing_graph import ProcessingStep
 from libcommon.queue import JobInfo, Queue, Status
 from libcommon.simple_cache import (
-    CacheEntry,
     SplitFullName,
     delete_response,
     get_response,
