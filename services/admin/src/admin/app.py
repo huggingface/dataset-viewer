@@ -12,6 +12,9 @@ from starlette_prometheus import PrometheusMiddleware
 from admin.config import AppConfig, UvicornConfig
 from admin.prometheus import Prometheus
 from admin.routes.cache_reports import create_cache_reports_endpoint
+from admin.routes.cache_reports_with_content import (
+    create_cache_reports_with_content_endpoint,
+)
 from admin.routes.cancel_jobs import create_cancel_jobs_endpoint
 from admin.routes.force_refresh import create_force_refresh_endpoint
 from admin.routes.healthcheck import healthcheck_endpoint
@@ -68,6 +71,19 @@ def create_app() -> Starlette:
                 endpoint=create_cache_reports_endpoint(
                     processing_step=processing_step,
                     cache_reports_num_results=app_config.admin.cache_reports_num_results,
+                    max_age=app_config.admin.max_age,
+                    external_auth_url=app_config.external_auth_url,
+                    organization=app_config.admin.hf_organization,
+                ),
+            )
+            for processing_step in processing_steps
+        ]
+        + [
+            Route(
+                f"/cache-reports-with-content{processing_step.endpoint}",
+                endpoint=create_cache_reports_with_content_endpoint(
+                    processing_step=processing_step,
+                    cache_reports_with_content_num_results=app_config.admin.cache_reports_with_content_num_results,
                     max_age=app_config.admin.max_age,
                     external_auth_url=app_config.external_auth_url,
                     organization=app_config.admin.hf_organization,

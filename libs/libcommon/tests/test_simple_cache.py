@@ -1,6 +1,7 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2022 The HuggingFace Authors.
 
+from datetime import datetime
 from http import HTTPStatus
 from time import process_time
 from typing import Optional
@@ -19,6 +20,7 @@ from libcommon.simple_cache import (
     delete_dataset_responses,
     delete_response,
     get_cache_reports,
+    get_cache_reports_with_content,
     get_response,
     get_response_without_content,
     get_responses_count_by_kind_status_and_error_code,
@@ -379,6 +381,10 @@ def test_get_cache_reports() -> None:
     kind = "test_kind"
     kind_2 = "test_kind_2"
     assert get_cache_reports(kind=kind, cursor="", limit=2) == {"cache_reports": [], "next_cursor": ""}
+    assert get_cache_reports_with_content(kind=kind, cursor="", limit=2) == {
+        "cache_reports_with_content": [],
+        "next_cursor": "",
+    }
 
     dataset_a = "test_dataset_a"
     content_a = {"key": "a"}
@@ -465,7 +471,6 @@ def test_get_cache_reports() -> None:
     ]
     assert response["next_cursor"] != ""
     next_cursor = response["next_cursor"]
-
     response = get_cache_reports(kind=kind, cursor=next_cursor, limit=2)
     assert response == {
         "cache_reports": [
@@ -478,6 +483,63 @@ def test_get_cache_reports() -> None:
                 "error_code": error_code_c,
                 "worker_version": None,
                 "dataset_git_revision": None,
+            },
+        ],
+        "next_cursor": "",
+    }
+
+    response_with_content = get_cache_reports_with_content(kind=kind, cursor="", limit=2)
+    # redact the response to make it simpler to compare with the expected
+    REDACTED_DATE = datetime(2020, 1, 1, 0, 0, 0)
+    for c in response_with_content["cache_reports_with_content"]:
+        c["updated_at"] = REDACTED_DATE
+    assert response_with_content["cache_reports_with_content"] == [
+        {
+            "kind": kind,
+            "dataset": dataset_a,
+            "config": None,
+            "split": None,
+            "http_status": http_status_a.value,
+            "error_code": None,
+            "content": content_a,
+            "worker_version": None,
+            "dataset_git_revision": None,
+            "details": {},
+            "updated_at": REDACTED_DATE,
+        },
+        {
+            "kind": kind,
+            "dataset": dataset_b,
+            "config": config_b,
+            "split": None,
+            "http_status": http_status_b.value,
+            "error_code": error_code_b,
+            "content": content_b,
+            "worker_version": worker_version_b,
+            "dataset_git_revision": dataset_git_revision_b,
+            "details": details_b,
+            "updated_at": REDACTED_DATE,
+        },
+    ]
+    assert response_with_content["next_cursor"] != ""
+    next_cursor = response_with_content["next_cursor"]
+    response_with_content = get_cache_reports_with_content(kind=kind, cursor=next_cursor, limit=2)
+    for c in response_with_content["cache_reports_with_content"]:
+        c["updated_at"] = REDACTED_DATE
+    assert response_with_content == {
+        "cache_reports_with_content": [
+            {
+                "kind": kind,
+                "dataset": dataset_c,
+                "config": config_c,
+                "split": split_c,
+                "http_status": http_status_c.value,
+                "error_code": error_code_c,
+                "content": content_c,
+                "worker_version": None,
+                "dataset_git_revision": None,
+                "details": details_c,
+                "updated_at": REDACTED_DATE,
             },
         ],
         "next_cursor": "",

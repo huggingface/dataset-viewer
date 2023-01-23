@@ -251,7 +251,7 @@ def get_responses_count_by_kind_status_and_error_code() -> List[CountEntry]:
 # /cache-reports/... endpoints
 
 
-class ResponseReport(TypedDict):
+class CacheReport(TypedDict):
     kind: str
     dataset: str
     config: Optional[str]
@@ -262,8 +262,8 @@ class ResponseReport(TypedDict):
     dataset_git_revision: Optional[str]
 
 
-class CacheReport(TypedDict):
-    cache_reports: List[ResponseReport]
+class CacheReportsPage(TypedDict):
+    cache_reports: List[CacheReport]
     next_cursor: str
 
 
@@ -275,7 +275,7 @@ class InvalidLimit(Exception):
     pass
 
 
-def get_cache_reports(kind: str, cursor: Optional[str], limit: int) -> CacheReport:
+def get_cache_reports(kind: str, cursor: Optional[str], limit: int) -> CacheReportsPage:
     """
     Get a list of reports of the cache entries, along with the next cursor.
     See https://solovyov.net/blog/2020/api-pagination-design/.
@@ -285,13 +285,13 @@ def get_cache_reports(kind: str, cursor: Optional[str], limit: int) -> CacheRepo
     Args:
         kind (str): the kind of the cache entries
         cursor (`str`):
-            An opaque string value representing a pointer to a specific FirstRowsResponse item in the dataset. The
+            An opaque string value representing a pointer to a specific CachedResponse item in the dataset. The
             server returns results after the given pointer.
             An empty string means to start from the beginning.
         limit (strictly positive `int`):
             The maximum number of results.
     Returns:
-        [`CacheReport`]: A dict with the list of reports and the next cursor. The next cursor is
+        [`CacheReportsPage`]: A dict with the list of reports and the next cursor. The next cursor is
         an empty string if there are no more items to be fetched.
     <Tip>
     Raises the following errors:
@@ -336,6 +336,91 @@ def get_cache_reports(kind: str, cursor: Optional[str], limit: int) -> CacheRepo
                 "error_code": object.error_code,
                 "worker_version": object.worker_version,
                 "dataset_git_revision": object.dataset_git_revision,
+            }
+            for object in objects
+        ],
+        "next_cursor": "" if len(objects) < limit else str(objects[-1].id),
+    }
+
+
+class CacheReportWithContent(CacheReport):
+    content: Mapping[str, Any]
+    details: Mapping[str, Any]
+    updated_at: datetime
+
+
+class CacheReportsWithContentPage(TypedDict):
+    cache_reports_with_content: List[CacheReportWithContent]
+    next_cursor: str
+
+
+def get_cache_reports_with_content(kind: str, cursor: Optional[str], limit: int) -> CacheReportsWithContentPage:
+    """
+    Get a list of the cache report with content, along with the next cursor.
+    See https://solovyov.net/blog/2020/api-pagination-design/.
+
+    The cache reports contain all the fields of the object, including the "content" field.
+
+    Args:
+        kind (str): the kind of the cache entries
+        cursor (`str`):
+            An opaque string value representing a pointer to a specific CachedResponse item in the dataset. The
+            server returns results after the given pointer.
+            An empty string means to start from the beginning.
+        limit (strictly positive `int`):
+            The maximum number of results.
+    Returns:
+        [`CacheReportsWithContentPage`]: A dict with the list of reports and the next cursor. The next cursor is
+        an empty string if there are no more items to be fetched.
+    <Tip>
+    Raises the following errors:
+        - [`~libcommon.simple_cache.InvalidCursor`]
+          If the cursor is invalid.
+        - [`~libcommon.simple_cache.InvalidLimit`]
+          If the limit is an invalid number.
+    </Tip>
+    """
+    if not cursor:
+        queryset = CachedResponse.objects(kind=kind)
+    else:
+        try:
+            queryset = CachedResponse.objects(kind=kind, id__gt=ObjectId(cursor))
+        except InvalidId as err:
+            raise InvalidCursor("Invalid cursor.") from err
+    if limit <= 0:
+        raise InvalidLimit("Invalid limit.")
+    objects = list(
+        queryset.order_by("+id")
+        .only(
+            "id",
+            "kind",
+            "dataset",
+            "config",
+            "split",
+            "http_status",
+            "error_code",
+            "content",
+            "worker_version",
+            "dataset_git_revision",
+            "details",
+            "updated_at",
+        )
+        .limit(limit)
+    )
+    return {
+        "cache_reports_with_content": [
+            {
+                "kind": kind,
+                "dataset": object.dataset,
+                "config": object.config,
+                "split": object.split,
+                "http_status": object.http_status.value,
+                "error_code": object.error_code,
+                "content": object.content,
+                "worker_version": object.worker_version,
+                "dataset_git_revision": object.dataset_git_revision,
+                "details": object.details,
+                "updated_at": object.updated_at,
             }
             for object in objects
         ],
