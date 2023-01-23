@@ -171,7 +171,7 @@ def test_create_children_jobs() -> None:
     )
     assert worker.should_skip_job() is False
     # we add an entry to the cache
-    worker.process()
+    worker.run()
     assert worker.should_skip_job() is True
     # check that the children jobs have been created
     child_dataset_jobs = Queue(type="/child-dataset").get_dump_with_status(status=Status.WAITING)

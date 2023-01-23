@@ -14,6 +14,7 @@ from libcommon.queue import JobInfo, Queue, Status
 from libcommon.simple_cache import (
     SplitFullName,
     delete_response,
+    get_response,
     get_response_without_content,
     get_split_full_names_for_dataset_and_kind,
     upsert_response,
@@ -182,15 +183,14 @@ class Worker(ABC):
     def run(self) -> Literal[Status.SUCCESS, Status.ERROR, Status.SKIPPED]:
         try:
             self.info(f"compute {self}")
-            if self.should_skip_job():
-                return Status.SKIPPED
-            elif self.process():
-                return Status.SUCCESS
-            else:
-                return Status.ERROR
+            result: Literal[Status.SUCCESS, Status.ERROR, Status.SKIPPED] = (
+                Status.SKIPPED if self.should_skip_job() else Status.SUCCESS if self.process() else Status.ERROR
+            )
         except Exception:
             self.exception(f"error while computing {self}")
-            return Status.ERROR
+            result = Status.ERROR
+        self.create_children_jobs()
+        return result
 
     def compare_major_version(self, other_version: str) -> int:
         """
@@ -262,7 +262,6 @@ class Worker(ABC):
             finally:
                 # ensure the post_compute hook is called even if the compute raises an exception
                 self.post_compute()
-            self.create_children_jobs(self.get_new_splits(content))
             upsert_response(
                 kind=self.processing_step.cache_kind,
                 dataset=self.dataset,
@@ -318,22 +317,37 @@ class Worker(ABC):
     def get_new_splits(self, content: Mapping[str, Any]) -> set[SplitFullName]:
         """Get the set of new splits, from the content created by the compute.
 
-        Can be empty."""
-        return set()
-
-    def create_children_jobs(self, new_split_full_names: set[SplitFullName]) -> None:
-        """Create children jobs for the current job.
+        Can be empty.
 
         Args:
-            new_split_full_names (:obj:`set[SplitFullName]`): the set of new splits, from the content created by the
-                compute. Can be empty.
+            content (:obj:`Mapping[str, Any]`): the content created by the compute.
+        Returns:
+            :obj:`set[SplitFullName]`: the set of new splits full names.
         """
-        for processing_step in self.processing_step.children:
-            if processing_step.input_type == "dataset":
-                Queue(type=processing_step.job_type).upsert_job(
-                    dataset=self.dataset, config=None, split=None, force=self.force
+        return set()
+
+    def create_children_jobs(self) -> None:
+        """Create children jobs for the current job."""
+        dataset_children = [c for c in self.processing_step.children if c.input_type == "dataset"]
+        for processing_step in dataset_children:
+            Queue(type=processing_step.job_type).upsert_job(
+                dataset=self.dataset, config=None, split=None, force=self.force
+            )
+
+        split_children = [c for c in self.processing_step.children if c.input_type == "split"]
+        if len(split_children) > 0:
+            try:
+                response_in_cache = get_response(
+                    kind=self.processing_step.cache_kind, dataset=self.dataset, config=self.config, split=self.split
                 )
-            elif processing_step.input_type == "split":
+            except Exception:
+                # if the response is not in the cache, we don't create the children jobs
+                return
+            if response_in_cache["http_status"] != HTTPStatus.OK:
+                # if the response is not valid, we don't create the children jobs
+                return
+            new_split_full_names: set[SplitFullName] = self.get_new_splits(response_in_cache["content"])
+            for processing_step in split_children:
                 # remove obsolete responses from the cache
                 split_full_names_in_cache = get_split_full_names_for_dataset_and_kind(
                     dataset=self.dataset, kind=processing_step.cache_kind
