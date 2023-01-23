@@ -137,6 +137,8 @@ ingress:
 admin:
   # Number of reports in /cache-reports/... endpoints
   cacheReportsNumResults: 1000
+  # Number of reports in /cache-reports-with-content/... endpoints
+  cacheReportsWithContentNumResults: 100
   # Number of uvicorn workers for running the application
   # (2 x $num_cores) + 1
   # https://docs.gunicorn.org/en/stable/design.html#how-many-workers

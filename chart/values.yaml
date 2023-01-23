@@ -148,6 +148,8 @@ admin:
   hfOrganization: "huggingface"
   # Number of reports in /cache-reports/... endpoints
   cacheReportsNumResults: 100
+  # Number of reports in /cache-reports-with-content/... endpoints
+  cacheReportsWithContentNumResults: 100
   # The path of the whoami service on the hub.
   hfWhoamiPath: "/api/whoami-v2"
   # Number of seconds to set in the `max-age` header on technical endpoints
