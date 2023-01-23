@@ -17,6 +17,7 @@ ENV PYTHONFAULTHANDLER=1 \
 RUN apt-get update \
     && apt-get install -y build-essential unzip wget python3-dev make \
     libicu-dev ffmpeg libavcodec-extra libsndfile1 llvm pkg-config \
+    poppler-utils \
     && rm -rf /var/lib/apt/lists/*
 
 RUN pip install -U --no-cache-dir pip
