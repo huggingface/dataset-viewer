@@ -330,7 +330,7 @@ class Worker(ABC):
         """
         for processing_step in self.processing_step.children:
             if processing_step.input_type == "dataset":
-                Queue(type=processing_step.job_type).add_job(
+                Queue(type=processing_step.job_type).upsert_job(
                     dataset=self.dataset, config=None, split=None, force=self.force
                 )
             elif processing_step.input_type == "split":
@@ -353,7 +353,7 @@ class Worker(ABC):
                 # compute the responses for the new splits
                 for split_full_name in new_split_full_names:
                     # we force the refresh of the children step responses if the current step refresh was forced
-                    Queue(type=processing_step.job_type).add_job(
+                    Queue(type=processing_step.job_type).upsert_job(
                         dataset=split_full_name.dataset,
                         config=split_full_name.config,
                         split=split_full_name.split,

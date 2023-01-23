@@ -187,10 +187,12 @@ class Queue:
             None if max_jobs_per_namespace is None or max_jobs_per_namespace < 1 else max_jobs_per_namespace
         )
 
-    def add_job(
+    def _add_job(
         self, dataset: str, config: Optional[str] = None, split: Optional[str] = None, force: bool = False
     ) -> Job:
         """Add a job to the queue in the waiting state.
+
+        This method should not be called directly. Use `upsert_job` instead.
 
         Args:
             dataset (`str`): The dataset on which to apply the job.
@@ -211,6 +213,27 @@ class Queue:
             created_at=get_datetime(),
             status=Status.WAITING,
         ).save()
+
+    def upsert_job(
+        self, dataset: str, config: Optional[str] = None, split: Optional[str] = None, force: bool = False
+    ) -> Job:
+        """Add, or update, a job to the queue in the waiting state.
+
+        If jobs already exist with the same parameters in the waiting state, they are cancelled and replaced by a new
+        one.
+
+        Args:
+            dataset (`str`): The dataset on which to apply the job.
+            config (`str`, optional): The config on which to apply the job.
+            split (`str`, optional): The config on which to apply the job.
+            force (`bool`, optional): If True, the job SHOULD not be skipped. Defaults to False.
+
+        Returns: the job
+        """
+        Job.objects(type=self.type, dataset=dataset, config=config, split=split, status=Status.WAITING).update(
+            finished_at=get_datetime(), status=Status.CANCELLED
+        )
+        return self._add_job(dataset=dataset, config=config, split=split, force=force)
 
     def get_next_waiting_job(self) -> Job:
         """Get the next job in the queue.
@@ -356,7 +379,7 @@ class Queue:
         """Cancel all started jobs."""
         for job in Job.objects(type=self.type, status=Status.STARTED.value):
             job.update(finished_at=get_datetime(), status=Status.CANCELLED)
-            self.add_job(dataset=job.dataset, config=job.config, split=job.split)
+            self.upsert_job(dataset=job.dataset, config=job.config, split=job.split)
 
     # special reports
     def count_jobs(self, status: Status) -> int:

@@ -57,7 +57,7 @@ def test_process_next_job(
     dataset = "dataset"
     config = "config"
     split = "split"
-    worker_loop.queue.add_job(dataset=dataset, config=config, split=split)
+    worker_loop.queue.upsert_job(dataset=dataset, config=config, split=split)
     worker_loop.queue.is_job_in_process(dataset=dataset, config=config, split=split) is True
     assert worker_loop.process_next_job() is True
     worker_loop.queue.is_job_in_process(dataset=dataset, config=config, split=split) is False
