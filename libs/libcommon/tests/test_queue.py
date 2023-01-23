@@ -15,15 +15,15 @@ def clean_mongo_database(queue_config: QueueConfig) -> None:
     _clean_queue_database()
 
 
-def test_add_job() -> None:
+def test__add_job() -> None:
     test_type = "test_type"
     test_dataset = "test_dataset"
     # get the queue
     queue = Queue(test_type)
     # add a job
-    queue.add_job(dataset=test_dataset, force=True)
+    queue._add_job(dataset=test_dataset, force=True)
     # a second call adds a second waiting job
-    queue.add_job(dataset=test_dataset)
+    queue._add_job(dataset=test_dataset)
     assert queue.is_job_in_process(dataset=test_dataset) is True
     # get and start the first job
     job_info = queue.start_job()
@@ -35,7 +35,7 @@ def test_add_job() -> None:
     assert queue.is_job_in_process(dataset=test_dataset) is True
     # adding the job while the first one has not finished yet adds another waiting job
     # (there are no limits to the number of waiting jobs)
-    queue.add_job(dataset=test_dataset, force=True)
+    queue._add_job(dataset=test_dataset, force=True)
     with pytest.raises(EmptyQueueError):
         # but: it's not possible to start two jobs with the same arguments
         queue.start_job()
@@ -62,6 +62,44 @@ def test_add_job() -> None:
         queue.start_job()
 
 
+def test_upsert_job() -> None:
+    test_type = "test_type"
+    test_dataset = "test_dataset"
+    # get the queue
+    queue = Queue(test_type)
+    # upsert a job
+    queue.upsert_job(dataset=test_dataset, force=True)
+    # a second call creates a second waiting job, and the first one is cancelled
+    queue.upsert_job(dataset=test_dataset)
+    assert queue.is_job_in_process(dataset=test_dataset) is True
+    # get and start the last job
+    job_info = queue.start_job()
+    assert job_info["type"] == test_type
+    assert job_info["dataset"] == test_dataset
+    assert job_info["config"] is None
+    assert job_info["split"] is None
+    assert job_info["force"] is False
+    assert queue.is_job_in_process(dataset=test_dataset) is True
+    # adding the job while the first one has not finished yet adds a new waiting job
+    queue.upsert_job(dataset=test_dataset, force=True)
+    with pytest.raises(EmptyQueueError):
+        # but: it's not possible to start two jobs with the same arguments
+        queue.start_job()
+    # finish the first job
+    queue.finish_job(job_id=job_info["job_id"], finished_status=Status.SUCCESS)
+    # the queue is not empty
+    assert queue.is_job_in_process(dataset=test_dataset) is True
+    # process the second job
+    job_info = queue.start_job()
+    assert job_info["force"] is True
+    queue.finish_job(job_id=job_info["job_id"], finished_status=Status.SUCCESS)
+    # the queue is empty
+    assert queue.is_job_in_process(dataset=test_dataset) is False
+    with pytest.raises(EmptyQueueError):
+        # an error is raised if we try to start a job
+        queue.start_job()
+
+
 def check_job(queue: Queue, expected_dataset: str, expected_split: str) -> None:
     job_info = queue.start_job()
     assert job_info["dataset"] == expected_dataset
@@ -71,23 +109,20 @@ def check_job(queue: Queue, expected_dataset: str, expected_split: str) -> None:
 def test_priority_to_non_started_datasets() -> None:
     test_type = "test_type"
     queue = Queue(test_type)
-    queue.add_job(dataset="dataset1", config="config", split="split1")
-    queue.add_job(dataset="dataset1", config="config", split="split1")
-    queue.add_job(dataset="dataset1/dataset", config="config", split="split1")
-    queue.add_job(dataset="dataset1", config="config", split="split2")
-    queue.add_job(dataset="dataset2", config="config", split="split1")
-    queue.add_job(dataset="dataset2", config="config", split="split2")
-    queue.add_job(dataset="dataset3", config="config", split="split1")
-    check_job(queue=queue, expected_dataset="dataset1", expected_split="split1")
+    queue.upsert_job(dataset="dataset1", config="config", split="split1")
+    queue.upsert_job(dataset="dataset1/dataset", config="config", split="split1")
+    queue.upsert_job(dataset="dataset1", config="config", split="split2")
+    queue.upsert_job(dataset="dataset2", config="config", split="split1")
+    queue.upsert_job(dataset="dataset2", config="config", split="split2")
+    queue.upsert_job(dataset="dataset3", config="config", split="split1")
+    queue.upsert_job(dataset="dataset1", config="config", split="split1")
+    check_job(queue=queue, expected_dataset="dataset1/dataset", expected_split="split1")
     check_job(queue=queue, expected_dataset="dataset2", expected_split="split1")
     check_job(queue=queue, expected_dataset="dataset3", expected_split="split1")
-    check_job(queue=queue, expected_dataset="dataset1/dataset", expected_split="split1")
-    check_job(queue=queue, expected_dataset="dataset2", expected_split="split2")
     check_job(queue=queue, expected_dataset="dataset1", expected_split="split2")
+    check_job(queue=queue, expected_dataset="dataset2", expected_split="split2")
+    check_job(queue=queue, expected_dataset="dataset1", expected_split="split1")
     with pytest.raises(EmptyQueueError):
-        # raises even if there is still a waiting job
-        # (dataset="dataset1", config="config", split="split1")
-        # because a job with the same arguments is already started
         queue.start_job()
 
 
@@ -97,10 +132,10 @@ def test_max_jobs_per_namespace(max_jobs_per_namespace: Optional[int]) -> None:
     test_dataset = "test_dataset"
     test_config = "test_config"
     queue = Queue(test_type, max_jobs_per_namespace=max_jobs_per_namespace)
-    queue.add_job(dataset=test_dataset, config=test_config, split="split1")
+    queue.upsert_job(dataset=test_dataset, config=test_config, split="split1")
     assert queue.is_job_in_process(dataset=test_dataset, config=test_config, split="split1") is True
-    queue.add_job(dataset=test_dataset, config=test_config, split="split2")
-    queue.add_job(dataset=test_dataset, config=test_config, split="split3")
+    queue.upsert_job(dataset=test_dataset, config=test_config, split="split2")
+    queue.upsert_job(dataset=test_dataset, config=test_config, split="split3")
     job_info = queue.start_job()
     assert job_info["dataset"] == test_dataset
     assert job_info["config"] == test_config
@@ -135,12 +170,12 @@ def test_count_by_status() -> None:
     assert queue.get_jobs_count_by_status() == expected_empty
     assert queue_other.get_jobs_count_by_status() == expected_empty
 
-    queue.add_job(dataset=test_dataset)
+    queue.upsert_job(dataset=test_dataset)
 
     assert queue.get_jobs_count_by_status() == expected_one_waiting
     assert queue_other.get_jobs_count_by_status() == expected_empty
 
-    queue_other.add_job(dataset=test_dataset)
+    queue_other.upsert_job(dataset=test_dataset)
 
     assert queue.get_jobs_count_by_status() == expected_one_waiting
     assert queue_other.get_jobs_count_by_status() == expected_one_waiting
@@ -151,11 +186,11 @@ def test_get_total_duration_per_dataset() -> None:
     test_dataset = "test_dataset"
     test_config = "test_config"
     queue = Queue(test_type)
-    queue.add_job(dataset=test_dataset, config=test_config, split="split1")
-    queue.add_job(dataset=test_dataset, config=test_config, split="split2")
-    queue.add_job(dataset=test_dataset, config=test_config, split="split3")
-    queue.add_job(dataset=test_dataset, config=test_config, split="split4")
-    queue.add_job(dataset=test_dataset, config=test_config, split="split5")
+    queue.upsert_job(dataset=test_dataset, config=test_config, split="split1")
+    queue.upsert_job(dataset=test_dataset, config=test_config, split="split2")
+    queue.upsert_job(dataset=test_dataset, config=test_config, split="split3")
+    queue.upsert_job(dataset=test_dataset, config=test_config, split="split4")
+    queue.upsert_job(dataset=test_dataset, config=test_config, split="split5")
     job_info = queue.start_job()
     job_info_2 = queue.start_job()
     job_info_3 = queue.start_job()

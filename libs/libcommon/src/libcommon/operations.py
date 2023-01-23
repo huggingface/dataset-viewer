@@ -45,7 +45,7 @@ def update_dataset(
     logging.debug(f"refresh dataset='{dataset}'")
     for init_processing_step in init_processing_steps:
         if init_processing_step.input_type == "dataset":
-            Queue(type=init_processing_step.job_type).add_job(dataset=dataset, force=force)
+            Queue(type=init_processing_step.job_type).upsert_job(dataset=dataset, force=force)
 
 
 def delete_dataset(dataset: str) -> None:
