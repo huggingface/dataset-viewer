@@ -88,7 +88,7 @@ def compute_splits_response(
     Get the response of /splits for one specific dataset on huggingface.co.
     Dataset can be private or gated if you pass an acceptable token.
 
-    It is assumed that the dataset exist and can be accessed using the token.
+    It is assumed that the dataset exists and can be accessed using the token.
 
     The list of splits might require the dataset to support the streaming mode. See
     https://github.dev/huggingface/datasets/blob/e183a269067575db8765ee979bd8523d14a1adae/src/datasets/inspect.py#L389-L390
