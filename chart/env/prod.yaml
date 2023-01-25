@@ -70,7 +70,7 @@ mongodb:
 
 common:
   # Log level
-  logLevel: "DEBUG"
+  logLevel: "INFO"
 
 # --- jobs (pre-install/upgrade hooks) ---
 
