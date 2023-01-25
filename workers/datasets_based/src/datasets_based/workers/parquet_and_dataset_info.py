@@ -590,7 +590,9 @@ def compute_parquet_and_dataset_info_response(
     try:
         refs = hf_api.list_repo_refs(repo_id=dataset, repo_type=DATASET_TYPE)
         if all(ref.ref != target_revision for ref in refs.converts):
-            committer_hf_api.create_branch(repo_id=dataset, branch=target_revision, repo_type=DATASET_TYPE)
+            committer_hf_api.create_branch(
+                repo_id=dataset, branch=target_revision, repo_type=DATASET_TYPE, revision=source_revision
+            )
     except RepositoryNotFoundError as err:
         raise DatasetNotFoundError("The dataset does not exist on the Hub.") from err
 
