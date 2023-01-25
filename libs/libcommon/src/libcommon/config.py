@@ -144,6 +144,7 @@ class ProcessingGraphConfig:
     specification: ProcessingGraphSpecification = field(
         default_factory=lambda: {
             "/config-names": {"input_type": "dataset"},
+            "/split-names": {"input_type": "config", "requires": "/config-names"},
             "/splits": {"input_type": "dataset", "required_by_dataset_viewer": True},  # to be deprecated
             "/first-rows": {"input_type": "split", "requires": "/splits", "required_by_dataset_viewer": True},
             "/parquet-and-dataset-info": {"input_type": "dataset"},

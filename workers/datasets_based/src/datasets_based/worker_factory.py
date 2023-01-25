@@ -13,6 +13,7 @@ from datasets_based.workers.first_rows import FirstRowsWorker
 from datasets_based.workers.parquet import ParquetWorker
 from datasets_based.workers.parquet_and_dataset_info import ParquetAndDatasetInfoWorker
 from datasets_based.workers.sizes import SizesWorker
+from datasets_based.workers.split_names import SplitNamesWorker
 from datasets_based.workers.splits import SplitsWorker
 
 
@@ -24,6 +25,8 @@ class DatasetBasedWorkerFactory(WorkerFactory):
         job_type = job_info["type"]
         if job_type == ConfigNamesWorker.get_job_type():
             return ConfigNamesWorker(job_info=job_info, app_config=self.app_config)
+        if job_type == SplitNamesWorker.get_job_type():
+            return SplitNamesWorker(job_info=job_info, app_config=self.app_config)
         if job_type == SplitsWorker.get_job_type():
             return SplitsWorker(job_info=job_info, app_config=self.app_config)
         if job_type == FirstRowsWorker.get_job_type():
@@ -44,6 +47,7 @@ class DatasetBasedWorkerFactory(WorkerFactory):
             return SizesWorker(job_info=job_info, app_config=self.app_config)
         supported_job_types = [
             ConfigNamesWorker.get_job_type(),
+            SplitNamesWorker.get_job_type(),
             SplitsWorker.get_job_type(),
             FirstRowsWorker.get_job_type(),
             ParquetAndDatasetInfoWorker.get_job_type(),

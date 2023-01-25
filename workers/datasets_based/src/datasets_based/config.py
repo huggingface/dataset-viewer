@@ -17,7 +17,7 @@ from libcommon.config import (
     WorkerLoopConfig,
 )
 
-DATASETS_BASED_ENDPOINT = "/splits"
+DATASETS_BASED_ENDPOINT = "/config-names"
 DATASETS_BASED_HF_DATASETS_CACHE = None
 
 

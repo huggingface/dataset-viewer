@@ -37,7 +37,7 @@ def get_worker(
     )
 
 
-def should_skip_job(app_config: AppConfig, first_rows_config: FirstRowsConfig, hub_public_csv: str) -> None:
+def test_should_skip_job(app_config: AppConfig, first_rows_config: FirstRowsConfig, hub_public_csv: str) -> None:
     dataset, config, split = get_default_config_split(hub_public_csv)
     worker = get_worker(dataset, config, split, app_config, first_rows_config)
     assert worker.should_skip_job() is False

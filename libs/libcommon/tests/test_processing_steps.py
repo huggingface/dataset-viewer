@@ -9,6 +9,7 @@ def test_default_graph():
     graph = config.graph
 
     config_names = graph.get_step("/config-names")
+    split_names = graph.get_step("/split-names")
     splits = graph.get_step("/splits")
     first_rows = graph.get_step("/first-rows")
     parquet_and_dataset_info = graph.get_step("/parquet-and-dataset-info")
@@ -18,8 +19,13 @@ def test_default_graph():
 
     assert config_names is not None
     assert config_names.parent is None
-    assert config_names.children == []
+    assert config_names.children == [split_names]
     assert config_names.get_ancestors() == []
+
+    assert split_names is not None
+    assert split_names.parent is config_names
+    assert split_names.children == []
+    assert split_names.get_ancestors() == [config_names]
 
     assert splits is not None
     assert splits.parent is None

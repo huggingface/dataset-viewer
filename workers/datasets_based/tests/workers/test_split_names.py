@@ -9,21 +9,22 @@ from libcommon.exceptions import CustomError
 from libcommon.simple_cache import DoesNotExist, get_response
 
 from datasets_based.config import AppConfig
-from datasets_based.workers.config_names import ConfigNamesWorker
+from datasets_based.workers.split_names import SplitNamesWorker
 
-from ..fixtures.hub import HubDatasets
+from ..fixtures.hub import HubDatasets, get_default_config_split
 
 
 def get_worker(
     dataset: str,
+    config: str,
     app_config: AppConfig,
     force: bool = False,
-) -> ConfigNamesWorker:
-    return ConfigNamesWorker(
+) -> SplitNamesWorker:
+    return SplitNamesWorker(
         job_info={
-            "type": ConfigNamesWorker.get_job_type(),
+            "type": SplitNamesWorker.get_job_type(),
             "dataset": dataset,
-            "config": None,
+            "config": config,
             "split": None,
             "job_id": "job_id",
             "force": force,
@@ -32,37 +33,27 @@ def get_worker(
     )
 
 
-def test_should_skip_job(app_config: AppConfig, hub_public_csv: str) -> None:
-    dataset = hub_public_csv
-    worker = get_worker(dataset, app_config)
-    assert worker.should_skip_job() is False
-    # we add an entry to the cache
-    worker.process()
-    assert worker.should_skip_job() is True
-    worker = get_worker(dataset, app_config, force=True)
-    assert worker.should_skip_job() is False
-
-
 def test_process(app_config: AppConfig, hub_public_csv: str) -> None:
-    dataset = hub_public_csv
-    worker = get_worker(dataset, app_config)
+    dataset, config, _ = get_default_config_split(hub_public_csv)
+    worker = get_worker(dataset, config, app_config)
     assert worker.process() is True
-    cached_response = get_response(kind=worker.processing_step.cache_kind, dataset=hub_public_csv)
+    cached_response = get_response(kind=worker.processing_step.cache_kind, dataset=hub_public_csv, config=config)
     assert cached_response["http_status"] == HTTPStatus.OK
     assert cached_response["error_code"] is None
     assert cached_response["worker_version"] == worker.get_version()
     assert cached_response["dataset_git_revision"] is not None
     assert cached_response["error_code"] is None
     content = cached_response["content"]
-    assert len(content["config_names"]) == 1
+    assert len(content["split_names"]) == 1
 
 
 def test_doesnotexist(app_config: AppConfig) -> None:
     dataset = "doesnotexist"
-    worker = get_worker(dataset, app_config)
+    config = "some_config"
+    worker = get_worker(dataset, config, app_config)
     assert worker.process() is False
     with pytest.raises(DoesNotExist):
-        get_response(kind=worker.processing_step.cache_kind, dataset=dataset)
+        get_response(kind=worker.processing_step.cache_kind, dataset=dataset, config=config)
 
 
 @pytest.mark.parametrize(
@@ -75,18 +66,20 @@ def test_doesnotexist(app_config: AppConfig) -> None:
         ("empty", False, "EmptyDatasetError", "EmptyDatasetError"),
         # should we really test the following cases?
         # The assumption is that the dataset exists and is accessible with the token
-        ("does_not_exist", False, "ConfigNamesError", "FileNotFoundError"),
-        ("gated", False, "ConfigNamesError", "FileNotFoundError"),
-        ("private", False, "ConfigNamesError", "FileNotFoundError"),
+        ("does_not_exist", False, "SplitNamesError", "FileNotFoundError"),
+        ("gated", False, "SplitNamesError", "FileNotFoundError"),
+        ("private", False, "SplitNamesError", "FileNotFoundError"),
     ],
 )
-def test_compute_splits_response_simple_csv(
+def test_compute_split_names_response(
     hub_datasets: HubDatasets, name: str, use_token: bool, error_code: str, cause: str, app_config: AppConfig
 ) -> None:
-    dataset = hub_datasets[name]["name"]
-    expected_configs_response = hub_datasets[name]["config_names_response"]
+    dataset, config, _ = get_default_config_split(hub_datasets[name]["name"])
+    worker = get_worker(dataset, config, app_config)
+    expected_configs_response = hub_datasets[name]["split_names_response"]
     worker = get_worker(
         dataset,
+        config,
         app_config if use_token else replace(app_config, common=replace(app_config.common, hf_token=None)),
     )
     if error_code is None:
