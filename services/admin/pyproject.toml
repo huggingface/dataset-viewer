@@ -18,7 +18,7 @@ watchdog = { extras = ["watchmedo"], version = "^2.1.3" }
 bandit = "^1.7.0"
 black = "^22.1.0"
 flake8 = "^3.9.2"
-huggingface-hub = "^0.11.0"
+huggingface-hub = "^0.12.0"
 isort = "^5.9.3"
 mypy = "0.812"
 poetryup = "^0.3.8"
