@@ -45,13 +45,13 @@ class ConfigNamesError(ConfigNamesWorkerError):
         super().__init__(message, HTTPStatus.INTERNAL_SERVER_ERROR, "ConfigNamesError", cause, True)
 
 
-class ConfigItem(TypedDict):
+class ConfigNameItem(TypedDict):
     dataset: str
     config: str
 
 
 class ConfigNamesResponseContent(TypedDict):
-    config_names: List[ConfigItem]
+    config_names: List[ConfigNameItem]
 
 
 def compute_config_names_response(
@@ -84,7 +84,7 @@ def compute_config_names_response(
     use_auth_token: Union[bool, str, None] = hf_token if hf_token is not None else False
     # get the list of splits in streaming mode
     try:
-        config_name_items: List[ConfigItem] = [
+        config_name_items: List[ConfigNameItem] = [
             {"dataset": dataset, "config": str(config)}
             for config in sorted(get_dataset_config_names(path=dataset, use_auth_token=use_auth_token))
         ]
