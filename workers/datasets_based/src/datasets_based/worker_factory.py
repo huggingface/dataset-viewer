@@ -7,7 +7,7 @@ from datasets_based.config import (
     ParquetAndDatasetInfoConfig,
 )
 from datasets_based.worker import JobInfo, Worker, WorkerFactory
-from datasets_based.workers.configs import ConfigsWorker
+from datasets_based.workers.config_names import ConfigNamesWorker
 from datasets_based.workers.dataset_info import DatasetInfoWorker
 from datasets_based.workers.first_rows import FirstRowsWorker
 from datasets_based.workers.parquet import ParquetWorker
@@ -22,8 +22,8 @@ class DatasetBasedWorkerFactory(WorkerFactory):
 
     def _create_worker(self, job_info: JobInfo) -> Worker:
         job_type = job_info["type"]
-        if job_type == ConfigsWorker.get_job_type():
-            return ConfigsWorker(job_info=job_info, app_config=self.app_config)
+        if job_type == ConfigNamesWorker.get_job_type():
+            return ConfigNamesWorker(job_info=job_info, app_config=self.app_config)
         if job_type == SplitsWorker.get_job_type():
             return SplitsWorker(job_info=job_info, app_config=self.app_config)
         elif job_type == FirstRowsWorker.get_job_type():
@@ -44,7 +44,7 @@ class DatasetBasedWorkerFactory(WorkerFactory):
             return SizesWorker(job_info=job_info, app_config=self.app_config)
         else:
             supported_job_types = [
-                ConfigsWorker.get_job_type(),
+                ConfigNamesWorker.get_job_type(),
                 SplitsWorker.get_job_type(),
                 FirstRowsWorker.get_job_type(),
                 ParquetAndDatasetInfoWorker.get_job_type(),

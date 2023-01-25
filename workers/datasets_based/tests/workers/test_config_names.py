@@ -9,7 +9,7 @@ from libcommon.exceptions import CustomError
 from libcommon.simple_cache import DoesNotExist, get_response
 
 from datasets_based.config import AppConfig
-from datasets_based.workers.configs import ConfigsWorker
+from datasets_based.workers.config_names import ConfigNamesWorker
 
 from ..fixtures.hub import HubDatasets
 
@@ -18,10 +18,10 @@ def get_worker(
     dataset: str,
     app_config: AppConfig,
     force: bool = False,
-) -> ConfigsWorker:
-    return ConfigsWorker(
+) -> ConfigNamesWorker:
+    return ConfigNamesWorker(
         job_info={
-            "type": ConfigsWorker.get_job_type(),
+            "type": ConfigNamesWorker.get_job_type(),
             "dataset": dataset,
             "config": None,
             "split": None,
@@ -54,7 +54,7 @@ def test_process(app_config: AppConfig, hub_public_csv: str) -> None:
     assert cached_response["dataset_git_revision"] is not None
     assert cached_response["error_code"] is None
     content = cached_response["content"]
-    assert len(content["configs"]) == 1
+    assert len(content["config_names"]) == 1
 
 
 def test_doesnotexist(app_config: AppConfig) -> None:
@@ -84,7 +84,7 @@ def test_compute_splits_response_simple_csv(
     hub_datasets: HubDatasets, name: str, use_token: bool, error_code: str, cause: str, app_config: AppConfig
 ) -> None:
     dataset = hub_datasets[name]["name"]
-    expected_configs_response = hub_datasets[name]["configs_response"]
+    expected_configs_response = hub_datasets[name]["config_names_response"]
     worker = get_worker(
         dataset,
         app_config if use_token else replace(app_config, common=replace(app_config.common, hf_token=None)),

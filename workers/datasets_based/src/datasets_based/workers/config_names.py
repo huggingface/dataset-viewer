@@ -11,17 +11,17 @@ from libcommon.exceptions import CustomError
 
 from datasets_based.workers._datasets_based_worker import DatasetsBasedWorker
 
-ConfigsWorkerErrorCode = Literal["EmptyDatasetError", "ConfigNamesError"]
+ConfigNamesWorkerErrorCode = Literal["EmptyDatasetError", "ConfigNamesError"]
 
 
-class ConfigsWorkerError(CustomError):
+class ConfigNamesWorkerError(CustomError):
     """Base class for worker exceptions."""
 
     def __init__(
         self,
         message: str,
         status_code: HTTPStatus,
-        code: ConfigsWorkerErrorCode,
+        code: ConfigNamesWorkerErrorCode,
         cause: Optional[BaseException] = None,
         disclose_cause: bool = False,
     ):
@@ -30,14 +30,14 @@ class ConfigsWorkerError(CustomError):
         )
 
 
-class EmptyDatasetError(ConfigsWorkerError):
+class EmptyDatasetError(ConfigNamesWorkerError):
     """Raised when the dataset has no data."""
 
     def __init__(self, message: str, cause: Optional[BaseException] = None):
         super().__init__(message, HTTPStatus.INTERNAL_SERVER_ERROR, "EmptyDatasetError", cause, True)
 
 
-class ConfigNamesError(ConfigsWorkerError):
+class ConfigNamesError(ConfigNamesWorkerError):
     """Raised when the config names could not be fetched."""
 
     def __init__(self, message: str, cause: Optional[BaseException] = None):
@@ -49,16 +49,16 @@ class ConfigItem(TypedDict):
     config: str
 
 
-class ConfigsResponseContent(TypedDict):
-    configs: List[ConfigItem]
+class ConfigNamesResponseContent(TypedDict):
+    config_names: List[ConfigItem]
 
 
-def compute_configs_response(
+def compute_config_names_response(
     dataset: str,
     hf_token: Optional[str] = None,
-) -> ConfigsResponseContent:
+) -> ConfigNamesResponseContent:
     """
-    Get the response of /configs for one specific dataset on huggingface.co.
+    Get the response of /config-names for one specific dataset on huggingface.co.
     Dataset can be private or gated if you pass an acceptable token.
 
     It is assumed that the dataset exists and can be accessed using the token.
@@ -70,20 +70,20 @@ def compute_configs_response(
         hf_token (`str`, *optional*):
             An authentication token (See https://huggingface.co/settings/token)
     Returns:
-        `ConfigsResponseContent`: An object with the list of config names.
+        `ConfigNamesResponseContent`: An object with the list of config names.
     <Tip>
     Raises the following errors:
-        - [`~workers.configs.EmptyDatasetError`]
+        - [`~workers.config_names.EmptyDatasetError`]
           The dataset is empty.
-        - [`~workers.splits.ConfigNamesError`]
+        - [`~workers.config_names.ConfigNamesError`]
           If the list of configs could not be obtained using the datasets library.
     </Tip>
     """
-    logging.info(f"get configs for dataset={dataset}")
+    logging.info(f"get config names for dataset={dataset}")
     use_auth_token: Union[bool, str, None] = hf_token if hf_token is not None else False
     # get the list of splits in streaming mode
     try:
-        config_items: List[ConfigItem] = [
+        config_name_items: List[ConfigItem] = [
             {"dataset": dataset, "config": str(config)}
             for config in sorted(get_dataset_config_names(path=dataset, use_auth_token=use_auth_token))
         ]
@@ -91,17 +91,17 @@ def compute_configs_response(
         raise EmptyDatasetError("The dataset is empty.", cause=err) from err
     except Exception as err:
         raise ConfigNamesError("Cannot get the config names for the dataset.", cause=err) from err
-    return {"configs": config_items}
+    return {"config_names": config_name_items}
 
 
-class ConfigsWorker(DatasetsBasedWorker):
+class ConfigNamesWorker(DatasetsBasedWorker):
     @staticmethod
     def get_job_type() -> str:
-        return "/configs"
+        return "/config-names"
 
     @staticmethod
     def get_version() -> str:
         return "1.0.0"
 
     def compute(self) -> Mapping[str, Any]:
-        return compute_configs_response(dataset=self.dataset, hf_token=self.common_config.hf_token)
+        return compute_config_names_response(dataset=self.dataset, hf_token=self.common_config.hf_token)

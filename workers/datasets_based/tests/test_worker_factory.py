@@ -13,7 +13,7 @@ from datasets_based.worker_factory import DatasetBasedWorkerFactory
 @pytest.mark.parametrize(
     "job_type,expected_worker",
     [
-        ("/configs", "ConfigsWorker"),
+        ("/config-names", "ConfigNamesWorker"),
         ("/splits", "SplitsWorker"),
         ("/first-rows", "FirstRowsWorker"),
         ("/parquet-and-dataset-info", "ParquetAndDatasetInfoWorker"),
