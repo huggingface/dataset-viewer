@@ -588,16 +588,15 @@ def compute_parquet_and_dataset_info_response(
 
     # create the target revision if it does not exist yet
     try:
-        target_dataset_info = hf_api.dataset_info(repo_id=dataset, revision=target_revision, files_metadata=False)
+        refs = hf_api.list_repo_refs(repo_id=dataset, repo_type=DATASET_TYPE)
+        if all(ref.ref != target_revision for ref in refs.converts):
+            committer_hf_api.create_branch(repo_id=dataset, branch=target_revision, repo_type=DATASET_TYPE)
     except RepositoryNotFoundError as err:
         raise DatasetNotFoundError("The dataset does not exist on the Hub.") from err
-    except RevisionNotFoundError:
-        # create the parquet_ref (refs/convert/parquet)
-        committer_hf_api.create_branch(repo_id=dataset, branch=target_revision, repo_type=DATASET_TYPE)
-        target_dataset_info = hf_api.dataset_info(repo_id=dataset, revision=target_revision, files_metadata=False)
 
     # delete:
     # - the previous files,
+    target_dataset_info = hf_api.dataset_info(repo_id=dataset, revision=target_revision, files_metadata=False)
     previous_files = {f.rfilename for f in target_dataset_info.siblings}
     # except:
     # - the files we will update,
