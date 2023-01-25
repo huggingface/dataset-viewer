@@ -27,7 +27,7 @@ WORKDIR /src
 COPY workers/datasets_based/vendors ./workers/datasets_based/vendors/
 COPY workers/datasets_based/poetry.lock ./workers/datasets_based/poetry.lock
 COPY workers/datasets_based/pyproject.toml ./workers/datasets_based/pyproject.toml
-COPY libs/libcommon/dist ./libs/libcommon/dist
+COPY libs/libcommon ./libs/libcommon
 WORKDIR /src/workers/datasets_based/
 RUN poetry install --no-cache
 COPY workers/datasets_based/src ./src

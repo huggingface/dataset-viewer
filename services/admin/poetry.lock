@@ -355,21 +355,22 @@ version = "0.6.8"
 description = "Library for utils, common to all the services and workers"
 category = "main"
 optional = false
-python-versions = "==3.9.15"
+python-versions = "3.9.15"
+develop = true
 
 [package.dependencies]
-appdirs = ">=1.4.4,<2.0.0"
-environs = ">=9.5.0,<10.0.0"
-huggingface-hub = ">=0.11.0,<0.12.0"
+appdirs = "^1.4.4"
+environs = "^9.5.0"
+huggingface-hub = "^0.11.0"
 mongo-types = "0.15.1"
-mongoengine = ">=0.24.1,<0.25.0"
-orjson = ">=3.6.4,<4.0.0"
-psutil = ">=5.9.2,<6.0.0"
-pymongo = {version = ">=3.13.0,<4.0.0", extras = ["srv"]}
+mongoengine = "^0.24.1"
+orjson = "^3.6.4"
+psutil = "^5.9.2"
+pymongo = {version = "^3.13.0", extras = ["srv"]}
 
 [package.source]
-type = "file"
-url = "../../libs/libcommon/dist/libcommon-0.6.8-py3-none-any.whl"
+type = "directory"
+url = "../../libs/libcommon"
 
 [[package]]
 name = "lockfile"
@@ -992,7 +993,7 @@ python-versions = "*"
 [metadata]
 lock-version = "1.1"
 python-versions = "3.9.15"
-content-hash = "ca56fd792b28501ba816d6bc44df28efacaf8ea43839c77d39c920c3c0e8913a"
+content-hash = "95fb7ecb3a6c7b3afb6cebd2e90a1f51a56ff86f934b17b748b396347a8d26fc"
 
 [metadata.files]
 anyio = [
@@ -1248,9 +1249,7 @@ isort = [
     {file = "isort-5.11.4-py3-none-any.whl", hash = "sha256:c033fd0edb91000a7f09527fe5c75321878f98322a77ddcc81adbd83724afb7b"},
     {file = "isort-5.11.4.tar.gz", hash = "sha256:6db30c5ded9815d813932c04c2f85a360bcdd35fed496f4d8f35495ef0a261b6"},
 ]
-libcommon = [
-    {file = "libcommon-0.6.8-py3-none-any.whl", hash = "sha256:28ae018d0416b1ebdbb8fc238157eb01f84608cd3880d23e9a7eef1f73c46908"},
-]
+libcommon = []
 lockfile = [
     {file = "lockfile-0.12.2-py2.py3-none-any.whl", hash = "sha256:6c3cb24f344923d30b2785d5ad75182c8ea7ac1b6171b08657258ec7429d50fa"},
     {file = "lockfile-0.12.2.tar.gz", hash = "sha256:6aed02de03cba24efabcd600b30540140634fc06cfa603822d508d5361e9f799"},

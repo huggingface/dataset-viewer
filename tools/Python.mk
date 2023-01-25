@@ -10,10 +10,6 @@ lock:
 	poetry lock
 	poetry install
 
-.PHONY: build
-build:
-	poetry build
-
 # Check that source code meets quality standards + security
 .PHONY: quality
 quality:

@@ -23,7 +23,7 @@ RUN pip install --no-cache-dir "poetry==$POETRY_VERSION"
 WORKDIR /src
 COPY jobs/mongodb_migration/poetry.lock ./jobs/mongodb_migration/poetry.lock
 COPY jobs/mongodb_migration/pyproject.toml ./jobs/mongodb_migration/pyproject.toml
-COPY libs/libcommon/dist ./libs/libcommon/dist
+COPY libs/libcommon ./libs/libcommon
 WORKDIR /src/jobs/mongodb_migration/
 RUN poetry install --no-cache
 COPY jobs/mongodb_migration/src ./src
