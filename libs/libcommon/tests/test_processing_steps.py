@@ -8,12 +8,18 @@ def test_default_graph():
     config = ProcessingGraphConfig()
     graph = config.graph
 
+    configs = graph.get_step("/configs")
     splits = graph.get_step("/splits")
     first_rows = graph.get_step("/first-rows")
     parquet_and_dataset_info = graph.get_step("/parquet-and-dataset-info")
     parquet = graph.get_step("/parquet")
     dataset_info = graph.get_step("/dataset-info")
     sizes = graph.get_step("/sizes")
+
+    assert configs is not None
+    assert configs.parent is None
+    assert configs.children == []
+    assert configs.get_ancestors() == []
 
     assert splits is not None
     assert splits.parent is None
@@ -45,5 +51,5 @@ def test_default_graph():
     assert sizes.children == []
     assert sizes.get_ancestors() == [parquet_and_dataset_info]
 
-    assert graph.get_first_steps() == [splits, parquet_and_dataset_info]
+    assert graph.get_first_steps() == [configs, splits, parquet_and_dataset_info]
     assert graph.get_steps_required_by_dataset_viewer() == [splits, first_rows]

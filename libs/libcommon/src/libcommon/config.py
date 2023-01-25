@@ -143,6 +143,7 @@ class WorkerLoopConfig:
 class ProcessingGraphConfig:
     specification: ProcessingGraphSpecification = field(
         default_factory=lambda: {
+            "/configs": {"input_type": "dataset"},
             "/splits": {"input_type": "dataset", "required_by_dataset_viewer": True},
             "/first-rows": {"input_type": "split", "requires": "/splits", "required_by_dataset_viewer": True},
             "/parquet-and-dataset-info": {"input_type": "dataset"},
