@@ -518,29 +518,30 @@ def compute_parquet_and_dataset_info_response(
           (dataset info and list of parquet files).
     <Tip>
     Raises the following errors:
-        - [`~parquet_and_dataset_info.worker.DatasetInBlockListError`]
+        - [`~workers.parquet_and_dataset_info.DatasetInBlockListError`]
           If the dataset is in the list of blocked datasets.
-        - [`~libcommon.dataset.GatedExtraFieldsError`]: if the dataset is gated, with extra fields.
+        - [`libcommon.dataset.GatedExtraFieldsError`]: if the dataset is gated, with extra fields.
             Programmatic access is not implemented for this type of dataset because there is no easy
             way to get the list of extra fields.
-        - [`~libcommon.dataset.GatedDisabledError`]: if the dataset is gated, but disabled.
-        - [`~libcommon.dataset.DatasetNotFoundError`]: if the dataset does not exist, or if the
+        - [`libcommon.dataset.GatedDisabledError`]: if the dataset is gated, but disabled.
+        - [`libcommon.dataset.DatasetNotFoundError`]: if the dataset does not exist, or if the
             token does not give the sufficient access to the dataset, or if the dataset is private
             (private datasets are not supported by the datasets server)
-        - ['~requests.exceptions.HTTPError']: any other error when asking access
-        - [`~parquet_and_dataset_info.worker.DatasetRevisionNotFoundError`]
+        - ['HTTPError'](https://requests.readthedocs.io/en/latest/api/#requests.HTTPError): any other error when
+            asking access
+        - [`~workers.parquet_and_dataset_info.DatasetRevisionNotFoundError`]
           If the revision does not exist or cannot be accessed using the token.
-        - [`~parquet_and_dataset_info.worker.DatasetTooBigFromHubError`]
+        - [`~workers.parquet_and_dataset_info.DatasetTooBigFromHubError`]
           If the dataset is too big to be converted to parquet
-        - [`ValueError`]
+        - [`ValueError`](https://docs.python.org/3/library/exceptions.html#ValueError)
             If the datasets.config.HF_ENDPOINT is not set to the expected value
-        - [`~parquet_and_dataset_info.worker.DatasetTooBigFromDatasetsError`]
+        - [`~workers.parquet_and_dataset_info.DatasetTooBigFromDatasetsError`]
             If the dataset is too big to be converted to parquet
-        - [`~parquet_and_dataset_info.worker.EmptyDatasetError`]
+        - [`~workers.parquet_and_dataset_info.EmptyDatasetError`]
           The dataset is empty.
-        - [`~parquet_and_dataset_info.worker.ConfigNamesError`]
+        - [`~workers.parquet_and_dataset_info.ConfigNamesError`]
           If the list of configurations could not be obtained using the datasets library.
-        - [`~parquet_and_dataset_info.worker.DatasetInBlockListError`]
+        - [`~workers.parquet_and_dataset_info.DatasetInBlockListError`]
           If the dataset is in the list of blocked datasets.
     </Tip>
     """

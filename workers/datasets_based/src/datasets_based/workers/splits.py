@@ -106,9 +106,9 @@ def compute_splits_response(
         `SplitsResponseContent`: An object with the list of split names.
     <Tip>
     Raises the following errors:
-        - [`~splits.worker.EmptyDatasetError`]
+        - [`~workers.splits.EmptyDatasetError`]
           The dataset is empty.
-        - [`~splits.worker.SplitsNamesError`]
+        - [`~workers.splits.SplitsNamesError`]
           If the list of splits could not be obtained using the datasets library.
     </Tip>
     """
