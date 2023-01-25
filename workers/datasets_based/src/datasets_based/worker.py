@@ -328,55 +328,62 @@ class Worker(ABC):
 
     def create_children_jobs(self) -> None:
         """Create children jobs for the current job."""
-        dataset_children = [c for c in self.processing_step.children if c.input_type == "dataset"]
-        for processing_step in dataset_children:
-            Queue(type=processing_step.job_type).upsert_job(
-                dataset=self.dataset, config=None, split=None, force=self.force
+        if len(self.processing_step.children) <= 0:
+            return
+        try:
+            response_in_cache = get_response(
+                kind=self.processing_step.cache_kind, dataset=self.dataset, config=self.config, split=self.split
             )
-
-        split_children = [c for c in self.processing_step.children if c.input_type == "split"]
-        if len(split_children) > 0:
-            try:
-                response_in_cache = get_response(
-                    kind=self.processing_step.cache_kind, dataset=self.dataset, config=self.config, split=self.split
+        except Exception:
+            # if the response is not in the cache, we don't create the children jobs
+            return
+        if response_in_cache["http_status"] != HTTPStatus.OK:
+            # if the response is not valid, we don't create the children jobs
+            return
+        new_split_full_names_for_split: set[SplitFullName] = self.get_new_splits(response_in_cache["content"])
+        new_split_full_names_for_config: set[SplitFullName] = {
+            SplitFullName(dataset=s.dataset, config=s.config, split=None) for s in new_split_full_names_for_split
+        }
+        new_split_full_names_for_dataset: set[SplitFullName] = {
+            SplitFullName(dataset=s.dataset, config=None, split=None) for s in new_split_full_names_for_config
+        }  # should be self.dataset
+        for processing_step in self.processing_step.children:
+            new_split_full_names = (
+                new_split_full_names_for_split
+                if processing_step.input_type == "split"
+                else new_split_full_names_for_config
+                if processing_step.input_type == "config"
+                else new_split_full_names_for_dataset
+            )
+            # remove obsolete responses from the cache
+            split_full_names_in_cache = get_split_full_names_for_dataset_and_kind(
+                dataset=self.dataset, kind=processing_step.cache_kind
+            )
+            split_full_names_to_delete = split_full_names_in_cache.difference(new_split_full_names)
+            for split_full_name in split_full_names_to_delete:
+                delete_response(
+                    kind=processing_step.cache_kind,
+                    dataset=split_full_name.dataset,
+                    config=split_full_name.config,
+                    split=split_full_name.split,
                 )
-            except Exception:
-                # if the response is not in the cache, we don't create the children jobs
-                return
-            if response_in_cache["http_status"] != HTTPStatus.OK:
-                # if the response is not valid, we don't create the children jobs
-                return
-            new_split_full_names: set[SplitFullName] = self.get_new_splits(response_in_cache["content"])
-            for processing_step in split_children:
-                # remove obsolete responses from the cache
-                split_full_names_in_cache = get_split_full_names_for_dataset_and_kind(
-                    dataset=self.dataset, kind=processing_step.cache_kind
+            logging.debug(
+                f"{len(split_full_names_to_delete)} obsolete responses"
+                f"of kind {processing_step.cache_kind} deleted from cache for dataset={self.dataset}"
+            )
+            # compute the responses for the new splits
+            for split_full_name in new_split_full_names:
+                # we force the refresh of the children step responses if the current step refresh was forced
+                Queue(type=processing_step.job_type).upsert_job(
+                    dataset=split_full_name.dataset,
+                    config=split_full_name.config,
+                    split=split_full_name.split,
+                    force=self.force,
                 )
-                split_full_names_to_delete = split_full_names_in_cache.difference(new_split_full_names)
-                for split_full_name in split_full_names_to_delete:
-                    delete_response(
-                        kind=processing_step.cache_kind,
-                        dataset=split_full_name.dataset,
-                        config=split_full_name.config,
-                        split=split_full_name.split,
-                    )
-                logging.debug(
-                    f"{len(split_full_names_to_delete)} {processing_step.endpoint} responses deleted from the cache"
-                    f" for obsolete splits of dataset={self.dataset}"
-                )
-                # compute the responses for the new splits
-                for split_full_name in new_split_full_names:
-                    # we force the refresh of the children step responses if the current step refresh was forced
-                    Queue(type=processing_step.job_type).upsert_job(
-                        dataset=split_full_name.dataset,
-                        config=split_full_name.config,
-                        split=split_full_name.split,
-                        force=self.force,
-                    )
-                logging.debug(
-                    f"{len(new_split_full_names)} {processing_step.job_type} jobs added for the splits of"
-                    f" dataset={self.dataset}"
-                )
+            logging.debug(
+                f"{len(new_split_full_names)} jobs"
+                f"of type {processing_step.job_type} added to queue for dataset={self.dataset}"
+            )
 
     def post_compute(self) -> None:
         """Hook method called after the compute method."""

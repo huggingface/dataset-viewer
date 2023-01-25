@@ -8,6 +8,7 @@ from typing import Any, List, Literal, Mapping, Optional, TypedDict, Union
 from datasets import get_dataset_config_names
 from datasets.data_files import EmptyDatasetError as _EmptyDatasetError
 from libcommon.exceptions import CustomError
+from libcommon.simple_cache import SplitFullName
 
 from datasets_based.workers._datasets_based_worker import DatasetsBasedWorker
 
@@ -105,3 +106,7 @@ class ConfigNamesWorker(DatasetsBasedWorker):
 
     def compute(self) -> Mapping[str, Any]:
         return compute_config_names_response(dataset=self.dataset, hf_token=self.common_config.hf_token)
+
+    def get_new_splits(self, content: Mapping[str, Any]) -> set[SplitFullName]:
+        """Get the set of new splits, from the content created by the compute."""
+        return {SplitFullName(dataset=s["dataset"], config=s["config"], split=None) for s in content["config_names"]}
