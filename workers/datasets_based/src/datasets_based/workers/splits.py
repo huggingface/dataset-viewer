@@ -18,7 +18,7 @@ SplitsWorkerErrorCode = Literal[
 ]
 
 
-class SplitWorkerError(CustomError):
+class SplitsWorkerError(CustomError):
     """Base class for worker exceptions."""
 
     def __init__(
@@ -34,14 +34,14 @@ class SplitWorkerError(CustomError):
         )
 
 
-class SplitsNamesError(SplitWorkerError):
+class SplitsNamesError(SplitsWorkerError):
     """Raised when the split names could not be fetched."""
 
     def __init__(self, message: str, cause: Optional[BaseException] = None):
         super().__init__(message, HTTPStatus.INTERNAL_SERVER_ERROR, "SplitsNamesError", cause, True)
 
 
-class EmptyDatasetError(SplitWorkerError):
+class EmptyDatasetError(SplitsWorkerError):
     """Raised when the dataset has no data."""
 
     def __init__(self, message: str, cause: Optional[BaseException] = None):
