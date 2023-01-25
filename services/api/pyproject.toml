@@ -7,7 +7,7 @@ license = "Apache-2.0"
 
 [tool.poetry.dependencies]
 environs = "^9.5.0"
-huggingface-hub = "^0.11.0"
+huggingface-hub = "^0.12.0"
 jsonschema = "^4.16.0"
 libcommon = {path = "../../libs/libcommon", develop = true}
 python = "3.9.15"
