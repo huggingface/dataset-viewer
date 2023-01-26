@@ -7,7 +7,13 @@ from typing import Optional
 import pytest
 
 from libcommon.config import QueueConfig
-from libcommon.queue import EmptyQueueError, Queue, Status, _clean_queue_database
+from libcommon.queue import (
+    EmptyQueueError,
+    Priority,
+    Queue,
+    Status,
+    _clean_queue_database,
+)
 
 
 @pytest.fixture(autouse=True)
@@ -106,22 +112,31 @@ def check_job(queue: Queue, expected_dataset: str, expected_split: str) -> None:
     assert job_info["split"] == expected_split
 
 
-def test_priority_to_non_started_datasets() -> None:
+def test_priority_logic() -> None:
     test_type = "test_type"
     queue = Queue(test_type)
     queue.upsert_job(dataset="dataset1", config="config", split="split1")
     queue.upsert_job(dataset="dataset1/dataset", config="config", split="split1")
     queue.upsert_job(dataset="dataset1", config="config", split="split2")
-    queue.upsert_job(dataset="dataset2", config="config", split="split1")
+    queue.upsert_job(dataset="dataset2", config="config", split="split1", priority=Priority.LOW)
+    queue.upsert_job(dataset="dataset2/dataset", config="config", split="split1", priority=Priority.LOW)
     queue.upsert_job(dataset="dataset2", config="config", split="split2")
     queue.upsert_job(dataset="dataset3", config="config", split="split1")
+    queue.upsert_job(dataset="dataset3", config="config", split="split1", priority=Priority.LOW)
     queue.upsert_job(dataset="dataset1", config="config", split="split1")
+    queue.upsert_job(dataset="dataset2", config="config", split="split1", priority=Priority.LOW)
     check_job(queue=queue, expected_dataset="dataset1/dataset", expected_split="split1")
-    check_job(queue=queue, expected_dataset="dataset2", expected_split="split1")
-    check_job(queue=queue, expected_dataset="dataset3", expected_split="split1")
-    check_job(queue=queue, expected_dataset="dataset1", expected_split="split2")
     check_job(queue=queue, expected_dataset="dataset2", expected_split="split2")
+    check_job(queue=queue, expected_dataset="dataset3", expected_split="split1")
+    # ^ before the other "dataset3" jobs because its priority is higher (it inherited Priority.NORMAL in upsert_job)
+    check_job(queue=queue, expected_dataset="dataset1", expected_split="split2")
+    # ^ same namespace as dataset1/dataset, goes after namespaces without any started job
     check_job(queue=queue, expected_dataset="dataset1", expected_split="split1")
+    # ^ comes after the other "dataset1" jobs because the last upsert_job call moved its creation date
+    check_job(queue=queue, expected_dataset="dataset2/dataset", expected_split="split1")
+    # ^ comes after the other "dataset2" jobs because its priority is lower
+    check_job(queue=queue, expected_dataset="dataset2", expected_split="split1")
+    # ^ the rest of the rules apply for Priority.LOW jobs
     with pytest.raises(EmptyQueueError):
         queue.start_job()
 
