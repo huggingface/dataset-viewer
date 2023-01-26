@@ -11,7 +11,9 @@ from mongodb_migration.migrations._20221116133500_queue_job_add_force import (
 from mongodb_migration.migrations._20221117223000_cache_generic_response import (
     MigrationMoveToGenericCachedResponse,
 )
-from mongodb_migration.migrations._20230126164900_queue_job_add_priority import MigrationAddPriorityToJob
+from mongodb_migration.migrations._20230126164900_queue_job_add_priority import (
+    MigrationAddPriorityToJob,
+)
 
 
 # TODO: add a way to automatically collect migrations from the migrations/ folder
