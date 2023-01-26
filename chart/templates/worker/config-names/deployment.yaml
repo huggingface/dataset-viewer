@@ -1,0 +1,29 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2022 The HuggingFace Authors.
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels: {{ include "labels.configNames" . | nindent 4 }}
+  name: "{{ include "release" . }}-worker-config-names"
+  namespace: {{ .Release.Namespace }}
+spec:
+  progressDeadlineSeconds: 600
+  replicas: {{ .Values.configNames.replicas }}
+  revisionHistoryLimit: 10
+  selector:
+    matchLabels: {{ include "labels.configNames" . | nindent 6 }}
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels: {{ include "labels.configNames" . | nindent 8 }}
+    spec:
+      imagePullSecrets: {{ toYaml .Values.imagePullSecrets | nindent 8 }}
+      initContainers:
+        {{ include "initContainerCache" . | nindent 8 }}
+      containers: {{ include "containerWorkerConfigNames" . | nindent 8 }}
+      nodeSelector: {{ toYaml .Values.configNames.nodeSelector | nindent 8 }}
+      tolerations: {{ toYaml .Values.configNames.tolerations | nindent 8 }}
+      volumes: {{ include "volumeData" . | nindent 8 }}
+      securityContext: {{ include "securityContext" . | nindent 8 }}

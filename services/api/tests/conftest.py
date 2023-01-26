@@ -55,5 +55,10 @@ def first_dataset_processing_step(app_config: AppConfig):
 
 
 @fixture(scope="session")
+def first_config_processing_step(app_config: AppConfig):
+    return next(step for step in app_config.processing_graph.graph.steps.values() if step.input_type == "config")
+
+
+@fixture(scope="session")
 def first_split_processing_step(app_config: AppConfig):
     return next(step for step in app_config.processing_graph.graph.steps.values() if step.input_type == "split")
