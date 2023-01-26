@@ -88,13 +88,13 @@ def compute_split_names_response(
         `SplitNamesResponseContent`: An object with the list of split names for the dataset and config.
     <Tip>
     Raises the following errors:
-        - [`~workers.splits.EmptyDatasetError`]
+        - [`~workers.split_names.EmptyDatasetError`]
           The dataset is empty.
-        - [`~workers.splits.SplitsNamesError`]
+        - [`~workers.split_names.SplitsNamesError`]
           If the list of splits could not be obtained using the datasets library.
     </Tip>
     """
-    logging.info(f"get splits for dataset={dataset}, config={config}")
+    logging.info(f"get split names for dataset={dataset}, config={config}")
     use_auth_token: Union[bool, str, None] = hf_token if hf_token is not None else False
     # get the list of splits in streaming mode
     try:
@@ -116,7 +116,7 @@ class SplitNamesWorker(DatasetsBasedWorker):
 
     @staticmethod
     def get_version() -> str:
-        return "2.0.0"
+        return "1.0.0"
 
     def compute(self) -> Mapping[str, Any]:
         if self.config is None:
