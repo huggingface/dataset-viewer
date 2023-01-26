@@ -2,7 +2,7 @@
   "dockerImage": {
     "reverseProxy": "docker.io/nginx:1.20",
     "jobs": {
-      "mongodbMigration": "huggingface/datasets-server-jobs-mongodb_migration:sha-3de1315"
+      "mongodbMigration": "huggingface/datasets-server-jobs-mongodb_migration:sha-48dee06"
     },
     "services": {
       "admin": "huggingface/datasets-server-services-admin:sha-3de1315",
