@@ -24,18 +24,18 @@ def test_default_graph():
 
     assert split_names is not None
     assert split_names.parent is config_names
-    assert split_names.children == []
+    assert split_names.children == [first_rows]
     assert split_names.get_ancestors() == [config_names]
 
     assert splits is not None
     assert splits.parent is None
-    assert splits.children == [first_rows]
+    assert splits.children == []
     assert splits.get_ancestors() == []
 
     assert first_rows is not None
-    assert first_rows.parent is splits
+    assert first_rows.parent is split_names
     assert first_rows.children == []
-    assert first_rows.get_ancestors() == [splits]
+    assert first_rows.get_ancestors() == [config_names, split_names]
 
     assert parquet_and_dataset_info is not None
     assert parquet_and_dataset_info.parent is None
