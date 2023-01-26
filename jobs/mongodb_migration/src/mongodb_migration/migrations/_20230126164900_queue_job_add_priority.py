@@ -32,7 +32,7 @@ class MigrationAddPriorityToJob(Migration):
         logging.info("Ensure that a random selection of jobs have the 'priority' field set to 'normal'")
 
         def custom_validation(doc: JobSnapshot) -> None:
-            if doc.priority != "normal":
+            if doc.priority != Priority.NORMAL:
                 raise ValueError("priority should be 'normal'")
 
         check_documents(DocCls=JobSnapshot, sample_size=10, custom_validation=custom_validation)
