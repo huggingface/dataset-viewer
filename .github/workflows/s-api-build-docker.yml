@@ -6,6 +6,7 @@ on:
   workflow_dispatch:
   push:
     paths:
+      - 'libs/libcommon/**'
       - 'services/api/Dockerfile'
       - 'services/api/src/**'
       - 'services/api/poetry.lock'
