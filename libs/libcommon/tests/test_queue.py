@@ -7,7 +7,13 @@ from typing import Optional
 import pytest
 
 from libcommon.config import QueueConfig
-from libcommon.queue import EmptyQueueError, Queue, Status, _clean_queue_database
+from libcommon.queue import (
+    EmptyQueueError,
+    Priority,
+    Queue,
+    Status,
+    _clean_queue_database,
+)
 
 
 @pytest.fixture(autouse=True)
@@ -78,10 +84,10 @@ def test_upsert_job() -> None:
     assert job_info["dataset"] == test_dataset
     assert job_info["config"] is None
     assert job_info["split"] is None
-    assert job_info["force"] is False
+    assert job_info["force"] is True  # the new job inherits from waiting forced jobs
     assert queue.is_job_in_process(dataset=test_dataset) is True
     # adding the job while the first one has not finished yet adds a new waiting job
-    queue.upsert_job(dataset=test_dataset, force=True)
+    queue.upsert_job(dataset=test_dataset, force=False)
     with pytest.raises(EmptyQueueError):
         # but: it's not possible to start two jobs with the same arguments
         queue.start_job()
@@ -91,7 +97,7 @@ def test_upsert_job() -> None:
     assert queue.is_job_in_process(dataset=test_dataset) is True
     # process the second job
     job_info = queue.start_job()
-    assert job_info["force"] is True
+    assert job_info["force"] is False  # the new jobs does not inherit from started forced jobs
     queue.finish_job(job_id=job_info["job_id"], finished_status=Status.SUCCESS)
     # the queue is empty
     assert queue.is_job_in_process(dataset=test_dataset) is False
@@ -106,22 +112,31 @@ def check_job(queue: Queue, expected_dataset: str, expected_split: str) -> None:
     assert job_info["split"] == expected_split
 
 
-def test_priority_to_non_started_datasets() -> None:
+def test_priority_logic() -> None:
     test_type = "test_type"
     queue = Queue(test_type)
     queue.upsert_job(dataset="dataset1", config="config", split="split1")
     queue.upsert_job(dataset="dataset1/dataset", config="config", split="split1")
     queue.upsert_job(dataset="dataset1", config="config", split="split2")
-    queue.upsert_job(dataset="dataset2", config="config", split="split1")
+    queue.upsert_job(dataset="dataset2", config="config", split="split1", priority=Priority.LOW)
+    queue.upsert_job(dataset="dataset2/dataset", config="config", split="split1", priority=Priority.LOW)
     queue.upsert_job(dataset="dataset2", config="config", split="split2")
     queue.upsert_job(dataset="dataset3", config="config", split="split1")
+    queue.upsert_job(dataset="dataset3", config="config", split="split1", priority=Priority.LOW)
     queue.upsert_job(dataset="dataset1", config="config", split="split1")
+    queue.upsert_job(dataset="dataset2", config="config", split="split1", priority=Priority.LOW)
     check_job(queue=queue, expected_dataset="dataset1/dataset", expected_split="split1")
-    check_job(queue=queue, expected_dataset="dataset2", expected_split="split1")
-    check_job(queue=queue, expected_dataset="dataset3", expected_split="split1")
-    check_job(queue=queue, expected_dataset="dataset1", expected_split="split2")
     check_job(queue=queue, expected_dataset="dataset2", expected_split="split2")
+    check_job(queue=queue, expected_dataset="dataset3", expected_split="split1")
+    # ^ before the other "dataset3" jobs because its priority is higher (it inherited Priority.NORMAL in upsert_job)
+    check_job(queue=queue, expected_dataset="dataset1", expected_split="split2")
+    # ^ same namespace as dataset1/dataset, goes after namespaces without any started job
     check_job(queue=queue, expected_dataset="dataset1", expected_split="split1")
+    # ^ comes after the other "dataset1" jobs because the last upsert_job call moved its creation date
+    check_job(queue=queue, expected_dataset="dataset2/dataset", expected_split="split1")
+    # ^ comes after the other "dataset2" jobs because its priority is lower
+    check_job(queue=queue, expected_dataset="dataset2", expected_split="split1")
+    # ^ the rest of the rules apply for Priority.LOW jobs
     with pytest.raises(EmptyQueueError):
         queue.start_job()
 
