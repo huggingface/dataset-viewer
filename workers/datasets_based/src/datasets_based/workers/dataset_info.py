@@ -61,9 +61,9 @@ def compute_dataset_info_response(dataset: str) -> DatasetInfoResponse:
         `DatasetInfoResponse`: An object with the dataset_info response.
     <Tip>
     Raises the following errors:
-        - [`~dataset_info.worker.PreviousStepStatusError`]
+        - [`~workers.dataset_info.PreviousStepStatusError`]
           If the the previous step gave an error.
-        - [`~dataset_info.worker.PreviousStepFormatError`]
+        - [`~workers.dataset_info.PreviousStepFormatError`]
             If the content of the previous step has not the expected format
     </Tip>
     """

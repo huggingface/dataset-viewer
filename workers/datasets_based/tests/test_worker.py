@@ -153,6 +153,7 @@ def test_create_children_jobs() -> None:
         {
             "/dummy": {"input_type": "dataset"},
             "/child-dataset": {"input_type": "dataset", "requires": "/dummy"},
+            "/child-config": {"input_type": "config", "requires": "/dummy"},
             "/child-split": {"input_type": "split", "requires": "/dummy"},
         }
     )
@@ -179,6 +180,11 @@ def test_create_children_jobs() -> None:
     assert child_dataset_jobs[0]["dataset"] == "dataset"
     assert child_dataset_jobs[0]["config"] is None
     assert child_dataset_jobs[0]["split"] is None
+    child_config_jobs = Queue(type="/child-config").get_dump_with_status(status=Status.WAITING)
+    assert len(child_config_jobs) == 1
+    assert child_config_jobs[0]["dataset"] == "dataset"
+    assert child_config_jobs[0]["config"] == "config"
+    assert child_config_jobs[0]["split"] is None
     child_split_jobs = Queue(type="/child-split").get_dump_with_status(status=Status.WAITING)
     assert len(child_split_jobs) == 2
     assert all(job["dataset"] == "dataset" and job["config"] == "config" for job in child_split_jobs)

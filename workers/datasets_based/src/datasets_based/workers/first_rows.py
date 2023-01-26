@@ -413,19 +413,19 @@ def compute_first_rows_response(
         [`FirstRowsResponse`]: The list of first rows of the split.
     <Tip>
     Raises the following errors:
-        - [`~libcommon.worker.ConfigNotFoundError`]
+        - [`libcommon.worker.ConfigNotFoundError`]
           If the config does not exist in the dataset.
-        - [`~libcommon.worker.SplitNotFoundError`]
+        - [`libcommon.worker.SplitNotFoundError`]
           If the split does not exist in the dataset.
-        - [`~worker.utils.InfoError`]
+        - [`~workers.first_rows.InfoError`]
           If the config info could not be obtained using the datasets library.
-        - [`~worker.utils.FeaturesError`]
+        - [`~workers.first_rows.FeaturesError`]
           If the split features could not be obtained using the datasets library.
-        - [`~worker.utils.StreamingRowsError`]
+        - [`~workers.first_rows.StreamingRowsError`]
           If the split rows could not be obtained using the datasets library in streaming mode.
-        - [`~worker.utils.NormalRowsError`]
+        - [`~workers.first_rows.NormalRowsError`]
           If the split rows could not be obtained using the datasets library in normal mode.
-        - [`~worker.utils.RowsPostProcessingError`]
+        - [`~workers.first_rows.RowsPostProcessingError`]
           If the post-processing of the split rows failed, e.g. while saving the images or audio files to the assets.
     </Tip>
     """

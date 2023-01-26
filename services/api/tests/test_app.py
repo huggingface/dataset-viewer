@@ -102,6 +102,26 @@ def test_get_step(client: TestClient, first_dataset_processing_step: ProcessingS
 
 
 @pytest.mark.parametrize(
+    "dataset,config",
+    [
+        (None, None),
+        ("a", None),
+        ("a", ""),
+    ],
+)
+def test_get_config_missing_parameter(
+    client: TestClient,
+    dataset: Optional[str],
+    config: Optional[str],
+    first_config_processing_step: ProcessingStep,
+) -> None:
+    response = client.get(
+        first_config_processing_step.endpoint, params={"dataset": dataset, "config": config, "split": None}
+    )
+    assert response.status_code == 422
+
+
+@pytest.mark.parametrize(
     "dataset,config,split",
     [
         (None, None, None),
@@ -110,7 +130,7 @@ def test_get_step(client: TestClient, first_dataset_processing_step: ProcessingS
         ("a", "b", ""),
     ],
 )
-def test_get_first_rows_missing_parameter(
+def test_get_split_missing_parameter(
     client: TestClient,
     dataset: Optional[str],
     config: Optional[str],

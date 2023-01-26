@@ -69,6 +69,40 @@ services:
     depends_on:
       - mongodb
     restart: unless-stopped
+  worker-config-names:
+    # build:
+    #   context: ..
+    #   dockerfile: workers/datasets_based/Dockerfile
+    image: ${IMAGE_WORKER_DATASETS_BASED?IMAGE_WORKER_DATASETS_BASED env var must be provided}
+    volumes:
+      - splits-datasets-cache:${HF_DATASETS_CACHE-/datasets-cache}:rw
+      - splits-modules-cache:${HF_DATASETS_CACHE-/modules-cache}:rw
+      - splits-numba-cache:${NUMBA_CACHE_DIR-/numba-cache}:rw
+    extends:
+      file: docker-compose-base.yml
+      service: datasets-worker
+    environment:
+      DATASETS_BASED_ENDPOINT: "/config-names" # hard-coded
+    depends_on:
+      - mongodb
+    restart: always
+  worker-split-names:
+    # build:
+    #   context: ..
+    #   dockerfile: workers/datasets_based/Dockerfile
+    image: ${IMAGE_WORKER_DATASETS_BASED?IMAGE_WORKER_DATASETS_BASED env var must be provided}
+    volumes:
+      - splits-datasets-cache:${HF_DATASETS_CACHE-/datasets-cache}:rw
+      - splits-modules-cache:${HF_DATASETS_CACHE-/modules-cache}:rw
+      - splits-numba-cache:${NUMBA_CACHE_DIR-/numba-cache}:rw
+    extends:
+      file: docker-compose-base.yml
+      service: datasets-worker
+    environment:
+      DATASETS_BASED_ENDPOINT: "/split-names" # hard-coded
+    depends_on:
+      - mongodb
+    restart: always
   worker-splits:
     # build:
     #   context: ..

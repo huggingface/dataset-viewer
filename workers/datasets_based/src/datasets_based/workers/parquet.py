@@ -62,9 +62,9 @@ def compute_parquet_response(dataset: str) -> ParquetResponse:
         `ParquetResponse`: An object with the parquet_response (list of parquet files).
     <Tip>
     Raises the following errors:
-        - [`~parquet.worker.PreviousStepStatusError`]
+        - [`~workers.parquet.PreviousStepStatusError`]
           If the the previous step gave an error.
-        - [`~parquet.worker.PreviousStepFormatError`]
+        - [`~workers.parquet.PreviousStepFormatError`]
             If the content of the previous step has not the expected format
     </Tip>
     """

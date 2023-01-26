@@ -210,6 +210,36 @@ api:
 
 # --- workers ---
 
+configNames:
+  # override the common queue parameters
+  queue:
+    # Maximum number of jobs running at the same time for the same namespace
+    maxJobsPerNamespace: 1
+
+  nodeSelector: {}
+  replicas: 1
+  resources:
+    requests:
+      cpu: 1
+    limits:
+      cpu: 1
+  tolerations: []
+
+splitNames:
+  # override the common queue parameters
+  queue:
+    # Maximum number of jobs running at the same time for the same namespace
+    maxJobsPerNamespace: 1
+
+  nodeSelector: {}
+  replicas: 1
+  resources:
+    requests:
+      cpu: 1
+    limits:
+      cpu: 1
+  tolerations: []
+
 splits:
   # override the common queue parameters
   queue:

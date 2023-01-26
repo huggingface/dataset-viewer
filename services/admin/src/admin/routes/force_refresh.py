@@ -37,6 +37,11 @@ def create_force_refresh_endpoint(
             if processing_step.input_type == "dataset":
                 config = None
                 split = None
+            elif processing_step.input_type == "config":
+                config = request.query_params.get("config")
+                split = None
+                if not are_valid_parameters([config]):
+                    raise MissingRequiredParameterError("Parameter 'config' is required")
             else:
                 config = request.query_params.get("config")
                 split = request.query_params.get("split")
