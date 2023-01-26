@@ -39,8 +39,8 @@ def test_auth_e2e(
 
     # asking for the dataset will launch the jobs, without the need of a webhook
     endpoints = [
-        f"/configNames?dataset={dataset}",
-        f"/splitNames?dataset={dataset}&config={config}",
+        f"/config-names?dataset={dataset}",
+        f"/split-names?dataset={dataset}&config={config}",
         f"/splits?dataset={dataset}",
         f"/first-rows?dataset={dataset}&config={config}&split={split}",
         f"/parquet-and-dataset-info?dataset={dataset}",
