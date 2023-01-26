@@ -71,6 +71,7 @@ class JobInfo(TypedDict):
     config: Optional[str]
     split: Optional[str]
     force: bool
+    priority: Priority
 
 
 class CountByStatus(TypedDict):
@@ -379,6 +380,7 @@ class Queue:
             "config": next_waiting_job.config,
             "split": next_waiting_job.split,
             "force": next_waiting_job.force,
+            "priority": next_waiting_job.priority,
         }
 
     def finish_job(self, job_id: str, finished_status: Literal[Status.SUCCESS, Status.ERROR, Status.SKIPPED]) -> None:

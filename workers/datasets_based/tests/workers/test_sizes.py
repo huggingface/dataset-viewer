@@ -5,6 +5,7 @@ from http import HTTPStatus
 from typing import Any
 
 import pytest
+from libcommon.queue import Priority
 from libcommon.simple_cache import _clean_cache_database, upsert_response
 
 from datasets_based.config import AppConfig
@@ -30,6 +31,7 @@ def get_worker(dataset: str, app_config: AppConfig, force: bool = False) -> Size
             "split": None,
             "job_id": "job_id",
             "force": force,
+            "priority": Priority.NORMAL,
         },
         app_config=app_config,
     )

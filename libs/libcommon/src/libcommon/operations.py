@@ -8,7 +8,7 @@ from typing import List, Optional
 from libcommon.dataset import check_support
 from libcommon.exceptions import LoggedError
 from libcommon.processing_graph import ProcessingStep
-from libcommon.queue import Queue
+from libcommon.queue import Priority, Queue
 from libcommon.simple_cache import DoesNotExist, delete_dataset_responses, get_response
 
 
@@ -25,6 +25,7 @@ def update_dataset(
     hf_endpoint: str,
     hf_token: Optional[str] = None,
     force: bool = False,
+    priority: Priority = Priority.NORMAL,
 ) -> None:
     """
     Update a dataset
@@ -35,6 +36,7 @@ def update_dataset(
         hf_endpoint (str): the HF endpoint
         hf_token (Optional[str], optional): The HF token. Defaults to None.
         force (bool, optional): Force the update. Defaults to False.
+        priority (Priority, optional): The priority of the job. Defaults to Priority.NORMAL.
 
     Returns: None.
 
@@ -45,7 +47,7 @@ def update_dataset(
     logging.debug(f"refresh dataset='{dataset}'")
     for init_processing_step in init_processing_steps:
         if init_processing_step.input_type == "dataset":
-            Queue(type=init_processing_step.job_type).upsert_job(dataset=dataset, force=force)
+            Queue(type=init_processing_step.job_type).upsert_job(dataset=dataset, force=force, priority=priority)
 
 
 def delete_dataset(dataset: str) -> None:
@@ -68,6 +70,7 @@ def move_dataset(
     hf_endpoint: str,
     hf_token: Optional[str] = None,
     force: bool = False,
+    priority: Priority = Priority.NORMAL,
 ) -> None:
     """
     Move a dataset
@@ -82,6 +85,7 @@ def move_dataset(
         hf_endpoint (str): the HF endpoint
         hf_token (Optional[str], optional): The HF token. Defaults to None.
         force (bool, optional): Force the update. Defaults to False.
+        priority (Priority, optional): The priority of the job. Defaults to Priority.NORMAL.
 
     Returns: None.
 
@@ -95,6 +99,7 @@ def move_dataset(
         hf_endpoint=hf_endpoint,
         hf_token=hf_token,
         force=force,
+        priority=priority,
     )
     # ^ can raise
     delete_dataset(dataset=from_dataset)
@@ -142,6 +147,8 @@ def check_in_process(
                 init_processing_steps=init_processing_steps,
                 hf_endpoint=hf_endpoint,
                 hf_token=hf_token,
+                force=False,
+                priority=Priority.NORMAL,
             )
             return
         if result["http_status"] != HTTPStatus.OK:
@@ -153,5 +160,7 @@ def check_in_process(
         init_processing_steps=init_processing_steps,
         hf_endpoint=hf_endpoint,
         hf_token=hf_token,
+        force=False,
+        priority=Priority.NORMAL,
     )
     return

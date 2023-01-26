@@ -15,6 +15,7 @@ from admin.routes.cache_reports import create_cache_reports_endpoint
 from admin.routes.cache_reports_with_content import (
     create_cache_reports_with_content_endpoint,
 )
+from admin.routes.backfill import create_backfill_endpoint
 from admin.routes.cancel_jobs import create_cancel_jobs_endpoint
 from admin.routes.force_refresh import create_force_refresh_endpoint
 from admin.routes.healthcheck import healthcheck_endpoint
@@ -64,6 +65,19 @@ def create_app() -> Starlette:
                 methods=["POST"],
             )
             for processing_step in processing_steps
+        ]
+        + [
+            Route(
+                "/backfill",
+                endpoint=create_backfill_endpoint(
+                    init_processing_steps=app_config.processing_graph.graph.get_first_steps(),
+                    hf_endpoint=app_config.common.hf_endpoint,
+                    hf_token=app_config.common.hf_token,
+                    external_auth_url=app_config.external_auth_url,
+                    organization=app_config.admin.hf_organization,
+                ),
+                methods=["POST"],
+            )
         ]
         + [
             Route(
