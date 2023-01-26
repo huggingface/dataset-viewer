@@ -146,7 +146,7 @@ class ProcessingGraphConfig:
             "/config-names": {"input_type": "dataset"},
             "/split-names": {"input_type": "config", "requires": "/config-names"},
             "/splits": {"input_type": "dataset", "required_by_dataset_viewer": True},  # to be deprecated
-            "/first-rows": {"input_type": "split", "requires": "/splits", "required_by_dataset_viewer": True},
+            "/first-rows": {"input_type": "split", "requires": "/split-names", "required_by_dataset_viewer": True},
             "/parquet-and-dataset-info": {"input_type": "dataset"},
             "/parquet": {"input_type": "dataset", "requires": "/parquet-and-dataset-info"},
             "/dataset-info": {"input_type": "dataset", "requires": "/parquet-and-dataset-info"},
