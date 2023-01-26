@@ -36,8 +36,8 @@ class MigrationAddPriorityToJob(Migration):
                 raise ValueError("priority should be 'normal'")
 
         check_documents(DocCls=JobSnapshot, sample_size=10, custom_validation=custom_validation)
-        if JobSnapshot.objects(force=False).count() != JobSnapshot.objects.count():
-            raise ValueError('All the objects should have the "force" field, set to False')
+        if JobSnapshot.objects(priority=Priority.NORMAL).count() != JobSnapshot.objects.count():
+            raise ValueError('All the objects should have the "priority" field, set to "normal"')
 
 
 # --- JobSnapshot ---
