@@ -221,6 +221,7 @@ class Queue:
 
         If jobs already exist with the same parameters in the waiting state, they are cancelled and replaced by a new
         one.
+        Note that the new job inherits the force=True property if one of the previous waiting jobs had it.
 
         Args:
             dataset (`str`): The dataset on which to apply the job.
@@ -230,9 +231,10 @@ class Queue:
 
         Returns: the job
         """
-        Job.objects(type=self.type, dataset=dataset, config=config, split=split, status=Status.WAITING).update(
-            finished_at=get_datetime(), status=Status.CANCELLED
-        )
+        existing = Job.objects(type=self.type, dataset=dataset, config=config, split=split, status=Status.WAITING)
+        if existing(force=True).count() > 0:
+            force = True
+        existing.update(finished_at=get_datetime(), status=Status.CANCELLED)
         return self._add_job(dataset=dataset, config=config, split=split, force=force)
 
     def get_next_waiting_job(self) -> Job:
