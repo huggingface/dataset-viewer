@@ -10,7 +10,7 @@ from libcommon.config import CommonConfig
 from libcommon.dataset import DatasetNotFoundError, get_dataset_git_revision
 from libcommon.exceptions import CustomError
 from libcommon.processing_graph import ProcessingStep
-from libcommon.queue import JobInfo, Queue, Status
+from libcommon.queue import JobInfo, Priority, Queue, Status
 from libcommon.simple_cache import (
     SplitFullName,
     delete_response,
@@ -106,7 +106,7 @@ class Worker(ABC):
     Args:
         job_info (:obj:`JobInfo`):
             The job to process. It contains the job_id, the job type, the dataset, the config, the split
-            and the force flag.
+            the force flag, and the priority level.
         common_config (:obj:`CommonConfig`):
             The common config.
         processing_step (:obj:`ProcessingStep`):
@@ -118,6 +118,7 @@ class Worker(ABC):
     config: Optional[str] = None
     split: Optional[str] = None
     force: bool
+    priority: Priority
     common_config: CommonConfig
     processing_step: ProcessingStep
 
@@ -143,6 +144,7 @@ class Worker(ABC):
         self.config = job_info["config"]
         self.split = job_info["split"]
         self.force = job_info["force"]
+        self.priority = job_info["priority"]
         self.common_config = common_config
         self.processing_step = processing_step
         self.setup()
@@ -379,6 +381,7 @@ class Worker(ABC):
                     config=split_full_name.config,
                     split=split_full_name.split,
                     force=self.force,
+                    priority=self.priority,
                 )
             logging.debug(
                 f"{len(new_split_full_names)} jobs"

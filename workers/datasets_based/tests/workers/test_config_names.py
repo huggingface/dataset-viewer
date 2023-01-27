@@ -6,6 +6,7 @@ from http import HTTPStatus
 
 import pytest
 from libcommon.exceptions import CustomError
+from libcommon.queue import Priority
 from libcommon.simple_cache import DoesNotExist, get_response
 
 from datasets_based.config import AppConfig
@@ -27,6 +28,7 @@ def get_worker(
             "split": None,
             "job_id": "job_id",
             "force": force,
+            "priority": Priority.NORMAL,
         },
         app_config=app_config,
     )

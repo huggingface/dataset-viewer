@@ -8,6 +8,7 @@ from jsonschema import ValidationError, validate  # type: ignore
 from libcommon.dataset import DatasetError
 from libcommon.operations import delete_dataset, move_dataset, update_dataset
 from libcommon.processing_graph import ProcessingStep
+from libcommon.queue import Priority
 from starlette.requests import Request
 from starlette.responses import Response
 
@@ -71,6 +72,7 @@ def process_payload(
             hf_endpoint=hf_endpoint,
             hf_token=hf_token,
             force=False,
+            priority=Priority.NORMAL,
         )
     elif event == "remove":
         delete_dataset(dataset=dataset)
@@ -85,6 +87,7 @@ def process_payload(
             hf_endpoint=hf_endpoint,
             hf_token=hf_token,
             force=False,
+            priority=Priority.NORMAL,
         )
 
 
