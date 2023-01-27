@@ -15,9 +15,9 @@ on:
       - 'tools/Python.mk'
       - 'tools/docker-compose-datasets-server.yml'
 jobs:
-  # quality:
-  #   uses: ./.github/workflows/_quality-python.yml
-  #   with:
-  #     working-directory: e2e
+  quality:
+    uses: ./.github/workflows/_quality-python.yml
+    with:
+      working-directory: e2e
   e2e-tests:
     uses: ./.github/workflows/_e2e_tests.yml

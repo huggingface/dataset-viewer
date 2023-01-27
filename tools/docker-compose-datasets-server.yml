@@ -23,7 +23,6 @@ services:
       context: ..
       dockerfile: services/admin/Dockerfile
     # image: ${IMAGE_SERVICE_ADMIN?IMAGE_SERVICE_ADMIN env var must be provided}
-    image: admin:ci
     extends:
       file: docker-compose-base.yml
       service: common
@@ -51,7 +50,6 @@ services:
       context: ..
       dockerfile: services/api/Dockerfile
     # image: ${IMAGE_SERVICE_API?IMAGE_SERVICE_API env var must be provided}
-    image: api:ci
     extends:
       file: docker-compose-base.yml
       service: common
@@ -77,7 +75,6 @@ services:
       context: ..
       dockerfile: workers/datasets_based/Dockerfile
     # image: ${IMAGE_WORKER_DATASETS_BASED?IMAGE_WORKER_DATASETS_BASED env var must be provided}
-    image: worker:ci
     volumes:
       - splits-datasets-cache:${HF_DATASETS_CACHE-/datasets-cache}:rw
       - splits-modules-cache:${HF_DATASETS_CACHE-/modules-cache}:rw
@@ -95,7 +92,6 @@ services:
       context: ..
       dockerfile: workers/datasets_based/Dockerfile
     # image: ${IMAGE_WORKER_DATASETS_BASED?IMAGE_WORKER_DATASETS_BASED env var must be provided}
-    image: worker:ci
     volumes:
       - splits-datasets-cache:${HF_DATASETS_CACHE-/datasets-cache}:rw
       - splits-modules-cache:${HF_DATASETS_CACHE-/modules-cache}:rw
@@ -113,7 +109,6 @@ services:
       context: ..
       dockerfile: workers/datasets_based/Dockerfile
     # image: ${IMAGE_WORKER_DATASETS_BASED?IMAGE_WORKER_DATASETS_BASED env var must be provided}
-    image: worker:ci
     volumes:
       - splits-datasets-cache:${HF_DATASETS_CACHE-/datasets-cache}:rw
       - splits-modules-cache:${HF_DATASETS_CACHE-/modules-cache}:rw
@@ -131,7 +126,6 @@ services:
       context: ..
       dockerfile: workers/datasets_based/Dockerfile
     # image: ${IMAGE_WORKER_DATASETS_BASED?IMAGE_WORKER_DATASETS_BASED env var must be provided}
-    image: worker:ci
     volumes:
       - assets:${ASSETS_STORAGE_DIRECTORY-/assets}:rw
       - first-rows-datasets-cache:${HF_DATASETS_CACHE-/datasets-cache}:rw
@@ -159,7 +153,6 @@ services:
       context: ..
       dockerfile: workers/datasets_based/Dockerfile
     # image: ${IMAGE_WORKER_DATASETS_BASED?IMAGE_WORKER_DATASETS_BASED env var must be provided}
-    image: worker:ci
     volumes:
       - parquet-datasets-cache:${HF_DATASETS_CACHE-/datasets-cache}:rw
       - parquet-modules-cache:${HF_DATASETS_CACHE-/modules-cache}:rw
@@ -185,7 +178,6 @@ services:
       context: ..
       dockerfile: workers/datasets_based/Dockerfile
     # image: ${IMAGE_WORKER_DATASETS_BASED?IMAGE_WORKER_DATASETS_BASED env var must be provided}
-    image: worker:ci
     extends:
       file: docker-compose-base.yml
       service: datasets-worker
@@ -199,7 +191,6 @@ services:
       context: ..
       dockerfile: workers/datasets_based/Dockerfile
     # image: ${IMAGE_WORKER_DATASETS_BASED?IMAGE_WORKER_DATASETS_BASED env var must be provided}
-    image: worker:ci
     extends:
       file: docker-compose-base.yml
       service: datasets-worker
@@ -213,7 +204,6 @@ services:
       context: ..
       dockerfile: workers/datasets_based/Dockerfile
     # image: ${IMAGE_WORKER_DATASETS_BASED?IMAGE_WORKER_DATASETS_BASED env var must be provided}
-    image: worker:ci
     extends:
       file: docker-compose-base.yml
       service: datasets-worker
