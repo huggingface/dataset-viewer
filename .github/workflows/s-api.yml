@@ -12,6 +12,14 @@ on:
       - '.github/workflows/_quality-python.yml'
       - '.github/workflows/_unit-tests-python.yml'
       - 'tools/docker-compose-mongo.yml'
+  pull_request:
+    paths:
+      - 'libs/libcommon/**'
+      - 'services/api/**'
+      - '.github/workflows/s-api.yml'
+      - '.github/workflows/_quality-python.yml'
+      - '.github/workflows/_unit-tests-python.yml'
+      - 'tools/docker-compose-mongo.yml'
 jobs:
   quality:
     uses: ./.github/workflows/_quality-python.yml

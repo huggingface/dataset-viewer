@@ -13,6 +13,15 @@ on:
       - '.github/workflows/_unit-tests-python.yml'
       - 'tools/docker-compose-mongo.yml'
       - 'vendors/'
+  pull_request:
+    paths:
+      - 'libs/libcommon/**'
+      - 'workers/datasets_based/**'
+      - '.github/workflows/w-datasets_based.yml'
+      - '.github/workflows/_quality-python.yml'
+      - '.github/workflows/_unit-tests-python.yml'
+      - 'tools/docker-compose-mongo.yml'
+      - 'vendors/'
 jobs:
   quality:
     uses: ./.github/workflows/_quality-python.yml

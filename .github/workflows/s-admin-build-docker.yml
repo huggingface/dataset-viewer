@@ -13,6 +13,15 @@ on:
       - 'services/admin/pyproject.toml'
       - '.github/workflows/s-admin-build-docker.yml'
       - '.github/workflows/_build_push_docker_hub.yml'
+  pull_request:
+    paths:
+      - 'libs/libcommon/**'
+      - 'services/admin/Dockerfile'
+      - 'services/admin/src/**'
+      - 'services/admin/poetry.lock'
+      - 'services/admin/pyproject.toml'
+      - '.github/workflows/s-admin-build-docker.yml'
+      - '.github/workflows/_build_push_docker_hub.yml'
 jobs:
   docker:
     uses: ./.github/workflows/_build_push_docker_hub.yml

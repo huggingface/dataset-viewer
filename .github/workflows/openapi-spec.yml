@@ -8,6 +8,10 @@ on:
     paths:
       - 'chart/static-files/opanapi.json'
       - '.github/workflows/openapi.yml'
+  pull_request:
+    paths:
+      - 'chart/static-files/opanapi.json'
+      - '.github/workflows/openapi.yml'
 env:
   python-version: 3.9.15
   poetry-version: 1.1.13

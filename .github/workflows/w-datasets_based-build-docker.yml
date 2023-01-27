@@ -14,6 +14,16 @@ on:
       - '.github/workflows/w-datasets_based-build-docker.yml'
       - '.github/workflows/_build_push_docker_hub.yml'
       - 'vendors/'
+  pull_request:
+    paths:
+      - 'libs/libcommon/**'
+      - 'workers/datasets_based/Dockerfile'
+      - 'workers/datasets_based/src/**'
+      - 'workers/datasets_based/poetry.lock'
+      - 'workers/datasets_based/pyproject.toml'
+      - '.github/workflows/w-datasets_based-build-docker.yml'
+      - '.github/workflows/_build_push_docker_hub.yml'
+      - 'vendors/'
 jobs:
   docker:
     uses: ./.github/workflows/_build_push_docker_hub.yml

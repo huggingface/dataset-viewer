@@ -13,6 +13,15 @@ on:
       - 'libs/libcommon/**'
       - '.github/workflows/j-mongodb_migration-build-docker.yml'
       - '.github/workflows/_build_push_docker_hub.yml'
+  pull_request:
+    paths:
+      - 'jobs/mongodb_migration/Dockerfile'
+      - 'jobs/mongodb_migration/src/**'
+      - 'jobs/mongodb_migration/poetry.lock'
+      - 'jobs/mongodb_migration/pyproject.toml'
+      - 'libs/libcommon/**'
+      - '.github/workflows/j-mongodb_migration-build-docker.yml'
+      - '.github/workflows/_build_push_docker_hub.yml'
 jobs:
   docker:
     uses: ./.github/workflows/_build_push_docker_hub.yml
