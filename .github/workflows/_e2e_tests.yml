@@ -10,25 +10,32 @@ env:
   # required to get access to use a cached poetry venv in "/home/runner/.cache/pypoetry/virtualenvs"
   POETRY_VIRTUALENVS_IN_PROJECT: false
   working-directory: e2e
+  docker-compose-file: ./tools/docker-compose-datasets-server.yml
 jobs:
   e2e-tests:
     defaults:
       run:
         shell: bash
-        working-directory: e2e
     runs-on: "ubuntu-latest"
     steps:
-      - uses: actions/checkout@v3
-      - name: Install poetry
-        run: pipx install poetry==${{ env.poetry-version }}
-      - name: Use Python
-        uses: actions/setup-python@v4
+      -
+        name: Checkout
+        uses: actions/checkout@v3
+      -
+        name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+      -
+        name: Build and push
+        uses: docker/bake-action@v2
         with:
-          python-version: ${{ env.python-version }}
-          cache: 'poetry'
-          cache-dependency-path: |
-            ${{ env.working-directory }}/poetry.lock
-      - name: Build the images and launch the services
+          load: true
+          files: |
+            ${{ env.docker-compose-file }}
+          set: |
+            *.cache-from=type=gha
+            *.cache-to=type=gha
+      -
+        name: Launch the services (the images should have been build in the previous step)
         env:
           WORKER_SLEEP_TIME: "1"
           # hard coded, see e2e/tests/fixtures/hub.py
@@ -43,13 +50,27 @@ jobs:
           ADMIN_UVICORN_NUM_WORKERS: "2"
           ADMIN_UVICORN_PORT: "8081"
           COMMON_LOG_LEVEL: "DEBUG"
-        working-directory: tools
-        run: docker compose -f ./docker-compose-datasets-server.yml up -d
-      - name: Install dependencies
+        run: docker compose -f ${{ env.docker-compose-file }} up -d
+      -
+        name: Install poetry
+        run: pipx install poetry==${{ env.poetry-version }}
+        working-directory: ${{ env.working-directory }}
+      -
+        name: Use Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ env.python-version }}
+          cache: 'poetry'
+          cache-dependency-path: |
+            ${{ env.working-directory }}/poetry.lock
+      -
+        name: Install dependencies
         run: |
           poetry env use "${{ env.python-version }}"
           poetry install
-      - name: End-to-end tests
+        working-directory: ${{ env.working-directory }}
+      -
+        name: End-to-end tests
         env:
           QUEUE_SLEEP_TIME: "1"
           # hard coded, see e2e/tests/fixtures/hub.py
@@ -66,3 +87,4 @@ jobs:
           COMMON_LOG_LEVEL: "DEBUG"
         run: |
           poetry run python -m pytest -vv -x tests
+        working-directory: ${{ env.working-directory }}
