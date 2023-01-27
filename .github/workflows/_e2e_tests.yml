@@ -10,13 +10,12 @@ env:
   # required to get access to use a cached poetry venv in "/home/runner/.cache/pypoetry/virtualenvs"
   POETRY_VIRTUALENVS_IN_PROJECT: false
   working-directory: e2e
-  docker-compose-file: ./tools/docker-compose-datasets-server.yml
-  docker-compose-file-base: ./tools/docker-compose-base.yml
 jobs:
   e2e-tests:
     defaults:
       run:
         shell: bash
+        working-directory: e2e
     runs-on: "ubuntu-latest"
     steps:
       -
@@ -31,11 +30,11 @@ jobs:
         with:
           load: true
           files: |
-            ${{ env.docker-compose-file }}
-            ${{ env.docker-compose-file-base }}
+            docker-compose-datasets-server.yml
           set: |
             *.cache-from=type=gha
             *.cache-to=type=gha
+          workdir: ./tools
       -
         name: Launch the services (the images should have been build in the previous step)
         env:
@@ -52,11 +51,11 @@ jobs:
           ADMIN_UVICORN_NUM_WORKERS: "2"
           ADMIN_UVICORN_PORT: "8081"
           COMMON_LOG_LEVEL: "DEBUG"
-        run: docker compose -f ${{ env.docker-compose-file }} up -d
+        run: docker compose -f docker-compose-datasets-server.yml up -d
+        working-directory: ./tools
       -
         name: Install poetry
         run: pipx install poetry==${{ env.poetry-version }}
-        working-directory: ${{ env.working-directory }}
       -
         name: Use Python
         uses: actions/setup-python@v4
@@ -70,7 +69,6 @@ jobs:
         run: |
           poetry env use "${{ env.python-version }}"
           poetry install
-        working-directory: ${{ env.working-directory }}
       -
         name: End-to-end tests
         env:
@@ -89,4 +87,3 @@ jobs:
           COMMON_LOG_LEVEL: "DEBUG"
         run: |
           poetry run python -m pytest -vv -x tests
-        working-directory: ${{ env.working-directory }}
