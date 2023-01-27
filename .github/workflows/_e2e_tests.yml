@@ -21,20 +21,20 @@ jobs:
       -
         name: Checkout
         uses: actions/checkout@v3
-      -
-        name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v2
-      -
-        name: Build and push
-        uses: docker/bake-action@v2
-        with:
-          load: true
-          files: |
-            docker-compose-datasets-server.yml
-          set: |
-            *.cache-from=type=gha
-            *.cache-to=type=gha
-          workdir: ./tools
+      # -
+      #   name: Set up Docker Buildx
+      #   uses: docker/setup-buildx-action@v2
+      # -
+      #   name: Build and push
+      #   uses: docker/bake-action@v2
+      #   with:
+      #     load: true
+      #     files: |
+      #       docker-compose-datasets-server.yml
+      #     set: |
+      #       *.cache-from=type=gha
+      #       *.cache-to=type=gha
+      #     workdir: ./tools
       -
         name: Launch the services (the images should have been build in the previous step)
         env:

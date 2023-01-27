@@ -22,6 +22,10 @@ services:
     build:
       context: ..
       dockerfile: services/admin/Dockerfile
+      cache-from:
+        - type=gha
+      cache-to:
+        - type=gha
     # image: ${IMAGE_SERVICE_ADMIN?IMAGE_SERVICE_ADMIN env var must be provided}
     extends:
       file: docker-compose-base.yml
@@ -49,6 +53,10 @@ services:
     build:
       context: ..
       dockerfile: services/api/Dockerfile
+      cache-from:
+        - type=gha
+      cache-to:
+        - type=gha
     # image: ${IMAGE_SERVICE_API?IMAGE_SERVICE_API env var must be provided}
     extends:
       file: docker-compose-base.yml
@@ -74,6 +82,10 @@ services:
     build:
       context: ..
       dockerfile: workers/datasets_based/Dockerfile
+      cache-from:
+        - type=gha
+      cache-to:
+        - type=gha
     # image: ${IMAGE_WORKER_DATASETS_BASED?IMAGE_WORKER_DATASETS_BASED env var must be provided}
     volumes:
       - splits-datasets-cache:${HF_DATASETS_CACHE-/datasets-cache}:rw
@@ -91,6 +103,10 @@ services:
     build:
       context: ..
       dockerfile: workers/datasets_based/Dockerfile
+      cache-from:
+        - type=gha
+      cache-to:
+        - type=gha
     # image: ${IMAGE_WORKER_DATASETS_BASED?IMAGE_WORKER_DATASETS_BASED env var must be provided}
     volumes:
       - splits-datasets-cache:${HF_DATASETS_CACHE-/datasets-cache}:rw
@@ -108,6 +124,10 @@ services:
     build:
       context: ..
       dockerfile: workers/datasets_based/Dockerfile
+      cache-from:
+        - type=gha
+      cache-to:
+        - type=gha
     # image: ${IMAGE_WORKER_DATASETS_BASED?IMAGE_WORKER_DATASETS_BASED env var must be provided}
     volumes:
       - splits-datasets-cache:${HF_DATASETS_CACHE-/datasets-cache}:rw
@@ -125,6 +145,10 @@ services:
     build:
       context: ..
       dockerfile: workers/datasets_based/Dockerfile
+      cache-from:
+        - type=gha
+      cache-to:
+        - type=gha
     # image: ${IMAGE_WORKER_DATASETS_BASED?IMAGE_WORKER_DATASETS_BASED env var must be provided}
     volumes:
       - assets:${ASSETS_STORAGE_DIRECTORY-/assets}:rw
@@ -152,6 +176,10 @@ services:
     build:
       context: ..
       dockerfile: workers/datasets_based/Dockerfile
+      cache-from:
+        - type=gha
+      cache-to:
+        - type=gha
     # image: ${IMAGE_WORKER_DATASETS_BASED?IMAGE_WORKER_DATASETS_BASED env var must be provided}
     volumes:
       - parquet-datasets-cache:${HF_DATASETS_CACHE-/datasets-cache}:rw
@@ -177,6 +205,10 @@ services:
     build:
       context: ..
       dockerfile: workers/datasets_based/Dockerfile
+      cache-from:
+        - type=gha
+      cache-to:
+        - type=gha
     # image: ${IMAGE_WORKER_DATASETS_BASED?IMAGE_WORKER_DATASETS_BASED env var must be provided}
     extends:
       file: docker-compose-base.yml
@@ -190,6 +222,10 @@ services:
     build:
       context: ..
       dockerfile: workers/datasets_based/Dockerfile
+      cache-from:
+        - type=gha
+      cache-to:
+        - type=gha
     # image: ${IMAGE_WORKER_DATASETS_BASED?IMAGE_WORKER_DATASETS_BASED env var must be provided}
     extends:
       file: docker-compose-base.yml
@@ -203,6 +239,10 @@ services:
     build:
       context: ..
       dockerfile: workers/datasets_based/Dockerfile
+      cache-from:
+        - type=gha
+      cache-to:
+        - type=gha
     # image: ${IMAGE_WORKER_DATASETS_BASED?IMAGE_WORKER_DATASETS_BASED env var must be provided}
     extends:
       file: docker-compose-base.yml
