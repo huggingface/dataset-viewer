@@ -9,7 +9,7 @@
       "api": "huggingface/datasets-server-services-api:sha-f70513e"
     },
     "workers": {
-      "datasets_based": "huggingface/datasets-server-workers-datasets_based:sha-f70513e"
+      "datasets_based": "huggingface/datasets-server-workers-datasets_based:sha-30d5ce2"
     }
   }
 }
