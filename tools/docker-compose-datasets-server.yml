@@ -19,14 +19,15 @@ services:
   #     - api
   #     - admin
   admin:
-    build:
-      context: ..
-      dockerfile: services/admin/Dockerfile
+    # build:
+    #   context: ..
+    #   dockerfile: services/admin/Dockerfile
       # cache_from:
       #   - type=gha
       # cache_to:
       #   - type=gha
     # image: ${IMAGE_SERVICE_ADMIN?IMAGE_SERVICE_ADMIN env var must be provided}
+    image: admin:latest
     extends:
       file: docker-compose-base.yml
       service: common
