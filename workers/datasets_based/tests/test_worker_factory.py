@@ -4,6 +4,7 @@
 from typing import Optional
 
 import pytest
+from libcommon.queue import Priority
 
 from datasets_based.config import AppConfig
 from datasets_based.worker import JobInfo
@@ -32,6 +33,7 @@ def test_create_worker(app_config: AppConfig, job_type: str, expected_worker: Op
         "split": "split",
         "job_id": "job_id",
         "force": False,
+        "priority": Priority.NORMAL,
     }
     if expected_worker is None:
         with pytest.raises(ValueError):

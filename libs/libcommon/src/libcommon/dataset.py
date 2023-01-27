@@ -213,3 +213,7 @@ def check_support(
         - ['~requests.exceptions.HTTPError']: any other error when asking access
     """
     get_dataset_info_for_supported_datasets(dataset=dataset, hf_endpoint=hf_endpoint, hf_token=hf_token)
+
+
+def get_supported_datasets(hf_endpoint: str, hf_token: Optional[str] = None) -> list[str]:
+    return [d.id for d in HfApi(endpoint=hf_endpoint, token=hf_token).list_datasets() if d.id is not None]

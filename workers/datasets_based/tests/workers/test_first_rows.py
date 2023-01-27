@@ -7,6 +7,7 @@ from http import HTTPStatus
 import pytest
 from datasets.packaged_modules import csv
 from libcommon.exceptions import CustomError
+from libcommon.queue import Priority
 from libcommon.simple_cache import DoesNotExist, get_response
 
 from datasets_based.config import AppConfig, FirstRowsConfig
@@ -31,6 +32,7 @@ def get_worker(
             "split": split,
             "job_id": "job_id",
             "force": force,
+            "priority": Priority.NORMAL,
         },
         app_config=app_config,
         first_rows_config=first_rows_config,
