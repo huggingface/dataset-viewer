@@ -18,10 +18,16 @@ jobs:
         working-directory: e2e
     runs-on: "ubuntu-latest"
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v3
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v2
+      - uses: actions/checkout@v3
+      - name: Install poetry
+        run: pipx install poetry==${{ env.poetry-version }}
+      - name: Use Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ env.python-version }}
+          cache: 'poetry'
+          cache-dependency-path: |
+            ${{ env.working-directory }}/poetry.lock
       - name: Build the images and launch the services
         env:
           WORKER_SLEEP_TIME: "1"
@@ -39,15 +45,6 @@ jobs:
           COMMON_LOG_LEVEL: "DEBUG"
         working-directory: tools
         run: docker compose -f ./docker-compose-datasets-server.yml up -d
-      - name: Install poetry
-        run: pipx install poetry==${{ env.poetry-version }}
-      - name: Use Python
-        uses: actions/setup-python@v4
-        with:
-          python-version: ${{ env.python-version }}
-          cache: 'poetry'
-          cache-dependency-path: |
-            ${{ env.working-directory }}/poetry.lock
       - name: Install dependencies
         run: |
           poetry env use "${{ env.python-version }}"
