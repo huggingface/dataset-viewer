@@ -48,8 +48,6 @@ jobs:
           # see https://github.com/docker/build-push-action/blob/master/docs/advanced/cache.md#registry-cache
           cache-from: type=gha
           cache-to: type=gha,mode=max
-          # gives:
-          # /usr/bin/docker buildx build --cache-from type=gha --cache-to type=gha,mode=max --file ./services/admin/Dockerfile --iidfile /tmp/docker-build-push-0INfdw/iidfile --load --metadata-file /tmp/docker-build-push-0INfdw/metadata-file .
       - 
         name: Build and push Docker image 2
         uses: docker/build-push-action@v3
@@ -62,8 +60,6 @@ jobs:
           # see https://github.com/docker/build-push-action/blob/master/docs/advanced/cache.md#registry-cache
           cache-from: type=gha
           cache-to: type=gha,mode=max
-          # gives:
-          # /usr/bin/docker buildx build --cache-from type=gha --cache-to type=gha,mode=max --file ./services/admin/Dockerfile --iidfile /tmp/docker-build-push-0INfdw/iidfile --load --metadata-file /tmp/docker-build-push-0INfdw/metadata-file .
       - 
         name: Build and push Docker image 3
         uses: docker/build-push-action@v3
@@ -76,8 +72,6 @@ jobs:
           # see https://github.com/docker/build-push-action/blob/master/docs/advanced/cache.md#registry-cache
           cache-from: type=gha
           cache-to: type=gha,mode=max
-          # gives:
-          # /usr/bin/docker buildx build --cache-from type=gha --cache-to type=gha,mode=max --file ./services/admin/Dockerfile --iidfile /tmp/docker-build-push-0INfdw/iidfile --load --metadata-file /tmp/docker-build-push-0INfdw/metadata-file .
       -
         name: Launch the services (the images should have been build in the previous step)
         env:
