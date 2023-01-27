@@ -11,6 +11,7 @@ env:
   POETRY_VIRTUALENVS_IN_PROJECT: false
   working-directory: e2e
   docker-compose-file: ./tools/docker-compose-datasets-server.yml
+  docker-compose-file-base: ./tools/docker-compose-base.yml
 jobs:
   e2e-tests:
     defaults:
@@ -31,6 +32,7 @@ jobs:
           load: true
           files: |
             ${{ env.docker-compose-file }}
+            ${{ env.docker-compose-file-base }}
           set: |
             *.cache-from=type=gha
             *.cache-to=type=gha
