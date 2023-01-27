@@ -252,7 +252,7 @@ Usage:
 Return the HUB url
 */}}
 {{- define "datasetsServer.hub.url" -}}
-{{- if ne "" .Values.common.hfEndpoint }}
+{{- if ne "" .Values.common.hfEndpoint -}}
 {{ .Values.common.hfEndpoint | quote }}
 {{- else -}}
 {{- $hubName := ((list $.Release.Name "hub") | join "-") | trunc 63 | trimSuffix "-" -}}

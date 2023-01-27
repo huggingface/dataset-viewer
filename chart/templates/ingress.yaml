@@ -17,12 +17,15 @@ spec:
                 port:
                   name: http
             path: /
-            pathType: ImplementationSpecific
+            pathType: Prefix
   {{- if include "common.ingress.certManagerRequest" ( dict "annotations" $annotations ) }}
   tls:
     - hosts:
         - {{ include "datasetsServer.ingress.hostname" . }}
       secretName: {{ printf "%s-tls" (include "datasetsServer.ingress.hostname" .) }}
   {{- else if .Values.ingress.tls -}}
-  tls: {{toYaml .Values.ingress.tls | nindent 4 }}
+  {{- with .Values.ingress.tls }}
+  tls:
+    {{- tpl (toYaml .) $ | nindent 4 }}
+  {{- end }}
   {{- end }}
