@@ -4,10 +4,6 @@
 name: Launch end-to-end tests
 on:
   workflow_call:
-    inputs:
-      config-file:
-        required: true
-        type: string
 env:
   python-version: 3.9.15
   poetry-version: 1.3.2
@@ -15,25 +11,7 @@ env:
   POETRY_VIRTUALENVS_IN_PROJECT: false
   working-directory: e2e
 jobs:
-  get-config:
-    runs-on: ubuntu-latest
-    outputs:
-      dockerConfig: ${{ steps.set-var.outputs.dockerConfig }}
-    steps:
-      - uses: actions/checkout@v3
-        with:
-          path: './'
-      - name: Get docker images
-        id: set-var
-        run: |
-          # from https://trstringer.com/github-actions-multiline-strings/
-          dockerConfig=`cat ${{ inputs.config-file }}`
-          # end of optional handling for multi line json
-          echo "dockerConfig<<EOF" >> $GITHUB_OUTPUT
-          echo "$dockerConfig" >> $GITHUB_OUTPUT
-          echo "EOF" >> $GITHUB_OUTPUT
   e2e-tests:
-    needs: get-config
     defaults:
       run:
         shell: bash
@@ -50,12 +28,8 @@ jobs:
           cache: 'poetry'
           cache-dependency-path: |
             ${{ env.working-directory }}/poetry.lock
-      - name: Launch the services
+      - name: Build the images and launch the services
         env:
-          IMAGE_REVERSE_PROXY: "${{fromJson(needs.get-config.outputs.dockerConfig).dockerImage.reverseProxy}}"
-          IMAGE_SERVICE_ADMIN: "${{fromJson(needs.get-config.outputs.dockerConfig).dockerImage.services.admin}}"
-          IMAGE_SERVICE_API: "${{fromJson(needs.get-config.outputs.dockerConfig).dockerImage.services.api}}"
-          IMAGE_WORKER_DATASETS_BASED: "${{fromJson(needs.get-config.outputs.dockerConfig).dockerImage.workers.datasets_based}}"
           WORKER_SLEEP_TIME: "1"
           # hard coded, see e2e/tests/fixtures/hub.py
           COMMON_HF_ENDPOINT: "https://hub-ci.huggingface.co"
