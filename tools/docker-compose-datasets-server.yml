@@ -1,31 +1,31 @@
 version: "3.9"
 services:
-  reverse-proxy:
-    image: docker.io/nginx:1.20
-    # image: ${IMAGE_REVERSE_PROXY?IMAGE_REVERSE_PROXY env var must be provided}
-    volumes:
-      - ../chart/nginx-templates/:/etc/nginx/templates:ro
-      - assets:${ASSETS_STORAGE_DIRECTORY-/assets}:ro
-      - ../chart/static-files/openapi.json:/static-files/openapi.json:ro
-    ports:
-      - "${PORT_REVERSE_PROXY-8000}:80"
-    environment:
-      ASSETS_DIRECTORY: ${ASSETS_STORAGE_DIRECTORY-/assets}
-      HOST: localhost
-      PORT: 80
-      URL_ADMIN: http://admin:${ADMIN_UVICORN_PORT-8081}
-      URL_API: http://api:${API_UVICORN_PORT-8080}
-    depends_on:
-      # - api
-      - admin
+  # reverse-proxy:
+  #   image: docker.io/nginx:1.20
+  #   # image: ${IMAGE_REVERSE_PROXY?IMAGE_REVERSE_PROXY env var must be provided}
+  #   volumes:
+  #     - ../chart/nginx-templates/:/etc/nginx/templates:ro
+  #     - assets:${ASSETS_STORAGE_DIRECTORY-/assets}:ro
+  #     - ../chart/static-files/openapi.json:/static-files/openapi.json:ro
+  #   ports:
+  #     - "${PORT_REVERSE_PROXY-8000}:80"
+  #   environment:
+  #     ASSETS_DIRECTORY: ${ASSETS_STORAGE_DIRECTORY-/assets}
+  #     HOST: localhost
+  #     PORT: 80
+  #     URL_ADMIN: http://admin:${ADMIN_UVICORN_PORT-8081}
+  #     URL_API: http://api:${API_UVICORN_PORT-8080}
+  #   depends_on:
+  #     - api
+  #     - admin
   admin:
     build:
       context: ..
       dockerfile: services/admin/Dockerfile
-      cache_from:
-        - type=gha
-      cache_to:
-        - type=gha
+      # cache_from:
+      #   - type=gha
+      # cache_to:
+      #   - type=gha
     # image: ${IMAGE_SERVICE_ADMIN?IMAGE_SERVICE_ADMIN env var must be provided}
     extends:
       file: docker-compose-base.yml
@@ -43,8 +43,8 @@ services:
       ADMIN_UVICORN_HOSTNAME: 0.0.0.0 # required for docker compose
       ADMIN_UVICORN_NUM_WORKERS: ${ADMIN_UVICORN_NUM_WORKERS-2}
       ADMIN_UVICORN_PORT: ${ADMIN_UVICORN_PORT-8081}
-    depends_on:
-      - mongodb
+    # depends_on:
+    #   - mongodb
     restart: always
     ports:
       # for debug
@@ -252,22 +252,22 @@ services:
   #   depends_on:
   #     - mongodb
   #   restart: always
-  mongodb:
-    image: docker.io/mongo
-    volumes:
-      - mongo:/data/db:rw
-    ports:
-      # for debug
-      - "${MONGO_PORT-27017}:27017"
-volumes:
-  assets:
-  mongo:
-  splits-datasets-cache:
-  splits-modules-cache:
-  splits-numba-cache:
-  first-rows-datasets-cache:
-  first-rows-modules-cache:
-  first-rows-numba-cache:
-  parquet-datasets-cache:
-  parquet-modules-cache:
-  parquet-numba-cache:
+  # mongodb:
+  #   image: docker.io/mongo
+  #   volumes:
+  #     - mongo:/data/db:rw
+  #   ports:
+  #     # for debug
+  #     - "${MONGO_PORT-27017}:27017"
+# volumes:
+#   assets:
+#   mongo:
+#   splits-datasets-cache:
+#   splits-modules-cache:
+#   splits-numba-cache:
+#   first-rows-datasets-cache:
+#   first-rows-modules-cache:
+#   first-rows-numba-cache:
+#   parquet-datasets-cache:
+#   parquet-modules-cache:
+#   parquet-numba-cache:
