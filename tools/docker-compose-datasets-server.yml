@@ -1,5 +1,34 @@
 version: "3.9"
 services:
+  common:
+    environment:
+      # common
+      COMMON_HF_ENDPOINT: ${COMMON_HF_ENDPOINT-https://huggingface.co}
+      COMMON_HF_TOKEN: ${COMMON_HF_TOKEN-}
+      COMMON_LOG_LEVEL: ${COMMON_LOG_LEVEL-INFO}
+      # huggingface_hub
+      HF_ENDPOINT: ${COMMON_HF_ENDPOINT-https://huggingface.co} # see https://github.com/huggingface/datasets/pull/5196#issuecomment-1322191411
+      # cache
+      CACHE_MONGO_URL: ${CACHE_MONGO_URL-mongodb://mongodb} # use mongo container by default
+      CACHE_MONGO_DATABASE: ${CACHE_MONGO_DATABASE-datasets_server_cache}
+      # queue
+      QUEUE_MAX_JOBS_PER_NAMESPACE: ${QUEUE_MAX_JOBS_PER_NAMESPACE-1}
+      QUEUE_MONGO_URL: ${QUEUE_MONGO_URL-mongodb://mongodb} # use mongo container by default
+      QUEUE_MONGO_DATABASE: ${QUEUE_MONGO_DATABASE-datasets_server_queue}
+      # worker
+      WORKER_LOOP_MAX_DISK_USAGE_PCT: ${WORKER_LOOP_MAX_DISK_USAGE_PCT-90}
+      WORKER_LOOP_MAX_LOAD_PCT: ${WORKER_LOOP_MAX_LOAD_PCT-70}
+      WORKER_LOOP_MAX_MEMORY_PCT: ${WORKER_LOOP_MAX_MEMORY_PCT-80}
+      WORKER_LOOP_SLEEP_SECONDS: ${WORKER_LOOP_SLEEP_SECONDS-15}
+  datasets-worker:
+    extends:
+      service: common
+    environment:
+      # datasets
+      DATASETS_BASED_HF_DATASETS_CACHE: ${HF_DATASETS_CACHE-/datasets-cache}
+      HF_MODULES_CACHE: ${HF_DATASETS_CACHE-/modules-cache}
+      NUMBA_CACHE_DIR: ${NUMBA_CACHE_DIR-/numba-cache}
+
   reverse-proxy:
     image: docker.io/nginx:1.20
     # image: ${IMAGE_REVERSE_PROXY?IMAGE_REVERSE_PROXY env var must be provided}
@@ -24,7 +53,6 @@ services:
       dockerfile: services/admin/Dockerfile
     # image: ${IMAGE_SERVICE_ADMIN?IMAGE_SERVICE_ADMIN env var must be provided}
     extends:
-      file: docker-compose-base.yml
       service: common
     environment:
       # service
@@ -51,7 +79,6 @@ services:
       dockerfile: services/api/Dockerfile
     # image: ${IMAGE_SERVICE_API?IMAGE_SERVICE_API env var must be provided}
     extends:
-      file: docker-compose-base.yml
       service: common
     environment:
       # service
@@ -80,7 +107,6 @@ services:
       - splits-modules-cache:${HF_DATASETS_CACHE-/modules-cache}:rw
       - splits-numba-cache:${NUMBA_CACHE_DIR-/numba-cache}:rw
     extends:
-      file: docker-compose-base.yml
       service: datasets-worker
     environment:
       DATASETS_BASED_ENDPOINT: "/config-names" # hard-coded
@@ -97,7 +123,6 @@ services:
       - splits-modules-cache:${HF_DATASETS_CACHE-/modules-cache}:rw
       - splits-numba-cache:${NUMBA_CACHE_DIR-/numba-cache}:rw
     extends:
-      file: docker-compose-base.yml
       service: datasets-worker
     environment:
       DATASETS_BASED_ENDPOINT: "/split-names" # hard-coded
@@ -114,7 +139,6 @@ services:
       - splits-modules-cache:${HF_DATASETS_CACHE-/modules-cache}:rw
       - splits-numba-cache:${NUMBA_CACHE_DIR-/numba-cache}:rw
     extends:
-      file: docker-compose-base.yml
       service: datasets-worker
     environment:
       DATASETS_BASED_ENDPOINT: "/splits" # hard-coded
@@ -132,7 +156,6 @@ services:
       - first-rows-modules-cache:${HF_DATASETS_CACHE-/modules-cache}:rw
       - first-rows-numba-cache:${NUMBA_CACHE_DIR-/numba-cache}:rw
     extends:
-      file: docker-compose-base.yml
       service: datasets-worker
     environment:
       ASSETS_BASE_URL: "http://localhost:${PORT_REVERSE_PROXY-8000}/assets" # hard-coded to work with the reverse-proxy
@@ -158,7 +181,6 @@ services:
       - parquet-modules-cache:${HF_DATASETS_CACHE-/modules-cache}:rw
       - parquet-numba-cache:${NUMBA_CACHE_DIR-/numba-cache}:rw
     extends:
-      file: docker-compose-base.yml
       service: datasets-worker
     environment:
       DATASETS_BASED_ENDPOINT: "/parquet-and-dataset-info" # hard-coded
@@ -179,7 +201,6 @@ services:
       dockerfile: workers/datasets_based/Dockerfile
     # image: ${IMAGE_WORKER_DATASETS_BASED?IMAGE_WORKER_DATASETS_BASED env var must be provided}
     extends:
-      file: docker-compose-base.yml
       service: datasets-worker
     environment:
       DATASETS_BASED_ENDPOINT: "/parquet" # hard-coded
@@ -192,7 +213,6 @@ services:
       dockerfile: workers/datasets_based/Dockerfile
     # image: ${IMAGE_WORKER_DATASETS_BASED?IMAGE_WORKER_DATASETS_BASED env var must be provided}
     extends:
-      file: docker-compose-base.yml
       service: datasets-worker
     environment:
       DATASETS_BASED_ENDPOINT: "/dataset-info" # hard-coded
@@ -205,7 +225,6 @@ services:
       dockerfile: workers/datasets_based/Dockerfile
     # image: ${IMAGE_WORKER_DATASETS_BASED?IMAGE_WORKER_DATASETS_BASED env var must be provided}
     extends:
-      file: docker-compose-base.yml
       service: datasets-worker
     environment:
       DATASETS_BASED_ENDPOINT: "/sizes" # hard-coded
