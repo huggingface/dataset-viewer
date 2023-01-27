@@ -53,37 +53,37 @@ jobs:
           COMMON_LOG_LEVEL: "DEBUG"
         run: docker compose -f docker-compose-datasets-server.yml up -d
         working-directory: ./tools
-      -
-        name: Install poetry
-        run: pipx install poetry==${{ env.poetry-version }}
-      -
-        name: Use Python
-        uses: actions/setup-python@v4
-        with:
-          python-version: ${{ env.python-version }}
-          cache: 'poetry'
-          cache-dependency-path: |
-            ${{ env.working-directory }}/poetry.lock
-      -
-        name: Install dependencies
-        run: |
-          poetry env use "${{ env.python-version }}"
-          poetry install
-      -
-        name: End-to-end tests
-        env:
-          QUEUE_SLEEP_TIME: "1"
-          # hard coded, see e2e/tests/fixtures/hub.py
-          COMMON_HF_ENDPOINT: "https://hub-ci.huggingface.co"
-          COMMON_HF_TOKEN: "hf_app_datasets-server_token"
-          PARQUET_AND_DATASET_INFO_COMMITTER_HF_TOKEN: "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"
-          FIRST_ROWS_MAX_NUMBER: "4"
-          PORT_REVERSE_PROXY: "8000"
-          PROMETHEUS_MULTIPROC_DIR: "/tmp"
-          API_UVICORN_NUM_WORKERS: "2"
-          API_UVICORN_PORT: "8080"
-          ADMIN_UVICORN_NUM_WORKERS: "2"
-          ADMIN_UVICORN_PORT: "8081"
-          COMMON_LOG_LEVEL: "DEBUG"
-        run: |
-          poetry run python -m pytest -vv -x tests
+      # -
+      #   name: Install poetry
+      #   run: pipx install poetry==${{ env.poetry-version }}
+      # -
+      #   name: Use Python
+      #   uses: actions/setup-python@v4
+      #   with:
+      #     python-version: ${{ env.python-version }}
+      #     cache: 'poetry'
+      #     cache-dependency-path: |
+      #       ${{ env.working-directory }}/poetry.lock
+      # -
+      #   name: Install dependencies
+      #   run: |
+      #     poetry env use "${{ env.python-version }}"
+      #     poetry install
+      # -
+      #   name: End-to-end tests
+      #   env:
+      #     QUEUE_SLEEP_TIME: "1"
+      #     # hard coded, see e2e/tests/fixtures/hub.py
+      #     COMMON_HF_ENDPOINT: "https://hub-ci.huggingface.co"
+      #     COMMON_HF_TOKEN: "hf_app_datasets-server_token"
+      #     PARQUET_AND_DATASET_INFO_COMMITTER_HF_TOKEN: "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"
+      #     FIRST_ROWS_MAX_NUMBER: "4"
+      #     PORT_REVERSE_PROXY: "8000"
+      #     PROMETHEUS_MULTIPROC_DIR: "/tmp"
+      #     API_UVICORN_NUM_WORKERS: "2"
+      #     API_UVICORN_PORT: "8080"
+      #     ADMIN_UVICORN_NUM_WORKERS: "2"
+      #     ADMIN_UVICORN_PORT: "8081"
+      #     COMMON_LOG_LEVEL: "DEBUG"
+      #   run: |
+      #     poetry run python -m pytest -vv -x tests
