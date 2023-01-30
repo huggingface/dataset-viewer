@@ -5,7 +5,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   labels: {{ include "labels.splitNames" . | nindent 4 }}
-  name: "{{ include "release" . }}-worker-split-names"
+  name: "{{ include "name" . }}-worker-split-names"
   namespace: {{ .Release.Namespace }}
 spec:
   progressDeadlineSeconds: 600
