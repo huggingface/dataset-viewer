@@ -880,14 +880,14 @@ toml = ">=0.10.0,<0.11.0"
 
 [[package]]
 name = "datasets"
-version = "2.8.0"
+version = "2.9.0"
 description = "HuggingFace community-driven open-source library of datasets"
 category = "main"
 optional = false
 python-versions = ">=3.7.0"
 files = [
-    {file = "datasets-2.8.0-py3-none-any.whl", hash = "sha256:f36cb362bb5587659bab18e594b6d25d9d28486d735a571319c82efeb5a4e5df"},
-    {file = "datasets-2.8.0.tar.gz", hash = "sha256:a843b69593914071f921fc1086fde939f30a63415a34cdda5db3c0acdd58aff2"},
+    {file = "datasets-2.9.0-py3-none-any.whl", hash = "sha256:f1aa5b98959cddb30f5077448204c8ce4235a4f1c8ec2473920660ebd6fc304f"},
+    {file = "datasets-2.9.0.tar.gz", hash = "sha256:c82458d635539b5a5dbed0fba8837006dfc3c213a5bcc00e18a67789f0f0f16f"},
 ]
 
 [package.dependencies]
@@ -909,17 +909,17 @@ tqdm = ">=4.62.1"
 xxhash = "*"
 
 [package.extras]
-apache-beam = ["apache-beam (>=2.26.0)"]
+apache-beam = ["apache-beam (>=2.26.0,<2.44.0)"]
 audio = ["librosa"]
 benchmarks = ["numpy (==1.18.5)", "tensorflow (==2.3.0)", "torch (==1.7.1)", "transformers (==3.0.2)"]
-dev = ["Pillow (>=6.2.1)", "absl-py", "apache-beam (>=2.26.0)", "black (>=22.0,<23.0)", "elasticsearch (<8.0.0)", "faiss-cpu (>=1.6.4)", "flake8 (>=3.8.3)", "isort (>=5.0.0)", "librosa", "lz4", "py7zr", "pytest", "pytest-datadir", "pytest-xdist", "pyyaml (>=5.3.1)", "rarfile (>=4.0)", "s3fs", "s3fs (>=2021.11.1)", "soundfile", "tensorflow (>=2.3,!=2.6.0,!=2.6.1)", "tensorflow-macos", "torch", "torchaudio (<0.12.0)", "transformers", "zstandard"]
+dev = ["Pillow (>=6.2.1)", "absl-py", "apache-beam (>=2.26.0,<2.44.0)", "black (>=22.0,<23.0)", "elasticsearch (<8.0.0)", "faiss-cpu (>=1.6.4)", "flake8 (>=3.8.3)", "isort (>=5.0.0)", "librosa", "lz4", "py7zr", "pytest", "pytest-datadir", "pytest-xdist", "pyyaml (>=5.3.1)", "rarfile (>=4.0)", "s3fs", "s3fs (>=2021.11.1)", "soundfile", "tensorflow (>=2.3,!=2.6.0,!=2.6.1)", "tensorflow-macos", "torch", "torchaudio (<0.12.0)", "transformers", "zstandard"]
 docs = ["s3fs"]
 metrics-tests = ["Werkzeug (>=1.0.1)", "bert-score (>=0.3.6)", "jiwer", "langdetect", "mauve-text", "nltk", "requests-file (>=1.5.1)", "rouge-score", "sacrebleu", "sacremoses", "scikit-learn", "scipy", "sentencepiece", "seqeval", "six (>=1.15.0,<1.16.0)", "spacy (>=3.0.0)", "sqlalchemy", "texttable (>=1.6.3)", "tldextract", "tldextract (>=3.1.0)", "toml (>=0.10.1)", "typer (<0.5.0)"]
 quality = ["black (>=22.0,<23.0)", "flake8 (>=3.8.3)", "isort (>=5.0.0)", "pyyaml (>=5.3.1)"]
 s3 = ["s3fs"]
 tensorflow = ["tensorflow (>=2.2.0,!=2.6.0,!=2.6.1)", "tensorflow-macos"]
 tensorflow-gpu = ["tensorflow-gpu (>=2.2.0,!=2.6.0,!=2.6.1)"]
-tests = ["Pillow (>=6.2.1)", "absl-py", "apache-beam (>=2.26.0)", "elasticsearch (<8.0.0)", "faiss-cpu (>=1.6.4)", "librosa", "lz4", "py7zr", "pytest", "pytest-datadir", "pytest-xdist", "rarfile (>=4.0)", "s3fs (>=2021.11.1)", "soundfile", "tensorflow (>=2.3,!=2.6.0,!=2.6.1)", "tensorflow-macos", "torch", "torchaudio (<0.12.0)", "transformers", "zstandard"]
+tests = ["Pillow (>=6.2.1)", "absl-py", "apache-beam (>=2.26.0,<2.44.0)", "elasticsearch (<8.0.0)", "faiss-cpu (>=1.6.4)", "librosa", "lz4", "py7zr", "pytest", "pytest-datadir", "pytest-xdist", "rarfile (>=4.0)", "s3fs (>=2021.11.1)", "soundfile", "tensorflow (>=2.3,!=2.6.0,!=2.6.1)", "tensorflow-macos", "torch", "torchaudio (<0.12.0)", "transformers", "zstandard"]
 torch = ["torch"]
 vision = ["Pillow (>=6.2.1)"]
 
@@ -5436,4 +5436,4 @@ cffi = ["cffi (>=1.11)"]
 [metadata]
 lock-version = "2.0"
 python-versions = "3.9.15"
-content-hash = "d813a3067825668630455a2c36c1f9b52d3704431cc41bc4860400f729e570de"
+content-hash = "1d75ae381d53e8abcc1896f6f33c71afadc51f9ea0d809e9effadacf716fa628"
