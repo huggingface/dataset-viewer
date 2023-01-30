@@ -224,7 +224,7 @@ The URL to access the admin service from another container
 See https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/#a-aaaa-records
 */}}
 {{- define "admin.url" -}}
-{{- printf "http://%s-admin.%s.svc.cluster.local:80" ( include "name" . ) ( .Release.Namespace ) }}
+{{- printf "http://%s-admin.%s.svc.cluster.local:8080" ( include "name" . ) ( .Release.Namespace ) }}
 {{- end }}
 
 {{/*
@@ -232,7 +232,7 @@ The URL to access the API service from another container
 See https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/#a-aaaa-records
 */}}
 {{- define "api.url" -}}
-{{- printf "http://%s-api.%s.svc.cluster.local:80" ( include "name" . ) ( .Release.Namespace ) }}
+{{- printf "http://%s-api.%s.svc.cluster.local:8080" ( include "name" . ) ( .Release.Namespace ) }}
 {{- end }}
 
 {{/*
