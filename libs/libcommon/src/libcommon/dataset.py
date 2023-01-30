@@ -219,5 +219,5 @@ def get_supported_datasets(hf_endpoint: str, hf_token: Optional[str] = None) -> 
     return [
         d.id
         for d in HfApi(endpoint=hf_endpoint, token=hf_token).list_datasets()
-        if d.id is not None and d.private is False
+        if d.id and not d.private
     ]
