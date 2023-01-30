@@ -42,7 +42,7 @@ def create_backfill_endpoint(
                     hf_token=hf_token,
                     force=False,
                     priority=Priority.LOW,
-                    skip_check_support=True,
+                    do_check_support=False,
                 )
             # ^ we simply ask an update for all the datasets on the Hub, supported by the datasets-server
             # we could be more precise and only ask for updates for the datasets that have some missing
