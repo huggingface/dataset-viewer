@@ -5,7 +5,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   labels: {{ include "labels.api" . | nindent 4 }}
-  name: "{{ include "release" . }}-api"
+  name: "{{ include "name" . }}-api"
   namespace: {{ .Release.Namespace }}
 spec:
   progressDeadlineSeconds: 600
@@ -22,7 +22,7 @@ spec:
     metadata:
       labels: {{ include "labels.api" . | nindent 8 }}
     spec:
-      imagePullSecrets: {{ toYaml .Values.imagePullSecrets | nindent 8 }}
+      {{- include "image.imagePullSecrets" . | nindent 6 }}
       containers: {{ include "containerApi" . | nindent 8 }}
       nodeSelector: {{ toYaml .Values.api.nodeSelector | nindent 8 }}
       tolerations: {{ toYaml .Values.api.tolerations | nindent 8 }}

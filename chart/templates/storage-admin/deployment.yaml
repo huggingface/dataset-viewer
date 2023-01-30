@@ -5,7 +5,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   labels: {{ include "labels.storageAdmin" . | nindent 4 }}
-  name: "{{ include "release" . }}-storage-admin"
+  name: "{{ include "name" . }}-storage-admin"
   namespace: {{ .Release.Namespace }}
 spec:
   progressDeadlineSeconds: 600

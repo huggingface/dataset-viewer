@@ -4,5 +4,5 @@
 {{- define "volumeData" -}}
 - name: data
   persistentVolumeClaim:
-    claimName: {{ .Values.persistence.existingClaim | default (include "release" .) }}
+    claimName: {{ .Values.persistence.existingClaim | default (include "name" .) }}
 {{- end -}}

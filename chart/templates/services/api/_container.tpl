@@ -3,8 +3,8 @@
 
 {{- define "containerApi" -}}
 - name: "{{ include "name" . }}-api"
-  image: {{ .Values.dockerImage.services.api }}
-  imagePullPolicy: IfNotPresent
+  image: {{ include "services.api.image" . }}
+  imagePullPolicy: {{ .Values.images.pullPolicy }}
   env:
   {{ include "envCache" . | nindent 2 }}
   {{ include "envQueue" . | nindent 2 }}
@@ -30,10 +30,10 @@
     allowPrivilegeEscalation: false
   readinessProbe:
     tcpSocket:
-      port: {{ .Values.api.readinessPort }}
+      port: {{ .Values.api.uvicornPort }}
   livenessProbe:
     tcpSocket:
-      port: {{ .Values.api.readinessPort }}
+      port: {{ .Values.api.uvicornPort }}
   ports:
   - containerPort: {{ .Values.api.uvicornPort }}
     name: http

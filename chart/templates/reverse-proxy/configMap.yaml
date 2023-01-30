@@ -5,7 +5,7 @@ apiVersion: v1
 kind: ConfigMap
 metadata:
   labels: {{ include "labels.reverseProxy" . | nindent 4 }}
-  name: "{{ include "release" . }}-reverse-proxy"
+  name: "{{ include "name" . }}-reverse-proxy"
   namespace: {{ .Release.Namespace }}
 data:
   default.conf.template: |-

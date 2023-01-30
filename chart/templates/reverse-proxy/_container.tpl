@@ -3,8 +3,8 @@
 
 {{- define "containerReverseProxy" -}}
 - name: "{{ include "name" . }}-reverse-proxy"
-  image: {{ .Values.dockerImage.reverseProxy }}
-  imagePullPolicy: IfNotPresent
+  image: {{ include "reverseproxy.image" . }}
+  imagePullPolicy: {{ .Values.images.pullPolicy }}
   env:
   - name: ASSETS_DIRECTORY
     value: {{ .Values.assets.storageDirectory | quote }}
@@ -32,10 +32,10 @@
     readOnly: true
   readinessProbe:
     tcpSocket:
-      port: {{ .Values.reverseProxy.readinessPort }}
+      port: {{ .Values.reverseProxy.port }}
   livenessProbe:
     tcpSocket:
-      port: {{ .Values.reverseProxy.readinessPort }}
+      port: {{ .Values.reverseProxy.port }}
   ports:
   - containerPort: {{ .Values.reverseProxy.port }}
     name: http

@@ -4,7 +4,7 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: "{{ include "release" . }}-admin"
+  name: "{{ include "name" . }}-admin"
   annotations: {{ toYaml .Values.admin.service.annotations | nindent 4 }}
   namespace: {{ .Release.Namespace }}
   labels: {{ include "labels.admin" . | nindent 4 }}

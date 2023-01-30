@@ -3,8 +3,8 @@
 
 {{- define "containerWorkerDatasetInfo" -}}
 - name: "{{ include "name" . }}-worker-dataset-info"
-  image: {{ .Values.dockerImage.workers.datasets_based }}
-  imagePullPolicy: {{ .Values.docker.pullPolicy }}
+  image: {{ include "workers.datasetsBased.image" . }}
+  imagePullPolicy: {{ .Values.images.pullPolicy }}
   env:
   - name: DATASETS_BASED_ENDPOINT
     value: "/dataset-info"

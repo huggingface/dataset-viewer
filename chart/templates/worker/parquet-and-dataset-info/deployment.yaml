@@ -5,7 +5,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   labels: {{ include "labels.parquetAndDatasetInfo" . | nindent 4 }}
-  name: "{{ include "release" . }}-worker-parquet-and-dataset-info"
+  name: "{{ include "name" . }}-worker-parquet-and-dataset-info"
   namespace: {{ .Release.Namespace }}
 spec:
   progressDeadlineSeconds: 600
@@ -19,9 +19,8 @@ spec:
     metadata:
       labels: {{ include "labels.parquetAndDatasetInfo" . | nindent 8 }}
     spec:
-      imagePullSecrets: {{ toYaml .Values.imagePullSecrets | nindent 8 }}
-      initContainers:
-        {{ include "initContainerCache" . | nindent 8 }}
+      {{- include "image.imagePullSecrets" . | nindent 6 }}
+      initContainers: {{ include "initContainerCache" . | nindent 8 }}
       containers: {{ include "containerWorkerParquetAndDatasetInfo" . | nindent 8 }}
       nodeSelector: {{ toYaml .Values.parquetAndDatasetInfo.nodeSelector | nindent 8 }}
       tolerations: {{ toYaml .Values.parquetAndDatasetInfo.tolerations | nindent 8 }}

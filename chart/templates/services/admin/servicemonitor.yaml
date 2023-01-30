@@ -6,7 +6,7 @@ apiVersion: monitoring.coreos.com/v1
 kind: ServiceMonitor
 metadata:
   labels: {{ include "labels.admin" . | nindent 4 }}
-  name: "{{ include "release" . }}-admin"
+  name: "{{ include "name" . }}-admin"
   namespace: {{ .Release.Namespace }}
 spec:
   endpoints:

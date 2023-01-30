@@ -4,7 +4,7 @@
 {{- define "initContainerCache" -}}
 - name: prepare-cache
   image: ubuntu:focal
-  imagePullPolicy: IfNotPresent
+  imagePullPolicy: {{ .Values.images.pullPolicy }}
   command: ["/bin/sh", "-c"]
   args:
   - chown {{ .Values.uid }}:{{ .Values.gid }} /mounted-path;
