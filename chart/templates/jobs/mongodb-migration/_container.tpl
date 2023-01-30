@@ -12,7 +12,7 @@
   - name: MONGODB_MIGRATION_MONGO_DATABASE
     value: {{ .Values.mongodbMigration.mongoDatabase | quote }}
   - name: MONGODB_MIGRATION_MONGO_URL
-    {{ include "datasetServer.mongo.url" . | nindent 2 }}
+    {{ include "datasetServer.mongo.url" . | nindent 4 }}
   securityContext:
     allowPrivilegeEscalation: false  
   resources: {{ toYaml .Values.mongodbMigration.resources | nindent 4 }}
