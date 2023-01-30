@@ -5,7 +5,8 @@
 Expand the name of the chart.
 */}}
 {{- define "name" -}}
-{{- ((list $.Release.Name .Chart.Name) | join "-") | trunc 63 | trimSuffix "-" -}}
+{{- ((list "datasets-server-prod") | join "-") | trunc 63 | trimSuffix "-" -}}
+{{/*{{- ((list $.Release.Name .Chart.Name) | join "-") | trunc 63 | trimSuffix "-" -}}*/}}
 {{- end }}
 
 {{/*
@@ -91,85 +92,69 @@ imagePullSecrets:
 {{- end -}}
 
 
-
-
-
-{{/*
-Selector labels
-*/}}
-{{- define "datasetServer.selectorLabels" -}}
-app.kubernetes.io/name: {{ include "name" . }}
-app.kubernetes.io/instance: {{ .Release.Name }}
-{{- end }}
-
 {{/*
 Common labels
 */}}
 {{- define "datasetServer.labels" -}}
-helm.sh/chart: {{ include "chart" . }}
-{{ include "datasetServer.selectorLabels" . }}
-{{- if .Chart.AppVersion }}
-app.kubernetes.io/version: {{ .Chart.AppVersion | quote }}
-{{- end }}
+app.kubernetes.io/name: {{ include "name" . }}
+helm.sh/chart: {{ .Chart.Name }}
+app.kubernetes.io/instance: {{ .Release.Name }}
 app.kubernetes.io/managed-by: {{ .Release.Service }}
-release: {{ $.Release.Name | quote }}
-heritage: {{ $.Release.Service | quote }}
-chart: "{{ include "name" . }}"
 {{- end }}
 
 {{- define "labels.reverseProxy" -}}
 {{ include "datasetServer.labels" . }}
-app: "{{ include "release" . }}-reverse-proxy"
+app.kubernetes.io/component: "{{ include "name" . }}-reverse-proxy"
 {{- end -}}
 
 {{- define "labels.storageAdmin" -}}
 {{ include "datasetServer.labels" . }}
-app: "{{ include "release" . }}-storage-admin"
+app.kubernetes.io/component: "{{ include "name" . }}-storage-admin"
 {{- end -}}
 
 {{- define "labels.mongodbMigration" -}}
 {{ include "datasetServer.labels" . }}
-app: "{{ include "release" . }}-mongodb-migration"
+app.kubernetes.io/component: "{{ include "name" . }}-mongodb-migration"
 {{- end -}}
 
 {{- define "labels.admin" -}}
 {{ include "datasetServer.labels" . }}
-app: "{{ include "release" . }}-admin"
+app.kubernetes.io/component: "{{ include "name" . }}-admin"
 {{- end -}}
 
 {{- define "labels.api" -}}
 {{ include "datasetServer.labels" . }}
-app: "{{ include "release" . }}-api"
+app.kubernetes.io/component: "{{ include "name" . }}-api"
 {{- end -}}
 
 {{- define "labels.splits" -}}
 {{ include "datasetServer.labels" . }}
-app: "{{ include "release" . }}-worker-splits"
+app.kubernetes.io/component: "{{ include "name" . }}-worker-splits"
 {{- end -}}
 
 {{- define "labels.firstRows" -}}
 {{ include "datasetServer.labels" . }}
-app: "{{ include "release" . }}-worker-first-rows"
+app.kubernetes.io/component: "{{ include "name" . }}-worker-first-rows"
 {{- end -}}
 
 {{- define "labels.parquetAndDatasetInfo" -}}
 {{ include "datasetServer.labels" . }}
-app: "{{ include "release" . }}-worker-parquet-and-dataset-info"
+app.kubernetes.io/component: "{{ include "name" . }}-worker-parquet-and-dataset-info"
 {{- end -}}
 
 {{- define "labels.parquet" -}}
 {{ include "datasetServer.labels" . }}
-app: "{{ include "release" . }}-worker-parquet"
+app.kubernetes.io/component: "{{ include "name" . }}-worker-parquet"
 {{- end -}}
 
 {{- define "labels.datasetInfo" -}}
 {{ include "datasetServer.labels" . }}
-app: "{{ include "release" . }}-worker-dataset-info"
+app.kubernetes.io/component: "{{ include "name" . }}-worker-dataset-info"
 {{- end -}}
 
 {{- define "labels.sizes" -}}
 {{ include "datasetServer.labels" . }}
-app: "{{ include "release" . }}-worker-sizes"
+app.kubernetes.io/component: "{{ include "name" . }}-worker-sizes"
 {{- end -}}
 
 {{/*
