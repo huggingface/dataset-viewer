@@ -1,7 +1,7 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2022 The HuggingFace Authors.
 
-{{- if .Values.dockerImage.jobs.mongodbMigration }}
+{{- if .Values.images.jobs.mongodbMigration }}
 apiVersion: batch/v1
 kind: Job
 metadata:

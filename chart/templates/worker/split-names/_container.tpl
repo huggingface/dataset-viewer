@@ -3,8 +3,8 @@
 
 {{- define "containerWorkerSplitNames" -}}
 - name: "{{ include "name" . }}-worker-split-names"
-  image: {{ .Values.dockerImage.workers.datasets_based }}
-  imagePullPolicy: {{ .Values.docker.pullPolicy }}
+  image: {{ include "workers.datasetsBased.image" . }}
+  imagePullPolicy: {{ .Values.images.pullPolicy }}
   env:
   - name: DATASETS_BASED_ENDPOINT
     value: "/split-names"

@@ -19,7 +19,7 @@ spec:
     metadata:
       labels: {{ include "labels.splitNames" . | nindent 8 }}
     spec:
-      imagePullSecrets: {{ toYaml .Values.imagePullSecrets | nindent 8 }}
+      {{- include "image.imagePullSecrets" . | nindent 6 }}
       initContainers:
         {{ include "initContainerCache" . | nindent 8 }}
       containers: {{ include "containerWorkerSplitNames" . | nindent 8 }}

@@ -128,12 +128,12 @@ app.kubernetes.io/component: "{{ include "name" . }}-api"
 {{- end -}}
 
 {{- define "labels.configNames" -}}
-{{ include "labels" . }}
+{{ include "datasetServer.labels" . }}
 app: "{{ include "release" . }}-worker-config-names"
 {{- end -}}
 
 {{- define "labels.splitNames" -}}
-{{ include "labels" . }}
+{{ include "datasetServer.labels" . }}
 app: "{{ include "release" . }}-worker-split-names"
 {{- end -}}
 
