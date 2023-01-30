@@ -5,6 +5,8 @@ on:
   push:
     branches:
       - main
+    paths:
+      - 'chart/**'
 
 jobs:
   publish:
@@ -29,7 +31,7 @@ jobs:
 
       - name: Add repository
         run: |
-          helm repo add charts https://registry.internal.huggingface.tech/chartrepo/charts
+          helm repo add charts ${{ secrets.REGISTRY_URL }}/chartrepo/charts
 
       - name: Publish
         run: |
