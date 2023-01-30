@@ -26,6 +26,7 @@ def update_dataset(
     hf_token: Optional[str] = None,
     force: bool = False,
     priority: Priority = Priority.NORMAL,
+    do_check_support: bool = True,
 ) -> None:
     """
     Update a dataset
@@ -37,13 +38,15 @@ def update_dataset(
         hf_token (Optional[str], optional): The HF token. Defaults to None.
         force (bool, optional): Force the update. Defaults to False.
         priority (Priority, optional): The priority of the job. Defaults to Priority.NORMAL.
+        do_check_support (bool, optional): Check if the dataset is supported. Defaults to True.
 
     Returns: None.
 
     Raises:
         - [`~libcommon.dataset.DatasetError`]: if the dataset could not be accessed or is not supported
     """
-    check_support(dataset=dataset, hf_endpoint=hf_endpoint, hf_token=hf_token)
+    if do_check_support:
+        check_support(dataset=dataset, hf_endpoint=hf_endpoint, hf_token=hf_token)
     logging.debug(f"refresh dataset='{dataset}'")
     for init_processing_step in init_processing_steps:
         if init_processing_step.input_type == "dataset":
