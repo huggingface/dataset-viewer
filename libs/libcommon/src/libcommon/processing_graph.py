@@ -6,7 +6,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import List, Literal, Mapping, Optional, TypedDict
 
-InputType = Literal["dataset", "split"]
+InputType = Literal["dataset", "config", "split"]
 
 
 class _ProcessingStepSpecification(TypedDict):

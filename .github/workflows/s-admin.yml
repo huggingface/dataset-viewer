@@ -6,6 +6,7 @@ on:
   workflow_dispatch:
   push:
     paths:
+      - 'libs/libcommon/**'
       - 'services/admin/**'
       - '.github/workflows/s-admin.yml'
       - '.github/workflows/_quality-python.yml'

@@ -10,13 +10,14 @@ ENV PYTHONFAULTHANDLER=1 \
     PIP_DEFAULT_TIMEOUT=100 \
     POETRY_NO_INTERACTION=1 \
     # Versions:
-    POETRY_VERSION=1.2.2 \
+    POETRY_VERSION=1.3.2 \
     POETRY_VIRTUALENVS_IN_PROJECT=true
 
 # System deps:
 RUN apt-get update \
     && apt-get install -y build-essential unzip wget python3-dev make \
     libicu-dev ffmpeg libavcodec-extra libsndfile1 llvm pkg-config \
+    poppler-utils \
     && rm -rf /var/lib/apt/lists/*
 
 RUN pip install -U --no-cache-dir pip
@@ -26,7 +27,7 @@ WORKDIR /src
 COPY workers/datasets_based/vendors ./workers/datasets_based/vendors/
 COPY workers/datasets_based/poetry.lock ./workers/datasets_based/poetry.lock
 COPY workers/datasets_based/pyproject.toml ./workers/datasets_based/pyproject.toml
-COPY libs/libcommon/dist ./libs/libcommon/dist
+COPY libs/libcommon ./libs/libcommon
 WORKDIR /src/workers/datasets_based/
 RUN poetry install --no-cache
 COPY workers/datasets_based/src ./src

@@ -6,6 +6,7 @@ on:
   workflow_dispatch:
   push:
     paths:
+      - 'libs/libcommon/**'
       - 'workers/datasets_based/**'
       - '.github/workflows/w-datasets_based.yml'
       - '.github/workflows/_quality-python.yml'

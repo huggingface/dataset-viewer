@@ -7,6 +7,7 @@ on:
   push:
     paths:
       - 'jobs/mongodb_migration/**'
+      - 'libs/libcommon/**'
       - '.github/workflows/j-mongodb_migration.yml'
       - '.github/workflows/_quality-python.yml'
       - '.github/workflows/_unit-tests-python.yml'

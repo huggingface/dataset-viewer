@@ -188,6 +188,8 @@ admin:
   hfOrganization: "huggingface"
   # Number of reports in /cache-reports/... endpoints
   cacheReportsNumResults: 100
+  # Number of reports in /cache-reports-with-content/... endpoints
+  cacheReportsWithContentNumResults: 100
   # The path of the whoami service on the hub.
   hfWhoamiPath: "/api/whoami-v2"
   # Number of seconds to set in the `max-age` header on technical endpoints
@@ -245,6 +247,36 @@ api:
   tolerations: []
 
 # --- workers ---
+
+configNames:
+  # override the common queue parameters
+  queue:
+    # Maximum number of jobs running at the same time for the same namespace
+    maxJobsPerNamespace: 1
+
+  nodeSelector: {}
+  replicas: 1
+  resources:
+    requests:
+      cpu: 1
+    limits:
+      cpu: 1
+  tolerations: []
+
+splitNames:
+  # override the common queue parameters
+  queue:
+    # Maximum number of jobs running at the same time for the same namespace
+    maxJobsPerNamespace: 1
+
+  nodeSelector: {}
+  replicas: 1
+  resources:
+    requests:
+      cpu: 1
+    limits:
+      cpu: 1
+  tolerations: []
 
 splits:
   # override the common queue parameters

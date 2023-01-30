@@ -86,6 +86,22 @@ api:
 
 # --- workers ---
 
+configNames:
+  replicas: 1
+  resources:
+    requests:
+      cpu: 0.01
+    limits:
+      cpu: 1
+
+splitsNames:
+  replicas: 1
+  resources:
+    requests:
+      cpu: 0.01
+    limits:
+      cpu: 1
+
 splits:
   replicas: 1
   resources:

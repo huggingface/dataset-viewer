@@ -10,7 +10,7 @@ ENV PYTHONFAULTHANDLER=1 \
     PIP_DEFAULT_TIMEOUT=100 \
     POETRY_NO_INTERACTION=1 \
     # Versions:
-    POETRY_VERSION=1.2.2 \
+    POETRY_VERSION=1.3.2 \
     POETRY_VIRTUALENVS_IN_PROJECT=true
 
 # System deps:
@@ -23,7 +23,7 @@ RUN pip install --no-cache-dir "poetry==$POETRY_VERSION"
 WORKDIR /src
 COPY services/admin/poetry.lock ./services/admin/poetry.lock
 COPY services/admin/pyproject.toml ./services/admin/pyproject.toml
-COPY libs/libcommon/dist ./libs/libcommon/dist
+COPY libs/libcommon ./libs/libcommon
 WORKDIR /src/services/admin/
 RUN poetry install --no-cache
 COPY services/admin/src ./src

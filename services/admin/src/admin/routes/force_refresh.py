@@ -37,6 +37,11 @@ def create_force_refresh_endpoint(
             if processing_step.input_type == "dataset":
                 config = None
                 split = None
+            elif processing_step.input_type == "config":
+                config = request.query_params.get("config")
+                split = None
+                if not are_valid_parameters([config]):
+                    raise MissingRequiredParameterError("Parameter 'config' is required")
             else:
                 config = request.query_params.get("config")
                 split = request.query_params.get("split")
@@ -49,7 +54,7 @@ def create_force_refresh_endpoint(
             # if auth_check fails, it will raise an exception that will be caught below
             auth_check(external_auth_url=external_auth_url, request=request, organization=organization)
             check_support(dataset=dataset, hf_endpoint=hf_endpoint, hf_token=hf_token)
-            Queue(type=processing_step.job_type).add_job(dataset=dataset, config=config, split=split, force=True)
+            Queue(type=processing_step.job_type).upsert_job(dataset=dataset, config=config, split=split, force=True)
             return get_json_ok_response(
                 {"status": "ok"},
                 max_age=0,

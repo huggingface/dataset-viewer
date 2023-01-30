@@ -518,29 +518,30 @@ def compute_parquet_and_dataset_info_response(
           (dataset info and list of parquet files).
     <Tip>
     Raises the following errors:
-        - [`~parquet_and_dataset_info.worker.DatasetInBlockListError`]
+        - [`~workers.parquet_and_dataset_info.DatasetInBlockListError`]
           If the dataset is in the list of blocked datasets.
-        - [`~libcommon.dataset.GatedExtraFieldsError`]: if the dataset is gated, with extra fields.
+        - [`libcommon.dataset.GatedExtraFieldsError`]: if the dataset is gated, with extra fields.
             Programmatic access is not implemented for this type of dataset because there is no easy
             way to get the list of extra fields.
-        - [`~libcommon.dataset.GatedDisabledError`]: if the dataset is gated, but disabled.
-        - [`~libcommon.dataset.DatasetNotFoundError`]: if the dataset does not exist, or if the
+        - [`libcommon.dataset.GatedDisabledError`]: if the dataset is gated, but disabled.
+        - [`libcommon.dataset.DatasetNotFoundError`]: if the dataset does not exist, or if the
             token does not give the sufficient access to the dataset, or if the dataset is private
             (private datasets are not supported by the datasets server)
-        - ['~requests.exceptions.HTTPError']: any other error when asking access
-        - [`~parquet_and_dataset_info.worker.DatasetRevisionNotFoundError`]
+        - ['HTTPError'](https://requests.readthedocs.io/en/latest/api/#requests.HTTPError): any other error when
+            asking access
+        - [`~workers.parquet_and_dataset_info.DatasetRevisionNotFoundError`]
           If the revision does not exist or cannot be accessed using the token.
-        - [`~parquet_and_dataset_info.worker.DatasetTooBigFromHubError`]
+        - [`~workers.parquet_and_dataset_info.DatasetTooBigFromHubError`]
           If the dataset is too big to be converted to parquet
-        - [`ValueError`]
+        - [`ValueError`](https://docs.python.org/3/library/exceptions.html#ValueError)
             If the datasets.config.HF_ENDPOINT is not set to the expected value
-        - [`~parquet_and_dataset_info.worker.DatasetTooBigFromDatasetsError`]
+        - [`~workers.parquet_and_dataset_info.DatasetTooBigFromDatasetsError`]
             If the dataset is too big to be converted to parquet
-        - [`~parquet_and_dataset_info.worker.EmptyDatasetError`]
+        - [`~workers.parquet_and_dataset_info.EmptyDatasetError`]
           The dataset is empty.
-        - [`~parquet_and_dataset_info.worker.ConfigNamesError`]
+        - [`~workers.parquet_and_dataset_info.ConfigNamesError`]
           If the list of configurations could not be obtained using the datasets library.
-        - [`~parquet_and_dataset_info.worker.DatasetInBlockListError`]
+        - [`~workers.parquet_and_dataset_info.DatasetInBlockListError`]
           If the dataset is in the list of blocked datasets.
     </Tip>
     """
@@ -588,16 +589,17 @@ def compute_parquet_and_dataset_info_response(
 
     # create the target revision if it does not exist yet
     try:
-        target_dataset_info = hf_api.dataset_info(repo_id=dataset, revision=target_revision, files_metadata=False)
+        refs = hf_api.list_repo_refs(repo_id=dataset, repo_type=DATASET_TYPE)
+        if all(ref.ref != target_revision for ref in refs.converts):
+            committer_hf_api.create_branch(
+                repo_id=dataset, branch=target_revision, repo_type=DATASET_TYPE, revision=source_revision
+            )
     except RepositoryNotFoundError as err:
         raise DatasetNotFoundError("The dataset does not exist on the Hub.") from err
-    except RevisionNotFoundError:
-        # create the parquet_ref (refs/convert/parquet)
-        committer_hf_api.create_branch(repo_id=dataset, branch=target_revision, repo_type=DATASET_TYPE)
-        target_dataset_info = hf_api.dataset_info(repo_id=dataset, revision=target_revision, files_metadata=False)
 
     # delete:
     # - the previous files,
+    target_dataset_info = hf_api.dataset_info(repo_id=dataset, revision=target_revision, files_metadata=False)
     previous_files = {f.rfilename for f in target_dataset_info.siblings}
     # except:
     # - the files we will update,

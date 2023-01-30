@@ -1,6 +1,7 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2022 The HuggingFace Authors.
 
+import contextlib
 import enum
 import logging
 import types
@@ -43,6 +44,11 @@ class Status(enum.Enum):
     SKIPPED = "skipped"
 
 
+class Priority(enum.Enum):
+    NORMAL = "normal"
+    LOW = "low"
+
+
 class JobDict(TypedDict):
     type: str
     dataset: str
@@ -51,6 +57,7 @@ class JobDict(TypedDict):
     unicity_id: str
     namespace: str
     force: bool
+    priority: str
     status: str
     created_at: datetime
     started_at: Optional[datetime]
@@ -64,6 +71,7 @@ class JobInfo(TypedDict):
     config: Optional[str]
     split: Optional[str]
     force: bool
+    priority: Priority
 
 
 class CountByStatus(TypedDict):
@@ -110,6 +118,7 @@ class Job(Document):
           the started state.
         namespace (`str`): The dataset namespace (user or organization) if any, else the dataset name (canonical name).
         force (`bool`, optional): If True, the job SHOULD not be skipped. Defaults to False.
+        priority (`Priority`, optional): The priority of the job. Defaults to Priority.NORMAL.
         status (`Status`, optional): The status of the job. Defaults to Status.WAITING.
         created_at (`datetime`): The creation date of the job.
         started_at (`datetime`, optional): When the job has started.
@@ -123,8 +132,8 @@ class Job(Document):
             "status",
             ("type", "status"),
             ("type", "dataset", "status"),
-            ("type", "dataset", "config", "split", "status"),
-            ("status", "type", "created_at", "namespace"),
+            ("type", "dataset", "config", "split", "status", "force", "priority"),
+            ("status", "type", "created_at", "namespace", "unicity_id", "priority"),
             "-created_at",
         ],
     }
@@ -135,6 +144,7 @@ class Job(Document):
     unicity_id = StringField(required=True)
     namespace = StringField(required=True)
     force = BooleanField(default=False)
+    priority = EnumField(Priority, default=Priority.NORMAL)
     status = EnumField(Status, default=Status.WAITING)
     created_at = DateTimeField(required=True)
     started_at = DateTimeField()
@@ -149,6 +159,7 @@ class Job(Document):
             "unicity_id": self.unicity_id,
             "namespace": self.namespace,
             "force": self.force,
+            "priority": self.priority.value,
             "status": self.status.value,
             "created_at": self.created_at,
             "started_at": self.started_at,
@@ -167,9 +178,10 @@ class Queue:
     It's a FIFO queue, with the following properties:
     - a job is identified by its input arguments: unicity_id (type, dataset, config and split)
     - a job can be in one of the following states: waiting, started, success, error, cancelled, skipped
-    - a job can be in the queue only once (unicity_id) in the "started" state
-    - a job can be in the queue multiple times in the other states (waiting, success, error, cancelled, skipped)
-    - the queue is ordered by the creation date of the jobs
+    - a job can be in the queue only once (unicity_id) in the "started" or "waiting" state
+    - a job can be in the queue multiple times in the other states (success, error, cancelled, skipped)
+    - a job has a priority (two levels: NORMAL and LOW)
+    - the queue is ordered by priority then by the creation date of the jobs
     - datasets and users that already have started jobs are de-prioritized (using namespace)
     - no more than `max_jobs_per_namespace` started jobs can exist for the same namespace
 
@@ -187,16 +199,24 @@ class Queue:
             None if max_jobs_per_namespace is None or max_jobs_per_namespace < 1 else max_jobs_per_namespace
         )
 
-    def add_job(
-        self, dataset: str, config: Optional[str] = None, split: Optional[str] = None, force: bool = False
+    def _add_job(
+        self,
+        dataset: str,
+        config: Optional[str] = None,
+        split: Optional[str] = None,
+        force: bool = False,
+        priority: Priority = Priority.NORMAL,
     ) -> Job:
         """Add a job to the queue in the waiting state.
+
+        This method should not be called directly. Use `upsert_job` instead.
 
         Args:
             dataset (`str`): The dataset on which to apply the job.
             config (`str`, optional): The config on which to apply the job.
             split (`str`, optional): The config on which to apply the job.
             force (`bool`, optional): If True, the job SHOULD not be skipped. Defaults to False.
+            priority (`Priority`, optional): The priority of the job. Defaults to Priority.NORMAL.
 
         Returns: the job
         """
@@ -208,15 +228,48 @@ class Queue:
             unicity_id=f"Job[{self.type}][{dataset}][{config}][{split}]",
             namespace=dataset.split("/")[0],
             force=force,
+            priority=priority,
             created_at=get_datetime(),
             status=Status.WAITING,
         ).save()
 
-    def get_next_waiting_job(self) -> Job:
-        """Get the next job in the queue.
+    def upsert_job(
+        self,
+        dataset: str,
+        config: Optional[str] = None,
+        split: Optional[str] = None,
+        force: bool = False,
+        priority: Priority = Priority.NORMAL,
+    ) -> Job:
+        """Add, or update, a job to the queue in the waiting state.
 
-        Get the waiting job with the oldest creation date:
-        - first, among the datasets that still have no started job.
+        If jobs already exist with the same parameters in the waiting state, they are cancelled and replaced by a new
+        one.
+        Note that the new job inherits the force=True property if one of the previous waiting jobs had it.
+        In the same way, the new job inherits the highest priority.
+
+        Args:
+            dataset (`str`): The dataset on which to apply the job.
+            config (`str`, optional): The config on which to apply the job.
+            split (`str`, optional): The config on which to apply the job.
+            force (`bool`, optional): If True, the job SHOULD not be skipped. Defaults to False.
+            priority (`Priority`, optional): The priority of the job. Defaults to Priority.NORMAL.
+
+        Returns: the job
+        """
+        existing = Job.objects(type=self.type, dataset=dataset, config=config, split=split, status=Status.WAITING)
+        if existing(force=True).count() > 0:
+            force = True
+        if existing(priority=Priority.NORMAL).count() > 0:
+            priority = Priority.NORMAL
+        existing.update(finished_at=get_datetime(), status=Status.CANCELLED)
+        return self._add_job(dataset=dataset, config=config, split=split, force=force, priority=priority)
+
+    def _get_next_waiting_job_for_priority(self, priority: Priority) -> Job:
+        """Get the next job in the queue for a given priority.
+
+        For a given priority, get the waiting job with the oldest creation date:
+        - among the datasets that still have no started job.
         - if none, among the datasets that have the least started jobs:
           - in the limit of `max_jobs_per_namespace` jobs per namespace
           - ensuring that the unicity_id field is unique among the started jobs.
@@ -234,6 +287,7 @@ class Queue:
                 type=self.type,
                 status=Status.WAITING,
                 namespace__nin=set(started_job_namespaces),
+                priority=priority,
             )
             .order_by("+created_at")
             .only("dataset", "config", "split", "force")
@@ -269,6 +323,7 @@ class Queue:
                     status=Status.WAITING,
                     namespace__in=least_common_namespaces_group,
                     unicity_id__nin=started_unicity_ids,
+                    priority=priority,
                 )
                 .order_by("+created_at")
                 .only("dataset", "config", "split", "force")
@@ -277,6 +332,29 @@ class Queue:
             )
             if next_waiting_job is not None:
                 return next_waiting_job
+        raise EmptyQueueError(
+            f"no job available with the priority (within the limit of {self.max_jobs_per_namespace} started jobs per"
+            " namespace)"
+        )
+
+    def get_next_waiting_job(self) -> Job:
+        """Get the next job in the queue.
+
+        Get the waiting job with the oldest creation date with the following criteria:
+        - among the highest priority jobs,
+        - among the datasets that still have no started job.
+        - if none, among the datasets that have the least started jobs:
+          - in the limit of `max_jobs_per_namespace` jobs per namespace
+          - ensuring that the unicity_id field is unique among the started jobs.
+
+        Raises:
+            EmptyQueueError: if there is no waiting job in the queue that satisfies the restrictions above.
+
+        Returns: the job
+        """
+        for priority in [Priority.NORMAL, Priority.LOW]:
+            with contextlib.suppress(EmptyQueueError):
+                return self._get_next_waiting_job_for_priority(priority)
         raise EmptyQueueError(
             f"no job available (within the limit of {self.max_jobs_per_namespace} started jobs per namespace)"
         )
@@ -302,6 +380,7 @@ class Queue:
             "config": next_waiting_job.config,
             "split": next_waiting_job.split,
             "force": next_waiting_job.force,
+            "priority": next_waiting_job.priority,
         }
 
     def finish_job(self, job_id: str, finished_status: Literal[Status.SUCCESS, Status.ERROR, Status.SKIPPED]) -> None:
@@ -356,7 +435,7 @@ class Queue:
         """Cancel all started jobs."""
         for job in Job.objects(type=self.type, status=Status.STARTED.value):
             job.update(finished_at=get_datetime(), status=Status.CANCELLED)
-            self.add_job(dataset=job.dataset, config=job.config, split=job.split)
+            self.upsert_job(dataset=job.dataset, config=job.config, split=job.split)
 
     # special reports
     def count_jobs(self, status: Status) -> int:

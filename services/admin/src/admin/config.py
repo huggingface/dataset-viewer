@@ -36,6 +36,7 @@ class UvicornConfig:
 
 
 ADMIN_CACHE_REPORTS_NUM_RESULTS = 100
+ADMIN_CACHE_REPORTS_WITH_CONTENT_NUM_RESULTS = 100
 ADMIN_HF_ORGANIZATION = None
 ADMIN_HF_WHOAMI_PATH = "/api/whoami-v2"
 ADMIN_MAX_AGE = 10
@@ -44,6 +45,7 @@ ADMIN_MAX_AGE = 10
 @dataclass
 class AdminConfig:
     cache_reports_num_results: int = ADMIN_CACHE_REPORTS_NUM_RESULTS
+    cache_reports_with_content_num_results: int = ADMIN_CACHE_REPORTS_WITH_CONTENT_NUM_RESULTS
     hf_organization: Optional[str] = ADMIN_HF_ORGANIZATION
     hf_whoami_path: str = ADMIN_HF_WHOAMI_PATH
     max_age: int = ADMIN_MAX_AGE
@@ -55,6 +57,9 @@ class AdminConfig:
             return AdminConfig(
                 cache_reports_num_results=env.int(
                     name="CACHE_REPORTS_NUM_RESULTS", default=ADMIN_CACHE_REPORTS_NUM_RESULTS
+                ),
+                cache_reports_with_content_num_results=env.int(
+                    name="CACHE_REPORTS_WITH_CONTENT_NUM_RESULTS", default=ADMIN_CACHE_REPORTS_WITH_CONTENT_NUM_RESULTS
                 ),
                 hf_organization=env.str(name="HF_ORGANIZATION", default=ADMIN_HF_ORGANIZATION),
                 hf_whoami_path=env.str(name="HF_WHOAMI_PATH", default=ADMIN_HF_WHOAMI_PATH),

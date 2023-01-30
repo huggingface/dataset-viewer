@@ -167,6 +167,8 @@ ingress:
 admin:
   # Number of reports in /cache-reports/... endpoints
   cacheReportsNumResults: 1000
+  # Number of reports in /cache-reports-with-content/... endpoints
+  cacheReportsWithContentNumResults: 100
   # Number of uvicorn workers for running the application
   # (2 x $num_cores) + 1
   # https://docs.gunicorn.org/en/stable/design.html#how-many-workers
@@ -202,15 +204,49 @@ api:
 
 # --- workers ---
 
+configNames:
+  # override the common queue parameters
+  queue:
+    # Maximum number of jobs running at the same time for the same namespace
+    maxJobsPerNamespace: 3
+
+  nodeSelector:
+    role-datasets-server: "true"
+  replicas: 8
+  resources:
+    requests:
+      cpu: 1
+      memory: "1Gi"
+    limits:
+      cpu: 2
+      memory: "30Gi"
+
+splitNames:
+  # override the common queue parameters
+  queue:
+    # Maximum number of jobs running at the same time for the same namespace
+    maxJobsPerNamespace: 5
+
+  nodeSelector:
+    role-datasets-server: "true"
+  replicas: 12
+  resources:
+    requests:
+      cpu: 1
+      memory: "8Gi"
+    limits:
+      cpu: 2
+      memory: "30Gi"
+
 splits:
   # override the common queue parameters
   queue:
     # Maximum number of jobs running at the same time for the same namespace
-    maxJobsPerNamespace: 4
+    maxJobsPerNamespace: 5
 
   nodeSelector:
     role-datasets-server: "true"
-  replicas: 40
+  replicas: 12
   resources:
     requests:
       cpu: 1
@@ -230,7 +266,7 @@ firstRows:
 
   nodeSelector:
     role-datasets-server: "true"
-  replicas: 64
+  replicas: 24
   resources:
     requests:
       cpu: 1
@@ -241,7 +277,7 @@ firstRows:
 
 parquetAndDatasetInfo:
   # comma-separated list of the blocked datasets. Defaults to empty.
-  blockedDatasets: "matallanas/linustechtips-transcript-audio-wav,KnutJaegersberg/Interpretable_word_embeddings_large_cskg,ashraf-ali/quran-data,cjvt/cc_gigafida,cmudrc/porous-microstructure-strain-fields,dlwh/MultiLegalPile_Wikipedia_Shuffled,izumaru/os2-datasets,joelito/MultiLegalPile_Wikipedia_Filtered,leviethoang/VBVLSP,nyanko7/yandere-images,severo/wit,texturedesign/td01_natural-ground-textures,Tristan/olm-october-2022-tokenized-1024-exact-dedup-only,Whispering-GPT/linustechtips-transcript-audio,beyond/chinese_clean_passages_80m,bigscience/xP3,dalle-mini/YFCC100M_OpenAI_subset,galman33/gal_yair_166000_256x256_fixed,matallanas/linustechtips-transcript-audio-mp3,mwitiderrick/arXiv,sjpmpzx/qm_ly_gy_soundn,tilos/ASR-CCANTCSC,matallanas/linustechtips-transcript-audio-ogg,bigcode/the-stack,VIMA/VIMA-Data,severo/wit,wmt/europarl,chrisjay/mnist-adversarial-dataset,mwitiderrick/arXiv,HuggingFaceM4/TextCaps,CristianaLazar/librispeech5k_train,texturedesign/td01_natural-ground-textures,cjvt/cc_gigafida,Yehor/ukrainian-tts-lada,YWjimmy/PeRFception-v1,SDbiaseval/dataset-dalle,Pinguin/images,DTU54DL/librispeech5k-augmentated-train-prepared,CristianaLazar/librispeech500,abdusahmbzuai/masc_dev,anonymousdeepcc/DeepCC,bigcode/the-stack-username-to-repo,bigscience/massive-probing-results,dgrnd4/stanford_dog_dataset,gigant/romanian_speech_synthesis_0_8_1,helena-balabin/sentences,icelab/ntrs_meta,joefox/Mozilla_Common_Voice_ru_test_noise,m-aliabbas/idrak_splitted_amy_1,marinone94/nst_sv,mbarnig/lb-de-fr-en-pt-12800-TTS-CORPUS,momilla/Ethereum_transacitons,nev/anime-giph,openclimatefix/nimrod-uk-1km-validation,raghav66/whisper-gpt,strombergnlp/broad_twitter_corpus,z-uo/female-LJSpeech-italian,Champion/vpc2020_clear_anon_speech,DelgadoPanadero/Pokemon,GEM/references,HuggingFaceM4/FairFace,Karavet/ILUR-news-text-classification-corpus,Voicemod/LibriTTS-100-preproc,YWjimmy/PeRFception-v1-1,albertvillanova/TextCaps,allenai/c4,dog/punks,chenghao/scielo_books,YWjimmy/PeRFception-v1-2,bigcode/the-stack-dedup,openclimatefix/era5,Carlisle/msmarco-passage-non-abs,SetFit/mnli,valurank/PoliticalBias_AllSides_Txt,Biomedical-TeMU/ProfNER_corpus_classification,LeoFeng/MLHW_6,pragnakalp/squad_v2_french_translated,textvqa,polinaeterna/vox_lingua,nishita/ade20k-sample,oyk100/ChaSES-data,YWjimmy/PeRFception-v1-3,YWjimmy/PeRFception-ScanNet,ChaiML/AnthropicRLHFPreferenceData,voidful/librispeech_asr_text,Isma/librispeech_1000_seed_42,Graphcore/vqa-lxmert,Tevatron/wikipedia-curated-corpus,adamlin/daily_dialog,cameronbc/synthtiger,clarin-pl/multiwiki_90k,echarlaix/vqa-lxmert,gigant/african_accented_french,Graphcore/vqa,echarlaix/vqa,jimregan/clarinpl_studio,GEM/xsum,Tevatron/wikipedia-squad-corpus,mulcyber/europarl-mono,nateraw/wit,bigscience/P3,tau/mrqa,uva-irlab/trec-cast-2019-multi-turn,vblagoje/wikipedia_snippets_streamed,Tevatron/wikipedia-wq-corpus,malteos/paperswithcode-aspects,Samip/Scotch,iluvvatar/RuREBus,nateraw/quickdraw,tau/scrolls,qanastek/MASSIVE,TalTechNLP/VoxLingua107,shanya/crd3,HugoLaurencon/libri_light,jerpint/imagenette,Leyo/TGIF,DFKI-SLT/few-nerd,crystina-z/msmarco-passage-dl20,HuggingFaceM4/epic_kitchens_100,HuggingFaceM4/yttemporal180m,andreagasparini/librispeech_train_other_only,allenai/nllb,biglam/nls_chapbook_illustrations,winvoker/lvis,Lacito/pangloss,indonesian-nlp/librivox-indonesia,Graphcore/gqa-lxmert,nanom/splittedspanish3bwc,cahya/librivox-indonesia,asapp/slue,sil-ai/audio-keyword-spotting,tner/wikiann,rogerdehe/xfund,arpelarpe/nota,mwhanna/ACT-Thor,sanchit-gandhi/librispeech_asr_clean,echarlaix/gqa-lxmert,shunk031/cocostuff,gigant/m-ailabs_speech_dataset_fr,jimregan/clarinpl_sejmsenat,1aurent/icdar-2011,marinone94/nst_no,jamescalam/unsplash-25k-images,stas/openwebtext-10k,florianbussmann/train_tickets-yu2020pick,benschill/brain-tumor-collection,imvladikon/paranames,PolyAI/evi,bengaliAI/cvbn,Sreyan88/librispeech_asr,superb,mozilla-foundation/common_voice_10_0,darkproger/librispeech_asr,kresnik/librispeech_asr_test,Lehrig/Monkey-Species-Collection,HuggingFaceM4/TGIF,crystina-z/miracl-bm25-negative,cats_vs_dogs,biglam/gallica_literary_fictions,common_language,competition_math,cornell_movie_dialog,evidence_infer_treatment,hebrew_projectbenyehuda,lj_speech,mc4,muchocine,opus_euconst,tab_fact,the_pile,tapaco,turkic_xwmt,web_nlg,vctk,mathaillah/BeritaHoaks-NonHoaks,universal_morphologies,LanceaKing/asvspoof2019,andreagasparini/librispeech_train_clean_only,nuprl/MultiPL-E,SLPL/naab-raw,mteb/results,SocialGrep/the-reddit-climate-change-dataset,bigscience-biomedical/anat_em,crystina-z/xor-tydi-corpus,qanastek/QUAERO,TomTBT/pmc_open_access_section,jamescalam/movielens-25m-ratings,HuggingFaceM4/charades,Tevatron/xor-tydi-corpus,khalidalt/tydiqa-primary,nvm472001/cvdataset-layoutlmv3,Lehrig/GTZAN-Collection,mteb/tatoeba-bitext-mining,sled-umich/Action-Effect,HamdiJr/Egyptian_hieroglyphs,joelito/lextreme,cooleel/xfund_de,oscar,mozilla-foundation/common_voice_7_0,KETI-AIR/vqa,Livingwithmachines/MapReader_Data_SIGSPATIAL_2022,NLPC-UOM/document_alignment_dataset-Sinhala-Tamil-English,miracl/miracl,Muennighoff/flores200,Murple/mmcrsc,mesolitica/dbp,CodedotAI/code_clippy,keshan/clean-si-mc4,yhavinga/ccmatrix,metashift,google/fleurs,HugoLaurencon/libri_light_bytes,biwi_kinect_head_pose,ami,bigscience-biomedical/ebm_pico,HuggingFaceM4/general-pmd-synthetic-testing,crystina-z/mmarco,robertmyers/pile_v2,bigbio/anat_em,biglam/early_printed_books_font_detection,nateraw/imagenet-sketch,jpwahle/dblp-discovery-dataset,andreagasparini/librispeech_test_only,crystina-z/mmarco-corpus,mozilla-foundation/common_voice_6_0,biglam/brill_iconclass,bigscience-biomedical/evidence_inference,HuggingFaceM4/cm4-synthetic-testing,SocialGrep/ten-million-reddit-answers"
+  blockedDatasets: "matallanas/linustechtips-transcript-audio-wav,KnutJaegersberg/Interpretable_word_embeddings_large_cskg,ashraf-ali/quran-data,cjvt/cc_gigafida,cmudrc/porous-microstructure-strain-fields,dlwh/MultiLegalPile_Wikipedia_Shuffled,izumaru/os2-datasets,joelito/MultiLegalPile_Wikipedia_Filtered,leviethoang/VBVLSP,nyanko7/yandere-images,severo/wit,texturedesign/td01_natural-ground-textures,Tristan/olm-october-2022-tokenized-1024-exact-dedup-only,Whispering-GPT/linustechtips-transcript-audio,beyond/chinese_clean_passages_80m,bigscience/xP3,dalle-mini/YFCC100M_OpenAI_subset,galman33/gal_yair_166000_256x256_fixed,matallanas/linustechtips-transcript-audio-mp3,mwitiderrick/arXiv,sjpmpzx/qm_ly_gy_soundn,tilos/ASR-CCANTCSC,matallanas/linustechtips-transcript-audio-ogg,bigcode/the-stack,VIMA/VIMA-Data,severo/wit,wmt/europarl,chrisjay/mnist-adversarial-dataset,mwitiderrick/arXiv,HuggingFaceM4/TextCaps,CristianaLazar/librispeech5k_train,texturedesign/td01_natural-ground-textures,cjvt/cc_gigafida,Yehor/ukrainian-tts-lada,YWjimmy/PeRFception-v1,SDbiaseval/dataset-dalle,Pinguin/images,DTU54DL/librispeech5k-augmentated-train-prepared,CristianaLazar/librispeech500,abdusahmbzuai/masc_dev,anonymousdeepcc/DeepCC,bigcode/the-stack-username-to-repo,bigscience/massive-probing-results,dgrnd4/stanford_dog_dataset,gigant/romanian_speech_synthesis_0_8_1,helena-balabin/sentences,icelab/ntrs_meta,joefox/Mozilla_Common_Voice_ru_test_noise,m-aliabbas/idrak_splitted_amy_1,marinone94/nst_sv,mbarnig/lb-de-fr-en-pt-12800-TTS-CORPUS,momilla/Ethereum_transacitons,nev/anime-giph,openclimatefix/nimrod-uk-1km-validation,raghav66/whisper-gpt,strombergnlp/broad_twitter_corpus,z-uo/female-LJSpeech-italian,Champion/vpc2020_clear_anon_speech,DelgadoPanadero/Pokemon,GEM/references,HuggingFaceM4/FairFace,Karavet/ILUR-news-text-classification-corpus,Voicemod/LibriTTS-100-preproc,YWjimmy/PeRFception-v1-1,albertvillanova/TextCaps,allenai/c4,dog/punks,chenghao/scielo_books,YWjimmy/PeRFception-v1-2,bigcode/the-stack-dedup,openclimatefix/era5,Carlisle/msmarco-passage-non-abs,SetFit/mnli,valurank/PoliticalBias_AllSides_Txt,Biomedical-TeMU/ProfNER_corpus_classification,LeoFeng/MLHW_6,pragnakalp/squad_v2_french_translated,textvqa,polinaeterna/vox_lingua,nishita/ade20k-sample,oyk100/ChaSES-data,YWjimmy/PeRFception-v1-3,YWjimmy/PeRFception-ScanNet,ChaiML/AnthropicRLHFPreferenceData,voidful/librispeech_asr_text,Isma/librispeech_1000_seed_42,Graphcore/vqa-lxmert,Tevatron/wikipedia-curated-corpus,adamlin/daily_dialog,cameronbc/synthtiger,clarin-pl/multiwiki_90k,echarlaix/vqa-lxmert,gigant/african_accented_french,Graphcore/vqa,echarlaix/vqa,jimregan/clarinpl_studio,GEM/xsum,Tevatron/wikipedia-squad-corpus,mulcyber/europarl-mono,nateraw/wit,bigscience/P3,tau/mrqa,uva-irlab/trec-cast-2019-multi-turn,vblagoje/wikipedia_snippets_streamed,Tevatron/wikipedia-wq-corpus,malteos/paperswithcode-aspects,Samip/Scotch,iluvvatar/RuREBus,nateraw/quickdraw,tau/scrolls,qanastek/MASSIVE,TalTechNLP/VoxLingua107,shanya/crd3,HugoLaurencon/libri_light,jerpint/imagenette,Leyo/TGIF,DFKI-SLT/few-nerd,crystina-z/msmarco-passage-dl20,HuggingFaceM4/epic_kitchens_100,HuggingFaceM4/yttemporal180m,andreagasparini/librispeech_train_other_only,allenai/nllb,biglam/nls_chapbook_illustrations,winvoker/lvis,Lacito/pangloss,indonesian-nlp/librivox-indonesia,Graphcore/gqa-lxmert,nanom/splittedspanish3bwc,cahya/librivox-indonesia,asapp/slue,sil-ai/audio-keyword-spotting,tner/wikiann,rogerdehe/xfund,arpelarpe/nota,mwhanna/ACT-Thor,sanchit-gandhi/librispeech_asr_clean,echarlaix/gqa-lxmert,shunk031/cocostuff,gigant/m-ailabs_speech_dataset_fr,jimregan/clarinpl_sejmsenat,1aurent/icdar-2011,marinone94/nst_no,jamescalam/unsplash-25k-images,stas/openwebtext-10k,florianbussmann/train_tickets-yu2020pick,benschill/brain-tumor-collection,imvladikon/paranames,PolyAI/evi,bengaliAI/cvbn,Sreyan88/librispeech_asr,superb,mozilla-foundation/common_voice_10_0,darkproger/librispeech_asr,kresnik/librispeech_asr_test,Lehrig/Monkey-Species-Collection,HuggingFaceM4/TGIF,crystina-z/miracl-bm25-negative,cats_vs_dogs,biglam/gallica_literary_fictions,common_language,competition_math,cornell_movie_dialog,evidence_infer_treatment,hebrew_projectbenyehuda,lj_speech,mc4,muchocine,opus_euconst,tab_fact,the_pile,tapaco,turkic_xwmt,web_nlg,vctk,mathaillah/BeritaHoaks-NonHoaks,universal_morphologies,LanceaKing/asvspoof2019,andreagasparini/librispeech_train_clean_only,nuprl/MultiPL-E,SLPL/naab-raw,mteb/results,SocialGrep/the-reddit-climate-change-dataset,bigscience-biomedical/anat_em,crystina-z/xor-tydi-corpus,qanastek/QUAERO,TomTBT/pmc_open_access_section,jamescalam/movielens-25m-ratings,HuggingFaceM4/charades,Tevatron/xor-tydi-corpus,khalidalt/tydiqa-primary,nvm472001/cvdataset-layoutlmv3,Lehrig/GTZAN-Collection,mteb/tatoeba-bitext-mining,sled-umich/Action-Effect,HamdiJr/Egyptian_hieroglyphs,joelito/lextreme,cooleel/xfund_de,oscar,mozilla-foundation/common_voice_7_0,KETI-AIR/vqa,Livingwithmachines/MapReader_Data_SIGSPATIAL_2022,NLPC-UOM/document_alignment_dataset-Sinhala-Tamil-English,miracl/miracl,Muennighoff/flores200,Murple/mmcrsc,mesolitica/dbp,CodedotAI/code_clippy,keshan/clean-si-mc4,yhavinga/ccmatrix,metashift,google/fleurs,HugoLaurencon/libri_light_bytes,biwi_kinect_head_pose,ami,bigscience-biomedical/ebm_pico,HuggingFaceM4/general-pmd-synthetic-testing,crystina-z/mmarco,robertmyers/pile_v2,bigbio/anat_em,biglam/early_printed_books_font_detection,nateraw/imagenet-sketch,jpwahle/dblp-discovery-dataset,andreagasparini/librispeech_test_only,crystina-z/mmarco-corpus,mozilla-foundation/common_voice_6_0,biglam/brill_iconclass,bigscience-biomedical/evidence_inference,HuggingFaceM4/cm4-synthetic-testing,SocialGrep/ten-million-reddit-answers,bnl_newspapers,multilingual_librispeech,openslr,GEM/BiSECT,Graphcore/gqa,SaulLu/Natural_Questions_HTML_reduced_all,ccdv/cnn_dailymail,mozilla-foundation/common_voice_1_0,huggan/anime-faces,Biomedical-TeMU/ProfNER_corpus_NER,MorVentura/TRBLLmaker,student/celebA,Rodion/uno_sustainable_development_goals,Nart/parallel-ab-ru,HuggingFaceM4/VQAv2,mesolitica/noisy-ms-en-augmentation,nateraw/rice-image-dataset,tensorcat/wikipedia-japanese,angelolab/ark_example,RAYZ/Mixed-Dia,ywchoi/mdpi_sept10,TomTBT/pmc_open_access_figure,society-ethics/lila_camera_traps,autoevaluator/shoes-vs-sandals-vs-boots,cjvt/slo_collocations,parambharat/mile_dataset,rossevine/tesis,ksaml/Stanford_dogs,nuprl/MultiPL-E-raw-data,ZihaoLin/zhlds,ACL-OCL/acl-anthology-corpus,mozilla-foundation/common_voice_2_0,Biomedical-TeMU/SPACCC_Sentence-Splitter,nateraw/rice-image-dataset-2,mesolitica/noisy-en-ms-augmentation,bigbio/ctebmsp,bigbio/distemist,nlphuji/vasr,parambharat/malayalam_asr_corpus,cjvt/sloleks,DavidVivancos/MindBigData2022_Imagenet_IN_Spct,KokeCacao/oracle,keremberke/nfl-object-detection,lafi23333/ds,Lykon/OnePiece,kaliansh/sdaia,sil-ai/audio-kw-in-context,andite/riyo-tag,ilhanemirhan/eee543,backslashlim/LoRA-Datasets,hr16/Miwano-Rag,ccdv/mediasum,mozilla-foundation/common_voice_3_0,mozilla-foundation/common_voice_4_0,bigbio/ebm_pico,parambharat/kannada_asr_corpus,parambharat/telugu_asr_corpus,Abuelnour/json_1000_Scientific_Paper,reazon-research/reazonspeech,shunk031/livedoor-news-corpus,mesolitica/translated-SQUAD,SamAct/medium_cleaned,EfaceD/ElysiumInspirations,cahya/fleurs,guangguang/azukijpg,genjib/LAVISHData,rohitp1/librispeech_asr_clean,azraahmadi/autotrain-data-xraydatasetp2,HuggingFaceM4/COCO,bio-datasets/e3c,nateraw/auto-cats-and-dogs,keremberke/smoke-object-detection,ds4sd/DocLayNet,nlphuji/utk_faces,corentinm7/MyoQuant-SDH-Data,xglue,grasshoff/lhc_sents,HugoLaurencon/IIIT-5K,alkzar90/CC6204-Hackaton-Cub-Dataset,RaphaelOlivier/whisper_adversarial_examples,bruno-cotrim/arch-max,keshan/multispeaker-tts-sinhala,Tevatron/beir-corpus,fcakyon/gun-object-detection,ccdv/arxiv-summarization,keremberke/protective-equipment-detection,mozilla-foundation/common_voice_5_0,nlphuji/winogavil,Poupou/Gitcoin-Grant-DataBuilder,orieg/elsevier-oa-cc-by,castorini/msmarco_v1_passage_doc2query-t5_expansions,inseq/divemt_attributions,crystina-z/msmarco-passage-dl19,mozilla-foundation/common_voice_5_1,matchbench/dbp15k-fr-en,keremberke/garbage-object-detection,crystina-z/no-nonself-mrtydi,ashraq/dhivehi-corpus,zyznull/dureader-retrieval-ranking,zyznull/msmarco-passage-corpus,zyznull/msmarco-passage-ranking,Tevatron/wikipedia-squad,Tevatron/wikipedia-trivia-corpus,NeuroSenko/senko_anime_full,plncmm/wl-disease,plncmm/wl-family-member"
   # comma-separated list of the supported datasets. If empty, all the datasets are processed. Defaults to empty.
   supportedDatasets: ""
   # the maximum size of the supported datasets. Bigger datasets, or datasets that cannot provide the size, are ignored.
@@ -252,7 +288,7 @@ parquetAndDatasetInfo:
     maxJobsPerNamespace: 4
   nodeSelector:
     role-datasets-server: "true"
-  replicas: 40
+  replicas: 24
   resources:
     requests:
       cpu: 1

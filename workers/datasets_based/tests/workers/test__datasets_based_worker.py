@@ -7,6 +7,7 @@ from typing import Any, Mapping, Optional
 
 import datasets.config
 import pytest
+from libcommon.queue import Priority
 
 from datasets_based.config import AppConfig
 from datasets_based.workers._datasets_based_worker import DatasetsBasedWorker
@@ -47,6 +48,7 @@ def get_worker(
             "split": split,
             "job_id": "job_id",
             "force": force,
+            "priority": Priority.NORMAL,
         },
         app_config=app_config,
     )

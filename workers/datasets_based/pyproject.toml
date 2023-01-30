@@ -12,19 +12,21 @@ aiohttp = "^3.7.4.post0"
 apache-beam = "2.41.0" # ^2 gives a InvalidWheelName error because it tries to install 2.42 that has not been released...
 bs4 = "^0.0.1"
 conllu = "^4.4.1"
-datasets = { extras = ["audio", "vision"], version = "~2.8.0" }
+datasets = { extras = ["audio", "vision"], version = "~2.9.0" }
 gdown = "^4.2.0"
-huggingface-hub = "^0.11.0"
+huggingface-hub = "^0.12.0"
 kenlm = { url = "https://github.com/kpu/kenlm/archive/master.zip" }
 kss = "^2.6.0"
-libcommon = { path = "../../libs/libcommon/dist/libcommon-0.6.6-py3-none-any.whl", develop = false }
+libcommon = {path = "../../libs/libcommon", develop = true}
 lm-dataformat = "^0.0.20"
 lxml = "^4.9.1"
 nlp = "^0.4.0"
 nltk = "^3.6.5"
 openpyxl = "^3.0.9"
+pdf2image = "^1.16.2"
 py7zr = "^0.20.1"
 pydub = "^0.25.1"
+pypdf2 = "^3.0.1"
 python = "3.9.15"
 rarfile = "^4.0"
 scikit-learn = "^1.0"

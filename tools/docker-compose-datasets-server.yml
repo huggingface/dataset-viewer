@@ -1,7 +1,8 @@
 version: "3.9"
 services:
   reverse-proxy:
-    image: ${IMAGE_REVERSE_PROXY?IMAGE_REVERSE_PROXY env var must be provided}
+    image: docker.io/nginx:1.20
+    # image: ${IMAGE_REVERSE_PROXY?IMAGE_REVERSE_PROXY env var must be provided}
     volumes:
       - ../chart/nginx-templates/:/etc/nginx/templates:ro
       - assets:${ASSETS_STORAGE_DIRECTORY-/assets}:ro
@@ -18,10 +19,10 @@ services:
       - api
       - admin
   admin:
-    # build:
-    #   context: ..
-    #   dockerfile: services/admin/Dockerfile
-    image: ${IMAGE_SERVICE_ADMIN?IMAGE_SERVICE_ADMIN env var must be provided}
+    build:
+      context: ..
+      dockerfile: services/admin/Dockerfile
+    # image: ${IMAGE_SERVICE_ADMIN?IMAGE_SERVICE_ADMIN env var must be provided}
     extends:
       file: docker-compose-base.yml
       service: common
@@ -29,6 +30,7 @@ services:
       # service
       ADMIN_HF_ORGANIZATION: ${ADMIN_HF_ORGANIZATION-}
       ADMIN_CACHE_REPORTS_NUM_RESULTS: ${ADMIN_CACHE_REPORTS_NUM_RESULTS-100}
+      ADMIN_CACHE_REPORTS_WITH_CONTENT_NUM_RESULTS: ${ADMIN_CACHE_REPORTS_WITH_CONTENT_NUM_RESULTS-100}
       ADMIN_HF_WHOAMI_PATH: ${ADMIN_HF_WHOAMI_PATH-/api/whoami-v2}
       ADMIN_MAX_AGE: ${ADMIN_MAX_AGE-10}
       # prometheus
@@ -44,10 +46,10 @@ services:
       # for debug
       - ${ADMIN_UVICORN_PORT-8081}:${ADMIN_UVICORN_PORT-8081}
   api:
-    # build:
-    #   context: ..
-    #   dockerfile: services/api/Dockerfile
-    image: ${IMAGE_SERVICE_API?IMAGE_SERVICE_API env var must be provided}
+    build:
+      context: ..
+      dockerfile: services/api/Dockerfile
+    # image: ${IMAGE_SERVICE_API?IMAGE_SERVICE_API env var must be provided}
     extends:
       file: docker-compose-base.yml
       service: common
@@ -68,11 +70,45 @@ services:
     depends_on:
       - mongodb
     restart: unless-stopped
+  worker-config-names:
+    build:
+      context: ..
+      dockerfile: workers/datasets_based/Dockerfile
+    # image: ${IMAGE_WORKER_DATASETS_BASED?IMAGE_WORKER_DATASETS_BASED env var must be provided}
+    volumes:
+      - splits-datasets-cache:${HF_DATASETS_CACHE-/datasets-cache}:rw
+      - splits-modules-cache:${HF_DATASETS_CACHE-/modules-cache}:rw
+      - splits-numba-cache:${NUMBA_CACHE_DIR-/numba-cache}:rw
+    extends:
+      file: docker-compose-base.yml
+      service: datasets-worker
+    environment:
+      DATASETS_BASED_ENDPOINT: "/config-names" # hard-coded
+    depends_on:
+      - mongodb
+    restart: always
+  worker-split-names:
+    build:
+      context: ..
+      dockerfile: workers/datasets_based/Dockerfile
+    # image: ${IMAGE_WORKER_DATASETS_BASED?IMAGE_WORKER_DATASETS_BASED env var must be provided}
+    volumes:
+      - splits-datasets-cache:${HF_DATASETS_CACHE-/datasets-cache}:rw
+      - splits-modules-cache:${HF_DATASETS_CACHE-/modules-cache}:rw
+      - splits-numba-cache:${NUMBA_CACHE_DIR-/numba-cache}:rw
+    extends:
+      file: docker-compose-base.yml
+      service: datasets-worker
+    environment:
+      DATASETS_BASED_ENDPOINT: "/split-names" # hard-coded
+    depends_on:
+      - mongodb
+    restart: always
   worker-splits:
-    # build:
-    #   context: ..
-    #   dockerfile: workers/datasets_based/Dockerfile
-    image: ${IMAGE_WORKER_DATASETS_BASED?IMAGE_WORKER_DATASETS_BASED env var must be provided}
+    build:
+      context: ..
+      dockerfile: workers/datasets_based/Dockerfile
+    # image: ${IMAGE_WORKER_DATASETS_BASED?IMAGE_WORKER_DATASETS_BASED env var must be provided}
     volumes:
       - splits-datasets-cache:${HF_DATASETS_CACHE-/datasets-cache}:rw
       - splits-modules-cache:${HF_DATASETS_CACHE-/modules-cache}:rw
@@ -86,10 +122,10 @@ services:
       - mongodb
     restart: always
   worker-first-rows:
-    # build:
-    #   context: ..
-    #   dockerfile: workers/datasets_based/Dockerfile
-    image: ${IMAGE_WORKER_DATASETS_BASED?IMAGE_WORKER_DATASETS_BASED env var must be provided}
+    build:
+      context: ..
+      dockerfile: workers/datasets_based/Dockerfile
+    # image: ${IMAGE_WORKER_DATASETS_BASED?IMAGE_WORKER_DATASETS_BASED env var must be provided}
     volumes:
       - assets:${ASSETS_STORAGE_DIRECTORY-/assets}:rw
       - first-rows-datasets-cache:${HF_DATASETS_CACHE-/datasets-cache}:rw
@@ -113,10 +149,10 @@ services:
       - mongodb
     restart: always
   worker-parquet-and-dataset-info:
-    # build:
-    #   context: ..
-    #   dockerfile: workers/dataset_based/Dockerfile
-    image: ${IMAGE_WORKER_DATASETS_BASED?IMAGE_WORKER_DATASETS_BASED env var must be provided}
+    build:
+      context: ..
+      dockerfile: workers/datasets_based/Dockerfile
+    # image: ${IMAGE_WORKER_DATASETS_BASED?IMAGE_WORKER_DATASETS_BASED env var must be provided}
     volumes:
       - parquet-datasets-cache:${HF_DATASETS_CACHE-/datasets-cache}:rw
       - parquet-modules-cache:${HF_DATASETS_CACHE-/modules-cache}:rw
@@ -138,10 +174,10 @@ services:
       - mongodb
     restart: always
   worker-parquet:
-    # build:
-    #   context: ..
-    #   dockerfile: workers/dataset_based/Dockerfile
-    image: ${IMAGE_WORKER_DATASETS_BASED?IMAGE_WORKER_DATASETS_BASED env var must be provided}
+    build:
+      context: ..
+      dockerfile: workers/datasets_based/Dockerfile
+    # image: ${IMAGE_WORKER_DATASETS_BASED?IMAGE_WORKER_DATASETS_BASED env var must be provided}
     extends:
       file: docker-compose-base.yml
       service: datasets-worker
@@ -151,10 +187,10 @@ services:
       - mongodb
     restart: always
   worker-dataset-info:
-    # build:
-    #   context: ..
-    #   dockerfile: workers/dataset_based/Dockerfile
-    image: ${IMAGE_WORKER_DATASETS_BASED?IMAGE_WORKER_DATASETS_BASED env var must be provided}
+    build:
+      context: ..
+      dockerfile: workers/datasets_based/Dockerfile
+    # image: ${IMAGE_WORKER_DATASETS_BASED?IMAGE_WORKER_DATASETS_BASED env var must be provided}
     extends:
       file: docker-compose-base.yml
       service: datasets-worker
@@ -164,10 +200,10 @@ services:
       - mongodb
     restart: always
   worker-sizes:
-    # build:
-    #   context: ..
-    #   dockerfile: workers/dataset_based/Dockerfile
-    image: ${IMAGE_WORKER_DATASETS_BASED?IMAGE_WORKER_DATASETS_BASED env var must be provided}
+    build:
+      context: ..
+      dockerfile: workers/datasets_based/Dockerfile
+    # image: ${IMAGE_WORKER_DATASETS_BASED?IMAGE_WORKER_DATASETS_BASED env var must be provided}
     extends:
       file: docker-compose-base.yml
       service: datasets-worker
@@ -177,7 +213,7 @@ services:
       - mongodb
     restart: always
   mongodb:
-    image: mongo
+    image: docker.io/mongo
     volumes:
       - mongo:/data/db:rw
     ports:

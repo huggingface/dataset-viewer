@@ -3,7 +3,7 @@ from typing import Any, Mapping, Optional
 import pytest
 from libcommon.config import CommonConfig
 from libcommon.processing_graph import ProcessingGraph, ProcessingStep
-from libcommon.queue import Queue, Status, _clean_queue_database
+from libcommon.queue import Priority, Queue, Status, _clean_queue_database
 from libcommon.simple_cache import SplitFullName, _clean_cache_database
 
 from datasets_based.worker import Worker
@@ -63,6 +63,7 @@ def test_compare_major_version(
             "config": config,
             "split": split,
             "force": force,
+            "priority": Priority.NORMAL,
         },
         processing_step=test_processing_step,
         common_config=CommonConfig(),
@@ -90,6 +91,7 @@ def test_should_skip_job(
             "config": config,
             "split": split,
             "force": force,
+            "priority": Priority.NORMAL,
         },
         processing_step=test_processing_step,
         common_config=CommonConfig(),
@@ -119,6 +121,7 @@ def test_check_type(
                 "config": config,
                 "split": split,
                 "force": force,
+                "priority": Priority.NORMAL,
             },
             processing_step=test_processing_step,
             common_config=CommonConfig(),
@@ -142,6 +145,7 @@ def test_check_type(
                 "config": config,
                 "split": split,
                 "force": force,
+                "priority": Priority.NORMAL,
             },
             processing_step=another_processing_step,
             common_config=CommonConfig(),
@@ -153,6 +157,7 @@ def test_create_children_jobs() -> None:
         {
             "/dummy": {"input_type": "dataset"},
             "/child-dataset": {"input_type": "dataset", "requires": "/dummy"},
+            "/child-config": {"input_type": "config", "requires": "/dummy"},
             "/child-split": {"input_type": "split", "requires": "/dummy"},
         }
     )
@@ -165,13 +170,14 @@ def test_create_children_jobs() -> None:
             "config": None,
             "split": None,
             "force": False,
+            "priority": Priority.LOW,
         },
         processing_step=root_step,
         common_config=CommonConfig(),
     )
     assert worker.should_skip_job() is False
     # we add an entry to the cache
-    worker.process()
+    worker.run()
     assert worker.should_skip_job() is True
     # check that the children jobs have been created
     child_dataset_jobs = Queue(type="/child-dataset").get_dump_with_status(status=Status.WAITING)
@@ -179,8 +185,18 @@ def test_create_children_jobs() -> None:
     assert child_dataset_jobs[0]["dataset"] == "dataset"
     assert child_dataset_jobs[0]["config"] is None
     assert child_dataset_jobs[0]["split"] is None
+    assert child_dataset_jobs[0]["priority"] is Priority.LOW.value
+    child_config_jobs = Queue(type="/child-config").get_dump_with_status(status=Status.WAITING)
+    assert len(child_config_jobs) == 1
+    assert child_config_jobs[0]["dataset"] == "dataset"
+    assert child_config_jobs[0]["config"] == "config"
+    assert child_config_jobs[0]["split"] is None
+    assert child_config_jobs[0]["priority"] is Priority.LOW.value
     child_split_jobs = Queue(type="/child-split").get_dump_with_status(status=Status.WAITING)
     assert len(child_split_jobs) == 2
-    assert all(job["dataset"] == "dataset" and job["config"] == "config" for job in child_split_jobs)
+    assert all(
+        job["dataset"] == "dataset" and job["config"] == "config" and job["priority"] == Priority.LOW.value
+        for job in child_split_jobs
+    )
     # we don't know the order
     assert {child_split_jobs[0]["split"], child_split_jobs[1]["split"]} == {"split1", "split2"}

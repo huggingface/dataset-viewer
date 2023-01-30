@@ -15,7 +15,7 @@ env:
   # required to get access to use a cached poetry venv in "/home/runner/.cache/pypoetry/virtualenvs"
   POETRY_VIRTUALENVS_IN_PROJECT: false
   python-version: "3.9.15"
-  poetry-version: "1.2.2"
+  poetry-version: "1.3.2"
 jobs:
   code-quality:
     defaults:
@@ -36,7 +36,7 @@ jobs:
             ${{ inputs.working-directory }}/poetry.lock
       - name: Install packages for workers that use datasets
         if: ${{ inputs.is-datasets-worker }}
-        run: sudo apt update; sudo apt install -y libicu-dev ffmpeg libavcodec-extra libsndfile1 llvm pkg-config
+        run: sudo apt update; sudo apt install -y libicu-dev ffmpeg libavcodec-extra libsndfile1 llvm pkg-config poppler-utils
       - name: Install dependencies
         # "poetry env use" is required: https://github.com/actions/setup-python/issues/374#issuecomment-1088938718
         run: |

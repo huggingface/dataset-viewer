@@ -9,6 +9,7 @@ import pandas as pd
 import pytest
 import requests
 from libcommon.exceptions import CustomError
+from libcommon.queue import Priority
 from libcommon.simple_cache import DoesNotExist, get_response
 
 from datasets_based.config import AppConfig, ParquetAndDatasetInfoConfig
@@ -65,6 +66,7 @@ def get_worker(
             "split": None,
             "job_id": "job_id",
             "force": force,
+            "priority": Priority.NORMAL,
         },
         app_config=app_config,
         parquet_and_dataset_info_config=parquet_and_dataset_info_config,

@@ -10,7 +10,7 @@ ENV PYTHONFAULTHANDLER=1 \
     PIP_DEFAULT_TIMEOUT=100 \
     POETRY_NO_INTERACTION=1 \
     # Versions:
-    POETRY_VERSION=1.2.2 \
+    POETRY_VERSION=1.3.2 \
     POETRY_VIRTUALENVS_IN_PROJECT=true
 
 # System deps:
@@ -23,7 +23,7 @@ RUN pip install --no-cache-dir "poetry==$POETRY_VERSION"
 WORKDIR /src
 COPY jobs/mongodb_migration/poetry.lock ./jobs/mongodb_migration/poetry.lock
 COPY jobs/mongodb_migration/pyproject.toml ./jobs/mongodb_migration/pyproject.toml
-COPY libs/libcommon/dist ./libs/libcommon/dist
+COPY libs/libcommon ./libs/libcommon
 WORKDIR /src/jobs/mongodb_migration/
 RUN poetry install --no-cache
 COPY jobs/mongodb_migration/src ./src
