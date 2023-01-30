@@ -8,6 +8,10 @@ on:
     paths:
       - 'chart/**'
       - '.github/workflows/chart.yml'
+  pull_request:
+    paths:
+      - 'chart/**'
+      - '.github/workflows/chart.yml'
 jobs:
   code-quality-helm:
     runs-on: ubuntu-20.04
