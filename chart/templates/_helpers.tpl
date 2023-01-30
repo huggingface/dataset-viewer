@@ -5,8 +5,7 @@
 Expand the name of the chart.
 */}}
 {{- define "name" -}}
-{{- ((list "datasets-server-prod") | join "-") | trunc 63 | trimSuffix "-" -}}
-{{/*{{- ((list $.Release.Name .Chart.Name) | join "-") | trunc 63 | trimSuffix "-" -}}*/}}
+{{- ((list $.Release.Name .Chart.Name) | join "-") | trunc 63 | trimSuffix "-" -}}
 {{- end }}
 
 {{/*
