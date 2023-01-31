@@ -3,13 +3,13 @@
 
 import contextlib
 import logging
+
 from libcommon.simple_cache import CachedResponse
 from mongoengine.connection import get_db
 from pymongo.errors import InvalidName
 
 from mongodb_migration.check import check_documents
 from mongodb_migration.migration import Migration
-
 
 db_name = "cache"
 splitsResponseCollection = "splitsResponse"
