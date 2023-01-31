@@ -129,11 +129,12 @@ class Job(Document):
         "collection": "jobsBlue",
         "db_alias": "queue",
         "indexes": [
+            "dataset",
             "status",
             ("type", "status"),
             ("type", "dataset", "status"),
             ("type", "dataset", "config", "split", "status", "force", "priority"),
-            ("status", "type", "created_at", "namespace", "unicity_id", "priority"),
+            ("priority", "status", "type", "created_at", "namespace", "unicity_id"),
             "-created_at",
         ],
     }
