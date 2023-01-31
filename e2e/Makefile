@@ -16,11 +16,9 @@ export COMMON_LOG_LEVEL := DEBUG
 
 # makefile variables
 DOCKER_COMPOSE := ../tools/docker-compose-datasets-server.yml
-# DOCKER_IMAGES := ../chart/docker-images.yaml
 
 include ../tools/Python.mk
 include ../tools/PythonTest.mk
-# include ../tools/DockerRemoteImages.mk
 include ../tools/Docker.mk
 
 .PHONY: e2e

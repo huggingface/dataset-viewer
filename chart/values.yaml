@@ -84,18 +84,6 @@ mongodb:
   serviceAccount:
     create: false
 
-# TODO : Update Makefile script to update this values
-# overridden by docker-images.yaml (which must be in JSON format!). See Makefile for details.
-dockerImage:
-  reverseProxy: ""
-  jobs:
-    mongodb_migration: ""
-  services:
-    admin: ""
-    api: ""
-  workers:
-    datasets_based: ""
-
 cache:
   # Name of the mongo db database used to cache the API responses
   mongoDatabase: "datasets_server_cache"
