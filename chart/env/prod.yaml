@@ -49,11 +49,11 @@ images:
     repository: nginx
     tag: "1.20"
   jobs:
-    mongodbMigration:
-      registry: huggingface
-      useGlobalRegistry: false
-      repository: datasets-server-jobs-mongodb_migration
-      tag: sha-2f38593
+    # mongodbMigration:
+    #   registry: huggingface
+    #   useGlobalRegistry: false
+    #   repository: datasets-server-jobs-mongodb_migration
+    #   tag: sha-2f38593
   services:
     admin:
       registry: huggingface
