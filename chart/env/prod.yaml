@@ -222,7 +222,7 @@ configNames:
 
   nodeSelector:
     role-datasets-server: "true"
-  replicas: 6
+  replicas: 8
   resources:
     requests:
       cpu: 1
@@ -239,7 +239,7 @@ splitNames:
 
   nodeSelector:
     role-datasets-server: "true"
-  replicas: 8
+  replicas: 12
   resources:
     requests:
       cpu: 1
