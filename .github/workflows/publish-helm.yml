@@ -33,8 +33,12 @@ jobs:
         run: |
           helm repo add charts ${{ secrets.REGISTRY_URL }}/chartrepo/charts
 
+      - name: Lint
+        working-directory: chart
+        run: helm lint
+
       - name: Publish
+        working-directory: chart
         run: |
-          cd chart
           helm dependencies update
           helm cm-push . charts
