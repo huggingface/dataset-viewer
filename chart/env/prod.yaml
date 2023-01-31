@@ -276,7 +276,7 @@ firstRows:
 
   nodeSelector:
     role-datasets-server: "true"
-  replicas: 60
+  replicas: 90
   resources:
     requests:
       cpu: 1
