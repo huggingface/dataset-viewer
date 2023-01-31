@@ -15,6 +15,7 @@ HF_ENDPOINT = os.environ.get("HF_ENDPOINT", "https://huggingface.co")
 PROD_DSS_ENDPOINT = os.environ.get("PROD_DSS_ENDPOINT", "https://datasets-server.huggingface.co")
 DEV_DSS_ENDPOINT = os.environ.get("DEV_DSS_ENDPOINT", "http://localhost:8100")
 ADMIN_HF_ORGANIZATION = os.environ.get("ADMIN_HF_ORGANIZATION", "huggingface")
+HF_TOKEN = os.environ.get("HF_TOKEN")
 
 DSS_ENDPOINT = DEV_DSS_ENDPOINT if DEV else PROD_DSS_ENDPOINT
 
@@ -29,20 +30,19 @@ def healthcheck():
         return f"❌ Failed to connect to {DSS_ENDPOINT} (error {response.status_code})"
 
 
-
 with gr.Blocks() as demo:
     gr.Markdown(" ## Datasets-server admin page")
     gr.Markdown(healthcheck)
 
-    with gr.Row() as auth_page:
+    with gr.Row(visible=HF_TOKEN is None) as auth_page:
         with gr.Column():
             auth_title = gr.Markdown("Enter your token ([settings](https://huggingface.co/settings/tokens)):")
             token_box = gr.Textbox(label="token", placeholder="hf_xxx", type="password")
             auth_error = gr.Markdown("", visible=False)
     
-    with gr.Row(visible=False) as main_page:
+    with gr.Row(visible=HF_TOKEN is not None) as main_page:
         with gr.Column():
-            welcome_title = gr.Markdown("")
+            welcome_title = gr.Markdown("### Welcome")
             with gr.Tab("View pending jobs"):
                 fetch_pending_jobs_button = gr.Button("Fetch pending jobs")
                 gr.Markdown("### Pending jobs summary")
@@ -74,9 +74,12 @@ with gr.Blocks() as demo:
                 main_page: gr.update(visible=True)
             }
         else:
-            return f"❌ Unauthorized (user '{user['name']} is not a member of '{ADMIN_HF_ORGANIZATION}')"
+            return {
+                auth_error: gr.update(value=f"❌ Unauthorized (user '{user['name']} is not a member of '{ADMIN_HF_ORGANIZATION}')")
+            }
 
     def view_jobs(token):
+        token = token or HF_TOKEN
         global pending_jobs_df
         headers = {"Authorization": f"Bearer {token}"}
         response = requests.get(f"{DSS_ENDPOINT}/admin/pending-jobs", headers=headers, timeout=60)
