@@ -222,7 +222,7 @@ configNames:
 
   nodeSelector:
     role-datasets-server: "true"
-  replicas: 8
+  replicas: 6
   resources:
     requests:
       cpu: 1
@@ -239,7 +239,7 @@ splitNames:
 
   nodeSelector:
     role-datasets-server: "true"
-  replicas: 12
+  replicas: 8
   resources:
     requests:
       cpu: 1
@@ -256,7 +256,7 @@ splits:
 
   nodeSelector:
     role-datasets-server: "true"
-  replicas: 12
+  replicas: 8
   resources:
     requests:
       cpu: 1
@@ -276,7 +276,7 @@ firstRows:
 
   nodeSelector:
     role-datasets-server: "true"
-  replicas: 24
+  replicas: 60
   resources:
     requests:
       cpu: 1
@@ -298,7 +298,7 @@ parquetAndDatasetInfo:
     maxJobsPerNamespace: 4
   nodeSelector:
     role-datasets-server: "true"
-  replicas: 24
+  replicas: 30
   resources:
     requests:
       cpu: 1
@@ -315,7 +315,7 @@ parquet:
     maxJobsPerNamespace: 2
   nodeSelector:
     role-datasets-server: "true"
-  replicas: 4
+  replicas: 2
   resources:
     requests:
       cpu: 1
@@ -332,7 +332,7 @@ datasetInfo:
     maxJobsPerNamespace: 2
   nodeSelector:
     role-datasets-server: "true"
-  replicas: 4
+  replicas: 2
   resources:
     requests:
       cpu: 1
@@ -349,7 +349,7 @@ sizes:
     maxJobsPerNamespace: 2
   nodeSelector:
     role-datasets-server: "true"
-  replicas: 4
+  replicas: 2
   resources:
     requests:
       cpu: 1
