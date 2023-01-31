@@ -35,7 +35,7 @@ FirstRowsWorkerErrorCode = Literal[
     "StreamingRowsError",
     "NormalRowsError",
     "RowsPostProcessingError",
-    "TooManyColumnsError"
+    "TooManyColumnsError",
 ]
 
 
