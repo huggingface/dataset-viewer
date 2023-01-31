@@ -35,6 +35,7 @@ FirstRowsWorkerErrorCode = Literal[
     "StreamingRowsError",
     "NormalRowsError",
     "RowsPostProcessingError",
+    "TooManyColumnsError"
 ]
 
 
@@ -99,6 +100,13 @@ class RowsPostProcessingError(FirstRowsWorkerError):
 
     def __init__(self, message: str, cause: Optional[BaseException] = None):
         super().__init__(message, HTTPStatus.INTERNAL_SERVER_ERROR, "RowsPostProcessingError", cause, False)
+
+
+class TooManyColumnsError(FirstRowsWorkerError):
+    """Raised when the dataset has too many features."""
+
+    def __init__(self, message: str, cause: Optional[BaseException] = None):
+        super().__init__(message, HTTPStatus.INTERNAL_SERVER_ERROR, "TooManyColumnsError", cause, True)
 
 
 def retry():
@@ -427,6 +435,8 @@ def compute_first_rows_response(
           If the split rows could not be obtained using the datasets library in normal mode.
         - [`~workers.first_rows.RowsPostProcessingError`]
           If the post-processing of the split rows failed, e.g. while saving the images or audio files to the assets.
+        - [`~workers.first_rows.TooManyColumnsError`]
+          If the response cannot be saved because of too many columns in the dataset.
     </Tip>
     """
     logging.info(f"get first-rows for dataset={dataset} config={config} split={split}")
@@ -536,6 +546,10 @@ def compute_first_rows_response(
         "rows": [],
     }
     surrounding_json_size = get_json_size(response)
+
+    if surrounding_json_size > rows_max_bytes:
+        raise TooManyColumnsError(f"Cannot extract rows because dataset has too many columns ({len(features)})")
+
     # truncate the rows to fit within the restrictions, and prepare them as RowItems
     row_items = create_truncated_row_items(
         rows=transformed_rows,

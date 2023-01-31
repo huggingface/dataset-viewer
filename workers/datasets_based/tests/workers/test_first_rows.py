@@ -143,15 +143,15 @@ def test_number_rows(
 
 
 @pytest.mark.parametrize(
-    "name,rows_max_bytes,successful_truncation",
+    "name,rows_max_bytes,error_code,successful_truncation",
     [
         # not-truncated public response is 687 bytes
-        ("public", 10, False),  # too small limit, even with truncation
-        ("public", 1_000, True),  # not truncated
+        ("public", 10, "TooManyColumnsError", False),  # too small limit, even with truncation
+        ("public", 1_000, None, True),  # not truncated
         # not-truncated big response is 5_885_989 bytes
-        ("big", 10, False),  # too small limit, even with truncation
-        ("big", 1_000, True),  # truncated successfully
-        ("big", 10_000_000, True),  # not truncated
+        ("big", 10, "TooManyColumnsError", False),  # too small limit, even with truncation
+        ("big", 1_000, None, True),  # truncated successfully
+        ("big", 10_000_000, None, True),  # not truncated
     ],
 )
 def test_truncation(
@@ -160,6 +160,7 @@ def test_truncation(
     first_rows_config: FirstRowsConfig,
     name: str,
     rows_max_bytes: int,
+    error_code: str,
     successful_truncation: bool,
 ) -> None:
     dataset, config, split = get_default_config_split(hub_datasets[name]["name"])
@@ -176,6 +177,12 @@ def test_truncation(
             min_cell_bytes=10,
         ),
     )
-    response = worker.compute()
-    print(get_json_size(response))
-    assert (get_json_size(response) <= rows_max_bytes) is successful_truncation
+
+    if error_code:
+        with pytest.raises(CustomError) as error_info:
+            worker.compute()
+        assert error_info.value.code == error_code
+    else:
+        response = worker.compute()
+        print(get_json_size(response))
+        assert (get_json_size(response) <= rows_max_bytes) is successful_truncation
