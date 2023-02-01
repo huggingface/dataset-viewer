@@ -421,54 +421,6 @@ class EmptyFeaturesError(Exception):
     pass
 
 
-# def dataset_info_to_splits_response(dataset: str, config_infos: List[DatasetInfo]):
-#     split_items: List[SplitItem] = []
-#     for config_info in config_infos:
-#         config = config_info.config_name
-#         if config is None:
-#             raise EmptyConfigNameError(f"Dataset info for dataset='{dataset}' has no config name.")
-#         if config_info.splits is None:
-#             raise EmptySplitsError(f"Dataset info for dataset='{dataset}', config='{config}' has no splits.")
-#         if config_info.download_size is None:
-#             raise EmptyDownloadSizeError(
-#                 f"Dataset info for dataset='{dataset}', config='{config}' has no download_size."
-#             )
-#         if config_info.features is None:
-#             raise EmptyFeaturesError(f"Dataset info for dataset='{dataset}', config='{config}' has no features.")
-#         for split_info in config_info.splits.values():
-#             if not isinstance(split_info, SplitInfo):
-#                 raise SplitInfoFormatError(
-#                     f"Split info for dataset='{dataset}', config='{config}' has an unknown format."
-#                 )
-#             split = split_info.name
-#             split_items.append(
-#                 # {'train': SplitInfo(name='train', num_bytes=148581, num_examples=569, shard_lengths=None,
-# #dataset_name='csv')}
-#                 {
-#                     "dataset": dataset,
-#                     "config": config,
-#                     "split": split,
-#                     "stats": {
-#                       "config_download_size": config_info.download_size,
-#                       "parquet_size": split_info.num_bytes,
-#                       "num_examples": split_info.num_examples,
-#                       "num_columns": len(config_info.features),
-#   TODO: shard?
-#                     },
-#                     "links": {
-#                         ...
-#                     }
-#                 }
-#             )
-
-#     # # original_size
-#     # # parquet_size
-#     # # num_rows
-#     # # num_columns
-#     # # links to: columns (features), first-rows, parquet files
-#     # config_info: Dict[str, DatasetInfo] = {}
-
-
 def compute_parquet_and_dataset_info_response(
     dataset: str,
     hf_endpoint: str,
