@@ -103,14 +103,18 @@ with gr.Blocks() as demo:
                 for job_state in pending_jobs[job_type]
                 for job in pending_jobs[job_type][job_state]
             ])
-            pending_jobs_df["created_at"] = pd.to_datetime(pending_jobs_df["created_at"], errors="coerce")
+            if "created_at" in pending_jobs_df.columns:
+                pending_jobs_df["created_at"] = pd.to_datetime(pending_jobs_df["created_at"], errors="coerce")
+                most_recent = pending_jobs_df.nlargest(5, "created_at")
+            else:
+                most_recent = pd.DataFrame()
             return {
                 pending_jobs_summary_table: gr.update(visible=True, value=pd.DataFrame({
                     "Jobs": list(pending_jobs),
                     "Waiting": [len(pending_jobs[job_type]["waiting"]) for job_type in pending_jobs],
                     "Started": [len(pending_jobs[job_type]["started"]) for job_type in pending_jobs],
                 })),
-                recent_pending_jobs_table: gr.update(value=pending_jobs_df.nlargest(5, "created_at"))
+                recent_pending_jobs_table: gr.update(value=most_recent)
             }
         else:
             return {
