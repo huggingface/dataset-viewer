@@ -5,6 +5,8 @@ name: e2e
 on:
   workflow_dispatch:
   push:
+    branches:
+      - main
     paths:
       - 'e2e/**'
       - 'chart/static-files/openapi.json'

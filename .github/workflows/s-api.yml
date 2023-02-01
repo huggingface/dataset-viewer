@@ -5,6 +5,8 @@ name: services/api
 on:
   workflow_dispatch:
   push:
+    branches:
+      - main
     paths:
       - 'libs/libcommon/**'
       - 'services/api/**'

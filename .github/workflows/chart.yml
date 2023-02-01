@@ -5,6 +5,8 @@ name: chart
 on:
   workflow_dispatch:
   push:
+    branches:
+      - main
     paths:
       - 'chart/**'
       - '.github/workflows/chart.yml'
@@ -17,7 +19,7 @@ jobs:
     runs-on: ubuntu-20.04
     steps:
       - name: Checkout sources
-        uses: actions/checkout@main
+        uses: actions/checkout@v3
       - name: Lint chart
         run: helm lint
         working-directory: chart
