@@ -2389,7 +2389,7 @@
                   "not-ready": {
                     "summary": "the response is not ready yet.",
                     "value": {
-                      "error": "The response is not ready yet. Please retry later."
+                      "error": "The server is busier than usual and the response is not ready yet. Please retry later."
                     }
                   },
                   "internal": {
