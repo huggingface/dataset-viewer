@@ -65,8 +65,6 @@ common:
 # --- jobs (pre-install/upgrade hooks) ---
 
 mongodbMigration:
-  nodeSelector:
-    role-datasets-server: "true"
   resources:
     requests:
       cpu: 100m
@@ -76,8 +74,6 @@ mongodbMigration:
 # --- storage admin (to manually inspect the storage, in /data) ---
 
 storageAdmin:
-  nodeSelector:
-    role-datasets-server: "true"
   replicas: 1
   resources:
     requests:
@@ -90,8 +86,6 @@ storageAdmin:
 # --- reverse proxy ---
 
 reverseProxy:
-  nodeSelector:
-    role-datasets-server: "true"
   replicas: 1
   resources:
     requests:
@@ -133,8 +127,6 @@ ingress:
 admin:
   uvicornNumWorkers: "1"
 
-  nodeSelector:
-    role-datasets-server: "true"
   replicas: 1
   service:
     type: NodePort
@@ -149,8 +141,6 @@ admin:
 api:
   uvicornNumWorkers: "1"
 
-  nodeSelector:
-    role-datasets-server: "true"
   replicas: 1
   service:
     type: NodePort
@@ -165,8 +155,6 @@ api:
 # --- workers ---
 
 configNames:
-  nodeSelector:
-    role-datasets-server: "true"
   replicas: 1
   resources:
     requests:
@@ -177,8 +165,6 @@ configNames:
       memory: "4Gi"
 
 splitNames:
-  nodeSelector:
-    role-datasets-server: "true"
   replicas: 1
   resources:
     requests:
@@ -189,8 +175,6 @@ splitNames:
       memory: "4Gi"
 
 splits:
-  nodeSelector:
-    role-datasets-server: "true"
   replicas: 1
   resources:
     requests:
@@ -201,8 +185,6 @@ splits:
       memory: "4Gi"
 
 firstRows:
-  nodeSelector:
-    role-datasets-server: "true"
   replicas: 1
   resources:
     requests:
@@ -216,8 +198,6 @@ parquetAndDatasetInfo:
 
   # the maximum size of the supported datasets. Bigger datasets, or datasets that cannot provide the size, are ignored.
   maxDatasetSize: "500_000_000" # support up to 500 MB
-  nodeSelector:
-    role-datasets-server: "true"
   replicas: 1
   resources:
     requests:
@@ -228,8 +208,6 @@ parquetAndDatasetInfo:
       memory: "4Gi"
 
 parquet:
-  nodeSelector:
-    role-datasets-server: "true"
   replicas: 1
   resources:
     requests:
@@ -240,8 +218,6 @@ parquet:
       memory: "4Gi"
 
 datasetInfo:
-  nodeSelector:
-    role-datasets-server: "true"
   replicas: 1
   resources:
     requests:
@@ -252,8 +228,6 @@ datasetInfo:
       memory: "4Gi"
 
 sizes:
-  nodeSelector:
-    role-datasets-server: "true"
   replicas: 1
   resources:
     requests:
