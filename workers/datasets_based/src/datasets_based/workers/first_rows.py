@@ -387,6 +387,7 @@ def compute_first_rows_response(
     rows_max_bytes: int,
     rows_max_number: int,
     rows_min_number: int,
+    columns_max_number: int,
     assets_directory: str,
 ) -> FirstRowsResponse:
     """
@@ -417,6 +418,8 @@ def compute_first_rows_response(
             The maximum number of rows of the response.
         rows_min_number (`int`):
             The minimum number of rows of the response.
+        columns_max_number (`int`):
+            The maximun number of columns allowed.
     Returns:
         [`FirstRowsResponse`]: The list of first rows of the split.
     <Tip>
@@ -490,6 +493,10 @@ def compute_first_rows_response(
             raise FeaturesError("The split features (columns) cannot be extracted.", cause=err) from err
     else:
         features = info.features
+
+    if len(features) > columns_max_number:
+        raise TooManyColumnsError(f"Too many columns. The maximum supported number of columns is {columns_max_number}.")
+
     # get the rows
     try:
         rows = get_rows(
@@ -547,9 +554,6 @@ def compute_first_rows_response(
     }
     surrounding_json_size = get_json_size(response)
 
-    if surrounding_json_size > rows_max_bytes:
-        raise TooManyColumnsError(f"Cannot extract rows because dataset has too many columns ({len(features)})")
-
     # truncate the rows to fit within the restrictions, and prepare them as RowItems
     row_items = create_truncated_row_items(
         rows=transformed_rows,
@@ -592,6 +596,7 @@ class FirstRowsWorker(DatasetsBasedWorker):
             rows_max_bytes=self.first_rows_config.max_bytes,
             rows_max_number=self.first_rows_config.max_number,
             rows_min_number=self.first_rows_config.min_number,
+            columns_max_number=self.first_rows_config.columns_max_number,
         )
 
     def get_new_splits(self, _: Mapping[str, Any]) -> set[_SplitFullName]:

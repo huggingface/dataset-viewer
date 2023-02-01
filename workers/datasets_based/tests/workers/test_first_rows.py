@@ -143,15 +143,15 @@ def test_number_rows(
 
 
 @pytest.mark.parametrize(
-    "name,rows_max_bytes,error_code,successful_truncation",
+    "name,rows_max_bytes,successful_truncation",
     [
         # not-truncated public response is 687 bytes
-        ("public", 10, "TooManyColumnsError", False),  # too small limit, even with truncation
-        ("public", 1_000, None, True),  # not truncated
+        ("public", 10, False),  # too small limit, even with truncation
+        ("public", 1_000, True),  # not truncated
         # not-truncated big response is 5_885_989 bytes
-        ("big", 10, "TooManyColumnsError", False),  # too small limit, even with truncation
-        ("big", 1_000, None, True),  # truncated successfully
-        ("big", 10_000_000, None, True),  # not truncated
+        ("big", 10, False),  # too small limit, even with truncation
+        ("big", 1_000, True),  # truncated successfully
+        ("big", 10_000_000, True),  # not truncated
     ],
 )
 def test_truncation(
@@ -160,7 +160,6 @@ def test_truncation(
     first_rows_config: FirstRowsConfig,
     name: str,
     rows_max_bytes: int,
-    error_code: str,
     successful_truncation: bool,
 ) -> None:
     dataset, config, split = get_default_config_split(hub_datasets[name]["name"])
@@ -178,6 +177,38 @@ def test_truncation(
         ),
     )
 
+    response = worker.compute()
+    print(get_json_size(response))
+    assert (get_json_size(response) <= rows_max_bytes) is successful_truncation
+
+
+@pytest.mark.parametrize(
+    "name,columns_max_number,error_code",
+    [
+        ("public", 10, None),  # compute success
+        ("public", 1, "TooManyColumnsError"),  # too small columns limit
+    ],
+)
+def test_compute_fails_too_many_columns(
+    hub_datasets: HubDatasets,
+    app_config: AppConfig,
+    first_rows_config: FirstRowsConfig,
+    name: str,
+    columns_max_number: int,
+    error_code: str,
+) -> None:
+    dataset, config, split = get_default_config_split(hub_datasets[name]["name"])
+    worker = get_worker(
+        dataset,
+        config,
+        split,
+        app_config=replace(app_config, common=replace(app_config.common, hf_token=None)),
+        first_rows_config=replace(
+            first_rows_config,
+            columns_max_number=columns_max_number,
+        ),
+    )
+
     if error_code:
         with pytest.raises(CustomError) as error_info:
             worker.compute()
@@ -185,4 +216,4 @@ def test_truncation(
     else:
         response = worker.compute()
         print(get_json_size(response))
-        assert (get_json_size(response) <= rows_max_bytes) is successful_truncation
+        assert (get_json_size(response) <= first_rows_config.max_bytes)

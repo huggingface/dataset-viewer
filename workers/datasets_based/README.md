@@ -44,6 +44,8 @@ Set environment variables to configure the first rows worker (`FIRST_ROWS_` pref
 - `FIRST_ROWS_MAX_NUMBER`: the max number of rows fetched by the worker for the split and provided in the /first-rows endpoint response. Defaults to `100`.
 - `FIRST_ROWS_MIN_CELL_BYTES`: the minimum size in bytes of a cell when truncating the content of a row (see `FIRST_ROWS_ROWS_MAX_BYTES`). Below this limit, the cell content will not be truncated. Defaults to `100`.
 - `FIRST_ROWS_MIN_NUMBER`: the min number of rows fetched by the worker for the split and provided in the /first-rows endpoint response. Defaults to `10`.
+- `FIRST_ROWS_COLUMNS_MAX_NUMBER`: the max numbers of columns allowed to fetch sample data
+
 
 Also, set the assets-related configuration for the first-rows worker. See [../../libs/libcommon/README.md](../../libs/libcommon/README.md).
 
