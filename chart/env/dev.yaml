@@ -2,6 +2,16 @@
 # Copyright 2022 The HuggingFace Authors.
 
 # --- common parameters ---
+global:
+  huggingface:
+    imageRegistry: ""
+    imagePullSecrets: []
+    privateHub:
+      enabled: false
+    ingress:
+      domain: us.dev.moon.huggingface.tech
+      subdomains:
+        datasetsServer: datasets-server
 
 images:
   pullPolicy: IfNotPresent
