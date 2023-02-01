@@ -218,6 +218,38 @@ class Worker(ABC):
             dataset=self.dataset, hf_endpoint=self.common_config.hf_endpoint, hf_token=self.common_config.hf_token
         )
 
+    def _should_process_job(self) -> bool:
+        """Return True if the job should be processed, False otherwise.
+
+        The job must be processed if:
+        - force is True
+        - or no cache entry exists for the dataset
+        - or the result was not successful
+        - or it has been created with the another major version of the worker
+        - or it has been created with the another git commit of the dataset repository
+        - or an exception occurred in this function (bad idea)
+
+        Returns:
+            :obj:`bool`: True if the job should be processed, False otherwise.
+        """
+        if self.force:
+            return True
+        try:
+            cached_response = get_response_without_content(
+                kind=self.processing_step.cache_kind, dataset=self.dataset, config=self.config, split=self.split
+            )
+            dataset_git_revision = self.get_dataset_git_revision()
+            return (
+                # TODO: use "error_code" to decide if the job should be skipped (ex: retry if temporary error)
+                cached_response["http_status"] != HTTPStatus.OK
+                or cached_response["worker_version"] is None
+                or self.compare_major_version(cached_response["worker_version"]) != 0
+                or cached_response["dataset_git_revision"] is None
+                or cached_response["dataset_git_revision"] != dataset_git_revision
+            )
+        except Exception:
+            return True
+
     def should_skip_job(self) -> bool:
         """Return True if the job should be skipped, False otherwise.
 
@@ -231,23 +263,7 @@ class Worker(ABC):
         Returns:
             :obj:`bool`: True if the job should be skipped, False otherwise.
         """
-        if self.force:
-            return False
-        try:
-            cached_response = get_response_without_content(
-                kind=self.processing_step.cache_kind, dataset=self.dataset, config=self.config, split=self.split
-            )
-            dataset_git_revision = self.get_dataset_git_revision()
-            return (
-                # TODO: use "error_code" to decide if the job should be skipped (ex: retry if temporary error)
-                cached_response["http_status"] == HTTPStatus.OK
-                and cached_response["worker_version"] is not None
-                and self.compare_major_version(cached_response["worker_version"]) == 0
-                and cached_response["dataset_git_revision"] is not None
-                and cached_response["dataset_git_revision"] == dataset_git_revision
-            )
-        except Exception:
-            return False
+        return not self._should_process_job()
 
     def process(
         self,
