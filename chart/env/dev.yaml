@@ -50,7 +50,6 @@ secrets:
 persistence:
   existingClaim: "nfs-datasets-server-pvc"
 
-
 monitoring:
   enabled: false
 
@@ -66,31 +65,53 @@ common:
 # --- jobs (pre-install/upgrade hooks) ---
 
 mongodbMigration:
+  nodeSelector:
+    role-datasets-server: "true"
   resources:
     requests:
-      cpu: 1
+      cpu: 100m
     limits:
       cpu: 1
 
 # --- storage admin (to manually inspect the storage, in /data) ---
 
 storageAdmin:
+  nodeSelector:
+    role-datasets-server: "true"
   replicas: 1
   resources:
     requests:
       cpu: 100m
+      memory: "256Mi"
     limits:
       cpu: 1
+      memory: "256Mi"
 
 # --- reverse proxy ---
 
 reverseProxy:
+  nodeSelector:
+    role-datasets-server: "true"
   replicas: 1
   resources:
     requests:
       cpu: 100m
+      memory: "256Mi"
     limits:
       cpu: 1
+      memory: "256Mi"
+  service:
+    type: NodePort
+    annotations:
+      service.beta.kubernetes.io/aws-load-balancer-additional-resource-tags: Env=dev,Project=datasets-server,Terraform=true
+      service.beta.kubernetes.io/aws-load-balancer-name: hub-dev-datasets-server-nlb
+      service.beta.kubernetes.io/aws-load-balancer-nlb-target-type: instance
+      service.beta.kubernetes.io/aws-load-balancer-scheme: internal
+      service.beta.kubernetes.io/aws-load-balancer-type: external
+      service.beta.kubernetes.io/aws-load-balancer-target-node-labels: role-datasets-server=true
+  tolerations:
+    - key: CriticalAddonsOnly
+      operator: Equal
 
 ingress:
   tls:
@@ -110,85 +131,134 @@ ingress:
 # --- services ---
 
 admin:
+  uvicornNumWorkers: "1"
+
+  nodeSelector:
+    role-datasets-server: "true"
   replicas: 1
+  service:
+    type: NodePort
   resources:
     requests:
       cpu: 100m
+      memory: "512Mi"
     limits:
       cpu: 1
+      memory: "4Gi"
 
 api:
+  uvicornNumWorkers: "1"
+
+  nodeSelector:
+    role-datasets-server: "true"
   replicas: 1
+  service:
+    type: NodePort
   resources:
     requests:
       cpu: 100m
+      memory: "512Mi"
     limits:
       cpu: 1
+      memory: "4Gi"
 
 # --- workers ---
 
 configNames:
+  nodeSelector:
+    role-datasets-server: "true"
   replicas: 1
   resources:
     requests:
       cpu: 100m
+      memory: "512Mi"
     limits:
       cpu: 1
+      memory: "4Gi"
 
-splitsNames:
+splitNames:
+  nodeSelector:
+    role-datasets-server: "true"
   replicas: 1
   resources:
     requests:
       cpu: 100m
+      memory: "512Mi"
     limits:
       cpu: 1
+      memory: "4Gi"
 
 splits:
+  nodeSelector:
+    role-datasets-server: "true"
   replicas: 1
   resources:
     requests:
-      cpu: 0.01
+      cpu: 100m
+      memory: "512Mi"
     limits:
       cpu: 1
+      memory: "4Gi"
 
 firstRows:
+  nodeSelector:
+    role-datasets-server: "true"
   replicas: 1
   resources:
     requests:
       cpu: 100m
+      memory: "512Mi"
     limits:
       cpu: 1
+      memory: "4Gi"
 
 parquetAndDatasetInfo:
+
   # the maximum size of the supported datasets. Bigger datasets, or datasets that cannot provide the size, are ignored.
   maxDatasetSize: "500_000_000" # support up to 500 MB
+  nodeSelector:
+    role-datasets-server: "true"
   replicas: 1
   resources:
     requests:
       cpu: 100m
+      memory: "512Mi"
     limits:
       cpu: 1
+      memory: "4Gi"
 
 parquet:
+  nodeSelector:
+    role-datasets-server: "true"
   replicas: 1
   resources:
     requests:
       cpu: 100m
+      memory: "512Mi"
     limits:
       cpu: 1
+      memory: "4Gi"
 
 datasetInfo:
+  nodeSelector:
+    role-datasets-server: "true"
   replicas: 1
   resources:
     requests:
       cpu: 100m
+      memory: "512Mi"
     limits:
       cpu: 1
+      memory: "4Gi"
 
 sizes:
+  nodeSelector:
+    role-datasets-server: "true"
   replicas: 1
   resources:
     requests:
       cpu: 100m
+      memory: "512Mi"
     limits:
       cpu: 1
+      memory: "4Gi"
