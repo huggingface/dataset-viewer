@@ -106,13 +106,6 @@ reverseProxy:
       memory: "256Mi"
   service:
     type: NodePort
-    annotations:
-      service.beta.kubernetes.io/aws-load-balancer-additional-resource-tags: Env=dev,Project=datasets-server,Terraform=true
-      service.beta.kubernetes.io/aws-load-balancer-name: hub-dev-datasets-server-nlb
-      service.beta.kubernetes.io/aws-load-balancer-nlb-target-type: instance
-      service.beta.kubernetes.io/aws-load-balancer-scheme: internal
-      service.beta.kubernetes.io/aws-load-balancer-type: external
-      service.beta.kubernetes.io/aws-load-balancer-target-node-labels: role-datasets-server=true
   tolerations:
     - key: CriticalAddonsOnly
       operator: Equal
