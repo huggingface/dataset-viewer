@@ -1,4 +1,6 @@
 import os
+import urllib.parse
+from itertools import product
 
 import pandas as pd
 import requests
@@ -37,7 +39,7 @@ with gr.Blocks() as demo:
     with gr.Row(visible=HF_TOKEN is None) as auth_page:
         with gr.Column():
             auth_title = gr.Markdown("Enter your token ([settings](https://huggingface.co/settings/tokens)):")
-            token_box = gr.Textbox(label="token", placeholder="hf_xxx", type="password")
+            token_box = gr.Textbox(HF_TOKEN or "", label="token", placeholder="hf_xxx", type="password")
             auth_error = gr.Markdown("", visible=False)
     
     with gr.Row(visible=HF_TOKEN is not None) as main_page:
@@ -58,6 +60,14 @@ with gr.Blocks() as demo:
                 )
                 query_pending_jobs_button = gr.Button("Run")
                 pending_jobs_query_result_df = gr.DataFrame()
+            with gr.Tab("Refresh dataset"):
+                refresh_type = gr.Textbox(label="Processing step type", placeholder="first-rows")
+                resfresh_dataset_name = gr.Textbox(label="dataset", placeholder="c4")
+                resfresh_config_name = gr.Textbox(label="config (optional)", placeholder="en")
+                resfresh_split_name = gr.Textbox(label="split (optional)", placeholder="train, test")
+                gr.Markdown("*you can select multiple values by separating them with commas, e.g. split='train, test'*")
+                refresh_dataset_button = gr.Button("Resfresh dataset")
+                refresh_dataset_output = gr.Markdown("")
 
     def auth(token):
         if not token:
@@ -79,7 +89,6 @@ with gr.Blocks() as demo:
             }
 
     def view_jobs(token):
-        token = token or HF_TOKEN
         global pending_jobs_df
         headers = {"Authorization": f"Bearer {token}"}
         response = requests.get(f"{DSS_ENDPOINT}/admin/pending-jobs", headers=headers, timeout=60)
@@ -114,10 +123,45 @@ with gr.Blocks() as demo:
             return {pending_jobs_query_result_df: gr.update(value=pd.DataFrame({"Error": [f"❌ {str(error)}"]}))}
         return {pending_jobs_query_result_df: gr.update(value=result)}
 
+    def refresh_dataset(token, refresh_types, resfresh_dataset_names, resfresh_config_names, resfresh_split_names):
+        headers = {"Authorization": f"Bearer {token}"}
+        all_results = ""
+        for refresh_type, resfresh_dataset_name, resfresh_config_name, resfresh_split_name in product(
+            refresh_types.split(","), resfresh_dataset_names.split(","), resfresh_config_names.split(","), resfresh_split_names.split(",")
+        ):
+            refresh_types = refresh_types.strip()
+            resfresh_dataset_name = resfresh_dataset_name.strip()
+            params = {"dataset": resfresh_dataset_name}
+            if resfresh_config_name:
+                resfresh_config_name = resfresh_config_name.strip()
+                params["config"] = resfresh_config_name
+            if resfresh_split_name:
+                resfresh_split_name = resfresh_split_name.strip()
+                params["split"] = resfresh_split_name
+            params = urllib.parse.urlencode(params)
+            response = requests.post(f"{DSS_ENDPOINT}/admin/force-refresh/{refresh_type}?{params}", headers=headers, timeout=60)
+            if response.status_code == 200:
+                result = f"[{resfresh_dataset_name}] ✅ Added processing step to the queue: '{refresh_type}'"
+                if resfresh_config_name:
+                    result += f", for config '{resfresh_config_name}'"
+                if resfresh_split_name:
+                    result += f", for split '{resfresh_split_name}'"
+            else:
+                result = f"[{resfresh_dataset_name}] ❌ Failed to add processing step to the queue. Error {response.status_code}"
+                try:
+                    if response.json().get("error"):
+                        result += f": {response.json()['error']}"
+                except requests.JSONDecodeError:
+                    result += f": {response.content}"
+            all_results += result.strip("\n") + "\n"
+        return "```\n" + all_results + "\n```"
+
     token_box.change(auth, inputs=token_box, outputs=[auth_error, welcome_title, auth_page, main_page])
+
     fetch_pending_jobs_button.click(view_jobs, inputs=token_box, outputs=[recent_pending_jobs_table, pending_jobs_summary_table])
     query_pending_jobs_button.click(query_jobs, inputs=pending_jobs_query, outputs=[pending_jobs_query_result_df])
     
+    refresh_dataset_button.click(refresh_dataset, inputs=[token_box, refresh_type, resfresh_dataset_name, resfresh_config_name, resfresh_split_name], outputs=refresh_dataset_output)
 
 
 if __name__ == "__main__":
