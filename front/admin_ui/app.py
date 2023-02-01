@@ -24,7 +24,10 @@ DSS_ENDPOINT = DEV_DSS_ENDPOINT if DEV else PROD_DSS_ENDPOINT
 pending_jobs_df = None
 
 def healthcheck():
-    response = requests.head(f"{DSS_ENDPOINT}/admin/pending-jobs", timeout=10)
+    try:
+        response = requests.head(f"{DSS_ENDPOINT}/admin/pending-jobs", timeout=10)
+    except requests.ConnectionError as error:
+        return f"❌ Failed to connect to {DSS_ENDPOINT} (error {error})"
     if response.status_code == 401:
         return f"*Connected to {DSS_ENDPOINT}*"
 
