@@ -216,4 +216,4 @@ def test_compute_fails_too_many_columns(
     else:
         response = worker.compute()
         print(get_json_size(response))
-        assert (get_json_size(response) <= first_rows_config.max_bytes)
+        assert get_json_size(response) <= first_rows_config.max_bytes
