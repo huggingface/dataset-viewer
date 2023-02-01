@@ -143,15 +143,16 @@ def test_number_rows(
 
 
 @pytest.mark.parametrize(
-    "name,rows_max_bytes,successful_truncation",
+    "name,rows_max_bytes,columns_max_number,error_code",
     [
         # not-truncated public response is 687 bytes
-        ("public", 10, False),  # too small limit, even with truncation
-        ("public", 1_000, True),  # not truncated
+        ("public", 10, 1_000, "TooBigContentError"),  # too small limit, even with truncation
+        ("public", 1_000, 1_000, None),  # not truncated
+        ("public", 1_000, 1,  "TooManyColumnsError"),  # too small columns limit
         # not-truncated big response is 5_885_989 bytes
-        ("big", 10, False),  # too small limit, even with truncation
-        ("big", 1_000, True),  # truncated successfully
-        ("big", 10_000_000, True),  # not truncated
+        ("big", 10, 1_000, "TooBigContentError"),  # too small limit, even with truncation
+        ("big", 1_000, 1_000, None),  # truncated successfully
+        ("big", 10_000_000, 1_000, None),  # not truncated
     ],
 )
 def test_truncation(
@@ -160,7 +161,8 @@ def test_truncation(
     first_rows_config: FirstRowsConfig,
     name: str,
     rows_max_bytes: int,
-    successful_truncation: bool,
+    columns_max_number: int,
+    error_code: str,
 ) -> None:
     dataset, config, split = get_default_config_split(hub_datasets[name]["name"])
     worker = get_worker(
@@ -174,37 +176,6 @@ def test_truncation(
             min_number=10,
             max_bytes=rows_max_bytes,
             min_cell_bytes=10,
-        ),
-    )
-
-    response = worker.compute()
-    print(get_json_size(response))
-    assert (get_json_size(response) <= rows_max_bytes) is successful_truncation
-
-
-@pytest.mark.parametrize(
-    "name,columns_max_number,error_code",
-    [
-        ("public", 10, None),  # compute success
-        ("public", 1, "TooManyColumnsError"),  # too small columns limit
-    ],
-)
-def test_compute_fails_too_many_columns(
-    hub_datasets: HubDatasets,
-    app_config: AppConfig,
-    first_rows_config: FirstRowsConfig,
-    name: str,
-    columns_max_number: int,
-    error_code: str,
-) -> None:
-    dataset, config, split = get_default_config_split(hub_datasets[name]["name"])
-    worker = get_worker(
-        dataset,
-        config,
-        split,
-        app_config=replace(app_config, common=replace(app_config.common, hf_token=None)),
-        first_rows_config=replace(
-            first_rows_config,
             columns_max_number=columns_max_number,
         ),
     )
@@ -216,4 +187,4 @@ def test_compute_fails_too_many_columns(
     else:
         response = worker.compute()
         print(get_json_size(response))
-        assert get_json_size(response) <= first_rows_config.max_bytes
+        assert get_json_size(response) <= rows_max_bytes

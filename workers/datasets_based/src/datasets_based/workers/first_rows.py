@@ -36,6 +36,7 @@ FirstRowsWorkerErrorCode = Literal[
     "NormalRowsError",
     "RowsPostProcessingError",
     "TooManyColumnsError",
+    "TooBigContentError",
 ]
 
 
@@ -103,10 +104,17 @@ class RowsPostProcessingError(FirstRowsWorkerError):
 
 
 class TooManyColumnsError(FirstRowsWorkerError):
-    """Raised when the dataset has too many features."""
+    """Raised when the dataset exceeded the max number of columns."""
 
     def __init__(self, message: str, cause: Optional[BaseException] = None):
         super().__init__(message, HTTPStatus.INTERNAL_SERVER_ERROR, "TooManyColumnsError", cause, True)
+
+
+class TooBigContentError(FirstRowsWorkerError):
+    """Raised when the first rows content exceeded the max size of bytes."""
+
+    def __init__(self, message: str, cause: Optional[BaseException] = None):
+        super().__init__(message, HTTPStatus.INTERNAL_SERVER_ERROR, "TooBigContentError", cause, True)
 
 
 def retry():
@@ -361,6 +369,11 @@ def to_features_list(features: Features) -> List[FeatureItem]:
     ]
 
 
+def validate_content_size(obj: Any, rows_max_bytes: int):
+    if get_json_size(obj) > rows_max_bytes:
+        raise TooBigContentError("First rows content exceeded max size bytes.")
+
+
 class SplitFullName(TypedDict):
     dataset: str
     config: str
@@ -499,6 +512,18 @@ def compute_first_rows_response(
             f"Too many columns. The maximum supported number of columns is {columns_max_number}."
         )
 
+    # validate size of response without the rows
+    features_list = to_features_list(features=features)
+    response: FirstRowsResponse = {
+        "dataset": dataset,
+        "config": config,
+        "split": split,
+        "features": features_list,
+        "rows": [],
+    }
+
+    validate_content_size(response, rows_max_bytes=rows_max_bytes)
+
     # get the rows
     try:
         rows = get_rows(
@@ -545,18 +570,9 @@ def compute_first_rows_response(
             "Server error while post-processing the split rows. Please report the issue.",
             cause=err,
         ) from err
-    # get the size of the surrounding JSON (without the rows)
-    features_list = to_features_list(features=features)
-    response: FirstRowsResponse = {
-        "dataset": dataset,
-        "config": config,
-        "split": split,
-        "features": features_list,
-        "rows": [],
-    }
-    surrounding_json_size = get_json_size(response)
 
     # truncate the rows to fit within the restrictions, and prepare them as RowItems
+    surrounding_json_size = get_json_size(response)
     row_items = create_truncated_row_items(
         rows=transformed_rows,
         min_cell_bytes=min_cell_bytes,
@@ -564,6 +580,8 @@ def compute_first_rows_response(
         rows_min_number=rows_min_number,
     )
     response["rows"] = row_items
+    validate_content_size(response, rows_max_bytes=rows_max_bytes)
+
     # return the response
     return response
 
