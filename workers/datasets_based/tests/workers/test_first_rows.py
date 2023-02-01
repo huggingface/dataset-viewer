@@ -148,7 +148,7 @@ def test_number_rows(
         # not-truncated public response is 687 bytes
         ("public", 10, 1_000, "TooBigContentError"),  # too small limit, even with truncation
         ("public", 1_000, 1_000, None),  # not truncated
-        ("public", 1_000, 1,  "TooManyColumnsError"),  # too small columns limit
+        ("public", 1_000, 1, "TooManyColumnsError"),  # too small columns limit
         # not-truncated big response is 5_885_989 bytes
         ("big", 10, 1_000, "TooBigContentError"),  # too small limit, even with truncation
         ("big", 1_000, 1_000, None),  # truncated successfully
