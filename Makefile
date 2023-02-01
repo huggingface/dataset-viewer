@@ -7,9 +7,7 @@ export COMPOSE_PROJECT_NAME := datasets-server
 
 # makefile variables
 DOCKER_COMPOSE := ./tools/docker-compose-datasets-server.yml
-# DOCKER_IMAGES := ./chart/docker-images.yaml
 
-# include tools/DockerRemoteImages.mk
 include tools/Docker.mk
 
 .PHONY: start

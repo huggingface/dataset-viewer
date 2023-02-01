@@ -79,12 +79,11 @@ The application also has:
 
 The following environments contain all the modules: reverse proxy, API server, admin API server, workers, and the Mongo database.
 
-| Environment              | URL                                                  | Type              | How to deploy                                                           |
-| ------------------------ | ---------------------------------------------------- | ----------------- | ----------------------------------------------------------------------- |
-| Production               | https://datasets-server.huggingface.co               | Helm / Kubernetes | `make upgrade-prod` in [chart](./chart)                                 |
-| Development              | https://datasets-server.us.dev.moon.huggingface.tech | Helm / Kubernetes | `make upgrade-dev` in [chart](./chart)                                  |
-| Local from remote images | http://localhost:8100                                | Docker compose    | `make start-from-remote-images` (fetches docker images from Docker Hub) |
-| Local build              | http://localhost:8000                                | Docker compose    | `make start-from-local-code` (builds docker images)                     |
+| Environment | URL                                                  | Type              | How to deploy                           |
+| ----------- | ---------------------------------------------------- | ----------------- | --------------------------------------- |
+| Production  | https://datasets-server.huggingface.co               | Helm / Kubernetes | `make upgrade-prod` in [chart](./chart) |
+| Development | https://datasets-server.us.dev.moon.huggingface.tech | Helm / Kubernetes | `make upgrade-dev` in [chart](./chart)  |
+| Local build | http://localhost:8100                                | Docker compose    | `make start` (builds docker images)     |
 
 ## Quality
 
@@ -120,19 +119,7 @@ make e2e
 
 ### Versions
 
-We version the [libraries](./libs) as they are dependencies of the [services](./services). To update a library:
-
-- change the version in its pyproject.yaml file
-- build with `make build`
-- version the new files in `dist/`
-
-And then update the library version in the services that require the update, for example if the library is `libcommon`:
-
-```
-poetry update libcommon
-```
-
-If service is updated, we don't update its version in the `pyproject.yaml` file. But we have to update the [docker images file](./chart/docker-images.yaml) with the new image tag. Then the CI will test the new docker images, and we will be able to deploy them to the infrastructure.
+If service is updated, we don't update its version in the `pyproject.yaml` file. But we have to update the [helm chart](./chart/) with the new image tag, corresponding to the last build docker published on docker.io by the CI.
 
 ## Pull requests
 

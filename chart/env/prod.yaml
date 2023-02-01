@@ -1,44 +1,7 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2022 The HuggingFace Authors.
 
-## Production
-#
-# datasets-server is installed on a [kubernetes cluster](https://us-east-1.console.aws.amazon.com/eks/home?region=us-east-1#/clusters)
-#
-# Grafana:
-#
-# - https://grafana.huggingface.tech/d/SaHl2KX7z/datasets-server-admin-cache-and-queue
-# - https://grafana.huggingface.tech/d/iPuzZbrnk/datasets-server-api-routes
-# - https://grafana.huggingface.tech/d/85a562078cdf77779eaa1add43ccec1e/kubernetes-compute-resources-namespace-pods?var-datasource=Prometheus%20EKS%20Hub%20Prod&var-namespace=datasets-server
-#
-# BetterUptime:
-#
-# - https://betteruptime.com/team/14149/monitors/389098
-# - https://betteruptime.com/team/14149/monitors/691070
-#
-# resources for the prod namespace are defined here: https://us-east-1.console.aws.amazon.com/eks/home?region=us-east-1#/clusters/hub-prod/nodegroups/datasets-server-20220513085103612000000001
-# the nodes are up to 20 t3.2xlarge instances (8 vCPUs, 32 GiB), with autoscale
-# (see https://github.com/huggingface/infra/pull/239/files)
-# this means that we can get up to:
-# 160 vCPUs and 640 GiB RAM are available (but no more than 8 cpus or 32 GiB for each pod)
-#
-# the max resources (limits) per deployment are:
-# - reverse-proxy: 2 pods -> 2 CPUs, 512MiB
-# - api: 4 pods -> 4 CPUs, 4 GiB
-# - admin: 1 pod -> 1 CPU
-# and for the workers:
-# - splits: 1 CPUs, 30 GiB
-# - firstRows: 1 CPUs, 30 GiB
-# We set the requested RAM to 8 GiB per worker, in order to trigger the autoscale. We should be able to
-# launch 3 worker pods per node, taking the sidecars into account, it means 60 pods
-#
-# Being optimistic about not all the pods having to increase their memory usage to 30 GiB at the same time,
-# ie over-committing a bit, we can set up to 60 workers (dataset + split).
-#
-# For now, we have to scale manually with:
-#  kubectl scale --replicas=16 deploy/datasets-server-prod-worker-splits
-# or
-#  kubectl scale --replicas=32 deploy/datasets-server-prod-worker-first-rows
+# --- common parameters ---
 
 images:
   pullPolicy: IfNotPresent
@@ -85,15 +48,12 @@ secrets:
     secretName: "hf-token-francky"
 
 persistence:
-  # https://us-east-1.console.aws.amazon.com/fsx/home?region=us-east-1#file-system-details/fs-02050b8d555063cde
-  # Alarm: https://us-east-1.console.aws.amazon.com/cloudwatch/home?region=us-east-1#alarmsV2:alarm/Low+disk+on+datasets+server?
   existingClaim: "nfs-datasets-server-pvc"
 
 monitoring:
   enabled: true
 
 mongodb:
-  # we use the secret instead to get the mongo URL
   enabled: false
 
 common:
@@ -142,13 +102,6 @@ reverseProxy:
       memory: "256Mi"
   service:
     type: NodePort
-    annotations:
-      service.beta.kubernetes.io/aws-load-balancer-additional-resource-tags: Env=prod,Project=datasets-server,Terraform=true
-      service.beta.kubernetes.io/aws-load-balancer-name: hub-prod-datasets-server-nlb
-      service.beta.kubernetes.io/aws-load-balancer-nlb-target-type: instance
-      service.beta.kubernetes.io/aws-load-balancer-scheme: internal
-      service.beta.kubernetes.io/aws-load-balancer-type: external
-      service.beta.kubernetes.io/aws-load-balancer-target-node-labels: role-datasets-server=true
   tolerations:
     - key: CriticalAddonsOnly
       operator: Equal
@@ -306,7 +259,6 @@ parquetAndDatasetInfo:
     limits:
       cpu: 2
       memory: "30Gi"
-  tolerations: []
 
 parquet:
   # override the common queue parameters
@@ -323,7 +275,6 @@ parquet:
     limits:
       cpu: 2
       memory: "1Gi"
-  tolerations: []
 
 datasetInfo:
   # override the common queue parameters
@@ -340,7 +291,6 @@ datasetInfo:
     limits:
       cpu: 2
       memory: "1Gi"
-  tolerations: []
 
 sizes:
   # override the common queue parameters
@@ -357,4 +307,3 @@ sizes:
     limits:
       cpu: 2
       memory: "1Gi"
-  tolerations: []
