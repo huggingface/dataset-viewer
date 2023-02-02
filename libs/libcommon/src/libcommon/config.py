@@ -9,9 +9,10 @@ from typing import List, Optional
 from environs import Env
 
 from libcommon.log import init_logging
+from libcommon.mongo import MongoConnection
 from libcommon.processing_graph import ProcessingGraph, ProcessingGraphSpecification
-from libcommon.queue import connect_to_queue_database
-from libcommon.simple_cache import connect_to_cache_database
+from libcommon.queue import QUEUE_DATABASE_ALIAS
+from libcommon.simple_cache import CACHE_DATABASE_ALIAS
 from libcommon.storage import init_dir
 
 ASSETS_BASE_URL = "assets"
@@ -70,8 +71,12 @@ class CacheConfig:
     mongo_database: str = CACHE_MONGO_DATABASE
     mongo_url: str = CACHE_MONGO_URL
 
+    mongo_connection: MongoConnection = field(init=False)
+
     def __post_init__(self):
-        connect_to_cache_database(database=self.mongo_database, host=self.mongo_url)
+        self.mongo_connection = MongoConnection(
+            database=self.mongo_database, alias=CACHE_DATABASE_ALIAS, host=self.mongo_url
+        )
 
     @staticmethod
     def from_env() -> "CacheConfig":
@@ -94,8 +99,12 @@ class QueueConfig:
     mongo_database: str = QUEUE_MONGO_DATABASE
     mongo_url: str = QUEUE_MONGO_URL
 
+    mongo_connection: MongoConnection = field(init=False)
+
     def __post_init__(self):
-        connect_to_queue_database(database=self.mongo_database, host=self.mongo_url)
+        self.mongo_connection = MongoConnection(
+            database=self.mongo_database, alias=QUEUE_DATABASE_ALIAS, host=self.mongo_url
+        )
 
     @staticmethod
     def from_env() -> "QueueConfig":

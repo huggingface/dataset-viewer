@@ -19,7 +19,7 @@ from typing import (
 
 from bson import ObjectId
 from bson.errors import InvalidId
-from mongoengine import Document, DoesNotExist, connect
+from mongoengine import Document, DoesNotExist
 from mongoengine.fields import (
     DateTimeField,
     DictField,
@@ -48,9 +48,7 @@ class QuerySetManager(Generic[U]):
 
 # END monkey patching ### hack ###
 
-
-def connect_to_cache_database(database: str, host: str) -> None:
-    connect(database, alias="cache", host=host)
+CACHE_DATABASE_ALIAS = "cache"
 
 
 def get_datetime() -> datetime:
@@ -101,7 +99,7 @@ class CachedResponse(Document):
 
     meta = {
         "collection": "cachedResponsesBlue",
-        "db_alias": "cache",
+        "db_alias": CACHE_DATABASE_ALIAS,
         "indexes": [
             ("kind", "dataset", "config", "split"),
             ("dataset", "kind", "http_status"),

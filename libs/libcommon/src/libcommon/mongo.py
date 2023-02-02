@@ -5,8 +5,8 @@ from dataclasses import dataclass, field
 from typing import Optional
 
 from mongoengine.connection import ConnectionFailure, connect, disconnect
-from pymongo.errors import ServerSelectionTimeoutError
 from pymongo import MongoClient  # type: ignore
+from pymongo.errors import ServerSelectionTimeoutError
 
 
 class CreationError(Exception):

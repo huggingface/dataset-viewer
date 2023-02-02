@@ -4,7 +4,7 @@
 import pytest
 
 from libcommon.config import CacheConfig
-from libcommon.mongo import CreationError, CheckError, MongoConnection
+from libcommon.mongo import CheckError, CreationError, MongoConnection
 
 
 def test_mongo_connection(cache_config: CacheConfig) -> None:

@@ -34,6 +34,8 @@ class QuerySetManager(Generic[U]):
 
 # END monkey patching ### hack ###
 
+QUEUE_DATABASE_ALIAS = "queue"
+
 
 class Status(enum.Enum):
     WAITING = "waiting"
@@ -127,7 +129,7 @@ class Job(Document):
 
     meta = {
         "collection": "jobsBlue",
-        "db_alias": "queue",
+        "db_alias": QUEUE_DATABASE_ALIAS,
         "indexes": [
             "dataset",
             "status",
