@@ -6,7 +6,7 @@ from typing import Any
 
 import pytest
 from libcommon.queue import Priority
-from libcommon.simple_cache import _clean_cache_database, upsert_response
+from libcommon.simple_cache import upsert_response
 
 from datasets_based.config import AppConfig
 from datasets_based.workers.sizes import (
@@ -18,8 +18,9 @@ from datasets_based.workers.sizes import (
 
 
 @pytest.fixture(autouse=True)
-def clean_mongo_database(app_config: AppConfig) -> None:
-    _clean_cache_database()
+def prepare_and_clean_mongo(app_config: AppConfig) -> None:
+    # prepare the database before each test, and clean it afterwards
+    pass
 
 
 def get_worker(dataset: str, app_config: AppConfig, force: bool = False) -> SizesWorker:

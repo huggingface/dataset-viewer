@@ -3,16 +3,17 @@ from typing import Any, Mapping, Optional
 import pytest
 from libcommon.config import CommonConfig
 from libcommon.processing_graph import ProcessingGraph, ProcessingStep
-from libcommon.queue import Priority, Queue, Status, _clean_queue_database
-from libcommon.simple_cache import SplitFullName, _clean_cache_database
+from libcommon.queue import Priority, Queue, Status
+from libcommon.simple_cache import SplitFullName
 
+from datasets_based.config import AppConfig
 from datasets_based.worker import Worker
 
 
 @pytest.fixture(autouse=True)
-def clean_mongo_database() -> None:
-    _clean_queue_database()
-    _clean_cache_database()
+def prepare_and_clean_mongo(app_config: AppConfig) -> None:
+    # prepare the database before each test, and clean it afterwards
+    pass
 
 
 class DummyWorker(Worker):
