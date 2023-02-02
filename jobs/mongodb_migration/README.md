@@ -10,6 +10,7 @@ The script can be configured using environment variables. They are grouped by sc
 
 Set environment variables to configure the job (`MONGODB_MIGRATION_` prefix):
 
+- `MONGODB_MIGRATION_MONGO_CONNECTION_TIMEOUT_MS`: the timeout in milliseconds for the connection to the mongo db server. Defaults to `30_000`.
 - `MONGODB_MIGRATION_MONGO_DATABASE`: the name of the database used for storing the migrations history. Defaults to `"datasets_server_maintenance"`.
 - `MONGODB_MIGRATION_MONGO_URL`: the URL used to connect to the mongo db server. Defaults to `"mongodb://localhost:27017"`.
 

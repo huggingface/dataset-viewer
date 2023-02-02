@@ -17,8 +17,8 @@ def monkeypatch_session():
     monkeypatch_session.undo()
 
 
-@fixture(scope="session", autouse=True)
-def app_config(monkeypatch_session: MonkeyPatch) -> JobConfig:
+@fixture(scope="session")
+def job_config(monkeypatch_session: MonkeyPatch) -> JobConfig:
     job_config = JobConfig.from_env()
     if (
         "test" not in job_config.cache.mongo_database

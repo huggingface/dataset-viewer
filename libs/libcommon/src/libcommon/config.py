@@ -64,10 +64,12 @@ class CommonConfig:
 
 CACHE_MONGO_DATABASE = "datasets_server_cache"
 CACHE_MONGO_URL = "mongodb://localhost:27017"
+CACHE_CONNECTION_MONGO_TIMEOUT_MS = 30_000
 
 
 @dataclass
 class CacheConfig:
+    mongo_connection_timeout_ms: int = CACHE_CONNECTION_MONGO_TIMEOUT_MS
     mongo_database: str = CACHE_MONGO_DATABASE
     mongo_url: str = CACHE_MONGO_URL
 
@@ -75,14 +77,21 @@ class CacheConfig:
 
     def __post_init__(self):
         self.mongo_connection = MongoConnection(
-            database=self.mongo_database, alias=CACHE_DATABASE_ALIAS, host=self.mongo_url
+            database=self.mongo_database,
+            alias=CACHE_DATABASE_ALIAS,
+            host=self.mongo_url,
+            serverSelectionTimeoutMS=self.mongo_connection_timeout_ms,
         )
+        self.mongo_connection.check_connection()
 
     @staticmethod
     def from_env() -> "CacheConfig":
         env = Env(expand_vars=True)
         with env.prefixed("CACHE_"):
             return CacheConfig(
+                mongo_connection_timeout_ms=env.str(
+                    name="CONNECTION_MONGO_TIMEOUT_MS", default=CACHE_CONNECTION_MONGO_TIMEOUT_MS
+                ),
                 mongo_database=env.str(name="MONGO_DATABASE", default=CACHE_MONGO_DATABASE),
                 mongo_url=env.str(name="MONGO_URL", default=CACHE_MONGO_URL),
             )
@@ -91,11 +100,13 @@ class CacheConfig:
 QUEUE_MAX_JOBS_PER_NAMESPACE = 1
 QUEUE_MONGO_DATABASE = "datasets_server_queue"
 QUEUE_MONGO_URL = "mongodb://localhost:27017"
+QUEUE_CONNECTION_MONGO_TIMEOUT_MS = 30_000
 
 
 @dataclass
 class QueueConfig:
     max_jobs_per_namespace: int = QUEUE_MAX_JOBS_PER_NAMESPACE
+    mongo_connection_timeout_ms: int = QUEUE_CONNECTION_MONGO_TIMEOUT_MS
     mongo_database: str = QUEUE_MONGO_DATABASE
     mongo_url: str = QUEUE_MONGO_URL
 
@@ -103,8 +114,12 @@ class QueueConfig:
 
     def __post_init__(self):
         self.mongo_connection = MongoConnection(
-            database=self.mongo_database, alias=QUEUE_DATABASE_ALIAS, host=self.mongo_url
+            database=self.mongo_database,
+            alias=QUEUE_DATABASE_ALIAS,
+            host=self.mongo_url,
+            serverSelectionTimeoutMS=self.mongo_connection_timeout_ms,
         )
+        self.mongo_connection.check_connection()
 
     @staticmethod
     def from_env() -> "QueueConfig":
@@ -112,6 +127,9 @@ class QueueConfig:
         with env.prefixed("QUEUE_"):
             return QueueConfig(
                 max_jobs_per_namespace=env.int(name="MAX_JOBS_PER_NAMESPACE", default=QUEUE_MAX_JOBS_PER_NAMESPACE),
+                mongo_connection_timeout_ms=env.str(
+                    name="CONNECTION_MONGO_TIMEOUT_MS", default=QUEUE_CONNECTION_MONGO_TIMEOUT_MS
+                ),
                 mongo_database=env.str(name="MONGO_DATABASE", default=QUEUE_MONGO_DATABASE),
                 mongo_url=env.str(name="MONGO_URL", default=QUEUE_MONGO_URL),
             )

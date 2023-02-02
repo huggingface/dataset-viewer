@@ -1,19 +1,35 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2022 The HuggingFace Authors.
 
+import logging
 import sys
 
 from mongodb_migration.collector import MigrationsCollector
-from mongodb_migration.config import JobConfig
+from mongodb_migration.config import CheckError, JobConfig
 from mongodb_migration.plan import Plan
 
-if __name__ == "__main__":
-    job_config = JobConfig.from_env()
-    collected_migrations = MigrationsCollector().get_migrations()
+
+def run_job() -> None:
     try:
-        Plan(collected_migrations=collected_migrations).execute()
+        job_config = JobConfig.from_env()
+    except CheckError:
+        logging.info("No connection to the database, skipping migrations")
+        return
+    collected_migrations = MigrationsCollector().get_migrations()
+    Plan(collected_migrations=collected_migrations).execute()
+
+    # TODO: use a context manager
+    job_config.mongodb_migration.mongo_connection.disconnect()
+    job_config.cache.mongo_connection.disconnect()
+    job_config.queue.mongo_connection.disconnect()
+
+
+if __name__ == "__main__":
+    try:
+        run_job()
         sys.exit(0)
-    except Exception:
+    except Exception as e:
+        logging.error(e, exc_info=True)
         sys.exit(1)
 
 # See:

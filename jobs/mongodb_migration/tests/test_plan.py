@@ -5,6 +5,7 @@ from typing import List, Optional, Type
 
 import pytest
 
+from mongodb_migration.config import JobConfig
 from mongodb_migration.database_migrations import (
     DatabaseMigration,
     _clean_maintenance_database,
@@ -14,7 +15,7 @@ from mongodb_migration.plan import Plan, SavedMigrationsError
 
 
 @pytest.fixture(autouse=True)
-def clean_mongo_database() -> None:
+def clean_mongo_database(job_config: JobConfig) -> None:
     _clean_maintenance_database()
 
 

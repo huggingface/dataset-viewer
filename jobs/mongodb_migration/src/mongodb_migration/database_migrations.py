@@ -4,7 +4,7 @@
 import types
 from typing import Generic, Type, TypeVar
 
-from mongoengine import Document, DoesNotExist, connect
+from mongoengine import Document, DoesNotExist
 from mongoengine.fields import StringField
 from mongoengine.queryset.queryset import QuerySet
 
@@ -27,11 +27,7 @@ class QuerySetManager(Generic[U]):
 
 # END monkey patching ### hack ###
 
-DATABASE_ALIAS = "maintenance"
-
-
-def connect_to_database(database: str, host: str) -> None:
-    connect(db=database, alias=DATABASE_ALIAS, host=host)
+MAINTENANCE_DATABASE_ALIAS = "maintenance"
 
 
 class DatabaseMigration(Document):
@@ -44,7 +40,7 @@ class DatabaseMigration(Document):
 
     meta = {
         "collection": "databaseMigrations",
-        "db_alias": DATABASE_ALIAS,
+        "db_alias": MAINTENANCE_DATABASE_ALIAS,
     }
     version = StringField(required=True)
     description = StringField(required=True)

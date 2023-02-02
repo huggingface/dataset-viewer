@@ -9,12 +9,14 @@ services:
       # huggingface_hub
       HF_ENDPOINT: ${COMMON_HF_ENDPOINT-https://huggingface.co} # see https://github.com/huggingface/datasets/pull/5196#issuecomment-1322191411
       # cache
-      CACHE_MONGO_URL: ${CACHE_MONGO_URL-mongodb://mongodb} # use mongo container by default
+      CACHE_MONGO_CONNECTION_TIMEOUT_MS: ${CACHE_MONGO_CONNECTION_TIMEOUT_MS-30_000}
       CACHE_MONGO_DATABASE: ${CACHE_MONGO_DATABASE-datasets_server_cache}
+      CACHE_MONGO_URL: ${CACHE_MONGO_URL-mongodb://mongodb} # use mongo container by default
       # queue
       QUEUE_MAX_JOBS_PER_NAMESPACE: ${QUEUE_MAX_JOBS_PER_NAMESPACE-1}
-      QUEUE_MONGO_URL: ${QUEUE_MONGO_URL-mongodb://mongodb} # use mongo container by default
+      QUEUE_MONGO_CONNECTION_TIMEOUT_MS: ${QUEUE_MONGO_CONNECTION_TIMEOUT_MS-30_000}
       QUEUE_MONGO_DATABASE: ${QUEUE_MONGO_DATABASE-datasets_server_queue}
+      QUEUE_MONGO_URL: ${QUEUE_MONGO_URL-mongodb://mongodb} # use mongo container by default
       # worker
       WORKER_LOOP_MAX_DISK_USAGE_PCT: ${WORKER_LOOP_MAX_DISK_USAGE_PCT-90}
       WORKER_LOOP_MAX_LOAD_PCT: ${WORKER_LOOP_MAX_LOAD_PCT-70}

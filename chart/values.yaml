@@ -85,10 +85,14 @@ mongodb:
     create: false
 
 cache:
+  # Timeout in milliseconds for the connection to the mongo db server
+  mongoConnectionTimeoutMs: 30_000
   # Name of the mongo db database used to cache the API responses
   mongoDatabase: "datasets_server_cache"
 
 queue:
+  # Timeout in milliseconds for the connection to the mongo db server
+  mongoConnectionTimeoutMs: 30_000
   # Maximum number of jobs running at the same time for the same namespace
   maxJobsPerNamespace: 1
   # Name of the mongo db database used to store the jobs queue
@@ -117,6 +121,8 @@ cacheDirectory: "/datasets-server-cache"
 # --- jobs (pre-install/upgrade hooks) ---
 
 mongodbMigration:
+  # Timeout in milliseconds for the connection to the mongo db server
+  mongoConnectionTimeoutMs: 30_000
   # Name of the mongo db database used for storing the migrations history
   mongoDatabase: "datasets_server_maintenance"
 
