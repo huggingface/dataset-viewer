@@ -5,6 +5,8 @@ name: jobs/mongodb_migration
 on:
   workflow_dispatch:
   push:
+    branches:
+      - main
     paths:
       - 'jobs/mongodb_migration/**'
       - 'libs/libcommon/**'
