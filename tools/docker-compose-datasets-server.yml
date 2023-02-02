@@ -73,7 +73,7 @@ services:
   worker-config-names:
     build:
       context: ..
-      dockerfile: workers/datasets_based/dev.Dockerfile
+      dockerfile: workers/datasets_based/Dockerfile
     # image: ${IMAGE_WORKER_DATASETS_BASED?IMAGE_WORKER_DATASETS_BASED env var must be provided}
     volumes:
       - splits-datasets-cache:${HF_DATASETS_CACHE-/datasets-cache}:rw
@@ -90,7 +90,7 @@ services:
   worker-split-names:
     build:
       context: ..
-      dockerfile: workers/datasets_based/dev.Dockerfile
+      dockerfile: workers/datasets_based/Dockerfile
     # image: ${IMAGE_WORKER_DATASETS_BASED?IMAGE_WORKER_DATASETS_BASED env var must be provided}
     volumes:
       - splits-datasets-cache:${HF_DATASETS_CACHE-/datasets-cache}:rw
@@ -107,7 +107,7 @@ services:
   worker-splits:
     build:
       context: ..
-      dockerfile: workers/datasets_based/dev.Dockerfile
+      dockerfile: workers/datasets_based/Dockerfile
     # image: ${IMAGE_WORKER_DATASETS_BASED?IMAGE_WORKER_DATASETS_BASED env var must be provided}
     volumes:
       - splits-datasets-cache:${HF_DATASETS_CACHE-/datasets-cache}:rw
@@ -124,7 +124,7 @@ services:
   worker-first-rows:
     build:
       context: ..
-      dockerfile: workers/datasets_based/dev.Dockerfile
+      dockerfile: workers/datasets_based/Dockerfile
     # image: ${IMAGE_WORKER_DATASETS_BASED?IMAGE_WORKER_DATASETS_BASED env var must be provided}
     volumes:
       - assets:${ASSETS_STORAGE_DIRECTORY-/assets}:rw
@@ -151,7 +151,7 @@ services:
   worker-parquet-and-dataset-info:
     build:
       context: ..
-      dockerfile: workers/datasets_based/dev.Dockerfile
+      dockerfile: workers/datasets_based/Dockerfile
     # image: ${IMAGE_WORKER_DATASETS_BASED?IMAGE_WORKER_DATASETS_BASED env var must be provided}
     volumes:
       - parquet-datasets-cache:${HF_DATASETS_CACHE-/datasets-cache}:rw
@@ -176,7 +176,7 @@ services:
   worker-parquet:
     build:
       context: ..
-      dockerfile: workers/datasets_based/dev.Dockerfile
+      dockerfile: workers/datasets_based/Dockerfile
     # image: ${IMAGE_WORKER_DATASETS_BASED?IMAGE_WORKER_DATASETS_BASED env var must be provided}
     extends:
       file: docker-compose-base.yml
@@ -189,7 +189,7 @@ services:
   worker-dataset-info:
     build:
       context: ..
-      dockerfile: workers/datasets_based/dev.Dockerfile
+      dockerfile: workers/datasets_based/Dockerfile
     # image: ${IMAGE_WORKER_DATASETS_BASED?IMAGE_WORKER_DATASETS_BASED env var must be provided}
     extends:
       file: docker-compose-base.yml
@@ -202,7 +202,7 @@ services:
   worker-sizes:
     build:
       context: ..
-      dockerfile: workers/datasets_based/dev.Dockerfile
+      dockerfile: workers/datasets_based/Dockerfile
     # image: ${IMAGE_WORKER_DATASETS_BASED?IMAGE_WORKER_DATASETS_BASED env var must be provided}
     extends:
       file: docker-compose-base.yml
