@@ -114,7 +114,7 @@ class TooBigContentError(FirstRowsWorkerError):
     """Raised when the first rows content exceeded the max size of bytes."""
 
     def __init__(self, message: str, cause: Optional[BaseException] = None):
-        super().__init__(message, HTTPStatus.INTERNAL_SERVER_ERROR, "TooBigContentError", cause, True)
+        super().__init__(message, HTTPStatus.INTERNAL_SERVER_ERROR, "TooBigContentError", cause, False)
 
 
 def retry():
