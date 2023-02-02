@@ -452,7 +452,7 @@ def compute_first_rows_response(
         - [`~workers.first_rows.RowsPostProcessingError`]
           If the post-processing of the split rows failed, e.g. while saving the images or audio files to the assets.
         - [`~workers.first_rows.TooManyColumnsError`]
-          If the response cannot be saved because of too many columns in the dataset.
+          If the number of columns (features) exceeds the maximum supported number of columns.
     </Tip>
     """
     logging.info(f"get first-rows for dataset={dataset} config={config} split={split}")
