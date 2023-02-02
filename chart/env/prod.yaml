@@ -226,6 +226,9 @@ firstRows:
   queue:
     # Maximum number of jobs running at the same time for the same namespace
     maxJobsPerNamespace: 4
+  
+  # Max number of columns in the /first-rows endpoint response
+  columnsMaxNumber: 1_000
 
   nodeSelector:
     role-datasets-server: "true"

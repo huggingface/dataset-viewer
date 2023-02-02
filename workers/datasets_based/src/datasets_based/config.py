@@ -46,6 +46,7 @@ FIRST_ROWS_MAX_BYTES = 1_000_000
 FIRST_ROWS_MAX_NUMBER = 100
 FIRST_ROWS_CELL_MIN_BYTES = 100
 FIRST_ROWS_MIN_NUMBER = 10
+FIRST_ROWS_COLUMNS_MAX_NUMBER = 1_000
 
 
 @dataclass
@@ -56,6 +57,7 @@ class FirstRowsConfig:
     max_number: int = FIRST_ROWS_MAX_NUMBER
     min_cell_bytes: int = FIRST_ROWS_CELL_MIN_BYTES
     min_number: int = FIRST_ROWS_MIN_NUMBER
+    columns_max_number: int = FIRST_ROWS_COLUMNS_MAX_NUMBER
 
     @staticmethod
     def from_env() -> "FirstRowsConfig":
@@ -70,6 +72,7 @@ class FirstRowsConfig:
                 max_number=env.int(name="MAX_NUMBER", default=FIRST_ROWS_MAX_NUMBER),
                 min_cell_bytes=env.int(name="CELL_MIN_BYTES", default=FIRST_ROWS_CELL_MIN_BYTES),
                 min_number=env.int(name="MIN_NUMBER", default=FIRST_ROWS_MIN_NUMBER),
+                columns_max_number=env.int(name="COLUMNS_MAX_NUMBER", default=FIRST_ROWS_COLUMNS_MAX_NUMBER),
             )
 
 
