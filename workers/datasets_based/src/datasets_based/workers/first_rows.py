@@ -432,7 +432,7 @@ def compute_first_rows_response(
         rows_min_number (`int`):
             The minimum number of rows of the response.
         columns_max_number (`int`):
-            The maximun number of columns allowed.
+            The maximum number of columns supported.
     Returns:
         [`FirstRowsResponse`]: The list of first rows of the split.
     <Tip>
