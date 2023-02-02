@@ -514,7 +514,7 @@ def compute_first_rows_response(
 
     # validate size of response without the rows
     features_list = to_features_list(features=features)
-    response: FirstRowsResponse = {
+    response_features_only: FirstRowsResponse = {
         "dataset": dataset,
         "config": config,
         "split": split,
