@@ -64,12 +64,12 @@ class CommonConfig:
 
 CACHE_MONGO_DATABASE = "datasets_server_cache"
 CACHE_MONGO_URL = "mongodb://localhost:27017"
-CACHE_CONNECTION_MONGO_TIMEOUT_MS = 30_000
+CACHE_MONGO_CONNECTION_TIMEOUT_MS = 30_000
 
 
 @dataclass
 class CacheConfig:
-    mongo_connection_timeout_ms: int = CACHE_CONNECTION_MONGO_TIMEOUT_MS
+    mongo_connection_timeout_ms: int = CACHE_MONGO_CONNECTION_TIMEOUT_MS
     mongo_database: str = CACHE_MONGO_DATABASE
     mongo_url: str = CACHE_MONGO_URL
 
@@ -90,7 +90,7 @@ class CacheConfig:
         with env.prefixed("CACHE_"):
             return CacheConfig(
                 mongo_connection_timeout_ms=env.str(
-                    name="CONNECTION_MONGO_TIMEOUT_MS", default=CACHE_CONNECTION_MONGO_TIMEOUT_MS
+                    name="MONGO_CONNECTION_TIMEOUT_MS", default=CACHE_MONGO_CONNECTION_TIMEOUT_MS
                 ),
                 mongo_database=env.str(name="MONGO_DATABASE", default=CACHE_MONGO_DATABASE),
                 mongo_url=env.str(name="MONGO_URL", default=CACHE_MONGO_URL),
@@ -100,13 +100,13 @@ class CacheConfig:
 QUEUE_MAX_JOBS_PER_NAMESPACE = 1
 QUEUE_MONGO_DATABASE = "datasets_server_queue"
 QUEUE_MONGO_URL = "mongodb://localhost:27017"
-QUEUE_CONNECTION_MONGO_TIMEOUT_MS = 30_000
+QUEUE_MONGO_CONNECTION_TIMEOUT_MS = 30_000
 
 
 @dataclass
 class QueueConfig:
     max_jobs_per_namespace: int = QUEUE_MAX_JOBS_PER_NAMESPACE
-    mongo_connection_timeout_ms: int = QUEUE_CONNECTION_MONGO_TIMEOUT_MS
+    mongo_connection_timeout_ms: int = QUEUE_MONGO_CONNECTION_TIMEOUT_MS
     mongo_database: str = QUEUE_MONGO_DATABASE
     mongo_url: str = QUEUE_MONGO_URL
 
@@ -128,7 +128,7 @@ class QueueConfig:
             return QueueConfig(
                 max_jobs_per_namespace=env.int(name="MAX_JOBS_PER_NAMESPACE", default=QUEUE_MAX_JOBS_PER_NAMESPACE),
                 mongo_connection_timeout_ms=env.str(
-                    name="CONNECTION_MONGO_TIMEOUT_MS", default=QUEUE_CONNECTION_MONGO_TIMEOUT_MS
+                    name="MONGO_CONNECTION_TIMEOUT_MS", default=QUEUE_MONGO_CONNECTION_TIMEOUT_MS
                 ),
                 mongo_database=env.str(name="MONGO_DATABASE", default=QUEUE_MONGO_DATABASE),
                 mongo_url=env.str(name="MONGO_URL", default=QUEUE_MONGO_URL),
