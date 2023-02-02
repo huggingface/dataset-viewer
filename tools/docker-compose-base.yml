@@ -28,3 +28,5 @@ services:
       DATASETS_BASED_HF_DATASETS_CACHE: ${HF_DATASETS_CACHE-/datasets-cache}
       HF_MODULES_CACHE: ${HF_DATASETS_CACHE-/modules-cache}
       NUMBA_CACHE_DIR: ${NUMBA_CACHE_DIR-/numba-cache}
+    volumes:
+      - ../workers/datasets_based/src:/src/workers/datasets_based/src
