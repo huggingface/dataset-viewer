@@ -369,11 +369,6 @@ def to_features_list(features: Features) -> List[FeatureItem]:
     ]
 
 
-def validate_content_size(obj: Any, rows_max_bytes: int):
-    if get_json_size(obj) > rows_max_bytes:
-        raise TooBigContentError("The first rows content after truncation exceeds the maximum size.")
-
-
 class SplitFullName(TypedDict):
     dataset: str
     config: str
@@ -522,7 +517,8 @@ def compute_first_rows_response(
         "rows": [],
     }
 
-    validate_content_size(response_features_only, rows_max_bytes=rows_max_bytes)
+    if get_json_size(response_features_only) > rows_max_bytes:
+        raise TooBigContentError("The first rows content after truncation exceeds the maximum size.")
 
     # get the rows
     try:
