@@ -572,7 +572,7 @@ def compute_first_rows_response(
         ) from err
 
     # truncate the rows to fit within the restrictions, and prepare them as RowItems
-    surrounding_json_size = get_json_size(response)
+    surrounding_json_size = get_json_size(response_features_only)
     row_items = create_truncated_row_items(
         rows=transformed_rows,
         min_cell_bytes=min_cell_bytes,
