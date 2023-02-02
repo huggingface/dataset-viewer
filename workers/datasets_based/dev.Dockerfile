@@ -33,7 +33,8 @@ RUN poetry install --no-cache
 
 # FOR LOCAL DEVELOPMENT ENVIRONMENT
 # No need to copy the source code since we map a volume in docker-compose-base.yaml
-# COPY workers/datasets_based/src ./src
-# RUN poetry install --no-cache
-
-ENTRYPOINT ["poetry", "run", "python", "src/datasets_based/main.py"]
+# Removed: COPY workers/datasets_based/src ./src
+# Removed: RUN poetry install --no-cache
+# However we need to install the package when the container starts
+# Added: poetry install
+ENTRYPOINT ["/bin/sh", "-c" , "poetry install && poetry run python src/datasets_based/main.py"]
