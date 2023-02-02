@@ -507,7 +507,7 @@ def compute_first_rows_response(
     else:
         features = info.features
 
-    if len(features) > columns_max_number:
+    if features and len(features) > columns_max_number:
         raise TooManyColumnsError(
             f"Too many columns. The maximum supported number of columns is {columns_max_number}."
         )
