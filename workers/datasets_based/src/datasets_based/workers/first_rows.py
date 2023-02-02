@@ -522,7 +522,7 @@ def compute_first_rows_response(
         "rows": [],
     }
 
-    validate_content_size(response, rows_max_bytes=rows_max_bytes)
+    validate_content_size(response_features_only, rows_max_bytes=rows_max_bytes)
 
     # get the rows
     try:
@@ -579,8 +579,9 @@ def compute_first_rows_response(
         rows_max_bytes=rows_max_bytes - surrounding_json_size,
         rows_min_number=rows_min_number,
     )
+
+    response = response_features_only
     response["rows"] = row_items
-    validate_content_size(response, rows_max_bytes=rows_max_bytes)
 
     # return the response
     return response

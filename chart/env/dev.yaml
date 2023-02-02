@@ -196,6 +196,7 @@ firstRows:
     limits:
       cpu: 1
       memory: "4Gi"
+  columnsMaxNumber: 1_000
 
 parquetAndDatasetInfo:
 
