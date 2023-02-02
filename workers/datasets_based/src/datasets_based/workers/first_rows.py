@@ -448,6 +448,8 @@ def compute_first_rows_response(
           If the post-processing of the split rows failed, e.g. while saving the images or audio files to the assets.
         - [`~workers.first_rows.TooManyColumnsError`]
           If the number of columns (features) exceeds the maximum supported number of columns.
+        - [`~workers.first_rows.TooBigContentError`]
+          If the first rows content exceeds the maximum supported size of bytes.
     </Tip>
     """
     logging.info(f"get first-rows for dataset={dataset} config={config} split={split}")
@@ -517,7 +519,8 @@ def compute_first_rows_response(
         "rows": [],
     }
 
-    if get_json_size(response_features_only) > rows_max_bytes:
+    surrounding_json_size = get_json_size(response_features_only)
+    if surrounding_json_size > rows_max_bytes:
         raise TooBigContentError("The first rows content after truncation exceeds the maximum size.")
 
     # get the rows
@@ -568,7 +571,6 @@ def compute_first_rows_response(
         ) from err
 
     # truncate the rows to fit within the restrictions, and prepare them as RowItems
-    surrounding_json_size = get_json_size(response_features_only)
     row_items = create_truncated_row_items(
         rows=transformed_rows,
         min_cell_bytes=min_cell_bytes,
