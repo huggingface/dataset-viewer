@@ -186,5 +186,4 @@ def test_truncation(
         assert error_info.value.code == error_code
     else:
         response = worker.compute()
-        print(get_json_size(response))
         assert get_json_size(response) <= rows_max_bytes
