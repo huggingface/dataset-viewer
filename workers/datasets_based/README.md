@@ -46,7 +46,6 @@ Set environment variables to configure the first rows worker (`FIRST_ROWS_` pref
 - `FIRST_ROWS_MIN_NUMBER`: the min number of rows fetched by the worker for the split and provided in the /first-rows endpoint response. Defaults to `10`.
 - `FIRST_ROWS_COLUMNS_MAX_NUMBER`: the max number of columns (features) provided in the /first-rows endpoint response. If the number of columns is greater than the limit, an error is returned. Defaults to `1_000`.
 
-
 Also, set the assets-related configuration for the first-rows worker. See [../../libs/libcommon/README.md](../../libs/libcommon/README.md).
 
 ### Parquet and dataset info worker
