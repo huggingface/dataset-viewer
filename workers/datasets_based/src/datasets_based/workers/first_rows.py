@@ -513,7 +513,8 @@ def compute_first_rows_response(
     if features and len(features) > columns_max_number:
         raise TooManyColumnsError(
             f"The number of columns ({len(features)}) exceeds the maximum supported number of columns"
-            f" ({columns_max_number})."
+            f" ({columns_max_number}). This is a current limitation of the datasets viewer. You can reduce the number"
+            " of columns if you want the viewer to work."
         )
 
     # validate size of response without the rows
@@ -529,8 +530,8 @@ def compute_first_rows_response(
     surrounding_json_size = get_json_size(response_features_only)
     if surrounding_json_size > rows_max_bytes:
         raise TooBigContentError(
-            f"The size of the first rows content after truncation ({surrounding_json_size} B) exceeds the maximum"
-            f" supported size ({rows_max_bytes} B)."
+            f"The size of the content of the first rows ({surrounding_json_size} B) exceeds the maximum"
+            f" supported size ({rows_max_bytes} B) even after truncation. Please report the issue."
         )
 
     # get the rows
