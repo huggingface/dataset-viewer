@@ -436,12 +436,12 @@ def compute_first_rows_response(
     try:
         split_full_names = get_dataset_split_full_names(dataset=dataset, use_auth_token=use_auth_token)
     except _EmptyDatasetError as err:
-        raise EmptyDatasetError("The dataset is empty.", cause=err) from err
+        raise EmptyDatasetError(f"The dataset '{dataset}' is empty.", cause=err) from err
     except Exception as err:
-        raise SplitsNamesError("Cannot get the split names for the dataset.", cause=err) from err
+        raise SplitsNamesError(f"Cannot get the split names for the dataset '{dataset}'.", cause=err) from err
     # ^ can raise DatasetNotFoundError or SplitsNamesError
     if config not in [split_full_name["config"] for split_full_name in split_full_names]:
-        raise ConfigNotFoundError(f"config {config} does not exist for dataset {dataset}")
+        raise ConfigNotFoundError(f"The config '{config}' does not exist for dataset '{dataset}'")
     if {"dataset": dataset, "config": config, "split": split} not in [
         {
             "dataset": split_full_name["dataset"],
@@ -450,7 +450,9 @@ def compute_first_rows_response(
         }
         for split_full_name in split_full_names
     ]:
-        raise SplitNotFoundError("The config or the split does not exist in the dataset")
+        raise SplitNotFoundError(
+            f"The split '{split}' does not exist for the config '{config}' of dataset '{dataset}'"
+        )
     # get the features
     try:
         info = get_dataset_config_info(
@@ -459,7 +461,9 @@ def compute_first_rows_response(
             use_auth_token=use_auth_token,
         )
     except Exception as err:
-        raise InfoError("The info cannot be fetched for the dataset config.", cause=err) from err
+        raise InfoError(
+            f"The info cannot be fetched for config '{config}' of dataset '{dataset}'.", cause=err
+        ) from err
     if not info.features:
         try:
             # https://github.com/huggingface/datasets/blob/f5826eff9b06ab10dba1adfa52543341ef1e6009/src/datasets/iterable_dataset.py#L1255
@@ -471,13 +475,19 @@ def compute_first_rows_response(
                 use_auth_token=use_auth_token,
             )
             if not isinstance(iterable_dataset, IterableDataset):
-                raise TypeError("load_dataset should return an IterableDataset")
+                raise TypeError("load_dataset should return an IterableDataset. Please fix your loading script.")
             iterable_dataset = iterable_dataset._resolve_features()
             if not isinstance(iterable_dataset, IterableDataset):
-                raise TypeError("load_dataset should return an IterableDataset")
+                raise TypeError("load_dataset should return an IterableDataset. Please fix your loading script.")
             features = iterable_dataset.features
         except Exception as err:
-            raise FeaturesError("The split features (columns) cannot be extracted.", cause=err) from err
+            raise FeaturesError(
+                (
+                    f"Cannot extract the features (columns) for split '{split}' of config '{config}' of dataset"
+                    f" '{dataset}'."
+                ),
+                cause=err,
+            ) from err
     else:
         features = info.features
     # get the rows
@@ -581,7 +591,7 @@ class FirstRowsWorker(DatasetsBasedWorker):
         )
 
     def get_new_splits(self, _: Mapping[str, Any]) -> set[_SplitFullName]:
-        """Get the set of new splits, from the content created by the compute."""
+        """Get the set of new splits, from the content created by compute."""
         if self.config is None or self.split is None:
             raise ValueError("config and split are required")
         return {_SplitFullName(dataset=self.dataset, config=self.config, split=self.split)}
