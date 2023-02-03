@@ -72,7 +72,9 @@ def compute_dataset_info_response(dataset: str) -> DatasetInfoResponse:
     try:
         response = get_response(kind="/parquet-and-dataset-info", dataset=dataset)
     except DoesNotExist as e:
-        raise DatasetNotFoundError("No response found in previous step for this dataset.", e) from e
+        raise DatasetNotFoundError(
+            "No response found in previous step for this dataset: '/parquet-and-dataset-info' endpoint.", e
+        ) from e
     if response["http_status"] != HTTPStatus.OK:
         raise PreviousStepStatusError(
             f"Previous step gave an error: {response['http_status']}. This job should not have been created."
