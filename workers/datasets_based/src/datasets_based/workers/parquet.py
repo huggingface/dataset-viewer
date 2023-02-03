@@ -82,7 +82,7 @@ def compute_parquet_response(dataset: str) -> ParquetResponse:
         )
     content = response["content"]
     if "parquet_files" not in content:
-        raise PreviousStepFormatError("Previous step did not return the expected content.")
+        raise PreviousStepFormatError("Previous step did not return the expected content: 'parquet_files'.")
     return {
         "parquet_files": content["parquet_files"],
     }

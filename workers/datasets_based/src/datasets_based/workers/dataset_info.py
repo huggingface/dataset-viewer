@@ -79,7 +79,7 @@ def compute_dataset_info_response(dataset: str) -> DatasetInfoResponse:
         )
     content = response["content"]
     if "dataset_info" not in content:
-        raise PreviousStepFormatError("Previous step did not return the expected content.")
+        raise PreviousStepFormatError("Previous step did not return the expected content: 'dataset_info'.")
     return {
         "dataset_info": content["dataset_info"],
     }
