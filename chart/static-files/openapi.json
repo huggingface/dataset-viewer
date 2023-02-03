@@ -98,7 +98,7 @@
         },
         "examples": {
           "SplitsResponseNotReadyError": {
-            "summary": "The list of splits is not ready yet. Please retry later.",
+            "summary": "The server is busier than usual and the list of splits is not ready yet. Please retry later.",
             "value": "SplitsResponseNotReadyError"
           },
           "SplitsNamesError": {
@@ -1168,7 +1168,7 @@
                   "not-ready": {
                     "summary": "the response is not ready yet.",
                     "value": {
-                      "error": "The list of splits is not ready yet. Please retry later."
+                      "error": "The server is busier than usual and the list of splits is not ready yet. Please retry later."
                     }
                   },
                   "internal": {
