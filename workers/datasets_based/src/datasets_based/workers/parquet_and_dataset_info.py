@@ -307,8 +307,8 @@ def raise_if_too_big_from_datasets(
     """
     if datasets.config.HF_ENDPOINT != hf_endpoint:
         raise ValueError(
-            "datasets.config.HF_ENDPOINT should have already been set to {hf_endpoint}. "
-            f"Current value: {datasets.config.HF_ENDPOINT}. "
+            f"Invalid datasets.config.HF_ENDPOINT value: '{datasets.config.HF_ENDPOINT}'. Please set it to:"
+            f" '{hf_endpoint}'."
         )
     dataset_size = 0
     with contextlib.suppress(Exception):
@@ -316,8 +316,9 @@ def raise_if_too_big_from_datasets(
         dataset_size = sum(value.dataset_size for value in infos.values() if value.dataset_size is not None)
     if dataset_size > max_dataset_size:
         raise DatasetTooBigFromDatasetsError(
-            f"The conversion to parquet is limited to datasets under {max_dataset_size} bytes. "
-            f"Current size as given per the datasets library is {dataset_size} bytes."
+            f"The dataset is too big to be converted to Parquet. The size of the dataset ({dataset_size} B, as given"
+            f" per the datasets library) exceeds the maximum supported size ({max_dataset_size} B). Please report the"
+            " issue."
         )
 
 
