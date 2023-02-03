@@ -96,7 +96,7 @@ def compute_sizes_response(dataset: str) -> SizesResponse:
     <Tip>
     Raises the following errors:
         - [`~workers.sizes.PreviousStepStatusError`]
-          If the the previous step gave an error.
+          If the previous step gave an error.
         - [`~workers.sizes.PreviousStepFormatError`]
             If the content of the previous step has not the expected format
     </Tip>

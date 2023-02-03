@@ -63,7 +63,7 @@ def compute_parquet_response(dataset: str) -> ParquetResponse:
     <Tip>
     Raises the following errors:
         - [`~workers.parquet.PreviousStepStatusError`]
-          If the the previous step gave an error.
+          If the previous step gave an error.
         - [`~workers.parquet.PreviousStepFormatError`]
             If the content of the previous step has not the expected format
     </Tip>
