@@ -459,12 +459,12 @@ def compute_first_rows_response(
     try:
         split_full_names = get_dataset_split_full_names(dataset=dataset, use_auth_token=use_auth_token)
     except _EmptyDatasetError as err:
-        raise EmptyDatasetError(f"The dataset '{dataset}' is empty.", cause=err) from err
+        raise EmptyDatasetError(f"The dataset is empty. Please fix your loading script.", cause=err) from err
     except Exception as err:
-        raise SplitsNamesError(f"Cannot get the split names for the dataset '{dataset}'.", cause=err) from err
+        raise SplitsNamesError(f"Cannot get the split names for the dataset.", cause=err) from err
     # ^ can raise DatasetNotFoundError or SplitsNamesError
     if config not in [split_full_name["config"] for split_full_name in split_full_names]:
-        raise ConfigNotFoundError(f"The config '{config}' does not exist for dataset '{dataset}'")
+        raise ConfigNotFoundError(f"The config '{config}' does not exist for the dataset.'")
     if {"dataset": dataset, "config": config, "split": split} not in [
         {
             "dataset": split_full_name["dataset"],
@@ -473,9 +473,7 @@ def compute_first_rows_response(
         }
         for split_full_name in split_full_names
     ]:
-        raise SplitNotFoundError(
-            f"The split '{split}' does not exist for the config '{config}' of dataset '{dataset}'"
-        )
+        raise SplitNotFoundError(f"The split '{split}' does not exist for the config '{config}' of the dataset.")
     # get the features
     try:
         info = get_dataset_config_info(
@@ -484,9 +482,7 @@ def compute_first_rows_response(
             use_auth_token=use_auth_token,
         )
     except Exception as err:
-        raise InfoError(
-            f"The info cannot be fetched for config '{config}' of dataset '{dataset}'.", cause=err
-        ) from err
+        raise InfoError(f"The info cannot be fetched for the config '{config}' of the dataset.", cause=err) from err
     if not info.features:
         try:
             # https://github.com/huggingface/datasets/blob/f5826eff9b06ab10dba1adfa52543341ef1e6009/src/datasets/iterable_dataset.py#L1255
@@ -506,8 +502,8 @@ def compute_first_rows_response(
         except Exception as err:
             raise FeaturesError(
                 (
-                    f"Cannot extract the features (columns) for split '{split}' of config '{config}' of dataset"
-                    f" '{dataset}'."
+                    f"Cannot extract the features (columns) for the split '{split}' of the config '{config}' of the"
+                    " dataset."
                 ),
                 cause=err,
             ) from err
