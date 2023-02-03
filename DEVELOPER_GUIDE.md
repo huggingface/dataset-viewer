@@ -13,9 +13,20 @@ cd datasets-server
 
 Install docker (see https://docs.docker.com/engine/install/ubuntu/#install-using-the-repository and https://docs.docker.com/engine/install/linux-postinstall/)
 
-```
+Run the project locally:
+
+```bash
 make start
 ```
+
+Run the project in development mode:
+
+```bash
+make dev-start
+```
+
+In development mode, you don't need to rebuild the docker images to apply a change in a worker.
+You can just restart the worker's docker container and it will apply your changes.
 
 To install a single job (in [jobs](./jobs)), library (in [libs](./libs)), service (in [services](./services)) or worker (in [workers](./workers)), go to their respective directory, and install Python 3.9 (consider [pyenv](https://github.com/pyenv/pyenv)) and [poetry](https://python-poetry.org/docs/master/#installation) (don't forget to add `poetry` to the `PATH` environment variable).
 
@@ -30,7 +41,7 @@ poetry env use python3.9
 
 then:
 
-```
+```bash
 make install
 ```
 
