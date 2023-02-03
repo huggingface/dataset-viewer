@@ -459,9 +459,9 @@ def compute_first_rows_response(
     try:
         split_full_names = get_dataset_split_full_names(dataset=dataset, use_auth_token=use_auth_token)
     except _EmptyDatasetError as err:
-        raise EmptyDatasetError(f"The dataset is empty. Please fix your loading script.", cause=err) from err
+        raise EmptyDatasetError("The dataset is empty. Please fix your loading script.", cause=err) from err
     except Exception as err:
-        raise SplitsNamesError(f"Cannot get the split names for the dataset.", cause=err) from err
+        raise SplitsNamesError("Cannot get the split names for the dataset.", cause=err) from err
     # ^ can raise DatasetNotFoundError or SplitsNamesError
     if config not in [split_full_name["config"] for split_full_name in split_full_names]:
         raise ConfigNotFoundError(f"The config '{config}' does not exist for the dataset.'")
