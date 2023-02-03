@@ -5,6 +5,8 @@ name: workers/datasets_based
 on:
   workflow_dispatch:
   push:
+    branches:
+      - main
     paths:
       - 'libs/libcommon/**'
       - 'workers/datasets_based/**'

@@ -1,23 +1,30 @@
+from dataclasses import dataclass
+from http import HTTPStatus
 from typing import Any, Mapping, Optional
 
 import pytest
 from libcommon.config import CommonConfig
 from libcommon.processing_graph import ProcessingGraph, ProcessingStep
-from libcommon.queue import Priority, Queue, Status, _clean_queue_database
-from libcommon.simple_cache import SplitFullName, _clean_cache_database
+from libcommon.queue import Priority, Queue, Status
+from libcommon.simple_cache import SplitFullName, upsert_response
 
-from datasets_based.worker import Worker
+from datasets_based.config import AppConfig
+from datasets_based.worker import ERROR_CODES_TO_RETRY, Worker
 
 
 @pytest.fixture(autouse=True)
-def clean_mongo_database() -> None:
-    _clean_queue_database()
-    _clean_cache_database()
+def prepare_and_clean_mongo(app_config: AppConfig) -> None:
+    # prepare the database before each test, and clean it afterwards
+    pass
 
 
 class DummyWorker(Worker):
     # override get_dataset_git_revision to avoid making a request to the Hub
     def get_dataset_git_revision(self) -> Optional[str]:
+        return DummyWorker._get_dataset_git_revision()
+
+    @staticmethod
+    def _get_dataset_git_revision() -> Optional[str]:
         return "0.1.2"
 
     @staticmethod
@@ -75,14 +82,103 @@ def test_compare_major_version(
         assert worker.compare_major_version(other_version) == expected
 
 
+@dataclass
+class CacheEntry:
+    error_code: Optional[str]
+    worker_version: Optional[str]
+    dataset_git_revision: Optional[str]
+
+
+# .get_version()
+@pytest.mark.parametrize(
+    "force,cache_entry,expected_skip",
+    [
+        (
+            False,
+            CacheEntry(
+                error_code="DoNotRetry",  # an error that we don't want to retry
+                worker_version=DummyWorker.get_version(),
+                dataset_git_revision=DummyWorker._get_dataset_git_revision(),
+            ),
+            True,  # skip
+        ),
+        (
+            False,
+            CacheEntry(
+                error_code=None,  # no error
+                worker_version=DummyWorker.get_version(),
+                dataset_git_revision=DummyWorker._get_dataset_git_revision(),
+            ),
+            True,  # skip
+        ),
+        (
+            True,  # force
+            CacheEntry(
+                error_code="DoNotRetry",
+                worker_version=DummyWorker.get_version(),
+                dataset_git_revision=DummyWorker._get_dataset_git_revision(),
+            ),
+            False,  # process
+        ),
+        (
+            False,
+            None,  # no cache entry
+            False,  # process
+        ),
+        (
+            False,
+            CacheEntry(
+                error_code=ERROR_CODES_TO_RETRY[0],  # an error that we want to retry
+                worker_version=DummyWorker.get_version(),
+                dataset_git_revision=DummyWorker._get_dataset_git_revision(),
+            ),
+            False,  # process
+        ),
+        (
+            False,
+            CacheEntry(
+                error_code="DoNotRetry",
+                worker_version=None,  # no worker version
+                dataset_git_revision=DummyWorker._get_dataset_git_revision(),
+            ),
+            False,  # process
+        ),
+        (
+            False,
+            CacheEntry(
+                error_code="DoNotRetry",
+                worker_version="0.0.1",  # a different worker version
+                dataset_git_revision=DummyWorker._get_dataset_git_revision(),
+            ),
+            False,  # process
+        ),
+        (
+            False,
+            CacheEntry(
+                error_code="DoNotRetry",
+                worker_version=DummyWorker.get_version(),
+                dataset_git_revision=None,  # no dataset git revision
+            ),
+            False,  # process
+        ),
+        (
+            False,
+            CacheEntry(
+                error_code="DoNotRetry",
+                worker_version=DummyWorker.get_version(),
+                dataset_git_revision="different",  # a different dataset git revision
+            ),
+            False,  # process
+        ),
+    ],
+)
 def test_should_skip_job(
-    test_processing_step: ProcessingStep,
+    test_processing_step: ProcessingStep, force: bool, cache_entry: Optional[CacheEntry], expected_skip: bool
 ) -> None:
     job_id = "job_id"
     dataset = "dataset"
     config = "config"
     split = "split"
-    force = False
     worker = DummyWorker(
         job_info={
             "job_id": job_id,
@@ -96,10 +192,20 @@ def test_should_skip_job(
         processing_step=test_processing_step,
         common_config=CommonConfig(),
     )
-    assert worker.should_skip_job() is False
-    # we add an entry to the cache
-    worker.process()
-    assert worker.should_skip_job() is True
+    if cache_entry:
+        upsert_response(
+            kind=test_processing_step.cache_kind,
+            dataset=dataset,
+            config=config,
+            split=split,
+            content={},
+            http_status=HTTPStatus.OK,  # <- not important
+            error_code=cache_entry.error_code,
+            details=None,
+            worker_version=cache_entry.worker_version,
+            dataset_git_revision=cache_entry.dataset_git_revision,
+        )
+    assert worker.should_skip_job() is expected_skip
 
 
 def test_check_type(

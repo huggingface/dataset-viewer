@@ -296,6 +296,9 @@ firstRows:
   queue:
     # Maximum number of jobs running at the same time for the same namespace
     maxJobsPerNamespace: 1
+  # Max number of columns in the /first-rows endpoint response
+  columnsMaxNumber: 1_000
+
 
   nodeSelector: {}
   replicas: 1

@@ -5,6 +5,8 @@ name: Check openapi specification
 on:
   workflow_dispatch:
   push:
+    branches:
+      - main
     paths:
       - 'chart/static-files/opanapi.json'
       - '.github/workflows/openapi.yml'

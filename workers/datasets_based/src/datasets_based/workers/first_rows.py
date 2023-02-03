@@ -35,6 +35,8 @@ FirstRowsWorkerErrorCode = Literal[
     "StreamingRowsError",
     "NormalRowsError",
     "RowsPostProcessingError",
+    "TooManyColumnsError",
+    "TooBigContentError",
 ]
 
 
@@ -99,6 +101,20 @@ class RowsPostProcessingError(FirstRowsWorkerError):
 
     def __init__(self, message: str, cause: Optional[BaseException] = None):
         super().__init__(message, HTTPStatus.INTERNAL_SERVER_ERROR, "RowsPostProcessingError", cause, False)
+
+
+class TooManyColumnsError(FirstRowsWorkerError):
+    """Raised when the dataset exceeded the max number of columns."""
+
+    def __init__(self, message: str, cause: Optional[BaseException] = None):
+        super().__init__(message, HTTPStatus.INTERNAL_SERVER_ERROR, "TooManyColumnsError", cause, True)
+
+
+class TooBigContentError(FirstRowsWorkerError):
+    """Raised when the first rows content exceeded the max size of bytes."""
+
+    def __init__(self, message: str, cause: Optional[BaseException] = None):
+        super().__init__(message, HTTPStatus.INTERNAL_SERVER_ERROR, "TooBigContentError", cause, False)
 
 
 def retry():
@@ -379,6 +395,7 @@ def compute_first_rows_response(
     rows_max_bytes: int,
     rows_max_number: int,
     rows_min_number: int,
+    columns_max_number: int,
     assets_directory: str,
 ) -> FirstRowsResponse:
     """
@@ -409,6 +426,8 @@ def compute_first_rows_response(
             The maximum number of rows of the response.
         rows_min_number (`int`):
             The minimum number of rows of the response.
+        columns_max_number (`int`):
+            The maximum number of columns supported.
     Returns:
         [`FirstRowsResponse`]: The list of first rows of the split.
     <Tip>
@@ -427,6 +446,10 @@ def compute_first_rows_response(
           If the split rows could not be obtained using the datasets library in normal mode.
         - [`~workers.first_rows.RowsPostProcessingError`]
           If the post-processing of the split rows failed, e.g. while saving the images or audio files to the assets.
+        - [`~workers.first_rows.TooManyColumnsError`]
+          If the number of columns (features) exceeds the maximum supported number of columns.
+        - [`~workers.first_rows.TooBigContentError`]
+          If the first rows content exceeds the maximum supported size of bytes.
     </Tip>
     """
     logging.info(f"get first-rows for dataset={dataset} config={config} split={split}")
@@ -490,6 +513,26 @@ def compute_first_rows_response(
             ) from err
     else:
         features = info.features
+
+    if features and len(features) > columns_max_number:
+        raise TooManyColumnsError(
+            f"Too many columns. The maximum supported number of columns is {columns_max_number}."
+        )
+
+    # validate size of response without the rows
+    features_list = to_features_list(features=features)
+    response_features_only: FirstRowsResponse = {
+        "dataset": dataset,
+        "config": config,
+        "split": split,
+        "features": features_list,
+        "rows": [],
+    }
+
+    surrounding_json_size = get_json_size(response_features_only)
+    if surrounding_json_size > rows_max_bytes:
+        raise TooBigContentError("The first rows content after truncation exceeds the maximum size.")
+
     # get the rows
     try:
         rows = get_rows(
@@ -536,16 +579,7 @@ def compute_first_rows_response(
             "Server error while post-processing the split rows. Please report the issue.",
             cause=err,
         ) from err
-    # get the size of the surrounding JSON (without the rows)
-    features_list = to_features_list(features=features)
-    response: FirstRowsResponse = {
-        "dataset": dataset,
-        "config": config,
-        "split": split,
-        "features": features_list,
-        "rows": [],
-    }
-    surrounding_json_size = get_json_size(response)
+
     # truncate the rows to fit within the restrictions, and prepare them as RowItems
     row_items = create_truncated_row_items(
         rows=transformed_rows,
@@ -553,7 +587,10 @@ def compute_first_rows_response(
         rows_max_bytes=rows_max_bytes - surrounding_json_size,
         rows_min_number=rows_min_number,
     )
+
+    response = response_features_only
     response["rows"] = row_items
+
     # return the response
     return response
 
@@ -588,6 +625,7 @@ class FirstRowsWorker(DatasetsBasedWorker):
             rows_max_bytes=self.first_rows_config.max_bytes,
             rows_max_number=self.first_rows_config.max_number,
             rows_min_number=self.first_rows_config.min_number,
+            columns_max_number=self.first_rows_config.columns_max_number,
         )
 
     def get_new_splits(self, _: Mapping[str, Any]) -> set[_SplitFullName]:

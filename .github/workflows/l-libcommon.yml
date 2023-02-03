@@ -5,6 +5,8 @@ name: libs/libcommon
 on:
   workflow_dispatch:
   push:
+    branches:
+      - main
     paths:
       - 'libs/libcommon/**'
       - '.github/workflows/l-libcommon.yml'

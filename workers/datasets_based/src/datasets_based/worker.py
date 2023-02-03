@@ -12,6 +12,7 @@ from libcommon.exceptions import CustomError
 from libcommon.processing_graph import ProcessingStep
 from libcommon.queue import JobInfo, Priority, Queue, Status
 from libcommon.simple_cache import (
+    DoesNotExist,
     SplitFullName,
     delete_response,
     get_response,
@@ -27,6 +28,9 @@ WorkerErrorCode = Literal[
     "SplitNotFoundError",
     "UnexpectedError",
 ]
+
+# List of error codes that should trigger a retry.
+ERROR_CODES_TO_RETRY: list[str] = ["ClientConnectionError"]
 
 
 class WorkerError(CustomError):
@@ -218,15 +222,18 @@ class Worker(ABC):
             dataset=self.dataset, hf_endpoint=self.common_config.hf_endpoint, hf_token=self.common_config.hf_token
         )
 
+    # TODO: set the git revision as part of the job_info -> no need to get info from the Hub
+    # if None: run the job
     def should_skip_job(self) -> bool:
         """Return True if the job should be skipped, False otherwise.
 
         The job must be skipped if:
         - force is False
         - and a cache entry exists for the dataset
-        - and the result was successful
-        - and it has been created with the same major version of the worker
-        - and it has been created with the exact same git commit of the dataset repository
+        - and we can get the git commit and it's not None
+        - and the cached entry has been created with the same git commit of the dataset repository
+        - and the cached entry has been created with the same major version of the worker
+        - and the cached entry, if an error, is not among the list of errors that should trigger a retry
 
         Returns:
             :obj:`bool`: True if the job should be skipped, False otherwise.
@@ -237,17 +244,26 @@ class Worker(ABC):
             cached_response = get_response_without_content(
                 kind=self.processing_step.cache_kind, dataset=self.dataset, config=self.config, split=self.split
             )
-            dataset_git_revision = self.get_dataset_git_revision()
-            return (
-                # TODO: use "error_code" to decide if the job should be skipped (ex: retry if temporary error)
-                cached_response["http_status"] == HTTPStatus.OK
-                and cached_response["worker_version"] is not None
-                and self.compare_major_version(cached_response["worker_version"]) == 0
-                and cached_response["dataset_git_revision"] is not None
-                and cached_response["dataset_git_revision"] == dataset_git_revision
-            )
-        except Exception:
+        except DoesNotExist:
+            # no entry in the cache
             return False
+        if cached_response["error_code"] in ERROR_CODES_TO_RETRY:
+            # the cache entry result was a temporary error - we process it
+            return False
+        if (
+            cached_response["worker_version"] is None
+            or self.compare_major_version(cached_response["worker_version"]) != 0
+        ):
+            # no worker version in the cache, or the worker has been updated - we process the job to update the cache
+            return False
+        try:
+            dataset_git_revision = self.get_dataset_git_revision()
+        except Exception:
+            # an exception occurred while getting the git revision from the Hub - the job will fail anyway, but we
+            # process it to store the error in the cache
+            return False
+        return dataset_git_revision is not None and cached_response["dataset_git_revision"] == dataset_git_revision
+        # skip if the git revision has not changed
 
     def process(
         self,

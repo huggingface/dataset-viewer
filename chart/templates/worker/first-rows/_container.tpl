@@ -34,6 +34,8 @@
     value: {{ .Values.firstRows.minCellBytes | quote }}
   - name: FIRST_ROWS_MIN_NUMBER
     value: {{ .Values.firstRows.minNumber| quote }}
+  - name: FIRST_ROWS_COLUMNS_MAX_NUMBER
+    value: {{ .Values.firstRows.columnsMaxNumber| quote }}
   volumeMounts:
   {{ include "volumeMountAssetsRW" . | nindent 2 }}
   {{ include "volumeMountCache" . | nindent 2 }}
