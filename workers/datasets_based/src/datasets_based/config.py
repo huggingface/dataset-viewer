@@ -41,7 +41,6 @@ class DatasetsBasedConfig:
             )
 
 
-FIRST_ROWS_FALLBACK_MAX_DATASET_SIZE = 100_000_000
 FIRST_ROWS_MAX_BYTES = 1_000_000
 FIRST_ROWS_MAX_NUMBER = 100
 FIRST_ROWS_CELL_MIN_BYTES = 100
@@ -52,7 +51,6 @@ FIRST_ROWS_COLUMNS_MAX_NUMBER = 1_000
 @dataclass
 class FirstRowsConfig:
     assets: AssetsConfig = field(default_factory=AssetsConfig)
-    fallback_max_dataset_size: int = FIRST_ROWS_FALLBACK_MAX_DATASET_SIZE
     max_bytes: int = FIRST_ROWS_MAX_BYTES
     max_number: int = FIRST_ROWS_MAX_NUMBER
     min_cell_bytes: int = FIRST_ROWS_CELL_MIN_BYTES
@@ -65,9 +63,6 @@ class FirstRowsConfig:
         with env.prefixed("FIRST_ROWS_"):
             return FirstRowsConfig(
                 assets=AssetsConfig.from_env(),
-                fallback_max_dataset_size=env.int(
-                    name="FALLBACK_MAX_DATASET_SIZE", default=FIRST_ROWS_FALLBACK_MAX_DATASET_SIZE
-                ),
                 max_bytes=env.int(name="MAX_BYTES", default=FIRST_ROWS_MAX_BYTES),
                 max_number=env.int(name="MAX_NUMBER", default=FIRST_ROWS_MAX_NUMBER),
                 min_cell_bytes=env.int(name="CELL_MIN_BYTES", default=FIRST_ROWS_CELL_MIN_BYTES),
