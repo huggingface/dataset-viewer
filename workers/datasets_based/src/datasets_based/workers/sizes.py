@@ -66,7 +66,9 @@ class SizesWorkerError(WorkerError):
         cause: Optional[BaseException] = None,
         disclose_cause: bool = False,
     ):
-        super().__init__(message, status_code, str(code), cause, disclose_cause)
+        super().__init__(
+            message=message, status_code=status_code, code=code, cause=cause, disclose_cause=disclose_cause
+        )
 
 
 class PreviousStepStatusError(SizesWorkerError):

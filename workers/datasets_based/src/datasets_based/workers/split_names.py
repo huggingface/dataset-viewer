@@ -30,7 +30,7 @@ class SplitNamesWorkerError(WorkerError):
         disclose_cause: bool = False,
     ):
         super().__init__(
-            message=message, status_code=status_code, code=str(code), cause=cause, disclose_cause=disclose_cause
+            message=message, status_code=status_code, code=code, cause=cause, disclose_cause=disclose_cause
         )
 
 
