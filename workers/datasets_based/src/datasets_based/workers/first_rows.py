@@ -391,6 +391,7 @@ def compute_first_rows_response(
     assets_base_url: str,
     hf_token: Optional[str],
     min_cell_bytes: int,
+    max_size_fallback: Optional[int],
     rows_max_bytes: int,
     rows_max_number: int,
     rows_min_number: int,
@@ -417,6 +418,9 @@ def compute_first_rows_response(
             The Hub endpoint (for example: "https://huggingface.co")
         hf_token (`str` or `None`):
             An authentication token (See https://huggingface.co/settings/token)
+        max_size_fallback (`int` or `None`): **DEPRECATED**
+            The maximum number of bytes of the split to fallback to normal mode if the streaming mode fails.
+            This argument is now hard-coded to 100MB, and will be removed in a future version.
         rows_max_bytes (`int`):
             The maximum number of bytes of the response (else, the response is truncated).
         rows_max_number (`int`):
@@ -609,6 +613,7 @@ class FirstRowsWorker(DatasetsBasedWorker):
             assets_directory=self.first_rows_config.assets.storage_directory,
             hf_token=self.common_config.hf_token,
             min_cell_bytes=self.first_rows_config.min_cell_bytes,
+            max_size_fallback=self.first_rows_config.fallback_max_dataset_size,
             rows_max_bytes=self.first_rows_config.max_bytes,
             rows_max_number=self.first_rows_config.max_number,
             rows_min_number=self.first_rows_config.min_number,
