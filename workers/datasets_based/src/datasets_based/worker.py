@@ -180,11 +180,14 @@ class Worker(ABC):
     def info(self, msg: str) -> None:
         self.log(level=logging.INFO, msg=msg)
 
-    def critical(self, msg: str) -> None:
-        self.log(level=logging.CRITICAL, msg=msg)
+    def warning(self, msg: str) -> None:
+        self.log(level=logging.WARNING, msg=msg)
 
     def exception(self, msg: str) -> None:
         self.log(level=logging.ERROR, msg=msg)
+
+    def critical(self, msg: str) -> None:
+        self.log(level=logging.CRITICAL, msg=msg)
 
     def run(self) -> Literal[Status.SUCCESS, Status.ERROR, Status.SKIPPED]:
         try:

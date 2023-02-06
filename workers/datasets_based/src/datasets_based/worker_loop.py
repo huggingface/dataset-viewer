@@ -97,6 +97,7 @@ class WorkerLoop:
         time.sleep(duration)
 
     def loop(self) -> None:
+        self.info(f"Using endpoint {self.worker_factory.app_config.common.hf_endpoint}")
         self.info("Worker started")
         try:
             while True:

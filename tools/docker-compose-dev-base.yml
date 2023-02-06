@@ -3,11 +3,11 @@ services:
   common:
     environment:
       # common
-      COMMON_HF_ENDPOINT: ${COMMON_HF_ENDPOINT-https://huggingface.co}
-      COMMON_HF_TOKEN: ${COMMON_HF_TOKEN-}
+      COMMON_HF_ENDPOINT: ${COMMON_HF_ENDPOINT-https://hub-ci.huggingface.co}
+      COMMON_HF_TOKEN: ${COMMON_HF_TOKEN-hf_app_datasets-server_token}
       COMMON_LOG_LEVEL: ${COMMON_LOG_LEVEL-INFO}
       # huggingface_hub
-      HF_ENDPOINT: ${COMMON_HF_ENDPOINT-https://huggingface.co} # see https://github.com/huggingface/datasets/pull/5196#issuecomment-1322191411
+      HF_ENDPOINT: ${COMMON_HF_ENDPOINT-https://hub-ci.huggingface.co} # see https://github.com/huggingface/datasets/pull/5196#issuecomment-1322191411
       # cache
       CACHE_MONGO_URL: ${CACHE_MONGO_URL-mongodb://mongodb} # use mongo container by default
       CACHE_MONGO_DATABASE: ${CACHE_MONGO_DATABASE-datasets_server_cache}
