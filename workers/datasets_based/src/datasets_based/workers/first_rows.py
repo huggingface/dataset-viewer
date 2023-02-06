@@ -535,9 +535,12 @@ def compute_first_rows_response(
             use_auth_token=use_auth_token,
         )
     except Exception as err:
-        if max_size_fallback:
-            warnings.warn(<A WARNING MESSAGE HERE>)
         MAX_SIZE_FALLBACK = 100_000_000
+        if max_size_fallback:
+            logging.warning(
+                f"The parameter 'max_size_fallback' is deprecated. The hard-coded value `{MAX_SIZE_FALLBACK}`"
+                " will be used instead."
+            )
         if info.size_in_bytes is None or info.size_in_bytes > MAX_SIZE_FALLBACK:
             raise StreamingRowsError(
                 "Cannot load the dataset split (in streaming mode) to extract the first rows.",
