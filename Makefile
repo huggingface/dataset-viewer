@@ -8,7 +8,7 @@ export PORT_REVERSE_PROXY := 8100
 start: export COMPOSE_PROJECT_NAME := datasets-server
 stop: export COMPOSE_PROJECT_NAME := datasets-server
 dev-start: export COMPOSE_PROJECT_NAME := dev-datasets-server
-dev-stop: export COMPOSE_PROJECT_NAME = dev-datasets-server
+dev-stop: export COMPOSE_PROJECT_NAME := dev-datasets-server
 
 # makefile variables per target
 start: DOCKER_COMPOSE := ./tools/docker-compose-datasets-server.yml

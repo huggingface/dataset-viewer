@@ -4,6 +4,7 @@
 import logging
 import random
 import time
+import os
 from dataclasses import dataclass
 
 from libcommon.config import WorkerLoopConfig
@@ -97,6 +98,8 @@ class WorkerLoop:
         time.sleep(duration)
 
     def loop(self) -> None:
+        if os.environ.get("HF_ENDPOINT"):
+            self.info(f"Using endpoint {os.environ['HF_ENDPOINT']}")
         self.info("Worker started")
         try:
             while True:
