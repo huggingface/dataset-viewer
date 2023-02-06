@@ -391,7 +391,6 @@ def compute_first_rows_response(
     assets_base_url: str,
     hf_token: Optional[str],
     min_cell_bytes: int,
-    max_size_fallback: int,
     rows_max_bytes: int,
     rows_max_number: int,
     rows_min_number: int,
@@ -418,8 +417,6 @@ def compute_first_rows_response(
             The Hub endpoint (for example: "https://huggingface.co")
         hf_token (`str` or `None`):
             An authentication token (See https://huggingface.co/settings/token)
-        max_size_fallback (`int`):
-            The maximum number of bytes of the split to fallback to normal mode if the streaming mode fails.
         rows_max_bytes (`int`):
             The maximum number of bytes of the response (else, the response is truncated).
         rows_max_number (`int`):
@@ -534,7 +531,8 @@ def compute_first_rows_response(
             use_auth_token=use_auth_token,
         )
     except Exception as err:
-        if info.size_in_bytes is None or info.size_in_bytes > max_size_fallback:
+        MAX_SIZE_FALLBACK = 100_000_000
+        if info.size_in_bytes is None or info.size_in_bytes > MAX_SIZE_FALLBACK:
             raise StreamingRowsError(
                 "Cannot load the dataset split (in streaming mode) to extract the first rows.",
                 cause=err,
@@ -611,7 +609,6 @@ class FirstRowsWorker(DatasetsBasedWorker):
             assets_directory=self.first_rows_config.assets.storage_directory,
             hf_token=self.common_config.hf_token,
             min_cell_bytes=self.first_rows_config.min_cell_bytes,
-            max_size_fallback=self.first_rows_config.fallback_max_dataset_size,
             rows_max_bytes=self.first_rows_config.max_bytes,
             rows_max_number=self.first_rows_config.max_number,
             rows_min_number=self.first_rows_config.min_number,
