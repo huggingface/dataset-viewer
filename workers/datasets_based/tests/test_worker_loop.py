@@ -6,7 +6,8 @@ from libcommon.processing_graph import ProcessingStep
 from libcommon.queue import Queue
 
 from datasets_based.config import AppConfig
-from datasets_based.worker import JobInfo, Worker, WorkerFactory
+from datasets_based.worker import JobInfo, Worker
+from datasets_based.worker_factory import DatasetBasedWorkerFactory
 from datasets_based.worker_loop import WorkerLoop
 
 
@@ -33,8 +34,9 @@ class DummyWorker(Worker):
         return {"key": "value"}
 
 
-class DummyWorkerFactory(WorkerFactory):
-    def __init__(self, processing_step: ProcessingStep) -> None:
+class DummyWorkerFactory(DatasetBasedWorkerFactory):
+    def __init__(self, app_config: AppConfig, processing_step: ProcessingStep) -> None:
+        self.app_config = app_config
         self.common_config = CommonConfig()
         self.processing_step = processing_step
 
@@ -43,10 +45,11 @@ class DummyWorkerFactory(WorkerFactory):
 
 
 def test_process_next_job(
+    app_config: AppConfig,
     test_processing_step: ProcessingStep,
     queue_config: QueueConfig,
 ) -> None:
-    worker_factory = DummyWorkerFactory(processing_step=test_processing_step)
+    worker_factory = DummyWorkerFactory(app_config=app_config, processing_step=test_processing_step)
     queue = Queue(type=test_processing_step.endpoint, max_jobs_per_namespace=queue_config.max_jobs_per_namespace)
     worker_loop = WorkerLoop(
         worker_factory=worker_factory,
