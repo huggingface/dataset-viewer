@@ -5,6 +5,7 @@ import functools
 import itertools
 import logging
 import time
+import warnings
 from http import HTTPStatus
 from typing import Any, List, Literal, Mapping, Optional, TypedDict, Union
 
@@ -537,9 +538,12 @@ def compute_first_rows_response(
     except Exception as err:
         MAX_SIZE_FALLBACK = 100_000_000
         if max_size_fallback:
-            logging.warning(
-                f"The parameter 'max_size_fallback' is deprecated. The hard-coded value `{MAX_SIZE_FALLBACK}`"
-                " will be used instead."
+            warnings.warn(
+                (
+                    f"The parameter 'max_size_fallback' is deprecated. The hard-coded value `{MAX_SIZE_FALLBACK}`"
+                    " will be used instead."
+                ),
+                category=DeprecationWarning,
             )
         if info.size_in_bytes is None or info.size_in_bytes > MAX_SIZE_FALLBACK:
             raise StreamingRowsError(
