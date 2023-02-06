@@ -7,9 +7,9 @@ from typing import Any, List, Literal, Mapping, Optional, TypedDict, Union
 
 from datasets import get_dataset_split_names
 from datasets.data_files import EmptyDatasetError as _EmptyDatasetError
-from libcommon.exceptions import CustomError
 from libcommon.simple_cache import SplitFullName
 
+from datasets_based.worker import WorkerError
 from datasets_based.workers._datasets_based_worker import DatasetsBasedWorker
 
 SplitNamesWorkerErrorCode = Literal[
@@ -18,7 +18,7 @@ SplitNamesWorkerErrorCode = Literal[
 ]
 
 
-class SplitNamesWorkerError(CustomError):
+class SplitNamesWorkerError(WorkerError):
     """Base class for worker exceptions."""
 
     def __init__(

@@ -6,11 +6,10 @@ from http import HTTPStatus
 from typing import Any, Literal, Mapping, Optional, TypedDict
 
 from libcommon.dataset import DatasetNotFoundError
-from libcommon.exceptions import CustomError
 from libcommon.simple_cache import DoesNotExist, SplitFullName, get_response
 
 from datasets_based.config import AppConfig
-from datasets_based.worker import JobInfo, Worker
+from datasets_based.worker import JobInfo, Worker, WorkerError
 
 SizesWorkerErrorCode = Literal[
     "PreviousStepStatusError",
@@ -56,7 +55,7 @@ class SizesResponse(TypedDict):
     sizes: SizesContent
 
 
-class SizesWorkerError(CustomError):
+class SizesWorkerError(WorkerError):
     """Base class for exceptions in this module."""
 
     def __init__(

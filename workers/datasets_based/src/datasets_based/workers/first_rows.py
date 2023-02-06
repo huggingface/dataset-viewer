@@ -18,13 +18,17 @@ from datasets import (
     load_dataset,
 )
 from datasets.data_files import EmptyDatasetError as _EmptyDatasetError
-from libcommon.exceptions import CustomError
 from libcommon.simple_cache import SplitFullName as _SplitFullName
 from libcommon.utils import orjson_dumps
 
 from datasets_based.config import AppConfig, FirstRowsConfig
 from datasets_based.features import get_cell_value
-from datasets_based.worker import ConfigNotFoundError, JobInfo, SplitNotFoundError
+from datasets_based.worker import (
+    ConfigNotFoundError,
+    JobInfo,
+    SplitNotFoundError,
+    WorkerError,
+)
 from datasets_based.workers._datasets_based_worker import DatasetsBasedWorker
 
 FirstRowsWorkerErrorCode = Literal[
@@ -40,7 +44,7 @@ FirstRowsWorkerErrorCode = Literal[
 ]
 
 
-class FirstRowsWorkerError(CustomError):
+class FirstRowsWorkerError(WorkerError):
     """Base class for exceptions in this module."""
 
     def __init__(
