@@ -535,6 +535,8 @@ def compute_first_rows_response(
             use_auth_token=use_auth_token,
         )
     except Exception as err:
+        if max_size_fallback:
+            warnings.warn(<A WARNING MESSAGE HERE>)
         MAX_SIZE_FALLBACK = 100_000_000
         if info.size_in_bytes is None or info.size_in_bytes > MAX_SIZE_FALLBACK:
             raise StreamingRowsError(
