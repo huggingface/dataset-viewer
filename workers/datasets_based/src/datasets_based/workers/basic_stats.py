@@ -122,7 +122,7 @@ def compute_basic_stats_response(dataset: str, config: str, split: str) -> Basic
     }
 
 
-class SizesWorker(Worker):
+class BasicStatsWorker(Worker):
     @staticmethod
     def get_job_type() -> str:
         return "/basic-stats"
