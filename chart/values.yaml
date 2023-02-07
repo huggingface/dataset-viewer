@@ -282,8 +282,6 @@ splits:
   tolerations: []
 
 firstRows:
-  # Max size (in bytes) of the dataset to fallback in normal mode if streaming fails
-  fallbackMaxDatasetSize: "100_000_000"
   # Max size of the /first-rows endpoint response in bytes
   maxBytes: "1_000_000"
   # Max number of rows in the /first-rows endpoint response
