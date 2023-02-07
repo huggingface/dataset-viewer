@@ -25,12 +25,11 @@ from huggingface_hub.hf_api import (
 )
 from huggingface_hub.utils import RepositoryNotFoundError, RevisionNotFoundError
 from libcommon.dataset import ask_access
-from libcommon.exceptions import CustomError
 from libcommon.processing_graph import ProcessingStep
 from libcommon.simple_cache import SplitFullName
 
 from datasets_based.config import AppConfig, ParquetAndDatasetInfoConfig
-from datasets_based.worker import DatasetNotFoundError, JobInfo
+from datasets_based.worker import DatasetNotFoundError, JobInfo, WorkerError
 from datasets_based.workers._datasets_based_worker import DatasetsBasedWorker
 
 ParquetAndDatasetInfoWorkerErrorCode = Literal[
@@ -43,7 +42,7 @@ ParquetAndDatasetInfoWorkerErrorCode = Literal[
 ]
 
 
-class ParquetAndDatasetInfoWorkerError(CustomError):
+class ParquetAndDatasetInfoWorkerError(WorkerError):
     """Base class for exceptions in this module."""
 
     def __init__(
@@ -54,7 +53,9 @@ class ParquetAndDatasetInfoWorkerError(CustomError):
         cause: Optional[BaseException] = None,
         disclose_cause: bool = False,
     ):
-        super().__init__(message, status_code, str(code), cause, disclose_cause)
+        super().__init__(
+            message=message, status_code=status_code, code=code, cause=cause, disclose_cause=disclose_cause
+        )
 
 
 class DatasetRevisionNotFoundError(ParquetAndDatasetInfoWorkerError):

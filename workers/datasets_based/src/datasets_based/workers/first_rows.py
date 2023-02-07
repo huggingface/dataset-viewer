@@ -19,14 +19,18 @@ from datasets import (
     load_dataset,
 )
 from datasets.data_files import EmptyDatasetError as _EmptyDatasetError
-from libcommon.exceptions import CustomError
 from libcommon.processing_graph import ProcessingStep
 from libcommon.simple_cache import SplitFullName as _SplitFullName
 from libcommon.utils import orjson_dumps
 
 from datasets_based.config import AppConfig, FirstRowsConfig
 from datasets_based.features import get_cell_value
-from datasets_based.worker import ConfigNotFoundError, JobInfo, SplitNotFoundError
+from datasets_based.worker import (
+    ConfigNotFoundError,
+    JobInfo,
+    SplitNotFoundError,
+    WorkerError,
+)
 from datasets_based.workers._datasets_based_worker import DatasetsBasedWorker
 
 FirstRowsWorkerErrorCode = Literal[
@@ -42,7 +46,7 @@ FirstRowsWorkerErrorCode = Literal[
 ]
 
 
-class FirstRowsWorkerError(CustomError):
+class FirstRowsWorkerError(WorkerError):
     """Base class for exceptions in this module."""
 
     def __init__(
@@ -53,7 +57,9 @@ class FirstRowsWorkerError(CustomError):
         cause: Optional[BaseException] = None,
         disclose_cause: bool = False,
     ):
-        super().__init__(message, status_code, str(code), cause, disclose_cause)
+        super().__init__(
+            message=message, status_code=status_code, code=code, cause=cause, disclose_cause=disclose_cause
+        )
 
 
 class SplitsNamesError(FirstRowsWorkerError):

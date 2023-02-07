@@ -6,10 +6,9 @@ from http import HTTPStatus
 from typing import Any, List, Literal, Mapping, Optional, TypedDict
 
 from libcommon.dataset import DatasetNotFoundError
-from libcommon.exceptions import CustomError
 from libcommon.simple_cache import DoesNotExist, SplitFullName, get_response
 
-from datasets_based.worker import Worker
+from datasets_based.worker import Worker, WorkerError
 from datasets_based.workers.parquet_and_dataset_info import ParquetFileItem
 
 ParquetWorkerErrorCode = Literal[
@@ -22,7 +21,7 @@ class ParquetResponse(TypedDict):
     parquet_files: List[ParquetFileItem]
 
 
-class ParquetWorkerError(CustomError):
+class ParquetWorkerError(WorkerError):
     """Base class for exceptions in this module."""
 
     def __init__(
@@ -33,7 +32,9 @@ class ParquetWorkerError(CustomError):
         cause: Optional[BaseException] = None,
         disclose_cause: bool = False,
     ):
-        super().__init__(message, status_code, str(code), cause, disclose_cause)
+        super().__init__(
+            message=message, status_code=status_code, code=code, cause=cause, disclose_cause=disclose_cause
+        )
 
 
 class PreviousStepStatusError(ParquetWorkerError):
