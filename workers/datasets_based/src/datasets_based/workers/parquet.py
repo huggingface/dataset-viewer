@@ -6,11 +6,9 @@ from http import HTTPStatus
 from typing import Any, List, Literal, Mapping, Optional, TypedDict
 
 from libcommon.dataset import DatasetNotFoundError
-from libcommon.exceptions import CustomError
 from libcommon.simple_cache import DoesNotExist, SplitFullName, get_response
 
-from datasets_based.config import AppConfig
-from datasets_based.worker import JobInfo, Worker
+from datasets_based.worker import Worker, WorkerError
 from datasets_based.workers.parquet_and_dataset_info import ParquetFileItem
 
 ParquetWorkerErrorCode = Literal[
@@ -23,7 +21,7 @@ class ParquetResponse(TypedDict):
     parquet_files: List[ParquetFileItem]
 
 
-class ParquetWorkerError(CustomError):
+class ParquetWorkerError(WorkerError):
     """Base class for exceptions in this module."""
 
     def __init__(
@@ -34,7 +32,9 @@ class ParquetWorkerError(CustomError):
         cause: Optional[BaseException] = None,
         disclose_cause: bool = False,
     ):
-        super().__init__(message, status_code, str(code), cause, disclose_cause)
+        super().__init__(
+            message=message, status_code=status_code, code=code, cause=cause, disclose_cause=disclose_cause
+        )
 
 
 class PreviousStepStatusError(ParquetWorkerError):
@@ -96,17 +96,6 @@ class ParquetWorker(Worker):
     @staticmethod
     def get_version() -> str:
         return "3.0.0"
-
-    def __init__(self, job_info: JobInfo, app_config: AppConfig) -> None:
-        job_type = job_info["type"]
-        try:
-            processing_step = app_config.processing_graph.graph.get_step_by_job_type(job_type)
-        except ValueError as e:
-            raise ValueError(
-                f"Unsupported job type: '{job_type}'. The job types declared in the processing graph are:"
-                f" {[step.job_type for step in app_config.processing_graph.graph.steps.values()]}"
-            ) from e
-        super().__init__(job_info=job_info, common_config=app_config.common, processing_step=processing_step)
 
     def compute(self) -> Mapping[str, Any]:
         return compute_parquet_response(dataset=self.dataset)

@@ -7,6 +7,7 @@ from typing import Any, Mapping, Optional
 
 import datasets.config
 import pytest
+from libcommon.processing_graph import ProcessingStep
 from libcommon.queue import Priority
 
 from datasets_based.config import AppConfig
@@ -51,6 +52,15 @@ def get_worker(
             "priority": Priority.NORMAL,
         },
         app_config=app_config,
+        processing_step=ProcessingStep(
+            endpoint=DummyWorker.get_job_type(),
+            input_type="split",
+            requires=None,
+            required_by_dataset_viewer=False,
+            parent=None,
+            ancestors=[],
+            children=[],
+        ),
     )
 
 

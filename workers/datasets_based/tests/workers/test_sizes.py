@@ -5,6 +5,7 @@ from http import HTTPStatus
 from typing import Any
 
 import pytest
+from libcommon.processing_graph import ProcessingStep
 from libcommon.queue import Priority
 from libcommon.simple_cache import upsert_response
 
@@ -34,7 +35,16 @@ def get_worker(dataset: str, app_config: AppConfig, force: bool = False) -> Size
             "force": force,
             "priority": Priority.NORMAL,
         },
-        app_config=app_config,
+        common_config=app_config.common,
+        processing_step=ProcessingStep(
+            endpoint=SizesWorker.get_job_type(),
+            input_type="dataset",
+            requires=None,
+            required_by_dataset_viewer=False,
+            parent=None,
+            ancestors=[],
+            children=[],
+        ),
     )
 
 

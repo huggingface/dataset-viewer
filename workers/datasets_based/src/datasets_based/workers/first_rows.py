@@ -19,13 +19,18 @@ from datasets import (
     load_dataset,
 )
 from datasets.data_files import EmptyDatasetError as _EmptyDatasetError
-from libcommon.exceptions import CustomError
+from libcommon.processing_graph import ProcessingStep
 from libcommon.simple_cache import SplitFullName as _SplitFullName
 from libcommon.utils import orjson_dumps
 
 from datasets_based.config import AppConfig, FirstRowsConfig
 from datasets_based.features import get_cell_value
-from datasets_based.worker import ConfigNotFoundError, JobInfo, SplitNotFoundError
+from datasets_based.worker import (
+    ConfigNotFoundError,
+    JobInfo,
+    SplitNotFoundError,
+    WorkerError,
+)
 from datasets_based.workers._datasets_based_worker import DatasetsBasedWorker
 
 FirstRowsWorkerErrorCode = Literal[
@@ -41,7 +46,7 @@ FirstRowsWorkerErrorCode = Literal[
 ]
 
 
-class FirstRowsWorkerError(CustomError):
+class FirstRowsWorkerError(WorkerError):
     """Base class for exceptions in this module."""
 
     def __init__(
@@ -52,7 +57,9 @@ class FirstRowsWorkerError(CustomError):
         cause: Optional[BaseException] = None,
         disclose_cause: bool = False,
     ):
-        super().__init__(message, status_code, str(code), cause, disclose_cause)
+        super().__init__(
+            message=message, status_code=status_code, code=code, cause=cause, disclose_cause=disclose_cause
+        )
 
 
 class SplitsNamesError(FirstRowsWorkerError):
@@ -607,8 +614,14 @@ class FirstRowsWorker(DatasetsBasedWorker):
     def get_version() -> str:
         return "2.0.0"
 
-    def __init__(self, job_info: JobInfo, app_config: AppConfig, first_rows_config: FirstRowsConfig) -> None:
-        super().__init__(job_info=job_info, app_config=app_config)
+    def __init__(
+        self,
+        job_info: JobInfo,
+        app_config: AppConfig,
+        processing_step: ProcessingStep,
+        first_rows_config: FirstRowsConfig,
+    ) -> None:
+        super().__init__(job_info=job_info, app_config=app_config, processing_step=processing_step)
         self.first_rows_config = first_rows_config
 
     def compute(self) -> Mapping[str, Any]:
