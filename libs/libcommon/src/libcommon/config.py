@@ -39,6 +39,7 @@ class AssetsConfig:
 COMMON_HF_ENDPOINT = "https://huggingface.co"
 COMMON_HF_TOKEN = None
 COMMON_LOG_LEVEL = logging.INFO
+COMMON_CONTENT_MAX_SIZE = 1_0000_000
 
 
 @dataclass
@@ -46,6 +47,7 @@ class CommonConfig:
     hf_endpoint: str = COMMON_HF_ENDPOINT
     hf_token: Optional[str] = COMMON_HF_TOKEN
     log_level: int = COMMON_LOG_LEVEL
+    content_max_size: int = COMMON_CONTENT_MAX_SIZE
 
     def __post_init__(self):
         init_logging(self.log_level)
@@ -58,6 +60,7 @@ class CommonConfig:
                 hf_endpoint=env.str(name="HF_ENDPOINT", default=COMMON_HF_ENDPOINT),
                 hf_token=env.str(name="HF_TOKEN", default=COMMON_HF_TOKEN),  # nosec
                 log_level=env.log_level(name="LOG_LEVEL", default=COMMON_LOG_LEVEL),
+                content_max_size=env.int(name="DOCUMENT_MAX_SIZE", default=COMMON_CONTENT_MAX_SIZE),
             )
 
 
