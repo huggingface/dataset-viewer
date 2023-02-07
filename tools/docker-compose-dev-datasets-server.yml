@@ -24,7 +24,7 @@ services:
       dockerfile: services/admin/Dockerfile
     # image: ${IMAGE_SERVICE_ADMIN?IMAGE_SERVICE_ADMIN env var must be provided}
     extends:
-      file: docker-compose-base.yml
+      file: docker-compose-dev-base.yml
       service: common
     environment:
       # service
@@ -51,7 +51,7 @@ services:
       dockerfile: services/api/Dockerfile
     # image: ${IMAGE_SERVICE_API?IMAGE_SERVICE_API env var must be provided}
     extends:
-      file: docker-compose-base.yml
+      file: docker-compose-dev-base.yml
       service: common
     environment:
       # service
@@ -80,7 +80,7 @@ services:
       - splits-modules-cache:${HF_DATASETS_CACHE-/modules-cache}:rw
       - splits-numba-cache:${NUMBA_CACHE_DIR-/numba-cache}:rw
     extends:
-      file: docker-compose-base.yml
+      file: docker-compose-dev-base.yml
       service: datasets-worker
     environment:
       DATASETS_BASED_ENDPOINT: "/config-names" # hard-coded
@@ -97,7 +97,7 @@ services:
       - splits-modules-cache:${HF_DATASETS_CACHE-/modules-cache}:rw
       - splits-numba-cache:${NUMBA_CACHE_DIR-/numba-cache}:rw
     extends:
-      file: docker-compose-base.yml
+      file: docker-compose-dev-base.yml
       service: datasets-worker
     environment:
       DATASETS_BASED_ENDPOINT: "/split-names" # hard-coded
@@ -114,7 +114,7 @@ services:
       - splits-modules-cache:${HF_DATASETS_CACHE-/modules-cache}:rw
       - splits-numba-cache:${NUMBA_CACHE_DIR-/numba-cache}:rw
     extends:
-      file: docker-compose-base.yml
+      file: docker-compose-dev-base.yml
       service: datasets-worker
     environment:
       DATASETS_BASED_ENDPOINT: "/splits" # hard-coded
@@ -132,7 +132,7 @@ services:
       - first-rows-modules-cache:${HF_DATASETS_CACHE-/modules-cache}:rw
       - first-rows-numba-cache:${NUMBA_CACHE_DIR-/numba-cache}:rw
     extends:
-      file: docker-compose-base.yml
+      file: docker-compose-dev-base.yml
       service: datasets-worker
     environment:
       ASSETS_BASE_URL: "http://localhost:${PORT_REVERSE_PROXY-8000}/assets" # hard-coded to work with the reverse-proxy
@@ -158,13 +158,13 @@ services:
       - parquet-modules-cache:${HF_DATASETS_CACHE-/modules-cache}:rw
       - parquet-numba-cache:${NUMBA_CACHE_DIR-/numba-cache}:rw
     extends:
-      file: docker-compose-base.yml
+      file: docker-compose-dev-base.yml
       service: datasets-worker
     environment:
       DATASETS_BASED_ENDPOINT: "/parquet-and-dataset-info" # hard-coded
       PARQUET_AND_DATASET_INFO_BLOCKED_DATASETS: ${PARQUET_AND_DATASET_INFO_BLOCKED_DATASETS-}
       PARQUET_AND_DATASET_INFO_COMMIT_MESSAGE: ${PARQUET_AND_DATASET_INFO_COMMIT_MESSAGE-Update parquet files}
-      PARQUET_AND_DATASET_INFO_COMMITTER_HF_TOKEN: ${PARQUET_AND_DATASET_INFO_COMMITTER_HF_TOKEN-}
+      PARQUET_AND_DATASET_INFO_COMMITTER_HF_TOKEN: ${PARQUET_AND_DATASET_INFO_COMMITTER_HF_TOKEN-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}
       PARQUET_AND_DATASET_INFO_MAX_DATASET_SIZE: ${PARQUET_AND_DATASET_INFO_MAX_DATASET_SIZE-100_000_000}
       PARQUET_AND_DATASET_INFO_SOURCE_REVISION: ${PARQUET_AND_DATASET_INFO_SOURCE_REVISION-main}
       PARQUET_AND_DATASET_INFO_SUPPORTED_DATASETS: ${PARQUET_AND_DATASET_INFO_SUPPORTED_DATASETS-}
@@ -179,7 +179,7 @@ services:
       dockerfile: workers/datasets_based/dev.Dockerfile
     # image: ${IMAGE_WORKER_DATASETS_BASED?IMAGE_WORKER_DATASETS_BASED env var must be provided}
     extends:
-      file: docker-compose-base.yml
+      file: docker-compose-dev-base.yml
       service: datasets-worker
     environment:
       DATASETS_BASED_ENDPOINT: "/parquet" # hard-coded
@@ -192,7 +192,7 @@ services:
       dockerfile: workers/datasets_based/dev.Dockerfile
     # image: ${IMAGE_WORKER_DATASETS_BASED?IMAGE_WORKER_DATASETS_BASED env var must be provided}
     extends:
-      file: docker-compose-base.yml
+      file: docker-compose-dev-base.yml
       service: datasets-worker
     environment:
       DATASETS_BASED_ENDPOINT: "/dataset-info" # hard-coded
@@ -205,7 +205,7 @@ services:
       dockerfile: workers/datasets_based/dev.Dockerfile
     # image: ${IMAGE_WORKER_DATASETS_BASED?IMAGE_WORKER_DATASETS_BASED env var must be provided}
     extends:
-      file: docker-compose-base.yml
+      file: docker-compose-dev-base.yml
       service: datasets-worker
     environment:
       DATASETS_BASED_ENDPOINT: "/sizes" # hard-coded

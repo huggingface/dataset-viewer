@@ -5,6 +5,7 @@ import functools
 import itertools
 import logging
 import time
+import warnings
 from http import HTTPStatus
 from typing import Any, List, Literal, Mapping, Optional, TypedDict, Union
 
@@ -18,6 +19,7 @@ from datasets import (
     load_dataset,
 )
 from datasets.data_files import EmptyDatasetError as _EmptyDatasetError
+from libcommon.processing_graph import ProcessingStep
 from libcommon.simple_cache import SplitFullName as _SplitFullName
 from libcommon.utils import orjson_dumps
 
@@ -397,7 +399,7 @@ def compute_first_rows_response(
     assets_base_url: str,
     hf_token: Optional[str],
     min_cell_bytes: int,
-    max_size_fallback: int,
+    max_size_fallback: Optional[int],
     rows_max_bytes: int,
     rows_max_number: int,
     rows_min_number: int,
@@ -424,8 +426,9 @@ def compute_first_rows_response(
             The Hub endpoint (for example: "https://huggingface.co")
         hf_token (`str` or `None`):
             An authentication token (See https://huggingface.co/settings/token)
-        max_size_fallback (`int`):
+        max_size_fallback (`int` or `None`): **DEPRECATED**
             The maximum number of bytes of the split to fallback to normal mode if the streaming mode fails.
+            This argument is now hard-coded to 100MB, and will be removed in a future version.
         rows_max_bytes (`int`):
             The maximum number of bytes of the response (else, the response is truncated).
         rows_max_number (`int`):
@@ -540,7 +543,16 @@ def compute_first_rows_response(
             use_auth_token=use_auth_token,
         )
     except Exception as err:
-        if info.size_in_bytes is None or info.size_in_bytes > max_size_fallback:
+        MAX_SIZE_FALLBACK = 100_000_000
+        if max_size_fallback:
+            warnings.warn(
+                (
+                    f"The parameter 'max_size_fallback' is deprecated. The hard-coded value `{MAX_SIZE_FALLBACK}`"
+                    " will be used instead."
+                ),
+                category=DeprecationWarning,
+            )
+        if info.size_in_bytes is None or info.size_in_bytes > MAX_SIZE_FALLBACK:
             raise StreamingRowsError(
                 "Cannot load the dataset split (in streaming mode) to extract the first rows.",
                 cause=err,
@@ -602,8 +614,14 @@ class FirstRowsWorker(DatasetsBasedWorker):
     def get_version() -> str:
         return "2.0.0"
 
-    def __init__(self, job_info: JobInfo, app_config: AppConfig, first_rows_config: FirstRowsConfig) -> None:
-        super().__init__(job_info=job_info, app_config=app_config)
+    def __init__(
+        self,
+        job_info: JobInfo,
+        app_config: AppConfig,
+        processing_step: ProcessingStep,
+        first_rows_config: FirstRowsConfig,
+    ) -> None:
+        super().__init__(job_info=job_info, app_config=app_config, processing_step=processing_step)
         self.first_rows_config = first_rows_config
 
     def compute(self) -> Mapping[str, Any]:

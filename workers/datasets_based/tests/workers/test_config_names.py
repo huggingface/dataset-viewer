@@ -6,6 +6,7 @@ from http import HTTPStatus
 
 import pytest
 from libcommon.exceptions import CustomError
+from libcommon.processing_graph import ProcessingStep
 from libcommon.queue import Priority
 from libcommon.simple_cache import DoesNotExist, get_response
 
@@ -31,6 +32,15 @@ def get_worker(
             "priority": Priority.NORMAL,
         },
         app_config=app_config,
+        processing_step=ProcessingStep(
+            endpoint=ConfigNamesWorker.get_job_type(),
+            input_type="dataset",
+            requires=None,
+            required_by_dataset_viewer=False,
+            parent=None,
+            ancestors=[],
+            children=[],
+        ),
     )
 
 
