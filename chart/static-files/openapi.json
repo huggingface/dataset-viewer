@@ -200,7 +200,7 @@
             "value": "InfoError"
           },
           "FeaturesError": {
-            "summary": "The split features (columns) cannot be extracted.",
+            "summary": "Cannot extract the features (columns) for the split of the config of the dataset. Please fix your loading script.",
             "value": "FeaturesError"
           },
           "StreamingRowsError": {

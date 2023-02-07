@@ -517,7 +517,7 @@ def compute_first_rows_response(
             raise FeaturesError(
                 (
                     f"Cannot extract the features (columns) for the split '{split}' of the config '{config}' of the"
-                    " dataset."
+                    " dataset. Please fix your loading script."
                 ),
                 cause=err,
             ) from err
