@@ -10,7 +10,7 @@ from libcommon.config import WorkerLoopConfig
 from libcommon.queue import EmptyQueueError, Queue
 from psutil import cpu_count, disk_usage, getloadavg, swap_memory, virtual_memory
 
-from datasets_based.worker_factory import DatasetBasedWorkerFactory
+from datasets_based.worker import WorkerFactory
 
 
 @dataclass
@@ -31,7 +31,7 @@ class WorkerLoop:
     """
 
     queue: Queue
-    worker_factory: DatasetBasedWorkerFactory
+    worker_factory: WorkerFactory
     worker_loop_config: WorkerLoopConfig
 
     def log(self, level: int, msg: str) -> None:
