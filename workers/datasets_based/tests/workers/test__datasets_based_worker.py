@@ -9,8 +9,10 @@ import datasets.config
 import pytest
 from libcommon.processing_graph import ProcessingStep
 from libcommon.queue import Priority
+from libcommon.resource import CacheDatabaseResource, QueueDatabaseResource
 
 from datasets_based.config import AppConfig
+from datasets_based.resource import LibrariesResource
 from datasets_based.workers._datasets_based_worker import DatasetsBasedWorker
 
 from ..fixtures.hub import get_default_config_split
@@ -34,37 +36,46 @@ class DummyWorker(DatasetsBasedWorker):
             return {}
 
 
+@pytest.fixture
 def get_worker(
-    dataset: str,
-    config: Optional[str],
-    split: Optional[str],
-    app_config: AppConfig,
-    force: bool = False,
-) -> DummyWorker:
-    return DummyWorker(
-        job_info={
-            "type": DummyWorker.get_job_type(),
-            "dataset": dataset,
-            "config": config,
-            "split": split,
-            "job_id": "job_id",
-            "force": force,
-            "priority": Priority.NORMAL,
-        },
-        app_config=app_config,
-        processing_step=ProcessingStep(
-            endpoint=DummyWorker.get_job_type(),
-            input_type="split",
-            requires=None,
-            required_by_dataset_viewer=False,
-            parent=None,
-            ancestors=[],
-            children=[],
-        ),
-    )
+    libraries_resource: LibrariesResource,
+    cache_database_resource: CacheDatabaseResource,
+    queue_database_resource: QueueDatabaseResource,
+):
+    def _get_worker(
+        dataset: str,
+        config: Optional[str],
+        split: Optional[str],
+        app_config: AppConfig,
+        force: bool = False,
+    ) -> DummyWorker:
+        return DummyWorker(
+            job_info={
+                "type": DummyWorker.get_job_type(),
+                "dataset": dataset,
+                "config": config,
+                "split": split,
+                "job_id": "job_id",
+                "force": force,
+                "priority": Priority.NORMAL,
+            },
+            app_config=app_config,
+            processing_step=ProcessingStep(
+                endpoint=DummyWorker.get_job_type(),
+                input_type="split",
+                requires=None,
+                required_by_dataset_viewer=False,
+                parent=None,
+                ancestors=[],
+                children=[],
+            ),
+            hf_datasets_cache=libraries_resource.hf_datasets_cache,
+        )
+
+    return _get_worker
 
 
-def test_version(app_config: AppConfig) -> None:
+def test_version(app_config: AppConfig, get_worker) -> None:
     dataset, config, split = get_default_config_split("dataset")
     worker = get_worker(dataset, config, split, app_config)
     assert len(worker.get_version().split(".")) == 3
@@ -93,17 +104,23 @@ def test_version(app_config: AppConfig) -> None:
     ],
 )
 def test_get_cache_subdirectory(
-    app_config: AppConfig, dataset: str, config: Optional[str], split: Optional[str], force: bool, expected: str
+    app_config: AppConfig,
+    get_worker,
+    dataset: str,
+    config: Optional[str],
+    split: Optional[str],
+    force: bool,
+    expected: str,
 ) -> None:
     date = datetime(2022, 11, 7, 12, 34, 56)
     worker = get_worker(dataset, config, split, app_config, force=force)
     assert worker.get_cache_subdirectory(date=date) == expected
 
 
-def test_set_and_unset_datasets_cache(app_config: AppConfig) -> None:
+def test_set_and_unset_datasets_cache(app_config: AppConfig, get_worker) -> None:
     dataset, config, split = get_default_config_split("dataset")
     worker = get_worker(dataset, config, split, app_config)
-    base_path = worker.datasets_based_config.hf_datasets_cache
+    base_path = worker.base_datasets_cache
     dummy_path = base_path / "dummy"
     worker.set_datasets_cache(dummy_path)
     assert_datasets_cache_path(path=dummy_path, exists=True)
@@ -111,10 +128,10 @@ def test_set_and_unset_datasets_cache(app_config: AppConfig) -> None:
     assert_datasets_cache_path(path=base_path, exists=True)
 
 
-def test_set_and_unset_cache(app_config: AppConfig) -> None:
+def test_set_and_unset_cache(app_config: AppConfig, get_worker) -> None:
     dataset, config, split = get_default_config_split("user/dataset")
     worker = get_worker(dataset, config, split, app_config)
-    datasets_base_path = worker.datasets_based_config.hf_datasets_cache
+    datasets_base_path = worker.base_datasets_cache
     worker.set_cache()
     assert str(datasets.config.HF_DATASETS_CACHE).startswith(str(datasets_base_path))
     assert "-splits-user-dataset" in str(datasets.config.HF_DATASETS_CACHE)
@@ -123,13 +140,13 @@ def test_set_and_unset_cache(app_config: AppConfig) -> None:
 
 
 @pytest.mark.parametrize("config", ["raise", "dont_raise"])
-def test_process(app_config: AppConfig, hub_public_csv: str, config: str) -> None:
+def test_process(app_config: AppConfig, get_worker, hub_public_csv: str, config: str) -> None:
     # ^ this test requires an existing dataset, otherwise .process fails before setting the cache
     # it must work in both cases: when the job fails and when it succeeds
     dataset = hub_public_csv
     split = "split"
     worker = get_worker(dataset, config, split, app_config)
-    datasets_base_path = worker.datasets_based_config.hf_datasets_cache
+    datasets_base_path = worker.base_datasets_cache
     # the datasets library sets the cache to its own default
     assert_datasets_cache_path(path=datasets_base_path, exists=False, equals=False)
     result = worker.process()

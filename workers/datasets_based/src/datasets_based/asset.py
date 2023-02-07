@@ -6,6 +6,7 @@ from pathlib import Path
 from typing import List, Tuple, TypedDict
 
 import soundfile  # type:ignore
+from libcommon.resource import StrPath
 from numpy import ndarray  # type:ignore
 from PIL import Image  # type: ignore
 from pydub import AudioSegment  # type:ignore
@@ -15,7 +16,7 @@ ASSET_DIR_MODE = 0o755
 
 
 def create_asset_dir(
-    dataset: str, config: str, split: str, row_idx: int, column: str, assets_directory: str
+    dataset: str, config: str, split: str, row_idx: int, column: str, assets_directory: StrPath
 ) -> Tuple[Path, str]:
     dir_path = Path(assets_directory).resolve() / dataset / DATASET_SEPARATOR / config / split / str(row_idx) / column
     url_dir_path = f"{dataset}/{DATASET_SEPARATOR}/{config}/{split}/{row_idx}/{column}"
@@ -38,7 +39,7 @@ def create_image_file(
     filename: str,
     image: Image.Image,
     assets_base_url: str,
-    assets_directory: str,
+    assets_directory: StrPath,
 ) -> ImageSource:
     dir_path, url_dir_path = create_asset_dir(
         dataset=dataset, config=config, split=split, row_idx=row_idx, column=column, assets_directory=assets_directory
@@ -67,7 +68,7 @@ def create_audio_files(
     sampling_rate: int,
     assets_base_url: str,
     filename_base: str,
-    assets_directory: str,
+    assets_directory: StrPath,
 ) -> List[AudioSource]:
     wav_filename = f"{filename_base}.wav"
     mp3_filename = f"{filename_base}.mp3"

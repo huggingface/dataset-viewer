@@ -7,6 +7,7 @@ from typing import Any
 import pytest
 from libcommon.processing_graph import ProcessingStep
 from libcommon.queue import Priority
+from libcommon.resource import CacheDatabaseResource, QueueDatabaseResource
 from libcommon.simple_cache import upsert_response
 
 from datasets_based.config import AppConfig
@@ -24,28 +25,39 @@ def prepare_and_clean_mongo(app_config: AppConfig) -> None:
     pass
 
 
-def get_worker(dataset: str, app_config: AppConfig, force: bool = False) -> ParquetWorker:
-    return ParquetWorker(
-        job_info={
-            "type": ParquetWorker.get_job_type(),
-            "dataset": dataset,
-            "config": None,
-            "split": None,
-            "job_id": "job_id",
-            "force": force,
-            "priority": Priority.NORMAL,
-        },
-        common_config=app_config.common,
-        processing_step=ProcessingStep(
-            endpoint=ParquetWorker.get_job_type(),
-            input_type="dataset",
-            requires=None,
-            required_by_dataset_viewer=False,
-            parent=None,
-            ancestors=[],
-            children=[],
-        ),
-    )
+@pytest.fixture
+def get_worker(
+    cache_database_resource: CacheDatabaseResource,
+    queue_database_resource: QueueDatabaseResource,
+):
+    def _get_worker(
+        dataset: str,
+        app_config: AppConfig,
+        force: bool = False,
+    ) -> ParquetWorker:
+        return ParquetWorker(
+            job_info={
+                "type": ParquetWorker.get_job_type(),
+                "dataset": dataset,
+                "config": None,
+                "split": None,
+                "job_id": "job_id",
+                "force": force,
+                "priority": Priority.NORMAL,
+            },
+            common_config=app_config.common,
+            processing_step=ProcessingStep(
+                endpoint=ParquetWorker.get_job_type(),
+                input_type="dataset",
+                requires=None,
+                required_by_dataset_viewer=False,
+                parent=None,
+                ancestors=[],
+                children=[],
+            ),
+        )
+
+    return _get_worker
 
 
 @pytest.mark.parametrize(
@@ -72,6 +84,7 @@ def get_worker(dataset: str, app_config: AppConfig, force: bool = False) -> Parq
 )
 def test_compute(
     app_config: AppConfig,
+    get_worker,
     dataset: str,
     upstream_status: HTTPStatus,
     upstream_content: Any,
@@ -91,7 +104,7 @@ def test_compute(
         assert worker.compute() == expected_content
 
 
-def test_doesnotexist(app_config: AppConfig) -> None:
+def test_doesnotexist(app_config: AppConfig, get_worker) -> None:
     dataset = "doesnotexist"
     worker = get_worker(dataset=dataset, app_config=app_config)
     with pytest.raises(DatasetNotFoundError):

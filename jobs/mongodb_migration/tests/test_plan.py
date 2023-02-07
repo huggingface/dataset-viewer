@@ -1,7 +1,7 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2022 The HuggingFace Authors.
 
-from typing import List, Optional, Type
+from typing import Iterator, List, Optional, Type
 
 import pytest
 
@@ -11,10 +11,20 @@ from mongodb_migration.database_migrations import (
 )
 from mongodb_migration.migration import IrreversibleMigration, Migration
 from mongodb_migration.plan import Plan, SavedMigrationsError
+from mongodb_migration.resource import MigrationsDatabaseResource
+
+
+@pytest.fixture(scope="module")
+def migrations_database_resource(mongo_host: str) -> Iterator[MigrationsDatabaseResource]:
+    database = "datasets_server_migrations_test"
+    if "test" not in database:
+        raise ValueError("Test must be launched on a test mongo database")
+    with MigrationsDatabaseResource(database=database, host=mongo_host) as resource:
+        yield resource
 
 
 @pytest.fixture(autouse=True)
-def clean_mongo_database() -> None:
+def clean_mongo_database(migrations_database_resource: MigrationsDatabaseResource) -> None:
     _clean_maintenance_database()
 
 

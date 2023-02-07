@@ -18,6 +18,7 @@ from datasets import (
     TranslationVariableLanguages,
     Value,
 )
+from libcommon.resource import StrPath
 from numpy import ndarray  # type:ignore
 from PIL import Image as PILImage  # type: ignore
 
@@ -49,7 +50,7 @@ def image(
     value: Any,
     featureName: str,
     assets_base_url: str,
-    assets_directory: str,
+    assets_directory: StrPath,
     json_path: List[Union[str, int]] = None,
 ) -> Any:
     if value is None:
@@ -86,7 +87,7 @@ def audio(
     value: Any,
     featureName: str,
     assets_base_url: str,
-    assets_directory: str,
+    assets_directory: StrPath,
     json_path: List[Union[str, int]] = None,
 ) -> Any:
     if value is None:
@@ -124,7 +125,7 @@ def get_cell_value(
     featureName: str,
     fieldType: Any,
     assets_base_url: str,
-    assets_directory: str,
+    assets_directory: StrPath,
     json_path: List[Union[str, int]] = None,
 ) -> Any:
     # always allow None values in the cells

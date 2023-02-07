@@ -617,9 +617,15 @@ class ParquetAndDatasetInfoWorker(DatasetsBasedWorker):
         job_info: JobInfo,
         app_config: AppConfig,
         processing_step: ProcessingStep,
+        hf_datasets_cache: Path,
         parquet_and_dataset_info_config: ParquetAndDatasetInfoConfig,
     ) -> None:
-        super().__init__(job_info=job_info, app_config=app_config, processing_step=processing_step)
+        super().__init__(
+            job_info=job_info,
+            app_config=app_config,
+            processing_step=processing_step,
+            hf_datasets_cache=hf_datasets_cache,
+        )
         self.parquet_and_dataset_info_config = parquet_and_dataset_info_config
 
     def compute(self) -> Mapping[str, Any]:

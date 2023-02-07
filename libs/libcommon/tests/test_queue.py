@@ -2,11 +2,10 @@
 # Copyright 2022 The HuggingFace Authors.
 
 import time
-from typing import Optional
+from typing import Iterator, Optional
 
 import pytest
 
-from libcommon.config import QueueConfig
 from libcommon.queue import (
     EmptyQueueError,
     Priority,
@@ -14,10 +13,21 @@ from libcommon.queue import (
     Status,
     _clean_queue_database,
 )
+from libcommon.resource import QueueDatabaseResource
+
+
+@pytest.fixture(scope="module")
+def queue_database_resource(queue_mongo_host: str) -> Iterator[QueueDatabaseResource]:
+    database = "datasets_server_queue_test"
+    host = queue_mongo_host
+    if "test" not in database:
+        raise ValueError("Test must be launched on a test mongo database")
+    with QueueDatabaseResource(database=database, host=host) as queue_database_resource:
+        yield queue_database_resource
 
 
 @pytest.fixture(autouse=True)
-def clean_mongo_database(queue_config: QueueConfig) -> None:
+def clean_mongo_database(queue_database_resource: QueueDatabaseResource) -> None:
     _clean_queue_database()
 
 

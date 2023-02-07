@@ -3,18 +3,30 @@
 
 import sys
 
+from libcommon.resource import CacheDatabaseResource, LogResource, QueueDatabaseResource
+
 from mongodb_migration.collector import MigrationsCollector
 from mongodb_migration.config import JobConfig
 from mongodb_migration.plan import Plan
+from mongodb_migration.resource import MigrationsDatabaseResource
 
 if __name__ == "__main__":
     job_config = JobConfig.from_env()
-    collected_migrations = MigrationsCollector().get_migrations()
-    try:
-        Plan(collected_migrations=collected_migrations).execute()
-        sys.exit(0)
-    except Exception:
-        sys.exit(1)
+    with (
+        LogResource(log_level=job_config.common.log_level),
+        # ^ first resource to be acquired, in order to have logs as soon as possible
+        CacheDatabaseResource(database=job_config.cache.mongo_database, host=job_config.cache.mongo_url),
+        QueueDatabaseResource(database=job_config.queue.mongo_database, host=job_config.queue.mongo_url),
+        MigrationsDatabaseResource(
+            database=job_config.database_migrations.mongo_database, host=job_config.database_migrations.mongo_url
+        ),
+    ):
+        collected_migrations = MigrationsCollector().get_migrations()
+        try:
+            Plan(collected_migrations=collected_migrations).execute()
+            sys.exit(0)
+        except Exception:
+            sys.exit(1)
 
 # See:
 #  https://blog.appsignal.com/2020/04/14/dissecting-rails-migrationsl.html

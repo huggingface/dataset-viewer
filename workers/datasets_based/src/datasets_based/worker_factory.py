@@ -2,6 +2,11 @@
 # Copyright 2022 The HuggingFace Authors.
 
 from abc import ABC, abstractmethod
+from dataclasses import dataclass
+from pathlib import Path
+
+from libcommon.processing_graph import ProcessingGraph
+from libcommon.resource import AssetsDirectoryResource
 
 from datasets_based.config import (
     AppConfig,
@@ -34,38 +39,59 @@ class BaseWorkerFactory(ABC):
         pass
 
 
+@dataclass
 class WorkerFactory(BaseWorkerFactory):
-    def __init__(self, app_config: AppConfig) -> None:
-        self.app_config = app_config
+    app_config: AppConfig
+    processing_graph: ProcessingGraph
+    hf_datasets_cache: Path
 
     def _create_worker(self, job_info: JobInfo) -> Worker:
         job_type = job_info["type"]
         try:
-            processing_step = self.app_config.processing_graph.graph.get_step_by_job_type(job_type)
+            processing_step = self.processing_graph.get_step_by_job_type(job_type)
         except ValueError as e:
             raise ValueError(
                 f"Unsupported job type: '{job_type}'. The job types declared in the processing graph are:"
-                f" {[step.job_type for step in self.app_config.processing_graph.graph.steps.values()]}"
+                f" {[step.job_type for step in self.processing_graph.steps.values()]}"
             ) from e
         if job_type == ConfigNamesWorker.get_job_type():
-            return ConfigNamesWorker(job_info=job_info, app_config=self.app_config, processing_step=processing_step)
-        if job_type == SplitNamesWorker.get_job_type():
-            return SplitNamesWorker(job_info=job_info, app_config=self.app_config, processing_step=processing_step)
-        if job_type == SplitsWorker.get_job_type():
-            return SplitsWorker(job_info=job_info, app_config=self.app_config, processing_step=processing_step)
-        if job_type == FirstRowsWorker.get_job_type():
-            first_rows_config = FirstRowsConfig.from_env()
-            return FirstRowsWorker(
+            return ConfigNamesWorker(
                 job_info=job_info,
                 app_config=self.app_config,
                 processing_step=processing_step,
-                first_rows_config=first_rows_config,
+                hf_datasets_cache=self.hf_datasets_cache,
             )
+        if job_type == SplitNamesWorker.get_job_type():
+            return SplitNamesWorker(
+                job_info=job_info,
+                app_config=self.app_config,
+                processing_step=processing_step,
+                hf_datasets_cache=self.hf_datasets_cache,
+            )
+        if job_type == SplitsWorker.get_job_type():
+            return SplitsWorker(
+                job_info=job_info,
+                app_config=self.app_config,
+                processing_step=processing_step,
+                hf_datasets_cache=self.hf_datasets_cache,
+            )
+        if job_type == FirstRowsWorker.get_job_type():
+            first_rows_config = FirstRowsConfig.from_env()
+            with AssetsDirectoryResource(storage_directory=first_rows_config.assets.storage_directory) as resource:
+                return FirstRowsWorker(
+                    job_info=job_info,
+                    app_config=self.app_config,
+                    processing_step=processing_step,
+                    hf_datasets_cache=self.hf_datasets_cache,
+                    first_rows_config=first_rows_config,
+                    assets_storage_directory=resource.storage_directory,
+                )
         if job_type == ParquetAndDatasetInfoWorker.get_job_type():
             return ParquetAndDatasetInfoWorker(
                 job_info=job_info,
                 app_config=self.app_config,
                 processing_step=processing_step,
+                hf_datasets_cache=self.hf_datasets_cache,
                 parquet_and_dataset_info_config=ParquetAndDatasetInfoConfig.from_env(),
             )
         if job_type == ParquetWorker.get_job_type():

@@ -1,6 +1,12 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2022 The HuggingFace Authors.
 
+from typing import Iterator, List
+
+from libcommon.processing_graph import ProcessingGraph, ProcessingStep
+from libcommon.queue import _clean_queue_database
+from libcommon.resource import CacheDatabaseResource, QueueDatabaseResource
+from libcommon.simple_cache import _clean_cache_database
 from pytest import MonkeyPatch, fixture
 
 from api.config import AppConfig, UvicornConfig
@@ -30,6 +36,41 @@ def app_config(monkeypatch_session: MonkeyPatch) -> AppConfig:
 
 
 @fixture(scope="session")
+def processing_steps(app_config: AppConfig) -> List[ProcessingStep]:
+    processing_graph = ProcessingGraph(app_config.processing_graph.specification)
+    return list(processing_graph.steps.values())
+
+
+@fixture(scope="session")
+def first_dataset_processing_step(processing_steps: List[ProcessingStep]):
+    return next(step for step in processing_steps if step.input_type == "dataset")
+
+
+@fixture(scope="session")
+def first_config_processing_step(processing_steps: List[ProcessingStep]):
+    return next(step for step in processing_steps if step.input_type == "config")
+
+
+@fixture(scope="session")
+def first_split_processing_step(processing_steps: List[ProcessingStep]):
+    return next(step for step in processing_steps if step.input_type == "split")
+
+
+@fixture(autouse=True)
+def cache_database_resource(app_config: AppConfig) -> Iterator[CacheDatabaseResource]:
+    with CacheDatabaseResource(database=app_config.cache.mongo_database, host=app_config.cache.mongo_url) as resource:
+        yield resource
+        _clean_cache_database()
+
+
+@fixture(autouse=True)
+def queue_database_resource(app_config: AppConfig) -> Iterator[QueueDatabaseResource]:
+    with QueueDatabaseResource(database=app_config.queue.mongo_database, host=app_config.queue.mongo_url) as resource:
+        yield resource
+        _clean_queue_database()
+
+
+@fixture(scope="session")
 def uvicorn_config(monkeypatch_session: MonkeyPatch):
     return UvicornConfig.from_env()
 
@@ -47,18 +88,3 @@ def hf_endpoint(app_config: AppConfig):
 @fixture(scope="session")
 def hf_auth_path(app_config: AppConfig):
     return app_config.api.hf_auth_path
-
-
-@fixture(scope="session")
-def first_dataset_processing_step(app_config: AppConfig):
-    return next(step for step in app_config.processing_graph.graph.steps.values() if step.input_type == "dataset")
-
-
-@fixture(scope="session")
-def first_config_processing_step(app_config: AppConfig):
-    return next(step for step in app_config.processing_graph.graph.steps.values() if step.input_type == "config")
-
-
-@fixture(scope="session")
-def first_split_processing_step(app_config: AppConfig):
-    return next(step for step in app_config.processing_graph.graph.steps.values() if step.input_type == "split")

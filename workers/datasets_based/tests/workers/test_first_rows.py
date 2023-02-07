@@ -9,47 +9,66 @@ from datasets.packaged_modules import csv
 from libcommon.exceptions import CustomError
 from libcommon.processing_graph import ProcessingStep
 from libcommon.queue import Priority
+from libcommon.resource import (
+    AssetsDirectoryResource,
+    CacheDatabaseResource,
+    QueueDatabaseResource,
+)
 from libcommon.simple_cache import DoesNotExist, get_response
 
 from datasets_based.config import AppConfig, FirstRowsConfig
+from datasets_based.resource import LibrariesResource
 from datasets_based.workers.first_rows import FirstRowsWorker, get_json_size
 
 from ..fixtures.hub import HubDatasets, get_default_config_split
 
 
+@pytest.fixture
 def get_worker(
-    dataset: str,
-    config: str,
-    split: str,
-    app_config: AppConfig,
-    first_rows_config: FirstRowsConfig,
-    force: bool = False,
-) -> FirstRowsWorker:
-    return FirstRowsWorker(
-        job_info={
-            "type": FirstRowsWorker.get_job_type(),
-            "dataset": dataset,
-            "config": config,
-            "split": split,
-            "job_id": "job_id",
-            "force": force,
-            "priority": Priority.NORMAL,
-        },
-        app_config=app_config,
-        processing_step=ProcessingStep(
-            endpoint=FirstRowsWorker.get_job_type(),
-            input_type="split",
-            requires=None,
-            required_by_dataset_viewer=True,
-            parent=None,
-            ancestors=[],
-            children=[],
-        ),
-        first_rows_config=first_rows_config,
-    )
+    libraries_resource: LibrariesResource,
+    cache_database_resource: CacheDatabaseResource,
+    queue_database_resource: QueueDatabaseResource,
+):
+    def _get_worker(
+        dataset: str,
+        config: str,
+        split: str,
+        app_config: AppConfig,
+        first_rows_config: FirstRowsConfig,
+        force: bool = False,
+    ) -> FirstRowsWorker:
+        with AssetsDirectoryResource(storage_directory=first_rows_config.assets.storage_directory) as resource:
+            return FirstRowsWorker(
+                job_info={
+                    "type": FirstRowsWorker.get_job_type(),
+                    "dataset": dataset,
+                    "config": config,
+                    "split": split,
+                    "job_id": "job_id",
+                    "force": force,
+                    "priority": Priority.NORMAL,
+                },
+                app_config=app_config,
+                processing_step=ProcessingStep(
+                    endpoint=FirstRowsWorker.get_job_type(),
+                    input_type="split",
+                    requires=None,
+                    required_by_dataset_viewer=True,
+                    parent=None,
+                    ancestors=[],
+                    children=[],
+                ),
+                hf_datasets_cache=libraries_resource.hf_datasets_cache,
+                first_rows_config=first_rows_config,
+                assets_storage_directory=resource.storage_directory,
+            )
+
+    return _get_worker
 
 
-def test_should_skip_job(app_config: AppConfig, first_rows_config: FirstRowsConfig, hub_public_csv: str) -> None:
+def test_should_skip_job(
+    app_config: AppConfig, get_worker, first_rows_config: FirstRowsConfig, hub_public_csv: str
+) -> None:
     dataset, config, split = get_default_config_split(hub_public_csv)
     worker = get_worker(dataset, config, split, app_config, first_rows_config)
     assert worker.should_skip_job() is False
@@ -60,7 +79,7 @@ def test_should_skip_job(app_config: AppConfig, first_rows_config: FirstRowsConf
     assert worker.should_skip_job() is False
 
 
-def test_compute(app_config: AppConfig, first_rows_config: FirstRowsConfig, hub_public_csv: str) -> None:
+def test_compute(app_config: AppConfig, get_worker, first_rows_config: FirstRowsConfig, hub_public_csv: str) -> None:
     dataset, config, split = get_default_config_split(hub_public_csv)
     worker = get_worker(dataset, config, split, app_config, first_rows_config)
     assert worker.process() is True
@@ -78,7 +97,7 @@ def test_compute(app_config: AppConfig, first_rows_config: FirstRowsConfig, hub_
     assert content["features"][2]["type"]["dtype"] == "float64"  # <-|
 
 
-def test_doesnotexist(app_config: AppConfig, first_rows_config: FirstRowsConfig) -> None:
+def test_doesnotexist(app_config: AppConfig, get_worker, first_rows_config: FirstRowsConfig) -> None:
     dataset = "doesnotexist"
     dataset, config, split = get_default_config_split(dataset)
     worker = get_worker(dataset, config, split, app_config, first_rows_config)
@@ -107,6 +126,7 @@ def test_doesnotexist(app_config: AppConfig, first_rows_config: FirstRowsConfig)
 )
 def test_number_rows(
     hub_datasets: HubDatasets,
+    get_worker,
     name: str,
     use_token: bool,
     error_code: str,
@@ -167,6 +187,7 @@ def test_number_rows(
 )
 def test_truncation(
     hub_datasets: HubDatasets,
+    get_worker,
     app_config: AppConfig,
     first_rows_config: FirstRowsConfig,
     name: str,

@@ -11,9 +11,11 @@ import requests
 from libcommon.exceptions import CustomError
 from libcommon.processing_graph import ProcessingStep
 from libcommon.queue import Priority
+from libcommon.resource import CacheDatabaseResource, QueueDatabaseResource
 from libcommon.simple_cache import DoesNotExist, get_response
 
 from datasets_based.config import AppConfig, ParquetAndDatasetInfoConfig
+from datasets_based.resource import LibrariesResource
 from datasets_based.workers.parquet_and_dataset_info import (
     DatasetInBlockListError,
     DatasetTooBigFromDatasetsError,
@@ -53,34 +55,43 @@ def parquet_and_dataset_info_config(
     return ParquetAndDatasetInfoConfig.from_env()
 
 
+@pytest.fixture
 def get_worker(
-    dataset: str,
-    app_config: AppConfig,
-    parquet_and_dataset_info_config: ParquetAndDatasetInfoConfig,
-    force: bool = False,
-) -> ParquetAndDatasetInfoWorker:
-    return ParquetAndDatasetInfoWorker(
-        job_info={
-            "type": ParquetAndDatasetInfoWorker.get_job_type(),
-            "dataset": dataset,
-            "config": None,
-            "split": None,
-            "job_id": "job_id",
-            "force": force,
-            "priority": Priority.NORMAL,
-        },
-        app_config=app_config,
-        processing_step=ProcessingStep(
-            endpoint=ParquetAndDatasetInfoWorker.get_job_type(),
-            input_type="dataset",
-            requires=None,
-            required_by_dataset_viewer=False,
-            parent=None,
-            ancestors=[],
-            children=[],
-        ),
-        parquet_and_dataset_info_config=parquet_and_dataset_info_config,
-    )
+    libraries_resource: LibrariesResource,
+    cache_database_resource: CacheDatabaseResource,
+    queue_database_resource: QueueDatabaseResource,
+):
+    def _get_worker(
+        dataset: str,
+        app_config: AppConfig,
+        parquet_and_dataset_info_config: ParquetAndDatasetInfoConfig,
+        force: bool = False,
+    ) -> ParquetAndDatasetInfoWorker:
+        return ParquetAndDatasetInfoWorker(
+            job_info={
+                "type": ParquetAndDatasetInfoWorker.get_job_type(),
+                "dataset": dataset,
+                "config": None,
+                "split": None,
+                "job_id": "job_id",
+                "force": force,
+                "priority": Priority.NORMAL,
+            },
+            app_config=app_config,
+            processing_step=ProcessingStep(
+                endpoint=ParquetAndDatasetInfoWorker.get_job_type(),
+                input_type="dataset",
+                requires=None,
+                required_by_dataset_viewer=False,
+                parent=None,
+                ancestors=[],
+                children=[],
+            ),
+            hf_datasets_cache=libraries_resource.hf_datasets_cache,
+            parquet_and_dataset_info_config=parquet_and_dataset_info_config,
+        )
+
+    return _get_worker
 
 
 def assert_content_is_equal(content: Any, expected: Any) -> None:
@@ -101,7 +112,10 @@ def assert_content_is_equal(content: Any, expected: Any) -> None:
 
 
 def test_compute(
-    app_config: AppConfig, parquet_and_dataset_info_config: ParquetAndDatasetInfoConfig, hub_datasets: HubDatasets
+    app_config: AppConfig,
+    get_worker,
+    parquet_and_dataset_info_config: ParquetAndDatasetInfoConfig,
+    hub_datasets: HubDatasets,
 ) -> None:
     dataset = hub_datasets["public"]["name"]
     worker = get_worker(
@@ -118,7 +132,9 @@ def test_compute(
     assert_content_is_equal(content, hub_datasets["public"]["parquet_and_dataset_info_response"])
 
 
-def test_doesnotexist(app_config: AppConfig, parquet_and_dataset_info_config: ParquetAndDatasetInfoConfig) -> None:
+def test_doesnotexist(
+    app_config: AppConfig, get_worker, parquet_and_dataset_info_config: ParquetAndDatasetInfoConfig
+) -> None:
     dataset = "doesnotexist"
     worker = get_worker(
         dataset=dataset, app_config=app_config, parquet_and_dataset_info_config=parquet_and_dataset_info_config
@@ -245,7 +261,10 @@ def test_raise_if_not_supported(
 
 
 def test_not_supported_if_big(
-    app_config: AppConfig, parquet_and_dataset_info_config: ParquetAndDatasetInfoConfig, hub_public_big: str
+    app_config: AppConfig,
+    get_worker,
+    parquet_and_dataset_info_config: ParquetAndDatasetInfoConfig,
+    hub_public_big: str,
 ) -> None:
     # Not in the list of supported datasets and bigger than the maximum size
     dataset = hub_public_big
@@ -259,7 +278,7 @@ def test_not_supported_if_big(
 
 
 def test_supported_if_gated(
-    app_config: AppConfig, parquet_and_dataset_info_config: ParquetAndDatasetInfoConfig, hub_gated_csv: str
+    app_config: AppConfig, get_worker, parquet_and_dataset_info_config: ParquetAndDatasetInfoConfig, hub_gated_csv: str
 ) -> None:
     # Access should must be granted
     dataset = hub_gated_csv
@@ -274,6 +293,7 @@ def test_supported_if_gated(
 
 def test_not_supported_if_gated_with_extra_fields(
     app_config: AppConfig,
+    get_worker,
     parquet_and_dataset_info_config: ParquetAndDatasetInfoConfig,
     hub_gated_extra_fields_csv: str,
 ) -> None:
@@ -289,7 +309,10 @@ def test_not_supported_if_gated_with_extra_fields(
 
 
 def test_blocked(
-    app_config: AppConfig, parquet_and_dataset_info_config: ParquetAndDatasetInfoConfig, hub_public_jsonl: str
+    app_config: AppConfig,
+    get_worker,
+    parquet_and_dataset_info_config: ParquetAndDatasetInfoConfig,
+    hub_public_jsonl: str,
 ) -> None:
     # In the list of blocked datasets
     dataset = hub_public_jsonl
@@ -308,6 +331,7 @@ def test_blocked(
 )
 def test_compute_splits_response_simple_csv_ok(
     hub_datasets: HubDatasets,
+    get_worker,
     name: str,
     app_config: AppConfig,
     parquet_and_dataset_info_config: ParquetAndDatasetInfoConfig,
@@ -350,6 +374,7 @@ def test_compute_splits_response_simple_csv_ok(
 )
 def test_compute_splits_response_simple_csv_error(
     hub_datasets: HubDatasets,
+    get_worker,
     name: str,
     error_code: str,
     cause: str,

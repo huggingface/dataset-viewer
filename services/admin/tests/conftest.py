@@ -1,9 +1,16 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2022 The HuggingFace Authors.
 
-from typing import List
+from typing import Iterator, List
 
-from libcommon.processing_graph import ProcessingStep
+from libcommon.processing_graph import ProcessingGraph, ProcessingStep
+from libcommon.queue import _clean_queue_database
+from libcommon.resource import (
+    AssetsDirectoryResource,
+    CacheDatabaseResource,
+    QueueDatabaseResource,
+)
+from libcommon.simple_cache import _clean_cache_database
 from pytest import MonkeyPatch, fixture
 
 from admin.config import AppConfig
@@ -34,4 +41,25 @@ def app_config(monkeypatch_session: MonkeyPatch) -> AppConfig:
 
 @fixture(scope="session")
 def processing_steps(app_config: AppConfig) -> List[ProcessingStep]:
-    return list(app_config.processing_graph.graph.steps.values())
+    processing_graph = ProcessingGraph(app_config.processing_graph.specification)
+    return list(processing_graph.steps.values())
+
+
+@fixture(scope="session")
+def assets_directory(app_config: AppConfig) -> Iterator[str]:
+    with AssetsDirectoryResource(storage_directory=app_config.assets.storage_directory) as resource:
+        yield str(resource.storage_directory)
+
+
+@fixture(autouse=True)
+def cache_database_resource(app_config: AppConfig) -> Iterator[CacheDatabaseResource]:
+    with CacheDatabaseResource(database=app_config.cache.mongo_database, host=app_config.cache.mongo_url) as resource:
+        yield resource
+        _clean_cache_database()
+
+
+@fixture(autouse=True)
+def queue_database_resource(app_config: AppConfig) -> Iterator[QueueDatabaseResource]:
+    with QueueDatabaseResource(database=app_config.queue.mongo_database, host=app_config.queue.mongo_url) as resource:
+        yield resource
+        _clean_queue_database()

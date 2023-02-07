@@ -8,43 +8,54 @@ import pytest
 from libcommon.exceptions import CustomError
 from libcommon.processing_graph import ProcessingStep
 from libcommon.queue import Priority
+from libcommon.resource import CacheDatabaseResource, QueueDatabaseResource
 from libcommon.simple_cache import DoesNotExist, get_response
 
 from datasets_based.config import AppConfig
+from datasets_based.resource import LibrariesResource
 from datasets_based.workers.splits import SplitsWorker
 
 from ..fixtures.hub import HubDatasets
 
 
+@pytest.fixture
 def get_worker(
-    dataset: str,
-    app_config: AppConfig,
-    force: bool = False,
-) -> SplitsWorker:
-    return SplitsWorker(
-        job_info={
-            "type": SplitsWorker.get_job_type(),
-            "dataset": dataset,
-            "config": None,
-            "split": None,
-            "job_id": "job_id",
-            "force": force,
-            "priority": Priority.NORMAL,
-        },
-        app_config=app_config,
-        processing_step=ProcessingStep(
-            endpoint=SplitsWorker.get_job_type(),
-            input_type="dataset",
-            requires=None,
-            required_by_dataset_viewer=True,
-            parent=None,
-            ancestors=[],
-            children=[],
-        ),
-    )
+    libraries_resource: LibrariesResource,
+    cache_database_resource: CacheDatabaseResource,
+    queue_database_resource: QueueDatabaseResource,
+):
+    def _get_worker(
+        dataset: str,
+        app_config: AppConfig,
+        force: bool = False,
+    ) -> SplitsWorker:
+        return SplitsWorker(
+            job_info={
+                "type": SplitsWorker.get_job_type(),
+                "dataset": dataset,
+                "config": None,
+                "split": None,
+                "job_id": "job_id",
+                "force": force,
+                "priority": Priority.NORMAL,
+            },
+            app_config=app_config,
+            processing_step=ProcessingStep(
+                endpoint=SplitsWorker.get_job_type(),
+                input_type="dataset",
+                requires=None,
+                required_by_dataset_viewer=True,
+                parent=None,
+                ancestors=[],
+                children=[],
+            ),
+            hf_datasets_cache=libraries_resource.hf_datasets_cache,
+        )
+
+    return _get_worker
 
 
-def should_skip_job(app_config: AppConfig, hub_public_csv: str) -> None:
+def should_skip_job(app_config: AppConfig, hub_public_csv: str, get_worker) -> None:
     dataset = hub_public_csv
     worker = get_worker(dataset, app_config)
     assert worker.should_skip_job() is False
@@ -55,7 +66,7 @@ def should_skip_job(app_config: AppConfig, hub_public_csv: str) -> None:
     assert worker.should_skip_job() is False
 
 
-def test_process(app_config: AppConfig, hub_public_csv: str) -> None:
+def test_process(app_config: AppConfig, hub_public_csv: str, get_worker) -> None:
     dataset = hub_public_csv
     worker = get_worker(dataset, app_config)
     assert worker.process() is True
@@ -70,7 +81,7 @@ def test_process(app_config: AppConfig, hub_public_csv: str) -> None:
     assert "stats" not in content["splits"][0]
 
 
-def test_doesnotexist(app_config: AppConfig) -> None:
+def test_doesnotexist(app_config: AppConfig, get_worker) -> None:
     dataset = "doesnotexist"
     worker = get_worker(dataset, app_config)
     assert worker.process() is False
@@ -94,7 +105,13 @@ def test_doesnotexist(app_config: AppConfig) -> None:
     ],
 )
 def test_compute_splits_response_simple_csv(
-    hub_datasets: HubDatasets, name: str, use_token: bool, error_code: str, cause: str, app_config: AppConfig
+    hub_datasets: HubDatasets,
+    get_worker,
+    name: str,
+    use_token: bool,
+    error_code: str,
+    cause: str,
+    app_config: AppConfig,
 ) -> None:
     dataset = hub_datasets[name]["name"]
     expected_splits_response = hub_datasets[name]["splits_response"]

@@ -37,6 +37,7 @@ class UvicornConfig:
 
 ADMIN_CACHE_REPORTS_NUM_RESULTS = 100
 ADMIN_CACHE_REPORTS_WITH_CONTENT_NUM_RESULTS = 100
+ADMIN_EXTERNAL_AUTH_URL = None
 ADMIN_HF_ORGANIZATION = None
 ADMIN_HF_WHOAMI_PATH = "/api/whoami-v2"
 ADMIN_MAX_AGE = 10
@@ -46,14 +47,17 @@ ADMIN_MAX_AGE = 10
 class AdminConfig:
     cache_reports_num_results: int = ADMIN_CACHE_REPORTS_NUM_RESULTS
     cache_reports_with_content_num_results: int = ADMIN_CACHE_REPORTS_WITH_CONTENT_NUM_RESULTS
+    external_auth_url: Optional[str] = ADMIN_EXTERNAL_AUTH_URL  # not documented
     hf_organization: Optional[str] = ADMIN_HF_ORGANIZATION
     hf_whoami_path: str = ADMIN_HF_WHOAMI_PATH
     max_age: int = ADMIN_MAX_AGE
 
     @staticmethod
-    def from_env() -> "AdminConfig":
+    def from_env(common_config: CommonConfig) -> "AdminConfig":
         env = Env(expand_vars=True)
         with env.prefixed("ADMIN_"):
+            hf_whoami_path = env.str(name="HF_WHOAMI_PATH", default=ADMIN_HF_WHOAMI_PATH)
+            external_auth_url = None if hf_whoami_path is None else f"{common_config.hf_endpoint}{hf_whoami_path}"
             return AdminConfig(
                 cache_reports_num_results=env.int(
                     name="CACHE_REPORTS_NUM_RESULTS", default=ADMIN_CACHE_REPORTS_NUM_RESULTS
@@ -61,8 +65,9 @@ class AdminConfig:
                 cache_reports_with_content_num_results=env.int(
                     name="CACHE_REPORTS_WITH_CONTENT_NUM_RESULTS", default=ADMIN_CACHE_REPORTS_WITH_CONTENT_NUM_RESULTS
                 ),
+                external_auth_url=external_auth_url,
                 hf_organization=env.str(name="HF_ORGANIZATION", default=ADMIN_HF_ORGANIZATION),
-                hf_whoami_path=env.str(name="HF_WHOAMI_PATH", default=ADMIN_HF_WHOAMI_PATH),
+                hf_whoami_path=hf_whoami_path,
                 max_age=env.int(name="MAX_AGE", default=ADMIN_MAX_AGE),
             )
 
@@ -76,19 +81,15 @@ class AppConfig:
     processing_graph: ProcessingGraphConfig = field(default_factory=ProcessingGraphConfig)
     queue: QueueConfig = field(default_factory=QueueConfig)
 
-    def __post_init__(self):
-        self.external_auth_url = (
-            None if self.admin.hf_whoami_path is None else f"{self.common.hf_endpoint}{self.admin.hf_whoami_path}"
-        )
-
     @staticmethod
     def from_env() -> "AppConfig":
         # First process the common configuration to setup the logging
+        common_config = CommonConfig.from_env()
         return AppConfig(
-            common=CommonConfig.from_env(),
+            common=common_config,
             assets=AssetsConfig.from_env(),
             cache=CacheConfig.from_env(),
             processing_graph=ProcessingGraphConfig.from_env(),
             queue=QueueConfig.from_env(),
-            admin=AdminConfig.from_env(),
+            admin=AdminConfig.from_env(common_config),
         )

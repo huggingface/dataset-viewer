@@ -4,12 +4,12 @@
 from datetime import datetime
 from http import HTTPStatus
 from time import process_time
-from typing import Optional
+from typing import Iterator, Optional
 
 import pytest
 from pymongo.errors import DocumentTooLarge
 
-from libcommon.config import CacheConfig
+from libcommon.resource import CacheDatabaseResource
 from libcommon.simple_cache import (
     CachedResponse,
     DoesNotExist,
@@ -31,8 +31,18 @@ from libcommon.simple_cache import (
 )
 
 
+@pytest.fixture(scope="module")
+def cache_database_resource(cache_mongo_host: str) -> Iterator[CacheDatabaseResource]:
+    database = "datasets_server_cache_test"
+    host = cache_mongo_host
+    if "test" not in database:
+        raise ValueError("Test must be launched on a test mongo database")
+    with CacheDatabaseResource(database=database, host=host) as cache_database_resource:
+        yield cache_database_resource
+
+
 @pytest.fixture(autouse=True)
-def clean_mongo_database(cache_config: CacheConfig) -> None:
+def clean_mongo_database(cache_database_resource: CacheDatabaseResource) -> None:
     _clean_cache_database()
 
 

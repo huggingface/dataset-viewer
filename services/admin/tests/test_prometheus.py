@@ -1,19 +1,21 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2022 The HuggingFace Authors.
+
 import os
 from typing import List
 
 from libcommon.processing_graph import ProcessingStep
 
-from admin.config import AppConfig
 from admin.prometheus import Prometheus
 
 
-def test_prometheus(app_config: AppConfig, processing_steps: List[ProcessingStep]) -> None:
-    # we depend on app_config to be sure we already connected to the database
+def test_prometheus(
+    assets_directory: str,
+    processing_steps: List[ProcessingStep],
+) -> None:
     is_multiprocess = "PROMETHEUS_MULTIPROC_DIR" in os.environ
 
-    prometheus = Prometheus(
-        processing_steps=processing_steps, assets_storage_directory=app_config.assets.storage_directory
-    )
+    prometheus = Prometheus(processing_steps=processing_steps, assets_storage_directory=assets_directory)
     registry = prometheus.getRegistry()
     assert registry is not None
 
