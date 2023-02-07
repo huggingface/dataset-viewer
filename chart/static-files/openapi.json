@@ -196,7 +196,7 @@
             "value": "FirstRowsResponseNotReady"
           },
           "InfoError": {
-            "summary": "The info cannot be fetched for the dataset config.",
+            "summary": "The info cannot be fetched for the config of the dataset. Please fix your loading script.",
             "value": "InfoError"
           },
           "FeaturesError": {

@@ -493,7 +493,10 @@ def compute_first_rows_response(
             use_auth_token=use_auth_token,
         )
     except Exception as err:
-        raise InfoError(f"The info cannot be fetched for the config '{config}' of the dataset.", cause=err) from err
+        raise InfoError(
+            f"The info cannot be fetched for the config '{config}' of the dataset. Please fix your loading script.",
+            cause=err,
+        ) from err
     if not info.features:
         try:
             # https://github.com/huggingface/datasets/blob/f5826eff9b06ab10dba1adfa52543341ef1e6009/src/datasets/iterable_dataset.py#L1255
