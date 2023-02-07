@@ -3,8 +3,6 @@
 
 from abc import ABC, abstractmethod
 
-from libcommon.processing_graph import ProcessingGraph
-
 from datasets_based.config import (
     AppConfig,
     FirstRowsConfig,
@@ -37,18 +35,17 @@ class BaseWorkerFactory(ABC):
 
 
 class WorkerFactory(BaseWorkerFactory):
-    def __init__(self, app_config: AppConfig, processing_graph: ProcessingGraph) -> None:
+    def __init__(self, app_config: AppConfig) -> None:
         self.app_config = app_config
-        self.processing_graph = processing_graph
 
     def _create_worker(self, job_info: JobInfo) -> Worker:
         job_type = job_info["type"]
         try:
-            processing_step = self.processing_graph.get_step_by_job_type(job_type)
+            processing_step = self.app_config.processing_graph.graph.get_step_by_job_type(job_type)
         except ValueError as e:
             raise ValueError(
                 f"Unsupported job type: '{job_type}'. The job types declared in the processing graph are:"
-                f" {[step.job_type for step in self.processing_graph.steps.values()]}"
+                f" {[step.job_type for step in self.app_config.processing_graph.graph.steps.values()]}"
             ) from e
         if job_type == ConfigNamesWorker.get_job_type():
             return ConfigNamesWorker(job_info=job_info, app_config=self.app_config, processing_step=processing_step)

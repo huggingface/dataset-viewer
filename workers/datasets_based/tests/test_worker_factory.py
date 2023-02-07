@@ -25,7 +25,7 @@ from datasets_based.worker_factory import WorkerFactory
     ],
 )
 def test_create_worker(app_config: AppConfig, job_type: str, expected_worker: Optional[str]) -> None:
-    worker_factory = WorkerFactory(app_config=app_config, processing_graph=app_config.processing_graph.graph)
+    worker_factory = WorkerFactory(app_config=app_config)
     job_info: JobInfo = {
         "type": job_type,
         "dataset": "dataset",
