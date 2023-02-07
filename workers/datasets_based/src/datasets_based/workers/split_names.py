@@ -105,7 +105,10 @@ def compute_split_names_response(
     except _EmptyDatasetError as err:
         raise EmptyDatasetError("The dataset is empty. Please fix your loading script.", cause=err) from err
     except Exception as err:
-        raise SplitNamesError("Cannot get the split names for the dataset and config.", cause=err) from err
+        raise SplitNamesError(
+            f"Cannot get the split names for the config '{config}' of the dataset. Please fix your loading script.",
+            cause=err,
+        ) from err
     return {"split_names": split_name_items}
 
 
