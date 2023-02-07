@@ -28,7 +28,6 @@ GeneralWorkerErrorCode = Literal[
     "NoGitRevisionError",
     "SplitNotFoundError",
     "UnexpectedError",
-    "TooBigContentError",
 ]
 
 # List of error codes that should trigger a retry.
