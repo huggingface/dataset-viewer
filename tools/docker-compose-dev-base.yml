@@ -6,6 +6,7 @@ services:
       COMMON_HF_ENDPOINT: ${COMMON_HF_ENDPOINT-https://hub-ci.huggingface.co}
       COMMON_HF_TOKEN: ${COMMON_HF_TOKEN-hf_app_datasets-server_token}
       COMMON_LOG_LEVEL: ${COMMON_LOG_LEVEL-INFO}
+      COMMON_CONTENT_MAX_SIZE: ${COMMON_CONTENT_MAX_SIZE-100000}
       # huggingface_hub
       HF_ENDPOINT: ${COMMON_HF_ENDPOINT-https://hub-ci.huggingface.co} # see https://github.com/huggingface/datasets/pull/5196#issuecomment-1322191411
       # cache

@@ -71,7 +71,7 @@ common:
   hfEndpoint: "https://huggingface.co"
   # Log level
   logLevel: "DEBUG"
-
+  contentMaxSize: 100000
 # --- jobs (pre-install/upgrade hooks) ---
 
 mongodbMigration:

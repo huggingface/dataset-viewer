@@ -48,6 +48,7 @@ common:
   hfEndpoint: ""
   # Log level
   logLevel: "INFO"
+  contentMaxSize: 1000000
 
 # --- common parameters ---
 
