@@ -7,6 +7,7 @@ from http import HTTPStatus
 import pytest
 from datasets.packaged_modules import csv
 from libcommon.exceptions import CustomError
+from libcommon.processing_graph import ProcessingStep
 from libcommon.queue import Priority
 from libcommon.simple_cache import DoesNotExist, get_response
 
@@ -35,6 +36,15 @@ def get_worker(
             "priority": Priority.NORMAL,
         },
         app_config=app_config,
+        processing_step=ProcessingStep(
+            endpoint=FirstRowsWorker.get_job_type(),
+            input_type="split",
+            requires=None,
+            required_by_dataset_viewer=True,
+            parent=None,
+            ancestors=[],
+            children=[],
+        ),
         first_rows_config=first_rows_config,
     )
 

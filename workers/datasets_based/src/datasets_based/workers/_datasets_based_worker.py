@@ -10,6 +10,7 @@ from pathlib import Path
 from typing import Optional
 
 import datasets.config
+from libcommon.processing_graph import ProcessingStep
 from libcommon.storage import init_dir, remove_dir
 
 from datasets_based.config import AppConfig, DatasetsBasedConfig
@@ -26,15 +27,7 @@ class DatasetsBasedWorker(Worker):
     # be safe to use a global variable (and to set the datasets cache globally)
     datasets_cache: Optional[Path] = None
 
-    def __init__(self, job_info: JobInfo, app_config: AppConfig) -> None:
-        job_type = job_info["type"]
-        try:
-            processing_step = app_config.processing_graph.graph.get_step_by_job_type(job_type)
-        except ValueError as e:
-            raise ValueError(
-                f"Unsupported job type: '{job_type}'. The job types declared in the processing graph are:"
-                f" {[step.job_type for step in app_config.processing_graph.graph.steps.values()]}"
-            ) from e
+    def __init__(self, job_info: JobInfo, app_config: AppConfig, processing_step: ProcessingStep) -> None:
         super().__init__(job_info=job_info, common_config=app_config.common, processing_step=processing_step)
         self.datasets_based_config = app_config.datasets_based
 
