@@ -570,7 +570,10 @@ def compute_first_rows_response(
             )
         if info.size_in_bytes is None or info.size_in_bytes > MAX_SIZE_FALLBACK:
             raise StreamingRowsError(
-                "Cannot load the dataset split (in streaming mode) to extract the first rows.",
+                (
+                    "Cannot load the dataset split (in streaming mode) to extract the first rows. Please make your"
+                    " loading script support streaming."
+                ),
                 cause=err,
             ) from err
         try:

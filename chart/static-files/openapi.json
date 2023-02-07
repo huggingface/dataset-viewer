@@ -204,7 +204,7 @@
             "value": "FeaturesError"
           },
           "StreamingRowsError": {
-            "summary": "Cannot load the dataset split (in streaming mode) to extract the first rows.",
+            "summary": "Cannot load the dataset split (in streaming mode) to extract the first rows. Please make your loading script support streaming",
             "value": "StreamingRowsError"
           },
           "NormalRowsError": {
