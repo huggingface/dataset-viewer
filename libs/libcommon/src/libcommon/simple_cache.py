@@ -29,6 +29,9 @@ from mongoengine.fields import (
 )
 from mongoengine.queryset.queryset import QuerySet
 
+from libcommon.exceptions import CustomError
+from libcommon.utils import orjson_dumps
+
 # START monkey patching ### hack ###
 # see https://github.com/sbdchd/mongo-types#install
 U = TypeVar("U", bound=Document)
@@ -63,6 +66,35 @@ class SplitFullName(NamedTuple):
     dataset: str
     config: Optional[str]
     split: Optional[str]
+
+
+class CachedResponseError(CustomError):
+    """Base class for CachedResponse exceptions."""
+
+    def __init__(
+        self,
+        message: str,
+        status_code: HTTPStatus,
+        code: str,
+        cause: Optional[BaseException] = None,
+        disclose_cause: bool = False,
+    ):
+        super().__init__(
+            message=message, status_code=status_code, code=code, cause=cause, disclose_cause=disclose_cause
+        )
+
+
+class TooBigContentError(CachedResponseError):
+    """Raised when document's content size in bytest is bigger than the supported value."""
+
+    def __init__(self, message: str, cause: Optional[BaseException] = None):
+        super().__init__(
+            message=message,
+            status_code=HTTPStatus.NOT_IMPLEMENTED,
+            code="TooBigContentError",
+            cause=cause,
+            disclose_cause=False,
+        )
 
 
 # cache of any endpoint
@@ -119,6 +151,13 @@ class CachedResponse(Document):
 # null values, see https://www.mongodb.com/docs/v5.0/core/index-unique/#unique-index-and-missing-field.
 CachedResponse.config.required = False  # type: ignore
 CachedResponse.split.required = False  # type: ignore
+
+
+def validate_content_size(content: Any, content_max_size: int) -> None:
+    if len(orjson_dumps(content)) > content_max_size:
+        raise TooBigContentError(
+            "Could not process content, it exceeds the supported size in bytes {content_max_size}."
+        )
 
 
 # Note: we let the exceptions throw (ie DocumentTooLarge): it's the responsibility of the caller to manage them

@@ -19,8 +19,8 @@ from libcommon.simple_cache import (
     get_response_without_content,
     get_split_full_names_for_dataset_and_kind,
     upsert_response,
+    validate_content_size,
 )
-from libcommon.utils import orjson_dumps
 from packaging import version
 
 GeneralWorkerErrorCode = Literal[
@@ -101,19 +101,6 @@ class NoGitRevisionError(GeneralWorkerError):
             message=message,
             status_code=HTTPStatus.NOT_FOUND,
             code="NoGitRevisionError",
-            cause=cause,
-            disclose_cause=False,
-        )
-
-
-class TooBigContentError(GeneralWorkerError):
-    """Raised when content size in bytest is bigger than the supported value."""
-
-    def __init__(self, message: str, cause: Optional[BaseException] = None):
-        super().__init__(
-            message=message,
-            status_code=HTTPStatus.NOT_IMPLEMENTED,
-            code="TooBigContentError",
             cause=cause,
             disclose_cause=False,
         )
@@ -312,13 +299,7 @@ class Worker(ABC):
             try:
                 self.pre_compute()
                 content = self.compute()
-
-                # Validate content size
-                if len(orjson_dumps(content)) > self.common_config.content_max_size:
-                    raise TooBigContentError(
-                        "Could not process content, it exceeds the supported size in bytes"
-                        f" {self.common_config.content_max_size}."
-                    )
+                validate_content_size(content=content, content_max_size=self.common_config.content_max_size)
             finally:
                 # ensure the post_compute hook is called even if the compute raises an exception
                 self.post_compute()
