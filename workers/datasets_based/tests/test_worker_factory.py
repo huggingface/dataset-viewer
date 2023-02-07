@@ -8,7 +8,7 @@ from libcommon.queue import Priority
 
 from datasets_based.config import AppConfig
 from datasets_based.worker import JobInfo
-from datasets_based.worker_factory import DatasetBasedWorkerFactory
+from datasets_based.worker_factory import WorkerFactory
 
 
 @pytest.mark.parametrize(
@@ -25,7 +25,7 @@ from datasets_based.worker_factory import DatasetBasedWorkerFactory
     ],
 )
 def test_create_worker(app_config: AppConfig, job_type: str, expected_worker: Optional[str]) -> None:
-    worker_factory = DatasetBasedWorkerFactory(app_config=app_config)
+    worker_factory = WorkerFactory(app_config=app_config, processing_graph=app_config.processing_graph.graph)
     job_info: JobInfo = {
         "type": job_type,
         "dataset": "dataset",

@@ -6,7 +6,8 @@ from libcommon.processing_graph import ProcessingStep
 from libcommon.queue import Queue
 
 from datasets_based.config import AppConfig, WorkerLoopConfig
-from datasets_based.worker import JobInfo, Worker, WorkerFactory
+from datasets_based.worker import JobInfo, Worker
+from datasets_based.worker_factory import BaseWorkerFactory
 from datasets_based.worker_loop import WorkerLoop
 
 
@@ -33,7 +34,7 @@ class DummyWorker(Worker):
         return {"key": "value"}
 
 
-class DummyWorkerFactory(WorkerFactory):
+class DummyWorkerFactory(BaseWorkerFactory):
     def __init__(self, processing_step: ProcessingStep) -> None:
         self.common_config = CommonConfig()
         self.processing_step = processing_step

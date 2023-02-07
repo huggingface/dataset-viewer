@@ -16,7 +16,6 @@ from libcommon.config import (
     QueueConfig,
 )
 
-
 WORKER_LOOP_MAX_DISK_USAGE_PCT = 90
 WORKER_LOOP_MAX_LOAD_PCT = 70
 WORKER_LOOP_MAX_MEMORY_PCT = 80
@@ -113,10 +112,6 @@ PARQUET_AND_DATASET_INFO_MAX_DATASET_SIZE = 100_000_000
 PARQUET_AND_DATASET_INFO_SOURCE_REVISION = "main"
 PARQUET_AND_DATASET_INFO_TARGET_REVISION = "refs/convert/parquet"
 PARQUET_AND_DATASET_INFO_URL_TEMPLATE = "/datasets/%s/resolve/%s/%s"
-
-
-def get_empty_str_list() -> List[str]:
-    return []
 
 
 @dataclass

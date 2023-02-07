@@ -20,6 +20,7 @@ from datasets import (
 )
 from datasets.data_files import EmptyDatasetError as _EmptyDatasetError
 from libcommon.exceptions import CustomError
+from libcommon.processing_graph import ProcessingStep
 from libcommon.simple_cache import SplitFullName as _SplitFullName
 from libcommon.utils import orjson_dumps
 
@@ -607,8 +608,14 @@ class FirstRowsWorker(DatasetsBasedWorker):
     def get_version() -> str:
         return "2.0.0"
 
-    def __init__(self, job_info: JobInfo, app_config: AppConfig, first_rows_config: FirstRowsConfig) -> None:
-        super().__init__(job_info=job_info, app_config=app_config)
+    def __init__(
+        self,
+        job_info: JobInfo,
+        app_config: AppConfig,
+        processing_step: ProcessingStep,
+        first_rows_config: FirstRowsConfig,
+    ) -> None:
+        super().__init__(job_info=job_info, app_config=app_config, processing_step=processing_step)
         self.first_rows_config = first_rows_config
 
     def compute(self) -> Mapping[str, Any]:

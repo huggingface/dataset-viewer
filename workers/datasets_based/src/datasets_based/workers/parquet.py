@@ -9,8 +9,7 @@ from libcommon.dataset import DatasetNotFoundError
 from libcommon.exceptions import CustomError
 from libcommon.simple_cache import DoesNotExist, SplitFullName, get_response
 
-from datasets_based.config import AppConfig
-from datasets_based.worker import JobInfo, Worker
+from datasets_based.worker import Worker
 from datasets_based.workers.parquet_and_dataset_info import ParquetFileItem
 
 ParquetWorkerErrorCode = Literal[
@@ -96,17 +95,6 @@ class ParquetWorker(Worker):
     @staticmethod
     def get_version() -> str:
         return "3.0.0"
-
-    def __init__(self, job_info: JobInfo, app_config: AppConfig) -> None:
-        job_type = job_info["type"]
-        try:
-            processing_step = app_config.processing_graph.graph.get_step_by_job_type(job_type)
-        except ValueError as e:
-            raise ValueError(
-                f"Unsupported job type: '{job_type}'. The job types declared in the processing graph are:"
-                f" {[step.job_type for step in app_config.processing_graph.graph.steps.values()]}"
-            ) from e
-        super().__init__(job_info=job_info, common_config=app_config.common, processing_step=processing_step)
 
     def compute(self) -> Mapping[str, Any]:
         return compute_parquet_response(dataset=self.dataset)

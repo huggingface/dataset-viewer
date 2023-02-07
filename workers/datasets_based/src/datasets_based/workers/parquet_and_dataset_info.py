@@ -26,6 +26,7 @@ from huggingface_hub.hf_api import (
 from huggingface_hub.utils import RepositoryNotFoundError, RevisionNotFoundError
 from libcommon.dataset import ask_access
 from libcommon.exceptions import CustomError
+from libcommon.processing_graph import ProcessingStep
 from libcommon.simple_cache import SplitFullName
 
 from datasets_based.config import AppConfig, ParquetAndDatasetInfoConfig
@@ -611,9 +612,13 @@ class ParquetAndDatasetInfoWorker(DatasetsBasedWorker):
         return "1.0.0"
 
     def __init__(
-        self, job_info: JobInfo, app_config: AppConfig, parquet_and_dataset_info_config: ParquetAndDatasetInfoConfig
+        self,
+        job_info: JobInfo,
+        app_config: AppConfig,
+        processing_step: ProcessingStep,
+        parquet_and_dataset_info_config: ParquetAndDatasetInfoConfig,
     ) -> None:
-        super().__init__(job_info=job_info, app_config=app_config)
+        super().__init__(job_info=job_info, app_config=app_config, processing_step=processing_step)
         self.parquet_and_dataset_info_config = parquet_and_dataset_info_config
 
     def compute(self) -> Mapping[str, Any]:
