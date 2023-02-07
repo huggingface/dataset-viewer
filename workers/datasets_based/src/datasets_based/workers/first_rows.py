@@ -587,7 +587,10 @@ def compute_first_rows_response(
             )
         except Exception as err:
             raise NormalRowsError(
-                "Cannot load the dataset split (in normal download mode) to extract the first rows.",
+                (
+                    "Cannot load the dataset split (in normal download mode) to extract the first rows. Please fix"
+                    " your loading script."
+                ),
                 cause=err,
             ) from err
     # transform the rows, if needed (e.g. save the images or audio to the assets, and return their URL)

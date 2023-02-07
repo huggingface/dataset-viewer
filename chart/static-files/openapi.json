@@ -208,7 +208,7 @@
             "value": "StreamingRowsError"
           },
           "NormalRowsError": {
-            "summary": "Cannot load the dataset split (in normal download mode) to extract the first rows.",
+            "summary": "Cannot load the dataset split (in normal download mode) to extract the first rows. Please fix your loading script.",
             "value": "NormalRowsError"
           },
           "RowsPostProcessingError": {
