@@ -102,7 +102,7 @@
             "value": "SplitsResponseNotReadyError"
           },
           "SplitsNamesError": {
-            "summary": "Cannot get the split names for the dataset.",
+            "summary": "Cannot get the split names for the dataset. Please fix your loading script.",
             "value": "SplitsNamesError"
           },
           "UnexpectedError": {
