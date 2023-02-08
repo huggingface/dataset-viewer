@@ -9,6 +9,7 @@ import pandas as pd
 import pytest
 import requests
 from libcommon.exceptions import CustomError
+from libcommon.processing_graph import ProcessingStep
 from libcommon.queue import Priority
 from libcommon.simple_cache import DoesNotExist, get_response
 
@@ -69,6 +70,15 @@ def get_worker(
             "priority": Priority.NORMAL,
         },
         app_config=app_config,
+        processing_step=ProcessingStep(
+            endpoint=ParquetAndDatasetInfoWorker.get_job_type(),
+            input_type="dataset",
+            requires=None,
+            required_by_dataset_viewer=False,
+            parent=None,
+            ancestors=[],
+            children=[],
+        ),
         parquet_and_dataset_info_config=parquet_and_dataset_info_config,
     )
 

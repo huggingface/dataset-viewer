@@ -17,5 +17,5 @@ poetry run python app.py
 To connect to your local DEV endpoint:
 
 ```
-DEV=1 poetry run python app.py
+DEV=1 HF_TOKEN=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 poetry run python app.py
 ```
