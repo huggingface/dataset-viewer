@@ -17,7 +17,7 @@ from libcommon.resources import (
 
 
 def test_log() -> None:
-    resource = LogResource(log_level=logging.DEBUG)
+    resource = LogResource(init_log_level=logging.DEBUG)
     assert logging.getLogger().getEffectiveLevel() == logging.WARNING
     resource.allocate()
     assert logging.getLogger().getEffectiveLevel() == logging.WARNING
@@ -34,7 +34,7 @@ def test_log_context_manager() -> None:
 @pytest.mark.parametrize("pass_directory", [True, False])
 def test_assets_directory(tmp_path: Path, pass_directory: bool) -> None:
     storage_directory = str(tmp_path / "test_assets") if pass_directory else None
-    resource = AssetsDirectoryResource(storage_directory=storage_directory)
+    resource = AssetsDirectoryResource(init_storage_directory=storage_directory)
     if pass_directory:
         assert resource.storage_directory == storage_directory
     assert resource.storage_directory is not None
@@ -44,7 +44,7 @@ def test_assets_directory(tmp_path: Path, pass_directory: bool) -> None:
 @pytest.mark.parametrize("pass_directory", [True, False])
 def test_assets_directory_context_manager(tmp_path: Path, pass_directory: bool) -> None:
     storage_directory = str(tmp_path / "test_assets") if pass_directory else None
-    with AssetsDirectoryResource(storage_directory=storage_directory) as resource:
+    with AssetsDirectoryResource(init_storage_directory=storage_directory) as resource:
         if pass_directory:
             assert resource.storage_directory == storage_directory
         assert resource.storage_directory is not None

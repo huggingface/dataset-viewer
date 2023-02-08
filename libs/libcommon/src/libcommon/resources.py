@@ -1,7 +1,7 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2022 The HuggingFace Authors.
 
-from dataclasses import dataclass, field
+from dataclasses import InitVar, dataclass, field
 from typing import Optional
 
 from libcommon.constants import CACHE_MONGOENGINE_ALIAS, QUEUE_MONGOENGINE_ALIAS
@@ -50,7 +50,7 @@ class AssetsDirectoryResource(Resource):
     The directory is created if it does not exist.
 
     Args:
-        storage_directory (:obj:`str`, optional): The path to the directory where assets are stored.
+        init_storage_directory (:obj:`str`, optional): The path to the directory where assets are stored.
             If :obj:`None`, the directory is created in the ``datasets_server_assets`` subdirectory of the
             user cache directory.
 
@@ -59,10 +59,11 @@ class AssetsDirectoryResource(Resource):
         ...     pass
     """
 
-    storage_directory: Optional[StrPath]
+    init_storage_directory: InitVar[Optional[StrPath]] = None
+    storage_directory: StrPath = field(init=False)
 
     def allocate(self):
-        self.storage_directory = init_dir(directory=self.storage_directory, appname="datasets_server_assets")
+        self.storage_directory = init_dir(directory=self.init_storage_directory, appname="datasets_server_assets")
 
     # no need to implement release() as the directory is not deleted
 
@@ -73,13 +74,14 @@ class LogResource(Resource):
     A resource that sets the log level.
 
     Args:
-        log_level (:obj:`int`, optional): The log level. If :obj:`None`, the log level is set to INFO.
+        init_log_level (:obj:`int`, optional): The log level. If :obj:`None`, the log level is set to INFO.
     """
 
-    log_level: int
+    init_log_level: InitVar[int] = None
+    log_level: int = field(init=False)
 
     def allocate(self):
-        self.log_level = init_logging(self.log_level)
+        self.log_level = init_logging(self.init_log_level)
 
     # no need to implement release() as the log level is not changed.
     # TODO: restore the previous log level?

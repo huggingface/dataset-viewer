@@ -77,7 +77,9 @@ class WorkerFactory(BaseWorkerFactory):
             )
         if job_type == FirstRowsWorker.get_job_type():
             first_rows_config = FirstRowsConfig.from_env()
-            with AssetsDirectoryResource(storage_directory=first_rows_config.assets.storage_directory) as resource:
+            with AssetsDirectoryResource(
+                init_storage_directory=first_rows_config.assets.storage_directory
+            ) as resource:
                 return FirstRowsWorker(
                     job_info=job_info,
                     app_config=self.app_config,

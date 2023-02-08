@@ -100,7 +100,7 @@ def first_rows_config(set_env_vars: MonkeyPatch) -> FirstRowsConfig:
 
 @fixture
 def assets_directory(first_rows_config: FirstRowsConfig) -> Iterator[AssetsDirectoryResource]:
-    with AssetsDirectoryResource(storage_directory=first_rows_config.assets.storage_directory) as resource:
+    with AssetsDirectoryResource(init_storage_directory=first_rows_config.assets.storage_directory) as resource:
         yield resource.storage_directory
 
 

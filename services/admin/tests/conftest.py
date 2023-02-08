@@ -47,7 +47,7 @@ def processing_steps(app_config: AppConfig) -> List[ProcessingStep]:
 
 @fixture(scope="session")
 def assets_directory(app_config: AppConfig) -> Iterator[str]:
-    with AssetsDirectoryResource(storage_directory=app_config.assets.storage_directory) as resource:
+    with AssetsDirectoryResource(init_storage_directory=app_config.assets.storage_directory) as resource:
         yield str(resource.storage_directory)
 
 
