@@ -17,7 +17,7 @@ from libcommon.resources import (
 
 
 def test_log() -> None:
-    resource = LogResource(init_log_level=logging.DEBUG)
+    resource = LogResource(log_level=logging.DEBUG)
     assert logging.getLogger().getEffectiveLevel() == logging.WARNING
     resource.allocate()
     assert logging.getLogger().getEffectiveLevel() == logging.WARNING

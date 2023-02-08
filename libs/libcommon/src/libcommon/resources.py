@@ -1,7 +1,7 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2022 The HuggingFace Authors.
 
-from dataclasses import InitVar, dataclass, field
+from dataclasses import dataclass, field
 from typing import Optional
 
 from libcommon.constants import CACHE_MONGOENGINE_ALIAS, QUEUE_MONGOENGINE_ALIAS
@@ -59,7 +59,7 @@ class AssetsDirectoryResource(Resource):
         ...     pass
     """
 
-    init_storage_directory: InitVar[Optional[StrPath]] = None
+    init_storage_directory: Optional[StrPath] = None
     storage_directory: StrPath = field(init=False)
 
     def allocate(self):
@@ -74,14 +74,13 @@ class LogResource(Resource):
     A resource that sets the log level.
 
     Args:
-        init_log_level (:obj:`int`, optional): The log level. If :obj:`None`, the log level is set to INFO.
+        log_level (:obj:`int`): The log level.
     """
 
-    init_log_level: InitVar[int] = None
-    log_level: int = field(init=False)
+    log_level: int
 
     def allocate(self):
-        self.log_level = init_logging(self.init_log_level)
+        init_logging(self.log_level)
 
     # no need to implement release() as the log level is not changed.
     # TODO: restore the previous log level?

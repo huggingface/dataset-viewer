@@ -44,7 +44,7 @@ def create_app() -> Starlette:
     ]
 
     resources: list[Resource] = [
-        LogResource(init_log_level=app_config.common.log_level),
+        LogResource(log_level=app_config.common.log_level),
         # ^ first resource to be acquired, in order to have logs as soon as possible
         CacheDatabaseResource(database=app_config.cache.mongo_database, host=app_config.cache.mongo_url),
         QueueDatabaseResource(database=app_config.queue.mongo_database, host=app_config.queue.mongo_url),

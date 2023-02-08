@@ -40,7 +40,7 @@ def create_app() -> Starlette:
 
     assets_directory_resource = AssetsDirectoryResource(init_storage_directory=app_config.assets.storage_directory)
     resources: list[Resource] = [
-        LogResource(init_log_level=app_config.common.log_level),
+        LogResource(log_level=app_config.common.log_level),
         # ^ first resource to be acquired, in order to have logs as soon as possible
         assets_directory_resource,
         CacheDatabaseResource(database=app_config.cache.mongo_database, host=app_config.cache.mongo_url),

@@ -20,7 +20,7 @@ if __name__ == "__main__":
     processing_step = processing_graph.get_step(app_config.datasets_based.endpoint)
 
     with (
-        LogResource(init_log_level=app_config.common.log_level),
+        LogResource(log_level=app_config.common.log_level),
         # ^ first resource to be acquired, in order to have logs as soon as possible
         LibrariesResource(
             common_config=app_config.common,
