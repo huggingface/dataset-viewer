@@ -9,7 +9,6 @@ from mongodb_migration.resources import MigrationsDatabaseResource
 
 def test_cache_database(mongo_host: str) -> None:
     resource = MigrationsDatabaseResource(database="test_migrations_database", host=mongo_host)
-    resource.allocate()
 
     class User(Document):
         name = StringField()

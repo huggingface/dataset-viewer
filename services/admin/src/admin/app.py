@@ -46,8 +46,6 @@ def create_app() -> Starlette:
         CacheDatabaseResource(database=app_config.cache.mongo_database, host=app_config.cache.mongo_url),
         QueueDatabaseResource(database=app_config.queue.mongo_database, host=app_config.queue.mongo_url),
     ]
-    for resource in resources:
-        resource.allocate()
 
     prometheus = Prometheus(
         processing_steps=processing_steps, assets_storage_directory=assets_directory_resource.storage_directory

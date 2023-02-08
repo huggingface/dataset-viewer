@@ -50,9 +50,6 @@ def create_app() -> Starlette:
         QueueDatabaseResource(database=app_config.queue.mongo_database, host=app_config.queue.mongo_url),
     ]
 
-    for resource in resources:
-        resource.allocate()
-
     valid: List[BaseRoute] = [
         Route(
             "/valid",

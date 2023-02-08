@@ -17,9 +17,7 @@ from libcommon.resources import (
 
 
 def test_log() -> None:
-    resource = LogResource(log_level=logging.DEBUG)
-    assert logging.getLogger().getEffectiveLevel() == logging.WARNING
-    resource.allocate()
+    LogResource(log_level=logging.DEBUG)
     assert logging.getLogger().getEffectiveLevel() == logging.WARNING
     # ^ This is a bug, the log level should be set to 10
 
@@ -53,7 +51,6 @@ def test_assets_directory_context_manager(tmp_path: Path, pass_directory: bool) 
 
 def test_cache_database(cache_mongo_host: str) -> None:
     resource = CacheDatabaseResource(database="test_cache_database", host=cache_mongo_host)
-    resource.allocate()
 
     class User(Document):
         name = StringField()
@@ -67,7 +64,6 @@ def test_cache_database(cache_mongo_host: str) -> None:
 
 def test_queue_database(queue_mongo_host: str) -> None:
     resource = QueueDatabaseResource(database="test_queue_database", host=queue_mongo_host)
-    resource.allocate()
 
     class User(Document):
         name = StringField()
