@@ -105,7 +105,7 @@ class NoGitRevisionError(GeneralWorkerError):
 
 
 class UnexpectedError(GeneralWorkerError):
-    """Raised when the response for the split has not been found."""
+    """Raised when the worker raised an unexpected error."""
 
     def __init__(self, message: str, cause: Optional[BaseException] = None):
         super().__init__(
@@ -115,6 +115,10 @@ class UnexpectedError(GeneralWorkerError):
             cause=cause,
             disclose_cause=False,
         )
+        if cause is not None:
+            logging.exception(message, exc_info=cause)
+        else:
+            logging.exception(message)
 
 
 class Worker(ABC):

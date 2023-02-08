@@ -106,7 +106,8 @@ def create_webhook_endpoint(
         except ValidationError:
             content = {"status": "error", "error": "the JSON payload is invalid"}
             return get_response(content, 400)
-        except Exception:
+        except Exception as e:
+            logging.exception("Unexpected error", exc_info=e)
             content = {"status": "error", "error": "unexpected error"}
             return get_response(content, 500)
 

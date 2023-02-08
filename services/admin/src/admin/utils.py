@@ -1,6 +1,7 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2022 The HuggingFace Authors.
 
+import logging
 from http import HTTPStatus
 from typing import Any, Callable, Coroutine, List, Literal, Optional
 
@@ -57,8 +58,12 @@ class UnsupportedDatasetError(AdminCustomError):
 class UnexpectedError(AdminCustomError):
     """Raised when an unexpected error occurred."""
 
-    def __init__(self, message: str):
-        super().__init__(message, HTTPStatus.INTERNAL_SERVER_ERROR, "UnexpectedError")
+    def __init__(self, message: str, cause: Optional[BaseException] = None):
+        super().__init__(message, HTTPStatus.INTERNAL_SERVER_ERROR, "UnexpectedError", cause)
+        if cause:
+            logging.exception(message, exc_info=cause)
+        else:
+            logging.error(message)
 
 
 class ExternalUnauthenticatedError(AdminCustomError):
