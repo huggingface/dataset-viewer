@@ -29,5 +29,3 @@ jobs:
     uses: ./.github/workflows/_unit-tests-python.yml
     with:
       working-directory: libs/libcommon
-  e2e-tests:
-    uses: ./.github/workflows/_e2e_tests.yml
