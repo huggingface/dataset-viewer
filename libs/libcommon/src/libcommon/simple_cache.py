@@ -29,8 +29,6 @@ from mongoengine.fields import (
 )
 from mongoengine.queryset.queryset import QuerySet
 
-from libcommon.exceptions import CustomError
-
 # START monkey patching ### hack ###
 # see https://github.com/sbdchd/mongo-types#install
 U = TypeVar("U", bound=Document)
@@ -65,35 +63,6 @@ class SplitFullName(NamedTuple):
     dataset: str
     config: Optional[str]
     split: Optional[str]
-
-
-class CachedResponseError(CustomError):
-    """Base class for CachedResponse exceptions."""
-
-    def __init__(
-        self,
-        message: str,
-        status_code: HTTPStatus,
-        code: str,
-        cause: Optional[BaseException] = None,
-        disclose_cause: bool = False,
-    ):
-        super().__init__(
-            message=message, status_code=status_code, code=code, cause=cause, disclose_cause=disclose_cause
-        )
-
-
-class TooBigContentError(CachedResponseError):
-    """Raised when document's content size in bytest is bigger than the supported value."""
-
-    def __init__(self, message: str, cause: Optional[BaseException] = None):
-        super().__init__(
-            message=message,
-            status_code=HTTPStatus.NOT_IMPLEMENTED,
-            code="TooBigContentError",
-            cause=cause,
-            disclose_cause=False,
-        )
 
 
 # cache of any endpoint
