@@ -8,7 +8,7 @@ from libcommon.processing_graph import ProcessingGraph
 from libcommon.queue import Priority
 
 from datasets_based.config import AppConfig
-from datasets_based.resource import LibrariesResource
+from datasets_based.resources import LibrariesResource
 from datasets_based.worker import JobInfo
 from datasets_based.worker_factory import WorkerFactory
 

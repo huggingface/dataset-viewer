@@ -6,7 +6,7 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from libcommon.processing_graph import ProcessingGraph
-from libcommon.resource import AssetsDirectoryResource
+from libcommon.resources import AssetsDirectoryResource
 
 from datasets_based.config import (
     AppConfig,

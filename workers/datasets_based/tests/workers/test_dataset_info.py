@@ -7,7 +7,7 @@ from typing import Any
 import pytest
 from libcommon.processing_graph import ProcessingStep
 from libcommon.queue import Priority
-from libcommon.resource import CacheDatabaseResource, QueueDatabaseResource
+from libcommon.resources import CacheDatabaseResource, QueueDatabaseResource
 from libcommon.simple_cache import upsert_response
 
 from datasets_based.config import AppConfig

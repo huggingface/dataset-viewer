@@ -18,7 +18,7 @@ from datasets import (
     TranslationVariableLanguages,
     Value,
 )
-from libcommon.resource import StrPath
+from libcommon.resources import StrPath
 from numpy import ndarray  # type:ignore
 from PIL import Image as PILImage  # type: ignore
 

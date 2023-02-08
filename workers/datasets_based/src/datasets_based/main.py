@@ -3,10 +3,14 @@
 
 from libcommon.processing_graph import ProcessingGraph
 from libcommon.queue import Queue
-from libcommon.resource import CacheDatabaseResource, LogResource, QueueDatabaseResource
+from libcommon.resources import (
+    CacheDatabaseResource,
+    LogResource,
+    QueueDatabaseResource,
+)
 
 from datasets_based.config import AppConfig
-from datasets_based.resource import LibrariesResource
+from datasets_based.resources import LibrariesResource
 from datasets_based.worker_factory import WorkerFactory
 from datasets_based.worker_loop import WorkerLoop
 

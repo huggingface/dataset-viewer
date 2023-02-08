@@ -3,7 +3,7 @@
 
 from dataclasses import dataclass, field
 
-from libcommon.resource import DatabaseResource
+from libcommon.resources import DatabaseResource
 
 from mongodb_migration.constants import DATABASE_MIGRATIONS_MONGOENGINE_ALIAS
 

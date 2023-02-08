@@ -5,7 +5,7 @@ from typing import Iterator, List
 
 from libcommon.processing_graph import ProcessingGraph, ProcessingStep
 from libcommon.queue import _clean_queue_database
-from libcommon.resource import (
+from libcommon.resources import (
     AssetsDirectoryResource,
     CacheDatabaseResource,
     QueueDatabaseResource,

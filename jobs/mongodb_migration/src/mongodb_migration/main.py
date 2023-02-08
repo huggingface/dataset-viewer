@@ -3,12 +3,16 @@
 
 import sys
 
-from libcommon.resource import CacheDatabaseResource, LogResource, QueueDatabaseResource
+from libcommon.resources import (
+    CacheDatabaseResource,
+    LogResource,
+    QueueDatabaseResource,
+)
 
 from mongodb_migration.collector import MigrationsCollector
 from mongodb_migration.config import JobConfig
 from mongodb_migration.plan import Plan
-from mongodb_migration.resource import MigrationsDatabaseResource
+from mongodb_migration.resources import MigrationsDatabaseResource
 
 if __name__ == "__main__":
     job_config = JobConfig.from_env()

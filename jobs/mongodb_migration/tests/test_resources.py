@@ -4,7 +4,7 @@
 from mongoengine import Document
 from mongoengine.fields import StringField
 
-from mongodb_migration.resource import MigrationsDatabaseResource
+from mongodb_migration.resources import MigrationsDatabaseResource
 
 
 def test_cache_database(mongo_host: str) -> None:

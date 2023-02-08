@@ -13,7 +13,7 @@ from libcommon.queue import (
     Status,
     _clean_queue_database,
 )
-from libcommon.resource import QueueDatabaseResource
+from libcommon.resources import QueueDatabaseResource
 
 
 @pytest.fixture(scope="module")

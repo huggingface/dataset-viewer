@@ -6,7 +6,7 @@ import pytest
 from libcommon.config import CommonConfig
 from libcommon.processing_graph import ProcessingGraph, ProcessingStep
 from libcommon.queue import Priority, Queue, Status
-from libcommon.resource import CacheDatabaseResource, QueueDatabaseResource
+from libcommon.resources import CacheDatabaseResource, QueueDatabaseResource
 from libcommon.simple_cache import SplitFullName, upsert_response
 
 from datasets_based.worker import ERROR_CODES_TO_RETRY, Worker

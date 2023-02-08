@@ -3,10 +3,10 @@ from typing import Any, Mapping, Optional
 from libcommon.config import CommonConfig, QueueConfig
 from libcommon.processing_graph import ProcessingStep
 from libcommon.queue import Queue
-from libcommon.resource import CacheDatabaseResource, QueueDatabaseResource
+from libcommon.resources import CacheDatabaseResource, QueueDatabaseResource
 
 from datasets_based.config import WorkerLoopConfig
-from datasets_based.resource import LibrariesResource
+from datasets_based.resources import LibrariesResource
 from datasets_based.worker import JobInfo, Worker
 from datasets_based.worker_factory import BaseWorkerFactory
 from datasets_based.worker_loop import WorkerLoop

@@ -8,7 +8,7 @@ import pytest
 from mongoengine import Document
 from mongoengine.fields import StringField
 
-from libcommon.resource import (
+from libcommon.resources import (
     AssetsDirectoryResource,
     CacheDatabaseResource,
     LogResource,

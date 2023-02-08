@@ -21,7 +21,7 @@ from datasets import (
 )
 from datasets.data_files import EmptyDatasetError as _EmptyDatasetError
 from libcommon.processing_graph import ProcessingStep
-from libcommon.resource import StrPath
+from libcommon.resources import StrPath
 from libcommon.simple_cache import SplitFullName as _SplitFullName
 from libcommon.utils import orjson_dumps
 

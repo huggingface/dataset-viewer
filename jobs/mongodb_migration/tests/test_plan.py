@@ -11,7 +11,7 @@ from mongodb_migration.database_migrations import (
 )
 from mongodb_migration.migration import IrreversibleMigration, Migration
 from mongodb_migration.plan import Plan, SavedMigrationsError
-from mongodb_migration.resource import MigrationsDatabaseResource
+from mongodb_migration.resources import MigrationsDatabaseResource
 
 
 @pytest.fixture(scope="module")

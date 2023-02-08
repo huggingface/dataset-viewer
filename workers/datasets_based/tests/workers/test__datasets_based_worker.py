@@ -9,10 +9,10 @@ import datasets.config
 import pytest
 from libcommon.processing_graph import ProcessingStep
 from libcommon.queue import Priority
-from libcommon.resource import CacheDatabaseResource, QueueDatabaseResource
+from libcommon.resources import CacheDatabaseResource, QueueDatabaseResource
 
 from datasets_based.config import AppConfig
-from datasets_based.resource import LibrariesResource
+from datasets_based.resources import LibrariesResource
 from datasets_based.workers._datasets_based_worker import DatasetsBasedWorker
 
 from ..fixtures.hub import get_default_config_split

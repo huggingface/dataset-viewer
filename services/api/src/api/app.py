@@ -5,7 +5,11 @@ from typing import List
 
 import uvicorn  # type: ignore
 from libcommon.processing_graph import ProcessingGraph
-from libcommon.resource import CacheDatabaseResource, LogResource, QueueDatabaseResource
+from libcommon.resources import (
+    CacheDatabaseResource,
+    LogResource,
+    QueueDatabaseResource,
+)
 from starlette.applications import Starlette
 from starlette.middleware import Middleware
 from starlette.middleware.cors import CORSMiddleware

@@ -9,7 +9,7 @@ from typing import Iterator, Optional
 import pytest
 from pymongo.errors import DocumentTooLarge
 
-from libcommon.resource import CacheDatabaseResource
+from libcommon.resources import CacheDatabaseResource
 from libcommon.simple_cache import (
     CachedResponse,
     DoesNotExist,

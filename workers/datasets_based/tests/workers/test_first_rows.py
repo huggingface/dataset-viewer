@@ -9,7 +9,7 @@ from datasets.packaged_modules import csv
 from libcommon.exceptions import CustomError
 from libcommon.processing_graph import ProcessingStep
 from libcommon.queue import Priority
-from libcommon.resource import (
+from libcommon.resources import (
     AssetsDirectoryResource,
     CacheDatabaseResource,
     QueueDatabaseResource,
@@ -17,7 +17,7 @@ from libcommon.resource import (
 from libcommon.simple_cache import DoesNotExist, get_response
 
 from datasets_based.config import AppConfig, FirstRowsConfig
-from datasets_based.resource import LibrariesResource
+from datasets_based.resources import LibrariesResource
 from datasets_based.workers.first_rows import FirstRowsWorker, get_json_size
 
 from ..fixtures.hub import HubDatasets, get_default_config_split

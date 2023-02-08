@@ -3,7 +3,7 @@
 
 import uvicorn  # type: ignore
 from libcommon.processing_graph import ProcessingGraph
-from libcommon.resource import (
+from libcommon.resources import (
     AssetsDirectoryResource,
     CacheDatabaseResource,
     LogResource,

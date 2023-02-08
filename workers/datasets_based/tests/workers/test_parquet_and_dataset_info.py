@@ -11,11 +11,11 @@ import requests
 from libcommon.exceptions import CustomError
 from libcommon.processing_graph import ProcessingStep
 from libcommon.queue import Priority
-from libcommon.resource import CacheDatabaseResource, QueueDatabaseResource
+from libcommon.resources import CacheDatabaseResource, QueueDatabaseResource
 from libcommon.simple_cache import DoesNotExist, get_response
 
 from datasets_based.config import AppConfig, ParquetAndDatasetInfoConfig
-from datasets_based.resource import LibrariesResource
+from datasets_based.resources import LibrariesResource
 from datasets_based.workers.parquet_and_dataset_info import (
     DatasetInBlockListError,
     DatasetTooBigFromDatasetsError,

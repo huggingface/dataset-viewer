@@ -7,7 +7,7 @@ from typing import Iterator
 from libcommon.config import CacheConfig, QueueConfig
 from libcommon.processing_graph import ProcessingStep
 from libcommon.queue import _clean_queue_database
-from libcommon.resource import (
+from libcommon.resources import (
     AssetsDirectoryResource,
     CacheDatabaseResource,
     QueueDatabaseResource,
@@ -16,7 +16,7 @@ from libcommon.simple_cache import _clean_cache_database
 from pytest import MonkeyPatch, fixture
 
 from datasets_based.config import AppConfig, FirstRowsConfig
-from datasets_based.resource import LibrariesResource
+from datasets_based.resources import LibrariesResource
 
 from .constants import CI_APP_TOKEN, CI_HUB_ENDPOINT, CI_URL_TEMPLATE, CI_USER_TOKEN
 

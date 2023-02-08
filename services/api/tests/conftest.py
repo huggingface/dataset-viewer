@@ -5,7 +5,7 @@ from typing import Iterator, List
 
 from libcommon.processing_graph import ProcessingGraph, ProcessingStep
 from libcommon.queue import _clean_queue_database
-from libcommon.resource import CacheDatabaseResource, QueueDatabaseResource
+from libcommon.resources import CacheDatabaseResource, QueueDatabaseResource
 from libcommon.simple_cache import _clean_cache_database
 from pytest import MonkeyPatch, fixture
 

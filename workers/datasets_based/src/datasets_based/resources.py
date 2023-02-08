@@ -4,10 +4,10 @@
 from dataclasses import dataclass, field
 from pathlib import Path
 
-import datasets.config
+import datasets
 from datasets.utils.logging import log_levels, set_verbosity
 from libcommon.config import CommonConfig
-from libcommon.resource import Resource
+from libcommon.resources import Resource
 
 from datasets_based.config import DatasetsBasedConfig, NumbaConfig
 
