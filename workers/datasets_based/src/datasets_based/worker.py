@@ -115,10 +115,7 @@ class UnexpectedError(GeneralWorkerError):
             cause=cause,
             disclose_cause=False,
         )
-        if cause is not None:
-            logging.exception(message, exc_info=cause)
-        else:
-            logging.exception(message)
+        logging.error(message, exc_info=cause)
 
 
 class Worker(ABC):
