@@ -39,7 +39,7 @@ def create_pending_jobs_endpoint(
             )
         except AdminCustomError as e:
             return get_json_admin_error_response(e, max_age=max_age)
-        except Exception:
-            return get_json_admin_error_response(UnexpectedError("Unexpected error."), max_age=max_age)
+        except Exception as e:
+            return get_json_admin_error_response(UnexpectedError("Unexpected error.", e), max_age=max_age)
 
     return pending_jobs_endpoint
