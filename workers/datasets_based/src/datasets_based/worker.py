@@ -19,7 +19,6 @@ from libcommon.simple_cache import (
     get_response_without_content,
     get_split_full_names_for_dataset_and_kind,
     upsert_response,
-    validate_content_size,
 )
 from libcommon.utils import orjson_dumps
 from packaging import version

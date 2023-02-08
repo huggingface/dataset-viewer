@@ -30,7 +30,6 @@ from mongoengine.fields import (
 from mongoengine.queryset.queryset import QuerySet
 
 from libcommon.exceptions import CustomError
-from libcommon.utils import orjson_dumps
 
 # START monkey patching ### hack ###
 # see https://github.com/sbdchd/mongo-types#install
@@ -151,13 +150,6 @@ class CachedResponse(Document):
 # null values, see https://www.mongodb.com/docs/v5.0/core/index-unique/#unique-index-and-missing-field.
 CachedResponse.config.required = False  # type: ignore
 CachedResponse.split.required = False  # type: ignore
-
-
-def validate_content_size(content: Any, content_max_size: int) -> None:
-    if len(orjson_dumps(content)) > content_max_size:
-        raise TooBigContentError(
-            "Could not process content, it exceeds the supported size in bytes {content_max_size}."
-        )
 
 
 # Note: we let the exceptions throw (ie DocumentTooLarge): it's the responsibility of the caller to manage them
