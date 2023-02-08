@@ -1,6 +1,8 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2022 The HuggingFace Authors.
 
+from typing import Optional
+
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Optional
