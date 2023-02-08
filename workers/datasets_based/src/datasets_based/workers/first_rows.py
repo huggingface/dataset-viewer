@@ -11,6 +11,7 @@ from typing import Any, List, Literal, Mapping, Optional, TypedDict, Union
 
 from datasets import (
     Dataset,
+    DownloadConfig,
     Features,
     IterableDataset,
     get_dataset_config_info,
@@ -185,12 +186,14 @@ def get_rows(
     rows_max_number: int,
     use_auth_token: Union[bool, str, None] = False,
 ) -> List[Row]:
+    download_config = DownloadConfig(delete_extracted=True)
     ds = load_dataset(
         dataset,
         name=config,
         split=split,
         streaming=streaming,
         use_auth_token=use_auth_token,
+        download_config=download_config,
     )
     if streaming:
         if not isinstance(ds, IterableDataset):
@@ -493,6 +496,7 @@ def compute_first_rows_response(
     except Exception as err:
         raise InfoError("The info cannot be fetched for the dataset config.", cause=err) from err
     if not info.features:
+        download_config = DownloadConfig(delete_extracted=True)
         try:
             # https://github.com/huggingface/datasets/blob/f5826eff9b06ab10dba1adfa52543341ef1e6009/src/datasets/iterable_dataset.py#L1255
             iterable_dataset = load_dataset(
@@ -501,6 +505,7 @@ def compute_first_rows_response(
                 split=split,
                 streaming=True,
                 use_auth_token=use_auth_token,
+                download_config=download_config,
             )
             if not isinstance(iterable_dataset, IterableDataset):
                 raise TypeError("load_dataset should return an IterableDataset")
