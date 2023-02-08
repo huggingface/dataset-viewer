@@ -399,12 +399,12 @@ def compute_first_rows_response(
     assets_base_url: str,
     hf_token: Optional[str],
     min_cell_bytes: int,
-    max_size_fallback: Optional[int],
     rows_max_bytes: int,
     rows_max_number: int,
     rows_min_number: int,
     columns_max_number: int,
     assets_directory: str,
+    max_size_fallback: Optional[int] = None,
 ) -> FirstRowsResponse:
     """
     Get the response of /first-rows for one specific split of a dataset from huggingface.co.
@@ -635,7 +635,6 @@ class FirstRowsWorker(DatasetsBasedWorker):
             assets_directory=self.first_rows_config.assets.storage_directory,
             hf_token=self.common_config.hf_token,
             min_cell_bytes=self.first_rows_config.min_cell_bytes,
-            max_size_fallback=self.first_rows_config.fallback_max_dataset_size,
             rows_max_bytes=self.first_rows_config.max_bytes,
             rows_max_number=self.first_rows_config.max_number,
             rows_min_number=self.first_rows_config.min_number,
