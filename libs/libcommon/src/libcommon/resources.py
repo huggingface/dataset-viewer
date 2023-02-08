@@ -15,7 +15,9 @@ class Resource:
     """
     A resource that can be allocated and released.
 
-    The method allocate() is called when the resource is created. The method release() allows to free the resource.
+    The method allocate() is called when the resource is created.
+    The method check() allows to check if the resource is available. It's not called automatically.
+    The method release() allows to free the resource.
 
     It can be used as a context manager, in which case the resource is released when the context is exited.
 
@@ -23,7 +25,7 @@ class Resource:
         >>> with Resource() as resource:
         ...     pass
 
-    Resources should be inherited from this class and implement the allocate() and release() methods.
+    Resources should be inherited from this class and must implement the allocate(), check() and release() methods.
     """
 
     def __post_init__(self):
@@ -38,15 +40,14 @@ class Resource:
     def allocate(self):
         pass
 
+    def check(self) -> bool:
+        raise NotImplementedError("check() is not implemented in the base class")
+
     def release(self):
         pass
 
 
 class MongoConnectionFailure(Exception):
-    pass
-
-
-class MongoTimeoutError(Exception):
     pass
 
 
@@ -81,16 +82,13 @@ class MongoResource(Resource):
         except ConnectionFailure as e:
             raise MongoConnectionFailure(f"Failed to connect to MongoDB: {e}") from e
 
-    def check(self) -> None:
-        """Check if the connection works.
-        Raises:
-            - [`~libcommon.resources.MongoTimeoutError`]:
-                if the mongo server could not be reached
-        """
+    def check(self) -> bool:
+        """Check if the connection works."""
         try:
             self._client.is_mongos
-        except ServerSelectionTimeoutError as e:
-            raise MongoTimeoutError("Cannot connect to the mongo database server") from e
+            return True
+        except ServerSelectionTimeoutError:
+            return False
 
     def release(self):
         disconnect(alias=self.mongoengine_alias)

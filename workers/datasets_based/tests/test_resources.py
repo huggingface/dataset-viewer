@@ -29,6 +29,7 @@ def test_libraries(tmp_path_factory, define_init_hf_datasets_cache: bool, define
     assert str(datasets.config.HF_MODULES_CACHE) in resource.storage_paths
     assert datasets.config.HF_UPDATE_DOWNLOAD_COUNTS is False
     assert (resource.hf_datasets_cache == init_hf_datasets_cache) == define_init_hf_datasets_cache
+    assert resource.check() is True
 
     resource.release()
 
@@ -44,6 +45,7 @@ def test_libraries_context_manager(tmp_path_factory) -> None:
         hf_endpoint=hf_endpoint,
         init_hf_datasets_cache=init_hf_datasets_cache,
         numba_path=numba_path,
-    ):
+    ) as resource:
         assert datasets.config.HF_ENDPOINT == hf_endpoint
+        assert resource.check() is True
     assert datasets.config.HF_ENDPOINT != hf_endpoint
