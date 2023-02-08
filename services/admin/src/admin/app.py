@@ -5,7 +5,7 @@ import uvicorn  # type: ignore
 from libcommon.log import init_logging
 from libcommon.processing_graph import ProcessingGraph
 from libcommon.resources import CacheMongoResource, QueueMongoResource, Resource
-from libcommon.storage import init_assets_dir
+from libcommon.storage import exists, init_assets_dir
 from starlette.applications import Starlette
 from starlette.middleware import Middleware
 from starlette.middleware.cors import CORSMiddleware
@@ -33,15 +33,20 @@ def create_app() -> Starlette:
     init_logging(log_level=app_config.common.log_level)
     # ^ set first to have logs as soon as possible
     assets_directory = init_assets_dir(directory=app_config.assets.storage_directory)
+    if not exists(assets_directory):
+        raise RuntimeError("The assets storage directory could not be accessed. Exiting.")
 
     processing_graph = ProcessingGraph(app_config.processing_graph.specification)
     processing_steps = list(processing_graph.steps.values())
     init_processing_steps = processing_graph.get_first_steps()
 
-    resources: list[Resource] = [
-        CacheMongoResource(database=app_config.cache.mongo_database, host=app_config.cache.mongo_url),
-        QueueMongoResource(database=app_config.queue.mongo_database, host=app_config.queue.mongo_url),
-    ]
+    cache_resource = CacheMongoResource(database=app_config.cache.mongo_database, host=app_config.cache.mongo_url)
+    queue_resource = QueueMongoResource(database=app_config.queue.mongo_database, host=app_config.queue.mongo_url)
+    resources: list[Resource] = [cache_resource, queue_resource]
+    if cache_resource.check() is False:
+        raise RuntimeError("The connection to the cache database could not be established. Exiting.")
+    if queue_resource.check() is False:
+        raise RuntimeError("The connection to the queue database could not be established. Exiting.")
 
     prometheus = Prometheus(processing_steps=processing_steps, assets_directory=assets_directory)
 
