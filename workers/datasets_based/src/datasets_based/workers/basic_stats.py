@@ -52,14 +52,14 @@ class BasicStatsWorkerError(CustomError):
         super().__init__(message, status_code, str(code), cause, disclose_cause)
 
 
-class PreviousStepStatusError(BasicStatsWorkerErrorCode):
+class PreviousStepStatusError(BasicStatsWorkerError):
     """Raised when the previous step gave an error. The job should not have been created."""
 
     def __init__(self, message: str, cause: Optional[BaseException] = None):
         super().__init__(message, HTTPStatus.INTERNAL_SERVER_ERROR, "PreviousStepStatusError", cause, False)
 
 
-class PreviousStepFormatError(BasicStatsWorkerErrorCode):
+class PreviousStepFormatError(BasicStatsWorkerError):
     """Raised when the content of the previous step has not the expected format."""
 
     def __init__(self, message: str, cause: Optional[BaseException] = None):
