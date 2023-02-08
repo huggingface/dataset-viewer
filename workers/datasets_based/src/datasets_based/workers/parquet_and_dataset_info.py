@@ -7,12 +7,12 @@ import logging
 import re
 from http import HTTPStatus
 from pathlib import Path
-from typing import Any, List, Literal, Mapping, Optional, Tuple, TypedDict
+from typing import Any, Dict, List, Literal, Mapping, Optional, Tuple, TypedDict
 from urllib.parse import quote
 
 import datasets
 import datasets.config
-from datasets import get_dataset_config_names, get_dataset_infos, load_dataset_builder
+from datasets import DownloadConfig, get_dataset_config_names, get_dataset_infos, load_dataset_builder
 from datasets.data_files import EmptyDatasetError as _EmptyDatasetError
 from datasets.utils.py_utils import asdict
 from huggingface_hub.hf_api import (
@@ -111,7 +111,7 @@ class ParquetFileItem(TypedDict):
 
 class ParquetAndDatasetInfoResponse(TypedDict):
     parquet_files: List[ParquetFileItem]
-    dataset_info: dict[str, Any]
+    dataset_info: Dict[str, Any]
 
 
 DATASET_TYPE = "dataset"
@@ -528,10 +528,17 @@ def compute_parquet_and_dataset_info_response(
 
     # prepare the parquet files locally
     parquet_files: List[ParquetFile] = []
-    dataset_info: dict[str, Any] = {}
+    dataset_info: Dict[str, Any] = {}
+    download_config = DownloadConfig(delete_extracted=True)
     for config in config_names:
         # TODO: run the loop in parallel, in different workers? with dagster?
-        builder = load_dataset_builder(path=dataset, name=config, revision=source_revision, use_auth_token=hf_token)
+        builder = load_dataset_builder(
+            path=dataset,
+            name=config,
+            revision=source_revision,
+            use_auth_token=hf_token,
+            download_config=download_config
+        )
         builder.download_and_prepare(file_format="parquet")  # the parquet files are stored in the cache dir
         dataset_info[config] = asdict(builder.info)
         # ^ see
