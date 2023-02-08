@@ -37,7 +37,7 @@ def get_worker(
         first_rows_config: FirstRowsConfig,
         force: bool = False,
     ) -> FirstRowsWorker:
-        with AssetsDirectoryResource(storage_directory=first_rows_config.assets.storage_directory) as resource:
+        with AssetsDirectoryResource(init_storage_directory=first_rows_config.assets.storage_directory) as resource:
             return FirstRowsWorker(
                 job_info={
                     "type": FirstRowsWorker.get_job_type(),
