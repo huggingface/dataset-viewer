@@ -83,7 +83,7 @@ class WorkerFactory(BaseWorkerFactory):
                 job_info=job_info, common_config=self.app_config.common, processing_step=processing_step
             )
         if job_type == BasicStatsWorker.get_job_type():
-            return BasicStatsWorker(job_info=job_info, app_config=self.app_config, processing_step=processing_step
+            return BasicStatsWorker(job_info=job_info, common_config=self.app_config.common, processing_step=processing_step
             )
         supported_job_types = [
             ConfigNamesWorker.get_job_type(),
