@@ -23,7 +23,7 @@ def get_empty_str_list() -> List[str]:
     return []
 
 
-@dataclass
+@dataclass(frozen=True)
 class WorkerLoopConfig:
     max_disk_usage_pct: int = WORKER_LOOP_MAX_DISK_USAGE_PCT
     max_load_pct: int = WORKER_LOOP_MAX_LOAD_PCT
@@ -49,7 +49,7 @@ DATASETS_BASED_HF_DATASETS_CACHE = None
 DATASETS_BASED_CONTENT_MAX_BYTES = 10_000_000
 
 
-@dataclass
+@dataclass(frozen=True)
 class DatasetsBasedConfig:
     endpoint: str = DATASETS_BASED_ENDPOINT
     hf_datasets_cache: Optional[str] = DATASETS_BASED_HF_DATASETS_CACHE
@@ -73,7 +73,7 @@ FIRST_ROWS_MIN_NUMBER = 10
 FIRST_ROWS_COLUMNS_MAX_NUMBER = 1_000
 
 
-@dataclass
+@dataclass(frozen=True)
 class FirstRowsConfig:
     max_bytes: int = FIRST_ROWS_MAX_BYTES
     max_number: int = FIRST_ROWS_MAX_NUMBER
@@ -102,7 +102,7 @@ PARQUET_AND_DATASET_INFO_TARGET_REVISION = "refs/convert/parquet"
 PARQUET_AND_DATASET_INFO_URL_TEMPLATE = "/datasets/%s/resolve/%s/%s"
 
 
-@dataclass
+@dataclass(frozen=True)
 class ParquetAndDatasetInfoConfig:
     blocked_datasets: List[str] = field(default_factory=get_empty_str_list)
     supported_datasets: List[str] = field(default_factory=get_empty_str_list)
@@ -134,7 +134,7 @@ class ParquetAndDatasetInfoConfig:
 NUMBA_CACHE_DIR: Optional[str] = None
 
 
-@dataclass
+@dataclass(frozen=True)
 class NumbaConfig:
     path: Optional[str] = NUMBA_CACHE_DIR  # not documented
 
@@ -145,7 +145,7 @@ class NumbaConfig:
             return NumbaConfig(path=env.str(name="NUMBA_CACHE_DIR", default=NUMBA_CACHE_DIR))
 
 
-@dataclass
+@dataclass(frozen=True)
 class AppConfig:
     assets: AssetsConfig = field(default_factory=AssetsConfig)
     cache: CacheConfig = field(default_factory=CacheConfig)
