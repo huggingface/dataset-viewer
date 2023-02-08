@@ -9,15 +9,16 @@ from libcommon.dataset import DatasetNotFoundError
 from libcommon.exceptions import CustomError
 from libcommon.simple_cache import DoesNotExist, SplitFullName, get_response
 
+import dask.array as da
 import dask.dataframe as dd
-import numpy as np
-from datasets_based.config import AppConfig
-from datasets_based.worker import JobInfo, Worker
+from datasets_based.worker import Worker
+from pandas.api.types import is_numeric_dtype
 
 
 BasicStatsWorkerErrorCode = Literal[
     "PreviousStepStatusError",
     "PreviousStepFormatError",
+    "BasicStatsComputationFailed",
 ]
 
 class Histogram(TypedDict):
@@ -66,6 +67,20 @@ class PreviousStepFormatError(BasicStatsWorkerError):
         super().__init__(message, HTTPStatus.INTERNAL_SERVER_ERROR, "PreviousStepFormatError", cause, False)
 
 
+class BasicStatsComputationFailed(BasicStatsWorkerError):
+    """Raised when the basic stats computation failed."""
+
+    def __init__(self, message: str, cause: Optional[BaseException] = None):
+        super().__init__(message, HTTPStatus.INTERNAL_SERVER_ERROR, "BasicStatsComputationFailed", cause, False)
+
+
+def compute_histogram(series = dd.Series) -> Histogram:
+    histogram_range = series.min(), series.max()
+    hist, bin_edges = dd.compute(*da.histogram(series.to_dask_array(), bins=10, range=histogram_range))
+    bin_edges = bin_edges.round(decimals=14)  # round up numpy precision issues
+    return Histogram(hist=hist.tolist(), bin_edges=bin_edges.tolist())
+
+
 def compute_basic_stats_response(dataset: str, config: str, split: str) -> BasicStatsResponse:
     """
     Get the response of /basic-stats for one specific dataset on huggingface.co.
@@ -84,7 +99,9 @@ def compute_basic_stats_response(dataset: str, config: str, split: str) -> Basic
         - [`~workers.sizes.PreviousStepStatusError`]
           If the the previous step gave an error.
         - [`~workers.sizes.PreviousStepFormatError`]
-            If the content of the previous step has not the expected format
+            If the content of the previous step has not the expected format.
+        - [`~workers.sizes.BasicStatsComputationFailed`]
+            If the basic stats computation failed.
     </Tip>
     """
     logging.info(f"get basic-stats for dataset={dataset}")
@@ -99,24 +116,25 @@ def compute_basic_stats_response(dataset: str, config: str, split: str) -> Basic
         )
     content = response["content"]
     try:
-        basic_stats = []
+        basic_stats: List[BasicColumnStats] = []
         parquet_files_urls = [
             parquet_file["url"]
             for parquet_file in response["content"]["parquet_files"]
             if parquet_file["config"] == config and parquet_file["split"] == split
         ]
         df = dd.read_parquet(parquet_files_urls)
-        for col in df:
-            if isinstance(df[col].dtype, np.number):
-                hist, bin_edges = np.histogram(df[col])
-                histogram = Histogram(hist=hist.tolist(), bin_edges=bin_edges.tolist())
+        for column_name in df:
+            if is_numeric_dtype(df[column_name].dtype):
+                histogram = compute_histogram(df[column_name])
                 basic_stats.append(BasicColumnStats(
-                    dataset, config, split, col, histogram=histogram
+                    dataset=dataset, config=config, split=split, column_name=column_name, histogram=histogram
                 ))
     except Exception as e:
-        raise PreviousStepFormatError("Previous step did not return the expected content.", e) from e
+        urls_string = str(parquet_files_urls)
+        if len(urls_string) > 300:
+            urls_string = urls_string[:300] + "..."
+        raise BasicStatsComputationFailed(f"Failed to compute stats from {urls_string}", e) from e
 
-    basic_stats = BasicStatsResponse(basic_stats)
     return {
         "basic_stats": basic_stats
     }
@@ -131,18 +149,9 @@ class BasicStatsWorker(Worker):
     def get_version() -> str:
         return "1.0.0"
 
-    def __init__(self, job_info: JobInfo, app_config: AppConfig) -> None:
-        job_type = job_info["type"]
-        try:
-            processing_step = app_config.processing_graph.graph.get_step_by_job_type(job_type)
-        except ValueError as e:
-            raise ValueError(
-                f"Unsupported job type: '{job_type}'. The job types declared in the processing graph are:"
-                f" {[step.job_type for step in app_config.processing_graph.graph.steps.values()]}"
-            ) from e
-        super().__init__(job_info=job_info, common_config=app_config.common, processing_step=processing_step)
-
     def compute(self) -> Mapping[str, Any]:
+        if self.config is None or self.split is None:
+            raise ValueError("config and split are required")
         return compute_basic_stats_response(dataset=self.dataset, config=self.config, split=self.split)
 
     def get_new_splits(self, content: Mapping[str, Any]) -> set[SplitFullName]:
