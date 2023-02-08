@@ -23,9 +23,9 @@ if __name__ == "__main__":
         LogResource(log_level=app_config.common.log_level),
         # ^ first resource to be acquired, in order to have logs as soon as possible
         LibrariesResource(
-            common_config=app_config.common,
-            datasets_based_config=app_config.datasets_based,
-            numba_config=app_config.numba,
+            hf_endpoint=app_config.common.hf_endpoint,
+            init_hf_datasets_cache=app_config.datasets_based.hf_datasets_cache,
+            numba_path=app_config.numba.path,
         ) as libraries_resource,
         CacheDatabaseResource(database=app_config.cache.mongo_database, host=app_config.cache.mongo_url),
         QueueDatabaseResource(database=app_config.queue.mongo_database, host=app_config.queue.mongo_url),

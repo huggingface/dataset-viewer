@@ -86,9 +86,9 @@ def queue_database_resource(app_config: AppConfig) -> Iterator[QueueDatabaseReso
 @fixture
 def libraries_resource(app_config: AppConfig) -> Iterator[LibrariesResource]:
     with LibrariesResource(
-        common_config=app_config.common,
-        datasets_based_config=app_config.datasets_based,
-        numba_config=app_config.numba,
+        hf_endpoint=app_config.common.hf_endpoint,
+        init_hf_datasets_cache=app_config.datasets_based.hf_datasets_cache,
+        numba_path=app_config.numba.path,
     ) as libraries_resource:
         yield libraries_resource
 
