@@ -12,6 +12,7 @@ from libcommon.resources import (
     CacheMongoResource,
     MongoConnectionFailure,
     MongoResource,
+    MongoTimeoutError,
     QueueMongoResource,
 )
 
@@ -28,6 +29,7 @@ def test_database_resource(queue_mongo_host: str) -> None:
         mongoengine_alias=mongoengine_alias,
         server_selection_timeout_ms=server_selection_timeout_ms,
     )
+    resource_1.check()
     with pytest.raises(MongoConnectionFailure):
         MongoResource(
             database=database_2,
@@ -42,6 +44,7 @@ def test_database_resource(queue_mongo_host: str) -> None:
         mongoengine_alias=mongoengine_alias,
         server_selection_timeout_ms=server_selection_timeout_ms,
     )
+    resource_2.check()
     resource_2.release()
 
 
@@ -75,6 +78,8 @@ def test_database_resource_errors(
         meta = {"db_alias": mongoengine_alias}
 
     if raises:
+        with pytest.raises(MongoTimeoutError):
+            resource.check()
         with pytest.raises(ServerSelectionTimeoutError):
             len(User.objects())  # type: ignore
     else:

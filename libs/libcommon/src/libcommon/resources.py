@@ -4,6 +4,8 @@
 from dataclasses import dataclass, field
 
 from mongoengine.connection import ConnectionFailure, connect, disconnect
+from pymongo import MongoClient  # type: ignore
+from pymongo.errors import ServerSelectionTimeoutError
 
 from libcommon.constants import CACHE_MONGOENGINE_ALIAS, QUEUE_MONGOENGINE_ALIAS
 
@@ -44,6 +46,10 @@ class MongoConnectionFailure(Exception):
     pass
 
 
+class MongoTimeoutError(Exception):
+    pass
+
+
 @dataclass
 class MongoResource(Resource):
     """
@@ -62,9 +68,11 @@ class MongoResource(Resource):
     mongoengine_alias: str
     server_selection_timeout_ms: int = 30_000
 
+    _client: MongoClient = field(init=False)
+
     def allocate(self):
         try:
-            connect(
+            self._client = connect(
                 db=self.database,
                 host=self.host,
                 alias=self.mongoengine_alias,
@@ -72,6 +80,17 @@ class MongoResource(Resource):
             )
         except ConnectionFailure as e:
             raise MongoConnectionFailure(f"Failed to connect to MongoDB: {e}") from e
+
+    def check(self) -> None:
+        """Check if the connection works.
+        Raises:
+            - [`~libcommon.resources.MongoTimeoutError`]:
+                if the mongo server could not be reached
+        """
+        try:
+            self._client.is_mongos
+        except ServerSelectionTimeoutError as e:
+            raise MongoTimeoutError("Cannot connect to the mongo database server") from e
 
     def release(self):
         disconnect(alias=self.mongoengine_alias)
