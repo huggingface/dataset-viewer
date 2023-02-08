@@ -9,6 +9,7 @@ from libcommon.resources import (
     CacheDatabaseResource,
     LogResource,
     QueueDatabaseResource,
+    Resource,
 )
 from starlette.applications import Starlette
 from starlette.middleware import Middleware
@@ -41,66 +42,72 @@ def create_app() -> Starlette:
         Middleware(GZipMiddleware),
         Middleware(PrometheusMiddleware, filter_unhandled_paths=True),
     ]
-    with (
-        LogResource(log_level=app_config.common.log_level),
+
+    resources: list[Resource] = [
+        LogResource(init_log_level=app_config.common.log_level),
         # ^ first resource to be acquired, in order to have logs as soon as possible
         CacheDatabaseResource(database=app_config.cache.mongo_database, host=app_config.cache.mongo_url),
         QueueDatabaseResource(database=app_config.queue.mongo_database, host=app_config.queue.mongo_url),
-    ):
-        valid: List[BaseRoute] = [
-            Route(
-                "/valid",
-                endpoint=create_valid_endpoint(
-                    processing_steps_for_valid=processing_steps_required_by_dataset_viewer,
-                    max_age_long=app_config.api.max_age_long,
-                    max_age_short=app_config.api.max_age_short,
-                ),
+    ]
+
+    for resource in resources:
+        resource.allocate()
+
+    valid: List[BaseRoute] = [
+        Route(
+            "/valid",
+            endpoint=create_valid_endpoint(
+                processing_steps_for_valid=processing_steps_required_by_dataset_viewer,
+                max_age_long=app_config.api.max_age_long,
+                max_age_short=app_config.api.max_age_short,
             ),
-            Route(
-                "/is-valid",
-                endpoint=create_is_valid_endpoint(
-                    external_auth_url=app_config.api.external_auth_url,
-                    processing_steps_for_valid=processing_steps_required_by_dataset_viewer,
-                    max_age_long=app_config.api.max_age_long,
-                    max_age_short=app_config.api.max_age_short,
-                ),
-            )
-            # ^ called by https://github.com/huggingface/model-evaluator
-        ]
-        processing_step_endpoints: List[BaseRoute] = [
-            Route(
-                processing_step.endpoint,
-                endpoint=create_processing_step_endpoint(
-                    processing_step=processing_step,
-                    init_processing_steps=init_processing_steps,
-                    hf_endpoint=app_config.common.hf_endpoint,
-                    hf_token=app_config.common.hf_token,
-                    external_auth_url=app_config.api.external_auth_url,
-                    max_age_long=app_config.api.max_age_long,
-                    max_age_short=app_config.api.max_age_short,
-                ),
-            )
-            for processing_step in processing_steps
-        ]
-        to_protect: List[BaseRoute] = [
-            # called by the Hub webhooks
-            Route(
-                "/webhook",
-                endpoint=create_webhook_endpoint(
-                    init_processing_steps=init_processing_steps,
-                    hf_endpoint=app_config.common.hf_endpoint,
-                    hf_token=app_config.common.hf_token,
-                ),
-                methods=["POST"],
+        ),
+        Route(
+            "/is-valid",
+            endpoint=create_is_valid_endpoint(
+                external_auth_url=app_config.api.external_auth_url,
+                processing_steps_for_valid=processing_steps_required_by_dataset_viewer,
+                max_age_long=app_config.api.max_age_long,
+                max_age_short=app_config.api.max_age_short,
             ),
-        ]
-        protected: List[BaseRoute] = [
-            Route("/healthcheck", endpoint=healthcheck_endpoint),
-            # called by Prometheus
-            Route("/metrics", endpoint=prometheus.endpoint),
-        ]
-        routes: List[BaseRoute] = valid + processing_step_endpoints + to_protect + protected
-        return Starlette(routes=routes, middleware=middleware)
+        )
+        # ^ called by https://github.com/huggingface/model-evaluator
+    ]
+    processing_step_endpoints: List[BaseRoute] = [
+        Route(
+            processing_step.endpoint,
+            endpoint=create_processing_step_endpoint(
+                processing_step=processing_step,
+                init_processing_steps=init_processing_steps,
+                hf_endpoint=app_config.common.hf_endpoint,
+                hf_token=app_config.common.hf_token,
+                external_auth_url=app_config.api.external_auth_url,
+                max_age_long=app_config.api.max_age_long,
+                max_age_short=app_config.api.max_age_short,
+            ),
+        )
+        for processing_step in processing_steps
+    ]
+    to_protect: List[BaseRoute] = [
+        # called by the Hub webhooks
+        Route(
+            "/webhook",
+            endpoint=create_webhook_endpoint(
+                init_processing_steps=init_processing_steps,
+                hf_endpoint=app_config.common.hf_endpoint,
+                hf_token=app_config.common.hf_token,
+            ),
+            methods=["POST"],
+        ),
+    ]
+    protected: List[BaseRoute] = [
+        Route("/healthcheck", endpoint=healthcheck_endpoint),
+        # called by Prometheus
+        Route("/metrics", endpoint=prometheus.endpoint),
+    ]
+    routes: List[BaseRoute] = valid + processing_step_endpoints + to_protect + protected
+
+    return Starlette(routes=routes, middleware=middleware, on_shutdown=[resource.release for resource in resources])
 
 
 def start() -> None:
