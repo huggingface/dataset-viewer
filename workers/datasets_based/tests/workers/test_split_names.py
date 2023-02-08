@@ -1,19 +1,22 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2022 The HuggingFace Authors.
 
-from dataclasses import replace
 from http import HTTPStatus
+from typing import Any
 
 import pytest
 from libcommon.exceptions import CustomError
 from libcommon.processing_graph import ProcessingStep
 from libcommon.queue import Priority
-from libcommon.simple_cache import DoesNotExist, get_response
+from libcommon.simple_cache import upsert_response
 
 from datasets_based.config import AppConfig
-from datasets_based.workers.split_names import SplitNamesWorker
-
-from ..fixtures.hub import HubDatasets, get_default_config_split
+from datasets_based.workers.split_names import (
+    DatasetNotFoundError,
+    PreviousStepFormatError,
+    PreviousStepStatusError,
+    SplitNamesWorker,
+)
 
 
 def get_worker(
@@ -45,73 +48,87 @@ def get_worker(
     )
 
 
-def test_process(app_config: AppConfig, hub_public_csv: str) -> None:
-    dataset, config, _ = get_default_config_split(hub_public_csv)
-    worker = get_worker(dataset, config, app_config)
-    assert worker.process() is True
-    cached_response = get_response(kind=worker.processing_step.cache_kind, dataset=hub_public_csv, config=config)
-    assert cached_response["http_status"] == HTTPStatus.OK
-    assert cached_response["error_code"] is None
-    assert cached_response["worker_version"] == worker.get_version()
-    assert cached_response["dataset_git_revision"] is not None
-    assert cached_response["error_code"] is None
-    content = cached_response["content"]
-    assert len(content["split_names"]) == 1
+@pytest.mark.parametrize(
+    "dataset,upstream_status,upstream_content,error_code,content",
+    [
+        (
+            "ok",
+            HTTPStatus.OK,
+            {
+                "dataset_info": {
+                    "config_name": {
+                        "splits": {
+                            "train": {"name": "train", "dataset_name": "ok"},
+                            "validation": {"name": "validation", "dataset_name": "ok"},
+                            "test": {"name": "test", "dataset_name": "ok"},
+                        },
+                    }
+                }
+            },
+            None,
+            {
+                "split_names": [
+                    {"dataset": "ok", "config": "config_name", "split": "train"},
+                    {"dataset": "ok", "config": "config_name", "split": "validation"},
+                    {"dataset": "ok", "config": "config_name", "split": "test"},
+                ]
+            },
+        ),
+        (
+            "upstream_fail",
+            HTTPStatus.INTERNAL_SERVER_ERROR,
+            {"error": "error"},
+            PreviousStepStatusError.__name__,
+            None,
+        ),
+        (
+            "without_dataset_info",
+            HTTPStatus.OK,
+            {"some_column": "wrong_format"},
+            PreviousStepFormatError.__name__,
+            None,
+        ),
+        (
+            "without_config_name",
+            HTTPStatus.OK,
+            {"dataset_info": "wrong_format"},
+            PreviousStepFormatError.__name__,
+            None,
+        ),
+        (
+            "without_splits",
+            HTTPStatus.OK,
+            {"dataset_info": {"config_name": "wrong_format"}},
+            PreviousStepFormatError.__name__,
+            None,
+        ),
+    ],
+)
+def test_compute(
+    app_config: AppConfig,
+    dataset: str,
+    upstream_status: HTTPStatus,
+    upstream_content: Any,
+    error_code: str,
+    content: Any,
+) -> None:
+    upsert_response(
+        kind="/parquet-and-dataset-info", dataset=dataset, content=upstream_content, http_status=upstream_status
+    )
+    worker = get_worker(dataset, "config_name", app_config)
+    if error_code:
+        with pytest.raises(Exception) as e:
+            worker.compute()
+        assert e.type.__name__ == error_code
+    else:
+        assert worker.compute() == content
 
 
 def test_doesnotexist(app_config: AppConfig) -> None:
-    dataset = "doesnotexist"
-    config = "some_config"
+    dataset = "non_existent"
+    config = "non_existent"
     worker = get_worker(dataset, config, app_config)
-    assert worker.process() is False
-    with pytest.raises(DoesNotExist):
-        get_response(kind=worker.processing_step.cache_kind, dataset=dataset, config=config)
-
-
-@pytest.mark.parametrize(
-    "name,use_token,error_code,cause",
-    [
-        ("public", False, None, None),
-        ("audio", False, None, None),
-        ("gated", True, None, None),
-        ("private", True, None, None),
-        ("empty", False, "EmptyDatasetError", "EmptyDatasetError"),
-        # should we really test the following cases?
-        # The assumption is that the dataset exists and is accessible with the token
-        ("does_not_exist", False, "SplitNamesError", "FileNotFoundError"),
-        ("gated", False, "SplitNamesError", "FileNotFoundError"),
-        ("private", False, "SplitNamesError", "FileNotFoundError"),
-    ],
-)
-def test_compute_split_names_response(
-    hub_datasets: HubDatasets, name: str, use_token: bool, error_code: str, cause: str, app_config: AppConfig
-) -> None:
-    dataset, config, _ = get_default_config_split(hub_datasets[name]["name"])
-    worker = get_worker(dataset, config, app_config)
-    expected_configs_response = hub_datasets[name]["split_names_response"]
-    worker = get_worker(
-        dataset,
-        config,
-        app_config if use_token else replace(app_config, common=replace(app_config.common, hf_token=None)),
-    )
-    if error_code is None:
-        result = worker.compute()
-        assert result == expected_configs_response
-        return
-
     with pytest.raises(CustomError) as exc_info:
         worker.compute()
-    assert exc_info.value.code == error_code
-    if cause is None:
-        assert exc_info.value.disclose_cause is False
-        assert exc_info.value.cause_exception is None
-    else:
-        assert exc_info.value.disclose_cause is True
-        assert exc_info.value.cause_exception == cause
-        response = exc_info.value.as_response()
-        assert set(response.keys()) == {"error", "cause_exception", "cause_message", "cause_traceback"}
-        response_dict = dict(response)
-        # ^ to remove mypy warnings
-        assert response_dict["cause_exception"] == cause
-        assert isinstance(response_dict["cause_traceback"], list)
-        assert response_dict["cause_traceback"][0] == "Traceback (most recent call last):\n"
+    assert exc_info.value.status_code == HTTPStatus.NOT_FOUND
+    assert exc_info.value.code == DatasetNotFoundError.__name__

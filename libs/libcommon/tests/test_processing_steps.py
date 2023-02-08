@@ -19,23 +19,13 @@ def test_default_graph():
 
     assert config_names is not None
     assert config_names.parent is None
-    assert config_names.children == [split_names]
+    assert config_names.children == []
     assert config_names.get_ancestors() == []
-
-    assert split_names is not None
-    assert split_names.parent is config_names
-    assert split_names.children == [first_rows]
-    assert split_names.get_ancestors() == [config_names]
 
     assert splits is not None
     assert splits.parent is None
     assert splits.children == []
     assert splits.get_ancestors() == []
-
-    assert first_rows is not None
-    assert first_rows.parent is split_names
-    assert first_rows.children == []
-    assert first_rows.get_ancestors() == [config_names, split_names]
 
     assert parquet_and_dataset_info is not None
     assert parquet_and_dataset_info.parent is None
@@ -49,8 +39,18 @@ def test_default_graph():
 
     assert dataset_info is not None
     assert dataset_info.parent is parquet_and_dataset_info
-    assert dataset_info.children == []
+    assert dataset_info.children == [split_names]
     assert dataset_info.get_ancestors() == [parquet_and_dataset_info]
+
+    assert split_names is not None
+    assert split_names.parent is dataset_info
+    assert split_names.children == [first_rows]
+    assert split_names.get_ancestors() == [parquet_and_dataset_info, dataset_info]
+
+    assert first_rows is not None
+    assert first_rows.parent is split_names
+    assert first_rows.children == []
+    assert first_rows.get_ancestors() == [parquet_and_dataset_info, dataset_info, split_names]
 
     assert sizes is not None
     assert sizes.parent is parquet_and_dataset_info
