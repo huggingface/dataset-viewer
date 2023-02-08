@@ -61,7 +61,7 @@ def create_force_refresh_endpoint(
             )
         except (DatasetError, AdminCustomError) as e:
             return get_json_admin_error_response(e, max_age=0)
-        except Exception:
-            return get_json_admin_error_response(UnexpectedError("Unexpected error."), max_age=0)
+        except Exception as e:
+            return get_json_admin_error_response(UnexpectedError("Unexpected error.", e), max_age=0)
 
     return force_refresh_endpoint
