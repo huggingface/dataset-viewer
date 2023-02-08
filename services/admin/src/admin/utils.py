@@ -63,7 +63,7 @@ class UnexpectedError(AdminCustomError):
         if cause:
             logging.exception(message, exc_info=cause)
         else:
-            logging.error(message)
+            logging.exception(message)
 
 
 class ExternalUnauthenticatedError(AdminCustomError):
