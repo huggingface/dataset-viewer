@@ -24,11 +24,11 @@ class UvicornConfig:
     num_workers: int = ADMIN_UVICORN_NUM_WORKERS
     port: int = ADMIN_UVICORN_PORT
 
-    @staticmethod
-    def from_env() -> "UvicornConfig":
+    @classmethod
+    def from_env(cls) -> "UvicornConfig":
         env = Env(expand_vars=True)
         with env.prefixed("ADMIN_UVICORN_"):
-            return UvicornConfig(
+            return cls(
                 hostname=env.str(name="HOSTNAME", default=ADMIN_UVICORN_HOSTNAME),
                 num_workers=env.int(name="NUM_WORKERS", default=ADMIN_UVICORN_NUM_WORKERS),
                 port=env.int(name="PORT", default=ADMIN_UVICORN_PORT),
@@ -52,13 +52,13 @@ class AdminConfig:
     hf_whoami_path: str = ADMIN_HF_WHOAMI_PATH
     max_age: int = ADMIN_MAX_AGE
 
-    @staticmethod
-    def from_env(common_config: CommonConfig) -> "AdminConfig":
+    @classmethod
+    def from_env(cls, common_config: CommonConfig) -> "AdminConfig":
         env = Env(expand_vars=True)
         with env.prefixed("ADMIN_"):
             hf_whoami_path = env.str(name="HF_WHOAMI_PATH", default=ADMIN_HF_WHOAMI_PATH)
             external_auth_url = None if hf_whoami_path is None else f"{common_config.hf_endpoint}{hf_whoami_path}"
-            return AdminConfig(
+            return cls(
                 cache_reports_num_results=env.int(
                     name="CACHE_REPORTS_NUM_RESULTS", default=ADMIN_CACHE_REPORTS_NUM_RESULTS
                 ),
@@ -81,10 +81,10 @@ class AppConfig:
     processing_graph: ProcessingGraphConfig = field(default_factory=ProcessingGraphConfig)
     queue: QueueConfig = field(default_factory=QueueConfig)
 
-    @staticmethod
-    def from_env() -> "AppConfig":
+    @classmethod
+    def from_env(cls) -> "AppConfig":
         common_config = CommonConfig.from_env()
-        return AppConfig(
+        return cls(
             common=common_config,
             assets=AssetsConfig.from_env(),
             cache=CacheConfig.from_env(),

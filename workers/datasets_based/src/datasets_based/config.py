@@ -31,11 +31,11 @@ class WorkerLoopConfig:
     sleep_seconds: int = WORKER_LOOP_SLEEP_SECONDS
     storage_paths: List[str] = field(default_factory=get_empty_str_list)
 
-    @staticmethod
-    def from_env() -> "WorkerLoopConfig":
+    @classmethod
+    def from_env(cls) -> "WorkerLoopConfig":
         env = Env(expand_vars=True)
         with env.prefixed("WORKER_LOOP_"):
-            return WorkerLoopConfig(
+            return cls(
                 max_disk_usage_pct=env.int(name="MAX_DISK_USAGE_PCT", default=WORKER_LOOP_MAX_DISK_USAGE_PCT),
                 max_load_pct=env.int(name="MAX_LOAD_PCT", default=WORKER_LOOP_MAX_LOAD_PCT),
                 max_memory_pct=env.int(name="MAX_MEMORY_PCT", default=WORKER_LOOP_MAX_MEMORY_PCT),
@@ -55,11 +55,11 @@ class DatasetsBasedConfig:
     hf_datasets_cache: Optional[str] = DATASETS_BASED_HF_DATASETS_CACHE
     content_max_bytes: int = DATASETS_BASED_CONTENT_MAX_BYTES
 
-    @staticmethod
-    def from_env() -> "DatasetsBasedConfig":
+    @classmethod
+    def from_env(cls) -> "DatasetsBasedConfig":
         env = Env(expand_vars=True)
         with env.prefixed("DATASETS_BASED_"):
-            return DatasetsBasedConfig(
+            return cls(
                 endpoint=env.str(name="ENDPOINT", default=DATASETS_BASED_ENDPOINT),
                 hf_datasets_cache=env.str(name="HF_DATASETS_CACHE", default=DATASETS_BASED_HF_DATASETS_CACHE),
                 content_max_bytes=env.int(name="CONTENT_MAX_BYTES", default=DATASETS_BASED_CONTENT_MAX_BYTES),
@@ -81,11 +81,11 @@ class FirstRowsConfig:
     min_number: int = FIRST_ROWS_MIN_NUMBER
     columns_max_number: int = FIRST_ROWS_COLUMNS_MAX_NUMBER
 
-    @staticmethod
-    def from_env() -> "FirstRowsConfig":
+    @classmethod
+    def from_env(cls) -> "FirstRowsConfig":
         env = Env(expand_vars=True)
         with env.prefixed("FIRST_ROWS_"):
-            return FirstRowsConfig(
+            return cls(
                 max_bytes=env.int(name="MAX_BYTES", default=FIRST_ROWS_MAX_BYTES),
                 max_number=env.int(name="MAX_NUMBER", default=FIRST_ROWS_MAX_NUMBER),
                 min_cell_bytes=env.int(name="CELL_MIN_BYTES", default=FIRST_ROWS_CELL_MIN_BYTES),
@@ -113,11 +113,11 @@ class ParquetAndDatasetInfoConfig:
     target_revision: str = PARQUET_AND_DATASET_INFO_TARGET_REVISION
     url_template: str = PARQUET_AND_DATASET_INFO_URL_TEMPLATE
 
-    @staticmethod
-    def from_env() -> "ParquetAndDatasetInfoConfig":
+    @classmethod
+    def from_env(cls) -> "ParquetAndDatasetInfoConfig":
         env = Env(expand_vars=True)
         with env.prefixed("PARQUET_AND_DATASET_INFO_"):
-            return ParquetAndDatasetInfoConfig(
+            return cls(
                 blocked_datasets=env.list(name="BLOCKED_DATASETS", default=get_empty_str_list()),
                 supported_datasets=env.list(name="SUPPORTED_DATASETS", default=get_empty_str_list()),
                 commit_message=env.str(name="COMMIT_MESSAGE", default=PARQUET_AND_DATASET_INFO_COMMIT_MESSAGE),
@@ -138,11 +138,11 @@ NUMBA_CACHE_DIR: Optional[str] = None
 class NumbaConfig:
     path: Optional[str] = NUMBA_CACHE_DIR  # not documented
 
-    @staticmethod
-    def from_env() -> "NumbaConfig":
+    @classmethod
+    def from_env(cls) -> "NumbaConfig":
         env = Env(expand_vars=True)
         with env.prefixed("NUMBA_"):
-            return NumbaConfig(path=env.str(name="NUMBA_CACHE_DIR", default=NUMBA_CACHE_DIR))
+            return cls(path=env.str(name="NUMBA_CACHE_DIR", default=NUMBA_CACHE_DIR))
 
 
 @dataclass(frozen=True)
@@ -156,9 +156,9 @@ class AppConfig:
     queue: QueueConfig = field(default_factory=QueueConfig)
     worker_loop: WorkerLoopConfig = field(default_factory=WorkerLoopConfig)
 
-    @staticmethod
-    def from_env() -> "AppConfig":
-        return AppConfig(
+    @classmethod
+    def from_env(cls) -> "AppConfig":
+        return cls(
             assets=AssetsConfig.from_env(),
             common=CommonConfig.from_env(),
             cache=CacheConfig.from_env(),
