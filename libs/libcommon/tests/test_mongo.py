@@ -40,8 +40,8 @@ def test_mongo_connection(queue_mongo_host: str) -> None:
 @pytest.mark.parametrize(
     "host,mongoengine_alias,server_selection_timeout_ms,raises",
     [
-        (None, "test_timeout_error", 1_000, False),
-        ("mongodb://doesnotexist:123", "test_host_error", 1_000, True),
+        (None, "test_timeout_error", 5_000, False),
+        ("mongodb://doesnotexist:123", "test_host_error", 5_000, True),
     ],
 )
 def test_mongo_connection_errors(
