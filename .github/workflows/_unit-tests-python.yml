@@ -49,6 +49,7 @@ jobs:
         env:
           CACHE_MONGO_URL: mongodb://localhost:${{ env.mongo-port }}
           QUEUE_MONGO_URL: mongodb://localhost:${{ env.mongo-port }}
+          MONGODB_MIGRATION_MONGO_URL: mongodb://localhost:${{ env.mongo-port }}
         run: poetry run python -m pytest -s --cov=./ --cov-report=xml:./coverage.xml --cov-report=term tests
       - name: Prepare codecov flag (slash "/" is not allowed)
         id: remove-slash
