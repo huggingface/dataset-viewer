@@ -58,7 +58,7 @@
         },
         "examples": {
           "ExternalAuthenticatedError": {
-            "summary": "The dataset does not exist, or is not accessible with the current credentials (private or gated).",
+            "summary": "The dataset does not exist, or is not accessible with the current credentials (private or gated). Please check the spelling of the dataset name or retry with other authentication credentials.",
             "value": "ExternalAuthenticatedError"
           },
           "DatasetNotFoundError": {
@@ -140,7 +140,7 @@
         },
         "examples": {
           "ExternalAuthenticatedError": {
-            "summary": "The dataset does not exist, or is not accessible with the current credentials (private or gated).",
+            "summary": "The dataset does not exist, or is not accessible with the current credentials (private or gated). Please check the spelling of the dataset name or retry with other authentication credentials.",
             "value": "ExternalAuthenticatedError"
           },
           "DatasetNotFoundError": {
@@ -1059,19 +1059,19 @@
                   "inexistent-dataset": {
                     "summary": "The dataset does not exist, while authentication was provided in the request.",
                     "value": {
-                      "error": "The dataset does not exist, or is not accessible with the current credentials (private or gated)."
+                      "error": "The dataset does not exist, or is not accessible with the current credentials (private or gated). Please check the spelling of the dataset name or retry with other authentication credentials."
                     }
                   },
                   "gated-dataset": {
                     "summary": "The dataset is private, while authentication was provided in the request.",
                     "value": {
-                      "error": "The dataset does not exist, or is not accessible with the current credentials (private or gated)."
+                      "error": "The dataset does not exist, or is not accessible with the current credentials (private or gated). Please check the spelling of the dataset name or retry with other authentication credentials."
                     }
                   },
                   "private-dataset": {
                     "summary": "The dataset is private, while authentication was provided in the request.",
                     "value": {
-                      "error": "The dataset does not exist, or is not accessible with the current credentials (private or gated)."
+                      "error": "The dataset does not exist, or is not accessible with the current credentials (private or gated). Please check the spelling of the dataset name or retry with other authentication credentials."
                     }
                   }
                 }
@@ -1822,19 +1822,19 @@
                   "inexistent-dataset": {
                     "summary": "The dataset does not exist, while authentication was provided in the request.",
                     "value": {
-                      "error": "The dataset does not exist, or is not accessible with the current credentials (private or gated)."
+                      "error": "The dataset does not exist, or is not accessible with the current credentials (private or gated). Please check the spelling of the dataset name or retry with other authentication credentials."
                     }
                   },
                   "gated-dataset": {
                     "summary": "The dataset is private, while authentication was provided in the request.",
                     "value": {
-                      "error": "The dataset does not exist, or is not accessible with the current credentials (private or gated)."
+                      "error": "The dataset does not exist, or is not accessible with the current credentials (private or gated). Please check the spelling of the dataset name or retry with other authentication credentials."
                     }
                   },
                   "private-dataset": {
                     "summary": "The dataset is private, while authentication was provided in the request.",
                     "value": {
-                      "error": "The dataset does not exist, or is not accessible with the current credentials (private or gated)."
+                      "error": "The dataset does not exist, or is not accessible with the current credentials (private or gated). Please check the spelling of the dataset name or retry with other authentication credentials."
                     }
                   },
                   "inexistent-config": {
@@ -2317,19 +2317,19 @@
                   "inexistent-dataset": {
                     "summary": "The dataset does not exist, while authentication was provided in the request.",
                     "value": {
-                      "error": "The dataset does not exist, or is not accessible with the current credentials (private or gated)."
+                      "error": "The dataset does not exist, or is not accessible with the current credentials (private or gated). Please check the spelling of the dataset name or retry with other authentication credentials."
                     }
                   },
                   "gated-dataset": {
                     "summary": "The dataset is private, while authentication was provided in the request.",
                     "value": {
-                      "error": "The dataset does not exist, or is not accessible with the current credentials (private or gated)."
+                      "error": "The dataset does not exist, or is not accessible with the current credentials (private or gated). Please check the spelling of the dataset name or retry with other authentication credentials."
                     }
                   },
                   "private-dataset": {
                     "summary": "The dataset is private, while authentication was provided in the request.",
                     "value": {
-                      "error": "The dataset does not exist, or is not accessible with the current credentials (private or gated)."
+                      "error": "The dataset does not exist, or is not accessible with the current credentials (private or gated). Please check the spelling of the dataset name or retry with other authentication credentials."
                     }
                   }
                 }
@@ -2636,19 +2636,19 @@
                   "inexistent-dataset": {
                     "summary": "The dataset does not exist, while authentication was provided in the request.",
                     "value": {
-                      "error": "The dataset does not exist, or is not accessible with the current credentials (private or gated)."
+                      "error": "The dataset does not exist, or is not accessible with the current credentials (private or gated). Please check the spelling of the dataset name or retry with other authentication credentials."
                     }
                   },
                   "gated-dataset": {
                     "summary": "The dataset is gated, while authentication was provided in the request.",
                     "value": {
-                      "error": "The dataset does not exist, or is not accessible with the current credentials (private or gated)."
+                      "error": "The dataset does not exist, or is not accessible with the current credentials (private or gated). Please check the spelling of the dataset name or retry with other authentication credentials."
                     }
                   },
                   "private-dataset": {
                     "summary": "The dataset is private, while authentication was provided in the request.",
                     "value": {
-                      "error": "The dataset does not exist, or is not accessible with the current credentials (private or gated)."
+                      "error": "The dataset does not exist, or is not accessible with the current credentials (private or gated). Please check the spelling of the dataset name or retry with other authentication credentials."
                     }
                   }
                 }
