@@ -35,5 +35,3 @@ jobs:
     with:
       working-directory: workers/datasets_based
       is-datasets-worker: true
-  e2e-tests:
-    uses: ./.github/workflows/_e2e_tests.yml

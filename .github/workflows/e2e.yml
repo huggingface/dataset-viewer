@@ -9,6 +9,9 @@ on:
       - main
     paths:
       - 'e2e/**'
+      - 'libs/**'
+      - 'services/**'
+      - 'workers/**'
       - 'chart/static-files/openapi.json'
       - '.github/workflows/_e2e_tests.yml'
       - '.github/workflows/_quality-python.yml'
@@ -18,6 +21,9 @@ on:
   pull_request:
     paths:
       - 'e2e/**'
+      - 'libs/**'
+      - 'services/**'
+      - 'workers/**'
       - 'chart/static-files/openapi.json'
       - '.github/workflows/_e2e_tests.yml'
       - '.github/workflows/_quality-python.yml'
