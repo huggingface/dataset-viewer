@@ -6,11 +6,11 @@ import random
 import time
 from dataclasses import dataclass
 
-from libcommon.config import WorkerLoopConfig
 from libcommon.queue import EmptyQueueError, Queue
 from psutil import cpu_count, disk_usage, getloadavg, swap_memory, virtual_memory
 
-from datasets_based.worker import WorkerFactory
+from datasets_based.config import WorkerLoopConfig
+from datasets_based.worker_factory import BaseWorkerFactory
 
 
 @dataclass
@@ -31,7 +31,7 @@ class WorkerLoop:
     """
 
     queue: Queue
-    worker_factory: WorkerFactory
+    worker_factory: BaseWorkerFactory
     worker_loop_config: WorkerLoopConfig
 
     def log(self, level: int, msg: str) -> None:
@@ -97,7 +97,6 @@ class WorkerLoop:
         time.sleep(duration)
 
     def loop(self) -> None:
-        self.info(f"Using endpoint {self.worker_factory.app_config.common.hf_endpoint}")
         self.info("Worker started")
         try:
             while True:

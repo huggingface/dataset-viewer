@@ -4,7 +4,7 @@
 
 import logging
 from dataclasses import dataclass, field
-from typing import List, Optional
+from typing import Optional
 
 from environs import Env
 
@@ -105,37 +105,6 @@ class QueueConfig:
                 max_jobs_per_namespace=env.int(name="MAX_JOBS_PER_NAMESPACE", default=QUEUE_MAX_JOBS_PER_NAMESPACE),
                 mongo_database=env.str(name="MONGO_DATABASE", default=QUEUE_MONGO_DATABASE),
                 mongo_url=env.str(name="MONGO_URL", default=QUEUE_MONGO_URL),
-            )
-
-
-WORKER_LOOP_MAX_DISK_USAGE_PCT = 90
-WORKER_LOOP_MAX_LOAD_PCT = 70
-WORKER_LOOP_MAX_MEMORY_PCT = 80
-WORKER_LOOP_SLEEP_SECONDS = 15
-
-
-def get_empty_str_list() -> List[str]:
-    return []
-
-
-@dataclass
-class WorkerLoopConfig:
-    max_disk_usage_pct: int = WORKER_LOOP_MAX_DISK_USAGE_PCT
-    max_load_pct: int = WORKER_LOOP_MAX_LOAD_PCT
-    max_memory_pct: int = WORKER_LOOP_MAX_MEMORY_PCT
-    sleep_seconds: int = WORKER_LOOP_SLEEP_SECONDS
-    storage_paths: List[str] = field(default_factory=get_empty_str_list)
-
-    @staticmethod
-    def from_env() -> "WorkerLoopConfig":
-        env = Env(expand_vars=True)
-        with env.prefixed("WORKER_LOOP_"):
-            return WorkerLoopConfig(
-                max_disk_usage_pct=env.int(name="MAX_DISK_USAGE_PCT", default=WORKER_LOOP_MAX_DISK_USAGE_PCT),
-                max_load_pct=env.int(name="MAX_LOAD_PCT", default=WORKER_LOOP_MAX_LOAD_PCT),
-                max_memory_pct=env.int(name="MAX_MEMORY_PCT", default=WORKER_LOOP_MAX_MEMORY_PCT),
-                sleep_seconds=env.int(name="SLEEP_SECONDS", default=WORKER_LOOP_SLEEP_SECONDS),
-                storage_paths=env.list(name="STORAGE_PATHS", default=get_empty_str_list()),
             )
 
 

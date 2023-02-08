@@ -1,6 +1,7 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2022 The HuggingFace Authors.
 
+import logging
 from http import HTTPStatus
 from typing import Any, Callable, Coroutine, List, Literal, Optional
 
@@ -59,6 +60,7 @@ class UnexpectedError(ApiCustomError):
 
     def __init__(self, message: str, cause: Optional[BaseException] = None):
         super().__init__(message, HTTPStatus.INTERNAL_SERVER_ERROR, "UnexpectedError", cause)
+        logging.error(message, exc_info=cause)
 
 
 class ExternalUnauthenticatedError(ApiCustomError):

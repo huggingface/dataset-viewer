@@ -36,7 +36,7 @@ def create_jobs_duration_per_dataset_endpoint(
             )
         except AdminCustomError as e:
             return get_json_admin_error_response(e, max_age=max_age)
-        except Exception:
-            return get_json_admin_error_response(UnexpectedError("Unexpected error."), max_age=max_age)
+        except Exception as e:
+            return get_json_admin_error_response(UnexpectedError("Unexpected error.", e), max_age=max_age)
 
     return jobs_duration_per_dataset_endpoint

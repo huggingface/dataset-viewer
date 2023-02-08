@@ -14,8 +14,38 @@ from libcommon.config import (
     CommonConfig,
     ProcessingGraphConfig,
     QueueConfig,
-    WorkerLoopConfig,
 )
+
+WORKER_LOOP_MAX_DISK_USAGE_PCT = 90
+WORKER_LOOP_MAX_LOAD_PCT = 70
+WORKER_LOOP_MAX_MEMORY_PCT = 80
+WORKER_LOOP_SLEEP_SECONDS = 15
+
+
+def get_empty_str_list() -> List[str]:
+    return []
+
+
+@dataclass
+class WorkerLoopConfig:
+    max_disk_usage_pct: int = WORKER_LOOP_MAX_DISK_USAGE_PCT
+    max_load_pct: int = WORKER_LOOP_MAX_LOAD_PCT
+    max_memory_pct: int = WORKER_LOOP_MAX_MEMORY_PCT
+    sleep_seconds: int = WORKER_LOOP_SLEEP_SECONDS
+    storage_paths: List[str] = field(default_factory=get_empty_str_list)
+
+    @staticmethod
+    def from_env() -> "WorkerLoopConfig":
+        env = Env(expand_vars=True)
+        with env.prefixed("WORKER_LOOP_"):
+            return WorkerLoopConfig(
+                max_disk_usage_pct=env.int(name="MAX_DISK_USAGE_PCT", default=WORKER_LOOP_MAX_DISK_USAGE_PCT),
+                max_load_pct=env.int(name="MAX_LOAD_PCT", default=WORKER_LOOP_MAX_LOAD_PCT),
+                max_memory_pct=env.int(name="MAX_MEMORY_PCT", default=WORKER_LOOP_MAX_MEMORY_PCT),
+                sleep_seconds=env.int(name="SLEEP_SECONDS", default=WORKER_LOOP_SLEEP_SECONDS),
+                storage_paths=env.list(name="STORAGE_PATHS", default=get_empty_str_list()),
+            )
+
 
 DATASETS_BASED_ENDPOINT = "/config-names"
 DATASETS_BASED_HF_DATASETS_CACHE = None
@@ -41,7 +71,6 @@ class DatasetsBasedConfig:
             )
 
 
-FIRST_ROWS_FALLBACK_MAX_DATASET_SIZE = 100_000_000
 FIRST_ROWS_MAX_BYTES = 1_000_000
 FIRST_ROWS_MAX_NUMBER = 100
 FIRST_ROWS_CELL_MIN_BYTES = 100
@@ -52,7 +81,6 @@ FIRST_ROWS_COLUMNS_MAX_NUMBER = 1_000
 @dataclass
 class FirstRowsConfig:
     assets: AssetsConfig = field(default_factory=AssetsConfig)
-    fallback_max_dataset_size: int = FIRST_ROWS_FALLBACK_MAX_DATASET_SIZE
     max_bytes: int = FIRST_ROWS_MAX_BYTES
     max_number: int = FIRST_ROWS_MAX_NUMBER
     min_cell_bytes: int = FIRST_ROWS_CELL_MIN_BYTES
@@ -65,9 +93,6 @@ class FirstRowsConfig:
         with env.prefixed("FIRST_ROWS_"):
             return FirstRowsConfig(
                 assets=AssetsConfig.from_env(),
-                fallback_max_dataset_size=env.int(
-                    name="FALLBACK_MAX_DATASET_SIZE", default=FIRST_ROWS_FALLBACK_MAX_DATASET_SIZE
-                ),
                 max_bytes=env.int(name="MAX_BYTES", default=FIRST_ROWS_MAX_BYTES),
                 max_number=env.int(name="MAX_NUMBER", default=FIRST_ROWS_MAX_NUMBER),
                 min_cell_bytes=env.int(name="CELL_MIN_BYTES", default=FIRST_ROWS_CELL_MIN_BYTES),
@@ -82,10 +107,6 @@ PARQUET_AND_DATASET_INFO_MAX_DATASET_SIZE = 100_000_000
 PARQUET_AND_DATASET_INFO_SOURCE_REVISION = "main"
 PARQUET_AND_DATASET_INFO_TARGET_REVISION = "refs/convert/parquet"
 PARQUET_AND_DATASET_INFO_URL_TEMPLATE = "/datasets/%s/resolve/%s/%s"
-
-
-def get_empty_str_list() -> List[str]:
-    return []
 
 
 @dataclass

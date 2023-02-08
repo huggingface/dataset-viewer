@@ -24,8 +24,6 @@
     # value: {{ .Values.queue.maxJobsPerNamespace | quote }}
     # overridden
     value: {{ .Values.firstRows.queue.maxJobsPerNamespace | quote }}
-  - name: FIRST_ROWS_FALLBACK_MAX_DATASET_SIZE
-    value: {{ .Values.firstRows.fallbackMaxDatasetSize | quote }}
   - name: FIRST_ROWS_MAX_BYTES
     value: {{ .Values.firstRows.maxBytes | quote }}
   - name: FIRST_ROWS_MAX_NUMBER

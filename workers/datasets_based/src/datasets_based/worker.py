@@ -22,7 +22,7 @@ from libcommon.simple_cache import (
 )
 from packaging import version
 
-WorkerErrorCode = Literal[
+GeneralWorkerErrorCode = Literal[
     "ConfigNotFoundError",
     "NoGitRevisionError",
     "SplitNotFoundError",
@@ -40,16 +40,32 @@ class WorkerError(CustomError):
         self,
         message: str,
         status_code: HTTPStatus,
-        code: WorkerErrorCode,
+        code: str,
         cause: Optional[BaseException] = None,
         disclose_cause: bool = False,
     ):
         super().__init__(
-            message=message, status_code=status_code, code=str(code), cause=cause, disclose_cause=disclose_cause
+            message=message, status_code=status_code, code=code, cause=cause, disclose_cause=disclose_cause
         )
 
 
-class ConfigNotFoundError(WorkerError):
+class GeneralWorkerError(WorkerError):
+    """Base class for worker exceptions."""
+
+    def __init__(
+        self,
+        message: str,
+        status_code: HTTPStatus,
+        code: GeneralWorkerErrorCode,
+        cause: Optional[BaseException] = None,
+        disclose_cause: bool = False,
+    ):
+        super().__init__(
+            message=message, status_code=status_code, code=code, cause=cause, disclose_cause=disclose_cause
+        )
+
+
+class ConfigNotFoundError(GeneralWorkerError):
     """Raised when the config does not exist."""
 
     def __init__(self, message: str, cause: Optional[BaseException] = None):
@@ -62,7 +78,7 @@ class ConfigNotFoundError(WorkerError):
         )
 
 
-class SplitNotFoundError(WorkerError):
+class SplitNotFoundError(GeneralWorkerError):
     """Raised when the split does not exist."""
 
     def __init__(self, message: str, cause: Optional[BaseException] = None):
@@ -75,7 +91,7 @@ class SplitNotFoundError(WorkerError):
         )
 
 
-class NoGitRevisionError(WorkerError):
+class NoGitRevisionError(GeneralWorkerError):
     """Raised when the git revision returned by huggingface_hub is None."""
 
     def __init__(self, message: str, cause: Optional[BaseException] = None):
@@ -88,8 +104,8 @@ class NoGitRevisionError(WorkerError):
         )
 
 
-class UnexpectedError(WorkerError):
-    """Raised when the response for the split has not been found."""
+class UnexpectedError(GeneralWorkerError):
+    """Raised when the worker raised an unexpected error."""
 
     def __init__(self, message: str, cause: Optional[BaseException] = None):
         super().__init__(
@@ -99,6 +115,7 @@ class UnexpectedError(WorkerError):
             cause=cause,
             disclose_cause=False,
         )
+        logging.error(message, exc_info=cause)
 
 
 class Worker(ABC):
@@ -409,19 +426,4 @@ class Worker(ABC):
 
     def post_compute(self) -> None:
         """Hook method called after the compute method."""
-        pass
-
-
-class WorkerFactory(ABC):
-    """
-    Base class for worker factories. A worker factory is a class that creates a worker.
-
-    It cannot be instantiated directly, but must be subclassed.
-    """
-
-    def create_worker(self, job_info: JobInfo) -> Worker:
-        return self._create_worker(job_info=job_info)
-
-    @abstractmethod
-    def _create_worker(self, job_info: JobInfo) -> Worker:
         pass
