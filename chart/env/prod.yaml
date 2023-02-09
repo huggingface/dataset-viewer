@@ -61,7 +61,6 @@ common:
   hfEndpoint: "https://huggingface.co"
   # Log level
   logLevel: "INFO"
-  contentMaxSize: 10_000_000
   
 # --- jobs (pre-install/upgrade hooks) ---
 
@@ -311,3 +310,7 @@ sizes:
     limits:
       cpu: 2
       memory: "1Gi"
+
+# --- datasets_based ---
+datasetsBased:
+  contentMaxBytes: "10_000_000"

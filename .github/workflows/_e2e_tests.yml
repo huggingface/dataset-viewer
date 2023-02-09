@@ -37,7 +37,6 @@ jobs:
           ADMIN_UVICORN_NUM_WORKERS: "2"
           ADMIN_UVICORN_PORT: "8081"
           COMMON_LOG_LEVEL: "DEBUG"
-          COMMON_CONTENT_MAX_SIZE : "10_000_000"
         run: docker compose -f docker-compose-datasets-server.yml up -d
         working-directory: ./tools
       -
@@ -72,6 +71,5 @@ jobs:
           ADMIN_UVICORN_NUM_WORKERS: "2"
           ADMIN_UVICORN_PORT: "8081"
           COMMON_LOG_LEVEL: "DEBUG"
-          COMMON_CONTENT_MAX_SIZE : "10_000_000"
         run: |
           poetry run python -m pytest -vv -x tests

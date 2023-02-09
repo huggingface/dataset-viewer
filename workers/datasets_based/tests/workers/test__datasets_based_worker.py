@@ -151,7 +151,10 @@ def assert_datasets_cache_path(path: Path, exists: bool, equals: bool = True) ->
 def test_process_big_content(hub_datasets: HubDatasets, app_config: AppConfig) -> None:
     dataset, config, split = get_default_config_split(hub_datasets["big"]["name"])
     worker = get_worker(
-        dataset, config, split, app_config=replace(app_config, common=replace(app_config.common, content_max_size=10))
+        dataset,
+        config,
+        split,
+        app_config=replace(app_config, datasets_based=replace(app_config.datasets_based, content_max_bytes=10)),
     )
 
     assert worker.process() is False

@@ -48,7 +48,6 @@ common:
   hfEndpoint: ""
   # Log level
   logLevel: "INFO"
-  contentMaxSize: 1000000
 
 # --- common parameters ---
 
@@ -378,3 +377,8 @@ sizes:
     limits:
       cpu: 0
   tolerations: []
+
+# --- datasets_based ---
+datasetsBased:
+  # TODO: This config have to be moved to worker namespace
+  contentMaxBytes: "10_000_000"

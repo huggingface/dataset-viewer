@@ -22,8 +22,6 @@
   {{- end }}
 - name: COMMON_LOG_LEVEL
   value: {{ .Values.common.logLevel | quote }}
-- name: COMMON_CONTENT_MAX_SIZE
-  value: {{ .Values.common.contentMaxSize}}
 {{- end -}}
 
 {{- define "datasetServer.mongo.url" -}}

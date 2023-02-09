@@ -23,6 +23,8 @@ from libcommon.simple_cache import (
 from libcommon.utils import orjson_dumps
 from packaging import version
 
+from datasets_based.config import DatasetsBasedConfig
+
 GeneralWorkerErrorCode = Literal[
     "ConfigNotFoundError",
     "NoGitRevisionError",
@@ -155,6 +157,7 @@ class Worker(ABC):
     split: Optional[str] = None
     force: bool
     priority: Priority
+    datasets_based_config: DatasetsBasedConfig
     common_config: CommonConfig
     processing_step: ProcessingStep
 
@@ -172,6 +175,7 @@ class Worker(ABC):
         self,
         job_info: JobInfo,
         common_config: CommonConfig,
+        datasets_based_config: DatasetsBasedConfig,
         processing_step: ProcessingStep,
     ) -> None:
         self.job_type = job_info["type"]
@@ -182,6 +186,7 @@ class Worker(ABC):
         self.force = job_info["force"]
         self.priority = job_info["priority"]
         self.common_config = common_config
+        self.datasets_based_config = datasets_based_config
         self.processing_step = processing_step
         self.setup()
 
@@ -314,10 +319,10 @@ class Worker(ABC):
                 content = self.compute()
 
                 # Validate content size
-                if len(orjson_dumps(content)) > self.common_config.content_max_size:
+                if len(orjson_dumps(content)) > self.datasets_based_config.content_max_bytes:
                     raise TooBigContentError(
-                        "The computed response content exceeds the supported size in bytes ({self.common_config.content_max_size})."
-                        f" {self.common_config.content_max_size}."
+                        "The computed response content exceeds the supported size in bytes"
+                        f" ({self.datasets_based_config.content_max_bytes})."
                     )
             finally:
                 # ensure the post_compute hook is called even if the compute raises an exception
