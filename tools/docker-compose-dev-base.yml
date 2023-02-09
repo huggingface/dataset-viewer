@@ -31,4 +31,4 @@ services:
       NUMBA_CACHE_DIR: ${NUMBA_CACHE_DIR-/numba-cache}
     # volumes to local source directory for development
     volumes:
-      - ../workers/datasets_based/src:/src/workers/datasets_based/src
+      - ../services/worker/src:/src/services/worker/src
