@@ -71,7 +71,6 @@ class AppConfig:
 
     @staticmethod
     def from_env() -> "AppConfig":
-        # First process the common configuration to setup the logging
         common_config = CommonConfig.from_env()
         return AppConfig(
             common=common_config,

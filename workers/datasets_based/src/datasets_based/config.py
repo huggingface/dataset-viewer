@@ -72,7 +72,6 @@ FIRST_ROWS_COLUMNS_MAX_NUMBER = 1_000
 
 @dataclass
 class FirstRowsConfig:
-    assets: AssetsConfig = field(default_factory=AssetsConfig)
     max_bytes: int = FIRST_ROWS_MAX_BYTES
     max_number: int = FIRST_ROWS_MAX_NUMBER
     min_cell_bytes: int = FIRST_ROWS_CELL_MIN_BYTES
@@ -84,7 +83,6 @@ class FirstRowsConfig:
         env = Env(expand_vars=True)
         with env.prefixed("FIRST_ROWS_"):
             return FirstRowsConfig(
-                assets=AssetsConfig.from_env(),
                 max_bytes=env.int(name="MAX_BYTES", default=FIRST_ROWS_MAX_BYTES),
                 max_number=env.int(name="MAX_NUMBER", default=FIRST_ROWS_MAX_NUMBER),
                 min_cell_bytes=env.int(name="CELL_MIN_BYTES", default=FIRST_ROWS_CELL_MIN_BYTES),
@@ -146,6 +144,7 @@ class NumbaConfig:
 
 @dataclass
 class AppConfig:
+    assets: AssetsConfig = field(default_factory=AssetsConfig)
     cache: CacheConfig = field(default_factory=CacheConfig)
     common: CommonConfig = field(default_factory=CommonConfig)
     datasets_based: DatasetsBasedConfig = field(default_factory=DatasetsBasedConfig)
@@ -157,7 +156,7 @@ class AppConfig:
     @staticmethod
     def from_env() -> "AppConfig":
         return AppConfig(
-            # First process the common configuration to setup the logging
+            assets=AssetsConfig.from_env(),
             common=CommonConfig.from_env(),
             cache=CacheConfig.from_env(),
             datasets_based=DatasetsBasedConfig.from_env(),

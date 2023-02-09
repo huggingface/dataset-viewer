@@ -10,7 +10,7 @@ import pytest
 from datasets import Audio, Dataset, Image, Value
 from libcommon.resources import StrPath
 
-from datasets_based.config import FirstRowsConfig
+from datasets_based.config import AppConfig
 from datasets_based.features import get_cell_value
 
 # we need to know the correspondence between the feature type and the cell value, in order to:
@@ -57,7 +57,7 @@ def test_value(
     output_value: Any,
     output_dtype: str,
     datasets: Mapping[str, Dataset],
-    first_rows_config: FirstRowsConfig,
+    app_config: AppConfig,
     assets_directory: StrPath,
 ) -> None:
     dataset = datasets[dataset_type]
@@ -72,7 +72,7 @@ def test_value(
         cell=dataset[0]["col"],
         featureName="col",
         fieldType=feature,
-        assets_base_url=first_rows_config.assets.base_url,
+        assets_base_url=app_config.assets.base_url,
         assets_directory=assets_directory,
     )
     assert value == output_value
@@ -299,7 +299,7 @@ def test_others(
     output_value: Any,
     output_type: Any,
     datasets: Mapping[str, Dataset],
-    first_rows_config: FirstRowsConfig,
+    app_config: AppConfig,
     assets_directory: StrPath,
 ) -> None:
     dataset = datasets[dataset_type]
@@ -316,7 +316,7 @@ def test_others(
         cell=dataset[0]["col"],
         featureName="col",
         fieldType=feature,
-        assets_base_url=first_rows_config.assets.base_url,
+        assets_base_url=app_config.assets.base_url,
         assets_directory=assets_directory,
     )
     assert value == output_value

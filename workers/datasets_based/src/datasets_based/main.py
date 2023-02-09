@@ -4,6 +4,7 @@
 from libcommon.processing_graph import ProcessingGraph
 from libcommon.queue import Queue
 from libcommon.resources import (
+    AssetsStorageAccessResource,
     CacheDatabaseResource,
     LogResource,
     QueueDatabaseResource,
@@ -22,6 +23,9 @@ if __name__ == "__main__":
     with (
         LogResource(log_level=app_config.common.log_level),
         # ^ first resource to be acquired, in order to have logs as soon as possible
+        AssetsStorageAccessResource(
+            init_directory=app_config.assets.storage_directory
+        ) as assets_storage_access_resource,
         LibrariesResource(
             hf_endpoint=app_config.common.hf_endpoint,
             init_hf_datasets_cache=app_config.datasets_based.hf_datasets_cache,
@@ -34,6 +38,7 @@ if __name__ == "__main__":
             app_config=app_config,
             processing_graph=processing_graph,
             hf_datasets_cache=libraries_resource.hf_datasets_cache,
+            assets_directory=assets_storage_access_resource.directory,
         )
         queue = Queue(type=processing_step.job_type, max_jobs_per_namespace=app_config.queue.max_jobs_per_namespace)
         worker_loop = WorkerLoop(

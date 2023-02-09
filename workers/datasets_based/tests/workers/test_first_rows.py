@@ -9,12 +9,9 @@ from datasets.packaged_modules import csv
 from libcommon.exceptions import CustomError
 from libcommon.processing_graph import ProcessingStep
 from libcommon.queue import Priority
-from libcommon.resources import (
-    AssetsStorageAccessResource,
-    CacheDatabaseResource,
-    QueueDatabaseResource,
-)
+from libcommon.resources import CacheDatabaseResource, QueueDatabaseResource
 from libcommon.simple_cache import DoesNotExist, get_response
+from libcommon.storage import StrPath
 
 from datasets_based.config import AppConfig, FirstRowsConfig
 from datasets_based.resources import LibrariesResource
@@ -25,6 +22,7 @@ from ..fixtures.hub import HubDatasets, get_default_config_split
 
 @pytest.fixture
 def get_worker(
+    assets_directory: StrPath,
     libraries_resource: LibrariesResource,
     cache_database_resource: CacheDatabaseResource,
     queue_database_resource: QueueDatabaseResource,
@@ -37,31 +35,30 @@ def get_worker(
         first_rows_config: FirstRowsConfig,
         force: bool = False,
     ) -> FirstRowsWorker:
-        with AssetsStorageAccessResource(init_directory=first_rows_config.assets.storage_directory) as resource:
-            return FirstRowsWorker(
-                job_info={
-                    "type": FirstRowsWorker.get_job_type(),
-                    "dataset": dataset,
-                    "config": config,
-                    "split": split,
-                    "job_id": "job_id",
-                    "force": force,
-                    "priority": Priority.NORMAL,
-                },
-                app_config=app_config,
-                processing_step=ProcessingStep(
-                    endpoint=FirstRowsWorker.get_job_type(),
-                    input_type="split",
-                    requires=None,
-                    required_by_dataset_viewer=True,
-                    parent=None,
-                    ancestors=[],
-                    children=[],
-                ),
-                hf_datasets_cache=libraries_resource.hf_datasets_cache,
-                first_rows_config=first_rows_config,
-                assets_storage_directory=resource.directory,
-            )
+        return FirstRowsWorker(
+            job_info={
+                "type": FirstRowsWorker.get_job_type(),
+                "dataset": dataset,
+                "config": config,
+                "split": split,
+                "job_id": "job_id",
+                "force": force,
+                "priority": Priority.NORMAL,
+            },
+            app_config=app_config,
+            processing_step=ProcessingStep(
+                endpoint=FirstRowsWorker.get_job_type(),
+                input_type="split",
+                requires=None,
+                required_by_dataset_viewer=True,
+                parent=None,
+                ancestors=[],
+                children=[],
+            ),
+            hf_datasets_cache=libraries_resource.hf_datasets_cache,
+            first_rows_config=first_rows_config,
+            assets_storage_directory=assets_directory,
+        )
 
     return _get_worker
 

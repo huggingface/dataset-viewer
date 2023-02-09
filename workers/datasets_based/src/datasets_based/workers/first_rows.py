@@ -636,6 +636,7 @@ class FirstRowsWorker(DatasetsBasedWorker):
         )
         self.first_rows_config = first_rows_config
         self.assets_storage_directory = assets_storage_directory
+        self.assets_base_url = app_config.assets.base_url
 
     def compute(self) -> Mapping[str, Any]:
         if self.config is None or self.split is None:
@@ -644,7 +645,7 @@ class FirstRowsWorker(DatasetsBasedWorker):
             dataset=self.dataset,
             config=self.config,
             split=self.split,
-            assets_base_url=self.first_rows_config.assets.base_url,
+            assets_base_url=self.assets_base_url,
             assets_directory=self.assets_storage_directory,
             hf_token=self.common_config.hf_token,
             min_cell_bytes=self.first_rows_config.min_cell_bytes,

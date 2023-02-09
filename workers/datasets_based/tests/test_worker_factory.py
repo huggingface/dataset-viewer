@@ -6,6 +6,7 @@ from typing import Optional
 import pytest
 from libcommon.processing_graph import ProcessingGraph
 from libcommon.queue import Priority
+from libcommon.storage import StrPath
 
 from datasets_based.config import AppConfig
 from datasets_based.resources import LibrariesResource
@@ -35,6 +36,7 @@ def test_create_worker(
     app_config: AppConfig,
     processing_graph: ProcessingGraph,
     libraries_resource: LibrariesResource,
+    assets_directory: StrPath,
     job_type: str,
     expected_worker: Optional[str],
 ) -> None:
@@ -42,6 +44,7 @@ def test_create_worker(
         app_config=app_config,
         processing_graph=processing_graph,
         hf_datasets_cache=libraries_resource.hf_datasets_cache,
+        assets_directory=assets_directory,
     )
     job_info: JobInfo = {
         "type": job_type,
