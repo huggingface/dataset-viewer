@@ -8,11 +8,7 @@ from pathlib import Path
 from libcommon.processing_graph import ProcessingGraph
 from libcommon.storage import StrPath
 
-from worker.config import (
-    AppConfig,
-    FirstRowsConfig,
-    ParquetAndDatasetInfoConfig,
-)
+from worker.config import AppConfig, FirstRowsConfig, ParquetAndDatasetInfoConfig
 from worker.worker import JobInfo, Worker
 from worker.workers.config_names import ConfigNamesWorker
 from worker.workers.dataset_info import DatasetInfoWorker
