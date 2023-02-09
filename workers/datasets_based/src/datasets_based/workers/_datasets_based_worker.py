@@ -28,7 +28,12 @@ class DatasetsBasedWorker(Worker):
     datasets_cache: Optional[Path] = None
 
     def __init__(self, job_info: JobInfo, app_config: AppConfig, processing_step: ProcessingStep) -> None:
-        super().__init__(job_info=job_info, common_config=app_config.common, processing_step=processing_step)
+        super().__init__(
+            job_info=job_info,
+            common_config=app_config.common,
+            datasets_based_config=app_config.datasets_based,
+            processing_step=processing_step,
+        )
         self.datasets_based_config = app_config.datasets_based
 
     def get_cache_subdirectory(self, date: datetime) -> str:
