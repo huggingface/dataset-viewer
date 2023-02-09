@@ -3,31 +3,32 @@
 
 import logging
 from http import HTTPStatus
-from typing import Any, Literal, Mapping, Optional, TypedDict
+from typing import Any, List, Literal, Mapping, Optional, TypedDict
 
 from libcommon.dataset import DatasetNotFoundError
 from libcommon.simple_cache import DoesNotExist, SplitFullName, get_response
 
-from worker.worker import Worker, WorkerError
+from worker.job_runner import JobRunner, JobRunnerError
+from worker.job_runners.parquet_and_dataset_info import ParquetFileItem
 
-DatasetInfoWorkerErrorCode = Literal[
+ParquetJobRunnerErrorCode = Literal[
     "PreviousStepStatusError",
     "PreviousStepFormatError",
 ]
 
 
-class DatasetInfoResponse(TypedDict):
-    dataset_info: dict[str, Any]
+class ParquetResponse(TypedDict):
+    parquet_files: List[ParquetFileItem]
 
 
-class DatasetInfoWorkerError(WorkerError):
+class ParquetJobRunnerError(JobRunnerError):
     """Base class for exceptions in this module."""
 
     def __init__(
         self,
         message: str,
         status_code: HTTPStatus,
-        code: DatasetInfoWorkerErrorCode,
+        code: ParquetJobRunnerErrorCode,
         cause: Optional[BaseException] = None,
         disclose_cause: bool = False,
     ):
@@ -36,39 +37,41 @@ class DatasetInfoWorkerError(WorkerError):
         )
 
 
-class PreviousStepStatusError(DatasetInfoWorkerError):
+class PreviousStepStatusError(ParquetJobRunnerError):
     """Raised when the previous step gave an error. The job should not have been created."""
 
     def __init__(self, message: str, cause: Optional[BaseException] = None):
         super().__init__(message, HTTPStatus.INTERNAL_SERVER_ERROR, "PreviousStepStatusError", cause, False)
 
 
-class PreviousStepFormatError(DatasetInfoWorkerError):
+class PreviousStepFormatError(ParquetJobRunnerError):
     """Raised when the content of the previous step has not the expected format."""
 
     def __init__(self, message: str, cause: Optional[BaseException] = None):
         super().__init__(message, HTTPStatus.INTERNAL_SERVER_ERROR, "PreviousStepFormatError", cause, False)
 
 
-def compute_dataset_info_response(dataset: str) -> DatasetInfoResponse:
+def compute_parquet_response(dataset: str) -> ParquetResponse:
     """
-    Get the response of /dataset-info for one specific dataset on huggingface.co.
+    Get the response of /parquet for one specific dataset on huggingface.co.
     Args:
         dataset (`str`):
             A namespace (user or an organization) and a repo name separated
             by a `/`.
     Returns:
-        `DatasetInfoResponse`: An object with the dataset_info response.
+        `ParquetResponse`: An object with the parquet_response (list of parquet files).
     <Tip>
     Raises the following errors:
-        - [`~workers.dataset_info.PreviousStepStatusError`]
+        - [`~job_runners.parquet.PreviousStepStatusError`]
           If the the previous step gave an error.
-        - [`~workers.dataset_info.PreviousStepFormatError`]
+        - [`~job_runners.parquet.PreviousStepFormatError`]
             If the content of the previous step has not the expected format
     </Tip>
     """
-    logging.info(f"get dataset_info for dataset={dataset}")
+    logging.info(f"get parquet files for dataset={dataset}")
 
+    # TODO: we should move this dependency to the JobRunner class: defining which are the inputs, and just getting
+    # their value here
     try:
         response = get_response(kind="/parquet-and-dataset-info", dataset=dataset)
     except DoesNotExist as e:
@@ -78,29 +81,28 @@ def compute_dataset_info_response(dataset: str) -> DatasetInfoResponse:
             f"Previous step gave an error: {response['http_status']}. This job should not have been created."
         )
     content = response["content"]
-    if "dataset_info" not in content:
+    if "parquet_files" not in content:
         raise PreviousStepFormatError("Previous step did not return the expected content.")
     return {
-        "dataset_info": content["dataset_info"],
+        "parquet_files": content["parquet_files"],
     }
 
 
-class DatasetInfoWorker(Worker):
+class ParquetJobRunner(JobRunner):
     @staticmethod
     def get_job_type() -> str:
-        return "/dataset-info"
+        return "/parquet"
 
     @staticmethod
     def get_version() -> str:
-        return "1.0.0"
+        return "3.0.0"
 
     def compute(self) -> Mapping[str, Any]:
-        return compute_dataset_info_response(dataset=self.dataset)
+        return compute_parquet_response(dataset=self.dataset)
 
     def get_new_splits(self, content: Mapping[str, Any]) -> set[SplitFullName]:
         """Get the set of new splits, from the content created by the compute."""
         return {
-            SplitFullName(dataset=self.dataset, config=config, split=split)
-            for config in content["dataset_info"].keys()
-            for split in content["dataset_info"][config]["splits"].keys()
+            SplitFullName(dataset=parquet_file["dataset"], config=parquet_file["config"], split=parquet_file["split"])
+            for parquet_file in content["parquet_files"]
         }

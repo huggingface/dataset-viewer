@@ -23,9 +23,9 @@ from libcommon.simple_cache import (
 from libcommon.utils import orjson_dumps
 from packaging import version
 
-from datasets_based.config import DatasetsBasedConfig
+from worker.config import DatasetsBasedConfig
 
-GeneralWorkerErrorCode = Literal[
+GeneralJobRunnerErrorCode = Literal[
     "ConfigNotFoundError",
     "NoGitRevisionError",
     "SplitNotFoundError",
@@ -37,8 +37,8 @@ GeneralWorkerErrorCode = Literal[
 ERROR_CODES_TO_RETRY: list[str] = ["ClientConnectionError"]
 
 
-class WorkerError(CustomError):
-    """Base class for worker exceptions."""
+class JobRunnerError(CustomError):
+    """Base class for job runner exceptions."""
 
     def __init__(
         self,
@@ -53,14 +53,14 @@ class WorkerError(CustomError):
         )
 
 
-class GeneralWorkerError(WorkerError):
-    """Base class for worker exceptions."""
+class GeneralJobRunnerError(JobRunnerError):
+    """General class for job runner exceptions."""
 
     def __init__(
         self,
         message: str,
         status_code: HTTPStatus,
-        code: GeneralWorkerErrorCode,
+        code: GeneralJobRunnerErrorCode,
         cause: Optional[BaseException] = None,
         disclose_cause: bool = False,
     ):
@@ -69,7 +69,7 @@ class GeneralWorkerError(WorkerError):
         )
 
 
-class ConfigNotFoundError(GeneralWorkerError):
+class ConfigNotFoundError(GeneralJobRunnerError):
     """Raised when the config does not exist."""
 
     def __init__(self, message: str, cause: Optional[BaseException] = None):
@@ -82,7 +82,7 @@ class ConfigNotFoundError(GeneralWorkerError):
         )
 
 
-class SplitNotFoundError(GeneralWorkerError):
+class SplitNotFoundError(GeneralJobRunnerError):
     """Raised when the split does not exist."""
 
     def __init__(self, message: str, cause: Optional[BaseException] = None):
@@ -95,7 +95,7 @@ class SplitNotFoundError(GeneralWorkerError):
         )
 
 
-class NoGitRevisionError(GeneralWorkerError):
+class NoGitRevisionError(GeneralJobRunnerError):
     """Raised when the git revision returned by huggingface_hub is None."""
 
     def __init__(self, message: str, cause: Optional[BaseException] = None):
@@ -108,7 +108,7 @@ class NoGitRevisionError(GeneralWorkerError):
         )
 
 
-class TooBigContentError(GeneralWorkerError):
+class TooBigContentError(GeneralJobRunnerError):
     """Raised when content size in bytes is bigger than the supported value."""
 
     def __init__(self, message: str, cause: Optional[BaseException] = None):
@@ -121,8 +121,8 @@ class TooBigContentError(GeneralWorkerError):
         )
 
 
-class UnexpectedError(GeneralWorkerError):
-    """Raised when the worker raised an unexpected error."""
+class UnexpectedError(GeneralJobRunnerError):
+    """Raised when the job runner raised an unexpected error."""
 
     def __init__(self, message: str, cause: Optional[BaseException] = None):
         super().__init__(
@@ -135,9 +135,9 @@ class UnexpectedError(GeneralWorkerError):
         logging.error(message, exc_info=cause)
 
 
-class Worker(ABC):
+class JobRunner(ABC):
     """
-    Base class for workers. A worker is a class that processes a job, for a specific processing step.
+    Base class for job runners. A job runner is a class that processes a job, for a specific processing step.
 
     It cannot be instantiated directly, but must be subclassed.
 
@@ -191,15 +191,15 @@ class Worker(ABC):
         self.setup()
 
     def setup(self) -> None:
-        worker_job_type = self.get_job_type()
-        if self.processing_step.job_type != worker_job_type:
+        job_type = self.get_job_type()
+        if self.processing_step.job_type != job_type:
             raise ValueError(
-                f"The processing step's job type is {self.processing_step.job_type}, but the worker only processes"
-                f" {worker_job_type}"
+                f"The processing step's job type is {self.processing_step.job_type}, but the job runner only processes"
+                f" {job_type}"
             )
-        if self.job_type != worker_job_type:
+        if self.job_type != job_type:
             raise ValueError(
-                f"The submitted job type is {self.job_type}, but the worker only processes {worker_job_type}"
+                f"The submitted job type is {self.job_type}, but the job runner only processes {job_type}"
             )
 
     def __str__(self):
@@ -240,16 +240,17 @@ class Worker(ABC):
 
     def compare_major_version(self, other_version: str) -> int:
         """
-        Compare the major version of worker's self version and the other version's.
+        Compare the major version of job runner's self version and the other version's.
 
         Args:
             other_version (:obj:`str`): the other semantic version
 
         Returns:
             :obj:`int`: the difference between the major version of both versions.
-            0 if they are equal. Negative if worker's major version is lower than other_version, positive otherwise.
+            0 if they are equal. Negative if job runner's major version is lower than other_version, positive
+              otherwise.
         Raises:
-            :obj:`ValueError`: if worker's version or other_version is not a valid semantic version.
+            :obj:`ValueError`: if job runner's version or other_version is not a valid semantic version.
         """
         try:
             return version.parse(self.get_version()).major - version.parse(other_version).major
@@ -272,7 +273,7 @@ class Worker(ABC):
         - and a cache entry exists for the dataset
         - and we can get the git commit and it's not None
         - and the cached entry has been created with the same git commit of the dataset repository
-        - and the cached entry has been created with the same major version of the worker
+        - and the cached entry has been created with the same major version of the job runner
         - and the cached entry, if an error, is not among the list of errors that should trigger a retry
 
         Returns:
@@ -294,7 +295,10 @@ class Worker(ABC):
             cached_response["worker_version"] is None
             or self.compare_major_version(cached_response["worker_version"]) != 0
         ):
-            # no worker version in the cache, or the worker has been updated - we process the job to update the cache
+            # no job runner version in the cache, or the job runner has been updated - we process the job to update
+            # the cache
+            # note: the collection field is named "worker_version" for historical reasons, it might be renamed
+            #   "job_runner_version" in the future.
             return False
         try:
             dataset_git_revision = self.get_dataset_git_revision()

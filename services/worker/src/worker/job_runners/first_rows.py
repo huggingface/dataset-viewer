@@ -27,10 +27,15 @@ from libcommon.utils import orjson_dumps
 
 from worker.config import AppConfig, FirstRowsConfig
 from worker.features import get_cell_value
-from worker.worker import ConfigNotFoundError, JobInfo, SplitNotFoundError, WorkerError
-from worker.workers._datasets_based_worker import DatasetsBasedWorker
+from worker.job_runner import (
+    ConfigNotFoundError,
+    JobInfo,
+    JobRunnerError,
+    SplitNotFoundError,
+)
+from worker.job_runners._datasets_based_job_runner import DatasetsBasedJobRunner
 
-FirstRowsWorkerErrorCode = Literal[
+FirstRowsJobRunnerErrorCode = Literal[
     "SplitsNamesError",
     "EmptyDatasetError",
     "InfoError",
@@ -43,14 +48,14 @@ FirstRowsWorkerErrorCode = Literal[
 ]
 
 
-class FirstRowsWorkerError(WorkerError):
+class FirstRowsJobRunnerError(JobRunnerError):
     """Base class for exceptions in this module."""
 
     def __init__(
         self,
         message: str,
         status_code: HTTPStatus,
-        code: FirstRowsWorkerErrorCode,
+        code: FirstRowsJobRunnerErrorCode,
         cause: Optional[BaseException] = None,
         disclose_cause: bool = False,
     ):
@@ -59,63 +64,63 @@ class FirstRowsWorkerError(WorkerError):
         )
 
 
-class SplitsNamesError(FirstRowsWorkerError):
+class SplitsNamesError(FirstRowsJobRunnerError):
     """Raised when the split names could not be fetched."""
 
     def __init__(self, message: str, cause: Optional[BaseException] = None):
         super().__init__(message, HTTPStatus.INTERNAL_SERVER_ERROR, "SplitsNamesError", cause, True)
 
 
-class EmptyDatasetError(FirstRowsWorkerError):
+class EmptyDatasetError(FirstRowsJobRunnerError):
     """Raised when the dataset has no data."""
 
     def __init__(self, message: str, cause: Optional[BaseException] = None):
         super().__init__(message, HTTPStatus.INTERNAL_SERVER_ERROR, "EmptyDatasetError", cause, True)
 
 
-class InfoError(FirstRowsWorkerError):
+class InfoError(FirstRowsJobRunnerError):
     """Raised when the info could not be fetched."""
 
     def __init__(self, message: str, cause: Optional[BaseException] = None):
         super().__init__(message, HTTPStatus.INTERNAL_SERVER_ERROR, "InfoError", cause, True)
 
 
-class FeaturesError(FirstRowsWorkerError):
+class FeaturesError(FirstRowsJobRunnerError):
     """Raised when the features could not be fetched."""
 
     def __init__(self, message: str, cause: Optional[BaseException] = None):
         super().__init__(message, HTTPStatus.INTERNAL_SERVER_ERROR, "FeaturesError", cause, True)
 
 
-class StreamingRowsError(FirstRowsWorkerError):
+class StreamingRowsError(FirstRowsJobRunnerError):
     """Raised when the rows could not be fetched in streaming mode."""
 
     def __init__(self, message: str, cause: Optional[BaseException] = None):
         super().__init__(message, HTTPStatus.INTERNAL_SERVER_ERROR, "StreamingRowsError", cause, True)
 
 
-class NormalRowsError(FirstRowsWorkerError):
+class NormalRowsError(FirstRowsJobRunnerError):
     """Raised when the rows could not be fetched in normal mode."""
 
     def __init__(self, message: str, cause: Optional[BaseException] = None):
         super().__init__(message, HTTPStatus.INTERNAL_SERVER_ERROR, "NormalRowsError", cause, True)
 
 
-class RowsPostProcessingError(FirstRowsWorkerError):
+class RowsPostProcessingError(FirstRowsJobRunnerError):
     """Raised when the rows could not be post-processed successfully."""
 
     def __init__(self, message: str, cause: Optional[BaseException] = None):
         super().__init__(message, HTTPStatus.INTERNAL_SERVER_ERROR, "RowsPostProcessingError", cause, False)
 
 
-class TooManyColumnsError(FirstRowsWorkerError):
+class TooManyColumnsError(FirstRowsJobRunnerError):
     """Raised when the dataset exceeded the max number of columns."""
 
     def __init__(self, message: str, cause: Optional[BaseException] = None):
         super().__init__(message, HTTPStatus.INTERNAL_SERVER_ERROR, "TooManyColumnsError", cause, True)
 
 
-class TooBigContentError(FirstRowsWorkerError):
+class TooBigContentError(FirstRowsJobRunnerError):
     """Raised when the first rows content exceeded the max size of bytes."""
 
     def __init__(self, message: str, cause: Optional[BaseException] = None):
@@ -440,23 +445,23 @@ def compute_first_rows_response(
         [`FirstRowsResponse`]: The list of first rows of the split.
     <Tip>
     Raises the following errors:
-        - [`libcommon.worker.ConfigNotFoundError`]
+        - [`~job_runner.ConfigNotFoundError`]
           If the config does not exist in the dataset.
-        - [`libcommon.worker.SplitNotFoundError`]
+        - [`~job_runner.SplitNotFoundError`]
           If the split does not exist in the dataset.
-        - [`~workers.first_rows.InfoError`]
+        - [`~job_runners.first_rows.InfoError`]
           If the config info could not be obtained using the datasets library.
-        - [`~workers.first_rows.FeaturesError`]
+        - [`~job_runners.first_rows.FeaturesError`]
           If the split features could not be obtained using the datasets library.
-        - [`~workers.first_rows.StreamingRowsError`]
+        - [`~job_runners.first_rows.StreamingRowsError`]
           If the split rows could not be obtained using the datasets library in streaming mode.
-        - [`~workers.first_rows.NormalRowsError`]
+        - [`~job_runners.first_rows.NormalRowsError`]
           If the split rows could not be obtained using the datasets library in normal mode.
-        - [`~workers.first_rows.RowsPostProcessingError`]
+        - [`~job_runners.first_rows.RowsPostProcessingError`]
           If the post-processing of the split rows failed, e.g. while saving the images or audio files to the assets.
-        - [`~workers.first_rows.TooManyColumnsError`]
+        - [`~job_runners.first_rows.TooManyColumnsError`]
           If the number of columns (features) exceeds the maximum supported number of columns.
-        - [`~workers.first_rows.TooBigContentError`]
+        - [`~job_runners.first_rows.TooBigContentError`]
           If the first rows content exceeds the maximum supported size of bytes.
     </Tip>
     """
@@ -602,7 +607,7 @@ def compute_first_rows_response(
     return response
 
 
-class FirstRowsWorker(DatasetsBasedWorker):
+class FirstRowsJobRunner(DatasetsBasedJobRunner):
     assets_directory: StrPath
     first_rows_config: FirstRowsConfig
 

@@ -14,17 +14,17 @@ from libcommon.processing_graph import ProcessingStep
 from libcommon.storage import init_dir, remove_dir
 
 from worker.config import AppConfig, DatasetsBasedConfig
-from worker.worker import JobInfo, Worker
+from worker.job_runner import JobInfo, JobRunner
 
 
-class DatasetsBasedWorker(Worker):
-    """Base class for workers that use datasets."""
+class DatasetsBasedJobRunner(JobRunner):
+    """Base class for job runners that use datasets."""
 
     datasets_based_config: DatasetsBasedConfig
     base_datasets_cache: Path
 
     # the datasets library cache directories (for data, downloads, extraction, NOT for modules)
-    # the worker should have only one running job at the same time, then it should
+    # the job runner should have only one running job at the same time, then it should
     # be safe to use a global variable (and to set the datasets cache globally)
     datasets_cache: Optional[Path] = None
 

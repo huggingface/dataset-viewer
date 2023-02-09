@@ -9,20 +9,20 @@ from datasets import get_dataset_config_names
 from datasets.data_files import EmptyDatasetError as _EmptyDatasetError
 from libcommon.simple_cache import SplitFullName
 
-from worker.worker import WorkerError
-from worker.workers._datasets_based_worker import DatasetsBasedWorker
+from worker.job_runner import JobRunnerError
+from worker.job_runners._datasets_based_job_runner import DatasetsBasedJobRunner
 
-ConfigNamesWorkerErrorCode = Literal["EmptyDatasetError", "ConfigNamesError"]
+ConfigNamesJobRunnerErrorCode = Literal["EmptyDatasetError", "ConfigNamesError"]
 
 
-class ConfigNamesWorkerError(WorkerError):
-    """Base class for worker exceptions."""
+class ConfigNamesJobRunnerError(JobRunnerError):
+    """Base class for job runner exceptions."""
 
     def __init__(
         self,
         message: str,
         status_code: HTTPStatus,
-        code: ConfigNamesWorkerErrorCode,
+        code: ConfigNamesJobRunnerErrorCode,
         cause: Optional[BaseException] = None,
         disclose_cause: bool = False,
     ):
@@ -31,14 +31,14 @@ class ConfigNamesWorkerError(WorkerError):
         )
 
 
-class EmptyDatasetError(ConfigNamesWorkerError):
+class EmptyDatasetError(ConfigNamesJobRunnerError):
     """Raised when the dataset has no data."""
 
     def __init__(self, message: str, cause: Optional[BaseException] = None):
         super().__init__(message, HTTPStatus.INTERNAL_SERVER_ERROR, "EmptyDatasetError", cause, True)
 
 
-class ConfigNamesError(ConfigNamesWorkerError):
+class ConfigNamesError(ConfigNamesJobRunnerError):
     """Raised when the config names could not be fetched."""
 
     def __init__(self, message: str, cause: Optional[BaseException] = None):
@@ -74,9 +74,9 @@ def compute_config_names_response(
         `ConfigNamesResponseContent`: An object with the list of config names.
     <Tip>
     Raises the following errors:
-        - [`~workers.config_names.EmptyDatasetError`]
+        - [`~job_runners.config_names.EmptyDatasetError`]
           The dataset is empty.
-        - [`~workers.config_names.ConfigNamesError`]
+        - [`~job_runners.config_names.ConfigNamesError`]
           If the list of configs could not be obtained using the datasets library.
     </Tip>
     """
@@ -95,7 +95,7 @@ def compute_config_names_response(
     return {"config_names": config_name_items}
 
 
-class ConfigNamesWorker(DatasetsBasedWorker):
+class ConfigNamesJobRunner(DatasetsBasedJobRunner):
     @staticmethod
     def get_job_type() -> str:
         return "/config-names"

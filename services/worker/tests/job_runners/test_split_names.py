@@ -12,27 +12,27 @@ from libcommon.resources import CacheMongoResource, QueueMongoResource
 from libcommon.simple_cache import DoesNotExist, get_response
 
 from worker.config import AppConfig
+from worker.job_runners.split_names import SplitNamesJobRunner
 from worker.resources import LibrariesResource
-from worker.workers.split_names import SplitNamesWorker
 
 from ..fixtures.hub import HubDatasets, get_default_config_split
 
 
 @pytest.fixture
-def get_worker(
+def get_job_runner(
     libraries_resource: LibrariesResource,
     cache_mongo_resource: CacheMongoResource,
     queue_mongo_resource: QueueMongoResource,
 ):
-    def _get_worker(
+    def _get_job_runner(
         dataset: str,
         config: str,
         app_config: AppConfig,
         force: bool = False,
-    ) -> SplitNamesWorker:
-        return SplitNamesWorker(
+    ) -> SplitNamesJobRunner:
+        return SplitNamesJobRunner(
             job_info={
-                "type": SplitNamesWorker.get_job_type(),
+                "type": SplitNamesJobRunner.get_job_type(),
                 "dataset": dataset,
                 "config": config,
                 "split": None,
@@ -42,7 +42,7 @@ def get_worker(
             },
             app_config=app_config,
             processing_step=ProcessingStep(
-                endpoint=SplitNamesWorker.get_job_type(),
+                endpoint=SplitNamesJobRunner.get_job_type(),
                 input_type="config",
                 requires=None,
                 required_by_dataset_viewer=False,
@@ -53,30 +53,30 @@ def get_worker(
             hf_datasets_cache=libraries_resource.hf_datasets_cache,
         )
 
-    return _get_worker
+    return _get_job_runner
 
 
-def test_process(app_config: AppConfig, get_worker, hub_public_csv: str) -> None:
+def test_process(app_config: AppConfig, get_job_runner, hub_public_csv: str) -> None:
     dataset, config, _ = get_default_config_split(hub_public_csv)
-    worker = get_worker(dataset, config, app_config)
-    assert worker.process() is True
-    cached_response = get_response(kind=worker.processing_step.cache_kind, dataset=hub_public_csv, config=config)
+    job_runner = get_job_runner(dataset, config, app_config)
+    assert job_runner.process() is True
+    cached_response = get_response(kind=job_runner.processing_step.cache_kind, dataset=hub_public_csv, config=config)
     assert cached_response["http_status"] == HTTPStatus.OK
     assert cached_response["error_code"] is None
-    assert cached_response["worker_version"] == worker.get_version()
+    assert cached_response["worker_version"] == job_runner.get_version()
     assert cached_response["dataset_git_revision"] is not None
     assert cached_response["error_code"] is None
     content = cached_response["content"]
     assert len(content["split_names"]) == 1
 
 
-def test_doesnotexist(app_config: AppConfig, get_worker) -> None:
+def test_doesnotexist(app_config: AppConfig, get_job_runner) -> None:
     dataset = "doesnotexist"
     config = "some_config"
-    worker = get_worker(dataset, config, app_config)
-    assert worker.process() is False
+    job_runner = get_job_runner(dataset, config, app_config)
+    assert job_runner.process() is False
     with pytest.raises(DoesNotExist):
-        get_response(kind=worker.processing_step.cache_kind, dataset=dataset, config=config)
+        get_response(kind=job_runner.processing_step.cache_kind, dataset=dataset, config=config)
 
 
 @pytest.mark.parametrize(
@@ -96,7 +96,7 @@ def test_doesnotexist(app_config: AppConfig, get_worker) -> None:
 )
 def test_compute_split_names_response(
     hub_datasets: HubDatasets,
-    get_worker,
+    get_job_runner,
     name: str,
     use_token: bool,
     error_code: str,
@@ -104,20 +104,20 @@ def test_compute_split_names_response(
     app_config: AppConfig,
 ) -> None:
     dataset, config, _ = get_default_config_split(hub_datasets[name]["name"])
-    worker = get_worker(dataset, config, app_config)
+    job_runner = get_job_runner(dataset, config, app_config)
     expected_configs_response = hub_datasets[name]["split_names_response"]
-    worker = get_worker(
+    job_runner = get_job_runner(
         dataset,
         config,
         app_config if use_token else replace(app_config, common=replace(app_config.common, hf_token=None)),
     )
     if error_code is None:
-        result = worker.compute()
+        result = job_runner.compute()
         assert result == expected_configs_response
         return
 
     with pytest.raises(CustomError) as exc_info:
-        worker.compute()
+        job_runner.compute()
     assert exc_info.value.code == error_code
     if cause is None:
         assert exc_info.value.disclose_cause is False

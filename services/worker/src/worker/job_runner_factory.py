@@ -9,40 +9,42 @@ from libcommon.processing_graph import ProcessingGraph
 from libcommon.storage import StrPath
 
 from worker.config import AppConfig, FirstRowsConfig, ParquetAndDatasetInfoConfig
-from worker.worker import JobInfo, Worker
-from worker.workers.config_names import ConfigNamesWorker
-from worker.workers.dataset_info import DatasetInfoWorker
-from worker.workers.first_rows import FirstRowsWorker
-from worker.workers.parquet import ParquetWorker
-from worker.workers.parquet_and_dataset_info import ParquetAndDatasetInfoWorker
-from worker.workers.sizes import SizesWorker
-from worker.workers.split_names import SplitNamesWorker
-from worker.workers.splits import SplitsWorker
+from worker.job_runner import JobInfo, JobRunner
+from worker.job_runners.config_names import ConfigNamesJobRunner
+from worker.job_runners.dataset_info import DatasetInfoJobRunner
+from worker.job_runners.first_rows import FirstRowsJobRunner
+from worker.job_runners.parquet import ParquetJobRunner
+from worker.job_runners.parquet_and_dataset_info import ParquetAndDatasetInfoJobRunner
+from worker.job_runners.sizes import SizesJobRunner
+from worker.job_runners.split_names import SplitNamesJobRunner
+from worker.job_runners.splits import SplitsJobRunner
 
 
-class BaseWorkerFactory(ABC):
+class BaseJobRunnerFactory(ABC):
     """
-    Base class for worker factories. A worker factory is a class that creates a worker.
+    Base class for job runner factories. A job runner factory is a class that creates a job runner.
 
     It cannot be instantiated directly, but must be subclassed.
+
+    Note that this class is only implemented once in the code, but we need it for the tests.
     """
 
-    def create_worker(self, job_info: JobInfo) -> Worker:
-        return self._create_worker(job_info=job_info)
+    def create_job_runner(self, job_info: JobInfo) -> JobRunner:
+        return self._create_job_runner(job_info=job_info)
 
     @abstractmethod
-    def _create_worker(self, job_info: JobInfo) -> Worker:
+    def _create_job_runner(self, job_info: JobInfo) -> JobRunner:
         pass
 
 
 @dataclass
-class WorkerFactory(BaseWorkerFactory):
+class JobRunnerFactory(BaseJobRunnerFactory):
     app_config: AppConfig
     processing_graph: ProcessingGraph
     hf_datasets_cache: Path
     assets_directory: StrPath
 
-    def _create_worker(self, job_info: JobInfo) -> Worker:
+    def _create_job_runner(self, job_info: JobInfo) -> JobRunner:
         job_type = job_info["type"]
         try:
             processing_step = self.processing_graph.get_step_by_job_type(job_type)
@@ -51,30 +53,30 @@ class WorkerFactory(BaseWorkerFactory):
                 f"Unsupported job type: '{job_type}'. The job types declared in the processing graph are:"
                 f" {[step.job_type for step in self.processing_graph.steps.values()]}"
             ) from e
-        if job_type == ConfigNamesWorker.get_job_type():
-            return ConfigNamesWorker(
+        if job_type == ConfigNamesJobRunner.get_job_type():
+            return ConfigNamesJobRunner(
                 job_info=job_info,
                 app_config=self.app_config,
                 processing_step=processing_step,
                 hf_datasets_cache=self.hf_datasets_cache,
             )
-        if job_type == SplitNamesWorker.get_job_type():
-            return SplitNamesWorker(
+        if job_type == SplitNamesJobRunner.get_job_type():
+            return SplitNamesJobRunner(
                 job_info=job_info,
                 app_config=self.app_config,
                 processing_step=processing_step,
                 hf_datasets_cache=self.hf_datasets_cache,
             )
-        if job_type == SplitsWorker.get_job_type():
-            return SplitsWorker(
+        if job_type == SplitsJobRunner.get_job_type():
+            return SplitsJobRunner(
                 job_info=job_info,
                 app_config=self.app_config,
                 processing_step=processing_step,
                 hf_datasets_cache=self.hf_datasets_cache,
             )
-        if job_type == FirstRowsWorker.get_job_type():
+        if job_type == FirstRowsJobRunner.get_job_type():
             first_rows_config = FirstRowsConfig.from_env()
-            return FirstRowsWorker(
+            return FirstRowsJobRunner(
                 job_info=job_info,
                 app_config=self.app_config,
                 processing_step=processing_step,
@@ -82,43 +84,43 @@ class WorkerFactory(BaseWorkerFactory):
                 first_rows_config=first_rows_config,
                 assets_directory=self.assets_directory,
             )
-        if job_type == ParquetAndDatasetInfoWorker.get_job_type():
-            return ParquetAndDatasetInfoWorker(
+        if job_type == ParquetAndDatasetInfoJobRunner.get_job_type():
+            return ParquetAndDatasetInfoJobRunner(
                 job_info=job_info,
                 app_config=self.app_config,
                 processing_step=processing_step,
                 hf_datasets_cache=self.hf_datasets_cache,
                 parquet_and_dataset_info_config=ParquetAndDatasetInfoConfig.from_env(),
             )
-        if job_type == ParquetWorker.get_job_type():
-            return ParquetWorker(
+        if job_type == ParquetJobRunner.get_job_type():
+            return ParquetJobRunner(
                 job_info=job_info,
                 common_config=self.app_config.common,
                 datasets_based_config=self.app_config.datasets_based,
                 processing_step=processing_step,
             )
-        if job_type == DatasetInfoWorker.get_job_type():
-            return DatasetInfoWorker(
+        if job_type == DatasetInfoJobRunner.get_job_type():
+            return DatasetInfoJobRunner(
                 job_info=job_info,
                 common_config=self.app_config.common,
                 datasets_based_config=self.app_config.datasets_based,
                 processing_step=processing_step,
             )
-        if job_type == SizesWorker.get_job_type():
-            return SizesWorker(
+        if job_type == SizesJobRunner.get_job_type():
+            return SizesJobRunner(
                 job_info=job_info,
                 common_config=self.app_config.common,
                 datasets_based_config=self.app_config.datasets_based,
                 processing_step=processing_step,
             )
         supported_job_types = [
-            ConfigNamesWorker.get_job_type(),
-            SplitNamesWorker.get_job_type(),
-            SplitsWorker.get_job_type(),
-            FirstRowsWorker.get_job_type(),
-            ParquetAndDatasetInfoWorker.get_job_type(),
-            ParquetWorker.get_job_type(),
-            DatasetInfoWorker.get_job_type(),
-            SizesWorker.get_job_type(),
+            ConfigNamesJobRunner.get_job_type(),
+            SplitNamesJobRunner.get_job_type(),
+            SplitsJobRunner.get_job_type(),
+            FirstRowsJobRunner.get_job_type(),
+            ParquetAndDatasetInfoJobRunner.get_job_type(),
+            ParquetJobRunner.get_job_type(),
+            DatasetInfoJobRunner.get_job_type(),
+            SizesJobRunner.get_job_type(),
         ]
         raise ValueError(f"Unsupported job type: '{job_type}'. The supported job types are: {supported_job_types}")

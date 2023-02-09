@@ -24,7 +24,7 @@ def get_empty_str_list() -> List[str]:
 
 
 @dataclass(frozen=True)
-class WorkerLoopConfig:
+class LoopConfig:
     max_disk_usage_pct: int = WORKER_LOOP_MAX_DISK_USAGE_PCT
     max_load_pct: int = WORKER_LOOP_MAX_LOAD_PCT
     max_memory_pct: int = WORKER_LOOP_MAX_MEMORY_PCT
@@ -32,7 +32,7 @@ class WorkerLoopConfig:
     storage_paths: List[str] = field(default_factory=get_empty_str_list)
 
     @classmethod
-    def from_env(cls) -> "WorkerLoopConfig":
+    def from_env(cls) -> "LoopConfig":
         env = Env(expand_vars=True)
         with env.prefixed("WORKER_LOOP_"):
             return cls(
@@ -154,7 +154,7 @@ class AppConfig:
     numba: NumbaConfig = field(default_factory=NumbaConfig)
     processing_graph: ProcessingGraphConfig = field(default_factory=ProcessingGraphConfig)
     queue: QueueConfig = field(default_factory=QueueConfig)
-    worker_loop: WorkerLoopConfig = field(default_factory=WorkerLoopConfig)
+    loop: LoopConfig = field(default_factory=LoopConfig)
 
     @classmethod
     def from_env(cls) -> "AppConfig":
@@ -166,5 +166,5 @@ class AppConfig:
             numba=NumbaConfig.from_env(),
             processing_graph=ProcessingGraphConfig.from_env(),
             queue=QueueConfig.from_env(),
-            worker_loop=WorkerLoopConfig.from_env(),
+            loop=LoopConfig.from_env(),
         )

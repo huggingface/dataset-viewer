@@ -29,10 +29,10 @@ from libcommon.processing_graph import ProcessingStep
 from libcommon.simple_cache import SplitFullName
 
 from worker.config import AppConfig, ParquetAndDatasetInfoConfig
-from worker.worker import DatasetNotFoundError, JobInfo, WorkerError
-from worker.workers._datasets_based_worker import DatasetsBasedWorker
+from worker.job_runner import DatasetNotFoundError, JobInfo, JobRunnerError
+from worker.job_runners._datasets_based_job_runner import DatasetsBasedJobRunner
 
-ParquetAndDatasetInfoWorkerErrorCode = Literal[
+ParquetAndDatasetInfoJobRunnerErrorCode = Literal[
     "DatasetRevisionNotFoundError",
     "EmptyDatasetError",
     "ConfigNamesError",
@@ -42,14 +42,14 @@ ParquetAndDatasetInfoWorkerErrorCode = Literal[
 ]
 
 
-class ParquetAndDatasetInfoWorkerError(WorkerError):
+class ParquetAndDatasetInfoJobRunnerError(JobRunnerError):
     """Base class for exceptions in this module."""
 
     def __init__(
         self,
         message: str,
         status_code: HTTPStatus,
-        code: ParquetAndDatasetInfoWorkerErrorCode,
+        code: ParquetAndDatasetInfoJobRunnerErrorCode,
         cause: Optional[BaseException] = None,
         disclose_cause: bool = False,
     ):
@@ -58,42 +58,42 @@ class ParquetAndDatasetInfoWorkerError(WorkerError):
         )
 
 
-class DatasetRevisionNotFoundError(ParquetAndDatasetInfoWorkerError):
+class DatasetRevisionNotFoundError(ParquetAndDatasetInfoJobRunnerError):
     """Raised when the revision of a dataset repository does not exist."""
 
     def __init__(self, message: str, cause: Optional[BaseException] = None):
         super().__init__(message, HTTPStatus.NOT_FOUND, "DatasetRevisionNotFoundError", cause, False)
 
 
-class ConfigNamesError(ParquetAndDatasetInfoWorkerError):
+class ConfigNamesError(ParquetAndDatasetInfoJobRunnerError):
     """Raised when the configuration names could not be fetched."""
 
     def __init__(self, message: str, cause: Optional[BaseException] = None):
         super().__init__(message, HTTPStatus.INTERNAL_SERVER_ERROR, "ConfigNamesError", cause, True)
 
 
-class EmptyDatasetError(ParquetAndDatasetInfoWorkerError):
+class EmptyDatasetError(ParquetAndDatasetInfoJobRunnerError):
     """Raised when the dataset has no data."""
 
     def __init__(self, message: str, cause: Optional[BaseException] = None):
         super().__init__(message, HTTPStatus.INTERNAL_SERVER_ERROR, "EmptyDatasetError", cause, True)
 
 
-class DatasetInBlockListError(ParquetAndDatasetInfoWorkerError):
+class DatasetInBlockListError(ParquetAndDatasetInfoJobRunnerError):
     """Raised when the dataset is in the list of blocked datasets."""
 
     def __init__(self, message: str, cause: Optional[BaseException] = None):
         super().__init__(message, HTTPStatus.NOT_IMPLEMENTED, "DatasetInBlockListError", cause, False)
 
 
-class DatasetTooBigFromHubError(ParquetAndDatasetInfoWorkerError):
+class DatasetTooBigFromHubError(ParquetAndDatasetInfoJobRunnerError):
     """Raised when the dataset size (sum of files on the Hub) is too big."""
 
     def __init__(self, message: str, cause: Optional[BaseException] = None):
         super().__init__(message, HTTPStatus.NOT_IMPLEMENTED, "DatasetTooBigFromHubError", cause, False)
 
 
-class DatasetTooBigFromDatasetsError(ParquetAndDatasetInfoWorkerError):
+class DatasetTooBigFromDatasetsError(ParquetAndDatasetInfoJobRunnerError):
     """Raised when the dataset size (sum of config sizes given by the datasets library) is too big."""
 
     def __init__(self, message: str, cause: Optional[BaseException] = None):
@@ -193,7 +193,7 @@ def raise_if_blocked(
         `None`
     <Tip>
     Raises the following errors:
-        - [`~parquet.worker.DatasetInBlockListError`]
+        - [`~job_runners.parquet_and_dataset_info.DatasetInBlockListError`]
           If the dataset is in the list of blocked datasets.
     </Tip>
     """
@@ -228,10 +228,10 @@ def get_dataset_info_or_raise(
         `DatasetInfo`: The dataset info
     <Tip>
     Raises the following errors:
-        - [`~libcommon.worker.DatasetNotFoundError`]
+        - [`~.job_runner.DatasetNotFoundError`]
           If the repository to download from cannot be found. This may be because it doesn't exist,
           or because it is set to `private` and you do not have access.
-        - [`~parquet.worker.DatasetRevisionNotFoundError`]
+        - [`~job_runners.parquet_and_dataset_info.DatasetRevisionNotFoundError`]
           If the revision does not exist or cannot be accessed using the token.
     </Tip>
     """
@@ -262,7 +262,7 @@ def raise_if_too_big_from_hub(
         `None`
     <Tip>
     Raises the following errors:
-        - [`~parquet.worker.DatasetTooBigFromHubError`]
+        - [`~job_runners.parquet_and_dataset_info.DatasetTooBigFromHubError`]
           If the dataset is too big to be converted to parquet
     </Tip>
     """
@@ -303,7 +303,7 @@ def raise_if_too_big_from_datasets(
     Raises the following errors:
         - [`ValueError`]
             If the datasets.config.HF_ENDPOINT is not set to the expected value
-        - [`~parquet.worker.DatasetTooBigFromDatasetsError`]
+        - [`~job_runners.parquet_and_dataset_info.DatasetTooBigFromDatasetsError`]
             If the dataset is too big to be converted to parquet
     </Tip>
     """
@@ -366,7 +366,7 @@ def raise_if_not_supported(
           (dataset and list of parquet files) and the dataset_git_revision (sha) if any.
     <Tip>
     Raises the following errors:
-        - [`~parquet.worker.DatasetInBlockListError`]
+        - [`~job_runners.parquet_and_dataset_info.DatasetInBlockListError`]
           If the dataset is in the list of blocked datasets.
         - [`~libcommon.dataset.GatedExtraFieldsError`]: if the dataset is gated, with extra fields.
             Programmatic access is not implemented for this type of dataset because there is no easy
@@ -376,13 +376,13 @@ def raise_if_not_supported(
             token does not give the sufficient access to the dataset, or if the dataset is private
             (private datasets are not supported by the datasets server)
         - ['~requests.exceptions.HTTPError']: any other error when asking access
-        - [`~parquet.worker.DatasetRevisionNotFoundError`]
+        - [`~job_runners.parquet_and_dataset_info.DatasetRevisionNotFoundError`]
           If the revision does not exist or cannot be accessed using the token.
-        - [`~parquet.worker.DatasetTooBigFromHubError`]
+        - [`~job_runners.parquet_and_dataset_info.DatasetTooBigFromHubError`]
           If the dataset is too big to be converted to parquet
         - [`ValueError`]
             If the datasets.config.HF_ENDPOINT is not set to the expected value
-        - [`~parquet.worker.DatasetTooBigFromDatasetsError`]
+        - [`~job_runners.parquet_and_dataset_info.DatasetTooBigFromDatasetsError`]
             If the dataset is too big to be converted to parquet
     </Tip>
     """
@@ -472,7 +472,7 @@ def compute_parquet_and_dataset_info_response(
           (dataset info and list of parquet files).
     <Tip>
     Raises the following errors:
-        - [`~workers.parquet_and_dataset_info.DatasetInBlockListError`]
+        - [`~job_runners.parquet_and_dataset_info.DatasetInBlockListError`]
           If the dataset is in the list of blocked datasets.
         - [`libcommon.dataset.GatedExtraFieldsError`]: if the dataset is gated, with extra fields.
             Programmatic access is not implemented for this type of dataset because there is no easy
@@ -483,19 +483,19 @@ def compute_parquet_and_dataset_info_response(
             (private datasets are not supported by the datasets server)
         - ['HTTPError'](https://requests.readthedocs.io/en/latest/api/#requests.HTTPError): any other error when
             asking access
-        - [`~workers.parquet_and_dataset_info.DatasetRevisionNotFoundError`]
+        - [`~job_runners.parquet_and_dataset_info.DatasetRevisionNotFoundError`]
           If the revision does not exist or cannot be accessed using the token.
-        - [`~workers.parquet_and_dataset_info.DatasetTooBigFromHubError`]
+        - [`~job_runners.parquet_and_dataset_info.DatasetTooBigFromHubError`]
           If the dataset is too big to be converted to parquet
         - [`ValueError`](https://docs.python.org/3/library/exceptions.html#ValueError)
             If the datasets.config.HF_ENDPOINT is not set to the expected value
-        - [`~workers.parquet_and_dataset_info.DatasetTooBigFromDatasetsError`]
+        - [`~job_runners.parquet_and_dataset_info.DatasetTooBigFromDatasetsError`]
             If the dataset is too big to be converted to parquet
-        - [`~workers.parquet_and_dataset_info.EmptyDatasetError`]
+        - [`~job_runners.parquet_and_dataset_info.EmptyDatasetError`]
           The dataset is empty.
-        - [`~workers.parquet_and_dataset_info.ConfigNamesError`]
+        - [`~job_runners.parquet_and_dataset_info.ConfigNamesError`]
           If the list of configurations could not be obtained using the datasets library.
-        - [`~workers.parquet_and_dataset_info.DatasetInBlockListError`]
+        - [`~job_runners.parquet_and_dataset_info.DatasetInBlockListError`]
           If the dataset is in the list of blocked datasets.
     </Tip>
     """
@@ -530,7 +530,6 @@ def compute_parquet_and_dataset_info_response(
     parquet_files: List[ParquetFile] = []
     dataset_info: dict[str, Any] = {}
     for config in config_names:
-        # TODO: run the loop in parallel, in different workers? with dagster?
         builder = load_dataset_builder(path=dataset, name=config, revision=source_revision, use_auth_token=hf_token)
         builder.download_and_prepare(file_format="parquet")  # the parquet files are stored in the cache dir
         dataset_info[config] = asdict(builder.info)
@@ -601,7 +600,7 @@ def compute_parquet_and_dataset_info_response(
     }
 
 
-class ParquetAndDatasetInfoWorker(DatasetsBasedWorker):
+class ParquetAndDatasetInfoJobRunner(DatasetsBasedJobRunner):
     parquet_and_dataset_info_config: ParquetAndDatasetInfoConfig
 
     @staticmethod

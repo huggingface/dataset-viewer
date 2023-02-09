@@ -5,14 +5,14 @@ from libcommon.processing_graph import ProcessingStep
 from libcommon.queue import Queue
 from libcommon.resources import CacheMongoResource, QueueMongoResource
 
-from worker.config import AppConfig, DatasetsBasedConfig, WorkerLoopConfig
+from worker.config import AppConfig, DatasetsBasedConfig, LoopConfig
+from worker.job_runner import JobInfo, JobRunner
+from worker.job_runner_factory import BaseJobRunnerFactory
+from worker.loop import Loop
 from worker.resources import LibrariesResource
-from worker.worker import JobInfo, Worker
-from worker.worker_factory import BaseWorkerFactory
-from worker.worker_loop import WorkerLoop
 
 
-class DummyWorker(Worker):
+class DummyJobRunner(JobRunner):
     # override get_dataset_git_revision to avoid making a request to the Hub
     def get_dataset_git_revision(self) -> Optional[str]:
         return "0.1.2"
@@ -29,14 +29,14 @@ class DummyWorker(Worker):
         return {"key": "value"}
 
 
-class DummyWorkerFactory(BaseWorkerFactory):
+class DummyJobRunnerFactory(BaseJobRunnerFactory):
     def __init__(self, processing_step: ProcessingStep) -> None:
         self.common_config = CommonConfig()
         self.datasets_based_config = DatasetsBasedConfig()
         self.processing_step = processing_step
 
-    def _create_worker(self, job_info: JobInfo) -> Worker:
-        return DummyWorker(
+    def _create_job_runner(self, job_info: JobInfo) -> JobRunner:
+        return DummyJobRunner(
             job_info=job_info,
             common_config=self.common_config,
             datasets_based_config=self.datasets_based_config,
@@ -51,19 +51,19 @@ def test_process_next_job(
     cache_mongo_resource: CacheMongoResource,
     queue_mongo_resource: QueueMongoResource,
 ) -> None:
-    worker_factory = DummyWorkerFactory(processing_step=test_processing_step)
+    factory = DummyJobRunnerFactory(processing_step=test_processing_step)
     queue = Queue(type=test_processing_step.endpoint, max_jobs_per_namespace=app_config.queue.max_jobs_per_namespace)
-    worker_loop = WorkerLoop(
+    loop = Loop(
         library_cache_paths=libraries_resource.storage_paths,
         queue=queue,
-        worker_factory=worker_factory,
-        worker_loop_config=WorkerLoopConfig(),
+        job_runner_factory=factory,
+        loop_config=LoopConfig(),
     )
-    assert worker_loop.process_next_job() is False
+    assert loop.process_next_job() is False
     dataset = "dataset"
     config = "config"
     split = "split"
-    worker_loop.queue.upsert_job(dataset=dataset, config=config, split=split)
-    worker_loop.queue.is_job_in_process(dataset=dataset, config=config, split=split) is True
-    assert worker_loop.process_next_job() is True
-    worker_loop.queue.is_job_in_process(dataset=dataset, config=config, split=split) is False
+    loop.queue.upsert_job(dataset=dataset, config=config, split=split)
+    loop.queue.is_job_in_process(dataset=dataset, config=config, split=split) is True
+    assert loop.process_next_job() is True
+    loop.queue.is_job_in_process(dataset=dataset, config=config, split=split) is False

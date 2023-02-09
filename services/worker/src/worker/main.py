@@ -8,9 +8,9 @@ from libcommon.resources import CacheMongoResource, QueueMongoResource
 from libcommon.storage import init_assets_dir
 
 from worker.config import AppConfig
+from worker.job_runner_factory import JobRunnerFactory
+from worker.loop import Loop
 from worker.resources import LibrariesResource
-from worker.worker_factory import WorkerFactory
-from worker.worker_loop import WorkerLoop
 
 if __name__ == "__main__":
     app_config = AppConfig.from_env()
@@ -40,17 +40,17 @@ if __name__ == "__main__":
         if not queue_resource.is_available():
             raise RuntimeError("The connection to the queue database could not be established. Exiting.")
 
-        worker_factory = WorkerFactory(
+        job_runner_factory = JobRunnerFactory(
             app_config=app_config,
             processing_graph=processing_graph,
             hf_datasets_cache=libraries_resource.hf_datasets_cache,
             assets_directory=assets_directory,
         )
         queue = Queue(type=processing_step.job_type, max_jobs_per_namespace=app_config.queue.max_jobs_per_namespace)
-        worker_loop = WorkerLoop(
+        loop = Loop(
             queue=queue,
             library_cache_paths=libraries_resource.storage_paths,
-            worker_factory=worker_factory,
-            worker_loop_config=app_config.worker_loop,
+            job_runner_factory=job_runner_factory,
+            loop_config=app_config.loop,
         )
-        worker_loop.loop()
+        loop.run()

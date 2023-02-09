@@ -11,11 +11,11 @@ from libcommon.resources import CacheMongoResource, QueueMongoResource
 from libcommon.simple_cache import upsert_response
 
 from worker.config import AppConfig
-from worker.workers.sizes import (
+from worker.job_runners.sizes import (
     DatasetNotFoundError,
     PreviousStepFormatError,
     PreviousStepStatusError,
-    SizesWorker,
+    SizesJobRunner,
 )
 
 
@@ -26,18 +26,18 @@ def prepare_and_clean_mongo(app_config: AppConfig) -> None:
 
 
 @pytest.fixture
-def get_worker(
+def get_job_runner(
     cache_mongo_resource: CacheMongoResource,
     queue_mongo_resource: QueueMongoResource,
 ):
-    def _get_worker(
+    def _get_job_runner(
         dataset: str,
         app_config: AppConfig,
         force: bool = False,
-    ) -> SizesWorker:
-        return SizesWorker(
+    ) -> SizesJobRunner:
+        return SizesJobRunner(
             job_info={
-                "type": SizesWorker.get_job_type(),
+                "type": SizesJobRunner.get_job_type(),
                 "dataset": dataset,
                 "config": None,
                 "split": None,
@@ -48,7 +48,7 @@ def get_worker(
             common_config=app_config.common,
             datasets_based_config=app_config.datasets_based,
             processing_step=ProcessingStep(
-                endpoint=SizesWorker.get_job_type(),
+                endpoint=SizesJobRunner.get_job_type(),
                 input_type="dataset",
                 requires=None,
                 required_by_dataset_viewer=False,
@@ -58,7 +58,7 @@ def get_worker(
             ),
         )
 
-    return _get_worker
+    return _get_job_runner
 
 
 @pytest.mark.parametrize(
@@ -240,7 +240,7 @@ def get_worker(
 )
 def test_compute(
     app_config: AppConfig,
-    get_worker,
+    get_job_runner,
     dataset: str,
     upstream_status: HTTPStatus,
     upstream_content: Any,
@@ -251,17 +251,17 @@ def test_compute(
     upsert_response(
         kind="/parquet-and-dataset-info", dataset=dataset, content=upstream_content, http_status=upstream_status
     )
-    worker = get_worker(dataset=dataset, app_config=app_config)
+    job_runner = get_job_runner(dataset=dataset, app_config=app_config)
     if should_raise:
         with pytest.raises(Exception) as e:
-            worker.compute()
+            job_runner.compute()
         assert e.type.__name__ == expected_error_code
     else:
-        assert worker.compute() == expected_content
+        assert job_runner.compute() == expected_content
 
 
-def test_doesnotexist(app_config: AppConfig, get_worker) -> None:
+def test_doesnotexist(app_config: AppConfig, get_job_runner) -> None:
     dataset = "doesnotexist"
-    worker = get_worker(dataset=dataset, app_config=app_config)
+    job_runner = get_job_runner(dataset=dataset, app_config=app_config)
     with pytest.raises(DatasetNotFoundError):
-        worker.compute()
+        job_runner.compute()

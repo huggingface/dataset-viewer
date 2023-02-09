@@ -9,16 +9,16 @@ from dataclasses import dataclass, field
 from libcommon.queue import EmptyQueueError, Queue
 from psutil import cpu_count, disk_usage, getloadavg, swap_memory, virtual_memory
 
-from worker.config import WorkerLoopConfig
-from worker.worker_factory import BaseWorkerFactory
+from worker.config import LoopConfig
+from worker.job_runner_factory import BaseJobRunnerFactory
 
 
 @dataclass
-class WorkerLoop:
+class Loop:
     """
-    A worker loop gets jobs from a queue and processes them.
+    A loop gets jobs from a queue and processes them.
 
-    Once initialized, the worker loop can be started with the `loop` method and will run until an uncaught exception
+    Once initialized, the loop can be started with the `run` method and will run until an uncaught exception
     is raised.
 
     Args:
@@ -26,21 +26,22 @@ class WorkerLoop:
             The paths of the library caches. Used to check if the disk is full.
         queue (`Queue`):
             The job queue.
-        worker_factory (`WorkerFactory`):
-            The worker factory that will create a worker for each job. Must be able to process the jobs of the queue.
-        worker_loop_config (`WorkerLoopConfig`):
-            Worker loop configuration.
+        job_runner_factory (`JobRunnerFactory`):
+            The job runner factory that will create a job runner for each job. Must be able to process the jobs of the
+              queue.
+        loop_config (`LoopConfig`):
+            Loop configuration.
     """
 
     library_cache_paths: set[str]
     queue: Queue
-    worker_factory: BaseWorkerFactory
-    worker_loop_config: WorkerLoopConfig
+    job_runner_factory: BaseJobRunnerFactory
+    loop_config: LoopConfig
 
     storage_paths: set[str] = field(init=False)
 
     def __post_init__(self) -> None:
-        self.storage_paths = set(self.worker_loop_config.storage_paths).union(self.library_cache_paths)
+        self.storage_paths = set(self.loop_config.storage_paths).union(self.library_cache_paths)
 
     def log(self, level: int, msg: str) -> None:
         logging.log(level=level, msg=f"[{self.queue.type}] {msg}")
@@ -58,36 +59,35 @@ class WorkerLoop:
         self.log(level=logging.ERROR, msg=msg)
 
     def has_memory(self) -> bool:
-        if self.worker_loop_config.max_memory_pct <= 0:
+        if self.loop_config.max_memory_pct <= 0:
             return True
         virtual_memory_used: int = virtual_memory().used  # type: ignore
         virtual_memory_total: int = virtual_memory().total  # type: ignore
         percent = (swap_memory().used + virtual_memory_used) / (swap_memory().total + virtual_memory_total)
-        ok = percent < self.worker_loop_config.max_memory_pct
+        ok = percent < self.loop_config.max_memory_pct
         if not ok:
             self.info(
-                f"memory usage (RAM + SWAP) is too high: {percent:.0f}% - max is"
-                f" {self.worker_loop_config.max_memory_pct}%"
+                f"memory usage (RAM + SWAP) is too high: {percent:.0f}% - max is {self.loop_config.max_memory_pct}%"
             )
         return ok
 
     def has_cpu(self) -> bool:
-        if self.worker_loop_config.max_load_pct <= 0:
+        if self.loop_config.max_load_pct <= 0:
             return True
         load_pct = max(getloadavg()[:2]) / cpu_count() * 100
         # ^ only current load and 5m load. 15m load is not relevant to decide to launch a new job
-        ok = load_pct < self.worker_loop_config.max_load_pct
+        ok = load_pct < self.loop_config.max_load_pct
         if not ok:
-            self.info(f"cpu load is too high: {load_pct:.0f}% - max is {self.worker_loop_config.max_load_pct}%")
+            self.info(f"cpu load is too high: {load_pct:.0f}% - max is {self.loop_config.max_load_pct}%")
         return ok
 
     def has_storage(self) -> bool:
-        if self.worker_loop_config.max_disk_usage_pct <= 0:
+        if self.loop_config.max_disk_usage_pct <= 0:
             return True
         for path in self.storage_paths:
             try:
                 usage = disk_usage(path)
-                if usage.percent >= self.worker_loop_config.max_disk_usage_pct:
+                if usage.percent >= self.loop_config.max_disk_usage_pct:
                     return False
             except Exception:
                 # if we can't get the disk usage, we let the process continue
@@ -100,11 +100,11 @@ class WorkerLoop:
     def sleep(self) -> None:
         jitter = 0.75 + random.random() / 2  # nosec
         # ^ between 0.75 and 1.25
-        duration = self.worker_loop_config.sleep_seconds * jitter
+        duration = self.loop_config.sleep_seconds * jitter
         self.debug(f"sleep during {duration:.2f} seconds")
         time.sleep(duration)
 
-    def loop(self) -> None:
+    def run(self) -> None:
         self.info("Worker started")
         try:
             while True:
@@ -121,13 +121,13 @@ class WorkerLoop:
         self.debug("try to process a job")
 
         try:
-            worker = self.worker_factory.create_worker(self.queue.start_job())
-            self.debug(f"job assigned: {worker}")
+            job_runner = self.job_runner_factory.create_job_runner(self.queue.start_job())
+            self.debug(f"job assigned: {job_runner}")
         except EmptyQueueError:
             self.debug("no job in the queue")
             return False
 
-        finished_status = worker.run()
-        self.queue.finish_job(job_id=worker.job_id, finished_status=finished_status)
-        self.debug(f"job finished with {finished_status.value}: {worker}")
+        finished_status = job_runner.run()
+        self.queue.finish_job(job_id=job_runner.job_id, finished_status=finished_status)
+        self.debug(f"job finished with {finished_status.value}: {job_runner}")
         return True

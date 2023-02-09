@@ -14,30 +14,30 @@ from libcommon.simple_cache import DoesNotExist, get_response
 from libcommon.storage import StrPath
 
 from worker.config import AppConfig, FirstRowsConfig
+from worker.job_runners.first_rows import FirstRowsJobRunner, get_json_size
 from worker.resources import LibrariesResource
-from worker.workers.first_rows import FirstRowsWorker, get_json_size
 
 from ..fixtures.hub import HubDatasets, get_default_config_split
 
 
 @pytest.fixture
-def get_worker(
+def get_job_runner(
     assets_directory: StrPath,
     libraries_resource: LibrariesResource,
     cache_mongo_resource: CacheMongoResource,
     queue_mongo_resource: QueueMongoResource,
 ):
-    def _get_worker(
+    def _get_job_runner(
         dataset: str,
         config: str,
         split: str,
         app_config: AppConfig,
         first_rows_config: FirstRowsConfig,
         force: bool = False,
-    ) -> FirstRowsWorker:
-        return FirstRowsWorker(
+    ) -> FirstRowsJobRunner:
+        return FirstRowsJobRunner(
             job_info={
-                "type": FirstRowsWorker.get_job_type(),
+                "type": FirstRowsJobRunner.get_job_type(),
                 "dataset": dataset,
                 "config": config,
                 "split": split,
@@ -47,7 +47,7 @@ def get_worker(
             },
             app_config=app_config,
             processing_step=ProcessingStep(
-                endpoint=FirstRowsWorker.get_job_type(),
+                endpoint=FirstRowsJobRunner.get_job_type(),
                 input_type="split",
                 requires=None,
                 required_by_dataset_viewer=True,
@@ -60,30 +60,34 @@ def get_worker(
             assets_directory=assets_directory,
         )
 
-    return _get_worker
+    return _get_job_runner
 
 
 def test_should_skip_job(
-    app_config: AppConfig, get_worker, first_rows_config: FirstRowsConfig, hub_public_csv: str
+    app_config: AppConfig, get_job_runner, first_rows_config: FirstRowsConfig, hub_public_csv: str
 ) -> None:
     dataset, config, split = get_default_config_split(hub_public_csv)
-    worker = get_worker(dataset, config, split, app_config, first_rows_config)
-    assert worker.should_skip_job() is False
+    job_runner = get_job_runner(dataset, config, split, app_config, first_rows_config)
+    assert job_runner.should_skip_job() is False
     # we add an entry to the cache
-    worker.process()
-    assert worker.should_skip_job() is True
-    worker = get_worker(dataset, config, split, app_config, first_rows_config, force=True)
-    assert worker.should_skip_job() is False
+    job_runner.process()
+    assert job_runner.should_skip_job() is True
+    job_runner = get_job_runner(dataset, config, split, app_config, first_rows_config, force=True)
+    assert job_runner.should_skip_job() is False
 
 
-def test_compute(app_config: AppConfig, get_worker, first_rows_config: FirstRowsConfig, hub_public_csv: str) -> None:
+def test_compute(
+    app_config: AppConfig, get_job_runner, first_rows_config: FirstRowsConfig, hub_public_csv: str
+) -> None:
     dataset, config, split = get_default_config_split(hub_public_csv)
-    worker = get_worker(dataset, config, split, app_config, first_rows_config)
-    assert worker.process() is True
-    cached_response = get_response(kind=worker.processing_step.cache_kind, dataset=dataset, config=config, split=split)
+    job_runner = get_job_runner(dataset, config, split, app_config, first_rows_config)
+    assert job_runner.process() is True
+    cached_response = get_response(
+        kind=job_runner.processing_step.cache_kind, dataset=dataset, config=config, split=split
+    )
     assert cached_response["http_status"] == HTTPStatus.OK
     assert cached_response["error_code"] is None
-    assert cached_response["worker_version"] == worker.get_version()
+    assert cached_response["worker_version"] == job_runner.get_version()
     assert cached_response["dataset_git_revision"] is not None
     content = cached_response["content"]
     assert content["features"][0]["feature_idx"] == 0
@@ -94,13 +98,13 @@ def test_compute(app_config: AppConfig, get_worker, first_rows_config: FirstRows
     assert content["features"][2]["type"]["dtype"] == "float64"  # <-|
 
 
-def test_doesnotexist(app_config: AppConfig, get_worker, first_rows_config: FirstRowsConfig) -> None:
+def test_doesnotexist(app_config: AppConfig, get_job_runner, first_rows_config: FirstRowsConfig) -> None:
     dataset = "doesnotexist"
     dataset, config, split = get_default_config_split(dataset)
-    worker = get_worker(dataset, config, split, app_config, first_rows_config)
-    assert worker.process() is False
+    job_runner = get_job_runner(dataset, config, split, app_config, first_rows_config)
+    assert job_runner.process() is False
     with pytest.raises(DoesNotExist):
-        get_response(kind=worker.processing_step.cache_kind, dataset=dataset, config=config, split=split)
+        get_response(kind=job_runner.processing_step.cache_kind, dataset=dataset, config=config, split=split)
 
 
 @pytest.mark.parametrize(
@@ -123,7 +127,7 @@ def test_doesnotexist(app_config: AppConfig, get_worker, first_rows_config: Firs
 )
 def test_number_rows(
     hub_datasets: HubDatasets,
-    get_worker,
+    get_job_runner,
     name: str,
     use_token: bool,
     error_code: str,
@@ -140,7 +144,7 @@ def test_number_rows(
     dataset = hub_datasets[name]["name"]
     expected_first_rows_response = hub_datasets[name]["first_rows_response"]
     dataset, config, split = get_default_config_split(dataset)
-    worker = get_worker(
+    job_runner = get_job_runner(
         dataset,
         config,
         split,
@@ -148,11 +152,11 @@ def test_number_rows(
         first_rows_config,
     )
     if error_code is None:
-        result = worker.compute()
+        result = job_runner.compute()
         assert result == expected_first_rows_response
         return
     with pytest.raises(CustomError) as exc_info:
-        worker.compute()
+        job_runner.compute()
     assert exc_info.value.code == error_code
     if cause is None:
         assert exc_info.value.disclose_cause is False
@@ -184,7 +188,7 @@ def test_number_rows(
 )
 def test_truncation(
     hub_datasets: HubDatasets,
-    get_worker,
+    get_job_runner,
     app_config: AppConfig,
     first_rows_config: FirstRowsConfig,
     name: str,
@@ -193,7 +197,7 @@ def test_truncation(
     error_code: str,
 ) -> None:
     dataset, config, split = get_default_config_split(hub_datasets[name]["name"])
-    worker = get_worker(
+    job_runner = get_job_runner(
         dataset,
         config,
         split,
@@ -210,8 +214,8 @@ def test_truncation(
 
     if error_code:
         with pytest.raises(CustomError) as error_info:
-            worker.compute()
+            job_runner.compute()
         assert error_info.value.code == error_code
     else:
-        response = worker.compute()
+        response = job_runner.compute()
         assert get_json_size(response) <= rows_max_bytes

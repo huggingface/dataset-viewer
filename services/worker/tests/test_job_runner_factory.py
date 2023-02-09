@@ -9,9 +9,9 @@ from libcommon.queue import Priority
 from libcommon.storage import StrPath
 
 from worker.config import AppConfig
+from worker.job_runner import JobInfo
+from worker.job_runner_factory import JobRunnerFactory
 from worker.resources import LibrariesResource
-from worker.worker import JobInfo
-from worker.worker_factory import WorkerFactory
 
 
 @pytest.fixture()
@@ -20,27 +20,27 @@ def processing_graph(app_config: AppConfig) -> ProcessingGraph:
 
 
 @pytest.mark.parametrize(
-    "job_type,expected_worker",
+    "job_type,expected_job_runner",
     [
-        ("/config-names", "ConfigNamesWorker"),
-        ("/splits", "SplitsWorker"),
-        ("/first-rows", "FirstRowsWorker"),
-        ("/parquet-and-dataset-info", "ParquetAndDatasetInfoWorker"),
-        ("/parquet", "ParquetWorker"),
-        ("/dataset-info", "DatasetInfoWorker"),
-        ("/sizes", "SizesWorker"),
+        ("/config-names", "ConfigNamesJobRunner"),
+        ("/splits", "SplitsJobRunner"),
+        ("/first-rows", "FirstRowsJobRunner"),
+        ("/parquet-and-dataset-info", "ParquetAndDatasetInfoJobRunner"),
+        ("/parquet", "ParquetJobRunner"),
+        ("/dataset-info", "DatasetInfoJobRunner"),
+        ("/sizes", "SizesJobRunner"),
         ("/unknown", None),
     ],
 )
-def test_create_worker(
+def test_create_job_runner(
     app_config: AppConfig,
     processing_graph: ProcessingGraph,
     libraries_resource: LibrariesResource,
     assets_directory: StrPath,
     job_type: str,
-    expected_worker: Optional[str],
+    expected_job_runner: Optional[str],
 ) -> None:
-    worker_factory = WorkerFactory(
+    factory = JobRunnerFactory(
         app_config=app_config,
         processing_graph=processing_graph,
         hf_datasets_cache=libraries_resource.hf_datasets_cache,
@@ -55,9 +55,9 @@ def test_create_worker(
         "force": False,
         "priority": Priority.NORMAL,
     }
-    if expected_worker is None:
+    if expected_job_runner is None:
         with pytest.raises(ValueError):
-            worker_factory.create_worker(job_info=job_info)
+            factory.create_job_runner(job_info=job_info)
     else:
-        worker = worker_factory.create_worker(job_info=job_info)
-        assert worker.__class__.__name__ == expected_worker
+        job_runner = factory.create_job_runner(job_info=job_info)
+        assert job_runner.__class__.__name__ == expected_job_runner

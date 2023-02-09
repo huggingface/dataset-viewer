@@ -12,26 +12,26 @@ from libcommon.resources import CacheMongoResource, QueueMongoResource
 from libcommon.simple_cache import DoesNotExist, get_response
 
 from worker.config import AppConfig
+from worker.job_runners.config_names import ConfigNamesJobRunner
 from worker.resources import LibrariesResource
-from worker.workers.splits import SplitsWorker
 
 from ..fixtures.hub import HubDatasets
 
 
 @pytest.fixture
-def get_worker(
+def get_job_runner(
     libraries_resource: LibrariesResource,
     cache_mongo_resource: CacheMongoResource,
     queue_mongo_resource: QueueMongoResource,
 ):
-    def _get_worker(
+    def _get_job_runner(
         dataset: str,
         app_config: AppConfig,
         force: bool = False,
-    ) -> SplitsWorker:
-        return SplitsWorker(
+    ) -> ConfigNamesJobRunner:
+        return ConfigNamesJobRunner(
             job_info={
-                "type": SplitsWorker.get_job_type(),
+                "type": ConfigNamesJobRunner.get_job_type(),
                 "dataset": dataset,
                 "config": None,
                 "split": None,
@@ -41,10 +41,10 @@ def get_worker(
             },
             app_config=app_config,
             processing_step=ProcessingStep(
-                endpoint=SplitsWorker.get_job_type(),
+                endpoint=ConfigNamesJobRunner.get_job_type(),
                 input_type="dataset",
                 requires=None,
-                required_by_dataset_viewer=True,
+                required_by_dataset_viewer=False,
                 parent=None,
                 ancestors=[],
                 children=[],
@@ -52,41 +52,40 @@ def get_worker(
             hf_datasets_cache=libraries_resource.hf_datasets_cache,
         )
 
-    return _get_worker
+    return _get_job_runner
 
 
-def should_skip_job(app_config: AppConfig, hub_public_csv: str, get_worker) -> None:
+def test_should_skip_job(app_config: AppConfig, hub_public_csv: str, get_job_runner) -> None:
     dataset = hub_public_csv
-    worker = get_worker(dataset, app_config)
-    assert worker.should_skip_job() is False
+    job_runner = get_job_runner(dataset, app_config)
+    assert job_runner.should_skip_job() is False
     # we add an entry to the cache
-    worker.process()
-    assert worker.should_skip_job() is True
-    worker = get_worker(dataset, app_config, force=True)
-    assert worker.should_skip_job() is False
+    job_runner.process()
+    assert job_runner.should_skip_job() is True
+    job_runner = get_job_runner(dataset, app_config, force=True)
+    assert job_runner.should_skip_job() is False
 
 
-def test_process(app_config: AppConfig, hub_public_csv: str, get_worker) -> None:
+def test_process(app_config: AppConfig, hub_public_csv: str, get_job_runner) -> None:
     dataset = hub_public_csv
-    worker = get_worker(dataset, app_config)
-    assert worker.process() is True
-    cached_response = get_response(kind=worker.processing_step.cache_kind, dataset=hub_public_csv)
+    job_runner = get_job_runner(dataset, app_config)
+    assert job_runner.process() is True
+    cached_response = get_response(kind=job_runner.processing_step.cache_kind, dataset=hub_public_csv)
     assert cached_response["http_status"] == HTTPStatus.OK
     assert cached_response["error_code"] is None
-    assert cached_response["worker_version"] == worker.get_version()
+    assert cached_response["worker_version"] == job_runner.get_version()
     assert cached_response["dataset_git_revision"] is not None
     assert cached_response["error_code"] is None
     content = cached_response["content"]
-    assert len(content["splits"]) == 1
-    assert "stats" not in content["splits"][0]
+    assert len(content["config_names"]) == 1
 
 
-def test_doesnotexist(app_config: AppConfig, get_worker) -> None:
+def test_doesnotexist(app_config: AppConfig, get_job_runner) -> None:
     dataset = "doesnotexist"
-    worker = get_worker(dataset, app_config)
-    assert worker.process() is False
+    job_runner = get_job_runner(dataset, app_config)
+    assert job_runner.process() is False
     with pytest.raises(DoesNotExist):
-        get_response(kind=worker.processing_step.cache_kind, dataset=dataset)
+        get_response(kind=job_runner.processing_step.cache_kind, dataset=dataset)
 
 
 @pytest.mark.parametrize(
@@ -99,14 +98,14 @@ def test_doesnotexist(app_config: AppConfig, get_worker) -> None:
         ("empty", False, "EmptyDatasetError", "EmptyDatasetError"),
         # should we really test the following cases?
         # The assumption is that the dataset exists and is accessible with the token
-        ("does_not_exist", False, "SplitsNamesError", "FileNotFoundError"),
-        ("gated", False, "SplitsNamesError", "FileNotFoundError"),
-        ("private", False, "SplitsNamesError", "FileNotFoundError"),
+        ("does_not_exist", False, "ConfigNamesError", "FileNotFoundError"),
+        ("gated", False, "ConfigNamesError", "FileNotFoundError"),
+        ("private", False, "ConfigNamesError", "FileNotFoundError"),
     ],
 )
 def test_compute_splits_response_simple_csv(
     hub_datasets: HubDatasets,
-    get_worker,
+    get_job_runner,
     name: str,
     use_token: bool,
     error_code: str,
@@ -114,18 +113,18 @@ def test_compute_splits_response_simple_csv(
     app_config: AppConfig,
 ) -> None:
     dataset = hub_datasets[name]["name"]
-    expected_splits_response = hub_datasets[name]["splits_response"]
-    worker = get_worker(
+    expected_configs_response = hub_datasets[name]["config_names_response"]
+    job_runner = get_job_runner(
         dataset,
         app_config if use_token else replace(app_config, common=replace(app_config.common, hf_token=None)),
     )
     if error_code is None:
-        result = worker.compute()
-        assert result == expected_splits_response
+        result = job_runner.compute()
+        assert result == expected_configs_response
         return
 
     with pytest.raises(CustomError) as exc_info:
-        worker.compute()
+        job_runner.compute()
     assert exc_info.value.code == error_code
     if cause is None:
         assert exc_info.value.disclose_cause is False

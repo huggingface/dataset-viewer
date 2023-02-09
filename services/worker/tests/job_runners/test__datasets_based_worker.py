@@ -15,17 +15,17 @@ from libcommon.resources import CacheMongoResource, QueueMongoResource
 from libcommon.simple_cache import get_response
 
 from worker.config import AppConfig
+from worker.job_runners._datasets_based_job_runner import DatasetsBasedJobRunner
 from worker.resources import LibrariesResource
-from worker.workers._datasets_based_worker import DatasetsBasedWorker
 
 from ..fixtures.hub import HubDatasets, get_default_config_split
 
 
-class DummyWorker(DatasetsBasedWorker):
+class DummyJobRunner(DatasetsBasedJobRunner):
     @staticmethod
     def get_job_type() -> str:
         return "/splits"
-        # ^ borrowing the endpoint, so that the processing step exists and the worker can be initialized
+        # ^ borrowing the endpoint, so that the processing step exists and the job runner can be initialized
         # refactoring libcommon.processing_graph might help avoiding this
 
     @staticmethod
@@ -40,21 +40,21 @@ class DummyWorker(DatasetsBasedWorker):
 
 
 @pytest.fixture
-def get_worker(
+def get_job_runner(
     libraries_resource: LibrariesResource,
     cache_mongo_resource: CacheMongoResource,
     queue_mongo_resource: QueueMongoResource,
 ):
-    def _get_worker(
+    def _get_job_runner(
         dataset: str,
         config: Optional[str],
         split: Optional[str],
         app_config: AppConfig,
         force: bool = False,
-    ) -> DummyWorker:
-        return DummyWorker(
+    ) -> DummyJobRunner:
+        return DummyJobRunner(
             job_info={
-                "type": DummyWorker.get_job_type(),
+                "type": DummyJobRunner.get_job_type(),
                 "dataset": dataset,
                 "config": config,
                 "split": split,
@@ -64,7 +64,7 @@ def get_worker(
             },
             app_config=app_config,
             processing_step=ProcessingStep(
-                endpoint=DummyWorker.get_job_type(),
+                endpoint=DummyJobRunner.get_job_type(),
                 input_type="split",
                 requires=None,
                 required_by_dataset_viewer=False,
@@ -75,15 +75,15 @@ def get_worker(
             hf_datasets_cache=libraries_resource.hf_datasets_cache,
         )
 
-    return _get_worker
+    return _get_job_runner
 
 
-def test_version(app_config: AppConfig, get_worker) -> None:
+def test_version(app_config: AppConfig, get_job_runner) -> None:
     dataset, config, split = get_default_config_split("dataset")
-    worker = get_worker(dataset, config, split, app_config)
-    assert len(worker.get_version().split(".")) == 3
-    assert worker.compare_major_version(other_version="0.0.0") > 0
-    assert worker.compare_major_version(other_version="1000.0.0") < 0
+    job_runner = get_job_runner(dataset, config, split, app_config)
+    assert len(job_runner.get_version().split(".")) == 3
+    assert job_runner.compare_major_version(other_version="0.0.0") > 0
+    assert job_runner.compare_major_version(other_version="1000.0.0") < 0
 
 
 @pytest.mark.parametrize(
@@ -108,7 +108,7 @@ def test_version(app_config: AppConfig, get_worker) -> None:
 )
 def test_get_cache_subdirectory(
     app_config: AppConfig,
-    get_worker,
+    get_job_runner,
     dataset: str,
     config: Optional[str],
     split: Optional[str],
@@ -116,43 +116,43 @@ def test_get_cache_subdirectory(
     expected: str,
 ) -> None:
     date = datetime(2022, 11, 7, 12, 34, 56)
-    worker = get_worker(dataset, config, split, app_config, force=force)
-    assert worker.get_cache_subdirectory(date=date) == expected
+    job_runner = get_job_runner(dataset, config, split, app_config, force=force)
+    assert job_runner.get_cache_subdirectory(date=date) == expected
 
 
-def test_set_and_unset_datasets_cache(app_config: AppConfig, get_worker) -> None:
+def test_set_and_unset_datasets_cache(app_config: AppConfig, get_job_runner) -> None:
     dataset, config, split = get_default_config_split("dataset")
-    worker = get_worker(dataset, config, split, app_config)
-    base_path = worker.base_datasets_cache
+    job_runner = get_job_runner(dataset, config, split, app_config)
+    base_path = job_runner.base_datasets_cache
     dummy_path = base_path / "dummy"
-    worker.set_datasets_cache(dummy_path)
+    job_runner.set_datasets_cache(dummy_path)
     assert_datasets_cache_path(path=dummy_path, exists=True)
-    worker.unset_datasets_cache()
+    job_runner.unset_datasets_cache()
     assert_datasets_cache_path(path=base_path, exists=True)
 
 
-def test_set_and_unset_cache(app_config: AppConfig, get_worker) -> None:
+def test_set_and_unset_cache(app_config: AppConfig, get_job_runner) -> None:
     dataset, config, split = get_default_config_split("user/dataset")
-    worker = get_worker(dataset, config, split, app_config)
-    datasets_base_path = worker.base_datasets_cache
-    worker.set_cache()
+    job_runner = get_job_runner(dataset, config, split, app_config)
+    datasets_base_path = job_runner.base_datasets_cache
+    job_runner.set_cache()
     assert str(datasets.config.HF_DATASETS_CACHE).startswith(str(datasets_base_path))
     assert "-splits-user-dataset" in str(datasets.config.HF_DATASETS_CACHE)
-    worker.unset_cache()
+    job_runner.unset_cache()
     assert_datasets_cache_path(path=datasets_base_path, exists=True)
 
 
 @pytest.mark.parametrize("config", ["raise", "dont_raise"])
-def test_process(app_config: AppConfig, get_worker, hub_public_csv: str, config: str) -> None:
+def test_process(app_config: AppConfig, get_job_runner, hub_public_csv: str, config: str) -> None:
     # ^ this test requires an existing dataset, otherwise .process fails before setting the cache
     # it must work in both cases: when the job fails and when it succeeds
     dataset = hub_public_csv
     split = "split"
-    worker = get_worker(dataset, config, split, app_config)
-    datasets_base_path = worker.base_datasets_cache
+    job_runner = get_job_runner(dataset, config, split, app_config)
+    datasets_base_path = job_runner.base_datasets_cache
     # the datasets library sets the cache to its own default
     assert_datasets_cache_path(path=datasets_base_path, exists=False, equals=False)
-    result = worker.process()
+    result = job_runner.process()
     assert result is (config != "raise")
     # the configured cache is now set (after having deleted a subdirectory used for the job)
     assert_datasets_cache_path(path=datasets_base_path, exists=True)
@@ -165,9 +165,9 @@ def assert_datasets_cache_path(path: Path, exists: bool, equals: bool = True) ->
     assert (datasets.config.EXTRACTED_DATASETS_PATH == path / datasets.config.EXTRACTED_DATASETS_DIR) is equals
 
 
-def test_process_big_content(hub_datasets: HubDatasets, app_config: AppConfig, get_worker) -> None:
+def test_process_big_content(hub_datasets: HubDatasets, app_config: AppConfig, get_job_runner) -> None:
     dataset, config, split = get_default_config_split(hub_datasets["big"]["name"])
-    worker = get_worker(
+    worker = get_job_runner(
         dataset,
         config,
         split,

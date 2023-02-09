@@ -9,23 +9,23 @@ from datasets import get_dataset_split_names
 from datasets.data_files import EmptyDatasetError as _EmptyDatasetError
 from libcommon.simple_cache import SplitFullName
 
-from worker.worker import WorkerError
-from worker.workers._datasets_based_worker import DatasetsBasedWorker
+from worker.job_runner import JobRunnerError
+from worker.job_runners._datasets_based_job_runner import DatasetsBasedJobRunner
 
-SplitNamesWorkerErrorCode = Literal[
+SplitNamesJobRunnerErrorCode = Literal[
     "EmptyDatasetError",
     "SplitNamesError",
 ]
 
 
-class SplitNamesWorkerError(WorkerError):
-    """Base class for worker exceptions."""
+class SplitNamesJobRunnerError(JobRunnerError):
+    """Base class for split names job runner exceptions."""
 
     def __init__(
         self,
         message: str,
         status_code: HTTPStatus,
-        code: SplitNamesWorkerErrorCode,
+        code: SplitNamesJobRunnerErrorCode,
         cause: Optional[BaseException] = None,
         disclose_cause: bool = False,
     ):
@@ -34,14 +34,14 @@ class SplitNamesWorkerError(WorkerError):
         )
 
 
-class SplitNamesError(SplitNamesWorkerError):
+class SplitNamesError(SplitNamesJobRunnerError):
     """Raised when the split names could not be fetched."""
 
     def __init__(self, message: str, cause: Optional[BaseException] = None):
         super().__init__(message, HTTPStatus.INTERNAL_SERVER_ERROR, "SplitNamesError", cause, True)
 
 
-class EmptyDatasetError(SplitNamesWorkerError):
+class EmptyDatasetError(SplitNamesJobRunnerError):
     """Raised when the dataset has no data."""
 
     def __init__(self, message: str, cause: Optional[BaseException] = None):
@@ -88,9 +88,9 @@ def compute_split_names_response(
         `SplitNamesResponseContent`: An object with the list of split names for the dataset and config.
     <Tip>
     Raises the following errors:
-        - [`~workers.split_names.EmptyDatasetError`]
+        - [`~job_runners.split_names.EmptyDatasetError`]
           The dataset is empty.
-        - [`~workers.split_names.SplitsNamesError`]
+        - [`~job_runners.split_names.SplitsNamesError`]
           If the list of splits could not be obtained using the datasets library.
     </Tip>
     """
@@ -109,7 +109,7 @@ def compute_split_names_response(
     return {"split_names": split_name_items}
 
 
-class SplitNamesWorker(DatasetsBasedWorker):
+class SplitNamesJobRunner(DatasetsBasedJobRunner):
     @staticmethod
     def get_job_type() -> str:
         return "/split-names"

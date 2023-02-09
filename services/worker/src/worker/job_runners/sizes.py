@@ -8,9 +8,9 @@ from typing import Any, Literal, Mapping, Optional, TypedDict
 from libcommon.dataset import DatasetNotFoundError
 from libcommon.simple_cache import DoesNotExist, SplitFullName, get_response
 
-from worker.worker import Worker, WorkerError
+from worker.job_runner import JobRunner, JobRunnerError
 
-SizesWorkerErrorCode = Literal[
+SizesJobRunnerErrorCode = Literal[
     "PreviousStepStatusError",
     "PreviousStepFormatError",
 ]
@@ -54,14 +54,14 @@ class SizesResponse(TypedDict):
     sizes: SizesContent
 
 
-class SizesWorkerError(WorkerError):
+class SizesJobRunnerError(JobRunnerError):
     """Base class for exceptions in this module."""
 
     def __init__(
         self,
         message: str,
         status_code: HTTPStatus,
-        code: SizesWorkerErrorCode,
+        code: SizesJobRunnerErrorCode,
         cause: Optional[BaseException] = None,
         disclose_cause: bool = False,
     ):
@@ -70,14 +70,14 @@ class SizesWorkerError(WorkerError):
         )
 
 
-class PreviousStepStatusError(SizesWorkerError):
+class PreviousStepStatusError(SizesJobRunnerError):
     """Raised when the previous step gave an error. The job should not have been created."""
 
     def __init__(self, message: str, cause: Optional[BaseException] = None):
         super().__init__(message, HTTPStatus.INTERNAL_SERVER_ERROR, "PreviousStepStatusError", cause, False)
 
 
-class PreviousStepFormatError(SizesWorkerError):
+class PreviousStepFormatError(SizesJobRunnerError):
     """Raised when the content of the previous step has not the expected format."""
 
     def __init__(self, message: str, cause: Optional[BaseException] = None):
@@ -95,9 +95,9 @@ def compute_sizes_response(dataset: str) -> SizesResponse:
         `SizesResponse`: An object with the sizes_response.
     <Tip>
     Raises the following errors:
-        - [`~workers.sizes.PreviousStepStatusError`]
+        - [`~job_runners.sizes.PreviousStepStatusError`]
           If the the previous step gave an error.
-        - [`~workers.sizes.PreviousStepFormatError`]
+        - [`~job_runners.sizes.PreviousStepFormatError`]
             If the content of the previous step has not the expected format
     </Tip>
     """
@@ -169,7 +169,7 @@ def compute_sizes_response(dataset: str) -> SizesResponse:
     }
 
 
-class SizesWorker(Worker):
+class SizesJobRunner(JobRunner):
     @staticmethod
     def get_job_type() -> str:
         return "/sizes"
