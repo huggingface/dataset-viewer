@@ -21,6 +21,6 @@ jobs:
         with:
           workingDirectory: chart
           tailscaleKey: ${{ secrets.TAILSCALE_AUTHKEY }}
-          repository: https://registry.internal.huggingface.tech/chartrepo/charts
+          repository: ${{ secrets.REGISTRY_URL }}/chartrepo/charts
           username: ${{ secrets.REGISTRY_USERNAME }}
           password: ${{ secrets.REGISTRY_PASSWORD }}
