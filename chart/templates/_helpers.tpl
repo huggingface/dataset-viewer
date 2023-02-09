@@ -181,10 +181,21 @@ Datasets Server base url
 {{- end }}
 
 {{/*
+Return the ingress scheme
+*/}}
+{{- define "datasetsServer.ingress.scheme" -}}
+{{- if .Values.global.huggingface.ingress.ssl -}}
+https://
+{{- else -}}
+http://
+{{- end -}}
+{{- end -}}
+
+{{/*
 The assets base URL
 */}}
 {{- define "assets.baseUrl" -}}
-{{- printf "https://%s/assets" (include "datasetsServer.ingress.hostname" .) }}
+{{- printf "%s%s/assets" (include "datasetsServer.ingress.scheme" .) (include "datasetsServer.ingress.hostname" .) }}
 {{- end }}
 
 {{/*

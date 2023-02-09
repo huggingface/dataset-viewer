@@ -12,29 +12,15 @@ jobs:
   publish:
     name: Publish on registry
     runs-on: ubuntu-latest
-    env:
-      HELM_REPO_USERNAME: ${{ secrets.REGISTRY_USERNAME }}
-      HELM_REPO_PASSWORD: ${{ secrets.REGISTRY_PASSWORD }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v3
 
-      - name: Install Helm
-        run: |
-          curl https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
-          helm plugin install https://github.com/chartmuseum/helm-push
-
-      - name: Tailscale
-        uses: tailscale/github-action@v1
+      - name: Helm Publish
+        uses: huggingface/helm-publish-action@latest
         with:
-          authkey: ${{ secrets.TAILSCALE_AUTHKEY }}
-
-      - name: Add repository
-        run: |
-          helm repo add charts ${{ secrets.REGISTRY_URL }}/chartrepo/charts
-
-      - name: Publish
-        run: |
-          cd chart
-          helm dependencies update
-          helm cm-push . charts
+          workingDirectory: chart
+          tailscaleKey: ${{ secrets.TAILSCALE_AUTHKEY }}
+          repository: ${{ secrets.REGISTRY_URL }}/chartrepo/charts
+          username: ${{ secrets.REGISTRY_USERNAME }}
+          password: ${{ secrets.REGISTRY_PASSWORD }}
