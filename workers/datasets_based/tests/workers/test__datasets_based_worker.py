@@ -34,7 +34,7 @@ class DummyWorker(DatasetsBasedWorker):
         if self.config == "raise":
             raise ValueError("This is a test")
         else:
-            return {"col1": ["a" * 10 for _ in range(200)]}
+            return {"col1": "a" * 200}
 
 
 def get_worker(

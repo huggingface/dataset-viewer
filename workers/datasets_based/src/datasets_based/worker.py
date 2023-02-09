@@ -107,7 +107,7 @@ class NoGitRevisionError(GeneralWorkerError):
 
 
 class TooBigContentError(GeneralWorkerError):
-    """Raised when content size in bytest is bigger than the supported value."""
+    """Raised when content size in bytes is bigger than the supported value."""
 
     def __init__(self, message: str, cause: Optional[BaseException] = None):
         super().__init__(
@@ -316,7 +316,7 @@ class Worker(ABC):
                 # Validate content size
                 if len(orjson_dumps(content)) > self.common_config.content_max_size:
                     raise TooBigContentError(
-                        "Could not process content, it exceeds the supported size in bytes"
+                        "The computed response content exceeds the supported size in bytes ({self.common_config.content_max_size})."
                         f" {self.common_config.content_max_size}."
                     )
             finally:
