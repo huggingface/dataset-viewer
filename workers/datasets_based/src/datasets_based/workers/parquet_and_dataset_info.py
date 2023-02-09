@@ -537,7 +537,7 @@ def compute_parquet_and_dataset_info_response(
             name=config,
             revision=source_revision,
             use_auth_token=hf_token,
-            download_config=download_config
+            download_config=download_config,
         )
         builder.download_and_prepare(file_format="parquet")  # the parquet files are stored in the cache dir
         dataset_info[config] = asdict(builder.info)
