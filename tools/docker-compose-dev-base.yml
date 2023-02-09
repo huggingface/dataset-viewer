@@ -26,7 +26,7 @@ services:
     environment:
       # datasets
       DATASETS_BASED_HF_DATASETS_CACHE: ${HF_DATASETS_CACHE-/datasets-cache}
-      DATASETS_BASED_CONTENT_MAX_BYTES: ${CONTENT_MAX_BYTES-10_000_000}
+      DATASETS_BASED_CONTENT_MAX_BYTES: ${DATASETS_BASED_CONTENT_MAX_BYTES-10_000_000}
       HF_MODULES_CACHE: ${HF_DATASETS_CACHE-/modules-cache}
       NUMBA_CACHE_DIR: ${NUMBA_CACHE_DIR-/numba-cache}
     # volumes to local source directory for development
