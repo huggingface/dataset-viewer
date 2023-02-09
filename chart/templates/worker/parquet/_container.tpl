@@ -13,6 +13,8 @@
   {{ include "envQueue" . | nindent 2 }}
   {{ include "envCommon" . | nindent 2 }}
   {{ include "envWorkerLoop" . | nindent 2 }}
+  - name: DATASETS_BASED_CONTENT_MAX_BYTES
+    value: {{ .Values.datasetsBased.contentMaxBytes | quote}}
   - name: QUEUE_MAX_JOBS_PER_NAMESPACE
     # value: {{ .Values.queue.maxJobsPerNamespace | quote }}
     # overridden

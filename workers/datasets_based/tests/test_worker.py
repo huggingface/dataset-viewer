@@ -8,7 +8,7 @@ from libcommon.processing_graph import ProcessingGraph, ProcessingStep
 from libcommon.queue import Priority, Queue, Status
 from libcommon.simple_cache import SplitFullName, upsert_response
 
-from datasets_based.config import AppConfig
+from datasets_based.config import AppConfig, DatasetsBasedConfig
 from datasets_based.worker import ERROR_CODES_TO_RETRY, Worker
 
 
@@ -74,6 +74,7 @@ def test_compare_major_version(
         },
         processing_step=test_processing_step,
         common_config=CommonConfig(),
+        datasets_based_config=DatasetsBasedConfig(),
     )
     if should_raise:
         with pytest.raises(Exception):
@@ -191,6 +192,7 @@ def test_should_skip_job(
         },
         processing_step=test_processing_step,
         common_config=CommonConfig(),
+        datasets_based_config=DatasetsBasedConfig(),
     )
     if cache_entry:
         upsert_response(
@@ -231,6 +233,7 @@ def test_check_type(
             },
             processing_step=test_processing_step,
             common_config=CommonConfig(),
+            datasets_based_config=DatasetsBasedConfig(),
         )
 
     another_processing_step = ProcessingStep(
@@ -255,6 +258,7 @@ def test_check_type(
             },
             processing_step=another_processing_step,
             common_config=CommonConfig(),
+            datasets_based_config=DatasetsBasedConfig(),
         )
 
 
@@ -280,6 +284,7 @@ def test_create_children_jobs() -> None:
         },
         processing_step=root_step,
         common_config=CommonConfig(),
+        datasets_based_config=DatasetsBasedConfig(),
     )
     assert worker.should_skip_job() is False
     # we add an entry to the cache
