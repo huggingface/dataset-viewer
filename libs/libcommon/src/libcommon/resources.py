@@ -43,27 +43,29 @@ class Resource:
 
 
 @dataclass
-class AssetsDirectoryResource(Resource):
+class AssetsStorageAccessResource(Resource):
     """
-    A resource that represents a directory where assets are stored.
+    A resource that represents the access to the assets storage.
 
     The directory is created if it does not exist.
 
+    Note that the directory is meant to be permanent, and is not deleted when the resource is released.
+
     Args:
-        init_storage_directory (:obj:`str`, optional): The path to the directory where assets are stored.
+        init_directory (:obj:`str`, optional): The path to the directory where assets are stored.
             If :obj:`None`, the directory is created in the ``datasets_server_assets`` subdirectory of the
             user cache directory.
 
     Example:
-        >>> with AssetsDirectoryResource("/tmp/assets") as assets_directory_resource:
+        >>> with AssetsStorageAccessResource(init_directory="/tmp/assets") as assets_storage_access:
         ...     pass
     """
 
-    init_storage_directory: Optional[StrPath] = None
-    storage_directory: StrPath = field(init=False)
+    init_directory: Optional[StrPath] = None
+    directory: StrPath = field(init=False)
 
     def allocate(self):
-        self.storage_directory = init_dir(directory=self.init_storage_directory, appname="datasets_server_assets")
+        self.directory = init_dir(directory=self.init_directory, appname="datasets_server_assets")
 
     # no need to implement release() as the directory is not deleted
 

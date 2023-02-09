@@ -6,7 +6,7 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from libcommon.processing_graph import ProcessingGraph
-from libcommon.resources import AssetsDirectoryResource
+from libcommon.resources import AssetsStorageAccessResource
 
 from datasets_based.config import (
     AppConfig,
@@ -77,16 +77,14 @@ class WorkerFactory(BaseWorkerFactory):
             )
         if job_type == FirstRowsWorker.get_job_type():
             first_rows_config = FirstRowsConfig.from_env()
-            with AssetsDirectoryResource(
-                init_storage_directory=first_rows_config.assets.storage_directory
-            ) as resource:
+            with AssetsStorageAccessResource(init_directory=first_rows_config.assets.storage_directory) as resource:
                 return FirstRowsWorker(
                     job_info=job_info,
                     app_config=self.app_config,
                     processing_step=processing_step,
                     hf_datasets_cache=self.hf_datasets_cache,
                     first_rows_config=first_rows_config,
-                    assets_storage_directory=resource.storage_directory,
+                    assets_storage_directory=resource.directory,
                 )
         if job_type == ParquetAndDatasetInfoWorker.get_job_type():
             return ParquetAndDatasetInfoWorker(

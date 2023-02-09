@@ -6,7 +6,7 @@ from typing import Iterator, List
 from libcommon.processing_graph import ProcessingGraph, ProcessingStep
 from libcommon.queue import _clean_queue_database
 from libcommon.resources import (
-    AssetsDirectoryResource,
+    AssetsStorageAccessResource,
     CacheDatabaseResource,
     QueueDatabaseResource,
 )
@@ -47,8 +47,8 @@ def processing_steps(app_config: AppConfig) -> List[ProcessingStep]:
 
 @fixture(scope="session")
 def assets_directory(app_config: AppConfig) -> Iterator[str]:
-    with AssetsDirectoryResource(init_storage_directory=app_config.assets.storage_directory) as resource:
-        yield str(resource.storage_directory)
+    with AssetsStorageAccessResource(init_directory=app_config.assets.storage_directory) as resource:
+        yield str(resource.directory)
 
 
 @fixture(autouse=True)

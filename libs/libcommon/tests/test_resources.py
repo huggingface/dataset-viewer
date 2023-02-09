@@ -9,7 +9,7 @@ from mongoengine import Document
 from mongoengine.fields import StringField
 
 from libcommon.resources import (
-    AssetsDirectoryResource,
+    AssetsStorageAccessResource,
     CacheDatabaseResource,
     LogResource,
     QueueDatabaseResource,
@@ -29,24 +29,24 @@ def test_log_context_manager() -> None:
         # ^ This is a bug, the log level should be set to 10
 
 
-@pytest.mark.parametrize("pass_directory", [True, False])
-def test_assets_directory(tmp_path: Path, pass_directory: bool) -> None:
-    storage_directory = str(tmp_path / "test_assets") if pass_directory else None
-    resource = AssetsDirectoryResource(init_storage_directory=storage_directory)
-    if pass_directory:
-        assert resource.storage_directory == storage_directory
-    assert resource.storage_directory is not None
-    assert Path(resource.storage_directory).exists()
+@pytest.mark.parametrize("with_init", [True, False])
+def test_assets_directory(tmp_path: Path, with_init: bool) -> None:
+    directory = str(tmp_path / "test_assets") if with_init else None
+    resource = AssetsStorageAccessResource(init_directory=directory)
+    if with_init:
+        assert resource.directory == directory
+    assert resource.directory is not None
+    assert Path(resource.directory).exists()
 
 
-@pytest.mark.parametrize("pass_directory", [True, False])
-def test_assets_directory_context_manager(tmp_path: Path, pass_directory: bool) -> None:
-    storage_directory = str(tmp_path / "test_assets") if pass_directory else None
-    with AssetsDirectoryResource(init_storage_directory=storage_directory) as resource:
-        if pass_directory:
-            assert resource.storage_directory == storage_directory
-        assert resource.storage_directory is not None
-        assert Path(resource.storage_directory).exists()
+@pytest.mark.parametrize("with_init", [True, False])
+def test_assets_directory_context_manager(tmp_path: Path, with_init: bool) -> None:
+    directory = str(tmp_path / "test_assets") if with_init else None
+    with AssetsStorageAccessResource(init_directory=directory) as resource:
+        if with_init:
+            assert resource.directory == directory
+        assert resource.directory is not None
+        assert Path(resource.directory).exists()
 
 
 def test_cache_database(cache_mongo_host: str) -> None:

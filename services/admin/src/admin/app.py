@@ -4,7 +4,7 @@
 import uvicorn  # type: ignore
 from libcommon.processing_graph import ProcessingGraph
 from libcommon.resources import (
-    AssetsDirectoryResource,
+    AssetsStorageAccessResource,
     CacheDatabaseResource,
     LogResource,
     QueueDatabaseResource,
@@ -38,17 +38,17 @@ def create_app() -> Starlette:
     processing_steps = list(processing_graph.steps.values())
     init_processing_steps = processing_graph.get_first_steps()
 
-    assets_directory_resource = AssetsDirectoryResource(init_storage_directory=app_config.assets.storage_directory)
+    assets_storage_access_resource = AssetsStorageAccessResource(init_directory=app_config.assets.storage_directory)
     resources: list[Resource] = [
         LogResource(log_level=app_config.common.log_level),
         # ^ first resource to be acquired, in order to have logs as soon as possible
-        assets_directory_resource,
+        assets_storage_access_resource,
         CacheDatabaseResource(database=app_config.cache.mongo_database, host=app_config.cache.mongo_url),
         QueueDatabaseResource(database=app_config.queue.mongo_database, host=app_config.queue.mongo_url),
     ]
 
     prometheus = Prometheus(
-        processing_steps=processing_steps, assets_storage_directory=assets_directory_resource.storage_directory
+        processing_steps=processing_steps, assets_storage_directory=assets_storage_access_resource.directory
     )
 
     middleware = [

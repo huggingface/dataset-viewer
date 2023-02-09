@@ -10,7 +10,7 @@ from libcommon.exceptions import CustomError
 from libcommon.processing_graph import ProcessingStep
 from libcommon.queue import Priority
 from libcommon.resources import (
-    AssetsDirectoryResource,
+    AssetsStorageAccessResource,
     CacheDatabaseResource,
     QueueDatabaseResource,
 )
@@ -37,7 +37,7 @@ def get_worker(
         first_rows_config: FirstRowsConfig,
         force: bool = False,
     ) -> FirstRowsWorker:
-        with AssetsDirectoryResource(init_storage_directory=first_rows_config.assets.storage_directory) as resource:
+        with AssetsStorageAccessResource(init_directory=first_rows_config.assets.storage_directory) as resource:
             return FirstRowsWorker(
                 job_info={
                     "type": FirstRowsWorker.get_job_type(),
@@ -60,7 +60,7 @@ def get_worker(
                 ),
                 hf_datasets_cache=libraries_resource.hf_datasets_cache,
                 first_rows_config=first_rows_config,
-                assets_storage_directory=resource.storage_directory,
+                assets_storage_directory=resource.directory,
             )
 
     return _get_worker

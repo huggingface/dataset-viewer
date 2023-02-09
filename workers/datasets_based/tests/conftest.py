@@ -8,11 +8,12 @@ from libcommon.config import CacheConfig, QueueConfig
 from libcommon.processing_graph import ProcessingStep
 from libcommon.queue import _clean_queue_database
 from libcommon.resources import (
-    AssetsDirectoryResource,
+    AssetsStorageAccessResource,
     CacheDatabaseResource,
     QueueDatabaseResource,
 )
 from libcommon.simple_cache import _clean_cache_database
+from libcommon.storage import StrPath
 from pytest import MonkeyPatch, fixture
 
 from datasets_based.config import AppConfig, FirstRowsConfig
@@ -99,9 +100,9 @@ def first_rows_config(set_env_vars: MonkeyPatch) -> FirstRowsConfig:
 
 
 @fixture
-def assets_directory(first_rows_config: FirstRowsConfig) -> Iterator[AssetsDirectoryResource]:
-    with AssetsDirectoryResource(init_storage_directory=first_rows_config.assets.storage_directory) as resource:
-        yield resource.storage_directory
+def assets_directory(first_rows_config: FirstRowsConfig) -> Iterator[StrPath]:
+    with AssetsStorageAccessResource(init_directory=first_rows_config.assets.storage_directory) as resource:
+        yield resource.directory
 
 
 @fixture()
