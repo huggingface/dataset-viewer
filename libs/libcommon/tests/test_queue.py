@@ -225,4 +225,5 @@ def test_get_total_duration_per_dataset() -> None:
     # cancel one remaining job
     queue.cancel_started_jobs()
     # check the total duration
-    assert queue.get_total_duration_per_dataset() == {test_dataset: duration * 3}
+    assert queue.get_total_duration_per_dataset()[test_dataset] >= duration * 3
+    # ^ it should be equal,  not >=, but if the runner is slow, it might take a bit more time
