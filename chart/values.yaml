@@ -8,6 +8,7 @@ global:
       domain: huggingface.co
       subdomains:
         datasetsServer: datasets-server
+      ssl: true
 
 images:
   pullPolicy: IfNotPresent
@@ -56,9 +57,9 @@ secrets:
     secretName: "mongo-url"
     value: mongo://
   appHfToken:
-    fromSecret: false
+    fromSecret: true
     secretName: ""
-    value: hf_app
+    value: ""
   userHfToken:
     fromSecret: false
     secretName: "hf-token-francky"
