@@ -48,9 +48,10 @@ def update_dataset(
     if do_check_support:
         check_support(dataset=dataset, hf_endpoint=hf_endpoint, hf_token=hf_token)
     logging.debug(f"refresh dataset='{dataset}'")
+    queue = Queue()
     for init_processing_step in init_processing_steps:
         if init_processing_step.input_type == "dataset":
-            Queue(type=init_processing_step.job_type).upsert_job(dataset=dataset, force=force, priority=priority)
+            queue.upsert_job(job_type=init_processing_step.job_type, dataset=dataset, force=force, priority=priority)
 
 
 def delete_dataset(dataset: str) -> None:
@@ -135,8 +136,10 @@ def check_in_process(
         - [`~libcommon.dataset.DatasetError`]: if the dataset could not be accessed or is not supported
     """
     all_steps = processing_step.get_ancestors() + [processing_step]
+    queue = Queue()
     if any(
-        Queue(type=step.job_type).is_job_in_process(dataset=dataset, config=config, split=split) for step in all_steps
+        queue.is_job_in_process(job_type=step.job_type, dataset=dataset, config=config, split=split)
+        for step in all_steps
     ):
         # the processing step, or a previous one, is still being computed
         return

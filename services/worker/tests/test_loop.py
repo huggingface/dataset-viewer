@@ -2,7 +2,6 @@ from typing import Any, Mapping, Optional
 
 from libcommon.config import CommonConfig
 from libcommon.processing_graph import ProcessingStep
-from libcommon.queue import Queue
 from libcommon.resources import CacheMongoResource, QueueMongoResource
 
 from worker.config import AppConfig, WorkerConfig
@@ -52,18 +51,21 @@ def test_process_next_job(
     queue_mongo_resource: QueueMongoResource,
 ) -> None:
     factory = DummyJobRunnerFactory(processing_step=test_processing_step)
-    queue = Queue(type=test_processing_step.endpoint, max_jobs_per_namespace=app_config.queue.max_jobs_per_namespace)
     loop = Loop(
-        library_cache_paths=libraries_resource.storage_paths,
-        queue=queue,
         job_runner_factory=factory,
+        library_cache_paths=libraries_resource.storage_paths,
         worker_config=WorkerConfig(),
+        max_jobs_per_namespace=app_config.queue.max_jobs_per_namespace,
     )
     assert loop.process_next_job() is False
     dataset = "dataset"
     config = "config"
     split = "split"
-    loop.queue.upsert_job(dataset=dataset, config=config, split=split)
-    loop.queue.is_job_in_process(dataset=dataset, config=config, split=split) is True
+    loop.queue.upsert_job(job_type=test_processing_step.job_type, dataset=dataset, config=config, split=split)
+    loop.queue.is_job_in_process(
+        job_type=test_processing_step.job_type, dataset=dataset, config=config, split=split
+    ) is True
     assert loop.process_next_job() is True
-    loop.queue.is_job_in_process(dataset=dataset, config=config, split=split) is False
+    loop.queue.is_job_in_process(
+        job_type=test_processing_step.job_type, dataset=dataset, config=config, split=split
+    ) is False

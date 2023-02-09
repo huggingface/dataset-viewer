@@ -239,3 +239,13 @@ sizes:
     limits:
       cpu: 1
       memory: "4Gi"
+
+genericWorker:
+  replicas: 1
+  resources:
+    requests:
+      cpu: 100m
+      memory: "512Mi"
+    limits:
+      cpu: 1
+      memory: "4Gi"

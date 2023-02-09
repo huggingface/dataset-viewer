@@ -166,6 +166,11 @@ app.kubernetes.io/component: "{{ include "name" . }}-worker-dataset-info"
 app.kubernetes.io/component: "{{ include "name" . }}-worker-sizes"
 {{- end -}}
 
+{{- define "labels.genericWorker" -}}
+{{ include "datasetServer.labels" . }}
+app.kubernetes.io/component: "{{ include "name" . }}-worker-generic"
+{{- end -}}
+
 {{/*
 Return the api ingress anotation
 */}}

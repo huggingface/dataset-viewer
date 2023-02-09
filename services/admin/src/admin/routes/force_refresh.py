@@ -54,7 +54,9 @@ def create_force_refresh_endpoint(
             # if auth_check fails, it will raise an exception that will be caught below
             auth_check(external_auth_url=external_auth_url, request=request, organization=organization)
             check_support(dataset=dataset, hf_endpoint=hf_endpoint, hf_token=hf_token)
-            Queue(type=processing_step.job_type).upsert_job(dataset=dataset, config=config, split=split, force=True)
+            Queue().upsert_job(
+                job_type=processing_step.job_type, dataset=dataset, config=config, split=split, force=True
+            )
             return get_json_ok_response(
                 {"status": "ok"},
                 max_age=0,

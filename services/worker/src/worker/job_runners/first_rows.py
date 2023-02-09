@@ -27,7 +27,12 @@ from libcommon.utils import orjson_dumps
 
 from worker.config import AppConfig, FirstRowsConfig
 from worker.features import get_cell_value
-from worker.job_runner import ConfigNotFoundError, JobInfo, JobRunnerError, SplitNotFoundError
+from worker.job_runner import (
+    ConfigNotFoundError,
+    JobInfo,
+    JobRunnerError,
+    SplitNotFoundError,
+)
 from worker.job_runners._datasets_based_job_runner import DatasetsBasedJobRunner
 
 FirstRowsJobRunnerErrorCode = Literal[

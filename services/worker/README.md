@@ -11,10 +11,10 @@ Use environment variables to configure the worker. The prefix of each environmen
 Set environment variables to configure the worker.
 
 - `WORKER_CONTENT_MAX_BYTES`: the maximum size in bytes of the response content computed by a worker (to prevent returning big responses in the REST API). Defaults to `10_000_000`.
-- `WORKER_ENDPOINT`: the endpoint on which the worker will work (pre-compute and cache the response). The same worker is used for different endpoints to reuse shared code and dependencies. But at runtime, the worker is assigned only one endpoint. Allowed values: `/splits`, `/first_rows`, `/parquet-and-dataset-info`, etc. Defaults to `/splits`.
 - `WORKER_MAX_DISK_USAGE_PCT`: maximum disk usage of every storage disk in the list (in percentage) to allow a job to start. Set to 0 to disable the test. Defaults to 90.
 - `WORKER_MAX_LOAD_PCT`: maximum load of the machine (in percentage: the max between the 1m load and the 5m load divided by the number of CPUs \*100) allowed to start a job. Set to 0 to disable the test. Defaults to 70.
 - `WORKER_MAX_MEMORY_PCT`: maximum memory (RAM + SWAP) usage of the machine (in percentage) allowed to start a job. Set to 0 to disable the test. Defaults to 80.
+- `WORKER_ONLY_JOB_TYPES`: comma-separated list of the job types to process, e.g. "/splits,/first-rows". If empty, the worker processes all the jobs. Defaults to empty.
 - `WORKER_SLEEP_SECONDS`: wait duration in seconds at each loop iteration before checking if resources are available and processing a job if any is available. Note that the loop doesn't wait just after finishing a job: the next job is immediately processed. Defaults to `15`.
 - `WORKER_STORAGE_PATHS`: comma-separated list of paths to check for disk usage. Defaults to empty.
 
@@ -46,8 +46,6 @@ If the Hub is not https://huggingface.co (i.e., if you set the `COMMON_HF_ENDPOI
 
 ### First rows worker
 
-Only needed when the `WORKER_ENDPOINT` is set to `/first-rows`.
-
 Set environment variables to configure the first rows worker (`FIRST_ROWS_` prefix):
 
 - `FIRST_ROWS_MAX_BYTES`: the max size of the /first-rows endpoint response in bytes. Defaults to `1_000_000` (1 MB).
@@ -59,8 +57,6 @@ Set environment variables to configure the first rows worker (`FIRST_ROWS_` pref
 Also, set the assets-related configuration for the first-rows worker. See [../../libs/libcommon/README.md](../../libs/libcommon/README.md).
 
 ### Parquet and dataset info worker
-
-Only needed when the `WORKER_ENDPOINT` is set to `/parquet-and-dataset-info`.
 
 Set environment variables to configure the parquet worker (`PARQUET_AND_DATASET_INFO_` prefix):
 

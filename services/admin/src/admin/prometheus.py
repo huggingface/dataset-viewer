@@ -61,8 +61,9 @@ class Prometheus:
 
     def updateMetrics(self):
         # Queue metrics
+        queue = Queue()
         for processing_step in self.processing_steps:
-            for status, total in Queue(type=processing_step.job_type).get_jobs_count_by_status().items():
+            for status, total in queue.get_jobs_count_by_status(job_type=processing_step.job_type).items():
                 QUEUE_JOBS_TOTAL.labels(queue=processing_step.job_type, status=status).set(total)
         # Cache metrics
         for metric in get_responses_count_by_kind_status_and_error_code():

@@ -231,7 +231,7 @@ firstRows:
 
   nodeSelector:
     role-datasets-server: "true"
-  replicas: 90
+  replicas: 80
   resources:
     requests:
       cpu: 1
@@ -253,7 +253,7 @@ parquetAndDatasetInfo:
     maxJobsPerNamespace: 4
   nodeSelector:
     role-datasets-server: "true"
-  replicas: 30
+  replicas: 20
   resources:
     requests:
       cpu: 1
@@ -309,3 +309,18 @@ sizes:
     limits:
       cpu: 2
       memory: "1Gi"
+
+genericWorker:
+  queue:
+    # Maximum number of jobs running at the same time for the same namespace
+    maxJobsPerNamespace: 4
+  nodeSelector:
+    role-datasets-server: "true"
+  replicas: 20
+  resources:
+    requests:
+      cpu: 1
+      memory: "8Gi"
+    limits:
+      cpu: 2
+      memory: "30Gi"
