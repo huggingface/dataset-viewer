@@ -61,7 +61,7 @@ common:
   hfEndpoint: "https://huggingface.co"
   # Log level
   logLevel: "INFO"
-  
+
 # --- jobs (pre-install/upgrade hooks) ---
 
 mongodbMigration:
