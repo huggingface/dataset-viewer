@@ -612,7 +612,7 @@ format-nongpl = ["fqdn", "idna", "isoduration", "jsonpointer (>1.13)", "rfc3339-
 [[package]]
 name = "libcommon"
 version = "0.6.8"
-description = "Library for utils, common to all the services and workers"
+description = "Library for utils common to all the services"
 category = "main"
 optional = false
 python-versions = "3.9.15"

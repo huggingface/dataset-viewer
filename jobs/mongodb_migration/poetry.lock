@@ -544,7 +544,7 @@ requirements-deprecated-finder = ["pip-api", "pipreqs"]
 [[package]]
 name = "libcommon"
 version = "0.6.8"
-description = "Library for utils, common to all the services and workers"
+description = "Library for utils common to all the services"
 category = "main"
 optional = false
 python-versions = "3.9.15"
