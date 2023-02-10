@@ -29,7 +29,7 @@ def test_libraries(tmp_path_factory, define_init_hf_datasets_cache: bool, define
     assert str(datasets.config.HF_MODULES_CACHE) in resource.storage_paths
     assert datasets.config.HF_UPDATE_DOWNLOAD_COUNTS is False
     assert (resource.hf_datasets_cache == init_hf_datasets_cache) == define_init_hf_datasets_cache
-    assert resource.check() is True
+    assert resource.check()
 
     resource.release()
 
