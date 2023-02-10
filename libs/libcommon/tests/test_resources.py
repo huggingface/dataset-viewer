@@ -28,7 +28,7 @@ def test_database_resource(queue_mongo_host: str) -> None:
         mongoengine_alias=mongoengine_alias,
         server_selection_timeout_ms=server_selection_timeout_ms,
     )
-    resource_1.check()
+    assert resource_1.check()
     with pytest.raises(MongoConnectionFailure):
         MongoResource(
             database=database_2,
