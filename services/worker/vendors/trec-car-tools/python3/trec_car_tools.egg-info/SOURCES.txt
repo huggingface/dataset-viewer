@@ -1,0 +1,9 @@
+setup.py
+trec_car/__init__.py
+trec_car/format_runs.py
+trec_car/read_data.py
+trec_car_tools.egg-info/PKG-INFO
+trec_car_tools.egg-info/SOURCES.txt
+trec_car_tools.egg-info/dependency_links.txt
+trec_car_tools.egg-info/requires.txt
+trec_car_tools.egg-info/top_level.txt
