@@ -551,8 +551,10 @@ def compute_first_rows_response(
         MAX_SIZE_FALLBACK = 100_000_000
         if max_size_fallback:
             warnings.warn(
-                f"The parameter 'max_size_fallback' is deprecated. The hard-coded value `{MAX_SIZE_FALLBACK}`"
-                " will be used instead.",
+                (
+                    f"The parameter 'max_size_fallback' is deprecated. The hard-coded value `{MAX_SIZE_FALLBACK}`"
+                    " will be used instead."
+                ),
                 category=DeprecationWarning,
             )
         if info.size_in_bytes is None or info.size_in_bytes > MAX_SIZE_FALLBACK:
