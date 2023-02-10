@@ -44,6 +44,6 @@ def test_libraries_context_manager(tmp_path_factory) -> None:
         hf_endpoint=hf_endpoint,
         init_hf_datasets_cache=init_hf_datasets_cache,
         numba_path=numba_path,
-    ) as resource:
+    ):
         assert datasets.config.HF_ENDPOINT == hf_endpoint
     assert datasets.config.HF_ENDPOINT != hf_endpoint
