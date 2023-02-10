@@ -7,13 +7,9 @@ from typing import Iterator
 from libcommon.config import CacheConfig, QueueConfig
 from libcommon.processing_graph import ProcessingStep
 from libcommon.queue import _clean_queue_database
-from libcommon.resources import (
-    AssetsStorageAccessResource,
-    CacheDatabaseResource,
-    QueueDatabaseResource,
-)
+from libcommon.resources import CacheMongoResource, QueueMongoResource
 from libcommon.simple_cache import _clean_cache_database
-from libcommon.storage import StrPath
+from libcommon.storage import StrPath, init_assets_dir
 from pytest import MonkeyPatch, fixture
 
 from datasets_based.config import AppConfig, FirstRowsConfig
@@ -72,15 +68,15 @@ def app_config(set_env_vars: MonkeyPatch) -> Iterator[AppConfig]:
 
 
 @fixture
-def cache_database_resource(app_config: AppConfig) -> Iterator[CacheDatabaseResource]:
-    with CacheDatabaseResource(database=app_config.cache.mongo_database, host=app_config.cache.mongo_url) as resource:
+def cache_mongo_resource(app_config: AppConfig) -> Iterator[CacheMongoResource]:
+    with CacheMongoResource(database=app_config.cache.mongo_database, host=app_config.cache.mongo_url) as resource:
         yield resource
         _clean_cache_database()
 
 
 @fixture
-def queue_database_resource(app_config: AppConfig) -> Iterator[QueueDatabaseResource]:
-    with QueueDatabaseResource(database=app_config.queue.mongo_database, host=app_config.queue.mongo_url) as resource:
+def queue_mongo_resource(app_config: AppConfig) -> Iterator[QueueMongoResource]:
+    with QueueMongoResource(database=app_config.queue.mongo_database, host=app_config.queue.mongo_url) as resource:
         yield resource
         _clean_queue_database()
 
@@ -101,9 +97,8 @@ def first_rows_config(set_env_vars: MonkeyPatch) -> FirstRowsConfig:
 
 
 @fixture
-def assets_directory(app_config: AppConfig) -> Iterator[StrPath]:
-    with AssetsStorageAccessResource(init_directory=app_config.assets.storage_directory) as resource:
-        yield resource.directory
+def assets_directory(app_config: AppConfig) -> StrPath:
+    return init_assets_dir(app_config.assets.storage_directory)
 
 
 @fixture()

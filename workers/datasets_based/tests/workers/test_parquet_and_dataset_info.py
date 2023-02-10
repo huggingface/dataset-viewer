@@ -11,7 +11,7 @@ import requests
 from libcommon.exceptions import CustomError
 from libcommon.processing_graph import ProcessingStep
 from libcommon.queue import Priority
-from libcommon.resources import CacheDatabaseResource, QueueDatabaseResource
+from libcommon.resources import CacheMongoResource, QueueMongoResource
 from libcommon.simple_cache import DoesNotExist, get_response
 
 from datasets_based.config import AppConfig, ParquetAndDatasetInfoConfig
@@ -58,8 +58,8 @@ def parquet_and_dataset_info_config(
 @pytest.fixture
 def get_worker(
     libraries_resource: LibrariesResource,
-    cache_database_resource: CacheDatabaseResource,
-    queue_database_resource: QueueDatabaseResource,
+    cache_mongo_resource: CacheMongoResource,
+    queue_mongo_resource: QueueMongoResource,
 ):
     def _get_worker(
         dataset: str,

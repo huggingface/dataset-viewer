@@ -21,8 +21,8 @@ from datasets import (
 )
 from datasets.data_files import EmptyDatasetError as _EmptyDatasetError
 from libcommon.processing_graph import ProcessingStep
-from libcommon.resources import StrPath
 from libcommon.simple_cache import SplitFullName as _SplitFullName
+from libcommon.storage import StrPath
 from libcommon.utils import orjson_dumps
 
 from datasets_based.config import AppConfig, FirstRowsConfig
@@ -608,7 +608,7 @@ def compute_first_rows_response(
 
 
 class FirstRowsWorker(DatasetsBasedWorker):
-    assets_storage_directory: StrPath
+    assets_directory: StrPath
     first_rows_config: FirstRowsConfig
 
     @staticmethod
@@ -626,7 +626,7 @@ class FirstRowsWorker(DatasetsBasedWorker):
         processing_step: ProcessingStep,
         first_rows_config: FirstRowsConfig,
         hf_datasets_cache: Path,
-        assets_storage_directory: StrPath,
+        assets_directory: StrPath,
     ) -> None:
         super().__init__(
             job_info=job_info,
@@ -635,7 +635,7 @@ class FirstRowsWorker(DatasetsBasedWorker):
             hf_datasets_cache=hf_datasets_cache,
         )
         self.first_rows_config = first_rows_config
-        self.assets_storage_directory = assets_storage_directory
+        self.assets_directory = assets_directory
         self.assets_base_url = app_config.assets.base_url
 
     def compute(self) -> Mapping[str, Any]:
@@ -646,7 +646,7 @@ class FirstRowsWorker(DatasetsBasedWorker):
             config=self.config,
             split=self.split,
             assets_base_url=self.assets_base_url,
-            assets_directory=self.assets_storage_directory,
+            assets_directory=self.assets_directory,
             hf_token=self.common_config.hf_token,
             min_cell_bytes=self.first_rows_config.min_cell_bytes,
             rows_max_bytes=self.first_rows_config.max_bytes,

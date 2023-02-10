@@ -5,7 +5,7 @@ from typing import Iterator, List
 
 from libcommon.processing_graph import ProcessingGraph, ProcessingStep
 from libcommon.queue import _clean_queue_database
-from libcommon.resources import CacheDatabaseResource, QueueDatabaseResource
+from libcommon.resources import CacheMongoResource, QueueMongoResource
 from libcommon.simple_cache import _clean_cache_database
 from pytest import MonkeyPatch, fixture
 
@@ -57,15 +57,15 @@ def first_split_processing_step(processing_steps: List[ProcessingStep]):
 
 
 @fixture(autouse=True)
-def cache_database_resource(app_config: AppConfig) -> Iterator[CacheDatabaseResource]:
-    with CacheDatabaseResource(database=app_config.cache.mongo_database, host=app_config.cache.mongo_url) as resource:
+def cache_mongo_resource(app_config: AppConfig) -> Iterator[CacheMongoResource]:
+    with CacheMongoResource(database=app_config.cache.mongo_database, host=app_config.cache.mongo_url) as resource:
         yield resource
         _clean_cache_database()
 
 
 @fixture(autouse=True)
-def queue_database_resource(app_config: AppConfig) -> Iterator[QueueDatabaseResource]:
-    with QueueDatabaseResource(database=app_config.queue.mongo_database, host=app_config.queue.mongo_url) as resource:
+def queue_mongo_resource(app_config: AppConfig) -> Iterator[QueueMongoResource]:
+    with QueueMongoResource(database=app_config.queue.mongo_database, host=app_config.queue.mongo_url) as resource:
         yield resource
         _clean_queue_database()
 

@@ -4,12 +4,8 @@
 import uvicorn  # type: ignore
 from libcommon.log import init_logging
 from libcommon.processing_graph import ProcessingGraph
-from libcommon.resources import (
-    AssetsStorageAccessResource,
-    CacheDatabaseResource,
-    QueueDatabaseResource,
-    Resource,
-)
+from libcommon.resources import CacheMongoResource, QueueMongoResource, Resource
+from libcommon.storage import init_assets_dir
 from starlette.applications import Starlette
 from starlette.middleware import Middleware
 from starlette.middleware.cors import CORSMiddleware
@@ -36,21 +32,18 @@ def create_app() -> Starlette:
 
     init_logging(log_level=app_config.common.log_level)
     # ^ set first to have logs as soon as possible
+    assets_directory = init_assets_dir(directory=app_config.assets.storage_directory)
 
     processing_graph = ProcessingGraph(app_config.processing_graph.specification)
     processing_steps = list(processing_graph.steps.values())
     init_processing_steps = processing_graph.get_first_steps()
 
-    assets_storage_access_resource = AssetsStorageAccessResource(init_directory=app_config.assets.storage_directory)
     resources: list[Resource] = [
-        assets_storage_access_resource,
-        CacheDatabaseResource(database=app_config.cache.mongo_database, host=app_config.cache.mongo_url),
-        QueueDatabaseResource(database=app_config.queue.mongo_database, host=app_config.queue.mongo_url),
+        CacheMongoResource(database=app_config.cache.mongo_database, host=app_config.cache.mongo_url),
+        QueueMongoResource(database=app_config.queue.mongo_database, host=app_config.queue.mongo_url),
     ]
 
-    prometheus = Prometheus(
-        processing_steps=processing_steps, assets_storage_directory=assets_storage_access_resource.directory
-    )
+    prometheus = Prometheus(processing_steps=processing_steps, assets_directory=assets_directory)
 
     middleware = [
         Middleware(

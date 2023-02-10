@@ -4,11 +4,8 @@
 from libcommon.log import init_logging
 from libcommon.processing_graph import ProcessingGraph
 from libcommon.queue import Queue
-from libcommon.resources import (
-    AssetsStorageAccessResource,
-    CacheDatabaseResource,
-    QueueDatabaseResource,
-)
+from libcommon.resources import CacheMongoResource, QueueMongoResource
+from libcommon.storage import init_assets_dir
 
 from datasets_based.config import AppConfig
 from datasets_based.resources import LibrariesResource
@@ -20,27 +17,25 @@ if __name__ == "__main__":
 
     init_logging(log_level=app_config.common.log_level)
     # ^ set first to have logs as soon as possible
+    assets_directory = init_assets_dir(directory=app_config.assets.storage_directory)
 
     processing_graph = ProcessingGraph(app_config.processing_graph.specification)
     processing_step = processing_graph.get_step(app_config.datasets_based.endpoint)
 
     with (
-        AssetsStorageAccessResource(
-            init_directory=app_config.assets.storage_directory
-        ) as assets_storage_access_resource,
         LibrariesResource(
             hf_endpoint=app_config.common.hf_endpoint,
             init_hf_datasets_cache=app_config.datasets_based.hf_datasets_cache,
             numba_path=app_config.numba.path,
         ) as libraries_resource,
-        CacheDatabaseResource(database=app_config.cache.mongo_database, host=app_config.cache.mongo_url),
-        QueueDatabaseResource(database=app_config.queue.mongo_database, host=app_config.queue.mongo_url),
+        CacheMongoResource(database=app_config.cache.mongo_database, host=app_config.cache.mongo_url),
+        QueueMongoResource(database=app_config.queue.mongo_database, host=app_config.queue.mongo_url),
     ):
         worker_factory = WorkerFactory(
             app_config=app_config,
             processing_graph=processing_graph,
             hf_datasets_cache=libraries_resource.hf_datasets_cache,
-            assets_directory=assets_storage_access_resource.directory,
+            assets_directory=assets_directory,
         )
         queue = Queue(type=processing_step.job_type, max_jobs_per_namespace=app_config.queue.max_jobs_per_namespace)
         worker_loop = WorkerLoop(

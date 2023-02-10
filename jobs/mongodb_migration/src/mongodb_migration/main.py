@@ -5,8 +5,8 @@ import sys
 
 from libcommon.log import init_logging
 from libcommon.resources import (
-    CacheDatabaseResource,
-    QueueDatabaseResource,
+    CacheMongoResource,
+    QueueMongoResource,
 )
 
 from mongodb_migration.collector import MigrationsCollector
@@ -21,8 +21,8 @@ if __name__ == "__main__":
     # ^ set first to have logs as soon as possible
 
     with (
-        CacheDatabaseResource(database=job_config.cache.mongo_database, host=job_config.cache.mongo_url),
-        QueueDatabaseResource(database=job_config.queue.mongo_database, host=job_config.queue.mongo_url),
+        CacheMongoResource(database=job_config.cache.mongo_database, host=job_config.cache.mongo_url),
+        QueueMongoResource(database=job_config.queue.mongo_database, host=job_config.queue.mongo_url),
         MigrationsDatabaseResource(
             database=job_config.database_migrations.mongo_database, host=job_config.database_migrations.mongo_url
         ),

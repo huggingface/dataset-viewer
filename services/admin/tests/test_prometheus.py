@@ -5,17 +5,18 @@ import os
 from typing import List
 
 from libcommon.processing_graph import ProcessingStep
+from libcommon.storage import StrPath
 
 from admin.prometheus import Prometheus
 
 
 def test_prometheus(
-    assets_directory: str,
+    assets_directory: StrPath,
     processing_steps: List[ProcessingStep],
 ) -> None:
     is_multiprocess = "PROMETHEUS_MULTIPROC_DIR" in os.environ
 
-    prometheus = Prometheus(processing_steps=processing_steps, assets_storage_directory=assets_directory)
+    prometheus = Prometheus(processing_steps=processing_steps, assets_directory=assets_directory)
     registry = prometheus.getRegistry()
     assert registry is not None
 

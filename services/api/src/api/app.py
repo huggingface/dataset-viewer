@@ -7,8 +7,8 @@ import uvicorn  # type: ignore
 from libcommon.log import init_logging
 from libcommon.processing_graph import ProcessingGraph
 from libcommon.resources import (
-    CacheDatabaseResource,
-    QueueDatabaseResource,
+    CacheMongoResource,
+    QueueMongoResource,
     Resource,
 )
 from starlette.applications import Starlette
@@ -48,8 +48,8 @@ def create_app() -> Starlette:
     ]
 
     resources: list[Resource] = [
-        CacheDatabaseResource(database=app_config.cache.mongo_database, host=app_config.cache.mongo_url),
-        QueueDatabaseResource(database=app_config.queue.mongo_database, host=app_config.queue.mongo_url),
+        CacheMongoResource(database=app_config.cache.mongo_database, host=app_config.cache.mongo_url),
+        QueueMongoResource(database=app_config.queue.mongo_database, host=app_config.queue.mongo_url),
     ]
 
     valid: List[BaseRoute] = [

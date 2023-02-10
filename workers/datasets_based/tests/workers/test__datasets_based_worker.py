@@ -11,7 +11,7 @@ import datasets.config
 import pytest
 from libcommon.processing_graph import ProcessingStep
 from libcommon.queue import Priority
-from libcommon.resources import CacheDatabaseResource, QueueDatabaseResource
+from libcommon.resources import CacheMongoResource, QueueMongoResource
 from libcommon.simple_cache import get_response
 
 from datasets_based.config import AppConfig
@@ -42,8 +42,8 @@ class DummyWorker(DatasetsBasedWorker):
 @pytest.fixture
 def get_worker(
     libraries_resource: LibrariesResource,
-    cache_database_resource: CacheDatabaseResource,
-    queue_database_resource: QueueDatabaseResource,
+    cache_mongo_resource: CacheMongoResource,
+    queue_mongo_resource: QueueMongoResource,
 ):
     def _get_worker(
         dataset: str,

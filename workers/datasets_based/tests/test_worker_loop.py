@@ -3,7 +3,7 @@ from typing import Any, Mapping, Optional
 from libcommon.config import CommonConfig, QueueConfig
 from libcommon.processing_graph import ProcessingStep
 from libcommon.queue import Queue
-from libcommon.resources import CacheDatabaseResource, QueueDatabaseResource
+from libcommon.resources import CacheMongoResource, QueueMongoResource
 
 from datasets_based.config import DatasetsBasedConfig, WorkerLoopConfig
 from datasets_based.resources import LibrariesResource
@@ -48,8 +48,8 @@ def test_process_next_job(
     test_processing_step: ProcessingStep,
     queue_config: QueueConfig,
     libraries_resource: LibrariesResource,
-    cache_database_resource: CacheDatabaseResource,
-    queue_database_resource: QueueDatabaseResource,
+    cache_mongo_resource: CacheMongoResource,
+    queue_mongo_resource: QueueMongoResource,
 ) -> None:
     worker_factory = DummyWorkerFactory(processing_step=test_processing_step)
     queue = Queue(type=test_processing_step.endpoint, max_jobs_per_namespace=queue_config.max_jobs_per_namespace)

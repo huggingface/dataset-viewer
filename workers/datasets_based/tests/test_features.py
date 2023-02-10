@@ -8,7 +8,7 @@ from zoneinfo import ZoneInfo
 import numpy as np
 import pytest
 from datasets import Audio, Dataset, Image, Value
-from libcommon.resources import StrPath
+from libcommon.storage import StrPath
 
 from datasets_based.config import AppConfig
 from datasets_based.features import get_cell_value

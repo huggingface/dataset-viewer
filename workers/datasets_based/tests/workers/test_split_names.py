@@ -8,7 +8,7 @@ import pytest
 from libcommon.exceptions import CustomError
 from libcommon.processing_graph import ProcessingStep
 from libcommon.queue import Priority
-from libcommon.resources import CacheDatabaseResource, QueueDatabaseResource
+from libcommon.resources import CacheMongoResource, QueueMongoResource
 from libcommon.simple_cache import DoesNotExist, get_response
 
 from datasets_based.config import AppConfig
@@ -21,8 +21,8 @@ from ..fixtures.hub import HubDatasets, get_default_config_split
 @pytest.fixture
 def get_worker(
     libraries_resource: LibrariesResource,
-    cache_database_resource: CacheDatabaseResource,
-    queue_database_resource: QueueDatabaseResource,
+    cache_mongo_resource: CacheMongoResource,
+    queue_mongo_resource: QueueMongoResource,
 ):
     def _get_worker(
         dataset: str,

@@ -9,7 +9,7 @@ from typing import Iterator, Optional
 import pytest
 from pymongo.errors import DocumentTooLarge
 
-from libcommon.resources import CacheDatabaseResource
+from libcommon.resources import CacheMongoResource
 from libcommon.simple_cache import (
     CachedResponse,
     DoesNotExist,
@@ -32,17 +32,17 @@ from libcommon.simple_cache import (
 
 
 @pytest.fixture(scope="module")
-def cache_database_resource(cache_mongo_host: str) -> Iterator[CacheDatabaseResource]:
+def cache_mongo_resource(cache_mongo_host: str) -> Iterator[CacheMongoResource]:
     database = "datasets_server_cache_test"
     host = cache_mongo_host
     if "test" not in database:
         raise ValueError("Test must be launched on a test mongo database")
-    with CacheDatabaseResource(database=database, host=host) as cache_database_resource:
-        yield cache_database_resource
+    with CacheMongoResource(database=database, host=host) as cache_mongo_resource:
+        yield cache_mongo_resource
 
 
 @pytest.fixture(autouse=True)
-def clean_mongo_database(cache_database_resource: CacheDatabaseResource) -> None:
+def clean_mongo_database(cache_mongo_resource: CacheMongoResource) -> None:
     _clean_cache_database()
 
 

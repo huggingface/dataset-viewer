@@ -84,7 +84,7 @@ class WorkerFactory(BaseWorkerFactory):
                 processing_step=processing_step,
                 hf_datasets_cache=self.hf_datasets_cache,
                 first_rows_config=first_rows_config,
-                assets_storage_directory=self.assets_directory,
+                assets_directory=self.assets_directory,
             )
         if job_type == ParquetAndDatasetInfoWorker.get_job_type():
             return ParquetAndDatasetInfoWorker(

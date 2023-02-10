@@ -5,12 +5,9 @@ from typing import Iterator, List
 
 from libcommon.processing_graph import ProcessingGraph, ProcessingStep
 from libcommon.queue import _clean_queue_database
-from libcommon.resources import (
-    AssetsStorageAccessResource,
-    CacheDatabaseResource,
-    QueueDatabaseResource,
-)
+from libcommon.resources import CacheMongoResource, QueueMongoResource
 from libcommon.simple_cache import _clean_cache_database
+from libcommon.storage import StrPath, init_assets_dir
 from pytest import MonkeyPatch, fixture
 
 from admin.config import AppConfig
@@ -46,20 +43,19 @@ def processing_steps(app_config: AppConfig) -> List[ProcessingStep]:
 
 
 @fixture(scope="session")
-def assets_directory(app_config: AppConfig) -> Iterator[str]:
-    with AssetsStorageAccessResource(init_directory=app_config.assets.storage_directory) as resource:
-        yield str(resource.directory)
+def assets_directory(app_config: AppConfig) -> StrPath:
+    return init_assets_dir(directory=app_config.assets.storage_directory)
 
 
 @fixture(autouse=True)
-def cache_database_resource(app_config: AppConfig) -> Iterator[CacheDatabaseResource]:
-    with CacheDatabaseResource(database=app_config.cache.mongo_database, host=app_config.cache.mongo_url) as resource:
+def cache_mongo_resource(app_config: AppConfig) -> Iterator[CacheMongoResource]:
+    with CacheMongoResource(database=app_config.cache.mongo_database, host=app_config.cache.mongo_url) as resource:
         yield resource
         _clean_cache_database()
 
 
 @fixture(autouse=True)
-def queue_database_resource(app_config: AppConfig) -> Iterator[QueueDatabaseResource]:
-    with QueueDatabaseResource(database=app_config.queue.mongo_database, host=app_config.queue.mongo_url) as resource:
+def queue_mongo_resource(app_config: AppConfig) -> Iterator[QueueMongoResource]:
+    with QueueMongoResource(database=app_config.queue.mongo_database, host=app_config.queue.mongo_url) as resource:
         yield resource
         _clean_queue_database()

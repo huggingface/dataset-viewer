@@ -7,7 +7,7 @@ from typing import List
 
 from libcommon.processing_graph import ProcessingStep
 from libcommon.queue import Queue
-from libcommon.resources import StrPath
+from libcommon.storage import StrPath
 from libcommon.simple_cache import get_responses_count_by_kind_status_and_error_code
 from prometheus_client import (  # type: ignore # https://github.com/prometheus/client_python/issues/491
     CONTENT_TYPE_LATEST,
@@ -47,7 +47,7 @@ ASSETS_DISK_USAGE = Gauge(
 @dataclass
 class Prometheus:
     processing_steps: List[ProcessingStep]
-    assets_storage_directory: StrPath
+    assets_directory: StrPath
 
     def getRegistry(self) -> CollectorRegistry:
         # taken from https://github.com/perdy/starlette-prometheus/blob/master/starlette_prometheus/view.py
@@ -70,7 +70,7 @@ class Prometheus:
                 kind=metric["kind"], http_status=metric["http_status"], error_code=metric["error_code"]
             ).set(metric["count"])
         # Assets storage metrics
-        total, used, free, percent = disk_usage(str(self.assets_storage_directory))
+        total, used, free, percent = disk_usage(str(self.assets_directory))
         ASSETS_DISK_USAGE.labels(type="total").set(total)
         ASSETS_DISK_USAGE.labels(type="used").set(used)
         ASSETS_DISK_USAGE.labels(type="free").set(free)

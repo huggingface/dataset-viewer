@@ -7,7 +7,7 @@ from typing import Any
 import pytest
 from libcommon.processing_graph import ProcessingStep
 from libcommon.queue import Priority
-from libcommon.resources import CacheDatabaseResource, QueueDatabaseResource
+from libcommon.resources import CacheMongoResource, QueueMongoResource
 from libcommon.simple_cache import upsert_response
 
 from datasets_based.config import AppConfig
@@ -27,8 +27,8 @@ def prepare_and_clean_mongo(app_config: AppConfig) -> None:
 
 @pytest.fixture
 def get_worker(
-    cache_database_resource: CacheDatabaseResource,
-    queue_database_resource: QueueDatabaseResource,
+    cache_mongo_resource: CacheMongoResource,
+    queue_mongo_resource: QueueMongoResource,
 ):
     def _get_worker(
         dataset: str,

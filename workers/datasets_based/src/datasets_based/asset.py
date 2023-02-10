@@ -6,7 +6,7 @@ from pathlib import Path
 from typing import List, Tuple, TypedDict
 
 import soundfile  # type:ignore
-from libcommon.resources import StrPath
+from libcommon.storage import StrPath
 from numpy import ndarray  # type:ignore
 from PIL import Image  # type: ignore
 from pydub import AudioSegment  # type:ignore

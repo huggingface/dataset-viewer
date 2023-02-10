@@ -9,7 +9,7 @@ from datasets.packaged_modules import csv
 from libcommon.exceptions import CustomError
 from libcommon.processing_graph import ProcessingStep
 from libcommon.queue import Priority
-from libcommon.resources import CacheDatabaseResource, QueueDatabaseResource
+from libcommon.resources import CacheMongoResource, QueueMongoResource
 from libcommon.simple_cache import DoesNotExist, get_response
 from libcommon.storage import StrPath
 
@@ -24,8 +24,8 @@ from ..fixtures.hub import HubDatasets, get_default_config_split
 def get_worker(
     assets_directory: StrPath,
     libraries_resource: LibrariesResource,
-    cache_database_resource: CacheDatabaseResource,
-    queue_database_resource: QueueDatabaseResource,
+    cache_mongo_resource: CacheMongoResource,
+    queue_mongo_resource: QueueMongoResource,
 ):
     def _get_worker(
         dataset: str,
@@ -57,7 +57,7 @@ def get_worker(
             ),
             hf_datasets_cache=libraries_resource.hf_datasets_cache,
             first_rows_config=first_rows_config,
-            assets_storage_directory=assets_directory,
+            assets_directory=assets_directory,
         )
 
     return _get_worker

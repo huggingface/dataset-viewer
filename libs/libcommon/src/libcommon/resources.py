@@ -2,11 +2,10 @@
 # Copyright 2022 The HuggingFace Authors.
 
 from dataclasses import dataclass, field
-from typing import Optional
+
+from mongoengine.connection import ConnectionFailure, connect, disconnect
 
 from libcommon.constants import CACHE_MONGOENGINE_ALIAS, QUEUE_MONGOENGINE_ALIAS
-from libcommon.mongo import MongoConnection, MongoConnectionFailure
-from libcommon.storage import StrPath, init_dir
 
 
 @dataclass
@@ -41,89 +40,64 @@ class Resource:
         pass
 
 
-@dataclass
-class AssetsStorageAccessResource(Resource):
-    """
-    A resource that represents the access to the assets storage.
-
-    The directory is created if it does not exist.
-
-    Note that the directory is meant to be permanent, and is not deleted when the resource is released.
-
-    Args:
-        init_directory (:obj:`str`, optional): The path to the directory where assets are stored.
-            If :obj:`None`, the directory is created in the ``datasets_server_assets`` subdirectory of the
-            user cache directory.
-
-    Example:
-        >>> with AssetsStorageAccessResource(init_directory="/tmp/assets") as assets_storage_access:
-        ...     pass
-    """
-
-    init_directory: Optional[StrPath] = None
-    directory: StrPath = field(init=False)
-
-    def allocate(self):
-        self.directory = init_dir(directory=self.init_directory, appname="datasets_server_assets")
-
-    # no need to implement release() as the directory is not deleted
-
-
-class DatabaseConnectionFailure(Exception):
+class MongoConnectionFailure(Exception):
     pass
 
 
 @dataclass
-class DatabaseResource(Resource):
+class MongoResource(Resource):
     """
     A base resource that represents a connection to a database.
 
     Args:
-        database (:obj:`str`): The name of the database.
-        host (:obj:`str`): The host of the database. It must start with ``mongodb://`` or ``mongodb+srv://``.
+        database (:obj:`str`): The name of the mongo database.
+        host (:obj:`str`): The host of the mongo database. It must start with ``mongodb://`` or ``mongodb+srv://``.
         mongoengine_alias (:obj:`str`): The alias of the connection in mongoengine.
+        server_selection_timeout_ms (:obj:`int`, `optional`, defaults to 30_000): The timeout in milliseconds for
+            server selection.
     """
 
     database: str
     host: str
     mongoengine_alias: str
-
-    mongo_connection: MongoConnection = field(init=False)
+    server_selection_timeout_ms: int = 30_000
 
     def allocate(self):
-        self.mongo_connection = MongoConnection(
-            database=self.database, host=self.host, mongoengine_alias=self.mongoengine_alias
-        )
         try:
-            self.mongo_connection.connect()
-        except MongoConnectionFailure as e:
-            raise DatabaseConnectionFailure(f"Failed to connect to the database: {e}") from e
+            connect(
+                db=self.database,
+                host=self.host,
+                alias=self.mongoengine_alias,
+                serverSelectionTimeoutMS=self.server_selection_timeout_ms,
+            )
+        except ConnectionFailure as e:
+            raise MongoConnectionFailure(f"Failed to connect to MongoDB: {e}") from e
 
     def release(self):
-        self.mongo_connection.disconnect()
+        disconnect(alias=self.mongoengine_alias)
 
 
 @dataclass
-class CacheDatabaseResource(DatabaseResource):
+class CacheMongoResource(MongoResource):
     """
-    A resource that represents a connection to the cache database.
+    A resource that represents a connection to the cache mongo database.
 
     Args:
-        database (:obj:`str`): The name of the database.
-        host (:obj:`str`): The host of the database. It must start with ``mongodb://`` or ``mongodb+srv://``.
+        database (:obj:`str`): The name of the mongo database.
+        host (:obj:`str`): The host of the mongo database. It must start with ``mongodb://`` or ``mongodb+srv://``.
     """
 
     mongoengine_alias: str = field(default=CACHE_MONGOENGINE_ALIAS, init=False)
 
 
 @dataclass
-class QueueDatabaseResource(DatabaseResource):
+class QueueMongoResource(MongoResource):
     """
-    A resource that represents a connection to the queue database.
+    A resource that represents a connection to the queue mongo database.
 
     Args:
-        database (:obj:`str`): The name of the database.
-        host (:obj:`str`): The host of the database. It must start with ``mongodb://`` or ``mongodb+srv://``.
+        database (:obj:`str`): The name of the mongo database.
+        host (:obj:`str`): The host of the mongo database. It must start with ``mongodb://`` or ``mongodb+srv://``.
     """
 
     mongoengine_alias: str = field(default=QUEUE_MONGOENGINE_ALIAS, init=False)
