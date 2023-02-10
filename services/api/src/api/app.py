@@ -48,7 +48,7 @@ def create_app() -> Starlette:
     resources: list[Resource] = [cache_resource, queue_resource]
     if cache_resource.check() is False:
         raise RuntimeError("The connection to the cache database could not be established. Exiting.")
-    if queue_resource.check() is False:
+    if not queue_resource.check():
         raise RuntimeError("The connection to the queue database could not be established. Exiting.")
 
     valid: List[BaseRoute] = [
