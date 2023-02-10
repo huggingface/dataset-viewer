@@ -17,4 +17,5 @@ def test_cache_database(mongo_host: str) -> None:
     assert len(User.objects()) == 0  # type: ignore
     # clean
     User.drop_collection()  # type: ignore
+    assert resource.is_available()
     resource.release()

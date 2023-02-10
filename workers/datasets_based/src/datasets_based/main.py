@@ -28,9 +28,18 @@ if __name__ == "__main__":
             init_hf_datasets_cache=app_config.datasets_based.hf_datasets_cache,
             numba_path=app_config.numba.path,
         ) as libraries_resource,
-        CacheMongoResource(database=app_config.cache.mongo_database, host=app_config.cache.mongo_url),
-        QueueMongoResource(database=app_config.queue.mongo_database, host=app_config.queue.mongo_url),
+        CacheMongoResource(
+            database=app_config.cache.mongo_database, host=app_config.cache.mongo_url
+        ) as cache_resource,
+        QueueMongoResource(
+            database=app_config.queue.mongo_database, host=app_config.queue.mongo_url
+        ) as queue_resource,
     ):
+        if not cache_resource.is_available():
+            raise RuntimeError("The connection to the cache database could not be established. Exiting.")
+        if not queue_resource.is_available():
+            raise RuntimeError("The connection to the queue database could not be established. Exiting.")
+
         worker_factory = WorkerFactory(
             app_config=app_config,
             processing_graph=processing_graph,
