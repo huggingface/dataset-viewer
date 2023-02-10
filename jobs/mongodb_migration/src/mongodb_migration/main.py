@@ -30,17 +30,17 @@ def run_job() -> None:
             database=job_config.database_migrations.mongo_database, host=job_config.database_migrations.mongo_url
         ) as migrations_database_resource,
     ):
-        if not cache_resource.check():
+        if not cache_resource.is_available():
             logging.warning(
                 "The connection to the cache database could not be established. The migration job is skipped."
             )
             return
-        if queue_resource.check() is False:
+        if queue_resource.is_available() is False:
             logging.warning(
                 "The connection to the queue database could not be established. The migration job is skipped."
             )
             return
-        if migrations_database_resource.check() is False:
+        if migrations_database_resource.is_available() is False:
             logging.warning(
                 "The connection to the migrations database could not be established. The migration job is skipped."
             )

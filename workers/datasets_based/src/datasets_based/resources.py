@@ -51,9 +51,6 @@ class LibrariesResource(Resource):
             storage_paths.add(self.numba_path)
         self.storage_paths = storage_paths
 
-    def check(self) -> bool:
-        return True
-
     def release(self):
         datasets.config.HF_ENDPOINT = self.previous_hf_endpoint
         datasets.config.HF_UPDATE_DOWNLOAD_COUNTS = self.previous_hf_update_download_counts

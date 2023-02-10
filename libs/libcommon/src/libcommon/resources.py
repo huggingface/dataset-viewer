@@ -16,7 +16,6 @@ class Resource:
     A resource that can be allocated and released.
 
     The method allocate() is called when the resource is created.
-    The method check() allows to check if the resource is available. It's not called automatically.
     The method release() allows to free the resource.
 
     It can be used as a context manager, in which case the resource is released when the context is exited.
@@ -40,9 +39,6 @@ class Resource:
     def allocate(self):
         pass
 
-    def check(self) -> bool:
-        raise NotImplementedError("check() is not implemented in the base class")
-
     def release(self):
         pass
 
@@ -55,6 +51,8 @@ class MongoConnectionFailure(Exception):
 class MongoResource(Resource):
     """
     A base resource that represents a connection to a database.
+
+    The method is_available() allows to check if the resource is available. It's not called automatically.
 
     Args:
         database (:obj:`str`): The name of the mongo database.
@@ -82,8 +80,8 @@ class MongoResource(Resource):
         except ConnectionFailure as e:
             raise MongoConnectionFailure(f"Failed to connect to MongoDB: {e}") from e
 
-    def check(self) -> bool:
-        """Check if the connection works."""
+    def is_available(self) -> bool:
+        """Check if the connection is available."""
         try:
             self._client.is_mongos
             return True
