@@ -35,11 +35,11 @@ if __name__ == "__main__":
             database=app_config.queue.mongo_database, host=app_config.queue.mongo_url
         ) as queue_resource,
     ):
-        if libraries_resource.check() is False:
+        if not libraries_resource.check():
             raise RuntimeError("The datasets and numba libraries could not be configured. Exiting.")
-        if cache_resource.check() is False:
+        if not cache_resource.check():
             raise RuntimeError("The connection to the cache database could not be established. Exiting.")
-        if queue_resource.check() is False:
+        if not queue_resource.check():
             raise RuntimeError("The connection to the queue database could not be established. Exiting.")
 
         worker_factory = WorkerFactory(
