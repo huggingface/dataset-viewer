@@ -12,7 +12,12 @@ from urllib.parse import quote
 
 import datasets
 import datasets.config
-from datasets import DownloadConfig, get_dataset_config_names, get_dataset_infos, load_dataset_builder
+from datasets import (
+    DownloadConfig,
+    get_dataset_config_names,
+    get_dataset_infos,
+    load_dataset_builder,
+)
 from datasets.data_files import EmptyDatasetError as _EmptyDatasetError
 from datasets.utils.py_utils import asdict
 from huggingface_hub.hf_api import (
