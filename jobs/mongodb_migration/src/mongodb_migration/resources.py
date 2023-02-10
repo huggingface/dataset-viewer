@@ -3,23 +3,19 @@
 
 from dataclasses import dataclass, field
 
-from libcommon.resources import DatabaseResource
+from libcommon.resources import MongoResource
 
 from mongodb_migration.constants import DATABASE_MIGRATIONS_MONGOENGINE_ALIAS
 
 
-class MigrationsDatabaseConnectionFailure(Exception):
-    pass
-
-
 @dataclass
-class MigrationsDatabaseResource(DatabaseResource):
+class MigrationsMongoResource(MongoResource):
     """
-    A resource that represents a connection to the migrations database.
+    A resource that represents a connection to the migrations mongo database.
 
     Args:
-        database (:obj:`str`): The name of the database.
-        host (:obj:`str`): The host of the database. It must start with ``mongodb://`` or ``mongodb+srv://``.
+        database (:obj:`str`): The name of the mongo database.
+        host (:obj:`str`): The host of the mongo database. It must start with ``mongodb://`` or ``mongodb+srv://``.
     """
 
     mongoengine_alias: str = field(default=DATABASE_MIGRATIONS_MONGOENGINE_ALIAS, init=False)

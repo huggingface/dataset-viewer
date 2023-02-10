@@ -4,15 +4,12 @@
 import sys
 
 from libcommon.log import init_logging
-from libcommon.resources import (
-    CacheMongoResource,
-    QueueMongoResource,
-)
+from libcommon.resources import CacheMongoResource, QueueMongoResource
 
 from mongodb_migration.collector import MigrationsCollector
 from mongodb_migration.config import JobConfig
 from mongodb_migration.plan import Plan
-from mongodb_migration.resources import MigrationsDatabaseResource
+from mongodb_migration.resources import MigrationsMongoResource
 
 if __name__ == "__main__":
     job_config = JobConfig.from_env()
@@ -23,7 +20,7 @@ if __name__ == "__main__":
     with (
         CacheMongoResource(database=job_config.cache.mongo_database, host=job_config.cache.mongo_url),
         QueueMongoResource(database=job_config.queue.mongo_database, host=job_config.queue.mongo_url),
-        MigrationsDatabaseResource(
+        MigrationsMongoResource(
             database=job_config.database_migrations.mongo_database, host=job_config.database_migrations.mongo_url
         ),
     ):

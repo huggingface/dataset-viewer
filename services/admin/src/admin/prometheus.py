@@ -7,8 +7,8 @@ from typing import List
 
 from libcommon.processing_graph import ProcessingStep
 from libcommon.queue import Queue
-from libcommon.storage import StrPath
 from libcommon.simple_cache import get_responses_count_by_kind_status_and_error_code
+from libcommon.storage import StrPath
 from prometheus_client import (  # type: ignore # https://github.com/prometheus/client_python/issues/491
     CONTENT_TYPE_LATEST,
     REGISTRY,

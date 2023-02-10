@@ -11,20 +11,20 @@ from mongodb_migration.database_migrations import (
 )
 from mongodb_migration.migration import IrreversibleMigration, Migration
 from mongodb_migration.plan import Plan, SavedMigrationsError
-from mongodb_migration.resources import MigrationsDatabaseResource
+from mongodb_migration.resources import MigrationsMongoResource
 
 
 @pytest.fixture(scope="module")
-def migrations_database_resource(mongo_host: str) -> Iterator[MigrationsDatabaseResource]:
+def migrations_mongo_resource(mongo_host: str) -> Iterator[MigrationsMongoResource]:
     database = "datasets_server_migrations_test"
     if "test" not in database:
         raise ValueError("Test must be launched on a test mongo database")
-    with MigrationsDatabaseResource(database=database, host=mongo_host) as resource:
+    with MigrationsMongoResource(database=database, host=mongo_host) as resource:
         yield resource
 
 
 @pytest.fixture(autouse=True)
-def clean_mongo_database(migrations_database_resource: MigrationsDatabaseResource) -> None:
+def clean_mongo_database(migrations_mongo_resource: MigrationsMongoResource) -> None:
     _clean_maintenance_database()
 
 
