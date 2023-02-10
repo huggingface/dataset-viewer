@@ -1,6 +1,6 @@
 [tool.poetry]
 authors = ["Sylvain Lesage <sylvain.lesage@huggingface.co>"]
-description = "Worker that processes jobs and store the responses in the cache"
+description = "Worker that processes jobs and stores the responses in the cache"
 name = "worker"
 version = "1.0.0"
 license = "Apache-2.0"
