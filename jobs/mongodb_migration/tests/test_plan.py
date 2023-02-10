@@ -24,10 +24,6 @@ def migrations_mongo_resource(mongo_host: str) -> Iterator[MigrationsMongoResour
         _clean_maintenance_database()
 
 
-# @pytest.fixture(autouse=True)
-# def clean_mongo_database(migrations_mongo_resource: MigrationsMongoResource) -> None:
-
-
 class MigrationOK(Migration):
     def up(self) -> None:
         pass
