@@ -16,7 +16,7 @@ from libcommon.queue import (
 from libcommon.resources import QueueMongoResource
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture(autouse=True)
 def queue_mongo_resource(queue_mongo_host: str) -> Iterator[QueueMongoResource]:
     database = "datasets_server_queue_test"
     host = queue_mongo_host
@@ -24,11 +24,7 @@ def queue_mongo_resource(queue_mongo_host: str) -> Iterator[QueueMongoResource]:
         raise ValueError("Test must be launched on a test mongo database")
     with QueueMongoResource(database=database, host=host) as queue_mongo_resource:
         yield queue_mongo_resource
-
-
-@pytest.fixture(autouse=True)
-def clean_mongo_database(queue_mongo_resource: QueueMongoResource) -> None:
-    _clean_queue_database()
+        _clean_queue_database()
 
 
 def test__add_job() -> None:

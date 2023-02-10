@@ -31,7 +31,7 @@ from libcommon.simple_cache import (
 )
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture(autouse=True)
 def cache_mongo_resource(cache_mongo_host: str) -> Iterator[CacheMongoResource]:
     database = "datasets_server_cache_test"
     host = cache_mongo_host
@@ -39,11 +39,7 @@ def cache_mongo_resource(cache_mongo_host: str) -> Iterator[CacheMongoResource]:
         raise ValueError("Test must be launched on a test mongo database")
     with CacheMongoResource(database=database, host=host) as cache_mongo_resource:
         yield cache_mongo_resource
-
-
-@pytest.fixture(autouse=True)
-def clean_mongo_database(cache_mongo_resource: CacheMongoResource) -> None:
-    _clean_cache_database()
+        _clean_cache_database()
 
 
 def test_insert_null_values() -> None:
