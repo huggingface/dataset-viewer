@@ -19,11 +19,11 @@ class AssetsConfig:
     base_url: str = ASSETS_BASE_URL
     storage_directory: Optional[str] = ASSETS_STORE_DIRECTORY
 
-    @staticmethod
-    def from_env() -> "AssetsConfig":
+    @classmethod
+    def from_env(cls) -> "AssetsConfig":
         env = Env(expand_vars=True)
         with env.prefixed("ASSETS_"):
-            return AssetsConfig(
+            return cls(
                 base_url=env.str(name="BASE_URL", default=ASSETS_BASE_URL),
                 storage_directory=env.str(name="STORAGE_DIRECTORY", default=ASSETS_STORE_DIRECTORY),
             )
@@ -40,11 +40,11 @@ class CommonConfig:
     hf_token: Optional[str] = COMMON_HF_TOKEN
     log_level: int = COMMON_LOG_LEVEL
 
-    @staticmethod
-    def from_env() -> "CommonConfig":
+    @classmethod
+    def from_env(cls) -> "CommonConfig":
         env = Env(expand_vars=True)
         with env.prefixed("COMMON_"):
-            return CommonConfig(
+            return cls(
                 hf_endpoint=env.str(name="HF_ENDPOINT", default=COMMON_HF_ENDPOINT),
                 hf_token=env.str(name="HF_TOKEN", default=COMMON_HF_TOKEN),  # nosec
                 log_level=env.log_level(name="LOG_LEVEL", default=COMMON_LOG_LEVEL),
@@ -60,11 +60,11 @@ class CacheConfig:
     mongo_database: str = CACHE_MONGO_DATABASE
     mongo_url: str = CACHE_MONGO_URL
 
-    @staticmethod
-    def from_env() -> "CacheConfig":
+    @classmethod
+    def from_env(cls) -> "CacheConfig":
         env = Env(expand_vars=True)
         with env.prefixed("CACHE_"):
-            return CacheConfig(
+            return cls(
                 mongo_database=env.str(name="MONGO_DATABASE", default=CACHE_MONGO_DATABASE),
                 mongo_url=env.str(name="MONGO_URL", default=CACHE_MONGO_URL),
             )
@@ -81,11 +81,11 @@ class QueueConfig:
     mongo_database: str = QUEUE_MONGO_DATABASE
     mongo_url: str = QUEUE_MONGO_URL
 
-    @staticmethod
-    def from_env() -> "QueueConfig":
+    @classmethod
+    def from_env(cls) -> "QueueConfig":
         env = Env(expand_vars=True)
         with env.prefixed("QUEUE_"):
-            return QueueConfig(
+            return cls(
                 max_jobs_per_namespace=env.int(name="MAX_JOBS_PER_NAMESPACE", default=QUEUE_MAX_JOBS_PER_NAMESPACE),
                 mongo_database=env.str(name="MONGO_DATABASE", default=QUEUE_MONGO_DATABASE),
                 mongo_url=env.str(name="MONGO_URL", default=QUEUE_MONGO_URL),
@@ -107,7 +107,7 @@ class ProcessingGraphConfig:
         }
     )
 
-    @staticmethod
-    def from_env() -> "ProcessingGraphConfig":
+    @classmethod
+    def from_env(cls) -> "ProcessingGraphConfig":
         # TODO: allow passing the graph via env vars
-        return ProcessingGraphConfig()
+        return cls()
