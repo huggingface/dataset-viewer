@@ -3,9 +3,9 @@
 
 import sys
 
+from libcommon.log import init_logging
 from libcommon.resources import (
     CacheDatabaseResource,
-    LogResource,
     QueueDatabaseResource,
 )
 
@@ -16,9 +16,11 @@ from mongodb_migration.resources import MigrationsDatabaseResource
 
 if __name__ == "__main__":
     job_config = JobConfig.from_env()
+
+    init_logging(log_level=job_config.common.log_level)
+    # ^ set first to have logs as soon as possible
+
     with (
-        LogResource(log_level=job_config.common.log_level),
-        # ^ first resource to be acquired, in order to have logs as soon as possible
         CacheDatabaseResource(database=job_config.cache.mongo_database, host=job_config.cache.mongo_url),
         QueueDatabaseResource(database=job_config.queue.mongo_database, host=job_config.queue.mongo_url),
         MigrationsDatabaseResource(

@@ -5,7 +5,6 @@ from dataclasses import dataclass, field
 from typing import Optional
 
 from libcommon.constants import CACHE_MONGOENGINE_ALIAS, QUEUE_MONGOENGINE_ALIAS
-from libcommon.log import init_logging
 from libcommon.mongo import MongoConnection, MongoConnectionFailure
 from libcommon.storage import StrPath, init_dir
 
@@ -68,24 +67,6 @@ class AssetsStorageAccessResource(Resource):
         self.directory = init_dir(directory=self.init_directory, appname="datasets_server_assets")
 
     # no need to implement release() as the directory is not deleted
-
-
-@dataclass
-class LogResource(Resource):
-    """
-    A resource that sets the log level.
-
-    Args:
-        log_level (:obj:`int`): The log level.
-    """
-
-    log_level: int
-
-    def allocate(self):
-        init_logging(self.log_level)
-
-    # no need to implement release() as the log level is not changed.
-    # TODO: restore the previous log level?
 
 
 class DatabaseConnectionFailure(Exception):

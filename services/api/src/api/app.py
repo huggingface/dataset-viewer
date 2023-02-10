@@ -4,10 +4,10 @@
 from typing import List
 
 import uvicorn  # type: ignore
+from libcommon.log import init_logging
 from libcommon.processing_graph import ProcessingGraph
 from libcommon.resources import (
     CacheDatabaseResource,
-    LogResource,
     QueueDatabaseResource,
     Resource,
 )
@@ -28,6 +28,10 @@ from api.routes.webhook import create_webhook_endpoint
 
 def create_app() -> Starlette:
     app_config = AppConfig.from_env()
+
+    init_logging(log_level=app_config.common.log_level)
+    # ^ set first to have logs as soon as possible
+
     prometheus = Prometheus()
 
     processing_graph = ProcessingGraph(app_config.processing_graph.specification)
@@ -44,8 +48,6 @@ def create_app() -> Starlette:
     ]
 
     resources: list[Resource] = [
-        LogResource(log_level=app_config.common.log_level),
-        # ^ first resource to be acquired, in order to have logs as soon as possible
         CacheDatabaseResource(database=app_config.cache.mongo_database, host=app_config.cache.mongo_url),
         QueueDatabaseResource(database=app_config.queue.mongo_database, host=app_config.queue.mongo_url),
     ]

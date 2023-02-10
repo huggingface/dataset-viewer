@@ -11,22 +11,8 @@ from mongoengine.fields import StringField
 from libcommon.resources import (
     AssetsStorageAccessResource,
     CacheDatabaseResource,
-    LogResource,
     QueueDatabaseResource,
 )
-
-
-def test_log() -> None:
-    LogResource(log_level=logging.DEBUG)
-    assert logging.getLogger().getEffectiveLevel() == logging.WARNING
-    # ^ This is a bug, the log level should be set to 10
-
-
-def test_log_context_manager() -> None:
-    assert logging.getLogger().getEffectiveLevel() == logging.WARNING
-    with LogResource(logging.DEBUG):
-        assert logging.getLogger().getEffectiveLevel() == logging.WARNING
-        # ^ This is a bug, the log level should be set to 10
 
 
 @pytest.mark.parametrize("with_init", [True, False])

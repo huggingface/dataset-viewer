@@ -1,12 +1,12 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2022 The HuggingFace Authors.
 
+from libcommon.log import init_logging
 from libcommon.processing_graph import ProcessingGraph
 from libcommon.queue import Queue
 from libcommon.resources import (
     AssetsStorageAccessResource,
     CacheDatabaseResource,
-    LogResource,
     QueueDatabaseResource,
 )
 
@@ -17,12 +17,14 @@ from datasets_based.worker_loop import WorkerLoop
 
 if __name__ == "__main__":
     app_config = AppConfig.from_env()
+
+    init_logging(log_level=app_config.common.log_level)
+    # ^ set first to have logs as soon as possible
+
     processing_graph = ProcessingGraph(app_config.processing_graph.specification)
     processing_step = processing_graph.get_step(app_config.datasets_based.endpoint)
 
     with (
-        LogResource(log_level=app_config.common.log_level),
-        # ^ first resource to be acquired, in order to have logs as soon as possible
         AssetsStorageAccessResource(
             init_directory=app_config.assets.storage_directory
         ) as assets_storage_access_resource,
