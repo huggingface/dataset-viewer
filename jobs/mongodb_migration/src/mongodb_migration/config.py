@@ -6,22 +6,22 @@ from dataclasses import dataclass, field
 from environs import Env
 from libcommon.config import CacheConfig, CommonConfig, QueueConfig
 
-MONGODB_MIGRATION_MONGO_DATABASE = "datasets_server_maintenance"
-MONGODB_MIGRATION_MONGO_URL = "mongodb://localhost:27017"
+DATABASE_MIGRATIONS_MONGO_DATABASE = "datasets_server_maintenance"
+DATABASE_MIGRATIONS_MONGO_URL = "mongodb://localhost:27017"
 
 
 @dataclass
 class DatabaseMigrationsConfig:
-    mongo_database: str = MONGODB_MIGRATION_MONGO_DATABASE
-    mongo_url: str = MONGODB_MIGRATION_MONGO_URL
+    mongo_database: str = DATABASE_MIGRATIONS_MONGO_DATABASE
+    mongo_url: str = DATABASE_MIGRATIONS_MONGO_URL
 
     @staticmethod
     def from_env() -> "DatabaseMigrationsConfig":
         env = Env(expand_vars=True)
-        with env.prefixed("MONGODB_MIGRATION_"):
+        with env.prefixed("DATABASE_MIGRATIONS_"):
             return DatabaseMigrationsConfig(
-                mongo_database=env.str(name="MONGO_DATABASE", default=MONGODB_MIGRATION_MONGO_DATABASE),
-                mongo_url=env.str(name="MONGO_URL", default=MONGODB_MIGRATION_MONGO_URL),
+                mongo_database=env.str(name="MONGO_DATABASE", default=DATABASE_MIGRATIONS_MONGO_DATABASE),
+                mongo_url=env.str(name="MONGO_URL", default=DATABASE_MIGRATIONS_MONGO_URL),
             )
 
 

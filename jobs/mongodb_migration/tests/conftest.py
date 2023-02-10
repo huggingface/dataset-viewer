@@ -13,6 +13,6 @@ def env() -> Env:
 @fixture(scope="session")
 def mongo_host(env: Env) -> str:
     try:
-        return env.str(name="MONGODB_MIGRATION_MONGO_URL")
+        return env.str(name="DATABASE_MIGRATIONS_MONGO_URL")
     except Exception as e:
-        raise ValueError("MONGODB_MIGRATION_MONGO_URL is not set") from e
+        raise ValueError("DATABASE_MIGRATIONS_MONGO_URL is not set") from e

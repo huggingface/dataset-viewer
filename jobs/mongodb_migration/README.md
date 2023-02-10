@@ -8,10 +8,10 @@ The script can be configured using environment variables. They are grouped by sc
 
 ### Admin service
 
-Set environment variables to configure the job (`MONGODB_MIGRATION_` prefix):
+Set environment variables to configure the job (`DATABASE_MIGRATIONS_` prefix):
 
-- `MONGODB_MIGRATION_MONGO_DATABASE`: the name of the database used for storing the migrations history. Defaults to `"datasets_server_maintenance"`.
-- `MONGODB_MIGRATION_MONGO_URL`: the URL used to connect to the mongo db server. Defaults to `"mongodb://localhost:27017"`.
+- `DATABASE_MIGRATIONS_MONGO_DATABASE`: the name of the database used for storing the migrations history. Defaults to `"datasets_server_maintenance"`.
+- `DATABASE_MIGRATIONS_MONGO_URL`: the URL used to connect to the mongo db server. Defaults to `"mongodb://localhost:27017"`.
 
 ### Common
 
