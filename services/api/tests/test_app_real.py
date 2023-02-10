@@ -2,8 +2,6 @@
 # Copyright 2022 The HuggingFace Authors.
 
 
-from libcommon.queue import _clean_queue_database
-from libcommon.simple_cache import _clean_cache_database
 from pytest import MonkeyPatch, fixture, mark
 from starlette.testclient import TestClient
 
@@ -36,12 +34,6 @@ def real_app_config(real_monkeypatch: MonkeyPatch) -> AppConfig:
     if app_config.common.hf_endpoint != "https://huggingface.co":
         raise ValueError("Test must be launched on the production hub")
     return app_config
-
-
-@fixture(autouse=True)
-def real_clean_mongo_databases(real_app_config: AppConfig) -> None:
-    _clean_cache_database()
-    _clean_queue_database()
 
 
 @mark.real_dataset

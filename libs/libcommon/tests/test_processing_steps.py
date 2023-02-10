@@ -2,11 +2,12 @@
 # Copyright 2022 The HuggingFace Authors.
 
 from libcommon.config import ProcessingGraphConfig
+from libcommon.processing_graph import ProcessingGraph
 
 
 def test_default_graph():
     config = ProcessingGraphConfig()
-    graph = config.graph
+    graph = ProcessingGraph(config.specification)
 
     config_names = graph.get_step("/config-names")
     split_names = graph.get_step("/split-names")

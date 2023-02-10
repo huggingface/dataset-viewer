@@ -76,6 +76,7 @@ services:
       dockerfile: workers/datasets_based/dev.Dockerfile
     # image: ${IMAGE_WORKER_DATASETS_BASED?IMAGE_WORKER_DATASETS_BASED env var must be provided}
     volumes:
+      - assets:${ASSETS_STORAGE_DIRECTORY-/assets}:rw
       - splits-datasets-cache:${HF_DATASETS_CACHE-/datasets-cache}:rw
       - splits-modules-cache:${HF_DATASETS_CACHE-/modules-cache}:rw
       - splits-numba-cache:${NUMBA_CACHE_DIR-/numba-cache}:rw
@@ -93,6 +94,7 @@ services:
       dockerfile: workers/datasets_based/dev.Dockerfile
     # image: ${IMAGE_WORKER_DATASETS_BASED?IMAGE_WORKER_DATASETS_BASED env var must be provided}
     volumes:
+      - assets:${ASSETS_STORAGE_DIRECTORY-/assets}:rw
       - splits-datasets-cache:${HF_DATASETS_CACHE-/datasets-cache}:rw
       - splits-modules-cache:${HF_DATASETS_CACHE-/modules-cache}:rw
       - splits-numba-cache:${NUMBA_CACHE_DIR-/numba-cache}:rw
@@ -110,6 +112,7 @@ services:
       dockerfile: workers/datasets_based/dev.Dockerfile
     # image: ${IMAGE_WORKER_DATASETS_BASED?IMAGE_WORKER_DATASETS_BASED env var must be provided}
     volumes:
+      - assets:${ASSETS_STORAGE_DIRECTORY-/assets}:rw
       - splits-datasets-cache:${HF_DATASETS_CACHE-/datasets-cache}:rw
       - splits-modules-cache:${HF_DATASETS_CACHE-/modules-cache}:rw
       - splits-numba-cache:${NUMBA_CACHE_DIR-/numba-cache}:rw
@@ -142,6 +145,7 @@ services:
       FIRST_ROWS_MAX_NUMBER: ${FIRST_ROWS_MAX_NUMBER-100}
       FIRST_ROWS_MIN_CELL_BYTES: ${FIRST_ROWS_MIN_CELL_BYTES-100}
       FIRST_ROWS_MIN_NUMBER: ${FIRST_ROWS_MIN_NUMBER-10}
+      FIRST_ROWS_COLUMNS_MAX_NUMBER: ${FIRST_ROWS_COLUMNS_MAX_NUMBER-1_000}
       WORKER_LOOP_STORAGE_PATHS: ${ASSETS_STORAGE_DIRECTORY-/assets}
       # ^ note: the datasets cache is automatically added, so no need to add it here
     depends_on:
@@ -153,6 +157,7 @@ services:
       dockerfile: workers/datasets_based/dev.Dockerfile
     # image: ${IMAGE_WORKER_DATASETS_BASED?IMAGE_WORKER_DATASETS_BASED env var must be provided}
     volumes:
+      - assets:${ASSETS_STORAGE_DIRECTORY-/assets}:rw
       - parquet-datasets-cache:${HF_DATASETS_CACHE-/datasets-cache}:rw
       - parquet-modules-cache:${HF_DATASETS_CACHE-/modules-cache}:rw
       - parquet-numba-cache:${NUMBA_CACHE_DIR-/numba-cache}:rw
@@ -177,6 +182,8 @@ services:
       context: ..
       dockerfile: workers/datasets_based/dev.Dockerfile
     # image: ${IMAGE_WORKER_DATASETS_BASED?IMAGE_WORKER_DATASETS_BASED env var must be provided}
+    volumes:
+      - assets:${ASSETS_STORAGE_DIRECTORY-/assets}:rw
     extends:
       file: docker-compose-dev-base.yml
       service: datasets-worker
@@ -190,6 +197,8 @@ services:
       context: ..
       dockerfile: workers/datasets_based/dev.Dockerfile
     # image: ${IMAGE_WORKER_DATASETS_BASED?IMAGE_WORKER_DATASETS_BASED env var must be provided}
+    volumes:
+      - assets:${ASSETS_STORAGE_DIRECTORY-/assets}:rw
     extends:
       file: docker-compose-dev-base.yml
       service: datasets-worker
@@ -203,6 +212,8 @@ services:
       context: ..
       dockerfile: workers/datasets_based/dev.Dockerfile
     # image: ${IMAGE_WORKER_DATASETS_BASED?IMAGE_WORKER_DATASETS_BASED env var must be provided}
+    volumes:
+      - assets:${ASSETS_STORAGE_DIRECTORY-/assets}:rw
     extends:
       file: docker-compose-dev-base.yml
       service: datasets-worker

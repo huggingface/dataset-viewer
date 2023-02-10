@@ -7,6 +7,7 @@ import logging
 import time
 import warnings
 from http import HTTPStatus
+from pathlib import Path
 from typing import Any, List, Literal, Mapping, Optional, TypedDict, Union
 
 from datasets import (
@@ -21,6 +22,7 @@ from datasets import (
 from datasets.data_files import EmptyDatasetError as _EmptyDatasetError
 from libcommon.processing_graph import ProcessingStep
 from libcommon.simple_cache import SplitFullName as _SplitFullName
+from libcommon.storage import StrPath
 from libcommon.utils import orjson_dumps
 
 from datasets_based.config import AppConfig, FirstRowsConfig
@@ -337,7 +339,7 @@ def transform_rows(
     rows: List[Row],
     features: Features,
     assets_base_url: str,
-    assets_directory: str,
+    assets_directory: StrPath,
 ) -> List[Row]:
     return [
         {
@@ -403,7 +405,7 @@ def compute_first_rows_response(
     rows_max_number: int,
     rows_min_number: int,
     columns_max_number: int,
-    assets_directory: str,
+    assets_directory: StrPath,
     max_size_fallback: Optional[int] = None,
 ) -> FirstRowsResponse:
     """
@@ -437,6 +439,8 @@ def compute_first_rows_response(
             The minimum number of rows of the response.
         columns_max_number (`int`):
             The maximum number of columns supported.
+        assets_directory (`str` or `pathlib.Path`):
+            The directory where the assets are stored.
     Returns:
         [`FirstRowsResponse`]: The list of first rows of the split.
     <Tip>
@@ -604,6 +608,7 @@ def compute_first_rows_response(
 
 
 class FirstRowsWorker(DatasetsBasedWorker):
+    assets_directory: StrPath
     first_rows_config: FirstRowsConfig
 
     @staticmethod
@@ -620,9 +625,18 @@ class FirstRowsWorker(DatasetsBasedWorker):
         app_config: AppConfig,
         processing_step: ProcessingStep,
         first_rows_config: FirstRowsConfig,
+        hf_datasets_cache: Path,
+        assets_directory: StrPath,
     ) -> None:
-        super().__init__(job_info=job_info, app_config=app_config, processing_step=processing_step)
+        super().__init__(
+            job_info=job_info,
+            app_config=app_config,
+            processing_step=processing_step,
+            hf_datasets_cache=hf_datasets_cache,
+        )
         self.first_rows_config = first_rows_config
+        self.assets_directory = assets_directory
+        self.assets_base_url = app_config.assets.base_url
 
     def compute(self) -> Mapping[str, Any]:
         if self.config is None or self.split is None:
@@ -631,8 +645,8 @@ class FirstRowsWorker(DatasetsBasedWorker):
             dataset=self.dataset,
             config=self.config,
             split=self.split,
-            assets_base_url=self.first_rows_config.assets.base_url,
-            assets_directory=self.first_rows_config.assets.storage_directory,
+            assets_base_url=self.assets_base_url,
+            assets_directory=self.assets_directory,
             hf_token=self.common_config.hf_token,
             min_cell_bytes=self.first_rows_config.min_cell_bytes,
             rows_max_bytes=self.first_rows_config.max_bytes,

@@ -9,9 +9,9 @@
   {{ include "envCache" . | nindent 2 }}
   {{ include "envQueue" . | nindent 2 }}
   {{ include "envCommon" . | nindent 2 }}
-  - name: MONGODB_MIGRATION_MONGO_DATABASE
+  - name: DATABASE_MIGRATIONS_MONGO_DATABASE
     value: {{ .Values.mongodbMigration.mongoDatabase | quote }}
-  - name: MONGODB_MIGRATION_MONGO_URL
+  - name: DATABASE_MIGRATIONS_MONGO_URL
     {{ include "datasetServer.mongo.url" . | nindent 4 }}
   securityContext:
     allowPrivilegeEscalation: false  

@@ -5,23 +5,14 @@ from typing import List, Optional
 
 import pytest
 from libcommon.processing_graph import ProcessingStep
-from libcommon.queue import _clean_queue_database
-from libcommon.simple_cache import _clean_cache_database
 from starlette.testclient import TestClient
 
 from admin.app import create_app
-from admin.config import AppConfig
 
 
 @pytest.fixture(scope="module")
 def client(monkeypatch_session: pytest.MonkeyPatch) -> TestClient:
     return TestClient(create_app())
-
-
-@pytest.fixture(autouse=True)
-def clean_mongo_databases(app_config: AppConfig) -> None:
-    _clean_cache_database()
-    _clean_queue_database()
 
 
 def test_cors(client: TestClient) -> None:

@@ -11,9 +11,11 @@ from itertools import groupby
 from operator import itemgetter
 from typing import Dict, Generic, List, Literal, Optional, Type, TypedDict, TypeVar
 
-from mongoengine import Document, DoesNotExist, connect
+from mongoengine import Document, DoesNotExist
 from mongoengine.fields import BooleanField, DateTimeField, EnumField, StringField
 from mongoengine.queryset.queryset import QuerySet
+
+from libcommon.constants import QUEUE_MONGOENGINE_ALIAS
 
 # START monkey patching ### hack ###
 # see https://github.com/sbdchd/mongo-types#install
@@ -96,10 +98,6 @@ def get_datetime() -> datetime:
     return datetime.now(timezone.utc)
 
 
-def connect_to_queue_database(database: str, host: str) -> None:
-    connect(db=database, alias="queue", host=host)
-
-
 # States:
 # - waiting: started_at is None and finished_at is None: waiting jobs
 # - started: started_at is not None and finished_at is None: started jobs
@@ -127,7 +125,7 @@ class Job(Document):
 
     meta = {
         "collection": "jobsBlue",
-        "db_alias": "queue",
+        "db_alias": QUEUE_MONGOENGINE_ALIAS,
         "indexes": [
             "dataset",
             "status",

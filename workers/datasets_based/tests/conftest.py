@@ -4,13 +4,15 @@
 from pathlib import Path
 from typing import Iterator
 
-from libcommon.config import CacheConfig, QueueConfig
 from libcommon.processing_graph import ProcessingStep
 from libcommon.queue import _clean_queue_database
+from libcommon.resources import CacheMongoResource, QueueMongoResource
 from libcommon.simple_cache import _clean_cache_database
+from libcommon.storage import StrPath, init_assets_dir
 from pytest import MonkeyPatch, fixture
 
 from datasets_based.config import AppConfig, FirstRowsConfig
+from datasets_based.resources import LibrariesResource
 
 from .constants import CI_APP_TOKEN, CI_HUB_ENDPOINT, CI_URL_TEMPLATE, CI_USER_TOKEN
 
@@ -62,11 +64,30 @@ def app_config(set_env_vars: MonkeyPatch) -> Iterator[AppConfig]:
     if "test" not in app_config.cache.mongo_database or "test" not in app_config.queue.mongo_database:
         raise ValueError("Test must be launched on a test mongo database")
     yield app_config
-    # Clean the database after each test. Must be done in test databases only, ensured by the check above!
-    # TODO: use a parameter to pass a reference to the database, instead of relying on the implicit global variable
-    # managed by mongoengine
-    _clean_cache_database()
-    _clean_queue_database()
+
+
+@fixture
+def cache_mongo_resource(app_config: AppConfig) -> Iterator[CacheMongoResource]:
+    with CacheMongoResource(database=app_config.cache.mongo_database, host=app_config.cache.mongo_url) as resource:
+        yield resource
+        _clean_cache_database()
+
+
+@fixture
+def queue_mongo_resource(app_config: AppConfig) -> Iterator[QueueMongoResource]:
+    with QueueMongoResource(database=app_config.queue.mongo_database, host=app_config.queue.mongo_url) as resource:
+        yield resource
+        _clean_queue_database()
+
+
+@fixture
+def libraries_resource(app_config: AppConfig) -> Iterator[LibrariesResource]:
+    with LibrariesResource(
+        hf_endpoint=app_config.common.hf_endpoint,
+        init_hf_datasets_cache=app_config.datasets_based.hf_datasets_cache,
+        numba_path=app_config.numba.path,
+    ) as libraries_resource:
+        yield libraries_resource
 
 
 @fixture
@@ -74,8 +95,9 @@ def first_rows_config(set_env_vars: MonkeyPatch) -> FirstRowsConfig:
     return FirstRowsConfig.from_env()
 
 
-# Import fixture modules as plugins
-pytest_plugins = ["tests.fixtures.datasets", "tests.fixtures.files", "tests.fixtures.hub"]
+@fixture
+def assets_directory(app_config: AppConfig) -> StrPath:
+    return init_assets_dir(app_config.assets.storage_directory)
 
 
 @fixture()
@@ -91,17 +113,5 @@ def test_processing_step() -> ProcessingStep:
     )
 
 
-@fixture()
-def cache_config(app_config: AppConfig) -> CacheConfig:
-    cache_config = app_config.cache
-    if "test" not in cache_config.mongo_database:
-        raise ValueError("Test must be launched on a test mongo database")
-    return cache_config
-
-
-@fixture()
-def queue_config(app_config: AppConfig) -> QueueConfig:
-    queue_config = app_config.queue
-    if "test" not in queue_config.mongo_database:
-        raise ValueError("Test must be launched on a test mongo database")
-    return queue_config
+# Import fixture modules as plugins
+pytest_plugins = ["tests.fixtures.datasets", "tests.fixtures.files", "tests.fixtures.hub"]

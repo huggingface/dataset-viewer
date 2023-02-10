@@ -6,14 +6,18 @@ import pytest
 from libcommon.config import CommonConfig
 from libcommon.processing_graph import ProcessingGraph, ProcessingStep
 from libcommon.queue import Priority, Queue, Status
+from libcommon.resources import CacheMongoResource, QueueMongoResource
 from libcommon.simple_cache import SplitFullName, upsert_response
 
-from datasets_based.config import AppConfig, DatasetsBasedConfig
+from datasets_based.config import DatasetsBasedConfig
 from datasets_based.worker import ERROR_CODES_TO_RETRY, Worker
 
 
 @pytest.fixture(autouse=True)
-def prepare_and_clean_mongo(app_config: AppConfig) -> None:
+def prepare_and_clean_mongo(
+    cache_mongo_resource: CacheMongoResource,
+    queue_mongo_resource: QueueMongoResource,
+) -> None:
     # prepare the database before each test, and clean it afterwards
     pass
 

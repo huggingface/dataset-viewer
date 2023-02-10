@@ -23,6 +23,7 @@
     # overridden
     value: {{ .Values.configNames.queue.maxJobsPerNamespace | quote }}
   volumeMounts:
+  {{ include "volumeMountAssetsRW" . | nindent 2 }}
   {{ include "volumeMountCache" . | nindent 2 }}
   securityContext:
     allowPrivilegeEscalation: false
