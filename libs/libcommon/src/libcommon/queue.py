@@ -410,7 +410,9 @@ class Queue:
         # ^ can raise EmptyQueueError
         next_waiting_job.update(started_at=get_datetime(), status=Status.STARTED)
         if only_job_types and next_waiting_job not in only_job_types:
-            raise ValueError(f"job type {next_waiting_job.type} not in {only_job_types}")
+            raise RuntimeError(
+                f"The job type {next_waiting_job.type} is not in the list of allowed job types {only_job_types}"
+            )
         return {
             "job_id": str(next_waiting_job.pk),  # job.pk is the id. job.id is not recognized by mypy
             "type": next_waiting_job.type,
