@@ -43,7 +43,7 @@ def test_database_resource(queue_mongo_host: str) -> None:
         mongoengine_alias=mongoengine_alias,
         server_selection_timeout_ms=server_selection_timeout_ms,
     )
-    resource_2.check()
+    assert resource_2.check()
     resource_2.release()
 
 
