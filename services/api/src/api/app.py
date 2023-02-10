@@ -46,7 +46,7 @@ def create_app() -> Starlette:
     cache_resource = CacheMongoResource(database=app_config.cache.mongo_database, host=app_config.cache.mongo_url)
     queue_resource = QueueMongoResource(database=app_config.queue.mongo_database, host=app_config.queue.mongo_url)
     resources: list[Resource] = [cache_resource, queue_resource]
-    if cache_resource.check() is False:
+    if not cache_resource.check():
         raise RuntimeError("The connection to the cache database could not be established. Exiting.")
     if not queue_resource.check():
         raise RuntimeError("The connection to the queue database could not be established. Exiting.")
