@@ -1,8 +1,7 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2022 The HuggingFace Authors.
 
-from libcommon.queue import _clean_queue_database
-from libcommon.simple_cache import _clean_cache_database
+from libcommon.processing_graph import ProcessingGraph
 from pytest import MonkeyPatch, fixture, mark
 from starlette.testclient import TestClient
 
@@ -37,18 +36,13 @@ def real_app_config(real_monkeypatch: MonkeyPatch) -> AppConfig:
     return app_config
 
 
-@fixture(autouse=True)
-def real_clean_mongo_databases(real_app_config: AppConfig) -> None:
-    _clean_cache_database()
-    _clean_queue_database()
-
-
 @mark.real_dataset
 def test_force_refresh(
     real_app_config: AppConfig,
     real_client: TestClient,
 ) -> None:
     dataset = "glue"
-    path = next(iter(real_app_config.processing_graph.graph.steps.values())).endpoint
+    processing_graph = ProcessingGraph(real_app_config.processing_graph.specification)
+    path = next(iter(processing_graph.steps.values())).endpoint
     response = real_client.post(f"/force-refresh{path}?dataset={dataset}")
     assert response.status_code == 200, response.text

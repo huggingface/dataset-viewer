@@ -2,11 +2,8 @@
 # Copyright 2022 The HuggingFace Authors.
 
 from dataclasses import dataclass, field
-from pathlib import Path
-from typing import List, Optional, Union
+from typing import List, Optional
 
-import datasets.config
-from datasets.utils.logging import log_levels, set_verbosity
 from environs import Env
 from libcommon.config import (
     AssetsConfig,
@@ -55,13 +52,8 @@ DATASETS_BASED_CONTENT_MAX_BYTES = 10_000_000
 @dataclass
 class DatasetsBasedConfig:
     endpoint: str = DATASETS_BASED_ENDPOINT
-    _hf_datasets_cache: Union[str, Path, None] = DATASETS_BASED_HF_DATASETS_CACHE
+    hf_datasets_cache: Optional[str] = DATASETS_BASED_HF_DATASETS_CACHE
     content_max_bytes: int = DATASETS_BASED_CONTENT_MAX_BYTES
-
-    def __post_init__(self) -> None:
-        self.hf_datasets_cache = (
-            datasets.config.HF_DATASETS_CACHE if self._hf_datasets_cache is None else Path(self._hf_datasets_cache)
-        )
 
     @staticmethod
     def from_env() -> "DatasetsBasedConfig":
@@ -69,7 +61,7 @@ class DatasetsBasedConfig:
         with env.prefixed("DATASETS_BASED_"):
             return DatasetsBasedConfig(
                 endpoint=env.str(name="ENDPOINT", default=DATASETS_BASED_ENDPOINT),
-                _hf_datasets_cache=env.str(name="HF_DATASETS_CACHE", default=DATASETS_BASED_HF_DATASETS_CACHE),
+                hf_datasets_cache=env.str(name="HF_DATASETS_CACHE", default=DATASETS_BASED_HF_DATASETS_CACHE),
                 content_max_bytes=env.int(name="CONTENT_MAX_BYTES", default=DATASETS_BASED_CONTENT_MAX_BYTES),
             )
 
@@ -83,7 +75,6 @@ FIRST_ROWS_COLUMNS_MAX_NUMBER = 1_000
 
 @dataclass
 class FirstRowsConfig:
-    assets: AssetsConfig = field(default_factory=AssetsConfig)
     max_bytes: int = FIRST_ROWS_MAX_BYTES
     max_number: int = FIRST_ROWS_MAX_NUMBER
     min_cell_bytes: int = FIRST_ROWS_CELL_MIN_BYTES
@@ -95,7 +86,6 @@ class FirstRowsConfig:
         env = Env(expand_vars=True)
         with env.prefixed("FIRST_ROWS_"):
             return FirstRowsConfig(
-                assets=AssetsConfig.from_env(),
                 max_bytes=env.int(name="MAX_BYTES", default=FIRST_ROWS_MAX_BYTES),
                 max_number=env.int(name="MAX_NUMBER", default=FIRST_ROWS_MAX_NUMBER),
                 min_cell_bytes=env.int(name="CELL_MIN_BYTES", default=FIRST_ROWS_CELL_MIN_BYTES),
@@ -141,43 +131,39 @@ class ParquetAndDatasetInfoConfig:
             )
 
 
+NUMBA_CACHE_DIR: Optional[str] = None
+
+
+@dataclass
+class NumbaConfig:
+    path: Optional[str] = NUMBA_CACHE_DIR  # not documented
+
+    @staticmethod
+    def from_env() -> "NumbaConfig":
+        env = Env(expand_vars=True)
+        with env.prefixed("NUMBA_"):
+            return NumbaConfig(path=env.str(name="NUMBA_CACHE_DIR", default=NUMBA_CACHE_DIR))
+
+
 @dataclass
 class AppConfig:
+    assets: AssetsConfig = field(default_factory=AssetsConfig)
     cache: CacheConfig = field(default_factory=CacheConfig)
     common: CommonConfig = field(default_factory=CommonConfig)
     datasets_based: DatasetsBasedConfig = field(default_factory=DatasetsBasedConfig)
+    numba: NumbaConfig = field(default_factory=NumbaConfig)
     processing_graph: ProcessingGraphConfig = field(default_factory=ProcessingGraphConfig)
     queue: QueueConfig = field(default_factory=QueueConfig)
     worker_loop: WorkerLoopConfig = field(default_factory=WorkerLoopConfig)
 
-    def __post_init__(self):
-        # Ensure the datasets library uses the expected HuggingFace endpoint
-        datasets.config.HF_ENDPOINT = self.common.hf_endpoint
-        # Don't increase the datasets download counts on huggingface.co
-        datasets.config.HF_UPDATE_DOWNLOAD_COUNTS = False
-        # Set logs from the datasets library to the least verbose
-        set_verbosity(log_levels["critical"])
-
-        # Note: self.common.hf_endpoint is ignored by the huggingface_hub library for now (see
-        # the discussion at https://github.com/huggingface/datasets/pull/5196), and this breaks
-        # various of the datasets functions. The fix, for now, is to set the HF_ENDPOINT
-        # environment variable to the desired value.
-
-        # Add the datasets and numba cache paths to the list of storage paths, to ensure the disk is not full
-        env = Env(expand_vars=True)
-        numba_path = env.str(name="NUMBA_CACHE_DIR", default=None)
-        additional_paths = {str(self.datasets_based.hf_datasets_cache), str(datasets.config.HF_MODULES_CACHE)}
-        if numba_path:
-            additional_paths.add(numba_path)
-        self.worker_loop.storage_paths = list(set(self.worker_loop.storage_paths).union(additional_paths))
-
     @staticmethod
     def from_env() -> "AppConfig":
         return AppConfig(
-            # First process the common configuration to setup the logging
+            assets=AssetsConfig.from_env(),
             common=CommonConfig.from_env(),
             cache=CacheConfig.from_env(),
             datasets_based=DatasetsBasedConfig.from_env(),
+            numba=NumbaConfig.from_env(),
             processing_graph=ProcessingGraphConfig.from_env(),
             queue=QueueConfig.from_env(),
             worker_loop=WorkerLoopConfig.from_env(),

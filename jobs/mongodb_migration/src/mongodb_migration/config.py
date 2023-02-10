@@ -6,27 +6,22 @@ from dataclasses import dataclass, field
 from environs import Env
 from libcommon.config import CacheConfig, CommonConfig, QueueConfig
 
-from mongodb_migration.database_migrations import connect_to_database
-
-MONGODB_MIGRATION_MONGO_DATABASE = "datasets_server_maintenance"
-MONGO_DATABASE_MONGO_URL = "mongodb://localhost:27017"
+DATABASE_MIGRATIONS_MONGO_DATABASE = "datasets_server_maintenance"
+DATABASE_MIGRATIONS_MONGO_URL = "mongodb://localhost:27017"
 
 
 @dataclass
-class MongodbMigrationConfig:
-    mongo_database: str = MONGODB_MIGRATION_MONGO_DATABASE
-    mongo_url: str = MONGO_DATABASE_MONGO_URL
-
-    def __post_init__(self):
-        connect_to_database(database=self.mongo_database, host=self.mongo_url)
+class DatabaseMigrationsConfig:
+    mongo_database: str = DATABASE_MIGRATIONS_MONGO_DATABASE
+    mongo_url: str = DATABASE_MIGRATIONS_MONGO_URL
 
     @staticmethod
-    def from_env() -> "MongodbMigrationConfig":
+    def from_env() -> "DatabaseMigrationsConfig":
         env = Env(expand_vars=True)
-        with env.prefixed("MONGODB_MIGRATION_"):
-            return MongodbMigrationConfig(
-                mongo_database=env.str(name="MONGO_DATABASE", default=MONGODB_MIGRATION_MONGO_DATABASE),
-                mongo_url=env.str(name="MONGO_URL", default=MONGO_DATABASE_MONGO_URL),
+        with env.prefixed("DATABASE_MIGRATIONS_"):
+            return DatabaseMigrationsConfig(
+                mongo_database=env.str(name="MONGO_DATABASE", default=DATABASE_MIGRATIONS_MONGO_DATABASE),
+                mongo_url=env.str(name="MONGO_URL", default=DATABASE_MIGRATIONS_MONGO_URL),
             )
 
 
@@ -34,7 +29,7 @@ class MongodbMigrationConfig:
 class JobConfig:
     cache: CacheConfig = field(default_factory=CacheConfig)
     common: CommonConfig = field(default_factory=CommonConfig)
-    mongodb_migration: MongodbMigrationConfig = field(default_factory=MongodbMigrationConfig)
+    database_migrations: DatabaseMigrationsConfig = field(default_factory=DatabaseMigrationsConfig)
     queue: QueueConfig = field(default_factory=QueueConfig)
 
     @staticmethod
@@ -42,6 +37,6 @@ class JobConfig:
         return JobConfig(
             common=CommonConfig.from_env(),
             cache=CacheConfig.from_env(),
-            mongodb_migration=MongodbMigrationConfig.from_env(),
+            database_migrations=DatabaseMigrationsConfig.from_env(),
             queue=QueueConfig.from_env(),
         )

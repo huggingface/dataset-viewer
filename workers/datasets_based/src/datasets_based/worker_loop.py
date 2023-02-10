@@ -4,7 +4,7 @@
 import logging
 import random
 import time
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 from libcommon.queue import EmptyQueueError, Queue
 from psutil import cpu_count, disk_usage, getloadavg, swap_memory, virtual_memory
@@ -22,6 +22,8 @@ class WorkerLoop:
     is raised.
 
     Args:
+        library_cache_paths (`set[str]`):
+            The paths of the library caches. Used to check if the disk is full.
         queue (`Queue`):
             The job queue.
         worker_factory (`WorkerFactory`):
@@ -30,9 +32,15 @@ class WorkerLoop:
             Worker loop configuration.
     """
 
+    library_cache_paths: set[str]
     queue: Queue
     worker_factory: BaseWorkerFactory
     worker_loop_config: WorkerLoopConfig
+
+    storage_paths: set[str] = field(init=False)
+
+    def __post_init__(self) -> None:
+        self.storage_paths = set(self.worker_loop_config.storage_paths).union(self.library_cache_paths)
 
     def log(self, level: int, msg: str) -> None:
         logging.log(level=level, msg=f"[{self.queue.type}] {msg}")
@@ -76,7 +84,7 @@ class WorkerLoop:
     def has_storage(self) -> bool:
         if self.worker_loop_config.max_disk_usage_pct <= 0:
             return True
-        for path in self.worker_loop_config.storage_paths:
+        for path in self.storage_paths:
             try:
                 usage = disk_usage(path)
                 if usage.percent >= self.worker_loop_config.max_disk_usage_pct:

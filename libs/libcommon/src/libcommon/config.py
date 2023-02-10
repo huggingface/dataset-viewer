@@ -8,11 +8,7 @@ from typing import Optional
 
 from environs import Env
 
-from libcommon.log import init_logging
-from libcommon.processing_graph import ProcessingGraph, ProcessingGraphSpecification
-from libcommon.queue import connect_to_queue_database
-from libcommon.simple_cache import connect_to_cache_database
-from libcommon.storage import init_dir
+from libcommon.processing_graph import ProcessingGraphSpecification
 
 ASSETS_BASE_URL = "assets"
 ASSETS_STORE_DIRECTORY = None
@@ -21,10 +17,7 @@ ASSETS_STORE_DIRECTORY = None
 @dataclass
 class AssetsConfig:
     base_url: str = ASSETS_BASE_URL
-    _storage_directory: Optional[str] = ASSETS_STORE_DIRECTORY
-
-    def __post_init__(self):
-        self.storage_directory = init_dir(directory=self._storage_directory, appname="datasets_server_assets")
+    storage_directory: Optional[str] = ASSETS_STORE_DIRECTORY
 
     @staticmethod
     def from_env() -> "AssetsConfig":
@@ -32,7 +25,7 @@ class AssetsConfig:
         with env.prefixed("ASSETS_"):
             return AssetsConfig(
                 base_url=env.str(name="BASE_URL", default=ASSETS_BASE_URL),
-                _storage_directory=env.str(name="STORAGE_DIRECTORY", default=ASSETS_STORE_DIRECTORY),
+                storage_directory=env.str(name="STORAGE_DIRECTORY", default=ASSETS_STORE_DIRECTORY),
             )
 
 
@@ -46,9 +39,6 @@ class CommonConfig:
     hf_endpoint: str = COMMON_HF_ENDPOINT
     hf_token: Optional[str] = COMMON_HF_TOKEN
     log_level: int = COMMON_LOG_LEVEL
-
-    def __post_init__(self):
-        init_logging(self.log_level)
 
     @staticmethod
     def from_env() -> "CommonConfig":
@@ -70,9 +60,6 @@ class CacheConfig:
     mongo_database: str = CACHE_MONGO_DATABASE
     mongo_url: str = CACHE_MONGO_URL
 
-    def __post_init__(self):
-        connect_to_cache_database(database=self.mongo_database, host=self.mongo_url)
-
     @staticmethod
     def from_env() -> "CacheConfig":
         env = Env(expand_vars=True)
@@ -93,9 +80,6 @@ class QueueConfig:
     max_jobs_per_namespace: int = QUEUE_MAX_JOBS_PER_NAMESPACE
     mongo_database: str = QUEUE_MONGO_DATABASE
     mongo_url: str = QUEUE_MONGO_URL
-
-    def __post_init__(self):
-        connect_to_queue_database(database=self.mongo_database, host=self.mongo_url)
 
     @staticmethod
     def from_env() -> "QueueConfig":
@@ -122,9 +106,6 @@ class ProcessingGraphConfig:
             "/sizes": {"input_type": "dataset", "requires": "/parquet-and-dataset-info"},
         }
     )
-
-    def __post_init__(self):
-        self.graph = ProcessingGraph(self.specification)
 
     @staticmethod
     def from_env() -> "ProcessingGraphConfig":

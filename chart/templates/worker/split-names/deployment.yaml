@@ -21,6 +21,7 @@ spec:
     spec:
       {{- include "image.imagePullSecrets" . | nindent 6 }}
       initContainers:
+        {{ include "initContainerAssets" . | nindent 8 }}
         {{ include "initContainerCache" . | nindent 8 }}
       containers: {{ include "containerWorkerSplitNames" . | nindent 8 }}
       nodeSelector: {{ toYaml .Values.splitNames.nodeSelector | nindent 8 }}

@@ -47,6 +47,7 @@
   - name: PARQUET_AND_DATASET_INFO_URL_TEMPLATE
     value: {{ .Values.parquetAndDatasetInfo.urlTemplate | quote }}
   volumeMounts:
+  {{ include "volumeMountAssetsRW" . | nindent 2 }}
   {{ include "volumeMountCache" . | nindent 2 }}
   securityContext:
     allowPrivilegeEscalation: false

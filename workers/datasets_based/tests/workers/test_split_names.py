@@ -8,44 +8,55 @@ import pytest
 from libcommon.exceptions import CustomError
 from libcommon.processing_graph import ProcessingStep
 from libcommon.queue import Priority
+from libcommon.resources import CacheMongoResource, QueueMongoResource
 from libcommon.simple_cache import DoesNotExist, get_response
 
 from datasets_based.config import AppConfig
+from datasets_based.resources import LibrariesResource
 from datasets_based.workers.split_names import SplitNamesWorker
 
 from ..fixtures.hub import HubDatasets, get_default_config_split
 
 
+@pytest.fixture
 def get_worker(
-    dataset: str,
-    config: str,
-    app_config: AppConfig,
-    force: bool = False,
-) -> SplitNamesWorker:
-    return SplitNamesWorker(
-        job_info={
-            "type": SplitNamesWorker.get_job_type(),
-            "dataset": dataset,
-            "config": config,
-            "split": None,
-            "job_id": "job_id",
-            "force": force,
-            "priority": Priority.NORMAL,
-        },
-        app_config=app_config,
-        processing_step=ProcessingStep(
-            endpoint=SplitNamesWorker.get_job_type(),
-            input_type="config",
-            requires=None,
-            required_by_dataset_viewer=False,
-            parent=None,
-            ancestors=[],
-            children=[],
-        ),
-    )
+    libraries_resource: LibrariesResource,
+    cache_mongo_resource: CacheMongoResource,
+    queue_mongo_resource: QueueMongoResource,
+):
+    def _get_worker(
+        dataset: str,
+        config: str,
+        app_config: AppConfig,
+        force: bool = False,
+    ) -> SplitNamesWorker:
+        return SplitNamesWorker(
+            job_info={
+                "type": SplitNamesWorker.get_job_type(),
+                "dataset": dataset,
+                "config": config,
+                "split": None,
+                "job_id": "job_id",
+                "force": force,
+                "priority": Priority.NORMAL,
+            },
+            app_config=app_config,
+            processing_step=ProcessingStep(
+                endpoint=SplitNamesWorker.get_job_type(),
+                input_type="config",
+                requires=None,
+                required_by_dataset_viewer=False,
+                parent=None,
+                ancestors=[],
+                children=[],
+            ),
+            hf_datasets_cache=libraries_resource.hf_datasets_cache,
+        )
+
+    return _get_worker
 
 
-def test_process(app_config: AppConfig, hub_public_csv: str) -> None:
+def test_process(app_config: AppConfig, get_worker, hub_public_csv: str) -> None:
     dataset, config, _ = get_default_config_split(hub_public_csv)
     worker = get_worker(dataset, config, app_config)
     assert worker.process() is True
@@ -59,7 +70,7 @@ def test_process(app_config: AppConfig, hub_public_csv: str) -> None:
     assert len(content["split_names"]) == 1
 
 
-def test_doesnotexist(app_config: AppConfig) -> None:
+def test_doesnotexist(app_config: AppConfig, get_worker) -> None:
     dataset = "doesnotexist"
     config = "some_config"
     worker = get_worker(dataset, config, app_config)
@@ -84,7 +95,13 @@ def test_doesnotexist(app_config: AppConfig) -> None:
     ],
 )
 def test_compute_split_names_response(
-    hub_datasets: HubDatasets, name: str, use_token: bool, error_code: str, cause: str, app_config: AppConfig
+    hub_datasets: HubDatasets,
+    get_worker,
+    name: str,
+    use_token: bool,
+    error_code: str,
+    cause: str,
+    app_config: AppConfig,
 ) -> None:
     dataset, config, _ = get_default_config_split(hub_datasets[name]["name"])
     worker = get_worker(dataset, config, app_config)

@@ -19,6 +19,8 @@
     # value: {{ .Values.queue.maxJobsPerNamespace | quote }}
     # overridden
     value: {{ .Values.sizes.queue.maxJobsPerNamespace | quote }}
+  volumeMounts:
+  {{ include "volumeMountAssetsRW" . | nindent 2 }}
   securityContext:
     allowPrivilegeEscalation: false
   resources: {{ toYaml .Values.sizes.resources | nindent 4 }}
