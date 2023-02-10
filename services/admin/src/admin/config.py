@@ -18,7 +18,7 @@ ADMIN_UVICORN_NUM_WORKERS = 2
 ADMIN_UVICORN_PORT = 8000
 
 
-@dataclass
+@dataclass(frozen=True)
 class UvicornConfig:
     hostname: str = ADMIN_UVICORN_HOSTNAME
     num_workers: int = ADMIN_UVICORN_NUM_WORKERS
@@ -43,7 +43,7 @@ ADMIN_HF_WHOAMI_PATH = "/api/whoami-v2"
 ADMIN_MAX_AGE = 10
 
 
-@dataclass
+@dataclass(frozen=True)
 class AdminConfig:
     cache_reports_num_results: int = ADMIN_CACHE_REPORTS_NUM_RESULTS
     cache_reports_with_content_num_results: int = ADMIN_CACHE_REPORTS_WITH_CONTENT_NUM_RESULTS
@@ -72,7 +72,7 @@ class AdminConfig:
             )
 
 
-@dataclass
+@dataclass(frozen=True)
 class AppConfig:
     admin: AdminConfig = field(default_factory=AdminConfig)
     assets: AssetsConfig = field(default_factory=AssetsConfig)

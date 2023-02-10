@@ -10,7 +10,7 @@ DATABASE_MIGRATIONS_MONGO_DATABASE = "datasets_server_maintenance"
 DATABASE_MIGRATIONS_MONGO_URL = "mongodb://localhost:27017"
 
 
-@dataclass
+@dataclass(frozen=True)
 class DatabaseMigrationsConfig:
     mongo_database: str = DATABASE_MIGRATIONS_MONGO_DATABASE
     mongo_url: str = DATABASE_MIGRATIONS_MONGO_URL
@@ -25,7 +25,7 @@ class DatabaseMigrationsConfig:
             )
 
 
-@dataclass
+@dataclass(frozen=True)
 class JobConfig:
     cache: CacheConfig = field(default_factory=CacheConfig)
     common: CommonConfig = field(default_factory=CommonConfig)

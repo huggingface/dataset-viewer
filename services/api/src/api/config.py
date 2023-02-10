@@ -17,7 +17,7 @@ API_UVICORN_NUM_WORKERS = 2
 API_UVICORN_PORT = 8000
 
 
-@dataclass
+@dataclass(frozen=True)
 class UvicornConfig:
     hostname: str = API_UVICORN_HOSTNAME
     num_workers: int = API_UVICORN_NUM_WORKERS
@@ -40,7 +40,7 @@ API_MAX_AGE_LONG = 120  # 2 minutes
 API_MAX_AGE_SHORT = 10  # 10 seconds
 
 
-@dataclass
+@dataclass(frozen=True)
 class ApiConfig:
     external_auth_url: Optional[str] = API_EXTERNAL_AUTH_URL  # not documented
     hf_auth_path: str = API_HF_AUTH_PATH
@@ -61,7 +61,7 @@ class ApiConfig:
             )
 
 
-@dataclass
+@dataclass(frozen=True)
 class AppConfig:
     api: ApiConfig = field(default_factory=ApiConfig)
     cache: CacheConfig = field(default_factory=CacheConfig)

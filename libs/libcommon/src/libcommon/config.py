@@ -14,7 +14,7 @@ ASSETS_BASE_URL = "assets"
 ASSETS_STORE_DIRECTORY = None
 
 
-@dataclass
+@dataclass(frozen=True)
 class AssetsConfig:
     base_url: str = ASSETS_BASE_URL
     storage_directory: Optional[str] = ASSETS_STORE_DIRECTORY
@@ -34,7 +34,7 @@ COMMON_HF_TOKEN = None
 COMMON_LOG_LEVEL = logging.INFO
 
 
-@dataclass
+@dataclass(frozen=True)
 class CommonConfig:
     hf_endpoint: str = COMMON_HF_ENDPOINT
     hf_token: Optional[str] = COMMON_HF_TOKEN
@@ -55,7 +55,7 @@ CACHE_MONGO_DATABASE = "datasets_server_cache"
 CACHE_MONGO_URL = "mongodb://localhost:27017"
 
 
-@dataclass
+@dataclass(frozen=True)
 class CacheConfig:
     mongo_database: str = CACHE_MONGO_DATABASE
     mongo_url: str = CACHE_MONGO_URL
@@ -75,7 +75,7 @@ QUEUE_MONGO_DATABASE = "datasets_server_queue"
 QUEUE_MONGO_URL = "mongodb://localhost:27017"
 
 
-@dataclass
+@dataclass(frozen=True)
 class QueueConfig:
     max_jobs_per_namespace: int = QUEUE_MAX_JOBS_PER_NAMESPACE
     mongo_database: str = QUEUE_MONGO_DATABASE
@@ -92,7 +92,7 @@ class QueueConfig:
             )
 
 
-@dataclass
+@dataclass(frozen=True)
 class ProcessingGraphConfig:
     specification: ProcessingGraphSpecification = field(
         default_factory=lambda: {
