@@ -8,6 +8,8 @@ from typing import Optional, Union
 
 from appdirs import user_cache_dir  # type:ignore
 
+from libcommon.constants import ASSETS_CACHE_APPNAME
+
 StrPath = Union[str, PathLike[str]]
 
 
@@ -30,6 +32,20 @@ def init_dir(directory: Optional[StrPath] = None, appname: Optional[str] = None)
     makedirs(directory, exist_ok=True)
     logging.debug(f"Directory created at: {directory}")
     return directory
+
+
+def init_assets_dir(directory: Optional[StrPath] = None) -> StrPath:
+    """Initialize the assets directory.
+
+    If directory is None, it will be set to the default cache location on the machine.
+
+    Args:
+        directory (Optional[Union[str, PathLike[str]]], optional): The directory to initialize. Defaults to None.
+
+    Returns:
+        Union[str, PathLike[str]]: The directory.
+    """
+    return init_dir(directory, appname=ASSETS_CACHE_APPNAME)
 
 
 def remove_dir(directory: StrPath) -> None:
