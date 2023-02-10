@@ -46,6 +46,7 @@ def get_worker(
                 "priority": Priority.NORMAL,
             },
             common_config=app_config.common,
+            datasets_based_config=app_config.datasets_based,
             processing_step=ProcessingStep(
                 endpoint=DatasetInfoWorker.get_job_type(),
                 input_type="dataset",

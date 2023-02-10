@@ -5,7 +5,7 @@ from libcommon.processing_graph import ProcessingStep
 from libcommon.queue import Queue
 from libcommon.resources import CacheDatabaseResource, QueueDatabaseResource
 
-from datasets_based.config import WorkerLoopConfig
+from datasets_based.config import DatasetsBasedConfig, WorkerLoopConfig
 from datasets_based.resources import LibrariesResource
 from datasets_based.worker import JobInfo, Worker
 from datasets_based.worker_factory import BaseWorkerFactory
@@ -32,10 +32,16 @@ class DummyWorker(Worker):
 class DummyWorkerFactory(BaseWorkerFactory):
     def __init__(self, processing_step: ProcessingStep) -> None:
         self.common_config = CommonConfig()
+        self.datasets_based_config = DatasetsBasedConfig()
         self.processing_step = processing_step
 
     def _create_worker(self, job_info: JobInfo) -> Worker:
-        return DummyWorker(job_info=job_info, common_config=self.common_config, processing_step=self.processing_step)
+        return DummyWorker(
+            job_info=job_info,
+            common_config=self.common_config,
+            datasets_based_config=self.datasets_based_config,
+            processing_step=self.processing_step,
+        )
 
 
 def test_process_next_job(

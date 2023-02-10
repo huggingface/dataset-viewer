@@ -1,7 +1,9 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2022 The HuggingFace Authors.
 
+from dataclasses import replace
 from datetime import datetime
+from http import HTTPStatus
 from pathlib import Path
 from typing import Any, Mapping, Optional
 
@@ -10,12 +12,13 @@ import pytest
 from libcommon.processing_graph import ProcessingStep
 from libcommon.queue import Priority
 from libcommon.resources import CacheDatabaseResource, QueueDatabaseResource
+from libcommon.simple_cache import get_response
 
 from datasets_based.config import AppConfig
 from datasets_based.resources import LibrariesResource
 from datasets_based.workers._datasets_based_worker import DatasetsBasedWorker
 
-from ..fixtures.hub import get_default_config_split
+from ..fixtures.hub import HubDatasets, get_default_config_split
 
 
 class DummyWorker(DatasetsBasedWorker):
@@ -33,7 +36,7 @@ class DummyWorker(DatasetsBasedWorker):
         if self.config == "raise":
             raise ValueError("This is a test")
         else:
-            return {}
+            return {"col1": "a" * 200}
 
 
 @pytest.fixture
@@ -160,3 +163,19 @@ def assert_datasets_cache_path(path: Path, exists: bool, equals: bool = True) ->
     assert (datasets.config.HF_DATASETS_CACHE == path) is equals
     assert (datasets.config.DOWNLOADED_DATASETS_PATH == path / datasets.config.DOWNLOADED_DATASETS_DIR) is equals
     assert (datasets.config.EXTRACTED_DATASETS_PATH == path / datasets.config.EXTRACTED_DATASETS_DIR) is equals
+
+
+def test_process_big_content(hub_datasets: HubDatasets, app_config: AppConfig, get_worker) -> None:
+    dataset, config, split = get_default_config_split(hub_datasets["big"]["name"])
+    worker = get_worker(
+        dataset,
+        config,
+        split,
+        app_config=replace(app_config, datasets_based=replace(app_config.datasets_based, content_max_bytes=10)),
+    )
+
+    assert worker.process() is False
+    cached_response = get_response(kind=worker.processing_step.cache_kind, dataset=dataset, config=config, split=split)
+
+    assert cached_response["http_status"] == HTTPStatus.NOT_IMPLEMENTED
+    assert cached_response["error_code"] == "TooBigContentError"

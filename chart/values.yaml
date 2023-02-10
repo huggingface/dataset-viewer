@@ -377,3 +377,7 @@ sizes:
     limits:
       cpu: 0
   tolerations: []
+
+# --- datasets_based ---
+datasetsBased:
+  contentMaxBytes: "10_000_000"

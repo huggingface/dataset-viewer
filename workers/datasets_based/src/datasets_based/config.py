@@ -46,12 +46,14 @@ class WorkerLoopConfig:
 
 DATASETS_BASED_ENDPOINT = "/config-names"
 DATASETS_BASED_HF_DATASETS_CACHE = None
+DATASETS_BASED_CONTENT_MAX_BYTES = 10_000_000
 
 
 @dataclass
 class DatasetsBasedConfig:
     endpoint: str = DATASETS_BASED_ENDPOINT
     hf_datasets_cache: Optional[str] = DATASETS_BASED_HF_DATASETS_CACHE
+    content_max_bytes: int = DATASETS_BASED_CONTENT_MAX_BYTES
 
     @staticmethod
     def from_env() -> "DatasetsBasedConfig":
@@ -60,6 +62,7 @@ class DatasetsBasedConfig:
             return DatasetsBasedConfig(
                 endpoint=env.str(name="ENDPOINT", default=DATASETS_BASED_ENDPOINT),
                 hf_datasets_cache=env.str(name="HF_DATASETS_CACHE", default=DATASETS_BASED_HF_DATASETS_CACHE),
+                content_max_bytes=env.int(name="CONTENT_MAX_BYTES", default=DATASETS_BASED_CONTENT_MAX_BYTES),
             )
 
 

@@ -20,13 +20,17 @@ from libcommon.simple_cache import (
     get_split_full_names_for_dataset_and_kind,
     upsert_response,
 )
+from libcommon.utils import orjson_dumps
 from packaging import version
+
+from datasets_based.config import DatasetsBasedConfig
 
 GeneralWorkerErrorCode = Literal[
     "ConfigNotFoundError",
     "NoGitRevisionError",
     "SplitNotFoundError",
     "UnexpectedError",
+    "TooBigContentError",
 ]
 
 # List of error codes that should trigger a retry.
@@ -104,6 +108,19 @@ class NoGitRevisionError(GeneralWorkerError):
         )
 
 
+class TooBigContentError(GeneralWorkerError):
+    """Raised when content size in bytes is bigger than the supported value."""
+
+    def __init__(self, message: str, cause: Optional[BaseException] = None):
+        super().__init__(
+            message=message,
+            status_code=HTTPStatus.NOT_IMPLEMENTED,
+            code="TooBigContentError",
+            cause=cause,
+            disclose_cause=False,
+        )
+
+
 class UnexpectedError(GeneralWorkerError):
     """Raised when the worker raised an unexpected error."""
 
@@ -140,6 +157,7 @@ class Worker(ABC):
     split: Optional[str] = None
     force: bool
     priority: Priority
+    datasets_based_config: DatasetsBasedConfig
     common_config: CommonConfig
     processing_step: ProcessingStep
 
@@ -157,6 +175,7 @@ class Worker(ABC):
         self,
         job_info: JobInfo,
         common_config: CommonConfig,
+        datasets_based_config: DatasetsBasedConfig,
         processing_step: ProcessingStep,
     ) -> None:
         self.job_type = job_info["type"]
@@ -167,6 +186,7 @@ class Worker(ABC):
         self.force = job_info["force"]
         self.priority = job_info["priority"]
         self.common_config = common_config
+        self.datasets_based_config = datasets_based_config
         self.processing_step = processing_step
         self.setup()
 
@@ -297,6 +317,13 @@ class Worker(ABC):
             try:
                 self.pre_compute()
                 content = self.compute()
+
+                # Validate content size
+                if len(orjson_dumps(content)) > self.datasets_based_config.content_max_bytes:
+                    raise TooBigContentError(
+                        "The computed response content exceeds the supported size in bytes"
+                        f" ({self.datasets_based_config.content_max_bytes})."
+                    )
             finally:
                 # ensure the post_compute hook is called even if the compute raises an exception
                 self.post_compute()

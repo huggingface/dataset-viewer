@@ -31,7 +31,12 @@ class DatasetsBasedWorker(Worker):
     def __init__(
         self, job_info: JobInfo, app_config: AppConfig, processing_step: ProcessingStep, hf_datasets_cache: Path
     ) -> None:
-        super().__init__(job_info=job_info, common_config=app_config.common, processing_step=processing_step)
+        super().__init__(
+            job_info=job_info,
+            common_config=app_config.common,
+            datasets_based_config=app_config.datasets_based,
+            processing_step=processing_step,
+        )
         self.datasets_based_config = app_config.datasets_based
         self.base_datasets_cache = hf_datasets_cache
 

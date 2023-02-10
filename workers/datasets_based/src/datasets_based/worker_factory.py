@@ -96,15 +96,24 @@ class WorkerFactory(BaseWorkerFactory):
             )
         if job_type == ParquetWorker.get_job_type():
             return ParquetWorker(
-                job_info=job_info, common_config=self.app_config.common, processing_step=processing_step
+                job_info=job_info,
+                common_config=self.app_config.common,
+                datasets_based_config=self.app_config.datasets_based,
+                processing_step=processing_step,
             )
         if job_type == DatasetInfoWorker.get_job_type():
             return DatasetInfoWorker(
-                job_info=job_info, common_config=self.app_config.common, processing_step=processing_step
+                job_info=job_info,
+                common_config=self.app_config.common,
+                datasets_based_config=self.app_config.datasets_based,
+                processing_step=processing_step,
             )
         if job_type == SizesWorker.get_job_type():
             return SizesWorker(
-                job_info=job_info, common_config=self.app_config.common, processing_step=processing_step
+                job_info=job_info,
+                common_config=self.app_config.common,
+                datasets_based_config=self.app_config.datasets_based,
+                processing_step=processing_step,
             )
         supported_job_types = [
             ConfigNamesWorker.get_job_type(),
