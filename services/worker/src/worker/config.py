@@ -34,7 +34,7 @@ class LoopConfig:
     @classmethod
     def from_env(cls) -> "LoopConfig":
         env = Env(expand_vars=True)
-        with env.prefixed("LOOP_"):
+        with env.prefixed("WORKER_LOOP_"):
             return cls(
                 max_disk_usage_pct=env.int(name="MAX_DISK_USAGE_PCT", default=WORKER_LOOP_MAX_DISK_USAGE_PCT),
                 max_load_pct=env.int(name="MAX_LOAD_PCT", default=WORKER_LOOP_MAX_LOAD_PCT),
