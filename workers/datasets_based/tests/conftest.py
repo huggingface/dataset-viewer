@@ -114,21 +114,5 @@ def test_processing_step() -> ProcessingStep:
     )
 
 
-@fixture()
-def cache_config(app_config: AppConfig) -> CacheConfig:
-    cache_config = app_config.cache
-    if "test" not in cache_config.mongo_database:
-        raise ValueError("Test must be launched on a test mongo database")
-    return cache_config
-
-
-@fixture()
-def queue_config(app_config: AppConfig) -> QueueConfig:
-    queue_config = app_config.queue
-    if "test" not in queue_config.mongo_database:
-        raise ValueError("Test must be launched on a test mongo database")
-    return queue_config
-
-
 # Import fixture modules as plugins
 pytest_plugins = ["tests.fixtures.datasets", "tests.fixtures.files", "tests.fixtures.hub"]

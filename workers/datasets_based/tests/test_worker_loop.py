@@ -1,11 +1,11 @@
 from typing import Any, Mapping, Optional
 
-from libcommon.config import CommonConfig, QueueConfig
+from libcommon.config import CommonConfig
 from libcommon.processing_graph import ProcessingStep
 from libcommon.queue import Queue
 from libcommon.resources import CacheMongoResource, QueueMongoResource
 
-from datasets_based.config import DatasetsBasedConfig, WorkerLoopConfig
+from datasets_based.config import AppConfig, DatasetsBasedConfig, WorkerLoopConfig
 from datasets_based.resources import LibrariesResource
 from datasets_based.worker import JobInfo, Worker
 from datasets_based.worker_factory import BaseWorkerFactory
@@ -46,13 +46,13 @@ class DummyWorkerFactory(BaseWorkerFactory):
 
 def test_process_next_job(
     test_processing_step: ProcessingStep,
-    queue_config: QueueConfig,
+    app_config: AppConfig,
     libraries_resource: LibrariesResource,
     cache_mongo_resource: CacheMongoResource,
     queue_mongo_resource: QueueMongoResource,
 ) -> None:
     worker_factory = DummyWorkerFactory(processing_step=test_processing_step)
-    queue = Queue(type=test_processing_step.endpoint, max_jobs_per_namespace=queue_config.max_jobs_per_namespace)
+    queue = Queue(type=test_processing_step.endpoint, max_jobs_per_namespace=app_config.queue.max_jobs_per_namespace)
     worker_loop = WorkerLoop(
         library_cache_paths=libraries_resource.storage_paths,
         queue=queue,
