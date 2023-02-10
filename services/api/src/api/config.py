@@ -2,6 +2,7 @@
 # Copyright 2022 The HuggingFace Authors.
 
 from dataclasses import dataclass, field
+from typing import Optional
 
 from environs import Env
 from libcommon.config import (
@@ -33,6 +34,7 @@ class UvicornConfig:
             )
 
 
+API_EXTERNAL_AUTH_URL = None
 API_HF_AUTH_PATH = "/api/datasets/%s/auth-check"
 API_MAX_AGE_LONG = 120  # 2 minutes
 API_MAX_AGE_SHORT = 10  # 10 seconds
@@ -40,16 +42,20 @@ API_MAX_AGE_SHORT = 10  # 10 seconds
 
 @dataclass
 class ApiConfig:
+    external_auth_url: Optional[str] = API_EXTERNAL_AUTH_URL  # not documented
     hf_auth_path: str = API_HF_AUTH_PATH
     max_age_long: int = API_MAX_AGE_LONG
     max_age_short: int = API_MAX_AGE_SHORT
 
     @staticmethod
-    def from_env() -> "ApiConfig":
+    def from_env(common_config: CommonConfig) -> "ApiConfig":
         env = Env(expand_vars=True)
         with env.prefixed("API_"):
+            hf_auth_path = env.str(name="HF_AUTH_PATH", default=API_HF_AUTH_PATH)
+            external_auth_url = None if hf_auth_path is None else f"{common_config.hf_endpoint}{hf_auth_path}"
             return ApiConfig(
-                hf_auth_path=env.str(name="HF_AUTH_PATH", default=API_HF_AUTH_PATH),
+                external_auth_url=external_auth_url,
+                hf_auth_path=hf_auth_path,
                 max_age_long=env.int(name="MAX_AGE_LONG", default=API_MAX_AGE_LONG),
                 max_age_short=env.int(name="MAX_AGE_SHORT", default=API_MAX_AGE_SHORT),
             )
@@ -63,18 +69,13 @@ class AppConfig:
     queue: QueueConfig = field(default_factory=QueueConfig)
     processing_graph: ProcessingGraphConfig = field(default_factory=ProcessingGraphConfig)
 
-    def __post_init__(self):
-        self.external_auth_url = (
-            None if self.api.hf_auth_path is None else f"{self.common.hf_endpoint}{self.api.hf_auth_path}"
-        )
-
     @staticmethod
     def from_env() -> "AppConfig":
-        # First process the common configuration to setup the logging
+        common_config = CommonConfig.from_env()
         return AppConfig(
-            common=CommonConfig.from_env(),
+            common=common_config,
             cache=CacheConfig.from_env(),
             processing_graph=ProcessingGraphConfig.from_env(),
             queue=QueueConfig.from_env(),
-            api=ApiConfig.from_env(),
+            api=ApiConfig.from_env(common_config=common_config),
         )

@@ -76,6 +76,7 @@ services:
       dockerfile: workers/datasets_based/Dockerfile
     # image: ${IMAGE_WORKER_DATASETS_BASED?IMAGE_WORKER_DATASETS_BASED env var must be provided}
     volumes:
+      - assets:${ASSETS_STORAGE_DIRECTORY-/assets}:rw
       - splits-datasets-cache:${HF_DATASETS_CACHE-/datasets-cache}:rw
       - splits-modules-cache:${HF_DATASETS_CACHE-/modules-cache}:rw
       - splits-numba-cache:${NUMBA_CACHE_DIR-/numba-cache}:rw
@@ -93,6 +94,7 @@ services:
       dockerfile: workers/datasets_based/Dockerfile
     # image: ${IMAGE_WORKER_DATASETS_BASED?IMAGE_WORKER_DATASETS_BASED env var must be provided}
     volumes:
+      - assets:${ASSETS_STORAGE_DIRECTORY-/assets}:rw
       - splits-datasets-cache:${HF_DATASETS_CACHE-/datasets-cache}:rw
       - splits-modules-cache:${HF_DATASETS_CACHE-/modules-cache}:rw
       - splits-numba-cache:${NUMBA_CACHE_DIR-/numba-cache}:rw
@@ -110,6 +112,7 @@ services:
       dockerfile: workers/datasets_based/Dockerfile
     # image: ${IMAGE_WORKER_DATASETS_BASED?IMAGE_WORKER_DATASETS_BASED env var must be provided}
     volumes:
+      - assets:${ASSETS_STORAGE_DIRECTORY-/assets}:rw
       - splits-datasets-cache:${HF_DATASETS_CACHE-/datasets-cache}:rw
       - splits-modules-cache:${HF_DATASETS_CACHE-/modules-cache}:rw
       - splits-numba-cache:${NUMBA_CACHE_DIR-/numba-cache}:rw
@@ -154,6 +157,7 @@ services:
       dockerfile: workers/datasets_based/Dockerfile
     # image: ${IMAGE_WORKER_DATASETS_BASED?IMAGE_WORKER_DATASETS_BASED env var must be provided}
     volumes:
+      - assets:${ASSETS_STORAGE_DIRECTORY-/assets}:rw
       - parquet-datasets-cache:${HF_DATASETS_CACHE-/datasets-cache}:rw
       - parquet-modules-cache:${HF_DATASETS_CACHE-/modules-cache}:rw
       - parquet-numba-cache:${NUMBA_CACHE_DIR-/numba-cache}:rw
@@ -178,6 +182,8 @@ services:
       context: ..
       dockerfile: workers/datasets_based/Dockerfile
     # image: ${IMAGE_WORKER_DATASETS_BASED?IMAGE_WORKER_DATASETS_BASED env var must be provided}
+    volumes:
+      - assets:${ASSETS_STORAGE_DIRECTORY-/assets}:rw
     extends:
       file: docker-compose-base.yml
       service: datasets-worker
@@ -191,6 +197,8 @@ services:
       context: ..
       dockerfile: workers/datasets_based/Dockerfile
     # image: ${IMAGE_WORKER_DATASETS_BASED?IMAGE_WORKER_DATASETS_BASED env var must be provided}
+    volumes:
+      - assets:${ASSETS_STORAGE_DIRECTORY-/assets}:rw
     extends:
       file: docker-compose-base.yml
       service: datasets-worker
@@ -204,6 +212,8 @@ services:
       context: ..
       dockerfile: workers/datasets_based/Dockerfile
     # image: ${IMAGE_WORKER_DATASETS_BASED?IMAGE_WORKER_DATASETS_BASED env var must be provided}
+    volumes:
+      - assets:${ASSETS_STORAGE_DIRECTORY-/assets}:rw
     extends:
       file: docker-compose-base.yml
       service: datasets-worker

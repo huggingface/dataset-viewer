@@ -4,11 +4,19 @@
 from typing import Optional
 
 import pytest
+from libcommon.processing_graph import ProcessingGraph
 from libcommon.queue import Priority
+from libcommon.storage import StrPath
 
 from datasets_based.config import AppConfig
+from datasets_based.resources import LibrariesResource
 from datasets_based.worker import JobInfo
 from datasets_based.worker_factory import WorkerFactory
+
+
+@pytest.fixture()
+def processing_graph(app_config: AppConfig) -> ProcessingGraph:
+    return ProcessingGraph(app_config.processing_graph.specification)
 
 
 @pytest.mark.parametrize(
@@ -24,8 +32,20 @@ from datasets_based.worker_factory import WorkerFactory
         ("/unknown", None),
     ],
 )
-def test_create_worker(app_config: AppConfig, job_type: str, expected_worker: Optional[str]) -> None:
-    worker_factory = WorkerFactory(app_config=app_config)
+def test_create_worker(
+    app_config: AppConfig,
+    processing_graph: ProcessingGraph,
+    libraries_resource: LibrariesResource,
+    assets_directory: StrPath,
+    job_type: str,
+    expected_worker: Optional[str],
+) -> None:
+    worker_factory = WorkerFactory(
+        app_config=app_config,
+        processing_graph=processing_graph,
+        hf_datasets_cache=libraries_resource.hf_datasets_cache,
+        assets_directory=assets_directory,
+    )
     job_info: JobInfo = {
         "type": job_type,
         "dataset": "dataset",

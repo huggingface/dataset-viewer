@@ -5,13 +5,10 @@ from typing import Mapping, Optional
 
 import pytest
 from libcommon.processing_graph import ProcessingStep
-from libcommon.queue import _clean_queue_database
-from libcommon.simple_cache import _clean_cache_database
 from pytest_httpserver import HTTPServer
 from starlette.testclient import TestClient
 
 from api.app import create_app
-from api.config import AppConfig
 
 from .utils import auth_callback
 
@@ -19,12 +16,6 @@ from .utils import auth_callback
 @pytest.fixture(scope="module")
 def client(monkeypatch_session: pytest.MonkeyPatch) -> TestClient:
     return TestClient(create_app())
-
-
-@pytest.fixture(autouse=True)
-def clean_mongo_databases(app_config: AppConfig) -> None:
-    _clean_cache_database()
-    _clean_queue_database()
 
 
 def test_cors(client: TestClient, first_dataset_processing_step: ProcessingStep) -> None:
