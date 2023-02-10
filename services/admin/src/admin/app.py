@@ -45,7 +45,7 @@ def create_app() -> Starlette:
     resources: list[Resource] = [cache_resource, queue_resource]
     if not cache_resource.check():
         raise RuntimeError("The connection to the cache database could not be established. Exiting.")
-    if queue_resource.check() is False:
+    if not queue_resource.check():
         raise RuntimeError("The connection to the queue database could not be established. Exiting.")
 
     prometheus = Prometheus(processing_steps=processing_steps, assets_directory=assets_directory)
