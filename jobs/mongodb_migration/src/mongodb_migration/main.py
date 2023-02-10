@@ -31,17 +31,17 @@ def run_job() -> None:
         ) as migrations_database_resource,
     ):
         if cache_resource.check() is False:
-            logging.info(
+            logging.warning(
                 "The connection to the cache database could not be established. The migration job is skipped."
             )
             return
         if queue_resource.check() is False:
-            logging.info(
+            logging.warning(
                 "The connection to the queue database could not be established. The migration job is skipped."
             )
             return
         if migrations_database_resource.check() is False:
-            logging.info(
+            logging.warning(
                 "The connection to the migrations database could not be established. The migration job is skipped."
             )
             return
