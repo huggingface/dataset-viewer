@@ -4,7 +4,6 @@
 from pathlib import Path
 from typing import Iterator
 
-from libcommon.config import CacheConfig, QueueConfig
 from libcommon.processing_graph import ProcessingStep
 from libcommon.queue import _clean_queue_database
 from libcommon.resources import CacheMongoResource, QueueMongoResource
