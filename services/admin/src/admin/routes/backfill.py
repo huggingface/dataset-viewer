@@ -28,7 +28,7 @@ def create_backfill_endpoint(
     external_auth_url: Optional[str] = None,
     organization: Optional[str] = None,
 ) -> Endpoint:
-    async def backfill_endpoint(request: Request) -> Response:
+    async def backfill(request: Request) -> Response:
         try:
             logging.info("/backfill")
 
@@ -57,4 +57,4 @@ def create_backfill_endpoint(
         except Exception as e:
             return get_json_admin_error_response(UnexpectedError("Unexpected error.", e), max_age=0)
 
-    return backfill_endpoint
+    return backfill

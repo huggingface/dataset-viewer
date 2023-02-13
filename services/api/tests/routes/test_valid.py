@@ -9,6 +9,7 @@ from api.config import AppConfig
 from api.routes.valid import get_valid, is_valid
 
 dataset_step = ProcessingStep(
+    job_type="/dataset-step",
     endpoint="/dataset-step",
     input_type="dataset",
     requires=None,
@@ -18,6 +19,7 @@ dataset_step = ProcessingStep(
     children=[],
 )
 config_step = ProcessingStep(
+    job_type="/config-step",
     endpoint="/config-step",
     input_type="config",
     requires=None,
@@ -27,6 +29,7 @@ config_step = ProcessingStep(
     children=[],
 )
 split_step = ProcessingStep(
+    job_type="/split-step",
     endpoint="/split-step",
     input_type="split",
     requires=None,

@@ -241,6 +241,7 @@ def test_check_type(
         )
 
     another_processing_step = ProcessingStep(
+        job_type=f"not-{test_processing_step.job_type}",
         endpoint=f"not-{test_processing_step.endpoint}",
         input_type="dataset",
         requires=None,
@@ -269,10 +270,10 @@ def test_check_type(
 def test_create_children_jobs() -> None:
     graph = ProcessingGraph(
         {
-            "/dummy": {"input_type": "dataset"},
-            "/child-dataset": {"input_type": "dataset", "requires": "/dummy"},
-            "/child-config": {"input_type": "config", "requires": "/dummy"},
-            "/child-split": {"input_type": "split", "requires": "/dummy"},
+            "/dummy": {"input_type": "dataset", "endpoint":"/dummy"},
+            "/child-dataset": {"input_type": "dataset", "requires": "/dummy", "endpoint":"/child-dataset"},
+            "/child-config": {"input_type": "config", "requires": "/dummy", "endpoint":"/child-config"},
+            "/child-split": {"input_type": "split", "requires": "/dummy", "endpoint":"/child-split"},
         }
     )
     root_step = graph.get_step("/dummy")

@@ -114,6 +114,7 @@ def assets_directory(app_config: AppConfig) -> StrPath:
 @fixture()
 def test_processing_step() -> ProcessingStep:
     return ProcessingStep(
+        job_type="/dummy",
         endpoint="/dummy",
         input_type="dataset",
         requires=None,

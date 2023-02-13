@@ -44,6 +44,7 @@ def get_job_runner(
             },
             app_config=app_config,
             processing_step=ProcessingStep(
+                job_type=SplitsJobRunner.get_job_type(),
                 endpoint=SplitsJobRunner.get_job_type(),
                 input_type="dataset",
                 requires=None,

@@ -51,6 +51,7 @@ def get_job_runner(
             common_config=app_config.common,
             worker_config=app_config.worker,
             processing_step=ProcessingStep(
+                job_type=DatasetInfoJobRunner.get_job_type(),
                 endpoint=DatasetInfoJobRunner.get_job_type(),
                 input_type="dataset",
                 requires=None,

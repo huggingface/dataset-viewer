@@ -84,7 +84,7 @@ def create_app() -> Starlette:
         ]
         + [
             Route(
-                f"/force-refresh{processing_step.endpoint}",
+                f"/force-refresh{processing_step.job_type}",
                 endpoint=create_force_refresh_endpoint(
                     processing_step=processing_step,
                     hf_endpoint=app_config.common.hf_endpoint,
@@ -111,7 +111,7 @@ def create_app() -> Starlette:
         ]
         + [
             Route(
-                f"/cache-reports{processing_step.endpoint}",
+                f"/cache-reports{processing_step.job_type}",
                 endpoint=create_cache_reports_endpoint(
                     processing_step=processing_step,
                     cache_reports_num_results=app_config.admin.cache_reports_num_results,
@@ -124,7 +124,7 @@ def create_app() -> Starlette:
         ]
         + [
             Route(
-                f"/cache-reports-with-content{processing_step.endpoint}",
+                f"/cache-reports-with-content{processing_step.job_type}",
                 endpoint=create_cache_reports_with_content_endpoint(
                     processing_step=processing_step,
                     cache_reports_with_content_num_results=app_config.admin.cache_reports_with_content_num_results,
@@ -137,7 +137,7 @@ def create_app() -> Starlette:
         ]
         + [
             Route(
-                f"/cancel-jobs{processing_step.endpoint}",
+                f"/cancel-jobs{processing_step.job_type}",
                 endpoint=create_cancel_jobs_endpoint(
                     processing_step=processing_step,
                     external_auth_url=app_config.admin.external_auth_url,
@@ -149,7 +149,7 @@ def create_app() -> Starlette:
         ]
         + [
             Route(
-                f"/jobs-duration-per-dataset{processing_step.endpoint}",
+                f"/jobs-duration-per-dataset{processing_step.job_type}",
                 endpoint=create_jobs_duration_per_dataset_endpoint(
                     processing_step=processing_step,
                     max_age=app_config.admin.max_age,

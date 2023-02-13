@@ -50,6 +50,7 @@ def get_job_runner(
             },
             app_config=app_config,
             processing_step=ProcessingStep(
+                job_type=FirstRowsJobRunner.get_job_type(),
                 endpoint=FirstRowsJobRunner.get_job_type(),
                 input_type="split",
                 requires=None,

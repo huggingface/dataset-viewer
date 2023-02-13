@@ -63,12 +63,12 @@ class SplitFullName(NamedTuple):
     split: Optional[str]
 
 
-# cache of any endpoint
+# cache of any job
 class CachedResponse(Document):
-    """A response to an endpoint request, cached in the mongoDB database
+    """A response to a job request, cached in the mongoDB database
 
     Args:
-        kind (`str`): The kind of the cached response, identifies the endpoint
+        kind (`str`): The kind of the cached response, identifies the job type
         dataset (`str`): The requested dataset.
         config (`str`, optional): The requested config, if any.
         split (`str`, optional): The requested split, if any.
