@@ -3,8 +3,9 @@
 
 import io
 from http import HTTPStatus
-from typing import Any, Iterator, List
+from typing import Any, Iterator, List, Optional
 
+import datasets.builder
 import pandas as pd
 import pytest
 import requests
@@ -18,6 +19,7 @@ from worker.config import AppConfig, ParquetAndDatasetInfoConfig
 from worker.job_runners.parquet_and_dataset_info import (
     DatasetInBlockListError,
     DatasetTooBigFromDatasetsError,
+    DatasetTooBigFromExternalFilesError,
     DatasetTooBigFromHubError,
     ParquetAndDatasetInfoJobRunner,
     get_dataset_info_or_raise,
@@ -26,6 +28,7 @@ from worker.job_runners.parquet_and_dataset_info import (
     raise_if_not_supported,
     raise_if_too_big_from_datasets,
     raise_if_too_big_from_hub,
+    raise_if_too_big_from_external_data_files,
 )
 from worker.resources import LibrariesResource
 
@@ -218,6 +221,37 @@ def test_raise_if_too_big_from_datasets(
             hf_token=app_config.common.hf_token,
             revision="main",
             max_dataset_size=parquet_and_dataset_info_config.max_dataset_size,
+        )
+
+
+@pytest.mark.parametrize(
+    "max_dataset_size,max_external_data_files, raises",
+    [(None, None, False), (10, None, True), (None, 1, True)],
+)
+def test_raise_if_too_big_from_external_files(
+    external_files_dataset_builder: "datasets.builder.DatasetBuilder",
+    raises: bool,
+    max_dataset_size: Optional[int],
+    max_external_data_files: Optional[int],
+    app_config: AppConfig,
+    parquet_and_dataset_info_config: ParquetAndDatasetInfoConfig,
+) -> None:
+    max_dataset_size = max_dataset_size or parquet_and_dataset_info_config.max_dataset_size
+    max_external_data_files = max_external_data_files or parquet_and_dataset_info_config.max_external_data_files
+    if raises:
+        with pytest.raises(DatasetTooBigFromExternalFilesError):
+            raise_if_too_big_from_external_data_files(
+                builder=external_files_dataset_builder,
+                hf_token=app_config.common.hf_token,
+                max_dataset_size=max_dataset_size,
+                max_external_data_files=max_external_data_files,
+            )
+    else:
+        raise_if_too_big_from_external_data_files(
+            builder=external_files_dataset_builder,
+            hf_token=app_config.common.hf_token,
+            max_dataset_size=max_dataset_size,
+            max_external_data_files=max_external_data_files,
         )
 
 
