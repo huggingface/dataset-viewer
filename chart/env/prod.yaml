@@ -309,7 +309,3 @@ sizes:
     limits:
       cpu: 2
       memory: "1Gi"
-
-# --- datasets_based ---
-datasetsBased:
-  contentMaxBytes: "10_000_000"

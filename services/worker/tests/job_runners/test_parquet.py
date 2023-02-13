@@ -46,7 +46,7 @@ def get_job_runner(
                 "priority": Priority.NORMAL,
             },
             common_config=app_config.common,
-            datasets_based_config=app_config.datasets_based,
+            worker_config=app_config.worker,
             processing_step=ProcessingStep(
                 endpoint=ParquetJobRunner.get_job_type(),
                 input_type="dataset",

@@ -82,7 +82,7 @@ imagePullSecrets:
 {{ include "datasetsServer.images.image" (dict "imageRoot" .Values.images.services.api "global" .Values.global.huggingface) }}
 {{- end -}}
 
-{{- define "workers.datasetsBased.image" -}}
+{{- define "services.worker.image" -}}
 {{ include "datasetsServer.images.image" (dict "imageRoot" .Values.images.services.worker "global" .Values.global.huggingface) }}
 {{- end -}}
 

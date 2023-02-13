@@ -8,7 +8,5 @@
   value: "/tmp/modules-cache"
 - name: NUMBA_CACHE_DIR
   value: "/tmp/numba-cache"
-- name: CONTENT_MAX_BYTES
-  value: {{ .Values.datasetsBased.contentMaxBytes}}
 {{- end -}}
 

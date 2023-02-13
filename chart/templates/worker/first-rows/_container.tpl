@@ -3,25 +3,20 @@
 
 {{- define "containerWorkerFirstRows" -}}
 - name: "{{ include "name" . }}-worker-first-rows"
-  image: {{ include "workers.datasetsBased.image" . }}
+  image: {{ include "services.worker.image" . }}
   imagePullPolicy: {{ .Values.images.pullPolicy }}
   env:
-  - name: DATASETS_BASED_ENDPOINT
+  - name: WORKER_ENDPOINT
     value: "/first-rows"
     # ^ hard-coded
   {{ include "envAssets" . | nindent 2 }}
   {{ include "envCache" . | nindent 2 }}
   {{ include "envQueue" . | nindent 2 }}
   {{ include "envCommon" . | nindent 2 }}
-  {{ include "envWorkerLoop" . | nindent 2 }}
-  - name: WORKER_LOOP_STORAGE_PATHS
-    value: {{ .Values.assets.storageDirectory | quote }}
-    # ^ note: the datasets cache is automatically added, so no need to add it here
+  {{ include "envWorker" . | nindent 2 }}
   {{ include "envDatasetsBased" . | nindent 2 }}
   - name: DATASETS_BASED_HF_DATASETS_CACHE
     value: {{ printf "%s/first-rows/datasets" .Values.cacheDirectory | quote }}
-  - name: DATASETS_BASED_CONTENT_MAX_BYTES
-    value: {{ .Values.datasetsBased.contentMaxBytes | quote}}
   - name: QUEUE_MAX_JOBS_PER_NAMESPACE
     # value: {{ .Values.queue.maxJobsPerNamespace | quote }}
     # overridden
