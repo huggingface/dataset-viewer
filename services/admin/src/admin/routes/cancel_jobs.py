@@ -24,9 +24,9 @@ def create_cancel_jobs_endpoint(
     external_auth_url: Optional[str] = None,
     organization: Optional[str] = None,
 ) -> Endpoint:
-    async def cancel_jobs_endpoint(request: Request) -> Response:
+    async def cancel_jobs(request: Request) -> Response:
         try:
-            logging.info(f"/cancel-jobs{processing_step.endpoint}")
+            logging.info(f"/cancel-jobs{processing_step.job_type}")
 
             # if auth_check fails, it will raise an exception that will be caught below
             auth_check(external_auth_url=external_auth_url, request=request, organization=organization)
@@ -40,4 +40,4 @@ def create_cancel_jobs_endpoint(
         except Exception as e:
             return get_json_admin_error_response(UnexpectedError("Unexpected error.", e), max_age=0)
 
-    return cancel_jobs_endpoint
+    return cancel_jobs

@@ -25,7 +25,7 @@ def create_jobs_duration_per_dataset_endpoint(
     external_auth_url: Optional[str] = None,
     organization: Optional[str] = None,
 ) -> Endpoint:
-    async def jobs_duration_per_dataset_endpoint(request: Request) -> Response:
+    async def jobs_duration_per_dataset(request: Request) -> Response:
         logging.info("/jobs-duration-per-dataset")
         try:
             # if auth_check fails, it will raise an exception that will be caught below
@@ -40,4 +40,4 @@ def create_jobs_duration_per_dataset_endpoint(
         except Exception as e:
             return get_json_admin_error_response(UnexpectedError("Unexpected error.", e), max_age=max_age)
 
-    return jobs_duration_per_dataset_endpoint
+    return jobs_duration_per_dataset

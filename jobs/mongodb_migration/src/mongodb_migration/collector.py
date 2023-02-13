@@ -14,6 +14,9 @@ from mongodb_migration.migrations._20221117223000_cache_generic_response import 
 from mongodb_migration.migrations._20230126164900_queue_job_add_priority import (
     MigrationAddPriorityToJob,
 )
+from mongodb_migration.migrations._20230213170000_split_names_streaming import (
+    MigrationUpdateSplitNames,
+)
 
 
 # TODO: add a way to automatically collect migrations from the migrations/ folder
@@ -31,5 +34,9 @@ class MigrationsCollector:
             MigrationAddPriorityToJob(
                 version="20230126164900",
                 description="add 'priority' field to jobs in queue database",
+            ),
+            MigrationUpdateSplitNames(
+                version="20230213170000",
+                description="update 'kind' field in cache from /split-names to /split-names-streaming",
             ),
         ]

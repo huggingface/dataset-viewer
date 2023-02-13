@@ -16,6 +16,7 @@ class _ProcessingStepSpecification(TypedDict):
 class ProcessingStepSpecification(_ProcessingStepSpecification, total=False):
     requires: Optional[str]
     required_by_dataset_viewer: Literal[True]
+    endpoint: str
 
 
 @dataclass
@@ -32,6 +33,7 @@ class ProcessingStep:
     - the next steps (the steps which previous step is the current one)
     """
 
+    job_type: str
     endpoint: str
     input_type: InputType
     requires: Optional[str]
@@ -41,14 +43,9 @@ class ProcessingStep:
     children: List[ProcessingStep]
 
     @property
-    def job_type(self):
-        """The job type (ie. the job to run to compute the response)."""
-        return self.endpoint
-
-    @property
     def cache_kind(self):
         """The cache kind (ie. the key in the cache)."""
-        return self.endpoint
+        return self.job_type
 
     def get_ancestors(self) -> List[ProcessingStep]:
         """Get all the ancestors previous steps required to compute the response of the given step."""
@@ -59,7 +56,7 @@ class ProcessingStep:
         else:
             parent_ancestors = self.parent.get_ancestors()
             if self in parent_ancestors:
-                raise ValueError(f"Cycle detected between {self.endpoint} and {self.parent.endpoint}")
+                raise ValueError(f"Cycle detected between {self.job_type} and {self.parent.job_type}")
             self.ancestors = parent_ancestors + [self.parent]
         return self.ancestors
 
@@ -87,8 +84,9 @@ class ProcessingGraph:
     def __init__(self, processing_graph_specification: ProcessingGraphSpecification):
         # TODO: validate the graph specification: endpoints must start with "/" and use only lowercase letters
         self.steps = {
-            endpoint: ProcessingStep(
-                endpoint=endpoint,
+            job_type: ProcessingStep(
+                job_type=job_type,
+                endpoint=specification["endpoint"],
                 input_type=specification["input_type"],
                 requires=specification.get("requires"),
                 required_by_dataset_viewer=specification.get("required_by_dataset_viewer", False),
@@ -96,7 +94,7 @@ class ProcessingGraph:
                 ancestors=[],
                 children=[],
             )
-            for endpoint, specification in processing_graph_specification.items()
+            for job_type, specification in processing_graph_specification.items()
         }
         self.setup()
 
@@ -112,11 +110,11 @@ class ProcessingGraph:
         self.roots = [step for step in self.steps.values() if step.parent is None]
         self.required_by_dataset_viewer = [step for step in self.steps.values() if step.required_by_dataset_viewer]
 
-    def get_step(self, endpoint: str) -> ProcessingStep:
-        """Get a step by its endpoint."""
-        if endpoint not in self.steps:
-            raise ValueError(f"Unknown endpoint: {endpoint}")
-        return self.steps[endpoint]
+    def get_step(self, job_type: str) -> ProcessingStep:
+        """Get a step by its job_type."""
+        if job_type not in self.steps:
+            raise ValueError(f"Unknown job_type: {job_type}")
+        return self.steps[job_type]
 
     def get_step_by_job_type(self, job_type: str) -> ProcessingStep:
         # for now: the job_type is just an alias for the endpoint

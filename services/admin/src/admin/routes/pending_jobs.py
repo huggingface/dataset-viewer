@@ -25,7 +25,7 @@ def create_pending_jobs_endpoint(
     external_auth_url: Optional[str] = None,
     organization: Optional[str] = None,
 ) -> Endpoint:
-    async def pending_jobs_endpoint(request: Request) -> Response:
+    async def pending_jobs(request: Request) -> Response:
         logging.info("/pending-jobs")
         try:
             # if auth_check fails, it will raise an exception that will be caught below
@@ -33,7 +33,7 @@ def create_pending_jobs_endpoint(
             queue = Queue()
             return get_json_ok_response(
                 {
-                    processing_step.endpoint: queue.get_dump_by_pending_status(job_type=processing_step.job_type)
+                    processing_step.job_type: queue.get_dump_by_pending_status(job_type=processing_step.job_type)
                     for processing_step in processing_steps
                 },
                 max_age=max_age,
@@ -43,4 +43,4 @@ def create_pending_jobs_endpoint(
         except Exception as e:
             return get_json_admin_error_response(UnexpectedError("Unexpected error.", e), max_age=max_age)
 
-    return pending_jobs_endpoint
+    return pending_jobs

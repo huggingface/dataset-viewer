@@ -87,7 +87,7 @@ services:
     depends_on:
       - mongodb
     restart: always
-  worker-split-names:
+  worker-split-names-streaming:
     build:
       context: ..
       dockerfile: services/worker/dev.Dockerfile
@@ -100,7 +100,7 @@ services:
       file: docker-compose-dev-base.yml
       service: datasets-worker
     environment:
-      WORKER_ONLY_JOB_TYPES: "/split-names" # hard-coded
+      WORKER_ONLY_JOB_TYPES: "/split-names-streaming" # hard-coded
     depends_on:
       - mongodb
     restart: always

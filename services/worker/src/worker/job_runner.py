@@ -209,7 +209,7 @@ class JobRunner(ABC):
         )
 
     def log(self, level: int, msg: str) -> None:
-        logging.log(level=level, msg=f"[{self.processing_step.endpoint}] {msg}")
+        logging.log(level=level, msg=f"[{self.processing_step.job_type}] {msg}")
 
     def debug(self, msg: str) -> None:
         self.log(level=logging.DEBUG, msg=msg)

@@ -85,7 +85,7 @@ def test_cache_reports(
     http_status: int,
     error_code: Optional[str],
 ) -> None:
-    path = processing_steps[0].endpoint
+    path = processing_steps[0].job_type
     cursor_str = f"?cursor={cursor}" if cursor else ""
     response = client.get(f"/cache-reports{path}{cursor_str}")
     assert response.status_code == http_status
@@ -112,7 +112,7 @@ def test_cache_reports_with_content(
     http_status: int,
     error_code: Optional[str],
 ) -> None:
-    path = processing_steps[0].endpoint
+    path = processing_steps[0].job_type
     cursor_str = f"?cursor={cursor}" if cursor else ""
     response = client.get(f"/cache-reports-with-content{path}{cursor_str}")
     assert response.status_code == http_status

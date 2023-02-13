@@ -48,6 +48,7 @@ def get_job_runner(
             common_config=app_config.common,
             worker_config=app_config.worker,
             processing_step=ProcessingStep(
+                job_type=ParquetJobRunner.get_job_type(),
                 endpoint=ParquetJobRunner.get_job_type(),
                 input_type="dataset",
                 requires=None,

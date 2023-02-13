@@ -253,7 +253,7 @@ configNames:
       cpu: 1
   tolerations: []
 
-splitNames:
+splitNamesStreaming:
   # override the common queue parameters
   queue:
     # Maximum number of jobs running at the same time for the same namespace
