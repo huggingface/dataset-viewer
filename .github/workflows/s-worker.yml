@@ -1,0 +1,37 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2022 The HuggingFace Authors.
+
+name: services/worker
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+    paths:
+      - 'libs/libcommon/**'
+      - 'services/worker/**'
+      - '.github/workflows/s-worker.yml'
+      - '.github/workflows/_quality-python.yml'
+      - '.github/workflows/_unit-tests-python.yml'
+      - 'tools/docker-compose-mongo.yml'
+      - 'vendors/'
+  pull_request:
+    paths:
+      - 'libs/libcommon/**'
+      - 'services/worker/**'
+      - '.github/workflows/s-worker.yml'
+      - '.github/workflows/_quality-python.yml'
+      - '.github/workflows/_unit-tests-python.yml'
+      - 'tools/docker-compose-mongo.yml'
+      - 'vendors/'
+jobs:
+  quality:
+    uses: ./.github/workflows/_quality-python.yml
+    with:
+      working-directory: services/worker
+      is-datasets-worker: true
+  unit-tests:
+    uses: ./.github/workflows/_unit-tests-python.yml
+    with:
+      working-directory: services/worker
+      is-datasets-worker: true

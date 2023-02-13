@@ -38,11 +38,10 @@ images:
       useGlobalRegistry: false
       repository: datasets-server-services-api
       tag: sha-27ad2f7
-  workers:
-    datasetsBased:
+    worker:
       registry: huggingface
       useGlobalRegistry: false
-      repository: datasets-server-workers-datasets_based
+      repository: datasets-server-services-worker
       tag: sha-27ad2f7
 
 secrets:
