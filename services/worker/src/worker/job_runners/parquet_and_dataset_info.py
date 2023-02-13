@@ -14,7 +14,7 @@ from urllib.parse import quote
 import datasets
 import datasets.config
 import numpy as np
-from datasets import get_dataset_config_names, get_dataset_infos, load_dataset_builder
+from datasets import get_dataset_config_names, get_dataset_infos, load_dataset_builder, DownloadConfig
 from datasets.builder import DatasetBuilder
 from datasets.data_files import EmptyDatasetError as _EmptyDatasetError
 from datasets.download import StreamingDownloadManager
@@ -49,7 +49,7 @@ ParquetAndDatasetInfoJobRunnerErrorCode = Literal[
     "DatasetInBlockListError",
     "DatasetTooBigFromHubError",
     "DatasetTooBigFromDatasetsError",
-    "DatasetTooBigFromExternalFiles",
+    "DatasetTooBigFromExternalFilesError",
 ]
 
 
@@ -434,11 +434,11 @@ class EmptyFeaturesError(Exception):
     pass
 
 
-class DatasetTooBigFromExternalFiles(ParquetAndDatasetInfoJobRunnerError):
+class DatasetTooBigFromExternalFilesError(ParquetAndDatasetInfoJobRunnerError):
     """Raised when the dataset size (sum of config sizes given by the datasets library) is too big."""
 
     def __init__(self, message: str, cause: Optional[BaseException] = None):
-        super().__init__(message, HTTPStatus.NOT_IMPLEMENTED, "DatasetTooBigFromExternalFiles", cause, False)
+        super().__init__(message, HTTPStatus.NOT_IMPLEMENTED, "DatasetTooBigFromExternalFilesError", cause, False)
 
 
 def _request_size(url: str, hf_token: Optional[str] = None) -> Optional[int]:
@@ -477,7 +477,7 @@ def raise_if_too_big_from_external_data_files(
     if type(builder).__module__.startswith("datasets."):
         return
     # For datasets with a loading script however, we need to check the downloaded files
-    mock_dl_manager = _MockStreamingDownloadManager(base_path=builder.base_path)
+    mock_dl_manager = _MockStreamingDownloadManager(base_path=builder.base_path, download_config=DownloadConfig(use_auth_token=hf_token))
     try:
         builder._split_generators(mock_dl_manager)
     except NotImplementedError as err:
@@ -485,7 +485,7 @@ def raise_if_too_big_from_external_data_files(
             raise
     ext_data_files = mock_dl_manager.ext_data_files
     if len(ext_data_files) > max_external_data_files:
-        raise DatasetTooBigFromExternalFiles(
+        raise DatasetTooBigFromExternalFilesError(
             f"The conversion to parquet is limited to datasets with less than {max_external_data_files} files. "
             f"However it uses {len(ext_data_files)} data files."
         )
@@ -499,7 +499,7 @@ def raise_if_too_big_from_external_data_files(
                 if size is not None:
                     total_size += size
                     if total_size > max_dataset_size:
-                        raise DatasetTooBigFromExternalFiles(
+                        raise DatasetTooBigFromExternalFilesError(
                             f"The conversion to parquet is limited to datasets under {max_dataset_size} bytes. However"
                             f" {i + 1} data files of {len(ext_data_files)} are already bigger than {total_size} bytes."
                         )
@@ -582,7 +582,7 @@ def compute_parquet_and_dataset_info_response(
           If the list of configurations could not be obtained using the datasets library.
         - [`~job_runners.parquet_and_dataset_info.DatasetInBlockListError`]
           If the dataset is in the list of blocked datasets.
-        - [`~job_runners.parquet_and_dataset_info.DatasetTooBigFromExternalFiles`]
+        - [`~job_runners.parquet_and_dataset_info.DatasetTooBigFromExternalFilesError`]
             If the dataset is too big to be converted to parquet
     </Tip>
     """
