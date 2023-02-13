@@ -420,7 +420,7 @@ class Queue:
         logging.debug(f"job found: {next_waiting_job}")
         # ^ can raise EmptyQueueError
         next_waiting_job.update(started_at=get_datetime(), status=Status.STARTED)
-        if only_job_types and next_waiting_job not in only_job_types:
+        if only_job_types and next_waiting_job.type not in only_job_types:
             raise RuntimeError(
                 f"The job type {next_waiting_job.type} is not in the list of allowed job types {only_job_types}"
             )

@@ -22,7 +22,9 @@ def queue_mongo_resource(queue_mongo_host: str) -> Iterator[QueueMongoResource]:
     host = queue_mongo_host
     if "test" not in database:
         raise ValueError("Test must be launched on a test mongo database")
-    with QueueMongoResource(database=database, host=host) as queue_mongo_resource:
+    with QueueMongoResource(database=database, host=host, server_selection_timeout_ms=3_000) as queue_mongo_resource:
+        if not queue_mongo_resource.is_available():
+            raise RuntimeError("Mongo resource is not available")
         yield queue_mongo_resource
         _clean_queue_database()
 
@@ -184,6 +186,27 @@ def test_max_jobs_per_namespace(max_jobs_per_namespace: Optional[int]) -> None:
     assert (
         queue.is_job_in_process(job_type=test_type, dataset=test_dataset, config=test_config, split="split1") is False
     )
+
+
+@pytest.mark.parametrize(
+    "job_type,only_job_types",
+    [
+        ("test_type", None),
+        ("test_type", ["test_type"]),
+        ("test_type", ["other_type", "test_type"]),
+        ("test_type", ["other_type"]),
+    ],
+)
+def test_only_job_types(job_type: str, only_job_types: Optional[list[str]]) -> None:
+    test_dataset = "test_dataset"
+    queue = Queue(max_jobs_per_namespace=100)
+    queue.upsert_job(job_type=job_type, dataset=test_dataset, config=None, split=None)
+    assert queue.is_job_in_process(job_type=job_type, dataset=test_dataset, config=None, split=None) is True
+    job_info = queue.start_job(only_job_types=only_job_types)
+    if only_job_types is not None and job_type not in only_job_types:
+        assert job_info is None
+    else:
+        assert job_info["dataset"] == test_dataset
 
 
 def test_count_by_status() -> None:
