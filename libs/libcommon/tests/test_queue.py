@@ -202,10 +202,12 @@ def test_only_job_types(job_type: str, only_job_types: Optional[list[str]]) -> N
     queue = Queue(max_jobs_per_namespace=100)
     queue.upsert_job(job_type=job_type, dataset=test_dataset, config=None, split=None)
     assert queue.is_job_in_process(job_type=job_type, dataset=test_dataset, config=None, split=None) is True
-    job_info = queue.start_job(only_job_types=only_job_types)
     if only_job_types is not None and job_type not in only_job_types:
-        assert job_info is None
+        with pytest.raises(EmptyQueueError):
+            job_info = queue.start_job(only_job_types=only_job_types)
+            queue.start_job(only_job_types=only_job_types)
     else:
+        job_info = queue.start_job(only_job_types=only_job_types)
         assert job_info["dataset"] == test_dataset
 
 
