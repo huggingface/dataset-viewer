@@ -500,7 +500,7 @@ class Queue:
         )
 
     def cancel_started_jobs(self, job_type: str) -> None:
-        """Cancel all started jobs."""
+        """Cancel all started jobs for a given type."""
         for job in Job.objects(type=job_type, status=Status.STARTED.value):
             job.update(finished_at=get_datetime(), status=Status.CANCELLED)
             self.upsert_job(job_type=job.type, dataset=job.dataset, config=job.config, split=job.split)

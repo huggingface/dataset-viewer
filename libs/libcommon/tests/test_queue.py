@@ -38,7 +38,7 @@ def test__add_job() -> None:
     queue._add_job(job_type=test_type, dataset=test_dataset, force=True)
     # a second call adds a second waiting job
     queue._add_job(job_type=test_type, dataset=test_dataset)
-    assert queue.is_job_in_process(job_type=test_type, dataset=test_dataset) is True
+    assert queue.is_job_in_process(job_type=test_type, dataset=test_dataset)
     # get and start the first job
     job_info = queue.start_job()
     assert job_info["type"] == test_type
@@ -46,7 +46,7 @@ def test__add_job() -> None:
     assert job_info["config"] is None
     assert job_info["split"] is None
     assert job_info["force"] is True
-    assert queue.is_job_in_process(job_type=test_type, dataset=test_dataset) is True
+    assert queue.is_job_in_process(job_type=test_type, dataset=test_dataset)
     # adding the job while the first one has not finished yet adds another waiting job
     # (there are no limits to the number of waiting jobs)
     queue._add_job(job_type=test_type, dataset=test_dataset, force=True)
@@ -56,7 +56,7 @@ def test__add_job() -> None:
     # finish the first job
     queue.finish_job(job_id=job_info["job_id"], finished_status=Status.SUCCESS)
     # the queue is not empty
-    assert queue.is_job_in_process(job_type=test_type, dataset=test_dataset) is True
+    assert queue.is_job_in_process(job_type=test_type, dataset=test_dataset)
     # process the second job
     job_info = queue.start_job()
     assert job_info["force"] is False
@@ -70,7 +70,7 @@ def test__add_job() -> None:
     # finish it
     queue.finish_job(job_id=job_info["job_id"], finished_status=Status.SUCCESS)
     # the queue is empty
-    assert queue.is_job_in_process(job_type=test_type, dataset=test_dataset) is False
+    assert not queue.is_job_in_process(job_type=test_type, dataset=test_dataset)
     with pytest.raises(EmptyQueueError):
         # an error is raised if we try to start a job
         queue.start_job()
@@ -85,7 +85,7 @@ def test_upsert_job() -> None:
     queue.upsert_job(job_type=test_type, dataset=test_dataset, force=True)
     # a second call creates a second waiting job, and the first one is cancelled
     queue.upsert_job(job_type=test_type, dataset=test_dataset)
-    assert queue.is_job_in_process(job_type=test_type, dataset=test_dataset) is True
+    assert queue.is_job_in_process(job_type=test_type, dataset=test_dataset)
     # get and start the last job
     job_info = queue.start_job()
     assert job_info["type"] == test_type
@@ -93,7 +93,7 @@ def test_upsert_job() -> None:
     assert job_info["config"] is None
     assert job_info["split"] is None
     assert job_info["force"] is True  # the new job inherits from waiting forced jobs
-    assert queue.is_job_in_process(job_type=test_type, dataset=test_dataset) is True
+    assert queue.is_job_in_process(job_type=test_type, dataset=test_dataset)
     # adding the job while the first one has not finished yet adds a new waiting job
     queue.upsert_job(job_type=test_type, dataset=test_dataset, force=False)
     with pytest.raises(EmptyQueueError):
@@ -102,13 +102,13 @@ def test_upsert_job() -> None:
     # finish the first job
     queue.finish_job(job_id=job_info["job_id"], finished_status=Status.SUCCESS)
     # the queue is not empty
-    assert queue.is_job_in_process(job_type=test_type, dataset=test_dataset) is True
+    assert queue.is_job_in_process(job_type=test_type, dataset=test_dataset)
     # process the second job
     job_info = queue.start_job()
     assert job_info["force"] is False  # the new jobs does not inherit from started forced jobs
     queue.finish_job(job_id=job_info["job_id"], finished_status=Status.SUCCESS)
     # the queue is empty
-    assert queue.is_job_in_process(job_type=test_type, dataset=test_dataset) is False
+    assert not queue.is_job_in_process(job_type=test_type, dataset=test_dataset)
     with pytest.raises(EmptyQueueError):
         # an error is raised if we try to start a job
         queue.start_job()
@@ -168,7 +168,7 @@ def test_max_jobs_per_namespace(max_jobs_per_namespace: Optional[int]) -> None:
     assert job_info["config"] == test_config
     assert job_info["split"] == "split1"
     assert (
-        queue.is_job_in_process(job_type=test_type, dataset=test_dataset, config=test_config, split="split1") is True
+        queue.is_job_in_process(job_type=test_type, dataset=test_dataset, config=test_config, split="split1")
     )
     if max_jobs_per_namespace == 1:
         with pytest.raises(EmptyQueueError):
@@ -201,8 +201,8 @@ def test_only_job_types(job_type: str, only_job_types: Optional[list[str]]) -> N
     test_dataset = "test_dataset"
     queue = Queue(max_jobs_per_namespace=100)
     queue.upsert_job(job_type=job_type, dataset=test_dataset, config=None, split=None)
-    assert queue.is_job_in_process(job_type=job_type, dataset=test_dataset, config=None, split=None) is True
-    if only_job_types is not None and job_type not in only_job_types:
+    assert queue.is_job_in_process(job_type=job_type, dataset=test_dataset, config=None, split=None)
+    if only_job_types and job_type not in only_job_types:
         with pytest.raises(EmptyQueueError):
             job_info = queue.start_job(only_job_types=only_job_types)
             queue.start_job(only_job_types=only_job_types)
