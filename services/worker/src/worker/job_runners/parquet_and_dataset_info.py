@@ -5,19 +5,26 @@ import contextlib
 import glob
 import logging
 import re
-from http import HTTPStatus
 from functools import partial
+from http import HTTPStatus
 from pathlib import Path
 from typing import Any, List, Literal, Mapping, Optional, Tuple, TypedDict
 from urllib.parse import quote
 
 import datasets
 import datasets.config
+import numpy as np
 from datasets import get_dataset_config_names, get_dataset_infos, load_dataset_builder
-from datasets.data_files import EmptyDatasetError as _EmptyDatasetError
 from datasets.builder import DatasetBuilder
-from datasets.utils.file_utils import get_authentication_headers_for_url, http_head
-from datasets.utils.py_utils import asdict
+from datasets.data_files import EmptyDatasetError as _EmptyDatasetError
+from datasets.download import StreamingDownloadManager
+from datasets.utils.file_utils import (
+    get_authentication_headers_for_url,
+    http_head,
+    is_relative_path,
+    url_or_path_join,
+)
+from datasets.utils.py_utils import asdict, map_nested
 from huggingface_hub.hf_api import (
     CommitOperation,
     CommitOperationAdd,
@@ -440,12 +447,6 @@ def _request_size(url: str, hf_token: Optional[str] = None) -> Optional[int]:
     response.raise_for_status()
     size = response.headers.get("Content-Length") if response.ok else None
     return int(size) if size is not None else size
-
-
-from datasets.download import StreamingDownloadManager
-from datasets.utils.py_utils import map_nested
-from datasets.utils.file_utils import url_or_path_join, is_relative_path
-import numpy as np
 
 
 class _MockStreamingDownloadManager(StreamingDownloadManager):
