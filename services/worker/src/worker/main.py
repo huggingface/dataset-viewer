@@ -3,7 +3,6 @@
 
 from libcommon.log import init_logging
 from libcommon.processing_graph import ProcessingGraph
-from libcommon.queue import Queue
 from libcommon.resources import CacheMongoResource, QueueMongoResource
 from libcommon.storage import init_assets_dir
 
@@ -20,7 +19,6 @@ if __name__ == "__main__":
     assets_directory = init_assets_dir(directory=app_config.assets.storage_directory)
 
     processing_graph = ProcessingGraph(app_config.processing_graph.specification)
-    processing_step = processing_graph.get_step(app_config.worker.endpoint)
 
     with (
         LibrariesResource(
@@ -46,11 +44,10 @@ if __name__ == "__main__":
             hf_datasets_cache=libraries_resource.hf_datasets_cache,
             assets_directory=assets_directory,
         )
-        queue = Queue(type=processing_step.job_type, max_jobs_per_namespace=app_config.queue.max_jobs_per_namespace)
         loop = Loop(
-            queue=queue,
             library_cache_paths=libraries_resource.storage_paths,
             job_runner_factory=job_runner_factory,
+            max_jobs_per_namespace=app_config.queue.max_jobs_per_namespace,
             worker_config=app_config.worker,
         )
         loop.run()

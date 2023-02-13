@@ -59,7 +59,7 @@ def get_job_runner(
 def test_process(app_config: AppConfig, get_job_runner, hub_public_csv: str) -> None:
     dataset, config, _ = get_default_config_split(hub_public_csv)
     job_runner = get_job_runner(dataset, config, app_config)
-    assert job_runner.process() is True
+    assert job_runner.process()
     cached_response = get_response(kind=job_runner.processing_step.cache_kind, dataset=hub_public_csv, config=config)
     assert cached_response["http_status"] == HTTPStatus.OK
     assert cached_response["error_code"] is None
@@ -74,7 +74,7 @@ def test_doesnotexist(app_config: AppConfig, get_job_runner) -> None:
     dataset = "doesnotexist"
     config = "some_config"
     job_runner = get_job_runner(dataset, config, app_config)
-    assert job_runner.process() is False
+    assert not job_runner.process()
     with pytest.raises(DoesNotExist):
         get_response(kind=job_runner.processing_step.cache_kind, dataset=dataset, config=config)
 
@@ -120,10 +120,10 @@ def test_compute_split_names_response(
         job_runner.compute()
     assert exc_info.value.code == error_code
     if cause is None:
-        assert exc_info.value.disclose_cause is False
+        assert not exc_info.value.disclose_cause
         assert exc_info.value.cause_exception is None
     else:
-        assert exc_info.value.disclose_cause is True
+        assert exc_info.value.disclose_cause
         assert exc_info.value.cause_exception == cause
         response = exc_info.value.as_response()
         assert set(response.keys()) == {"error", "cause_exception", "cause_message", "cause_traceback"}

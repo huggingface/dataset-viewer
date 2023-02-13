@@ -148,7 +148,7 @@ def get_dataset_info_for_supported_datasets(
         dataset_info = HfApi(endpoint=hf_endpoint).dataset_info(repo_id=dataset, token=hf_token)
     except RepositoryNotFoundError:
         ask_access(dataset=dataset, hf_endpoint=hf_endpoint, hf_token=hf_token)
-    if dataset_info.private is True:
+    if dataset_info.private:
         raise DatasetNotFoundError("The dataset does not exist on the Hub, or is private.")
     return dataset_info
 

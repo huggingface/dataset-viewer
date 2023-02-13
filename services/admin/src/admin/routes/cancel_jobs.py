@@ -30,7 +30,7 @@ def create_cancel_jobs_endpoint(
 
             # if auth_check fails, it will raise an exception that will be caught below
             auth_check(external_auth_url=external_auth_url, request=request, organization=organization)
-            Queue(type=processing_step.job_type).cancel_started_jobs()
+            Queue().cancel_started_jobs(job_type=processing_step.job_type)
             return get_json_ok_response(
                 {"status": "ok"},
                 max_age=0,

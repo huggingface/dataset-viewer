@@ -28,10 +28,10 @@ def get_empty_str_list() -> List[str]:
 @dataclass(frozen=True)
 class WorkerConfig:
     content_max_bytes: int = WORKER_CONTENT_MAX_BYTES
-    endpoint: str = WORKER_ENDPOINT
     max_disk_usage_pct: int = WORKER_MAX_DISK_USAGE_PCT
     max_load_pct: int = WORKER_MAX_LOAD_PCT
     max_memory_pct: int = WORKER_MAX_MEMORY_PCT
+    only_job_types: list[str] = field(default_factory=get_empty_str_list)
     sleep_seconds: int = WORKER_SLEEP_SECONDS
     storage_paths: List[str] = field(default_factory=get_empty_str_list)
 
@@ -41,11 +41,11 @@ class WorkerConfig:
         with env.prefixed("WORKER_"):
             return cls(
                 content_max_bytes=env.int(name="CONTENT_MAX_BYTES", default=WORKER_CONTENT_MAX_BYTES),
-                endpoint=env.str(name="ENDPOINT", default=WORKER_ENDPOINT),
                 max_disk_usage_pct=env.int(name="MAX_DISK_USAGE_PCT", default=WORKER_MAX_DISK_USAGE_PCT),
                 max_load_pct=env.int(name="MAX_LOAD_PCT", default=WORKER_MAX_LOAD_PCT),
                 max_memory_pct=env.int(name="MAX_MEMORY_PCT", default=WORKER_MAX_MEMORY_PCT),
                 sleep_seconds=env.int(name="SLEEP_SECONDS", default=WORKER_SLEEP_SECONDS),
+                only_job_types=env.list(name="ONLY_JOB_TYPES", default=get_empty_str_list()),
                 storage_paths=env.list(name="STORAGE_PATHS", default=get_empty_str_list()),
             )
 

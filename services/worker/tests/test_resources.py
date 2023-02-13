@@ -27,7 +27,7 @@ def test_libraries(tmp_path_factory, define_init_hf_datasets_cache: bool, define
     assert (numba_path in resource.storage_paths) == define_numba_path
     assert str(resource.hf_datasets_cache) in resource.storage_paths
     assert str(datasets.config.HF_MODULES_CACHE) in resource.storage_paths
-    assert datasets.config.HF_UPDATE_DOWNLOAD_COUNTS is False
+    assert not datasets.config.HF_UPDATE_DOWNLOAD_COUNTS
     assert (resource.hf_datasets_cache == init_hf_datasets_cache) == define_init_hf_datasets_cache
 
     resource.release()

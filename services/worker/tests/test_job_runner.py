@@ -290,24 +290,25 @@ def test_create_children_jobs() -> None:
         common_config=CommonConfig(),
         worker_config=WorkerConfig(),
     )
-    assert job_runner.should_skip_job() is False
+    assert not job_runner.should_skip_job()
     # we add an entry to the cache
     job_runner.run()
-    assert job_runner.should_skip_job() is True
+    assert job_runner.should_skip_job()
     # check that the children jobs have been created
-    child_dataset_jobs = Queue(type="/child-dataset").get_dump_with_status(status=Status.WAITING)
+    queue = Queue()
+    child_dataset_jobs = queue.get_dump_with_status(job_type="/child-dataset", status=Status.WAITING)
     assert len(child_dataset_jobs) == 1
     assert child_dataset_jobs[0]["dataset"] == "dataset"
     assert child_dataset_jobs[0]["config"] is None
     assert child_dataset_jobs[0]["split"] is None
     assert child_dataset_jobs[0]["priority"] is Priority.LOW.value
-    child_config_jobs = Queue(type="/child-config").get_dump_with_status(status=Status.WAITING)
+    child_config_jobs = queue.get_dump_with_status(job_type="/child-config", status=Status.WAITING)
     assert len(child_config_jobs) == 1
     assert child_config_jobs[0]["dataset"] == "dataset"
     assert child_config_jobs[0]["config"] == "config"
     assert child_config_jobs[0]["split"] is None
     assert child_config_jobs[0]["priority"] is Priority.LOW.value
-    child_split_jobs = Queue(type="/child-split").get_dump_with_status(status=Status.WAITING)
+    child_split_jobs = queue.get_dump_with_status(job_type="/child-split", status=Status.WAITING)
     assert len(child_split_jobs) == 2
     assert all(
         job["dataset"] == "dataset" and job["config"] == "config" and job["priority"] == Priority.LOW.value

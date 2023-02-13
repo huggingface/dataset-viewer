@@ -6,7 +6,7 @@
   image: {{ include "services.worker.image" . }}
   imagePullPolicy: {{ .Values.images.pullPolicy }}
   env:
-  - name: WORKER_ENDPOINT
+  - name: WORKER_ONLY_JOB_TYPES
     value: "/first-rows"
     # ^ hard-coded
   {{ include "envAssets" . | nindent 2 }}

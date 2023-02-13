@@ -169,7 +169,7 @@ class Job(Document):
 
 
 class Queue:
-    """A queue manages jobs of a given type.
+    """A queue manages jobs.
 
     Note that creating a Queue object does not create the queue in the database. It's a view that allows to manipulate
     the jobs. You can create multiple Queue objects, it has no effect on the database.
@@ -185,21 +185,20 @@ class Queue:
     - no more than `max_jobs_per_namespace` started jobs can exist for the same namespace
 
     Args:
-        type (`str`, required): Type of the job. It identifies the queue.
         max_jobs_per_namespace (`int`): Maximum number of started jobs for the same namespace. We call a namespace the
           part of the dataset name that is before the `/` separator (user or organization). If `/` is not present,
           which is the case for the "canonical" datasets, the namespace is the dataset name.
           0 or a negative value are ignored. Defaults to None.
     """
 
-    def __init__(self, type: str, max_jobs_per_namespace: Optional[int] = None):
-        self.type = type
+    def __init__(self, max_jobs_per_namespace: Optional[int] = None):
         self.max_jobs_per_namespace = (
             None if max_jobs_per_namespace is None or max_jobs_per_namespace < 1 else max_jobs_per_namespace
         )
 
     def _add_job(
         self,
+        job_type: str,
         dataset: str,
         config: Optional[str] = None,
         split: Optional[str] = None,
@@ -211,6 +210,7 @@ class Queue:
         This method should not be called directly. Use `upsert_job` instead.
 
         Args:
+            job_type (`str`): The type of the job
             dataset (`str`): The dataset on which to apply the job.
             config (`str`, optional): The config on which to apply the job.
             split (`str`, optional): The config on which to apply the job.
@@ -220,11 +220,11 @@ class Queue:
         Returns: the job
         """
         return Job(
-            type=self.type,
+            type=job_type,
             dataset=dataset,
             config=config,
             split=split,
-            unicity_id=f"Job[{self.type}][{dataset}][{config}][{split}]",
+            unicity_id=f"Job[{job_type}][{dataset}][{config}][{split}]",
             namespace=dataset.split("/")[0],
             force=force,
             priority=priority,
@@ -234,6 +234,7 @@ class Queue:
 
     def upsert_job(
         self,
+        job_type: str,
         dataset: str,
         config: Optional[str] = None,
         split: Optional[str] = None,
@@ -248,6 +249,7 @@ class Queue:
         In the same way, the new job inherits the highest priority.
 
         Args:
+            job_type (`str`): The type of the job
             dataset (`str`): The dataset on which to apply the job.
             config (`str`, optional): The config on which to apply the job.
             split (`str`, optional): The config on which to apply the job.
@@ -256,15 +258,19 @@ class Queue:
 
         Returns: the job
         """
-        existing = Job.objects(type=self.type, dataset=dataset, config=config, split=split, status=Status.WAITING)
+        existing = Job.objects(type=job_type, dataset=dataset, config=config, split=split, status=Status.WAITING)
         if existing(force=True).count() > 0:
             force = True
         if existing(priority=Priority.NORMAL).count() > 0:
             priority = Priority.NORMAL
         existing.update(finished_at=get_datetime(), status=Status.CANCELLED)
-        return self._add_job(dataset=dataset, config=config, split=split, force=force, priority=priority)
+        return self._add_job(
+            job_type=job_type, dataset=dataset, config=config, split=split, force=force, priority=priority
+        )
 
-    def _get_next_waiting_job_for_priority(self, priority: Priority) -> Job:
+    def _get_next_waiting_job_for_priority(
+        self, priority: Priority, only_job_types: Optional[list[str]] = None
+    ) -> Job:
         """Get the next job in the queue for a given priority.
 
         For a given priority, get the waiting job with the oldest creation date:
@@ -273,29 +279,49 @@ class Queue:
           - in the limit of `max_jobs_per_namespace` jobs per namespace
           - ensuring that the unicity_id field is unique among the started jobs.
 
+        Args:
+            priority (`Priority`): The priority of the job.
+            only_job_types: if not None, only jobs of the given types are considered.
+
         Raises:
             EmptyQueueError: if there is no waiting job in the queue that satisfies the restrictions above.
 
         Returns: the job
         """
-        started_jobs = Job.objects(type=self.type, status=Status.STARTED)
+        logging.debug("Getting next waiting job for priority %s, among types %s", priority, only_job_types or "all")
+        started_jobs = (
+            Job.objects(type__in=only_job_types, status=Status.STARTED)
+            if only_job_types
+            else Job.objects(status=Status.STARTED)
+        )
+        logging.debug(f"Number of started jobs: {started_jobs.count()}")
         started_job_namespaces = [job.namespace for job in started_jobs.only("namespace")]
+        logging.debug(f"Started job namespaces: {started_job_namespaces}")
 
         next_waiting_job = (
-            Job.objects(
-                type=self.type,
-                status=Status.WAITING,
-                namespace__nin=set(started_job_namespaces),
-                priority=priority,
+            (
+                Job.objects(
+                    type__in=only_job_types,
+                    status=Status.WAITING,
+                    namespace__nin=set(started_job_namespaces),
+                    priority=priority,
+                )
+                if only_job_types
+                else Job.objects(
+                    status=Status.WAITING,
+                    namespace__nin=set(started_job_namespaces),
+                    priority=priority,
+                )
             )
             .order_by("+created_at")
-            .only("dataset", "config", "split", "force")
+            .only("type", "dataset", "config", "split", "force")
             .no_cache()
             .first()
         )
         # ^ no_cache should generate a query on every iteration, which should solve concurrency issues between workers
         if next_waiting_job is not None:
             return next_waiting_job
+        logging.debug("No waiting job for namespace without started job")
 
         # all the waiting jobs, if any, are for namespaces that already have started jobs.
         #
@@ -310,22 +336,36 @@ class Queue:
             for namespace, count in Counter(started_job_namespaces).most_common()
             if self.max_jobs_per_namespace is None or count < self.max_jobs_per_namespace
         ]
+        logging.debug(
+            f"Descending frequency namespace counts, with less than {self.max_jobs_per_namespace} started jobs:"
+            f" {descending_frequency_namespace_counts}"
+        )
         descending_frequency_namespace_groups = [
             [item[0] for item in data] for (_, data) in groupby(descending_frequency_namespace_counts, itemgetter(1))
         ]
         # maybe we could get rid of this loop
         while descending_frequency_namespace_groups:
             least_common_namespaces_group = descending_frequency_namespace_groups.pop()
+            logging.debug(f"Least common namespaces group: {least_common_namespaces_group}")
             next_waiting_job = (
-                Job.objects(
-                    type=self.type,
-                    status=Status.WAITING,
-                    namespace__in=least_common_namespaces_group,
-                    unicity_id__nin=started_unicity_ids,
-                    priority=priority,
+                (
+                    Job.objects(
+                        type__in=only_job_types,
+                        status=Status.WAITING,
+                        namespace__in=least_common_namespaces_group,
+                        unicity_id__nin=started_unicity_ids,
+                        priority=priority,
+                    )
+                    if only_job_types
+                    else Job.objects(
+                        status=Status.WAITING,
+                        namespace__in=least_common_namespaces_group,
+                        unicity_id__nin=started_unicity_ids,
+                        priority=priority,
+                    )
                 )
                 .order_by("+created_at")
-                .only("dataset", "config", "split", "force")
+                .only("type", "dataset", "config", "split", "force")
                 .no_cache()
                 .first()
             )
@@ -336,7 +376,7 @@ class Queue:
             " namespace)"
         )
 
-    def get_next_waiting_job(self) -> Job:
+    def get_next_waiting_job(self, only_job_types: Optional[list[str]] = None) -> Job:
         """Get the next job in the queue.
 
         Get the waiting job with the oldest creation date with the following criteria:
@@ -346,6 +386,9 @@ class Queue:
           - in the limit of `max_jobs_per_namespace` jobs per namespace
           - ensuring that the unicity_id field is unique among the started jobs.
 
+        Args:
+            only_job_types: if not None, only jobs of the given types are considered.
+
         Raises:
             EmptyQueueError: if there is no waiting job in the queue that satisfies the restrictions above.
 
@@ -353,15 +396,18 @@ class Queue:
         """
         for priority in [Priority.NORMAL, Priority.LOW]:
             with contextlib.suppress(EmptyQueueError):
-                return self._get_next_waiting_job_for_priority(priority)
+                return self._get_next_waiting_job_for_priority(priority=priority, only_job_types=only_job_types)
         raise EmptyQueueError(
             f"no job available (within the limit of {self.max_jobs_per_namespace} started jobs per namespace)"
         )
 
-    def start_job(self) -> JobInfo:
+    def start_job(self, only_job_types: Optional[list[str]] = None) -> JobInfo:
         """Start the next job in the queue.
 
         The job is moved from the waiting state to the started state.
+
+        Args:
+            only_job_types: if not None, only jobs of the given types are considered.
 
         Raises:
             EmptyQueueError: if there is no job in the queue, within the limit of the maximum number of started jobs
@@ -369,18 +415,38 @@ class Queue:
 
         Returns: the job id, the type (endpoint), the input arguments: dataset, config and split and the force flag
         """
-        next_waiting_job = self.get_next_waiting_job()
+        logging.debug("looking for a job to start, among the following types: %s", only_job_types or "all")
+        next_waiting_job = self.get_next_waiting_job(only_job_types=only_job_types)
+        logging.debug(f"job found: {next_waiting_job}")
         # ^ can raise EmptyQueueError
         next_waiting_job.update(started_at=get_datetime(), status=Status.STARTED)
+        if only_job_types and next_waiting_job.type not in only_job_types:
+            raise RuntimeError(
+                f"The job type {next_waiting_job.type} is not in the list of allowed job types {only_job_types}"
+            )
         return {
             "job_id": str(next_waiting_job.pk),  # job.pk is the id. job.id is not recognized by mypy
-            "type": self.type,
+            "type": next_waiting_job.type,
             "dataset": next_waiting_job.dataset,
             "config": next_waiting_job.config,
             "split": next_waiting_job.split,
             "force": next_waiting_job.force,
             "priority": next_waiting_job.priority,
         }
+
+    def get_job_type(self, job_id: str) -> str:
+        """Get the job type for a given job id.
+
+        Args:
+            job_id (`str`, required): id of the job
+
+        Returns: the job type
+
+        Raises:
+            DoesNotExist: if the job does not exist
+        """
+        job = Job.objects(pk=job_id).get()
+        return job.type
 
     def finish_job(self, job_id: str, finished_status: Literal[Status.SUCCESS, Status.ERROR, Status.SKIPPED]) -> None:
         """Finish a job in the queue.
@@ -408,10 +474,13 @@ class Queue:
             logging.warning(f"job {job.unicity_id} has an empty started_at field. Force finishing anyway.")
         job.update(finished_at=get_datetime(), status=finished_status)
 
-    def is_job_in_process(self, dataset: str, config: Optional[str] = None, split: Optional[str] = None) -> bool:
+    def is_job_in_process(
+        self, job_type: str, dataset: str, config: Optional[str] = None, split: Optional[str] = None
+    ) -> bool:
         """Check if a job is in process (waiting or started).
 
         Args:
+            job_type (`str`, required): job type
             dataset (`str`, required): dataset name
             config (`str`, optional): config name. Defaults to None.
             split (`str`, optional): split name. Defaults to None.
@@ -421,7 +490,7 @@ class Queue:
         """
         return (
             Job.objects(
-                type=self.type,
+                type=job_type,
                 dataset=dataset,
                 config=config,
                 split=split,
@@ -430,25 +499,26 @@ class Queue:
             > 0
         )
 
-    def cancel_started_jobs(self) -> None:
-        """Cancel all started jobs."""
-        for job in Job.objects(type=self.type, status=Status.STARTED.value):
+    def cancel_started_jobs(self, job_type: str) -> None:
+        """Cancel all started jobs for a given type."""
+        for job in Job.objects(type=job_type, status=Status.STARTED.value):
             job.update(finished_at=get_datetime(), status=Status.CANCELLED)
-            self.upsert_job(dataset=job.dataset, config=job.config, split=job.split)
+            self.upsert_job(job_type=job.type, dataset=job.dataset, config=job.config, split=job.split)
 
     # special reports
-    def count_jobs(self, status: Status) -> int:
-        """Count the number of jobs with a given status.
+    def count_jobs(self, status: Status, job_type: str) -> int:
+        """Count the number of jobs with a given status and the given type.
 
         Args:
             status (`Status`, required): status of the jobs
+            job_type (`str`, required): job type
 
-        Returns: the number of jobs with the given status
+        Returns: the number of jobs with the given status and the given type.
         """
-        return Job.objects(type=self.type, status=status.value).count()
+        return Job.objects(type=job_type, status=status.value).count()
 
-    def get_jobs_count_by_status(self) -> CountByStatus:
-        """Count the number of jobs by status.
+    def get_jobs_count_by_status(self, job_type: str) -> CountByStatus:
+        """Count the number of jobs by status for a given job type.
 
         Returns: a dictionary with the number of jobs for each status
         """
@@ -458,36 +528,37 @@ class Queue:
         # result: CountByStatus = {s.value: jobs(status=s.value).count() for s in Status} # <- doesn't work in mypy
         # see https://stackoverflow.com/a/67292548/7351594
         return {
-            "waiting": self.count_jobs(status=Status.WAITING),
-            "started": self.count_jobs(status=Status.STARTED),
-            "success": self.count_jobs(status=Status.SUCCESS),
-            "error": self.count_jobs(status=Status.ERROR),
-            "cancelled": self.count_jobs(status=Status.CANCELLED),
-            "skipped": self.count_jobs(status=Status.SKIPPED),
+            "waiting": self.count_jobs(status=Status.WAITING, job_type=job_type),
+            "started": self.count_jobs(status=Status.STARTED, job_type=job_type),
+            "success": self.count_jobs(status=Status.SUCCESS, job_type=job_type),
+            "error": self.count_jobs(status=Status.ERROR, job_type=job_type),
+            "cancelled": self.count_jobs(status=Status.CANCELLED, job_type=job_type),
+            "skipped": self.count_jobs(status=Status.SKIPPED, job_type=job_type),
         }
 
-    def get_dump_with_status(self, status: Status) -> List[JobDict]:
-        """Get the dump of the jobs with a given status.
+    def get_dump_with_status(self, status: Status, job_type: str) -> List[JobDict]:
+        """Get the dump of the jobs with a given status and a given type.
 
         Args:
             status (`Status`, required): status of the jobs
+            job_type (`str`, required): job type
 
-        Returns: a list of jobs with the given status
+        Returns: a list of jobs with the given status and the given type
         """
-        return [d.to_dict() for d in Job.objects(type=self.type, status=status.value)]
+        return [d.to_dict() for d in Job.objects(type=job_type, status=status.value)]
 
-    def get_dump_by_pending_status(self) -> DumpByPendingStatus:
-        """Get the dump of the jobs by pending status.
+    def get_dump_by_pending_status(self, job_type: str) -> DumpByPendingStatus:
+        """Get the dump of the jobs by pending status for a given job type.
 
         Returns: a dictionary with the dump of the jobs for each pending status
         """
         return {
-            "waiting": self.get_dump_with_status(status=Status.WAITING),
-            "started": self.get_dump_with_status(status=Status.STARTED),
+            "waiting": self.get_dump_with_status(job_type=job_type, status=Status.WAITING),
+            "started": self.get_dump_with_status(job_type=job_type, status=Status.STARTED),
         }
 
-    def get_total_duration_per_dataset(self) -> Dict[str, int]:
-        """Get the total duration for the last 30 days of the finished jobs for every dataset
+    def get_total_duration_per_dataset(self, job_type: str) -> Dict[str, int]:
+        """Get the total duration for the last 30 days of the finished jobs of a given type for every dataset
 
         Returns: a dictionary where the keys are the dataset names and the values are the total duration of its
         finished jobs during the last 30 days, in seconds (integer)
@@ -496,7 +567,7 @@ class Queue:
         return {
             d["_id"]: d["total_duration"]
             for d in Job.objects(
-                type=self.type,
+                type=job_type,
                 status__in=[Status.SUCCESS, Status.ERROR],
                 finished_at__gt=datetime.now() - timedelta(days=DURATION_IN_DAYS),
             ).aggregate(

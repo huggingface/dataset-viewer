@@ -174,7 +174,7 @@ def test_process_big_content(hub_datasets: HubDatasets, app_config: AppConfig, g
         app_config=replace(app_config, worker=replace(app_config.worker, content_max_bytes=10)),
     )
 
-    assert worker.process() is False
+    assert not worker.process()
     cached_response = get_response(kind=worker.processing_step.cache_kind, dataset=dataset, config=config, split=split)
 
     assert cached_response["http_status"] == HTTPStatus.NOT_IMPLEMENTED

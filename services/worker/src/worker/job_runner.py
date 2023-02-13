@@ -441,9 +441,11 @@ class JobRunner(ABC):
                 f"of kind {processing_step.cache_kind} deleted from cache for dataset={self.dataset}"
             )
             # compute the responses for the new splits
+            queue = Queue()
             for split_full_name in new_split_full_names:
                 # we force the refresh of the children step responses if the current step refresh was forced
-                Queue(type=processing_step.job_type).upsert_job(
+                queue.upsert_job(
+                    job_type=processing_step.job_type,
                     dataset=split_full_name.dataset,
                     config=split_full_name.config,
                     split=split_full_name.split,
