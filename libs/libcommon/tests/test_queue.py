@@ -198,7 +198,6 @@ def test_only_job_types(job_type: str, only_job_types: Optional[list[str]]) -> N
     assert queue.is_job_in_process(job_type=job_type, dataset=test_dataset, config=None, split=None)
     if only_job_types and job_type not in only_job_types:
         with pytest.raises(EmptyQueueError):
-            job_info = queue.start_job(only_job_types=only_job_types)
             queue.start_job(only_job_types=only_job_types)
     else:
         job_info = queue.start_job(only_job_types=only_job_types)
