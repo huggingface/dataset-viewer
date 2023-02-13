@@ -6,6 +6,7 @@ import glob
 import logging
 import re
 from http import HTTPStatus
+from functools import partial
 from pathlib import Path
 from typing import Any, List, Literal, Mapping, Optional, Tuple, TypedDict
 from urllib.parse import quote
@@ -14,6 +15,8 @@ import datasets
 import datasets.config
 from datasets import get_dataset_config_names, get_dataset_infos, load_dataset_builder
 from datasets.data_files import EmptyDatasetError as _EmptyDatasetError
+from datasets.builder import DatasetBuilder
+from datasets.utils.file_utils import get_authentication_headers_for_url, http_head
 from datasets.utils.py_utils import asdict
 from huggingface_hub.hf_api import (
     CommitOperation,
@@ -39,6 +42,7 @@ ParquetAndDatasetInfoJobRunnerErrorCode = Literal[
     "DatasetInBlockListError",
     "DatasetTooBigFromHubError",
     "DatasetTooBigFromDatasetsError",
+    "DatasetTooBigFromExternalFiles"
 ]
 
 
@@ -423,6 +427,86 @@ class EmptyFeaturesError(Exception):
     pass
 
 
+class DatasetTooBigFromExternalFiles(ParquetAndDatasetInfoJobRunnerError):
+    """Raised when the dataset size (sum of config sizes given by the datasets library) is too big."""
+
+    def __init__(self, message: str, cause: Optional[BaseException] = None):
+        super().__init__(message, HTTPStatus.NOT_IMPLEMENTED, "DatasetTooBigFromExternalFiles", cause, False)
+
+
+def _request_size(url: str, hf_token: Optional[str] = None) -> Optional[int]:
+    headers = get_authentication_headers_for_url(url, use_auth_token=hf_token)
+    response = http_head(url, headers=headers, max_retries=3)
+    response.raise_for_status()
+    size = response.headers.get("Content-Length") if response.ok else None
+    return int(size) if size is not None else size
+
+
+from datasets.download import StreamingDownloadManager
+from datasets.utils.py_utils import map_nested
+from datasets.utils.file_utils import url_or_path_join, is_relative_path
+import numpy as np
+
+
+class _MockStreamingDownloadManager(StreamingDownloadManager):
+    
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.ext_data_files = []
+    
+    def download(self, url_or_urls):
+        url_or_urls = map_nested(self._download, url_or_urls, map_tuple=True, parallel_min_length=np.inf)
+        return url_or_urls
+
+    def _download(self, urlpath):
+        urlpath = str(urlpath)
+        if is_relative_path(urlpath):
+            # append the relative path to the base_path
+            urlpath = url_or_path_join(self._base_path, urlpath)
+        elif not urlpath.startswith(self._base_path):
+            # it's an external file
+            self.ext_data_files.append(urlpath)
+        return urlpath
+
+
+def raise_if_too_big_from_external_data_files(
+    builder: DatasetBuilder,
+    max_dataset_size: int,
+    max_external_data_files: int,
+    hf_token: Optional[str]
+) -> None:
+    # Packaged dataset modules only load data files that are inside the dataset repository.
+    # No need to check them since they're already caught by `raise_if_too_big_from_hub`
+    if type(builder).__module__.startswith("datasets."):
+        return
+    # For datasets with a loading script however, we need to check the downloaded files
+    mock_dl_manager = _MockStreamingDownloadManager(base_path=builder.base_path)
+    try:
+        builder._split_generators(mock_dl_manager)
+    except NotImplementedError as err:
+        if "is not implemented in streaming mode." not in str(err):
+            raise
+    ext_data_files = mock_dl_manager.ext_data_files
+    if len(ext_data_files) > max_external_data_files:
+        raise DatasetTooBigFromExternalFiles(
+            f"The conversion to parquet is limited to datasets with less than {max_external_data_files} files. "
+            f"However it uses {len(ext_data_files)} data files."
+        )
+    elif ext_data_files:
+        from multiprocessing.pool import ThreadPool
+        with ThreadPool(16) as pool:
+            total_size = 0
+            get_size = partial(_request_size, hf_token=hf_token)
+            for i, size in enumerate(pool.imap_unordered(get_size, ext_data_files)):
+                if size is not None:
+                    total_size += size
+                    if total_size > max_dataset_size:
+                        raise DatasetTooBigFromExternalFiles(
+                            f"The conversion to parquet is limited to datasets under {max_dataset_size} bytes. "
+                            f"However {i + 1} data files of {len(ext_data_files)} are already bigger than {total_size} bytes."
+                        )
+
+
 def compute_parquet_and_dataset_info_response(
     dataset: str,
     hf_endpoint: str,
@@ -435,6 +519,7 @@ def compute_parquet_and_dataset_info_response(
     supported_datasets: List[str],
     blocked_datasets: List[str],
     max_dataset_size: int,
+    max_external_data_files: int,
 ) -> ParquetAndDatasetInfoResponse:
     """
     Get the response of /parquet-and-dataset-info for one specific dataset on huggingface.co.
@@ -467,6 +552,8 @@ def compute_parquet_and_dataset_info_response(
         max_dataset_size (`int`):
             The maximum size of a dataset in bytes. If the dataset is under the limit (which means that the size
             can be fetched), it will be allowed.
+        max_external_data_files (`int`):
+            The maximum number of external data files of a dataset. This is for datasets with loading scripts only.
     Returns:
         `ParquetAndDatasetInfoResponse`: An object with the parquet_and_dataset_info_response
           (dataset info and list of parquet files).
@@ -497,6 +584,8 @@ def compute_parquet_and_dataset_info_response(
           If the list of configurations could not be obtained using the datasets library.
         - [`~job_runners.parquet_and_dataset_info.DatasetInBlockListError`]
           If the dataset is in the list of blocked datasets.
+        - [`~job_runners.parquet_and_dataset_info.DatasetTooBigFromExternalFiles`]
+            If the dataset is too big to be converted to parquet
     </Tip>
     """
     logging.info(f"get parquet files and dataset info for dataset={dataset}")
@@ -531,6 +620,7 @@ def compute_parquet_and_dataset_info_response(
     dataset_info: dict[str, Any] = {}
     for config in config_names:
         builder = load_dataset_builder(path=dataset, name=config, revision=source_revision, use_auth_token=hf_token)
+        raise_if_too_big_from_external_data_files(builder=builder, max_dataset_size=max_dataset_size, max_external_data_files=max_external_data_files)
         builder.download_and_prepare(file_format="parquet")  # the parquet files are stored in the cache dir
         dataset_info[config] = asdict(builder.info)
         # ^ see
