@@ -68,12 +68,12 @@ def test_should_skip_job(
 ) -> None:
     dataset, config, split = get_default_config_split(hub_public_csv)
     job_runner = get_job_runner(dataset, config, split, app_config, first_rows_config)
-    assert job_runner.should_skip_job() is False
+    assert not job_runner.should_skip_job()
     # we add an entry to the cache
     job_runner.process()
-    assert job_runner.should_skip_job() is True
+    assert job_runner.should_skip_job()
     job_runner = get_job_runner(dataset, config, split, app_config, first_rows_config, force=True)
-    assert job_runner.should_skip_job() is False
+    assert not job_runner.should_skip_job()
 
 
 def test_compute(
@@ -81,7 +81,7 @@ def test_compute(
 ) -> None:
     dataset, config, split = get_default_config_split(hub_public_csv)
     job_runner = get_job_runner(dataset, config, split, app_config, first_rows_config)
-    assert job_runner.process() is True
+    assert job_runner.process()
     cached_response = get_response(
         kind=job_runner.processing_step.cache_kind, dataset=dataset, config=config, split=split
     )
@@ -102,7 +102,7 @@ def test_doesnotexist(app_config: AppConfig, get_job_runner, first_rows_config: 
     dataset = "doesnotexist"
     dataset, config, split = get_default_config_split(dataset)
     job_runner = get_job_runner(dataset, config, split, app_config, first_rows_config)
-    assert job_runner.process() is False
+    assert not job_runner.process()
     with pytest.raises(DoesNotExist):
         get_response(kind=job_runner.processing_step.cache_kind, dataset=dataset, config=config, split=split)
 
@@ -159,10 +159,10 @@ def test_number_rows(
         job_runner.compute()
     assert exc_info.value.code == error_code
     if cause is None:
-        assert exc_info.value.disclose_cause is False
+        assert not exc_info.value.disclose_cause
         assert exc_info.value.cause_exception is None
     else:
-        assert exc_info.value.disclose_cause is True
+        assert exc_info.value.disclose_cause
         assert exc_info.value.cause_exception == cause
         response = exc_info.value.as_response()
         assert set(response.keys()) == {"error", "cause_exception", "cause_message", "cause_traceback"}

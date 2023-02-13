@@ -290,10 +290,10 @@ def test_create_children_jobs() -> None:
         common_config=CommonConfig(),
         worker_config=WorkerConfig(),
     )
-    assert job_runner.should_skip_job() is False
+    assert not job_runner.should_skip_job()
     # we add an entry to the cache
     job_runner.run()
-    assert job_runner.should_skip_job() is True
+    assert job_runner.should_skip_job()
     # check that the children jobs have been created
     queue = Queue()
     child_dataset_jobs = queue.get_dump_with_status(job_type="/child-dataset", status=Status.WAITING)

@@ -15,7 +15,7 @@ from .utils import auth_callback
 
 
 def test_no_auth_check() -> None:
-    assert auth_check("dataset") is True
+    assert auth_check("dataset")
 
 
 def test_invalid_auth_check_url() -> None:

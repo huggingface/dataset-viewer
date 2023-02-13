@@ -14,7 +14,7 @@ from .utils import request_callback
 
 
 def test_no_auth_check() -> None:
-    assert auth_check() is True
+    assert auth_check()
 
 
 @responses.activate
@@ -39,7 +39,7 @@ def test_external_auth_responses_without_request(status: int, error: Optional[Ty
     body = '{"orgs": [{"name": "org1"}]}'
     responses.add(responses.GET, url, status=status, body=body)
     if error is None:
-        assert auth_check(external_auth_url=url, organization="org1") is True
+        assert auth_check(external_auth_url=url, organization="org1")
     else:
         with pytest.raises(error):
             auth_check(external_auth_url=url, organization="org1")
@@ -55,7 +55,7 @@ def test_org(org: str, status: int, error: Optional[Type[Exception]]) -> None:
     body = '{"orgs": [{"name": "org1"}]}'
     responses.add(responses.GET, url, status=status, body=body)
     if error is None:
-        assert auth_check(external_auth_url=url, organization=org) is True
+        assert auth_check(external_auth_url=url, organization=org)
     else:
         with pytest.raises(error):
             auth_check(external_auth_url=url, organization=org)
@@ -90,11 +90,8 @@ def test_valid_responses_with_request() -> None:
             organization=organization,
         )
 
-    assert (
-        auth_check(
-            external_auth_url=url,
-            request=create_request(headers={}),
-            organization=organization,
-        )
-        is True
+    assert auth_check(
+        external_auth_url=url,
+        request=create_request(headers={}),
+        organization=organization,
     )

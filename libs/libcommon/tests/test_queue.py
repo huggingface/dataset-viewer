@@ -45,7 +45,7 @@ def test__add_job() -> None:
     assert job_info["dataset"] == test_dataset
     assert job_info["config"] is None
     assert job_info["split"] is None
-    assert job_info["force"] is True
+    assert job_info["force"]
     assert queue.is_job_in_process(job_type=test_type, dataset=test_dataset)
     # adding the job while the first one has not finished yet adds another waiting job
     # (there are no limits to the number of waiting jobs)
@@ -59,11 +59,11 @@ def test__add_job() -> None:
     assert queue.is_job_in_process(job_type=test_type, dataset=test_dataset)
     # process the second job
     job_info = queue.start_job()
-    assert job_info["force"] is False
+    assert not job_info["force"]
     queue.finish_job(job_id=job_info["job_id"], finished_status=Status.SUCCESS)
     # and the third one
     job_info = queue.start_job()
-    assert job_info["force"] is True
+    assert job_info["force"]
     other_job_id = ("1" if job_info["job_id"][0] == "0" else "0") + job_info["job_id"][1:]
     # trying to finish another job fails silently (with a log)
     queue.finish_job(job_id=other_job_id, finished_status=Status.SUCCESS)
@@ -92,7 +92,7 @@ def test_upsert_job() -> None:
     assert job_info["dataset"] == test_dataset
     assert job_info["config"] is None
     assert job_info["split"] is None
-    assert job_info["force"] is True  # the new job inherits from waiting forced jobs
+    assert job_info["force"]  # the new job inherits from waiting forced jobs
     assert queue.is_job_in_process(job_type=test_type, dataset=test_dataset)
     # adding the job while the first one has not finished yet adds a new waiting job
     queue.upsert_job(job_type=test_type, dataset=test_dataset, force=False)
@@ -105,7 +105,7 @@ def test_upsert_job() -> None:
     assert queue.is_job_in_process(job_type=test_type, dataset=test_dataset)
     # process the second job
     job_info = queue.start_job()
-    assert job_info["force"] is False  # the new jobs does not inherit from started forced jobs
+    assert not job_info["force"]  # the new jobs does not inherit from started forced jobs
     queue.finish_job(job_id=job_info["job_id"], finished_status=Status.SUCCESS)
     # the queue is empty
     assert not queue.is_job_in_process(job_type=test_type, dataset=test_dataset)
@@ -158,18 +158,14 @@ def test_max_jobs_per_namespace(max_jobs_per_namespace: Optional[int]) -> None:
     test_config = "test_config"
     queue = Queue(max_jobs_per_namespace=max_jobs_per_namespace)
     queue.upsert_job(job_type=test_type, dataset=test_dataset, config=test_config, split="split1")
-    assert (
-        queue.is_job_in_process(job_type=test_type, dataset=test_dataset, config=test_config, split="split1") is True
-    )
+    assert queue.is_job_in_process(job_type=test_type, dataset=test_dataset, config=test_config, split="split1")
     queue.upsert_job(job_type=test_type, dataset=test_dataset, config=test_config, split="split2")
     queue.upsert_job(job_type=test_type, dataset=test_dataset, config=test_config, split="split3")
     job_info = queue.start_job()
     assert job_info["dataset"] == test_dataset
     assert job_info["config"] == test_config
     assert job_info["split"] == "split1"
-    assert (
-        queue.is_job_in_process(job_type=test_type, dataset=test_dataset, config=test_config, split="split1")
-    )
+    assert queue.is_job_in_process(job_type=test_type, dataset=test_dataset, config=test_config, split="split1")
     if max_jobs_per_namespace == 1:
         with pytest.raises(EmptyQueueError):
             queue.start_job()
@@ -183,9 +179,7 @@ def test_max_jobs_per_namespace(max_jobs_per_namespace: Optional[int]) -> None:
     # max_jobs_per_namespace <= 0 and max_jobs_per_namespace == None are the same
     # finish the first job
     queue.finish_job(job_info["job_id"], finished_status=Status.SUCCESS)
-    assert (
-        queue.is_job_in_process(job_type=test_type, dataset=test_dataset, config=test_config, split="split1") is False
-    )
+    assert not queue.is_job_in_process(job_type=test_type, dataset=test_dataset, config=test_config, split="split1")
 
 
 @pytest.mark.parametrize(

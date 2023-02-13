@@ -108,7 +108,7 @@ def test_remove_dir(tmp_path_factory: pytest.TempPathFactory, exists: bool, is_s
     assert tmp_file.is_file() is exists
     directory: StrPath = str(tmp_path) if is_string else tmp_path
     remove_dir(directory)
-    assert tmp_path.exists() is False
-    assert tmp_path.is_dir() is False
-    assert tmp_file.exists() is False
-    assert tmp_file.is_file() is False
+    assert not tmp_path.exists()
+    assert not tmp_path.is_dir()
+    assert not tmp_file.exists()
+    assert not tmp_file.is_file()

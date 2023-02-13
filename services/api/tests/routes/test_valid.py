@@ -109,6 +109,6 @@ def test_errors() -> None:
         kind=dataset_step.cache_kind, dataset=dataset_c, content={}, http_status=HTTPStatus.INTERNAL_SERVER_ERROR
     )
     assert get_valid(processing_steps_for_valid=processing_steps_for_valid) == [dataset_a, dataset_b]
-    assert is_valid(dataset=dataset_a, processing_steps_for_valid=processing_steps_for_valid) is True
-    assert is_valid(dataset=dataset_b, processing_steps_for_valid=processing_steps_for_valid) is True
-    assert is_valid(dataset=dataset_c, processing_steps_for_valid=processing_steps_for_valid) is False
+    assert is_valid(dataset=dataset_a, processing_steps_for_valid=processing_steps_for_valid)
+    assert is_valid(dataset=dataset_b, processing_steps_for_valid=processing_steps_for_valid)
+    assert not is_valid(dataset=dataset_c, processing_steps_for_valid=processing_steps_for_valid)

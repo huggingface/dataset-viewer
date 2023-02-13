@@ -121,7 +121,7 @@ def test_compute(
     job_runner = get_job_runner(
         dataset=dataset, app_config=app_config, parquet_and_dataset_info_config=parquet_and_dataset_info_config
     )
-    assert job_runner.process() is True
+    assert job_runner.process()
     cached_response = get_response(kind=job_runner.processing_step.cache_kind, dataset=dataset)
     assert cached_response["http_status"] == HTTPStatus.OK
     assert cached_response["error_code"] is None
@@ -139,7 +139,7 @@ def test_doesnotexist(
     job_runner = get_job_runner(
         dataset=dataset, app_config=app_config, parquet_and_dataset_info_config=parquet_and_dataset_info_config
     )
-    assert job_runner.process() is False
+    assert not job_runner.process()
     with pytest.raises(DoesNotExist):
         get_response(kind=job_runner.processing_step.cache_kind, dataset=dataset)
 
@@ -271,7 +271,7 @@ def test_not_supported_if_big(
     job_runner = get_job_runner(
         dataset=dataset, app_config=app_config, parquet_and_dataset_info_config=parquet_and_dataset_info_config
     )
-    assert job_runner.process() is False
+    assert not job_runner.process()
     cached_response = get_response(kind=job_runner.processing_step.cache_kind, dataset=dataset)
     assert cached_response["http_status"] == HTTPStatus.NOT_IMPLEMENTED
     assert cached_response["error_code"] == "DatasetTooBigFromDatasetsError"
@@ -288,7 +288,7 @@ def test_supported_if_gated(
     job_runner = get_job_runner(
         dataset=dataset, app_config=app_config, parquet_and_dataset_info_config=parquet_and_dataset_info_config
     )
-    assert job_runner.process() is True
+    assert job_runner.process()
     cached_response = get_response(kind=job_runner.processing_step.cache_kind, dataset=dataset)
     assert cached_response["http_status"] == HTTPStatus.OK
     assert cached_response["error_code"] is None
@@ -305,7 +305,7 @@ def test_not_supported_if_gated_with_extra_fields(
     job_runner = get_job_runner(
         dataset=dataset, app_config=app_config, parquet_and_dataset_info_config=parquet_and_dataset_info_config
     )
-    assert job_runner.process() is False
+    assert not job_runner.process()
     cached_response = get_response(kind=job_runner.processing_step.cache_kind, dataset=dataset)
     assert cached_response["http_status"] == HTTPStatus.NOT_FOUND
     assert cached_response["error_code"] == "GatedExtraFieldsError"
@@ -322,7 +322,7 @@ def test_blocked(
     job_runner = get_job_runner(
         dataset=dataset, app_config=app_config, parquet_and_dataset_info_config=parquet_and_dataset_info_config
     )
-    assert job_runner.process() is False
+    assert not job_runner.process()
     cached_response = get_response(kind=job_runner.processing_step.cache_kind, dataset=dataset)
     assert cached_response["http_status"] == HTTPStatus.NOT_IMPLEMENTED
     assert cached_response["error_code"] == "DatasetInBlockListError"
@@ -392,10 +392,10 @@ def test_compute_splits_response_simple_csv_error(
         job_runner.compute()
     assert exc_info.value.code == error_code
     if cause is None:
-        assert exc_info.value.disclose_cause is False
+        assert not exc_info.value.disclose_cause
         assert exc_info.value.cause_exception is None
     else:
-        assert exc_info.value.disclose_cause is True
+        assert exc_info.value.disclose_cause
         assert exc_info.value.cause_exception == cause
         response = exc_info.value.as_response()
         assert set(response.keys()) == {"error", "cause_exception", "cause_message", "cause_traceback"}

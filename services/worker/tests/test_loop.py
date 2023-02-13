@@ -57,15 +57,15 @@ def test_process_next_job(
         worker_config=WorkerConfig(),
         max_jobs_per_namespace=app_config.queue.max_jobs_per_namespace,
     )
-    assert loop.process_next_job() is False
+    assert not loop.process_next_job()
     dataset = "dataset"
     config = "config"
     split = "split"
     loop.queue.upsert_job(job_type=test_processing_step.job_type, dataset=dataset, config=config, split=split)
-    loop.queue.is_job_in_process(
+    assert loop.queue.is_job_in_process(
         job_type=test_processing_step.job_type, dataset=dataset, config=config, split=split
-    ) is True
-    assert loop.process_next_job() is True
-    loop.queue.is_job_in_process(
+    )
+    assert loop.process_next_job()
+    assert not loop.queue.is_job_in_process(
         job_type=test_processing_step.job_type, dataset=dataset, config=config, split=split
-    ) is False
+    )
