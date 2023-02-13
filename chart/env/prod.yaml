@@ -16,23 +16,23 @@ images:
       registry: huggingface
       useGlobalRegistry: false
       repository: datasets-server-jobs-mongodb_migration
-      tag: sha-27ad2f7
+      tag: sha-fb3399a
   services:
     admin:
       registry: huggingface
       useGlobalRegistry: false
       repository: datasets-server-services-admin
-      tag: sha-27ad2f7
+      tag: sha-fb3399a
     api:
       registry: huggingface
       useGlobalRegistry: false
       repository: datasets-server-services-api
-      tag: sha-27ad2f7
+      tag: sha-fb3399a
     worker:
       registry: huggingface
       useGlobalRegistry: false
       repository: datasets-server-services-worker
-      tag: sha-27ad2f7
+      tag: sha-fb3399a
 
 secrets:
   mongoUrl:
