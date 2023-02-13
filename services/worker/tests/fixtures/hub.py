@@ -467,7 +467,8 @@ TEXT_cols = {
 }
 
 TEXT_rows = [
-    {"text": text} for text in [
+    {"text": text}
+    for text in [
         "foo",
         "bar",
         "foobar",

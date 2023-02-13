@@ -14,7 +14,12 @@ from urllib.parse import quote
 import datasets
 import datasets.config
 import numpy as np
-from datasets import get_dataset_config_names, get_dataset_infos, load_dataset_builder, DownloadConfig
+from datasets import (
+    DownloadConfig,
+    get_dataset_config_names,
+    get_dataset_infos,
+    load_dataset_builder,
+)
 from datasets.builder import DatasetBuilder
 from datasets.data_files import EmptyDatasetError as _EmptyDatasetError
 from datasets.download import StreamingDownloadManager
@@ -477,7 +482,9 @@ def raise_if_too_big_from_external_data_files(
     if type(builder).__module__.startswith("datasets."):
         return
     # For datasets with a loading script however, we need to check the downloaded files
-    mock_dl_manager = _MockStreamingDownloadManager(base_path=builder.base_path, download_config=DownloadConfig(use_auth_token=hf_token))
+    mock_dl_manager = _MockStreamingDownloadManager(
+        base_path=builder.base_path, download_config=DownloadConfig(use_auth_token=hf_token)
+    )
     try:
         builder._split_generators(mock_dl_manager)
     except NotImplementedError as err:

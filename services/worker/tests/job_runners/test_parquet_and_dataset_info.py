@@ -27,8 +27,8 @@ from worker.job_runners.parquet_and_dataset_info import (
     raise_if_blocked,
     raise_if_not_supported,
     raise_if_too_big_from_datasets,
-    raise_if_too_big_from_hub,
     raise_if_too_big_from_external_data_files,
+    raise_if_too_big_from_hub,
 )
 from worker.resources import LibrariesResource
 
