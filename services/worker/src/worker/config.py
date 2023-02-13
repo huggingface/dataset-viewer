@@ -13,10 +13,12 @@ from libcommon.config import (
     QueueConfig,
 )
 
-WORKER_LOOP_MAX_DISK_USAGE_PCT = 90
-WORKER_LOOP_MAX_LOAD_PCT = 70
-WORKER_LOOP_MAX_MEMORY_PCT = 80
-WORKER_LOOP_SLEEP_SECONDS = 15
+WORKER_CONTENT_MAX_BYTES = 10_000_000
+WORKER_ENDPOINT = "/config-names"
+WORKER_MAX_DISK_USAGE_PCT = 90
+WORKER_MAX_LOAD_PCT = 70
+WORKER_MAX_MEMORY_PCT = 80
+WORKER_SLEEP_SECONDS = 15
 
 
 def get_empty_str_list() -> List[str]:
@@ -24,45 +26,43 @@ def get_empty_str_list() -> List[str]:
 
 
 @dataclass(frozen=True)
-class LoopConfig:
-    max_disk_usage_pct: int = WORKER_LOOP_MAX_DISK_USAGE_PCT
-    max_load_pct: int = WORKER_LOOP_MAX_LOAD_PCT
-    max_memory_pct: int = WORKER_LOOP_MAX_MEMORY_PCT
-    sleep_seconds: int = WORKER_LOOP_SLEEP_SECONDS
+class WorkerConfig:
+    content_max_bytes: int = WORKER_CONTENT_MAX_BYTES
+    endpoint: str = WORKER_ENDPOINT
+    max_disk_usage_pct: int = WORKER_MAX_DISK_USAGE_PCT
+    max_load_pct: int = WORKER_MAX_LOAD_PCT
+    max_memory_pct: int = WORKER_MAX_MEMORY_PCT
+    sleep_seconds: int = WORKER_SLEEP_SECONDS
     storage_paths: List[str] = field(default_factory=get_empty_str_list)
 
     @classmethod
-    def from_env(cls) -> "LoopConfig":
+    def from_env(cls) -> "WorkerConfig":
         env = Env(expand_vars=True)
-        with env.prefixed("WORKER_LOOP_"):
+        with env.prefixed("WORKER_"):
             return cls(
-                max_disk_usage_pct=env.int(name="MAX_DISK_USAGE_PCT", default=WORKER_LOOP_MAX_DISK_USAGE_PCT),
-                max_load_pct=env.int(name="MAX_LOAD_PCT", default=WORKER_LOOP_MAX_LOAD_PCT),
-                max_memory_pct=env.int(name="MAX_MEMORY_PCT", default=WORKER_LOOP_MAX_MEMORY_PCT),
-                sleep_seconds=env.int(name="SLEEP_SECONDS", default=WORKER_LOOP_SLEEP_SECONDS),
+                content_max_bytes=env.int(name="CONTENT_MAX_BYTES", default=WORKER_CONTENT_MAX_BYTES),
+                endpoint=env.str(name="ENDPOINT", default=WORKER_ENDPOINT),
+                max_disk_usage_pct=env.int(name="MAX_DISK_USAGE_PCT", default=WORKER_MAX_DISK_USAGE_PCT),
+                max_load_pct=env.int(name="MAX_LOAD_PCT", default=WORKER_MAX_LOAD_PCT),
+                max_memory_pct=env.int(name="MAX_MEMORY_PCT", default=WORKER_MAX_MEMORY_PCT),
+                sleep_seconds=env.int(name="SLEEP_SECONDS", default=WORKER_SLEEP_SECONDS),
                 storage_paths=env.list(name="STORAGE_PATHS", default=get_empty_str_list()),
             )
 
 
-DATASETS_BASED_ENDPOINT = "/config-names"
 DATASETS_BASED_HF_DATASETS_CACHE = None
-DATASETS_BASED_CONTENT_MAX_BYTES = 10_000_000
 
 
 @dataclass(frozen=True)
 class DatasetsBasedConfig:
-    endpoint: str = DATASETS_BASED_ENDPOINT
     hf_datasets_cache: Optional[str] = DATASETS_BASED_HF_DATASETS_CACHE
-    content_max_bytes: int = DATASETS_BASED_CONTENT_MAX_BYTES
 
     @classmethod
     def from_env(cls) -> "DatasetsBasedConfig":
         env = Env(expand_vars=True)
         with env.prefixed("DATASETS_BASED_"):
             return cls(
-                endpoint=env.str(name="ENDPOINT", default=DATASETS_BASED_ENDPOINT),
                 hf_datasets_cache=env.str(name="HF_DATASETS_CACHE", default=DATASETS_BASED_HF_DATASETS_CACHE),
-                content_max_bytes=env.int(name="CONTENT_MAX_BYTES", default=DATASETS_BASED_CONTENT_MAX_BYTES),
             )
 
 
@@ -154,7 +154,7 @@ class AppConfig:
     numba: NumbaConfig = field(default_factory=NumbaConfig)
     processing_graph: ProcessingGraphConfig = field(default_factory=ProcessingGraphConfig)
     queue: QueueConfig = field(default_factory=QueueConfig)
-    loop: LoopConfig = field(default_factory=LoopConfig)
+    worker: WorkerConfig = field(default_factory=WorkerConfig)
 
     @classmethod
     def from_env(cls) -> "AppConfig":
@@ -166,5 +166,5 @@ class AppConfig:
             numba=NumbaConfig.from_env(),
             processing_graph=ProcessingGraphConfig.from_env(),
             queue=QueueConfig.from_env(),
-            loop=LoopConfig.from_env(),
+            worker=WorkerConfig.from_env(),
         )

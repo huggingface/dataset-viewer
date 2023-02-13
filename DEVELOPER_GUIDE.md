@@ -155,7 +155,7 @@ GITHUB_TOKEN=xxx
 
 ## Mac OS
 
-To install the [datasets based worker](./services/worker) on Mac OS, you can follow the next steps.
+To install the [worker](./services/worker) on Mac OS, you can follow the next steps.
 
 ### First: as an administrator
 

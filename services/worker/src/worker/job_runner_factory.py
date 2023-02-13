@@ -96,21 +96,21 @@ class JobRunnerFactory(BaseJobRunnerFactory):
             return ParquetJobRunner(
                 job_info=job_info,
                 common_config=self.app_config.common,
-                datasets_based_config=self.app_config.datasets_based,
+                worker_config=self.app_config.worker,
                 processing_step=processing_step,
             )
         if job_type == DatasetInfoJobRunner.get_job_type():
             return DatasetInfoJobRunner(
                 job_info=job_info,
                 common_config=self.app_config.common,
-                datasets_based_config=self.app_config.datasets_based,
+                worker_config=self.app_config.worker,
                 processing_step=processing_step,
             )
         if job_type == SizesJobRunner.get_job_type():
             return SizesJobRunner(
                 job_info=job_info,
                 common_config=self.app_config.common,
-                datasets_based_config=self.app_config.datasets_based,
+                worker_config=self.app_config.worker,
                 processing_step=processing_step,
             )
         supported_job_types = [

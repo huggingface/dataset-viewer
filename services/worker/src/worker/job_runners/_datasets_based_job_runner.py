@@ -34,7 +34,7 @@ class DatasetsBasedJobRunner(JobRunner):
         super().__init__(
             job_info=job_info,
             common_config=app_config.common,
-            datasets_based_config=app_config.datasets_based,
+            worker_config=app_config.worker,
             processing_step=processing_step,
         )
         self.datasets_based_config = app_config.datasets_based

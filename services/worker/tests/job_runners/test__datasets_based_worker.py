@@ -171,7 +171,7 @@ def test_process_big_content(hub_datasets: HubDatasets, app_config: AppConfig, g
         dataset,
         config,
         split,
-        app_config=replace(app_config, datasets_based=replace(app_config.datasets_based, content_max_bytes=10)),
+        app_config=replace(app_config, worker=replace(app_config.worker, content_max_bytes=10)),
     )
 
     assert worker.process() is False

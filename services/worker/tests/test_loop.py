@@ -5,7 +5,7 @@ from libcommon.processing_graph import ProcessingStep
 from libcommon.queue import Queue
 from libcommon.resources import CacheMongoResource, QueueMongoResource
 
-from worker.config import AppConfig, DatasetsBasedConfig, LoopConfig
+from worker.config import AppConfig, WorkerConfig
 from worker.job_runner import JobInfo, JobRunner
 from worker.job_runner_factory import BaseJobRunnerFactory
 from worker.loop import Loop
@@ -32,14 +32,14 @@ class DummyJobRunner(JobRunner):
 class DummyJobRunnerFactory(BaseJobRunnerFactory):
     def __init__(self, processing_step: ProcessingStep) -> None:
         self.common_config = CommonConfig()
-        self.datasets_based_config = DatasetsBasedConfig()
+        self.worker_config = WorkerConfig()
         self.processing_step = processing_step
 
     def _create_job_runner(self, job_info: JobInfo) -> JobRunner:
         return DummyJobRunner(
             job_info=job_info,
             common_config=self.common_config,
-            datasets_based_config=self.datasets_based_config,
+            worker_config=self.worker_config,
             processing_step=self.processing_step,
         )
 
@@ -57,7 +57,7 @@ def test_process_next_job(
         library_cache_paths=libraries_resource.storage_paths,
         queue=queue,
         job_runner_factory=factory,
-        loop_config=LoopConfig(),
+        worker_config=WorkerConfig(),
     )
     assert loop.process_next_job() is False
     dataset = "dataset"

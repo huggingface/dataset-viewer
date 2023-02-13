@@ -9,7 +9,7 @@ from dataclasses import dataclass, field
 from libcommon.queue import EmptyQueueError, Queue
 from psutil import cpu_count, disk_usage, getloadavg, swap_memory, virtual_memory
 
-from worker.config import LoopConfig
+from worker.config import WorkerConfig
 from worker.job_runner_factory import BaseJobRunnerFactory
 
 
@@ -29,19 +29,19 @@ class Loop:
         job_runner_factory (`JobRunnerFactory`):
             The job runner factory that will create a job runner for each job. Must be able to process the jobs of the
               queue.
-        loop_config (`LoopConfig`):
-            Loop configuration.
+        worker_config (`WorkerConfig`):
+            Worker configuration.
     """
 
     library_cache_paths: set[str]
     queue: Queue
     job_runner_factory: BaseJobRunnerFactory
-    loop_config: LoopConfig
+    worker_config: WorkerConfig
 
     storage_paths: set[str] = field(init=False)
 
     def __post_init__(self) -> None:
-        self.storage_paths = set(self.loop_config.storage_paths).union(self.library_cache_paths)
+        self.storage_paths = set(self.worker_config.storage_paths).union(self.library_cache_paths)
 
     def log(self, level: int, msg: str) -> None:
         logging.log(level=level, msg=f"[{self.queue.type}] {msg}")
@@ -59,35 +59,35 @@ class Loop:
         self.log(level=logging.ERROR, msg=msg)
 
     def has_memory(self) -> bool:
-        if self.loop_config.max_memory_pct <= 0:
+        if self.worker_config.max_memory_pct <= 0:
             return True
         virtual_memory_used: int = virtual_memory().used  # type: ignore
         virtual_memory_total: int = virtual_memory().total  # type: ignore
         percent = (swap_memory().used + virtual_memory_used) / (swap_memory().total + virtual_memory_total)
-        ok = percent < self.loop_config.max_memory_pct
+        ok = percent < self.worker_config.max_memory_pct
         if not ok:
             self.info(
-                f"memory usage (RAM + SWAP) is too high: {percent:.0f}% - max is {self.loop_config.max_memory_pct}%"
+                f"memory usage (RAM + SWAP) is too high: {percent:.0f}% - max is {self.worker_config.max_memory_pct}%"
             )
         return ok
 
     def has_cpu(self) -> bool:
-        if self.loop_config.max_load_pct <= 0:
+        if self.worker_config.max_load_pct <= 0:
             return True
         load_pct = max(getloadavg()[:2]) / cpu_count() * 100
         # ^ only current load and 5m load. 15m load is not relevant to decide to launch a new job
-        ok = load_pct < self.loop_config.max_load_pct
+        ok = load_pct < self.worker_config.max_load_pct
         if not ok:
-            self.info(f"cpu load is too high: {load_pct:.0f}% - max is {self.loop_config.max_load_pct}%")
+            self.info(f"cpu load is too high: {load_pct:.0f}% - max is {self.worker_config.max_load_pct}%")
         return ok
 
     def has_storage(self) -> bool:
-        if self.loop_config.max_disk_usage_pct <= 0:
+        if self.worker_config.max_disk_usage_pct <= 0:
             return True
         for path in self.storage_paths:
             try:
                 usage = disk_usage(path)
-                if usage.percent >= self.loop_config.max_disk_usage_pct:
+                if usage.percent >= self.worker_config.max_disk_usage_pct:
                     return False
             except Exception:
                 # if we can't get the disk usage, we let the process continue
@@ -100,7 +100,7 @@ class Loop:
     def sleep(self) -> None:
         jitter = 0.75 + random.random() / 2  # nosec
         # ^ between 0.75 and 1.25
-        duration = self.loop_config.sleep_seconds * jitter
+        duration = self.worker_config.sleep_seconds * jitter
         self.debug(f"sleep during {duration:.2f} seconds")
         time.sleep(duration)
 

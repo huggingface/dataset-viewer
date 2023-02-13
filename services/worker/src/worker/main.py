@@ -20,7 +20,7 @@ if __name__ == "__main__":
     assets_directory = init_assets_dir(directory=app_config.assets.storage_directory)
 
     processing_graph = ProcessingGraph(app_config.processing_graph.specification)
-    processing_step = processing_graph.get_step(app_config.datasets_based.endpoint)
+    processing_step = processing_graph.get_step(app_config.worker.endpoint)
 
     with (
         LibrariesResource(
@@ -51,6 +51,6 @@ if __name__ == "__main__":
             queue=queue,
             library_cache_paths=libraries_resource.storage_paths,
             job_runner_factory=job_runner_factory,
-            loop_config=app_config.loop,
+            worker_config=app_config.worker,
         )
         loop.run()

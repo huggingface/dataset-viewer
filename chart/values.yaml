@@ -94,7 +94,9 @@ queue:
   # Name of the mongo db database used to store the jobs queue
   mongoDatabase: "datasets_server_queue"
 
-workerLoop:
+worker:
+  # maximum size in bytes of the response content computed by a worker
+  contentMaxBytes: "10_000_000"
   # maximum disk usage of every storage disk in the list (in percentage) to allow a job to start. Set to 0 to disable the test.
   maxDiskUsagePct: 90
   # Max CPU load (%) - if reached, sleeps until it comes back under the limit. Set to 0 to disable the test.
@@ -376,7 +378,3 @@ sizes:
     limits:
       cpu: 0
   tolerations: []
-
-# --- datasets_based ---
-datasetsBased:
-  contentMaxBytes: "10_000_000"

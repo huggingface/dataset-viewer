@@ -6,19 +6,29 @@
 
 Use environment variables to configure the worker. The prefix of each environment variable gives its scope.
 
+## Worker configuration
+
+Set environment variables to configure the worker.
+
+- `WORKER_CONTENT_MAX_BYTES`: the maximum size in bytes of the response content computed by a worker (to prevent returning big responses in the REST API). Defaults to `10_000_000`.
+- `WORKER_ENDPOINT`: the endpoint on which the worker will work (pre-compute and cache the response). The same worker is used for different endpoints to reuse shared code and dependencies. But at runtime, the worker is assigned only one endpoint. Allowed values: `/splits`, `/first_rows`, `/parquet-and-dataset-info`, etc. Defaults to `/splits`.
+- `WORKER_MAX_DISK_USAGE_PCT`: maximum disk usage of every storage disk in the list (in percentage) to allow a job to start. Set to 0 to disable the test. Defaults to 90.
+- `WORKER_MAX_LOAD_PCT`: maximum load of the machine (in percentage: the max between the 1m load and the 5m load divided by the number of CPUs \*100) allowed to start a job. Set to 0 to disable the test. Defaults to 70.
+- `WORKER_MAX_MEMORY_PCT`: maximum memory (RAM + SWAP) usage of the machine (in percentage) allowed to start a job. Set to 0 to disable the test. Defaults to 80.
+- `WORKER_SLEEP_SECONDS`: wait duration in seconds at each loop iteration before checking if resources are available and processing a job if any is available. Note that the loop doesn't wait just after finishing a job: the next job is immediately processed. Defaults to `15`.
+- `WORKER_STORAGE_PATHS`: comma-separated list of paths to check for disk usage. Defaults to empty.
+
 ### Datasets based worker
 
 Set environment variables to configure the datasets-based worker (`DATASETS_BASED_` prefix):
 
-- `DATASETS_BASED_ENDPOINT`: the endpoint on which the worker will work (pre-compute and cache the response). The same worker is used for different endpoints to reuse shared code and dependencies. But at runtime, the worker is assigned only one endpoint. Allowed values: `/splits`, `/first_rows`, and ` /parquet-and-dataset-info`. Defaults to `/splits`.
 - `DATASETS_BASED_HF_DATASETS_CACHE`: directory where the `datasets` library will store the cached datasets' data. If not set, the datasets library will choose the default location. Defaults to None.
-- `DATASETS_BASED_CONTENT_MAX_BYTES`: the maximum size in bytes of the response content computed by a worker (to prevent returning big responses in the REST API). Defaults to `10_000_000`.
 
 Also, set the modules cache configuration for the datasets-based worker. See [../../libs/libcommon/README.md](../../libs/libcommon/README.md). Note that this variable has no `DATASETS_BASED_` prefix:
 
 - `HF_MODULES_CACHE`: directory where the `datasets` library will store the cached dataset scripts. If not set, the datasets library will choose the default location. Defaults to None.
 
-Note that both directories will be appended to `WORKER_LOOP_STORAGE_PATHS` (see [../../libs/libcommon/README.md](../../libs/libcommon/README.md)) to hold the workers when the disk is full.
+Note that both directories will be appended to `WORKER_STORAGE_PATHS` (see [../../libs/libcommon/README.md](../../libs/libcommon/README.md)) to hold the workers when the disk is full.
 
 ### Numba library
 
@@ -26,7 +36,7 @@ Numba requires setting the `NUMBA_CACHE_DIR` environment variable to a writable 
 
 - `NUMBA_CACHE_DIR`: directory where the `numba` decorators (used by `librosa`) can write cache.
 
-Note that this directory will be appended to `WORKER_LOOP_STORAGE_PATHS` (see [../../libs/libcommon/README.md](../../libs/libcommon/README.md)) to hold the workers when the disk is full.
+Note that this directory will be appended to `WORKER_STORAGE_PATHS` (see [../../libs/libcommon/README.md](../../libs/libcommon/README.md)) to hold the workers when the disk is full.
 
 ### Huggingface_hub library
 
@@ -36,7 +46,7 @@ If the Hub is not https://huggingface.co (i.e., if you set the `COMMON_HF_ENDPOI
 
 ### First rows worker
 
-Only needed when the `DATASETS_BASED_ENDPOINT` is set to `/first-rows`.
+Only needed when the `WORKER_ENDPOINT` is set to `/first-rows`.
 
 Set environment variables to configure the first rows worker (`FIRST_ROWS_` prefix):
 
@@ -50,7 +60,7 @@ Also, set the assets-related configuration for the first-rows worker. See [../..
 
 ### Parquet and dataset info worker
 
-Only needed when the `DATASETS_BASED_ENDPOINT` is set to `/parquet-and-dataset-info`.
+Only needed when the `WORKER_ENDPOINT` is set to `/parquet-and-dataset-info`.
 
 Set environment variables to configure the parquet worker (`PARQUET_AND_DATASET_INFO_` prefix):
 
@@ -70,13 +80,3 @@ The splits worker does not need any additional configuration.
 ### Common
 
 See [../../libs/libcommon/README.md](../../libs/libcommon/README.md) for more information about the common configuration.
-
-## Worker loop configuration
-
-Set environment variables to configure the worker loop that processes the queue.
-
-- `WORKER_LOOP_MAX_DISK_USAGE_PCT`: maximum disk usage of every storage disk in the list (in percentage) to allow a job to start. Set to 0 to disable the test. Defaults to 90.
-- `WORKER_LOOP_MAX_LOAD_PCT`: maximum load of the machine (in percentage: the max between the 1m load and the 5m load divided by the number of CPUs \*100) allowed to start a job. Set to 0 to disable the test. Defaults to 70.
-- `WORKER_LOOP_MAX_MEMORY_PCT`: maximum memory (RAM + SWAP) usage of the machine (in percentage) allowed to start a job. Set to 0 to disable the test. Defaults to 80.
-- `WORKER_LOOP_SLEEP_SECONDS`: wait duration in seconds at each loop iteration before checking if resources are available and processing a job if any is available. Note that the loop doesn't wait just after finishing a job: the next job is immediately processed. Defaults to `15`.
-- `WORKER_LOOP_STORAGE_PATHS`: comma-separated list of paths to check for disk usage. Defaults to empty.
