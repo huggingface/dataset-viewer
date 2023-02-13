@@ -288,12 +288,15 @@ class Queue:
 
         Returns: the job
         """
+        logging.debug("Getting next waiting job for priority %s, among types %s", priority, only_job_types or "all")
         started_jobs = (
             Job.objects(type__in=only_job_types, status=Status.STARTED)
             if only_job_types
             else Job.objects(status=Status.STARTED)
         )
+        logging.debug(f"Number of started jobs: {started_jobs.count()}")
         started_job_namespaces = [job.namespace for job in started_jobs.only("namespace")]
+        logging.debug(f"Started job namespaces: {started_job_namespaces}")
 
         next_waiting_job = (
             (
@@ -318,6 +321,7 @@ class Queue:
         # ^ no_cache should generate a query on every iteration, which should solve concurrency issues between workers
         if next_waiting_job is not None:
             return next_waiting_job
+        logging.debug("No waiting job for namespace without started job")
 
         # all the waiting jobs, if any, are for namespaces that already have started jobs.
         #
@@ -332,12 +336,17 @@ class Queue:
             for namespace, count in Counter(started_job_namespaces).most_common()
             if self.max_jobs_per_namespace is None or count < self.max_jobs_per_namespace
         ]
+        logging.debug(
+            f"Descending frequency namespace counts, with less than {self.max_jobs_per_namespace} started jobs:"
+            f" {descending_frequency_namespace_counts}"
+        )
         descending_frequency_namespace_groups = [
             [item[0] for item in data] for (_, data) in groupby(descending_frequency_namespace_counts, itemgetter(1))
         ]
         # maybe we could get rid of this loop
         while descending_frequency_namespace_groups:
             least_common_namespaces_group = descending_frequency_namespace_groups.pop()
+            logging.debug(f"Least common namespaces group: {least_common_namespaces_group}")
             next_waiting_job = (
                 (
                     Job.objects(
@@ -406,7 +415,9 @@ class Queue:
 
         Returns: the job id, the type (endpoint), the input arguments: dataset, config and split and the force flag
         """
+        logging.debug("looking for a job to start, among the following types: %s", only_job_types or "all")
         next_waiting_job = self.get_next_waiting_job(only_job_types=only_job_types)
+        logging.debug(f"job found: {next_waiting_job}")
         # ^ can raise EmptyQueueError
         next_waiting_job.update(started_at=get_datetime(), status=Status.STARTED)
         if only_job_types and next_waiting_job not in only_job_types:
