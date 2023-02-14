@@ -7,6 +7,7 @@ import logging
 import re
 from functools import partial
 from http import HTTPStatus
+from multiprocessing.pool import ThreadPool
 from pathlib import Path
 from typing import Any, List, Literal, Mapping, Optional, Tuple, TypedDict
 from urllib.parse import quote
@@ -14,6 +15,7 @@ from urllib.parse import quote
 import datasets
 import datasets.config
 import numpy as np
+import requests
 from datasets import (
     DownloadConfig,
     get_dataset_config_names,
@@ -54,7 +56,12 @@ ParquetAndDatasetInfoJobRunnerErrorCode = Literal[
     "DatasetInBlockListError",
     "DatasetTooBigFromHubError",
     "DatasetTooBigFromDatasetsError",
-    "DatasetTooBigFromExternalFilesError",
+    "DatasetWithTooManyExternalFilesError",
+    "DatasetWithTooBigExternalFilesError",
+    "ExternalFilesSizeRequestHTTPError",
+    "ExternalFilesSizeRequestConnectionError",
+    "ExternalFilesSizeRequestTimeoutError",
+    "ExternalFilesSizeRequestError",
 ]
 
 
@@ -439,11 +446,46 @@ class EmptyFeaturesError(Exception):
     pass
 
 
-class DatasetTooBigFromExternalFilesError(ParquetAndDatasetInfoJobRunnerError):
+class DatasetWithTooManyExternalFilesError(ParquetAndDatasetInfoJobRunnerError):
     """Raised when the dataset size (sum of config sizes given by the datasets library) is too big."""
 
     def __init__(self, message: str, cause: Optional[BaseException] = None):
-        super().__init__(message, HTTPStatus.NOT_IMPLEMENTED, "DatasetTooBigFromExternalFilesError", cause, False)
+        super().__init__(message, HTTPStatus.NOT_IMPLEMENTED, "DatasetWithTooManyExternalFilesError", cause, False)
+
+
+class DatasetWithTooBigExternalFilesError(ParquetAndDatasetInfoJobRunnerError):
+    """Raised when the dataset size (sum of config sizes given by the datasets library) is too big."""
+
+    def __init__(self, message: str, cause: Optional[BaseException] = None):
+        super().__init__(message, HTTPStatus.NOT_IMPLEMENTED, "DatasetWithTooBigExternalFilesError", cause, False)
+
+
+class ExternalFilesSizeRequestHTTPError(ParquetAndDatasetInfoJobRunnerError):
+    """Raised when we failed to get the size of the external files."""
+
+    def __init__(self, message: str, cause: Optional[BaseException] = None):
+        super().__init__(message, HTTPStatus.NOT_IMPLEMENTED, "ExternalFilesSizeRequestHTTPError", cause, False)
+
+
+class ExternalFilesSizeRequestConnectionError(ParquetAndDatasetInfoJobRunnerError):
+    """Raised when we failed to get the size of the external files."""
+
+    def __init__(self, message: str, cause: Optional[BaseException] = None):
+        super().__init__(message, HTTPStatus.NOT_IMPLEMENTED, "ExternalFilesSizeRequestConnectionError", cause, False)
+
+
+class ExternalFilesSizeRequestTimeoutError(ParquetAndDatasetInfoJobRunnerError):
+    """Raised when we failed to get the size of the external files."""
+
+    def __init__(self, message: str, cause: Optional[BaseException] = None):
+        super().__init__(message, HTTPStatus.NOT_IMPLEMENTED, "ExternalFilesSizeRequestTimeoutError", cause, False)
+
+
+class ExternalFilesSizeRequestError(ParquetAndDatasetInfoJobRunnerError):
+    """Raised when we failed to get the size of the external files."""
+
+    def __init__(self, message: str, cause: Optional[BaseException] = None):
+        super().__init__(message, HTTPStatus.NOT_IMPLEMENTED, "ExternalFilesSizeRequestError", cause, False)
 
 
 def _request_size(url: str, hf_token: Optional[str] = None) -> Optional[int]:
@@ -492,24 +534,41 @@ def raise_if_too_big_from_external_data_files(
             raise
     ext_data_files = mock_dl_manager.ext_data_files
     if len(ext_data_files) > max_external_data_files:
-        raise DatasetTooBigFromExternalFilesError(
+        raise DatasetWithTooManyExternalFilesError(
             f"The conversion to parquet is limited to datasets with less than {max_external_data_files} files. "
             f"However it uses {len(ext_data_files)} data files."
         )
     elif ext_data_files:
-        from multiprocessing.pool import ThreadPool
-
-        with ThreadPool(16) as pool:
-            total_size = 0
-            get_size = partial(_request_size, hf_token=hf_token)
-            for i, size in enumerate(pool.imap_unordered(get_size, ext_data_files)):
-                if size is not None:
-                    total_size += size
-                    if total_size > max_dataset_size:
-                        raise DatasetTooBigFromExternalFilesError(
-                            f"The conversion to parquet is limited to datasets under {max_dataset_size} bytes. However"
-                            f" {i + 1} data files of {len(ext_data_files)} are already bigger than {total_size} bytes."
-                        )
+        try:
+            with ThreadPool(16) as pool:
+                total_size = 0
+                get_size = partial(_request_size, hf_token=hf_token)
+                for i, size in enumerate(pool.imap_unordered(get_size, ext_data_files)):
+                    if size is not None:
+                        total_size += size
+                        if total_size > max_dataset_size:
+                            raise DatasetWithTooBigExternalFilesError(
+                                f"The conversion to parquet is limited to datasets under {max_dataset_size} bytes."
+                                f" However {i + 1} data files of {len(ext_data_files)} are already bigger than"
+                                f" {total_size} bytes."
+                            )
+        except requests.exceptions.RequestException as error:
+            if isinstance(error, requests.exceptions.HTTPError):
+                raise ExternalFilesSizeRequestHTTPError(
+                    "Couldn't get the size of external files using HEAD requests"
+                ) from error
+            elif isinstance(error, requests.exceptions.ConnectionError):
+                raise ExternalFilesSizeRequestConnectionError(
+                    "Couldn't get the size of external files using HEAD requests"
+                ) from error
+            elif isinstance(error, requests.exceptions.Timeout):
+                raise ExternalFilesSizeRequestTimeoutError(
+                    "Couldn't get the size of external files using HEAD requests"
+                ) from error
+            else:
+                raise ExternalFilesSizeRequestError(
+                    "Couldn't get the size of external files using HEAD requests"
+                ) from error
 
 
 def compute_parquet_and_dataset_info_response(
@@ -589,8 +648,18 @@ def compute_parquet_and_dataset_info_response(
           If the list of configurations could not be obtained using the datasets library.
         - [`~job_runners.parquet_and_dataset_info.DatasetInBlockListError`]
           If the dataset is in the list of blocked datasets.
-        - [`~job_runners.parquet_and_dataset_info.DatasetTooBigFromExternalFilesError`]
-            If the dataset is too big to be converted to parquet
+        - [`~job_runners.parquet_and_dataset_info.DatasetWithTooManyExternalFilesError`]
+            If the dataset has too many external files to be converted to parquet
+        - [`~job_runners.parquet_and_dataset_info.DatasetWithTooBigExternalFilesError`]
+            If the dataset is too big external files be converted to parquet
+        - [`~job_runners.parquet_and_dataset_info.ExternalFilesSizeRequestHTTPError`]
+            If we failed to get the external files sizes to make sure we can convert the dataet to parquet
+        - [`~job_runners.parquet_and_dataset_info.ExternalFilesSizeRequestConnectionError`]
+            If we failed to get the external files sizes to make sure we can convert the dataet to parquet
+        - [`~job_runners.parquet_and_dataset_info.ExternalFilesSizeRequestTimeoutError`]
+            If we failed to get the external files sizes to make sure we can convert the dataet to parquet
+        - [`~job_runners.parquet_and_dataset_info.ExternalFilesSizeRequestError`]
+            If we failed to get the external files sizes to make sure we can convert the dataet to parquet
     </Tip>
     """
     logging.info(f"get parquet files and dataset info for dataset={dataset}")

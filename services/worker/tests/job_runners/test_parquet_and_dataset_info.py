@@ -19,9 +19,11 @@ from worker.config import AppConfig, ParquetAndDatasetInfoConfig
 from worker.job_runners.parquet_and_dataset_info import (
     DatasetInBlockListError,
     DatasetTooBigFromDatasetsError,
-    DatasetTooBigFromExternalFilesError,
     DatasetTooBigFromHubError,
+    DatasetWithTooBigExternalFilesError,
+    DatasetWithTooManyExternalFilesError,
     ParquetAndDatasetInfoJobRunner,
+    ParquetAndDatasetInfoJobRunnerError,
     get_dataset_info_or_raise,
     parse_repo_filename,
     raise_if_blocked,
@@ -225,12 +227,16 @@ def test_raise_if_too_big_from_datasets(
 
 
 @pytest.mark.parametrize(
-    "max_dataset_size,max_external_data_files, raises",
-    [(None, None, False), (10, None, True), (None, 1, True)],
+    "max_dataset_size,max_external_data_files,error",
+    [
+        (None, None, None),
+        (10, None, DatasetWithTooBigExternalFilesError),
+        (None, 1, DatasetWithTooManyExternalFilesError),
+    ],
 )
 def test_raise_if_too_big_from_external_files(
     external_files_dataset_builder: "datasets.builder.DatasetBuilder",
-    raises: bool,
+    error: Optional[ParquetAndDatasetInfoJobRunnerError],
     max_dataset_size: Optional[int],
     max_external_data_files: Optional[int],
     app_config: AppConfig,
@@ -238,8 +244,8 @@ def test_raise_if_too_big_from_external_files(
 ) -> None:
     max_dataset_size = max_dataset_size or parquet_and_dataset_info_config.max_dataset_size
     max_external_data_files = max_external_data_files or parquet_and_dataset_info_config.max_external_data_files
-    if raises:
-        with pytest.raises(DatasetTooBigFromExternalFilesError):
+    if error:
+        with pytest.raises(error):
             raise_if_too_big_from_external_data_files(
                 builder=external_files_dataset_builder,
                 hf_token=app_config.common.hf_token,
