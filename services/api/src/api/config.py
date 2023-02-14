@@ -86,7 +86,7 @@ class EndpointConfig:
     specification: Mapping[str, List[str]] = field(
         default_factory=lambda: {
             "/config-names": ["/config-names"],
-            "/split-names": ["/split-names-streaming"],
+            "/split-names": ["/split-names"],
             "/splits": ["/splits"],
             "/first-rows": ["/first-rows"],
             "/parquet-and-dataset-info": ["/parquet-and-dataset-info"],
