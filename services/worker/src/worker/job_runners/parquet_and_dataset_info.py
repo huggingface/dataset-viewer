@@ -56,6 +56,7 @@ ParquetAndDatasetInfoJobRunnerErrorCode = Literal[
     "DatasetInBlockListError",
     "DatasetTooBigFromHubError",
     "DatasetTooBigFromDatasetsError",
+    "UnsupportedExternalFilesError",
     "DatasetWithTooManyExternalFilesError",
     "DatasetWithTooBigExternalFilesError",
     "ExternalFilesSizeRequestHTTPError",
@@ -460,6 +461,13 @@ class DatasetWithTooBigExternalFilesError(ParquetAndDatasetInfoJobRunnerError):
         super().__init__(message, HTTPStatus.NOT_IMPLEMENTED, "DatasetWithTooBigExternalFilesError", cause, False)
 
 
+class UnsupportedExternalFilesError(ParquetAndDatasetInfoJobRunnerError):
+    """Raised when we failed to get the size of the external files."""
+
+    def __init__(self, message: str, cause: Optional[BaseException] = None):
+        super().__init__(message, HTTPStatus.NOT_IMPLEMENTED, "UnsupportedExternalFilesError", cause, False)
+
+
 class ExternalFilesSizeRequestHTTPError(ParquetAndDatasetInfoJobRunnerError):
     """Raised when we failed to get the size of the external files."""
 
@@ -533,23 +541,49 @@ def raise_if_too_big_from_external_data_files(
         if isinstance(error, NotImplementedError):
             # we can ignore the errors from functions not implemented in streaming mode like `.extract()` on TAR files
             if "is not implemented in streaming mode." not in str(error):
-                raise
+                raise UnsupportedExternalFilesError(
+                    (
+                        "Couldn't get the list of external files in `_split_generators` because it doesn't support"
+                        f" streaming:\n{error}"
+                    ),
+                    error,
+                )
         elif isinstance(error, requests.exceptions.HTTPError):
             raise ExternalFilesSizeRequestHTTPError(
-                "Couldn't get the list of external files in `_split_generators` because a request failed"
-            ) from error
+                (
+                    "Couldn't get the list of external files in `_split_generators` because a request"
+                    f" failed:\n{error}\nPlease consider moving your data fiels in this dataset repository instead"
+                    " (e.g. inside a data/ folder)."
+                ),
+                error,
+            )
         elif isinstance(error, requests.exceptions.ConnectionError):
             raise ExternalFilesSizeRequestConnectionError(
-                "Couldn't get the list of external files in `_split_generators` because a request failed"
-            ) from error
+                (
+                    "Couldn't get the list of external files in `_split_generators` because a request"
+                    f" failed:\n{error}\nPlease consider moving your data fiels in this dataset repository instead"
+                    " (e.g. inside a data/ folder)."
+                ),
+                error,
+            )
         elif isinstance(error, requests.exceptions.Timeout):
             raise ExternalFilesSizeRequestTimeoutError(
-                "Couldn't get the list of external files in `_split_generators` because a request failed"
-            ) from error
+                (
+                    "Couldn't get the list of external files in `_split_generators` because a request"
+                    f" failed:\n{error}\nPlease consider moving your data fiels in this dataset repository instead"
+                    " (e.g. inside a data/ folder)."
+                ),
+                error,
+            )
         else:
             raise ExternalFilesSizeRequestError(
-                "Couldn't get the list of external files in `_split_generators` because a request failed"
-            ) from error
+                (
+                    "Couldn't get the list of external files in `_split_generators` because a request"
+                    f" failed:\n{error}\nPlease consider moving your data fiels in this dataset repository instead"
+                    " (e.g. inside a data/ folder)."
+                ),
+                error,
+            )
     ext_data_files = mock_dl_manager.ext_data_files
     if len(ext_data_files) > max_external_data_files:
         raise DatasetWithTooManyExternalFilesError(
@@ -573,20 +607,40 @@ def raise_if_too_big_from_external_data_files(
         except requests.exceptions.RequestException as error:
             if isinstance(error, requests.exceptions.HTTPError):
                 raise ExternalFilesSizeRequestHTTPError(
-                    "Couldn't get the size of external files using HEAD requests"
-                ) from error
+                    (
+                        "Couldn't get the size of external files in `_split_generators` because a request"
+                        f" failed:\n{error}\nPlease consider moving your data fiels in this dataset repository instead"
+                        " (e.g. inside a data/ folder)."
+                    ),
+                    error,
+                )
             elif isinstance(error, requests.exceptions.ConnectionError):
                 raise ExternalFilesSizeRequestConnectionError(
-                    "Couldn't get the size of external files using HEAD requests"
-                ) from error
+                    (
+                        "Couldn't get the size of external files in `_split_generators` because a request"
+                        f" failed:\n{error}\nPlease consider moving your data fiels in this dataset repository instead"
+                        " (e.g. inside a data/ folder)."
+                    ),
+                    error,
+                )
             elif isinstance(error, requests.exceptions.Timeout):
                 raise ExternalFilesSizeRequestTimeoutError(
-                    "Couldn't get the size of external files using HEAD requests"
-                ) from error
+                    (
+                        "Couldn't get the size of external files in `_split_generators` because a request"
+                        f" failed:\n{error}\nPlease consider moving your data fiels in this dataset repository instead"
+                        " (e.g. inside a data/ folder)."
+                    ),
+                    error,
+                )
             else:
                 raise ExternalFilesSizeRequestError(
-                    "Couldn't get the size of external files using HEAD requests"
-                ) from error
+                    (
+                        "Couldn't get the size of external files in `_split_generators` because a request"
+                        f" failed:\n{error}\nPlease consider moving your data fiels in this dataset repository instead"
+                        " (e.g. inside a data/ folder)."
+                    ),
+                    error,
+                )
 
 
 def compute_parquet_and_dataset_info_response(
@@ -670,6 +724,8 @@ def compute_parquet_and_dataset_info_response(
             If the dataset has too many external files to be converted to parquet
         - [`~job_runners.parquet_and_dataset_info.DatasetWithTooBigExternalFilesError`]
             If the dataset is too big external files be converted to parquet
+        - [`~job_runners.parquet_and_dataset_info.UnsupportedExternalFilesError`]
+            If we failed to get the external files sizes to make sure we can convert the dataet to parquet
         - [`~job_runners.parquet_and_dataset_info.ExternalFilesSizeRequestHTTPError`]
             If we failed to get the external files sizes to make sure we can convert the dataet to parquet
         - [`~job_runners.parquet_and_dataset_info.ExternalFilesSizeRequestConnectionError`]
@@ -796,7 +852,7 @@ class ParquetAndDatasetInfoJobRunner(DatasetsBasedJobRunner):
 
     @staticmethod
     def get_version() -> str:
-        return "1.0.0"
+        return "1.1.0"
 
     def __init__(
         self,
