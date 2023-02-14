@@ -16,7 +16,7 @@ from worker.job_runners.first_rows import FirstRowsJobRunner
 from worker.job_runners.parquet import ParquetJobRunner
 from worker.job_runners.parquet_and_dataset_info import ParquetAndDatasetInfoJobRunner
 from worker.job_runners.sizes import SizesJobRunner
-from worker.job_runners.split_names_streaming import SplitNamesStreamingJobRunner
+from worker.job_runners.split_names import SplitNamesStreamingJobRunner
 from worker.job_runners.splits import SplitsJobRunner
 
 

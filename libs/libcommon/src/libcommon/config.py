@@ -99,7 +99,7 @@ class ProcessingGraphConfig:
             "/config-names": {
                 "input_type": "dataset",
             },
-            "/split-names-streaming": {
+            "/split-names": {
                 "input_type": "config",
                 "requires": "/config-names",
             },
@@ -109,7 +109,7 @@ class ProcessingGraphConfig:
             },  # to be deprecated
             "/first-rows": {
                 "input_type": "split",
-                "requires": "/split-names-streaming",
+                "requires": "/split-names",
                 "required_by_dataset_viewer": True,
             },
             "/parquet-and-dataset-info": {

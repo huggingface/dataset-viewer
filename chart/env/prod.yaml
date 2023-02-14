@@ -183,7 +183,7 @@ configNames:
       cpu: 2
       memory: "30Gi"
 
-splitNamesStreaming:
+splitNames:
   # override the common queue parameters
   queue:
     # Maximum number of jobs running at the same time for the same namespace

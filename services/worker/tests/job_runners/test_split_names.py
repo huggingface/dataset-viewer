@@ -12,7 +12,7 @@ from libcommon.resources import CacheMongoResource, QueueMongoResource
 from libcommon.simple_cache import DoesNotExist, get_response
 
 from worker.config import AppConfig
-from worker.job_runners.split_names_streaming import SplitNamesStreamingJobRunner
+from worker.job_runners.split_names import SplitNamesStreamingJobRunner
 from worker.resources import LibrariesResource
 
 from ..fixtures.hub import HubDatasets, get_default_config_split

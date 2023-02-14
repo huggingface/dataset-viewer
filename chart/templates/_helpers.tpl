@@ -131,9 +131,9 @@ app.kubernetes.io/component: "{{ include "name" . }}-api"
 app.kubernetes.io/component: "{{ include "name" . }}-worker-config-names"
 {{- end -}}
 
-{{- define "labels.splitNamesStreaming" -}}
+{{- define "labels.splitNames" -}}
 {{ include "datasetServer.labels" . }}
-app.kubernetes.io/component: "{{ include "name" . }}-worker-split-names-streaming"
+app.kubernetes.io/component: "{{ include "name" . }}-worker-split-names"
 {{- end -}}
 
 {{- define "labels.splits" -}}

@@ -166,7 +166,7 @@ configNames:
       cpu: 1
       memory: "4Gi"
 
-splitNamesStreaming:
+splitNames:
   replicas: 1
   resources:
     requests:
