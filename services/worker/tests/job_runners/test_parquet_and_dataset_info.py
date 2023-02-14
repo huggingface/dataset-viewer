@@ -86,7 +86,7 @@ def get_job_runner(
             },
             app_config=app_config,
             processing_step=ProcessingStep(
-                job_type=ParquetAndDatasetInfoJobRunner.get_job_type(),
+                name=ParquetAndDatasetInfoJobRunner.get_job_type(),
                 input_type="dataset",
                 requires=None,
                 required_by_dataset_viewer=False,

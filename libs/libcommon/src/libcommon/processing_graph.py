@@ -23,6 +23,7 @@ class ProcessingStep:
     """A dataset processing step.
 
     It contains the details of:
+    - the job name
     - the cache kind (ie. the key in the cache)
     - the job type (ie. the job to run to compute the response)
     - the job parameters (mainly: ['dataset'] or ['dataset', 'config', 'split'])
@@ -31,7 +32,7 @@ class ProcessingStep:
     - the next steps (the steps which previous step is the current one)
     """
 
-    job_type: str
+    name: str
     input_type: InputType
     requires: Optional[str]
     required_by_dataset_viewer: bool
@@ -40,9 +41,14 @@ class ProcessingStep:
     children: List[ProcessingStep]
 
     @property
+    def job_type(self):
+        """The job type (ie. the job to run to compute the response)."""
+        return self.name
+
+    @property
     def cache_kind(self):
         """The cache kind (ie. the key in the cache)."""
-        return self.job_type
+        return self.name
 
     def get_ancestors(self) -> List[ProcessingStep]:
         """Get all the ancestors previous steps required to compute the response of the given step."""
@@ -80,8 +86,8 @@ class ProcessingGraph:
 
     def __init__(self, processing_graph_specification: ProcessingGraphSpecification):
         self.steps = {
-            job_type: ProcessingStep(
-                job_type=job_type,
+            name: ProcessingStep(
+                name=name,
                 input_type=specification["input_type"],
                 requires=specification.get("requires"),
                 required_by_dataset_viewer=specification.get("required_by_dataset_viewer", False),
@@ -89,7 +95,7 @@ class ProcessingGraph:
                 ancestors=[],
                 children=[],
             )
-            for job_type, specification in processing_graph_specification.items()
+            for name, specification in processing_graph_specification.items()
         }
         self.setup()
 
@@ -105,11 +111,11 @@ class ProcessingGraph:
         self.roots = [step for step in self.steps.values() if step.parent is None]
         self.required_by_dataset_viewer = [step for step in self.steps.values() if step.required_by_dataset_viewer]
 
-    def get_step(self, job_type: str) -> ProcessingStep:
-        """Get a step by its job_type."""
-        if job_type not in self.steps:
-            raise ValueError(f"Unknown job_type: {job_type}")
-        return self.steps[job_type]
+    def get_step(self, name: str) -> ProcessingStep:
+        """Get a step by its name."""
+        if name not in self.steps:
+            raise ValueError(f"Unknown name: {name}")
+        return self.steps[name]
 
     def get_step_by_job_type(self, job_type: str) -> ProcessingStep:
         # for now: the job_type is just an alias for the step name

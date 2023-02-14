@@ -241,7 +241,7 @@ def test_check_type(
         )
 
     another_processing_step = ProcessingStep(
-        job_type=f"not-{test_processing_step.job_type}",
+        name=f"not-{test_processing_step.name}",
         input_type="dataset",
         requires=None,
         required_by_dataset_viewer=False,
