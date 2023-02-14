@@ -23,7 +23,6 @@ from worker.job_runners.parquet_and_dataset_info import (
     DatasetWithTooBigExternalFilesError,
     DatasetWithTooManyExternalFilesError,
     ParquetAndDatasetInfoJobRunner,
-    ParquetAndDatasetInfoJobRunnerError,
     get_dataset_info_or_raise,
     parse_repo_filename,
     raise_if_blocked,
@@ -236,7 +235,7 @@ def test_raise_if_too_big_from_datasets(
 )
 def test_raise_if_too_big_from_external_files(
     external_files_dataset_builder: "datasets.builder.DatasetBuilder",
-    error: Optional[ParquetAndDatasetInfoJobRunnerError],
+    error,
     max_dataset_size: Optional[int],
     max_external_data_files: Optional[int],
     app_config: AppConfig,
