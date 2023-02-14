@@ -9,6 +9,7 @@
   - name: WORKER_ONLY_JOB_TYPES
     value: "/parquet-and-dataset-info"
     # ^ hard-coded
+  {{ include "envAssets" . | nindent 2 }}
   {{ include "envCache" . | nindent 2 }}
   {{ include "envQueue" . | nindent 2 }}
   {{ include "envCommon" . | nindent 2 }}
