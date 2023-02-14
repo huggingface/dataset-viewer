@@ -17,6 +17,7 @@ def test_default_graph() -> None:
     parquet = graph.get_step("/parquet")
     dataset_info = graph.get_step("/dataset-info")
     sizes = graph.get_step("/sizes")
+    split_names_from_dataset_info = graph.get_step("/split-names-from-dataset-info")
 
     assert config_names is not None
     assert config_names.parent is None
@@ -50,8 +51,13 @@ def test_default_graph() -> None:
 
     assert dataset_info is not None
     assert dataset_info.parent is parquet_and_dataset_info
-    assert dataset_info.children == []
+    assert dataset_info.children == [split_names_from_dataset_info]
     assert dataset_info.get_ancestors() == [parquet_and_dataset_info]
+
+    assert split_names_from_dataset_info is not None
+    assert split_names_from_dataset_info.parent is dataset_info
+    assert split_names_from_dataset_info.children == []
+    assert split_names_from_dataset_info.get_ancestors() == [parquet_and_dataset_info, dataset_info]
 
     assert sizes is not None
     assert sizes.parent is parquet_and_dataset_info

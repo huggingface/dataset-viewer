@@ -18,6 +18,9 @@ from worker.job_runners.parquet import ParquetJobRunner
 from worker.job_runners.parquet_and_dataset_info import ParquetAndDatasetInfoJobRunner
 from worker.job_runners.sizes import SizesJobRunner
 from worker.job_runners.split_names import SplitNamesJobRunner
+from worker.job_runners.split_names_from_dataset_info import (
+    SplitNamesFromDatasetInfoJobRunner,
+)
 from worker.job_runners.splits import SplitsJobRunner
 
 
@@ -114,6 +117,13 @@ class JobRunnerFactory(BaseJobRunnerFactory):
                 worker_config=self.app_config.worker,
                 processing_step=processing_step,
             )
+        if job_type == SplitNamesFromDatasetInfoJobRunner.get_job_type():
+            return SplitNamesFromDatasetInfoJobRunner(
+                job_info=job_info,
+                app_config=self.app_config,
+                processing_step=processing_step,
+                hf_datasets_cache=self.hf_datasets_cache,
+            )
         supported_job_types = [
             ConfigNamesJobRunner.get_job_type(),
             SplitNamesJobRunner.get_job_type(),
@@ -123,5 +133,6 @@ class JobRunnerFactory(BaseJobRunnerFactory):
             ParquetJobRunner.get_job_type(),
             DatasetInfoJobRunner.get_job_type(),
             SizesJobRunner.get_job_type(),
+            SplitNamesFromDatasetInfoJobRunner.get_job_type(),
         ]
         raise ValueError(f"Unsupported job type: '{job_type}'. The supported job types are: {supported_job_types}")
