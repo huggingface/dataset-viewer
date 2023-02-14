@@ -126,49 +126,9 @@ app.kubernetes.io/component: "{{ include "name" . }}-admin"
 app.kubernetes.io/component: "{{ include "name" . }}-api"
 {{- end -}}
 
-{{- define "labels.configNames" -}}
+{{- define "labels.worker" -}}
 {{ include "datasetServer.labels" . }}
-app.kubernetes.io/component: "{{ include "name" . }}-worker-config-names"
-{{- end -}}
-
-{{- define "labels.splitNames" -}}
-{{ include "datasetServer.labels" . }}
-app.kubernetes.io/component: "{{ include "name" . }}-worker-split-names"
-{{- end -}}
-
-{{- define "labels.splits" -}}
-{{ include "datasetServer.labels" . }}
-app.kubernetes.io/component: "{{ include "name" . }}-worker-splits"
-{{- end -}}
-
-{{- define "labels.firstRows" -}}
-{{ include "datasetServer.labels" . }}
-app.kubernetes.io/component: "{{ include "name" . }}-worker-first-rows"
-{{- end -}}
-
-{{- define "labels.parquetAndDatasetInfo" -}}
-{{ include "datasetServer.labels" . }}
-app.kubernetes.io/component: "{{ include "name" . }}-worker-parquet-and-dataset-info"
-{{- end -}}
-
-{{- define "labels.parquet" -}}
-{{ include "datasetServer.labels" . }}
-app.kubernetes.io/component: "{{ include "name" . }}-worker-parquet"
-{{- end -}}
-
-{{- define "labels.datasetInfo" -}}
-{{ include "datasetServer.labels" . }}
-app.kubernetes.io/component: "{{ include "name" . }}-worker-dataset-info"
-{{- end -}}
-
-{{- define "labels.sizes" -}}
-{{ include "datasetServer.labels" . }}
-app.kubernetes.io/component: "{{ include "name" . }}-worker-sizes"
-{{- end -}}
-
-{{- define "labels.genericWorker" -}}
-{{ include "datasetServer.labels" . }}
-app.kubernetes.io/component: "{{ include "name" . }}-worker-generic"
+app.kubernetes.io/component: "{{ include "name" . }}-worker"
 {{- end -}}
 
 {{/*

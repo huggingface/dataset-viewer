@@ -106,6 +106,34 @@ worker:
   # Number of seconds a worker will sleep before trying to process a new job
   sleepSeconds: 5
 
+firstRows:
+  # Max size of the /first-rows endpoint response in bytes
+  maxBytes: "1_000_000"
+  # Max number of rows in the /first-rows endpoint response
+  maxNumber: 100
+  # Min size of a cell in the /first-rows endpoint response in bytes
+  minCellBytes: 100
+  # Min number of rows in the /first-rows endpoint response
+  minNumber: 10
+  # Max number of columns in the /first-rows endpoint response
+  columnsMaxNumber: 1_000
+
+parquetAndDatasetInfo:
+  # comma-separated list of the blocked datasets. Defaults to empty.
+  blockedDatasets: ""
+  # the git commit message when the parquet files are uploaded to the Hub. Defaults to `Update parquet files`.
+  commitMessage: "Update parquet files"
+  # the maximum size of the supported datasets. Bigger datasets, or datasets that cannot provide the size, are ignored.
+  maxDatasetSize: "100_000_000"
+  # the git revision of the dataset to use to prepare the parquet files. Defaults to `main`.
+  sourceRevision: "main"
+  # comma-separated list of the supported datasets. If empty, all the datasets are processed. Defaults to empty.
+  supportedDatasets: ""
+  # the git revision of the dataset where to store the parquet files. Make sure the hf_token (see the "Common" section) allows to write there. Defaults to `refs/convert/parquet`.
+  targetRevision: "refs/convert/parquet"
+  # the URL template to build the parquet file URLs. Defaults to `/datasets/%s/resolve/%s/%s`.
+  urlTemplate: "/datasets/%s/resolve/%s/%s"
+
 assets:
   # base URL for the assets files. It should be set accordingly to the datasets-server domain, eg https://datasets-server.huggingface.co/assets
   # baseUrl: "not used for now"
@@ -236,159 +264,139 @@ api:
     annotations: {}
   tolerations: []
 
-# --- workers ---
-
-configNames:
-  # override the common queue parameters
-  queue:
+workers:
+  -
+    # name of the deployment
+    deployName: "generic"
     # Maximum number of jobs running at the same time for the same namespace
     maxJobsPerNamespace: 1
-
-  nodeSelector: {}
-  replicas: 1
-  resources:
-    requests:
-      cpu: 1
-    limits:
-      cpu: 1
-  tolerations: []
-
-splitNames:
-  # override the common queue parameters
-  queue:
+    # job types that this worker can process
+    workerOnlyJobTypes: []
+    nodeSelector: {}
+    replicas: 1
+    resources:
+      requests:
+        cpu: 0
+      limits:
+        cpu: 0
+    tolerations: []
+  -
+    # name of the deployment
+    deployName: "config-names"
     # Maximum number of jobs running at the same time for the same namespace
     maxJobsPerNamespace: 1
-
-  nodeSelector: {}
-  replicas: 1
-  resources:
-    requests:
-      cpu: 1
-    limits:
-      cpu: 1
-  tolerations: []
-
-splits:
-  # override the common queue parameters
-  queue:
+    # job types that this worker can process
+    workerOnlyJobTypes: ["/config-names"]
+    nodeSelector: {}
+    replicas: 1
+    resources:
+      requests:
+        cpu: 1
+      limits:
+        cpu: 1
+    tolerations: []
+  -
+    # name of the deployment
+    deployName: "split-names"
     # Maximum number of jobs running at the same time for the same namespace
     maxJobsPerNamespace: 1
-
-  nodeSelector: {}
-  replicas: 1
-  resources:
-    requests:
-      cpu: 0
-    limits:
-      cpu: 0
-  tolerations: []
-
-firstRows:
-  # Max size of the /first-rows endpoint response in bytes
-  maxBytes: "1_000_000"
-  # Max number of rows in the /first-rows endpoint response
-  maxNumber: 100
-  # Min size of a cell in the /first-rows endpoint response in bytes
-  minCellBytes: 100
-  # Min number of rows in the /first-rows endpoint response
-  minNumber: 10
-  # override the common queue parameters
-  queue:
+    # job types that this worker can process
+    workerOnlyJobTypes: ["/split-names"]
+    nodeSelector: {}
+    replicas: 1
+    resources:
+      requests:
+        cpu: 1
+      limits:
+        cpu: 1
+    tolerations: []
+  -
+    # name of the deployment
+    deployName: "splits"
     # Maximum number of jobs running at the same time for the same namespace
     maxJobsPerNamespace: 1
-  # Max number of columns in the /first-rows endpoint response
-  columnsMaxNumber: 1_000
-
-
-  nodeSelector: {}
-  replicas: 1
-  resources:
-    requests:
-      cpu: 0
-    limits:
-      cpu: 0
-  tolerations: []
-
-parquetAndDatasetInfo:
-  # comma-separated list of the blocked datasets. Defaults to empty.
-  blockedDatasets: ""
-  # the git commit message when the parquet files are uploaded to the Hub. Defaults to `Update parquet files`.
-  commitMessage: "Update parquet files"
-  # the maximum size of the supported datasets. Bigger datasets, or datasets that cannot provide the size, are ignored.
-  maxDatasetSize: "100_000_000"
-  # the git revision of the dataset to use to prepare the parquet files. Defaults to `main`.
-  sourceRevision: "main"
-  # comma-separated list of the supported datasets. If empty, all the datasets are processed. Defaults to empty.
-  supportedDatasets: ""
-  # the git revision of the dataset where to store the parquet files. Make sure the hf_token (see the "Common" section) allows to write there. Defaults to `refs/convert/parquet`.
-  targetRevision: "refs/convert/parquet"
-  # the URL template to build the parquet file URLs. Defaults to `/datasets/%s/resolve/%s/%s`.
-  urlTemplate: "/datasets/%s/resolve/%s/%s"
-  # override the common queue parameters
-  queue:
+    # job types that this worker can process
+    workerOnlyJobTypes: ["/splits"]
+    nodeSelector: {}
+    replicas: 1
+    resources:
+      requests:
+        cpu: 0
+      limits:
+        cpu: 0
+    tolerations: []
+  -
+    # name of the deployment
+    deployName: "first-rows"
     # Maximum number of jobs running at the same time for the same namespace
     maxJobsPerNamespace: 1
-  nodeSelector: {}
-  replicas: 1
-  resources:
-    requests:
-      cpu: 0
-    limits:
-      cpu: 0
-  tolerations: []
-
-parquet:
-  # override the common queue parameters
-  queue:
+    # job types that this worker can process
+    workerOnlyJobTypes: ["/first-rows"]
+    nodeSelector: {}
+    replicas: 1
+    resources:
+      requests:
+        cpu: 0
+      limits:
+        cpu: 0
+    tolerations: []
+  -
+    # name of the deployment
+    deployName: "parquet-and-dataset-info"
     # Maximum number of jobs running at the same time for the same namespace
     maxJobsPerNamespace: 1
-  nodeSelector: {}
-  replicas: 1
-  resources:
-    requests:
-      cpu: 0
-    limits:
-      cpu: 0
-  tolerations: []
-
-datasetInfo:
-  # override the common queue parameters
-  queue:
+    # job types that this worker can process
+    workerOnlyJobTypes: ["/parquet-and-dataset-info"]
+    nodeSelector: {}
+    replicas: 1
+    resources:
+      requests:
+        cpu: 0
+      limits:
+        cpu: 0
+    tolerations: []
+  -
+    # name of the deployment
+    deployName: "parquet"
     # Maximum number of jobs running at the same time for the same namespace
     maxJobsPerNamespace: 1
-  nodeSelector: {}
-  replicas: 1
-  resources:
-    requests:
-      cpu: 0
-    limits:
-      cpu: 0
-  tolerations: []
-
-sizes:
-  # override the common queue parameters
-  queue:
+    # job types that this worker can process
+    workerOnlyJobTypes: ["/parquet"]
+    nodeSelector: {}
+    replicas: 1
+    resources:
+      requests:
+        cpu: 0
+      limits:
+        cpu: 0
+    tolerations: []
+  -
+    # name of the deployment
+    deployName: "dataset-info"
     # Maximum number of jobs running at the same time for the same namespace
     maxJobsPerNamespace: 1
-  nodeSelector: {}
-  replicas: 1
-  resources:
-    requests:
-      cpu: 0
-    limits:
-      cpu: 0
-  tolerations: []
-
-genericWorker:
-  # override the common queue parameters
-  queue:
+    # job types that this worker can process
+    workerOnlyJobTypes: ["/dataset-info"]
+    nodeSelector: {}
+    replicas: 1
+    resources:
+      requests:
+        cpu: 0
+      limits:
+        cpu: 0
+    tolerations: []
+  -
+    # name of the deployment
+    deployName: "sizes"
     # Maximum number of jobs running at the same time for the same namespace
     maxJobsPerNamespace: 1
-  nodeSelector: {}
-  replicas: 1
-  resources:
-    requests:
-      cpu: 0
-    limits:
-      cpu: 0
-  tolerations: []
+    # job types that this worker can process
+    workerOnlyJobTypes: ["/sizes"]
+    nodeSelector: {}
+    replicas: 1
+    resources:
+      requests:
+        cpu: 0
+      limits:
+        cpu: 0
+    tolerations: []
