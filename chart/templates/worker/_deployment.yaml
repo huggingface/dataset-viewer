@@ -1,30 +1,33 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2022 The HuggingFace Authors.
 
+{{- define "deploymentWorker" -}}
+---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  labels: {{ include "labels.parquet" . | nindent 4 }}
-  name: "{{ include "name" . }}-worker-parquet"
+  labels: {{ include "labels.worker" . | nindent 4 }}
+  name: "{{ include "name" . }}-worker-{{ .workerValues.deployName }}"
   namespace: {{ .Release.Namespace }}
 spec:
   progressDeadlineSeconds: 600
-  replicas: {{ .Values.parquet.replicas }}
+  replicas: {{ .workerValues.replicas }}
   revisionHistoryLimit: 10
   selector:
-    matchLabels: {{ include "labels.parquet" . | nindent 6 }}
+    matchLabels: {{ include "labels.worker" . | nindent 6 }}
   strategy:
     type: Recreate
   template:
     metadata:
-      labels: {{ include "labels.parquet" . | nindent 8 }}
+      labels: {{ include "labels.worker" . | nindent 8 }}
     spec:
       {{- include "image.imagePullSecrets" . | nindent 6 }}
       initContainers:
         {{ include "initContainerAssets" . | nindent 8 }}
         {{ include "initContainerCache" . | nindent 8 }}
-      containers: {{ include "containerWorkerParquet" . | nindent 8 }}
-      nodeSelector: {{ toYaml .Values.parquet.nodeSelector | nindent 8 }}
-      tolerations: {{ toYaml .Values.parquet.tolerations | nindent 8 }}
+      containers: {{ include "containerWorker" . | nindent 8 }}
+      nodeSelector: {{ toYaml .workerValues.nodeSelector | nindent 8 }}
+      tolerations: {{ toYaml .workerValues.tolerations | nindent 8 }}
       volumes: {{ include "volumeData" . | nindent 8 }}
       securityContext: {{ include "securityContext" . | nindent 8 }}
+{{- end -}}
