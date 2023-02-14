@@ -14,10 +14,10 @@ from starlette.middleware.gzip import GZipMiddleware
 from starlette.routing import BaseRoute, Route
 from starlette_prometheus import PrometheusMiddleware
 
-from api.config import AppConfig, UvicornConfig
+from api.config import AppConfig, EndpointConfig, UvicornConfig
 from api.prometheus import Prometheus
+from api.routes.endpoint import EndpointsDefinition, create_endpoint
 from api.routes.healthcheck import healthcheck_endpoint
-from api.routes.processing_step import create_processing_step_endpoint
 from api.routes.valid import create_is_valid_endpoint, create_valid_endpoint
 from api.routes.webhook import create_webhook_endpoint
 
@@ -31,7 +31,7 @@ def create_app() -> Starlette:
     prometheus = Prometheus()
 
     processing_graph = ProcessingGraph(app_config.processing_graph.specification)
-    processing_steps = list(processing_graph.steps.values())
+    endpoint_specification = EndpointsDefinition(processing_graph, EndpointConfig.from_env())
     processing_steps_required_by_dataset_viewer = processing_graph.get_steps_required_by_dataset_viewer()
     init_processing_steps = processing_graph.get_first_steps()
 
@@ -71,11 +71,11 @@ def create_app() -> Starlette:
         )
         # ^ called by https://github.com/huggingface/model-evaluator
     ]
-    processing_step_endpoints: List[BaseRoute] = [
+    endpoints: List[BaseRoute] = [
         Route(
-            processing_step.endpoint,
-            endpoint=create_processing_step_endpoint(
-                processing_step=processing_step,
+            endpoint_name,
+            endpoint=create_endpoint(
+                processing_steps=processing_steps,
                 init_processing_steps=init_processing_steps,
                 hf_endpoint=app_config.common.hf_endpoint,
                 hf_token=app_config.common.hf_token,
@@ -84,7 +84,7 @@ def create_app() -> Starlette:
                 max_age_short=app_config.api.max_age_short,
             ),
         )
-        for processing_step in processing_steps
+        for endpoint_name, processing_steps in endpoint_specification.definition.items()
     ]
     to_protect: List[BaseRoute] = [
         # called by the Hub webhooks
@@ -103,7 +103,7 @@ def create_app() -> Starlette:
         # called by Prometheus
         Route("/metrics", endpoint=prometheus.endpoint),
     ]
-    routes: List[BaseRoute] = valid + processing_step_endpoints + to_protect + protected
+    routes: List[BaseRoute] = valid + endpoints + to_protect + protected
 
     return Starlette(routes=routes, middleware=middleware, on_shutdown=[resource.release for resource in resources])
 

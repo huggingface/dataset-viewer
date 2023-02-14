@@ -29,7 +29,7 @@ def create_force_refresh_endpoint(
     external_auth_url: Optional[str] = None,
     organization: Optional[str] = None,
 ) -> Endpoint:
-    async def force_refresh(request: Request) -> Response:
+    async def force_refresh_endpoint(request: Request) -> Response:
         try:
             dataset = request.query_params.get("dataset")
             if not are_valid_parameters([dataset]):
@@ -66,4 +66,4 @@ def create_force_refresh_endpoint(
         except Exception as e:
             return get_json_admin_error_response(UnexpectedError("Unexpected error.", e), max_age=0)
 
-    return force_refresh
+    return force_refresh_endpoint

@@ -2,7 +2,7 @@
 # Copyright 2022 The HuggingFace Authors.
 
 from dataclasses import dataclass, field
-from typing import Optional
+from typing import List, Mapping, Optional
 
 from environs import Env
 from libcommon.config import (
@@ -79,3 +79,24 @@ class AppConfig:
             queue=QueueConfig.from_env(),
             api=ApiConfig.from_env(common_config=common_config),
         )
+
+
+@dataclass(frozen=True)
+class EndpointConfig:
+    specification: Mapping[str, List[str]] = field(
+        default_factory=lambda: {
+            "/config-names": ["/config-names"],
+            "/split-names": ["/split-names-streaming"],
+            "/splits": ["/splits"],
+            "/first-rows": ["/first-rows"],
+            "/parquet-and-dataset-info": ["/parquet-and-dataset-info"],
+            "/parquet": ["/parquet"],
+            "/dataset-info": ["/dataset-info"],
+            "/sizes": ["/sizes"],
+        }
+    )
+
+    @classmethod
+    def from_env(cls) -> "EndpointConfig":
+        # TODO: allow passing the graph via env vars
+        return cls()

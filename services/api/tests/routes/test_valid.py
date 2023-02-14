@@ -10,7 +10,6 @@ from api.routes.valid import get_valid, is_valid
 
 dataset_step = ProcessingStep(
     job_type="/dataset-step",
-    endpoint="/dataset-step",
     input_type="dataset",
     requires=None,
     required_by_dataset_viewer=False,
@@ -20,7 +19,6 @@ dataset_step = ProcessingStep(
 )
 config_step = ProcessingStep(
     job_type="/config-step",
-    endpoint="/config-step",
     input_type="config",
     requires=None,
     required_by_dataset_viewer=False,
@@ -30,7 +28,6 @@ config_step = ProcessingStep(
 )
 split_step = ProcessingStep(
     job_type="/split-step",
-    endpoint="/split-step",
     input_type="split",
     requires=None,
     required_by_dataset_viewer=False,

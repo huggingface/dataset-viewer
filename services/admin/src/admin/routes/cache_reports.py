@@ -27,7 +27,7 @@ def create_cache_reports_endpoint(
     external_auth_url: Optional[str] = None,
     organization: Optional[str] = None,
 ) -> Endpoint:
-    async def cache_reports(request: Request) -> Response:
+    async def cache_reports_endpoint(request: Request) -> Response:
         try:
             cursor = request.query_params.get("cursor") or ""
             logging.info(f"Cache reports for {processing_step.cache_kind}, cursor={cursor}")
@@ -49,4 +49,4 @@ def create_cache_reports_endpoint(
         except Exception as e:
             return get_json_admin_error_response(UnexpectedError("Unexpected error.", e), max_age=max_age)
 
-    return cache_reports
+    return cache_reports_endpoint
