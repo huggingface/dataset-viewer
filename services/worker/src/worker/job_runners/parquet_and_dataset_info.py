@@ -528,10 +528,28 @@ def raise_if_too_big_from_external_data_files(
         base_path=builder.base_path, download_config=DownloadConfig(use_auth_token=hf_token)
     )
     try:
-        builder._split_generators(mock_dl_manager)
-    except NotImplementedError as err:
-        if "is not implemented in streaming mode." not in str(err):
-            raise
+        builder._split_generators(mock_dl_manager)  # type: ignore
+    except (requests.exceptions.RequestException, NotImplementedError) as error:
+        if isinstance(error, NotImplementedError):
+            # we can ignore the errors from functions not implemented in streaming mode like `.extract()` on TAR files
+            if "is not implemented in streaming mode." not in str(error):
+                raise
+        elif isinstance(error, requests.exceptions.HTTPError):
+            raise ExternalFilesSizeRequestHTTPError(
+                "Couldn't get the list of external files in `_split_generators` because a request failed"
+            ) from error
+        elif isinstance(error, requests.exceptions.ConnectionError):
+            raise ExternalFilesSizeRequestConnectionError(
+                "Couldn't get the list of external files in `_split_generators` because a request failed"
+            ) from error
+        elif isinstance(error, requests.exceptions.Timeout):
+            raise ExternalFilesSizeRequestTimeoutError(
+                "Couldn't get the list of external files in `_split_generators` because a request failed"
+            ) from error
+        else:
+            raise ExternalFilesSizeRequestError(
+                "Couldn't get the list of external files in `_split_generators` because a request failed"
+            ) from error
     ext_data_files = mock_dl_manager.ext_data_files
     if len(ext_data_files) > max_external_data_files:
         raise DatasetWithTooManyExternalFilesError(
