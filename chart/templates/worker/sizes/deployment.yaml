@@ -22,6 +22,7 @@ spec:
       {{- include "image.imagePullSecrets" . | nindent 6 }}
       initContainers:
         {{ include "initContainerAssets" . | nindent 8 }}
+        {{ include "initContainerCache" . | nindent 8 }}
       containers: {{ include "containerWorkerSizes" . | nindent 8 }}
       nodeSelector: {{ toYaml .Values.sizes.nodeSelector | nindent 8 }}
       tolerations: {{ toYaml .Values.sizes.tolerations | nindent 8 }}
