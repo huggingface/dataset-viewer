@@ -17,6 +17,7 @@ ApiErrorCode = Literal[
     "UnexpectedError",
     "ExternalUnauthenticatedError",
     "ExternalAuthenticatedError",
+    "MissingProcessingStepsError",
 ]
 
 
