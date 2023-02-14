@@ -12,20 +12,20 @@ from libcommon.simple_cache import SplitFullName
 from worker.job_runner import JobRunnerError
 from worker.job_runners._datasets_based_job_runner import DatasetsBasedJobRunner
 
-SplitNamesStreamingJobRunnerErrorCode = Literal[
+SplitNamesJobRunnerErrorCode = Literal[
     "EmptyDatasetError",
-    "SplitNamesStreamingError",
+    "SplitNamesError",
 ]
 
 
-class SplitNamesStreamingJobRunnerError(JobRunnerError):
+class SplitNamesJobRunnerError(JobRunnerError):
     """Base class for split names job runner exceptions."""
 
     def __init__(
         self,
         message: str,
         status_code: HTTPStatus,
-        code: SplitNamesStreamingJobRunnerErrorCode,
+        code: SplitNamesJobRunnerErrorCode,
         cause: Optional[BaseException] = None,
         disclose_cause: bool = False,
     ):
@@ -34,14 +34,14 @@ class SplitNamesStreamingJobRunnerError(JobRunnerError):
         )
 
 
-class SplitNamesStreamingError(SplitNamesStreamingJobRunnerError):
+class SplitNamesError(SplitNamesJobRunnerError):
     """Raised when the split names could not be fetched."""
 
     def __init__(self, message: str, cause: Optional[BaseException] = None):
-        super().__init__(message, HTTPStatus.INTERNAL_SERVER_ERROR, "SplitNamesStreamingError", cause, True)
+        super().__init__(message, HTTPStatus.INTERNAL_SERVER_ERROR, "SplitNamesError", cause, True)
 
 
-class EmptyDatasetError(SplitNamesStreamingJobRunnerError):
+class EmptyDatasetError(SplitNamesJobRunnerError):
     """Raised when the dataset has no data."""
 
     def __init__(self, message: str, cause: Optional[BaseException] = None):
@@ -54,7 +54,7 @@ class SplitNameItem(TypedDict):
     split: str
 
 
-class SplitNamesStreamingResponseContent(TypedDict):
+class SplitNamesResponseContent(TypedDict):
     split_names: List[SplitNameItem]
 
 
@@ -62,7 +62,7 @@ def compute_split_names_response(
     dataset: str,
     config: str,
     hf_token: Optional[str] = None,
-) -> SplitNamesStreamingResponseContent:
+) -> SplitNamesResponseContent:
     """
     Get the response of /split-names for one specific dataset and config on huggingface.co.
     Dataset can be private or gated if you pass an acceptable token.
@@ -85,7 +85,7 @@ def compute_split_names_response(
         hf_token (`str`, *optional*):
             An authentication token (See https://huggingface.co/settings/token)
     Returns:
-        `SplitNamesStreamingResponseContent`: An object with the list of split names for the dataset and config.
+        `SplitNamesResponseContent`: An object with the list of split names for the dataset and config.
     <Tip>
     Raises the following errors:
         - [`~job_runners.split_names.EmptyDatasetError`]
@@ -105,11 +105,11 @@ def compute_split_names_response(
     except _EmptyDatasetError as err:
         raise EmptyDatasetError("The dataset is empty.", cause=err) from err
     except Exception as err:
-        raise SplitNamesStreamingError("Cannot get the split names for the dataset and config.", cause=err) from err
+        raise SplitNamesError("Cannot get the split names for the dataset and config.", cause=err) from err
     return {"split_names": split_name_items}
 
 
-class SplitNamesStreamingJobRunner(DatasetsBasedJobRunner):
+class SplitNamesJobRunner(DatasetsBasedJobRunner):
     @staticmethod
     def get_job_type() -> str:
         return "/split-names"

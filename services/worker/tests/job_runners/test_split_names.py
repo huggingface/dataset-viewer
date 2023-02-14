@@ -12,7 +12,7 @@ from libcommon.resources import CacheMongoResource, QueueMongoResource
 from libcommon.simple_cache import DoesNotExist, get_response
 
 from worker.config import AppConfig
-from worker.job_runners.split_names import SplitNamesStreamingJobRunner
+from worker.job_runners.split_names import SplitNamesJobRunner
 from worker.resources import LibrariesResource
 
 from ..fixtures.hub import HubDatasets, get_default_config_split
@@ -29,10 +29,10 @@ def get_job_runner(
         config: str,
         app_config: AppConfig,
         force: bool = False,
-    ) -> SplitNamesStreamingJobRunner:
-        return SplitNamesStreamingJobRunner(
+    ) -> SplitNamesJobRunner:
+        return SplitNamesJobRunner(
             job_info={
-                "type": SplitNamesStreamingJobRunner.get_job_type(),
+                "type": SplitNamesJobRunner.get_job_type(),
                 "dataset": dataset,
                 "config": config,
                 "split": None,
@@ -42,7 +42,7 @@ def get_job_runner(
             },
             app_config=app_config,
             processing_step=ProcessingStep(
-                job_type=SplitNamesStreamingJobRunner.get_job_type(),
+                job_type=SplitNamesJobRunner.get_job_type(),
                 input_type="config",
                 requires=None,
                 required_by_dataset_viewer=False,
@@ -89,9 +89,9 @@ def test_doesnotexist(app_config: AppConfig, get_job_runner) -> None:
         ("empty", False, "EmptyDatasetError", "EmptyDatasetError"),
         # should we really test the following cases?
         # The assumption is that the dataset exists and is accessible with the token
-        ("does_not_exist", False, "SplitNamesStreamingError", "FileNotFoundError"),
-        ("gated", False, "SplitNamesStreamingError", "FileNotFoundError"),
-        ("private", False, "SplitNamesStreamingError", "FileNotFoundError"),
+        ("does_not_exist", False, "SplitNamesError", "FileNotFoundError"),
+        ("gated", False, "SplitNamesError", "FileNotFoundError"),
+        ("private", False, "SplitNamesError", "FileNotFoundError"),
     ],
 )
 def test_compute_split_names_response(

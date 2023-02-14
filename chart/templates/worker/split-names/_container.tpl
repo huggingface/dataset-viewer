@@ -1,7 +1,7 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2022 The HuggingFace Authors.
 
-{{- define "containerWorkerSplitNamesStreaming" -}}
+{{- define "containerWorkerSplitNames" -}}
 - name: "{{ include "name" . }}-worker-split-names"
   image: {{ include "services.worker.image" . }}
   imagePullPolicy: {{ .Values.images.pullPolicy }}
