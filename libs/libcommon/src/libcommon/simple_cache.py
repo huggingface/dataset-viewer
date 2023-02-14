@@ -65,7 +65,7 @@ class SplitFullName(NamedTuple):
 
 # cache of any job
 class CachedResponse(Document):
-    """A response to a job request, cached in the mongoDB database
+    """A response computed for a job, cached in the mongoDB database
 
     Args:
         kind (`str`): The kind of the cached response, identifies the job type

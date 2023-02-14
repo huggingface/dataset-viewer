@@ -16,12 +16,12 @@ db_name = "cache"
 # connection already occurred in the main.py (caveat: we use globals)
 class MigrationUpdateSplitNames(Migration):
     def up(self) -> None:
-        logging.info(f"Rename {db_name} kind field from /split-name to /split-names-streaming")
+        logging.info(f"Rename cache_kind field from /split-name to /split-names-streaming")
         db = get_db(db_name)
         db["cachedResponsesBlue"].update_many({"kind": "/split-names"}, {"$set": {"kind": "/split-names-streaming"}})
 
     def down(self) -> None:
-        logging.info(f"Rollback {db_name} kind field from /split-name-streaming to /split-names")
+        logging.info(f"Rollback cache_kind field from /split-name-streaming to /split-names")
         db = get_db(db_name)
         db["cachedResponsesBlue"].update_many({"kind": "/split-names-streaming"}, {"$set": {"kind": "/split-names"}})
 
