@@ -264,8 +264,6 @@ api:
     annotations: {}
   tolerations: []
 
-# --- workers ---
-
 workers:
   -
     # name of the deployment
@@ -274,7 +272,6 @@ workers:
     maxJobsPerNamespace: 1
     # job types that this worker can process
     workerOnlyJobTypes: []
-    
     nodeSelector: {}
     replicas: 1
     resources:
@@ -290,7 +287,6 @@ workers:
     maxJobsPerNamespace: 1
     # job types that this worker can process
     workerOnlyJobTypes: ["/config-names"]
-
     nodeSelector: {}
     replicas: 1
     resources:
@@ -306,7 +302,6 @@ workers:
     maxJobsPerNamespace: 1
     # job types that this worker can process
     workerOnlyJobTypes: ["/split-names"]
-
     nodeSelector: {}
     replicas: 1
     resources:
@@ -322,7 +317,6 @@ workers:
     maxJobsPerNamespace: 1
     # job types that this worker can process
     workerOnlyJobTypes: ["/splits"]
-
     nodeSelector: {}
     replicas: 1
     resources:
@@ -338,7 +332,6 @@ workers:
     maxJobsPerNamespace: 1
     # job types that this worker can process
     workerOnlyJobTypes: ["/first-rows"]
-
     nodeSelector: {}
     replicas: 1
     resources:
@@ -354,7 +347,6 @@ workers:
     maxJobsPerNamespace: 1
     # job types that this worker can process
     workerOnlyJobTypes: ["/parquet-and-dataset-info"]
-    
     nodeSelector: {}
     replicas: 1
     resources:
@@ -370,7 +362,6 @@ workers:
     maxJobsPerNamespace: 1
     # job types that this worker can process
     workerOnlyJobTypes: ["/parquet"]
-    
     nodeSelector: {}
     replicas: 1
     resources:
@@ -386,7 +377,6 @@ workers:
     maxJobsPerNamespace: 1
     # job types that this worker can process
     workerOnlyJobTypes: ["/dataset-info"]
-    
     nodeSelector: {}
     replicas: 1
     resources:
@@ -402,7 +392,6 @@ workers:
     maxJobsPerNamespace: 1
     # job types that this worker can process
     workerOnlyJobTypes: ["/sizes"]
-    
     nodeSelector: {}
     replicas: 1
     resources:

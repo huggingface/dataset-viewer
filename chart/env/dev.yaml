@@ -71,6 +71,9 @@ common:
   # Log level
   logLevel: "DEBUG"
 
+parquetAndDatasetInfo:
+  maxDatasetSize: "500_000_000"
+
 # --- jobs (pre-install/upgrade hooks) ---
 
 mongodbMigration:
@@ -154,98 +157,46 @@ api:
       cpu: 1
       memory: "4Gi"
 
-# --- workers ---
-
-configNames:
-  replicas: 1
-  resources:
-    requests:
-      cpu: 100m
-      memory: "512Mi"
-    limits:
-      cpu: 1
-      memory: "4Gi"
-
-splitNames:
-  replicas: 1
-  resources:
-    requests:
-      cpu: 100m
-      memory: "512Mi"
-    limits:
-      cpu: 1
-      memory: "4Gi"
-
-splits:
-  replicas: 1
-  resources:
-    requests:
-      cpu: 100m
-      memory: "512Mi"
-    limits:
-      cpu: 1
-      memory: "4Gi"
-
-firstRows:
-  replicas: 1
-  resources:
-    requests:
-      cpu: 100m
-      memory: "512Mi"
-    limits:
-      cpu: 1
-      memory: "4Gi"
-  columnsMaxNumber: 1_000
-
-parquetAndDatasetInfo:
-
-  # the maximum size of the supported datasets. Bigger datasets, or datasets that cannot provide the size, are ignored.
-  maxDatasetSize: "500_000_000" # support up to 500 MB
-  replicas: 1
-  resources:
-    requests:
-      cpu: 100m
-      memory: "512Mi"
-    limits:
-      cpu: 1
-      memory: "4Gi"
-
-parquet:
-  replicas: 1
-  resources:
-    requests:
-      cpu: 100m
-      memory: "512Mi"
-    limits:
-      cpu: 1
-      memory: "4Gi"
-
-datasetInfo:
-  replicas: 1
-  resources:
-    requests:
-      cpu: 100m
-      memory: "512Mi"
-    limits:
-      cpu: 1
-      memory: "4Gi"
-
-sizes:
-  replicas: 1
-  resources:
-    requests:
-      cpu: 100m
-      memory: "512Mi"
-    limits:
-      cpu: 1
-      memory: "4Gi"
-
-genericWorker:
-  replicas: 1
-  resources:
-    requests:
-      cpu: 100m
-      memory: "512Mi"
-    limits:
-      cpu: 1
-      memory: "4Gi"
+workers:
+  -
+    deployName: "generic"
+    maxJobsPerNamespace: 1
+    workerOnlyJobTypes: []
+    nodeSelector: {}
+    replicas: 1
+    resources:
+      requests:
+        cpu: 100m
+        memory: "512Mi"
+      limits:
+        cpu: 1
+        memory: "4Gi"
+    tolerations: []
+  -
+    deployName: "first-rows"
+    maxJobsPerNamespace: 1
+    workerOnlyJobTypes: ["/first-rows"]
+    nodeSelector: {}
+    replicas: 1
+    resources:
+      requests:
+        cpu: 100m
+        memory: "512Mi"
+      limits:
+        cpu: 1
+        memory: "4Gi"
+    tolerations: []
+  -
+    deployName: "parquet-and-dataset-info"
+    maxJobsPerNamespace: 1
+    workerOnlyJobTypes: []
+    nodeSelector: {}
+    replicas: 1
+    resources:
+      requests:
+        cpu: 100m
+        memory: "512Mi"
+      limits:
+        cpu: 1
+        memory: "4Gi"
+    tolerations: []
