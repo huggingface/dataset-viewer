@@ -584,6 +584,18 @@ class Queue:
             )
         }
 
+    def get_dataset_pending_jobs_for_type(self, dataset: str, job_type: str) -> List[JobDict]:
+        """Get the pending jobs of a dataset for a given job type.
+
+        Returns: an array of the pending jobs for the dataset and the given job type
+        """
+        return [
+            d.to_dict()
+            for d in Job.objects(
+                type=job_type, dataset=dataset, status__in=[Status.WAITING.value, Status.STARTED.value]
+            )
+        ]
+
 
 # only for the tests
 def _clean_queue_database() -> None:

@@ -21,6 +21,7 @@ from libcommon.simple_cache import (
     delete_response,
     get_cache_reports,
     get_cache_reports_with_content,
+    get_dataset_responses_without_content_for_kind,
     get_response,
     get_response_without_content,
     get_responses_count_by_kind_status_and_error_code,
@@ -452,6 +453,17 @@ def test_get_cache_reports() -> None:
         error_code=error_code_c,
     )
 
+    upsert_response(
+        kind=kind_2,
+        dataset=dataset_c,
+        config=config_c,
+        split=split_c,
+        content=content_c,
+        details=details_c,
+        http_status=http_status_c,
+        error_code=error_code_c,
+    )
+
     response = get_cache_reports(kind=kind, cursor="", limit=2)
     assert response["cache_reports"] == [
         {
@@ -557,6 +569,19 @@ def test_get_cache_reports() -> None:
         get_cache_reports(kind=kind, cursor=next_cursor, limit=-1)
     with pytest.raises(InvalidLimit):
         get_cache_reports(kind=kind, cursor=next_cursor, limit=0)
+
+    result_a = get_dataset_responses_without_content_for_kind(kind=kind, dataset=dataset_a)
+    assert len(result_a) == 1
+    assert result_a[0]["http_status"] == HTTPStatus.OK.value
+    assert result_a[0]["error_code"] is None
+
+    assert not get_dataset_responses_without_content_for_kind(kind=kind_2, dataset=dataset_a)
+
+    result_c = get_dataset_responses_without_content_for_kind(kind=kind_2, dataset=dataset_c)
+    assert len(result_c) == 2
+    for result in result_c:
+        assert result["http_status"] == http_status_c.value
+        assert result["error_code"] == error_code_c
 
 
 @pytest.mark.parametrize("num_entries", [1, 10, 100, 1_000])
