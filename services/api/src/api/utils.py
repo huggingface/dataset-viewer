@@ -80,6 +80,13 @@ class ExternalAuthenticatedError(ApiCustomError):
         super().__init__(message, HTTPStatus.NOT_FOUND, "ExternalAuthenticatedError")
 
 
+class MissingProcessingStepsError(ApiCustomError):
+    """Raised when an endpoint does not have related processing steps."""
+
+    def __init__(self, message: str):
+        super().__init__(message, HTTPStatus.UNPROCESSABLE_ENTITY, "MissingProcessingStepsError")
+
+
 class OrjsonResponse(JSONResponse):
     def render(self, content: Any) -> bytes:
         return orjson_dumps(content=content)

@@ -24,7 +24,7 @@ def create_cancel_jobs_endpoint(
     external_auth_url: Optional[str] = None,
     organization: Optional[str] = None,
 ) -> Endpoint:
-    async def cancel_jobs(request: Request) -> Response:
+    async def cancel_jobs_endpoint(request: Request) -> Response:
         try:
             logging.info(f"/cancel-jobs{processing_step.job_type}")
 
@@ -40,4 +40,4 @@ def create_cancel_jobs_endpoint(
         except Exception as e:
             return get_json_admin_error_response(UnexpectedError("Unexpected error.", e), max_age=0)
 
-    return cancel_jobs
+    return cancel_jobs_endpoint

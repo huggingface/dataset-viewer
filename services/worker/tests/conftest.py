@@ -115,7 +115,6 @@ def assets_directory(app_config: AppConfig) -> StrPath:
 def test_processing_step() -> ProcessingStep:
     return ProcessingStep(
         job_type="/dummy",
-        endpoint="/dummy",
         input_type="dataset",
         requires=None,
         required_by_dataset_viewer=False,

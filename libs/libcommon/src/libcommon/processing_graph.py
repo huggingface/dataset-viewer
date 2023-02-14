@@ -16,7 +16,6 @@ class _ProcessingStepSpecification(TypedDict):
 class ProcessingStepSpecification(_ProcessingStepSpecification, total=False):
     requires: Optional[str]
     required_by_dataset_viewer: Literal[True]
-    endpoint: str
 
 
 @dataclass
@@ -24,7 +23,6 @@ class ProcessingStep:
     """A dataset processing step.
 
     It contains the details of:
-    - the API endpoint
     - the cache kind (ie. the key in the cache)
     - the job type (ie. the job to run to compute the response)
     - the job parameters (mainly: ['dataset'] or ['dataset', 'config', 'split'])
@@ -34,7 +32,6 @@ class ProcessingStep:
     """
 
     job_type: str
-    endpoint: str
     input_type: InputType
     requires: Optional[str]
     required_by_dataset_viewer: bool
@@ -72,7 +69,7 @@ class ProcessingGraph:
     The graph can have multiple roots.
 
     It contains the details of:
-    - the index of all the steps, identified by their endpoint
+    - the index of all the steps, identified by their step name
     - the first step, or roots: they don't have a previous step. This means that they will be computed first when a
       dataset is updated.
     """
@@ -82,11 +79,9 @@ class ProcessingGraph:
     required_by_dataset_viewer: List[ProcessingStep]
 
     def __init__(self, processing_graph_specification: ProcessingGraphSpecification):
-        # TODO: validate the graph specification: endpoints must start with "/" and use only lowercase letters
         self.steps = {
             job_type: ProcessingStep(
                 job_type=job_type,
-                endpoint=specification["endpoint"],
                 input_type=specification["input_type"],
                 requires=specification.get("requires"),
                 required_by_dataset_viewer=specification.get("required_by_dataset_viewer", False),
