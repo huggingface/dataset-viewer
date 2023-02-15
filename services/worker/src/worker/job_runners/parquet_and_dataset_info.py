@@ -451,7 +451,7 @@ class DatasetWithTooManyExternalFilesError(ParquetAndDatasetInfoJobRunnerError):
     """Raised when the dataset size (sum of config sizes given by the datasets library) is too big."""
 
     def __init__(self, message: str, cause: Optional[BaseException] = None):
-        super().__init__(message, HTTPStatus.NOT_IMPLEMENTED, "DatasetWithTooManyExternalFilesError", cause, False)
+        super().__init__(message, HTTPStatus.NOT_IMPLEMENTED, "DatasetWithTooManyExternalFilesError", cause, True)
 
 
 class DatasetWithTooBigExternalFilesError(ParquetAndDatasetInfoJobRunnerError):
@@ -552,7 +552,7 @@ def raise_if_too_big_from_external_data_files(
             raise ExternalFilesSizeRequestHTTPError(
                 (
                     "Couldn't get the list of external files in `_split_generators` because a request"
-                    f" failed:\n{error}\nPlease consider moving your data fiels in this dataset repository instead"
+                    f" failed:\n{error}\nPlease consider moving your data files in this dataset repository instead"
                     " (e.g. inside a data/ folder)."
                 ),
                 error,
