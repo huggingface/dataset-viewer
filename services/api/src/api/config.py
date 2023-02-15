@@ -98,5 +98,5 @@ class EndpointConfig:
 
     @classmethod
     def from_env(cls) -> "EndpointConfig":
-        # TODO: allow passing the graph via env vars
+        # TODO: allow passing the mapping between endpoint and processing steps via env vars
         return cls()

@@ -31,7 +31,7 @@ def create_app() -> Starlette:
     prometheus = Prometheus()
 
     processing_graph = ProcessingGraph(app_config.processing_graph.specification)
-    endpoint_specification = EndpointsDefinition(processing_graph, EndpointConfig.from_env())
+    endpoints_definition = EndpointsDefinition(processing_graph, EndpointConfig.from_env())
     processing_steps_required_by_dataset_viewer = processing_graph.get_steps_required_by_dataset_viewer()
     init_processing_steps = processing_graph.get_first_steps()
 
@@ -84,7 +84,7 @@ def create_app() -> Starlette:
                 max_age_short=app_config.api.max_age_short,
             ),
         )
-        for endpoint_name, processing_steps in endpoint_specification.definition.items()
+        for endpoint_name, processing_steps in endpoints_definition.definition.items()
     ]
     to_protect: List[BaseRoute] = [
         # called by the Hub webhooks

@@ -32,11 +32,11 @@ from api.utils import (
 class EndpointsDefinition:
     """Definition of supported endpoints and its relation with processing steps."""
 
-    definition: Mapping[str, List[ProcessingStep]]
+    processing_steps_by_endpoint: Mapping[str, List[ProcessingStep]]
 
     def __init__(self, graph: ProcessingGraph, endpoint_config: EndpointConfig):
         self.definition = {
-            endpoint: [graph.get_step_by_job_type(step) for step in processing_steps]
+            endpoint: [graph.get_step(step) for step in processing_steps]
             for endpoint, processing_steps in endpoint_config.specification.items()
         }
 

@@ -23,7 +23,7 @@ class ProcessingStep:
     """A dataset processing step.
 
     It contains the details of:
-    - the job name
+    - the step name
     - the cache kind (ie. the key in the cache)
     - the job type (ie. the job to run to compute the response)
     - the job parameters (mainly: ['dataset'] or ['dataset', 'config', 'split'])
@@ -75,7 +75,7 @@ class ProcessingGraph:
     The graph can have multiple roots.
 
     It contains the details of:
-    - the index of all the steps, identified by their step name
+    - the index of all the steps, identified by their name
     - the first step, or roots: they don't have a previous step. This means that they will be computed first when a
       dataset is updated.
     """
