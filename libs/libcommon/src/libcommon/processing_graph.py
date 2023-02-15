@@ -42,17 +42,17 @@ class ProcessingStep:
     children: List[ProcessingStep]
 
     @property
-    def endpoint(self):
+    def endpoint(self) -> str:
         warnings.warn("The use of endpoint is deprecated, name will be used instead.", category=DeprecationWarning)
         return self.name
 
     @property
-    def job_type(self):
+    def job_type(self) -> str:
         """The job type (ie. the job to run to compute the response)."""
         return self.name
 
     @property
-    def cache_kind(self):
+    def cache_kind(self) -> str:
         """The cache kind (ie. the key in the cache)."""
         return self.name
 

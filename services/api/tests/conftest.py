@@ -44,7 +44,7 @@ def endpoint_definition(app_config: AppConfig) -> Mapping[str, List[ProcessingSt
 
 
 @fixture(scope="session")
-def first_dataset_endpoint(endpoint_definition: Mapping[str, List[ProcessingStep]]):
+def first_dataset_endpoint(endpoint_definition: Mapping[str, List[ProcessingStep]]) -> str:
     return next(
         endpoint
         for endpoint, processing_steps in endpoint_definition.items()
@@ -53,7 +53,7 @@ def first_dataset_endpoint(endpoint_definition: Mapping[str, List[ProcessingStep
 
 
 @fixture(scope="session")
-def first_config_endoint(endpoint_definition: Mapping[str, List[ProcessingStep]]):
+def first_config_endoint(endpoint_definition: Mapping[str, List[ProcessingStep]]) -> str:
     return next(
         endpoint
         for endpoint, processing_steps in endpoint_definition.items()
@@ -62,7 +62,7 @@ def first_config_endoint(endpoint_definition: Mapping[str, List[ProcessingStep]]
 
 
 @fixture(scope="session")
-def first_split_endpoint(endpoint_definition: Mapping[str, List[ProcessingStep]]):
+def first_split_endpoint(endpoint_definition: Mapping[str, List[ProcessingStep]]) -> str:
     return next(
         endpoint
         for endpoint, processing_steps in endpoint_definition.items()
