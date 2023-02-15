@@ -88,7 +88,7 @@ def compute_split_names_from_dataset_info_response(
     """
     logging.info(f"get split names from dataset info for dataset={dataset}, config={config}")
     try:
-        response = get_response(kind="/parquet-and-dataset-info", dataset=dataset)
+        response = get_response(kind="/dataset-info", dataset=dataset)
     except DoesNotExist as e:
         raise DatasetNotFoundError("No response found in previous step for this dataset.", e) from e
     if response["http_status"] != HTTPStatus.OK:
@@ -101,9 +101,9 @@ def compute_split_names_from_dataset_info_response(
         raise PreviousStepFormatError("Previous step did not return the expected content.")
     dataset_info = content["dataset_info"]
 
-    if config not in dataset_info:
+    if config not in content:
         raise PreviousStepFormatError("Previous step did not return the expected content.")
-    config_info = dataset_info[config]
+    config_info = content[config]
 
     if "splits" not in config_info:
         raise PreviousStepFormatError("Previous step did not return the expected content.")
