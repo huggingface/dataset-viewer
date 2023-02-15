@@ -10,7 +10,7 @@ from typing import Any, Iterable, List, Literal, Mapping, Optional, Tuple, Typed
 
 import pytest
 import requests
-from datasets import Dataset
+from datasets import Dataset, load_dataset_builder
 from huggingface_hub.hf_api import (
     REPO_TYPES,
     REPO_TYPES_URL_PREFIXES,
@@ -101,7 +101,8 @@ def update_repo_settings(
 def create_hub_dataset_repo(
     *, prefix: str, file_paths: List[str] = None, dataset: Dataset = None, private=False, gated=False
 ) -> str:
-    repo_id = f"{CI_USER}/{prefix}-{int(time.time() * 10e3)}"
+    dataset_name = f"{prefix}-{int(time.time() * 10e3)}"
+    repo_id = f"{CI_USER}/{dataset_name}"
     if dataset is not None:
         dataset.push_to_hub(repo_id=repo_id, private=private, token=CI_USER_TOKEN, embed_external_files=True)
     else:
@@ -113,7 +114,7 @@ def create_hub_dataset_repo(
             hf_api.upload_file(
                 token=CI_USER_TOKEN,
                 path_or_fileobj=file_path,
-                path_in_repo=Path(file_path).name,
+                path_in_repo=Path(file_path).name.replace("{dataset_name}", dataset_name),
                 repo_id=repo_id,
                 repo_type=DATASET,
             )
@@ -199,6 +200,18 @@ def hub_public_big(datasets: Mapping[str, Dataset]) -> Iterable[str]:
     repo_id = create_hub_dataset_repo(prefix="big", dataset=datasets["big"])
     yield repo_id
     delete_hub_dataset_repo(repo_id=repo_id)
+
+
+@pytest.fixture(scope="session")
+def hub_public_external_files(dataset_script_with_external_files_path) -> Iterable[str]:
+    repo_id = create_hub_dataset_repo(prefix="external_files", file_paths=[dataset_script_with_external_files_path])
+    yield repo_id
+    delete_hub_dataset_repo(repo_id=repo_id)
+
+
+@pytest.fixture
+def external_files_dataset_builder(hub_public_external_files):
+    return load_dataset_builder(hub_public_external_files)
 
 
 class HubDatasetTest(TypedDict):
@@ -449,6 +462,21 @@ BIG_cols = {
 
 BIG_rows = ["a" * 1_234 for _ in range(4_567)]
 
+TEXT_cols = {
+    "text": {"_type": "Value", "dtype": "string"},
+}
+
+TEXT_rows = [
+    {"text": text}
+    for text in [
+        "foo",
+        "bar",
+        "foobar",
+        "- Hello there !",
+        "- General Kenobi !",
+    ]
+]
+
 
 @pytest.fixture(scope="session")
 def hub_datasets(
@@ -462,6 +490,7 @@ def hub_datasets(
     hub_public_image,
     hub_public_images_list,
     hub_public_big,
+    hub_public_external_files,
 ) -> HubDatasets:
     return {
         "does_not_exist": {
@@ -566,6 +595,14 @@ def hub_datasets(
             "split_names_response": create_split_names_response(hub_public_big),
             "splits_response": create_splits_response(hub_public_big),
             "first_rows_response": create_first_rows_response(hub_public_big, BIG_cols, BIG_rows),
+            "parquet_and_dataset_info_response": None,
+        },
+        "external_files": {
+            "name": hub_public_external_files,
+            "config_names_response": create_config_names_response(hub_public_external_files),
+            "split_names_response": create_split_names_response(hub_public_external_files),
+            "splits_response": create_splits_response(hub_public_external_files),
+            "first_rows_response": create_first_rows_response(hub_public_external_files, TEXT_cols, TEXT_rows),
             "parquet_and_dataset_info_response": None,
         },
     }
