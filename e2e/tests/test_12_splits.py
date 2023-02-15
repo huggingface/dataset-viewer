@@ -37,7 +37,7 @@ from .utils import get, get_openapi_body_example, poll, poll_splits, post_refres
         # not tested: 'internal_error'
     ],
 )
-def test_splits_using_openapi(status: int, name: str, dataset: str, error_code: str):
+def test_splits_using_openapi(status: int, name: str, dataset: str, error_code: str) -> None:
     body = get_openapi_body_example("/splits", status, name)
 
     if name == "empty-parameter":
