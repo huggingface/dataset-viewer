@@ -2,7 +2,7 @@
 # Copyright 2022 The HuggingFace Authors.
 
 from http import HTTPStatus
-from typing import Any
+from typing import Any, Callable
 
 import pytest
 from libcommon.exceptions import CustomError
@@ -10,15 +10,17 @@ from libcommon.processing_graph import ProcessingStep
 from libcommon.queue import Priority
 from libcommon.resources import CacheMongoResource, QueueMongoResource
 from libcommon.simple_cache import upsert_response
+from libcommon.dataset import DatasetNotFoundError
 
 from worker.config import AppConfig
 from worker.job_runners.split_names_from_dataset_info import (
-    DatasetNotFoundError,
     PreviousStepFormatError,
     PreviousStepStatusError,
     SplitNamesFromDatasetInfoJobRunner,
 )
 from worker.resources import LibrariesResource
+
+GetJobRunner = Callable[[str, str, AppConfig, bool], SplitNamesFromDatasetInfoJobRunner]
 
 
 @pytest.fixture
@@ -26,7 +28,7 @@ def get_job_runner(
     libraries_resource: LibrariesResource,
     cache_mongo_resource: CacheMongoResource,
     queue_mongo_resource: QueueMongoResource,
-):
+) -> GetJobRunner:
     def _get_job_runner(
         dataset: str,
         config: str,
@@ -117,7 +119,7 @@ def get_job_runner(
 )
 def test_compute(
     app_config: AppConfig,
-    get_job_runner,
+    get_job_runner: GetJobRunner,
     dataset: str,
     upstream_status: HTTPStatus,
     upstream_content: Any,
@@ -125,7 +127,7 @@ def test_compute(
     content: Any,
 ) -> None:
     upsert_response(kind="/dataset-info", dataset=dataset, content=upstream_content, http_status=upstream_status)
-    job_runner = get_job_runner(dataset, "config_name", app_config)
+    job_runner = get_job_runner(dataset, "config_name", app_config, False)
     if error_code:
         with pytest.raises(Exception) as e:
             job_runner.compute()
@@ -134,10 +136,10 @@ def test_compute(
         assert job_runner.compute() == content
 
 
-def test_doesnotexist(app_config: AppConfig, get_job_runner) -> None:
+def test_doesnotexist(app_config: AppConfig, get_job_runner: GetJobRunner) -> None:
     dataset = "non_existent"
     config = "non_existent"
-    worker = get_job_runner(dataset, config, app_config)
+    worker = get_job_runner(dataset, config, app_config, False)
     with pytest.raises(CustomError) as exc_info:
         worker.compute()
     assert exc_info.value.status_code == HTTPStatus.NOT_FOUND
