@@ -70,6 +70,17 @@ def test_pending_jobs(client: TestClient, processing_steps: List[ProcessingStep]
         assert json[processing_step.job_type] == {"waiting": [], "started": []}
 
 
+def test_dataset_status(client: TestClient, processing_steps: List[ProcessingStep]) -> None:
+    response = client.get("/dataset-status")
+    assert response.status_code == 422
+    response = client.get("/dataset-status", params={"dataset": "test-dataset"})
+    assert response.status_code == 200
+    json = response.json()
+    for processing_step in processing_steps:
+        assert not json[processing_step.job_type]["cached_responses"]
+        assert not json[processing_step.job_type]["jobs"]
+
+
 @pytest.mark.parametrize(
     "cursor,http_status,error_code",
     [

@@ -177,6 +177,21 @@ def get_response_without_content(
     }
 
 
+def get_dataset_responses_without_content_for_kind(kind: str, dataset: str) -> List[CacheEntryWithoutContent]:
+    responses = CachedResponse.objects(kind=kind, dataset=dataset).only(
+        "http_status", "error_code", "worker_version", "dataset_git_revision"
+    )
+    return [
+        {
+            "http_status": response.http_status,
+            "error_code": response.error_code,
+            "worker_version": response.worker_version,
+            "dataset_git_revision": response.dataset_git_revision,
+        }
+        for response in responses
+    ]
+
+
 class CacheEntry(CacheEntryWithoutContent):
     content: Mapping[str, Any]
 

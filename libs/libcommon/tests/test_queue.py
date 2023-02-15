@@ -227,6 +227,38 @@ def test_count_by_status() -> None:
     assert queue.get_jobs_count_by_status(job_type=test_other_type) == expected_one_waiting
 
 
+def test_get_dataset_pending_jobs_for_type() -> None:
+    queue = Queue(max_jobs_per_namespace=100)
+    test_type = "test_type"
+    test_another_type = "test_another_type"
+    test_dataset = "test_dataset"
+    test_another_dataset = "test_another_dataset"
+    test_configs_waiting = ["test_config_waiting_1", "test_config_waiting_2"]
+    test_configs_started = ["test_config_started_1", "test_config_started_2"]
+    test_configs_finished = ["test_config_finished_1", "test_config_finished_2"]
+    for config in test_configs_finished:
+        for dataset in [test_dataset, test_another_dataset]:
+            for job_type in [test_type, test_another_type]:
+                queue.upsert_job(job_type=job_type, dataset=dataset, config=config, split=None)
+                job_info = queue.start_job()
+                queue.finish_job(job_info["job_id"], finished_status=Status.SUCCESS)
+    for config in test_configs_started:
+        for dataset in [test_dataset, test_another_dataset]:
+            for job_type in [test_type, test_another_type]:
+                queue.upsert_job(job_type=job_type, dataset=dataset, config=config, split=None)
+                job_info = queue.start_job()
+    for config in test_configs_waiting:
+        for dataset in [test_dataset, test_another_dataset]:
+            for job_type in [test_type, test_another_type]:
+                queue.upsert_job(job_type=job_type, dataset=dataset, config=config, split=None)
+    result = queue.get_dataset_pending_jobs_for_type(dataset=test_dataset, job_type=test_type)
+    assert len(result) == len(test_configs_waiting) + len(test_configs_started)
+    for r in result:
+        assert r["dataset"] == test_dataset
+        assert r["type"] == test_type
+        assert r["status"] in [Status.WAITING.value, Status.STARTED.value]
+
+
 def test_get_total_duration_per_dataset() -> None:
     test_type = "test_type"
     test_dataset = "test_dataset"
