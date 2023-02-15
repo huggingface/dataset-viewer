@@ -8,13 +8,13 @@ from typing import Mapping
 from .utils import API_URL, get
 
 
-def has_metric(name: str, labels: Mapping[str, str], metrics: set[str]) -> bool:
+def has_metric(name: str, labels: Mapping[str, str], metric_names: set[str]) -> bool:
     label_str = ",".join([f'{k}="{v}"' for k, v in labels.items()])
     s = name + "{" + label_str + "}"
-    return any(re.match(s, metric) is not None for metric in metrics)
+    return any(re.match(s, metric_name) is not None for metric_name in metric_names)
 
 
-def test_metrics():
+def test_metrics() -> None:
     assert "PROMETHEUS_MULTIPROC_DIR" in os.environ
     response = get("/metrics", url=API_URL)
     assert response.status_code == 200, f"{response.status_code} - {response.text}"
@@ -29,14 +29,16 @@ def test_metrics():
     assert name in metrics, metrics
     assert metrics[name] > 0, metrics
 
-    metrics = set(metrics.keys())
+    metric_names = set(metrics.keys())
     for endpoint in ["/splits", "/first-rows", "/parquet"]:
         # these metrics are only available in the admin API
         assert not has_metric(
-            name="queue_jobs_total", labels={"pid": "[0-9]*", "queue": endpoint, "status": "started"}, metrics=metrics
+            name="queue_jobs_total",
+            labels={"pid": "[0-9]*", "queue": endpoint, "status": "started"},
+            metric_names=metric_names,
         ), f"queue_jobs_total - endpoint={endpoint} found in {metrics}"
         assert not has_metric(
             name="responses_in_cache_total",
             labels={"error_code": "None", "http_status": "200", "path": endpoint, "pid": "[0-9]*"},
-            metrics=metrics,
+            metric_names=metric_names,
         ), f"responses_in_cache_total - endpoint {endpoint} found in {metrics}"

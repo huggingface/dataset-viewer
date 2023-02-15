@@ -5,7 +5,8 @@ from typing import Mapping, Optional, Type
 
 import pytest
 import responses
-from starlette.requests import Headers, Request
+from starlette.datastructures import Headers
+from starlette.requests import Request
 
 from admin.authentication import auth_check
 from admin.utils import ExternalAuthenticatedError, ExternalUnauthenticatedError

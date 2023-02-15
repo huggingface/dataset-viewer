@@ -5,6 +5,7 @@ export CACHE_MONGO_URL := mongodb://localhost:${MONGO_PORT}
 export QUEUE_MONGO_URL := mongodb://localhost:${MONGO_PORT}
 # makefile variables
 DOCKER_COMPOSE := ../../tools/docker-compose-mongo.yml
+TEST_PATH ?= tests
 
 include ../../tools/Python.mk
 include ../../tools/Docker.mk
@@ -21,15 +22,13 @@ watch:
 # we cannot set the env var with pytest.MonkeyPatch, it's too late
 .PHONY: test
 test:
-	$(MAKE) down
 	$(MAKE) up
-	poetry run python -m pytest -vv -x tests
-	PROMETHEUS_MULTIPROC_DIR=/tmp poetry run python -m pytest -vv -x -k "test_metrics or test_prometheus" tests
+	poetry run python -m pytest -vv -x ${ADDOPTS} $(TEST_PATH)
+	PROMETHEUS_MULTIPROC_DIR=/tmp poetry run python -m pytest -vv -x -k "test_metrics or test_prometheus" ${ADDOPTS} $(TEST_PATH)
 	$(MAKE) down
 
 .PHONY: coverage
 coverage:
-	$(MAKE) down
 	$(MAKE) up
-	poetry run python -m pytest -s --cov --cov-report xml:coverage.xml --cov-report=term tests
+	poetry run python -m pytest -s --cov --cov-report xml:coverage.xml --cov-report=term $(TEST_PATH)
 	$(MAKE) down

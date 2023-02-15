@@ -5,7 +5,7 @@ from libcommon.config import ProcessingGraphConfig
 from libcommon.processing_graph import ProcessingGraph
 
 
-def test_default_graph():
+def test_default_graph() -> None:
     config = ProcessingGraphConfig()
     graph = ProcessingGraph(config.specification)
 

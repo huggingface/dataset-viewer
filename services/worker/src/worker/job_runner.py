@@ -202,7 +202,7 @@ class JobRunner(ABC):
                 f"The submitted job type is {self.job_type}, but the job runner only processes {job_type}"
             )
 
-    def __str__(self):
+    def __str__(self) -> str:
         return (
             f"JobRunner(job_id={self.job_id} dataset={self.dataset} config={self.config}"
             + f" split={self.split} force={self.force})"

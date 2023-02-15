@@ -31,7 +31,7 @@ def create_dataset_status_endpoint(
     async def dataset_status_endpoint(request: Request) -> Response:
         try:
             dataset = request.query_params.get("dataset")
-            if not are_valid_parameters([dataset]):
+            if not are_valid_parameters([dataset]) or not dataset:
                 raise MissingRequiredParameterError("Parameter 'dataset' is required")
             logging.info(f"/dataset-status, dataset={dataset}")
 

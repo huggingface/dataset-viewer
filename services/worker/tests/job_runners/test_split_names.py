@@ -3,6 +3,7 @@
 
 from dataclasses import replace
 from http import HTTPStatus
+from typing import Callable
 
 import pytest
 from libcommon.exceptions import CustomError
@@ -17,13 +18,15 @@ from worker.resources import LibrariesResource
 
 from ..fixtures.hub import HubDatasets, get_default_config_split
 
+GetJobRunner = Callable[[str, str, AppConfig, bool], SplitNamesJobRunner]
+
 
 @pytest.fixture
 def get_job_runner(
     libraries_resource: LibrariesResource,
     cache_mongo_resource: CacheMongoResource,
     queue_mongo_resource: QueueMongoResource,
-):
+) -> GetJobRunner:
     def _get_job_runner(
         dataset: str,
         config: str,
@@ -56,9 +59,9 @@ def get_job_runner(
     return _get_job_runner
 
 
-def test_process(app_config: AppConfig, get_job_runner, hub_public_csv: str) -> None:
+def test_process(app_config: AppConfig, get_job_runner: GetJobRunner, hub_public_csv: str) -> None:
     dataset, config, _ = get_default_config_split(hub_public_csv)
-    job_runner = get_job_runner(dataset, config, app_config)
+    job_runner = get_job_runner(dataset, config, app_config, False)
     assert job_runner.process()
     cached_response = get_response(kind=job_runner.processing_step.cache_kind, dataset=hub_public_csv, config=config)
     assert cached_response["http_status"] == HTTPStatus.OK
@@ -70,10 +73,10 @@ def test_process(app_config: AppConfig, get_job_runner, hub_public_csv: str) -> 
     assert len(content["split_names"]) == 1
 
 
-def test_doesnotexist(app_config: AppConfig, get_job_runner) -> None:
+def test_doesnotexist(app_config: AppConfig, get_job_runner: GetJobRunner) -> None:
     dataset = "doesnotexist"
     config = "some_config"
-    job_runner = get_job_runner(dataset, config, app_config)
+    job_runner = get_job_runner(dataset, config, app_config, False)
     assert not job_runner.process()
     with pytest.raises(DoesNotExist):
         get_response(kind=job_runner.processing_step.cache_kind, dataset=dataset, config=config)
@@ -96,7 +99,7 @@ def test_doesnotexist(app_config: AppConfig, get_job_runner) -> None:
 )
 def test_compute_split_names_response(
     hub_datasets: HubDatasets,
-    get_job_runner,
+    get_job_runner: GetJobRunner,
     name: str,
     use_token: bool,
     error_code: str,
@@ -104,12 +107,12 @@ def test_compute_split_names_response(
     app_config: AppConfig,
 ) -> None:
     dataset, config, _ = get_default_config_split(hub_datasets[name]["name"])
-    job_runner = get_job_runner(dataset, config, app_config)
     expected_configs_response = hub_datasets[name]["split_names_response"]
     job_runner = get_job_runner(
         dataset,
         config,
         app_config if use_token else replace(app_config, common=replace(app_config.common, hf_token=None)),
+        False,
     )
     if error_code is None:
         result = job_runner.compute()

@@ -32,21 +32,20 @@ from datasets.utils.file_utils import (
     url_or_path_join,
 )
 from datasets.utils.py_utils import asdict, map_nested
-from huggingface_hub.hf_api import (
+from huggingface_hub._commit_api import (
     CommitOperation,
     CommitOperationAdd,
     CommitOperationDelete,
-    DatasetInfo,
-    HfApi,
-    RepoFile,
 )
-from huggingface_hub.utils import RepositoryNotFoundError, RevisionNotFoundError
-from libcommon.dataset import ask_access
+from huggingface_hub.hf_api import DatasetInfo, HfApi, RepoFile
+from huggingface_hub.utils._errors import RepositoryNotFoundError, RevisionNotFoundError
+from libcommon.dataset import DatasetNotFoundError, ask_access
 from libcommon.processing_graph import ProcessingStep
+from libcommon.queue import JobInfo
 from libcommon.simple_cache import SplitFullName
 
 from worker.config import AppConfig, ParquetAndDatasetInfoConfig
-from worker.job_runner import DatasetNotFoundError, JobInfo, JobRunnerError
+from worker.job_runner import JobRunnerError
 from worker.job_runners._datasets_based_job_runner import DatasetsBasedJobRunner
 
 ParquetAndDatasetInfoJobRunnerErrorCode = Literal[
@@ -505,23 +504,31 @@ def _request_size(url: str, hf_token: Optional[str] = None) -> Optional[int]:
 
 
 class _MockStreamingDownloadManager(StreamingDownloadManager):
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
         super().__init__(*args, **kwargs)
-        self.ext_data_files = []
+        self.ext_data_files: List[str] = []
 
-    def download(self, url_or_urls):
-        url_or_urls = map_nested(self._download, url_or_urls, map_tuple=True, parallel_min_length=np.inf)
+    def download(self, url_or_urls: Any) -> Any:
+        url_or_urls = map_nested(
+            self._download,
+            url_or_urls,
+            map_tuple=True,
+            parallel_min_length=np.inf,  # type: ignore
+            # ^ parallel_min_length has int type, but is currently used in datasets for a comparison only
+            # and it works with np.inf. No conversion is involved
+            # (would raise: OverflowError: cannot convert float infinity to integer)
+        )
         return url_or_urls
 
-    def _download(self, urlpath):
-        urlpath = str(urlpath)
-        if is_relative_path(urlpath):
+    def _download(self, urlpath: Any) -> str:
+        urlpath_str = str(urlpath)
+        if is_relative_path(urlpath_str):
             # append the relative path to the base_path
-            urlpath = url_or_path_join(self._base_path, urlpath)
-        elif not urlpath.startswith(self._base_path):
+            urlpath_str = url_or_path_join(self._base_path, urlpath_str)
+        elif not urlpath_str.startswith(self._base_path):
             # it's an external file
-            self.ext_data_files.append(urlpath)
-        return urlpath
+            self.ext_data_files.append(urlpath_str)
+        return urlpath_str
 
 
 def raise_if_too_big_from_external_data_files(
@@ -547,7 +554,7 @@ def raise_if_too_big_from_external_data_files(
                         f" streaming:\n{error}"
                     ),
                     error,
-                )
+                ) from error
         elif isinstance(error, requests.exceptions.HTTPError):
             raise ExternalFilesSizeRequestHTTPError(
                 (
@@ -556,7 +563,7 @@ def raise_if_too_big_from_external_data_files(
                     " (e.g. inside a data/ folder)."
                 ),
                 error,
-            )
+            ) from error
         elif isinstance(error, requests.exceptions.ConnectionError):
             raise ExternalFilesSizeRequestConnectionError(
                 (
@@ -565,7 +572,7 @@ def raise_if_too_big_from_external_data_files(
                     " (e.g. inside a data/ folder)."
                 ),
                 error,
-            )
+            ) from error
         elif isinstance(error, requests.exceptions.Timeout):
             raise ExternalFilesSizeRequestTimeoutError(
                 (
@@ -574,7 +581,7 @@ def raise_if_too_big_from_external_data_files(
                     " (e.g. inside a data/ folder)."
                 ),
                 error,
-            )
+            ) from error
         else:
             raise ExternalFilesSizeRequestError(
                 (
@@ -583,7 +590,7 @@ def raise_if_too_big_from_external_data_files(
                     " (e.g. inside a data/ folder)."
                 ),
                 error,
-            )
+            ) from error
     ext_data_files = mock_dl_manager.ext_data_files
     if len(ext_data_files) > max_external_data_files:
         raise DatasetWithTooManyExternalFilesError(
@@ -613,7 +620,7 @@ def raise_if_too_big_from_external_data_files(
                         " (e.g. inside a data/ folder)."
                     ),
                     error,
-                )
+                ) from error
             elif isinstance(error, requests.exceptions.ConnectionError):
                 raise ExternalFilesSizeRequestConnectionError(
                     (
@@ -622,7 +629,7 @@ def raise_if_too_big_from_external_data_files(
                         " (e.g. inside a data/ folder)."
                     ),
                     error,
-                )
+                ) from error
             elif isinstance(error, requests.exceptions.Timeout):
                 raise ExternalFilesSizeRequestTimeoutError(
                     (
@@ -631,7 +638,7 @@ def raise_if_too_big_from_external_data_files(
                         " (e.g. inside a data/ folder)."
                     ),
                     error,
-                )
+                ) from error
             else:
                 raise ExternalFilesSizeRequestError(
                     (
@@ -640,7 +647,7 @@ def raise_if_too_big_from_external_data_files(
                         " (e.g. inside a data/ folder)."
                     ),
                     error,
-                )
+                ) from error
 
 
 def compute_parquet_and_dataset_info_response(
@@ -725,15 +732,15 @@ def compute_parquet_and_dataset_info_response(
         - [`~job_runners.parquet_and_dataset_info.DatasetWithTooBigExternalFilesError`]
             If the dataset is too big external files be converted to parquet
         - [`~job_runners.parquet_and_dataset_info.UnsupportedExternalFilesError`]
-            If we failed to get the external files sizes to make sure we can convert the dataet to parquet
+            If we failed to get the external files sizes to make sure we can convert the dataset to parquet
         - [`~job_runners.parquet_and_dataset_info.ExternalFilesSizeRequestHTTPError`]
-            If we failed to get the external files sizes to make sure we can convert the dataet to parquet
+            If we failed to get the external files sizes to make sure we can convert the dataset to parquet
         - [`~job_runners.parquet_and_dataset_info.ExternalFilesSizeRequestConnectionError`]
-            If we failed to get the external files sizes to make sure we can convert the dataet to parquet
+            If we failed to get the external files sizes to make sure we can convert the dataset to parquet
         - [`~job_runners.parquet_and_dataset_info.ExternalFilesSizeRequestTimeoutError`]
-            If we failed to get the external files sizes to make sure we can convert the dataet to parquet
+            If we failed to get the external files sizes to make sure we can convert the dataset to parquet
         - [`~job_runners.parquet_and_dataset_info.ExternalFilesSizeRequestError`]
-            If we failed to get the external files sizes to make sure we can convert the dataet to parquet
+            If we failed to get the external files sizes to make sure we can convert the dataset to parquet
     </Tip>
     """
     logging.info(f"get parquet files and dataset info for dataset={dataset}")
@@ -775,9 +782,10 @@ def compute_parquet_and_dataset_info_response(
             hf_token=hf_token,
         )
         builder.download_and_prepare(file_format="parquet")  # the parquet files are stored in the cache dir
-        dataset_info[config] = asdict(builder.info)
+        dataset_info[config] = asdict(builder.info)  # type: ignore
         # ^ see
         # https://github.dev/huggingface/datasets/blob/e183a269067575db8765ee979bd8523d14a1adae/src/datasets/info.py#L244-L245
+        # note that asdict() is not typed in the datasets library, hence type: ignore
         parquet_files.extend(
             ParquetFile(local_file=local_file, local_dir=builder.cache_dir, config=config)
             for local_file in glob.glob(f"{builder.cache_dir}**/*.parquet")

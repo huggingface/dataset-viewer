@@ -4,6 +4,7 @@
 import csv
 
 import pytest
+from pytest import TempPathFactory
 
 DATA = [
     {"col_1": "0", "col_2": 0, "col_3": 0.0},
@@ -14,7 +15,7 @@ DATA = [
 
 
 @pytest.fixture(scope="session")
-def csv_path(tmp_path_factory):
+def csv_path(tmp_path_factory: TempPathFactory) -> str:
     path = str(tmp_path_factory.mktemp("data") / "dataset.csv")
     with open(path, "w", newline="") as f:
         writer = csv.DictWriter(f, fieldnames=["col_1", "col_2", "col_3"])

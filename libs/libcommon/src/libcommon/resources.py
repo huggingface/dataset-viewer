@@ -2,12 +2,16 @@
 # Copyright 2022 The HuggingFace Authors.
 
 from dataclasses import dataclass, field
+from types import TracebackType
+from typing import Optional, Type, TypeVar
 
 from mongoengine.connection import ConnectionFailure, connect, disconnect
-from pymongo import MongoClient  # type: ignore
+from pymongo import MongoClient
 from pymongo.errors import ServerSelectionTimeoutError
 
 from libcommon.constants import CACHE_MONGOENGINE_ALIAS, QUEUE_MONGOENGINE_ALIAS
+
+T = TypeVar("T", bound="Resource")
 
 
 @dataclass
@@ -27,19 +31,24 @@ class Resource:
     Resources should be inherited from this class and must implement the allocate(), check() and release() methods.
     """
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         self.allocate()
 
-    def __enter__(self):
+    def __enter__(self: T) -> T:
         return self
 
-    def __exit__(self, exc_type, exc_value, traceback):
+    def __exit__(
+        self,
+        exc_type: Optional[Type[BaseException]],
+        exc_value: Optional[BaseException],
+        traceback: Optional[TracebackType],
+    ) -> None:
         self.release()
 
-    def allocate(self):
+    def allocate(self) -> None:
         pass
 
-    def release(self):
+    def release(self) -> None:
         pass
 
 
@@ -69,7 +78,7 @@ class MongoResource(Resource):
 
     _client: MongoClient = field(init=False)
 
-    def allocate(self):
+    def allocate(self) -> None:
         try:
             self._client = connect(
                 db=self.database,
@@ -88,7 +97,7 @@ class MongoResource(Resource):
         except ServerSelectionTimeoutError:
             return False
 
-    def release(self):
+    def release(self) -> None:
         disconnect(alias=self.mongoengine_alias)
 
 

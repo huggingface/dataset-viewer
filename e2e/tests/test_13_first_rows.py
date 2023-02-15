@@ -41,7 +41,7 @@ def prepare_json(response: requests.Response) -> Any:
         (422, "empty-split", "imdb", "plain_text", "", "MissingRequiredParameter"),
     ],
 )
-def test_first_rows(status: int, name: str, dataset: str, config: str, split: str, error_code: str):
+def test_first_rows(status: int, name: str, dataset: str, config: str, split: str, error_code: str) -> None:
     body = get_openapi_body_example("/first-rows", status, name)
 
     # the logic here is a bit convoluted, because we have no way to refresh a split, we have to refresh the whole

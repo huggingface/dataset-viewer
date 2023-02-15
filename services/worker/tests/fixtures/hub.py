@@ -6,17 +6,14 @@
 import time
 from contextlib import suppress
 from pathlib import Path
-from typing import Any, Iterable, List, Literal, Mapping, Optional, Tuple, TypedDict
+from typing import Any, Iterator, List, Literal, Mapping, Optional, Tuple, TypedDict
 
 import pytest
 import requests
-from datasets import Dataset, load_dataset_builder
-from huggingface_hub.hf_api import (
-    REPO_TYPES,
-    REPO_TYPES_URL_PREFIXES,
-    HfApi,
-    hf_raise_for_status,
-)
+from datasets import Dataset, DatasetBuilder, load_dataset_builder
+from huggingface_hub.constants import REPO_TYPES, REPO_TYPES_URL_PREFIXES
+from huggingface_hub.hf_api import HfApi
+from huggingface_hub.utils._errors import hf_raise_for_status
 
 from ..constants import CI_HUB_ENDPOINT, CI_URL_TEMPLATE, CI_USER, CI_USER_TOKEN
 
@@ -38,8 +35,8 @@ def update_repo_settings(
     token: Optional[str] = None,
     organization: Optional[str] = None,
     repo_type: Optional[str] = None,
-    name: str = None,
-) -> Mapping[str, bool]:
+    name: Optional[str] = None,
+) -> Any:
     """Update the settings of a repository.
     Args:
         repo_id (`str`, *optional*):
@@ -99,7 +96,12 @@ def update_repo_settings(
 
 
 def create_hub_dataset_repo(
-    *, prefix: str, file_paths: List[str] = None, dataset: Dataset = None, private=False, gated=False
+    *,
+    prefix: str,
+    file_paths: Optional[List[str]] = None,
+    dataset: Optional[Dataset] = None,
+    private: bool = False,
+    gated: bool = False,
 ) -> str:
     dataset_name = f"{prefix}-{int(time.time() * 10e3)}"
     repo_id = f"{CI_USER}/{dataset_name}"
@@ -131,42 +133,42 @@ def delete_hub_dataset_repo(repo_id: str) -> None:
 
 # https://docs.pytest.org/en/6.2.x/fixture.html#yield-fixtures-recommended
 @pytest.fixture(scope="session")
-def hub_public_empty() -> Iterable[str]:
+def hub_public_empty() -> Iterator[str]:
     repo_id = create_hub_dataset_repo(prefix="empty")
     yield repo_id
     delete_hub_dataset_repo(repo_id=repo_id)
 
 
 @pytest.fixture(scope="session")
-def hub_public_csv(csv_path: str) -> Iterable[str]:
+def hub_public_csv(csv_path: str) -> Iterator[str]:
     repo_id = create_hub_dataset_repo(prefix="csv", file_paths=[csv_path])
     yield repo_id
     delete_hub_dataset_repo(repo_id=repo_id)
 
 
 @pytest.fixture(scope="session")
-def hub_private_csv(csv_path: str) -> Iterable[str]:
+def hub_private_csv(csv_path: str) -> Iterator[str]:
     repo_id = create_hub_dataset_repo(prefix="csv_private", file_paths=[csv_path], private=True)
     yield repo_id
     delete_hub_dataset_repo(repo_id=repo_id)
 
 
 @pytest.fixture(scope="session")
-def hub_gated_csv(csv_path: str) -> Iterable[str]:
+def hub_gated_csv(csv_path: str) -> Iterator[str]:
     repo_id = create_hub_dataset_repo(prefix="csv_gated", file_paths=[csv_path], gated=True)
     yield repo_id
     delete_hub_dataset_repo(repo_id=repo_id)
 
 
 @pytest.fixture(scope="session")
-def hub_public_jsonl(jsonl_path: str) -> Iterable[str]:
+def hub_public_jsonl(jsonl_path: str) -> Iterator[str]:
     repo_id = create_hub_dataset_repo(prefix="jsonl", file_paths=[jsonl_path])
     yield repo_id
     delete_hub_dataset_repo(repo_id=repo_id)
 
 
 @pytest.fixture(scope="session")
-def hub_gated_extra_fields_csv(csv_path: str, extra_fields_readme: str) -> Iterable[str]:
+def hub_gated_extra_fields_csv(csv_path: str, extra_fields_readme: str) -> Iterator[str]:
     repo_id = create_hub_dataset_repo(
         prefix="csv_extra_fields_gated", file_paths=[csv_path, extra_fields_readme], gated=True
     )
@@ -175,42 +177,42 @@ def hub_gated_extra_fields_csv(csv_path: str, extra_fields_readme: str) -> Itera
 
 
 @pytest.fixture(scope="session")
-def hub_public_audio(datasets: Mapping[str, Dataset]) -> Iterable[str]:
+def hub_public_audio(datasets: Mapping[str, Dataset]) -> Iterator[str]:
     repo_id = create_hub_dataset_repo(prefix="audio", dataset=datasets["audio"])
     yield repo_id
     delete_hub_dataset_repo(repo_id=repo_id)
 
 
 @pytest.fixture(scope="session")
-def hub_public_image(datasets: Mapping[str, Dataset]) -> Iterable[str]:
+def hub_public_image(datasets: Mapping[str, Dataset]) -> Iterator[str]:
     repo_id = create_hub_dataset_repo(prefix="image", dataset=datasets["image"])
     yield repo_id
     delete_hub_dataset_repo(repo_id=repo_id)
 
 
 @pytest.fixture(scope="session")
-def hub_public_images_list(datasets: Mapping[str, Dataset]) -> Iterable[str]:
+def hub_public_images_list(datasets: Mapping[str, Dataset]) -> Iterator[str]:
     repo_id = create_hub_dataset_repo(prefix="images_list", dataset=datasets["images_list"])
     yield repo_id
     delete_hub_dataset_repo(repo_id=repo_id)
 
 
 @pytest.fixture(scope="session")
-def hub_public_big(datasets: Mapping[str, Dataset]) -> Iterable[str]:
+def hub_public_big(datasets: Mapping[str, Dataset]) -> Iterator[str]:
     repo_id = create_hub_dataset_repo(prefix="big", dataset=datasets["big"])
     yield repo_id
     delete_hub_dataset_repo(repo_id=repo_id)
 
 
 @pytest.fixture(scope="session")
-def hub_public_external_files(dataset_script_with_external_files_path) -> Iterable[str]:
+def hub_public_external_files(dataset_script_with_external_files_path: str) -> Iterator[str]:
     repo_id = create_hub_dataset_repo(prefix="external_files", file_paths=[dataset_script_with_external_files_path])
     yield repo_id
     delete_hub_dataset_repo(repo_id=repo_id)
 
 
 @pytest.fixture
-def external_files_dataset_builder(hub_public_external_files):
+def external_files_dataset_builder(hub_public_external_files: str) -> DatasetBuilder:
     return load_dataset_builder(hub_public_external_files)
 
 
@@ -226,7 +228,7 @@ class HubDatasetTest(TypedDict):
 HubDatasets = Mapping[str, HubDatasetTest]
 
 
-def create_config_names_response(dataset: str):
+def create_config_names_response(dataset: str) -> Any:
     dataset, config, _ = get_default_config_split(dataset)
     return {
         "config_names": [
@@ -238,7 +240,7 @@ def create_config_names_response(dataset: str):
     }
 
 
-def create_split_names_response(dataset: str):
+def create_split_names_response(dataset: str) -> Any:
     dataset, config, split = get_default_config_split(dataset)
     return {
         "split_names": [
@@ -251,7 +253,7 @@ def create_split_names_response(dataset: str):
     }
 
 
-def create_splits_response(dataset: str):
+def create_splits_response(dataset: str) -> Any:
     dataset, config, split = get_default_config_split(dataset)
     return {
         "splits": [
@@ -264,7 +266,7 @@ def create_splits_response(dataset: str):
     }
 
 
-def create_first_rows_response(dataset: str, cols: Mapping[str, Any], rows: List[Any]):
+def create_first_rows_response(dataset: str, cols: Mapping[str, Any], rows: List[Any]) -> Any:
     dataset, config, split = get_default_config_split(dataset)
     return {
         "dataset": dataset,
@@ -289,7 +291,7 @@ def create_first_rows_response(dataset: str, cols: Mapping[str, Any], rows: List
     }
 
 
-def create_dataset_info_response_for_csv(dataset: str, config: str):
+def create_dataset_info_response_for_csv(dataset: str, config: str) -> Any:
     return {
         "description": "",
         "citation": "",
@@ -312,7 +314,7 @@ def create_dataset_info_response_for_csv(dataset: str, config: str):
     }
 
 
-def create_dataset_info_response_for_audio(dataset: str, config: str):
+def create_dataset_info_response_for_audio(dataset: str, config: str) -> Any:
     return {
         "description": "",
         "citation": "",
@@ -332,7 +334,7 @@ def create_dataset_info_response_for_audio(dataset: str, config: str):
     }
 
 
-def create_parquet_and_dataset_info_response(dataset: str, data_type: Literal["csv", "audio"]):
+def create_parquet_and_dataset_info_response(dataset: str, data_type: Literal["csv", "audio"]) -> Any:
     dataset, config, split = get_default_config_split(dataset)
 
     filename = "csv-train.parquet" if data_type == "csv" else "parquet-train.parquet"
@@ -395,7 +397,7 @@ AUDIO_cols = {
 }
 
 
-def get_AUDIO_rows(dataset: str):
+def get_AUDIO_rows(dataset: str) -> Any:
     dataset, config, split = get_default_config_split(dataset)
     return [
         {
@@ -418,7 +420,7 @@ IMAGE_cols = {
 }
 
 
-def get_IMAGE_rows(dataset: str):
+def get_IMAGE_rows(dataset: str) -> Any:
     dataset, config, split = get_default_config_split(dataset)
     return [
         {
@@ -436,7 +438,7 @@ IMAGES_LIST_cols = {
 }
 
 
-def get_IMAGES_LIST_rows(dataset: str):
+def get_IMAGES_LIST_rows(dataset: str) -> Any:
     dataset, config, split = get_default_config_split(dataset)
     return [
         {
@@ -480,17 +482,17 @@ TEXT_rows = [
 
 @pytest.fixture(scope="session")
 def hub_datasets(
-    hub_public_empty,
-    hub_public_csv,
-    hub_private_csv,
-    hub_gated_csv,
-    hub_public_jsonl,
-    hub_gated_extra_fields_csv,
-    hub_public_audio,
-    hub_public_image,
-    hub_public_images_list,
-    hub_public_big,
-    hub_public_external_files,
+    hub_public_empty: str,
+    hub_public_csv: str,
+    hub_private_csv: str,
+    hub_gated_csv: str,
+    hub_public_jsonl: str,
+    hub_gated_extra_fields_csv: str,
+    hub_public_audio: str,
+    hub_public_image: str,
+    hub_public_images_list: str,
+    hub_public_big: str,
+    hub_public_external_files: str,
 ) -> HubDatasets:
     return {
         "does_not_exist": {

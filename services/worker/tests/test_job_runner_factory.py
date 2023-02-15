@@ -5,11 +5,10 @@ from typing import Optional
 
 import pytest
 from libcommon.processing_graph import ProcessingGraph
-from libcommon.queue import Priority
+from libcommon.queue import JobInfo, Priority
 from libcommon.storage import StrPath
 
 from worker.config import AppConfig
-from worker.job_runner import JobInfo
 from worker.job_runner_factory import JobRunnerFactory
 from worker.resources import LibrariesResource
 

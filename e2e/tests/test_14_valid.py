@@ -5,7 +5,7 @@ from .fixtures.hub import DatasetRepos
 from .utils import get
 
 
-def test_valid_after_datasets_processed(hf_dataset_repos_csv_data: DatasetRepos):
+def test_valid_after_datasets_processed(hf_dataset_repos_csv_data: DatasetRepos) -> None:
     # this test ensures that the datasets processed successfully are present in /valid
     response = get("/valid")
     assert response.status_code == 200, f"{response.status_code} - {response.text}"
