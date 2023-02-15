@@ -3,7 +3,7 @@
 
 import datetime
 from pathlib import Path
-from typing import Any, Mapping
+from typing import Any, Mapping, Optional
 
 import numpy as np
 import pandas as pd
@@ -30,12 +30,12 @@ def value(content: Any, dtype: Any) -> Dataset:
     return Dataset.from_pandas(pd.DataFrame({"col": [content]}, dtype=dtype))
 
 
-def other(content: Any, feature_type: FeatureType = None) -> Dataset:
-    return (
-        Dataset.from_dict({"col": [content]})
-        if feature_type is None
-        else Dataset.from_dict({"col": [content]}, features=Features({"col": feature_type}))
-    )
+def other(content: Any, feature_type: Optional[FeatureType] = None) -> Dataset:
+    if feature_type:
+        features = Features({"col": feature_type})  # type: ignore
+        return Dataset.from_dict({"col": [content]}, features=features)
+    else:
+        return Dataset.from_dict({"col": [content]})
 
 
 @pytest.fixture(scope="session")

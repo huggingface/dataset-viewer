@@ -11,10 +11,11 @@ from typing import Optional
 
 import datasets.config
 from libcommon.processing_graph import ProcessingStep
+from libcommon.queue import JobInfo
 from libcommon.storage import init_dir, remove_dir
 
 from worker.config import AppConfig, DatasetsBasedConfig
-from worker.job_runner import JobInfo, JobRunner
+from worker.job_runner import JobRunner
 
 
 class DatasetsBasedJobRunner(JobRunner):

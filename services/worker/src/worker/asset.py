@@ -7,7 +7,7 @@ from typing import List, Tuple, TypedDict
 
 import soundfile  # type:ignore
 from libcommon.storage import StrPath
-from numpy import ndarray  # type:ignore
+from numpy import ndarray
 from PIL import Image  # type: ignore
 from pydub import AudioSegment  # type:ignore
 
@@ -64,7 +64,7 @@ def create_audio_files(
     split: str,
     row_idx: int,
     column: str,
-    array: ndarray,
+    array: ndarray,  # type: ignore
     sampling_rate: int,
     assets_base_url: str,
     filename_base: str,

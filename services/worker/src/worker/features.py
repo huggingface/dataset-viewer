@@ -2,7 +2,7 @@
 # Copyright 2022 The HuggingFace Authors.
 
 import json
-from typing import Any, List, Union
+from typing import Any, List, Optional, Union
 from zlib import adler32
 
 from datasets import (
@@ -19,13 +19,13 @@ from datasets import (
     Value,
 )
 from libcommon.storage import StrPath
-from numpy import ndarray  # type:ignore
+from numpy import ndarray
 from PIL import Image as PILImage  # type: ignore
 
 from worker.asset import create_audio_files, create_image_file
 
 
-def append_hash_suffix(string, json_path: List[Union[str, int]] = None) -> str:
+def append_hash_suffix(string: str, json_path: Optional[List[Union[str, int]]] = None) -> str:
     """
     Hash the json path to a string.
     Args:
@@ -51,7 +51,7 @@ def image(
     featureName: str,
     assets_base_url: str,
     assets_directory: StrPath,
-    json_path: List[Union[str, int]] = None,
+    json_path: Optional[List[Union[str, int]]] = None,
 ) -> Any:
     if value is None:
         return None
@@ -88,7 +88,7 @@ def audio(
     featureName: str,
     assets_base_url: str,
     assets_directory: StrPath,
-    json_path: List[Union[str, int]] = None,
+    json_path: Optional[List[Union[str, int]]] = None,
 ) -> Any:
     if value is None:
         return None
@@ -126,7 +126,7 @@ def get_cell_value(
     fieldType: Any,
     assets_base_url: str,
     assets_directory: StrPath,
-    json_path: List[Union[str, int]] = None,
+    json_path: Optional[List[Union[str, int]]] = None,
 ) -> Any:
     # always allow None values in the cells
     if cell is None:

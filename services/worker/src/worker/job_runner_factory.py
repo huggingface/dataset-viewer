@@ -6,10 +6,11 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from libcommon.processing_graph import ProcessingGraph
+from libcommon.queue import JobInfo
 from libcommon.storage import StrPath
 
 from worker.config import AppConfig, FirstRowsConfig, ParquetAndDatasetInfoConfig
-from worker.job_runner import JobInfo, JobRunner
+from worker.job_runner import JobRunner
 from worker.job_runners.config_names import ConfigNamesJobRunner
 from worker.job_runners.dataset_info import DatasetInfoJobRunner
 from worker.job_runners.first_rows import FirstRowsJobRunner

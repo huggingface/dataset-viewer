@@ -3,6 +3,7 @@
 
 from dataclasses import replace
 from http import HTTPStatus
+from typing import Callable
 
 import pytest
 from datasets.packaged_modules import csv
@@ -19,6 +20,8 @@ from worker.resources import LibrariesResource
 
 from ..fixtures.hub import HubDatasets, get_default_config_split
 
+GetJobRunner = Callable[[str, str, str, AppConfig, FirstRowsConfig, bool], FirstRowsJobRunner]
+
 
 @pytest.fixture
 def get_job_runner(
@@ -26,7 +29,7 @@ def get_job_runner(
     libraries_resource: LibrariesResource,
     cache_mongo_resource: CacheMongoResource,
     queue_mongo_resource: QueueMongoResource,
-):
+) -> GetJobRunner:
     def _get_job_runner(
         dataset: str,
         config: str,
@@ -64,23 +67,23 @@ def get_job_runner(
 
 
 def test_should_skip_job(
-    app_config: AppConfig, get_job_runner, first_rows_config: FirstRowsConfig, hub_public_csv: str
+    app_config: AppConfig, get_job_runner: GetJobRunner, first_rows_config: FirstRowsConfig, hub_public_csv: str
 ) -> None:
     dataset, config, split = get_default_config_split(hub_public_csv)
-    job_runner = get_job_runner(dataset, config, split, app_config, first_rows_config)
+    job_runner = get_job_runner(dataset, config, split, app_config, first_rows_config, False)
     assert not job_runner.should_skip_job()
     # we add an entry to the cache
     job_runner.process()
     assert job_runner.should_skip_job()
-    job_runner = get_job_runner(dataset, config, split, app_config, first_rows_config, force=True)
+    job_runner = get_job_runner(dataset, config, split, app_config, first_rows_config, True)
     assert not job_runner.should_skip_job()
 
 
 def test_compute(
-    app_config: AppConfig, get_job_runner, first_rows_config: FirstRowsConfig, hub_public_csv: str
+    app_config: AppConfig, get_job_runner: GetJobRunner, first_rows_config: FirstRowsConfig, hub_public_csv: str
 ) -> None:
     dataset, config, split = get_default_config_split(hub_public_csv)
-    job_runner = get_job_runner(dataset, config, split, app_config, first_rows_config)
+    job_runner = get_job_runner(dataset, config, split, app_config, first_rows_config, False)
     assert job_runner.process()
     cached_response = get_response(
         kind=job_runner.processing_step.cache_kind, dataset=dataset, config=config, split=split
@@ -98,10 +101,10 @@ def test_compute(
     assert content["features"][2]["type"]["dtype"] == "float64"  # <-|
 
 
-def test_doesnotexist(app_config: AppConfig, get_job_runner, first_rows_config: FirstRowsConfig) -> None:
+def test_doesnotexist(app_config: AppConfig, get_job_runner: GetJobRunner, first_rows_config: FirstRowsConfig) -> None:
     dataset = "doesnotexist"
     dataset, config, split = get_default_config_split(dataset)
-    job_runner = get_job_runner(dataset, config, split, app_config, first_rows_config)
+    job_runner = get_job_runner(dataset, config, split, app_config, first_rows_config, False)
     assert not job_runner.process()
     with pytest.raises(DoesNotExist):
         get_response(kind=job_runner.processing_step.cache_kind, dataset=dataset, config=config, split=split)
@@ -127,7 +130,7 @@ def test_doesnotexist(app_config: AppConfig, get_job_runner, first_rows_config: 
 )
 def test_number_rows(
     hub_datasets: HubDatasets,
-    get_job_runner,
+    get_job_runner: GetJobRunner,
     name: str,
     use_token: bool,
     error_code: str,
@@ -138,8 +141,8 @@ def test_number_rows(
     # temporary patch to remove the effect of
     # https://github.com/huggingface/datasets/issues/4875#issuecomment-1280744233
     # note: it fixes the tests, but it does not fix the bug in the "real world"
-    if hasattr(csv, "_patched_for_streaming") and csv._patched_for_streaming:  # type: ignore
-        csv._patched_for_streaming = False  # type: ignore
+    if hasattr(csv, "_patched_for_streaming") and csv._patched_for_streaming:
+        csv._patched_for_streaming = False
 
     dataset = hub_datasets[name]["name"]
     expected_first_rows_response = hub_datasets[name]["first_rows_response"]
@@ -150,6 +153,7 @@ def test_number_rows(
         split,
         app_config if use_token else replace(app_config, common=replace(app_config.common, hf_token=None)),
         first_rows_config,
+        False,
     )
     if error_code is None:
         result = job_runner.compute()
@@ -188,7 +192,7 @@ def test_number_rows(
 )
 def test_truncation(
     hub_datasets: HubDatasets,
-    get_job_runner,
+    get_job_runner: GetJobRunner,
     app_config: AppConfig,
     first_rows_config: FirstRowsConfig,
     name: str,
@@ -201,8 +205,8 @@ def test_truncation(
         dataset,
         config,
         split,
-        app_config=replace(app_config, common=replace(app_config.common, hf_token=None)),
-        first_rows_config=replace(
+        replace(app_config, common=replace(app_config.common, hf_token=None)),
+        replace(
             first_rows_config,
             max_number=1_000_000,
             min_number=10,
@@ -210,6 +214,7 @@ def test_truncation(
             min_cell_bytes=10,
             columns_max_number=columns_max_number,
         ),
+        False,
     )
 
     if error_code:
