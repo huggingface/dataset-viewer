@@ -12,6 +12,8 @@ from pymongo.errors import DocumentTooLarge
 from libcommon.resources import CacheMongoResource
 from libcommon.simple_cache import (
     CachedResponse,
+    CacheReportsPage,
+    CacheReportsWithContentPage,
     DoesNotExist,
     InvalidCursor,
     InvalidLimit,
@@ -353,7 +355,7 @@ def test_get_validity_by_kind_only_invalid_responses() -> None:
 
 
 def test_count_by_status_and_error_code() -> None:
-    assert "OK" not in get_responses_count_by_kind_status_and_error_code()
+    assert not get_responses_count_by_kind_status_and_error_code()
 
     upsert_response(
         kind="test_kind",
@@ -387,11 +389,13 @@ def test_count_by_status_and_error_code() -> None:
 def test_get_cache_reports() -> None:
     kind = "test_kind"
     kind_2 = "test_kind_2"
-    assert get_cache_reports(kind=kind, cursor="", limit=2) == {"cache_reports": [], "next_cursor": ""}
-    assert get_cache_reports_with_content(kind=kind, cursor="", limit=2) == {
+    expected_cache_reports: CacheReportsPage = {"cache_reports": [], "next_cursor": ""}
+    assert get_cache_reports(kind=kind, cursor="", limit=2) == expected_cache_reports
+    expected_cache_reports_with_content: CacheReportsWithContentPage = {
         "cache_reports_with_content": [],
         "next_cursor": "",
     }
+    assert get_cache_reports_with_content(kind=kind, cursor="", limit=2) == expected_cache_reports_with_content
 
     dataset_a = "test_dataset_a"
     content_a = {"key": "a"}

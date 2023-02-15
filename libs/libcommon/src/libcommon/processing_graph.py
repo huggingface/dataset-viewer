@@ -41,12 +41,12 @@ class ProcessingStep:
     children: List[ProcessingStep]
 
     @property
-    def job_type(self):
+    def job_type(self) -> str:
         """The job type (ie. the job to run to compute the response)."""
         return self.endpoint
 
     @property
-    def cache_kind(self):
+    def cache_kind(self) -> str:
         """The cache kind (ie. the key in the cache)."""
         return self.endpoint
 
