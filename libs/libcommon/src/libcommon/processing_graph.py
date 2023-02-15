@@ -1,6 +1,8 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2022 The HuggingFace Authors.
 
+import warnings
+
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -39,6 +41,11 @@ class ProcessingStep:
     parent: Optional[ProcessingStep]
     ancestors: List[ProcessingStep]
     children: List[ProcessingStep]
+
+    @property
+    def endpoint(self):
+        warnings.warn("The use of endpoint is deprecated, name will be used instead.", category=DeprecationWarning)
+        return self.name
 
     @property
     def job_type(self):
