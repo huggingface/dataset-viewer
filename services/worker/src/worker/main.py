@@ -74,7 +74,7 @@ if __name__ == "__main__":
 
         app_config = AppConfig.from_env()
         init_logging(log_level=app_config.common.log_level)
-        
+
         with QueueMongoResource(
             database=app_config.queue.mongo_database, host=app_config.queue.mongo_url
         ) as queue_resource:
