@@ -103,7 +103,7 @@ class Loop:
         time.sleep(duration)
 
     def run(self) -> None:
-        logging.info("Worker started")
+        logging.info("Worker loop started")
         try:
             while True:
                 if self.has_resources() and self.process_next_job():

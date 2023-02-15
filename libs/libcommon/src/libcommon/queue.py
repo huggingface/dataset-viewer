@@ -37,7 +37,7 @@ class QuerySetManager(Generic[U]):
 # END monkey patching ### hack ###
 
 
-class Status(enum.Enum):
+class Status(str, enum.Enum):
     WAITING = "waiting"
     STARTED = "started"
     SUCCESS = "success"
@@ -46,7 +46,7 @@ class Status(enum.Enum):
     SKIPPED = "skipped"
 
 
-class Priority(enum.Enum):
+class Priority(str, enum.Enum):
     NORMAL = "normal"
     LOW = "low"
 
