@@ -458,42 +458,42 @@ class DatasetWithTooBigExternalFilesError(ParquetAndDatasetInfoJobRunnerError):
     """Raised when the dataset size (sum of config sizes given by the datasets library) is too big."""
 
     def __init__(self, message: str, cause: Optional[BaseException] = None):
-        super().__init__(message, HTTPStatus.NOT_IMPLEMENTED, "DatasetWithTooBigExternalFilesError", cause, False)
+        super().__init__(message, HTTPStatus.NOT_IMPLEMENTED, "DatasetWithTooBigExternalFilesError", cause, True)
 
 
 class UnsupportedExternalFilesError(ParquetAndDatasetInfoJobRunnerError):
     """Raised when we failed to get the size of the external files."""
 
     def __init__(self, message: str, cause: Optional[BaseException] = None):
-        super().__init__(message, HTTPStatus.NOT_IMPLEMENTED, "UnsupportedExternalFilesError", cause, False)
+        super().__init__(message, HTTPStatus.NOT_IMPLEMENTED, "UnsupportedExternalFilesError", cause, True)
 
 
 class ExternalFilesSizeRequestHTTPError(ParquetAndDatasetInfoJobRunnerError):
     """Raised when we failed to get the size of the external files."""
 
     def __init__(self, message: str, cause: Optional[BaseException] = None):
-        super().__init__(message, HTTPStatus.NOT_IMPLEMENTED, "ExternalFilesSizeRequestHTTPError", cause, False)
+        super().__init__(message, HTTPStatus.NOT_IMPLEMENTED, "ExternalFilesSizeRequestHTTPError", cause, True)
 
 
 class ExternalFilesSizeRequestConnectionError(ParquetAndDatasetInfoJobRunnerError):
     """Raised when we failed to get the size of the external files."""
 
     def __init__(self, message: str, cause: Optional[BaseException] = None):
-        super().__init__(message, HTTPStatus.NOT_IMPLEMENTED, "ExternalFilesSizeRequestConnectionError", cause, False)
+        super().__init__(message, HTTPStatus.NOT_IMPLEMENTED, "ExternalFilesSizeRequestConnectionError", cause, True)
 
 
 class ExternalFilesSizeRequestTimeoutError(ParquetAndDatasetInfoJobRunnerError):
     """Raised when we failed to get the size of the external files."""
 
     def __init__(self, message: str, cause: Optional[BaseException] = None):
-        super().__init__(message, HTTPStatus.NOT_IMPLEMENTED, "ExternalFilesSizeRequestTimeoutError", cause, False)
+        super().__init__(message, HTTPStatus.NOT_IMPLEMENTED, "ExternalFilesSizeRequestTimeoutError", cause, True)
 
 
 class ExternalFilesSizeRequestError(ParquetAndDatasetInfoJobRunnerError):
     """Raised when we failed to get the size of the external files."""
 
     def __init__(self, message: str, cause: Optional[BaseException] = None):
-        super().__init__(message, HTTPStatus.NOT_IMPLEMENTED, "ExternalFilesSizeRequestError", cause, False)
+        super().__init__(message, HTTPStatus.NOT_IMPLEMENTED, "ExternalFilesSizeRequestError", cause, True)
 
 
 def _request_size(url: str, hf_token: Optional[str] = None) -> Optional[int]:
@@ -561,7 +561,7 @@ def raise_if_too_big_from_external_data_files(
             raise ExternalFilesSizeRequestConnectionError(
                 (
                     "Couldn't get the list of external files in `_split_generators` because a request"
-                    f" failed:\n{error}\nPlease consider moving your data fiels in this dataset repository instead"
+                    f" failed:\n{error}\nPlease consider moving your data files in this dataset repository instead"
                     " (e.g. inside a data/ folder)."
                 ),
                 error,
@@ -570,7 +570,7 @@ def raise_if_too_big_from_external_data_files(
             raise ExternalFilesSizeRequestTimeoutError(
                 (
                     "Couldn't get the list of external files in `_split_generators` because a request"
-                    f" failed:\n{error}\nPlease consider moving your data fiels in this dataset repository instead"
+                    f" failed:\n{error}\nPlease consider moving your data files in this dataset repository instead"
                     " (e.g. inside a data/ folder)."
                 ),
                 error,
@@ -579,7 +579,7 @@ def raise_if_too_big_from_external_data_files(
             raise ExternalFilesSizeRequestError(
                 (
                     "Couldn't get the list of external files in `_split_generators` because a request"
-                    f" failed:\n{error}\nPlease consider moving your data fiels in this dataset repository instead"
+                    f" failed:\n{error}\nPlease consider moving your data files in this dataset repository instead"
                     " (e.g. inside a data/ folder)."
                 ),
                 error,
@@ -609,7 +609,7 @@ def raise_if_too_big_from_external_data_files(
                 raise ExternalFilesSizeRequestHTTPError(
                     (
                         "Couldn't get the size of external files in `_split_generators` because a request"
-                        f" failed:\n{error}\nPlease consider moving your data fiels in this dataset repository instead"
+                        f" failed:\n{error}\nPlease consider moving your data files in this dataset repository instead"
                         " (e.g. inside a data/ folder)."
                     ),
                     error,
@@ -618,7 +618,7 @@ def raise_if_too_big_from_external_data_files(
                 raise ExternalFilesSizeRequestConnectionError(
                     (
                         "Couldn't get the size of external files in `_split_generators` because a request"
-                        f" failed:\n{error}\nPlease consider moving your data fiels in this dataset repository instead"
+                        f" failed:\n{error}\nPlease consider moving your data files in this dataset repository instead"
                         " (e.g. inside a data/ folder)."
                     ),
                     error,
@@ -627,7 +627,7 @@ def raise_if_too_big_from_external_data_files(
                 raise ExternalFilesSizeRequestTimeoutError(
                     (
                         "Couldn't get the size of external files in `_split_generators` because a request"
-                        f" failed:\n{error}\nPlease consider moving your data fiels in this dataset repository instead"
+                        f" failed:\n{error}\nPlease consider moving your data files in this dataset repository instead"
                         " (e.g. inside a data/ folder)."
                     ),
                     error,
@@ -636,7 +636,7 @@ def raise_if_too_big_from_external_data_files(
                 raise ExternalFilesSizeRequestError(
                     (
                         "Couldn't get the size of external files in `_split_generators` because a request"
-                        f" failed:\n{error}\nPlease consider moving your data fiels in this dataset repository instead"
+                        f" failed:\n{error}\nPlease consider moving your data files in this dataset repository instead"
                         " (e.g. inside a data/ folder)."
                     ),
                     error,
