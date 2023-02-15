@@ -5,12 +5,12 @@ from http import HTTPStatus
 from typing import Any, Callable
 
 import pytest
+from libcommon.dataset import DatasetNotFoundError
 from libcommon.exceptions import CustomError
 from libcommon.processing_graph import ProcessingStep
 from libcommon.queue import Priority
 from libcommon.resources import CacheMongoResource, QueueMongoResource
 from libcommon.simple_cache import upsert_response
-from libcommon.dataset import DatasetNotFoundError
 
 from worker.config import AppConfig
 from worker.job_runners.split_names_from_dataset_info import (
