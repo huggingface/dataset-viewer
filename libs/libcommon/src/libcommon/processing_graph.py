@@ -1,10 +1,9 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2022 The HuggingFace Authors.
 
-import warnings
-
 from __future__ import annotations
 
+import warnings
 from dataclasses import dataclass
 from typing import List, Literal, Mapping, Optional, TypedDict
 
