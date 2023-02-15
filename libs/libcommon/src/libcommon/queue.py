@@ -148,6 +148,7 @@ class Job(Document):
     created_at = DateTimeField(required=True)
     started_at = DateTimeField()
     finished_at = DateTimeField()
+    last_heartbeat = DateTimeField()
 
     def to_dict(self) -> JobDict:
         return {
@@ -163,6 +164,7 @@ class Job(Document):
             "created_at": self.created_at,
             "started_at": self.started_at,
             "finished_at": self.finished_at,
+            "last_heartbeat": self.last_heartbeat,
         }
 
     objects = QuerySetManager["Job"]()

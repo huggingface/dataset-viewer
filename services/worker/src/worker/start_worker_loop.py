@@ -1,8 +1,8 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2022 The HuggingFace Authors.
 
-import argparse
 import json
+import sys
 
 from filelock import FileLock
 from libcommon.log import init_logging
@@ -15,34 +15,12 @@ from worker.job_runner_factory import JobRunnerFactory
 from worker.loop import Loop
 from worker.resources import LibrariesResource
 
-
 if __name__ == "__main__":
-    
-    parser = argparse.ArgumentParser()
-    parser.add_argument('--banner')
-    parser.add_argument('--worker_state_path')
-    args = parser.parse_args()
-
-    if args.banner:
-        print(args.banner, flush=True)
-
     app_config = AppConfig.from_env()
+    if "--print-worker-state-path" in sys.argv:
+        print(app_config.worker.state_path, flush=True)
 
     init_logging(log_level=app_config.common.log_level)
-
-    import logging
-    import time
-    
-
-    for i in range(60):
-        logging.warning(f"{i}")
-        if i % 2 == 0:
-            if args.worker_state_path:
-                with FileLock(args.worker_state_path + ".lock"):
-                    with open(args.worker_state_path, 'w') as worker_state_f:
-                        json.dump({"even_id": i}, worker_state_f)
-        time.sleep(1)
-    exit(0)
     # ^ set first to have logs as soon as possible
     assets_directory = init_assets_dir(directory=app_config.assets.storage_directory)
 
