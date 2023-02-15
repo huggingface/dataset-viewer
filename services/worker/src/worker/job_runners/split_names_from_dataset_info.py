@@ -95,20 +95,14 @@ def compute_split_names_from_dataset_info_response(
         raise PreviousStepStatusError(
             f"Previous step gave an error: {response['http_status']}. This job should not have been created."
         )
-    content = response["content"]
 
-    if "dataset_info" not in content:
-        raise PreviousStepFormatError("Previous step did not return the expected content.")
-    dataset_info = content["dataset_info"]
+    try:
+        splits_content = response["content"]["dataset_info"][config]["splits"]
+    except Exception as e:
+        raise PreviousStepFormatError("Previous step did not return the expected content.") from e
 
-    if config not in content:
-        raise PreviousStepFormatError("Previous step did not return the expected content.")
-    config_info = content[config]
-
-    if "splits" not in config_info:
-        raise PreviousStepFormatError("Previous step did not return the expected content.")
     split_name_items: List[SplitNameItem] = [
-        {"dataset": dataset, "config": config, "split": str(split)} for split in config_info["splits"]
+        {"dataset": dataset, "config": config, "split": str(split)} for split in splits_content
     ]
 
     return {"split_names": split_name_items}
