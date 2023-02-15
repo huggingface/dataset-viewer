@@ -39,7 +39,7 @@ def create_processing_step_endpoint(
     async def processing_step_endpoint(request: Request) -> Response:
         try:
             dataset = request.query_params.get("dataset")
-            if not are_valid_parameters([dataset]):
+            if not are_valid_parameters([dataset]) or not dataset:
                 raise MissingRequiredParameterError("Parameter 'dataset' is required")
             if processing_step.input_type == "dataset":
                 config = None

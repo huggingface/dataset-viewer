@@ -6,7 +6,8 @@ from typing import Any, Mapping
 
 import pytest
 from pytest_httpserver import HTTPServer
-from starlette.requests import Headers, Request
+from starlette.datastructures import Headers
+from starlette.requests import Request
 
 from api.authentication import auth_check
 from api.utils import ExternalAuthenticatedError, ExternalUnauthenticatedError
