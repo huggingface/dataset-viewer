@@ -4,8 +4,8 @@
 import logging
 
 from libcommon.queue import Job
-
 from mongoengine.connection import get_db
+
 from mongodb_migration.check import check_documents
 from mongodb_migration.migration import Migration
 
