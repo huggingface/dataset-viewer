@@ -1,12 +1,15 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2022 The HuggingFace Authors.
 
+import json
 import logging
 import random
 import time
 from dataclasses import dataclass, field
+from typing import Optional, TypedDict
 
-from libcommon.queue import EmptyQueueError, Queue
+from filelock import FileLock
+from libcommon.queue import EmptyQueueError, JobInfo, Queue
 from psutil import cpu_count, disk_usage, getloadavg, swap_memory, virtual_memory
 
 from worker.config import WorkerConfig
@@ -15,6 +18,10 @@ from worker.job_runner_factory import BaseJobRunnerFactory
 
 class UnknownJobTypeError(Exception):
     pass
+
+
+class WorkerState(TypedDict):
+    current_job_info: Optional[JobInfo]
 
 
 @dataclass
@@ -96,7 +103,7 @@ class Loop:
         time.sleep(duration)
 
     def run(self) -> None:
-        logging.info("Worker started")
+        logging.info("Worker loop started")
         try:
             while True:
                 if self.has_resources() and self.process_next_job():
@@ -119,13 +126,23 @@ class Loop:
                     f" ${', '.join(self.worker_config.only_job_types)}). The queue should not have provided this"
                     " job. It is in an inconsistent state. Please report this issue to the datasets team."
                 )
+            self.set_worker_state(current_job_info=job_info)
             logging.debug(f"job assigned: {job_info}")
         except EmptyQueueError:
+            self.set_worker_state(current_job_info=None)
             logging.debug("no job in the queue")
             return False
 
         job_runner = self.job_runner_factory.create_job_runner(job_info)
         finished_status = job_runner.run()
         self.queue.finish_job(job_id=job_runner.job_id, finished_status=finished_status)
+        self.set_worker_state(current_job_info=None)
         logging.debug(f"job finished with {finished_status.value}: {job_runner}")
         return True
+
+    def set_worker_state(self, current_job_info: Optional[JobInfo]) -> None:
+        worker_state: WorkerState = {"current_job_info": current_job_info}
+        if self.worker_config.state_path:
+            with FileLock(self.worker_config.state_path + ".lock"):
+                with open(self.worker_config.state_path, "w") as worker_state_f:
+                    json.dump(worker_state, worker_state_f)

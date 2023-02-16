@@ -1,53 +1,90 @@
-# SPDX-License-Identifier: Apache-2.0
-# Copyright 2022 The HuggingFace Authors.
+import json
+import logging
+import os
+import sys
+import tempfile
+import time
+from typing import Optional
 
+from filelock import FileLock
 from libcommon.log import init_logging
-from libcommon.processing_graph import ProcessingGraph
-from libcommon.resources import CacheMongoResource, QueueMongoResource
-from libcommon.storage import init_assets_dir
+from libcommon.queue import Job, Status, get_datetime
+from libcommon.resources import QueueMongoResource
+from mirakuru import OutputExecutor
 
+from worker import start_worker_loop
 from worker.config import AppConfig
-from worker.job_runner_factory import JobRunnerFactory
-from worker.loop import Loop
-from worker.resources import LibrariesResource
+from worker.loop import WorkerState
+
+WORKER_STATE_FILE_NAME = "worker_state.json"
+START_WORKER_LOOP_PATH = start_worker_loop.__file__
+
+
+class WorkerExecutor:
+    def __init__(self, app_config: AppConfig) -> None:
+        self.app_config = app_config
+
+    def _create_worker_loop_executor(self) -> OutputExecutor:
+        banner = self.app_config.worker.state_path
+        if not banner:
+            raise ValueError("Failed to create the executor because WORKER_STATE_PATH is missing.")
+        start_worker_loop_command = [
+            sys.executable,
+            START_WORKER_LOOP_PATH,
+            "--print-worker-state-path",
+        ]
+        return OutputExecutor(start_worker_loop_command, banner, timeout=10)
+
+    def start(self) -> None:
+        worker_loop_executor = self._create_worker_loop_executor()
+        worker_loop_executor.start()  # blocking until the banner is printed
+        logging.info("Starting heartbeat.")
+        while worker_loop_executor.running():
+            self.heartbeat()
+            time.sleep(self.app_config.worker.heartbeat_time_interval_seconds)
+        worker_loop_executor.stop()
+
+    def get_state(self) -> WorkerState:
+        worker_state_path = self.app_config.worker.state_path
+        if not worker_state_path:
+            raise ValueError("Failed to get worker state because WORKER_STATE_PATH is missing.")
+        if os.path.exists(worker_state_path):
+            with FileLock(worker_state_path + ".lock"):
+                try:
+                    with open(worker_state_path, "r") as worker_state_f:
+                        worker_state = json.load(worker_state_f)
+                        return WorkerState(current_job_info=worker_state.get("current_job_info"))
+                except json.JSONDecodeError:
+                    return WorkerState(current_job_info=None)
+        else:
+            return WorkerState(current_job_info=None)
+
+    def get_current_job(self) -> Optional[Job]:
+        worker_state = self.get_state()
+        if worker_state["current_job_info"]:
+            job = Job.objects.with_id(worker_state["current_job_info"]["job_id"])  # type: ignore
+            if job and isinstance(job, Job) and job.status == Status.STARTED:
+                return job
+        return None
+
+    def heartbeat(self) -> None:
+        current_job = self.get_current_job()
+        if current_job:
+            current_job.update(last_heartbeat=get_datetime())
+
 
 if __name__ == "__main__":
-    app_config = AppConfig.from_env()
+    with tempfile.TemporaryDirectory() as tmp_dir:
+        if "WORKER_STATE_PATH" not in os.environ:
+            os.environ["WORKER_STATE_PATH"] = os.path.join(tmp_dir, WORKER_STATE_FILE_NAME)
 
-    init_logging(log_level=app_config.common.log_level)
-    # ^ set first to have logs as soon as possible
-    assets_directory = init_assets_dir(directory=app_config.assets.storage_directory)
+        app_config = AppConfig.from_env()
+        init_logging(log_level=app_config.common.log_level)
 
-    processing_graph = ProcessingGraph(app_config.processing_graph.specification)
-
-    with (
-        LibrariesResource(
-            hf_endpoint=app_config.common.hf_endpoint,
-            init_hf_datasets_cache=app_config.datasets_based.hf_datasets_cache,
-            numba_path=app_config.numba.path,
-        ) as libraries_resource,
-        CacheMongoResource(
-            database=app_config.cache.mongo_database, host=app_config.cache.mongo_url
-        ) as cache_resource,
-        QueueMongoResource(
+        with QueueMongoResource(
             database=app_config.queue.mongo_database, host=app_config.queue.mongo_url
-        ) as queue_resource,
-    ):
-        if not cache_resource.is_available():
-            raise RuntimeError("The connection to the cache database could not be established. Exiting.")
-        if not queue_resource.is_available():
-            raise RuntimeError("The connection to the queue database could not be established. Exiting.")
-
-        job_runner_factory = JobRunnerFactory(
-            app_config=app_config,
-            processing_graph=processing_graph,
-            hf_datasets_cache=libraries_resource.hf_datasets_cache,
-            assets_directory=assets_directory,
-        )
-        loop = Loop(
-            library_cache_paths=libraries_resource.storage_paths,
-            job_runner_factory=job_runner_factory,
-            max_jobs_per_namespace=app_config.queue.max_jobs_per_namespace,
-            worker_config=app_config.worker,
-        )
-        loop.run()
+        ) as queue_resource:
+            if not queue_resource.is_available():
+                raise RuntimeError("The connection to the queue database could not be established. Exiting.")
+            worker_executor = WorkerExecutor(app_config)
+            worker_executor.start()

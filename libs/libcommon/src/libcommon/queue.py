@@ -37,7 +37,7 @@ class QuerySetManager(Generic[U]):
 # END monkey patching ### hack ###
 
 
-class Status(enum.Enum):
+class Status(str, enum.Enum):
     WAITING = "waiting"
     STARTED = "started"
     SUCCESS = "success"
@@ -46,7 +46,7 @@ class Status(enum.Enum):
     SKIPPED = "skipped"
 
 
-class Priority(enum.Enum):
+class Priority(str, enum.Enum):
     NORMAL = "normal"
     LOW = "low"
 
@@ -64,6 +64,7 @@ class JobDict(TypedDict):
     created_at: datetime
     started_at: Optional[datetime]
     finished_at: Optional[datetime]
+    last_heartbeat: Optional[datetime]
 
 
 class JobInfo(TypedDict):
@@ -121,6 +122,7 @@ class Job(Document):
         created_at (`datetime`): The creation date of the job.
         started_at (`datetime`, optional): When the job has started.
         finished_at (`datetime`, optional): When the job has finished.
+        last_heartbeat (`datetime`, optional): Last time the running job got a heartbeat from the worker.
     """
 
     meta = {
@@ -148,6 +150,7 @@ class Job(Document):
     created_at = DateTimeField(required=True)
     started_at = DateTimeField()
     finished_at = DateTimeField()
+    last_heartbeat = DateTimeField()
 
     def to_dict(self) -> JobDict:
         return {
@@ -163,6 +166,7 @@ class Job(Document):
             "created_at": self.created_at,
             "started_at": self.started_at,
             "finished_at": self.finished_at,
+            "last_heartbeat": self.last_heartbeat,
         }
 
     objects = QuerySetManager["Job"]()

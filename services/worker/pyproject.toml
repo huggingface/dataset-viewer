@@ -40,6 +40,7 @@ transformers = "^4.26.1"
 trec-car-tools = { path = "vendors/trec-car-tools/python3" }
 typer = "^0.4.2"
 wget = "^3.2"
+mirakuru = "^2.4.2"
 
 [tool.poetry.group.dev.dependencies]
 bandit = "^1.7.4"

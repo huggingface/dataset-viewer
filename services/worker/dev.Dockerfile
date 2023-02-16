@@ -30,7 +30,9 @@ COPY services/worker/poetry.lock ./services/worker/poetry.lock
 COPY services/worker/pyproject.toml ./services/worker/pyproject.toml
 COPY libs/libcommon ./libs/libcommon
 WORKDIR /src/services/worker/
-RUN poetry install --no-cache
+RUN --mount=type=cache,target=/home/.cache/pypoetry/cache \
+    --mount=type=cache,target=/home/.cache/pypoetry/artifacts \
+    poetry install --no-root
 
 # FOR LOCAL DEVELOPMENT ENVIRONMENT
 # No need to copy the source code since we map a volume in docker-compose-base.yaml
@@ -38,4 +40,4 @@ RUN poetry install --no-cache
 # Removed: RUN poetry install --no-cache
 # However we need to install the package when the container starts
 # Added: poetry install
-ENTRYPOINT ["/bin/sh", "-c" , "poetry install && poetry run python src/worker/main.py"]
+ENTRYPOINT ["/bin/sh", "-c" , "poetry install --only-root && poetry run python src/worker/main.py"]
