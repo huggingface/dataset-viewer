@@ -12,6 +12,7 @@ from libcommon.storage import StrPath, init_assets_dir
 from pytest import MonkeyPatch, fixture
 
 from worker.config import AppConfig, FirstRowsConfig
+from worker.main import WORKER_STATE_FILE_NAME
 from worker.resources import LibrariesResource
 
 from .constants import CI_APP_TOKEN, CI_HUB_ENDPOINT, CI_URL_TEMPLATE, CI_USER_TOKEN
@@ -25,6 +26,11 @@ def datasets_cache_directory(tmp_path: Path) -> Path:
 @fixture
 def modules_cache_directory(tmp_path: Path) -> Path:
     return tmp_path / "modules"
+
+
+@fixture
+def worker_state_path(tmp_path: Path) -> Path:
+    return tmp_path / WORKER_STATE_FILE_NAME
 
 
 # see https://github.com/pytest-dev/pytest/issues/363#issuecomment-406536200
@@ -41,7 +47,9 @@ def monkeypatch_session() -> Iterator[MonkeyPatch]:
 
 # see https://github.com/pytest-dev/pytest/issues/363#issuecomment-406536200
 @fixture
-def set_env_vars(datasets_cache_directory: Path, modules_cache_directory: Path) -> Iterator[MonkeyPatch]:
+def set_env_vars(
+    datasets_cache_directory: Path, modules_cache_directory: Path, worker_state_path: Path
+) -> Iterator[MonkeyPatch]:
     mp = MonkeyPatch()
     mp.setenv("CACHE_MONGO_DATABASE", "datasets_server_cache_test")
     mp.setenv("QUEUE_MONGO_DATABASE", "datasets_server_queue_test")
@@ -55,6 +63,8 @@ def set_env_vars(datasets_cache_directory: Path, modules_cache_directory: Path) 
     mp.setenv("DATASETS_BASED_HF_DATASETS_CACHE", str(datasets_cache_directory))
     mp.setenv("HF_MODULES_CACHE", str(modules_cache_directory))
     mp.setenv("WORKER_CONTENT_MAX_BYTES", "10_000_000")
+    mp.setenv("WORKER_STATE_PATH", str(worker_state_path))
+    mp.setenv("WORKER_HEARTBEAT_TIME_INTERVAL_SECONDS", "1")
     yield mp
     mp.undo()
 

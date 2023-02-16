@@ -17,6 +17,7 @@ from worker.config import AppConfig
 from worker.loop import WorkerState
 
 WORKER_STATE_FILE_NAME = "worker_state.json"
+START_WORKER_LOOP_PATH = start_worker_loop.__file__
 
 
 class WorkerExecutor:
@@ -24,12 +25,12 @@ class WorkerExecutor:
         self.app_config = app_config
 
     def _create_worker_loop_executor(self) -> OutputExecutor:
-        banner = app_config.worker.state_path
+        banner = self.app_config.worker.state_path
         if not banner:
             raise ValueError("Failed to create the executor because WORKER_STATE_PATH is missing.")
         start_worker_loop_command = [
             sys.executable,
-            start_worker_loop.__file__,
+            START_WORKER_LOOP_PATH,
             "--print-worker-state-path",
         ]
         return OutputExecutor(start_worker_loop_command, banner, timeout=10)
