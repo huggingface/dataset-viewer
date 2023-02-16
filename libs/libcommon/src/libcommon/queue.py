@@ -64,6 +64,7 @@ class JobDict(TypedDict):
     created_at: datetime
     started_at: Optional[datetime]
     finished_at: Optional[datetime]
+    last_heartbeat: Optional[datetime]
 
 
 class JobInfo(TypedDict):
