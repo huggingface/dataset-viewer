@@ -42,6 +42,7 @@ class WorkerExecutor:
         while worker_loop_executor.running():
             self.heartbeat()
             time.sleep(self.app_config.worker.heartbeat_time_interval_seconds)
+        worker_loop_executor.stop()
 
     def get_state(self) -> WorkerState:
         worker_state_path = self.app_config.worker.state_path

@@ -7,10 +7,12 @@ from pathlib import Path
 from typing import Iterator
 from unittest.mock import patch
 
+import pytest
 import pytz
 from filelock import FileLock
 from libcommon.queue import Job, JobInfo, Priority, Status, get_datetime
 from libcommon.resources import QueueMongoResource
+from mirakuru import ProcessExitedWithError, TimeoutExpired
 from pytest import fixture
 
 from worker.config import AppConfig
@@ -45,6 +47,19 @@ def start_worker_loop() -> None:
     current_job_info = get_job_info()
     worker_state = WorkerState(current_job_info=current_job_info)
     write_worker_state(worker_state, app_config.worker.state_path)
+
+
+def start_worker_loop_that_crashes() -> None:
+    app_config = AppConfig.from_env()
+    if not app_config.worker.state_path:
+        raise ValueError("Failed to get worker state because WORKER_STATE_PATH is missing.")
+    if "--print-worker-state-path" in sys.argv:
+        print(app_config.worker.state_path, flush=True)
+    raise RuntimeError("Tried to run a bad worker loop")
+
+
+def start_worker_loop_that_times_out() -> None:
+    time.sleep(20)
 
 
 @fixture
@@ -122,19 +137,44 @@ def test_executor_heartbeat(
     assert last_heartbeat_datetime >= get_datetime() - timedelta(seconds=1)
 
 
-def test_executor_start(app_config: AppConfig, queue_mongo_resource: QueueMongoResource) -> None:
+def test_executor_start(
+    app_config: AppConfig, queue_mongo_resource: QueueMongoResource, set_started_job_in_queue: Job
+) -> None:
     if not queue_mongo_resource.is_available():
         raise RuntimeError("Mongo resource is not available")
     executor = WorkerExecutor(app_config)
     with patch.object(executor, "heartbeat", wraps=executor.heartbeat) as heartbeat_mock:
         with patch("worker.main.START_WORKER_LOOP_PATH", __file__):
             executor.start()
-    time.sleep(1)  # wait for first job to start
     current_job = executor.get_current_job()
     assert current_job is not None
-    assert current_job.pk == get_job_info()["job_id"]
+    assert str(current_job.pk) == get_job_info()["job_id"]
     assert heartbeat_mock.call_count > 0
 
 
+@pytest.mark.parametrize(
+    "bad_worker_loop_type", ["start_worker_loop_that_crashes", "start_worker_loop_that_times_out"]
+)
+def test_executor_raises_on_bad_worker(
+    app_config: AppConfig, queue_mongo_resource: QueueMongoResource, tmp_path: Path, bad_worker_loop_type: str
+) -> None:
+    if not queue_mongo_resource.is_available():
+        raise RuntimeError("Mongo resource is not available")
+    bad_start_worker_loop_path = tmp_path / "bad_start_worker_loop.py"
+    with bad_start_worker_loop_path.open("w") as bad_start_worker_loop_f:
+        bad_start_worker_loop_f.write("raise RuntimeError('Tried to start a bad worker loop.')")
+    executor = WorkerExecutor(app_config)
+    with patch.dict(os.environ, {"WORKER_LOOP_TYPE": bad_worker_loop_type}):
+        with patch("worker.main.START_WORKER_LOOP_PATH", __file__):
+            with pytest.raises((ProcessExitedWithError, TimeoutExpired)):
+                executor.start()
+
+
 if __name__ == "__main__":
-    start_worker_loop()
+    worker_loop_type = os.environ.get("WORKER_LOOP_TYPE", "start_worker_loop")
+    if worker_loop_type == "start_worker_loop_that_crashes":
+        start_worker_loop_that_crashes()
+    elif worker_loop_type == "start_worker_loop_that_times_out":
+        start_worker_loop_that_times_out()
+    else:
+        start_worker_loop()
