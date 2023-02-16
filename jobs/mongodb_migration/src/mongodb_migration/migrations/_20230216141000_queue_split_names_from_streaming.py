@@ -13,6 +13,7 @@ split_names = "/split-names"
 split_names_from_streaming = "/split-names-from-streaming"
 db_name = "queue"
 
+
 # connection already occurred in the main.py (caveat: we use globals)
 class MigrationQueueUpdateSplitNames(Migration):
     def up(self) -> None:
