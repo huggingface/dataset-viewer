@@ -35,7 +35,7 @@ class WorkerExecutor:
         ]
         return OutputExecutor(start_worker_loop_command, banner, timeout=10)
 
-    def start(self):
+    def start(self) -> None:
         worker_loop_executor = self._create_worker_loop_executor()
         worker_loop_executor.start()  # blocking until the banner is printed
         logging.info("Starting heartbeat.")
@@ -45,11 +45,14 @@ class WorkerExecutor:
 
     def get_state(self) -> WorkerState:
         worker_state_path = self.app_config.worker.state_path
+        if not worker_state_path:
+            raise ValueError("Failed to get worker state because WORKER_STATE_PATH is missing.")
         if os.path.exists(worker_state_path):
             with FileLock(worker_state_path + ".lock"):
                 try:
                     with open(worker_state_path, "r") as worker_state_f:
-                        return json.load(worker_state_f)
+                        worker_state = json.load(worker_state_f)
+                        return WorkerState(current_job_info=worker_state.get("current_job_info"))
                 except json.JSONDecodeError:
                     return WorkerState(current_job_info=None)
         else:
@@ -58,11 +61,12 @@ class WorkerExecutor:
     def get_current_job(self) -> Optional[Job]:
         worker_state = self.get_state()
         if worker_state["current_job_info"]:
-            job = Job.objects.with_id(worker_state["current_job_info"]["job_id"])
-            if job and job.status == Status.STARTED:
+            job = Job.objects.with_id(worker_state["current_job_info"]["job_id"])  # type: ignore
+            if job and isinstance(job, Job) and job.status == Status.STARTED:
                 return job
+        return None
 
-    def heartbeat(self):
+    def heartbeat(self) -> None:
         current_job = self.get_current_job()
         if current_job:
             current_job.update(last_heartbeat=get_datetime())
