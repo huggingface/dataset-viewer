@@ -1,6 +1,7 @@
 import json
 import os
 import sys
+import time
 from datetime import timedelta
 from pathlib import Path
 from typing import Iterator
@@ -128,6 +129,7 @@ def test_executor_start(app_config: AppConfig, queue_mongo_resource: QueueMongoR
     with patch.object(executor, "heartbeat", wraps=executor.heartbeat) as heartbeat_mock:
         with patch("worker.main.START_WORKER_LOOP_PATH", __file__):
             executor.start()
+    time.sleep(1)  # wait for first job to start
     current_job = executor.get_current_job()
     assert current_job is not None
     assert current_job.pk == get_job_info()["job_id"]
