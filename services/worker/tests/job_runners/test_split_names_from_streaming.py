@@ -13,12 +13,14 @@ from libcommon.resources import CacheMongoResource, QueueMongoResource
 from libcommon.simple_cache import DoesNotExist, get_response
 
 from worker.config import AppConfig
-from worker.job_runners.split_names import SplitNamesJobRunner
+from worker.job_runners.split_names_from_streaming import (
+    SplitNamesFromStreamingJobRunner,
+)
 from worker.resources import LibrariesResource
 
 from ..fixtures.hub import HubDatasets, get_default_config_split
 
-GetJobRunner = Callable[[str, str, AppConfig, bool], SplitNamesJobRunner]
+GetJobRunner = Callable[[str, str, AppConfig, bool], SplitNamesFromStreamingJobRunner]
 
 
 @pytest.fixture
@@ -32,10 +34,10 @@ def get_job_runner(
         config: str,
         app_config: AppConfig,
         force: bool = False,
-    ) -> SplitNamesJobRunner:
-        return SplitNamesJobRunner(
+    ) -> SplitNamesFromStreamingJobRunner:
+        return SplitNamesFromStreamingJobRunner(
             job_info={
-                "type": SplitNamesJobRunner.get_job_type(),
+                "type": SplitNamesFromStreamingJobRunner.get_job_type(),
                 "dataset": dataset,
                 "config": config,
                 "split": None,
@@ -45,7 +47,7 @@ def get_job_runner(
             },
             app_config=app_config,
             processing_step=ProcessingStep(
-                endpoint=SplitNamesJobRunner.get_job_type(),
+                endpoint=SplitNamesFromStreamingJobRunner.get_job_type(),
                 input_type="config",
                 requires=None,
                 required_by_dataset_viewer=False,
