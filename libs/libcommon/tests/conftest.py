@@ -13,7 +13,10 @@ def env() -> Env:
 @fixture(scope="session")
 def cache_mongo_host(env: Env) -> str:
     try:
-        return env.str(name="CACHE_MONGO_URL")
+        url = env.str(name="CACHE_MONGO_URL")
+        if type(url) is not str:
+            raise ValueError("CACHE_MONGO_URL is not set")
+        return url
     except Exception as e:
         raise ValueError("CACHE_MONGO_URL is not set") from e
 
@@ -21,6 +24,9 @@ def cache_mongo_host(env: Env) -> str:
 @fixture(scope="session")
 def queue_mongo_host(env: Env) -> str:
     try:
-        return env.str(name="QUEUE_MONGO_URL")
+        url = env.str(name="QUEUE_MONGO_URL")
+        if type(url) is not str:
+            raise ValueError("QUEUE_MONGO_URL is not set")
+        return url
     except Exception as e:
         raise ValueError("QUEUE_MONGO_URL is not set") from e

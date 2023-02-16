@@ -8,7 +8,18 @@ import time
 import warnings
 from http import HTTPStatus
 from pathlib import Path
-from typing import Any, List, Literal, Mapping, Optional, TypedDict, Union
+from typing import (
+    Any,
+    Callable,
+    List,
+    Literal,
+    Mapping,
+    Optional,
+    TypedDict,
+    TypeVar,
+    Union,
+    cast,
+)
 
 from datasets import (
     Dataset,
@@ -21,18 +32,14 @@ from datasets import (
 )
 from datasets.data_files import EmptyDatasetError as _EmptyDatasetError
 from libcommon.processing_graph import ProcessingStep
+from libcommon.queue import JobInfo
 from libcommon.simple_cache import SplitFullName as _SplitFullName
 from libcommon.storage import StrPath
 from libcommon.utils import orjson_dumps
 
 from worker.config import AppConfig, FirstRowsConfig
 from worker.features import get_cell_value
-from worker.job_runner import (
-    ConfigNotFoundError,
-    JobInfo,
-    JobRunnerError,
-    SplitNotFoundError,
-)
+from worker.job_runner import ConfigNotFoundError, JobRunnerError, SplitNotFoundError
 from worker.job_runners._datasets_based_job_runner import DatasetsBasedJobRunner
 
 FirstRowsJobRunnerErrorCode = Literal[
@@ -127,32 +134,32 @@ class TooBigContentError(FirstRowsJobRunnerError):
         super().__init__(message, HTTPStatus.INTERNAL_SERVER_ERROR, "TooBigContentError", cause, False)
 
 
-def retry():
-    def decorator_retry(func):
-        """retries with an increasing sleep before every attempt"""
-        SLEEPS = [1, 7, 70, 7 * 60, 70 * 60]
-        MAX_ATTEMPTS = len(SLEEPS)
+FuncT = TypeVar("FuncT", bound=Callable[..., Any])
 
-        @functools.wraps(func)
-        def decorator(*args, **kwargs):
-            attempt = 0
-            last_err = None
-            while attempt < MAX_ATTEMPTS:
-                try:
-                    """always sleep before calling the function. It will prevent rate limiting in the first place"""
-                    duration = SLEEPS[attempt]
-                    logging.info(f"Sleep during {duration} seconds to preventively mitigate rate limiting.")
-                    time.sleep(duration)
-                    return func(*args, **kwargs)
-                except ConnectionError as err:
-                    logging.info("Got a ConnectionError, possibly due to rate limiting. Let's retry.")
-                    last_err = err
-                    attempt += 1
-            raise RuntimeError(f"Give up after {attempt} attempts with ConnectionError") from last_err
 
-        return decorator
+def retry(func: FuncT) -> FuncT:
+    """retries with an increasing sleep before every attempt"""
+    SLEEPS = [1, 7, 70, 7 * 60, 70 * 60]
+    MAX_ATTEMPTS = len(SLEEPS)
 
-    return decorator_retry
+    @functools.wraps(func)
+    def decorator(*args: Any, **kwargs: Any) -> Any:
+        attempt = 0
+        last_err = None
+        while attempt < MAX_ATTEMPTS:
+            try:
+                """always sleep before calling the function. It will prevent rate limiting in the first place"""
+                duration = SLEEPS[attempt]
+                logging.info(f"Sleep during {duration} seconds to preventively mitigate rate limiting.")
+                time.sleep(duration)
+                return func(*args, **kwargs)
+            except ConnectionError as err:
+                logging.info("Got a ConnectionError, possibly due to rate limiting. Let's retry.")
+                last_err = err
+                attempt += 1
+        raise RuntimeError(f"Give up after {attempt} attempts with ConnectionError") from last_err
+
+    return cast(FuncT, decorator)
 
 
 Row = Mapping[str, Any]
@@ -178,7 +185,7 @@ class FirstRowsResponse(TypedDict):
     rows: List[RowItem]
 
 
-@retry()
+@retry
 def get_rows(
     dataset: str,
     config: str,
@@ -368,7 +375,7 @@ def transform_rows(
 # > The terms "object" and "array" come from the conventions of JavaScript.
 # from https://stackoverflow.com/a/7214312/7351594 / https://www.rfc-editor.org/rfc/rfc7159.html
 def to_features_list(features: Features) -> List[FeatureItem]:
-    features_dict = features.to_dict()
+    features_dict = features.to_dict()  # type: ignore
     return [
         {
             "feature_idx": idx,
@@ -508,7 +515,7 @@ def compute_first_rows_response(
             )
             if not isinstance(iterable_dataset, IterableDataset):
                 raise TypeError("load_dataset should return an IterableDataset")
-            iterable_dataset = iterable_dataset._resolve_features()
+            iterable_dataset = iterable_dataset._resolve_features()  # type: ignore
             if not isinstance(iterable_dataset, IterableDataset):
                 raise TypeError("load_dataset should return an IterableDataset")
             features = iterable_dataset.features

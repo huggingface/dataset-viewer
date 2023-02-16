@@ -18,7 +18,7 @@ pytest_plugins = ["tests.fixtures.hub"]
 
 # see https://github.com/pytest-dev/pytest/issues/363#issuecomment-406536200
 @fixture(scope="session")
-def monkeypatch_session(hf_endpoint: str, hf_token: str):
+def monkeypatch_session(hf_endpoint: str, hf_token: str) -> Iterator[MonkeyPatch]:
     monkeypatch_session = MonkeyPatch()
     monkeypatch_session.setenv("CACHE_MONGO_DATABASE", "datasets_server_cache_test")
     monkeypatch_session.setenv("QUEUE_MONGO_DATABASE", "datasets_server_queue_test")

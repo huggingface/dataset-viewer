@@ -22,7 +22,7 @@ class LibrariesResource(Resource):
     hf_datasets_cache: Path = field(init=False)
     storage_paths: set[str] = field(init=False)
 
-    def allocate(self):
+    def allocate(self) -> None:
         self.hf_datasets_cache = (
             datasets.config.HF_DATASETS_CACHE
             if self.init_hf_datasets_cache is None
@@ -51,7 +51,7 @@ class LibrariesResource(Resource):
             storage_paths.add(self.numba_path)
         self.storage_paths = storage_paths
 
-    def release(self):
+    def release(self) -> None:
         datasets.config.HF_ENDPOINT = self.previous_hf_endpoint
         datasets.config.HF_UPDATE_DOWNLOAD_COUNTS = self.previous_hf_update_download_counts
         set_verbosity(self.previous_verbosity)

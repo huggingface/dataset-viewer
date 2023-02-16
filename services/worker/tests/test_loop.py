@@ -2,10 +2,11 @@ from typing import Any, Mapping, Optional
 
 from libcommon.config import CommonConfig
 from libcommon.processing_graph import ProcessingStep
+from libcommon.queue import JobInfo
 from libcommon.resources import CacheMongoResource, QueueMongoResource
 
 from worker.config import AppConfig, WorkerConfig
-from worker.job_runner import JobInfo, JobRunner
+from worker.job_runner import JobRunner
 from worker.job_runner_factory import BaseJobRunnerFactory
 from worker.loop import Loop
 from worker.resources import LibrariesResource

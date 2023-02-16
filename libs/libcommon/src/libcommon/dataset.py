@@ -5,12 +5,9 @@ from http import HTTPStatus
 from typing import Literal, Optional
 
 import requests
-from huggingface_hub.hf_api import (
-    DatasetInfo,
-    HfApi,
-    RepositoryNotFoundError,
-    build_hf_headers,
-)
+from huggingface_hub.hf_api import DatasetInfo, HfApi
+from huggingface_hub.utils._errors import RepositoryNotFoundError
+from huggingface_hub.utils._headers import build_hf_headers
 
 from libcommon.exceptions import CustomError
 

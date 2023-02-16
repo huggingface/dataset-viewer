@@ -5,7 +5,7 @@ from dataclasses import replace
 from datetime import datetime
 from http import HTTPStatus
 from pathlib import Path
-from typing import Any, Mapping, Optional
+from typing import Any, Callable, Mapping, Optional
 
 import datasets.config
 import pytest
@@ -39,18 +39,21 @@ class DummyJobRunner(DatasetsBasedJobRunner):
             return {"col1": "a" * 200}
 
 
+GetJobRunner = Callable[[str, Optional[str], Optional[str], AppConfig, bool], DummyJobRunner]
+
+
 @pytest.fixture
 def get_job_runner(
     libraries_resource: LibrariesResource,
     cache_mongo_resource: CacheMongoResource,
     queue_mongo_resource: QueueMongoResource,
-):
+) -> GetJobRunner:
     def _get_job_runner(
         dataset: str,
         config: Optional[str],
         split: Optional[str],
         app_config: AppConfig,
-        force: bool = False,
+        force: bool,
     ) -> DummyJobRunner:
         return DummyJobRunner(
             job_info={
@@ -78,9 +81,9 @@ def get_job_runner(
     return _get_job_runner
 
 
-def test_version(app_config: AppConfig, get_job_runner) -> None:
+def test_version(app_config: AppConfig, get_job_runner: GetJobRunner) -> None:
     dataset, config, split = get_default_config_split("dataset")
-    job_runner = get_job_runner(dataset, config, split, app_config)
+    job_runner = get_job_runner(dataset, config, split, app_config, False)
     assert len(job_runner.get_version().split(".")) == 3
     assert job_runner.compare_major_version(other_version="0.0.0") > 0
     assert job_runner.compare_major_version(other_version="1000.0.0") < 0
@@ -108,7 +111,7 @@ def test_version(app_config: AppConfig, get_job_runner) -> None:
 )
 def test_get_cache_subdirectory(
     app_config: AppConfig,
-    get_job_runner,
+    get_job_runner: GetJobRunner,
     dataset: str,
     config: Optional[str],
     split: Optional[str],
@@ -116,13 +119,13 @@ def test_get_cache_subdirectory(
     expected: str,
 ) -> None:
     date = datetime(2022, 11, 7, 12, 34, 56)
-    job_runner = get_job_runner(dataset, config, split, app_config, force=force)
+    job_runner = get_job_runner(dataset, config, split, app_config, force)
     assert job_runner.get_cache_subdirectory(date=date) == expected
 
 
-def test_set_and_unset_datasets_cache(app_config: AppConfig, get_job_runner) -> None:
+def test_set_and_unset_datasets_cache(app_config: AppConfig, get_job_runner: GetJobRunner) -> None:
     dataset, config, split = get_default_config_split("dataset")
-    job_runner = get_job_runner(dataset, config, split, app_config)
+    job_runner = get_job_runner(dataset, config, split, app_config, False)
     base_path = job_runner.base_datasets_cache
     dummy_path = base_path / "dummy"
     job_runner.set_datasets_cache(dummy_path)
@@ -131,9 +134,9 @@ def test_set_and_unset_datasets_cache(app_config: AppConfig, get_job_runner) -> 
     assert_datasets_cache_path(path=base_path, exists=True)
 
 
-def test_set_and_unset_cache(app_config: AppConfig, get_job_runner) -> None:
+def test_set_and_unset_cache(app_config: AppConfig, get_job_runner: GetJobRunner) -> None:
     dataset, config, split = get_default_config_split("user/dataset")
-    job_runner = get_job_runner(dataset, config, split, app_config)
+    job_runner = get_job_runner(dataset, config, split, app_config, False)
     datasets_base_path = job_runner.base_datasets_cache
     job_runner.set_cache()
     assert str(datasets.config.HF_DATASETS_CACHE).startswith(str(datasets_base_path))
@@ -143,12 +146,12 @@ def test_set_and_unset_cache(app_config: AppConfig, get_job_runner) -> None:
 
 
 @pytest.mark.parametrize("config", ["raise", "dont_raise"])
-def test_process(app_config: AppConfig, get_job_runner, hub_public_csv: str, config: str) -> None:
+def test_process(app_config: AppConfig, get_job_runner: GetJobRunner, hub_public_csv: str, config: str) -> None:
     # ^ this test requires an existing dataset, otherwise .process fails before setting the cache
     # it must work in both cases: when the job fails and when it succeeds
     dataset = hub_public_csv
     split = "split"
-    job_runner = get_job_runner(dataset, config, split, app_config)
+    job_runner = get_job_runner(dataset, config, split, app_config, False)
     datasets_base_path = job_runner.base_datasets_cache
     # the datasets library sets the cache to its own default
     assert_datasets_cache_path(path=datasets_base_path, exists=False, equals=False)
@@ -165,13 +168,10 @@ def assert_datasets_cache_path(path: Path, exists: bool, equals: bool = True) ->
     assert (datasets.config.EXTRACTED_DATASETS_PATH == path / datasets.config.EXTRACTED_DATASETS_DIR) is equals
 
 
-def test_process_big_content(hub_datasets: HubDatasets, app_config: AppConfig, get_job_runner) -> None:
+def test_process_big_content(hub_datasets: HubDatasets, app_config: AppConfig, get_job_runner: GetJobRunner) -> None:
     dataset, config, split = get_default_config_split(hub_datasets["big"]["name"])
     worker = get_job_runner(
-        dataset,
-        config,
-        split,
-        app_config=replace(app_config, worker=replace(app_config.worker, content_max_bytes=10)),
+        dataset, config, split, replace(app_config, worker=replace(app_config.worker, content_max_bytes=10)), False
     )
 
     assert not worker.process()

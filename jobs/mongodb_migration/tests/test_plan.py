@@ -79,7 +79,7 @@ class MigrationErrorIrreversible(Migration):
         pass
 
 
-def test_empty_plan():
+def test_empty_plan() -> None:
     plan = Plan(collected_migrations=[])
 
     assert plan.collected_migrations == []
@@ -106,7 +106,7 @@ migration_error_irreversible = MigrationErrorIrreversible(
         [migration_ok_b, migration_ok_a],
     ),
 )
-def test_collected_migrations_order_dont_matter(collected_migrations: List[Migration]):
+def test_collected_migrations_order_dont_matter(collected_migrations: List[Migration]) -> None:
     assert DatabaseMigration.objects.distinct("version") == []
     plan = Plan(collected_migrations=collected_migrations)
     assert plan.executed_migrations == []
@@ -133,7 +133,7 @@ def test_collected_migrations_order_dont_matter(collected_migrations: List[Migra
 )
 def test_errors_in_migration_steps(
     collected_migrations: List[Migration], executed_migrations: List[Migration], exception: Optional[Type[Exception]]
-):
+) -> None:
     assert DatabaseMigration.objects.distinct("version") == []
     plan = Plan(collected_migrations=collected_migrations)
     assert plan.executed_migrations == []
@@ -166,7 +166,7 @@ def test_get_planned_migrations(
     collected_migrations: List[Migration],
     executed_migrations: List[Migration],
     exception: Optional[Type[Exception]],
-):
+) -> None:
     for migration in previous_migrations:
         DatabaseMigration(version=migration.version, description=migration.description).save()
     assert DatabaseMigration.objects.distinct("version") == [migration.version for migration in previous_migrations]
@@ -185,7 +185,7 @@ def test_get_planned_migrations(
     ]
 
 
-def test_internal_operations_are_idempotent():
+def test_internal_operations_are_idempotent() -> None:
     plan = Plan(collected_migrations=[migration_ok_a, migration_ok_b])
     plan.rollback()
     plan.rollback()
@@ -199,7 +199,7 @@ def test_internal_operations_are_idempotent():
     plan.rollback()
 
 
-def test_execute_is_idempotent():
+def test_execute_is_idempotent() -> None:
     plan = Plan(collected_migrations=[migration_ok_a, migration_ok_b])
     plan.execute()
     plan.execute()

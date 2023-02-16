@@ -14,7 +14,7 @@ from api.config import AppConfig, UvicornConfig
 
 # see https://github.com/pytest-dev/pytest/issues/363#issuecomment-406536200
 @fixture(scope="session")
-def monkeypatch_session():
+def monkeypatch_session() -> Iterator[MonkeyPatch]:
     monkeypatch_session = MonkeyPatch()
     monkeypatch_session.setenv("CACHE_MONGO_DATABASE", "datasets_server_cache_test")
     monkeypatch_session.setenv("QUEUE_MONGO_DATABASE", "datasets_server_queue_test")
@@ -42,17 +42,17 @@ def processing_steps(app_config: AppConfig) -> List[ProcessingStep]:
 
 
 @fixture(scope="session")
-def first_dataset_processing_step(processing_steps: List[ProcessingStep]):
+def first_dataset_processing_step(processing_steps: List[ProcessingStep]) -> ProcessingStep:
     return next(step for step in processing_steps if step.input_type == "dataset")
 
 
 @fixture(scope="session")
-def first_config_processing_step(processing_steps: List[ProcessingStep]):
+def first_config_processing_step(processing_steps: List[ProcessingStep]) -> ProcessingStep:
     return next(step for step in processing_steps if step.input_type == "config")
 
 
 @fixture(scope="session")
-def first_split_processing_step(processing_steps: List[ProcessingStep]):
+def first_split_processing_step(processing_steps: List[ProcessingStep]) -> ProcessingStep:
     return next(step for step in processing_steps if step.input_type == "split")
 
 
@@ -71,20 +71,20 @@ def queue_mongo_resource(app_config: AppConfig) -> Iterator[QueueMongoResource]:
 
 
 @fixture(scope="session")
-def uvicorn_config(monkeypatch_session: MonkeyPatch):
+def uvicorn_config(monkeypatch_session: MonkeyPatch) -> UvicornConfig:
     return UvicornConfig.from_env()
 
 
 @fixture(scope="session")
-def httpserver_listen_address(uvicorn_config: UvicornConfig):
+def httpserver_listen_address(uvicorn_config: UvicornConfig) -> tuple[str, int]:
     return (uvicorn_config.hostname, uvicorn_config.port)
 
 
 @fixture(scope="session")
-def hf_endpoint(app_config: AppConfig):
+def hf_endpoint(app_config: AppConfig) -> str:
     return app_config.common.hf_endpoint
 
 
 @fixture(scope="session")
-def hf_auth_path(app_config: AppConfig):
+def hf_auth_path(app_config: AppConfig) -> str:
     return app_config.api.hf_auth_path

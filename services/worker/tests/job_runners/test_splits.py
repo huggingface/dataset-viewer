@@ -3,6 +3,7 @@
 
 from dataclasses import replace
 from http import HTTPStatus
+from typing import Callable
 
 import pytest
 from libcommon.exceptions import CustomError
@@ -17,13 +18,15 @@ from worker.resources import LibrariesResource
 
 from ..fixtures.hub import HubDatasets
 
+GetJobRunner = Callable[[str, AppConfig, bool], SplitsJobRunner]
+
 
 @pytest.fixture
 def get_job_runner(
     libraries_resource: LibrariesResource,
     cache_mongo_resource: CacheMongoResource,
     queue_mongo_resource: QueueMongoResource,
-):
+) -> GetJobRunner:
     def _get_job_runner(
         dataset: str,
         app_config: AppConfig,
@@ -55,20 +58,20 @@ def get_job_runner(
     return _get_job_runner
 
 
-def should_skip_job(app_config: AppConfig, hub_public_csv: str, get_job_runner) -> None:
+def should_skip_job(app_config: AppConfig, hub_public_csv: str, get_job_runner: GetJobRunner) -> None:
     dataset = hub_public_csv
-    job_runner = get_job_runner(dataset, app_config)
+    job_runner = get_job_runner(dataset, app_config, False)
     assert not job_runner.should_skip_job()
     # we add an entry to the cache
     job_runner.process()
     assert job_runner.should_skip_job()
-    job_runner = get_job_runner(dataset, app_config, force=True)
+    job_runner = get_job_runner(dataset, app_config, True)
     assert not job_runner.should_skip_job()
 
 
-def test_process(app_config: AppConfig, hub_public_csv: str, get_job_runner) -> None:
+def test_process(app_config: AppConfig, hub_public_csv: str, get_job_runner: GetJobRunner) -> None:
     dataset = hub_public_csv
-    job_runner = get_job_runner(dataset, app_config)
+    job_runner = get_job_runner(dataset, app_config, False)
     assert job_runner.process()
     cached_response = get_response(kind=job_runner.processing_step.cache_kind, dataset=hub_public_csv)
     assert cached_response["http_status"] == HTTPStatus.OK
@@ -81,9 +84,9 @@ def test_process(app_config: AppConfig, hub_public_csv: str, get_job_runner) -> 
     assert "stats" not in content["splits"][0]
 
 
-def test_doesnotexist(app_config: AppConfig, get_job_runner) -> None:
+def test_doesnotexist(app_config: AppConfig, get_job_runner: GetJobRunner) -> None:
     dataset = "doesnotexist"
-    job_runner = get_job_runner(dataset, app_config)
+    job_runner = get_job_runner(dataset, app_config, False)
     assert not job_runner.process()
     with pytest.raises(DoesNotExist):
         get_response(kind=job_runner.processing_step.cache_kind, dataset=dataset)
@@ -106,7 +109,7 @@ def test_doesnotexist(app_config: AppConfig, get_job_runner) -> None:
 )
 def test_compute_splits_response_simple_csv(
     hub_datasets: HubDatasets,
-    get_job_runner,
+    get_job_runner: GetJobRunner,
     name: str,
     use_token: bool,
     error_code: str,
@@ -118,6 +121,7 @@ def test_compute_splits_response_simple_csv(
     job_runner = get_job_runner(
         dataset,
         app_config if use_token else replace(app_config, common=replace(app_config.common, hf_token=None)),
+        False,
     )
     if error_code is None:
         result = job_runner.compute()

@@ -37,7 +37,7 @@ version_too_short = "20221110"
         (version_ok, description, None),
     ],
 )
-def test_migration(version: str, description: str, exception: Optional[Type[Exception]]):
+def test_migration(version: str, description: str, exception: Optional[Type[Exception]]) -> None:
     if exception is None:
         MigrationOK(version=version, description=description)
     else:

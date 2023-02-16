@@ -47,7 +47,7 @@ class Plan:
             logging.info("All migrations have already been applied.")
         return collected_migrations[num_saved_migrations:]
 
-    def execute(self):
+    def execute(self) -> None:
         try:
             self.apply()
         except Exception as e:
@@ -56,7 +56,7 @@ class Plan:
             raise e
             # ^ the script must stop with an error code
 
-    def apply(self):
+    def apply(self) -> None:
         logging.info("Start migrations")
         self.executed_migrations = []
         for migration in self.get_planned_migrations():
@@ -70,7 +70,7 @@ class Plan:
             logging.info(f"Migrate {migration.version}: done")
         logging.info("All migrations have been applied")
 
-    def rollback(self):
+    def rollback(self) -> None:
         logging.info("Start rollback")
         try:
             while self.executed_migrations:
@@ -88,7 +88,7 @@ class Plan:
             )
             raise e
 
-    def save(self, migration: Migration):
+    def save(self, migration: Migration) -> None:
         DatabaseMigration(version=migration.version, description=migration.description).save()
 
     def remove(self, migration: Migration) -> None:

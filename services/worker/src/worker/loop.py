@@ -59,8 +59,8 @@ class Loop:
     def has_memory(self) -> bool:
         if self.worker_config.max_memory_pct <= 0:
             return True
-        virtual_memory_used: int = virtual_memory().used  # type: ignore
-        virtual_memory_total: int = virtual_memory().total  # type: ignore
+        virtual_memory_used = int(virtual_memory().used)
+        virtual_memory_total = int(virtual_memory().total)
         percent = (swap_memory().used + virtual_memory_used) / (swap_memory().total + virtual_memory_total)
         ok = percent < self.worker_config.max_memory_pct
         if not ok:

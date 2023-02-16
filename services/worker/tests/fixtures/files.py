@@ -64,3 +64,52 @@ def extra_fields_readme(tmp_path_factory: pytest.TempPathFactory) -> str:
     with open(path, "w", newline="") as f:
         f.writelines(f"{line}\n" for line in lines)
     return path
+
+
+DATASET_SCRIPT_WITH_EXTERNAL_FILES_CONTENT = """
+import datasets
+
+_URLS = {
+    "train": [
+        "https://huggingface.co/datasets/lhoestq/test/resolve/main/some_text.txt",
+        "https://huggingface.co/datasets/lhoestq/test/resolve/main/another_text.txt",
+    ]
+}
+
+
+class Test(datasets.GeneratorBasedBuilder):
+
+
+    def _info(self):
+        return datasets.DatasetInfo(
+            features=datasets.Features(
+                {
+                    "text": datasets.Value("string"),
+                }
+            ),
+            homepage="https://huggingface.co/datasets/lhoestq/test",
+        )
+
+    def _split_generators(self, dl_manager):
+        downloaded_files = dl_manager.download_and_extract(_URLS)
+
+        return [
+            datasets.SplitGenerator(name=datasets.Split.TRAIN, gen_kwargs={"filepath": downloaded_files["train"]}),
+        ]
+
+    def _generate_examples(self, filepaths):
+        _id = 0
+        for filepath in filepaths:
+            with open(filepath, encoding="utf-8") as f:
+                for line in f:
+                    yield _id, {"text": line.rstrip()}
+                    _id += 1
+"""
+
+
+@pytest.fixture(scope="session")
+def dataset_script_with_external_files_path(tmp_path_factory: pytest.TempPathFactory) -> str:
+    path = str(tmp_path_factory.mktemp("data") / "{dataset_name}.py")
+    with open(path, "w", newline="") as f:
+        f.write(DATASET_SCRIPT_WITH_EXTERNAL_FILES_CONTENT)
+    return path
