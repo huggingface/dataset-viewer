@@ -121,6 +121,7 @@ class Job(Document):
         created_at (`datetime`): The creation date of the job.
         started_at (`datetime`, optional): When the job has started.
         finished_at (`datetime`, optional): When the job has finished.
+        last_heartbeat (`datetime`, optional): Last time the running job got a heartbeat from the worker.
     """
 
     meta = {
