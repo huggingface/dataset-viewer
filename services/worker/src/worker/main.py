@@ -114,7 +114,7 @@ class WorkerExecutor:
 
     def kill_zombies(self) -> None:
         zombies = self.get_zombies()
-        Job.objects(pk__in=[zombie.pk for zombie in zombies]).update(status=Status.ERROR)
+        Job.objects(pk__in=[zombie.pk for zombie in zombies]).update(status=Status.ERROR, finished_at=get_datetime())
 
     def is_worker_alive(self, worker_loop_executor: OutputExecutor) -> bool:
         if not worker_loop_executor.running():
