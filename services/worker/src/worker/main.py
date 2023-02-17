@@ -115,7 +115,7 @@ class WorkerExecutor:
     def kill_zombies(self) -> None:
         zombies = self.get_zombies()
         if zombies:
-            zombies_examples = [zombie.pk for zombie in zombies[:10]]
+            zombies_examples = [str(zombie.pk) for zombie in zombies[:10]]
             zombies_examples_str = ", ".join(zombies_examples) + (
                 "..." if len(zombies_examples) != len(zombies) else ""
             )
