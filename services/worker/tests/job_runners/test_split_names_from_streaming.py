@@ -94,9 +94,9 @@ def test_doesnotexist(app_config: AppConfig, get_job_runner: GetJobRunner) -> No
         ("empty", False, "EmptyDatasetError", "EmptyDatasetError"),
         # should we really test the following cases?
         # The assumption is that the dataset exists and is accessible with the token
-        ("does_not_exist", False, "SplitNamesError", "FileNotFoundError"),
-        ("gated", False, "SplitNamesError", "FileNotFoundError"),
-        ("private", False, "SplitNamesError", "FileNotFoundError"),
+        ("does_not_exist", False, "SplitNamesFromStreamingError", "FileNotFoundError"),
+        ("gated", False, "SplitNamesFromStreamingError", "FileNotFoundError"),
+        ("private", False, "SplitNamesFromStreamingError", "FileNotFoundError"),
     ],
 )
 def test_compute_split_names_response(
