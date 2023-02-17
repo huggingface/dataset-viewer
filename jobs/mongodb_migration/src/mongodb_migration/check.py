@@ -16,8 +16,8 @@ CustomValidation = Callable[[U], None]
 
 
 def get_random_oids(collection: Collection, sample_size: int) -> List[int]:
-    pipeline = [{"$project": {"pk": 1}}, {"$sample": {"size": sample_size}}]
-    return [s["pk"] for s in collection.aggregate(pipeline)]
+    pipeline = [{"$project": {"_id": 1}}, {"$sample": {"size": sample_size}}]
+    return [s["_id"] for s in collection.aggregate(pipeline)]
 
 
 def get_random_documents(DocCls: DocumentClass[Document], sample_size: int) -> Iterator[Document]:
