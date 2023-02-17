@@ -65,6 +65,7 @@ def set_env_vars(
     mp.setenv("WORKER_CONTENT_MAX_BYTES", "10_000_000")
     mp.setenv("WORKER_STATE_PATH", str(worker_state_path))
     mp.setenv("WORKER_HEARTBEAT_TIME_INTERVAL_SECONDS", "1")
+    mp.setenv("WORKER_KILL_ZOMBIES_TIME_INTERVAL_SECONDS", "1")
     yield mp
     mp.undo()
 
