@@ -114,7 +114,15 @@ class WorkerExecutor:
 
     def kill_zombies(self) -> None:
         zombies = self.get_zombies()
-        Job.objects(pk__in=[zombie.pk for zombie in zombies]).update(status=Status.ERROR, finished_at=get_datetime())
+        if zombies:
+            zombies_examples = [zombie.job_id for zombie in zombies[:10]]
+            zombies_examples_str = ", ".join(zombies_examples) + (
+                "..." if len(zombies_examples) != len(zombies) else ""
+            )
+            logging.info(f"Killing {len(zombies)} zombies. Job ids = " + zombies_examples_str)
+            Job.objects(pk__in=[zombie.pk for zombie in zombies]).update(
+                status=Status.ERROR, finished_at=get_datetime()
+            )
 
     def is_worker_alive(self, worker_loop_executor: OutputExecutor) -> bool:
         if not worker_loop_executor.running():
