@@ -95,10 +95,19 @@ class WorkerExecutor:
             return [
                 job
                 for job in started_jobs
-                if job.last_heartbeat is not None
-                and get_datetime()
-                >= pytz.UTC.localize(job.last_heartbeat)
-                + timedelta(seconds=max_missing_heartbeats * heartbeat_time_interval_seconds)
+                if (
+                    job.last_heartbeat is not None
+                    and get_datetime()
+                    >= pytz.UTC.localize(job.last_heartbeat)
+                    + timedelta(seconds=max_missing_heartbeats * heartbeat_time_interval_seconds)
+                )
+                or (
+                    job.last_heartbeat is None
+                    and job.started_at is not None
+                    and get_datetime()
+                    >= pytz.UTC.localize(job.started_at)
+                    + timedelta(seconds=max_missing_heartbeats * heartbeat_time_interval_seconds)
+                )
             ]
         else:
             return []
