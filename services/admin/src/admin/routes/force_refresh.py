@@ -48,7 +48,7 @@ def create_force_refresh_endpoint(
                 if not are_valid_parameters([config, split]):
                     raise MissingRequiredParameterError("Parameters 'config' and 'split' are required")
             logging.info(
-                f"/force-refresh{processing_step.endpoint}, dataset={dataset}, config={config}, split={split}"
+                f"/force-refresh{processing_step.job_type}, dataset={dataset}, config={config}, split={split}"
             )
 
             # if auth_check fails, it will raise an exception that will be caught below

@@ -4,7 +4,6 @@
 from typing import Mapping, Optional
 
 import pytest
-from libcommon.processing_graph import ProcessingStep
 from pytest_httpserver import HTTPServer
 from starlette.testclient import TestClient
 
@@ -18,12 +17,12 @@ def client(monkeypatch_session: pytest.MonkeyPatch) -> TestClient:
     return TestClient(create_app())
 
 
-def test_cors(client: TestClient, first_dataset_processing_step: ProcessingStep) -> None:
+def test_cors(client: TestClient, first_dataset_endpoint: str) -> None:
     origin = "http://localhost:3000"
     method = "GET"
     header = "X-Requested-With"
     response = client.options(
-        f"{first_dataset_processing_step.endpoint}?dataset=dataset1",
+        f"{first_dataset_endpoint}?dataset=dataset1",
         headers={
             "Origin": origin,
             "Access-Control-Request-Method": method,
@@ -83,12 +82,12 @@ def test_get_healthcheck(client: TestClient) -> None:
     assert response.text == "ok"
 
 
-def test_get_step(client: TestClient, first_dataset_processing_step: ProcessingStep) -> None:
+def test_get_endpoint(client: TestClient, first_dataset_endpoint: str) -> None:
     # missing parameter
-    response = client.get(first_dataset_processing_step.endpoint)
+    response = client.get(first_dataset_endpoint)
     assert response.status_code == 422
     # empty parameter
-    response = client.get(f"{first_dataset_processing_step.endpoint}?dataset=")
+    response = client.get(f"{first_dataset_endpoint}?dataset=")
     assert response.status_code == 422
 
 
@@ -104,11 +103,9 @@ def test_get_config_missing_parameter(
     client: TestClient,
     dataset: Optional[str],
     config: Optional[str],
-    first_config_processing_step: ProcessingStep,
+    first_config_endoint: str,
 ) -> None:
-    response = client.get(
-        first_config_processing_step.endpoint, params={"dataset": dataset, "config": config, "split": None}
-    )
+    response = client.get(first_config_endoint, params={"dataset": dataset, "config": config, "split": None})
     assert response.status_code == 422
 
 
@@ -126,11 +123,9 @@ def test_get_split_missing_parameter(
     dataset: Optional[str],
     config: Optional[str],
     split: Optional[str],
-    first_split_processing_step: ProcessingStep,
+    first_split_endpoint: str,
 ) -> None:
-    response = client.get(
-        first_split_processing_step.endpoint, params={"dataset": dataset, "config": config, "split": split}
-    )
+    response = client.get(first_split_endpoint, params={"dataset": dataset, "config": config, "split": split})
     assert response.status_code == 422
 
 

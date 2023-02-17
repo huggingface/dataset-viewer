@@ -2,7 +2,7 @@
 # Copyright 2022 The HuggingFace Authors.
 
 from dataclasses import dataclass, field
-from typing import Optional
+from typing import List, Mapping, Optional
 
 from environs import Env
 from libcommon.config import (
@@ -79,3 +79,27 @@ class AppConfig:
             queue=QueueConfig.from_env(),
             api=ApiConfig.from_env(common_config=common_config),
         )
+
+
+EndpointProcessingStepNamesMapping = Mapping[str, List[str]]
+
+
+@dataclass(frozen=True)
+class EndpointConfig:
+    specification: EndpointProcessingStepNamesMapping = field(
+        default_factory=lambda: {
+            "/config-names": ["/config-names"],
+            "/split-names-from-streaming": ["/split-names-from-streaming"],
+            "/splits": ["/splits"],
+            "/first-rows": ["/first-rows"],
+            "/parquet-and-dataset-info": ["/parquet-and-dataset-info"],
+            "/parquet": ["/parquet"],
+            "/dataset-info": ["/dataset-info"],
+            "/sizes": ["/sizes"],
+        }
+    )
+
+    @classmethod
+    def from_env(cls) -> "EndpointConfig":
+        # TODO: allow passing the mapping between endpoint and processing steps via env vars
+        return cls()

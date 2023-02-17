@@ -3,19 +3,21 @@
 
 import logging
 from http import HTTPStatus
-from typing import List, Optional
+from typing import List, Mapping, Optional
 
 from libcommon.dataset import DatasetError
 from libcommon.operations import PreviousStepError, check_in_process
-from libcommon.processing_graph import ProcessingStep
+from libcommon.processing_graph import ProcessingGraph, ProcessingStep
 from libcommon.simple_cache import DoesNotExist, get_response
 from starlette.requests import Request
 from starlette.responses import Response
 
 from api.authentication import auth_check
+from api.config import EndpointConfig
 from api.utils import (
     ApiCustomError,
     Endpoint,
+    MissingProcessingStepsError,
     MissingRequiredParameterError,
     ResponseNotFoundError,
     ResponseNotReadyError,
@@ -27,8 +29,20 @@ from api.utils import (
 )
 
 
-def create_processing_step_endpoint(
-    processing_step: ProcessingStep,
+class EndpointsDefinition:
+    """Definition of supported endpoints and its relation with processing steps."""
+
+    processing_steps_by_endpoint: Mapping[str, List[ProcessingStep]]
+
+    def __init__(self, graph: ProcessingGraph, endpoint_config: EndpointConfig):
+        self.definition = {
+            endpoint: [graph.get_step(step) for step in processing_steps]
+            for endpoint, processing_steps in endpoint_config.specification.items()
+        }
+
+
+def create_endpoint(
+    processing_steps: List[ProcessingStep],
     init_processing_steps: List[ProcessingStep],
     hf_endpoint: str,
     hf_token: Optional[str] = None,
@@ -37,6 +51,11 @@ def create_processing_step_endpoint(
     max_age_short: int = 0,
 ) -> Endpoint:
     async def processing_step_endpoint(request: Request) -> Response:
+        if not processing_steps:
+            raise MissingProcessingStepsError("Missing processing steps or empty list")
+
+        processing_step = processing_steps[0]
+        # TODO: Add support to iterate over the processing steps list in case of failure
         try:
             dataset = request.query_params.get("dataset")
             if not are_valid_parameters([dataset]) or not dataset:
@@ -54,7 +73,7 @@ def create_processing_step_endpoint(
                 split = request.query_params.get("split")
                 if not are_valid_parameters([config, split]):
                     raise MissingRequiredParameterError("Parameters 'config' and 'split' are required")
-            logging.info(f"{processing_step.endpoint}, dataset={dataset}, config={config}, split={split}")
+            logging.info(f"{processing_step.job_type}, dataset={dataset}, config={config}, split={split}")
 
             # if auth_check fails, it will raise an exception that will be caught below
             auth_check(dataset, external_auth_url=external_auth_url, request=request)

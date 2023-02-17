@@ -417,7 +417,7 @@ class Queue:
             EmptyQueueError: if there is no job in the queue, within the limit of the maximum number of started jobs
             for a dataset
 
-        Returns: the job id, the type (endpoint), the input arguments: dataset, config and split and the force flag
+        Returns: the job id, the type, the input arguments: dataset, config and split and the force flag
         """
         logging.debug("looking for a job to start, among the following types: %s", only_job_types or "all")
         next_waiting_job = self.get_next_waiting_job(only_job_types=only_job_types)

@@ -25,7 +25,7 @@ class DummyJobRunner(DatasetsBasedJobRunner):
     @staticmethod
     def get_job_type() -> str:
         return "/splits"
-        # ^ borrowing the endpoint, so that the processing step exists and the job runner can be initialized
+        # ^ borrowing the type, so that the processing step exists and the job runner can be initialized
         # refactoring libcommon.processing_graph might help avoiding this
 
     @staticmethod
@@ -67,7 +67,7 @@ def get_job_runner(
             },
             app_config=app_config,
             processing_step=ProcessingStep(
-                endpoint=DummyJobRunner.get_job_type(),
+                name=DummyJobRunner.get_job_type(),
                 input_type="split",
                 requires=None,
                 required_by_dataset_viewer=False,

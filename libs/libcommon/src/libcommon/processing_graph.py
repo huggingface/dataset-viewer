@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+import warnings
 from dataclasses import dataclass
 from typing import List, Literal, Mapping, Optional, TypedDict
 
@@ -23,7 +24,7 @@ class ProcessingStep:
     """A dataset processing step.
 
     It contains the details of:
-    - the API endpoint
+    - the step name
     - the cache kind (ie. the key in the cache)
     - the job type (ie. the job to run to compute the response)
     - the job parameters (mainly: ['dataset'] or ['dataset', 'config', 'split'])
@@ -32,7 +33,7 @@ class ProcessingStep:
     - the next steps (the steps which previous step is the current one)
     """
 
-    endpoint: str
+    name: str
     input_type: InputType
     requires: Optional[str]
     required_by_dataset_viewer: bool
@@ -41,14 +42,19 @@ class ProcessingStep:
     children: List[ProcessingStep]
 
     @property
+    def endpoint(self) -> str:
+        warnings.warn("The use of endpoint is deprecated, name will be used instead.", category=DeprecationWarning)
+        return self.name
+
+    @property
     def job_type(self) -> str:
         """The job type (ie. the job to run to compute the response)."""
-        return self.endpoint
+        return self.name
 
     @property
     def cache_kind(self) -> str:
         """The cache kind (ie. the key in the cache)."""
-        return self.endpoint
+        return self.name
 
     def get_ancestors(self) -> List[ProcessingStep]:
         """Get all the ancestors previous steps required to compute the response of the given step."""
@@ -59,7 +65,7 @@ class ProcessingStep:
         else:
             parent_ancestors = self.parent.get_ancestors()
             if self in parent_ancestors:
-                raise ValueError(f"Cycle detected between {self.endpoint} and {self.parent.endpoint}")
+                raise ValueError(f"Cycle detected between {self.job_type} and {self.parent.job_type}")
             self.ancestors = parent_ancestors + [self.parent]
         return self.ancestors
 
@@ -75,7 +81,7 @@ class ProcessingGraph:
     The graph can have multiple roots.
 
     It contains the details of:
-    - the index of all the steps, identified by their endpoint
+    - the index of all the steps, identified by their name
     - the first step, or roots: they don't have a previous step. This means that they will be computed first when a
       dataset is updated.
     """
@@ -85,10 +91,9 @@ class ProcessingGraph:
     required_by_dataset_viewer: List[ProcessingStep]
 
     def __init__(self, processing_graph_specification: ProcessingGraphSpecification):
-        # TODO: validate the graph specification: endpoints must start with "/" and use only lowercase letters
         self.steps = {
-            endpoint: ProcessingStep(
-                endpoint=endpoint,
+            name: ProcessingStep(
+                name=name,
                 input_type=specification["input_type"],
                 requires=specification.get("requires"),
                 required_by_dataset_viewer=specification.get("required_by_dataset_viewer", False),
@@ -96,7 +101,7 @@ class ProcessingGraph:
                 ancestors=[],
                 children=[],
             )
-            for endpoint, specification in processing_graph_specification.items()
+            for name, specification in processing_graph_specification.items()
         }
         self.setup()
 
@@ -112,14 +117,14 @@ class ProcessingGraph:
         self.roots = [step for step in self.steps.values() if step.parent is None]
         self.required_by_dataset_viewer = [step for step in self.steps.values() if step.required_by_dataset_viewer]
 
-    def get_step(self, endpoint: str) -> ProcessingStep:
-        """Get a step by its endpoint."""
-        if endpoint not in self.steps:
-            raise ValueError(f"Unknown endpoint: {endpoint}")
-        return self.steps[endpoint]
+    def get_step(self, name: str) -> ProcessingStep:
+        """Get a step by its name."""
+        if name not in self.steps:
+            raise ValueError(f"Unknown name: {name}")
+        return self.steps[name]
 
     def get_step_by_job_type(self, job_type: str) -> ProcessingStep:
-        # for now: the job_type is just an alias for the endpoint
+        # for now: the job_type is just an alias for the step name
         return self.get_step(job_type)
 
     def get_first_steps(self) -> List[ProcessingStep]:

@@ -15,7 +15,7 @@ from libcommon.simple_cache import DoesNotExist, delete_dataset_responses, get_r
 class PreviousStepError(LoggedError):
     def __init__(self, dataset: str, step: ProcessingStep, config: Optional[str] = None, split: Optional[str] = None):
         super().__init__(
-            f"Response for {step.endpoint} for dataset={dataset}, config={config}, split={split} is an error."
+            f"Response for {step.job_type} for dataset={dataset}, config={config}, split={split} is an error."
         )
 
 

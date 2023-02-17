@@ -33,7 +33,7 @@ def create_pending_jobs_endpoint(
             queue = Queue()
             return get_json_ok_response(
                 {
-                    processing_step.endpoint: queue.get_dump_by_pending_status(job_type=processing_step.job_type)
+                    processing_step.job_type: queue.get_dump_by_pending_status(job_type=processing_step.job_type)
                     for processing_step in processing_steps
                 },
                 max_age=max_age,

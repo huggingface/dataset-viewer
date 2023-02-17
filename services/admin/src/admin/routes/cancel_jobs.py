@@ -26,7 +26,7 @@ def create_cancel_jobs_endpoint(
 ) -> Endpoint:
     async def cancel_jobs_endpoint(request: Request) -> Response:
         try:
-            logging.info(f"/cancel-jobs{processing_step.endpoint}")
+            logging.info(f"/cancel-jobs{processing_step.job_type}")
 
             # if auth_check fails, it will raise an exception that will be caught below
             auth_check(external_auth_url=external_auth_url, request=request, organization=organization)

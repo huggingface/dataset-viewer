@@ -40,7 +40,7 @@ def create_dataset_status_endpoint(
             queue = Queue()
             return get_json_ok_response(
                 {
-                    processing_step.endpoint: {
+                    processing_step.job_type: {
                         "cached_responses": get_dataset_responses_without_content_for_kind(
                             kind=processing_step.cache_kind, dataset=dataset
                         ),
