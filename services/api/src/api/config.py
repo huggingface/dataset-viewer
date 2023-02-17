@@ -81,12 +81,15 @@ class AppConfig:
         )
 
 
+EndpointProcessingStepNamesMapping = Mapping[str, List[str]]
+
+
 @dataclass(frozen=True)
 class EndpointConfig:
-    specification: Mapping[str, List[str]] = field(
+    specification: EndpointProcessingStepNamesMapping = field(
         default_factory=lambda: {
             "/config-names": ["/config-names"],
-            "/split-names": ["/split-names"],
+            "/split-names-from-streaming": ["/split-names-from-streaming"],
             "/splits": ["/splits"],
             "/first-rows": ["/first-rows"],
             "/parquet-and-dataset-info": ["/parquet-and-dataset-info"],
