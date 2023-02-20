@@ -232,11 +232,11 @@ def test_executor_kill_zombies(
     set_long_running_job_in_queue: Job,
     set_zombie_job_in_queue: Job,
     job_runner_factory: JobRunnerFactory,
-    tmp_dataset_repo: Callable[[str], str],
+    tmp_dataset_repo_factory: Callable[[str], str],
     cache_mongo_resource: CacheMongoResource,
 ) -> None:
     zombie = set_zombie_job_in_queue
-    tmp_dataset_repo(zombie.dataset)
+    tmp_dataset_repo_factory(zombie.dataset)
     assert executor.get_zombies() == [zombie]
     try:
         executor.kill_zombies()
