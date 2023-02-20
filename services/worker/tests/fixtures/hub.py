@@ -22,7 +22,7 @@ import pytest
 import requests
 from datasets import Dataset, DatasetBuilder, load_dataset_builder
 from huggingface_hub.constants import REPO_TYPES, REPO_TYPES_URL_PREFIXES
-from huggingface_hub.hf_api import DatasetInfo, HfApi
+from huggingface_hub.hf_api import HfApi
 from huggingface_hub.utils._errors import hf_raise_for_status
 
 from ..constants import CI_HUB_ENDPOINT, CI_URL_TEMPLATE, CI_USER, CI_USER_TOKEN

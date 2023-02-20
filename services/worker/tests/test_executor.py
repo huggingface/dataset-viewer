@@ -15,7 +15,7 @@ from libcommon.processing_graph import ProcessingGraph
 from libcommon.queue import Job, JobInfo, Priority, Status, get_datetime
 from libcommon.resources import CacheMongoResource, QueueMongoResource
 from libcommon.simple_cache import CachedResponse
-from libcommon.storage import StrPath, init_assets_dir
+from libcommon.storage import StrPath
 from mirakuru import ProcessExitedWithError, TimeoutExpired
 from pytest import fixture
 
