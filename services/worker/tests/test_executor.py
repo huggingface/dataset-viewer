@@ -3,21 +3,29 @@ import os
 import sys
 import time
 from datetime import timedelta
+from http import HTTPStatus
 from pathlib import Path
-from typing import Iterator
+from typing import Callable, Iterator
 from unittest.mock import patch
 
 import pytest
 import pytz
 from filelock import FileLock
+from libcommon.processing_graph import ProcessingGraph
 from libcommon.queue import Job, JobInfo, Priority, Status, get_datetime
-from libcommon.resources import QueueMongoResource
+from libcommon.resources import CacheMongoResource, QueueMongoResource
+from libcommon.simple_cache import CachedResponse
+from libcommon.storage import StrPath, init_assets_dir
 from mirakuru import ProcessExitedWithError, TimeoutExpired
 from pytest import fixture
 
 from worker.config import AppConfig
+from worker.job_runner_factory import JobRunnerFactory
 from worker.loop import WorkerState
 from worker.main import WorkerExecutor
+from worker.resources import LibrariesResource
+
+_TIME = int(time.time() * 10e3)
 
 
 def get_job_info(prefix: str = "base") -> JobInfo:
@@ -25,8 +33,8 @@ def get_job_info(prefix: str = "base") -> JobInfo:
     assert len(job_id) <= 24, "please choose a smaller prefix"
     return JobInfo(
         job_id=job_id + "0" * (24 - len(job_id)),
-        type="bar",
-        dataset=f"user/{prefix}_dataset",
+        type="/splits",
+        dataset=f"__DUMMY_DATASETS_SERVER_USER__/{prefix}_dataset_{_TIME}",
         config="default",
         split="train",
         force=False,
@@ -154,45 +162,59 @@ def set_zombie_job_in_queue(queue_mongo_resource: QueueMongoResource) -> Iterato
     job.delete()
 
 
-def test_executor_get_state(app_config: AppConfig, set_worker_state: WorkerState) -> None:
-    executor = WorkerExecutor(app_config)
+@fixture
+def job_runner_factory(
+    app_config: AppConfig, libraries_resource: LibrariesResource, assets_directory: StrPath
+) -> JobRunnerFactory:
+    processing_graph = ProcessingGraph(app_config.processing_graph.specification)
+    return JobRunnerFactory(
+        app_config=app_config,
+        processing_graph=processing_graph,
+        hf_datasets_cache=libraries_resource.hf_datasets_cache,
+        assets_directory=assets_directory,
+    )
+
+
+@fixture
+def executor(app_config: AppConfig, job_runner_factory: JobRunnerFactory) -> WorkerExecutor:
+    return WorkerExecutor(app_config, job_runner_factory)
+
+
+def test_executor_get_state(executor: WorkerExecutor, set_worker_state: WorkerState) -> None:
     assert executor.get_state() == set_worker_state
 
 
-def test_executor_get_empty_state(app_config: AppConfig) -> None:
-    executor = WorkerExecutor(app_config)
+def test_executor_get_empty_state(
+    executor: WorkerExecutor,
+) -> None:
     assert executor.get_state() == WorkerState(current_job_info=None)
 
 
 def test_executor_get_current_job(
-    app_config: AppConfig, set_just_started_job_in_queue: Job, set_worker_state: WorkerState
+    executor: WorkerExecutor, set_just_started_job_in_queue: Job, set_worker_state: WorkerState
 ) -> None:
-    executor = WorkerExecutor(app_config)
     assert executor.get_current_job() == set_just_started_job_in_queue
 
 
-def test_executor_get_nonexisting_current_job(app_config: AppConfig) -> None:
-    executor = WorkerExecutor(app_config)
+def test_executor_get_nonexisting_current_job(executor: WorkerExecutor) -> None:
     assert executor.get_current_job() is None
 
 
 def test_executor_get_zombies(
-    app_config: AppConfig,
+    executor: WorkerExecutor,
     set_just_started_job_in_queue: Job,
     set_long_running_job_in_queue: Job,
     set_zombie_job_in_queue: Job,
 ) -> None:
     zombie = set_zombie_job_in_queue
-    executor = WorkerExecutor(app_config)
     assert executor.get_zombies() == [zombie]
 
 
 def test_executor_heartbeat(
-    app_config: AppConfig,
+    executor: WorkerExecutor,
     set_just_started_job_in_queue: Job,
     set_worker_state: WorkerState,
 ) -> None:
-    executor = WorkerExecutor(app_config)
     current_job = executor.get_current_job()
     assert current_job is not None
     assert current_job.last_heartbeat is None
@@ -205,28 +227,44 @@ def test_executor_heartbeat(
 
 
 def test_executor_kill_zombies(
-    app_config: AppConfig,
+    executor: WorkerExecutor,
     set_just_started_job_in_queue: Job,
     set_long_running_job_in_queue: Job,
     set_zombie_job_in_queue: Job,
+    job_runner_factory: JobRunnerFactory,
+    tmp_dataset_repo: Callable[[str], str],
+    cache_mongo_resource: CacheMongoResource,
 ) -> None:
     zombie = set_zombie_job_in_queue
-    executor = WorkerExecutor(app_config)
+    tmp_dataset_repo(zombie.dataset)
     assert executor.get_zombies() == [zombie]
-    executor.kill_zombies()
-    assert executor.get_zombies() == []
-    assert Job.objects.with_id(zombie.pk).status == Status.ERROR  # type: ignore
+    try:
+        executor.kill_zombies()
+        assert executor.get_zombies() == []
+        assert Job.objects.with_id(zombie.pk).status == Status.ERROR  # type: ignore
+        response = CachedResponse.objects()[0]
+        expected_error = {
+            "error": "Job crashed and was automatically killed from the queue.",
+        }
+        assert response.http_status == HTTPStatus.NOT_IMPLEMENTED
+        assert response.error_code == "JobCrashedError"
+        assert response.dataset == zombie.dataset
+        assert response.config == zombie.config
+        assert response.split == zombie.split
+        assert response.content == expected_error
+        assert response.details == expected_error
+    finally:
+        CachedResponse.objects().delete()
 
 
 def test_executor_start(
-    app_config: AppConfig,
+    executor: WorkerExecutor,
     queue_mongo_resource: QueueMongoResource,
     set_just_started_job_in_queue: Job,
     set_zombie_job_in_queue: Job,
 ) -> None:
     if not queue_mongo_resource.is_available():
         raise RuntimeError("Mongo resource is not available")
-    executor = WorkerExecutor(app_config)
     with patch.object(executor, "heartbeat", wraps=executor.heartbeat) as heartbeat_mock:
         with patch.object(executor, "kill_zombies", wraps=executor.kill_zombies) as kill_zombies_mock:
             with patch("worker.main.START_WORKER_LOOP_PATH", __file__):
@@ -244,14 +282,13 @@ def test_executor_start(
     "bad_worker_loop_type", ["start_worker_loop_that_crashes", "start_worker_loop_that_times_out"]
 )
 def test_executor_raises_on_bad_worker(
-    app_config: AppConfig, queue_mongo_resource: QueueMongoResource, tmp_path: Path, bad_worker_loop_type: str
+    executor: WorkerExecutor, queue_mongo_resource: QueueMongoResource, tmp_path: Path, bad_worker_loop_type: str
 ) -> None:
     if not queue_mongo_resource.is_available():
         raise RuntimeError("Mongo resource is not available")
     bad_start_worker_loop_path = tmp_path / "bad_start_worker_loop.py"
     with bad_start_worker_loop_path.open("w") as bad_start_worker_loop_f:
         bad_start_worker_loop_f.write("raise RuntimeError('Tried to start a bad worker loop.')")
-    executor = WorkerExecutor(app_config)
     with patch.dict(os.environ, {"WORKER_LOOP_TYPE": bad_worker_loop_type}):
         with patch("worker.main.START_WORKER_LOOP_PATH", __file__):
             with pytest.raises((ProcessExitedWithError, TimeoutExpired)):
