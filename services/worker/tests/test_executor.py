@@ -244,10 +244,10 @@ def test_executor_kill_zombies(
         assert Job.objects.with_id(zombie.pk).status == Status.ERROR  # type: ignore
         response = CachedResponse.objects()[0]
         expected_error = {
-            "error": "Job crashed and was automatically killed from the queue.",
+            "error": "Worker crashed while running this job.",
         }
         assert response.http_status == HTTPStatus.NOT_IMPLEMENTED
-        assert response.error_code == "JobCrashedError"
+        assert response.error_code == "WorkerCrashedError"
         assert response.dataset == zombie.dataset
         assert response.config == zombie.config
         assert response.split == zombie.split

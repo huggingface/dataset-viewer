@@ -142,7 +142,7 @@ def delete_hub_dataset_repo(repo_id: str) -> None:
 
 
 @pytest.fixture
-def tmp_dataset_repo() -> Iterator[Callable[[str], str]]:
+def tmp_dataset_repo_factory() -> Iterator[Callable[[str], str]]:
     repo_ids: List[str] = []
 
     def _tmp_dataset_repo(repo_id: str) -> str:

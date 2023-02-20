@@ -39,9 +39,9 @@ async def every(
         await asyncio.sleep(seconds)
 
 
-class JobCrashedError(CustomError):
+class WorkerCrashedError(CustomError):
     def __init__(self, message: str, cause: Optional[BaseException] = None):
-        super().__init__(message, HTTPStatus.NOT_IMPLEMENTED, "JobCrashedError", cause, True)
+        super().__init__(message, HTTPStatus.NOT_IMPLEMENTED, "WorkerCrashedError", cause, True)
 
 
 class WorkerExecutor:
@@ -147,7 +147,7 @@ class WorkerExecutor:
                     priority=zombie.priority,
                 )
                 job_runner = self.job_runner_factory.create_job_runner(job_info)
-                error = JobCrashedError("Job crashed and was automatically killed from the queue.")
+                error = WorkerCrashedError("Worker crashed while running this job.")
                 upsert_response(
                     kind=job_runner.processing_step.cache_kind,
                     dataset=job_runner.dataset,
