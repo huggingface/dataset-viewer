@@ -89,11 +89,9 @@ def compute_config_names_response(
             for config in sorted(get_dataset_config_names(path=dataset, use_auth_token=use_auth_token))
         ]
     except _EmptyDatasetError as err:
-        raise EmptyDatasetError("The dataset is empty. Please fix your loading script.", cause=err) from err
+        raise EmptyDatasetError("The dataset is empty.", cause=err) from err
     except Exception as err:
-        raise ConfigNamesError(
-            "Cannot get the config names for the dataset. Please fix your loading script.", cause=err
-        ) from err
+        raise ConfigNamesError("Cannot get the config names for the dataset.", cause=err) from err
     return {"config_names": config_name_items}
 
 

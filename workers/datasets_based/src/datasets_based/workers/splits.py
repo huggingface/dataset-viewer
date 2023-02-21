@@ -118,11 +118,9 @@ def compute_splits_response(
     try:
         split_items = get_dataset_split_full_names(dataset=dataset, use_auth_token=use_auth_token)
     except _EmptyDatasetError as err:
-        raise EmptyDatasetError("The dataset is empty. Please fix your loading script.", cause=err) from err
+        raise EmptyDatasetError("The dataset is empty.", cause=err) from err
     except Exception as err:
-        raise SplitsNamesError(
-            "Cannot get the split names for the dataset. Please fix your loading script.", cause=err
-        ) from err
+        raise SplitsNamesError("Cannot get the split names for the dataset.", cause=err) from err
     return {"splits": split_items}
 
 

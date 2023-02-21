@@ -468,11 +468,9 @@ def compute_first_rows_response(
     try:
         split_full_names = get_dataset_split_full_names(dataset=dataset, use_auth_token=use_auth_token)
     except _EmptyDatasetError as err:
-        raise EmptyDatasetError("The dataset is empty. Please fix your loading script.", cause=err) from err
+        raise EmptyDatasetError("The dataset is empty.", cause=err) from err
     except Exception as err:
-        raise SplitsNamesError(
-            "Cannot get the split names for the dataset. Please fix your loading script.", cause=err
-        ) from err
+        raise SplitsNamesError("Cannot get the split names for the dataset.", cause=err) from err
     # ^ can raise DatasetNotFoundError or SplitsNamesError
     if config not in [split_full_name["config"] for split_full_name in split_full_names]:
         raise ConfigNotFoundError(f"The config '{config}' does not exist for the dataset.'")
@@ -494,7 +492,7 @@ def compute_first_rows_response(
         )
     except Exception as err:
         raise InfoError(
-            f"The info cannot be fetched for the config '{config}' of the dataset. Please fix your loading script.",
+            f"The info cannot be fetched for the config '{config}' of the dataset.",
             cause=err,
         ) from err
     if not info.features:
@@ -508,16 +506,16 @@ def compute_first_rows_response(
                 use_auth_token=use_auth_token,
             )
             if not isinstance(iterable_dataset, IterableDataset):
-                raise TypeError("load_dataset should return an IterableDataset. Please fix your loading script.")
+                raise TypeError("load_dataset should return an IterableDataset.")
             iterable_dataset = iterable_dataset._resolve_features()
             if not isinstance(iterable_dataset, IterableDataset):
-                raise TypeError("load_dataset should return an IterableDataset. Please fix your loading script.")
+                raise TypeError("load_dataset should return an IterableDataset.")
             features = iterable_dataset.features
         except Exception as err:
             raise FeaturesError(
                 (
                     f"Cannot extract the features (columns) for the split '{split}' of the config '{config}' of the"
-                    " dataset. Please fix your loading script."
+                    " dataset."
                 ),
                 cause=err,
             ) from err
@@ -570,10 +568,7 @@ def compute_first_rows_response(
             )
         if info.size_in_bytes is None or info.size_in_bytes > MAX_SIZE_FALLBACK:
             raise StreamingRowsError(
-                (
-                    "Cannot load the dataset split (in streaming mode) to extract the first rows. Please make your"
-                    " loading script support streaming."
-                ),
+                "Cannot load the dataset split (in streaming mode) to extract the first rows.",
                 cause=err,
             ) from err
         try:
@@ -587,10 +582,7 @@ def compute_first_rows_response(
             )
         except Exception as err:
             raise NormalRowsError(
-                (
-                    "Cannot load the dataset split (in normal download mode) to extract the first rows. Please fix"
-                    " your loading script."
-                ),
+                "Cannot load the dataset split (in normal download mode) to extract the first rows.",
                 cause=err,
             ) from err
     # transform the rows, if needed (e.g. save the images or audio to the assets, and return their URL)

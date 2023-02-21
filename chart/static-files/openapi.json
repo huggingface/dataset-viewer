@@ -102,7 +102,7 @@
             "value": "SplitsResponseNotReadyError"
           },
           "SplitsNamesError": {
-            "summary": "Cannot get the split names for the dataset. Please fix your loading script.",
+            "summary": "Cannot get the split names for the dataset.",
             "value": "SplitsNamesError"
           },
           "UnexpectedError": {
@@ -196,19 +196,19 @@
             "value": "FirstRowsResponseNotReady"
           },
           "InfoError": {
-            "summary": "The info cannot be fetched for the config of the dataset. Please fix your loading script.",
+            "summary": "The info cannot be fetched for the config of the dataset.",
             "value": "InfoError"
           },
           "FeaturesError": {
-            "summary": "Cannot extract the features (columns) for the split of the config of the dataset. Please fix your loading script.",
+            "summary": "Cannot extract the features (columns) for the split of the config of the dataset.",
             "value": "FeaturesError"
           },
           "StreamingRowsError": {
-            "summary": "Cannot load the dataset split (in streaming mode) to extract the first rows. Please make your loading script support streaming",
+            "summary": "Cannot load the dataset split (in streaming mode) to extract the first rows.",
             "value": "StreamingRowsError"
           },
           "NormalRowsError": {
-            "summary": "Cannot load the dataset split (in normal download mode) to extract the first rows. Please fix your loading script.",
+            "summary": "Cannot load the dataset split (in normal download mode) to extract the first rows.",
             "value": "NormalRowsError"
           },
           "RowsPostProcessingError": {

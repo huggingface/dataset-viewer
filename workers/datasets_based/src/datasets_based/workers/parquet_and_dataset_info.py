@@ -523,11 +523,9 @@ def compute_parquet_and_dataset_info_response(
             for config in get_dataset_config_names(path=dataset, revision=source_revision, use_auth_token=hf_token)
         )
     except _EmptyDatasetError as err:
-        raise EmptyDatasetError("The dataset is empty. Please fix your loading script.", cause=err) from err
+        raise EmptyDatasetError("The dataset is empty.", cause=err) from err
     except Exception as err:
-        raise ConfigNamesError(
-            "Cannot get the config names for the dataset. Please fix your loading script.", cause=err
-        ) from err
+        raise ConfigNamesError("Cannot get the config names for the dataset.", cause=err) from err
 
     # prepare the parquet files locally
     parquet_files: List[ParquetFile] = []
