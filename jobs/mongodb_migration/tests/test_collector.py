@@ -4,7 +4,7 @@
 from mongodb_migration.collector import MigrationsCollector
 
 
-def test_collector():
+def test_collector() -> None:
     collector = MigrationsCollector()
     migrations = collector.get_migrations()
     assert len(migrations) >= 1

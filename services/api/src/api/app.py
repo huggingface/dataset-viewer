@@ -3,7 +3,10 @@
 
 from typing import List
 
-import uvicorn  # type: ignore
+import uvicorn
+from libcommon.log import init_logging
+from libcommon.processing_graph import ProcessingGraph
+from libcommon.resources import CacheMongoResource, QueueMongoResource, Resource
 from starlette.applications import Starlette
 from starlette.middleware import Middleware
 from starlette.middleware.cors import CORSMiddleware
@@ -11,17 +14,26 @@ from starlette.middleware.gzip import GZipMiddleware
 from starlette.routing import BaseRoute, Route
 from starlette_prometheus import PrometheusMiddleware
 
-from api.config import AppConfig, UvicornConfig
+from api.config import AppConfig, EndpointConfig, UvicornConfig
 from api.prometheus import Prometheus
+from api.routes.endpoint import EndpointsDefinition, create_endpoint
 from api.routes.healthcheck import healthcheck_endpoint
-from api.routes.processing_step import create_processing_step_endpoint
 from api.routes.valid import create_is_valid_endpoint, create_valid_endpoint
 from api.routes.webhook import create_webhook_endpoint
 
 
 def create_app() -> Starlette:
     app_config = AppConfig.from_env()
+
+    init_logging(log_level=app_config.common.log_level)
+    # ^ set first to have logs as soon as possible
+
     prometheus = Prometheus()
+
+    processing_graph = ProcessingGraph(app_config.processing_graph.specification)
+    endpoints_definition = EndpointsDefinition(processing_graph, EndpointConfig.from_env())
+    processing_steps_required_by_dataset_viewer = processing_graph.get_steps_required_by_dataset_viewer()
+    init_processing_steps = processing_graph.get_first_steps()
 
     middleware = [
         Middleware(
@@ -30,11 +42,20 @@ def create_app() -> Starlette:
         Middleware(GZipMiddleware),
         Middleware(PrometheusMiddleware, filter_unhandled_paths=True),
     ]
+
+    cache_resource = CacheMongoResource(database=app_config.cache.mongo_database, host=app_config.cache.mongo_url)
+    queue_resource = QueueMongoResource(database=app_config.queue.mongo_database, host=app_config.queue.mongo_url)
+    resources: list[Resource] = [cache_resource, queue_resource]
+    if not cache_resource.is_available():
+        raise RuntimeError("The connection to the cache database could not be established. Exiting.")
+    if not queue_resource.is_available():
+        raise RuntimeError("The connection to the queue database could not be established. Exiting.")
+
     valid: List[BaseRoute] = [
         Route(
             "/valid",
             endpoint=create_valid_endpoint(
-                processing_steps_for_valid=app_config.processing_graph.graph.get_steps_required_by_dataset_viewer(),
+                processing_steps_for_valid=processing_steps_required_by_dataset_viewer,
                 max_age_long=app_config.api.max_age_long,
                 max_age_short=app_config.api.max_age_short,
             ),
@@ -42,35 +63,35 @@ def create_app() -> Starlette:
         Route(
             "/is-valid",
             endpoint=create_is_valid_endpoint(
-                external_auth_url=app_config.external_auth_url,
-                processing_steps_for_valid=app_config.processing_graph.graph.get_steps_required_by_dataset_viewer(),
+                external_auth_url=app_config.api.external_auth_url,
+                processing_steps_for_valid=processing_steps_required_by_dataset_viewer,
                 max_age_long=app_config.api.max_age_long,
                 max_age_short=app_config.api.max_age_short,
             ),
         )
         # ^ called by https://github.com/huggingface/model-evaluator
     ]
-    processing_steps: List[BaseRoute] = [
+    endpoints: List[BaseRoute] = [
         Route(
-            processing_step.endpoint,
-            endpoint=create_processing_step_endpoint(
-                processing_step=processing_step,
-                init_processing_steps=app_config.processing_graph.graph.get_first_steps(),
+            endpoint_name,
+            endpoint=create_endpoint(
+                processing_steps=processing_steps,
+                init_processing_steps=init_processing_steps,
                 hf_endpoint=app_config.common.hf_endpoint,
                 hf_token=app_config.common.hf_token,
-                external_auth_url=app_config.external_auth_url,
+                external_auth_url=app_config.api.external_auth_url,
                 max_age_long=app_config.api.max_age_long,
                 max_age_short=app_config.api.max_age_short,
             ),
         )
-        for processing_step in list(app_config.processing_graph.graph.steps.values())
+        for endpoint_name, processing_steps in endpoints_definition.definition.items()
     ]
     to_protect: List[BaseRoute] = [
         # called by the Hub webhooks
         Route(
             "/webhook",
             endpoint=create_webhook_endpoint(
-                init_processing_steps=app_config.processing_graph.graph.get_first_steps(),
+                init_processing_steps=init_processing_steps,
                 hf_endpoint=app_config.common.hf_endpoint,
                 hf_token=app_config.common.hf_token,
             ),
@@ -82,8 +103,9 @@ def create_app() -> Starlette:
         # called by Prometheus
         Route("/metrics", endpoint=prometheus.endpoint),
     ]
-    routes: List[BaseRoute] = valid + processing_steps + to_protect + protected
-    return Starlette(routes=routes, middleware=middleware)
+    routes: List[BaseRoute] = valid + endpoints + to_protect + protected
+
+    return Starlette(routes=routes, middleware=middleware, on_shutdown=[resource.release for resource in resources])
 
 
 def start() -> None:

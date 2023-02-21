@@ -9,7 +9,7 @@ from api.config import AppConfig
 from api.routes.valid import get_valid, is_valid
 
 dataset_step = ProcessingStep(
-    endpoint="/dataset-step",
+    name="/dataset-step",
     input_type="dataset",
     requires=None,
     required_by_dataset_viewer=False,
@@ -18,7 +18,7 @@ dataset_step = ProcessingStep(
     children=[],
 )
 config_step = ProcessingStep(
-    endpoint="/config-step",
+    name="/config-step",
     input_type="config",
     requires=None,
     required_by_dataset_viewer=False,
@@ -27,7 +27,7 @@ config_step = ProcessingStep(
     children=[],
 )
 split_step = ProcessingStep(
-    endpoint="/split-step",
+    name="/split-step",
     input_type="split",
     requires=None,
     required_by_dataset_viewer=False,
@@ -109,6 +109,6 @@ def test_errors() -> None:
         kind=dataset_step.cache_kind, dataset=dataset_c, content={}, http_status=HTTPStatus.INTERNAL_SERVER_ERROR
     )
     assert get_valid(processing_steps_for_valid=processing_steps_for_valid) == [dataset_a, dataset_b]
-    assert is_valid(dataset=dataset_a, processing_steps_for_valid=processing_steps_for_valid) is True
-    assert is_valid(dataset=dataset_b, processing_steps_for_valid=processing_steps_for_valid) is True
-    assert is_valid(dataset=dataset_c, processing_steps_for_valid=processing_steps_for_valid) is False
+    assert is_valid(dataset=dataset_a, processing_steps_for_valid=processing_steps_for_valid)
+    assert is_valid(dataset=dataset_b, processing_steps_for_valid=processing_steps_for_valid)
+    assert not is_valid(dataset=dataset_c, processing_steps_for_valid=processing_steps_for_valid)

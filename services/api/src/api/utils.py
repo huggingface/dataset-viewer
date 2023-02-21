@@ -1,6 +1,7 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2022 The HuggingFace Authors.
 
+import logging
 from http import HTTPStatus
 from typing import Any, Callable, Coroutine, List, Literal, Optional
 
@@ -16,6 +17,7 @@ ApiErrorCode = Literal[
     "UnexpectedError",
     "ExternalUnauthenticatedError",
     "ExternalAuthenticatedError",
+    "MissingProcessingStepsError",
 ]
 
 
@@ -59,6 +61,7 @@ class UnexpectedError(ApiCustomError):
 
     def __init__(self, message: str, cause: Optional[BaseException] = None):
         super().__init__(message, HTTPStatus.INTERNAL_SERVER_ERROR, "UnexpectedError", cause)
+        logging.error(message, exc_info=cause)
 
 
 class ExternalUnauthenticatedError(ApiCustomError):
@@ -76,6 +79,13 @@ class ExternalAuthenticatedError(ApiCustomError):
 
     def __init__(self, message: str):
         super().__init__(message, HTTPStatus.NOT_FOUND, "ExternalAuthenticatedError")
+
+
+class MissingProcessingStepsError(ApiCustomError):
+    """Raised when an endpoint does not have related processing steps."""
+
+    def __init__(self, message: str):
+        super().__init__(message, HTTPStatus.UNPROCESSABLE_ENTITY, "MissingProcessingStepsError")
 
 
 class OrjsonResponse(JSONResponse):

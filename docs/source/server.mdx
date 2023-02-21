@@ -25,7 +25,7 @@ You might've noticed the `/valid` and `/is-valid` endpoints don't have a job in 
 
 Workers are responsible for executing the jobs in the queue. They complete the actual preprocessing requests, such as getting a list of splits and configurations. The workers can be controlled by configurable environment variables, like the minimum or the maximum number of rows returned by a worker or the maximum number of jobs to start per dataset user or organization.
 
-Take a look at the [workers configuration](https://github.com/huggingface/datasets-server/tree/main/workers/datasets_based#configuration) for a complete list of the environment variables if you're interested in learning more.
+Take a look at the [workers configuration](https://github.com/huggingface/datasets-server/tree/main/services/worker#configuration) for a complete list of the environment variables if you're interested in learning more.
 
 ## Cache
 

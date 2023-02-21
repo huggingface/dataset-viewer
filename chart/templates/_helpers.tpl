@@ -82,8 +82,8 @@ imagePullSecrets:
 {{ include "datasetsServer.images.image" (dict "imageRoot" .Values.images.services.api "global" .Values.global.huggingface) }}
 {{- end -}}
 
-{{- define "workers.datasetsBased.image" -}}
-{{ include "datasetsServer.images.image" (dict "imageRoot" .Values.images.workers.datasetsBased "global" .Values.global.huggingface) }}
+{{- define "services.worker.image" -}}
+{{ include "datasetsServer.images.image" (dict "imageRoot" .Values.images.services.worker "global" .Values.global.huggingface) }}
 {{- end -}}
 
 {{- define "image.imagePullSecrets" -}}
@@ -126,44 +126,9 @@ app.kubernetes.io/component: "{{ include "name" . }}-admin"
 app.kubernetes.io/component: "{{ include "name" . }}-api"
 {{- end -}}
 
-{{- define "labels.configNames" -}}
+{{- define "labels.worker" -}}
 {{ include "datasetServer.labels" . }}
-app.kubernetes.io/component: "{{ include "name" . }}-worker-config-names"
-{{- end -}}
-
-{{- define "labels.splitNames" -}}
-{{ include "datasetServer.labels" . }}
-app.kubernetes.io/component: "{{ include "name" . }}-worker-split-names"
-{{- end -}}
-
-{{- define "labels.splits" -}}
-{{ include "datasetServer.labels" . }}
-app.kubernetes.io/component: "{{ include "name" . }}-worker-splits"
-{{- end -}}
-
-{{- define "labels.firstRows" -}}
-{{ include "datasetServer.labels" . }}
-app.kubernetes.io/component: "{{ include "name" . }}-worker-first-rows"
-{{- end -}}
-
-{{- define "labels.parquetAndDatasetInfo" -}}
-{{ include "datasetServer.labels" . }}
-app.kubernetes.io/component: "{{ include "name" . }}-worker-parquet-and-dataset-info"
-{{- end -}}
-
-{{- define "labels.parquet" -}}
-{{ include "datasetServer.labels" . }}
-app.kubernetes.io/component: "{{ include "name" . }}-worker-parquet"
-{{- end -}}
-
-{{- define "labels.datasetInfo" -}}
-{{ include "datasetServer.labels" . }}
-app.kubernetes.io/component: "{{ include "name" . }}-worker-dataset-info"
-{{- end -}}
-
-{{- define "labels.sizes" -}}
-{{ include "datasetServer.labels" . }}
-app.kubernetes.io/component: "{{ include "name" . }}-worker-sizes"
+app.kubernetes.io/component: "{{ include "name" . }}-worker"
 {{- end -}}
 
 {{/*
@@ -181,10 +146,21 @@ Datasets Server base url
 {{- end }}
 
 {{/*
+Return the ingress scheme
+*/}}
+{{- define "datasetsServer.ingress.scheme" -}}
+{{- if .Values.global.huggingface.ingress.ssl -}}
+https://
+{{- else -}}
+http://
+{{- end -}}
+{{- end -}}
+
+{{/*
 The assets base URL
 */}}
 {{- define "assets.baseUrl" -}}
-{{- printf "https://%s/assets" (include "datasetsServer.ingress.hostname" .) }}
+{{- printf "%s%s/assets" (include "datasetsServer.ingress.scheme" .) (include "datasetsServer.ingress.hostname" .) }}
 {{- end }}
 
 {{/*

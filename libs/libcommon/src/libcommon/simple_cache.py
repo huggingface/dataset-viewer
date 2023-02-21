@@ -19,7 +19,7 @@ from typing import (
 
 from bson import ObjectId
 from bson.errors import InvalidId
-from mongoengine import Document, DoesNotExist, connect
+from mongoengine import Document, DoesNotExist
 from mongoengine.fields import (
     DateTimeField,
     DictField,
@@ -28,6 +28,8 @@ from mongoengine.fields import (
     StringField,
 )
 from mongoengine.queryset.queryset import QuerySet
+
+from libcommon.constants import CACHE_MONGOENGINE_ALIAS
 
 # START monkey patching ### hack ###
 # see https://github.com/sbdchd/mongo-types#install
@@ -49,10 +51,6 @@ class QuerySetManager(Generic[U]):
 # END monkey patching ### hack ###
 
 
-def connect_to_cache_database(database: str, host: str) -> None:
-    connect(database, alias="cache", host=host)
-
-
 def get_datetime() -> datetime:
     return datetime.now(timezone.utc)
 
@@ -65,12 +63,12 @@ class SplitFullName(NamedTuple):
     split: Optional[str]
 
 
-# cache of any endpoint
+# cache of any job
 class CachedResponse(Document):
-    """A response to an endpoint request, cached in the mongoDB database
+    """A response computed for a job, cached in the mongoDB database
 
     Args:
-        kind (`str`): The kind of the cached response, identifies the endpoint
+        kind (`str`): The kind of the cached response, identifies the job type
         dataset (`str`): The requested dataset.
         config (`str`, optional): The requested config, if any.
         split (`str`, optional): The requested split, if any.
@@ -101,7 +99,7 @@ class CachedResponse(Document):
 
     meta = {
         "collection": "cachedResponsesBlue",
-        "db_alias": "cache",
+        "db_alias": CACHE_MONGOENGINE_ALIAS,
         "indexes": [
             ("kind", "dataset", "config", "split"),
             ("dataset", "kind", "http_status"),
@@ -177,6 +175,21 @@ def get_response_without_content(
         "worker_version": response.worker_version,
         "dataset_git_revision": response.dataset_git_revision,
     }
+
+
+def get_dataset_responses_without_content_for_kind(kind: str, dataset: str) -> List[CacheEntryWithoutContent]:
+    responses = CachedResponse.objects(kind=kind, dataset=dataset).only(
+        "http_status", "error_code", "worker_version", "dataset_git_revision"
+    )
+    return [
+        {
+            "http_status": response.http_status,
+            "error_code": response.error_code,
+            "worker_version": response.worker_version,
+            "dataset_git_revision": response.dataset_git_revision,
+        }
+        for response in responses
+    ]
 
 
 class CacheEntry(CacheEntryWithoutContent):

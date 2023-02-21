@@ -25,12 +25,12 @@
       "path": "../services/api"
     },
     {
-      "name": "services/reverse-proxy",
-      "path": "../services/reverse-proxy"
+      "name": "services/worker",
+      "path": "../services/worker"
     },
     {
-      "name": "workers/datasets_based",
-      "path": "../workers/datasets_based"
+      "name": "services/reverse-proxy",
+      "path": "../services/reverse-proxy"
     }
   ],
   "settings": {
@@ -38,8 +38,7 @@
       "e2e": true,
       "jobs": true,
       "libs": true,
-      "services": true,
-      "workers": true
+      "services": true
     },
     "python.formatting.provider": "black",
     "python.linting.enabled": true,

@@ -56,8 +56,8 @@ def create_valid_endpoint(
             logging.info("/valid")
             content = {"valid": get_valid(processing_steps_for_valid=processing_steps_for_valid)}
             return get_json_ok_response(content, max_age=max_age_long)
-        except Exception:
-            return get_json_api_error_response(UnexpectedError("Unexpected error."), max_age=max_age_short)
+        except Exception as e:
+            return get_json_api_error_response(UnexpectedError("Unexpected error.", e), max_age=max_age_short)
 
     return valid_endpoint
 
@@ -73,7 +73,7 @@ def create_is_valid_endpoint(
         try:
             dataset = request.query_params.get("dataset")
             logging.info(f"/is-valid, dataset={dataset}")
-            if not are_valid_parameters([dataset]):
+            if not are_valid_parameters([dataset]) or not dataset:
                 raise MissingRequiredParameterError("Parameter 'dataset' is required")
             # if auth_check fails, it will raise an exception that will be caught below
             auth_check(dataset, external_auth_url=external_auth_url, request=request)
@@ -83,7 +83,7 @@ def create_is_valid_endpoint(
             return get_json_ok_response(content=content, max_age=max_age_long)
         except ApiCustomError as e:
             return get_json_api_error_response(error=e, max_age=max_age_short)
-        except Exception:
-            return get_json_api_error_response(error=UnexpectedError("Unexpected error."), max_age=max_age_short)
+        except Exception as e:
+            return get_json_api_error_response(error=UnexpectedError("Unexpected error.", e), max_age=max_age_short)
 
     return is_valid_endpoint

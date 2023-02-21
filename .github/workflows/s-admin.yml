@@ -31,5 +31,3 @@ jobs:
     uses: ./.github/workflows/_unit-tests-python.yml
     with:
       working-directory: services/admin
-  e2e-tests:
-    uses: ./.github/workflows/_e2e_tests.yml

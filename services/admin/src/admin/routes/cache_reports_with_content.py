@@ -52,7 +52,7 @@ def create_cache_reports_with_content_endpoint(
                 ) from e
         except AdminCustomError as e:
             return get_json_admin_error_response(e, max_age=max_age)
-        except Exception:
-            return get_json_admin_error_response(UnexpectedError("Unexpected error."), max_age=max_age)
+        except Exception as e:
+            return get_json_admin_error_response(UnexpectedError("Unexpected error.", e), max_age=max_age)
 
     return cache_reports_with_content_endpoint

@@ -5,7 +5,7 @@ from .fixtures.hub import DatasetRepos
 from .utils import get
 
 
-def test_is_valid_after_datasets_processed(hf_dataset_repos_csv_data: DatasetRepos):
+def test_is_valid_after_datasets_processed(hf_dataset_repos_csv_data: DatasetRepos) -> None:
     # this test ensures that a dataset processed successfully returns true in /is-valid
     response = get("/is-valid")
     assert response.status_code == 422, f"{response.status_code} - {response.text}"
@@ -13,7 +13,7 @@ def test_is_valid_after_datasets_processed(hf_dataset_repos_csv_data: DatasetRep
     public = hf_dataset_repos_csv_data["public"]
     response = get(f"/is-valid?dataset={public}")
     assert response.status_code == 200, f"{response.status_code} - {response.text}"
-    assert response.json()["valid"] is True, response.text
+    assert response.json()["valid"], response.text
     # without authentication, we get a 401 error when requesting a non-existing dataset
     response = get("/is-valid?dataset=non-existing-dataset")
     assert response.status_code == 401, f"{response.status_code} - {response.text}"

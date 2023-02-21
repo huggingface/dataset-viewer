@@ -1,7 +1,7 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2022 The HuggingFace Authors.
 
-from typing import List, Optional, Type
+from typing import Iterator, List, Optional, Type
 
 import pytest
 
@@ -11,11 +11,17 @@ from mongodb_migration.database_migrations import (
 )
 from mongodb_migration.migration import IrreversibleMigration, Migration
 from mongodb_migration.plan import Plan, SavedMigrationsError
+from mongodb_migration.resources import MigrationsMongoResource
 
 
 @pytest.fixture(autouse=True)
-def clean_mongo_database() -> None:
-    _clean_maintenance_database()
+def migrations_mongo_resource(mongo_host: str) -> Iterator[MigrationsMongoResource]:
+    database = "datasets_server_migrations_test"
+    if "test" not in database:
+        raise ValueError("Test must be launched on a test mongo database")
+    with MigrationsMongoResource(database=database, host=mongo_host) as resource:
+        yield resource
+        _clean_maintenance_database()
 
 
 class MigrationOK(Migration):
@@ -73,7 +79,7 @@ class MigrationErrorIrreversible(Migration):
         pass
 
 
-def test_empty_plan():
+def test_empty_plan() -> None:
     plan = Plan(collected_migrations=[])
 
     assert plan.collected_migrations == []
@@ -100,7 +106,7 @@ migration_error_irreversible = MigrationErrorIrreversible(
         [migration_ok_b, migration_ok_a],
     ),
 )
-def test_collected_migrations_order_dont_matter(collected_migrations: List[Migration]):
+def test_collected_migrations_order_dont_matter(collected_migrations: List[Migration]) -> None:
     assert DatabaseMigration.objects.distinct("version") == []
     plan = Plan(collected_migrations=collected_migrations)
     assert plan.executed_migrations == []
@@ -127,7 +133,7 @@ def test_collected_migrations_order_dont_matter(collected_migrations: List[Migra
 )
 def test_errors_in_migration_steps(
     collected_migrations: List[Migration], executed_migrations: List[Migration], exception: Optional[Type[Exception]]
-):
+) -> None:
     assert DatabaseMigration.objects.distinct("version") == []
     plan = Plan(collected_migrations=collected_migrations)
     assert plan.executed_migrations == []
@@ -160,7 +166,7 @@ def test_get_planned_migrations(
     collected_migrations: List[Migration],
     executed_migrations: List[Migration],
     exception: Optional[Type[Exception]],
-):
+) -> None:
     for migration in previous_migrations:
         DatabaseMigration(version=migration.version, description=migration.description).save()
     assert DatabaseMigration.objects.distinct("version") == [migration.version for migration in previous_migrations]
@@ -179,7 +185,7 @@ def test_get_planned_migrations(
     ]
 
 
-def test_internal_operations_are_idempotent():
+def test_internal_operations_are_idempotent() -> None:
     plan = Plan(collected_migrations=[migration_ok_a, migration_ok_b])
     plan.rollback()
     plan.rollback()
@@ -193,7 +199,7 @@ def test_internal_operations_are_idempotent():
     plan.rollback()
 
 
-def test_execute_is_idempotent():
+def test_execute_is_idempotent() -> None:
     plan = Plan(collected_migrations=[migration_ok_a, migration_ok_b])
     plan.execute()
     plan.execute()

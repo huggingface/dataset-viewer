@@ -28,7 +28,7 @@ make dev-start
 In development mode, you don't need to rebuild the docker images to apply a change in a worker.
 You can just restart the worker's docker container and it will apply your changes.
 
-To install a single job (in [jobs](./jobs)), library (in [libs](./libs)), service (in [services](./services)) or worker (in [workers](./workers)), go to their respective directory, and install Python 3.9 (consider [pyenv](https://github.com/pyenv/pyenv)) and [poetry](https://python-poetry.org/docs/master/#installation) (don't forget to add `poetry` to the `PATH` environment variable).
+To install a single job (in [jobs](./jobs)), library (in [libs](./libs)) or service (in [services](./services)), go to their respective directory, and install Python 3.9 (consider [pyenv](https://github.com/pyenv/pyenv)) and [poetry](https://python-poetry.org/docs/master/#installation) (don't forget to add `poetry` to the `PATH` environment variable).
 
 If you use pyenv:
 
@@ -51,12 +51,11 @@ If you use VSCode, it might be useful to use the ["monorepo" workspace](./.vscod
 
 ## Architecture
 
-The repository is structured as a monorepo, with Python libraries and applications in [jobs](./jobs)), [libs](./libs), [services](./services) and [workers](./workers):
+The repository is structured as a monorepo, with Python libraries and applications in [jobs](./jobs)), [libs](./libs) and [services](./services):
 
 - [jobs](./jobs) contains the one-time jobs run by Helm before deploying the pods. For now, the only job migrates the databases when needed.
 - [libs](./libs) contains the Python libraries used by the services and workers. For now, the only library is [libcommon](./libs/libcommon), which contains the common code for the services and workers.
-- [services](./services) contains the applications: the public API, the admin API (which is separated from the public API and might be published under its own domain at some point) and the reverse proxy.
-- [workers](./workers) contains the workers that process the queue asynchronously: they get a "job" (caution: not the Helm jobs, but the jobs stored in the queue), process the expected response for the associated endpoint, and store the response in the cache.
+- [services](./services) contains the applications: the public API, the admin API (which is separated from the public API and might be published under its own domain at some point), the reverse proxy, and the worker that processes the queue asynchronously: it gets a "job" (caution: the jobs stored in the queue, not the Helm jobs), processes the expected response for the associated endpoint, and stores the response in the cache.
 
 If you have access to the internal HF notion, see https://www.notion.so/huggingface2/Datasets-server-464848da2a984e999c540a4aa7f0ece5.
 
@@ -64,7 +63,7 @@ The application is distributed in several components.
 
 [api](./services/api) is a web server that exposes the [API endpoints](https://huggingface.co/docs/datasets-server). Apart from some endpoints (`valid`, `is-valid`), all the responses are served from pre-computed responses. That's the main point of this project: generating these responses takes time, and the API server provides this service to the users.
 
-The precomputed responses are stored in a Mongo database called "cache". They are computed by [workers](./workers) which take their jobs from a job queue stored in a Mongo database called "queue", and store the results (error or valid response) into the "cache" (see [libcommon](./libs/libcommon)).
+The precomputed responses are stored in a Mongo database called "cache". They are computed by [workers](./services/worker) which take their jobs from a job queue stored in a Mongo database called "queue", and store the results (error or valid response) into the "cache" (see [libcommon](./libs/libcommon)).
 
 The API service exposes the `/webhook` endpoint which is called by the Hub on every creation, update or deletion of a dataset on the Hub. On deletion, the cached responses are deleted. On creation or update, a new job is appended in the "queue" database.
 
@@ -156,7 +155,7 @@ GITHUB_TOKEN=xxx
 
 ## Mac OS
 
-To install the [datasets based worker](./workers/datasets_based) on Mac OS, you can follow the next steps.
+To install the [worker](./services/worker) on Mac OS, you can follow the next steps.
 
 ### First: as an administrator
 
@@ -219,7 +218,7 @@ $ pyenv install 3.9.15
 Check that the expected local version of Python is used:
 
 ```bash
-$ cd workers/datasets_based
+$ cd services/worker
 $ python --version
 Python 3.9.15
 ```

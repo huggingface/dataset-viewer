@@ -5,16 +5,13 @@
 
 import time
 from contextlib import contextmanager, suppress
-from typing import Iterable, Literal, Mapping, Optional, TypedDict
+from typing import Any, Callable, Iterator, Literal, Mapping, Optional, TypedDict
 
 import pytest
 import requests
-from huggingface_hub.hf_api import (
-    REPO_TYPES,
-    REPO_TYPES_URL_PREFIXES,
-    HfApi,
-    hf_raise_for_status,
-)
+from huggingface_hub.constants import REPO_TYPES, REPO_TYPES_URL_PREFIXES
+from huggingface_hub.hf_api import HfApi
+from huggingface_hub.utils._errors import hf_raise_for_status
 
 # see https://github.com/huggingface/moon-landing/blob/main/server/scripts/staging-seed-db.ts
 CI_HUB_USER = "__DUMMY_DATASETS_SERVER_USER__"
@@ -36,8 +33,8 @@ def update_repo_settings(
     token: Optional[str] = None,
     organization: Optional[str] = None,
     repo_type: Optional[str] = None,
-    name: str = None,
-) -> Mapping[str, bool]:
+    name: Optional[str] = None,
+) -> Any:
     """Update the settings of a repository.
     Args:
         repo_id (`str`, *optional*):
@@ -97,7 +94,7 @@ def update_repo_settings(
 
 
 @pytest.fixture(scope="session")
-def hf_api():
+def hf_api() -> HfApi:
     return HfApi(endpoint=CI_HUB_ENDPOINT)
 
 
@@ -107,23 +104,23 @@ def hf_token() -> str:
 
 
 @pytest.fixture
-def cleanup_repo(hf_api: HfApi):
-    def _cleanup_repo(repo_id):
+def cleanup_repo(hf_api: HfApi) -> Callable[[str], None]:
+    def _cleanup_repo(repo_id: str) -> None:
         hf_api.delete_repo(repo_id=repo_id, token=CI_HUB_USER_API_TOKEN, repo_type="dataset")
 
     return _cleanup_repo
 
 
 @pytest.fixture
-def temporary_repo(cleanup_repo):
+def temporary_repo(cleanup_repo: Callable[[str], None]) -> Callable[[str], Iterator[str]]:
     @contextmanager
-    def _temporary_repo(repo_id):
+    def _temporary_repo(repo_id: str) -> Iterator[str]:
         try:
             yield repo_id
         finally:
             cleanup_repo(repo_id)
 
-    return _temporary_repo
+    return _temporary_repo  # type: ignore
 
 
 def create_unique_repo_name(prefix: str, user: str) -> str:
@@ -132,7 +129,7 @@ def create_unique_repo_name(prefix: str, user: str) -> str:
 
 
 def create_hf_dataset_repo_csv_data(
-    hf_api: HfApi, hf_token: str, csv_path: str, *, private=False, gated=False, user=CI_HUB_USER
+    hf_api: HfApi, hf_token: str, csv_path: str, *, private: bool = False, gated: bool = False, user: str = CI_HUB_USER
 ) -> str:
     repo_id = create_unique_repo_name("repo_csv_data", user)
     hf_api.create_repo(repo_id=repo_id, token=hf_token, repo_type="dataset", private=private)
@@ -150,7 +147,7 @@ def create_hf_dataset_repo_csv_data(
 
 # https://docs.pytest.org/en/6.2.x/fixture.html#yield-fixtures-recommended
 @pytest.fixture(scope="session", autouse=True)
-def hf_public_dataset_repo_csv_data(hf_api: HfApi, hf_token: str, csv_path: str) -> Iterable[str]:
+def hf_public_dataset_repo_csv_data(hf_api: HfApi, hf_token: str, csv_path: str) -> Iterator[str]:
     repo_id = create_hf_dataset_repo_csv_data(hf_api=hf_api, hf_token=hf_token, csv_path=csv_path)
     yield repo_id
     with suppress(requests.exceptions.HTTPError, ValueError):
@@ -158,7 +155,7 @@ def hf_public_dataset_repo_csv_data(hf_api: HfApi, hf_token: str, csv_path: str)
 
 
 @pytest.fixture(scope="session", autouse=True)
-def hf_public_2_dataset_repo_csv_data(hf_api: HfApi, hf_token: str, csv_path: str) -> Iterable[str]:
+def hf_public_2_dataset_repo_csv_data(hf_api: HfApi, hf_token: str, csv_path: str) -> Iterator[str]:
     repo_id = create_hf_dataset_repo_csv_data(hf_api=hf_api, hf_token=hf_token, csv_path=csv_path)
     yield repo_id
     with suppress(requests.exceptions.HTTPError, ValueError):
@@ -166,7 +163,7 @@ def hf_public_2_dataset_repo_csv_data(hf_api: HfApi, hf_token: str, csv_path: st
 
 
 @pytest.fixture(scope="session", autouse=True)
-def hf_private_dataset_repo_csv_data(hf_api: HfApi, hf_token: str, csv_path: str) -> Iterable[str]:
+def hf_private_dataset_repo_csv_data(hf_api: HfApi, hf_token: str, csv_path: str) -> Iterator[str]:
     repo_id = create_hf_dataset_repo_csv_data(hf_api=hf_api, hf_token=hf_token, csv_path=csv_path, private=True)
     yield repo_id
     with suppress(requests.exceptions.HTTPError, ValueError):
@@ -174,7 +171,7 @@ def hf_private_dataset_repo_csv_data(hf_api: HfApi, hf_token: str, csv_path: str
 
 
 @pytest.fixture(scope="session", autouse=True)
-def hf_gated_dataset_repo_csv_data(hf_api: HfApi, hf_token: str, csv_path: str) -> Iterable[str]:
+def hf_gated_dataset_repo_csv_data(hf_api: HfApi, hf_token: str, csv_path: str) -> Iterator[str]:
     repo_id = create_hf_dataset_repo_csv_data(hf_api=hf_api, hf_token=hf_token, csv_path=csv_path, gated=True)
     yield repo_id
     with suppress(requests.exceptions.HTTPError, ValueError):
@@ -193,10 +190,10 @@ DatasetReposType = Literal["public", "public2", "private", "gated"]
 
 @pytest.fixture(scope="session", autouse=True)
 def hf_dataset_repos_csv_data(
-    hf_public_dataset_repo_csv_data,
-    hf_public_2_dataset_repo_csv_data,
-    hf_private_dataset_repo_csv_data,
-    hf_gated_dataset_repo_csv_data,
+    hf_public_dataset_repo_csv_data: str,
+    hf_public_2_dataset_repo_csv_data: str,
+    hf_private_dataset_repo_csv_data: str,
+    hf_gated_dataset_repo_csv_data: str,
 ) -> DatasetRepos:
     return {
         "public": hf_public_dataset_repo_csv_data,
