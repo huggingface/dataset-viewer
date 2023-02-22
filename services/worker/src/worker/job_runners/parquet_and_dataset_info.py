@@ -775,13 +775,18 @@ def compute_parquet_and_dataset_info_response(
     dataset_info: Dict[str, Any] = {}
     download_config = DownloadConfig(delete_extracted=True)
     for config in config_names:
-        builder = load_dataset_builder(path=dataset, name=config, revision=source_revision, use_auth_token=hf_token)
+        builder = load_dataset_builder(
+            path=dataset,
+            name=config,
+            revision=source_revision,
+            use_auth_token=hf_token,
+            download_config=download_config,
+        )
         raise_if_too_big_from_external_data_files(
             builder=builder,
             max_dataset_size=max_dataset_size,
             max_external_data_files=max_external_data_files,
             hf_token=hf_token,
-            download_config=download_config,
         )
         builder.download_and_prepare(file_format="parquet")  # the parquet files are stored in the cache dir
         dataset_info[config] = asdict(builder.info)  # type: ignore
