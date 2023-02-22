@@ -1877,13 +1877,13 @@
                   "missing-config": {
                     "summary": "The config parameter is missing.",
                     "value": {
-                      "error": "Parameters 'config' and 'split' are required"
+                      "error": "Parameter 'config' is required"
                     }
                   },
                   "missing-split": {
                     "summary": "The split parameter is missing.",
                     "value": {
-                      "error": "Parameters 'config' and 'split' are required"
+                      "error": "Operation not supported or not found"
                     }
                   },
                   "empty-dataset": {
@@ -1895,13 +1895,13 @@
                   "empty-config": {
                     "summary": "The config parameter is empty.",
                     "value": {
-                      "error": "Parameters 'config' and 'split' are required"
+                      "error": "Parameter 'config' is required"
                     }
                   },
                   "empty-split": {
                     "summary": "The split parameter is empty.",
                     "value": {
-                      "error": "Parameters 'config' and 'split' are required"
+                      "error": "Operation not supported or not found"
                     }
                   }
                 }
