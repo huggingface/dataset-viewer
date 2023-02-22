@@ -63,12 +63,12 @@ class SplitFullName(NamedTuple):
     split: Optional[str]
 
 
-# cache of any endpoint
+# cache of any job
 class CachedResponse(Document):
-    """A response to an endpoint request, cached in the mongoDB database
+    """A response computed for a job, cached in the mongoDB database
 
     Args:
-        kind (`str`): The kind of the cached response, identifies the endpoint
+        kind (`str`): The kind of the cached response, identifies the job type
         dataset (`str`): The requested dataset.
         config (`str`, optional): The requested config, if any.
         split (`str`, optional): The requested split, if any.
@@ -175,6 +175,21 @@ def get_response_without_content(
         "worker_version": response.worker_version,
         "dataset_git_revision": response.dataset_git_revision,
     }
+
+
+def get_dataset_responses_without_content_for_kind(kind: str, dataset: str) -> List[CacheEntryWithoutContent]:
+    responses = CachedResponse.objects(kind=kind, dataset=dataset).only(
+        "http_status", "error_code", "worker_version", "dataset_git_revision"
+    )
+    return [
+        {
+            "http_status": response.http_status,
+            "error_code": response.error_code,
+            "worker_version": response.worker_version,
+            "dataset_git_revision": response.dataset_git_revision,
+        }
+        for response in responses
+    ]
 
 
 class CacheEntry(CacheEntryWithoutContent):

@@ -19,7 +19,8 @@ def test_cors(client: TestClient) -> None:
     origin = "http://localhost:3000"
     method = "GET"
     header = "X-Requested-With"
-    response = client.options(
+    response = client.request(
+        "options",
         "/pending-jobs",
         headers={
             "Origin": origin,
@@ -44,13 +45,13 @@ def test_cors(client: TestClient) -> None:
 
 
 def test_get_healthcheck(client: TestClient) -> None:
-    response = client.get("/healthcheck")
+    response = client.request("get", "/healthcheck")
     assert response.status_code == 200
     assert response.text == "ok"
 
 
 def test_metrics(client: TestClient) -> None:
-    response = client.get("/metrics")
+    response = client.request("get", "/metrics")
     assert response.status_code == 200
     text = response.text
     lines = text.split("\n")
@@ -63,11 +64,22 @@ def test_metrics(client: TestClient) -> None:
 
 
 def test_pending_jobs(client: TestClient, processing_steps: List[ProcessingStep]) -> None:
-    response = client.get("/pending-jobs")
+    response = client.request("get", "/pending-jobs")
     assert response.status_code == 200
     json = response.json()
     for processing_step in processing_steps:
         assert json[processing_step.job_type] == {"waiting": [], "started": []}
+
+
+def test_dataset_status(client: TestClient, processing_steps: List[ProcessingStep]) -> None:
+    response = client.request("get", "/dataset-status")
+    assert response.status_code == 422
+    response = client.request("get", "/dataset-status", params={"dataset": "test-dataset"})
+    assert response.status_code == 200
+    json = response.json()
+    for processing_step in processing_steps:
+        assert not json[processing_step.job_type]["cached_responses"]
+        assert not json[processing_step.job_type]["jobs"]
 
 
 @pytest.mark.parametrize(
@@ -85,9 +97,9 @@ def test_cache_reports(
     http_status: int,
     error_code: Optional[str],
 ) -> None:
-    path = processing_steps[0].endpoint
+    path = processing_steps[0].job_type
     cursor_str = f"?cursor={cursor}" if cursor else ""
-    response = client.get(f"/cache-reports{path}{cursor_str}")
+    response = client.request("get", f"/cache-reports{path}{cursor_str}")
     assert response.status_code == http_status
     if error_code:
         assert isinstance(response.json()["error"], str)
@@ -112,9 +124,9 @@ def test_cache_reports_with_content(
     http_status: int,
     error_code: Optional[str],
 ) -> None:
-    path = processing_steps[0].endpoint
+    path = processing_steps[0].job_type
     cursor_str = f"?cursor={cursor}" if cursor else ""
-    response = client.get(f"/cache-reports-with-content{path}{cursor_str}")
+    response = client.request("get", f"/cache-reports-with-content{path}{cursor_str}")
     assert response.status_code == http_status
     if error_code:
         assert isinstance(response.json()["error"], str)

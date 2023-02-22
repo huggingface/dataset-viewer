@@ -73,7 +73,7 @@ def create_is_valid_endpoint(
         try:
             dataset = request.query_params.get("dataset")
             logging.info(f"/is-valid, dataset={dataset}")
-            if not are_valid_parameters([dataset]):
+            if not are_valid_parameters([dataset]) or not dataset:
                 raise MissingRequiredParameterError("Parameter 'dataset' is required")
             # if auth_check fails, it will raise an exception that will be caught below
             auth_check(dataset, external_auth_url=external_auth_url, request=request)

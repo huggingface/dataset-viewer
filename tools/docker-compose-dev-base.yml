@@ -16,19 +16,19 @@ services:
       QUEUE_MONGO_URL: ${QUEUE_MONGO_URL-mongodb://mongodb} # use mongo container by default
       QUEUE_MONGO_DATABASE: ${QUEUE_MONGO_DATABASE-datasets_server_queue}
       # worker
-      WORKER_LOOP_MAX_DISK_USAGE_PCT: ${WORKER_LOOP_MAX_DISK_USAGE_PCT-90}
-      WORKER_LOOP_MAX_LOAD_PCT: ${WORKER_LOOP_MAX_LOAD_PCT-70}
-      WORKER_LOOP_MAX_MEMORY_PCT: ${WORKER_LOOP_MAX_MEMORY_PCT-80}
-      WORKER_LOOP_SLEEP_SECONDS: ${WORKER_LOOP_SLEEP_SECONDS-15}
+      WORKER_CONTENT_MAX_BYTES: ${WORKER_CONTENT_MAX_BYTES-10_000_000}
+      WORKER_MAX_DISK_USAGE_PCT: ${WORKER_MAX_DISK_USAGE_PCT-90}
+      WORKER_MAX_LOAD_PCT: ${WORKER_MAX_LOAD_PCT-70}
+      WORKER_MAX_MEMORY_PCT: ${WORKER_MAX_MEMORY_PCT-80}
+      WORKER_SLEEP_SECONDS: ${WORKER_SLEEP_SECONDS-15}
   datasets-worker:
     extends:
       service: common
     environment:
       # datasets
       DATASETS_BASED_HF_DATASETS_CACHE: ${HF_DATASETS_CACHE-/datasets-cache}
-      DATASETS_BASED_CONTENT_MAX_BYTES: ${DATASETS_BASED_CONTENT_MAX_BYTES-10_000_000}
       HF_MODULES_CACHE: ${HF_DATASETS_CACHE-/modules-cache}
       NUMBA_CACHE_DIR: ${NUMBA_CACHE_DIR-/numba-cache}
     # volumes to local source directory for development
     volumes:
-      - ../workers/datasets_based/src:/src/workers/datasets_based/src
+      - ../services/worker/src:/src/services/worker/src

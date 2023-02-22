@@ -2,10 +2,16 @@
 # Copyright 2022 The HuggingFace Authors.
 
 from dataclasses import dataclass, field
+from types import TracebackType
+from typing import Optional, Type, TypeVar
 
 from mongoengine.connection import ConnectionFailure, connect, disconnect
+from pymongo import MongoClient
+from pymongo.errors import ServerSelectionTimeoutError
 
 from libcommon.constants import CACHE_MONGOENGINE_ALIAS, QUEUE_MONGOENGINE_ALIAS
+
+T = TypeVar("T", bound="Resource")
 
 
 @dataclass
@@ -13,7 +19,8 @@ class Resource:
     """
     A resource that can be allocated and released.
 
-    The method allocate() is called when the resource is created. The method release() allows to free the resource.
+    The method allocate() is called when the resource is created.
+    The method release() allows to free the resource.
 
     It can be used as a context manager, in which case the resource is released when the context is exited.
 
@@ -21,22 +28,27 @@ class Resource:
         >>> with Resource() as resource:
         ...     pass
 
-    Resources should be inherited from this class and implement the allocate() and release() methods.
+    Resources should be inherited from this class and must implement the allocate(), check() and release() methods.
     """
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         self.allocate()
 
-    def __enter__(self):
+    def __enter__(self: T) -> T:
         return self
 
-    def __exit__(self, exc_type, exc_value, traceback):
+    def __exit__(
+        self,
+        exc_type: Optional[Type[BaseException]],
+        exc_value: Optional[BaseException],
+        traceback: Optional[TracebackType],
+    ) -> None:
         self.release()
 
-    def allocate(self):
+    def allocate(self) -> None:
         pass
 
-    def release(self):
+    def release(self) -> None:
         pass
 
 
@@ -48,6 +60,8 @@ class MongoConnectionFailure(Exception):
 class MongoResource(Resource):
     """
     A base resource that represents a connection to a database.
+
+    The method is_available() allows to check if the resource is available. It's not called automatically.
 
     Args:
         database (:obj:`str`): The name of the mongo database.
@@ -62,9 +76,11 @@ class MongoResource(Resource):
     mongoengine_alias: str
     server_selection_timeout_ms: int = 30_000
 
-    def allocate(self):
+    _client: MongoClient = field(init=False)
+
+    def allocate(self) -> None:
         try:
-            connect(
+            self._client = connect(
                 db=self.database,
                 host=self.host,
                 alias=self.mongoengine_alias,
@@ -73,7 +89,15 @@ class MongoResource(Resource):
         except ConnectionFailure as e:
             raise MongoConnectionFailure(f"Failed to connect to MongoDB: {e}") from e
 
-    def release(self):
+    def is_available(self) -> bool:
+        """Check if the connection is available."""
+        try:
+            self._client.is_mongos
+            return True
+        except ServerSelectionTimeoutError:
+            return False
+
+    def release(self) -> None:
         disconnect(alias=self.mongoengine_alias)
 
 

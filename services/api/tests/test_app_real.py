@@ -1,6 +1,7 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2022 The HuggingFace Authors.
 
+from typing import Iterator
 
 from pytest import MonkeyPatch, fixture, mark
 from starlette.testclient import TestClient
@@ -11,7 +12,7 @@ from api.config import AppConfig
 
 # see https://github.com/pytest-dev/pytest/issues/363#issuecomment-406536200
 @fixture(scope="module")
-def real_monkeypatch():
+def real_monkeypatch() -> Iterator[MonkeyPatch]:
     monkeypatch = MonkeyPatch()
     monkeypatch.setenv("CACHE_MONGO_DATABASE", "datasets_server_cache_test")
     monkeypatch.setenv("QUEUE_MONGO_DATABASE", "datasets_server_queue_test")

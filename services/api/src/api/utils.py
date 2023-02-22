@@ -17,6 +17,7 @@ ApiErrorCode = Literal[
     "UnexpectedError",
     "ExternalUnauthenticatedError",
     "ExternalAuthenticatedError",
+    "MissingProcessingStepsError",
 ]
 
 
@@ -78,6 +79,13 @@ class ExternalAuthenticatedError(ApiCustomError):
 
     def __init__(self, message: str):
         super().__init__(message, HTTPStatus.NOT_FOUND, "ExternalAuthenticatedError")
+
+
+class MissingProcessingStepsError(ApiCustomError):
+    """Raised when an endpoint does not have related processing steps."""
+
+    def __init__(self, message: str):
+        super().__init__(message, HTTPStatus.UNPROCESSABLE_ENTITY, "MissingProcessingStepsError")
 
 
 class OrjsonResponse(JSONResponse):

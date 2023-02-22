@@ -1,5 +1,7 @@
 ## Datasets-server Admin UI
 
+Deployed at (internal) https://huggingface.co/spaces/datasets-maintainers/datasets-server-admin-ui
+
 ### Setup:
 
 ```

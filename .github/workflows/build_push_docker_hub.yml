@@ -20,8 +20,8 @@ jobs:
             project: admin
           - directory: services
             project: api
-          - directory: workers
-            project: datasets_based
+          - directory: services
+            project: worker
     runs-on: "ubuntu-latest"
     steps:
       - name: Checkout repository
