@@ -503,7 +503,7 @@ def _request_size(url: str, hf_token: Optional[str] = None) -> Optional[int]:
     return int(size) if size is not None else size
 
 
-class _MockStreamingDownloadManager(StreamingDownloadManager):
+class _MockStreamingDownloadManager(StreamingDownloadManager):  # type: ignore
     def __init__(self, *args: Any, **kwargs: Any) -> None:
         super().__init__(*args, **kwargs)
         self.ext_data_files: List[str] = []
