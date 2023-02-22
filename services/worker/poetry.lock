@@ -963,19 +963,19 @@ toml = ">=0.10.0,<0.11.0"
 
 [[package]]
 name = "datasets"
-version = "2.9.0"
+version = "2.10.0"
 description = "HuggingFace community-driven open-source library of datasets"
 category = "main"
 optional = false
 python-versions = ">=3.7.0"
 files = [
-    {file = "datasets-2.9.0-py3-none-any.whl", hash = "sha256:f1aa5b98959cddb30f5077448204c8ce4235a4f1c8ec2473920660ebd6fc304f"},
-    {file = "datasets-2.9.0.tar.gz", hash = "sha256:c82458d635539b5a5dbed0fba8837006dfc3c213a5bcc00e18a67789f0f0f16f"},
+    {file = "datasets-2.10.0-py3-none-any.whl", hash = "sha256:42968d0cc88608ebc4a92a2fc26b4cd65e38f3ce3f5bb90a468cae6a6f0de989"},
+    {file = "datasets-2.10.0.tar.gz", hash = "sha256:c2ddab0899e17590fe39bc5783828ac9a7331c74508ab7a345ea0dca3112ead0"},
 ]
 
 [package.dependencies]
 aiohttp = "*"
-dill = "<0.3.7"
+dill = ">=0.3.0,<0.3.7"
 fsspec = {version = ">=2021.11.1", extras = ["http"]}
 huggingface-hub = ">=0.2.0,<1.0.0"
 librosa = {version = "*", optional = true, markers = "extra == \"audio\""}
@@ -994,15 +994,16 @@ xxhash = "*"
 [package.extras]
 apache-beam = ["apache-beam (>=2.26.0,<2.44.0)"]
 audio = ["librosa"]
-benchmarks = ["numpy (==1.18.5)", "tensorflow (==2.3.0)", "torch (==1.7.1)", "transformers (==3.0.2)"]
-dev = ["Pillow (>=6.2.1)", "absl-py", "apache-beam (>=2.26.0,<2.44.0)", "black (>=22.0,<23.0)", "elasticsearch (<8.0.0)", "faiss-cpu (>=1.6.4)", "flake8 (>=3.8.3)", "isort (>=5.0.0)", "librosa", "lz4", "py7zr", "pytest", "pytest-datadir", "pytest-xdist", "pyyaml (>=5.3.1)", "rarfile (>=4.0)", "s3fs", "s3fs (>=2021.11.1)", "soundfile", "tensorflow (>=2.3,!=2.6.0,!=2.6.1)", "tensorflow-macos", "torch", "torchaudio (<0.12.0)", "transformers", "zstandard"]
+benchmarks = ["numpy (==1.18.5)", "protobuf (==3.20.3)", "tensorflow (==2.3.0)", "torch (==1.7.1)", "transformers (==3.0.2)"]
+dev = ["Pillow (>=6.2.1)", "absl-py", "apache-beam (>=2.26.0,<2.44.0)", "black (>=23.1,<24.0)", "elasticsearch (<8.0.0)", "faiss-cpu (>=1.6.4)", "librosa", "lz4", "py7zr", "pytest", "pytest-datadir", "pytest-xdist", "pyyaml (>=5.3.1)", "rarfile (>=4.0)", "ruff (>=0.0.241)", "s3fs", "s3fs (>=2021.11.1)", "soundfile", "tensorflow (>=2.3,!=2.6.0,!=2.6.1)", "tensorflow-macos", "tiktoken", "torch", "torchaudio (<0.12.0)", "transformers", "zstandard"]
 docs = ["s3fs"]
-metrics-tests = ["Werkzeug (>=1.0.1)", "bert-score (>=0.3.6)", "jiwer", "langdetect", "mauve-text", "nltk", "requests-file (>=1.5.1)", "rouge-score", "sacrebleu", "sacremoses", "scikit-learn", "scipy", "sentencepiece", "seqeval", "six (>=1.15.0,<1.16.0)", "spacy (>=3.0.0)", "sqlalchemy", "texttable (>=1.6.3)", "tldextract", "tldextract (>=3.1.0)", "toml (>=0.10.1)", "typer (<0.5.0)"]
-quality = ["black (>=22.0,<23.0)", "flake8 (>=3.8.3)", "isort (>=5.0.0)", "pyyaml (>=5.3.1)"]
+jax = ["jax (>=0.2.8,!=0.3.2,<=0.3.25)", "jaxlib (>=0.1.65,<=0.3.25)"]
+metrics-tests = ["Werkzeug (>=1.0.1)", "bert-score (>=0.3.6)", "jiwer", "langdetect", "mauve-text", "nltk", "requests-file (>=1.5.1)", "rouge-score", "sacrebleu", "sacremoses", "scikit-learn", "scipy", "sentencepiece", "seqeval", "six (>=1.15.0,<1.16.0)", "spacy (>=3.0.0)", "sqlalchemy (<2.0.0)", "texttable (>=1.6.3)", "tldextract", "tldextract (>=3.1.0)", "toml (>=0.10.1)", "typer (<0.5.0)"]
+quality = ["black (>=23.1,<24.0)", "pyyaml (>=5.3.1)", "ruff (>=0.0.241)"]
 s3 = ["s3fs"]
 tensorflow = ["tensorflow (>=2.2.0,!=2.6.0,!=2.6.1)", "tensorflow-macos"]
 tensorflow-gpu = ["tensorflow-gpu (>=2.2.0,!=2.6.0,!=2.6.1)"]
-tests = ["Pillow (>=6.2.1)", "absl-py", "apache-beam (>=2.26.0,<2.44.0)", "elasticsearch (<8.0.0)", "faiss-cpu (>=1.6.4)", "librosa", "lz4", "py7zr", "pytest", "pytest-datadir", "pytest-xdist", "rarfile (>=4.0)", "s3fs (>=2021.11.1)", "soundfile", "tensorflow (>=2.3,!=2.6.0,!=2.6.1)", "tensorflow-macos", "torch", "torchaudio (<0.12.0)", "transformers", "zstandard"]
+tests = ["Pillow (>=6.2.1)", "absl-py", "apache-beam (>=2.26.0,<2.44.0)", "elasticsearch (<8.0.0)", "faiss-cpu (>=1.6.4)", "librosa", "lz4", "py7zr", "pytest", "pytest-datadir", "pytest-xdist", "rarfile (>=4.0)", "s3fs (>=2021.11.1)", "soundfile", "tensorflow (>=2.3,!=2.6.0,!=2.6.1)", "tensorflow-macos", "tiktoken", "torch", "torchaudio (<0.12.0)", "transformers", "zstandard"]
 torch = ["torch"]
 vision = ["Pillow (>=6.2.1)"]
 
@@ -5490,4 +5491,4 @@ cffi = ["cffi (>=1.11)"]
 [metadata]
 lock-version = "2.0"
 python-versions = "3.9.15"
-content-hash = "c20f6820064117295d9db223142b9ccdafd534b12c3304e3fa51ccf3dbcd622f"
+content-hash = "2bf2596d9309ec8715c9bf1e89f590057e44c8cd7e143d9f4bff3d27b9a51c5b"
