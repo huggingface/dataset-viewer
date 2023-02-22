@@ -305,7 +305,7 @@ def create_dataset_info_response_for_csv(dataset: str, config: str) -> Any:
         "download_checksums": {
             f"https://hub-ci.huggingface.co/datasets/{dataset}/resolve/__COMMIT__/dataset.csv": {
                 "num_bytes": 50,
-                "checksum": "441b6927a5442803821415bdcb0f418731b0d2a525a7f2e68ce0df0e95d444de",
+                "checksum": None,
             }
         },
         "download_size": 50,
