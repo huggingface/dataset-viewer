@@ -75,7 +75,7 @@ def create_app() -> Starlette:
         Route(
             endpoint_name,
             endpoint=create_endpoint(
-                processing_steps=processing_steps,
+                input_types=input_types,
                 init_processing_steps=init_processing_steps,
                 hf_endpoint=app_config.common.hf_endpoint,
                 hf_token=app_config.common.hf_token,
@@ -84,7 +84,7 @@ def create_app() -> Starlette:
                 max_age_short=app_config.api.max_age_short,
             ),
         )
-        for endpoint_name, processing_steps in endpoints_definition.definition.items()
+        for endpoint_name, input_types in endpoints_definition.definition.items()
     ]
     to_protect: List[BaseRoute] = [
         # called by the Hub webhooks

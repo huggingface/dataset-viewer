@@ -55,3 +55,28 @@ def test_splits_using_openapi(status: int, name: str, dataset: str, error_code: 
         assert r_splits.headers["X-Error-Code"] == error_code, r_splits.headers["X-Error-Code"]
     else:
         assert "X-Error-Code" not in r_splits.headers, r_splits.headers["X-Error-Code"]
+
+
+@pytest.mark.parametrize(
+    "status,dataset,config,error_code",
+    [
+        # (200, "duorc", "SelfRC", None),
+        (422, "inexistent-dataset-with-split", "my_config", "MissingRequiredParameter"),
+    ],
+)
+def test_splits_with_config_using_openapi(status: int, dataset: str, config: str, error_code: str) -> None:
+    r_splits = (
+        poll(f"/splits?dataset={dataset}&config={config}&split=extra_param", error_field="error")
+        if error_code
+        else poll(f"/splits?dataset={dataset}&config={config}")
+    )
+
+    assert r_splits.status_code == status, f"{r_splits.status_code} - {r_splits.text}"
+
+    if error_code is None:
+        assert all(split["config"] == config for split in r_splits.json()["split_names"])
+        # all splits must belong to the provided config
+
+        assert "X-Error-Code" not in r_splits.headers, r_splits.headers["X-Error-Code"]
+    else:
+        assert r_splits.headers["X-Error-Code"] == error_code, r_splits.headers["X-Error-Code"]

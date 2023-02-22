@@ -1,16 +1,16 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2022 The HuggingFace Authors.
 
-from typing import Iterator, List, Mapping
+from typing import Iterator
 
-from libcommon.processing_graph import ProcessingGraph, ProcessingStep
+from libcommon.processing_graph import ProcessingGraph
 from libcommon.queue import _clean_queue_database
 from libcommon.resources import CacheMongoResource, QueueMongoResource
 from libcommon.simple_cache import _clean_cache_database
 from pytest import MonkeyPatch, fixture
 
 from api.config import AppConfig, EndpointConfig, UvicornConfig
-from api.routes.endpoint import EndpointsDefinition
+from api.routes.endpoint import EndpointProcessingStepsMapping, EndpointsDefinition
 
 
 # see https://github.com/pytest-dev/pytest/issues/363#issuecomment-406536200
@@ -37,36 +37,36 @@ def app_config(monkeypatch_session: MonkeyPatch) -> AppConfig:
 
 
 @fixture(scope="session")
-def endpoint_definition(app_config: AppConfig) -> Mapping[str, List[ProcessingStep]]:
+def endpoint_definition(app_config: AppConfig) -> EndpointProcessingStepsMapping:
     processing_graph = ProcessingGraph(app_config.processing_graph.specification)
     endpoint_specification = EndpointsDefinition(processing_graph, EndpointConfig.from_env())
     return endpoint_specification.definition
 
 
 @fixture(scope="session")
-def first_dataset_endpoint(endpoint_definition: Mapping[str, List[ProcessingStep]]) -> str:
+def first_dataset_endpoint(endpoint_definition: EndpointProcessingStepsMapping) -> str:
     return next(
         endpoint
-        for endpoint, processing_steps in endpoint_definition.items()
-        if next((step for step in processing_steps if step.input_type == "dataset"), None)
+        for endpoint, input_types in endpoint_definition.items()
+        if next((endpoint for input_type, _ in input_types.items() if input_type == "dataset"), None)
     )
 
 
 @fixture(scope="session")
-def first_config_endoint(endpoint_definition: Mapping[str, List[ProcessingStep]]) -> str:
+def first_config_endoint(endpoint_definition: EndpointProcessingStepsMapping) -> str:
     return next(
         endpoint
-        for endpoint, processing_steps in endpoint_definition.items()
-        if next((step for step in processing_steps if step.input_type == "config"), None)
+        for endpoint, input_types in endpoint_definition.items()
+        if next((endpoint for input_type, _ in input_types.items() if input_type == "config"), None)
     )
 
 
 @fixture(scope="session")
-def first_split_endpoint(endpoint_definition: Mapping[str, List[ProcessingStep]]) -> str:
+def first_split_endpoint(endpoint_definition: EndpointProcessingStepsMapping) -> str:
     return next(
         endpoint
-        for endpoint, processing_steps in endpoint_definition.items()
-        if next((step for step in processing_steps if step.input_type == "split"), None)
+        for endpoint, input_types in endpoint_definition.items()
+        if next((endpoint for input_type, _ in input_types.items() if input_type == "split"), None)
     )
 
 
