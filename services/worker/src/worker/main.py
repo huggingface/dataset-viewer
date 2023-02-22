@@ -41,7 +41,7 @@ async def every(
 
 class WorkerCrashedError(CustomError):
     def __init__(self, message: str, cause: Optional[BaseException] = None):
-        super().__init__(message, HTTPStatus.NOT_IMPLEMENTED, "WorkerCrashedError", cause, True)
+        super().__init__(message, HTTPStatus.NOT_IMPLEMENTED, "WorkerCrashedError", cause, False)
 
 
 class WorkerExecutor:
