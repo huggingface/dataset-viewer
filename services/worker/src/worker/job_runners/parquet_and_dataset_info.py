@@ -14,10 +14,12 @@ from urllib.parse import quote
 
 import datasets
 import datasets.config
+import datasets.info
 import numpy as np
 import requests
 from datasets import (
     DownloadConfig,
+    get_dataset_config_info,
     get_dataset_config_names,
     get_dataset_infos,
     load_dataset_builder,
@@ -650,6 +652,25 @@ def raise_if_too_big_from_external_data_files(
                 ) from error
 
 
+def get_writer_batch_size(ds_config_info: datasets.info.DatasetInfo) -> Optional[int]:
+    """
+    Get the writer_batch_size that defines the maximum row group size in the parquet files.
+    The default in `datasets` is 1,000 but we lower it to 100 for image datasets.
+    This allows to optimize random access to parquet file, since accessing 1 row requires
+    to read its entire row group.
+
+    Args:
+        ds_config_info (`datasets.info.DatasetInfo`):
+            Dataset info from `datasets`.
+
+    Returns:
+        writer_batch_size (`Optional[int]`):
+            Writer batch size to pass to a dataset builder.
+            If `None`, then it will use the `datasets` default.
+    """
+    return 100 if "Image(" in str(ds_config_info.features) else None
+
+
 def compute_parquet_and_dataset_info_response(
     dataset: str,
     hf_endpoint: str,
@@ -774,12 +795,17 @@ def compute_parquet_and_dataset_info_response(
     parquet_files: List[ParquetFile] = []
     dataset_info: dict[str, Any] = {}
     for config in config_names:
+        ds_config_info = get_dataset_config_info(
+            path=dataset, config_name=config, revision=source_revision, use_auth_token=hf_token
+        )
+        writer_batch_size = get_writer_batch_size(ds_config_info)
         builder = load_dataset_builder(path=dataset, name=config, revision=source_revision, use_auth_token=hf_token)
         raise_if_too_big_from_external_data_files(
             builder=builder,
             max_dataset_size=max_dataset_size,
             max_external_data_files=max_external_data_files,
             hf_token=hf_token,
+            writer_batch_size=writer_batch_size,
         )
         builder.download_and_prepare(file_format="parquet")  # the parquet files are stored in the cache dir
         dataset_info[config] = asdict(builder.info)  # type: ignore
@@ -860,7 +886,7 @@ class ParquetAndDatasetInfoJobRunner(DatasetsBasedJobRunner):
 
     @staticmethod
     def get_version() -> str:
-        return "1.1.0"
+        return "1.2.0"
 
     def __init__(
         self,
