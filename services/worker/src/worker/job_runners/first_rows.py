@@ -23,6 +23,7 @@ from typing import (
 
 from datasets import (
     Dataset,
+    DownloadConfig,
     Features,
     IterableDataset,
     get_dataset_config_info,
@@ -194,12 +195,14 @@ def get_rows(
     rows_max_number: int,
     use_auth_token: Union[bool, str, None] = False,
 ) -> List[Row]:
+    download_config = DownloadConfig(delete_extracted=True)
     ds = load_dataset(
         dataset,
         name=config,
         split=split,
         streaming=streaming,
         use_auth_token=use_auth_token,
+        download_config=download_config,
     )
     if streaming:
         if not isinstance(ds, IterableDataset):

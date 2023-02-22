@@ -9,7 +9,7 @@ from functools import partial
 from http import HTTPStatus
 from multiprocessing.pool import ThreadPool
 from pathlib import Path
-from typing import Any, List, Literal, Mapping, Optional, Tuple, TypedDict
+from typing import Any, Dict, List, Literal, Mapping, Optional, Tuple, TypedDict
 from urllib.parse import quote
 
 import datasets
@@ -134,7 +134,7 @@ class ParquetFileItem(TypedDict):
 
 class ParquetAndDatasetInfoResponse(TypedDict):
     parquet_files: List[ParquetFileItem]
-    dataset_info: dict[str, Any]
+    dataset_info: Dict[str, Any]
 
 
 DATASET_TYPE = "dataset"
@@ -772,9 +772,16 @@ def compute_parquet_and_dataset_info_response(
 
     # prepare the parquet files locally
     parquet_files: List[ParquetFile] = []
-    dataset_info: dict[str, Any] = {}
+    dataset_info: Dict[str, Any] = {}
+    download_config = DownloadConfig(delete_extracted=True)
     for config in config_names:
-        builder = load_dataset_builder(path=dataset, name=config, revision=source_revision, use_auth_token=hf_token)
+        builder = load_dataset_builder(
+            path=dataset,
+            name=config,
+            revision=source_revision,
+            use_auth_token=hf_token,
+            download_config=download_config,
+        )
         raise_if_too_big_from_external_data_files(
             builder=builder,
             max_dataset_size=max_dataset_size,
