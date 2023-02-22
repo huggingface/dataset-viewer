@@ -80,6 +80,5 @@ exclude = 'vendors'
 strict = true
 
 [[tool.mypy.overrides]]
-# could be solved in datasets by adding __add__ to the __init__.py file
-implicit_reexport = true
 module = "datasets"
+ignore_missing_imports = true
