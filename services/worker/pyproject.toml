@@ -80,5 +80,5 @@ exclude = 'vendors'
 strict = true
 
 [[tool.mypy.overrides]]
-module = "datasets"
+module = "datasets.*"
 ignore_missing_imports = true
