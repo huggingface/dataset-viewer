@@ -324,13 +324,13 @@ def create_dataset_info_response_for_audio(dataset: str, config: str) -> Any:
         "splits": {"train": {"name": "train", "num_bytes": 59, "num_examples": 1, "dataset_name": "parquet"}},
         "download_checksums": {
             "SOME_KEY": {
-                "num_bytes": 1124,
-                "checksum": "3b630ef6ede66c5ced336df78fd99d98f835b459baadbe88a2cdf180709e9543",
+                "num_bytes": 1383,
+                "checksum": None,
             }
         },
-        "download_size": 1124,
+        "download_size": 1383,
         "dataset_size": 59,
-        "size_in_bytes": 1183,
+        "size_in_bytes": 1442,
     }
 
 
