@@ -375,7 +375,7 @@ def transform_rows(
 # > The terms "object" and "array" come from the conventions of JavaScript.
 # from https://stackoverflow.com/a/7214312/7351594 / https://www.rfc-editor.org/rfc/rfc7159.html
 def to_features_list(features: Features) -> List[FeatureItem]:
-    features_dict = features.to_dict()  # type: ignore
+    features_dict = features.to_dict()
     return [
         {
             "feature_idx": idx,
@@ -515,7 +515,7 @@ def compute_first_rows_response(
             )
             if not isinstance(iterable_dataset, IterableDataset):
                 raise TypeError("load_dataset should return an IterableDataset")
-            iterable_dataset = iterable_dataset._resolve_features()  # type: ignore
+            iterable_dataset = iterable_dataset._resolve_features()
             if not isinstance(iterable_dataset, IterableDataset):
                 raise TypeError("load_dataset should return an IterableDataset")
             features = iterable_dataset.features
