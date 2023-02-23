@@ -86,6 +86,11 @@ EndpointProcessingStepNamesMapping = Mapping[str, Mapping[str, List[str]]]
 
 @dataclass(frozen=True)
 class EndpointConfig:
+    """Contains the endpoint config specification to relate with step names.
+    The list of processing steps corresponds to the priority in which the response
+    has to be reacheded.
+    """
+
     specification: EndpointProcessingStepNamesMapping = field(
         default_factory=lambda: {
             "/config-names": {"dataset": ["/config-names"]},

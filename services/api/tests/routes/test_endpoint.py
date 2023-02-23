@@ -1,13 +1,21 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2022 The HuggingFace Authors.
 
+from http import HTTPStatus
+
 from libcommon.config import ProcessingGraphConfig
 from libcommon.processing_graph import ProcessingGraph
+from libcommon.simple_cache import upsert_response
 from pytest import raises
 from starlette.datastructures import QueryParams
 
 from api.config import EndpointConfig
-from api.routes.endpoint import EndpointsDefinition, get_params
+from api.routes.endpoint import (
+    EndpointsDefinition,
+    InputParams,
+    first_entry_from_steps,
+    get_params,
+)
 from api.utils import MissingRequiredParameterError
 
 
@@ -89,3 +97,46 @@ def test_get_params() -> None:
     with raises(MissingRequiredParameterError) as e:
         get_params(query_params=query_params)
     assert e.value.message == "Parameter 'config' is required"
+
+
+def test_first_entry_from_steps() -> None:
+    dataset = "dataset"
+    config = "config"
+
+    graph_config = ProcessingGraphConfig()
+    graph = ProcessingGraph(graph_config.specification)
+
+    cache_with_error = "/split-names-from-streaming"
+    cache_without_error = "/split-names-from-dataset-info"
+
+    step_with_error = graph.get_step(cache_with_error)
+    step_whitout_error = graph.get_step(cache_without_error)
+
+    input_params = InputParams(input_type="config", dataset=dataset, config=config, split=None)
+
+    upsert_response(
+        kind=cache_without_error,
+        dataset=dataset,
+        config=config,
+        content={},
+        http_status=HTTPStatus.OK,
+    )
+
+    upsert_response(
+        kind=cache_with_error,
+        dataset=dataset,
+        config=config,
+        content={},
+        http_status=HTTPStatus.INTERNAL_SERVER_ERROR,
+    )
+
+    result = first_entry_from_steps([step_with_error, step_whitout_error], input_params)
+    assert result
+    assert result["http_status"] == HTTPStatus.INTERNAL_SERVER_ERROR
+
+    result = first_entry_from_steps([step_whitout_error, step_with_error], input_params)
+    assert result
+    assert result["http_status"] == HTTPStatus.OK
+
+    non_existent_step = graph.get_step("/splits")
+    assert not first_entry_from_steps([non_existent_step], input_params)
