@@ -18,29 +18,33 @@ db_name = "queue"
 class MigrationQueueUpdateSplitNames(Migration):
     def up(self) -> None:
         logging.info(
-            f"Rename unicity_id field from Job[{split_names}][<dataset>][<config>][<split>] to"
-            f" Job[{split_names_from_streaming}][<dataset>][<config>][<split>]"
+            f"Rename unicity_id field from Job[{split_names}][<dataset>][<config>][None] to"
+            f" Job[{split_names_from_streaming}][<dataset>][<config>][None] and change type from {split_names} to"
+            f" {split_names_from_streaming}"
         )
 
-        for job in Job.objects(type=split_names):
-            job.update(unicity_id=f"Job[{split_names_from_streaming}][{job.dataset}][{job.config}][{job.split}]")
-
-        logging.info(f"Rename type field from {split_names} to {split_names_from_streaming}")
         db = get_db("queue")
-        db["jobsBlue"].update_many({"type": split_names}, {"$set": {"type": split_names_from_streaming}})
+        for job in db["jobsBlue"].find({"type": split_names}):
+            job.update(
+                unicity_id=f"Job[{split_names_from_streaming}][{job['dataset']}][{job['config']}][None]",
+                type=split_names_from_streaming,
+            )
+            db["jobsBlue"].save(job)
 
     def down(self) -> None:
         logging.info(
-            f"Rename unicity_id field from Job[{split_names_from_streaming}][<dataset>][<config>][<split>] to"
-            f" Job[{split_names}][<dataset>][<config>][<split>]"
+            f"Rename unicity_id field from Job[{split_names_from_streaming}][<dataset>][<config>][None] to"
+            f" Job[{split_names}][<dataset>][<config>][None] and change type from {split_names_from_streaming} to"
+            f" {split_names}"
         )
 
-        for job in Job.objects(type=split_names_from_streaming):
-            job.update(unicity_id=f"Job[{split_names}][{job.dataset}][{job.config}][{job.split}]")
-
-        logging.info(f"Rename type field from {split_names_from_streaming} to {split_names}")
         db = get_db("queue")
-        db["jobsBlue"].update_many({"type": split_names_from_streaming}, {"$set": {"type": split_names}})
+        for job in db["jobsBlue"].find({"type": split_names_from_streaming}):
+            job.update(
+                unicity_id=f"Job[{split_names}][{job['dataset']}][{job['config']}][None]",
+                type=split_names,
+            )
+            db["jobsBlue"].save(job)
 
     def validate(self) -> None:
         logging.info("Validate modified documents")

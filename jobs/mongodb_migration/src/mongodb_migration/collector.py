@@ -40,10 +40,12 @@ class MigrationsCollector:
             ),
             MigrationCacheUpdateSplitNames(
                 version="20230216112500",
-                description="update 'kind' field in cache from /split-names to /split-names-streaming",
+                description="update 'kind' field in cache from /split-names to /split-names-from-streaming",
             ),
             MigrationQueueUpdateSplitNames(
                 version="20230216141000",
-                description="update 'type' and 'unicity_id' fields in job from /split-names to /split-names-streaming",
+                description=(
+                    "update 'type' and 'unicity_id' fields in job from /split-names to /split-names-from-streaming"
+                ),
             ),
         ]
