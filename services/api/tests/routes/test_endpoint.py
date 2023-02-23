@@ -112,7 +112,7 @@ def test_first_entry_from_steps() -> None:
     step_with_error = graph.get_step(cache_with_error)
     step_whitout_error = graph.get_step(cache_without_error)
 
-    input_params = InputParams(input_type="config", dataset=dataset, config=config, split=None)
+    input_params = InputParams(dataset=dataset, config=config, split=None)
 
     upsert_response(
         kind=cache_without_error,

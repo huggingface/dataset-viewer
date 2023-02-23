@@ -2,7 +2,7 @@
 # Copyright 2022 The HuggingFace Authors.
 
 import logging
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from http import HTTPStatus
 from typing import List, Mapping, Optional
 
@@ -54,8 +54,9 @@ class InputParams:
     dataset: str
     config: Optional[str]
     split: Optional[str]
-    
-    def __post_init__(self):
+    input_type: str = field(init=False)
+
+    def __post_init__(self) -> None:
         self.input_type = "split" if self.split else "config" if self.config else "dataset"
 
 
