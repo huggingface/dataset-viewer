@@ -51,14 +51,15 @@ class EndpointsDefinition:
 
 @dataclass
 class InputParams:
-    input_type: str
     dataset: str
     config: Optional[str]
     split: Optional[str]
+    
+    def __post_init__(self):
+        self.input_type = "split" if self.split else "config" if self.config else "dataset"
 
 
 def get_params(query_params: QueryParams) -> InputParams:
-    input_type = "dataset"
     dataset = query_params.get("dataset")
 
     if not are_valid_parameters([dataset]) or not dataset:
@@ -67,18 +68,16 @@ def get_params(query_params: QueryParams) -> InputParams:
     config = None
     config_param = query_params.get("config")
     if are_valid_parameters([config_param]):
-        input_type = "config"
         config = config_param
 
     split = None
     split_param = query_params.get("split")
     if are_valid_parameters([split_param]):
-        input_type = "split"
         split = split_param
         if config is None:
             raise MissingRequiredParameterError("Parameter 'config' is required")
 
-    return InputParams(input_type=input_type, dataset=dataset, config=config, split=split)
+    return InputParams(dataset=dataset, config=config, split=split)
 
 
 def first_entry_from_steps(processing_steps: List[ProcessingStep], params: InputParams) -> Optional[CacheEntry]:
