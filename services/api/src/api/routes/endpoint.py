@@ -41,11 +41,11 @@ class EndpointsDefinition:
     processing_steps_by_endpoint: StepsByInputTypeAndEndpoint
 
     def __init__(self, graph: ProcessingGraph, endpoint_config: EndpointConfig):
-        self.processing_steps_by_endpoint = {
+        self.steps_by_input_type_and_endpoint = {
             endpoint: {
-                input_type: [graph.get_step(step) for step in steps] for input_type, steps in input_types.items()
+                input_type: [graph.get_step(step_name) for step_name in step_names] for input_type, step_names in step_names_by_input_type.items()
             }
-            for endpoint, input_types in endpoint_config.specification.items()
+            for endpoint, step_names_by_input_type in endpoint_config.step_names_by_input_type_and_endpoint.items()
         }
 
 

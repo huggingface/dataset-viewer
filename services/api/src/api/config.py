@@ -97,7 +97,7 @@ class EndpointConfig:
     (dataset, config, split)
     """
 
-    specification: StepNamesByInputTypeAndEndpoint = field(
+    step_names_by_input_type_and_endpoint: StepNamesByInputTypeAndEndpoint = field(
         default_factory=lambda: {
             "/config-names": {"dataset": ["/config-names"]},
             "/split-names-from-streaming": {"config": ["/split-names-from-streaming"]},
