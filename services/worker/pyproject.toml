@@ -83,3 +83,8 @@ strict = true
 # could be solved in datasets by adding __add__ to the __init__.py file
 implicit_reexport = true
 module = "datasets"
+
+[[tool.mypy.overrides]]
+ignore_missing_imports = true
+module = "mirakuru.*"
+# ^ until https://github.com/ClearcodeHQ/mirakuru/pull/633 is merged and released
