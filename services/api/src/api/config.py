@@ -11,6 +11,7 @@ from libcommon.config import (
     ProcessingGraphConfig,
     QueueConfig,
 )
+from libcommon.processing_graph import InputType
 
 API_UVICORN_HOSTNAME = "localhost"
 API_UVICORN_NUM_WORKERS = 2
@@ -81,7 +82,9 @@ class AppConfig:
         )
 
 
-EndpointProcessingStepNamesMapping = Mapping[str, Mapping[str, List[str]]]
+StepNamesByInputType = Mapping[InputType, List[str]]
+
+StepNamesByInputTypeAndEndpoint = Mapping[str, StepNamesByInputType]
 
 
 @dataclass(frozen=True)
@@ -94,7 +97,7 @@ class EndpointConfig:
     (dataset, config, split)
     """
 
-    specification: EndpointProcessingStepNamesMapping = field(
+    specification: StepNamesByInputTypeAndEndpoint = field(
         default_factory=lambda: {
             "/config-names": {"dataset": ["/config-names"]},
             "/split-names-from-streaming": {"config": ["/split-names-from-streaming"]},

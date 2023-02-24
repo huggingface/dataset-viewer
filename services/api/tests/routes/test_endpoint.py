@@ -12,9 +12,9 @@ from starlette.datastructures import QueryParams
 from api.config import EndpointConfig
 from api.routes.endpoint import (
     EndpointsDefinition,
-    InputParams,
-    first_entry_from_steps,
-    get_params,
+    InputParameters,
+    get_first_cache_entry_from_steps,
+    get_input_parameters,
 )
 from api.utils import MissingRequiredParameterError
 
@@ -27,7 +27,7 @@ def test_endpoints_definition() -> None:
     endpoints_definition = EndpointsDefinition(graph, endpoint_config)
     assert endpoints_definition
 
-    definition = endpoints_definition.definition
+    definition = endpoints_definition.processing_steps_by_endpoint
     assert definition
 
     config_names = definition["/config-names"]
@@ -72,30 +72,30 @@ def test_endpoints_definition() -> None:
     assert len(sizes["dataset"]) == 1  # Only has one processing step
 
 
-def test_get_params() -> None:
+def test_get_input_parameters() -> None:
     query_params = QueryParams([("config", None)])
     with raises(MissingRequiredParameterError) as e:
-        get_params(query_params=query_params)
+        get_input_parameters(query_params=query_params)
     assert e.value.message == "Parameter 'dataset' is required"
 
     query_params = QueryParams([("dataset", "my_dataset")])
-    input_params = get_params(query_params=query_params)
+    input_params = get_input_parameters(query_params=query_params)
     assert input_params
     assert input_params.input_type == "dataset"
 
     query_params = QueryParams([("dataset", "my_dataset"), ("config", "my_config")])
-    input_params = get_params(query_params=query_params)
+    input_params = get_input_parameters(query_params=query_params)
     assert input_params
     assert input_params.input_type == "config"
 
     query_params = QueryParams([("dataset", "my_dataset"), ("config", "my_config"), ("split", "my_split")])
-    input_params = get_params(query_params=query_params)
+    input_params = get_input_parameters(query_params=query_params)
     assert input_params
     assert input_params.input_type == "split"
 
     query_params = QueryParams([("dataset", "my_dataset"), ("split", "my_split")])
     with raises(MissingRequiredParameterError) as e:
-        get_params(query_params=query_params)
+        get_input_parameters(query_params=query_params)
     assert e.value.message == "Parameter 'config' is required"
 
 
@@ -112,7 +112,7 @@ def test_first_entry_from_steps() -> None:
     step_with_error = graph.get_step(cache_with_error)
     step_whitout_error = graph.get_step(cache_without_error)
 
-    input_params = InputParams(dataset=dataset, config=config, split=None)
+    input_params = InputParameters(dataset=dataset, config=config, split=None)
 
     upsert_response(
         kind=cache_without_error,
@@ -130,13 +130,13 @@ def test_first_entry_from_steps() -> None:
         http_status=HTTPStatus.INTERNAL_SERVER_ERROR,
     )
 
-    result = first_entry_from_steps([step_with_error, step_whitout_error], input_params)
+    result = get_first_cache_entry_from_steps([step_with_error, step_whitout_error], input_params)
     assert result
     assert result["http_status"] == HTTPStatus.INTERNAL_SERVER_ERROR
 
-    result = first_entry_from_steps([step_whitout_error, step_with_error], input_params)
+    result = get_first_cache_entry_from_steps([step_whitout_error, step_with_error], input_params)
     assert result
     assert result["http_status"] == HTTPStatus.OK
 
     non_existent_step = graph.get_step("/splits")
-    assert not first_entry_from_steps([non_existent_step], input_params)
+    assert not get_first_cache_entry_from_steps([non_existent_step], input_params)

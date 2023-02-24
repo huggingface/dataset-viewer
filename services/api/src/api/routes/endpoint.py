@@ -8,7 +8,7 @@ from typing import List, Mapping, Optional
 
 from libcommon.dataset import DatasetError
 from libcommon.operations import PreviousStepError, check_in_process
-from libcommon.processing_graph import ProcessingGraph, ProcessingStep
+from libcommon.processing_graph import InputType, ProcessingGraph, ProcessingStep
 from libcommon.simple_cache import CacheEntry, DoesNotExist, get_response
 from starlette.datastructures import QueryParams
 from starlette.requests import Request
@@ -38,10 +38,10 @@ StepsByInputTypeAndEndpoint = Mapping[str, StepsByInputType]
 class EndpointsDefinition:
     """Definition of supported endpoints and its relation with processing steps."""
 
-    processing_steps_by_endpoint: EndpointProcessingStepsMapping
+    processing_steps_by_endpoint: StepsByInputTypeAndEndpoint
 
     def __init__(self, graph: ProcessingGraph, endpoint_config: EndpointConfig):
-        self.definition = {
+        self.processing_steps_by_endpoint = {
             endpoint: {
                 input_type: [graph.get_step(step) for step in steps] for input_type, steps in input_types.items()
             }
@@ -54,7 +54,7 @@ class InputParameters:
     dataset: str
     config: Optional[str]
     split: Optional[str]
-    input_type: str = field(init=False)
+    input_type: InputType = field(init=False)
 
     def __post_init__(self) -> None:
         self.input_type = "split" if self.split else "config" if self.config else "dataset"
@@ -78,29 +78,32 @@ def get_input_parameters(query_params: QueryParams) -> InputParameters:
         if config is None:
             raise MissingRequiredParameterError("Parameter 'config' is required")
 
-    return InputParams(dataset=dataset, config=config, split=split)
+    return InputParameters(dataset=dataset, config=config, split=split)
 
 
-def get_first_cache_entry_from_steps(processing_steps: List[ProcessingStep], input_parameters: InputParameters) -> Optional[CacheEntry]:
+def get_first_cache_entry_from_steps(
+    processing_steps: List[ProcessingStep], input_parameters: InputParameters
+) -> Optional[CacheEntry]:
     for processing_step in processing_steps:
         try:
             result = get_response(
                 kind=processing_step.cache_kind,
-                dataset=params.dataset,
-                config=params.config,
-                split=params.split,
+                dataset=input_parameters.dataset,
+                config=input_parameters.config,
+                split=input_parameters.split,
             )
             return result
         except DoesNotExist:
             logging.warning(
-                f"processing_step={processing_step.name} dataset={params.dataset} "
-                f"config={params.config} split={params.split} no entry found"
+                f"processing_step={processing_step.name} dataset={input_parameters.dataset} "
+                f"config={input_parameters.config} split={input_parameters.split} no entry found"
             )
     return None
 
 
 def create_endpoint(
-    steps_by_input_type: StepsByInputType
+    endpoint_name: str,
+    steps_by_input_type: StepsByInputType,
     init_processing_steps: List[ProcessingStep],
     hf_endpoint: str,
     hf_token: Optional[str] = None,
@@ -111,24 +114,26 @@ def create_endpoint(
     async def processing_step_endpoint(request: Request) -> Response:
         try:
             # getting input params
-            params: InputParams = get_params(request.query_params)
+            params: InputParameters = get_input_parameters(request.query_params)
             logging.info(
                 f"input_type={params.input_type}, dataset={params.dataset}, config={params.config},"
                 f" split={params.split}"
             )
 
-            if params.input_type not in input_types:
+            if params.input_type not in steps_by_input_type:
                 raise MissingRequiredParameterError("Operation not supported or not found")
 
-            processing_steps = input_types[params.input_type]
+            processing_steps = steps_by_input_type[params.input_type]
             if not processing_steps:
-                raise MissingProcessingStepsError("Missing processing steps")
+                raise MissingProcessingStepsError(
+                    f"No processing steps found for endpoint '{endpoint_name}' and input type '{params.input_type}'"
+                )
 
             # if auth_check fails, it will raise an exception that will be caught below
             auth_check(params.dataset, external_auth_url=external_auth_url, request=request)
 
             # try to get result from steps
-            result = first_entry_from_steps(processing_steps, params)
+            result = get_first_cache_entry_from_steps(processing_steps, params)
             if result:
                 content = result["content"]
                 http_status = result["http_status"]
