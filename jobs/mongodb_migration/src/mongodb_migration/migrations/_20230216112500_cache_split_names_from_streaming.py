@@ -19,16 +19,12 @@ class MigrationCacheUpdateSplitNames(Migration):
     def up(self) -> None:
         logging.info(f"Rename cache_kind field from {split_names} to {split_names_from_streaming}")
         db = get_db(db_name)
-        db["cachedResponsesBlue"].update_many(
-            {"kind": split_names}, {"$set": {"kind": split_names_from_streaming}}
-        )
+        db["cachedResponsesBlue"].update_many({"kind": split_names}, {"$set": {"kind": split_names_from_streaming}})
 
     def down(self) -> None:
         logging.info(f"Rollback cache_kind field from {split_names_from_streaming} to {split_names}")
         db = get_db(db_name)
-        db["cachedResponsesBlue"].update_many(
-            {"kind": split_names_from_streaming}, {"$set": {"kind": split_names}}
-        )
+        db["cachedResponsesBlue"].update_many({"kind": split_names_from_streaming}, {"$set": {"kind": split_names}})
 
     def validate(self) -> None:
         logging.info("Validate modified documents")
