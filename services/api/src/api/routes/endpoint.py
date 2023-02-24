@@ -38,12 +38,13 @@ StepsByInputTypeAndEndpoint = Mapping[str, StepsByInputType]
 class EndpointsDefinition:
     """Definition of supported endpoints and its relation with processing steps."""
 
-    processing_steps_by_endpoint: StepsByInputTypeAndEndpoint
+    steps_by_input_type_and_endpoint: StepsByInputTypeAndEndpoint
 
     def __init__(self, graph: ProcessingGraph, endpoint_config: EndpointConfig):
         self.steps_by_input_type_and_endpoint = {
             endpoint: {
-                input_type: [graph.get_step(step_name) for step_name in step_names] for input_type, step_names in step_names_by_input_type.items()
+                input_type: [graph.get_step(step_name) for step_name in step_names]
+                for input_type, step_names in step_names_by_input_type.items()
             }
             for endpoint, step_names_by_input_type in endpoint_config.step_names_by_input_type_and_endpoint.items()
         }
@@ -106,7 +107,7 @@ def get_first_succeeded_cache_entry_from_steps(
             if last_result["http_status"] == HTTPStatus.OK:
                 return last_result
         except DoesNotExist:
-            logging.warning(
+            logging.debug(
                 f"processing_step={processing_step.name} dataset={input_parameters.dataset} "
                 f"config={input_parameters.config} split={input_parameters.split} no entry found"
             )
@@ -130,18 +131,19 @@ def get_response_from_cache_entry(
     max_age_long: int = 0,
     max_age_short: int = 0,
 ) -> Response:
-    if result:
-        content = result["content"]
-        http_status = result["http_status"]
-        error_code = result["error_code"]
-        if http_status == HTTPStatus.OK:
-            return get_json_ok_response(content=content, max_age=max_age_long)
-        else:
-            return get_json_error_response(
-                content=content, status_code=http_status, max_age=max_age_short, error_code=error_code
-            )
-    raise ResponseNotReadyError(
-        "The server is busier than usual and the response is not ready yet. Please retry later."
+    if not result:
+        raise ResponseNotReadyError(
+            "The server is busier than usual and the response is not ready yet. Please retry later."
+        )
+
+    content = result["content"]
+    http_status = result["http_status"]
+    error_code = result["error_code"]
+    if http_status == HTTPStatus.OK:
+        return get_json_ok_response(content=content, max_age=max_age_long)
+
+    return get_json_error_response(
+        content=content, status_code=http_status, max_age=max_age_short, error_code=error_code
     )
 
 

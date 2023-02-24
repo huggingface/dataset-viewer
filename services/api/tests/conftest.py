@@ -40,7 +40,7 @@ def app_config(monkeypatch_session: MonkeyPatch) -> AppConfig:
 def endpoint_definition(app_config: AppConfig) -> StepsByInputTypeAndEndpoint:
     processing_graph = ProcessingGraph(app_config.processing_graph.specification)
     endpoint_specification = EndpointsDefinition(processing_graph, EndpointConfig.from_env())
-    return endpoint_specification.processing_steps_by_endpoint
+    return endpoint_specification.steps_by_input_type_and_endpoint
 
 
 @fixture(scope="session")

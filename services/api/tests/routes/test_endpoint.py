@@ -29,7 +29,7 @@ def test_endpoints_definition() -> None:
     endpoints_definition = EndpointsDefinition(graph, endpoint_config)
     assert endpoints_definition
 
-    definition = endpoints_definition.processing_steps_by_endpoint
+    definition = endpoints_definition.steps_by_input_type_and_endpoint
     assert definition
 
     config_names = definition["/config-names"]
