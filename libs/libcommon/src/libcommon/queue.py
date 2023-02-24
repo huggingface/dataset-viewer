@@ -11,6 +11,7 @@ from itertools import groupby
 from operator import itemgetter
 from typing import Dict, Generic, List, Literal, Optional, Type, TypedDict, TypeVar
 
+import pytz
 from mongoengine import Document, DoesNotExist
 from mongoengine.fields import BooleanField, DateTimeField, EnumField, StringField
 from mongoengine.queryset.queryset import QuerySet
@@ -171,6 +172,19 @@ class Job(Document):
 
     objects = QuerySetManager["Job"]()
 
+    def info(self) -> JobInfo:
+        return JobInfo(
+            {
+                "job_id": str(self.pk),  # job.pk is the id. job.id is not recognized by mypy
+                "type": self.type,
+                "dataset": self.dataset,
+                "config": self.config,
+                "split": self.split,
+                "force": self.force,
+                "priority": self.priority,
+            }
+        )
+
 
 class Queue:
     """A queue manages jobs.
@@ -195,7 +209,10 @@ class Queue:
           0 or a negative value are ignored. Defaults to None.
     """
 
-    def __init__(self, max_jobs_per_namespace: Optional[int] = None):
+    def __init__(
+        self,
+        max_jobs_per_namespace: Optional[int] = None,
+    ):
         self.max_jobs_per_namespace = (
             None if max_jobs_per_namespace is None or max_jobs_per_namespace < 1 else max_jobs_per_namespace
         )
@@ -428,15 +445,7 @@ class Queue:
             raise RuntimeError(
                 f"The job type {next_waiting_job.type} is not in the list of allowed job types {only_job_types}"
             )
-        return {
-            "job_id": str(next_waiting_job.pk),  # job.pk is the id. job.id is not recognized by mypy
-            "type": next_waiting_job.type,
-            "dataset": next_waiting_job.dataset,
-            "config": next_waiting_job.config,
-            "split": next_waiting_job.split,
-            "force": next_waiting_job.force,
-            "priority": next_waiting_job.priority,
-        }
+        return next_waiting_job.info()
 
     def get_job_type(self, job_id: str) -> str:
         """Get the job type for a given job id.
@@ -599,6 +608,47 @@ class Queue:
                 type=job_type, dataset=dataset, status__in=[Status.WAITING.value, Status.STARTED.value]
             )
         ]
+
+    def heartbeat(self, job_id: str) -> None:
+        job = Job.objects.with_id(job_id)  # type: ignore
+        if job is not None and isinstance(job, Job):
+            job.update(last_heartbeat=get_datetime())
+
+    def get_zombies(self, max_seconds_without_heartbeat: int) -> List[JobInfo]:
+        started_jobs = Job.objects(status=Status.STARTED)
+        if max_seconds_without_heartbeat > 0:
+            zombies = [
+                job
+                for job in started_jobs
+                if (
+                    job.last_heartbeat is not None
+                    and get_datetime()
+                    >= pytz.UTC.localize(job.last_heartbeat) + timedelta(seconds=max_seconds_without_heartbeat)
+                )
+                or (
+                    job.last_heartbeat is None
+                    and job.started_at is not None
+                    and get_datetime()
+                    >= pytz.UTC.localize(job.started_at) + timedelta(seconds=max_seconds_without_heartbeat)
+                )
+            ]
+            return [zombie.info() for zombie in zombies]
+        else:
+            return []
+
+    def kill_zombies(self, zombies: List[JobInfo]) -> int:
+        if zombies:
+            zombie_job_ids = [zombie["job_id"] for zombie in zombies]
+            zombies_examples = zombie_job_ids[:10]
+            zombies_examples_str = ", ".join(zombies_examples) + (
+                "..." if len(zombies_examples) != len(zombies) else ""
+            )
+            logging.info(f"Killing {len(zombies)} zombies. Job ids = " + zombies_examples_str)
+            return Job.objects(pk__in=zombie_job_ids, status=Status.STARTED).update(
+                status=Status.ERROR, finished_at=get_datetime()
+            )
+        else:
+            return 0
 
 
 # only for the tests

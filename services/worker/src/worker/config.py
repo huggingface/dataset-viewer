@@ -15,13 +15,13 @@ from libcommon.config import (
 
 WORKER_CONTENT_MAX_BYTES = 10_000_000
 WORKER_ENDPOINT = "/config-names"
+WORKER_HEARTBEAT_INTERVAL_SECONDS = 60
+WORKER_KILL_ZOMBIES_INTERVAL_SECONDS = 10 * 60
 WORKER_MAX_DISK_USAGE_PCT = 90
 WORKER_MAX_LOAD_PCT = 70
 WORKER_MAX_MEMORY_PCT = 80
-WORKER_SLEEP_SECONDS = 15
-WORKER_HEARTBEAT_TIME_INTERVAL_SECONDS = 60
 WORKER_MAX_MISSING_HEARTBEATS = 5
-WORKER_KILL_ZOMBIES_TIME_INTERVAL_SECONDS = 10 * 60
+WORKER_SLEEP_SECONDS = 15
 
 
 def get_empty_str_list() -> List[str]:
@@ -38,9 +38,9 @@ class WorkerConfig:
     sleep_seconds: int = WORKER_SLEEP_SECONDS
     storage_paths: List[str] = field(default_factory=get_empty_str_list)
     state_path: Optional[str] = None
-    heartbeat_time_interval_seconds: int = WORKER_HEARTBEAT_TIME_INTERVAL_SECONDS
+    heartbeat_interval_seconds: int = WORKER_HEARTBEAT_INTERVAL_SECONDS
     max_missing_heartbeats: int = WORKER_MAX_MISSING_HEARTBEATS
-    kill_zombies_time_interval_seconds: int = WORKER_KILL_ZOMBIES_TIME_INTERVAL_SECONDS
+    kill_zombies_interval_seconds: int = WORKER_KILL_ZOMBIES_INTERVAL_SECONDS
 
     @classmethod
     def from_env(cls) -> "WorkerConfig":
@@ -55,12 +55,12 @@ class WorkerConfig:
                 only_job_types=env.list(name="ONLY_JOB_TYPES", default=get_empty_str_list()),
                 storage_paths=env.list(name="STORAGE_PATHS", default=get_empty_str_list()),
                 state_path=env.str(name="STATE_PATH", default=None),
-                heartbeat_time_interval_seconds=env.int(
-                    name="HEARTBEAT_TIME_INTERVAL_SECONDS", default=WORKER_HEARTBEAT_TIME_INTERVAL_SECONDS
+                heartbeat_interval_seconds=env.int(
+                    name="HEARTBEAT_INTERVAL_SECONDS", default=WORKER_HEARTBEAT_INTERVAL_SECONDS
                 ),
                 max_missing_heartbeats=env.int(name="MAX_MISSING_HEARTBEATS", default=WORKER_MAX_MISSING_HEARTBEATS),
-                kill_zombies_time_interval_seconds=env.int(
-                    name="KILL_ZOMBIES_TIME_INTERVAL_SECONDS", default=WORKER_KILL_ZOMBIES_TIME_INTERVAL_SECONDS
+                kill_zombies_interval_seconds=env.int(
+                    name="KILL_ZOMBIES_INTERVAL_SECONDS", default=WORKER_KILL_ZOMBIES_INTERVAL_SECONDS
                 ),
             )
 

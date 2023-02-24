@@ -31,6 +31,7 @@ GeneralJobRunnerErrorCode = Literal[
     "SplitNotFoundError",
     "UnexpectedError",
     "TooBigContentError",
+    "JobRunnerCrashedError",
 ]
 
 # List of error codes that should trigger a retry.
@@ -133,6 +134,19 @@ class UnexpectedError(GeneralJobRunnerError):
             disclose_cause=False,
         )
         logging.error(message, exc_info=cause)
+
+
+class JobRunnerCrashedError(GeneralJobRunnerError):
+    """Raised when the job runner crashed and the job became a zombie."""
+
+    def __init__(self, message: str, cause: Optional[BaseException] = None):
+        super().__init__(
+            message=message,
+            status_code=HTTPStatus.NOT_IMPLEMENTED,
+            code="JobRunnerCrashedError",
+            cause=cause,
+            disclose_cause=False,
+        )
 
 
 class JobRunner(ABC):
@@ -460,3 +474,23 @@ class JobRunner(ABC):
     def post_compute(self) -> None:
         """Hook method called after the compute method."""
         pass
+
+    def set_crashed(self, message: str, cause: Optional[BaseException] = None) -> None:
+        error = JobRunnerCrashedError(message=message, cause=cause)
+        upsert_response(
+            kind=self.processing_step.cache_kind,
+            dataset=self.dataset,
+            config=self.config,
+            split=self.split,
+            content=dict(error.as_response()),
+            http_status=error.status_code,
+            error_code=error.code,
+            details=dict(error.as_response_with_cause()),
+            worker_version=self.get_version(),
+            dataset_git_revision=self.get_dataset_git_revision(),
+        )
+        logging.debug(
+            "response for"
+            f" dataset={self.dataset} config={self.config} split={self.split} had an error (crashed),"
+            " cache updated"
+        )
