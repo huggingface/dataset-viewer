@@ -24,12 +24,23 @@ class MigrationQueueUpdateSplitNames(Migration):
         )
 
         db = get_db("queue")
-        for job in db["jobsBlue"].find({"type": split_names}):
-            job.update(
-                unicity_id=f"Job[{split_names_from_streaming}][{job['dataset']}][{job['config']}][None]",
-                type=split_names_from_streaming,
-            )
-            db["jobsBlue"].save(job)
+        db["jobsBlue"].update_many(
+            {"type": split_names},
+            [
+                {
+                    "$set": {
+                        "unicity_id": {
+                            "$replaceOne": {
+                                "input": "$unicity_id",
+                                "find": f"Job[{split_names}]",
+                                "replacement": f"Job[{split_names_from_streaming}]",
+                            }
+                        }
+                    }
+                },
+                {"$set": {"type": split_names_from_streaming}},
+            ],  # type: ignore
+        )
 
     def down(self) -> None:
         logging.info(
@@ -39,12 +50,23 @@ class MigrationQueueUpdateSplitNames(Migration):
         )
 
         db = get_db("queue")
-        for job in db["jobsBlue"].find({"type": split_names_from_streaming}):
-            job.update(
-                unicity_id=f"Job[{split_names}][{job['dataset']}][{job['config']}][None]",
-                type=split_names,
-            )
-            db["jobsBlue"].save(job)
+        db["jobsBlue"].update_many(
+            {"type": split_names_from_streaming},
+            [
+                {
+                    "$set": {
+                        "unicity_id": {
+                            "$replaceOne": {
+                                "input": "$unicity_id",
+                                "find": f"Job[{split_names_from_streaming}]",
+                                "replacement": f"Job[{split_names}]",
+                            }
+                        }
+                    }
+                },
+                {"$set": {"type": split_names}},
+            ],  # type: ignore
+        )
 
     def validate(self) -> None:
         logging.info("Validate modified documents")
