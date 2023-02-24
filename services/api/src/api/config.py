@@ -88,7 +88,10 @@ EndpointProcessingStepNamesMapping = Mapping[str, Mapping[str, List[str]]]
 class EndpointConfig:
     """Contains the endpoint config specification to relate with step names.
     The list of processing steps corresponds to the priority in which the response
-    has to be reacheded.
+    has to be reached. The cache from the first step in the list will be used first
+    then, if it's an error or missing, the second one, etc.
+    The related steps depend on the query parameters passed in the request
+    (dataset, config, split)
     """
 
     specification: EndpointProcessingStepNamesMapping = field(

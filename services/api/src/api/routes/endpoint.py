@@ -30,9 +30,9 @@ from api.utils import (
     get_json_ok_response,
 )
 
-InputForProcessingStepsMapping = Mapping[str, List[ProcessingStep]]
+StepsByInputType = Mapping[InputType, List[ProcessingStep]]
 
-EndpointProcessingStepsMapping = Mapping[str, InputForProcessingStepsMapping]
+StepsByInputTypeAndEndpoint = Mapping[str, StepsByInputType]
 
 
 class EndpointsDefinition:
@@ -50,7 +50,7 @@ class EndpointsDefinition:
 
 
 @dataclass
-class InputParams:
+class InputParameters:
     dataset: str
     config: Optional[str]
     split: Optional[str]
@@ -60,7 +60,7 @@ class InputParams:
         self.input_type = "split" if self.split else "config" if self.config else "dataset"
 
 
-def get_params(query_params: QueryParams) -> InputParams:
+def get_input_parameters(query_params: QueryParams) -> InputParameters:
     dataset = query_params.get("dataset")
 
     if not are_valid_parameters([dataset]) or not dataset:
@@ -81,7 +81,7 @@ def get_params(query_params: QueryParams) -> InputParams:
     return InputParams(dataset=dataset, config=config, split=split)
 
 
-def first_entry_from_steps(processing_steps: List[ProcessingStep], params: InputParams) -> Optional[CacheEntry]:
+def get_first_cache_entry_from_steps(processing_steps: List[ProcessingStep], input_parameters: InputParameters) -> Optional[CacheEntry]:
     for processing_step in processing_steps:
         try:
             result = get_response(
@@ -100,7 +100,7 @@ def first_entry_from_steps(processing_steps: List[ProcessingStep], params: Input
 
 
 def create_endpoint(
-    input_types: InputForProcessingStepsMapping,
+    steps_by_input_type: StepsByInputType
     init_processing_steps: List[ProcessingStep],
     hf_endpoint: str,
     hf_token: Optional[str] = None,
