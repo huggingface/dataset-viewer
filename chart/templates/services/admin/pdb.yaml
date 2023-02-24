@@ -1,0 +1,10 @@
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  labels: {{ include "labels.admin" . | nindent 4 }}
+  name: "{{ include "name" . }}-admin"
+  namespace: {{ .Release.Namespace }}
+spec:
+  maxUnavailable: 1
+  selector:
+    matchLabels: {{ include "labels.admin" . | nindent 6 }}

@@ -1,0 +1,10 @@
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  labels: {{ include "labels.reverseProxy" . | nindent 4 }}
+  name: "{{ include "name" . }}-reverse-proxy"
+  namespace: {{ .Release.Namespace }}
+spec:
+  maxUnavailable: 1
+  selector:
+    matchLabels: {{ include "labels.reverseProxy" . | nindent 6 }}
