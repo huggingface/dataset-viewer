@@ -57,10 +57,15 @@ def auth_check(
             else:
                 raise ExternalAuthenticatedError("You are not member of the organization")
         except Exception as err:
-            raise ExternalAuthenticatedError("Cannot access the route with the current credentials.") from err
+            raise ExternalAuthenticatedError(
+                "Cannot access the route with the current credentials. Please retry with other authentication"
+                " credentials."
+            ) from err
     elif response.status_code == 401:
         raise ExternalUnauthenticatedError("Cannot access the route. Please retry with authentication.")
     elif response.status_code in [403, 404]:
-        raise ExternalAuthenticatedError("Cannot access the route with the current credentials.")
+        raise ExternalAuthenticatedError(
+            "Cannot access the route with the current credentials. Please retry with other authentication credentials."
+        )
     else:
         raise ValueError(f"Unexpected status code {response.status_code}")

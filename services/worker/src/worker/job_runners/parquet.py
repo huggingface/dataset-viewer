@@ -63,7 +63,7 @@ def compute_parquet_response(dataset: str) -> ParquetResponse:
     <Tip>
     Raises the following errors:
         - [`~job_runners.parquet.PreviousStepStatusError`]
-          If the the previous step gave an error.
+          If the previous step gave an error.
         - [`~job_runners.parquet.PreviousStepFormatError`]
             If the content of the previous step has not the expected format
     </Tip>
@@ -75,14 +75,16 @@ def compute_parquet_response(dataset: str) -> ParquetResponse:
     try:
         response = get_response(kind="/parquet-and-dataset-info", dataset=dataset)
     except DoesNotExist as e:
-        raise DatasetNotFoundError("No response found in previous step for this dataset.", e) from e
+        raise DatasetNotFoundError(
+            "No response found in previous step for this dataset: '/parquet-and-dataset-info' endpoint.", e
+        ) from e
     if response["http_status"] != HTTPStatus.OK:
         raise PreviousStepStatusError(
             f"Previous step gave an error: {response['http_status']}. This job should not have been created."
         )
     content = response["content"]
     if "parquet_files" not in content:
-        raise PreviousStepFormatError("Previous step did not return the expected content.")
+        raise PreviousStepFormatError("Previous step did not return the expected content: 'parquet_files'.")
     return {
         "parquet_files": content["parquet_files"],
     }

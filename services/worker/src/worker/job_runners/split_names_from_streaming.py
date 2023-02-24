@@ -106,7 +106,8 @@ def compute_split_names_from_streaming_response(
         raise EmptyDatasetError("The dataset is empty.", cause=err) from err
     except Exception as err:
         raise SplitNamesFromStreamingError(
-            "Cannot get the split names for the dataset and config.", cause=err
+            f"Cannot get the split names for the config '{config}' of the dataset.",
+            cause=err,
         ) from err
     return {"split_names": split_name_items}
 

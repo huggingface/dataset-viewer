@@ -5,18 +5,25 @@ import os
 import sys
 import tempfile
 from datetime import timedelta
+from http import HTTPStatus
 from typing import Any, Callable, List, Optional
 
 import pytz
 from filelock import FileLock
+from libcommon.exceptions import CustomError
 from libcommon.log import init_logging
-from libcommon.queue import Job, Status, get_datetime
-from libcommon.resources import QueueMongoResource
+from libcommon.processing_graph import ProcessingGraph
+from libcommon.queue import Job, JobInfo, Status, get_datetime
+from libcommon.resources import CacheMongoResource, QueueMongoResource
+from libcommon.simple_cache import upsert_response
+from libcommon.storage import init_assets_dir
 from mirakuru import OutputExecutor
 
 from worker import start_worker_loop
 from worker.config import AppConfig
+from worker.job_runner_factory import JobRunnerFactory
 from worker.loop import WorkerState
+from worker.resources import LibrariesResource
 
 WORKER_STATE_FILE_NAME = "worker_state.json"
 START_WORKER_LOOP_PATH = start_worker_loop.__file__
@@ -32,9 +39,15 @@ async def every(
         await asyncio.sleep(seconds)
 
 
+class WorkerCrashedError(CustomError):
+    def __init__(self, message: str, cause: Optional[BaseException] = None):
+        super().__init__(message, HTTPStatus.NOT_IMPLEMENTED, "WorkerCrashedError", cause, False)
+
+
 class WorkerExecutor:
-    def __init__(self, app_config: AppConfig) -> None:
+    def __init__(self, app_config: AppConfig, job_runner_factory: JobRunnerFactory) -> None:
         self.app_config = app_config
+        self.job_runner_factory = job_runner_factory
 
     def _create_worker_loop_executor(self) -> OutputExecutor:
         banner = self.app_config.worker.state_path
@@ -123,6 +136,35 @@ class WorkerExecutor:
             Job.objects(pk__in=[zombie.pk for zombie in zombies]).update(
                 status=Status.ERROR, finished_at=get_datetime()
             )
+            for zombie in zombies:
+                job_info = JobInfo(
+                    job_id=str(zombie.pk),
+                    type=zombie.type,
+                    dataset=zombie.dataset,
+                    config=zombie.config,
+                    split=zombie.split,
+                    force=zombie.force,
+                    priority=zombie.priority,
+                )
+                job_runner = self.job_runner_factory.create_job_runner(job_info)
+                error = WorkerCrashedError("Worker crashed while running this job.")
+                upsert_response(
+                    kind=job_runner.processing_step.cache_kind,
+                    dataset=job_runner.dataset,
+                    config=job_runner.config,
+                    split=job_runner.split,
+                    content=dict(error.as_response()),
+                    http_status=error.status_code,
+                    error_code=error.code,
+                    details=dict(error.as_response_with_cause()),
+                    worker_version=job_runner.get_version(),
+                    dataset_git_revision=job_runner.get_dataset_git_revision(),
+                )
+                logging.debug(
+                    "response for"
+                    f" dataset={job_runner.dataset} config={job_runner.config} split={job_runner.split} had an error,"
+                    " cache updated"
+                )
 
     def is_worker_alive(self, worker_loop_executor: OutputExecutor) -> bool:
         if not worker_loop_executor.running():
@@ -140,10 +182,35 @@ if __name__ == "__main__":
         app_config = AppConfig.from_env()
         init_logging(log_level=app_config.common.log_level)
 
-        with QueueMongoResource(
-            database=app_config.queue.mongo_database, host=app_config.queue.mongo_url
-        ) as queue_resource:
+        init_logging(log_level=app_config.common.log_level)
+        # ^ set first to have logs as soon as possible
+        assets_directory = init_assets_dir(directory=app_config.assets.storage_directory)
+
+        processing_graph = ProcessingGraph(app_config.processing_graph.specification)
+
+        with (
+            LibrariesResource(
+                hf_endpoint=app_config.common.hf_endpoint,
+                init_hf_datasets_cache=app_config.datasets_based.hf_datasets_cache,
+                numba_path=app_config.numba.path,
+            ) as libraries_resource,
+            CacheMongoResource(
+                database=app_config.cache.mongo_database, host=app_config.cache.mongo_url
+            ) as cache_resource,
+            QueueMongoResource(
+                database=app_config.queue.mongo_database, host=app_config.queue.mongo_url
+            ) as queue_resource,
+        ):
+            if not cache_resource.is_available():
+                raise RuntimeError("The connection to the cache database could not be established. Exiting.")
             if not queue_resource.is_available():
                 raise RuntimeError("The connection to the queue database could not be established. Exiting.")
-            worker_executor = WorkerExecutor(app_config)
+
+            job_runner_factory = JobRunnerFactory(
+                app_config=app_config,
+                processing_graph=processing_graph,
+                hf_datasets_cache=libraries_resource.hf_datasets_cache,
+                assets_directory=assets_directory,
+            )
+            worker_executor = WorkerExecutor(app_config, job_runner_factory)
             worker_executor.start()

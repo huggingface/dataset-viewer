@@ -6,7 +6,17 @@
 import time
 from contextlib import suppress
 from pathlib import Path
-from typing import Any, Iterator, List, Literal, Mapping, Optional, Tuple, TypedDict
+from typing import (
+    Any,
+    Callable,
+    Iterator,
+    List,
+    Literal,
+    Mapping,
+    Optional,
+    Tuple,
+    TypedDict,
+)
 
 import pytest
 import requests
@@ -129,6 +139,21 @@ def delete_hub_dataset_repo(repo_id: str) -> None:
 
 
 # TODO: factor all the datasets fixture with one function that manages the yield and deletion
+
+
+@pytest.fixture
+def tmp_dataset_repo_factory() -> Iterator[Callable[[str], str]]:
+    repo_ids: List[str] = []
+
+    def _tmp_dataset_repo(repo_id: str) -> str:
+        nonlocal repo_ids
+        hf_api.create_repo(repo_id=repo_id, token=CI_USER_TOKEN, repo_type=DATASET)
+        repo_ids.append(repo_id)
+        return repo_id
+
+    yield _tmp_dataset_repo
+    for repo_id in repo_ids:
+        delete_hub_dataset_repo(repo_id=repo_id)
 
 
 # https://docs.pytest.org/en/6.2.x/fixture.html#yield-fixtures-recommended

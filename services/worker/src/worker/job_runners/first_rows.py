@@ -23,6 +23,7 @@ from typing import (
 
 from datasets import (
     Dataset,
+    DownloadConfig,
     Features,
     IterableDataset,
     get_dataset_config_info,
@@ -194,12 +195,14 @@ def get_rows(
     rows_max_number: int,
     use_auth_token: Union[bool, str, None] = False,
 ) -> List[Row]:
+    download_config = DownloadConfig(delete_extracted=True)
     ds = load_dataset(
         dataset,
         name=config,
         split=split,
         streaming=streaming,
         use_auth_token=use_auth_token,
+        download_config=download_config,
     )
     if streaming:
         if not isinstance(ds, IterableDataset):
@@ -484,7 +487,7 @@ def compute_first_rows_response(
         raise SplitsNamesError("Cannot get the split names for the dataset.", cause=err) from err
     # ^ can raise DatasetNotFoundError or SplitsNamesError
     if config not in [split_full_name["config"] for split_full_name in split_full_names]:
-        raise ConfigNotFoundError(f"config {config} does not exist for dataset {dataset}")
+        raise ConfigNotFoundError(f"The config '{config}' does not exist for the dataset.'")
     if {"dataset": dataset, "config": config, "split": split} not in [
         {
             "dataset": split_full_name["dataset"],
@@ -493,7 +496,7 @@ def compute_first_rows_response(
         }
         for split_full_name in split_full_names
     ]:
-        raise SplitNotFoundError("The config or the split does not exist in the dataset")
+        raise SplitNotFoundError(f"The split '{split}' does not exist for the config '{config}' of the dataset.")
     # get the features
     try:
         info = get_dataset_config_info(
@@ -502,7 +505,10 @@ def compute_first_rows_response(
             use_auth_token=use_auth_token,
         )
     except Exception as err:
-        raise InfoError("The info cannot be fetched for the dataset config.", cause=err) from err
+        raise InfoError(
+            f"The info cannot be fetched for the config '{config}' of the dataset.",
+            cause=err,
+        ) from err
     if not info.features:
         try:
             # https://github.com/huggingface/datasets/blob/f5826eff9b06ab10dba1adfa52543341ef1e6009/src/datasets/iterable_dataset.py#L1255
@@ -514,19 +520,27 @@ def compute_first_rows_response(
                 use_auth_token=use_auth_token,
             )
             if not isinstance(iterable_dataset, IterableDataset):
-                raise TypeError("load_dataset should return an IterableDataset")
+                raise TypeError("load_dataset should return an IterableDataset.")
             iterable_dataset = iterable_dataset._resolve_features()
             if not isinstance(iterable_dataset, IterableDataset):
-                raise TypeError("load_dataset should return an IterableDataset")
+                raise TypeError("load_dataset should return an IterableDataset.")
             features = iterable_dataset.features
         except Exception as err:
-            raise FeaturesError("The split features (columns) cannot be extracted.", cause=err) from err
+            raise FeaturesError(
+                (
+                    f"Cannot extract the features (columns) for the split '{split}' of the config '{config}' of the"
+                    " dataset."
+                ),
+                cause=err,
+            ) from err
     else:
         features = info.features
 
     if features and len(features) > columns_max_number:
         raise TooManyColumnsError(
-            f"Too many columns. The maximum supported number of columns is {columns_max_number}."
+            f"The number of columns ({len(features)}) exceeds the maximum supported number of columns"
+            f" ({columns_max_number}). This is a current limitation of the datasets viewer. You can reduce the number"
+            " of columns if you want the viewer to work."
         )
 
     # validate size of response without the rows
@@ -541,7 +555,10 @@ def compute_first_rows_response(
 
     surrounding_json_size = get_json_size(response_features_only)
     if surrounding_json_size > rows_max_bytes:
-        raise TooBigContentError("The first rows content after truncation exceeds the maximum size.")
+        raise TooBigContentError(
+            f"The size of the content of the first rows ({surrounding_json_size} B) exceeds the maximum"
+            f" supported size ({rows_max_bytes} B) even after truncation. Please report the issue."
+        )
 
     # get the rows
     try:
@@ -663,7 +680,7 @@ class FirstRowsJobRunner(DatasetsBasedJobRunner):
         )
 
     def get_new_splits(self, _: Mapping[str, Any]) -> set[_SplitFullName]:
-        """Get the set of new splits, from the content created by the compute."""
+        """Get the set of new splits, from the content created by compute."""
         if self.config is None or self.split is None:
             raise ValueError("config and split are required")
         return {_SplitFullName(dataset=self.dataset, config=self.config, split=self.split)}
