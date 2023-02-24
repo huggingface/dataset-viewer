@@ -81,24 +81,68 @@ def get_input_parameters(query_params: QueryParams) -> InputParameters:
     return InputParameters(dataset=dataset, config=config, split=split)
 
 
-def get_first_cache_entry_from_steps(
-    processing_steps: List[ProcessingStep], input_parameters: InputParameters
+def get_first_succeeded_cache_entry_from_steps(
+    processing_steps: List[ProcessingStep],
+    input_parameters: InputParameters,
+    init_processing_steps: List[ProcessingStep],
+    hf_endpoint: str,
+    hf_token: Optional[str] = None,
 ) -> Optional[CacheEntry]:
+    """Gets the cache from the first succedeed step in the processing step list.
+    If no succeeded result is found, it will return the last one even if it was failed,
+    if no one result is found, it returns None.
+    Checks if job is still in progress by each processing step in case of no entry found.
+    """
+    last_result = None
     for processing_step in processing_steps:
         try:
-            result = get_response(
+            last_result = get_response(
                 kind=processing_step.cache_kind,
                 dataset=input_parameters.dataset,
                 config=input_parameters.config,
                 split=input_parameters.split,
             )
-            return result
+
+            if last_result["http_status"] == HTTPStatus.OK:
+                return last_result
         except DoesNotExist:
             logging.warning(
                 f"processing_step={processing_step.name} dataset={input_parameters.dataset} "
                 f"config={input_parameters.config} split={input_parameters.split} no entry found"
             )
-    return None
+            try:
+                check_in_process(
+                    processing_step=processing_step,
+                    init_processing_steps=init_processing_steps,
+                    dataset=input_parameters.dataset,
+                    config=input_parameters.config,
+                    split=input_parameters.split,
+                    hf_endpoint=hf_endpoint,
+                    hf_token=hf_token,
+                )
+            except (PreviousStepError, DatasetError):
+                raise ResponseNotFoundError("Not found.")
+    return last_result
+
+
+def get_response_from_cache_entry(
+    result: Optional[CacheEntry],
+    max_age_long: int = 0,
+    max_age_short: int = 0,
+) -> Response:
+    if result:
+        content = result["content"]
+        http_status = result["http_status"]
+        error_code = result["error_code"]
+        if http_status == HTTPStatus.OK:
+            return get_json_ok_response(content=content, max_age=max_age_long)
+        else:
+            return get_json_error_response(
+                content=content, status_code=http_status, max_age=max_age_short, error_code=error_code
+            )
+    raise ResponseNotReadyError(
+        "The server is busier than usual and the response is not ready yet. Please retry later."
+    )
 
 
 def create_endpoint(
@@ -132,37 +176,11 @@ def create_endpoint(
             # if auth_check fails, it will raise an exception that will be caught below
             auth_check(params.dataset, external_auth_url=external_auth_url, request=request)
 
-            # try to get result from steps
-            result = get_first_cache_entry_from_steps(processing_steps, params)
-            if result:
-                content = result["content"]
-                http_status = result["http_status"]
-                error_code = result["error_code"]
-                if http_status == HTTPStatus.OK:
-                    return get_json_ok_response(content=content, max_age=max_age_long)
-                else:
-                    return get_json_error_response(
-                        content=content, status_code=http_status, max_age=max_age_short, error_code=error_code
-                    )
+            result = get_first_succeeded_cache_entry_from_steps(
+                processing_steps, params, init_processing_steps, hf_endpoint, hf_token
+            )
 
-            # maybe the response is in process"
-            logging.warning("No response found for processing steps")
-            for processing_step in processing_steps:
-                try:
-                    check_in_process(
-                        processing_step=processing_step,
-                        init_processing_steps=init_processing_steps,
-                        dataset=params.dataset,
-                        config=params.config,
-                        split=params.split,
-                        hf_endpoint=hf_endpoint,
-                        hf_token=hf_token,
-                    )
-                except (PreviousStepError, DatasetError):
-                    raise ResponseNotFoundError("Not found.")
-                raise ResponseNotReadyError(
-                    "The server is busier than usual and the response is not ready yet. Please retry later."
-                )
+            return get_response_from_cache_entry(result, max_age_long, max_age_short)
         except ApiCustomError as e:
             return get_json_api_error_response(error=e, max_age=max_age_short)
         except Exception as e:

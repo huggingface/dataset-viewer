@@ -5,18 +5,20 @@ from http import HTTPStatus
 
 from libcommon.config import ProcessingGraphConfig
 from libcommon.processing_graph import ProcessingGraph
-from libcommon.simple_cache import upsert_response
+from libcommon.queue import Queue
+from libcommon.simple_cache import CacheEntry, upsert_response
 from pytest import raises
 from starlette.datastructures import QueryParams
 
-from api.config import EndpointConfig
+from api.config import AppConfig, EndpointConfig
 from api.routes.endpoint import (
     EndpointsDefinition,
     InputParameters,
-    get_first_cache_entry_from_steps,
+    get_first_succeeded_cache_entry_from_steps,
     get_input_parameters,
+    get_response_from_cache_entry,
 )
-from api.utils import MissingRequiredParameterError
+from api.utils import MissingRequiredParameterError, ResponseNotReadyError
 
 
 def test_endpoints_definition() -> None:
@@ -103,8 +105,10 @@ def test_first_entry_from_steps() -> None:
     dataset = "dataset"
     config = "config"
 
+    app_config = AppConfig.from_env()
     graph_config = ProcessingGraphConfig()
     graph = ProcessingGraph(graph_config.specification)
+    init_processing_steps = graph.get_first_steps()
 
     cache_with_error = "/split-names-from-streaming"
     cache_without_error = "/split-names-from-dataset-info"
@@ -130,13 +134,65 @@ def test_first_entry_from_steps() -> None:
         http_status=HTTPStatus.INTERNAL_SERVER_ERROR,
     )
 
-    result = get_first_cache_entry_from_steps([step_with_error, step_whitout_error], input_params)
-    assert result
-    assert result["http_status"] == HTTPStatus.INTERNAL_SERVER_ERROR
-
-    result = get_first_cache_entry_from_steps([step_whitout_error, step_with_error], input_params)
+    # succeeded result is returned
+    result = get_first_succeeded_cache_entry_from_steps(
+        [step_whitout_error, step_with_error], input_params, init_processing_steps, app_config.common.hf_endpoint
+    )
     assert result
     assert result["http_status"] == HTTPStatus.OK
 
+    # succeeded result is returned even if first step failed
+    result = get_first_succeeded_cache_entry_from_steps(
+        [step_with_error, step_whitout_error], input_params, init_processing_steps, app_config.common.hf_endpoint
+    )
+    assert result
+    assert result["http_status"] == HTTPStatus.OK
+
+    # error result is returned if all steps failed
+    result = get_first_succeeded_cache_entry_from_steps(
+        [step_with_error, step_with_error], input_params, init_processing_steps, app_config.common.hf_endpoint
+    )
+    assert result
+    assert result["http_status"] == HTTPStatus.INTERNAL_SERVER_ERROR
+
+    # peding job returns None
+    queue = Queue()
+    queue.upsert_job(job_type="/splits", dataset=dataset, config=config, force=True)
     non_existent_step = graph.get_step("/splits")
-    assert not get_first_cache_entry_from_steps([non_existent_step], input_params)
+    assert not get_first_succeeded_cache_entry_from_steps(
+        [non_existent_step], input_params, init_processing_steps, app_config.common.hf_endpoint
+    )
+
+
+def test_get_response_from_cache_entry() -> None:
+    # raises exception if no cache entry found
+    with raises(ResponseNotReadyError) as e:
+        get_response_from_cache_entry(result=None)
+    assert e.value.message == "The server is busier than usual and the response is not ready yet. Please retry later."
+
+    # returns OK response
+    cache_entry = CacheEntry(
+        http_status=HTTPStatus.OK,
+        error_code=None,
+        worker_version="worker_version",
+        dataset_git_revision="git_version",
+        content={},
+    )
+
+    response = get_response_from_cache_entry(cache_entry)
+    assert response
+    assert "X-Error-Code" not in response.headers
+
+    # returns ERROR response
+    error_code = "error_code"
+    cache_entry = CacheEntry(
+        http_status=HTTPStatus.INTERNAL_SERVER_ERROR,
+        error_code=error_code,
+        worker_version="worker_version",
+        dataset_git_revision="git_version",
+        content={},
+    )
+
+    response = get_response_from_cache_entry(cache_entry)
+    assert response
+    assert response.headers["X-Error-Code"] == error_code
