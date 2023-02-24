@@ -1259,14 +1259,14 @@ cli = ["click (>=5.0)"]
 
 [[package]]
 name = "pytz"
-version = "2022.7.1"
+version = "2020.5"
 description = "World timezone definitions, modern and historical"
 category = "main"
 optional = false
 python-versions = "*"
 files = [
-    {file = "pytz-2022.7.1-py2.py3-none-any.whl", hash = "sha256:78f4f37d8198e0627c5f1143240bb0206b8691d8d7ac6d78fee88b78733f8c4a"},
-    {file = "pytz-2022.7.1.tar.gz", hash = "sha256:01a0681c4b9684a28304615eba55d1ab31ae00bf68ec157ec3708a8182dbbcd0"},
+    {file = "pytz-2020.5-py2.py3-none-any.whl", hash = "sha256:16962c5fb8db4a8f63a26646d8886e9d769b6c511543557bc84e9569fb9a9cb4"},
+    {file = "pytz-2020.5.tar.gz", hash = "sha256:180befebb1927b16f6b57101720075a984c019ac16b1b7575673bea42c6c3da5"},
 ]
 
 [[package]]
@@ -1504,6 +1504,18 @@ files = [
 ]
 
 [[package]]
+name = "types-pytz"
+version = "2022.7.1.2"
+description = "Typing stubs for pytz"
+category = "main"
+optional = false
+python-versions = "*"
+files = [
+    {file = "types-pytz-2022.7.1.2.tar.gz", hash = "sha256:487d3e8e9f4071eec8081746d53fa982bbc05812e719dcbf2ebf3d55a1a4cd28"},
+    {file = "types_pytz-2022.7.1.2-py3-none-any.whl", hash = "sha256:40ca448a928d566f7d44ddfde0066e384f7ffbd4da2778e42a4570eaca572446"},
+]
+
+[[package]]
 name = "types-requests"
 version = "2.28.11.14"
 description = "Typing stubs for requests"
@@ -1574,4 +1586,4 @@ files = [
 [metadata]
 lock-version = "2.0"
 python-versions = "3.9.15"
-content-hash = "23337fd477a0965e17e6801fe20ba68d1c6fa1dcb9e281a6ec78485e9a3abe30"
+content-hash = "f38214dac191b2c10d86350cccd4624d21d1dea514c9b3f1b62e904bea64d658"
