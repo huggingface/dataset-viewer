@@ -504,7 +504,7 @@ def _request_size(url: str, hf_token: Optional[str] = None) -> Optional[int]:
     return int(size) if size is not None else size
 
 
-class _MockStreamingDownloadManager(StreamingDownloadManager):
+class _MockStreamingDownloadManager(StreamingDownloadManager):  # type: ignore
     def __init__(self, *args: Any, **kwargs: Any) -> None:
         super().__init__(*args, **kwargs)
         self.ext_data_files: List[str] = []
@@ -514,7 +514,7 @@ class _MockStreamingDownloadManager(StreamingDownloadManager):
             self._download,
             url_or_urls,
             map_tuple=True,
-            parallel_min_length=np.inf,  # type: ignore
+            parallel_min_length=np.inf,
             # ^ parallel_min_length has int type, but is currently used in datasets for a comparison only
             # and it works with np.inf. No conversion is involved
             # (would raise: OverflowError: cannot convert float infinity to integer)
@@ -544,7 +544,7 @@ def raise_if_too_big_from_external_data_files(
         base_path=builder.base_path, download_config=DownloadConfig(use_auth_token=hf_token)
     )
     try:
-        builder._split_generators(mock_dl_manager)  # type: ignore
+        builder._split_generators(mock_dl_manager)
     except (requests.exceptions.RequestException, NotImplementedError) as error:
         if isinstance(error, NotImplementedError):
             # we can ignore the errors from functions not implemented in streaming mode like `.extract()` on TAR files
@@ -790,7 +790,7 @@ def compute_parquet_and_dataset_info_response(
             hf_token=hf_token,
         )
         builder.download_and_prepare(file_format="parquet")  # the parquet files are stored in the cache dir
-        dataset_info[config] = asdict(builder.info)  # type: ignore
+        dataset_info[config] = asdict(builder.info)
         # ^ see
         # https://github.dev/huggingface/datasets/blob/e183a269067575db8765ee979bd8523d14a1adae/src/datasets/info.py#L244-L245
         # note that asdict() is not typed in the datasets library, hence type: ignore

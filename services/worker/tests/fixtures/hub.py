@@ -330,7 +330,7 @@ def create_dataset_info_response_for_csv(dataset: str, config: str) -> Any:
         "download_checksums": {
             f"https://hub-ci.huggingface.co/datasets/{dataset}/resolve/__COMMIT__/dataset.csv": {
                 "num_bytes": 50,
-                "checksum": "441b6927a5442803821415bdcb0f418731b0d2a525a7f2e68ce0df0e95d444de",
+                "checksum": None,
             }
         },
         "download_size": 50,
@@ -349,13 +349,13 @@ def create_dataset_info_response_for_audio(dataset: str, config: str) -> Any:
         "splits": {"train": {"name": "train", "num_bytes": 59, "num_examples": 1, "dataset_name": "parquet"}},
         "download_checksums": {
             "SOME_KEY": {
-                "num_bytes": 1124,
-                "checksum": "3b630ef6ede66c5ced336df78fd99d98f835b459baadbe88a2cdf180709e9543",
+                "num_bytes": 1383,
+                "checksum": None,
             }
         },
-        "download_size": 1124,
+        "download_size": 1383,
         "dataset_size": 59,
-        "size_in_bytes": 1183,
+        "size_in_bytes": 1442,
     }
 
 

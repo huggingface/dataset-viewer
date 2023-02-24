@@ -32,7 +32,7 @@ def value(content: Any, dtype: Any) -> Dataset:
 
 def other(content: Any, feature_type: Optional[FeatureType] = None) -> Dataset:
     if feature_type:
-        features = Features({"col": feature_type})  # type: ignore
+        features = Features({"col": feature_type})
         return Dataset.from_dict({"col": [content]}, features=features)
     else:
         return Dataset.from_dict({"col": [content]})
