@@ -136,7 +136,7 @@ class Job(Document):
             ("type", "dataset", "config", "split", "status", "force", "priority"),
             ("priority", "status", "type", "created_at", "namespace", "unicity_id"),
             "-created_at",
-            {'fields': ['finished_at'], 'expireAfterSeconds': QUEUE_TTL_SECONDS}
+            {"fields": ["finished_at"], "expireAfterSeconds": QUEUE_TTL_SECONDS},
         ],
     }
     type = StringField(required=True)
