@@ -86,5 +86,5 @@ module = "datasets"
 
 [[tool.mypy.overrides]]
 ignore_missing_imports = true
-module = "mirakuru"
+module = "mirakuru.*"
 # ^ until https://github.com/ClearcodeHQ/mirakuru/pull/633 is merged and released
