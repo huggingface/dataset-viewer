@@ -108,7 +108,9 @@ def ask_access(dataset: str, hf_endpoint: str, hf_token: Optional[str]) -> None:
         if r.status_code == 403:
             raise GatedDisabledError("The dataset is gated and access is disabled.") from err
         if r.status_code in [401, 404]:
-            raise DatasetNotFoundError("The dataset does not exist on the Hub, or is private.") from err
+            raise DatasetNotFoundError(
+                "The dataset does not exist on the Hub, or is private. Private datasets are not yet supported."
+            ) from err
         raise err
 
 
@@ -146,7 +148,7 @@ def get_dataset_info_for_supported_datasets(
     except RepositoryNotFoundError:
         ask_access(dataset=dataset, hf_endpoint=hf_endpoint, hf_token=hf_token)
     if dataset_info.private:
-        raise DatasetNotFoundError("The dataset does not exist on the Hub, or is private.")
+        raise DatasetNotFoundError("The dataset is private and private datasets are not yet supported.")
     return dataset_info
 
 

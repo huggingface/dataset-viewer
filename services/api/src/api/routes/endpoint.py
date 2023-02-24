@@ -102,7 +102,9 @@ def create_endpoint(
                     )
                 except (PreviousStepError, DatasetError):
                     raise ResponseNotFoundError("Not found.") from e
-                raise ResponseNotReadyError("The response is not ready yet. Please retry later.") from e
+                raise ResponseNotReadyError(
+                    "The server is busier than usual and the response is not ready yet. Please retry later."
+                ) from e
         except ApiCustomError as e:
             return get_json_api_error_response(error=e, max_age=max_age_short)
         except Exception as e:

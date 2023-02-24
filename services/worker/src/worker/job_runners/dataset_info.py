@@ -62,7 +62,7 @@ def compute_dataset_info_response(dataset: str) -> DatasetInfoResponse:
     <Tip>
     Raises the following errors:
         - [`~job_runners.dataset_info.PreviousStepStatusError`]
-          If the the previous step gave an error.
+          If the previous step gave an error.
         - [`~job_runners.dataset_info.PreviousStepFormatError`]
             If the content of the previous step has not the expected format
     </Tip>
@@ -72,14 +72,16 @@ def compute_dataset_info_response(dataset: str) -> DatasetInfoResponse:
     try:
         response = get_response(kind="/parquet-and-dataset-info", dataset=dataset)
     except DoesNotExist as e:
-        raise DatasetNotFoundError("No response found in previous step for this dataset.", e) from e
+        raise DatasetNotFoundError(
+            "No response found in previous step for this dataset: '/parquet-and-dataset-info' endpoint.", e
+        ) from e
     if response["http_status"] != HTTPStatus.OK:
         raise PreviousStepStatusError(
             f"Previous step gave an error: {response['http_status']}. This job should not have been created."
         )
     content = response["content"]
     if "dataset_info" not in content:
-        raise PreviousStepFormatError("Previous step did not return the expected content.")
+        raise PreviousStepFormatError("Previous step did not return the expected content: 'dataset_info'.")
     return {
         "dataset_info": content["dataset_info"],
     }
