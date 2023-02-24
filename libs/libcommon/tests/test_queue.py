@@ -11,7 +11,6 @@ import pytz
 
 from libcommon.queue import (
     EmptyQueueError,
-    JobInfo,
     Priority,
     Queue,
     Status,
