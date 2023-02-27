@@ -672,9 +672,7 @@ class Queue:
             return 0
         zombie_job_ids = [zombie["job_id"] for zombie in zombies]
         zombies_examples = zombie_job_ids[:10]
-        zombies_examples_str = ", ".join(zombies_examples) + (
-            "..." if len(zombies_examples) != len(zombies) else ""
-        )
+        zombies_examples_str = ", ".join(zombies_examples) + ("..." if len(zombies_examples) != len(zombies) else "")
         logging.info(f"Killing {len(zombies)} zombies. Job ids = " + zombies_examples_str)
         return Job.objects(pk__in=zombie_job_ids, status=Status.STARTED).update(
             status=Status.ERROR, finished_at=get_datetime()

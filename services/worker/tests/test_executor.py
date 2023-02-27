@@ -12,7 +12,7 @@ import pytest
 import pytz
 from filelock import FileLock
 from libcommon.processing_graph import ProcessingGraph
-from libcommon.queue import Job, JobInfo, Priority, Status, get_datetime, DoesNotExist
+from libcommon.queue import DoesNotExist, Job, JobInfo, Priority, Status, get_datetime
 from libcommon.resources import CacheMongoResource, QueueMongoResource
 from libcommon.simple_cache import CachedResponse
 from libcommon.storage import StrPath
