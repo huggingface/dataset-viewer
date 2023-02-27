@@ -29,10 +29,19 @@ async def every(
         await asyncio.sleep(seconds)
 
 
+class BadWorkerState(RuntimeError):
+    """Raised when the worker state frm the worker read by the executor is not valid."""
+    pass
+
+
 class WorkerExecutor:
     def __init__(self, app_config: AppConfig, job_runner_factory: JobRunnerFactory) -> None:
         self.app_config = app_config
         self.job_runner_factory = job_runner_factory
+
+        max_missing_heartbeats = self.app_config.worker.max_missing_heartbeats
+        heartbeat_interval_seconds = self.app_config.worker.heartbeat_interval_seconds
+        self.max_seconds_without_heartbeat_for_zombies = heartbeat_interval_seconds * max_missing_heartbeats
 
     def _create_worker_loop_executor(self) -> OutputExecutor:
         banner = self.app_config.worker.state_path
@@ -67,8 +76,8 @@ class WorkerExecutor:
                     with open(worker_state_path, "r") as worker_state_f:
                         worker_state = json.load(worker_state_f)
                         return WorkerState(current_job_info=worker_state.get("current_job_info"))
-                except json.JSONDecodeError:
-                    return WorkerState(current_job_info=None)
+                except json.JSONDecodeError as err:
+                    raise BadWorkerState(f"Failed to read worker state at {worker_state_path}") from err
         else:
             return WorkerState(current_job_info=None)
 
@@ -78,11 +87,8 @@ class WorkerExecutor:
             Queue().heartbeat(job_id=worker_state["current_job_info"]["job_id"])
 
     def kill_zombies(self) -> None:
-        max_missing_heartbeats = self.app_config.worker.max_missing_heartbeats
-        heartbeat_interval_seconds = self.app_config.worker.heartbeat_interval_seconds
-        max_seconds_without_heartbeat = heartbeat_interval_seconds * max_missing_heartbeats
         queue = Queue()
-        zombies = queue.get_zombies(max_seconds_without_heartbeat=max_seconds_without_heartbeat)
+        zombies = queue.get_zombies(max_seconds_without_heartbeat=self.max_seconds_without_heartbeat_for_zombies)
         queue.kill_zombies(zombies)
         message = "Job runner crashed while running this job (missing heartbeats)."
         for zombie in zombies:
