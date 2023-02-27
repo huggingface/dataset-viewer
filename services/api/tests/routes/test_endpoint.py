@@ -34,11 +34,6 @@ def test_endpoints_definition() -> None:
     assert config_names[InputType.DATASET] is not None
     assert len(config_names[InputType.DATASET]) == 1  # Only has one processing step
 
-    split_names_from_streaming = definition["/split-names-from-streaming"]
-    assert split_names_from_streaming is not None
-    assert split_names_from_streaming[InputType.CONFIG] is not None
-    assert len(split_names_from_streaming[InputType.CONFIG]) == 1  # Only has one processing step
-
     splits = definition["/splits"]
     assert splits is not None
     assert splits[InputType.DATASET] is not None

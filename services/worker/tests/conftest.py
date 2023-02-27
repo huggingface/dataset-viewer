@@ -4,7 +4,7 @@
 from pathlib import Path
 from typing import Iterator
 
-from libcommon.processing_graph import ProcessingStep
+from libcommon.processing_graph import InputType, ProcessingStep
 from libcommon.queue import _clean_queue_database
 from libcommon.resources import CacheMongoResource, QueueMongoResource
 from libcommon.simple_cache import _clean_cache_database
@@ -116,7 +116,7 @@ def assets_directory(app_config: AppConfig) -> StrPath:
 def test_processing_step() -> ProcessingStep:
     return ProcessingStep(
         name="/dummy",
-        input_type="dataset",
+        input_type=InputType.DATASET,
         requires=None,
         required_by_dataset_viewer=False,
         parent=None,

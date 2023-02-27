@@ -9,7 +9,7 @@ from typing import Any, Callable, Mapping, Optional
 
 import datasets.config
 import pytest
-from libcommon.processing_graph import ProcessingStep
+from libcommon.processing_graph import InputType, ProcessingStep
 from libcommon.queue import Priority
 from libcommon.resources import CacheMongoResource, QueueMongoResource
 from libcommon.simple_cache import get_response
@@ -68,7 +68,7 @@ def get_job_runner(
             app_config=app_config,
             processing_step=ProcessingStep(
                 name=DummyJobRunner.get_job_type(),
-                input_type="split",
+                input_type=InputType.SPLIT,
                 requires=None,
                 required_by_dataset_viewer=False,
                 parent=None,

@@ -91,6 +91,7 @@ def test_get_endpoint(client: TestClient, first_dataset_endpoint: str) -> None:
     assert response.status_code == 422
 
 
+@pytest.mark.skip(reason="no way to test this scenario since there is no endpoint supporting only config")
 @pytest.mark.parametrize(
     "dataset,config",
     [
