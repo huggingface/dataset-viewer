@@ -35,10 +35,10 @@ class MigrationQueueUpdateSplitNames(Migration):
                                 "find": f"Job[{split_names}",
                                 "replacement": f"Job[{split_names_from_streaming}",
                             }
-                        }
+                        },
+                        "type": split_names_from_streaming,
                     }
                 },
-                {"$set": {"type": split_names_from_streaming}},
             ],  # type: ignore
         )
 
@@ -61,10 +61,10 @@ class MigrationQueueUpdateSplitNames(Migration):
                                 "find": f"Job[{split_names_from_streaming}",
                                 "replacement": f"Job[{split_names}",
                             }
-                        }
+                        },
+                        "type": split_names_from_streaming,
                     }
                 },
-                {"$set": {"type": split_names}},
             ],  # type: ignore
         )
 
