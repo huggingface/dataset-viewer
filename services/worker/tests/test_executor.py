@@ -12,7 +12,7 @@ import pytest
 import pytz
 from filelock import FileLock
 from libcommon.processing_graph import ProcessingGraph
-from libcommon.queue import Job, JobInfo, Priority, Status, get_datetime
+from libcommon.queue import Job, JobInfo, Priority, Status, get_datetime, DoesNotExist
 from libcommon.resources import CacheMongoResource, QueueMongoResource
 from libcommon.simple_cache import CachedResponse
 from libcommon.storage import StrPath
@@ -86,8 +86,10 @@ def set_just_started_job_in_queue(queue_mongo_resource: QueueMongoResource) -> I
     if not queue_mongo_resource.is_available():
         raise RuntimeError("Mongo resource is not available")
     job_info = get_job_info()
-    if Job.objects.with_id(job_info["job_id"]):  # type: ignore
-        Job.objects.with_id(job_info["job_id"]).delete()  # type: ignore
+    try:
+        Job.objects(pk=job_info["job_id"]).get().delete()
+    except DoesNotExist:
+        pass
     created_at = get_datetime()
     job = Job(
         pk=job_info["job_id"],
@@ -112,8 +114,10 @@ def set_long_running_job_in_queue(app_config: AppConfig, queue_mongo_resource: Q
     if not queue_mongo_resource.is_available():
         raise RuntimeError("Mongo resource is not available")
     job_info = get_job_info("long")
-    if Job.objects.with_id(job_info["job_id"]):  # type: ignore
-        Job.objects.with_id(job_info["job_id"]).delete()  # type: ignore
+    try:
+        Job.objects(pk=job_info["job_id"]).get().delete()
+    except DoesNotExist:
+        pass
     created_at = get_datetime() - timedelta(days=1)
     last_heartbeat = get_datetime() - timedelta(seconds=app_config.worker.heartbeat_interval_seconds)
     job = Job(
@@ -140,8 +144,10 @@ def set_zombie_job_in_queue(queue_mongo_resource: QueueMongoResource) -> Iterato
     if not queue_mongo_resource.is_available():
         raise RuntimeError("Mongo resource is not available")
     job_info = get_job_info("zombie")
-    if Job.objects.with_id(job_info["job_id"]):  # type: ignore
-        Job.objects.with_id(job_info["job_id"]).delete()  # type: ignore
+    try:
+        Job.objects(pk=job_info["job_id"]).get().delete()
+    except DoesNotExist:
+        pass
     created_at = get_datetime() - timedelta(days=1)
     job = Job(
         pk=job_info["job_id"],
@@ -218,8 +224,8 @@ def test_executor_kill_zombies(
     tmp_dataset_repo_factory(zombie.dataset)
     try:
         executor.kill_zombies()
-        assert Job.objects.with_id(zombie.pk).status == Status.ERROR  # type: ignore
-        assert Job.objects.with_id(normal_job.pk).status == Status.STARTED  # type: ignore
+        assert Job.objects(pk=zombie.pk).get().status == Status.ERROR
+        assert Job.objects(pk=normal_job.pk).get().status == Status.STARTED
         response = CachedResponse.objects()[0]
         expected_error = {
             "error": "Job runner crashed while running this job (missing heartbeats).",
@@ -251,9 +257,9 @@ def test_executor_start(
     assert current_job is not None
     assert str(current_job.pk) == get_job_info()["job_id"]
     assert heartbeat_mock.call_count > 0
-    assert Job.objects.with_id(set_just_started_job_in_queue.pk).last_heartbeat is not None  # type: ignore
+    assert Job.objects(pk=set_just_started_job_in_queue.pk).get().last_heartbeat is not None
     assert kill_zombies_mock.call_count > 0
-    assert Job.objects.with_id(set_zombie_job_in_queue.pk).status == Status.ERROR  # type: ignore
+    assert Job.objects(pk=set_zombie_job_in_queue.pk).get().status == Status.ERROR
 
 
 @pytest.mark.parametrize(
