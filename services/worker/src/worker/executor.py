@@ -30,7 +30,7 @@ async def every(
 
 
 class BadWorkerState(RuntimeError):
-    """Raised when the worker state frm the worker read by the executor is not valid."""
+    """Raised when the worker state from the worker read by the executor is not valid."""
 
     pass
 

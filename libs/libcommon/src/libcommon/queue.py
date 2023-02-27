@@ -625,12 +625,12 @@ class Queue:
     def heartbeat(self, job_id: str) -> None:
         """Update the job `last_heartbeat` field with the current date.
         This is used to keep track of running jobs.
-        If a job doesn have recent heartbeats, it means it crashed at one point and is considered a zombie.
+        If a job doesn't have recent heartbeats, it means it crashed at one point and is considered a zombie.
         """
         try:
             job = self.get_job_with_id(job_id)
         except DoesNotExist:
-            logging.warning(f"Hearbeat skipped because job {job_id} doesn;t exist in the queue.")
+            logging.warning(f"Heartbeat skipped because job {job_id} doesn't exist in the queue.")
             return
         job.update(last_heartbeat=get_datetime())
 
@@ -639,7 +639,7 @@ class Queue:
         It returns jobs without recent heartbeats, which means they crashed at one point and became zombies.
         Usually `max_seconds_without_heartbeat` is a factor of the time between two heartbeats.
 
-        Returns: an array of the zombie jobs.
+        Returns: an array of the zombie job infos.
         """
         started_jobs = Job.objects(status=Status.STARTED)
         if max_seconds_without_heartbeat <= 0:
