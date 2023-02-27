@@ -661,7 +661,6 @@ psutil = "^5.9.4"
 pymongo = {version = "^3.13.0", extras = ["srv"]}
 pytz = "^2020.1"
 requests = "^2.28.2"
-types-pytz = "^2022.1.1"
 
 [package.source]
 type = "directory"
@@ -1831,18 +1830,6 @@ python-versions = "*"
 files = [
     {file = "types-psutil-5.9.5.8.tar.gz", hash = "sha256:26e2841996fdfc66542ef74eb27ed3fbd8199bfa84e9aac0c36e177b8a74341e"},
     {file = "types_psutil-5.9.5.8-py3-none-any.whl", hash = "sha256:21dc3aa224554b81226785708443c8b1f19d8c52a350f1a75eb9f82dfb35fffd"},
-]
-
-[[package]]
-name = "types-pytz"
-version = "2022.7.1.2"
-description = "Typing stubs for pytz"
-category = "main"
-optional = false
-python-versions = "*"
-files = [
-    {file = "types-pytz-2022.7.1.2.tar.gz", hash = "sha256:487d3e8e9f4071eec8081746d53fa982bbc05812e719dcbf2ebf3d55a1a4cd28"},
-    {file = "types_pytz-2022.7.1.2-py3-none-any.whl", hash = "sha256:40ca448a928d566f7d44ddfde0066e384f7ffbd4da2778e42a4570eaca572446"},
 ]
 
 [[package]]

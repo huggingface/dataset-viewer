@@ -1507,7 +1507,7 @@ files = [
 name = "types-pytz"
 version = "2022.7.1.2"
 description = "Typing stubs for pytz"
-category = "main"
+category = "dev"
 optional = false
 python-versions = "*"
 files = [
@@ -1586,4 +1586,4 @@ files = [
 [metadata]
 lock-version = "2.0"
 python-versions = "3.9.15"
-content-hash = "f38214dac191b2c10d86350cccd4624d21d1dea514c9b3f1b62e904bea64d658"
+content-hash = "cfcb2f1c0c312d601ff81a829435ff17e651b1be8959b8302f336b6d6ef9d2aa"
