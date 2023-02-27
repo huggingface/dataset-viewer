@@ -99,17 +99,16 @@ class EndpointConfig:
 
     step_names_by_input_type_and_endpoint: StepNamesByInputTypeAndEndpoint = field(
         default_factory=lambda: {
-            "/config-names": {"dataset": ["/config-names"]},
-            "/split-names-from-streaming": {"config": ["/split-names-from-streaming"]},
+            "/config-names": {InputType.DATASET: ["/config-names"]},
             "/splits": {
-                "dataset": ["/splits"],
-                "config": ["/split-names-from-streaming", "/split-names-from-dataset-info"],
+                InputType.DATASET: ["/splits"],
+                InputType.CONFIG: ["/split-names-from-streaming", "/split-names-from-dataset-info"],
             },
-            "/first-rows": {"split": ["/first-rows"]},
-            "/parquet-and-dataset-info": {"dataset": ["/parquet-and-dataset-info"]},
-            "/parquet": {"dataset": ["/parquet"]},
-            "/dataset-info": {"dataset": ["/dataset-info"]},
-            "/sizes": {"dataset": ["/sizes"]},
+            "/first-rows": {InputType.SPLIT: ["/first-rows"]},
+            "/parquet-and-dataset-info": {InputType.DATASET: ["/parquet-and-dataset-info"]},
+            "/parquet": {InputType.DATASET: ["/parquet"]},
+            "/dataset-info": {InputType.DATASET: ["/dataset-info"]},
+            "/sizes": {InputType.DATASET: ["/sizes"]},
         }
     )
 

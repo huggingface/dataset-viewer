@@ -2,7 +2,6 @@
 # Copyright 2022 The HuggingFace Authors.
 
 import logging
-from dataclasses import dataclass, field
 from http import HTTPStatus
 from typing import List, Mapping, Optional
 
@@ -10,7 +9,6 @@ from libcommon.dataset import DatasetError
 from libcommon.operations import PreviousStepError, check_in_process
 from libcommon.processing_graph import InputType, ProcessingGraph, ProcessingStep
 from libcommon.simple_cache import CacheEntry, DoesNotExist, get_response
-from starlette.datastructures import QueryParams
 from starlette.requests import Request
 from starlette.responses import Response
 
@@ -19,7 +17,6 @@ from api.config import EndpointConfig
 from api.utils import (
     ApiCustomError,
     Endpoint,
-    MissingProcessingStepsError,
     MissingRequiredParameterError,
     ResponseNotFoundError,
     ResponseNotReadyError,
@@ -50,41 +47,11 @@ class EndpointsDefinition:
         }
 
 
-@dataclass
-class InputParameters:
-    dataset: str
-    config: Optional[str]
-    split: Optional[str]
-    input_type: InputType = field(init=False)
-
-    def __post_init__(self) -> None:
-        self.input_type = "split" if self.split else "config" if self.config else "dataset"
-
-
-def get_input_parameters(query_params: QueryParams) -> InputParameters:
-    dataset = query_params.get("dataset")
-
-    if not are_valid_parameters([dataset]) or not dataset:
-        raise MissingRequiredParameterError("Parameter 'dataset' is required")
-
-    config = None
-    config_param = query_params.get("config")
-    if are_valid_parameters([config_param]):
-        config = config_param
-
-    split = None
-    split_param = query_params.get("split")
-    if are_valid_parameters([split_param]):
-        split = split_param
-        if config is None:
-            raise MissingRequiredParameterError("Parameter 'config' is required")
-
-    return InputParameters(dataset=dataset, config=config, split=split)
-
-
 def get_first_succeeded_cache_entry_from_steps(
     processing_steps: List[ProcessingStep],
-    input_parameters: InputParameters,
+    dataset: str,
+    config: Optional[str],
+    split: Optional[str],
     init_processing_steps: List[ProcessingStep],
     hf_endpoint: str,
     hf_token: Optional[str] = None,
@@ -99,25 +66,25 @@ def get_first_succeeded_cache_entry_from_steps(
         try:
             last_result = get_response(
                 kind=processing_step.cache_kind,
-                dataset=input_parameters.dataset,
-                config=input_parameters.config,
-                split=input_parameters.split,
+                dataset=dataset,
+                config=config,
+                split=split,
             )
 
             if last_result["http_status"] == HTTPStatus.OK:
                 return last_result
         except DoesNotExist:
             logging.debug(
-                f"processing_step={processing_step.name} dataset={input_parameters.dataset} "
-                f"config={input_parameters.config} split={input_parameters.split} no entry found"
+                f"processing_step={processing_step.name} dataset={dataset} "
+                f"config={config} split={split} no entry found"
             )
             try:
                 check_in_process(
                     processing_step=processing_step,
                     init_processing_steps=init_processing_steps,
-                    dataset=input_parameters.dataset,
-                    config=input_parameters.config,
-                    split=input_parameters.split,
+                    dataset=dataset,
+                    config=config,
+                    split=split,
                     hf_endpoint=hf_endpoint,
                     hf_token=hf_token,
                 )
@@ -147,6 +114,24 @@ def get_response_from_cache_entry(
     )
 
 
+def get_input_types_by_priority(steps_by_input_type: StepsByInputType) -> List[InputType]:
+    input_type_order = [InputType.SPLIT, InputType.CONFIG, InputType.DATASET]
+    return [input_type for input_type in input_type_order if input_type in steps_by_input_type]
+
+
+def are_request_parameters_enough_for_input_type(
+    input_type: InputType, dataset: Optional[str], config: Optional[str], split: Optional[str]
+) -> bool:
+    parameters = (
+        [dataset]
+        if input_type == InputType.DATASET
+        else [config, dataset]
+        if input_type == InputType.CONFIG
+        else [split, config, dataset]
+    )
+    return are_valid_parameters(parameters)
+
+
 def create_endpoint(
     endpoint_name: str,
     steps_by_input_type: StepsByInputType,
@@ -159,27 +144,41 @@ def create_endpoint(
 ) -> Endpoint:
     async def processing_step_endpoint(request: Request) -> Response:
         try:
-            # getting input params
-            params: InputParameters = get_input_parameters(request.query_params)
-            logging.info(
-                f"input_type={params.input_type}, dataset={params.dataset}, config={params.config},"
-                f" split={params.split}"
-            )
+            # validating request parameters
+            dataset = request.query_params.get("dataset")
 
-            if params.input_type not in steps_by_input_type:
-                raise MissingRequiredParameterError("Operation not supported or not found")
+            if not are_valid_parameters([dataset]) or not dataset:
+                raise MissingRequiredParameterError("Parameter 'dataset' is required")
 
-            processing_steps = steps_by_input_type[params.input_type]
+            config = request.query_params.get("config")
+            split = request.query_params.get("split")
+
+            input_types = get_input_types_by_priority(steps_by_input_type=steps_by_input_type)
+
+            logging.debug(f"endpoint={endpoint_name} dataset={dataset} config={config} split={split}")
+            processing_steps = []
+            error_message = "Parameter 'dataset' is required"
+            for input_type in input_types:
+                if are_request_parameters_enough_for_input_type(input_type, dataset, config, split):
+                    processing_steps = steps_by_input_type[input_type]
+                    config = None if input_type == InputType.DATASET else config
+                    split = None if input_type in (InputType.DATASET, InputType.CONFIG) else split
+                    logging.debug(f"Input type = {input_type} is the appropiated for the params")
+                    break
+                elif input_type == InputType.CONFIG:
+                    error_message = "Parameters 'config' and 'dataset' are required"
+                elif input_type == InputType.SPLIT:
+                    error_message = "Parameters 'split', 'config' and 'dataset' are required"
+
             if not processing_steps:
-                raise MissingProcessingStepsError(
-                    f"No processing steps found for endpoint '{endpoint_name}' and input type '{params.input_type}'"
-                )
+                raise MissingRequiredParameterError(error_message)
 
             # if auth_check fails, it will raise an exception that will be caught below
-            auth_check(params.dataset, external_auth_url=external_auth_url, request=request)
+            auth_check(dataset, external_auth_url=external_auth_url, request=request)
 
+            # getting result based on processing steps
             result = get_first_succeeded_cache_entry_from_steps(
-                processing_steps, params, init_processing_steps, hf_endpoint, hf_token
+                processing_steps, dataset, config, split, init_processing_steps, hf_endpoint, hf_token
             )
 
             return get_response_from_cache_entry(result, max_age_long, max_age_short)

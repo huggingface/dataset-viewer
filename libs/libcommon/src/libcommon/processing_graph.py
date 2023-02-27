@@ -5,9 +5,14 @@ from __future__ import annotations
 
 import warnings
 from dataclasses import dataclass
+from enum import Enum
 from typing import List, Literal, Mapping, Optional, TypedDict
 
-InputType = Literal["dataset", "config", "split"]
+
+class InputType(str, Enum):
+    DATASET = "dataset"
+    CONFIG = "config"
+    SPLIT = "split"
 
 
 class _ProcessingStepSpecification(TypedDict):

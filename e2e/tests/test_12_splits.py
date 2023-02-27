@@ -61,12 +61,13 @@ def test_splits_using_openapi(status: int, name: str, dataset: str, error_code: 
     "status,dataset,config,error_code",
     [
         # (200, "duorc", "SelfRC", None),
-        (422, "inexistent-dataset-with-split", "my_config", "MissingRequiredParameter"),
+        (401, "missing-parameter", None, "ExternalUnauthenticatedError")
+        # missing config will result in asking dataset but it does not exist
     ],
 )
 def test_splits_with_config_using_openapi(status: int, dataset: str, config: str, error_code: str) -> None:
     r_splits = (
-        poll(f"/splits?dataset={dataset}&config={config}&split=extra_param", error_field="error")
+        poll(f"/splits?dataset={dataset}&config=", error_field="error")
         if error_code
         else poll(f"/splits?dataset={dataset}&config={config}")
     )

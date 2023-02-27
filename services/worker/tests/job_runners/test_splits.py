@@ -7,7 +7,7 @@ from typing import Callable
 
 import pytest
 from libcommon.exceptions import CustomError
-from libcommon.processing_graph import ProcessingStep
+from libcommon.processing_graph import InputType, ProcessingStep
 from libcommon.queue import Priority
 from libcommon.resources import CacheMongoResource, QueueMongoResource
 from libcommon.simple_cache import DoesNotExist, get_response
@@ -45,7 +45,7 @@ def get_job_runner(
             app_config=app_config,
             processing_step=ProcessingStep(
                 name=SplitsJobRunner.get_job_type(),
-                input_type="dataset",
+                input_type=InputType.DATASET,
                 requires=None,
                 required_by_dataset_viewer=True,
                 parent=None,
