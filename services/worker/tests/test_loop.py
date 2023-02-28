@@ -50,6 +50,7 @@ def test_process_next_job(
     libraries_resource: LibrariesResource,
     cache_mongo_resource: CacheMongoResource,
     queue_mongo_resource: QueueMongoResource,
+    worker_state_file_path: str,
 ) -> None:
     factory = DummyJobRunnerFactory(processing_step=test_processing_step)
     loop = Loop(
@@ -57,6 +58,7 @@ def test_process_next_job(
         library_cache_paths=libraries_resource.storage_paths,
         worker_config=WorkerConfig(),
         max_jobs_per_namespace=app_config.queue.max_jobs_per_namespace,
+        state_file_path=worker_state_file_path,
     )
     assert not loop.process_next_job()
     dataset = "dataset"

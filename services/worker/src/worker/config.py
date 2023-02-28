@@ -22,6 +22,7 @@ WORKER_MAX_LOAD_PCT = 70
 WORKER_MAX_MEMORY_PCT = 80
 WORKER_MAX_MISSING_HEARTBEATS = 5
 WORKER_SLEEP_SECONDS = 15
+WORKER_STATE_FILE_PATH = None
 
 
 def get_empty_str_list() -> List[str]:
@@ -37,7 +38,7 @@ class WorkerConfig:
     only_job_types: list[str] = field(default_factory=get_empty_str_list)
     sleep_seconds: int = WORKER_SLEEP_SECONDS
     storage_paths: List[str] = field(default_factory=get_empty_str_list)
-    state_path: Optional[str] = None
+    state_file_path: Optional[str] = WORKER_STATE_FILE_PATH
     heartbeat_interval_seconds: int = WORKER_HEARTBEAT_INTERVAL_SECONDS
     max_missing_heartbeats: int = WORKER_MAX_MISSING_HEARTBEATS
     kill_zombies_interval_seconds: int = WORKER_KILL_ZOMBIES_INTERVAL_SECONDS
@@ -54,7 +55,9 @@ class WorkerConfig:
                 sleep_seconds=env.int(name="SLEEP_SECONDS", default=WORKER_SLEEP_SECONDS),
                 only_job_types=env.list(name="ONLY_JOB_TYPES", default=get_empty_str_list()),
                 storage_paths=env.list(name="STORAGE_PATHS", default=get_empty_str_list()),
-                state_path=env.str(name="STATE_PATH", default=None),
+                state_file_path=env.str(
+                    name="STATE_FILE_PATH", default=WORKER_STATE_FILE_PATH
+                ),  # this environment variable is not expected to be set explicitly, it's set by the worker executor
                 heartbeat_interval_seconds=env.int(
                     name="HEARTBEAT_INTERVAL_SECONDS", default=WORKER_HEARTBEAT_INTERVAL_SECONDS
                 ),
