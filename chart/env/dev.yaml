@@ -161,7 +161,7 @@ workers:
   -
     deployName: "generic"
     maxJobsPerNamespace: 1
-    workerOnlyJobTypes: []
+    workerOnlyJobTypes: ""
     nodeSelector: {}
     replicas: 1
     resources:
@@ -175,7 +175,7 @@ workers:
   -
     deployName: "first-rows"
     maxJobsPerNamespace: 1
-    workerOnlyJobTypes: ["/first-rows"]
+    workerOnlyJobTypes: "/first-rows"
     nodeSelector: {}
     replicas: 1
     resources:
@@ -189,7 +189,7 @@ workers:
   -
     deployName: "parquet-and-dataset-info"
     maxJobsPerNamespace: 1
-    workerOnlyJobTypes: []
+    workerOnlyJobTypes: "/parquet-and-dataset-info"
     nodeSelector: {}
     replicas: 1
     resources:
