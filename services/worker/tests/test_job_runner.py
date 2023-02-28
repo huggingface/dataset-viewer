@@ -7,7 +7,7 @@ from libcommon.config import CommonConfig
 from libcommon.processing_graph import ProcessingGraph, ProcessingStep
 from libcommon.queue import Priority, Queue, Status
 from libcommon.resources import CacheMongoResource, QueueMongoResource
-from libcommon.simple_cache import SplitFullName, upsert_response
+from libcommon.simple_cache import CachedResponse, SplitFullName, upsert_response
 
 from worker.config import WorkerConfig
 from worker.job_runner import ERROR_CODES_TO_RETRY, JobRunner
@@ -316,3 +316,39 @@ def test_create_children_jobs() -> None:
     )
     # we don't know the order
     assert {child_split_jobs[0]["split"], child_split_jobs[1]["split"]} == {"split1", "split2"}
+
+
+def test_job_runner_set_crashed(
+    test_processing_step: ProcessingStep,
+) -> None:
+    job_id = "job_id"
+    dataset = "dataset"
+    config = "config"
+    split = "split"
+    force = False
+    message = "I'm crashed :("
+    job_runner = DummyJobRunner(
+        job_info={
+            "job_id": job_id,
+            "type": test_processing_step.job_type,
+            "dataset": dataset,
+            "config": config,
+            "split": split,
+            "force": force,
+            "priority": Priority.NORMAL,
+        },
+        processing_step=test_processing_step,
+        common_config=CommonConfig(),
+        worker_config=WorkerConfig(),
+    )
+    job_runner.set_crashed(message=message)
+    response = CachedResponse.objects()[0]
+    expected_error = {"error": message}
+    assert response.http_status == HTTPStatus.NOT_IMPLEMENTED
+    assert response.error_code == "JobRunnerCrashedError"
+    assert response.dataset == dataset
+    assert response.config == config
+    assert response.split == split
+    assert response.content == expected_error
+    assert response.details == expected_error
+    # TODO: check if it stores the correct dataset git sha and job version when it's implemented

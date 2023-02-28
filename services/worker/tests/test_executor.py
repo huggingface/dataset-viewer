@@ -12,7 +12,7 @@ import pytest
 import pytz
 from filelock import FileLock
 from libcommon.processing_graph import ProcessingGraph
-from libcommon.queue import Job, JobInfo, Priority, Status, get_datetime
+from libcommon.queue import DoesNotExist, Job, JobInfo, Priority, Status, get_datetime
 from libcommon.resources import CacheMongoResource, QueueMongoResource
 from libcommon.simple_cache import CachedResponse
 from libcommon.storage import StrPath
@@ -20,9 +20,9 @@ from mirakuru import ProcessExitedWithError, TimeoutExpired
 from pytest import fixture
 
 from worker.config import AppConfig
+from worker.executor import WorkerExecutor
 from worker.job_runner_factory import JobRunnerFactory
 from worker.loop import WorkerState
-from worker.main import WorkerExecutor
 from worker.resources import LibrariesResource
 
 _TIME = int(time.time() * 10e3)
@@ -86,8 +86,10 @@ def set_just_started_job_in_queue(queue_mongo_resource: QueueMongoResource) -> I
     if not queue_mongo_resource.is_available():
         raise RuntimeError("Mongo resource is not available")
     job_info = get_job_info()
-    if Job.objects.with_id(job_info["job_id"]):  # type: ignore
-        Job.objects.with_id(job_info["job_id"]).delete()  # type: ignore
+    try:
+        Job.objects(pk=job_info["job_id"]).get().delete()
+    except DoesNotExist:
+        pass
     created_at = get_datetime()
     job = Job(
         pk=job_info["job_id"],
@@ -112,10 +114,12 @@ def set_long_running_job_in_queue(app_config: AppConfig, queue_mongo_resource: Q
     if not queue_mongo_resource.is_available():
         raise RuntimeError("Mongo resource is not available")
     job_info = get_job_info("long")
-    if Job.objects.with_id(job_info["job_id"]):  # type: ignore
-        Job.objects.with_id(job_info["job_id"]).delete()  # type: ignore
+    try:
+        Job.objects(pk=job_info["job_id"]).get().delete()
+    except DoesNotExist:
+        pass
     created_at = get_datetime() - timedelta(days=1)
-    last_heartbeat = get_datetime() - timedelta(seconds=app_config.worker.heartbeat_time_interval_seconds)
+    last_heartbeat = get_datetime() - timedelta(seconds=app_config.worker.heartbeat_interval_seconds)
     job = Job(
         pk=job_info["job_id"],
         type=job_info["type"],
@@ -140,8 +144,10 @@ def set_zombie_job_in_queue(queue_mongo_resource: QueueMongoResource) -> Iterato
     if not queue_mongo_resource.is_available():
         raise RuntimeError("Mongo resource is not available")
     job_info = get_job_info("zombie")
-    if Job.objects.with_id(job_info["job_id"]):  # type: ignore
-        Job.objects.with_id(job_info["job_id"]).delete()  # type: ignore
+    try:
+        Job.objects(pk=job_info["job_id"]).get().delete()
+    except DoesNotExist:
+        pass
     created_at = get_datetime() - timedelta(days=1)
     job = Job(
         pk=job_info["job_id"],
@@ -190,37 +196,15 @@ def test_executor_get_empty_state(
     assert executor.get_state() == WorkerState(current_job_info=None)
 
 
-def test_executor_get_current_job(
-    executor: WorkerExecutor, set_just_started_job_in_queue: Job, set_worker_state: WorkerState
-) -> None:
-    assert executor.get_current_job() == set_just_started_job_in_queue
-
-
-def test_executor_get_nonexisting_current_job(executor: WorkerExecutor) -> None:
-    assert executor.get_current_job() is None
-
-
-def test_executor_get_zombies(
-    executor: WorkerExecutor,
-    set_just_started_job_in_queue: Job,
-    set_long_running_job_in_queue: Job,
-    set_zombie_job_in_queue: Job,
-) -> None:
-    zombie = set_zombie_job_in_queue
-    assert executor.get_zombies() == [zombie]
-
-
 def test_executor_heartbeat(
     executor: WorkerExecutor,
     set_just_started_job_in_queue: Job,
     set_worker_state: WorkerState,
 ) -> None:
-    current_job = executor.get_current_job()
-    assert current_job is not None
+    current_job = set_just_started_job_in_queue
     assert current_job.last_heartbeat is None
     executor.heartbeat()
-    current_job = executor.get_current_job()
-    assert current_job is not None
+    current_job.reload()
     assert current_job.last_heartbeat is not None
     last_heartbeat_datetime = pytz.UTC.localize(current_job.last_heartbeat)
     assert last_heartbeat_datetime >= get_datetime() - timedelta(seconds=1)
@@ -236,18 +220,18 @@ def test_executor_kill_zombies(
     cache_mongo_resource: CacheMongoResource,
 ) -> None:
     zombie = set_zombie_job_in_queue
+    normal_job = set_just_started_job_in_queue
     tmp_dataset_repo_factory(zombie.dataset)
-    assert executor.get_zombies() == [zombie]
     try:
         executor.kill_zombies()
-        assert executor.get_zombies() == []
-        assert Job.objects.with_id(zombie.pk).status == Status.ERROR  # type: ignore
+        assert Job.objects(pk=zombie.pk).get().status == Status.ERROR
+        assert Job.objects(pk=normal_job.pk).get().status == Status.STARTED
         response = CachedResponse.objects()[0]
         expected_error = {
-            "error": "Worker crashed while running this job.",
+            "error": "Job runner crashed while running this job (missing heartbeats).",
         }
         assert response.http_status == HTTPStatus.NOT_IMPLEMENTED
-        assert response.error_code == "WorkerCrashedError"
+        assert response.error_code == "JobRunnerCrashedError"
         assert response.dataset == zombie.dataset
         assert response.config == zombie.config
         assert response.split == zombie.split
@@ -267,15 +251,15 @@ def test_executor_start(
         raise RuntimeError("Mongo resource is not available")
     with patch.object(executor, "heartbeat", wraps=executor.heartbeat) as heartbeat_mock:
         with patch.object(executor, "kill_zombies", wraps=executor.kill_zombies) as kill_zombies_mock:
-            with patch("worker.main.START_WORKER_LOOP_PATH", __file__):
+            with patch("worker.executor.START_WORKER_LOOP_PATH", __file__):
                 executor.start()
-    current_job = executor.get_current_job()
+    current_job = set_just_started_job_in_queue
     assert current_job is not None
     assert str(current_job.pk) == get_job_info()["job_id"]
     assert heartbeat_mock.call_count > 0
-    assert Job.objects.with_id(set_just_started_job_in_queue.pk).last_heartbeat is not None  # type: ignore
+    assert Job.objects(pk=set_just_started_job_in_queue.pk).get().last_heartbeat is not None
     assert kill_zombies_mock.call_count > 0
-    assert Job.objects.with_id(set_zombie_job_in_queue.pk).status == Status.ERROR  # type: ignore
+    assert Job.objects(pk=set_zombie_job_in_queue.pk).get().status == Status.ERROR
 
 
 @pytest.mark.parametrize(
@@ -290,7 +274,7 @@ def test_executor_raises_on_bad_worker(
     with bad_start_worker_loop_path.open("w") as bad_start_worker_loop_f:
         bad_start_worker_loop_f.write("raise RuntimeError('Tried to start a bad worker loop.')")
     with patch.dict(os.environ, {"WORKER_LOOP_TYPE": bad_worker_loop_type}):
-        with patch("worker.main.START_WORKER_LOOP_PATH", __file__):
+        with patch("worker.executor.START_WORKER_LOOP_PATH", __file__):
             with pytest.raises((ProcessExitedWithError, TimeoutExpired)):
                 executor.start()
 

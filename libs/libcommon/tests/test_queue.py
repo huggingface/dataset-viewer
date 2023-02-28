@@ -2,9 +2,12 @@
 # Copyright 2022 The HuggingFace Authors.
 
 import time
+from datetime import datetime, timedelta
 from typing import Iterator, Optional
+from unittest.mock import patch
 
 import pytest
+import pytz
 
 from libcommon.queue import (
     EmptyQueueError,
@@ -12,8 +15,13 @@ from libcommon.queue import (
     Queue,
     Status,
     _clean_queue_database,
+    get_datetime,
 )
 from libcommon.resources import QueueMongoResource
+
+
+def get_old_datetime() -> datetime:
+    return get_datetime() - timedelta(days=1)
 
 
 @pytest.fixture(autouse=True)
@@ -284,3 +292,48 @@ def test_get_total_duration_per_dataset() -> None:
     # check the total duration
     assert queue.get_total_duration_per_dataset(job_type=test_type)[test_dataset] >= duration * 3
     # ^ it should be equal,  not >=, but if the runner is slow, it might take a bit more time
+
+
+def test_queue_heartbeat() -> None:
+    job_type = "test_type"
+    queue = Queue()
+    job = queue.upsert_job(job_type=job_type, dataset="dataset1", config="config", split="split1")
+    queue.start_job([job_type])
+    assert job.last_heartbeat is None
+    queue.heartbeat(job.pk)
+    job.reload()
+    assert job.last_heartbeat is not None
+    last_heartbeat_datetime = pytz.UTC.localize(job.last_heartbeat)
+    assert last_heartbeat_datetime >= get_datetime() - timedelta(seconds=1)
+
+
+def test_queue_get_zombies() -> None:
+    job_type = "test_type"
+    queue = Queue()
+    with patch("libcommon.queue.get_datetime", get_old_datetime):
+        zombie = queue.upsert_job(job_type=job_type, dataset="dataset1", config="config", split="split1")
+        queue.start_job([job_type])
+    queue.upsert_job(job_type=job_type, dataset="dataset1", config="config", split="split2")
+    queue.start_job([job_type])
+    assert queue.get_zombies(max_seconds_without_heartbeat=10) == [zombie.info()]
+    assert queue.get_zombies(max_seconds_without_heartbeat=-1) == []
+    assert queue.get_zombies(max_seconds_without_heartbeat=0) == []
+    assert queue.get_zombies(max_seconds_without_heartbeat=9999999) == []
+
+
+def test_queue_kill_zombies() -> None:
+    job_type = "test_type"
+    queue = Queue()
+    with patch("libcommon.queue.get_datetime", get_old_datetime):
+        zombie = queue.upsert_job(job_type=job_type, dataset="dataset1", config="config", split="split1")
+        queue.start_job([job_type])
+    another_job = queue.upsert_job(job_type=job_type, dataset="dataset1", config="config", split="split2")
+    queue.start_job([job_type])
+
+    assert queue.get_zombies(max_seconds_without_heartbeat=10) == [zombie.info()]
+    queue.kill_zombies([zombie.info()])
+    assert queue.get_zombies(max_seconds_without_heartbeat=10) == []
+    zombie.reload()
+    another_job.reload()
+    assert zombie.status == Status.ERROR
+    assert another_job.status == Status.STARTED
