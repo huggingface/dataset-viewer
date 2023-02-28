@@ -142,7 +142,7 @@ class Loop:
 
     def set_worker_state(self, current_job_info: Optional[JobInfo]) -> None:
         worker_state: WorkerState = {"current_job_info": current_job_info}
-        if self.worker_config.state_path:
-            with FileLock(self.worker_config.state_path + ".lock"):
-                with open(self.worker_config.state_path, "w") as worker_state_f:
+        if self.worker_config.state_file_path:
+            with FileLock(f"{self.worker_config.state_file_path}.lock"):
+                with open(self.worker_config.state_file_path, "w") as worker_state_f:
                     json.dump(worker_state, worker_state_f)

@@ -42,29 +42,29 @@ def get_job_info(prefix: str = "base") -> JobInfo:
     )
 
 
-def write_worker_state(worker_state: WorkerState, worker_state_path: str) -> None:
-    with FileLock(worker_state_path + ".lock"):
-        with open(worker_state_path, "w") as worker_state_f:
+def write_worker_state(worker_state: WorkerState, worker_state_file_path: str) -> None:
+    with FileLock(worker_state_file_path + ".lock"):
+        with open(worker_state_file_path, "w") as worker_state_f:
             json.dump(worker_state, worker_state_f)
 
 
 def start_worker_loop() -> None:
     app_config = AppConfig.from_env()
-    if not app_config.worker.state_path:
-        raise ValueError("Failed to get worker state because WORKER_STATE_PATH is missing.")
+    if not app_config.worker.state_file_path:
+        raise ValueError("Failed to get worker state because 'state_file_path' is missing.")
     if "--print-worker-state-path" in sys.argv:
-        print(app_config.worker.state_path, flush=True)
+        print(app_config.worker.state_file_path, flush=True)
     current_job_info = get_job_info()
     worker_state = WorkerState(current_job_info=current_job_info)
-    write_worker_state(worker_state, app_config.worker.state_path)
+    write_worker_state(worker_state, app_config.worker.state_file_path)
 
 
 def start_worker_loop_that_crashes() -> None:
     app_config = AppConfig.from_env()
-    if not app_config.worker.state_path:
-        raise ValueError("Failed to get worker state because WORKER_STATE_PATH is missing.")
+    if not app_config.worker.state_file_path:
+        raise ValueError("Failed to get worker state because 'state_file_path' is missing.")
     if "--print-worker-state-path" in sys.argv:
-        print(app_config.worker.state_path, flush=True)
+        print(app_config.worker.state_file_path, flush=True)
     raise RuntimeError("Tried to run a bad worker loop")
 
 
@@ -73,12 +73,12 @@ def start_worker_loop_that_times_out() -> None:
 
 
 @fixture
-def set_worker_state(worker_state_path: Path) -> Iterator[WorkerState]:
+def set_worker_state(worker_state_file_path: Path) -> Iterator[WorkerState]:
     job_info = get_job_info()
     worker_state = WorkerState(current_job_info=job_info)
-    write_worker_state(worker_state, str(worker_state_path))
+    write_worker_state(worker_state, str(worker_state_file_path))
     yield worker_state
-    os.remove(worker_state_path)
+    os.remove(worker_state_file_path)
 
 
 @fixture

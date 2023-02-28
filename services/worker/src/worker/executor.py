@@ -45,9 +45,9 @@ class WorkerExecutor:
         self.max_seconds_without_heartbeat_for_zombies = heartbeat_interval_seconds * max_missing_heartbeats
 
     def _create_worker_loop_executor(self) -> OutputExecutor:
-        banner = self.app_config.worker.state_path
+        banner = self.app_config.worker.state_file_path
         if not banner:
-            raise ValueError("Failed to create the executor because WORKER_STATE_PATH is missing.")
+            raise ValueError("Failed to create the executor because 'state_file_path' is missing.")
         start_worker_loop_command = [
             sys.executable,
             START_WORKER_LOOP_PATH,
@@ -68,19 +68,18 @@ class WorkerExecutor:
         )
 
     def get_state(self) -> WorkerState:
-        worker_state_path = self.app_config.worker.state_path
-        if not worker_state_path:
-            raise ValueError("Failed to get worker state because WORKER_STATE_PATH is missing.")
-        if os.path.exists(worker_state_path):
-            with FileLock(worker_state_path + ".lock"):
-                try:
-                    with open(worker_state_path, "r") as worker_state_f:
-                        worker_state = json.load(worker_state_f)
-                        return WorkerState(current_job_info=worker_state.get("current_job_info"))
-                except json.JSONDecodeError as err:
-                    raise BadWorkerState(f"Failed to read worker state at {worker_state_path}") from err
-        else:
+        worker_state_file_path = self.app_config.worker.state_file_path
+        if not worker_state_file_path:
+            raise ValueError("Failed to get worker state because 'state_file_path' is missing.")
+        if not os.path.exists(worker_state_file_path):
             return WorkerState(current_job_info=None)
+        with FileLock(f"{worker_state_file_path}.lock"):
+            try:
+                with open(worker_state_file_path, "r") as worker_state_f:
+                    worker_state = json.load(worker_state_f)
+                    return WorkerState(current_job_info=worker_state.get("current_job_info"))
+            except json.JSONDecodeError as err:
+                raise BadWorkerState(f"Failed to read worker state at {worker_state_file_path}") from err
 
     def heartbeat(self) -> None:
         worker_state = self.get_state()

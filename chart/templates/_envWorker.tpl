@@ -18,8 +18,8 @@
   value: {{ .Values.worker.maxMissingHeartbeats | quote }}
 - name: WORKER_SLEEP_SECONDS
   value: {{ .Values.worker.sleepSeconds | quote }}
-- name: WORKER_STATE_PATH
-  value: "/tmp/worker-state"
+- name: WORKER_STATE_FILE_PATH
+  value: "/tmp/worker_state.json"
   # ^the size should remain so small that we don't need to worry about putting it on an external storage
   # note that the /tmp directory is not shared among the pods
 - name: WORKER_STORAGE_PATHS

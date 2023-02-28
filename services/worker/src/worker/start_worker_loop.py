@@ -16,7 +16,7 @@ from worker.resources import LibrariesResource
 if __name__ == "__main__":
     app_config = AppConfig.from_env()
     if "--print-worker-state-path" in sys.argv:
-        print(app_config.worker.state_path, flush=True)
+        print(app_config.worker.state_file_path, flush=True)
 
     init_logging(log_level=app_config.common.log_level)
     # ^ set first to have logs as soon as possible

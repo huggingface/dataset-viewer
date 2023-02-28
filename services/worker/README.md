@@ -19,7 +19,7 @@ Set environment variables to configure the worker.
 - `WORKER_MAX_MISSING_HEARTBEATS`: the number of hearbeats a job must have missed to be considered a zombie job. Defaults to `5`.
 - `WORKER_ONLY_JOB_TYPES`: comma-separated list of the job types to process, e.g. "/splits,/first-rows". If empty, the worker processes all the jobs. Defaults to empty.
 - `WORKER_SLEEP_SECONDS`: wait duration in seconds at each loop iteration before checking if resources are available and processing a job if any is available. Note that the loop doesn't wait just after finishing a job: the next job is immediately processed. Defaults to `15`.
-- `WORKER_STATE_PATH`: directory where the worker executor will store a lock file containing the current job info. If empty, a temporary directory will be used. Defaults to empty.
+- `WORKER_STATE_FILE_PATH`: absolute path of the file where the worker executor will store the state of the current job info. If empty, a temporary file will be used. Defaults to empty.
 - `WORKER_STORAGE_PATHS`: comma-separated list of paths to check for disk usage. Defaults to empty.
 
 ### Datasets based worker
