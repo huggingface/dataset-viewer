@@ -18,9 +18,7 @@ WORKER_STATE_FILE_NAME = "worker_state.json"
 
 if __name__ == "__main__":
     with tempfile.TemporaryDirectory() as tmp_dir:
-        if "WORKER_STATE_FILE_PATH" not in os.environ:
-            os.environ["WORKER_STATE_FILE_PATH"] = os.path.join(tmp_dir, WORKER_STATE_FILE_NAME)
-
+        state_file_path = os.path.join(tmp_dir, WORKER_STATE_FILE_NAME)
         app_config = AppConfig.from_env()
 
         init_logging(log_level=app_config.common.log_level)
@@ -53,5 +51,9 @@ if __name__ == "__main__":
                 hf_datasets_cache=libraries_resource.hf_datasets_cache,
                 assets_directory=assets_directory,
             )
-            worker_executor = WorkerExecutor(app_config, job_runner_factory)
+            worker_executor = WorkerExecutor(
+                app_config=app_config,
+                job_runner_factory=job_runner_factory,
+                state_file_path=state_file_path,
+            )
             worker_executor.start()

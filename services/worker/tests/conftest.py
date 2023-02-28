@@ -29,8 +29,8 @@ def modules_cache_directory(tmp_path: Path) -> Path:
 
 
 @fixture
-def worker_state_file_path(tmp_path: Path) -> Path:
-    return tmp_path / WORKER_STATE_FILE_NAME
+def worker_state_file_path(tmp_path: Path) -> str:
+    return str(tmp_path / WORKER_STATE_FILE_NAME)
 
 
 # see https://github.com/pytest-dev/pytest/issues/363#issuecomment-406536200
@@ -48,7 +48,7 @@ def monkeypatch_session() -> Iterator[MonkeyPatch]:
 # see https://github.com/pytest-dev/pytest/issues/363#issuecomment-406536200
 @fixture
 def set_env_vars(
-    datasets_cache_directory: Path, modules_cache_directory: Path, worker_state_file_path: Path
+    datasets_cache_directory: Path, modules_cache_directory: Path, worker_state_file_path: str
 ) -> Iterator[MonkeyPatch]:
     mp = MonkeyPatch()
     mp.setenv("CACHE_MONGO_DATABASE", "datasets_server_cache_test")
@@ -63,7 +63,7 @@ def set_env_vars(
     mp.setenv("DATASETS_BASED_HF_DATASETS_CACHE", str(datasets_cache_directory))
     mp.setenv("HF_MODULES_CACHE", str(modules_cache_directory))
     mp.setenv("WORKER_CONTENT_MAX_BYTES", "10_000_000")
-    mp.setenv("WORKER_STATE_FILE_PATH", str(worker_state_file_path))
+    mp.setenv("WORKER_STATE_FILE_PATH", worker_state_file_path)
     mp.setenv("WORKER_HEARTBEAT_INTERVAL_SECONDS", "1")
     mp.setenv("WORKER_KILL_ZOMBIES_INTERVAL_SECONDS", "1")
     yield mp

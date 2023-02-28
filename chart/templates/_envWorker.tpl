@@ -18,10 +18,9 @@
   value: {{ .Values.worker.maxMissingHeartbeats | quote }}
 - name: WORKER_SLEEP_SECONDS
   value: {{ .Values.worker.sleepSeconds | quote }}
-- name: WORKER_STATE_FILE_PATH
-  value: "/tmp/worker_state.json"
-  # ^the size should remain so small that we don't need to worry about putting it on an external storage
-  # note that the /tmp directory is not shared among the pods
+- name: TMPDIR
+  value: "/tmp"
+  # ^ensure the temporary files are created in /tmp, which is writable
 - name: WORKER_STORAGE_PATHS
   value: {{ .Values.assets.storageDirectory | quote }}
 # specific to the /first-rows job runner

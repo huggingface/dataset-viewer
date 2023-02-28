@@ -15,8 +15,12 @@ from worker.resources import LibrariesResource
 
 if __name__ == "__main__":
     app_config = AppConfig.from_env()
+
+    state_file_path = app_config.worker.state_file_path
     if "--print-worker-state-path" in sys.argv:
-        print(app_config.worker.state_file_path, flush=True)
+        print(state_file_path, flush=True)
+    if not state_file_path:
+        raise RuntimeError("The worker state file path is not set. Exiting.")
 
     init_logging(log_level=app_config.common.log_level)
     # ^ set first to have logs as soon as possible
@@ -52,6 +56,7 @@ if __name__ == "__main__":
             library_cache_paths=libraries_resource.storage_paths,
             job_runner_factory=job_runner_factory,
             max_jobs_per_namespace=app_config.queue.max_jobs_per_namespace,
+            state_file_path=state_file_path,
             worker_config=app_config.worker,
         )
         loop.run()

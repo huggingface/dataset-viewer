@@ -73,10 +73,10 @@ def start_worker_loop_that_times_out() -> None:
 
 
 @fixture
-def set_worker_state(worker_state_file_path: Path) -> Iterator[WorkerState]:
+def set_worker_state(worker_state_file_path: str) -> Iterator[WorkerState]:
     job_info = get_job_info()
     worker_state = WorkerState(current_job_info=job_info)
-    write_worker_state(worker_state, str(worker_state_file_path))
+    write_worker_state(worker_state, worker_state_file_path)
     yield worker_state
     os.remove(worker_state_file_path)
 
@@ -182,8 +182,10 @@ def job_runner_factory(
 
 
 @fixture
-def executor(app_config: AppConfig, job_runner_factory: JobRunnerFactory) -> WorkerExecutor:
-    return WorkerExecutor(app_config, job_runner_factory)
+def executor(
+    app_config: AppConfig, job_runner_factory: JobRunnerFactory, worker_state_file_path: str
+) -> WorkerExecutor:
+    return WorkerExecutor(app_config, job_runner_factory, state_file_path=worker_state_file_path)
 
 
 def test_executor_get_state(executor: WorkerExecutor, set_worker_state: WorkerState) -> None:

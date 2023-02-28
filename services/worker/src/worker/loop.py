@@ -43,12 +43,15 @@ class Loop:
         max_jobs_per_namespace (`int`):
             The maximum number of jobs that can be processed per namespace. If a namespace has more jobs, the loop will
             wait until some jobs are finished.
+        state_file_path (`str`):
+            The path of the file where the state of the loop will be saved.
     """
 
     job_runner_factory: BaseJobRunnerFactory
     library_cache_paths: set[str]
     worker_config: WorkerConfig
     max_jobs_per_namespace: int
+    state_file_path: str
 
     storage_paths: set[str] = field(init=False)
 
@@ -142,7 +145,6 @@ class Loop:
 
     def set_worker_state(self, current_job_info: Optional[JobInfo]) -> None:
         worker_state: WorkerState = {"current_job_info": current_job_info}
-        if self.worker_config.state_file_path:
-            with FileLock(f"{self.worker_config.state_file_path}.lock"):
-                with open(self.worker_config.state_file_path, "w") as worker_state_f:
-                    json.dump(worker_state, worker_state_f)
+        with FileLock(f"{self.state_file_path}.lock"):
+            with open(self.state_file_path, "w") as worker_state_f:
+                json.dump(worker_state, worker_state_f)

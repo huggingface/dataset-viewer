@@ -55,7 +55,9 @@ class WorkerConfig:
                 sleep_seconds=env.int(name="SLEEP_SECONDS", default=WORKER_SLEEP_SECONDS),
                 only_job_types=env.list(name="ONLY_JOB_TYPES", default=get_empty_str_list()),
                 storage_paths=env.list(name="STORAGE_PATHS", default=get_empty_str_list()),
-                state_file_path=env.str(name="STATE_FILE_PATH", default=WORKER_STATE_FILE_PATH),
+                state_file_path=env.str(
+                    name="STATE_FILE_PATH", default=WORKER_STATE_FILE_PATH
+                ),  # this environment variable is not expected to be set explicitly, it's set by the worker executor
                 heartbeat_interval_seconds=env.int(
                     name="HEARTBEAT_INTERVAL_SECONDS", default=WORKER_HEARTBEAT_INTERVAL_SECONDS
                 ),
