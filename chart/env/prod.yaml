@@ -176,7 +176,7 @@ workers:
   -
     deployName: "generic"
     maxJobsPerNamespace: 4
-    workerOnlyJobTypes: []
+    workerOnlyJobTypes: ""
     nodeSelector:
       role-datasets-server: "true"
     replicas: 20
@@ -191,7 +191,7 @@ workers:
   -
     deployName: "config-names"
     maxJobsPerNamespace: 4
-    workerOnlyJobTypes: ["/config-names"]
+    workerOnlyJobTypes: "/config-names"
     nodeSelector:
       role-datasets-server: "true"
     replicas: 8
@@ -206,7 +206,7 @@ workers:
   -
     deployName: "split-names"
     maxJobsPerNamespace: 5
-    workerOnlyJobTypes: ["/split-names"]
+    workerOnlyJobTypes: "/split-names"
     nodeSelector:
       role-datasets-server: "true"
     replicas: 12
@@ -221,7 +221,7 @@ workers:
   -
     deployName: "splits"
     maxJobsPerNamespace: 5
-    workerOnlyJobTypes: ["/splits"]
+    workerOnlyJobTypes: "/splits"
     nodeSelector:
       role-datasets-server: "true"
     replicas: 8
@@ -236,7 +236,7 @@ workers:
   -
     deployName: "first-rows"
     maxJobsPerNamespace: 4
-    workerOnlyJobTypes: ["/first-rows"]
+    workerOnlyJobTypes: "/first-rows"
     nodeSelector:
       role-datasets-server: "true"
     replicas: 80
@@ -251,7 +251,7 @@ workers:
   -
     deployName: "parquet-and-dataset-info"
     maxJobsPerNamespace: 4
-    workerOnlyJobTypes: ["/parquet-and-dataset-info"]
+    workerOnlyJobTypes: "/parquet-and-dataset-info"
     nodeSelector:
       role-datasets-server: "true"
     replicas: 20
@@ -266,7 +266,7 @@ workers:
   -
     deployName: "parquet"
     maxJobsPerNamespace: 2
-    workerOnlyJobTypes: ["/parquet"]
+    workerOnlyJobTypes: "/parquet"
     nodeSelector:
       role-datasets-server: "true"
     replicas: 2
@@ -281,7 +281,7 @@ workers:
   -
     deployName: "dataset-info"
     maxJobsPerNamespace: 2
-    workerOnlyJobTypes: ["/dataset-info"]
+    workerOnlyJobTypes: "/dataset-info"
     nodeSelector:
       role-datasets-server: "true"
     replicas: 2
@@ -296,7 +296,7 @@ workers:
   -
     deployName: "sizes"
     maxJobsPerNamespace: 2
-    workerOnlyJobTypes: ["/sizes"]
+    workerOnlyJobTypes: "/sizes"
     nodeSelector:
       role-datasets-server: "true"
     replicas: 2

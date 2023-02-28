@@ -277,7 +277,7 @@ workers:
     # Maximum number of jobs running at the same time for the same namespace
     maxJobsPerNamespace: 1
     # job types that this worker can process
-    workerOnlyJobTypes: []
+    workerOnlyJobTypes: ""
     nodeSelector: {}
     replicas: 1
     resources:
@@ -292,7 +292,7 @@ workers:
     # Maximum number of jobs running at the same time for the same namespace
     maxJobsPerNamespace: 1
     # job types that this worker can process
-    workerOnlyJobTypes: ["/config-names"]
+    workerOnlyJobTypes: "/config-names"
     nodeSelector: {}
     replicas: 1
     resources:
@@ -307,7 +307,7 @@ workers:
     # Maximum number of jobs running at the same time for the same namespace
     maxJobsPerNamespace: 1
     # job types that this worker can process
-    workerOnlyJobTypes: ["/split-names"]
+    workerOnlyJobTypes: "/split-names"
     nodeSelector: {}
     replicas: 1
     resources:
@@ -322,7 +322,7 @@ workers:
     # Maximum number of jobs running at the same time for the same namespace
     maxJobsPerNamespace: 1
     # job types that this worker can process
-    workerOnlyJobTypes: ["/splits"]
+    workerOnlyJobTypes: "/splits"
     nodeSelector: {}
     replicas: 1
     resources:
@@ -337,7 +337,7 @@ workers:
     # Maximum number of jobs running at the same time for the same namespace
     maxJobsPerNamespace: 1
     # job types that this worker can process
-    workerOnlyJobTypes: ["/first-rows"]
+    workerOnlyJobTypes: "/first-rows"
     nodeSelector: {}
     replicas: 1
     resources:
@@ -352,7 +352,7 @@ workers:
     # Maximum number of jobs running at the same time for the same namespace
     maxJobsPerNamespace: 1
     # job types that this worker can process
-    workerOnlyJobTypes: ["/parquet-and-dataset-info"]
+    workerOnlyJobTypes: "/parquet-and-dataset-info"
     nodeSelector: {}
     replicas: 1
     resources:
@@ -367,7 +367,7 @@ workers:
     # Maximum number of jobs running at the same time for the same namespace
     maxJobsPerNamespace: 1
     # job types that this worker can process
-    workerOnlyJobTypes: ["/parquet"]
+    workerOnlyJobTypes: "/parquet"
     nodeSelector: {}
     replicas: 1
     resources:
@@ -382,7 +382,7 @@ workers:
     # Maximum number of jobs running at the same time for the same namespace
     maxJobsPerNamespace: 1
     # job types that this worker can process
-    workerOnlyJobTypes: ["/dataset-info"]
+    workerOnlyJobTypes: "/dataset-info"
     nodeSelector: {}
     replicas: 1
     resources:
@@ -397,7 +397,7 @@ workers:
     # Maximum number of jobs running at the same time for the same namespace
     maxJobsPerNamespace: 1
     # job types that this worker can process
-    workerOnlyJobTypes: ["/sizes"]
+    workerOnlyJobTypes: "/sizes"
     nodeSelector: {}
     replicas: 1
     resources:
