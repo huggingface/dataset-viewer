@@ -1871,7 +1871,7 @@
                   "missing-dataset": {
                     "summary": "The dataset parameter is missing.",
                     "value": {
-                      "error": "Parameter 'dataset' is required"
+                      "error": "Parameters 'split', 'config' and 'dataset' are required"
                     }
                   },
                   "missing-config": {
@@ -1889,7 +1889,7 @@
                   "empty-dataset": {
                     "summary": "The dataset parameter is empty.",
                     "value": {
-                      "error": "Parameter 'dataset' is required"
+                      "error": "Parameters 'split', 'config' and 'dataset' are required"
                     }
                   },
                   "empty-config": {

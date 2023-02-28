@@ -6,15 +6,11 @@ from http import HTTPStatus
 from libcommon.config import ProcessingGraphConfig
 from libcommon.processing_graph import ProcessingGraph
 from libcommon.queue import Queue
-from libcommon.simple_cache import CacheEntry, upsert_response
+from libcommon.simple_cache import upsert_response
 from pytest import raises
 
 from api.config import AppConfig, EndpointConfig
-from api.routes.endpoint import (
-    EndpointsDefinition,
-    get_first_succeeded_cache_entry_from_steps,
-    get_response_from_cache_entry,
-)
+from api.routes.endpoint import EndpointsDefinition, get_cache_entry_from_steps
 from api.utils import ResponseNotReadyError
 
 
@@ -66,7 +62,7 @@ def test_endpoints_definition() -> None:
     assert len(sizes["dataset"]) == 1  # Only has one processing step
 
 
-def test_first_entry_from_steps() -> None:
+def test_get_cache_entry_from_steps() -> None:
     dataset = "dataset"
     config = "config"
 
@@ -98,7 +94,7 @@ def test_first_entry_from_steps() -> None:
     )
 
     # succeeded result is returned
-    result = get_first_succeeded_cache_entry_from_steps(
+    result = get_cache_entry_from_steps(
         [step_whitout_error, step_with_error],
         dataset,
         config,
@@ -110,7 +106,7 @@ def test_first_entry_from_steps() -> None:
     assert result["http_status"] == HTTPStatus.OK
 
     # succeeded result is returned even if first step failed
-    result = get_first_succeeded_cache_entry_from_steps(
+    result = get_cache_entry_from_steps(
         [step_with_error, step_whitout_error],
         dataset,
         config,
@@ -122,50 +118,17 @@ def test_first_entry_from_steps() -> None:
     assert result["http_status"] == HTTPStatus.OK
 
     # error result is returned if all steps failed
-    result = get_first_succeeded_cache_entry_from_steps(
+    result = get_cache_entry_from_steps(
         [step_with_error, step_with_error], dataset, config, None, init_processing_steps, app_config.common.hf_endpoint
     )
     assert result
     assert result["http_status"] == HTTPStatus.INTERNAL_SERVER_ERROR
 
-    # peding job returns None
+    # peding job thows exception
     queue = Queue()
     queue.upsert_job(job_type="/splits", dataset=dataset, config=config, force=True)
     non_existent_step = graph.get_step("/splits")
-    assert not get_first_succeeded_cache_entry_from_steps(
-        [non_existent_step], dataset, config, None, init_processing_steps, app_config.common.hf_endpoint
-    )
-
-
-def test_get_response_from_cache_entry() -> None:
-    # raises exception if no cache entry found
-    with raises(ResponseNotReadyError) as e:
-        get_response_from_cache_entry(result=None)
-    assert e.value.message == "The server is busier than usual and the response is not ready yet. Please retry later."
-
-    # returns OK response
-    cache_entry = CacheEntry(
-        http_status=HTTPStatus.OK,
-        error_code=None,
-        worker_version="worker_version",
-        dataset_git_revision="git_version",
-        content={},
-    )
-
-    response = get_response_from_cache_entry(cache_entry)
-    assert response
-    assert "X-Error-Code" not in response.headers
-
-    # returns ERROR response
-    error_code = "error_code"
-    cache_entry = CacheEntry(
-        http_status=HTTPStatus.INTERNAL_SERVER_ERROR,
-        error_code=error_code,
-        worker_version="worker_version",
-        dataset_git_revision="git_version",
-        content={},
-    )
-
-    response = get_response_from_cache_entry(cache_entry)
-    assert response
-    assert response.headers["X-Error-Code"] == error_code
+    with raises(ResponseNotReadyError):
+        get_cache_entry_from_steps(
+            [non_existent_step], dataset, config, None, init_processing_steps, app_config.common.hf_endpoint
+        )
