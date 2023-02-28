@@ -18,8 +18,8 @@ WORKER_STATE_FILE_NAME = "worker_state.json"
 
 if __name__ == "__main__":
     with tempfile.TemporaryDirectory() as tmp_dir:
-        if "WORKER_STATE_FILE_PATH" not in os.environ:
-            os.environ["WORKER_STATE_FILE_PATH"] = os.path.join(tmp_dir, WORKER_STATE_FILE_NAME)
+        state_file_path = os.path.join(tmp_dir, WORKER_STATE_FILE_NAME)
+        os.environ["WORKER_STATE_FILE_PATH"] = state_file_path
 
         app_config = AppConfig.from_env()
 
