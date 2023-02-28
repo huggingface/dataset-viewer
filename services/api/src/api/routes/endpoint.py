@@ -47,7 +47,7 @@ class EndpointsDefinition:
         }
 
 
-def get_first_succeeded_cache_entry_from_steps(
+def get_cache_entry_from_steps(
     processing_steps: List[ProcessingStep],
     dataset: str,
     config: Optional[str],
@@ -56,9 +56,9 @@ def get_first_succeeded_cache_entry_from_steps(
     hf_endpoint: str,
     hf_token: Optional[str] = None,
 ) -> Optional[CacheEntry]:
-    """Gets the cache from the first succedeed step in the processing step list.
-    If no succeeded result is found, it will return the last one even if it was failed,
-    if no one result is found, it returns None.
+    """Gets the cache from the first successful step in the processing steps list.
+    If no successful result is found, it will return the last one even if it's an error,
+    if no result is found, it returns None.
     Checks if job is still in progress by each processing step in case of no entry found.
     """
     last_result = None
