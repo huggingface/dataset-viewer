@@ -3,7 +3,7 @@
 
 from typing import Iterator
 
-from libcommon.processing_graph import ProcessingGraph
+from libcommon.processing_graph import InputType, ProcessingGraph
 from libcommon.queue import _clean_queue_database
 from libcommon.resources import CacheMongoResource, QueueMongoResource
 from libcommon.simple_cache import _clean_cache_database
@@ -37,10 +37,22 @@ def app_config(monkeypatch_session: MonkeyPatch) -> AppConfig:
 
 
 @fixture(scope="session")
-def endpoint_definition(app_config: AppConfig) -> StepsByInputTypeAndEndpoint:
+def endpoint_config(monkeypatch_session: MonkeyPatch) -> EndpointConfig:
+    return EndpointConfig(
+        step_names_by_input_type_and_endpoint={
+            "/config-names": {InputType.DATASET: ["/config-names"]},
+            "/splits": {
+                InputType.CONFIG: ["/split-names-from-streaming"],
+            },
+            "/first-rows": {InputType.SPLIT: ["/first-rows"]},
+        }
+    )
+
+
+@fixture(scope="session")
+def endpoint_definition(endpoint_config: EndpointConfig, app_config: AppConfig) -> StepsByInputTypeAndEndpoint:
     processing_graph = ProcessingGraph(app_config.processing_graph.specification)
-    endpoint_specification = EndpointsDefinition(processing_graph, EndpointConfig.from_env())
-    return endpoint_specification.steps_by_input_type_and_endpoint
+    return EndpointsDefinition(processing_graph, endpoint_config=endpoint_config).steps_by_input_type_and_endpoint
 
 
 @fixture(scope="session")

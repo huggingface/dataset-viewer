@@ -1877,7 +1877,7 @@
                   "missing-config": {
                     "summary": "The config parameter is missing.",
                     "value": {
-                      "error": "Parameters 'config' and 'dataset' are required"
+                      "error": "Parameters 'split', 'config' and 'dataset' are required"
                     }
                   },
                   "missing-split": {
