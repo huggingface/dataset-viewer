@@ -103,8 +103,7 @@ def get_cache_entry_from_steps(
 
 
 class InputTypeValidator(ABC):
-    def __init__(self, input_type: InputType) -> None:
-        self.input_type = input_type
+    input_type: InputType = NotImplemented
 
     @abstractmethod
     def are_parameters_sufficient(self, dataset: Optional[str], config: Optional[str], split: Optional[str]) -> bool:
@@ -123,15 +122,17 @@ class InputTypeValidator(ABC):
     @staticmethod
     def from_input_type(input_type: InputType) -> "InputTypeValidator":
         return (
-            DatasetInputTypeValidator("dataset")
+            DatasetInputTypeValidator()
             if input_type == "dataset"
-            else ConfigInputTypeValidator("config")
+            else ConfigInputTypeValidator()
             if input_type == "config"
-            else SplitInputTypeValidator("split")
+            else SplitInputTypeValidator()
         )
 
 
 class DatasetInputTypeValidator(InputTypeValidator):
+    input_type: InputType = "dataset"
+
     def are_parameters_sufficient(self, dataset: Optional[str], config: Optional[str], split: Optional[str]) -> bool:
         return are_valid_parameters([dataset])
 
@@ -145,6 +146,8 @@ class DatasetInputTypeValidator(InputTypeValidator):
 
 
 class ConfigInputTypeValidator(InputTypeValidator):
+    input_type: InputType = "config"
+
     def are_parameters_sufficient(self, dataset: Optional[str], config: Optional[str], split: Optional[str]) -> bool:
         return are_valid_parameters([dataset, config])
 
@@ -158,6 +161,8 @@ class ConfigInputTypeValidator(InputTypeValidator):
 
 
 class SplitInputTypeValidator(InputTypeValidator):
+    input_type: InputType = "split"
+
     def are_parameters_sufficient(self, dataset: Optional[str], config: Optional[str], split: Optional[str]) -> bool:
         return are_valid_parameters([dataset, config, split])
 
