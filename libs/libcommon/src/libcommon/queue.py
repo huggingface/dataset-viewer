@@ -16,7 +16,7 @@ from mongoengine import Document, DoesNotExist
 from mongoengine.fields import BooleanField, DateTimeField, EnumField, StringField
 from mongoengine.queryset.queryset import QuerySet
 
-from libcommon.constants import QUEUE_MONGOENGINE_ALIAS
+from libcommon.constants import QUEUE_MONGOENGINE_ALIAS, QUEUE_TTL_SECONDS
 
 # START monkey patching ### hack ###
 # see https://github.com/sbdchd/mongo-types#install
@@ -137,6 +137,7 @@ class Job(Document):
             ("type", "dataset", "config", "split", "status", "force", "priority"),
             ("priority", "status", "type", "created_at", "namespace", "unicity_id"),
             "-created_at",
+            {"fields": ["finished_at"], "expireAfterSeconds": QUEUE_TTL_SECONDS},
         ],
     }
     type = StringField(required=True)

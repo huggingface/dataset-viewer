@@ -6,7 +6,7 @@ from http import HTTPStatus
 from typing import Any, List, Literal, Mapping, Optional, TypedDict
 
 from libcommon.dataset import DatasetNotFoundError
-from libcommon.simple_cache import DoesNotExist, get_response
+from libcommon.simple_cache import DoesNotExist, SplitFullName, get_response
 
 from worker.job_runner import JobRunnerError
 from worker.job_runners._datasets_based_job_runner import DatasetsBasedJobRunner
@@ -123,3 +123,9 @@ class SplitNamesFromDatasetInfoJobRunner(DatasetsBasedJobRunner):
         if self.config is None:
             raise ValueError("config is required")
         return compute_split_names_from_dataset_info_response(dataset=self.dataset, config=self.config)
+
+    def get_new_splits(self, content: Mapping[str, Any]) -> set[SplitFullName]:
+        """Get the set of new splits, from the content created by the compute."""
+        return {
+            SplitFullName(dataset=s["dataset"], config=s["config"], split=s["split"]) for s in content["split_names"]
+        }
