@@ -4,7 +4,7 @@ from typing import Any, Mapping, Optional
 
 import pytest
 from libcommon.config import CommonConfig
-from libcommon.processing_graph import InputType, ProcessingGraph, ProcessingStep
+from libcommon.processing_graph import ProcessingGraph, ProcessingStep
 from libcommon.queue import Priority, Queue, Status
 from libcommon.resources import CacheMongoResource, QueueMongoResource
 from libcommon.simple_cache import CachedResponse, SplitFullName, upsert_response
@@ -242,7 +242,7 @@ def test_check_type(
 
     another_processing_step = ProcessingStep(
         name=f"not-{test_processing_step.name}",
-        input_type=InputType.DATASET,
+        input_type="dataset",
         requires=None,
         required_by_dataset_viewer=False,
         parent=None,
@@ -269,10 +269,10 @@ def test_check_type(
 def test_create_children_jobs() -> None:
     graph = ProcessingGraph(
         {
-            "/dummy": {"input_type": InputType.DATASET},
-            "/child-dataset": {"input_type": InputType.DATASET, "requires": "/dummy"},
-            "/child-config": {"input_type": InputType.CONFIG, "requires": "/dummy"},
-            "/child-split": {"input_type": InputType.SPLIT, "requires": "/dummy"},
+            "/dummy": {"input_type": "dataset"},
+            "/child-dataset": {"input_type": "dataset", "requires": "/dummy"},
+            "/child-config": {"input_type": "config", "requires": "/dummy"},
+            "/child-split": {"input_type": "split", "requires": "/dummy"},
         }
     )
     root_step = graph.get_step("/dummy")

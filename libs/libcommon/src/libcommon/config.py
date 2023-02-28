@@ -8,7 +8,7 @@ from typing import Optional
 
 from environs import Env
 
-from libcommon.processing_graph import InputType, ProcessingGraphSpecification
+from libcommon.processing_graph import ProcessingGraphSpecification
 
 ASSETS_BASE_URL = "assets"
 ASSETS_STORE_DIRECTORY = None
@@ -96,19 +96,19 @@ class QueueConfig:
 class ProcessingGraphConfig:
     specification: ProcessingGraphSpecification = field(
         default_factory=lambda: {
-            "/config-names": {"input_type": InputType.DATASET},
-            "/split-names-from-streaming": {"input_type": InputType.CONFIG, "requires": "/config-names"},
-            "/splits": {"input_type": InputType.DATASET, "required_by_dataset_viewer": True},  # to be deprecated
+            "/config-names": {"input_type": "dataset"},
+            "/split-names-from-streaming": {"input_type": "config", "requires": "/config-names"},
+            "/splits": {"input_type": "dataset", "required_by_dataset_viewer": True},  # to be deprecated
             "/first-rows": {
-                "input_type": InputType.SPLIT,
+                "input_type": "split",
                 "requires": "/split-names-from-streaming",
                 "required_by_dataset_viewer": True,
             },
-            "/parquet-and-dataset-info": {"input_type": InputType.DATASET},
-            "/parquet": {"input_type": InputType.DATASET, "requires": "/parquet-and-dataset-info"},
-            "/dataset-info": {"input_type": InputType.DATASET, "requires": "/parquet-and-dataset-info"},
-            "/split-names-from-dataset-info": {"input_type": InputType.CONFIG, "requires": "/dataset-info"},
-            "/sizes": {"input_type": InputType.DATASET, "requires": "/parquet-and-dataset-info"},
+            "/parquet-and-dataset-info": {"input_type": "dataset"},
+            "/parquet": {"input_type": "dataset", "requires": "/parquet-and-dataset-info"},
+            "/dataset-info": {"input_type": "dataset", "requires": "/parquet-and-dataset-info"},
+            "/split-names-from-dataset-info": {"input_type": "config", "requires": "/dataset-info"},
+            "/sizes": {"input_type": "dataset", "requires": "/parquet-and-dataset-info"},
         }
     )
 

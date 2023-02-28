@@ -4,7 +4,7 @@
 from http import HTTPStatus
 
 from libcommon.config import ProcessingGraphConfig
-from libcommon.processing_graph import InputType, ProcessingGraph
+from libcommon.processing_graph import ProcessingGraph
 from libcommon.queue import Queue
 from libcommon.simple_cache import CacheEntry, upsert_response
 from pytest import raises
@@ -31,44 +31,44 @@ def test_endpoints_definition() -> None:
 
     config_names = definition["/config-names"]
     assert config_names is not None
-    assert config_names[InputType.DATASET] is not None
-    assert len(config_names[InputType.DATASET]) == 1  # Only has one processing step
+    assert config_names["dataset"] is not None
+    assert len(config_names["dataset"]) == 1  # Only has one processing step
 
     splits = definition["/splits"]
     assert splits is not None
-    assert splits[InputType.DATASET] is not None
-    assert len(splits[InputType.DATASET]) == 1  # Only has one processing step
-    assert len(splits[InputType.CONFIG]) == 2  # Has two processing step
+    assert splits["dataset"] is not None
+    assert len(splits["dataset"]) == 1  # Only has one processing step
+    assert len(splits["config"]) == 2  # Has two processing step
 
     first_rows = definition["/first-rows"]
     assert first_rows is not None
-    assert first_rows[InputType.SPLIT] is not None
-    assert len(first_rows[InputType.SPLIT]) == 1  # Only has one processing step
+    assert first_rows["split"] is not None
+    assert len(first_rows["split"]) == 1  # Only has one processing step
 
     parquet_and_dataset_info = definition["/parquet-and-dataset-info"]
     assert parquet_and_dataset_info is not None
-    assert parquet_and_dataset_info[InputType.DATASET] is not None
-    assert len(parquet_and_dataset_info[InputType.DATASET]) == 1  # Only has one processing step
+    assert parquet_and_dataset_info["dataset"] is not None
+    assert len(parquet_and_dataset_info["dataset"]) == 1  # Only has one processing step
 
     parquet = definition["/parquet"]
     assert parquet is not None
-    assert parquet[InputType.DATASET] is not None
-    assert len(parquet[InputType.DATASET]) == 1  # Only has one processing step
+    assert parquet["dataset"] is not None
+    assert len(parquet["dataset"]) == 1  # Only has one processing step
 
     dataset_info = definition["/dataset-info"]
     assert dataset_info is not None
-    assert dataset_info[InputType.DATASET] is not None
-    assert len(dataset_info[InputType.DATASET]) == 1  # Only has one processing step
+    assert dataset_info["dataset"] is not None
+    assert len(dataset_info["dataset"]) == 1  # Only has one processing step
 
     sizes = definition["/sizes"]
     assert sizes is not None
-    assert sizes[InputType.DATASET] is not None
-    assert len(sizes[InputType.DATASET]) == 1  # Only has one processing step
+    assert sizes["dataset"] is not None
+    assert len(sizes["dataset"]) == 1  # Only has one processing step
 
 
 def test_first_entry_from_steps() -> None:
-    dataset = InputType.DATASET
-    config = InputType.CONFIG
+    dataset = "dataset"
+    config = "config"
 
     app_config = AppConfig.from_env()
     graph_config = ProcessingGraphConfig()

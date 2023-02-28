@@ -3,7 +3,7 @@
 
 from typing import Iterator
 
-from libcommon.processing_graph import InputType, ProcessingGraph
+from libcommon.processing_graph import ProcessingGraph
 from libcommon.queue import _clean_queue_database
 from libcommon.resources import CacheMongoResource, QueueMongoResource
 from libcommon.simple_cache import _clean_cache_database
@@ -40,11 +40,11 @@ def app_config(monkeypatch_session: MonkeyPatch) -> AppConfig:
 def endpoint_config(monkeypatch_session: MonkeyPatch) -> EndpointConfig:
     return EndpointConfig(
         step_names_by_input_type_and_endpoint={
-            "/config-names": {InputType.DATASET: ["/config-names"]},
+            "/config-names": {"dataset": ["/config-names"]},
             "/splits": {
-                InputType.CONFIG: ["/split-names-from-streaming"],
+                "config": ["/split-names-from-streaming"],
             },
-            "/first-rows": {InputType.SPLIT: ["/first-rows"]},
+            "/first-rows": {"split": ["/first-rows"]},
         }
     )
 

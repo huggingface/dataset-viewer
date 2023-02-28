@@ -2,7 +2,7 @@ from http import HTTPStatus
 from typing import List
 
 import pytest
-from libcommon.processing_graph import InputType, ProcessingStep
+from libcommon.processing_graph import ProcessingStep
 from libcommon.simple_cache import _clean_cache_database, upsert_response
 
 from api.config import AppConfig
@@ -10,7 +10,7 @@ from api.routes.valid import get_valid, is_valid
 
 dataset_step = ProcessingStep(
     name="/dataset-step",
-    input_type=InputType.DATASET,
+    input_type="dataset",
     requires=None,
     required_by_dataset_viewer=False,
     parent=None,
@@ -19,7 +19,7 @@ dataset_step = ProcessingStep(
 )
 config_step = ProcessingStep(
     name="/config-step",
-    input_type=InputType.CONFIG,
+    input_type="config",
     requires=None,
     required_by_dataset_viewer=False,
     parent=None,
@@ -28,7 +28,7 @@ config_step = ProcessingStep(
 )
 split_step = ProcessingStep(
     name="/split-step",
-    input_type=InputType.SPLIT,
+    input_type="split",
     requires=None,
     required_by_dataset_viewer=False,
     parent=None,

@@ -115,7 +115,7 @@ def get_response_from_cache_entry(
 
 
 def get_input_types_by_priority(steps_by_input_type: StepsByInputType) -> List[InputType]:
-    input_type_order = [InputType.SPLIT, InputType.CONFIG, InputType.DATASET]
+    input_type_order: List[InputType] = ["split", "config", "dataset"]
     return [input_type for input_type in input_type_order if input_type in steps_by_input_type]
 
 
@@ -124,9 +124,9 @@ def are_request_parameters_enough_for_input_type(
 ) -> bool:
     parameters = (
         [dataset]
-        if input_type == InputType.DATASET
+        if input_type == "dataset"
         else [config, dataset]
-        if input_type == InputType.CONFIG
+        if input_type == "config"
         else [split, config, dataset]
     )
     return are_valid_parameters(parameters)
@@ -161,13 +161,13 @@ def create_endpoint(
             for input_type in input_types:
                 if are_request_parameters_enough_for_input_type(input_type, dataset, config, split):
                     processing_steps = steps_by_input_type[input_type]
-                    config = None if input_type == InputType.DATASET else config
-                    split = None if input_type in (InputType.DATASET, InputType.CONFIG) else split
+                    config = None if input_type == "dataset" else config
+                    split = None if input_type in ("dataset", "config") else split
                     logging.debug(f"Input type = {input_type} is the appropiated for the params")
                     break
-                elif input_type == InputType.CONFIG:
+                elif input_type == "config":
                     error_message = "Parameters 'config' and 'dataset' are required"
-                elif input_type == InputType.SPLIT:
+                elif input_type == "split":
                     error_message = "Parameters 'split', 'config' and 'dataset' are required"
 
             if not processing_steps:
