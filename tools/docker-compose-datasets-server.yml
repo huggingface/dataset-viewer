@@ -74,7 +74,6 @@ services:
       dockerfile: services/worker/Dockerfile
     volumes:
       - assets:${ASSETS_STORAGE_DIRECTORY-/assets}:rw
-      - state:${WORKER_STATE_PATH-/state}:rw
     extends:
       file: docker-compose-base.yml
       service: datasets-worker
@@ -94,7 +93,6 @@ services:
       PARQUET_AND_DATASET_INFO_SUPPORTED_DATASETS: ${PARQUET_AND_DATASET_INFO_SUPPORTED_DATASETS-}
       PARQUET_AND_DATASET_INFO_TARGET_REVISION: ${PARQUET_AND_DATASET_INFO_TARGET_REVISION-refs/convert/parquet}
       PARQUET_AND_DATASET_INFO_URL_TEMPLATE: ${PARQUET_AND_DATASET_INFO_URL_TEMPLATE-/datasets/%s/resolve/%s/%s}
-      WORKER_STATE_PATH: ${WORKER_STATE_PATH-/state/worker-state}
       WORKER_STORAGE_PATHS: ${ASSETS_STORAGE_DIRECTORY-/assets}
       # ^ note: the datasets cache is automatically added, so no need to add it here
     depends_on:
@@ -113,7 +111,6 @@ volumes:
   splits-datasets-cache:
   splits-modules-cache:
   splits-numba-cache:
-  state:
   first-rows-datasets-cache:
   first-rows-modules-cache:
   first-rows-numba-cache:
