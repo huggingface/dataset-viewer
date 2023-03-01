@@ -80,7 +80,7 @@ def get_job_runner(
             },
             None,
             {
-                "split_names": [
+                "splits": [
                     {"dataset": "ok", "config": "config_name", "split": "train"},
                     {"dataset": "ok", "config": "config_name", "split": "validation"},
                     {"dataset": "ok", "config": "config_name", "split": "test"},

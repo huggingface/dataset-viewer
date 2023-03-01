@@ -75,7 +75,7 @@ def test_splits_with_config_using_openapi(status: int, dataset: str, config: str
     assert r_splits.status_code == status, f"{r_splits.status_code} - {r_splits.text}"
 
     if error_code is None:
-        assert all(split["config"] == config for split in r_splits.json()["split_names"])
+        assert all(split["config"] == config for split in r_splits.json()["splits"])
         # all splits must belong to the provided config
 
         assert "X-Error-Code" not in r_splits.headers, r_splits.headers["X-Error-Code"]

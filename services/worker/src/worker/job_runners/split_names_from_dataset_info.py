@@ -54,7 +54,7 @@ class SplitNameItem(TypedDict):
 
 
 class SplitNamesFromDatasetInfoResponseContent(TypedDict):
-    split_names: List[SplitNameItem]
+    splits: List[SplitNameItem]
 
 
 def compute_split_names_from_dataset_info_response(
@@ -105,7 +105,7 @@ def compute_split_names_from_dataset_info_response(
         {"dataset": dataset, "config": config, "split": str(split)} for split in splits_content
     ]
 
-    return {"split_names": split_name_items}
+    return {"splits": split_name_items}
 
 
 class SplitNamesFromDatasetInfoJobRunner(DatasetsBasedJobRunner):
@@ -126,6 +126,4 @@ class SplitNamesFromDatasetInfoJobRunner(DatasetsBasedJobRunner):
 
     def get_new_splits(self, content: Mapping[str, Any]) -> set[SplitFullName]:
         """Get the set of new splits, from the content created by the compute."""
-        return {
-            SplitFullName(dataset=s["dataset"], config=s["config"], split=s["split"]) for s in content["split_names"]
-        }
+        return {SplitFullName(dataset=s["dataset"], config=s["config"], split=s["split"]) for s in content["splits"]}
