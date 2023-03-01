@@ -175,26 +175,26 @@ api:
 workers:
   -
     deployName: "generic"
-    maxJobsPerNamespace: 4
+    maxJobsPerNamespace: 20
     workerOnlyJobTypes: ""
     nodeSelector:
       role-datasets-server: "true"
-    replicas: 20
+    replicas: 12
     resources:
       requests:
         cpu: 1
-        memory: "8Gi"
+        memory: "1Gi"
       limits:
         cpu: 2
         memory: "30Gi"
     tolerations: []
   -
     deployName: "config-names"
-    maxJobsPerNamespace: 4
+    maxJobsPerNamespace: 20
     workerOnlyJobTypes: "/config-names"
     nodeSelector:
       role-datasets-server: "true"
-    replicas: 8
+    replicas: 2
     resources:
       requests:
         cpu: 1
@@ -205,11 +205,11 @@ workers:
     tolerations: []
   -
     deployName: "split-names"
-    maxJobsPerNamespace: 5
+    maxJobsPerNamespace: 20
     workerOnlyJobTypes: "/split-names"
     nodeSelector:
       role-datasets-server: "true"
-    replicas: 12
+    replicas: 2
     resources:
       requests:
         cpu: 1
@@ -220,11 +220,11 @@ workers:
     tolerations: []
   -
     deployName: "splits"
-    maxJobsPerNamespace: 5
+    maxJobsPerNamespace: 20
     workerOnlyJobTypes: "/splits"
     nodeSelector:
       role-datasets-server: "true"
-    replicas: 8
+    replicas: 2
     resources:
       requests:
         cpu: 1
@@ -235,11 +235,11 @@ workers:
     tolerations: []
   -
     deployName: "first-rows"
-    maxJobsPerNamespace: 4
+    maxJobsPerNamespace: 20
     workerOnlyJobTypes: "/first-rows"
     nodeSelector:
       role-datasets-server: "true"
-    replicas: 80
+    replicas: 2
     resources:
       requests:
         cpu: 1
@@ -250,11 +250,11 @@ workers:
     tolerations: []
   -
     deployName: "parquet-and-dataset-info"
-    maxJobsPerNamespace: 4
+    maxJobsPerNamespace: 20
     workerOnlyJobTypes: "/parquet-and-dataset-info"
     nodeSelector:
       role-datasets-server: "true"
-    replicas: 20
+    replicas: 2
     resources:
       requests:
         cpu: 1
@@ -265,7 +265,7 @@ workers:
     tolerations: []
   -
     deployName: "parquet"
-    maxJobsPerNamespace: 2
+    maxJobsPerNamespace: 20
     workerOnlyJobTypes: "/parquet"
     nodeSelector:
       role-datasets-server: "true"
@@ -280,7 +280,7 @@ workers:
     tolerations: []
   -
     deployName: "dataset-info"
-    maxJobsPerNamespace: 2
+    maxJobsPerNamespace: 20
     workerOnlyJobTypes: "/dataset-info"
     nodeSelector:
       role-datasets-server: "true"
@@ -295,7 +295,7 @@ workers:
     tolerations: []
   -
     deployName: "sizes"
-    maxJobsPerNamespace: 2
+    maxJobsPerNamespace: 20
     workerOnlyJobTypes: "/sizes"
     nodeSelector:
       role-datasets-server: "true"
