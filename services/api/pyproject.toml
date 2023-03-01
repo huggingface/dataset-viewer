@@ -64,3 +64,11 @@ disallow_untyped_calls = false
 module = "prometheus_client.*"
 ignore_missing_imports = true
 # ^ prometheus_client is now typed, but starlette-prometheus requires an old version
+
+[[tool.mypy.overrides]]
+module = "hffs.*"
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = "pyarrow.*"
+ignore_missing_imports = true
