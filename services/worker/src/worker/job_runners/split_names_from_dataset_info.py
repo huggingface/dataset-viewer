@@ -5,6 +5,7 @@ import logging
 from http import HTTPStatus
 from typing import Any, List, Literal, Mapping, Optional, TypedDict
 
+from libcommon.constants import PROCESSING_STEP_SPLITS_VERSION
 from libcommon.dataset import DatasetNotFoundError
 from libcommon.simple_cache import DoesNotExist, SplitFullName, get_response
 
@@ -115,7 +116,7 @@ class SplitNamesFromDatasetInfoJobRunner(DatasetsBasedJobRunner):
 
     @staticmethod
     def get_version() -> str:
-        return "2.0.0"
+        return PROCESSING_STEP_SPLITS_VERSION
 
     def compute(self) -> Mapping[str, Any]:
         if self.dataset is None:

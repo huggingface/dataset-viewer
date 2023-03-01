@@ -17,6 +17,7 @@ class _ProcessingStepSpecification(TypedDict):
 class ProcessingStepSpecification(_ProcessingStepSpecification, total=False):
     requires: Optional[str]
     required_by_dataset_viewer: Literal[True]
+    version: str
 
 
 @dataclass

@@ -5,6 +5,7 @@ import logging
 from http import HTTPStatus
 from typing import Any, List, Literal, Mapping, Optional, TypedDict
 
+from libcommon.constants import PROCESSING_STEP_PARQUET_VERSION
 from libcommon.dataset import DatasetNotFoundError
 from libcommon.simple_cache import DoesNotExist, SplitFullName, get_response
 
@@ -97,7 +98,7 @@ class ParquetJobRunner(JobRunner):
 
     @staticmethod
     def get_version() -> str:
-        return "3.0.0"
+        return PROCESSING_STEP_PARQUET_VERSION
 
     def compute(self) -> Mapping[str, Any]:
         return compute_parquet_response(dataset=self.dataset)

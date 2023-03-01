@@ -7,6 +7,7 @@ from typing import Any, List, Literal, Mapping, Optional, TypedDict, Union
 
 from datasets import get_dataset_split_names
 from datasets.data_files import EmptyDatasetError as _EmptyDatasetError
+from libcommon.constants import PROCESSING_STEP_SPLIT_NAMES_FROM_STREAMING_VERSION
 from libcommon.simple_cache import SplitFullName
 
 from worker.job_runner import JobRunnerError
@@ -119,7 +120,7 @@ class SplitNamesFromStreamingJobRunner(DatasetsBasedJobRunner):
 
     @staticmethod
     def get_version() -> str:
-        return "2.0.0"
+        return PROCESSING_STEP_SPLIT_NAMES_FROM_STREAMING_VERSION
 
     def compute(self) -> Mapping[str, Any]:
         if self.config is None:

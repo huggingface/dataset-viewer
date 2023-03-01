@@ -7,6 +7,7 @@ from typing import Any, List, Literal, Mapping, Optional, TypedDict, Union
 
 from datasets import get_dataset_config_names
 from datasets.data_files import EmptyDatasetError as _EmptyDatasetError
+from libcommon.constants import PROCESSING_STEP_CONFIG_NAMES_VERSION
 from libcommon.simple_cache import SplitFullName
 
 from worker.job_runner import JobRunnerError
@@ -102,7 +103,7 @@ class ConfigNamesJobRunner(DatasetsBasedJobRunner):
 
     @staticmethod
     def get_version() -> str:
-        return "1.0.0"
+        return PROCESSING_STEP_CONFIG_NAMES_VERSION
 
     def compute(self) -> Mapping[str, Any]:
         return compute_config_names_response(dataset=self.dataset, hf_token=self.common_config.hf_token)

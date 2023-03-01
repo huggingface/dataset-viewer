@@ -441,6 +441,26 @@ def get_cache_reports_with_content(kind: str, cursor: Optional[str], limit: int)
     }
 
 
+class CacheInfo(TypedDict):
+    dataset: str
+    config: Optional[str]
+    split: Optional[str]
+
+
+def get_cache_info_for_kind_minor_than_version(kind: str, current_version: str) -> List[CacheInfo]:
+    responses = CachedResponse.objects(kind=kind, worker_version__lt=current_version).only(
+        "dataset", "config", "split"
+    )
+    return [
+        {
+            "dataset": response.dataset,
+            "config": response.config,
+            "split": response.split,
+        }
+        for response in responses
+    ]
+
+
 # only for the tests
 def _clean_cache_database() -> None:
     CachedResponse.drop_collection()  # type: ignore

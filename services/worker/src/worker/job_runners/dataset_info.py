@@ -5,6 +5,7 @@ import logging
 from http import HTTPStatus
 from typing import Any, Literal, Mapping, Optional, TypedDict
 
+from libcommon.constants import PROCESSING_STEP_DATASET_INFO_VERSION
 from libcommon.dataset import DatasetNotFoundError
 from libcommon.simple_cache import DoesNotExist, SplitFullName, get_response
 
@@ -94,7 +95,7 @@ class DatasetInfoJobRunner(JobRunner):
 
     @staticmethod
     def get_version() -> str:
-        return "1.0.0"
+        return PROCESSING_STEP_DATASET_INFO_VERSION
 
     def compute(self) -> Mapping[str, Any]:
         return compute_dataset_info_response(dataset=self.dataset)
