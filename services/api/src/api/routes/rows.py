@@ -26,7 +26,6 @@ from api.utils import (
     get_json_ok_response,
 )
 
-
 MAX_ROWS = 100
 
 
