@@ -16,6 +16,7 @@ from api.authentication import auth_check
 from api.utils import (
     ApiCustomError,
     Endpoint,
+    InvalidParameterError,
     MissingRequiredParameterError,
     ResponseNotFoundError,
     UnexpectedError,
@@ -24,6 +25,9 @@ from api.utils import (
     get_json_error_response,
     get_json_ok_response,
 )
+
+
+MAX_ROWS = 100
 
 
 def create_rows_endpoint(
@@ -42,14 +46,15 @@ def create_rows_endpoint(
             split = request.query_params.get("split")
             if not dataset or not are_valid_parameters([dataset, config, split]):
                 raise MissingRequiredParameterError("Parameter 'dataset', 'config' and 'split' are required")
-            MAX_ROWS = 100
-            fromRow = int(request.query_params.get("from", 0))
-            _toRow = request.query_params.get("to")
-            if _toRow is None:
-                toRow = fromRow + MAX_ROWS
-            else:
-                toRow = max(min(int(_toRow), fromRow + MAX_ROWS), fromRow)
-            logging.info("/rows, dataset={dataset}, config={config}, split={split}, from={fromRow}, to={toRow}}")
+            offset = int(request.query_params.get("offset", 0))
+            if offset < 0:
+                raise InvalidParameterError(message="Offset must be positive")
+            length = int(request.query_params.get("length", MAX_ROWS))
+            if length < 0:
+                raise InvalidParameterError("Length must be positive")
+            if length > MAX_ROWS:
+                raise InvalidParameterError("Length must be less than or equal to {MAX_ROWS}")
+            logging.info("/rows, dataset={dataset}, config={config}, split={split}, offset={offset}, length={length}}")
 
             # if auth_check fails, it will raise an exception that will be caught below
             auth_check(
@@ -81,7 +86,7 @@ def create_rows_endpoint(
                 fs = hffs.HfFileSystem(dataset, repo_type="dataset", revision=REVISION)
                 parquet_dataset = pq.ParquetDataset(parquet_files_paths, filesystem=fs)
                 table = parquet_dataset.read()
-                rows = table.take(list(range(fromRow, toRow))).to_pylist()
+                rows = table.slice(offset=offset, length=length).to_pylist()
                 return get_json_ok_response(content={"rows": rows}, max_age=max_age_long)
             except DoesNotExist as e:
                 # add "check_in_process" ...
