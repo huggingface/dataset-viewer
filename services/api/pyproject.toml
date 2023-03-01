@@ -7,9 +7,11 @@ license = "Apache-2.0"
 
 [tool.poetry.dependencies]
 environs = "^9.5.0"
+hffs = {git = "https://github.com/huggingface/hffs.git"}
 jsonschema = "^4.17.0"
 libcommon = {path = "../../libs/libcommon", develop = true}
 pyjwt = { extras = ["crypto"], version = "^2.6.0" }
+pyarrow = "^11.0.0"
 python = "3.9.15"
 requests = "^2.28.2"
 starlette = "^0.25.0"
