@@ -32,8 +32,8 @@ class MigrationQueueUpdateSplitNames(Migration):
                         "unicity_id": {
                             "$replaceOne": {
                                 "input": "$unicity_id",
-                                "find": f"Job[{split_names}",
-                                "replacement": f"Job[{split_names_from_streaming}",
+                                "find": f"Job[{split_names}]",
+                                "replacement": f"Job[{split_names_from_streaming}]",
                             }
                         },
                         "type": split_names_from_streaming,
@@ -58,8 +58,8 @@ class MigrationQueueUpdateSplitNames(Migration):
                         "unicity_id": {
                             "$replaceOne": {
                                 "input": "$unicity_id",
-                                "find": f"Job[{split_names_from_streaming}",
-                                "replacement": f"Job[{split_names}",
+                                "find": f"Job[{split_names_from_streaming}]",
+                                "replacement": f"Job[{split_names}]",
                             }
                         },
                         "type": split_names_from_streaming,
