@@ -72,7 +72,7 @@ def test_process(app_config: AppConfig, get_job_runner: GetJobRunner, hub_public
     assert cached_response["dataset_git_revision"] is not None
     assert cached_response["error_code"] is None
     content = cached_response["content"]
-    assert len(content["split_names"]) == 1
+    assert len(content["splits"]) == 1
 
 
 def test_doesnotexist(app_config: AppConfig, get_job_runner: GetJobRunner) -> None:
@@ -99,7 +99,7 @@ def test_doesnotexist(app_config: AppConfig, get_job_runner: GetJobRunner) -> No
         ("private", False, "SplitNamesFromStreamingError", "FileNotFoundError"),
     ],
 )
-def test_compute_split_names_response(
+def test_compute_split_names_from_streaming_response(
     hub_datasets: HubDatasets,
     get_job_runner: GetJobRunner,
     name: str,
@@ -109,7 +109,7 @@ def test_compute_split_names_response(
     app_config: AppConfig,
 ) -> None:
     dataset, config, _ = get_default_config_split(hub_datasets[name]["name"])
-    expected_configs_response = hub_datasets[name]["split_names_response"]
+    expected_configs_response = hub_datasets[name]["splits_response"]
     job_runner = get_job_runner(
         dataset,
         config,

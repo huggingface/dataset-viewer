@@ -55,7 +55,7 @@ class SplitNameItem(TypedDict):
 
 
 class SplitNamesFromStreamingResponseContent(TypedDict):
-    split_names: List[SplitNameItem]
+    splits: List[SplitNameItem]
 
 
 def compute_split_names_from_streaming_response(
@@ -109,7 +109,7 @@ def compute_split_names_from_streaming_response(
             f"Cannot get the split names for the config '{config}' of the dataset.",
             cause=err,
         ) from err
-    return {"split_names": split_name_items}
+    return {"splits": split_name_items}
 
 
 class SplitNamesFromStreamingJobRunner(DatasetsBasedJobRunner):
@@ -130,6 +130,4 @@ class SplitNamesFromStreamingJobRunner(DatasetsBasedJobRunner):
 
     def get_new_splits(self, content: Mapping[str, Any]) -> set[SplitFullName]:
         """Get the set of new splits, from the content created by the compute."""
-        return {
-            SplitFullName(dataset=s["dataset"], config=s["config"], split=s["split"]) for s in content["split_names"]
-        }
+        return {SplitFullName(dataset=s["dataset"], config=s["config"], split=s["split"]) for s in content["splits"]}
