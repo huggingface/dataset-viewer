@@ -17,6 +17,7 @@ from api.jwt_token import fetch_jwt_public_key
 from api.prometheus import Prometheus
 from api.routes.endpoint import EndpointsDefinition, create_endpoint
 from api.routes.healthcheck import healthcheck_endpoint
+from api.routes.rows import create_rows_endpoint
 from api.routes.valid import create_is_valid_endpoint, create_valid_endpoint
 from api.routes.webhook import create_webhook_endpoint
 
@@ -46,6 +47,8 @@ def create_app_with_config(app_config: AppConfig, endpoint_config: EndpointConfi
         if app_config.api.hf_jwt_public_key_url and app_config.api.hf_jwt_algorithm
         else None
     )
+    parquet_processing_step = processing_graph.get_step("/parquet")
+    # ^ can raise an exception. We don't catch it here because we want the app to crash if the config is invalid
 
     middleware = [
         Middleware(
@@ -118,6 +121,18 @@ def create_app_with_config(app_config: AppConfig, endpoint_config: EndpointConfi
             methods=["POST"],
         ),
         # ^ called by the Hub webhooks
+        Route(
+            "/rows",
+            endpoint=create_rows_endpoint(
+                parquet_processing_step=parquet_processing_step,
+                hf_jwt_public_key=hf_jwt_public_key,
+                hf_jwt_algorithm=app_config.api.hf_jwt_algorithm,
+                external_auth_url=app_config.api.external_auth_url,
+                hf_timeout_seconds=app_config.api.hf_timeout_seconds,
+                max_age_long=app_config.api.max_age_long,
+                max_age_short=app_config.api.max_age_short,
+            ),
+        ),
     ]
 
     return Starlette(routes=routes, middleware=middleware, on_shutdown=[resource.release for resource in resources])
