@@ -119,7 +119,7 @@ class SplitNamesFromStreamingJobRunner(DatasetsBasedJobRunner):
 
     @staticmethod
     def get_version() -> str:
-        return "1.0.0"
+        return "2.0.0"
 
     def compute(self) -> Mapping[str, Any]:
         if self.config is None:
