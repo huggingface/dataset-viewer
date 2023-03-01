@@ -11,6 +11,7 @@ from libcommon.config import (
     ProcessingGraphConfig,
     QueueConfig,
 )
+from libcommon.processing_graph import InputType
 
 API_UVICORN_HOSTNAME = "localhost"
 API_UVICORN_NUM_WORKERS = 2
@@ -81,21 +82,33 @@ class AppConfig:
         )
 
 
-EndpointProcessingStepNamesMapping = Mapping[str, List[str]]
+StepNamesByInputType = Mapping[InputType, List[str]]
+
+StepNamesByInputTypeAndEndpoint = Mapping[str, StepNamesByInputType]
 
 
 @dataclass(frozen=True)
 class EndpointConfig:
-    specification: EndpointProcessingStepNamesMapping = field(
+    """Contains the endpoint config specification to relate with step names.
+    The list of processing steps corresponds to the priority in which the response
+    has to be reached. The cache from the first step in the list will be used first
+    then, if it's an error or missing, the second one, etc.
+    The related steps depend on the query parameters passed in the request
+    (dataset, config, split)
+    """
+
+    step_names_by_input_type_and_endpoint: StepNamesByInputTypeAndEndpoint = field(
         default_factory=lambda: {
-            "/config-names": ["/config-names"],
-            "/split-names-from-streaming": ["/split-names-from-streaming"],
-            "/splits": ["/splits"],
-            "/first-rows": ["/first-rows"],
-            "/parquet-and-dataset-info": ["/parquet-and-dataset-info"],
-            "/parquet": ["/parquet"],
-            "/dataset-info": ["/dataset-info"],
-            "/sizes": ["/sizes"],
+            "/config-names": {"dataset": ["/config-names"]},
+            "/splits": {
+                "dataset": ["/splits"],
+                "config": ["/split-names-from-streaming", "/split-names-from-dataset-info"],
+            },
+            "/first-rows": {"split": ["/first-rows"]},
+            "/parquet-and-dataset-info": {"dataset": ["/parquet-and-dataset-info"]},
+            "/parquet": {"dataset": ["/parquet"]},
+            "/dataset-info": {"dataset": ["/dataset-info"]},
+            "/sizes": {"dataset": ["/sizes"]},
         }
     )
 

@@ -24,14 +24,18 @@ from api.routes.webhook import create_webhook_endpoint
 
 def create_app() -> Starlette:
     app_config = AppConfig.from_env()
+    endpoint_config = EndpointConfig.from_env()
+    return create_app_with_config(app_config=app_config, endpoint_config=endpoint_config)
 
+
+def create_app_with_config(app_config: AppConfig, endpoint_config: EndpointConfig) -> Starlette:
     init_logging(log_level=app_config.common.log_level)
     # ^ set first to have logs as soon as possible
 
     prometheus = Prometheus()
 
     processing_graph = ProcessingGraph(app_config.processing_graph.specification)
-    endpoints_definition = EndpointsDefinition(processing_graph, EndpointConfig.from_env())
+    endpoints_definition = EndpointsDefinition(processing_graph, endpoint_config)
     processing_steps_required_by_dataset_viewer = processing_graph.get_steps_required_by_dataset_viewer()
     init_processing_steps = processing_graph.get_first_steps()
 
@@ -75,7 +79,8 @@ def create_app() -> Starlette:
         Route(
             endpoint_name,
             endpoint=create_endpoint(
-                processing_steps=processing_steps,
+                endpoint_name=endpoint_name,
+                steps_by_input_type=steps_by_input_type,
                 init_processing_steps=init_processing_steps,
                 hf_endpoint=app_config.common.hf_endpoint,
                 hf_token=app_config.common.hf_token,
@@ -84,7 +89,7 @@ def create_app() -> Starlette:
                 max_age_short=app_config.api.max_age_short,
             ),
         )
-        for endpoint_name, processing_steps in endpoints_definition.definition.items()
+        for endpoint_name, steps_by_input_type in endpoints_definition.steps_by_input_type_and_endpoint.items()
     ]
     to_protect: List[BaseRoute] = [
         # called by the Hub webhooks

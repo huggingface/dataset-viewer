@@ -7,14 +7,17 @@ import pytest
 from pytest_httpserver import HTTPServer
 from starlette.testclient import TestClient
 
-from api.app import create_app
+from api.app import create_app_with_config
+from api.config import AppConfig, EndpointConfig
 
 from .utils import auth_callback
 
 
 @pytest.fixture(scope="module")
-def client(monkeypatch_session: pytest.MonkeyPatch) -> TestClient:
-    return TestClient(create_app())
+def client(
+    monkeypatch_session: pytest.MonkeyPatch, app_config: AppConfig, endpoint_config: EndpointConfig
+) -> TestClient:
+    return TestClient(create_app_with_config(app_config=app_config, endpoint_config=endpoint_config))
 
 
 def test_cors(client: TestClient, first_dataset_endpoint: str) -> None:
