@@ -66,9 +66,9 @@ ignore_missing_imports = true
 # ^ prometheus_client is now typed, but starlette-prometheus requires an old version
 
 [[tool.mypy.overrides]]
-module = "hffs.*"
-ignore_missing_imports = true
-
-[[tool.mypy.overrides]]
-module = "pyarrow.*"
+module = [
+    "hffs.*",
+    "pyarrow.*",
+    "tqdm.*"
+]
 ignore_missing_imports = true
