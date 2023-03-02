@@ -88,8 +88,8 @@ storageAdmin:
   replicas: 1
   resources:
     requests:
-      cpu: 1
-      memory: "256Mi"
+      cpu: 50m
+      memory: "64Mi"
     limits:
       cpu: 1
       memory: "256Mi"
@@ -103,7 +103,7 @@ reverseProxy:
   resources:
     requests:
       cpu: 1
-      memory: "256Mi"
+      memory: "64Mi"
     limits:
       cpu: 1
       memory: "256Mi"
@@ -147,7 +147,7 @@ admin:
     type: NodePort
   resources:
     requests:
-      cpu: 4
+      cpu: 1
       memory: "512Mi"
     limits:
       cpu: 4
@@ -166,7 +166,7 @@ api:
     type: NodePort
   resources:
     requests:
-      cpu: 4
+      cpu: 1
       memory: "512Mi"
     limits:
       cpu: 4
@@ -183,10 +183,10 @@ workers:
     resources:
       requests:
         cpu: 1
-        memory: "1Gi"
+        memory: "2Gi"
       limits:
         cpu: 2
-        memory: "30Gi"
+        memory: "8Gi"
     tolerations: []
   -
     deployName: "config-names"
@@ -198,10 +198,10 @@ workers:
     resources:
       requests:
         cpu: 1
-        memory: "1Gi"
+        memory: "2Gi"
       limits:
         cpu: 2
-        memory: "30Gi"
+        memory: "8Gi"
     tolerations: []
   -
     deployName: "split-names"
@@ -213,10 +213,10 @@ workers:
     resources:
       requests:
         cpu: 1
-        memory: "8Gi"
+        memory: "2Gi"
       limits:
         cpu: 2
-        memory: "30Gi"
+        memory: "8Gi"
     tolerations: []
   -
     deployName: "splits"
@@ -228,10 +228,10 @@ workers:
     resources:
       requests:
         cpu: 1
-        memory: "8Gi"
+        memory: "2Gi"
       limits:
         cpu: 2
-        memory: "30Gi"
+        memory: "8Gi"
     tolerations: []
   -
     deployName: "first-rows"
@@ -243,10 +243,10 @@ workers:
     resources:
       requests:
         cpu: 1
-        memory: "8Gi"
+        memory: "2Gi"
       limits:
         cpu: 2
-        memory: "30Gi"
+        memory: "8Gi"
     tolerations: []
   -
     deployName: "parquet-and-dataset-info"
@@ -258,10 +258,10 @@ workers:
     resources:
       requests:
         cpu: 1
-        memory: "8Gi"
+        memory: "2Gi"
       limits:
         cpu: 2
-        memory: "30Gi"
+        memory: "8Gi"
     tolerations: []
   -
     deployName: "parquet"
@@ -272,7 +272,7 @@ workers:
     replicas: 2
     resources:
       requests:
-        cpu: 1
+        cpu: 200m
         memory: "100Mi"
       limits:
         cpu: 2
@@ -287,7 +287,7 @@ workers:
     replicas: 2
     resources:
       requests:
-        cpu: 1
+        cpu: 200m
         memory: "100Mi"
       limits:
         cpu: 2
@@ -302,7 +302,7 @@ workers:
     replicas: 2
     resources:
       requests:
-        cpu: 1
+        cpu: 200m
         memory: "100Mi"
       limits:
         cpu: 2
