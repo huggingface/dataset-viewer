@@ -135,6 +135,7 @@ class Job(Document):
             ("type", "status"),
             ("type", "dataset", "status"),
             ("type", "dataset", "config", "split", "status", "force", "priority"),
+            ("priority", "status", "created_at", "type", "namespace"),
             ("priority", "status", "type", "created_at", "namespace", "unicity_id"),
             "-created_at",
             {"fields": ["finished_at"], "expireAfterSeconds": QUEUE_TTL_SECONDS},
