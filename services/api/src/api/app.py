@@ -1,8 +1,6 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2022 The HuggingFace Authors.
 
-from typing import List
-
 import uvicorn
 from libcommon.log import init_logging
 from libcommon.processing_graph import ProcessingGraph
@@ -11,7 +9,7 @@ from starlette.applications import Starlette
 from starlette.middleware import Middleware
 from starlette.middleware.cors import CORSMiddleware
 from starlette.middleware.gzip import GZipMiddleware
-from starlette.routing import BaseRoute, Route
+from starlette.routing import Route
 from starlette_prometheus import PrometheusMiddleware
 
 from api.config import AppConfig, EndpointConfig, UvicornConfig
