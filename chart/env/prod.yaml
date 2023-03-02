@@ -178,7 +178,7 @@ workers:
     maxJobsPerNamespace: 20
     workerOnlyJobTypes: ""
     nodeSelector:
-      role-datasets-server: "true"
+      role-datasets-server-worker: "true"
     replicas: 12
     resources:
       requests:
@@ -193,7 +193,7 @@ workers:
     maxJobsPerNamespace: 20
     workerOnlyJobTypes: "/config-names"
     nodeSelector:
-      role-datasets-server: "true"
+      role-datasets-server-worker: "true"
     replicas: 2
     resources:
       requests:
@@ -208,7 +208,7 @@ workers:
     maxJobsPerNamespace: 20
     workerOnlyJobTypes: "/split-names"
     nodeSelector:
-      role-datasets-server: "true"
+      role-datasets-server-worker: "true"
     replicas: 2
     resources:
       requests:
@@ -223,7 +223,7 @@ workers:
     maxJobsPerNamespace: 20
     workerOnlyJobTypes: "/splits"
     nodeSelector:
-      role-datasets-server: "true"
+      role-datasets-server-worker: "true"
     replicas: 2
     resources:
       requests:
@@ -238,7 +238,7 @@ workers:
     maxJobsPerNamespace: 20
     workerOnlyJobTypes: "/first-rows"
     nodeSelector:
-      role-datasets-server: "true"
+      role-datasets-server-worker: "true"
     replicas: 2
     resources:
       requests:
@@ -253,7 +253,7 @@ workers:
     maxJobsPerNamespace: 20
     workerOnlyJobTypes: "/parquet-and-dataset-info"
     nodeSelector:
-      role-datasets-server: "true"
+      role-datasets-server-worker: "true"
     replicas: 2
     resources:
       requests:
@@ -268,7 +268,7 @@ workers:
     maxJobsPerNamespace: 20
     workerOnlyJobTypes: "/parquet"
     nodeSelector:
-      role-datasets-server: "true"
+      role-datasets-server-worker: "true"
     replicas: 2
     resources:
       requests:
@@ -283,7 +283,7 @@ workers:
     maxJobsPerNamespace: 20
     workerOnlyJobTypes: "/dataset-info"
     nodeSelector:
-      role-datasets-server: "true"
+      role-datasets-server-worker: "true"
     replicas: 2
     resources:
       requests:
@@ -298,7 +298,7 @@ workers:
     maxJobsPerNamespace: 20
     workerOnlyJobTypes: "/sizes"
     nodeSelector:
-      role-datasets-server: "true"
+      role-datasets-server-worker: "true"
     replicas: 2
     resources:
       requests:
