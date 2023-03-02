@@ -58,7 +58,7 @@ server {
     internal;
   }
 
-  location ~* ^(/admin)?(/healthcheck|/metrics)$ {
+  location ~* ^(/admin)?/metrics$ {
     return 404;
   }
 

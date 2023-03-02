@@ -1,8 +1,6 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2022 The HuggingFace Authors.
 
-from typing import List
-
 import uvicorn
 from libcommon.log import init_logging
 from libcommon.processing_graph import ProcessingGraph
@@ -11,7 +9,7 @@ from starlette.applications import Starlette
 from starlette.middleware import Middleware
 from starlette.middleware.cors import CORSMiddleware
 from starlette.middleware.gzip import GZipMiddleware
-from starlette.routing import BaseRoute, Route
+from starlette.routing import Route
 from starlette_prometheus import PrometheusMiddleware
 
 from api.config import AppConfig, EndpointConfig, UvicornConfig
@@ -55,7 +53,22 @@ def create_app_with_config(app_config: AppConfig, endpoint_config: EndpointConfi
     if not queue_resource.is_available():
         raise RuntimeError("The connection to the queue database could not be established. Exiting.")
 
-    valid: List[BaseRoute] = [
+    routes = [
+        Route(
+            endpoint_name,
+            endpoint=create_endpoint(
+                endpoint_name=endpoint_name,
+                steps_by_input_type=steps_by_input_type,
+                init_processing_steps=init_processing_steps,
+                hf_endpoint=app_config.common.hf_endpoint,
+                hf_token=app_config.common.hf_token,
+                external_auth_url=app_config.api.external_auth_url,
+                max_age_long=app_config.api.max_age_long,
+                max_age_short=app_config.api.max_age_short,
+            ),
+        )
+        for endpoint_name, steps_by_input_type in endpoints_definition.steps_by_input_type_and_endpoint.items()
+    ] + [
         Route(
             "/valid",
             endpoint=create_valid_endpoint(
@@ -72,27 +85,11 @@ def create_app_with_config(app_config: AppConfig, endpoint_config: EndpointConfi
                 max_age_long=app_config.api.max_age_long,
                 max_age_short=app_config.api.max_age_short,
             ),
-        )
+        ),
         # ^ called by https://github.com/huggingface/model-evaluator
-    ]
-    endpoints: List[BaseRoute] = [
-        Route(
-            endpoint_name,
-            endpoint=create_endpoint(
-                endpoint_name=endpoint_name,
-                steps_by_input_type=steps_by_input_type,
-                init_processing_steps=init_processing_steps,
-                hf_endpoint=app_config.common.hf_endpoint,
-                hf_token=app_config.common.hf_token,
-                external_auth_url=app_config.api.external_auth_url,
-                max_age_long=app_config.api.max_age_long,
-                max_age_short=app_config.api.max_age_short,
-            ),
-        )
-        for endpoint_name, steps_by_input_type in endpoints_definition.steps_by_input_type_and_endpoint.items()
-    ]
-    to_protect: List[BaseRoute] = [
-        # called by the Hub webhooks
+        Route("/healthcheck", endpoint=healthcheck_endpoint),
+        Route("/metrics", endpoint=prometheus.endpoint),
+        # ^ called by Prometheus
         Route(
             "/webhook",
             endpoint=create_webhook_endpoint(
@@ -102,13 +99,8 @@ def create_app_with_config(app_config: AppConfig, endpoint_config: EndpointConfi
             ),
             methods=["POST"],
         ),
+        # ^ called by the Hub webhooks
     ]
-    protected: List[BaseRoute] = [
-        Route("/healthcheck", endpoint=healthcheck_endpoint),
-        # called by Prometheus
-        Route("/metrics", endpoint=prometheus.endpoint),
-    ]
-    routes: List[BaseRoute] = valid + endpoints + to_protect + protected
 
     return Starlette(routes=routes, middleware=middleware, on_shutdown=[resource.release for resource in resources])
 
