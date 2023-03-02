@@ -323,6 +323,25 @@ class JobRunner(ABC):
         return dataset_git_revision is not None and cached_response["dataset_git_revision"] == dataset_git_revision
         # skip if the git revision has not changed
 
+    def get_config_by_aggregation_level(
+        self,
+    ) -> Optional[str]:
+        return (
+            self.config
+            if self.processing_step.aggregation_level is None
+            or self.processing_step.aggregation_level in ["config", "split"]
+            else None
+        )
+
+    def get_split_by_aggregation_level(
+        self,
+    ) -> Optional[str]:
+        return (
+            self.split
+            if self.processing_step.aggregation_level is None or self.processing_step.aggregation_level == "split"
+            else None
+        )
+
     def process(
         self,
     ) -> bool:
@@ -348,8 +367,8 @@ class JobRunner(ABC):
             upsert_response(
                 kind=self.processing_step.cache_kind,
                 dataset=self.dataset,
-                config=self.config,
-                split=self.split,
+                config=self.get_config_by_aggregation_level(),
+                split=self.get_split_by_aggregation_level(),
                 content=content,
                 http_status=HTTPStatus.OK,
                 worker_version=self.get_version(),
@@ -373,8 +392,8 @@ class JobRunner(ABC):
             upsert_response(
                 kind=self.processing_step.cache_kind,
                 dataset=self.dataset,
-                config=self.config,
-                split=self.split,
+                config=self.get_config_by_aggregation_level(),
+                split=self.get_split_by_aggregation_level(),
                 content=dict(e.as_response()),
                 http_status=e.status_code,
                 error_code=e.code,

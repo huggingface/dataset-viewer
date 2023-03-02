@@ -8,6 +8,7 @@ from dataclasses import dataclass
 from typing import List, Literal, Mapping, Optional, TypedDict
 
 InputType = Literal["dataset", "config", "split"]
+AggregationLevel = Literal["dataset", "config", "split"]
 
 
 class _ProcessingStepSpecification(TypedDict):
@@ -17,6 +18,7 @@ class _ProcessingStepSpecification(TypedDict):
 class ProcessingStepSpecification(_ProcessingStepSpecification, total=False):
     requires: Optional[str]
     required_by_dataset_viewer: Literal[True]
+    aggregation_level: Optional[AggregationLevel]
 
 
 @dataclass
@@ -40,6 +42,7 @@ class ProcessingStep:
     parent: Optional[ProcessingStep]
     ancestors: List[ProcessingStep]
     children: List[ProcessingStep]
+    aggregation_level: Optional[AggregationLevel]
 
     @property
     def endpoint(self) -> str:
@@ -95,6 +98,7 @@ class ProcessingGraph:
             name: ProcessingStep(
                 name=name,
                 input_type=specification["input_type"],
+                aggregation_level=specification.get("aggregation_level"),
                 requires=specification.get("requires"),
                 required_by_dataset_viewer=specification.get("required_by_dataset_viewer", False),
                 parent=None,

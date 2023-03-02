@@ -4,10 +4,15 @@ from typing import Any, Mapping, Optional
 
 import pytest
 from libcommon.config import CommonConfig
-from libcommon.processing_graph import ProcessingGraph, ProcessingStep
+from libcommon.processing_graph import AggregationLevel, ProcessingGraph, ProcessingStep
 from libcommon.queue import Priority, Queue, Status
 from libcommon.resources import CacheMongoResource, QueueMongoResource
-from libcommon.simple_cache import CachedResponse, SplitFullName, upsert_response
+from libcommon.simple_cache import (
+    CachedResponse,
+    SplitFullName,
+    get_response,
+    upsert_response,
+)
 
 from worker.config import WorkerConfig
 from worker.job_runner import ERROR_CODES_TO_RETRY, JobRunner
@@ -243,6 +248,7 @@ def test_check_type(
     another_processing_step = ProcessingStep(
         name=f"not-{test_processing_step.name}",
         input_type="dataset",
+        aggregation_level=None,
         requires=None,
         required_by_dataset_viewer=False,
         parent=None,
@@ -352,3 +358,48 @@ def test_job_runner_set_crashed(
     assert response.content == expected_error
     assert response.details == expected_error
     # TODO: check if it stores the correct dataset git sha and job version when it's implemented
+
+
+@pytest.mark.parametrize("aggregation_level", [(None), "dataset", "config", "split"])
+def test_aggregation_level(aggregation_level: AggregationLevel) -> None:
+    dataset = "dataset"
+    config = "config"
+    split = "split"
+    graph = ProcessingGraph(
+        {
+            "/dummy": {"input_type": "split", "aggregation_level": aggregation_level},
+        }
+    )
+    processing_step = graph.get_step("/dummy")
+    job_runner = DummyJobRunner(
+        job_info={
+            "job_id": "job_id",
+            "type": processing_step.job_type,
+            "dataset": dataset,
+            "config": config,
+            "split": split,
+            "force": False,
+            "priority": Priority.LOW,
+        },
+        processing_step=processing_step,
+        common_config=CommonConfig(),
+        worker_config=WorkerConfig(),
+    )
+
+    assert job_runner.process()
+
+    if aggregation_level is None:
+        assert get_response(kind=processing_step.cache_kind, dataset=dataset, config=config, split=split)
+
+    if aggregation_level == "dataset":
+        with pytest.raises(Exception):
+            get_response(kind=processing_step.cache_kind, dataset=dataset, config=config, split=split)
+        assert get_response(kind=processing_step.cache_kind, dataset=dataset, config=None, split=None)
+
+    if aggregation_level == "config":
+        with pytest.raises(Exception):
+            get_response(kind=processing_step.cache_kind, dataset=dataset, config=config, split=split)
+        assert get_response(kind=processing_step.cache_kind, dataset=dataset, config=config, split=None)
+
+    if aggregation_level == "split":
+        assert get_response(kind=processing_step.cache_kind, dataset=dataset, config=config, split=split)

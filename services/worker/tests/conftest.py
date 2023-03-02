@@ -117,6 +117,7 @@ def test_processing_step() -> ProcessingStep:
     return ProcessingStep(
         name="/dummy",
         input_type="dataset",
+        aggregation_level=None,
         requires=None,
         required_by_dataset_viewer=False,
         parent=None,

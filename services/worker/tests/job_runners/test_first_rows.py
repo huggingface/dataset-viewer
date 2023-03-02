@@ -52,6 +52,7 @@ def get_job_runner(
             processing_step=ProcessingStep(
                 name=FirstRowsJobRunner.get_job_type(),
                 input_type="split",
+                aggregation_level=None,
                 requires=None,
                 required_by_dataset_viewer=True,
                 parent=None,

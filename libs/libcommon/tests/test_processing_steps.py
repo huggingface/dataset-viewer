@@ -23,46 +23,55 @@ def test_default_graph() -> None:
     assert config_names.parent is None
     assert config_names.children == [split_names_from_streaming]
     assert config_names.get_ancestors() == []
+    assert config_names.aggregation_level is None
 
     assert split_names_from_streaming is not None
     assert split_names_from_streaming.parent is config_names
     assert split_names_from_streaming.children == [first_rows]
     assert split_names_from_streaming.get_ancestors() == [config_names]
+    assert split_names_from_streaming.aggregation_level is None
 
     assert splits is not None
     assert splits.parent is None
     assert splits.children == []
     assert splits.get_ancestors() == []
+    assert splits.aggregation_level is None
 
     assert first_rows is not None
     assert first_rows.parent is split_names_from_streaming
     assert first_rows.children == []
     assert first_rows.get_ancestors() == [config_names, split_names_from_streaming]
+    assert first_rows.aggregation_level is None
 
     assert parquet_and_dataset_info is not None
     assert parquet_and_dataset_info.parent is None
     assert parquet_and_dataset_info.children == [parquet, dataset_info, sizes]
     assert parquet_and_dataset_info.get_ancestors() == []
+    assert parquet_and_dataset_info.aggregation_level is None
 
     assert parquet is not None
     assert parquet.parent is parquet_and_dataset_info
     assert parquet.children == []
     assert parquet.get_ancestors() == [parquet_and_dataset_info]
+    assert parquet.aggregation_level is None
 
     assert dataset_info is not None
     assert dataset_info.parent is parquet_and_dataset_info
     assert dataset_info.children == [split_names_from_dataset_info]
     assert dataset_info.get_ancestors() == [parquet_and_dataset_info]
+    assert dataset_info.aggregation_level is None
 
     assert split_names_from_dataset_info is not None
     assert split_names_from_dataset_info.parent is dataset_info
     assert split_names_from_dataset_info.children == []
     assert split_names_from_dataset_info.get_ancestors() == [parquet_and_dataset_info, dataset_info]
+    assert split_names_from_dataset_info.aggregation_level is None
 
     assert sizes is not None
     assert sizes.parent is parquet_and_dataset_info
     assert sizes.children == []
     assert sizes.get_ancestors() == [parquet_and_dataset_info]
+    assert sizes.aggregation_level is None
 
     assert graph.get_first_steps() == [config_names, splits, parquet_and_dataset_info]
     assert graph.get_steps_required_by_dataset_viewer() == [splits, first_rows]
