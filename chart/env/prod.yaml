@@ -102,7 +102,7 @@ reverseProxy:
   replicas: 2
   resources:
     requests:
-      cpu: 200m
+      cpu: 1
       memory: "64Mi"
     limits:
       cpu: 1
@@ -147,7 +147,7 @@ admin:
     type: NodePort
   resources:
     requests:
-      cpu: 200m
+      cpu: 1
       memory: "512Mi"
     limits:
       cpu: 4
@@ -166,7 +166,7 @@ api:
     type: NodePort
   resources:
     requests:
-      cpu: 200m
+      cpu: 1
       memory: "512Mi"
     limits:
       cpu: 4
@@ -182,7 +182,7 @@ workers:
     replicas: 12
     resources:
       requests:
-        cpu: 200m
+        cpu: 1
         memory: "2Gi"
       limits:
         cpu: 2
@@ -197,7 +197,7 @@ workers:
     replicas: 2
     resources:
       requests:
-        cpu: 200m
+        cpu: 1
         memory: "2Gi"
       limits:
         cpu: 2
@@ -212,7 +212,7 @@ workers:
     replicas: 2
     resources:
       requests:
-        cpu: 200m
+        cpu: 1
         memory: "2Gi"
       limits:
         cpu: 2
@@ -227,7 +227,7 @@ workers:
     replicas: 2
     resources:
       requests:
-        cpu: 200m
+        cpu: 1
         memory: "2Gi"
       limits:
         cpu: 2
@@ -242,7 +242,7 @@ workers:
     replicas: 2
     resources:
       requests:
-        cpu: 200m
+        cpu: 1
         memory: "2Gi"
       limits:
         cpu: 2
@@ -257,7 +257,7 @@ workers:
     replicas: 2
     resources:
       requests:
-        cpu: 200m
+        cpu: 1
         memory: "2Gi"
       limits:
         cpu: 2
