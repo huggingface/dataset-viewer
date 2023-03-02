@@ -89,8 +89,8 @@ storageAdmin:
   replicas: 1
   resources:
     requests:
-      cpu: 100m
-      memory: "256Mi"
+      cpu: 50m
+      memory: "64Mi"
     limits:
       cpu: 1
       memory: "256Mi"
@@ -102,7 +102,7 @@ reverseProxy:
   resources:
     requests:
       cpu: 100m
-      memory: "256Mi"
+      memory: "64Mi"
     limits:
       cpu: 1
       memory: "256Mi"
