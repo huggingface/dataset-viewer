@@ -5,10 +5,18 @@ global:
     privateHub:
       enabled: false
     ingress:
+      enabled: true
       domain: huggingface.co
+      ssl: true
       subdomains:
         datasetsServer: datasets-server
-      ssl: true
+    service:
+      type: ClusterIP
+      ports:
+        datasetsServer:
+          proxy: 30020
+          admin: 30021
+          api: 30022
 
 images:
   pullPolicy: IfNotPresent
@@ -175,7 +183,7 @@ storageAdmin:
     limits:
       cpu: 0
   service:
-    type: ClusterIP
+    type: ""
     annotations: {}
   tolerations: []
 
@@ -197,11 +205,12 @@ reverseProxy:
     limits:
       cpu: 0
   service:
-    type: ClusterIP
+    type: ""
     annotations: {}
   tolerations: []
 
 ingress:
+  enabled: true
   tls: []
   annotations: {}
 
@@ -236,7 +245,7 @@ admin:
     limits:
       cpu: 0
   service:
-    type: ClusterIP
+    type: ""
     annotations: {}
   tolerations: []
 
@@ -266,7 +275,7 @@ api:
     limits:
       cpu: 0
   service:
-    type: ClusterIP
+    type: ""
     annotations: {}
   tolerations: []
 
