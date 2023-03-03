@@ -5,9 +5,6 @@ metadata:
   labels: {{ include "datasetServer.labels" . | nindent 4 }}
   name: {{ include "name" . }}
   namespace: {{ .Release.Namespace }}
-  annotations:
-    "helm.sh/hook": pre-upgrade
-    "helm.sh/hook-weight": "-1"
 spec:
   accessModes:
     - ReadWriteMany
