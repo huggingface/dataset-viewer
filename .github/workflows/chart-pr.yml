@@ -13,14 +13,21 @@ jobs:
     steps:
       - name: Checkout sources
         uses: actions/checkout@v3
+      - name: Tailscale
+        uses: tailscale/github-action@v1
+        with:
+          authkey: ${{ secrets.TAILSCALE_AUTHKEY }}
+      - name: Update dependencies
+        run: helm dependencies update
+        working-directory: chart
       - name: Lint chart with default values
-        run: helm dependencies update && helm lint
+        run: helm lint
         working-directory: chart
       - name: Lint chart with dev values
-        run: helm dependencies update && helm lint --values env/dev.yaml
+        run: helm lint --values env/dev.yaml
         working-directory: chart
       - name: Lint chart with prod values
-        run: helm dependencies update && helm lint --values env/prod.yaml
+        run: helm lint --values env/prod.yaml
         working-directory: chart
   helm-diff:
     name: Diff
