@@ -68,6 +68,13 @@ jobs:
     steps:
       - name: Checkout sources
         uses: actions/checkout@v3
+      - name: Tailscale
+        uses: tailscale/github-action@v1
+        with:
+          authkey: ${{ secrets.TAILSCALE_AUTHKEY }}
+      - name: Update dependencies
+        run: helm dependencies update
+        working-directory: chart
       - name: Lint chart with default values
         run: helm lint
         working-directory: chart
