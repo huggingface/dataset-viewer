@@ -201,6 +201,7 @@ def create_endpoint(
     init_processing_steps: List[ProcessingStep],
     hf_endpoint: str,
     hf_token: Optional[str] = None,
+    external_auth_bypass_key: Optional[str] = None,
     external_auth_url: Optional[str] = None,
     max_age_long: int = 0,
     max_age_short: int = 0,
@@ -231,7 +232,12 @@ def create_endpoint(
                 raise MissingRequiredParameterError("Parameter 'dataset' is required")
 
             # if auth_check fails, it will raise an exception that will be caught below
-            auth_check(dataset, external_auth_url=external_auth_url, request=request)
+            auth_check(
+                dataset,
+                external_auth_url=external_auth_url,
+                request=request,
+                external_auth_bypass_key=external_auth_bypass_key,
+            )
 
             # getting result based on processing steps
             result = get_cache_entry_from_steps(

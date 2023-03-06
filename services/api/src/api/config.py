@@ -36,6 +36,7 @@ class UvicornConfig:
 
 
 API_EXTERNAL_AUTH_URL = None
+API_HF_AUTH_BYPASS_KEY = None
 API_HF_AUTH_PATH = "/api/datasets/%s/auth-check"
 API_MAX_AGE_LONG = 120  # 2 minutes
 API_MAX_AGE_SHORT = 10  # 10 seconds
@@ -44,6 +45,7 @@ API_MAX_AGE_SHORT = 10  # 10 seconds
 @dataclass(frozen=True)
 class ApiConfig:
     external_auth_url: Optional[str] = API_EXTERNAL_AUTH_URL  # not documented
+    hf_auth_bypass_key: Optional[str] = API_HF_AUTH_BYPASS_KEY
     hf_auth_path: str = API_HF_AUTH_PATH
     max_age_long: int = API_MAX_AGE_LONG
     max_age_short: int = API_MAX_AGE_SHORT
@@ -56,6 +58,7 @@ class ApiConfig:
             external_auth_url = None if hf_auth_path is None else f"{common_config.hf_endpoint}{hf_auth_path}"
             return cls(
                 external_auth_url=external_auth_url,
+                hf_auth_bypass_key=env.str(name="HF_AUTH_BYPASS_KEY", default=API_HF_AUTH_BYPASS_KEY),
                 hf_auth_path=hf_auth_path,
                 max_age_long=env.int(name="MAX_AGE_LONG", default=API_MAX_AGE_LONG),
                 max_age_short=env.int(name="MAX_AGE_SHORT", default=API_MAX_AGE_SHORT),

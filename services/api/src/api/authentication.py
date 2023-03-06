@@ -32,7 +32,10 @@ class RequestAuth(AuthBase):
 
 
 def auth_check(
-    dataset: str, external_auth_url: Optional[str] = None, request: Optional[Request] = None
+    dataset: str,
+    external_auth_url: Optional[str] = None,
+    request: Optional[Request] = None,
+    external_auth_bypass_key: Optional[str] = None,
 ) -> Literal[True]:
     """check if the dataset is authorized for the request
 
@@ -42,12 +45,20 @@ def auth_check(
           which will be replaced with the dataset name, for example: https://huggingface.co/api/datasets/%s/auth-check
           The authentication service must return 200, 401, 403 or 404.
           If None, the dataset is always authorized.
-        request (Request | None): the request which optionally bears authentication headers: "cookie" or
-          "authorization"
+        request (Request | None): the request which optionally bears authentication headers: "cookie",
+          "authorization" or "X-Api-Key"
+        external_auth_bypass_key (str|None): if the request bears this secret key in the "X-Api-Key" header, the
+          external authentication service is bypassed.
 
     Returns:
         None: the dataset is authorized for the request
     """
+    if (
+        external_auth_bypass_key is not None
+        and request is not None
+        and request.headers.get("X-Api-Key") == external_auth_bypass_key
+    ):
+        return True
     if external_auth_url is None:
         return True
     try:

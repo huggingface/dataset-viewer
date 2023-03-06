@@ -2,12 +2,13 @@
 # Copyright 2022 The HuggingFace Authors.
 
 from contextlib import nullcontext as does_not_raise
-from typing import Any, Mapping
+from typing import Any, Mapping, Optional
 
 import pytest
 from pytest_httpserver import HTTPServer
 from starlette.datastructures import Headers
 from starlette.requests import Request
+from werkzeug.wrappers import Request as WerkzeugRequest, Response as WerkzeugResponse
 
 from api.authentication import auth_check
 from api.utils import ExternalAuthenticatedError, ExternalUnauthenticatedError
@@ -91,4 +92,39 @@ def test_valid_responses_with_request(
             dataset,
             external_auth_url=external_auth_url,
             request=create_request(headers=headers),
+        )
+
+
+def raise_value_error(request: WerkzeugRequest) -> WerkzeugResponse:
+    return WerkzeugResponse(status=500)  # <- will raise ValueError in auth_check
+
+
+@pytest.mark.parametrize(
+    "external_auth_bypass_key,headers,expectation",
+    [
+        (None, {}, pytest.raises(ValueError)),
+        (None, {"X-Api-Key": "key"}, pytest.raises(ValueError)),
+        ("key", {}, pytest.raises(ValueError)),
+        ("key", {"X-Api-Key": "wrong_key"}, pytest.raises(ValueError)),
+        ("key", {"X-Api-Key": "key"}, does_not_raise()),
+        ("key", {"x-api-key": "key"}, does_not_raise()),
+    ],
+)
+def test_bypass_auth_key(
+    httpserver: HTTPServer,
+    hf_endpoint: str,
+    hf_auth_path: str,
+    external_auth_bypass_key: Optional[str],
+    headers: Mapping[str, str],
+    expectation: Any,
+) -> None:
+    dataset = "dataset"
+    external_auth_url = hf_endpoint + hf_auth_path
+    httpserver.expect_request(hf_auth_path % dataset).respond_with_handler(raise_value_error)
+    with expectation:
+        auth_check(
+            dataset,
+            external_auth_url=external_auth_url,
+            request=create_request(headers=headers),
+            external_auth_bypass_key=external_auth_bypass_key,
         )

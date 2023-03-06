@@ -64,6 +64,7 @@ def create_valid_endpoint(
 
 def create_is_valid_endpoint(
     processing_steps_for_valid: List[ProcessingStep],
+    external_auth_bypass_key: Optional[str] = None,
     external_auth_url: Optional[str] = None,
     max_age_long: int = 0,
     max_age_short: int = 0,
@@ -76,7 +77,12 @@ def create_is_valid_endpoint(
             if not are_valid_parameters([dataset]) or not dataset:
                 raise MissingRequiredParameterError("Parameter 'dataset' is required")
             # if auth_check fails, it will raise an exception that will be caught below
-            auth_check(dataset, external_auth_url=external_auth_url, request=request)
+            auth_check(
+                dataset,
+                external_auth_url=external_auth_url,
+                request=request,
+                external_auth_bypass_key=external_auth_bypass_key,
+            )
             content = {
                 "valid": is_valid(dataset=dataset, processing_steps_for_valid=processing_steps_for_valid),
             }
