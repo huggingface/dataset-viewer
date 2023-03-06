@@ -54,7 +54,7 @@ def auth_check(
         None: the dataset is authorized for the request
     """
     if (
-        external_auth_bypass_key is not None
+        external_auth_bypass_key
         and request is not None
         and request.headers.get("X-Api-Key") == external_auth_bypass_key
     ):
