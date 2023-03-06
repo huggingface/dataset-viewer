@@ -14,13 +14,13 @@ jobs:
       - name: Checkout sources
         uses: actions/checkout@v3
       - name: Lint chart with default values
-        run: helm lint
+        run: helm dependencies update && helm lint
         working-directory: chart
       - name: Lint chart with dev values
-        run: helm lint --values env/dev.yaml
+        run: helm dependencies update && helm lint --values env/dev.yaml
         working-directory: chart
       - name: Lint chart with prod values
-        run: helm lint --values env/prod.yaml
+        run: helm dependencies update && helm lint --values env/prod.yaml
         working-directory: chart
   helm-diff:
     name: Diff
