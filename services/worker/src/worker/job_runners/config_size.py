@@ -10,9 +10,10 @@ from libcommon.simple_cache import DoesNotExist, SplitFullName, get_response
 
 from worker.job_runner import JobRunner, JobRunnerError
 
-SizesJobRunnerErrorCode = Literal[
+ConfigSizeJobRunnerErrorCode = Literal[
     "PreviousStepStatusError",
     "PreviousStepFormatError",
+    "MissingInfoForConfigError",
 ]
 
 
@@ -44,24 +45,23 @@ class SplitSize(TypedDict):
     num_columns: int
 
 
-class SizesContent(TypedDict):
-    dataset: DatasetSize
-    configs: list[ConfigSize]
+class ConfigSizeContent(TypedDict):
+    config: ConfigSize
     splits: list[SplitSize]
 
 
-class SizesResponse(TypedDict):
-    sizes: SizesContent
+class ConfigSizeResponse(TypedDict):
+    size: ConfigSizeContent
 
 
-class SizesJobRunnerError(JobRunnerError):
+class ConfigSizeJobRunnerError(JobRunnerError):
     """Base class for exceptions in this module."""
 
     def __init__(
         self,
         message: str,
         status_code: HTTPStatus,
-        code: SizesJobRunnerErrorCode,
+        code: ConfigSizeJobRunnerErrorCode,
         cause: Optional[BaseException] = None,
         disclose_cause: bool = False,
     ):
@@ -70,38 +70,47 @@ class SizesJobRunnerError(JobRunnerError):
         )
 
 
-class PreviousStepStatusError(SizesJobRunnerError):
+class PreviousStepStatusError(ConfigSizeJobRunnerError):
     """Raised when the previous step gave an error. The job should not have been created."""
 
     def __init__(self, message: str, cause: Optional[BaseException] = None):
         super().__init__(message, HTTPStatus.INTERNAL_SERVER_ERROR, "PreviousStepStatusError", cause, False)
 
 
-class PreviousStepFormatError(SizesJobRunnerError):
+class PreviousStepFormatError(ConfigSizeJobRunnerError):
     """Raised when the content of the previous step has not the expected format."""
 
     def __init__(self, message: str, cause: Optional[BaseException] = None):
         super().__init__(message, HTTPStatus.INTERNAL_SERVER_ERROR, "PreviousStepFormatError", cause, False)
 
 
-def compute_sizes_response(dataset: str) -> SizesResponse:
+class MissingInfoForConfigError(ConfigSizeJobRunnerError):
+    """Raised when the dataset info from the parquet export is missing the requested dataset configuration."""
+
+    def __init__(self, message: str, cause: Optional[BaseException] = None):
+        super().__init__(message, HTTPStatus.INTERNAL_SERVER_ERROR, "MissingInfoForConfigError", cause, False)
+
+
+def compute_config_size_response(dataset: str, config: str) -> ConfigSizeResponse:
     """
-    Get the response of /sizes for one specific dataset on huggingface.co.
+    Get the response of /sizes for one specific dataset and config on huggingface.co.
     Args:
         dataset (`str`):
             A namespace (user or an organization) and a repo name separated
             by a `/`.
+        config (`str`):
+            A configuration name.
     Returns:
-        `SizesResponse`: An object with the sizes_response.
+        `ConfigSizeResponse`: An object with the size_response.
     <Tip>
     Raises the following errors:
-        - [`~job_runners.sizes.PreviousStepStatusError`]
+        - [`~job_runners.config_size.PreviousStepStatusError`]
           If the previous step gave an error.
-        - [`~job_runners.sizes.PreviousStepFormatError`]
+        - [`~job_runners.config_size.PreviousStepFormatError`]
             If the content of the previous step has not the expected format
     </Tip>
     """
-    logging.info(f"get sizes for dataset={dataset}")
+    logging.info(f"get size for dataset={dataset}, config={config}")
 
     try:
         response = get_response(kind="/parquet-and-dataset-info", dataset=dataset)
@@ -114,74 +123,68 @@ def compute_sizes_response(dataset: str) -> SizesResponse:
             f"Previous step gave an error: {response['http_status']}. This job should not have been created."
         )
     content = response["content"]
+    if config not in content["dataset_info"]:
+        raise MissingInfoForConfigError(
+            f"Dataset configuration '{config}' is missing in the dataset info from the parquet export. "
+            f"Available configurations: {', '.join(content['dataset_info'][:10])}"
+            + f"... ({len(content['dataset_info']) - 10})" if len(content['dataset_info']) > 10 else ""
+        )
     try:
-        split_sizes: list[SplitSize] = []
-        config_sizes: list[ConfigSize] = []
-        for config in content["dataset_info"].keys():
-            config_dataset_info = content["dataset_info"][config]
-            num_columns = len(config_dataset_info["features"])
-            config_split_sizes: list[SplitSize] = [
-                {
-                    "dataset": dataset,
-                    "config": config,
-                    "split": split_info["name"],
-                    "num_bytes_parquet_files": sum(
-                        x["size"]
-                        for x in content["parquet_files"]
-                        if x["config"] == config and x["split"] == split_info["name"]
-                    ),
-                    "num_bytes_memory": split_info["num_bytes"],
-                    "num_rows": split_info["num_examples"],
-                    "num_columns": num_columns,
-                }
-                for split_info in config_dataset_info["splits"].values()
-            ]
-            config_sizes.append(
-                {
-                    "dataset": dataset,
-                    "config": config,
-                    "num_bytes_original_files": config_dataset_info["download_size"],
-                    "num_bytes_parquet_files": sum(
-                        split_size["num_bytes_parquet_files"] for split_size in config_split_sizes
-                    ),
-                    "num_bytes_memory": sum(
-                        split_size["num_bytes_memory"] for split_size in config_split_sizes
-                    ),  # or "num_bytes_memory": config_dataset_info["dataset_size"],
-                    "num_rows": sum(split_size["num_rows"] for split_size in config_split_sizes),
-                    "num_columns": len(config_dataset_info["features"]),
-                }
-            )
-            split_sizes.extend(config_split_sizes)
-        dataset_size: DatasetSize = {
-            "dataset": dataset,
-            "num_bytes_original_files": sum(config_size["num_bytes_original_files"] for config_size in config_sizes),
-            "num_bytes_parquet_files": sum(config_size["num_bytes_parquet_files"] for config_size in config_sizes),
-            "num_bytes_memory": sum(config_size["num_bytes_memory"] for config_size in config_sizes),
-            "num_rows": sum(config_size["num_rows"] for config_size in config_sizes),
-        }
+        config_dataset_info = content["dataset_info"][config]
+        num_columns = len(config_dataset_info["features"])
+        split_sizes: list[SplitSize] = [
+            {
+                "dataset": dataset,
+                "config": config,
+                "split": split_info["name"],
+                "num_bytes_parquet_files": sum(
+                    x["size"]
+                    for x in content["parquet_files"]
+                    if x["config"] == config and x["split"] == split_info["name"]
+                ),
+                "num_bytes_memory": split_info["num_bytes"],
+                "num_rows": split_info["num_examples"],
+                "num_columns": num_columns,
+            }
+            for split_info in config_dataset_info["splits"].values()
+        ]
+        config_size = ConfigSize(
+            {
+                "dataset": dataset,
+                "config": config,
+                "num_bytes_original_files": config_dataset_info["download_size"],
+                "num_bytes_parquet_files": sum(
+                    split_size["num_bytes_parquet_files"] for split_size in split_sizes
+                ),
+                "num_bytes_memory": sum(
+                    split_size["num_bytes_memory"] for split_size in split_sizes
+                ),  # or "num_bytes_memory": config_dataset_info["dataset_size"],
+                "num_rows": sum(split_size["num_rows"] for split_size in split_sizes),
+                "num_columns": len(config_dataset_info["features"]),
+            }
+        )
     except Exception as e:
         raise PreviousStepFormatError("Previous step did not return the expected content.", e) from e
 
     return {
         "sizes": {
-            "dataset": dataset_size,
-            "configs": config_sizes,
+            "config": config_size,
             "splits": split_sizes,
         }
     }
 
 
-class SizesJobRunner(JobRunner):
+class ConfigSizeJobRunner(JobRunner):
     @staticmethod
     def get_job_type() -> str:
-        return "/sizes"
+        return "/config-size"
 
     @staticmethod
     def get_version() -> str:
         return "1.0.0"
 
     def compute(self) -> Mapping[str, Any]:
-        return compute_sizes_response(dataset=self.dataset)
+        return compute_config_size_response(dataset=self.dataset, config=self.config)
 
     def get_new_splits(self, content: Mapping[str, Any]) -> set[SplitFullName]:
         """Get the set of new splits, from the content created by the compute."""
