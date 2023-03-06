@@ -1,5 +1,5 @@
 # build with
-#   docker build -t some_tag_worker -f Dockerfile ../..
+#   docker build -t some_tag_api -f Dockerfile ../..
 FROM python:3.9.15-slim
 
 ENV PYTHONFAULTHANDLER=1 \
@@ -16,20 +16,16 @@ ENV PYTHONFAULTHANDLER=1 \
 
 # System deps:
 RUN apt-get update \
-    && apt-get install -y build-essential unzip wget python3-dev make \
-    libicu-dev ffmpeg libavcodec-extra libsndfile1 llvm pkg-config \
-    poppler-utils \
+    && apt-get install -y build-essential unzip wget python3-dev \
     && rm -rf /var/lib/apt/lists/*
-
 RUN pip install -U pip
 RUN pip install "poetry==$POETRY_VERSION"
 
 WORKDIR /src
 COPY libs/libcommon/poetry.lock ./libs/libcommon/poetry.lock
 COPY libs/libcommon/pyproject.toml ./libs/libcommon/pyproject.toml
-COPY services/worker/vendors ./services/worker/vendors/
-COPY services/worker/poetry.lock ./services/worker/poetry.lock
-COPY services/worker/pyproject.toml ./services/worker/pyproject.toml
+COPY services/api/poetry.lock ./services/api/poetry.lock
+COPY services/api/pyproject.toml ./services/api/pyproject.toml
 
 # FOR LOCAL DEVELOPMENT ENVIRONMENT
 # Initialize an empty libcommon
@@ -37,12 +33,12 @@ COPY services/worker/pyproject.toml ./services/worker/pyproject.toml
 RUN mkdir ./libs/libcommon/src && mkdir ./libs/libcommon/src/libcommon && touch ./libs/libcommon/src/libcommon/__init__.py
 
 # Install dependencies
-WORKDIR /src/services/worker/
+WORKDIR /src/services/api/
 RUN --mount=type=cache,target=/home/.cache/pypoetry/cache \
     --mount=type=cache,target=/home/.cache/pypoetry/artifacts \
     poetry install --no-root
 
 # FOR LOCAL DEVELOPMENT ENVIRONMENT
-# Install the worker package.
-# Mapping a volume to ./services/worker/src is required when running this image.
-ENTRYPOINT ["/bin/sh", "-c" , "poetry install --only-root && poetry run python src/worker/main.py"]
+# Install the api package.
+# Mapping a volume to ./services/api/src is required when running this image.
+ENTRYPOINT ["/bin/sh", "-c" , "poetry install --only-root && poetry run python src/api/main.py"]

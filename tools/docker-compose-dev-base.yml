@@ -21,6 +21,21 @@ services:
       WORKER_MAX_LOAD_PCT: ${WORKER_MAX_LOAD_PCT-70}
       WORKER_MAX_MEMORY_PCT: ${WORKER_MAX_MEMORY_PCT-80}
       WORKER_SLEEP_SECONDS: ${WORKER_SLEEP_SECONDS-15}
+    # volumes to local source directory for development
+    volumes:
+      - ../libs/libcommon/src:/src/libs/libcommon/src
+  admin:
+    extends:
+      service: common
+    # volumes to local source directory for development
+    volumes:
+      - ../services/admin/src:/src/services/admin/src
+  api:
+    extends:
+      service: common
+    # volumes to local source directory for development
+    volumes:
+      - ../services/api/src:/src/services/api/src
   datasets-worker:
     extends:
       service: common
