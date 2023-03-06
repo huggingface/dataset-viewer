@@ -18,7 +18,7 @@ type: application
 # This is the chart version. This version number should be incremented each time you make changes
 # to the chart and its templates, including the app version.
 # Versions are expected to follow Semantic Versioning (https://semver.org/)
-version: 1.4.0
+version: 1.5.0
 
 # This is the version number of the application being deployed. This version number should be
 # incremented each time you make changes to the application. Versions are not expected to
@@ -28,7 +28,11 @@ version: 1.4.0
 # See https://github.com/huggingface/datasets-server/releases
 appVersion: "0.21.0"
 
+icon: https://huggingface.co/front/assets/huggingface_logo-noborder.svg
 dependencies:
+  - name: common
+    version: 0.1.2
+    repository: https://registry.internal.huggingface.tech/chartrepo/charts
   - name: mongodb
     version: 13.6.4
     condition: mongodb.enabled

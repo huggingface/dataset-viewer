@@ -23,7 +23,6 @@ spec:
       containers: {{ include "containerMongodbMigration" . | nindent 8 }}
       nodeSelector: {{ toYaml .Values.mongodbMigration.nodeSelector | nindent 8 }}
       tolerations: {{ toYaml .Values.mongodbMigration.tolerations | nindent 8 }}
-      volumes: {{ include "volumeData" . | nindent 8 }}
       securityContext: {{ include "securityContext" . | nindent 8 }}
   backoffLimit: 0
 {{- end}}

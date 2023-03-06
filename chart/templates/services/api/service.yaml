@@ -1,6 +1,7 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2022 The HuggingFace Authors.
 
+{{ $serviceType := .Values.reverseProxy.service.type | default .Values.global.huggingface.service.type }}
 apiVersion: v1
 kind: Service
 metadata:
@@ -13,6 +14,9 @@ spec:
   - name: http
     port: 80
     protocol: TCP
+    {{- if eq "NodePort" $serviceType }}
+    nodePort: {{ .Values.global.huggingface.service.ports.datasetsServer.api }}
+    {{- end }}
     targetPort: {{ .Values.api.uvicornPort }}
   selector: {{ include "labels.api" . | nindent 4 }}
-  type: {{ .Values.api.service.type }}
+  type: {{ $serviceType }}
