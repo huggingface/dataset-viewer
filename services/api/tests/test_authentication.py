@@ -5,6 +5,7 @@ import time
 from contextlib import nullcontext as does_not_raise
 from typing import Any, Mapping, Optional
 
+import jwt
 import pytest
 import werkzeug.wrappers
 from pytest_httpserver import HTTPServer
@@ -136,22 +137,43 @@ def raise_value_error(request: WerkzeugRequest) -> WerkzeugResponse:
     return WerkzeugResponse(status=500)  # <- will raise ValueError in auth_check
 
 
+private_key = """-----BEGIN RSA PRIVATE KEY-----
+MIIBOQIBAAJAZTmplhS/Jd73ycVut7TglMObheQqXM7RZYlwazLU4wpfIVIwOh9I
+sCZGSgLyFq42KWIikKLEs/yqx3pRGfq+rwIDAQABAkAMyF9WCICq86Eu5bO5lynV
+H26AVfPTjHp87AI6R00C7p9n8hO/DhHaHpc3InOSsXsw9d2hmz37jwwBFiwMHMMh
+AiEAtbttHlIO+yO29oXw4P6+yO11lMy1UpT1sPVTnR9TXbUCIQCOl7Zuyy2ZY9ZW
+pDhW91x/14uXjnLXPypgY9bcfggJUwIhAJQG1LzrzjQWRUPMmgZKuhBkC3BmxhM8
+LlwzmCXVjEw5AiA7JnAFEb9+q82T71d3q/DxD0bWvb6hz5ASoBfXK2jGBQIgbaQp
+h4Tk6UJuj1xgKNs75Pk3pG2tj8AQiuBk3l62vRU=
+-----END RSA PRIVATE KEY-----"""
+public_key = """-----BEGIN PUBLIC KEY-----
+MFswDQYJKoZIhvcNAQEBBQADSgAwRwJAZTmplhS/Jd73ycVut7TglMObheQqXM7R
+ZYlwazLU4wpfIVIwOh9IsCZGSgLyFq42KWIikKLEs/yqx3pRGfq+rwIDAQAB
+-----END PUBLIC KEY-----"""
+other_public_key = """-----BEGIN PUBLIC KEY-----
+MFswDQYJKoZIhvcNAQEBBQADSgAwRwJAecoNIHMXczWkzTp9ePEcx6vPibrZVz/z
+xYGX6G2jFcwFdsrO9nCecrtpSw5lwjW40aNVL9NL9yxPxDi2dyq4wQIDAQAB
+-----END PUBLIC KEY-----"""
+
+encoded = jwt.encode({"some": "payload"}, private_key, algorithm="RS256")
+
+
 @pytest.mark.parametrize(
-    "external_auth_bypass_key,headers,expectation",
+    "external_auth_bypass_public_key,headers,expectation",
     [
         (None, {}, pytest.raises(ValueError)),
-        (None, {"X-Api-Key": "key"}, pytest.raises(ValueError)),
-        ("key", {}, pytest.raises(ValueError)),
-        ("key", {"X-Api-Key": "wrong_key"}, pytest.raises(ValueError)),
-        ("key", {"X-Api-Key": "key"}, does_not_raise()),
-        ("key", {"x-api-key": "key"}, does_not_raise()),
+        (None, {"X-Api-Key": encoded}, pytest.raises(ValueError)),
+        (public_key, {}, pytest.raises(ValueError)),
+        (other_public_key, {"X-Api-Key": encoded}, pytest.raises(ValueError)),
+        (public_key, {"X-Api-Key": encoded}, does_not_raise()),
+        (public_key, {"x-api-key": encoded}, does_not_raise()),
     ],
 )
-def test_bypass_auth_key(
+def test_bypass_auth_public_key(
     httpserver: HTTPServer,
     hf_endpoint: str,
     hf_auth_path: str,
-    external_auth_bypass_key: Optional[str],
+    external_auth_bypass_public_key: Optional[str],
     headers: Mapping[str, str],
     expectation: Any,
 ) -> None:
@@ -163,5 +185,5 @@ def test_bypass_auth_key(
             dataset,
             external_auth_url=external_auth_url,
             request=create_request(headers=headers),
-            external_auth_bypass_key=external_auth_bypass_key,
+            external_auth_bypass_public_key=external_auth_bypass_public_key,
         )

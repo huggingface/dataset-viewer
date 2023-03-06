@@ -202,7 +202,7 @@ def create_endpoint(
     init_processing_steps: List[ProcessingStep],
     hf_endpoint: str,
     hf_token: Optional[str] = None,
-    external_auth_bypass_key: Optional[str] = None,
+    external_auth_bypass_public_key: Optional[str] = None,
     external_auth_url: Optional[str] = None,
     hf_timeout_seconds: Optional[float] = None,
     max_age_long: int = 0,
@@ -246,7 +246,7 @@ def create_endpoint(
                         dataset,
                         external_auth_url=external_auth_url,
                         request=request,
-                        external_auth_bypass_key=external_auth_bypass_key,
+                        external_auth_bypass_public_key=external_auth_bypass_public_key,
                         hf_timeout_seconds=hf_timeout_seconds,
                     )
                 # getting result based on processing steps

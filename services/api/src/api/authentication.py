@@ -4,6 +4,7 @@
 import logging
 from typing import Literal, Optional
 
+import jwt
 import requests
 from requests import PreparedRequest
 from requests.auth import AuthBase
@@ -37,11 +38,25 @@ class RequestAuth(AuthBase):
         return r
 
 
+def is_jwt_valid(request: Optional[Request], public_key: Optional[str]) -> bool:
+    if not request or not public_key:
+        return False
+    encoded = request.headers.get("x-api-key")
+    if not encoded:
+        return False
+    try:
+        jwt.decode(jwt=encoded, key=public_key, algorithms=["RS256"])
+        # ^ we're not interested in the contents of the JWT token, we just want to check that it's valid
+    except Exception:
+        return False
+    return True
+
+
 def auth_check(
     dataset: str,
     external_auth_url: Optional[str] = None,
     request: Optional[Request] = None,
-    external_auth_bypass_key: Optional[str] = None,
+    external_auth_bypass_public_key: Optional[str] = None,
     hf_timeout_seconds: Optional[float] = None,
 ) -> Literal[True]:
     """check if the dataset is authorized for the request
@@ -56,10 +71,9 @@ def auth_check(
           which will be replaced with the dataset name, for example: https://huggingface.co/api/datasets/%s/auth-check
           The authentication service must return 200, 401, 403 or 404.
           If None, the dataset is always authorized.
-        request (Request | None): the request which optionally bears authentication headers: "cookie" or
-          "authorization"
-        external_auth_bypass_key (str|None): if the request bears this secret key in the "X-Api-Key" header, the
-          external authentication service is bypassed.
+        request (Request | None): the request which optionally bears authentication headers: "cookie",
+          "authorization" or "X-Api-Key"
+        external_auth_bypass_public_key (str|None): the public key to use to decode the JWT token
         hf_timeout_seconds (float|None): the timeout in seconds for the external authentication service. It
           is used both for the connection timeout and the read timeout. If None, the request never timeouts.
 
@@ -68,11 +82,7 @@ def auth_check(
     """
     with StepProfiler(method="auth_check", step="all"):
         with StepProfiler(method="auth_check", step="prepare parameters"):
-            if (
-                external_auth_bypass_key is not None
-                and request is not None
-                and request.headers.get("X-Api-Key") == external_auth_bypass_key
-            ):
+            if is_jwt_valid(request=request, public_key=external_auth_bypass_public_key):
                 return True
             if external_auth_url is None:
                 return True

@@ -69,7 +69,7 @@ def create_valid_endpoint(
 
 def create_is_valid_endpoint(
     processing_steps_for_valid: List[ProcessingStep],
-    external_auth_bypass_key: Optional[str] = None,
+    external_auth_bypass_public_key: Optional[str] = None,
     external_auth_url: Optional[str] = None,
     hf_timeout_seconds: Optional[float] = None,
     max_age_long: int = 0,
@@ -90,7 +90,7 @@ def create_is_valid_endpoint(
                         dataset,
                         external_auth_url=external_auth_url,
                         request=request,
-                        external_auth_bypass_key=external_auth_bypass_key,
+                        external_auth_bypass_public_key=external_auth_bypass_public_key,
                         hf_timeout_seconds=hf_timeout_seconds,
                     )
                 with StepProfiler(method="is_valid_endpoint", step="prepare content"):
