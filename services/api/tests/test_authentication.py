@@ -8,7 +8,8 @@ import pytest
 from pytest_httpserver import HTTPServer
 from starlette.datastructures import Headers
 from starlette.requests import Request
-from werkzeug.wrappers import Request as WerkzeugRequest, Response as WerkzeugResponse
+from werkzeug.wrappers import Request as WerkzeugRequest
+from werkzeug.wrappers import Response as WerkzeugResponse
 
 from api.authentication import auth_check
 from api.utils import ExternalAuthenticatedError, ExternalUnauthenticatedError
