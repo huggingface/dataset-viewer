@@ -1,9 +1,9 @@
 dependencies:
 - name: common
-  repository: https://registry.internal.huggingface.tech/chartrepo/charts
-  version: 0.1.2
+  repository: oci://ghcr.io/huggingface/helm-common
+  version: 0.0.0
 - name: mongodb
   repository: https://charts.bitnami.com/bitnami
   version: 13.6.4
-digest: sha256:7b30ce342604b5ef63973ab9446d5425bbd41720c94f3589a7c912dfdde2fec5
-generated: "2023-03-03T14:45:23.93166+01:00"
+digest: sha256:3be4b001a1d350839f37b7f7b14f39ab5dd221b7bfd1030250d317acc28fb5d6
+generated: "2023-03-06T20:52:19.58506+01:00"

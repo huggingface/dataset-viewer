@@ -13,10 +13,6 @@ jobs:
     steps:
       - name: Checkout sources
         uses: actions/checkout@v3
-      - name: Tailscale
-        uses: tailscale/github-action@v1
-        with:
-          authkey: ${{ secrets.TAILSCALE_AUTHKEY }}
       - name: Update dependencies
         run: helm dependencies update
         working-directory: chart
@@ -35,6 +31,9 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v3
+      - name: Update dependencies
+        run: helm dependencies update
+        working-directory: chart
       - name: Tailscale
         uses: tailscale/github-action@v1
         with:

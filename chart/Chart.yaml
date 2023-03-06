@@ -31,8 +31,8 @@ appVersion: "0.21.0"
 icon: https://huggingface.co/front/assets/huggingface_logo-noborder.svg
 dependencies:
   - name: common
-    version: 0.1.2
-    repository: https://registry.internal.huggingface.tech/chartrepo/charts
+    version: 0.2.1
+    repository: oci://ghcr.io/huggingface/helm-common
   - name: mongodb
     version: 13.6.4
     condition: mongodb.enabled
