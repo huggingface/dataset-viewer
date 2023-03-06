@@ -3,6 +3,15 @@
 
 # --- common parameters ---
 
+global:
+  huggingface:
+    service:
+      ports:
+        datasetsServer:
+          proxy: 30931
+          admin: 32702
+          api: 31370
+
 images:
   pullPolicy: IfNotPresent
   pullSecrets: []
