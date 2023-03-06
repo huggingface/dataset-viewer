@@ -226,12 +226,16 @@ def create_endpoint(
                 dataset_parameter, config_parameter, split_parameter
             )
 
+            # for now, dataset is always required in the endpoints.
+            if not dataset:
+                raise MissingRequiredParameterError("Parameter 'dataset' is required")
+
             # if auth_check fails, it will raise an exception that will be caught below
-            auth_check(dataset, external_auth_url=external_auth_url, request=request)  # type: ignore
+            auth_check(dataset, external_auth_url=external_auth_url, request=request)
 
             # getting result based on processing steps
             result = get_cache_entry_from_steps(
-                processing_steps, dataset, config, split, init_processing_steps, hf_endpoint, hf_token  # type: ignore
+                processing_steps, dataset, config, split, init_processing_steps, hf_endpoint, hf_token
             )
 
             content = result["content"]
