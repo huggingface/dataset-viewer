@@ -110,6 +110,11 @@ class ProcessingGraphConfig:
             "/split-names-from-dataset-info": {"input_type": "config", "requires": "/dataset-info"},
             "config-size": {"input_type": "config", "requires": "/parquet-and-dataset-info"},
             "dataset-size": {"input_type": "dataset", "requires": "config-size"},
+            "/sizes": {"input_type": "dataset", "requires": "/parquet-and-dataset-info"},
+            "dataset--split-names": {
+                "input_type": "dataset",
+                "requires": "/split-names-from-streaming",
+            },
         }
     )
 

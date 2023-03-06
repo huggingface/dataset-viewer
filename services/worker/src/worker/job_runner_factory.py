@@ -15,6 +15,7 @@ from worker.job_runners.config_names import ConfigNamesJobRunner
 from worker.job_runners.config_size import ConfigSizeJobRunner
 from worker.job_runners.dataset_info import DatasetInfoJobRunner
 from worker.job_runners.dataset_size import DatasetSizeJobRunner
+from worker.job_runners.dataset_split_names import DatasetSplitNamesJobRunner
 from worker.job_runners.first_rows import FirstRowsJobRunner
 from worker.job_runners.parquet import ParquetJobRunner
 from worker.job_runners.parquet_and_dataset_info import ParquetAndDatasetInfoJobRunner
@@ -134,6 +135,13 @@ class JobRunnerFactory(BaseJobRunnerFactory):
                 processing_step=processing_step,
                 hf_datasets_cache=self.hf_datasets_cache,
             )
+        if job_type == DatasetSplitNamesJobRunner.get_job_type():
+            return DatasetSplitNamesJobRunner(
+                job_info=job_info,
+                app_config=self.app_config,
+                processing_step=processing_step,
+                hf_datasets_cache=self.hf_datasets_cache,
+            )
         supported_job_types = [
             ConfigNamesJobRunner.get_job_type(),
             SplitNamesFromStreamingJobRunner.get_job_type(),
@@ -145,5 +153,6 @@ class JobRunnerFactory(BaseJobRunnerFactory):
             DatasetSizeJobRunner.get_job_type(),
             ConfigSizeJobRunner.get_job_type(),
             SplitNamesFromDatasetInfoJobRunner.get_job_type(),
+            DatasetSplitNamesJobRunner.get_job_type(),
         ]
         raise ValueError(f"Unsupported job type: '{job_type}'. The supported job types are: {supported_job_types}")
