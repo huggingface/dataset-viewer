@@ -4,11 +4,15 @@
 from typing import Literal, Optional
 
 import requests
-from requests import PreparedRequest
+from requests import PreparedRequest, Timeout
 from requests.auth import AuthBase
 from starlette.requests import Request
 
-from api.utils import ExternalAuthenticatedError, ExternalUnauthenticatedError
+from api.utils import (
+    ExternalAuthenticatedError,
+    ExternalTimeoutError,
+    ExternalUnauthenticatedError,
+)
 
 
 class RequestAuth(AuthBase):
@@ -32,9 +36,16 @@ class RequestAuth(AuthBase):
 
 
 def auth_check(
-    dataset: str, external_auth_url: Optional[str] = None, request: Optional[Request] = None
+    dataset: str,
+    external_auth_url: Optional[str] = None,
+    request: Optional[Request] = None,
+    external_auth_timeout_seconds: Optional[float] = None,
 ) -> Literal[True]:
     """check if the dataset is authorized for the request
+
+    It sends a request to the Hugging Face API to check if the dataset is authorized for the input request. The request
+    to the Hugging Face API is authenticated with the same authentication headers as the input request. It timeouts
+    after 200ms.
 
     Args:
         dataset (str): the dataset name
@@ -44,6 +55,8 @@ def auth_check(
           If None, the dataset is always authorized.
         request (Request | None): the request which optionally bears authentication headers: "cookie" or
           "authorization"
+        external_auth_timeout_seconds (float|None): the timeout in seconds for the external authentication service. It
+          is used both for the connection timeout and the read timeout. If None, the request never timeouts.
 
     Returns:
         None: the dataset is authorized for the request
@@ -55,9 +68,14 @@ def auth_check(
     except TypeError as e:
         raise ValueError("external_auth_url must contain %s") from e
     try:
-        response = requests.get(url, auth=RequestAuth(request))
+        response = requests.get(url, auth=RequestAuth(request), timeout=external_auth_timeout_seconds)
+    except Timeout as err:
+        raise ExternalTimeoutError(
+            "Authentication check timed out. Please try again later, it's a temporary internal issue.", err
+        ) from err
     except Exception as err:
         raise RuntimeError("External authentication check failed", err) from err
+
     if response.status_code == 200:
         return True
     elif response.status_code == 401:

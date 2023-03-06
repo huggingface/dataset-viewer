@@ -17,6 +17,7 @@ ApiErrorCode = Literal[
     "UnexpectedError",
     "ExternalUnauthenticatedError",
     "ExternalAuthenticatedError",
+    "ExternalTimeoutError",
     "MissingProcessingStepsError",
 ]
 
@@ -79,6 +80,15 @@ class ExternalAuthenticatedError(ApiCustomError):
 
     def __init__(self, message: str):
         super().__init__(message, HTTPStatus.NOT_FOUND, "ExternalAuthenticatedError")
+
+
+class ExternalTimeoutError(ApiCustomError):
+    """Raised when the external authentication check failed due to timeout."""
+
+    def __init__(self, message: str, cause: Optional[BaseException] = None):
+        super().__init__(
+            message, HTTPStatus.INTERNAL_SERVER_ERROR, "ExternalTimeoutError", cause=cause, disclose_cause=False
+        )
 
 
 class OrjsonResponse(JSONResponse):

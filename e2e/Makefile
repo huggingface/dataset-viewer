@@ -13,6 +13,8 @@ export PROMETHEUS_MULTIPROC_DIR := /tmp
 export ADMIN_UVICORN_NUM_WORKERS := 2
 export API_UVICORN_NUM_WORKERS := 2
 export COMMON_LOG_LEVEL := DEBUG
+export API_HF_AUTH_TIMEOUT_SECONDS := 10
+# ^ allow hub-ci to be slow to answer
 
 # makefile variables
 DOCKER_COMPOSE := ../tools/docker-compose-datasets-server.yml

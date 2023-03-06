@@ -1,16 +1,22 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2022 The HuggingFace Authors.
 
+import time
 from contextlib import nullcontext as does_not_raise
-from typing import Any, Mapping
+from typing import Any, Mapping, Optional
 
 import pytest
+import werkzeug.wrappers
 from pytest_httpserver import HTTPServer
 from starlette.datastructures import Headers
 from starlette.requests import Request
 
 from api.authentication import auth_check
-from api.utils import ExternalAuthenticatedError, ExternalUnauthenticatedError
+from api.utils import (
+    ExternalAuthenticatedError,
+    ExternalTimeoutError,
+    ExternalUnauthenticatedError,
+)
 
 from .utils import auth_callback
 
@@ -51,6 +57,38 @@ def test_external_auth_responses_without_request(
     httpserver.expect_request(hf_auth_path % dataset).respond_with_data(status=status_code)
     with expectation:
         auth_check(dataset, external_auth_url=external_auth_url)
+
+
+TIMEOUT_TIME = 0.2
+
+
+def sleeping(_: werkzeug.wrappers.Request) -> werkzeug.wrappers.Response:
+    time.sleep(TIMEOUT_TIME)
+    return werkzeug.wrappers.Response(status=200)
+
+
+@pytest.mark.parametrize(
+    "external_auth_timeout_seconds,expectation",
+    [
+        (TIMEOUT_TIME * 2, does_not_raise()),
+        (None, does_not_raise()),
+        (TIMEOUT_TIME / 2, pytest.raises(ExternalTimeoutError)),
+    ],
+)
+def test_external_auth_timeout(
+    httpserver: HTTPServer,
+    hf_endpoint: str,
+    hf_auth_path: str,
+    external_auth_timeout_seconds: Optional[float],
+    expectation: Any,
+) -> None:
+    dataset = "dataset"
+    external_auth_url = hf_endpoint + hf_auth_path
+    httpserver.expect_request(hf_auth_path % dataset).respond_with_handler(func=sleeping)
+    with expectation:
+        auth_check(
+            dataset, external_auth_url=external_auth_url, external_auth_timeout_seconds=external_auth_timeout_seconds
+        )
 
 
 def create_request(headers: Mapping[str, str]) -> Request:

@@ -253,6 +253,8 @@ api:
   # the path of the external authentication service on the hub.
   # The string must contain `%s` which will be replaced with the dataset name.
   hfAuthPath: "/api/datasets/%s/auth-check"
+  # the timeout in seconds for the external authentication service.
+  hfAuthTimeoutSeconds: "0.2"
   # Number of seconds to set in the `max-age` header on data endpoints
   maxAgeLong: "120"
   # Number of seconds to set in the `max-age` header on technical endpoints
