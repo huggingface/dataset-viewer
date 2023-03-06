@@ -41,6 +41,7 @@ def auth_check(
     dataset: str,
     external_auth_url: Optional[str] = None,
     request: Optional[Request] = None,
+    external_auth_bypass_key: Optional[str] = None,
     hf_timeout_seconds: Optional[float] = None,
 ) -> Literal[True]:
     """check if the dataset is authorized for the request
@@ -57,6 +58,8 @@ def auth_check(
           If None, the dataset is always authorized.
         request (Request | None): the request which optionally bears authentication headers: "cookie" or
           "authorization"
+        external_auth_bypass_key (str|None): if the request bears this secret key in the "X-Api-Key" header, the
+          external authentication service is bypassed.
         hf_timeout_seconds (float|None): the timeout in seconds for the external authentication service. It
           is used both for the connection timeout and the read timeout. If None, the request never timeouts.
 
@@ -65,6 +68,12 @@ def auth_check(
     """
     with StepProfiler(method="auth_check", step="all"):
         with StepProfiler(method="auth_check", step="prepare parameters"):
+            if (
+                external_auth_bypass_key is not None
+                and request is not None
+                and request.headers.get("X-Api-Key") == external_auth_bypass_key
+            ):
+                return True
             if external_auth_url is None:
                 return True
             try:
@@ -92,18 +101,18 @@ def auth_check(
                     ),
                     err,
                 ) from err
-        with StepProfiler(method="auth_check", step="return or raise"):
-            if response.status_code == 200:
-                return True
-            elif response.status_code == 401:
-                raise ExternalUnauthenticatedError(
-                    "The dataset does not exist, or is not accessible without authentication (private or gated)."
-                    " Please check the spelling of the dataset name or retry with authentication."
-                )
-            elif response.status_code in [403, 404]:
-                raise ExternalAuthenticatedError(
-                    "The dataset does not exist, or is not accessible with the current credentials (private or gated)."
-                    " Please check the spelling of the dataset name or retry with other authentication credentials."
-                )
-            else:
-                raise ValueError(f"Unexpected status code {response.status_code}")
+    with StepProfiler(method="auth_check", step="return or raise"):
+        if response.status_code == 200:
+            return True
+        elif response.status_code == 401:
+            raise ExternalUnauthenticatedError(
+                "The dataset does not exist, or is not accessible without authentication (private or gated). Please"
+                " check the spelling of the dataset name or retry with authentication."
+            )
+        elif response.status_code in [403, 404]:
+            raise ExternalAuthenticatedError(
+                "The dataset does not exist, or is not accessible with the current credentials (private or gated)."
+                " Please check the spelling of the dataset name or retry with other authentication credentials."
+            )
+        else:
+            raise ValueError(f"Unexpected status code {response.status_code}")
