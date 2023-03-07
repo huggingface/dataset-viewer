@@ -213,9 +213,9 @@ workers:
         memory: "8Gi"
     tolerations: []
   -
-    deployName: "split-names"
+    deployName: "split-names-from-streaming"
     maxJobsPerNamespace: 20
-    workerOnlyJobTypes: "/split-names"
+    workerOnlyJobTypes: "/split-names-from-streaming"
     nodeSelector:
       role-datasets-server-worker: "true"
     replicas: 2
@@ -291,6 +291,21 @@ workers:
     deployName: "dataset-info"
     maxJobsPerNamespace: 20
     workerOnlyJobTypes: "/dataset-info"
+    nodeSelector:
+      role-datasets-server-worker: "true"
+    replicas: 2
+    resources:
+      requests:
+        cpu: 200m
+        memory: "100Mi"
+      limits:
+        cpu: 2
+        memory: "1Gi"
+    tolerations: []
+  -
+    deployName: "split-names-from-streaming"
+    maxJobsPerNamespace: 20
+    workerOnlyJobTypes: "/split-names-from-streaming"
     nodeSelector:
       role-datasets-server-worker: "true"
     replicas: 2
