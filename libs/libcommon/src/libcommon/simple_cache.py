@@ -25,6 +25,7 @@ from mongoengine.fields import (
     DateTimeField,
     DictField,
     EnumField,
+    FloatField,
     ObjectIdField,
     StringField,
 )
@@ -80,7 +81,7 @@ class CachedResponse(Document):
         updated_at (`datetime`): When the cache entry has been last updated.
         worker_version (`str`): The semver version of the worker that cached the response.
         dataset_git_revision (`str`): The commit (of the git dataset repo) used to generate the response.
-        partial (`bool`): The response is partial and will be being updated with subsequent jobs.
+        complete (`bool`): When the response is complete. Partial results keep being updated with subsequent jobs.
     """
 
     id = ObjectIdField(db_field="_id", primary_key=True, default=ObjectId)
@@ -95,7 +96,9 @@ class CachedResponse(Document):
     content = DictField(required=True)
     worker_version = StringField()
     dataset_git_revision = StringField()
-    partial = BooleanField()
+
+    complete = BooleanField()
+    progress = FloatField(min_value=0., max_value=1.)
 
     details = DictField()
     updated_at = DateTimeField(default=get_datetime)
@@ -134,7 +137,8 @@ def upsert_response(
     details: Optional[Mapping[str, Any]] = None,
     worker_version: Optional[str] = None,
     dataset_git_revision: Optional[str] = None,
-    partial: Optional[bool] = None,
+    complete: Optional[bool] = None,
+    progress: Optional[float] = None,
 ) -> None:
     CachedResponse.objects(kind=kind, dataset=dataset, config=config, split=split).upsert_one(
         content=content,
@@ -143,7 +147,8 @@ def upsert_response(
         details=details,
         worker_version=worker_version,
         dataset_git_revision=dataset_git_revision,
-        partial=partial,
+        complete=complete,
+        progress=progress,
         updated_at=get_datetime(),
     )
 
@@ -163,7 +168,8 @@ class CacheEntryWithoutContent(TypedDict):
     error_code: Optional[str]
     worker_version: Optional[str]
     dataset_git_revision: Optional[str]
-    partial: Optional[bool]
+    complete: Optional[bool]
+    progress: Optional[float]
 
 
 # Note: we let the exceptions throw (ie DoesNotExist): it's the responsibility of the caller to manage them
@@ -172,7 +178,7 @@ def get_response_without_content(
 ) -> CacheEntryWithoutContent:
     response = (
         CachedResponse.objects(kind=kind, dataset=dataset, config=config, split=split)
-        .only("http_status", "error_code", "worker_version", "dataset_git_revision", "partial")
+        .only("http_status", "error_code", "worker_version", "dataset_git_revision", "complete", "progress")
         .get()
     )
     return {
@@ -180,13 +186,14 @@ def get_response_without_content(
         "error_code": response.error_code,
         "worker_version": response.worker_version,
         "dataset_git_revision": response.dataset_git_revision,
-        "partial": response.partial,
+        "complete": response.complete,
+        "progress": response.progress,
     }
 
 
 def get_dataset_responses_without_content_for_kind(kind: str, dataset: str) -> List[CacheEntryWithoutContent]:
     responses = CachedResponse.objects(kind=kind, dataset=dataset).only(
-        "http_status", "error_code", "worker_version", "dataset_git_revision", "partial"
+        "http_status", "error_code", "worker_version", "dataset_git_revision", "complete", "progress"
     )
     return [
         {
@@ -194,7 +201,8 @@ def get_dataset_responses_without_content_for_kind(kind: str, dataset: str) -> L
             "error_code": response.error_code,
             "worker_version": response.worker_version,
             "dataset_git_revision": response.dataset_git_revision,
-            "partial": response.partial,
+            "complete": response.complete,
+            "progress": response.progress,
         }
         for response in responses
     ]
@@ -208,7 +216,7 @@ class CacheEntry(CacheEntryWithoutContent):
 def get_response(kind: str, dataset: str, config: Optional[str] = None, split: Optional[str] = None) -> CacheEntry:
     response = (
         CachedResponse.objects(kind=kind, dataset=dataset, config=config, split=split)
-        .only("content", "http_status", "error_code", "worker_version", "dataset_git_revision", "partial")
+        .only("content", "http_status", "error_code", "worker_version", "dataset_git_revision", "complete", "progress")
         .get()
     )
     return {
@@ -217,7 +225,8 @@ def get_response(kind: str, dataset: str, config: Optional[str] = None, split: O
         "error_code": response.error_code,
         "worker_version": response.worker_version,
         "dataset_git_revision": response.dataset_git_revision,
-        "partial": response.partial,
+        "complete": response.complete,
+        "progress": response.progress,
     }
 
 
