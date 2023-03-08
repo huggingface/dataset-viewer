@@ -31,8 +31,17 @@ class DatasetSizeContent(TypedDict):
     splits: list[SplitSize]
 
 
+class PreviousJob(TypedDict):
+    kind: str
+    dataset: str
+    config: Optional[str]
+    split: Optional[str]
+
+
 class DatasetSizeResponse(TypedDict):
     size: DatasetSizeContent
+    pending: list[PreviousJob]
+    failed: list[PreviousJob]
 
 
 class DatasetSizeJobRunnerError(JobRunnerError):
@@ -98,14 +107,28 @@ def compute_sizes_response(dataset: str) -> DatasetSizeResponse:
     try:
         split_sizes: list[SplitSize] = []
         config_sizes: list[ConfigSize] = []
+        pending = []
+        failed = []
         for config in content["dataset_info"].keys():
             try:
                 response = get_response(kind="/config-size", dataset=dataset, config=config)
             except DoesNotExist:
-                logging.error("No response found in previous step for this dataset: '/config-size' endpoint.")
+                logging.debug("No response found in previous step for this dataset: '/config-size' endpoint.")
+                pending.append(PreviousJob({
+                    "kind": "/config-size",
+                    "dataset": dataset,
+                    "config": config,
+                    "split": None,
+                }))
                 continue
             if response["http_status"] != HTTPStatus.OK:
-                logging.error(f"Previous step gave an error: {response['http_status']}. This job should not have been created.")
+                logging.debug(f"Previous step gave an error: {response['http_status']}.")
+                failed.append(PreviousJob({
+                    "kind": "/config-size",
+                    "dataset": dataset,
+                    "config": config,
+                    "split": None,
+                }))
                 continue
             config_size_content: ConfigSizeResponse = response["content"]
             config_sizes.append(config_size_content["size"]["config"])
@@ -120,13 +143,15 @@ def compute_sizes_response(dataset: str) -> DatasetSizeResponse:
     except Exception as e:
         raise PreviousStepFormatError("Previous step did not return the expected content.", e) from e
 
-    return {
+    return DatasetSizeResponse({
         "size": {
             "dataset": dataset_size,
             "configs": config_sizes,
             "splits": split_sizes,
-        }
-    }
+        },
+        "pending": pending,
+        "failed": failed,
+    })
 
 
 class DatasetSizeJobRunner(JobRunner):

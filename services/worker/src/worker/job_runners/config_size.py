@@ -166,12 +166,12 @@ def compute_config_size_response(dataset: str, config: str) -> ConfigSizeRespons
     except Exception as e:
         raise PreviousStepFormatError("Previous step did not return the expected content.", e) from e
 
-    return {
-        "sizes": {
+    return ConfigSizeResponse({
+        "size": {
             "config": config_size,
             "splits": split_sizes,
         }
-    }
+    })
 
 
 class ConfigSizeJobRunner(JobRunner):
