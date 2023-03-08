@@ -11,6 +11,7 @@ The worker can be configured using environment variables. They are grouped by sc
 Set environment variables to configure the application (`API_` prefix):
 
 - `API_HF_AUTH_PATH`: the path of the external authentication service, on the hub (see `HF_ENDPOINT`). The string must contain `%s` which will be replaced with the dataset name. The external authentication service must return 200, 401, 403 or 404. Defaults to "/api/datasets/%s/auth-check".
+- `API_HF_AUTH_TIMEOUT_SECONDS`: the timeout in seconds for the external authentication service. Defaults to `0.2` (200 ms).
 - `API_MAX_AGE_LONG`: number of seconds to set in the `max-age` header on data endpoints. Defaults to `120` (2 minutes).
 - `API_MAX_AGE_SHORT`: number of seconds to set in the `max-age` header on technical endpoints. Defaults to `10` (10 seconds).
 

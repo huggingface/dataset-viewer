@@ -12,6 +12,8 @@
   # service
   - name: API_HF_AUTH_PATH
     value: {{ .Values.api.hfAuthPath | quote }}
+  - name: API_HF_AUTH_TIMEOUT_SECONDS
+    value: {{ .Values.api.hfAuthTimeoutSeconds | quote }}
   - name: API_MAX_AGE_LONG
     value: {{ .Values.api.maxAgeLong | quote }}
   - name: API_MAX_AGE_SHORT
