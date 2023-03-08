@@ -21,12 +21,12 @@ from bson import ObjectId
 from bson.errors import InvalidId
 from mongoengine import Document, DoesNotExist
 from mongoengine.fields import (
+    BooleanField,
     DateTimeField,
     DictField,
     EnumField,
     ObjectIdField,
     StringField,
-    BooleanField,
 )
 from mongoengine.queryset.queryset import QuerySet
 
