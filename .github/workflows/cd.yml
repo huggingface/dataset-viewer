@@ -99,6 +99,8 @@ jobs:
               jobs:
                 mongodbMigration:
                   tag: sha-${{ steps.vars.outputs.sha_short }}
+                cacheRefresh:
+                  tag: sha-${{ steps.vars.outputs.sha_short }}
               services:
                 admin:
                   tag: sha-${{ steps.vars.outputs.sha_short }}

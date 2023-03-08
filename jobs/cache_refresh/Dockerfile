@@ -22,12 +22,12 @@ RUN pip install -U pip
 RUN pip install "poetry==$POETRY_VERSION"
 
 WORKDIR /src
-COPY jobs/mongodb_migration/poetry.lock ./jobs/mongodb_migration/poetry.lock
-COPY jobs/mongodb_migration/pyproject.toml ./jobs/mongodb_migration/pyproject.toml
+COPY jobs/cache_refresh/poetry.lock ./jobs/cache_refresh/poetry.lock
+COPY jobs/cache_refresh/pyproject.toml ./jobs/cache_refresh/pyproject.toml
 COPY libs/libcommon ./libs/libcommon
-WORKDIR /src/jobs/mongodb_migration/
+WORKDIR /src/jobs/cache_refresh/
 RUN poetry install --no-cache
-COPY jobs/mongodb_migration/src ./src
+COPY jobs/cache_refresh/src ./src
 RUN poetry install --no-cache
 
 ENTRYPOINT ["poetry", "run", "python", "src/cache_refresh/main.py"]
