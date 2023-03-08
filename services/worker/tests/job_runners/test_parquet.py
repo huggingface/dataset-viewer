@@ -105,7 +105,7 @@ def test_compute(
             job_runner.compute()
         assert e.type.__name__ == expected_error_code
     else:
-        assert job_runner.compute() == expected_content
+        assert job_runner.compute().content == expected_content
 
 
 def test_doesnotexist(app_config: AppConfig, get_job_runner: GetJobRunner) -> None:

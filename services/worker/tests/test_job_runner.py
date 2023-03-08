@@ -92,7 +92,8 @@ class CacheEntry:
     error_code: Optional[str]
     worker_version: Optional[str]
     dataset_git_revision: Optional[str]
-    partial: Optional[bool] = None
+    complete: Optional[bool] = None
+    progress: Optional[float] = None
 
 
 # .get_version()
@@ -182,7 +183,8 @@ class CacheEntry:
                 error_code=None,  # no error
                 worker_version=DummyJobRunner.get_version(),
                 dataset_git_revision=DummyJobRunner._get_dataset_git_revision(),
-                partial=True,  # incomplete job
+                complete=False,  # incomplete result
+                progress=.5,
             ),
             False,  # process
         ),
@@ -192,7 +194,8 @@ class CacheEntry:
                 error_code=None,  # no error
                 worker_version=DummyJobRunner.get_version(),
                 dataset_git_revision=DummyJobRunner._get_dataset_git_revision(),
-                partial=False,  # complete job
+                complete=True,  # complete result
+                progress=1.,
             ),
             True,  # skip
         ),
@@ -231,7 +234,8 @@ def test_should_skip_job(
             details=None,
             worker_version=cache_entry.worker_version,
             dataset_git_revision=cache_entry.dataset_git_revision,
-            partial=cache_entry.partial,
+            complete=cache_entry.complete,
+            progress==cache_entry.progress,
         )
     assert job_runner.should_skip_job() is expected_skip
 
