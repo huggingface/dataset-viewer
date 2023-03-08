@@ -23,6 +23,7 @@ from libcommon.simple_cache import (
     delete_response,
     get_cache_reports,
     get_cache_reports_with_content,
+    get_cache_with_minor_version_for_kind,
     get_dataset_responses_without_content_for_kind,
     get_response,
     get_response_without_content,
@@ -616,3 +617,30 @@ def test_stress_get_cache_reports(num_entries: int) -> None:
         response = get_cache_reports(kind=kind, cursor=next_cursor, limit=100)
         next_cursor = response["next_cursor"]
         assert process_time() - start < MAX_SECONDS
+
+
+def test_get_cache_with_minor_version_for_kind() -> None:
+    kind = "kind"
+    current_version = "2.0.0"
+    minor_version = "1.0.0"
+
+    result = get_cache_with_minor_version_for_kind(kind=kind, current_version=current_version)
+    upsert_response(
+        kind=kind,
+        dataset="dataset_with_current_version",
+        content={},
+        http_status=HTTPStatus.OK,
+        worker_version=current_version,
+    )
+    assert not result
+
+    upsert_response(
+        kind=kind,
+        dataset="dataset_with_minor_version",
+        content={},
+        http_status=HTTPStatus.OK,
+        worker_version=minor_version,
+    )
+    result = get_cache_with_minor_version_for_kind(kind=kind, current_version=current_version)
+    assert result
+    assert len(result) == 1
