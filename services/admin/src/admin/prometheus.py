@@ -9,14 +9,14 @@ from libcommon.processing_graph import ProcessingStep
 from libcommon.queue import Queue
 from libcommon.simple_cache import get_responses_count_by_kind_status_and_error_code
 from libcommon.storage import StrPath
-from prometheus_client import (
+from prometheus_client import (  # type: ignore[import]
     CONTENT_TYPE_LATEST,
     REGISTRY,
     CollectorRegistry,
     Gauge,
     generate_latest,
 )
-from prometheus_client.multiprocess import MultiProcessCollector
+from prometheus_client.multiprocess import MultiProcessCollector  # type: ignore[import]
 
 # ^ type: ignore can be removed on next release:
 # https://github.com/prometheus/client_python/issues/491#issuecomment-1429287314
