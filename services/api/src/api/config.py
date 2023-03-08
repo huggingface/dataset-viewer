@@ -37,7 +37,7 @@ class UvicornConfig:
 
 API_EXTERNAL_AUTH_URL = None
 API_HF_AUTH_PATH = "/api/datasets/%s/auth-check"
-API_HF_AUTH_TIMEOUT_SECONDS = 0.2
+API_HF_TIMEOUT_SECONDS = 0.2
 API_MAX_AGE_LONG = 120  # 2 minutes
 API_MAX_AGE_SHORT = 10  # 10 seconds
 
@@ -46,7 +46,7 @@ API_MAX_AGE_SHORT = 10  # 10 seconds
 class ApiConfig:
     external_auth_url: Optional[str] = API_EXTERNAL_AUTH_URL  # not documented
     hf_auth_path: str = API_HF_AUTH_PATH
-    hf_auth_timeout_seconds: Optional[float] = API_HF_AUTH_TIMEOUT_SECONDS
+    hf_timeout_seconds: Optional[float] = API_HF_TIMEOUT_SECONDS
     max_age_long: int = API_MAX_AGE_LONG
     max_age_short: int = API_MAX_AGE_SHORT
 
@@ -59,7 +59,7 @@ class ApiConfig:
             return cls(
                 external_auth_url=external_auth_url,
                 hf_auth_path=hf_auth_path,
-                hf_auth_timeout_seconds=env.float(name="HF_AUTH_TIMEOUT_SECONDS", default=API_HF_AUTH_TIMEOUT_SECONDS),
+                hf_timeout_seconds=env.float(name="HF_TIMEOUT_SECONDS", default=API_HF_TIMEOUT_SECONDS),
                 max_age_long=env.int(name="MAX_AGE_LONG", default=API_MAX_AGE_LONG),
                 max_age_short=env.int(name="MAX_AGE_SHORT", default=API_MAX_AGE_SHORT),
             )

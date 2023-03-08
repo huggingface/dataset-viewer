@@ -65,7 +65,7 @@ def create_valid_endpoint(
 def create_is_valid_endpoint(
     processing_steps_for_valid: List[ProcessingStep],
     external_auth_url: Optional[str] = None,
-    external_auth_timeout_seconds: Optional[float] = None,
+    hf_timeout_seconds: Optional[float] = None,
     max_age_long: int = 0,
     max_age_short: int = 0,
 ) -> Endpoint:
@@ -81,7 +81,7 @@ def create_is_valid_endpoint(
                 dataset,
                 external_auth_url=external_auth_url,
                 request=request,
-                external_auth_timeout_seconds=external_auth_timeout_seconds,
+                hf_timeout_seconds=hf_timeout_seconds,
             )
             content = {
                 "valid": is_valid(dataset=dataset, processing_steps_for_valid=processing_steps_for_valid),

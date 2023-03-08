@@ -21,7 +21,7 @@ def monkeypatch_session() -> Iterator[MonkeyPatch]:
     monkeypatch_session.setenv("QUEUE_MONGO_DATABASE", "datasets_server_queue_test")
     hostname = "localhost"
     port = "8888"
-    monkeypatch_session.setenv("API_HF_AUTH_TIMEOUT_SECONDS", "10")
+    monkeypatch_session.setenv("API_HF_TIMEOUT_SECONDS", "10")
     monkeypatch_session.setenv("API_UVICORN_HOSTNAME", hostname)
     monkeypatch_session.setenv("API_UVICORN_PORT", port)
     monkeypatch_session.setenv("COMMON_HF_ENDPOINT", f"http://{hostname}:{port}")

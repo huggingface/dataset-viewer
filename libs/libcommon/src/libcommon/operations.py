@@ -27,6 +27,7 @@ def update_dataset(
     force: bool = False,
     priority: Priority = Priority.NORMAL,
     do_check_support: bool = True,
+    hf_timeout_seconds: Optional[float] = None,
 ) -> None:
     """
     Update a dataset
@@ -39,14 +40,22 @@ def update_dataset(
         force (bool, optional): Force the update. Defaults to False.
         priority (Priority, optional): The priority of the job. Defaults to Priority.NORMAL.
         do_check_support (bool, optional): Check if the dataset is supported. Defaults to True.
+        hf_timeout_seconds (Optional[float], optional): The timeout for requests to the hub. None means no timeout.
+          Defaults to None.
 
     Returns: None.
 
     Raises:
+        - [`~libcommon.dataset.AskAccessHubRequestError`]: if the request to the Hub to get access to the
+            dataset failed or timed out.
+        - [`~libcommon.dataset.DatasetInfoHubRequestError`]: if the request to the Hub to get the dataset
+            info failed or timed out.
         - [`~libcommon.dataset.DatasetError`]: if the dataset could not be accessed or is not supported
     """
     if do_check_support:
-        check_support(dataset=dataset, hf_endpoint=hf_endpoint, hf_token=hf_token)
+        check_support(
+            dataset=dataset, hf_endpoint=hf_endpoint, hf_token=hf_token, hf_timeout_seconds=hf_timeout_seconds
+        )
     logging.debug(f"refresh dataset='{dataset}'")
     queue = Queue()
     for init_processing_step in init_processing_steps:
@@ -75,6 +84,7 @@ def move_dataset(
     hf_token: Optional[str] = None,
     force: bool = False,
     priority: Priority = Priority.NORMAL,
+    hf_timeout_seconds: Optional[float] = None,
 ) -> None:
     """
     Move a dataset
@@ -90,10 +100,16 @@ def move_dataset(
         hf_token (Optional[str], optional): The HF token. Defaults to None.
         force (bool, optional): Force the update. Defaults to False.
         priority (Priority, optional): The priority of the job. Defaults to Priority.NORMAL.
+        hf_timeout_seconds (Optional[float], optional): The timeout for requests to the hub. None means no timeout.
+          Defaults to None.
 
     Returns: None.
 
     Raises:
+        - [`~libcommon.dataset.AskAccessHubRequestError`]: if the request to the Hub to get access to the
+            dataset failed or timed out.
+        - [`~libcommon.dataset.DatasetInfoHubRequestError`]: if the request to the Hub to get the dataset
+            info failed or timed out.
         - [`~libcommon.dataset.DatasetError`]: if the dataset could not be accessed or is not supported
     """
     logging.debug(f"move dataset '{from_dataset}' to '{to_dataset}'")
@@ -104,6 +120,7 @@ def move_dataset(
         hf_token=hf_token,
         force=force,
         priority=priority,
+        hf_timeout_seconds=hf_timeout_seconds,
     )
     # ^ can raise
     delete_dataset(dataset=from_dataset)
@@ -117,6 +134,7 @@ def check_in_process(
     hf_token: Optional[str] = None,
     config: Optional[str] = None,
     split: Optional[str] = None,
+    hf_timeout_seconds: Optional[float] = None,
 ) -> None:
     """Checks if the processing step is running
 
@@ -128,10 +146,17 @@ def check_in_process(
         hf_token (Optional[str], optional): The HF token. Defaults to None.
         config (Optional[str], optional): The config, if any. Defaults to None.
         split (Optional[str], optional): The split, if any. Defaults to None.
+        hf_timeout_seconds (Optional[float], optional): The timeout for requests to the hub. None means no timeout.
+          Defaults to None.
+
 
     Returns: None. Does not raise if the processing step is running.
 
     Raises:
+        - [`~libcommon.dataset.AskAccessHubRequestError`]: if the request to the Hub to get access to the
+            dataset failed or timed out.
+        - [`~libcommon.dataset.DatasetInfoHubRequestError`]: if the request to the Hub to get the dataset
+            info failed or timed out.
         - [`~libcommon.operations.PreviousStepError`]: a previous step has an error
         - [`~libcommon.dataset.DatasetError`]: if the dataset could not be accessed or is not supported
     """
@@ -155,6 +180,7 @@ def check_in_process(
                 hf_token=hf_token,
                 force=False,
                 priority=Priority.NORMAL,
+                hf_timeout_seconds=hf_timeout_seconds,
             )
             return
         if result["http_status"] != HTTPStatus.OK:
@@ -168,5 +194,6 @@ def check_in_process(
         hf_token=hf_token,
         force=False,
         priority=Priority.NORMAL,
+        hf_timeout_seconds=hf_timeout_seconds,
     )
     return
