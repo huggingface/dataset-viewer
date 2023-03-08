@@ -314,6 +314,10 @@ class JobRunner(ABC):
             # note: the collection field is named "worker_version" for historical reasons, it might be renamed
             #   "job_runner_version" in the future.
             return False
+        if cached_response["partial"]:
+            # this job is still waiting for more inputs to be completed - we should not skip it.
+            # this can happen with fan-in jobs
+            return False
         try:
             dataset_git_revision = self.get_dataset_git_revision()
         except Exception:
