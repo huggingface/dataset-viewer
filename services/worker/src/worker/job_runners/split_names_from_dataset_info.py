@@ -122,7 +122,9 @@ class SplitNamesFromDatasetInfoJobRunner(DatasetsBasedJobRunner):
             raise ValueError("dataset is required")
         if self.config is None:
             raise ValueError("config is required")
-        return CompleteJobResult(compute_split_names_from_dataset_info_response(dataset=self.dataset, config=self.config))
+        return CompleteJobResult(
+            compute_split_names_from_dataset_info_response(dataset=self.dataset, config=self.config)
+        )
 
     def get_new_splits(self, content: Mapping[str, Any]) -> set[SplitFullName]:
         """Get the set of new splits, from the content created by the compute."""

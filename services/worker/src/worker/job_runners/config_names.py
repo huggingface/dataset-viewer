@@ -105,7 +105,9 @@ class ConfigNamesJobRunner(DatasetsBasedJobRunner):
         return "1.0.0"
 
     def compute(self) -> CompleteJobResult:
-        return CompleteJobResult(compute_config_names_response(dataset=self.dataset, hf_token=self.common_config.hf_token))
+        return CompleteJobResult(
+            compute_config_names_response(dataset=self.dataset, hf_token=self.common_config.hf_token)
+        )
 
     def get_new_splits(self, content: Mapping[str, Any]) -> set[SplitFullName]:
         """Get the set of new splits, from the content created by the compute."""

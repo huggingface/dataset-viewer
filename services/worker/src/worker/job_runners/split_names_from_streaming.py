@@ -124,9 +124,11 @@ class SplitNamesFromStreamingJobRunner(DatasetsBasedJobRunner):
     def compute(self) -> CompleteJobResult:
         if self.config is None:
             raise ValueError("config is required")
-        return CompleteJobResult(compute_split_names_from_streaming_response(
-            dataset=self.dataset, config=self.config, hf_token=self.common_config.hf_token
-        ))
+        return CompleteJobResult(
+            compute_split_names_from_streaming_response(
+                dataset=self.dataset, config=self.config, hf_token=self.common_config.hf_token
+            )
+        )
 
     def get_new_splits(self, content: Mapping[str, Any]) -> set[SplitFullName]:
         """Get the set of new splits, from the content created by the compute."""

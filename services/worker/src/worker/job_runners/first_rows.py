@@ -665,19 +665,21 @@ class FirstRowsJobRunner(DatasetsBasedJobRunner):
     def compute(self) -> CompleteJobResult:
         if self.config is None or self.split is None:
             raise ValueError("config and split are required")
-        return CompleteJobResult(compute_first_rows_response(
-            dataset=self.dataset,
-            config=self.config,
-            split=self.split,
-            assets_base_url=self.assets_base_url,
-            assets_directory=self.assets_directory,
-            hf_token=self.common_config.hf_token,
-            min_cell_bytes=self.first_rows_config.min_cell_bytes,
-            rows_max_bytes=self.first_rows_config.max_bytes,
-            rows_max_number=self.first_rows_config.max_number,
-            rows_min_number=self.first_rows_config.min_number,
-            columns_max_number=self.first_rows_config.columns_max_number,
-        ))
+        return CompleteJobResult(
+            compute_first_rows_response(
+                dataset=self.dataset,
+                config=self.config,
+                split=self.split,
+                assets_base_url=self.assets_base_url,
+                assets_directory=self.assets_directory,
+                hf_token=self.common_config.hf_token,
+                min_cell_bytes=self.first_rows_config.min_cell_bytes,
+                rows_max_bytes=self.first_rows_config.max_bytes,
+                rows_max_number=self.first_rows_config.max_number,
+                rows_min_number=self.first_rows_config.min_number,
+                columns_max_number=self.first_rows_config.columns_max_number,
+            )
+        )
 
     def get_new_splits(self, _: Mapping[str, Any]) -> set[_SplitFullName]:
         """Get the set of new splits, from the content created by compute."""

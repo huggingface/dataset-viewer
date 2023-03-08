@@ -98,7 +98,7 @@ class CachedResponse(Document):
     dataset_git_revision = StringField()
 
     complete = BooleanField()
-    progress = FloatField(min_value=0., max_value=1.)
+    progress = FloatField(min_value=0.0, max_value=1.0)
 
     details = DictField()
     updated_at = DateTimeField(default=get_datetime)

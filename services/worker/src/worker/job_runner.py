@@ -46,17 +46,17 @@ class JobResult:
     progress: float
 
     def __post_init__(self):
-        if self.complete and self.progress != 1.:
+        if self.complete and self.progress != 1.0:
             raise ValueError(
                 "Progress should be 1 for complete results, but got "
                 f"progress={self.progress} and complete={self.complete}"
             )
-        if not self.complete and self.progress == 1.:
+        if not self.complete and self.progress == 1.0:
             raise ValueError(
                 "Progress should be <1 for partial results, but got "
                 f"progress={self.progress} and complete={self.complete}"
             )
-        if self.progress < 0. or self.progress > 1.:
+        if self.progress < 0.0 or self.progress > 1.0:
             raise ValueError(f"Progress should be between 0 and 1, but got {self.progress}")
 
 
@@ -64,7 +64,7 @@ class JobResult:
 class CompleteJobResult(JobResult):
     content: Mapping[str, Any]
     complete: field(init=False) = True
-    progress: field(init=False) = 1.
+    progress: field(init=False) = 1.0
 
 
 class JobRunnerError(CustomError):
