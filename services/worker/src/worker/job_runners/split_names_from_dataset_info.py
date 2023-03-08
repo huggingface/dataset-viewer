@@ -8,7 +8,7 @@ from typing import Any, List, Literal, Mapping, Optional, TypedDict
 from libcommon.dataset import DatasetNotFoundError
 from libcommon.simple_cache import DoesNotExist, SplitFullName, get_response
 
-from worker.job_runner import JobRunnerError
+from worker.job_runner import JobRunnerError, CompleteJobResult
 from worker.job_runners._datasets_based_job_runner import DatasetsBasedJobRunner
 
 SplitNamesFromDatasetInfoJobRunnerErrorCode = Literal[
@@ -117,12 +117,12 @@ class SplitNamesFromDatasetInfoJobRunner(DatasetsBasedJobRunner):
     def get_version() -> str:
         return "2.0.0"
 
-    def compute(self) -> Mapping[str, Any]:
+    def compute(self) -> CompleteJobResult:
         if self.dataset is None:
             raise ValueError("dataset is required")
         if self.config is None:
             raise ValueError("config is required")
-        return compute_split_names_from_dataset_info_response(dataset=self.dataset, config=self.config)
+        return CompleteJobResult(compute_split_names_from_dataset_info_response(dataset=self.dataset, config=self.config))
 
     def get_new_splits(self, content: Mapping[str, Any]) -> set[SplitFullName]:
         """Get the set of new splits, from the content created by the compute."""

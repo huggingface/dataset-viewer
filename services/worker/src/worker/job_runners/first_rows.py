@@ -40,7 +40,7 @@ from libcommon.utils import orjson_dumps
 
 from worker.config import AppConfig, FirstRowsConfig
 from worker.features import get_cell_value
-from worker.job_runner import ConfigNotFoundError, JobRunnerError, SplitNotFoundError
+from worker.job_runner import ConfigNotFoundError, JobRunnerError, SplitNotFoundError, CompleteJobResult
 from worker.job_runners._datasets_based_job_runner import DatasetsBasedJobRunner
 
 FirstRowsJobRunnerErrorCode = Literal[
@@ -662,10 +662,10 @@ class FirstRowsJobRunner(DatasetsBasedJobRunner):
         self.assets_directory = assets_directory
         self.assets_base_url = app_config.assets.base_url
 
-    def compute(self) -> Mapping[str, Any]:
+    def compute(self) -> CompleteJobResult:
         if self.config is None or self.split is None:
             raise ValueError("config and split are required")
-        return compute_first_rows_response(
+        return CompleteJobResult(compute_first_rows_response(
             dataset=self.dataset,
             config=self.config,
             split=self.split,
@@ -677,7 +677,7 @@ class FirstRowsJobRunner(DatasetsBasedJobRunner):
             rows_max_number=self.first_rows_config.max_number,
             rows_min_number=self.first_rows_config.min_number,
             columns_max_number=self.first_rows_config.columns_max_number,
-        )
+        ))
 
     def get_new_splits(self, _: Mapping[str, Any]) -> set[_SplitFullName]:
         """Get the set of new splits, from the content created by compute."""

@@ -9,7 +9,7 @@ from datasets import get_dataset_config_names
 from datasets.data_files import EmptyDatasetError as _EmptyDatasetError
 from libcommon.simple_cache import SplitFullName
 
-from worker.job_runner import JobRunnerError
+from worker.job_runner import JobRunnerError, CompleteJobResult
 from worker.job_runners._datasets_based_job_runner import DatasetsBasedJobRunner
 
 ConfigNamesJobRunnerErrorCode = Literal["EmptyDatasetError", "ConfigNamesError"]
@@ -104,8 +104,8 @@ class ConfigNamesJobRunner(DatasetsBasedJobRunner):
     def get_version() -> str:
         return "1.0.0"
 
-    def compute(self) -> Mapping[str, Any]:
-        return compute_config_names_response(dataset=self.dataset, hf_token=self.common_config.hf_token)
+    def compute(self) -> CompleteJobResult:
+        return CompleteJobResult(compute_config_names_response(dataset=self.dataset, hf_token=self.common_config.hf_token))
 
     def get_new_splits(self, content: Mapping[str, Any]) -> set[SplitFullName]:
         """Get the set of new splits, from the content created by the compute."""
