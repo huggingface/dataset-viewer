@@ -165,6 +165,7 @@ def test_upsert_response(config: Optional[str], split: Optional[str]) -> None:
         "error_code": error_code,
         "worker_version": worker_version,
         "dataset_git_revision": dataset_git_revision,
+        "partial": None,
     }
 
 
