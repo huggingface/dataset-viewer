@@ -4,13 +4,13 @@
 import os
 from typing import Any
 
-from prometheus_client import (  # type: ignore
+from prometheus_client import (
     CONTENT_TYPE_LATEST,
     REGISTRY,
     CollectorRegistry,
     generate_latest,
 )
-from prometheus_client.multiprocess import MultiProcessCollector  # type: ignore
+from prometheus_client.multiprocess import MultiProcessCollector
 
 # ^ type: ignore can be removed on next release:
 # https://github.com/prometheus/client_python/issues/491#issuecomment-1429287314
