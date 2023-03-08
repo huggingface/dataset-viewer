@@ -235,7 +235,7 @@ def test_should_skip_job(
             worker_version=cache_entry.worker_version,
             dataset_git_revision=cache_entry.dataset_git_revision,
             complete=cache_entry.complete,
-            progress==cache_entry.progress,
+            progress=cache_entry.progress,
         )
     assert job_runner.should_skip_job() is expected_skip
 
