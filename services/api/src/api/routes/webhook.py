@@ -59,6 +59,7 @@ def process_payload(
     payload: MoonWebhookV2Payload,
     hf_endpoint: str,
     hf_token: Optional[str] = None,
+    hf_timeout_seconds: Optional[float] = None,
 ) -> None:
     if payload["repo"]["type"] != "dataset":
         return
@@ -74,6 +75,7 @@ def process_payload(
             hf_token=hf_token,
             force=False,
             priority=Priority.NORMAL,
+            hf_timeout_seconds=hf_timeout_seconds,
         )
     elif event == "remove":
         delete_dataset(dataset=dataset)
@@ -89,11 +91,15 @@ def process_payload(
             hf_token=hf_token,
             force=False,
             priority=Priority.NORMAL,
+            hf_timeout_seconds=hf_timeout_seconds,
         )
 
 
 def create_webhook_endpoint(
-    init_processing_steps: List[ProcessingStep], hf_endpoint: str, hf_token: Optional[str] = None
+    init_processing_steps: List[ProcessingStep],
+    hf_endpoint: str,
+    hf_token: Optional[str] = None,
+    hf_timeout_seconds: Optional[float] = None,
 ) -> Endpoint:
     async def webhook_endpoint(request: Request) -> Response:
         try:
@@ -118,6 +124,7 @@ def create_webhook_endpoint(
                 payload=payload,
                 hf_endpoint=hf_endpoint,
                 hf_token=hf_token,
+                hf_timeout_seconds=hf_timeout_seconds,
             )
         except DatasetError:
             content = {"status": "error", "error": "the dataset is not supported"}
