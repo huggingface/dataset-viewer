@@ -15,6 +15,7 @@ from libcommon.resources import CacheMongoResource, QueueMongoResource
 from libcommon.simple_cache import get_response
 
 from worker.config import AppConfig
+from worker.job_runner import CompleteJobResult
 from worker.job_runners._datasets_based_job_runner import DatasetsBasedJobRunner
 from worker.resources import LibrariesResource
 
@@ -32,11 +33,11 @@ class DummyJobRunner(DatasetsBasedJobRunner):
     def get_version() -> str:
         return "1.0.0"
 
-    def compute(self) -> Mapping[str, Any]:
+    def compute(self) -> CompleteJobResult:
         if self.config == "raise":
             raise ValueError("This is a test")
         else:
-            return {"col1": "a" * 200}
+            return CompleteJobResult({"col1": "a" * 200})
 
 
 GetJobRunner = Callable[[str, Optional[str], Optional[str], AppConfig, bool], DummyJobRunner]

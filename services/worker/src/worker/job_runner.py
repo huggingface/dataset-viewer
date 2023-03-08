@@ -45,7 +45,7 @@ class JobResult:
     complete: bool
     progress: float
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         if self.complete and self.progress != 1.0:
             raise ValueError(
                 "Progress should be 1 for complete results, but got "
@@ -63,8 +63,8 @@ class JobResult:
 @dataclass
 class CompleteJobResult(JobResult):
     content: Mapping[str, Any]
-    complete: field(init=False) = True
-    progress: field(init=False) = 1.0
+    complete: bool = field(init=False, default=True)
+    progress: float = field(init=False, default=1.)
 
 
 class JobRunnerError(CustomError):

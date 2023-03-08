@@ -10,7 +10,7 @@ from libcommon.resources import CacheMongoResource, QueueMongoResource
 from libcommon.simple_cache import CachedResponse, SplitFullName, upsert_response
 
 from worker.config import WorkerConfig
-from worker.job_runner import ERROR_CODES_TO_RETRY, JobRunner
+from worker.job_runner import ERROR_CODES_TO_RETRY, JobRunner, CompleteJobResult
 
 
 @pytest.fixture(autouse=True)
@@ -39,8 +39,8 @@ class DummyJobRunner(JobRunner):
     def get_version() -> str:
         return "1.0.1"
 
-    def compute(self) -> Mapping[str, Any]:
-        return {"key": "value"}
+    def compute(self) -> CompleteJobResult:
+        return CompleteJobResult({"key": "value"})
 
     def get_new_splits(self, content: Mapping[str, Any]) -> set[SplitFullName]:
         return {SplitFullName(self.dataset, "config", "split1"), SplitFullName(self.dataset, "config", "split2")}
