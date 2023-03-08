@@ -5,7 +5,7 @@ from dataclasses import replace
 from datetime import datetime
 from http import HTTPStatus
 from pathlib import Path
-from typing import Any, Callable, Mapping, Optional
+from typing import Callable, Optional
 
 import datasets.config
 import pytest
