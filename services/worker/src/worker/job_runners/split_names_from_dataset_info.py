@@ -8,7 +8,7 @@ from typing import Any, List, Literal, Mapping, Optional, TypedDict
 from libcommon.dataset import DatasetNotFoundError
 from libcommon.simple_cache import DoesNotExist, SplitFullName, get_response
 
-from worker.job_runner import JobRunnerError, CompleteJobResult
+from worker.job_runner import CompleteJobResult, JobRunnerError
 from worker.job_runners._datasets_based_job_runner import DatasetsBasedJobRunner
 
 SplitNamesFromDatasetInfoJobRunnerErrorCode = Literal[

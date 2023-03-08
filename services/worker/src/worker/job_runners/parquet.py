@@ -8,7 +8,7 @@ from typing import Any, List, Literal, Mapping, Optional, TypedDict
 from libcommon.dataset import DatasetNotFoundError
 from libcommon.simple_cache import DoesNotExist, SplitFullName, get_response
 
-from worker.job_runner import JobRunner, JobRunnerError, CompleteJobResult
+from worker.job_runner import CompleteJobResult, JobRunner, JobRunnerError
 from worker.job_runners.parquet_and_dataset_info import ParquetFileItem
 
 ParquetJobRunnerErrorCode = Literal[

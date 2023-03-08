@@ -184,7 +184,7 @@ class CacheEntry:
                 worker_version=DummyJobRunner.get_version(),
                 dataset_git_revision=DummyJobRunner._get_dataset_git_revision(),
                 complete=False,  # incomplete result
-                progress=.5,
+                progress=0.5,
             ),
             False,  # process
         ),
@@ -195,7 +195,7 @@ class CacheEntry:
                 worker_version=DummyJobRunner.get_version(),
                 dataset_git_revision=DummyJobRunner._get_dataset_git_revision(),
                 complete=True,  # complete result
-                progress=1.,
+                progress=1.0,
             ),
             True,  # skip
         ),

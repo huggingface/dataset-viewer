@@ -9,7 +9,7 @@ from datasets import get_dataset_config_names
 from datasets.data_files import EmptyDatasetError as _EmptyDatasetError
 from libcommon.simple_cache import SplitFullName
 
-from worker.job_runner import JobRunnerError, CompleteJobResult
+from worker.job_runner import CompleteJobResult, JobRunnerError
 from worker.job_runners._datasets_based_job_runner import DatasetsBasedJobRunner
 
 ConfigNamesJobRunnerErrorCode = Literal["EmptyDatasetError", "ConfigNamesError"]

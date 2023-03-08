@@ -8,7 +8,7 @@ from typing import Any, Literal, Mapping, Optional, TypedDict
 from libcommon.dataset import DatasetNotFoundError
 from libcommon.simple_cache import DoesNotExist, SplitFullName, get_response
 
-from worker.job_runner import JobRunner, JobRunnerError, CompleteJobResult
+from worker.job_runner import CompleteJobResult, JobRunner, JobRunnerError
 
 SizesJobRunnerErrorCode = Literal[
     "PreviousStepStatusError",
