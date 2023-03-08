@@ -6,7 +6,10 @@ import logging
 from starlette.requests import Request
 from starlette.responses import PlainTextResponse, Response
 
+from api.prometheus import StepProfiler
+
 
 async def healthcheck_endpoint(_: Request) -> Response:
     logging.info("/healthcheck")
-    return PlainTextResponse("ok", headers={"Cache-Control": "no-store"})
+    with StepProfiler(method="healthcheck_endpoint", step="all"):
+        return PlainTextResponse("ok", headers={"Cache-Control": "no-store"})
