@@ -13,6 +13,10 @@
       "path": "../jobs/mongodb_migration"
     },
     {
+      "name": "jobs/cache_refresh",
+      "path": "../jobs/cache_refresh"
+    },
+    {
       "name": "libs/libcommon",
       "path": "../libs/libcommon"
     },

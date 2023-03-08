@@ -39,6 +39,7 @@ from huggingface_hub._commit_api import (
 )
 from huggingface_hub.hf_api import DatasetInfo, HfApi, RepoFile
 from huggingface_hub.utils._errors import RepositoryNotFoundError, RevisionNotFoundError
+from libcommon.constants import PROCESSING_STEP_PARQUET_AND_DATASET_INFO_VERSION
 from libcommon.dataset import DatasetNotFoundError, ask_access
 from libcommon.processing_graph import ProcessingStep
 from libcommon.queue import JobInfo

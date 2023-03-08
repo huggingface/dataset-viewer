@@ -32,6 +32,7 @@ from datasets import (
     load_dataset,
 )
 from datasets.data_files import EmptyDatasetError as _EmptyDatasetError
+from libcommon.constants import PROCESSING_STEP_FIRST_ROWS_VERSION
 from libcommon.processing_graph import ProcessingStep
 from libcommon.queue import JobInfo
 from libcommon.simple_cache import SplitFullName as _SplitFullName
