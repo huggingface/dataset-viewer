@@ -10,7 +10,7 @@ from libcommon.resources import CacheMongoResource, QueueMongoResource
 from libcommon.simple_cache import CachedResponse, SplitFullName, upsert_response
 
 from worker.config import WorkerConfig
-from worker.job_runner import ERROR_CODES_TO_RETRY, JobRunner, CompleteJobResult
+from worker.job_runner import ERROR_CODES_TO_RETRY, CompleteJobResult, JobRunner
 
 
 @pytest.fixture(autouse=True)

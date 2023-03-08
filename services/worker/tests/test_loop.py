@@ -6,7 +6,7 @@ from libcommon.queue import JobInfo
 from libcommon.resources import CacheMongoResource, QueueMongoResource
 
 from worker.config import AppConfig, WorkerConfig
-from worker.job_runner import JobRunner, CompleteJobResult
+from worker.job_runner import CompleteJobResult, JobRunner
 from worker.job_runner_factory import BaseJobRunnerFactory
 from worker.loop import Loop
 from worker.resources import LibrariesResource

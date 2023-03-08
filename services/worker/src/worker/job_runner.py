@@ -64,7 +64,7 @@ class JobResult:
 class CompleteJobResult(JobResult):
     content: Mapping[str, Any]
     complete: bool = field(init=False, default=True)
-    progress: float = field(init=False, default=1.)
+    progress: float = field(init=False, default=1.0)
 
 
 class JobRunnerError(CustomError):
