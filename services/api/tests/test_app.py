@@ -142,9 +142,7 @@ def test_metrics(client: TestClient) -> None:
     # starlette_requests_total{method="GET",path_template="/metrics"} 1.0
     # method_steps_processing_time_seconds_sum{method="healthcheck_endpoint",step="all"} 1.6772013623267412e-05
     metrics = {
-        parts[0]: float(parts[1])
-        for line in lines
-        if line and line[0] != "#" and len(parts := line.rsplit(" ", 1)) == 2
+        parts[0]: float(parts[1]) for line in lines if line and line[0] != "#" and (parts := line.rsplit(" ", 1))
     }
 
     # the metrics should contain at least the following
