@@ -42,20 +42,9 @@ ERROR_CODES_TO_RETRY: list[str] = ["ClientConnectionError"]
 @dataclass
 class JobResult:
     content: Mapping[str, Any]
-    complete: bool
     progress: float
 
     def __post_init__(self) -> None:
-        if self.complete and self.progress != 1.0:
-            raise ValueError(
-                "Progress should be 1 for complete results, but got "
-                f"progress={self.progress} and complete={self.complete}"
-            )
-        if not self.complete and self.progress == 1.0:
-            raise ValueError(
-                "Progress should be <1 for partial results, but got "
-                f"progress={self.progress} and complete={self.complete}"
-            )
         if self.progress < 0.0 or self.progress > 1.0:
             raise ValueError(f"Progress should be between 0 and 1, but got {self.progress}")
 
@@ -63,7 +52,6 @@ class JobResult:
 @dataclass
 class CompleteJobResult(JobResult):
     content: Mapping[str, Any]
-    complete: bool = field(init=False, default=True)
     progress: float = field(init=False, default=1.0)
 
 
@@ -343,7 +331,7 @@ class JobRunner(ABC):
             # note: the collection field is named "worker_version" for historical reasons, it might be renamed
             #   "job_runner_version" in the future.
             return False
-        if cached_response["complete"] is not None and not cached_response["complete"]:
+        if cached_response["progress"] is not None and cached_response["progress"] < 1.0:
             # this job is still waiting for more inputs to be complete - we should not skip it.
             # this can happen with fan-in jobs
             return False
@@ -388,7 +376,6 @@ class JobRunner(ABC):
                 http_status=HTTPStatus.OK,
                 worker_version=self.get_version(),
                 dataset_git_revision=dataset_git_revision,
-                complete=job_result.complete,
                 progress=job_result.progress,
             )
             self.debug(f"dataset={self.dataset} config={self.config} split={self.split} is valid, cache updated")
