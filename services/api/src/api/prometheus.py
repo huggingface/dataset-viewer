@@ -23,7 +23,7 @@ from starlette.responses import Response
 # the metrics are global to the process
 METHOD_STEPS_PROCESSING_TIME = Histogram(
     "method_steps_processing_time_seconds",
-    "Histogram of the processing time of specific steps in methods (in seconds)",
+    "Histogram of the processing time of specific steps in methods for a given context (in seconds)",
     ["method", "step", "context"],
 )
 
