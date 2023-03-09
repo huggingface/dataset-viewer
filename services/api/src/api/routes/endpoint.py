@@ -258,7 +258,7 @@ def create_endpoint(
                     with StepProfiler(method="processing_step_endpoint", step="generate OK response"):
                         return get_json_ok_response(content=content, max_age=max_age_long)
 
-                with StepProfiler(method="routes.endpoint", step="generate error response"):
+                with StepProfiler(method="processing_step_endpoint", step="generate error response"):
                     return get_json_error_response(
                         content=content, status_code=http_status, max_age=max_age_short, error_code=error_code
                     )
