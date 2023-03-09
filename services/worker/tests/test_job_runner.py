@@ -46,6 +46,38 @@ class DummyJobRunner(JobRunner):
         return {SplitFullName(self.dataset, "config", "split1"), SplitFullName(self.dataset, "config", "split2")}
 
 
+@pytest.mark.parametrize(
+    "other_version, expected",
+    [
+        (0, True),
+        (1, False),
+        (2, False),
+        (None, True),
+    ],
+)
+def test_is_major_version_than(test_processing_step: ProcessingStep, other_version: int, expected: bool) -> None:
+    job_id = "job_id"
+    dataset = "dataset"
+    config = "config"
+    split = "split"
+    force = False
+    job_runner = DummyJobRunner(
+        job_info={
+            "job_id": job_id,
+            "type": test_processing_step.job_type,
+            "dataset": dataset,
+            "config": config,
+            "split": split,
+            "force": force,
+            "priority": Priority.NORMAL,
+        },
+        processing_step=test_processing_step,
+        common_config=CommonConfig(),
+        worker_config=WorkerConfig(),
+    )
+    assert job_runner.is_major_version_than(other_version=other_version) == expected
+
+
 @dataclass
 class CacheEntry:
     error_code: Optional[str]

@@ -95,11 +95,11 @@ class CachedResponse(Document):
     http_status = EnumField(HTTPStatus, required=True)
     error_code = StringField()
     content = DictField(required=True)
-    worker_version = StringField()
     dataset_git_revision = StringField()
     progress = FloatField(min_value=0.0, max_value=1.0)
     job_runner_version = IntField()
     progress = FloatField(min_value=0.0, max_value=1.0)
+    job_runner_version = IntField()
 
     details = DictField()
     updated_at = DateTimeField(default=get_datetime)
@@ -168,7 +168,6 @@ class CacheEntryWithoutContent(TypedDict):
     dataset_git_revision: Optional[str]
     progress: Optional[float]
     job_runner_version: Optional[int]
-    progress: Optional[float]
 
 
 # Note: we let the exceptions throw (ie DoesNotExist): it's the responsibility of the caller to manage them
@@ -186,7 +185,6 @@ def get_response_without_content(
         "dataset_git_revision": response.dataset_git_revision,
         "progress": response.progress,
         "job_runner_version": response.job_runner_version,
-        "progress": response.progress,
     }
 
 

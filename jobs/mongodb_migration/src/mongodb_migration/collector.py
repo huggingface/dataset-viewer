@@ -29,6 +29,9 @@ from mongodb_migration.migrations._20230309141600_cache_add_job_runner_version i
 from mongodb_migration.migrations._20230309123100_cache_add_progress import (
     MigrationAddProgressToCacheResponse,
 )
+from mongodb_migration.migrations._20230309141600_cache_add_job_runner_version import (
+    MigrationAddJobRunnerVerionToCacheResponse,
+)
 
 
 # TODO: add a way to automatically collect migrations from the migrations/ folder
