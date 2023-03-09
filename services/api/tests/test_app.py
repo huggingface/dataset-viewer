@@ -133,13 +133,22 @@ def test_get_split_missing_parameter(
 
 
 def test_metrics(client: TestClient) -> None:
+    response = client.get("/healthcheck")
     response = client.get("/metrics")
     assert response.status_code == 200
     text = response.text
     lines = text.split("\n")
-    metrics = {line.split(" ")[0]: float(line.split(" ")[1]) for line in lines if line and line[0] != "#"}
+    # examples:
+    # starlette_requests_total{method="GET",path_template="/metrics"} 1.0
+    # method_steps_processing_time_seconds_sum{method="healthcheck_endpoint",step="all"} 1.6772013623267412e-05
+    metrics = {
+        parts[0]: float(parts[1]) for line in lines if line and line[0] != "#" and (parts := line.rsplit(" ", 1))
+    }
 
-    # the middleware should have recorded the request
-    name = 'starlette_requests_total{method="GET",path_template="/metrics"}'
-    assert name in metrics, metrics
-    assert metrics[name] > 0, metrics
+    # the metrics should contain at least the following
+    for name in [
+        'starlette_requests_total{method="GET",path_template="/metrics"}',
+        'method_steps_processing_time_seconds_sum{method="healthcheck_endpoint",step="all"}',
+    ]:
+        assert name in metrics, metrics
+        assert metrics[name] > 0, metrics

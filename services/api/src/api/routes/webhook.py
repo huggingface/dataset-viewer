@@ -12,6 +12,7 @@ from libcommon.queue import Priority
 from starlette.requests import Request
 from starlette.responses import Response
 
+from api.prometheus import StepProfiler
 from api.utils import Endpoint, get_response
 
 schema = {
@@ -102,34 +103,38 @@ def create_webhook_endpoint(
     hf_timeout_seconds: Optional[float] = None,
 ) -> Endpoint:
     async def webhook_endpoint(request: Request) -> Response:
-        try:
-            json = await request.json()
-        except Exception:
-            content = {"status": "error", "error": "the body could not be parsed as a JSON"}
-            return get_response(content, 400)
-        logging.info(f"/webhook: {json}")
-        try:
-            payload = parse_payload(json)
-        except ValidationError:
-            content = {"status": "error", "error": "the JSON payload is invalid"}
-            return get_response(content, 400)
-        except Exception as e:
-            logging.exception("Unexpected error", exc_info=e)
-            content = {"status": "error", "error": "unexpected error"}
-            return get_response(content, 500)
+        with StepProfiler(method="webhook_endpoint", step="all"):
+            with StepProfiler(method="webhook_endpoint", step="get JSON"):
+                try:
+                    json = await request.json()
+                except Exception:
+                    content = {"status": "error", "error": "the body could not be parsed as a JSON"}
+                    return get_response(content, 400)
+            logging.info(f"/webhook: {json}")
+            with StepProfiler(method="webhook_endpoint", step="parse payload"):
+                try:
+                    payload = parse_payload(json)
+                except ValidationError:
+                    content = {"status": "error", "error": "the JSON payload is invalid"}
+                    return get_response(content, 400)
+                except Exception as e:
+                    logging.exception("Unexpected error", exc_info=e)
+                    content = {"status": "error", "error": "unexpected error"}
+                    return get_response(content, 500)
 
-        try:
-            process_payload(
-                init_processing_steps=init_processing_steps,
-                payload=payload,
-                hf_endpoint=hf_endpoint,
-                hf_token=hf_token,
-                hf_timeout_seconds=hf_timeout_seconds,
-            )
-        except DatasetError:
-            content = {"status": "error", "error": "the dataset is not supported"}
-            return get_response(content, 400)
-        content = {"status": "ok"}
-        return get_response(content, 200)
+            with StepProfiler(method="webhook_endpoint", step="process payload"):
+                try:
+                    process_payload(
+                        init_processing_steps=init_processing_steps,
+                        payload=payload,
+                        hf_endpoint=hf_endpoint,
+                        hf_token=hf_token,
+                        hf_timeout_seconds=hf_timeout_seconds,
+                    )
+                except DatasetError:
+                    content = {"status": "error", "error": "the dataset is not supported"}
+                    return get_response(content, 400)
+                content = {"status": "ok"}
+                return get_response(content, 200)
 
     return webhook_endpoint
