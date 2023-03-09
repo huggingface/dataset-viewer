@@ -1,6 +1,6 @@
 import os
 import time
-from typing import Dict
+from typing import Dict, Optional
 
 from api.prometheus import Prometheus, StepProfiler
 
@@ -34,35 +34,48 @@ def test_prometheus() -> None:
         assert name not in metrics, metrics
 
 
-def check_histogram_metric(metrics: Dict[str, float], method: str, step: str, events: int, duration: float) -> None:
-    name = "method_steps_processing_time_seconds"
-    params = f'method="{method}",step="{step}"'
-    assert metrics[f"{name}_count{{{params}}}"] == events, metrics
-    assert metrics[f'{name}_bucket{{le="+Inf",{params}}}'] == events, metrics
-    assert metrics[f'{name}_bucket{{le="1.0",{params}}}'] == events, metrics
-    assert metrics[f'{name}_bucket{{le="0.05",{params}}}'] == 0, metrics
-    assert metrics[f"{name}_sum{{{params}}}"] >= duration, metrics
-    assert metrics[f"{name}_sum{{{params}}}"] <= duration * 1.1, metrics
+def create_key(suffix: str, labels: Dict[str, str], le: Optional[str] = None) -> str:
+    items = list(labels.items())
+    if le:
+        items.append(("le", le))
+    labels_string = ",".join([f'{key}="{value}"' for key, value in sorted(items)])
+    return f"method_steps_processing_time_seconds_{suffix}{{{labels_string}}}"
+
+
+def check_histogram_metric(
+    metrics: Dict[str, float], method: str, step: str, context: str, events: int, duration: float
+) -> None:
+    labels = {"context": context, "method": method, "step": step}
+    assert metrics[create_key("count", labels)] == events, metrics
+    assert metrics[create_key("bucket", labels, le="+Inf")] == events, metrics
+    assert metrics[create_key("bucket", labels, le="1.0")] == events, metrics
+    assert metrics[create_key("bucket", labels, le="0.05")] == 0, metrics
+    assert metrics[create_key("sum", labels)] >= duration, metrics
+    assert metrics[create_key("sum", labels)] <= duration * 1.1, metrics
 
 
 def test_step_profiler() -> None:
     duration = 0.1
     method = "test"
     step_all = "all"
+    context = "None"
     with StepProfiler(method=method, step=step_all):
         time.sleep(duration)
     metrics = parse_metrics(Prometheus().getLatestContent())
-    check_histogram_metric(metrics=metrics, method=method, step=step_all, events=1, duration=duration)
+    check_histogram_metric(metrics=metrics, method=method, step=step_all, context=context, events=1, duration=duration)
 
 
 def test_nested_step_profiler() -> None:
     method = "test"
     step_all = "all"
+    context = "None"
     step_1 = "step_1"
     duration_1a = 0.1
     duration_1b = 0.3
+    context_1 = "None"
     step_2 = "step_2"
     duration_2 = 0.5
+    context_2 = "endpoint: /splits"
     with StepProfiler(method=method, step=step_all):
         with StepProfiler("test", step_1):
             time.sleep(duration_1a)
@@ -73,7 +86,16 @@ def test_nested_step_profiler() -> None:
     metrics = parse_metrics(Prometheus().getLatestContent())
     print(metrics)
     check_histogram_metric(
-        metrics=metrics, method=method, step=step_all, events=1, duration=duration_1a + duration_1b + duration_2
+        metrics=metrics,
+        method=method,
+        step=step_all,
+        context=context,
+        events=1,
+        duration=duration_1a + duration_1b + duration_2,
     )
-    check_histogram_metric(metrics=metrics, method=method, step=step_1, events=2, duration=duration_1a + duration_1b)
-    check_histogram_metric(metrics=metrics, method=method, step=step_2, events=1, duration=duration_2)
+    check_histogram_metric(
+        metrics=metrics, method=method, step=step_1, context=context_1, events=2, duration=duration_1a + duration_1b
+    )
+    check_histogram_metric(
+        metrics=metrics, method=method, step=step_2, context=context_2, events=1, duration=duration_2
+    )

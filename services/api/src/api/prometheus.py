@@ -24,7 +24,7 @@ from starlette.responses import Response
 METHOD_STEPS_PROCESSING_TIME = Histogram(
     "method_steps_processing_time_seconds",
     "Histogram of the processing time of specific steps in methods (in seconds)",
-    ["method", "step"],
+    ["method", "step", "context"],
 )
 
 T = TypeVar("T", bound="StepProfiler")
@@ -35,17 +35,19 @@ class StepProfiler:
     A context manager that measures the time spent in a step of a method and reports it to Prometheus.
 
     Example:
-        >>> with StepProfiler("method", "step") as profiler:
+        >>> with StepProfiler("method", "step", "context") as profiler:
         ...     pass
 
     Args:
         method (str): The name of the method.
         step (str): The name of the step.
+        context (str|None): An optional string that adds context. If None, the label "None" is used.
     """
 
-    def __init__(self, method: str, step: str):
+    def __init__(self, method: str, step: str, context: Optional[str] = None):
         self.method = method
         self.step = step
+        self.context = str(context)
         self.before_time = time.perf_counter()
 
     def __enter__(self: T) -> T:
@@ -58,7 +60,9 @@ class StepProfiler:
         traceback: Optional[TracebackType],
     ) -> None:
         after_time = time.perf_counter()
-        METHOD_STEPS_PROCESSING_TIME.labels(method=self.method, step=self.step).observe(after_time - self.before_time)
+        METHOD_STEPS_PROCESSING_TIME.labels(method=self.method, step=self.step, context=self.context).observe(
+            after_time - self.before_time
+        )
 
 
 class Prometheus:
