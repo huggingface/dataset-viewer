@@ -58,13 +58,11 @@ class ResponseNotReadyError(DatasetSplitNamesJobRunnerError):
 
 
 class PendingJob(TypedDict):
-    kind: str
     dataset: str
     config: Optional[str]
-    split: Optional[str]
 
 
-class SplitItem(ConfigItem):
+class SuccessJob(PendingJob):
     split: str
 
 
@@ -73,9 +71,9 @@ class FailedJob(PendingJob):
 
 
 class DatasetSplitNamesResponseContent(TypedDict):
-    splits: List[SplitItem]
-    pending: List[ConfigItem]
-    failed: List[ConfigWithError]
+    splits: List[SuccessJob]
+    pending: List[PendingJob]
+    failed: List[FailedJob]
 
 
 def get_response_from_sources(
@@ -138,9 +136,9 @@ def compute_dataset_split_names_response(
     split_names_from_streaming = get_responses_for_kind(kind="/split-names-from-streaming", dataset=dataset)
     split_names_from_dataset_info = get_responses_for_kind(kind="/split-names-from-dataset-info", dataset=dataset)
 
-    splits: List[SplitItem] = []
-    pending: List[ConfigItem] = []
-    failed: List[ConfigWithError] = []
+    splits: List[SuccessJob] = []
+    pending: List[PendingJob] = []
+    failed: List[FailedJob] = []
 
     for config in config_content:
         config_name = config["config"]
@@ -158,6 +156,15 @@ def compute_dataset_split_names_response(
         except ResponseNotReadyError:
             pending.append({"dataset": dataset, "config": config_name})
 
+    # progress = (len(splits) + len(failed)) / len(config_content)
+    # return JobResult(
+    #     content={
+    #     "splits": splits,
+    #     "pending": pending,
+    #     "failed": failed,
+    #     },
+    #     progress=progress
+    # )
     return {
         "splits": splits,
         "pending": pending,
