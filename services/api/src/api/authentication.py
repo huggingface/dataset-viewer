@@ -1,6 +1,7 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2022 The HuggingFace Authors.
 
+import logging
 from typing import Literal, Optional
 
 import requests
@@ -68,6 +69,10 @@ def auth_check(
     except TypeError as e:
         raise ValueError("external_auth_url must contain %s") from e
     try:
+        logging.debug(
+            f"Checking authentication on the Hugging Face Hub for dataset {dataset}, url: {url}, timeout:"
+            f" {hf_timeout_seconds}"
+        )
         response = requests.get(url, auth=RequestAuth(request), timeout=hf_timeout_seconds)
     except Exception as err:
         raise AuthCheckHubRequestError(
