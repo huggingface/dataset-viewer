@@ -208,10 +208,13 @@ def create_endpoint(
     max_age_short: int = 0,
 ) -> Endpoint:
     async def processing_step_endpoint(request: Request) -> Response:
-        with StepProfiler(method="processing_step_endpoint", step="all"):
+        context = f"endpoint: {endpoint_name}"
+        with StepProfiler(method="processing_step_endpoint", step="all", context=context):
             try:
                 with StepProfiler(
-                    method="processing_step_endpoint", step="validate parameters and get processing steps"
+                    method="processing_step_endpoint",
+                    step="validate parameters and get processing steps",
+                    context=context,
                 ):
                     # validating request parameters
                     dataset_parameter = request.query_params.get("dataset")
@@ -237,7 +240,7 @@ def create_endpoint(
                     raise MissingRequiredParameterError("Parameter 'dataset' is required")
 
                 # if auth_check fails, it will raise an exception that will be caught below
-                with StepProfiler(method="processing_step_endpoint", step="check authentication"):
+                with StepProfiler(method="processing_step_endpoint", step="check authentication", context=context):
                     auth_check(
                         dataset,
                         external_auth_url=external_auth_url,
@@ -246,7 +249,7 @@ def create_endpoint(
                     )
 
                 # getting result based on processing steps
-                with StepProfiler(method="processing_step_endpoint", step="get cache entry"):
+                with StepProfiler(method="processing_step_endpoint", step="get cache entry", context=context):
                     result = get_cache_entry_from_steps(
                         processing_steps, dataset, config, split, init_processing_steps, hf_endpoint, hf_token
                     )
@@ -255,16 +258,18 @@ def create_endpoint(
                 http_status = result["http_status"]
                 error_code = result["error_code"]
                 if http_status == HTTPStatus.OK:
-                    with StepProfiler(method="processing_step_endpoint", step="generate OK response"):
+                    with StepProfiler(method="processing_step_endpoint", step="generate OK response", context=context):
                         return get_json_ok_response(content=content, max_age=max_age_long)
 
-                with StepProfiler(method="routes.endpoint", step="generate error response"):
+                with StepProfiler(method="processing_step_endpoint", step="generate error response", context=context):
                     return get_json_error_response(
                         content=content, status_code=http_status, max_age=max_age_short, error_code=error_code
                     )
             except Exception as e:
                 error = e if isinstance(e, ApiCustomError) else UnexpectedError("Unexpected error.", e)
-                with StepProfiler(method="processing_step_endpoint", step="generate API error response"):
+                with StepProfiler(
+                    method="processing_step_endpoint", step="generate API error response", context=context
+                ):
                     return get_json_api_error_response(error=error, max_age=max_age_short)
 
     return processing_step_endpoint
