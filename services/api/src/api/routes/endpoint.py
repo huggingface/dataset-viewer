@@ -223,8 +223,8 @@ def create_endpoint(
                     validators = get_input_type_validators_by_priority(steps_by_input_type=steps_by_input_type)
 
                     logging.debug(
-                        f"endpoint={endpoint_name} dataset={dataset_parameter} ",
-                        f"config={config_parameter} split={split_parameter}",
+                        f"endpoint={endpoint_name} dataset={dataset_parameter} config={config_parameter}"
+                        + f" split={split_parameter}"
                     )
 
                     validator = get_input_type_validator_by_parameters(
