@@ -14,7 +14,7 @@ from mongodb_migration.migration import Migration
 class MigrationAddProgressToCacheResponse(Migration):
     def up(self) -> None:
         # See https://docs.mongoengine.org/guide/migration.html#example-1-addition-of-a-field
-        logging.info("If missing, add the cache field with the default value (1.0) to the cached results")
+        logging.info("If missing, add the progress field with the default value (1.0) to the cached results")
         db = get_db("cache")
         db["cachedResponsesBlue"].update_many({"progress": {"$exists": False}}, {"$set": {"progress": 1.0}})
 
