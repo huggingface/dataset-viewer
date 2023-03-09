@@ -57,16 +57,18 @@ class ResponseNotReadyError(DatasetSplitNamesJobRunnerError):
         super().__init__(message, HTTPStatus.INTERNAL_SERVER_ERROR, "ResponseNotReady")
 
 
-class ConfigItem(TypedDict):
+class PendingJob(TypedDict):
+    kind: str
     dataset: str
-    config: str
+    config: Optional[str]
+    split: Optional[str]
 
 
 class SplitItem(ConfigItem):
     split: str
 
 
-class ConfigWithError(ConfigItem):
+class FailedJob(PendingJob):
     error: Mapping[str, Any]
 
 
