@@ -23,6 +23,9 @@ from mongodb_migration.migrations._20230216141000_queue_split_names_from_streami
 from mongodb_migration.migrations._20230309123100_cache_add_progress import (
     MigrationAddProgressToCacheResponse,
 )
+from mongodb_migration.migrations._20230309141600_cache_add_job_runner_version import (
+    MigrationAddJobRunnerVerionToCacheResponse,
+)
 
 
 # TODO: add a way to automatically collect migrations from the migrations/ folder
@@ -54,5 +57,8 @@ class MigrationsCollector:
             MigrationAddProgressToCacheResponse(
                 version="20230309123100",
                 description="add the 'progress' field with the default value (1.0) to the cached results",
+            ),
+            MigrationAddJobRunnerVerionToCacheResponse(
+                version="20230309141600", description="add 'job_runner_version' field based on 'worker_version' value"
             ),
         ]

@@ -25,6 +25,7 @@ from mongoengine.fields import (
     DictField,
     EnumField,
     FloatField,
+    IntField,
     ObjectIdField,
     StringField,
 )
@@ -78,7 +79,7 @@ class CachedResponse(Document):
         content (`dict`): The content of the cached response. Can be an error or a valid content.
         details (`dict`, optional): Additional details, eg. a detailed error that we don't want to send as a response.
         updated_at (`datetime`): When the cache entry has been last updated.
-        worker_version (`str`): The semver version of the worker that cached the response.
+        job_runner_version (`int`): The version of the job runner that cached the response.
         dataset_git_revision (`str`): The commit (of the git dataset repo) used to generate the response.
         progress (`float`): Progress percentage (between 0. and 1.) if the result is not complete yet.
     """
@@ -93,9 +94,9 @@ class CachedResponse(Document):
     http_status = EnumField(HTTPStatus, required=True)
     error_code = StringField()
     content = DictField(required=True)
-    worker_version = StringField()
     dataset_git_revision = StringField()
     progress = FloatField(min_value=0.0, max_value=1.0)
+    job_runner_version = IntField()
 
     details = DictField()
     updated_at = DateTimeField(default=get_datetime)
@@ -132,7 +133,7 @@ def upsert_response(
     split: Optional[str] = None,
     error_code: Optional[str] = None,
     details: Optional[Mapping[str, Any]] = None,
-    worker_version: Optional[str] = None,
+    job_runner_version: Optional[int] = None,
     dataset_git_revision: Optional[str] = None,
     progress: Optional[float] = None,
 ) -> None:
@@ -141,10 +142,10 @@ def upsert_response(
         http_status=http_status,
         error_code=error_code,
         details=details,
-        worker_version=worker_version,
         dataset_git_revision=dataset_git_revision,
         progress=progress,
         updated_at=get_datetime(),
+        job_runner_version=job_runner_version,
     )
 
 
@@ -161,9 +162,9 @@ def delete_dataset_responses(dataset: str) -> Optional[int]:
 class CacheEntryWithoutContent(TypedDict):
     http_status: HTTPStatus
     error_code: Optional[str]
-    worker_version: Optional[str]
     dataset_git_revision: Optional[str]
     progress: Optional[float]
+    job_runner_version: Optional[int]
 
 
 # Note: we let the exceptions throw (ie DoesNotExist): it's the responsibility of the caller to manage them
@@ -172,27 +173,27 @@ def get_response_without_content(
 ) -> CacheEntryWithoutContent:
     response = (
         CachedResponse.objects(kind=kind, dataset=dataset, config=config, split=split)
-        .only("http_status", "error_code", "worker_version", "dataset_git_revision", "progress")
+        .only("http_status", "error_code", "job_runner_version", "dataset_git_revision", "progress")
         .get()
     )
     return {
         "http_status": response.http_status,
         "error_code": response.error_code,
-        "worker_version": response.worker_version,
         "dataset_git_revision": response.dataset_git_revision,
         "progress": response.progress,
+        "job_runner_version": response.job_runner_version,
     }
 
 
 def get_dataset_responses_without_content_for_kind(kind: str, dataset: str) -> List[CacheEntryWithoutContent]:
     responses = CachedResponse.objects(kind=kind, dataset=dataset).only(
-        "http_status", "error_code", "worker_version", "dataset_git_revision", "progress"
+        "http_status", "error_code", "job_runner_version", "dataset_git_revision", "progress"
     )
     return [
         {
             "http_status": response.http_status,
             "error_code": response.error_code,
-            "worker_version": response.worker_version,
+            "job_runner_version": response.job_runner_version,
             "dataset_git_revision": response.dataset_git_revision,
             "progress": response.progress,
         }
@@ -208,14 +209,14 @@ class CacheEntry(CacheEntryWithoutContent):
 def get_response(kind: str, dataset: str, config: Optional[str] = None, split: Optional[str] = None) -> CacheEntry:
     response = (
         CachedResponse.objects(kind=kind, dataset=dataset, config=config, split=split)
-        .only("content", "http_status", "error_code", "worker_version", "dataset_git_revision", "progress")
+        .only("content", "http_status", "error_code", "job_runner_version", "dataset_git_revision", "progress")
         .get()
     )
     return {
         "content": response.content,
         "http_status": response.http_status,
         "error_code": response.error_code,
-        "worker_version": response.worker_version,
+        "job_runner_version": response.job_runner_version,
         "dataset_git_revision": response.dataset_git_revision,
         "progress": response.progress,
     }
@@ -280,7 +281,7 @@ class CacheReport(TypedDict):
     split: Optional[str]
     http_status: int
     error_code: Optional[str]
-    worker_version: Optional[str]
+    job_runner_version: Optional[int]
     dataset_git_revision: Optional[str]
 
 
@@ -342,7 +343,7 @@ def get_cache_reports(kind: str, cursor: Optional[str], limit: int) -> CacheRepo
             "split",
             "http_status",
             "error_code",
-            "worker_version",
+            "job_runner_version",
             "dataset_git_revision",
         )
         .limit(limit)
@@ -356,7 +357,7 @@ def get_cache_reports(kind: str, cursor: Optional[str], limit: int) -> CacheRepo
                 "split": object.split,
                 "http_status": object.http_status.value,
                 "error_code": object.error_code,
-                "worker_version": object.worker_version,
+                "job_runner_version": object.job_runner_version,
                 "dataset_git_revision": object.dataset_git_revision,
             }
             for object in objects
@@ -422,7 +423,7 @@ def get_cache_reports_with_content(kind: str, cursor: Optional[str], limit: int)
             "http_status",
             "error_code",
             "content",
-            "worker_version",
+            "job_runner_version",
             "dataset_git_revision",
             "details",
             "updated_at",
@@ -439,7 +440,7 @@ def get_cache_reports_with_content(kind: str, cursor: Optional[str], limit: int)
                 "http_status": object.http_status.value,
                 "error_code": object.error_code,
                 "content": object.content,
-                "worker_version": object.worker_version,
+                "job_runner_version": object.job_runner_version,
                 "dataset_git_revision": object.dataset_git_revision,
                 "details": object.details,
                 "updated_at": object.updated_at,

@@ -90,7 +90,7 @@ def test_compute(
     )
     assert cached_response["http_status"] == HTTPStatus.OK
     assert cached_response["error_code"] is None
-    assert cached_response["worker_version"] == job_runner.get_version()
+    assert cached_response["job_runner_version"] == job_runner.get_job_runner_version()
     assert cached_response["dataset_git_revision"] is not None
     content = cached_response["content"]
     assert content["features"][0]["feature_idx"] == 0

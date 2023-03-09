@@ -113,7 +113,7 @@ def test_upsert_response(config: Optional[str], split: Optional[str]) -> None:
         "http_status": HTTPStatus.OK,
         "content": content,
         "error_code": None,
-        "worker_version": None,
+        "job_runner_version": None,
         "dataset_git_revision": None,
         "progress": None,
     }
@@ -123,7 +123,7 @@ def test_upsert_response(config: Optional[str], split: Optional[str]) -> None:
     assert cached_response_without_content == {
         "http_status": HTTPStatus.OK,
         "error_code": None,
-        "worker_version": None,
+        "job_runner_version": None,
         "dataset_git_revision": None,
         "progress": None,
     }
@@ -144,7 +144,7 @@ def test_upsert_response(config: Optional[str], split: Optional[str]) -> None:
         get_response(kind=kind, dataset=dataset, config=config, split=split)
 
     error_code = "error_code"
-    worker_version = "0.1.2"
+    job_runner_version = 0
     dataset_git_revision = "123456"
     upsert_response(
         kind=kind,
@@ -154,7 +154,7 @@ def test_upsert_response(config: Optional[str], split: Optional[str]) -> None:
         content=content,
         http_status=HTTPStatus.BAD_REQUEST,
         error_code=error_code,
-        worker_version=worker_version,
+        job_runner_version=job_runner_version,
         dataset_git_revision=dataset_git_revision,
     )
 
@@ -163,7 +163,7 @@ def test_upsert_response(config: Optional[str], split: Optional[str]) -> None:
         "http_status": HTTPStatus.BAD_REQUEST,
         "content": content,
         "error_code": error_code,
-        "worker_version": worker_version,
+        "job_runner_version": job_runner_version,
         "dataset_git_revision": dataset_git_revision,
         "progress": None,
     }
@@ -418,7 +418,7 @@ def test_get_cache_reports() -> None:
     details_b = {
         "error": "error b",
     }
-    worker_version_b = "0.1.2"
+    job_runner_version_b = 0
     dataset_git_revision_b = "123456"
     upsert_response(
         kind=kind,
@@ -428,7 +428,7 @@ def test_get_cache_reports() -> None:
         details=details_b,
         http_status=http_status_b,
         error_code=error_code_b,
-        worker_version=worker_version_b,
+        job_runner_version=job_runner_version_b,
         dataset_git_revision=dataset_git_revision_b,
     )
 
@@ -480,7 +480,7 @@ def test_get_cache_reports() -> None:
             "split": None,
             "http_status": http_status_a.value,
             "error_code": None,
-            "worker_version": None,
+            "job_runner_version": None,
             "dataset_git_revision": None,
         },
         {
@@ -490,7 +490,7 @@ def test_get_cache_reports() -> None:
             "split": None,
             "http_status": http_status_b.value,
             "error_code": error_code_b,
-            "worker_version": worker_version_b,
+            "job_runner_version": job_runner_version_b,
             "dataset_git_revision": dataset_git_revision_b,
         },
     ]
@@ -506,7 +506,7 @@ def test_get_cache_reports() -> None:
                 "split": split_c,
                 "http_status": http_status_c.value,
                 "error_code": error_code_c,
-                "worker_version": None,
+                "job_runner_version": None,
                 "dataset_git_revision": None,
             },
         ],
@@ -527,7 +527,7 @@ def test_get_cache_reports() -> None:
             "http_status": http_status_a.value,
             "error_code": None,
             "content": content_a,
-            "worker_version": None,
+            "job_runner_version": None,
             "dataset_git_revision": None,
             "details": {},
             "updated_at": REDACTED_DATE,
@@ -540,7 +540,7 @@ def test_get_cache_reports() -> None:
             "http_status": http_status_b.value,
             "error_code": error_code_b,
             "content": content_b,
-            "worker_version": worker_version_b,
+            "job_runner_version": job_runner_version_b,
             "dataset_git_revision": dataset_git_revision_b,
             "details": details_b,
             "updated_at": REDACTED_DATE,
@@ -561,7 +561,7 @@ def test_get_cache_reports() -> None:
                 "http_status": http_status_c.value,
                 "error_code": error_code_c,
                 "content": content_c,
-                "worker_version": None,
+                "job_runner_version": None,
                 "dataset_git_revision": None,
                 "details": details_c,
                 "updated_at": REDACTED_DATE,

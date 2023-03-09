@@ -32,12 +32,12 @@ class DummyJobRunner(JobRunner):
         return "0.1.2"
 
     @staticmethod
-    def get_job_type() -> str:
-        return "/dummy"
+    def get_job_runner_version() -> int:
+        return 1
 
     @staticmethod
-    def get_version() -> str:
-        return "1.0.1"
+    def get_job_type() -> str:
+        return "/dummy"
 
     def compute(self) -> CompleteJobResult:
         return CompleteJobResult({"key": "value"})
@@ -47,20 +47,15 @@ class DummyJobRunner(JobRunner):
 
 
 @pytest.mark.parametrize(
-    "other_version, expected, should_raise",
+    "other_version, expected",
     [
-        ("1.0.0", 0, False),
-        ("0.1.0", 1, False),
-        ("2.0.0", -1, False),
-        ("not a version", None, True),
+        (0, True),
+        (1, False),
+        (2, False),
+        (None, True),
     ],
 )
-def test_compare_major_version(
-    test_processing_step: ProcessingStep,
-    other_version: str,
-    expected: int,
-    should_raise: bool,
-) -> None:
+def test_is_major_version_than(test_processing_step: ProcessingStep, other_version: int, expected: bool) -> None:
     job_id = "job_id"
     dataset = "dataset"
     config = "config"
@@ -80,17 +75,13 @@ def test_compare_major_version(
         common_config=CommonConfig(),
         worker_config=WorkerConfig(),
     )
-    if should_raise:
-        with pytest.raises(Exception):
-            job_runner.compare_major_version(other_version)
-    else:
-        assert job_runner.compare_major_version(other_version) == expected
+    assert job_runner.is_major_version_than(other_version=other_version) == expected
 
 
 @dataclass
 class CacheEntry:
     error_code: Optional[str]
-    worker_version: Optional[str]
+    job_runner_version: Optional[int]
     dataset_git_revision: Optional[str]
     progress: Optional[float] = None
 
@@ -103,7 +94,7 @@ class CacheEntry:
             False,
             CacheEntry(
                 error_code="DoNotRetry",  # an error that we don't want to retry
-                worker_version=DummyJobRunner.get_version(),
+                job_runner_version=DummyJobRunner.get_job_runner_version(),
                 dataset_git_revision=DummyJobRunner._get_dataset_git_revision(),
             ),
             True,  # skip
@@ -112,7 +103,7 @@ class CacheEntry:
             False,
             CacheEntry(
                 error_code=None,  # no error
-                worker_version=DummyJobRunner.get_version(),
+                job_runner_version=DummyJobRunner.get_job_runner_version(),
                 dataset_git_revision=DummyJobRunner._get_dataset_git_revision(),
             ),
             True,  # skip
@@ -121,7 +112,7 @@ class CacheEntry:
             True,  # force
             CacheEntry(
                 error_code="DoNotRetry",
-                worker_version=DummyJobRunner.get_version(),
+                job_runner_version=DummyJobRunner.get_job_runner_version(),
                 dataset_git_revision=DummyJobRunner._get_dataset_git_revision(),
             ),
             False,  # process
@@ -135,7 +126,7 @@ class CacheEntry:
             False,
             CacheEntry(
                 error_code=ERROR_CODES_TO_RETRY[0],  # an error that we want to retry
-                worker_version=DummyJobRunner.get_version(),
+                job_runner_version=DummyJobRunner.get_job_runner_version(),
                 dataset_git_revision=DummyJobRunner._get_dataset_git_revision(),
             ),
             False,  # process
@@ -144,7 +135,7 @@ class CacheEntry:
             False,
             CacheEntry(
                 error_code="DoNotRetry",
-                worker_version=None,  # no version
+                job_runner_version=None,  # no version
                 dataset_git_revision=DummyJobRunner._get_dataset_git_revision(),
             ),
             False,  # process
@@ -153,7 +144,7 @@ class CacheEntry:
             False,
             CacheEntry(
                 error_code="DoNotRetry",
-                worker_version="0.0.1",  # a different version
+                job_runner_version=0,  # a different version
                 dataset_git_revision=DummyJobRunner._get_dataset_git_revision(),
             ),
             False,  # process
@@ -162,7 +153,7 @@ class CacheEntry:
             False,
             CacheEntry(
                 error_code="DoNotRetry",
-                worker_version=DummyJobRunner.get_version(),
+                job_runner_version=DummyJobRunner.get_job_runner_version(),
                 dataset_git_revision=None,  # no dataset git revision
             ),
             False,  # process
@@ -171,7 +162,7 @@ class CacheEntry:
             False,
             CacheEntry(
                 error_code="DoNotRetry",
-                worker_version=DummyJobRunner.get_version(),
+                job_runner_version=DummyJobRunner.get_job_runner_version(),
                 dataset_git_revision="different",  # a different dataset git revision
             ),
             False,  # process
@@ -229,7 +220,7 @@ def test_should_skip_job(
             http_status=HTTPStatus.OK,  # <- not important
             error_code=cache_entry.error_code,
             details=None,
-            worker_version=cache_entry.worker_version,
+            job_runner_version=cache_entry.job_runner_version,
             dataset_git_revision=cache_entry.dataset_git_revision,
             progress=cache_entry.progress,
         )

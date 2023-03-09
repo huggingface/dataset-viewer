@@ -177,8 +177,8 @@ class SizesJobRunner(JobRunner):
         return "/sizes"
 
     @staticmethod
-    def get_version() -> str:
-        return "1.0.0"
+    def get_job_runner_version() -> int:
+        return 1
 
     def compute(self) -> CompleteJobResult:
         return CompleteJobResult(compute_sizes_response(dataset=self.dataset))
