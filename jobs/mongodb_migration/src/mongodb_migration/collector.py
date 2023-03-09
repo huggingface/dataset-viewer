@@ -53,8 +53,6 @@ class MigrationsCollector:
             ),
             MigrationAddProgressToCacheResponse(
                 version="20230309123100",
-                description=(
-                    "add the 'progress' field with the default value (1.0) to the cached results"
-                ),
+                description="add the 'progress' field with the default value (1.0) to the cached results",
             ),
         ]
