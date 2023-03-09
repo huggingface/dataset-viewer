@@ -56,7 +56,7 @@ def check_histogram_metric(
 
 def test_step_profiler() -> None:
     duration = 0.1
-    method = "test"
+    method = "test_step_profiler"
     step_all = "all"
     context = "None"
     with StepProfiler(method=method, step=step_all):
@@ -66,7 +66,7 @@ def test_step_profiler() -> None:
 
 
 def test_nested_step_profiler() -> None:
-    method = "test"
+    method = "test_nested_step_profiler"
     step_all = "all"
     context = "None"
     step_1 = "step_1"
