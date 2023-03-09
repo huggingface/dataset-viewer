@@ -92,7 +92,6 @@ class CacheEntry:
     error_code: Optional[str]
     worker_version: Optional[str]
     dataset_git_revision: Optional[str]
-    complete: Optional[bool] = None
     progress: Optional[float] = None
 
 
