@@ -86,7 +86,6 @@ class CacheEntry:
     progress: Optional[float] = None
 
 
-# .get_version()
 @pytest.mark.parametrize(
     "force,cache_entry,expected_skip",
     [
