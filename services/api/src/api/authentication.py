@@ -9,6 +9,7 @@ from requests import PreparedRequest
 from requests.auth import AuthBase
 from starlette.requests import Request
 
+from api.prometheus import StepProfiler
 from api.utils import (
     AuthCheckHubRequestError,
     ExternalAuthenticatedError,
@@ -62,38 +63,47 @@ def auth_check(
     Returns:
         None: the dataset is authorized for the request
     """
-    if external_auth_url is None:
-        return True
-    try:
-        url = external_auth_url % dataset
-    except TypeError as e:
-        raise ValueError("external_auth_url must contain %s") from e
-    try:
-        logging.debug(
-            f"Checking authentication on the Hugging Face Hub for dataset {dataset}, url: {url}, timeout:"
-            f" {hf_timeout_seconds}"
-        )
-        response = requests.get(url, auth=RequestAuth(request), timeout=hf_timeout_seconds)
-    except Exception as err:
-        raise AuthCheckHubRequestError(
-            (
-                "Authentication check on the Hugging Face Hub failed or timed out. Please try again later, it's a"
-                " temporary internal issue."
-            ),
-            err,
-        ) from err
-
-    if response.status_code == 200:
-        return True
-    elif response.status_code == 401:
-        raise ExternalUnauthenticatedError(
-            "The dataset does not exist, or is not accessible without authentication (private or gated). Please check"
-            " the spelling of the dataset name or retry with authentication."
-        )
-    elif response.status_code in [403, 404]:
-        raise ExternalAuthenticatedError(
-            "The dataset does not exist, or is not accessible with the current credentials (private or gated). Please"
-            " check the spelling of the dataset name or retry with other authentication credentials."
-        )
-    else:
-        raise ValueError(f"Unexpected status code {response.status_code}")
+    with StepProfiler(method="auth_check", step="all"):
+        with StepProfiler(method="auth_check", step="prepare parameters"):
+            if external_auth_url is None:
+                return True
+            try:
+                url = external_auth_url % dataset
+            except TypeError as e:
+                raise ValueError("external_auth_url must contain %s") from e
+        with StepProfiler(method="auth_check", step="create auth parameter"):
+            auth = RequestAuth(request)
+        with StepProfiler(
+            method="auth_check",
+            step="requests.get",
+            context=f"external_auth_url={external_auth_url} timeout={hf_timeout_seconds}",
+        ):
+            try:
+                logging.debug(
+                    f"Checking authentication on the Hugging Face Hub for dataset {dataset}, url: {url}, timeout:"
+                    f" {hf_timeout_seconds}"
+                )
+                response = requests.get(url, auth=auth, timeout=hf_timeout_seconds)
+            except Exception as err:
+                raise AuthCheckHubRequestError(
+                    (
+                        "Authentication check on the Hugging Face Hub failed or timed out. Please try again later,"
+                        " it's a temporary internal issue."
+                    ),
+                    err,
+                ) from err
+        with StepProfiler(method="auth_check", step="return or raise"):
+            if response.status_code == 200:
+                return True
+            elif response.status_code == 401:
+                raise ExternalUnauthenticatedError(
+                    "The dataset does not exist, or is not accessible without authentication (private or gated)."
+                    " Please check the spelling of the dataset name or retry with authentication."
+                )
+            elif response.status_code in [403, 404]:
+                raise ExternalAuthenticatedError(
+                    "The dataset does not exist, or is not accessible with the current credentials (private or gated)."
+                    " Please check the spelling of the dataset name or retry with other authentication credentials."
+                )
+            else:
+                raise ValueError(f"Unexpected status code {response.status_code}")
