@@ -26,7 +26,7 @@ def test_metrics() -> None:
     metrics = {
         parts[0]: float(parts[1])
         for line in lines
-        if line and line[0] != "#" and len(parts := line.rsplit(" ", 1)) == 2
+        if line and line[0] != "#" and (parts := line.rsplit(" ", 1))
     }
     # see https://github.com/prometheus/client_python#multiprocess-mode-eg-gunicorn
     assert "process_start_time_seconds" not in metrics
