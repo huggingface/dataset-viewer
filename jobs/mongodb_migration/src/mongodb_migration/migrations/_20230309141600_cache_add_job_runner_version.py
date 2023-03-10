@@ -19,8 +19,18 @@ class MigrationAddJobRunnerVerionToCacheResponse(Migration):
         db["cachedResponsesBlue"].update_many(
             {"job_runner_version": {"$exists": False}},
             [
-                {"$set": {"job_runner_version": {"$toInt": {"$first": {"$split": ["$worker_version", "."]}}}}},
-                {"$unset": "worker_version"},
+                {
+                    "$set": {
+                        "job_runner_version": {
+                            "$convert": {
+                                "input": {"$first": {"$split": ["$worker_version", "."]}},
+                                "to": "int",
+                                "onError": None,
+                                "onNull": None,
+                            }
+                        }
+                    }
+                }
             ],  # type: ignore
         )
 

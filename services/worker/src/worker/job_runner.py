@@ -268,9 +268,6 @@ class JobRunner(ABC):
         self.create_children_jobs()
         return result
 
-    def is_major_version_than(self, other_version: Optional[int]) -> bool:
-        return other_version is None or self.get_job_runner_version() > other_version
-
     def get_dataset_git_revision(self) -> Optional[str]:
         """Get the git revision of the dataset repository."""
         return get_dataset_git_revision(
@@ -306,8 +303,9 @@ class JobRunner(ABC):
         if cached_response["error_code"] in ERROR_CODES_TO_RETRY:
             # the cache entry result was a temporary error - we process it
             return False
-        if cached_response["job_runner_version"] is None or self.is_major_version_than(
-            cached_response["job_runner_version"]
+        if (
+            cached_response["job_runner_version"] is None
+            or self.get_job_runner_version() > cached_response["job_runner_version"]
         ):
             return False
         if cached_response["progress"] is not None and cached_response["progress"] < 1.0:

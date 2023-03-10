@@ -82,13 +82,6 @@ def get_job_runner(
     return _get_job_runner
 
 
-def test_version(app_config: AppConfig, get_job_runner: GetJobRunner) -> None:
-    dataset, config, split = get_default_config_split("dataset")
-    job_runner = get_job_runner(dataset, config, split, app_config, False)
-    assert job_runner.is_major_version_than(other_version=0)
-    assert not job_runner.is_major_version_than(other_version=10)
-
-
 @pytest.mark.parametrize(
     "dataset,config,split,force,expected",
     [
