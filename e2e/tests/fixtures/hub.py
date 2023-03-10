@@ -5,7 +5,7 @@
 
 import time
 from contextlib import contextmanager, suppress
-from typing import Any, Callable, Iterator, Literal, Mapping, Optional, TypedDict, Union
+from typing import Any, Callable, Iterator, Literal, Mapping, Optional, TypedDict
 
 import pytest
 import requests
