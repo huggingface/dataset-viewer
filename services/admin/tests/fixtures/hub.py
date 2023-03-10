@@ -135,7 +135,7 @@ def create_hf_dataset_repo(
     prefix: str,
     *,
     private: bool = False,
-    gated: Optional[bool] = None,
+    gated: Optional[str] = None,
     user: str = CI_HUB_USER,
 ) -> str:
     repo_id = create_unique_repo_name(prefix, user)
