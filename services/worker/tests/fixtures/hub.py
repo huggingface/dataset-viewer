@@ -9,6 +9,7 @@ from pathlib import Path
 from typing import (
     Any,
     Callable,
+    Dict,
     Iterator,
     List,
     Literal,
@@ -16,6 +17,7 @@ from typing import (
     Optional,
     Tuple,
     TypedDict,
+    Union,
 )
 
 import pytest
@@ -91,7 +93,7 @@ def update_repo_settings(
 
     path = f"{path_prefix}{namespace}/{name}/settings"
 
-    json = {}
+    json: Dict[str, Union[bool, str]] = {}
     if private is not None:
         json["private"] = private
     if gated is not None:

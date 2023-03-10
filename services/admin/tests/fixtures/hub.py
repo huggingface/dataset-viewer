@@ -5,7 +5,7 @@
 
 import time
 from contextlib import contextmanager, suppress
-from typing import Any, Callable, Iterator, Literal, Optional, TypedDict
+from typing import Any, Callable, Dict, Iterator, Literal, Optional, TypedDict, Union
 
 import pytest
 import requests
@@ -75,7 +75,7 @@ def update_repo_settings(
 
     path = f"{path_prefix}{namespace}/{name}/settings"
 
-    json = {}
+    json: Dict[str, Union[bool, str]] = {}
     if private is not None:
         json["private"] = private
     if gated is not None:
