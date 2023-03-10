@@ -9,6 +9,7 @@ from pathlib import Path
 from typing import (
     Any,
     Callable,
+    Dict,
     Iterator,
     List,
     Literal,
@@ -16,6 +17,7 @@ from typing import (
     Optional,
     Tuple,
     TypedDict,
+    Union,
 )
 
 import pytest
@@ -41,7 +43,7 @@ def update_repo_settings(
     *,
     repo_id: str,
     private: Optional[bool] = None,
-    gated: Optional[bool] = None,
+    gated: Optional[str] = None,
     token: Optional[str] = None,
     organization: Optional[str] = None,
     repo_type: Optional[str] = None,
@@ -57,8 +59,9 @@ def update_repo_settings(
             </Tip>
         private (`bool`, *optional*, defaults to `None`):
             Whether the repo should be private.
-        gated (`bool`, *optional*, defaults to `None`):
+        gated (`str`, *optional*, defaults to `None`):
             Whether the repo should request user access.
+            Possible values are 'auto' and 'manual'
         token (`str`, *optional*):
             An authentication token (See https://huggingface.co/settings/token)
         repo_type (`str`, *optional*):
@@ -90,7 +93,7 @@ def update_repo_settings(
 
     path = f"{path_prefix}{namespace}/{name}/settings"
 
-    json = {}
+    json: Dict[str, Union[bool, str]] = {}
     if private is not None:
         json["private"] = private
     if gated is not None:
@@ -111,7 +114,7 @@ def create_hub_dataset_repo(
     file_paths: Optional[List[str]] = None,
     dataset: Optional[Dataset] = None,
     private: bool = False,
-    gated: bool = False,
+    gated: Optional[str] = None,
 ) -> str:
     dataset_name = f"{prefix}-{int(time.time() * 10e3)}"
     repo_id = f"{CI_USER}/{dataset_name}"
@@ -180,7 +183,7 @@ def hub_private_csv(csv_path: str) -> Iterator[str]:
 
 @pytest.fixture(scope="session")
 def hub_gated_csv(csv_path: str) -> Iterator[str]:
-    repo_id = create_hub_dataset_repo(prefix="csv_gated", file_paths=[csv_path], gated=True)
+    repo_id = create_hub_dataset_repo(prefix="csv_gated", file_paths=[csv_path], gated="auto")
     yield repo_id
     delete_hub_dataset_repo(repo_id=repo_id)
 
@@ -195,7 +198,7 @@ def hub_public_jsonl(jsonl_path: str) -> Iterator[str]:
 @pytest.fixture(scope="session")
 def hub_gated_extra_fields_csv(csv_path: str, extra_fields_readme: str) -> Iterator[str]:
     repo_id = create_hub_dataset_repo(
-        prefix="csv_extra_fields_gated", file_paths=[csv_path, extra_fields_readme], gated=True
+        prefix="csv_extra_fields_gated", file_paths=[csv_path, extra_fields_readme], gated="auto"
     )
     yield repo_id
     delete_hub_dataset_repo(repo_id=repo_id)
