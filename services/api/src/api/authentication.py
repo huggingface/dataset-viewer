@@ -1,16 +1,18 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2022 The HuggingFace Authors.
 
+import logging
 from typing import Literal, Optional
 
 import requests
-from requests import PreparedRequest, Timeout
+from requests import PreparedRequest
 from requests.auth import AuthBase
 from starlette.requests import Request
 
+from api.prometheus import StepProfiler
 from api.utils import (
+    AuthCheckHubRequestError,
     ExternalAuthenticatedError,
-    ExternalTimeoutError,
     ExternalUnauthenticatedError,
 )
 
@@ -39,7 +41,7 @@ def auth_check(
     dataset: str,
     external_auth_url: Optional[str] = None,
     request: Optional[Request] = None,
-    external_auth_timeout_seconds: Optional[float] = None,
+    hf_timeout_seconds: Optional[float] = None,
 ) -> Literal[True]:
     """check if the dataset is authorized for the request
 
@@ -55,38 +57,53 @@ def auth_check(
           If None, the dataset is always authorized.
         request (Request | None): the request which optionally bears authentication headers: "cookie" or
           "authorization"
-        external_auth_timeout_seconds (float|None): the timeout in seconds for the external authentication service. It
+        hf_timeout_seconds (float|None): the timeout in seconds for the external authentication service. It
           is used both for the connection timeout and the read timeout. If None, the request never timeouts.
 
     Returns:
         None: the dataset is authorized for the request
     """
-    if external_auth_url is None:
-        return True
-    try:
-        url = external_auth_url % dataset
-    except TypeError as e:
-        raise ValueError("external_auth_url must contain %s") from e
-    try:
-        response = requests.get(url, auth=RequestAuth(request), timeout=external_auth_timeout_seconds)
-    except Timeout as err:
-        raise ExternalTimeoutError(
-            "Authentication check timed out. Please try again later, it's a temporary internal issue.", err
-        ) from err
-    except Exception as err:
-        raise RuntimeError("External authentication check failed", err) from err
-
-    if response.status_code == 200:
-        return True
-    elif response.status_code == 401:
-        raise ExternalUnauthenticatedError(
-            "The dataset does not exist, or is not accessible without authentication (private or gated). Please check"
-            " the spelling of the dataset name or retry with authentication."
-        )
-    elif response.status_code in [403, 404]:
-        raise ExternalAuthenticatedError(
-            "The dataset does not exist, or is not accessible with the current credentials (private or gated). Please"
-            " check the spelling of the dataset name or retry with other authentication credentials."
-        )
-    else:
-        raise ValueError(f"Unexpected status code {response.status_code}")
+    with StepProfiler(method="auth_check", step="all"):
+        with StepProfiler(method="auth_check", step="prepare parameters"):
+            if external_auth_url is None:
+                return True
+            try:
+                url = external_auth_url % dataset
+            except TypeError as e:
+                raise ValueError("external_auth_url must contain %s") from e
+        with StepProfiler(method="auth_check", step="create auth parameter"):
+            auth = RequestAuth(request)
+        with StepProfiler(
+            method="auth_check",
+            step="requests.get",
+            context=f"external_auth_url={external_auth_url} timeout={hf_timeout_seconds}",
+        ):
+            try:
+                logging.debug(
+                    f"Checking authentication on the Hugging Face Hub for dataset {dataset}, url: {url}, timeout:"
+                    f" {hf_timeout_seconds}"
+                )
+                response = requests.get(url, auth=auth, timeout=hf_timeout_seconds)
+            except Exception as err:
+                raise AuthCheckHubRequestError(
+                    (
+                        "Authentication check on the Hugging Face Hub failed or timed out. Please try again later,"
+                        " it's a temporary internal issue."
+                    ),
+                    err,
+                ) from err
+        with StepProfiler(method="auth_check", step="return or raise"):
+            if response.status_code == 200:
+                return True
+            elif response.status_code == 401:
+                raise ExternalUnauthenticatedError(
+                    "The dataset does not exist, or is not accessible without authentication (private or gated)."
+                    " Please check the spelling of the dataset name or retry with authentication."
+                )
+            elif response.status_code in [403, 404]:
+                raise ExternalAuthenticatedError(
+                    "The dataset does not exist, or is not accessible with the current credentials (private or gated)."
+                    " Please check the spelling of the dataset name or retry with other authentication credentials."
+                )
+            else:
+                raise ValueError(f"Unexpected status code {response.status_code}")

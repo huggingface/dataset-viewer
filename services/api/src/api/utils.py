@@ -17,7 +17,7 @@ ApiErrorCode = Literal[
     "UnexpectedError",
     "ExternalUnauthenticatedError",
     "ExternalAuthenticatedError",
-    "ExternalTimeoutError",
+    "AuthCheckHubRequestError",
     "MissingProcessingStepsError",
 ]
 
@@ -82,12 +82,12 @@ class ExternalAuthenticatedError(ApiCustomError):
         super().__init__(message, HTTPStatus.NOT_FOUND, "ExternalAuthenticatedError")
 
 
-class ExternalTimeoutError(ApiCustomError):
-    """Raised when the external authentication check failed due to timeout."""
+class AuthCheckHubRequestError(ApiCustomError):
+    """Raised when the external authentication check failed or timed out."""
 
     def __init__(self, message: str, cause: Optional[BaseException] = None):
         super().__init__(
-            message, HTTPStatus.INTERNAL_SERVER_ERROR, "ExternalTimeoutError", cause=cause, disclose_cause=False
+            message, HTTPStatus.INTERNAL_SERVER_ERROR, "AuthCheckHubRequestError", cause=cause, disclose_cause=False
         )
 
 

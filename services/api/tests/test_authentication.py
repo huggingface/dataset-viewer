@@ -13,8 +13,8 @@ from starlette.requests import Request
 
 from api.authentication import auth_check
 from api.utils import (
+    AuthCheckHubRequestError,
     ExternalAuthenticatedError,
-    ExternalTimeoutError,
     ExternalUnauthenticatedError,
 )
 
@@ -31,7 +31,7 @@ def test_invalid_auth_check_url() -> None:
 
 
 def test_unreachable_external_auth_check_service() -> None:
-    with pytest.raises(RuntimeError):
+    with pytest.raises(AuthCheckHubRequestError):
         auth_check("dataset", external_auth_url="https://auth.check/%s")
 
 
@@ -68,27 +68,25 @@ def sleeping(_: werkzeug.wrappers.Request) -> werkzeug.wrappers.Response:
 
 
 @pytest.mark.parametrize(
-    "external_auth_timeout_seconds,expectation",
+    "hf_timeout_seconds,expectation",
     [
         (TIMEOUT_TIME * 2, does_not_raise()),
         (None, does_not_raise()),
-        (TIMEOUT_TIME / 2, pytest.raises(ExternalTimeoutError)),
+        (TIMEOUT_TIME / 2, pytest.raises(AuthCheckHubRequestError)),
     ],
 )
-def test_external_auth_timeout(
+def test_hf_timeout_seconds(
     httpserver: HTTPServer,
     hf_endpoint: str,
     hf_auth_path: str,
-    external_auth_timeout_seconds: Optional[float],
+    hf_timeout_seconds: Optional[float],
     expectation: Any,
 ) -> None:
     dataset = "dataset"
     external_auth_url = hf_endpoint + hf_auth_path
     httpserver.expect_request(hf_auth_path % dataset).respond_with_handler(func=sleeping)
     with expectation:
-        auth_check(
-            dataset, external_auth_url=external_auth_url, external_auth_timeout_seconds=external_auth_timeout_seconds
-        )
+        auth_check(dataset, external_auth_url=external_auth_url, hf_timeout_seconds=hf_timeout_seconds)
 
 
 def create_request(headers: Mapping[str, str]) -> Request:

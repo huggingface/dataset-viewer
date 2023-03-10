@@ -15,6 +15,7 @@ from starlette.responses import Response
 
 from api.authentication import auth_check
 from api.config import EndpointConfig
+from api.prometheus import StepProfiler
 from api.utils import (
     ApiCustomError,
     Endpoint,
@@ -202,60 +203,73 @@ def create_endpoint(
     hf_endpoint: str,
     hf_token: Optional[str] = None,
     external_auth_url: Optional[str] = None,
-    external_auth_timeout_seconds: Optional[float] = None,
+    hf_timeout_seconds: Optional[float] = None,
     max_age_long: int = 0,
     max_age_short: int = 0,
 ) -> Endpoint:
     async def processing_step_endpoint(request: Request) -> Response:
-        try:
-            # validating request parameters
-            dataset_parameter = request.query_params.get("dataset")
-            config_parameter = request.query_params.get("config")
-            split_parameter = request.query_params.get("split")
-            validators = get_input_type_validators_by_priority(steps_by_input_type=steps_by_input_type)
+        context = f"endpoint: {endpoint_name}"
+        with StepProfiler(method="processing_step_endpoint", step="all", context=context):
+            try:
+                with StepProfiler(
+                    method="processing_step_endpoint",
+                    step="validate parameters and get processing steps",
+                    context=context,
+                ):
+                    # validating request parameters
+                    dataset_parameter = request.query_params.get("dataset")
+                    config_parameter = request.query_params.get("config")
+                    split_parameter = request.query_params.get("split")
+                    validators = get_input_type_validators_by_priority(steps_by_input_type=steps_by_input_type)
 
-            logging.debug(
-                f"endpoint={endpoint_name} dataset={dataset_parameter} ",
-                f"config={config_parameter} split={split_parameter}",
-            )
+                    logging.debug(
+                        f"endpoint={endpoint_name} dataset={dataset_parameter} config={config_parameter}"
+                        + f" split={split_parameter}"
+                    )
 
-            validator = get_input_type_validator_by_parameters(
-                validators, dataset_parameter, config_parameter, split_parameter
-            )
-            processing_steps = steps_by_input_type[validator.input_type]
-            dataset, config, split = validator.get_useful_parameters(
-                dataset_parameter, config_parameter, split_parameter
-            )
+                    validator = get_input_type_validator_by_parameters(
+                        validators, dataset_parameter, config_parameter, split_parameter
+                    )
+                    processing_steps = steps_by_input_type[validator.input_type]
+                    dataset, config, split = validator.get_useful_parameters(
+                        dataset_parameter, config_parameter, split_parameter
+                    )
 
-            # for now, dataset is always required in the endpoints.
-            if not dataset:
-                raise MissingRequiredParameterError("Parameter 'dataset' is required")
+                # for now, dataset is always required in the endpoints.
+                if not dataset:
+                    raise MissingRequiredParameterError("Parameter 'dataset' is required")
 
-            # if auth_check fails, it will raise an exception that will be caught below
-            auth_check(
-                dataset,
-                external_auth_url=external_auth_url,
-                request=request,
-                external_auth_timeout_seconds=external_auth_timeout_seconds,
-            )
+                # if auth_check fails, it will raise an exception that will be caught below
+                with StepProfiler(method="processing_step_endpoint", step="check authentication", context=context):
+                    auth_check(
+                        dataset,
+                        external_auth_url=external_auth_url,
+                        request=request,
+                        hf_timeout_seconds=hf_timeout_seconds,
+                    )
 
-            # getting result based on processing steps
-            result = get_cache_entry_from_steps(
-                processing_steps, dataset, config, split, init_processing_steps, hf_endpoint, hf_token
-            )
+                # getting result based on processing steps
+                with StepProfiler(method="processing_step_endpoint", step="get cache entry", context=context):
+                    result = get_cache_entry_from_steps(
+                        processing_steps, dataset, config, split, init_processing_steps, hf_endpoint, hf_token
+                    )
 
-            content = result["content"]
-            http_status = result["http_status"]
-            error_code = result["error_code"]
-            if http_status == HTTPStatus.OK:
-                return get_json_ok_response(content=content, max_age=max_age_long)
+                content = result["content"]
+                http_status = result["http_status"]
+                error_code = result["error_code"]
+                if http_status == HTTPStatus.OK:
+                    with StepProfiler(method="processing_step_endpoint", step="generate OK response", context=context):
+                        return get_json_ok_response(content=content, max_age=max_age_long)
 
-            return get_json_error_response(
-                content=content, status_code=http_status, max_age=max_age_short, error_code=error_code
-            )
-        except ApiCustomError as e:
-            return get_json_api_error_response(error=e, max_age=max_age_short)
-        except Exception as e:
-            return get_json_api_error_response(error=UnexpectedError("Unexpected error.", e), max_age=max_age_short)
+                with StepProfiler(method="processing_step_endpoint", step="generate error response", context=context):
+                    return get_json_error_response(
+                        content=content, status_code=http_status, max_age=max_age_short, error_code=error_code
+                    )
+            except Exception as e:
+                error = e if isinstance(e, ApiCustomError) else UnexpectedError("Unexpected error.", e)
+                with StepProfiler(
+                    method="processing_step_endpoint", step="generate API error response", context=context
+                ):
+                    return get_json_api_error_response(error=error, max_age=max_age_short)
 
     return processing_step_endpoint
