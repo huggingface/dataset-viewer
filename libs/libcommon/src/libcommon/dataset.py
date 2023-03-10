@@ -145,6 +145,8 @@ def ask_access(
         r.raise_for_status()
     except requests.exceptions.HTTPError as err:
         if r.status_code == 400:
+            if r.headers and r.headers.get("X-Error-Code") == "RepoNotGated":
+                return  # the dataset is not gated
             raise GatedExtraFieldsError(
                 "The dataset is gated with extra fields: not supported at the moment."
             ) from err
