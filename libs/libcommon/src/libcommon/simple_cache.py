@@ -95,6 +95,7 @@ class CachedResponse(Document):
     http_status = EnumField(HTTPStatus, required=True)
     error_code = StringField()
     content = DictField(required=True)
+    worker_version = StringField()
     dataset_git_revision = StringField()
     progress = FloatField(min_value=0.0, max_value=1.0)
     job_runner_version = IntField()

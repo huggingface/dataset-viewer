@@ -5,7 +5,7 @@ from libcommon.resources import MongoResource
 from mongoengine.connection import get_db
 
 from mongodb_migration.migrations._20230309141600_cache_add_job_runner_version import (
-    MigrationAddJobRunnerVerionToCacheResponse,
+    MigrationAddJobRunnerVersionToCacheResponse,
 )
 
 
@@ -16,7 +16,7 @@ def test_cache_add_job_runner_version_without_worker_version(mongo_host: str) ->
         db["cachedResponsesBlue"].insert_many(
             [{"kind": "/splits", "dataset": "dataset_without_worker_version", "http_status": 200}]
         )
-        migration = MigrationAddJobRunnerVerionToCacheResponse(
+        migration = MigrationAddJobRunnerVersionToCacheResponse(
             version="20230309141600", description="add 'job_runner_version' field based on 'worker_version' value"
         )
         migration.up()
@@ -41,7 +41,7 @@ def test_cache_add_job_runner_version(mongo_host: str, worker_version: str, expe
         db["cachedResponsesBlue"].insert_many(
             [{"kind": "/splits", "dataset": "dataset", "http_status": 200, "worker_version": worker_version}]
         )
-        migration = MigrationAddJobRunnerVerionToCacheResponse(
+        migration = MigrationAddJobRunnerVersionToCacheResponse(
             version="20230309141600", description="add 'job_runner_version' field based on 'worker_version' value"
         )
         migration.up()
