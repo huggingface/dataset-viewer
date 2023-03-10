@@ -12,6 +12,10 @@
   # service
   - name: API_HF_AUTH_PATH
     value: {{ .Values.api.hfAuthPath | quote }}
+  - name: API_HF_JWT_PUBLIC_KEY_URL
+    value: {{ .Values.api.hfJwtPublicKeyUrl | quote }}
+  - name: API_HF_JWT_ALGORITHM
+    value: {{ .Values.api.hfJwtAlgorithm | quote }}
   - name: API_HF_TIMEOUT_SECONDS
     value: {{ .Values.api.hfTimeoutSeconds | quote }}
   - name: API_MAX_AGE_LONG

@@ -36,8 +36,9 @@ class UvicornConfig:
 
 
 API_EXTERNAL_AUTH_URL = None
-API_HF_AUTH_BYPASS_PUBLIC_KEY = None
 API_HF_AUTH_PATH = "/api/datasets/%s/auth-check"
+API_HF_JWT_PUBLIC_KEY_URL = None
+API_HF_JWT_ALGORITHM = "EdDSA"
 API_HF_TIMEOUT_SECONDS = 0.2
 API_MAX_AGE_LONG = 120  # 2 minutes
 API_MAX_AGE_SHORT = 10  # 10 seconds
@@ -46,8 +47,9 @@ API_MAX_AGE_SHORT = 10  # 10 seconds
 @dataclass(frozen=True)
 class ApiConfig:
     external_auth_url: Optional[str] = API_EXTERNAL_AUTH_URL  # not documented
-    hf_auth_bypass_public_key: Optional[str] = API_HF_AUTH_BYPASS_PUBLIC_KEY
     hf_auth_path: str = API_HF_AUTH_PATH
+    hf_jwt_public_key_url: Optional[str] = API_HF_JWT_PUBLIC_KEY_URL
+    hf_jwt_algorithm: Optional[str] = API_HF_JWT_ALGORITHM
     hf_timeout_seconds: Optional[float] = API_HF_TIMEOUT_SECONDS
     max_age_long: int = API_MAX_AGE_LONG
     max_age_short: int = API_MAX_AGE_SHORT
@@ -60,10 +62,8 @@ class ApiConfig:
             external_auth_url = None if hf_auth_path is None else f"{common_config.hf_endpoint}{hf_auth_path}"
             return cls(
                 external_auth_url=external_auth_url,
-                hf_auth_bypass_public_key=env.str(
-                    name="HF_AUTH_BYPASS_PUBLIC_KEY", default=API_HF_AUTH_BYPASS_PUBLIC_KEY
-                ),
                 hf_auth_path=hf_auth_path,
+                hf_jwt_public_key_url=env.str(name="HF_JWT_PUBLIC_KEY_URL", default=API_HF_JWT_PUBLIC_KEY_URL),
                 hf_timeout_seconds=env.float(name="HF_TIMEOUT_SECONDS", default=API_HF_TIMEOUT_SECONDS),
                 max_age_long=env.int(name="MAX_AGE_LONG", default=API_MAX_AGE_LONG),
                 max_age_short=env.int(name="MAX_AGE_SHORT", default=API_MAX_AGE_SHORT),

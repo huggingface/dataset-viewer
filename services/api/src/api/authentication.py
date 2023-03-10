@@ -2,14 +2,14 @@
 # Copyright 2022 The HuggingFace Authors.
 
 import logging
-from typing import Literal, Optional
+from typing import Any, Literal, Optional
 
-import jwt
 import requests
 from requests import PreparedRequest
 from requests.auth import AuthBase
 from starlette.requests import Request
 
+from api.jwt_token import is_jwt_valid
 from api.prometheus import StepProfiler
 from api.utils import (
     AuthCheckHubRequestError,
@@ -38,25 +38,12 @@ class RequestAuth(AuthBase):
         return r
 
 
-def is_jwt_valid(request: Optional[Request], public_key: Optional[str]) -> bool:
-    if not request or not public_key:
-        return False
-    encoded = request.headers.get("x-api-key")
-    if not encoded:
-        return False
-    try:
-        jwt.decode(jwt=encoded, key=public_key, algorithms=["RS256"])
-        # ^ we're not interested in the contents of the JWT token, we just want to check that it's valid
-    except Exception:
-        return False
-    return True
-
-
 def auth_check(
     dataset: str,
     external_auth_url: Optional[str] = None,
     request: Optional[Request] = None,
-    external_auth_bypass_public_key: Optional[str] = None,
+    hf_jwt_public_key: Optional[Any] = None,
+    hf_jwt_algorithm: Optional[str] = None,
     hf_timeout_seconds: Optional[float] = None,
 ) -> Literal[True]:
     """check if the dataset is authorized for the request
@@ -73,7 +60,8 @@ def auth_check(
           If None, the dataset is always authorized.
         request (Request | None): the request which optionally bears authentication headers: "cookie",
           "authorization" or "X-Api-Key"
-        external_auth_bypass_public_key (str|None): the public key to use to decode the JWT token
+        hf_jwt_public_key (Any|None): the public key to use to decode the JWT token
+        hf_jwt_algorithm (str): the algorithm to use to decode the JWT token
         hf_timeout_seconds (float|None): the timeout in seconds for the external authentication service. It
           is used both for the connection timeout and the read timeout. If None, the request never timeouts.
 
@@ -82,8 +70,12 @@ def auth_check(
     """
     with StepProfiler(method="auth_check", step="all"):
         with StepProfiler(method="auth_check", step="prepare parameters"):
-            if is_jwt_valid(request=request, public_key=external_auth_bypass_public_key):
-                return True
+            if request:
+                token = request.headers.get("x-api-key")
+                if token and is_jwt_valid(
+                    dataset=dataset, token=token, public_key=hf_jwt_public_key, algorithm=hf_jwt_algorithm
+                ):
+                    return True
             if external_auth_url is None:
                 return True
             try:

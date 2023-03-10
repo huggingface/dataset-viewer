@@ -13,6 +13,7 @@ from starlette.routing import Route
 from starlette_prometheus import PrometheusMiddleware
 
 from api.config import AppConfig, EndpointConfig, UvicornConfig
+from api.jwt_token import fetch_jwt_public_key
 from api.prometheus import Prometheus
 from api.routes.endpoint import EndpointsDefinition, create_endpoint
 from api.routes.healthcheck import healthcheck_endpoint
@@ -36,6 +37,15 @@ def create_app_with_config(app_config: AppConfig, endpoint_config: EndpointConfi
     endpoints_definition = EndpointsDefinition(processing_graph, endpoint_config)
     processing_steps_required_by_dataset_viewer = processing_graph.get_steps_required_by_dataset_viewer()
     init_processing_steps = processing_graph.get_first_steps()
+    hf_jwt_public_key = (
+        fetch_jwt_public_key(
+            url=app_config.api.hf_jwt_public_key_url,
+            hf_jwt_algorithm=app_config.api.hf_jwt_algorithm,
+            hf_timeout_seconds=app_config.api.hf_timeout_seconds,
+        )
+        if app_config.api.hf_jwt_public_key_url and app_config.api.hf_jwt_algorithm
+        else None
+    )
 
     middleware = [
         Middleware(
@@ -62,7 +72,7 @@ def create_app_with_config(app_config: AppConfig, endpoint_config: EndpointConfi
                 init_processing_steps=init_processing_steps,
                 hf_endpoint=app_config.common.hf_endpoint,
                 hf_token=app_config.common.hf_token,
-                external_auth_bypass_public_key=app_config.api.hf_auth_bypass_public_key,
+                hf_jwt_public_key=hf_jwt_public_key,
                 external_auth_url=app_config.api.external_auth_url,
                 hf_timeout_seconds=app_config.api.hf_timeout_seconds,
                 max_age_long=app_config.api.max_age_long,
@@ -82,7 +92,7 @@ def create_app_with_config(app_config: AppConfig, endpoint_config: EndpointConfi
         Route(
             "/is-valid",
             endpoint=create_is_valid_endpoint(
-                external_auth_bypass_public_key=app_config.api.hf_auth_bypass_public_key,
+                hf_jwt_public_key=hf_jwt_public_key,
                 external_auth_url=app_config.api.external_auth_url,
                 hf_timeout_seconds=app_config.api.hf_timeout_seconds,
                 processing_steps_for_valid=processing_steps_required_by_dataset_viewer,
