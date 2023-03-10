@@ -41,7 +41,7 @@ def update_repo_settings(
     *,
     repo_id: str,
     private: Optional[bool] = None,
-    gated: Optional[bool] = None,
+    gated: Optional[str] = None,
     token: Optional[str] = None,
     organization: Optional[str] = None,
     repo_type: Optional[str] = None,
@@ -57,8 +57,9 @@ def update_repo_settings(
             </Tip>
         private (`bool`, *optional*, defaults to `None`):
             Whether the repo should be private.
-        gated (`bool`, *optional*, defaults to `None`):
+        gated (`str`, *optional*, defaults to `None`):
             Whether the repo should request user access.
+            Possible values are 'auto' and 'manual'
         token (`str`, *optional*):
             An authentication token (See https://huggingface.co/settings/token)
         repo_type (`str`, *optional*):
