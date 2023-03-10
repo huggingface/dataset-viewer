@@ -111,7 +111,7 @@ def create_hub_dataset_repo(
     file_paths: Optional[List[str]] = None,
     dataset: Optional[Dataset] = None,
     private: bool = False,
-    gated: bool = False,
+    gated: Optional[str] = None,
 ) -> str:
     dataset_name = f"{prefix}-{int(time.time() * 10e3)}"
     repo_id = f"{CI_USER}/{dataset_name}"
@@ -180,7 +180,7 @@ def hub_private_csv(csv_path: str) -> Iterator[str]:
 
 @pytest.fixture(scope="session")
 def hub_gated_csv(csv_path: str) -> Iterator[str]:
-    repo_id = create_hub_dataset_repo(prefix="csv_gated", file_paths=[csv_path], gated=True)
+    repo_id = create_hub_dataset_repo(prefix="csv_gated", file_paths=[csv_path], gated="auto")
     yield repo_id
     delete_hub_dataset_repo(repo_id=repo_id)
 
@@ -195,7 +195,7 @@ def hub_public_jsonl(jsonl_path: str) -> Iterator[str]:
 @pytest.fixture(scope="session")
 def hub_gated_extra_fields_csv(csv_path: str, extra_fields_readme: str) -> Iterator[str]:
     repo_id = create_hub_dataset_repo(
-        prefix="csv_extra_fields_gated", file_paths=[csv_path, extra_fields_readme], gated=True
+        prefix="csv_extra_fields_gated", file_paths=[csv_path, extra_fields_readme], gated="auto"
     )
     yield repo_id
     delete_hub_dataset_repo(repo_id=repo_id)

@@ -5,7 +5,7 @@
 
 import time
 from contextlib import contextmanager, suppress
-from typing import Any, Callable, Iterator, Literal, Mapping, Optional, TypedDict
+from typing import Any, Callable, Iterator, Literal, Mapping, Optional, TypedDict, Union
 
 import pytest
 import requests
@@ -29,7 +29,7 @@ def update_repo_settings(
     repo_id: str,
     *,
     private: Optional[bool] = None,
-    gated: Optional[bool] = None,
+    gated: Optional[str] = None,
     token: Optional[str] = None,
     organization: Optional[str] = None,
     repo_type: Optional[str] = None,
@@ -45,8 +45,9 @@ def update_repo_settings(
             </Tip>
         private (`bool`, *optional*, defaults to `None`):
             Whether the repo should be private.
-        gated (`bool`, *optional*, defaults to `None`):
+        gated (`str`, *optional*, defaults to `None`):
             Whether the repo should request user access.
+            Possible values are 'auto' and 'manual'
         token (`str`, *optional*):
             An authentication token (See https://huggingface.co/settings/token)
         repo_type (`str`, *optional*):
@@ -129,7 +130,13 @@ def create_unique_repo_name(prefix: str, user: str) -> str:
 
 
 def create_hf_dataset_repo_csv_data(
-    hf_api: HfApi, hf_token: str, csv_path: str, *, private: bool = False, gated: bool = False, user: str = CI_HUB_USER
+    hf_api: HfApi,
+    hf_token: str,
+    csv_path: str,
+    *,
+    private: bool = False,
+    gated: Optional[str] = None,
+    user: str = CI_HUB_USER,
 ) -> str:
     repo_id = create_unique_repo_name("repo_csv_data", user)
     hf_api.create_repo(repo_id=repo_id, token=hf_token, repo_type="dataset", private=private)
@@ -172,7 +179,7 @@ def hf_private_dataset_repo_csv_data(hf_api: HfApi, hf_token: str, csv_path: str
 
 @pytest.fixture(scope="session", autouse=True)
 def hf_gated_dataset_repo_csv_data(hf_api: HfApi, hf_token: str, csv_path: str) -> Iterator[str]:
-    repo_id = create_hf_dataset_repo_csv_data(hf_api=hf_api, hf_token=hf_token, csv_path=csv_path, gated=True)
+    repo_id = create_hf_dataset_repo_csv_data(hf_api=hf_api, hf_token=hf_token, csv_path=csv_path, gated="auto")
     yield repo_id
     with suppress(requests.exceptions.HTTPError, ValueError):
         hf_api.delete_repo(repo_id=repo_id, token=hf_token, repo_type="dataset")

@@ -130,7 +130,13 @@ def create_unique_repo_name(prefix: str, user: str) -> str:
 
 
 def create_hf_dataset_repo(
-    hf_api: HfApi, hf_token: str, prefix: str, *, private: bool = False, gated: bool = False, user: str = CI_HUB_USER
+    hf_api: HfApi,
+    hf_token: str,
+    prefix: str,
+    *,
+    private: bool = False,
+    gated: Optional[str] = None,
+    user: str = CI_HUB_USER,
 ) -> str:
     repo_id = create_unique_repo_name(prefix, user)
     hf_api.create_repo(repo_id=repo_id, token=hf_token, repo_type="dataset", private=private)
@@ -150,7 +156,7 @@ def hf_public_dataset_repo_empty(hf_api: HfApi, hf_token: str) -> Iterator[str]:
 
 @pytest.fixture(scope="session", autouse=True)
 def hf_gated_dataset_repo_empty(hf_api: HfApi, hf_token: str) -> Iterator[str]:
-    repo_id = create_hf_dataset_repo(hf_api=hf_api, hf_token=hf_token, prefix="repo_empty", gated=True)
+    repo_id = create_hf_dataset_repo(hf_api=hf_api, hf_token=hf_token, prefix="repo_empty", gated="auto")
     yield repo_id
     with suppress(requests.exceptions.HTTPError, ValueError):
         hf_api.delete_repo(repo_id=repo_id, token=hf_token, repo_type="dataset")
