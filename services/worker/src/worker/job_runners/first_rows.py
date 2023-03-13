@@ -647,7 +647,7 @@ class FirstRowsJobRunner(DatasetsBasedJobRunner):
 
     @staticmethod
     def get_job_runner_version() -> int:
-        return 2
+        return PROCESSING_STEP_FIRST_ROWS_VERSION
 
     def __init__(
         self,
