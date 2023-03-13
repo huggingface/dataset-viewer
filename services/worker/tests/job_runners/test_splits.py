@@ -124,7 +124,7 @@ def test_compute_splits_response_simple_csv(
         False,
     )
     if error_code is None:
-        result = job_runner.compute()
+        result = job_runner.compute().content
         assert result == expected_splits_response
         return
 

@@ -117,7 +117,7 @@ def test_compute_split_names_from_streaming_response(
         False,
     )
     if error_code is None:
-        result = job_runner.compute()
+        result = job_runner.compute().content
         assert result == expected_configs_response
         return
 

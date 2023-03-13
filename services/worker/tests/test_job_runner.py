@@ -10,7 +10,7 @@ from libcommon.resources import CacheMongoResource, QueueMongoResource
 from libcommon.simple_cache import CachedResponse, SplitFullName, upsert_response
 
 from worker.config import WorkerConfig
-from worker.job_runner import ERROR_CODES_TO_RETRY, JobRunner
+from worker.job_runner import ERROR_CODES_TO_RETRY, CompleteJobResult, JobRunner
 
 
 @pytest.fixture(autouse=True)
@@ -39,8 +39,8 @@ class DummyJobRunner(JobRunner):
     def get_version() -> str:
         return "1.0.1"
 
-    def compute(self) -> Mapping[str, Any]:
-        return {"key": "value"}
+    def compute(self) -> CompleteJobResult:
+        return CompleteJobResult({"key": "value"})
 
     def get_new_splits(self, content: Mapping[str, Any]) -> set[SplitFullName]:
         return {SplitFullName(self.dataset, "config", "split1"), SplitFullName(self.dataset, "config", "split2")}
@@ -92,6 +92,7 @@ class CacheEntry:
     error_code: Optional[str]
     worker_version: Optional[str]
     dataset_git_revision: Optional[str]
+    progress: Optional[float] = None
 
 
 # .get_version()
@@ -175,6 +176,26 @@ class CacheEntry:
             ),
             False,  # process
         ),
+        (
+            False,
+            CacheEntry(
+                error_code=None,  # no error
+                worker_version=DummyJobRunner.get_version(),
+                dataset_git_revision=DummyJobRunner._get_dataset_git_revision(),
+                progress=0.5,  # incomplete result
+            ),
+            False,  # process
+        ),
+        (
+            False,
+            CacheEntry(
+                error_code=None,  # no error
+                worker_version=DummyJobRunner.get_version(),
+                dataset_git_revision=DummyJobRunner._get_dataset_git_revision(),
+                progress=1.0,  # complete result
+            ),
+            True,  # skip
+        ),
     ],
 )
 def test_should_skip_job(
@@ -210,6 +231,7 @@ def test_should_skip_job(
             details=None,
             worker_version=cache_entry.worker_version,
             dataset_git_revision=cache_entry.dataset_git_revision,
+            progress=cache_entry.progress,
         )
     assert job_runner.should_skip_job() is expected_skip
 

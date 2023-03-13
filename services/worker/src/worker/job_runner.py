@@ -3,6 +3,7 @@
 
 import logging
 from abc import ABC, abstractmethod
+from dataclasses import dataclass, field
 from http import HTTPStatus
 from typing import Any, Literal, Mapping, Optional
 
@@ -36,6 +37,22 @@ GeneralJobRunnerErrorCode = Literal[
 
 # List of error codes that should trigger a retry.
 ERROR_CODES_TO_RETRY: list[str] = ["ClientConnectionError"]
+
+
+@dataclass
+class JobResult:
+    content: Mapping[str, Any]
+    progress: float
+
+    def __post_init__(self) -> None:
+        if self.progress < 0.0 or self.progress > 1.0:
+            raise ValueError(f"Progress should be between 0 and 1, but got {self.progress}")
+
+
+@dataclass
+class CompleteJobResult(JobResult):
+    content: Mapping[str, Any]
+    progress: float = field(init=False, default=1.0)
 
 
 class JobRunnerError(CustomError):
@@ -289,6 +306,7 @@ class JobRunner(ABC):
         - and the cached entry has been created with the same git commit of the dataset repository
         - and the cached entry has been created with the same major version of the job runner
         - and the cached entry, if an error, is not among the list of errors that should trigger a retry
+        - and the cached entry is complete (has a progress of 1.)
 
         Returns:
             :obj:`bool`: True if the job should be skipped, False otherwise.
@@ -314,6 +332,10 @@ class JobRunner(ABC):
             # note: the collection field is named "worker_version" for historical reasons, it might be renamed
             #   "job_runner_version" in the future.
             return False
+        if cached_response["progress"] is not None and cached_response["progress"] < 1.0:
+            # this job is still waiting for more inputs to be complete - we should not skip it.
+            # this can happen with fan-in jobs
+            return False
         try:
             dataset_git_revision = self.get_dataset_git_revision()
         except Exception:
@@ -334,7 +356,8 @@ class JobRunner(ABC):
                 raise NoGitRevisionError(f"Could not get git revision for dataset {self.dataset}")
             try:
                 self.pre_compute()
-                content = self.compute()
+                job_result = self.compute()
+                content = job_result.content
 
                 # Validate content size
                 if len(orjson_dumps(content)) > self.worker_config.content_max_bytes:
@@ -354,6 +377,7 @@ class JobRunner(ABC):
                 http_status=HTTPStatus.OK,
                 worker_version=self.get_version(),
                 dataset_git_revision=dataset_git_revision,
+                progress=job_result.progress,
             )
             self.debug(f"dataset={self.dataset} config={self.config} split={self.split} is valid, cache updated")
             return True
@@ -393,7 +417,7 @@ class JobRunner(ABC):
         pass
 
     @abstractmethod
-    def compute(self) -> Mapping[str, Any]:
+    def compute(self) -> JobResult:
         pass
 
     # should be overridden if the job has children jobs of type "split"
