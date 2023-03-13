@@ -266,6 +266,8 @@ def get_dataset_info_or_raise(
         raise DatasetNotFoundError("The dataset does not exist on the Hub.") from err
     except RevisionNotFoundError as err:
         raise DatasetRevisionNotFoundError("The dataset revision does not exist on the Hub.") from err
+    if dataset_info.private:
+        raise DatasetNotFoundError("The dataset does not exist on the Hub.")
     return dataset_info
 
 
