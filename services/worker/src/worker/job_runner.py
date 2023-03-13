@@ -306,6 +306,7 @@ class JobRunner(ABC):
         - and the cached entry has been created with the same git commit of the dataset repository
         - and the cached entry has been created with the same major version of the job runner
         - and the cached entry, if an error, is not among the list of errors that should trigger a retry
+        - and the cached entry is complete (has a progress of 1.)
 
         Returns:
             :obj:`bool`: True if the job should be skipped, False otherwise.

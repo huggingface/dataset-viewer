@@ -80,7 +80,7 @@ class CachedResponse(Document):
         updated_at (`datetime`): When the cache entry has been last updated.
         worker_version (`str`): The semver version of the worker that cached the response.
         dataset_git_revision (`str`): The commit (of the git dataset repo) used to generate the response.
-        progress (`float`): Progress percentage if the result is not complete yet.
+        progress (`float`): Progress percentage (between 0. and 1.) if the result is not complete yet.
     """
 
     id = ObjectIdField(db_field="_id", primary_key=True, default=ObjectId)
