@@ -20,6 +20,9 @@ from mongodb_migration.migrations._20230216112500_cache_split_names_from_streami
 from mongodb_migration.migrations._20230216141000_queue_split_names_from_streaming import (
     MigrationQueueUpdateSplitNames,
 )
+from mongodb_migration.migrations._20230309123100_cache_add_progress import (
+    MigrationAddProgressToCacheResponse,
+)
 
 
 # TODO: add a way to automatically collect migrations from the migrations/ folder
@@ -47,5 +50,9 @@ class MigrationsCollector:
                 description=(
                     "update 'type' and 'unicity_id' fields in job from /split-names to /split-names-from-streaming"
                 ),
+            ),
+            MigrationAddProgressToCacheResponse(
+                version="20230309123100",
+                description="add the 'progress' field with the default value (1.0) to the cached results",
             ),
         ]

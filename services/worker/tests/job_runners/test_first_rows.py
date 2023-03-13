@@ -156,7 +156,7 @@ def test_number_rows(
         False,
     )
     if error_code is None:
-        result = job_runner.compute()
+        result = job_runner.compute().content
         assert result == expected_first_rows_response
         return
     with pytest.raises(CustomError) as exc_info:
@@ -222,5 +222,5 @@ def test_truncation(
             job_runner.compute()
         assert error_info.value.code == error_code
     else:
-        response = job_runner.compute()
+        response = job_runner.compute().content
         assert get_json_size(response) <= rows_max_bytes

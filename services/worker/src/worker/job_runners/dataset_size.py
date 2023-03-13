@@ -8,7 +8,7 @@ from typing import Any, Literal, Mapping, Optional, TypedDict
 from libcommon.dataset import DatasetNotFoundError
 from libcommon.simple_cache import DoesNotExist, SplitFullName, get_response
 
-from worker.job_runner import JobRunner, JobRunnerError
+from worker.job_runner import CompleteJobResult, JobRunner, JobRunnerError
 from worker.job_runners.config_size import ConfigSize, SplitSize, ConfigSizeResponse
 
 SizesJobRunnerErrorCode = Literal[
@@ -163,8 +163,8 @@ class DatasetSizeJobRunner(JobRunner):
     def get_version() -> str:
         return "1.0.0"
 
-    def compute(self) -> Mapping[str, Any]:
-        return compute_sizes_response(dataset=self.dataset)
+    def compute(self) -> CompleteJobResult:
+        return CompleteJobResult(compute_sizes_response(dataset=self.dataset))
 
     def get_new_splits(self, content: Mapping[str, Any]) -> set[SplitFullName]:
         """Get the set of new splits, from the content created by the compute."""

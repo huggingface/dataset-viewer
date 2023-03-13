@@ -45,7 +45,7 @@ from libcommon.queue import JobInfo
 from libcommon.simple_cache import SplitFullName
 
 from worker.config import AppConfig, ParquetAndDatasetInfoConfig
-from worker.job_runner import JobRunnerError
+from worker.job_runner import CompleteJobResult, JobRunnerError
 from worker.job_runners._datasets_based_job_runner import DatasetsBasedJobRunner
 
 ParquetAndDatasetInfoJobRunnerErrorCode = Literal[
@@ -886,20 +886,22 @@ class ParquetAndDatasetInfoJobRunner(DatasetsBasedJobRunner):
         )
         self.parquet_and_dataset_info_config = parquet_and_dataset_info_config
 
-    def compute(self) -> Mapping[str, Any]:
-        return compute_parquet_and_dataset_info_response(
-            dataset=self.dataset,
-            hf_endpoint=self.common_config.hf_endpoint,
-            hf_token=self.common_config.hf_token,
-            committer_hf_token=self.parquet_and_dataset_info_config.committer_hf_token,
-            source_revision=self.parquet_and_dataset_info_config.source_revision,
-            target_revision=self.parquet_and_dataset_info_config.target_revision,
-            commit_message=self.parquet_and_dataset_info_config.commit_message,
-            url_template=self.parquet_and_dataset_info_config.url_template,
-            supported_datasets=self.parquet_and_dataset_info_config.supported_datasets,
-            blocked_datasets=self.parquet_and_dataset_info_config.blocked_datasets,
-            max_dataset_size=self.parquet_and_dataset_info_config.max_dataset_size,
-            max_external_data_files=self.parquet_and_dataset_info_config.max_external_data_files,
+    def compute(self) -> CompleteJobResult:
+        return CompleteJobResult(
+            compute_parquet_and_dataset_info_response(
+                dataset=self.dataset,
+                hf_endpoint=self.common_config.hf_endpoint,
+                hf_token=self.common_config.hf_token,
+                committer_hf_token=self.parquet_and_dataset_info_config.committer_hf_token,
+                source_revision=self.parquet_and_dataset_info_config.source_revision,
+                target_revision=self.parquet_and_dataset_info_config.target_revision,
+                commit_message=self.parquet_and_dataset_info_config.commit_message,
+                url_template=self.parquet_and_dataset_info_config.url_template,
+                supported_datasets=self.parquet_and_dataset_info_config.supported_datasets,
+                blocked_datasets=self.parquet_and_dataset_info_config.blocked_datasets,
+                max_dataset_size=self.parquet_and_dataset_info_config.max_dataset_size,
+                max_external_data_files=self.parquet_and_dataset_info_config.max_external_data_files,
+            )
         )
 
     def get_new_splits(self, content: Mapping[str, Any]) -> set[SplitFullName]:
