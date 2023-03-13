@@ -5,6 +5,7 @@ from typing import Any, Optional
 
 import jwt
 import requests
+from jsonschema import ValidationError, validate
 
 from api.utils import JWKError
 
@@ -63,11 +64,25 @@ def fetch_jwt_public_key(
         raise JWKError(f"Failed to fetch or parse the JWT public key from {url}. ", cause=err) from err
 
 
+sub_schema = {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "type": "object",
+    "properties": {
+        "repoName": {"type": "string"},
+        "repoType": {"type": "string", "enum": ["dataset"]},
+        "read": {"type": "boolean", "enum": [True]},
+    },
+    "required": ["repoName", "repoType", "read"],
+}
+
+
 def is_jwt_valid(dataset: str, token: Any, public_key: Optional[Any], algorithm: Optional[str]) -> bool:
     """
-    Check if the JWT is valid for the input dataset.
+    Check if the JWT is valid for the dataset.
 
-    The JWT is decoded with the public key, and the "sub" claim must be equal to the input dataset identifier.
+    The JWT is decoded with the public key, and the "sub" claim must be:
+      {"repoName": <...>, "repoType": "dataset", "read": true}
+    where <...> is the dataset identifier.
 
     Returns True only if all the conditions are met. Else, it returns False.
 
@@ -88,4 +103,10 @@ def is_jwt_valid(dataset: str, token: Any, public_key: Optional[Any], algorithm:
         print(err)
         return False
     sub = decoded.get("sub")
-    return isinstance(sub, str) and sub == dataset
+    try:
+        validate(instance=sub, schema=sub_schema)
+    except ValidationError:
+        return False
+    repo_name: str = sub["repoName"]  # type: ignore
+    # ^ the type is ensured by the JSON schema
+    return repo_name == dataset

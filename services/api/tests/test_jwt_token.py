@@ -63,7 +63,13 @@ wrong_dataset = "wrong_dataset"
 exp = datetime.datetime.now().timestamp() + 1000
 wrong_exp_1 = datetime.datetime.now().timestamp() - 1000
 wrong_exp_2 = 1
-payload_ok = {"sub": dataset_ok, "exp": exp}
+sub_ok = {"repoName": dataset_ok, "repoType": "dataset", "read": True}
+sub_wrong_format_1 = dataset_ok
+sub_wrong_format_2 = {"repoName": dataset_ok}
+sub_wrong_value_1 = {"repoName": wrong_dataset, "repoType": "dataset", "read": True}
+sub_wrong_value_2 = {"repoName": dataset_ok, "repoType": "model", "read": True}
+sub_wrong_value_3 = {"repoName": dataset_ok, "repoType": "dataset", "read": False}
+payload_ok = {"sub": sub_ok, "exp": exp}
 algorithm_rs256 = "RS256"
 
 
@@ -78,6 +84,11 @@ algorithm_rs256 = "RS256"
         (public_key, {"sub": wrong_dataset, "exp": exp}, False),
         (public_key, {"sub": dataset_ok, "exp": wrong_exp_1}, False),
         (public_key, {"sub": dataset_ok, "exp": wrong_exp_2}, False),
+        (public_key, {"sub": sub_wrong_format_1, "exp": exp}, False),
+        (public_key, {"sub": sub_wrong_format_2, "exp": exp}, False),
+        (public_key, {"sub": sub_wrong_value_1, "exp": exp}, False),
+        (public_key, {"sub": sub_wrong_value_2, "exp": exp}, False),
+        (public_key, {"sub": sub_wrong_value_3, "exp": exp}, False),
         (public_key, payload_ok, True),
     ],
 )
