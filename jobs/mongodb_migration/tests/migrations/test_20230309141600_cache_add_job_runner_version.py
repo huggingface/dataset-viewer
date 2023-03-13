@@ -1,5 +1,7 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2022 The HuggingFace Authors.
+from typing import Optional
+
 import pytest
 from libcommon.resources import MongoResource
 from mongoengine.connection import get_db
