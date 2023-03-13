@@ -12,12 +12,12 @@ from libcommon.storage import StrPath
 from worker.config import AppConfig, FirstRowsConfig, ParquetAndDatasetInfoConfig
 from worker.job_runner import JobRunner
 from worker.job_runners.config_names import ConfigNamesJobRunner
+from worker.job_runners.config_size import ConfigSizeJobRunner
 from worker.job_runners.dataset_info import DatasetInfoJobRunner
+from worker.job_runners.dataset_size import DatasetSizeJobRunner
 from worker.job_runners.first_rows import FirstRowsJobRunner
 from worker.job_runners.parquet import ParquetJobRunner
 from worker.job_runners.parquet_and_dataset_info import ParquetAndDatasetInfoJobRunner
-from worker.job_runners.dataset_size import DatasetSizeJobRunner
-from worker.job_runners.config_size import ConfigSizeJobRunner
 from worker.job_runners.split_names_from_dataset_info import (
     SplitNamesFromDatasetInfoJobRunner,
 )
