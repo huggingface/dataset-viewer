@@ -372,7 +372,7 @@ class CacheInfo(TypedDict):
     split: Optional[str]
 
 
-def get_cache_with_minor_version_for_kind(kind: str, current_version: str) -> List[CacheInfo]:
+def get_split_full_names_with_lower_version_for_kind(kind: str, current_version: str) -> List[SplitFullName]:
     responses = CachedResponse.objects(kind=kind, worker_version__lt=current_version).only(
         "dataset", "config", "split"
     )

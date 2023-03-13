@@ -18,7 +18,7 @@ def refresh_cache(processing_steps: List[ProcessingStep], processing_graph_confi
         logging.info(
             (
                 f"processing_step={processing_step.cache_kind} ",
-                f"current_version={current_version} cache_records={len(cache_records)}",
+                f"{len(cache_records)} cache entries are outdated for processing_step={processing_step.cache_kind} (version {current_version}). Creating jobs to update them.",
             )
         )
 
