@@ -869,8 +869,8 @@ class ParquetAndDatasetInfoJobRunner(DatasetsBasedJobRunner):
         return "/parquet-and-dataset-info"
 
     @staticmethod
-    def get_version() -> str:
-        return "1.1.0"
+    def get_job_runner_version() -> int:
+        return 1
 
     def __init__(
         self,

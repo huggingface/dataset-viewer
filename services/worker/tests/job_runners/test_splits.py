@@ -76,7 +76,7 @@ def test_process(app_config: AppConfig, hub_public_csv: str, get_job_runner: Get
     cached_response = get_response(kind=job_runner.processing_step.cache_kind, dataset=hub_public_csv)
     assert cached_response["http_status"] == HTTPStatus.OK
     assert cached_response["error_code"] is None
-    assert cached_response["worker_version"] == job_runner.get_version()
+    assert cached_response["job_runner_version"] == job_runner.get_job_runner_version()
     assert cached_response["dataset_git_revision"] is not None
     assert cached_response["error_code"] is None
     content = cached_response["content"]
