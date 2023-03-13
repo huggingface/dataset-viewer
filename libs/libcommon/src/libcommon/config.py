@@ -107,46 +107,46 @@ class QueueConfig:
 class ProcessingGraphConfig:
     specification: ProcessingGraphSpecification = field(
         default_factory=lambda: {
-            "/config-names": {"input_type": "dataset", "version": PROCESSING_STEP_CONFIG_NAMES_VERSION},
+            "/config-names": {"input_type": "dataset", "job_runner_version": PROCESSING_STEP_CONFIG_NAMES_VERSION},
             "/split-names-from-streaming": {
                 "input_type": "config",
                 "requires": "/config-names",
-                "version": PROCESSING_STEP_SPLIT_NAMES_FROM_STREAMING_VERSION,
+                "job_runner_version": PROCESSING_STEP_SPLIT_NAMES_FROM_STREAMING_VERSION,
             },
             "/splits": {
                 "input_type": "dataset",
                 "required_by_dataset_viewer": True,
-                "version": PROCESSING_STEP_SPLITS_VERSION,
+                "job_runner_version": PROCESSING_STEP_SPLITS_VERSION,
             },  # to be deprecated
             "/first-rows": {
                 "input_type": "split",
                 "requires": "/split-names-from-streaming",
                 "required_by_dataset_viewer": True,
-                "version": PROCESSING_STEP_FIRST_ROWS_VERSION,
+                "job_runner_version": PROCESSING_STEP_FIRST_ROWS_VERSION,
             },
             "/parquet-and-dataset-info": {
                 "input_type": "dataset",
-                "version": PROCESSING_STEP_PARQUET_AND_DATASET_INFO_VERSION,
+                "job_runner_version": PROCESSING_STEP_PARQUET_AND_DATASET_INFO_VERSION,
             },
             "/parquet": {
                 "input_type": "dataset",
                 "requires": "/parquet-and-dataset-info",
-                "version": PROCESSING_STEP_PARQUET_VERSION,
+                "job_runner_version": PROCESSING_STEP_PARQUET_VERSION,
             },
             "/dataset-info": {
                 "input_type": "dataset",
                 "requires": "/parquet-and-dataset-info",
-                "version": PROCESSING_STEP_DATASET_INFO_VERSION,
+                "job_runner_version": PROCESSING_STEP_DATASET_INFO_VERSION,
             },
             "/split-names-from-dataset-info": {
                 "input_type": "config",
                 "requires": "/dataset-info",
-                "version": PROCESSING_STEP_SPLIT_NAMES_FROM_DATASET_INFO_VERSION,
+                "job_runner_version": PROCESSING_STEP_SPLIT_NAMES_FROM_DATASET_INFO_VERSION,
             },
             "/sizes": {
                 "input_type": "dataset",
                 "requires": "/parquet-and-dataset-info",
-                "version": PROCESSING_STEP_SIZES_VERSION,
+                "job_runner_version": PROCESSING_STEP_SIZES_VERSION,
             },
             "config-parquet": {"input_type": "config", "requires": "/parquet-and-dataset-info"},
             "dataset-parquet": {"input_type": "dataset", "requires": "config-parquet"},

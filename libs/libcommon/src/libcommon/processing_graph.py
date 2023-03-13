@@ -17,7 +17,7 @@ class _ProcessingStepSpecification(TypedDict):
 class ProcessingStepSpecification(_ProcessingStepSpecification, total=False):
     requires: Optional[str]
     required_by_dataset_viewer: Literal[True]
-    version: str
+    job_runner_version: int
 
 
 @dataclass
@@ -41,6 +41,7 @@ class ProcessingStep:
     parent: Optional[ProcessingStep]
     ancestors: List[ProcessingStep]
     children: List[ProcessingStep]
+    job_runner_version: int
 
     @property
     def endpoint(self) -> str:
@@ -101,6 +102,7 @@ class ProcessingGraph:
                 parent=None,
                 ancestors=[],
                 children=[],
+                job_runner_version=specification["job_runner_version"],
             )
             for name, specification in processing_graph_specification.items()
         }

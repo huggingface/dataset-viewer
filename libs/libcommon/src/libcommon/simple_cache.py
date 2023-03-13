@@ -366,22 +366,12 @@ def get_cache_reports(kind: str, cursor: Optional[str], limit: int) -> CacheRepo
     }
 
 
-class CacheInfo(TypedDict):
-    dataset: str
-    config: Optional[str]
-    split: Optional[str]
-
-
-def get_split_full_names_with_lower_version_for_kind(kind: str, current_version: str) -> List[SplitFullName]:
+def get_outdated_split_full_names_for_step(kind: str, current_version: int) -> List[SplitFullName]:
     responses = CachedResponse.objects(kind=kind, worker_version__lt=current_version).only(
         "dataset", "config", "split"
     )
     return [
-        {
-            "dataset": response.dataset,
-            "config": response.config,
-            "split": response.split,
-        }
+        SplitFullName(dataset=response.dataset, config=response.config, split=response.split)
         for response in responses
     ]
 

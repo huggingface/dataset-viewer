@@ -41,7 +41,7 @@ def run_job() -> None:
         processing_graph_config = ProcessingGraphConfig.from_env()
         processing_graph = ProcessingGraph(processing_graph_config.specification)
         processing_steps = list(processing_graph.steps.values())
-        refresh_cache(processing_steps, processing_graph_config)
+        refresh_cache(processing_steps)
 
 
 if __name__ == "__main__":
