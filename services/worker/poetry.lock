@@ -4535,7 +4535,44 @@ files = [
 ]
 
 [[package]]
-name = "tensorflow"
+name = "tensorflow-aarch64"
+version = "2.11.0"
+description = "TensorFlow is an open source machine learning framework for everyone."
+category = "main"
+optional = false
+python-versions = ">=3.7"
+files = [
+    {file = "tensorflow_aarch64-2.11.0-cp310-cp310-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:f0e562ea7dc9f9c02f3c0df27ff8e561d4dccd42fe9d42b1b9536bbc555db560"},
+    {file = "tensorflow_aarch64-2.11.0-cp37-cp37m-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:5e0e915cfcba6d629ef9f2de78152836f94819041ff38b4ee6ac31f18e2137ce"},
+    {file = "tensorflow_aarch64-2.11.0-cp38-cp38-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:b9f5139d57dee505c8f5b94bc17b99f75e51399ec4cf09c51ef6a71b1b099ea2"},
+    {file = "tensorflow_aarch64-2.11.0-cp39-cp39-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:97b6dbfb1307f76d54f8ddc4bddc1ad2470e00c6c457f962e12de8be4f59b7f6"},
+]
+
+[package.dependencies]
+absl-py = ">=1.0.0"
+astunparse = ">=1.6.0"
+flatbuffers = ">=2.0"
+gast = ">=0.2.1,<=0.4.0"
+google-pasta = ">=0.1.1"
+grpcio = ">=1.24.3,<2.0"
+h5py = ">=2.9.0"
+keras = ">=2.11.0,<2.12"
+libclang = ">=13.0.0"
+numpy = ">=1.20"
+opt-einsum = ">=2.3.2"
+packaging = "*"
+protobuf = ">=3.9.2,<3.20"
+setuptools = "*"
+six = ">=1.12.0"
+tensorboard = ">=2.11,<2.12"
+tensorflow-estimator = ">=2.11.0,<2.12"
+tensorflow-io-gcs-filesystem = {version = ">=0.23.1", markers = "platform_machine != \"arm64\" or platform_system != \"Darwin\""}
+termcolor = ">=1.1.0"
+typing-extensions = ">=3.6.6"
+wrapt = ">=1.11.0"
+
+[[package]]
+name = "tensorflow-cpu"
 version = "2.11.0"
 description = "TensorFlow is an open source machine learning framework for everyone."
 category = "main"
@@ -5547,4 +5584,4 @@ cffi = ["cffi (>=1.11)"]
 [metadata]
 lock-version = "2.0"
 python-versions = "3.9.15"
-content-hash = "8a1e569f72882646c18f5a9a19a29f281ad7724f538c31ad6e2f156c5a88beed"
+content-hash = "f3944a99f45c8d6f063ec218eb246c3c6ef4015d6f633350ec026948efd54549"
