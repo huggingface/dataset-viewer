@@ -164,6 +164,7 @@ def get_dataset_info_for_supported_datasets(
     hf_endpoint: str,
     hf_token: Optional[str] = None,
     hf_timeout_seconds: Optional[float] = None,
+    allow_recursive_call: bool = True,
 ) -> DatasetInfo:
     """
     Get the DatasetInfo of the dataset, after checking if it's supported (no private datasets).
@@ -177,6 +178,8 @@ def get_dataset_info_for_supported_datasets(
             An authentication token (See https://huggingface.co/settings/token)
         hf_timeout_seconds (`float`, *optional*, defaults to None):
             The timeout in seconds for the request to the Hub.
+        allow_recursive_call (`bool`, *optional*, defaults to True):
+            If True, the function will be called again in case of success after asking for access
     Returns:
         `DatasetInfo`: the dataset info.
     <Tip>
@@ -201,7 +204,17 @@ def get_dataset_info_for_supported_datasets(
             repo_id=dataset, token=hf_token, timeout=hf_timeout_seconds
         )
     except RepositoryNotFoundError:
-        ask_access(dataset=dataset, hf_endpoint=hf_endpoint, hf_token=hf_token, hf_timeout_seconds=hf_timeout_seconds)
+        if allow_recursive_call:
+            ask_access(
+                dataset=dataset, hf_endpoint=hf_endpoint, hf_token=hf_token, hf_timeout_seconds=hf_timeout_seconds
+            )
+            return get_dataset_info_for_supported_datasets(
+                dataset=dataset,
+                hf_endpoint=hf_endpoint,
+                hf_token=hf_token,
+                hf_timeout_seconds=hf_timeout_seconds,
+                allow_recursive_call=False,
+            )
     except RevisionNotFoundError as err:
         raise DatasetNotFoundError(
             f"The default branch cannot be found in dataset {dataset} on the Hub.", cause=err
