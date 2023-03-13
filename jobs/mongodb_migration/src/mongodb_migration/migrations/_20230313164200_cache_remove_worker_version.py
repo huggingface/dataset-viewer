@@ -13,7 +13,6 @@ from mongodb_migration.migration import IrreversibleMigration, Migration
 # connection already occurred in the main.py (caveat: we use globals)
 class MigrationRemoveWorkerVersionFromCachedResponse(Migration):
     def up(self) -> None:
-        # See https://docs.mongoengine.org/guide/migration.html#example-1-addition-of-a-field
         logging.info("Removing 'worker_version' field.")
         db = get_db("cache")
         db["cachedResponsesBlue"].update_many({}, {"$unset": {"worker_version": ""}})
