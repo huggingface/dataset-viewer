@@ -94,7 +94,7 @@ class MissingInfoForConfigError(ConfigSizeJobRunnerError):
 
 def compute_config_size_response(dataset: str, config: str) -> ConfigSizeResponse:
     """
-    Get the response of /sizes for one specific dataset and config on huggingface.co.
+    Get the response of /config-size for one specific dataset and config on huggingface.co.
     Args:
         dataset (`str`):
             A namespace (user or an organization) and a repo name separated

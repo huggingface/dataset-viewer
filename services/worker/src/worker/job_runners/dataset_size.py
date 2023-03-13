@@ -76,13 +76,13 @@ class PreviousStepFormatError(DatasetSizeJobRunnerError):
 
 def compute_sizes_response(dataset: str) -> Tuple[DatasetSizeResponse, float]:
     """
-    Get the response of /sizes for one specific dataset on huggingface.co.
+    Get the response of /dataset-size for one specific dataset on huggingface.co.
     Args:
         dataset (`str`):
             A namespace (user or an organization) and a repo name separated
             by a `/`.
     Returns:
-        `SizesResponse`: An object with the sizes_response.
+        `DatasetSizeResponse`: An object with the sizes_response.
     <Tip>
     Raises the following errors:
         - [`~job_runners.dataset_size.PreviousStepStatusError`]
