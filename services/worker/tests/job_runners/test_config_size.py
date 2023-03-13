@@ -12,10 +12,10 @@ from libcommon.resources import CacheMongoResource, QueueMongoResource
 from libcommon.simple_cache import upsert_response
 
 from worker.config import AppConfig
-from worker.job_runners.dataset_size import (
+from worker.job_runners.config_size import (
+    ConfigSizeJobRunner,
     PreviousStepFormatError,
     PreviousStepStatusError,
-    SizesJobRunner,
 )
 
 
@@ -25,7 +25,7 @@ def prepare_and_clean_mongo(app_config: AppConfig) -> None:
     pass
 
 
-GetJobRunner = Callable[[str, AppConfig, bool], SizesJobRunner]
+GetJobRunner = Callable[[str, str, AppConfig, bool], ConfigSizeJobRunner]
 
 
 @pytest.fixture
@@ -35,14 +35,15 @@ def get_job_runner(
 ) -> GetJobRunner:
     def _get_job_runner(
         dataset: str,
+        config: str,
         app_config: AppConfig,
         force: bool = False,
-    ) -> SizesJobRunner:
-        return SizesJobRunner(
+    ) -> ConfigSizeJobRunner:
+        return ConfigSizeJobRunner(
             job_info={
-                "type": SizesJobRunner.get_job_type(),
+                "type": ConfigSizeJobRunner.get_job_type(),
                 "dataset": dataset,
-                "config": None,
+                "config": config,
                 "split": None,
                 "job_id": "job_id",
                 "force": force,
@@ -51,8 +52,8 @@ def get_job_runner(
             common_config=app_config.common,
             worker_config=app_config.worker,
             processing_step=ProcessingStep(
-                name=SizesJobRunner.get_job_type(),
-                input_type="dataset",
+                name=ConfigSizeJobRunner.get_job_type(),
+                input_type="config",
                 requires=None,
                 required_by_dataset_viewer=False,
                 parent=None,
@@ -65,10 +66,11 @@ def get_job_runner(
 
 
 @pytest.mark.parametrize(
-    "dataset,upstream_status,upstream_content,expected_error_code,expected_content,should_raise",
+    "dataset,config,upstream_status,upstream_content,expected_error_code,expected_content,should_raise",
     [
         (
             "dataset_ok",
+            "config_1",
             HTTPStatus.OK,
             {
                 "parquet_files": [
@@ -160,34 +162,16 @@ def get_job_runner(
             },
             None,
             {
-                "sizes": {
-                    "dataset": {
+                "size": {
+                    "config": {
                         "dataset": "dataset_ok",
-                        "num_bytes_original_files": 21507144,
-                        "num_bytes_parquet_files": 19057017,
-                        "num_bytes_memory": 20394144,
-                        "num_rows": 74000,
+                        "config": "config_1",
+                        "num_bytes_original_files": 11594722,
+                        "num_bytes_parquet_files": 16665091,
+                        "num_bytes_memory": 20387232,
+                        "num_rows": 70000,
+                        "num_columns": 2,
                     },
-                    "configs": [
-                        {
-                            "dataset": "dataset_ok",
-                            "config": "config_1",
-                            "num_bytes_original_files": 11594722,
-                            "num_bytes_parquet_files": 16665091,
-                            "num_bytes_memory": 20387232,
-                            "num_rows": 70000,
-                            "num_columns": 2,
-                        },
-                        {
-                            "dataset": "dataset_ok",
-                            "config": "config_2",
-                            "num_bytes_original_files": 9912422,
-                            "num_bytes_parquet_files": 2391926,
-                            "num_bytes_memory": 6912,
-                            "num_rows": 4000,
-                            "num_columns": 3,
-                        },
-                    ],
                     "splits": [
                         {
                             "dataset": "dataset_ok",
@@ -207,32 +191,23 @@ def get_job_runner(
                             "num_rows": 10000,
                             "num_columns": 2,
                         },
-                        {
-                            "dataset": "dataset_ok",
-                            "config": "config_2",
-                            "split": "train",
-                            "num_bytes_parquet_files": 8023,
-                            "num_bytes_memory": 5678,
-                            "num_rows": 3000,
-                            "num_columns": 3,
-                        },
-                        {
-                            "dataset": "dataset_ok",
-                            "config": "config_2",
-                            "split": "test",
-                            "num_bytes_parquet_files": 2383903,
-                            "num_bytes_memory": 1234,
-                            "num_rows": 1000,
-                            "num_columns": 3,
-                        },
                     ],
                 }
             },
             False,
         ),
-        ("status_error", HTTPStatus.NOT_FOUND, {"error": "error"}, PreviousStepStatusError.__name__, None, True),
+        (
+            "status_error",
+            "config_1",
+            HTTPStatus.NOT_FOUND,
+            {"error": "error"},
+            PreviousStepStatusError.__name__,
+            None,
+            True,
+        ),
         (
             "format_error",
+            "config_1",
             HTTPStatus.OK,
             {"not_dataset_info": "wrong_format"},
             PreviousStepFormatError.__name__,
@@ -245,6 +220,7 @@ def test_compute(
     app_config: AppConfig,
     get_job_runner: GetJobRunner,
     dataset: str,
+    config: str,
     upstream_status: HTTPStatus,
     upstream_content: Any,
     expected_error_code: str,
@@ -254,7 +230,7 @@ def test_compute(
     upsert_response(
         kind="/parquet-and-dataset-info", dataset=dataset, content=upstream_content, http_status=upstream_status
     )
-    job_runner = get_job_runner(dataset, app_config, False)
+    job_runner = get_job_runner(dataset, config, app_config, False)
     if should_raise:
         with pytest.raises(Exception) as e:
             job_runner.compute()
@@ -264,7 +240,7 @@ def test_compute(
 
 
 def test_doesnotexist(app_config: AppConfig, get_job_runner: GetJobRunner) -> None:
-    dataset = "doesnotexist"
-    job_runner = get_job_runner(dataset, app_config, False)
+    dataset = config = "doesnotexist"
+    job_runner = get_job_runner(dataset, config, app_config, False)
     with pytest.raises(DatasetNotFoundError):
         job_runner.compute()
