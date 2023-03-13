@@ -4,7 +4,7 @@
 import logging
 from abc import ABC, abstractmethod
 from http import HTTPStatus
-from typing import List, Mapping, Optional, Tuple
+from typing import Any, List, Mapping, Optional, Tuple
 
 from libcommon.dataset import DatasetError
 from libcommon.operations import PreviousStepError, check_in_process
@@ -202,6 +202,7 @@ def create_endpoint(
     init_processing_steps: List[ProcessingStep],
     hf_endpoint: str,
     hf_token: Optional[str] = None,
+    hf_jwt_public_key: Optional[Any] = None,
     external_auth_url: Optional[str] = None,
     hf_timeout_seconds: Optional[float] = None,
     max_age_long: int = 0,
@@ -245,9 +246,9 @@ def create_endpoint(
                         dataset,
                         external_auth_url=external_auth_url,
                         request=request,
+                        hf_jwt_public_key=hf_jwt_public_key,
                         hf_timeout_seconds=hf_timeout_seconds,
                     )
-
                 # getting result based on processing steps
                 with StepProfiler(method="processing_step_endpoint", step="get cache entry", context=context):
                     result = get_cache_entry_from_steps(

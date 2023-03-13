@@ -3,13 +3,16 @@
 
 import time
 from contextlib import nullcontext as does_not_raise
-from typing import Any, Mapping, Optional
+from typing import Any, Dict, Mapping, Optional
 
+import jwt
 import pytest
 import werkzeug.wrappers
 from pytest_httpserver import HTTPServer
 from starlette.datastructures import Headers
 from starlette.requests import Request
+from werkzeug.wrappers import Request as WerkzeugRequest
+from werkzeug.wrappers import Response as WerkzeugResponse
 
 from api.authentication import auth_check
 from api.utils import (
@@ -18,6 +21,13 @@ from api.utils import (
     ExternalUnauthenticatedError,
 )
 
+from .test_jwt_token import (
+    algorithm_rs256,
+    dataset_ok,
+    payload_ok,
+    private_key,
+    public_key,
+)
 from .utils import auth_callback
 
 
@@ -127,4 +137,41 @@ def test_valid_responses_with_request(
             dataset,
             external_auth_url=external_auth_url,
             request=create_request(headers=headers),
+        )
+
+
+def raise_value_error(request: WerkzeugRequest) -> WerkzeugResponse:
+    return WerkzeugResponse(status=500)  # <- will raise ValueError in auth_check
+
+
+@pytest.mark.parametrize(
+    "hf_jwt_public_key,header,payload,expectation",
+    [
+        (None, None, payload_ok, pytest.raises(ValueError)),
+        (None, "X-Api-Key", payload_ok, pytest.raises(ValueError)),
+        (public_key, None, payload_ok, pytest.raises(ValueError)),
+        (public_key, "X-Api-Key", {}, pytest.raises(ValueError)),
+        (public_key, "X-Api-Key", payload_ok, does_not_raise()),
+        (public_key, "x-api-key", payload_ok, does_not_raise()),
+    ],
+)
+def test_bypass_auth_public_key(
+    httpserver: HTTPServer,
+    hf_endpoint: str,
+    hf_auth_path: str,
+    hf_jwt_public_key: Optional[str],
+    header: Optional[str],
+    payload: Dict[str, str],
+    expectation: Any,
+) -> None:
+    external_auth_url = hf_endpoint + hf_auth_path
+    httpserver.expect_request(hf_auth_path % dataset_ok).respond_with_handler(raise_value_error)
+    headers = {header: jwt.encode(payload, private_key, algorithm=algorithm_rs256)} if header else {}
+    with expectation:
+        auth_check(
+            dataset=dataset_ok,
+            external_auth_url=external_auth_url,
+            request=create_request(headers=headers),
+            hf_jwt_public_key=hf_jwt_public_key,
+            hf_jwt_algorithm=algorithm_rs256,
         )
