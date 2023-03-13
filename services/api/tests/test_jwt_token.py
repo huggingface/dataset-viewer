@@ -8,7 +8,7 @@ from typing import Any, Dict, Optional
 import jwt
 import pytest
 
-from api.jwt_token import is_jwt_valid, parse_jwk
+from api.jwt_token import is_jwt_valid, parse_jwt_public_key
 
 HUB_JWT_KEYS = [{"crv": "Ed25519", "x": "-RBhgyNluwaIL5KFJb6ZOL2H1nmyI8mW4Z2EHGDGCXM", "kty": "OKP"}]
 UNSUPPORTED_ALGORITHM_JWT_KEYS = [
@@ -36,7 +36,7 @@ def test_parse_jwk(
     expectation: Any,
 ) -> None:
     with expectation:
-        parse_jwk(json, hf_jwt_algorithm="EdDSA")
+        parse_jwt_public_key(json, hf_jwt_algorithm="EdDSA")
 
 
 private_key = """-----BEGIN RSA PRIVATE KEY-----

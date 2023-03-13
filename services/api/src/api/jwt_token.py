@@ -9,7 +9,7 @@ import requests
 from api.utils import JWKError
 
 
-def parse_jwk(
+def parse_jwt_public_key(
     json: Any,
     hf_jwt_algorithm: str,
 ) -> Any:
@@ -58,7 +58,7 @@ def fetch_jwt_public_key(
     try:
         response = requests.get(url, timeout=hf_timeout_seconds)
         response.raise_for_status()
-        return parse_jwk(json=response.json(), hf_jwt_algorithm=hf_jwt_algorithm)
+        return parse_jwt_public_key(json=response.json(), hf_jwt_algorithm=hf_jwt_algorithm)
     except Exception as err:
         raise JWKError(f"Failed to fetch or parse the JWT public key from {url}. ", cause=err) from err
 
