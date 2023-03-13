@@ -24,7 +24,7 @@ UNSUPPORTED_ALGORITHM_JWT_KEYS = [
 
 
 @pytest.mark.parametrize(
-    "json,expectation",
+    "keys,expectation",
     [
         (HUB_JWT_KEYS, does_not_raise()),
         ([], pytest.raises(Exception)),
@@ -32,11 +32,11 @@ UNSUPPORTED_ALGORITHM_JWT_KEYS = [
     ],
 )
 def test_parse_jwk(
-    json: Any,
+    keys: Any,
     expectation: Any,
 ) -> None:
     with expectation:
-        parse_jwt_public_key(json, hf_jwt_algorithm="EdDSA")
+        parse_jwt_public_key(keys=keys, hf_jwt_algorithm="EdDSA")
 
 
 private_key = """-----BEGIN RSA PRIVATE KEY-----

@@ -1,19 +1,56 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2022 The HuggingFace Authors.
 
-from typing import Any, Optional
+from typing import Any, Optional, Union
 
 import jwt
 import requests
+from cryptography.hazmat.primitives import serialization
+from cryptography.hazmat.primitives.asymmetric.ec import (
+    EllipticCurvePrivateKey,
+    EllipticCurvePublicKey,
+)
+from cryptography.hazmat.primitives.asymmetric.ed448 import (
+    Ed448PrivateKey,
+    Ed448PublicKey,
+)
+from cryptography.hazmat.primitives.asymmetric.ed25519 import (
+    Ed25519PrivateKey,
+    Ed25519PublicKey,
+)
+from cryptography.hazmat.primitives.asymmetric.rsa import RSAPrivateKey, RSAPublicKey
 from jsonschema import ValidationError, validate
+from jwt.algorithms import (
+    ECAlgorithm,
+    HMACAlgorithm,
+    OKPAlgorithm,
+    RSAAlgorithm,
+    RSAPSSAlgorithm,
+)
 
 from api.utils import JWKError
 
+ASYMMETRIC_ALGORITHMS = (ECAlgorithm, OKPAlgorithm, RSAAlgorithm, RSAPSSAlgorithm)
+SYMMETRIC_ALGORITHMS = (HMACAlgorithm,)
 
-def parse_jwt_public_key(
-    json: Any,
-    hf_jwt_algorithm: str,
-) -> Any:
+
+def is_public_key(
+    key: Union[
+        EllipticCurvePublicKey,
+        EllipticCurvePrivateKey,
+        Ed25519PublicKey,
+        Ed448PublicKey,
+        Ed25519PrivateKey,
+        Ed448PrivateKey,
+        RSAPrivateKey,
+        RSAPublicKey,
+    ]
+) -> Union[EllipticCurvePublicKey, Ed25519PublicKey, Ed448PublicKey, RSAPublicKey]:
+    return hasattr(key, "public_bytes")  # type: ignore
+    # ^ type: ignore could be removed by using TypeGuard. But it requires Python 3.10
+
+
+def parse_jwt_public_key(keys: Any, hf_jwt_algorithm: str) -> Any:
     """parse the input JSON to extract the public key
 
     Note that the return type is Any in order not to enter in too much details. See
@@ -21,7 +58,7 @@ def parse_jwt_public_key(
     In our case, the type should be cryptography.hazmat.backends.openssl.ed25519._Ed25519PublicKey
 
     Args:
-        json (Any): the JSON to parse
+        keys (Any): the JSON to parse
         hf_jwt_algorithm (str): the JWT algorithm to use.
 
     Returns:
@@ -29,13 +66,25 @@ def parse_jwt_public_key(
     """
     try:
         expected_algorithm = jwt.get_algorithm_by_name(hf_jwt_algorithm)
+        if not isinstance(expected_algorithm, (*ASYMMETRIC_ALGORITHMS, *SYMMETRIC_ALGORITHMS)):
+            raise NotImplementedError()
     except NotImplementedError as err:
-        raise RuntimeError(f"Invalid algorithm for JWT verification: {hf_jwt_algorithm}") from err
+        raise RuntimeError(f"Invalid algorithm for JWT verification: {hf_jwt_algorithm} is not supported") from err
 
+    if not isinstance(keys, list):
+        raise ValueError("Payload from moon must be a list of JWK formatted keys.")
     try:
-        return expected_algorithm.from_jwk(json[0])
+        key = expected_algorithm.from_jwk(keys[0])
+        if not isinstance(expected_algorithm, ASYMMETRIC_ALGORITHMS):
+            return key.decode("utf-8")
+        if not is_public_key(key):
+            raise RuntimeError("Failed to parse JWT key: the provided key is a private key")
+        return key.public_bytes(
+            encoding=serialization.Encoding.PEM,
+            format=serialization.PublicFormat.SubjectPublicKeyInfo,
+        ).decode("utf-8")
     except (jwt.InvalidKeyError, KeyError) as err:
-        raise RuntimeError("Failed to parse JWT key") from err
+        raise RuntimeError(f"Failed to parse JWT key: {err.args[0]}") from err
 
 
 def fetch_jwt_public_key(
@@ -59,7 +108,7 @@ def fetch_jwt_public_key(
     try:
         response = requests.get(url, timeout=hf_timeout_seconds)
         response.raise_for_status()
-        return parse_jwt_public_key(json=response.json(), hf_jwt_algorithm=hf_jwt_algorithm)
+        return parse_jwt_public_key(keys=response.json(), hf_jwt_algorithm=hf_jwt_algorithm)
     except Exception as err:
         raise JWKError(f"Failed to fetch or parse the JWT public key from {url}. ", cause=err) from err
 
