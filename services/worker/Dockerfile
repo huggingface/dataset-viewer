@@ -16,7 +16,7 @@ ENV PYTHONFAULTHANDLER=1 \
 
 # System deps:
 RUN apt-get update \
-    && apt-get install -y build-essential unzip wget python3-dev make \
+    && apt-get install -y build-essential unzip wget make \
     libicu-dev ffmpeg libavcodec-extra libsndfile1 llvm pkg-config \
     poppler-utils \
     && rm -rf /var/lib/apt/lists/*
