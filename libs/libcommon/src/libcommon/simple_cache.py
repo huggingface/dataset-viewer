@@ -185,7 +185,6 @@ def get_response_without_content(
         "error_code": response.error_code,
         "dataset_git_revision": response.dataset_git_revision,
         "progress": response.progress,
-        "job_runner_version": response.job_runner_version,
     }
 
 

@@ -30,7 +30,7 @@ from mongodb_migration.migrations._20230309123100_cache_add_progress import (
     MigrationAddProgressToCacheResponse,
 )
 from mongodb_migration.migrations._20230309141600_cache_add_job_runner_version import (
-    MigrationAddJobRunnerVerionToCacheResponse,
+    MigrationAddJobRunnerVersionToCacheResponse,
 )
 
 

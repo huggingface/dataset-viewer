@@ -138,7 +138,7 @@ class CacheEntry:
             False,
             CacheEntry(
                 error_code=None,  # no error
-                worker_version=DummyJobRunner.get_version(),
+                job_runner_version=DummyJobRunner.get_job_runner_version(),
                 dataset_git_revision=DummyJobRunner._get_dataset_git_revision(),
                 progress=0.5,  # incomplete result
             ),
@@ -148,7 +148,7 @@ class CacheEntry:
             False,
             CacheEntry(
                 error_code=None,  # no error
-                worker_version=DummyJobRunner.get_version(),
+                job_runner_version=DummyJobRunner.get_job_runner_version(),
                 dataset_git_revision=DummyJobRunner._get_dataset_git_revision(),
                 progress=1.0,  # complete result
             ),
