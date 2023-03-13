@@ -312,6 +312,10 @@ class JobRunner(ABC):
             # this job is still waiting for more inputs to be complete - we should not skip it.
             # this can happen with fan-in jobs
             return False
+        if cached_response["progress"] is not None and cached_response["progress"] < 1.0:
+            # this job is still waiting for more inputs to be complete - we should not skip it.
+            # this can happen with fan-in jobs
+            return False
         try:
             dataset_git_revision = self.get_dataset_git_revision()
         except Exception:
