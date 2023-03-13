@@ -8,7 +8,8 @@ from typing import Any, Literal, Mapping, Optional, TypedDict
 from libcommon.dataset import DatasetNotFoundError
 from libcommon.simple_cache import DoesNotExist, SplitFullName, get_response
 
-from worker.job_runner import JobRunner, JobRunnerError
+from worker.job_runner import CompleteJobResult, JobRunner, JobRunnerError
+from worker.job_runners.parquet_and_dataset_info import ParquetAndDatasetInfoResponse
 
 ConfigSizeJobRunnerErrorCode = Literal[
     "PreviousStepStatusError",
@@ -122,12 +123,26 @@ def compute_config_size_response(dataset: str, config: str) -> ConfigSizeRespons
         raise PreviousStepStatusError(
             f"Previous step gave an error: {response['http_status']}. This job should not have been created."
         )
-    content = response["content"]
+
+    try:
+        content = ParquetAndDatasetInfoResponse(
+            parquet_files=response["content"]["parquet_files"], dataset_info=response["content"]["dataset_info"]
+        )
+    except Exception as e:
+        raise PreviousStepFormatError("Previous step did not return the expected content.", e) from e
+
     if config not in content["dataset_info"]:
+        if not isinstance(content["dataset_info"], dict):
+            raise PreviousStepFormatError(
+                "Previous step did not return the expected content.",
+                TypeError(f"dataset_info should be a dict, but got {type(content['dataset_info'])}"),
+            )
         raise MissingInfoForConfigError(
             f"Dataset configuration '{config}' is missing in the dataset info from the parquet export. "
-            f"Available configurations: {', '.join(content['dataset_info'][:10])}"
-            + f"... ({len(content['dataset_info']) - 10})" if len(content['dataset_info']) > 10 else ""
+            f"Available configurations: {', '.join(list(content['dataset_info'])[:10])}"
+            + f"... ({len(content['dataset_info']) - 10})"
+            if len(content["dataset_info"]) > 10
+            else ""
         )
     try:
         config_dataset_info = content["dataset_info"][config]
@@ -153,9 +168,7 @@ def compute_config_size_response(dataset: str, config: str) -> ConfigSizeRespons
                 "dataset": dataset,
                 "config": config,
                 "num_bytes_original_files": config_dataset_info["download_size"],
-                "num_bytes_parquet_files": sum(
-                    split_size["num_bytes_parquet_files"] for split_size in split_sizes
-                ),
+                "num_bytes_parquet_files": sum(split_size["num_bytes_parquet_files"] for split_size in split_sizes),
                 "num_bytes_memory": sum(
                     split_size["num_bytes_memory"] for split_size in split_sizes
                 ),  # or "num_bytes_memory": config_dataset_info["dataset_size"],
@@ -166,12 +179,14 @@ def compute_config_size_response(dataset: str, config: str) -> ConfigSizeRespons
     except Exception as e:
         raise PreviousStepFormatError("Previous step did not return the expected content.", e) from e
 
-    return ConfigSizeResponse({
-        "size": {
-            "config": config_size,
-            "splits": split_sizes,
+    return ConfigSizeResponse(
+        {
+            "size": {
+                "config": config_size,
+                "splits": split_sizes,
+            }
         }
-    })
+    )
 
 
 class ConfigSizeJobRunner(JobRunner):
@@ -183,12 +198,14 @@ class ConfigSizeJobRunner(JobRunner):
     def get_version() -> str:
         return "1.0.0"
 
-    def compute(self) -> Mapping[str, Any]:
-        return compute_config_size_response(dataset=self.dataset, config=self.config)
+    def compute(self) -> CompleteJobResult:
+        if self.config is None:
+            raise ValueError("config is required")
+        return CompleteJobResult(compute_config_size_response(dataset=self.dataset, config=self.config))
 
     def get_new_splits(self, content: Mapping[str, Any]) -> set[SplitFullName]:
         """Get the set of new splits, from the content created by the compute."""
         return {
             SplitFullName(dataset=split_size["dataset"], config=split_size["config"], split=split_size["split"])
-            for split_size in content["sizes"]["splits"]
+            for split_size in content["size"]["splits"]
         }
