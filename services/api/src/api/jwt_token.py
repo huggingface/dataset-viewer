@@ -19,7 +19,6 @@ from cryptography.hazmat.primitives.asymmetric.ed25519 import (
     Ed25519PublicKey,
 )
 from cryptography.hazmat.primitives.asymmetric.rsa import RSAPrivateKey, RSAPublicKey
-from jsonschema import ValidationError, validate
 from jwt.algorithms import (
     ECAlgorithm,
     HMACAlgorithm,
@@ -113,18 +112,6 @@ def fetch_jwt_public_key(
         raise JWKError(f"Failed to fetch or parse the JWT public key from {url}. ", cause=err) from err
 
 
-sub_schema = {
-    "$schema": "https://json-schema.org/draft/2020-12/schema",
-    "type": "object",
-    "properties": {
-        "repoName": {"type": "string"},
-        "repoType": {"type": "string", "enum": ["dataset"]},
-        "read": {"type": "boolean", "enum": [True]},
-    },
-    "required": ["repoName", "repoType", "read"],
-}
-
-
 def is_jwt_valid(dataset: str, token: Any, public_key: Optional[str], algorithm: Optional[str]) -> bool:
     """
     Check if the JWT is valid for the dataset.
@@ -147,14 +134,13 @@ def is_jwt_valid(dataset: str, token: Any, public_key: Optional[str], algorithm:
     if not public_key or not algorithm:
         return False
     try:
-        decoded = jwt.decode(jwt=token, key=public_key, algorithms=[algorithm], options={"require": ["exp", "sub"]})
+        decoded = jwt.decode(
+            jwt=token, key=public_key, algorithms=[algorithm], options={"require": ["exp", "sub", "read"]}
+        )
     except Exception:
         return False
     sub = decoded.get("sub")
-    try:
-        validate(instance=sub, schema=sub_schema)
-    except ValidationError:
+    if not isinstance(sub, str) or not sub.startswith("datasets/") or sub.removeprefix("datasets/") != dataset:
         return False
-    repo_name: str = sub["repoName"]  # type: ignore
-    # ^ the type is ensured by the JSON schema
-    return repo_name == dataset
+    read = decoded.get("read")
+    return read is True
