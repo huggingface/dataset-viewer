@@ -26,6 +26,9 @@ from mongodb_migration.migrations._20230309123100_cache_add_progress import (
 from mongodb_migration.migrations._20230309141600_cache_add_job_runner_version import (
     MigrationAddJobRunnerVersionToCacheResponse,
 )
+from mongodb_migration.migrations._20230309123100_cache_add_progress import (
+    MigrationAddProgressToCacheResponse,
+)
 
 
 # TODO: add a way to automatically collect migrations from the migrations/ folder
@@ -58,7 +61,7 @@ class MigrationsCollector:
                 version="20230309123100",
                 description="add the 'progress' field with the default value (1.0) to the cached results",
             ),
-            MigrationAddJobRunnerVerionToCacheResponse(
+            MigrationAddJobRunnerVersionToCacheResponse(
                 version="20230309141600", description="add 'job_runner_version' field based on 'worker_version' value"
-            ),
+            )
         ]
