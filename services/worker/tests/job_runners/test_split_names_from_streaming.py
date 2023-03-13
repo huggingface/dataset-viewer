@@ -124,12 +124,8 @@ def test_compute_split_names_from_streaming_response(
     with pytest.raises(CustomError) as exc_info:
         job_runner.compute()
     assert exc_info.value.code == error_code
-    if cause is None:
-        assert not exc_info.value.disclose_cause
-        assert exc_info.value.cause_exception is None
-    else:
-        assert exc_info.value.disclose_cause
-        assert exc_info.value.cause_exception == cause
+    assert exc_info.value.cause_exception == cause
+    if exc_info.value.disclose_cause:
         response = exc_info.value.as_response()
         assert set(response.keys()) == {"error", "cause_exception", "cause_message", "cause_traceback"}
         response_dict = dict(response)
