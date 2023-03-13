@@ -45,12 +45,11 @@ def is_public_key(
         RSAPrivateKey,
         RSAPublicKey,
     ]
-) -> Union[EllipticCurvePublicKey, Ed25519PublicKey, Ed448PublicKey, RSAPublicKey]:
-    return hasattr(key, "public_bytes")  # type: ignore
-    # ^ type: ignore could be removed by using TypeGuard. But it requires Python 3.10
+) -> bool:
+    return hasattr(key, "public_bytes")
 
 
-def parse_jwt_public_key(keys: Any, hf_jwt_algorithm: str) -> Any:
+def parse_jwt_public_key(keys: Any, hf_jwt_algorithm: str) -> str:
     """parse the input JSON to extract the public key
 
     Note that the return type is Any in order not to enter in too much details. See
@@ -62,7 +61,7 @@ def parse_jwt_public_key(keys: Any, hf_jwt_algorithm: str) -> Any:
         hf_jwt_algorithm (str): the JWT algorithm to use.
 
     Returns:
-        Any: the public key
+        str: the public key
     """
     try:
         expected_algorithm = jwt.get_algorithm_by_name(hf_jwt_algorithm)
@@ -76,13 +75,14 @@ def parse_jwt_public_key(keys: Any, hf_jwt_algorithm: str) -> Any:
     try:
         key = expected_algorithm.from_jwk(keys[0])
         if not isinstance(expected_algorithm, ASYMMETRIC_ALGORITHMS):
-            return key.decode("utf-8")
+            return key.decode("utf-8")  # type: ignore[no-any-return]
         if not is_public_key(key):
             raise RuntimeError("Failed to parse JWT key: the provided key is a private key")
-        return key.public_bytes(
+        return key.public_bytes(  # type: ignore[no-any-return]
             encoding=serialization.Encoding.PEM,
             format=serialization.PublicFormat.SubjectPublicKeyInfo,
         ).decode("utf-8")
+        # ^ we assume that the key contain UTF-8 encoded bytes, which is why we use type ignore for mypy
     except (jwt.InvalidKeyError, KeyError) as err:
         raise RuntimeError(f"Failed to parse JWT key: {err.args[0]}") from err
 
@@ -91,7 +91,7 @@ def fetch_jwt_public_key(
     url: str,
     hf_jwt_algorithm: str,
     hf_timeout_seconds: Optional[float] = None,
-) -> Any:
+) -> str:
     """fetch the public key to decode the JWT token from the input URL
 
     See https://huggingface.co/api/keys/jwt
@@ -103,7 +103,7 @@ def fetch_jwt_public_key(
             is used both for the connection timeout and the read timeout. If None, the request never timeouts.
 
     Returns:
-        Any: the public key
+        str: the public key
     """
     try:
         response = requests.get(url, timeout=hf_timeout_seconds)
@@ -125,7 +125,7 @@ sub_schema = {
 }
 
 
-def is_jwt_valid(dataset: str, token: Any, public_key: Optional[Any], algorithm: Optional[str]) -> bool:
+def is_jwt_valid(dataset: str, token: Any, public_key: Optional[str], algorithm: Optional[str]) -> bool:
     """
     Check if the JWT is valid for the dataset.
 
@@ -138,7 +138,7 @@ def is_jwt_valid(dataset: str, token: Any, public_key: Optional[Any], algorithm:
     Args:
         dataset (str): the dataset identifier
         token (Any): the JWT token to decode
-        public_key (Any|None): the public key to use to decode the JWT token
+        public_key (str|None): the public key to use to decode the JWT token
         algorithm (str|None): the algorithm to use to decode the JWT token
 
     Returns:
@@ -148,8 +148,7 @@ def is_jwt_valid(dataset: str, token: Any, public_key: Optional[Any], algorithm:
         return False
     try:
         decoded = jwt.decode(jwt=token, key=public_key, algorithms=[algorithm], options={"require": ["exp", "sub"]})
-    except Exception as err:
-        print(err)
+    except Exception:
         return False
     sub = decoded.get("sub")
     try:
