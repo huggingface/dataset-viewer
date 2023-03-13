@@ -406,7 +406,7 @@ def test_compute_splits_response_simple_csv_ok(
     dataset = hub_datasets[name]["name"]
     expected_parquet_and_dataset_info_response = hub_datasets[name]["parquet_and_dataset_info_response"]
     job_runner = get_job_runner(dataset, app_config, parquet_and_dataset_info_config, False)
-    result = job_runner.compute()
+    result = job_runner.compute().content
     assert_content_is_equal(result, expected_parquet_and_dataset_info_response)
 
     # download the parquet file and check that it is valid

@@ -1,4 +1,4 @@
-from typing import Any, Mapping, Optional
+from typing import Optional
 
 from libcommon.config import CommonConfig
 from libcommon.processing_graph import ProcessingStep
@@ -6,7 +6,7 @@ from libcommon.queue import JobInfo
 from libcommon.resources import CacheMongoResource, QueueMongoResource
 
 from worker.config import AppConfig, WorkerConfig
-from worker.job_runner import JobRunner
+from worker.job_runner import CompleteJobResult, JobRunner
 from worker.job_runner_factory import BaseJobRunnerFactory
 from worker.loop import Loop
 from worker.resources import LibrariesResource
@@ -25,8 +25,8 @@ class DummyJobRunner(JobRunner):
     def get_version() -> str:
         return "1.0.1"
 
-    def compute(self) -> Mapping[str, Any]:
-        return {"key": "value"}
+    def compute(self) -> CompleteJobResult:
+        return CompleteJobResult({"key": "value"})
 
 
 class DummyJobRunnerFactory(BaseJobRunnerFactory):

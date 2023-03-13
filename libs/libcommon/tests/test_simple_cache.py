@@ -115,6 +115,7 @@ def test_upsert_response(config: Optional[str], split: Optional[str]) -> None:
         "error_code": None,
         "worker_version": None,
         "dataset_git_revision": None,
+        "progress": None,
     }
     cached_response_without_content = get_response_without_content(
         kind=kind, dataset=dataset, config=config, split=split
@@ -124,6 +125,7 @@ def test_upsert_response(config: Optional[str], split: Optional[str]) -> None:
         "error_code": None,
         "worker_version": None,
         "dataset_git_revision": None,
+        "progress": None,
     }
 
     # ensure it's idempotent
@@ -163,6 +165,7 @@ def test_upsert_response(config: Optional[str], split: Optional[str]) -> None:
         "error_code": error_code,
         "worker_version": worker_version,
         "dataset_git_revision": dataset_git_revision,
+        "progress": None,
     }
 
 
