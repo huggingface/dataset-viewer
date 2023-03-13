@@ -10,13 +10,13 @@ ENV PYTHONFAULTHANDLER=1 \
     PIP_DEFAULT_TIMEOUT=100 \
     POETRY_NO_INTERACTION=1 \
     # Versions:
-    POETRY_VERSION=1.3.2 \
+    POETRY_VERSION=1.4.0 \
     POETRY_VIRTUALENVS_IN_PROJECT=true \
     PATH="$PATH:/root/.local/bin"
 
 # System deps:
 RUN apt-get update \
-    && apt-get install -y build-essential python3-dev make \
+    && apt-get install -y build-essential make \
     && rm -rf /var/lib/apt/lists/*
 RUN pip install -U pip
 RUN pip install "poetry==$POETRY_VERSION"
