@@ -179,7 +179,7 @@ class DatasetSizeJobRunner(JobRunner):
 
     @staticmethod
     def get_job_runner_version() -> int:
-        return 1
+        return PROCESSING_STEP_SIZES_VERSION
 
     def compute(self) -> JobResult:
         response_content, progress = compute_sizes_response(dataset=self.dataset)

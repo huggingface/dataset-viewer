@@ -107,7 +107,7 @@ class SplitNamesFromDatasetInfoJobRunner(DatasetsBasedJobRunner):
 
     @staticmethod
     def get_job_runner_version() -> int:
-        return 2
+        return PROCESSING_STEP_SPLIT_NAMES_FROM_DATASET_INFO_VERSION
 
     def compute(self) -> CompleteJobResult:
         if self.dataset is None:

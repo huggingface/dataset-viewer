@@ -131,7 +131,7 @@ class ConfigParquetJobRunner(JobRunner):
 
     @staticmethod
     def get_job_runner_version() -> int:
-        return 3
+        return PROCESSING_STEP_PARQUET_VERSION
 
     def compute(self) -> CompleteJobResult:
         if self.config is None:

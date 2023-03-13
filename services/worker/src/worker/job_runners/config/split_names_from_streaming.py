@@ -111,7 +111,7 @@ class SplitNamesFromStreamingJobRunner(DatasetsBasedJobRunner):
 
     @staticmethod
     def get_job_runner_version() -> int:
-        return 2
+        return PROCESSING_STEP_SPLIT_NAMES_FROM_STREAMING_VERSION
 
     def compute(self) -> CompleteJobResult:
         if self.config is None:

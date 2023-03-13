@@ -871,7 +871,7 @@ class ParquetAndDatasetInfoJobRunner(DatasetsBasedJobRunner):
 
     @staticmethod
     def get_job_runner_version() -> int:
-        return 1
+        return PROCESSING_STEP_PARQUET_AND_DATASET_INFO_VERSION
 
     def __init__(
         self,

@@ -95,7 +95,7 @@ class DatasetInfoJobRunner(JobRunner):
 
     @staticmethod
     def get_job_runner_version() -> int:
-        return 1
+        return PROCESSING_STEP_DATASET_INFO_VERSION
 
     def compute(self) -> CompleteJobResult:
         return CompleteJobResult(compute_dataset_info_response(dataset=self.dataset))

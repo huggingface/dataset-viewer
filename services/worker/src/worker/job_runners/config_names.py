@@ -103,7 +103,7 @@ class ConfigNamesJobRunner(DatasetsBasedJobRunner):
 
     @staticmethod
     def get_job_runner_version() -> int:
-        return 1
+        return PROCESSING_STEP_CONFIG_NAMES_VERSION
 
     def compute(self) -> CompleteJobResult:
         return CompleteJobResult(

@@ -621,8 +621,8 @@ def test_stress_get_cache_reports(num_entries: int) -> None:
 
 def test_get_cache_with_minor_version_for_kind() -> None:
     kind = "kind"
-    current_version = "2.0.0"
-    minor_version = "1.0.0"
+    current_version = 2
+    minor_version = 1
 
     result = get_cache_with_minor_version_for_kind(kind=kind, current_version=current_version)
     upsert_response(
@@ -630,7 +630,7 @@ def test_get_cache_with_minor_version_for_kind() -> None:
         dataset="dataset_with_current_version",
         content={},
         http_status=HTTPStatus.OK,
-        worker_version=current_version,
+        job_runner_version=current_version,
     )
     assert not result
 
@@ -639,7 +639,7 @@ def test_get_cache_with_minor_version_for_kind() -> None:
         dataset="dataset_with_minor_version",
         content={},
         http_status=HTTPStatus.OK,
-        worker_version=minor_version,
+        job_runner_version=minor_version,
     )
     result = get_cache_with_minor_version_for_kind(kind=kind, current_version=current_version)
     assert result
