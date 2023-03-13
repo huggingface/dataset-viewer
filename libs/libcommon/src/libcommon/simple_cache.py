@@ -367,12 +367,11 @@ def get_cache_reports(kind: str, cursor: Optional[str], limit: int) -> CacheRepo
 
 
 def get_outdated_split_full_names_for_step(kind: str, current_version: int) -> List[SplitFullName]:
-    responses = CachedResponse.objects(kind=kind, worker_version__lt=current_version).only(
+    responses = CachedResponse.objects(kind=kind, job_runner_version__lt=current_version).only(
         "dataset", "config", "split"
     )
     return [
-        SplitFullName(dataset=response.dataset, config=response.config, split=response.split)
-        for response in responses
+        SplitFullName(dataset=response.dataset, config=response.config, split=response.split) for response in responses
     ]
 
 

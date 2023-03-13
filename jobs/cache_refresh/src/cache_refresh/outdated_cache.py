@@ -34,9 +34,9 @@ def refresh_cache(processing_steps: List[ProcessingStep]) -> None:
             )
             queue.upsert_job(
                 job_type=processing_step.job_type,
-                dataset=cache_info["dataset"],  # type: ignore
-                config=cache_info["config"],
-                split=cache_info["split"],
+                dataset=cache_info.dataset,
+                config=cache_info.config,
+                split=cache_info.split,
                 force=False,
                 priority=Priority.LOW,
             )
