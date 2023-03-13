@@ -34,7 +34,7 @@ def test_cache_add_job_runner_version_without_worker_version(mongo_host: str) ->
         (None, None),
     ],
 )
-def test_cache_add_job_runner_version(mongo_host: str, worker_version: str, expected: int) -> None:
+def test_cache_add_job_runner_version(mongo_host: str, worker_version: str, expected: Optional[int]) -> None:
     with MongoResource(database="test_cache_add_job_runner_version", host=mongo_host, mongoengine_alias="cache"):
         db = get_db("cache")
         db["cachedResponsesBlue"].delete_many({})
@@ -47,6 +47,4 @@ def test_cache_add_job_runner_version(mongo_host: str, worker_version: str, expe
         migration.up()
         result = db["cachedResponsesBlue"].find_one({"dataset": "dataset"})
         assert result
-        if expected:
-            assert result["job_runner_version"]
-            assert result["job_runner_version"] == expected
+        assert result["job_runner_version"] == expected
