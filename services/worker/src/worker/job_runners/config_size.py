@@ -187,8 +187,8 @@ class ConfigSizeJobRunner(JobRunner):
         return "config-size"
 
     @staticmethod
-    def get_version() -> str:
-        return "1.0.0"
+    def get_job_runner_version() -> int:
+        return 1
 
     def compute(self) -> CompleteJobResult:
         if self.config is None:
