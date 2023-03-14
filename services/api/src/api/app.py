@@ -73,6 +73,7 @@ def create_app_with_config(app_config: AppConfig, endpoint_config: EndpointConfi
                 hf_endpoint=app_config.common.hf_endpoint,
                 hf_token=app_config.common.hf_token,
                 hf_jwt_public_key=hf_jwt_public_key,
+                hf_jwt_algorithm=app_config.api.hf_jwt_algorithm,
                 external_auth_url=app_config.api.external_auth_url,
                 hf_timeout_seconds=app_config.api.hf_timeout_seconds,
                 max_age_long=app_config.api.max_age_long,
@@ -93,6 +94,7 @@ def create_app_with_config(app_config: AppConfig, endpoint_config: EndpointConfi
             "/is-valid",
             endpoint=create_is_valid_endpoint(
                 hf_jwt_public_key=hf_jwt_public_key,
+                hf_jwt_algorithm=app_config.api.hf_jwt_algorithm,
                 external_auth_url=app_config.api.external_auth_url,
                 hf_timeout_seconds=app_config.api.hf_timeout_seconds,
                 processing_steps_for_valid=processing_steps_required_by_dataset_viewer,
