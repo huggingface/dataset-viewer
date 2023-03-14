@@ -18,14 +18,6 @@ ConfigSizeJobRunnerErrorCode = Literal[
 ]
 
 
-class DatasetSize(TypedDict):
-    dataset: str
-    num_bytes_original_files: int
-    num_bytes_parquet_files: int
-    num_bytes_memory: int
-    num_rows: int
-
-
 class ConfigSize(TypedDict):
     dataset: str
     config: str
@@ -94,7 +86,7 @@ class MissingInfoForConfigError(ConfigSizeJobRunnerError):
 
 def compute_config_size_response(dataset: str, config: str) -> ConfigSizeResponse:
     """
-    Get the response of /config-size for one specific dataset and config on huggingface.co.
+    Get the response of config-size for one specific dataset and config on huggingface.co.
     Args:
         dataset (`str`):
             A namespace (user or an organization) and a repo name separated
@@ -192,7 +184,7 @@ def compute_config_size_response(dataset: str, config: str) -> ConfigSizeRespons
 class ConfigSizeJobRunner(JobRunner):
     @staticmethod
     def get_job_type() -> str:
-        return "/config-size"
+        return "config-size"
 
     @staticmethod
     def get_version() -> str:
