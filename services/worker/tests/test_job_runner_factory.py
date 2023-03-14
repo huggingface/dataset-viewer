@@ -28,6 +28,7 @@ def processing_graph(app_config: AppConfig) -> ProcessingGraph:
         ("/parquet", "ParquetJobRunner"),
         ("/dataset-info", "DatasetInfoJobRunner"),
         ("config-size", "ConfigSizeJobRunner"),
+        ("dataset-size", "DatasetSizeJobRunner"),
         ("/unknown", None),
     ],
 )

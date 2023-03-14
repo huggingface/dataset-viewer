@@ -101,6 +101,11 @@ def compute_config_size_response(dataset: str, config: str) -> ConfigSizeRespons
           If the previous step gave an error.
         - [`~job_runners.config_size.PreviousStepFormatError`]
             If the content of the previous step has not the expected format
+        - [`~job_runners.config_size.MissingInfoForConfigError`]
+            If the dataset info from the parquet export is missing the requested dataset configuration
+        - [`~libcommon.dataset.DatasetNotFoundError`]: if the dataset does not exist, or if the
+            token does not give the sufficient access to the dataset, or if the dataset is private
+            (private datasets are not supported by the datasets server)
     </Tip>
     """
     logging.info(f"get size for dataset={dataset}, config={config}")
@@ -112,9 +117,7 @@ def compute_config_size_response(dataset: str, config: str) -> ConfigSizeRespons
             "No response found in previous step for this dataset: '/parquet-and-dataset-info'.", e
         ) from e
     if response["http_status"] != HTTPStatus.OK:
-        raise PreviousStepStatusError(
-            f"Previous step gave an error: {response['http_status']}. This job should not have been created."
-        )
+        raise PreviousStepStatusError(f"Previous step gave an error: {response['http_status']}..")
 
     try:
         content = ParquetAndDatasetInfoResponse(
@@ -165,7 +168,7 @@ def compute_config_size_response(dataset: str, config: str) -> ConfigSizeRespons
                     split_size["num_bytes_memory"] for split_size in split_sizes
                 ),  # or "num_bytes_memory": config_dataset_info["dataset_size"],
                 "num_rows": sum(split_size["num_rows"] for split_size in split_sizes),
-                "num_columns": len(config_dataset_info["features"]),
+                "num_columns": num_columns,
             }
         )
     except Exception as e:
