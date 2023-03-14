@@ -106,6 +106,7 @@ class ProcessingGraphConfig:
             },
             "/parquet-and-dataset-info": {"input_type": "dataset"},
             "config-parquet": {"input_type": "config", "requires": "/parquet-and-dataset-info"},
+            "dataset-parquet": {"input_type": "dataset", "requires": "config-parquet"},
             "/dataset-info": {"input_type": "dataset", "requires": "/parquet-and-dataset-info"},
             "/split-names-from-dataset-info": {"input_type": "config", "requires": "/dataset-info"},
             "config-size": {"input_type": "config", "requires": "/parquet-and-dataset-info"},
