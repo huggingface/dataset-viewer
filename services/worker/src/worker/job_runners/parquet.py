@@ -76,7 +76,7 @@ def compute_parquet_response(dataset: str) -> ParquetResponse:
         response = get_response(kind="/parquet-and-dataset-info", dataset=dataset)
     except DoesNotExist as e:
         raise DatasetNotFoundError(
-            "No response found in previous step for this dataset: '/parquet-and-dataset-info' endpoint.", e
+            "No response found in previous step for this dataset: '/parquet-and-dataset-info'.", e
         ) from e
     if response["http_status"] != HTTPStatus.OK:
         raise PreviousStepStatusError(

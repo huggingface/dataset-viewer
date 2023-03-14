@@ -56,10 +56,12 @@ def test_endpoints_definition() -> None:
     assert dataset_info["dataset"] is not None
     assert len(dataset_info["dataset"]) == 1  # Only has one processing step
 
-    sizes = definition["/sizes"]
-    assert sizes is not None
-    assert sizes["dataset"] is not None
-    assert len(sizes["dataset"]) == 1  # Only has one processing step
+    size = definition["/size"]
+    assert size is not None
+    assert size["dataset"] is not None
+    assert size["config"] is not None
+    assert len(size["dataset"]) == 1  # Only has one processing step
+    assert len(size["config"]) == 1  # Only has one processing step
 
 
 def test_get_cache_entry_from_steps() -> None:
