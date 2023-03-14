@@ -17,13 +17,13 @@ from worker.job_runners.config_size import ConfigSizeJobRunner
 from worker.job_runners.dataset_info import DatasetInfoJobRunner
 from worker.job_runners.dataset_parquet import DatasetParquetJobRunner
 from worker.job_runners.dataset_size import DatasetSizeJobRunner
-from worker.job_runners.dataset_split_names import DatasetSplitNamesJobRunner
+from worker.job_runners.dataset.split_names import DatasetSplitNamesJobRunner
 from worker.job_runners.first_rows import FirstRowsJobRunner
 from worker.job_runners.parquet_and_dataset_info import ParquetAndDatasetInfoJobRunner
-from worker.job_runners.split_names_from_dataset_info import (
+from worker.job_runners.config.split_names_from_dataset_info import (
     SplitNamesFromDatasetInfoJobRunner,
 )
-from worker.job_runners.split_names_from_streaming import (
+from worker.job_runners.config.split_names_from_streaming import (
     SplitNamesFromStreamingJobRunner,
 )
 from worker.job_runners.splits import SplitsJobRunner
