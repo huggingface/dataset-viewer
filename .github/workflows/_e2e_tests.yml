@@ -72,5 +72,7 @@ jobs:
           ADMIN_UVICORN_PORT: "8081"
           COMMON_LOG_LEVEL: "DEBUG"
           API_HF_TIMEOUT_SECONDS: "10"
+          API_HF_JWT_PUBLIC_KEY_URL: "https://huggingface.co/api/keys/jwt"
+          API_HF_JWT_ALGORITHM: "EdDSA"
         run: |
           poetry run python -m pytest -vv -x tests

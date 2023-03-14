@@ -90,7 +90,7 @@ def test_compute(
     )
     assert cached_response["http_status"] == HTTPStatus.OK
     assert cached_response["error_code"] is None
-    assert cached_response["worker_version"] == job_runner.get_version()
+    assert cached_response["job_runner_version"] == job_runner.get_job_runner_version()
     assert cached_response["dataset_git_revision"] is not None
     content = cached_response["content"]
     assert content["features"][0]["feature_idx"] == 0
@@ -162,12 +162,8 @@ def test_number_rows(
     with pytest.raises(CustomError) as exc_info:
         job_runner.compute()
     assert exc_info.value.code == error_code
-    if cause is None:
-        assert not exc_info.value.disclose_cause
-        assert exc_info.value.cause_exception is None
-    else:
-        assert exc_info.value.disclose_cause
-        assert exc_info.value.cause_exception == cause
+    assert exc_info.value.cause_exception == cause
+    if exc_info.value.disclose_cause:
         response = exc_info.value.as_response()
         assert set(response.keys()) == {"error", "cause_exception", "cause_message", "cause_traceback"}
         response_dict = dict(response)

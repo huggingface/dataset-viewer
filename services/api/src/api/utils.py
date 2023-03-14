@@ -18,6 +18,7 @@ ApiErrorCode = Literal[
     "ExternalUnauthenticatedError",
     "ExternalAuthenticatedError",
     "AuthCheckHubRequestError",
+    "JWKError",
     "MissingProcessingStepsError",
 ]
 
@@ -80,6 +81,13 @@ class ExternalAuthenticatedError(ApiCustomError):
 
     def __init__(self, message: str):
         super().__init__(message, HTTPStatus.NOT_FOUND, "ExternalAuthenticatedError")
+
+
+class JWKError(ApiCustomError):
+    """Raised when the JWT key (JWK) could not be fetched or parsed."""
+
+    def __init__(self, message: str, cause: Optional[BaseException] = None):
+        super().__init__(message, HTTPStatus.INTERNAL_SERVER_ERROR, "JWKError", cause=cause, disclose_cause=False)
 
 
 class AuthCheckHubRequestError(ApiCustomError):

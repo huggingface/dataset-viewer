@@ -2,13 +2,14 @@
 # Copyright 2022 The HuggingFace Authors.
 
 import logging
-from typing import Literal, Optional
+from typing import Any, Literal, Optional
 
 import requests
 from requests import PreparedRequest
 from requests.auth import AuthBase
 from starlette.requests import Request
 
+from api.jwt_token import is_jwt_valid
 from api.prometheus import StepProfiler
 from api.utils import (
     AuthCheckHubRequestError,
@@ -41,6 +42,8 @@ def auth_check(
     dataset: str,
     external_auth_url: Optional[str] = None,
     request: Optional[Request] = None,
+    hf_jwt_public_key: Optional[Any] = None,
+    hf_jwt_algorithm: Optional[str] = None,
     hf_timeout_seconds: Optional[float] = None,
 ) -> Literal[True]:
     """check if the dataset is authorized for the request
@@ -55,8 +58,10 @@ def auth_check(
           which will be replaced with the dataset name, for example: https://huggingface.co/api/datasets/%s/auth-check
           The authentication service must return 200, 401, 403 or 404.
           If None, the dataset is always authorized.
-        request (Request | None): the request which optionally bears authentication headers: "cookie" or
-          "authorization"
+        request (Request | None): the request which optionally bears authentication headers: "cookie",
+          "authorization" or "X-Api-Key"
+        hf_jwt_public_key (Any|None): the public key to use to decode the JWT token
+        hf_jwt_algorithm (str): the algorithm to use to decode the JWT token
         hf_timeout_seconds (float|None): the timeout in seconds for the external authentication service. It
           is used both for the connection timeout and the read timeout. If None, the request never timeouts.
 
@@ -65,6 +70,12 @@ def auth_check(
     """
     with StepProfiler(method="auth_check", step="all"):
         with StepProfiler(method="auth_check", step="prepare parameters"):
+            if request:
+                token = request.headers.get("x-api-key")
+                if token and is_jwt_valid(
+                    dataset=dataset, token=token, public_key=hf_jwt_public_key, algorithm=hf_jwt_algorithm
+                ):
+                    return True
             if external_auth_url is None:
                 return True
             try:
@@ -92,18 +103,18 @@ def auth_check(
                     ),
                     err,
                 ) from err
-        with StepProfiler(method="auth_check", step="return or raise"):
-            if response.status_code == 200:
-                return True
-            elif response.status_code == 401:
-                raise ExternalUnauthenticatedError(
-                    "The dataset does not exist, or is not accessible without authentication (private or gated)."
-                    " Please check the spelling of the dataset name or retry with authentication."
-                )
-            elif response.status_code in [403, 404]:
-                raise ExternalAuthenticatedError(
-                    "The dataset does not exist, or is not accessible with the current credentials (private or gated)."
-                    " Please check the spelling of the dataset name or retry with other authentication credentials."
-                )
-            else:
-                raise ValueError(f"Unexpected status code {response.status_code}")
+    with StepProfiler(method="auth_check", step="return or raise"):
+        if response.status_code == 200:
+            return True
+        elif response.status_code == 401:
+            raise ExternalUnauthenticatedError(
+                "The dataset does not exist, or is not accessible without authentication (private or gated). Please"
+                " check the spelling of the dataset name or retry with authentication."
+            )
+        elif response.status_code in [403, 404]:
+            raise ExternalAuthenticatedError(
+                "The dataset does not exist, or is not accessible with the current credentials (private or gated)."
+                " Please check the spelling of the dataset name or retry with other authentication credentials."
+            )
+        else:
+            raise ValueError(f"Unexpected status code {response.status_code}")

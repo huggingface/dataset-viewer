@@ -93,8 +93,8 @@ class DatasetInfoJobRunner(JobRunner):
         return "/dataset-info"
 
     @staticmethod
-    def get_version() -> str:
-        return "1.0.0"
+    def get_job_runner_version() -> int:
+        return 1
 
     def compute(self) -> CompleteJobResult:
         return CompleteJobResult(compute_dataset_info_response(dataset=self.dataset))

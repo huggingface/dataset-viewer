@@ -101,6 +101,11 @@ class GatedExtraFieldsError(DatasetError):
         )
 
 
+DOES_NOT_EXIST_OR_PRIVATE_DATASET_ERROR_MESSAGE = (
+    "The dataset does not exist on the Hub, or is private. Private datasets are not yet supported."
+)
+
+
 def ask_access(
     dataset: str, hf_endpoint: str, hf_token: Optional[str], hf_timeout_seconds: Optional[float] = None
 ) -> None:
@@ -139,7 +144,7 @@ def ask_access(
                 "Request to the Hub to get access to the dataset failed or timed out. Please try again later, it's a"
                 " temporary internal issue."
             ),
-            err,
+            cause=err,
         ) from err
     try:
         r.raise_for_status()
@@ -148,14 +153,12 @@ def ask_access(
             if r.headers and r.headers.get("X-Error-Code") == "RepoNotGated":
                 return  # the dataset is not gated
             raise GatedExtraFieldsError(
-                "The dataset is gated with extra fields: not supported at the moment."
+                "The dataset is gated with extra fields: not supported at the moment.", cause=err
             ) from err
         if r.status_code == 403:
-            raise GatedDisabledError("The dataset is gated and access is disabled.") from err
+            raise GatedDisabledError("The dataset is gated and access is disabled.", cause=err) from err
         if r.status_code in [401, 404]:
-            raise DatasetNotFoundError(
-                "The dataset does not exist on the Hub, or is private. Private datasets are not yet supported."
-            ) from err
+            raise DatasetNotFoundError(DOES_NOT_EXIST_OR_PRIVATE_DATASET_ERROR_MESSAGE, cause=err) from err
         raise err
 
 
@@ -197,11 +200,21 @@ def get_dataset_info_for_supported_datasets(
     </Tip>
     """
     try:
-        dataset_info = HfApi(endpoint=hf_endpoint).dataset_info(
-            repo_id=dataset, token=hf_token, timeout=hf_timeout_seconds
-        )
-    except RepositoryNotFoundError:
-        ask_access(dataset=dataset, hf_endpoint=hf_endpoint, hf_token=hf_token, hf_timeout_seconds=hf_timeout_seconds)
+        try:
+            dataset_info = HfApi(endpoint=hf_endpoint).dataset_info(
+                repo_id=dataset, token=hf_token, timeout=hf_timeout_seconds
+            )
+        except RepositoryNotFoundError:
+            ask_access(
+                dataset=dataset, hf_endpoint=hf_endpoint, hf_token=hf_token, hf_timeout_seconds=hf_timeout_seconds
+            )
+            dataset_info = HfApi(endpoint=hf_endpoint).dataset_info(
+                repo_id=dataset, token=hf_token, timeout=hf_timeout_seconds
+            )
+    except DatasetError as err:
+        raise err
+    except RepositoryNotFoundError as err:
+        raise DatasetNotFoundError(DOES_NOT_EXIST_OR_PRIVATE_DATASET_ERROR_MESSAGE, cause=err) from err
     except RevisionNotFoundError as err:
         raise DatasetNotFoundError(
             f"The default branch cannot be found in dataset {dataset} on the Hub.", cause=err
@@ -212,7 +225,7 @@ def get_dataset_info_for_supported_datasets(
                 "Request to the Hub to get the dataset info failed or timed out. Please try again later, it's a"
                 " temporary internal issue."
             ),
-            err,
+            cause=err,
         ) from err
     if dataset_info.private:
         raise DatasetNotFoundError("The dataset is private and private datasets are not yet supported.")

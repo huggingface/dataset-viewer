@@ -96,8 +96,8 @@ class ParquetJobRunner(JobRunner):
         return "/parquet"
 
     @staticmethod
-    def get_version() -> str:
-        return "3.0.0"
+    def get_job_runner_version() -> int:
+        return 3
 
     def compute(self) -> CompleteJobResult:
         return CompleteJobResult(compute_parquet_response(dataset=self.dataset))

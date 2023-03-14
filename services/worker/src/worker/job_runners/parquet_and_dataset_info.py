@@ -266,6 +266,8 @@ def get_dataset_info_or_raise(
         raise DatasetNotFoundError("The dataset does not exist on the Hub.") from err
     except RevisionNotFoundError as err:
         raise DatasetRevisionNotFoundError("The dataset revision does not exist on the Hub.") from err
+    if dataset_info.private:
+        raise DatasetNotFoundError("The dataset does not exist on the Hub.")
     return dataset_info
 
 
@@ -867,8 +869,8 @@ class ParquetAndDatasetInfoJobRunner(DatasetsBasedJobRunner):
         return "/parquet-and-dataset-info"
 
     @staticmethod
-    def get_version() -> str:
-        return "1.1.0"
+    def get_job_runner_version() -> int:
+        return 1
 
     def __init__(
         self,

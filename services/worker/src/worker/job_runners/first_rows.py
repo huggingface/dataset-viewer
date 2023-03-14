@@ -645,8 +645,8 @@ class FirstRowsJobRunner(DatasetsBasedJobRunner):
         return "/first-rows"
 
     @staticmethod
-    def get_version() -> str:
-        return "2.0.0"
+    def get_job_runner_version() -> int:
+        return 2
 
     def __init__(
         self,

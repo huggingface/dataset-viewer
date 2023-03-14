@@ -130,8 +130,8 @@ class SplitsJobRunner(DatasetsBasedJobRunner):
         return "/splits"
 
     @staticmethod
-    def get_version() -> str:
-        return "2.0.0"
+    def get_job_runner_version() -> int:
+        return 2
 
     def compute(self) -> CompleteJobResult:
         return CompleteJobResult(compute_splits_response(dataset=self.dataset, hf_token=self.common_config.hf_token))

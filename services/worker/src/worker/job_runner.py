@@ -22,7 +22,6 @@ from libcommon.simple_cache import (
     upsert_response,
 )
 from libcommon.utils import orjson_dumps
-from packaging import version
 
 from worker.config import WorkerConfig
 
@@ -199,7 +198,7 @@ class JobRunner(ABC):
 
     @staticmethod
     @abstractmethod
-    def get_version() -> str:
+    def get_job_runner_version() -> int:
         pass
 
     def __init__(
@@ -269,25 +268,6 @@ class JobRunner(ABC):
         self.create_children_jobs()
         return result
 
-    def compare_major_version(self, other_version: str) -> int:
-        """
-        Compare the major version of job runner's self version and the other version's.
-
-        Args:
-            other_version (:obj:`str`): the other semantic version
-
-        Returns:
-            :obj:`int`: the difference between the major version of both versions.
-            0 if they are equal. Negative if job runner's major version is lower than other_version, positive
-              otherwise.
-        Raises:
-            :obj:`ValueError`: if job runner's version or other_version is not a valid semantic version.
-        """
-        try:
-            return version.parse(self.get_version()).major - version.parse(other_version).major
-        except Exception as err:
-            raise RuntimeError(f"Could not get major versions: {err}") from err
-
     def get_dataset_git_revision(self) -> Optional[str]:
         """Get the git revision of the dataset repository."""
         return get_dataset_git_revision(
@@ -324,13 +304,9 @@ class JobRunner(ABC):
             # the cache entry result was a temporary error - we process it
             return False
         if (
-            cached_response["worker_version"] is None
-            or self.compare_major_version(cached_response["worker_version"]) != 0
+            cached_response["job_runner_version"] is None
+            or self.get_job_runner_version() > cached_response["job_runner_version"]
         ):
-            # no job runner version in the cache, or the job runner has been updated - we process the job to update
-            # the cache
-            # note: the collection field is named "worker_version" for historical reasons, it might be renamed
-            #   "job_runner_version" in the future.
             return False
         if cached_response["progress"] is not None and cached_response["progress"] < 1.0:
             # this job is still waiting for more inputs to be complete - we should not skip it.
@@ -375,7 +351,7 @@ class JobRunner(ABC):
                 split=self.split,
                 content=content,
                 http_status=HTTPStatus.OK,
-                worker_version=self.get_version(),
+                job_runner_version=self.get_job_runner_version(),
                 dataset_git_revision=dataset_git_revision,
                 progress=job_result.progress,
             )
@@ -403,7 +379,7 @@ class JobRunner(ABC):
                 http_status=e.status_code,
                 error_code=e.code,
                 details=dict(e.as_response_with_cause()),
-                worker_version=self.get_version(),
+                job_runner_version=self.get_job_runner_version(),
                 dataset_git_revision=dataset_git_revision,
             )
             self.debug(
@@ -510,7 +486,7 @@ class JobRunner(ABC):
             http_status=error.status_code,
             error_code=error.code,
             details=dict(error.as_response_with_cause()),
-            worker_version=self.get_version(),
+            job_runner_version=self.get_job_runner_version(),
             dataset_git_revision=self.get_dataset_git_revision(),
         )
         logging.debug(

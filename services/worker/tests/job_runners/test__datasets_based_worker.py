@@ -30,8 +30,8 @@ class DummyJobRunner(DatasetsBasedJobRunner):
         # refactoring libcommon.processing_graph might help avoiding this
 
     @staticmethod
-    def get_version() -> str:
-        return "1.0.0"
+    def get_job_runner_version() -> int:
+        return 1
 
     def compute(self) -> CompleteJobResult:
         if self.config == "raise":
@@ -80,14 +80,6 @@ def get_job_runner(
         )
 
     return _get_job_runner
-
-
-def test_version(app_config: AppConfig, get_job_runner: GetJobRunner) -> None:
-    dataset, config, split = get_default_config_split("dataset")
-    job_runner = get_job_runner(dataset, config, split, app_config, False)
-    assert len(job_runner.get_version().split(".")) == 3
-    assert job_runner.compare_major_version(other_version="0.0.0") > 0
-    assert job_runner.compare_major_version(other_version="1000.0.0") < 0
 
 
 @pytest.mark.parametrize(
