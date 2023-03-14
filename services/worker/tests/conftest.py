@@ -122,6 +122,7 @@ def test_processing_step() -> ProcessingStep:
         parent=None,
         ancestors=[],
         children=[],
+        job_runner_version=1,
     )
 
 

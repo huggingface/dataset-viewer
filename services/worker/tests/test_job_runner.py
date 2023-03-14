@@ -228,6 +228,7 @@ def test_check_type(
         parent=None,
         ancestors=[],
         children=[],
+        job_runner_version=1,
     )
     with pytest.raises(ValueError):
         DummyJobRunner(
