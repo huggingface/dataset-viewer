@@ -59,7 +59,7 @@ def get_job_runner(
                 parent=None,
                 ancestors=[],
                 children=[],
-                job_runner_version=SizesJobRunner.get_job_runner_version(),
+                job_runner_version=ConfigSizeJobRunner.get_job_runner_version(),
             ),
         )
 

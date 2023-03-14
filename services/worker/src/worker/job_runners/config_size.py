@@ -5,6 +5,7 @@ import logging
 from http import HTTPStatus
 from typing import Any, Literal, Mapping, Optional, TypedDict
 
+from libcommon.constants import PROCESSING_STEP_CONFIG_SIZE_VERSION
 from libcommon.dataset import DatasetNotFoundError
 from libcommon.simple_cache import DoesNotExist, SplitFullName, get_response
 
@@ -191,7 +192,7 @@ class ConfigSizeJobRunner(JobRunner):
 
     @staticmethod
     def get_job_runner_version() -> int:
-        return 1
+        return PROCESSING_STEP_CONFIG_SIZE_VERSION
 
     def compute(self) -> CompleteJobResult:
         if self.config is None:

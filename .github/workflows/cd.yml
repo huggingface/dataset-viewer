@@ -23,6 +23,8 @@ jobs:
         include:
           - directory: jobs
             project: mongodb_migration
+          - directory: jobs
+            project: cache_refresh
           - directory: services
             project: admin
           - directory: services
