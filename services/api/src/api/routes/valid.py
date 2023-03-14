@@ -70,6 +70,7 @@ def create_valid_endpoint(
 def create_is_valid_endpoint(
     processing_steps_for_valid: List[ProcessingStep],
     hf_jwt_public_key: Optional[Any] = None,
+    hf_jwt_algorithm: Optional[str] = None,
     external_auth_url: Optional[str] = None,
     hf_timeout_seconds: Optional[float] = None,
     max_age_long: int = 0,
@@ -91,6 +92,7 @@ def create_is_valid_endpoint(
                         external_auth_url=external_auth_url,
                         request=request,
                         hf_jwt_public_key=hf_jwt_public_key,
+                        hf_jwt_algorithm=hf_jwt_algorithm,
                         hf_timeout_seconds=hf_timeout_seconds,
                     )
                 with StepProfiler(method="is_valid_endpoint", step="prepare content"):
