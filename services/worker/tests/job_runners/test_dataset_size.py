@@ -374,7 +374,6 @@ def test_compute(
             job_runner.compute()
         assert e.type.__name__ == expected_error_code
     else:
-        # raise ArithmeticError(str(job_runner.compute().content))
         assert job_runner.compute().content == expected_content
 
 

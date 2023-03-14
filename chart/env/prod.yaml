@@ -275,7 +275,7 @@ workers:
   -
     deployName: "parquet"
     maxJobsPerNamespace: 20
-    workerOnlyJobTypes: "/parquet"
+    workerOnlyJobTypes: "dataset-parquet,config-parquet"
     nodeSelector:
       role-datasets-server-worker: "true"
     replicas: 2
