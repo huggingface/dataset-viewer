@@ -112,7 +112,9 @@ def fetch_jwt_public_key(
         raise JWKError(f"Failed to fetch or parse the JWT public key from {url}. ", cause=err) from err
 
 
-def is_jwt_valid(dataset: str, token: Any, public_key: Optional[str], algorithm: Optional[str]) -> bool:
+def is_jwt_valid(
+    dataset: str, token: Any, public_key: Optional[str], algorithm: Optional[str], verify_exp: Optional[bool] = True
+) -> bool:
     """
     Check if the JWT is valid for the dataset.
 
@@ -127,6 +129,7 @@ def is_jwt_valid(dataset: str, token: Any, public_key: Optional[str], algorithm:
         token (Any): the JWT token to decode
         public_key (str|None): the public key to use to decode the JWT token
         algorithm (str|None): the algorithm to use to decode the JWT token
+        verify_exp (bool|None): whether to verify the expiration of the JWT token. Default to True.
 
     Returns:
         bool: True if the JWT is valid for the input dataset, else False
@@ -135,7 +138,10 @@ def is_jwt_valid(dataset: str, token: Any, public_key: Optional[str], algorithm:
         return False
     try:
         decoded = jwt.decode(
-            jwt=token, key=public_key, algorithms=[algorithm], options={"require": ["exp", "sub", "read"]}
+            jwt=token,
+            key=public_key,
+            algorithms=[algorithm],
+            options={"require": ["exp", "sub", "read"], "verify_exp": verify_exp},
         )
     except Exception:
         return False

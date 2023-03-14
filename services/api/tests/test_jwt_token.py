@@ -11,6 +11,11 @@ import pytest
 from api.jwt_token import is_jwt_valid, parse_jwt_public_key
 
 HUB_JWT_KEYS = [{"crv": "Ed25519", "x": "-RBhgyNluwaIL5KFJb6ZOL2H1nmyI8mW4Z2EHGDGCXM", "kty": "OKP"}]
+HUB_JWT_ALGORITHM = "EdDSA"
+HUB_JWT_PUBLIC_KEY = """-----BEGIN PUBLIC KEY-----
+MCowBQYDK2VwAyEA+RBhgyNluwaIL5KFJb6ZOL2H1nmyI8mW4Z2EHGDGCXM=
+-----END PUBLIC KEY-----
+"""
 UNSUPPORTED_ALGORITHM_JWT_KEYS = [
     {
         "alg": "EC",
@@ -36,7 +41,26 @@ def test_parse_jwk(
     expectation: Any,
 ) -> None:
     with expectation:
-        parse_jwt_public_key(keys=keys, hf_jwt_algorithm="EdDSA")
+        key = parse_jwt_public_key(keys=keys, hf_jwt_algorithm=HUB_JWT_ALGORITHM)
+        assert key == HUB_JWT_PUBLIC_KEY
+
+
+HUB_JWT_TOKEN_FOR_SEVERO_GLUE = "eyJhbGciOiJFZERTQSJ9.eyJyZWFkIjp0cnVlLCJzdWIiOiJkYXRhc2V0cy9zZXZlcm8vZ2x1ZSIsImV4cCI6MTY3ODgwMjk0NH0.nIi1ZKinMBpYi4kKtirW-cQEt1cGnAziTGmJsZeN5UpE62jz4DcPaIPlSI5P5ciGOlTxy4SEhD1WITkQzpo3Aw"
+DATASET_SEVERO_GLUE = "severo/glue"
+
+
+def test_is_jwt_valid_with_ec() -> None:
+    assert (
+        is_jwt_valid(
+            dataset=DATASET_SEVERO_GLUE,
+            token=HUB_JWT_TOKEN_FOR_SEVERO_GLUE,
+            public_key=HUB_JWT_PUBLIC_KEY,
+            algorithm=HUB_JWT_ALGORITHM,
+            verify_exp=False,
+            # This is a test token generated on 2023/03/14, so we don't want to verify the exp.
+        )
+        is True
+    )
 
 
 private_key = """-----BEGIN RSA PRIVATE KEY-----

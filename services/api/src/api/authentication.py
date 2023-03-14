@@ -75,7 +75,9 @@ def auth_check(
                 if token and is_jwt_valid(
                     dataset=dataset, token=token, public_key=hf_jwt_public_key, algorithm=hf_jwt_algorithm
                 ):
+                    logging.debug(f"Authentication check succeeded for dataset {dataset} with token {token}")
                     return True
+                logging.debug(f"Authentication check failed for dataset {dataset} with token {token}")
             if external_auth_url is None:
                 return True
             try:
