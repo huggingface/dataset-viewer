@@ -58,17 +58,14 @@ preview = true
 [tool.mypy]
 strict = true
 disallow_untyped_calls = false
-# ^ call to expected_algorithm.from_jwk force to set this to false
-
-[[tool.mypy.overrides]]
-module = "prometheus_client.*"
-ignore_missing_imports = true
-# ^ prometheus_client is now typed, but starlette-prometheus requires an old version
+# ^ call to expected_algorithm.from_jwk forces to set this to false
 
 [[tool.mypy.overrides]]
 module = [
     "hffs.*",
+    "prometheus_client.*",
     "pyarrow.*",
     "tqdm.*"
 ]
+# ^ prometheus_client is now typed, but starlette-prometheus requires an old version
 ignore_missing_imports = true
