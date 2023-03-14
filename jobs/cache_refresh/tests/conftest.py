@@ -1,10 +1,8 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2022 The HuggingFace Authors.
 
-from typing import Iterator, List
+from typing import Iterator
 
-from libcommon.config import ProcessingGraphConfig
-from libcommon.processing_graph import ProcessingGraph, ProcessingStep
 from libcommon.queue import _clean_queue_database
 from libcommon.resources import CacheMongoResource, QueueMongoResource
 from libcommon.simple_cache import _clean_cache_database
@@ -29,17 +27,6 @@ def job_config(monkeypatch_session: MonkeyPatch) -> JobConfig:
     if "test" not in job_config.cache.mongo_database or "test" not in job_config.queue.mongo_database:
         raise ValueError("Test must be launched on a test mongo database")
     return job_config
-
-
-@fixture(scope="session")
-def processing_graph_config() -> ProcessingGraphConfig:
-    return ProcessingGraphConfig.from_env()
-
-
-@fixture(scope="session")
-def processing_steps(processing_graph_config: ProcessingGraphConfig) -> List[ProcessingStep]:
-    processing_graph = ProcessingGraph(processing_graph_config.specification)
-    return list(processing_graph.steps.values())
 
 
 @fixture(autouse=True)

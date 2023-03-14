@@ -2,7 +2,6 @@
 # Copyright 2022 The HuggingFace Authors.
 
 from http import HTTPStatus
-from typing import List
 
 import pytest
 from libcommon.processing_graph import ProcessingStep
@@ -21,10 +20,21 @@ from cache_refresh.outdated_cache import refresh_cache
     ],
 )
 def test_refresh_cache(
-    processing_steps: List[ProcessingStep],
     job_runner_version: int,
     upserts_job: bool,
 ) -> None:
+    processing_steps = [
+        ProcessingStep(
+            name="/config-names",
+            input_type="dataset",
+            requires=None,
+            required_by_dataset_viewer=False,
+            parent=None,
+            ancestors=[],
+            children=[],
+            job_runner_version=1,
+        )
+    ]
     queue = Queue()
     assert not queue.is_job_in_process(job_type="/config-names", dataset="dataset")
     upsert_response(
