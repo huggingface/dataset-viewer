@@ -19,7 +19,7 @@ def test_default_graph() -> None:
     config_size = graph.get_step("config-size")
     dataset_size = graph.get_step("dataset-size")
     split_names_from_dataset_info = graph.get_step("/split-names-from-dataset-info")
-    dataset_split_names = graph.get_step("dataset--split-names")
+    dataset_split_names = graph.get_step("dataset-split-names")
 
     assert config_names is not None
     assert config_names.parent is None
