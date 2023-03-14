@@ -16,8 +16,8 @@ def test_default_graph() -> None:
     parquet_and_dataset_info = graph.get_step("/parquet-and-dataset-info")
     parquet = graph.get_step("/parquet")
     dataset_info = graph.get_step("/dataset-info")
-    config_size = graph.get_step("/config-size")
-    dataset_size = graph.get_step("/dataset-size")
+    config_size = graph.get_step("config-size")
+    dataset_size = graph.get_step("dataset-size")
     split_names_from_dataset_info = graph.get_step("/split-names-from-dataset-info")
 
     assert config_names is not None

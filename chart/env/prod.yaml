@@ -320,7 +320,7 @@ workers:
   -
     deployName: "sizes"
     maxJobsPerNamespace: 20
-    workerOnlyJobTypes: "/config-size,/dataset-size"
+    workerOnlyJobTypes: "config-size,dataset-size"
     nodeSelector:
       role-datasets-server-worker: "true"
     replicas: 2

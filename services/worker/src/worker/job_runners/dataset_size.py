@@ -76,7 +76,7 @@ class PreviousStepFormatError(DatasetSizeJobRunnerError):
 
 def compute_sizes_response(dataset: str) -> Tuple[DatasetSizeResponse, float]:
     """
-    Get the response of /dataset-size for one specific dataset on huggingface.co.
+    Get the response of dataset-size for one specific dataset on huggingface.co.
     Args:
         dataset (`str`):
             A namespace (user or an organization) and a repo name separated
@@ -113,13 +113,13 @@ def compute_sizes_response(dataset: str) -> Tuple[DatasetSizeResponse, float]:
         for config in content["dataset_info"].keys():
             total += 1
             try:
-                response = get_response(kind="/config-size", dataset=dataset, config=config)
+                response = get_response(kind="config-size", dataset=dataset, config=config)
             except DoesNotExist:
-                logging.debug("No response found in previous step for this dataset: '/config-size' endpoint.")
+                logging.debug("No response found in previous step for this dataset: 'config-size' endpoint.")
                 pending.append(
                     PreviousJob(
                         {
-                            "kind": "/config-size",
+                            "kind": "config-size",
                             "dataset": dataset,
                             "config": config,
                             "split": None,
@@ -132,7 +132,7 @@ def compute_sizes_response(dataset: str) -> Tuple[DatasetSizeResponse, float]:
                 failed.append(
                     PreviousJob(
                         {
-                            "kind": "/config-size",
+                            "kind": "config-size",
                             "dataset": dataset,
                             "config": config,
                             "split": None,
@@ -174,7 +174,7 @@ def compute_sizes_response(dataset: str) -> Tuple[DatasetSizeResponse, float]:
 class DatasetSizeJobRunner(JobRunner):
     @staticmethod
     def get_job_type() -> str:
-        return "/dataset-size"
+        return "dataset-size"
 
     @staticmethod
     def get_job_runner_version() -> int:

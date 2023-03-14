@@ -173,7 +173,7 @@ def get_job_runner(
                     },
                 ),
                 UpstreamResponse(
-                    kind="/config-size",
+                    kind="config-size",
                     dataset="dataset_ok",
                     config="config_1",
                     http_status=HTTPStatus.OK,
@@ -212,7 +212,7 @@ def get_job_runner(
                     },
                 ),
                 UpstreamResponse(
-                    kind="/config-size",
+                    kind="config-size",
                     dataset="dataset_ok",
                     config="config_2",
                     http_status=HTTPStatus.OK,
