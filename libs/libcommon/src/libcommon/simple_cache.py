@@ -79,7 +79,6 @@ class CachedResponse(Document):
         content (`dict`): The content of the cached response. Can be an error or a valid content.
         details (`dict`, optional): Additional details, eg. a detailed error that we don't want to send as a response.
         updated_at (`datetime`): When the cache entry has been last updated.
-        worker_version (`str`): The semver version of the worker that cached the response.
         job_runner_version (`int`): The version of the job runner that cached the response.
         dataset_git_revision (`str`): The commit (of the git dataset repo) used to generate the response.
         progress (`float`): Progress percentage (between 0. and 1.) if the result is not complete yet.
@@ -95,7 +94,6 @@ class CachedResponse(Document):
     http_status = EnumField(HTTPStatus, required=True)
     error_code = StringField()
     content = DictField(required=True)
-    worker_version = StringField()
     dataset_git_revision = StringField()
     progress = FloatField(min_value=0.0, max_value=1.0)
     job_runner_version = IntField()
