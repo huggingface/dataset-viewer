@@ -47,8 +47,10 @@ def create_app_with_config(app_config: AppConfig, endpoint_config: EndpointConfi
         if app_config.api.hf_jwt_public_key_url and app_config.api.hf_jwt_algorithm
         else None
     )
-    config_parquet_processing_step = processing_graph.get_step("config-parquet")
-    # ^ can raise an exception. We don't catch it here because we want the app to crash if the config is invalid
+    parquet_processing_steps_by_input_type = endpoints_definition.steps_by_input_type_and_endpoint.get("/parquet")
+    if not parquet_processing_steps_by_input_type or not parquet_processing_steps_by_input_type["config"]:
+        raise RuntimeError("The parquet endpoint is not configured. Exiting.")
+    config_parquet_processing_steps = parquet_processing_steps_by_input_type["config"]
 
     middleware = [
         Middleware(
@@ -124,7 +126,10 @@ def create_app_with_config(app_config: AppConfig, endpoint_config: EndpointConfi
         Route(
             "/rows",
             endpoint=create_rows_endpoint(
-                config_parquet_processing_step=config_parquet_processing_step,
+                config_parquet_processing_steps=config_parquet_processing_steps,
+                init_processing_steps=init_processing_steps,
+                hf_endpoint=app_config.common.hf_endpoint,
+                hf_token=app_config.common.hf_token,
                 hf_jwt_public_key=hf_jwt_public_key,
                 hf_jwt_algorithm=app_config.api.hf_jwt_algorithm,
                 external_auth_url=app_config.api.external_auth_url,

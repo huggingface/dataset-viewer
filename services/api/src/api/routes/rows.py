@@ -4,22 +4,23 @@
 import logging
 from functools import lru_cache, partial
 from typing import Any, List, Optional, Tuple
+from typing_extensions import Protocol
+
 
 import numpy as np
 import pyarrow as pa
 import pyarrow.parquet as pq
-import requests
 from hffs.fs import HfFileSystem
 from libcommon.processing_graph import ProcessingStep
 
-# from libcommon.simple_cache import DoesNotExist
 from starlette.requests import Request
 from starlette.responses import Response
 from tqdm.contrib.concurrent import thread_map
 
 from api.authentication import auth_check
 from api.prometheus import StepProfiler
-from api.utils import (  # ResponseNotFoundError,
+from api.routes.endpoint import get_cache_entry_from_steps
+from api.utils import (
     ApiCustomError,
     Endpoint,
     InvalidParameterError,
@@ -41,7 +42,11 @@ class FileSystemError(Exception):
     pass
 
 
-class ParquetResponseError(Exception):
+class ParquetResponseFormatError(Exception):
+    pass
+
+
+class ParquetResponseEmptyError(Exception):
     pass
 
 
@@ -65,67 +70,100 @@ def get_parquet_fs(dataset: str) -> HfFileSystem:
 # RowGroupReader = Union[RowGroupReaderBase, partial[RowGroupReaderBase]]
 RowGroupReader = partial[Any]
 
+Index = Tuple[Any, List[RowGroupReader]]
 
-@lru_cache(maxsize=128)
-def index(config_parquet_cache_kind: str, dataset: str, config: str, split: str) -> Tuple[Any, List[RowGroupReader]]:
-    # get the list of parquet files
-    # try:
-    #     result = get_response(kind=parquet_cache_kind, dataset=dataset)
-    # except DoesNotExist as e:
-    #     # add "check_in_process" ...
-    #     raise ResponseNotFoundError("Not found.") from e
-    try:
-        response = requests.get(f"https://datasets-server.huggingface.co/parquet?dataset={dataset}&config={config}")
-        response.raise_for_status()
-        result = response.json()
-    except Exception as e:
-        raise ParquetResponseError("Could not get the list of parquet files.") from e
-    sources = sorted(
-        f"{config}/{parquet_file['filename']}"
-        for parquet_file in result["parquet_files"]
-        if parquet_file["split"] == split and parquet_file["config"] == config
-    )
-    logging.debug(f"Found {len(sources)} parquet files for split {split}: {sources}")
-    if not sources:
-        raise ParquetResponseError("No parquet files found.")
-    fs = get_parquet_fs(dataset)
-    desc = f"{dataset}/{config}/{split}"
-    try:
-        parquet_files: List[pq.ParquetFile] = thread_map(
-            partial(pq.ParquetFile, filesystem=fs),
-            sources,
-            desc=desc,
-            unit="pq",
-            tqdm_class=None,
-        )
-        # parquet_files: List[pq.ParquetFile] = [pq.ParquetFile(source=source, filesystem=fs) for source in sources]
-    except Exception as e:
-        raise FileSystemError(f"Could not read the parquet files: {e}") from e
-    # features = Features.from_arrow_schema(all_pf[0].schema.to_arrow_schema())
-    # columns = [
-    #     col
-    #     for col in features
-    #     if all(bad_type not in str(features[col]) for bad_type in ["Image(", "Audio(", "'binary'"])
-    # ]
-    columns = None
-    # info = (
-    #     ""
-    #     if len(columns) == len(features)
-    #     else f"Some columns are not supported yet: {sorted(set(features) - set(columns))}"
-    # )
-    row_group_offsets = np.cumsum(
-        [
-            parquet_file.metadata.row_group(group_id).num_rows
-            for parquet_file in parquet_files
-            for group_id in range(parquet_file.metadata.num_row_groups)
-        ]
-    )
-    row_group_readers = [
-        partial(parquet_file.read_row_group, i=group_id, columns=columns)
-        for parquet_file in parquet_files
-        for group_id in range(parquet_file.metadata.num_row_groups)
-    ]
-    return row_group_offsets, row_group_readers
+
+class Indexer(Protocol):
+    def __call__(self, dataset: str, config: str, split: str) -> Index:
+        ...
+
+
+def create_index(
+    config_parquet_processing_steps: List[ProcessingStep],
+    init_processing_steps: List[ProcessingStep],
+    hf_endpoint: str,
+    hf_token: Optional[str] = None,
+) -> Indexer:
+    # _lru_cache_wrapper
+    @lru_cache(maxsize=128)
+    def index(
+        dataset: str,
+        config: str,
+        split: str,
+    ) -> Index:
+        with StepProfiler(method="rows.index", step="all"):
+            # get the list of parquet files
+            with StepProfiler(method="rows.index", step="get list of parquet files for split"):
+                try:
+                    result = get_cache_entry_from_steps(
+                        processing_steps=config_parquet_processing_steps,
+                        dataset=dataset,
+                        config=config,
+                        split=None,
+                        init_processing_steps=init_processing_steps,
+                        hf_endpoint=hf_endpoint,
+                        hf_token=hf_token,
+                    )
+                    content = result["content"]
+                except ApiCustomError as e:
+                    raise e
+                except Exception as e:
+                    raise UnexpectedError("Could not get the list of parquet files to fetch the rows from.") from e
+                    # ^ TODO: improve the error, depending on the case
+                try:
+                    sources = sorted(
+                        f"{config}/{parquet_file['filename']}"
+                        for parquet_file in content["parquet_files"]
+                        if parquet_file["split"] == split and parquet_file["config"] == config
+                    )
+                except Exception as e:
+                    raise ParquetResponseFormatError(f"Could not parse the list of parquet files: {e}") from e
+                logging.debug(f"Found {len(sources)} parquet files for split {split}: {sources}")
+                if not sources:
+                    raise ParquetResponseEmptyError("No parquet files found.")
+            with StepProfiler(method="rows.index", step="get the Hub's dataset filesystem"):
+                fs = get_parquet_fs(dataset)
+            with StepProfiler(method="rows.index", step="get one parquet reader per parquet file"):
+                desc = f"{dataset}/{config}/{split}"
+                try:
+                    parquet_files: List[pq.ParquetFile] = thread_map(
+                        partial(pq.ParquetFile, filesystem=fs),
+                        sources,
+                        desc=desc,
+                        unit="pq",
+                        tqdm_class=None,
+                    )
+                except Exception as e:
+                    raise FileSystemError(f"Could not read the parquet files: {e}") from e
+            # features = Features.from_arrow_schema(all_pf[0].schema.to_arrow_schema())
+            # columns = [
+            #     col
+            #     for col in features
+            #     if all(bad_type not in str(features[col]) for bad_type in ["Image(", "Audio(", "'binary'"])
+            # ]
+            columns = None
+            # info = (
+            #     ""
+            #     if len(columns) == len(features)
+            #     else f"Some columns are not supported yet: {sorted(set(features) - set(columns))}"
+            # )
+            with StepProfiler(method="rows.index", step="create the row group offsets"):
+                row_group_offsets = np.cumsum(
+                    [
+                        parquet_file.metadata.row_group(group_id).num_rows
+                        for parquet_file in parquet_files
+                        for group_id in range(parquet_file.metadata.num_row_groups)
+                    ]
+                )
+            with StepProfiler(method="rows.index", step="create the row group readers"):
+                row_group_readers = [
+                    partial(parquet_file.read_row_group, i=group_id, columns=columns)
+                    for parquet_file in parquet_files
+                    for group_id in range(parquet_file.metadata.num_row_groups)
+                ]
+            return row_group_offsets, row_group_readers
+
+    return index
 
 
 def query(offset: int, length: int, row_group_offsets: Any, row_group_readers: List[RowGroupReader]) -> pa.Table:
@@ -144,7 +182,7 @@ def query(offset: int, length: int, row_group_offsets: Any, row_group_readers: L
         pa.Table: The requested rows.
     """
     if (len(row_group_offsets) == 0) or (len(row_group_readers) == 0):
-        raise ParquetResponseError("No parquet files found.")
+        raise ParquetResponseEmptyError("No parquet files found.")
     last_row_in_parquet = row_group_offsets[-1] - 1
     first_row = min(offset, last_row_in_parquet)
     last_row = min(offset, offset + length - 1, last_row_in_parquet)
@@ -155,7 +193,10 @@ def query(offset: int, length: int, row_group_offsets: Any, row_group_readers: L
 
 
 def create_rows_endpoint(
-    config_parquet_processing_step: ProcessingStep,
+    config_parquet_processing_steps: List[ProcessingStep],
+    init_processing_steps: List[ProcessingStep],
+    hf_endpoint: str,
+    hf_token: Optional[str] = None,
     hf_jwt_public_key: Optional[str] = None,
     hf_jwt_algorithm: Optional[str] = None,
     external_auth_url: Optional[str] = None,
@@ -163,6 +204,13 @@ def create_rows_endpoint(
     max_age_long: int = 0,
     max_age_short: int = 0,
 ) -> Endpoint:
+    index = create_index(
+        config_parquet_processing_steps=config_parquet_processing_steps,
+        init_processing_steps=init_processing_steps,
+        hf_endpoint=hf_endpoint,
+        hf_token=hf_token,
+    )
+
     async def rows_endpoint(request: Request) -> Response:
         with StepProfiler(method="rows_endpoint", step="all"):
             try:
@@ -170,7 +218,7 @@ def create_rows_endpoint(
                     dataset = request.query_params.get("dataset")
                     config = request.query_params.get("config")
                     split = request.query_params.get("split")
-                    if not dataset or not are_valid_parameters([dataset, config, split]):
+                    if not dataset or not config or not split or not are_valid_parameters([dataset, config, split]):
                         raise MissingRequiredParameterError("Parameter 'dataset', 'config' and 'split' are required")
                     offset = int(request.query_params.get("offset", 0))
                     if offset < 0:
@@ -196,12 +244,7 @@ def create_rows_endpoint(
                     )
 
                 with StepProfiler(method="rows_endpoint", step="get row groups index"):
-                    row_group_offsets, row_group_readers = index(
-                        parquet_cache_kind=config_parquet_processing_step.cache_kind,
-                        dataset=dataset,
-                        config=config,
-                        split=split,
-                    )
+                    row_group_offsets, row_group_readers = index(dataset=dataset, config=config, split=split)
                 with StepProfiler(method="rows_endpoint", step="query the rows"):
                     pa_table = query(
                         offset=offset,
