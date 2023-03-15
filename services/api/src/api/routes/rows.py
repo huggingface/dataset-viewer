@@ -151,7 +151,7 @@ def query(offset: int, length: int, row_group_offsets: Any, row_group_readers: L
 
 def create_rows_endpoint(
     parquet_processing_step: ProcessingStep,
-    hf_jwt_public_key: Optional[Any] = None,
+    hf_jwt_public_key: Optional[str] = None,
     hf_jwt_algorithm: Optional[str] = None,
     external_auth_url: Optional[str] = None,
     hf_timeout_seconds: Optional[float] = None,
