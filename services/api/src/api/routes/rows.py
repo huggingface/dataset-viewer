@@ -66,7 +66,7 @@ RowGroupReader = partial[Any]
 
 
 @lru_cache(maxsize=128)
-def index(parquet_cache_kind: str, dataset: str, config: str, split: str) -> Tuple[Any, List[RowGroupReader]]:
+def index(config_parquet_cache_kind: str, dataset: str, config: str, split: str) -> Tuple[Any, List[RowGroupReader]]:
     # get the list of parquet files
     # try:
     #     result = get_response(kind=parquet_cache_kind, dataset=dataset)
@@ -74,7 +74,7 @@ def index(parquet_cache_kind: str, dataset: str, config: str, split: str) -> Tup
     #     # add "check_in_process" ...
     #     raise ResponseNotFoundError("Not found.") from e
     try:
-        response = requests.get(f"https://datasets-server.huggingface.co/parquet?dataset={dataset}")
+        response = requests.get(f"https://datasets-server.huggingface.co/parquet?dataset={dataset}&config={config}")
         response.raise_for_status()
         result = response.json()
     except Exception as e:
@@ -154,7 +154,7 @@ def query(offset: int, length: int, row_group_offsets: Any, row_group_readers: L
 
 
 def create_rows_endpoint(
-    parquet_processing_step: ProcessingStep,
+    config_parquet_processing_step: ProcessingStep,
     hf_jwt_public_key: Optional[str] = None,
     hf_jwt_algorithm: Optional[str] = None,
     external_auth_url: Optional[str] = None,
@@ -189,7 +189,10 @@ def create_rows_endpoint(
                 hf_timeout_seconds=hf_timeout_seconds,
             )
             row_group_offsets, row_group_readers = index(
-                parquet_cache_kind=parquet_processing_step.cache_kind, dataset=dataset, config=config, split=split
+                parquet_cache_kind=config_parquet_processing_step.cache_kind,
+                dataset=dataset,
+                config=config,
+                split=split,
             )
             pa_table = query(
                 offset=offset,
