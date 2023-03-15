@@ -14,7 +14,8 @@ def test_default_graph() -> None:
     splits = graph.get_step("/splits")
     first_rows = graph.get_step("/first-rows")
     parquet_and_dataset_info = graph.get_step("/parquet-and-dataset-info")
-    parquet = graph.get_step("/parquet")
+    config_parquet = graph.get_step("config-parquet")
+    dataset_parquet = graph.get_step("dataset-parquet")
     dataset_info = graph.get_step("/dataset-info")
     config_size = graph.get_step("config-size")
     dataset_size = graph.get_step("dataset-size")
@@ -42,13 +43,18 @@ def test_default_graph() -> None:
 
     assert parquet_and_dataset_info is not None
     assert parquet_and_dataset_info.parent is None
-    assert parquet_and_dataset_info.children == [parquet, dataset_info, config_size]
+    assert parquet_and_dataset_info.children == [config_parquet, dataset_info, config_size]
     assert parquet_and_dataset_info.get_ancestors() == []
 
-    assert parquet is not None
-    assert parquet.parent is parquet_and_dataset_info
-    assert parquet.children == []
-    assert parquet.get_ancestors() == [parquet_and_dataset_info]
+    assert config_parquet is not None
+    assert config_parquet.parent is parquet_and_dataset_info
+    assert config_parquet.children == [dataset_parquet]
+    assert config_parquet.get_ancestors() == [parquet_and_dataset_info]
+
+    assert dataset_parquet is not None
+    assert dataset_parquet.parent is config_parquet
+    assert dataset_parquet.children == []
+    assert dataset_parquet.get_ancestors() == [parquet_and_dataset_info, config_parquet]
 
     assert dataset_info is not None
     assert dataset_info.parent is parquet_and_dataset_info

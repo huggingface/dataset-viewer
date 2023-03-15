@@ -115,7 +115,10 @@ class EndpointConfig:
             },
             "/first-rows": {"split": ["/first-rows"]},
             "/parquet-and-dataset-info": {"dataset": ["/parquet-and-dataset-info"]},
-            "/parquet": {"dataset": ["/parquet"]},
+            "/parquet": {
+                "dataset": ["dataset-parquet"],
+                "config": ["config-parquet"],
+            },
             "/dataset-info": {"dataset": ["/dataset-info"]},
             "/size": {
                 "dataset": ["dataset-size"],

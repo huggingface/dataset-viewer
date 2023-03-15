@@ -384,7 +384,7 @@ workers:
     # Maximum number of jobs running at the same time for the same namespace
     maxJobsPerNamespace: 1
     # job types that this worker can process
-    workerOnlyJobTypes: "/parquet"
+    workerOnlyJobTypes: "dataset-parquet,config-parquet"
     nodeSelector: {}
     replicas: 1
     resources:

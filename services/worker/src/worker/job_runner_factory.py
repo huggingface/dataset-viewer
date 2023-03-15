@@ -12,11 +12,12 @@ from libcommon.storage import StrPath
 from worker.config import AppConfig, FirstRowsConfig, ParquetAndDatasetInfoConfig
 from worker.job_runner import JobRunner
 from worker.job_runners.config_names import ConfigNamesJobRunner
+from worker.job_runners.config_parquet import ConfigParquetJobRunner
 from worker.job_runners.config_size import ConfigSizeJobRunner
 from worker.job_runners.dataset_info import DatasetInfoJobRunner
+from worker.job_runners.dataset_parquet import DatasetParquetJobRunner
 from worker.job_runners.dataset_size import DatasetSizeJobRunner
 from worker.job_runners.first_rows import FirstRowsJobRunner
-from worker.job_runners.parquet import ParquetJobRunner
 from worker.job_runners.parquet_and_dataset_info import ParquetAndDatasetInfoJobRunner
 from worker.job_runners.split_names_from_dataset_info import (
     SplitNamesFromDatasetInfoJobRunner,
@@ -99,8 +100,15 @@ class JobRunnerFactory(BaseJobRunnerFactory):
                 hf_datasets_cache=self.hf_datasets_cache,
                 parquet_and_dataset_info_config=ParquetAndDatasetInfoConfig.from_env(),
             )
-        if job_type == ParquetJobRunner.get_job_type():
-            return ParquetJobRunner(
+        if job_type == ConfigParquetJobRunner.get_job_type():
+            return ConfigParquetJobRunner(
+                job_info=job_info,
+                common_config=self.app_config.common,
+                worker_config=self.app_config.worker,
+                processing_step=processing_step,
+            )
+        if job_type == DatasetParquetJobRunner.get_job_type():
+            return DatasetParquetJobRunner(
                 job_info=job_info,
                 common_config=self.app_config.common,
                 worker_config=self.app_config.worker,
@@ -140,7 +148,8 @@ class JobRunnerFactory(BaseJobRunnerFactory):
             SplitsJobRunner.get_job_type(),
             FirstRowsJobRunner.get_job_type(),
             ParquetAndDatasetInfoJobRunner.get_job_type(),
-            ParquetJobRunner.get_job_type(),
+            ConfigParquetJobRunner.get_job_type(),
+            DatasetParquetJobRunner.get_job_type(),
             DatasetInfoJobRunner.get_job_type(),
             DatasetSizeJobRunner.get_job_type(),
             ConfigSizeJobRunner.get_job_type(),
