@@ -91,7 +91,11 @@ def index(parquet_cache_kind: str, dataset: str, config: str, split: str) -> Tup
     desc = f"{dataset}/{config}/{split}"
     try:
         parquet_files: List[pq.ParquetFile] = thread_map(
-            partial(pq.ParquetFile, filesystem=fs), sources, desc=desc, unit="pq"
+            partial(pq.ParquetFile, filesystem=fs),
+            sources,
+            desc=desc,
+            unit="pq",
+            tqdm_class=None,
         )
         # parquet_files: List[pq.ParquetFile] = [pq.ParquetFile(source=source, filesystem=fs) for source in sources]
     except Exception as e:
