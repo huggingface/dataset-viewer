@@ -3,13 +3,14 @@
 
 import logging
 from http import HTTPStatus
-from typing import Any, List, Literal, Mapping, Optional, TypedDict
+from typing import Any, List, Literal, Mapping, Optional
 
 from libcommon.dataset import DatasetNotFoundError
 from libcommon.simple_cache import DoesNotExist, SplitFullName, get_response
 
 from worker.job_runner import CompleteJobResult, JobRunnerError
 from worker.job_runners._datasets_based_job_runner import DatasetsBasedJobRunner
+from worker.utils import SplitItem, SplitsList
 
 SplitNamesFromDatasetInfoJobRunnerErrorCode = Literal[
     "PreviousStepStatusError",
@@ -47,20 +48,10 @@ class PreviousStepFormatError(SplitNamesFromDatasetInfoJobRunnerError):
         super().__init__(message, HTTPStatus.INTERNAL_SERVER_ERROR, "PreviousStepFormatError", cause, False)
 
 
-class SplitNameItem(TypedDict):
-    dataset: str
-    config: str
-    split: str
-
-
-class SplitNamesFromDatasetInfoResponseContent(TypedDict):
-    splits: List[SplitNameItem]
-
-
 def compute_split_names_from_dataset_info_response(
     dataset: str,
     config: str,
-) -> SplitNamesFromDatasetInfoResponseContent:
+) -> SplitsList:
     """
     Get the response of /split-names-from-dataset-info for one specific dataset and config on huggingface.co
     computed from cached response in /dataset-info step.
@@ -75,7 +66,7 @@ def compute_split_names_from_dataset_info_response(
         config (`str`):
             A configuration name.
     Returns:
-        `SplitNamesFromDatasetInfoResponseContent`: An object with the list of split names for the dataset and config.
+        `SplitsList`: An object with the list of split names for the dataset and config.
     <Tip>
     Raises the following errors:
         - [`~job_runners.split_names_from_dataset_info.PreviousStepStatusError`]
@@ -101,11 +92,11 @@ def compute_split_names_from_dataset_info_response(
     except Exception as e:
         raise PreviousStepFormatError("Previous step did not return the expected content.") from e
 
-    split_name_items: List[SplitNameItem] = [
+    split_name_items: List[SplitItem] = [
         {"dataset": dataset, "config": config, "split": str(split)} for split in splits_content
     ]
 
-    return {"splits": split_name_items}
+    return SplitsList({"splits": split_name_items})
 
 
 class SplitNamesFromDatasetInfoJobRunner(DatasetsBasedJobRunner):

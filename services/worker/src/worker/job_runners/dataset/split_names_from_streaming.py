@@ -9,6 +9,7 @@ from libcommon.dataset import DatasetNotFoundError
 from libcommon.simple_cache import DoesNotExist, SplitFullName, get_response
 
 from worker.job_runner import JobResult, JobRunner, JobRunnerError
+from worker.utils import ConfigItem, SplitItem
 
 DatasetSplitNamesFromStreamingJobRunnerErrorCode = Literal[
     "PreviousStepStatusError", "PreviousStepFormatError", "ResponseNotReady"
@@ -52,23 +53,14 @@ class ResponseNotReadyError(DatasetSplitNamesFromStreamingJobRunnerError):
         super().__init__(message, HTTPStatus.INTERNAL_SERVER_ERROR, "ResponseNotReady")
 
 
-class PendingJob(TypedDict):
-    dataset: str
-    config: Optional[str]
-
-
-class SuccessJob(PendingJob):
-    split: str
-
-
-class FailedJob(PendingJob):
+class FailedConfigItem(ConfigItem):
     error: Mapping[str, Any]
 
 
 class DatasetSplitNamesFromStreamingResponse(TypedDict):
-    splits: List[SuccessJob]
-    pending: List[PendingJob]
-    failed: List[FailedJob]
+    splits: List[SplitItem]
+    pending: List[ConfigItem]
+    failed: List[FailedConfigItem]
 
 
 def compute_dataset_split_names_from_streaming_response(
@@ -108,9 +100,9 @@ def compute_dataset_split_names_from_streaming_response(
             f"Previous step gave an error: {config_names['http_status']}. This job should not have been created."
         )
     try:
-        splits: List[SuccessJob] = []
-        pending: List[PendingJob] = []
-        failed: List[FailedJob] = []
+        splits: List[SplitItem] = []
+        pending: List[ConfigItem] = []
+        failed: List[FailedConfigItem] = []
         total = 0
         for config_item in config_content:
             config = config_item["config"]
@@ -119,12 +111,12 @@ def compute_dataset_split_names_from_streaming_response(
                 response = get_response(kind="/split-names-from-streaming", dataset=dataset, config=config)
             except DoesNotExist:
                 logging.debug("No response found in previous step '/split-names-from-streaming' for this dataset.")
-                pending.append(PendingJob({"dataset": dataset, "config": config}))
+                pending.append(ConfigItem({"dataset": dataset, "config": config}))
                 continue
             if response["http_status"] != HTTPStatus.OK:
                 logging.debug(f"Previous step gave an error: {response['http_status']}.")
                 failed.append(
-                    FailedJob(
+                    FailedConfigItem(
                         {
                             "dataset": dataset,
                             "config": config,
@@ -135,7 +127,7 @@ def compute_dataset_split_names_from_streaming_response(
                 continue
             splits.extend(
                 [
-                    {"dataset": dataset, "config": config, "split": split_content["split"]}
+                    SplitItem({"dataset": dataset, "config": config, "split": split_content["split"]})
                     for split_content in response["content"]["splits"]
                 ]
             )
@@ -159,7 +151,7 @@ def compute_dataset_split_names_from_streaming_response(
 class DatasetSplitNamesFromStreamingJobRunner(JobRunner):
     @staticmethod
     def get_job_type() -> str:
-        return "dataset-split-names"
+        return "dataset-split-names-from-streaming"
 
     @staticmethod
     def get_job_runner_version() -> int:
