@@ -640,7 +640,7 @@ files = [
 [[package]]
 name = "hffs"
 version = "0.0.1.dev0"
-description = ""
+description = "Filesystem interface over huggingface.co repositories"
 category = "main"
 optional = false
 python-versions = ">=3.7.0"
@@ -654,14 +654,15 @@ packaging = ">=20.9"
 requests = "*"
 
 [package.extras]
+dev = ["black (>=23.1,<24.0)", "pytest", "ruff (>=0.0.241)"]
 quality = ["black (>=23.1,<24.0)", "ruff (>=0.0.241)"]
 tests = ["pytest"]
 
 [package.source]
 type = "git"
 url = "https://github.com/huggingface/hffs.git"
-reference = "HEAD"
-resolved_reference = "63298cde9f994a0ab16c3ba89c5f7a9d140f20b2"
+reference = "0e187e74d38e9436353691f4a7a26b15f0663f58"
+resolved_reference = "0e187e74d38e9436353691f4a7a26b15f0663f58"
 
 [[package]]
 name = "html5lib"
@@ -2277,4 +2278,4 @@ watchdog = ["watchdog"]
 [metadata]
 lock-version = "2.0"
 python-versions = "3.9.15"
-content-hash = "c2136a133edb5642ff3c25862676d5e3a041fae2e10940dc418e5be6395fd151"
+content-hash = "8b57c9001381e9e142c146a6522efc6bcab0dde4e6dcd9c2e50756000849c9ff"
