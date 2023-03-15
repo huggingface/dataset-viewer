@@ -230,22 +230,6 @@ class CacheEntryWithInfo(TypedDict):
     content: Mapping[str, Any]
 
 
-def get_responses_for_kind(kind: str, dataset: str) -> List[CacheEntryWithInfo]:
-    responses = CachedResponse.objects(kind=kind, dataset=dataset).only(
-        "dataset", "config", "http_status", "error_code", "content"
-    )
-    return [
-        {
-            "dataset": response.dataset,
-            "config": response.config,
-            "http_status": response.http_status,
-            "error_code": response.error_code,
-            "content": response.content,
-        }
-        for response in responses
-    ]
-
-
 def get_split_full_names_for_dataset_and_kind(dataset: str, kind: str) -> set[SplitFullName]:
     return {
         SplitFullName(dataset=response.dataset, config=response.config, split=response.split)
