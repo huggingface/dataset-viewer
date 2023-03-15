@@ -2,7 +2,7 @@
 # Copyright 2022 The HuggingFace Authors.
 
 import logging
-from typing import Any, Literal, Optional
+from typing import Literal, Optional
 
 import requests
 from requests import PreparedRequest
@@ -42,7 +42,7 @@ def auth_check(
     dataset: str,
     external_auth_url: Optional[str] = None,
     request: Optional[Request] = None,
-    hf_jwt_public_key: Optional[Any] = None,
+    hf_jwt_public_key: Optional[str] = None,
     hf_jwt_algorithm: Optional[str] = None,
     hf_timeout_seconds: Optional[float] = None,
 ) -> Literal[True]:
@@ -60,7 +60,7 @@ def auth_check(
           If None, the dataset is always authorized.
         request (Request | None): the request which optionally bears authentication headers: "cookie",
           "authorization" or "X-Api-Key"
-        hf_jwt_public_key (Any|None): the public key to use to decode the JWT token
+        hf_jwt_public_key (str|None): the public key to use to decode the JWT token
         hf_jwt_algorithm (str): the algorithm to use to decode the JWT token
         hf_timeout_seconds (float|None): the timeout in seconds for the external authentication service. It
           is used both for the connection timeout and the read timeout. If None, the request never timeouts.
