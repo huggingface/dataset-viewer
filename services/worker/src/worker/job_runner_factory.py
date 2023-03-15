@@ -11,21 +11,23 @@ from libcommon.storage import StrPath
 
 from worker.config import AppConfig, FirstRowsConfig, ParquetAndDatasetInfoConfig
 from worker.job_runner import JobRunner
-from worker.job_runners.config_names import ConfigNamesJobRunner
-from worker.job_runners.config_parquet import ConfigParquetJobRunner
-from worker.job_runners.config_size import ConfigSizeJobRunner
-from worker.job_runners.dataset_info import DatasetInfoJobRunner
-from worker.job_runners.dataset_parquet import DatasetParquetJobRunner
-from worker.job_runners.dataset_size import DatasetSizeJobRunner
-from worker.job_runners.dataset.split_names_from_streaming import DatasetSplitNamesFromStreamingJobRunner
-from worker.job_runners.first_rows import FirstRowsJobRunner
-from worker.job_runners.parquet_and_dataset_info import ParquetAndDatasetInfoJobRunner
 from worker.job_runners.config.split_names_from_dataset_info import (
     SplitNamesFromDatasetInfoJobRunner,
 )
 from worker.job_runners.config.split_names_from_streaming import (
     SplitNamesFromStreamingJobRunner,
 )
+from worker.job_runners.config_names import ConfigNamesJobRunner
+from worker.job_runners.config_parquet import ConfigParquetJobRunner
+from worker.job_runners.config_size import ConfigSizeJobRunner
+from worker.job_runners.dataset.split_names_from_streaming import (
+    DatasetSplitNamesFromStreamingJobRunner,
+)
+from worker.job_runners.dataset_info import DatasetInfoJobRunner
+from worker.job_runners.dataset_parquet import DatasetParquetJobRunner
+from worker.job_runners.dataset_size import DatasetSizeJobRunner
+from worker.job_runners.first_rows import FirstRowsJobRunner
+from worker.job_runners.parquet_and_dataset_info import ParquetAndDatasetInfoJobRunner
 from worker.job_runners.splits import SplitsJobRunner
 
 
@@ -146,9 +148,9 @@ class JobRunnerFactory(BaseJobRunnerFactory):
         if job_type == DatasetSplitNamesFromStreamingJobRunner.get_job_type():
             return DatasetSplitNamesFromStreamingJobRunner(
                 job_info=job_info,
-                app_config=self.app_config,
                 processing_step=processing_step,
-                hf_datasets_cache=self.hf_datasets_cache,
+                common_config=self.app_config.common,
+                worker_config=self.app_config.worker,
             )
         supported_job_types = [
             ConfigNamesJobRunner.get_job_type(),

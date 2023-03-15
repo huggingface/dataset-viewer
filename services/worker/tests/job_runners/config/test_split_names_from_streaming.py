@@ -18,7 +18,7 @@ from worker.job_runners.config.split_names_from_streaming import (
 )
 from worker.resources import LibrariesResource
 
-from ..fixtures.hub import HubDatasets, get_default_config_split
+from ...fixtures.hub import HubDatasets, get_default_config_split
 
 GetJobRunner = Callable[[str, str, AppConfig, bool], SplitNamesFromStreamingJobRunner]
 

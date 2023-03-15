@@ -6,16 +6,13 @@ from http import HTTPStatus
 from typing import Any, List, Literal, Mapping, Optional, Tuple, TypedDict
 
 from libcommon.dataset import DatasetNotFoundError
-from libcommon.simple_cache import (
-    DoesNotExist,
-    SplitFullName,
-    get_response,
-)
+from libcommon.simple_cache import DoesNotExist, SplitFullName, get_response
 
-from worker.job_runner import JobResult, JobRunnerError
-from worker.job_runners._datasets_based_job_runner import DatasetsBasedJobRunner
+from worker.job_runner import JobResult, JobRunner, JobRunnerError
 
-DatasetSplitNamesFromStreamingJobRunnerErrorCode = Literal["PreviousStepStatusError", "PreviousStepFormatError", "ResponseNotReady"]
+DatasetSplitNamesFromStreamingJobRunnerErrorCode = Literal[
+    "PreviousStepStatusError", "PreviousStepFormatError", "ResponseNotReady"
+]
 
 
 class DatasetSplitNamesFromStreamingJobRunnerError(JobRunnerError):
@@ -68,7 +65,7 @@ class FailedJob(PendingJob):
     error: Mapping[str, Any]
 
 
-class DatasetSplitNamesFromStreamingResponseContent(TypedDict):
+class DatasetSplitNamesFromStreamingResponse(TypedDict):
     splits: List[SuccessJob]
     pending: List[PendingJob]
     failed: List[FailedJob]
@@ -76,7 +73,7 @@ class DatasetSplitNamesFromStreamingResponseContent(TypedDict):
 
 def compute_dataset_split_names_from_streaming_response(
     dataset: str,
-) -> Tuple[DatasetSplitNamesFromStreamingResponseContent, float]:
+) -> Tuple[DatasetSplitNamesFromStreamingResponse, float]:
     """
     Get the response of /splits for one specific dataset on huggingface.co
     computed from responses cached in /split-names-from-streaming step.
@@ -85,7 +82,7 @@ def compute_dataset_split_names_from_streaming_response(
         dataset (`str`):
             A namespace (user or an organization) and a repo name separated by a `/`.
     Returns:
-        `DatasetSplitNamesFromStreamingResponseContent`: An object with a list of split names for the dataset [splits],
+        `DatasetSplitNamesFromStreamingResponse`: An object with a list of split names for the dataset [splits],
          a list of pending configs to be processed [pending] and the list of errors [failed] by config.
     <Tip>
     Raises the following errors:
@@ -115,7 +112,8 @@ def compute_dataset_split_names_from_streaming_response(
         pending: List[PendingJob] = []
         failed: List[FailedJob] = []
         total = 0
-        for config in config_content.keys():
+        for config_item in config_content:
+            config = config_item["config"]
             total += 1
             try:
                 response = get_response(kind="/split-names-from-streaming", dataset=dataset, config=config)
@@ -135,17 +133,19 @@ def compute_dataset_split_names_from_streaming_response(
                     )
                 )
                 continue
-            splits.extend([
-                            {"dataset": dataset, "config": config, "split": split_content["split"]}
-                            for split_content in response["content"]["splits"]
-                        ])
+            splits.extend(
+                [
+                    {"dataset": dataset, "config": config, "split": split_content["split"]}
+                    for split_content in response["content"]["splits"]
+                ]
+            )
     except Exception as e:
         raise PreviousStepFormatError("Previous step did not return the expected content.", e) from e
 
     progress = (total - len(pending)) / total if total else 1.0
 
     return (
-        DatasetSplitNamesFromStreamingResponseContent(
+        DatasetSplitNamesFromStreamingResponse(
             {
                 "splits": splits,
                 "pending": pending,
@@ -156,7 +156,7 @@ def compute_dataset_split_names_from_streaming_response(
     )
 
 
-class DatasetSplitNamesFromStreamingJobRunner(DatasetsBasedJobRunner):
+class DatasetSplitNamesFromStreamingJobRunner(JobRunner):
     @staticmethod
     def get_job_type() -> str:
         return "dataset-split-names"
@@ -166,6 +166,8 @@ class DatasetSplitNamesFromStreamingJobRunner(DatasetsBasedJobRunner):
         return 1
 
     def compute(self) -> JobResult:
+        if self.dataset is None:
+            raise ValueError("dataset is required")
         response_content, progress = compute_dataset_split_names_from_streaming_response(dataset=self.dataset)
         return JobResult(response_content, progress=progress)
 
