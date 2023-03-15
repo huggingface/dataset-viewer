@@ -9,7 +9,7 @@ from libcommon.dataset import DatasetNotFoundError
 from libcommon.processing_graph import ProcessingStep
 from libcommon.queue import Priority
 from libcommon.resources import CacheMongoResource, QueueMongoResource
-from libcommon.simple_cache import upsert_response
+from libcommon.simple_cache import SplitFullName, upsert_response
 
 from worker.config import AppConfig
 from worker.job_runners.dataset.split_names_from_streaming import (
@@ -238,3 +238,31 @@ def test_doesnotexist(app_config: AppConfig, get_job_runner: GetJobRunner) -> No
     job_runner = get_job_runner(dataset, app_config, False)
     with pytest.raises(DatasetNotFoundError):
         job_runner.compute()
+
+
+def test_get_new_splits(app_config: AppConfig, get_job_runner: GetJobRunner) -> None:
+    dataset = "dataset"
+    job_runner = get_job_runner(dataset, app_config, False)
+    content = {
+        "splits": [
+            {
+                "dataset": dataset,
+                "config": "config_a",
+                "split": "split_a",
+            },
+            {
+                "dataset": dataset,
+                "config": "config_b",
+                "split": "split_b",
+            },
+        ],
+        "pending": [],
+        "failed": [],
+    }
+    expected = {
+        SplitFullName(dataset=dataset, config="config_a", split="split_a"),
+        SplitFullName(dataset=dataset, config="config_b", split="split_b"),
+    }
+    new_splits = job_runner.get_new_splits(content=content)
+    assert new_splits
+    assert new_splits == expected
