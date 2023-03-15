@@ -4,18 +4,16 @@
 import logging
 from functools import lru_cache, partial
 from typing import Any, List, Optional, Tuple
-from typing_extensions import Protocol
-
 
 import numpy as np
 import pyarrow as pa
 import pyarrow.parquet as pq
 from hffs.fs import HfFileSystem
 from libcommon.processing_graph import ProcessingStep
-
 from starlette.requests import Request
 from starlette.responses import Response
 from tqdm.contrib.concurrent import thread_map
+from typing_extensions import Protocol
 
 from api.authentication import auth_check
 from api.prometheus import StepProfiler
