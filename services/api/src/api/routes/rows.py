@@ -50,18 +50,19 @@ class ParquetResponseEmptyError(Exception):
 
 # TODO: how to invalidate the cache when the parquet branch is created or deleted?
 @lru_cache(maxsize=128)
-def get_parquet_fs(dataset: str) -> HfFileSystem:
+def get_parquet_fs(dataset: str, hf_token: Optional[str]) -> HfFileSystem:
     """Get the parquet filesystem for a dataset.
 
     The parquet files are stored in a separate branch of the dataset repository (see PARQUET_REVISION)
 
     Args:
         dataset (str): The dataset name.
+        hf_token (Optional[str]): The token to access the filesystem.
 
     Returns:
         HfFileSystem: The parquet filesystem.
     """
-    return HfFileSystem(dataset, repo_type="dataset", revision=PARQUET_REVISION)
+    return HfFileSystem(dataset, repo_type="dataset", revision=PARQUET_REVISION, token=hf_token)
 
 
 # RowGroupReaderBase = Callable[[], pa.Table]
@@ -120,16 +121,12 @@ def create_index(
                 if not sources:
                     raise ParquetResponseEmptyError("No parquet files found.")
             with StepProfiler(method="rows.index", step="get the Hub's dataset filesystem"):
-                fs = get_parquet_fs(dataset)
+                fs = get_parquet_fs(dataset=dataset, hf_token=hf_token)
             with StepProfiler(method="rows.index", step="get one parquet reader per parquet file"):
                 desc = f"{dataset}/{config}/{split}"
                 try:
                     parquet_files: List[pq.ParquetFile] = thread_map(
-                        partial(pq.ParquetFile, filesystem=fs),
-                        sources,
-                        desc=desc,
-                        unit="pq",
-                        tqdm_class=None,
+                        partial(pq.ParquetFile, filesystem=fs), sources, desc=desc, unit="pq", disable=True
                     )
                 except Exception as e:
                     raise FileSystemError(f"Could not read the parquet files: {e}") from e
@@ -229,7 +226,6 @@ def create_rows_endpoint(
                     logging.info(
                         f"/rows, dataset={dataset}, config={config}, split={split}, offset={offset}, length={length}"
                     )
-
                 with StepProfiler(method="rows_endpoint", step="check authentication"):
                     # if auth_check fails, it will raise an exception that will be caught below
                     auth_check(
@@ -240,7 +236,6 @@ def create_rows_endpoint(
                         hf_jwt_algorithm=hf_jwt_algorithm,
                         hf_timeout_seconds=hf_timeout_seconds,
                     )
-
                 with StepProfiler(method="rows_endpoint", step="get row groups index"):
                     row_group_offsets, row_group_readers = index(dataset=dataset, config=config, split=split)
                 with StepProfiler(method="rows_endpoint", step="query the rows"):
