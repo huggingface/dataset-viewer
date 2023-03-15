@@ -2,7 +2,7 @@
 # Copyright 2022 The HuggingFace Authors.
 
 import logging
-from typing import Any, List, Optional, Set
+from typing import List, Optional, Set
 
 from libcommon.processing_graph import ProcessingStep
 from libcommon.simple_cache import get_valid_datasets, get_validity_by_kind
@@ -69,7 +69,7 @@ def create_valid_endpoint(
 
 def create_is_valid_endpoint(
     processing_steps_for_valid: List[ProcessingStep],
-    hf_jwt_public_key: Optional[Any] = None,
+    hf_jwt_public_key: Optional[str] = None,
     hf_jwt_algorithm: Optional[str] = None,
     external_auth_url: Optional[str] = None,
     hf_timeout_seconds: Optional[float] = None,

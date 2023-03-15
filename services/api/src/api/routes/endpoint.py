@@ -4,7 +4,7 @@
 import logging
 from abc import ABC, abstractmethod
 from http import HTTPStatus
-from typing import Any, List, Mapping, Optional, Tuple
+from typing import List, Mapping, Optional, Tuple
 
 from libcommon.dataset import DatasetError
 from libcommon.operations import PreviousStepError, check_in_process
@@ -202,7 +202,7 @@ def create_endpoint(
     init_processing_steps: List[ProcessingStep],
     hf_endpoint: str,
     hf_token: Optional[str] = None,
-    hf_jwt_public_key: Optional[Any] = None,
+    hf_jwt_public_key: Optional[str] = None,
     hf_jwt_algorithm: Optional[str] = None,
     external_auth_url: Optional[str] = None,
     hf_timeout_seconds: Optional[float] = None,
