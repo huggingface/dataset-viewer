@@ -64,7 +64,7 @@ def get_job_runner(
                 parent=None,
                 ancestors=[],
                 children=[],
-                job_runner_version=ParquetJobRunner.get_job_runner_version(),
+                job_runner_version=ConfigParquetJobRunner.get_job_runner_version(),
             ),
         )
 

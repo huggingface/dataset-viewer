@@ -5,7 +5,7 @@ import logging
 from http import HTTPStatus
 from typing import Any, List, Literal, Mapping, Optional, TypedDict
 
-from libcommon.constants import PROCESSING_STEP_PARQUET_VERSION
+from libcommon.constants import PROCESSING_STEP_CONFIG_PARQUET_VERSION
 from libcommon.dataset import DatasetNotFoundError
 from libcommon.simple_cache import DoesNotExist, SplitFullName, get_response
 
@@ -131,7 +131,7 @@ class ConfigParquetJobRunner(JobRunner):
 
     @staticmethod
     def get_job_runner_version() -> int:
-        return PROCESSING_STEP_PARQUET_VERSION
+        return PROCESSING_STEP_CONFIG_PARQUET_VERSION
 
     def compute(self) -> CompleteJobResult:
         if self.config is None:
