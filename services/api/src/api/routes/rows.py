@@ -18,6 +18,7 @@ from starlette.responses import Response
 from tqdm.contrib.concurrent import thread_map
 
 from api.authentication import auth_check
+from api.prometheus import StepProfiler
 from api.utils import (  # ResponseNotFoundError,
     ApiCustomError,
     Endpoint,
@@ -163,50 +164,60 @@ def create_rows_endpoint(
     max_age_short: int = 0,
 ) -> Endpoint:
     async def rows_endpoint(request: Request) -> Response:
-        try:
-            dataset = request.query_params.get("dataset")
-            config = request.query_params.get("config")
-            split = request.query_params.get("split")
-            if not dataset or not are_valid_parameters([dataset, config, split]):
-                raise MissingRequiredParameterError("Parameter 'dataset', 'config' and 'split' are required")
-            offset = int(request.query_params.get("offset", 0))
-            if offset < 0:
-                raise InvalidParameterError(message="Offset must be positive")
-            length = int(request.query_params.get("length", MAX_ROWS))
-            if length < 0:
-                raise InvalidParameterError("Length must be positive")
-            if length > MAX_ROWS:
-                raise InvalidParameterError(f"Length must be less than or equal to {MAX_ROWS}")
-            logging.info(f"/rows, dataset={dataset}, config={config}, split={split}, offset={offset}, length={length}")
+        with StepProfiler(method="rows_endpoint", step="all"):
+            try:
+                with StepProfiler(method="rows_endpoint", step="validate parameters"):
+                    dataset = request.query_params.get("dataset")
+                    config = request.query_params.get("config")
+                    split = request.query_params.get("split")
+                    if not dataset or not are_valid_parameters([dataset, config, split]):
+                        raise MissingRequiredParameterError("Parameter 'dataset', 'config' and 'split' are required")
+                    offset = int(request.query_params.get("offset", 0))
+                    if offset < 0:
+                        raise InvalidParameterError(message="Offset must be positive")
+                    length = int(request.query_params.get("length", MAX_ROWS))
+                    if length < 0:
+                        raise InvalidParameterError("Length must be positive")
+                    if length > MAX_ROWS:
+                        raise InvalidParameterError(f"Length must be less than or equal to {MAX_ROWS}")
+                    logging.info(
+                        f"/rows, dataset={dataset}, config={config}, split={split}, offset={offset}, length={length}"
+                    )
 
-            # if auth_check fails, it will raise an exception that will be caught below
-            auth_check(
-                dataset,
-                external_auth_url=external_auth_url,
-                request=request,
-                hf_jwt_public_key=hf_jwt_public_key,
-                hf_jwt_algorithm=hf_jwt_algorithm,
-                hf_timeout_seconds=hf_timeout_seconds,
-            )
-            row_group_offsets, row_group_readers = index(
-                parquet_cache_kind=config_parquet_processing_step.cache_kind,
-                dataset=dataset,
-                config=config,
-                split=split,
-            )
-            pa_table = query(
-                offset=offset,
-                length=length,
-                row_group_offsets=row_group_offsets,
-                row_group_readers=row_group_readers,
-            )
-            # TODO: ignore, or transform, some of the cells (e.g. audio or image)
-            rows = pa_table.to_pylist()
-            # TODO: add features?
-            return get_json_ok_response(content={"rows": rows}, max_age=max_age_long)
-        except ApiCustomError as e:
-            return get_json_api_error_response(error=e, max_age=max_age_short)
-        except Exception as e:
-            return get_json_api_error_response(error=UnexpectedError("Unexpected error.", e), max_age=max_age_short)
+                with StepProfiler(method="rows_endpoint", step="check authentication"):
+                    # if auth_check fails, it will raise an exception that will be caught below
+                    auth_check(
+                        dataset,
+                        external_auth_url=external_auth_url,
+                        request=request,
+                        hf_jwt_public_key=hf_jwt_public_key,
+                        hf_jwt_algorithm=hf_jwt_algorithm,
+                        hf_timeout_seconds=hf_timeout_seconds,
+                    )
+
+                with StepProfiler(method="rows_endpoint", step="get row groups index"):
+                    row_group_offsets, row_group_readers = index(
+                        parquet_cache_kind=config_parquet_processing_step.cache_kind,
+                        dataset=dataset,
+                        config=config,
+                        split=split,
+                    )
+                with StepProfiler(method="rows_endpoint", step="query the rows"):
+                    pa_table = query(
+                        offset=offset,
+                        length=length,
+                        row_group_offsets=row_group_offsets,
+                        row_group_readers=row_group_readers,
+                    )
+                with StepProfiler(method="rows_endpoint", step="transform to a list"):
+                    # TODO: ignore, or transform, some of the cells (e.g. audio or image)
+                    rows = pa_table.to_pylist()
+                    # TODO: add features?
+                with StepProfiler(method="rows_endpoint", step="generate the OK response"):
+                    return get_json_ok_response(content={"rows": rows}, max_age=max_age_long)
+            except Exception as e:
+                error = e if isinstance(e, ApiCustomError) else UnexpectedError("Unexpected error.", e)
+                with StepProfiler(method="rows_endpoint", step="generate API error response"):
+                    return get_json_api_error_response(error=error, max_age=max_age_short)
 
     return rows_endpoint
