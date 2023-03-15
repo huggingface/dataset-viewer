@@ -222,14 +222,6 @@ def get_response(kind: str, dataset: str, config: Optional[str] = None, split: O
     }
 
 
-class CacheEntryWithInfo(TypedDict):
-    dataset: str
-    config: Optional[str]
-    http_status: HTTPStatus
-    error_code: Optional[str]
-    content: Mapping[str, Any]
-
-
 def get_split_full_names_for_dataset_and_kind(dataset: str, kind: str) -> set[SplitFullName]:
     return {
         SplitFullName(dataset=response.dataset, config=response.config, split=response.split)
