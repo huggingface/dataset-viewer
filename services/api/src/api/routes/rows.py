@@ -65,8 +65,6 @@ def get_parquet_fs(dataset: str, hf_token: Optional[str]) -> HfFileSystem:
     return HfFileSystem(dataset, repo_type="dataset", revision=PARQUET_REVISION, token=hf_token)
 
 
-# RowGroupReaderBase = Callable[[], pa.Table]
-# RowGroupReader = Union[RowGroupReaderBase, partial[RowGroupReaderBase]]
 RowGroupReader = partial[Any]
 
 Index = Tuple[Any, List[RowGroupReader]]
@@ -83,7 +81,6 @@ def create_index(
     hf_endpoint: str,
     hf_token: Optional[str] = None,
 ) -> Indexer:
-    # _lru_cache_wrapper
     @lru_cache(maxsize=128)
     def index(
         dataset: str,
