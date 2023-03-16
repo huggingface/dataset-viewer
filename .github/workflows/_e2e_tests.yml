@@ -41,8 +41,7 @@ jobs:
           PARQUET_AND_DATASET_INFO_COMMITTER_HF_TOKEN: "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"
           PORT_REVERSE_PROXY: "8000"
           PROMETHEUS_MULTIPROC_DIR: "/tmp"
-          QUEUE_SLEEP_TIME: "1"
-          WORKER_SLEEP_TIME: "1"
+          WORKER_SLEEP_SECONDS: "1"
         run: docker compose -f docker-compose-datasets-server.yml up -d
         working-directory: ./tools
       -
@@ -81,7 +80,6 @@ jobs:
           PARQUET_AND_DATASET_INFO_COMMITTER_HF_TOKEN: "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"
           PORT_REVERSE_PROXY: "8000"
           PROMETHEUS_MULTIPROC_DIR: "/tmp"
-          QUEUE_SLEEP_TIME: "1"
-          WORKER_SLEEP_TIME : "1"
+          WORKER_SLEEP_SECONDS : "1"
         run: |
           poetry run python -m pytest -vv -x tests
