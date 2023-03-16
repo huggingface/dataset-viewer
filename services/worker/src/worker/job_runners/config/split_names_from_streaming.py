@@ -3,7 +3,7 @@
 
 import logging
 from http import HTTPStatus
-from typing import Any, List, Literal, Mapping, Optional, TypedDict, Union
+from typing import Any, List, Literal, Mapping, Optional, Union
 
 from datasets import get_dataset_split_names
 from datasets.data_files import EmptyDatasetError as _EmptyDatasetError
@@ -11,6 +11,7 @@ from libcommon.simple_cache import SplitFullName
 
 from worker.job_runner import CompleteJobResult, JobRunnerError
 from worker.job_runners._datasets_based_job_runner import DatasetsBasedJobRunner
+from worker.utils import SplitItem, SplitsList
 
 SplitNamesFromStreamingJobRunnerErrorCode = Literal[
     "EmptyDatasetError",
@@ -48,21 +49,11 @@ class EmptyDatasetError(SplitNamesFromStreamingJobRunnerError):
         super().__init__(message, HTTPStatus.INTERNAL_SERVER_ERROR, "EmptyDatasetError", cause, True)
 
 
-class SplitNameItem(TypedDict):
-    dataset: str
-    config: str
-    split: str
-
-
-class SplitNamesFromStreamingResponseContent(TypedDict):
-    splits: List[SplitNameItem]
-
-
 def compute_split_names_from_streaming_response(
     dataset: str,
     config: str,
     hf_token: Optional[str] = None,
-) -> SplitNamesFromStreamingResponseContent:
+) -> SplitsList:
     """
     Get the response of /split-names-from-streaming for one specific dataset and config on huggingface.co.
     Dataset can be private or gated if you pass an acceptable token.
@@ -85,7 +76,7 @@ def compute_split_names_from_streaming_response(
         hf_token (`str`, *optional*):
             An authentication token (See https://huggingface.co/settings/token)
     Returns:
-        `SplitNamesFromStreamingResponseContent`: An object with the list of split names for the dataset and config.
+        `SplitsList`: An object with the list of split names for the dataset and config.
     <Tip>
     Raises the following errors:
         - [`~job_runners.split_names.EmptyDatasetError`]
@@ -98,7 +89,7 @@ def compute_split_names_from_streaming_response(
     use_auth_token: Union[bool, str, None] = hf_token if hf_token is not None else False
 
     try:
-        split_name_items: List[SplitNameItem] = [
+        split_name_items: List[SplitItem] = [
             {"dataset": dataset, "config": config, "split": str(split)}
             for split in get_dataset_split_names(path=dataset, config_name=config, use_auth_token=use_auth_token)
         ]
@@ -109,7 +100,7 @@ def compute_split_names_from_streaming_response(
             f"Cannot get the split names for the config '{config}' of the dataset.",
             cause=err,
         ) from err
-    return {"splits": split_name_items}
+    return SplitsList({"splits": split_name_items})
 
 
 class SplitNamesFromStreamingJobRunner(DatasetsBasedJobRunner):

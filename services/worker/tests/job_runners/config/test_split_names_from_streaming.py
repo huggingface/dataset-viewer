@@ -13,12 +13,12 @@ from libcommon.resources import CacheMongoResource, QueueMongoResource
 from libcommon.simple_cache import DoesNotExist, get_response
 
 from worker.config import AppConfig
-from worker.job_runners.split_names_from_streaming import (
+from worker.job_runners.config.split_names_from_streaming import (
     SplitNamesFromStreamingJobRunner,
 )
 from worker.resources import LibrariesResource
 
-from ..fixtures.hub import HubDatasets, get_default_config_split
+from ...fixtures.hub import HubDatasets, get_default_config_split
 
 GetJobRunner = Callable[[str, str, AppConfig, bool], SplitNamesFromStreamingJobRunner]
 
