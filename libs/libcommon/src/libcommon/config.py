@@ -15,6 +15,8 @@ from libcommon.constants import (
     PROCESSING_STEP_DATASET_INFO_VERSION,
     PROCESSING_STEP_DATASET_PARQUET_VERSION,
     PROCESSING_STEP_DATASET_SIZE_VERSION,
+    PROCESSING_STEP_DATASET_SPLIT_NAMES_FROM_DATASET_INFO_VERSION,
+    PROCESSING_STEP_DATASET_SPLIT_NAMES_FROM_STREAMING_VERSION,
     PROCESSING_STEP_FIRST_ROWS_VERSION,
     PROCESSING_STEP_PARQUET_AND_DATASET_INFO_VERSION,
     PROCESSING_STEP_SPLIT_NAMES_FROM_DATASET_INFO_VERSION,
@@ -160,17 +162,15 @@ class ProcessingGraphConfig:
                 "requires": "config-size",
                 "job_runner_version": PROCESSING_STEP_DATASET_SIZE_VERSION,
             },
-            "config-parquet": {"input_type": "config", "requires": "/parquet-and-dataset-info"},
-            "dataset-parquet": {"input_type": "dataset", "requires": "config-parquet"},
-            "config-size": {"input_type": "config", "requires": "/parquet-and-dataset-info"},
-            "dataset-size": {"input_type": "dataset", "requires": "config-size"},
             "dataset-split-names-from-streaming": {
                 "input_type": "dataset",
                 "requires": "/split-names-from-streaming",
+                "job_runner_version": PROCESSING_STEP_DATASET_SPLIT_NAMES_FROM_STREAMING_VERSION,
             },
             "dataset-split-names-from-dataset-info": {
                 "input_type": "dataset",
                 "requires": "/split-names-from-dataset-info",
+                "job_runner_version": PROCESSING_STEP_DATASET_SPLIT_NAMES_FROM_DATASET_INFO_VERSION,
             },
         }
     )
