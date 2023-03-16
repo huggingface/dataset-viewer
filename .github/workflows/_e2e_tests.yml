@@ -58,22 +58,22 @@ jobs:
       -
         name: End-to-end tests
         env:
-          QUEUE_SLEEP_TIME: "1"
+          ADMIN_UVICORN_NUM_WORKERS: "2"
+          ADMIN_UVICORN_PORT: "8081"
+          # JWT: it's not tested in the e2e tests, but it's good to ensure we're able to fetch it at least.
+          API_HF_JWT_ALGORITHM: "EdDSA"
+          API_HF_JWT_PUBLIC_KEY_URL: "https://hub-ci.huggingface.co/api/keys/jwt"
+          API_HF_TIMEOUT_SECONDS: "10"
+          API_UVICORN_NUM_WORKERS: "2"
+          API_UVICORN_PORT: "8080"
           # hard coded, see e2e/tests/fixtures/hub.py
           COMMON_HF_ENDPOINT: "https://hub-ci.huggingface.co"
           COMMON_HF_TOKEN: "hf_app_datasets-server_token"
-          PARQUET_AND_DATASET_INFO_COMMITTER_HF_TOKEN: "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"
+          COMMON_LOG_LEVEL: "DEBUG"
           FIRST_ROWS_MAX_NUMBER: "4"
+          PARQUET_AND_DATASET_INFO_COMMITTER_HF_TOKEN: "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"
           PORT_REVERSE_PROXY: "8000"
           PROMETHEUS_MULTIPROC_DIR: "/tmp"
-          API_UVICORN_NUM_WORKERS: "2"
-          API_UVICORN_PORT: "8080"
-          ADMIN_UVICORN_NUM_WORKERS: "2"
-          ADMIN_UVICORN_PORT: "8081"
-          COMMON_LOG_LEVEL: "DEBUG"
-          API_HF_TIMEOUT_SECONDS: "10"
-          # JWT: it's not tested in the e2e tests, but it's good to ensure we're able to fetch it at least.
-          API_HF_JWT_PUBLIC_KEY_URL: "https://hub-ci.huggingface.co/api/keys/jwt"
-          API_HF_JWT_ALGORITHM: "EdDSA"
+          QUEUE_SLEEP_TIME: "1"
         run: |
           poetry run python -m pytest -vv -x tests
