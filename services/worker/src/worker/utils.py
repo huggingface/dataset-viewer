@@ -1,7 +1,7 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2022 The HuggingFace Authors.
 
-from typing import List, Optional, TypedDict
+from typing import Any, List, Mapping, Optional, TypedDict
 
 
 class DatasetItem(TypedDict):
@@ -18,3 +18,13 @@ class SplitItem(ConfigItem):
 
 class SplitsList(TypedDict):
     splits: List[SplitItem]
+
+
+class FailedConfigItem(ConfigItem):
+    error: Mapping[str, Any]
+
+
+class DatasetSplitNamesResponse(TypedDict):
+    splits: List[SplitItem]
+    pending: List[ConfigItem]
+    failed: List[FailedConfigItem]

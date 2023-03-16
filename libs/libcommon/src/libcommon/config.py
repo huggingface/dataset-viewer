@@ -115,6 +115,10 @@ class ProcessingGraphConfig:
                 "input_type": "dataset",
                 "requires": "/split-names-from-streaming",
             },
+            "dataset-split-names-from-dataset-info": {
+                "input_type": "dataset",
+                "requires": "/split-names-from-dataset-info",
+            },
         }
     )
 
