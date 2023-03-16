@@ -71,20 +71,28 @@ def auth_check(
     with StepProfiler(method="auth_check", step="all"):
         with StepProfiler(method="auth_check", step="prepare parameters"):
             if request:
-                HEADER = "x-api-key"
-                token = request.headers.get(HEADER)
-                if token and is_jwt_valid(
-                    dataset=dataset, token=token, public_key=hf_jwt_public_key, algorithm=hf_jwt_algorithm
-                ):
-                    logging.debug(
-                        f"By-passing the authentication step, because a valid JWT was passed in header: '{HEADER}' for"
-                        f" dataset {dataset}. JWT was: {token}"
-                    )
-                    return True
                 logging.debug(
-                    f"Error while validating the JWT passed in header: '{HEADER}' for dataset {dataset}. Trying with"
-                    f" the following authentication mechanisms. JWT was: {token}"
+                    f"Looking if jwt is passed in request headers {request.headers} to bypass authentication."
                 )
+                HEADER = "x-api-key"
+                if token := request.headers.get(HEADER):
+                    if is_jwt_valid(
+                        dataset=dataset, token=token, public_key=hf_jwt_public_key, algorithm=hf_jwt_algorithm
+                    ):
+                        logging.debug(
+                            f"By-passing the authentication step, because a valid JWT was passed in header: '{HEADER}'"
+                            f" for dataset {dataset}. JWT was: {token}"
+                        )
+                        return True
+                    logging.debug(
+                        f"Error while validating the JWT passed in header: '{HEADER}' for dataset {dataset}. Trying"
+                        f" with the following authentication mechanisms. JWT was: {token}"
+                    )
+                else:
+                    logging.debug(
+                        f"No JWT was passed in header: '{HEADER}' for dataset {dataset}. Trying with the following"
+                        " authentication mechanisms."
+                    )
             if external_auth_url is None:
                 return True
             try:

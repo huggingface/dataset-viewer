@@ -1,6 +1,7 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2022 The HuggingFace Authors.
 
+import logging
 from typing import Any, Optional, Union
 
 import jwt
@@ -135,6 +136,10 @@ def is_jwt_valid(
         bool: True if the JWT is valid for the input dataset, else False
     """
     if not public_key or not algorithm:
+        logging.debug(
+            f"Missing public key '{public_key}' or algorithm '{algorithm}' to decode JWT token. Skipping JWT"
+            " validation."
+        )
         return False
     try:
         decoded = jwt.decode(
@@ -143,7 +148,12 @@ def is_jwt_valid(
             algorithms=[algorithm],
             options={"require": ["exp", "sub", "read"], "verify_exp": verify_exp},
         )
+        logging.debug(f"Decoded JWT is: '{public_key}'.")
     except Exception:
+        logging.debug(
+            f"Missing public key '{public_key}' or algorithm '{algorithm}' to decode JWT token. Skipping JWT"
+            " validation."
+        )
         return False
     sub = decoded.get("sub")
     if not isinstance(sub, str) or not sub.startswith("datasets/") or sub.removeprefix("datasets/") != dataset:
