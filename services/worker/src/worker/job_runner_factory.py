@@ -20,11 +20,11 @@ from worker.job_runners.config.split_names_from_streaming import (
 from worker.job_runners.config_names import ConfigNamesJobRunner
 from worker.job_runners.config_parquet import ConfigParquetJobRunner
 from worker.job_runners.config_size import ConfigSizeJobRunner
-from worker.job_runners.dataset.split_names_from_streaming import (
-    DatasetSplitNamesFromStreamingJobRunner,
-)
 from worker.job_runners.dataset.split_names_from_dataset_info import (
     DatasetSplitNamesFromDatasetInfoJobRunner,
+)
+from worker.job_runners.dataset.split_names_from_streaming import (
+    DatasetSplitNamesFromStreamingJobRunner,
 )
 from worker.job_runners.dataset_info import DatasetInfoJobRunner
 from worker.job_runners.dataset_parquet import DatasetParquetJobRunner
