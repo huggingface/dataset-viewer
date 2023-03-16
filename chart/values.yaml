@@ -290,13 +290,13 @@ api:
 workers:
   -
     # name of the deployment
-    deployName: "generic"
+    deployName: "all"
     # Maximum number of jobs running at the same time for the same namespace
     maxJobsPerNamespace: 1
     # job types that this worker can process
-    workerOnlyJobTypes: ""
+    workerOnlyJobTypes: "/config-names,/split-names-from-streaming,splits,/first-rows,/parquet-and-dataset-info,"
     nodeSelector: {}
-    replicas: 1
+    replicas: 6
     resources:
       requests:
         cpu: 0
@@ -309,144 +309,9 @@ workers:
     # Maximum number of jobs running at the same time for the same namespace
     maxJobsPerNamespace: 1
     # job types that this worker can process
-    workerOnlyJobTypes: "dataset-split-names-from-streaming,dataset-split-names-from-dataset-info"
+    workerOnlyJobTypes: "config-parquet,dataset-parquet,/dataset-info,/split-names-from-dataset-info,config-size,dataset-size,dataset-split-names-from-streaming,dataset-split-names-from-dataset-info"
     nodeSelector: {}
-    replicas: 1
-    resources:
-      requests:
-        cpu: 0
-      limits:
-        cpu: 0
-    tolerations: []
-  -
-    # name of the deployment
-    deployName: "config-names"
-    # Maximum number of jobs running at the same time for the same namespace
-    maxJobsPerNamespace: 1
-    # job types that this worker can process
-    workerOnlyJobTypes: "/config-names"
-    nodeSelector: {}
-    replicas: 1
-    resources:
-      requests:
-        cpu: 1
-      limits:
-        cpu: 1
-    tolerations: []
-  -
-    # name of the deployment
-    deployName: "split-names-from-streaming"
-    # Maximum number of jobs running at the same time for the same namespace
-    maxJobsPerNamespace: 1
-    # job types that this worker can process
-    workerOnlyJobTypes: "/split-names-from-streaming"
-    nodeSelector: {}
-    replicas: 1
-    resources:
-      requests:
-        cpu: 1
-      limits:
-        cpu: 1
-    tolerations: []
-  -
-    # name of the deployment
-    deployName: "splits"
-    # Maximum number of jobs running at the same time for the same namespace
-    maxJobsPerNamespace: 1
-    # job types that this worker can process
-    workerOnlyJobTypes: "/splits"
-    nodeSelector: {}
-    replicas: 1
-    resources:
-      requests:
-        cpu: 0
-      limits:
-        cpu: 0
-    tolerations: []
-  -
-    # name of the deployment
-    deployName: "first-rows"
-    # Maximum number of jobs running at the same time for the same namespace
-    maxJobsPerNamespace: 1
-    # job types that this worker can process
-    workerOnlyJobTypes: "/first-rows"
-    nodeSelector: {}
-    replicas: 1
-    resources:
-      requests:
-        cpu: 0
-      limits:
-        cpu: 0
-    tolerations: []
-  -
-    # name of the deployment
-    deployName: "parquet-and-dataset-info"
-    # Maximum number of jobs running at the same time for the same namespace
-    maxJobsPerNamespace: 1
-    # job types that this worker can process
-    workerOnlyJobTypes: "/parquet-and-dataset-info"
-    nodeSelector: {}
-    replicas: 1
-    resources:
-      requests:
-        cpu: 0
-      limits:
-        cpu: 0
-    tolerations: []
-  -
-    # name of the deployment
-    deployName: "parquet"
-    # Maximum number of jobs running at the same time for the same namespace
-    maxJobsPerNamespace: 1
-    # job types that this worker can process
-    workerOnlyJobTypes: "dataset-parquet,config-parquet"
-    nodeSelector: {}
-    replicas: 1
-    resources:
-      requests:
-        cpu: 0
-      limits:
-        cpu: 0
-    tolerations: []
-  -
-    # name of the deployment
-    deployName: "dataset-info"
-    # Maximum number of jobs running at the same time for the same namespace
-    maxJobsPerNamespace: 1
-    # job types that this worker can process
-    workerOnlyJobTypes: "/dataset-info"
-    nodeSelector: {}
-    replicas: 1
-    resources:
-      requests:
-        cpu: 0
-      limits:
-        cpu: 0
-    tolerations: []
-  -
-    # name of the deployment
-    deployName: "split-names-from-dataset-info"
-    # Maximum number of jobs running at the same time for the same namespace
-    maxJobsPerNamespace: 1
-    # job types that this worker can process
-    workerOnlyJobTypes: "/split-names-from-dataset-info"
-    nodeSelector: {}
-    replicas: 1
-    resources:
-      requests:
-        cpu: 0
-      limits:
-        cpu: 0
-    tolerations: []
-  -
-    # name of the deployment
-    deployName: "sizes"
-    # Maximum number of jobs running at the same time for the same namespace
-    maxJobsPerNamespace: 1
-    # job types that this worker can process
-    workerOnlyJobTypes: "config-size,dataset-size"
-    nodeSelector: {}
-    replicas: 1
+    replicas: 4
     resources:
       requests:
         cpu: 0
