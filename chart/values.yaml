@@ -305,6 +305,21 @@ workers:
     tolerations: []
   -
     # name of the deployment
+    deployName: "light"
+    # Maximum number of jobs running at the same time for the same namespace
+    maxJobsPerNamespace: 1
+    # job types that this worker can process
+    workerOnlyJobTypes: "dataset-split-names-from-streaming,dataset-split-names-from-dataset-info"
+    nodeSelector: {}
+    replicas: 1
+    resources:
+      requests:
+        cpu: 0
+      limits:
+        cpu: 0
+    tolerations: []
+  -
+    # name of the deployment
     deployName: "config-names"
     # Maximum number of jobs running at the same time for the same namespace
     maxJobsPerNamespace: 1

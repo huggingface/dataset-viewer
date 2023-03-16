@@ -173,6 +173,20 @@ workers:
         memory: "4Gi"
     tolerations: []
   -
+    deployName: "light"
+    maxJobsPerNamespace: 1
+    workerOnlyJobTypes: "dataset-split-names-from-streaming,dataset-split-names-from-dataset-info"
+    nodeSelector: {}
+    replicas: 1
+    resources:
+      requests:
+        cpu: 100m
+        memory: "512Mi"
+      limits:
+        cpu: 1
+        memory: "4Gi"
+    tolerations: []
+  -
     deployName: "first-rows"
     maxJobsPerNamespace: 1
     workerOnlyJobTypes: "/first-rows"

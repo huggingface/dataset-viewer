@@ -202,6 +202,22 @@ workers:
         memory: "8Gi"
     tolerations: []
   -
+    deployName: "light"
+    maxJobsPerNamespace: 20
+    workerOnlyJobTypes: "dataset-split-names-from-streaming,dataset-split-names-from-dataset-info"
+    nodeSelector:
+      role-datasets-server-worker: "true"
+    replicas: 2
+    resources:
+      requests:
+        cpu: 1
+        memory: "2Gi"
+      limits:
+        cpu: 2
+        memory: "8Gi"
+    tolerations: []
+
+  -
     deployName: "config-names"
     maxJobsPerNamespace: 20
     workerOnlyJobTypes: "/config-names"
