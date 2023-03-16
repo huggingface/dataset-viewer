@@ -68,7 +68,7 @@ common:
   # URL of the HuggingFace Hub
   hfEndpoint: "https://huggingface.co"
   # Log level
-  logLevel: "INFO"
+  logLevel: "DEBUG"
 
 firstRows:
   maxBytes: "200_000"
