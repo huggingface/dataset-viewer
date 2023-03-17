@@ -1,6 +1,6 @@
 [tool.poetry]
 authors = ["Andrea Soria <andrea@huggingface.co>"]
-description = "Refresh outdated cache entries based on worker version"
+description = "Refresh outdated cache entries based on job runner version"
 name = "cache_refresh"
 version = "0.0.1"
 license = "Apache-2.0"
