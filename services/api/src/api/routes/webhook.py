@@ -109,17 +109,20 @@ def create_webhook_endpoint(
                     json = await request.json()
                 except Exception:
                     content = {"status": "error", "error": "the body could not be parsed as a JSON"}
+                    logging.info("/webhook: the body could not be parsed as a JSON.")
                     return get_response(content, 400)
             logging.info(f"/webhook: {json}")
             with StepProfiler(method="webhook_endpoint", step="parse payload"):
                 try:
                     payload = parse_payload(json)
-                except ValidationError:
+                except ValidationError as e:
                     content = {"status": "error", "error": "the JSON payload is invalid"}
+                    logging.info(f"/webhook: the JSON body is invalid. JSON: {json}. Error: {e}")
                     return get_response(content, 400)
                 except Exception as e:
                     logging.exception("Unexpected error", exc_info=e)
                     content = {"status": "error", "error": "unexpected error"}
+                    logging.warning(f"/webhook: unexpected error while parsing the JSON body is invalid. Error: {e}")
                     return get_response(content, 500)
 
             with StepProfiler(method="webhook_endpoint", step="process payload"):
@@ -131,8 +134,10 @@ def create_webhook_endpoint(
                         hf_token=hf_token,
                         hf_timeout_seconds=hf_timeout_seconds,
                     )
-                except DatasetError:
+                except DatasetError as e:
                     content = {"status": "error", "error": "the dataset is not supported"}
+                    dataset = payload["repo"]["name"]
+                    logging.debug(f"/webhook: the dataset {dataset} is not supported. JSON: {json}. Error: {e}")
                     return get_response(content, 400)
                 content = {"status": "ok"}
                 return get_response(content, 200)
