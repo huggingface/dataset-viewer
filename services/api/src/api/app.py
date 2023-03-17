@@ -112,6 +112,7 @@ def create_app_with_config(app_config: AppConfig, endpoint_config: EndpointConfi
                 init_processing_steps=init_processing_steps,
                 hf_endpoint=app_config.common.hf_endpoint,
                 hf_token=app_config.common.hf_token,
+                hf_webhook_secret=app_config.api.hf_webhook_secret,
                 hf_timeout_seconds=app_config.api.hf_timeout_seconds,
             ),
             methods=["POST"],

@@ -76,56 +76,6 @@ def delete_dataset(dataset: str) -> None:
     delete_dataset_responses(dataset=dataset)
 
 
-def move_dataset(
-    from_dataset: str,
-    to_dataset: str,
-    init_processing_steps: List[ProcessingStep],
-    hf_endpoint: str,
-    hf_token: Optional[str] = None,
-    force: bool = False,
-    priority: Priority = Priority.NORMAL,
-    hf_timeout_seconds: Optional[float] = None,
-) -> None:
-    """
-    Move a dataset
-
-    Note that the implementation is simply to add or update the new dataset, then delete the old one in case of
-    success.
-
-    Args:
-        from_dataset (str): the dataset to move
-        to_dataset (str): the destination dataset
-        init_processing_steps (List[ProcessingStep]): the processing steps that must be run when updating a dataset
-        hf_endpoint (str): the HF endpoint
-        hf_token (Optional[str], optional): The HF token. Defaults to None.
-        force (bool, optional): Force the update. Defaults to False.
-        priority (Priority, optional): The priority of the job. Defaults to Priority.NORMAL.
-        hf_timeout_seconds (Optional[float], optional): The timeout for requests to the hub. None means no timeout.
-          Defaults to None.
-
-    Returns: None.
-
-    Raises:
-        - [`~libcommon.dataset.AskAccessHubRequestError`]: if the request to the Hub to get access to the
-            dataset failed or timed out.
-        - [`~libcommon.dataset.DatasetInfoHubRequestError`]: if the request to the Hub to get the dataset
-            info failed or timed out.
-        - [`~libcommon.dataset.DatasetError`]: if the dataset could not be accessed or is not supported
-    """
-    logging.debug(f"move dataset '{from_dataset}' to '{to_dataset}'")
-    update_dataset(
-        dataset=to_dataset,
-        init_processing_steps=init_processing_steps,
-        hf_endpoint=hf_endpoint,
-        hf_token=hf_token,
-        force=force,
-        priority=priority,
-        hf_timeout_seconds=hf_timeout_seconds,
-    )
-    # ^ can raise
-    delete_dataset(dataset=from_dataset)
-
-
 def check_in_process(
     processing_step: ProcessingStep,
     init_processing_steps: List[ProcessingStep],

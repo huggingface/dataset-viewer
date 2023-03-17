@@ -40,6 +40,7 @@ API_HF_AUTH_PATH = "/api/datasets/%s/auth-check"
 API_HF_JWT_PUBLIC_KEY_URL = None
 API_HF_JWT_ALGORITHM = "EdDSA"
 API_HF_TIMEOUT_SECONDS = 0.2
+API_HF_WEBHOOK_SECRET = None
 API_MAX_AGE_LONG = 120  # 2 minutes
 API_MAX_AGE_SHORT = 10  # 10 seconds
 
@@ -51,6 +52,7 @@ class ApiConfig:
     hf_jwt_public_key_url: Optional[str] = API_HF_JWT_PUBLIC_KEY_URL
     hf_jwt_algorithm: Optional[str] = API_HF_JWT_ALGORITHM
     hf_timeout_seconds: Optional[float] = API_HF_TIMEOUT_SECONDS
+    hf_webhook_secret: Optional[str] = API_HF_WEBHOOK_SECRET
     max_age_long: int = API_MAX_AGE_LONG
     max_age_short: int = API_MAX_AGE_SHORT
 
@@ -66,6 +68,7 @@ class ApiConfig:
                 hf_jwt_public_key_url=env.str(name="HF_JWT_PUBLIC_KEY_URL", default=API_HF_JWT_PUBLIC_KEY_URL),
                 hf_jwt_algorithm=env.str(name="HF_JWT_ALGORITHM", default=API_HF_JWT_ALGORITHM),
                 hf_timeout_seconds=env.float(name="HF_TIMEOUT_SECONDS", default=API_HF_TIMEOUT_SECONDS),
+                hf_webhook_secret=env.str(name="HF_WEBHOOK_SECRET", default=API_HF_WEBHOOK_SECRET),
                 max_age_long=env.int(name="MAX_AGE_LONG", default=API_MAX_AGE_LONG),
                 max_age_short=env.int(name="MAX_AGE_SHORT", default=API_MAX_AGE_SHORT),
             )

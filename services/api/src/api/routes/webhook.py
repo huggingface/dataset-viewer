@@ -6,7 +6,7 @@ from typing import Any, List, Literal, Optional, TypedDict
 
 from jsonschema import ValidationError, validate
 from libcommon.dataset import DatasetError
-from libcommon.operations import delete_dataset, move_dataset, update_dataset
+from libcommon.operations import delete_dataset, update_dataset
 from libcommon.processing_graph import ProcessingStep
 from libcommon.queue import Priority
 from starlette.requests import Request
@@ -61,6 +61,7 @@ def process_payload(
     hf_endpoint: str,
     hf_token: Optional[str] = None,
     hf_timeout_seconds: Optional[float] = None,
+    trust_sender: bool = False,
 ) -> None:
     if payload["repo"]["type"] != "dataset":
         return
@@ -77,29 +78,31 @@ def process_payload(
             force=False,
             priority=Priority.NORMAL,
             hf_timeout_seconds=hf_timeout_seconds,
+            do_check_support=False,  # always create a job, even if the dataset is not supported
         )
-    elif event == "remove":
-        delete_dataset(dataset=dataset)
-    elif event == "move":
-        moved_to = payload["movedTo"]
-        if moved_to is None:
-            return
-        move_dataset(
-            from_dataset=dataset,
-            to_dataset=moved_to,
-            init_processing_steps=init_processing_steps,
-            hf_endpoint=hf_endpoint,
-            hf_token=hf_token,
-            force=False,
-            priority=Priority.NORMAL,
-            hf_timeout_seconds=hf_timeout_seconds,
-        )
+    elif trust_sender:
+        # destructive actions (delete, move) require a trusted sender
+        if event == "move" and (moved_to := payload["movedTo"]):
+            update_dataset(
+                dataset=moved_to,
+                init_processing_steps=init_processing_steps,
+                hf_token=hf_token,
+                hf_endpoint=hf_endpoint,
+                force=False,
+                priority=Priority.NORMAL,
+                hf_timeout_seconds=hf_timeout_seconds,
+                do_check_support=False,
+            )
+            delete_dataset(dataset=dataset)
+        elif event == "remove":
+            delete_dataset(dataset=dataset)
 
 
 def create_webhook_endpoint(
     init_processing_steps: List[ProcessingStep],
     hf_endpoint: str,
     hf_token: Optional[str] = None,
+    hf_webhook_secret: Optional[str] = None,
     hf_timeout_seconds: Optional[float] = None,
 ) -> Endpoint:
     async def webhook_endpoint(request: Request) -> Response:
@@ -112,7 +115,7 @@ def create_webhook_endpoint(
                     logging.info("/webhook: the body could not be parsed as a JSON.")
                     return get_response(content, 400)
             logging.info(f"/webhook: {json}")
-            with StepProfiler(method="webhook_endpoint", step="parse payload"):
+            with StepProfiler(method="webhook_endpoint", step="parse payload and headers"):
                 try:
                     payload = parse_payload(json)
                 except ValidationError as e:
@@ -125,6 +128,15 @@ def create_webhook_endpoint(
                     logging.warning(f"/webhook: unexpected error while parsing the JSON body is invalid. Error: {e}")
                     return get_response(content, 500)
 
+                HEADER = "x-webhook-secret"
+                trust_sender = (
+                    hf_webhook_secret is not None
+                    and (secret := request.headers.get(HEADER)) is not None
+                    and secret == hf_webhook_secret
+                )
+                if not trust_sender:
+                    logging.info(f"/webhook: the sender is not trusted. JSON: {json}")
+
             with StepProfiler(method="webhook_endpoint", step="process payload"):
                 try:
                     process_payload(
@@ -133,6 +145,7 @@ def create_webhook_endpoint(
                         hf_endpoint=hf_endpoint,
                         hf_token=hf_token,
                         hf_timeout_seconds=hf_timeout_seconds,
+                        trust_sender=trust_sender,
                     )
                 except DatasetError as e:
                     content = {"status": "error", "error": "the dataset is not supported"}
