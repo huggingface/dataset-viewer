@@ -161,9 +161,9 @@ workers:
   -
     deployName: "all"
     maxJobsPerNamespace: 1
-    workerOnlyJobTypes: "/config-names,/split-names-from-streaming,splits,/first-rows,/parquet-and-dataset-info,"
+    workerOnlyJobTypes: ""
     nodeSelector: {}
-    replicas: 6
+    replicas: 1
     resources:
       requests:
         cpu: 100m
@@ -177,7 +177,7 @@ workers:
     maxJobsPerNamespace: 1
     workerOnlyJobTypes: "config-parquet,dataset-parquet,/dataset-info,/split-names-from-dataset-info,config-size,dataset-size,dataset-split-names-from-streaming,dataset-split-names-from-dataset-info"
     nodeSelector: {}
-    replicas: 4
+    replicas: 1
     resources:
       requests:
         cpu: 100m
