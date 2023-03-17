@@ -187,12 +187,12 @@ api:
 
 workers:
   -
-    deployName: "generic"
+    deployName: "all"
     maxJobsPerNamespace: 20
     workerOnlyJobTypes: ""
     nodeSelector:
       role-datasets-server-worker: "true"
-    replicas: 12
+    replicas: 22
     resources:
       requests:
         cpu: 1
@@ -202,129 +202,9 @@ workers:
         memory: "8Gi"
     tolerations: []
   -
-    deployName: "config-names"
+    deployName: "light"
     maxJobsPerNamespace: 20
-    workerOnlyJobTypes: "/config-names"
-    nodeSelector:
-      role-datasets-server-worker: "true"
-    replicas: 2
-    resources:
-      requests:
-        cpu: 1
-        memory: "2Gi"
-      limits:
-        cpu: 2
-        memory: "8Gi"
-    tolerations: []
-  -
-    deployName: "split-names-from-streaming"
-    maxJobsPerNamespace: 20
-    workerOnlyJobTypes: "/split-names-from-streaming"
-    nodeSelector:
-      role-datasets-server-worker: "true"
-    replicas: 2
-    resources:
-      requests:
-        cpu: 1
-        memory: "2Gi"
-      limits:
-        cpu: 2
-        memory: "8Gi"
-    tolerations: []
-  -
-    deployName: "splits"
-    maxJobsPerNamespace: 20
-    workerOnlyJobTypes: "/splits"
-    nodeSelector:
-      role-datasets-server-worker: "true"
-    replicas: 2
-    resources:
-      requests:
-        cpu: 1
-        memory: "2Gi"
-      limits:
-        cpu: 2
-        memory: "8Gi"
-    tolerations: []
-  -
-    deployName: "first-rows"
-    maxJobsPerNamespace: 20
-    workerOnlyJobTypes: "/first-rows"
-    nodeSelector:
-      role-datasets-server-worker: "true"
-    replicas: 2
-    resources:
-      requests:
-        cpu: 1
-        memory: "2Gi"
-      limits:
-        cpu: 2
-        memory: "8Gi"
-    tolerations: []
-  -
-    deployName: "parquet-and-dataset-info"
-    maxJobsPerNamespace: 20
-    workerOnlyJobTypes: "/parquet-and-dataset-info"
-    nodeSelector:
-      role-datasets-server-worker: "true"
-    replicas: 2
-    resources:
-      requests:
-        cpu: 1
-        memory: "2Gi"
-      limits:
-        cpu: 2
-        memory: "8Gi"
-    tolerations: []
-  -
-    deployName: "parquet"
-    maxJobsPerNamespace: 20
-    workerOnlyJobTypes: "dataset-parquet,config-parquet"
-    nodeSelector:
-      role-datasets-server-worker: "true"
-    replicas: 2
-    resources:
-      requests:
-        cpu: 200m
-        memory: "100Mi"
-      limits:
-        cpu: 2
-        memory: "1Gi"
-    tolerations: []
-  -
-    deployName: "dataset-info"
-    maxJobsPerNamespace: 20
-    workerOnlyJobTypes: "/dataset-info"
-    nodeSelector:
-      role-datasets-server-worker: "true"
-    replicas: 2
-    resources:
-      requests:
-        cpu: 200m
-        memory: "100Mi"
-      limits:
-        cpu: 2
-        memory: "1Gi"
-    tolerations: []
-  -
-    deployName: "split-names-from-dataset-info"
-    maxJobsPerNamespace: 20
-    workerOnlyJobTypes: "/split-names-from-dataset-info"
-    nodeSelector:
-      role-datasets-server-worker: "true"
-    replicas: 2
-    resources:
-      requests:
-        cpu: 200m
-        memory: "100Mi"
-      limits:
-        cpu: 2
-        memory: "1Gi"
-    tolerations: []
-  -
-    deployName: "sizes"
-    maxJobsPerNamespace: 20
-    workerOnlyJobTypes: "config-size,dataset-size"
+    workerOnlyJobTypes: "config-parquet,dataset-parquet,/dataset-info,/split-names-from-dataset-info,config-size,dataset-size,dataset-split-names-from-streaming,dataset-split-names-from-dataset-info"
     nodeSelector:
       role-datasets-server-worker: "true"
     replicas: 2

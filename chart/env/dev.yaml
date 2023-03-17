@@ -159,7 +159,7 @@ api:
 
 workers:
   -
-    deployName: "generic"
+    deployName: "all"
     maxJobsPerNamespace: 1
     workerOnlyJobTypes: ""
     nodeSelector: {}
@@ -173,23 +173,9 @@ workers:
         memory: "4Gi"
     tolerations: []
   -
-    deployName: "first-rows"
+    deployName: "light"
     maxJobsPerNamespace: 1
-    workerOnlyJobTypes: "/first-rows"
-    nodeSelector: {}
-    replicas: 1
-    resources:
-      requests:
-        cpu: 100m
-        memory: "512Mi"
-      limits:
-        cpu: 1
-        memory: "4Gi"
-    tolerations: []
-  -
-    deployName: "parquet-and-dataset-info"
-    maxJobsPerNamespace: 1
-    workerOnlyJobTypes: "/parquet-and-dataset-info"
+    workerOnlyJobTypes: "config-parquet,dataset-parquet,/dataset-info,/split-names-from-dataset-info,config-size,dataset-size,dataset-split-names-from-streaming,dataset-split-names-from-dataset-info"
     nodeSelector: {}
     replicas: 1
     resources:
