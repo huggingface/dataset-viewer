@@ -13,13 +13,9 @@ from .utils import get_default_config_split, poll_until_ready_and_assert
         ("public", "none", 200, None),
         ("public", "token", 200, None),
         ("public", "cookie", 200, None),
-        # gated: webhook_status_code is 200 because the access is asked for the app token, not the user token
-        # (which is not passed to the webhook request)
         ("gated", "none", 401, "ExternalUnauthenticatedError"),
         ("gated", "token", 200, None),
         ("gated", "cookie", 200, None),
-        # private: webhook_status_code is 400 because the access is asked for the app token, which has no
-        # access to the private datasets. As a consequence, no data in the cache
         ("private", "none", 401, "ExternalUnauthenticatedError"),
         ("private", "token", 404, "ResponseNotFound"),
         ("private", "cookie", 404, "ResponseNotFound"),
