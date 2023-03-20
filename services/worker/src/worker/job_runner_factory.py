@@ -128,7 +128,7 @@ class JobRunnerFactory(BaseJobRunnerFactory):
                 worker_config=self.app_config.worker,
                 processing_step=processing_step,
             )
-        if job_type == ConfigParquetJobRunner.get_job_type():
+        if job_type == ConfigInfoJobRunner.get_job_type():
             return ConfigInfoJobRunner(
                 job_info=job_info,
                 common_config=self.app_config.common,

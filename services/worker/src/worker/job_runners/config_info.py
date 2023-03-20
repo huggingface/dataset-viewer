@@ -6,10 +6,7 @@ from libcommon.dataset import DatasetNotFoundError
 from libcommon.simple_cache import DoesNotExist, SplitFullName, get_response
 
 from worker.job_runner import CompleteJobResult, JobRunner, JobRunnerError
-from worker.job_runners.parquet_and_dataset_info import (
-    ParquetAndDatasetInfoResponse,
-    ParquetFileItem,
-)
+from worker.job_runners.parquet_and_dataset_info import ParquetAndDatasetInfoResponse
 
 ConfigInfoJobRunnerErrorCode = Literal[
     "PreviousStepStatusError",
@@ -100,7 +97,7 @@ def compute_config_info_response(dataset: str, config: str):
     except Exception as e:
         raise PreviousStepFormatError("Previous step did not return the expected content.", e) from e
 
-    return ConfigInfoResponse({"dataset_info": config_info})
+    return ConfigInfoResponse(dataset_info=config_info)
 
 
 class ConfigInfoJobRunner(JobRunner):
@@ -122,5 +119,5 @@ class ConfigInfoJobRunner(JobRunner):
         """Get the set of new splits, from the content created by the compute."""
         return {
             SplitFullName(dataset=self.dataset, config=self.config, split=split)
-            for split in content["dataset_info"][self.config]["splits"]
+            for split in content["dataset_info"]["splits"]
         }

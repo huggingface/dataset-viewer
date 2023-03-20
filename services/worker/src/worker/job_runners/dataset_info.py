@@ -3,12 +3,13 @@
 
 import logging
 from http import HTTPStatus
-from typing import Any, Literal, Mapping, Optional, TypedDict
+from typing import Any, Dict, Literal, Mapping, Optional, TypedDict
 
 from libcommon.dataset import DatasetNotFoundError
 from libcommon.simple_cache import DoesNotExist, SplitFullName, get_response
 
 from worker.job_runner import CompleteJobResult, JobRunner, JobRunnerError
+from worker.job_runners.config_info import ConfigInfoResponse
 
 DatasetInfoJobRunnerErrorCode = Literal[
     "PreviousStepStatusError",
@@ -17,7 +18,15 @@ DatasetInfoJobRunnerErrorCode = Literal[
 
 
 class DatasetInfoResponse(TypedDict):
-    dataset_info: dict[str, Any]
+    dataset_info: Dict[str, Any]
+
+
+# TODO: refactor? (the same exists in dataset_parquet and dataset_size)
+class PreviousJob(TypedDict):
+    kind: str
+    dataset: str
+    config: Optional[str]
+    split: Optional[str]
 
 
 class DatasetInfoJobRunnerError(JobRunnerError):
@@ -67,7 +76,7 @@ def compute_dataset_info_response(dataset: str) -> DatasetInfoResponse:
             If the content of the previous step has not the expected format
     </Tip>
     """
-    logging.info(f"get dataset_info for dataset={dataset}")
+    logging.info(f"get dataset_info for {dataset=}")
 
     try:
         response = get_response(kind="/parquet-and-dataset-info", dataset=dataset)
@@ -82,17 +91,54 @@ def compute_dataset_info_response(dataset: str) -> DatasetInfoResponse:
     content = response["content"]
     if "dataset_info" not in content:
         raise PreviousStepFormatError("Previous step did not return the expected content: 'dataset_info'.")
-    return DatasetInfoResponse(
-        {
-            "dataset_info": content["dataset_info"],
-        }
-    )
+
+    try:
+        config_infos: Dict[str, Any] = {}
+        total = 0
+        pending, failed = [], []
+        for config in content["dataset_info"]:
+            total += 1
+            try:
+                config_response = get_response(kind="config-info", dataset=dataset, config=config)
+            except DoesNotExist:
+                logging.debug(f"No response found in previous step for {dataset=} {config=}: 'config-info'.")
+                pending.append(
+                    PreviousJob(
+                        {
+                            "kind": "config-size",
+                            "dataset": dataset,
+                            "config": config,
+                            "split": None,
+                        }
+                    )
+                )
+                continue
+            if config_response["http_status"] != HTTPStatus.OK:
+                logging.debug(f"Previous step gave an error: {response['http_status']}")
+                failed.append(
+                    PreviousJob(
+                        {
+                            "kind": "config-size",
+                            "dataset": dataset,
+                            "config": config,
+                            "split": None,
+                        }
+                    )
+                )
+                continue
+            config_info = ConfigInfoResponse(dataset_info=config_response["content"]["dataset_info"])
+            config_infos[config] = config_info["dataset_info"]
+
+    except Exception as e:
+        raise PreviousStepFormatError("Previous step did not return the expected content.", e) from e
+
+    return DatasetInfoResponse(dataset_info=config_infos)
 
 
 class DatasetInfoJobRunner(JobRunner):
     @staticmethod
     def get_job_type() -> str:
-        return "/dataset-info"
+        return "dataset-info"
 
     @staticmethod
     def get_job_runner_version() -> int:
