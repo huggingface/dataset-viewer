@@ -502,16 +502,16 @@ def compute_first_rows_response(
     use_auth_token: Union[bool, str, None] = hf_token if hf_token is not None else False
     # first ensure the tuple (dataset, config, split) exists on the Hub
     try:
-        response = get_response(kind="/split-names-from-streaming", dataset=dataset, config=config)
-        splits_content = response["content"]["splits"]
+        upstream_response = get_response(kind="/split-names-from-streaming", dataset=dataset, config=config)
+        splits_content = upstream_response["content"]["splits"]
     except DoesNotExist:
         raise ConfigNotFoundError(f"The config '{config}' does not exist for the dataset.'")
     except Exception as e:
         raise PreviousStepFormatError("Previous step did not return the expected content.") from e
 
-    if response["http_status"] != HTTPStatus.OK:
+    if upstream_response["http_status"] != HTTPStatus.OK:
         raise PreviousStepStatusError(
-            f"Previous step gave an error: {response['http_status']}. This job should not have been created."
+            f"Previous step gave an error: {upstream_response['http_status']}. This job should not have been created."
         )
 
     if split not in [split_item["split"] for split_item in splits_content]:
@@ -643,11 +643,11 @@ def compute_first_rows_response(
         rows_min_number=rows_min_number,
     )
 
-    result: FirstRowsFromStreamingResponse = response_features_only
-    result["rows"] = row_items
+    response = response_features_only
+    response["rows"] = row_items
 
     # return the response
-    return result
+    return response
 
 
 class FirstRowsFromStreamingJobRunner(DatasetsBasedJobRunner):
