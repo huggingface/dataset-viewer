@@ -23,7 +23,7 @@ def processing_graph(app_config: AppConfig) -> ProcessingGraph:
     [
         ("/config-names", "ConfigNamesJobRunner"),
         ("/splits", "SplitsJobRunner"),
-        ("/first-rows", "FirstRowsJobRunner"),
+        ("first-rows-from-streaming", "FirstRowsFromStreamingJobRunner"),
         ("/parquet-and-dataset-info", "ParquetAndDatasetInfoJobRunner"),
         ("config-parquet", "ConfigParquetJobRunner"),
         ("dataset-parquet", "DatasetParquetJobRunner"),

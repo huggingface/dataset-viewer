@@ -122,7 +122,7 @@ class ProcessingGraphConfig:
                 "required_by_dataset_viewer": True,
                 "job_runner_version": PROCESSING_STEP_SPLITS_VERSION,
             },  # to be deprecated
-            "/first-rows": {
+            "first-rows-from-streaming": {
                 "input_type": "split",
                 "requires": "/split-names-from-streaming",
                 "required_by_dataset_viewer": True,
