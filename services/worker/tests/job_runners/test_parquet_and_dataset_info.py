@@ -93,6 +93,7 @@ def get_job_runner(
                 parent=None,
                 ancestors=[],
                 children=[],
+                job_runner_version=ParquetAndDatasetInfoJobRunner.get_job_runner_version(),
             ),
             hf_datasets_cache=libraries_resource.hf_datasets_cache,
             parquet_and_dataset_info_config=parquet_and_dataset_info_config,

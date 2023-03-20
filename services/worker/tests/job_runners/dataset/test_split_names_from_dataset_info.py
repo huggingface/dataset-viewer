@@ -50,6 +50,7 @@ def get_job_runner(
                 parent=None,
                 ancestors=[],
                 children=[],
+                job_runner_version=DatasetSplitNamesFromDatasetInfoJobRunner.get_job_runner_version(),
             ),
         )
 

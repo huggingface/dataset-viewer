@@ -26,6 +26,11 @@ images:
       useGlobalRegistry: false
       repository: datasets-server-jobs-mongodb_migration
       tag: sha-fb3399a
+    cacheRefresh:
+      registry: huggingface
+      useGlobalRegistry: false
+      repository: datasets-server-jobs-cache_refresh
+      tag: sha-fb3399a
   services:
     admin:
       registry: huggingface

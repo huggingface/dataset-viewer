@@ -16,6 +16,7 @@ dataset_step = ProcessingStep(
     parent=None,
     ancestors=[],
     children=[],
+    job_runner_version=1,
 )
 config_step = ProcessingStep(
     name="/config-step",
@@ -25,6 +26,7 @@ config_step = ProcessingStep(
     parent=None,
     ancestors=[],
     children=[],
+    job_runner_version=1,
 )
 split_step = ProcessingStep(
     name="/split-step",
@@ -34,6 +36,7 @@ split_step = ProcessingStep(
     parent=None,
     ancestors=[],
     children=[],
+    job_runner_version=1,
 )
 
 

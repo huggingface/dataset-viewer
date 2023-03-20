@@ -32,6 +32,11 @@ images:
       useGlobalRegistry: false
       repository: datasets-server-jobs-mongodb_migration
       tag: sha-fb3399a
+    cacheRefresh:
+      registry: huggingface
+      useGlobalRegistry: false
+      repository: datasets-server-jobs-cache_refresh
+      tag: sha-fb3399a
   services:
     admin:
       registry: huggingface
@@ -168,6 +173,15 @@ mongodbMigration:
   # Name of the mongo db database used for storing the migrations history
   mongoDatabase: "datasets_server_maintenance"
 
+  nodeSelector: {}
+  resources:
+    requests:
+      cpu: 0
+    limits:
+      cpu: 0
+  tolerations: []
+
+cacheRefresh:
   nodeSelector: {}
   resources:
     requests:
