@@ -14,7 +14,7 @@ def test_queue_update_first_rows_type_and_unicity_id(mongo_host: str) -> None:
         db["jobsBlue"].insert_many([{"type": "/first-rows", "unicity_id": 'Job[/first-rows][dataset][config][split]', "dataset": "dataset", "http_status": 200}])
         assert db["jobsBlue"].find_one(
             {"type": "/first-rows"}
-        )  # Ensure there exists at least one record to update
+        )  # Ensure there is at least one record to update
 
         migration = MigrationQueueUpdateFirstRows(
             version="20230320165700",
@@ -26,7 +26,7 @@ def test_queue_update_first_rows_type_and_unicity_id(mongo_host: str) -> None:
 
         assert not db["jobsBlue"].find_one(
             {"type": "/first-rows"}
-        )  # Ensure that are not records with old kind
+        )  # Ensure 0 records with old type
 
         result = db["jobsBlue"].find_one({"type": "first-rows-from-streaming"})
         assert result

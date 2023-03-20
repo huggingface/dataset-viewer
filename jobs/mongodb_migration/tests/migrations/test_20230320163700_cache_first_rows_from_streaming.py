@@ -14,7 +14,7 @@ def test_cache_update_first_rows_kind(mongo_host: str) -> None:
         db["cachedResponsesBlue"].insert_many([{"kind": "/first-rows", "dataset": "dataset", "http_status": 200}])
         assert db["cachedResponsesBlue"].find_one(
             {"kind": "/first-rows"}
-        )  # Ensure there exists at least one record to update
+        )  # Ensure there is at least one record to update
 
         migration = MigrationCacheUpdateFirstRows(
             version="20230320163700",
@@ -24,7 +24,7 @@ def test_cache_update_first_rows_kind(mongo_host: str) -> None:
 
         assert not db["cachedResponsesBlue"].find_one(
             {"kind": "/first-rows"}
-        )  # Ensure that are not records with old kind
+        )  # Ensure 0 records with old kind
 
         assert db["cachedResponsesBlue"].find_one({"kind": "first-rows-from-streaming"})
 
