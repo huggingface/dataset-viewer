@@ -22,9 +22,7 @@ def test_cache_update_first_rows_kind(mongo_host: str) -> None:
         )
         migration.up()
 
-        assert not db["cachedResponsesBlue"].find_one(
-            {"kind": "/first-rows"}
-        )  # Ensure 0 records with old kind
+        assert not db["cachedResponsesBlue"].find_one({"kind": "/first-rows"})  # Ensure 0 records with old kind
 
         assert db["cachedResponsesBlue"].find_one({"kind": "first-rows-from-streaming"})
 

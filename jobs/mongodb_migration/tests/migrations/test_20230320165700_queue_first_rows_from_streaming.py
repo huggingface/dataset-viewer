@@ -9,24 +9,29 @@ from mongodb_migration.migrations._20230320165700_queue_first_rows_from_streamin
 
 
 def test_queue_update_first_rows_type_and_unicity_id(mongo_host: str) -> None:
-    with MongoResource(database="test_queue_update_first_rows_type_and_unicity_id", host=mongo_host, mongoengine_alias="queue"):
+    with MongoResource(
+        database="test_queue_update_first_rows_type_and_unicity_id", host=mongo_host, mongoengine_alias="queue"
+    ):
         db = get_db("queue")
-        db["jobsBlue"].insert_many([{"type": "/first-rows", "unicity_id": 'Job[/first-rows][dataset][config][split]', "dataset": "dataset", "http_status": 200}])
-        assert db["jobsBlue"].find_one(
-            {"type": "/first-rows"}
-        )  # Ensure there is at least one record to update
+        db["jobsBlue"].insert_many(
+            [
+                {
+                    "type": "/first-rows",
+                    "unicity_id": "Job[/first-rows][dataset][config][split]",
+                    "dataset": "dataset",
+                    "http_status": 200,
+                }
+            ]
+        )
+        assert db["jobsBlue"].find_one({"type": "/first-rows"})  # Ensure there is at least one record to update
 
         migration = MigrationQueueUpdateFirstRows(
             version="20230320165700",
-            description=(
-                "update 'type' and 'unicity_id' fields in job from /first-rows to first-rows-from-streaming"
-            ),
+            description="update 'type' and 'unicity_id' fields in job from /first-rows to first-rows-from-streaming",
         )
         migration.up()
 
-        assert not db["jobsBlue"].find_one(
-            {"type": "/first-rows"}
-        )  # Ensure 0 records with old type
+        assert not db["jobsBlue"].find_one({"type": "/first-rows"})  # Ensure 0 records with old type
 
         result = db["jobsBlue"].find_one({"type": "first-rows-from-streaming"})
         assert result

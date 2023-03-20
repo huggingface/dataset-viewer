@@ -82,5 +82,5 @@ class MigrationsCollector:
                 description=(
                     "update 'type' and 'unicity_id' fields in job from /first-rows to first-rows-from-streaming"
                 ),
-            )
+            ),
         ]

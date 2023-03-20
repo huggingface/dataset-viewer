@@ -15,7 +15,10 @@ from libcommon.simple_cache import DoesNotExist, get_response, upsert_response
 from libcommon.storage import StrPath
 
 from worker.config import AppConfig, FirstRowsConfig
-from worker.job_runners.first_rows_from_streaming import FirstRowsFromStreamingJobRunner, get_json_size
+from worker.job_runners.first_rows_from_streaming import (
+    FirstRowsFromStreamingJobRunner,
+    get_json_size,
+)
 from worker.resources import LibrariesResource
 
 from ..fixtures.hub import HubDatasets, get_default_config_split
@@ -190,14 +193,14 @@ def test_number_rows(
             http_status=HTTPStatus.OK,
         )
     elif error_code in ("InfoError", "SplitsNamesError"):
-         upsert_response(
+        upsert_response(
             kind="/split-names-from-streaming",
             dataset=dataset,
             config=config,
             content={"splits": [{"dataset": dataset, "config": config, "split": split}]},
             http_status=HTTPStatus.OK,
         )
-         
+
     with pytest.raises(CustomError) as exc_info:
         job_runner.compute()
     assert exc_info.value.code == error_code
