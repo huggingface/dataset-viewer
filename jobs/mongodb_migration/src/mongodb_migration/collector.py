@@ -29,6 +29,12 @@ from mongodb_migration.migrations._20230309141600_cache_add_job_runner_version i
 from mongodb_migration.migrations._20230313164200_cache_remove_worker_version import (
     MigrationRemoveWorkerVersionFromCachedResponse,
 )
+from mongodb_migration.migrations._20230320163700_cache_first_rows_from_streaming import (
+    MigrationCacheUpdateFirstRows,
+)
+from mongodb_migration.migrations._20230320165700_queue_first_rows_from_streaming import (
+    MigrationQueueUpdateFirstRows,
+)
 
 
 # TODO: add a way to automatically collect migrations from the migrations/ folder
@@ -67,4 +73,14 @@ class MigrationsCollector:
             MigrationRemoveWorkerVersionFromCachedResponse(
                 version="20230313164200", description="remove 'worker_version' field from cache"
             ),
+            MigrationCacheUpdateFirstRows(
+                version="20230320163700",
+                description="update 'kind' field in cache from /first-rows to first-rows-from-streaming",
+            ),
+            MigrationQueueUpdateFirstRows(
+                version="20230320165700",
+                description=(
+                    "update 'type' and 'unicity_id' fields in job from /first-rows to first-rows-from-streaming"
+                ),
+            )
         ]

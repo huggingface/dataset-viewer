@@ -1,0 +1,74 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2022 The HuggingFace Authors.
+
+import logging
+
+from libcommon.queue import Job
+from mongoengine.connection import get_db
+
+from mongodb_migration.check import check_documents
+from mongodb_migration.migration import Migration
+
+first_rows = "/first-rows"
+first_rows_from_streaming = "first-rows-from-streaming"
+db_name = "queue"
+
+
+# connection already occurred in the main.py (caveat: we use globals)
+class MigrationQueueUpdateFirstRows(Migration):
+    def up(self) -> None:
+        logging.info(
+            f"Rename unicity_id field from Job[{first_rows}][<dataset>][<config>][split] to"
+            f" Job[{first_rows_from_streaming}][<dataset>][<config>][split] and change type from {first_rows} to"
+            f" {first_rows_from_streaming}"
+        )
+
+        db = get_db("queue")
+        db["jobsBlue"].update_many(
+            {"type": first_rows},
+            [
+                {
+                    "$set": {
+                        "unicity_id": {
+                            "$replaceOne": {
+                                "input": "$unicity_id",
+                                "find": f"Job[{first_rows}]",
+                                "replacement": f"Job[{first_rows_from_streaming}]",
+                            }
+                        },
+                        "type": first_rows_from_streaming,
+                    }
+                },
+            ],  # type: ignore
+        )
+
+    def down(self) -> None:
+        logging.info(
+            f"Rename unicity_id field from Job[{first_rows_from_streaming}][<dataset>][<config>][split] to"
+            f" Job[{first_rows}][<dataset>][<config>][split] and change type from {first_rows_from_streaming} to"
+            f" {first_rows}"
+        )
+
+        db = get_db("queue")
+        db["jobsBlue"].update_many(
+            {"type": first_rows_from_streaming},
+            [
+                {
+                    "$set": {
+                        "unicity_id": {
+                            "$replaceOne": {
+                                "input": "$unicity_id",
+                                "find": f"Job[{first_rows_from_streaming}]",
+                                "replacement": f"Job[{first_rows}]",
+                            }
+                        },
+                        "type": first_rows_from_streaming,
+                    }
+                },
+            ],  # type: ignore
+        )
+
+    def validate(self) -> None:
+        logging.info("Validate modified documents")
+
+        check_documents(DocCls=Job, sample_size=10)
