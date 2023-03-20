@@ -11,7 +11,7 @@ from libcommon.exceptions import CustomError
 from libcommon.processing_graph import ProcessingStep
 from libcommon.queue import Priority
 from libcommon.resources import CacheMongoResource, QueueMongoResource
-from libcommon.simple_cache import DoesNotExist, get_response
+from libcommon.simple_cache import DoesNotExist, get_response, upsert_response
 from libcommon.storage import StrPath
 
 from worker.config import AppConfig, FirstRowsConfig
@@ -74,6 +74,13 @@ def test_should_skip_job(
     job_runner = get_job_runner(dataset, config, split, app_config, first_rows_config, False)
     assert not job_runner.should_skip_job()
     # we add an entry to the cache
+    upsert_response(
+        kind="/split-names-from-streaming",
+        dataset=dataset,
+        config=config,
+        content={"splits": [{"dataset": dataset, "config": config, "split": split}]},
+        http_status=HTTPStatus.OK,
+    )
     job_runner.process()
     assert job_runner.should_skip_job()
     job_runner = get_job_runner(dataset, config, split, app_config, first_rows_config, True)
@@ -85,6 +92,13 @@ def test_compute(
 ) -> None:
     dataset, config, split = get_default_config_split(hub_public_csv)
     job_runner = get_job_runner(dataset, config, split, app_config, first_rows_config, False)
+    upsert_response(
+        kind="/split-names-from-streaming",
+        dataset=dataset,
+        config=config,
+        content={"splits": [{"dataset": dataset, "config": config, "split": split}]},
+        http_status=HTTPStatus.OK,
+    )
     assert job_runner.process()
     cached_response = get_response(
         kind=job_runner.processing_step.cache_kind, dataset=dataset, config=config, split=split
@@ -121,12 +135,12 @@ def test_doesnotexist(app_config: AppConfig, get_job_runner: GetJobRunner, first
         ("jsonl", False, None, None),
         ("gated", True, None, None),
         ("private", True, None, None),
-        ("empty", False, "EmptyDatasetError", "EmptyDatasetError"),
+        ("does_not_exist_config", False, "ConfigNotFoundError", None),
         # should we really test the following cases?
         # The assumption is that the dataset exists and is accessible with the token
-        ("does_not_exist", False, "SplitsNamesError", "FileNotFoundError"),
-        ("gated", False, "SplitsNamesError", "FileNotFoundError"),
-        ("private", False, "SplitsNamesError", "FileNotFoundError"),
+        ("does_not_exist_split", False, "SplitNotFoundError", None),
+        ("gated", False, "InfoError", "FileNotFoundError"),
+        ("private", False, "InfoError", "FileNotFoundError"),
     ],
 )
 def test_number_rows(
@@ -157,9 +171,33 @@ def test_number_rows(
         False,
     )
     if error_code is None:
+        upsert_response(
+            kind="/split-names-from-streaming",
+            dataset=dataset,
+            config=config,
+            content={"splits": [{"dataset": dataset, "config": config, "split": split}]},
+            http_status=HTTPStatus.OK,
+        )
         result = job_runner.compute().content
         assert result == expected_first_rows_response
         return
+    elif error_code == "SplitNotFoundError":
+        upsert_response(
+            kind="/split-names-from-streaming",
+            dataset=dataset,
+            config=config,
+            content={"splits": [{"dataset": dataset, "config": config, "split": "other_split"}]},
+            http_status=HTTPStatus.OK,
+        )
+    elif error_code in ("InfoError", "SplitsNamesError"):
+         upsert_response(
+            kind="/split-names-from-streaming",
+            dataset=dataset,
+            config=config,
+            content={"splits": [{"dataset": dataset, "config": config, "split": split}]},
+            http_status=HTTPStatus.OK,
+        )
+         
     with pytest.raises(CustomError) as exc_info:
         job_runner.compute()
     assert exc_info.value.code == error_code
@@ -212,6 +250,14 @@ def test_truncation(
             columns_max_number=columns_max_number,
         ),
         False,
+    )
+
+    upsert_response(
+        kind="/split-names-from-streaming",
+        dataset=dataset,
+        config=config,
+        content={"splits": [{"dataset": dataset, "config": config, "split": split}]},
+        http_status=HTTPStatus.OK,
     )
 
     if error_code:

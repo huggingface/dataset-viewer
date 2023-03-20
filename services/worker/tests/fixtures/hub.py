@@ -516,6 +516,20 @@ def hub_datasets(
             "first_rows_response": None,
             "parquet_and_dataset_info_response": None,
         },
+        "does_not_exist_config": {
+            "name": "does_not_exist_config",
+            "config_names_response": None,
+            "splits_response": None,
+            "first_rows_response": None,
+            "parquet_and_dataset_info_response": None,
+        },
+        "does_not_exist_split": {
+            "name": "does_not_exist_split",
+            "config_names_response": None,
+            "splits_response": None,
+            "first_rows_response": None,
+            "parquet_and_dataset_info_response": None,
+        },
         "empty": {
             "name": hub_public_empty,
             "config_names_response": None,
