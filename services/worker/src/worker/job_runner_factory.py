@@ -17,6 +17,7 @@ from worker.job_runners.config.split_names_from_dataset_info import (
 from worker.job_runners.config.split_names_from_streaming import (
     SplitNamesFromStreamingJobRunner,
 )
+from worker.job_runners.config_info import ConfigInfoJobRunner
 from worker.job_runners.config_names import ConfigNamesJobRunner
 from worker.job_runners.config_parquet import ConfigParquetJobRunner
 from worker.job_runners.config_size import ConfigSizeJobRunner
@@ -127,6 +128,13 @@ class JobRunnerFactory(BaseJobRunnerFactory):
                 worker_config=self.app_config.worker,
                 processing_step=processing_step,
             )
+        if job_type == ConfigParquetJobRunner.get_job_type():
+            return ConfigInfoJobRunner(
+                job_info=job_info,
+                common_config=self.app_config.common,
+                worker_config=self.app_config.worker,
+                processing_step=processing_step,
+            )
         if job_type == DatasetSizeJobRunner.get_job_type():
             return DatasetSizeJobRunner(
                 job_info=job_info,
@@ -171,6 +179,7 @@ class JobRunnerFactory(BaseJobRunnerFactory):
             ConfigParquetJobRunner.get_job_type(),
             DatasetParquetJobRunner.get_job_type(),
             DatasetInfoJobRunner.get_job_type(),
+            ConfigInfoJobRunner.get_job_type(),
             DatasetSizeJobRunner.get_job_type(),
             ConfigSizeJobRunner.get_job_type(),
             SplitNamesFromDatasetInfoJobRunner.get_job_type(),
