@@ -643,11 +643,11 @@ def compute_first_rows_response(
         rows_min_number=rows_min_number,
     )
 
-    response = response_features_only
-    response["rows"] = row_items
+    result: FirstRowsFromStreamingResponse = response_features_only
+    result["rows"] = row_items
 
     # return the response
-    return response
+    return result
 
 
 class FirstRowsFromStreamingJobRunner(DatasetsBasedJobRunner):
