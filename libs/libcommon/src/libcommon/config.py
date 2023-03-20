@@ -17,7 +17,7 @@ from libcommon.constants import (
     PROCESSING_STEP_DATASET_SIZE_VERSION,
     PROCESSING_STEP_DATASET_SPLIT_NAMES_FROM_DATASET_INFO_VERSION,
     PROCESSING_STEP_DATASET_SPLIT_NAMES_FROM_STREAMING_VERSION,
-    PROCESSING_STEP_FIRST_ROWS_VERSION,
+    PROCESSING_STEP_FIRST_ROWS_FROM_STREAMING_VERSION,
     PROCESSING_STEP_PARQUET_AND_DATASET_INFO_VERSION,
     PROCESSING_STEP_SPLIT_NAMES_FROM_DATASET_INFO_VERSION,
     PROCESSING_STEP_SPLIT_NAMES_FROM_STREAMING_VERSION,
@@ -126,7 +126,7 @@ class ProcessingGraphConfig:
                 "input_type": "split",
                 "requires": "/split-names-from-streaming",
                 "required_by_dataset_viewer": True,
-                "job_runner_version": PROCESSING_STEP_FIRST_ROWS_VERSION,
+                "job_runner_version": PROCESSING_STEP_FIRST_ROWS_FROM_STREAMING_VERSION,
             },
             "/parquet-and-dataset-info": {
                 "input_type": "dataset",
