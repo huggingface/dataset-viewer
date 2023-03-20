@@ -18,6 +18,16 @@
     value: {{ .Values.api.hfJwtAlgorithm | quote }}
   - name: API_HF_TIMEOUT_SECONDS
     value: {{ .Values.api.hfTimeoutSeconds | quote }}
+  - name: API_HF_WEBHOOK_SECRET
+    {{- if .Values.secrets.hfWebhookSecret.fromSecret }}
+    valueFrom:
+      secretKeyRef:
+        name: {{ .Values.secrets.hfWebhookSecret.secretName | quote }}
+        key: WEBHOOK_SECRET
+        optional: false
+    {{- else }}
+    value: {{ .Values.secrets.hfWebhookSecret.value }}
+    {{- end }}
   - name: API_MAX_AGE_LONG
     value: {{ .Values.api.maxAgeLong | quote }}
   - name: API_MAX_AGE_SHORT

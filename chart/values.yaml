@@ -71,6 +71,10 @@ secrets:
     fromSecret: false
     secretName: "hf-token-francky"
     value: hf_
+  hfWebhookSecret:
+    fromSecret: false
+    secretName: "webhook-secret"
+    value: ""
 
 uid: 1000
 gid: 3000

@@ -5,7 +5,7 @@ import json
 import os
 import time
 from pathlib import Path
-from typing import Any, Literal, Mapping, Optional, Tuple
+from typing import Any, Mapping, Optional, Tuple
 
 import requests
 from requests import Response
@@ -96,15 +96,6 @@ def get_default_config_split(dataset: str) -> Tuple[str, str, str]:
     config = dataset.replace("/", "--")
     split = "train"
     return dataset, config, split
-
-
-def post_webhook(
-    dataset: str, event: Literal["add", "remove", "update", "move"], movedTo: Optional[str] = None
-) -> Response:
-    json: dict[str, Any] = {"event": event, "repo": {"type": "dataset", "name": dataset}}
-    if movedTo is not None:
-        json["movedTo"] = movedTo
-    return post("/webhook", json=json)
 
 
 def log(response: Response, url: str) -> str:

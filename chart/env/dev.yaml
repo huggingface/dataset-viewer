@@ -55,6 +55,10 @@ secrets:
   userHfToken:
     fromSecret: true
     secretName: "hf-token-francky"
+  hfWebhookSecret:
+    fromSecret: false
+    secretName: "webhook-secret"
+    value: ""
 
 persistence:
   existingClaim: "nfs-datasets-server-pvc"
