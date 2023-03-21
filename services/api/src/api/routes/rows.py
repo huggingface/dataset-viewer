@@ -114,7 +114,10 @@ def create_index(
                     )
                 except Exception as e:
                     raise ParquetResponseFormatError(f"Could not parse the list of parquet files: {e}") from e
-                logging.debug(f"Found {len(sources)} parquet files for dataset={dataset}, config={config}, split={split}: {sources}")
+                logging.debug(
+                    f"Found {len(sources)} parquet files for dataset={dataset}, config={config}, split={split}:"
+                    f" {sources}"
+                )
                 if not sources:
                     raise ParquetResponseEmptyError("No parquet files found.")
             with StepProfiler(method="rows.index", step="get the Hub's dataset filesystem"):
