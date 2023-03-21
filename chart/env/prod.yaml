@@ -26,11 +26,12 @@ images:
       useGlobalRegistry: false
       repository: datasets-server-jobs-mongodb_migration
       tag: sha-fb3399a
-    cacheRefresh:
-      registry: huggingface
-      useGlobalRegistry: false
-      repository: datasets-server-jobs-cache_refresh
-      tag: sha-fb3399a
+    # cacheRefresh:
+    #   registry: huggingface
+    #   useGlobalRegistry: false
+    #   repository: datasets-server-jobs-cache_refresh
+    #   tag: sha-fb3399a
+    # --- temporary disabling this job ---
   services:
     admin:
       registry: huggingface
@@ -200,7 +201,7 @@ workers:
     workerOnlyJobTypes: ""
     nodeSelector:
       role-datasets-server-worker: "true"
-    replicas: 100
+    replicas: 40
     resources:
       requests:
         cpu: 1
