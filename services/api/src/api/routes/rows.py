@@ -3,11 +3,12 @@
 
 import logging
 from functools import lru_cache, partial
-from typing import Any, List, Optional, Tuple
+from typing import Any, List, Mapping, Optional, Tuple, TypedDict
 
 import numpy as np
 import pyarrow as pa
 import pyarrow.parquet as pq
+from datasets import Features
 from hffs.fs import HfFileSystem
 from libcommon.processing_graph import ProcessingStep
 from starlette.requests import Request
@@ -65,9 +66,11 @@ def get_parquet_fs(dataset: str, hf_token: Optional[str]) -> HfFileSystem:
     return HfFileSystem(dataset, repo_type="dataset", revision=PARQUET_REVISION, token=hf_token)
 
 
+UNSUPPORTED_FEATURES_MAGIC_STRINGS = ["Image(", "Audio(", "'binary'"]
+
 RowGroupReader = partial[Any]
 
-Index = Tuple[Any, List[RowGroupReader]]
+Index = Tuple[Any, List[RowGroupReader], Features, List[str]]
 
 
 class Indexer(Protocol):
@@ -130,18 +133,18 @@ def create_index(
                     )
                 except Exception as e:
                     raise FileSystemError(f"Could not read the parquet files: {e}") from e
-            # features = Features.from_arrow_schema(all_pf[0].schema.to_arrow_schema())
-            # columns = [
-            #     col
-            #     for col in features
-            #     if all(bad_type not in str(features[col]) for bad_type in ["Image(", "Audio(", "'binary'"])
-            # ]
-            columns = None
-            # info = (
-            #     ""
-            #     if len(columns) == len(features)
-            #     else f"Some columns are not supported yet: {sorted(set(features) - set(columns))}"
-            # )
+            with StepProfiler(method="rows.index", step="get the dataset's features"):
+                features = Features.from_arrow_schema(parquet_files[0].schema.to_arrow_schema())
+
+            supported_columns, unsupported_columns = [], []
+            for column, feature in features.items():
+                str_feature = str(feature)
+                str_column = str(column)
+                if any(magic_string in str_feature for magic_string in UNSUPPORTED_FEATURES_MAGIC_STRINGS):
+                    unsupported_columns.append(str_column)
+                else:
+                    supported_columns.append(str_column)
+
             with StepProfiler(method="rows.index", step="create the row group offsets"):
                 row_group_offsets = np.cumsum(
                     [
@@ -152,11 +155,11 @@ def create_index(
                 )
             with StepProfiler(method="rows.index", step="create the row group readers"):
                 row_group_readers = [
-                    partial(parquet_file.read_row_group, i=group_id, columns=columns)
+                    partial(parquet_file.read_row_group, i=group_id, columns=supported_columns)
                     for parquet_file in parquet_files
                     for group_id in range(parquet_file.metadata.num_row_groups)
                 ]
-            return row_group_offsets, row_group_readers
+            return row_group_offsets, row_group_readers, features, unsupported_columns
 
     return index
 
@@ -185,6 +188,63 @@ def query(offset: int, length: int, row_group_offsets: Any, row_group_readers: L
     pa_table = pa.concat_tables([row_group_readers[i]() for i in range(first_row_group_id, last_row_group_id + 1)])
     first_row_in_pa_table = row_group_offsets[first_row_group_id - 1] if first_row_group_id > 0 else 0
     return pa_table.slice(offset - first_row_in_pa_table, length)
+
+
+class FeatureItem(TypedDict):
+    feature_idx: int
+    name: str
+    type: Mapping[str, Any]
+
+
+# in JSON, dicts do not carry any order, so we need to return a list
+#
+# > An object is an *unordered* collection of zero or more name/value pairs, where a name is a string and a value
+#   is a string, number, boolean, null, object, or array.
+# > An array is an *ordered* sequence of zero or more values.
+# > The terms "object" and "array" come from the conventions of JavaScript.
+# from https://stackoverflow.com/a/7214312/7351594 / https://www.rfc-editor.org/rfc/rfc7159.html
+def to_features_list(features: Features) -> List[FeatureItem]:
+    features_dict = features.to_dict()
+    return [
+        {
+            "feature_idx": idx,
+            "name": name,
+            "type": features_dict[name],
+        }
+        for idx, name in enumerate(features)
+    ]
+
+
+class RowItem(TypedDict):
+    row_idx: int
+    row: Mapping[str, Any]
+    truncated_cells: List[str]
+
+
+def to_rows_list(pa_table: pa.Table, offset: int, features: Features, unsupported_columns: List[str]) -> List[RowItem]:
+    num_rows = pa_table.num_rows
+    for idx, (column, feature) in enumerate(features.items()):
+        if column in unsupported_columns:
+            pa_table = pa_table.add_column(idx, column, pa.array([None] * num_rows))
+    return [
+        {
+            "row_idx": idx + offset,
+            "row": row,
+            "truncated_cells": unsupported_columns,
+        }
+        for idx, row in enumerate(pa_table.to_pylist())
+    ]
+
+
+def create_response(pa_table: pa.Table, offset: int, features: Features, unsupported_columns: List[str]) -> Any:
+    if set(pa_table.column_names).intersection(set(unsupported_columns)):
+        raise RuntimeError(
+            "The pyarrow table contains unsupported columns. They should have been ignored in the row group reader."
+        )
+    return {
+        "features": to_features_list(features),
+        "rows": to_rows_list(pa_table, offset, features, unsupported_columns),
+    }
 
 
 def create_rows_endpoint(
@@ -237,7 +297,9 @@ def create_rows_endpoint(
                         hf_timeout_seconds=hf_timeout_seconds,
                     )
                 with StepProfiler(method="rows_endpoint", step="get row groups index"):
-                    row_group_offsets, row_group_readers = index(dataset=dataset, config=config, split=split)
+                    row_group_offsets, row_group_readers, features, unsupported_columns = index(
+                        dataset=dataset, config=config, split=split
+                    )
                 with StepProfiler(method="rows_endpoint", step="query the rows"):
                     pa_table = query(
                         offset=offset,
@@ -246,11 +308,9 @@ def create_rows_endpoint(
                         row_group_readers=row_group_readers,
                     )
                 with StepProfiler(method="rows_endpoint", step="transform to a list"):
-                    # TODO: ignore, or transform, some of the cells (e.g. audio or image)
-                    rows = pa_table.to_pylist()
-                    # TODO: add features?
+                    response = create_response(pa_table, offset, features, unsupported_columns)
                 with StepProfiler(method="rows_endpoint", step="generate the OK response"):
-                    return get_json_ok_response(content={"rows": rows}, max_age=max_age_long)
+                    return get_json_ok_response(content=response, max_age=max_age_long)
             except Exception as e:
                 error = e if isinstance(e, ApiCustomError) else UnexpectedError("Unexpected error.", e)
                 with StepProfiler(method="rows_endpoint", step="generate API error response"):

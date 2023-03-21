@@ -6,6 +6,7 @@ version = "0.1.3"
 license = "Apache-2.0"
 
 [tool.poetry.dependencies]
+datasets = "^2.10.1"
 environs = "^9.5.0"
 hffs = {git = "https://github.com/huggingface/hffs.git", rev="0e187e74d38e9436353691f4a7a26b15f0663f58"}
 jsonschema = "^4.17.0"
