@@ -224,3 +224,48 @@ workers:
         cpu: 2
         memory: "1Gi"
     tolerations: []
+  -
+    deployName: "split-names-from-streaming"
+    maxJobsPerNamespace: 20
+    workerOnlyJobTypes: "/split-names-from-streaming"
+    nodeSelector:
+      role-datasets-server-worker: "true"
+    replicas: 2
+    resources:
+      requests:
+        cpu: 1
+        memory: "2Gi"
+      limits:
+        cpu: 2
+        memory: "8Gi"
+    tolerations: []
+  -
+    deployName: "first-rows"
+    maxJobsPerNamespace: 20
+    workerOnlyJobTypes: "/first-rows"
+    nodeSelector:
+      role-datasets-server-worker: "true"
+    replicas: 2
+    resources:
+      requests:
+        cpu: 1
+        memory: "2Gi"
+      limits:
+        cpu: 2
+        memory: "8Gi"
+    tolerations: []
+  -
+    deployName: "parquet-and-dataset-info"
+    maxJobsPerNamespace: 20
+    workerOnlyJobTypes: "/parquet-and-dataset-info"
+    nodeSelector:
+      role-datasets-server-worker: "true"
+    replicas: 2
+    resources:
+      requests:
+        cpu: 1
+        memory: "2Gi"
+      limits:
+        cpu: 2
+        memory: "8Gi"
+    tolerations: []
