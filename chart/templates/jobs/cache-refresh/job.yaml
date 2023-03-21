@@ -8,10 +8,6 @@ metadata:
   labels: {{ include "labels.cacheRefresh" . | nindent 4 }}
   name: "{{ include "name" . }}-job-cache-refresh"
   namespace: {{ .Release.Namespace }}
-  annotations:
-    "helm.sh/hook": pre-upgrade
-    "helm.sh/hook-weight": "-1"
-    "helm.sh/hook-delete-policy": before-hook-creation
 spec:
   ttlSecondsAfterFinished: 300
   template:
