@@ -200,7 +200,7 @@ workers:
     workerOnlyJobTypes: ""
     nodeSelector:
       role-datasets-server-worker: "true"
-    replicas: 100
+    replicas: 40
     resources:
       requests:
         cpu: 1
