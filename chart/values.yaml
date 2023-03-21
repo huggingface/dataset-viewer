@@ -182,7 +182,6 @@ mongodbMigration:
   tolerations: []
 
 cacheRefresh:
-  enabled: false
   nodeSelector: {}
   resources:
     requests:
