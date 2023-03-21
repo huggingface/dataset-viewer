@@ -1,5 +1,6 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2022 The HuggingFace Authors.
+
 {{- if and .Values.cacheRefresh.enabled .Values.images.jobs.cacheRefresh }}
 apiVersion: batch/v1
 kind: Job
@@ -20,4 +21,4 @@ spec:
       tolerations: {{ toYaml .Values.cacheRefresh.tolerations | nindent 8 }}
       securityContext: {{ include "securityContext" . | nindent 8 }}
   backoffLimit: 0
-{{- end }}
+{{- end}}
