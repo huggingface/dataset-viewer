@@ -1,8 +1,8 @@
-# List parquet files
+# List Parquet files
 
-Datasets can be published in any format (CSV, JSONL, directories of images, etc.) on the Hub, and people generally use the [`datasets` library](https://huggingface.co/docs/datasets/) to access the data. To make it even easier, the datasets-server automatically converts every dataset to the [Parquet](https://parquet.apache.org/) format and publishes the parquet files on the Hub (in a specific branch: `ref/convert/parquet`).
+Datasets can be published in any format (CSV, JSONL, directories of images, etc.) on the Hub, and they are easily accessed with the 🤗 [Datasets](https://huggingface.co/docs/datasets/) library. For even more performant and efficient access, Datasets Server automatically converts every dataset to the [Parquet](https://parquet.apache.org/) format. The Parquet files are published to the Hub on a specific branch, `ref/convert/parquet`.
 
-This guide shows you how to use Datasets Server's `/parquet` endpoint to retrieve the list of a dataset's parquet files programmatically. Feel free to also try it out with [Postman](https://www.postman.com/huggingface/workspace/hugging-face-apis/request/23242779-f0cde3b9-c2ee-4062-aaca-65c4cfdd96f8), [RapidAPI](https://rapidapi.com/hugging-face-hugging-face-default/api/hugging-face-datasets-api), or [ReDoc](https://redocly.github.io/redoc/?url=https://datasets-server.huggingface.co/openapi.json#operation/listSplits)
+This guide shows you how to use Datasets Server's `/parquet` endpoint to retrieve a list of a dataset's Parquet files programmatically. Feel free to also try it out with [Postman](https://www.postman.com/huggingface/workspace/hugging-face-apis/request/23242779-f0cde3b9-c2ee-4062-aaca-65c4cfdd96f8), [RapidAPI](https://rapidapi.com/hugging-face-hugging-face-default/api/hugging-face-datasets-api), or [ReDoc](https://redocly.github.io/redoc/?url=https://datasets-server.huggingface.co/openapi.json#operation/listSplits).
 
 The `/parquet` endpoint accepts the dataset name as its query parameter:
 
@@ -46,7 +46,7 @@ curl https://datasets-server.huggingface.co/parquet?dataset=duorc \
 </curl>
 </inferencesnippet>
 
-The endpoint response is a JSON containing a list of the dataset's parquet files. For example, the [duorc](https://huggingface.co/datasets/duorc) dataset has six parquet files, which corresponds to the `train`, `validation` and `test` splits of its two configurations (see the [/splits](./splits) guide):
+The endpoint response is a JSON containing a list of the dataset's Parquet files. For example, the [duorc](https://huggingface.co/datasets/duorc) dataset has six Parquet files, which corresponds to the `train`, `validation` and `test` splits of its two configurations (see the [List splits and configurations](./splits) guide for more details about splits and configurations):
 
 ```json
 {
@@ -103,134 +103,97 @@ The endpoint response is a JSON containing a list of the dataset's parquet files
 }
 ```
 
-The dataset can then be accessed directly through the parquet files:
+Now you can access the dataset - for example, the `train` split - directly from the Parquet files with [Polars](https://www.pola.rs/):
 
 ```python
-import pandas as pd
+import polars as pl
 url = "https://huggingface.co/datasets/duorc/resolve/refs%2Fconvert%2Fparquet/ParaphraseRC/duorc-train.parquet"
-pd.read_parquet(url).title.value_counts().head()
-# Dracula                 422
-# The Three Musketeers    412
-# Superman                193
-# Jane Eyre               190
-# The Thing               189
-# Name: title, dtype: int64
+q = (
+    pl.scan_parquet(url)
+    .groupby("title")
+    .count()
+    .sort("count", descending=True)
+)
+
+df = q.collect().head()
+df
+shape: (5, 2)
+┌──────────────────────┬───────┐
+│ title                ┆ count │
+│ ---                  ┆ ---   │
+│ str                  ┆ u32   │
+╞══════════════════════╪═══════╡
+│ Dracula              ┆ 422   │
+│ The Three Musketeers ┆ 412   │
+│ Superman             ┆ 193   │
+│ Jane Eyre            ┆ 190   │
+│ The Thing            ┆ 189   │
+└──────────────────────┴───────┘
 ```
 
-## Sharded parquet files
+## Sharded Parquet files
 
-The big datasets are partitioned in parquet files (shards) of about 1 GiB. The file name gives the index of the shard and the total number of shards. For example, the `train` split of the [`alexandrainst/danish-wit`](https://datasets-server.huggingface.co/parquet?dataset=alexandrainst/danish-wit) dataset is partitioned into 9 shards, from `parquet-train-00000-of-00009.parquet` to `parquet-train-00008-of-00009.parquet`:
+Big datasets are partitioned into Parquet files (shards) of about 1GB. The file name contains the name of the dataset, the split, the index of the shard, and the total number of shards (for example, `dataset-name-train-0000-of-0004.parquet`). For example, the `train` split of the [`amazon_polarity`](https://datasets-server.huggingface.co/parquet?dataset=amazon_polarity) dataset is partitioned into 4 shards:
 
 ```json
-{
-  "parquet_files": [
-    {
-      "dataset": "alexandrainst/danish-wit",
-      "config": "alexandrainst--danish-wit",
-      "split": "test",
-      "url": "https://huggingface.co/datasets/alexandrainst/danish-wit/resolve/refs%2Fconvert%2Fparquet/alexandrainst--danish-wit/parquet-test.parquet",
-      "filename": "parquet-test.parquet",
-      "size": 48781933
-    },
-    {
-      "dataset": "alexandrainst/danish-wit",
-      "config": "alexandrainst--danish-wit",
-      "split": "train",
-      "url": "https://huggingface.co/datasets/alexandrainst/danish-wit/resolve/refs%2Fconvert%2Fparquet/alexandrainst--danish-wit/parquet-train-00000-of-00009.parquet",
-      "filename": "parquet-train-00000-of-00009.parquet",
-      "size": 937127291
-    },
-    {
-      "dataset": "alexandrainst/danish-wit",
-      "config": "alexandrainst--danish-wit",
-      "split": "train",
-      "url": "https://huggingface.co/datasets/alexandrainst/danish-wit/resolve/refs%2Fconvert%2Fparquet/alexandrainst--danish-wit/parquet-train-00001-of-00009.parquet",
-      "filename": "parquet-train-00001-of-00009.parquet",
-      "size": 925920565
-    },
-    {
-      "dataset": "alexandrainst/danish-wit",
-      "config": "alexandrainst--danish-wit",
-      "split": "train",
-      "url": "https://huggingface.co/datasets/alexandrainst/danish-wit/resolve/refs%2Fconvert%2Fparquet/alexandrainst--danish-wit/parquet-train-00002-of-00009.parquet",
-      "filename": "parquet-train-00002-of-00009.parquet",
-      "size": 940390661
-    },
-    {
-      "dataset": "alexandrainst/danish-wit",
-      "config": "alexandrainst--danish-wit",
-      "split": "train",
-      "url": "https://huggingface.co/datasets/alexandrainst/danish-wit/resolve/refs%2Fconvert%2Fparquet/alexandrainst--danish-wit/parquet-train-00003-of-00009.parquet",
-      "filename": "parquet-train-00003-of-00009.parquet",
-      "size": 934549621
-    },
-    {
-      "dataset": "alexandrainst/danish-wit",
-      "config": "alexandrainst--danish-wit",
-      "split": "train",
-      "url": "https://huggingface.co/datasets/alexandrainst/danish-wit/resolve/refs%2Fconvert%2Fparquet/alexandrainst--danish-wit/parquet-train-00004-of-00009.parquet",
-      "filename": "parquet-train-00004-of-00009.parquet",
-      "size": 493004154
-    },
-    {
-      "dataset": "alexandrainst/danish-wit",
-      "config": "alexandrainst--danish-wit",
-      "split": "train",
-      "url": "https://huggingface.co/datasets/alexandrainst/danish-wit/resolve/refs%2Fconvert%2Fparquet/alexandrainst--danish-wit/parquet-train-00005-of-00009.parquet",
-      "filename": "parquet-train-00005-of-00009.parquet",
-      "size": 942848888
-    },
-    {
-      "dataset": "alexandrainst/danish-wit",
-      "config": "alexandrainst--danish-wit",
-      "split": "train",
-      "url": "https://huggingface.co/datasets/alexandrainst/danish-wit/resolve/refs%2Fconvert%2Fparquet/alexandrainst--danish-wit/parquet-train-00006-of-00009.parquet",
-      "filename": "parquet-train-00006-of-00009.parquet",
-      "size": 933373843
-    },
-    {
-      "dataset": "alexandrainst/danish-wit",
-      "config": "alexandrainst--danish-wit",
-      "split": "train",
-      "url": "https://huggingface.co/datasets/alexandrainst/danish-wit/resolve/refs%2Fconvert%2Fparquet/alexandrainst--danish-wit/parquet-train-00007-of-00009.parquet",
-      "filename": "parquet-train-00007-of-00009.parquet",
-      "size": 936939176
-    },
-    {
-      "dataset": "alexandrainst/danish-wit",
-      "config": "alexandrainst--danish-wit",
-      "split": "train",
-      "url": "https://huggingface.co/datasets/alexandrainst/danish-wit/resolve/refs%2Fconvert%2Fparquet/alexandrainst--danish-wit/parquet-train-00008-of-00009.parquet",
-      "filename": "parquet-train-00008-of-00009.parquet",
-      "size": 946933048
-    },
-    {
-      "dataset": "alexandrainst/danish-wit",
-      "config": "alexandrainst--danish-wit",
-      "split": "val",
-      "url": "https://huggingface.co/datasets/alexandrainst/danish-wit/resolve/refs%2Fconvert%2Fparquet/alexandrainst--danish-wit/parquet-val.parquet",
-      "filename": "parquet-val.parquet",
-      "size": 11437355
-    }
-  ]
-}
+{'parquet_files': [{'dataset': 'amazon_polarity',
+   'config': 'amazon_polarity',
+   'split': 'test',
+   'url': 'https://huggingface.co/datasets/amazon_polarity/resolve/refs%2Fconvert%2Fparquet/amazon_polarity/amazon_polarity-test.parquet',
+   'filename': 'amazon_polarity-test.parquet',
+   'size': 117422359},
+  {'dataset': 'amazon_polarity',
+   'config': 'amazon_polarity',
+   'split': 'train',
+   'url': 'https://huggingface.co/datasets/amazon_polarity/resolve/refs%2Fconvert%2Fparquet/amazon_polarity/amazon_polarity-train-00000-of-00004.parquet',
+   'filename': 'amazon_polarity-train-00000-of-00004.parquet',
+   'size': 320281121},
+  {'dataset': 'amazon_polarity',
+   'config': 'amazon_polarity',
+   'split': 'train',
+   'url': 'https://huggingface.co/datasets/amazon_polarity/resolve/refs%2Fconvert%2Fparquet/amazon_polarity/amazon_polarity-train-00001-of-00004.parquet',
+   'filename': 'amazon_polarity-train-00001-of-00004.parquet',
+   'size': 320627716},
+  {'dataset': 'amazon_polarity',
+   'config': 'amazon_polarity',
+   'split': 'train',
+   'url': 'https://huggingface.co/datasets/amazon_polarity/resolve/refs%2Fconvert%2Fparquet/amazon_polarity/amazon_polarity-train-00002-of-00004.parquet',
+   'filename': 'amazon_polarity-train-00002-of-00004.parquet',
+   'size': 320587882},
+  {'dataset': 'amazon_polarity',
+   'config': 'amazon_polarity',
+   'split': 'train',
+   'url': 'https://huggingface.co/datasets/amazon_polarity/resolve/refs%2Fconvert%2Fparquet/amazon_polarity/amazon_polarity-train-00003-of-00004.parquet',
+   'filename': 'amazon_polarity-train-00003-of-00004.parquet',
+   'size': 66515954}],
+ 'pending': [],
+ 'failed': []}
 ```
 
-The shards can be concatenated:
+To concatenate the shards:
 
 ```python
-import pandas as pd
-import requests
-r = requests.get("https://datasets-server.huggingface.co/parquet?dataset=alexandrainst/danish-wit")
+import polars as pl
+r = requests.get("https://datasets-server.huggingface.co/parquet?dataset=amazon_polarity")
 j = r.json()
 urls = [f['url'] for f in j['parquet_files'] if f['split'] == 'train']
-dfs = [pd.read_parquet(url) for url in urls]
-df = pd.concat(dfs)
-df.mime_type.value_counts().head()
-# image/jpeg       140919
-# image/png         18608
-# image/svg+xml      6171
-# image/gif          1030
-# image/webp            1
-# Name: mime_type, dtype: int64
+q = (
+    pl.concat([pl.scan_parquet(url) for url in urls])
+    .groupby("label")
+    .agg([
+        pl.count(),
+        pl.col("content").str.n_chars().mean().alias("avg_review_length"),
+    ])
+)
+df = q.collect()
+print(df)
+shape: (2, 3)
+┌───────┬─────────┬───────────────────┐
+│ label ┆ count   ┆ avg_review_length │
+│ ---   ┆ ---     ┆ ---               │
+│ i64   ┆ u32     ┆ f64               │
+╞═══════╪═════════╪═══════════════════╡
+│ 0     ┆ 1800000 ┆ 420.873973        │
+│ 1     ┆ 1800000 ┆ 389.405282        │
+└───────┴─────────┴───────────────────┘
 ```
