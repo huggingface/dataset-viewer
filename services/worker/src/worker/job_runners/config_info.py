@@ -1,6 +1,6 @@
 import logging
 from http import HTTPStatus
-from typing import Any, Dict, Literal, Mapping, Optional, TypedDict
+from typing import Any, Dict, Literal, Mapping, Optional, Set, TypedDict
 
 from libcommon.dataset import DatasetNotFoundError
 from libcommon.simple_cache import DoesNotExist, SplitFullName, get_response
@@ -61,7 +61,7 @@ class ConfigInfoResponse(TypedDict):
     dataset_info: Dict[str, Any]  # info? dataset_info?
 
 
-def compute_config_info_response(dataset: str, config: str):
+def compute_config_info_response(dataset: str, config: str) -> ConfigInfoResponse:
     logging.info(f"get dataset_info for {dataset=} and {config=}")
 
     try:
@@ -115,7 +115,7 @@ class ConfigInfoJobRunner(JobRunner):
         return CompleteJobResult(compute_config_info_response(dataset=self.dataset, config=self.config))
 
     # TODO: is it needed?
-    def get_new_splits(self, content: Mapping[str, Any]) -> set[SplitFullName]:
+    def get_new_splits(self, content: Mapping[str, Any]) -> Set[SplitFullName]:
         """Get the set of new splits, from the content created by the compute."""
         return {
             SplitFullName(dataset=self.dataset, config=self.config, split=split)

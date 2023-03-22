@@ -3,12 +3,12 @@
 
 import logging
 from http import HTTPStatus
-from typing import Any, Dict, Literal, Mapping, Optional, TypedDict
+from typing import Any, Dict, List, Literal, Mapping, Optional, Tuple, TypedDict
 
 from libcommon.dataset import DatasetNotFoundError
 from libcommon.simple_cache import DoesNotExist, SplitFullName, get_response
 
-from worker.job_runner import CompleteJobResult, JobRunner, JobRunnerError
+from worker.job_runner import JobResult, JobRunner, JobRunnerError
 from worker.job_runners.config_info import ConfigInfoResponse
 
 DatasetInfoJobRunnerErrorCode = Literal[
@@ -17,16 +17,18 @@ DatasetInfoJobRunnerErrorCode = Literal[
 ]
 
 
-class DatasetInfoResponse(TypedDict):
-    dataset_info: Dict[str, Any]
-
-
 # TODO: refactor? (the same exists in dataset_parquet and dataset_size)
 class PreviousJob(TypedDict):
     kind: str
     dataset: str
     config: Optional[str]
     split: Optional[str]
+
+
+class DatasetInfoResponse(TypedDict):
+    dataset_info: Dict[str, Any]
+    pending: List[PreviousJob]
+    failed: List[PreviousJob]
 
 
 class DatasetInfoJobRunnerError(JobRunnerError):
@@ -59,7 +61,7 @@ class PreviousStepFormatError(DatasetInfoJobRunnerError):
         super().__init__(message, HTTPStatus.INTERNAL_SERVER_ERROR, "PreviousStepFormatError", cause, False)
 
 
-def compute_dataset_info_response(dataset: str) -> DatasetInfoResponse:
+def compute_dataset_info_response(dataset: str) -> Tuple[DatasetInfoResponse, float]:
     """
     Get the response of /dataset-info for one specific dataset on huggingface.co.
     Args:
@@ -104,12 +106,10 @@ def compute_dataset_info_response(dataset: str) -> DatasetInfoResponse:
                 logging.debug(f"No response found in previous step for {dataset=} {config=}: 'config-info'.")
                 pending.append(
                     PreviousJob(
-                        {
-                            "kind": "config-size",
-                            "dataset": dataset,
-                            "config": config,
-                            "split": None,
-                        }
+                        kind="config-size",
+                        dataset=dataset,
+                        config=config,
+                        split=None,
                     )
                 )
                 continue
@@ -117,22 +117,21 @@ def compute_dataset_info_response(dataset: str) -> DatasetInfoResponse:
                 logging.debug(f"Previous step gave an error: {response['http_status']}")
                 failed.append(
                     PreviousJob(
-                        {
-                            "kind": "config-size",
-                            "dataset": dataset,
-                            "config": config,
-                            "split": None,
-                        }
+                        kind="config-size",
+                        dataset=dataset,
+                        config=config,
+                        split=None,
                     )
                 )
                 continue
-            config_info = ConfigInfoResponse(dataset_info=config_response["content"]["dataset_info"])
-            config_infos[config] = config_info["dataset_info"]
+            config_infos[config] = config_response["content"]
 
     except Exception as e:
         raise PreviousStepFormatError("Previous step did not return the expected content.", e) from e
 
-    return DatasetInfoResponse(dataset_info=config_infos)
+    progress = (total - len(pending)) / total if total else 1.0
+
+    return DatasetInfoResponse(dataset_info=config_infos, pending=pending, failed=failed), progress
 
 
 class DatasetInfoJobRunner(JobRunner):
@@ -144,13 +143,14 @@ class DatasetInfoJobRunner(JobRunner):
     def get_job_runner_version() -> int:
         return 1
 
-    def compute(self) -> CompleteJobResult:
-        return CompleteJobResult(compute_dataset_info_response(dataset=self.dataset))
+    def compute(self) -> JobResult:
+        response_content, progress = compute_dataset_info_response(dataset=self.dataset)
+        return JobResult(response_content, progress=progress)
 
     def get_new_splits(self, content: Mapping[str, Any]) -> set[SplitFullName]:
         """Get the set of new splits, from the content created by the compute."""
         return {
             SplitFullName(dataset=self.dataset, config=config, split=split)
-            for config in content["dataset_info"].keys()
+            for config in content["dataset_info"]
             for split in content["dataset_info"][config]["splits"]
         }
