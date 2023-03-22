@@ -16,6 +16,8 @@ from libcommon.config import (
 WORKER_CONTENT_MAX_BYTES = 10_000_000
 WORKER_ENDPOINT = "/config-names"
 WORKER_HEARTBEAT_INTERVAL_SECONDS = 60
+WORKER_MAX_JOB_DURATION_SECONDS = 20 * 60
+WORKER_KILL_LONG_JOB_INTERVAL_SECONDS = 60
 WORKER_KILL_ZOMBIES_INTERVAL_SECONDS = 10 * 60
 WORKER_MAX_DISK_USAGE_PCT = 90
 WORKER_MAX_LOAD_PCT = 70
@@ -42,6 +44,8 @@ class WorkerConfig:
     heartbeat_interval_seconds: int = WORKER_HEARTBEAT_INTERVAL_SECONDS
     max_missing_heartbeats: int = WORKER_MAX_MISSING_HEARTBEATS
     kill_zombies_interval_seconds: int = WORKER_KILL_ZOMBIES_INTERVAL_SECONDS
+    max_job_duration_seconds: int = WORKER_MAX_JOB_DURATION_SECONDS
+    kill_long_job_interval_seconds: int = WORKER_KILL_LONG_JOB_INTERVAL_SECONDS
 
     @classmethod
     def from_env(cls) -> "WorkerConfig":
@@ -64,6 +68,12 @@ class WorkerConfig:
                 max_missing_heartbeats=env.int(name="MAX_MISSING_HEARTBEATS", default=WORKER_MAX_MISSING_HEARTBEATS),
                 kill_zombies_interval_seconds=env.int(
                     name="KILL_ZOMBIES_INTERVAL_SECONDS", default=WORKER_KILL_ZOMBIES_INTERVAL_SECONDS
+                ),
+                max_job_duration_seconds=env.int(
+                    name="MAX_JOB_DURATION_SECONDS", default=WORKER_MAX_JOB_DURATION_SECONDS
+                ),
+                kill_long_job_interval_seconds=env.int(
+                    name="KILL_LONG_JOB_INTERVAL_SECONDS", default=WORKER_KILL_LONG_JOB_INTERVAL_SECONDS
                 ),
             )
 

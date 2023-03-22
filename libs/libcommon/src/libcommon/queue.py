@@ -680,6 +680,19 @@ class Queue:
         return Job.objects(pk__in=zombie_job_ids, status=Status.STARTED).update(
             status=Status.ERROR, finished_at=get_datetime()
         )
+    
+    def kill_long_job(self, long_job: JobInfo) -> int:
+        """Kill the long job in the queue, setting its status to ERROR.
+        It does nothing if the input job has already been updated and
+        is not in the STARTED status anymore.
+
+        Returns: number of killed long jobs.
+        """
+        long_job_id = long_job["job_id"]
+        logging.info(f"Killing a long job. Job id = " + long_job_id)
+        return Job.objects(pk=long_job_id, status=Status.STARTED).update(
+            status=Status.ERROR, finished_at=get_datetime()
+        )
 
 
 # only for the tests

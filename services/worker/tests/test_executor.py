@@ -1,4 +1,3 @@
-import json
 import os
 import sys
 import time
@@ -8,11 +7,20 @@ from pathlib import Path
 from typing import Callable, Iterator
 from unittest.mock import patch
 
+import orjson
 import pytest
 import pytz
 from filelock import FileLock
 from libcommon.processing_graph import ProcessingGraph
-from libcommon.queue import DoesNotExist, Job, JobInfo, Priority, Status, get_datetime
+from libcommon.queue import (
+    DoesNotExist,
+    Job,
+    JobInfo,
+    Priority,
+    Queue,
+    Status,
+    get_datetime,
+)
 from libcommon.resources import CacheMongoResource, QueueMongoResource
 from libcommon.simple_cache import CachedResponse
 from libcommon.storage import StrPath
@@ -25,7 +33,7 @@ from worker.job_runner_factory import JobRunnerFactory
 from worker.loop import WorkerState
 from worker.resources import LibrariesResource
 
-_TIME = int(time.time() * 10e3)
+_TIME = int(os.environ.get("WORKER_TEST_TIME", int(time.time() * 10e3)))
 
 
 def get_job_info(prefix: str = "base") -> JobInfo:
@@ -44,8 +52,8 @@ def get_job_info(prefix: str = "base") -> JobInfo:
 
 def write_worker_state(worker_state: WorkerState, worker_state_file_path: str) -> None:
     with FileLock(worker_state_file_path + ".lock"):
-        with open(worker_state_file_path, "w") as worker_state_f:
-            json.dump(worker_state, worker_state_f)
+        with open(worker_state_file_path, "wb") as worker_state_f:
+            worker_state_f.write(orjson.dumps(worker_state))
 
 
 def start_worker_loop() -> None:
@@ -55,7 +63,7 @@ def start_worker_loop() -> None:
     if "--print-worker-state-path" in sys.argv:
         print(app_config.worker.state_file_path, flush=True)
     current_job_info = get_job_info()
-    worker_state = WorkerState(current_job_info=current_job_info)
+    worker_state = WorkerState(current_job_info=current_job_info, last_updated=get_datetime())
     write_worker_state(worker_state, app_config.worker.state_file_path)
 
 
@@ -72,10 +80,29 @@ def start_worker_loop_that_times_out() -> None:
     time.sleep(20)
 
 
+def start_worker_loop_with_long_job() -> None:
+    app_config = AppConfig.from_env()
+    if not app_config.worker.state_file_path:
+        raise ValueError("Failed to get worker state because 'state_file_path' is missing.")
+    if "--print-worker-state-path" in sys.argv:
+        print(app_config.worker.state_file_path, flush=True)
+    current_job_info = get_job_info("long")
+    with QueueMongoResource(database=app_config.queue.mongo_database, host=app_config.queue.mongo_url):
+        current_job = Job.objects(pk=current_job_info["job_id"]).get()
+        assert current_job.started_at is not None
+        worker_state = WorkerState(
+            current_job_info=current_job_info, last_updated=pytz.UTC.localize(current_job.started_at)
+        )
+        if current_job.status == Status.STARTED:
+            write_worker_state(worker_state, app_config.worker.state_file_path)
+            time.sleep(10)
+            Queue().finish_job(current_job_info["job_id"], finished_status=Status.SUCCESS)
+
+
 @fixture
 def set_worker_state(worker_state_file_path: str) -> Iterator[WorkerState]:
     job_info = get_job_info()
-    worker_state = WorkerState(current_job_info=job_info)
+    worker_state = WorkerState(current_job_info=job_info, last_updated=get_datetime())
     write_worker_state(worker_state, worker_state_file_path)
     yield worker_state
     os.remove(worker_state_file_path)
@@ -195,7 +222,7 @@ def test_executor_get_state(executor: WorkerExecutor, set_worker_state: WorkerSt
 def test_executor_get_empty_state(
     executor: WorkerExecutor,
 ) -> None:
-    assert executor.get_state() == WorkerState(current_job_info=None)
+    assert executor.get_state() is None
 
 
 def test_executor_heartbeat(
@@ -217,7 +244,6 @@ def test_executor_kill_zombies(
     set_just_started_job_in_queue: Job,
     set_long_running_job_in_queue: Job,
     set_zombie_job_in_queue: Job,
-    job_runner_factory: JobRunnerFactory,
     tmp_dataset_repo_factory: Callable[[str], str],
     cache_mongo_resource: CacheMongoResource,
 ) -> None:
@@ -248,12 +274,19 @@ def test_executor_start(
     queue_mongo_resource: QueueMongoResource,
     set_just_started_job_in_queue: Job,
     set_zombie_job_in_queue: Job,
+    tmp_dataset_repo_factory: Callable[[str], str],
+    cache_mongo_resource: CacheMongoResource,
 ) -> None:
     if not queue_mongo_resource.is_available():
         raise RuntimeError("Mongo resource is not available")
+    zombie = set_zombie_job_in_queue
+    tmp_dataset_repo_factory(zombie.dataset)
+    # tmp_dataset_repo_factory(zombie.dataset)
     with patch.object(executor, "heartbeat", wraps=executor.heartbeat) as heartbeat_mock:
         with patch.object(executor, "kill_zombies", wraps=executor.kill_zombies) as kill_zombies_mock:
-            with patch("worker.executor.START_WORKER_LOOP_PATH", __file__):
+            with patch("worker.executor.START_WORKER_LOOP_PATH", __file__), patch.dict(
+                os.environ, {"WORKER_TEST_TIME": str(_TIME)}
+            ):
                 executor.start()
     current_job = set_just_started_job_in_queue
     assert current_job is not None
@@ -276,9 +309,62 @@ def test_executor_raises_on_bad_worker(
     with bad_start_worker_loop_path.open("w") as bad_start_worker_loop_f:
         bad_start_worker_loop_f.write("raise RuntimeError('Tried to start a bad worker loop.')")
     with patch.dict(os.environ, {"WORKER_LOOP_TYPE": bad_worker_loop_type}):
-        with patch("worker.executor.START_WORKER_LOOP_PATH", __file__):
+        with patch("worker.executor.START_WORKER_LOOP_PATH", __file__), patch.dict(
+            os.environ, {"WORKER_TEST_TIME": str(_TIME)}
+        ):
             with pytest.raises((ProcessExitedWithError, TimeoutExpired)):
                 executor.start()
+
+
+def test_executor_stops_on_long_job(
+    executor: WorkerExecutor,
+    queue_mongo_resource: QueueMongoResource,
+    cache_mongo_resource: CacheMongoResource,
+    tmp_dataset_repo_factory: Callable[[str], str],
+    set_long_running_job_in_queue: Job,
+    set_just_started_job_in_queue: Job,
+) -> None:
+    if not queue_mongo_resource.is_available():
+        raise RuntimeError("Mongo resource is not available")
+    long_job = set_long_running_job_in_queue
+    normal_job = set_just_started_job_in_queue
+    tmp_dataset_repo_factory(long_job.dataset)
+    try:
+        with patch.dict(os.environ, {"WORKER_LOOP_TYPE": "start_worker_loop_with_long_job"}):
+            with patch.object(executor, "max_seconds_without_heartbeat_for_zombies", -1):  # don't kill normal_job
+                with patch("worker.executor.START_WORKER_LOOP_PATH", __file__), patch.dict(
+                    os.environ, {"WORKER_TEST_TIME": str(_TIME)}
+                ):
+                    _start = time.time()
+                    executor.start()
+                    _stop = time.time()
+
+        assert long_job is not None
+        assert str(long_job.pk) == get_job_info("long")["job_id"]
+        assert _stop - _start < 5, "must have killed the long job quickly"
+
+        long_job.reload()
+        assert long_job.status == Status.ERROR, "must be an error because too long"
+
+        responses = CachedResponse.objects()
+        assert len(responses) == 1
+        response = responses[0]
+        expected_error = {
+            "error": "Job runner was killed while running this job (job exceeded maximum duration).",
+        }
+        assert response.http_status == HTTPStatus.NOT_IMPLEMENTED
+        assert response.error_code == "JobRunnerCrashedError"
+        assert response.dataset == long_job.dataset
+        assert response.config == long_job.config
+        assert response.split == long_job.split
+        assert response.content == expected_error
+        assert response.details == expected_error
+
+        normal_job.reload()
+        assert normal_job.status == Status.STARTED, "must stay untouched"
+
+    finally:
+        CachedResponse.objects().delete()
 
 
 if __name__ == "__main__":
@@ -287,5 +373,7 @@ if __name__ == "__main__":
         start_worker_loop_that_crashes()
     elif worker_loop_type == "start_worker_loop_that_times_out":
         start_worker_loop_that_times_out()
+    elif worker_loop_type == "start_worker_loop_with_long_job":
+        start_worker_loop_with_long_job()
     else:
         start_worker_loop()
