@@ -689,7 +689,7 @@ class Queue:
         Returns: number of killed long jobs.
         """
         long_job_id = long_job["job_id"]
-        logging.info(f"Killing a long job. Job id = " + long_job_id)
+        logging.info("Killing a long job. Job id = " + long_job_id)
         return Job.objects(pk=long_job_id, status=Status.STARTED).update(
             status=Status.ERROR, finished_at=get_datetime()
         )
