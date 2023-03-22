@@ -10,7 +10,7 @@ from mongodb_migration.check import check_documents
 from mongodb_migration.migration import Migration
 
 first_rows = "/first-rows"
-first_rows_from_streaming = "first-rows-from-streaming"
+split_first_rows_from_streaming = "split-first-rows-from-streaming"
 db_name = "queue"
 
 
@@ -19,8 +19,8 @@ class MigrationQueueUpdateFirstRows(Migration):
     def up(self) -> None:
         logging.info(
             f"Rename unicity_id field from Job[{first_rows}][<dataset>][<config>][split] to"
-            f" Job[{first_rows_from_streaming}][<dataset>][<config>][split] and change type from {first_rows} to"
-            f" {first_rows_from_streaming}"
+            f" Job[{split_first_rows_from_streaming}][<dataset>][<config>][split] and change type from {first_rows} to"
+            f" {split_first_rows_from_streaming}"
         )
 
         db = get_db("queue")
@@ -33,10 +33,10 @@ class MigrationQueueUpdateFirstRows(Migration):
                             "$replaceOne": {
                                 "input": "$unicity_id",
                                 "find": f"Job[{first_rows}]",
-                                "replacement": f"Job[{first_rows_from_streaming}]",
+                                "replacement": f"Job[{split_first_rows_from_streaming}]",
                             }
                         },
-                        "type": first_rows_from_streaming,
+                        "type": split_first_rows_from_streaming,
                     }
                 },
             ],  # type: ignore
@@ -44,25 +44,25 @@ class MigrationQueueUpdateFirstRows(Migration):
 
     def down(self) -> None:
         logging.info(
-            f"Rename unicity_id field from Job[{first_rows_from_streaming}][<dataset>][<config>][split] to"
-            f" Job[{first_rows}][<dataset>][<config>][split] and change type from {first_rows_from_streaming} to"
+            f"Rename unicity_id field from Job[{split_first_rows_from_streaming}][<dataset>][<config>][split] to"
+            f" Job[{first_rows}][<dataset>][<config>][split] and change type from {split_first_rows_from_streaming} to"
             f" {first_rows}"
         )
 
         db = get_db("queue")
         db["jobsBlue"].update_many(
-            {"type": first_rows_from_streaming},
+            {"type": split_first_rows_from_streaming},
             [
                 {
                     "$set": {
                         "unicity_id": {
                             "$replaceOne": {
                                 "input": "$unicity_id",
-                                "find": f"Job[{first_rows_from_streaming}]",
+                                "find": f"Job[{split_first_rows_from_streaming}]",
                                 "replacement": f"Job[{first_rows}]",
                             }
                         },
-                        "type": first_rows_from_streaming,
+                        "type": split_first_rows_from_streaming,
                     }
                 },
             ],  # type: ignore

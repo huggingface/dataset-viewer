@@ -75,12 +75,12 @@ class MigrationsCollector:
             ),
             MigrationCacheUpdateFirstRows(
                 version="20230320163700",
-                description="update 'kind' field in cache from /first-rows to first-rows-from-streaming",
+                description="update 'kind' field in cache from /first-rows to split-first-rows-from-streaming",
             ),
             MigrationQueueUpdateFirstRows(
                 version="20230320165700",
                 description=(
-                    "update 'type' and 'unicity_id' fields in job from /first-rows to first-rows-from-streaming"
+                    "update 'type' and 'unicity_id' fields in job from /first-rows to split-first-rows-from-streaming"
                 ),
             ),
         ]

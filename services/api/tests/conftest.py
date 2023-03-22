@@ -45,7 +45,7 @@ def endpoint_config(monkeypatch_session: MonkeyPatch) -> EndpointConfig:
             "/splits": {
                 "config": ["/split-names-from-streaming"],
             },
-            "/first-rows": {"split": ["first-rows-from-streaming"]},
+            "/first-rows": {"split": ["split-first-rows-from-streaming"]},
         }
     )
 

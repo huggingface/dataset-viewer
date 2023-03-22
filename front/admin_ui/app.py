@@ -64,7 +64,7 @@ with gr.Blocks() as demo:
                 query_pending_jobs_button = gr.Button("Run")
                 pending_jobs_query_result_df = gr.DataFrame()
             with gr.Tab("Refresh dataset"):
-                refresh_type = gr.Textbox(label="Processing step type", placeholder="first-rows-from-streaming")
+                refresh_type = gr.Textbox(label="Processing step type", placeholder="split-first-rows-from-streaming")
                 refresh_dataset_name = gr.Textbox(label="dataset", placeholder="c4")
                 refresh_config_name = gr.Textbox(label="config (optional)", placeholder="en")
                 refresh_split_name = gr.Textbox(label="split (optional)", placeholder="train, test")

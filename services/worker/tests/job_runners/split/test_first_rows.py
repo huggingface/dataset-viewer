@@ -15,15 +15,15 @@ from libcommon.simple_cache import DoesNotExist, get_response, upsert_response
 from libcommon.storage import StrPath
 
 from worker.config import AppConfig, FirstRowsConfig
-from worker.job_runners.first_rows_from_streaming import (
-    FirstRowsFromStreamingJobRunner,
+from worker.job_runners.split.first_rows_from_streaming import (
+    SplitFirstRowsFromStreamingJobRunner,
     get_json_size,
 )
 from worker.resources import LibrariesResource
 
-from ..fixtures.hub import HubDatasets, get_default_config_split
+from ...fixtures.hub import HubDatasets, get_default_config_split
 
-GetJobRunner = Callable[[str, str, str, AppConfig, FirstRowsConfig, bool], FirstRowsFromStreamingJobRunner]
+GetJobRunner = Callable[[str, str, str, AppConfig, FirstRowsConfig, bool], SplitFirstRowsFromStreamingJobRunner]
 
 
 @pytest.fixture
@@ -40,10 +40,10 @@ def get_job_runner(
         app_config: AppConfig,
         first_rows_config: FirstRowsConfig,
         force: bool = False,
-    ) -> FirstRowsFromStreamingJobRunner:
-        return FirstRowsFromStreamingJobRunner(
+    ) -> SplitFirstRowsFromStreamingJobRunner:
+        return SplitFirstRowsFromStreamingJobRunner(
             job_info={
-                "type": FirstRowsFromStreamingJobRunner.get_job_type(),
+                "type": SplitFirstRowsFromStreamingJobRunner.get_job_type(),
                 "dataset": dataset,
                 "config": config,
                 "split": split,
@@ -53,14 +53,14 @@ def get_job_runner(
             },
             app_config=app_config,
             processing_step=ProcessingStep(
-                name=FirstRowsFromStreamingJobRunner.get_job_type(),
+                name=SplitFirstRowsFromStreamingJobRunner.get_job_type(),
                 input_type="split",
                 requires=None,
                 required_by_dataset_viewer=True,
                 parent=None,
                 ancestors=[],
                 children=[],
-                job_runner_version=FirstRowsFromStreamingJobRunner.get_job_runner_version(),
+                job_runner_version=SplitFirstRowsFromStreamingJobRunner.get_job_runner_version(),
             ),
             hf_datasets_cache=libraries_resource.hf_datasets_cache,
             first_rows_config=first_rows_config,

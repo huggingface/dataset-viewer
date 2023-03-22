@@ -27,13 +27,15 @@ def test_queue_update_first_rows_type_and_unicity_id(mongo_host: str) -> None:
 
         migration = MigrationQueueUpdateFirstRows(
             version="20230320165700",
-            description="update 'type' and 'unicity_id' fields in job from /first-rows to first-rows-from-streaming",
+            description=(
+                "update 'type' and 'unicity_id' fields in job from /first-rows to split-first-rows-from-streaming"
+            ),
         )
         migration.up()
 
         assert not db["jobsBlue"].find_one({"type": "/first-rows"})  # Ensure 0 records with old type
 
-        result = db["jobsBlue"].find_one({"type": "first-rows-from-streaming"})
+        result = db["jobsBlue"].find_one({"type": "split-first-rows-from-streaming"})
         assert result
-        assert result["unicity_id"] == "Job[first-rows-from-streaming][dataset][config][split]"
+        assert result["unicity_id"] == "Job[split-first-rows-from-streaming][dataset][config][split]"
         db["jobsBlue"].drop()

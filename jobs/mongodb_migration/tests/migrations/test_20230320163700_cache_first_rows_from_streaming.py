@@ -18,12 +18,12 @@ def test_cache_update_first_rows_kind(mongo_host: str) -> None:
 
         migration = MigrationCacheUpdateFirstRows(
             version="20230320163700",
-            description="update 'kind' field in cache from /first-rows to /first-rows-from-streaming",
+            description="update 'kind' field in cache from /first-rows to split-first-rows-from-streaming",
         )
         migration.up()
 
         assert not db["cachedResponsesBlue"].find_one({"kind": "/first-rows"})  # Ensure 0 records with old kind
 
-        assert db["cachedResponsesBlue"].find_one({"kind": "first-rows-from-streaming"})
+        assert db["cachedResponsesBlue"].find_one({"kind": "split-first-rows-from-streaming"})
 
         db["cachedResponsesBlue"].drop()
