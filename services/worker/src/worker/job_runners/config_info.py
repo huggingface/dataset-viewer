@@ -52,16 +52,33 @@ class MissingInfoForConfigError(ConfigInfoJobRunnerError):
         super().__init__(message, HTTPStatus.INTERNAL_SERVER_ERROR, "MissingInfoForConfigError", cause, False)
 
 
-# class ConfigInfo(TypedDict):
-#     dataset: str
-#     config: str
-
-
 class ConfigInfoResponse(TypedDict):
-    dataset_info: Dict[str, Any]  # info? dataset_info?
+    dataset_info: Dict[str, Any]
 
 
 def compute_config_info_response(dataset: str, config: str) -> ConfigInfoResponse:
+    """
+    Get the response of config-info for one specific config of a specific dataset on huggingface.co.
+    Args:
+        dataset (`str`):
+            A namespace (user or an organization) and a repo name separated
+            by a `/`.
+    Returns:
+        `ConfigInfoResponse`: An object with the dataset_info response for requested config.
+    <Tip>
+    Raises the following errors:
+        - [`~job_runners.config_info.PreviousStepStatusError`]
+        `If the previous step gave an error.
+        - [`~job_runners.config_info.PreviousStepFormatError`]
+            If the content of the previous step doesn't have the expected format
+        - [`~job_runners.config_info.MissingInfoForConfigError`]
+            If the dataset info from the parquet export doesn't have the requested dataset configuration
+        - [`~libcommon.dataset.DatasetNotFoundError`]
+            If the dataset does not exist, or if the
+            token does not give the sufficient access to the dataset, or if the dataset is private
+            (private datasets are not supported by the datasets server)
+    </Tip>
+    """
     logging.info(f"get dataset_info for {dataset=} and {config=}")
 
     try:
@@ -72,7 +89,7 @@ def compute_config_info_response(dataset: str, config: str) -> ConfigInfoRespons
         ) from e
 
     if response["http_status"] != HTTPStatus.OK:
-        raise PreviousStepStatusError(f"Previous step gave an error: {response['http_status']}..")
+        raise PreviousStepStatusError(f"Previous step raised an error: {response['http_status']}..")
 
     try:
         content = ParquetAndDatasetInfoResponse(

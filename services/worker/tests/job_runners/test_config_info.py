@@ -218,7 +218,7 @@ def test_compute(
     expected_error_code: str,
     expected_content: Any,
     should_raise: bool,
-):
+) -> None:
     upsert_response(
         kind="/parquet-and-dataset-info", dataset=dataset, content=upstream_content, http_status=upstream_status
     )

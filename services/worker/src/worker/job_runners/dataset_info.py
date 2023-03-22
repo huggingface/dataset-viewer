@@ -63,19 +63,26 @@ class PreviousStepFormatError(DatasetInfoJobRunnerError):
 
 def compute_dataset_info_response(dataset: str) -> Tuple[DatasetInfoResponse, float]:
     """
-    Get the response of /dataset-info for one specific dataset on huggingface.co.
+    Get the response of dataset-info for one specific dataset on huggingface.co.
     Args:
         dataset (`str`):
             A namespace (user or an organization) and a repo name separated
             by a `/`.
     Returns:
-        `DatasetInfoResponse`: An object with the dataset_info response.
+        (`DatasetInfoResponse`, `float`): Tuple of an object with the dataset_info response and
+        progress float value from 0. to 1. which corresponds to the percentage of dataset configs
+        correctly processed and included in current response (some configs might not exist in cache yet
+        or raise errors).
     <Tip>
     Raises the following errors:
         - [`~job_runners.dataset_info.PreviousStepStatusError`]
-          If the previous step gave an error.
+            If the previous step gave an error.
         - [`~job_runners.dataset_info.PreviousStepFormatError`]
-            If the content of the previous step has not the expected format
+            If the content of the previous step doesn't have the expected format.
+        - [`~libcommon.dataset.DatasetNotFoundError`]
+            If the dataset does not exist, or if the
+            token does not give the sufficient access to the dataset, or if the dataset is private
+            (private datasets are not supported by the datasets server)
     </Tip>
     """
     logging.info(f"get dataset_info for {dataset=}")
@@ -88,7 +95,7 @@ def compute_dataset_info_response(dataset: str) -> Tuple[DatasetInfoResponse, fl
         ) from e
     if response["http_status"] != HTTPStatus.OK:
         raise PreviousStepStatusError(
-            f"Previous step gave an error: {response['http_status']}. This job should not have been created."
+            f"Previous step raised an error: {response['http_status']}. This job should not have been created."
         )
     content = response["content"]
     if "dataset_info" not in content:
