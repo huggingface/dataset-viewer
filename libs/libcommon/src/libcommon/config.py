@@ -150,7 +150,7 @@ class ProcessingGraphConfig:
             },
             "dataset-info": {
                 "input_type": "dataset",
-                "requires": "/parquet-and-dataset-info",
+                "requires": "config-info",
                 "job_runner_version": PROCESSING_STEP_DATASET_INFO_VERSION,
             },
             "/split-names-from-dataset-info": {
