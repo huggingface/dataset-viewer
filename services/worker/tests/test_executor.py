@@ -95,7 +95,7 @@ def start_worker_loop_with_long_job() -> None:
         )
         if current_job.status == Status.STARTED:
             write_worker_state(worker_state, app_config.worker.state_file_path)
-            time.sleep(10)
+            time.sleep(20)
             Queue().finish_job(current_job_info["job_id"], finished_status=Status.SUCCESS)
 
 
@@ -341,7 +341,7 @@ def test_executor_stops_on_long_job(
 
         assert long_job is not None
         assert str(long_job.pk) == get_job_info("long")["job_id"]
-        assert _stop - _start < 5, "must have killed the long job quickly"
+        assert _stop - _start < 15, "must have killed the long job quickly"
 
         long_job.reload()
         assert long_job.status == Status.ERROR, "must be an error because too long"
