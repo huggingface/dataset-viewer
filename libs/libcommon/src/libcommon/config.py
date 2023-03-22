@@ -12,6 +12,7 @@ from libcommon.constants import (
     PROCESSING_STEP_CONFIG_NAMES_VERSION,
     PROCESSING_STEP_CONFIG_PARQUET_VERSION,
     PROCESSING_STEP_CONFIG_SIZE_VERSION,
+    PROCESSING_STEP_CONFIG_INFO_VERSION,
     PROCESSING_STEP_DATASET_INFO_VERSION,
     PROCESSING_STEP_DATASET_PARQUET_VERSION,
     PROCESSING_STEP_DATASET_SIZE_VERSION,
@@ -142,7 +143,11 @@ class ProcessingGraphConfig:
                 "requires": "config-parquet",
                 "job_runner_version": PROCESSING_STEP_DATASET_PARQUET_VERSION,
             },
-            "config-info": {"input_type": "config", "requires": "/parquet-and-dataset-info"},  # TODO: add job runner version
+            "config-info": {
+                "input_type": "config",
+                "requires": "/parquet-and-dataset-info",
+                "job_runner_version": PROCESSING_STEP_CONFIG_INFO_VERSION,
+            },
             "dataset-info": {
                 "input_type": "dataset",
                 "requires": "/parquet-and-dataset-info",
