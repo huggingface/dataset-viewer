@@ -7,6 +7,7 @@ from typing import Any, List, Literal, Mapping, Optional, TypedDict, Union
 
 from datasets import get_dataset_config_names, get_dataset_split_names
 from datasets.data_files import EmptyDatasetError as _EmptyDatasetError
+from libcommon.constants import PROCESSING_STEP_SPLITS_VERSION
 from libcommon.simple_cache import SplitFullName
 
 from worker.job_runner import CompleteJobResult, JobRunnerError
@@ -131,7 +132,7 @@ class SplitsJobRunner(DatasetsBasedJobRunner):
 
     @staticmethod
     def get_job_runner_version() -> int:
-        return 2
+        return PROCESSING_STEP_SPLITS_VERSION
 
     def compute(self) -> CompleteJobResult:
         return CompleteJobResult(compute_splits_response(dataset=self.dataset, hf_token=self.common_config.hf_token))

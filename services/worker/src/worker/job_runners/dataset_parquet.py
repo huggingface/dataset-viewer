@@ -5,6 +5,7 @@ import logging
 from http import HTTPStatus
 from typing import Any, List, Literal, Mapping, Optional, Tuple, TypedDict
 
+from libcommon.constants import PROCESSING_STEP_DATASET_PARQUET_VERSION
 from libcommon.dataset import DatasetNotFoundError
 from libcommon.simple_cache import DoesNotExist, SplitFullName, get_response
 
@@ -150,7 +151,7 @@ class DatasetParquetJobRunner(JobRunner):
 
     @staticmethod
     def get_job_runner_version() -> int:
-        return 1
+        return PROCESSING_STEP_DATASET_PARQUET_VERSION
 
     def compute(self) -> JobResult:
         response_content, progress = compute_sizes_response(dataset=self.dataset)

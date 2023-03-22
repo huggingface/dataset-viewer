@@ -72,6 +72,7 @@ def get_job_runner(
                 parent=None,
                 ancestors=[],
                 children=[],
+                job_runner_version=DatasetParquetJobRunner.get_job_runner_version(),
             ),
         )
 

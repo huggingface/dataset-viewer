@@ -23,6 +23,8 @@ jobs:
         include:
           - directory: jobs
             project: mongodb_migration
+          - directory: jobs
+            project: cache_refresh
           - directory: services
             project: admin
           - directory: services
@@ -98,6 +100,8 @@ jobs:
             images:
               jobs:
                 mongodbMigration:
+                  tag: sha-${{ steps.vars.outputs.sha_short }}
+                cacheRefresh:
                   tag: sha-${{ steps.vars.outputs.sha_short }}
               services:
                 admin:
