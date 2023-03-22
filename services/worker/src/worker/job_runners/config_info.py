@@ -71,6 +71,9 @@ def compute_config_info_response(dataset: str, config: str) -> ConfigInfoRespons
             "No response found in previous step for this dataset: '/parquet-and-dataset-info'.", e
         ) from e
 
+    if response["http_status"] != HTTPStatus.OK:
+        raise PreviousStepStatusError(f"Previous step gave an error: {response['http_status']}..")
+
     try:
         content = ParquetAndDatasetInfoResponse(
             parquet_files=response["content"]["parquet_files"], dataset_info=response["content"]["dataset_info"]

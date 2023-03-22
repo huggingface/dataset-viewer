@@ -10,7 +10,6 @@ from libcommon.dataset import DatasetNotFoundError
 from libcommon.simple_cache import DoesNotExist, SplitFullName, get_response
 
 from worker.job_runner import JobResult, JobRunner, JobRunnerError
-from worker.job_runners.config_info import ConfigInfoResponse
 
 DatasetInfoJobRunnerErrorCode = Literal[
     "PreviousStepStatusError",
