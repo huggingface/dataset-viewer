@@ -353,7 +353,7 @@ def test_executor_stops_on_long_job(
             "error": "Job runner was killed while running this job (job exceeded maximum duration).",
         }
         assert response.http_status == HTTPStatus.NOT_IMPLEMENTED
-        assert response.error_code == "JobRunnerCrashedError"
+        assert response.error_code == "JobRunnerKilledError"
         assert response.dataset == long_job.dataset
         assert response.config == long_job.config
         assert response.split == long_job.split
