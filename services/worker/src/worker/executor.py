@@ -134,7 +134,7 @@ class WorkerExecutor:
                     Queue().kill_long_job(long_job)
                     job_runner = self.job_runner_factory.create_job_runner(long_job)
                     message = "Job runner was killed while running this job (job exceeded maximum duration)."
-                    job_runner.set_killed(message=message)
+                    job_runner.set_exceeded_maximum_duration(message=message)
 
     def is_worker_alive(self, worker_loop_executor: OutputExecutor) -> bool:
         if not worker_loop_executor.running():

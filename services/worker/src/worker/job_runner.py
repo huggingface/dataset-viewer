@@ -32,7 +32,7 @@ GeneralJobRunnerErrorCode = Literal[
     "UnexpectedError",
     "TooBigContentError",
     "JobRunnerCrashedError",
-    "JobRunnerKilledError",
+    "JobRunnerExceededMaximumDurationError",
 ]
 
 # List of error codes that should trigger a retry.
@@ -166,14 +166,14 @@ class JobRunnerCrashedError(GeneralJobRunnerError):
         )
 
 
-class JobRunnerKilledError(GeneralJobRunnerError):
+class JobRunnerExceededMaximumDurationError(GeneralJobRunnerError):
     """Raised when the job runner was killed because the job exceeded the maximum duration."""
 
     def __init__(self, message: str, cause: Optional[BaseException] = None):
         super().__init__(
             message=message,
             status_code=HTTPStatus.NOT_IMPLEMENTED,
-            code="JobRunnerKilledError",
+            code="JobRunnerExceededMaximumDurationError",
             cause=cause,
             disclose_cause=False,
         )
@@ -509,8 +509,8 @@ class JobRunner(ABC):
             " cache updated"
         )
 
-    def set_killed(self, message: str, cause: Optional[BaseException] = None) -> None:
-        error = JobRunnerKilledError(message=message, cause=cause)
+    def set_exceeded_maximum_duration(self, message: str, cause: Optional[BaseException] = None) -> None:
+        error = JobRunnerExceededMaximumDurationError(message=message, cause=cause)
         upsert_response(
             kind=self.processing_step.cache_kind,
             dataset=self.dataset,
@@ -524,7 +524,6 @@ class JobRunner(ABC):
             dataset_git_revision=self.get_dataset_git_revision(),
         )
         logging.debug(
-            "response for"
-            f" dataset={self.dataset} config={self.config} split={self.split} had an error (killed),"
-            " cache updated"
+            f"response for dataset={self.dataset} config={self.config} split={self.split} had an error (exceeded"
+            " maximum duration), cache updated"
         )
