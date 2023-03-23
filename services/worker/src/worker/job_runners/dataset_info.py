@@ -112,7 +112,7 @@ def compute_dataset_info_response(dataset: str) -> Tuple[DatasetInfoResponse, fl
                 logging.debug(f"No response found in previous step for {dataset=} {config=}: 'config-info'.")
                 pending.append(
                     PreviousJob(
-                        kind="config-size",
+                        kind="config-info",
                         dataset=dataset,
                         config=config,
                         split=None,
@@ -123,7 +123,7 @@ def compute_dataset_info_response(dataset: str) -> Tuple[DatasetInfoResponse, fl
                 logging.debug(f"Previous step gave an error: {response['http_status']}")
                 failed.append(
                     PreviousJob(
-                        kind="config-size",
+                        kind="config-info",
                         dataset=dataset,
                         config=config,
                         split=None,

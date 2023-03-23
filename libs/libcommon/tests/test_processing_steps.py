@@ -12,7 +12,7 @@ def test_default_graph() -> None:
     config_names = graph.get_step("/config-names")
     split_names_from_streaming = graph.get_step("/split-names-from-streaming")
     splits = graph.get_step("/splits")
-    first_rows = graph.get_step("/first-rows")
+    split_first_rows_from_streaming = graph.get_step("split-first-rows-from-streaming")
     parquet_and_dataset_info = graph.get_step("/parquet-and-dataset-info")
     config_parquet = graph.get_step("config-parquet")
     dataset_parquet = graph.get_step("dataset-parquet")
@@ -31,7 +31,7 @@ def test_default_graph() -> None:
 
     assert split_names_from_streaming is not None
     assert split_names_from_streaming.parent is config_names
-    assert split_names_from_streaming.children == [first_rows, dataset_split_names_from_streaming]
+    assert split_names_from_streaming.children == [split_first_rows_from_streaming, dataset_split_names_from_streaming]
     assert split_names_from_streaming.get_ancestors() == [config_names]
 
     assert splits is not None
@@ -39,10 +39,10 @@ def test_default_graph() -> None:
     assert splits.children == []
     assert splits.get_ancestors() == []
 
-    assert first_rows is not None
-    assert first_rows.parent is split_names_from_streaming
-    assert first_rows.children == []
-    assert first_rows.get_ancestors() == [config_names, split_names_from_streaming]
+    assert split_first_rows_from_streaming is not None
+    assert split_first_rows_from_streaming.parent is split_names_from_streaming
+    assert split_first_rows_from_streaming.children == []
+    assert split_first_rows_from_streaming.get_ancestors() == [config_names, split_names_from_streaming]
 
     assert parquet_and_dataset_info is not None
     assert parquet_and_dataset_info.parent is None
@@ -100,4 +100,4 @@ def test_default_graph() -> None:
     ]
 
     assert graph.get_first_steps() == [config_names, splits, parquet_and_dataset_info]
-    assert graph.get_steps_required_by_dataset_viewer() == [splits, first_rows]
+    assert graph.get_steps_required_by_dataset_viewer() == [splits, split_first_rows_from_streaming]

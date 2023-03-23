@@ -127,7 +127,7 @@ class ConfigInfoJobRunner(JobRunner):
 
     @staticmethod
     def get_job_runner_version() -> int:
-        return 1
+        return PROCESSING_STEP_CONFIG_INFO_VERSION
 
     def compute(self) -> CompleteJobResult:
         if self.config is None:
