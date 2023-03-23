@@ -32,6 +32,7 @@ GeneralJobRunnerErrorCode = Literal[
     "UnexpectedError",
     "TooBigContentError",
     "JobRunnerCrashedError",
+    "JobRunnerExceededMaximumDurationError",
 ]
 
 # List of error codes that should trigger a retry.
@@ -160,6 +161,19 @@ class JobRunnerCrashedError(GeneralJobRunnerError):
             message=message,
             status_code=HTTPStatus.NOT_IMPLEMENTED,
             code="JobRunnerCrashedError",
+            cause=cause,
+            disclose_cause=False,
+        )
+
+
+class JobRunnerExceededMaximumDurationError(GeneralJobRunnerError):
+    """Raised when the job runner was killed because the job exceeded the maximum duration."""
+
+    def __init__(self, message: str, cause: Optional[BaseException] = None):
+        super().__init__(
+            message=message,
+            status_code=HTTPStatus.NOT_IMPLEMENTED,
+            code="JobRunnerExceededMaximumDurationError",
             cause=cause,
             disclose_cause=False,
         )
@@ -493,4 +507,23 @@ class JobRunner(ABC):
             "response for"
             f" dataset={self.dataset} config={self.config} split={self.split} had an error (crashed),"
             " cache updated"
+        )
+
+    def set_exceeded_maximum_duration(self, message: str, cause: Optional[BaseException] = None) -> None:
+        error = JobRunnerExceededMaximumDurationError(message=message, cause=cause)
+        upsert_response(
+            kind=self.processing_step.cache_kind,
+            dataset=self.dataset,
+            config=self.config,
+            split=self.split,
+            content=dict(error.as_response()),
+            http_status=error.status_code,
+            error_code=error.code,
+            details=dict(error.as_response_with_cause()),
+            job_runner_version=self.get_job_runner_version(),
+            dataset_git_revision=self.get_dataset_git_revision(),
+        )
+        logging.debug(
+            f"response for dataset={self.dataset} config={self.config} split={self.split} had an error (exceeded"
+            " maximum duration), cache updated"
         )
