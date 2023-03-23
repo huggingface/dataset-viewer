@@ -19,12 +19,7 @@ from worker.job_runners.dataset_info import (
     PreviousStepStatusError,
 )
 
-from .test_config_info import (
-    CONFIG_INFO_1,
-    CONFIG_INFO_2,
-    DATASET_INFO_OK,
-    PARQUET_FILES,
-)
+from .test_config_info import CONFIG_INFO_1, CONFIG_INFO_2, DATASET_INFO_OK
 
 
 @pytest.fixture(autouse=True)
@@ -44,14 +39,16 @@ class UpstreamResponse(TypedDict):
     content: Mapping[str, Any]
 
 
-UPSTREAM_RESPONSE_PARQUET_AND_DATASET_INFO: UpstreamResponse = UpstreamResponse(
-    kind="/parquet-and-dataset-info",
+UPSTREAM_RESPONSE_CONFIG_NAMES: UpstreamResponse = UpstreamResponse(
+    kind="/config-names",
     dataset="dataset_ok",
     config=None,
     http_status=HTTPStatus.OK,
     content={
-        "parquet_files": PARQUET_FILES,
-        "dataset_info": DATASET_INFO_OK,
+        "config_names": [
+            {"dataset": "datset_ok", "config": "config_1"},
+            {"dataset": "datset_ok", "config": "config_2"},
+        ],
     },
 )
 
@@ -87,8 +84,8 @@ EXPECTED_PARTIAL = (
         },
         "pending": [
             PreviousJob(
-                kind="config-size",
-                dataset="dataset_partial",
+                kind="config-info",
+                dataset="dataset_ok",
                 config="config_2",
                 split=None,
             )
@@ -142,7 +139,7 @@ def get_job_runner(
         (
             "dataset_ok",
             [
-                UPSTREAM_RESPONSE_PARQUET_AND_DATASET_INFO,
+                UPSTREAM_RESPONSE_CONFIG_NAMES,
                 UPSTREAM_RESPONSE_CONFIG_INFO_1,
                 UPSTREAM_RESPONSE_CONFIG_INFO_2,
             ],
@@ -152,7 +149,7 @@ def get_job_runner(
         ),
         (
             "dataset_ok",
-            [UPSTREAM_RESPONSE_PARQUET_AND_DATASET_INFO, UPSTREAM_RESPONSE_CONFIG_INFO_1],
+            [UPSTREAM_RESPONSE_CONFIG_NAMES, UPSTREAM_RESPONSE_CONFIG_INFO_1],
             None,
             EXPECTED_PARTIAL,
             False,
@@ -161,7 +158,7 @@ def get_job_runner(
             "status_error",
             [
                 UpstreamResponse(
-                    kind="/parquet-and-dataset-info",
+                    kind="/config-names",
                     dataset="status_error",
                     config=None,
                     http_status=HTTPStatus.NOT_FOUND,
@@ -176,7 +173,7 @@ def get_job_runner(
             "format_error",
             [
                 UpstreamResponse(
-                    kind="/parquet-and-dataset-info",
+                    kind="/config-names",
                     dataset="format_error",
                     config=None,
                     http_status=HTTPStatus.OK,

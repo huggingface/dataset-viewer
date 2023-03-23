@@ -88,24 +88,23 @@ def compute_dataset_info_response(dataset: str) -> Tuple[DatasetInfoResponse, fl
     logging.info(f"get dataset_info for {dataset=}")
 
     try:
-        response = get_response(kind="/parquet-and-dataset-info", dataset=dataset)
+        response = get_response(kind="/config-names", dataset=dataset)
     except DoesNotExist as e:
-        raise DatasetNotFoundError(
-            "No response found in previous step for this dataset: '/parquet-and-dataset-info'.", e
-        ) from e
+        raise DatasetNotFoundError("No response found in previous step for this dataset: '/config-names'.", e) from e
     if response["http_status"] != HTTPStatus.OK:
         raise PreviousStepStatusError(
             f"Previous step raised an error: {response['http_status']}. This job should not have been created."
         )
     content = response["content"]
-    if "dataset_info" not in content:
-        raise PreviousStepFormatError("Previous step did not return the expected content: 'dataset_info'.")
+    if "config_names" not in content:
+        raise PreviousStepFormatError("Previous step did not return the expected content: 'config_names'.")
 
     try:
         config_infos: Dict[str, Any] = {}
         total = 0
         pending, failed = [], []
-        for config in content["dataset_info"]:
+        for config_item in content["config_names"]:
+            config = config_item["config"]
             total += 1
             try:
                 config_response = get_response(kind="config-info", dataset=dataset, config=config)
@@ -155,7 +154,7 @@ class DatasetInfoJobRunner(JobRunner):
         return JobResult(response_content, progress=progress)
 
     def get_new_splits(self, content: Mapping[str, Any]) -> set[SplitFullName]:
-        """Get the set of new splits, from the content created by the compute."""
+        """Get the set of new splits, from the content created by  self.compute()"""
         return {
             SplitFullName(dataset=self.dataset, config=config, split=split)
             for config in content["dataset_info"]
