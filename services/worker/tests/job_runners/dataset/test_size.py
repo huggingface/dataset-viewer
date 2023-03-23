@@ -12,13 +12,13 @@ from libcommon.resources import CacheMongoResource, QueueMongoResource
 from libcommon.simple_cache import upsert_response
 
 from worker.config import AppConfig
-from worker.job_runners.dataset_size import (
+from worker.job_runners.dataset.size import (
     DatasetSizeJobRunner,
     PreviousStepFormatError,
     PreviousStepStatusError,
 )
 
-from .utils import UpstreamResponse
+from ..utils import UpstreamResponse
 
 
 @pytest.fixture(autouse=True)

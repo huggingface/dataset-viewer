@@ -12,8 +12,8 @@ from libcommon.resources import CacheMongoResource, QueueMongoResource
 from libcommon.simple_cache import upsert_response
 
 from worker.config import AppConfig
-from worker.job_runners.config_parquet import ConfigParquetResponse
-from worker.job_runners.dataset_parquet import (
+from worker.job_runners.config.parquet import ConfigParquetResponse
+from worker.job_runners.dataset.parquet import (
     DatasetParquetJobRunner,
     DatasetParquetResponse,
     PreviousStepFormatError,
@@ -24,7 +24,7 @@ from worker.job_runners.parquet_and_dataset_info import (
     ParquetFileItem,
 )
 
-from .utils import UpstreamResponse
+from ..utils import UpstreamResponse
 
 
 @pytest.fixture(autouse=True)
