@@ -31,11 +31,12 @@ from datasets import (
     get_dataset_split_names,
     load_dataset,
 )
-from datasets.data_files import EmptyDatasetError as _EmptyDatasetError
-from libcommon.constants import PROCESSING_STEP_FIRST_ROWS_VERSION
+from libcommon.constants import PROCESSING_STEP_SPLIT_FIRST_ROWS_FROM_STREAMING_VERSION
 from libcommon.processing_graph import ProcessingStep
 from libcommon.queue import JobInfo
+from libcommon.simple_cache import DoesNotExist
 from libcommon.simple_cache import SplitFullName as _SplitFullName
+from libcommon.simple_cache import get_response
 from libcommon.storage import StrPath
 from libcommon.utils import orjson_dumps
 
@@ -49,7 +50,7 @@ from worker.job_runner import (
 )
 from worker.job_runners._datasets_based_job_runner import DatasetsBasedJobRunner
 
-FirstRowsJobRunnerErrorCode = Literal[
+SplitFirstRowsFromStreamingJobRunnerErrorCode = Literal[
     "SplitsNamesError",
     "EmptyDatasetError",
     "InfoError",
@@ -59,17 +60,19 @@ FirstRowsJobRunnerErrorCode = Literal[
     "RowsPostProcessingError",
     "TooManyColumnsError",
     "TooBigContentError",
+    "PreviousStepStatusError",
+    "PreviousStepFormatError",
 ]
 
 
-class FirstRowsJobRunnerError(JobRunnerError):
+class SplitFirstRowsFromStreamingJobRunnerError(JobRunnerError):
     """Base class for exceptions in this module."""
 
     def __init__(
         self,
         message: str,
         status_code: HTTPStatus,
-        code: FirstRowsJobRunnerErrorCode,
+        code: SplitFirstRowsFromStreamingJobRunnerErrorCode,
         cause: Optional[BaseException] = None,
         disclose_cause: bool = False,
     ):
@@ -78,67 +81,81 @@ class FirstRowsJobRunnerError(JobRunnerError):
         )
 
 
-class SplitsNamesError(FirstRowsJobRunnerError):
+class SplitsNamesError(SplitFirstRowsFromStreamingJobRunnerError):
     """Raised when the split names could not be fetched."""
 
     def __init__(self, message: str, cause: Optional[BaseException] = None):
         super().__init__(message, HTTPStatus.INTERNAL_SERVER_ERROR, "SplitsNamesError", cause, True)
 
 
-class EmptyDatasetError(FirstRowsJobRunnerError):
+class EmptyDatasetError(SplitFirstRowsFromStreamingJobRunnerError):
     """Raised when the dataset has no data."""
 
     def __init__(self, message: str, cause: Optional[BaseException] = None):
         super().__init__(message, HTTPStatus.INTERNAL_SERVER_ERROR, "EmptyDatasetError", cause, True)
 
 
-class InfoError(FirstRowsJobRunnerError):
+class InfoError(SplitFirstRowsFromStreamingJobRunnerError):
     """Raised when the info could not be fetched."""
 
     def __init__(self, message: str, cause: Optional[BaseException] = None):
         super().__init__(message, HTTPStatus.INTERNAL_SERVER_ERROR, "InfoError", cause, True)
 
 
-class FeaturesError(FirstRowsJobRunnerError):
+class FeaturesError(SplitFirstRowsFromStreamingJobRunnerError):
     """Raised when the features could not be fetched."""
 
     def __init__(self, message: str, cause: Optional[BaseException] = None):
         super().__init__(message, HTTPStatus.INTERNAL_SERVER_ERROR, "FeaturesError", cause, True)
 
 
-class StreamingRowsError(FirstRowsJobRunnerError):
+class StreamingRowsError(SplitFirstRowsFromStreamingJobRunnerError):
     """Raised when the rows could not be fetched in streaming mode."""
 
     def __init__(self, message: str, cause: Optional[BaseException] = None):
         super().__init__(message, HTTPStatus.INTERNAL_SERVER_ERROR, "StreamingRowsError", cause, True)
 
 
-class NormalRowsError(FirstRowsJobRunnerError):
+class NormalRowsError(SplitFirstRowsFromStreamingJobRunnerError):
     """Raised when the rows could not be fetched in normal mode."""
 
     def __init__(self, message: str, cause: Optional[BaseException] = None):
         super().__init__(message, HTTPStatus.INTERNAL_SERVER_ERROR, "NormalRowsError", cause, True)
 
 
-class RowsPostProcessingError(FirstRowsJobRunnerError):
+class RowsPostProcessingError(SplitFirstRowsFromStreamingJobRunnerError):
     """Raised when the rows could not be post-processed successfully."""
 
     def __init__(self, message: str, cause: Optional[BaseException] = None):
         super().__init__(message, HTTPStatus.INTERNAL_SERVER_ERROR, "RowsPostProcessingError", cause, False)
 
 
-class TooManyColumnsError(FirstRowsJobRunnerError):
+class TooManyColumnsError(SplitFirstRowsFromStreamingJobRunnerError):
     """Raised when the dataset exceeded the max number of columns."""
 
     def __init__(self, message: str, cause: Optional[BaseException] = None):
         super().__init__(message, HTTPStatus.INTERNAL_SERVER_ERROR, "TooManyColumnsError", cause, True)
 
 
-class TooBigContentError(FirstRowsJobRunnerError):
+class TooBigContentError(SplitFirstRowsFromStreamingJobRunnerError):
     """Raised when the first rows content exceeded the max size of bytes."""
 
     def __init__(self, message: str, cause: Optional[BaseException] = None):
         super().__init__(message, HTTPStatus.INTERNAL_SERVER_ERROR, "TooBigContentError", cause, False)
+
+
+class PreviousStepStatusError(SplitFirstRowsFromStreamingJobRunnerError):
+    """Raised when the previous step gave an error. The job should not have been created."""
+
+    def __init__(self, message: str, cause: Optional[BaseException] = None):
+        super().__init__(message, HTTPStatus.INTERNAL_SERVER_ERROR, "PreviousStepStatusError", cause, False)
+
+
+class PreviousStepFormatError(SplitFirstRowsFromStreamingJobRunnerError):
+    """Raised when the content of the previous step has not the expected format."""
+
+    def __init__(self, message: str, cause: Optional[BaseException] = None):
+        super().__init__(message, HTTPStatus.INTERNAL_SERVER_ERROR, "PreviousStepFormatError", cause, False)
 
 
 FuncT = TypeVar("FuncT", bound=Callable[..., Any])
@@ -184,7 +201,7 @@ class RowItem(TypedDict):
     truncated_cells: List[str]
 
 
-class FirstRowsResponse(TypedDict):
+class SplitFirstRowsFromStreamingResponse(TypedDict):
     dataset: str
     config: str
     split: str
@@ -423,7 +440,7 @@ def compute_first_rows_response(
     columns_max_number: int,
     assets_directory: StrPath,
     max_size_fallback: Optional[int] = None,
-) -> FirstRowsResponse:
+) -> SplitFirstRowsFromStreamingResponse:
     """
     Get the response of /first-rows for one specific split of a dataset from huggingface.co.
     Dataset can be private or gated if you pass an acceptable token.
@@ -458,7 +475,7 @@ def compute_first_rows_response(
         assets_directory (`str` or `pathlib.Path`):
             The directory where the assets are stored.
     Returns:
-        [`FirstRowsResponse`]: The list of first rows of the split.
+        [`SplitFirstRowsFromStreamingResponse`]: The list of first rows of the split.
     <Tip>
     Raises the following errors:
         - [`~job_runner.ConfigNotFoundError`]
@@ -484,24 +501,20 @@ def compute_first_rows_response(
     logging.info(f"get first-rows for dataset={dataset} config={config} split={split}")
     use_auth_token: Union[bool, str, None] = hf_token if hf_token is not None else False
     # first ensure the tuple (dataset, config, split) exists on the Hub
-    # get the list of splits
     try:
-        split_full_names = get_dataset_split_full_names(dataset=dataset, use_auth_token=use_auth_token)
-    except _EmptyDatasetError as err:
-        raise EmptyDatasetError("The dataset is empty.", cause=err) from err
-    except Exception as err:
-        raise SplitsNamesError("Cannot get the split names for the dataset.", cause=err) from err
-    # ^ can raise DatasetNotFoundError or SplitsNamesError
-    if config not in [split_full_name["config"] for split_full_name in split_full_names]:
+        upstream_response = get_response(kind="/split-names-from-streaming", dataset=dataset, config=config)
+        splits_content = upstream_response["content"]["splits"]
+    except DoesNotExist:
         raise ConfigNotFoundError(f"The config '{config}' does not exist for the dataset.'")
-    if {"dataset": dataset, "config": config, "split": split} not in [
-        {
-            "dataset": split_full_name["dataset"],
-            "config": split_full_name["config"],
-            "split": split_full_name["split"],
-        }
-        for split_full_name in split_full_names
-    ]:
+    except Exception as e:
+        raise PreviousStepFormatError("Previous step did not return the expected content.") from e
+
+    if upstream_response["http_status"] != HTTPStatus.OK:
+        raise PreviousStepStatusError(
+            f"Previous step gave an error: {upstream_response['http_status']}. This job should not have been created."
+        )
+
+    if split not in [split_item["split"] for split_item in splits_content]:
         raise SplitNotFoundError(f"The split '{split}' does not exist for the config '{config}' of the dataset.")
     # get the features
     try:
@@ -551,7 +564,7 @@ def compute_first_rows_response(
 
     # validate size of response without the rows
     features_list = to_features_list(features=features)
-    response_features_only: FirstRowsResponse = {
+    response_features_only: SplitFirstRowsFromStreamingResponse = {
         "dataset": dataset,
         "config": config,
         "split": split,
@@ -637,17 +650,17 @@ def compute_first_rows_response(
     return response
 
 
-class FirstRowsJobRunner(DatasetsBasedJobRunner):
+class SplitFirstRowsFromStreamingJobRunner(DatasetsBasedJobRunner):
     assets_directory: StrPath
     first_rows_config: FirstRowsConfig
 
     @staticmethod
     def get_job_type() -> str:
-        return "/first-rows"
+        return "split-first-rows-from-streaming"
 
     @staticmethod
     def get_job_runner_version() -> int:
-        return PROCESSING_STEP_FIRST_ROWS_VERSION
+        return PROCESSING_STEP_SPLIT_FIRST_ROWS_FROM_STREAMING_VERSION
 
     def __init__(
         self,
