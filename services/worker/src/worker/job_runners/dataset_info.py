@@ -90,14 +90,14 @@ def compute_dataset_info_response(dataset: str) -> Tuple[DatasetInfoResponse, fl
     try:
         response = get_response(kind="/config-names", dataset=dataset)
     except DoesNotExist as e:
-        raise DatasetNotFoundError("No response found in previous step for this dataset: '/config-names'.", e) from e
+        raise DatasetNotFoundError("No response for '/config-names' found for this dataset: .", e) from e
     if response["http_status"] != HTTPStatus.OK:
         raise PreviousStepStatusError(
             f"Previous step raised an error: {response['http_status']}. This job should not have been created."
         )
     content = response["content"]
     if "config_names" not in content:
-        raise PreviousStepFormatError("Previous step did not return the expected content: 'config_names'.")
+        raise PreviousStepFormatError("'/config-names' did not return the expected content: 'config_names'.")
 
     try:
         config_infos: Dict[str, Any] = {}

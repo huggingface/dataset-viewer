@@ -46,8 +46,8 @@ UPSTREAM_RESPONSE_CONFIG_NAMES: UpstreamResponse = UpstreamResponse(
     http_status=HTTPStatus.OK,
     content={
         "config_names": [
-            {"dataset": "datset_ok", "config": "config_1"},
-            {"dataset": "datset_ok", "config": "config_2"},
+            {"dataset": "dataset_ok", "config": "config_1"},
+            {"dataset": "dataset_ok", "config": "config_2"},
         ],
     },
 )
@@ -77,7 +77,7 @@ EXPECTED_OK = (
     1.0,
 )
 
-EXPECTED_PARTIAL = (
+EXPECTED_PARTIAL_PENDING = (
     {
         "dataset_info": {
             "config_1": CONFIG_INFO_1,
@@ -93,6 +93,24 @@ EXPECTED_PARTIAL = (
         "failed": [],
     },
     0.5,
+)
+
+EXPECTED_PARTIAL_FAILED = (
+    {
+        "dataset_info": {
+            "config_1": CONFIG_INFO_1,
+        },
+        "pending": [],
+        "failed": [
+            PreviousJob(
+                kind="config-info",
+                dataset="dataset_ok",
+                config="config_2",
+                split=None,
+            )
+        ],
+    },
+    1.0,
 )
 
 
@@ -151,7 +169,24 @@ def get_job_runner(
             "dataset_ok",
             [UPSTREAM_RESPONSE_CONFIG_NAMES, UPSTREAM_RESPONSE_CONFIG_INFO_1],
             None,
-            EXPECTED_PARTIAL,
+            EXPECTED_PARTIAL_PENDING,
+            False,
+        ),
+        (
+            "dataset_ok",
+            [
+                UPSTREAM_RESPONSE_CONFIG_NAMES,
+                UPSTREAM_RESPONSE_CONFIG_INFO_1,
+                UpstreamResponse(
+                    kind="config-info",
+                    dataset="dataset_ok",
+                    config="config_2",
+                    http_status=HTTPStatus.NOT_FOUND,
+                    content={"error": "error"},
+                ),
+            ],
+            None,
+            EXPECTED_PARTIAL_FAILED,
             False,
         ),
         (
@@ -204,7 +239,8 @@ def test_compute(
         assert e.type.__name__ == expected_error_code
     else:
         compute_result = job_runner.compute()
-        assert compute_result.content, compute_result.progress == expected
+        assert compute_result.content == expected[0]
+        assert compute_result.progress == expected[1]
 
 
 def test_doesnotexist(app_config: AppConfig, get_job_runner: GetJobRunner) -> None:
