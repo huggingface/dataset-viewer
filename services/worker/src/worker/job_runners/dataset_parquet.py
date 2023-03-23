@@ -12,18 +12,12 @@ from libcommon.simple_cache import DoesNotExist, SplitFullName, get_response
 from worker.job_runner import JobResult, JobRunner, JobRunnerError
 from worker.job_runners.config_parquet import ConfigParquetResponse
 from worker.job_runners.parquet_and_dataset_info import ParquetFileItem
+from worker.utils import PreviousJob
 
 SizesJobRunnerErrorCode = Literal[
     "PreviousStepStatusError",
     "PreviousStepFormatError",
 ]
-
-
-class PreviousJob(TypedDict):
-    kind: str
-    dataset: str
-    config: Optional[str]
-    split: Optional[str]
 
 
 class DatasetParquetResponse(TypedDict):

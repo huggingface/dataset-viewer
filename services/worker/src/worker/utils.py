@@ -28,3 +28,10 @@ class DatasetSplitNamesResponse(TypedDict):
     splits: List[SplitItem]
     pending: List[ConfigItem]
     failed: List[FailedConfigItem]
+
+
+class PreviousJob(TypedDict):
+    kind: str
+    dataset: str
+    config: Optional[str]
+    split: Optional[str]

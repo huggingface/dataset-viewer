@@ -10,19 +10,12 @@ from libcommon.dataset import DatasetNotFoundError
 from libcommon.simple_cache import DoesNotExist, SplitFullName, get_response
 
 from worker.job_runner import JobResult, JobRunner, JobRunnerError
+from worker.utils import PreviousJob
 
 DatasetInfoJobRunnerErrorCode = Literal[
     "PreviousStepStatusError",
     "PreviousStepFormatError",
 ]
-
-
-# TODO: refactor? (the same exists in dataset_parquet and dataset_size)
-class PreviousJob(TypedDict):
-    kind: str
-    dataset: str
-    config: Optional[str]
-    split: Optional[str]
 
 
 class DatasetInfoResponse(TypedDict):

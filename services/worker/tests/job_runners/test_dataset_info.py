@@ -2,7 +2,7 @@
 # Copyright 2022 The HuggingFace Authors.
 
 from http import HTTPStatus
-from typing import Any, Callable, List, Mapping, Optional, TypedDict
+from typing import Any, Callable, List
 
 import pytest
 from libcommon.dataset import DatasetNotFoundError
@@ -14,12 +14,13 @@ from libcommon.simple_cache import upsert_response
 from worker.config import AppConfig
 from worker.job_runners.dataset_info import (
     DatasetInfoJobRunner,
-    PreviousJob,
     PreviousStepFormatError,
     PreviousStepStatusError,
 )
+from worker.utils import PreviousJob
 
 from .test_config_info import CONFIG_INFO_1, CONFIG_INFO_2, DATASET_INFO_OK
+from .utils import UpstreamResponse
 
 
 @pytest.fixture(autouse=True)
@@ -29,14 +30,6 @@ def prepare_and_clean_mongo(app_config: AppConfig) -> None:
 
 
 GetJobRunner = Callable[[str, AppConfig, bool], DatasetInfoJobRunner]
-
-
-class UpstreamResponse(TypedDict):
-    kind: str
-    dataset: str
-    config: Optional[str]
-    http_status: HTTPStatus
-    content: Mapping[str, Any]
 
 
 UPSTREAM_RESPONSE_CONFIG_NAMES: UpstreamResponse = UpstreamResponse(
