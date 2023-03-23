@@ -44,6 +44,8 @@ services:
     ports:
       # for debug
       - ${ADMIN_UVICORN_PORT-8081}:${ADMIN_UVICORN_PORT-8081}
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
   api:
     build:
       context: ..
@@ -68,6 +70,8 @@ services:
     ports:
       # for debug
       - ${API_UVICORN_PORT-8080}:${API_UVICORN_PORT-8080}
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     depends_on:
       - mongodb
     restart: unless-stopped
@@ -98,6 +102,8 @@ services:
       PARQUET_AND_DATASET_INFO_URL_TEMPLATE: ${PARQUET_AND_DATASET_INFO_URL_TEMPLATE-/datasets/%s/resolve/%s/%s}
       WORKER_STORAGE_PATHS: ${ASSETS_STORAGE_DIRECTORY-/assets}
       # ^ note: the datasets cache is automatically added, so no need to add it here
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     depends_on:
       - mongodb
     restart: always
