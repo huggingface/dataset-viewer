@@ -335,9 +335,7 @@ def test_executor_stops_on_long_job(
                 with patch("worker.executor.START_WORKER_LOOP_PATH", __file__), patch.dict(
                     os.environ, {"WORKER_TEST_TIME": str(_TIME)}
                 ):
-                    _start = time.time()
                     executor.start()
-                    _stop = time.time()
 
         assert long_job is not None
         assert str(long_job.pk) == get_job_info("long")["job_id"]
