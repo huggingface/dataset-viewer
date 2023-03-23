@@ -19,10 +19,7 @@ from worker.job_runners.dataset.parquet import (
     PreviousStepFormatError,
     PreviousStepStatusError,
 )
-from worker.job_runners.parquet_and_dataset_info import (
-    ParquetAndDatasetInfoResponse,
-    ParquetFileItem,
-)
+from worker.job_runners.parquet_and_dataset_info import ParquetFileItem
 
 from ..utils import UpstreamResponse
 
@@ -80,31 +77,16 @@ def get_job_runner(
             "ok",
             [
                 UpstreamResponse(
-                    kind="/parquet-and-dataset-info",
+                    kind="/config-names",
                     dataset="ok",
                     config=None,
                     http_status=HTTPStatus.OK,
-                    content=ParquetAndDatasetInfoResponse(
-                        parquet_files=[
-                            ParquetFileItem(
-                                dataset="ok",
-                                config="config_1",
-                                split="train",
-                                url="url1",
-                                filename="filename1",
-                                size=0,
-                            ),
-                            ParquetFileItem(
-                                dataset="ok",
-                                config="config_2",
-                                split="train",
-                                url="url2",
-                                filename="filename2",
-                                size=0,
-                            ),
+                    content={
+                        "config_names": [
+                            {"dataset": "dataset_ok", "config": "config_1"},
+                            {"dataset": "dataset_ok", "config": "config_2"},
                         ],
-                        dataset_info={"config_1": "value", "config_2": "value"},
-                    ),
+                    },
                 ),
                 UpstreamResponse(
                     kind="config-parquet",
@@ -162,7 +144,7 @@ def get_job_runner(
             "status_error",
             [
                 UpstreamResponse(
-                    kind="/parquet-and-dataset-info",
+                    kind="/config-names",
                     dataset="status_error",
                     config=None,
                     http_status=HTTPStatus.NOT_FOUND,
@@ -177,7 +159,7 @@ def get_job_runner(
             "format_error",
             [
                 UpstreamResponse(
-                    kind="/parquet-and-dataset-info",
+                    kind="/config-names",
                     dataset="format_error",
                     config=None,
                     http_status=HTTPStatus.OK,
