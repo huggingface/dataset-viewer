@@ -3,7 +3,7 @@
 
 import logging
 from functools import lru_cache, partial
-from typing import Any, List, Mapping, Optional, Tuple, TypedDict
+from typing import Any, List, Mapping, Optional, TypedDict
 
 import numpy as np
 import pyarrow as pa
@@ -14,7 +14,6 @@ from libcommon.processing_graph import ProcessingStep
 from starlette.requests import Request
 from starlette.responses import Response
 from tqdm.contrib.concurrent import thread_map
-from typing_extensions import Protocol
 
 from api.authentication import auth_check
 from api.prometheus import StepProfiler
@@ -33,8 +32,6 @@ from api.utils import (
 MAX_ROWS = 100
 
 PARQUET_REVISION = "refs/convert/parquet"
-
-# TODO: manage private/gated datasets
 
 
 class FileSystemError(Exception):
@@ -68,36 +65,43 @@ def get_parquet_fs(dataset: str, hf_token: Optional[str]) -> HfFileSystem:
 
 UNSUPPORTED_FEATURES_MAGIC_STRINGS = ["Image(", "Audio(", "'binary'"]
 
-RowGroupReader = partial[Any]
 
-Index = Tuple[Any, List[RowGroupReader], Features, List[str]]
-
-
-class Indexer(Protocol):
-    def __call__(self, dataset: str, config: str, split: str) -> Index:
-        ...
-
-
-def create_index(
-    config_parquet_processing_steps: List[ProcessingStep],
-    init_processing_steps: List[ProcessingStep],
-    hf_endpoint: str,
-    hf_token: Optional[str] = None,
-) -> Indexer:
-    @lru_cache(maxsize=128)
-    def index(
+class RowsIndex:
+    def __init__(
+        self,
         dataset: str,
         config: str,
         split: str,
-    ) -> Index:
+        config_parquet_processing_steps: List[ProcessingStep],
+        init_processing_steps: List[ProcessingStep],
+        hf_endpoint: str,
+        hf_token: Optional[str],
+    ):
+        self.dataset = dataset
+        self.config = config
+        self.split = split
+        self.__post_init__(
+            config_parquet_processing_steps=config_parquet_processing_steps,
+            init_processing_steps=init_processing_steps,
+            hf_endpoint=hf_endpoint,
+            hf_token=hf_token,
+        )
+
+    def __post_init__(
+        self,
+        config_parquet_processing_steps: List[ProcessingStep],
+        init_processing_steps: List[ProcessingStep],
+        hf_endpoint: str,
+        hf_token: Optional[str],
+    ) -> None:
         with StepProfiler(method="rows.index", step="all"):
             # get the list of parquet files
             with StepProfiler(method="rows.index", step="get list of parquet files for split"):
                 try:
                     result = get_cache_entry_from_steps(
                         processing_steps=config_parquet_processing_steps,
-                        dataset=dataset,
-                        config=config,
+                        dataset=self.dataset,
+                        config=self.config,
                         split=None,
                         init_processing_steps=init_processing_steps,
                         hf_endpoint=hf_endpoint,
@@ -111,22 +115,22 @@ def create_index(
                     # ^ TODO: improve the error, depending on the case
                 try:
                     sources = sorted(
-                        f"{config}/{parquet_file['filename']}"
+                        f"{self.config}/{parquet_file['filename']}"
                         for parquet_file in content["parquet_files"]
-                        if parquet_file["split"] == split and parquet_file["config"] == config
+                        if parquet_file["split"] == self.split and parquet_file["config"] == self.config
                     )
                 except Exception as e:
                     raise ParquetResponseFormatError(f"Could not parse the list of parquet files: {e}") from e
                 logging.debug(
-                    f"Found {len(sources)} parquet files for dataset={dataset}, config={config}, split={split}:"
-                    f" {sources}"
+                    f"Found {len(sources)} parquet files for dataset={self.dataset}, config={self.config},"
+                    f" split={self.split}: {sources}"
                 )
                 if not sources:
                     raise ParquetResponseEmptyError("No parquet files found.")
             with StepProfiler(method="rows.index", step="get the Hub's dataset filesystem"):
-                fs = get_parquet_fs(dataset=dataset, hf_token=hf_token)
+                fs = get_parquet_fs(dataset=self.dataset, hf_token=hf_token)
             with StepProfiler(method="rows.index", step="get one parquet reader per parquet file"):
-                desc = f"{dataset}/{config}/{split}"
+                desc = f"{self.dataset}/{self.config}/{self.split}"
                 try:
                     parquet_files: List[pq.ParquetFile] = thread_map(
                         partial(pq.ParquetFile, filesystem=fs), sources, desc=desc, unit="pq", disable=True
@@ -134,19 +138,19 @@ def create_index(
                 except Exception as e:
                     raise FileSystemError(f"Could not read the parquet files: {e}") from e
             with StepProfiler(method="rows.index", step="get the dataset's features"):
-                features = Features.from_arrow_schema(parquet_files[0].schema.to_arrow_schema())
+                self.features = Features.from_arrow_schema(parquet_files[0].schema.to_arrow_schema())
 
-            supported_columns, unsupported_columns = [], []
-            for column, feature in features.items():
+            self.supported_columns, self.unsupported_columns = [], []
+            for column, feature in self.features.items():
                 str_feature = str(feature)
                 str_column = str(column)
                 if any(magic_string in str_feature for magic_string in UNSUPPORTED_FEATURES_MAGIC_STRINGS):
-                    unsupported_columns.append(str_column)
+                    self.unsupported_columns.append(str_column)
                 else:
-                    supported_columns.append(str_column)
+                    self.supported_columns.append(str_column)
 
             with StepProfiler(method="rows.index", step="create the row group offsets"):
-                row_group_offsets = np.cumsum(
+                self.row_group_offsets = np.cumsum(
                     [
                         parquet_file.metadata.row_group(group_id).num_rows
                         for parquet_file in parquet_files
@@ -154,41 +158,71 @@ def create_index(
                     ]
                 )
             with StepProfiler(method="rows.index", step="create the row group readers"):
-                row_group_readers = [
-                    partial(parquet_file.read_row_group, i=group_id, columns=supported_columns)
+                self.row_group_readers = [
+                    partial(parquet_file.read_row_group, i=group_id, columns=self.supported_columns)
                     for parquet_file in parquet_files
                     for group_id in range(parquet_file.metadata.num_row_groups)
                 ]
-            return row_group_offsets, row_group_readers, features, unsupported_columns
 
-    return index
+    # note that this cache is global for the class, not per instance
+    @lru_cache(maxsize=1024)
+    def query(self, offset: int, length: int) -> pa.Table:
+        """Query the parquet files
+
+        Note that this implementation will always read one row group, to get the list of columns and always have the
+        same schema, even if the requested rows are invalid (out of range).
+
+        Args:
+            offset (int): The first row to read.
+            length (int): The number of rows to read.
+
+        Returns:
+            pa.Table: The requested rows.
+        """
+        if (len(self.row_group_offsets) == 0) or (len(self.row_group_readers) == 0):
+            raise ParquetResponseEmptyError("No parquet files found.")
+        last_row_in_parquet = self.row_group_offsets[-1] - 1
+        first_row = min(offset, last_row_in_parquet)
+        last_row = min(offset, offset + length - 1, last_row_in_parquet)
+        first_row_group_id, last_row_group_id = np.searchsorted(
+            self.row_group_offsets, [first_row, last_row], side="right"
+        )
+        pa_table = pa.concat_tables(
+            [self.row_group_readers[i]() for i in range(first_row_group_id, last_row_group_id + 1)]
+        )
+        first_row_in_pa_table = self.row_group_offsets[first_row_group_id - 1] if first_row_group_id > 0 else 0
+        return pa_table.slice(offset - first_row_in_pa_table, length)
 
 
-@lru_cache(maxsize=1024)
-def query(offset: int, length: int, row_group_offsets: Any, row_group_readers: List[RowGroupReader]) -> pa.Table:
-    """Query the parquet files
+class Indexer:
+    def __init__(
+        self,
+        config_parquet_processing_steps: List[ProcessingStep],
+        init_processing_steps: List[ProcessingStep],
+        hf_endpoint: str,
+        hf_token: Optional[str] = None,
+    ):
+        self.config_parquet_processing_steps = config_parquet_processing_steps
+        self.init_processing_steps = init_processing_steps
+        self.hf_endpoint = hf_endpoint
+        self.hf_token = hf_token
 
-    Note that this implementation will always read one row group, to get the list of columns and always have the same
-    schema, even if the requested rows are invalid (out of range).
-
-    Args:
-        offset (int): The first row to read.
-        length (int): The number of rows to read.
-        row_group_offsets (Any): The row group offsets. See index().
-        row_group_readers (List[RowGroupReader]): The row group readers. See index().
-
-    Returns:
-        pa.Table: The requested rows.
-    """
-    if (len(row_group_offsets) == 0) or (len(row_group_readers) == 0):
-        raise ParquetResponseEmptyError("No parquet files found.")
-    last_row_in_parquet = row_group_offsets[-1] - 1
-    first_row = min(offset, last_row_in_parquet)
-    last_row = min(offset, offset + length - 1, last_row_in_parquet)
-    first_row_group_id, last_row_group_id = np.searchsorted(row_group_offsets, [first_row, last_row], side="right")
-    pa_table = pa.concat_tables([row_group_readers[i]() for i in range(first_row_group_id, last_row_group_id + 1)])
-    first_row_in_pa_table = row_group_offsets[first_row_group_id - 1] if first_row_group_id > 0 else 0
-    return pa_table.slice(offset - first_row_in_pa_table, length)
+    @lru_cache(maxsize=128)
+    def get_rows_index(
+        self,
+        dataset: str,
+        config: str,
+        split: str,
+    ) -> RowsIndex:
+        return RowsIndex(
+            dataset=dataset,
+            config=config,
+            split=split,
+            config_parquet_processing_steps=self.config_parquet_processing_steps,
+            init_processing_steps=self.init_processing_steps,
+            hf_endpoint=self.hf_endpoint,
+            hf_token=self.hf_token,
+        )
 
 
 class FeatureItem(TypedDict):
@@ -260,7 +294,7 @@ def create_rows_endpoint(
     max_age_long: int = 0,
     max_age_short: int = 0,
 ) -> Endpoint:
-    index = create_index(
+    indexer = Indexer(
         config_parquet_processing_steps=config_parquet_processing_steps,
         init_processing_steps=init_processing_steps,
         hf_endpoint=hf_endpoint,
@@ -298,18 +332,11 @@ def create_rows_endpoint(
                         hf_timeout_seconds=hf_timeout_seconds,
                     )
                 with StepProfiler(method="rows_endpoint", step="get row groups index"):
-                    row_group_offsets, row_group_readers, features, unsupported_columns = index(
-                        dataset=dataset, config=config, split=split
-                    )
+                    rows_index = indexer.get_rows_index(dataset=dataset, config=config, split=split)
                 with StepProfiler(method="rows_endpoint", step="query the rows"):
-                    pa_table = query(
-                        offset=offset,
-                        length=length,
-                        row_group_offsets=row_group_offsets,
-                        row_group_readers=row_group_readers,
-                    )
+                    pa_table = rows_index.query(offset=offset, length=length)
                 with StepProfiler(method="rows_endpoint", step="transform to a list"):
-                    response = create_response(pa_table, offset, features, unsupported_columns)
+                    response = create_response(pa_table, offset, rows_index.features, rows_index.unsupported_columns)
                 with StepProfiler(method="rows_endpoint", step="generate the OK response"):
                     return get_json_ok_response(content=response, max_age=max_age_long)
             except Exception as e:
