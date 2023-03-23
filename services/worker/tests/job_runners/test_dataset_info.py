@@ -57,7 +57,7 @@ UPSTREAM_RESPONSE_CONFIG_INFO_1: UpstreamResponse = UpstreamResponse(
     dataset="dataset_ok",
     config="config_1",
     http_status=HTTPStatus.OK,
-    content=CONFIG_INFO_1,
+    content={"dataset_info": CONFIG_INFO_1},
 )
 
 UPSTREAM_RESPONSE_CONFIG_INFO_2: UpstreamResponse = UpstreamResponse(
@@ -65,7 +65,7 @@ UPSTREAM_RESPONSE_CONFIG_INFO_2: UpstreamResponse = UpstreamResponse(
     dataset="dataset_ok",
     config="config_2",
     http_status=HTTPStatus.OK,
-    content=CONFIG_INFO_2,
+    content={"dataset_info": CONFIG_INFO_2},
 )
 
 EXPECTED_OK = (
