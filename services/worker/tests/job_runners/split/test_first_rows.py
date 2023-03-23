@@ -11,16 +11,19 @@ from libcommon.exceptions import CustomError
 from libcommon.processing_graph import ProcessingStep
 from libcommon.queue import Priority
 from libcommon.resources import CacheMongoResource, QueueMongoResource
-from libcommon.simple_cache import DoesNotExist, get_response
+from libcommon.simple_cache import DoesNotExist, get_response, upsert_response
 from libcommon.storage import StrPath
 
 from worker.config import AppConfig, FirstRowsConfig
-from worker.job_runners.first_rows import FirstRowsJobRunner, get_json_size
+from worker.job_runners.split.first_rows_from_streaming import (
+    SplitFirstRowsFromStreamingJobRunner,
+    get_json_size,
+)
 from worker.resources import LibrariesResource
 
-from ..fixtures.hub import HubDatasets, get_default_config_split
+from ...fixtures.hub import HubDatasets, get_default_config_split
 
-GetJobRunner = Callable[[str, str, str, AppConfig, FirstRowsConfig, bool], FirstRowsJobRunner]
+GetJobRunner = Callable[[str, str, str, AppConfig, FirstRowsConfig, bool], SplitFirstRowsFromStreamingJobRunner]
 
 
 @pytest.fixture
@@ -37,10 +40,10 @@ def get_job_runner(
         app_config: AppConfig,
         first_rows_config: FirstRowsConfig,
         force: bool = False,
-    ) -> FirstRowsJobRunner:
-        return FirstRowsJobRunner(
+    ) -> SplitFirstRowsFromStreamingJobRunner:
+        return SplitFirstRowsFromStreamingJobRunner(
             job_info={
-                "type": FirstRowsJobRunner.get_job_type(),
+                "type": SplitFirstRowsFromStreamingJobRunner.get_job_type(),
                 "dataset": dataset,
                 "config": config,
                 "split": split,
@@ -50,14 +53,14 @@ def get_job_runner(
             },
             app_config=app_config,
             processing_step=ProcessingStep(
-                name=FirstRowsJobRunner.get_job_type(),
+                name=SplitFirstRowsFromStreamingJobRunner.get_job_type(),
                 input_type="split",
                 requires=None,
                 required_by_dataset_viewer=True,
                 parent=None,
                 ancestors=[],
                 children=[],
-                job_runner_version=FirstRowsJobRunner.get_job_runner_version(),
+                job_runner_version=SplitFirstRowsFromStreamingJobRunner.get_job_runner_version(),
             ),
             hf_datasets_cache=libraries_resource.hf_datasets_cache,
             first_rows_config=first_rows_config,
@@ -74,6 +77,13 @@ def test_should_skip_job(
     job_runner = get_job_runner(dataset, config, split, app_config, first_rows_config, False)
     assert not job_runner.should_skip_job()
     # we add an entry to the cache
+    upsert_response(
+        kind="/split-names-from-streaming",
+        dataset=dataset,
+        config=config,
+        content={"splits": [{"dataset": dataset, "config": config, "split": split}]},
+        http_status=HTTPStatus.OK,
+    )
     job_runner.process()
     assert job_runner.should_skip_job()
     job_runner = get_job_runner(dataset, config, split, app_config, first_rows_config, True)
@@ -85,6 +95,13 @@ def test_compute(
 ) -> None:
     dataset, config, split = get_default_config_split(hub_public_csv)
     job_runner = get_job_runner(dataset, config, split, app_config, first_rows_config, False)
+    upsert_response(
+        kind="/split-names-from-streaming",
+        dataset=dataset,
+        config=config,
+        content={"splits": [{"dataset": dataset, "config": config, "split": split}]},
+        http_status=HTTPStatus.OK,
+    )
     assert job_runner.process()
     cached_response = get_response(
         kind=job_runner.processing_step.cache_kind, dataset=dataset, config=config, split=split
@@ -121,12 +138,12 @@ def test_doesnotexist(app_config: AppConfig, get_job_runner: GetJobRunner, first
         ("jsonl", False, None, None),
         ("gated", True, None, None),
         ("private", True, None, None),
-        ("empty", False, "EmptyDatasetError", "EmptyDatasetError"),
+        ("does_not_exist_config", False, "ConfigNotFoundError", None),
         # should we really test the following cases?
         # The assumption is that the dataset exists and is accessible with the token
-        ("does_not_exist", False, "SplitsNamesError", "FileNotFoundError"),
-        ("gated", False, "SplitsNamesError", "FileNotFoundError"),
-        ("private", False, "SplitsNamesError", "FileNotFoundError"),
+        ("does_not_exist_split", False, "SplitNotFoundError", None),
+        ("gated", False, "InfoError", "FileNotFoundError"),
+        ("private", False, "InfoError", "FileNotFoundError"),
     ],
 )
 def test_number_rows(
@@ -157,9 +174,33 @@ def test_number_rows(
         False,
     )
     if error_code is None:
+        upsert_response(
+            kind="/split-names-from-streaming",
+            dataset=dataset,
+            config=config,
+            content={"splits": [{"dataset": dataset, "config": config, "split": split}]},
+            http_status=HTTPStatus.OK,
+        )
         result = job_runner.compute().content
         assert result == expected_first_rows_response
         return
+    elif error_code == "SplitNotFoundError":
+        upsert_response(
+            kind="/split-names-from-streaming",
+            dataset=dataset,
+            config=config,
+            content={"splits": [{"dataset": dataset, "config": config, "split": "other_split"}]},
+            http_status=HTTPStatus.OK,
+        )
+    elif error_code in ("InfoError", "SplitsNamesError"):
+        upsert_response(
+            kind="/split-names-from-streaming",
+            dataset=dataset,
+            config=config,
+            content={"splits": [{"dataset": dataset, "config": config, "split": split}]},
+            http_status=HTTPStatus.OK,
+        )
+
     with pytest.raises(CustomError) as exc_info:
         job_runner.compute()
     assert exc_info.value.code == error_code
@@ -212,6 +253,14 @@ def test_truncation(
             columns_max_number=columns_max_number,
         ),
         False,
+    )
+
+    upsert_response(
+        kind="/split-names-from-streaming",
+        dataset=dataset,
+        config=config,
+        content={"splits": [{"dataset": dataset, "config": config, "split": split}]},
+        http_status=HTTPStatus.OK,
     )
 
     if error_code:
