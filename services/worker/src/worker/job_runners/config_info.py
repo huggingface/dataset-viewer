@@ -3,6 +3,7 @@ from http import HTTPStatus
 from typing import Any, Dict, Literal, Mapping, Optional, Set, TypedDict
 
 from libcommon.dataset import DatasetNotFoundError
+from libcommon.constants import PROCESSING_STEP_CONFIG_INFO_VERSION
 from libcommon.simple_cache import DoesNotExist, SplitFullName, get_response
 
 from worker.job_runner import CompleteJobResult, JobRunner, JobRunnerError
@@ -130,6 +131,8 @@ class ConfigInfoJobRunner(JobRunner):
         return PROCESSING_STEP_CONFIG_INFO_VERSION
 
     def compute(self) -> CompleteJobResult:
+        if self.dataset is None:
+            raise ValueError("dataset is required")
         if self.config is None:
             raise ValueError("config is required")
         return CompleteJobResult(compute_config_info_response(dataset=self.dataset, config=self.config))
