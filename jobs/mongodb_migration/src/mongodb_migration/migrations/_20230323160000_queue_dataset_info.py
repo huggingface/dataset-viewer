@@ -8,7 +8,7 @@ from mongodb_migration.migration import Migration
 
 dataset_info = "/dataset-info"
 dataset_info_updated = "dataset-info"
-db_name = "cache"
+db_name = "queue"
 
 
 # connection already occurred in the main.py (caveat: we use globals)
@@ -20,7 +20,7 @@ class MigrationQueueUpdateDatasetInfo(Migration):
             f" {dataset_info_updated}"
         )
 
-        db = get_db("queue")
+        db = get_db(db_name)
         db["jobsBlue"].update_many(
             {"type": dataset_info},
             [
@@ -46,7 +46,7 @@ class MigrationQueueUpdateDatasetInfo(Migration):
             f" {dataset_info}"
         )
 
-        db = get_db("queue")
+        db = get_db(db_name)
         db["jobsBlue"].update_many(
             {"type": dataset_info_updated},
             [
