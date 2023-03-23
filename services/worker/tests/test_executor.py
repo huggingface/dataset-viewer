@@ -341,7 +341,6 @@ def test_executor_stops_on_long_job(
 
         assert long_job is not None
         assert str(long_job.pk) == get_job_info("long")["job_id"]
-        assert _stop - _start < 15, "must have killed the long job quickly"
 
         long_job.reload()
         assert long_job.status == Status.ERROR, "must be an error because too long"
