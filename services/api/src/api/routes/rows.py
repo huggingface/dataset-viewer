@@ -164,6 +164,7 @@ def create_index(
     return index
 
 
+@lru_cache(maxsize=1024)
 def query(offset: int, length: int, row_group_offsets: Any, row_group_readers: List[RowGroupReader]) -> pa.Table:
     """Query the parquet files
 
