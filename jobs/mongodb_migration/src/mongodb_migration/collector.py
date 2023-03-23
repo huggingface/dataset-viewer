@@ -35,6 +35,12 @@ from mongodb_migration.migrations._20230320163700_cache_first_rows_from_streamin
 from mongodb_migration.migrations._20230320165700_queue_first_rows_from_streaming import (
     MigrationQueueUpdateFirstRows,
 )
+from mongodb_migration.migrations._20230323155000_cache_dataset_info import (
+    MigrationCacheUpdateDatasetInfo,
+)
+from mongodb_migration.migrations._20230323160000_queue_dataset_info import (
+    MigrationQueueUpdateDatasetInfo,
+)
 
 
 # TODO: add a way to automatically collect migrations from the migrations/ folder
@@ -82,5 +88,13 @@ class MigrationsCollector:
                 description=(
                     "update 'type' and 'unicity_id' fields in job from /first-rows to split-first-rows-from-streaming"
                 ),
+            ),
+            MigrationCacheUpdateDatasetInfo(
+                version="20230323155000",
+                description="update 'kind' field in cache from '/dataset-info' to 'dataset-info'",
+            ),
+            MigrationQueueUpdateDatasetInfo(
+                version="20230323160000",
+                description="update 'type' and 'unicity_id' fields in job from /dataset-info to dataset-info",
             ),
         ]

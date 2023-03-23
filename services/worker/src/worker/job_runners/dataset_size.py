@@ -11,6 +11,7 @@ from libcommon.simple_cache import DoesNotExist, SplitFullName, get_response
 
 from worker.job_runner import JobResult, JobRunner, JobRunnerError
 from worker.job_runners.config_size import ConfigSize, ConfigSizeResponse, SplitSize
+from worker.utils import PreviousJob
 
 SizesJobRunnerErrorCode = Literal[
     "PreviousStepStatusError",
@@ -30,13 +31,6 @@ class DatasetSizeContent(TypedDict):
     dataset: DatasetSize
     configs: list[ConfigSize]
     splits: list[SplitSize]
-
-
-class PreviousJob(TypedDict):
-    kind: str
-    dataset: str
-    config: Optional[str]
-    split: Optional[str]
 
 
 class DatasetSizeResponse(TypedDict):

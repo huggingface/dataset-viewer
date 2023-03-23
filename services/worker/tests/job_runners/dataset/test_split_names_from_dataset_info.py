@@ -146,7 +146,7 @@ def test_compute_progress(
     progress: float,
 ) -> None:
     upsert_response(
-        kind="/dataset-info",
+        kind="dataset-info",
         dataset=dataset,
         content={"dataset_info": {"config_a": {"splits": {}}, "config_b": {"splits": {}}}},
         http_status=HTTPStatus.OK,
@@ -169,7 +169,7 @@ def test_compute_error(app_config: AppConfig, get_job_runner: GetJobRunner) -> N
     dataset = "error"
     config = "error"
     upsert_response(
-        kind="/dataset-info",
+        kind="dataset-info",
         dataset=dataset,
         content={"dataset_info": {config: {"splits": {}}}},
         http_status=HTTPStatus.OK,
@@ -195,7 +195,7 @@ def test_compute_format_error(app_config: AppConfig, get_job_runner: GetJobRunne
     dataset = "error"
     config = "error"
     upsert_response(
-        kind="/dataset-info",
+        kind="dataset-info",
         dataset=dataset,
         content={"dataset_info": {config: {"splits": {}}}},
         http_status=HTTPStatus.OK,

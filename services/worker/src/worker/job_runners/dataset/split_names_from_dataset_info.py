@@ -78,12 +78,12 @@ def compute_dataset_split_names_from_dataset_info_response(dataset: str) -> Tupl
     logging.info(f"get dataset split names from dataset info for dataset={dataset}")
 
     try:
-        response = get_response(kind="/dataset-info", dataset=dataset)
+        response = get_response(kind="dataset-info", dataset=dataset)
         dataset_info_content = response["content"]["dataset_info"]
     except DoesNotExist as e:
-        raise DatasetNotFoundError("No response found in previous step for this dataset: '/dataset-info'.", e) from e
+        raise DatasetNotFoundError("No response found in previous step for this dataset: 'dataset-info'.", e) from e
     except KeyError as e:
-        raise PreviousStepFormatError("Previous step '/dataset-info' did not return the expected content.") from e
+        raise PreviousStepFormatError("Previous step 'dataset-info' did not return the expected content.") from e
 
     if response["http_status"] != HTTPStatus.OK:
         raise PreviousStepStatusError(

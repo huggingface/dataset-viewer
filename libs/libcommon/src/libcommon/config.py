@@ -9,6 +9,7 @@ from typing import Optional
 from environs import Env
 
 from libcommon.constants import (
+    PROCESSING_STEP_CONFIG_INFO_VERSION,
     PROCESSING_STEP_CONFIG_NAMES_VERSION,
     PROCESSING_STEP_CONFIG_PARQUET_VERSION,
     PROCESSING_STEP_CONFIG_SIZE_VERSION,
@@ -142,14 +143,19 @@ class ProcessingGraphConfig:
                 "requires": "config-parquet",
                 "job_runner_version": PROCESSING_STEP_DATASET_PARQUET_VERSION,
             },
-            "/dataset-info": {
-                "input_type": "dataset",
+            "config-info": {
+                "input_type": "config",
                 "requires": "/parquet-and-dataset-info",
+                "job_runner_version": PROCESSING_STEP_CONFIG_INFO_VERSION,
+            },
+            "dataset-info": {
+                "input_type": "dataset",
+                "requires": "config-info",
                 "job_runner_version": PROCESSING_STEP_DATASET_INFO_VERSION,
             },
             "/split-names-from-dataset-info": {
                 "input_type": "config",
-                "requires": "/dataset-info",
+                "requires": "dataset-info",
                 "job_runner_version": PROCESSING_STEP_SPLIT_NAMES_FROM_DATASET_INFO_VERSION,
             },
             "config-size": {

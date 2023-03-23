@@ -127,7 +127,7 @@ def test_compute(
     error_code: str,
     content: Any,
 ) -> None:
-    upsert_response(kind="/dataset-info", dataset=dataset, content=upstream_content, http_status=upstream_status)
+    upsert_response(kind="dataset-info", dataset=dataset, content=upstream_content, http_status=upstream_status)
     job_runner = get_job_runner(dataset, "config_name", app_config, False)
     if error_code:
         with pytest.raises(Exception) as e:
