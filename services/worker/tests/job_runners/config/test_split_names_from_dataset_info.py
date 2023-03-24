@@ -70,13 +70,11 @@ def get_job_runner(
             HTTPStatus.OK,
             {
                 "dataset_info": {
-                    "config_name": {
-                        "splits": {
-                            "train": {"name": "train", "dataset_name": "ok"},
-                            "validation": {"name": "validation", "dataset_name": "ok"},
-                            "test": {"name": "test", "dataset_name": "ok"},
-                        },
-                    }
+                    "splits": {
+                        "train": {"name": "train", "dataset_name": "ok"},
+                        "validation": {"name": "validation", "dataset_name": "ok"},
+                        "test": {"name": "test", "dataset_name": "ok"},
+                    },
                 }
             },
             None,
@@ -127,7 +125,7 @@ def test_compute(
     error_code: str,
     content: Any,
 ) -> None:
-    upsert_response(kind="dataset-info", dataset=dataset, content=upstream_content, http_status=upstream_status)
+    upsert_response(kind="config-info", dataset=dataset, content=upstream_content, http_status=upstream_status)
     job_runner = get_job_runner(dataset, "config_name", app_config, False)
     if error_code:
         with pytest.raises(Exception) as e:
