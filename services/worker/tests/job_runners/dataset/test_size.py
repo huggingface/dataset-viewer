@@ -12,13 +12,13 @@ from libcommon.resources import CacheMongoResource, QueueMongoResource
 from libcommon.simple_cache import upsert_response
 
 from worker.config import AppConfig
-from worker.job_runners.dataset_size import (
+from worker.job_runners.dataset.size import (
     DatasetSizeJobRunner,
     PreviousStepFormatError,
     PreviousStepStatusError,
 )
 
-from .utils import UpstreamResponse
+from ..utils import UpstreamResponse
 
 
 @pytest.fixture(autouse=True)
@@ -74,97 +74,15 @@ def get_job_runner(
             "dataset_ok",
             [
                 UpstreamResponse(
-                    kind="/parquet-and-dataset-info",
+                    kind="/config-names",
                     dataset="dataset_ok",
                     config=None,
                     http_status=HTTPStatus.OK,
                     content={
-                        "parquet_files": [
-                            {"dataset": "dataset_ok", "config": "config_1", "split": "train", "size": 14281188},
-                            {"dataset": "dataset_ok", "config": "config_1", "split": "test", "size": 2383903},
-                            {"dataset": "dataset_ok", "config": "config_2", "split": "train", "size": 1234},
-                            {"dataset": "dataset_ok", "config": "config_2", "split": "train", "size": 6789},
-                            {"dataset": "dataset_ok", "config": "config_2", "split": "test", "size": 2383903},
+                        "config_names": [
+                            {"dataset": "dataset_ok", "config": "config_1"},
+                            {"dataset": "dataset_ok", "config": "config_2"},
                         ],
-                        "dataset_info": {
-                            "config_1": {
-                                "features": {
-                                    "image": {"_type": "Image"},
-                                    "label": {
-                                        "names": ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9"],
-                                        "_type": "ClassLabel",
-                                    },
-                                },
-                                "splits": {
-                                    "train": {
-                                        "name": "train",
-                                        "num_bytes": 17470800,
-                                        "num_examples": 60000,
-                                        "dataset_name": "dataset_ok",
-                                    },
-                                    "test": {
-                                        "name": "test",
-                                        "num_bytes": 2916432,
-                                        "num_examples": 10000,
-                                        "dataset_name": "dataset_ok",
-                                    },
-                                },
-                                "download_checksums": {
-                                    "https://storage.googleapis.com/cvdf-datasets/mnist/train-images-idx3-ubyte.gz": {
-                                        "num_bytes": 9912422,
-                                        "checksum": "440fcabf73cc546fa21475e81ea370265605f56be210a4024d2ca8f203523609",
-                                    },
-                                    "https://storage.googleapis.com/cvdf-datasets/mnist/train-labels-idx1-ubyte.gz": {
-                                        "num_bytes": 28881,
-                                        "checksum": "3552534a0a558bbed6aed32b30c495cca23d567ec52cac8be1a0730e8010255c",
-                                    },
-                                    "https://storage.googleapis.com/cvdf-datasets/mnist/t10k-images-idx3-ubyte.gz": {
-                                        "num_bytes": 1648877,
-                                        "checksum": "8d422c7b0a1c1c79245a5bcf07fe86e33eeafee792b84584aec276f5a2dbc4e6",
-                                    },
-                                    "https://storage.googleapis.com/cvdf-datasets/mnist/t10k-labels-idx1-ubyte.gz": {
-                                        "num_bytes": 4542,
-                                        "checksum": "f7ae60f92e00ec6debd23a6088c31dbd2371eca3ffa0defaefb259924204aec6",
-                                    },
-                                },
-                                "download_size": 11594722,
-                                "dataset_size": 20387232,
-                                "size_in_bytes": 31981954,
-                            },
-                            "config_2": {
-                                "features": {
-                                    "image": {"_type": "Image"},
-                                    "image2": {"_type": "Image"},
-                                    "label": {
-                                        "names": ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9"],
-                                        "_type": "ClassLabel",
-                                    },
-                                },
-                                "splits": {
-                                    "train": {
-                                        "name": "train",
-                                        "num_bytes": 5678,
-                                        "num_examples": 3000,
-                                        "dataset_name": "dataset_ok",
-                                    },
-                                    "test": {
-                                        "name": "test",
-                                        "num_bytes": 1234,
-                                        "num_examples": 1000,
-                                        "dataset_name": "dataset_ok",
-                                    },
-                                },
-                                "download_checksums": {
-                                    "https://storage.googleapis.com/cvdf-datasets/mnist/train-images-idx3-ubyte.gz": {
-                                        "num_bytes": 9912422,
-                                        "checksum": "440fcabf73cc546fa21475e81ea370265605f56be210a4024d2ca8f203523609",
-                                    },
-                                },
-                                "download_size": 9912422,
-                                "dataset_size": 6912,
-                                "size_in_bytes": 9919334,
-                            },
-                        },
                     },
                 ),
                 UpstreamResponse(
@@ -324,7 +242,7 @@ def get_job_runner(
             "status_error",
             [
                 UpstreamResponse(
-                    kind="/parquet-and-dataset-info",
+                    kind="/config-names",
                     dataset="status_error",
                     config=None,
                     http_status=HTTPStatus.NOT_FOUND,
@@ -339,7 +257,7 @@ def get_job_runner(
             "format_error",
             [
                 UpstreamResponse(
-                    kind="/parquet-and-dataset-info",
+                    kind="/config-names",
                     dataset="format_error",
                     config=None,
                     http_status=HTTPStatus.OK,

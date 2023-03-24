@@ -12,7 +12,7 @@ from libcommon.resources import CacheMongoResource, QueueMongoResource
 from libcommon.simple_cache import upsert_response
 
 from worker.config import AppConfig
-from worker.job_runners.config_size import (
+from worker.job_runners.config.size import (
     ConfigSizeJobRunner,
     PreviousStepFormatError,
     PreviousStepStatusError,
