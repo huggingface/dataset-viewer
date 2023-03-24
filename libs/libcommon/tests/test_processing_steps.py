@@ -61,18 +61,18 @@ def test_default_graph() -> None:
 
     assert config_info is not None
     assert config_info.parent is parquet_and_dataset_info
-    assert config_info.children == [dataset_info]
+    assert config_info.children == [dataset_info, split_names_from_dataset_info]
     assert config_info.get_ancestors() == [parquet_and_dataset_info]
 
     assert dataset_info is not None
     assert dataset_info.parent is config_info
-    assert dataset_info.children == [split_names_from_dataset_info]
+    assert dataset_info.children == []
     assert dataset_info.get_ancestors() == [parquet_and_dataset_info, config_info]
 
     assert split_names_from_dataset_info is not None
-    assert split_names_from_dataset_info.parent is dataset_info
+    assert split_names_from_dataset_info.parent is config_info
     assert split_names_from_dataset_info.children == [dataset_split_names_from_dataset_info]
-    assert split_names_from_dataset_info.get_ancestors() == [parquet_and_dataset_info, config_info, dataset_info]
+    assert split_names_from_dataset_info.get_ancestors() == [parquet_and_dataset_info, config_info]
 
     assert config_size is not None
     assert config_size.parent is parquet_and_dataset_info
@@ -95,7 +95,6 @@ def test_default_graph() -> None:
     assert dataset_split_names_from_dataset_info.get_ancestors() == [
         parquet_and_dataset_info,
         config_info,
-        dataset_info,
         split_names_from_dataset_info,
     ]
 
