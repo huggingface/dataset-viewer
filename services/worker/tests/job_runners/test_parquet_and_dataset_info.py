@@ -16,7 +16,7 @@ from libcommon.resources import CacheMongoResource, QueueMongoResource
 from libcommon.simple_cache import DoesNotExist, get_response
 
 from worker.config import AppConfig, ParquetAndDatasetInfoConfig
-from worker.job_runners.parquet_and_dataset_info import (
+from worker.job_runners.config.parquet_and_info import (
     DatasetInBlockListError,
     DatasetTooBigFromDatasetsError,
     DatasetTooBigFromHubError,

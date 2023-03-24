@@ -9,7 +9,7 @@ from functools import partial
 from http import HTTPStatus
 from multiprocessing.pool import ThreadPool
 from pathlib import Path
-from typing import Any, Dict, List, Literal, Mapping, Optional, Tuple, TypedDict
+from typing import Any, Dict, List, Literal, Mapping, Optional, Set, Tuple, TypedDict
 from urllib.parse import quote
 
 import datasets
@@ -44,7 +44,7 @@ from worker.config import AppConfig, ParquetAndInfoConfig
 from worker.job_runner import CompleteJobResult, JobRunnerError
 from worker.job_runners._datasets_based_job_runner import DatasetsBasedJobRunner
 
-ParquetAndInfoJobRunnerErrorCode = Literal[
+ConfigParquetAndInfoJobRunnerErrorCode = Literal[
     "DatasetRevisionNotFoundError",
     "EmptyDatasetError",
     "DatasetInBlockListError",
@@ -60,14 +60,14 @@ ParquetAndInfoJobRunnerErrorCode = Literal[
 ]
 
 
-class ParquetAndInfoJobRunnerError(JobRunnerError):
+class ConfigParquetAndInfoJobRunnerError(JobRunnerError):
     """Base class for exceptions in this module."""
 
     def __init__(
         self,
         message: str,
         status_code: HTTPStatus,
-        code: ParquetAndInfoJobRunnerErrorCode,
+        code: ConfigParquetAndInfoJobRunnerErrorCode,
         cause: Optional[BaseException] = None,
         disclose_cause: bool = False,
     ):
@@ -76,35 +76,35 @@ class ParquetAndInfoJobRunnerError(JobRunnerError):
         )
 
 
-class DatasetRevisionNotFoundError(ParquetAndInfoJobRunnerError):
+class DatasetRevisionNotFoundError(ConfigParquetAndInfoJobRunnerError):
     """Raised when the revision of a dataset repository does not exist."""
 
     def __init__(self, message: str, cause: Optional[BaseException] = None):
         super().__init__(message, HTTPStatus.NOT_FOUND, "DatasetRevisionNotFoundError", cause, False)
 
 
-class EmptyDatasetError(ParquetAndInfoJobRunnerError):
+class EmptyDatasetError(ConfigParquetAndInfoJobRunnerError):
     """Raised when the dataset has no data."""
 
     def __init__(self, message: str, cause: Optional[BaseException] = None):
         super().__init__(message, HTTPStatus.INTERNAL_SERVER_ERROR, "EmptyDatasetError", cause, True)
 
 
-class DatasetInBlockListError(ParquetAndInfoJobRunnerError):
+class DatasetInBlockListError(ConfigParquetAndInfoJobRunnerError):
     """Raised when the dataset is in the list of blocked datasets."""
 
     def __init__(self, message: str, cause: Optional[BaseException] = None):
         super().__init__(message, HTTPStatus.NOT_IMPLEMENTED, "DatasetInBlockListError", cause, False)
 
 
-class DatasetTooBigFromHubError(ParquetAndInfoJobRunnerError):
+class DatasetTooBigFromHubError(ConfigParquetAndInfoJobRunnerError):
     """Raised when the dataset size (sum of files on the Hub) is too big."""
 
     def __init__(self, message: str, cause: Optional[BaseException] = None):
         super().__init__(message, HTTPStatus.NOT_IMPLEMENTED, "DatasetTooBigFromHubError", cause, False)
 
 
-class DatasetTooBigFromDatasetsError(ParquetAndInfoJobRunnerError):
+class DatasetTooBigFromDatasetsError(ConfigParquetAndInfoJobRunnerError):
     """Raised when the dataset size (sum of config sizes given by the datasets library) is too big."""
 
     def __init__(self, message: str, cause: Optional[BaseException] = None):
@@ -120,7 +120,7 @@ class ParquetFileItem(TypedDict):
     size: int
 
 
-class ParquetAndInfoResponse(TypedDict):
+class ConfigParquetAndInfoResponse(TypedDict):
     parquet_files: List[ParquetFileItem]
     dataset_info: Dict[str, Any]
 
@@ -437,49 +437,49 @@ class EmptyFeaturesError(Exception):
     pass
 
 
-class DatasetWithTooManyExternalFilesError(ParquetAndInfoJobRunnerError):
+class DatasetWithTooManyExternalFilesError(ConfigParquetAndInfoJobRunnerError):
     """Raised when the dataset size (sum of config sizes given by the datasets library) is too big."""
 
     def __init__(self, message: str, cause: Optional[BaseException] = None):
         super().__init__(message, HTTPStatus.NOT_IMPLEMENTED, "DatasetWithTooManyExternalFilesError", cause, True)
 
 
-class DatasetWithTooBigExternalFilesError(ParquetAndInfoJobRunnerError):
+class DatasetWithTooBigExternalFilesError(ConfigParquetAndInfoJobRunnerError):
     """Raised when the dataset size (sum of config sizes given by the datasets library) is too big."""
 
     def __init__(self, message: str, cause: Optional[BaseException] = None):
         super().__init__(message, HTTPStatus.NOT_IMPLEMENTED, "DatasetWithTooBigExternalFilesError", cause, True)
 
 
-class UnsupportedExternalFilesError(ParquetAndInfoJobRunnerError):
+class UnsupportedExternalFilesError(ConfigParquetAndInfoJobRunnerError):
     """Raised when we failed to get the size of the external files."""
 
     def __init__(self, message: str, cause: Optional[BaseException] = None):
         super().__init__(message, HTTPStatus.NOT_IMPLEMENTED, "UnsupportedExternalFilesError", cause, True)
 
 
-class ExternalFilesSizeRequestHTTPError(ParquetAndInfoJobRunnerError):
+class ExternalFilesSizeRequestHTTPError(ConfigParquetAndInfoJobRunnerError):
     """Raised when we failed to get the size of the external files."""
 
     def __init__(self, message: str, cause: Optional[BaseException] = None):
         super().__init__(message, HTTPStatus.NOT_IMPLEMENTED, "ExternalFilesSizeRequestHTTPError", cause, True)
 
 
-class ExternalFilesSizeRequestConnectionError(ParquetAndInfoJobRunnerError):
+class ExternalFilesSizeRequestConnectionError(ConfigParquetAndInfoJobRunnerError):
     """Raised when we failed to get the size of the external files."""
 
     def __init__(self, message: str, cause: Optional[BaseException] = None):
         super().__init__(message, HTTPStatus.NOT_IMPLEMENTED, "ExternalFilesSizeRequestConnectionError", cause, True)
 
 
-class ExternalFilesSizeRequestTimeoutError(ParquetAndInfoJobRunnerError):
+class ExternalFilesSizeRequestTimeoutError(ConfigParquetAndInfoJobRunnerError):
     """Raised when we failed to get the size of the external files."""
 
     def __init__(self, message: str, cause: Optional[BaseException] = None):
         super().__init__(message, HTTPStatus.NOT_IMPLEMENTED, "ExternalFilesSizeRequestTimeoutError", cause, True)
 
 
-class ExternalFilesSizeRequestError(ParquetAndInfoJobRunnerError):
+class ExternalFilesSizeRequestError(ConfigParquetAndInfoJobRunnerError):
     """Raised when we failed to get the size of the external files."""
 
     def __init__(self, message: str, cause: Optional[BaseException] = None):
@@ -655,7 +655,7 @@ def compute_config_parquet_and_info_response(
     blocked_datasets: List[str],
     max_dataset_size: int,
     max_external_data_files: int,
-) -> ParquetAndInfoResponse:
+) -> ConfigParquetAndInfoResponse:
     """
     Get the response of /parquet-and-dataset-info for one specific dataset on huggingface.co.
     It is assumed that the dataset can be accessed with the token.
@@ -692,7 +692,7 @@ def compute_config_parquet_and_info_response(
         max_external_data_files (`int`):
             The maximum number of external data files of a dataset. This is for datasets with loading scripts only.
     Returns:
-        `ParquetAndInfoResponse`: An object with the parquet_and_dataset_info_response
+        `ConfigParquetAndInfoResponse`: An object with the parquet_and_dataset_info_response
           (dataset info and list of parquet files).
     <Tip>
     Raises the following errors:
@@ -892,7 +892,7 @@ class ConfigParquetAndInfoJobRunner(DatasetsBasedJobRunner):
             )
         )
 
-    def get_new_splits(self, content: Mapping[str, Any]) -> set[SplitFullName]:
+    def get_new_splits(self, content: Mapping[str, Any]) -> Set[SplitFullName]:
         """Get the set of new splits, from the content created by the compute."""
         return {
             SplitFullName(dataset=self.dataset, config=self.config, split=split)

@@ -10,15 +10,14 @@ from libcommon.dataset import DatasetNotFoundError
 from libcommon.simple_cache import DoesNotExist, SplitFullName, get_response
 
 from worker.job_runner import CompleteJobResult, JobRunner, JobRunnerError
-from worker.job_runners.parquet_and_dataset_info import (
-    ParquetAndDatasetInfoResponse,
+from worker.job_runners.config.parquet_and_info import (
+    ConfigParquetAndInfoResponse,
     ParquetFileItem,
 )
 
 ConfigParquetJobRunnerErrorCode = Literal[
     "PreviousStepStatusError",
     "PreviousStepFormatError",
-    "MissingInfoForConfigError",
 ]
 
 
@@ -56,13 +55,6 @@ class PreviousStepFormatError(ConfigParquetJobRunnerError):
         super().__init__(message, HTTPStatus.INTERNAL_SERVER_ERROR, "PreviousStepFormatError", cause, False)
 
 
-class MissingInfoForConfigError(ConfigParquetJobRunnerError):
-    """Raised when the dataset info from the parquet export is missing the requested dataset configuration."""
-
-    def __init__(self, message: str, cause: Optional[BaseException] = None):
-        super().__init__(message, HTTPStatus.INTERNAL_SERVER_ERROR, "MissingInfoForConfigError", cause, False)
-
-
 def compute_parquet_response(dataset: str, config: str) -> ConfigParquetResponse:
     """
     Get the response of /parquet for one specific dataset on huggingface.co.
@@ -89,37 +81,20 @@ def compute_parquet_response(dataset: str, config: str) -> ConfigParquetResponse
     """
     logging.info(f"get parquet files for dataset={dataset}, config={config}")
 
+    previous_step = "config-parquet-and-info"
     try:
-        response = get_response(kind="/parquet-and-dataset-info", dataset=dataset)
+        response = get_response(kind=previous_step, dataset=dataset)
     except DoesNotExist as e:
         raise DatasetNotFoundError(
-            "No response found in previous step for this dataset: '/parquet-and-dataset-info'.", e
+            f"No response found in previous step '{previous_step}' for this dataset.", e
         ) from e
     if response["http_status"] != HTTPStatus.OK:
         raise PreviousStepStatusError(f"Previous step gave an error: {response['http_status']}.")
-    try:
-        content = ParquetAndDatasetInfoResponse(
-            parquet_files=response["content"]["parquet_files"], dataset_info=response["content"]["dataset_info"]
-        )
-    except Exception as e:
-        raise PreviousStepFormatError("Previous step did not return the expected content.", e) from e
 
-    if config not in content["dataset_info"]:
-        if not isinstance(content["dataset_info"], dict):
-            raise PreviousStepFormatError(
-                "Previous step did not return the expected content.",
-                TypeError(f"dataset_info should be a dict, but got {type(content['dataset_info'])}"),
-            )
-        raise MissingInfoForConfigError(
-            f"Dataset configuration '{config}' is missing in the dataset info from the parquet export. "
-            f"Available configurations: {', '.join(list(content['dataset_info'])[:10])}"
-            + f"... ({len(content['dataset_info']) - 10})"
-            if len(content["dataset_info"]) > 10
-            else ""
-        )
-
+    content = response["content"]
     if "parquet_files" not in content:
         raise PreviousStepFormatError("Previous step did not return the expected content: 'parquet_files'.")
+
     parquet_files = [parquet_file for parquet_file in content["parquet_files"] if parquet_file.get("config") == config]
     return ConfigParquetResponse(parquet_files=parquet_files)
 

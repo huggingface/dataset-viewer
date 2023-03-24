@@ -30,7 +30,7 @@ from worker.job_runners.dataset.split_names_from_dataset_info import (
 from worker.job_runners.dataset.split_names_from_streaming import (
     DatasetSplitNamesFromStreamingJobRunner,
 )
-from worker.job_runners.parquet_and_dataset_info import ConfigParquetAndInfoJobRunner
+from worker.job_runners.config.parquet_and_info import ConfigParquetAndInfoJobRunner
 from worker.job_runners.split.first_rows_from_streaming import (
     SplitFirstRowsFromStreamingJobRunner,
 )

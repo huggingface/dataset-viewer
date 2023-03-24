@@ -11,7 +11,7 @@ from libcommon.simple_cache import DoesNotExist, SplitFullName, get_response
 
 from worker.job_runner import JobResult, JobRunner, JobRunnerError
 from worker.job_runners.config.parquet import ConfigParquetResponse
-from worker.job_runners.parquet_and_dataset_info import ParquetFileItem
+from worker.job_runners.config.parquet_and_info import ParquetFileItem
 from worker.utils import PreviousJob
 
 SizesJobRunnerErrorCode = Literal[

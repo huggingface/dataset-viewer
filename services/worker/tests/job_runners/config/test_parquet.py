@@ -18,7 +18,7 @@ from worker.job_runners.config.parquet import (
     PreviousStepFormatError,
     PreviousStepStatusError,
 )
-from worker.job_runners.parquet_and_dataset_info import (
+from worker.job_runners.config.parquet_and_info import (
     ParquetAndDatasetInfoResponse,
     ParquetFileItem,
 )
