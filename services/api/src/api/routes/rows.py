@@ -169,8 +169,8 @@ class RowsIndex:
     def query(self, offset: int, length: int) -> pa.Table:
         """Query the parquet files
 
-        Note that this implementation will always read at least one row group, to get the list of columns and always have the
-        same schema, even if the requested rows are invalid (out of range).
+        Note that this implementation will always read at least one row group, to get the list of columns and always
+        have the same schema, even if the requested rows are invalid (out of range).
 
         Args:
             offset (int): The first row to read.
