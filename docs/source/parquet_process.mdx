@@ -1,0 +1,226 @@
+# Process Parquet files
+
+[Parquet](https://parquet.apache.org/docs/) files are column-based and they really shine when you're working with big data. Datasets Server automatically converts and stores datasets on the Hub as Parquet files, which you can learn more about in the [List Parquet files](parquet) guide. There are several ways you can work with Parquet files, and this guide will show you how to:
+
+- read Parquet files with Pandas and Polars
+- load, read, and query Parquet files with DuckDB and DuckDB-Wasm
+
+## Polars
+
+[Polars](https://pola-rs.github.io/polars-book/user-guide/introduction.html) is a fast DataFrame library written in Rust with Arrow as its foundation. 
+
+Let's start by grabbing the URLs to the `train` split of the [`blog_authorship_corpus`](https://huggingface.co/datasets/blog_authorship_corpus) dataset:
+
+```py
+r = requests.get("https://datasets-server.huggingface.co/parquet?dataset=blog_authorship_corpus")
+j = r.json()
+urls = [f['url'] for f in j['parquet_files'] if f['split'] == 'train']
+urls
+['https://huggingface.co/datasets/blog_authorship_corpus/resolve/refs%2Fconvert%2Fparquet/blog_authorship_corpus/blog_authorship_corpus-train-00000-of-00002.parquet',
+ 'https://huggingface.co/datasets/blog_authorship_corpus/resolve/refs%2Fconvert%2Fparquet/blog_authorship_corpus/blog_authorship_corpus-train-00001-of-00002.parquet']
+```
+
+To read from a single Parquet file, use the [`read_parquet`](https://pola-rs.github.io/polars/py-polars/html/reference/api/polars.read_parquet.html) function to read them into a DataFrame:
+
+```py
+import polars as pl
+
+df = (
+    pl.read_parquet("https://huggingface.co/datasets/blog_authorship_corpus/resolve/refs%2Fconvert%2Fparquet/blog_authorship_corpus/blog_authorship_corpus-train-00000-of-00002.parquet")
+    .groupby("horoscope")
+    .agg(
+        [
+            pl.count(),
+            pl.col("text").str.n_chars().mean().alias("avg_blog_length")
+        ]
+    )
+    .sort("avg_blog_length", descending=True)
+    .limit(5)
+)
+print(df)
+shape: (5, 3)
+┌───────────┬───────┬─────────────────┐
+│ horoscope ┆ count ┆ avg_blog_length │
+│ ---       ┆ ---   ┆ ---             │
+│ str       ┆ u32   ┆ f64             │
+╞═══════════╪═══════╪═════════════════╡
+│ Aquarius  ┆ 34062 ┆ 1129.218836     │
+│ Cancer    ┆ 41509 ┆ 1098.366812     │
+│ Capricorn ┆ 33961 ┆ 1073.2002       │
+│ Libra     ┆ 40302 ┆ 1072.071833     │
+│ Leo       ┆ 40587 ┆ 1064.053687     │
+└───────────┴───────┴─────────────────┘
+```
+
+To read multiple Parquet files, you'll also need to use the [`concat`](https://pola-rs.github.io/polars/py-polars/html/reference/api/polars.concat.html) function to concatenate them into a single DataFrame: 
+
+```py
+import polars as pl
+df = (
+    pl.concat([pl.read_parquet(url) for url in urls])
+    .groupby("horoscope")
+    .agg(
+        [
+            pl.count(),
+            pl.col("text").str.n_chars().mean().alias("avg_blog_length")
+        ]
+    )
+    .sort("avg_blog_length", descending=True)
+    .limit(5)
+)
+print(df)
+shape: (5, 3)
+┌─────────────┬───────┬─────────────────┐
+│ horoscope   ┆ count ┆ avg_blog_length │
+│ ---         ┆ ---   ┆ ---             │
+│ str         ┆ u32   ┆ f64             │
+╞═════════════╪═══════╪═════════════════╡
+│ Aquarius    ┆ 49568 ┆ 1125.830677     │
+│ Cancer      ┆ 63512 ┆ 1097.956087     │
+│ Libra       ┆ 60304 ┆ 1060.611054     │
+│ Capricorn   ┆ 49402 ┆ 1059.555261     │
+│ Sagittarius ┆ 50431 ┆ 1057.458984     │
+└─────────────┴───────┴─────────────────┘
+```
+
+### Lazy API
+
+Polars offers a [lazy API](https://pola-rs.github.io/polars-book/user-guide/lazy-api/intro.html) that is more performant and memory-efficient for large Parquet files. It keeps track of what you want to do, and only when you're ready, Polars executes the query. This way, the lazy API doesn't load everything into RAM before you even execute the query. It allows you to work with datasets larger than your available RAM.
+
+To lazily read a Parquet file, use the [`scan_parquet`](https://pola-rs.github.io/polars/py-polars/html/reference/api/polars.scan_parquet.html) function. Then, execute the entire query with the [`collect`](https://pola-rs.github.io/polars/py-polars/html/reference/lazyframe/api/polars.LazyFrame.collect.html) function:
+
+```py
+import polars as pl
+
+q = (
+    pl.scan_parquet("https://huggingface.co/datasets/blog_authorship_corpus/resolve/refs%2Fconvert%2Fparquet/blog_authorship_corpus/blog_authorship_corpus-train-00000-of-00002.parquet")
+    .groupby("horoscope")
+    .agg(
+        [
+            pl.count(),
+            pl.col("text").str.n_chars().mean().alias("avg_blog_length")
+        ]
+    )
+    .sort("avg_blog_length", descending=True)
+    .limit(5)
+)
+df = q.collect()
+```
+
+## Pandas
+
+You can also use the popular Pandas DataFrame library to read Parquet files.
+
+To read from a single Parquet file, use the [`read_parquet`](https://pandas.pydata.org/docs/reference/api/pandas.read_parquet.html) function to read them into a DataFrame:
+
+```py
+import pandas as pd
+
+df = (
+    pd.read_parquet("https://huggingface.co/datasets/blog_authorship_corpus/resolve/refs%2Fconvert%2Fparquet/blog_authorship_corpus/blog_authorship_corpus-train-00000-of-00002.parquet")
+    .groupby('horoscope')['text']
+    .apply(lambda x: x.str.len().mean())
+    .sort_values(ascending=False)
+    .head(5)
+)
+```
+
+To read multiple Parquet files, you'll also need to use the [`concat`](https://pandas.pydata.org/docs/reference/api/pandas.concat.html) function to concatenate them into a single DataFrame:
+
+```py
+df = (
+      pd.concat([pd.read_parquet(url) for url in urls])
+      .groupby('horoscope')['text']
+      .apply(lambda x: x.str.len().mean())
+      .sort_values(ascending=False)
+      .head(5)
+)
+```
+
+## DuckDB
+
+[DuckDB](https://duckdb.org/docs/) is a database that supports reading and querying Parquet files really fast. Begin by creating a connection to DuckDB, and then install and load the [`httpfs`](https://duckdb.org/docs/extensions/httpfs.html) extension to read and write remote files:
+
+<inferencesnippet>
+<python>
+```py
+import duckdb
+
+url = "https://huggingface.co/datasets/blog_authorship_corpus/resolve/refs%2Fconvert%2Fparquet/blog_authorship_corpus/blog_authorship_corpus-train-00000-of-00002.parquet"
+
+con = duckdb.connect()
+con.execute("INSTALL httpfs;")
+con.execute("LOAD httpfs;")
+```
+</python>
+<js>
+```js
+var duckdb = require('duckdb');
+var db = new duckdb.Database(':memory:');
+var con = db.connect();
+con.exec('INSTALL httpfs');
+con.exec('LOAD httpfs');
+
+const url = "https://huggingface.co/datasets/blog_authorship_corpus/resolve/refs%2Fconvert%2Fparquet/blog_authorship_corpus/blog_authorship_corpus-train-00000-of-00002.parquet"
+```
+</js>
+</inferencesnippet>
+
+Now you can write and execute your SQL query on the Parquet file:
+
+<inferencesnippet>
+<python>
+```py
+con.sql(f"SELECT horoscope, count(*), AVG(LENGTH(text)) AS avg_blog_length FROM '{url}' GROUP BY horoscope ORDER BY avg_blog_length DESC LIMIT(5)")┌───────────┬──────────────┬────────────────────┐
+│ horoscope │ count_star() │  avg_blog_length   │
+│  varchar  │    int64     │       double       │
+├───────────┼──────────────┼────────────────────┤
+│ Aquarius  │        34062 │  1129.218836239798 │
+│ Cancer    │        41509 │  1098.366812016671 │
+│ Capricorn │        33961 │ 1073.2002002296751 │
+│ Libra     │        40302 │ 1072.0718326633914 │
+│ Leo       │        40587 │ 1064.0536871412028 │
+└───────────┴──────────────┴────────────────────┘
+```
+</python>
+<js>
+```js
+con.all(`SELECT horoscope, count(*), AVG(LENGTH(text)) AS avg_blog_length FROM '${url}' GROUP BY horoscope ORDER BY avg_blog_length DESC LIMIT(5)`, function(err, res) {
+  if (err) {
+    throw err;
+  }
+  console.log(res)
+});
+```
+</js>
+</inferencesnippet>
+
+To query multiple files:
+
+<inferencesnippet>
+<python>
+```py
+con.sql(f"SELECT horoscope, count(*), AVG(LENGTH(text)) AS avg_blog_length FROM read_parquet({urls[:2]}) GROUP BY horoscope ORDER BY avg_blog_length DESC LIMIT(5)")
+┌─────────────┬──────────────┬────────────────────┐
+│  horoscope  │ count_star() │  avg_blog_length   │
+│   varchar   │    int64     │       double       │
+├─────────────┼──────────────┼────────────────────┤
+│ Aquarius    │        49568 │ 1125.8306770497095 │
+│ Cancer      │        63512 │   1097.95608703867 │
+│ Libra       │        60304 │ 1060.6110539931017 │
+│ Capricorn   │        49402 │ 1059.5552609206104 │
+│ Sagittarius │        50431 │ 1057.4589835616982 │
+└─────────────┴──────────────┴────────────────────┘
+```
+</python>
+<js>
+```js
+con.all(`SELECT horoscope, count(*), AVG(LENGTH(text)) AS avg_blog_length FROM read_parquet(${JSON.stringify(urls)}) GROUP BY horoscope ORDER BY avg_blog_length DESC LIMIT(5)`, function(err, res) {
+  if (err) {
+    throw err;
+  }
+  console.log(res)
+});
+```
+</js>
+</inferencesnippet>
