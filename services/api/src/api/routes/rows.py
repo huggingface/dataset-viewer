@@ -164,7 +164,7 @@ class RowsIndex:
                     for group_id in range(parquet_file.metadata.num_row_groups)
                 ]
 
-    # note that this cache is global for the class, not per instance
+    # note that this cache size is global for the class, not per instance
     @lru_cache(maxsize=1024)
     def query(self, offset: int, length: int) -> pa.Table:
         """Query the parquet files
