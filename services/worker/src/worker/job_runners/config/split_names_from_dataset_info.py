@@ -80,24 +80,24 @@ def compute_split_names_from_dataset_info_response(
     """
     logging.info(f"get split names from dataset info for dataset={dataset}, config={config}")
     try:
-        response = get_response(kind="dataset-info", dataset=dataset)
+        response = get_response(kind="config-info", dataset=dataset)
     except DoesNotExist as e:
-        raise DatasetNotFoundError("No response found in previous step for this dataset.", e) from e
+        raise DatasetNotFoundError("No response found in previous step for this dataset: 'config-info'.", e) from e
     if response["http_status"] != HTTPStatus.OK:
         raise PreviousStepStatusError(
             f"Previous step gave an error: {response['http_status']}. This job should not have been created."
         )
 
     try:
-        splits_content = response["content"]["dataset_info"][config]["splits"]
+        splits_content = response["content"]["dataset_info"]["splits"]
     except Exception as e:
-        raise PreviousStepFormatError("Previous step did not return the expected content.") from e
+        raise PreviousStepFormatError("Previous step 'config-info' did not return the expected content.") from e
 
     split_name_items: List[SplitItem] = [
         {"dataset": dataset, "config": config, "split": str(split)} for split in splits_content
     ]
 
-    return SplitsList({"splits": split_name_items})
+    return SplitsList(splits=split_name_items)
 
 
 class SplitNamesFromDatasetInfoJobRunner(DatasetsBasedJobRunner):
