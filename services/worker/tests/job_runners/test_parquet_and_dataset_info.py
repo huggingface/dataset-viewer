@@ -469,6 +469,7 @@ def test_compute_splits_response_simple_csv_error(
         ("config/builder-split-00000-of-00001.parquet", "split", "config", False),
         ("builder-split-00000-of-00001.parquet", "split", "config", True),
         ("config/builder-not-supported.parquet", "not-supported", "config", True),
+        ("plain_text/openwebtext-10k-train.parquet", "train", "plain_text", False),
     ],
 )
 def test_parse_repo_filename(filename: str, split: str, config: str, raises: bool) -> None:
