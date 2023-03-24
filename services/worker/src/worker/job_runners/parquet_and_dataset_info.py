@@ -16,12 +16,7 @@ import datasets
 import datasets.config
 import numpy as np
 import requests
-from datasets import (
-    DownloadConfig,
-    get_dataset_config_names,
-    get_dataset_infos,
-    load_dataset_builder,
-)
+from datasets import DownloadConfig, get_dataset_infos, load_dataset_builder
 from datasets.builder import DatasetBuilder
 from datasets.data_files import EmptyDatasetError as _EmptyDatasetError
 from datasets.download import StreamingDownloadManager
@@ -39,20 +34,19 @@ from huggingface_hub._commit_api import (
 )
 from huggingface_hub.hf_api import DatasetInfo, HfApi, RepoFile
 from huggingface_hub.utils._errors import RepositoryNotFoundError, RevisionNotFoundError
-from libcommon.constants import PROCESSING_STEP_PARQUET_AND_DATASET_INFO_VERSION
+from libcommon.constants import PROCESSING_STEP_CONFIG_PARQUET_AND_INFO_VERSION
 from libcommon.dataset import DatasetNotFoundError, ask_access
 from libcommon.processing_graph import ProcessingStep
 from libcommon.queue import JobInfo
 from libcommon.simple_cache import SplitFullName
 
-from worker.config import AppConfig, ParquetAndDatasetInfoConfig
+from worker.config import AppConfig, ParquetAndInfoConfig
 from worker.job_runner import CompleteJobResult, JobRunnerError
 from worker.job_runners._datasets_based_job_runner import DatasetsBasedJobRunner
 
-ParquetAndDatasetInfoJobRunnerErrorCode = Literal[
+ParquetAndInfoJobRunnerErrorCode = Literal[
     "DatasetRevisionNotFoundError",
     "EmptyDatasetError",
-    "ConfigNamesError",
     "DatasetInBlockListError",
     "DatasetTooBigFromHubError",
     "DatasetTooBigFromDatasetsError",
@@ -66,14 +60,14 @@ ParquetAndDatasetInfoJobRunnerErrorCode = Literal[
 ]
 
 
-class ParquetAndDatasetInfoJobRunnerError(JobRunnerError):
+class ParquetAndInfoJobRunnerError(JobRunnerError):
     """Base class for exceptions in this module."""
 
     def __init__(
         self,
         message: str,
         status_code: HTTPStatus,
-        code: ParquetAndDatasetInfoJobRunnerErrorCode,
+        code: ParquetAndInfoJobRunnerErrorCode,
         cause: Optional[BaseException] = None,
         disclose_cause: bool = False,
     ):
@@ -82,42 +76,35 @@ class ParquetAndDatasetInfoJobRunnerError(JobRunnerError):
         )
 
 
-class DatasetRevisionNotFoundError(ParquetAndDatasetInfoJobRunnerError):
+class DatasetRevisionNotFoundError(ParquetAndInfoJobRunnerError):
     """Raised when the revision of a dataset repository does not exist."""
 
     def __init__(self, message: str, cause: Optional[BaseException] = None):
         super().__init__(message, HTTPStatus.NOT_FOUND, "DatasetRevisionNotFoundError", cause, False)
 
 
-class ConfigNamesError(ParquetAndDatasetInfoJobRunnerError):
-    """Raised when the configuration names could not be fetched."""
-
-    def __init__(self, message: str, cause: Optional[BaseException] = None):
-        super().__init__(message, HTTPStatus.INTERNAL_SERVER_ERROR, "ConfigNamesError", cause, True)
-
-
-class EmptyDatasetError(ParquetAndDatasetInfoJobRunnerError):
+class EmptyDatasetError(ParquetAndInfoJobRunnerError):
     """Raised when the dataset has no data."""
 
     def __init__(self, message: str, cause: Optional[BaseException] = None):
         super().__init__(message, HTTPStatus.INTERNAL_SERVER_ERROR, "EmptyDatasetError", cause, True)
 
 
-class DatasetInBlockListError(ParquetAndDatasetInfoJobRunnerError):
+class DatasetInBlockListError(ParquetAndInfoJobRunnerError):
     """Raised when the dataset is in the list of blocked datasets."""
 
     def __init__(self, message: str, cause: Optional[BaseException] = None):
         super().__init__(message, HTTPStatus.NOT_IMPLEMENTED, "DatasetInBlockListError", cause, False)
 
 
-class DatasetTooBigFromHubError(ParquetAndDatasetInfoJobRunnerError):
+class DatasetTooBigFromHubError(ParquetAndInfoJobRunnerError):
     """Raised when the dataset size (sum of files on the Hub) is too big."""
 
     def __init__(self, message: str, cause: Optional[BaseException] = None):
         super().__init__(message, HTTPStatus.NOT_IMPLEMENTED, "DatasetTooBigFromHubError", cause, False)
 
 
-class DatasetTooBigFromDatasetsError(ParquetAndDatasetInfoJobRunnerError):
+class DatasetTooBigFromDatasetsError(ParquetAndInfoJobRunnerError):
     """Raised when the dataset size (sum of config sizes given by the datasets library) is too big."""
 
     def __init__(self, message: str, cause: Optional[BaseException] = None):
@@ -133,7 +120,7 @@ class ParquetFileItem(TypedDict):
     size: int
 
 
-class ParquetAndDatasetInfoResponse(TypedDict):
+class ParquetAndInfoResponse(TypedDict):
     parquet_files: List[ParquetFileItem]
     dataset_info: Dict[str, Any]
 
@@ -450,49 +437,49 @@ class EmptyFeaturesError(Exception):
     pass
 
 
-class DatasetWithTooManyExternalFilesError(ParquetAndDatasetInfoJobRunnerError):
+class DatasetWithTooManyExternalFilesError(ParquetAndInfoJobRunnerError):
     """Raised when the dataset size (sum of config sizes given by the datasets library) is too big."""
 
     def __init__(self, message: str, cause: Optional[BaseException] = None):
         super().__init__(message, HTTPStatus.NOT_IMPLEMENTED, "DatasetWithTooManyExternalFilesError", cause, True)
 
 
-class DatasetWithTooBigExternalFilesError(ParquetAndDatasetInfoJobRunnerError):
+class DatasetWithTooBigExternalFilesError(ParquetAndInfoJobRunnerError):
     """Raised when the dataset size (sum of config sizes given by the datasets library) is too big."""
 
     def __init__(self, message: str, cause: Optional[BaseException] = None):
         super().__init__(message, HTTPStatus.NOT_IMPLEMENTED, "DatasetWithTooBigExternalFilesError", cause, True)
 
 
-class UnsupportedExternalFilesError(ParquetAndDatasetInfoJobRunnerError):
+class UnsupportedExternalFilesError(ParquetAndInfoJobRunnerError):
     """Raised when we failed to get the size of the external files."""
 
     def __init__(self, message: str, cause: Optional[BaseException] = None):
         super().__init__(message, HTTPStatus.NOT_IMPLEMENTED, "UnsupportedExternalFilesError", cause, True)
 
 
-class ExternalFilesSizeRequestHTTPError(ParquetAndDatasetInfoJobRunnerError):
+class ExternalFilesSizeRequestHTTPError(ParquetAndInfoJobRunnerError):
     """Raised when we failed to get the size of the external files."""
 
     def __init__(self, message: str, cause: Optional[BaseException] = None):
         super().__init__(message, HTTPStatus.NOT_IMPLEMENTED, "ExternalFilesSizeRequestHTTPError", cause, True)
 
 
-class ExternalFilesSizeRequestConnectionError(ParquetAndDatasetInfoJobRunnerError):
+class ExternalFilesSizeRequestConnectionError(ParquetAndInfoJobRunnerError):
     """Raised when we failed to get the size of the external files."""
 
     def __init__(self, message: str, cause: Optional[BaseException] = None):
         super().__init__(message, HTTPStatus.NOT_IMPLEMENTED, "ExternalFilesSizeRequestConnectionError", cause, True)
 
 
-class ExternalFilesSizeRequestTimeoutError(ParquetAndDatasetInfoJobRunnerError):
+class ExternalFilesSizeRequestTimeoutError(ParquetAndInfoJobRunnerError):
     """Raised when we failed to get the size of the external files."""
 
     def __init__(self, message: str, cause: Optional[BaseException] = None):
         super().__init__(message, HTTPStatus.NOT_IMPLEMENTED, "ExternalFilesSizeRequestTimeoutError", cause, True)
 
 
-class ExternalFilesSizeRequestError(ParquetAndDatasetInfoJobRunnerError):
+class ExternalFilesSizeRequestError(ParquetAndInfoJobRunnerError):
     """Raised when we failed to get the size of the external files."""
 
     def __init__(self, message: str, cause: Optional[BaseException] = None):
@@ -654,8 +641,9 @@ def raise_if_too_big_from_external_data_files(
                 ) from error
 
 
-def compute_parquet_and_dataset_info_response(
+def compute_config_parquet_and_info_response(
     dataset: str,
+    config: str,
     hf_endpoint: str,
     hf_token: Optional[str],
     committer_hf_token: Optional[str],
@@ -667,7 +655,7 @@ def compute_parquet_and_dataset_info_response(
     blocked_datasets: List[str],
     max_dataset_size: int,
     max_external_data_files: int,
-) -> ParquetAndDatasetInfoResponse:
+) -> ParquetAndInfoResponse:
     """
     Get the response of /parquet-and-dataset-info for one specific dataset on huggingface.co.
     It is assumed that the dataset can be accessed with the token.
@@ -675,6 +663,8 @@ def compute_parquet_and_dataset_info_response(
         dataset (`str`):
             A namespace (user or an organization) and a repo name separated
             by a `/`.
+        config (`str`):
+            Dataset config name
         hf_endpoint (`str`):
             The Hub endpoint (for example: "https://huggingface.co")
         hf_token (`str`, `optional`):
@@ -702,7 +692,7 @@ def compute_parquet_and_dataset_info_response(
         max_external_data_files (`int`):
             The maximum number of external data files of a dataset. This is for datasets with loading scripts only.
     Returns:
-        `ParquetAndDatasetInfoResponse`: An object with the parquet_and_dataset_info_response
+        `ParquetAndInfoResponse`: An object with the parquet_and_dataset_info_response
           (dataset info and list of parquet files).
     <Tip>
     Raises the following errors:
@@ -747,7 +737,7 @@ def compute_parquet_and_dataset_info_response(
             If we failed to get the external files sizes to make sure we can convert the dataset to parquet
     </Tip>
     """
-    logging.info(f"get parquet files and dataset info for dataset={dataset}")
+    logging.info(f"get parquet files and dataset info for {dataset=} {config=}")
 
     raise_if_not_supported(
         dataset=dataset,
@@ -763,22 +753,10 @@ def compute_parquet_and_dataset_info_response(
     hf_api = HfApi(endpoint=hf_endpoint, token=hf_token)
     committer_hf_api = HfApi(endpoint=hf_endpoint, token=committer_hf_token)
 
-    # get the sorted list of configurations
-    try:
-        config_names = sorted(
-            str(config)
-            for config in get_dataset_config_names(path=dataset, revision=source_revision, use_auth_token=hf_token)
-        )
-    except _EmptyDatasetError as err:
-        raise EmptyDatasetError("The dataset is empty.", cause=err) from err
-    except Exception as err:
-        raise ConfigNamesError("Cannot get the config names for the dataset.", cause=err) from err
-
     # prepare the parquet files locally
     parquet_files: List[ParquetFile] = []
-    dataset_info: Dict[str, Any] = {}
     download_config = DownloadConfig(delete_extracted=True)
-    for config in config_names:
+    try:
         builder = load_dataset_builder(
             path=dataset,
             name=config,
@@ -786,21 +764,23 @@ def compute_parquet_and_dataset_info_response(
             use_auth_token=hf_token,
             download_config=download_config,
         )
-        raise_if_too_big_from_external_data_files(
-            builder=builder,
-            max_dataset_size=max_dataset_size,
-            max_external_data_files=max_external_data_files,
-            hf_token=hf_token,
-        )
-        builder.download_and_prepare(file_format="parquet")  # the parquet files are stored in the cache dir
-        dataset_info[config] = asdict(builder.info)
-        # ^ see
-        # https://github.dev/huggingface/datasets/blob/e183a269067575db8765ee979bd8523d14a1adae/src/datasets/info.py#L244-L245
-        # note that asdict() is not typed in the datasets library, hence type: ignore
-        parquet_files.extend(
-            ParquetFile(local_file=local_file, local_dir=builder.cache_dir, config=config)
-            for local_file in glob.glob(f"{builder.cache_dir}**/*.parquet")
-        )
+    except _EmptyDatasetError as err:
+        raise EmptyDatasetError(f"{dataset=} is empty.", cause=err) from err
+    raise_if_too_big_from_external_data_files(
+        builder=builder,
+        max_dataset_size=max_dataset_size,
+        max_external_data_files=max_external_data_files,
+        hf_token=hf_token,
+    )
+    builder.download_and_prepare(file_format="parquet")  # the parquet files are stored in the cache dir
+    dataset_info = asdict(builder.info)
+    # ^ see
+    # https://github.dev/huggingface/datasets/blob/e183a269067575db8765ee979bd8523d14a1adae/src/datasets/info.py#L244-L245
+    # note that asdict() is not typed in the datasets library, hence type: ignore
+    parquet_files.extend(
+        ParquetFile(local_file=local_file, local_dir=builder.cache_dir, config=config)
+        for local_file in glob.glob(f"{builder.cache_dir}**/*.parquet")
+    )
 
     # create the target revision if it does not exist yet
     try:
@@ -862,16 +842,16 @@ def compute_parquet_and_dataset_info_response(
     }
 
 
-class ParquetAndDatasetInfoJobRunner(DatasetsBasedJobRunner):
-    parquet_and_dataset_info_config: ParquetAndDatasetInfoConfig
+class ConfigParquetAndInfoJobRunner(DatasetsBasedJobRunner):
+    parquet_and_info_config: ParquetAndInfoConfig
 
     @staticmethod
     def get_job_type() -> str:
-        return "/parquet-and-dataset-info"
+        return "config-parquet-and-info"
 
     @staticmethod
     def get_job_runner_version() -> int:
-        return PROCESSING_STEP_PARQUET_AND_DATASET_INFO_VERSION
+        return PROCESSING_STEP_CONFIG_PARQUET_AND_INFO_VERSION
 
     def __init__(
         self,
@@ -879,7 +859,7 @@ class ParquetAndDatasetInfoJobRunner(DatasetsBasedJobRunner):
         app_config: AppConfig,
         processing_step: ProcessingStep,
         hf_datasets_cache: Path,
-        parquet_and_dataset_info_config: ParquetAndDatasetInfoConfig,
+        parquet_and_info_config: ParquetAndInfoConfig,
     ) -> None:
         super().__init__(
             job_info=job_info,
@@ -887,29 +867,34 @@ class ParquetAndDatasetInfoJobRunner(DatasetsBasedJobRunner):
             processing_step=processing_step,
             hf_datasets_cache=hf_datasets_cache,
         )
-        self.parquet_and_dataset_info_config = parquet_and_dataset_info_config
+        self.parquet_and_info_config = parquet_and_info_config
 
     def compute(self) -> CompleteJobResult:
+        if self.dataset is None:
+            raise ValueError("dataset is required")
+        if self.config is None:
+            raise ValueError("config is required")
         return CompleteJobResult(
-            compute_parquet_and_dataset_info_response(
+            compute_config_parquet_and_info_response(
                 dataset=self.dataset,
+                config=self.config,
                 hf_endpoint=self.common_config.hf_endpoint,
                 hf_token=self.common_config.hf_token,
-                committer_hf_token=self.parquet_and_dataset_info_config.committer_hf_token,
-                source_revision=self.parquet_and_dataset_info_config.source_revision,
-                target_revision=self.parquet_and_dataset_info_config.target_revision,
-                commit_message=self.parquet_and_dataset_info_config.commit_message,
-                url_template=self.parquet_and_dataset_info_config.url_template,
-                supported_datasets=self.parquet_and_dataset_info_config.supported_datasets,
-                blocked_datasets=self.parquet_and_dataset_info_config.blocked_datasets,
-                max_dataset_size=self.parquet_and_dataset_info_config.max_dataset_size,
-                max_external_data_files=self.parquet_and_dataset_info_config.max_external_data_files,
+                committer_hf_token=self.parquet_and_info_config.committer_hf_token,
+                source_revision=self.parquet_and_info_config.source_revision,
+                target_revision=self.parquet_and_info_config.target_revision,
+                commit_message=self.parquet_and_info_config.commit_message,
+                url_template=self.parquet_and_info_config.url_template,
+                supported_datasets=self.parquet_and_info_config.supported_datasets,
+                blocked_datasets=self.parquet_and_info_config.blocked_datasets,
+                max_dataset_size=self.parquet_and_info_config.max_dataset_size,
+                max_external_data_files=self.parquet_and_info_config.max_external_data_files,
             )
         )
 
     def get_new_splits(self, content: Mapping[str, Any]) -> set[SplitFullName]:
         """Get the set of new splits, from the content created by the compute."""
         return {
-            SplitFullName(dataset=parquet_file["dataset"], config=parquet_file["config"], split=parquet_file["split"])
-            for parquet_file in content["parquet_files"]
+            SplitFullName(dataset=self.dataset, config=self.config, split=split)
+            for split in content["dataset_info"]["splits"]
         }

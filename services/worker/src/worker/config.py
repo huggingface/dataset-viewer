@@ -132,7 +132,7 @@ PARQUET_AND_DATASET_INFO_URL_TEMPLATE = "/datasets/%s/resolve/%s/%s"
 
 
 @dataclass(frozen=True)
-class ParquetAndDatasetInfoConfig:
+class ParquetAndInfoConfig:
     blocked_datasets: List[str] = field(default_factory=get_empty_str_list)
     supported_datasets: List[str] = field(default_factory=get_empty_str_list)
     commit_message: str = PARQUET_AND_DATASET_INFO_COMMIT_MESSAGE
@@ -144,7 +144,7 @@ class ParquetAndDatasetInfoConfig:
     url_template: str = PARQUET_AND_DATASET_INFO_URL_TEMPLATE
 
     @classmethod
-    def from_env(cls) -> "ParquetAndDatasetInfoConfig":
+    def from_env(cls) -> "ParquetAndInfoConfig":
         env = Env(expand_vars=True)
         with env.prefixed("PARQUET_AND_DATASET_INFO_"):
             return cls(

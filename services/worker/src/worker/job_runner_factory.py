@@ -9,7 +9,7 @@ from libcommon.processing_graph import ProcessingGraph
 from libcommon.queue import JobInfo
 from libcommon.storage import StrPath
 
-from worker.config import AppConfig, FirstRowsConfig, ParquetAndDatasetInfoConfig
+from worker.config import AppConfig, FirstRowsConfig, ParquetAndInfoConfig
 from worker.job_runner import JobRunner
 from worker.job_runners.config.info import ConfigInfoJobRunner
 from worker.job_runners.config.parquet import ConfigParquetJobRunner
@@ -30,7 +30,7 @@ from worker.job_runners.dataset.split_names_from_dataset_info import (
 from worker.job_runners.dataset.split_names_from_streaming import (
     DatasetSplitNamesFromStreamingJobRunner,
 )
-from worker.job_runners.parquet_and_dataset_info import ParquetAndDatasetInfoJobRunner
+from worker.job_runners.parquet_and_dataset_info import ConfigParquetAndInfoJobRunner
 from worker.job_runners.split.first_rows_from_streaming import (
     SplitFirstRowsFromStreamingJobRunner,
 )
@@ -101,13 +101,13 @@ class JobRunnerFactory(BaseJobRunnerFactory):
                 first_rows_config=first_rows_config,
                 assets_directory=self.assets_directory,
             )
-        if job_type == ParquetAndDatasetInfoJobRunner.get_job_type():
-            return ParquetAndDatasetInfoJobRunner(
+        if job_type == ConfigParquetAndInfoJobRunner.get_job_type():
+            return ConfigParquetAndInfoJobRunner(
                 job_info=job_info,
                 app_config=self.app_config,
                 processing_step=processing_step,
                 hf_datasets_cache=self.hf_datasets_cache,
-                parquet_and_dataset_info_config=ParquetAndDatasetInfoConfig.from_env(),
+                parquet_and_info_config=ParquetAndInfoConfig.from_env(),
             )
         if job_type == ConfigParquetJobRunner.get_job_type():
             return ConfigParquetJobRunner(
@@ -177,7 +177,7 @@ class JobRunnerFactory(BaseJobRunnerFactory):
             SplitNamesFromStreamingJobRunner.get_job_type(),
             SplitsJobRunner.get_job_type(),
             SplitFirstRowsFromStreamingJobRunner.get_job_type(),
-            ParquetAndDatasetInfoJobRunner.get_job_type(),
+            ConfigParquetAndInfoJobRunner.get_job_type(),
             ConfigParquetJobRunner.get_job_type(),
             DatasetParquetJobRunner.get_job_type(),
             DatasetInfoJobRunner.get_job_type(),
