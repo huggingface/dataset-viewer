@@ -13,7 +13,7 @@ def test_default_graph() -> None:
     split_names_from_streaming = graph.get_step("/split-names-from-streaming")
     splits = graph.get_step("/splits")
     split_first_rows_from_streaming = graph.get_step("split-first-rows-from-streaming")
-    parquet_and_dataset_info = graph.get_step("/parquet-and-dataset-info")
+    config_parquet_and_info = graph.get_step("config-parquet-and-info")
     config_parquet = graph.get_step("config-parquet")
     dataset_parquet = graph.get_step("dataset-parquet")
     config_info = graph.get_step("config-info")
@@ -26,7 +26,7 @@ def test_default_graph() -> None:
 
     assert config_names is not None
     assert config_names.parent is None
-    assert config_names.children == [split_names_from_streaming]
+    assert config_names.children == [split_names_from_streaming, config_parquet_and_info]
     assert config_names.get_ancestors() == []
 
     assert split_names_from_streaming is not None
@@ -44,45 +44,45 @@ def test_default_graph() -> None:
     assert split_first_rows_from_streaming.children == []
     assert split_first_rows_from_streaming.get_ancestors() == [config_names, split_names_from_streaming]
 
-    assert parquet_and_dataset_info is not None
-    assert parquet_and_dataset_info.parent is None
-    assert parquet_and_dataset_info.children == [config_parquet, config_info, config_size]
-    assert parquet_and_dataset_info.get_ancestors() == []
+    assert config_parquet_and_info is not None
+    assert config_parquet_and_info.parent is config_names
+    assert config_parquet_and_info.children == [config_parquet, config_info, config_size]
+    assert config_parquet_and_info.get_ancestors() == [config_names]
 
     assert config_parquet is not None
-    assert config_parquet.parent is parquet_and_dataset_info
+    assert config_parquet.parent is config_parquet_and_info
     assert config_parquet.children == [dataset_parquet]
-    assert config_parquet.get_ancestors() == [parquet_and_dataset_info]
+    assert config_parquet.get_ancestors() == [config_names, config_parquet_and_info]
 
     assert dataset_parquet is not None
     assert dataset_parquet.parent is config_parquet
     assert dataset_parquet.children == []
-    assert dataset_parquet.get_ancestors() == [parquet_and_dataset_info, config_parquet]
+    assert dataset_parquet.get_ancestors() == [config_names, config_parquet_and_info, config_parquet]
 
     assert config_info is not None
-    assert config_info.parent is parquet_and_dataset_info
+    assert config_info.parent is config_parquet_and_info
     assert config_info.children == [dataset_info, split_names_from_dataset_info]
-    assert config_info.get_ancestors() == [parquet_and_dataset_info]
+    assert config_info.get_ancestors() == [config_names, config_parquet_and_info]
 
     assert dataset_info is not None
     assert dataset_info.parent is config_info
     assert dataset_info.children == []
-    assert dataset_info.get_ancestors() == [parquet_and_dataset_info, config_info]
+    assert dataset_info.get_ancestors() == [config_names, config_parquet_and_info, config_info]
 
     assert split_names_from_dataset_info is not None
     assert split_names_from_dataset_info.parent is config_info
     assert split_names_from_dataset_info.children == [dataset_split_names_from_dataset_info]
-    assert split_names_from_dataset_info.get_ancestors() == [parquet_and_dataset_info, config_info]
+    assert split_names_from_dataset_info.get_ancestors() == [config_names, config_parquet_and_info, config_info]
 
     assert config_size is not None
-    assert config_size.parent is parquet_and_dataset_info
+    assert config_size.parent is config_parquet_and_info
     assert config_size.children == [dataset_size]
-    assert config_size.get_ancestors() == [parquet_and_dataset_info]
+    assert config_size.get_ancestors() == [config_names, config_parquet_and_info]
 
     assert dataset_size is not None
     assert dataset_size.parent is config_size
     assert dataset_size.children == []
-    assert dataset_size.get_ancestors() == [parquet_and_dataset_info, config_size]
+    assert dataset_size.get_ancestors() == [config_names, config_parquet_and_info, config_size]
 
     assert dataset_split_names_from_streaming is not None
     assert dataset_split_names_from_streaming.parent is split_names_from_streaming
@@ -93,10 +93,11 @@ def test_default_graph() -> None:
     assert dataset_split_names_from_dataset_info.parent is split_names_from_dataset_info
     assert dataset_split_names_from_dataset_info.children == []
     assert dataset_split_names_from_dataset_info.get_ancestors() == [
-        parquet_and_dataset_info,
+        config_names,
+        config_parquet_and_info,
         config_info,
         split_names_from_dataset_info,
     ]
 
-    assert graph.get_first_steps() == [config_names, splits, parquet_and_dataset_info]
+    assert graph.get_first_steps() == [config_names, splits]
     assert graph.get_steps_required_by_dataset_viewer() == [splits, split_first_rows_from_streaming]

@@ -131,11 +131,12 @@ class ProcessingGraphConfig:
             },
             "config-parquet-and-info": {
                 "input_type": "config",
+                "requires": "/config-names",
                 "job_runner_version": PROCESSING_STEP_CONFIG_PARQUET_AND_INFO_VERSION,
             },
             "config-parquet": {
                 "input_type": "config",
-                "requires": "/parquet-and-dataset-info",
+                "requires": "config-parquet-and-info",
                 "job_runner_version": PROCESSING_STEP_CONFIG_PARQUET_VERSION,
             },
             "dataset-parquet": {
@@ -145,7 +146,7 @@ class ProcessingGraphConfig:
             },
             "config-info": {
                 "input_type": "config",
-                "requires": "/parquet-and-dataset-info",
+                "requires": "config-parquet-and-info",
                 "job_runner_version": PROCESSING_STEP_CONFIG_INFO_VERSION,
             },
             "dataset-info": {
@@ -160,7 +161,7 @@ class ProcessingGraphConfig:
             },
             "config-size": {
                 "input_type": "config",
-                "requires": "/parquet-and-dataset-info",
+                "requires": "config-parquet-and-info",
                 "job_runner_version": PROCESSING_STEP_CONFIG_SIZE_VERSION,
             },
             "dataset-size": {
