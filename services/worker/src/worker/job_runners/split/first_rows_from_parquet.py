@@ -2,37 +2,32 @@
 # Copyright 2022 The HuggingFace Authors.
 
 import functools
-import itertools
 import logging
 import time
-import warnings
+from functools import partial
 from http import HTTPStatus
 from pathlib import Path
-from typing import Any, Callable, List, Literal, Mapping, Optional, TypeVar, Union, cast
+from typing import Any, Callable, List, Literal, Mapping, Optional, TypeVar, cast
 
-from datasets import (
-    Dataset,
-    DownloadConfig,
-    Features,
-    IterableDataset,
-    get_dataset_config_info,
-    load_dataset,
+import numpy as np
+import pyarrow as pa
+from datasets import Features
+from hffs.fs import HfFileSystem
+from libcommon.constants import (
+    PARQUET_REVISION,
+    PROCESSING_STEP_SPLIT_FIRST_ROWS_FROM_PARQUET_VERSION,
 )
-from libcommon.constants import PROCESSING_STEP_SPLIT_FIRST_ROWS_FROM_STREAMING_VERSION
 from libcommon.processing_graph import ProcessingStep
 from libcommon.queue import JobInfo
 from libcommon.simple_cache import DoesNotExist, SplitFullName, get_response
 from libcommon.storage import StrPath
 from libcommon.utils import orjson_dumps
+from pyarrow.parquet import ParquetFile
+from tqdm.contrib.concurrent import thread_map
 
 from worker.config import AppConfig, FirstRowsConfig
 from worker.features import get_cell_value
-from worker.job_runner import (
-    CompleteJobResult,
-    ConfigNotFoundError,
-    JobRunnerError,
-    SplitNotFoundError,
-)
+from worker.job_runner import CompleteJobResult, ConfigNotFoundError, JobRunnerError
 from worker.job_runners._datasets_based_job_runner import DatasetsBasedJobRunner
 from worker.utils import (
     RowItem,
@@ -41,7 +36,7 @@ from worker.utils import (
     to_features_list,
 )
 
-SplitFirstRowsFromStreamingJobRunnerErrorCode = Literal[
+SplitFirstRowsFromParquetJobRunnerErrorCode = Literal[
     "SplitsNamesError",
     "EmptyDatasetError",
     "InfoError",
@@ -53,17 +48,18 @@ SplitFirstRowsFromStreamingJobRunnerErrorCode = Literal[
     "TooBigContentError",
     "PreviousStepStatusError",
     "PreviousStepFormatError",
+    "ParquetResponseEmptyError",
 ]
 
 
-class SplitFirstRowsFromStreamingJobRunnerError(JobRunnerError):
+class SplitFirstRowsFromParquetJobRunnerError(JobRunnerError):
     """Base class for exceptions in this module."""
 
     def __init__(
         self,
         message: str,
         status_code: HTTPStatus,
-        code: SplitFirstRowsFromStreamingJobRunnerErrorCode,
+        code: SplitFirstRowsFromParquetJobRunnerErrorCode,
         cause: Optional[BaseException] = None,
         disclose_cause: bool = False,
     ):
@@ -72,81 +68,88 @@ class SplitFirstRowsFromStreamingJobRunnerError(JobRunnerError):
         )
 
 
-class SplitsNamesError(SplitFirstRowsFromStreamingJobRunnerError):
+class SplitsNamesError(SplitFirstRowsFromParquetJobRunnerError):
     """Raised when the split names could not be fetched."""
 
     def __init__(self, message: str, cause: Optional[BaseException] = None):
         super().__init__(message, HTTPStatus.INTERNAL_SERVER_ERROR, "SplitsNamesError", cause, True)
 
 
-class EmptyDatasetError(SplitFirstRowsFromStreamingJobRunnerError):
+class EmptyDatasetError(SplitFirstRowsFromParquetJobRunnerError):
     """Raised when the dataset has no data."""
 
     def __init__(self, message: str, cause: Optional[BaseException] = None):
         super().__init__(message, HTTPStatus.INTERNAL_SERVER_ERROR, "EmptyDatasetError", cause, True)
 
 
-class InfoError(SplitFirstRowsFromStreamingJobRunnerError):
+class InfoError(SplitFirstRowsFromParquetJobRunnerError):
     """Raised when the info could not be fetched."""
 
     def __init__(self, message: str, cause: Optional[BaseException] = None):
         super().__init__(message, HTTPStatus.INTERNAL_SERVER_ERROR, "InfoError", cause, True)
 
 
-class FeaturesError(SplitFirstRowsFromStreamingJobRunnerError):
+class FeaturesError(SplitFirstRowsFromParquetJobRunnerError):
     """Raised when the features could not be fetched."""
 
     def __init__(self, message: str, cause: Optional[BaseException] = None):
         super().__init__(message, HTTPStatus.INTERNAL_SERVER_ERROR, "FeaturesError", cause, True)
 
 
-class StreamingRowsError(SplitFirstRowsFromStreamingJobRunnerError):
+class StreamingRowsError(SplitFirstRowsFromParquetJobRunnerError):
     """Raised when the rows could not be fetched in streaming mode."""
 
     def __init__(self, message: str, cause: Optional[BaseException] = None):
         super().__init__(message, HTTPStatus.INTERNAL_SERVER_ERROR, "StreamingRowsError", cause, True)
 
 
-class NormalRowsError(SplitFirstRowsFromStreamingJobRunnerError):
+class NormalRowsError(SplitFirstRowsFromParquetJobRunnerError):
     """Raised when the rows could not be fetched in normal mode."""
 
     def __init__(self, message: str, cause: Optional[BaseException] = None):
         super().__init__(message, HTTPStatus.INTERNAL_SERVER_ERROR, "NormalRowsError", cause, True)
 
 
-class RowsPostProcessingError(SplitFirstRowsFromStreamingJobRunnerError):
+class RowsPostProcessingError(SplitFirstRowsFromParquetJobRunnerError):
     """Raised when the rows could not be post-processed successfully."""
 
     def __init__(self, message: str, cause: Optional[BaseException] = None):
         super().__init__(message, HTTPStatus.INTERNAL_SERVER_ERROR, "RowsPostProcessingError", cause, False)
 
 
-class TooManyColumnsError(SplitFirstRowsFromStreamingJobRunnerError):
+class TooManyColumnsError(SplitFirstRowsFromParquetJobRunnerError):
     """Raised when the dataset exceeded the max number of columns."""
 
     def __init__(self, message: str, cause: Optional[BaseException] = None):
         super().__init__(message, HTTPStatus.INTERNAL_SERVER_ERROR, "TooManyColumnsError", cause, True)
 
 
-class TooBigContentError(SplitFirstRowsFromStreamingJobRunnerError):
+class TooBigContentError(SplitFirstRowsFromParquetJobRunnerError):
     """Raised when the first rows content exceeded the max size of bytes."""
 
     def __init__(self, message: str, cause: Optional[BaseException] = None):
         super().__init__(message, HTTPStatus.INTERNAL_SERVER_ERROR, "TooBigContentError", cause, False)
 
 
-class PreviousStepStatusError(SplitFirstRowsFromStreamingJobRunnerError):
+class PreviousStepStatusError(SplitFirstRowsFromParquetJobRunnerError):
     """Raised when the previous step gave an error. The job should not have been created."""
 
     def __init__(self, message: str, cause: Optional[BaseException] = None):
         super().__init__(message, HTTPStatus.INTERNAL_SERVER_ERROR, "PreviousStepStatusError", cause, False)
 
 
-class PreviousStepFormatError(SplitFirstRowsFromStreamingJobRunnerError):
+class PreviousStepFormatError(SplitFirstRowsFromParquetJobRunnerError):
     """Raised when the content of the previous step has not the expected format."""
 
     def __init__(self, message: str, cause: Optional[BaseException] = None):
         super().__init__(message, HTTPStatus.INTERNAL_SERVER_ERROR, "PreviousStepFormatError", cause, False)
+
+
+class ParquetResponseEmptyError(SplitFirstRowsFromParquetJobRunnerError):
+    """Raised when no parquet files were found for split."""
+
+    def __init__(self, message: str, cause: Optional[BaseException] = None):
+        super().__init__(message, HTTPStatus.INTERNAL_SERVER_ERROR, "ParquetResponseEmptyError", cause, False)
 
 
 FuncT = TypeVar("FuncT", bound=Callable[..., Any])
@@ -178,38 +181,6 @@ def retry(func: FuncT) -> FuncT:
 
 
 Row = Mapping[str, Any]
-
-
-@retry
-def get_rows(
-    dataset: str,
-    config: str,
-    split: str,
-    streaming: bool,
-    rows_max_number: int,
-    use_auth_token: Union[bool, str, None] = False,
-) -> List[Row]:
-    download_config = DownloadConfig(delete_extracted=True)
-    ds = load_dataset(
-        dataset,
-        name=config,
-        split=split,
-        streaming=streaming,
-        use_auth_token=use_auth_token,
-        download_config=download_config,
-    )
-    if streaming:
-        if not isinstance(ds, IterableDataset):
-            raise TypeError("load_dataset should return an IterableDataset in streaming mode")
-    elif not isinstance(ds, Dataset):
-        raise TypeError("load_dataset should return a Dataset in normal mode")
-    rows_plus_one = list(itertools.islice(ds, rows_max_number + 1))
-    # ^^ to be able to detect if a split has exactly ROWS_MAX_NUMBER rows
-    if len(rows_plus_one) <= rows_max_number:
-        logging.debug(f"all the rows in the split have been fetched ({len(rows_plus_one)})")
-    else:
-        logging.debug(f"the rows in the split have been truncated ({rows_max_number} rows)")
-    return rows_plus_one[:rows_max_number]
 
 
 # from https://stackoverflow.com/a/43848928/7351594
@@ -328,7 +299,7 @@ def transform_rows(
     dataset: str,
     config: str,
     split: str,
-    rows: List[Row],
+    rows: List[RowItem],
     features: Features,
     assets_base_url: str,
     assets_directory: StrPath,
@@ -340,7 +311,7 @@ def transform_rows(
                 config=config,
                 split=split,
                 row_idx=row_idx,
-                cell=row[featureName] if featureName in row else None,
+                cell=row["row"][featureName] if featureName in row["row"] else None,
                 featureName=featureName,
                 fieldType=fieldType,
                 assets_base_url=assets_base_url,
@@ -350,6 +321,22 @@ def transform_rows(
         }
         for row_idx, row in enumerate(rows)
     ]
+
+
+def get_parquet_fs(dataset: str, hf_token: Optional[str]) -> HfFileSystem:
+    """Get the parquet filesystem for a dataset.
+    The parquet files are stored in a separate branch of the dataset repository (see PARQUET_REVISION)
+    Args:
+        dataset (str): The dataset name.
+        hf_token (Optional[str]): The token to access the filesystem.
+    Returns:
+        HfFileSystem: The parquet filesystem.
+    """
+    return HfFileSystem(dataset, repo_type="dataset", revision=PARQUET_REVISION, token=hf_token)
+
+
+class FileSystemError(Exception):
+    pass
 
 
 def compute_first_rows_response(
@@ -364,121 +351,44 @@ def compute_first_rows_response(
     rows_min_number: int,
     columns_max_number: int,
     assets_directory: StrPath,
-    max_size_fallback: Optional[int] = None,
 ) -> SplitFirstRowsResponse:
-    """
-    Get the response of /first-rows for one specific split of a dataset from huggingface.co.
-    Dataset can be private or gated if you pass an acceptable token.
-
-    It is assumed that the dataset exist and can be accessed using the token.
-
-    Args:
-        dataset (`str`):
-            A namespace (user or an organization) and a repo name separated
-            by a `/`.
-        config (`str`):
-            A configuration name.
-        split (`str`):
-            A split name.
-        assets_base_url (`str`):
-            The base url of the assets.
-        hf_endpoint (`str`):
-            The Hub endpoint (for example: "https://huggingface.co")
-        hf_token (`str` or `None`):
-            An authentication token (See https://huggingface.co/settings/token)
-        max_size_fallback (`int` or `None`): **DEPRECATED**
-            The maximum number of bytes of the split to fallback to normal mode if the streaming mode fails.
-            This argument is now hard-coded to 100MB, and will be removed in a future version.
-        rows_max_bytes (`int`):
-            The maximum number of bytes of the response (else, the response is truncated).
-        rows_max_number (`int`):
-            The maximum number of rows of the response.
-        rows_min_number (`int`):
-            The minimum number of rows of the response.
-        columns_max_number (`int`):
-            The maximum number of columns supported.
-        assets_directory (`str` or `pathlib.Path`):
-            The directory where the assets are stored.
-    Returns:
-        [`SplitFirstRowsResponse`]: The list of first rows of the split.
-    <Tip>
-    Raises the following errors:
-        - [`~job_runner.ConfigNotFoundError`]
-          If the config does not exist in the dataset.
-        - [`~job_runner.SplitNotFoundError`]
-          If the split does not exist in the dataset.
-        - [`~job_runners.first_rows.InfoError`]
-          If the config info could not be obtained using the datasets library.
-        - [`~job_runners.first_rows.FeaturesError`]
-          If the split features could not be obtained using the datasets library.
-        - [`~job_runners.first_rows.StreamingRowsError`]
-          If the split rows could not be obtained using the datasets library in streaming mode.
-        - [`~job_runners.first_rows.NormalRowsError`]
-          If the split rows could not be obtained using the datasets library in normal mode.
-        - [`~job_runners.first_rows.RowsPostProcessingError`]
-          If the post-processing of the split rows failed, e.g. while saving the images or audio files to the assets.
-        - [`~job_runners.first_rows.TooManyColumnsError`]
-          If the number of columns (features) exceeds the maximum supported number of columns.
-        - [`~job_runners.first_rows.TooBigContentError`]
-          If the first rows content exceeds the maximum supported size of bytes.
-    </Tip>
-    """
     logging.info(f"get first-rows for dataset={dataset} config={config} split={split}")
-    use_auth_token: Union[bool, str, None] = hf_token if hf_token is not None else False
+
     # first ensure the tuple (dataset, config, split) exists on the Hub
     try:
-        upstream_response = get_response(kind="/split-names-from-streaming", dataset=dataset, config=config)
-        splits_content = upstream_response["content"]["splits"]
+        upstream_response = get_response(kind="config-parquet", dataset=dataset, config=config)
+        if upstream_response["http_status"] != HTTPStatus.OK:
+            raise PreviousStepStatusError(
+                f"Previous step gave an error: {upstream_response['http_status']}. This job should not have been"
+                " created."
+            )
+
+        parquet_files_content = upstream_response["content"]["parquet_files"]
+        sources = sorted(
+            f"{config}/{parquet_file['filename']}"
+            for parquet_file in parquet_files_content
+            if parquet_file["split"] == split and parquet_file["config"] == config
+        )
+        if not sources:
+            raise ParquetResponseEmptyError("No parquet files found.")
     except DoesNotExist:
         raise ConfigNotFoundError(f"The config '{config}' does not exist for the dataset.'")
     except Exception as e:
         raise PreviousStepFormatError("Previous step did not return the expected content.") from e
 
-    if upstream_response["http_status"] != HTTPStatus.OK:
-        raise PreviousStepStatusError(
-            f"Previous step gave an error: {upstream_response['http_status']}. This job should not have been created."
-        )
+    logging.debug(f"Found {len(sources)} parquet files for {dataset=}, {config=}, {split=}: {sources}")
 
-    if split not in [split_item["split"] for split_item in splits_content]:
-        raise SplitNotFoundError(f"The split '{split}' does not exist for the config '{config}' of the dataset.")
-    # get the features
+    fs = get_parquet_fs(dataset=dataset, hf_token=hf_token)
+    desc = f"{dataset}/{config}/{split}"
     try:
-        info = get_dataset_config_info(
-            path=dataset,
-            config_name=config,
-            use_auth_token=use_auth_token,
+        parquet_files: List[ParquetFile] = thread_map(
+            partial(ParquetFile, filesystem=fs), sources, desc=desc, unit="pq", disable=True
         )
-    except Exception as err:
-        raise InfoError(
-            f"The info cannot be fetched for the config '{config}' of the dataset.",
-            cause=err,
-        ) from err
-    if not info.features:
-        try:
-            # https://github.com/huggingface/datasets/blob/f5826eff9b06ab10dba1adfa52543341ef1e6009/src/datasets/iterable_dataset.py#L1255
-            iterable_dataset = load_dataset(
-                path=dataset,
-                name=config,
-                split=split,
-                streaming=True,
-                use_auth_token=use_auth_token,
-            )
-            if not isinstance(iterable_dataset, IterableDataset):
-                raise TypeError("load_dataset should return an IterableDataset.")
-            iterable_dataset = iterable_dataset._resolve_features()
-            if not isinstance(iterable_dataset, IterableDataset):
-                raise TypeError("load_dataset should return an IterableDataset.")
-            features = iterable_dataset.features
-        except Exception as err:
-            raise FeaturesError(
-                (
-                    f"Cannot extract the features (columns) for the split '{split}' of the config '{config}' of the"
-                    " dataset."
-                ),
-                cause=err,
-            ) from err
-    else:
-        features = info.features
+    except Exception as e:
+        raise FileSystemError(f"Could not read the parquet files: {e}") from e
+
+    # get the features
+    features = Features.from_arrow_schema(parquet_files[0].schema.to_arrow_schema())
 
     if features and len(features) > columns_max_number:
         raise TooManyColumnsError(
@@ -500,49 +410,49 @@ def compute_first_rows_response(
     surrounding_json_size = get_json_size(response_features_only)
     if surrounding_json_size > rows_max_bytes:
         raise TooBigContentError(
-            f"The size of the content of the first rows ({surrounding_json_size} B) exceeds the maximum"
+            f"The size of the content of the first rows ({surrounding_json_size}) exceeds the maximum"
             f" supported size ({rows_max_bytes} B) even after truncation. Please report the issue."
         )
 
     # get the rows
-    try:
-        rows = get_rows(
-            dataset=dataset,
-            config=config,
-            split=split,
-            streaming=True,
-            rows_max_number=rows_max_number,
-            use_auth_token=use_auth_token,
+    # TODO: Not sure if it is needed to get all the offsets yet
+    row_group_offsets = np.cumsum(
+        [
+            parquet_file.metadata.row_group(group_id).num_rows
+            for parquet_file in parquet_files
+            for group_id in range(parquet_file.metadata.num_row_groups)
+        ]
+    )
+    row_group_readers = [
+        partial(parquet_file.read_row_group, i=group_id)
+        for parquet_file in parquet_files
+        for group_id in range(parquet_file.metadata.num_row_groups)
+    ]
+
+    if (len(row_group_offsets) == 0) or (len(row_group_readers) == 0):
+        raise ParquetResponseEmptyError("No parquet files found.")
+
+    # TODO: Remove unnecessary code here, only first N rows is needed
+    offset = 0
+    length = rows_max_number
+    last_row_in_parquet = row_group_offsets[-1] - 1
+    first_row = min(offset, last_row_in_parquet)
+    last_row = min(offset, offset + length - 1, last_row_in_parquet)
+    first_row_group_id, last_row_group_id = np.searchsorted(row_group_offsets, [first_row, last_row], side="right")
+    pa_table = pa.concat_tables([row_group_readers[i]() for i in range(first_row_group_id, last_row_group_id + 1)])
+    result = pa_table.slice(offset, length)
+
+    rows = [
+        RowItem(
+            {
+                "row_idx": idx + offset,
+                "row": row,
+                "truncated_cells": [],
+            }
         )
-    except Exception as err:
-        MAX_SIZE_FALLBACK = 100_000_000
-        if max_size_fallback:
-            warnings.warn(
-                (
-                    f"The parameter 'max_size_fallback' is deprecated. The hard-coded value `{MAX_SIZE_FALLBACK}`"
-                    " will be used instead."
-                ),
-                category=DeprecationWarning,
-            )
-        if info.size_in_bytes is None or info.size_in_bytes > MAX_SIZE_FALLBACK:
-            raise StreamingRowsError(
-                "Cannot load the dataset split (in streaming mode) to extract the first rows.",
-                cause=err,
-            ) from err
-        try:
-            rows = get_rows(
-                dataset=dataset,
-                config=config,
-                split=split,
-                streaming=False,
-                rows_max_number=rows_max_number,
-                use_auth_token=use_auth_token,
-            )
-        except Exception as err:
-            raise NormalRowsError(
-                "Cannot load the dataset split (in normal download mode) to extract the first rows.",
-                cause=err,
-            ) from err
+        for idx, row in enumerate(result.to_pylist())
+    ]
+
     # transform the rows, if needed (e.g. save the images or audio to the assets, and return their URL)
     try:
         transformed_rows = transform_rows(
@@ -575,17 +485,17 @@ def compute_first_rows_response(
     return response
 
 
-class SplitFirstRowsFromStreamingJobRunner(DatasetsBasedJobRunner):
+class SplitFirstRowsFromParquetJobRunner(DatasetsBasedJobRunner):
     assets_directory: StrPath
     first_rows_config: FirstRowsConfig
 
     @staticmethod
     def get_job_type() -> str:
-        return "split-first-rows-from-streaming"
+        return "split-first-rows-from-parquet"
 
     @staticmethod
     def get_job_runner_version() -> int:
-        return PROCESSING_STEP_SPLIT_FIRST_ROWS_FROM_STREAMING_VERSION
+        return PROCESSING_STEP_SPLIT_FIRST_ROWS_FROM_PARQUET_VERSION
 
     def __init__(
         self,

@@ -17,9 +17,9 @@ from libcommon.storage import StrPath
 from worker.config import AppConfig, FirstRowsConfig
 from worker.job_runners.split.first_rows_from_streaming import (
     SplitFirstRowsFromStreamingJobRunner,
-    get_json_size,
 )
 from worker.resources import LibrariesResource
+from worker.utils import get_json_size
 
 from ...fixtures.hub import HubDatasets, get_default_config_split
 

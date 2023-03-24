@@ -1,6 +1,7 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2022 The HuggingFace Authors.
 
+import io
 import json
 from typing import Any, List, Optional, Union
 from zlib import adler32
@@ -22,7 +23,11 @@ from libcommon.storage import StrPath
 from numpy import ndarray
 from PIL import Image as PILImage  # type: ignore
 
-from worker.asset import create_audio_files, create_image_file
+from worker.asset import (
+    create_audio_files,
+    create_audio_files_from_bytes,
+    create_image_file,
+)
 
 
 def append_hash_suffix(string: str, json_path: Optional[List[Union[str, int]]] = None) -> str:
@@ -56,7 +61,11 @@ def image(
     if value is None:
         return None
     if not isinstance(value, PILImage.Image):
-        raise TypeError("image cell must be a PIL image")
+        try:
+            image_bytes = value["bytes"]
+            value = PILImage.open(io.BytesIO(image_bytes))
+        except Exception:
+            raise TypeError("image cell must be a PIL image")
     # attempt to generate one of the supported formats; if unsuccessful, throw an error
     for ext in [".jpg", ".png"]:
         try:
@@ -92,6 +101,18 @@ def audio(
 ) -> Any:
     if value is None:
         return None
+    if "bytes" in value:
+        return create_audio_files_from_bytes(
+            dataset=dataset,
+            config=config,
+            split=split,
+            row_idx=row_idx,
+            column=featureName,
+            array=value["bytes"],
+            assets_base_url=assets_base_url,
+            filename_base=append_hash_suffix("audio", json_path),
+            assets_directory=assets_directory,
+        )
     try:
         array = value["array"]
         sampling_rate = value["sampling_rate"]

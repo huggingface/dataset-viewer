@@ -5,6 +5,7 @@ from os import makedirs
 from pathlib import Path
 from typing import List, Tuple, TypedDict
 
+import numpy as np
 import soundfile  # type:ignore
 from libcommon.storage import StrPath
 from numpy import ndarray
@@ -56,6 +57,35 @@ def create_image_file(
 class AudioSource(TypedDict):
     src: str
     type: str
+
+
+# TODO: Refacto this method to be compatible with the existing one for streaming
+def create_audio_files_from_bytes(
+    dataset: str,
+    config: str,
+    split: str,
+    row_idx: int,
+    column: str,
+    array: bytearray,
+    assets_base_url: str,
+    filename_base: str,
+    assets_directory: StrPath,
+) -> List[AudioSource]:
+    wav_filename = f"{filename_base}.wav"
+    mp3_filename = f"{filename_base}.mp3"
+    dir_path, url_dir_path = create_asset_dir(
+        dataset=dataset, config=config, split=split, row_idx=row_idx, column=column, assets_directory=assets_directory
+    )
+    wav_file_path = dir_path / wav_filename
+    mp3_file_path = dir_path / mp3_filename
+    data = np.frombuffer(array, dtype="int16")
+    soundfile.write(file=wav_file_path, data=data, samplerate=48000)  # TODO: Get correct samplerate
+    segment = AudioSegment.from_wav(wav_file_path)
+    segment.export(mp3_file_path, format="mp3")
+    return [
+        {"src": f"{assets_base_url}/{url_dir_path}/{mp3_filename}", "type": "audio/mpeg"},
+        {"src": f"{assets_base_url}/{url_dir_path}/{wav_filename}", "type": "audio/wav"},
+    ]
 
 
 def create_audio_files(
