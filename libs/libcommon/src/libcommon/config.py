@@ -155,7 +155,7 @@ class ProcessingGraphConfig:
             },
             "/split-names-from-dataset-info": {
                 "input_type": "config",
-                "requires": "dataset-info",
+                "requires": "config-info",
                 "job_runner_version": PROCESSING_STEP_SPLIT_NAMES_FROM_DATASET_INFO_VERSION,
             },
             "config-size": {
