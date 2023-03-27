@@ -108,7 +108,7 @@ def poll_until_ready_and_assert(
     expected_error_code: Optional[str],
     headers: Optional[Headers] = None,
     url: str = URL,
-) -> None:
+) -> Any:
     if headers is None:
         headers = {}
     interval = INTERVAL
@@ -126,6 +126,7 @@ def poll_until_ready_and_assert(
         raise RuntimeError("Poll timeout")
     assert response.status_code == expected_status_code, log(response, url)
     assert response.headers.get("X-Error-Code") == expected_error_code, log(response, url)
+    return response
 
 
 # explicit re-export

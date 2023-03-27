@@ -89,7 +89,7 @@ def test_get_cache_entry_from_steps() -> None:
     cache_without_error = "/split-names-from-dataset-info"
 
     step_with_error = graph.get_step(cache_with_error)
-    step_whitout_error = graph.get_step(cache_without_error)
+    step_without_error = graph.get_step(cache_without_error)
 
     upsert_response(
         kind=cache_without_error,
@@ -109,7 +109,7 @@ def test_get_cache_entry_from_steps() -> None:
 
     # succeeded result is returned
     result = get_cache_entry_from_steps(
-        [step_whitout_error, step_with_error],
+        [step_without_error, step_with_error],
         dataset,
         config,
         None,
@@ -121,7 +121,7 @@ def test_get_cache_entry_from_steps() -> None:
 
     # succeeded result is returned even if first step failed
     result = get_cache_entry_from_steps(
-        [step_with_error, step_whitout_error],
+        [step_with_error, step_without_error],
         dataset,
         config,
         None,
@@ -138,7 +138,7 @@ def test_get_cache_entry_from_steps() -> None:
     assert result
     assert result["http_status"] == HTTPStatus.INTERNAL_SERVER_ERROR
 
-    # peding job thows exception
+    # pending job throws exception
     queue = Queue()
     queue.upsert_job(job_type="/splits", dataset=dataset, config=config, force=True)
     non_existent_step = graph.get_step("/splits")

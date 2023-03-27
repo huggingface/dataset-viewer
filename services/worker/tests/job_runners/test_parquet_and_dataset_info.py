@@ -466,9 +466,18 @@ def test_compute_splits_response_simple_csv_error(
     "filename,split,config,raises",
     [
         ("config/builder-split.parquet", "split", "config", False),
+        ("config/builder-with-dashes-split.parquet", "split", "config", False),
         ("config/builder-split-00000-of-00001.parquet", "split", "config", False),
+        ("config/builder-with-dashes-split-00000-of-00001.parquet", "split", "config", False),
+        (
+            "config/builder-with-dashes-caveat-asplitwithdashesisnotsupported-00000-of-00001.parquet",
+            "asplitwithdashesisnotsupported",
+            "config",
+            False,
+        ),
         ("builder-split-00000-of-00001.parquet", "split", "config", True),
-        ("config/builder-not-supported.parquet", "not-supported", "config", True),
+        ("plain_text/openwebtext-10k-train.parquet", "train", "plain_text", False),
+        ("plain_text/openwebtext-10k-train-00000-of-00001.parquet", "train", "plain_text", False),
     ],
 )
 def test_parse_repo_filename(filename: str, split: str, config: str, raises: bool) -> None:
