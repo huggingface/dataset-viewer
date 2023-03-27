@@ -1,15 +1,21 @@
-# Process Parquet files
+# Query datasets from Datasets Server
 
-[Parquet](https://parquet.apache.org/docs/) files are column-based and they really shine when you're working with big data. Datasets Server automatically converts and stores datasets on the Hub as Parquet files, which you can learn more about in the [List Parquet files](parquet) guide. There are several ways you can work with Parquet files, and this guide will show you how to:
+Datasets Server automatically converts and publishes datasets on the Hub as Parquet files.[Parquet](https://parquet.apache.org/docs/) files are column-based and they really shine when you're working with big data. There are several ways you can work with Parquet files, and this guide will show you how to:
 
-- read Parquet files with Pandas and Polars
-- load, read, and query Parquet files with DuckDB and DuckDB-Wasm
+- read and query Parquet files with Pandas and Polars
+- access, read and query Parquet files with DuckDB and DuckDB-Wasm
 
-## Polars
+## Polars 
 
-[Polars](https://pola-rs.github.io/polars-book/user-guide/introduction.html) is a fast DataFrame library written in Rust with Arrow as its foundation. 
+[Polars](https://pola-rs.github.io/polars-book/user-guide/introduction.html) is a fast DataFrame library written in Rust with Arrow as its foundation.
 
-Let's start by grabbing the URLs to the `train` split of the [`blog_authorship_corpus`](https://huggingface.co/datasets/blog_authorship_corpus) dataset:
+<Tip>
+
+💡 Learn more about how to get the dataset URLs in the [List Parquet files](parquet) guide.
+
+</Tip>
+
+Let's start by grabbing the URLs to the `train` split of the [`blog_authorship_corpus`](https://huggingface.co/datasets/blog_authorship_corpus) dataset from Datasets Server:
 
 ```py
 r = requests.get("https://datasets-server.huggingface.co/parquet?dataset=blog_authorship_corpus")
@@ -20,7 +26,7 @@ urls
  'https://huggingface.co/datasets/blog_authorship_corpus/resolve/refs%2Fconvert%2Fparquet/blog_authorship_corpus/blog_authorship_corpus-train-00001-of-00002.parquet']
 ```
 
-To read from a single Parquet file, use the [`read_parquet`](https://pola-rs.github.io/polars/py-polars/html/reference/api/polars.read_parquet.html) function to read them into a DataFrame:
+To read from a single Parquet file, use the [`read_parquet`](https://pola-rs.github.io/polars/py-polars/html/reference/api/polars.read_parquet.html) function to read it into a DataFrame and then execute your query:
 
 ```py
 import polars as pl
@@ -52,7 +58,7 @@ shape: (5, 3)
 └───────────┴───────┴─────────────────┘
 ```
 
-To read multiple Parquet files, you'll also need to use the [`concat`](https://pola-rs.github.io/polars/py-polars/html/reference/api/polars.concat.html) function to concatenate them into a single DataFrame: 
+To read multiple Parquet files, you'll need to use the [`concat`](https://pola-rs.github.io/polars/py-polars/html/reference/api/polars.concat.html) function to concatenate the files into a single DataFrame: 
 
 ```py
 import polars as pl
@@ -85,9 +91,9 @@ shape: (5, 3)
 
 ### Lazy API
 
-Polars offers a [lazy API](https://pola-rs.github.io/polars-book/user-guide/lazy-api/intro.html) that is more performant and memory-efficient for large Parquet files. It keeps track of what you want to do, and only when you're ready, Polars executes the query. This way, the lazy API doesn't load everything into RAM before you even execute the query. It allows you to work with datasets larger than your available RAM.
+Polars offers a [lazy API](https://pola-rs.github.io/polars-book/user-guide/lazy-api/intro.html) that is more performant and memory-efficient for large Parquet files. The LazyFrame API keeps track of what you want to do, and it'll only execute the entire query when you're ready. This way, the lazy API doesn't load everything into RAM beforehand, and it allows you to work with datasets larger than your available RAM.
 
-To lazily read a Parquet file, use the [`scan_parquet`](https://pola-rs.github.io/polars/py-polars/html/reference/api/polars.scan_parquet.html) function. Then, execute the entire query with the [`collect`](https://pola-rs.github.io/polars/py-polars/html/reference/lazyframe/api/polars.LazyFrame.collect.html) function:
+To lazily read a Parquet file, use the [`scan_parquet`](https://pola-rs.github.io/polars/py-polars/html/reference/api/polars.scan_parquet.html) function instead. Then, execute the entire query with the [`collect`](https://pola-rs.github.io/polars/py-polars/html/reference/lazyframe/api/polars.LazyFrame.collect.html) function:
 
 ```py
 import polars as pl
@@ -111,7 +117,7 @@ df = q.collect()
 
 You can also use the popular Pandas DataFrame library to read Parquet files.
 
-To read from a single Parquet file, use the [`read_parquet`](https://pandas.pydata.org/docs/reference/api/pandas.read_parquet.html) function to read them into a DataFrame:
+To read from a single Parquet file, use the [`read_parquet`](https://pandas.pydata.org/docs/reference/api/pandas.read_parquet.html) function to read it into a DataFrame:
 
 ```py
 import pandas as pd
@@ -125,7 +131,7 @@ df = (
 )
 ```
 
-To read multiple Parquet files, you'll also need to use the [`concat`](https://pandas.pydata.org/docs/reference/api/pandas.concat.html) function to concatenate them into a single DataFrame:
+To read multiple Parquet files, you'll need to use the [`concat`](https://pandas.pydata.org/docs/reference/api/pandas.concat.html) function to concatenate the files into a single DataFrame:
 
 ```py
 df = (
@@ -171,7 +177,8 @@ Now you can write and execute your SQL query on the Parquet file:
 <inferencesnippet>
 <python>
 ```py
-con.sql(f"SELECT horoscope, count(*), AVG(LENGTH(text)) AS avg_blog_length FROM '{url}' GROUP BY horoscope ORDER BY avg_blog_length DESC LIMIT(5)")┌───────────┬──────────────┬────────────────────┐
+con.sql(f"SELECT horoscope, count(*), AVG(LENGTH(text)) AS avg_blog_length FROM '{url}' GROUP BY horoscope ORDER BY avg_blog_length DESC LIMIT(5)")
+┌───────────┬──────────────┬────────────────────┐
 │ horoscope │ count_star() │  avg_blog_length   │
 │  varchar  │    int64     │       double       │
 ├───────────┼──────────────┼────────────────────┤
@@ -224,3 +231,5 @@ con.all(`SELECT horoscope, count(*), AVG(LENGTH(text)) AS avg_blog_length FROM r
 ```
 </js>
 </inferencesnippet>
+
+There is also [DuckDB-Wasm](https://duckdb.org/docs/api/wasm), a package powered by WebAssembly for running DuckDB in a browser. This could be useful, for instance, if you want to create a web app to query Parquet files from the browser!
