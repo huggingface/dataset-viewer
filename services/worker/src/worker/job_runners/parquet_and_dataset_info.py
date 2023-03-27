@@ -9,7 +9,7 @@ from functools import partial
 from http import HTTPStatus
 from multiprocessing.pool import ThreadPool
 from pathlib import Path
-from typing import Any, List, Literal, Mapping, Optional, Tuple, TypedDict
+from typing import Any, Dict, List, Literal, Mapping, Optional, Tuple, TypedDict
 from urllib.parse import quote
 
 import datasets
@@ -41,13 +41,14 @@ from huggingface_hub._commit_api import (
 )
 from huggingface_hub.hf_api import DatasetInfo, HfApi, RepoFile
 from huggingface_hub.utils._errors import RepositoryNotFoundError, RevisionNotFoundError
+from libcommon.constants import PROCESSING_STEP_PARQUET_AND_DATASET_INFO_VERSION
 from libcommon.dataset import DatasetNotFoundError, ask_access
 from libcommon.processing_graph import ProcessingStep
 from libcommon.queue import JobInfo
 from libcommon.simple_cache import SplitFullName
 
 from worker.config import AppConfig, ParquetAndDatasetInfoConfig
-from worker.job_runner import JobRunnerError
+from worker.job_runner import CompleteJobResult, JobRunnerError
 from worker.job_runners._datasets_based_job_runner import DatasetsBasedJobRunner
 
 ParquetAndDatasetInfoJobRunnerErrorCode = Literal[
@@ -136,7 +137,7 @@ class ParquetFileItem(TypedDict):
 
 class ParquetAndDatasetInfoResponse(TypedDict):
     parquet_files: List[ParquetFileItem]
-    dataset_info: dict[str, Any]
+    dataset_info: Dict[str, Any]
 
 
 DATASET_TYPE = "dataset"
@@ -160,7 +161,7 @@ def hf_hub_url(repo_id: str, filename: str, hf_endpoint: str, revision: str, url
     return (hf_endpoint + url_template) % (repo_id, quote(revision, safe=""), filename)
 
 
-p = re.compile(r"[\w]+-(?P<split>[\w]+?)(-[0-9]{5}-of-[0-9]{5})?.parquet")
+p = re.compile(r"(?P<builder>[\w-]+?)-(?P<split>[\w]+?)(-[0-9]{5}-of-[0-9]{5})?.parquet")
 
 
 def parse_repo_filename(filename: str) -> Tuple[str, str]:
@@ -268,6 +269,8 @@ def get_dataset_info_or_raise(
         raise DatasetNotFoundError("The dataset does not exist on the Hub.") from err
     except RevisionNotFoundError as err:
         raise DatasetRevisionNotFoundError("The dataset revision does not exist on the Hub.") from err
+    if dataset_info.private:
+        raise DatasetNotFoundError("The dataset does not exist on the Hub.")
     return dataset_info
 
 
@@ -334,8 +337,8 @@ def raise_if_too_big_from_datasets(
     """
     if datasets.config.HF_ENDPOINT != hf_endpoint:
         raise ValueError(
-            "datasets.config.HF_ENDPOINT should have already been set to {hf_endpoint}. "
-            f"Current value: {datasets.config.HF_ENDPOINT}. "
+            f"Invalid datasets.config.HF_ENDPOINT value: '{datasets.config.HF_ENDPOINT}'. Please set it to:"
+            f" '{hf_endpoint}'."
         )
     dataset_size = 0
     with contextlib.suppress(Exception):
@@ -343,8 +346,9 @@ def raise_if_too_big_from_datasets(
         dataset_size = sum(value.dataset_size for value in infos.values() if value.dataset_size is not None)
     if dataset_size > max_dataset_size:
         raise DatasetTooBigFromDatasetsError(
-            f"The conversion to parquet is limited to datasets under {max_dataset_size} bytes. "
-            f"Current size as given per the datasets library is {dataset_size} bytes."
+            f"The dataset is too big to be converted to Parquet. The size of the dataset ({dataset_size} B, as given"
+            f" per the datasets library) exceeds the maximum supported size ({max_dataset_size} B). Please report the"
+            " issue."
         )
 
 
@@ -505,7 +509,7 @@ def _request_size(url: str, hf_token: Optional[str] = None) -> Optional[int]:
     return int(size) if size is not None else size
 
 
-class _MockStreamingDownloadManager(StreamingDownloadManager):
+class _MockStreamingDownloadManager(StreamingDownloadManager):  # type: ignore
     def __init__(self, *args: Any, **kwargs: Any) -> None:
         super().__init__(*args, **kwargs)
         self.ext_data_files: List[str] = []
@@ -515,7 +519,7 @@ class _MockStreamingDownloadManager(StreamingDownloadManager):
             self._download,
             url_or_urls,
             map_tuple=True,
-            parallel_min_length=np.inf,  # type: ignore
+            parallel_min_length=np.inf,
             # ^ parallel_min_length has int type, but is currently used in datasets for a comparison only
             # and it works with np.inf. No conversion is involved
             # (would raise: OverflowError: cannot convert float infinity to integer)
@@ -545,7 +549,7 @@ def raise_if_too_big_from_external_data_files(
         base_path=builder.base_path, download_config=DownloadConfig(use_auth_token=hf_token)
     )
     try:
-        builder._split_generators(mock_dl_manager)  # type: ignore
+        builder._split_generators(mock_dl_manager)
     except (requests.exceptions.RequestException, NotImplementedError) as error:
         if isinstance(error, NotImplementedError):
             # we can ignore the errors from functions not implemented in streaming mode like `.extract()` on TAR files
@@ -789,17 +793,24 @@ def compute_parquet_and_dataset_info_response(
     except _EmptyDatasetError as err:
         raise EmptyDatasetError("The dataset is empty.", cause=err) from err
     except Exception as err:
-        raise ConfigNamesError("Cannot get the configuration names for the dataset.", cause=err) from err
+        raise ConfigNamesError("Cannot get the config names for the dataset.", cause=err) from err
 
     # prepare the parquet files locally
     parquet_files: List[ParquetFile] = []
-    dataset_info: dict[str, Any] = {}
+    dataset_info: Dict[str, Any] = {}
+    download_config = DownloadConfig(delete_extracted=True)
     for config in config_names:
         ds_config_info = get_dataset_config_info(
             path=dataset, config_name=config, revision=source_revision, use_auth_token=hf_token
         )
         writer_batch_size = get_writer_batch_size(ds_config_info)
-        builder = load_dataset_builder(path=dataset, name=config, revision=source_revision, use_auth_token=hf_token)
+        builder = load_dataset_builder(
+            path=dataset,
+            name=config,
+            revision=source_revision,
+            use_auth_token=hf_token,
+            download_config=download_config,
+        )
         raise_if_too_big_from_external_data_files(
             builder=builder,
             max_dataset_size=max_dataset_size,
@@ -808,7 +819,7 @@ def compute_parquet_and_dataset_info_response(
             writer_batch_size=writer_batch_size,
         )
         builder.download_and_prepare(file_format="parquet")  # the parquet files are stored in the cache dir
-        dataset_info[config] = asdict(builder.info)  # type: ignore
+        dataset_info[config] = asdict(builder.info)
         # ^ see
         # https://github.dev/huggingface/datasets/blob/e183a269067575db8765ee979bd8523d14a1adae/src/datasets/info.py#L244-L245
         # note that asdict() is not typed in the datasets library, hence type: ignore
@@ -885,8 +896,8 @@ class ParquetAndDatasetInfoJobRunner(DatasetsBasedJobRunner):
         return "/parquet-and-dataset-info"
 
     @staticmethod
-    def get_version() -> str:
-        return "1.2.0"
+    def get_job_runner_version() -> int:
+        return PROCESSING_STEP_PARQUET_AND_DATASET_INFO_VERSION
 
     def __init__(
         self,
@@ -904,20 +915,22 @@ class ParquetAndDatasetInfoJobRunner(DatasetsBasedJobRunner):
         )
         self.parquet_and_dataset_info_config = parquet_and_dataset_info_config
 
-    def compute(self) -> Mapping[str, Any]:
-        return compute_parquet_and_dataset_info_response(
-            dataset=self.dataset,
-            hf_endpoint=self.common_config.hf_endpoint,
-            hf_token=self.common_config.hf_token,
-            committer_hf_token=self.parquet_and_dataset_info_config.committer_hf_token,
-            source_revision=self.parquet_and_dataset_info_config.source_revision,
-            target_revision=self.parquet_and_dataset_info_config.target_revision,
-            commit_message=self.parquet_and_dataset_info_config.commit_message,
-            url_template=self.parquet_and_dataset_info_config.url_template,
-            supported_datasets=self.parquet_and_dataset_info_config.supported_datasets,
-            blocked_datasets=self.parquet_and_dataset_info_config.blocked_datasets,
-            max_dataset_size=self.parquet_and_dataset_info_config.max_dataset_size,
-            max_external_data_files=self.parquet_and_dataset_info_config.max_external_data_files,
+    def compute(self) -> CompleteJobResult:
+        return CompleteJobResult(
+            compute_parquet_and_dataset_info_response(
+                dataset=self.dataset,
+                hf_endpoint=self.common_config.hf_endpoint,
+                hf_token=self.common_config.hf_token,
+                committer_hf_token=self.parquet_and_dataset_info_config.committer_hf_token,
+                source_revision=self.parquet_and_dataset_info_config.source_revision,
+                target_revision=self.parquet_and_dataset_info_config.target_revision,
+                commit_message=self.parquet_and_dataset_info_config.commit_message,
+                url_template=self.parquet_and_dataset_info_config.url_template,
+                supported_datasets=self.parquet_and_dataset_info_config.supported_datasets,
+                blocked_datasets=self.parquet_and_dataset_info_config.blocked_datasets,
+                max_dataset_size=self.parquet_and_dataset_info_config.max_dataset_size,
+                max_external_data_files=self.parquet_and_dataset_info_config.max_external_data_files,
+            )
         )
 
     def get_new_splits(self, content: Mapping[str, Any]) -> set[SplitFullName]:

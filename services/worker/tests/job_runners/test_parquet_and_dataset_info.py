@@ -96,6 +96,7 @@ def get_job_runner(
                 parent=None,
                 ancestors=[],
                 children=[],
+                job_runner_version=ParquetAndDatasetInfoJobRunner.get_job_runner_version(),
             ),
             hf_datasets_cache=libraries_resource.hf_datasets_cache,
             parquet_and_dataset_info_config=parquet_and_dataset_info_config,
@@ -133,7 +134,7 @@ def test_compute(
     cached_response = get_response(kind=job_runner.processing_step.cache_kind, dataset=dataset)
     assert cached_response["http_status"] == HTTPStatus.OK
     assert cached_response["error_code"] is None
-    assert cached_response["worker_version"] == job_runner.get_version()
+    assert cached_response["job_runner_version"] == job_runner.get_job_runner_version()
     assert cached_response["dataset_git_revision"] is not None
     content = cached_response["content"]
     assert len(content["parquet_files"]) == 1
@@ -409,7 +410,7 @@ def test_compute_splits_response_simple_csv_ok(
     dataset = hub_datasets[name]["name"]
     expected_parquet_and_dataset_info_response = hub_datasets[name]["parquet_and_dataset_info_response"]
     job_runner = get_job_runner(dataset, app_config, parquet_and_dataset_info_config, False)
-    result = job_runner.compute()
+    result = job_runner.compute().content
     assert_content_is_equal(result, expected_parquet_and_dataset_info_response)
 
     # download the parquet file and check that it is valid
@@ -434,8 +435,8 @@ def test_compute_splits_response_simple_csv_ok(
     "name,error_code,cause",
     [
         ("empty", "EmptyDatasetError", "EmptyDatasetError"),
-        ("does_not_exist", "DatasetNotFoundError", None),
-        ("gated_extra_fields", "GatedExtraFieldsError", None),
+        ("does_not_exist", "DatasetNotFoundError", "HTTPError"),
+        ("gated_extra_fields", "GatedExtraFieldsError", "HTTPError"),
         ("private", "DatasetNotFoundError", None),
     ],
 )
@@ -453,12 +454,8 @@ def test_compute_splits_response_simple_csv_error(
     with pytest.raises(CustomError) as exc_info:
         job_runner.compute()
     assert exc_info.value.code == error_code
-    if cause is None:
-        assert not exc_info.value.disclose_cause
-        assert exc_info.value.cause_exception is None
-    else:
-        assert exc_info.value.disclose_cause
-        assert exc_info.value.cause_exception == cause
+    assert exc_info.value.cause_exception == cause
+    if exc_info.value.disclose_cause:
         response = exc_info.value.as_response()
         assert set(response.keys()) == {"error", "cause_exception", "cause_message", "cause_traceback"}
         response_dict = dict(response)
@@ -472,9 +469,18 @@ def test_compute_splits_response_simple_csv_error(
     "filename,split,config,raises",
     [
         ("config/builder-split.parquet", "split", "config", False),
+        ("config/builder-with-dashes-split.parquet", "split", "config", False),
         ("config/builder-split-00000-of-00001.parquet", "split", "config", False),
+        ("config/builder-with-dashes-split-00000-of-00001.parquet", "split", "config", False),
+        (
+            "config/builder-with-dashes-caveat-asplitwithdashesisnotsupported-00000-of-00001.parquet",
+            "asplitwithdashesisnotsupported",
+            "config",
+            False,
+        ),
         ("builder-split-00000-of-00001.parquet", "split", "config", True),
-        ("config/builder-not-supported.parquet", "not-supported", "config", True),
+        ("plain_text/openwebtext-10k-train.parquet", "train", "plain_text", False),
+        ("plain_text/openwebtext-10k-train-00000-of-00001.parquet", "train", "plain_text", False),
     ],
 )
 def test_parse_repo_filename(filename: str, split: str, config: str, raises: bool) -> None:

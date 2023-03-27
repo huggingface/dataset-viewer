@@ -1,15 +1,16 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2022 The HuggingFace Authors.
 
-import json
 import logging
 import random
 import time
 from dataclasses import dataclass, field
+from datetime import datetime
 from typing import Optional, TypedDict
 
+import orjson
 from filelock import FileLock
-from libcommon.queue import EmptyQueueError, JobInfo, Queue
+from libcommon.queue import EmptyQueueError, JobInfo, Queue, get_datetime
 from psutil import cpu_count, disk_usage, getloadavg, swap_memory, virtual_memory
 
 from worker.config import WorkerConfig
@@ -22,6 +23,7 @@ class UnknownJobTypeError(Exception):
 
 class WorkerState(TypedDict):
     current_job_info: Optional[JobInfo]
+    last_updated: datetime
 
 
 @dataclass
@@ -43,12 +45,15 @@ class Loop:
         max_jobs_per_namespace (`int`):
             The maximum number of jobs that can be processed per namespace. If a namespace has more jobs, the loop will
             wait until some jobs are finished.
+        state_file_path (`str`):
+            The path of the file where the state of the loop will be saved.
     """
 
     job_runner_factory: BaseJobRunnerFactory
     library_cache_paths: set[str]
     worker_config: WorkerConfig
     max_jobs_per_namespace: int
+    state_file_path: str
 
     storage_paths: set[str] = field(init=False)
 
@@ -141,8 +146,7 @@ class Loop:
         return True
 
     def set_worker_state(self, current_job_info: Optional[JobInfo]) -> None:
-        worker_state: WorkerState = {"current_job_info": current_job_info}
-        if self.worker_config.state_path:
-            with FileLock(self.worker_config.state_path + ".lock"):
-                with open(self.worker_config.state_path, "w") as worker_state_f:
-                    json.dump(worker_state, worker_state_f)
+        worker_state: WorkerState = {"current_job_info": current_job_info, "last_updated": get_datetime()}
+        with FileLock(f"{self.state_file_path}.lock"):
+            with open(self.state_file_path, "wb") as worker_state_f:
+                worker_state_f.write(orjson.dumps(worker_state))

@@ -2,20 +2,67 @@
 # Copyright 2022 The HuggingFace Authors.
 
 import os
-from typing import Any
+import time
+from types import TracebackType
+from typing import Any, Optional, Type, TypeVar
 
-from prometheus_client import (  # type: ignore
+from prometheus_client import (
     CONTENT_TYPE_LATEST,
     REGISTRY,
     CollectorRegistry,
+    Histogram,
     generate_latest,
 )
-from prometheus_client.multiprocess import MultiProcessCollector  # type: ignore
+from prometheus_client.multiprocess import MultiProcessCollector
 
 # ^ type: ignore can be removed on next release:
 # https://github.com/prometheus/client_python/issues/491#issuecomment-1429287314
 from starlette.requests import Request
 from starlette.responses import Response
+
+# the metrics are global to the process
+METHOD_STEPS_PROCESSING_TIME = Histogram(
+    "method_steps_processing_time_seconds",
+    "Histogram of the processing time of specific steps in methods for a given context (in seconds)",
+    ["method", "step", "context"],
+)
+
+T = TypeVar("T", bound="StepProfiler")
+
+
+class StepProfiler:
+    """
+    A context manager that measures the time spent in a step of a method and reports it to Prometheus.
+
+    Example:
+        >>> with StepProfiler("method", "step", "context") as profiler:
+        ...     pass
+
+    Args:
+        method (str): The name of the method.
+        step (str): The name of the step.
+        context (str|None): An optional string that adds context. If None, the label "None" is used.
+    """
+
+    def __init__(self, method: str, step: str, context: Optional[str] = None):
+        self.method = method
+        self.step = step
+        self.context = str(context)
+        self.before_time = time.perf_counter()
+
+    def __enter__(self: T) -> T:
+        return self
+
+    def __exit__(
+        self,
+        exc_type: Optional[Type[BaseException]],
+        exc_value: Optional[BaseException],
+        traceback: Optional[TracebackType],
+    ) -> None:
+        after_time = time.perf_counter()
+        METHOD_STEPS_PROCESSING_TIME.labels(method=self.method, step=self.step, context=self.context).observe(
+            after_time - self.before_time
+        )
 
 
 class Prometheus:

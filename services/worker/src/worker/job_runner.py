@@ -3,6 +3,7 @@
 
 import logging
 from abc import ABC, abstractmethod
+from dataclasses import dataclass, field
 from http import HTTPStatus
 from typing import Any, Literal, Mapping, Optional
 
@@ -21,7 +22,6 @@ from libcommon.simple_cache import (
     upsert_response,
 )
 from libcommon.utils import orjson_dumps
-from packaging import version
 
 from worker.config import WorkerConfig
 
@@ -31,10 +31,28 @@ GeneralJobRunnerErrorCode = Literal[
     "SplitNotFoundError",
     "UnexpectedError",
     "TooBigContentError",
+    "JobRunnerCrashedError",
+    "JobRunnerExceededMaximumDurationError",
 ]
 
 # List of error codes that should trigger a retry.
 ERROR_CODES_TO_RETRY: list[str] = ["ClientConnectionError"]
+
+
+@dataclass
+class JobResult:
+    content: Mapping[str, Any]
+    progress: float
+
+    def __post_init__(self) -> None:
+        if self.progress < 0.0 or self.progress > 1.0:
+            raise ValueError(f"Progress should be between 0 and 1, but got {self.progress}")
+
+
+@dataclass
+class CompleteJobResult(JobResult):
+    content: Mapping[str, Any]
+    progress: float = field(init=False, default=1.0)
 
 
 class JobRunnerError(CustomError):
@@ -135,6 +153,32 @@ class UnexpectedError(GeneralJobRunnerError):
         logging.error(message, exc_info=cause)
 
 
+class JobRunnerCrashedError(GeneralJobRunnerError):
+    """Raised when the job runner crashed and the job became a zombie."""
+
+    def __init__(self, message: str, cause: Optional[BaseException] = None):
+        super().__init__(
+            message=message,
+            status_code=HTTPStatus.NOT_IMPLEMENTED,
+            code="JobRunnerCrashedError",
+            cause=cause,
+            disclose_cause=False,
+        )
+
+
+class JobRunnerExceededMaximumDurationError(GeneralJobRunnerError):
+    """Raised when the job runner was killed because the job exceeded the maximum duration."""
+
+    def __init__(self, message: str, cause: Optional[BaseException] = None):
+        super().__init__(
+            message=message,
+            status_code=HTTPStatus.NOT_IMPLEMENTED,
+            code="JobRunnerExceededMaximumDurationError",
+            cause=cause,
+            disclose_cause=False,
+        )
+
+
 class JobRunner(ABC):
     """
     Base class for job runners. A job runner is a class that processes a job, for a specific processing step.
@@ -168,7 +212,7 @@ class JobRunner(ABC):
 
     @staticmethod
     @abstractmethod
-    def get_version() -> str:
+    def get_job_runner_version() -> int:
         pass
 
     def __init__(
@@ -238,25 +282,6 @@ class JobRunner(ABC):
         self.create_children_jobs()
         return result
 
-    def compare_major_version(self, other_version: str) -> int:
-        """
-        Compare the major version of job runner's self version and the other version's.
-
-        Args:
-            other_version (:obj:`str`): the other semantic version
-
-        Returns:
-            :obj:`int`: the difference between the major version of both versions.
-            0 if they are equal. Negative if job runner's major version is lower than other_version, positive
-              otherwise.
-        Raises:
-            :obj:`ValueError`: if job runner's version or other_version is not a valid semantic version.
-        """
-        try:
-            return version.parse(self.get_version()).major - version.parse(other_version).major
-        except Exception as err:
-            raise RuntimeError(f"Could not get major versions: {err}") from err
-
     def get_dataset_git_revision(self) -> Optional[str]:
         """Get the git revision of the dataset repository."""
         return get_dataset_git_revision(
@@ -275,6 +300,7 @@ class JobRunner(ABC):
         - and the cached entry has been created with the same git commit of the dataset repository
         - and the cached entry has been created with the same major version of the job runner
         - and the cached entry, if an error, is not among the list of errors that should trigger a retry
+        - and the cached entry is complete (has a progress of 1.)
 
         Returns:
             :obj:`bool`: True if the job should be skipped, False otherwise.
@@ -292,13 +318,13 @@ class JobRunner(ABC):
             # the cache entry result was a temporary error - we process it
             return False
         if (
-            cached_response["worker_version"] is None
-            or self.compare_major_version(cached_response["worker_version"]) != 0
+            cached_response["job_runner_version"] is None
+            or self.get_job_runner_version() > cached_response["job_runner_version"]
         ):
-            # no job runner version in the cache, or the job runner has been updated - we process the job to update
-            # the cache
-            # note: the collection field is named "worker_version" for historical reasons, it might be renamed
-            #   "job_runner_version" in the future.
+            return False
+        if cached_response["progress"] is not None and cached_response["progress"] < 1.0:
+            # this job is still waiting for more inputs to be complete - we should not skip it.
+            # this can happen with fan-in jobs
             return False
         try:
             dataset_git_revision = self.get_dataset_git_revision()
@@ -320,7 +346,8 @@ class JobRunner(ABC):
                 raise NoGitRevisionError(f"Could not get git revision for dataset {self.dataset}")
             try:
                 self.pre_compute()
-                content = self.compute()
+                job_result = self.compute()
+                content = job_result.content
 
                 # Validate content size
                 if len(orjson_dumps(content)) > self.worker_config.content_max_bytes:
@@ -338,8 +365,9 @@ class JobRunner(ABC):
                 split=self.split,
                 content=content,
                 http_status=HTTPStatus.OK,
-                worker_version=self.get_version(),
+                job_runner_version=self.get_job_runner_version(),
                 dataset_git_revision=dataset_git_revision,
+                progress=job_result.progress,
             )
             self.debug(f"dataset={self.dataset} config={self.config} split={self.split} is valid, cache updated")
             return True
@@ -365,7 +393,7 @@ class JobRunner(ABC):
                 http_status=e.status_code,
                 error_code=e.code,
                 details=dict(e.as_response_with_cause()),
-                worker_version=self.get_version(),
+                job_runner_version=self.get_job_runner_version(),
                 dataset_git_revision=dataset_git_revision,
             )
             self.debug(
@@ -379,7 +407,7 @@ class JobRunner(ABC):
         pass
 
     @abstractmethod
-    def compute(self) -> Mapping[str, Any]:
+    def compute(self) -> JobResult:
         pass
 
     # should be overridden if the job has children jobs of type "split"
@@ -460,3 +488,42 @@ class JobRunner(ABC):
     def post_compute(self) -> None:
         """Hook method called after the compute method."""
         pass
+
+    def set_crashed(self, message: str, cause: Optional[BaseException] = None) -> None:
+        error = JobRunnerCrashedError(message=message, cause=cause)
+        upsert_response(
+            kind=self.processing_step.cache_kind,
+            dataset=self.dataset,
+            config=self.config,
+            split=self.split,
+            content=dict(error.as_response()),
+            http_status=error.status_code,
+            error_code=error.code,
+            details=dict(error.as_response_with_cause()),
+            job_runner_version=self.get_job_runner_version(),
+            dataset_git_revision=self.get_dataset_git_revision(),
+        )
+        logging.debug(
+            "response for"
+            f" dataset={self.dataset} config={self.config} split={self.split} had an error (crashed),"
+            " cache updated"
+        )
+
+    def set_exceeded_maximum_duration(self, message: str, cause: Optional[BaseException] = None) -> None:
+        error = JobRunnerExceededMaximumDurationError(message=message, cause=cause)
+        upsert_response(
+            kind=self.processing_step.cache_kind,
+            dataset=self.dataset,
+            config=self.config,
+            split=self.split,
+            content=dict(error.as_response()),
+            http_status=error.status_code,
+            error_code=error.code,
+            details=dict(error.as_response_with_cause()),
+            job_runner_version=self.get_job_runner_version(),
+            dataset_git_revision=self.get_dataset_git_revision(),
+        )
+        logging.debug(
+            f"response for dataset={self.dataset} config={self.config} split={self.split} had an error (exceeded"
+            " maximum duration), cache updated"
+        )

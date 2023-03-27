@@ -13,19 +13,20 @@ services:
       ASSETS_DIRECTORY: ${ASSETS_STORAGE_DIRECTORY-/assets}
       HOST: localhost
       PORT: 80
-      URL_ADMIN: http://admin:${ADMIN_UVICORN_PORT-8081}
-      URL_API: http://api:${API_UVICORN_PORT-8080}
+      URL_ADMIN: http://host.docker.internal:${ADMIN_UVICORN_PORT-8081}
+      URL_API: http://host.docker.internal:${API_UVICORN_PORT-8080}
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     depends_on:
       - api
       - admin
   admin:
     build:
       context: ..
-      dockerfile: services/admin/Dockerfile
-    # image: ${IMAGE_SERVICE_ADMIN?IMAGE_SERVICE_ADMIN env var must be provided}
+      dockerfile: services/admin/dev.Dockerfile
     extends:
       file: docker-compose-dev-base.yml
-      service: common
+      service: admin
     environment:
       # service
       ADMIN_HF_ORGANIZATION: ${ADMIN_HF_ORGANIZATION-huggingface}
@@ -42,20 +43,20 @@ services:
     depends_on:
       - mongodb
     restart: always
-    ports:
-      # for debug
-      - ${ADMIN_UVICORN_PORT-8081}:${ADMIN_UVICORN_PORT-8081}
+    network_mode: host
   api:
     build:
       context: ..
-      dockerfile: services/api/Dockerfile
-    # image: ${IMAGE_SERVICE_API?IMAGE_SERVICE_API env var must be provided}
+      dockerfile: services/api/dev.Dockerfile
     extends:
       file: docker-compose-dev-base.yml
-      service: common
+      service: api
     environment:
       # service
       API_HF_AUTH_PATH: ${API_HF_AUTH_PATH-/api/datasets/%s/auth-check}
+      API_HF_JWT_PUBLIC_KEY_URL: ${API_HF_JWT_PUBLIC_KEY_URL-https://hub-ci.huggingface.co/api/keys/jwt}
+      API_HF_JWT_ALGORITHM: ${API_HF_JWT_ALGORITHM-EdDSA}
+      API_HF_TIMEOUT_SECONDS: ${API_HF_TIMEOUT_SECONDS-0.2}
       API_MAX_AGE_LONG: ${API_MAX_AGE_LONG-120}
       API_MAX_AGE_SHORT: ${API_MAX_AGE_SHORT-10}
       # prometheus
@@ -64,163 +65,21 @@ services:
       API_UVICORN_HOSTNAME: 0.0.0.0 # required for docker compose
       API_UVICORN_NUM_WORKERS: ${API_UVICORN_NUM_WORKERS-2}
       API_UVICORN_PORT: ${API_UVICORN_PORT-8080}
-    ports:
-      # for debug
-      - ${API_UVICORN_PORT-8080}:${API_UVICORN_PORT-8080}
+    network_mode: host
     depends_on:
       - mongodb
     restart: unless-stopped
-  worker-config-names:
+  worker:
     build:
       context: ..
       dockerfile: services/worker/dev.Dockerfile
-    volumes:
-      - assets:${ASSETS_STORAGE_DIRECTORY-/assets}:rw
-      - splits-datasets-cache:${HF_DATASETS_CACHE-/datasets-cache}:rw
-      - splits-modules-cache:${HF_DATASETS_CACHE-/modules-cache}:rw
-      - splits-numba-cache:${NUMBA_CACHE_DIR-/numba-cache}:rw
-    extends:
-      file: docker-compose-dev-base.yml
-      service: datasets-worker
-    environment:
-      WORKER_ONLY_JOB_TYPES: "/config-names" # hard-coded
-    depends_on:
-      - mongodb
-    restart: always
-  worker-split-names:
-    build:
-      context: ..
-      dockerfile: services/worker/dev.Dockerfile
-    volumes:
-      - assets:${ASSETS_STORAGE_DIRECTORY-/assets}:rw
-      - splits-datasets-cache:${HF_DATASETS_CACHE-/datasets-cache}:rw
-      - splits-modules-cache:${HF_DATASETS_CACHE-/modules-cache}:rw
-      - splits-numba-cache:${NUMBA_CACHE_DIR-/numba-cache}:rw
-    extends:
-      file: docker-compose-dev-base.yml
-      service: datasets-worker
-    environment:
-      WORKER_ONLY_JOB_TYPES: "/split-names" # hard-coded
-    depends_on:
-      - mongodb
-    restart: always
-  worker-splits:
-    build:
-      context: ..
-      dockerfile: services/worker/dev.Dockerfile
-    volumes:
-      - assets:${ASSETS_STORAGE_DIRECTORY-/assets}:rw
-      - splits-datasets-cache:${HF_DATASETS_CACHE-/datasets-cache}:rw
-      - splits-modules-cache:${HF_DATASETS_CACHE-/modules-cache}:rw
-      - splits-numba-cache:${NUMBA_CACHE_DIR-/numba-cache}:rw
-    extends:
-      file: docker-compose-dev-base.yml
-      service: datasets-worker
-    environment:
-      WORKER_ONLY_JOB_TYPES: "/splits" # hard-coded
-    depends_on:
-      - mongodb
-    restart: always
-  worker-first-rows:
-    build:
-      context: ..
-      dockerfile: services/worker/dev.Dockerfile
-    volumes:
-      - assets:${ASSETS_STORAGE_DIRECTORY-/assets}:rw
-      - first-rows-datasets-cache:${HF_DATASETS_CACHE-/datasets-cache}:rw
-      - first-rows-modules-cache:${HF_DATASETS_CACHE-/modules-cache}:rw
-      - first-rows-numba-cache:${NUMBA_CACHE_DIR-/numba-cache}:rw
-    extends:
-      file: docker-compose-dev-base.yml
-      service: datasets-worker
-    environment:
-      ASSETS_BASE_URL: "http://localhost:${PORT_REVERSE_PROXY-8000}/assets" # hard-coded to work with the reverse-proxy
-      ASSETS_STORAGE_DIRECTORY: ${ASSETS_STORAGE_DIRECTORY-/assets}
-      WORKER_ONLY_JOB_TYPES: "/first-rows" # hard-coded
-      FIRST_ROWS_MAX_BYTES: ${FIRST_ROWS_MAX_BYTES-1_000_000}
-      FIRST_ROWS_MAX_NUMBER: ${FIRST_ROWS_MAX_NUMBER-100}
-      FIRST_ROWS_MIN_CELL_BYTES: ${FIRST_ROWS_MIN_CELL_BYTES-100}
-      FIRST_ROWS_MIN_NUMBER: ${FIRST_ROWS_MIN_NUMBER-10}
-      FIRST_ROWS_COLUMNS_MAX_NUMBER: ${FIRST_ROWS_COLUMNS_MAX_NUMBER-1_000}
-      WORKER_STORAGE_PATHS: ${ASSETS_STORAGE_DIRECTORY-/assets}
-      # ^ note: the datasets cache is automatically added, so no need to add it here
-    depends_on:
-      - mongodb
-    restart: always
-  worker-parquet-and-dataset-info:
-    build:
-      context: ..
-      dockerfile: services/worker/dev.Dockerfile
-    volumes:
-      - assets:${ASSETS_STORAGE_DIRECTORY-/assets}:rw
-      - parquet-datasets-cache:${HF_DATASETS_CACHE-/datasets-cache}:rw
-      - parquet-modules-cache:${HF_DATASETS_CACHE-/modules-cache}:rw
-      - parquet-numba-cache:${NUMBA_CACHE_DIR-/numba-cache}:rw
-    extends:
-      file: docker-compose-dev-base.yml
-      service: datasets-worker
-    environment:
-      WORKER_ONLY_JOB_TYPES: "/parquet-and-dataset-info" # hard-coded
-      PARQUET_AND_DATASET_INFO_BLOCKED_DATASETS: ${PARQUET_AND_DATASET_INFO_BLOCKED_DATASETS-}
-      PARQUET_AND_DATASET_INFO_COMMIT_MESSAGE: ${PARQUET_AND_DATASET_INFO_COMMIT_MESSAGE-Update parquet files}
-      PARQUET_AND_DATASET_INFO_COMMITTER_HF_TOKEN: ${PARQUET_AND_DATASET_INFO_COMMITTER_HF_TOKEN-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}
-      PARQUET_AND_DATASET_INFO_MAX_DATASET_SIZE: ${PARQUET_AND_DATASET_INFO_MAX_DATASET_SIZE-100_000_000}
-      PARQUET_AND_DATASET_INFO_SOURCE_REVISION: ${PARQUET_AND_DATASET_INFO_SOURCE_REVISION-main}
-      PARQUET_AND_DATASET_INFO_SUPPORTED_DATASETS: ${PARQUET_AND_DATASET_INFO_SUPPORTED_DATASETS-}
-      PARQUET_AND_DATASET_INFO_TARGET_REVISION: ${PARQUET_AND_DATASET_INFO_TARGET_REVISION-refs/convert/parquet}
-      PARQUET_AND_DATASET_INFO_URL_TEMPLATE: ${PARQUET_AND_DATASET_INFO_URL_TEMPLATE-/datasets/%s/resolve/%s/%s}
-    depends_on:
-      - mongodb
-    restart: always
-  worker-parquet:
-    build:
-      context: ..
-      dockerfile: services/worker/dev.Dockerfile
+    deploy:
+      replicas: 4
     volumes:
       - assets:${ASSETS_STORAGE_DIRECTORY-/assets}:rw
     extends:
       file: docker-compose-dev-base.yml
       service: datasets-worker
-    environment:
-      WORKER_ONLY_JOB_TYPES: "/parquet" # hard-coded
-    depends_on:
-      - mongodb
-    restart: always
-  worker-dataset-info:
-    build:
-      context: ..
-      dockerfile: services/worker/dev.Dockerfile
-    volumes:
-      - assets:${ASSETS_STORAGE_DIRECTORY-/assets}:rw
-    extends:
-      file: docker-compose-dev-base.yml
-      service: datasets-worker
-    environment:
-      WORKER_ONLY_JOB_TYPES: "/dataset-info" # hard-coded
-    depends_on:
-      - mongodb
-    restart: always
-  worker-sizes:
-    build:
-      context: ..
-      dockerfile: services/worker/dev.Dockerfile
-    volumes:
-      - assets:${ASSETS_STORAGE_DIRECTORY-/assets}:rw
-    extends:
-      file: docker-compose-dev-base.yml
-      service: datasets-worker
-    environment:
-      WORKER_ONLY_JOB_TYPES: "/sizes" # hard-coded
-    depends_on:
-      - mongodb
-    restart: always
-  worker-anything:
-    build:
-      context: ..
-      dockerfile: services/worker/dev.Dockerfile
-    # image: ${IMAGE_WORKER_DATASETS_BASED?IMAGE_WORKER_DATASETS_BASED env var must be provided}
-    volumes:
-      - assets:${ASSETS_STORAGE_DIRECTORY-/assets}:rw
     environment:
       ASSETS_BASE_URL: "http://localhost:${PORT_REVERSE_PROXY-8000}/assets" # hard-coded to work with the reverse-proxy
       ASSETS_STORAGE_DIRECTORY: ${ASSETS_STORAGE_DIRECTORY-/assets}
@@ -239,18 +98,13 @@ services:
       PARQUET_AND_DATASET_INFO_URL_TEMPLATE: ${PARQUET_AND_DATASET_INFO_URL_TEMPLATE-/datasets/%s/resolve/%s/%s}
       WORKER_STORAGE_PATHS: ${ASSETS_STORAGE_DIRECTORY-/assets}
       # ^ note: the datasets cache is automatically added, so no need to add it here
-    extends:
-      file: docker-compose-dev-base.yml
-      service: datasets-worker
-    depends_on:
-      - mongodb
+    network_mode: host
     restart: always
   mongodb:
     image: docker.io/mongo
     volumes:
       - mongo:/data/db:rw
     ports:
-      # for debug
       - "${MONGO_PORT-27017}:27017"
 volumes:
   assets:

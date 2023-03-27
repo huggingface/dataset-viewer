@@ -12,11 +12,14 @@ from starlette.responses import JSONResponse, Response
 
 ApiErrorCode = Literal[
     "MissingRequiredParameter",
+    "InvalidParameter",
     "ResponseNotReady",
     "ResponseNotFound",
     "UnexpectedError",
     "ExternalUnauthenticatedError",
     "ExternalAuthenticatedError",
+    "AuthCheckHubRequestError",
+    "JWKError",
     "MissingProcessingStepsError",
 ]
 
@@ -40,6 +43,13 @@ class MissingRequiredParameterError(ApiCustomError):
 
     def __init__(self, message: str):
         super().__init__(message, HTTPStatus.UNPROCESSABLE_ENTITY, "MissingRequiredParameter")
+
+
+class InvalidParameterError(ApiCustomError):
+    """Raised when a parameter has an invalid value."""
+
+    def __init__(self, message: str):
+        super().__init__(message, HTTPStatus.UNPROCESSABLE_ENTITY, "InvalidParameter")
 
 
 class ResponseNotReadyError(ApiCustomError):
@@ -81,11 +91,20 @@ class ExternalAuthenticatedError(ApiCustomError):
         super().__init__(message, HTTPStatus.NOT_FOUND, "ExternalAuthenticatedError")
 
 
-class MissingProcessingStepsError(ApiCustomError):
-    """Raised when an endpoint does not have related processing steps."""
+class JWKError(ApiCustomError):
+    """Raised when the JWT key (JWK) could not be fetched or parsed."""
 
-    def __init__(self, message: str):
-        super().__init__(message, HTTPStatus.UNPROCESSABLE_ENTITY, "MissingProcessingStepsError")
+    def __init__(self, message: str, cause: Optional[BaseException] = None):
+        super().__init__(message, HTTPStatus.INTERNAL_SERVER_ERROR, "JWKError", cause=cause, disclose_cause=False)
+
+
+class AuthCheckHubRequestError(ApiCustomError):
+    """Raised when the external authentication check failed or timed out."""
+
+    def __init__(self, message: str, cause: Optional[BaseException] = None):
+        super().__init__(
+            message, HTTPStatus.INTERNAL_SERVER_ERROR, "AuthCheckHubRequestError", cause=cause, disclose_cause=False
+        )
 
 
 class OrjsonResponse(JSONResponse):

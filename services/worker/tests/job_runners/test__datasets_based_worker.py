@@ -5,7 +5,7 @@ from dataclasses import replace
 from datetime import datetime
 from http import HTTPStatus
 from pathlib import Path
-from typing import Any, Callable, Mapping, Optional
+from typing import Callable, Optional
 
 import datasets.config
 import pytest
@@ -15,6 +15,7 @@ from libcommon.resources import CacheMongoResource, QueueMongoResource
 from libcommon.simple_cache import get_response
 
 from worker.config import AppConfig
+from worker.job_runner import CompleteJobResult
 from worker.job_runners._datasets_based_job_runner import DatasetsBasedJobRunner
 from worker.resources import LibrariesResource
 
@@ -29,14 +30,14 @@ class DummyJobRunner(DatasetsBasedJobRunner):
         # refactoring libcommon.processing_graph might help avoiding this
 
     @staticmethod
-    def get_version() -> str:
-        return "1.0.0"
+    def get_job_runner_version() -> int:
+        return 1
 
-    def compute(self) -> Mapping[str, Any]:
+    def compute(self) -> CompleteJobResult:
         if self.config == "raise":
             raise ValueError("This is a test")
         else:
-            return {"col1": "a" * 200}
+            return CompleteJobResult({"col1": "a" * 200})
 
 
 GetJobRunner = Callable[[str, Optional[str], Optional[str], AppConfig, bool], DummyJobRunner]
@@ -74,19 +75,12 @@ def get_job_runner(
                 parent=None,
                 ancestors=[],
                 children=[],
+                job_runner_version=DummyJobRunner.get_job_runner_version(),
             ),
             hf_datasets_cache=libraries_resource.hf_datasets_cache,
         )
 
     return _get_job_runner
-
-
-def test_version(app_config: AppConfig, get_job_runner: GetJobRunner) -> None:
-    dataset, config, split = get_default_config_split("dataset")
-    job_runner = get_job_runner(dataset, config, split, app_config, False)
-    assert len(job_runner.get_version().split(".")) == 3
-    assert job_runner.compare_major_version(other_version="0.0.0") > 0
-    assert job_runner.compare_major_version(other_version="1000.0.0") < 0
 
 
 @pytest.mark.parametrize(

@@ -4,14 +4,25 @@
 {{- define "envWorker" -}}
 - name: WORKER_CONTENT_MAX_BYTES
   value: {{ .Values.worker.contentMaxBytes | quote}}
+- name: WORKER_HEARTBEAT_INTERVAL_SECONDS
+  value: {{ .Values.worker.heartbeatIntervalSeconds | quote}}
+- name: WORKER_KILL_ZOMBIES_INTERVAL_SECONDS
+  value: {{ .Values.worker.killZombiesIntervalSeconds | quote}}
 - name: WORKER_MAX_DISK_USAGE_PCT
   value: {{ .Values.worker.maxDiskUsagePct | quote }}
+- name: WORKER_MAX_JOB_DURATION_SECONDS
+  value: {{ .Values.worker.maxJobDurationSeconds | quote }}
 - name: WORKER_MAX_LOAD_PCT
   value: {{ .Values.worker.maxLoadPct | quote }}
 - name: WORKER_MAX_MEMORY_PCT
   value: {{ .Values.worker.maxMemoryPct | quote }}
+- name: WORKER_MAX_MISSING_HEARTBEATS
+  value: {{ .Values.worker.maxMissingHeartbeats | quote }}
 - name: WORKER_SLEEP_SECONDS
   value: {{ .Values.worker.sleepSeconds | quote }}
+- name: TMPDIR
+  value: "/tmp"
+  # ^ensure the temporary files are created in /tmp, which is writable
 - name: WORKER_STORAGE_PATHS
   value: {{ .Values.assets.storageDirectory | quote }}
 # specific to the /first-rows job runner

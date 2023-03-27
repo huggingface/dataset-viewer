@@ -5,10 +5,18 @@ global:
     privateHub:
       enabled: false
     ingress:
+      enabled: true
       domain: huggingface.co
+      ssl: true
       subdomains:
         datasetsServer: datasets-server
-      ssl: true
+    service:
+      type: ClusterIP
+      ports:
+        datasetsServer:
+          proxy: 30020
+          admin: 30021
+          api: 30022
 
 images:
   pullPolicy: IfNotPresent
@@ -24,6 +32,12 @@ images:
       useGlobalRegistry: false
       repository: datasets-server-jobs-mongodb_migration
       tag: sha-fb3399a
+    # cacheRefresh:
+    #   registry: huggingface
+    #   useGlobalRegistry: false
+    #   repository: datasets-server-jobs-cache_refresh
+    #   tag: sha-fb3399a
+    # --- temporary disabling this job ---
   services:
     admin:
       registry: huggingface
@@ -63,6 +77,10 @@ secrets:
     fromSecret: false
     secretName: "hf-token-francky"
     value: hf_
+  hfWebhookSecret:
+    fromSecret: false
+    secretName: "webhook-secret"
+    value: ""
 
 uid: 1000
 gid: 3000
@@ -97,12 +115,20 @@ queue:
 worker:
   # maximum size in bytes of the response content computed by a worker
   contentMaxBytes: "10_000_000"
+  # the time interval between two heartbeats. Each heartbeat updates the job "last_heartbeat" field in the queue.
+  heartbeatIntervalSeconds: 60
+  # the time interval at which the worker looks for zombie jobs to kill them
+  killZombiesIntervalSeconds: 600
   # maximum disk usage of every storage disk in the list (in percentage) to allow a job to start. Set to 0 to disable the test.
   maxDiskUsagePct: 90
+  # the maximum duration of a job before it gets stopped for exceeded the maximum duration
+  maxJobDurationSeconds: 1200
   # Max CPU load (%) - if reached, sleeps until it comes back under the limit. Set to 0 to disable the test.
   maxLoadPct: 0
   # Max memory (RAM + SWAP) (%) - if reached, sleeps until it comes back under the limit. Set to 0 to disable the test.
   maxMemoryPct: 0
+  # the number of hearbeats a job must have missed to be considered a zombie job.
+  maxMissingHeartbeats: 5
   # Number of seconds a worker will sleep before trying to process a new job
   sleepSeconds: 5
 
@@ -158,6 +184,15 @@ mongodbMigration:
       cpu: 0
   tolerations: []
 
+cacheRefresh:
+  nodeSelector: {}
+  resources:
+    requests:
+      cpu: 0
+    limits:
+      cpu: 0
+  tolerations: []
+
 # --- storage admin (to manually inspect the storage, in /data) ---
 
 storageAdmin:
@@ -169,7 +204,7 @@ storageAdmin:
     limits:
       cpu: 0
   service:
-    type: ClusterIP
+    type: ""
     annotations: {}
   tolerations: []
 
@@ -191,11 +226,12 @@ reverseProxy:
     limits:
       cpu: 0
   service:
-    type: ClusterIP
+    type: ""
     annotations: {}
   tolerations: []
 
 ingress:
+  enabled: true
   tls: []
   annotations: {}
 
@@ -230,7 +266,7 @@ admin:
     limits:
       cpu: 0
   service:
-    type: ClusterIP
+    type: ""
     annotations: {}
   tolerations: []
 
@@ -238,6 +274,14 @@ api:
   # the path of the external authentication service on the hub.
   # The string must contain `%s` which will be replaced with the dataset name.
   hfAuthPath: "/api/datasets/%s/auth-check"
+  # the URL where the "Hub JWT public key" is published. The "Hub JWT public key" must be in JWK format.
+  # It helps to decode a JWT sent by the Hugging Face Hub, for example, to bypass the external authentication
+  # check (JWT in the 'X-Api-Key' header). If not set, the JWT are ignored.
+  hfJwtPublicKeyUrl: "https://huggingface.co/api/keys/jwt"
+  # the algorithm used to encode the JWT.
+  hfJwtAlgorithm: "EdDSA"
+  # the timeout in seconds for the requests to the Hugging Face Hub.
+  hfTimeoutSeconds: "0.2"
   # Number of seconds to set in the `max-age` header on data endpoints
   maxAgeLong: "120"
   # Number of seconds to set in the `max-age` header on technical endpoints
@@ -260,18 +304,18 @@ api:
     limits:
       cpu: 0
   service:
-    type: ClusterIP
+    type: ""
     annotations: {}
   tolerations: []
 
 workers:
   -
     # name of the deployment
-    deployName: "generic"
+    deployName: "all"
     # Maximum number of jobs running at the same time for the same namespace
     maxJobsPerNamespace: 1
     # job types that this worker can process
-    workerOnlyJobTypes: []
+    workerOnlyJobTypes: ""
     nodeSelector: {}
     replicas: 1
     resources:
@@ -282,116 +326,11 @@ workers:
     tolerations: []
   -
     # name of the deployment
-    deployName: "config-names"
+    deployName: "light"
     # Maximum number of jobs running at the same time for the same namespace
     maxJobsPerNamespace: 1
     # job types that this worker can process
-    workerOnlyJobTypes: ["/config-names"]
-    nodeSelector: {}
-    replicas: 1
-    resources:
-      requests:
-        cpu: 1
-      limits:
-        cpu: 1
-    tolerations: []
-  -
-    # name of the deployment
-    deployName: "split-names"
-    # Maximum number of jobs running at the same time for the same namespace
-    maxJobsPerNamespace: 1
-    # job types that this worker can process
-    workerOnlyJobTypes: ["/split-names"]
-    nodeSelector: {}
-    replicas: 1
-    resources:
-      requests:
-        cpu: 1
-      limits:
-        cpu: 1
-    tolerations: []
-  -
-    # name of the deployment
-    deployName: "splits"
-    # Maximum number of jobs running at the same time for the same namespace
-    maxJobsPerNamespace: 1
-    # job types that this worker can process
-    workerOnlyJobTypes: ["/splits"]
-    nodeSelector: {}
-    replicas: 1
-    resources:
-      requests:
-        cpu: 0
-      limits:
-        cpu: 0
-    tolerations: []
-  -
-    # name of the deployment
-    deployName: "first-rows"
-    # Maximum number of jobs running at the same time for the same namespace
-    maxJobsPerNamespace: 1
-    # job types that this worker can process
-    workerOnlyJobTypes: ["/first-rows"]
-    nodeSelector: {}
-    replicas: 1
-    resources:
-      requests:
-        cpu: 0
-      limits:
-        cpu: 0
-    tolerations: []
-  -
-    # name of the deployment
-    deployName: "parquet-and-dataset-info"
-    # Maximum number of jobs running at the same time for the same namespace
-    maxJobsPerNamespace: 1
-    # job types that this worker can process
-    workerOnlyJobTypes: ["/parquet-and-dataset-info"]
-    nodeSelector: {}
-    replicas: 1
-    resources:
-      requests:
-        cpu: 0
-      limits:
-        cpu: 0
-    tolerations: []
-  -
-    # name of the deployment
-    deployName: "parquet"
-    # Maximum number of jobs running at the same time for the same namespace
-    maxJobsPerNamespace: 1
-    # job types that this worker can process
-    workerOnlyJobTypes: ["/parquet"]
-    nodeSelector: {}
-    replicas: 1
-    resources:
-      requests:
-        cpu: 0
-      limits:
-        cpu: 0
-    tolerations: []
-  -
-    # name of the deployment
-    deployName: "dataset-info"
-    # Maximum number of jobs running at the same time for the same namespace
-    maxJobsPerNamespace: 1
-    # job types that this worker can process
-    workerOnlyJobTypes: ["/dataset-info"]
-    nodeSelector: {}
-    replicas: 1
-    resources:
-      requests:
-        cpu: 0
-      limits:
-        cpu: 0
-    tolerations: []
-  -
-    # name of the deployment
-    deployName: "sizes"
-    # Maximum number of jobs running at the same time for the same namespace
-    maxJobsPerNamespace: 1
-    # job types that this worker can process
-    workerOnlyJobTypes: ["/sizes"]
+    workerOnlyJobTypes: "config-parquet,dataset-parquet,config-info,dataset-info,/split-names-from-dataset-info,config-size,dataset-size,dataset-split-names-from-streaming,dataset-split-names-from-dataset-info"
     nodeSelector: {}
     replicas: 1
     resources:

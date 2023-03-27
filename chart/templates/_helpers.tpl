@@ -26,108 +26,70 @@ Create chart name and version as used by the chart label.
 {{/*
 Docker image management
 */}}
-{{- define "datasetsServer.images.image" -}}
-{{- $registryName := .imageRoot.registry -}}
-{{- $repositoryName := .imageRoot.repository -}}
-{{- $separator := ":" -}}
-{{- $termination := .imageRoot.tag | toString -}}
-{{- if .global }}
-    {{- if and .global.imageRegistry .imageRoot.useGlobalRegistry }}
-     {{- $registryName = .global.imageRegistry -}}
-    {{- end -}}
-{{- end -}}
-{{- if .imageRoot.digest }}
-    {{- $separator = "@" -}}
-    {{- $termination = .imageRoot.digest | toString -}}
-{{- end -}}
-{{- printf "%s/%s%s%s" $registryName $repositoryName $separator $termination -}}
-{{- end -}}
-
-{{- define "common.images.pullSecrets" -}}
-  {{- $pullSecrets := list }}
-
-  {{- if .global }}
-    {{- range .global.imagePullSecrets -}}
-      {{- $pullSecrets = append $pullSecrets . -}}
-    {{- end -}}
-  {{- end -}}
-
-  {{- range .images -}}
-    {{- range .pullSecrets -}}
-      {{- $pullSecrets = append $pullSecrets . -}}
-    {{- end -}}
-  {{- end -}}
-
-  {{- if (not (empty $pullSecrets)) }}
-imagePullSecrets:
-    {{- range $pullSecrets }}
-  - name: {{ . }}
-    {{- end }}
-  {{- end }}
-{{- end -}}
-
 {{- define "reverseproxy.image" -}}
-{{ include "datasetsServer.images.image" (dict "imageRoot" .Values.images.reverseProxy "global" .Values.global.huggingface) }}
+{{ include "hf.common.images.image" (dict "imageRoot" .Values.images.reverseProxy "global" .Values.global.huggingface) }}
 {{- end -}}
 
 {{- define "jobs.mongodbMigration.image" -}}
-{{ include "datasetsServer.images.image" (dict "imageRoot" .Values.images.jobs.mongodbMigration "global" .Values.global.huggingface) }}
+{{ include "hf.common.images.image" (dict "imageRoot" .Values.images.jobs.mongodbMigration "global" .Values.global.huggingface) }}
+{{- end -}}
+
+{{- define "jobs.cacheRefresh.image" -}}
+{{ include "hf.common.images.image" (dict "imageRoot" .Values.images.jobs.cacheRefresh "global" .Values.global.huggingface) }}
 {{- end -}}
 
 {{- define "services.admin.image" -}}
-{{ include "datasetsServer.images.image" (dict "imageRoot" .Values.images.services.admin "global" .Values.global.huggingface) }}
+{{ include "hf.common.images.image" (dict "imageRoot" .Values.images.services.admin "global" .Values.global.huggingface) }}
 {{- end -}}
 
 {{- define "services.api.image" -}}
-{{ include "datasetsServer.images.image" (dict "imageRoot" .Values.images.services.api "global" .Values.global.huggingface) }}
+{{ include "hf.common.images.image" (dict "imageRoot" .Values.images.services.api "global" .Values.global.huggingface) }}
 {{- end -}}
 
 {{- define "services.worker.image" -}}
-{{ include "datasetsServer.images.image" (dict "imageRoot" .Values.images.services.worker "global" .Values.global.huggingface) }}
+{{ include "hf.common.images.image" (dict "imageRoot" .Values.images.services.worker "global" .Values.global.huggingface) }}
 {{- end -}}
 
 {{- define "image.imagePullSecrets" -}}
-{{ include "common.images.pullSecrets" (dict "images" (list .Values.images) "global" .Values.global.huggingface) }}
+{{- include "hf.common.images.renderPullSecrets" (dict "images" (list .Values.images) "context" $) -}}
 {{- end -}}
 
 
 {{/*
 Common labels
 */}}
-{{- define "datasetServer.labels" -}}
-app.kubernetes.io/name: {{ include "name" . }}
-helm.sh/chart: {{ .Chart.Name }}
-app.kubernetes.io/instance: {{ .Release.Name }}
-app.kubernetes.io/managed-by: {{ .Release.Service }}
-{{- end }}
-
 {{- define "labels.reverseProxy" -}}
-{{ include "datasetServer.labels" . }}
+{{ include "hf.labels.commons" . }}
 app.kubernetes.io/component: "{{ include "name" . }}-reverse-proxy"
 {{- end -}}
 
 {{- define "labels.storageAdmin" -}}
-{{ include "datasetServer.labels" . }}
+{{ include "hf.labels.commons" . }}
 app.kubernetes.io/component: "{{ include "name" . }}-storage-admin"
 {{- end -}}
 
 {{- define "labels.mongodbMigration" -}}
-{{ include "datasetServer.labels" . }}
+{{ include "hf.labels.commons" . }}
 app.kubernetes.io/component: "{{ include "name" . }}-mongodb-migration"
 {{- end -}}
 
+{{- define "labels.cacheRefresh" -}}
+{{ include "hf.labels.commons" . }}
+app.kubernetes.io/component: "{{ include "name" . }}-cache-refresh"
+{{- end -}}
+
 {{- define "labels.admin" -}}
-{{ include "datasetServer.labels" . }}
+{{ include "hf.labels.commons" . }}
 app.kubernetes.io/component: "{{ include "name" . }}-admin"
 {{- end -}}
 
 {{- define "labels.api" -}}
-{{ include "datasetServer.labels" . }}
+{{ include "hf.labels.commons" . }}
 app.kubernetes.io/component: "{{ include "name" . }}-api"
 {{- end -}}
 
 {{- define "labels.worker" -}}
-{{ include "datasetServer.labels" . }}
+{{ include "hf.labels.commons" . }}
 app.kubernetes.io/component: "{{ include "name" . }}-worker"
 {{- end -}}
 
@@ -204,19 +166,6 @@ See https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/#a-a
 {{- define "api.url" -}}
 {{- printf "http://%s-api.%s.svc.cluster.local:80" ( include "name" . ) ( .Release.Namespace ) }}
 {{- end }}
-
-{{/*
-Return true if cert-manager required annotations for TLS signed
-certificates are set in the Ingress annotations
-Ref: https://cert-manager.io/docs/usage/ingress/#supported-annotations
-Usage:
-{{ include "common.ingress.certManagerRequest" ( dict "annotations" .Values.path.to.the.ingress.annotations ) }}
-*/}}
-{{- define "common.ingress.certManagerRequest" -}}
-{{ if or (hasKey .annotations "cert-manager.io/cluster-issuer") (hasKey .annotations "cert-manager.io/issuer") (hasKey .annotations "kubernetes.io/tls-acme") }}
-    {{- true -}}
-{{- end -}}
-{{- end -}}
 
 {{/*
 Return the HUB url

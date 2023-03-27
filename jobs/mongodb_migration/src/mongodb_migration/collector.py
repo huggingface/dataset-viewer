@@ -20,6 +20,27 @@ from mongodb_migration.migrations._20230216112500_cache_split_names_from_streami
 from mongodb_migration.migrations._20230216141000_queue_split_names_from_streaming import (
     MigrationQueueUpdateSplitNames,
 )
+from mongodb_migration.migrations._20230309123100_cache_add_progress import (
+    MigrationAddProgressToCacheResponse,
+)
+from mongodb_migration.migrations._20230309141600_cache_add_job_runner_version import (
+    MigrationAddJobRunnerVersionToCacheResponse,
+)
+from mongodb_migration.migrations._20230313164200_cache_remove_worker_version import (
+    MigrationRemoveWorkerVersionFromCachedResponse,
+)
+from mongodb_migration.migrations._20230320163700_cache_first_rows_from_streaming import (
+    MigrationCacheUpdateFirstRows,
+)
+from mongodb_migration.migrations._20230320165700_queue_first_rows_from_streaming import (
+    MigrationQueueUpdateFirstRows,
+)
+from mongodb_migration.migrations._20230323155000_cache_dataset_info import (
+    MigrationCacheUpdateDatasetInfo,
+)
+from mongodb_migration.migrations._20230323160000_queue_dataset_info import (
+    MigrationQueueUpdateDatasetInfo,
+)
 
 
 # TODO: add a way to automatically collect migrations from the migrations/ folder
@@ -40,10 +61,40 @@ class MigrationsCollector:
             ),
             MigrationCacheUpdateSplitNames(
                 version="20230216112500",
-                description="update 'kind' field in cache from /split-names to /split-names-streaming",
+                description="update 'kind' field in cache from /split-names to /split-names-from-streaming",
             ),
             MigrationQueueUpdateSplitNames(
                 version="20230216141000",
-                description="update 'type' and 'unicity_id' fields in job from /split-names to /split-names-streaming",
+                description=(
+                    "update 'type' and 'unicity_id' fields in job from /split-names to /split-names-from-streaming"
+                ),
+            ),
+            MigrationAddProgressToCacheResponse(
+                version="20230309123100",
+                description="add the 'progress' field with the default value (1.0) to the cached results",
+            ),
+            MigrationAddJobRunnerVersionToCacheResponse(
+                version="20230309141600", description="add 'job_runner_version' field based on 'worker_version' value"
+            ),
+            MigrationRemoveWorkerVersionFromCachedResponse(
+                version="20230313164200", description="remove 'worker_version' field from cache"
+            ),
+            MigrationCacheUpdateFirstRows(
+                version="20230320163700",
+                description="update 'kind' field in cache from /first-rows to split-first-rows-from-streaming",
+            ),
+            MigrationQueueUpdateFirstRows(
+                version="20230320165700",
+                description=(
+                    "update 'type' and 'unicity_id' fields in job from /first-rows to split-first-rows-from-streaming"
+                ),
+            ),
+            MigrationCacheUpdateDatasetInfo(
+                version="20230323155000",
+                description="update 'kind' field in cache from '/dataset-info' to 'dataset-info'",
+            ),
+            MigrationQueueUpdateDatasetInfo(
+                version="20230323160000",
+                description="update 'type' and 'unicity_id' fields in job from /dataset-info to dataset-info",
             ),
         ]

@@ -24,6 +24,7 @@ from libcommon.simple_cache import (
     get_cache_reports,
     get_cache_reports_with_content,
     get_dataset_responses_without_content_for_kind,
+    get_outdated_split_full_names_for_step,
     get_response,
     get_response_without_content,
     get_responses_count_by_kind_status_and_error_code,
@@ -113,8 +114,9 @@ def test_upsert_response(config: Optional[str], split: Optional[str]) -> None:
         "http_status": HTTPStatus.OK,
         "content": content,
         "error_code": None,
-        "worker_version": None,
+        "job_runner_version": None,
         "dataset_git_revision": None,
+        "progress": None,
     }
     cached_response_without_content = get_response_without_content(
         kind=kind, dataset=dataset, config=config, split=split
@@ -122,8 +124,9 @@ def test_upsert_response(config: Optional[str], split: Optional[str]) -> None:
     assert cached_response_without_content == {
         "http_status": HTTPStatus.OK,
         "error_code": None,
-        "worker_version": None,
+        "job_runner_version": None,
         "dataset_git_revision": None,
+        "progress": None,
     }
 
     # ensure it's idempotent
@@ -142,7 +145,7 @@ def test_upsert_response(config: Optional[str], split: Optional[str]) -> None:
         get_response(kind=kind, dataset=dataset, config=config, split=split)
 
     error_code = "error_code"
-    worker_version = "0.1.2"
+    job_runner_version = 0
     dataset_git_revision = "123456"
     upsert_response(
         kind=kind,
@@ -152,7 +155,7 @@ def test_upsert_response(config: Optional[str], split: Optional[str]) -> None:
         content=content,
         http_status=HTTPStatus.BAD_REQUEST,
         error_code=error_code,
-        worker_version=worker_version,
+        job_runner_version=job_runner_version,
         dataset_git_revision=dataset_git_revision,
     )
 
@@ -161,8 +164,9 @@ def test_upsert_response(config: Optional[str], split: Optional[str]) -> None:
         "http_status": HTTPStatus.BAD_REQUEST,
         "content": content,
         "error_code": error_code,
-        "worker_version": worker_version,
+        "job_runner_version": job_runner_version,
         "dataset_git_revision": dataset_git_revision,
+        "progress": None,
     }
 
 
@@ -415,7 +419,7 @@ def test_get_cache_reports() -> None:
     details_b = {
         "error": "error b",
     }
-    worker_version_b = "0.1.2"
+    job_runner_version_b = 0
     dataset_git_revision_b = "123456"
     upsert_response(
         kind=kind,
@@ -425,7 +429,7 @@ def test_get_cache_reports() -> None:
         details=details_b,
         http_status=http_status_b,
         error_code=error_code_b,
-        worker_version=worker_version_b,
+        job_runner_version=job_runner_version_b,
         dataset_git_revision=dataset_git_revision_b,
     )
 
@@ -477,7 +481,7 @@ def test_get_cache_reports() -> None:
             "split": None,
             "http_status": http_status_a.value,
             "error_code": None,
-            "worker_version": None,
+            "job_runner_version": None,
             "dataset_git_revision": None,
         },
         {
@@ -487,7 +491,7 @@ def test_get_cache_reports() -> None:
             "split": None,
             "http_status": http_status_b.value,
             "error_code": error_code_b,
-            "worker_version": worker_version_b,
+            "job_runner_version": job_runner_version_b,
             "dataset_git_revision": dataset_git_revision_b,
         },
     ]
@@ -503,7 +507,7 @@ def test_get_cache_reports() -> None:
                 "split": split_c,
                 "http_status": http_status_c.value,
                 "error_code": error_code_c,
-                "worker_version": None,
+                "job_runner_version": None,
                 "dataset_git_revision": None,
             },
         ],
@@ -524,7 +528,7 @@ def test_get_cache_reports() -> None:
             "http_status": http_status_a.value,
             "error_code": None,
             "content": content_a,
-            "worker_version": None,
+            "job_runner_version": None,
             "dataset_git_revision": None,
             "details": {},
             "updated_at": REDACTED_DATE,
@@ -537,7 +541,7 @@ def test_get_cache_reports() -> None:
             "http_status": http_status_b.value,
             "error_code": error_code_b,
             "content": content_b,
-            "worker_version": worker_version_b,
+            "job_runner_version": job_runner_version_b,
             "dataset_git_revision": dataset_git_revision_b,
             "details": details_b,
             "updated_at": REDACTED_DATE,
@@ -558,7 +562,7 @@ def test_get_cache_reports() -> None:
                 "http_status": http_status_c.value,
                 "error_code": error_code_c,
                 "content": content_c,
-                "worker_version": None,
+                "job_runner_version": None,
                 "dataset_git_revision": None,
                 "details": details_c,
                 "updated_at": REDACTED_DATE,
@@ -613,3 +617,30 @@ def test_stress_get_cache_reports(num_entries: int) -> None:
         response = get_cache_reports(kind=kind, cursor=next_cursor, limit=100)
         next_cursor = response["next_cursor"]
         assert process_time() - start < MAX_SECONDS
+
+
+def test_get_outdated_split_full_names_for_step() -> None:
+    kind = "kind"
+    current_version = 2
+    minor_version = 1
+
+    result = get_outdated_split_full_names_for_step(kind=kind, current_version=current_version)
+    upsert_response(
+        kind=kind,
+        dataset="dataset_with_current_version",
+        content={},
+        http_status=HTTPStatus.OK,
+        job_runner_version=current_version,
+    )
+    assert not result
+
+    upsert_response(
+        kind=kind,
+        dataset="dataset_with_minor_version",
+        content={},
+        http_status=HTTPStatus.OK,
+        job_runner_version=minor_version,
+    )
+    result = get_outdated_split_full_names_for_step(kind=kind, current_version=current_version)
+    assert result
+    assert len(result) == 1

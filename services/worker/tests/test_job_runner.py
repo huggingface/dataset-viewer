@@ -7,10 +7,10 @@ from libcommon.config import CommonConfig
 from libcommon.processing_graph import ProcessingGraph, ProcessingStep
 from libcommon.queue import Priority, Queue, Status
 from libcommon.resources import CacheMongoResource, QueueMongoResource
-from libcommon.simple_cache import SplitFullName, upsert_response
+from libcommon.simple_cache import CachedResponse, SplitFullName, upsert_response
 
 from worker.config import WorkerConfig
-from worker.job_runner import ERROR_CODES_TO_RETRY, JobRunner
+from worker.job_runner import ERROR_CODES_TO_RETRY, CompleteJobResult, JobRunner
 
 
 @pytest.fixture(autouse=True)
@@ -32,69 +32,28 @@ class DummyJobRunner(JobRunner):
         return "0.1.2"
 
     @staticmethod
+    def get_job_runner_version() -> int:
+        return 1
+
+    @staticmethod
     def get_job_type() -> str:
         return "/dummy"
 
-    @staticmethod
-    def get_version() -> str:
-        return "1.0.1"
-
-    def compute(self) -> Mapping[str, Any]:
-        return {"key": "value"}
+    def compute(self) -> CompleteJobResult:
+        return CompleteJobResult({"key": "value"})
 
     def get_new_splits(self, content: Mapping[str, Any]) -> set[SplitFullName]:
         return {SplitFullName(self.dataset, "config", "split1"), SplitFullName(self.dataset, "config", "split2")}
 
 
-@pytest.mark.parametrize(
-    "other_version, expected, should_raise",
-    [
-        ("1.0.0", 0, False),
-        ("0.1.0", 1, False),
-        ("2.0.0", -1, False),
-        ("not a version", None, True),
-    ],
-)
-def test_compare_major_version(
-    test_processing_step: ProcessingStep,
-    other_version: str,
-    expected: int,
-    should_raise: bool,
-) -> None:
-    job_id = "job_id"
-    dataset = "dataset"
-    config = "config"
-    split = "split"
-    force = False
-    job_runner = DummyJobRunner(
-        job_info={
-            "job_id": job_id,
-            "type": test_processing_step.job_type,
-            "dataset": dataset,
-            "config": config,
-            "split": split,
-            "force": force,
-            "priority": Priority.NORMAL,
-        },
-        processing_step=test_processing_step,
-        common_config=CommonConfig(),
-        worker_config=WorkerConfig(),
-    )
-    if should_raise:
-        with pytest.raises(Exception):
-            job_runner.compare_major_version(other_version)
-    else:
-        assert job_runner.compare_major_version(other_version) == expected
-
-
 @dataclass
 class CacheEntry:
     error_code: Optional[str]
-    worker_version: Optional[str]
+    job_runner_version: Optional[int]
     dataset_git_revision: Optional[str]
+    progress: Optional[float] = None
 
 
-# .get_version()
 @pytest.mark.parametrize(
     "force,cache_entry,expected_skip",
     [
@@ -102,7 +61,7 @@ class CacheEntry:
             False,
             CacheEntry(
                 error_code="DoNotRetry",  # an error that we don't want to retry
-                worker_version=DummyJobRunner.get_version(),
+                job_runner_version=DummyJobRunner.get_job_runner_version(),
                 dataset_git_revision=DummyJobRunner._get_dataset_git_revision(),
             ),
             True,  # skip
@@ -111,7 +70,7 @@ class CacheEntry:
             False,
             CacheEntry(
                 error_code=None,  # no error
-                worker_version=DummyJobRunner.get_version(),
+                job_runner_version=DummyJobRunner.get_job_runner_version(),
                 dataset_git_revision=DummyJobRunner._get_dataset_git_revision(),
             ),
             True,  # skip
@@ -120,7 +79,7 @@ class CacheEntry:
             True,  # force
             CacheEntry(
                 error_code="DoNotRetry",
-                worker_version=DummyJobRunner.get_version(),
+                job_runner_version=DummyJobRunner.get_job_runner_version(),
                 dataset_git_revision=DummyJobRunner._get_dataset_git_revision(),
             ),
             False,  # process
@@ -134,7 +93,7 @@ class CacheEntry:
             False,
             CacheEntry(
                 error_code=ERROR_CODES_TO_RETRY[0],  # an error that we want to retry
-                worker_version=DummyJobRunner.get_version(),
+                job_runner_version=DummyJobRunner.get_job_runner_version(),
                 dataset_git_revision=DummyJobRunner._get_dataset_git_revision(),
             ),
             False,  # process
@@ -143,7 +102,7 @@ class CacheEntry:
             False,
             CacheEntry(
                 error_code="DoNotRetry",
-                worker_version=None,  # no version
+                job_runner_version=None,  # no version
                 dataset_git_revision=DummyJobRunner._get_dataset_git_revision(),
             ),
             False,  # process
@@ -152,7 +111,7 @@ class CacheEntry:
             False,
             CacheEntry(
                 error_code="DoNotRetry",
-                worker_version="0.0.1",  # a different version
+                job_runner_version=0,  # a different version
                 dataset_git_revision=DummyJobRunner._get_dataset_git_revision(),
             ),
             False,  # process
@@ -161,7 +120,7 @@ class CacheEntry:
             False,
             CacheEntry(
                 error_code="DoNotRetry",
-                worker_version=DummyJobRunner.get_version(),
+                job_runner_version=DummyJobRunner.get_job_runner_version(),
                 dataset_git_revision=None,  # no dataset git revision
             ),
             False,  # process
@@ -170,10 +129,30 @@ class CacheEntry:
             False,
             CacheEntry(
                 error_code="DoNotRetry",
-                worker_version=DummyJobRunner.get_version(),
+                job_runner_version=DummyJobRunner.get_job_runner_version(),
                 dataset_git_revision="different",  # a different dataset git revision
             ),
             False,  # process
+        ),
+        (
+            False,
+            CacheEntry(
+                error_code=None,  # no error
+                job_runner_version=DummyJobRunner.get_job_runner_version(),
+                dataset_git_revision=DummyJobRunner._get_dataset_git_revision(),
+                progress=0.5,  # incomplete result
+            ),
+            False,  # process
+        ),
+        (
+            False,
+            CacheEntry(
+                error_code=None,  # no error
+                job_runner_version=DummyJobRunner.get_job_runner_version(),
+                dataset_git_revision=DummyJobRunner._get_dataset_git_revision(),
+                progress=1.0,  # complete result
+            ),
+            True,  # skip
         ),
     ],
 )
@@ -208,8 +187,9 @@ def test_should_skip_job(
             http_status=HTTPStatus.OK,  # <- not important
             error_code=cache_entry.error_code,
             details=None,
-            worker_version=cache_entry.worker_version,
+            job_runner_version=cache_entry.job_runner_version,
             dataset_git_revision=cache_entry.dataset_git_revision,
+            progress=cache_entry.progress,
         )
     assert job_runner.should_skip_job() is expected_skip
 
@@ -248,6 +228,7 @@ def test_check_type(
         parent=None,
         ancestors=[],
         children=[],
+        job_runner_version=1,
     )
     with pytest.raises(ValueError):
         DummyJobRunner(
@@ -269,10 +250,10 @@ def test_check_type(
 def test_create_children_jobs() -> None:
     graph = ProcessingGraph(
         {
-            "/dummy": {"input_type": "dataset"},
-            "/child-dataset": {"input_type": "dataset", "requires": "/dummy"},
-            "/child-config": {"input_type": "config", "requires": "/dummy"},
-            "/child-split": {"input_type": "split", "requires": "/dummy"},
+            "/dummy": {"input_type": "dataset", "job_runner_version": 1},
+            "/child-dataset": {"input_type": "dataset", "requires": "/dummy", "job_runner_version": 1},
+            "/child-config": {"input_type": "config", "requires": "/dummy", "job_runner_version": 1},
+            "/child-split": {"input_type": "split", "requires": "/dummy", "job_runner_version": 1},
         }
     )
     root_step = graph.get_step("/dummy")
@@ -316,3 +297,39 @@ def test_create_children_jobs() -> None:
     )
     # we don't know the order
     assert {child_split_jobs[0]["split"], child_split_jobs[1]["split"]} == {"split1", "split2"}
+
+
+def test_job_runner_set_crashed(
+    test_processing_step: ProcessingStep,
+) -> None:
+    job_id = "job_id"
+    dataset = "dataset"
+    config = "config"
+    split = "split"
+    force = False
+    message = "I'm crashed :("
+    job_runner = DummyJobRunner(
+        job_info={
+            "job_id": job_id,
+            "type": test_processing_step.job_type,
+            "dataset": dataset,
+            "config": config,
+            "split": split,
+            "force": force,
+            "priority": Priority.NORMAL,
+        },
+        processing_step=test_processing_step,
+        common_config=CommonConfig(),
+        worker_config=WorkerConfig(),
+    )
+    job_runner.set_crashed(message=message)
+    response = CachedResponse.objects()[0]
+    expected_error = {"error": message}
+    assert response.http_status == HTTPStatus.NOT_IMPLEMENTED
+    assert response.error_code == "JobRunnerCrashedError"
+    assert response.dataset == dataset
+    assert response.config == config
+    assert response.split == split
+    assert response.content == expected_error
+    assert response.details == expected_error
+    # TODO: check if it stores the correct dataset git sha and job version when it's implemented

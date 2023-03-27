@@ -12,7 +12,7 @@ aiohttp = "^3.8.4"
 apache-beam = "2.41.0" # ^2 gives a InvalidWheelName error because it tries to install 2.42 that has not been released...
 bs4 = "^0.0.1"
 conllu = "^4.5.2"
-datasets = { extras = ["audio", "vision"], version = "~2.9.0" }
+datasets = { extras = ["audio", "vision"], version = "~2.10.0" }
 environs = "^9.5.0"
 gdown = "^4.6.3"
 huggingface-hub = "^0.12.0"
@@ -31,7 +31,11 @@ pypdf2 = "^3.0.1"
 python = "3.9.15"
 rarfile = "^4.0"
 scikit-learn = "^1.2.1"
-tensorflow-cpu = {version = "^2.11.0", markers = "sys_platform != 'darwin' or platform_machine != 'arm64'"}
+tensorflow-cpu = [
+    {version = "^2.11.0", markers = "sys_platform == 'linux' and platform_machine != 'aarch64'"},
+    {version = "^2.11.0", markers = "sys_platform == 'darwin' and platform_machine != 'arm64'"}
+]
+tensorflow-aarch64 = {version = "^2.11.0", markers = "sys_platform == 'linux' and platform_machine == 'aarch64'"}
 tensorflow-macos = {version = "^2.11.0", markers = "sys_platform == 'darwin' and platform_machine == 'arm64'"}
 tfrecord = "^1.14.1"
 torch = { url = "https://download.pytorch.org/whl/cpu/torch-1.13.1%2Bcpu-cp39-cp39-linux_x86_64.whl" }
@@ -80,6 +84,5 @@ exclude = 'vendors'
 strict = true
 
 [[tool.mypy.overrides]]
-# could be solved in datasets by adding __add__ to the __init__.py file
-implicit_reexport = true
-module = "datasets"
+module = "datasets.*"
+ignore_missing_imports = true

@@ -51,6 +51,7 @@ def get_job_runner(
                 parent=None,
                 ancestors=[],
                 children=[],
+                job_runner_version=ConfigNamesJobRunner.get_job_runner_version(),
             ),
             hf_datasets_cache=libraries_resource.hf_datasets_cache,
         )
@@ -76,7 +77,7 @@ def test_process(app_config: AppConfig, hub_public_csv: str, get_job_runner: Get
     cached_response = get_response(kind=job_runner.processing_step.cache_kind, dataset=hub_public_csv)
     assert cached_response["http_status"] == HTTPStatus.OK
     assert cached_response["error_code"] is None
-    assert cached_response["worker_version"] == job_runner.get_version()
+    assert cached_response["job_runner_version"] == job_runner.get_job_runner_version()
     assert cached_response["dataset_git_revision"] is not None
     assert cached_response["error_code"] is None
     content = cached_response["content"]
@@ -123,19 +124,15 @@ def test_compute_splits_response_simple_csv(
         False,
     )
     if error_code is None:
-        result = job_runner.compute()
+        result = job_runner.compute().content
         assert result == expected_configs_response
         return
 
     with pytest.raises(CustomError) as exc_info:
         job_runner.compute()
     assert exc_info.value.code == error_code
-    if cause is None:
-        assert not exc_info.value.disclose_cause
-        assert exc_info.value.cause_exception is None
-    else:
-        assert exc_info.value.disclose_cause
-        assert exc_info.value.cause_exception == cause
+    assert exc_info.value.cause_exception == cause
+    if exc_info.value.disclose_cause:
         response = exc_info.value.as_response()
         assert set(response.keys()) == {"error", "cause_exception", "cause_message", "cause_traceback"}
         response_dict = dict(response)

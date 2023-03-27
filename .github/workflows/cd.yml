@@ -1,0 +1,124 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2022 The HuggingFace Authors.
+
+name: Continuous deployment
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  repository-prefix: huggingface/datasets-server-
+
+jobs:
+  build-and-push-images:
+    name: Build and push docker images to public Docker Hub
+    strategy:
+      matrix:
+        include:
+          - directory: jobs
+            project: mongodb_migration
+          - directory: jobs
+            project: cache_refresh
+          - directory: services
+            project: admin
+          - directory: services
+            project: api
+          - directory: services
+            project: worker
+    runs-on: "ubuntu-latest"
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+      - name: Set outputs
+        id: vars
+        run: echo "sha_short=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
+      - name: Login to Docker Hub
+        uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_PASSWORD }}
+      - name: Extract metadata (tags, labels) for Docker
+        id: meta
+        uses: docker/metadata-action@v4
+        with:
+          images: ${{ env.repository-prefix }}${{ matrix.directory }}-${{ matrix.project }}
+          tags: |
+            type=raw,value=sha-${{ steps.vars.outputs.sha_short }}
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v3
+        with:
+          context: .
+          file: ${{ matrix.directory }}/${{ matrix.project }}/Dockerfile
+          build-args: COMMIT=${{ steps.vars.outputs.sha_short }}
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          # see https://github.com/docker/build-push-action/blob/master/docs/advanced/cache.md#registry-cache
+          cache-from: type=registry,ref=${{ env.repository-prefix }}${{ matrix.directory }}-${{ matrix.project }}:buildcache
+          cache-to: type=registry,ref=${{ env.repository-prefix }}${{ matrix.directory }}-${{ matrix.project }}:buildcache,mode=max
+
+  code-quality-helm:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout sources
+        uses: actions/checkout@v3
+      - name: Update dependencies
+        run: helm dependencies update
+        working-directory: chart
+      - name: Lint chart with default values
+        run: helm lint
+        working-directory: chart
+      - name: Lint chart with dev values
+        run: helm lint --values env/dev.yaml
+        working-directory: chart
+      - name: Lint chart with prod values
+        run: helm lint --values env/prod.yaml
+        working-directory: chart
+
+  deploy-dev-and-prod:
+    if: ${{ endsWith(github.ref, '/main') }}
+    runs-on: ubuntu-latest
+    needs: [ build-and-push-images ]
+    environment: production
+    steps:
+      - name: Checkout sources
+        uses: actions/checkout@v3
+      - name: Set outputs
+        id: vars
+        run: echo "sha_short=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
+      - name: Gen values
+        run: |
+          VALUES=$(cat <<-END
+            images:
+              jobs:
+                mongodbMigration:
+                  tag: sha-${{ steps.vars.outputs.sha_short }}
+                cacheRefresh:
+                  tag: sha-${{ steps.vars.outputs.sha_short }}
+              services:
+                admin:
+                  tag: sha-${{ steps.vars.outputs.sha_short }}
+                api:
+                  tag: sha-${{ steps.vars.outputs.sha_short }}
+                worker:
+                  tag: sha-${{ steps.vars.outputs.sha_short }}
+          END
+          )
+          echo "VALUES=$(echo "$VALUES" | yq -o=json | jq tostring)" >> $GITHUB_ENV
+      - name: Deploy on infra-deployments
+        uses: aurelien-baudet/workflow-dispatch@v2
+        with:
+          workflow: Update application values
+          repo: huggingface/infra-deployments
+          wait-for-completion: true
+          ref: refs/heads/main
+          token: ${{ secrets.ARGO_CD_TOKEN }}
+          inputs: '{"path": "datasets-server/*.yaml", "values": ${{ env.VALUES }}, "url": "${{ github.event.head_commit.url }}"}'

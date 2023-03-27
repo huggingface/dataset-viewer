@@ -1,0 +1,48 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2022 The HuggingFace Authors.
+
+name: chart PR
+on:
+  pull_request:
+    paths:
+      - 'chart/**'
+      - '.github/workflows/chart-pr.yml'
+jobs:
+  code-quality-helm:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout sources
+        uses: actions/checkout@v3
+      - name: Update dependencies
+        run: helm dependencies update
+        working-directory: chart
+      - name: Lint chart with default values
+        run: helm lint
+        working-directory: chart
+      - name: Lint chart with dev values
+        run: helm lint --values env/dev.yaml
+        working-directory: chart
+      - name: Lint chart with prod values
+        run: helm lint --values env/prod.yaml
+        working-directory: chart
+  helm-diff:
+    name: Diff
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+      - name: Update dependencies
+        run: helm dependencies update
+        working-directory: chart
+      - name: Tailscale
+        uses: tailscale/github-action@v1
+        with:
+          authkey: ${{ secrets.TAILSCALE_AUTHKEY }}
+      - uses: XciD/argocd-diff-action@master
+        name: ArgoCD Diff
+        with:
+          argocd-server-url: ${{ secrets.ARGO_CD_URL }}
+          argocd-token: ${{ secrets.ARGO_CD_CI_TOKEN }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          argocd-version: v2.6.1
+          argocd-extra-cli-args: --grpc-web --loglevel error

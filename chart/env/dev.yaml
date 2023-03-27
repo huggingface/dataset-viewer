@@ -27,6 +27,12 @@ images:
       useGlobalRegistry: false
       repository: datasets-server-jobs-mongodb_migration
       tag: sha-fb3399a
+    # cacheRefresh:
+    #   registry: huggingface
+    #   useGlobalRegistry: false
+    #   repository: datasets-server-jobs-cache_refresh
+    #   tag: sha-fb3399a
+    # --- temporary disabling this job ---
   services:
     admin:
       registry: huggingface
@@ -55,6 +61,10 @@ secrets:
   userHfToken:
     fromSecret: true
     secretName: "hf-token-francky"
+  hfWebhookSecret:
+    fromSecret: false
+    secretName: "webhook-secret"
+    value: ""
 
 persistence:
   existingClaim: "nfs-datasets-server-pvc"
@@ -89,8 +99,8 @@ storageAdmin:
   replicas: 1
   resources:
     requests:
-      cpu: 100m
-      memory: "256Mi"
+      cpu: 50m
+      memory: "64Mi"
     limits:
       cpu: 1
       memory: "256Mi"
@@ -102,7 +112,7 @@ reverseProxy:
   resources:
     requests:
       cpu: 100m
-      memory: "256Mi"
+      memory: "64Mi"
     limits:
       cpu: 1
       memory: "256Mi"
@@ -159,9 +169,9 @@ api:
 
 workers:
   -
-    deployName: "generic"
+    deployName: "all"
     maxJobsPerNamespace: 1
-    workerOnlyJobTypes: []
+    workerOnlyJobTypes: ""
     nodeSelector: {}
     replicas: 1
     resources:
@@ -173,23 +183,9 @@ workers:
         memory: "4Gi"
     tolerations: []
   -
-    deployName: "first-rows"
+    deployName: "light"
     maxJobsPerNamespace: 1
-    workerOnlyJobTypes: ["/first-rows"]
-    nodeSelector: {}
-    replicas: 1
-    resources:
-      requests:
-        cpu: 100m
-        memory: "512Mi"
-      limits:
-        cpu: 1
-        memory: "4Gi"
-    tolerations: []
-  -
-    deployName: "parquet-and-dataset-info"
-    maxJobsPerNamespace: 1
-    workerOnlyJobTypes: []
+    workerOnlyJobTypes: "config-parquet,dataset-parquet,config-info,dataset-info,/split-names-from-dataset-info,config-size,dataset-size,dataset-split-names-from-streaming,dataset-split-names-from-dataset-info"
     nodeSelector: {}
     replicas: 1
     resources:
