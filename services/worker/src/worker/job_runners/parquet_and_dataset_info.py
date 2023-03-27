@@ -41,7 +41,10 @@ from huggingface_hub._commit_api import (
 )
 from huggingface_hub.hf_api import DatasetInfo, HfApi, RepoFile
 from huggingface_hub.utils._errors import RepositoryNotFoundError, RevisionNotFoundError
-from libcommon.constants import PROCESSING_STEP_PARQUET_AND_DATASET_INFO_VERSION
+from libcommon.constants import (
+    PARQUET_AND_DATASET_INFO_ROW_GROUP_SIZE_FOR_IMAGE_DATASETS,
+    PROCESSING_STEP_PARQUET_AND_DATASET_INFO_VERSION,
+)
 from libcommon.dataset import DatasetNotFoundError, ask_access
 from libcommon.processing_graph import ProcessingStep
 from libcommon.queue import JobInfo
@@ -672,7 +675,11 @@ def get_writer_batch_size(ds_config_info: datasets.info.DatasetInfo) -> Optional
             Writer batch size to pass to a dataset builder.
             If `None`, then it will use the `datasets` default.
     """
-    return 100 if "Image(" in str(ds_config_info.features) else None
+    return (
+        PARQUET_AND_DATASET_INFO_ROW_GROUP_SIZE_FOR_IMAGE_DATASETS
+        if "Image(" in str(ds_config_info.features)
+        else None
+    )
 
 
 def compute_parquet_and_dataset_info_response(
@@ -800,10 +807,6 @@ def compute_parquet_and_dataset_info_response(
     dataset_info: Dict[str, Any] = {}
     download_config = DownloadConfig(delete_extracted=True)
     for config in config_names:
-        ds_config_info = get_dataset_config_info(
-            path=dataset, config_name=config, revision=source_revision, use_auth_token=hf_token
-        )
-        writer_batch_size = get_writer_batch_size(ds_config_info)
         builder = load_dataset_builder(
             path=dataset,
             name=config,
@@ -811,6 +814,7 @@ def compute_parquet_and_dataset_info_response(
             use_auth_token=hf_token,
             download_config=download_config,
         )
+        writer_batch_size = get_writer_batch_size(builder.info)
         raise_if_too_big_from_external_data_files(
             builder=builder,
             max_dataset_size=max_dataset_size,
