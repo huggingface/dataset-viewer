@@ -6,6 +6,7 @@ from pathlib import Path
 from typing import List, Tuple, TypedDict
 
 import numpy as np
+import io
 import soundfile  # type:ignore
 from libcommon.storage import StrPath
 from numpy import ndarray
@@ -59,7 +60,6 @@ class AudioSource(TypedDict):
     type: str
 
 
-# TODO: Refacto this method to be compatible with the existing one for streaming
 def create_audio_files_from_bytes(
     dataset: str,
     config: str,
@@ -78,8 +78,8 @@ def create_audio_files_from_bytes(
     )
     wav_file_path = dir_path / wav_filename
     mp3_file_path = dir_path / mp3_filename
-    data = np.frombuffer(array, dtype="int16")
-    soundfile.write(file=wav_file_path, data=data, samplerate=48000)  # TODO: Get correct samplerate
+    array, sampling_rate = soundfile.read(io.BytesIO(array))
+    soundfile.write(file=wav_file_path, data=array, samplerate=sampling_rate)
     segment = AudioSegment.from_wav(wav_file_path)
     segment.export(mp3_file_path, format="mp3")
     return [
