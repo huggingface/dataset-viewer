@@ -469,6 +469,7 @@ def test_compute_splits_response_simple_csv_error(
         ("config/builder-with-dashes-split.parquet", "split", "config", False),
         ("config/builder-split-00000-of-00001.parquet", "split", "config", False),
         ("config/builder-with-dashes-split-00000-of-00001.parquet", "split", "config", False),
+        ("config/builder-split.with.dots-00000-of-00001.parquet", "split.with.dots", "config", False),
         (
             "config/builder-with-dashes-caveat-asplitwithdashesisnotsupported-00000-of-00001.parquet",
             "asplitwithdashesisnotsupported",
