@@ -7,9 +7,9 @@ from http import HTTPStatus
 from pathlib import Path
 from typing import Any, List, Literal, Mapping, Optional
 
-import numpy as np
 import pyarrow as pa
 from datasets import Features
+from fsspec import AbstractFileSystem  # type: ignore
 from hffs.fs import HfFileSystem
 from libcommon.constants import (
     PARQUET_REVISION,
@@ -62,7 +62,6 @@ class SplitFirstRowsFromParquetJobRunnerError(JobRunnerError):
         )
 
 
-# TODO: Refactor shared exceptions with split-first-rows-from-streaming?
 class RowsPostProcessingError(SplitFirstRowsFromParquetJobRunnerError):
     """Raised when the rows could not be post-processed successfully."""
 
@@ -140,7 +139,7 @@ def transform_rows(
     ]
 
 
-def get_parquet_fs(dataset: str, hf_token: Optional[str]) -> HfFileSystem:
+def get_parquet_fs(dataset: str, hf_token: Optional[str]) -> AbstractFileSystem:
     """Get the parquet filesystem for a dataset.
     The parquet files are stored in a separate branch of the dataset repository (see PARQUET_REVISION)
     Args:
@@ -228,37 +227,32 @@ def compute_first_rows_response(
         )
 
     # get the rows
-    # TODO: Not sure if it is needed to get all the offsets yet
-    row_group_offsets = np.cumsum(
-        [
-            parquet_file.metadata.row_group(group_id).num_rows
-            for parquet_file in parquet_files
-            for group_id in range(parquet_file.metadata.num_row_groups)
-        ]
-    )
-    row_group_readers = [
-        partial(parquet_file.read_row_group, i=group_id)
-        for parquet_file in parquet_files
-        for group_id in range(parquet_file.metadata.num_row_groups)
-    ]
+    num_rows = 0
+    last_row_group_id = 0
+    row_group_readers = []
+    for parquet_file in parquet_files:
+        for group_id in range(parquet_file.metadata.num_row_groups):
+            last_row_group_id = group_id
+            row_group_readers.append(partial(parquet_file.read_row_group, i=group_id))
+            if num_rows + parquet_file.metadata.row_group(group_id).num_rows >= rows_max_number:
+                num_rows = rows_max_number
+                break
+            else:
+                num_rows += parquet_file.metadata.row_group(group_id).num_rows
+        else:
+            continue
+        break
 
-    if (len(row_group_offsets) == 0) or (len(row_group_readers) == 0):
+    if len(row_group_readers) == 0:
         raise ParquetResponseEmptyError("No parquet files found.")
 
-    # TODO: Remove unnecessary code here, only first N rows is needed
-    offset = 0
-    length = rows_max_number
-    last_row_in_parquet = row_group_offsets[-1] - 1
-    first_row = min(offset, last_row_in_parquet)
-    last_row = min(offset, offset + length - 1, last_row_in_parquet)
-    first_row_group_id, last_row_group_id = np.searchsorted(row_group_offsets, [first_row, last_row], side="right")
-    pa_table = pa.concat_tables([row_group_readers[i]() for i in range(first_row_group_id, last_row_group_id + 1)])
-    result = pa_table.slice(offset, length)
+    pa_table = pa.concat_tables([row_group_readers[i]() for i in range(0, last_row_group_id + 1)])
+    result = pa_table.slice(0, num_rows)
 
     rows = [
         RowItem(
             {
-                "row_idx": idx + offset,
+                "row_idx": idx,
                 "row": row,
                 "truncated_cells": [],
             }
@@ -293,8 +287,6 @@ def compute_first_rows_response(
 
     response = response_features_only
     response["rows"] = row_items
-
-    # return the response
     return response
 
 
