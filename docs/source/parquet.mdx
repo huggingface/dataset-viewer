@@ -1,8 +1,8 @@
 # List Parquet files
 
-Datasets can be published in any format (CSV, JSONL, directories of images, etc.) on the Hub, and they are easily accessed with the 🤗 [Datasets](https://huggingface.co/docs/datasets/) library. For even more performant and efficient access, Datasets Server automatically converts every dataset to the [Parquet](https://parquet.apache.org/) format. The Parquet files are published to the Hub on a specific branch, `ref/convert/parquet`.
+Datasets can be published in any format (CSV, JSONL, directories of images, etc.) to the Hub, and they are easily accessed with the 🤗 [Datasets](https://huggingface.co/docs/datasets/) library. For a more performant experience (especially when it is a large dataset), Datasets Server automatically converts every dataset to the [Parquet](https://parquet.apache.org/) format. The Parquet files are published to the Hub on a specific branch, `ref/convert/parquet`.
 
-This guide shows you how to use Datasets Server's `/parquet` endpoint to retrieve a list of a dataset's Parquet files programmatically. Feel free to also try it out with [Postman](https://www.postman.com/huggingface/workspace/hugging-face-apis/request/23242779-f0cde3b9-c2ee-4062-aaca-65c4cfdd96f8), [RapidAPI](https://rapidapi.com/hugging-face-hugging-face-default/api/hugging-face-datasets-api), or [ReDoc](https://redocly.github.io/redoc/?url=https://datasets-server.huggingface.co/openapi.json#operation/listSplits).
+This guide shows you how to use Datasets Server's `/parquet` endpoint to retrieve a list of a dataset's files converted to Parquet. Feel free to also try it out with [Postman](https://www.postman.com/huggingface/workspace/hugging-face-apis/request/23242779-f0cde3b9-c2ee-4062-aaca-65c4cfdd96f8), [RapidAPI](https://rapidapi.com/hugging-face-hugging-face-default/api/hugging-face-datasets-api), or [ReDoc](https://redocly.github.io/redoc/?url=https://datasets-server.huggingface.co/openapi.json#operation/listSplits).
 
 The `/parquet` endpoint accepts the dataset name as its query parameter:
 
@@ -46,7 +46,9 @@ curl https://datasets-server.huggingface.co/parquet?dataset=duorc \
 </curl>
 </inferencesnippet>
 
-The endpoint response is a JSON containing a list of the dataset's Parquet files. For example, the [duorc](https://huggingface.co/datasets/duorc) dataset has six Parquet files, which corresponds to the `train`, `validation` and `test` splits of its two configurations (see the [List splits and configurations](./splits) guide for more details about splits and configurations):
+The endpoint response is a JSON containing a list of the dataset's files in the Parquet format. For example, the [`duorc`](https://huggingface.co/datasets/duorc) dataset has six Parquet files, which corresponds to the `test`, `train` and `validation` splits of its two configurations, `ParaphraseRC` and `SelfRC` (see the [List splits and configurations](./splits) guide for more details about splits and configurations). 
+
+The endpoint also gives the filename and size of each file:
 
 ```json
 {
@@ -103,97 +105,56 @@ The endpoint response is a JSON containing a list of the dataset's Parquet files
 }
 ```
 
-Now you can access the dataset - for example, the `train` split - directly from the Parquet files with [Polars](https://www.pola.rs/):
-
-```python
-import polars as pl
-url = "https://huggingface.co/datasets/duorc/resolve/refs%2Fconvert%2Fparquet/ParaphraseRC/duorc-train.parquet"
-q = (
-    pl.scan_parquet(url)
-    .groupby("title")
-    .count()
-    .sort("count", descending=True)
-)
-
-df = q.collect().head()
-df
-shape: (5, 2)
-┌──────────────────────┬───────┐
-│ title                ┆ count │
-│ ---                  ┆ ---   │
-│ str                  ┆ u32   │
-╞══════════════════════╪═══════╡
-│ Dracula              ┆ 422   │
-│ The Three Musketeers ┆ 412   │
-│ Superman             ┆ 193   │
-│ Jane Eyre            ┆ 190   │
-│ The Thing            ┆ 189   │
-└──────────────────────┴───────┘
-```
-
 ## Sharded Parquet files
 
-Big datasets are partitioned into Parquet files (shards) of about 1GB. The file name contains the name of the dataset, the split, the index of the shard, and the total number of shards (for example, `dataset-name-train-0000-of-0004.parquet`). For example, the `train` split of the [`amazon_polarity`](https://datasets-server.huggingface.co/parquet?dataset=amazon_polarity) dataset is partitioned into 4 shards:
+Big datasets are partitioned into Parquet files (shards) of about 1GB. The filename contains the name of the dataset, the split, the index of the shard, and the total number of shards (`dataset-name-train-0000-of-0004.parquet`). For example, the `train` split of the [`amazon_polarity`](https://datasets-server.huggingface.co/parquet?dataset=amazon_polarity) dataset is partitioned into 4 shards:
 
 ```json
-{'parquet_files': [{'dataset': 'amazon_polarity',
-   'config': 'amazon_polarity',
-   'split': 'test',
-   'url': 'https://huggingface.co/datasets/amazon_polarity/resolve/refs%2Fconvert%2Fparquet/amazon_polarity/amazon_polarity-test.parquet',
-   'filename': 'amazon_polarity-test.parquet',
-   'size': 117422359},
-  {'dataset': 'amazon_polarity',
-   'config': 'amazon_polarity',
-   'split': 'train',
-   'url': 'https://huggingface.co/datasets/amazon_polarity/resolve/refs%2Fconvert%2Fparquet/amazon_polarity/amazon_polarity-train-00000-of-00004.parquet',
-   'filename': 'amazon_polarity-train-00000-of-00004.parquet',
-   'size': 320281121},
-  {'dataset': 'amazon_polarity',
-   'config': 'amazon_polarity',
-   'split': 'train',
-   'url': 'https://huggingface.co/datasets/amazon_polarity/resolve/refs%2Fconvert%2Fparquet/amazon_polarity/amazon_polarity-train-00001-of-00004.parquet',
-   'filename': 'amazon_polarity-train-00001-of-00004.parquet',
-   'size': 320627716},
-  {'dataset': 'amazon_polarity',
-   'config': 'amazon_polarity',
-   'split': 'train',
-   'url': 'https://huggingface.co/datasets/amazon_polarity/resolve/refs%2Fconvert%2Fparquet/amazon_polarity/amazon_polarity-train-00002-of-00004.parquet',
-   'filename': 'amazon_polarity-train-00002-of-00004.parquet',
-   'size': 320587882},
-  {'dataset': 'amazon_polarity',
-   'config': 'amazon_polarity',
-   'split': 'train',
-   'url': 'https://huggingface.co/datasets/amazon_polarity/resolve/refs%2Fconvert%2Fparquet/amazon_polarity/amazon_polarity-train-00003-of-00004.parquet',
-   'filename': 'amazon_polarity-train-00003-of-00004.parquet',
-   'size': 66515954}],
- 'pending': [],
- 'failed': []}
+{
+  "parquet_files": [
+    {
+      "dataset": "amazon_polarity",
+      "config": "amazon_polarity",
+      "split": "test",
+      "url": "https://huggingface.co/datasets/amazon_polarity/resolve/refs%2Fconvert%2Fparquet/amazon_polarity/amazon_polarity-test.parquet",
+      "filename": "amazon_polarity-test.parquet",
+      "size": 117422359
+   },
+   {
+      "dataset": "amazon_polarity",
+      "config": "amazon_polarity",
+      "split": "train",
+      "url": "https://huggingface.co/datasets/amazon_polarity/resolve/refs%2Fconvert%2Fparquet/amazon_polarity/amazon_polarity-train-00000-of-00004.parquet",
+      "filename": "amazon_polarity-train-00000-of-00004.parquet",
+      "size": 320281121
+    },
+    {
+      "dataset": "amazon_polarity",
+      "config": "amazon_polarity",
+      "split": "train",
+      "url": "https://huggingface.co/datasets/amazon_polarity/resolve/refs%2Fconvert%2Fparquet/amazon_polarity/amazon_polarity-train-00001-of-00004.parquet",
+      "filename": "amazon_polarity-train-00001-of-00004.parquet",
+      "size": 320627716
+    },
+    {
+      "dataset": "amazon_polarity",
+      "config": "amazon_polarity",
+      "split": "train",
+      "url": "https://huggingface.co/datasets/amazon_polarity/resolve/refs%2Fconvert%2Fparquet/amazon_polarity/amazon_polarity-train-00002-of-00004.parquet",
+      "filename": "amazon_polarity-train-00002-of-00004.parquet",
+      "size": 320587882
+    },
+    {
+      "dataset": "amazon_polarity",
+      "config": "amazon_polarity",
+      "split": "train",
+      "url": "https://huggingface.co/datasets/amazon_polarity/resolve/refs%2Fconvert%2Fparquet/amazon_polarity/amazon_polarity-train-00003-of-00004.parquet",
+      "filename": "amazon_polarity-train-00003-of-00004.parquet",
+      "size": 66515954
+    }
+  ],
+ "pending": [],
+ "failed": []}
 ```
 
-To concatenate the shards:
-
-```python
-import polars as pl
-r = requests.get("https://datasets-server.huggingface.co/parquet?dataset=amazon_polarity")
-j = r.json()
-urls = [f['url'] for f in j['parquet_files'] if f['split'] == 'train']
-q = (
-    pl.concat([pl.scan_parquet(url) for url in urls])
-    .groupby("label")
-    .agg([
-        pl.count(),
-        pl.col("content").str.n_chars().mean().alias("avg_review_length"),
-    ])
-)
-df = q.collect()
-print(df)
-shape: (2, 3)
-┌───────┬─────────┬───────────────────┐
-│ label ┆ count   ┆ avg_review_length │
-│ ---   ┆ ---     ┆ ---               │
-│ i64   ┆ u32     ┆ f64               │
-╞═══════╪═════════╪═══════════════════╡
-│ 0     ┆ 1800000 ┆ 420.873973        │
-│ 1     ┆ 1800000 ┆ 389.405282        │
-└───────┴─────────┴───────────────────┘
-```
+To read and query the Parquet files, take a look at the [Query datasets from Datasets Server](parquet_process) guide.
