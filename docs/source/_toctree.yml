@@ -15,7 +15,7 @@
   - local: parquet
     title: List Parquet files
   - local: parquet_process
-    title: Process Parquet files
+    title: Query datasets from Datasets Server
 - title: Conceptual Guides
   sections:
   - local: configs_and_splits
