@@ -7,8 +7,15 @@ from typing import Any, List, Literal, Mapping, Optional, Union
 
 from datasets import get_dataset_split_names
 from datasets.data_files import EmptyDatasetError as _EmptyDatasetError
-from libcommon.constants import PROCESSING_STEP_SPLIT_NAMES_FROM_STREAMING_VERSION
-from libcommon.simple_cache import DoesNotExist, SplitFullName, get_response
+from libcommon.constants import (
+    PROCESSING_STEP_SPLIT_NAMES_FROM_DATASET_INFO_VERSION,
+    PROCESSING_STEP_SPLIT_NAMES_FROM_STREAMING_VERSION,
+)
+from libcommon.simple_cache import (
+    DoesNotExist,
+    SplitFullName,
+    get_response_without_content,
+)
 
 from worker.job_runner import CompleteJobResult, JobRunnerError
 from worker.job_runners._datasets_based_job_runner import DatasetsBasedJobRunner
@@ -61,6 +68,7 @@ class ResponseAlreadyComputedError(SplitNamesFromStreamingJobRunnerError):
 def compute_split_names_from_streaming_response(
     dataset: str,
     config: str,
+    dataset_git_revision: Optional[str],
     hf_token: Optional[str] = None,
 ) -> SplitsList:
     """
@@ -98,8 +106,16 @@ def compute_split_names_from_streaming_response(
     """
     logging.info(f"get split names for dataset={dataset}, config={config}")
     try:
-        dataset_info_response = get_response(kind="/split-names-from-dataset-info", dataset=dataset, config=config)
-        if dataset_info_response["http_status"] == HTTPStatus.OK:
+        dataset_info_response = get_response_without_content(
+            kind="/split-names-from-dataset-info", dataset=dataset, config=config
+        )
+        if (
+            dataset_info_response["http_status"] == HTTPStatus.OK
+            and dataset_info_response["job_runner_version"] == PROCESSING_STEP_SPLIT_NAMES_FROM_DATASET_INFO_VERSION
+            and dataset_info_response["progress"] == 1.0  # completed response
+            and dataset_git_revision is not None
+            and dataset_info_response["dataset_git_revision"] == dataset_git_revision
+        ):
             raise ResponseAlreadyComputedError(
                 "Response has already been computed by /split-names-from-dataset-info. Compute will be skipped."
             )
@@ -133,11 +149,17 @@ class SplitNamesFromStreamingJobRunner(DatasetsBasedJobRunner):
         return PROCESSING_STEP_SPLIT_NAMES_FROM_STREAMING_VERSION
 
     def compute(self) -> CompleteJobResult:
+        if self.dataset is None:
+            raise ValueError("dataset is required")
         if self.config is None:
             raise ValueError("config is required")
+        dataset_git_revision = self.get_dataset_git_revision()
         return CompleteJobResult(
             compute_split_names_from_streaming_response(
-                dataset=self.dataset, config=self.config, hf_token=self.common_config.hf_token
+                dataset=self.dataset,
+                config=self.config,
+                dataset_git_revision=dataset_git_revision,
+                hf_token=self.common_config.hf_token,
             )
         )
 
