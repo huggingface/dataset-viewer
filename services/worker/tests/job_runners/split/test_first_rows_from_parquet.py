@@ -159,4 +159,13 @@ def test_compute(
             assert response["features"][1]["name"] == "col2"
             assert response["features"][1]["type"]["_type"] == "Value"
             assert response["features"][1]["type"]["dtype"] == "string"
+            assert response["rows"][0]["row_idx"] == 0
+            assert response["rows"][0]["truncated_cells"] == []
+            assert response["rows"][0]["row"] == {"col1": 1, "col2": "a"}
+            assert response["rows"][1]["row_idx"] == 1
+            assert response["rows"][1]["truncated_cells"] == []
+            assert response["rows"][1]["row"] == {"col1": 2, "col2": "b"}
+            assert response["rows"][2]["row_idx"] == 2
+            assert response["rows"][2]["truncated_cells"] == []
+            assert response["rows"][2]["row"] == {"col1": 3, "col2": "c"}
         os.chdir(initial_location)

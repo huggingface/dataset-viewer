@@ -6,6 +6,8 @@ import json
 from typing import Any, List, Optional, Union
 from zlib import adler32
 
+import numpy
+import soundfile  # type:ignore
 from datasets import (
     Array2D,
     Array3D,
@@ -20,14 +22,9 @@ from datasets import (
     Value,
 )
 from libcommon.storage import StrPath
-from numpy import ndarray
 from PIL import Image as PILImage  # type: ignore
 
-from worker.asset import (
-    create_audio_files,
-    create_audio_files_from_bytes,
-    create_image_file,
-)
+from worker.asset import create_audio_files, create_image_file
 
 
 def append_hash_suffix(string: str, json_path: Optional[List[Union[str, int]]] = None) -> str:
@@ -101,24 +98,16 @@ def audio(
 ) -> Any:
     if value is None:
         return None
-    if "bytes" in value:
-        return create_audio_files_from_bytes(
-            dataset=dataset,
-            config=config,
-            split=split,
-            row_idx=row_idx,
-            column=featureName,
-            array=value["bytes"],
-            assets_base_url=assets_base_url,
-            filename_base=append_hash_suffix("audio", json_path),
-            assets_directory=assets_directory,
-        )
     try:
         array = value["array"]
         sampling_rate = value["sampling_rate"]
     except Exception as e:
-        raise TypeError("audio cell must contain 'array' and 'sampling_rate' fields") from e
-    if type(array) != ndarray:
+        if "bytes" in value:
+            bytes_array, sampling_rate = soundfile.read(io.BytesIO(value["bytes"]))
+            array = numpy.array(bytes_array)
+        else:
+            raise TypeError("audio cell must contain 'array' and 'sampling_rate' fields") from e
+    if type(array) != numpy.ndarray:
         raise TypeError("'array' field must be a numpy.ndarray")
     if type(sampling_rate) != int:
         raise TypeError("'sampling_rate' field must be an integer")
