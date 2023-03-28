@@ -1,9 +1,9 @@
 # Query datasets from Datasets Server
 
-Datasets Server automatically converts and publishes datasets on the Hub as Parquet files.[Parquet](https://parquet.apache.org/docs/) files are column-based and they really shine when you're working with big data. There are several ways you can work with Parquet files, and this guide will show you how to:
+Datasets Server automatically converts and publishes datasets on the Hub as Parquet files. [Parquet](https://parquet.apache.org/docs/) files are column-based and they shine when you're working with big data. There are several ways you can work with Parquet files, and this guide will show you how to:
 
 - read and query Parquet files with Pandas and Polars
-- access, read and query Parquet files with DuckDB and DuckDB-Wasm
+- connect, read and query Parquet files with DuckDB and DuckDB-Wasm
 
 ## Polars 
 
@@ -58,7 +58,7 @@ shape: (5, 3)
 └───────────┴───────┴─────────────────┘
 ```
 
-To read multiple Parquet files, you'll need to use the [`concat`](https://pola-rs.github.io/polars/py-polars/html/reference/api/polars.concat.html) function to concatenate the files into a single DataFrame: 
+To read multiple Parquet files - for example, if the dataset is sharded - you'll need to use the [`concat`](https://pola-rs.github.io/polars/py-polars/html/reference/api/polars.concat.html) function to concatenate the files into a single DataFrame: 
 
 ```py
 import polars as pl
@@ -131,7 +131,7 @@ df = (
 )
 ```
 
-To read multiple Parquet files, you'll need to use the [`concat`](https://pandas.pydata.org/docs/reference/api/pandas.concat.html) function to concatenate the files into a single DataFrame:
+To read multiple Parquet files - for example, if the dataset is sharded - you'll need to use the [`concat`](https://pandas.pydata.org/docs/reference/api/pandas.concat.html) function to concatenate the files into a single DataFrame:
 
 ```py
 df = (
@@ -202,7 +202,7 @@ con.all(`SELECT horoscope, count(*), AVG(LENGTH(text)) AS avg_blog_length FROM '
 </js>
 </inferencesnippet>
 
-To query multiple files:
+To query multiple files - for example, if the dataset is sharded:
 
 <inferencesnippet>
 <python>
@@ -232,4 +232,4 @@ con.all(`SELECT horoscope, count(*), AVG(LENGTH(text)) AS avg_blog_length FROM r
 </js>
 </inferencesnippet>
 
-There is also [DuckDB-Wasm](https://duckdb.org/docs/api/wasm), a package powered by WebAssembly for running DuckDB in a browser. This could be useful, for instance, if you want to create a web app to query Parquet files from the browser!
+[DuckDB-Wasm](https://duckdb.org/docs/api/wasm), a package powered by , is also availabe for running DuckDB in a browser. This could be useful, for instance, if you want to create a web app to query Parquet files from the browser!
