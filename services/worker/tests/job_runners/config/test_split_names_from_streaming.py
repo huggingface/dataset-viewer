@@ -145,6 +145,7 @@ def test_compute_split_names_from_streaming_response(
     [
         (HTTPStatus.OK, "CURRENT_GIT_REVISION", "ResponseAlreadyComputedError"),
         (HTTPStatus.INTERNAL_SERVER_ERROR, "CURRENT_GIT_REVISION", "SplitNamesFromStreamingError"),
+        (HTTPStatus.OK, "DIFFERENT_GIT_REVISION", "SplitNamesFromStreamingError"),
     ],
 )
 def test_response_already_computed(
