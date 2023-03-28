@@ -1,6 +1,6 @@
 # List Parquet files
 
-Datasets can be published in any format (CSV, JSONL, directories of images, etc.) to the Hub, and they are easily accessed with the 🤗 [Datasets](https://huggingface.co/docs/datasets/) library. For a more performant experience (especially when it is a large dataset), Datasets Server automatically converts every dataset to the [Parquet](https://parquet.apache.org/) format. The Parquet files are published to the Hub on a specific branch, `ref/convert/parquet`.
+Datasets can be published in any format (CSV, JSONL, directories of images, etc.) to the Hub, and they are easily accessed with the 🤗 [Datasets](https://huggingface.co/docs/datasets/) library. For a more performant experience (especially when it comes to large datasets), Datasets Server automatically converts every dataset to the [Parquet](https://parquet.apache.org/) format. The Parquet files are published to the Hub on a specific `ref/convert/parquet` branch (like this `amazon_polarity` [branch](https://huggingface.co/datasets/amazon_polarity/tree/refs%2Fconvert%2Fparquet) for example).
 
 This guide shows you how to use Datasets Server's `/parquet` endpoint to retrieve a list of a dataset's files converted to Parquet. Feel free to also try it out with [Postman](https://www.postman.com/huggingface/workspace/hugging-face-apis/request/23242779-f0cde3b9-c2ee-4062-aaca-65c4cfdd96f8), [RapidAPI](https://rapidapi.com/hugging-face-hugging-face-default/api/hugging-face-datasets-api), or [ReDoc](https://redocly.github.io/redoc/?url=https://datasets-server.huggingface.co/openapi.json#operation/listSplits).
 
@@ -107,7 +107,7 @@ The endpoint also gives the filename and size of each file:
 
 ## Sharded Parquet files
 
-Big datasets are partitioned into Parquet files (shards) of about 1GB. The filename contains the name of the dataset, the split, the index of the shard, and the total number of shards (`dataset-name-train-0000-of-0004.parquet`). For example, the `train` split of the [`amazon_polarity`](https://datasets-server.huggingface.co/parquet?dataset=amazon_polarity) dataset is partitioned into 4 shards:
+Big datasets are partitioned into Parquet files (shards) of about 1GB each. The filename contains the name of the dataset, the split, the shard index, and the total number of shards (`dataset-name-train-0000-of-0004.parquet`). For example, the `train` split of the [`amazon_polarity`](https://datasets-server.huggingface.co/parquet?dataset=amazon_polarity) dataset is partitioned into 4 shards:
 
 ```json
 {
