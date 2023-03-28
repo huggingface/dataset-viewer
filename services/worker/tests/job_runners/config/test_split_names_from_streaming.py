@@ -10,7 +10,7 @@ from libcommon.exceptions import CustomError
 from libcommon.processing_graph import ProcessingStep
 from libcommon.queue import Priority
 from libcommon.resources import CacheMongoResource, QueueMongoResource
-from libcommon.simple_cache import DoesNotExist, get_response
+from libcommon.simple_cache import DoesNotExist, get_response, upsert_response
 
 from worker.config import AppConfig
 from worker.job_runners.config.split_names_from_streaming import (
@@ -134,3 +134,32 @@ def test_compute_split_names_from_streaming_response(
         assert response_dict["cause_exception"] == cause
         assert isinstance(response_dict["cause_traceback"], list)
         assert response_dict["cause_traceback"][0] == "Traceback (most recent call last):\n"
+
+
+@pytest.mark.parametrize(
+    "streaming_response_status,error_code",
+    [
+        (HTTPStatus.OK, "ResponseAlreadyComputedError"),
+        (HTTPStatus.INTERNAL_SERVER_ERROR, "SplitNamesFromStreamingError"),
+    ],
+)
+def test_response_already_computed(
+    app_config: AppConfig,
+    get_job_runner: GetJobRunner,
+    streaming_response_status: HTTPStatus,
+    error_code: str,
+) -> None:
+    dataset = "dataset"
+    config = "config"
+    upsert_response(
+        kind="/split-names-from-dataset-info",
+        dataset=dataset,
+        config=config,
+        content={},
+        http_status=streaming_response_status,
+    )
+    worker = get_job_runner(dataset, config, app_config, False)
+    with pytest.raises(CustomError) as exc_info:
+        worker.compute()
+    assert exc_info.value.status_code == HTTPStatus.INTERNAL_SERVER_ERROR
+    assert exc_info.value.code == error_code

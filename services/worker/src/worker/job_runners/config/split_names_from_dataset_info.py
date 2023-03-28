@@ -16,6 +16,7 @@ from worker.utils import SplitItem, SplitsList
 SplitNamesFromDatasetInfoJobRunnerErrorCode = Literal[
     "PreviousStepStatusError",
     "PreviousStepFormatError",
+    "ResponseAlreadyComputedError",
 ]
 
 
@@ -49,6 +50,13 @@ class PreviousStepFormatError(SplitNamesFromDatasetInfoJobRunnerError):
         super().__init__(message, HTTPStatus.INTERNAL_SERVER_ERROR, "PreviousStepFormatError", cause, False)
 
 
+class ResponseAlreadyComputedError(SplitNamesFromDatasetInfoJobRunnerError):
+    """Raised when reponse has been already computed by /split-names-from-streaming job runner."""
+
+    def __init__(self, message: str, cause: Optional[BaseException] = None):
+        super().__init__(message, HTTPStatus.INTERNAL_SERVER_ERROR, "ResponseAlreadyComputedError", cause, True)
+
+
 def compute_split_names_from_dataset_info_response(
     dataset: str,
     config: str,
@@ -76,9 +84,19 @@ def compute_split_names_from_dataset_info_response(
             If the content of the previous step has not the expected format
         - [`~libcommon.dataset.DatasetNotFoundError`]
             If previous step content was not found for the dataset
+        - [`~job_runners.split_names_from_dataset_info.ResponseAlreadyComputedError`]
+          If reponse has been already computed by /split-names-from-streaming job runner.
     </Tip>
     """
     logging.info(f"get split names from dataset info for dataset={dataset}, config={config}")
+    try:
+        streaming_response = get_response(kind="/split-names-from-streaming", dataset=dataset, config=config)
+        if streaming_response["http_status"] == HTTPStatus.OK:
+            raise ResponseAlreadyComputedError(
+                "Response has already been computed by /split-names-from-streaming. Compute will be skipped."
+            )
+    except DoesNotExist:
+        logging.debug("no cache found for /split-names-from-streaming, will proceed to compute from config-info")
     try:
         response = get_response(kind="config-info", dataset=dataset)
     except DoesNotExist as e:

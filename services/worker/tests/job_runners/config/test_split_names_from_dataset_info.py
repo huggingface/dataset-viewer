@@ -143,3 +143,33 @@ def test_doesnotexist(app_config: AppConfig, get_job_runner: GetJobRunner) -> No
         worker.compute()
     assert exc_info.value.status_code == HTTPStatus.NOT_FOUND
     assert exc_info.value.code == DatasetNotFoundError.__name__
+
+
+@pytest.mark.parametrize(
+    "streaming_response_status,error_code,status_code",
+    [
+        (HTTPStatus.OK, "ResponseAlreadyComputedError", HTTPStatus.INTERNAL_SERVER_ERROR),
+        (HTTPStatus.INTERNAL_SERVER_ERROR, "DatasetNotFoundError", HTTPStatus.NOT_FOUND),
+    ],
+)
+def test_response_already_computed(
+    app_config: AppConfig,
+    get_job_runner: GetJobRunner,
+    streaming_response_status: HTTPStatus,
+    error_code: str,
+    status_code: HTTPStatus,
+) -> None:
+    dataset = "dataset"
+    config = "config"
+    upsert_response(
+        kind="/split-names-from-streaming",
+        dataset=dataset,
+        config=config,
+        content={},
+        http_status=streaming_response_status,
+    )
+    worker = get_job_runner(dataset, config, app_config, False)
+    with pytest.raises(CustomError) as exc_info:
+        worker.compute()
+    assert exc_info.value.status_code == status_code
+    assert exc_info.value.code == error_code
