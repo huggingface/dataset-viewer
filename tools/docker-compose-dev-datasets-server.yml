@@ -43,7 +43,8 @@ services:
     depends_on:
       - mongodb
     restart: always
-    network_mode: host
+    ports:
+      - ${ADMIN_UVICORN_PORT-8081}:${ADMIN_UVICORN_PORT-8081}
   api:
     build:
       context: ..
@@ -51,7 +52,11 @@ services:
     extends:
       file: docker-compose-dev-base.yml
       service: api
+    volumes:
+      - assets:${ASSETS_STORAGE_DIRECTORY-/assets}
     environment:
+      ASSETS_BASE_URL: "http://localhost:${PORT_REVERSE_PROXY-8000}/assets" # hard-coded to work with the reverse-proxy
+      ASSETS_STORAGE_DIRECTORY: ${ASSETS_STORAGE_DIRECTORY-/assets}
       # service
       API_HF_AUTH_PATH: ${API_HF_AUTH_PATH-/api/datasets/%s/auth-check}
       API_HF_JWT_PUBLIC_KEY_URL: ${API_HF_JWT_PUBLIC_KEY_URL-https://hub-ci.huggingface.co/api/keys/jwt}
@@ -65,7 +70,8 @@ services:
       API_UVICORN_HOSTNAME: 0.0.0.0 # required for docker compose
       API_UVICORN_NUM_WORKERS: ${API_UVICORN_NUM_WORKERS-2}
       API_UVICORN_PORT: ${API_UVICORN_PORT-8080}
-    network_mode: host
+    ports:
+      - ${API_UVICORN_PORT-8080}:${API_UVICORN_PORT-8080}
     depends_on:
       - mongodb
     restart: unless-stopped
@@ -91,14 +97,13 @@ services:
       PARQUET_AND_DATASET_INFO_BLOCKED_DATASETS: ${PARQUET_AND_DATASET_INFO_BLOCKED_DATASETS-}
       PARQUET_AND_DATASET_INFO_COMMIT_MESSAGE: ${PARQUET_AND_DATASET_INFO_COMMIT_MESSAGE-Update parquet files}
       PARQUET_AND_DATASET_INFO_COMMITTER_HF_TOKEN: ${PARQUET_AND_DATASET_INFO_COMMITTER_HF_TOKEN-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}
-      PARQUET_AND_DATASET_INFO_MAX_DATASET_SIZE: ${PARQUET_AND_DATASET_INFO_MAX_DATASET_SIZE-100_000_000}
+      PARQUET_AND_DATASET_INFO_MAX_DATASET_SIZE: ${PARQUET_AND_DATASET_INFO_MAX_DATASET_SIZE-500_000_000}
       PARQUET_AND_DATASET_INFO_SOURCE_REVISION: ${PARQUET_AND_DATASET_INFO_SOURCE_REVISION-main}
       PARQUET_AND_DATASET_INFO_SUPPORTED_DATASETS: ${PARQUET_AND_DATASET_INFO_SUPPORTED_DATASETS-}
       PARQUET_AND_DATASET_INFO_TARGET_REVISION: ${PARQUET_AND_DATASET_INFO_TARGET_REVISION-refs/convert/parquet}
       PARQUET_AND_DATASET_INFO_URL_TEMPLATE: ${PARQUET_AND_DATASET_INFO_URL_TEMPLATE-/datasets/%s/resolve/%s/%s}
       WORKER_STORAGE_PATHS: ${ASSETS_STORAGE_DIRECTORY-/assets}
       # ^ note: the datasets cache is automatically added, so no need to add it here
-    network_mode: host
     restart: always
   mongodb:
     image: docker.io/mongo
