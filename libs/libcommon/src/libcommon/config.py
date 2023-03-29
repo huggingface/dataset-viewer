@@ -27,13 +27,13 @@ from libcommon.constants import (
 from libcommon.processing_graph import ProcessingGraphSpecification
 
 ASSETS_BASE_URL = "assets"
-ASSETS_STORE_DIRECTORY = None
+ASSETS_STORAGE_DIRECTORY = None
 
 
 @dataclass(frozen=True)
 class AssetsConfig:
     base_url: str = ASSETS_BASE_URL
-    storage_directory: Optional[str] = ASSETS_STORE_DIRECTORY
+    storage_directory: Optional[str] = ASSETS_STORAGE_DIRECTORY
 
     @classmethod
     def from_env(cls) -> "AssetsConfig":
@@ -41,7 +41,7 @@ class AssetsConfig:
         with env.prefixed("ASSETS_"):
             return cls(
                 base_url=env.str(name="BASE_URL", default=ASSETS_BASE_URL),
-                storage_directory=env.str(name="STORAGE_DIRECTORY", default=ASSETS_STORE_DIRECTORY),
+                storage_directory=env.str(name="STORAGE_DIRECTORY", default=ASSETS_STORAGE_DIRECTORY),
             )
 
 
