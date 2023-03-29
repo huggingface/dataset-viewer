@@ -19,7 +19,7 @@ from worker.job_runners.config.parquet import (
     PreviousStepStatusError,
 )
 from worker.job_runners.config.parquet_and_info import (
-    ParquetAndDatasetInfoResponse,
+    ConfigParquetAndInfoResponse,
     ParquetFileItem,
 )
 
@@ -78,16 +78,16 @@ def get_job_runner(
             "ok",
             "config_1",
             HTTPStatus.OK,
-            ParquetAndDatasetInfoResponse(
+            ConfigParquetAndInfoResponse(
                 parquet_files=[
                     ParquetFileItem(
                         dataset="ok", config="config_1", split="train", url="url1", filename="filename1", size=0
                     ),
-                    ParquetFileItem(
-                        dataset="ok", config="config_2", split="train", url="url2", filename="filename2", size=0
-                    ),
+                    # ParquetFileItem(
+                    #     dataset="ok", config="config_2", split="train", url="url2", filename="filename2", size=0
+                    # ),
                 ],
-                dataset_info={"config_1": "value", "config_2": "value"},
+                dataset_info={"description": "value", "dataset_size": 10},
             ),
             None,
             ConfigParquetResponse(

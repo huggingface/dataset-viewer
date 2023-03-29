@@ -16,7 +16,7 @@ import datasets
 import datasets.config
 import numpy as np
 import requests
-from datasets import DownloadConfig, get_dataset_infos, load_dataset_builder
+from datasets import DownloadConfig, get_dataset_config_info, load_dataset_builder
 from datasets.builder import DatasetBuilder
 from datasets.data_files import EmptyDatasetError as _EmptyDatasetError
 from datasets.download import StreamingDownloadManager
@@ -164,13 +164,14 @@ def parse_repo_filename(filename: str) -> Tuple[str, str]:
 def create_parquet_file_item(
     repo_file: RepoFile,
     dataset: str,
+    config: str,
     hf_endpoint: str,
     target_revision: str,
     url_template: str,
 ) -> ParquetFileItem:
     if repo_file.size is None:
         raise ValueError(f"Cannot get size of {repo_file.rfilename}")
-    config, split = parse_repo_filename(repo_file.rfilename)
+    _, split = parse_repo_filename(repo_file.rfilename)
     return {
         "dataset": dataset,
         "config": config,
@@ -289,6 +290,7 @@ def raise_if_too_big_from_hub(
 
 def raise_if_too_big_from_datasets(
     dataset: str,
+    config: str,
     hf_endpoint: str,
     hf_token: Optional[str],
     revision: str,
@@ -302,6 +304,8 @@ def raise_if_too_big_from_datasets(
         dataset (`str`):
             A namespace (user or an organization) and a repo name separated
             by a `/`.
+        config (`str`):
+            Dataset configuration name
         hf_endpoint (`str`):
             The Hub endpoint (for example: "https://huggingface.co")
         hf_token (`str`, `optional`):
@@ -327,8 +331,8 @@ def raise_if_too_big_from_datasets(
         )
     dataset_size = 0
     with contextlib.suppress(Exception):
-        infos = get_dataset_infos(path=dataset, revision=revision, use_auth_token=hf_token)
-        dataset_size = sum(value.dataset_size for value in infos.values() if value.dataset_size is not None)
+        info = get_dataset_config_info(path=dataset, config_name=config, revision=revision, use_auth_token=hf_token)
+        dataset_size = info.dataset_size if info.dataset_size is not None else 0
     if dataset_size > max_dataset_size:
         raise DatasetTooBigFromDatasetsError(
             f"The dataset is too big to be converted to Parquet. The size of the dataset ({dataset_size} B, as given"
@@ -339,6 +343,7 @@ def raise_if_too_big_from_datasets(
 
 def raise_if_not_supported(
     dataset: str,
+    config: str,
     hf_endpoint: str,
     hf_token: Optional[str],
     committer_hf_token: Optional[str],
@@ -357,6 +362,8 @@ def raise_if_not_supported(
         dataset (`str`):
             A namespace (user or an organization) and a repo name separated
             by a `/`.
+        config (`str`):
+            Dataset configuration name
         hf_endpoint (`str`):
             The Hub endpoint (for example: "https://huggingface.co")
         hf_token (`str`, `optional`):
@@ -409,6 +416,7 @@ def raise_if_not_supported(
         return
     raise_if_too_big_from_datasets(
         dataset=dataset,
+        config=config,
         hf_endpoint=hf_endpoint,
         hf_token=hf_token,
         revision=revision,
@@ -664,7 +672,7 @@ def compute_config_parquet_and_info_response(
             A namespace (user or an organization) and a repo name separated
             by a `/`.
         config (`str`):
-            Dataset config name
+            Dataset configuration name
         hf_endpoint (`str`):
             The Hub endpoint (for example: "https://huggingface.co")
         hf_token (`str`, `optional`):
@@ -692,7 +700,7 @@ def compute_config_parquet_and_info_response(
         max_external_data_files (`int`):
             The maximum number of external data files of a dataset. This is for datasets with loading scripts only.
     Returns:
-        `ConfigParquetAndInfoResponse`: An object with the parquet_and_dataset_info_response
+        `ConfigParquetAndInfoResponse`: An object with the config_parquet_and_info_response
           (dataset info and list of parquet files).
     <Tip>
     Raises the following errors:
@@ -741,6 +749,7 @@ def compute_config_parquet_and_info_response(
 
     raise_if_not_supported(
         dataset=dataset,
+        config=config,
         hf_endpoint=hf_endpoint,
         hf_token=hf_token,
         committer_hf_token=committer_hf_token,
@@ -809,7 +818,7 @@ def compute_config_parquet_and_info_response(
         CommitOperationAdd(path_in_repo=file, path_or_fileobj=local_file)
         for (file, local_file) in files_to_add.items()
     ]
-    logging.debug(f"add_operations={add_operations}")
+    logging.debug(f"{add_operations=}")
 
     committer_hf_api.create_commit(
         repo_id=dataset,
@@ -827,19 +836,20 @@ def compute_config_parquet_and_info_response(
     # we could also check that the list of parquet files is exactly what we expect
     # let's not over engineer this for now. After all, what is on the Hub is the source of truth
     # and the /parquet response is more a helper to get the list of parquet files
-    return {
-        "parquet_files": [
+    return ConfigParquetAndInfoResponse(
+        parquet_files=[
             create_parquet_file_item(
                 repo_file=repo_file,
                 dataset=dataset,
+                config=config,
                 hf_endpoint=hf_endpoint,
                 target_revision=target_revision,
                 url_template=url_template,
             )
             for repo_file in repo_files
         ],
-        "dataset_info": dataset_info,
-    }
+        dataset_info=dataset_info,
+    )
 
 
 class ConfigParquetAndInfoJobRunner(DatasetsBasedJobRunner):

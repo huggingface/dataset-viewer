@@ -10,10 +10,7 @@ from libcommon.dataset import DatasetNotFoundError
 from libcommon.simple_cache import DoesNotExist, SplitFullName, get_response
 
 from worker.job_runner import CompleteJobResult, JobRunner, JobRunnerError
-from worker.job_runners.config.parquet_and_info import (
-    ConfigParquetAndInfoResponse,
-    ParquetFileItem,
-)
+from worker.job_runners.config.parquet_and_info import ParquetFileItem
 
 ConfigParquetJobRunnerErrorCode = Literal[
     "PreviousStepStatusError",

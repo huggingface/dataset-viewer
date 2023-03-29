@@ -371,7 +371,7 @@ def create_parquet_and_dataset_info_response(dataset: str, data_type: Literal["c
                 "size": size,
             }
         ],
-        "dataset_info": {config: info},
+        "dataset_info": info,
     }
 
 
