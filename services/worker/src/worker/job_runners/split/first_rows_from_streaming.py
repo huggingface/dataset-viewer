@@ -39,9 +39,9 @@ from libcommon.simple_cache import SplitFullName as _SplitFullName
 from libcommon.simple_cache import get_response
 from libcommon.storage import StrPath
 from libcommon.utils import orjson_dumps
+from libcommon.viewer_utils.features import get_cell_value
 
 from worker.config import AppConfig, FirstRowsConfig
-from worker.features import get_cell_value
 from worker.job_runner import (
     CompleteJobResult,
     ConfigNotFoundError,
