@@ -109,7 +109,7 @@ def auth_check(
             try:
                 logging.debug(
                     f"Checking authentication on the Hugging Face Hub for dataset {dataset}, url: {url}, timeout:"
-                    f" {hf_timeout_seconds}"
+                    f" {hf_timeout_seconds}, authorization: {auth.authorization}"
                 )
                 response = requests.get(url, auth=auth, timeout=hf_timeout_seconds)
             except Exception as err:

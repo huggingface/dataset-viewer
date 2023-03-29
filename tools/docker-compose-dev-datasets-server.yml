@@ -13,8 +13,10 @@ services:
       ASSETS_DIRECTORY: ${ASSETS_STORAGE_DIRECTORY-/assets}
       HOST: localhost
       PORT: 80
-      URL_ADMIN: http://admin:${ADMIN_UVICORN_PORT-8081}
-      URL_API: http://api:${API_UVICORN_PORT-8080}
+      URL_ADMIN: http://host.docker.internal:${ADMIN_UVICORN_PORT-8081}
+      URL_API: http://host.docker.internal:${API_UVICORN_PORT-8080}
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     depends_on:
       - api
       - admin
@@ -41,9 +43,7 @@ services:
     depends_on:
       - mongodb
     restart: always
-    ports:
-      # for debug
-      - ${ADMIN_UVICORN_PORT-8081}:${ADMIN_UVICORN_PORT-8081}
+    network_mode: host
   api:
     build:
       context: ..
@@ -54,7 +54,7 @@ services:
     environment:
       # service
       API_HF_AUTH_PATH: ${API_HF_AUTH_PATH-/api/datasets/%s/auth-check}
-      API_HF_JWT_PUBLIC_KEY_URL: ${API_HF_JWT_PUBLIC_KEY_URL-https://huggingface.co/api/keys/jwt}
+      API_HF_JWT_PUBLIC_KEY_URL: ${API_HF_JWT_PUBLIC_KEY_URL-https://hub-ci.huggingface.co/api/keys/jwt}
       API_HF_JWT_ALGORITHM: ${API_HF_JWT_ALGORITHM-EdDSA}
       API_HF_TIMEOUT_SECONDS: ${API_HF_TIMEOUT_SECONDS-0.2}
       API_MAX_AGE_LONG: ${API_MAX_AGE_LONG-120}
@@ -65,9 +65,7 @@ services:
       API_UVICORN_HOSTNAME: 0.0.0.0 # required for docker compose
       API_UVICORN_NUM_WORKERS: ${API_UVICORN_NUM_WORKERS-2}
       API_UVICORN_PORT: ${API_UVICORN_PORT-8080}
-    ports:
-      # for debug
-      - ${API_UVICORN_PORT-8080}:${API_UVICORN_PORT-8080}
+    network_mode: host
     depends_on:
       - mongodb
     restart: unless-stopped
@@ -75,6 +73,8 @@ services:
     build:
       context: ..
       dockerfile: services/worker/dev.Dockerfile
+    deploy:
+      replicas: 4
     volumes:
       - assets:${ASSETS_STORAGE_DIRECTORY-/assets}:rw
     extends:
@@ -98,15 +98,13 @@ services:
       PARQUET_AND_DATASET_INFO_URL_TEMPLATE: ${PARQUET_AND_DATASET_INFO_URL_TEMPLATE-/datasets/%s/resolve/%s/%s}
       WORKER_STORAGE_PATHS: ${ASSETS_STORAGE_DIRECTORY-/assets}
       # ^ note: the datasets cache is automatically added, so no need to add it here
-    depends_on:
-      - mongodb
+    network_mode: host
     restart: always
   mongodb:
     image: docker.io/mongo
     volumes:
       - mongo:/data/db:rw
     ports:
-      # for debug
       - "${MONGO_PORT-27017}:27017"
 volumes:
   assets:

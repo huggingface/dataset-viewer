@@ -13,7 +13,7 @@
   - local: first_rows
     title: Preview a dataset
   - local: parquet
-    title: List parquet files
+    title: List Parquet files
 - title: Conceptual Guides
   sections:
   - local: configs_and_splits

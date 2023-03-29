@@ -12,6 +12,7 @@ from starlette.responses import JSONResponse, Response
 
 ApiErrorCode = Literal[
     "MissingRequiredParameter",
+    "InvalidParameter",
     "ResponseNotReady",
     "ResponseNotFound",
     "UnexpectedError",
@@ -42,6 +43,13 @@ class MissingRequiredParameterError(ApiCustomError):
 
     def __init__(self, message: str):
         super().__init__(message, HTTPStatus.UNPROCESSABLE_ENTITY, "MissingRequiredParameter")
+
+
+class InvalidParameterError(ApiCustomError):
+    """Raised when a parameter has an invalid value."""
+
+    def __init__(self, message: str):
+        super().__init__(message, HTTPStatus.UNPROCESSABLE_ENTITY, "InvalidParameter")
 
 
 class ResponseNotReadyError(ApiCustomError):
