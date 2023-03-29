@@ -85,9 +85,7 @@ def compute_parquet_response(dataset: str, config: str) -> ConfigParquetResponse
     try:
         response = get_response(kind=previous_step, dataset=dataset)
     except DoesNotExist as e:
-        raise DatasetNotFoundError(
-            f"No response found in previous step '{previous_step}' for this dataset.", e
-        ) from e
+        raise DatasetNotFoundError(f"No response found in previous step '{previous_step}' for this dataset.", e) from e
     if response["http_status"] != HTTPStatus.OK:
         raise PreviousStepStatusError(f"Previous step gave an error: {response['http_status']}.")
 
