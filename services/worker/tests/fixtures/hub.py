@@ -338,13 +338,13 @@ def create_dataset_info_response_for_audio(dataset: str, config: str) -> Any:
         "splits": {"train": {"name": "train", "num_bytes": 59, "num_examples": 1, "dataset_name": "parquet"}},
         "download_checksums": {
             "SOME_KEY": {
-                "num_bytes": 1383,
+                "num_bytes": AUDIO_PARQUET_SIZE,
                 "checksum": None,
             }
         },
-        "download_size": 1383,
+        "download_size": AUDIO_PARQUET_SIZE,
         "dataset_size": 59,
-        "size_in_bytes": 1442,
+        "size_in_bytes": 1443,
     }
 
 
@@ -375,8 +375,8 @@ def create_parquet_and_dataset_info_response(dataset: str, data_type: Literal["c
     }
 
 
-CSV_PARQUET_SIZE = 1_865
-AUDIO_PARQUET_SIZE = 1_383
+CSV_PARQUET_SIZE = 1_866
+AUDIO_PARQUET_SIZE = 1_384
 
 DATA_cols = {
     "col_1": {"_type": "Value", "dtype": "int64"},
