@@ -2,8 +2,13 @@
 # Copyright 2022 The HuggingFace Authors.
 
 import logging
+import os
+import random
+import shutil
 from functools import lru_cache, partial
-from typing import Any, List, Mapping, Optional, TypedDict
+from itertools import islice
+from os import PathLike
+from typing import Any, List, Mapping, Optional, TypedDict, Union
 
 import numpy as np
 import pyarrow as pa
@@ -11,6 +16,11 @@ import pyarrow.parquet as pq
 from datasets import Features
 from hffs.fs import HfFileSystem
 from libcommon.processing_graph import ProcessingStep
+from libcommon.viewer_utils.asset import (
+    glob_rows_in_assets_dir,
+    update_last_modified_date_of_rows_in_assets_dir,
+)
+from libcommon.viewer_utils.features import get_cell_value
 from starlette.requests import Request
 from starlette.responses import Response
 from tqdm.contrib.concurrent import thread_map
@@ -32,6 +42,14 @@ from api.utils import (
 MAX_ROWS = 100
 
 PARQUET_REVISION = "refs/convert/parquet"
+CACHED_ASSETS_DIR_DATASET_SEPARATOR_SUFFIX = "cached"
+
+CLEAN_CACHE_PROBA = 0.05
+KEEP_ROWS_BELOW_INDEX = 100
+KEEP_N_MOST_RECENT_ROWS = 1000
+MAX_CLEAN_SAMPLE_SIZE = 10_000
+
+StrPath = Union[str, PathLike[str]]
 
 
 class FileSystemError(Exception):
@@ -43,6 +61,10 @@ class ParquetResponseFormatError(Exception):
 
 
 class ParquetResponseEmptyError(Exception):
+    pass
+
+
+class ParquetDataProcessingError(Exception):
     pass
 
 
@@ -63,7 +85,7 @@ def get_parquet_fs(dataset: str, hf_token: Optional[str]) -> HfFileSystem:
     return HfFileSystem(dataset, repo_type="dataset", revision=PARQUET_REVISION, token=hf_token)
 
 
-UNSUPPORTED_FEATURES_MAGIC_STRINGS = ["Image(", "Audio(", "'binary'"]
+UNSUPPORTED_FEATURES_MAGIC_STRINGS = ["Audio(", "'binary'"]
 
 
 class RowsIndex:
@@ -225,10 +247,13 @@ class Indexer:
         )
 
 
+Row = Mapping[str, Any]
+
+
 class FeatureItem(TypedDict):
     feature_idx: int
     name: str
-    type: Mapping[str, Any]
+    type: Row
 
 
 # in JSON, dicts do not carry any order, so we need to return a list
@@ -256,35 +281,138 @@ class RowItem(TypedDict):
     truncated_cells: List[str]
 
 
-def to_rows_list(pa_table: pa.Table, offset: int, features: Features, unsupported_columns: List[str]) -> List[RowItem]:
+def to_rows_list(
+    pa_table: pa.Table,
+    dataset: str,
+    config: str,
+    split: str,
+    assets_base_url: str,
+    assets_directory: StrPath,
+    offset: int,
+    features: Features,
+    unsupported_columns: List[str],
+) -> List[RowItem]:
     num_rows = pa_table.num_rows
     for idx, (column, feature) in enumerate(features.items()):
         if column in unsupported_columns:
             pa_table = pa_table.add_column(idx, column, pa.array([None] * num_rows))
+    # transform the rows, if needed (e.g. save the images or audio to the assets, and return their URL)
+    try:
+        transformed_rows = transform_rows(
+            dataset=dataset,
+            config=config,
+            split=split,
+            rows=pa_table.to_pylist(),
+            features=features,
+            assets_base_url=assets_base_url,
+            assets_directory=assets_directory,
+        )
+    except Exception as err:
+        raise ParquetDataProcessingError(
+            "Server error while post-processing the split rows. Please report the issue."
+        ) from err
     return [
         {
             "row_idx": idx + offset,
             "row": row,
             "truncated_cells": unsupported_columns,
         }
-        for idx, row in enumerate(pa_table.to_pylist())
+        for idx, row in enumerate(transformed_rows)
     ]
 
 
-def create_response(pa_table: pa.Table, offset: int, features: Features, unsupported_columns: List[str]) -> Any:
+def transform_rows(
+    dataset: str,
+    config: str,
+    split: str,
+    rows: List[Row],
+    features: Features,
+    assets_base_url: str,
+    assets_directory: StrPath,
+) -> List[Row]:
+    return [
+        {
+            featureName: get_cell_value(
+                dataset=dataset,
+                config=config,
+                split=split,
+                row_idx=row_idx,
+                cell=row[featureName] if featureName in row else None,
+                featureName=featureName,
+                fieldType=fieldType,
+                assets_base_url=assets_base_url,
+                assets_directory=assets_directory,
+                dataset_separator_suffix=CACHED_ASSETS_DIR_DATASET_SEPARATOR_SUFFIX,
+            )
+            for (featureName, fieldType) in features.items()
+        }
+        for row_idx, row in enumerate(rows)
+    ]
+
+
+def _greater_or_equal(row_dir_name: str, row_idx: int, on_error: bool) -> bool:
+    try:
+        return int(row_dir_name) >= row_idx
+    except ValueError:
+        return on_error
+
+
+def clean_cached_assets(
+    dataset: str,
+    assets_directory: StrPath,
+    keep_rows_below_index: int,
+    keep_n_most_recent_rows: int,
+    max_clean_sample_size: int,
+):
+    row_directories = glob_rows_in_assets_dir(
+        dataset, assets_directory, dataset_separator_suffix=CACHED_ASSETS_DIR_DATASET_SEPARATOR_SUFFIX
+    )
+    row_directories_sample = list(
+        islice(
+            (
+                row_dir
+                for row_dir in row_directories
+                if _greater_or_equal(row_dir.name, keep_rows_below_index, on_error=True)
+            ),
+            max_clean_sample_size + keep_n_most_recent_rows,
+        )
+    )
+    if len(row_directories_sample) > keep_n_most_recent_rows:
+        row_dirs_to_delete = sorted(row_directories_sample, key=os.path.getmtime, reverse=True)[
+            keep_n_most_recent_rows:
+        ]
+        for row_dir_to_delete in row_dirs_to_delete:
+            shutil.rmtree(row_dir_to_delete, ignore_errors=True)
+
+
+def create_response(
+    dataset: str,
+    config: str,
+    split: str,
+    assets_base_url: str,
+    assets_directory: StrPath,
+    pa_table: pa.Table,
+    offset: int,
+    features: Features,
+    unsupported_columns: List[str],
+) -> Any:
     if set(pa_table.column_names).intersection(set(unsupported_columns)):
         raise RuntimeError(
             "The pyarrow table contains unsupported columns. They should have been ignored in the row group reader."
         )
     return {
         "features": to_features_list(features),
-        "rows": to_rows_list(pa_table, offset, features, unsupported_columns),
+        "rows": to_rows_list(
+            pa_table, dataset, config, split, assets_base_url, assets_directory, offset, features, unsupported_columns
+        ),
     }
 
 
 def create_rows_endpoint(
     config_parquet_processing_steps: List[ProcessingStep],
     init_processing_steps: List[ProcessingStep],
+    assets_base_url: str,
+    assets_directory: StrPath,
     hf_endpoint: str,
     hf_token: Optional[str] = None,
     hf_jwt_public_key: Optional[str] = None,
@@ -335,8 +463,37 @@ def create_rows_endpoint(
                     rows_index = indexer.get_rows_index(dataset=dataset, config=config, split=split)
                 with StepProfiler(method="rows_endpoint", step="query the rows"):
                     pa_table = rows_index.query(offset=offset, length=length)
+                with StepProfiler(method="rows_endpoint", step="clean cache"):
+                    if random.random() < CLEAN_CACHE_PROBA:  # no need to do it every time
+                        clean_cached_assets(
+                            dataset,
+                            assets_directory,
+                            keep_rows_below_index=KEEP_ROWS_BELOW_INDEX,
+                            keep_n_most_recent_rows=KEEP_N_MOST_RECENT_ROWS,
+                            max_clean_sample_size=MAX_CLEAN_SAMPLE_SIZE,
+                        )
                 with StepProfiler(method="rows_endpoint", step="transform to a list"):
-                    response = create_response(pa_table, offset, rows_index.features, rows_index.unsupported_columns)
+                    response = create_response(
+                        dataset,
+                        config,
+                        split,
+                        assets_base_url,
+                        assets_directory,
+                        pa_table,
+                        offset,
+                        rows_index.features,
+                        rows_index.unsupported_columns,
+                    )
+                with StepProfiler(method="rows_endpoint", step="update last modified time of rows in asset dir"):
+                    update_last_modified_date_of_rows_in_assets_dir(
+                        dataset,
+                        config,
+                        split,
+                        offset,
+                        length,
+                        assets_directory=assets_directory,
+                        dataset_separator_suffix=CACHED_ASSETS_DIR_DATASET_SEPARATOR_SUFFIX,
+                    )
                 with StepProfiler(method="rows_endpoint", step="generate the OK response"):
                     return get_json_ok_response(content=response, max_age=max_age_long)
             except Exception as e:
