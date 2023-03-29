@@ -328,7 +328,7 @@ def create_dataset_info_response_for_csv(dataset: str, config: str) -> Any:
     }
 
 
-def create_dataset_info_response_for_audio(dataset: str, config: str) -> Any:
+def create_dataset_info_response_for_audio() -> Any:
     return {
         "description": "",
         "citation": "",
@@ -356,7 +356,7 @@ def create_parquet_and_dataset_info_response(dataset: str, data_type: Literal["c
     info = (
         create_dataset_info_response_for_csv(dataset, config)
         if data_type == "csv"
-        else create_dataset_info_response_for_audio(dataset, config)
+        else create_dataset_info_response_for_audio()
     )
     return {
         "parquet_files": [
