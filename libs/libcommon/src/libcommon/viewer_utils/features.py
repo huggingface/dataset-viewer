@@ -2,6 +2,7 @@
 # Copyright 2022 The HuggingFace Authors.
 
 import json
+from io import BytesIO
 from typing import Any, List, Optional, Union
 from zlib import adler32
 
@@ -18,11 +19,11 @@ from datasets import (
     TranslationVariableLanguages,
     Value,
 )
-from libcommon.storage import StrPath
 from numpy import ndarray
 from PIL import Image as PILImage  # type: ignore
 
-from worker.asset import create_audio_files, create_image_file
+from libcommon.storage import StrPath
+from libcommon.viewer_utils.asset import create_audio_files, create_image_file
 
 
 def append_hash_suffix(string: str, json_path: Optional[List[Union[str, int]]] = None) -> str:
@@ -52,11 +53,15 @@ def image(
     assets_base_url: str,
     assets_directory: StrPath,
     json_path: Optional[List[Union[str, int]]] = None,
+    dataset_separator_suffix: str = "",
+    overwrite: bool = True,
 ) -> Any:
     if value is None:
         return None
+    if isinstance(value, dict) and value.get("bytes"):
+        value = PILImage.open(BytesIO(value["bytes"]))
     if not isinstance(value, PILImage.Image):
-        raise TypeError("image cell must be a PIL image")
+        raise TypeError("image cell must be a PIL image or an encoded dict of an image")
     # attempt to generate one of the supported formats; if unsuccessful, throw an error
     for ext in [".jpg", ".png"]:
         try:
@@ -70,8 +75,11 @@ def image(
                 image=value,
                 assets_base_url=assets_base_url,
                 assets_directory=assets_directory,
+                dataset_separator_suffix=dataset_separator_suffix,
+                overwrite=overwrite,
             )
         except OSError:
+            raise
             # if wrong format, try the next one, see https://github.com/huggingface/datasets-server/issues/191
             #  OSError: cannot write mode P as JPEG
             #  OSError: cannot write mode RGBA as JPEG
@@ -89,9 +97,13 @@ def audio(
     assets_base_url: str,
     assets_directory: StrPath,
     json_path: Optional[List[Union[str, int]]] = None,
+    dataset_separator_suffix: str = "",
+    overwrite: bool = True,
 ) -> Any:
     if value is None:
         return None
+    if isinstance(value, dict) and value.get("bytes"):
+        value = Audio().decode_example(value)
     try:
         array = value["array"]
         sampling_rate = value["sampling_rate"]
@@ -113,6 +125,8 @@ def audio(
         assets_base_url=assets_base_url,
         filename_base=append_hash_suffix("audio", json_path),
         assets_directory=assets_directory,
+        dataset_separator_suffix=dataset_separator_suffix,
+        overwrite=overwrite,
     )
 
 
@@ -127,6 +141,8 @@ def get_cell_value(
     assets_base_url: str,
     assets_directory: StrPath,
     json_path: Optional[List[Union[str, int]]] = None,
+    dataset_separator_suffix: str = "",
+    overwrite: bool = True,
 ) -> Any:
     # always allow None values in the cells
     if cell is None:
@@ -142,6 +158,8 @@ def get_cell_value(
             assets_base_url=assets_base_url,
             assets_directory=assets_directory,
             json_path=json_path,
+            dataset_separator_suffix=dataset_separator_suffix,
+            overwrite=overwrite,
         )
     elif isinstance(fieldType, Audio):
         return audio(
@@ -154,6 +172,8 @@ def get_cell_value(
             assets_base_url=assets_base_url,
             assets_directory=assets_directory,
             json_path=json_path,
+            dataset_separator_suffix=dataset_separator_suffix,
+            overwrite=overwrite,
         )
     elif isinstance(fieldType, list):
         if type(cell) != list:
@@ -173,6 +193,8 @@ def get_cell_value(
                 assets_base_url=assets_base_url,
                 assets_directory=assets_directory,
                 json_path=json_path + [idx] if json_path else [idx],
+                dataset_separator_suffix=dataset_separator_suffix,
+                overwrite=overwrite,
             )
             for (idx, subCell) in enumerate(cell)
         ]
@@ -192,6 +214,8 @@ def get_cell_value(
                     assets_base_url=assets_base_url,
                     assets_directory=assets_directory,
                     json_path=json_path + [idx] if json_path else [idx],
+                    dataset_separator_suffix=dataset_separator_suffix,
+                    overwrite=overwrite,
                 )
                 for (idx, subCell) in enumerate(cell)
             ]
@@ -214,6 +238,8 @@ def get_cell_value(
                         assets_base_url=assets_base_url,
                         assets_directory=assets_directory,
                         json_path=json_path + [key, idx] if json_path else [key, idx],
+                        dataset_separator_suffix=dataset_separator_suffix,
+                        overwrite=overwrite,
                     )
                     for (idx, subCellItem) in enumerate(subCell)
                 ]
@@ -236,6 +262,8 @@ def get_cell_value(
                 assets_base_url=assets_base_url,
                 assets_directory=assets_directory,
                 json_path=json_path + [key] if json_path else [key],
+                dataset_separator_suffix=dataset_separator_suffix,
+                overwrite=overwrite,
             )
             for (key, subCell) in cell.items()
         }
