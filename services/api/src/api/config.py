@@ -6,6 +6,7 @@ from typing import List, Mapping, Optional
 
 from environs import Env
 from libcommon.config import (
+    AssetsConfig,
     CacheConfig,
     CommonConfig,
     ProcessingGraphConfig,
@@ -77,6 +78,7 @@ class ApiConfig:
 @dataclass(frozen=True)
 class AppConfig:
     api: ApiConfig = field(default_factory=ApiConfig)
+    assets: AssetsConfig = field(default_factory=AssetsConfig)
     cache: CacheConfig = field(default_factory=CacheConfig)
     common: CommonConfig = field(default_factory=CommonConfig)
     queue: QueueConfig = field(default_factory=QueueConfig)
@@ -87,6 +89,7 @@ class AppConfig:
         common_config = CommonConfig.from_env()
         return cls(
             common=common_config,
+            assets=AssetsConfig.from_env(),
             cache=CacheConfig.from_env(),
             processing_graph=ProcessingGraphConfig.from_env(),
             queue=QueueConfig.from_env(),
