@@ -5,9 +5,17 @@ import logging
 from http import HTTPStatus
 from typing import Any, List, Literal, Mapping, Optional
 
-from libcommon.constants import PROCESSING_STEP_SPLIT_NAMES_FROM_DATASET_INFO_VERSION
+from libcommon.constants import (
+    PROCESSING_STEP_SPLIT_NAMES_FROM_DATASET_INFO_VERSION,
+    PROCESSING_STEP_SPLIT_NAMES_FROM_STREAMING_VERSION,
+)
 from libcommon.dataset import DatasetNotFoundError
-from libcommon.simple_cache import DoesNotExist, SplitFullName, get_response
+from libcommon.simple_cache import (
+    DoesNotExist,
+    SplitFullName,
+    get_response,
+    get_response_without_content,
+)
 
 from worker.job_runner import CompleteJobResult, JobRunnerError
 from worker.job_runners._datasets_based_job_runner import DatasetsBasedJobRunner
@@ -16,6 +24,7 @@ from worker.utils import SplitItem, SplitsList
 SplitNamesFromDatasetInfoJobRunnerErrorCode = Literal[
     "PreviousStepStatusError",
     "PreviousStepFormatError",
+    "ResponseAlreadyComputedError",
 ]
 
 
@@ -49,9 +58,15 @@ class PreviousStepFormatError(SplitNamesFromDatasetInfoJobRunnerError):
         super().__init__(message, HTTPStatus.INTERNAL_SERVER_ERROR, "PreviousStepFormatError", cause, False)
 
 
+class ResponseAlreadyComputedError(SplitNamesFromDatasetInfoJobRunnerError):
+    """Raised when reponse has been already computed by /split-names-from-streaming job runner."""
+
+    def __init__(self, message: str, cause: Optional[BaseException] = None):
+        super().__init__(message, HTTPStatus.INTERNAL_SERVER_ERROR, "ResponseAlreadyComputedError", cause, True)
+
+
 def compute_split_names_from_dataset_info_response(
-    dataset: str,
-    config: str,
+    dataset: str, config: str, dataset_git_revision: Optional[str]
 ) -> SplitsList:
     """
     Get the response of /split-names-from-dataset-info for one specific dataset and config on huggingface.co
@@ -76,9 +91,27 @@ def compute_split_names_from_dataset_info_response(
             If the content of the previous step has not the expected format
         - [`~libcommon.dataset.DatasetNotFoundError`]
             If previous step content was not found for the dataset
+        - [`~job_runners.split_names_from_dataset_info.ResponseAlreadyComputedError`]
+          If reponse has been already computed by /split-names-from-streaming job runner.
     </Tip>
     """
     logging.info(f"get split names from dataset info for dataset={dataset}, config={config}")
+    try:
+        streaming_response = get_response_without_content(
+            kind="/split-names-from-streaming", dataset=dataset, config=config
+        )
+        if (
+            streaming_response["http_status"] == HTTPStatus.OK
+            and streaming_response["job_runner_version"] == PROCESSING_STEP_SPLIT_NAMES_FROM_STREAMING_VERSION
+            and streaming_response["progress"] == 1.0  # completed response
+            and dataset_git_revision is not None
+            and streaming_response["dataset_git_revision"] == dataset_git_revision
+        ):
+            raise ResponseAlreadyComputedError(
+                "Response has already been computed by /split-names-from-streaming. Compute will be skipped."
+            )
+    except DoesNotExist:
+        logging.debug("no cache found for /split-names-from-streaming, will proceed to compute from config-info")
     try:
         response = get_response(kind="config-info", dataset=dataset)
     except DoesNotExist as e:
@@ -114,8 +147,11 @@ class SplitNamesFromDatasetInfoJobRunner(DatasetsBasedJobRunner):
             raise ValueError("dataset is required")
         if self.config is None:
             raise ValueError("config is required")
+        dataset_git_revision = self.get_dataset_git_revision()
         return CompleteJobResult(
-            compute_split_names_from_dataset_info_response(dataset=self.dataset, config=self.config)
+            compute_split_names_from_dataset_info_response(
+                dataset=self.dataset, config=self.config, dataset_git_revision=dataset_git_revision
+            )
         )
 
     def get_new_splits(self, content: Mapping[str, Any]) -> set[SplitFullName]:
