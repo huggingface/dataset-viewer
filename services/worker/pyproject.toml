@@ -9,12 +9,12 @@ license = "Apache-2.0"
 Pillow = "^9.4.0"
 PyICU = "^2.10.2"
 aiohttp = "^3.8.4"
-apache-beam = "2.41.0" # ^2 gives a InvalidWheelName error because it tries to install 2.42 that has not been released...
 bs4 = "^0.0.1"
 conllu = "^4.5.2"
-datasets = { extras = ["audio", "vision"], version = "~2.10.0" }
+datasets = { extras = ["audio", "vision"], version = "^2.10.1" }
 environs = "^9.5.0"
 gdown = "^4.6.3"
+hffs = {git = "https://github.com/huggingface/hffs.git", rev="0e187e74d38e9436353691f4a7a26b15f0663f58"}
 huggingface-hub = "^0.12.0"
 kenlm = { git = "https://github.com/kpu/kenlm", branch = "master" }
 kss = "^2.6.0"
@@ -23,8 +23,10 @@ lm-dataformat = "^0.0.20"
 lxml = "^4.9.2"
 nlp = "^0.4.0"
 nltk = "^3.8.1"
+numpy = "~1.22.4"
 openpyxl = "^3.1.1"
 pdf2image = "^1.16.2"
+pyarrow = "^11.0.0"
 py7zr = "^0.20.4"
 pydub = "^0.25.1"
 pypdf2 = "^3.0.1"
@@ -84,5 +86,10 @@ exclude = 'vendors'
 strict = true
 
 [[tool.mypy.overrides]]
-module = "datasets.*"
+module = [
+    "datasets.*",
+    "hffs.*",
+    "pyarrow.*",
+    "tqdm.*"
+]
 ignore_missing_imports = true
