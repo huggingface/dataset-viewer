@@ -41,7 +41,7 @@ from libcommon.queue import JobInfo
 from libcommon.simple_cache import SplitFullName
 
 from worker.config import AppConfig, ParquetAndInfoConfig
-from worker.job_runner import CompleteJobResult, JobRunnerError
+from worker.job_runner import CompleteJobResult, JobRunnerError, ParameterMissingError
 from worker.job_runners._datasets_based_job_runner import DatasetsBasedJobRunner
 
 ConfigParquetAndInfoJobRunnerErrorCode = Literal[
@@ -881,9 +881,9 @@ class ConfigParquetAndInfoJobRunner(DatasetsBasedJobRunner):
 
     def compute(self) -> CompleteJobResult:
         if self.dataset is None:
-            raise ValueError("dataset is required")
+            raise ParameterMissingError("'dataset' parameter is required")
         if self.config is None:
-            raise ValueError("config is required")
+            raise ParameterMissingError("'config' parameter is required")
         return CompleteJobResult(
             compute_config_parquet_and_info_response(
                 dataset=self.dataset,

@@ -9,7 +9,12 @@ from libcommon.constants import PROCESSING_STEP_CONFIG_PARQUET_VERSION
 from libcommon.dataset import DatasetNotFoundError
 from libcommon.simple_cache import DoesNotExist, SplitFullName, get_response
 
-from worker.job_runner import CompleteJobResult, JobRunner, JobRunnerError
+from worker.job_runner import (
+    CompleteJobResult,
+    JobRunner,
+    JobRunnerError,
+    ParameterMissingError,
+)
 from worker.job_runners.config.parquet_and_info import ParquetFileItem
 
 ConfigParquetJobRunnerErrorCode = Literal[
@@ -104,8 +109,10 @@ class ConfigParquetJobRunner(JobRunner):
         return PROCESSING_STEP_CONFIG_PARQUET_VERSION
 
     def compute(self) -> CompleteJobResult:
+        if self.dataset is None:
+            raise ParameterMissingError("'dataset' parameter is required")
         if self.config is None:
-            raise ValueError("config is required")
+            raise ParameterMissingError("'config' parameter is required")
         return CompleteJobResult(compute_parquet_response(dataset=self.dataset, config=self.config))
 
     def get_new_splits(self, content: Mapping[str, Any]) -> set[SplitFullName]:

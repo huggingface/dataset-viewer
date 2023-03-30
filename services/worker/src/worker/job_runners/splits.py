@@ -10,7 +10,7 @@ from datasets.data_files import EmptyDatasetError as _EmptyDatasetError
 from libcommon.constants import PROCESSING_STEP_SPLITS_VERSION
 from libcommon.simple_cache import SplitFullName
 
-from worker.job_runner import CompleteJobResult, JobRunnerError
+from worker.job_runner import CompleteJobResult, JobRunnerError, ParameterMissingError
 from worker.job_runners._datasets_based_job_runner import DatasetsBasedJobRunner
 
 SplitsJobRunnerErrorCode = Literal[
@@ -135,6 +135,8 @@ class SplitsJobRunner(DatasetsBasedJobRunner):
         return PROCESSING_STEP_SPLITS_VERSION
 
     def compute(self) -> CompleteJobResult:
+        if self.dataset is None:
+            raise ParameterMissingError("'dataset' parameter is required")
         return CompleteJobResult(compute_splits_response(dataset=self.dataset, hf_token=self.common_config.hf_token))
 
     def get_new_splits(self, content: Mapping[str, Any]) -> set[SplitFullName]:

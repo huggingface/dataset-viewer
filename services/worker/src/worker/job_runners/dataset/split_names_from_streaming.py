@@ -11,7 +11,12 @@ from libcommon.constants import (
 from libcommon.dataset import DatasetNotFoundError
 from libcommon.simple_cache import DoesNotExist, SplitFullName, get_response
 
-from worker.job_runner import JobResult, JobRunner, JobRunnerError
+from worker.job_runner import (
+    JobResult,
+    JobRunner,
+    JobRunnerError,
+    ParameterMissingError,
+)
 from worker.utils import ConfigItem, SplitItem
 
 DatasetSplitNamesFromStreamingJobRunnerErrorCode = Literal[
@@ -162,7 +167,7 @@ class DatasetSplitNamesFromStreamingJobRunner(JobRunner):
 
     def compute(self) -> JobResult:
         if self.dataset is None:
-            raise ValueError("dataset is required")
+            raise ParameterMissingError("'dataset' parameter is required")
         response_content, progress = compute_dataset_split_names_from_streaming_response(dataset=self.dataset)
         return JobResult(response_content, progress=progress)
 

@@ -6,7 +6,12 @@ from libcommon.constants import PROCESSING_STEP_CONFIG_INFO_VERSION
 from libcommon.dataset import DatasetNotFoundError
 from libcommon.simple_cache import DoesNotExist, SplitFullName, get_response
 
-from worker.job_runner import CompleteJobResult, JobRunner, JobRunnerError
+from worker.job_runner import (
+    CompleteJobResult,
+    JobRunner,
+    JobRunnerError,
+    ParameterMissingError,
+)
 
 ConfigInfoJobRunnerErrorCode = Literal[
     "PreviousStepStatusError",
@@ -117,9 +122,9 @@ class ConfigInfoJobRunner(JobRunner):
 
     def compute(self) -> CompleteJobResult:
         if self.dataset is None:
-            raise ValueError("dataset is required")
+            raise ParameterMissingError("'dataset' parameter is required")
         if self.config is None:
-            raise ValueError("config is required")
+            raise ParameterMissingError("'config' parameter is required")
         return CompleteJobResult(compute_config_info_response(dataset=self.dataset, config=self.config))
 
     # TODO: is it needed?

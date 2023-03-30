@@ -10,7 +10,7 @@ from datasets.data_files import EmptyDatasetError as _EmptyDatasetError
 from libcommon.constants import PROCESSING_STEP_SPLIT_NAMES_FROM_STREAMING_VERSION
 from libcommon.simple_cache import SplitFullName
 
-from worker.job_runner import CompleteJobResult, JobRunnerError
+from worker.job_runner import CompleteJobResult, JobRunnerError, ParameterMissingError
 from worker.job_runners._datasets_based_job_runner import DatasetsBasedJobRunner
 from worker.utils import SplitItem, SplitsList
 
@@ -114,8 +114,10 @@ class SplitNamesFromStreamingJobRunner(DatasetsBasedJobRunner):
         return PROCESSING_STEP_SPLIT_NAMES_FROM_STREAMING_VERSION
 
     def compute(self) -> CompleteJobResult:
+        if self.dataset is None:
+            raise ParameterMissingError("'dataset' parameter is required")
         if self.config is None:
-            raise ValueError("config is required")
+            raise ParameterMissingError("'config' parameter is required")
         return CompleteJobResult(
             compute_split_names_from_streaming_response(
                 dataset=self.dataset, config=self.config, hf_token=self.common_config.hf_token

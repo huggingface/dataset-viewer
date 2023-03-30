@@ -27,6 +27,7 @@ from worker.config import WorkerConfig
 
 GeneralJobRunnerErrorCode = Literal[
     "ConfigNotFoundError",
+    "ParameterMissingError",
     "NoGitRevisionError",
     "SplitNotFoundError",
     "UnexpectedError",
@@ -108,6 +109,19 @@ class SplitNotFoundError(GeneralJobRunnerError):
             message=message,
             status_code=HTTPStatus.NOT_FOUND,
             code="SplitNotFoundError",
+            cause=cause,
+            disclose_cause=False,
+        )
+
+
+class ParameterMissingError(GeneralJobRunnerError):
+    """Raised when request is missing some parameter."""
+
+    def __init__(self, message: str, cause: Optional[BaseException] = None):
+        super().__init__(
+            message=message,
+            status_code=HTTPStatus.BAD_REQUEST,
+            code="ParameterMissingError",
             cause=cause,
             disclose_cause=False,
         )

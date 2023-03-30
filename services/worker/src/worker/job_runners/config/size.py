@@ -9,7 +9,12 @@ from libcommon.constants import PROCESSING_STEP_CONFIG_SIZE_VERSION
 from libcommon.dataset import DatasetNotFoundError
 from libcommon.simple_cache import DoesNotExist, SplitFullName, get_response
 
-from worker.job_runner import CompleteJobResult, JobRunner, JobRunnerError
+from worker.job_runner import (
+    CompleteJobResult,
+    JobRunner,
+    JobRunnerError,
+    ParameterMissingError,
+)
 
 ConfigSizeJobRunnerErrorCode = Literal[
     "PreviousStepStatusError",
@@ -112,18 +117,12 @@ def compute_config_size_response(dataset: str, config: str) -> ConfigSizeRespons
 
     previous_step = "config-parquet-and-info"
     try:
-        response = get_response(kind=previous_step, dataset=dataset)
+        response = get_response(kind=previous_step, dataset=dataset, config=config)
     except DoesNotExist as e:
         raise DatasetNotFoundError(f"No response found in previous step '{previous_step}' for this dataset.", e) from e
     if response["http_status"] != HTTPStatus.OK:
         raise PreviousStepStatusError(f"Previous step {previous_step} gave an error: {response['http_status']}..")
 
-        # try:
-        #     content = ParquetAndDatasetInfoResponse(
-        #         parquet_files=response["content"]["parquet_files"], dataset_info=response["content"]["dataset_info"]
-        #     )
-        # except Exception as e:
-        #     raise PreviousStepFormatError("Previous step did not return the expected content.", e) from e
     content = response["content"]
     if "dataset_info" not in content:
         raise PreviousStepFormatError("Previous step did not return the expected content: 'dataset_info'.")
@@ -190,9 +189,9 @@ class ConfigSizeJobRunner(JobRunner):
 
     def compute(self) -> CompleteJobResult:
         if self.dataset is None:
-            raise ValueError("dataset is required")
+            raise ParameterMissingError("'dataset' parameter is required")
         if self.config is None:
-            raise ValueError("config is required")
+            raise ParameterMissingError("'config' parameter is required")
         return CompleteJobResult(compute_config_size_response(dataset=self.dataset, config=self.config))
 
     def get_new_splits(self, content: Mapping[str, Any]) -> set[SplitFullName]:

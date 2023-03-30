@@ -46,6 +46,7 @@ from worker.job_runner import (
     CompleteJobResult,
     ConfigNotFoundError,
     JobRunnerError,
+    ParameterMissingError,
     SplitNotFoundError,
 )
 from worker.job_runners._datasets_based_job_runner import DatasetsBasedJobRunner
@@ -682,8 +683,12 @@ class SplitFirstRowsFromStreamingJobRunner(DatasetsBasedJobRunner):
         self.assets_base_url = app_config.assets.base_url
 
     def compute(self) -> CompleteJobResult:
-        if self.config is None or self.split is None:
-            raise ValueError("config and split are required")
+        if self.dataset is None:
+            raise ParameterMissingError("'dataset' parameter is required")
+        if self.config is None:
+            raise ParameterMissingError("'config' parameter is required")
+        if self.split is None:
+            raise ParameterMissingError("'split' parameter is required")
         return CompleteJobResult(
             compute_first_rows_response(
                 dataset=self.dataset,
