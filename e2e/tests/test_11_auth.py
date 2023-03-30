@@ -38,7 +38,7 @@ def test_auth_e2e(
         f"/config-names?dataset={dataset}",
         f"/splits?dataset={dataset}",
         f"/first-rows?dataset={dataset}&config={config}&split={split}",
-        f"/parquet-and-dataset-info?dataset={dataset}",
+        f"/parquet-and-dataset-info?dataset={dataset}&config={config}",
         f"/parquet?dataset={dataset}",
         f"/dataset-info?dataset={dataset}",
         f"/size?dataset={dataset}",

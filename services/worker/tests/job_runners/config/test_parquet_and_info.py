@@ -446,8 +446,8 @@ def test_compute_splits_response_simple_csv_ok(
 @pytest.mark.parametrize(
     "name,error_code,cause",
     [
-        ("empty", "EmptyDatasetError", "EmptyDatasetError"),
-        ("does_not_exist", "DatasetNotFoundError", "HTTPError"),
+        ("empty", "ParameterMissingError", None),
+        ("does_not_exist", "ParameterMissingError", None),
         ("gated_extra_fields", "GatedExtraFieldsError", "HTTPError"),
         ("private", "DatasetNotFoundError", None),
     ],
@@ -462,7 +462,8 @@ def test_compute_splits_response_simple_csv_error(
     parquet_and_info_config: ParquetAndInfoConfig,
 ) -> None:
     dataset = hub_datasets[name]["name"]
-    config = hub_datasets[name]["config_names_response"]["config_names"][0]["config"]
+    config_names_response = hub_datasets[name]["config_names_response"]
+    config = config_names_response["config_names"][0]["config"] if config_names_response else None
     job_runner = get_job_runner(dataset, config, app_config, parquet_and_info_config, False)
     with pytest.raises(CustomError) as exc_info:
         job_runner.compute()

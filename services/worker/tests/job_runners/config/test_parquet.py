@@ -83,9 +83,9 @@ def get_job_runner(
                     ParquetFileItem(
                         dataset="ok", config="config_1", split="train", url="url1", filename="filename1", size=0
                     ),
-                    # ParquetFileItem(
-                    #     dataset="ok", config="config_2", split="train", url="url2", filename="filename2", size=0
-                    # ),
+                    ParquetFileItem(
+                        dataset="ok", config="config_1", split="train", url="url2", filename="filename2", size=0
+                    ),
                 ],
                 dataset_info={"description": "value", "dataset_size": 10},
             ),
@@ -94,7 +94,10 @@ def get_job_runner(
                 parquet_files=[
                     ParquetFileItem(
                         dataset="ok", config="config_1", split="train", url="url1", filename="filename1", size=0
-                    )
+                    ),
+                    ParquetFileItem(
+                        dataset="ok", config="config_1", split="train", url="url2", filename="filename2", size=0
+                    ),
                 ]
             ),
             False,
@@ -131,7 +134,7 @@ def test_compute(
     should_raise: bool,
 ) -> None:
     upsert_response(
-        kind="/parquet-and-dataset-info", dataset=dataset, content=upstream_content, http_status=upstream_status
+        kind="config-parquet-and-info", dataset=dataset, content=upstream_content, http_status=upstream_status
     )
     job_runner = get_job_runner(dataset, config, app_config, False)
     if should_raise:
@@ -143,8 +146,7 @@ def test_compute(
 
 
 def test_doesnotexist(app_config: AppConfig, get_job_runner: GetJobRunner) -> None:
-    dataset = "doesnotexist"
-    config = "doesnotexist"
+    dataset = config = "doesnotexist"
     job_runner = get_job_runner(dataset, config, app_config, False)
     with pytest.raises(DatasetNotFoundError):
         job_runner.compute()

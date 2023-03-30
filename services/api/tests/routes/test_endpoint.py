@@ -45,11 +45,11 @@ def test_endpoints_definition() -> None:
     assert first_rows["split"] is not None
     assert len(first_rows["split"]) == 1  # Only has one processing step
 
-    parquet_and_dataset_info = definition["/parquet-and-dataset-info"]
-    assert parquet_and_dataset_info is not None
-    assert sorted(list(parquet_and_dataset_info)) == ["config"]
-    assert parquet_and_dataset_info["config"] is not None
-    assert len(parquet_and_dataset_info["config"]) == 1  # Only has one processing step
+    parquet_and_info = definition["/parquet-and-dataset-info"]
+    assert parquet_and_info is not None
+    assert sorted(list(parquet_and_info)) == ["config"]
+    assert parquet_and_info["config"] is not None
+    assert len(parquet_and_info["config"]) == 1  # Only has one processing step
 
     parquet = definition["/parquet"]
     assert parquet is not None

@@ -182,7 +182,7 @@ def get_job_runner(
             HTTPStatus.OK,
             {
                 "parquet_files": PARQUET_FILES,
-                "dataset_info": DATASET_INFO_OK,
+                "dataset_info": CONFIG_INFO_1,
             },
             None,
             {"dataset_info": CONFIG_INFO_1},
@@ -220,7 +220,11 @@ def test_compute(
     should_raise: bool,
 ) -> None:
     upsert_response(
-        kind="/parquet-and-dataset-info", dataset=dataset, content=upstream_content, http_status=upstream_status
+        kind="config-parquet-and-info",
+        dataset=dataset,
+        config=config,
+        content=upstream_content,
+        http_status=upstream_status,
     )
     job_runner = get_job_runner(dataset, config, app_config, False)
     if should_raise:
