@@ -411,6 +411,7 @@ class JobRunner(ABC):
         pass
 
     # should be overridden if the job has children jobs of type "split"
+    @abstractmethod
     def get_new_splits(self, content: Mapping[str, Any]) -> set[SplitFullName]:
         """Get the set of new splits, from the content created by the compute.
 
