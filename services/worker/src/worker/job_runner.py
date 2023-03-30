@@ -204,7 +204,7 @@ class JobRunner(ABC):
     worker_config: WorkerConfig
     common_config: CommonConfig
     processing_step: ProcessingStep
-    dataset_git_revision: Optional[str] = None
+    _dataset_git_revision: Optional[str] = None
 
     @staticmethod
     @abstractmethod
@@ -285,11 +285,11 @@ class JobRunner(ABC):
 
     def get_dataset_git_revision(self) -> Optional[str]:
         """Get the git revision of the dataset repository."""
-        if self.dataset_git_revision is None:
-            self.dataset_git_revision = get_dataset_git_revision(
+        if self._dataset_git_revision is None:
+            self._dataset_git_revision = get_dataset_git_revision(
                 dataset=self.dataset, hf_endpoint=self.common_config.hf_endpoint, hf_token=self.common_config.hf_token
             )
-        return self.dataset_git_revision
+        return self._dataset_git_revision
 
     # TODO: set the git revision as part of the job_info -> no need to get info from the Hub
     # if None: run the job
