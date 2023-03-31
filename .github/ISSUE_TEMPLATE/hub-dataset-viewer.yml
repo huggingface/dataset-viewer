@@ -2,8 +2,6 @@ name: Dataset Viewer Issue
 description: Issue related to the Dataset Viewer on the Hub
 title: "Dataset Viewer issue for [dataset name]"
 labels: ["bug"]
-assignees:
-  - severo
 body:
   - type: input
     id: url

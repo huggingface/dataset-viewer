@@ -116,8 +116,8 @@ class EndpointConfig:
                 "dataset": ["/splits", "dataset-split-names-from-streaming", "dataset-split-names-from-dataset-info"],
                 "config": ["/split-names-from-streaming", "/split-names-from-dataset-info"],
             },
-            "/first-rows": {"split": ["split-first-rows-from-streaming"]},
-            "/parquet-and-dataset-info": {"config": ["config-parquet-and-info"]},
+            "/first-rows": {"split": ["split-first-rows-from-streaming", "split-first-rows-from-parquet"]},
+            "/parquet-and-dataset-info": {"dataset": ["/parquet-and-dataset-info"], "config": ["config-parquet-and-info"]},
             "/parquet": {
                 "dataset": ["dataset-parquet"],
                 "config": ["config-parquet"],
