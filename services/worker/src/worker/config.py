@@ -122,26 +122,26 @@ class FirstRowsConfig:
             )
 
 
-PARQUET_AND_DATASET_INFO_COMMIT_MESSAGE = "Update parquet files"
-PARQUET_AND_DATASET_INFO_COMMITTER_HF_TOKEN = None
-PARQUET_AND_DATASET_INFO_MAX_DATASET_SIZE = 100_000_000
-PARQUET_AND_DATASET_INFO_MAX_EXTERNAL_DATA_FILES = 10_000
-PARQUET_AND_DATASET_INFO_SOURCE_REVISION = "main"
-PARQUET_AND_DATASET_INFO_TARGET_REVISION = "refs/convert/parquet"
-PARQUET_AND_DATASET_INFO_URL_TEMPLATE = "/datasets/%s/resolve/%s/%s"
+PARQUET_AND_INFO_COMMIT_MESSAGE = "Update parquet files"
+PARQUET_AND_INFO_COMMITTER_HF_TOKEN = None
+PARQUET_AND_INFO_MAX_DATASET_SIZE = 100_000_000
+PARQUET_AND_INFO_MAX_EXTERNAL_DATA_FILES = 10_000
+PARQUET_AND_INFO_SOURCE_REVISION = "main"
+PARQUET_AND_INFO_TARGET_REVISION = "refs/convert/parquet"
+PARQUET_AND_INFO_URL_TEMPLATE = "/datasets/%s/resolve/%s/%s"
 
 
 @dataclass(frozen=True)
 class ParquetAndInfoConfig:
     blocked_datasets: List[str] = field(default_factory=get_empty_str_list)
     supported_datasets: List[str] = field(default_factory=get_empty_str_list)
-    commit_message: str = PARQUET_AND_DATASET_INFO_COMMIT_MESSAGE
-    committer_hf_token: Optional[str] = PARQUET_AND_DATASET_INFO_COMMITTER_HF_TOKEN
-    max_dataset_size: int = PARQUET_AND_DATASET_INFO_MAX_DATASET_SIZE
-    max_external_data_files: int = PARQUET_AND_DATASET_INFO_MAX_EXTERNAL_DATA_FILES
-    source_revision: str = PARQUET_AND_DATASET_INFO_SOURCE_REVISION
-    target_revision: str = PARQUET_AND_DATASET_INFO_TARGET_REVISION
-    url_template: str = PARQUET_AND_DATASET_INFO_URL_TEMPLATE
+    commit_message: str = PARQUET_AND_INFO_COMMIT_MESSAGE
+    committer_hf_token: Optional[str] = PARQUET_AND_INFO_COMMITTER_HF_TOKEN
+    max_dataset_size: int = PARQUET_AND_INFO_MAX_DATASET_SIZE
+    max_external_data_files: int = PARQUET_AND_INFO_MAX_EXTERNAL_DATA_FILES
+    source_revision: str = PARQUET_AND_INFO_SOURCE_REVISION
+    target_revision: str = PARQUET_AND_INFO_TARGET_REVISION
+    url_template: str = PARQUET_AND_INFO_URL_TEMPLATE
 
     @classmethod
     def from_env(cls) -> "ParquetAndInfoConfig":
@@ -150,14 +150,14 @@ class ParquetAndInfoConfig:
             return cls(
                 blocked_datasets=env.list(name="BLOCKED_DATASETS", default=get_empty_str_list()),
                 supported_datasets=env.list(name="SUPPORTED_DATASETS", default=get_empty_str_list()),
-                commit_message=env.str(name="COMMIT_MESSAGE", default=PARQUET_AND_DATASET_INFO_COMMIT_MESSAGE),
+                commit_message=env.str(name="COMMIT_MESSAGE", default=PARQUET_AND_INFO_COMMIT_MESSAGE),
                 committer_hf_token=env.str(
-                    name="COMMITTER_HF_TOKEN", default=PARQUET_AND_DATASET_INFO_COMMITTER_HF_TOKEN
+                    name="COMMITTER_HF_TOKEN", default=PARQUET_AND_INFO_COMMITTER_HF_TOKEN
                 ),
-                max_dataset_size=env.int(name="MAX_DATASET_SIZE", default=PARQUET_AND_DATASET_INFO_MAX_DATASET_SIZE),
-                source_revision=env.str(name="SOURCE_REVISION", default=PARQUET_AND_DATASET_INFO_SOURCE_REVISION),
-                target_revision=env.str(name="TARGET_REVISION", default=PARQUET_AND_DATASET_INFO_TARGET_REVISION),
-                url_template=env.str(name="URL_TEMPLATE", default=PARQUET_AND_DATASET_INFO_URL_TEMPLATE),
+                max_dataset_size=env.int(name="MAX_DATASET_SIZE", default=PARQUET_AND_INFO_MAX_DATASET_SIZE),
+                source_revision=env.str(name="SOURCE_REVISION", default=PARQUET_AND_INFO_SOURCE_REVISION),
+                target_revision=env.str(name="TARGET_REVISION", default=PARQUET_AND_INFO_TARGET_REVISION),
+                url_template=env.str(name="URL_TEMPLATE", default=PARQUET_AND_INFO_URL_TEMPLATE),
             )
 
 
