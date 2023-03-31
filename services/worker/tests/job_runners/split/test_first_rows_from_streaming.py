@@ -7,8 +7,8 @@ from typing import Callable
 from unittest.mock import Mock
 
 import pytest
-from libcommon.constants import PROCESSING_STEP_SPLIT_FIRST_ROWS_FROM_PARQUET_VERSION
 from datasets.packaged_modules import csv
+from libcommon.constants import PROCESSING_STEP_SPLIT_FIRST_ROWS_FROM_PARQUET_VERSION
 from libcommon.exceptions import CustomError
 from libcommon.processing_graph import ProcessingStep
 from libcommon.queue import Priority
