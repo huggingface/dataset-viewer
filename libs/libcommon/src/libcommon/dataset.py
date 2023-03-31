@@ -15,6 +15,7 @@ DatasetErrorCode = Literal[
     "AskAccessHubRequestError",
     "DatasetInfoHubRequestError",
     "DatasetNotFoundError",
+    "DisabledViewerError",
     "GatedDisabledError",
     "GatedExtraFieldsError",
 ]
