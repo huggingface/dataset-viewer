@@ -86,9 +86,9 @@ def compute_dataset_split_names_from_streaming_response(
          a list of pending configs to be processed [pending] and the list of errors [failed] by config.
     <Tip>
     Raises the following errors:
-        - [`~job_runners.dataset_split_names_from_streaming.PreviousStepStatusError`]
+        - [`~job_runners.dataset.split_names_from_streaming.PreviousStepStatusError`]
           If the the previous step gave an error.
-        - [`~job_runners.dataset_split_names_from_streaming.PreviousStepFormatError`]
+        - [`~job_runners.dataset.split_names_from_streaming.PreviousStepFormatError`]
             If the content of the previous step has not the expected format
         - [`~libcommon.dataset.DatasetNotFoundError`]
             If previous step content was not found for the dataset

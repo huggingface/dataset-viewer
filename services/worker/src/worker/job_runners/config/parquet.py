@@ -74,8 +74,6 @@ def compute_parquet_response(dataset: str, config: str) -> ConfigParquetResponse
           If the previous step gave an error.
         - [`~job_runners.parquet.PreviousStepFormatError`]
             If the content of the previous step has not the expected format
-        - [`~job_runners.config_size.MissingInfoForConfigError`]
-            If the dataset info from the parquet export is missing the requested dataset configuration
         - [`~libcommon.dataset.DatasetNotFoundError`]: if the dataset does not exist, or if the
             token does not give the sufficient access to the dataset, or if the dataset is private
             (private datasets are not supported by the datasets server)

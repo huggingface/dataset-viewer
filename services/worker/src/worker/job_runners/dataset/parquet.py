@@ -72,9 +72,9 @@ def compute_sizes_response(dataset: str) -> Tuple[DatasetParquetResponse, float]
         `DatasetParquetResponse`: An object with the parquet_response (list of parquet files).
     <Tip>
     Raises the following errors:
-        - [`~job_runners.dataset_size.PreviousStepStatusError`]
+        - [`~job_runners.dataset.parquet.PreviousStepStatusError`]
           If the previous step gave an error.
-        - [`~job_runners.dataset_size.PreviousStepFormatError`]
+        - [`~job_runners.dataset.parquet.PreviousStepFormatError`]
             If the content of the previous step has not the expected format
     </Tip>
     """

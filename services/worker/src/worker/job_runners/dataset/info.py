@@ -73,9 +73,9 @@ def compute_dataset_info_response(dataset: str) -> Tuple[DatasetInfoResponse, fl
         or raise errors).
     <Tip>
     Raises the following errors:
-        - [`~job_runners.dataset_info.PreviousStepStatusError`]
+        - [`~job_runners.dataset.info.PreviousStepStatusError`]
             If the previous step gave an error.
-        - [`~job_runners.dataset_info.PreviousStepFormatError`]
+        - [`~job_runners.dataset.info.PreviousStepFormatError`]
             If the content of the previous step doesn't have the expected format.
         - [`~libcommon.dataset.DatasetNotFoundError`]
             If the dataset does not exist, or if the

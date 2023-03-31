@@ -96,11 +96,11 @@ def compute_split_names_from_streaming_response(
         `SplitsList`: An object with the list of split names for the dataset and config.
     <Tip>
     Raises the following errors:
-        - [`~job_runners.split_names_from_streaming.EmptyDatasetError`]
+        - [`~job_runners.config.split_names_from_streaming.EmptyDatasetError`]
           The dataset is empty.
-        - [`~job_runners.split_names_from_streaming.SplitsNamesError`]
+        - [`~job_runners.config.split_names_from_streaming.SplitsNamesError`]
           If the list of splits could not be obtained using the datasets library.
-        - [`~job_runners.split_names_from_streaming.ResponseAlreadyComputedError`]
+        - [`~job_runners.config.split_names_from_streaming.ResponseAlreadyComputedError`]
           If reponse has been already computed by /split-names-from-dataset-info job runner.
     </Tip>
     """

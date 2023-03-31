@@ -19,7 +19,6 @@ from worker.job_runner import (
 ConfigSizeJobRunnerErrorCode = Literal[
     "PreviousStepStatusError",
     "PreviousStepFormatError",
-    "MissingInfoForConfigError",
 ]
 
 
@@ -82,13 +81,6 @@ class PreviousStepFormatError(ConfigSizeJobRunnerError):
         super().__init__(message, HTTPStatus.INTERNAL_SERVER_ERROR, "PreviousStepFormatError", cause, False)
 
 
-class MissingInfoForConfigError(ConfigSizeJobRunnerError):
-    """Raised when the dataset info from the parquet export is missing the requested dataset configuration."""
-
-    def __init__(self, message: str, cause: Optional[BaseException] = None):
-        super().__init__(message, HTTPStatus.INTERNAL_SERVER_ERROR, "MissingInfoForConfigError", cause, False)
-
-
 def compute_config_size_response(dataset: str, config: str) -> ConfigSizeResponse:
     """
     Get the response of config-size for one specific dataset and config on huggingface.co.
@@ -102,12 +94,10 @@ def compute_config_size_response(dataset: str, config: str) -> ConfigSizeRespons
         `ConfigSizeResponse`: An object with the size_response.
     <Tip>
     Raises the following errors:
-        - [`~job_runners.config_size.PreviousStepStatusError`]
+        - [`~job_runners.config.size.PreviousStepStatusError`]
           If the previous step gave an error.
-        - [`~job_runners.config_size.PreviousStepFormatError`]
+        - [`~job_runners.config.size.PreviousStepFormatError`]
             If the content of the previous step has not the expected format
-        - [`~job_runners.config_size.MissingInfoForConfigError`]
-            If the dataset info from the parquet export is missing the requested dataset configuration
         - [`~libcommon.dataset.DatasetNotFoundError`]: if the dataset does not exist, or if the
             token does not give the sufficient access to the dataset, or if the dataset is private
             (private datasets are not supported by the datasets server)

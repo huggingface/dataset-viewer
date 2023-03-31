@@ -74,9 +74,9 @@ def compute_config_info_response(dataset: str, config: str) -> ConfigInfoRespons
     Raises the following errors:
         - [`~job_runners.config_info.PreviousStepStatusError`]
         `If the previous step gave an error.
-        - [`~job_runners.config_info.PreviousStepFormatError`]
+        - [`~job_runners.config.info.PreviousStepFormatError`]
             If the content of the previous step doesn't have the expected format
-        - [`~job_runners.config_info.MissingInfoForConfigError`]
+        - [`~job_runners.config.info.MissingInfoForConfigError`]
             If the dataset info from the parquet export doesn't have the requested dataset configuration
         - [`~libcommon.dataset.DatasetNotFoundError`]
             If the dataset does not exist, or if the

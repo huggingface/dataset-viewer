@@ -85,9 +85,9 @@ def compute_sizes_response(dataset: str) -> Tuple[DatasetSizeResponse, float]:
         `DatasetSizeResponse`: An object with the sizes_response.
     <Tip>
     Raises the following errors:
-        - [`~job_runners.dataset_size.PreviousStepStatusError`]
+        - [`~job_runners.dataset.size.PreviousStepStatusError`]
           If the previous step gave an error.
-        - [`~job_runners.dataset_size.PreviousStepFormatError`]
+        - [`~job_runners.dataset.size.PreviousStepFormatError`]
             If the content of the previous step has not the expected format
     </Tip>
     """
