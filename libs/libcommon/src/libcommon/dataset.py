@@ -204,6 +204,7 @@ def get_dataset_info_for_supported_datasets(
         - [`~libcommon.dataset.GatedExtraFieldsError`]: if the dataset is gated, with extra fields.
             Programmatic access is not implemented for this type of dataset because there is no easy
             way to get the list of extra fields.
+        - [`~libcommon.dataset.DisabledViewerError`]: if the dataset viewer is disabled.
         - [`~libcommon.dataset.GatedDisabledError`]: if the dataset is gated, but disabled.
         - [`~libcommon.dataset.DatasetNotFoundError`]: if the dataset does not exist, or if the
             token does not give the sufficient access to the dataset, or if the dataset is private
@@ -276,6 +277,7 @@ def get_dataset_git_revision(
         - [`~libcommon.dataset.GatedExtraFieldsError`]: if the dataset is gated, with extra fields.
             Programmatic access is not implemented for this type of dataset because there is no easy
             way to get the list of extra fields.
+        - [`~libcommon.dataset.DisabledViewerError`]: if the dataset viewer is disabled.
         - [`~libcommon.dataset.GatedDisabledError`]: if the dataset is gated, but disabled.
         - [`~libcommon.dataset.DatasetNotFoundError`]: if the dataset does not exist, or if the
             token does not give the sufficient access to the dataset, or if the dataset is private
@@ -316,6 +318,7 @@ def check_support(
         - [`~libcommon.dataset.GatedExtraFieldsError`]: if the dataset is gated, with extra fields.
             Programmatic access is not implemented for this type of dataset because there is no easy
             way to get the list of extra fields.
+        - [`~libcommon.dataset.DisabledViewerError`]: if the dataset viewer is disabled.
         - [`~libcommon.dataset.GatedDisabledError`]: if the dataset is gated, but disabled.
         - [`~libcommon.dataset.DatasetNotFoundError`]: if the dataset does not exist, or if the
             token does not give the sufficient access to the dataset, or if the dataset is private
