@@ -128,6 +128,12 @@ If a dataset is not valid, then the response looks like:
 {"valid": false}
 ```
 
+Some cases where a dataset is not valid are:
+- the dataset viewer is disabled
+- the dataset is gated but the access is not granted: no token is passed or the passed token is not authorized
+- the dataset is private
+- the dataset contains no data or the data format is not supported
+
 <Tip>
   Remember if a dataset is <a href="./quick_start#gated-datasets">gated</a>, you'll need to provide your user token to submit a successful query!
 </Tip>
