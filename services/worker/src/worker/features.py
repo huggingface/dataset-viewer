@@ -1,10 +1,13 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2022 The HuggingFace Authors.
 
+import io
 import json
 from typing import Any, List, Optional, Union
 from zlib import adler32
 
+import numpy
+import soundfile  # type:ignore
 from datasets import (
     Array2D,
     Array3D,
@@ -19,7 +22,6 @@ from datasets import (
     Value,
 )
 from libcommon.storage import StrPath
-from numpy import ndarray
 from PIL import Image as PILImage  # type: ignore
 
 from worker.asset import create_audio_files, create_image_file
@@ -56,7 +58,11 @@ def image(
     if value is None:
         return None
     if not isinstance(value, PILImage.Image):
-        raise TypeError("image cell must be a PIL image")
+        try:
+            image_bytes = value["bytes"]
+            value = PILImage.open(io.BytesIO(image_bytes))
+        except Exception:
+            raise TypeError("image cell must be a PIL image")
     # attempt to generate one of the supported formats; if unsuccessful, throw an error
     for ext in [".jpg", ".png"]:
         try:
@@ -96,8 +102,12 @@ def audio(
         array = value["array"]
         sampling_rate = value["sampling_rate"]
     except Exception as e:
-        raise TypeError("audio cell must contain 'array' and 'sampling_rate' fields") from e
-    if type(array) != ndarray:
+        if "bytes" in value:
+            bytes_array, sampling_rate = soundfile.read(io.BytesIO(value["bytes"]))
+            array = numpy.array(bytes_array)
+        else:
+            raise TypeError("audio cell must contain 'array' and 'sampling_rate' fields") from e
+    if type(array) != numpy.ndarray:
         raise TypeError("'array' field must be a numpy.ndarray")
     if type(sampling_rate) != int:
         raise TypeError("'sampling_rate' field must be an integer")

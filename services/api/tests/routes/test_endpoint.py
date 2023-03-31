@@ -43,7 +43,7 @@ def test_endpoints_definition() -> None:
     assert first_rows is not None
     assert sorted(list(first_rows)) == ["split"]
     assert first_rows["split"] is not None
-    assert len(first_rows["split"]) == 1  # Only has one processing step
+    assert len(first_rows["split"]) == 2  # Has two processing steps
 
     parquet_and_dataset_info = definition["/parquet-and-dataset-info"]
     assert parquet_and_dataset_info is not None

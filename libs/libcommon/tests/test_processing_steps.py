@@ -23,6 +23,7 @@ def test_default_graph() -> None:
     split_names_from_dataset_info = graph.get_step("/split-names-from-dataset-info")
     dataset_split_names_from_streaming = graph.get_step("dataset-split-names-from-streaming")
     dataset_split_names_from_dataset_info = graph.get_step("dataset-split-names-from-dataset-info")
+    split_first_rows_from_parquet = graph.get_step("split-first-rows-from-parquet")
 
     assert config_names is not None
     assert config_names.parent is None
@@ -51,7 +52,7 @@ def test_default_graph() -> None:
 
     assert config_parquet is not None
     assert config_parquet.parent is parquet_and_dataset_info
-    assert config_parquet.children == [dataset_parquet]
+    assert config_parquet.children == [split_first_rows_from_parquet, dataset_parquet]
     assert config_parquet.get_ancestors() == [parquet_and_dataset_info]
 
     assert dataset_parquet is not None
@@ -97,6 +98,11 @@ def test_default_graph() -> None:
         config_info,
         split_names_from_dataset_info,
     ]
+
+    assert split_first_rows_from_parquet is not None
+    assert split_first_rows_from_parquet.parent is config_parquet
+    assert split_first_rows_from_parquet.children == []
+    assert split_first_rows_from_parquet.get_ancestors() == [parquet_and_dataset_info, config_parquet]
 
     assert graph.get_first_steps() == [config_names, splits, parquet_and_dataset_info]
     assert graph.get_steps_required_by_dataset_viewer() == [splits, split_first_rows_from_streaming]
