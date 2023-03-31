@@ -3,19 +3,19 @@
 
 from dataclasses import dataclass, field
 
-from libcommon.config import CacheConfig, CommonConfig, QueueConfig
+from libcommon.config import CacheConfig, LogConfig, QueueConfig
 
 
 @dataclass(frozen=True)
 class JobConfig:
     cache: CacheConfig = field(default_factory=CacheConfig)
-    common: CommonConfig = field(default_factory=CommonConfig)
+    log: LogConfig = field(default_factory=LogConfig)
     queue: QueueConfig = field(default_factory=QueueConfig)
 
     @classmethod
     def from_env(cls) -> "JobConfig":
         return cls(
             cache=CacheConfig.from_env(),
-            common=CommonConfig.from_env(),
+            log=LogConfig.from_env(),
             queue=QueueConfig.from_env(),
         )

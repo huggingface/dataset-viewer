@@ -59,8 +59,10 @@ images:
 common:
   # URL of the HuggingFace Hub
   hfEndpoint: ""
+
+log:
   # Log level
-  logLevel: "INFO"
+  level: "INFO"
 
 # --- common parameters ---
 

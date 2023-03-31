@@ -36,7 +36,7 @@ jobs:
           COMMON_HF_ENDPOINT: "https://hub-ci.huggingface.co"
           COMMON_HF_TOKEN: "hf_app_datasets-server_token"
           # ^ hard coded, see e2e/tests/fixtures/hub.py
-          COMMON_LOG_LEVEL: "DEBUG"
+          LOG_LEVEL: "DEBUG"
           FIRST_ROWS_MAX_NUMBER: "4"
           PARQUET_AND_DATASET_INFO_COMMITTER_HF_TOKEN: "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"
           PORT_REVERSE_PROXY: "8000"
@@ -75,7 +75,7 @@ jobs:
           COMMON_HF_ENDPOINT: "https://hub-ci.huggingface.co"
           COMMON_HF_TOKEN: "hf_app_datasets-server_token"
           # ^ hard coded, see e2e/tests/fixtures/hub.py
-          COMMON_LOG_LEVEL: "DEBUG"
+          LOG_LEVEL: "DEBUG"
           FIRST_ROWS_MAX_NUMBER: "4"
           PARQUET_AND_DATASET_INFO_COMMITTER_HF_TOKEN: "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"
           PORT_REVERSE_PROXY: "8000"

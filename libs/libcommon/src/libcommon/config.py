@@ -48,14 +48,12 @@ class AssetsConfig:
 
 COMMON_HF_ENDPOINT = "https://huggingface.co"
 COMMON_HF_TOKEN = None
-COMMON_LOG_LEVEL = logging.INFO
 
 
 @dataclass(frozen=True)
 class CommonConfig:
     hf_endpoint: str = COMMON_HF_ENDPOINT
     hf_token: Optional[str] = COMMON_HF_TOKEN
-    log_level: int = COMMON_LOG_LEVEL
 
     @classmethod
     def from_env(cls) -> "CommonConfig":
@@ -64,7 +62,22 @@ class CommonConfig:
             return cls(
                 hf_endpoint=env.str(name="HF_ENDPOINT", default=COMMON_HF_ENDPOINT),
                 hf_token=env.str(name="HF_TOKEN", default=COMMON_HF_TOKEN),  # nosec
-                log_level=env.log_level(name="LOG_LEVEL", default=COMMON_LOG_LEVEL),
+            )
+
+
+LOG_LEVEL = logging.INFO
+
+
+@dataclass(frozen=True)
+class LogConfig:
+    level: int = LOG_LEVEL
+
+    @classmethod
+    def from_env(cls) -> "LogConfig":
+        env = Env(expand_vars=True)
+        with env.prefixed("LOG_"):
+            return cls(
+                level=env.log_level(name="LEVEL", default=LOG_LEVEL),
             )
 
 

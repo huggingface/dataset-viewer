@@ -16,7 +16,7 @@ from cache_refresh.outdated_cache import refresh_cache
 def run_job() -> None:
     job_config = JobConfig.from_env()
 
-    init_logging(log_level=job_config.common.log_level)
+    init_logging(level=job_config.log.level)
     # ^ set first to have logs as soon as possible
 
     with (
