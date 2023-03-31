@@ -76,8 +76,10 @@ mongodb:
 common:
   # URL of the HuggingFace Hub
   hfEndpoint: "https://huggingface.co"
+
+log:
   # Log level
-  logLevel: "INFO"
+  level: "INFO"
 
 firstRows:
   maxBytes: "200_000"
