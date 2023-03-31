@@ -75,6 +75,19 @@ class DatasetNotFoundError(DatasetError):
         )
 
 
+class DisabledViewerError(DatasetError):
+    """Raised when the dataset viewer is disabled."""
+
+    def __init__(self, message: str, cause: Optional[BaseException] = None):
+        super().__init__(
+            message=message,
+            status_code=HTTPStatus.NOT_FOUND,
+            code="DisabledViewerError",
+            cause=cause,
+            disclose_cause=False,
+        )
+
+
 class GatedDisabledError(DatasetError):
     """Raised when the dataset is gated, but disabled."""
 
