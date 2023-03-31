@@ -4,6 +4,7 @@
 from dataclasses import replace
 from http import HTTPStatus
 from typing import Callable
+from unittest.mock import Mock
 
 import pytest
 from datasets.packaged_modules import csv
@@ -173,6 +174,8 @@ def test_number_rows(
         first_rows_config,
         False,
     )
+    job_runner.get_dataset_git_revision = Mock(return_value="1.0.0")  # type: ignore
+
     if error_code is None:
         upsert_response(
             kind="/split-names-from-streaming",
@@ -262,6 +265,8 @@ def test_truncation(
         content={"splits": [{"dataset": dataset, "config": config, "split": split}]},
         http_status=HTTPStatus.OK,
     )
+
+    job_runner.get_dataset_git_revision = Mock(return_value="1.0.0")  # type: ignore
 
     if error_code:
         with pytest.raises(CustomError) as error_info:
