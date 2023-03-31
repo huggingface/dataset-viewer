@@ -160,8 +160,8 @@ def get_job_runner(
             worker_config=app_config.worker,
             processing_step=ProcessingStep(
                 name=ConfigInfoJobRunner.get_job_type(),
-                input_type="config",  # TODO
-                requires=None,  # TODO
+                input_type="config",
+                requires=None,
                 required_by_dataset_viewer=False,
                 parent=None,
                 ancestors=[],
