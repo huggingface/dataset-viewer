@@ -151,9 +151,7 @@ class ParquetAndInfoConfig:
                 blocked_datasets=env.list(name="BLOCKED_DATASETS", default=get_empty_str_list()),
                 supported_datasets=env.list(name="SUPPORTED_DATASETS", default=get_empty_str_list()),
                 commit_message=env.str(name="COMMIT_MESSAGE", default=PARQUET_AND_INFO_COMMIT_MESSAGE),
-                committer_hf_token=env.str(
-                    name="COMMITTER_HF_TOKEN", default=PARQUET_AND_INFO_COMMITTER_HF_TOKEN
-                ),
+                committer_hf_token=env.str(name="COMMITTER_HF_TOKEN", default=PARQUET_AND_INFO_COMMITTER_HF_TOKEN),
                 max_dataset_size=env.int(name="MAX_DATASET_SIZE", default=PARQUET_AND_INFO_MAX_DATASET_SIZE),
                 source_revision=env.str(name="SOURCE_REVISION", default=PARQUET_AND_INFO_SOURCE_REVISION),
                 target_revision=env.str(name="TARGET_REVISION", default=PARQUET_AND_INFO_TARGET_REVISION),
