@@ -7,6 +7,7 @@ from typing import Callable
 from unittest.mock import Mock
 
 import pytest
+from libcommon.constants import PROCESSING_STEP_SPLIT_FIRST_ROWS_FROM_PARQUET_VERSION
 from datasets.packaged_modules import csv
 from libcommon.exceptions import CustomError
 from libcommon.processing_graph import ProcessingStep
@@ -275,3 +276,50 @@ def test_truncation(
     else:
         response = job_runner.compute().content
         assert get_json_size(response) <= rows_max_bytes
+
+
+@pytest.mark.parametrize(
+    "streaming_response_status,dataset_git_revision,error_code,status_code",
+    [
+        (HTTPStatus.OK, "CURRENT_GIT_REVISION", "ResponseAlreadyComputedError", HTTPStatus.INTERNAL_SERVER_ERROR),
+        (HTTPStatus.INTERNAL_SERVER_ERROR, "CURRENT_GIT_REVISION", "ConfigNotFoundError", HTTPStatus.NOT_FOUND),
+        (HTTPStatus.OK, "DIFFERENT_GIT_REVISION", "ConfigNotFoundError", HTTPStatus.NOT_FOUND),
+    ],
+)
+def test_response_already_computed(
+    app_config: AppConfig,
+    first_rows_config: FirstRowsConfig,
+    get_job_runner: GetJobRunner,
+    streaming_response_status: HTTPStatus,
+    dataset_git_revision: str,
+    error_code: str,
+    status_code: HTTPStatus,
+) -> None:
+    dataset = "dataset"
+    config = "config"
+    split = "split"
+    current_dataset_git_revision = "CURRENT_GIT_REVISION"
+    upsert_response(
+        kind="split-first-rows-from-parquet",
+        dataset=dataset,
+        config=config,
+        split=split,
+        content={},
+        dataset_git_revision=dataset_git_revision,
+        job_runner_version=PROCESSING_STEP_SPLIT_FIRST_ROWS_FROM_PARQUET_VERSION,
+        progress=1.0,
+        http_status=streaming_response_status,
+    )
+    job_runner = get_job_runner(
+        dataset,
+        config,
+        split,
+        app_config,
+        first_rows_config,
+        False,
+    )
+    job_runner.get_dataset_git_revision = Mock(return_value=current_dataset_git_revision)  # type: ignore
+    with pytest.raises(CustomError) as exc_info:
+        job_runner.compute()
+    assert exc_info.value.status_code == status_code
+    assert exc_info.value.code == error_code
