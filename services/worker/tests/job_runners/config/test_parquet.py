@@ -134,7 +134,11 @@ def test_compute(
     should_raise: bool,
 ) -> None:
     upsert_response(
-        kind="config-parquet-and-info", dataset=dataset, content=upstream_content, http_status=upstream_status
+        kind="config-parquet-and-info",
+        dataset=dataset,
+        config=config,
+        content=upstream_content,
+        http_status=upstream_status,
     )
     job_runner = get_job_runner(dataset, config, app_config, False)
     if should_raise:
