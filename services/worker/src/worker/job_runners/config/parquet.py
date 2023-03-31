@@ -85,7 +85,7 @@ def compute_parquet_response(dataset: str, config: str) -> ConfigParquetResponse
 
     previous_step = "config-parquet-and-info"
     try:
-        response = get_response(kind=previous_step, dataset=dataset)
+        response = get_response(kind=previous_step, dataset=dataset, config=config)
     except DoesNotExist as e:
         raise DatasetNotFoundError(f"No response found in previous step '{previous_step}' for this dataset.", e) from e
     if response["http_status"] != HTTPStatus.OK:
@@ -118,6 +118,6 @@ class ConfigParquetJobRunner(JobRunner):
     def get_new_splits(self, content: Mapping[str, Any]) -> set[SplitFullName]:
         """Get the set of new splits, from the content created by the compute."""
         return {
-            SplitFullName(dataset=parquet_file["dataset"], config=parquet_file["config"], split=parquet_file["split"])
+            SplitFullName(dataset=self.dataset, config=self.config, split=parquet_file["split"])
             for parquet_file in content["parquet_files"]
         }
