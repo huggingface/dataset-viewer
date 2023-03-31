@@ -68,6 +68,8 @@ def compute_config_info_response(dataset: str, config: str) -> ConfigInfoRespons
         dataset (`str`):
             A namespace (user or an organization) and a repo name separated
             by a `/`.
+        config (`str`):
+            Dataset configuration name
     Returns:
         `ConfigInfoResponse`: An object with the dataset_info response for requested config.
     <Tip>

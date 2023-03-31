@@ -89,7 +89,7 @@ def get_job_runner(
             processing_step=ProcessingStep(
                 name=ConfigParquetAndInfoJobRunner.get_job_type(),
                 input_type="config",
-                requires="/config-names",
+                requires=None,
                 required_by_dataset_viewer=False,
                 parent=None,
                 ancestors=[],
@@ -179,7 +179,6 @@ def test_raise_if_too_big_from_hub(
     parquet_and_info_config: ParquetAndInfoConfig,
 ) -> None:
     dataset = hub_datasets[name]["name"]
-    # config = hub_datasets[name]["config_names_response"]["config_names"][0]["config"]
     dataset_info = get_dataset_info_or_raise(
         dataset=dataset,
         hf_endpoint=app_config.common.hf_endpoint,
