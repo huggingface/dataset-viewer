@@ -77,9 +77,6 @@ def get_job_runner(
                 "parquet_files": [
                     {"dataset": "dataset_ok", "config": "config_1", "split": "train", "size": 14281188},
                     {"dataset": "dataset_ok", "config": "config_1", "split": "test", "size": 2383903},
-                    # {"dataset": "dataset_ok", "config": "config_2", "split": "train", "size": 1234},
-                    # {"dataset": "dataset_ok", "config": "config_2", "split": "train", "size": 6789},
-                    # {"dataset": "dataset_ok", "config": "config_2", "split": "test", "size": 2383903},
                 ],
                 "dataset_info": {
                     "features": {
