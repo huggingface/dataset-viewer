@@ -8,6 +8,7 @@ from environs import Env
 from libcommon.config import (
     CacheConfig,
     CommonConfig,
+    LogConfig,
     ProcessingGraphConfig,
     QueueConfig,
 )
@@ -79,6 +80,7 @@ class AppConfig:
     api: ApiConfig = field(default_factory=ApiConfig)
     cache: CacheConfig = field(default_factory=CacheConfig)
     common: CommonConfig = field(default_factory=CommonConfig)
+    log: LogConfig = field(default_factory=LogConfig)
     queue: QueueConfig = field(default_factory=QueueConfig)
     processing_graph: ProcessingGraphConfig = field(default_factory=ProcessingGraphConfig)
 
@@ -88,6 +90,7 @@ class AppConfig:
         return cls(
             common=common_config,
             cache=CacheConfig.from_env(),
+            log=LogConfig.from_env(),
             processing_graph=ProcessingGraphConfig.from_env(),
             queue=QueueConfig.from_env(),
             api=ApiConfig.from_env(common_config=common_config),

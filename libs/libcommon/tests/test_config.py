@@ -1,9 +1,9 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2022 The HuggingFace Authors.
 
-from libcommon.config import CommonConfig
+from libcommon.config import LogConfig
 
 
 def test_common_config() -> None:
-    common_config = CommonConfig()
-    assert common_config.log_level == 20
+    log_config = LogConfig()
+    assert log_config.level == 20

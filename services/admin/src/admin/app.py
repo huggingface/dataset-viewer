@@ -31,7 +31,7 @@ from admin.routes.pending_jobs import create_pending_jobs_endpoint
 def create_app() -> Starlette:
     app_config = AppConfig.from_env()
 
-    init_logging(log_level=app_config.common.log_level)
+    init_logging(level=app_config.log.level)
     # ^ set first to have logs as soon as possible
     assets_directory = init_assets_dir(directory=app_config.assets.storage_directory)
     if not exists(assets_directory):
