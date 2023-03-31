@@ -40,8 +40,11 @@ def test_auth_e2e(
         f"/first-rows?dataset={dataset}&config={config}&split={split}",
         f"/parquet-and-dataset-info?dataset={dataset}&config={config}",
         f"/parquet?dataset={dataset}",
+        f"/parquet?dataset={dataset}&config={config}",
         f"/dataset-info?dataset={dataset}",
+        f"/dataset-info?dataset={dataset}&config={config}",
         f"/size?dataset={dataset}",
+        f"/size?dataset={dataset}&config={config}",
     ]
     for endpoint in endpoints:
         poll_until_ready_and_assert(
