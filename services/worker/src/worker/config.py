@@ -9,6 +9,7 @@ from libcommon.config import (
     AssetsConfig,
     CacheConfig,
     CommonConfig,
+    LogConfig,
     ProcessingGraphConfig,
     QueueConfig,
 )
@@ -179,6 +180,7 @@ class AppConfig:
     cache: CacheConfig = field(default_factory=CacheConfig)
     common: CommonConfig = field(default_factory=CommonConfig)
     datasets_based: DatasetsBasedConfig = field(default_factory=DatasetsBasedConfig)
+    log: LogConfig = field(default_factory=LogConfig)
     numba: NumbaConfig = field(default_factory=NumbaConfig)
     processing_graph: ProcessingGraphConfig = field(default_factory=ProcessingGraphConfig)
     queue: QueueConfig = field(default_factory=QueueConfig)
@@ -191,6 +193,7 @@ class AppConfig:
             common=CommonConfig.from_env(),
             cache=CacheConfig.from_env(),
             datasets_based=DatasetsBasedConfig.from_env(),
+            log=LogConfig.from_env(),
             numba=NumbaConfig.from_env(),
             processing_graph=ProcessingGraphConfig.from_env(),
             queue=QueueConfig.from_env(),
