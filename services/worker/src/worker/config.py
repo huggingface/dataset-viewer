@@ -147,7 +147,7 @@ class ParquetAndInfoConfig:
     @classmethod
     def from_env(cls) -> "ParquetAndInfoConfig":
         env = Env(expand_vars=True)
-        with env.prefixed("PARQUET_AND_DATASET_INFO_"):
+        with env.prefixed("PARQUET_AND_INFO_"):
             return cls(
                 blocked_datasets=env.list(name="BLOCKED_DATASETS", default=get_empty_str_list()),
                 supported_datasets=env.list(name="SUPPORTED_DATASETS", default=get_empty_str_list()),

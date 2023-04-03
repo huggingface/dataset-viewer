@@ -45,7 +45,7 @@ def set_supported_datasets(hub_datasets: HubDatasets) -> Iterator[pytest.MonkeyP
         ",".join(value["name"] for value in hub_datasets.values() if "jsonl" in value["name"]),
     )
     mp.setenv(
-        "PARQUET_AND_DATASET_INFO_SUPPORTED_DATASETS",
+        "PARQUET_AND_INFO_SUPPORTED_DATASETS",
         ",".join(value["name"] for value in hub_datasets.values() if "big" not in value["name"]),
     )
     yield mp

@@ -41,11 +41,11 @@ from ...fixtures.hub import HubDatasets
 def set_supported_datasets(hub_datasets: HubDatasets) -> Iterator[pytest.MonkeyPatch]:
     mp = pytest.MonkeyPatch()
     mp.setenv(
-        "PARQUET_AND_DATASET_INFO_BLOCKED_DATASETS",
+        "PARQUET_AND_INFO_INFO_BLOCKED_DATASETS",
         ",".join(value["name"] for value in hub_datasets.values() if "jsonl" in value["name"]),
     )
     mp.setenv(
-        "PARQUET_AND_DATASET_INFO_SUPPORTED_DATASETS",
+        "PARQUET_AND_INFO_SUPPORTED_DATASETS",
         ",".join(value["name"] for value in hub_datasets.values() if "big" not in value["name"]),
     )
     yield mp
