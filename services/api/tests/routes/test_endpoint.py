@@ -47,7 +47,7 @@ def test_endpoints_definition() -> None:
 
     parquet_and_info = definition["/parquet-and-dataset-info"]
     assert parquet_and_info is not None
-    assert sorted(list(parquet_and_info)) == ["config"]
+    assert sorted(list(parquet_and_info)) == ["config", "dataset"]
     assert parquet_and_info["config"] is not None
     assert len(parquet_and_info["config"]) == 1  # Only has one processing step
 
