@@ -34,6 +34,7 @@ GeneralJobRunnerErrorCode = Literal[
     "TooBigContentError",
     "JobRunnerCrashedError",
     "JobRunnerExceededMaximumDurationError",
+    "ResponseAlreadyComputedError",
 ]
 
 # List of error codes that should trigger a retry.
@@ -190,6 +191,19 @@ class JobRunnerExceededMaximumDurationError(GeneralJobRunnerError):
             code="JobRunnerExceededMaximumDurationError",
             cause=cause,
             disclose_cause=False,
+        )
+
+
+class ResponseAlreadyComputedError(GeneralJobRunnerError):
+    """Raised when reponse has been already computed by another job runner."""
+
+    def __init__(self, message: str, cause: Optional[BaseException] = None):
+        super().__init__(
+            message=message,
+            status_code=HTTPStatus.INTERNAL_SERVER_ERROR,
+            code="ResponseAlreadyComputedError",
+            cause=cause,
+            disclose_cause=True,
         )
 
 
@@ -544,3 +558,22 @@ class JobRunner(ABC):
             f"response for dataset={self.dataset} config={self.config} split={self.split} had an error (exceeded"
             " maximum duration), cache updated"
         )
+
+    def raise_if_parallel_response_exists(self, parallel_job_type: str, parallel_job_version: int) -> None:
+        try:
+            existing_response = get_response_without_content(
+                kind=parallel_job_type, dataset=self.dataset, config=self.config, split=self.split
+            )
+            dataset_git_revision = self.get_dataset_git_revision()
+            if (
+                existing_response["http_status"] == HTTPStatus.OK
+                and existing_response["job_runner_version"] == parallel_job_version
+                and existing_response["progress"] == 1.0  # completed response
+                and dataset_git_revision is not None
+                and existing_response["dataset_git_revision"] == dataset_git_revision
+            ):
+                raise ResponseAlreadyComputedError(
+                    f"Response has already been computed by {parallel_job_type}. Compute will be skipped."
+                )
+        except DoesNotExist:
+            logging.debug(f"no cache found for {parallel_job_type}.")

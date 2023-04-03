@@ -10,12 +10,7 @@ from libcommon.constants import (
     PROCESSING_STEP_SPLIT_NAMES_FROM_STREAMING_VERSION,
 )
 from libcommon.dataset import DatasetNotFoundError
-from libcommon.simple_cache import (
-    DoesNotExist,
-    SplitFullName,
-    get_response,
-    get_response_without_content,
-)
+from libcommon.simple_cache import DoesNotExist, SplitFullName, get_response
 
 from worker.job_runner import CompleteJobResult, JobRunnerError, ParameterMissingError
 from worker.job_runners._datasets_based_job_runner import DatasetsBasedJobRunner
@@ -65,9 +60,7 @@ class ResponseAlreadyComputedError(SplitNamesFromDatasetInfoJobRunnerError):
         super().__init__(message, HTTPStatus.INTERNAL_SERVER_ERROR, "ResponseAlreadyComputedError", cause, True)
 
 
-def compute_split_names_from_dataset_info_response(
-    dataset: str, config: str, dataset_git_revision: Optional[str]
-) -> SplitsList:
+def compute_split_names_from_dataset_info_response(dataset: str, config: str) -> SplitsList:
     """
     Get the response of /split-names-from-dataset-info for one specific dataset and config on huggingface.co
     computed from cached response in dataset-info step.
@@ -96,22 +89,6 @@ def compute_split_names_from_dataset_info_response(
     </Tip>
     """
     logging.info(f"get split names from dataset info for dataset={dataset}, config={config}")
-    try:
-        streaming_response = get_response_without_content(
-            kind="/split-names-from-streaming", dataset=dataset, config=config
-        )
-        if (
-            streaming_response["http_status"] == HTTPStatus.OK
-            and streaming_response["job_runner_version"] == PROCESSING_STEP_SPLIT_NAMES_FROM_STREAMING_VERSION
-            and streaming_response["progress"] == 1.0  # completed response
-            and dataset_git_revision is not None
-            and streaming_response["dataset_git_revision"] == dataset_git_revision
-        ):
-            raise ResponseAlreadyComputedError(
-                "Response has already been computed by /split-names-from-streaming. Compute will be skipped."
-            )
-    except DoesNotExist:
-        logging.debug("no cache found for /split-names-from-streaming, will proceed to compute from config-info")
     try:
         response = get_response(kind="config-info", dataset=dataset)
     except DoesNotExist as e:
@@ -147,11 +124,12 @@ class SplitNamesFromDatasetInfoJobRunner(DatasetsBasedJobRunner):
             raise ParameterMissingError("'dataset' parameter is required")
         if self.config is None:
             raise ParameterMissingError("'config' parameter is required")
-        dataset_git_revision = self.get_dataset_git_revision()
+        self.raise_if_parallel_response_exists(
+            parallel_job_type="/split-names-from-streaming",
+            parallel_job_version=PROCESSING_STEP_SPLIT_NAMES_FROM_STREAMING_VERSION,
+        )
         return CompleteJobResult(
-            compute_split_names_from_dataset_info_response(
-                dataset=self.dataset, config=self.config, dataset_git_revision=dataset_git_revision
-            )
+            compute_split_names_from_dataset_info_response(dataset=self.dataset, config=self.config)
         )
 
     def get_new_splits(self, content: Mapping[str, Any]) -> set[SplitFullName]:

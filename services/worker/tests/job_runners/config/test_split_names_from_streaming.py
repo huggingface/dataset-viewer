@@ -67,7 +67,6 @@ def get_job_runner(
 def test_process(app_config: AppConfig, get_job_runner: GetJobRunner, hub_public_csv: str) -> None:
     dataset, config, _ = get_default_config_split(hub_public_csv)
     job_runner = get_job_runner(dataset, config, app_config, False)
-    job_runner.get_dataset_git_revision = Mock(return_value="1.0.0")  # type: ignore
     assert job_runner.process()
     cached_response = get_response(kind=job_runner.processing_step.cache_kind, dataset=hub_public_csv, config=config)
     assert cached_response["http_status"] == HTTPStatus.OK

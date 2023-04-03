@@ -18,7 +18,10 @@ from datasets import (
     get_dataset_config_info,
     load_dataset,
 )
-from libcommon.constants import PROCESSING_STEP_SPLIT_FIRST_ROWS_FROM_STREAMING_VERSION
+from libcommon.constants import (
+    PROCESSING_STEP_SPLIT_FIRST_ROWS_FROM_PARQUET_VERSION,
+    PROCESSING_STEP_SPLIT_FIRST_ROWS_FROM_STREAMING_VERSION,
+)
 from libcommon.processing_graph import ProcessingStep
 from libcommon.queue import JobInfo
 from libcommon.simple_cache import DoesNotExist, SplitFullName, get_response
@@ -53,6 +56,7 @@ SplitFirstRowsFromStreamingJobRunnerErrorCode = Literal[
     "TooBigContentError",
     "PreviousStepStatusError",
     "PreviousStepFormatError",
+    "ResponseAlreadyComputedError",
 ]
 
 
@@ -501,6 +505,10 @@ class SplitFirstRowsFromStreamingJobRunner(DatasetsBasedJobRunner):
             raise ParameterMissingError("'config' parameter is required")
         if self.split is None:
             raise ParameterMissingError("'split' parameter is required")
+        self.raise_if_parallel_response_exists(
+            parallel_job_type="split-first-rows-from-parquet",
+            parallel_job_version=PROCESSING_STEP_SPLIT_FIRST_ROWS_FROM_PARQUET_VERSION,
+        )
         return CompleteJobResult(
             compute_first_rows_response(
                 dataset=self.dataset,

@@ -14,6 +14,7 @@ from hffs.fs import HfFileSystem
 from libcommon.constants import (
     PARQUET_REVISION,
     PROCESSING_STEP_SPLIT_FIRST_ROWS_FROM_PARQUET_VERSION,
+    PROCESSING_STEP_SPLIT_FIRST_ROWS_FROM_STREAMING_VERSION,
 )
 from libcommon.processing_graph import ProcessingStep
 from libcommon.queue import JobInfo
@@ -324,6 +325,10 @@ class SplitFirstRowsFromParquetJobRunner(DatasetsBasedJobRunner):
     def compute(self) -> CompleteJobResult:
         if self.config is None or self.split is None:
             raise ValueError("config and split are required")
+        self.raise_if_parallel_response_exists(
+            parallel_job_type="split-first-rows-from-streaming",
+            parallel_job_version=PROCESSING_STEP_SPLIT_FIRST_ROWS_FROM_STREAMING_VERSION,
+        )
         return CompleteJobResult(
             compute_first_rows_response(
                 dataset=self.dataset,
