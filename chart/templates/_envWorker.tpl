@@ -38,9 +38,9 @@
   value: {{ .Values.firstRows.columnsMaxNumber| quote }}
 # specific to the /parquet-and-dataset-info and config-parquet-and-info job runner
 - name: PARQUET_AND_INFO_BLOCKED_DATASETS
-  value: {{ .Values.parquetAndInfo.blockedDatasets | quote }}
+  value: {{ .Values.parquetAndDatasetInfo.blockedDatasets | quote }}
 - name: PARQUET_AND_INFO_COMMIT_MESSAGE
-  value: {{ .Values.parquetAndInfo.commitMessage | quote }}
+  value: {{ .Values.parquetAndDatasetInfo.commitMessage | quote }}
 - name: PARQUET_AND_INFO_COMMITTER_HF_TOKEN
   {{- if .Values.secrets.userHfToken.fromSecret }}
   valueFrom:
@@ -52,13 +52,13 @@
   value: {{ .Values.secrets.userHfToken.value }}
   {{- end }}
 - name: PARQUET_AND_INFO_MAX_DATASET_SIZE
-  value: {{ .Values.parquetAndInfo.maxDatasetSize | quote }}
+  value: {{ .Values.parquetAndDatasetInfo.maxDatasetSize | quote }}
 - name: PARQUET_AND_INFO_SOURCE_REVISION
-  value: {{ .Values.parquetAndInfo.sourceRevision | quote }}
+  value: {{ .Values.parquetAndDatasetInfo.sourceRevision | quote }}
 - name: PARQUET_AND_INFO_SUPPORTED_DATASETS
-  value: {{ .Values.parquetAndInfo.supportedDatasets | quote }}
+  value: {{ .Values.parquetAndDatasetInfo.supportedDatasets | quote }}
 - name: PARQUET_AND_INFO_TARGET_REVISION
-  value: {{ .Values.parquetAndInfo.targetRevision | quote }}
+  value: {{ .Values.parquetAndDatasetInfo.targetRevision | quote }}
 - name: PARQUET_AND_INFO_URL_TEMPLATE
-  value: {{ .Values.parquetAndInfo.urlTemplate | quote }}
+  value: {{ .Values.parquetAndDatasetInfo.urlTemplate | quote }}
 {{- end -}}
