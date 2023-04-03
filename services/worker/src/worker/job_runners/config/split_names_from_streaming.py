@@ -55,7 +55,7 @@ class EmptyDatasetError(SplitNamesFromStreamingJobRunnerError):
 
 
 class ResponseAlreadyComputedError(SplitNamesFromStreamingJobRunnerError):
-    """Raised when reponse has been already computed by /split-names-from-dataset-info job runner."""
+    """Raised when response has been already computed by /split-names-from-dataset-info job runner."""
 
     def __init__(self, message: str, cause: Optional[BaseException] = None):
         super().__init__(message, HTTPStatus.INTERNAL_SERVER_ERROR, "ResponseAlreadyComputedError", cause, True)
