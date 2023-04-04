@@ -103,6 +103,8 @@ jobs:
                   tag: sha-${{ steps.vars.outputs.sha_short }}
                 cacheRefresh:
                   tag: sha-${{ steps.vars.outputs.sha_short }}
+                cacheMonitor:
+                  tag: sha-${{ steps.vars.outputs.sha_short }}
               services:
                 admin:
                   tag: sha-${{ steps.vars.outputs.sha_short }}

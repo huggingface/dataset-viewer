@@ -17,6 +17,10 @@
       "path": "../jobs/cache_refresh"
     },
     {
+      "name": "jobs/cache_monitor",
+      "path": "../jobs/cache_monitor"
+    },
+    {
       "name": "libs/libcommon",
       "path": "../libs/libcommon"
     },

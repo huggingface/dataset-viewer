@@ -38,6 +38,10 @@ Docker image management
 {{ include "hf.common.images.image" (dict "imageRoot" .Values.images.jobs.cacheRefresh "global" .Values.global.huggingface) }}
 {{- end -}}
 
+{{- define "jobs.cacheMonitor.image" -}}
+{{ include "hf.common.images.image" (dict "imageRoot" .Values.images.jobs.cacheMonitor "global" .Values.global.huggingface) }}
+{{- end -}}
+
 {{- define "services.admin.image" -}}
 {{ include "hf.common.images.image" (dict "imageRoot" .Values.images.services.admin "global" .Values.global.huggingface) }}
 {{- end -}}

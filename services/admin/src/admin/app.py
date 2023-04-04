@@ -15,7 +15,6 @@ from starlette_prometheus import PrometheusMiddleware
 
 from admin.config import AppConfig, UvicornConfig
 from admin.prometheus import Prometheus
-from admin.routes.backfill import create_backfill_endpoint
 from admin.routes.cache_reports import create_cache_reports_endpoint
 from admin.routes.cache_reports_with_content import (
     create_cache_reports_with_content_endpoint,
@@ -39,7 +38,6 @@ def create_app() -> Starlette:
 
     processing_graph = ProcessingGraph(app_config.processing_graph.specification)
     processing_steps = list(processing_graph.steps.values())
-    init_processing_steps = processing_graph.get_first_steps()
 
     cache_resource = CacheMongoResource(database=app_config.cache.mongo_database, host=app_config.cache.mongo_url)
     queue_resource = QueueMongoResource(database=app_config.queue.mongo_database, host=app_config.queue.mongo_url)
@@ -95,19 +93,6 @@ def create_app() -> Starlette:
                 methods=["POST"],
             )
             for processing_step in processing_steps
-        ]
-        + [
-            Route(
-                "/backfill",
-                endpoint=create_backfill_endpoint(
-                    init_processing_steps=init_processing_steps,
-                    hf_endpoint=app_config.common.hf_endpoint,
-                    hf_token=app_config.common.hf_token,
-                    external_auth_url=app_config.admin.external_auth_url,
-                    organization=app_config.admin.hf_organization,
-                ),
-                methods=["POST"],
-            )
         ]
         + [
             Route(
