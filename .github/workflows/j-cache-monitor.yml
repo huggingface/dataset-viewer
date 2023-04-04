@@ -1,0 +1,33 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2022 The HuggingFace Authors.
+
+name: jobs/cache_monitor
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+    paths:
+      - 'jobs/cache_monitor/**'
+      - 'libs/libcommon/**'
+      - '.github/workflows/j-cache-monitor.yml'
+      - '.github/workflows/_quality-python.yml'
+      - '.github/workflows/_unit-tests-python.yml'
+      - 'tools/docker-compose-mongo.yml'
+  pull_request:
+    paths:
+      - 'jobs/cache_monitor/**'
+      - 'libs/libcommon/**'
+      - '.github/workflows/j-cache-monitor.yml'
+      - '.github/workflows/_quality-python.yml'
+      - '.github/workflows/_unit-tests-python.yml'
+      - 'tools/docker-compose-mongo.yml'
+jobs:
+  quality:
+    uses: ./.github/workflows/_quality-python.yml
+    with:
+      working-directory: jobs/cache_monitor
+  unit-tests:
+    uses: ./.github/workflows/_unit-tests-python.yml
+    with:
+      working-directory: jobs/cache_monitor
