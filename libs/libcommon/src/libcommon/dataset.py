@@ -15,6 +15,7 @@ DatasetErrorCode = Literal[
     "AskAccessHubRequestError",
     "DatasetInfoHubRequestError",
     "DatasetNotFoundError",
+    "DisabledViewerError",
     "GatedDisabledError",
     "GatedExtraFieldsError",
 ]
@@ -70,6 +71,19 @@ class DatasetNotFoundError(DatasetError):
             message=message,
             status_code=HTTPStatus.NOT_FOUND,
             code="DatasetNotFoundError",
+            cause=cause,
+            disclose_cause=False,
+        )
+
+
+class DisabledViewerError(DatasetError):
+    """Raised when the dataset viewer is disabled."""
+
+    def __init__(self, message: str, cause: Optional[BaseException] = None):
+        super().__init__(
+            message=message,
+            status_code=HTTPStatus.NOT_FOUND,
+            code="DisabledViewerError",
             cause=cause,
             disclose_cause=False,
         )
@@ -191,6 +205,7 @@ def get_dataset_info_for_supported_datasets(
         - [`~libcommon.dataset.GatedExtraFieldsError`]: if the dataset is gated, with extra fields.
             Programmatic access is not implemented for this type of dataset because there is no easy
             way to get the list of extra fields.
+        - [`~libcommon.dataset.DisabledViewerError`]: if the dataset viewer is disabled.
         - [`~libcommon.dataset.GatedDisabledError`]: if the dataset is gated, but disabled.
         - [`~libcommon.dataset.DatasetNotFoundError`]: if the dataset does not exist, or if the
             token does not give the sufficient access to the dataset, or if the dataset is private
@@ -229,6 +244,8 @@ def get_dataset_info_for_supported_datasets(
         ) from err
     if dataset_info.private:
         raise DatasetNotFoundError("The dataset is private and private datasets are not yet supported.")
+    if dataset_info.cardData and not dataset_info.cardData.get("viewer", True):
+        raise DisabledViewerError("The dataset viewer has been disabled on this dataset.")
     return dataset_info
 
 
@@ -261,6 +278,7 @@ def get_dataset_git_revision(
         - [`~libcommon.dataset.GatedExtraFieldsError`]: if the dataset is gated, with extra fields.
             Programmatic access is not implemented for this type of dataset because there is no easy
             way to get the list of extra fields.
+        - [`~libcommon.dataset.DisabledViewerError`]: if the dataset viewer is disabled.
         - [`~libcommon.dataset.GatedDisabledError`]: if the dataset is gated, but disabled.
         - [`~libcommon.dataset.DatasetNotFoundError`]: if the dataset does not exist, or if the
             token does not give the sufficient access to the dataset, or if the dataset is private
@@ -301,6 +319,7 @@ def check_support(
         - [`~libcommon.dataset.GatedExtraFieldsError`]: if the dataset is gated, with extra fields.
             Programmatic access is not implemented for this type of dataset because there is no easy
             way to get the list of extra fields.
+        - [`~libcommon.dataset.DisabledViewerError`]: if the dataset viewer is disabled.
         - [`~libcommon.dataset.GatedDisabledError`]: if the dataset is gated, but disabled.
         - [`~libcommon.dataset.DatasetNotFoundError`]: if the dataset does not exist, or if the
             token does not give the sufficient access to the dataset, or if the dataset is private
