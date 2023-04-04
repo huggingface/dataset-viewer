@@ -59,8 +59,10 @@ images:
 common:
   # URL of the HuggingFace Hub
   hfEndpoint: ""
+
+log:
   # Log level
-  logLevel: "INFO"
+  level: "INFO"
 
 # --- common parameters ---
 
@@ -121,6 +123,8 @@ worker:
   killZombiesIntervalSeconds: 600
   # maximum disk usage of every storage disk in the list (in percentage) to allow a job to start. Set to 0 to disable the test.
   maxDiskUsagePct: 90
+  # the maximum duration of a job before it gets stopped for exceeded the maximum duration
+  maxJobDurationSeconds: 1200
   # Max CPU load (%) - if reached, sleeps until it comes back under the limit. Set to 0 to disable the test.
   maxLoadPct: 0
   # Max memory (RAM + SWAP) (%) - if reached, sleeps until it comes back under the limit. Set to 0 to disable the test.
@@ -328,7 +332,7 @@ workers:
     # Maximum number of jobs running at the same time for the same namespace
     maxJobsPerNamespace: 1
     # job types that this worker can process
-    workerOnlyJobTypes: "config-parquet,dataset-parquet,/dataset-info,/split-names-from-dataset-info,config-size,dataset-size,dataset-split-names-from-streaming,dataset-split-names-from-dataset-info"
+    workerOnlyJobTypes: "config-parquet,dataset-parquet,config-info,dataset-info,/split-names-from-dataset-info,config-size,dataset-size,dataset-split-names-from-streaming,dataset-split-names-from-dataset-info"
     nodeSelector: {}
     replicas: 1
     resources:

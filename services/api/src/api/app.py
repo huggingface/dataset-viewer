@@ -17,6 +17,7 @@ from api.jwt_token import fetch_jwt_public_key
 from api.prometheus import Prometheus
 from api.routes.endpoint import EndpointsDefinition, create_endpoint
 from api.routes.healthcheck import healthcheck_endpoint
+from api.routes.rows import create_rows_endpoint
 from api.routes.valid import create_is_valid_endpoint, create_valid_endpoint
 from api.routes.webhook import create_webhook_endpoint
 
@@ -28,7 +29,7 @@ def create_app() -> Starlette:
 
 
 def create_app_with_config(app_config: AppConfig, endpoint_config: EndpointConfig) -> Starlette:
-    init_logging(log_level=app_config.common.log_level)
+    init_logging(level=app_config.log.level)
     # ^ set first to have logs as soon as possible
 
     prometheus = Prometheus()
@@ -46,6 +47,10 @@ def create_app_with_config(app_config: AppConfig, endpoint_config: EndpointConfi
         if app_config.api.hf_jwt_public_key_url and app_config.api.hf_jwt_algorithm
         else None
     )
+    parquet_processing_steps_by_input_type = endpoints_definition.steps_by_input_type_and_endpoint.get("/parquet")
+    if not parquet_processing_steps_by_input_type or not parquet_processing_steps_by_input_type["config"]:
+        raise RuntimeError("The parquet endpoint is not configured. Exiting.")
+    config_parquet_processing_steps = parquet_processing_steps_by_input_type["config"]
 
     middleware = [
         Middleware(
@@ -118,6 +123,21 @@ def create_app_with_config(app_config: AppConfig, endpoint_config: EndpointConfi
             methods=["POST"],
         ),
         # ^ called by the Hub webhooks
+        Route(
+            "/rows",
+            endpoint=create_rows_endpoint(
+                config_parquet_processing_steps=config_parquet_processing_steps,
+                init_processing_steps=init_processing_steps,
+                hf_endpoint=app_config.common.hf_endpoint,
+                hf_token=app_config.common.hf_token,
+                hf_jwt_public_key=hf_jwt_public_key,
+                hf_jwt_algorithm=app_config.api.hf_jwt_algorithm,
+                external_auth_url=app_config.api.external_auth_url,
+                hf_timeout_seconds=app_config.api.hf_timeout_seconds,
+                max_age_long=app_config.api.max_age_long,
+                max_age_short=app_config.api.max_age_short,
+            ),
+        ),
     ]
 
     return Starlette(routes=routes, middleware=middleware, on_shutdown=[resource.release for resource in resources])

@@ -10,6 +10,8 @@
   value: {{ .Values.worker.killZombiesIntervalSeconds | quote}}
 - name: WORKER_MAX_DISK_USAGE_PCT
   value: {{ .Values.worker.maxDiskUsagePct | quote }}
+- name: WORKER_MAX_JOB_DURATION_SECONDS
+  value: {{ .Values.worker.maxJobDurationSeconds | quote }}
 - name: WORKER_MAX_LOAD_PCT
   value: {{ .Values.worker.maxLoadPct | quote }}
 - name: WORKER_MAX_MEMORY_PCT

@@ -20,8 +20,6 @@
   {{- else }}
   value: {{ .Values.secrets.appHfToken.value }}
   {{- end }}
-- name: COMMON_LOG_LEVEL
-  value: {{ .Values.common.logLevel | quote }}
 {{- end -}}
 
 {{- define "datasetServer.mongo.url" -}}

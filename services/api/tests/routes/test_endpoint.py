@@ -27,37 +27,49 @@ def test_endpoints_definition() -> None:
 
     config_names = definition["/config-names"]
     assert config_names is not None
+    assert sorted(list(config_names)) == ["dataset"]
     assert config_names["dataset"] is not None
     assert len(config_names["dataset"]) == 1  # Only has one processing step
 
     splits = definition["/splits"]
     assert splits is not None
+    assert sorted(list(splits)) == ["config", "dataset"]
     assert splits["dataset"] is not None
+    assert splits["config"] is not None
     assert len(splits["dataset"]) == 3  # Has three processing steps
     assert len(splits["config"]) == 2  # Has two processing steps
 
     first_rows = definition["/first-rows"]
     assert first_rows is not None
+    assert sorted(list(first_rows)) == ["split"]
     assert first_rows["split"] is not None
-    assert len(first_rows["split"]) == 1  # Only has one processing step
+    assert len(first_rows["split"]) == 2  # Has two processing steps
 
     parquet_and_dataset_info = definition["/parquet-and-dataset-info"]
     assert parquet_and_dataset_info is not None
+    assert sorted(list(parquet_and_dataset_info)) == ["dataset"]
     assert parquet_and_dataset_info["dataset"] is not None
     assert len(parquet_and_dataset_info["dataset"]) == 1  # Only has one processing step
 
     parquet = definition["/parquet"]
     assert parquet is not None
+    assert sorted(list(parquet)) == ["config", "dataset"]
     assert parquet["dataset"] is not None
+    assert parquet["config"] is not None
     assert len(parquet["dataset"]) == 1  # Only has one processing step
+    assert len(parquet["config"]) == 1  # Only has one processing step
 
     dataset_info = definition["/dataset-info"]
     assert dataset_info is not None
+    assert sorted(list(dataset_info)) == ["config", "dataset"]
     assert dataset_info["dataset"] is not None
+    assert dataset_info["config"] is not None
     assert len(dataset_info["dataset"]) == 1  # Only has one processing step
+    assert len(dataset_info["config"]) == 1  # Only has one processing step
 
     size = definition["/size"]
     assert size is not None
+    assert sorted(list(size)) == ["config", "dataset"]
     assert size["dataset"] is not None
     assert size["config"] is not None
     assert len(size["dataset"]) == 1  # Only has one processing step
@@ -77,7 +89,7 @@ def test_get_cache_entry_from_steps() -> None:
     cache_without_error = "/split-names-from-dataset-info"
 
     step_with_error = graph.get_step(cache_with_error)
-    step_whitout_error = graph.get_step(cache_without_error)
+    step_without_error = graph.get_step(cache_without_error)
 
     upsert_response(
         kind=cache_without_error,
@@ -97,7 +109,7 @@ def test_get_cache_entry_from_steps() -> None:
 
     # succeeded result is returned
     result = get_cache_entry_from_steps(
-        [step_whitout_error, step_with_error],
+        [step_without_error, step_with_error],
         dataset,
         config,
         None,
@@ -109,7 +121,7 @@ def test_get_cache_entry_from_steps() -> None:
 
     # succeeded result is returned even if first step failed
     result = get_cache_entry_from_steps(
-        [step_with_error, step_whitout_error],
+        [step_with_error, step_without_error],
         dataset,
         config,
         None,
@@ -126,7 +138,7 @@ def test_get_cache_entry_from_steps() -> None:
     assert result
     assert result["http_status"] == HTTPStatus.INTERNAL_SERVER_ERROR
 
-    # peding job thows exception
+    # pending job throws exception
     queue = Queue()
     queue.upsert_job(job_type="/splits", dataset=dataset, config=config, force=True)
     non_existent_step = graph.get_step("/splits")

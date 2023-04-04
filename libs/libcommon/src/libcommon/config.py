@@ -9,6 +9,7 @@ from typing import Optional
 from environs import Env
 
 from libcommon.constants import (
+    PROCESSING_STEP_CONFIG_INFO_VERSION,
     PROCESSING_STEP_CONFIG_NAMES_VERSION,
     PROCESSING_STEP_CONFIG_PARQUET_VERSION,
     PROCESSING_STEP_CONFIG_SIZE_VERSION,
@@ -17,8 +18,9 @@ from libcommon.constants import (
     PROCESSING_STEP_DATASET_SIZE_VERSION,
     PROCESSING_STEP_DATASET_SPLIT_NAMES_FROM_DATASET_INFO_VERSION,
     PROCESSING_STEP_DATASET_SPLIT_NAMES_FROM_STREAMING_VERSION,
-    PROCESSING_STEP_FIRST_ROWS_VERSION,
     PROCESSING_STEP_PARQUET_AND_DATASET_INFO_VERSION,
+    PROCESSING_STEP_SPLIT_FIRST_ROWS_FROM_PARQUET_VERSION,
+    PROCESSING_STEP_SPLIT_FIRST_ROWS_FROM_STREAMING_VERSION,
     PROCESSING_STEP_SPLIT_NAMES_FROM_DATASET_INFO_VERSION,
     PROCESSING_STEP_SPLIT_NAMES_FROM_STREAMING_VERSION,
     PROCESSING_STEP_SPLITS_VERSION,
@@ -46,14 +48,12 @@ class AssetsConfig:
 
 COMMON_HF_ENDPOINT = "https://huggingface.co"
 COMMON_HF_TOKEN = None
-COMMON_LOG_LEVEL = logging.INFO
 
 
 @dataclass(frozen=True)
 class CommonConfig:
     hf_endpoint: str = COMMON_HF_ENDPOINT
     hf_token: Optional[str] = COMMON_HF_TOKEN
-    log_level: int = COMMON_LOG_LEVEL
 
     @classmethod
     def from_env(cls) -> "CommonConfig":
@@ -62,7 +62,22 @@ class CommonConfig:
             return cls(
                 hf_endpoint=env.str(name="HF_ENDPOINT", default=COMMON_HF_ENDPOINT),
                 hf_token=env.str(name="HF_TOKEN", default=COMMON_HF_TOKEN),  # nosec
-                log_level=env.log_level(name="LOG_LEVEL", default=COMMON_LOG_LEVEL),
+            )
+
+
+LOG_LEVEL = logging.INFO
+
+
+@dataclass(frozen=True)
+class LogConfig:
+    level: int = LOG_LEVEL
+
+    @classmethod
+    def from_env(cls) -> "LogConfig":
+        env = Env(expand_vars=True)
+        with env.prefixed("LOG_"):
+            return cls(
+                level=env.log_level(name="LEVEL", default=LOG_LEVEL),
             )
 
 
@@ -122,11 +137,11 @@ class ProcessingGraphConfig:
                 "required_by_dataset_viewer": True,
                 "job_runner_version": PROCESSING_STEP_SPLITS_VERSION,
             },  # to be deprecated
-            "/first-rows": {
+            "split-first-rows-from-streaming": {
                 "input_type": "split",
                 "requires": "/split-names-from-streaming",
                 "required_by_dataset_viewer": True,
-                "job_runner_version": PROCESSING_STEP_FIRST_ROWS_VERSION,
+                "job_runner_version": PROCESSING_STEP_SPLIT_FIRST_ROWS_FROM_STREAMING_VERSION,
             },
             "/parquet-and-dataset-info": {
                 "input_type": "dataset",
@@ -137,19 +152,29 @@ class ProcessingGraphConfig:
                 "requires": "/parquet-and-dataset-info",
                 "job_runner_version": PROCESSING_STEP_CONFIG_PARQUET_VERSION,
             },
+            "split-first-rows-from-parquet": {
+                "input_type": "split",
+                "requires": "config-parquet",
+                "job_runner_version": PROCESSING_STEP_SPLIT_FIRST_ROWS_FROM_PARQUET_VERSION,
+            },
             "dataset-parquet": {
                 "input_type": "dataset",
                 "requires": "config-parquet",
                 "job_runner_version": PROCESSING_STEP_DATASET_PARQUET_VERSION,
             },
-            "/dataset-info": {
-                "input_type": "dataset",
+            "config-info": {
+                "input_type": "config",
                 "requires": "/parquet-and-dataset-info",
+                "job_runner_version": PROCESSING_STEP_CONFIG_INFO_VERSION,
+            },
+            "dataset-info": {
+                "input_type": "dataset",
+                "requires": "config-info",
                 "job_runner_version": PROCESSING_STEP_DATASET_INFO_VERSION,
             },
             "/split-names-from-dataset-info": {
                 "input_type": "config",
-                "requires": "/dataset-info",
+                "requires": "config-info",
                 "job_runner_version": PROCESSING_STEP_SPLIT_NAMES_FROM_DATASET_INFO_VERSION,
             },
             "config-size": {
