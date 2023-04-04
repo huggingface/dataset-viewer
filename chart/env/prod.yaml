@@ -106,6 +106,15 @@ mongodbMigration:
     limits:
       cpu: 1
 
+# --- jobs (no hooks) ---
+
+cacheMonitor:
+  resources:
+    requests:
+      cpu: 100m
+    limits:
+      cpu: 1
+
 # --- storage admin (to manually inspect the storage, in /data) ---
 
 storageAdmin:
