@@ -783,9 +783,6 @@ def compute_config_parquet_and_info_response(
     )
     builder.download_and_prepare(file_format="parquet")  # the parquet files are stored in the cache dir
     dataset_info = asdict(builder.info)
-    # ^ see
-    # https://github.dev/huggingface/datasets/blob/e183a269067575db8765ee979bd8523d14a1adae/src/datasets/info.py#L244-L245
-    # note that asdict() is not typed in the datasets library, hence type: ignore
     parquet_files.extend(
         ParquetFile(local_file=local_file, local_dir=builder.cache_dir, config=config)
         for local_file in glob.glob(f"{builder.cache_dir}**/*.parquet")
