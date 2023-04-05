@@ -53,7 +53,6 @@ def image(
     assets_base_url: str,
     assets_directory: StrPath,
     json_path: Optional[List[Union[str, int]]] = None,
-    dataset_separator_suffix: str = "",
     overwrite: bool = True,
 ) -> Any:
     if value is None:
@@ -75,7 +74,6 @@ def image(
                 image=value,
                 assets_base_url=assets_base_url,
                 assets_directory=assets_directory,
-                dataset_separator_suffix=dataset_separator_suffix,
                 overwrite=overwrite,
             )
         except OSError:
@@ -97,7 +95,6 @@ def audio(
     assets_base_url: str,
     assets_directory: StrPath,
     json_path: Optional[List[Union[str, int]]] = None,
-    dataset_separator_suffix: str = "",
     overwrite: bool = True,
 ) -> Any:
     if value is None:
@@ -125,7 +122,6 @@ def audio(
         assets_base_url=assets_base_url,
         filename_base=append_hash_suffix("audio", json_path),
         assets_directory=assets_directory,
-        dataset_separator_suffix=dataset_separator_suffix,
         overwrite=overwrite,
     )
 
@@ -141,7 +137,6 @@ def get_cell_value(
     assets_base_url: str,
     assets_directory: StrPath,
     json_path: Optional[List[Union[str, int]]] = None,
-    dataset_separator_suffix: str = "",
     overwrite: bool = True,
 ) -> Any:
     # always allow None values in the cells
@@ -158,7 +153,6 @@ def get_cell_value(
             assets_base_url=assets_base_url,
             assets_directory=assets_directory,
             json_path=json_path,
-            dataset_separator_suffix=dataset_separator_suffix,
             overwrite=overwrite,
         )
     elif isinstance(fieldType, Audio):
@@ -172,7 +166,6 @@ def get_cell_value(
             assets_base_url=assets_base_url,
             assets_directory=assets_directory,
             json_path=json_path,
-            dataset_separator_suffix=dataset_separator_suffix,
             overwrite=overwrite,
         )
     elif isinstance(fieldType, list):
@@ -193,7 +186,6 @@ def get_cell_value(
                 assets_base_url=assets_base_url,
                 assets_directory=assets_directory,
                 json_path=json_path + [idx] if json_path else [idx],
-                dataset_separator_suffix=dataset_separator_suffix,
                 overwrite=overwrite,
             )
             for (idx, subCell) in enumerate(cell)
@@ -214,7 +206,6 @@ def get_cell_value(
                     assets_base_url=assets_base_url,
                     assets_directory=assets_directory,
                     json_path=json_path + [idx] if json_path else [idx],
-                    dataset_separator_suffix=dataset_separator_suffix,
                     overwrite=overwrite,
                 )
                 for (idx, subCell) in enumerate(cell)
@@ -238,7 +229,6 @@ def get_cell_value(
                         assets_base_url=assets_base_url,
                         assets_directory=assets_directory,
                         json_path=json_path + [key, idx] if json_path else [key, idx],
-                        dataset_separator_suffix=dataset_separator_suffix,
                         overwrite=overwrite,
                     )
                     for (idx, subCellItem) in enumerate(subCell)
@@ -262,7 +252,6 @@ def get_cell_value(
                 assets_base_url=assets_base_url,
                 assets_directory=assets_directory,
                 json_path=json_path + [key] if json_path else [key],
-                dataset_separator_suffix=dataset_separator_suffix,
                 overwrite=overwrite,
             )
             for (key, subCell) in cell.items()

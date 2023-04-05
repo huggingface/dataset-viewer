@@ -5,7 +5,7 @@ import uvicorn
 from libcommon.log import init_logging
 from libcommon.processing_graph import ProcessingGraph
 from libcommon.resources import CacheMongoResource, QueueMongoResource, Resource
-from libcommon.storage import exists, init_assets_dir
+from libcommon.storage import exists, init_cached_assets_dir
 from starlette.applications import Starlette
 from starlette.middleware import Middleware
 from starlette.middleware.cors import CORSMiddleware
@@ -32,8 +32,8 @@ def create_app() -> Starlette:
 def create_app_with_config(app_config: AppConfig, endpoint_config: EndpointConfig) -> Starlette:
     init_logging(log_level=app_config.common.log_level)
     # ^ set first to have logs as soon as possible
-    assets_directory = init_assets_dir(directory=app_config.assets.storage_directory)
-    if not exists(assets_directory):
+    cached_assets_directory = init_cached_assets_dir(directory=app_config.cached_assets.storage_directory)
+    if not exists(cached_assets_directory):
         raise RuntimeError("The assets storage directory could not be accessed. Exiting.")
 
     prometheus = Prometheus()
@@ -132,8 +132,8 @@ def create_app_with_config(app_config: AppConfig, endpoint_config: EndpointConfi
             endpoint=create_rows_endpoint(
                 config_parquet_processing_steps=config_parquet_processing_steps,
                 init_processing_steps=init_processing_steps,
-                assets_base_url=app_config.assets.base_url,
-                assets_directory=assets_directory,
+                cached_assets_base_url=app_config.cached_assets.base_url,
+                cached_assets_directory=cached_assets_directory,
                 hf_endpoint=app_config.common.hf_endpoint,
                 hf_token=app_config.common.hf_token,
                 hf_jwt_public_key=hf_jwt_public_key,

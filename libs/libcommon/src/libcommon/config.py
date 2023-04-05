@@ -45,6 +45,25 @@ class AssetsConfig:
             )
 
 
+CACHED_ASSETS_BASE_URL = "cached-assets"
+CACHED_ASSETS_STORAGE_DIRECTORY = None
+
+
+@dataclass(frozen=True)
+class CachedAssetsConfig:
+    base_url: str = ASSETS_BASE_URL
+    storage_directory: Optional[str] = ASSETS_STORAGE_DIRECTORY
+
+    @classmethod
+    def from_env(cls) -> "CachedAssetsConfig":
+        env = Env(expand_vars=True)
+        with env.prefixed("CACHED_ASSETS_"):
+            return cls(
+                base_url=env.str(name="BASE_URL", default=CACHED_ASSETS_BASE_URL),
+                storage_directory=env.str(name="STORAGE_DIRECTORY", default=CACHED_ASSETS_STORAGE_DIRECTORY),
+            )
+
+
 COMMON_HF_ENDPOINT = "https://huggingface.co"
 COMMON_HF_TOKEN = None
 COMMON_LOG_LEVEL = logging.INFO

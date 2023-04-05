@@ -9,7 +9,7 @@ from typing import Optional, Union
 
 from appdirs import user_cache_dir  # type:ignore
 
-from libcommon.constants import ASSETS_CACHE_APPNAME
+from libcommon.constants import ASSETS_CACHE_APPNAME, CACHED_ASSETS_CACHE_APPNAME
 
 StrPath = Union[str, PathLike[str]]
 
@@ -47,6 +47,20 @@ def init_assets_dir(directory: Optional[StrPath] = None) -> StrPath:
         Union[str, PathLike[str]]: The directory.
     """
     return init_dir(directory, appname=ASSETS_CACHE_APPNAME)
+
+
+def init_cached_assets_dir(directory: Optional[StrPath] = None) -> StrPath:
+    """Initialize the cached assets directory.
+
+    If directory is None, it will be set to the default cache location on the machine.
+
+    Args:
+        directory (Optional[Union[str, PathLike[str]]], optional): The directory to initialize. Defaults to None.
+
+    Returns:
+        Union[str, PathLike[str]]: The directory.
+    """
+    return init_dir(directory, appname=CACHED_ASSETS_CACHE_APPNAME)
 
 
 def exists(path: StrPath) -> bool:

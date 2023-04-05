@@ -42,7 +42,6 @@ from api.utils import (
 MAX_ROWS = 100
 
 PARQUET_REVISION = "refs/convert/parquet"
-CACHED_ASSETS_DIR_DATASET_SEPARATOR_SUFFIX = "cached"
 
 CLEAN_CACHE_PROBA = 0.05
 KEEP_ROWS_BELOW_INDEX = 100
@@ -286,8 +285,8 @@ def to_rows_list(
     dataset: str,
     config: str,
     split: str,
-    assets_base_url: str,
-    assets_directory: StrPath,
+    cached_assets_base_url: str,
+    cached_assets_directory: StrPath,
     offset: int,
     features: Features,
     unsupported_columns: List[str],
@@ -304,8 +303,8 @@ def to_rows_list(
             split=split,
             rows=pa_table.to_pylist(),
             features=features,
-            assets_base_url=assets_base_url,
-            assets_directory=assets_directory,
+            cached_assets_base_url=cached_assets_base_url,
+            cached_assets_directory=cached_assets_directory,
         )
     except Exception as err:
         raise ParquetDataProcessingError(
@@ -327,8 +326,8 @@ def transform_rows(
     split: str,
     rows: List[Row],
     features: Features,
-    assets_base_url: str,
-    assets_directory: StrPath,
+    cached_assets_base_url: str,
+    cached_assets_directory: StrPath,
 ) -> List[Row]:
     return [
         {
@@ -340,9 +339,8 @@ def transform_rows(
                 cell=row[featureName] if featureName in row else None,
                 featureName=featureName,
                 fieldType=fieldType,
-                assets_base_url=assets_base_url,
-                assets_directory=assets_directory,
-                dataset_separator_suffix=CACHED_ASSETS_DIR_DATASET_SEPARATOR_SUFFIX,
+                assets_base_url=cached_assets_base_url,
+                assets_directory=cached_assets_directory,
             )
             for (featureName, fieldType) in features.items()
         }
@@ -359,14 +357,12 @@ def _greater_or_equal(row_dir_name: str, row_idx: int, on_error: bool) -> bool:
 
 def clean_cached_assets(
     dataset: str,
-    assets_directory: StrPath,
+    cached_assets_directory: StrPath,
     keep_rows_below_index: int,
     keep_n_most_recent_rows: int,
     max_clean_sample_size: int,
-):
-    row_directories = glob_rows_in_assets_dir(
-        dataset, assets_directory, dataset_separator_suffix=CACHED_ASSETS_DIR_DATASET_SEPARATOR_SUFFIX
-    )
+) -> None:
+    row_directories = glob_rows_in_assets_dir(dataset, cached_assets_directory)
     row_directories_sample = list(
         islice(
             (
@@ -389,8 +385,8 @@ def create_response(
     dataset: str,
     config: str,
     split: str,
-    assets_base_url: str,
-    assets_directory: StrPath,
+    cached_assets_base_url: str,
+    cached_assets_directory: StrPath,
     pa_table: pa.Table,
     offset: int,
     features: Features,
@@ -403,7 +399,15 @@ def create_response(
     return {
         "features": to_features_list(features),
         "rows": to_rows_list(
-            pa_table, dataset, config, split, assets_base_url, assets_directory, offset, features, unsupported_columns
+            pa_table,
+            dataset,
+            config,
+            split,
+            cached_assets_base_url,
+            cached_assets_directory,
+            offset,
+            features,
+            unsupported_columns,
         ),
     }
 
@@ -411,8 +415,8 @@ def create_response(
 def create_rows_endpoint(
     config_parquet_processing_steps: List[ProcessingStep],
     init_processing_steps: List[ProcessingStep],
-    assets_base_url: str,
-    assets_directory: StrPath,
+    cached_assets_base_url: str,
+    cached_assets_directory: StrPath,
     hf_endpoint: str,
     hf_token: Optional[str] = None,
     hf_jwt_public_key: Optional[str] = None,
@@ -452,7 +456,7 @@ def create_rows_endpoint(
                 with StepProfiler(method="rows_endpoint", step="check authentication"):
                     # if auth_check fails, it will raise an exception that will be caught below
                     auth_check(
-                        dataset,
+                        dataset=dataset,
                         external_auth_url=external_auth_url,
                         request=request,
                         hf_jwt_public_key=hf_jwt_public_key,
@@ -466,33 +470,32 @@ def create_rows_endpoint(
                 with StepProfiler(method="rows_endpoint", step="clean cache"):
                     if random.random() < CLEAN_CACHE_PROBA:  # no need to do it every time
                         clean_cached_assets(
-                            dataset,
-                            assets_directory,
+                            dataset=dataset,
+                            cached_assets_directory=cached_assets_directory,
                             keep_rows_below_index=KEEP_ROWS_BELOW_INDEX,
                             keep_n_most_recent_rows=KEEP_N_MOST_RECENT_ROWS,
                             max_clean_sample_size=MAX_CLEAN_SAMPLE_SIZE,
                         )
                 with StepProfiler(method="rows_endpoint", step="transform to a list"):
                     response = create_response(
-                        dataset,
-                        config,
-                        split,
-                        assets_base_url,
-                        assets_directory,
-                        pa_table,
-                        offset,
-                        rows_index.features,
-                        rows_index.unsupported_columns,
+                        dataset=dataset,
+                        config=config,
+                        split=split,
+                        cached_assets_base_url=cached_assets_base_url,
+                        cached_assets_directory=cached_assets_directory,
+                        pa_table=pa_table,
+                        offset=offset,
+                        features=rows_index.features,
+                        unsupported_columns=rows_index.unsupported_columns,
                     )
                 with StepProfiler(method="rows_endpoint", step="update last modified time of rows in asset dir"):
                     update_last_modified_date_of_rows_in_assets_dir(
-                        dataset,
-                        config,
-                        split,
-                        offset,
-                        length,
-                        assets_directory=assets_directory,
-                        dataset_separator_suffix=CACHED_ASSETS_DIR_DATASET_SEPARATOR_SUFFIX,
+                        dataset=dataset,
+                        config=config,
+                        split=split,
+                        offset=offset,
+                        length=length,
+                        assets_directory=cached_assets_directory,
                     )
                 with StepProfiler(method="rows_endpoint", step="generate the OK response"):
                     return get_json_ok_response(content=response, max_age=max_age_long)
