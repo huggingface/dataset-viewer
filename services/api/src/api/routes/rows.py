@@ -183,7 +183,7 @@ class RowsIndex:
             raise ParquetResponseEmptyError("No parquet files found.")
         last_row_in_parquet = self.row_group_offsets[-1] - 1
         first_row = min(offset, last_row_in_parquet)
-        last_row = min(offset, offset + length - 1, last_row_in_parquet)
+        last_row = min(offset + length - 1, last_row_in_parquet)
         first_row_group_id, last_row_group_id = np.searchsorted(
             self.row_group_offsets, [first_row, last_row], side="right"
         )
