@@ -43,7 +43,7 @@ from libcommon.constants import PROCESSING_STEP_CONFIG_PARQUET_AND_INFO_VERSION
 from libcommon.dataset import DatasetNotFoundError, ask_access
 from libcommon.processing_graph import ProcessingStep
 from libcommon.queue import JobInfo
-from libcommon.simple_cache import SplitFullName, get_response
+from libcommon.simple_cache import SplitFullName
 
 from worker.config import AppConfig, ParquetAndInfoConfig
 from worker.job_runner import CompleteJobResult, JobRunnerError, ParameterMissingError
@@ -806,22 +806,15 @@ def compute_config_parquet_and_info_response(
 
     target_dataset_info = hf_api.dataset_info(repo_id=dataset, revision=target_revision, files_metadata=False)
     # - check if there are files for configs that do not exist anymore and delete them
-    # - get dataset's config names
-    try:  # first try from cache
-        response = get_response(kind="/config-names", dataset=dataset)
-    except (ConfigNamesError, EmptyDatasetError):
-        response = None
-    if response and response["http_status"] == HTTPStatus.OK and response["content"].get("config_names"):
-        config_names = {config_name_item["config"] for config_name_item in response["content"]["config_names"]}
-    else:
-        try:  # try with `datasets` lib directly
-            config_names = set(
-                get_dataset_config_names(path=dataset, use_auth_token=hf_token if hf_token is not None else False)
-            )
-        except _EmptyDatasetError as err:
-            raise EmptyDatasetError("The dataset is empty.", cause=err) from err
-        except Exception as err:
-            raise ConfigNamesError("Cannot get the config names for the dataset.", cause=err) from err
+    # - get dataset's config names with `datasets` lib directly
+    try:
+        config_names = set(
+            get_dataset_config_names(path=dataset, use_auth_token=hf_token if hf_token is not None else False)
+        )
+    except _EmptyDatasetError as err:
+        raise EmptyDatasetError("The dataset is empty.", cause=err) from err
+    except Exception as err:
+        raise ConfigNamesError("Cannot get the config names for the dataset.", cause=err) from err
 
     # - get configs that exist in repo
     repo_parquet_files = {f.rfilename for f in target_dataset_info.siblings if f.rfilename.endswith(".parquet")}
