@@ -16,7 +16,12 @@ import datasets
 import datasets.config
 import numpy as np
 import requests
-from datasets import DownloadConfig, get_dataset_config_info, load_dataset_builder
+from datasets import (
+    DownloadConfig,
+    get_dataset_config_info,
+    get_dataset_config_names,
+    load_dataset_builder,
+)
 from datasets.builder import DatasetBuilder
 from datasets.data_files import EmptyDatasetError as _EmptyDatasetError
 from datasets.download import StreamingDownloadManager
@@ -38,11 +43,12 @@ from libcommon.constants import PROCESSING_STEP_CONFIG_PARQUET_AND_INFO_VERSION
 from libcommon.dataset import DatasetNotFoundError, ask_access
 from libcommon.processing_graph import ProcessingStep
 from libcommon.queue import JobInfo
-from libcommon.simple_cache import SplitFullName
+from libcommon.simple_cache import SplitFullName, get_response
 
 from worker.config import AppConfig, ParquetAndInfoConfig
 from worker.job_runner import CompleteJobResult, JobRunnerError, ParameterMissingError
 from worker.job_runners._datasets_based_job_runner import DatasetsBasedJobRunner
+from worker.job_runners.config_names import ConfigNamesError
 
 ConfigParquetAndInfoJobRunnerErrorCode = Literal[
     "DatasetRevisionNotFoundError",
@@ -763,7 +769,7 @@ def compute_config_parquet_and_info_response(
     committer_hf_api = HfApi(endpoint=hf_endpoint, token=committer_hf_token)
 
     # prepare the parquet files locally
-    parquet_files: List[ParquetFile] = []
+    local_parquet_files: List[ParquetFile] = []
     download_config = DownloadConfig(delete_extracted=True)
     try:
         builder = load_dataset_builder(
@@ -783,7 +789,7 @@ def compute_config_parquet_and_info_response(
     )
     builder.download_and_prepare(file_format="parquet")  # the parquet files are stored in the cache dir
     dataset_info = asdict(builder.info)
-    parquet_files.extend(
+    local_parquet_files.extend(
         ParquetFile(local_file=local_file, local_dir=builder.cache_dir, config=config)
         for local_file in glob.glob(f"{builder.cache_dir}**/*.parquet")
     )
@@ -798,22 +804,67 @@ def compute_config_parquet_and_info_response(
     except RepositoryNotFoundError as err:
         raise DatasetNotFoundError("The dataset does not exist on the Hub.") from err
 
-    # delete:
-    # - the previous files,
     target_dataset_info = hf_api.dataset_info(repo_id=dataset, revision=target_revision, files_metadata=False)
-    previous_files = {f.rfilename for f in target_dataset_info.siblings}
-    # except:
-    # - the files we will update,
-    files_to_add = {parquet_file.repo_file(): parquet_file.local_file for parquet_file in parquet_files}
-    # - .gitattributes if present.
-    files_to_delete = previous_files - set(files_to_add.keys()).union({".gitattributes"})
-    delete_operations: List[CommitOperation] = [CommitOperationDelete(path_in_repo=file) for file in files_to_delete]
-    logging.debug(f"delete_operations={delete_operations}")
+    # - check if there are files for configs that do not exist anymore and delete them
+    # - get dataset's config names
+    try:  # first try from cache
+        response = get_response(kind="/config-names", dataset=dataset)
+    except (ConfigNamesError, EmptyDatasetError):
+        response = None
+    if response and response["http_status"] == HTTPStatus.OK and response["content"].get("config_names"):
+        config_names = {config_name_item["config"] for config_name_item in response["content"]["config_names"]}
+    else:
+        try:  # try with `datasets` lib directly
+            config_names = set(
+                get_dataset_config_names(path=dataset, use_auth_token=hf_token if hf_token is not None else False)
+            )
+        except _EmptyDatasetError as err:
+            raise EmptyDatasetError("The dataset is empty.", cause=err) from err
+        except Exception as err:
+            raise ConfigNamesError("Cannot get the config names for the dataset.", cause=err) from err
+
+    # - get configs that exist in repo
+    repo_parquet_files = {f.rfilename for f in target_dataset_info.siblings if f.rfilename.endswith(".parquet")}
+    repo_config_names = {file.split("/")[0] for file in repo_parquet_files}
+    legacy_configs = repo_config_names - config_names.union(config)
+    # - delete configs that do not exist anymore
+    if legacy_configs:
+        legacy_configs_files_to_delete = {
+            file
+            for legacy_config in legacy_configs
+            for file in repo_parquet_files
+            if file.startswith(f"{legacy_config}/")
+        }
+        legacy_configs_delete_operations: List[CommitOperation] = [
+            CommitOperationDelete(path_in_repo=file) for file in legacy_configs_files_to_delete
+        ]
+        logging.debug(f"{legacy_configs_delete_operations=}")
+        committer_hf_api.create_commit(
+            repo_id=dataset,
+            repo_type=DATASET_TYPE,
+            revision=target_revision,
+            operations=legacy_configs_delete_operations,
+            commit_message=f"Deleting files for configs that do not exist anymore: {legacy_configs}",
+            parent_commit=target_dataset_info.sha,
+        )
+        target_dataset_info = hf_api.dataset_info(repo_id=dataset, revision=target_revision, files_metadata=False)
+
+    # - delete existing files for current config
+    previous_config_repo_files = {
+        f.rfilename for f in target_dataset_info.siblings if f.rfilename.startswith(f"{config}/")
+    }
+    # - except for the files that we will update and .gitattributes if present.
+    config_files_to_add = {parquet_file.repo_file(): parquet_file.local_file for parquet_file in local_parquet_files}
+    config_files_to_delete = previous_config_repo_files - set(config_files_to_add).union({".gitattributes"})
+    delete_operations: List[CommitOperation] = [
+        CommitOperationDelete(path_in_repo=file) for file in config_files_to_delete
+    ]
+    logging.debug(f"{delete_operations=}")
 
     # send the files to the target revision
     add_operations: List[CommitOperation] = [
         CommitOperationAdd(path_in_repo=file, path_or_fileobj=local_file)
-        for (file, local_file) in files_to_add.items()
+        for (file, local_file) in config_files_to_add.items()
     ]
     logging.debug(f"{add_operations=}")
 
@@ -828,7 +879,11 @@ def compute_config_parquet_and_info_response(
 
     # call the API again to get the list of parquet files
     target_dataset_info = hf_api.dataset_info(repo_id=dataset, revision=target_revision, files_metadata=True)
-    repo_files = [repo_file for repo_file in target_dataset_info.siblings if repo_file.rfilename.endswith(".parquet")]
+    repo_files = [
+        repo_file
+        for repo_file in target_dataset_info.siblings
+        if repo_file.rfilename.startswith(f"{config}/") and repo_file.rfilename.endswith(".parquet")
+    ]
     # we might want to check if the sha of the parquet files is the same as the one we just uploaded
     # we could also check that the list of parquet files is exactly what we expect
     # let's not over engineer this for now. After all, what is on the Hub is the source of truth

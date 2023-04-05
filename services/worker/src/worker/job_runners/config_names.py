@@ -51,14 +51,14 @@ class ConfigNameItem(TypedDict):
     config: str
 
 
-class ConfigNamesResponseContent(TypedDict):
+class ConfigNamesResponse(TypedDict):
     config_names: List[ConfigNameItem]
 
 
 def compute_config_names_response(
     dataset: str,
     hf_token: Optional[str] = None,
-) -> ConfigNamesResponseContent:
+) -> ConfigNamesResponse:
     """
     Get the response of /config-names for one specific dataset on huggingface.co.
     Dataset can be private or gated if you pass an acceptable token.
@@ -72,7 +72,7 @@ def compute_config_names_response(
         hf_token (`str`, *optional*):
             An authentication token (See https://huggingface.co/settings/token)
     Returns:
-        `ConfigNamesResponseContent`: An object with the list of config names.
+        `ConfigNamesResponse`: An object with the list of config names.
     <Tip>
     Raises the following errors:
         - [`~job_runners.config_names.EmptyDatasetError`]
@@ -93,7 +93,7 @@ def compute_config_names_response(
         raise EmptyDatasetError("The dataset is empty.", cause=err) from err
     except Exception as err:
         raise ConfigNamesError("Cannot get the config names for the dataset.", cause=err) from err
-    return {"config_names": config_name_items}
+    return ConfigNamesResponse(config_names=config_name_items)
 
 
 class ConfigNamesJobRunner(DatasetsBasedJobRunner):
