@@ -106,7 +106,7 @@ mongodbMigration:
     limits:
       cpu: 1
 
-# --- jobs (no hooks) ---
+# --- jobs (post-upgrade hooks) ---
 
 cacheMaintenance:
   resources:
