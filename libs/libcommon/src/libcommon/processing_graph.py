@@ -7,6 +7,8 @@ import warnings
 from dataclasses import dataclass
 from typing import List, Literal, Mapping, Optional, TypedDict
 
+import networkx as nx
+
 InputType = Literal["dataset", "config", "split"]
 
 
@@ -30,8 +32,8 @@ class ProcessingStep:
     - the job type (ie. the job to run to compute the response)
     - the job parameters (mainly: ['dataset'] or ['dataset', 'config', 'split'])
     - the immediately previous step required to compute the response
-    - the list of all the previous steps required to compute the response
-    - the next steps (the steps which previous step is the current one)
+    - the list of all the previous steps required to compute the response (in no particular order)
+    - the next steps (the steps which previous step is the current one, in no particular order)
     """
 
     name: str
@@ -60,15 +62,6 @@ class ProcessingStep:
 
     def get_ancestors(self) -> List[ProcessingStep]:
         """Get all the ancestors previous steps required to compute the response of the given step."""
-        if len(self.ancestors) > 0:
-            return self.ancestors
-        if self.parent is None:
-            self.ancestors = []
-        else:
-            parent_ancestors = self.parent.get_ancestors()
-            if self in parent_ancestors:
-                raise ValueError(f"Cycle detected between {self.job_type} and {self.parent.job_type}")
-            self.ancestors = parent_ancestors + [self.parent]
         return self.ancestors
 
 
@@ -110,14 +103,22 @@ class ProcessingGraph:
 
     def setup(self) -> None:
         """Setup the graph."""
-        for step in self.steps.values():
-            # Set the parent and the children
+        graph = nx.DiGraph()
+        for name, step in self.steps.items():
+            graph.add_node(name)
             if step.requires:
-                step.parent = self.get_step(step.requires)
-                step.parent.children.append(step)
-            # Set the ancestors (allows to check for cycles)
-            step.get_ancestors()
-        self.roots = [step for step in self.steps.values() if step.parent is None]
+                graph.add_edge(step.requires, name)
+        if not nx.is_directed_acyclic_graph(graph):
+            raise ValueError("The graph is not a directed acyclic graph.")
+
+        for step in self.steps.values():
+            if parents := set(graph.predecessors(step.name)):
+                if len(parents) > 1:
+                    raise ValueError(f"Step {step.name} has multiple parents: {parents}")
+                step.parent = self.get_step(parents.pop())
+            step.children = [self.get_step(name) for name in graph.successors(step.name)]
+            step.ancestors = [self.get_step(name) for name in nx.ancestors(graph, step.name)]
+        self.roots = [self.get_step(name) for name, degree in graph.in_degree() if degree == 0]
         self.required_by_dataset_viewer = [step for step in self.steps.values() if step.required_by_dataset_viewer]
 
     def get_step(self, name: str) -> ProcessingStep:
