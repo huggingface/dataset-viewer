@@ -3,12 +3,14 @@
 
 import io
 from http import HTTPStatus
+from pathlib import Path
 from typing import Any, Callable, Iterator, List, Optional
 
 import datasets.builder
 import pandas as pd
 import pytest
 import requests
+from huggingface_hub.hf_api import HfApi
 from libcommon.exceptions import CustomError
 from libcommon.processing_graph import ProcessingStep
 from libcommon.queue import Priority
@@ -33,6 +35,7 @@ from worker.job_runners.config.parquet_and_info import (
 )
 from worker.resources import LibrariesResource
 
+from ...constants import CI_HUB_ENDPOINT, CI_USER_TOKEN
 from ...fixtures.hub import HubDatasets
 
 
@@ -138,6 +141,49 @@ def test_compute(
     content = cached_response["content"]
     assert len(content["parquet_files"]) == 1
     assert_content_is_equal(content, hub_datasets["public"]["parquet_and_info_response"])
+
+
+def test_compute_legacy_configs(
+    app_config: AppConfig,
+    get_job_runner: GetJobRunner,
+    parquet_and_info_config: ParquetAndInfoConfig,
+    hub_public_legacy_configs: str,
+    dataset_script_with_one_config_path: str,
+) -> None:
+    dataset_name = hub_public_legacy_configs
+    original_configs = {"first", "second"}
+    # first compute and push parquet files for each config for dataset with script with two configs
+    for config in original_configs:
+        job_runner = get_job_runner(dataset_name, config, app_config, parquet_and_info_config, False)
+        assert job_runner.process()
+    hf_api = HfApi(endpoint=CI_HUB_ENDPOINT, token=CI_USER_TOKEN)
+    dataset_info = hf_api.dataset_info(
+        repo_id=hub_public_legacy_configs, revision=parquet_and_info_config.target_revision, files_metadata=False
+    )
+    orig_repo_configs = {f.rfilename.split("/")[0] for f in dataset_info.siblings if f.rfilename.endswith(".parquet")}
+    assert len(orig_repo_configs) == 2
+    assert orig_repo_configs == original_configs
+    # then upload updated dataset script that includes only one config
+    hf_api.upload_file(
+        token=CI_USER_TOKEN,
+        path_or_fileobj=dataset_script_with_one_config_path,
+        path_in_repo=Path(dataset_script_with_one_config_path).name.replace(
+            "{dataset_name}", dataset_name.split("/")[1]
+        ),
+        repo_id=hub_public_legacy_configs,
+        repo_type="dataset",
+        revision="main",
+    )
+    job_runner = get_job_runner(dataset_name, "first", app_config, parquet_and_info_config, False)
+    assert job_runner.process()
+    dataset_info = hf_api.dataset_info(
+        repo_id=hub_public_legacy_configs, revision=parquet_and_info_config.target_revision, files_metadata=False
+    )
+    updated_repo_configs = {
+        f.rfilename.split("/")[0] for f in dataset_info.siblings if f.rfilename.endswith(".parquet")
+    }
+    assert len(updated_repo_configs) == 1
+    assert updated_repo_configs == {"first"}
 
 
 def test_doesnotexist(

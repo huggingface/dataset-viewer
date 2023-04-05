@@ -818,7 +818,7 @@ def compute_config_parquet_and_info_response(
 
     # - get configs that exist in repo
     repo_parquet_files = {f.rfilename for f in target_dataset_info.siblings if f.rfilename.endswith(".parquet")}
-    repo_config_names = {file.split("/")[0] for file in repo_parquet_files}
+    repo_config_names = {f.split("/")[0] for f in repo_parquet_files}
     legacy_configs = repo_config_names - config_names.union(config)
     # - delete configs that do not exist anymore
     if legacy_configs:

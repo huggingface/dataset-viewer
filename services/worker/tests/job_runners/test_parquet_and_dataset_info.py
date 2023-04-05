@@ -353,7 +353,7 @@ def test_supported_if_gated(
     parquet_and_dataset_info_config: ParquetAndInfoConfig,
     hub_gated_csv: str,
 ) -> None:
-    # Access should must be granted
+    # Access must be granted
     dataset = hub_gated_csv
     job_runner = get_job_runner(dataset, app_config, parquet_and_dataset_info_config, False)
     assert job_runner.process()
