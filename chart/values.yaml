@@ -201,6 +201,7 @@ cacheRefresh:
   tolerations: []
 
 cacheMaintenance:
+  # action: "backfill" -- Set this value according to required action for maintenance
   nodeSelector: {}
   resources:
     requests:

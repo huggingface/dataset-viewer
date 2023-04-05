@@ -9,6 +9,8 @@
   {{ include "envLog" . | nindent 2 }}
   {{ include "envQueue" . | nindent 2 }}
   {{ include "envCommon" . | nindent 2 }}
+  - name: CACHE_MAINTENANCE_ACTION
+    value: {{ .Values.cacheMaintenance.action | quote }}
   securityContext:
     allowPrivilegeEscalation: false  
   resources: {{ toYaml .Values.cacheMaintenance.resources | nindent 4 }}
