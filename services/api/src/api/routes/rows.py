@@ -8,7 +8,7 @@ import shutil
 from functools import lru_cache, partial
 from itertools import islice
 from os import PathLike
-from typing import Any, List, Mapping, Optional, TypedDict, Union
+from typing import Any, Callable, List, Mapping, Optional, TypedDict, Union
 
 import numpy as np
 import pyarrow as pa
@@ -179,7 +179,7 @@ class RowsIndex:
                     ]
                 )
             with StepProfiler(method="rows.index", step="create the row group readers"):
-                self.row_group_readers = [
+                self.row_group_readers: List[Callable[[], pa.Table]] = [
                     partial(parquet_file.read_row_group, i=group_id, columns=self.supported_columns)
                     for parquet_file in parquet_files
                     for group_id in range(parquet_file.metadata.num_row_groups)

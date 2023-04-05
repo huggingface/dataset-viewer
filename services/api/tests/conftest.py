@@ -12,6 +12,9 @@ from pytest import MonkeyPatch, fixture
 from api.config import AppConfig, EndpointConfig, UvicornConfig
 from api.routes.endpoint import EndpointsDefinition, StepsByInputTypeAndEndpoint
 
+# Import fixture modules as plugins
+pytest_plugins = ["tests.fixtures.fsspec"]
+
 
 # see https://github.com/pytest-dev/pytest/issues/363#issuecomment-406536200
 @fixture(scope="session")

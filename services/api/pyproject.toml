@@ -68,7 +68,8 @@ module = [
     "hffs.*",
     "prometheus_client.*",
     "pyarrow.*",
-    "tqdm.*"
+    "tqdm.*",
+    "fsspec.*"
 ]
 # ^ prometheus_client is now typed, but starlette-prometheus requires an old version
 ignore_missing_imports = true
