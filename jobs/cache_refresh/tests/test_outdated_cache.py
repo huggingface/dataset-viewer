@@ -27,9 +27,8 @@ def test_refresh_cache(
         ProcessingStep(
             name="/config-names",
             input_type="dataset",
-            requires=None,
+            requires=[],
             required_by_dataset_viewer=False,
-            parent=None,
             ancestors=[],
             children=[],
             job_runner_version=1,

@@ -5,7 +5,7 @@ from __future__ import annotations
 
 import warnings
 from dataclasses import dataclass
-from typing import List, Literal, Mapping, Optional, TypedDict
+from typing import List, Literal, Mapping, TypedDict, Union
 
 import networkx as nx
 
@@ -17,7 +17,7 @@ class _ProcessingStepSpecification(TypedDict):
 
 
 class ProcessingStepSpecification(_ProcessingStepSpecification, total=False):
-    requires: Optional[str]
+    requires: Union[List[str], str, None]
     required_by_dataset_viewer: Literal[True]
     job_runner_version: int
 
@@ -30,17 +30,18 @@ class ProcessingStep:
     - the step name
     - the cache kind (ie. the key in the cache)
     - the job type (ie. the job to run to compute the response)
-    - the job parameters (mainly: ['dataset'] or ['dataset', 'config', 'split'])
-    - the immediately previous step required to compute the response
-    - the list of all the previous steps required to compute the response (in no particular order)
-    - the next steps (the steps which previous step is the current one, in no particular order)
+    - the input type ('dataset', 'config' or 'split')
+    - the ancestors: all the chain of previous steps, even those that are not required, in no particular order
+    - the children: steps that will be triggered at the end of the step, in no particular order.
+
+    Beware: the children are computed from "requires", but with a subtlety: if c requires a and b, and if b requires a,
+      only b will trigger c, i.e. c will be a child of a, but not of a.
     """
 
     name: str
     input_type: InputType
-    requires: Optional[str]
+    requires: List[str]
     required_by_dataset_viewer: bool
-    parent: Optional[ProcessingStep]
     ancestors: List[ProcessingStep]
     children: List[ProcessingStep]
     job_runner_version: int
@@ -68,11 +69,17 @@ class ProcessingStep:
 ProcessingGraphSpecification = Mapping[str, ProcessingStepSpecification]
 
 
+def get_required_steps(requires: Union[List[str], str, None]) -> List[str]:
+    if requires is None:
+        return []
+    return [requires] if isinstance(requires, str) else requires
+
+
 class ProcessingGraph:
     """A graph of dataset processing steps.
 
-    For now, the steps can have only one parent (immediate previous step), but can have multiple children
-    (next steps, found automatically by traversing the graph).
+    The steps can have multiple parents, and multiple children (next steps, found automatically by traversing the
+      graph).
     The graph can have multiple roots.
 
     It contains the details of:
@@ -90,9 +97,8 @@ class ProcessingGraph:
             name: ProcessingStep(
                 name=name,
                 input_type=specification["input_type"],
-                requires=specification.get("requires"),
+                requires=get_required_steps(specification.get("requires")),
                 required_by_dataset_viewer=specification.get("required_by_dataset_viewer", False),
-                parent=None,
                 ancestors=[],
                 children=[],
                 job_runner_version=specification["job_runner_version"],
@@ -106,18 +112,22 @@ class ProcessingGraph:
         graph = nx.DiGraph()
         for name, step in self.steps.items():
             graph.add_node(name)
-            if step.requires:
-                graph.add_edge(step.requires, name)
+            for step_name in step.requires:
+                graph.add_edge(step_name, name)
         if not nx.is_directed_acyclic_graph(graph):
             raise ValueError("The graph is not a directed acyclic graph.")
 
         for step in self.steps.values():
-            if parents := set(graph.predecessors(step.name)):
-                if len(parents) > 1:
-                    raise ValueError(f"Step {step.name} has multiple parents: {parents}")
-                step.parent = self.get_step(parents.pop())
-            step.children = [self.get_step(name) for name in graph.successors(step.name)]
             step.ancestors = [self.get_step(name) for name in nx.ancestors(graph, step.name)]
+        for step in self.steps.values():
+            required_steps = [self.get_step(name) for name in graph.predecessors(step.name)]
+            parents = list(required_steps)
+            for parent_candidate in required_steps:
+                for other_parent_candidate in required_steps:
+                    if other_parent_candidate in parent_candidate.ancestors:
+                        parents.remove(other_parent_candidate)
+            for parent in parents:
+                parent.children.append(step)
         self.roots = [self.get_step(name) for name, degree in graph.in_degree() if degree == 0]
         self.required_by_dataset_viewer = [step for step in self.steps.values() if step.required_by_dataset_viewer]
 
