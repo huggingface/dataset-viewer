@@ -38,8 +38,8 @@ Docker image management
 {{ include "hf.common.images.image" (dict "imageRoot" .Values.images.jobs.cacheRefresh "global" .Values.global.huggingface) }}
 {{- end -}}
 
-{{- define "jobs.cacheMonitor.image" -}}
-{{ include "hf.common.images.image" (dict "imageRoot" .Values.images.jobs.cacheMonitor "global" .Values.global.huggingface) }}
+{{- define "jobs.cacheMaintenance.image" -}}
+{{ include "hf.common.images.image" (dict "imageRoot" .Values.images.jobs.cacheMaintenance "global" .Values.global.huggingface) }}
 {{- end -}}
 
 {{- define "services.admin.image" -}}
@@ -82,9 +82,9 @@ app.kubernetes.io/component: "{{ include "name" . }}-mongodb-migration"
 app.kubernetes.io/component: "{{ include "name" . }}-cache-refresh"
 {{- end -}}
 
-{{- define "labels.cacheMonitor" -}}
+{{- define "labels.cacheMaintenance" -}}
 {{ include "hf.labels.commons" . }}
-app.kubernetes.io/component: "{{ include "name" . }}-cache-monitor"
+app.kubernetes.io/component: "{{ include "name" . }}-cache-maintenance"
 {{- end -}}
 
 {{- define "labels.admin" -}}

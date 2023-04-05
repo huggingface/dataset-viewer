@@ -1,0 +1,26 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2022 The HuggingFace Authors.
+
+{{- if .Values.images.jobs.cacheMaintenance }}
+apiVersion: batch/v1
+kind: Job
+metadata:
+  labels: {{ include "labels.cacheMaintenance" . | nindent 4 }}
+  name: "{{ include "name" . }}-job-cache-maintenance"
+  namespace: {{ .Release.Namespace }}
+  annotations:
+    "helm.sh/hook": post-upgrade
+spec:
+  ttlSecondsAfterFinished: 86400
+  template:
+    metadata:
+      labels: {{ include "labels.cacheMaintenance" . | nindent 8 }}
+    spec:
+      restartPolicy: Never
+      {{- include "image.imagePullSecrets" . | nindent 6 }}
+      containers: {{ include "containerCacheMaintenance" . | nindent 8 }}
+      nodeSelector: {{ toYaml .Values.cacheMaintenance.nodeSelector | nindent 8 }}
+      tolerations: {{ toYaml .Values.cacheMaintenance.tolerations | nindent 8 }}
+      securityContext: {{ include "securityContext" . | nindent 8 }}
+  backoffLimit: 0
+{{- end}}

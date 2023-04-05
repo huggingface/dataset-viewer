@@ -16,7 +16,8 @@ def backfill_cache(
     hf_token: Optional[str] = None,
 ) -> None:
     logging.info("backfill init processing steps for supported datasets")
-
+    supported_datasets = libcommon.dataset.get_supported_datasets(hf_endpoint=hf_endpoint, hf_token=hf_token)
+    logging.info(f"about to backfill {len(supported_datasets)} datasets")
     for dataset in libcommon.dataset.get_supported_datasets(hf_endpoint=hf_endpoint, hf_token=hf_token):
         update_dataset(
             dataset=dataset,
@@ -27,3 +28,4 @@ def backfill_cache(
             priority=Priority.LOW,
             do_check_support=False,
         )
+    logging.info("backfill completed")

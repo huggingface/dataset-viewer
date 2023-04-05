@@ -26,7 +26,7 @@ jobs:
           - directory: jobs
             project: cache_refresh
           - directory: jobs
-            project: cache_monitor
+            project: cache_maintenance
           - directory: services
             project: admin
           - directory: services
@@ -105,7 +105,7 @@ jobs:
                   tag: sha-${{ steps.vars.outputs.sha_short }}
                 cacheRefresh:
                   tag: sha-${{ steps.vars.outputs.sha_short }}
-                cacheMonitor:
+                cacheMaintenance:
                   tag: sha-${{ steps.vars.outputs.sha_short }}
               services:
                 admin:

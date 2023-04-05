@@ -32,10 +32,10 @@ images:
       useGlobalRegistry: false
       repository: datasets-server-jobs-mongodb_migration
       tag: sha-fb3399a
-    cacheMonitor:
+    cacheMaintenance:
       registry: huggingface
       useGlobalRegistry: false
-      repository: datasets-server-jobs-cache_monitor
+      repository: datasets-server-jobs-cache_maintenance
       tag: sha-fb3399a
     # cacheRefresh:
     #   registry: huggingface
@@ -200,7 +200,7 @@ cacheRefresh:
       cpu: 0
   tolerations: []
 
-cacheMonitor:
+cacheMaintenance:
   nodeSelector: {}
   resources:
     requests:

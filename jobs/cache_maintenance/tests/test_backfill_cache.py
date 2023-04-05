@@ -6,7 +6,7 @@ from unittest.mock import patch
 from libcommon.processing_graph import ProcessingStep
 from libcommon.queue import Queue, Status
 
-from cache_monitor.backfill import backfill_cache
+from cache_maintenance.backfill import backfill_cache
 
 
 def test_backfill_cache() -> None:

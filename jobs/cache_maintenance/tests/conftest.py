@@ -7,7 +7,7 @@ from libcommon.queue import _clean_queue_database
 from libcommon.resources import QueueMongoResource
 from pytest import MonkeyPatch, fixture
 
-from cache_monitor.config import JobConfig
+from cache_maintenance.config import JobConfig
 
 
 # see https://github.com/pytest-dev/pytest/issues/363#issuecomment-406536200

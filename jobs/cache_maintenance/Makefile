@@ -1,5 +1,5 @@
 # environment variables for the commands (docker compose, poetry)
-export COMPOSE_PROJECT_NAME := cache_monitor
+export COMPOSE_PROJECT_NAME := cache_maintenance
 export MONGO_PORT := 27080
 export CACHE_MONGO_URL := mongodb://localhost:${MONGO_PORT}
 export QUEUE_MONGO_URL := mongodb://localhost:${MONGO_PORT}
@@ -12,4 +12,4 @@ include ../../tools/Docker.mk
 
 .PHONY: run
 run:
-	poetry run python src/cache_monitor/main.py
+	poetry run python src/cache_maintenance/main.py

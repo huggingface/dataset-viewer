@@ -1,7 +1,7 @@
 [tool.poetry]
 authors = ["Andrea Soria <andrea@huggingface.co>"]
 description = "Monitor cache status entries and apply corrections if needed."
-name = "cache_monitor"
+name = "cache_maintenance"
 version = "0.0.1"
 license = "Apache-2.0"
 
@@ -31,7 +31,7 @@ markers = [
 ]
 
 [tool.coverage.run]
-source = ["cache_monitor"]
+source = ["cache_maintenance"]
 
 [tool.isort]
 profile = "black"

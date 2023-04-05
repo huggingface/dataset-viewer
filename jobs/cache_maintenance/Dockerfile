@@ -22,12 +22,12 @@ RUN pip install -U pip
 RUN pip install "poetry==$POETRY_VERSION"
 
 WORKDIR /src
-COPY jobs/cache_monitor/poetry.lock ./jobs/cache_monitor/poetry.lock
-COPY jobs/cache_monitor/pyproject.toml ./jobs/cache_monitor/pyproject.toml
+COPY jobs/cache_maintenance/poetry.lock ./jobs/cache_maintenance/poetry.lock
+COPY jobs/cache_maintenance/pyproject.toml ./jobs/cache_maintenance/pyproject.toml
 COPY libs/libcommon ./libs/libcommon
-WORKDIR /src/jobs/cache_monitor/
+WORKDIR /src/jobs/cache_maintenance/
 RUN poetry install --no-cache
-COPY jobs/cache_monitor/src ./src
+COPY jobs/cache_maintenance/src ./src
 RUN poetry install --no-cache
 
-ENTRYPOINT ["poetry", "run", "python", "src/cache_monitor/main.py"]
+ENTRYPOINT ["poetry", "run", "python", "src/cache_maintenance/main.py"]

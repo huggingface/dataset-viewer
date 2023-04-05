@@ -27,10 +27,10 @@ images:
       useGlobalRegistry: false
       repository: datasets-server-jobs-mongodb_migration
       tag: sha-fb3399a
-    cacheMonitor:
+    cacheMaintenance:
       registry: huggingface
       useGlobalRegistry: false
-      repository: datasets-server-jobs-cache_monitor
+      repository: datasets-server-jobs-cache_maintenance
       tag: sha-fb3399a
     # cacheRefresh:
     #   registry: huggingface
@@ -102,7 +102,7 @@ mongodbMigration:
 
 # --- jobs (no hooks) ---
 
-cacheMonitor:
+cacheMaintenance:
   resources:
     requests:
       cpu: 100m
