@@ -55,9 +55,8 @@ def get_job_runner(
             processing_step=ProcessingStep(
                 name=DatasetSizeJobRunner.get_job_type(),
                 input_type="dataset",
-                requires=None,
+                requires=[],
                 required_by_dataset_viewer=False,
-                parent=None,
                 ancestors=[],
                 children=[],
                 job_runner_version=DatasetSizeJobRunner.get_job_runner_version(),
