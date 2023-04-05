@@ -18,9 +18,8 @@ def test_backfill_cache() -> None:
             ProcessingStep(
                 name=step_name,
                 input_type="dataset",
-                requires=None,
+                requires=[],
                 required_by_dataset_viewer=False,
-                parent=None,
                 ancestors=[],
                 children=[],
                 job_runner_version=1,
