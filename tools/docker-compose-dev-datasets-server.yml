@@ -6,11 +6,13 @@ services:
     volumes:
       - ../chart/nginx-templates/:/etc/nginx/templates:ro
       - assets:${ASSETS_STORAGE_DIRECTORY-/assets}:ro
+      - cached-assets:${CACHED_ASSETS_STORAGE_DIRECTORY-/cached-assets}:ro
       - ../chart/static-files/openapi.json:/static-files/openapi.json:ro
     ports:
       - "${PORT_REVERSE_PROXY-8000}:80"
     environment:
       ASSETS_DIRECTORY: ${ASSETS_STORAGE_DIRECTORY-/assets}
+      CACHED_ASSETS_DIRECTORY: ${CACHED_ASSETS_STORAGE_DIRECTORY-/cached-assets}
       HOST: localhost
       PORT: 80
       URL_ADMIN: http://host.docker.internal:${ADMIN_UVICORN_PORT-8081}
@@ -53,15 +55,15 @@ services:
       file: docker-compose-dev-base.yml
       service: api
     volumes:
-      - assets:${ASSETS_STORAGE_DIRECTORY-/assets}
+      - cached-assets:${CACHED_ASSETS_STORAGE_DIRECTORY-/cached-assets}
     environment:
-      ASSETS_BASE_URL: "http://localhost:${PORT_REVERSE_PROXY-8000}/assets" # hard-coded to work with the reverse-proxy
-      ASSETS_STORAGE_DIRECTORY: ${ASSETS_STORAGE_DIRECTORY-/assets}
+      CACHED_ASSETS_BASE_URL: "http://localhost:${PORT_REVERSE_PROXY-8000}/cached-assets" # hard-coded to work with the reverse-proxy
+      CACHED_ASSETS_STORAGE_DIRECTORY: ${CACHED_ASSETS_STORAGE_DIRECTORY-/cached-assets}
       # service
       API_HF_AUTH_PATH: ${API_HF_AUTH_PATH-/api/datasets/%s/auth-check}
       API_HF_JWT_PUBLIC_KEY_URL: ${API_HF_JWT_PUBLIC_KEY_URL-https://hub-ci.huggingface.co/api/keys/jwt}
       API_HF_JWT_ALGORITHM: ${API_HF_JWT_ALGORITHM-EdDSA}
-      API_HF_TIMEOUT_SECONDS: ${API_HF_TIMEOUT_SECONDS-0.2}
+      API_HF_TIMEOUT_SECONDS: ${API_HF_TIMEOUT_SECONDS-1.0}
       API_MAX_AGE_LONG: ${API_MAX_AGE_LONG-120}
       API_MAX_AGE_SHORT: ${API_MAX_AGE_SHORT-10}
       # prometheus
@@ -80,7 +82,7 @@ services:
       context: ..
       dockerfile: services/worker/dev.Dockerfile
     deploy:
-      replicas: 4
+      replicas: ${DEV_WORKER_REPLICAS-4}
     volumes:
       - assets:${ASSETS_STORAGE_DIRECTORY-/assets}:rw
     extends:
@@ -113,6 +115,7 @@ services:
       - "${MONGO_PORT-27017}:27017"
 volumes:
   assets:
+  cached-assets:
   mongo:
   splits-datasets-cache:
   splits-modules-cache:
