@@ -3,6 +3,8 @@
 
 from typing import List
 
+import pytest
+
 from libcommon.config import ProcessingGraphConfig
 from libcommon.processing_graph import (
     ProcessingGraph,
@@ -54,79 +56,84 @@ def test_graph() -> None:
     assert_step(f, children=[], ancestors=[a, b])
 
 
-def test_default_graph() -> None:
+@pytest.fixture(scope="module")
+def graph() -> ProcessingGraph:
     config = ProcessingGraphConfig()
-    graph = ProcessingGraph(config.specification)
+    return ProcessingGraph(config.specification)
 
-    config_names = graph.get_step("/config-names")
-    split_names_from_streaming = graph.get_step("/split-names-from-streaming")
-    splits = graph.get_step("/splits")
-    split_first_rows_from_streaming = graph.get_step("split-first-rows-from-streaming")
-    parquet_and_dataset_info = graph.get_step("/parquet-and-dataset-info")
-    config_parquet = graph.get_step("config-parquet")
-    dataset_parquet = graph.get_step("dataset-parquet")
-    config_info = graph.get_step("config-info")
-    dataset_info = graph.get_step("dataset-info")
-    config_size = graph.get_step("config-size")
-    dataset_size = graph.get_step("dataset-size")
-    split_names_from_dataset_info = graph.get_step("/split-names-from-dataset-info")
-    dataset_split_names_from_streaming = graph.get_step("dataset-split-names-from-streaming")
-    dataset_split_names_from_dataset_info = graph.get_step("dataset-split-names-from-dataset-info")
-    split_first_rows_from_parquet = graph.get_step("split-first-rows-from-parquet")
 
-    assert_step(config_names, children=[split_names_from_streaming], ancestors=[])
+@pytest.mark.parametrize(
+    "step_name,children,ancestors",
+    [
+        ("/config-names", ["/split-names-from-streaming"], []),
+        ("/splits", [], []),
+        (
+            "/split-names-from-dataset-info",
+            ["dataset-split-names-from-dataset-info", "split-first-rows-from-streaming", "dataset-split-names"],
+            ["/parquet-and-dataset-info", "config-info"],
+        ),
+        (
+            "/split-names-from-streaming",
+            ["split-first-rows-from-streaming", "dataset-split-names-from-streaming", "dataset-split-names"],
+            ["/config-names"],
+        ),
+        (
+            "dataset-split-names-from-dataset-info",
+            [],
+            ["/parquet-and-dataset-info", "config-info", "/split-names-from-dataset-info"],
+        ),
+        ("dataset-split-names-from-streaming", [], ["/config-names", "/split-names-from-streaming"]),
+        (
+            "dataset-split-names",
+            [],
+            [
+                "/parquet-and-dataset-info",
+                "config-info",
+                "/split-names-from-dataset-info",
+                "/config-names",
+                "/split-names-from-streaming",
+            ],
+        ),
+        ("split-first-rows-from-parquet", [], ["config-parquet", "/parquet-and-dataset-info"]),
+        (
+            "split-first-rows-from-streaming",
+            [],
+            [
+                "/config-names",
+                "/split-names-from-streaming",
+                "/split-names-from-dataset-info",
+                "/parquet-and-dataset-info",
+                "config-info",
+            ],
+        ),
+        ("/parquet-and-dataset-info", ["config-parquet", "config-info", "config-size"], []),
+        ("config-parquet", ["split-first-rows-from-parquet", "dataset-parquet"], ["/parquet-and-dataset-info"]),
+        ("dataset-parquet", [], ["/parquet-and-dataset-info", "config-parquet"]),
+        ("config-info", ["dataset-info", "/split-names-from-dataset-info"], ["/parquet-and-dataset-info"]),
+        ("dataset-info", [], ["/parquet-and-dataset-info", "config-info"]),
+        ("config-size", ["dataset-size"], ["/parquet-and-dataset-info"]),
+        ("dataset-size", [], ["/parquet-and-dataset-info", "config-size"]),
+    ],
+)
+def test_default_graph_steps(
+    graph: ProcessingGraph, step_name: str, children: List[str], ancestors: List[str]
+) -> None:
     assert_step(
-        split_names_from_streaming,
-        children=[split_first_rows_from_streaming, dataset_split_names_from_streaming],
-        ancestors=[config_names],
-    )
-    assert_step(splits, children=[], ancestors=[])
-    assert_step(
-        split_first_rows_from_streaming,
-        children=[],
-        ancestors=[
-            config_names,
-            split_names_from_streaming,
-            split_names_from_dataset_info,
-            parquet_and_dataset_info,
-            config_info,
-        ],
-    )
-    assert_step(parquet_and_dataset_info, children=[config_parquet, config_info, config_size], ancestors=[])
-    assert_step(
-        config_parquet,
-        children=[split_first_rows_from_parquet, dataset_parquet],
-        ancestors=[parquet_and_dataset_info],
-    )
-    assert_step(dataset_parquet, children=[], ancestors=[parquet_and_dataset_info, config_parquet])
-    assert_step(
-        config_info,
-        children=[dataset_info, split_names_from_dataset_info],
-        ancestors=[parquet_and_dataset_info],
-    )
-    assert_step(dataset_info, children=[], ancestors=[parquet_and_dataset_info, config_info])
-    assert_step(config_size, children=[dataset_size], ancestors=[parquet_and_dataset_info])
-    assert_step(dataset_size, children=[], ancestors=[parquet_and_dataset_info, config_size])
-    assert_step(
-        split_names_from_dataset_info,
-        children=[split_first_rows_from_streaming, dataset_split_names_from_dataset_info],
-        ancestors=[parquet_and_dataset_info, config_info],
-    )
-    assert_step(
-        dataset_split_names_from_streaming,
-        children=[],
-        ancestors=[config_names, split_names_from_streaming],
-    )
-    assert_step(
-        dataset_split_names_from_dataset_info,
-        children=[],
-        ancestors=[parquet_and_dataset_info, config_info, split_names_from_dataset_info],
-    )
-    assert_step(
-        split_first_rows_from_parquet,
-        children=[],
-        ancestors=[parquet_and_dataset_info, config_parquet],
+        graph.get_step(step_name),
+        children=[graph.get_step(child) for child in children],
+        ancestors=[graph.get_step(ancestor) for ancestor in ancestors],
     )
 
-    assert graph.get_first_steps() == [config_names, splits, parquet_and_dataset_info]
-    assert graph.get_steps_required_by_dataset_viewer() == [splits, split_first_rows_from_streaming]
+
+def test_default_graph_first_steps(graph: ProcessingGraph) -> None:
+    assert_lists_are_equal(
+        graph.get_first_steps(),
+        [graph.get_step(step_name) for step_name in {"/config-names", "/splits", "/parquet-and-dataset-info"}],
+    )
+
+
+def test_default_graph_required_by_dataset_viewer(graph: ProcessingGraph) -> None:
+    assert_lists_are_equal(
+        graph.get_steps_required_by_dataset_viewer(),
+        [graph.get_step(step_name) for step_name in {"/splits", "split-first-rows-from-streaming"}],
+    )

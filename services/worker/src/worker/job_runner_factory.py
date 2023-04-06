@@ -24,6 +24,7 @@ from worker.job_runners.config_names import ConfigNamesJobRunner
 from worker.job_runners.dataset.info import DatasetInfoJobRunner
 from worker.job_runners.dataset.parquet import DatasetParquetJobRunner
 from worker.job_runners.dataset.size import DatasetSizeJobRunner
+from worker.job_runners.dataset.split_names import DatasetSplitNamesJobRunner
 from worker.job_runners.dataset.split_names_from_dataset_info import (
     DatasetSplitNamesFromDatasetInfoJobRunner,
 )
@@ -160,6 +161,13 @@ class JobRunnerFactory(BaseJobRunnerFactory):
                 app_config=self.app_config,
                 processing_step=processing_step,
                 hf_datasets_cache=self.hf_datasets_cache,
+            )
+        if job_type == DatasetSplitNamesJobRunner.get_job_type():
+            return DatasetSplitNamesJobRunner(
+                job_info=job_info,
+                processing_step=processing_step,
+                common_config=self.app_config.common,
+                worker_config=self.app_config.worker,
             )
         if job_type == DatasetSplitNamesFromStreamingJobRunner.get_job_type():
             return DatasetSplitNamesFromStreamingJobRunner(
