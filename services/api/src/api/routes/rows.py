@@ -39,14 +39,12 @@ from api.utils import (
     get_json_ok_response,
 )
 
+logger = logging.getLogger(__name__)
+
 MAX_ROWS = 100
 
 PARQUET_REVISION = "refs/convert/parquet"
 
-CLEAN_CACHE_PROBA = 0.05
-KEEP_ROWS_BELOW_INDEX = 100
-KEEP_N_MOST_RECENT_ROWS = 1000
-MAX_CLEAN_SAMPLE_SIZE = 10_000
 
 StrPath = Union[str, PathLike[str]]
 
@@ -204,7 +202,7 @@ class RowsIndex:
             raise ParquetResponseEmptyError("No parquet files found.")
         last_row_in_parquet = self.row_group_offsets[-1] - 1
         first_row = min(offset, last_row_in_parquet)
-        last_row = min(offset, offset + length - 1, last_row_in_parquet)
+        last_row = min(offset + length - 1, last_row_in_parquet)
         first_row_group_id, last_row_group_id = np.searchsorted(
             self.row_group_offsets, [first_row, last_row], side="right"
         )
@@ -305,6 +303,7 @@ def to_rows_list(
             features=features,
             cached_assets_base_url=cached_assets_base_url,
             cached_assets_directory=cached_assets_directory,
+            offset=offset,
         )
     except Exception as err:
         raise ParquetDataProcessingError(
@@ -328,6 +327,7 @@ def transform_rows(
     features: Features,
     cached_assets_base_url: str,
     cached_assets_directory: StrPath,
+    offset: int,
 ) -> List[Row]:
     return [
         {
@@ -335,7 +335,7 @@ def transform_rows(
                 dataset=dataset,
                 config=config,
                 split=split,
-                row_idx=row_idx,
+                row_idx=offset + row_idx,
                 cell=row[featureName] if featureName in row else None,
                 featureName=featureName,
                 fieldType=fieldType,
@@ -362,6 +362,12 @@ def clean_cached_assets(
     keep_n_most_recent_rows: int,
     max_clean_sample_size: int,
 ) -> None:
+    if keep_rows_below_index < 0 or keep_n_most_recent_rows < 0 or max_clean_sample_size < 0:
+        raise ValueError(
+            "Failed to run cached assets cleaning. Make sure all of keep_rows_below_index, keep_n_most_recent_rows"
+            f" and max_clean_sample_size  are set (got {keep_rows_below_index}, {keep_n_most_recent_rows} and"
+            f" {max_clean_sample_size})"
+        )
     row_directories = glob_rows_in_assets_dir(dataset, cached_assets_directory)
     row_directories_sample = list(
         islice(
@@ -425,6 +431,10 @@ def create_rows_endpoint(
     hf_timeout_seconds: Optional[float] = None,
     max_age_long: int = 0,
     max_age_short: int = 0,
+    clean_cache_proba: float = 0.0,
+    keep_rows_below_index: int = -1,
+    keep_n_most_recent_rows: int = -1,
+    max_clean_sample_size: int = -1,
 ) -> Endpoint:
     indexer = Indexer(
         config_parquet_processing_steps=config_parquet_processing_steps,
@@ -468,14 +478,20 @@ def create_rows_endpoint(
                 with StepProfiler(method="rows_endpoint", step="query the rows"):
                     pa_table = rows_index.query(offset=offset, length=length)
                 with StepProfiler(method="rows_endpoint", step="clean cache"):
-                    if random.random() < CLEAN_CACHE_PROBA:  # no need to do it every time
-                        clean_cached_assets(
-                            dataset=dataset,
-                            cached_assets_directory=cached_assets_directory,
-                            keep_rows_below_index=KEEP_ROWS_BELOW_INDEX,
-                            keep_n_most_recent_rows=KEEP_N_MOST_RECENT_ROWS,
-                            max_clean_sample_size=MAX_CLEAN_SAMPLE_SIZE,
-                        )
+                    if random.random() < clean_cache_proba:  # no need to do it every time
+                        if keep_rows_below_index < 0 and keep_n_most_recent_rows < 0 and max_clean_sample_size < 0:
+                            logger.debug(
+                                "Params keep_rows_below_index, keep_n_most_recent_rows and max_clean_sample_size are"
+                                " not set. Skipping cached assets cleaning."
+                            )
+                        else:
+                            clean_cached_assets(
+                                dataset=dataset,
+                                cached_assets_directory=cached_assets_directory,
+                                keep_rows_below_index=keep_rows_below_index,
+                                keep_n_most_recent_rows=keep_n_most_recent_rows,
+                                max_clean_sample_size=max_clean_sample_size,
+                            )
                 with StepProfiler(method="rows_endpoint", step="transform to a list"):
                     response = create_response(
                         dataset=dataset,
