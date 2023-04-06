@@ -112,9 +112,11 @@ cacheMaintenance:
   action: "backfill"
   resources:
     requests:
-      cpu: 100m
-    limits:
       cpu: 1
+      memory: "2Gi"
+    limits:
+      cpu: 2
+      memory: "8Gi"
 
 # --- storage admin (to manually inspect the storage, in /data) ---
 
