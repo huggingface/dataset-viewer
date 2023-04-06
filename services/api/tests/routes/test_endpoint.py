@@ -36,7 +36,7 @@ def test_endpoints_definition() -> None:
     assert sorted(list(splits)) == ["config", "dataset"]
     assert splits["dataset"] is not None
     assert splits["config"] is not None
-    assert len(splits["dataset"]) == 3  # Has three processing steps
+    assert len(splits["dataset"]) == 4  # Has four processing steps
     assert len(splits["config"]) == 2  # Has two processing steps
 
     first_rows = definition["/first-rows"]

@@ -116,7 +116,12 @@ class EndpointConfig:
         default_factory=lambda: {
             "/config-names": {"dataset": ["/config-names"]},
             "/splits": {
-                "dataset": ["/splits", "dataset-split-names-from-streaming", "dataset-split-names-from-dataset-info"],
+                "dataset": [
+                    "/splits",
+                    "dataset-split-names",
+                    "dataset-split-names-from-streaming",
+                    "dataset-split-names-from-dataset-info",
+                ],
                 "config": ["/split-names-from-streaming", "/split-names-from-dataset-info"],
             },
             "/first-rows": {"split": ["split-first-rows-from-streaming", "split-first-rows-from-parquet"]},

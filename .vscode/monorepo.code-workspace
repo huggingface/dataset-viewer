@@ -17,6 +17,10 @@
       "path": "../jobs/cache_refresh"
     },
     {
+      "name": "jobs/cache_maintenance",
+      "path": "../jobs/cache_maintenance"
+    },
+    {
       "name": "libs/libcommon",
       "path": "../libs/libcommon"
     },
