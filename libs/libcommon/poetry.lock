@@ -1632,6 +1632,21 @@ pytz = ">=2020.1"
 test = ["hypothesis (>=5.5.3)", "pytest (>=6.0)", "pytest-xdist (>=1.31)"]
 
 [[package]]
+name = "pandas-stubs"
+version = "1.5.3.230321"
+description = "Type annotations for pandas"
+category = "dev"
+optional = false
+python-versions = ">=3.8,<3.12"
+files = [
+    {file = "pandas_stubs-1.5.3.230321-py3-none-any.whl", hash = "sha256:4bf36b3071dd55f0e558ac8efe07676a120f2ed89e7a3df0fb78ddf2733bf247"},
+    {file = "pandas_stubs-1.5.3.230321.tar.gz", hash = "sha256:2fa860df9e6058e9f0d2c09bc711c09abb8f0516eee7f0b9f9950d29b835fc6f"},
+]
+
+[package.dependencies]
+types-pytz = ">=2022.1.1"
+
+[[package]]
 name = "pathspec"
 version = "0.11.1"
 description = "Utility library for gitignore style pattern matching of file paths."
@@ -2912,4 +2927,4 @@ multidict = ">=4.0"
 [metadata]
 lock-version = "2.0"
 python-versions = "3.9.15"
-content-hash = "882ad9e7dab7930f4e8e1378913dc9b5c56c02db000743964b311a1449670e9e"
+content-hash = "4ab72544ec9674e6d301723ab7e0be3b905b04bef17d04d2ec93bee9891e86ab"

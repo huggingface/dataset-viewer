@@ -1891,6 +1891,21 @@ pytz = ">=2020.1"
 test = ["hypothesis (>=5.5.3)", "pytest (>=6.0)", "pytest-xdist (>=1.31)"]
 
 [[package]]
+name = "pandas-stubs"
+version = "1.5.3.230321"
+description = "Type annotations for pandas"
+category = "dev"
+optional = false
+python-versions = ">=3.8,<3.12"
+files = [
+    {file = "pandas_stubs-1.5.3.230321-py3-none-any.whl", hash = "sha256:4bf36b3071dd55f0e558ac8efe07676a120f2ed89e7a3df0fb78ddf2733bf247"},
+    {file = "pandas_stubs-1.5.3.230321.tar.gz", hash = "sha256:2fa860df9e6058e9f0d2c09bc711c09abb8f0516eee7f0b9f9950d29b835fc6f"},
+]
+
+[package.dependencies]
+types-pytz = ">=2022.1.1"
+
+[[package]]
 name = "pathspec"
 version = "0.11.0"
 description = "Utility library for gitignore style pattern matching of file paths."
@@ -3077,6 +3092,18 @@ files = [
 ]
 
 [[package]]
+name = "types-pytz"
+version = "2023.3.0.0"
+description = "Typing stubs for pytz"
+category = "dev"
+optional = false
+python-versions = "*"
+files = [
+    {file = "types-pytz-2023.3.0.0.tar.gz", hash = "sha256:ecdc70d543aaf3616a7e48631543a884f74205f284cefd6649ddf44c6a820aac"},
+    {file = "types_pytz-2023.3.0.0-py3-none-any.whl", hash = "sha256:4fc2a7fbbc315f0b6630e0b899fd6c743705abe1094d007b0e612d10da15e0f3"},
+]
+
+[[package]]
 name = "types-requests"
 version = "2.28.11.15"
 description = "Typing stubs for requests"
@@ -3424,4 +3451,4 @@ multidict = ">=4.0"
 [metadata]
 lock-version = "2.0"
 python-versions = "3.9.15"
-content-hash = "a459e8a8766804f9fc2e995f55f83d9c750f8419210a3f76962e1011125b2ac5"
+content-hash = "c0fc2e9965f5934c34722dbed4b13bfc2d9c3a103f3114acf7a5e9246b5865a4"
