@@ -251,6 +251,8 @@ def get_best_response(
     - if no response is found, a `~libcommon.simple_cache.DoesNotExist` error is raised
 
     Args:
+        kinds (`List[str]`):
+            A list of cache kinds to look responses for.
         dataset (`str`):
             A namespace (user or an organization) and a repo name separated by a `/`.
         config (`str`, optional):
