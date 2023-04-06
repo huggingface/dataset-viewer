@@ -94,7 +94,7 @@ def compute_dataset_split_names_response(dataset: str) -> Tuple[DatasetSplitName
         ) from e
     except KeyError as e:
         raise PreviousStepFormatError(
-            "Previous steps 'config-names' or 'dataset-info' did not return the expected content.", e
+            "Previous steps '/config-names' or 'dataset-info' did not return the expected content.", e
         ) from e
     if any(not isinstance(config_name, str) for config_name in config_names):
         raise PreviousStepFormatError(
