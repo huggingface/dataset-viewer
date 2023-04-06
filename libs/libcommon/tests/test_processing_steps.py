@@ -70,7 +70,7 @@ def graph() -> ProcessingGraph:
         (
             "/split-names-from-dataset-info",
             ["dataset-split-names-from-dataset-info", "split-first-rows-from-streaming", "dataset-split-names"],
-            ["/parquet-and-dataset-info", "config-info"],
+            ["/config-names", "config-parquet-and-info", "config-info"],
         ),
         (
             "/split-names-from-streaming",
