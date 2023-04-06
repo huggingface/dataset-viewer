@@ -244,7 +244,7 @@ def get_best_response(
     """
     Get the best response from a list of cache kinds.
 
-    Best means that the response is a success (HTTP status 200) or the last response if all responses are errors.
+    Best means:
     - the first success response with progress=1.0 is returned
     - if no success response with progress=1.0 is found, the success response with the highest progress is returned
     - if no success response is found, the first error response is returned

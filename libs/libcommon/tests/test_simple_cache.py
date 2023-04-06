@@ -658,7 +658,7 @@ class EntrySpec(TypedDict):
 @pytest.mark.parametrize(
     "selected_entries,kinds,dataset,config,best_entry",
     [
-        # Best means that the response is a success (HTTP status 200) or the last response if all responses are errors.
+        # Best means:
         # - the first success response with progress=1.0 is returned
         (["ok1"], ["kind1"], "dataset", None, "ok1"),
         (["ok_config1"], ["kind1"], "dataset", "config", "ok_config1"),
