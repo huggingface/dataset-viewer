@@ -75,9 +75,7 @@ def test_default_graph() -> None:
     dataset_split_names_from_dataset_info = graph.get_step("dataset-split-names-from-dataset-info")
     split_first_rows_from_parquet = graph.get_step("split-first-rows-from-parquet")
 
-    assert_step(
-        config_names, children=[split_names_from_streaming, config_parquet_and_info], ancestors=[]
-    )
+    assert_step(config_names, children=[split_names_from_streaming, config_parquet_and_info], ancestors=[])
     assert_step(
         split_names_from_streaming,
         children=[split_first_rows_from_streaming, dataset_split_names_from_streaming],
@@ -106,18 +104,14 @@ def test_default_graph() -> None:
         children=[split_first_rows_from_parquet, dataset_parquet],
         ancestors=[config_names, config_parquet_and_info],
     )
-    assert_step(
-        dataset_parquet, children=[], ancestors=[config_names, config_parquet_and_info, config_parquet]
-    )
+    assert_step(dataset_parquet, children=[], ancestors=[config_names, config_parquet_and_info, config_parquet])
     assert_step(
         config_info,
         children=[dataset_info, split_names_from_dataset_info],
         ancestors=[config_names, config_parquet_and_info],
     )
     assert_step(dataset_info, children=[], ancestors=[config_names, config_parquet_and_info, config_info])
-    assert_step(
-        config_size, children=[dataset_size], ancestors=[config_names, config_parquet_and_info]
-    )
+    assert_step(config_size, children=[dataset_size], ancestors=[config_names, config_parquet_and_info])
     assert_step(dataset_size, children=[], ancestors=[config_names, config_parquet_and_info, config_size])
     assert_step(
         split_names_from_dataset_info,
