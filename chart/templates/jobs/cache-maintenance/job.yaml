@@ -9,7 +9,7 @@ metadata:
   name: "{{ include "name" . }}-job-cache-maintenance"
   namespace: {{ .Release.Namespace }}
   annotations:
-    "helm.sh/hook": post-upgrade
+    "helm.sh/hook": post-install,post-upgrade
 spec:
   ttlSecondsAfterFinished: 86400
   template:

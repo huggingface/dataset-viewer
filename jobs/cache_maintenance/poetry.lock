@@ -545,6 +545,7 @@ environs = "^9.5.0"
 huggingface-hub = "^0.12.0"
 mongo-types = "0.15.1"
 mongoengine = "^0.24.2"
+networkx = "^3.0"
 orjson = "^3.8.6"
 psutil = "^5.9.4"
 pymongo = {version = "^3.13.0", extras = ["srv"]}
@@ -1585,4 +1586,4 @@ files = [
 [metadata]
 lock-version = "2.0"
 python-versions = "3.9.15"
-content-hash = "322f55489db7a91a5cc03a6587f94af596583268097eef32d6b5f6e7fccb0054"
+content-hash = "67ae1eb17c3921f944b323ddcaa58919c1deff1e7cc25e63cf3a82ec23340c62"

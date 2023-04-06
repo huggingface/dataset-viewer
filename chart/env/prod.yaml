@@ -109,7 +109,7 @@ mongodbMigration:
 # --- jobs (post-upgrade hooks) ---
 
 cacheMaintenance:
-  # action: "backfill" -- Set this value according to required action for maintenance
+  action: "backfill"
   resources:
     requests:
       cpu: 100m
