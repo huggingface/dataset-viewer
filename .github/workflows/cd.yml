@@ -24,8 +24,6 @@ jobs:
           - directory: jobs
             project: mongodb_migration
           - directory: jobs
-            project: cache_refresh
-          - directory: jobs
             project: cache_maintenance
           - directory: services
             project: admin
@@ -102,8 +100,6 @@ jobs:
             images:
               jobs:
                 mongodbMigration:
-                  tag: sha-${{ steps.vars.outputs.sha_short }}
-                cacheRefresh:
                   tag: sha-${{ steps.vars.outputs.sha_short }}
                 cacheMaintenance:
                   tag: sha-${{ steps.vars.outputs.sha_short }}

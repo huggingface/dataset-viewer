@@ -8,7 +8,7 @@ from libcommon.processing_graph import ProcessingStep
 from libcommon.queue import Queue
 from libcommon.simple_cache import upsert_response
 
-from cache_refresh.outdated_cache import refresh_cache
+from cache_maintenance.upgrade import upgrade_cache
 
 
 @pytest.mark.parametrize(
@@ -19,7 +19,7 @@ from cache_refresh.outdated_cache import refresh_cache
         (2, False),
     ],
 )
-def test_refresh_cache(
+def test_upgrade_cache(
     job_runner_version: int,
     upserts_job: bool,
 ) -> None:
@@ -43,5 +43,5 @@ def test_refresh_cache(
         http_status=HTTPStatus.OK,
         job_runner_version=job_runner_version,
     )
-    refresh_cache(processing_steps=processing_steps)
+    upgrade_cache(processing_steps=processing_steps)
     assert queue.is_job_in_process(job_type="/config-names", dataset="dataset") == upserts_job

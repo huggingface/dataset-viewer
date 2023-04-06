@@ -9,7 +9,8 @@ from libcommon.queue import Priority, Queue
 from libcommon.simple_cache import get_outdated_split_full_names_for_step
 
 
-def refresh_cache(processing_steps: List[ProcessingStep]) -> None:
+def upgrade_cache(processing_steps: List[ProcessingStep]) -> None:
+    logging.info("upgrade cache")
     queue = Queue()
     for processing_step in processing_steps:
         current_version = processing_step.job_runner_version
