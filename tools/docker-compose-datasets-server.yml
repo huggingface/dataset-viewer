@@ -116,6 +116,7 @@ services:
       - "${MONGO_PORT-27017}:27017"
 volumes:
   assets:
+  cached-assets:
   mongo:
   splits-datasets-cache:
   splits-modules-cache:
