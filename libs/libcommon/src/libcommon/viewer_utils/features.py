@@ -23,7 +23,6 @@ from datasets import (
     Value,
 )
 from numpy import ndarray
-from libcommon.storage import StrPath
 from PIL import Image as PILImage  # type: ignore
 
 from libcommon.storage import StrPath
