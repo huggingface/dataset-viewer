@@ -8,7 +8,7 @@
   env:
   {{ include "envCache" . | nindent 2 }}
   {{ include "envQueue" . | nindent 2 }}
-  {{ include "envCommon" . | nindent 2 }}
+  {{ include "envLog" . | nindent 2 }}
   securityContext:
     allowPrivilegeEscalation: false  
   resources: {{ toYaml .Values.cacheRefresh.resources | nindent 4 }}

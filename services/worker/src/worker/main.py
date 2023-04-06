@@ -23,7 +23,7 @@ if __name__ == "__main__":
 
         app_config = AppConfig.from_env()
 
-        init_logging(log_level=app_config.common.log_level)
+        init_logging(level=app_config.log.level)
         # ^ set first to have logs as soon as possible
         assets_directory = init_assets_dir(directory=app_config.assets.storage_directory)
 

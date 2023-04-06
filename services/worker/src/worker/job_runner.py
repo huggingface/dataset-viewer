@@ -33,6 +33,7 @@ GeneralJobRunnerErrorCode = Literal[
     "TooBigContentError",
     "JobRunnerCrashedError",
     "JobRunnerExceededMaximumDurationError",
+    "ResponseAlreadyComputedError",
 ]
 
 # List of error codes that should trigger a retry.
@@ -179,6 +180,19 @@ class JobRunnerExceededMaximumDurationError(GeneralJobRunnerError):
         )
 
 
+class ResponseAlreadyComputedError(GeneralJobRunnerError):
+    """Raised when reponse has been already computed by another job runner."""
+
+    def __init__(self, message: str, cause: Optional[BaseException] = None):
+        super().__init__(
+            message=message,
+            status_code=HTTPStatus.INTERNAL_SERVER_ERROR,
+            code="ResponseAlreadyComputedError",
+            cause=cause,
+            disclose_cause=True,
+        )
+
+
 class JobRunner(ABC):
     """
     Base class for job runners. A job runner is a class that processes a job, for a specific processing step.
@@ -204,6 +218,7 @@ class JobRunner(ABC):
     worker_config: WorkerConfig
     common_config: CommonConfig
     processing_step: ProcessingStep
+    _dataset_git_revision: Optional[str] = None
 
     @staticmethod
     @abstractmethod
@@ -284,9 +299,11 @@ class JobRunner(ABC):
 
     def get_dataset_git_revision(self) -> Optional[str]:
         """Get the git revision of the dataset repository."""
-        return get_dataset_git_revision(
-            dataset=self.dataset, hf_endpoint=self.common_config.hf_endpoint, hf_token=self.common_config.hf_token
-        )
+        if self._dataset_git_revision is None:
+            self._dataset_git_revision = get_dataset_git_revision(
+                dataset=self.dataset, hf_endpoint=self.common_config.hf_endpoint, hf_token=self.common_config.hf_token
+            )
+        return self._dataset_git_revision
 
     # TODO: set the git revision as part of the job_info -> no need to get info from the Hub
     # if None: run the job
@@ -527,3 +544,22 @@ class JobRunner(ABC):
             f"response for dataset={self.dataset} config={self.config} split={self.split} had an error (exceeded"
             " maximum duration), cache updated"
         )
+
+    def raise_if_parallel_response_exists(self, parallel_job_type: str, parallel_job_version: int) -> None:
+        try:
+            existing_response = get_response_without_content(
+                kind=parallel_job_type, dataset=self.dataset, config=self.config, split=self.split
+            )
+            dataset_git_revision = self.get_dataset_git_revision()
+            if (
+                existing_response["http_status"] == HTTPStatus.OK
+                and existing_response["job_runner_version"] == parallel_job_version
+                and existing_response["progress"] == 1.0  # completed response
+                and dataset_git_revision is not None
+                and existing_response["dataset_git_revision"] == dataset_git_revision
+            ):
+                raise ResponseAlreadyComputedError(
+                    f"Response has already been computed by {parallel_job_type}. Compute will be skipped."
+                )
+        except DoesNotExist:
+            logging.debug(f"no cache found for {parallel_job_type}.")

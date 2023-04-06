@@ -1,11 +1,14 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2022 The HuggingFace Authors.
 
+import io
 import json
 from io import BytesIO
 from typing import Any, List, Optional, Union
 from zlib import adler32
 
+import numpy
+import soundfile  # type:ignore
 from datasets import (
     Array2D,
     Array3D,
@@ -20,6 +23,7 @@ from datasets import (
     Value,
 )
 from numpy import ndarray
+from libcommon.storage import StrPath
 from PIL import Image as PILImage  # type: ignore
 
 from libcommon.storage import StrPath

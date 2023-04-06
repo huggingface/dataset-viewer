@@ -12,6 +12,7 @@ environs = "^9.5.0"
 huggingface-hub = "^0.12.0"
 mongo-types = "0.15.1"
 mongoengine = "^0.24.2"
+networkx = "^3.0"
 orjson = "^3.8.6"
 psutil = "^5.9.4"
 pydub = "^0.25.1"
@@ -59,5 +60,8 @@ preview = true
 strict = true
 
 [[tool.mypy.overrides]]
-module = "datasets.*"
+module = [
+    "datasets.*",
+    "networkx.*",
+]
 ignore_missing_imports = true

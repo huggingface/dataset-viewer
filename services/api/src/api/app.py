@@ -30,7 +30,7 @@ def create_app() -> Starlette:
 
 
 def create_app_with_config(app_config: AppConfig, endpoint_config: EndpointConfig) -> Starlette:
-    init_logging(log_level=app_config.common.log_level)
+    init_logging(level=app_config.log.level)
     # ^ set first to have logs as soon as possible
     cached_assets_directory = init_cached_assets_dir(directory=app_config.cached_assets.storage_directory)
     if not exists(cached_assets_directory):

@@ -5,7 +5,10 @@ import logging
 from http import HTTPStatus
 from typing import Any, List, Literal, Mapping, Optional
 
-from libcommon.constants import PROCESSING_STEP_SPLIT_NAMES_FROM_DATASET_INFO_VERSION
+from libcommon.constants import (
+    PROCESSING_STEP_SPLIT_NAMES_FROM_DATASET_INFO_VERSION,
+    PROCESSING_STEP_SPLIT_NAMES_FROM_STREAMING_VERSION,
+)
 from libcommon.dataset import DatasetNotFoundError
 from libcommon.simple_cache import DoesNotExist, SplitFullName, get_response
 
@@ -16,6 +19,7 @@ from worker.utils import SplitItem, SplitsList
 SplitNamesFromDatasetInfoJobRunnerErrorCode = Literal[
     "PreviousStepStatusError",
     "PreviousStepFormatError",
+    "ResponseAlreadyComputedError",
 ]
 
 
@@ -49,10 +53,14 @@ class PreviousStepFormatError(SplitNamesFromDatasetInfoJobRunnerError):
         super().__init__(message, HTTPStatus.INTERNAL_SERVER_ERROR, "PreviousStepFormatError", cause, False)
 
 
-def compute_split_names_from_dataset_info_response(
-    dataset: str,
-    config: str,
-) -> SplitsList:
+class ResponseAlreadyComputedError(SplitNamesFromDatasetInfoJobRunnerError):
+    """Raised when reponse has been already computed by /split-names-from-streaming job runner."""
+
+    def __init__(self, message: str, cause: Optional[BaseException] = None):
+        super().__init__(message, HTTPStatus.INTERNAL_SERVER_ERROR, "ResponseAlreadyComputedError", cause, True)
+
+
+def compute_split_names_from_dataset_info_response(dataset: str, config: str) -> SplitsList:
     """
     Get the response of /split-names-from-dataset-info for one specific dataset and config on huggingface.co
     computed from cached response in dataset-info step.
@@ -76,6 +84,8 @@ def compute_split_names_from_dataset_info_response(
             If the content of the previous step has not the expected format
         - [`~libcommon.dataset.DatasetNotFoundError`]
             If previous step content was not found for the dataset
+        - [`~job_runners.split_names_from_dataset_info.ResponseAlreadyComputedError`]
+          If reponse has been already computed by /split-names-from-streaming job runner.
     </Tip>
     """
     logging.info(f"get split names from dataset info for dataset={dataset}, config={config}")
@@ -114,6 +124,10 @@ class SplitNamesFromDatasetInfoJobRunner(DatasetsBasedJobRunner):
             raise ValueError("dataset is required")
         if self.config is None:
             raise ValueError("config is required")
+        self.raise_if_parallel_response_exists(
+            parallel_job_type="/split-names-from-streaming",
+            parallel_job_version=PROCESSING_STEP_SPLIT_NAMES_FROM_STREAMING_VERSION,
+        )
         return CompleteJobResult(
             compute_split_names_from_dataset_info_response(dataset=self.dataset, config=self.config)
         )

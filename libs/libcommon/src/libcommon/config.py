@@ -19,6 +19,7 @@ from libcommon.constants import (
     PROCESSING_STEP_DATASET_SPLIT_NAMES_FROM_DATASET_INFO_VERSION,
     PROCESSING_STEP_DATASET_SPLIT_NAMES_FROM_STREAMING_VERSION,
     PROCESSING_STEP_PARQUET_AND_DATASET_INFO_VERSION,
+    PROCESSING_STEP_SPLIT_FIRST_ROWS_FROM_PARQUET_VERSION,
     PROCESSING_STEP_SPLIT_FIRST_ROWS_FROM_STREAMING_VERSION,
     PROCESSING_STEP_SPLIT_NAMES_FROM_DATASET_INFO_VERSION,
     PROCESSING_STEP_SPLIT_NAMES_FROM_STREAMING_VERSION,
@@ -84,14 +85,12 @@ class CachedAssetsConfig:
 
 COMMON_HF_ENDPOINT = "https://huggingface.co"
 COMMON_HF_TOKEN = None
-COMMON_LOG_LEVEL = logging.INFO
 
 
 @dataclass(frozen=True)
 class CommonConfig:
     hf_endpoint: str = COMMON_HF_ENDPOINT
     hf_token: Optional[str] = COMMON_HF_TOKEN
-    log_level: int = COMMON_LOG_LEVEL
 
     @classmethod
     def from_env(cls) -> "CommonConfig":
@@ -100,7 +99,22 @@ class CommonConfig:
             return cls(
                 hf_endpoint=env.str(name="HF_ENDPOINT", default=COMMON_HF_ENDPOINT),
                 hf_token=env.str(name="HF_TOKEN", default=COMMON_HF_TOKEN),  # nosec
-                log_level=env.log_level(name="LOG_LEVEL", default=COMMON_LOG_LEVEL),
+            )
+
+
+LOG_LEVEL = logging.INFO
+
+
+@dataclass(frozen=True)
+class LogConfig:
+    level: int = LOG_LEVEL
+
+    @classmethod
+    def from_env(cls) -> "LogConfig":
+        env = Env(expand_vars=True)
+        with env.prefixed("LOG_"):
+            return cls(
+                level=env.log_level(name="LEVEL", default=LOG_LEVEL),
             )
 
 
@@ -162,7 +176,7 @@ class ProcessingGraphConfig:
             },  # to be deprecated
             "split-first-rows-from-streaming": {
                 "input_type": "split",
-                "requires": "/split-names-from-streaming",
+                "requires": ["/split-names-from-streaming", "/split-names-from-dataset-info"],
                 "required_by_dataset_viewer": True,
                 "job_runner_version": PROCESSING_STEP_SPLIT_FIRST_ROWS_FROM_STREAMING_VERSION,
             },
@@ -174,6 +188,11 @@ class ProcessingGraphConfig:
                 "input_type": "config",
                 "requires": "/parquet-and-dataset-info",
                 "job_runner_version": PROCESSING_STEP_CONFIG_PARQUET_VERSION,
+            },
+            "split-first-rows-from-parquet": {
+                "input_type": "split",
+                "requires": "config-parquet",
+                "job_runner_version": PROCESSING_STEP_SPLIT_FIRST_ROWS_FROM_PARQUET_VERSION,
             },
             "dataset-parquet": {
                 "input_type": "dataset",
