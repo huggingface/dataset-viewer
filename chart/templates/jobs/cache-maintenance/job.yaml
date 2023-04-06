@@ -22,5 +22,5 @@ spec:
       nodeSelector: {{ toYaml .Values.cacheMaintenance.nodeSelector | nindent 8 }}
       tolerations: {{ toYaml .Values.cacheMaintenance.tolerations | nindent 8 }}
       securityContext: {{ include "securityContext" . | nindent 8 }}
-  backoffLimit: 0
+  backoffLimit: 1
 {{- end}}
