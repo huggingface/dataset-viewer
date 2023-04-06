@@ -60,7 +60,10 @@ def image(
     if isinstance(value, dict) and value.get("bytes"):
         value = PILImage.open(BytesIO(value["bytes"]))
     if not isinstance(value, PILImage.Image):
-        raise TypeError("image cell must be a PIL image or an encoded dict of an image")
+        raise TypeError(
+            "Image cell must be a PIL image or an encoded dict of an image, "
+            f"but got {str(value)[:300]}{'...' if len(str(value)) > 300 else ''}"
+        )
     # attempt to generate one of the supported formats; if unsuccessful, throw an error
     for ext in [".jpg", ".png"]:
         try:
@@ -105,7 +108,10 @@ def audio(
         array = value["array"]
         sampling_rate = value["sampling_rate"]
     except Exception as e:
-        raise TypeError("audio cell must contain 'array' and 'sampling_rate' fields") from e
+        raise TypeError(
+            "audio cell must contain 'array' and 'sampling_rate' fields, "
+            f"but got {str(value)[:300]}{'...' if len(str(value)) > 300 else ''}"
+        ) from e
     if type(array) != ndarray:
         raise TypeError("'array' field must be a numpy.ndarray")
     if type(sampling_rate) != int:
