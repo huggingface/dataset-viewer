@@ -90,7 +90,7 @@ def compute_dataset_split_names_response(dataset: str) -> Tuple[DatasetSplitName
             )
     except DoesNotExist as e:
         raise DatasetNotFoundError(
-            "No response found in previous step for this dataset: 'config-names' or 'dataset-info'.", e
+            "No response found in previous step for this dataset: '/config-names' or 'dataset-info'.", e
         ) from e
     except KeyError as e:
         raise PreviousStepFormatError(
