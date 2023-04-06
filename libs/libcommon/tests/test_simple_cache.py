@@ -4,7 +4,7 @@
 from datetime import datetime
 from http import HTTPStatus
 from time import process_time
-from typing import Iterator, Optional
+from typing import Dict, Iterator, List, Optional, TypedDict
 
 import pytest
 from pymongo.errors import DocumentTooLarge
@@ -21,6 +21,7 @@ from libcommon.simple_cache import (
     _clean_cache_database,
     delete_dataset_responses,
     delete_response,
+    get_best_response,
     get_cache_reports,
     get_cache_reports_with_content,
     get_dataset_responses_without_content_for_kind,
@@ -644,3 +645,115 @@ def test_get_outdated_split_full_names_for_step() -> None:
     result = get_outdated_split_full_names_for_step(kind=kind, current_version=current_version)
     assert result
     assert len(result) == 1
+
+
+class EntrySpec(TypedDict):
+    kind: str
+    dataset: str
+    config: Optional[str]
+    http_status: HTTPStatus
+    progress: float
+
+
+@pytest.mark.parametrize(
+    "selected_entries,kinds,dataset,config,best_entry",
+    [
+        # Best means that the response is a success (HTTP status 200) or the last response if all responses are errors.
+        # - the first success response with progress=1.0 is returned
+        (["ok1"], ["kind1"], "dataset", None, "ok1"),
+        (["ok_config1"], ["kind1"], "dataset", "config", "ok_config1"),
+        (["ok1", "ok2"], ["kind1", "kind2"], "dataset", None, "ok1"),
+        (["ok1", "ok2"], ["kind2", "kind1"], "dataset", None, "ok2"),
+        (["partial1", "ok2"], ["kind1", "kind2"], "dataset", None, "ok2"),
+        (["error1", "ok2"], ["kind1", "kind2"], "dataset", None, "ok2"),
+        # - if no success response with progress=1.0 is found, the success response with the highest progress is
+        #  returned
+        (["partial1", "partial2"], ["kind1", "kind2"], "dataset", None, "partial2"),
+        (["partial1", "error2"], ["kind1", "kind2"], "dataset", None, "partial1"),
+        # - if no success response is found, the first error response is returned
+        (["error1", "error2"], ["kind1", "kind2"], "dataset", None, "error1"),
+        (["error1", "error2"], ["kind2", "kind1"], "dataset", None, "error2"),
+        # - if no response is found, a `~libcommon.simple_cache.DoesNotExist` error is raised
+        ([], ["kind1"], "dataset", None, None),
+        (["ok_config1"], ["kind1"], "dataset", None, None),
+        (["ok1"], ["kind1"], "dataset", "config", None),
+    ],
+)
+def test_get_best_response(
+    selected_entries: List[str], kinds: List[str], dataset: str, config: Optional[str], best_entry: Optional[str]
+) -> None:
+    # arrange
+    entries: Dict[str, EntrySpec] = {
+        "ok1": {
+            "kind": "kind1",
+            "dataset": "dataset",
+            "config": None,
+            "http_status": HTTPStatus.OK,
+            "progress": 1.0,
+        },
+        "ok2": {
+            "kind": "kind2",
+            "dataset": "dataset",
+            "config": None,
+            "http_status": HTTPStatus.OK,
+            "progress": 1.0,
+        },
+        "partial1": {
+            "kind": "kind1",
+            "dataset": "dataset",
+            "config": None,
+            "http_status": HTTPStatus.OK,
+            "progress": 0,
+        },
+        "partial2": {
+            "kind": "kind2",
+            "dataset": "dataset",
+            "config": None,
+            "http_status": HTTPStatus.OK,
+            "progress": 0.5,
+        },
+        "ok_config1": {
+            "kind": "kind1",
+            "dataset": "dataset",
+            "config": "config",
+            "http_status": HTTPStatus.OK,
+            "progress": 1.0,
+        },
+        "error1": {
+            "kind": "kind1",
+            "dataset": "dataset",
+            "config": None,
+            "http_status": HTTPStatus.INTERNAL_SERVER_ERROR,
+            "progress": 1.0,
+        },
+        "error2": {
+            "kind": "kind2",
+            "dataset": "dataset",
+            "config": None,
+            "http_status": HTTPStatus.NOT_FOUND,
+            "progress": 1.0,
+        },
+    }
+
+    for entry in selected_entries:
+        upsert_response(
+            kind=entries[entry]["kind"],
+            dataset=entries[entry]["dataset"],
+            config=entries[entry]["config"],
+            http_status=entries[entry]["http_status"],
+            progress=entries[entry]["progress"],
+            content={"entry": entry},
+        )
+
+    # act
+    if best_entry is None:
+        with pytest.raises(DoesNotExist):
+            get_best_response(kinds, dataset, config)
+        return
+    best_response = get_best_response(kinds, dataset, config)
+
+    # assert
+    assert best_response.kind == entries[best_entry]["kind"]
+    assert best_response.response["content"]["entry"] == best_entry
+    assert best_response.response["http_status"] == entries[best_entry]["http_status"].value
+    assert best_response.response["progress"] == entries[best_entry]["progress"]

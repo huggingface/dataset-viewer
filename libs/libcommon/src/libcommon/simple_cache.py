@@ -1,7 +1,9 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2022 The HuggingFace Authors.
 
+import contextlib
 import types
+from dataclasses import dataclass
 from datetime import datetime, timezone
 from http import HTTPStatus
 from typing import (
@@ -220,6 +222,66 @@ def get_response(kind: str, dataset: str, config: Optional[str] = None, split: O
         "dataset_git_revision": response.dataset_git_revision,
         "progress": response.progress,
     }
+
+
+@dataclass
+class BestResponse:
+    kind: str
+    response: Any
+
+
+def _get_progress(best_response: BestResponse) -> float:
+    return (
+        best_response.response["progress"]
+        if ("progress" in best_response.response and isinstance(best_response.response["progress"], float))
+        else 0.0
+    )
+
+
+def get_best_response(
+    kinds: List[str], dataset: str, config: Optional[str] = None, split: Optional[str] = None
+) -> BestResponse:
+    """
+    Get the best response from a list of cache kinds.
+
+    Best means that the response is a success (HTTP status 200) or the last response if all responses are errors.
+    - the first success response with progress=1.0 is returned
+    - if no success response with progress=1.0 is found, the success response with the highest progress is returned
+    - if no success response is found, the first error response is returned
+    - if no response is found, a `~libcommon.simple_cache.DoesNotExist` error is raised
+
+    Args:
+        dataset (`str`):
+            A namespace (user or an organization) and a repo name separated by a `/`.
+        config (`str`, optional):
+            A config name.
+        split (`str`, optional):
+            A split name.
+    Returns:
+        BestResponse: The best response (object with fields: kind and response). The response can be an error.
+    <Tip>
+    Raises the following errors:
+        - [`~libcommon.simple_cache.DoesNotExist`]
+            If no response was found
+    </Tip>
+    """
+    in_progress_success_responses = []
+    error_responses = []
+    for kind in kinds:
+        with contextlib.suppress(DoesNotExist):
+            response = get_response(kind=kind, dataset=dataset, config=config, split=split)
+            best_response = BestResponse(kind=kind, response=response)
+            if best_response.response["http_status"] == HTTPStatus.OK:
+                if best_response.response["progress"] == 1.0:
+                    return best_response
+                in_progress_success_responses.append(best_response)
+            else:
+                error_responses.append(best_response)
+    if in_progress_success_responses:
+        return sorted(in_progress_success_responses, key=_get_progress, reverse=True)[0]
+    if error_responses:
+        return error_responses[0]
+    raise DoesNotExist("No cached response found.")
 
 
 def get_split_full_names_for_dataset_and_kind(dataset: str, kind: str) -> set[SplitFullName]:
