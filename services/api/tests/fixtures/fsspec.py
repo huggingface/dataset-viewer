@@ -36,14 +36,14 @@ class MockFileSystem(AbstractFileSystem):
         path = posixpath.join(self.local_root_dir, self._strip_protocol(path))
         out = self._fs.ls(path, detail=detail, *args, **kwargs)
         if detail:
-            return [{**info, "name": info["name"][len(self.local_root_dir) :]} for info in out]
+            return [{**info, "name": info["name"][len(self.local_root_dir) :]} for info in out]  # noqa: E203
         else:
-            return [name[len(self.local_root_dir) :] for name in out]
+            return [name[len(self.local_root_dir) :] for name in out]  # noqa: E203
 
     def info(self, path, *args, **kwargs):
         path = posixpath.join(self.local_root_dir, self._strip_protocol(path))
         out = dict(self._fs.info(path, *args, **kwargs))
-        out["name"] = out["name"][len(self.local_root_dir) :]
+        out["name"] = out["name"][len(self.local_root_dir) :]  # noqa: E203
         return out
 
     def cp_file(self, path1, path2, *args, **kwargs):

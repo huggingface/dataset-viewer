@@ -131,6 +131,6 @@ def cached_assets_directory(app_config: AppConfig) -> StrPath:
 
 @fixture
 def image_path() -> str:
-    image_path = Path(__file__).resolve().parent / "data" / "hf-logo.png"
+    image_path = Path(__file__).resolve().parent / "data" / "test_image_rgb.jpg"
     assert image_path.is_file()
     return str(image_path)

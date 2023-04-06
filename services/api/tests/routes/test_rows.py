@@ -71,7 +71,7 @@ def dataset_with_config_parquet() -> dict[str, Any]:
                 "dataset": "ds",
                 "config": "plain_text",
                 "split": "train",
-                "url": "https://fake.huggingface.co/datasets/ds/resolve/refs%2Fconvert%2Fparquet/plain_text/ds-train.parquet",
+                "url": "https://fake.huggingface.co/datasets/ds/resolve/refs%2Fconvert%2Fparquet/plain_text/ds-train.parquet",  # noqa: E501
                 "filename": "ds-train.parquet",
                 "size": 128,
             }
@@ -97,7 +97,7 @@ def dataset_sharded_with_config_parquet() -> dict[str, Any]:
                 "dataset": "ds_sharded",
                 "config": "plain_text",
                 "split": "train",
-                "url": f"https://fake.huggingface.co/datasets/ds/resolve/refs%2Fconvert%2Fparquet/plain_text/ds_sharded-train-{shard_idx:05d}-of-{num_shards:05d}.parquet",
+                "url": f"https://fake.huggingface.co/datasets/ds/resolve/refs%2Fconvert%2Fparquet/plain_text/ds_sharded-train-{shard_idx:05d}-of-{num_shards:05d}.parquet",  # noqa: E501
                 "filename": f"ds_sharded-train-{shard_idx:05d}-of-{num_shards:05d}.parquet",
                 "size": 128,
             }
@@ -123,8 +123,8 @@ def dataset_image_with_config_parquet() -> dict[str, Any]:
                 "dataset": "ds_image",
                 "config": "plain_text",
                 "split": "train",
-                "url": f"https://fake.huggingface.co/datasets/ds/resolve/refs%2Fconvert%2Fparquet/plain_text/ds_image-train.parquet",
-                "filename": f"ds_image-train.parquet",
+                "url": "https://fake.huggingface.co/datasets/ds/resolve/refs%2Fconvert%2Fparquet/plain_text/ds_image-train.parquet",  # noqa: E501
+                "filename": "ds_image-train.parquet",
                 "size": 11128,
             }
         ]

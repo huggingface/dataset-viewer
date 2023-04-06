@@ -1,14 +1,11 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2022 The HuggingFace Authors.
 
-import io
 import json
 from io import BytesIO
 from typing import Any, List, Optional, Union
 from zlib import adler32
 
-import numpy
-import soundfile  # type:ignore
 from datasets import (
     Array2D,
     Array3D,
