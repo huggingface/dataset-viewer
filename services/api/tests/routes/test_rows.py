@@ -1,4 +1,5 @@
 import os
+import time
 from http import HTTPStatus
 from pathlib import Path
 from typing import Any, Generator, List
@@ -249,8 +250,8 @@ def test_create_response_with_image(
             "row": {
                 "image": {
                     "src": "http://localhost/cached-assets/ds_image/--/plain_text/train/0/image/image.jpg",
-                    "height": 175,
-                    "width": 175,
+                    "height": 480,
+                    "width": 640,
                 }
             },
             "truncated_cells": [],
@@ -310,6 +311,7 @@ def test_update_last_modified_date_of_rows_in_assets_dir(tmp_path: Path) -> None
     n_rows = 8
     for i in range(n_rows):
         (split_dir / str(i)).mkdir()
+        time.sleep(0.002)
     update_last_modified_date_of_rows_in_assets_dir(
         dataset="ds",
         config="plain_text",
