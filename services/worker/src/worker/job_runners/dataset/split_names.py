@@ -98,7 +98,7 @@ def compute_dataset_split_names_response(dataset: str) -> Tuple[DatasetSplitName
         ) from e
     if any(not isinstance(config_name, str) for config_name in config_names):
         raise PreviousStepFormatError(
-            "Previous steps 'config-names' or 'dataset-info' did not return a list of config names."
+            "Previous steps '/config-names' or 'dataset-info' did not return a list of config names."
         )
 
     split_names_cache_kinds = ["/split-names-from-dataset-info", "/split-names-from-streaming"]
