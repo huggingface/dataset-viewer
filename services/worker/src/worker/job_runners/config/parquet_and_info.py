@@ -16,12 +16,7 @@ import datasets
 import datasets.config
 import numpy as np
 import requests
-from datasets import (
-    DownloadConfig,
-    get_dataset_config_info,
-    get_dataset_config_names,
-    load_dataset_builder,
-)
+from datasets import DownloadConfig, get_dataset_config_info, load_dataset_builder
 from datasets.builder import DatasetBuilder
 from datasets.data_files import EmptyDatasetError as _EmptyDatasetError
 from datasets.download import StreamingDownloadManager
@@ -63,6 +58,8 @@ ConfigParquetAndInfoJobRunnerErrorCode = Literal[
     "ExternalFilesSizeRequestConnectionError",
     "ExternalFilesSizeRequestTimeoutError",
     "ExternalFilesSizeRequestError",
+    "PreviousStepStatusError",
+    "PreviousStepFormatError",
 ]
 
 
@@ -115,6 +112,20 @@ class DatasetTooBigFromDatasetsError(ConfigParquetAndInfoJobRunnerError):
 
     def __init__(self, message: str, cause: Optional[BaseException] = None):
         super().__init__(message, HTTPStatus.NOT_IMPLEMENTED, "DatasetTooBigFromDatasetsError", cause, False)
+
+
+class PreviousStepStatusError(ConfigParquetAndInfoJobRunnerError):
+    """Raised when the previous step gave an error. The job should not have been created."""
+
+    def __init__(self, message: str, cause: Optional[BaseException] = None):
+        super().__init__(message, HTTPStatus.INTERNAL_SERVER_ERROR, "PreviousStepStatusError", cause, False)
+
+
+class PreviousStepFormatError(ConfigParquetAndInfoJobRunnerError):
+    """Raised when the content of the previous step has not the expected format."""
+
+    def __init__(self, message: str, cause: Optional[BaseException] = None):
+        super().__init__(message, HTTPStatus.INTERNAL_SERVER_ERROR, "PreviousStepFormatError", cause, False)
 
 
 class ParquetFileItem(TypedDict):
@@ -749,6 +760,11 @@ def compute_config_parquet_and_info_response(
             If we failed to get the external files sizes to make sure we can convert the dataset to parquet
         - [`~job_runners.config.parquet_and_info.ExternalFilesSizeRequestError`]
             If we failed to get the external files sizes to make sure we can convert the dataset to parquet
+        - [`~job_runners.config.parquet_and_info.PreviousStepStatusError`]
+          If the previous step gave an error.
+        - [`~job_runners.config.parquet_and_info.PreviousStepFormatError`]
+            If the content of the previous step has not the expected format
+
     </Tip>
     """
     logging.info(f"get parquet files and dataset info for {dataset=} {config=}")
@@ -764,6 +780,29 @@ def compute_config_parquet_and_info_response(
         blocked_datasets=blocked_datasets,
         max_dataset_size=max_dataset_size,
     )
+
+    logging.info(f"get config names for {dataset=}")
+    previous_step = "/config-names"
+    try:
+        response = get_response(kind=previous_step, dataset=dataset)
+    except DoesNotExist as e:
+        raise DatasetNotFoundError(f"No response found in previous step '{previous_step}' for this dataset.", e) from e
+    if response["http_status"] != HTTPStatus.OK:
+        raise PreviousStepStatusError(f"Previous step {previous_step} gave an error: {response['http_status']}..")
+
+    config_names_content = response["content"]
+    if "config_names" not in config_names_content:
+        raise PreviousStepFormatError("Previous step did not return the expected content: 'config_names'.")
+
+    if not isinstance(config_names_content["config_names"], list):
+        raise PreviousStepFormatError(
+            "Previous step did not return the expected content.",
+            TypeError(f"config_names should be a list, but got {type(config_names_content['config_names'])}"),
+        )
+
+    config_names = {config_name_item["config"] for config_name_item in config_names_content["config_names"]}
+    if config not in config_names:
+        raise ConfigNamesError(f"{config=} does not exist in {dataset=}")
 
     hf_api = HfApi(endpoint=hf_endpoint, token=hf_token)
     committer_hf_api = HfApi(endpoint=hf_endpoint, token=committer_hf_token)
@@ -806,24 +845,6 @@ def compute_config_parquet_and_info_response(
 
     target_dataset_info = hf_api.dataset_info(repo_id=dataset, revision=target_revision, files_metadata=False)
     # - check if there are files for configs that do not exist anymore and delete them
-    # - get dataset's config names with `datasets` lib directly
-    try:  # first try from cache
-        response = get_response(kind="/config-names", dataset=dataset)
-    except (DoesNotExist, ConfigNamesError, EmptyDatasetError):
-        response = None
-    if response and response["http_status"] == HTTPStatus.OK and response["content"].get("config_names"):
-        config_names = {config_name_item["config"] for config_name_item in response["content"]["config_names"]}
-    else:
-        try:
-            config_names = set(
-                get_dataset_config_names(path=dataset, use_auth_token=hf_token if hf_token is not None else False)
-            )
-        except _EmptyDatasetError as err:
-            raise EmptyDatasetError("The dataset is empty.", cause=err) from err
-        except Exception as err:
-            raise ConfigNamesError("Cannot get the config names for the dataset.", cause=err) from err
-    if config not in config_names:
-        raise ConfigNamesError(f"{config=} does not exist in {dataset=}")
     # - get configs that exist in repo
     repo_parquet_files = {f.rfilename for f in target_dataset_info.siblings if f.rfilename.endswith(".parquet")}
     repo_config_names = {f.split("/")[0] for f in repo_parquet_files}

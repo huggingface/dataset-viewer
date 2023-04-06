@@ -3,7 +3,6 @@
 
 import io
 from http import HTTPStatus
-from pathlib import Path
 from typing import Any, Callable, Iterator, List, Optional
 
 import datasets.builder
@@ -15,7 +14,7 @@ from libcommon.exceptions import CustomError
 from libcommon.processing_graph import ProcessingStep
 from libcommon.queue import Priority
 from libcommon.resources import CacheMongoResource, QueueMongoResource
-from libcommon.simple_cache import DoesNotExist, get_response
+from libcommon.simple_cache import DoesNotExist, get_response, upsert_response
 
 from worker.config import AppConfig, ParquetAndInfoConfig
 from worker.job_runners.config.parquet_and_info import (
@@ -151,6 +150,17 @@ def test_compute_legacy_configs(
 ) -> None:
     dataset_name = hub_public_legacy_configs
     original_configs = {"first", "second"}
+    upsert_response(
+        kind="/config-names",
+        dataset=hub_public_legacy_configs,
+        http_status=HTTPStatus.OK,
+        content={
+            "config_names": [
+                {"dataset": hub_public_legacy_configs, "config": "first"},
+                {"dataset": hub_public_legacy_configs, "config": "second"},
+            ],
+        },
+    )
     # first compute and push parquet files for each config for dataset with script with two configs
     for config in original_configs:
         job_runner = get_job_runner(dataset_name, config, app_config, parquet_and_info_config, False)
@@ -163,16 +173,16 @@ def test_compute_legacy_configs(
     # assert that both configs are pushed (push of second config didn't delete first config's files)
     assert len(orig_repo_configs) == 2
     assert orig_repo_configs == original_configs
-    # then upload updated dataset script that includes only one config
-    hf_api.upload_file(
-        token=CI_USER_TOKEN,
-        path_or_fileobj=dataset_script_with_one_config_path,
-        path_in_repo=Path(dataset_script_with_one_config_path).name.replace(
-            "{dataset_name}", dataset_name.split("/")[1]
-        ),
-        repo_id=hub_public_legacy_configs,
-        repo_type="dataset",
-        revision="main",
+    # then change the set of dataset configs (remove "second")
+    upsert_response(
+        kind="/config-names",
+        dataset=hub_public_legacy_configs,
+        http_status=HTTPStatus.OK,
+        content={
+            "config_names": [
+                {"dataset": hub_public_legacy_configs, "config": "first"},
+            ],
+        },
     )
     job_runner = get_job_runner(dataset_name, "first", app_config, parquet_and_info_config, False)
     assert job_runner.process()
