@@ -43,7 +43,7 @@ from libcommon.constants import PROCESSING_STEP_CONFIG_PARQUET_AND_INFO_VERSION
 from libcommon.dataset import DatasetNotFoundError, ask_access
 from libcommon.processing_graph import ProcessingStep
 from libcommon.queue import JobInfo
-from libcommon.simple_cache import SplitFullName
+from libcommon.simple_cache import DoesNotExist, SplitFullName, get_response
 
 from worker.config import AppConfig, ParquetAndInfoConfig
 from worker.job_runner import CompleteJobResult, JobRunnerError, ParameterMissingError
@@ -807,19 +807,28 @@ def compute_config_parquet_and_info_response(
     target_dataset_info = hf_api.dataset_info(repo_id=dataset, revision=target_revision, files_metadata=False)
     # - check if there are files for configs that do not exist anymore and delete them
     # - get dataset's config names with `datasets` lib directly
-    try:
-        config_names = set(
-            get_dataset_config_names(path=dataset, use_auth_token=hf_token if hf_token is not None else False)
-        )
-    except _EmptyDatasetError as err:
-        raise EmptyDatasetError("The dataset is empty.", cause=err) from err
-    except Exception as err:
-        raise ConfigNamesError("Cannot get the config names for the dataset.", cause=err) from err
-
+    try:  # first try from cache
+        response = get_response(kind="/config-names", dataset=dataset)
+    except (DoesNotExist, ConfigNamesError, EmptyDatasetError):
+        response = None
+    if response and response["http_status"] == HTTPStatus.OK and response["content"].get("config_names"):
+        config_names = {config_name_item["config"] for config_name_item in response["content"]["config_names"]}
+    else:
+        try:
+            config_names = set(
+                get_dataset_config_names(path=dataset, use_auth_token=hf_token if hf_token is not None else False)
+            )
+        except _EmptyDatasetError as err:
+            raise EmptyDatasetError("The dataset is empty.", cause=err) from err
+        except Exception as err:
+            raise ConfigNamesError("Cannot get the config names for the dataset.", cause=err) from err
+    if config not in config_names:
+        raise ConfigNamesError(f"{config=} does not exist in {dataset=}")
     # - get configs that exist in repo
     repo_parquet_files = {f.rfilename for f in target_dataset_info.siblings if f.rfilename.endswith(".parquet")}
     repo_config_names = {f.split("/")[0] for f in repo_parquet_files}
-    legacy_configs = repo_config_names - config_names.union(config)
+    delete_operations: List[CommitOperation] = []
+    legacy_configs = repo_config_names - config_names
     # - delete configs that do not exist anymore
     if legacy_configs:
         legacy_configs_files_to_delete = {
@@ -828,31 +837,16 @@ def compute_config_parquet_and_info_response(
             for file in repo_parquet_files
             if file.startswith(f"{legacy_config}/")
         }
-        legacy_configs_delete_operations: List[CommitOperation] = [
-            CommitOperationDelete(path_in_repo=file) for file in legacy_configs_files_to_delete
-        ]
-        logging.debug(f"{legacy_configs_delete_operations=}")
-        committer_hf_api.create_commit(
-            repo_id=dataset,
-            repo_type=DATASET_TYPE,
-            revision=target_revision,
-            operations=legacy_configs_delete_operations,
-            commit_message=f"Deleting files for configs that do not exist anymore: {legacy_configs}",
-            parent_commit=target_dataset_info.sha,
-        )
-        target_dataset_info = hf_api.dataset_info(repo_id=dataset, revision=target_revision, files_metadata=False)
+        delete_operations.extend([CommitOperationDelete(path_in_repo=file) for file in legacy_configs_files_to_delete])
+        logging.debug(f"delete operations for legacy configs={delete_operations}")
 
     # - delete existing files for current config
-    previous_config_repo_files = {
-        f.rfilename for f in target_dataset_info.siblings if f.rfilename.startswith(f"{config}/")
-    }
+    previous_config_repo_files = {filename for filename in repo_parquet_files if filename.startswith(f"{config}/")}
     # - except for the files that we will update and .gitattributes if present.
     config_files_to_add = {parquet_file.repo_file(): parquet_file.local_file for parquet_file in local_parquet_files}
     config_files_to_delete = previous_config_repo_files - set(config_files_to_add).union({".gitattributes"})
-    delete_operations: List[CommitOperation] = [
-        CommitOperationDelete(path_in_repo=file) for file in config_files_to_delete
-    ]
-    logging.debug(f"{delete_operations=}")
+    delete_operations.extend([CommitOperationDelete(path_in_repo=file) for file in config_files_to_delete])
+    logging.debug(f"all delete operations={delete_operations}")
 
     # send the files to the target revision
     add_operations: List[CommitOperation] = [
