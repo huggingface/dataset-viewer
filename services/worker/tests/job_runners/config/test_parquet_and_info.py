@@ -160,6 +160,7 @@ def test_compute_legacy_configs(
         repo_id=hub_public_legacy_configs, revision=parquet_and_info_config.target_revision, files_metadata=False
     )
     orig_repo_configs = {f.rfilename.split("/")[0] for f in dataset_info.siblings if f.rfilename.endswith(".parquet")}
+    # assert that both configs are pushed (push of second config didn't delete first config's files)
     assert len(orig_repo_configs) == 2
     assert orig_repo_configs == original_configs
     # then upload updated dataset script that includes only one config
@@ -181,6 +182,7 @@ def test_compute_legacy_configs(
     updated_repo_configs = {
         f.rfilename.split("/")[0] for f in dataset_info.siblings if f.rfilename.endswith(".parquet")
     }
+    # assert that legacy config is removed from the repo
     assert len(updated_repo_configs) == 1
     assert updated_repo_configs == {"first"}
 
