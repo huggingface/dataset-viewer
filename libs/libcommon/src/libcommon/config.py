@@ -139,7 +139,7 @@ class ProcessingGraphConfig:
             },  # to be deprecated
             "split-first-rows-from-streaming": {
                 "input_type": "split",
-                "requires": "/split-names-from-streaming",
+                "requires": ["/split-names-from-streaming", "/split-names-from-dataset-info"],
                 "required_by_dataset_viewer": True,
                 "job_runner_version": PROCESSING_STEP_SPLIT_FIRST_ROWS_FROM_STREAMING_VERSION,
             },

@@ -84,7 +84,13 @@ def test_default_graph() -> None:
     assert_step(
         split_first_rows_from_streaming,
         children=[],
-        ancestors=[config_names, split_names_from_streaming],
+        ancestors=[
+            config_names,
+            split_names_from_streaming,
+            split_names_from_dataset_info,
+            parquet_and_dataset_info,
+            config_info,
+        ],
     )
     assert_step(parquet_and_dataset_info, children=[config_parquet, config_info, config_size], ancestors=[])
     assert_step(
@@ -103,7 +109,7 @@ def test_default_graph() -> None:
     assert_step(dataset_size, children=[], ancestors=[parquet_and_dataset_info, config_size])
     assert_step(
         split_names_from_dataset_info,
-        children=[dataset_split_names_from_dataset_info],
+        children=[split_first_rows_from_streaming, dataset_split_names_from_dataset_info],
         ancestors=[parquet_and_dataset_info, config_info],
     )
     assert_step(
