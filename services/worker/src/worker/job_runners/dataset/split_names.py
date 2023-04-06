@@ -86,7 +86,7 @@ def compute_dataset_split_names_response(dataset: str) -> Tuple[DatasetSplitName
             config_names = list(best_response.response["content"]["dataset-info"].keys())
         else:
             raise PreviousStepFormatError(
-                "Previous step 'config-names' or 'dataset-info' did not return the expected content."
+                "Previous step '/config-names' or 'dataset-info' did not return the expected content."
             )
     except DoesNotExist as e:
         raise DatasetNotFoundError(
