@@ -57,9 +57,8 @@ def get_job_runner(
             processing_step=ProcessingStep(
                 name=SplitFirstRowsFromStreamingJobRunner.get_job_type(),
                 input_type="split",
-                requires=None,
+                requires=[],
                 required_by_dataset_viewer=True,
-                parent=None,
                 ancestors=[],
                 children=[],
                 job_runner_version=SplitFirstRowsFromStreamingJobRunner.get_job_runner_version(),
@@ -140,7 +139,7 @@ def test_doesnotexist(app_config: AppConfig, get_job_runner: GetJobRunner, first
         ("jsonl", False, None, None),
         ("gated", True, None, None),
         ("private", True, None, None),
-        ("does_not_exist_config", False, "ConfigNotFoundError", None),
+        ("does_not_exist_config", False, "ConfigNotFoundError", "DoesNotExist"),
         # should we really test the following cases?
         # The assumption is that the dataset exists and is accessible with the token
         ("does_not_exist_split", False, "SplitNotFoundError", None),
@@ -196,7 +195,7 @@ def test_number_rows(
             content={"splits": [{"dataset": dataset, "config": config, "split": "other_split"}]},
             http_status=HTTPStatus.OK,
         )
-    elif error_code in ("InfoError", "SplitsNamesError"):
+    elif error_code in {"InfoError", "SplitsNamesError"}:
         upsert_response(
             kind="/split-names-from-streaming",
             dataset=dataset,

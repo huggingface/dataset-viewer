@@ -320,10 +320,14 @@ def compute_first_rows_response(
     try:
         upstream_response = get_response(kind="/split-names-from-streaming", dataset=dataset, config=config)
         splits_content = upstream_response["content"]["splits"]
-    except DoesNotExist:
-        raise ConfigNotFoundError(f"The config '{config}' does not exist for the dataset.'")
-    except Exception as e:
-        raise PreviousStepFormatError("Previous step did not return the expected content.") from e
+    except Exception:
+        try:
+            upstream_response = get_response(kind="/split-names-from-dataset-info", dataset=dataset, config=config)
+            splits_content = upstream_response["content"]["splits"]
+        except DoesNotExist as e:
+            raise ConfigNotFoundError(f"The config '{config}' does not exist for the dataset.'", e) from e
+        except Exception as e:
+            raise PreviousStepFormatError("Previous step did not return the expected content.", e) from e
 
     if upstream_response["http_status"] != HTTPStatus.OK:
         raise PreviousStepStatusError(

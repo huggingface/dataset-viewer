@@ -160,10 +160,9 @@ def get_job_runner(
             worker_config=app_config.worker,
             processing_step=ProcessingStep(
                 name=ConfigInfoJobRunner.get_job_type(),
-                input_type="config",
-                requires=None,
+                input_type="dataset",
+                requires=[],
                 required_by_dataset_viewer=False,
-                parent=None,
                 ancestors=[],
                 children=[],
                 job_runner_version=ConfigInfoJobRunner.get_job_runner_version(),
