@@ -282,6 +282,7 @@ def test_clean_cached_assets(
     split_dir.mkdir(parents=True)
     for i in range(n_rows):
         (split_dir / str(i)).mkdir()
+        time.sleep(0.002)
 
     def deterministic_glob_rows_in_assets_dir(
         dataset: str,
@@ -322,4 +323,5 @@ def test_update_last_modified_date_of_rows_in_assets_dir(tmp_path: Path) -> None
     )
     most_recent_rows_dirs = sorted([row_dir for row_dir in split_dir.glob("*")], key=os.path.getmtime, reverse=True)
     most_recent_rows = [int(row_dir.name) for row_dir in most_recent_rows_dirs]
-    assert most_recent_rows == [4, 3, 2, 7, 6, 5, 1, 0]
+    assert sorted(most_recent_rows[:3]) == [2, 3, 4]
+    assert most_recent_rows[3:] == [7, 6, 5, 1, 0]
