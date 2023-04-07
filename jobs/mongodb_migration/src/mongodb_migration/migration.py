@@ -4,7 +4,7 @@ import datetime
 from abc import ABC, abstractmethod
 
 
-class IrreversibleMigration(Exception):
+class IrreversibleMigrationError(Exception):
     pass
 
 
@@ -29,4 +29,4 @@ class Migration(ABC):
 
     @abstractmethod
     def down(self) -> None:
-        raise IrreversibleMigration()
+        raise IrreversibleMigrationError()

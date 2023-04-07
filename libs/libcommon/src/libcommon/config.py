@@ -24,7 +24,6 @@ from libcommon.constants import (
     PROCESSING_STEP_SPLIT_FIRST_ROWS_FROM_STREAMING_VERSION,
     PROCESSING_STEP_SPLIT_NAMES_FROM_DATASET_INFO_VERSION,
     PROCESSING_STEP_SPLIT_NAMES_FROM_STREAMING_VERSION,
-    PROCESSING_STEP_SPLITS_VERSION,
 )
 from libcommon.processing_graph import ProcessingGraphSpecification
 
@@ -133,11 +132,6 @@ class ProcessingGraphConfig:
                 "requires": "/config-names",
                 "job_runner_version": PROCESSING_STEP_SPLIT_NAMES_FROM_STREAMING_VERSION,
             },
-            "/splits": {
-                "input_type": "dataset",
-                "required_by_dataset_viewer": True,
-                "job_runner_version": PROCESSING_STEP_SPLITS_VERSION,
-            },  # to be deprecated
             "split-first-rows-from-streaming": {
                 "input_type": "split",
                 "requires": ["/split-names-from-streaming", "/split-names-from-dataset-info"],
@@ -192,12 +186,12 @@ class ProcessingGraphConfig:
                 "input_type": "dataset",
                 "requires": "/split-names-from-streaming",
                 "job_runner_version": PROCESSING_STEP_DATASET_SPLIT_NAMES_FROM_STREAMING_VERSION,
-            },
+            },  # to be deprecated
             "dataset-split-names-from-dataset-info": {
                 "input_type": "dataset",
                 "requires": "/split-names-from-dataset-info",
                 "job_runner_version": PROCESSING_STEP_DATASET_SPLIT_NAMES_FROM_DATASET_INFO_VERSION,
-            },
+            },  # to be deprecated
             "dataset-split-names": {
                 "input_type": "dataset",
                 "requires": ["/split-names-from-dataset-info", "/split-names-from-streaming"],
