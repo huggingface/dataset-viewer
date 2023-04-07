@@ -27,6 +27,11 @@ images:
       useGlobalRegistry: false
       repository: datasets-server-jobs-mongodb_migration
       tag: sha-fb3399a
+    cacheMaintenance:
+      registry: huggingface
+      useGlobalRegistry: false
+      repository: datasets-server-jobs-cache_maintenance
+      tag: sha-fb3399a
     # cacheRefresh:
     #   registry: huggingface
     #   useGlobalRegistry: false
@@ -89,6 +94,16 @@ parquetAndDatasetInfo:
 # --- jobs (pre-install/upgrade hooks) ---
 
 mongodbMigration:
+  resources:
+    requests:
+      cpu: 100m
+    limits:
+      cpu: 1
+
+# --- jobs (post-upgrade hooks) ---
+
+cacheMaintenance:
+  action: "skip"
   resources:
     requests:
       cpu: 100m

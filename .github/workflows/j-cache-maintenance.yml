@@ -8,17 +8,17 @@ on:
     branches:
       - main
     paths:
-      - 'jobs/cache_refresh/**'
+      - 'jobs/cache_maintenance/**'
       - 'libs/libcommon/**'
-      - '.github/workflows/j-cache-refresh.yml'
+      - '.github/workflows/j-cache-maintenance.yml'
       - '.github/workflows/_quality-python.yml'
       - '.github/workflows/_unit-tests-python.yml'
       - 'tools/docker-compose-mongo.yml'
   pull_request:
     paths:
-      - 'jobs/cache_refresh/**'
+      - 'jobs/cache_maintenance/**'
       - 'libs/libcommon/**'
-      - '.github/workflows/j-cache-refresh.yml'
+      - '.github/workflows/j-cache-maintenance.yml'
       - '.github/workflows/_quality-python.yml'
       - '.github/workflows/_unit-tests-python.yml'
       - 'tools/docker-compose-mongo.yml'
@@ -26,8 +26,8 @@ jobs:
   quality:
     uses: ./.github/workflows/_quality-python.yml
     with:
-      working-directory: jobs/cache_refresh
+      working-directory: jobs/cache_maintenance
   unit-tests:
     uses: ./.github/workflows/_unit-tests-python.yml
     with:
-      working-directory: jobs/cache_refresh
+      working-directory: jobs/cache_maintenance
