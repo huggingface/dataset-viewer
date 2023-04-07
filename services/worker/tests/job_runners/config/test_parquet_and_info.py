@@ -129,6 +129,12 @@ def test_compute(
 ) -> None:
     dataset = hub_datasets["public"]["name"]
     config = hub_datasets["public"]["config_names_response"]["config_names"][0]["config"]
+    upsert_response(
+        "/config-names",
+        dataset=dataset,
+        http_status=HTTPStatus.OK,
+        content=hub_datasets["public"]["config_names_response"],
+    )
     job_runner = get_job_runner(dataset, config, app_config, parquet_and_info_config, False)
     assert job_runner.process()
     cached_response = get_response(kind=job_runner.processing_step.cache_kind, dataset=dataset, config=config)
@@ -146,7 +152,6 @@ def test_compute_legacy_configs(
     get_job_runner: GetJobRunner,
     parquet_and_info_config: ParquetAndInfoConfig,
     hub_public_legacy_configs: str,
-    dataset_script_with_one_config_path: str,
 ) -> None:
     dataset_name = hub_public_legacy_configs
     original_configs = {"first", "second"}
@@ -406,7 +411,12 @@ def test_not_supported_if_big(
     # dataset = hub_public_big
     dataset = hub_datasets["big"]["name"]
     config = hub_datasets["big"]["config_names_response"]["config_names"][0]["config"]
-
+    upsert_response(
+        kind="/config-names",
+        dataset=dataset,
+        http_status=HTTPStatus.OK,
+        content=hub_datasets["big"]["config_names_response"],
+    )
     job_runner = get_job_runner(dataset, config, app_config, parquet_and_info_config, False)
     assert not job_runner.process()
     cached_response = get_response(kind=job_runner.processing_step.cache_kind, dataset=dataset, config=config)
@@ -423,6 +433,12 @@ def test_supported_if_gated(
     # Access must be granted
     dataset = hub_datasets["gated"]["name"]
     config = hub_datasets["gated"]["config_names_response"]["config_names"][0]["config"]
+    upsert_response(
+        "/config-names",
+        dataset=dataset,
+        http_status=HTTPStatus.OK,
+        content=hub_datasets["gated"]["config_names_response"],
+    )
     job_runner = get_job_runner(dataset, config, app_config, parquet_and_info_config, False)
     assert job_runner.process()
     cached_response = get_response(kind=job_runner.processing_step.cache_kind, dataset=dataset, config=config)
@@ -439,6 +455,12 @@ def test_not_supported_if_gated_with_extra_fields(
     # Access request should fail because extra fields in gated datasets are not supported
     dataset = hub_datasets["gated_extra_fields"]["name"]
     config = hub_datasets["gated_extra_fields"]["config_names_response"]["config_names"][0]["config"]
+    upsert_response(
+        kind="/config-names",
+        dataset=dataset,
+        http_status=HTTPStatus.OK,
+        content=hub_datasets["gated_extra_fields"]["config_names_response"],
+    )
     job_runner = get_job_runner(dataset, config, app_config, parquet_and_info_config, False)
     assert not job_runner.process()
     cached_response = get_response(kind=job_runner.processing_step.cache_kind, dataset=dataset, config=config)
@@ -455,6 +477,12 @@ def test_blocked(
     # In the list of blocked datasets
     dataset = hub_datasets["jsonl"]["name"]
     config = hub_datasets["jsonl"]["config_names_response"]["config_names"][0]["config"]
+    upsert_response(
+        kind="/config-names",
+        dataset=dataset,
+        http_status=HTTPStatus.OK,
+        content=hub_datasets["jsonl"]["config_names_response"],
+    )
     job_runner = get_job_runner(dataset, config, app_config, parquet_and_info_config, False)
     assert not job_runner.process()
     cached_response = get_response(kind=job_runner.processing_step.cache_kind, dataset=dataset, config=config)
@@ -476,6 +504,12 @@ def test_compute_splits_response_simple_csv_ok(
 ) -> None:
     dataset = hub_datasets[name]["name"]
     config = hub_datasets[name]["config_names_response"]["config_names"][0]["config"]
+    upsert_response(
+        "/config-names",
+        dataset=dataset,
+        http_status=HTTPStatus.OK,
+        content=hub_datasets[name]["config_names_response"],
+    )
     expected_parquet_and_info_response = hub_datasets[name]["parquet_and_info_response"]
     job_runner = get_job_runner(dataset, config, app_config, parquet_and_info_config, False)
     result = job_runner.compute().content
@@ -502,10 +536,10 @@ def test_compute_splits_response_simple_csv_ok(
 @pytest.mark.parametrize(
     "name,error_code,cause",
     [
-        ("empty", "ParameterMissingError", None),
         ("does_not_exist", "ParameterMissingError", None),
         ("gated_extra_fields", "GatedExtraFieldsError", "HTTPError"),
         ("private", "DatasetNotFoundError", None),
+        ("public", "DatasetNotFoundError", "DoesNotExist"),  # no cache for /config-names -> DatasetNotFoundError
     ],
 )
 def test_compute_splits_response_simple_csv_error(
@@ -533,6 +567,38 @@ def test_compute_splits_response_simple_csv_error(
         assert response_dict["cause_exception"] == cause
         assert isinstance(response_dict["cause_traceback"], list)
         assert response_dict["cause_traceback"][0] == "Traceback (most recent call last):\n"
+
+
+@pytest.mark.parametrize(
+    "upstream_status,upstream_content,error_code",
+    [
+        (HTTPStatus.NOT_FOUND, {"error": "error"}, "PreviousStepStatusError"),
+        (HTTPStatus.OK, {"not_config_names": "wrong_format"}, "PreviousStepFormatError"),
+        (HTTPStatus.OK, {"config_names": "not a list"}, "PreviousStepFormatError"),
+    ],
+)
+def test_previous_step_error(
+    get_job_runner: GetJobRunner,
+    upstream_status: HTTPStatus,
+    upstream_content: Any,
+    error_code: str,
+    hub_public_csv: str,
+    hub_datasets: HubDatasets,
+    app_config: AppConfig,
+    parquet_and_info_config: ParquetAndInfoConfig,
+) -> None:
+    dataset = hub_datasets["public"]["name"]
+    config = hub_datasets["public"]["config_names_response"]["config_names"][0]["config"]
+    job_runner = get_job_runner(dataset, config, app_config, parquet_and_info_config, False)
+    upsert_response(
+        "/config-names",
+        dataset=dataset,
+        http_status=upstream_status,
+        content=upstream_content,
+    )
+    with pytest.raises(CustomError) as exc_info:
+        job_runner.compute()
+    assert exc_info.value.code == error_code
 
 
 @pytest.mark.parametrize(

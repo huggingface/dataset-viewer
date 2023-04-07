@@ -147,37 +147,3 @@ def dataset_script_with_two_configs_path(tmp_path_factory: pytest.TempPathFactor
     with open(path, "w", newline="") as f:
         f.write(DATASET_SCRIPT_WITH_TWO_CONFIGS)
     return path
-
-
-DATASET_SCRIPT_WITH_ONE_CONFIG = """
-import os
-
-import datasets
-from datasets import DatasetInfo, BuilderConfig, Features, Split, SplitGenerator, Value
-
-
-class DummyDataset(datasets.GeneratorBasedBuilder):
-
-    BUILDER_CONFIGS = [BuilderConfig(name="first")]
-
-    def _info(self) -> DatasetInfo:
-        return DatasetInfo(features=Features({"text": Value("string")}))
-
-    def _split_generators(self, dl_manager):
-        return [
-            SplitGenerator(Split.TRAIN, gen_kwargs={"text": self.config.name}),
-            SplitGenerator(Split.TEST, gen_kwargs={"text": self.config.name}),
-        ]
-
-    def _generate_examples(self, text, **kwargs):
-        for i in range(2000):
-            yield i, {"text": text}
-"""
-
-
-@pytest.fixture(scope="session")
-def dataset_script_with_one_config_path(tmp_path_factory: pytest.TempPathFactory) -> str:
-    path = str(tmp_path_factory.mktemp("data") / "{dataset_name}.py")
-    with open(path, "w", newline="") as f:
-        f.write(DATASET_SCRIPT_WITH_ONE_CONFIG)
-    return path
