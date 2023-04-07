@@ -41,7 +41,7 @@ def get_job_info(prefix: str = "base") -> JobInfo:
     assert len(job_id) <= 24, "please choose a smaller prefix"
     return JobInfo(
         job_id=job_id + "0" * (24 - len(job_id)),
-        type="/splits",
+        type="/config-names",
         dataset=f"__DUMMY_DATASETS_SERVER_USER__/{prefix}_dataset_{_TIME}",
         config="default",
         split="train",
