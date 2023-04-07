@@ -297,9 +297,13 @@ def get_valid_datasets(kind: str) -> Set[str]:
     return set(CachedResponse.objects(kind=kind, http_status=HTTPStatus.OK).distinct("dataset"))
 
 
-def get_validity_by_kind(dataset: str) -> Mapping[str, bool]:
+def get_validity_by_kind(dataset: str, kinds: Optional[List[str]] = None) -> Mapping[str, bool]:
     # TODO: rework with aggregate
-    entries = CachedResponse.objects(dataset=dataset).only("kind", "http_status")
+    entries = (
+        CachedResponse.objects(dataset=dataset)
+        if kinds is None
+        else CachedResponse.objects(dataset=dataset, kind__in=kinds)
+    ).only("kind", "http_status")
     return {
         str(kind): entries(kind=kind, http_status=HTTPStatus.OK).first() is not None
         for kind in sorted(entries.distinct("kind"))
