@@ -23,7 +23,7 @@ class MigrationCacheDeleteSplits(Migration):
         raise IrreversibleMigrationError("This migration does not support rollback")
 
     def validate(self) -> None:
-        logging.info("Check that none of the documents has the /splits kind")
+        logging.info(f"Check that none of the documents has the {cache_kind} kind")
 
         db = get_db(db_name)
         if db[db_name].count_documents({"kind": cache_kind}):
