@@ -41,6 +41,12 @@ from mongodb_migration.migrations._20230323155000_cache_dataset_info import (
 from mongodb_migration.migrations._20230323160000_queue_dataset_info import (
     MigrationQueueUpdateDatasetInfo,
 )
+from mongodb_migration.migrations._20230407091400_queue_delete_splits import (
+    MigrationQueueDeleteSplits,
+)
+from mongodb_migration.migrations._20230407091500_cache_delete_splits import (
+    MigrationCacheDeleteSplits,
+)
 
 
 # TODO: add a way to automatically collect migrations from the migrations/ folder
@@ -96,5 +102,13 @@ class MigrationsCollector:
             MigrationQueueUpdateDatasetInfo(
                 version="20230323160000",
                 description="update 'type' and 'unicity_id' fields in job from /dataset-info to dataset-info",
+            ),
+            MigrationQueueDeleteSplits(
+                version="20230407091400",
+                description="delete the jobs of type '/splits'",
+            ),
+            MigrationCacheDeleteSplits(
+                version="20230407091500",
+                description="delete the cache entries of kind '/splits'",
             ),
         ]
