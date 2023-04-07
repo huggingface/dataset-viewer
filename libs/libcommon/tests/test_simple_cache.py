@@ -316,12 +316,16 @@ def test_get_validity_by_kind_empty() -> None:
 
 def test_get_validity_by_kind_two_valid_datasets() -> None:
     kind = "test_kind"
+    other_kind = "other_kind"
     dataset_a = "test_dataset_a"
     dataset_b = "test_dataset_b"
     upsert_response(kind=kind, dataset=dataset_a, content={}, http_status=HTTPStatus.OK)
     upsert_response(kind=kind, dataset=dataset_b, content={}, http_status=HTTPStatus.OK)
     assert get_validity_by_kind(dataset=dataset_a) == {kind: True}
     assert get_validity_by_kind(dataset=dataset_b) == {kind: True}
+    assert get_validity_by_kind(dataset=dataset_b, kinds=[kind]) == {kind: True}
+    assert not get_validity_by_kind(dataset=dataset_b, kinds=[other_kind])
+    assert get_validity_by_kind(dataset=dataset_b, kinds=[kind, other_kind]) == {kind: True}
 
 
 def test_get_validity_by_kind_two_valid_kinds() -> None:

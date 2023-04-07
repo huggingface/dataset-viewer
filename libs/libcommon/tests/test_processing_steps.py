@@ -84,7 +84,7 @@ def graph() -> ProcessingGraph:
         ("dataset-split-names-from-streaming", [], ["/config-names", "/split-names-from-streaming"]),
         (
             "dataset-split-names",
-            [],
+            ["dataset-is-valid"],
             [
                 "/parquet-and-dataset-info",
                 "config-info",
@@ -93,10 +93,10 @@ def graph() -> ProcessingGraph:
                 "/split-names-from-streaming",
             ],
         ),
-        ("split-first-rows-from-parquet", [], ["config-parquet", "/parquet-and-dataset-info"]),
+        ("split-first-rows-from-parquet", ["dataset-is-valid"], ["config-parquet", "/parquet-and-dataset-info"]),
         (
             "split-first-rows-from-streaming",
-            [],
+            ["dataset-is-valid"],
             [
                 "/config-names",
                 "/split-names-from-streaming",
@@ -112,6 +112,21 @@ def graph() -> ProcessingGraph:
         ("dataset-info", [], ["/parquet-and-dataset-info", "config-info"]),
         ("config-size", ["dataset-size"], ["/parquet-and-dataset-info"]),
         ("dataset-size", [], ["/parquet-and-dataset-info", "config-size"]),
+        (
+            "dataset-is-valid",
+            [],
+            [
+                "/config-names",
+                "/parquet-and-dataset-info",
+                "dataset-split-names",
+                "config-info",
+                "config-parquet",
+                "/split-names-from-dataset-info",
+                "/split-names-from-streaming",
+                "split-first-rows-from-parquet",
+                "split-first-rows-from-streaming",
+            ],
+        ),
     ],
 )
 def test_default_graph_steps(
