@@ -32,7 +32,7 @@ def compute_is_valid_response(dataset: str) -> Tuple[DatasetIsValidResponse, flo
     Get the response of /is-valid for one specific dataset on huggingface.co.
 
     A dataset is valid if:
-    - /splits is valid
+    - /splits is valid for at least one of the configs
     - /first-rows is valid for at least one of the splits
 
     Args:
