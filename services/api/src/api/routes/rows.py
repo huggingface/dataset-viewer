@@ -478,7 +478,8 @@ def create_rows_endpoint(
                 with StepProfiler(method="rows_endpoint", step="query the rows"):
                     pa_table = rows_index.query(offset=offset, length=length)
                 with StepProfiler(method="rows_endpoint", step="clean cache"):
-                    if random.random() < clean_cache_proba:  # no need to do it every time
+                    # no need to do it every time
+                    if random.random() < clean_cache_proba:  # nosec
                         if keep_rows_below_index < 0 and keep_n_most_recent_rows < 0 and max_clean_sample_size < 0:
                             logger.debug(
                                 "Params keep_rows_below_index, keep_n_most_recent_rows and max_clean_sample_size are"
