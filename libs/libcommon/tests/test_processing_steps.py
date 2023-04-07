@@ -93,7 +93,11 @@ def graph() -> ProcessingGraph:
                 "/split-names-from-streaming",
             ],
         ),
-        ("split-first-rows-from-parquet", ["dataset-is-valid"], ["config-parquet", "/config-names", "config-parquet-and-info"]),
+        (
+            "split-first-rows-from-parquet",
+            ["dataset-is-valid"],
+            ["config-parquet", "/config-names", "config-parquet-and-info"],
+        ),
         (
             "split-first-rows-from-streaming",
             ["dataset-is-valid"],
@@ -121,19 +125,19 @@ def graph() -> ProcessingGraph:
         ("config-size", ["dataset-size"], ["/config-names", "config-parquet-and-info"]),
         ("dataset-size", [], ["/config-names", "config-parquet-and-info", "config-size"]),
         (
-                "dataset-is-valid",
-                [],
-                [
-                    "/config-names",
-                    "/parquet-and-dataset-info",
-                    "dataset-split-names",
-                    "config-info",
-                    "config-parquet",
-                    "/split-names-from-dataset-info",
-                    "/split-names-from-streaming",
-                    "split-first-rows-from-parquet",
-                    "split-first-rows-from-streaming",
-                ],
+            "dataset-is-valid",
+            [],
+            [
+                "/config-names",
+                "config-parquet-and-info",
+                "dataset-split-names",
+                "config-info",
+                "config-parquet",
+                "/split-names-from-dataset-info",
+                "/split-names-from-streaming",
+                "split-first-rows-from-parquet",
+                "split-first-rows-from-streaming",
+            ],
         ),
     ],
 )
@@ -150,7 +154,7 @@ def test_default_graph_steps(
 def test_default_graph_first_steps(graph: ProcessingGraph) -> None:
     assert_lists_are_equal(
         graph.get_first_steps(),
-        [graph.get_step(step_name) for step_name in {"/config-names", "/parquet-and-dataset-info"}],
+        [graph.get_step(step_name) for step_name in {"/config-names"}],
     )
 
 
