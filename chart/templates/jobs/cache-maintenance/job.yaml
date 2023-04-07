@@ -11,7 +11,7 @@ metadata:
   annotations:
     "helm.sh/hook": post-install,post-upgrade
 spec:
-  ttlSecondsAfterFinished: 86400
+  ttlSecondsAfterFinished: 300
   template:
     metadata:
       labels: {{ include "labels.cacheMaintenance" . | nindent 8 }}
