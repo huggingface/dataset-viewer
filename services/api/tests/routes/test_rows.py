@@ -282,7 +282,7 @@ def test_clean_cached_assets(
     split_dir.mkdir(parents=True)
     for i in range(n_rows):
         (split_dir / str(i)).mkdir()
-        time.sleep(0.002)
+        time.sleep(0.01)
 
     def deterministic_glob_rows_in_assets_dir(
         dataset: str,
@@ -312,7 +312,7 @@ def test_update_last_modified_date_of_rows_in_assets_dir(tmp_path: Path) -> None
     n_rows = 8
     for i in range(n_rows):
         (split_dir / str(i)).mkdir()
-        time.sleep(0.002)
+        time.sleep(0.01)
     update_last_modified_date_of_rows_in_assets_dir(
         dataset="ds",
         config="plain_text",
