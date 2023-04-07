@@ -7,7 +7,7 @@ license = "Apache-2.0"
 
 [tool.poetry.dependencies]
 appdirs = "^1.4.4"
-datasets = { extras = ["audio", "vision"], version = "~2.10.0" }
+datasets = { extras = ["audio", "vision"], version = "^2.11.0" }
 environs = "^9.5.0"
 huggingface-hub = "^0.12.0"
 mongo-types = "0.15.1"
@@ -30,7 +30,7 @@ flake8 = "^3.9.2"
 isort = "^5.12.0"
 mypy = "^1.0.0"
 pandas-stubs = "^1.5.3"
-pip-audit = "^2.4.14"
+pip-audit = "^2.5.4"
 pytest = "^7.2.1"
 pytest-cov = "^2.12.1"
 types-psutil = "^5.9.5"
