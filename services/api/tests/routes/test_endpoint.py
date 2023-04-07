@@ -36,7 +36,7 @@ def test_endpoints_definition() -> None:
     assert sorted(list(splits)) == ["config", "dataset"]
     assert splits["dataset"] is not None
     assert splits["config"] is not None
-    assert len(splits["dataset"]) == 4  # Has four processing steps
+    assert len(splits["dataset"]) == 3  # Has four processing steps
     assert len(splits["config"]) == 2  # Has two processing steps
 
     first_rows = definition["/first-rows"]
@@ -140,8 +140,8 @@ def test_get_cache_entry_from_steps() -> None:
 
     # pending job throws exception
     queue = Queue()
-    queue.upsert_job(job_type="/splits", dataset=dataset, config=config, force=True)
-    non_existent_step = graph.get_step("/splits")
+    queue.upsert_job(job_type="dataset-split-names", dataset=dataset, config=config, force=True)
+    non_existent_step = graph.get_step("dataset-split-names")
     with raises(ResponseNotReadyError):
         get_cache_entry_from_steps(
             [non_existent_step], dataset, config, None, init_processing_steps, app_config.common.hf_endpoint

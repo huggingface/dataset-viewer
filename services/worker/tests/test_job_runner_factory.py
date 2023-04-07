@@ -22,7 +22,6 @@ def processing_graph(app_config: AppConfig) -> ProcessingGraph:
     "job_type,expected_job_runner",
     [
         ("/config-names", "ConfigNamesJobRunner"),
-        ("/splits", "SplitsJobRunner"),
         ("split-first-rows-from-streaming", "SplitFirstRowsFromStreamingJobRunner"),
         ("/parquet-and-dataset-info", "ParquetAndDatasetInfoJobRunner"),
         ("config-parquet-and-info", "ConfigParquetAndInfoJobRunner"),

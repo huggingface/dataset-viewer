@@ -39,7 +39,6 @@ from worker.job_runners.split.first_rows_from_parquet import (
 from worker.job_runners.split.first_rows_from_streaming import (
     SplitFirstRowsFromStreamingJobRunner,
 )
-from worker.job_runners.splits import SplitsJobRunner
 
 
 class BaseJobRunnerFactory(ABC):
@@ -84,13 +83,6 @@ class JobRunnerFactory(BaseJobRunnerFactory):
             )
         if job_type == SplitNamesFromStreamingJobRunner.get_job_type():
             return SplitNamesFromStreamingJobRunner(
-                job_info=job_info,
-                app_config=self.app_config,
-                processing_step=processing_step,
-                hf_datasets_cache=self.hf_datasets_cache,
-            )
-        if job_type == SplitsJobRunner.get_job_type():
-            return SplitsJobRunner(
                 job_info=job_info,
                 app_config=self.app_config,
                 processing_step=processing_step,
@@ -205,7 +197,6 @@ class JobRunnerFactory(BaseJobRunnerFactory):
         supported_job_types = [
             ConfigNamesJobRunner.get_job_type(),
             SplitNamesFromStreamingJobRunner.get_job_type(),
-            SplitsJobRunner.get_job_type(),
             SplitFirstRowsFromStreamingJobRunner.get_job_type(),
             ParquetAndDatasetInfoJobRunner.get_job_type(),
             ConfigParquetAndInfoJobRunner.get_job_type(),

@@ -117,7 +117,6 @@ class EndpointConfig:
             "/config-names": {"dataset": ["/config-names"]},
             "/splits": {
                 "dataset": [
-                    "/splits",
                     "dataset-split-names",
                     "dataset-split-names-from-streaming",
                     "dataset-split-names-from-dataset-info",

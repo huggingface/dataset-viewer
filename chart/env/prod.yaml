@@ -109,12 +109,14 @@ mongodbMigration:
 # --- jobs (post-upgrade hooks) ---
 
 cacheMaintenance:
-  action: "backfill"
+  action: "skip"
   resources:
     requests:
-      cpu: 100m
-    limits:
       cpu: 1
+      memory: "2Gi"
+    limits:
+      cpu: 2
+      memory: "8Gi"
 
 # --- storage admin (to manually inspect the storage, in /data) ---
 
@@ -219,7 +221,7 @@ workers:
     workerOnlyJobTypes: ""
     nodeSelector:
       role-datasets-server-worker: "true"
-    replicas: 40
+    replicas: 80
     resources:
       requests:
         cpu: 1
@@ -234,7 +236,7 @@ workers:
     workerOnlyJobTypes: "/config-names,config-parquet,dataset-parquet,config-info,dataset-info,/split-names-from-dataset-info,config-size,dataset-size,dataset-split-names-from-streaming,dataset-split-names-from-dataset-info"
     nodeSelector:
       role-datasets-server-worker: "true"
-    replicas: 2
+    replicas: 4
     resources:
       requests:
         cpu: 200m

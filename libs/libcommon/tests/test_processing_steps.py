@@ -66,7 +66,6 @@ def graph() -> ProcessingGraph:
     "step_name,children,ancestors",
     [
         ("/config-names", ["/split-names-from-streaming", "config-parquet-and-info"], []),
-        ("/splits", [], []),
         (
             "/split-names-from-dataset-info",
             ["dataset-split-names-from-dataset-info", "split-first-rows-from-streaming", "dataset-split-names"],
@@ -136,12 +135,12 @@ def test_default_graph_steps(
 def test_default_graph_first_steps(graph: ProcessingGraph) -> None:
     assert_lists_are_equal(
         graph.get_first_steps(),
-        [graph.get_step(step_name) for step_name in {"/config-names", "/splits", "/parquet-and-dataset-info"}],
+        [graph.get_step(step_name) for step_name in {"/config-names", "/parquet-and-dataset-info"}],
     )
 
 
 def test_default_graph_required_by_dataset_viewer(graph: ProcessingGraph) -> None:
     assert_lists_are_equal(
         graph.get_steps_required_by_dataset_viewer(),
-        [graph.get_step(step_name) for step_name in {"/splits", "split-first-rows-from-streaming"}],
+        [graph.get_step(step_name) for step_name in {"split-first-rows-from-streaming"}],
     )

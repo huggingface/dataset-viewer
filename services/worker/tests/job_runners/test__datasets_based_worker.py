@@ -25,7 +25,7 @@ from ..fixtures.hub import HubDatasets, get_default_config_split
 class DummyJobRunner(DatasetsBasedJobRunner):
     @staticmethod
     def get_job_type() -> str:
-        return "/splits"
+        return "/config-names"
         # ^ borrowing the type, so that the processing step exists and the job runner can be initialized
         # refactoring libcommon.processing_graph might help avoiding this
 
@@ -85,20 +85,20 @@ def get_job_runner(
 @pytest.mark.parametrize(
     "dataset,config,split,force,expected",
     [
-        ("user/dataset", "config", "split", True, "2022-11-07-12-34-56--splits-user-dataset-775e7212"),
+        ("user/dataset", "config", "split", True, "2022-11-07-12-34-56--config-names-user-dataset-cdf8effa"),
         # Every parameter variation changes the hash, hence the subdirectory
-        ("user/dataset", None, "split", True, "2022-11-07-12-34-56--splits-user-dataset-73c4b810"),
-        ("user/dataset", "config2", "split", True, "2022-11-07-12-34-56--splits-user-dataset-b6920bfb"),
-        ("user/dataset", "config", None, True, "2022-11-07-12-34-56--splits-user-dataset-36d21623"),
-        ("user/dataset", "config", "split2", True, "2022-11-07-12-34-56--splits-user-dataset-f60adde1"),
-        ("user/dataset", "config", "split", False, "2022-11-07-12-34-56--splits-user-dataset-f7985698"),
+        ("user/dataset", None, "split", True, "2022-11-07-12-34-56--config-names-user-dataset-54ba8b96"),
+        ("user/dataset", "config2", "split", True, "2022-11-07-12-34-56--config-names-user-dataset-1ad0bdcb"),
+        ("user/dataset", "config", None, True, "2022-11-07-12-34-56--config-names-user-dataset-49c90a57"),
+        ("user/dataset", "config", "split2", True, "2022-11-07-12-34-56--config-names-user-dataset-9a5cd356"),
+        ("user/dataset", "config", "split", False, "2022-11-07-12-34-56--config-names-user-dataset-abec311a"),
         # The subdirectory length is truncated, and it always finishes with the hash
         (
             "very_long_dataset_name_0123456789012345678901234567890123456789012345678901234567890123456789",
             "config",
             "split",
             True,
-            "2022-11-07-12-34-56--splits-very_long_dataset_name_0123456789012-1457d125",
+            "2022-11-07-12-34-56--config-names-very_long_dataset_name_0123456-30acf104",
         ),
     ],
 )
@@ -133,7 +133,7 @@ def test_set_and_unset_cache(app_config: AppConfig, get_job_runner: GetJobRunner
     datasets_base_path = job_runner.base_datasets_cache
     job_runner.set_cache()
     assert str(datasets.config.HF_DATASETS_CACHE).startswith(str(datasets_base_path))
-    assert "-splits-user-dataset" in str(datasets.config.HF_DATASETS_CACHE)
+    assert "-config-names-user-dataset" in str(datasets.config.HF_DATASETS_CACHE)
     job_runner.unset_cache()
     assert_datasets_cache_path(path=datasets_base_path, exists=True)
 

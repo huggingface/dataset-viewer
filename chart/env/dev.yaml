@@ -103,7 +103,7 @@ mongodbMigration:
 # --- jobs (post-upgrade hooks) ---
 
 cacheMaintenance:
-  action: "backfill"
+  action: "skip"
   resources:
     requests:
       cpu: 100m
