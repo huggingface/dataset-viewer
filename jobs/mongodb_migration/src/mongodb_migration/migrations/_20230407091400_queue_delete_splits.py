@@ -20,7 +20,7 @@ class MigrationQueueDeleteSplits(Migration):
         raise IrreversibleMigrationError("This migration does not support rollback")
 
     def validate(self) -> None:
-        logging.info("Check that none of the documents has the /splits type")
+        logging.info(f"Check that none of the documents has the {job_type} type")
 
         db = get_db(db_name)
         if db[db_name].count_documents({"type": job_type}):
