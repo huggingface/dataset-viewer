@@ -123,6 +123,25 @@ class FirstRowsConfig:
             )
 
 
+URLS_SCAN_ROWS_MAX_NUMBER = 100_000
+URLS_SCAN_COLUMNS_MAX_NULBER = 10
+
+
+@dataclass(frozen=True)
+class UrlsScanConfig:
+    rows_max_number: int = URLS_SCAN_ROWS_MAX_NUMBER
+    columns_max_number: int = FIRST_ROWS_COLUMNS_MAX_NUMBER
+
+    @classmethod
+    def from_env(cls) -> "UrlsScanConfig":
+        env = Env(expand_vars=True)
+        with env.prefixed("URLS_SCAN_"):
+            return cls(
+                rows_max_number=env.int(name="ROWS_MAX_NUMBER", default=URLS_SCAN_ROWS_MAX_NUMBER),
+                columns_max_number=env.int(name="COLUMNS_MAX_NUMBER", default=URLS_SCAN_COLUMNS_MAX_NULBER),
+            )
+
+
 PARQUET_AND_INFO_COMMIT_MESSAGE = "Update parquet files"
 PARQUET_AND_INFO_COMMITTER_HF_TOKEN = None
 PARQUET_AND_INFO_MAX_DATASET_SIZE = 100_000_000
