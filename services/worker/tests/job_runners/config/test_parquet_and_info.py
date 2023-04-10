@@ -2,6 +2,7 @@
 # Copyright 2022 The HuggingFace Authors.
 
 import io
+from fnmatch import fnmatch
 from http import HTTPStatus
 from typing import Any, Callable, Iterator, List, Optional
 
@@ -174,6 +175,14 @@ def test_compute_legacy_configs(
     dataset_info = hf_api.dataset_info(
         repo_id=hub_public_legacy_configs, revision=parquet_and_info_config.target_revision, files_metadata=False
     )
+    repo_files = {f.rfilename for f in dataset_info.siblings}
+    # assert that there are only parquet files for dataset's configs and ".gitattributes" in a repo
+    # (no files from 'main')
+    assert ".gitattributes" in repo_files
+    assert all(
+        fnmatch(file, "first/*.parquet") or fnmatch(file, "second/*.parquet")
+        for file in repo_files.difference({".gitattributes"})
+    )
     orig_repo_configs = {f.rfilename.split("/")[0] for f in dataset_info.siblings if f.rfilename.endswith(".parquet")}
     # assert that both configs are pushed (push of second config didn't delete first config's files)
     assert len(orig_repo_configs) == 2
@@ -194,10 +203,14 @@ def test_compute_legacy_configs(
     dataset_info = hf_api.dataset_info(
         repo_id=hub_public_legacy_configs, revision=parquet_and_info_config.target_revision, files_metadata=False
     )
+    updated_repo_files = {f.rfilename for f in dataset_info.siblings}
+    # assert that legacy config is removed from the repo
+    # and there are only files for config that was just pushed and .gitattributes
+    assert ".gitattributes" in updated_repo_files
+    assert all(fnmatch(file, "first/*") for file in updated_repo_files.difference({".gitattributes"}))
     updated_repo_configs = {
         f.rfilename.split("/")[0] for f in dataset_info.siblings if f.rfilename.endswith(".parquet")
     }
-    # assert that legacy config is removed from the repo
     assert len(updated_repo_configs) == 1
     assert updated_repo_configs == {"first"}
 

@@ -855,7 +855,7 @@ def compute_config_parquet_and_info_response(
     # - get files that will be preserved in repo: files belonging to other configs and .gitattributes
     files_to_ignore: Set[str] = {
         file for config in config_names for file in repo_parquet_files if file.startswith(f"{config}/")
-    }.union(".gitattributes")
+    }.union({".gitattributes"})
     # - get files to be deleted - all files except for:
     #   - parquet files obtained for current config at this processing step,
     #   - parquet files belonging to other existing configs
