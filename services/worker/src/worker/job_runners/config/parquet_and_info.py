@@ -856,8 +856,10 @@ def compute_config_parquet_and_info_response(
     files_to_ignore: Set[str] = {
         file for config in config_names for file in repo_parquet_files if file.startswith(f"{config}/")
     }.union(".gitattributes")
-    # - get files to be deleted: all files except for parquet files obtained for current config at this processing step,
-    # parquet files belonging to other existing configs and .gitignore
+    # - get files to be deleted - all files except for:
+    #   - parquet files obtained for current config at this processing step,
+    #   - parquet files belonging to other existing configs
+    #   - .gitattributes
     files_to_delete = all_repo_files - set(config_files_to_add).union(files_to_ignore)
     delete_operations: List[CommitOperation] = [CommitOperationDelete(path_in_repo=file) for file in files_to_delete]
     logging.debug(f"{delete_operations=}")
