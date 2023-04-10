@@ -71,6 +71,14 @@ with gr.Blocks() as demo:
                 gr.Markdown("*you can select multiple values by separating them with commas, e.g. split='train, test'*")
                 refresh_dataset_button = gr.Button("Force resfresh dataset")
                 refresh_dataset_output = gr.Markdown("")
+            with gr.Tab("Dataset status"):
+                dataset_name = gr.Textbox(label="dataset", placeholder="c4")
+                dataset_status_button = gr.Button("Get dataset status")
+                gr.Markdown("### Cached responses")
+                cached_responses_table = gr.DataFrame()
+                gr.Markdown("### Pending jobs")
+                jobs_table = gr.DataFrame()
+
 
     def auth(token):
         if not token:
@@ -121,7 +129,52 @@ with gr.Blocks() as demo:
                 pending_jobs_summary_table: gr.update(visible=True, value=pd.DataFrame({"Error": [f"❌ Failed to view pending jobs to {DSS_ENDPOINT} (error {response.status_code})"]})),
                 recent_pending_jobs_table: gr.update(value=None)
             }
-    
+        
+
+    def get_dataset_status(token, dataset):
+        headers = {"Authorization": f"Bearer {token}"}
+        response = requests.get(f"{DSS_ENDPOINT}/admin/dataset-status?dataset={dataset}", headers=headers, timeout=60)
+        if response.status_code == 200:
+            dataset_status = response.json()
+            cached_responses_df = pd.DataFrame([{
+                    "type": job_type,
+                    "http_status": cached_response["http_status"],
+                    "error_code": cached_response["error_code"],
+                    "job_runner_version": cached_response["job_runner_version"],
+                    "dataset_git_revision": cached_response["dataset_git_revision"],
+                    "progress": cached_response["progress"]
+                }
+                for job_type, content in dataset_status.items()
+                for cached_response in content["cached_responses"]
+            ])
+            jobs_df = pd.DataFrame([{
+                    "type": job_type,
+                    "dataset": job["dataset"],
+                    "config": job["config"],
+                    "split": job["split"],
+                    "namespace": job["namespace"],
+                    "force": job["force"],
+                    "priority": job["priority"],
+                    "status": job["status"],
+                    "created_at": job["created_at"],
+                    "started_at": job["started_at"],
+                    "finished_at": job["finished_at"],
+                    "last_heartbeat": job["last_heartbeat"]
+                }
+                for job_type, content in dataset_status.items()
+                for job in content["jobs"]
+            ])
+            return {
+                cached_responses_table: gr.update(value=cached_responses_df),
+                jobs_table: gr.update(value=jobs_df)
+            }
+        else:
+            return {
+                cached_responses_table: gr.update(value=None),
+                jobs_table: gr.update(value=None)
+            }
+
+
     def query_jobs(pending_jobs_query):
         global pending_jobs_df
         try:
@@ -169,7 +222,7 @@ with gr.Blocks() as demo:
     query_pending_jobs_button.click(query_jobs, inputs=pending_jobs_query, outputs=[pending_jobs_query_result_df])
     
     refresh_dataset_button.click(refresh_dataset, inputs=[token_box, refresh_type, refresh_dataset_name, refresh_config_name, refresh_split_name], outputs=refresh_dataset_output)
-
+    dataset_status_button.click(get_dataset_status, inputs=[token_box, dataset_name], outputs=[cached_responses_table, jobs_table])
 
 if __name__ == "__main__":
     demo.launch()
