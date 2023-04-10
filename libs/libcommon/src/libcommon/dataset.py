@@ -286,7 +286,7 @@ def get_dataset_git_revision(
         - ['~requests.exceptions.HTTPError']: any other error when asking access
     </Tip>
     """
-    return get_dataset_info_for_supported_datasets(
+    return get_dataset_info_for_supported_datasets(  # type: ignore
         dataset=dataset, hf_endpoint=hf_endpoint, hf_token=hf_token, hf_timeout_seconds=hf_timeout_seconds
     ).sha
 

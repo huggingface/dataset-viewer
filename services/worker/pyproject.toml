@@ -89,6 +89,7 @@ strict = true
 module = [
     "datasets.*",
     "hffs.*",
+    "huggingface_hub.*",
     "pyarrow.*",
     "tqdm.*"
 ]
