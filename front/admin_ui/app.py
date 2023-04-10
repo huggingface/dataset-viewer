@@ -137,6 +137,9 @@ with gr.Blocks() as demo:
             dataset_status = response.json()
             cached_responses_df = pd.DataFrame([{
                     "type": job_type,
+                    "dataset": cached_response["dataset"],
+                    "config": cached_response["config"],
+                    "split": cached_response["split"],
                     "http_status": cached_response["http_status"],
                     "error_code": cached_response["error_code"],
                     "job_runner_version": cached_response["job_runner_version"],
