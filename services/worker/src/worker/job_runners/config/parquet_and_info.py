@@ -833,46 +833,39 @@ def compute_config_parquet_and_info_response(
         for local_file in glob.glob(f"{builder.cache_dir}**/*.parquet")
     )
 
-    # create the target revision if it does not exist yet
+    # create the target revision if it does not exist yet (clone from initial commit to avoid cloning all repo's files)
     try:
         refs = hf_api.list_repo_refs(repo_id=dataset, repo_type=DATASET_TYPE)
         if all(ref.ref != target_revision for ref in refs.converts):
+            initial_commit = hf_api.list_repo_commits(repo_id=dataset, repo_type=DATASET_TYPE)[-1].commit_id
             committer_hf_api.create_branch(
-                repo_id=dataset, branch=target_revision, repo_type=DATASET_TYPE, revision=source_revision
+                repo_id=dataset, branch=target_revision, repo_type=DATASET_TYPE, revision=initial_commit
             )
     except RepositoryNotFoundError as err:
         raise DatasetNotFoundError("The dataset does not exist on the Hub.") from err
 
     target_dataset_info = hf_api.dataset_info(repo_id=dataset, revision=target_revision, files_metadata=False)
-    # - check if there are files for configs that do not exist anymore and delete them
-    # - get configs that exist in repo
-    repo_parquet_files = {f.rfilename for f in target_dataset_info.siblings if f.rfilename.endswith(".parquet")}
-    repo_config_names = {f.split("/")[0] for f in repo_parquet_files}
-    delete_operations: List[CommitOperation] = []
-    legacy_configs = repo_config_names - config_names
-    # - delete configs that do not exist anymore
-    if legacy_configs:
-        legacy_configs_files_to_delete = {
-            file
-            for legacy_config in legacy_configs
-            for file in repo_parquet_files
-            if file.startswith(f"{legacy_config}/")
-        }
-        delete_operations.extend([CommitOperationDelete(path_in_repo=file) for file in legacy_configs_files_to_delete])
-        logging.debug(f"delete operations for legacy configs={delete_operations}")
-
-    # - delete existing files for current config
-    previous_config_repo_files = {filename for filename in repo_parquet_files if filename.startswith(f"{config}/")}
-    # - except for the files that we will update and .gitattributes if present.
-    config_files_to_add = {parquet_file.repo_file(): parquet_file.local_file for parquet_file in local_parquet_files}
-    config_files_to_delete = previous_config_repo_files - set(config_files_to_add).union({".gitattributes"})
-    delete_operations.extend([CommitOperationDelete(path_in_repo=file) for file in config_files_to_delete])
-    logging.debug(f"all delete operations={delete_operations}")
+    # - get repo parquet files
+    all_repo_files: Set[str] = {f.rfilename for f in target_dataset_info.siblings}
+    repo_parquet_files: Set[str] = {file for file in all_repo_files if file.endswith(".parquet")}
+    # - get parquet files for current config
+    config_files_to_add: Dict[str, str] = {
+        parquet_file.repo_file(): parquet_file.local_file for parquet_file in local_parquet_files
+    }
+    # - get files that will be preserved in repo: files belonging to other configs and .gitattributes
+    files_to_ignore: Set[str] = {
+        file for config in config_names for file in repo_parquet_files if file.startswith(f"{config}/")
+    }.union(".gitattributes")
+    # - get files to be deleted: all files except for parquet files obtained for current config at this processing step,
+    # parquet files belonging to other existing configs and .gitignore
+    files_to_delete = all_repo_files - set(config_files_to_add).union(files_to_ignore)
+    delete_operations: List[CommitOperation] = [CommitOperationDelete(path_in_repo=file) for file in files_to_delete]
+    logging.debug(f"{delete_operations=}")
 
     # send the files to the target revision
     add_operations: List[CommitOperation] = [
         CommitOperationAdd(path_in_repo=file, path_or_fileobj=local_file)
-        for (file, local_file) in config_files_to_add.items()
+        for file, local_file in config_files_to_add.items()
     ]
     logging.debug(f"{add_operations=}")
 
