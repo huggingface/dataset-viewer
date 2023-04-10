@@ -37,12 +37,6 @@ images:
       useGlobalRegistry: false
       repository: datasets-server-jobs-cache_maintenance
       tag: sha-fb3399a
-    # cacheRefresh:
-    #   registry: huggingface
-    #   useGlobalRegistry: false
-    #   repository: datasets-server-jobs-cache_refresh
-    #   tag: sha-fb3399a
-    # --- temporary disabling this job ---
   services:
     admin:
       registry: huggingface
@@ -191,17 +185,9 @@ mongodbMigration:
       cpu: 0
   tolerations: []
 
-cacheRefresh:
-  nodeSelector: {}
-  resources:
-    requests:
-      cpu: 0
-    limits:
-      cpu: 0
-  tolerations: []
-
 cacheMaintenance:
   action: "skip"
+  # ^ allowed values are {skip,backfill,upgrade}
   nodeSelector: {}
   resources:
     requests:
