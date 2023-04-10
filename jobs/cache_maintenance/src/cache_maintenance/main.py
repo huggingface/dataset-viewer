@@ -7,16 +7,17 @@ from datetime import datetime
 
 from libcommon.log import init_logging
 from libcommon.processing_graph import ProcessingGraph
-from libcommon.resources import QueueMongoResource
+from libcommon.resources import CacheMongoResource, QueueMongoResource
 
 from cache_maintenance.backfill import backfill_cache
 from cache_maintenance.config import JobConfig
+from cache_maintenance.upgrade import upgrade_cache
 
 
 def run_job() -> None:
     job_config = JobConfig.from_env()
     action = job_config.action
-    supported_actions = ["backfill"]
+    supported_actions = ["backfill", "upgrade"]
     #  In the future we will support other kind of actions
     if not action:
         logging.warning("No action mode was selected, skipping tasks.")
@@ -28,10 +29,18 @@ def run_job() -> None:
     init_logging(level=job_config.log.level)
 
     with (
+        CacheMongoResource(
+            database=job_config.cache.mongo_database, host=job_config.cache.mongo_url
+        ) as cache_resource,
         QueueMongoResource(
             database=job_config.queue.mongo_database, host=job_config.queue.mongo_url
         ) as queue_resource,
     ):
+        if not cache_resource.is_available():
+            logging.warning(
+                "The connection to the cache database could not be established. The cache refresh job is skipped."
+            )
+            return
         if not queue_resource.is_available():
             logging.warning(
                 "The connection to the queue database could not be established. The cache refresh job is skipped."
@@ -40,7 +49,7 @@ def run_job() -> None:
 
         processing_graph = ProcessingGraph(job_config.graph.specification)
         init_processing_steps = processing_graph.get_first_steps()
-
+        processing_steps = list(processing_graph.steps.values())
         start_time = datetime.now()
 
         if action == "backfill":
@@ -49,6 +58,8 @@ def run_job() -> None:
                 hf_endpoint=job_config.common.hf_endpoint,
                 hf_token=job_config.common.hf_token,
             )
+        if action == "upgrade":
+            upgrade_cache(processing_steps)
 
         end_time = datetime.now()
         logging.info(f"Duration: {end_time - start_time}")

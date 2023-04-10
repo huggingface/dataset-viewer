@@ -13,10 +13,6 @@
       "path": "../jobs/mongodb_migration"
     },
     {
-      "name": "jobs/cache_refresh",
-      "path": "../jobs/cache_refresh"
-    },
-    {
       "name": "jobs/cache_maintenance",
       "path": "../jobs/cache_maintenance"
     },
