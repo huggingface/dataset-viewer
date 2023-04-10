@@ -129,7 +129,6 @@ with gr.Blocks() as demo:
                 pending_jobs_summary_table: gr.update(visible=True, value=pd.DataFrame({"Error": [f"❌ Failed to view pending jobs to {DSS_ENDPOINT} (error {response.status_code})"]})),
                 recent_pending_jobs_table: gr.update(value=None)
             }
-        
 
     def get_dataset_status(token, dataset):
         headers = {"Authorization": f"Bearer {token}"}
@@ -173,7 +172,6 @@ with gr.Blocks() as demo:
                 cached_responses_table: gr.update(value=None),
                 jobs_table: gr.update(value=None)
             }
-
 
     def query_jobs(pending_jobs_query):
         global pending_jobs_df
@@ -223,6 +221,7 @@ with gr.Blocks() as demo:
     
     refresh_dataset_button.click(refresh_dataset, inputs=[token_box, refresh_type, refresh_dataset_name, refresh_config_name, refresh_split_name], outputs=refresh_dataset_output)
     dataset_status_button.click(get_dataset_status, inputs=[token_box, dataset_name], outputs=[cached_responses_table, jobs_table])
+
 
 if __name__ == "__main__":
     demo.launch()
