@@ -682,7 +682,7 @@ def compute_config_parquet_and_info_response(
     max_external_data_files: int,
 ) -> ConfigParquetAndInfoResponse:
     """
-    Get the response of /parquet-and-dataset-info for one specific dataset on huggingface.co.
+    Get the response of /parquet-and-dataset-info for one specific dataset and config on huggingface.co.
     It is assumed that the dataset can be accessed with the token.
     Args:
         dataset (`str`):
