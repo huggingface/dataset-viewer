@@ -262,7 +262,7 @@ def test_create_response_with_image(
 
 
 @pytest.mark.parametrize(
-    "n_rows,keep_n_most_recent_rows,keep_rows_below_index,max_clean_sample_size,expected_remaining_rows",
+    "n_rows,keep_most_recent_rows_number,keep_first_rows_number,max_cleaned_rows_number,expected_remaining_rows",
     [
         (8, 1, 1, 100, [0, 7]),
         (8, 2, 2, 100, [0, 1, 6, 7]),
@@ -272,9 +272,9 @@ def test_create_response_with_image(
 def test_clean_cached_assets(
     tmp_path: Path,
     n_rows: int,
-    keep_n_most_recent_rows: int,
-    keep_rows_below_index: int,
-    max_clean_sample_size: int,
+    keep_most_recent_rows_number: int,
+    keep_first_rows_number: int,
+    max_cleaned_rows_number: int,
     expected_remaining_rows: list[int],
 ) -> None:
     cached_assets_directory = tmp_path / "cached-assets"
@@ -297,9 +297,9 @@ def test_clean_cached_assets(
         clean_cached_assets(
             "ds",
             cached_assets_directory,
-            keep_n_most_recent_rows=keep_n_most_recent_rows,
-            keep_rows_below_index=keep_rows_below_index,
-            max_clean_sample_size=max_clean_sample_size,
+            keep_most_recent_rows_number=keep_most_recent_rows_number,
+            keep_first_rows_number=keep_first_rows_number,
+            max_cleaned_rows_number=max_cleaned_rows_number,
         )
     remaining_rows = sorted(int(row_dir.name) for row_dir in split_dir.glob("*"))
     assert remaining_rows == expected_remaining_rows

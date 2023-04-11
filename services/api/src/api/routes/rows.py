@@ -358,15 +358,15 @@ def _greater_or_equal(row_dir_name: str, row_idx: int, on_error: bool) -> bool:
 def clean_cached_assets(
     dataset: str,
     cached_assets_directory: StrPath,
-    keep_rows_below_index: int,
-    keep_n_most_recent_rows: int,
-    max_clean_sample_size: int,
+    keep_first_rows_number: int,
+    keep_most_recent_rows_number: int,
+    max_cleaned_rows_number: int,
 ) -> None:
-    if keep_rows_below_index < 0 or keep_n_most_recent_rows < 0 or max_clean_sample_size < 0:
+    if keep_first_rows_number < 0 or keep_most_recent_rows_number < 0 or max_cleaned_rows_number < 0:
         raise ValueError(
-            "Failed to run cached assets cleaning. Make sure all of keep_rows_below_index, keep_n_most_recent_rows"
-            f" and max_clean_sample_size  are set (got {keep_rows_below_index}, {keep_n_most_recent_rows} and"
-            f" {max_clean_sample_size})"
+            "Failed to run cached assets cleaning. Make sure all of keep_first_rows_number, keep_most_recent_rows_number"
+            f" and max_cleaned_rows_number  are set (got {keep_first_rows_number}, {keep_most_recent_rows_number} and"
+            f" {max_cleaned_rows_number})"
         )
     row_directories = glob_rows_in_assets_dir(dataset, cached_assets_directory)
     row_directories_sample = list(
@@ -374,14 +374,14 @@ def clean_cached_assets(
             (
                 row_dir
                 for row_dir in row_directories
-                if _greater_or_equal(row_dir.name, keep_rows_below_index, on_error=True)
+                if _greater_or_equal(row_dir.name, keep_first_rows_number, on_error=True)
             ),
-            max_clean_sample_size + keep_n_most_recent_rows,
+            max_cleaned_rows_number + keep_most_recent_rows_number,
         )
     )
-    if len(row_directories_sample) > keep_n_most_recent_rows:
+    if len(row_directories_sample) > keep_most_recent_rows_number:
         row_dirs_to_delete = sorted(row_directories_sample, key=os.path.getmtime, reverse=True)[
-            keep_n_most_recent_rows:
+            keep_most_recent_rows_number:
         ]
         for row_dir_to_delete in row_dirs_to_delete:
             shutil.rmtree(row_dir_to_delete, ignore_errors=True)
@@ -432,9 +432,9 @@ def create_rows_endpoint(
     max_age_long: int = 0,
     max_age_short: int = 0,
     clean_cache_proba: float = 0.0,
-    keep_rows_below_index: int = -1,
-    keep_n_most_recent_rows: int = -1,
-    max_clean_sample_size: int = -1,
+    keep_first_rows_number: int = -1,
+    keep_most_recent_rows_number: int = -1,
+    max_cleaned_rows_number: int = -1,
 ) -> Endpoint:
     indexer = Indexer(
         config_parquet_processing_steps=config_parquet_processing_steps,
@@ -480,18 +480,18 @@ def create_rows_endpoint(
                 with StepProfiler(method="rows_endpoint", step="clean cache"):
                     # no need to do it every time
                     if random.random() < clean_cache_proba:  # nosec
-                        if keep_rows_below_index < 0 and keep_n_most_recent_rows < 0 and max_clean_sample_size < 0:
+                        if keep_first_rows_number < 0 and keep_most_recent_rows_number < 0 and max_cleaned_rows_number < 0:
                             logger.debug(
-                                "Params keep_rows_below_index, keep_n_most_recent_rows and max_clean_sample_size are"
+                                "Params keep_first_rows_number, keep_most_recent_rows_number and max_cleaned_rows_number are"
                                 " not set. Skipping cached assets cleaning."
                             )
                         else:
                             clean_cached_assets(
                                 dataset=dataset,
                                 cached_assets_directory=cached_assets_directory,
-                                keep_rows_below_index=keep_rows_below_index,
-                                keep_n_most_recent_rows=keep_n_most_recent_rows,
-                                max_clean_sample_size=max_clean_sample_size,
+                                keep_first_rows_number=keep_first_rows_number,
+                                keep_most_recent_rows_number=keep_most_recent_rows_number,
+                                max_cleaned_rows_number=max_cleaned_rows_number,
                             )
                 with StepProfiler(method="rows_endpoint", step="transform to a list"):
                     response = create_response(

@@ -50,9 +50,9 @@ class AssetsConfig:
 CACHED_ASSETS_BASE_URL = "cached-assets"
 CACHED_ASSETS_STORAGE_DIRECTORY = None
 CACHED_ASSETS_CLEAN_CACHE_PROBA = 0.05
-CACHED_ASSETS_KEEP_ROWS_BELOW_INDEX = 100
-CACHED_ASSETS_KEEP_N_MOST_RECENT_ROWS = 200
-CACHED_ASSETS_MAX_CLEAN_SAMPLE_SIZE = 10_000
+CACHED_ASSETS_KEEP_FIRST_ROWS_NUMBER = 100
+CACHED_ASSETS_KEEP_MOST_RECENT_ROWS_NUMBER = 200
+CACHED_ASSETS_MAX_CLEANED_ROWS_NUMBER= 10_000
 
 
 @dataclass(frozen=True)
@@ -60,9 +60,9 @@ class CachedAssetsConfig:
     base_url: str = ASSETS_BASE_URL
     storage_directory: Optional[str] = ASSETS_STORAGE_DIRECTORY
     clean_cache_proba: float = CACHED_ASSETS_CLEAN_CACHE_PROBA
-    keep_rows_below_index: int = CACHED_ASSETS_KEEP_ROWS_BELOW_INDEX
-    keep_n_most_recent_rows: int = CACHED_ASSETS_KEEP_N_MOST_RECENT_ROWS
-    max_clean_sample_size: int = CACHED_ASSETS_MAX_CLEAN_SAMPLE_SIZE
+    keep_first_rows_number: int = CACHED_ASSETS_KEEP_FIRST_ROWS_NUMBER
+    keep_most_recent_rows_number: int = CACHED_ASSETS_KEEP_MOST_RECENT_ROWS_NUMBER
+    max_cleaned_rows_number: int = CACHED_ASSETS_MAX_CLEANED_ROWS_NUMBER
 
     @classmethod
     def from_env(cls) -> "CachedAssetsConfig":
@@ -72,14 +72,14 @@ class CachedAssetsConfig:
                 base_url=env.str(name="BASE_URL", default=CACHED_ASSETS_BASE_URL),
                 storage_directory=env.str(name="STORAGE_DIRECTORY", default=CACHED_ASSETS_STORAGE_DIRECTORY),
                 clean_cache_proba=env.float(name="CLEAN_CACHE_PROBA", default=CACHED_ASSETS_CLEAN_CACHE_PROBA),
-                keep_rows_below_index=env.float(
-                    name="KEEP_ROWS_BELOW_INDEX", default=CACHED_ASSETS_KEEP_ROWS_BELOW_INDEX
+                keep_first_rows_number=env.float(
+                    name="KEEP_FIRST_ROWS_NUMBER", default=CACHED_ASSETS_KEEP_FIRST_ROWS_NUMBER
                 ),
-                keep_n_most_recent_rows=env.float(
-                    name="KEEP_N_MOST_RECENT_ROWS", default=CACHED_ASSETS_KEEP_N_MOST_RECENT_ROWS
+                keep_most_recent_rows_number=env.float(
+                    name="KEEP_MOST_RECENT_ROWS_NUMBER", default=CACHED_ASSETS_KEEP_MOST_RECENT_ROWS_NUMBER
                 ),
-                max_clean_sample_size=env.float(
-                    name="MAX_CLEAN_SAMPLE_SIZE", default=CACHED_ASSETS_MAX_CLEAN_SAMPLE_SIZE
+                max_cleaned_rows_number=env.float(
+                    name="MAX_CLEAN_SAMPLE_SIZE", default=CACHED_ASSETS_MAX_CLEANED_ROWS_NUMBER
                 ),
             )
 
