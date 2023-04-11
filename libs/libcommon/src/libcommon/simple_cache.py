@@ -187,22 +187,6 @@ def get_response_without_content(
     }
 
 
-def get_dataset_responses_without_content_for_kind(kind: str, dataset: str) -> List[CacheEntryWithoutContent]:
-    responses = CachedResponse.objects(kind=kind, dataset=dataset).only(
-        "http_status", "error_code", "job_runner_version", "dataset_git_revision", "progress"
-    )
-    return [
-        {
-            "http_status": response.http_status,
-            "error_code": response.error_code,
-            "job_runner_version": response.job_runner_version,
-            "dataset_git_revision": response.dataset_git_revision,
-            "progress": response.progress,
-        }
-        for response in responses
-    ]
-
-
 class CacheEntry(CacheEntryWithoutContent):
     content: Mapping[str, Any]
 
@@ -351,6 +335,7 @@ class CacheReport(TypedDict):
     error_code: Optional[str]
     job_runner_version: Optional[int]
     dataset_git_revision: Optional[str]
+    progress: Optional[float]
 
 
 class CacheReportsPage(TypedDict):
@@ -413,6 +398,7 @@ def get_cache_reports(kind: str, cursor: Optional[str], limit: int) -> CacheRepo
             "error_code",
             "job_runner_version",
             "dataset_git_revision",
+            "progress",
         )
         .limit(limit)
     )
@@ -427,6 +413,7 @@ def get_cache_reports(kind: str, cursor: Optional[str], limit: int) -> CacheRepo
                 "error_code": object.error_code,
                 "job_runner_version": object.job_runner_version,
                 "dataset_git_revision": object.dataset_git_revision,
+                "progress": object.progress,
             }
             for object in objects
         ],
@@ -440,6 +427,34 @@ def get_outdated_split_full_names_for_step(kind: str, current_version: int) -> L
     )
     return [
         SplitFullName(dataset=response.dataset, config=response.config, split=response.split) for response in responses
+    ]
+
+
+def get_dataset_responses_without_content_for_kind(kind: str, dataset: str) -> List[CacheReport]:
+    responses = CachedResponse.objects(kind=kind, dataset=dataset).only(
+        "kind",
+        "dataset",
+        "config",
+        "split",
+        "http_status",
+        "error_code",
+        "job_runner_version",
+        "dataset_git_revision",
+        "progress",
+    )
+    return [
+        {
+            "kind": response.kind,
+            "dataset": response.dataset,
+            "config": response.config,
+            "split": response.split,
+            "http_status": response.http_status,
+            "error_code": response.error_code,
+            "job_runner_version": response.job_runner_version,
+            "dataset_git_revision": response.dataset_git_revision,
+            "progress": response.progress,
+        }
+        for response in responses
     ]
 
 
@@ -504,6 +519,7 @@ def get_cache_reports_with_content(kind: str, cursor: Optional[str], limit: int)
             "dataset_git_revision",
             "details",
             "updated_at",
+            "progress",
         )
         .limit(limit)
     )
@@ -521,6 +537,7 @@ def get_cache_reports_with_content(kind: str, cursor: Optional[str], limit: int)
                 "dataset_git_revision": object.dataset_git_revision,
                 "details": object.details,
                 "updated_at": object.updated_at,
+                "progress": object.progress,
             }
             for object in objects
         ],
