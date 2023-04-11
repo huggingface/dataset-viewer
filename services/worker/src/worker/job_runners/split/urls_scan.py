@@ -233,8 +233,8 @@ def compute_first_rows_response(
     first_rows = parquet_files[0].read_row_group(i=0, columns=string_columns).slice(0, 100).to_pydict()
     urls_columns = []
     for string_column in string_columns:
-        urls_count = sum(1 for string in first_rows[string_column] if string.startswith("https://"))
-        if urls_count / len(first_rows[string_column]) > 0.5:
+        urls_count = sum(1 for string in first_rows[string_column] if string.startswith("https://") or string.startswith("http://"))
+        if urls_count and urls_count / len(first_rows[string_column]) > .5:
             urls_columns.append(string_column)
 
     if not urls_columns:
