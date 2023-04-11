@@ -145,10 +145,6 @@ class ProcessingGraphConfig:
                 "requires": "/config-names",
                 "job_runner_version": PROCESSING_STEP_CONFIG_PARQUET_AND_INFO_VERSION,
             },
-            "/parquet-and-dataset-info": {
-                "input_type": "dataset",
-                "job_runner_version": PROCESSING_STEP_PARQUET_AND_DATASET_INFO_VERSION,
-            },
             "config-parquet": {
                 "input_type": "config",
                 "requires": "config-parquet-and-info",

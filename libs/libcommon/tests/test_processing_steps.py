@@ -110,7 +110,6 @@ def graph() -> ProcessingGraph:
                 "config-info",
             ],
         ),
-        ("/parquet-and-dataset-info", [], []),
         (
             "config-parquet",
             ["split-first-rows-from-parquet", "dataset-parquet"],
@@ -155,7 +154,7 @@ def test_default_graph_steps(
 def test_default_graph_first_steps(graph: ProcessingGraph) -> None:
     assert_lists_are_equal(
         graph.get_first_steps(),
-        [graph.get_step(step_name) for step_name in {"/config-names", "/parquet-and-dataset-info"}],
+        [graph.get_step(step_name) for step_name in {"/config-names"}],
     )
 
 
