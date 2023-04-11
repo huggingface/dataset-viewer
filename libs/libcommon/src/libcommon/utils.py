@@ -5,6 +5,7 @@ import base64
 from typing import Any
 
 import orjson
+from datetime import datetime, timezone
 
 
 # orjson is used to get rid of errors with datetime (see allenai/c4)
@@ -19,3 +20,7 @@ def orjson_default(obj: Any) -> Any:
 
 def orjson_dumps(content: Any) -> bytes:
     return orjson.dumps(content, option=orjson.OPT_UTC_Z, default=orjson_default)
+
+
+def get_datetime() -> datetime:
+    return datetime.now(timezone.utc)

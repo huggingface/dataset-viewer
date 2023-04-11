@@ -12,12 +12,13 @@ from libcommon.resources import CacheMongoResource, QueueMongoResource
 from cache_maintenance.backfill import backfill_cache
 from cache_maintenance.config import JobConfig
 from cache_maintenance.upgrade import upgrade_cache
+from cache_maintenance.metrics import collect_metrics
 
 
 def run_job() -> None:
     job_config = JobConfig.from_env()
     action = job_config.action
-    supported_actions = ["backfill", "upgrade"]
+    supported_actions = ["backfill", "upgrade", "collect-metrics"]
     #  In the future we will support other kind of actions
     if not action:
         logging.warning("No action mode was selected, skipping tasks.")
@@ -61,6 +62,8 @@ def run_job() -> None:
         if action == "upgrade":
             upgrade_cache(processing_steps)
 
+        if action == "collect-metrics":
+            collect_metrics(processing_steps)
         end_time = datetime.now()
         logging.info(f"Duration: {end_time - start_time}")
 

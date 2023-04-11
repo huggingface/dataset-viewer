@@ -105,6 +105,17 @@ cacheMaintenance:
     limits:
       cpu: 1
 
+# --- cron jobs  ---
+metricsCollector:
+  action: "collect-metrics"
+  nodeSelector: {}
+  resources:
+    requests:
+      cpu: 0
+    limits:
+      cpu: 0
+  tolerations: []
+
 # --- storage admin (to manually inspect the storage, in /data) ---
 
 storageAdmin:

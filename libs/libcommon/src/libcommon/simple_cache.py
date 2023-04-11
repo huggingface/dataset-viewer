@@ -4,7 +4,7 @@
 import contextlib
 import types
 from dataclasses import dataclass
-from datetime import datetime, timezone
+from datetime import datetime
 from http import HTTPStatus
 from typing import (
     Any,
@@ -34,6 +34,7 @@ from mongoengine.fields import (
 from mongoengine.queryset.queryset import QuerySet
 
 from libcommon.constants import CACHE_MONGOENGINE_ALIAS
+from libcommon.utils import get_datetime
 
 # START monkey patching ### hack ###
 # see https://github.com/sbdchd/mongo-types#install
@@ -53,10 +54,6 @@ class QuerySetManager(Generic[U]):
 
 
 # END monkey patching ### hack ###
-
-
-def get_datetime() -> datetime:
-    return datetime.now(timezone.utc)
 
 
 class SplitFullName(NamedTuple):

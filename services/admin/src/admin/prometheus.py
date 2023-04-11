@@ -6,6 +6,7 @@ from dataclasses import dataclass
 from typing import Any, List
 
 from libcommon.processing_graph import ProcessingStep
+from libcommon.metrics import CustomMetric
 from libcommon.queue import Queue
 from libcommon.simple_cache import get_responses_count_by_kind_status_and_error_code
 from libcommon.storage import StrPath
@@ -62,15 +63,19 @@ class Prometheus:
 
     def updateMetrics(self) -> None:
         # Queue metrics
-        queue = Queue()
-        for processing_step in self.processing_steps:
-            for status, total in queue.get_jobs_count_by_status(job_type=processing_step.job_type).items():
-                QUEUE_JOBS_TOTAL.labels(queue=processing_step.job_type, status=status).set(total)
+        queue_jobs_total = CustomMetric.objects(metric="queue_jobs_total")
+        for job_metric in queue_jobs_total:
+                content = job_metric["content"]
+                QUEUE_JOBS_TOTAL.labels(queue=content["queue"], status=content["status"]).set(content["count"])
+
         # Cache metrics
-        for metric in get_responses_count_by_kind_status_and_error_code():
-            RESPONSES_IN_CACHE_TOTAL.labels(
-                kind=metric["kind"], http_status=metric["http_status"], error_code=metric["error_code"]
-            ).set(metric["count"])
+        responses_in_cache_total = CustomMetric.objects(metric="responses_in_cache_total")
+        for cache_metric in responses_in_cache_total:
+                content = cache_metric["content"]
+                RESPONSES_IN_CACHE_TOTAL.labels(
+                    kind=content["kind"], http_status=content["http_status"], error_code=content["error_code"]
+                ).set(content["count"])
+            
         # Assets storage metrics
         total, used, free, percent = disk_usage(str(self.assets_directory))
         ASSETS_DISK_USAGE.labels(type="total").set(total)

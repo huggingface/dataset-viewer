@@ -201,7 +201,18 @@ mongodbMigration:
 
 cacheMaintenance:
   action: "skip"
-  # ^ allowed values are {skip,backfill,upgrade}
+  # ^ allowed values are {skip,backfill,upgrade,collect-metrics}
+  nodeSelector: {}
+  resources:
+    requests:
+      cpu: 0
+    limits:
+      cpu: 0
+  tolerations: []
+
+# --- cron jobs  ---
+metricsCollector:
+  action: "collect-metrics"
   nodeSelector: {}
   resources:
     requests:

@@ -6,7 +6,7 @@ import enum
 import logging
 import types
 from collections import Counter
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timedelta
 from itertools import groupby
 from operator import itemgetter
 from typing import Dict, Generic, List, Literal, Optional, Type, TypedDict, TypeVar
@@ -17,6 +17,7 @@ from mongoengine.fields import BooleanField, DateTimeField, EnumField, StringFie
 from mongoengine.queryset.queryset import QuerySet
 
 from libcommon.constants import QUEUE_MONGOENGINE_ALIAS, QUEUE_TTL_SECONDS
+from libcommon.utils import get_datetime
 
 # START monkey patching ### hack ###
 # see https://github.com/sbdchd/mongo-types#install
@@ -94,10 +95,6 @@ class DumpByPendingStatus(TypedDict):
 
 class EmptyQueueError(Exception):
     pass
-
-
-def get_datetime() -> datetime:
-    return datetime.now(timezone.utc)
 
 
 # States:
