@@ -197,7 +197,6 @@ class JobRunnerFactory(BaseJobRunnerFactory):
             ConfigNamesJobRunner.get_job_type(),
             SplitNamesFromStreamingJobRunner.get_job_type(),
             SplitFirstRowsFromStreamingJobRunner.get_job_type(),
-            ParquetAndDatasetInfoJobRunner.get_job_type(),
             ConfigParquetAndInfoJobRunner.get_job_type(),
             ConfigParquetJobRunner.get_job_type(),
             DatasetParquetJobRunner.get_job_type(),
