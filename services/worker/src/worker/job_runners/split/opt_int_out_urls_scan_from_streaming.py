@@ -2,39 +2,45 @@
 # Copyright 2022 The HuggingFace Authors.
 
 import asyncio
+import itertools
 import logging
 from functools import partial
 from http import HTTPStatus
 from pathlib import Path
-from typing import Any, List, Literal, Mapping, Optional, Tuple, TypedDict
+from typing import Any, List, Literal, Mapping, Optional, Tuple, TypedDict, Union
 
 import aiohttp
 import pyarrow as pa
 from aiolimiter import AsyncLimiter
-from datasets import Features, Value
-from fsspec import AbstractFileSystem  # type: ignore
-from hffs.fs import HfFileSystem
-from libcommon.constants import (
-    PARQUET_REVISION,
-    PROCESSING_STEP_SPLIT_OPT_IN_OUT_URLS_SCAN_VERSION,
+from datasets import (
+    Dataset,
+    DownloadConfig,
+    IterableDataset,
+    get_dataset_config_info,
+    load_dataset,
 )
+from libcommon.constants import PROCESSING_STEP_SPLIT_OPT_IN_OUT_URLS_SCAN_VERSION
 from libcommon.processing_graph import ProcessingStep
 from libcommon.queue import JobInfo
 from libcommon.simple_cache import DoesNotExist, SplitFullName, get_response
 from libcommon.storage import StrPath
-from pyarrow.parquet import ParquetFile
-from tqdm.contrib.concurrent import thread_map
 
 from worker.config import AppConfig, OptinOutUrlsScanConfig
 from worker.job_runner import CompleteJobResult, ConfigNotFoundError, JobRunnerError
 from worker.job_runners._datasets_based_job_runner import DatasetsBasedJobRunner
+from worker.job_runners.split.first_rows_from_streaming import (
+    Row,
+    SplitFirstRowsResponse,
+    retry,
+)
 
 OptinOutUrlsScanJobRunnerErrorCode = Literal[
+    "InfoError",
     "TooManyColumnsError",
     "PreviousStepStatusError",
     "PreviousStepFormatError",
-    "ParquetResponseEmptyError",
-    "FileSystemError",
+    "StreamingRowsError",
+    "NormalRowsError",
     "MissingSpawningTokenError",
 ]
 
@@ -53,6 +59,13 @@ class OptinOutUrlsScanJobRunnerError(JobRunnerError):
         super().__init__(
             message=message, status_code=status_code, code=code, cause=cause, disclose_cause=disclose_cause
         )
+
+
+class InfoError(OptinOutUrlsScanJobRunnerError):
+    """Raised when the info could not be fetched."""
+
+    def __init__(self, message: str, cause: Optional[BaseException] = None):
+        super().__init__(message, HTTPStatus.INTERNAL_SERVER_ERROR, "InfoError", cause, True)
 
 
 class TooManyColumnsError(OptinOutUrlsScanJobRunnerError):
@@ -76,18 +89,18 @@ class PreviousStepFormatError(OptinOutUrlsScanJobRunnerError):
         super().__init__(message, HTTPStatus.INTERNAL_SERVER_ERROR, "PreviousStepFormatError", cause, False)
 
 
-class ParquetResponseEmptyError(OptinOutUrlsScanJobRunnerError):
-    """Raised when no parquet files were found for split."""
+class StreamingRowsError(OptinOutUrlsScanJobRunnerError):
+    """Raised when the rows could not be fetched in streaming mode."""
 
     def __init__(self, message: str, cause: Optional[BaseException] = None):
-        super().__init__(message, HTTPStatus.INTERNAL_SERVER_ERROR, "ParquetResponseEmptyError", cause, False)
+        super().__init__(message, HTTPStatus.INTERNAL_SERVER_ERROR, "StreamingRowsError", cause, True)
 
 
-class FileSystemError(OptinOutUrlsScanJobRunnerError):
-    """Raised when an error happen reading from File System."""
+class NormalRowsError(OptinOutUrlsScanJobRunnerError):
+    """Raised when the rows could not be fetched in normal mode."""
 
     def __init__(self, message: str, cause: Optional[BaseException] = None):
-        super().__init__(message, HTTPStatus.INTERNAL_SERVER_ERROR, "FileSystemError", cause, False)
+        super().__init__(message, HTTPStatus.INTERNAL_SERVER_ERROR, "NormalRowsError", cause, True)
 
 
 class MissingSpawningTokenError(OptinOutUrlsScanJobRunnerError):
@@ -102,7 +115,6 @@ class OptinOutUrlsScanResponse(TypedDict):
     opt_in_urls: List[str]
     opt_out_urls: List[str]
     num_scanned_rows: int
-    total_num_rows: int
 
 
 class OptInUrl(TypedDict):
@@ -117,16 +129,39 @@ class OptOutUrl(TypedDict):
     column_name: str
 
 
-def get_parquet_fs(dataset: str, hf_token: Optional[str]) -> AbstractFileSystem:
-    """Get the parquet filesystem for a dataset.
-    The parquet files are stored in a separate branch of the dataset repository (see PARQUET_REVISION)
-    Args:
-        dataset (str): The dataset name.
-        hf_token (Optional[str]): The token to access the filesystem.
-    Returns:
-        HfFileSystem: The parquet filesystem.
-    """
-    return HfFileSystem(dataset, repo_type="dataset", revision=PARQUET_REVISION, token=hf_token)
+@retry
+def get_rows(
+    dataset: str,
+    config: str,
+    split: str,
+    streaming: bool,
+    rows_max_number: int,
+    use_auth_token: Union[bool, str, None] = False,
+    column_names: Optional[List[str]] = None,
+) -> List[Row]:
+    download_config = DownloadConfig(delete_extracted=True)
+    ds = load_dataset(
+        dataset,
+        name=config,
+        split=split,
+        streaming=streaming,
+        use_auth_token=use_auth_token,
+        download_config=download_config,
+    )
+    if streaming:
+        if not isinstance(ds, IterableDataset):
+            raise TypeError("load_dataset should return an IterableDataset in streaming mode")
+    elif not isinstance(ds, Dataset):
+        raise TypeError("load_dataset should return a Dataset in normal mode")
+    if column_names:
+        ds = ds.select_columns(column_names)
+    rows_plus_one = list(itertools.islice(ds, rows_max_number + 1))
+    # ^^ to be able to detect if a split has exactly ROWS_MAX_NUMBER rows
+    if len(rows_plus_one) <= rows_max_number:
+        logging.debug(f"all the rows in the split have been fetched ({len(rows_plus_one)})")
+    else:
+        logging.debug(f"the rows in the split have been truncated ({rows_max_number} rows)")
+    return rows_plus_one[:rows_max_number]
 
 
 async def check_spawning(image_urls: List[str], session, semaphore, limiter) -> dict:
@@ -196,47 +231,35 @@ def compute_opt_in_out_urls_scan_response(
     max_concurrent_requests_number: int,
     max_requests_per_second: int,
 ) -> OptinOutUrlsScanResponse:
+    logging.info(f"get opt-in-out-urls-scan for dataset={dataset} config={config} split={split}")
+
+    use_auth_token: Union[bool, str, None] = hf_token if hf_token is not None else False
     if not spawning_token:
         raise MissingSpawningTokenError("OPT_IN_OUT_URLS_SCAN_SPAWNING_TOKEN is not set")
 
-    logging.info(f"get first-rows for dataset={dataset} config={config} split={split}")
-
-    # first ensure the tuple (dataset, config, split) exists on the Hub
+    # get the first rows from previous job
     try:
-        upstream_response = get_response(kind="config-parquet", dataset=dataset, config=config)
-        if upstream_response["http_status"] != HTTPStatus.OK:
-            raise PreviousStepStatusError(
-                f"Previous step gave an error: {upstream_response['http_status']}. This job should not have been"
-                " created."
-            )
-
-        parquet_files_content = upstream_response["content"]["parquet_files"]
-        sources = sorted(
-            f"{config}/{parquet_file['filename']}"
-            for parquet_file in parquet_files_content
-            if parquet_file["split"] == split and parquet_file["config"] == config
+        upstream_response = get_response(
+            kind="split-first-rows-from-streaming", dataset=dataset, config=config, split=split
         )
-        if not sources:
-            raise ParquetResponseEmptyError("No parquet files found.")
-    except DoesNotExist:
-        raise ConfigNotFoundError(f"The config '{config}' does not exist for the dataset.'")
-    except Exception as e:
-        raise PreviousStepFormatError("Previous step did not return the expected content.") from e
-
-    logging.debug(f"Found {len(sources)} parquet files for {dataset=}, {config=}, {split=}: {sources}")
-
-    fs = get_parquet_fs(dataset=dataset, hf_token=hf_token)
-    desc = f"{dataset}/{config}/{split}"
-    try:
-        parquet_files: List[ParquetFile] = thread_map(
-            partial(ParquetFile, filesystem=fs), sources, desc=desc, unit="pq", disable=True
+        upstream_response_content = SplitFirstRowsResponse(
+            dataset=dataset,
+            config=config,
+            split=split,
+            features=upstream_response["content"]["features"],
+            rows=upstream_response["content"]["rows"],
         )
+        features = upstream_response_content["features"]
+        first_rows = upstream_response_content["rows"]
+    except DoesNotExist as e:
+        raise ConfigNotFoundError(f"The config '{config}' does not exist for the dataset.'", e) from e
     except Exception as e:
-        raise FileSystemError(f"Could not read the parquet files: {e}") from e
-    total_num_rows = sum(parquet_file.metadata.num_rows for parquet_file in parquet_files)
+        raise PreviousStepFormatError("Previous step did not return the expected content.", e) from e
 
-    # get the features
-    features = Features.from_arrow_schema(parquet_files[0].schema.to_arrow_schema())
+    if upstream_response["http_status"] != HTTPStatus.OK:
+        raise PreviousStepStatusError(
+            f"Previous step gave an error: {upstream_response['http_status']}. This job should not have been created."
+        )
 
     if features and len(features) > columns_max_number:
         raise TooManyColumnsError(
@@ -245,15 +268,32 @@ def compute_opt_in_out_urls_scan_response(
             " of columns if you want the viewer to work."
         )
 
-    # get the first rows to look for URLs columns
-    string_columns = [column for column in features if features[column] == Value("string")]
-    first_rows = parquet_files[0].read_row_group(i=0, columns=string_columns).slice(0, 100).to_pydict()
+    # get the info
+    try:
+        info = get_dataset_config_info(
+            path=dataset,
+            config_name=config,
+            use_auth_token=use_auth_token,
+        )
+    except Exception as err:
+        raise InfoError(
+            f"The info cannot be fetched for the config '{config}' of the dataset.",
+            cause=err,
+        ) from err
+
+    # look for URLs columns using the first rows
+    string_type_dict = {"dtype": "string", "_type": "Value"}
+    string_columns = [column for column in features if features[column] == string_type_dict]
     urls_columns = []
     for string_column in string_columns:
         urls_count = sum(
-            1 for string in first_rows[string_column] if string.startswith("https://") or string.startswith("http://")
+            1
+            for row in first_rows
+            if isinstance(row["row"].get(string_column), str)
+            and row["row"][string_column].startswith("https://")
+            or row["row"][string_column].startswith("http://")
         )
-        if urls_count and urls_count / len(first_rows[string_column]) > 0.5:
+        if urls_count and urls_count / len(first_rows) > 0.5:
             urls_columns.append(string_column)
 
     if not urls_columns:
@@ -265,35 +305,44 @@ def compute_opt_in_out_urls_scan_response(
             opt_in_urls_indices=[],
             opt_out_urls_indices=[],
             num_scanned_rows=0,
-            total_num_rows=total_num_rows,
         )
 
     # get the rows
-    num_scanned_rows = 0
-    last_row_group_id = 0
-    row_group_readers = []
-    for parquet_file in parquet_files:
-        for group_id in range(parquet_file.metadata.num_row_groups):
-            last_row_group_id = group_id
-            row_group_readers.append(partial(parquet_file.read_row_group, i=group_id, columns=urls_columns))
-            if num_scanned_rows + parquet_file.metadata.row_group(group_id).num_rows >= rows_max_number:
-                num_scanned_rows = rows_max_number
-                break
-            else:
-                num_scanned_rows += parquet_file.metadata.row_group(group_id).num_rows
-        else:
-            continue
-        break
-
-    if len(row_group_readers) == 0:
-        raise ParquetResponseEmptyError("No parquet files found.")
+    try:
+        rows = get_rows(
+            dataset=dataset,
+            config=config,
+            split=split,
+            streaming=True,
+            rows_max_number=rows_max_number,
+            use_auth_token=use_auth_token,
+            column_names=urls_columns,
+        )
+    except Exception as err:
+        MAX_SIZE_FALLBACK = 100_000_000
+        if info.size_in_bytes is None or info.size_in_bytes > MAX_SIZE_FALLBACK:
+            raise StreamingRowsError(
+                "Cannot load the dataset split (in streaming mode) to extract the first rows.",
+                cause=err,
+            ) from err
+        try:
+            rows = get_rows(
+                dataset=dataset,
+                config=config,
+                split=split,
+                streaming=False,
+                rows_max_number=rows_max_number,
+                use_auth_token=use_auth_token,
+            )
+        except Exception as err:
+            raise NormalRowsError(
+                "Cannot load the dataset split (in normal download mode) to extract the first rows.",
+                cause=err,
+            ) from err
 
     # get the urls
-    pa_table = pa.concat_tables([row_group_readers[i]() for i in range(0, last_row_group_id + 1)]).slice(
-        0, num_scanned_rows
-    )
-    urls = [url for urls_array in pa_table for url in urls_array.to_pylist()]
-    column_names = list(pa_table.column_names)
+    num_scanned_rows = len(rows)
+    urls = [row[urls_column] for row in rows for urls_column in urls_columns]
 
     # scan the urls
     opt_in_urls_indices, opt_out_urls_indices = asyncio.run(
@@ -306,11 +355,11 @@ def compute_opt_in_out_urls_scan_response(
         )
     )
     opt_in_urls = [
-        OptInUrl(url=url, row_idx=url_idx % num_scanned_rows, column_name=column_names[url_idx // num_scanned_rows])
+        OptInUrl(url=url, row_idx=url_idx // len(urls_columns), column_name=urls_columns[url_idx % len(urls_columns)])
         for url_idx, url in enumerate(opt_in_urls_indices)
     ]
     opt_out_urls = [
-        OptOutUrl(url=url, row_idx=url_idx % num_scanned_rows, column_name=column_names[url_idx // num_scanned_rows])
+        OptOutUrl(url=url, row_idx=url_idx // len(urls_columns), column_name=urls_columns[url_idx % len(urls_columns)])
         for url_idx, url in enumerate(opt_out_urls_indices)
     ]
 
@@ -323,7 +372,6 @@ def compute_opt_in_out_urls_scan_response(
         opt_in_urls_indices=opt_in_urls_indices,
         opt_out_urls_indices=opt_out_urls_indices,
         num_scanned_rows=num_scanned_rows,
-        total_num_rows=total_num_rows,
     )
 
 
