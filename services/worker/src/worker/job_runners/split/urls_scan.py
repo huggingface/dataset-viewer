@@ -1,13 +1,16 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2022 The HuggingFace Authors.
 
+import asyncio
 import logging
 from functools import partial
 from http import HTTPStatus
 from pathlib import Path
 from typing import Any, List, Literal, Mapping, Optional, Tuple, TypedDict
 
+import aiohttp
 import pyarrow as pa
+from aiolimiter import AsyncLimiter
 from datasets import Features, Value
 from fsspec import AbstractFileSystem  # type: ignore
 from hffs.fs import HfFileSystem
@@ -25,7 +28,6 @@ from tqdm.contrib.concurrent import thread_map
 from worker.config import AppConfig, UrlsScanConfig
 from worker.job_runner import CompleteJobResult, ConfigNotFoundError, JobRunnerError
 from worker.job_runners._datasets_based_job_runner import DatasetsBasedJobRunner
-
 
 UrlsScanJobRunnerErrorCode = Literal[
     "TooManyColumnsError",
@@ -119,9 +121,57 @@ def get_parquet_fs(dataset: str, hf_token: Optional[str]) -> AbstractFileSystem:
     return HfFileSystem(dataset, repo_type="dataset", revision=PARQUET_REVISION, token=hf_token)
 
 
-def scan_urls(urls: List[str]) -> Tuple[List[int], List[int]]:
-    # TODO: implement
-    return [], []
+async def check_spawning(image_urls: List[str], session, semaphore, limiter) -> dict:
+    url = f"https://opts-api.spawningaiapi.com/api/v2/query/urls"
+    if not image_urls:
+        return {"urls": []}
+    elif len(image_urls) == 1:
+        image_urls = image_urls + [""]  # the API requires >1 urls
+    async with semaphore:
+        async with limiter:
+            async with session.post(url=url, data="\n".join(image_urls)) as resp:
+                spawning_response = await resp.json()
+                return spawning_response
+
+
+async def opt_in_out_task(image_urls: List[str], session, semaphore, limiter) -> tuple:
+    spawning_response = await check_spawning(image_urls, session, semaphore, limiter)
+    opt_in_urls_indices = [i for i in range(len(image_urls)) if spawning_response["urls"][i]["optIn"]]
+    opt_out_urls_indices = [i for i in range(len(image_urls)) if spawning_response["urls"][i]["optOut"]]
+    return opt_in_urls_indices, opt_out_urls_indices
+
+
+async def scan_urls(
+    urls: List[str],
+    batch_size: int,
+    spawning_token: str,
+    max_concurrent_requests_number: int,
+    max_requests_per_second: int,
+) -> Tuple[List[int], List[int]]:
+    offsets = []
+    tasks = []
+    semaphore = asyncio.Semaphore(value=max_concurrent_requests_number)
+    limiter = AsyncLimiter(max_requests_per_second, time_period=1)
+
+    headers = {"Authorization": f"API {spawning_token}"}
+    async with aiohttp.ClientSession(headers=headers) as session:
+        for offset in range(0, len(urls), batch_size):
+            offsets.append(offset)
+            tasks.append(
+                asyncio.create_task(opt_in_out_task(urls[offset : offset + batch_size], session, semaphore, limiter))
+            )
+        await asyncio.wait(tasks)
+
+    opt_in_urls_indices = []
+    opt_out_urls_indices = []
+    for offset, task in zip(offsets, tasks):
+        batch_opt_in_urls_indices, batch_opt_out_urls_indices = task.result()
+        for batch_opt_in_urls_idx in batch_opt_in_urls_indices:
+            opt_in_urls_indices.append(offset + batch_opt_in_urls_idx)
+        for batch_opt_out_urls_idx in batch_opt_out_urls_indices:
+            opt_out_urls_indices.append(offset + batch_opt_out_urls_idx)
+
+    return opt_in_urls_indices, opt_out_urls_indices
 
 
 def compute_first_rows_response(
@@ -184,11 +234,13 @@ def compute_first_rows_response(
     urls_columns = []
     for string_column in string_columns:
         urls_count = sum(1 for string in first_rows[string_column] if string.startswith("https://"))
-        if urls_count / len(first_rows[string_column]) > .5:
+        if urls_count / len(first_rows[string_column]) > 0.5:
             urls_columns.append(string_column)
 
     if not urls_columns:
-        return UrlsScanResponse(urls_columns=[], opt_in_urls=[], opt_out_urls=[], num_scanned_rows=0, total_num_rows=total_num_rows)
+        return UrlsScanResponse(
+            urls_columns=[], opt_in_urls=[], opt_out_urls=[], num_scanned_rows=0, total_num_rows=total_num_rows
+        )
 
     # get the rows
     num_scanned_rows = 0
@@ -211,14 +263,14 @@ def compute_first_rows_response(
         raise ParquetResponseEmptyError("No parquet files found.")
 
     # get the urls
-    pa_table = pa.concat_tables(
-        [row_group_readers[i]() for i in range(0, last_row_group_id + 1)]
-    ).slice(0, num_scanned_rows)
+    pa_table = pa.concat_tables([row_group_readers[i]() for i in range(0, last_row_group_id + 1)]).slice(
+        0, num_scanned_rows
+    )
     urls = [url for urls_array in pa_table for url in urls_array.to_pylist()]
     column_names = list(pa_table.column_names)
 
     # scan the urls
-    opt_in_urls_indices, opt_out_urls_indices = scan_urls(urls)
+    opt_in_urls_indices, opt_out_urls_indices = asyncio.run(scan_urls(urls))
     opt_in_urls = [
         OptInUrl(url=url, row_idx=url_idx % num_scanned_rows, column_name=column_names[url_idx // num_scanned_rows])
         for url_idx, url in enumerate(opt_in_urls_indices)
@@ -234,7 +286,7 @@ def compute_first_rows_response(
         opt_in_urls=opt_in_urls,
         opt_out_urls=opt_out_urls,
         num_scanned_rows=num_scanned_rows,
-        total_num_rows=total_num_rows
+        total_num_rows=total_num_rows,
     )
 
 
