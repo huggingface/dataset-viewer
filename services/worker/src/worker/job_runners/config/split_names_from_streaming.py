@@ -13,7 +13,7 @@ from libcommon.constants import (
 )
 from libcommon.simple_cache import SplitFullName
 
-from worker.job_runner import CompleteJobResult, JobRunnerError
+from worker.job_runner import CompleteJobResult, JobRunnerError, ParameterMissingError
 from worker.job_runners._datasets_based_job_runner import DatasetsBasedJobRunner
 from worker.utils import SplitItem, SplitsList
 
@@ -55,7 +55,7 @@ class EmptyDatasetError(SplitNamesFromStreamingJobRunnerError):
 
 
 class ResponseAlreadyComputedError(SplitNamesFromStreamingJobRunnerError):
-    """Raised when reponse has been already computed by /split-names-from-dataset-info job runner."""
+    """Raised when response has been already computed by /split-names-from-dataset-info job runner."""
 
     def __init__(self, message: str, cause: Optional[BaseException] = None):
         super().__init__(message, HTTPStatus.INTERNAL_SERVER_ERROR, "ResponseAlreadyComputedError", cause, True)
@@ -91,11 +91,11 @@ def compute_split_names_from_streaming_response(
         `SplitsList`: An object with the list of split names for the dataset and config.
     <Tip>
     Raises the following errors:
-        - [`~job_runners.split_names_from_streaming.EmptyDatasetError`]
+        - [`~job_runners.config.split_names_from_streaming.EmptyDatasetError`]
           The dataset is empty.
-        - [`~job_runners.split_names_from_streaming.SplitsNamesError`]
+        - [`~job_runners.config.split_names_from_streaming.SplitsNamesError`]
           If the list of splits could not be obtained using the datasets library.
-        - [`~job_runners.split_names_from_streaming.ResponseAlreadyComputedError`]
+        - [`~job_runners.config.split_names_from_streaming.ResponseAlreadyComputedError`]
           If reponse has been already computed by /split-names-from-dataset-info job runner.
     </Tip>
     """
@@ -128,9 +128,9 @@ class SplitNamesFromStreamingJobRunner(DatasetsBasedJobRunner):
 
     def compute(self) -> CompleteJobResult:
         if self.dataset is None:
-            raise ValueError("dataset is required")
+            raise ParameterMissingError("'dataset' parameter is required")
         if self.config is None:
-            raise ValueError("config is required")
+            raise ParameterMissingError("'config' parameter is required")
         self.raise_if_parallel_response_exists(
             parallel_job_type="/split-names-from-dataset-info",
             parallel_job_version=PROCESSING_STEP_SPLIT_NAMES_FROM_DATASET_INFO_VERSION,

@@ -9,7 +9,12 @@ from libcommon.constants import PROCESSING_STEP_DATASET_INFO_VERSION
 from libcommon.dataset import DatasetNotFoundError
 from libcommon.simple_cache import DoesNotExist, SplitFullName, get_response
 
-from worker.job_runner import JobResult, JobRunner, JobRunnerError
+from worker.job_runner import (
+    JobResult,
+    JobRunner,
+    JobRunnerError,
+    ParameterMissingError,
+)
 from worker.utils import PreviousJob
 
 DatasetInfoJobRunnerErrorCode = Literal[
@@ -68,9 +73,9 @@ def compute_dataset_info_response(dataset: str) -> Tuple[DatasetInfoResponse, fl
         or raise errors).
     <Tip>
     Raises the following errors:
-        - [`~job_runners.dataset_info.PreviousStepStatusError`]
+        - [`~job_runners.dataset.info.PreviousStepStatusError`]
             If the previous step gave an error.
-        - [`~job_runners.dataset_info.PreviousStepFormatError`]
+        - [`~job_runners.dataset.info.PreviousStepFormatError`]
             If the content of the previous step doesn't have the expected format.
         - [`~libcommon.dataset.DatasetNotFoundError`]
             If the dataset does not exist, or if the
@@ -143,6 +148,8 @@ class DatasetInfoJobRunner(JobRunner):
         return PROCESSING_STEP_DATASET_INFO_VERSION
 
     def compute(self) -> JobResult:
+        if self.dataset is None:
+            raise ParameterMissingError("'dataset' parameter is required")
         response_content, progress = compute_dataset_info_response(dataset=self.dataset)
         return JobResult(response_content, progress=progress)
 

@@ -9,7 +9,12 @@ from libcommon.constants import PROCESSING_STEP_DATASET_SIZE_VERSION
 from libcommon.dataset import DatasetNotFoundError
 from libcommon.simple_cache import DoesNotExist, SplitFullName, get_response
 
-from worker.job_runner import JobResult, JobRunner, JobRunnerError
+from worker.job_runner import (
+    JobResult,
+    JobRunner,
+    JobRunnerError,
+    ParameterMissingError,
+)
 from worker.job_runners.config.size import ConfigSize, ConfigSizeResponse, SplitSize
 from worker.utils import PreviousJob
 
@@ -80,9 +85,9 @@ def compute_sizes_response(dataset: str) -> Tuple[DatasetSizeResponse, float]:
         `DatasetSizeResponse`: An object with the sizes_response.
     <Tip>
     Raises the following errors:
-        - [`~job_runners.dataset_size.PreviousStepStatusError`]
+        - [`~job_runners.dataset.size.PreviousStepStatusError`]
           If the previous step gave an error.
-        - [`~job_runners.dataset_size.PreviousStepFormatError`]
+        - [`~job_runners.dataset.size.PreviousStepFormatError`]
             If the content of the previous step has not the expected format
     </Tip>
     """
@@ -178,6 +183,8 @@ class DatasetSizeJobRunner(JobRunner):
         return PROCESSING_STEP_DATASET_SIZE_VERSION
 
     def compute(self) -> JobResult:
+        if self.dataset is None:
+            raise ParameterMissingError("'dataset' parameter is required")
         response_content, progress = compute_sizes_response(dataset=self.dataset)
         return JobResult(response_content, progress=progress)
 

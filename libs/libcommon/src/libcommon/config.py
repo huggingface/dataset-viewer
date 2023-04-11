@@ -11,6 +11,7 @@ from environs import Env
 from libcommon.constants import (
     PROCESSING_STEP_CONFIG_INFO_VERSION,
     PROCESSING_STEP_CONFIG_NAMES_VERSION,
+    PROCESSING_STEP_CONFIG_PARQUET_AND_INFO_VERSION,
     PROCESSING_STEP_CONFIG_PARQUET_VERSION,
     PROCESSING_STEP_CONFIG_SIZE_VERSION,
     PROCESSING_STEP_DATASET_INFO_VERSION,
@@ -139,13 +140,18 @@ class ProcessingGraphConfig:
                 "required_by_dataset_viewer": True,
                 "job_runner_version": PROCESSING_STEP_SPLIT_FIRST_ROWS_FROM_STREAMING_VERSION,
             },
+            "config-parquet-and-info": {
+                "input_type": "config",
+                "requires": "/config-names",
+                "job_runner_version": PROCESSING_STEP_CONFIG_PARQUET_AND_INFO_VERSION,
+            },
             "/parquet-and-dataset-info": {
                 "input_type": "dataset",
                 "job_runner_version": PROCESSING_STEP_PARQUET_AND_DATASET_INFO_VERSION,
             },
             "config-parquet": {
                 "input_type": "config",
-                "requires": "/parquet-and-dataset-info",
+                "requires": "config-parquet-and-info",
                 "job_runner_version": PROCESSING_STEP_CONFIG_PARQUET_VERSION,
             },
             "split-first-rows-from-parquet": {
@@ -160,7 +166,7 @@ class ProcessingGraphConfig:
             },
             "config-info": {
                 "input_type": "config",
-                "requires": "/parquet-and-dataset-info",
+                "requires": "config-parquet-and-info",
                 "job_runner_version": PROCESSING_STEP_CONFIG_INFO_VERSION,
             },
             "dataset-info": {
@@ -175,7 +181,7 @@ class ProcessingGraphConfig:
             },
             "config-size": {
                 "input_type": "config",
-                "requires": "/parquet-and-dataset-info",
+                "requires": "config-parquet-and-info",
                 "job_runner_version": PROCESSING_STEP_CONFIG_SIZE_VERSION,
             },
             "dataset-size": {

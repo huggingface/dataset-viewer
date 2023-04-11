@@ -145,7 +145,7 @@ firstRows:
   # Max number of columns in the /first-rows endpoint response
   columnsMaxNumber: 1_000
 
-parquetAndDatasetInfo:
+parquetAndInfo:
   # comma-separated list of the blocked datasets. Defaults to empty.
   blockedDatasets: ""
   # the git commit message when the parquet files are uploaded to the Hub. Defaults to `Update parquet files`.

@@ -9,9 +9,14 @@ from libcommon.constants import PROCESSING_STEP_DATASET_PARQUET_VERSION
 from libcommon.dataset import DatasetNotFoundError
 from libcommon.simple_cache import DoesNotExist, SplitFullName, get_response
 
-from worker.job_runner import JobResult, JobRunner, JobRunnerError
+from worker.job_runner import (
+    JobResult,
+    JobRunner,
+    JobRunnerError,
+    ParameterMissingError,
+)
 from worker.job_runners.config.parquet import ConfigParquetResponse
-from worker.job_runners.parquet_and_dataset_info import ParquetFileItem
+from worker.job_runners.config.parquet_and_info import ParquetFileItem
 from worker.utils import PreviousJob
 
 SizesJobRunnerErrorCode = Literal[
@@ -67,9 +72,9 @@ def compute_sizes_response(dataset: str) -> Tuple[DatasetParquetResponse, float]
         `DatasetParquetResponse`: An object with the parquet_response (list of parquet files).
     <Tip>
     Raises the following errors:
-        - [`~job_runners.dataset_size.PreviousStepStatusError`]
+        - [`~job_runners.dataset.parquet.PreviousStepStatusError`]
           If the previous step gave an error.
-        - [`~job_runners.dataset_size.PreviousStepFormatError`]
+        - [`~job_runners.dataset.parquet.PreviousStepFormatError`]
             If the content of the previous step has not the expected format
     </Tip>
     """
@@ -150,6 +155,8 @@ class DatasetParquetJobRunner(JobRunner):
         return PROCESSING_STEP_DATASET_PARQUET_VERSION
 
     def compute(self) -> JobResult:
+        if self.dataset is None:
+            raise ParameterMissingError("'dataset' parameter is required")
         response_content, progress = compute_sizes_response(dataset=self.dataset)
         return JobResult(response_content, progress=progress)
 

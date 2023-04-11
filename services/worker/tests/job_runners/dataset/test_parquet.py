@@ -13,13 +13,13 @@ from libcommon.simple_cache import upsert_response
 
 from worker.config import AppConfig
 from worker.job_runners.config.parquet import ConfigParquetResponse
+from worker.job_runners.config.parquet_and_info import ParquetFileItem
 from worker.job_runners.dataset.parquet import (
     DatasetParquetJobRunner,
     DatasetParquetResponse,
     PreviousStepFormatError,
     PreviousStepStatusError,
 )
-from worker.job_runners.parquet_and_dataset_info import ParquetFileItem
 
 from ..utils import UpstreamResponse
 

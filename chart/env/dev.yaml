@@ -82,7 +82,7 @@ log:
   # Log level
   level: "DEBUG"
 
-parquetAndDatasetInfo:
+parquetAndInfo:
   maxDatasetSize: "500_000_000"
 
 # --- jobs (pre-install/upgrade hooks) ---
