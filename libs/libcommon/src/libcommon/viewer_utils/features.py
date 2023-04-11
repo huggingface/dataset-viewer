@@ -80,7 +80,6 @@ def image(
                 overwrite=overwrite,
             )
         except OSError:
-            raise
             # if wrong format, try the next one, see https://github.com/huggingface/datasets-server/issues/191
             #  OSError: cannot write mode P as JPEG
             #  OSError: cannot write mode RGBA as JPEG
