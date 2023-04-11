@@ -35,6 +35,10 @@
     {
       "name": "services/reverse-proxy",
       "path": "../services/reverse-proxy"
+    },
+    {
+      "name": "front/admin_ui",
+      "path": "../front/admin_ui"
     }
   ],
   "settings": {
