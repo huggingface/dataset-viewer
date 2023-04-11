@@ -362,6 +362,30 @@ def clean_cached_assets(
     keep_most_recent_rows_number: int,
     max_cleaned_rows_number: int,
 ) -> None:
+    """
+    The cached assets directory is cleaned to save disk space using this simple (?) heuristic:
+
+    1. it takes a big sample of rows from the cache using glob (max `max_cleaned_rows_number`)
+    2. it keeps the most recent ones (max `keep_most_recent_rows_number`)
+    3. it keeps the rows below a certain index (max `keep_first_rows_number`)
+    4. it discards the rest
+
+    To check for the most recent rows, it looks at the "last modified time" of rows directories.
+    This time is updated every time a row is accessed using `update_last_modified_date_of_rows_in_assets_dir()`.
+
+    Args:
+        dataset (`str`):
+            Dataset name e.g `squad` or `lhoestq/demo1`.
+            Rows are cleaned in any dataset configuration or split of this dataset.
+        cached_assets_directory (`str`):
+            Directory containing the cached image and audio files
+        keep_first_rows_number (`int`):
+            Keep the rows with an index below a certain number
+        keep_most_recent_rows_number (`int`):
+            Keep the most recently accessed rows.
+        max_cleaned_rows_number (`int`):
+            Maximum number of rows to discard.
+    """
     if keep_first_rows_number < 0 or keep_most_recent_rows_number < 0 or max_cleaned_rows_number < 0:
         raise ValueError(
             "Failed to run cached assets cleaning. Make sure all of keep_first_rows_number, keep_most_recent_rows_number"
