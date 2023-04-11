@@ -9,7 +9,7 @@ license = "Apache-2.0"
 appdirs = "^1.4.4"
 datasets = { extras = ["audio", "vision"], version = "^2.11.0" }
 environs = "^9.5.0"
-huggingface-hub = "^0.12.0"
+huggingface-hub = "^0.13.0"
 mongo-types = "0.15.1"
 mongoengine = "^0.24.2"
 networkx = "^3.0"
@@ -64,5 +64,7 @@ strict = true
 module = [
     "datasets.*",
     "networkx.*",
+    "huggingface_hub.*",
 ]
+# ^ huggingface_hub is not typed since version 0.13.0
 ignore_missing_imports = true
