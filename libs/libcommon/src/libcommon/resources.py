@@ -9,7 +9,7 @@ from mongoengine.connection import ConnectionFailure, connect, disconnect
 from pymongo import MongoClient
 from pymongo.errors import ServerSelectionTimeoutError
 
-from libcommon.constants import CACHE_MONGOENGINE_ALIAS, QUEUE_MONGOENGINE_ALIAS
+from libcommon.constants import CACHE_MONGOENGINE_ALIAS, QUEUE_MONGOENGINE_ALIAS, METRICS_MONGOENGINE_ALIAS
 
 T = TypeVar("T", bound="Resource")
 
@@ -125,3 +125,16 @@ class QueueMongoResource(MongoResource):
     """
 
     mongoengine_alias: str = field(default=QUEUE_MONGOENGINE_ALIAS, init=False)
+
+
+@dataclass
+class MetricMongoResource(MongoResource):
+    """
+    A resource that represents a connection to the queue mongo database.
+
+    Args:
+        database (:obj:`str`): The name of the mongo database.
+        host (:obj:`str`): The host of the mongo database. It must start with ``mongodb://`` or ``mongodb+srv://``.
+    """
+
+    mongoengine_alias: str = field(default=METRICS_MONGOENGINE_ALIAS, init=False)

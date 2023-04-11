@@ -11,6 +11,7 @@ from libcommon.config import (
     LogConfig,
     ProcessingGraphConfig,
     QueueConfig,
+    MetricConfig,
 )
 
 CACHE_MAINTENANCE_ACTION = None
@@ -21,6 +22,7 @@ class JobConfig:
     log: LogConfig = field(default_factory=LogConfig)
     cache: CacheConfig = field(default_factory=CacheConfig)
     queue: QueueConfig = field(default_factory=QueueConfig)
+    metric: MetricConfig = field(default_factory=MetricConfig)
     common: CommonConfig = field(default_factory=CommonConfig)
     graph: ProcessingGraphConfig = field(default_factory=ProcessingGraphConfig)
     action: Optional[str] = CACHE_MAINTENANCE_ACTION
@@ -33,6 +35,7 @@ class JobConfig:
             log=LogConfig.from_env(),
             cache=CacheConfig.from_env(),
             queue=QueueConfig.from_env(),
+            metric=MetricConfig.from_env(),
             common=CommonConfig.from_env(),
             graph=ProcessingGraphConfig.from_env(),
             action=env.str(name="CACHE_MAINTENANCE_ACTION", default=CACHE_MAINTENANCE_ACTION),

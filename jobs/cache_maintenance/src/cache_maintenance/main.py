@@ -7,7 +7,7 @@ from datetime import datetime
 
 from libcommon.log import init_logging
 from libcommon.processing_graph import ProcessingGraph
-from libcommon.resources import CacheMongoResource, QueueMongoResource
+from libcommon.resources import CacheMongoResource, QueueMongoResource, MetricMongoResource
 
 from cache_maintenance.backfill import backfill_cache
 from cache_maintenance.config import JobConfig
@@ -36,6 +36,9 @@ def run_job() -> None:
         QueueMongoResource(
             database=job_config.queue.mongo_database, host=job_config.queue.mongo_url
         ) as queue_resource,
+        MetricMongoResource(
+            database=job_config.metric.mongo_database, host=job_config.metric.mongo_url
+        ) as metric_resource,
     ):
         if not cache_resource.is_available():
             logging.warning(
@@ -43,6 +46,11 @@ def run_job() -> None:
             )
             return
         if not queue_resource.is_available():
+            logging.warning(
+                "The connection to the queue database could not be established. The cache refresh job is skipped."
+            )
+            return
+        if not metric_resource.is_available():
             logging.warning(
                 "The connection to the queue database could not be established. The cache refresh job is skipped."
             )
