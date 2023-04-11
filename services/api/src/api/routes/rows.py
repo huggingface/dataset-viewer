@@ -388,9 +388,9 @@ def clean_cached_assets(
     """
     if keep_first_rows_number < 0 or keep_most_recent_rows_number < 0 or max_cleaned_rows_number < 0:
         raise ValueError(
-            "Failed to run cached assets cleaning. Make sure all of keep_first_rows_number, keep_most_recent_rows_number"
-            f" and max_cleaned_rows_number  are set (got {keep_first_rows_number}, {keep_most_recent_rows_number} and"
-            f" {max_cleaned_rows_number})"
+            "Failed to run cached assets cleaning. Make sure all of keep_first_rows_number,"
+            f" keep_most_recent_rows_number and max_cleaned_rows_number  are set (got {keep_first_rows_number},"
+            f" {keep_most_recent_rows_number} and {max_cleaned_rows_number})"
         )
     row_directories = glob_rows_in_assets_dir(dataset, cached_assets_directory)
     row_directories_sample = list(
@@ -504,10 +504,14 @@ def create_rows_endpoint(
                 with StepProfiler(method="rows_endpoint", step="clean cache"):
                     # no need to do it every time
                     if random.random() < clean_cache_proba:  # nosec
-                        if keep_first_rows_number < 0 and keep_most_recent_rows_number < 0 and max_cleaned_rows_number < 0:
+                        if (
+                            keep_first_rows_number < 0
+                            and keep_most_recent_rows_number < 0
+                            and max_cleaned_rows_number < 0
+                        ):
                             logger.debug(
-                                "Params keep_first_rows_number, keep_most_recent_rows_number and max_cleaned_rows_number are"
-                                " not set. Skipping cached assets cleaning."
+                                "Params keep_first_rows_number, keep_most_recent_rows_number and"
+                                " max_cleaned_rows_number are not set. Skipping cached assets cleaning."
                             )
                         else:
                             clean_cached_assets(
