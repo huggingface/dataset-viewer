@@ -66,6 +66,7 @@ def graph() -> ProcessingGraph:
     "step_name,children,ancestors",
     [
         ("/config-names", ["/split-names-from-streaming", "config-parquet-and-info"], []),
+        ("config-parquet-and-info", ["config-parquet", "config-info", "config-size"], ["/config-names"]),
         (
             "/split-names-from-dataset-info",
             ["dataset-split-names-from-dataset-info", "split-first-rows-from-streaming", "dataset-split-names"],

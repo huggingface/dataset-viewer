@@ -853,10 +853,12 @@ def compute_config_parquet_and_info_response(
         parquet_file.repo_file(): parquet_file.local_file for parquet_file in local_parquet_files
     }
     # - get files that will be preserved in repo: files belonging to other configs and .gitattributes
-    #   we exclude files for current config because otherwise outdated files might be preserved
+    #   we exclude files of current config because otherwise outdated files might be preserved
     files_to_ignore: Set[str] = {
-        file for other_config in config_names.difference({config})
-        for file in repo_parquet_files if file.startswith(f"{other_config}/")
+        file
+        for other_config in config_names.difference({config})
+        for file in repo_parquet_files
+        if file.startswith(f"{other_config}/")
     }.union({".gitattributes"})
     # - get files to be deleted - all files except for:
     #   - parquet files obtained for current config at this processing step,
