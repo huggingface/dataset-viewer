@@ -9,13 +9,16 @@ from libcommon.constants import PROCESSING_STEP_CONFIG_SIZE_VERSION
 from libcommon.dataset import DatasetNotFoundError
 from libcommon.simple_cache import DoesNotExist, SplitFullName, get_response
 
-from worker.job_runner import CompleteJobResult, JobRunner, JobRunnerError
-from worker.job_runners.parquet_and_dataset_info import ParquetAndDatasetInfoResponse
+from worker.job_runner import (
+    CompleteJobResult,
+    JobRunner,
+    JobRunnerError,
+    ParameterMissingError,
+)
 
 ConfigSizeJobRunnerErrorCode = Literal[
     "PreviousStepStatusError",
     "PreviousStepFormatError",
-    "MissingInfoForConfigError",
 ]
 
 
@@ -78,13 +81,6 @@ class PreviousStepFormatError(ConfigSizeJobRunnerError):
         super().__init__(message, HTTPStatus.INTERNAL_SERVER_ERROR, "PreviousStepFormatError", cause, False)
 
 
-class MissingInfoForConfigError(ConfigSizeJobRunnerError):
-    """Raised when the dataset info from the parquet export is missing the requested dataset configuration."""
-
-    def __init__(self, message: str, cause: Optional[BaseException] = None):
-        super().__init__(message, HTTPStatus.INTERNAL_SERVER_ERROR, "MissingInfoForConfigError", cause, False)
-
-
 def compute_config_size_response(dataset: str, config: str) -> ConfigSizeResponse:
     """
     Get the response of config-size for one specific dataset and config on huggingface.co.
@@ -98,12 +94,10 @@ def compute_config_size_response(dataset: str, config: str) -> ConfigSizeRespons
         `ConfigSizeResponse`: An object with the size_response.
     <Tip>
     Raises the following errors:
-        - [`~job_runners.config_size.PreviousStepStatusError`]
+        - [`~job_runners.config.size.PreviousStepStatusError`]
           If the previous step gave an error.
-        - [`~job_runners.config_size.PreviousStepFormatError`]
+        - [`~job_runners.config.size.PreviousStepFormatError`]
             If the content of the previous step has not the expected format
-        - [`~job_runners.config_size.MissingInfoForConfigError`]
-            If the dataset info from the parquet export is missing the requested dataset configuration
         - [`~libcommon.dataset.DatasetNotFoundError`]: if the dataset does not exist, or if the
             token does not give the sufficient access to the dataset, or if the dataset is private
             (private datasets are not supported by the datasets server)
@@ -111,38 +105,27 @@ def compute_config_size_response(dataset: str, config: str) -> ConfigSizeRespons
     """
     logging.info(f"get size for dataset={dataset}, config={config}")
 
+    previous_step = "config-parquet-and-info"
     try:
-        response = get_response(kind="/parquet-and-dataset-info", dataset=dataset)
+        response = get_response(kind=previous_step, dataset=dataset, config=config)
     except DoesNotExist as e:
-        raise DatasetNotFoundError(
-            "No response found in previous step for this dataset: '/parquet-and-dataset-info'.", e
-        ) from e
+        raise DatasetNotFoundError(f"No response found in previous step '{previous_step}' for this dataset.", e) from e
     if response["http_status"] != HTTPStatus.OK:
-        raise PreviousStepStatusError(f"Previous step gave an error: {response['http_status']}..")
+        raise PreviousStepStatusError(f"Previous step {previous_step} gave an error: {response['http_status']}..")
+
+    content = response["content"]
+    if "dataset_info" not in content:
+        raise PreviousStepFormatError("Previous step did not return the expected content: 'dataset_info'.")
+
+    if not isinstance(content["dataset_info"], dict):
+        raise PreviousStepFormatError(
+            "Previous step did not return the expected content.",
+            TypeError(f"dataset_info should be a dict, but got {type(content['dataset_info'])}"),
+        )
 
     try:
-        content = ParquetAndDatasetInfoResponse(
-            parquet_files=response["content"]["parquet_files"], dataset_info=response["content"]["dataset_info"]
-        )
-    except Exception as e:
-        raise PreviousStepFormatError("Previous step did not return the expected content.", e) from e
-
-    if config not in content["dataset_info"]:
-        if not isinstance(content["dataset_info"], dict):
-            raise PreviousStepFormatError(
-                "Previous step did not return the expected content.",
-                TypeError(f"dataset_info should be a dict, but got {type(content['dataset_info'])}"),
-            )
-        raise MissingInfoForConfigError(
-            f"Dataset configuration '{config}' is missing in the dataset info from the parquet export. "
-            f"Available configurations: {', '.join(list(content['dataset_info'])[:10])}"
-            + f"... ({len(content['dataset_info']) - 10})"
-            if len(content["dataset_info"]) > 10
-            else ""
-        )
-    try:
-        config_dataset_info = content["dataset_info"][config]
-        num_columns = len(config_dataset_info["features"])
+        config_info = content["dataset_info"]
+        num_columns = len(config_info["features"])
         split_sizes: list[SplitSize] = [
             {
                 "dataset": dataset,
@@ -157,13 +140,13 @@ def compute_config_size_response(dataset: str, config: str) -> ConfigSizeRespons
                 "num_rows": split_info["num_examples"],
                 "num_columns": num_columns,
             }
-            for split_info in config_dataset_info["splits"].values()
+            for split_info in config_info["splits"].values()
         ]
         config_size = ConfigSize(
             {
                 "dataset": dataset,
                 "config": config,
-                "num_bytes_original_files": config_dataset_info["download_size"],
+                "num_bytes_original_files": config_info["download_size"],
                 "num_bytes_parquet_files": sum(split_size["num_bytes_parquet_files"] for split_size in split_sizes),
                 "num_bytes_memory": sum(
                     split_size["num_bytes_memory"] for split_size in split_sizes
@@ -195,8 +178,10 @@ class ConfigSizeJobRunner(JobRunner):
         return PROCESSING_STEP_CONFIG_SIZE_VERSION
 
     def compute(self) -> CompleteJobResult:
+        if self.dataset is None:
+            raise ParameterMissingError("'dataset' parameter is required")
         if self.config is None:
-            raise ValueError("config is required")
+            raise ParameterMissingError("'config' parameter is required")
         return CompleteJobResult(compute_config_size_response(dataset=self.dataset, config=self.config))
 
     def get_new_splits(self, content: Mapping[str, Any]) -> set[SplitFullName]:

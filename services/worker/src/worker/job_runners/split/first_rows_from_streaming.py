@@ -33,6 +33,7 @@ from worker.job_runner import (
     CompleteJobResult,
     ConfigNotFoundError,
     JobRunnerError,
+    ParameterMissingError,
     SplitNotFoundError,
 )
 from worker.job_runners._datasets_based_job_runner import DatasetsBasedJobRunner
@@ -55,7 +56,6 @@ SplitFirstRowsFromStreamingJobRunnerErrorCode = Literal[
     "TooBigContentError",
     "PreviousStepStatusError",
     "PreviousStepFormatError",
-    "ResponseAlreadyComputedError",
 ]
 
 
@@ -298,19 +298,19 @@ def compute_first_rows_response(
           If the config does not exist in the dataset.
         - [`~job_runner.SplitNotFoundError`]
           If the split does not exist in the dataset.
-        - [`~job_runners.first_rows.InfoError`]
+        - [`~job_runners.split.first_rows.InfoError`]
           If the config info could not be obtained using the datasets library.
-        - [`~job_runners.first_rows.FeaturesError`]
+        - [`~job_runners.split.first_rows.FeaturesError`]
           If the split features could not be obtained using the datasets library.
-        - [`~job_runners.first_rows.StreamingRowsError`]
+        - [`~job_runners.split.first_rows.StreamingRowsError`]
           If the split rows could not be obtained using the datasets library in streaming mode.
-        - [`~job_runners.first_rows.NormalRowsError`]
+        - [`~job_runners.split.first_rows.NormalRowsError`]
           If the split rows could not be obtained using the datasets library in normal mode.
-        - [`~job_runners.first_rows.RowsPostProcessingError`]
+        - [`~job_runners.split.first_rows.RowsPostProcessingError`]
           If the post-processing of the split rows failed, e.g. while saving the images or audio files to the assets.
-        - [`~job_runners.first_rows.TooManyColumnsError`]
+        - [`~job_runners.split.first_rows.TooManyColumnsError`]
           If the number of columns (features) exceeds the maximum supported number of columns.
-        - [`~job_runners.first_rows.TooBigContentError`]
+        - [`~job_runners.split.first_rows.TooBigContentError`]
           If the first rows content exceeds the maximum supported size of bytes.
     </Tip>
     """
@@ -502,8 +502,12 @@ class SplitFirstRowsFromStreamingJobRunner(DatasetsBasedJobRunner):
         self.assets_base_url = app_config.assets.base_url
 
     def compute(self) -> CompleteJobResult:
-        if self.config is None or self.split is None:
-            raise ValueError("config and split are required")
+        if self.dataset is None:
+            raise ParameterMissingError("'dataset' parameter is required")
+        if self.config is None:
+            raise ParameterMissingError("'config' parameter is required")
+        if self.split is None:
+            raise ParameterMissingError("'split' parameter is required")
         self.raise_if_parallel_response_exists(
             parallel_job_type="split-first-rows-from-parquet",
             parallel_job_version=PROCESSING_STEP_SPLIT_FIRST_ROWS_FROM_PARQUET_VERSION,

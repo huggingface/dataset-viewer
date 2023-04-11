@@ -18,8 +18,8 @@ from worker.job_runners.config.parquet import (
     PreviousStepFormatError,
     PreviousStepStatusError,
 )
-from worker.job_runners.parquet_and_dataset_info import (
-    ParquetAndDatasetInfoResponse,
+from worker.job_runners.config.parquet_and_info import (
+    ConfigParquetAndInfoResponse,
     ParquetFileItem,
 )
 
@@ -77,23 +77,26 @@ def get_job_runner(
             "ok",
             "config_1",
             HTTPStatus.OK,
-            ParquetAndDatasetInfoResponse(
+            ConfigParquetAndInfoResponse(
                 parquet_files=[
                     ParquetFileItem(
                         dataset="ok", config="config_1", split="train", url="url1", filename="filename1", size=0
                     ),
                     ParquetFileItem(
-                        dataset="ok", config="config_2", split="train", url="url2", filename="filename2", size=0
+                        dataset="ok", config="config_1", split="train", url="url2", filename="filename2", size=0
                     ),
                 ],
-                dataset_info={"config_1": "value", "config_2": "value"},
+                dataset_info={"description": "value", "dataset_size": 10},
             ),
             None,
             ConfigParquetResponse(
                 parquet_files=[
                     ParquetFileItem(
                         dataset="ok", config="config_1", split="train", url="url1", filename="filename1", size=0
-                    )
+                    ),
+                    ParquetFileItem(
+                        dataset="ok", config="config_1", split="train", url="url2", filename="filename2", size=0
+                    ),
                 ]
             ),
             False,
@@ -130,7 +133,11 @@ def test_compute(
     should_raise: bool,
 ) -> None:
     upsert_response(
-        kind="/parquet-and-dataset-info", dataset=dataset, content=upstream_content, http_status=upstream_status
+        kind="config-parquet-and-info",
+        dataset=dataset,
+        config=config,
+        content=upstream_content,
+        http_status=upstream_status,
     )
     job_runner = get_job_runner(dataset, config, app_config, False)
     if should_raise:
@@ -142,8 +149,7 @@ def test_compute(
 
 
 def test_doesnotexist(app_config: AppConfig, get_job_runner: GetJobRunner) -> None:
-    dataset = "doesnotexist"
-    config = "doesnotexist"
+    dataset = config = "doesnotexist"
     job_runner = get_job_runner(dataset, config, app_config, False)
     with pytest.raises(DatasetNotFoundError):
         job_runner.compute()
