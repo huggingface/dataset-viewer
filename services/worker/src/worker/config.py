@@ -123,22 +123,38 @@ class FirstRowsConfig:
             )
 
 
-URLS_SCAN_ROWS_MAX_NUMBER = 100_000
-URLS_SCAN_COLUMNS_MAX_NULBER = 10
+OPT_IN_OUT_URLS_SCAN_COLUMNS_MAX_NUMBER = 10
+OPT_IN_OUT_URLS_SCAN_MAX_CONCURRENT_REQUESTS_NUMBER = 100
+OPT_IN_OUT_URLS_SCAN_MAX_REQUESTS_PER_SECOND = 50
+OPT_IN_OUT_URLS_SCAN_ROWS_MAX_NUMBER = 100_000
+OPT_IN_OUT_URLS_SCAN_SPAWNING_TOKEN = None
+OPT_IN_OUT_URLS_SCAN_URLS_NUMBER_PER_BATCH = 1000
 
 
 @dataclass(frozen=True)
-class UrlsScanConfig:
-    rows_max_number: int = URLS_SCAN_ROWS_MAX_NUMBER
+class OptinOutUrlsScanConfig:
+    rows_max_number: int = OPT_IN_OUT_URLS_SCAN_ROWS_MAX_NUMBER
     columns_max_number: int = FIRST_ROWS_COLUMNS_MAX_NUMBER
+    urls_number_per_batch: int = OPT_IN_OUT_URLS_SCAN_URLS_NUMBER_PER_BATCH
+    spawning_token: Optional[str] = OPT_IN_OUT_URLS_SCAN_SPAWNING_TOKEN
+    max_concurrent_requests_number: int = OPT_IN_OUT_URLS_SCAN_MAX_CONCURRENT_REQUESTS_NUMBER
+    max_requests_per_second: int = OPT_IN_OUT_URLS_SCAN_MAX_REQUESTS_PER_SECOND
 
     @classmethod
-    def from_env(cls) -> "UrlsScanConfig":
+    def from_env(cls) -> "OptinOutUrlsScanConfig":
         env = Env(expand_vars=True)
-        with env.prefixed("URLS_SCAN_"):
+        with env.prefixed("OPT_IN_OUT_URLS_SCAN_"):
             return cls(
-                rows_max_number=env.int(name="ROWS_MAX_NUMBER", default=URLS_SCAN_ROWS_MAX_NUMBER),
-                columns_max_number=env.int(name="COLUMNS_MAX_NUMBER", default=URLS_SCAN_COLUMNS_MAX_NULBER),
+                rows_max_number=env.int(name="ROWS_MAX_NUMBER", default=OPT_IN_OUT_URLS_SCAN_ROWS_MAX_NUMBER),
+                columns_max_number=env.int(name="COLUMNS_MAX_NUMBER", default=OPT_IN_OUT_URLS_SCAN_COLUMNS_MAX_NUMBER),
+                urls_number_per_batch=env.int(name="URLS_NUMBER_PER_BATCH", default=OPT_IN_OUT_URLS_SCAN_URLS_NUMBER_PER_BATCH),
+                spawning_token=env.int(name="SPAWNING_TOKEN", default=OPT_IN_OUT_URLS_SCAN_SPAWNING_TOKEN),
+                max_concurrent_requests_number=env.int(
+                    name="MAX_CONCURRENT_REQUESTS_NUMBER", default=OPT_IN_OUT_URLS_SCAN_MAX_CONCURRENT_REQUESTS_NUMBER
+                ),
+                max_requests_per_second=env.int(
+                    name="MAX_REQUESTS_PER_SECOND", default=OPT_IN_OUT_URLS_SCAN_MAX_REQUESTS_PER_SECOND
+                ),
             )
 
 

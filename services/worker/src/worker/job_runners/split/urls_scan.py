@@ -16,7 +16,7 @@ from fsspec import AbstractFileSystem  # type: ignore
 from hffs.fs import HfFileSystem
 from libcommon.constants import (
     PARQUET_REVISION,
-    PROCESSING_STEP_SPLIT_URLS_SCAN_VERSION,
+    PROCESSING_STEP_SPLIT_OPT_IN_OUT_URLS_SCAN_VERSION,
 )
 from libcommon.processing_graph import ProcessingStep
 from libcommon.queue import JobInfo
@@ -25,27 +25,28 @@ from libcommon.storage import StrPath
 from pyarrow.parquet import ParquetFile
 from tqdm.contrib.concurrent import thread_map
 
-from worker.config import AppConfig, UrlsScanConfig
+from worker.config import AppConfig, OptinOutUrlsScanConfig
 from worker.job_runner import CompleteJobResult, ConfigNotFoundError, JobRunnerError
 from worker.job_runners._datasets_based_job_runner import DatasetsBasedJobRunner
 
-UrlsScanJobRunnerErrorCode = Literal[
+OptinOutUrlsScanJobRunnerErrorCode = Literal[
     "TooManyColumnsError",
     "PreviousStepStatusError",
     "PreviousStepFormatError",
     "ParquetResponseEmptyError",
     "FileSystemError",
+    "MissingSpawningTokenError",
 ]
 
 
-class UrlsScanJobRunnerError(JobRunnerError):
+class OptinOutUrlsScanJobRunnerError(JobRunnerError):
     """Base class for exceptions in this module."""
 
     def __init__(
         self,
         message: str,
         status_code: HTTPStatus,
-        code: UrlsScanJobRunnerErrorCode,
+        code: OptinOutUrlsScanJobRunnerErrorCode,
         cause: Optional[BaseException] = None,
         disclose_cause: bool = False,
     ):
@@ -54,42 +55,49 @@ class UrlsScanJobRunnerError(JobRunnerError):
         )
 
 
-class TooManyColumnsError(UrlsScanJobRunnerError):
+class TooManyColumnsError(OptinOutUrlsScanJobRunnerError):
     """Raised when the dataset exceeded the max number of columns."""
 
     def __init__(self, message: str, cause: Optional[BaseException] = None):
         super().__init__(message, HTTPStatus.INTERNAL_SERVER_ERROR, "TooManyColumnsError", cause, True)
 
 
-class PreviousStepStatusError(UrlsScanJobRunnerError):
+class PreviousStepStatusError(OptinOutUrlsScanJobRunnerError):
     """Raised when the previous step gave an error. The job should not have been created."""
 
     def __init__(self, message: str, cause: Optional[BaseException] = None):
         super().__init__(message, HTTPStatus.INTERNAL_SERVER_ERROR, "PreviousStepStatusError", cause, False)
 
 
-class PreviousStepFormatError(UrlsScanJobRunnerError):
+class PreviousStepFormatError(OptinOutUrlsScanJobRunnerError):
     """Raised when the content of the previous step has not the expected format."""
 
     def __init__(self, message: str, cause: Optional[BaseException] = None):
         super().__init__(message, HTTPStatus.INTERNAL_SERVER_ERROR, "PreviousStepFormatError", cause, False)
 
 
-class ParquetResponseEmptyError(UrlsScanJobRunnerError):
+class ParquetResponseEmptyError(OptinOutUrlsScanJobRunnerError):
     """Raised when no parquet files were found for split."""
 
     def __init__(self, message: str, cause: Optional[BaseException] = None):
         super().__init__(message, HTTPStatus.INTERNAL_SERVER_ERROR, "ParquetResponseEmptyError", cause, False)
 
 
-class FileSystemError(UrlsScanJobRunnerError):
+class FileSystemError(OptinOutUrlsScanJobRunnerError):
     """Raised when an error happen reading from File System."""
 
     def __init__(self, message: str, cause: Optional[BaseException] = None):
         super().__init__(message, HTTPStatus.INTERNAL_SERVER_ERROR, "FileSystemError", cause, False)
 
 
-class UrlsScanResponse(TypedDict):
+class MissingSpawningTokenError(OptinOutUrlsScanJobRunnerError):
+    """Raised when the spawning.ai token is not set."""
+
+    def __init__(self, message: str, cause: Optional[BaseException] = None):
+        super().__init__(message, HTTPStatus.INTERNAL_SERVER_ERROR, "MissingSpawningTokenError", cause, False)
+
+
+class OptinOutUrlsScanResponse(TypedDict):
     urls_columns: List[str]
     opt_in_urls: List[str]
     opt_out_urls: List[str]
@@ -141,9 +149,9 @@ async def opt_in_out_task(image_urls: List[str], session, semaphore, limiter) ->
     return opt_in_urls_indices, opt_out_urls_indices
 
 
-async def scan_urls(
+async def opt_in_out_scan_urls(
     urls: List[str],
-    batch_size: int,
+    urls_number_per_batch: int,
     spawning_token: str,
     max_concurrent_requests_number: int,
     max_requests_per_second: int,
@@ -155,10 +163,12 @@ async def scan_urls(
 
     headers = {"Authorization": f"API {spawning_token}"}
     async with aiohttp.ClientSession(headers=headers) as session:
-        for offset in range(0, len(urls), batch_size):
+        for offset in range(0, len(urls), urls_number_per_batch):
             offsets.append(offset)
             tasks.append(
-                asyncio.create_task(opt_in_out_task(urls[offset : offset + batch_size], session, semaphore, limiter))
+                asyncio.create_task(
+                    opt_in_out_task(urls[offset : offset + urls_number_per_batch], session, semaphore, limiter)
+                )
             )
         await asyncio.wait(tasks)
 
@@ -174,14 +184,21 @@ async def scan_urls(
     return opt_in_urls_indices, opt_out_urls_indices
 
 
-def compute_first_rows_response(
+def compute_opt_in_out_urls_scan_response(
     dataset: str,
     config: str,
     split: str,
     hf_token: Optional[str],
     rows_max_number: int,
     columns_max_number: int,
-) -> UrlsScanResponse:
+    urls_number_per_batch: int,
+    spawning_token: Optional[str],
+    max_concurrent_requests_number: int,
+    max_requests_per_second: int,
+) -> OptinOutUrlsScanResponse:
+    if not spawning_token:
+        raise MissingSpawningTokenError("OPT_IN_OUT_URLS_SCAN_SPAWNING_TOKEN is not set")
+
     logging.info(f"get first-rows for dataset={dataset} config={config} split={split}")
 
     # first ensure the tuple (dataset, config, split) exists on the Hub
@@ -233,13 +250,22 @@ def compute_first_rows_response(
     first_rows = parquet_files[0].read_row_group(i=0, columns=string_columns).slice(0, 100).to_pydict()
     urls_columns = []
     for string_column in string_columns:
-        urls_count = sum(1 for string in first_rows[string_column] if string.startswith("https://") or string.startswith("http://"))
-        if urls_count and urls_count / len(first_rows[string_column]) > .5:
+        urls_count = sum(
+            1 for string in first_rows[string_column] if string.startswith("https://") or string.startswith("http://")
+        )
+        if urls_count and urls_count / len(first_rows[string_column]) > 0.5:
             urls_columns.append(string_column)
 
     if not urls_columns:
-        return UrlsScanResponse(
-            urls_columns=[], opt_in_urls=[], opt_out_urls=[], num_scanned_rows=0, total_num_rows=total_num_rows
+        return OptinOutUrlsScanResponse(
+            has_urls_columns=False,
+            urls_columns=[],
+            opt_in_urls=[],
+            opt_out_urls=[],
+            opt_in_urls_indices=[],
+            opt_out_urls_indices=[],
+            num_scanned_rows=0,
+            total_num_rows=total_num_rows,
         )
 
     # get the rows
@@ -270,7 +296,15 @@ def compute_first_rows_response(
     column_names = list(pa_table.column_names)
 
     # scan the urls
-    opt_in_urls_indices, opt_out_urls_indices = asyncio.run(scan_urls(urls))
+    opt_in_urls_indices, opt_out_urls_indices = asyncio.run(
+        opt_in_out_scan_urls(
+            urls,
+            urls_number_per_batch=urls_number_per_batch,
+            spawning_token=spawning_token,
+            max_concurrent_requests_number=max_concurrent_requests_number,
+            max_requests_per_second=max_requests_per_second,
+        )
+    )
     opt_in_urls = [
         OptInUrl(url=url, row_idx=url_idx % num_scanned_rows, column_name=column_names[url_idx // num_scanned_rows])
         for url_idx, url in enumerate(opt_in_urls_indices)
@@ -281,32 +315,35 @@ def compute_first_rows_response(
     ]
 
     # return scan result
-    return UrlsScanResponse(
+    return OptinOutUrlsScanResponse(
+        has_urls_columns=True,
         urls_columns=urls_columns,
         opt_in_urls=opt_in_urls,
         opt_out_urls=opt_out_urls,
+        opt_in_urls_indices=opt_in_urls_indices,
+        opt_out_urls_indices=opt_out_urls_indices,
         num_scanned_rows=num_scanned_rows,
         total_num_rows=total_num_rows,
     )
 
 
-class UrlsScanJobRunner(DatasetsBasedJobRunner):
-    urls_scan_config: UrlsScanConfig
+class OptinOutUrlsScanJobRunner(DatasetsBasedJobRunner):
+    urls_scan_config: OptinOutUrlsScanConfig
 
     @staticmethod
     def get_job_type() -> str:
-        return "urls-scan"
+        return "opt-in-out-urls-scan"
 
     @staticmethod
     def get_job_runner_version() -> int:
-        return PROCESSING_STEP_SPLIT_URLS_SCAN_VERSION
+        return PROCESSING_STEP_SPLIT_OPT_IN_OUT_URLS_SCAN_VERSION
 
     def __init__(
         self,
         job_info: JobInfo,
         app_config: AppConfig,
         processing_step: ProcessingStep,
-        urls_scan_config: UrlsScanConfig,
+        urls_scan_config: OptinOutUrlsScanConfig,
         hf_datasets_cache: Path,
         assets_directory: StrPath,
     ) -> None:
@@ -324,13 +361,17 @@ class UrlsScanJobRunner(DatasetsBasedJobRunner):
         if self.config is None or self.split is None:
             raise ValueError("config and split are required")
         return CompleteJobResult(
-            compute_first_rows_response(
+            compute_opt_in_out_urls_scan_response(
                 dataset=self.dataset,
                 config=self.config,
                 split=self.split,
                 hf_token=self.common_config.hf_token,
                 rows_max_number=self.urls_scan_config.rows_max_number,
                 columns_max_number=self.urls_scan_config.columns_max_number,
+                urls_number_per_batch=self.urls_scan_config.urls_number_per_batch,
+                spawning_token=self.urls_scan_config.spawning_token,
+                max_concurrent_requests_number=self.urls_scan_config.max_concurrent_requests_number,
+                max_requests_per_second=self.urls_scan_config.max_requests_per_second,
             )
         )
 
