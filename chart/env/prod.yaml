@@ -116,6 +116,8 @@ cacheMaintenance:
 # --- cron jobs  ---
 metricsCollector:
   action: "collect-metrics"
+  schedule: "*/2 * * * *"
+  # every two minutes
   nodeSelector: {}
   resources:
     requests:

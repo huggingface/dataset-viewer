@@ -2,17 +2,22 @@
 # Copyright 2022 The HuggingFace Authors.
 
 import types
+from http import HTTPStatus
 from typing import Generic, Type, TypeVar
 
 from bson import ObjectId
 from mongoengine import Document
-from mongoengine.fields import DateTimeField, ObjectIdField, StringField, IntField, EnumField
+from mongoengine.fields import (
+    DateTimeField,
+    EnumField,
+    IntField,
+    ObjectIdField,
+    StringField,
+)
 from mongoengine.queryset.queryset import QuerySet
 
 from libcommon.constants import METRICS_MONGOENGINE_ALIAS
 from libcommon.utils import get_datetime
-from http import HTTPStatus
-
 
 # START monkey patching ### hack ###
 # see https://github.com/sbdchd/mongo-types#install
@@ -53,9 +58,7 @@ class JobTotalMetric(Document):
     meta = {
         "collection": "jobTotalMetric",
         "db_alias": METRICS_MONGOENGINE_ALIAS,
-        "indexes": [
-            ("queue", "status")
-        ],
+        "indexes": [("queue", "status")],
     }
     objects = QuerySetManager["JobTotalMetric"]()
 
@@ -81,8 +84,6 @@ class CacheTotalMetric(Document):
     meta = {
         "collection": "cacheTotalMetric",
         "db_alias": METRICS_MONGOENGINE_ALIAS,
-        "indexes": [
-            ("kind", "http_status", "error_code")
-        ],
+        "indexes": [("kind", "http_status", "error_code")],
     }
     objects = QuerySetManager["CacheTotalMetric"]()
