@@ -88,6 +88,7 @@ class CacheTotalMetric(Document):
     }
     objects = QuerySetManager["CacheTotalMetric"]()
 
+
 # only for the tests
 def _clean_metric_database() -> None:
     CacheTotalMetric.drop_collection()
