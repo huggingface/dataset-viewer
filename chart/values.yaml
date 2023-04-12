@@ -167,6 +167,12 @@ assets:
   # Directory on the shared storage (audio files and images)
   storageDirectory: "/assets"
 
+cachedAssets:
+  # base URL for the cached assets files. It should be set accordingly to the datasets-server domain, eg https://datasets-server.huggingface.co/cached-assets
+  # baseUrl: "not used for now"
+  # Directory on the cached shared storage (audio files and images)
+  storageDirectory: "/cached-assets"
+
 
 # Directory where the cache data will be stored
 cacheDirectory: "/datasets-server-cache"

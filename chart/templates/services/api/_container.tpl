@@ -6,6 +6,7 @@
   image: {{ include "services.api.image" . }}
   imagePullPolicy: {{ .Values.images.pullPolicy }}
   env:
+  {{ include "envCachedAssets" . | nindent 2 }}
   {{ include "envCache" . | nindent 2 }}
   {{ include "envQueue" . | nindent 2 }}
   {{ include "envCommon" . | nindent 2 }}
@@ -43,6 +44,8 @@
     value: {{ .Values.api.uvicornNumWorkers | quote }}
   - name: API_UVICORN_PORT
     value: {{ .Values.api.uvicornPort | quote }}
+  volumeMounts:
+  {{ include "volumeMountCachedAssetsRO" . | nindent 2 }}
   securityContext:
     allowPrivilegeEscalation: false
   readinessProbe:

@@ -18,6 +18,7 @@
     value: {{ include "api.url" . | quote }}
   volumeMounts:
   {{ include "volumeMountAssetsRO" . | nindent 2 }}
+  {{ include "volumeMountCachedAssetsRO" . | nindent 2 }}
   - name: nginx-templates
     mountPath: /etc/nginx/templates
     mountPropagation: None
