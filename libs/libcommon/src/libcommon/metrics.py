@@ -6,11 +6,13 @@ from typing import Generic, Type, TypeVar
 
 from bson import ObjectId
 from mongoengine import Document
-from mongoengine.fields import DateTimeField, DictField, ObjectIdField, StringField
+from mongoengine.fields import DateTimeField, ObjectIdField, StringField, IntField, EnumField
 from mongoengine.queryset.queryset import QuerySet
 
-from libcommon.constants import METRICS_MONGOENGINE_ALIAS, METRICS_TTL_SECONDS
+from libcommon.constants import METRICS_MONGOENGINE_ALIAS
 from libcommon.utils import get_datetime
+from http import HTTPStatus
+
 
 # START monkey patching ### hack ###
 # see https://github.com/sbdchd/mongo-types#install
@@ -32,27 +34,55 @@ class QuerySetManager(Generic[U]):
 # END monkey patching ### hack ###
 
 
-class CustomMetric(Document):
-    """A response computed for a job, cached in the mongoDB database
+class JobTotalMetric(Document):
+    """Jobs total metric in mongoDB database, used to compute prometheus metrics.
 
     Args:
-        metric (`str`): metric name
-        content (`dict`): The content of the metric.
-        created_at (`datetime`): When the metric has been created.
+        queue (`str`): queue name
+        status (`str`): job status see libcommon.queue.Status
+        total (`int`): total of jobs
+        created_at (`datetime`): when the metric has been created.
     """
 
     id = ObjectIdField(db_field="_id", primary_key=True, default=ObjectId)
-
-    metric = StringField(required=True)
-    content = DictField(required=True)
+    queue = StringField(required=True)
+    status = StringField(required=True)
+    total = IntField(required=True, default=0)
     created_at = DateTimeField(default=get_datetime)
 
     meta = {
-        "collection": "customMetrics",
+        "collection": "jobTotalMetric",
         "db_alias": METRICS_MONGOENGINE_ALIAS,
         "indexes": [
-            ("metric", "created_at"),
-            {"fields": ["created_at"], "expireAfterSeconds": METRICS_TTL_SECONDS},
+            ("queue", "status")
         ],
     }
-    objects = QuerySetManager["CustomMetric"]()
+    objects = QuerySetManager["JobTotalMetric"]()
+
+
+class CacheTotalMetric(Document):
+    """Cache total metric in the mongoDB database, used to compute prometheus metrics.
+
+    Args:
+        kind (`str`): kind name
+        http_status (`str`): cache http_status
+        error_code (`str`): error code name
+        total (`int`): total of jobs
+        created_at (`datetime`): when the metric has been created.
+    """
+
+    id = ObjectIdField(db_field="_id", primary_key=True, default=ObjectId)
+    kind = StringField(required=True)
+    http_status = EnumField(HTTPStatus, required=True)
+    error_code = StringField()
+    total = IntField(required=True, default=0)
+    created_at = DateTimeField(default=get_datetime)
+
+    meta = {
+        "collection": "cacheTotalMetric",
+        "db_alias": METRICS_MONGOENGINE_ALIAS,
+        "indexes": [
+            ("kind", "http_status", "error_code")
+        ],
+    }
+    objects = QuerySetManager["CacheTotalMetric"]()

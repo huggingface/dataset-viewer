@@ -12,18 +12,11 @@ import pytest
 import pytz
 from filelock import FileLock
 from libcommon.processing_graph import ProcessingGraph
-from libcommon.queue import (
-    DoesNotExist,
-    Job,
-    JobInfo,
-    Priority,
-    Queue,
-    Status,
-    get_datetime,
-)
+from libcommon.queue import DoesNotExist, Job, JobInfo, Priority, Queue, Status
 from libcommon.resources import CacheMongoResource, QueueMongoResource
 from libcommon.simple_cache import CachedResponse
 from libcommon.storage import StrPath
+from libcommon.utils import get_datetime
 from mirakuru import ProcessExitedWithError, TimeoutExpired
 from pytest import fixture
 

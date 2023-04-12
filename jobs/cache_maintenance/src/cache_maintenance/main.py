@@ -45,19 +45,13 @@ def run_job() -> None:
         ) as metric_resource,
     ):
         if not cache_resource.is_available():
-            logging.warning(
-                "The connection to the cache database could not be established. The cache refresh job is skipped."
-            )
+            logging.warning("The connection to the cache database could not be established. The action is skipped.")
             return
         if not queue_resource.is_available():
-            logging.warning(
-                "The connection to the queue database could not be established. The cache refresh job is skipped."
-            )
+            logging.warning("The connection to the queue database could not be established. The action is skipped.")
             return
         if not metric_resource.is_available():
-            logging.warning(
-                "The connection to the queue database could not be established. The cache refresh job is skipped."
-            )
+            logging.warning("The connection to the metric database could not be established. The action is skipped.")
             return
 
         processing_graph = ProcessingGraph(job_config.graph.specification)
@@ -76,6 +70,7 @@ def run_job() -> None:
 
         if action == "collect-metrics":
             collect_metrics(processing_steps)
+
         end_time = datetime.now()
         logging.info(f"Duration: {end_time - start_time}")
 

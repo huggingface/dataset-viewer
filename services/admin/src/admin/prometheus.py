@@ -5,7 +5,7 @@ import os
 from dataclasses import dataclass
 from typing import Any, List
 
-from libcommon.metrics import CustomMetric
+from libcommon.metrics import CacheTotalMetric, JobTotalMetric
 from libcommon.processing_graph import ProcessingStep
 from libcommon.storage import StrPath
 from prometheus_client import (
@@ -61,18 +61,16 @@ class Prometheus:
 
     def updateMetrics(self) -> None:
         # Queue metrics
-        queue_jobs_total = CustomMetric.objects(metric="queue_jobs_total")
+        queue_jobs_total = JobTotalMetric.objects()
         for job_metric in queue_jobs_total:
-            content = job_metric.content
-            QUEUE_JOBS_TOTAL.labels(queue=content["queue"], status=content["status"]).set(content["count"])
+            QUEUE_JOBS_TOTAL.labels(queue=job_metric.queue, status=job_metric.status).set(job_metric.total)
 
         # Cache metrics
-        responses_in_cache_total = CustomMetric.objects(metric="responses_in_cache_total")
+        responses_in_cache_total = CacheTotalMetric.objects()
         for cache_metric in responses_in_cache_total:
-            content = cache_metric.content
             RESPONSES_IN_CACHE_TOTAL.labels(
-                kind=content["kind"], http_status=content["http_status"], error_code=content["error_code"]
-            ).set(content["count"])
+                kind=cache_metric.kind, http_status=cache_metric.http_status, error_code=cache_metric.error_code
+            ).set(cache_metric.total)
 
         # Assets storage metrics
         total, used, free, percent = disk_usage(str(self.assets_directory))
