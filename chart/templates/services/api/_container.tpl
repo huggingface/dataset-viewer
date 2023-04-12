@@ -45,7 +45,7 @@
   - name: API_UVICORN_PORT
     value: {{ .Values.api.uvicornPort | quote }}
   volumeMounts:
-  {{ include "volumeMountCachedAssetsRO" . | nindent 2 }}
+  {{ include "volumeMountCachedAssetsRW" . | nindent 2 }}
   securityContext:
     allowPrivilegeEscalation: false
   readinessProbe:
