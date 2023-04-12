@@ -3,10 +3,9 @@
 
 import os
 from dataclasses import dataclass
-from typing import Any, List
+from typing import Any
 
 from libcommon.metrics import CacheTotalMetric, JobTotalMetric
-from libcommon.processing_graph import ProcessingStep
 from libcommon.storage import StrPath
 from prometheus_client import (
     CONTENT_TYPE_LATEST,
@@ -46,7 +45,6 @@ ASSETS_DISK_USAGE = Gauge(
 
 @dataclass
 class Prometheus:
-    processing_steps: List[ProcessingStep]
     assets_directory: StrPath
 
     def getRegistry(self) -> CollectorRegistry:

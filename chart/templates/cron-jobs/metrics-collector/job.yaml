@@ -9,7 +9,7 @@ metadata:
   name: "{{ include "name" . }}-job-metrics-collector"
   namespace: {{ .Release.Namespace }}
 spec:
-  schedule: "*/3 * * * *"
+  schedule: {{ toYaml .Values.metricsCollector.schedule }}
   template:
     metadata:
       labels: {{ include "labels.metricsCollector" . | nindent 8 }}
