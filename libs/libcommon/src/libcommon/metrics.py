@@ -1,20 +1,16 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2022 The HuggingFace Authors.
 
+import types
+from typing import Generic, Type, TypeVar
+
+from bson import ObjectId
 from mongoengine import Document
-from mongoengine.fields import (
-    DateTimeField,
-    DictField,
-    ObjectIdField,
-    StringField,
-)
+from mongoengine.fields import DateTimeField, DictField, ObjectIdField, StringField
+from mongoengine.queryset.queryset import QuerySet
+
 from libcommon.constants import METRICS_MONGOENGINE_ALIAS, METRICS_TTL_SECONDS
 from libcommon.utils import get_datetime
-from bson import ObjectId
-from typing import Generic, TypeVar, Type
-from mongoengine.queryset.queryset import QuerySet
-import types
-
 
 # START monkey patching ### hack ###
 # see https://github.com/sbdchd/mongo-types#install
@@ -35,6 +31,7 @@ class QuerySetManager(Generic[U]):
 
 # END monkey patching ### hack ###
 
+
 class CustomMetric(Document):
     """A response computed for a job, cached in the mongoDB database
 
@@ -46,7 +43,7 @@ class CustomMetric(Document):
 
     id = ObjectIdField(db_field="_id", primary_key=True, default=ObjectId)
 
-    metric = StringField(required=True, unique_with=["dataset", "config", "split"])
+    metric = StringField(required=True)
     content = DictField(required=True)
     created_at = DateTimeField(default=get_datetime)
 

@@ -9,9 +9,9 @@ from libcommon.config import (
     CacheConfig,
     CommonConfig,
     LogConfig,
+    MetricConfig,
     ProcessingGraphConfig,
     QueueConfig,
-    MetricConfig,
 )
 
 CACHE_MAINTENANCE_ACTION = None

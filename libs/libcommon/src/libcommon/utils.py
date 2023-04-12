@@ -2,10 +2,10 @@
 # Copyright 2022 The HuggingFace Authors.
 
 import base64
+from datetime import datetime, timezone
 from typing import Any
 
 import orjson
-from datetime import datetime, timezone
 
 
 # orjson is used to get rid of errors with datetime (see allenai/c4)

@@ -178,7 +178,7 @@ class MetricConfig:
                 mongo_database=env.str(name="MONGO_DATABASE", default=METRIC_MONGO_DATABASE),
                 mongo_url=env.str(name="MONGO_URL", default=METRIC_MONGO_URL),
             )
-        
+
 
 @dataclass(frozen=True)
 class ProcessingGraphConfig:

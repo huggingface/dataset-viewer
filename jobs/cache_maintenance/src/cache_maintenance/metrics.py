@@ -2,29 +2,26 @@
 # Copyright 2022 The HuggingFace Authors.
 
 import logging
+
+from libcommon.metrics import CustomMetric
 from libcommon.processing_graph import ProcessingStep
 from libcommon.queue import Queue
 from libcommon.simple_cache import get_responses_count_by_kind_status_and_error_code
-from libcommon.metrics import CustomMetric
 
 
-def collect_metrics(
-    processing_steps: list[ProcessingStep]
-) -> None:
+def collect_metrics(processing_steps: list[ProcessingStep]) -> None:
     logging.info("collecting jobs metrics")
     queue = Queue()
+    CustomMetric.objects(metric="queue_jobs_total").delete()
     for processing_step in processing_steps:
         for status, total in queue.get_jobs_count_by_status(job_type=processing_step.job_type).items():
             CustomMetric(
                 metric="queue_jobs_total",
-                content={
-                    "queue": processing_step.job_type,
-                    "status": status,
-                    "count": total
-                }
+                content={"queue": processing_step.job_type, "status": status, "count": total},
             ).save()
 
     logging.info("collecting cache metrics")
+    CustomMetric.objects(metric="responses_in_cache_total").delete()
     for metric in get_responses_count_by_kind_status_and_error_code():
         CustomMetric(
             metric="responses_in_cache_total",
@@ -32,7 +29,7 @@ def collect_metrics(
                 "kind": metric["kind"],
                 "http_status": metric["http_status"],
                 "error_code": metric["error_code"],
-                "count": metric["count"]
-            }
+                "count": metric["count"],
+            },
         ).save()
     logging.info("metrics have been collected")

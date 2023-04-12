@@ -10,6 +10,7 @@ from libcommon.config import (
     CacheConfig,
     CommonConfig,
     LogConfig,
+    MetricConfig,
     ProcessingGraphConfig,
     QueueConfig,
 )
@@ -82,6 +83,7 @@ class AppConfig:
     log: LogConfig = field(default_factory=LogConfig)
     processing_graph: ProcessingGraphConfig = field(default_factory=ProcessingGraphConfig)
     queue: QueueConfig = field(default_factory=QueueConfig)
+    metric: MetricConfig = field(default_factory=MetricConfig)
 
     @classmethod
     def from_env(cls) -> "AppConfig":
@@ -94,4 +96,5 @@ class AppConfig:
             processing_graph=ProcessingGraphConfig.from_env(),
             queue=QueueConfig.from_env(),
             admin=AdminConfig.from_env(common_config),
+            metric=MetricConfig.from_env(),
         )

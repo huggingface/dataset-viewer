@@ -7,12 +7,16 @@ from datetime import datetime
 
 from libcommon.log import init_logging
 from libcommon.processing_graph import ProcessingGraph
-from libcommon.resources import CacheMongoResource, QueueMongoResource, MetricMongoResource
+from libcommon.resources import (
+    CacheMongoResource,
+    MetricMongoResource,
+    QueueMongoResource,
+)
 
 from cache_maintenance.backfill import backfill_cache
 from cache_maintenance.config import JobConfig
-from cache_maintenance.upgrade import upgrade_cache
 from cache_maintenance.metrics import collect_metrics
+from cache_maintenance.upgrade import upgrade_cache
 
 
 def run_job() -> None:
