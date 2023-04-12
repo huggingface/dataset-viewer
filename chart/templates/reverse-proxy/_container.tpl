@@ -8,6 +8,8 @@
   env:
   - name: ASSETS_DIRECTORY
     value: {{ .Values.assets.storageDirectory | quote }}
+  - name: CACHED_ASSETS_DIRECTORY
+    value: {{ .Values.cachedAssets.storageDirectory | quote }}
   - name: HOST
     value: {{ .Values.reverseProxy.host | quote }}
   - name: PORT
