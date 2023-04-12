@@ -2,7 +2,7 @@
 # Copyright 2022 The HuggingFace Authors.
 
 {{- define "initContainerCachedAssets" -}}
-- name: prepare-assets
+- name: prepare-cached-assets
   image: ubuntu:focal
   imagePullPolicy: {{ .Values.images.pullPolicy }}
   command: ["/bin/sh", "-c"]
