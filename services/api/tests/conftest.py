@@ -1,16 +1,21 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2022 The HuggingFace Authors.
 
+from pathlib import Path
 from typing import Iterator
 
 from libcommon.processing_graph import ProcessingGraph
 from libcommon.queue import _clean_queue_database
 from libcommon.resources import CacheMongoResource, QueueMongoResource
 from libcommon.simple_cache import _clean_cache_database
+from libcommon.storage import StrPath, init_cached_assets_dir
 from pytest import MonkeyPatch, fixture
 
 from api.config import AppConfig, EndpointConfig, UvicornConfig
 from api.routes.endpoint import EndpointsDefinition, StepsByInputTypeAndEndpoint
+
+# Import fixture modules as plugins
+pytest_plugins = ["tests.fixtures.fsspec"]
 
 
 # see https://github.com/pytest-dev/pytest/issues/363#issuecomment-406536200
@@ -19,6 +24,7 @@ def monkeypatch_session() -> Iterator[MonkeyPatch]:
     monkeypatch_session = MonkeyPatch()
     monkeypatch_session.setenv("CACHE_MONGO_DATABASE", "datasets_server_cache_test")
     monkeypatch_session.setenv("QUEUE_MONGO_DATABASE", "datasets_server_queue_test")
+    monkeypatch_session.setenv("CACHED_ASSETS_BASE_URL", "http://localhost/cached-assets")
     hostname = "localhost"
     port = "8888"
     monkeypatch_session.setenv("API_HF_TIMEOUT_SECONDS", "10")
@@ -116,3 +122,15 @@ def hf_endpoint(app_config: AppConfig) -> str:
 @fixture(scope="session")
 def hf_auth_path(app_config: AppConfig) -> str:
     return app_config.api.hf_auth_path
+
+
+@fixture
+def cached_assets_directory(app_config: AppConfig) -> StrPath:
+    return init_cached_assets_dir(app_config.cached_assets.storage_directory)
+
+
+@fixture
+def image_path() -> str:
+    image_path = Path(__file__).resolve().parent / "data" / "test_image_rgb.jpg"
+    assert image_path.is_file()
+    return str(image_path)

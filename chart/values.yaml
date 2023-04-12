@@ -167,6 +167,20 @@ assets:
   # Directory on the shared storage (audio files and images)
   storageDirectory: "/assets"
 
+cachedAssets:
+  # base URL for the cached assets files. It should be set accordingly to the datasets-server domain, eg https://datasets-server.huggingface.co/cached-assets
+  # baseUrl: "not used for now"
+  # Directory on the cached shared storage (audio files and images)
+  storageDirectory: "/cached-assets"
+  # Probability of cleaning the cached assets directory at each request.
+  cleanCacheProba: 0.05
+  # When cleaning the cached assets directory: keep the rows with an index below a certain number.
+  keepFirstRowsNumber: 100
+  # When cleaning the cached assets directory: keep the most recently accessed rows.
+  keepMostRecentRowsNumber: 200
+  # When cleaning the cached assets directory: maximum number of rows to discard.
+  maxCleanedRowsNumber: 10000
+
 
 # Directory where the cache data will be stored
 cacheDirectory: "/datasets-server-cache"

@@ -29,9 +29,7 @@ jobs:
     uses: ./.github/workflows/_quality-python.yml
     with:
       working-directory: services/worker
-      is-datasets-worker: true
   unit-tests:
     uses: ./.github/workflows/_unit-tests-python.yml
     with:
       working-directory: services/worker
-      is-datasets-worker: true

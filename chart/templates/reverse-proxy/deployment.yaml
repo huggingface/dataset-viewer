@@ -26,7 +26,9 @@ spec:
         checksum/config: {{ include (print $.Template.BasePath "/reverse-proxy/configMap.yaml") . | sha256sum }}
     spec:
       {{- include "image.imagePullSecrets" . | nindent 6 }}
-      initContainers: {{ include "initContainerAssets" . | nindent 8 }}
+      initContainers: 
+        {{ include "initContainerAssets" . | nindent 8 }}
+        {{ include "initContainerCachedAssets" . | nindent 8 }}
       containers: {{ include "containerReverseProxy" . | nindent 8 }}
       nodeSelector: {{ toYaml .Values.reverseProxy.nodeSelector | nindent 8 }}
       tolerations: {{ toYaml .Values.reverseProxy.tolerations | nindent 8 }}
