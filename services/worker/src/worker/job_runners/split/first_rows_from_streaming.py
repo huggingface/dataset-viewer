@@ -26,9 +26,9 @@ from libcommon.processing_graph import ProcessingStep
 from libcommon.queue import JobInfo
 from libcommon.simple_cache import DoesNotExist, SplitFullName, get_response
 from libcommon.storage import StrPath
+from libcommon.viewer_utils.features import get_cell_value
 
 from worker.config import AppConfig, FirstRowsConfig
-from worker.features import get_cell_value
 from worker.job_runner import (
     CompleteJobResult,
     ConfigNotFoundError,

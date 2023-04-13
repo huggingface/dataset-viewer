@@ -28,5 +28,5 @@ style:
 
 .PHONY: pip-audit
 pip-audit:
-	bash -c "poetry run pip-audit -r <(poetry export -f requirements.txt --with dev  | sed '/^pymongo==/,+109 d' | sed '/^requests==2.28.2 ;/,+2 d' | sed '/^kenlm @/d' | sed '/^fsspec==/,+2 d' | sed '/^torch @/d' | sed '/^torchaudio @/d' | sed '/^libcommon @/d' | sed '/^trec-car-tools @/d' | sed '/^hffs @/d')"
+	bash -c "poetry run pip-audit -r <(poetry export -f requirements.txt --with dev  | sed '/^kenlm @/d' |sed '/^torch @/d' | sed '/^torchaudio @/d' | sed '/^libcommon @/d' | sed '/^trec-car-tools @/d' | sed '/^hffs @/d')"
 # ^ we remove problematic lines to have a working pip-audit. See https://github.com/pypa/pip-audit/issues/84#issuecomment-1326203111 for "requests"

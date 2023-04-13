@@ -2,8 +2,13 @@
 # Copyright 2022 The HuggingFace Authors.
 
 import logging
+import os
+import random
+import shutil
 from functools import lru_cache, partial
-from typing import Any, List, Mapping, Optional, TypedDict
+from itertools import islice
+from os import PathLike
+from typing import Any, Callable, List, Mapping, Optional, TypedDict, Union
 
 import numpy as np
 import pyarrow as pa
@@ -11,6 +16,11 @@ import pyarrow.parquet as pq
 from datasets import Features
 from hffs.fs import HfFileSystem
 from libcommon.processing_graph import ProcessingStep
+from libcommon.viewer_utils.asset import (
+    glob_rows_in_assets_dir,
+    update_last_modified_date_of_rows_in_assets_dir,
+)
+from libcommon.viewer_utils.features import get_cell_value
 from starlette.requests import Request
 from starlette.responses import Response
 from tqdm.contrib.concurrent import thread_map
@@ -29,9 +39,14 @@ from api.utils import (
     get_json_ok_response,
 )
 
+logger = logging.getLogger(__name__)
+
 MAX_ROWS = 100
 
 PARQUET_REVISION = "refs/convert/parquet"
+
+
+StrPath = Union[str, PathLike[str]]
 
 
 class FileSystemError(Exception):
@@ -43,6 +58,10 @@ class ParquetResponseFormatError(Exception):
 
 
 class ParquetResponseEmptyError(Exception):
+    pass
+
+
+class ParquetDataProcessingError(Exception):
     pass
 
 
@@ -63,7 +82,7 @@ def get_parquet_fs(dataset: str, hf_token: Optional[str]) -> HfFileSystem:
     return HfFileSystem(dataset, repo_type="dataset", revision=PARQUET_REVISION, token=hf_token)
 
 
-UNSUPPORTED_FEATURES_MAGIC_STRINGS = ["Image(", "Audio(", "'binary'"]
+UNSUPPORTED_FEATURES_MAGIC_STRINGS = ["'binary'"]
 
 
 class RowsIndex:
@@ -158,7 +177,7 @@ class RowsIndex:
                     ]
                 )
             with StepProfiler(method="rows.index", step="create the row group readers"):
-                self.row_group_readers = [
+                self.row_group_readers: List[Callable[[], pa.Table]] = [
                     partial(parquet_file.read_row_group, i=group_id, columns=self.supported_columns)
                     for parquet_file in parquet_files
                     for group_id in range(parquet_file.metadata.num_row_groups)
@@ -225,10 +244,13 @@ class Indexer:
         )
 
 
+Row = Mapping[str, Any]
+
+
 class FeatureItem(TypedDict):
     feature_idx: int
     name: str
-    type: Mapping[str, Any]
+    type: Row
 
 
 # in JSON, dicts do not carry any order, so we need to return a list
@@ -256,35 +278,175 @@ class RowItem(TypedDict):
     truncated_cells: List[str]
 
 
-def to_rows_list(pa_table: pa.Table, offset: int, features: Features, unsupported_columns: List[str]) -> List[RowItem]:
+def to_rows_list(
+    pa_table: pa.Table,
+    dataset: str,
+    config: str,
+    split: str,
+    cached_assets_base_url: str,
+    cached_assets_directory: StrPath,
+    offset: int,
+    features: Features,
+    unsupported_columns: List[str],
+) -> List[RowItem]:
     num_rows = pa_table.num_rows
     for idx, (column, feature) in enumerate(features.items()):
         if column in unsupported_columns:
             pa_table = pa_table.add_column(idx, column, pa.array([None] * num_rows))
+    # transform the rows, if needed (e.g. save the images or audio to the assets, and return their URL)
+    try:
+        transformed_rows = transform_rows(
+            dataset=dataset,
+            config=config,
+            split=split,
+            rows=pa_table.to_pylist(),
+            features=features,
+            cached_assets_base_url=cached_assets_base_url,
+            cached_assets_directory=cached_assets_directory,
+            offset=offset,
+        )
+    except Exception as err:
+        raise ParquetDataProcessingError(
+            "Server error while post-processing the split rows. Please report the issue."
+        ) from err
     return [
         {
             "row_idx": idx + offset,
             "row": row,
             "truncated_cells": unsupported_columns,
         }
-        for idx, row in enumerate(pa_table.to_pylist())
+        for idx, row in enumerate(transformed_rows)
     ]
 
 
-def create_response(pa_table: pa.Table, offset: int, features: Features, unsupported_columns: List[str]) -> Any:
+def transform_rows(
+    dataset: str,
+    config: str,
+    split: str,
+    rows: List[Row],
+    features: Features,
+    cached_assets_base_url: str,
+    cached_assets_directory: StrPath,
+    offset: int,
+) -> List[Row]:
+    return [
+        {
+            featureName: get_cell_value(
+                dataset=dataset,
+                config=config,
+                split=split,
+                row_idx=offset + row_idx,
+                cell=row[featureName] if featureName in row else None,
+                featureName=featureName,
+                fieldType=fieldType,
+                assets_base_url=cached_assets_base_url,
+                assets_directory=cached_assets_directory,
+            )
+            for (featureName, fieldType) in features.items()
+        }
+        for row_idx, row in enumerate(rows)
+    ]
+
+
+def _greater_or_equal(row_dir_name: str, row_idx: int, on_error: bool) -> bool:
+    try:
+        return int(row_dir_name) >= row_idx
+    except ValueError:
+        return on_error
+
+
+def clean_cached_assets(
+    dataset: str,
+    cached_assets_directory: StrPath,
+    keep_first_rows_number: int,
+    keep_most_recent_rows_number: int,
+    max_cleaned_rows_number: int,
+) -> None:
+    """
+    The cached assets directory is cleaned to save disk space using this simple (?) heuristic:
+
+    1. it takes a big sample of rows from the cache using glob (max `max_cleaned_rows_number`)
+    2. it keeps the most recent ones (max `keep_most_recent_rows_number`)
+    3. it keeps the rows below a certain index (max `keep_first_rows_number`)
+    4. it discards the rest
+
+    To check for the most recent rows, it looks at the "last modified time" of rows directories.
+    This time is updated every time a row is accessed using `update_last_modified_date_of_rows_in_assets_dir()`.
+
+    Args:
+        dataset (`str`):
+            Dataset name e.g `squad` or `lhoestq/demo1`.
+            Rows are cleaned in any dataset configuration or split of this dataset.
+        cached_assets_directory (`str`):
+            Directory containing the cached image and audio files
+        keep_first_rows_number (`int`):
+            Keep the rows with an index below a certain number
+        keep_most_recent_rows_number (`int`):
+            Keep the most recently accessed rows.
+        max_cleaned_rows_number (`int`):
+            Maximum number of rows to discard.
+    """
+    if keep_first_rows_number < 0 or keep_most_recent_rows_number < 0 or max_cleaned_rows_number < 0:
+        raise ValueError(
+            "Failed to run cached assets cleaning. Make sure all of keep_first_rows_number,"
+            f" keep_most_recent_rows_number and max_cleaned_rows_number  are set (got {keep_first_rows_number},"
+            f" {keep_most_recent_rows_number} and {max_cleaned_rows_number})"
+        )
+    row_directories = glob_rows_in_assets_dir(dataset, cached_assets_directory)
+    row_directories_sample = list(
+        islice(
+            (
+                row_dir
+                for row_dir in row_directories
+                if _greater_or_equal(row_dir.name, keep_first_rows_number, on_error=True)
+            ),
+            max_cleaned_rows_number + keep_most_recent_rows_number,
+        )
+    )
+    if len(row_directories_sample) > keep_most_recent_rows_number:
+        row_dirs_to_delete = sorted(row_directories_sample, key=os.path.getmtime, reverse=True)[
+            keep_most_recent_rows_number:
+        ]
+        for row_dir_to_delete in row_dirs_to_delete:
+            shutil.rmtree(row_dir_to_delete, ignore_errors=True)
+
+
+def create_response(
+    dataset: str,
+    config: str,
+    split: str,
+    cached_assets_base_url: str,
+    cached_assets_directory: StrPath,
+    pa_table: pa.Table,
+    offset: int,
+    features: Features,
+    unsupported_columns: List[str],
+) -> Any:
     if set(pa_table.column_names).intersection(set(unsupported_columns)):
         raise RuntimeError(
             "The pyarrow table contains unsupported columns. They should have been ignored in the row group reader."
         )
     return {
         "features": to_features_list(features),
-        "rows": to_rows_list(pa_table, offset, features, unsupported_columns),
+        "rows": to_rows_list(
+            pa_table,
+            dataset,
+            config,
+            split,
+            cached_assets_base_url,
+            cached_assets_directory,
+            offset,
+            features,
+            unsupported_columns,
+        ),
     }
 
 
 def create_rows_endpoint(
     config_parquet_processing_steps: List[ProcessingStep],
     init_processing_steps: List[ProcessingStep],
+    cached_assets_base_url: str,
+    cached_assets_directory: StrPath,
     hf_endpoint: str,
     hf_token: Optional[str] = None,
     hf_jwt_public_key: Optional[str] = None,
@@ -293,6 +455,10 @@ def create_rows_endpoint(
     hf_timeout_seconds: Optional[float] = None,
     max_age_long: int = 0,
     max_age_short: int = 0,
+    clean_cache_proba: float = 0.0,
+    keep_first_rows_number: int = -1,
+    keep_most_recent_rows_number: int = -1,
+    max_cleaned_rows_number: int = -1,
 ) -> Endpoint:
     indexer = Indexer(
         config_parquet_processing_steps=config_parquet_processing_steps,
@@ -324,7 +490,7 @@ def create_rows_endpoint(
                 with StepProfiler(method="rows_endpoint", step="check authentication"):
                     # if auth_check fails, it will raise an exception that will be caught below
                     auth_check(
-                        dataset,
+                        dataset=dataset,
                         external_auth_url=external_auth_url,
                         request=request,
                         hf_jwt_public_key=hf_jwt_public_key,
@@ -335,8 +501,47 @@ def create_rows_endpoint(
                     rows_index = indexer.get_rows_index(dataset=dataset, config=config, split=split)
                 with StepProfiler(method="rows_endpoint", step="query the rows"):
                     pa_table = rows_index.query(offset=offset, length=length)
+                with StepProfiler(method="rows_endpoint", step="clean cache"):
+                    # no need to do it every time
+                    if random.random() < clean_cache_proba:  # nosec
+                        if (
+                            keep_first_rows_number < 0
+                            and keep_most_recent_rows_number < 0
+                            and max_cleaned_rows_number < 0
+                        ):
+                            logger.debug(
+                                "Params keep_first_rows_number, keep_most_recent_rows_number and"
+                                " max_cleaned_rows_number are not set. Skipping cached assets cleaning."
+                            )
+                        else:
+                            clean_cached_assets(
+                                dataset=dataset,
+                                cached_assets_directory=cached_assets_directory,
+                                keep_first_rows_number=keep_first_rows_number,
+                                keep_most_recent_rows_number=keep_most_recent_rows_number,
+                                max_cleaned_rows_number=max_cleaned_rows_number,
+                            )
                 with StepProfiler(method="rows_endpoint", step="transform to a list"):
-                    response = create_response(pa_table, offset, rows_index.features, rows_index.unsupported_columns)
+                    response = create_response(
+                        dataset=dataset,
+                        config=config,
+                        split=split,
+                        cached_assets_base_url=cached_assets_base_url,
+                        cached_assets_directory=cached_assets_directory,
+                        pa_table=pa_table,
+                        offset=offset,
+                        features=rows_index.features,
+                        unsupported_columns=rows_index.unsupported_columns,
+                    )
+                with StepProfiler(method="rows_endpoint", step="update last modified time of rows in asset dir"):
+                    update_last_modified_date_of_rows_in_assets_dir(
+                        dataset=dataset,
+                        config=config,
+                        split=split,
+                        offset=offset,
+                        length=length,
+                        assets_directory=cached_assets_directory,
+                    )
                 with StepProfiler(method="rows_endpoint", step="generate the OK response"):
                     return get_json_ok_response(content=response, max_age=max_age_long)
             except Exception as e:

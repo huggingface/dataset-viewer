@@ -1,13 +1,11 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2022 The HuggingFace Authors.
 
-import io
 import json
+from io import BytesIO
 from typing import Any, List, Optional, Union
 from zlib import adler32
 
-import numpy
-import soundfile  # type:ignore
 from datasets import (
     Array2D,
     Array3D,
@@ -21,10 +19,11 @@ from datasets import (
     TranslationVariableLanguages,
     Value,
 )
-from libcommon.storage import StrPath
+from numpy import ndarray
 from PIL import Image as PILImage  # type: ignore
 
-from worker.asset import create_audio_files, create_image_file
+from libcommon.storage import StrPath
+from libcommon.viewer_utils.asset import create_audio_files, create_image_file
 
 
 def append_hash_suffix(string: str, json_path: Optional[List[Union[str, int]]] = None) -> str:
@@ -54,15 +53,17 @@ def image(
     assets_base_url: str,
     assets_directory: StrPath,
     json_path: Optional[List[Union[str, int]]] = None,
+    overwrite: bool = True,
 ) -> Any:
     if value is None:
         return None
+    if isinstance(value, dict) and value.get("bytes"):
+        value = PILImage.open(BytesIO(value["bytes"]))
     if not isinstance(value, PILImage.Image):
-        try:
-            image_bytes = value["bytes"]
-            value = PILImage.open(io.BytesIO(image_bytes))
-        except Exception:
-            raise TypeError("image cell must be a PIL image")
+        raise TypeError(
+            "Image cell must be a PIL image or an encoded dict of an image, "
+            f"but got {str(value)[:300]}{'...' if len(str(value)) > 300 else ''}"
+        )
     # attempt to generate one of the supported formats; if unsuccessful, throw an error
     for ext in [".jpg", ".png"]:
         try:
@@ -76,6 +77,7 @@ def image(
                 image=value,
                 assets_base_url=assets_base_url,
                 assets_directory=assets_directory,
+                overwrite=overwrite,
             )
         except OSError:
             # if wrong format, try the next one, see https://github.com/huggingface/datasets-server/issues/191
@@ -95,19 +97,21 @@ def audio(
     assets_base_url: str,
     assets_directory: StrPath,
     json_path: Optional[List[Union[str, int]]] = None,
+    overwrite: bool = True,
 ) -> Any:
     if value is None:
         return None
+    if isinstance(value, dict) and value.get("bytes"):
+        value = Audio().decode_example(value)
     try:
         array = value["array"]
         sampling_rate = value["sampling_rate"]
     except Exception as e:
-        if "bytes" in value:
-            bytes_array, sampling_rate = soundfile.read(io.BytesIO(value["bytes"]))
-            array = numpy.array(bytes_array)
-        else:
-            raise TypeError("audio cell must contain 'array' and 'sampling_rate' fields") from e
-    if type(array) != numpy.ndarray:
+        raise TypeError(
+            "audio cell must contain 'array' and 'sampling_rate' fields, "
+            f"but got {str(value)[:300]}{'...' if len(str(value)) > 300 else ''}"
+        ) from e
+    if type(array) != ndarray:
         raise TypeError("'array' field must be a numpy.ndarray")
     if type(sampling_rate) != int:
         raise TypeError("'sampling_rate' field must be an integer")
@@ -123,6 +127,7 @@ def audio(
         assets_base_url=assets_base_url,
         filename_base=append_hash_suffix("audio", json_path),
         assets_directory=assets_directory,
+        overwrite=overwrite,
     )
 
 
@@ -137,6 +142,7 @@ def get_cell_value(
     assets_base_url: str,
     assets_directory: StrPath,
     json_path: Optional[List[Union[str, int]]] = None,
+    overwrite: bool = True,
 ) -> Any:
     # always allow None values in the cells
     if cell is None:
@@ -152,6 +158,7 @@ def get_cell_value(
             assets_base_url=assets_base_url,
             assets_directory=assets_directory,
             json_path=json_path,
+            overwrite=overwrite,
         )
     elif isinstance(fieldType, Audio):
         return audio(
@@ -164,6 +171,7 @@ def get_cell_value(
             assets_base_url=assets_base_url,
             assets_directory=assets_directory,
             json_path=json_path,
+            overwrite=overwrite,
         )
     elif isinstance(fieldType, list):
         if type(cell) != list:
@@ -183,6 +191,7 @@ def get_cell_value(
                 assets_base_url=assets_base_url,
                 assets_directory=assets_directory,
                 json_path=json_path + [idx] if json_path else [idx],
+                overwrite=overwrite,
             )
             for (idx, subCell) in enumerate(cell)
         ]
@@ -202,6 +211,7 @@ def get_cell_value(
                     assets_base_url=assets_base_url,
                     assets_directory=assets_directory,
                     json_path=json_path + [idx] if json_path else [idx],
+                    overwrite=overwrite,
                 )
                 for (idx, subCell) in enumerate(cell)
             ]
@@ -224,6 +234,7 @@ def get_cell_value(
                         assets_base_url=assets_base_url,
                         assets_directory=assets_directory,
                         json_path=json_path + [key, idx] if json_path else [key, idx],
+                        overwrite=overwrite,
                     )
                     for (idx, subCellItem) in enumerate(subCell)
                 ]
@@ -246,6 +257,7 @@ def get_cell_value(
                 assets_base_url=assets_base_url,
                 assets_directory=assets_directory,
                 json_path=json_path + [key] if json_path else [key],
+                overwrite=overwrite,
             )
             for (key, subCell) in cell.items()
         }

@@ -1,10 +1,13 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2022 The HuggingFace Authors.
 
+from io import BufferedReader
 from typing import Mapping, Tuple, Union
 
 from requests import PreparedRequest
-from responses import _Body
+from responses import Response
+
+_Body = Union[str, BaseException, Response, BufferedReader, bytes]
 
 
 def request_callback(request: PreparedRequest) -> Union[Exception, Tuple[int, Mapping[str, str], _Body]]:

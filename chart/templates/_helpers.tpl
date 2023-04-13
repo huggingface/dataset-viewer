@@ -135,6 +135,22 @@ The assets/ subpath in the NFS
 {{- end }}
 
 {{/*
+The cached-assets base URL
+*/}}
+{{- define "cachedAssets.baseUrl" -}}
+{{- printf "%s%s/cached-assets" (include "datasetsServer.ingress.scheme" .) (include "datasetsServer.ingress.hostname" .) }}
+{{- end }}
+
+{{/*
+The cached-assets/ subpath in the NFS
+- in a subdirectory named as the chart (datasets-server/), and below it,
+- in a subdirectory named as the Release, so that Releases will not share the same dir
+*/}}
+{{- define "cachedAssets.subpath" -}}
+{{- printf "%s/%s/%s/" .Chart.Name .Release.Name "cached-assets" }}
+{{- end }}
+
+{{/*
 The datasets library will use this directory as a cache
 - in a subdirectory named as the chart (datasets-server/), and below it,
 - in a subdirectory named as the Release, so that Releases will not share the same dir

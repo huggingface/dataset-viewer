@@ -23,7 +23,9 @@ spec:
       labels: {{ include "labels.admin" . | nindent 8 }}
     spec:
       {{- include "image.imagePullSecrets" . | nindent 6 }}
-      initContainers: {{ include "initContainerAssets" . | nindent 8 }}
+      initContainers: 
+        {{ include "initContainerAssets" . | nindent 8 }}
+        {{ include "initContainerCachedAssets" . | nindent 8 }}
       containers: {{ include "containerAdmin" . | nindent 8 }}
       nodeSelector: {{ toYaml .Values.admin.nodeSelector | nindent 8 }}
       tolerations: {{ toYaml .Values.admin.tolerations | nindent 8 }}

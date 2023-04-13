@@ -33,6 +33,10 @@ server {
     alias ${ASSETS_DIRECTORY}/;
   }
 
+  location /cached-assets/ {
+    alias ${CACHED_ASSETS_DIRECTORY}/;
+  }
+
   location /admin/ {
     # note the trailing slash, to remove the /admin/ prefix
     proxy_pass ${URL_ADMIN}/;

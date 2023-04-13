@@ -6,11 +6,13 @@ services:
     volumes:
       - ../chart/nginx-templates/:/etc/nginx/templates:ro
       - assets:${ASSETS_STORAGE_DIRECTORY-/assets}:ro
+      - cached-assets:${CACHED_ASSETS_STORAGE_DIRECTORY-/cached-assets}:ro
       - ../chart/static-files/openapi.json:/static-files/openapi.json:ro
     ports:
       - "${PORT_REVERSE_PROXY-8000}:80"
     environment:
       ASSETS_DIRECTORY: ${ASSETS_STORAGE_DIRECTORY-/assets}
+      CACHED_ASSETS_DIRECTORY: ${CACHED_ASSETS_STORAGE_DIRECTORY-/cached-assets}
       HOST: localhost
       PORT: 80
       URL_ADMIN: http://host.docker.internal:${ADMIN_UVICORN_PORT-8081}
@@ -43,7 +45,8 @@ services:
     depends_on:
       - mongodb
     restart: always
-    network_mode: host
+    ports:
+      - ${ADMIN_UVICORN_PORT-8081}:${ADMIN_UVICORN_PORT-8081}
   api:
     build:
       context: ..
@@ -51,12 +54,20 @@ services:
     extends:
       file: docker-compose-dev-base.yml
       service: api
+    volumes:
+      - cached-assets:${CACHED_ASSETS_STORAGE_DIRECTORY-/cached-assets}
     environment:
+      CACHED_ASSETS_BASE_URL: "http://localhost:${PORT_REVERSE_PROXY-8000}/cached-assets" # hard-coded to work with the reverse-proxy
+      CACHED_ASSETS_STORAGE_DIRECTORY: ${CACHED_ASSETS_STORAGE_DIRECTORY-/cached-assets}
+      CACHED_ASSETS_CLEAN_CACHE_PROBA: ${CACHED_ASSETS_CLEAN_CACHE_PROBA-0.05}
+      CACHED_ASSETS_KEEP_FIRST_ROWS_NUMBER: ${CACHED_ASSETS_KEEP_FIRST_ROWS_NUMBER-100}
+      CACHED_ASSETS_KEEP_MOST_RECENT_ROWS_NUMBER: ${CACHED_ASSETS_KEEP_MOST_RECENT_ROWS_NUMBER-200}
+      CACHED_ASSETS_MAX_CLEANED_ROWS_NUMBER: ${CACHED_ASSETS_MAX_CLEANED_ROWS_NUMBER-10000}
       # service
       API_HF_AUTH_PATH: ${API_HF_AUTH_PATH-/api/datasets/%s/auth-check}
       API_HF_JWT_PUBLIC_KEY_URL: ${API_HF_JWT_PUBLIC_KEY_URL-https://hub-ci.huggingface.co/api/keys/jwt}
       API_HF_JWT_ALGORITHM: ${API_HF_JWT_ALGORITHM-EdDSA}
-      API_HF_TIMEOUT_SECONDS: ${API_HF_TIMEOUT_SECONDS-0.2}
+      API_HF_TIMEOUT_SECONDS: ${API_HF_TIMEOUT_SECONDS-1.0}
       API_MAX_AGE_LONG: ${API_MAX_AGE_LONG-120}
       API_MAX_AGE_SHORT: ${API_MAX_AGE_SHORT-10}
       # prometheus
@@ -65,7 +76,8 @@ services:
       API_UVICORN_HOSTNAME: 0.0.0.0 # required for docker compose
       API_UVICORN_NUM_WORKERS: ${API_UVICORN_NUM_WORKERS-2}
       API_UVICORN_PORT: ${API_UVICORN_PORT-8080}
-    network_mode: host
+    ports:
+      - ${API_UVICORN_PORT-8080}:${API_UVICORN_PORT-8080}
     depends_on:
       - mongodb
     restart: unless-stopped
@@ -74,7 +86,7 @@ services:
       context: ..
       dockerfile: services/worker/dev.Dockerfile
     deploy:
-      replicas: 4
+      replicas: ${DEV_WORKER_REPLICAS-4}
     volumes:
       - assets:${ASSETS_STORAGE_DIRECTORY-/assets}:rw
     extends:
@@ -98,7 +110,6 @@ services:
       PARQUET_AND_INFO_URL_TEMPLATE: ${PARQUET_AND_INFO_URL_TEMPLATE-/datasets/%s/resolve/%s/%s}
       WORKER_STORAGE_PATHS: ${ASSETS_STORAGE_DIRECTORY-/assets}
       # ^ note: the datasets cache is automatically added, so no need to add it here
-    network_mode: host
     restart: always
   mongodb:
     image: docker.io/mongo
@@ -108,6 +119,7 @@ services:
       - "${MONGO_PORT-27017}:27017"
 volumes:
   assets:
+  cached-assets:
   mongo:
   splits-datasets-cache:
   splits-modules-cache:
