@@ -1,15 +1,16 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2022 The HuggingFace Authors.
 
+from http import HTTPStatus
 from typing import Any, Iterator, List, Mapping, Optional, TypedDict
 
 import pytest
-from http import HTTPStatus
 
 from libcommon.config import ProcessingGraphConfig
-from libcommon.processing_graph import ProcessingGraph, ProcessingStep
+from libcommon.processing_graph import ProcessingGraph
 from libcommon.queue import Queue, Status, _clean_queue_database
 from libcommon.resources import CacheMongoResource, QueueMongoResource
+from libcommon.simple_cache import _clean_cache_database, upsert_response
 from libcommon.state import (
     HARD_CODED_CONFIG_NAMES_CACHE_KIND,
     HARD_CODED_SPLIT_NAMES_FROM_DATASET_INFO_CACHE_KIND,
@@ -23,7 +24,6 @@ from libcommon.state import (
     fetch_config_names,
     fetch_split_names,
 )
-from libcommon.simple_cache import _clean_cache_database, upsert_response
 
 
 @pytest.fixture(autouse=True)
@@ -267,6 +267,15 @@ def test_step_state_as_dict() -> None:
     }
 
 
+def test_step_state_create_backfill_task() -> None:
+    dataset = DATASET_NAME
+    config = None
+    split = None
+    step = PROCESSING_GRAPH.get_step(name="/config-names")
+    step_state = StepState(dataset=dataset, config=config, split=split, step=step)
+    assert step_state.create_backfill_task().task_id == f"backfill[{step.job_type},{dataset},{config},{split}]"
+
+
 def test_step_state_backfill() -> None:
     dataset = DATASET_NAME
     config = None
@@ -275,13 +284,11 @@ def test_step_state_backfill() -> None:
     step_state = StepState(dataset=dataset, config=config, split=split, step=step)
     assert not step_state.cache_state.exists
     assert not step_state.job_state.is_in_process
-    assert [str(task) for task in step_state.get_backfill_tasks()] == ["backfill[/config-names,dataset,None,None]"]
     assert step_state.should_be_backfilled()
-    step_state.backfill()
+    step_state.create_backfill_task().run()
     step_state = StepState(dataset=dataset, config=config, split=split, step=step)
     assert not step_state.cache_state.exists
     assert step_state.job_state.is_in_process
-    assert not step_state.get_backfill_tasks()
     assert not step_state.should_be_backfilled()
 
 
@@ -302,7 +309,6 @@ SPLIT1_STATE_DICT = {
             "should_be_backfilled": True,
         },
     ],
-    "should_be_backfilled": True,
 }
 
 
@@ -315,25 +321,6 @@ def test_split_state_as_dict() -> None:
         SplitState(dataset=dataset, config=config, split=split, processing_graph=processing_graph).as_dict()
         == SPLIT1_STATE_DICT
     )
-
-
-def test_split_state_backfill() -> None:
-    dataset = DATASET_NAME
-    config = CONFIG_NAME
-    split = SPLIT1_NAME
-    processing_graph = PROCESSING_GRAPH
-    split_state = SplitState(dataset=dataset, config=config, split=split, processing_graph=processing_graph)
-    assert all(not step_state.job_state.is_in_process for step_state in split_state.step_states)
-    assert [str(task) for task in split_state.get_backfill_tasks()] == [
-        "backfill[split-first-rows-from-streaming,dataset,config,split1]",
-        "backfill[split-first-rows-from-parquet,dataset,config,split1]",
-    ]
-    assert split_state.should_be_backfilled()
-    split_state.backfill()
-    split_state = SplitState(dataset=dataset, config=config, split=split, processing_graph=processing_graph)
-    assert all(step_state.job_state.is_in_process for step_state in split_state.step_states)
-    assert not split_state.get_backfill_tasks()
-    assert not split_state.should_be_backfilled()
 
 
 SPLIT2_NAME = "split2"
@@ -353,7 +340,6 @@ SPLIT2_STATE_DICT = {
             "should_be_backfilled": True,
         },
     ],
-    "should_be_backfilled": True,
 }
 
 CONFIG_STATE_DICT = {
@@ -400,7 +386,6 @@ CONFIG_STATE_DICT = {
             "should_be_backfilled": True,
         },
     ],
-    "should_be_backfilled": True,
 }
 
 
@@ -419,52 +404,6 @@ def test_config_state_as_dict() -> None:
     assert (
         ConfigState(dataset=dataset, config=config, processing_graph=processing_graph).as_dict() == CONFIG_STATE_DICT
     )
-
-
-def test_config_state_backfill() -> None:
-    dataset = DATASET_NAME
-    config = CONFIG_NAME
-    processing_graph = PROCESSING_GRAPH
-    config_state = ConfigState(dataset=dataset, config=config, processing_graph=processing_graph)
-    assert not config_state.split_names
-    assert [str(task) for task in config_state.get_backfill_tasks()] == [
-        "backfill[/split-names-from-streaming,dataset,config,None]",
-        "backfill[config-parquet-and-info,dataset,config,None]",
-        "backfill[config-parquet,dataset,config,None]",
-        "backfill[config-info,dataset,config,None]",
-        "backfill[/split-names-from-dataset-info,dataset,config,None]",
-        "backfill[config-size,dataset,config,None]",
-    ]
-    assert config_state.should_be_backfilled()
-    config_state.backfill()
-    # simulate that the split names are now in the cache
-    upsert_response(
-        kind=HARD_CODED_SPLIT_NAMES_FROM_DATASET_INFO_CACHE_KIND,
-        dataset=DATASET_NAME,
-        config=CONFIG_NAME,
-        split=None,
-        content=SPLIT_NAMES_RESPONSE_OK["content"],
-        http_status=SPLIT_NAMES_RESPONSE_OK["http_status"],
-    )
-    job_info = Queue().start_job(only_job_types=[HARD_CODED_SPLIT_NAMES_FROM_DATASET_INFO_CACHE_KIND])
-    Queue().finish_job(job_id=job_info["job_id"], finished_status=Status.SUCCESS)
-    config_state = ConfigState(dataset=dataset, config=config, processing_graph=processing_graph)
-    assert config_state.split_names == [
-        split_item["split"] for split_item in SPLIT_NAMES_RESPONSE_OK["content"]["split_names"]
-    ]
-    # still: should_be_backfilled() is True, because the split steps are not in the cache
-    # the config steps, on the other hand, are in process, so not appearing in the list of backfill tasks
-    assert [str(task) for task in config_state.get_backfill_tasks()] == [
-        "backfill[split-first-rows-from-streaming,dataset,config,split1]",
-        "backfill[split-first-rows-from-parquet,dataset,config,split1]",
-        "backfill[split-first-rows-from-streaming,dataset,config,split2]",
-        "backfill[split-first-rows-from-parquet,dataset,config,split2]",
-    ]
-    assert config_state.should_be_backfilled()
-    config_state.backfill()
-    config_state = ConfigState(dataset=dataset, config=config, processing_graph=processing_graph)
-    assert not config_state.get_backfill_tasks()
-    assert not config_state.should_be_backfilled()
 
 
 ONE_CONFIG_NAME_CONTENT_OK = {"config_names": [{"config": CONFIG_NAME}]}
@@ -548,80 +487,105 @@ def test_dataset_state_as_dict() -> None:
                 "should_be_backfilled": True,
             },
         ],
-        "should_be_backfilled": True,
     }
 
 
-def test_dataset_state_backfill() -> None:
+CONFIG_PARQUET_AND_INFO_OK = {"config": CONFIG_NAME, "content": "not important"}
+CONFIG_INFO_OK = {"config": CONFIG_NAME, "content": "not important"}
+
+
+def finish_task(job_type: str, content: Any) -> None:
+    job_info = Queue().start_job(only_job_types=[job_type])
+    upsert_response(
+        kind=job_info["type"],
+        dataset=job_info["dataset"],
+        config=job_info["config"],
+        split=job_info["split"],
+        content=content,
+        http_status=HTTPStatus.OK,
+    )
+    Queue().finish_job(job_id=job_info["job_id"], finished_status=Status.SUCCESS)
+
+
+def test_get_backfill_tasks() -> None:
     dataset = DATASET_NAME
     processing_graph = PROCESSING_GRAPH
     dataset_state = DatasetState(dataset=dataset, processing_graph=processing_graph)
     assert not dataset_state.config_names
-    assert [str(task) for task in dataset_state.get_backfill_tasks()] == [
+    assert sorted([task.task_id for task in dataset_state.get_backfill_tasks()]) == [
         "backfill[/config-names,dataset,None,None]",
         "backfill[/parquet-and-dataset-info,dataset,None,None]",
-        "backfill[dataset-parquet,dataset,None,None]",
         "backfill[dataset-info,dataset,None,None]",
+        "backfill[dataset-parquet,dataset,None,None]",
         "backfill[dataset-size,dataset,None,None]",
-        "backfill[dataset-split-names-from-streaming,dataset,None,None]",
-        "backfill[dataset-split-names-from-dataset-info,dataset,None,None]",
         "backfill[dataset-split-names,dataset,None,None]",
-        "backfill[dataset-is-valid,dataset,None,None]",
+        "backfill[dataset-split-names-from-dataset-info,dataset,None,None]",
+        "backfill[dataset-split-names-from-streaming,dataset,None,None]",
     ]
-    assert dataset_state.should_be_backfilled()
-    dataset_state.backfill()
-    # simulate that the config names are now in the cache
-    upsert_response(
-        kind=HARD_CODED_CONFIG_NAMES_CACHE_KIND,
-        dataset=DATASET_NAME,
-        config=None,
-        split=None,
-        content=ONE_CONFIG_NAME_CONTENT_OK,
-        http_status=HTTPStatus.OK,
-    )
-    job_info = Queue().start_job(only_job_types=[HARD_CODED_CONFIG_NAMES_CACHE_KIND])
-    Queue().finish_job(job_id=job_info["job_id"], finished_status=Status.SUCCESS)
+    # assert dataset_state.should_be_backfilled()
 
+    # we launch all the backfill tasks
+    dataset_state.backfill()
+    # the jobs have been created and are in process, and the cache has not changed
+    # thus: no new backfill task is proposed
+    dataset_state = DatasetState(dataset=dataset, processing_graph=processing_graph)
+    assert not dataset_state.config_names
+    assert sorted([task.task_id for task in dataset_state.get_backfill_tasks()]) == []
+
+    # simulate that the "backfill[/config-names,dataset,None,None]" task has finished
+    finish_task(job_type="/config-names", content=ONE_CONFIG_NAME_CONTENT_OK)
+
+    # The first config-level steps are now ready to be backfilled
     dataset_state = DatasetState(dataset=dataset, processing_graph=processing_graph)
     assert dataset_state.config_names == [CONFIG_NAME]
-    # still: should_be_backfilled() is True, because the config steps are not in the cache
-    # the dataset steps, on the other hand, are in process, so not appearing in the list of backfill tasks
-    assert [str(task) for task in dataset_state.get_backfill_tasks()] == [
+    assert len(dataset_state.config_states) == 1
+    assert dataset_state.config_states[0].split_names == []
+    assert sorted([task.task_id for task in dataset_state.get_backfill_tasks()]) == [
         "backfill[/split-names-from-streaming,dataset,config,None]",
         "backfill[config-parquet-and-info,dataset,config,None]",
-        "backfill[config-parquet,dataset,config,None]",
+    ]
+
+    # launch the backfill tasks
+    dataset_state.backfill()
+    # simulate that the "backfill[config-parquet-and-info,dataset,config,None]" task has finished
+    finish_task(job_type="config-parquet-and-info", content=CONFIG_PARQUET_AND_INFO_OK)
+    # the config-level dependent steps are now ready to be backfilled
+    dataset_state = DatasetState(dataset=dataset, processing_graph=processing_graph)
+    assert dataset_state.config_names == [CONFIG_NAME]
+    assert len(dataset_state.config_states) == 1
+    assert dataset_state.config_states[0].split_names == []
+    assert sorted([task.task_id for task in dataset_state.get_backfill_tasks()]) == [
         "backfill[config-info,dataset,config,None]",
-        "backfill[/split-names-from-dataset-info,dataset,config,None]",
+        "backfill[config-parquet,dataset,config,None]",
         "backfill[config-size,dataset,config,None]",
     ]
-    assert dataset_state.should_be_backfilled()
-    dataset_state.backfill()
-    # simulate that the config names are now in the cache
-    upsert_response(
-        kind=HARD_CODED_SPLIT_NAMES_FROM_DATASET_INFO_CACHE_KIND,
-        dataset=DATASET_NAME,
-        config=CONFIG_NAME,
-        split=None,
-        content=SPLIT_NAMES_RESPONSE_OK["content"],
-        http_status=SPLIT_NAMES_RESPONSE_OK["http_status"],
-    )
-    job_info = Queue().start_job(only_job_types=[HARD_CODED_SPLIT_NAMES_FROM_DATASET_INFO_CACHE_KIND])
-    Queue().finish_job(job_id=job_info["job_id"], finished_status=Status.SUCCESS)
 
-    dataset_state = DatasetState(dataset=dataset, processing_graph=processing_graph)
-    assert dataset_state.config_states[CONFIG_NAME].split_names == [
-        split_item["split"] for split_item in SPLIT_NAMES_RESPONSE_OK["content"]["split_names"]
-    ]
-    # still: should_be_backfilled() is True, because the split steps are not in the cache
-    # the config steps, on the other hand, are in process, so not appearing in the list of backfill tasks
-    assert [str(task) for task in dataset_state.get_backfill_tasks()] == [
-        "backfill[split-first-rows-from-streaming,dataset,config,split1]",
-        "backfill[split-first-rows-from-parquet,dataset,config,split1]",
-        "backfill[split-first-rows-from-streaming,dataset,config,split2]",
-        "backfill[split-first-rows-from-parquet,dataset,config,split2]",
-    ]
-    assert dataset_state.should_be_backfilled()
+    # launch the backfill tasks
     dataset_state.backfill()
+    # simulate that the "backfill[config-info,dataset,config,None]" task has finished
+    finish_task(job_type="config-info", content=CONFIG_INFO_OK)
+    # the config-level dependent steps are now ready to be backfilled
     dataset_state = DatasetState(dataset=dataset, processing_graph=processing_graph)
-    assert not dataset_state.get_backfill_tasks()
-    assert not dataset_state.should_be_backfilled()
+    assert dataset_state.config_names == [CONFIG_NAME]
+    assert len(dataset_state.config_states) == 1
+    assert dataset_state.config_states[0].split_names == []
+    assert sorted([task.task_id for task in dataset_state.get_backfill_tasks()]) == [
+        "backfill[/split-names-from-dataset-info,dataset,config,None]"
+    ]
+
+    # launch the backfill tasks
+    dataset_state.backfill()
+    # simulate that the "backfill[/split-names-from-dataset-info,dataset,config,None]" task and
+    # the "backfill[/split-names-from-streaming,dataset,config,None]" have finished
+    finish_task(job_type="/split-names-from-dataset-info", content=SPLIT_NAMES_RESPONSE_OK["content"])
+    finish_task(job_type="/split-names-from-streaming", content=SPLIT_NAMES_RESPONSE_OK["content"])
+    # the split names are now available
+    dataset_state = DatasetState(dataset=dataset, processing_graph=processing_graph)
+    assert dataset_state.config_names == [CONFIG_NAME]
+    assert len(dataset_state.config_states) == 1
+    assert dataset_state.config_states[0].split_names == SPLIT_NAMES_OK
+    # the split-level dependent steps are now ready to be backfilled
+    assert sorted([task.task_id for task in dataset_state.get_backfill_tasks()]) == [
+        "backfill[split-first-rows-from-streaming,dataset,config,split1]",
+        "backfill[split-first-rows-from-streaming,dataset,config,split2]",
+    ]

@@ -5,7 +5,7 @@ from __future__ import annotations
 
 import contextlib
 from dataclasses import dataclass, field
-from typing import Any, Dict, List, Mapping, Optional
+from typing import Any, Dict, List, Optional
 
 from libcommon.processing_graph import ProcessingGraph, ProcessingStep
 from libcommon.queue import Priority, Queue
@@ -16,7 +16,6 @@ from libcommon.simple_cache import (
     get_response,
     get_response_without_content,
 )
-
 
 # TODO: assets, cached_assets, parquet files
 # TODO: obsolete/dangling cache entries and jobs
@@ -71,12 +70,9 @@ class BackfillTask:
     split: Optional[str]
 
     def __post_init__(self) -> None:
-        self.task = f"backfill[{self.job_type},{self.dataset},{self.config},{self.split}]"
+        self.task_id = f"backfill[{self.job_type},{self.dataset},{self.config},{self.split}]"
 
-    def __str__(self) -> str:
-        return self.task
-
-    def run(self, force: bool, priority: Priority) -> None:
+    def run(self, force: bool = True, priority: Priority = Priority.LOW) -> None:
         Queue().upsert_job(
             job_type=self.job_type,
             dataset=self.dataset,
@@ -175,6 +171,7 @@ class StepState:
                 raise ValueError("Step input type is split, but config or split is None")
         else:
             raise ValueError(f"Invalid step input type: {self.step.input_type}")
+        self.id = f"{self.step.name}[{self.dataset},{self.config},{self.split}]"
         self.job_state = JobState(
             job_type=self.step.job_type, dataset=self.dataset, config=self.config, split=self.split
         )
@@ -182,21 +179,50 @@ class StepState:
             cache_kind=self.step.cache_kind, dataset=self.dataset, config=self.config, split=self.split
         )
 
-    def get_backfill_tasks(self) -> List[BackfillTask]:
-        tasks: List[BackfillTask] = []
-        if self.cache_state.should_be_refreshed() and not self.job_state.is_in_process:
-            tasks.append(
-                BackfillTask(job_type=self.step.job_type, dataset=self.dataset, config=self.config, split=self.split)
+    def get_parent_step_state(self, parent_step: ProcessingStep) -> Optional["StepState"]:
+        if parent_step.input_type == "dataset":
+            return StepState(step=parent_step, dataset=self.dataset, config=None, split=None)
+        elif parent_step.input_type == "config":
+            return (
+                StepState(
+                    step=parent_step,
+                    dataset=self.dataset,
+                    config=self.config,
+                    split=None,
+                )
+                if self.step.input_type in ["config", "split"]
+                else None
+                # ^ fan-in: config->dataset. We just ignore the case
             )
-        return tasks
+        else:
+            return (
+                StepState(
+                    step=parent_step,
+                    dataset=self.dataset,
+                    config=self.config,
+                    split=self.split,
+                )
+                if self.step.input_type == "split"
+                else None
+                # ^ fan-in: split->config, or split->dataset. We just ignore the case
+            )
 
-    def backfill(self) -> None:
-        """Backfill the cache entry for this step."""
-        for backfill_tasks in self.get_backfill_tasks():
-            backfill_tasks.run(force=True, priority=Priority.LOW)
+    def get_parent_step_states(self) -> List[Optional["StepState"]]:
+        return [self.get_parent_step_state(parent_step) for parent_step in self.step.parents]
+
+    def create_backfill_task(self) -> BackfillTask:
+        return BackfillTask(
+            job_type=self.step.job_type,
+            dataset=self.dataset,
+            config=self.config,
+            split=self.split,
+        )
+
+    def is_in_process(self) -> bool:
+        return self.job_state.is_in_process
 
     def should_be_backfilled(self) -> bool:
-        return len(self.get_backfill_tasks()) > 0
+        return self.cache_state.should_be_refreshed() and not self.job_state.is_in_process
 
     def as_dict(self) -> Dict[str, Any]:
         return {
@@ -215,34 +241,20 @@ class SplitState:
     config: str
     split: str
     processing_graph: ProcessingGraph
-    step_states: List[StepState] = field(init=False)
+
+    step_states_by_step: Dict[str, StepState] = field(init=False)
 
     def __post_init__(self) -> None:
-        self.step_states = [
-            StepState(step=step, dataset=self.dataset, config=self.config, split=self.split)
+        self.step_state_by_step = {
+            step.name: StepState(step=step, dataset=self.dataset, config=self.config, split=self.split)
             for step in self.processing_graph.steps.values()
             if step.input_type == "split"
-        ]
-
-    def get_backfill_tasks(self) -> List[BackfillTask]:
-        tasks: List[BackfillTask] = []
-        for step_state in self.step_states:
-            tasks.extend(step_state.get_backfill_tasks())
-        return tasks
-
-    def backfill(self) -> None:
-        """Backfill the cache entry for this split."""
-        for backfill_tasks in self.get_backfill_tasks():
-            backfill_tasks.run(force=True, priority=Priority.LOW)
-
-    def should_be_backfilled(self) -> bool:
-        return len(self.get_backfill_tasks()) > 0
+        }
 
     def as_dict(self) -> Dict[str, Any]:
         return {
             "split": self.split,
-            "step_states": [step_state.as_dict() for step_state in self.step_states],
-            "should_be_backfilled": self.should_be_backfilled(),
+            "step_states": [step_state.as_dict() for step_state in self.step_state_by_step.values()],
         }
 
 
@@ -253,47 +265,33 @@ class ConfigState:
     dataset: str
     config: str
     processing_graph: ProcessingGraph
+
     split_names: List[str] = field(init=False)
-    split_states: Mapping[str, SplitState] = field(init=False)
-    step_states: List[StepState] = field(init=False)
+    split_states: List[SplitState] = field(init=False)
+    step_states_by_step: Dict[str, StepState] = field(init=False)
 
     def __post_init__(self) -> None:
+        self.step_state_by_step = {
+            step.name: StepState(step=step, dataset=self.dataset, config=self.config, split=None)
+            for step in self.processing_graph.steps.values()
+            if step.input_type == "config"
+        }
+
         try:
             self.split_names = fetch_split_names(self.dataset, self.config)
         except Exception:
             self.split_names = []
-        self.split_states = {
-            split_name: SplitState(self.dataset, self.config, split_name, self.processing_graph)
+
+        self.split_states = [
+            SplitState(self.dataset, self.config, split_name, processing_graph=self.processing_graph)
             for split_name in self.split_names
-        }
-        self.step_states = [
-            StepState(step=step, dataset=self.dataset, config=self.config, split=None)
-            for step in self.processing_graph.steps.values()
-            if step.input_type == "config"
         ]
-
-    def get_backfill_tasks(self) -> List[BackfillTask]:
-        tasks: List[BackfillTask] = []
-        for step_state in self.step_states:
-            tasks.extend(step_state.get_backfill_tasks())
-        for split_state in self.split_states.values():
-            tasks.extend(split_state.get_backfill_tasks())
-        return tasks
-
-    def backfill(self) -> None:
-        """Backfill the cache entry for this split."""
-        for backfill_tasks in self.get_backfill_tasks():
-            backfill_tasks.run(force=True, priority=Priority.LOW)
-
-    def should_be_backfilled(self) -> bool:
-        return len(self.get_backfill_tasks()) > 0
 
     def as_dict(self) -> Dict[str, Any]:
         return {
             "config": self.config,
-            "split_states": [split_state.as_dict() for split_state in self.split_states.values()],
-            "step_states": [step_state.as_dict() for step_state in self.step_states],
-            "should_be_backfilled": self.should_be_backfilled(),
+            "split_states": [split_state.as_dict() for split_state in self.split_states],
+            "step_states": [step_state.as_dict() for step_state in self.step_state_by_step.values()],
         }
 
 
@@ -301,47 +299,92 @@ class ConfigState:
 class DatasetState:
     """The state of a dataset."""
 
-    config_states: Mapping[str, ConfigState] = field(init=False)
     dataset: str
     processing_graph: ProcessingGraph
+
     config_names: List[str] = field(init=False)
-    step_states: List[StepState] = field(init=False)
+    config_states: List[ConfigState] = field(init=False)
+    step_states_by_step: Dict[str, StepState] = field(init=False)
 
     def __post_init__(self) -> None:
+        self.step_state_by_step = {
+            step.name: StepState(step=step, dataset=self.dataset, config=None, split=None)
+            for step in self.processing_graph.steps.values()
+            if step.input_type == "dataset"
+        }
+
         try:
             self.config_names = fetch_config_names(self.dataset)
         except Exception:
             self.config_names = []
-        self.config_states = {
-            config_name: ConfigState(dataset=self.dataset, config=config_name, processing_graph=self.processing_graph)
+
+        self.config_states = [
+            ConfigState(dataset=self.dataset, config=config_name, processing_graph=self.processing_graph)
             for config_name in self.config_names
-        }
-        self.step_states = [
-            StepState(step=step, dataset=self.dataset, config=None, split=None)
-            for step in self.processing_graph.steps.values()
-            if step.input_type == "dataset"
         ]
 
     def get_backfill_tasks(self) -> List[BackfillTask]:
-        tasks: List[BackfillTask] = []
-        for step_state in self.step_states:
-            tasks.extend(step_state.get_backfill_tasks())
-        for config_state in self.config_states.values():
-            tasks.extend(config_state.get_backfill_tasks())
-        return tasks
+        step_states_to_backfill: Dict[str, StepState] = {}
+        step_states_blocked_by_parent: Dict[str, StepState] = {}
+        step_states_ok: Dict[str, StepState] = {}
+
+        dataset_state = DatasetState(dataset=self.dataset, processing_graph=self.processing_graph)
+
+        for step in self.processing_graph.topologically_ordered_steps:
+            if step.input_type == "dataset":
+                step_states = [dataset_state.step_state_by_step[step.name]]
+            elif step.input_type == "config":
+                step_states = [
+                    config_state.step_state_by_step[step.name] for config_state in dataset_state.config_states
+                ]
+            elif step.input_type == "split":
+                step_states = [
+                    split_state.step_state_by_step[step.name]
+                    for config_state in dataset_state.config_states
+                    for split_state in config_state.split_states
+                ]
+            else:
+                raise ValueError(f"Invalid input type: {step.input_type}")
+
+            for step_state in step_states:
+                # blocked by a parent?
+                parent_step_states = [
+                    parent_step_state for parent_step_state in step_state.get_parent_step_states() if parent_step_state
+                ]
+                # ^ the parent step states are None (and ignored here) for fan-in steps
+                # (config->dataset, split->config, split->dataset)
+                # what should we do? always recompute? test the progress?
+                if any(
+                    (parent_step_state.id not in step_states_ok) or parent_step_state.is_in_process()
+                    for parent_step_state in parent_step_states
+                ):
+                    if step_state.id in step_states_blocked_by_parent:
+                        raise ValueError(f"Duplicate step state id: {step_state.id}")
+                    step_states_blocked_by_parent[step_state.id] = step_state
+                    continue
+
+                # needs backfill?
+                if step_state.should_be_backfilled():
+                    if step_state.id in step_states_to_backfill:
+                        raise ValueError(f"Duplicate step state id: {step_state.id}")
+                    step_states_to_backfill[step_state.id] = step_state
+                    continue
+
+                # ok
+                if step_state.id in step_states_ok:
+                    raise ValueError(f"Duplicate step state id: {step_state.id}")
+                step_states_ok[step_state.id] = step_state
+
+        return [step_state.create_backfill_task() for step_state in step_states_to_backfill.values()]
 
     def backfill(self) -> None:
         """Backfill the cache entry for this split."""
         for backfill_tasks in self.get_backfill_tasks():
             backfill_tasks.run(force=True, priority=Priority.LOW)
 
-    def should_be_backfilled(self) -> bool:
-        return len(self.get_backfill_tasks()) > 0
-
     def as_dict(self) -> Dict[str, Any]:
         return {
             "dataset": self.dataset,
-            "config_states": [config_state.as_dict() for config_state in self.config_states.values()],
-            "step_states": [step_state.as_dict() for step_state in self.step_states],
-            "should_be_backfilled": self.should_be_backfilled(),
+            "config_states": [config_state.as_dict() for config_state in self.config_states],
+            "step_states": [step_state.as_dict() for step_state in self.step_state_by_step.values()],
         }
