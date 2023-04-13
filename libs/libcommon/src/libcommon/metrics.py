@@ -91,5 +91,5 @@ class CacheTotalMetric(Document):
 
 # only for the tests
 def _clean_metric_database() -> None:
-    CacheTotalMetric.drop_collection()
-    JobTotalMetric.drop_collection()
+    CacheTotalMetric.drop_collection()  # type: ignore
+    JobTotalMetric.drop_collection()  # type: ignore
