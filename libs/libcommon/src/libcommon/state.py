@@ -324,30 +324,30 @@ class DatasetState:
 
         self.step_states_by_status = self._get_step_states_by_status()
 
+    def _get_step_states_for_step(self, step: ProcessingStep) -> List[StepState]:
+        if step.input_type == "dataset":
+            step_states = [self.step_state_by_step[step.name]]
+        elif step.input_type == "config":
+            step_states = [config_state.step_state_by_step[step.name] for config_state in self.config_states]
+        elif step.input_type == "split":
+            step_states = [
+                split_state.step_state_by_step[step.name]
+                for config_state in self.config_states
+                for split_state in config_state.split_states
+            ]
+        else:
+            raise ValueError(f"Invalid input type: {step.input_type}")
+        step_states_ids = {step_state.id for step_state in step_states}
+        if len(step_states_ids) != len(step_states):
+            raise ValueError(f"Duplicate step states for step {step.name}")
+        return step_states
+
     def _get_step_states_by_status(self) -> StepStatesByStatus:
         step_states_by_status = StepStatesByStatus()
 
         for step in self.processing_graph.topologically_ordered_steps:
-            if step.input_type == "dataset":
-                step_states = [self.step_state_by_step[step.name]]
-            elif step.input_type == "config":
-                step_states = [config_state.step_state_by_step[step.name] for config_state in self.config_states]
-            elif step.input_type == "split":
-                step_states = [
-                    split_state.step_state_by_step[step.name]
-                    for config_state in self.config_states
-                    for split_state in config_state.split_states
-                ]
-            else:
-                raise ValueError(f"Invalid input type: {step.input_type}")
-
+            step_states = self._get_step_states_for_step(step)
             for step_state in step_states:
-                # in process?
-                # TODO: should we check this at the end, and if it should not be in process: should we remove the job?
-                if step_state.is_in_process():
-                    step_states_by_status.in_process[step_state.id] = step_state
-                    continue
-
                 # one parent is in an undefined state?
                 # (fan-in steps: config -> dataset, split -> config, split -> dataset)
                 # what should we do? always recompute? test the progress?
@@ -362,21 +362,20 @@ class DatasetState:
                     for parent_step_state in parent_step_states
                     if parent_step_state is not None
                 ):
-                    if step_state.id in step_states_by_status.blocked_by_parent:
-                        raise ValueError(f"Duplicate step state id: {step_state.id}")
                     step_states_by_status.blocked_by_parent[step_state.id] = step_state
                     continue
 
                 # needs backfill?
                 if step_state.should_be_backfilled():
-                    if step_state.id in step_states_by_status.should_be_backfilled:
-                        raise ValueError(f"Duplicate step state id: {step_state.id}")
                     step_states_by_status.should_be_backfilled[step_state.id] = step_state
                     continue
 
+                # in process?
+                if step_state.is_in_process():
+                    step_states_by_status.in_process[step_state.id] = step_state
+                    continue
+
                 # ok
-                if step_state.id in step_states_by_status.up_to_date:
-                    raise ValueError(f"Duplicate step state id: {step_state.id}")
                 step_states_by_status.up_to_date[step_state.id] = step_state
 
         return step_states_by_status
