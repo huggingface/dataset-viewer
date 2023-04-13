@@ -303,6 +303,7 @@ class DatasetState:
     config_names: List[str] = field(init=False)
     config_states: List[ConfigState] = field(init=False)
     step_states_by_step: Dict[str, StepState] = field(init=False)
+    step_states_by_status: StepStatesByStatus = field(init=False)
 
     def __post_init__(self) -> None:
         self.step_state_by_step = {
@@ -321,22 +322,20 @@ class DatasetState:
             for config_name in self.config_names
         ]
 
-    def get_step_states_by_status(self) -> StepStatesByStatus:
-        step_states_by_status = StepStatesByStatus()
+        self.step_states_by_status = self._get_step_states_by_status()
 
-        dataset_state = DatasetState(dataset=self.dataset, processing_graph=self.processing_graph)
+    def _get_step_states_by_status(self) -> StepStatesByStatus:
+        step_states_by_status = StepStatesByStatus()
 
         for step in self.processing_graph.topologically_ordered_steps:
             if step.input_type == "dataset":
-                step_states = [dataset_state.step_state_by_step[step.name]]
+                step_states = [self.step_state_by_step[step.name]]
             elif step.input_type == "config":
-                step_states = [
-                    config_state.step_state_by_step[step.name] for config_state in dataset_state.config_states
-                ]
+                step_states = [config_state.step_state_by_step[step.name] for config_state in self.config_states]
             elif step.input_type == "split":
                 step_states = [
                     split_state.step_state_by_step[step.name]
-                    for config_state in dataset_state.config_states
+                    for config_state in self.config_states
                     for split_state in config_state.split_states
                 ]
             else:
@@ -384,7 +383,7 @@ class DatasetState:
 
     def backfill(self) -> None:
         """Backfill the cache entry for this split."""
-        for step_state in self.get_step_states_by_status().should_be_backfilled.values():
+        for step_state in self.step_states_by_status.should_be_backfilled.values():
             step_state.backfill(force=True, priority=Priority.LOW)
 
     def as_dict(self) -> Dict[str, Any]:

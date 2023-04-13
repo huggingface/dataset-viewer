@@ -508,7 +508,7 @@ def test_get_backfill_tasks() -> None:  # sourcery skip: extract-duplicate-metho
     # Note that no config-level and split-level step is listed here, because the config names and splits names are not
     # yet known.
     # The root dataset-level steps are ready to be backfilled.
-    assert dataset_state.get_step_states_by_status().get_ids() == {
+    assert dataset_state.step_states_by_status.get_ids() == {
         "blocked_by_parent": [],
         "should_be_backfilled": ["/config-names[dataset,None,None]", "/parquet-and-dataset-info[dataset,None,None]"],
         "in_process": [],
@@ -531,7 +531,7 @@ def test_get_backfill_tasks() -> None:  # sourcery skip: extract-duplicate-metho
     # thus: no new backfill task is proposed, and the state steps are now in "in_process" status
     dataset_state = DatasetState(dataset=dataset, processing_graph=processing_graph)
     assert not dataset_state.config_names
-    assert dataset_state.get_step_states_by_status().get_ids() == {
+    assert dataset_state.step_states_by_status.get_ids() == {
         "blocked_by_parent": [],
         "should_be_backfilled": [],
         "in_process": ["/config-names[dataset,None,None]", "/parquet-and-dataset-info[dataset,None,None]"],
@@ -559,7 +559,7 @@ def test_get_backfill_tasks() -> None:  # sourcery skip: extract-duplicate-metho
     assert dataset_state.config_names == [CONFIG_NAME]
     assert len(dataset_state.config_states) == 1
     assert dataset_state.config_states[0].split_names == []
-    assert dataset_state.get_step_states_by_status().get_ids() == {
+    assert dataset_state.step_states_by_status.get_ids() == {
         "blocked_by_parent": [
             "/split-names-from-dataset-info[dataset,config,None]",
             "config-info[dataset,config,None]",
@@ -594,7 +594,7 @@ def test_get_backfill_tasks() -> None:  # sourcery skip: extract-duplicate-metho
     assert dataset_state.config_names == [CONFIG_NAME]
     assert len(dataset_state.config_states) == 1
     assert dataset_state.config_states[0].split_names == []
-    assert dataset_state.get_step_states_by_status().get_ids() == {
+    assert dataset_state.step_states_by_status.get_ids() == {
         "blocked_by_parent": ["/split-names-from-dataset-info[dataset,config,None]"],
         "should_be_backfilled": [
             "config-info[dataset,config,None]",
@@ -628,7 +628,7 @@ def test_get_backfill_tasks() -> None:  # sourcery skip: extract-duplicate-metho
     assert dataset_state.config_names == [CONFIG_NAME]
     assert len(dataset_state.config_states) == 1
     assert dataset_state.config_states[0].split_names == []
-    assert dataset_state.get_step_states_by_status().get_ids() == {
+    assert dataset_state.step_states_by_status.get_ids() == {
         "blocked_by_parent": [],
         "should_be_backfilled": ["/split-names-from-dataset-info[dataset,config,None]"],
         "in_process": [
@@ -668,7 +668,7 @@ def test_get_backfill_tasks() -> None:  # sourcery skip: extract-duplicate-metho
     assert len(dataset_state.config_states) == 1
     assert dataset_state.config_states[0].split_names == SPLIT_NAMES_OK
     # the split-level dependent steps are now ready to be backfilled
-    assert dataset_state.get_step_states_by_status().get_ids() == {
+    assert dataset_state.step_states_by_status.get_ids() == {
         "blocked_by_parent": [
             "split-first-rows-from-parquet[dataset,config,split1]",
             "split-first-rows-from-parquet[dataset,config,split2]",
