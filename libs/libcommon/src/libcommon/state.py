@@ -61,29 +61,6 @@ def fetch_split_names(dataset: str, config: str) -> List[str]:
 
 
 @dataclass
-class BackfillTask:
-    """A backfill task."""
-
-    job_type: str
-    dataset: str
-    config: Optional[str]
-    split: Optional[str]
-
-    def __post_init__(self) -> None:
-        self.task_id = f"backfill[{self.job_type},{self.dataset},{self.config},{self.split}]"
-
-    def run(self, force: bool = True, priority: Priority = Priority.LOW) -> None:
-        Queue().upsert_job(
-            job_type=self.job_type,
-            dataset=self.dataset,
-            config=self.config,
-            split=self.split,
-            force=force,
-            priority=priority,
-        )
-
-
-@dataclass
 class JobState:
     """The state of a job for a given input."""
 
@@ -210,12 +187,14 @@ class StepState:
     def get_parent_step_states(self) -> List[Optional["StepState"]]:
         return [self.get_parent_step_state(parent_step) for parent_step in self.step.parents]
 
-    def create_backfill_task(self) -> BackfillTask:
-        return BackfillTask(
+    def backfill(self, force: bool = True, priority: Priority = Priority.LOW) -> None:
+        Queue().upsert_job(
             job_type=self.step.job_type,
             dataset=self.dataset,
             config=self.config,
             split=self.split,
+            force=force,
+            priority=priority,
         )
 
     def is_in_process(self) -> bool:
@@ -296,6 +275,25 @@ class ConfigState:
 
 
 @dataclass
+class StepStatesByStatus:
+    blocked_by_parent: Dict[str, StepState] = field(default_factory=dict)
+    should_be_backfilled: Dict[str, StepState] = field(default_factory=dict)
+    in_process: Dict[str, StepState] = field(default_factory=dict)
+    up_to_date: Dict[str, StepState] = field(default_factory=dict)
+    undefined: Dict[str, StepState] = field(default_factory=dict)
+
+    def get_ids(self) -> Dict[str, List[str]]:
+        # for tests
+        return {
+            "blocked_by_parent": sorted(self.blocked_by_parent.keys()),
+            "should_be_backfilled": sorted(self.should_be_backfilled.keys()),
+            "in_process": sorted(self.in_process.keys()),
+            "up_to_date": sorted(self.up_to_date.keys()),
+            "undefined": sorted(self.undefined.keys()),
+        }
+
+
+@dataclass
 class DatasetState:
     """The state of a dataset."""
 
@@ -323,10 +321,8 @@ class DatasetState:
             for config_name in self.config_names
         ]
 
-    def get_backfill_tasks(self) -> List[BackfillTask]:
-        step_states_to_backfill: Dict[str, StepState] = {}
-        step_states_blocked_by_parent: Dict[str, StepState] = {}
-        step_states_ok: Dict[str, StepState] = {}
+    def get_step_states_by_status(self) -> StepStatesByStatus:
+        step_states_by_status = StepStatesByStatus()
 
         dataset_state = DatasetState(dataset=self.dataset, processing_graph=self.processing_graph)
 
@@ -347,40 +343,49 @@ class DatasetState:
                 raise ValueError(f"Invalid input type: {step.input_type}")
 
             for step_state in step_states:
-                # blocked by a parent?
-                parent_step_states = [
-                    parent_step_state for parent_step_state in step_state.get_parent_step_states() if parent_step_state
-                ]
-                # ^ the parent step states are None (and ignored here) for fan-in steps
-                # (config->dataset, split->config, split->dataset)
+                # in process?
+                # TODO: should we check this at the end, and if it should not be in process: should we remove the job?
+                if step_state.is_in_process():
+                    step_states_by_status.in_process[step_state.id] = step_state
+                    continue
+
+                # one parent is in an undefined state?
+                # (fan-in steps: config -> dataset, split -> config, split -> dataset)
                 # what should we do? always recompute? test the progress?
+                parent_step_states = step_state.get_parent_step_states()
+                if any(parent_step_state is None for parent_step_state in parent_step_states):
+                    step_states_by_status.undefined[step_state.id] = step_state
+                    continue
+
+                # blocked by a parent?
                 if any(
-                    (parent_step_state.id not in step_states_ok) or parent_step_state.is_in_process()
+                    parent_step_state.id not in step_states_by_status.up_to_date
                     for parent_step_state in parent_step_states
+                    if parent_step_state is not None
                 ):
-                    if step_state.id in step_states_blocked_by_parent:
+                    if step_state.id in step_states_by_status.blocked_by_parent:
                         raise ValueError(f"Duplicate step state id: {step_state.id}")
-                    step_states_blocked_by_parent[step_state.id] = step_state
+                    step_states_by_status.blocked_by_parent[step_state.id] = step_state
                     continue
 
                 # needs backfill?
                 if step_state.should_be_backfilled():
-                    if step_state.id in step_states_to_backfill:
+                    if step_state.id in step_states_by_status.should_be_backfilled:
                         raise ValueError(f"Duplicate step state id: {step_state.id}")
-                    step_states_to_backfill[step_state.id] = step_state
+                    step_states_by_status.should_be_backfilled[step_state.id] = step_state
                     continue
 
                 # ok
-                if step_state.id in step_states_ok:
+                if step_state.id in step_states_by_status.up_to_date:
                     raise ValueError(f"Duplicate step state id: {step_state.id}")
-                step_states_ok[step_state.id] = step_state
+                step_states_by_status.up_to_date[step_state.id] = step_state
 
-        return [step_state.create_backfill_task() for step_state in step_states_to_backfill.values()]
+        return step_states_by_status
 
     def backfill(self) -> None:
         """Backfill the cache entry for this split."""
-        for backfill_tasks in self.get_backfill_tasks():
-            backfill_tasks.run(force=True, priority=Priority.LOW)
+        for step_state in self.get_step_states_by_status().should_be_backfilled.values():
+            step_state.backfill(force=True, priority=Priority.LOW)
 
     def as_dict(self) -> Dict[str, Any]:
         return {

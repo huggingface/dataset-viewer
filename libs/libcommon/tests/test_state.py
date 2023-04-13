@@ -259,21 +259,14 @@ def test_step_state_as_dict() -> None:
     config = None
     split = None
     step = PROCESSING_GRAPH.get_step(name="/config-names")
-    assert StepState(dataset=dataset, config=config, split=split, step=step).as_dict() == {
+    step_state = StepState(dataset=dataset, config=config, split=split, step=step)
+    assert step_state.as_dict() == {
         "step_name": "/config-names",
         "job_state": {"is_in_process": False},
         "cache_state": {"exists": False, "is_success": False},
         "should_be_backfilled": True,
     }
-
-
-def test_step_state_create_backfill_task() -> None:
-    dataset = DATASET_NAME
-    config = None
-    split = None
-    step = PROCESSING_GRAPH.get_step(name="/config-names")
-    step_state = StepState(dataset=dataset, config=config, split=split, step=step)
-    assert step_state.create_backfill_task().task_id == f"backfill[{step.job_type},{dataset},{config},{split}]"
+    assert step_state.id == f"/config-names[{dataset},{config},{split}]"
 
 
 def test_step_state_backfill() -> None:
@@ -285,7 +278,7 @@ def test_step_state_backfill() -> None:
     assert not step_state.cache_state.exists
     assert not step_state.job_state.is_in_process
     assert step_state.should_be_backfilled()
-    step_state.create_backfill_task().run()
+    step_state.backfill()
     step_state = StepState(dataset=dataset, config=config, split=split, step=step)
     assert not step_state.cache_state.exists
     assert step_state.job_state.is_in_process
@@ -507,71 +500,158 @@ def finish_task(job_type: str, content: Any) -> None:
     Queue().finish_job(job_id=job_info["job_id"], finished_status=Status.SUCCESS)
 
 
-def test_get_backfill_tasks() -> None:
+def test_get_backfill_tasks() -> None:  # sourcery skip: extract-duplicate-method
     dataset = DATASET_NAME
     processing_graph = PROCESSING_GRAPH
     dataset_state = DatasetState(dataset=dataset, processing_graph=processing_graph)
     assert not dataset_state.config_names
-    assert sorted([task.task_id for task in dataset_state.get_backfill_tasks()]) == [
-        "backfill[/config-names,dataset,None,None]",
-        "backfill[/parquet-and-dataset-info,dataset,None,None]",
-        "backfill[dataset-info,dataset,None,None]",
-        "backfill[dataset-parquet,dataset,None,None]",
-        "backfill[dataset-size,dataset,None,None]",
-        "backfill[dataset-split-names,dataset,None,None]",
-        "backfill[dataset-split-names-from-dataset-info,dataset,None,None]",
-        "backfill[dataset-split-names-from-streaming,dataset,None,None]",
-    ]
-    # assert dataset_state.should_be_backfilled()
+    # Note that no config-level and split-level step is listed here, because the config names and splits names are not
+    # yet known.
+    # The root dataset-level steps are ready to be backfilled.
+    assert dataset_state.get_step_states_by_status().get_ids() == {
+        "blocked_by_parent": [],
+        "should_be_backfilled": ["/config-names[dataset,None,None]", "/parquet-and-dataset-info[dataset,None,None]"],
+        "in_process": [],
+        "up_to_date": [],
+        "undefined": [
+            "dataset-info[dataset,None,None]",
+            "dataset-is-valid[dataset,None,None]",
+            "dataset-parquet[dataset,None,None]",
+            "dataset-size[dataset,None,None]",
+            "dataset-split-names-from-dataset-info[dataset,None,None]",
+            "dataset-split-names-from-streaming[dataset,None,None]",
+            "dataset-split-names[dataset,None,None]",
+        ],
+    }
 
     # we launch all the backfill tasks
     dataset_state.backfill()
+
     # the jobs have been created and are in process, and the cache has not changed
-    # thus: no new backfill task is proposed
+    # thus: no new backfill task is proposed, and the state steps are now in "in_process" status
     dataset_state = DatasetState(dataset=dataset, processing_graph=processing_graph)
     assert not dataset_state.config_names
-    assert sorted([task.task_id for task in dataset_state.get_backfill_tasks()]) == []
+    assert dataset_state.get_step_states_by_status().get_ids() == {
+        "blocked_by_parent": [],
+        "should_be_backfilled": [],
+        "in_process": ["/config-names[dataset,None,None]", "/parquet-and-dataset-info[dataset,None,None]"],
+        "up_to_date": [],
+        "undefined": [
+            "dataset-info[dataset,None,None]",
+            "dataset-is-valid[dataset,None,None]",
+            "dataset-parquet[dataset,None,None]",
+            "dataset-size[dataset,None,None]",
+            "dataset-split-names-from-dataset-info[dataset,None,None]",
+            "dataset-split-names-from-streaming[dataset,None,None]",
+            "dataset-split-names[dataset,None,None]",
+        ],
+    }
 
     # simulate that the "backfill[/config-names,dataset,None,None]" task has finished
     finish_task(job_type="/config-names", content=ONE_CONFIG_NAME_CONTENT_OK)
 
-    # The first config-level steps are now ready to be backfilled
+    # The "/config-names" step is now up-to-date
+    # The first config-level steps are ready to be backfilled for all the configs (only one in this case)
+    # New step states also appear in the "blocked_by_parent" status, because the config names are now known, but the
+    # parents are not ready yet.
+    # The split-level steps are still missing, because the splits names are not yet known, for any config.
     dataset_state = DatasetState(dataset=dataset, processing_graph=processing_graph)
     assert dataset_state.config_names == [CONFIG_NAME]
     assert len(dataset_state.config_states) == 1
     assert dataset_state.config_states[0].split_names == []
-    assert sorted([task.task_id for task in dataset_state.get_backfill_tasks()]) == [
-        "backfill[/split-names-from-streaming,dataset,config,None]",
-        "backfill[config-parquet-and-info,dataset,config,None]",
-    ]
+    assert dataset_state.get_step_states_by_status().get_ids() == {
+        "blocked_by_parent": [
+            "/split-names-from-dataset-info[dataset,config,None]",
+            "config-info[dataset,config,None]",
+            "config-parquet[dataset,config,None]",
+            "config-size[dataset,config,None]",
+        ],
+        "should_be_backfilled": [
+            "/split-names-from-streaming[dataset,config,None]",
+            "config-parquet-and-info[dataset,config,None]",
+        ],
+        "in_process": ["/parquet-and-dataset-info[dataset,None,None]"],
+        "up_to_date": ["/config-names[dataset,None,None]"],
+        "undefined": [
+            "dataset-info[dataset,None,None]",
+            "dataset-is-valid[dataset,None,None]",
+            "dataset-parquet[dataset,None,None]",
+            "dataset-size[dataset,None,None]",
+            "dataset-split-names-from-dataset-info[dataset,None,None]",
+            "dataset-split-names-from-streaming[dataset,None,None]",
+            "dataset-split-names[dataset,None,None]",
+        ],
+    }
 
     # launch the backfill tasks
     dataset_state.backfill()
-    # simulate that the "backfill[config-parquet-and-info,dataset,config,None]" task has finished
+    # and simulate that the "backfill[config-parquet-and-info,dataset,config,None]" task has finished
     finish_task(job_type="config-parquet-and-info", content=CONFIG_PARQUET_AND_INFO_OK)
+
     # the config-level dependent steps are now ready to be backfilled
+    # (they are no more blocked by "config-parquet-and-info", which is up-to-date)
     dataset_state = DatasetState(dataset=dataset, processing_graph=processing_graph)
     assert dataset_state.config_names == [CONFIG_NAME]
     assert len(dataset_state.config_states) == 1
     assert dataset_state.config_states[0].split_names == []
-    assert sorted([task.task_id for task in dataset_state.get_backfill_tasks()]) == [
-        "backfill[config-info,dataset,config,None]",
-        "backfill[config-parquet,dataset,config,None]",
-        "backfill[config-size,dataset,config,None]",
-    ]
+    assert dataset_state.get_step_states_by_status().get_ids() == {
+        "blocked_by_parent": ["/split-names-from-dataset-info[dataset,config,None]"],
+        "should_be_backfilled": [
+            "config-info[dataset,config,None]",
+            "config-parquet[dataset,config,None]",
+            "config-size[dataset,config,None]",
+        ],
+        "in_process": [
+            "/parquet-and-dataset-info[dataset,None,None]",
+            "/split-names-from-streaming[dataset,config,None]",
+        ],
+        "up_to_date": ["/config-names[dataset,None,None]", "config-parquet-and-info[dataset,config,None]"],
+        "undefined": [
+            "dataset-info[dataset,None,None]",
+            "dataset-is-valid[dataset,None,None]",
+            "dataset-parquet[dataset,None,None]",
+            "dataset-size[dataset,None,None]",
+            "dataset-split-names-from-dataset-info[dataset,None,None]",
+            "dataset-split-names-from-streaming[dataset,None,None]",
+            "dataset-split-names[dataset,None,None]",
+        ],
+    }
 
     # launch the backfill tasks
     dataset_state.backfill()
-    # simulate that the "backfill[config-info,dataset,config,None]" task has finished
+    # and simulate that the "backfill[config-info,dataset,config,None]" task has finished
     finish_task(job_type="config-info", content=CONFIG_INFO_OK)
-    # the config-level dependent steps are now ready to be backfilled
+
+    # "config-info" is up-to-date
+    # "/split-names-from-dataset-info" is no more blocked, and is ready to be backfilled
     dataset_state = DatasetState(dataset=dataset, processing_graph=processing_graph)
     assert dataset_state.config_names == [CONFIG_NAME]
     assert len(dataset_state.config_states) == 1
     assert dataset_state.config_states[0].split_names == []
-    assert sorted([task.task_id for task in dataset_state.get_backfill_tasks()]) == [
-        "backfill[/split-names-from-dataset-info,dataset,config,None]"
-    ]
+    assert dataset_state.get_step_states_by_status().get_ids() == {
+        "blocked_by_parent": [],
+        "should_be_backfilled": ["/split-names-from-dataset-info[dataset,config,None]"],
+        "in_process": [
+            "/parquet-and-dataset-info[dataset,None,None]",
+            "/split-names-from-streaming[dataset,config,None]",
+            "config-parquet[dataset,config,None]",
+            "config-size[dataset,config,None]",
+        ],
+        "up_to_date": [
+            "/config-names[dataset,None,None]",
+            "config-info[dataset,config,None]",
+            "config-parquet-and-info[dataset,config,None]",
+        ],
+        "undefined": [
+            "dataset-info[dataset,None,None]",
+            "dataset-is-valid[dataset,None,None]",
+            "dataset-parquet[dataset,None,None]",
+            "dataset-size[dataset,None,None]",
+            "dataset-split-names-from-dataset-info[dataset,None,None]",
+            "dataset-split-names-from-streaming[dataset,None,None]",
+            "dataset-split-names[dataset,None,None]",
+        ],
+    }
 
     # launch the backfill tasks
     dataset_state.backfill()
@@ -579,13 +659,43 @@ def test_get_backfill_tasks() -> None:
     # the "backfill[/split-names-from-streaming,dataset,config,None]" have finished
     finish_task(job_type="/split-names-from-dataset-info", content=SPLIT_NAMES_RESPONSE_OK["content"])
     finish_task(job_type="/split-names-from-streaming", content=SPLIT_NAMES_RESPONSE_OK["content"])
+
+    # "/split-names-from-dataset-info" and "/split-names-from-streaming" are up-to-date for the config
     # the split names are now available
+    # the split-level dependent steps are now ready to be backfilled, or blocked by parent
     dataset_state = DatasetState(dataset=dataset, processing_graph=processing_graph)
     assert dataset_state.config_names == [CONFIG_NAME]
     assert len(dataset_state.config_states) == 1
     assert dataset_state.config_states[0].split_names == SPLIT_NAMES_OK
     # the split-level dependent steps are now ready to be backfilled
-    assert sorted([task.task_id for task in dataset_state.get_backfill_tasks()]) == [
-        "backfill[split-first-rows-from-streaming,dataset,config,split1]",
-        "backfill[split-first-rows-from-streaming,dataset,config,split2]",
-    ]
+    assert dataset_state.get_step_states_by_status().get_ids() == {
+        "blocked_by_parent": [
+            "split-first-rows-from-parquet[dataset,config,split1]",
+            "split-first-rows-from-parquet[dataset,config,split2]",
+        ],
+        "should_be_backfilled": [
+            "split-first-rows-from-streaming[dataset,config,split1]",
+            "split-first-rows-from-streaming[dataset,config,split2]",
+        ],
+        "in_process": [
+            "/parquet-and-dataset-info[dataset,None,None]",
+            "config-parquet[dataset,config,None]",
+            "config-size[dataset,config,None]",
+        ],
+        "up_to_date": [
+            "/config-names[dataset,None,None]",
+            "/split-names-from-dataset-info[dataset,config,None]",
+            "/split-names-from-streaming[dataset,config,None]",
+            "config-info[dataset,config,None]",
+            "config-parquet-and-info[dataset,config,None]",
+        ],
+        "undefined": [
+            "dataset-info[dataset,None,None]",
+            "dataset-is-valid[dataset,None,None]",
+            "dataset-parquet[dataset,None,None]",
+            "dataset-size[dataset,None,None]",
+            "dataset-split-names-from-dataset-info[dataset,None,None]",
+            "dataset-split-names-from-streaming[dataset,None,None]",
+            "dataset-split-names[dataset,None,None]",
+        ],
+    }
