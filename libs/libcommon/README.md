@@ -36,3 +36,10 @@ Set environment variables to configure the job queues to precompute API response
 - `QUEUE_MAX_JOBS_PER_NAMESPACE`: maximum number of started jobs for the same namespace (the user or organization, before the `/` separator in the dataset name, or the "canonical" dataset name if not present). Defaults to 1.
 - `QUEUE_MONGO_DATABASE`: name of the database used for storing the queue. Defaults to `datasets_server_queue`.
 - `QUEUE_MONGO_URL`: URL used to connect to the MongoDB server. Defaults to `mongodb://localhost:27017`.
+
+## Metric configuration
+
+Set environment variables to configure the storage of calculated metrics in a MongoDB database:
+
+- `METRIC_MONGO_DATABASE`: name of the database used for storing the metrics. Defaults to `datasets_server_metric`.
+- `METRIC_MONGO_URL`: URL used to connect to the MongoDB server. Defaults to `mongodb://localhost:27017`.
