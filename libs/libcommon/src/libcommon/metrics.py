@@ -2,18 +2,11 @@
 # Copyright 2022 The HuggingFace Authors.
 
 import types
-from http import HTTPStatus
 from typing import Generic, Type, TypeVar
 
 from bson import ObjectId
 from mongoengine import Document
-from mongoengine.fields import (
-    DateTimeField,
-    EnumField,
-    IntField,
-    ObjectIdField,
-    StringField,
-)
+from mongoengine.fields import DateTimeField, IntField, ObjectIdField, StringField
 from mongoengine.queryset.queryset import QuerySet
 
 from libcommon.constants import METRICS_MONGOENGINE_ALIAS
@@ -68,7 +61,7 @@ class CacheTotalMetric(Document):
 
     Args:
         kind (`str`): kind name
-        http_status (`str`): cache http_status
+        http_status (`int`): cache http_status
         error_code (`str`): error code name
         total (`int`): total of jobs
         created_at (`datetime`): when the metric has been created.
@@ -76,7 +69,7 @@ class CacheTotalMetric(Document):
 
     id = ObjectIdField(db_field="_id", primary_key=True, default=ObjectId)
     kind = StringField(required=True)
-    http_status = EnumField(HTTPStatus, required=True)
+    http_status = IntField(required=True)
     error_code = StringField()
     total = IntField(required=True, default=0)
     created_at = DateTimeField(default=get_datetime)

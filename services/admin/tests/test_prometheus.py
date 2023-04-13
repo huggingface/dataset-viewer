@@ -52,7 +52,7 @@ def test_prometheus(
 
     additional_field = ('pid="' + str(os.getpid()) + '",') if is_multiprocess else ""
 
-    assert 'responses_in_cache_total{error_code="None",http_status="HTTPStatus.OK",kind="dummy"}' in metrics
+    assert 'responses_in_cache_total{error_code="None",http_status="200",kind="dummy"}' in metrics
     assert 'queue_jobs_total{queue="dummy",status="waiting"}' in metrics
 
     for type in ["total", "used", "free", "percent"]:

@@ -5,7 +5,7 @@ import os
 import re
 from typing import Mapping
 
-from .utils import ADMIN_URL, get
+from .utils import ADMIN_URL, get, post_refresh
 
 
 def has_metric(name: str, labels: Mapping[str, str], metric_names: set[str]) -> bool:
@@ -15,6 +15,7 @@ def has_metric(name: str, labels: Mapping[str, str], metric_names: set[str]) -> 
 
 
 def test_metrics() -> None:
+    post_refresh("dataset")
     assert "PROMETHEUS_MULTIPROC_DIR" in os.environ
     response = get("/metrics", url=ADMIN_URL)
     assert response.status_code == 200, f"{response.status_code} - {response.text}"
