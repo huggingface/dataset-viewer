@@ -156,36 +156,40 @@ class StepState:
             cache_kind=self.step.cache_kind, dataset=self.dataset, config=self.config, split=self.split
         )
 
-    def get_parent_step_state(self, parent_step: ProcessingStep) -> Optional["StepState"]:
+    def get_parent_step_states(self, parent_step: ProcessingStep) -> List["StepState"]:
         if parent_step.input_type == "dataset":
-            return StepState(step=parent_step, dataset=self.dataset, config=None, split=None)
+            return [StepState(step=parent_step, dataset=self.dataset, config=None, split=None)]
         elif parent_step.input_type == "config":
             return (
-                StepState(
-                    step=parent_step,
-                    dataset=self.dataset,
-                    config=self.config,
-                    split=None,
-                )
+                [
+                    StepState(
+                        step=parent_step,
+                        dataset=self.dataset,
+                        config=self.config,
+                        split=None,
+                    )
+                ]
                 if self.step.input_type in ["config", "split"]
-                else None
+                else []
                 # ^ fan-in: config->dataset. We just ignore the case
             )
         else:
             return (
-                StepState(
-                    step=parent_step,
-                    dataset=self.dataset,
-                    config=self.config,
-                    split=self.split,
-                )
+                [
+                    StepState(
+                        step=parent_step,
+                        dataset=self.dataset,
+                        config=self.config,
+                        split=self.split,
+                    )
+                ]
                 if self.step.input_type == "split"
-                else None
+                else []
                 # ^ fan-in: split->config, or split->dataset. We just ignore the case
             )
 
-    def get_parent_step_states(self) -> List[Optional["StepState"]]:
-        return [self.get_parent_step_state(parent_step) for parent_step in self.step.parents]
+    def get_all_parents_step_states(self) -> List[List["StepState"]]:
+        return [self.get_parent_step_states(parent_step) for parent_step in self.step.parents]
 
     def backfill(self, force: bool = True, priority: Priority = Priority.LOW) -> None:
         Queue().upsert_job(
@@ -351,16 +355,16 @@ class DatasetState:
                 # one parent is in an undefined state?
                 # (fan-in steps: config -> dataset, split -> config, split -> dataset)
                 # what should we do? always recompute? test the progress?
-                parent_step_states = step_state.get_parent_step_states()
-                if any(parent_step_state is None for parent_step_state in parent_step_states):
+                all_parents_step_states = step_state.get_all_parents_step_states()
+                if not all(all_parents_step_states):
                     step_states_by_status.undefined[step_state.id] = step_state
                     continue
 
                 # blocked by a parent?
                 if any(
                     parent_step_state.id not in step_states_by_status.up_to_date
+                    for parent_step_states in all_parents_step_states
                     for parent_step_state in parent_step_states
-                    if parent_step_state is not None
                 ):
                     step_states_by_status.blocked_by_parent[step_state.id] = step_state
                     continue
