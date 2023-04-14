@@ -55,6 +55,8 @@ def queue_mongo_resource(job_config: JobConfig) -> Iterator[QueueMongoResource]:
 
 @fixture(autouse=True)
 def metrics_mongo_resource(job_config: JobConfig) -> Iterator[MetricsMongoResource]:
-    with MetricsMongoResource(database=job_config.metrics.mongo_database, host=job_config.metrics.mongo_url) as resource:
+    with MetricsMongoResource(
+        database=job_config.metrics.mongo_database, host=job_config.metrics.mongo_url
+    ) as resource:
         yield resource
         _clean_metrics_database()

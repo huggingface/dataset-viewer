@@ -46,7 +46,9 @@ def create_app() -> Starlette:
 
     cache_resource = CacheMongoResource(database=app_config.cache.mongo_database, host=app_config.cache.mongo_url)
     queue_resource = QueueMongoResource(database=app_config.queue.mongo_database, host=app_config.queue.mongo_url)
-    metrics_resource = MetricsMongoResource(database=app_config.metrics.mongo_database, host=app_config.metrics.mongo_url)
+    metrics_resource = MetricsMongoResource(
+        database=app_config.metrics.mongo_database, host=app_config.metrics.mongo_url
+    )
 
     resources: list[Resource] = [cache_resource, queue_resource, metrics_resource]
     if not cache_resource.is_available():

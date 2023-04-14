@@ -22,7 +22,7 @@ class JobConfig:
     log: LogConfig = field(default_factory=LogConfig)
     cache: CacheConfig = field(default_factory=CacheConfig)
     queue: QueueConfig = field(default_factory=QueueConfig)
-    metrics: MetricConfig = field(default_factory=MetricsConfig)
+    metrics: MetricsConfig = field(default_factory=MetricsConfig)
     common: CommonConfig = field(default_factory=CommonConfig)
     graph: ProcessingGraphConfig = field(default_factory=ProcessingGraphConfig)
     action: Optional[str] = CACHE_MAINTENANCE_ACTION
