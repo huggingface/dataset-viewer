@@ -5,7 +5,7 @@ import os
 import re
 from typing import Mapping
 
-from .utils import ADMIN_URL, get, post_refresh
+from .utils import ADMIN_URL, get
 
 
 def has_metric(name: str, labels: Mapping[str, str], metric_names: set[str]) -> bool:
@@ -15,7 +15,6 @@ def has_metric(name: str, labels: Mapping[str, str], metric_names: set[str]) -> 
 
 
 def test_metrics() -> None:
-    post_refresh("dataset")
     assert "PROMETHEUS_MULTIPROC_DIR" in os.environ
     response = get("/metrics", url=ADMIN_URL)
     assert response.status_code == 200, f"{response.status_code} - {response.text}"
@@ -29,7 +28,6 @@ def test_metrics() -> None:
     name = 'starlette_requests_total{method="GET",path_template="/metrics"}'
     assert name in metrics, metrics
     assert metrics[name] > 0, metrics
-
     metric_names = set(metrics.keys())
     for queue in ["/config-names", "split-first-rows-from-streaming", "dataset-parquet"]:
         # eg. 'queue_jobs_total{pid="10",queue="split-first-rows-from-streaming",status="started"}'

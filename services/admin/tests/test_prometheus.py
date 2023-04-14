@@ -3,8 +3,10 @@
 
 import os
 from http import HTTPStatus
+from typing import List
 
 from libcommon.metrics import CacheTotalMetric, JobTotalMetric
+from libcommon.processing_graph import ProcessingStep
 from libcommon.storage import StrPath
 
 from admin.prometheus import Prometheus
@@ -12,6 +14,7 @@ from admin.prometheus import Prometheus
 
 def test_prometheus(
     assets_directory: StrPath,
+    processing_steps: List[ProcessingStep],
 ) -> None:
     cache_metric = {
         "kind": "dummy",
@@ -34,7 +37,7 @@ def test_prometheus(
 
     is_multiprocess = "PROMETHEUS_MULTIPROC_DIR" in os.environ
 
-    prometheus = Prometheus(assets_directory=assets_directory)
+    prometheus = Prometheus(processing_steps=processing_steps, assets_directory=assets_directory)
     registry = prometheus.getRegistry()
     assert registry is not None
 

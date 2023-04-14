@@ -3,9 +3,11 @@
 
 import os
 from dataclasses import dataclass
-from typing import Any
+from typing import Any, List
 
 from libcommon.metrics import CacheTotalMetric, JobTotalMetric
+from libcommon.processing_graph import ProcessingStep
+from libcommon.queue import Status
 from libcommon.storage import StrPath
 from prometheus_client import (
     CONTENT_TYPE_LATEST,
@@ -45,6 +47,7 @@ ASSETS_DISK_USAGE = Gauge(
 
 @dataclass
 class Prometheus:
+    processing_steps: List[ProcessingStep]
     assets_directory: StrPath
 
     def getRegistry(self) -> CollectorRegistry:
@@ -60,15 +63,30 @@ class Prometheus:
     def updateMetrics(self) -> None:
         # Queue metrics
         queue_jobs_total = JobTotalMetric.objects()
-        for job_metric in queue_jobs_total:
-            QUEUE_JOBS_TOTAL.labels(queue=job_metric.queue, status=job_metric.status).set(job_metric.total)
+        if not queue_jobs_total:
+            # TODO: Move this logic to a metrics manager
+            # In case collect metrics job has not run yet, fill with 0
+            for processing_step in self.processing_steps:
+                for status in Status:
+                    QUEUE_JOBS_TOTAL.labels(queue=processing_step.job_type, status=status.value).set(0)
+        else:
+            for job_metric in queue_jobs_total:
+                QUEUE_JOBS_TOTAL.labels(queue=job_metric.queue, status=job_metric.status).set(job_metric.total)
 
         # Cache metrics
         responses_in_cache_total = CacheTotalMetric.objects()
-        for cache_metric in responses_in_cache_total:
-            RESPONSES_IN_CACHE_TOTAL.labels(
-                kind=cache_metric.kind, http_status=cache_metric.http_status, error_code=cache_metric.error_code
-            ).set(cache_metric.total)
+        if not responses_in_cache_total:
+            # TODO: Move this logic to a metrics manager
+            # In case collect metrics job has not run yet, fill with 0
+            for processing_step in self.processing_steps:
+                RESPONSES_IN_CACHE_TOTAL.labels(
+                    kind=processing_step.cache_kind, http_status="200", error_code="None"
+                ).set(0)
+        else:
+            for cache_metric in responses_in_cache_total:
+                RESPONSES_IN_CACHE_TOTAL.labels(
+                    kind=cache_metric.kind, http_status=cache_metric.http_status, error_code=cache_metric.error_code
+                ).set(cache_metric.total)
 
         # Assets storage metrics
         total, used, free, percent = disk_usage(str(self.assets_directory))

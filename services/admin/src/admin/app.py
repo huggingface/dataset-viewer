@@ -58,7 +58,7 @@ def create_app() -> Starlette:
     if not metrics_resource.is_available():
         raise RuntimeError("The connection to the metrics database could not be established. Exiting.")
 
-    prometheus = Prometheus(assets_directory=assets_directory)
+    prometheus = Prometheus(processing_steps=processing_steps, assets_directory=assets_directory)
 
     middleware = [
         Middleware(
