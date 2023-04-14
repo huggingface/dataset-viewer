@@ -121,9 +121,9 @@ metricsCollector:
   nodeSelector: {}
   resources:
     requests:
-      cpu: 0
+      cpu: 1
     limits:
-      cpu: 0
+      cpu: 1
   tolerations: []
 
 # --- storage admin (to manually inspect the storage, in /data) ---
