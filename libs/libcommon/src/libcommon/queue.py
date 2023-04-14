@@ -289,6 +289,32 @@ class Queue:
             job_type=job_type, dataset=dataset, config=config, split=split, force=force, priority=priority
         )
 
+    def cancel_pending_jobs(
+        self,
+        job_type: str,
+        dataset: str,
+        config: Optional[str] = None,
+        split: Optional[str] = None,
+    ) -> int:
+        """Cancel pending jobs (WAITING and STARTED) from the queue.
+
+        Returns a tuple with the max force (False<True) and priority (LOW<NORMAL) of the cancelled jobs.
+
+        Args:
+            job_type (`str`): The type of the job
+            dataset (`str`): The dataset on which to apply the job.
+            config (`str`, optional): The config on which to apply the job.
+            split (`str`, optional): The config on which to apply the job.
+
+        Returns:
+            `int`: The number of cancelled jobs
+        """
+        existing = Job.objects(
+            type=job_type, dataset=dataset, config=config, split=split, status__in=[Status.WAITING, Status.STARTED]
+        )
+        existing.update(finished_at=get_datetime(), status=Status.CANCELLED)
+        return len(existing)
+
     def _get_next_waiting_job_for_priority(
         self, priority: Priority, only_job_types: Optional[list[str]] = None
     ) -> Job:

@@ -122,6 +122,24 @@ def test_upsert_job() -> None:
         queue.start_job()
 
 
+def test_cancel_pending_jobs() -> None:
+    test_type = "test_type"
+    test_dataset = "test_dataset"
+    # get the queue
+    queue = Queue()
+    # add a job
+    queue._add_job(job_type=test_type, dataset=test_dataset, force=True)
+    # a second call adds a second waiting job
+    queue._add_job(job_type=test_type, dataset=test_dataset)
+    assert queue.is_job_in_process(job_type=test_type, dataset=test_dataset)
+
+    queue.cancel_pending_jobs(job_type=test_type, dataset=test_dataset)
+
+    assert not queue.is_job_in_process(job_type=test_type, dataset=test_dataset)
+    with pytest.raises(EmptyQueueError):
+        queue.start_job()
+
+
 def check_job(queue: Queue, expected_dataset: str, expected_split: str) -> None:
     job_info = queue.start_job()
     assert job_info["dataset"] == expected_dataset
