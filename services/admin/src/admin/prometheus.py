@@ -65,7 +65,7 @@ class Prometheus:
         queue_jobs_total = JobTotalMetric.objects()
         if not queue_jobs_total:
             # TODO: Move this logic to a metrics manager
-            # In case collect metrics job has not run yet, fill with 0
+            # In case job collected metrics do not exist, fill with 0
             for processing_step in self.processing_steps:
                 for status in Status:
                     QUEUE_JOBS_TOTAL.labels(queue=processing_step.job_type, status=status.value).set(0)
@@ -77,7 +77,7 @@ class Prometheus:
         responses_in_cache_total = CacheTotalMetric.objects()
         if not responses_in_cache_total:
             # TODO: Move this logic to a metrics manager
-            # In case collect metrics job has not run yet, fill with 0
+            # In case cache collected metrics do not exist, fill with 0
             for processing_step in self.processing_steps:
                 RESPONSES_IN_CACHE_TOTAL.labels(
                     kind=processing_step.cache_kind, http_status="200", error_code="None"

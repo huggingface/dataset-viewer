@@ -28,6 +28,7 @@ def test_metrics() -> None:
     name = 'starlette_requests_total{method="GET",path_template="/metrics"}'
     assert name in metrics, metrics
     assert metrics[name] > 0, metrics
+
     metric_names = set(metrics.keys())
     for queue in ["/config-names", "split-first-rows-from-streaming", "dataset-parquet"]:
         # eg. 'queue_jobs_total{pid="10",queue="split-first-rows-from-streaming",status="started"}'
