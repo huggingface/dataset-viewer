@@ -452,7 +452,7 @@ CONFIG_PARQUET_AND_INFO_OK = {"config": CONFIG_NAME, "content": "not important"}
 CONFIG_INFO_OK = {"config": CONFIG_NAME, "content": "not important"}
 
 
-def finish_task(job_type: str, content: Any) -> None:
+def finish_job(job_type: str, content: Any) -> None:
     job_info = Queue().start_job(only_job_types=[job_type])
     upsert_response(
         kind=job_info["type"],
@@ -578,8 +578,8 @@ def test_backfill() -> None:
         tasks=[],
     )
 
-    # simulate that the "backfill[/config-names,dataset]" task has finished
-    finish_task(job_type="/config-names", content=ONE_CONFIG_NAME_CONTENT_OK)
+    # simulate that the job for the "/config-names,dataset" artifact has finished
+    finish_job(job_type="/config-names", content=ONE_CONFIG_NAME_CONTENT_OK)
 
     dataset_state = assert_dataset_state(
         # The config names are known
@@ -635,8 +635,8 @@ def test_backfill() -> None:
 
     # launch the backfill tasks
     dataset_state.backfill()
-    # and simulate that the "backfill[config-parquet-and-info,dataset,config]" task has finished
-    finish_task(job_type="config-parquet-and-info", content=CONFIG_PARQUET_AND_INFO_OK)
+    # and simulate that the job for the "config-parquet-and-info,dataset,config" artifact has finished
+    finish_job(job_type="config-parquet-and-info", content=CONFIG_PARQUET_AND_INFO_OK)
 
     dataset_state = assert_dataset_state(
         # The config names are known
@@ -689,8 +689,8 @@ def test_backfill() -> None:
 
     # launch the backfill tasks
     dataset_state.backfill()
-    # and simulate that the "backfill[config-info,dataset,config]" task has finished
-    finish_task(job_type="config-info", content=CONFIG_INFO_OK)
+    # and simulate that the job for the "config-info,dataset,config" artifact has finished
+    finish_job(job_type="config-info", content=CONFIG_INFO_OK)
 
     # "config-info" is up-to-date
     # "/split-names-from-dataset-info" is no more blocked, and is ready to be backfilled
@@ -741,10 +741,10 @@ def test_backfill() -> None:
 
     # launch the backfill tasks
     dataset_state.backfill()
-    # simulate that the "backfill[/split-names-from-dataset-info,dataset,config]" task and
-    # the "backfill[/split-names-from-streaming,dataset,config]" have finished
-    finish_task(job_type="/split-names-from-dataset-info", content=SPLIT_NAMES_RESPONSE_OK["content"])
-    finish_task(job_type="/split-names-from-streaming", content=SPLIT_NAMES_RESPONSE_OK["content"])
+    # and simulate that the job for the "/split-names-from-dataset-info,dataset,config" and
+    # "/split-names-from-streaming,dataset,config" artifacts have finished
+    finish_job(job_type="/split-names-from-dataset-info", content=SPLIT_NAMES_RESPONSE_OK["content"])
+    finish_job(job_type="/split-names-from-streaming", content=SPLIT_NAMES_RESPONSE_OK["content"])
 
     # "/split-names-from-dataset-info" and "/split-names-from-streaming" are up-to-date for the config
     # the split names are now available
@@ -802,7 +802,7 @@ def test_backfill() -> None:
         ],
     )
 
-    # force an update of the /config-names step
+    # force an update of the /config-names artifact
     upsert_response(
         kind="/config-names",
         dataset="dataset",
