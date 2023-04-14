@@ -9,7 +9,7 @@ from libcommon.log import init_logging
 from libcommon.processing_graph import ProcessingGraph
 from libcommon.resources import (
     CacheMongoResource,
-    MetricMongoResource,
+    MetricsMongoResource,
     QueueMongoResource,
 )
 
@@ -40,9 +40,9 @@ def run_job() -> None:
         QueueMongoResource(
             database=job_config.queue.mongo_database, host=job_config.queue.mongo_url
         ) as queue_resource,
-        MetricMongoResource(
-            database=job_config.metric.mongo_database, host=job_config.metric.mongo_url
-        ) as metric_resource,
+        MetricsMongoResource(
+            database=job_config.metrics.mongo_database, host=job_config.metrics.mongo_url
+        ) as metrics_resource,
     ):
         if not cache_resource.is_available():
             logging.warning("The connection to the cache database could not be established. The action is skipped.")
@@ -50,8 +50,8 @@ def run_job() -> None:
         if not queue_resource.is_available():
             logging.warning("The connection to the queue database could not be established. The action is skipped.")
             return
-        if not metric_resource.is_available():
-            logging.warning("The connection to the metric database could not be established. The action is skipped.")
+        if not metrics_resource.is_available():
+            logging.warning("The connection to the metrics database could not be established. The action is skipped.")
             return
 
         processing_graph = ProcessingGraph(job_config.graph.specification)

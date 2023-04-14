@@ -3,7 +3,7 @@ export COMPOSE_PROJECT_NAME := admin
 export MONGO_PORT := 27030
 export CACHE_MONGO_URL := mongodb://localhost:${MONGO_PORT}
 export QUEUE_MONGO_URL := mongodb://localhost:${MONGO_PORT}
-export METRIC_MONGO_URL := mongodb://localhost:${MONGO_PORT}
+export METRICS_MONGO_URL := mongodb://localhost:${MONGO_PORT}
 # makefile variables
 DOCKER_COMPOSE := ../../tools/docker-compose-mongo.yml
 TEST_PATH ?= tests

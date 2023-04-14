@@ -161,22 +161,22 @@ class QueueConfig:
             )
 
 
-METRIC_MONGO_DATABASE = "datasets_server_metric"
-METRIC_MONGO_URL = "mongodb://localhost:27017"
+METRICS_MONGO_DATABASE = "datasets_server_metrics"
+METRICS_MONGO_URL = "mongodb://localhost:27017"
 
 
 @dataclass(frozen=True)
-class MetricConfig:
-    mongo_database: str = METRIC_MONGO_DATABASE
-    mongo_url: str = METRIC_MONGO_URL
+class MetricsConfig:
+    mongo_database: str = METRICS_MONGO_DATABASE
+    mongo_url: str = METRICS_MONGO_URL
 
     @classmethod
-    def from_env(cls) -> "MetricConfig":
+    def from_env(cls) -> "MetricsConfig":
         env = Env(expand_vars=True)
-        with env.prefixed("METRIC_"):
+        with env.prefixed("METRICS_"):
             return cls(
-                mongo_database=env.str(name="MONGO_DATABASE", default=METRIC_MONGO_DATABASE),
-                mongo_url=env.str(name="MONGO_URL", default=METRIC_MONGO_URL),
+                mongo_database=env.str(name="MONGO_DATABASE", default=METRICS_MONGO_DATABASE),
+                mongo_url=env.str(name="MONGO_URL", default=METRICS_MONGO_URL),
             )
 
 

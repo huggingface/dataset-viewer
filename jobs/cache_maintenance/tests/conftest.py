@@ -3,11 +3,11 @@
 
 from typing import Iterator
 
-from libcommon.metrics import _clean_metric_database
+from libcommon.metrics import _clean_metrics_database
 from libcommon.queue import _clean_queue_database
 from libcommon.resources import (
     CacheMongoResource,
-    MetricMongoResource,
+    MetricsMongoResource,
     QueueMongoResource,
 )
 from libcommon.simple_cache import _clean_cache_database
@@ -22,7 +22,7 @@ def monkeypatch_session() -> Iterator[MonkeyPatch]:
     monkeypatch_session = MonkeyPatch()
     monkeypatch_session.setenv("CACHE_MONGO_DATABASE", "datasets_server_cache_test")
     monkeypatch_session.setenv("QUEUE_MONGO_DATABASE", "datasets_server_queue_test")
-    monkeypatch_session.setenv("METRIC_MONGO_DATABASE", "datasets_server_metric_test")
+    monkeypatch_session.setenv("METRICS_MONGO_DATABASE", "datasets_server_metrics_test")
     yield monkeypatch_session
     monkeypatch_session.undo()
 
@@ -33,7 +33,7 @@ def job_config(monkeypatch_session: MonkeyPatch) -> JobConfig:
     if (
         "test" not in job_config.cache.mongo_database
         or "test" not in job_config.queue.mongo_database
-        or "test" not in job_config.metric.mongo_database
+        or "test" not in job_config.metrics.mongo_database
     ):
         raise ValueError("Test must be launched on a test mongo database")
     return job_config
@@ -54,7 +54,7 @@ def queue_mongo_resource(job_config: JobConfig) -> Iterator[QueueMongoResource]:
 
 
 @fixture(autouse=True)
-def metric_mongo_resource(job_config: JobConfig) -> Iterator[MetricMongoResource]:
-    with MetricMongoResource(database=job_config.metric.mongo_database, host=job_config.metric.mongo_url) as resource:
+def metrics_mongo_resource(job_config: JobConfig) -> Iterator[MetricsMongoResource]:
+    with MetricsMongoResource(database=job_config.metrics.mongo_database, host=job_config.metrics.mongo_url) as resource:
         yield resource
-        _clean_metric_database()
+        _clean_metrics_database()

@@ -132,9 +132,9 @@ class QueueMongoResource(MongoResource):
 
 
 @dataclass
-class MetricMongoResource(MongoResource):
+class MetricsMongoResource(MongoResource):
     """
-    A resource that represents a connection to the queue mongo database.
+    A resource that represents a connection to the metrics mongo database.
 
     Args:
         database (:obj:`str`): The name of the mongo database.
