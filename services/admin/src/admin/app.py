@@ -25,6 +25,7 @@ from admin.routes.cache_reports_with_content import (
     create_cache_reports_with_content_endpoint,
 )
 from admin.routes.cancel_jobs import create_cancel_jobs_endpoint
+from admin.routes.dataset_backfill import create_dataset_backfill_endpoint
 from admin.routes.dataset_state import create_dataset_state_endpoint
 from admin.routes.dataset_status import create_dataset_status_endpoint
 from admin.routes.force_refresh import create_force_refresh_endpoint
@@ -81,6 +82,17 @@ def create_app() -> Starlette:
                     external_auth_url=app_config.admin.external_auth_url,
                     organization=app_config.admin.hf_organization,
                 ),
+            ),
+            Route(
+                "/dataset-backfill",
+                endpoint=create_dataset_backfill_endpoint(
+                    processing_graph=processing_graph,
+                    hf_endpoint=app_config.common.hf_endpoint,
+                    hf_token=app_config.common.hf_token,
+                    external_auth_url=app_config.admin.external_auth_url,
+                    organization=app_config.admin.hf_organization,
+                ),
+                methods=["POST"],
             ),
             Route(
                 "/dataset-state",
