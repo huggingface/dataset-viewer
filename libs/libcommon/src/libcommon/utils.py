@@ -2,6 +2,7 @@
 # Copyright 2022 The HuggingFace Authors.
 
 import base64
+from datetime import datetime, timezone
 from typing import Any
 
 import orjson
@@ -19,3 +20,7 @@ def orjson_default(obj: Any) -> Any:
 
 def orjson_dumps(content: Any) -> bytes:
     return orjson.dumps(content, option=orjson.OPT_UTC_Z, default=orjson_default)
+
+
+def get_datetime() -> datetime:
+    return datetime.now(timezone.utc)

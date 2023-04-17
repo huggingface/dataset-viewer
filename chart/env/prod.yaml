@@ -113,6 +113,20 @@ cacheMaintenance:
       cpu: 2
       memory: "8Gi"
 
+# --- cron jobs  ---
+metricsCollector:
+  action: "collect-metrics"
+  schedule: "*/2 * * * *"
+  # every two minutes
+  nodeSelector: {}
+  resources:
+    requests:
+      cpu: 1
+    limits:
+      cpu: 1
+      memory: "512Mi"
+  tolerations: []
+
 # --- storage admin (to manually inspect the storage, in /data) ---
 
 storageAdmin:

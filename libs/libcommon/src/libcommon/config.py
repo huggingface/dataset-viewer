@@ -161,6 +161,25 @@ class QueueConfig:
             )
 
 
+METRICS_MONGO_DATABASE = "datasets_server_metrics"
+METRICS_MONGO_URL = "mongodb://localhost:27017"
+
+
+@dataclass(frozen=True)
+class MetricsConfig:
+    mongo_database: str = METRICS_MONGO_DATABASE
+    mongo_url: str = METRICS_MONGO_URL
+
+    @classmethod
+    def from_env(cls) -> "MetricsConfig":
+        env = Env(expand_vars=True)
+        with env.prefixed("METRICS_"):
+            return cls(
+                mongo_database=env.str(name="MONGO_DATABASE", default=METRICS_MONGO_DATABASE),
+                mongo_url=env.str(name="MONGO_URL", default=METRICS_MONGO_URL),
+            )
+
+
 @dataclass(frozen=True)
 class ProcessingGraphConfig:
     specification: ProcessingGraphSpecification = field(

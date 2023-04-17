@@ -78,6 +78,11 @@ app.kubernetes.io/component: "{{ include "name" . }}-mongodb-migration"
 app.kubernetes.io/component: "{{ include "name" . }}-cache-maintenance"
 {{- end -}}
 
+{{- define "labels.metricsCollector" -}}
+{{ include "hf.labels.commons" . }}
+app.kubernetes.io/component: "{{ include "name" . }}-metrics-collector"
+{{- end -}}
+
 {{- define "labels.admin" -}}
 {{ include "hf.labels.commons" . }}
 app.kubernetes.io/component: "{{ include "name" . }}-admin"

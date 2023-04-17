@@ -15,9 +15,9 @@ from libcommon.queue import (
     Queue,
     Status,
     _clean_queue_database,
-    get_datetime,
 )
 from libcommon.resources import QueueMongoResource
+from libcommon.utils import get_datetime
 
 
 def get_old_datetime() -> datetime:
