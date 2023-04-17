@@ -492,26 +492,6 @@ def get_dataset_state() -> DatasetState:
     return DatasetState(dataset=DATASET_NAME, processing_graph=PROCESSING_GRAPH)
 
 
-def get_cache_status(dataset_state: DatasetState) -> Dict[str, List[str]]:
-    return {
-        "blocked_by_parent": sorted(dataset_state.cache_status.blocked_by_parent.keys()),
-        "cache_has_different_git_revision": sorted(dataset_state.cache_status.cache_has_different_git_revision.keys()),
-        "cache_is_outdated_by_parent": sorted(dataset_state.cache_status.cache_is_outdated_by_parent.keys()),
-        "cache_is_empty": sorted(dataset_state.cache_status.cache_is_empty.keys()),
-        "cache_is_error_to_retry": sorted(dataset_state.cache_status.cache_is_error_to_retry.keys()),
-        "cache_is_job_runner_obsolete": sorted(dataset_state.cache_status.cache_is_job_runner_obsolete.keys()),
-        "up_to_date": sorted(dataset_state.cache_status.up_to_date.keys()),
-    }
-
-
-def get_queue_status(dataset_state: DatasetState) -> Dict[str, List[str]]:
-    return {"in_process": sorted(dataset_state.queue_status.in_process.keys())}
-
-
-def get_tasks(dataset_state: DatasetState) -> List[str]:
-    return sorted(task.id for task in dataset_state.plan.tasks)
-
-
 def assert_dataset_state(
     config_names: List[str],
     split_names_in_first_config: List[str],
@@ -527,9 +507,9 @@ def assert_dataset_state(
     else:
         # this case is just to check the test, not the code
         assert not split_names_in_first_config
-    assert get_cache_status(dataset_state) == cache_status
-    assert get_queue_status(dataset_state) == queue_status
-    assert get_tasks(dataset_state) == tasks
+    assert dataset_state.cache_status.as_response() == cache_status
+    assert dataset_state.queue_status.as_response() == queue_status
+    assert dataset_state.plan.as_response() == tasks
     return dataset_state
 
 
@@ -581,7 +561,7 @@ def test_plan() -> None:
 def test_plan_job_creation_and_termination() -> None:
     # we launch all the backfill tasks
     dataset_state = get_dataset_state()
-    assert get_tasks(dataset_state) == [
+    assert dataset_state.plan.as_response() == [
         "CreateJob[/config-names,dataset]",
         "CreateJob[/parquet-and-dataset-info,dataset]",
         "CreateJob[dataset-info,dataset]",

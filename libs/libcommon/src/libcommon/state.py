@@ -292,10 +292,24 @@ class CacheStatus:
     cache_is_job_runner_obsolete: Dict[str, ArtifactState] = field(default_factory=dict)
     up_to_date: Dict[str, ArtifactState] = field(default_factory=dict)
 
+    def as_response(self) -> Dict[str, List[str]]:
+        return {
+            "blocked_by_parent": sorted(self.blocked_by_parent.keys()),
+            "cache_has_different_git_revision": sorted(self.cache_has_different_git_revision.keys()),
+            "cache_is_outdated_by_parent": sorted(self.cache_is_outdated_by_parent.keys()),
+            "cache_is_empty": sorted(self.cache_is_empty.keys()),
+            "cache_is_error_to_retry": sorted(self.cache_is_error_to_retry.keys()),
+            "cache_is_job_runner_obsolete": sorted(self.cache_is_job_runner_obsolete.keys()),
+            "up_to_date": sorted(self.up_to_date.keys()),
+        }
+
 
 @dataclass
 class QueueStatus:
     in_process: Dict[str, ArtifactState] = field(default_factory=dict)
+
+    def as_response(self) -> Dict[str, List[str]]:
+        return {"in_process": sorted(self.in_process.keys())}
 
 
 @dataclass
@@ -354,6 +368,9 @@ class Plan:
     def run(self) -> None:
         for task in self.tasks:
             task.run()
+
+    def as_response(self) -> List[str]:
+        return sorted(task.id for task in self.tasks)
 
 
 @dataclass
@@ -504,4 +521,12 @@ class DatasetState:
             "dataset": self.dataset,
             "config_states": [config_state.as_dict() for config_state in self.config_states],
             "artifact_states": [artifact_state.as_dict() for artifact_state in self.artifact_state_by_step.values()],
+        }
+
+    def as_response(self) -> Dict[str, Any]:
+        return {
+            "dataset": self.dataset,
+            "cache_status": self.cache_status.as_response(),
+            "queue_status": self.queue_status.as_response(),
+            "plan": self.plan.as_response(),
         }
