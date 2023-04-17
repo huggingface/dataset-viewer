@@ -243,7 +243,7 @@ def get_dataset_info_for_supported_datasets(
             cause=err,
         ) from err
     if dataset_info.private:
-        raise DatasetNotFoundError("The dataset is private and private datasets are not yet supported.")
+        raise DatasetNotFoundError(DOES_NOT_EXIST_OR_PRIVATE_DATASET_ERROR_MESSAGE)
     if dataset_info.cardData and not dataset_info.cardData.get("viewer", True):
         raise DisabledViewerError("The dataset viewer has been disabled on this dataset.")
     return dataset_info
