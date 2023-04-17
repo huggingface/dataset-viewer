@@ -15,6 +15,7 @@ DatasetErrorCode = Literal[
     "AskAccessHubRequestError",
     "DatasetInfoHubRequestError",
     "DatasetNotFoundError",
+    "DatasetRevisionNotFoundError",
     "DisabledViewerError",
     "GatedDisabledError",
     "GatedExtraFieldsError",
@@ -73,6 +74,19 @@ class DatasetNotFoundError(DatasetError):
             code="DatasetNotFoundError",
             cause=cause,
             disclose_cause=False,
+        )
+
+
+class DatasetRevisionNotFoundError(DatasetError):
+    """Raised when the dataset revision (git branch) does not exist."""
+
+    def __init__(self, message: str, cause: Optional[BaseException] = None):
+        super().__init__(
+            message=message,
+            status_code=HTTPStatus.NOT_FOUND,
+            code="DatasetRevisionNotFoundError",
+            cause=cause,
+            disclose_cause=True,
         )
 
 
@@ -209,8 +223,9 @@ def get_dataset_info_for_supported_datasets(
         - [`~libcommon.dataset.GatedDisabledError`]: if the dataset is gated, but disabled.
         - [`~libcommon.dataset.DatasetNotFoundError`]: if the dataset does not exist, or if the
             token does not give the sufficient access to the dataset, or if the dataset is private
-            (private datasets are not supported by the datasets server), or if the default branch cannot
-            be found in the dataset.
+            (private datasets are not supported by the datasets server).
+        - [`~libcommon.dataset.DatasetRevisionNotFoundError`]: if the git revision (branch, commit) does not
+            exist in the repository.
         - ['~requests.exceptions.HTTPError']: any other error when asking access
     </Tip>
     """
@@ -231,7 +246,7 @@ def get_dataset_info_for_supported_datasets(
     except RepositoryNotFoundError as err:
         raise DatasetNotFoundError(DOES_NOT_EXIST_OR_PRIVATE_DATASET_ERROR_MESSAGE, cause=err) from err
     except RevisionNotFoundError as err:
-        raise DatasetNotFoundError(
+        raise DatasetRevisionNotFoundError(
             f"The default branch cannot be found in dataset {dataset} on the Hub.", cause=err
         ) from err
     except Exception as err:
