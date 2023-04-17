@@ -127,7 +127,12 @@ class CacheState:
             return False
         return self.cache_entry_metadata["updated_at"] < other.cache_entry_metadata["updated_at"]
 
-    # TODO: old git revision
+    def is_git_revision_different_from(self, other: "CacheState") -> bool:
+        if self.cache_entry_metadata is None and other.cache_entry_metadata is None:
+            return False
+        if self.cache_entry_metadata is None or other.cache_entry_metadata is None:
+            return True
+        return self.cache_entry_metadata["dataset_git_revision"] != other.cache_entry_metadata["dataset_git_revision"]
 
 
 @dataclass
@@ -280,6 +285,7 @@ class ConfigState:
 @dataclass
 class CacheStatus:
     blocked_by_parent: Dict[str, ArtifactState] = field(default_factory=dict)
+    cache_has_different_git_revision: Dict[str, ArtifactState] = field(default_factory=dict)
     cache_is_outdated_by_parent: Dict[str, ArtifactState] = field(default_factory=dict)
     cache_is_empty: Dict[str, ArtifactState] = field(default_factory=dict)
     cache_is_error_to_retry: Dict[str, ArtifactState] = field(default_factory=dict)
@@ -445,6 +451,15 @@ class DatasetState:
                     cache_status.cache_is_job_runner_obsolete[artifact_state.id] = artifact_state
                     continue
 
+                # has a different git revision from the up to date artifacts?
+                # note: these can be parents, ancestors, siblings or other unrelated artifacts
+                if any(
+                    artifact_state.cache_state.is_git_revision_different_from(up_to_date_artifact.cache_state)
+                    for up_to_date_artifact in cache_status.up_to_date.values()
+                ):
+                    cache_status.cache_has_different_git_revision[artifact_state.id] = artifact_state
+                    continue
+
                 # ok
                 cache_status.up_to_date[artifact_state.id] = artifact_state
 
@@ -469,6 +484,7 @@ class DatasetState:
             + list(self.cache_status.cache_is_error_to_retry.values())
             + list(self.cache_status.cache_is_outdated_by_parent.values())
             + list(self.cache_status.cache_is_job_runner_obsolete.values())
+            + list(self.cache_status.cache_has_different_git_revision.values())
         )
         for artifact_state in artifact_states:
             if artifact_state.id in remaining_in_process_artifact_state_ids:
