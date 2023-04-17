@@ -171,7 +171,7 @@ def ask_access(
             ) from err
         if r.status_code == 403:
             raise GatedDisabledError("The dataset is gated and access is disabled.", cause=err) from err
-        if r.status_code in [401, 404]:
+        if r.status_code in {401, 404}:
             raise DatasetNotFoundError(DOES_NOT_EXIST_OR_PRIVATE_DATASET_ERROR_MESSAGE, cause=err) from err
         raise err
 
