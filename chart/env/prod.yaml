@@ -124,6 +124,7 @@ metricsCollector:
       cpu: 1
     limits:
       cpu: 1
+      memory: "512Mi"
   tolerations: []
 
 # --- storage admin (to manually inspect the storage, in /data) ---
