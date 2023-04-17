@@ -45,6 +45,7 @@ services:
     depends_on:
       - mongodb
     restart: always
+    network_mode: ${DEV_NETWORK_MODE-service:admin}
     ports:
       - ${ADMIN_UVICORN_PORT-8081}:${ADMIN_UVICORN_PORT-8081}
   api:
@@ -76,6 +77,7 @@ services:
       API_UVICORN_HOSTNAME: 0.0.0.0 # required for docker compose
       API_UVICORN_NUM_WORKERS: ${API_UVICORN_NUM_WORKERS-2}
       API_UVICORN_PORT: ${API_UVICORN_PORT-8080}
+    network_mode: ${DEV_NETWORK_MODE-service:api}
     ports:
       - ${API_UVICORN_PORT-8080}:${API_UVICORN_PORT-8080}
     depends_on:
@@ -110,6 +112,7 @@ services:
       PARQUET_AND_INFO_URL_TEMPLATE: ${PARQUET_AND_INFO_URL_TEMPLATE-/datasets/%s/resolve/%s/%s}
       WORKER_STORAGE_PATHS: ${ASSETS_STORAGE_DIRECTORY-/assets}
       # ^ note: the datasets cache is automatically added, so no need to add it here
+    network_mode: ${DEV_NETWORK_MODE-service:worker}
     restart: always
   mongodb:
     image: docker.io/mongo
