@@ -376,6 +376,7 @@ def test_config_state_as_dict() -> None:
 CONFIG_NAME_2 = "config2"
 TWO_CONFIG_NAMES = [CONFIG_NAME_1, CONFIG_NAME_2]
 TWO_CONFIG_NAMES_CONTENT_OK = {"config_names": [{"config": config} for config in TWO_CONFIG_NAMES]}
+CURRENT_GIT_REVISION = "current_git_revision"
 
 
 def test_dataset_state_as_dict() -> None:
@@ -397,7 +398,9 @@ def test_dataset_state_as_dict() -> None:
         http_status=SPLIT_NAMES_RESPONSE_OK["http_status"],
     )
     processing_graph = PROCESSING_GRAPH
-    assert DatasetState(dataset=dataset, processing_graph=processing_graph).as_dict() == {
+    assert DatasetState(
+        dataset=dataset, processing_graph=processing_graph, revision=CURRENT_GIT_REVISION
+    ).as_dict() == {
         "dataset": "dataset",
         "config_states": [
             get_CONFIG_STATE_DICT(
@@ -484,12 +487,13 @@ def finish_job(job_type: str, content: Any, job_runner_version: Optional[int] = 
         content=content,
         http_status=HTTPStatus.OK,
         job_runner_version=job_runner_version,
+        dataset_git_revision=CURRENT_GIT_REVISION,
     )
     Queue().finish_job(job_id=job_info["job_id"], finished_status=Status.SUCCESS)
 
 
-def get_dataset_state() -> DatasetState:
-    return DatasetState(dataset=DATASET_NAME, processing_graph=PROCESSING_GRAPH)
+def get_dataset_state(git_revision: Optional[str] = CURRENT_GIT_REVISION) -> DatasetState:
+    return DatasetState(dataset=DATASET_NAME, processing_graph=PROCESSING_GRAPH, revision=git_revision)
 
 
 def assert_dataset_state(
@@ -498,8 +502,9 @@ def assert_dataset_state(
     cache_status: Dict[str, List[str]],
     queue_status: Dict[str, List[str]],
     tasks: List[str],
+    git_revision: Optional[str] = CURRENT_GIT_REVISION,
 ) -> DatasetState:
-    dataset_state = get_dataset_state()
+    dataset_state = get_dataset_state(git_revision=git_revision)
     assert dataset_state.config_names == config_names
     assert len(dataset_state.config_states) == len(config_names)
     if len(config_names):
@@ -688,6 +693,7 @@ def test_plan_only_one_config() -> None:
         content=TWO_CONFIG_NAMES_CONTENT_OK,
         http_status=HTTPStatus.OK,
         job_runner_version=NEW_JOB_RUNNER_VERSION,
+        dataset_git_revision=CURRENT_GIT_REVISION,
     )
     # Set the "config-parquet-and-info,dataset,config1" artifact in cache
     upsert_response(
@@ -698,6 +704,7 @@ def test_plan_only_one_config() -> None:
         content=TWO_CONFIG_NAMES_CONTENT_OK,
         http_status=HTTPStatus.OK,
         job_runner_version=NEW_JOB_RUNNER_VERSION,
+        dataset_git_revision=CURRENT_GIT_REVISION,
     )
 
     assert_dataset_state(
@@ -769,6 +776,7 @@ def test_plan_retry_error() -> None:
         http_status=HTTPStatus.INTERNAL_SERVER_ERROR,
         job_runner_version=NEW_JOB_RUNNER_VERSION,
         error_code=ERROR_CODE_TO_RETRY,
+        dataset_git_revision=CURRENT_GIT_REVISION,
     )
 
     with patch("libcommon.state.ERROR_CODES_TO_RETRY", [ERROR_CODE_TO_RETRY]):
@@ -835,6 +843,7 @@ def test_plan_incoherent_state() -> None:
         content=TWO_CONFIG_NAMES_CONTENT_OK,
         http_status=HTTPStatus.OK,
         job_runner_version=NEW_JOB_RUNNER_VERSION,
+        dataset_git_revision=CURRENT_GIT_REVISION,
     )
     # Set the "/split-names-from-dataset-info,dataset,config1" artifact in cache
     # -> It's not a coherent state for the cache: the ancestors artifacts are missing:
@@ -847,6 +856,7 @@ def test_plan_incoherent_state() -> None:
         content=get_SPLIT_NAMES_CONTENT_OK(dataset=DATASET_NAME, config=CONFIG_NAME_1, splits=SPLIT_NAMES_OK),
         http_status=HTTPStatus.OK,
         job_runner_version=NEW_JOB_RUNNER_VERSION,
+        dataset_git_revision=CURRENT_GIT_REVISION,
     )
 
     assert_dataset_state(
@@ -920,6 +930,7 @@ def test_plan_get_splits() -> None:
         content=TWO_CONFIG_NAMES_CONTENT_OK,
         http_status=HTTPStatus.OK,
         job_runner_version=NEW_JOB_RUNNER_VERSION,
+        dataset_git_revision=CURRENT_GIT_REVISION,
     )
     # Set the "config-parquet-and-info,dataset,config1" artifact in cache
     upsert_response(
@@ -930,6 +941,7 @@ def test_plan_get_splits() -> None:
         content=TWO_CONFIG_NAMES_CONTENT_OK,  # <- not important
         http_status=HTTPStatus.OK,
         job_runner_version=NEW_JOB_RUNNER_VERSION,
+        dataset_git_revision=CURRENT_GIT_REVISION,
     )
     # Set the "config-info,dataset,config1" artifact in cache
     upsert_response(
@@ -940,6 +952,7 @@ def test_plan_get_splits() -> None:
         content=TWO_CONFIG_NAMES_CONTENT_OK,  # <- not important
         http_status=HTTPStatus.OK,
         job_runner_version=NEW_JOB_RUNNER_VERSION,
+        dataset_git_revision=CURRENT_GIT_REVISION,
     )
     # Set the "/split-names-from-dataset-info,dataset,config1" artifact in cache
     upsert_response(
@@ -950,6 +963,7 @@ def test_plan_get_splits() -> None:
         content=get_SPLIT_NAMES_CONTENT_OK(dataset=DATASET_NAME, config=CONFIG_NAME_1, splits=SPLIT_NAMES_OK),
         http_status=HTTPStatus.OK,
         job_runner_version=NEW_JOB_RUNNER_VERSION,
+        dataset_git_revision=CURRENT_GIT_REVISION,
     )
     # Set the "/split-names-from-streaming,dataset,config1" artifact in cache
     upsert_response(
@@ -960,6 +974,7 @@ def test_plan_get_splits() -> None:
         content=get_SPLIT_NAMES_CONTENT_OK(dataset=DATASET_NAME, config=CONFIG_NAME_1, splits=SPLIT_NAMES_OK),
         http_status=HTTPStatus.OK,
         job_runner_version=NEW_JOB_RUNNER_VERSION,
+        dataset_git_revision=CURRENT_GIT_REVISION,
     )
 
     assert_dataset_state(
@@ -1037,6 +1052,7 @@ def test_plan_updated_at() -> None:
         content=TWO_CONFIG_NAMES_CONTENT_OK,
         http_status=HTTPStatus.OK,
         job_runner_version=NEW_JOB_RUNNER_VERSION,
+        dataset_git_revision=CURRENT_GIT_REVISION,
     )
     # Set the "config-parquet-and-info,dataset,config1" artifact in cache
     upsert_response(
@@ -1047,6 +1063,7 @@ def test_plan_updated_at() -> None:
         content=TWO_CONFIG_NAMES_CONTENT_OK,  # <- not important
         http_status=HTTPStatus.OK,
         job_runner_version=NEW_JOB_RUNNER_VERSION,
+        dataset_git_revision=CURRENT_GIT_REVISION,
     )
     # Set the "config-info,dataset,config1" artifact in cache
     upsert_response(
@@ -1057,6 +1074,7 @@ def test_plan_updated_at() -> None:
         content=TWO_CONFIG_NAMES_CONTENT_OK,  # <- not important
         http_status=HTTPStatus.OK,
         job_runner_version=NEW_JOB_RUNNER_VERSION,
+        dataset_git_revision=CURRENT_GIT_REVISION,
     )
     # Set the "/split-names-from-dataset-info,dataset,config1" artifact in cache
     upsert_response(
@@ -1067,6 +1085,7 @@ def test_plan_updated_at() -> None:
         content=get_SPLIT_NAMES_CONTENT_OK(dataset=DATASET_NAME, config=CONFIG_NAME_1, splits=SPLIT_NAMES_OK),
         http_status=HTTPStatus.OK,
         job_runner_version=NEW_JOB_RUNNER_VERSION,
+        dataset_git_revision=CURRENT_GIT_REVISION,
     )
     # Set the "/split-names-from-streaming,dataset,config1" artifact in cache
     upsert_response(
@@ -1077,6 +1096,7 @@ def test_plan_updated_at() -> None:
         content=get_SPLIT_NAMES_CONTENT_OK(dataset=DATASET_NAME, config=CONFIG_NAME_1, splits=SPLIT_NAMES_OK),
         http_status=HTTPStatus.OK,
         job_runner_version=NEW_JOB_RUNNER_VERSION,
+        dataset_git_revision=CURRENT_GIT_REVISION,
     )
 
     # Now: refresh again the "/config-names,dataset" artifact in cache
@@ -1088,6 +1108,7 @@ def test_plan_updated_at() -> None:
         content=TWO_CONFIG_NAMES_CONTENT_OK,
         http_status=HTTPStatus.OK,
         job_runner_version=NEW_JOB_RUNNER_VERSION,
+        dataset_git_revision=CURRENT_GIT_REVISION,
     )
 
     assert_dataset_state(
@@ -1164,6 +1185,7 @@ def test_plan_job_runner_version() -> None:
         content=TWO_CONFIG_NAMES_CONTENT_OK,
         http_status=HTTPStatus.OK,
         job_runner_version=NEW_JOB_RUNNER_VERSION,
+        dataset_git_revision=CURRENT_GIT_REVISION,
     )
     # Set the "config-parquet-and-info,dataset,config1" artifact in cache
     upsert_response(
@@ -1174,6 +1196,7 @@ def test_plan_job_runner_version() -> None:
         content=TWO_CONFIG_NAMES_CONTENT_OK,  # <- not important
         http_status=HTTPStatus.OK,
         job_runner_version=NEW_JOB_RUNNER_VERSION,
+        dataset_git_revision=CURRENT_GIT_REVISION,
     )
     # Set the "config-parquet,dataset,config1" artifact in cache
     upsert_response(
@@ -1184,6 +1207,7 @@ def test_plan_job_runner_version() -> None:
         content=TWO_CONFIG_NAMES_CONTENT_OK,  # <- not important
         http_status=HTTPStatus.OK,
         job_runner_version=OLD_JOB_RUNNER_VERSION,  # <- current version is 3, this one is 1
+        dataset_git_revision=CURRENT_GIT_REVISION,
     )
 
     assert_dataset_state(
@@ -1242,16 +1266,17 @@ def test_plan_job_runner_version() -> None:
 
 
 @pytest.mark.parametrize(
-    "dataset_git_revision_1,dataset_get_revision_2,expect_refresh",
+    "dataset_git_revision,cached_dataset_get_revision,expect_refresh",
     [
         (None, None, False),
-        (None, "revision2", True),
-        ("revision1", None, True),
-        ("revision1", "revision2", True),
+        ("a", "a", False),
+        (None, "b", True),
+        ("a", None, True),
+        ("a", "b", True),
     ],
 )
 def test_plan_git_revision(
-    dataset_git_revision_1: Optional[str], dataset_get_revision_2: Optional[str], expect_refresh: bool
+    dataset_git_revision: Optional[str], cached_dataset_get_revision: Optional[str], expect_refresh: bool
 ) -> None:
     # Set the "/config-names,dataset" artifact in cache
     upsert_response(
@@ -1262,34 +1287,64 @@ def test_plan_git_revision(
         content=TWO_CONFIG_NAMES_CONTENT_OK,
         http_status=HTTPStatus.OK,
         job_runner_version=NEW_JOB_RUNNER_VERSION,
-        dataset_git_revision=dataset_git_revision_1,
-    )
-    # Set the "config-parquet-and-info,dataset,config1" artifact (child) in cache
-    upsert_response(
-        kind="config-parquet-and-info",
-        dataset=DATASET_NAME,
-        config=CONFIG_NAME_1,
-        split=None,
-        content=TWO_CONFIG_NAMES_CONTENT_OK,  # <- not important
-        http_status=HTTPStatus.OK,
-        job_runner_version=NEW_JOB_RUNNER_VERSION,
-        dataset_git_revision=dataset_get_revision_2,
-    )
-    # Set the "/parquet-and-dataset-info" artifact (sibling) in cache
-    upsert_response(
-        kind="/parquet-and-dataset-info",
-        dataset=DATASET_NAME,
-        split=None,
-        content=TWO_CONFIG_NAMES_CONTENT_OK,  # <- not important
-        http_status=HTTPStatus.OK,
-        job_runner_version=NEW_JOB_RUNNER_VERSION,
-        dataset_git_revision=dataset_get_revision_2,
+        dataset_git_revision=cached_dataset_get_revision,
     )
 
     if expect_refresh:
-        # if the git revision is different from an artifact placed before in the DAG, the artifact will be refreshed
+        # if the git revision is different from the current dataset git revision, the artifact will be refreshed
         # and its children will be blocked
         assert_dataset_state(
+            git_revision=dataset_git_revision,
+            # The config names are known
+            config_names=TWO_CONFIG_NAMES,
+            # The split names are not known
+            split_names_in_first_config=[],
+            cache_status={
+                "blocked_by_parent": [
+                    "/split-names-from-dataset-info,dataset,config1",
+                    "/split-names-from-dataset-info,dataset,config2",
+                    "/split-names-from-streaming,dataset,config1",
+                    "/split-names-from-streaming,dataset,config2",
+                    "config-info,dataset,config1",
+                    "config-info,dataset,config2",
+                    "config-parquet,dataset,config1",
+                    "config-parquet,dataset,config2",
+                    "config-parquet-and-info,dataset,config1",
+                    "config-parquet-and-info,dataset,config2",
+                    "config-size,dataset,config1",
+                    "config-size,dataset,config2",
+                    "dataset-is-valid,dataset",
+                ],
+                "cache_has_different_git_revision": ["/config-names,dataset"],
+                "cache_is_outdated_by_parent": [],
+                "cache_is_empty": [
+                    "/parquet-and-dataset-info,dataset",
+                    "dataset-info,dataset",
+                    "dataset-parquet,dataset",
+                    "dataset-size,dataset",
+                    "dataset-split-names,dataset",
+                    "dataset-split-names-from-dataset-info,dataset",
+                    "dataset-split-names-from-streaming,dataset",
+                ],
+                "cache_is_error_to_retry": [],
+                "cache_is_job_runner_obsolete": [],
+                "up_to_date": [],
+            },
+            queue_status={"in_process": []},
+            tasks=[
+                "CreateJob[/config-names,dataset]",
+                "CreateJob[/parquet-and-dataset-info,dataset]",
+                "CreateJob[dataset-info,dataset]",
+                "CreateJob[dataset-parquet,dataset]",
+                "CreateJob[dataset-size,dataset]",
+                "CreateJob[dataset-split-names,dataset]",
+                "CreateJob[dataset-split-names-from-dataset-info,dataset]",
+                "CreateJob[dataset-split-names-from-streaming,dataset]",
+            ],
+        )
+    else:
+        assert_dataset_state(
+            git_revision=dataset_git_revision,
             # The config names are known
             config_names=TWO_CONFIG_NAMES,
             # The split names are not known
@@ -1306,14 +1361,13 @@ def test_plan_git_revision(
                     "config-size,dataset,config2",
                     "dataset-is-valid,dataset",
                 ],
-                "cache_has_different_git_revision": [
-                    "/parquet-and-dataset-info,dataset",
-                    "config-parquet-and-info,dataset,config1",
-                ],
+                "cache_has_different_git_revision": [],
                 "cache_is_outdated_by_parent": [],
                 "cache_is_empty": [
+                    "/parquet-and-dataset-info,dataset",
                     "/split-names-from-streaming,dataset,config1",
                     "/split-names-from-streaming,dataset,config2",
+                    "config-parquet-and-info,dataset,config1",
                     "config-parquet-and-info,dataset,config2",
                     "dataset-info,dataset",
                     "dataset-parquet,dataset",
@@ -1333,61 +1387,6 @@ def test_plan_git_revision(
                 "CreateJob[/split-names-from-streaming,dataset,config2]",
                 "CreateJob[config-parquet-and-info,dataset,config1]",
                 "CreateJob[config-parquet-and-info,dataset,config2]",
-                "CreateJob[dataset-info,dataset]",
-                "CreateJob[dataset-parquet,dataset]",
-                "CreateJob[dataset-size,dataset]",
-                "CreateJob[dataset-split-names,dataset]",
-                "CreateJob[dataset-split-names-from-dataset-info,dataset]",
-                "CreateJob[dataset-split-names-from-streaming,dataset]",
-            ],
-        )
-    else:
-        assert_dataset_state(
-            # The config names are known
-            config_names=TWO_CONFIG_NAMES,
-            # The split names are not known
-            split_names_in_first_config=[],
-            cache_status={
-                "blocked_by_parent": [
-                    "/split-names-from-dataset-info,dataset,config1",
-                    "/split-names-from-dataset-info,dataset,config2",
-                    "config-info,dataset,config2",
-                    "config-parquet,dataset,config2",
-                    "config-size,dataset,config2",
-                    "dataset-is-valid,dataset",
-                ],
-                "cache_has_different_git_revision": [],
-                "cache_is_outdated_by_parent": [],
-                "cache_is_empty": [
-                    "/split-names-from-streaming,dataset,config1",
-                    "/split-names-from-streaming,dataset,config2",
-                    "config-info,dataset,config1",
-                    "config-parquet,dataset,config1",
-                    "config-parquet-and-info,dataset,config2",
-                    "config-size,dataset,config1",
-                    "dataset-info,dataset",
-                    "dataset-parquet,dataset",
-                    "dataset-size,dataset",
-                    "dataset-split-names,dataset",
-                    "dataset-split-names-from-dataset-info,dataset",
-                    "dataset-split-names-from-streaming,dataset",
-                ],
-                "cache_is_error_to_retry": [],
-                "cache_is_job_runner_obsolete": [],
-                "up_to_date": [
-                    "/config-names,dataset",
-                    "/parquet-and-dataset-info,dataset",
-                    "config-parquet-and-info,dataset,config1",
-                ],
-            },
-            queue_status={"in_process": []},
-            tasks=[
-                "CreateJob[/split-names-from-streaming,dataset,config1]",
-                "CreateJob[/split-names-from-streaming,dataset,config2]",
-                "CreateJob[config-info,dataset,config1]",
-                "CreateJob[config-parquet,dataset,config1]",
-                "CreateJob[config-parquet-and-info,dataset,config2]",
-                "CreateJob[config-size,dataset,config1]",
                 "CreateJob[dataset-info,dataset]",
                 "CreateJob[dataset-parquet,dataset]",
                 "CreateJob[dataset-size,dataset]",

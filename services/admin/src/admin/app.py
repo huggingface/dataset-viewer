@@ -98,6 +98,8 @@ def create_app() -> Starlette:
                 "/dataset-state",
                 endpoint=create_dataset_state_endpoint(
                     processing_graph=processing_graph,
+                    hf_endpoint=app_config.common.hf_endpoint,
+                    hf_token=app_config.common.hf_token,
                     max_age=app_config.admin.max_age,
                     external_auth_url=app_config.admin.external_auth_url,
                     organization=app_config.admin.hf_organization,

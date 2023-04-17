@@ -23,7 +23,6 @@ from libcommon.simple_cache import (
 # A job and a cache entry is related to an Artifact, not to a Step
 # TODO: assets, cached_assets, parquet files
 # TODO: obsolete/dangling cache entries and jobs
-# TODO: add git version
 
 HARD_CODED_CONFIG_NAMES_CACHE_KIND = "/config-names"
 HARD_CODED_SPLIT_NAMES_FROM_STREAMING_CACHE_KIND = "/split-names-from-streaming"
@@ -127,12 +126,8 @@ class CacheState:
             return False
         return self.cache_entry_metadata["updated_at"] < other.cache_entry_metadata["updated_at"]
 
-    def is_git_revision_different_from(self, other: "CacheState") -> bool:
-        if self.cache_entry_metadata is None and other.cache_entry_metadata is None:
-            return False
-        if self.cache_entry_metadata is None or other.cache_entry_metadata is None:
-            return True
-        return self.cache_entry_metadata["dataset_git_revision"] != other.cache_entry_metadata["dataset_git_revision"]
+    def is_git_revision_different_from(self, git_revision: Optional[str]) -> bool:
+        return self.cache_entry_metadata is None or self.cache_entry_metadata["dataset_git_revision"] != git_revision
 
 
 @dataclass
@@ -379,6 +374,7 @@ class DatasetState:
 
     dataset: str
     processing_graph: ProcessingGraph
+    revision: Optional[str]
 
     config_names: List[str] = field(init=False)
     config_states: List[ConfigState] = field(init=False)
@@ -468,12 +464,8 @@ class DatasetState:
                     cache_status.cache_is_job_runner_obsolete[artifact_state.id] = artifact_state
                     continue
 
-                # has a different git revision from the up to date artifacts?
-                # note: these can be parents, ancestors, siblings or other unrelated artifacts
-                if any(
-                    artifact_state.cache_state.is_git_revision_different_from(up_to_date_artifact.cache_state)
-                    for up_to_date_artifact in cache_status.up_to_date.values()
-                ):
+                # has a different git revision from the dataset current revision?
+                if artifact_state.cache_state.is_git_revision_different_from(self.revision):
                     cache_status.cache_has_different_git_revision[artifact_state.id] = artifact_state
                     continue
 

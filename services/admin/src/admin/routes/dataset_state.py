@@ -4,6 +4,7 @@
 import logging
 from typing import Optional
 
+from libcommon.dataset import get_dataset_git_revision
 from libcommon.processing_graph import ProcessingGraph
 from libcommon.state import DatasetState
 from starlette.requests import Request
@@ -24,8 +25,11 @@ from admin.utils import (
 def create_dataset_state_endpoint(
     processing_graph: ProcessingGraph,
     max_age: int,
+    hf_endpoint: str,
     external_auth_url: Optional[str] = None,
     organization: Optional[str] = None,
+    hf_token: Optional[str] = None,
+    hf_timeout_seconds: Optional[float] = None,
 ) -> Endpoint:
     async def dataset_state_endpoint(request: Request) -> Response:
         try:
@@ -37,7 +41,12 @@ def create_dataset_state_endpoint(
             # if auth_check fails, it will raise an exception that will be caught below
             auth_check(external_auth_url=external_auth_url, request=request, organization=organization)
 
-            dataset_state = DatasetState(dataset=dataset, processing_graph=processing_graph)
+            dataset_git_revision = get_dataset_git_revision(
+                dataset=dataset, hf_endpoint=hf_endpoint, hf_token=hf_token, hf_timeout_seconds=hf_timeout_seconds
+            )
+            dataset_state = DatasetState(
+                dataset=dataset, processing_graph=processing_graph, revision=dataset_git_revision
+            )
             return get_json_ok_response(dataset_state.as_response(), max_age=max_age)
         except AdminCustomError as e:
             return get_json_admin_error_response(e, max_age=max_age)
