@@ -3,6 +3,7 @@
 
 from http import HTTPStatus
 from typing import Any, Dict, Iterator, List, Mapping, Optional, TypedDict
+from unittest.mock import patch
 
 import pytest
 
@@ -774,6 +775,74 @@ def test_plan_only_one_config() -> None:
             "CreateJob[dataset-split-names-from-streaming,dataset]",
         ],
     )
+
+
+def test_plan_retry_error() -> None:
+    ERROR_CODE_TO_RETRY = "ERROR_CODE_TO_RETRY"
+    # Set the "/config-names,dataset" artifact in cache
+    upsert_response(
+        kind="/config-names",
+        dataset=DATASET_NAME,
+        config=None,
+        split=None,
+        content=TWO_CONFIG_NAMES_CONTENT_OK,
+        http_status=HTTPStatus.INTERNAL_SERVER_ERROR,
+        job_runner_version=NEW_JOB_RUNNER_VERSION,
+        error_code=ERROR_CODE_TO_RETRY,
+    )
+
+    with patch("libcommon.state.ERROR_CODES_TO_RETRY", [ERROR_CODE_TO_RETRY]):
+        assert_dataset_state(
+            # The config names are known
+            config_names=TWO_CONFIG_NAMES,
+            # The split names are not yet known
+            split_names_in_first_config=[],
+            # "/config-names,dataset" is in the cache, but it's not categorized in up to date,
+            # but in "cache_is_error_to_retry" due to the error code
+            cache_status={
+                "blocked_by_parent": [
+                    "/split-names-from-dataset-info,dataset,config1",
+                    "/split-names-from-dataset-info,dataset,config2",
+                    "/split-names-from-streaming,dataset,config1",
+                    "/split-names-from-streaming,dataset,config2",
+                    "config-info,dataset,config1",
+                    "config-info,dataset,config2",
+                    "config-parquet,dataset,config1",
+                    "config-parquet,dataset,config2",
+                    "config-parquet-and-info,dataset,config1",
+                    "config-parquet-and-info,dataset,config2",
+                    "config-size,dataset,config1",
+                    "config-size,dataset,config2",
+                    "dataset-is-valid,dataset",
+                ],
+                "cache_has_different_git_revision": [],
+                "cache_is_outdated_by_parent": [],
+                "cache_is_empty": [
+                    "/parquet-and-dataset-info,dataset",
+                    "dataset-info,dataset",
+                    "dataset-parquet,dataset",
+                    "dataset-size,dataset",
+                    "dataset-split-names,dataset",
+                    "dataset-split-names-from-dataset-info,dataset",
+                    "dataset-split-names-from-streaming,dataset",
+                ],
+                "cache_is_error_to_retry": ["/config-names,dataset"],
+                "cache_is_job_runner_obsolete": [],
+                "up_to_date": [],
+            },
+            queue_status={"in_process": []},
+            # The "/config-names,dataset" artifact will be retried
+            tasks=[
+                "CreateJob[/config-names,dataset]",
+                "CreateJob[/parquet-and-dataset-info,dataset]",
+                "CreateJob[dataset-info,dataset]",
+                "CreateJob[dataset-parquet,dataset]",
+                "CreateJob[dataset-size,dataset]",
+                "CreateJob[dataset-split-names,dataset]",
+                "CreateJob[dataset-split-names-from-dataset-info,dataset]",
+                "CreateJob[dataset-split-names-from-streaming,dataset]",
+            ],
+        )
 
 
 def test_plan_incoherent_state() -> None:
