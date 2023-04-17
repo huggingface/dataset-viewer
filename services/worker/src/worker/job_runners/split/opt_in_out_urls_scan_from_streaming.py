@@ -1,16 +1,14 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2022 The HuggingFace Authors.
 
-import asyncio
 import itertools
 import logging
-from functools import partial
+from asyncio import Semaphore, create_task, run, wait
 from http import HTTPStatus
 from pathlib import Path
 from typing import Any, List, Literal, Mapping, Optional, Tuple, TypedDict, Union
 
-import aiohttp
-import pyarrow as pa
+from aiohttp import ClientSession
 from aiolimiter import AsyncLimiter
 from datasets import (
     Dataset,
@@ -23,16 +21,12 @@ from libcommon.constants import PROCESSING_STEP_SPLIT_OPT_IN_OUT_URLS_SCAN_VERSI
 from libcommon.processing_graph import ProcessingStep
 from libcommon.queue import JobInfo
 from libcommon.simple_cache import DoesNotExist, SplitFullName, get_response
-from libcommon.storage import StrPath
 
 from worker.config import AppConfig, OptInOutUrlsScanConfig
 from worker.job_runner import CompleteJobResult, ConfigNotFoundError, JobRunnerError
 from worker.job_runners._datasets_based_job_runner import DatasetsBasedJobRunner
-from worker.job_runners.split.first_rows_from_streaming import (
-    Row,
-    SplitFirstRowsResponse,
-    retry,
-)
+from worker.job_runners.split.first_rows_from_streaming import Row, retry
+from worker.utils import SplitFirstRowsResponse
 
 SplitOptInOutUrlsScanJobRunnerErrorCode = Literal[
     "InfoError",
@@ -110,13 +104,6 @@ class MissingSpawningTokenError(SplitOptInOutUrlsScanJobRunnerError):
         super().__init__(message, HTTPStatus.INTERNAL_SERVER_ERROR, "MissingSpawningTokenError", cause, False)
 
 
-class OptInOutUrlsScanResponse(TypedDict):
-    urls_columns: List[str]
-    opt_in_urls: List[str]
-    opt_out_urls: List[str]
-    num_scanned_rows: int
-
-
 class OptInUrl(TypedDict):
     url: str
     row_idx: int
@@ -127,6 +114,16 @@ class OptOutUrl(TypedDict):
     url: str
     row_idx: int
     column_name: str
+
+
+class OptInOutUrlsScanResponse(TypedDict):
+    urls_columns: List[str]
+    opt_in_urls: List[OptInUrl]
+    opt_out_urls: List[OptOutUrl]
+    num_scanned_rows: int
+    has_urls_columns: bool
+    opt_in_urls_indices: List[int]
+    opt_out_urls_indices: List[int]
 
 
 @retry
@@ -164,8 +161,10 @@ def get_rows(
     return rows_plus_one[:rows_max_number]
 
 
-async def check_spawning(image_urls: List[str], session, semaphore, limiter) -> dict:
-    url = f"https://opts-api.spawningaiapi.com/api/v2/query/urls"
+async def check_spawning(
+    image_urls: List[str], session: ClientSession, semaphore: Semaphore, limiter: AsyncLimiter
+) -> Any:
+    url = "https://opts-api.spawningaiapi.com/api/v2/query/urls"
     if not image_urls:
         return {"urls": []}
     elif len(image_urls) == 1:
@@ -177,7 +176,9 @@ async def check_spawning(image_urls: List[str], session, semaphore, limiter) -> 
                 return spawning_response
 
 
-async def opt_in_out_task(image_urls: List[str], session, semaphore, limiter) -> tuple:
+async def opt_in_out_task(
+    image_urls: List[str], session: ClientSession, semaphore: Semaphore, limiter: AsyncLimiter
+) -> Tuple[List[Any], List[Any]]:
     spawning_response = await check_spawning(image_urls, session, semaphore, limiter)
     opt_in_urls_indices = [i for i in range(len(image_urls)) if spawning_response["urls"][i]["optIn"]]
     opt_out_urls_indices = [i for i in range(len(image_urls)) if spawning_response["urls"][i]["optOut"]]
@@ -193,19 +194,16 @@ async def opt_in_out_scan_urls(
 ) -> Tuple[List[int], List[int]]:
     offsets = []
     tasks = []
-    semaphore = asyncio.Semaphore(value=max_concurrent_requests_number)
+    semaphore = Semaphore(value=max_concurrent_requests_number)
     limiter = AsyncLimiter(max_requests_per_second, time_period=1)
 
     headers = {"Authorization": f"API {spawning_token}"}
-    async with aiohttp.ClientSession(headers=headers) as session:
+    async with ClientSession(headers=headers) as session:
         for offset in range(0, len(urls), urls_number_per_batch):
             offsets.append(offset)
-            tasks.append(
-                asyncio.create_task(
-                    opt_in_out_task(urls[offset : offset + urls_number_per_batch], session, semaphore, limiter)
-                )
-            )
-        await asyncio.wait(tasks)
+            limit = offset + urls_number_per_batch
+            tasks.append(create_task(opt_in_out_task(urls[offset:limit], session, semaphore, limiter)))  # noqa: E203
+        await wait(tasks)
 
     opt_in_urls_indices = []
     opt_out_urls_indices = []
@@ -283,7 +281,7 @@ def compute_opt_in_out_urls_scan_response(
 
     # look for URLs columns using the first rows
     string_type_dict = {"dtype": "string", "_type": "Value"}
-    string_columns = [column for column in features if features[column] == string_type_dict]
+    string_columns = [feature["name"] for feature in features if feature["type"] == string_type_dict]
     urls_columns = []
     for string_column in string_columns:
         urls_count = sum(
@@ -345,7 +343,7 @@ def compute_opt_in_out_urls_scan_response(
     urls = [row[urls_column] for row in rows for urls_column in urls_columns]
 
     # scan the urls
-    opt_in_urls_indices, opt_out_urls_indices = asyncio.run(
+    opt_in_urls_indices, opt_out_urls_indices = run(
         opt_in_out_scan_urls(
             urls,
             urls_number_per_batch=urls_number_per_batch,
@@ -355,12 +353,20 @@ def compute_opt_in_out_urls_scan_response(
         )
     )
     opt_in_urls = [
-        OptInUrl(url=url, row_idx=url_idx // len(urls_columns), column_name=urls_columns[url_idx % len(urls_columns)])
-        for url_idx, url in enumerate(opt_in_urls_indices)
+        OptInUrl(
+            url=urls[url_idx],
+            row_idx=url_idx // len(urls_columns),
+            column_name=urls_columns[url_idx % len(urls_columns)],
+        )
+        for url_idx in opt_in_urls_indices
     ]
     opt_out_urls = [
-        OptOutUrl(url=url, row_idx=url_idx // len(urls_columns), column_name=urls_columns[url_idx % len(urls_columns)])
-        for url_idx, url in enumerate(opt_out_urls_indices)
+        OptOutUrl(
+            url=urls[url_idx],
+            row_idx=url_idx // len(urls_columns),
+            column_name=urls_columns[url_idx % len(urls_columns)],
+        )
+        for url_idx in opt_out_urls_indices
     ]
 
     # return scan result

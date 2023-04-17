@@ -40,7 +40,9 @@ from worker.job_runners.split.first_rows_from_parquet import (
 from worker.job_runners.split.first_rows_from_streaming import (
     SplitFirstRowsFromStreamingJobRunner,
 )
-from worker.job_runners.split.opt_in_out_urls_scan_from_streaming import SplitOptInOutUrlsScanJobRunner
+from worker.job_runners.split.opt_in_out_urls_scan_from_streaming import (
+    SplitOptInOutUrlsScanJobRunner,
+)
 
 
 class BaseJobRunnerFactory(ABC):
