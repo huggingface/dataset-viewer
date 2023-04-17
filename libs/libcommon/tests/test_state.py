@@ -91,14 +91,16 @@ class ResponseSpec(TypedDict):
     http_status: HTTPStatus
 
 
-CONFIG_NAME = "config"
+CONFIG_NAME_1 = "config1"
 SPLIT_NAMES_OK = ["split1", "split2"]
+
+
+def get_SPLIT_NAMES_CONTENT_OK(dataset: str, config: str, splits: List[str]) -> Any:
+    return {"split_names": [{"dataset": dataset, "config": config, "split": split_name} for split_name in splits]}
+
+
 SPLIT_NAMES_RESPONSE_OK = ResponseSpec(
-    content={
-        "split_names": [
-            {"dataset": DATASET_NAME, "config": CONFIG_NAME, "split": split_name} for split_name in SPLIT_NAMES_OK
-        ]
-    },
+    content=get_SPLIT_NAMES_CONTENT_OK(dataset=DATASET_NAME, config=CONFIG_NAME_1, splits=SPLIT_NAMES_OK),
     http_status=HTTPStatus.OK,
 )
 SPLIT_NAMES_RESPONSE_ERROR = ResponseSpec(content={"error": "error"}, http_status=HTTPStatus.INTERNAL_SERVER_ERROR)
@@ -129,7 +131,7 @@ def test_fetch_split_names(
         upsert_response(
             kind=kind,
             dataset=DATASET_NAME,
-            config=CONFIG_NAME,
+            config=CONFIG_NAME_1,
             split=None,
             content=response_spec["content"],
             http_status=response_spec["http_status"],
@@ -137,9 +139,9 @@ def test_fetch_split_names(
 
     if raises:
         with pytest.raises(Exception):
-            fetch_split_names(dataset=DATASET_NAME, config=CONFIG_NAME)
+            fetch_split_names(dataset=DATASET_NAME, config=CONFIG_NAME_1)
     else:
-        split_names = fetch_split_names(dataset=DATASET_NAME, config=CONFIG_NAME)
+        split_names = fetch_split_names(dataset=DATASET_NAME, config=CONFIG_NAME_1)
         assert split_names == expected_split_names
 
 
@@ -151,8 +153,8 @@ JOB_TYPE = "job_type"
     "dataset,config,split,job_type",
     [
         (DATASET_NAME, None, None, JOB_TYPE),
-        (DATASET_NAME, CONFIG_NAME, None, JOB_TYPE),
-        (DATASET_NAME, CONFIG_NAME, SPLIT_NAME, JOB_TYPE),
+        (DATASET_NAME, CONFIG_NAME_1, None, JOB_TYPE),
+        (DATASET_NAME, CONFIG_NAME_1, SPLIT_NAME, JOB_TYPE),
     ],
 )
 def test_job_state_is_in_process(dataset: str, config: Optional[str], split: Optional[str], job_type: str) -> None:
@@ -169,8 +171,8 @@ def test_job_state_is_in_process(dataset: str, config: Optional[str], split: Opt
     "dataset,config,split,job_type",
     [
         (DATASET_NAME, None, None, JOB_TYPE),
-        (DATASET_NAME, CONFIG_NAME, None, JOB_TYPE),
-        (DATASET_NAME, CONFIG_NAME, SPLIT_NAME, JOB_TYPE),
+        (DATASET_NAME, CONFIG_NAME_1, None, JOB_TYPE),
+        (DATASET_NAME, CONFIG_NAME_1, SPLIT_NAME, JOB_TYPE),
     ],
 )
 def test_job_state_as_dict(dataset: str, config: Optional[str], split: Optional[str], job_type: str) -> None:
@@ -188,8 +190,8 @@ CACHE_KIND = "cache_kind"
     "dataset,config,split,cache_kind",
     [
         (DATASET_NAME, None, None, CACHE_KIND),
-        (DATASET_NAME, CONFIG_NAME, None, CACHE_KIND),
-        (DATASET_NAME, CONFIG_NAME, SPLIT_NAME, CACHE_KIND),
+        (DATASET_NAME, CONFIG_NAME_1, None, CACHE_KIND),
+        (DATASET_NAME, CONFIG_NAME_1, SPLIT_NAME, CACHE_KIND),
     ],
 )
 def test_cache_state_exists(dataset: str, config: Optional[str], split: Optional[str], cache_kind: str) -> None:
@@ -204,8 +206,8 @@ def test_cache_state_exists(dataset: str, config: Optional[str], split: Optional
     "dataset,config,split,cache_kind",
     [
         (DATASET_NAME, None, None, CACHE_KIND),
-        (DATASET_NAME, CONFIG_NAME, None, CACHE_KIND),
-        (DATASET_NAME, CONFIG_NAME, SPLIT_NAME, CACHE_KIND),
+        (DATASET_NAME, CONFIG_NAME_1, None, CACHE_KIND),
+        (DATASET_NAME, CONFIG_NAME_1, SPLIT_NAME, CACHE_KIND),
     ],
 )
 def test_cache_state_is_success(dataset: str, config: Optional[str], split: Optional[str], cache_kind: str) -> None:
@@ -228,8 +230,8 @@ def test_cache_state_is_success(dataset: str, config: Optional[str], split: Opti
     "dataset,config,split,cache_kind",
     [
         (DATASET_NAME, None, None, CACHE_KIND),
-        (DATASET_NAME, CONFIG_NAME, None, CACHE_KIND),
-        (DATASET_NAME, CONFIG_NAME, SPLIT_NAME, CACHE_KIND),
+        (DATASET_NAME, CONFIG_NAME_1, None, CACHE_KIND),
+        (DATASET_NAME, CONFIG_NAME_1, SPLIT_NAME, CACHE_KIND),
     ],
 )
 def test_cache_state_as_dict(dataset: str, config: Optional[str], split: Optional[str], cache_kind: str) -> None:
@@ -269,127 +271,126 @@ def test_artifact_state() -> None:
     assert not artifact_state.job_state.is_in_process
 
 
+def get_SPLIT_STATE_DICT(dataset: str, config: str, split: str) -> Any:
+    return {
+        "split": split,
+        "artifact_states": [
+            {
+                "id": f"split-first-rows-from-streaming,{dataset},{config},{split}",
+                "job_state": {"is_in_process": False},
+                "cache_state": {"exists": False, "is_success": False},
+            },
+            {
+                "id": f"split-first-rows-from-parquet,{dataset},{config},{split}",
+                "job_state": {"is_in_process": False},
+                "cache_state": {"exists": False, "is_success": False},
+            },
+        ],
+    }
+
+
 SPLIT1_NAME = "split1"
-SPLIT1_STATE_DICT = {
-    "split": SPLIT1_NAME,
-    "artifact_states": [
-        {
-            "id": f"split-first-rows-from-streaming,{DATASET_NAME},{CONFIG_NAME},{SPLIT1_NAME}",
-            "job_state": {"is_in_process": False},
-            "cache_state": {"exists": False, "is_success": False},
-        },
-        {
-            "id": f"split-first-rows-from-parquet,{DATASET_NAME},{CONFIG_NAME},{SPLIT1_NAME}",
-            "job_state": {"is_in_process": False},
-            "cache_state": {"exists": False, "is_success": False},
-        },
-    ],
-}
 
 
 def test_split_state_as_dict() -> None:
     dataset = DATASET_NAME
-    config = CONFIG_NAME
+    config = CONFIG_NAME_1
     split = SPLIT1_NAME
     processing_graph = PROCESSING_GRAPH
-    assert (
-        SplitState(dataset=dataset, config=config, split=split, processing_graph=processing_graph).as_dict()
-        == SPLIT1_STATE_DICT
-    )
+    assert SplitState(
+        dataset=dataset, config=config, split=split, processing_graph=processing_graph
+    ).as_dict() == get_SPLIT_STATE_DICT(dataset=dataset, config=config, split=split)
 
 
 SPLIT2_NAME = "split2"
-SPLIT2_STATE_DICT = {
-    "split": SPLIT2_NAME,
-    "artifact_states": [
-        {
-            "id": f"split-first-rows-from-streaming,{DATASET_NAME},{CONFIG_NAME},{SPLIT2_NAME}",
-            "job_state": {"is_in_process": False},
-            "cache_state": {"exists": False, "is_success": False},
-        },
-        {
-            "id": f"split-first-rows-from-parquet,{DATASET_NAME},{CONFIG_NAME},{SPLIT2_NAME}",
-            "job_state": {"is_in_process": False},
-            "cache_state": {"exists": False, "is_success": False},
-        },
-    ],
-}
 
-CONFIG_STATE_DICT = {
-    "config": "config",
-    "split_states": [
-        SPLIT1_STATE_DICT,
-        SPLIT2_STATE_DICT,
-    ],
-    "artifact_states": [
-        {
-            "id": f"/split-names-from-streaming,{DATASET_NAME},{CONFIG_NAME}",
-            "job_state": {"is_in_process": False},
-            "cache_state": {"exists": False, "is_success": False},
-        },
-        {
-            "id": f"config-parquet-and-info,{DATASET_NAME},{CONFIG_NAME}",
-            "job_state": {"is_in_process": False},
-            "cache_state": {"exists": False, "is_success": False},
-        },
-        {
-            "id": f"config-parquet,{DATASET_NAME},{CONFIG_NAME}",
-            "job_state": {"is_in_process": False},
-            "cache_state": {"exists": False, "is_success": False},
-        },
-        {
-            "id": f"config-info,{DATASET_NAME},{CONFIG_NAME}",
-            "job_state": {"is_in_process": False},
-            "cache_state": {"exists": False, "is_success": False},
-        },
-        {
-            "id": f"/split-names-from-dataset-info,{DATASET_NAME},{CONFIG_NAME}",
-            "job_state": {"is_in_process": False},
-            "cache_state": {"exists": True, "is_success": True},  # <- this entry is in the cache
-        },
-        {
-            "id": f"config-size,{DATASET_NAME},{CONFIG_NAME}",
-            "job_state": {"is_in_process": False},
-            "cache_state": {"exists": False, "is_success": False},
-        },
-    ],
-}
+
+def get_CONFIG_STATE_DICT(dataset: str, config: str, split_states: List[Any], cache_exists: bool) -> Any:
+    return {
+        "config": config,
+        "split_states": split_states,
+        "artifact_states": [
+            {
+                "id": f"/split-names-from-streaming,{dataset},{config}",
+                "job_state": {"is_in_process": False},
+                "cache_state": {"exists": False, "is_success": False},
+            },
+            {
+                "id": f"config-parquet-and-info,{dataset},{config}",
+                "job_state": {"is_in_process": False},
+                "cache_state": {"exists": False, "is_success": False},
+            },
+            {
+                "id": f"config-parquet,{dataset},{config}",
+                "job_state": {"is_in_process": False},
+                "cache_state": {"exists": False, "is_success": False},
+            },
+            {
+                "id": f"config-info,{dataset},{config}",
+                "job_state": {"is_in_process": False},
+                "cache_state": {"exists": False, "is_success": False},
+            },
+            {
+                "id": f"/split-names-from-dataset-info,{dataset},{config}",
+                "job_state": {"is_in_process": False},
+                "cache_state": {
+                    "exists": cache_exists,
+                    "is_success": cache_exists,
+                },  # ^ if this entry is in the cache
+            },
+            {
+                "id": f"config-size,{dataset},{config}",
+                "job_state": {"is_in_process": False},
+                "cache_state": {"exists": False, "is_success": False},
+            },
+        ],
+    }
 
 
 def test_config_state_as_dict() -> None:
     dataset = DATASET_NAME
-    config = CONFIG_NAME
+    config = CONFIG_NAME_1
     upsert_response(
         kind=HARD_CODED_SPLIT_NAMES_FROM_DATASET_INFO_CACHE_KIND,
         dataset=DATASET_NAME,
-        config=CONFIG_NAME,
+        config=CONFIG_NAME_1,
         split=None,
         content=SPLIT_NAMES_RESPONSE_OK["content"],
         http_status=SPLIT_NAMES_RESPONSE_OK["http_status"],
     )
     processing_graph = PROCESSING_GRAPH
-    assert (
-        ConfigState(dataset=dataset, config=config, processing_graph=processing_graph).as_dict() == CONFIG_STATE_DICT
+    assert ConfigState(
+        dataset=dataset, config=config, processing_graph=processing_graph
+    ).as_dict() == get_CONFIG_STATE_DICT(
+        dataset=DATASET_NAME,
+        config=CONFIG_NAME_1,
+        split_states=[
+            get_SPLIT_STATE_DICT(dataset=dataset, config=config, split=SPLIT1_NAME),
+            get_SPLIT_STATE_DICT(dataset=dataset, config=config, split=SPLIT2_NAME),
+        ],
+        cache_exists=True,
     )
 
 
-ONE_CONFIG_NAME_CONTENT_OK = {"config_names": [{"config": CONFIG_NAME}]}
+CONFIG_NAME_2 = "config2"
+TWO_CONFIG_NAMES = [CONFIG_NAME_1, CONFIG_NAME_2]
+TWO_CONFIG_NAMES_CONTENT_OK = {"config_names": [{"config": config} for config in TWO_CONFIG_NAMES]}
 
 
 def test_dataset_state_as_dict() -> None:
     dataset = DATASET_NAME
     upsert_response(
         kind=HARD_CODED_CONFIG_NAMES_CACHE_KIND,
-        dataset=DATASET_NAME,
+        dataset=dataset,
         config=None,
         split=None,
-        content=ONE_CONFIG_NAME_CONTENT_OK,
+        content=TWO_CONFIG_NAMES_CONTENT_OK,
         http_status=HTTPStatus.OK,
     )
     upsert_response(
         kind=HARD_CODED_SPLIT_NAMES_FROM_DATASET_INFO_CACHE_KIND,
-        dataset=DATASET_NAME,
-        config=CONFIG_NAME,
+        dataset=dataset,
+        config=CONFIG_NAME_1,
         split=None,
         content=SPLIT_NAMES_RESPONSE_OK["content"],
         http_status=SPLIT_NAMES_RESPONSE_OK["http_status"],
@@ -397,7 +398,23 @@ def test_dataset_state_as_dict() -> None:
     processing_graph = PROCESSING_GRAPH
     assert DatasetState(dataset=dataset, processing_graph=processing_graph).as_dict() == {
         "dataset": "dataset",
-        "config_states": [CONFIG_STATE_DICT],
+        "config_states": [
+            get_CONFIG_STATE_DICT(
+                dataset=dataset,
+                config=CONFIG_NAME_1,
+                split_states=[
+                    get_SPLIT_STATE_DICT(dataset=dataset, config=CONFIG_NAME_1, split=SPLIT1_NAME),
+                    get_SPLIT_STATE_DICT(dataset=dataset, config=CONFIG_NAME_1, split=SPLIT2_NAME),
+                ],
+                cache_exists=True,
+            ),
+            get_CONFIG_STATE_DICT(
+                dataset=dataset,
+                config=CONFIG_NAME_2,
+                split_states=[],
+                cache_exists=False,
+            ),
+        ],
         "artifact_states": [
             {
                 "id": f"/config-names,{DATASET_NAME}",
@@ -448,11 +465,15 @@ def test_dataset_state_as_dict() -> None:
     }
 
 
-CONFIG_PARQUET_AND_INFO_OK = {"config": CONFIG_NAME, "content": "not important"}
-CONFIG_INFO_OK = {"config": CONFIG_NAME, "content": "not important"}
+CONFIG_PARQUET_AND_INFO_OK = {"config": CONFIG_NAME_1, "content": "not important"}
+CONFIG_INFO_OK = {"config": CONFIG_NAME_1, "content": "not important"}
 
 
-def finish_job(job_type: str, content: Any) -> None:
+OLD_JOB_RUNNER_VERSION = 1
+NEW_JOB_RUNNER_VERSION = 2
+
+
+def finish_job(job_type: str, content: Any, job_runner_version: Optional[int] = NEW_JOB_RUNNER_VERSION) -> None:
     job_info = Queue().start_job(only_job_types=[job_type])
     upsert_response(
         kind=job_info["type"],
@@ -461,41 +482,57 @@ def finish_job(job_type: str, content: Any) -> None:
         split=job_info["split"],
         content=content,
         http_status=HTTPStatus.OK,
+        job_runner_version=job_runner_version,
     )
     Queue().finish_job(job_id=job_info["job_id"], finished_status=Status.SUCCESS)
 
 
-def test_backfill() -> None:
-    dataset = DATASET_NAME
-    processing_graph = PROCESSING_GRAPH
+def get_dataset_state() -> DatasetState:
+    return DatasetState(dataset=DATASET_NAME, processing_graph=PROCESSING_GRAPH)
 
-    def assert_dataset_state(
-        config_names: List[str],
-        split_names_in_first_config: List[str],
-        cache_status: Dict[str, List[str]],
-        queue_status: Dict[str, List[str]],
-        tasks: List[str],
-    ) -> DatasetState:
-        dataset_state = DatasetState(dataset=dataset, processing_graph=processing_graph)
-        assert dataset_state.config_names == config_names
-        assert len(dataset_state.config_states) == len(config_names)
-        if len(config_names):
-            assert dataset_state.config_states[0].split_names == split_names_in_first_config
-        else:
-            # this case is just to check the test, not the code
-            assert not split_names_in_first_config
-        assert {
-            "blocked_by_parent": sorted(dataset_state.cache_status.blocked_by_parent.keys()),
-            "cache_is_outdated_by_parent": sorted(dataset_state.cache_status.cache_is_outdated_by_parent.keys()),
-            "cache_is_empty": sorted(dataset_state.cache_status.cache_is_empty.keys()),
-            "cache_is_error_to_retry": sorted(dataset_state.cache_status.cache_is_error_to_retry.keys()),
-            "up_to_date": sorted(dataset_state.cache_status.up_to_date.keys()),
-        } == cache_status
-        assert {"in_process": sorted(dataset_state.queue_status.in_process.keys())} == queue_status
-        assert sorted(task.id for task in dataset_state.plan.tasks) == tasks
-        return dataset_state
 
-    dataset_state = assert_dataset_state(
+def get_cache_status(dataset_state: DatasetState) -> Dict[str, List[str]]:
+    return {
+        "blocked_by_parent": sorted(dataset_state.cache_status.blocked_by_parent.keys()),
+        "cache_is_outdated_by_parent": sorted(dataset_state.cache_status.cache_is_outdated_by_parent.keys()),
+        "cache_is_empty": sorted(dataset_state.cache_status.cache_is_empty.keys()),
+        "cache_is_error_to_retry": sorted(dataset_state.cache_status.cache_is_error_to_retry.keys()),
+        "cache_is_job_runner_obsolete": sorted(dataset_state.cache_status.cache_is_job_runner_obsolete.keys()),
+        "up_to_date": sorted(dataset_state.cache_status.up_to_date.keys()),
+    }
+
+
+def get_queue_status(dataset_state: DatasetState) -> Dict[str, List[str]]:
+    return {"in_process": sorted(dataset_state.queue_status.in_process.keys())}
+
+
+def get_tasks(dataset_state: DatasetState) -> List[str]:
+    return sorted(task.id for task in dataset_state.plan.tasks)
+
+
+def assert_dataset_state(
+    config_names: List[str],
+    split_names_in_first_config: List[str],
+    cache_status: Dict[str, List[str]],
+    queue_status: Dict[str, List[str]],
+    tasks: List[str],
+) -> DatasetState:
+    dataset_state = get_dataset_state()
+    assert dataset_state.config_names == config_names
+    assert len(dataset_state.config_states) == len(config_names)
+    if len(config_names):
+        assert dataset_state.config_states[0].split_names == split_names_in_first_config
+    else:
+        # this case is just to check the test, not the code
+        assert not split_names_in_first_config
+    assert get_cache_status(dataset_state) == cache_status
+    assert get_queue_status(dataset_state) == queue_status
+    assert get_tasks(dataset_state) == tasks
+    return dataset_state
+
+
+def test_plan() -> None:
+    assert_dataset_state(
         # The config names are not yet known
         config_names=[],
         # The split names are not yet known
@@ -519,6 +556,7 @@ def test_backfill() -> None:
                 "dataset-split-names-from-streaming,dataset",
             ],
             "cache_is_error_to_retry": [],
+            "cache_is_job_runner_obsolete": [],
             "up_to_date": [],
         },
         # The queue is empty, so no step is in process.
@@ -536,9 +574,21 @@ def test_backfill() -> None:
         ],
     )
 
-    # we launch all the backfill tasks
-    dataset_state.backfill()
 
+def test_plan_job_creation_and_termination() -> None:
+    # we launch all the backfill tasks
+    dataset_state = get_dataset_state()
+    assert get_tasks(dataset_state) == [
+        "CreateJob[/config-names,dataset]",
+        "CreateJob[/parquet-and-dataset-info,dataset]",
+        "CreateJob[dataset-info,dataset]",
+        "CreateJob[dataset-parquet,dataset]",
+        "CreateJob[dataset-size,dataset]",
+        "CreateJob[dataset-split-names,dataset]",
+        "CreateJob[dataset-split-names-from-dataset-info,dataset]",
+        "CreateJob[dataset-split-names-from-streaming,dataset]",
+    ]
+    dataset_state.backfill()
     assert_dataset_state(
         # The config names are not yet known
         config_names=[],
@@ -559,6 +609,7 @@ def test_backfill() -> None:
                 "dataset-split-names-from-streaming,dataset",
             ],
             "cache_is_error_to_retry": [],
+            "cache_is_job_runner_obsolete": [],
             "up_to_date": [],
         },
         # the jobs have been created and are in process
@@ -578,31 +629,37 @@ def test_backfill() -> None:
         tasks=[],
     )
 
-    # simulate that the job for the "/config-names,dataset" artifact has finished
-    finish_job(job_type="/config-names", content=ONE_CONFIG_NAME_CONTENT_OK)
+    # we simulate the job for "/config-names,dataset" has finished
+    finish_job("/config-names", TWO_CONFIG_NAMES_CONTENT_OK)
 
-    dataset_state = assert_dataset_state(
-        # The config names are known
-        config_names=[CONFIG_NAME],
+    assert_dataset_state(
+        # The config names are now known
+        config_names=TWO_CONFIG_NAMES,
         # The split names are not yet known
         split_names_in_first_config=[],
-        # The "/config-names" step is now up-to-date
-        # New step states appear in the "blocked_by_parent" status, because the config names are now known, but the
-        # parents are not ready yet.
-        # The split-level steps are still missing, because the splits names are not yet known, for any config.
+        # The "/config-names" step is up-to-date
+        # Config-level artifacts appear in the "blocked_by_parent" status, because the config names are now known, but
+        # the parents are not ready yet.
+        # The split-level artifacts are still missing, because the splits names are not yet known, for any config.
         cache_status={
             "blocked_by_parent": [
-                "/split-names-from-dataset-info,dataset,config",
-                "config-info,dataset,config",
-                "config-parquet,dataset,config",
-                "config-size,dataset,config",
+                "/split-names-from-dataset-info,dataset,config1",
+                "/split-names-from-dataset-info,dataset,config2",
+                "config-info,dataset,config1",
+                "config-info,dataset,config2",
+                "config-parquet,dataset,config1",
+                "config-parquet,dataset,config2",
+                "config-size,dataset,config1",
+                "config-size,dataset,config2",
                 "dataset-is-valid,dataset",
             ],
             "cache_is_outdated_by_parent": [],
             "cache_is_empty": [
                 "/parquet-and-dataset-info,dataset",
-                "/split-names-from-streaming,dataset,config",
-                "config-parquet-and-info,dataset,config",
+                "/split-names-from-streaming,dataset,config1",
+                "/split-names-from-streaming,dataset,config2",
+                "config-parquet-and-info,dataset,config1",
+                "config-parquet-and-info,dataset,config2",
                 "dataset-info,dataset",
                 "dataset-parquet,dataset",
                 "dataset-size,dataset",
@@ -611,9 +668,10 @@ def test_backfill() -> None:
                 "dataset-split-names-from-streaming,dataset",
             ],
             "cache_is_error_to_retry": [],
+            "cache_is_job_runner_obsolete": [],
             "up_to_date": ["/config-names,dataset"],
         },
-        # the "/config-names" job has finished
+        # the job "/config-names,dataset" is no more in process
         queue_status={
             "in_process": [
                 "/parquet-and-dataset-info,dataset",
@@ -625,219 +683,63 @@ def test_backfill() -> None:
                 "dataset-split-names-from-streaming,dataset",
             ]
         },
-        # The next config-level steps in the graph are ready to be backfilled for each config
-        # (only one config in our test)
+        # The children of "/config-names,dataset" are ready to be backfilled for each config (fan-out)
         tasks=[
-            "CreateJob[/split-names-from-streaming,dataset,config]",
-            "CreateJob[config-parquet-and-info,dataset,config]",
+            "CreateJob[/split-names-from-streaming,dataset,config1]",
+            "CreateJob[/split-names-from-streaming,dataset,config2]",
+            "CreateJob[config-parquet-and-info,dataset,config1]",
+            "CreateJob[config-parquet-and-info,dataset,config2]",
         ],
     )
 
-    # launch the backfill tasks
-    dataset_state.backfill()
-    # and simulate that the job for the "config-parquet-and-info,dataset,config" artifact has finished
-    finish_job(job_type="config-parquet-and-info", content=CONFIG_PARQUET_AND_INFO_OK)
 
-    dataset_state = assert_dataset_state(
-        # The config names are known
-        config_names=[CONFIG_NAME],
-        # The split names are not yet known
-        split_names_in_first_config=[],
-        # the config-level dependent steps are no more blocked by "config-parquet-and-info", which is up-to-date
-        cache_status={
-            "blocked_by_parent": [
-                "/split-names-from-dataset-info,dataset,config",
-                "dataset-is-valid,dataset",
-            ],
-            "cache_is_outdated_by_parent": [],
-            "cache_is_empty": [
-                "/parquet-and-dataset-info,dataset",
-                "/split-names-from-streaming,dataset,config",
-                "config-info,dataset,config",
-                "config-parquet,dataset,config",
-                "config-size,dataset,config",
-                "dataset-info,dataset",
-                "dataset-parquet,dataset",
-                "dataset-size,dataset",
-                "dataset-split-names,dataset",
-                "dataset-split-names-from-dataset-info,dataset",
-                "dataset-split-names-from-streaming,dataset",
-            ],
-            "cache_is_error_to_retry": [],
-            "up_to_date": ["/config-names,dataset", "config-parquet-and-info,dataset,config"],
-        },
-        # The "config-parquet-and-info" job has finished, while the other config-level step is still in progress
-        queue_status={
-            "in_process": [
-                "/parquet-and-dataset-info,dataset",
-                "/split-names-from-streaming,dataset,config",
-                "dataset-info,dataset",
-                "dataset-parquet,dataset",
-                "dataset-size,dataset",
-                "dataset-split-names,dataset",
-                "dataset-split-names-from-dataset-info,dataset",
-                "dataset-split-names-from-streaming,dataset",
-            ]
-        },
-        # the config-level dependent steps are now ready to be backfilled
-        tasks=[
-            "CreateJob[config-info,dataset,config]",
-            "CreateJob[config-parquet,dataset,config]",
-            "CreateJob[config-size,dataset,config]",
-        ],
-    )
-
-    # launch the backfill tasks
-    dataset_state.backfill()
-    # and simulate that the job for the "config-info,dataset,config" artifact has finished
-    finish_job(job_type="config-info", content=CONFIG_INFO_OK)
-
-    # "config-info" is up-to-date
-    # "/split-names-from-dataset-info" is no more blocked, and is ready to be backfilled
-    dataset_state = assert_dataset_state(
-        # The config names are known
-        config_names=[CONFIG_NAME],
-        # The split names are not yet known
-        split_names_in_first_config=[],
-        cache_status={
-            "blocked_by_parent": ["dataset-is-valid,dataset"],
-            "cache_is_outdated_by_parent": [],
-            "cache_is_empty": [
-                "/parquet-and-dataset-info,dataset",
-                "/split-names-from-dataset-info,dataset,config",
-                "/split-names-from-streaming,dataset,config",
-                "config-parquet,dataset,config",
-                "config-size,dataset,config",
-                "dataset-info,dataset",
-                "dataset-parquet,dataset",
-                "dataset-size,dataset",
-                "dataset-split-names,dataset",
-                "dataset-split-names-from-dataset-info,dataset",
-                "dataset-split-names-from-streaming,dataset",
-            ],
-            "cache_is_error_to_retry": [],
-            "up_to_date": [
-                "/config-names,dataset",
-                "config-info,dataset,config",
-                "config-parquet-and-info,dataset,config",
-            ],
-        },
-        queue_status={
-            "in_process": [
-                "/parquet-and-dataset-info,dataset",
-                "/split-names-from-streaming,dataset,config",
-                "config-parquet,dataset,config",
-                "config-size,dataset,config",
-                "dataset-info,dataset",
-                "dataset-parquet,dataset",
-                "dataset-size,dataset",
-                "dataset-split-names,dataset",
-                "dataset-split-names-from-dataset-info,dataset",
-                "dataset-split-names-from-streaming,dataset",
-            ]
-        },
-        tasks=["CreateJob[/split-names-from-dataset-info,dataset,config]"],
-    )
-
-    # launch the backfill tasks
-    dataset_state.backfill()
-    # and simulate that the job for the "/split-names-from-dataset-info,dataset,config" and
-    # "/split-names-from-streaming,dataset,config" artifacts have finished
-    finish_job(job_type="/split-names-from-dataset-info", content=SPLIT_NAMES_RESPONSE_OK["content"])
-    finish_job(job_type="/split-names-from-streaming", content=SPLIT_NAMES_RESPONSE_OK["content"])
-
-    # "/split-names-from-dataset-info" and "/split-names-from-streaming" are up-to-date for the config
-    # the split names are now available
-    # the split-level dependent steps are now ready to be backfilled, or blocked by parent
-    dataset_state = assert_dataset_state(
-        # The config names are known
-        config_names=[CONFIG_NAME],
-        # The split names are known
-        split_names_in_first_config=SPLIT_NAMES_OK,
-        cache_status={
-            "blocked_by_parent": [
-                "dataset-is-valid,dataset",
-                "split-first-rows-from-parquet,dataset,config,split1",
-                "split-first-rows-from-parquet,dataset,config,split2",
-            ],
-            "cache_is_outdated_by_parent": [],
-            "cache_is_empty": [
-                "/parquet-and-dataset-info,dataset",
-                "config-parquet,dataset,config",
-                "config-size,dataset,config",
-                "dataset-info,dataset",
-                "dataset-parquet,dataset",
-                "dataset-size,dataset",
-                "dataset-split-names,dataset",
-                "dataset-split-names-from-dataset-info,dataset",
-                "dataset-split-names-from-streaming,dataset",
-                "split-first-rows-from-streaming,dataset,config,split1",
-                "split-first-rows-from-streaming,dataset,config,split2",
-            ],
-            "cache_is_error_to_retry": [],
-            "up_to_date": [
-                "/config-names,dataset",
-                "/split-names-from-dataset-info,dataset,config",
-                "/split-names-from-streaming,dataset,config",
-                "config-info,dataset,config",
-                "config-parquet-and-info,dataset,config",
-            ],
-        },
-        queue_status={
-            "in_process": [
-                "/parquet-and-dataset-info,dataset",
-                "config-parquet,dataset,config",
-                "config-size,dataset,config",
-                "dataset-info,dataset",
-                "dataset-parquet,dataset",
-                "dataset-size,dataset",
-                "dataset-split-names,dataset",
-                "dataset-split-names-from-dataset-info,dataset",
-                "dataset-split-names-from-streaming,dataset",
-            ]
-        },
-        tasks=[
-            "CreateJob[split-first-rows-from-streaming,dataset,config,split1]",
-            "CreateJob[split-first-rows-from-streaming,dataset,config,split2]",
-        ],
-    )
-
-    # force an update of the /config-names artifact
+def test_plan_only_one_config() -> None:
+    # Set the "/config-names,dataset" artifact in cache
     upsert_response(
         kind="/config-names",
-        dataset="dataset",
-        content=ONE_CONFIG_NAME_CONTENT_OK,
+        dataset=DATASET_NAME,
+        config=None,
+        split=None,
+        content=TWO_CONFIG_NAMES_CONTENT_OK,
         http_status=HTTPStatus.OK,
+        job_runner_version=NEW_JOB_RUNNER_VERSION,
+    )
+    # Set the "config-parquet-and-info,dataset,config1" artifact in cache
+    upsert_response(
+        kind="config-parquet-and-info",
+        dataset=DATASET_NAME,
+        config=CONFIG_NAME_1,
+        split=None,
+        content=TWO_CONFIG_NAMES_CONTENT_OK,
+        http_status=HTTPStatus.OK,
+        job_runner_version=NEW_JOB_RUNNER_VERSION,
     )
 
-    # As the date of the /config-names step is updated, all the steps that depend on it are
-    # considered as outdated, and are now in the "cache_is_outdated_by_parent" status, for
-    # the first children steps. The following descendants steps are in "blocked_by_parent"
-    # status, even those that were already in in_process status -> their jobs will be deleted.
-    # the split-level dependent steps are now ready to be backfilled
-    dataset_state = assert_dataset_state(
+    assert_dataset_state(
         # The config names are known
-        config_names=[CONFIG_NAME],
-        # The split names are known
-        split_names_in_first_config=SPLIT_NAMES_OK,
+        config_names=TWO_CONFIG_NAMES,
+        # The split names are not yet known
+        split_names_in_first_config=[],
+        # The children of "config-parquet-and-info" are blocked for config2, but not for config1
+        # The two cache entries we created are up-to-date
         cache_status={
             "blocked_by_parent": [
-                "/split-names-from-dataset-info,dataset,config",
-                "config-info,dataset,config",
-                "config-parquet,dataset,config",
-                "config-size,dataset,config",
+                "/split-names-from-dataset-info,dataset,config1",
+                "/split-names-from-dataset-info,dataset,config2",
+                "config-info,dataset,config2",
+                "config-parquet,dataset,config2",
+                "config-size,dataset,config2",
                 "dataset-is-valid,dataset",
-                "split-first-rows-from-parquet,dataset,config,split1",
-                "split-first-rows-from-parquet,dataset,config,split2",
-                "split-first-rows-from-streaming,dataset,config,split1",
-                "split-first-rows-from-streaming,dataset,config,split2",
             ],
-            "cache_is_outdated_by_parent": [
-                "/split-names-from-streaming,dataset,config",
-                "config-parquet-and-info,dataset,config",
-            ],
+            "cache_is_outdated_by_parent": [],
             "cache_is_empty": [
                 "/parquet-and-dataset-info,dataset",
+                "/split-names-from-streaming,dataset,config1",
+                "/split-names-from-streaming,dataset,config2",
+                "config-info,dataset,config1",
+                "config-parquet,dataset,config1",
+                "config-parquet-and-info,dataset,config2",
+                "config-size,dataset,config1",
                 "dataset-info,dataset",
                 "dataset-parquet,dataset",
                 "dataset-size,dataset",
@@ -846,57 +748,83 @@ def test_backfill() -> None:
                 "dataset-split-names-from-streaming,dataset",
             ],
             "cache_is_error_to_retry": [],
-            "up_to_date": ["/config-names,dataset"],
+            "cache_is_job_runner_obsolete": [],
+            "up_to_date": ["/config-names,dataset", "config-parquet-and-info,dataset,config1"],
         },
-        queue_status={
-            "in_process": [
-                "/parquet-and-dataset-info,dataset",
-                "config-parquet,dataset,config",
-                "config-size,dataset,config",
-                "dataset-info,dataset",
-                "dataset-parquet,dataset",
-                "dataset-size,dataset",
-                "dataset-split-names,dataset",
-                "dataset-split-names-from-dataset-info,dataset",
-                "dataset-split-names-from-streaming,dataset",
-            ]
-        },
+        queue_status={"in_process": []},
+        # the children of "config-parquet-and-info" for config1 are ready to be backfilled
         tasks=[
-            "CreateJob[/split-names-from-streaming,dataset,config]",
-            "CreateJob[config-parquet-and-info,dataset,config]",
-            "DeleteJob[config-parquet,dataset,config]",
-            "DeleteJob[config-size,dataset,config]",
+            "CreateJob[/parquet-and-dataset-info,dataset]",
+            "CreateJob[/split-names-from-streaming,dataset,config1]",
+            "CreateJob[/split-names-from-streaming,dataset,config2]",
+            "CreateJob[config-info,dataset,config1]",
+            "CreateJob[config-parquet,dataset,config1]",
+            "CreateJob[config-parquet-and-info,dataset,config2]",
+            "CreateJob[config-size,dataset,config1]",
+            "CreateJob[dataset-info,dataset]",
+            "CreateJob[dataset-parquet,dataset]",
+            "CreateJob[dataset-size,dataset]",
+            "CreateJob[dataset-split-names,dataset]",
+            "CreateJob[dataset-split-names-from-dataset-info,dataset]",
+            "CreateJob[dataset-split-names-from-streaming,dataset]",
         ],
     )
 
-    # launch the backfill tasks
-    dataset_state.backfill()
 
-    # the split-level dependent steps are now ready to be backfilled
-    dataset_state = assert_dataset_state(
+def test_plan_incoherent_state() -> None:
+    # Set the "/config-names,dataset" artifact in cache
+    upsert_response(
+        kind="/config-names",
+        dataset=DATASET_NAME,
+        config=None,
+        split=None,
+        content=TWO_CONFIG_NAMES_CONTENT_OK,
+        http_status=HTTPStatus.OK,
+        job_runner_version=NEW_JOB_RUNNER_VERSION,
+    )
+    # Set the "/split-names-from-dataset-info,dataset,config1" artifact in cache
+    # -> It's not a coherent state for the cache: the ancestors artifacts are missing:
+    # "config-parquet-and-info,dataset" and "config-info,dataset,config1"
+    upsert_response(
+        kind="/split-names-from-dataset-info",
+        dataset=DATASET_NAME,
+        config=CONFIG_NAME_1,
+        split=None,
+        content=get_SPLIT_NAMES_CONTENT_OK(dataset=DATASET_NAME, config=CONFIG_NAME_1, splits=SPLIT_NAMES_OK),
+        http_status=HTTPStatus.OK,
+        job_runner_version=NEW_JOB_RUNNER_VERSION,
+    )
+
+    assert_dataset_state(
         # The config names are known
-        config_names=[CONFIG_NAME],
-        # The split names are known
+        config_names=TWO_CONFIG_NAMES,
+        # The split names are known (even if it's from an outdated artifact)
         split_names_in_first_config=SPLIT_NAMES_OK,
-        # the cache content has not changed
+        # "/split-names-from-dataset-info,dataset,config1" is blocked by its parents, even if it's in cache, because
+        # two ancestors are missing. It's not listed in up-to-date, even if it has been cached after /config-names.
         cache_status={
             "blocked_by_parent": [
-                "/split-names-from-dataset-info,dataset,config",
-                "config-info,dataset,config",
-                "config-parquet,dataset,config",
-                "config-size,dataset,config",
+                "/split-names-from-dataset-info,dataset,config1",
+                "/split-names-from-dataset-info,dataset,config2",
+                "config-info,dataset,config1",
+                "config-info,dataset,config2",
+                "config-parquet,dataset,config1",
+                "config-parquet,dataset,config2",
+                "config-size,dataset,config1",
+                "config-size,dataset,config2",
                 "dataset-is-valid,dataset",
-                "split-first-rows-from-parquet,dataset,config,split1",
-                "split-first-rows-from-parquet,dataset,config,split2",
-                "split-first-rows-from-streaming,dataset,config,split1",
-                "split-first-rows-from-streaming,dataset,config,split2",
+                "split-first-rows-from-parquet,dataset,config1,split1",
+                "split-first-rows-from-parquet,dataset,config1,split2",
+                "split-first-rows-from-streaming,dataset,config1,split1",
+                "split-first-rows-from-streaming,dataset,config1,split2",
             ],
-            "cache_is_outdated_by_parent": [
-                "/split-names-from-streaming,dataset,config",
-                "config-parquet-and-info,dataset,config",
-            ],
+            "cache_is_outdated_by_parent": [],
             "cache_is_empty": [
                 "/parquet-and-dataset-info,dataset",
+                "/split-names-from-streaming,dataset,config1",
+                "/split-names-from-streaming,dataset,config2",
+                "config-parquet-and-info,dataset,config1",
+                "config-parquet-and-info,dataset,config2",
                 "dataset-info,dataset",
                 "dataset-parquet,dataset",
                 "dataset-size,dataset",
@@ -905,22 +833,351 @@ def test_backfill() -> None:
                 "dataset-split-names-from-streaming,dataset",
             ],
             "cache_is_error_to_retry": [],
+            "cache_is_job_runner_obsolete": [],
             "up_to_date": ["/config-names,dataset"],
         },
-        # the jobs of blocked step states have been deleted, thus they are no more listed as in process
-        queue_status={
-            "in_process": [
+        queue_status={"in_process": []},
+        # The children of "/split-names-from-dataset-info,dataset,config1" are not ready to be backfilled
+        # because it's blocked by its parents.
+        tasks=[
+            "CreateJob[/parquet-and-dataset-info,dataset]",
+            "CreateJob[/split-names-from-streaming,dataset,config1]",
+            "CreateJob[/split-names-from-streaming,dataset,config2]",
+            "CreateJob[config-parquet-and-info,dataset,config1]",
+            "CreateJob[config-parquet-and-info,dataset,config2]",
+            "CreateJob[dataset-info,dataset]",
+            "CreateJob[dataset-parquet,dataset]",
+            "CreateJob[dataset-size,dataset]",
+            "CreateJob[dataset-split-names,dataset]",
+            "CreateJob[dataset-split-names-from-dataset-info,dataset]",
+            "CreateJob[dataset-split-names-from-streaming,dataset]",
+        ],
+    )
+
+
+def test_plan_get_splits() -> None:
+    # Set the "/config-names,dataset" artifact in cache
+    upsert_response(
+        kind="/config-names",
+        dataset=DATASET_NAME,
+        config=None,
+        split=None,
+        content=TWO_CONFIG_NAMES_CONTENT_OK,
+        http_status=HTTPStatus.OK,
+        job_runner_version=NEW_JOB_RUNNER_VERSION,
+    )
+    # Set the "config-parquet-and-info,dataset,config1" artifact in cache
+    upsert_response(
+        kind="config-parquet-and-info",
+        dataset=DATASET_NAME,
+        config=CONFIG_NAME_1,
+        split=None,
+        content=TWO_CONFIG_NAMES_CONTENT_OK,  # <- not important
+        http_status=HTTPStatus.OK,
+        job_runner_version=NEW_JOB_RUNNER_VERSION,
+    )
+    # Set the "config-info,dataset,config1" artifact in cache
+    upsert_response(
+        kind="config-info",
+        dataset=DATASET_NAME,
+        config=CONFIG_NAME_1,
+        split=None,
+        content=TWO_CONFIG_NAMES_CONTENT_OK,  # <- not important
+        http_status=HTTPStatus.OK,
+        job_runner_version=NEW_JOB_RUNNER_VERSION,
+    )
+    # Set the "/split-names-from-dataset-info,dataset,config1" artifact in cache
+    upsert_response(
+        kind="/split-names-from-dataset-info",
+        dataset=DATASET_NAME,
+        config=CONFIG_NAME_1,
+        split=None,
+        content=get_SPLIT_NAMES_CONTENT_OK(dataset=DATASET_NAME, config=CONFIG_NAME_1, splits=SPLIT_NAMES_OK),
+        http_status=HTTPStatus.OK,
+        job_runner_version=NEW_JOB_RUNNER_VERSION,
+    )
+    # Set the "/split-names-from-streaming,dataset,config1" artifact in cache
+    upsert_response(
+        kind="/split-names-from-streaming",
+        dataset=DATASET_NAME,
+        config=CONFIG_NAME_1,
+        split=None,
+        content=get_SPLIT_NAMES_CONTENT_OK(dataset=DATASET_NAME, config=CONFIG_NAME_1, splits=SPLIT_NAMES_OK),
+        http_status=HTTPStatus.OK,
+        job_runner_version=NEW_JOB_RUNNER_VERSION,
+    )
+
+    assert_dataset_state(
+        # The config names are known
+        config_names=TWO_CONFIG_NAMES,
+        # The split names are known (even if it's from an outdated artifact)
+        split_names_in_first_config=SPLIT_NAMES_OK,
+        # The chains /config-names,dataset -> config-parquet-and-info,dataset,config1 -> config-info,dataset,config1
+        # -> /split-names-from-dataset-info,dataset,config1 and
+        # /config-names,dataset -> /split-names-from-streaming,dataset,config1 are up to date
+        cache_status={
+            "blocked_by_parent": [
+                "/split-names-from-dataset-info,dataset,config2",
+                "config-info,dataset,config2",
+                "config-parquet,dataset,config2",
+                "config-size,dataset,config2",
+                "dataset-is-valid,dataset",
+                "split-first-rows-from-parquet,dataset,config1,split1",
+                "split-first-rows-from-parquet,dataset,config1,split2",
+            ],
+            "cache_is_outdated_by_parent": [],
+            "cache_is_empty": [
                 "/parquet-and-dataset-info,dataset",
-                "/split-names-from-streaming,dataset,config",
-                "config-parquet-and-info,dataset,config",
+                "/split-names-from-streaming,dataset,config2",
+                "config-parquet,dataset,config1",
+                "config-parquet-and-info,dataset,config2",
+                "config-size,dataset,config1",
                 "dataset-info,dataset",
                 "dataset-parquet,dataset",
                 "dataset-size,dataset",
                 "dataset-split-names,dataset",
                 "dataset-split-names-from-dataset-info,dataset",
                 "dataset-split-names-from-streaming,dataset",
-            ]
+                "split-first-rows-from-streaming,dataset,config1,split1",
+                "split-first-rows-from-streaming,dataset,config1,split2",
+            ],
+            "cache_is_error_to_retry": [],
+            "cache_is_job_runner_obsolete": [],
+            "up_to_date": [
+                "/config-names,dataset",
+                "/split-names-from-dataset-info,dataset,config1",
+                "/split-names-from-streaming,dataset,config1",
+                "config-info,dataset,config1",
+                "config-parquet-and-info,dataset,config1",
+            ],
         },
-        # no new task
-        tasks=[],
+        queue_status={"in_process": []},
+        # split-first-rows-from-streaming is now ready to be backfilled for split1 and split2 of dataset,config1
+        tasks=[
+            "CreateJob[/parquet-and-dataset-info,dataset]",
+            "CreateJob[/split-names-from-streaming,dataset,config2]",
+            "CreateJob[config-parquet,dataset,config1]",
+            "CreateJob[config-parquet-and-info,dataset,config2]",
+            "CreateJob[config-size,dataset,config1]",
+            "CreateJob[dataset-info,dataset]",
+            "CreateJob[dataset-parquet,dataset]",
+            "CreateJob[dataset-size,dataset]",
+            "CreateJob[dataset-split-names,dataset]",
+            "CreateJob[dataset-split-names-from-dataset-info,dataset]",
+            "CreateJob[dataset-split-names-from-streaming,dataset]",
+            "CreateJob[split-first-rows-from-streaming,dataset,config1,split1]",
+            "CreateJob[split-first-rows-from-streaming,dataset,config1,split2]",
+        ],
+    )
+
+
+def test_plan_updated_at() -> None:
+    # Set the "/config-names,dataset" artifact in cache
+    upsert_response(
+        kind="/config-names",
+        dataset=DATASET_NAME,
+        config=None,
+        split=None,
+        content=TWO_CONFIG_NAMES_CONTENT_OK,
+        http_status=HTTPStatus.OK,
+        job_runner_version=NEW_JOB_RUNNER_VERSION,
+    )
+    # Set the "config-parquet-and-info,dataset,config1" artifact in cache
+    upsert_response(
+        kind="config-parquet-and-info",
+        dataset=DATASET_NAME,
+        config=CONFIG_NAME_1,
+        split=None,
+        content=TWO_CONFIG_NAMES_CONTENT_OK,  # <- not important
+        http_status=HTTPStatus.OK,
+        job_runner_version=NEW_JOB_RUNNER_VERSION,
+    )
+    # Set the "config-info,dataset,config1" artifact in cache
+    upsert_response(
+        kind="config-info",
+        dataset=DATASET_NAME,
+        config=CONFIG_NAME_1,
+        split=None,
+        content=TWO_CONFIG_NAMES_CONTENT_OK,  # <- not important
+        http_status=HTTPStatus.OK,
+        job_runner_version=NEW_JOB_RUNNER_VERSION,
+    )
+    # Set the "/split-names-from-dataset-info,dataset,config1" artifact in cache
+    upsert_response(
+        kind="/split-names-from-dataset-info",
+        dataset=DATASET_NAME,
+        config=CONFIG_NAME_1,
+        split=None,
+        content=get_SPLIT_NAMES_CONTENT_OK(dataset=DATASET_NAME, config=CONFIG_NAME_1, splits=SPLIT_NAMES_OK),
+        http_status=HTTPStatus.OK,
+        job_runner_version=NEW_JOB_RUNNER_VERSION,
+    )
+    # Set the "/split-names-from-streaming,dataset,config1" artifact in cache
+    upsert_response(
+        kind="/split-names-from-streaming",
+        dataset=DATASET_NAME,
+        config=CONFIG_NAME_1,
+        split=None,
+        content=get_SPLIT_NAMES_CONTENT_OK(dataset=DATASET_NAME, config=CONFIG_NAME_1, splits=SPLIT_NAMES_OK),
+        http_status=HTTPStatus.OK,
+        job_runner_version=NEW_JOB_RUNNER_VERSION,
+    )
+
+    # Now: refresh again the "/config-names,dataset" artifact in cache
+    upsert_response(
+        kind="/config-names",
+        dataset=DATASET_NAME,
+        config=None,
+        split=None,
+        content=TWO_CONFIG_NAMES_CONTENT_OK,
+        http_status=HTTPStatus.OK,
+        job_runner_version=NEW_JOB_RUNNER_VERSION,
+    )
+
+    assert_dataset_state(
+        # The config names are known
+        config_names=TWO_CONFIG_NAMES,
+        # The split names are known (even if it's from an outdated artifact)
+        split_names_in_first_config=SPLIT_NAMES_OK,
+        # config-parquet-and-info,dataset,config1 is marked as outdate by parent,
+        # as well as /split-names-from-streaming,dataset,config1
+        # This means that all their children are marked as blocked by parent
+        # Only "/config-names,dataset" is marked as up to date
+        cache_status={
+            "blocked_by_parent": [
+                "/split-names-from-dataset-info,dataset,config1",
+                "/split-names-from-dataset-info,dataset,config2",
+                "config-info,dataset,config1",
+                "config-info,dataset,config2",
+                "config-parquet,dataset,config1",
+                "config-parquet,dataset,config2",
+                "config-size,dataset,config1",
+                "config-size,dataset,config2",
+                "dataset-is-valid,dataset",
+                "split-first-rows-from-parquet,dataset,config1,split1",
+                "split-first-rows-from-parquet,dataset,config1,split2",
+                "split-first-rows-from-streaming,dataset,config1,split1",
+                "split-first-rows-from-streaming,dataset,config1,split2",
+            ],
+            "cache_is_outdated_by_parent": [
+                "/split-names-from-streaming,dataset,config1",
+                "config-parquet-and-info,dataset,config1",
+            ],
+            "cache_is_empty": [
+                "/parquet-and-dataset-info,dataset",
+                "/split-names-from-streaming,dataset,config2",
+                "config-parquet-and-info,dataset,config2",
+                "dataset-info,dataset",
+                "dataset-parquet,dataset",
+                "dataset-size,dataset",
+                "dataset-split-names,dataset",
+                "dataset-split-names-from-dataset-info,dataset",
+                "dataset-split-names-from-streaming,dataset",
+            ],
+            "cache_is_error_to_retry": [],
+            "cache_is_job_runner_obsolete": [],
+            "up_to_date": ["/config-names,dataset"],
+        },
+        queue_status={"in_process": []},
+        # config-parquet-and-info and /split-names-from-streaming will be refreshed for both configs
+        # (even if config1 is already in the cache -> but it's outdated)
+        tasks=[
+            "CreateJob[/parquet-and-dataset-info,dataset]",
+            "CreateJob[/split-names-from-streaming,dataset,config1]",
+            "CreateJob[/split-names-from-streaming,dataset,config2]",
+            "CreateJob[config-parquet-and-info,dataset,config1]",
+            "CreateJob[config-parquet-and-info,dataset,config2]",
+            "CreateJob[dataset-info,dataset]",
+            "CreateJob[dataset-parquet,dataset]",
+            "CreateJob[dataset-size,dataset]",
+            "CreateJob[dataset-split-names,dataset]",
+            "CreateJob[dataset-split-names-from-dataset-info,dataset]",
+            "CreateJob[dataset-split-names-from-streaming,dataset]",
+        ],
+    )
+
+
+def test_plan_job_runner_version() -> None:
+    # Set the "/config-names,dataset" artifact in cache
+    upsert_response(
+        kind="/config-names",
+        dataset=DATASET_NAME,
+        config=None,
+        split=None,
+        content=TWO_CONFIG_NAMES_CONTENT_OK,
+        http_status=HTTPStatus.OK,
+        job_runner_version=NEW_JOB_RUNNER_VERSION,
+    )
+    # Set the "config-parquet-and-info,dataset,config1" artifact in cache
+    upsert_response(
+        kind="config-parquet-and-info",
+        dataset=DATASET_NAME,
+        config=CONFIG_NAME_1,
+        split=None,
+        content=TWO_CONFIG_NAMES_CONTENT_OK,  # <- not important
+        http_status=HTTPStatus.OK,
+        job_runner_version=NEW_JOB_RUNNER_VERSION,
+    )
+    # Set the "config-parquet,dataset,config1" artifact in cache
+    upsert_response(
+        kind="config-parquet",
+        dataset=DATASET_NAME,
+        config=CONFIG_NAME_1,
+        split=None,
+        content=TWO_CONFIG_NAMES_CONTENT_OK,  # <- not important
+        http_status=HTTPStatus.OK,
+        job_runner_version=OLD_JOB_RUNNER_VERSION,  # <- current version is 3, this one is 1
+    )
+
+    assert_dataset_state(
+        # The config names are known
+        config_names=TWO_CONFIG_NAMES,
+        # The split names are not known
+        split_names_in_first_config=[],
+        # config-parquet,dataset,config1 is in the category: "is_job_runner_obsolete"
+        cache_status={
+            "blocked_by_parent": [
+                "/split-names-from-dataset-info,dataset,config1",
+                "/split-names-from-dataset-info,dataset,config2",
+                "config-info,dataset,config2",
+                "config-parquet,dataset,config2",
+                "config-size,dataset,config2",
+                "dataset-is-valid,dataset",
+            ],
+            "cache_is_outdated_by_parent": [],
+            "cache_is_empty": [
+                "/parquet-and-dataset-info,dataset",
+                "/split-names-from-streaming,dataset,config1",
+                "/split-names-from-streaming,dataset,config2",
+                "config-info,dataset,config1",
+                "config-parquet-and-info,dataset,config2",
+                "config-size,dataset,config1",
+                "dataset-info,dataset",
+                "dataset-parquet,dataset",
+                "dataset-size,dataset",
+                "dataset-split-names,dataset",
+                "dataset-split-names-from-dataset-info,dataset",
+                "dataset-split-names-from-streaming,dataset",
+            ],
+            "cache_is_error_to_retry": [],
+            "cache_is_job_runner_obsolete": ["config-parquet,dataset,config1"],
+            "up_to_date": ["/config-names,dataset", "config-parquet-and-info,dataset,config1"],
+        },
+        queue_status={"in_process": []},
+        # config-parquet,dataset,config1 will be refreshed because its job runner has been upgraded
+        tasks=[
+            "CreateJob[/parquet-and-dataset-info,dataset]",
+            "CreateJob[/split-names-from-streaming,dataset,config1]",
+            "CreateJob[/split-names-from-streaming,dataset,config2]",
+            "CreateJob[config-info,dataset,config1]",
+            "CreateJob[config-parquet,dataset,config1]",
+            "CreateJob[config-parquet-and-info,dataset,config2]",
+            "CreateJob[config-size,dataset,config1]",
+            "CreateJob[dataset-info,dataset]",
+            "CreateJob[dataset-parquet,dataset]",
+            "CreateJob[dataset-size,dataset]",
+            "CreateJob[dataset-split-names,dataset]",
+            "CreateJob[dataset-split-names-from-dataset-info,dataset]",
+            "CreateJob[dataset-split-names-from-streaming,dataset]",
+        ],
     )

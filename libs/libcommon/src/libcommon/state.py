@@ -23,10 +23,7 @@ from libcommon.simple_cache import (
 # A job and a cache entry is related to an Artifact, not to a Step
 # TODO: assets, cached_assets, parquet files
 # TODO: obsolete/dangling cache entries and jobs
-# TODO: report, show in endpoint
-# TODO: plan what to do (backfill: create job, delete cache entries, delete assets)
 # TODO: add git version
-# TODO: add details about jobs (priority, force, status, times)
 
 HARD_CODED_CONFIG_NAMES_CACHE_KIND = "/config-names"
 HARD_CODED_SPLIT_NAMES_FROM_STREAMING_CACHE_KIND = "/split-names-from-streaming"
@@ -131,7 +128,6 @@ class CacheState:
         return self.cache_entry_metadata["updated_at"] < other.cache_entry_metadata["updated_at"]
 
     # TODO: old git revision
-    # TODO: old job_runner_version
 
 
 @dataclass
@@ -199,6 +195,14 @@ class ArtifactState:
                 # ^ fan-in: split->config, or split->dataset. For now, we don't return the list of parent artifact
                 #  states in that case
             )
+
+    def is_job_runner_obsolete(self) -> bool:
+        if self.cache_state.cache_entry_metadata is None:
+            return False
+        job_runner_version = self.cache_state.cache_entry_metadata["job_runner_version"]
+        if job_runner_version is None:
+            return True
+        return job_runner_version < self.step.job_runner_version
 
     def get_all_parents_artifact_states(self) -> List[List["ArtifactState"]]:
         return [self.get_parent_artifact_states(parent_step) for parent_step in self.step.parents]
@@ -279,6 +283,7 @@ class CacheStatus:
     cache_is_outdated_by_parent: Dict[str, ArtifactState] = field(default_factory=dict)
     cache_is_empty: Dict[str, ArtifactState] = field(default_factory=dict)
     cache_is_error_to_retry: Dict[str, ArtifactState] = field(default_factory=dict)
+    cache_is_job_runner_obsolete: Dict[str, ArtifactState] = field(default_factory=dict)
     up_to_date: Dict[str, ArtifactState] = field(default_factory=dict)
 
 
@@ -435,6 +440,11 @@ class DatasetState:
                     cache_status.cache_is_error_to_retry[artifact_state.id] = artifact_state
                     continue
 
+                # was created with an obsolete version of the job runner?
+                if artifact_state.is_job_runner_obsolete():
+                    cache_status.cache_is_job_runner_obsolete[artifact_state.id] = artifact_state
+                    continue
+
                 # ok
                 cache_status.up_to_date[artifact_state.id] = artifact_state
 
@@ -458,6 +468,7 @@ class DatasetState:
             list(self.cache_status.cache_is_empty.values())
             + list(self.cache_status.cache_is_error_to_retry.values())
             + list(self.cache_status.cache_is_outdated_by_parent.values())
+            + list(self.cache_status.cache_is_job_runner_obsolete.values())
         )
         for artifact_state in artifact_states:
             if artifact_state.id in remaining_in_process_artifact_state_ids:
