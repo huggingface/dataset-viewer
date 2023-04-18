@@ -8,6 +8,14 @@ from unittest.mock import patch
 import pytest
 
 from libcommon.config import ProcessingGraphConfig
+from libcommon.constants import (
+    PROCESSING_STEP_CONFIG_INFO_VERSION,
+    PROCESSING_STEP_CONFIG_NAMES_VERSION,
+    PROCESSING_STEP_CONFIG_PARQUET_AND_INFO_VERSION,
+    PROCESSING_STEP_CONFIG_PARQUET_VERSION,
+    PROCESSING_STEP_SPLIT_NAMES_FROM_DATASET_INFO_VERSION,
+    PROCESSING_STEP_SPLIT_NAMES_FROM_STREAMING_VERSION,
+)
 from libcommon.processing_graph import ProcessingGraph
 from libcommon.queue import Queue, Status
 from libcommon.resources import CacheMongoResource, QueueMongoResource
@@ -605,7 +613,7 @@ def test_plan_job_creation_and_termination() -> None:
     )
 
     # we simulate the job for "/config-names,dataset" has finished
-    finish_job("/config-names", TWO_CONFIG_NAMES_CONTENT_OK)
+    finish_job("/config-names", TWO_CONFIG_NAMES_CONTENT_OK, job_runner_version=PROCESSING_STEP_CONFIG_NAMES_VERSION)
 
     assert_dataset_state(
         # The config names are now known
@@ -678,7 +686,7 @@ def test_plan_only_one_config() -> None:
         split=None,
         content=TWO_CONFIG_NAMES_CONTENT_OK,
         http_status=HTTPStatus.OK,
-        job_runner_version=NEW_JOB_RUNNER_VERSION,
+        job_runner_version=PROCESSING_STEP_CONFIG_NAMES_VERSION,
         dataset_git_revision=CURRENT_GIT_REVISION,
     )
     # Set the "config-parquet-and-info,dataset,config1" artifact in cache
@@ -689,7 +697,7 @@ def test_plan_only_one_config() -> None:
         split=None,
         content=TWO_CONFIG_NAMES_CONTENT_OK,
         http_status=HTTPStatus.OK,
-        job_runner_version=NEW_JOB_RUNNER_VERSION,
+        job_runner_version=PROCESSING_STEP_CONFIG_PARQUET_AND_INFO_VERSION,
         dataset_git_revision=CURRENT_GIT_REVISION,
     )
 
@@ -760,7 +768,7 @@ def test_plan_retry_error() -> None:
         split=None,
         content=TWO_CONFIG_NAMES_CONTENT_OK,
         http_status=HTTPStatus.INTERNAL_SERVER_ERROR,
-        job_runner_version=NEW_JOB_RUNNER_VERSION,
+        job_runner_version=PROCESSING_STEP_CONFIG_NAMES_VERSION,
         error_code=ERROR_CODE_TO_RETRY,
         dataset_git_revision=CURRENT_GIT_REVISION,
     )
@@ -828,7 +836,7 @@ def test_plan_incoherent_state() -> None:
         split=None,
         content=TWO_CONFIG_NAMES_CONTENT_OK,
         http_status=HTTPStatus.OK,
-        job_runner_version=NEW_JOB_RUNNER_VERSION,
+        job_runner_version=PROCESSING_STEP_CONFIG_NAMES_VERSION,
         dataset_git_revision=CURRENT_GIT_REVISION,
     )
     # Set the "/split-names-from-dataset-info,dataset,config1" artifact in cache
@@ -841,7 +849,7 @@ def test_plan_incoherent_state() -> None:
         split=None,
         content=get_SPLIT_NAMES_CONTENT_OK(dataset=DATASET_NAME, config=CONFIG_NAME_1, splits=SPLIT_NAMES_OK),
         http_status=HTTPStatus.OK,
-        job_runner_version=NEW_JOB_RUNNER_VERSION,
+        job_runner_version=PROCESSING_STEP_SPLIT_NAMES_FROM_DATASET_INFO_VERSION,
         dataset_git_revision=CURRENT_GIT_REVISION,
     )
 
@@ -915,7 +923,7 @@ def test_plan_get_splits() -> None:
         split=None,
         content=TWO_CONFIG_NAMES_CONTENT_OK,
         http_status=HTTPStatus.OK,
-        job_runner_version=NEW_JOB_RUNNER_VERSION,
+        job_runner_version=PROCESSING_STEP_CONFIG_NAMES_VERSION,
         dataset_git_revision=CURRENT_GIT_REVISION,
     )
     # Set the "config-parquet-and-info,dataset,config1" artifact in cache
@@ -926,7 +934,7 @@ def test_plan_get_splits() -> None:
         split=None,
         content=TWO_CONFIG_NAMES_CONTENT_OK,  # <- not important
         http_status=HTTPStatus.OK,
-        job_runner_version=NEW_JOB_RUNNER_VERSION,
+        job_runner_version=PROCESSING_STEP_CONFIG_PARQUET_AND_INFO_VERSION,
         dataset_git_revision=CURRENT_GIT_REVISION,
     )
     # Set the "config-info,dataset,config1" artifact in cache
@@ -937,7 +945,7 @@ def test_plan_get_splits() -> None:
         split=None,
         content=TWO_CONFIG_NAMES_CONTENT_OK,  # <- not important
         http_status=HTTPStatus.OK,
-        job_runner_version=NEW_JOB_RUNNER_VERSION,
+        job_runner_version=PROCESSING_STEP_CONFIG_INFO_VERSION,
         dataset_git_revision=CURRENT_GIT_REVISION,
     )
     # Set the "/split-names-from-dataset-info,dataset,config1" artifact in cache
@@ -948,7 +956,7 @@ def test_plan_get_splits() -> None:
         split=None,
         content=get_SPLIT_NAMES_CONTENT_OK(dataset=DATASET_NAME, config=CONFIG_NAME_1, splits=SPLIT_NAMES_OK),
         http_status=HTTPStatus.OK,
-        job_runner_version=NEW_JOB_RUNNER_VERSION,
+        job_runner_version=PROCESSING_STEP_SPLIT_NAMES_FROM_DATASET_INFO_VERSION,
         dataset_git_revision=CURRENT_GIT_REVISION,
     )
     # Set the "/split-names-from-streaming,dataset,config1" artifact in cache
@@ -959,7 +967,7 @@ def test_plan_get_splits() -> None:
         split=None,
         content=get_SPLIT_NAMES_CONTENT_OK(dataset=DATASET_NAME, config=CONFIG_NAME_1, splits=SPLIT_NAMES_OK),
         http_status=HTTPStatus.OK,
-        job_runner_version=NEW_JOB_RUNNER_VERSION,
+        job_runner_version=PROCESSING_STEP_SPLIT_NAMES_FROM_STREAMING_VERSION,
         dataset_git_revision=CURRENT_GIT_REVISION,
     )
 
@@ -1037,7 +1045,7 @@ def test_plan_updated_at() -> None:
         split=None,
         content=TWO_CONFIG_NAMES_CONTENT_OK,
         http_status=HTTPStatus.OK,
-        job_runner_version=NEW_JOB_RUNNER_VERSION,
+        job_runner_version=PROCESSING_STEP_CONFIG_NAMES_VERSION,
         dataset_git_revision=CURRENT_GIT_REVISION,
     )
     # Set the "config-parquet-and-info,dataset,config1" artifact in cache
@@ -1048,7 +1056,7 @@ def test_plan_updated_at() -> None:
         split=None,
         content=TWO_CONFIG_NAMES_CONTENT_OK,  # <- not important
         http_status=HTTPStatus.OK,
-        job_runner_version=NEW_JOB_RUNNER_VERSION,
+        job_runner_version=PROCESSING_STEP_CONFIG_PARQUET_AND_INFO_VERSION,
         dataset_git_revision=CURRENT_GIT_REVISION,
     )
     # Set the "config-info,dataset,config1" artifact in cache
@@ -1059,7 +1067,7 @@ def test_plan_updated_at() -> None:
         split=None,
         content=TWO_CONFIG_NAMES_CONTENT_OK,  # <- not important
         http_status=HTTPStatus.OK,
-        job_runner_version=NEW_JOB_RUNNER_VERSION,
+        job_runner_version=PROCESSING_STEP_CONFIG_INFO_VERSION,
         dataset_git_revision=CURRENT_GIT_REVISION,
     )
     # Set the "/split-names-from-dataset-info,dataset,config1" artifact in cache
@@ -1070,7 +1078,7 @@ def test_plan_updated_at() -> None:
         split=None,
         content=get_SPLIT_NAMES_CONTENT_OK(dataset=DATASET_NAME, config=CONFIG_NAME_1, splits=SPLIT_NAMES_OK),
         http_status=HTTPStatus.OK,
-        job_runner_version=NEW_JOB_RUNNER_VERSION,
+        job_runner_version=PROCESSING_STEP_SPLIT_NAMES_FROM_DATASET_INFO_VERSION,
         dataset_git_revision=CURRENT_GIT_REVISION,
     )
     # Set the "/split-names-from-streaming,dataset,config1" artifact in cache
@@ -1081,7 +1089,7 @@ def test_plan_updated_at() -> None:
         split=None,
         content=get_SPLIT_NAMES_CONTENT_OK(dataset=DATASET_NAME, config=CONFIG_NAME_1, splits=SPLIT_NAMES_OK),
         http_status=HTTPStatus.OK,
-        job_runner_version=NEW_JOB_RUNNER_VERSION,
+        job_runner_version=PROCESSING_STEP_SPLIT_NAMES_FROM_STREAMING_VERSION,
         dataset_git_revision=CURRENT_GIT_REVISION,
     )
 
@@ -1093,7 +1101,7 @@ def test_plan_updated_at() -> None:
         split=None,
         content=TWO_CONFIG_NAMES_CONTENT_OK,
         http_status=HTTPStatus.OK,
-        job_runner_version=NEW_JOB_RUNNER_VERSION,
+        job_runner_version=PROCESSING_STEP_CONFIG_NAMES_VERSION,
         dataset_git_revision=CURRENT_GIT_REVISION,
     )
 
@@ -1170,7 +1178,7 @@ def test_plan_job_runner_version() -> None:
         split=None,
         content=TWO_CONFIG_NAMES_CONTENT_OK,
         http_status=HTTPStatus.OK,
-        job_runner_version=NEW_JOB_RUNNER_VERSION,
+        job_runner_version=PROCESSING_STEP_CONFIG_NAMES_VERSION,
         dataset_git_revision=CURRENT_GIT_REVISION,
     )
     # Set the "config-parquet-and-info,dataset,config1" artifact in cache
@@ -1181,7 +1189,7 @@ def test_plan_job_runner_version() -> None:
         split=None,
         content=TWO_CONFIG_NAMES_CONTENT_OK,  # <- not important
         http_status=HTTPStatus.OK,
-        job_runner_version=NEW_JOB_RUNNER_VERSION,
+        job_runner_version=PROCESSING_STEP_CONFIG_PARQUET_AND_INFO_VERSION,
         dataset_git_revision=CURRENT_GIT_REVISION,
     )
     # Set the "config-parquet,dataset,config1" artifact in cache
@@ -1192,7 +1200,7 @@ def test_plan_job_runner_version() -> None:
         split=None,
         content=TWO_CONFIG_NAMES_CONTENT_OK,  # <- not important
         http_status=HTTPStatus.OK,
-        job_runner_version=OLD_JOB_RUNNER_VERSION,  # <- current version is 3, this one is 1
+        job_runner_version=PROCESSING_STEP_CONFIG_PARQUET_VERSION - 1,  # <- current version is 3, this one is 1
         dataset_git_revision=CURRENT_GIT_REVISION,
     )
 
@@ -1272,7 +1280,7 @@ def test_plan_git_revision(
         split=None,
         content=TWO_CONFIG_NAMES_CONTENT_OK,
         http_status=HTTPStatus.OK,
-        job_runner_version=NEW_JOB_RUNNER_VERSION,
+        job_runner_version=PROCESSING_STEP_CONFIG_NAMES_VERSION,
         dataset_git_revision=cached_dataset_get_revision,
     )
 
