@@ -129,10 +129,12 @@ OPT_IN_OUT_URLS_SCAN_MAX_REQUESTS_PER_SECOND = 50
 OPT_IN_OUT_URLS_SCAN_ROWS_MAX_NUMBER = 100_000
 OPT_IN_OUT_URLS_SCAN_SPAWNING_TOKEN = None
 OPT_IN_OUT_URLS_SCAN_URLS_NUMBER_PER_BATCH = 1000
+OPT_IN_OUT_URLS_SCAN_URL = "https://opts-api.spawningaiapi.com/api/v2/query/urls"
 
 
 @dataclass(frozen=True)
 class OptInOutUrlsScanConfig:
+    url: str = OPT_IN_OUT_URLS_SCAN_URL
     rows_max_number: int = OPT_IN_OUT_URLS_SCAN_ROWS_MAX_NUMBER
     columns_max_number: int = FIRST_ROWS_COLUMNS_MAX_NUMBER
     urls_number_per_batch: int = OPT_IN_OUT_URLS_SCAN_URLS_NUMBER_PER_BATCH
@@ -157,6 +159,7 @@ class OptInOutUrlsScanConfig:
                 max_requests_per_second=env.int(
                     name="MAX_REQUESTS_PER_SECOND", default=OPT_IN_OUT_URLS_SCAN_MAX_REQUESTS_PER_SECOND
                 ),
+                url=env.str(name="URL", default=OPT_IN_OUT_URLS_SCAN_URL),
             )
 
 

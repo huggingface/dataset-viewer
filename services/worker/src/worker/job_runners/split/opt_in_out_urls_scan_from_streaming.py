@@ -36,6 +36,7 @@ SplitOptInOutUrlsScanJobRunnerErrorCode = Literal[
     "StreamingRowsError",
     "NormalRowsError",
     "MissingSpawningTokenError",
+    "ExternalServerError",
 ]
 
 
@@ -104,6 +105,13 @@ class MissingSpawningTokenError(SplitOptInOutUrlsScanJobRunnerError):
         super().__init__(message, HTTPStatus.INTERNAL_SERVER_ERROR, "MissingSpawningTokenError", cause, False)
 
 
+class ExternalServerError(SplitOptInOutUrlsScanJobRunnerError):
+    """Raised when the spawning.ai server is not responding."""
+
+    def __init__(self, message: str, cause: Optional[BaseException] = None):
+        super().__init__(message, HTTPStatus.INTERNAL_SERVER_ERROR, "ExternalServerError", cause, False)
+
+
 class OptInUrl(TypedDict):
     url: str
     row_idx: int
@@ -162,9 +170,8 @@ def get_rows(
 
 
 async def check_spawning(
-    image_urls: List[str], session: ClientSession, semaphore: Semaphore, limiter: AsyncLimiter
+    image_urls: List[str], session: ClientSession, semaphore: Semaphore, limiter: AsyncLimiter, url: str
 ) -> Any:
-    url = "https://opts-api.spawningaiapi.com/api/v2/query/urls"
     if not image_urls:
         return {"urls": []}
     elif len(image_urls) == 1:
@@ -177,9 +184,12 @@ async def check_spawning(
 
 
 async def opt_in_out_task(
-    image_urls: List[str], session: ClientSession, semaphore: Semaphore, limiter: AsyncLimiter
+    image_urls: List[str], session: ClientSession, semaphore: Semaphore, limiter: AsyncLimiter, url: str
 ) -> Tuple[List[Any], List[Any]]:
-    spawning_response = await check_spawning(image_urls, session, semaphore, limiter)
+    try:
+        spawning_response = await check_spawning(image_urls, session, semaphore, limiter, url)
+    except Exception:
+        raise ExternalServerError(message=f"Error when trying to connect to {url}")
     opt_in_urls_indices = [i for i in range(len(image_urls)) if spawning_response["urls"][i]["optIn"]]
     opt_out_urls_indices = [i for i in range(len(image_urls)) if spawning_response["urls"][i]["optOut"]]
     return opt_in_urls_indices, opt_out_urls_indices
@@ -191,6 +201,7 @@ async def opt_in_out_scan_urls(
     spawning_token: str,
     max_concurrent_requests_number: int,
     max_requests_per_second: int,
+    url: str,
 ) -> Tuple[List[int], List[int]]:
     offsets = []
     tasks = []
@@ -202,7 +213,9 @@ async def opt_in_out_scan_urls(
         for offset in range(0, len(urls), urls_number_per_batch):
             offsets.append(offset)
             limit = offset + urls_number_per_batch
-            tasks.append(create_task(opt_in_out_task(urls[offset:limit], session, semaphore, limiter)))  # noqa: E203
+            tasks.append(
+                create_task(opt_in_out_task(urls[offset:limit], session, semaphore, limiter, url))
+            )  # noqa: E203
         await wait(tasks)
 
     opt_in_urls_indices = []
@@ -228,6 +241,7 @@ def compute_opt_in_out_urls_scan_response(
     spawning_token: Optional[str],
     max_concurrent_requests_number: int,
     max_requests_per_second: int,
+    url: str,
 ) -> OptInOutUrlsScanResponse:
     logging.info(f"get opt-in-out-urls-scan for dataset={dataset} config={config} split={split}")
 
@@ -240,6 +254,13 @@ def compute_opt_in_out_urls_scan_response(
         upstream_response = get_response(
             kind="split-first-rows-from-streaming", dataset=dataset, config=config, split=split
         )
+
+        if upstream_response["http_status"] != HTTPStatus.OK:
+            raise PreviousStepStatusError(
+                f"Previous step gave an error: {upstream_response['http_status']}. This job should not have been"
+                " created."
+            )
+
         upstream_response_content = SplitFirstRowsResponse(
             dataset=dataset,
             config=config,
@@ -247,17 +268,13 @@ def compute_opt_in_out_urls_scan_response(
             features=upstream_response["content"]["features"],
             rows=upstream_response["content"]["rows"],
         )
+
         features = upstream_response_content["features"]
         first_rows = upstream_response_content["rows"]
     except DoesNotExist as e:
         raise ConfigNotFoundError(f"The config '{config}' does not exist for the dataset.'", e) from e
-    except Exception as e:
+    except KeyError as e:
         raise PreviousStepFormatError("Previous step did not return the expected content.", e) from e
-
-    if upstream_response["http_status"] != HTTPStatus.OK:
-        raise PreviousStepStatusError(
-            f"Previous step gave an error: {upstream_response['http_status']}. This job should not have been created."
-        )
 
     if features and len(features) > columns_max_number:
         raise TooManyColumnsError(
@@ -349,8 +366,10 @@ def compute_opt_in_out_urls_scan_response(
             spawning_token=spawning_token,
             max_concurrent_requests_number=max_concurrent_requests_number,
             max_requests_per_second=max_requests_per_second,
+            url=url,
         )
     )
+
     opt_in_urls = [
         OptInUrl(
             url=urls[url_idx],
@@ -422,6 +441,7 @@ class SplitOptInOutUrlsScanJobRunner(DatasetsBasedJobRunner):
                 spawning_token=self.urls_scan_config.spawning_token,
                 max_concurrent_requests_number=self.urls_scan_config.max_concurrent_requests_number,
                 max_requests_per_second=self.urls_scan_config.max_requests_per_second,
+                url=self.urls_scan_config.url,
             )
         )
 
