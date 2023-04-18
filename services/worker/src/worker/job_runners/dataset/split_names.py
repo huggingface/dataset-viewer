@@ -78,6 +78,11 @@ def compute_dataset_split_names_response(dataset: str) -> Tuple[DatasetSplitName
     # Get the config names from the previous steps
     try:
         best_response = get_best_response(["/config-names", "dataset-info"], dataset)
+        if best_response.response["http_status"] != HTTPStatus.OK:
+            raise PreviousStepStatusError(
+                f"Previous step raised an error: {best_response.response['http_status']}. This job should not have"
+                " been created."
+            )
         if best_response.kind == "/config-names":
             config_names = [
                 config_name_item["config"] for config_name_item in best_response.response["content"]["config_names"]

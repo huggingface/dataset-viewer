@@ -84,6 +84,10 @@ def compute_dataset_split_names_from_dataset_info_response(dataset: str) -> Tupl
 
     try:
         response = get_response(kind="dataset-info", dataset=dataset)
+        if response["http_status"] != HTTPStatus.OK:
+            raise PreviousStepStatusError(
+                f"Previous step raised an error: {response['http_status']}. This job should not have been created."
+            )
         dataset_info_content = response["content"]["dataset_info"]
     except DoesNotExist as e:
         raise DatasetNotFoundError("No response found in previous step for this dataset: 'dataset-info'.", e) from e

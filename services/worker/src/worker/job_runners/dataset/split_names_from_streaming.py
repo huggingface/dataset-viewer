@@ -97,6 +97,10 @@ def compute_dataset_split_names_from_streaming_response(
     logging.info(f"get dataset split names from dataset info for dataset={dataset}")
     try:
         config_names = get_response(kind="/config-names", dataset=dataset)
+        if response["http_status"] != HTTPStatus.OK:
+            raise PreviousStepStatusError(
+                f"Previous step raised an error: {response['http_status']}. This job should not have been created."
+            )
         config_content = config_names["content"]["config_names"]
     except DoesNotExist as e:
         raise DatasetNotFoundError("No response found in previous step '/config-names' for this dataset.", e) from e
