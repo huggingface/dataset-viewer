@@ -62,6 +62,7 @@ def get_job_runner(
                 required_by_dataset_viewer=True,
                 ancestors=[],
                 children=[],
+                parents=[],
                 job_runner_version=SplitFirstRowsFromParquetJobRunner.get_job_runner_version(),
             ),
             hf_datasets_cache=libraries_resource.hf_datasets_cache,

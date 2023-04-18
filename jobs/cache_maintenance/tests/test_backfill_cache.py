@@ -22,6 +22,7 @@ def test_backfill_cache() -> None:
                 required_by_dataset_viewer=False,
                 ancestors=[],
                 children=[],
+                parents=[],
                 job_runner_version=1,
             )
         ]

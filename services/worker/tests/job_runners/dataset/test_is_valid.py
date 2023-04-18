@@ -93,6 +93,7 @@ def get_job_runner(
                 required_by_dataset_viewer=False,
                 ancestors=[],
                 children=[],
+                parents=[],
                 job_runner_version=DatasetIsValidJobRunner.get_job_runner_version(),
             ),
         )

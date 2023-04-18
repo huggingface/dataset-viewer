@@ -44,6 +44,7 @@ class ProcessingStep:
     required_by_dataset_viewer: bool
     ancestors: List[ProcessingStep]
     children: List[ProcessingStep]
+    parents: List[ProcessingStep]
     job_runner_version: int
 
     @property
@@ -91,6 +92,7 @@ class ProcessingGraph:
     steps: Mapping[str, ProcessingStep]
     roots: List[ProcessingStep]
     required_by_dataset_viewer: List[ProcessingStep]
+    topologically_ordered_steps: List[ProcessingStep]
 
     def __init__(self, processing_graph_specification: ProcessingGraphSpecification):
         self.steps = {
@@ -101,6 +103,7 @@ class ProcessingGraph:
                 required_by_dataset_viewer=specification.get("required_by_dataset_viewer", False),
                 ancestors=[],
                 children=[],
+                parents=[],
                 job_runner_version=specification["job_runner_version"],
             )
             for name, specification in processing_graph_specification.items()
@@ -121,15 +124,16 @@ class ProcessingGraph:
             step.ancestors = [self.get_step(name) for name in nx.ancestors(graph, step.name)]
         for step in self.steps.values():
             required_steps = [self.get_step(name) for name in graph.predecessors(step.name)]
-            parents = list(required_steps)
+            step.parents = list(required_steps)
             for parent_candidate in required_steps:
                 for other_parent_candidate in required_steps:
                     if other_parent_candidate in parent_candidate.ancestors:
-                        parents.remove(other_parent_candidate)
-            for parent in parents:
+                        step.parents.remove(other_parent_candidate)
+            for parent in step.parents:
                 parent.children.append(step)
         self.roots = [self.get_step(name) for name, degree in graph.in_degree() if degree == 0]
         self.required_by_dataset_viewer = [step for step in self.steps.values() if step.required_by_dataset_viewer]
+        self.topologically_ordered_steps = [self.get_step(name) for name in nx.topological_sort(graph)]
 
     def get_step(self, name: str) -> ProcessingStep:
         """Get a step by its name."""

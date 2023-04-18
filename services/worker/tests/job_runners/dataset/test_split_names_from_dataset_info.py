@@ -49,6 +49,7 @@ def get_job_runner(
                 required_by_dataset_viewer=False,
                 ancestors=[],
                 children=[],
+                parents=[],
                 job_runner_version=DatasetSplitNamesFromDatasetInfoJobRunner.get_job_runner_version(),
             ),
         )

@@ -122,6 +122,7 @@ def test_processing_step() -> ProcessingStep:
         required_by_dataset_viewer=False,
         ancestors=[],
         children=[],
+        parents=[],
         job_runner_version=1,
     )
 

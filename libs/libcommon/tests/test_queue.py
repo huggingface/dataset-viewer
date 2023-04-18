@@ -3,19 +3,13 @@
 
 import time
 from datetime import datetime, timedelta
-from typing import Iterator, Optional
+from typing import List, Optional
 from unittest.mock import patch
 
 import pytest
 import pytz
 
-from libcommon.queue import (
-    EmptyQueueError,
-    Priority,
-    Queue,
-    Status,
-    _clean_queue_database,
-)
+from libcommon.queue import EmptyQueueError, Priority, Queue, Status
 from libcommon.resources import QueueMongoResource
 from libcommon.utils import get_datetime
 
@@ -25,16 +19,8 @@ def get_old_datetime() -> datetime:
 
 
 @pytest.fixture(autouse=True)
-def queue_mongo_resource(queue_mongo_host: str) -> Iterator[QueueMongoResource]:
-    database = "datasets_server_queue_test"
-    host = queue_mongo_host
-    if "test" not in database:
-        raise ValueError("Test must be launched on a test mongo database")
-    with QueueMongoResource(database=database, host=host, server_selection_timeout_ms=3_000) as queue_mongo_resource:
-        if not queue_mongo_resource.is_available():
-            raise RuntimeError("Mongo resource is not available")
-        yield queue_mongo_resource
-        _clean_queue_database()
+def queue_mongo_resource_autouse(queue_mongo_resource: QueueMongoResource) -> QueueMongoResource:
+    return queue_mongo_resource
 
 
 def test__add_job() -> None:
@@ -120,6 +106,37 @@ def test_upsert_job() -> None:
     with pytest.raises(EmptyQueueError):
         # an error is raised if we try to start a job
         queue.start_job()
+
+
+@pytest.mark.parametrize(
+    "statuses_to_cancel, expected_remaining_number",
+    [
+        (None, 0),
+        ([Status.WAITING], 1),
+        ([Status.WAITING, Status.STARTED], 0),
+        ([Status.STARTED], 1),
+        ([Status.SUCCESS], 2),
+    ],
+)
+def test_cancel_jobs(statuses_to_cancel: Optional[List[Status]], expected_remaining_number: int) -> None:
+    test_type = "test_type"
+    test_dataset = "test_dataset"
+    queue = Queue()
+    queue._add_job(job_type=test_type, dataset=test_dataset, force=True)
+    queue._add_job(job_type=test_type, dataset=test_dataset)
+    queue.start_job()
+
+    canceled_job_dicts = queue.cancel_jobs(
+        job_type=test_type, dataset=test_dataset, statuses_to_cancel=statuses_to_cancel
+    )
+    assert len(canceled_job_dicts) == 2 - expected_remaining_number
+
+    if expected_remaining_number == 0:
+        assert not queue.is_job_in_process(job_type=test_type, dataset=test_dataset)
+        with pytest.raises(EmptyQueueError):
+            queue.start_job()
+    else:
+        assert queue.is_job_in_process(job_type=test_type, dataset=test_dataset)
 
 
 def check_job(queue: Queue, expected_dataset: str, expected_split: str) -> None:

@@ -15,6 +15,7 @@ dataset_step = ProcessingStep(
     required_by_dataset_viewer=False,
     ancestors=[],
     children=[],
+    parents=[],
     job_runner_version=1,
 )
 config_step = ProcessingStep(
@@ -24,6 +25,7 @@ config_step = ProcessingStep(
     required_by_dataset_viewer=False,
     ancestors=[],
     children=[],
+    parents=[],
     job_runner_version=1,
 )
 split_step = ProcessingStep(
@@ -33,6 +35,7 @@ split_step = ProcessingStep(
     required_by_dataset_viewer=False,
     ancestors=[],
     children=[],
+    parents=[],
     job_runner_version=1,
 )
 

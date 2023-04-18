@@ -184,6 +184,29 @@ def get_response_without_content(
     }
 
 
+class CacheEntryMetadata(CacheEntryWithoutContent):
+    updated_at: datetime
+
+
+# Note: we let the exceptions throw (ie DoesNotExist): it's the responsibility of the caller to manage them
+def get_response_metadata(
+    kind: str, dataset: str, config: Optional[str] = None, split: Optional[str] = None
+) -> CacheEntryMetadata:
+    response = (
+        CachedResponse.objects(kind=kind, dataset=dataset, config=config, split=split)
+        .only("http_status", "error_code", "job_runner_version", "dataset_git_revision", "progress", "updated_at")
+        .get()
+    )
+    return {
+        "http_status": response.http_status,
+        "error_code": response.error_code,
+        "dataset_git_revision": response.dataset_git_revision,
+        "job_runner_version": response.job_runner_version,
+        "progress": response.progress,
+        "updated_at": response.updated_at,
+    }
+
+
 class CacheEntry(CacheEntryWithoutContent):
     content: Mapping[str, Any]
 
