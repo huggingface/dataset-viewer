@@ -127,7 +127,7 @@ class ProcessingGraph:
             step.parents = list(required_steps)
             for parent_candidate in required_steps:
                 for other_parent_candidate in required_steps:
-                    if other_parent_candidate in parent_candidate.ancestors:
+                    if other_parent_candidate in parent_candidate.ancestors and other_parent_candidate in step.parents:
                         step.parents.remove(other_parent_candidate)
             for parent in step.parents:
                 parent.children.append(step)
