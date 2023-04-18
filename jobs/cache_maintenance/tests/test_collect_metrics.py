@@ -33,6 +33,7 @@ def test_collect_metrics() -> None:
             required_by_dataset_viewer=False,
             ancestors=[],
             children=[],
+            parents=[],
             job_runner_version=1,
         )
     ]
