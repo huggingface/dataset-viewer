@@ -50,10 +50,10 @@ def test_graph() -> None:
     e = graph.get_step("e")
     f = graph.get_step("f")
 
-    assert_step(a, children=[c, f], parents=[], ancestors=[])
+    assert_step(a, children=[c, d, f], parents=[], ancestors=[])
     assert_step(b, children=[f], parents=[], ancestors=[])
     assert_step(c, children=[d, e], parents=[a], ancestors=[a])
-    assert_step(d, children=[], parents=[c], ancestors=[a, c])
+    assert_step(d, children=[], parents=[a, c], ancestors=[a, c])
     assert_step(e, children=[], parents=[c], ancestors=[a, c])
     assert_step(f, children=[], parents=[a, b], ancestors=[a, b])
 
@@ -67,16 +67,38 @@ def graph() -> ProcessingGraph:
 @pytest.mark.parametrize(
     "step_name,children,parents,ancestors",
     [
-        ("/config-names", ["/split-names-from-streaming", "config-parquet-and-info"], [], []),
+        (
+            "/config-names",
+            [
+                "/split-names-from-streaming",
+                "config-parquet-and-info",
+                "dataset-split-names-from-dataset-info",
+                "dataset-split-names-from-streaming",
+                "dataset-split-names",
+                "dataset-parquet",
+                "dataset-info",
+                "dataset-size",
+            ],
+            [],
+            [],
+        ),
         (
             "config-parquet-and-info",
-            ["config-parquet", "config-info", "config-size"],
+            [
+                "config-parquet",
+                "config-info",
+                "config-size",
+            ],
             ["/config-names"],
             ["/config-names"],
         ),
         (
             "/split-names-from-dataset-info",
-            ["dataset-split-names-from-dataset-info", "split-first-rows-from-streaming", "dataset-split-names"],
+            [
+                "dataset-split-names-from-dataset-info",
+                "split-first-rows-from-streaming",
+                "dataset-split-names",
+            ],
             ["config-info"],
             ["/config-names", "config-parquet-and-info", "config-info"],
         ),
@@ -89,19 +111,20 @@ def graph() -> ProcessingGraph:
         (
             "dataset-split-names-from-dataset-info",
             [],
-            ["/split-names-from-dataset-info"],
+            ["/config-names", "/split-names-from-dataset-info"],
             ["/config-names", "config-parquet-and-info", "config-info", "/split-names-from-dataset-info"],
         ),
         (
             "dataset-split-names-from-streaming",
             [],
-            ["/split-names-from-streaming"],
+            ["/config-names", "/split-names-from-streaming"],
             ["/config-names", "/split-names-from-streaming"],
         ),
         (
             "dataset-split-names",
             ["dataset-is-valid"],
             [
+                "/config-names",
                 "/split-names-from-dataset-info",
                 "/split-names-from-streaming",
             ],
@@ -141,16 +164,31 @@ def graph() -> ProcessingGraph:
             ["config-parquet-and-info"],
             ["/config-names", "config-parquet-and-info"],
         ),
-        ("dataset-parquet", [], ["config-parquet"], ["/config-names", "config-parquet-and-info", "config-parquet"]),
+        (
+            "dataset-parquet",
+            [],
+            ["/config-names", "config-parquet"],
+            ["/config-names", "config-parquet-and-info", "config-parquet"],
+        ),
         (
             "config-info",
             ["dataset-info", "/split-names-from-dataset-info"],
             ["config-parquet-and-info"],
             ["/config-names", "config-parquet-and-info"],
         ),
-        ("dataset-info", [], ["config-info"], ["/config-names", "config-parquet-and-info", "config-info"]),
+        (
+            "dataset-info",
+            [],
+            ["/config-names", "config-info"],
+            ["/config-names", "config-parquet-and-info", "config-info"],
+        ),
         ("config-size", ["dataset-size"], ["config-parquet-and-info"], ["/config-names", "config-parquet-and-info"]),
-        ("dataset-size", [], ["config-size"], ["/config-names", "config-parquet-and-info", "config-size"]),
+        (
+            "dataset-size",
+            [],
+            ["/config-names", "config-size"],
+            ["/config-names", "config-parquet-and-info", "config-size"],
+        ),
         (
             "dataset-is-valid",
             [],

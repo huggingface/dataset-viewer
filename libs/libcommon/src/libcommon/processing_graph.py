@@ -123,12 +123,7 @@ class ProcessingGraph:
         for step in self.steps.values():
             step.ancestors = [self.get_step(name) for name in nx.ancestors(graph, step.name)]
         for step in self.steps.values():
-            required_steps = [self.get_step(name) for name in graph.predecessors(step.name)]
-            step.parents = list(required_steps)
-            for parent_candidate in required_steps:
-                for other_parent_candidate in required_steps:
-                    if other_parent_candidate in parent_candidate.ancestors and other_parent_candidate in step.parents:
-                        step.parents.remove(other_parent_candidate)
+            step.parents = [self.get_step(name) for name in graph.predecessors(step.name)]
             for parent in step.parents:
                 parent.children.append(step)
         self.roots = [self.get_step(name) for name, degree in graph.in_degree() if degree == 0]
