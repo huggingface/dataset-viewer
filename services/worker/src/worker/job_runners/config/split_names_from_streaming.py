@@ -96,7 +96,7 @@ def compute_split_names_from_streaming_response(
         - [`~job_runners.config.split_names_from_streaming.SplitsNamesError`]
           If the list of splits could not be obtained using the datasets library.
         - [`~job_runners.config.split_names_from_streaming.ResponseAlreadyComputedError`]
-          If reponse has been already computed by /split-names-from-dataset-info job runner.
+          If response has been already computed by /split-names-from-dataset-info job runner.
     </Tip>
     """
     logging.info(f"get split names for dataset={dataset}, config={config}")

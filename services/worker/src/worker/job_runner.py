@@ -195,7 +195,7 @@ class JobRunnerExceededMaximumDurationError(GeneralJobRunnerError):
 
 
 class ResponseAlreadyComputedError(GeneralJobRunnerError):
-    """Raised when reponse has been already computed by another job runner."""
+    """Raised when response has been already computed by another job runner."""
 
     def __init__(self, message: str, cause: Optional[BaseException] = None):
         super().__init__(

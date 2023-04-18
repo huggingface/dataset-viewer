@@ -85,7 +85,7 @@ def compute_split_names_from_dataset_info_response(dataset: str, config: str) ->
         - [`~libcommon.dataset.DatasetNotFoundError`]
             If previous step content was not found for the dataset
         - [`~job_runners.config.split_names_from_dataset_info.ResponseAlreadyComputedError`]
-          If reponse has been already computed by /split-names-from-streaming job runner.
+          If response has been already computed by /split-names-from-streaming job runner.
     </Tip>
     """
     logging.info(f"get split names from dataset info for dataset={dataset}, config={config}")
