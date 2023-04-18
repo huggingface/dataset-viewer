@@ -5,7 +5,7 @@ import logging
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 from http import HTTPStatus
-from typing import Any, Literal, Mapping, Optional
+from typing import Any, List, Literal, Mapping, Optional
 
 from libcommon.config import CommonConfig
 from libcommon.dataset import DatasetNotFoundError, get_dataset_git_revision
@@ -13,9 +13,12 @@ from libcommon.exceptions import CustomError
 from libcommon.processing_graph import ProcessingStep
 from libcommon.queue import JobInfo, Priority, Queue, Status
 from libcommon.simple_cache import (
+    BestResponse,
+    CacheEntry,
     DoesNotExist,
     SplitFullName,
     delete_response,
+    get_best_response,
     get_response,
     get_response_without_content,
     get_split_full_names_for_dataset_and_kind,
@@ -205,6 +208,43 @@ class ResponseAlreadyComputedError(GeneralJobRunnerError):
             cause=cause,
             disclose_cause=True,
         )
+
+
+class PreviousStepError(Exception):
+    """Raised when the previous step failed. It contains the contents of the error response,
+    and the details contain extra information about the previous step.
+    """
+
+    def __init__(
+        self, response: CacheEntry, kind: str, dataset: str, config: Optional[str] = None, split: Optional[str] = None
+    ):
+        super().__init__("Error in previous step")
+        if response.get("http_status") == HTTPStatus.OK or response["content"].get("error") is None:
+            raise ValueError("Cannot create a PreviousStepError, the response should contain an error")
+
+        self.content = response["content"]
+        self.http_status = response["http_status"]
+        self.error_code = response["error_code"]
+        self.details = {
+            "message": "The previous step failed",
+            "previous_step": {"kind": kind, "dataset": dataset, "config": config, "split": split},
+        }
+
+
+def get_previous_step_or_raise(
+    kinds: List[str], dataset: str, config: Optional[str] = None, split: Optional[str] = None
+) -> BestResponse:
+    """Get the previous step from the cache, or raise an exception if it failed."""
+    best_response = get_best_response(kinds=kinds, dataset=dataset, config=config, split=split)
+    if best_response.response["http_status"] != HTTPStatus.OK:
+        raise PreviousStepError(
+            response=best_response.response,
+            kind=best_response.kind,
+            dataset=dataset,
+            config=config,
+            split=split,
+        )
+    return best_response
 
 
 class JobRunner(ABC):
@@ -414,16 +454,26 @@ class JobRunner(ABC):
             )
             return False
         except Exception as err:
-            e = err if isinstance(err, CustomError) else UnexpectedError(str(err), err)
+            if isinstance(err, PreviousStepError):
+                content = err.content
+                http_status = err.http_status
+                error_code = err.error_code
+                details: Mapping[str, Any] = err.details
+            else:
+                e = err if isinstance(err, CustomError) else UnexpectedError(str(err), err)
+                content = dict(e.as_response())
+                http_status = e.status_code
+                error_code = e.code
+                details = dict(e.as_response_with_cause())
             upsert_response(
                 kind=self.processing_step.cache_kind,
                 dataset=self.dataset,
                 config=self.config,
                 split=self.split,
-                content=dict(e.as_response()),
-                http_status=e.status_code,
-                error_code=e.code,
-                details=dict(e.as_response_with_cause()),
+                content=content,
+                http_status=http_status,
+                error_code=error_code,
+                details=details,
                 job_runner_version=self.get_job_runner_version(),
                 dataset_git_revision=dataset_git_revision,
             )

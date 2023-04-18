@@ -6,20 +6,17 @@ from http import HTTPStatus
 from typing import Any, Literal, Mapping, Optional, TypedDict
 
 from libcommon.constants import PROCESSING_STEP_CONFIG_SIZE_VERSION
-from libcommon.dataset import DatasetNotFoundError
-from libcommon.simple_cache import DoesNotExist, SplitFullName, get_response
+from libcommon.simple_cache import SplitFullName
 
 from worker.job_runner import (
     CompleteJobResult,
     JobRunner,
     JobRunnerError,
     ParameterMissingError,
+    get_previous_step_or_raise,
 )
 
-ConfigSizeJobRunnerErrorCode = Literal[
-    "PreviousStepStatusError",
-    "PreviousStepFormatError",
-]
+ConfigSizeJobRunnerErrorCode = Literal["PreviousStepFormatError"]
 
 
 class ConfigSize(TypedDict):
@@ -67,13 +64,6 @@ class ConfigSizeJobRunnerError(JobRunnerError):
         )
 
 
-class PreviousStepStatusError(ConfigSizeJobRunnerError):
-    """Raised when the previous step gave an error. The job should not have been created."""
-
-    def __init__(self, message: str, cause: Optional[BaseException] = None):
-        super().__init__(message, HTTPStatus.INTERNAL_SERVER_ERROR, "PreviousStepStatusError", cause, False)
-
-
 class PreviousStepFormatError(ConfigSizeJobRunnerError):
     """Raised when the content of the previous step has not the expected format."""
 
@@ -94,29 +84,20 @@ def compute_config_size_response(dataset: str, config: str) -> ConfigSizeRespons
         `ConfigSizeResponse`: An object with the size_response.
     <Tip>
     Raises the following errors:
-        - [`~job_runners.config.size.PreviousStepStatusError`]
+        - [`~job_runner.PreviousStepError`]
           If the previous step gave an error.
         - [`~job_runners.config.size.PreviousStepFormatError`]
             If the content of the previous step has not the expected format
-        - [`~libcommon.dataset.DatasetNotFoundError`]: if the dataset does not exist, or if the
-            token does not give the sufficient access to the dataset, or if the dataset is private
-            (private datasets are not supported by the datasets server)
     </Tip>
     """
     logging.info(f"get size for dataset={dataset}, config={config}")
 
-    previous_step = "config-parquet-and-info"
-    try:
-        response = get_response(kind=previous_step, dataset=dataset, config=config)
-    except DoesNotExist as e:
-        raise DatasetNotFoundError(f"No response found in previous step '{previous_step}' for this dataset.", e) from e
-    if response["http_status"] != HTTPStatus.OK:
-        raise PreviousStepStatusError(f"Previous step {previous_step} gave an error: {response['http_status']}..")
-
-    content = response["content"]
+    dataset_info_best_response = get_previous_step_or_raise(
+        kinds=["config-parquet-and-info"], dataset=dataset, config=config
+    )
+    content = dataset_info_best_response.response["content"]
     if "dataset_info" not in content:
         raise PreviousStepFormatError("Previous step did not return the expected content: 'dataset_info'.")
-
     if not isinstance(content["dataset_info"], dict):
         raise PreviousStepFormatError(
             "Previous step did not return the expected content.",
