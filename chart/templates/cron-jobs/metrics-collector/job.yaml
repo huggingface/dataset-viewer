@@ -14,11 +14,10 @@ spec:
     metadata:
       labels: {{ include "labels.metricsCollector" . | nindent 8 }}
     spec:
-      restartPolicy: Never
+      restartPolicy: OnFailure
       {{- include "image.imagePullSecrets" . | nindent 6 }}
       containers: {{ include "containerMetricsCollector" . | nindent 8 }}
       nodeSelector: {{ toYaml .Values.metricsCollector.nodeSelector | nindent 8 }}
       tolerations: {{ toYaml .Values.metricsCollector.tolerations | nindent 8 }}
       securityContext: {{ include "securityContext" . | nindent 8 }}
-  backoffLimit: 0
 {{- end}}
