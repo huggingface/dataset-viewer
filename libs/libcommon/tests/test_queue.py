@@ -3,19 +3,13 @@
 
 import time
 from datetime import datetime, timedelta
-from typing import Iterator, List, Optional
+from typing import List, Optional
 from unittest.mock import patch
 
 import pytest
 import pytz
 
-from libcommon.queue import (
-    EmptyQueueError,
-    Priority,
-    Queue,
-    Status,
-    _clean_queue_database,
-)
+from libcommon.queue import EmptyQueueError, Priority, Queue, Status
 from libcommon.resources import QueueMongoResource
 from libcommon.utils import get_datetime
 
@@ -25,16 +19,8 @@ def get_old_datetime() -> datetime:
 
 
 @pytest.fixture(autouse=True)
-def queue_mongo_resource(queue_mongo_host: str) -> Iterator[QueueMongoResource]:
-    database = "datasets_server_queue_test"
-    host = queue_mongo_host
-    if "test" not in database:
-        raise ValueError("Test must be launched on a test mongo database")
-    with QueueMongoResource(database=database, host=host, server_selection_timeout_ms=3_000) as queue_mongo_resource:
-        if not queue_mongo_resource.is_available():
-            raise RuntimeError("Mongo resource is not available")
-        yield queue_mongo_resource
-        _clean_queue_database()
+def queue_mongo_resource_autouse(queue_mongo_resource: QueueMongoResource) -> QueueMongoResource:
+    return queue_mongo_resource
 
 
 def test__add_job() -> None:

@@ -2,16 +2,16 @@
 # Copyright 2022 The HuggingFace Authors.
 
 from http import HTTPStatus
-from typing import Any, Dict, Iterator, List, Mapping, Optional, TypedDict
+from typing import Any, Dict, List, Mapping, Optional, TypedDict
 from unittest.mock import patch
 
 import pytest
 
 from libcommon.config import ProcessingGraphConfig
 from libcommon.processing_graph import ProcessingGraph
-from libcommon.queue import Queue, Status, _clean_queue_database
+from libcommon.queue import Queue, Status
 from libcommon.resources import CacheMongoResource, QueueMongoResource
-from libcommon.simple_cache import _clean_cache_database, upsert_response
+from libcommon.simple_cache import upsert_response
 from libcommon.state import (
     HARD_CODED_CONFIG_NAMES_CACHE_KIND,
     HARD_CODED_SPLIT_NAMES_FROM_DATASET_INFO_CACHE_KIND,
@@ -28,27 +28,13 @@ from libcommon.state import (
 
 
 @pytest.fixture(autouse=True)
-def queue_mongo_resource(queue_mongo_host: str) -> Iterator[QueueMongoResource]:
-    database = "datasets_server_queue_test"
-    host = queue_mongo_host
-    if "test" not in database:
-        raise ValueError("Test must be launched on a test mongo database")
-    with QueueMongoResource(database=database, host=host, server_selection_timeout_ms=3_000) as queue_mongo_resource:
-        if not queue_mongo_resource.is_available():
-            raise RuntimeError("Mongo resource is not available")
-        yield queue_mongo_resource
-        _clean_queue_database()
+def queue_mongo_resource_autouse(queue_mongo_resource: QueueMongoResource) -> QueueMongoResource:
+    return queue_mongo_resource
 
 
 @pytest.fixture(autouse=True)
-def cache_mongo_resource(cache_mongo_host: str) -> Iterator[CacheMongoResource]:
-    database = "datasets_server_cache_test"
-    host = cache_mongo_host
-    if "test" not in database:
-        raise ValueError("Test must be launched on a test mongo database")
-    with CacheMongoResource(database=database, host=host) as cache_mongo_resource:
-        yield cache_mongo_resource
-        _clean_cache_database()
+def cache_mongo_resource_autouse(cache_mongo_resource: CacheMongoResource) -> CacheMongoResource:
+    return cache_mongo_resource
 
 
 DATASET_NAME = "dataset"
