@@ -150,7 +150,7 @@ class OptInOutUrlsScanConfig:
                 urls_number_per_batch=env.int(
                     name="URLS_NUMBER_PER_BATCH", default=OPT_IN_OUT_URLS_SCAN_URLS_NUMBER_PER_BATCH
                 ),
-                spawning_token=env.int(name="SPAWNING_TOKEN", default=OPT_IN_OUT_URLS_SCAN_SPAWNING_TOKEN),
+                spawning_token=env.str(name="SPAWNING_TOKEN", default=OPT_IN_OUT_URLS_SCAN_SPAWNING_TOKEN),
                 max_concurrent_requests_number=env.int(
                     name="MAX_CONCURRENT_REQUESTS_NUMBER", default=OPT_IN_OUT_URLS_SCAN_MAX_CONCURRENT_REQUESTS_NUMBER
                 ),

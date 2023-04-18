@@ -386,7 +386,7 @@ class SplitOptInOutUrlsScanJobRunner(DatasetsBasedJobRunner):
 
     @staticmethod
     def get_job_type() -> str:
-        return "opt-in-out-urls-scan"
+        return "split-opt-in-out-urls-scan"
 
     @staticmethod
     def get_job_runner_version() -> int:
