@@ -16,7 +16,7 @@ spec:
     spec:
       restartPolicy: Never
       {{- include "image.imagePullSecrets" . | nindent 6 }}
-      containers: {{ include "containerCacheMaintenance" . | nindent 8 }}
+      containers: {{ include "containerMetricsCollector" . | nindent 8 }}
       nodeSelector: {{ toYaml .Values.metricsCollector.nodeSelector | nindent 8 }}
       tolerations: {{ toYaml .Values.metricsCollector.tolerations | nindent 8 }}
       securityContext: {{ include "securityContext" . | nindent 8 }}
