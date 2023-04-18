@@ -3,7 +3,7 @@
 
 import time
 from datetime import datetime, timedelta
-from typing import Iterator, Optional
+from typing import Iterator, List, Optional
 from unittest.mock import patch
 
 import pytest
@@ -122,22 +122,35 @@ def test_upsert_job() -> None:
         queue.start_job()
 
 
-def test_cancel_pending_jobs() -> None:
+@pytest.mark.parametrize(
+    "statuses_to_cancel, expected_remaining_number",
+    [
+        (None, 0),
+        ([Status.WAITING], 1),
+        ([Status.WAITING, Status.STARTED], 0),
+        ([Status.STARTED], 1),
+        ([Status.SUCCESS], 2),
+    ],
+)
+def test_cancel_jobs(statuses_to_cancel: Optional[List[Status]], expected_remaining_number: int) -> None:
     test_type = "test_type"
     test_dataset = "test_dataset"
-    # get the queue
     queue = Queue()
-    # add a job
     queue._add_job(job_type=test_type, dataset=test_dataset, force=True)
-    # a second call adds a second waiting job
     queue._add_job(job_type=test_type, dataset=test_dataset)
-    assert queue.is_job_in_process(job_type=test_type, dataset=test_dataset)
+    queue.start_job()
 
-    queue.cancel_pending_jobs(job_type=test_type, dataset=test_dataset)
+    canceled_job_dicts = queue.cancel_jobs(
+        job_type=test_type, dataset=test_dataset, statuses_to_cancel=statuses_to_cancel
+    )
+    assert len(canceled_job_dicts) == 2 - expected_remaining_number
 
-    assert not queue.is_job_in_process(job_type=test_type, dataset=test_dataset)
-    with pytest.raises(EmptyQueueError):
-        queue.start_job()
+    if expected_remaining_number == 0:
+        assert not queue.is_job_in_process(job_type=test_type, dataset=test_dataset)
+        with pytest.raises(EmptyQueueError):
+            queue.start_job()
+    else:
+        assert queue.is_job_in_process(job_type=test_type, dataset=test_dataset)
 
 
 def check_job(queue: Queue, expected_dataset: str, expected_split: str) -> None:

@@ -9,7 +9,7 @@ from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional
 
 from libcommon.processing_graph import ProcessingGraph, ProcessingStep
-from libcommon.queue import Priority, Queue
+from libcommon.queue import Priority, Queue, Status
 from libcommon.simple_cache import (
     CacheEntryMetadata,
     DoesNotExist,
@@ -345,11 +345,12 @@ class DeleteJobTask(Task):
     def run(self) -> None:
         # TODO: the started jobs are also canceled: we need to ensure the job runners will
         # not try to update the cache when they finish
-        Queue().cancel_pending_jobs(
+        Queue().cancel_jobs(
             job_type=self.artifact_state.step.job_type,
             dataset=self.artifact_state.dataset,
             config=self.artifact_state.config,
             split=self.artifact_state.split,
+            statuses_to_cancel=[Status.WAITING, Status.STARTED],
         )
 
 
