@@ -19,4 +19,5 @@ spec:
           nodeSelector: {{ toYaml .Values.metricsCollector.nodeSelector | nindent 12 }}
           tolerations: {{ toYaml .Values.metricsCollector.tolerations | nindent 12 }}
           containers: {{ include "containerMetricsCollector" . | nindent 12 }}
+          securityContext: {{ include "securityContext" . | nindent 12 }}
 {{- end}}

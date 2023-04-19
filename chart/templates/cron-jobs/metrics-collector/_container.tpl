@@ -5,7 +5,8 @@
 - name: "{{ include "name" . }}-metrics-collector"
   image: {{ include "jobs.cacheMaintenance.image" . }}
   imagePullPolicy: {{ .Values.images.pullPolicy }}
-  securityContext: {{ include "securityContext" . | nindent 4 }}
+  securityContext:
+    allowPrivilegeEscalation: false
   resources: {{ toYaml .Values.metricsCollector.resources | nindent 4 }}
   env:
     {{ include "envLog" . | nindent 2 }}
