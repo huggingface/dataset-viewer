@@ -13,6 +13,7 @@ from libcommon.constants import (
     PROCESSING_STEP_CONFIG_NAMES_VERSION,
     PROCESSING_STEP_CONFIG_PARQUET_AND_INFO_VERSION,
     PROCESSING_STEP_CONFIG_PARQUET_VERSION,
+    PROCESSING_STEP_DATASET_PARQUET_VERSION,
     PROCESSING_STEP_SPLIT_NAMES_FROM_DATASET_INFO_VERSION,
     PROCESSING_STEP_SPLIT_NAMES_FROM_STREAMING_VERSION,
 )
@@ -1351,3 +1352,108 @@ def test_plan_git_revision(
                 "CreateJob[dataset-split-names-from-streaming,dataset]",
             ],
         )
+
+
+def test_plan_update_fan_in_parent() -> None:
+    # Set the "/config-names,dataset" artifact in cache
+    upsert_response(
+        kind="/config-names",
+        dataset=DATASET_NAME,
+        config=None,
+        split=None,
+        content=TWO_CONFIG_NAMES_CONTENT_OK,
+        http_status=HTTPStatus.OK,
+        job_runner_version=PROCESSING_STEP_CONFIG_NAMES_VERSION,
+        dataset_git_revision=CURRENT_GIT_REVISION,
+    )
+    # Set the "dataset-parquet,dataset" artifact in cache
+    upsert_response(
+        kind="dataset-parquet",
+        dataset=DATASET_NAME,
+        config=None,
+        split=None,
+        content=TWO_CONFIG_NAMES_CONTENT_OK,  # <- not important
+        http_status=HTTPStatus.OK,
+        job_runner_version=PROCESSING_STEP_DATASET_PARQUET_VERSION,
+        dataset_git_revision=CURRENT_GIT_REVISION,
+    )
+    # Set the "config-parquet-and-info,dataset,config1" artifact in cache
+    upsert_response(
+        kind="config-parquet-and-info",
+        dataset=DATASET_NAME,
+        config=CONFIG_NAME_1,
+        split=None,
+        content=TWO_CONFIG_NAMES_CONTENT_OK,  # <- not important
+        http_status=HTTPStatus.OK,
+        job_runner_version=PROCESSING_STEP_CONFIG_PARQUET_AND_INFO_VERSION,
+        dataset_git_revision=CURRENT_GIT_REVISION,
+    )
+    # Set the "config-parquet,dataset,config1" artifact in cache
+    upsert_response(
+        kind="config-parquet",
+        dataset=DATASET_NAME,
+        config=CONFIG_NAME_1,
+        split=None,
+        content=TWO_CONFIG_NAMES_CONTENT_OK,  # <- not important
+        http_status=HTTPStatus.OK,
+        job_runner_version=PROCESSING_STEP_CONFIG_PARQUET_VERSION,
+        dataset_git_revision=CURRENT_GIT_REVISION,
+    )
+    assert_dataset_state(
+        # The config names are known
+        config_names=TWO_CONFIG_NAMES,
+        # The split names are not known
+        split_names_in_first_config=[],
+        # dataset-parquet,dataset is in the category: "cache_is_outdated_by_parent"
+        # because one of the "config-parquet" artifacts is more recent
+        cache_status={
+            "blocked_by_parent": [
+                "/split-names-from-dataset-info,dataset,config1",
+                "/split-names-from-dataset-info,dataset,config2",
+                "config-info,dataset,config2",
+                "config-parquet,dataset,config2",
+                "config-size,dataset,config2",
+                "dataset-is-valid,dataset",
+            ],
+            "cache_has_different_git_revision": [],
+            "cache_is_outdated_by_parent": [
+                "dataset-parquet,dataset",
+            ],
+            "cache_is_empty": [
+                "/parquet-and-dataset-info,dataset",
+                "/split-names-from-streaming,dataset,config1",
+                "/split-names-from-streaming,dataset,config2",
+                "config-info,dataset,config1",
+                "config-parquet-and-info,dataset,config2",
+                "config-size,dataset,config1",
+                "dataset-info,dataset",
+                "dataset-size,dataset",
+                "dataset-split-names,dataset",
+                "dataset-split-names-from-dataset-info,dataset",
+                "dataset-split-names-from-streaming,dataset",
+            ],
+            "cache_is_error_to_retry": [],
+            "cache_is_job_runner_obsolete": [],
+            "up_to_date": [
+                "/config-names,dataset",
+                "config-parquet,dataset,config1",
+                "config-parquet-and-info,dataset,config1",
+            ],
+        },
+        queue_status={"in_process": []},
+        # config-parquet,dataset,config1 will be refreshed because its job runner has been upgraded
+        tasks=[
+            "CreateJob[/parquet-and-dataset-info,dataset]",
+            "CreateJob[/split-names-from-streaming,dataset,config1]",
+            "CreateJob[/split-names-from-streaming,dataset,config2]",
+            "CreateJob[config-info,dataset,config1]",
+            "CreateJob[config-parquet-and-info,dataset,config2]",
+            "CreateJob[config-size,dataset,config1]",
+            "CreateJob[dataset-info,dataset]",
+            "CreateJob[dataset-parquet,dataset]",
+            "CreateJob[dataset-size,dataset]",
+            "CreateJob[dataset-split-names,dataset]",
+            "CreateJob[dataset-split-names-from-dataset-info,dataset]",
+            "CreateJob[dataset-split-names-from-streaming,dataset]",
+        ],
+    )
