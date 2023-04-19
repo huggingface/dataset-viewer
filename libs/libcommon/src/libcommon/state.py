@@ -163,39 +163,6 @@ class ArtifactState:
             cache_kind=self.step.cache_kind, dataset=self.dataset, config=self.config, split=self.split
         )
 
-    def get_parent_artifact_states(self, parent_step: ProcessingStep) -> List["ArtifactState"]:
-        if parent_step.input_type == "dataset":
-            return [ArtifactState(step=parent_step, dataset=self.dataset, config=None, split=None)]
-        elif parent_step.input_type == "config":
-            return (
-                [
-                    ArtifactState(
-                        step=parent_step,
-                        dataset=self.dataset,
-                        config=self.config,
-                        split=None,
-                    )
-                ]
-                if self.step.input_type in ["config", "split"]
-                else []
-                # ^ fan-in: config->dataset. For now, we don't return the list of parent artifact states in that case
-            )
-        else:
-            return (
-                [
-                    ArtifactState(
-                        step=parent_step,
-                        dataset=self.dataset,
-                        config=self.config,
-                        split=self.split,
-                    )
-                ]
-                if self.step.input_type == "split"
-                else []
-                # ^ fan-in: split->config, or split->dataset. For now, we don't return the list of parent artifact
-                #  states in that case
-            )
-
     def is_job_runner_obsolete(self) -> bool:
         if self.cache_state.cache_entry_metadata is None:
             return False
@@ -203,9 +170,6 @@ class ArtifactState:
         if job_runner_version is None:
             return True
         return job_runner_version < self.step.job_runner_version
-
-    def get_all_parents_artifact_states(self) -> List[List["ArtifactState"]]:
-        return [self.get_parent_artifact_states(parent_step) for parent_step in self.step.parents]
 
     def as_dict(self) -> Dict[str, Any]:
         return {
@@ -370,6 +334,12 @@ class Plan:
 
 
 @dataclass
+class ParentState:
+    is_fan_in: bool
+    artifact_states: List[ArtifactState]
+
+
+@dataclass
 class DatasetState:
     """The state of a dataset."""
 
@@ -402,17 +372,56 @@ class DatasetState:
         self.queue_status = self._get_queue_status()
         self.plan = self._create_plan()
 
-    def _get_artifact_states_for_step(self, step: ProcessingStep) -> List[ArtifactState]:
+    def _get_artifact_states_for_step(
+        self, step: ProcessingStep, config: Optional[str] = None, split: Optional[str] = None
+    ) -> List[ArtifactState]:
+        """Get the artifact states for a step.
+
+        Args:
+            step: the processing step
+            config: if not None, and step input type is config or split, only return the artifact states for this
+              config
+            split: if not None, and step input type is split, only return the artifact states for this split (config
+              must be specified)
+
+        Returns:
+            the artifact states for the step
+        """
         if step.input_type == "dataset":
             artifact_states = [self.artifact_state_by_step[step.name]]
         elif step.input_type == "config":
-            artifact_states = [config_state.artifact_state_by_step[step.name] for config_state in self.config_states]
+            if config is None:
+                artifact_states = [
+                    config_state.artifact_state_by_step[step.name] for config_state in self.config_states
+                ]
+            else:
+                artifact_states = [
+                    config_state.artifact_state_by_step[step.name]
+                    for config_state in self.config_states
+                    if config_state.config == config
+                ]
         elif step.input_type == "split":
-            artifact_states = [
-                split_state.artifact_state_by_step[step.name]
-                for config_state in self.config_states
-                for split_state in config_state.split_states
-            ]
+            if config is None:
+                artifact_states = [
+                    split_state.artifact_state_by_step[step.name]
+                    for config_state in self.config_states
+                    for split_state in config_state.split_states
+                ]
+            elif split is None:
+                artifact_states = [
+                    split_state.artifact_state_by_step[step.name]
+                    for config_state in self.config_states
+                    if config_state.config == config
+                    for split_state in config_state.split_states
+                ]
+            else:
+                artifact_states = [
+                    split_state.artifact_state_by_step[step.name]
+                    for config_state in self.config_states
+                    if config_state.config == config
+                    for split_state in config_state.split_states
+                    if split_state.split == split
+                ]
         else:
             raise ValueError(f"Invalid input type: {step.input_type}")
         artifact_states_ids = {artifact_state.id for artifact_state in artifact_states}
@@ -424,19 +433,30 @@ class DatasetState:
         cache_status = CacheStatus()
 
         for step in self.processing_graph.topologically_ordered_steps:
+            # Every step can have one or multiple artifacts, for example config-level steps have one artifact per
+            # config
             artifact_states = self._get_artifact_states_for_step(step)
             for artifact_state in artifact_states:
-                # (fan-in steps: config -> dataset, split -> config, split -> dataset)
-                # what should we do? always recompute? test the progress?
-                all_not_none_parents_artifact_states = [
-                    x for x in artifact_state.get_all_parents_artifact_states() if x is not None
+                parent_states = [
+                    ParentState(
+                        artifact_states=self._get_artifact_states_for_step(
+                            step=parent_step, config=artifact_state.config, split=artifact_state.split
+                        ),
+                        is_fan_in=(parent_step.input_type == "config" and step.input_type == "dataset")
+                        or (parent_step.input_type == "split" and step.input_type == "dataset")
+                        or (parent_step.input_type == "split" and step.input_type == "config"),
+                    )
+                    for parent_step in step.parents
                 ]
 
                 # blocked by a parent?
                 if any(
                     parent_artifact_state.id not in cache_status.up_to_date
-                    for all_parents_artifact_state in all_not_none_parents_artifact_states
-                    for parent_artifact_state in all_parents_artifact_state
+                    for parent_state in parent_states
+                    for parent_artifact_state in parent_state.artifact_states
+                    if not parent_state.is_fan_in
+                    # ^ the fan-in relations between steps do not block, because these steps consider the
+                    # cases: ok, pending and error. So, if one of the previous artifacts is pending, we must not block
                 ):
                     cache_status.blocked_by_parent[artifact_state.id] = artifact_state
                     continue
@@ -444,8 +464,8 @@ class DatasetState:
                 # any of the parents is more recent?
                 if any(
                     artifact_state.cache_state.is_older_than(parent_artifact_state.cache_state)
-                    for all_parents_artifact_state in all_not_none_parents_artifact_states
-                    for parent_artifact_state in all_parents_artifact_state
+                    for parent_state in parent_states
+                    for parent_artifact_state in parent_state.artifact_states
                 ):
                     cache_status.cache_is_outdated_by_parent[artifact_state.id] = artifact_state
                     continue
