@@ -5,14 +5,14 @@
 - name: "{{ include "name" . }}-metrics-collector"
   image: {{ include "jobs.cacheMaintenance.image" . }}
   imagePullPolicy: {{ .Values.images.pullPolicy }}
+  securityContext:
+    allowPrivilegeEscalation: false
+  resources: {{ toYaml .Values.metricsCollector.resources | nindent 4 }}
   env:
-  {{ include "envLog" . | nindent 2 }}
-  {{ include "envQueue" . | nindent 2 }}
-  {{ include "envCommon" . | nindent 2 }}
-  {{ include "envMetrics" . | nindent 2 }}
+    {{ include "envLog" . | nindent 2 }}
+    {{ include "envQueue" . | nindent 2 }}
+    {{ include "envCommon" . | nindent 2 }}
+    {{ include "envMetrics" . | nindent 2 }}
   - name: CACHE_MAINTENANCE_ACTION
     value: {{ .Values.metricsCollector.action | quote }}
-  securityContext:
-    allowPrivilegeEscalation: false  
-  resources: {{ toYaml .Values.metricsCollector.resources | nindent 4 }}
 {{- end -}}

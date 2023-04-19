@@ -9,15 +9,15 @@ metadata:
   name: "{{ include "name" . }}-job-metrics-collector"
   namespace: {{ .Release.Namespace }}
 spec:
-  schedule: {{ toYaml .Values.metricsCollector.schedule }}
-  template:
-    metadata:
-      labels: {{ include "labels.metricsCollector" . | nindent 8 }}
+  schedule: {{ .Values.metricsCollector.schedule | quote }}
+  jobTemplate:
     spec:
-      restartPolicy: OnFailure
-      {{- include "image.imagePullSecrets" . | nindent 6 }}
-      containers: {{ include "containerMetricsCollector" . | nindent 8 }}
-      nodeSelector: {{ toYaml .Values.metricsCollector.nodeSelector | nindent 8 }}
-      tolerations: {{ toYaml .Values.metricsCollector.tolerations | nindent 8 }}
-      securityContext: {{ include "securityContext" . | nindent 8 }}
+      template:
+        spec:
+          restartPolicy: OnFailure
+          {{- include "image.imagePullSecrets" . | nindent 6 }}
+          nodeSelector: {{ toYaml .Values.metricsCollector.nodeSelector | nindent 12 }}
+          tolerations: {{ toYaml .Values.metricsCollector.tolerations | nindent 12 }}
+          containers: {{ include "containerMetricsCollector" . | nindent 12 }}
+          securityContext: {{ include "securityContext" . | nindent 12 }}
 {{- end}}
