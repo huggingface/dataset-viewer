@@ -3,28 +3,24 @@
 
 from dataclasses import replace
 from http import HTTPStatus
-from typing import Callable
+from typing import Any, Callable, Mapping
 
 import pytest
 from libcommon.constants import PROCESSING_STEP_SPLIT_OPT_IN_OUT_URLS_SCAN_VERSION
+from libcommon.exceptions import CustomError
 from libcommon.processing_graph import ProcessingStep
 from libcommon.queue import Priority
 from libcommon.resources import CacheMongoResource, QueueMongoResource
 from libcommon.simple_cache import get_response, upsert_response
 
 from worker.config import AppConfig, OptInOutUrlsScanConfig
-from worker.job_runner import ConfigNotFoundError
 from worker.job_runners.split.opt_in_out_urls_scan_from_streaming import (
     ExternalServerError,
-    InfoError,
-    PreviousStepFormatError,
-    PreviousStepStatusError,
     SplitOptInOutUrlsScanJobRunner,
-    TooManyColumnsError,
 )
 from worker.resources import LibrariesResource
 
-from ...fixtures.hub import get_default_config_split
+from ...fixtures.hub import HubDatasets, get_default_config_split
 
 GetJobRunner = Callable[[str, str, str, AppConfig, OptInOutUrlsScanConfig, bool], SplitOptInOutUrlsScanJobRunner]
 
@@ -71,242 +67,104 @@ def get_job_runner(
     return _get_job_runner
 
 
-def test_upstream_content_does_not_exist(
-    app_config: AppConfig, get_job_runner: GetJobRunner, urls_scan_config: OptInOutUrlsScanConfig
-) -> None:
-    dataset = "doesnotexist"
-    dataset, config, split = get_default_config_split(dataset)
-    job_runner = get_job_runner(dataset, config, split, app_config, urls_scan_config, False)
-    with pytest.raises(ConfigNotFoundError):
-        job_runner.compute()
-
-
-def test_upstream_content_wrong_format(
-    app_config: AppConfig, get_job_runner: GetJobRunner, urls_scan_config: OptInOutUrlsScanConfig
-) -> None:
-    dataset = "doesnotexist"
-    dataset, config, split = get_default_config_split(dataset)
-    job_runner = get_job_runner(dataset, config, split, app_config, urls_scan_config, False)
-    upsert_response(
-        kind="split-first-rows-from-streaming",
-        dataset=dataset,
-        config=config,
-        split=split,
-        content={},
-        dataset_git_revision="dataset_git_revision",
-        job_runner_version=PROCESSING_STEP_SPLIT_OPT_IN_OUT_URLS_SCAN_VERSION,
-        progress=1.0,
-        http_status=HTTPStatus.OK,
-    )
-    with pytest.raises(PreviousStepFormatError):
-        job_runner.compute()
-
-
-def test_upstream_content_failed(
-    app_config: AppConfig, get_job_runner: GetJobRunner, urls_scan_config: OptInOutUrlsScanConfig
-) -> None:
-    dataset = "doesnotexist"
-    dataset, config, split = get_default_config_split(dataset)
-    job_runner = get_job_runner(dataset, config, split, app_config, urls_scan_config, False)
-    upsert_response(
-        kind="split-first-rows-from-streaming",
-        dataset=dataset,
-        config=config,
-        split=split,
-        content={},
-        dataset_git_revision="dataset_git_revision",
-        job_runner_version=PROCESSING_STEP_SPLIT_OPT_IN_OUT_URLS_SCAN_VERSION,
-        progress=1.0,
-        http_status=HTTPStatus.INTERNAL_SERVER_ERROR,
-    )
-    with pytest.raises(PreviousStepStatusError):
-        job_runner.compute()
-
-
-def test_compute_too_many_columns_error(
-    app_config: AppConfig, get_job_runner: GetJobRunner, urls_scan_config: OptInOutUrlsScanConfig
-) -> None:
-    dataset = "doesnotexist"
-    dataset, config, split = get_default_config_split(dataset)
-    job_runner = get_job_runner(
-        dataset, config, split, app_config, replace(urls_scan_config, columns_max_number=1), False
-    )
-    upsert_response(
-        kind="split-first-rows-from-streaming",
-        dataset=dataset,
-        config=config,
-        split=split,
-        content={
-            "features": [
-                {
-                    "feature_idx": 0,
-                    "name": "feature1",
-                    "type": {
-                        "dtype": "string",
-                        "_type": "Value",
-                    },
-                },
-                {
-                    "feature_idx": 1,
-                    "name": "feature2",
-                    "type": {
-                        "dtype": "string",
-                        "_type": "Value",
-                    },
-                },
-            ],
-            "rows": [],
+FIRST_ROWS_WITHOUT_OPT_IN_OUT_URLS = {
+    "features": [
+        {
+            "feature_idx": 0,
+            "name": "col1",
+            "type": {
+                "dtype": "int64",
+                "_type": "Value",
+            },
         },
-        dataset_git_revision="dataset_git_revision",
-        job_runner_version=PROCESSING_STEP_SPLIT_OPT_IN_OUT_URLS_SCAN_VERSION,
-        progress=1.0,
-        http_status=HTTPStatus.OK,
-    )
-    with pytest.raises(TooManyColumnsError):
-        job_runner.compute()
-
-
-def test_compute_info_error(
-    app_config: AppConfig, get_job_runner: GetJobRunner, urls_scan_config: OptInOutUrlsScanConfig
-) -> None:
-    dataset, config, split = "doesnotexist", "config", "split"
-    job_runner = get_job_runner(dataset, config, split, app_config, urls_scan_config, False)
-    upsert_response(
-        kind="split-first-rows-from-streaming",
-        dataset=dataset,
-        config=config,
-        split=split,
-        content={
-            "features": [
-                {
-                    "feature_idx": 0,
-                    "name": "col1",
-                    "type": {
-                        "dtype": "int64",
-                        "_type": "Value",
-                    },
-                },
-                {
-                    "feature_idx": 1,
-                    "name": "col2",
-                    "type": {
-                        "dtype": "int64",
-                        "_type": "Value",
-                    },
-                },
-                {
-                    "feature_idx": 2,
-                    "name": "col3",
-                    "type": {
-                        "dtype": "float64",
-                        "_type": "Value",
-                    },
-                },
-            ],
-            "rows": [],
+        {
+            "feature_idx": 1,
+            "name": "col2",
+            "type": {
+                "dtype": "int64",
+                "_type": "Value",
+            },
         },
-        dataset_git_revision="dataset_git_revision",
-        job_runner_version=PROCESSING_STEP_SPLIT_OPT_IN_OUT_URLS_SCAN_VERSION,
-        progress=1.0,
-        http_status=HTTPStatus.OK,
-    )
-    with pytest.raises(InfoError):
-        job_runner.compute()
-
-
-def test_compute_no_opt_in_out_urls(
-    app_config: AppConfig, get_job_runner: GetJobRunner, urls_scan_config: OptInOutUrlsScanConfig, hub_public_csv: str
-) -> None:
-    dataset, config, split = get_default_config_split(hub_public_csv)
-    job_runner = get_job_runner(dataset, config, split, app_config, urls_scan_config, False)
-    upsert_response(
-        kind="split-first-rows-from-streaming",
-        dataset=dataset,
-        config=config,
-        split=split,
-        content={
-            "features": [
-                {
-                    "feature_idx": 0,
-                    "name": "col1",
-                    "type": {
-                        "dtype": "int64",
-                        "_type": "Value",
-                    },
-                },
-                {
-                    "feature_idx": 1,
-                    "name": "col2",
-                    "type": {
-                        "dtype": "int64",
-                        "_type": "Value",
-                    },
-                },
-                {
-                    "feature_idx": 2,
-                    "name": "col3",
-                    "type": {
-                        "dtype": "float64",
-                        "_type": "Value",
-                    },
-                },
-            ],
-            "rows": [],
+        {
+            "feature_idx": 2,
+            "name": "col3",
+            "type": {
+                "dtype": "float64",
+                "_type": "Value",
+            },
         },
-        dataset_git_revision="dataset_git_revision",
-        job_runner_version=PROCESSING_STEP_SPLIT_OPT_IN_OUT_URLS_SCAN_VERSION,
-        progress=1.0,
-        http_status=HTTPStatus.OK,
-    )
-
-    assert job_runner.process()
-    cached_response = get_response(
-        kind=job_runner.processing_step.cache_kind, dataset=dataset, config=config, split=split
-    )
-    assert cached_response
-    content = cached_response["content"]
-    assert content
-    assert not content["has_urls_columns"]
-    assert content["urls_columns"] == []
-    assert content["opt_in_urls"] == []
-    assert content["opt_out_urls"] == []
-    assert content["opt_in_urls_indices"] == []
-    assert content["opt_out_urls_indices"] == []
-    assert content["num_scanned_rows"] == 0
-    assert cached_response["http_status"] == HTTPStatus.OK
-    assert cached_response["error_code"] is None
+    ],
+    "rows": [],
+}
 
 
-def test_compute_with_opt_in_out_urls(
+FIRST_ROWS_WITH_OPT_IN_OUT_URLS = {
+    "features": [
+        {
+            "feature_idx": 0,
+            "name": "col",
+            "type": {
+                "dtype": "string",
+                "_type": "Value",
+            },
+        }
+    ],
+    "rows": [
+        {"row_idx": 0, "row": {"col": "http://testurl.test/test_image.jpg"}, "truncated_cells": []},
+        {"row_idx": 1, "row": {"col": "http://testurl.test/test_image2.jpg"}, "truncated_cells": []},
+        {"row_idx": 2, "row": {"col": "other"}, "truncated_cells": []},
+    ],
+}
+
+
+@pytest.mark.parametrize(
+    "name,upstream_content,expected_content",
+    [
+        (
+            "public",
+            FIRST_ROWS_WITHOUT_OPT_IN_OUT_URLS,
+            {
+                "has_urls_columns": False,
+                "num_scanned_rows": 0,
+                "opt_in_urls": [],
+                "opt_in_urls_indices": [],
+                "opt_out_urls": [],
+                "opt_out_urls_indices": [],
+                "urls_columns": [],
+            },
+        ),
+        (
+            "spawning_opt_in_out",
+            FIRST_ROWS_WITH_OPT_IN_OUT_URLS,
+            {
+                "has_urls_columns": True,
+                "num_scanned_rows": 3,
+                "opt_in_urls": [],
+                "opt_in_urls_indices": [],
+                "opt_out_urls": [],
+                "opt_out_urls_indices": [],
+                "urls_columns": ["col"],
+            },
+        ),
+    ],
+)
+def test_compute(
+    hub_datasets: HubDatasets,
     app_config: AppConfig,
     get_job_runner: GetJobRunner,
     urls_scan_config: OptInOutUrlsScanConfig,
-    hub_public_spawning_opt_in_out: str,
+    name: str,
+    upstream_content: Mapping[str, Any],
+    expected_content: Mapping[str, Any],
 ) -> None:
-    dataset, config, split = get_default_config_split(hub_public_spawning_opt_in_out)
+    dataset, config, split = get_default_config_split(hub_datasets[name]["name"])
     job_runner = get_job_runner(dataset, config, split, app_config, urls_scan_config, False)
     upsert_response(
         kind="split-first-rows-from-streaming",
         dataset=dataset,
         config=config,
         split=split,
-        content={
-            "features": [
-                {
-                    "feature_idx": 0,
-                    "name": "col",
-                    "type": {
-                        "dtype": "string",
-                        "_type": "Value",
-                    },
-                }
-            ],
-            "rows": [
-                {"row_idx": 0, "row": {"col": "http://testurl.test/test_image.jpg"}, "truncated_cells": []},
-                {"row_idx": 1, "row": {"col": "http://testurl.test/test_image2.jpg"}, "truncated_cells": []},
-                {"row_idx": 2, "row": {"col": "other"}, "truncated_cells": []},
-            ],
-        },
+        content=upstream_content,
         dataset_git_revision="dataset_git_revision",
         job_runner_version=PROCESSING_STEP_SPLIT_OPT_IN_OUT_URLS_SCAN_VERSION,
         progress=1.0,
@@ -318,17 +176,73 @@ def test_compute_with_opt_in_out_urls(
         kind=job_runner.processing_step.cache_kind, dataset=dataset, config=config, split=split
     )
     assert cached_response
-    content = cached_response["content"]
-    assert content
-    assert content["has_urls_columns"]
-    assert content["urls_columns"] == ["col"]
-    assert content["opt_in_urls"] == []
-    assert content["opt_out_urls"] == []
-    assert content["opt_in_urls_indices"] == []
-    assert content["opt_out_urls_indices"] == []
-    assert content["num_scanned_rows"] == 3
+    assert cached_response["content"] == expected_content
     assert cached_response["http_status"] == HTTPStatus.OK
     assert cached_response["error_code"] is None
+
+
+@pytest.mark.parametrize(
+    "dataset,columns_max_number,upstream_content,upstream_status,error_code,status_code",
+    [
+        ("doesnotexist", 10, {}, HTTPStatus.OK, "ConfigNotFoundError", HTTPStatus.NOT_FOUND),
+        ("wrong_format", 10, {}, HTTPStatus.OK, "PreviousStepFormatError", HTTPStatus.INTERNAL_SERVER_ERROR),
+        (
+            "upstream_failed",
+            10,
+            "PreviousStepStatusError",
+            HTTPStatus.INTERNAL_SERVER_ERROR,
+            {},
+            HTTPStatus.INTERNAL_SERVER_ERROR,
+        ),
+        (
+            "info_error",
+            10,
+            "InfoError",
+            HTTPStatus.INTERNAL_SERVER_ERROR,
+            FIRST_ROWS_WITHOUT_OPT_IN_OUT_URLS,
+            HTTPStatus.OK,
+        ),
+        (
+            "too_many_columns",
+            1,
+            "TooManyColumnsError",
+            HTTPStatus.INTERNAL_SERVER_ERROR,
+            FIRST_ROWS_WITHOUT_OPT_IN_OUT_URLS,
+            HTTPStatus.OK,
+        ),
+    ],
+)
+def test_compute_failed(
+    app_config: AppConfig,
+    get_job_runner: GetJobRunner,
+    urls_scan_config: OptInOutUrlsScanConfig,
+    dataset: str,
+    columns_max_number: int,
+    upstream_content: Mapping[str, Any],
+    upstream_status: HTTPStatus,
+    error_code: str,
+    status_code: HTTPStatus,
+) -> None:
+    dataset, config, split = get_default_config_split(dataset)
+    job_runner = get_job_runner(
+        dataset, config, split, app_config, replace(urls_scan_config, columns_max_number=columns_max_number), False
+    )
+    if dataset != "doesnotexist":
+        upsert_response(
+            kind="split-first-rows-from-streaming",
+            dataset=dataset,
+            config=config,
+            split=split,
+            content=upstream_content,
+            dataset_git_revision="dataset_git_revision",
+            job_runner_version=PROCESSING_STEP_SPLIT_OPT_IN_OUT_URLS_SCAN_VERSION,
+            progress=1.0,
+            http_status=upstream_status,
+        )
+    with pytest.raises(CustomError) as exc_info:
+        job_runner.compute()
+    assert exc_info.value.status_code == status_code
+    assert exc_info.value.code == error_code
 
 
 def test_compute_error_from_spawning(
@@ -338,29 +252,15 @@ def test_compute_error_from_spawning(
     hub_public_spawning_opt_in_out: str,
 ) -> None:
     dataset, config, split = get_default_config_split(hub_public_spawning_opt_in_out)
-    job_runner = get_job_runner(dataset, config, split, app_config, replace(urls_scan_config, url="wrong_url"), False)
+    job_runner = get_job_runner(
+        dataset, config, split, app_config, replace(urls_scan_config, spawning_url="wrong_url"), False
+    )
     upsert_response(
         kind="split-first-rows-from-streaming",
         dataset=dataset,
         config=config,
         split=split,
-        content={
-            "features": [
-                {
-                    "feature_idx": 0,
-                    "name": "col",
-                    "type": {
-                        "dtype": "string",
-                        "_type": "Value",
-                    },
-                }
-            ],
-            "rows": [
-                {"row_idx": 0, "row": {"col": "http://testurl.test/test_image.jpg"}, "truncated_cells": []},
-                {"row_idx": 1, "row": {"col": "http://testurl.test/test_image2.jpg"}, "truncated_cells": []},
-                {"row_idx": 2, "row": {"col": "other"}, "truncated_cells": []},
-            ],
-        },
+        content=FIRST_ROWS_WITH_OPT_IN_OUT_URLS,
         dataset_git_revision="dataset_git_revision",
         job_runner_version=PROCESSING_STEP_SPLIT_OPT_IN_OUT_URLS_SCAN_VERSION,
         progress=1.0,

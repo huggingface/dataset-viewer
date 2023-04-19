@@ -184,12 +184,12 @@ async def check_spawning(
 
 
 async def opt_in_out_task(
-    image_urls: List[str], session: ClientSession, semaphore: Semaphore, limiter: AsyncLimiter, url: str
+    image_urls: List[str], session: ClientSession, semaphore: Semaphore, limiter: AsyncLimiter, spawning_url: str
 ) -> Tuple[List[Any], List[Any]]:
     try:
-        spawning_response = await check_spawning(image_urls, session, semaphore, limiter, url)
+        spawning_response = await check_spawning(image_urls, session, semaphore, limiter, spawning_url)
     except Exception:
-        raise ExternalServerError(message=f"Error when trying to connect to {url}")
+        raise ExternalServerError(message=f"Error when trying to connect to {spawning_url}")
     opt_in_urls_indices = [i for i in range(len(image_urls)) if spawning_response["urls"][i]["optIn"]]
     opt_out_urls_indices = [i for i in range(len(image_urls)) if spawning_response["urls"][i]["optOut"]]
     return opt_in_urls_indices, opt_out_urls_indices
@@ -201,7 +201,7 @@ async def opt_in_out_scan_urls(
     spawning_token: str,
     max_concurrent_requests_number: int,
     max_requests_per_second: int,
-    url: str,
+    spawning_url: str,
 ) -> Tuple[List[int], List[int]]:
     offsets = []
     tasks = []
@@ -214,7 +214,7 @@ async def opt_in_out_scan_urls(
             offsets.append(offset)
             limit = offset + urls_number_per_batch
             tasks.append(
-                create_task(opt_in_out_task(urls[offset:limit], session, semaphore, limiter, url))
+                create_task(opt_in_out_task(urls[offset:limit], session, semaphore, limiter, spawning_url))
             )  # noqa: E203
         await wait(tasks)
 
@@ -241,7 +241,7 @@ def compute_opt_in_out_urls_scan_response(
     spawning_token: Optional[str],
     max_concurrent_requests_number: int,
     max_requests_per_second: int,
-    url: str,
+    spawning_url: str,
 ) -> OptInOutUrlsScanResponse:
     logging.info(f"get opt-in-out-urls-scan for dataset={dataset} config={config} split={split}")
 
@@ -366,7 +366,7 @@ def compute_opt_in_out_urls_scan_response(
             spawning_token=spawning_token,
             max_concurrent_requests_number=max_concurrent_requests_number,
             max_requests_per_second=max_requests_per_second,
-            url=url,
+            spawning_url=spawning_url,
         )
     )
 
@@ -441,7 +441,7 @@ class SplitOptInOutUrlsScanJobRunner(DatasetsBasedJobRunner):
                 spawning_token=self.urls_scan_config.spawning_token,
                 max_concurrent_requests_number=self.urls_scan_config.max_concurrent_requests_number,
                 max_requests_per_second=self.urls_scan_config.max_requests_per_second,
-                url=self.urls_scan_config.url,
+                spawning_url=self.urls_scan_config.spawning_url,
             )
         )
 

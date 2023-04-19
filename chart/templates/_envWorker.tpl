@@ -86,7 +86,7 @@
   {{- end }}
 - name: OPT_IN_OUT_URLS_SCAN_URLS_NUMBER_PER_BATCH
   value: {{ .Values.OPT_IN_OUT_URLS_SCAN_URLS_NUMBER_PER_BATCH | quote }}
-- name: OPT_IN_OUT_URLS_SCAN_URL
-  value: {{ .Values.OPT_IN_OUT_URLS_SCAN_URL | quote }}
+- name: OPT_IN_OUT_URLS_SCAN_SPAWNING_URL
+  value: {{ .Values.OPT_IN_OUT_URLS_SCAN_SPAWNING_URL | quote }}
 
 {{- end -}}
