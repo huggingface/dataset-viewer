@@ -219,7 +219,7 @@ def graph() -> ProcessingGraph:
                 "split-first-rows-from-streaming",
                 "/split-names-from-dataset-info",
                 "config-info",
-                "config-parquet-and-info"
+                "config-parquet-and-info",
             ],
         ),
     ],
