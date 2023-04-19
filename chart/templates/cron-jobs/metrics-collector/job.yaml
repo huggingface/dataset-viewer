@@ -12,6 +12,7 @@ spec:
   schedule: {{ .Values.metricsCollector.schedule | quote }}
   jobTemplate:
     spec:
+      ttlSecondsAfterFinished: 300
       template:
         spec:
           restartPolicy: OnFailure
