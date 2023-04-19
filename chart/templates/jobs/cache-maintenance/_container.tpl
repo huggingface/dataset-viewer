@@ -7,6 +7,7 @@
   imagePullPolicy: {{ .Values.images.pullPolicy }}
   env:
   {{ include "envLog" . | nindent 2 }}
+  {{ include "envCache" . | nindent 2 }}
   {{ include "envQueue" . | nindent 2 }}
   {{ include "envCommon" . | nindent 2 }}
   {{ include "envMetrics" . | nindent 2 }}
