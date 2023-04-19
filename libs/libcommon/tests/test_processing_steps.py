@@ -212,13 +212,14 @@ def graph() -> ProcessingGraph:
         (
             "split-opt-in-out-urls-scan",
             [],
+            ["split-first-rows-from-streaming"],
             [
                 "/config-names",
                 "/split-names-from-streaming",
-                "/split-names-from-dataset-info",
                 "split-first-rows-from-streaming",
-                "config-parquet-and-info",
+                "/split-names-from-dataset-info",
                 "config-info",
+                "config-parquet-and-info"
             ],
         ),
     ],
