@@ -63,30 +63,26 @@
   value: {{ .Values.parquetAndInfo.urlTemplate | quote }}
 # specific to the split-opt-in-out-urls-scan job runner
 - name: OPT_IN_OUT_URLS_SCAN_COLUMNS_MAX_NUMBER
-  value: {{ .Values.OPT_IN_OUT_URLS_SCAN_COLUMNS_MAX_NUMBER | quote }}
+  value: {{ .Values.optInOutUrlsScan.columnsMaxNumber | quote }}
 - name: OPT_IN_OUT_URLS_SCAN_MAX_CONCURRENT_REQUESTS_NUMBER
-  value: {{ .Values.OPT_IN_OUT_URLS_SCAN_MAX_CONCURRENT_REQUESTS_NUMBER | quote }}
+  value: {{ .Values.optInOutUrlsScan.maxConcurrentRequestsNumber | quote }}
 - name: OPT_IN_OUT_URLS_SCAN_MAX_REQUESTS_PER_SECOND
-  value: {{ .Values.OPT_IN_OUT_URLS_SCAN_MAX_REQUESTS_PER_SECOND | quote }}
+  value: {{ .Values.optInOutUrlsScan.maxRequestsPerSecond | quote }}
 - name: OPT_IN_OUT_URLS_SCAN_ROWS_MAX_NUMBER
-  value: {{ .Values.OPT_IN_OUT_URLS_SCAN_ROWS_MAX_NUMBER | quote }}
+  value: {{ .Values.optInOutUrlsScan.rowsMaxNumber | quote }}
 - name: OPT_IN_OUT_URLS_SCAN_SPAWNING_TOKEN
   {{- if .Values.secrets.spawningToken.fromSecret }}
   valueFrom:
     secretKeyRef:
-      {{- if eq .Values.secrets.spawningToken.secretName "" }}
-      name: {{ .Release.Name }}-datasets-server-app-token
-      {{- else }}
       name: {{ .Values.secrets.spawningToken.secretName | quote }}
-      {{- end }}
-      key: OPT_IN_OUT_URLS_SCAN_SPAWNING_TOKEN
+      key: SPAWNING_TOKEN
       optional: false
   {{- else }}
   value: {{ .Values.secrets.spawningToken.value }}
   {{- end }}
 - name: OPT_IN_OUT_URLS_SCAN_URLS_NUMBER_PER_BATCH
-  value: {{ .Values.OPT_IN_OUT_URLS_SCAN_URLS_NUMBER_PER_BATCH | quote }}
+  value: {{ .Values.optInOutUrlsScan.urlsNumberPerBatch | quote }}
 - name: OPT_IN_OUT_URLS_SCAN_SPAWNING_URL
-  value: {{ .Values.OPT_IN_OUT_URLS_SCAN_SPAWNING_URL | quote }}
+  value: {{ .Values.optInOutUrlsScan.spawningUrl | quote }}
 
 {{- end -}}

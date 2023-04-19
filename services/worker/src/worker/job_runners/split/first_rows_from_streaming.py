@@ -1,23 +1,12 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2022 The HuggingFace Authors.
 
-import functools
-import itertools
 import logging
-import time
-import warnings
 from http import HTTPStatus
 from pathlib import Path
-from typing import Any, Callable, List, Literal, Mapping, Optional, TypeVar, Union, cast
+from typing import Any, List, Literal, Mapping, Optional, Union
 
-from datasets import (
-    Dataset,
-    DownloadConfig,
-    Features,
-    IterableDataset,
-    get_dataset_config_info,
-    load_dataset,
-)
+from datasets import Features, IterableDataset, get_dataset_config_info, load_dataset
 from libcommon.constants import (
     PROCESSING_STEP_SPLIT_FIRST_ROWS_FROM_PARQUET_VERSION,
     PROCESSING_STEP_SPLIT_FIRST_ROWS_FROM_STREAMING_VERSION,
@@ -38,9 +27,11 @@ from worker.job_runner import (
 )
 from worker.job_runners._datasets_based_job_runner import DatasetsBasedJobRunner
 from worker.utils import (
+    Row,
     SplitFirstRowsResponse,
     create_truncated_row_items,
     get_json_size,
+    get_rows_or_raise,
     to_features_list,
 )
 
@@ -102,20 +93,6 @@ class FeaturesError(SplitFirstRowsFromStreamingJobRunnerError):
         super().__init__(message, HTTPStatus.INTERNAL_SERVER_ERROR, "FeaturesError", cause, True)
 
 
-class StreamingRowsError(SplitFirstRowsFromStreamingJobRunnerError):
-    """Raised when the rows could not be fetched in streaming mode."""
-
-    def __init__(self, message: str, cause: Optional[BaseException] = None):
-        super().__init__(message, HTTPStatus.INTERNAL_SERVER_ERROR, "StreamingRowsError", cause, True)
-
-
-class NormalRowsError(SplitFirstRowsFromStreamingJobRunnerError):
-    """Raised when the rows could not be fetched in normal mode."""
-
-    def __init__(self, message: str, cause: Optional[BaseException] = None):
-        super().__init__(message, HTTPStatus.INTERNAL_SERVER_ERROR, "NormalRowsError", cause, True)
-
-
 class RowsPostProcessingError(SplitFirstRowsFromStreamingJobRunnerError):
     """Raised when the rows could not be post-processed successfully."""
 
@@ -142,69 +119,6 @@ class PreviousStepFormatError(SplitFirstRowsFromStreamingJobRunnerError):
 
     def __init__(self, message: str, cause: Optional[BaseException] = None):
         super().__init__(message, HTTPStatus.INTERNAL_SERVER_ERROR, "PreviousStepFormatError", cause, False)
-
-
-FuncT = TypeVar("FuncT", bound=Callable[..., Any])
-
-
-def retry(func: FuncT) -> FuncT:
-    """retries with an increasing sleep before every attempt"""
-    SLEEPS = [1, 7, 70, 7 * 60, 70 * 60]
-    MAX_ATTEMPTS = len(SLEEPS)
-
-    @functools.wraps(func)
-    def decorator(*args: Any, **kwargs: Any) -> Any:
-        attempt = 0
-        last_err = None
-        while attempt < MAX_ATTEMPTS:
-            try:
-                """always sleep before calling the function. It will prevent rate limiting in the first place"""
-                duration = SLEEPS[attempt]
-                logging.info(f"Sleep during {duration} seconds to preventively mitigate rate limiting.")
-                time.sleep(duration)
-                return func(*args, **kwargs)
-            except ConnectionError as err:
-                logging.info("Got a ConnectionError, possibly due to rate limiting. Let's retry.")
-                last_err = err
-                attempt += 1
-        raise RuntimeError(f"Give up after {attempt} attempts with ConnectionError") from last_err
-
-    return cast(FuncT, decorator)
-
-
-Row = Mapping[str, Any]
-
-
-@retry
-def get_rows(
-    dataset: str,
-    config: str,
-    split: str,
-    streaming: bool,
-    rows_max_number: int,
-    use_auth_token: Union[bool, str, None] = False,
-) -> List[Row]:
-    download_config = DownloadConfig(delete_extracted=True)
-    ds = load_dataset(
-        dataset,
-        name=config,
-        split=split,
-        streaming=streaming,
-        use_auth_token=use_auth_token,
-        download_config=download_config,
-    )
-    if streaming:
-        if not isinstance(ds, IterableDataset):
-            raise TypeError("load_dataset should return an IterableDataset in streaming mode")
-    elif not isinstance(ds, Dataset):
-        raise TypeError("load_dataset should return a Dataset in normal mode")
-    rows_plus_one = list(itertools.islice(ds, rows_max_number + 1))
-    # ^^ to be able to detect if a split has exactly ROWS_MAX_NUMBER rows
-    if len(rows_plus_one) <= rows_max_number:
-        logging.debug(f"all the rows in the split have been fetched ({len(rows_plus_one)})")
-    else:
-        logging.debug(f"the rows in the split have been truncated ({rows_max_number} rows)")
-    return rows_plus_one[:rows_max_number]
 
 
 def transform_rows(
@@ -292,10 +206,6 @@ def compute_first_rows_response(
           If the config info could not be obtained using the datasets library.
         - [`~job_runners.split.first_rows.FeaturesError`]
           If the split features could not be obtained using the datasets library.
-        - [`~job_runners.split.first_rows.StreamingRowsError`]
-          If the split rows could not be obtained using the datasets library in streaming mode.
-        - [`~job_runners.split.first_rows.NormalRowsError`]
-          If the split rows could not be obtained using the datasets library in normal mode.
         - [`~job_runners.split.first_rows.RowsPostProcessingError`]
           If the post-processing of the split rows failed, e.g. while saving the images or audio files to the assets.
         - [`~job_runners.split.first_rows.TooManyColumnsError`]
@@ -306,6 +216,10 @@ def compute_first_rows_response(
             If the previous step gave an error.
         - [`~job_runners.split.first_rows.PreviousStepFormatError`]
             If the content of the previous step has not the expected format
+        - [`~job_runners.common_exceptions.StreamingRowsError`]
+          If the split rows could not be obtained using the datasets library in streaming mode.
+        - [`~job_runners.common_exceptions.NormalRowsError`]
+          If the split rows could not be obtained using the datasets library in normal mode.
     </Tip>
     """
     logging.info(f"get first-rows for dataset={dataset} config={config} split={split}")
@@ -385,44 +299,16 @@ def compute_first_rows_response(
         )
 
     # get the rows
-    try:
-        rows = get_rows(
-            dataset=dataset,
-            config=config,
-            split=split,
-            streaming=True,
-            rows_max_number=rows_max_number,
-            use_auth_token=use_auth_token,
-        )
-    except Exception as err:
-        MAX_SIZE_FALLBACK = 100_000_000
-        if max_size_fallback:
-            warnings.warn(
-                (
-                    f"The parameter 'max_size_fallback' is deprecated. The hard-coded value `{MAX_SIZE_FALLBACK}`"
-                    " will be used instead."
-                ),
-                category=DeprecationWarning,
-            )
-        if info.size_in_bytes is None or info.size_in_bytes > MAX_SIZE_FALLBACK:
-            raise StreamingRowsError(
-                "Cannot load the dataset split (in streaming mode) to extract the first rows.",
-                cause=err,
-            ) from err
-        try:
-            rows = get_rows(
-                dataset=dataset,
-                config=config,
-                split=split,
-                streaming=False,
-                rows_max_number=rows_max_number,
-                use_auth_token=use_auth_token,
-            )
-        except Exception as err:
-            raise NormalRowsError(
-                "Cannot load the dataset split (in normal download mode) to extract the first rows.",
-                cause=err,
-            ) from err
+    rows = get_rows_or_raise(
+        dataset=dataset,
+        config=config,
+        split=split,
+        info=info,
+        max_size_fallback=max_size_fallback,
+        rows_max_number=rows_max_number,
+        use_auth_token=use_auth_token,
+    )
+
     # transform the rows, if needed (e.g. save the images or audio to the assets, and return their URL)
     try:
         transformed_rows = transform_rows(

@@ -1,7 +1,6 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2022 The HuggingFace Authors.
 
-import itertools
 import logging
 from asyncio import Semaphore, create_task, run, wait
 from http import HTTPStatus
@@ -10,13 +9,7 @@ from typing import Any, List, Literal, Mapping, Optional, Tuple, TypedDict, Unio
 
 from aiohttp import ClientSession
 from aiolimiter import AsyncLimiter
-from datasets import (
-    Dataset,
-    DownloadConfig,
-    IterableDataset,
-    get_dataset_config_info,
-    load_dataset,
-)
+from datasets import get_dataset_config_info
 from libcommon.constants import PROCESSING_STEP_SPLIT_OPT_IN_OUT_URLS_SCAN_VERSION
 from libcommon.processing_graph import ProcessingStep
 from libcommon.queue import JobInfo
@@ -25,16 +18,13 @@ from libcommon.simple_cache import DoesNotExist, SplitFullName, get_response
 from worker.config import AppConfig, OptInOutUrlsScanConfig
 from worker.job_runner import CompleteJobResult, ConfigNotFoundError, JobRunnerError
 from worker.job_runners._datasets_based_job_runner import DatasetsBasedJobRunner
-from worker.job_runners.split.first_rows_from_streaming import Row, retry
-from worker.utils import SplitFirstRowsResponse
+from worker.utils import SplitFirstRowsResponse, get_rows_or_raise
 
 SplitOptInOutUrlsScanJobRunnerErrorCode = Literal[
     "InfoError",
     "TooManyColumnsError",
     "PreviousStepStatusError",
     "PreviousStepFormatError",
-    "StreamingRowsError",
-    "NormalRowsError",
     "MissingSpawningTokenError",
     "ExternalServerError",
 ]
@@ -84,20 +74,6 @@ class PreviousStepFormatError(SplitOptInOutUrlsScanJobRunnerError):
         super().__init__(message, HTTPStatus.INTERNAL_SERVER_ERROR, "PreviousStepFormatError", cause, False)
 
 
-class StreamingRowsError(SplitOptInOutUrlsScanJobRunnerError):
-    """Raised when the rows could not be fetched in streaming mode."""
-
-    def __init__(self, message: str, cause: Optional[BaseException] = None):
-        super().__init__(message, HTTPStatus.INTERNAL_SERVER_ERROR, "StreamingRowsError", cause, True)
-
-
-class NormalRowsError(SplitOptInOutUrlsScanJobRunnerError):
-    """Raised when the rows could not be fetched in normal mode."""
-
-    def __init__(self, message: str, cause: Optional[BaseException] = None):
-        super().__init__(message, HTTPStatus.INTERNAL_SERVER_ERROR, "NormalRowsError", cause, True)
-
-
 class MissingSpawningTokenError(SplitOptInOutUrlsScanJobRunnerError):
     """Raised when the spawning.ai token is not set."""
 
@@ -112,13 +88,7 @@ class ExternalServerError(SplitOptInOutUrlsScanJobRunnerError):
         super().__init__(message, HTTPStatus.INTERNAL_SERVER_ERROR, "ExternalServerError", cause, False)
 
 
-class OptInUrl(TypedDict):
-    url: str
-    row_idx: int
-    column_name: str
-
-
-class OptOutUrl(TypedDict):
+class OptUrl(TypedDict):
     url: str
     row_idx: int
     column_name: str
@@ -126,47 +96,12 @@ class OptOutUrl(TypedDict):
 
 class OptInOutUrlsScanResponse(TypedDict):
     urls_columns: List[str]
-    opt_in_urls: List[OptInUrl]
-    opt_out_urls: List[OptOutUrl]
+    opt_in_urls: List[OptUrl]
+    opt_out_urls: List[OptUrl]
     num_scanned_rows: int
     has_urls_columns: bool
     opt_in_urls_indices: List[int]
     opt_out_urls_indices: List[int]
-
-
-@retry
-def get_rows(
-    dataset: str,
-    config: str,
-    split: str,
-    streaming: bool,
-    rows_max_number: int,
-    use_auth_token: Union[bool, str, None] = False,
-    column_names: Optional[List[str]] = None,
-) -> List[Row]:
-    download_config = DownloadConfig(delete_extracted=True)
-    ds = load_dataset(
-        dataset,
-        name=config,
-        split=split,
-        streaming=streaming,
-        use_auth_token=use_auth_token,
-        download_config=download_config,
-    )
-    if streaming:
-        if not isinstance(ds, IterableDataset):
-            raise TypeError("load_dataset should return an IterableDataset in streaming mode")
-    elif not isinstance(ds, Dataset):
-        raise TypeError("load_dataset should return a Dataset in normal mode")
-    if column_names:
-        ds = ds.select_columns(column_names)
-    rows_plus_one = list(itertools.islice(ds, rows_max_number + 1))
-    # ^^ to be able to detect if a split has exactly ROWS_MAX_NUMBER rows
-    if len(rows_plus_one) <= rows_max_number:
-        logging.debug(f"all the rows in the split have been fetched ({len(rows_plus_one)})")
-    else:
-        logging.debug(f"the rows in the split have been truncated ({rows_max_number} rows)")
-    return rows_plus_one[:rows_max_number]
 
 
 async def check_spawning(
@@ -322,37 +257,15 @@ def compute_opt_in_out_urls_scan_response(
         )
 
     # get the rows
-    try:
-        rows = get_rows(
-            dataset=dataset,
-            config=config,
-            split=split,
-            streaming=True,
-            rows_max_number=rows_max_number,
-            use_auth_token=use_auth_token,
-            column_names=urls_columns,
-        )
-    except Exception as err:
-        MAX_SIZE_FALLBACK = 100_000_000
-        if info.size_in_bytes is None or info.size_in_bytes > MAX_SIZE_FALLBACK:
-            raise StreamingRowsError(
-                "Cannot load the dataset split (in streaming mode) to extract the first rows.",
-                cause=err,
-            ) from err
-        try:
-            rows = get_rows(
-                dataset=dataset,
-                config=config,
-                split=split,
-                streaming=False,
-                rows_max_number=rows_max_number,
-                use_auth_token=use_auth_token,
-            )
-        except Exception as err:
-            raise NormalRowsError(
-                "Cannot load the dataset split (in normal download mode) to extract the first rows.",
-                cause=err,
-            ) from err
+    rows = get_rows_or_raise(
+        dataset=dataset,
+        config=config,
+        split=split,
+        info=info,
+        rows_max_number=rows_max_number,
+        use_auth_token=use_auth_token,
+        column_names=urls_columns,
+    )
 
     # get the urls
     num_scanned_rows = len(rows)
@@ -371,7 +284,7 @@ def compute_opt_in_out_urls_scan_response(
     )
 
     opt_in_urls = [
-        OptInUrl(
+        OptUrl(
             url=urls[url_idx],
             row_idx=url_idx // len(urls_columns),
             column_name=urls_columns[url_idx % len(urls_columns)],
@@ -379,7 +292,7 @@ def compute_opt_in_out_urls_scan_response(
         for url_idx in opt_in_urls_indices
     ]
     opt_out_urls = [
-        OptOutUrl(
+        OptUrl(
             url=urls[url_idx],
             row_idx=url_idx // len(urls_columns),
             column_name=urls_columns[url_idx % len(urls_columns)],

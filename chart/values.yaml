@@ -168,6 +168,14 @@ parquetAndInfo:
   # the URL template to build the parquet file URLs. Defaults to `/datasets/%s/resolve/%s/%s`.
   urlTemplate: "/datasets/%s/resolve/%s/%s"
 
+optInOutUrlsScan:
+  columnsMaxNumber: 10
+  maxConcurrentRequestsNumber: 10
+  maxRequestsPerSecond: 20
+  rowsMaxNumber: 1_000
+  urlsNumberPerBatch: 1000
+  spawningUrl: "https://opts-api.spawningaiapi.com/api/v2/query/urls"
+
 assets:
   # base URL for the assets files. It should be set accordingly to the datasets-server domain, eg https://datasets-server.huggingface.co/assets
   # baseUrl: "not used for now"
