@@ -64,6 +64,9 @@ secrets:
     fromSecret: false
     secretName: "webhook-secret"
     value: ""
+  spawningToken:
+    fromSecret: true
+    secretName: "spawning-token"
 
 persistence:
   existingClaim: "nfs-datasets-server-pvc"

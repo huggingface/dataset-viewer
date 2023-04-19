@@ -82,6 +82,9 @@ secrets:
     fromSecret: false
     secretName: "webhook-secret"
     value: ""
+  spawningToken:
+    fromSecret: true
+    secretName: "spawning-token"
 
 uid: 1000
 gid: 3000
