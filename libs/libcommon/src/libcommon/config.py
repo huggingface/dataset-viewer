@@ -217,7 +217,7 @@ class ProcessingGraphConfig:
             },
             "dataset-parquet": {
                 "input_type": "dataset",
-                "requires": "config-parquet",
+                "requires": ["config-parquet", "/config-names"],
                 "job_runner_version": PROCESSING_STEP_DATASET_PARQUET_VERSION,
             },
             "config-info": {
@@ -227,7 +227,7 @@ class ProcessingGraphConfig:
             },
             "dataset-info": {
                 "input_type": "dataset",
-                "requires": "config-info",
+                "requires": ["config-info", "/config-names"],
                 "job_runner_version": PROCESSING_STEP_DATASET_INFO_VERSION,
             },
             "/split-names-from-dataset-info": {
@@ -242,22 +242,22 @@ class ProcessingGraphConfig:
             },
             "dataset-size": {
                 "input_type": "dataset",
-                "requires": "config-size",
+                "requires": ["config-size", "/config-names"],
                 "job_runner_version": PROCESSING_STEP_DATASET_SIZE_VERSION,
             },
             "dataset-split-names-from-streaming": {
                 "input_type": "dataset",
-                "requires": "/split-names-from-streaming",
+                "requires": ["/split-names-from-streaming", "/config-names"],
                 "job_runner_version": PROCESSING_STEP_DATASET_SPLIT_NAMES_FROM_STREAMING_VERSION,
             },  # to be deprecated
             "dataset-split-names-from-dataset-info": {
                 "input_type": "dataset",
-                "requires": "/split-names-from-dataset-info",
+                "requires": ["/split-names-from-dataset-info", "/config-names"],
                 "job_runner_version": PROCESSING_STEP_DATASET_SPLIT_NAMES_FROM_DATASET_INFO_VERSION,
             },  # to be deprecated
             "dataset-split-names": {
                 "input_type": "dataset",
-                "requires": ["/split-names-from-dataset-info", "/split-names-from-streaming"],
+                "requires": ["/split-names-from-dataset-info", "/split-names-from-streaming", "/config-names"],
                 "job_runner_version": PROCESSING_STEP_DATASET_SPLIT_NAMES_VERSION,
             },
             "dataset-is-valid": {

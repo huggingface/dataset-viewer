@@ -8,7 +8,6 @@ from typing import Any, List, Literal, Mapping, Optional, Tuple
 from libcommon.constants import (
     PROCESSING_STEP_DATASET_SPLIT_NAMES_FROM_DATASET_INFO_VERSION,
 )
-from libcommon.dataset import DatasetNotFoundError
 from libcommon.simple_cache import DoesNotExist, SplitFullName, get_response
 
 from worker.job_runner import (
@@ -16,6 +15,7 @@ from worker.job_runner import (
     JobRunner,
     JobRunnerError,
     ParameterMissingError,
+    get_previous_step_or_raise,
 )
 from worker.utils import (
     ConfigItem,
@@ -24,10 +24,7 @@ from worker.utils import (
     SplitItem,
 )
 
-DatasetSplitNamesFromDatasetInfoErrorCode = Literal[
-    "PreviousStepStatusError",
-    "PreviousStepFormatError",
-]
+DatasetSplitNamesFromDatasetInfoErrorCode = Literal["PreviousStepFormatError"]
 
 
 class DatasetSplitNamesFromDatasetInfoJobRunnerError(JobRunnerError):
@@ -44,13 +41,6 @@ class DatasetSplitNamesFromDatasetInfoJobRunnerError(JobRunnerError):
         super().__init__(
             message=message, status_code=status_code, code=code, cause=cause, disclose_cause=disclose_cause
         )
-
-
-class PreviousStepStatusError(DatasetSplitNamesFromDatasetInfoJobRunnerError):
-    """Raised when the previous step gave an error. The job should not have been created."""
-
-    def __init__(self, message: str, cause: Optional[BaseException] = None):
-        super().__init__(message, HTTPStatus.INTERNAL_SERVER_ERROR, "PreviousStepStatusError", cause, False)
 
 
 class PreviousStepFormatError(DatasetSplitNamesFromDatasetInfoJobRunnerError):
@@ -72,28 +62,19 @@ def compute_dataset_split_names_from_dataset_info_response(dataset: str) -> Tupl
          a list of pending configs to be processed [pending] and the list of errors [failed] by config.
     <Tip>
     Raises the following errors:
-        - [`~job_runners.dataset.split_names_from_dataset_info.PreviousStepStatusError`]
+        - [`~job_runner.PreviousStepError`]
           If the the previous step gave an error.
         - [`~job_runners.dataset.split_names_from_dataset_info.PreviousStepFormatError`]
             If the content of the previous step has not the expected format
-        - [`~libcommon.dataset.DatasetNotFoundError`]
-            If previous step content was not found for the dataset
     </Tip>
     """
     logging.info(f"get dataset split names from dataset info for dataset={dataset}")
 
-    try:
-        response = get_response(kind="dataset-info", dataset=dataset)
-        dataset_info_content = response["content"]["dataset_info"]
-    except DoesNotExist as e:
-        raise DatasetNotFoundError("No response found in previous step for this dataset: 'dataset-info'.", e) from e
-    except KeyError as e:
-        raise PreviousStepFormatError("Previous step 'dataset-info' did not return the expected content.") from e
-
-    if response["http_status"] != HTTPStatus.OK:
-        raise PreviousStepStatusError(
-            f"Previous step gave an error: {response['http_status']}. This job should not have been created."
-        )
+    best_dataset_info_response = get_previous_step_or_raise(kinds=["dataset-info"], dataset=dataset)
+    content = best_dataset_info_response.response["content"]
+    if "dataset_info" not in content:
+        raise PreviousStepFormatError("Previous step did not return the expected content: 'dataset_info'.")
+    dataset_info_content = content["dataset_info"]
 
     try:
         splits: List[SplitItem] = []
