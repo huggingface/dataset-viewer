@@ -210,6 +210,10 @@ class CacheEntry(CacheEntryWithoutContent):
     content: Mapping[str, Any]
 
 
+class CacheEntryWithDetails(CacheEntry):
+    details: Mapping[str, str]
+
+
 # Note: we let the exceptions throw (ie DoesNotExist): it's the responsibility of the caller to manage them
 def get_response(kind: str, dataset: str, config: Optional[str] = None, split: Optional[str] = None) -> CacheEntry:
     response = (
@@ -227,13 +231,35 @@ def get_response(kind: str, dataset: str, config: Optional[str] = None, split: O
     }
 
 
+# Note: we let the exceptions throw (ie DoesNotExist): it's the responsibility of the caller to manage them
+def get_response_with_details(
+    kind: str, dataset: str, config: Optional[str] = None, split: Optional[str] = None
+) -> CacheEntryWithDetails:
+    response = (
+        CachedResponse.objects(kind=kind, dataset=dataset, config=config, split=split)
+        .only(
+            "content", "http_status", "error_code", "job_runner_version", "dataset_git_revision", "progress", "details"
+        )
+        .get()
+    )
+    return {
+        "content": response.content,
+        "http_status": response.http_status,
+        "error_code": response.error_code,
+        "job_runner_version": response.job_runner_version,
+        "dataset_git_revision": response.dataset_git_revision,
+        "progress": response.progress,
+        "details": response.details,
+    }
+
+
 def get_response_or_missing_error(
     kind: str, dataset: str, config: Optional[str] = None, split: Optional[str] = None
-) -> CacheEntry:
+) -> CacheEntryWithDetails:
     try:
-        response = get_response(kind=kind, dataset=dataset, config=config, split=split)
+        response = get_response_with_details(kind=kind, dataset=dataset, config=config, split=split)
     except DoesNotExist:
-        response = CacheEntry(
+        response = CacheEntryWithDetails(
             content={
                 "error": (
                     f"Cached response not found for kind {kind}, dataset {dataset}, config {config}, split {split}"
@@ -244,6 +270,7 @@ def get_response_or_missing_error(
             dataset_git_revision=None,
             job_runner_version=None,
             progress=None,
+            details={},
         )
     return response
 
@@ -251,7 +278,7 @@ def get_response_or_missing_error(
 @dataclass
 class BestResponse:
     kind: str
-    response: CacheEntry
+    response: CacheEntryWithDetails
 
 
 def get_best_response(
