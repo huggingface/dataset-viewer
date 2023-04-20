@@ -18,14 +18,18 @@ from libcommon.constants import (
 )
 from libcommon.processing_graph import ProcessingStep
 from libcommon.queue import JobInfo
-from libcommon.simple_cache import DoesNotExist, SplitFullName, get_response
+from libcommon.simple_cache import SplitFullName
 from libcommon.storage import StrPath
 from libcommon.viewer_utils.features import get_cell_value
 from pyarrow.parquet import ParquetFile
 from tqdm.contrib.concurrent import thread_map
 
 from worker.config import AppConfig, FirstRowsConfig
-from worker.job_runner import CompleteJobResult, ConfigNotFoundError, JobRunnerError
+from worker.job_runner import (
+    CompleteJobResult,
+    JobRunnerError,
+    get_previous_step_or_raise,
+)
 from worker.job_runners._datasets_based_job_runner import DatasetsBasedJobRunner
 from worker.utils import (
     Row,
@@ -40,7 +44,6 @@ SplitFirstRowsFromParquetJobRunnerErrorCode = Literal[
     "RowsPostProcessingError",
     "TooManyColumnsError",
     "TooBigContentError",
-    "PreviousStepStatusError",
     "PreviousStepFormatError",
     "ParquetResponseEmptyError",
     "FileSystemError",
@@ -82,13 +85,6 @@ class TooBigContentError(SplitFirstRowsFromParquetJobRunnerError):
 
     def __init__(self, message: str, cause: Optional[BaseException] = None):
         super().__init__(message, HTTPStatus.INTERNAL_SERVER_ERROR, "TooBigContentError", cause, False)
-
-
-class PreviousStepStatusError(SplitFirstRowsFromParquetJobRunnerError):
-    """Raised when the previous step gave an error. The job should not have been created."""
-
-    def __init__(self, message: str, cause: Optional[BaseException] = None):
-        super().__init__(message, HTTPStatus.INTERNAL_SERVER_ERROR, "PreviousStepStatusError", cause, False)
 
 
 class PreviousStepFormatError(SplitFirstRowsFromParquetJobRunnerError):
@@ -168,15 +164,10 @@ def compute_first_rows_response(
     logging.info(f"get first-rows for dataset={dataset} config={config} split={split}")
 
     # first ensure the tuple (dataset, config, split) exists on the Hub
-    try:
-        upstream_response = get_response(kind="config-parquet", dataset=dataset, config=config)
-        if upstream_response["http_status"] != HTTPStatus.OK:
-            raise PreviousStepStatusError(
-                f"Previous step gave an error: {upstream_response['http_status']}. This job should not have been"
-                " created."
-            )
 
-        parquet_files_content = upstream_response["content"]["parquet_files"]
+    config_parquet_best_response = get_previous_step_or_raise(kinds=["config-parquet"], dataset=dataset, config=config)
+    try:
+        parquet_files_content = config_parquet_best_response.response["content"]["parquet_files"]
         sources = sorted(
             f"{config}/{parquet_file['filename']}"
             for parquet_file in parquet_files_content
@@ -184,8 +175,6 @@ def compute_first_rows_response(
         )
         if not sources:
             raise ParquetResponseEmptyError("No parquet files found.")
-    except DoesNotExist:
-        raise ConfigNotFoundError(f"The config '{config}' does not exist for the dataset.'")
     except Exception as e:
         raise PreviousStepFormatError("Previous step did not return the expected content.") from e
 

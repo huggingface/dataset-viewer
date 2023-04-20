@@ -9,7 +9,11 @@ from typing import Any, List, Literal, Mapping, Optional
 
 from libcommon.config import CommonConfig
 from libcommon.dataset import DatasetNotFoundError, get_dataset_git_revision
-from libcommon.exceptions import CustomError, ErrorResponseWithCause, ErrorResponseWithoutCause
+from libcommon.exceptions import (
+    CustomError,
+    ErrorResponseWithCause,
+    ErrorResponseWithoutCause,
+)
 from libcommon.processing_graph import ProcessingStep
 from libcommon.queue import JobInfo, Priority, Queue, Status
 from libcommon.simple_cache import (
@@ -29,7 +33,6 @@ from libcommon.utils import orjson_dumps
 from worker.config import WorkerConfig
 
 GeneralJobRunnerErrorCode = Literal[
-    "ConfigNotFoundError",
     "ParameterMissingError",
     "NoGitRevisionError",
     "SplitNotFoundError",
@@ -89,19 +92,6 @@ class GeneralJobRunnerError(JobRunnerError):
     ):
         super().__init__(
             message=message, status_code=status_code, code=code, cause=cause, disclose_cause=disclose_cause
-        )
-
-
-class ConfigNotFoundError(GeneralJobRunnerError):
-    """Raised when the config does not exist."""
-
-    def __init__(self, message: str, cause: Optional[BaseException] = None):
-        super().__init__(
-            message=message,
-            status_code=HTTPStatus.NOT_FOUND,
-            code="ConfigNotFoundError",
-            cause=cause,
-            disclose_cause=False,
         )
 
 

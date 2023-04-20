@@ -24,17 +24,17 @@ from libcommon.constants import (
 )
 from libcommon.processing_graph import ProcessingStep
 from libcommon.queue import JobInfo
-from libcommon.simple_cache import DoesNotExist, SplitFullName, get_response
+from libcommon.simple_cache import SplitFullName
 from libcommon.storage import StrPath
 from libcommon.viewer_utils.features import get_cell_value
 
 from worker.config import AppConfig, FirstRowsConfig
 from worker.job_runner import (
     CompleteJobResult,
-    ConfigNotFoundError,
     JobRunnerError,
     ParameterMissingError,
     SplitNotFoundError,
+    get_previous_step_or_raise,
 )
 from worker.job_runners._datasets_based_job_runner import DatasetsBasedJobRunner
 from worker.utils import (
@@ -54,7 +54,6 @@ SplitFirstRowsFromStreamingJobRunnerErrorCode = Literal[
     "RowsPostProcessingError",
     "TooManyColumnsError",
     "TooBigContentError",
-    "PreviousStepStatusError",
     "PreviousStepFormatError",
 ]
 
@@ -136,13 +135,6 @@ class TooBigContentError(SplitFirstRowsFromStreamingJobRunnerError):
 
     def __init__(self, message: str, cause: Optional[BaseException] = None):
         super().__init__(message, HTTPStatus.INTERNAL_SERVER_ERROR, "TooBigContentError", cause, False)
-
-
-class PreviousStepStatusError(SplitFirstRowsFromStreamingJobRunnerError):
-    """Raised when the previous step gave an error. The job should not have been created."""
-
-    def __init__(self, message: str, cause: Optional[BaseException] = None):
-        super().__init__(message, HTTPStatus.INTERNAL_SERVER_ERROR, "PreviousStepStatusError", cause, False)
 
 
 class PreviousStepFormatError(SplitFirstRowsFromStreamingJobRunnerError):
@@ -294,8 +286,6 @@ def compute_first_rows_response(
         [`SplitFirstRowsResponse`]: The list of first rows of the split.
     <Tip>
     Raises the following errors:
-        - [`~job_runner.ConfigNotFoundError`]
-          If the config does not exist in the dataset.
         - [`~job_runner.SplitNotFoundError`]
           If the split does not exist in the dataset.
         - [`~job_runners.split.first_rows.InfoError`]
@@ -312,27 +302,22 @@ def compute_first_rows_response(
           If the number of columns (features) exceeds the maximum supported number of columns.
         - [`~job_runners.split.first_rows.TooBigContentError`]
           If the first rows content exceeds the maximum supported size of bytes.
+        - [`~job_runner.PreviousStepError`]
+            If the previous step gave an error.
+        - [`~job_runners.split.first_rows.PreviousStepFormatError`]
+            If the content of the previous step has not the expected format
     </Tip>
     """
     logging.info(f"get first-rows for dataset={dataset} config={config} split={split}")
     use_auth_token: Union[bool, str, None] = hf_token if hf_token is not None else False
     # first ensure the tuple (dataset, config, split) exists on the Hub
+    split_names_best_response = get_previous_step_or_raise(
+        kinds=["/split-names-from-streaming", "/split-names-from-dataset-info"], dataset=dataset, config=config
+    )
     try:
-        upstream_response = get_response(kind="/split-names-from-streaming", dataset=dataset, config=config)
-        splits_content = upstream_response["content"]["splits"]
-    except Exception:
-        try:
-            upstream_response = get_response(kind="/split-names-from-dataset-info", dataset=dataset, config=config)
-            splits_content = upstream_response["content"]["splits"]
-        except DoesNotExist as e:
-            raise ConfigNotFoundError(f"The config '{config}' does not exist for the dataset.'", e) from e
-        except Exception as e:
-            raise PreviousStepFormatError("Previous step did not return the expected content.", e) from e
-
-    if upstream_response["http_status"] != HTTPStatus.OK:
-        raise PreviousStepStatusError(
-            f"Previous step gave an error: {upstream_response['http_status']}. This job should not have been created."
-        )
+        splits_content = split_names_best_response.response["content"]["splits"]
+    except Exception as e:
+        raise PreviousStepFormatError("Previous step did not return the expected content.", e) from e
 
     if split not in [split_item["split"] for split_item in splits_content]:
         raise SplitNotFoundError(f"The split '{split}' does not exist for the config '{config}' of the dataset.")

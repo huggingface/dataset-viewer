@@ -140,7 +140,7 @@ def test_doesnotexist(app_config: AppConfig, get_job_runner: GetJobRunner, first
         ("jsonl", False, None, None),
         ("gated", True, None, None),
         ("private", True, None, None),
-        ("does_not_exist_config", False, "ConfigNotFoundError", "DoesNotExist"),
+        ("does_not_exist_config", False, "CachedResponseNotFound", None),
         # should we really test the following cases?
         # The assumption is that the dataset exists and is accessible with the token
         ("does_not_exist_split", False, "SplitNotFoundError", None),
@@ -282,8 +282,8 @@ def test_truncation(
     "streaming_response_status,dataset_git_revision,error_code,status_code",
     [
         (HTTPStatus.OK, "CURRENT_GIT_REVISION", "ResponseAlreadyComputedError", HTTPStatus.INTERNAL_SERVER_ERROR),
-        (HTTPStatus.INTERNAL_SERVER_ERROR, "CURRENT_GIT_REVISION", "ConfigNotFoundError", HTTPStatus.NOT_FOUND),
-        (HTTPStatus.OK, "DIFFERENT_GIT_REVISION", "ConfigNotFoundError", HTTPStatus.NOT_FOUND),
+        (HTTPStatus.INTERNAL_SERVER_ERROR, "CURRENT_GIT_REVISION", "CachedResponseNotFound", HTTPStatus.NOT_FOUND),
+        (HTTPStatus.OK, "DIFFERENT_GIT_REVISION", "CachedResponseNotFound", HTTPStatus.NOT_FOUND),
     ],
 )
 def test_response_already_computed(
