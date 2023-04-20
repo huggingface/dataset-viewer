@@ -196,14 +196,14 @@ def test_compute(
 @pytest.mark.parametrize(
     "dataset,columns_max_number,upstream_content,upstream_status,error_code,status_code",
     [
-        ("doesnotexist", 10, {}, HTTPStatus.OK, "ConfigNotFoundError", HTTPStatus.NOT_FOUND),
+        ("doesnotexist", 10, {}, HTTPStatus.OK, "CachedResponseNotFound", HTTPStatus.NOT_FOUND),
         ("wrong_format", 10, {}, HTTPStatus.OK, "PreviousStepFormatError", HTTPStatus.INTERNAL_SERVER_ERROR),
         (
             "upstream_failed",
             10,
             {},
             HTTPStatus.INTERNAL_SERVER_ERROR,
-            "PreviousStepStatusError",
+            "PreviousStepError",
             HTTPStatus.INTERNAL_SERVER_ERROR,
         ),
         (

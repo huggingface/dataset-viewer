@@ -13,10 +13,14 @@ from datasets import get_dataset_config_info
 from libcommon.constants import PROCESSING_STEP_SPLIT_OPT_IN_OUT_URLS_SCAN_VERSION
 from libcommon.processing_graph import ProcessingStep
 from libcommon.queue import JobInfo
-from libcommon.simple_cache import DoesNotExist, SplitFullName, get_response
+from libcommon.simple_cache import SplitFullName
 
 from worker.config import AppConfig, OptInOutUrlsScanConfig
-from worker.job_runner import CompleteJobResult, ConfigNotFoundError, JobRunnerError
+from worker.job_runner import (
+    CompleteJobResult,
+    JobRunnerError,
+    get_previous_step_or_raise,
+)
 from worker.job_runners._datasets_based_job_runner import DatasetsBasedJobRunner
 from worker.utils import SplitFirstRowsResponse, get_rows_or_raise
 
@@ -185,29 +189,21 @@ def compute_opt_in_out_urls_scan_response(
         raise MissingSpawningTokenError("OPT_IN_OUT_URLS_SCAN_SPAWNING_TOKEN is not set")
 
     # get the first rows from previous job
+    upstream_response = get_previous_step_or_raise(
+        kinds=["split-first-rows-from-streaming"], dataset=dataset, config=config, split=split
+    )
     try:
-        upstream_response = get_response(
-            kind="split-first-rows-from-streaming", dataset=dataset, config=config, split=split
-        )
-
-        if upstream_response["http_status"] != HTTPStatus.OK:
-            raise PreviousStepStatusError(
-                f"Previous step gave an error: {upstream_response['http_status']}. This job should not have been"
-                " created."
-            )
-
+        first_rows_response = upstream_response.response
         upstream_response_content = SplitFirstRowsResponse(
             dataset=dataset,
             config=config,
             split=split,
-            features=upstream_response["content"]["features"],
-            rows=upstream_response["content"]["rows"],
+            features=first_rows_response["content"]["features"],
+            rows=first_rows_response["content"]["rows"],
         )
 
         features = upstream_response_content["features"]
         first_rows = upstream_response_content["rows"]
-    except DoesNotExist as e:
-        raise ConfigNotFoundError(f"The config '{config}' does not exist for the dataset.'", e) from e
     except KeyError as e:
         raise PreviousStepFormatError("Previous step did not return the expected content.", e) from e
 
