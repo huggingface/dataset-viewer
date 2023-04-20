@@ -21,9 +21,11 @@ from worker.config import AppConfig, OptInOutUrlsScanConfig
 from worker.job_runners.split.opt_in_out_urls_scan_from_streaming import (
     ExternalServerError,
     SplitOptInOutUrlsScanJobRunner,
+    check_spawning,
 )
 from worker.resources import LibrariesResource
 
+from ...constants import CI_SPAWNING_TOKEN
 from ...fixtures.hub import HubDatasets, get_default_config_split
 
 GetJobRunner = Callable[[str, str, str, AppConfig, OptInOutUrlsScanConfig, bool], SplitOptInOutUrlsScanJobRunner]
@@ -214,8 +216,8 @@ def test_compute(
         ),
         (
             "too_many_columns",
-            1,
-            FIRST_ROWS_WITHOUT_OPT_IN_OUT_URLS,
+            0,
+            FIRST_ROWS_WITH_OPT_IN_OUT_URLS,
             HTTPStatus.OK,
             "TooManyColumnsError",
             HTTPStatus.INTERNAL_SERVER_ERROR,
@@ -224,6 +226,7 @@ def test_compute(
 )
 def test_compute_failed(
     app_config: AppConfig,
+    hub_datasets: HubDatasets,
     get_job_runner: GetJobRunner,
     urls_scan_config: OptInOutUrlsScanConfig,
     dataset: str,
@@ -233,6 +236,8 @@ def test_compute_failed(
     error_code: str,
     status_code: HTTPStatus,
 ) -> None:
+    if dataset == "too_many_columns":
+        dataset = hub_datasets["spawning_opt_in_out"]["name"]
     dataset, config, split = get_default_config_split(dataset)
     job_runner = get_job_runner(
         dataset, config, split, app_config, replace(urls_scan_config, columns_max_number=columns_max_number), False
@@ -278,3 +283,23 @@ def test_compute_error_from_spawning(
     )
     with pytest.raises(ExternalServerError):
         job_runner.compute()
+
+
+@pytest.mark.asyncio
+async def test_real_check_spawning_response(urls_scan_config: OptInOutUrlsScanConfig) -> None:
+    semaphore = Semaphore(value=10)
+    limiter = AsyncLimiter(10, time_period=1)
+
+    headers = {"Authorization": f"API {CI_SPAWNING_TOKEN}"}
+    async with ClientSession(headers=headers) as session:
+        image_url = "http://testurl.test/test_image.jpg"
+        image_urls = [image_url]
+        spawning_url = urls_scan_config.spawning_url
+        spawning_response = await check_spawning(image_urls, session, semaphore, limiter, spawning_url)
+        assert spawning_response and isinstance(spawning_response, dict)
+        assert spawning_response["urls"] and isinstance(spawning_response["urls"], list)
+        assert len(spawning_response["urls"]) == 2  # the API requires >1 urls
+        first_url = spawning_response["urls"][0]
+        assert first_url and isinstance(first_url, dict)
+        assert first_url["url"] and isinstance(first_url["url"], str)
+        assert first_url["url"] == image_url
