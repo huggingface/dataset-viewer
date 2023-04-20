@@ -33,3 +33,4 @@ jobs:
     uses: ./.github/workflows/_unit-tests-python.yml
     with:
       working-directory: services/worker
+    secrets: inherit
