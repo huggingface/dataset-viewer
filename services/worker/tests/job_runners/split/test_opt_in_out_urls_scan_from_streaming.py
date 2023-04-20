@@ -1,11 +1,15 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2022 The HuggingFace Authors.
 
+from asyncio import Semaphore
 from dataclasses import replace
 from http import HTTPStatus
-from typing import Any, Callable, Mapping
+from typing import Any, Callable, List, Mapping
+from unittest.mock import patch
 
 import pytest
+from aiohttp import ClientSession
+from aiolimiter import AsyncLimiter
 from libcommon.constants import PROCESSING_STEP_SPLIT_OPT_IN_OUT_URLS_SCAN_VERSION
 from libcommon.exceptions import CustomError
 from libcommon.processing_graph import ProcessingStep
@@ -23,6 +27,12 @@ from worker.resources import LibrariesResource
 from ...fixtures.hub import HubDatasets, get_default_config_split
 
 GetJobRunner = Callable[[str, str, str, AppConfig, OptInOutUrlsScanConfig, bool], SplitOptInOutUrlsScanJobRunner]
+
+
+async def mock_check_spawning(
+    image_urls: List[str], session: ClientSession, semaphore: Semaphore, limiter: AsyncLimiter, url: str
+) -> Any:
+    return {"urls": [{"url": url, "optIn": "optIn" in url, "optOut": "optOut" in url} for url in image_urls]}
 
 
 @pytest.fixture
@@ -141,8 +151,10 @@ FIRST_ROWS_WITH_OPT_IN_OUT_URLS = {
                 "num_scanned_rows": 3,
                 "opt_in_urls": [],
                 "opt_in_urls_indices": [],
-                "opt_out_urls": [],
-                "opt_out_urls_indices": [],
+                "opt_out_urls": [
+                    {"url": "http://testurl.test/test_image-optOut.jpg", "row_idx": 0, "column_name": "col"}
+                ],
+                "opt_out_urls_indices": [0],
                 "urls_columns": ["col"],
             },
         ),
@@ -170,8 +182,8 @@ def test_compute(
         progress=1.0,
         http_status=HTTPStatus.OK,
     )
-
-    assert job_runner.process()
+    with patch("worker.job_runners.split.opt_in_out_urls_scan_from_streaming.check_spawning", mock_check_spawning):
+        assert job_runner.process()
     cached_response = get_response(
         kind=job_runner.processing_step.cache_kind, dataset=dataset, config=config, split=split
     )

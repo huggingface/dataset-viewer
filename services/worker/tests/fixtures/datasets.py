@@ -132,7 +132,7 @@ def datasets() -> Mapping[str, Dataset]:
         ),
         "spawning_opt_in_out": Dataset.from_pandas(
             pd.DataFrame(
-                {"col": ["http://testurl.test/test_image.jpg", "http://testurl.test/test_image2.jpg", "other"]},
+                {"col": ["http://testurl.test/test_image-optOut.jpg", "http://testurl.test/test_image2.jpg", "other"]},
                 dtype=pd.StringDtype(storage="python"),
             )
         ),
