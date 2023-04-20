@@ -498,16 +498,9 @@ class JobRunner(ABC):
             )
             self.debug(f"dataset={self.dataset} config={self.config} split={self.split} is valid, cache updated")
             return True
-        except (
-            DatasetNotFoundError,
-            ConfigNotFoundError,
-            SplitNotFoundError,
-        ):
-            # To avoid filling the cache, we don't save these errors. Otherwise, DoS is possible.
-            self.debug(
-                f"the dataset={self.dataset}, config {self.config} or split {self.split} could not be found, don't"
-                " update the cache"
-            )
+        except DatasetNotFoundError:
+            # To avoid filling the cache, we don't save this error. Otherwise, DoS is possible.
+            self.debug(f"the dataset={self.dataset} could not be found, don't update the cache")
             return False
         except Exception as err:
             e = err if isinstance(err, CustomError) else UnexpectedError(str(err), err)
