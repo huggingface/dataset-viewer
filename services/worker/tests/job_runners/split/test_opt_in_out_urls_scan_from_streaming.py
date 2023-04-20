@@ -137,9 +137,7 @@ FIRST_ROWS_WITH_OPT_IN_OUT_URLS = {
                 "has_urls_columns": False,
                 "num_scanned_rows": 0,
                 "opt_in_urls": [],
-                "opt_in_urls_indices": [],
                 "opt_out_urls": [],
-                "opt_out_urls_indices": [],
                 "urls_columns": [],
             },
         ),
@@ -148,13 +146,13 @@ FIRST_ROWS_WITH_OPT_IN_OUT_URLS = {
             FIRST_ROWS_WITH_OPT_IN_OUT_URLS,
             {
                 "has_urls_columns": True,
-                "num_scanned_rows": 3,
-                "opt_in_urls": [],
-                "opt_in_urls_indices": [],
+                "num_scanned_rows": 4,
+                "opt_in_urls": [
+                    {"url": "http://testurl.test/test_image3-optIn.jpg", "row_idx": 3, "column_name": "col"}
+                ],
                 "opt_out_urls": [
                     {"url": "http://testurl.test/test_image-optOut.jpg", "row_idx": 0, "column_name": "col"}
                 ],
-                "opt_out_urls_indices": [0],
                 "urls_columns": ["col"],
             },
         ),
