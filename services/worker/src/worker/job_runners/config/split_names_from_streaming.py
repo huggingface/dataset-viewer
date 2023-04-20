@@ -134,7 +134,7 @@ class SplitNamesFromStreamingJobRunner(DatasetsBasedJobRunner):
           If response has been already computed by /split-names-from-dataset-info job runner.
         """
         self.raise_if_parallel_response_exists(
-            parallel_job_type="/split-names-from-dataset-info",
+            parallel_cache_kind="/split-names-from-dataset-info",
             parallel_job_version=PROCESSING_STEP_SPLIT_NAMES_FROM_DATASET_INFO_VERSION,
         )
         return CompleteJobResult(
