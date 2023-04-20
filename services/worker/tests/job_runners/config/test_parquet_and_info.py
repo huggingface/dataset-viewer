@@ -553,7 +553,7 @@ def test_compute_splits_response_simple_csv_ok(
         ("does_not_exist", "ParameterMissingError", None),
         ("gated_extra_fields", "GatedExtraFieldsError", "HTTPError"),
         ("private", "DatasetNotFoundError", None),
-        ("public", "DatasetNotFoundError", "DoesNotExist"),  # no cache for /config-names -> DatasetNotFoundError
+        ("public", "CachedResponseNotFound", None),  # no cache for /config-names -> CachedResponseNotFound
     ],
 )
 def test_compute_splits_response_simple_csv_error(
@@ -586,7 +586,7 @@ def test_compute_splits_response_simple_csv_error(
 @pytest.mark.parametrize(
     "upstream_status,upstream_content,error_code",
     [
-        (HTTPStatus.NOT_FOUND, {"error": "error"}, "PreviousStepStatusError"),
+        (HTTPStatus.NOT_FOUND, {"error": "error"}, "PreviousStepError"),
         (HTTPStatus.OK, {"not_config_names": "wrong_format"}, "PreviousStepFormatError"),
         (HTTPStatus.OK, {"config_names": "not a list"}, "PreviousStepFormatError"),
     ],

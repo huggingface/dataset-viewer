@@ -38,10 +38,15 @@ from libcommon.constants import PROCESSING_STEP_CONFIG_PARQUET_AND_INFO_VERSION
 from libcommon.dataset import DatasetNotFoundError, ask_access
 from libcommon.processing_graph import ProcessingStep
 from libcommon.queue import JobInfo
-from libcommon.simple_cache import DoesNotExist, SplitFullName, get_response
+from libcommon.simple_cache import SplitFullName
 
 from worker.config import AppConfig, ParquetAndInfoConfig
-from worker.job_runner import CompleteJobResult, JobRunnerError, ParameterMissingError
+from worker.job_runner import (
+    CompleteJobResult,
+    JobRunnerError,
+    ParameterMissingError,
+    get_previous_step_or_raise,
+)
 from worker.job_runners._datasets_based_job_runner import DatasetsBasedJobRunner
 from worker.job_runners.config_names import ConfigNamesError
 
@@ -58,7 +63,6 @@ ConfigParquetAndInfoJobRunnerErrorCode = Literal[
     "ExternalFilesSizeRequestConnectionError",
     "ExternalFilesSizeRequestTimeoutError",
     "ExternalFilesSizeRequestError",
-    "PreviousStepStatusError",
     "PreviousStepFormatError",
 ]
 
@@ -112,13 +116,6 @@ class DatasetTooBigFromDatasetsError(ConfigParquetAndInfoJobRunnerError):
 
     def __init__(self, message: str, cause: Optional[BaseException] = None):
         super().__init__(message, HTTPStatus.NOT_IMPLEMENTED, "DatasetTooBigFromDatasetsError", cause, False)
-
-
-class PreviousStepStatusError(ConfigParquetAndInfoJobRunnerError):
-    """Raised when the previous step gave an error. The job should not have been created."""
-
-    def __init__(self, message: str, cause: Optional[BaseException] = None):
-        super().__init__(message, HTTPStatus.INTERNAL_SERVER_ERROR, "PreviousStepStatusError", cause, False)
 
 
 class PreviousStepFormatError(ConfigParquetAndInfoJobRunnerError):
@@ -760,8 +757,8 @@ def compute_config_parquet_and_info_response(
             If we failed to get the external files sizes to make sure we can convert the dataset to parquet
         - [`~job_runners.config.parquet_and_info.ExternalFilesSizeRequestError`]
             If we failed to get the external files sizes to make sure we can convert the dataset to parquet
-        - [`~job_runners.config.parquet_and_info.PreviousStepStatusError`]
-          If the previous step gave an error.
+        - [`~job_runner.PreviousStepError`]
+            If the previous step gave an error.
         - [`~job_runners.config.parquet_and_info.PreviousStepFormatError`]
             If the content of the previous step has not the expected format
 
@@ -783,14 +780,9 @@ def compute_config_parquet_and_info_response(
 
     logging.info(f"get config names for {dataset=}")
     previous_step = "/config-names"
-    try:
-        response = get_response(kind=previous_step, dataset=dataset)
-    except DoesNotExist as e:
-        raise DatasetNotFoundError(f"No response found in previous step '{previous_step}' for this dataset.", e) from e
-    if response["http_status"] != HTTPStatus.OK:
-        raise PreviousStepStatusError(f"Previous step {previous_step} gave an error: {response['http_status']}..")
+    config_names_best_response = get_previous_step_or_raise(kinds=[previous_step], dataset=dataset)
 
-    config_names_content = response["content"]
+    config_names_content = config_names_best_response.response["content"]
     if "config_names" not in config_names_content:
         raise PreviousStepFormatError("Previous step did not return the expected content: 'config_names'.")
 
