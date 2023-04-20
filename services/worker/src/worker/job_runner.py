@@ -609,10 +609,10 @@ class JobRunner(ABC):
             " maximum duration), cache updated"
         )
 
-    def raise_if_parallel_response_exists(self, parallel_job_type: str, parallel_job_version: int) -> None:
+    def raise_if_parallel_response_exists(self, parallel_cache_kind: str, parallel_job_version: int) -> None:
         try:
             existing_response = get_response_without_content(
-                kind=parallel_job_type, dataset=self.dataset, config=self.config, split=self.split
+                kind=parallel_cache_kind, dataset=self.dataset, config=self.config, split=self.split
             )
             dataset_git_revision = self.get_dataset_git_revision()
             if (
@@ -623,7 +623,8 @@ class JobRunner(ABC):
                 and existing_response["dataset_git_revision"] == dataset_git_revision
             ):
                 raise ResponseAlreadyComputedError(
-                    f"Response has already been computed by {parallel_job_type}. Compute will be skipped."
+                    f"Response has already been computed and stored in cache kind: {parallel_cache_kind}. Compute will"
+                    " be skipped."
                 )
         except DoesNotExist:
-            logging.debug(f"no cache found for {parallel_job_type}.")
+            logging.debug(f"no cache found for {parallel_cache_kind}.")

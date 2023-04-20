@@ -132,7 +132,7 @@ class SplitNamesFromStreamingJobRunner(DatasetsBasedJobRunner):
         if self.config is None:
             raise ParameterMissingError("'config' parameter is required")
         self.raise_if_parallel_response_exists(
-            parallel_job_type="/split-names-from-dataset-info",
+            parallel_cache_kind="/split-names-from-dataset-info",
             parallel_job_version=PROCESSING_STEP_SPLIT_NAMES_FROM_DATASET_INFO_VERSION,
         )
         return CompleteJobResult(
