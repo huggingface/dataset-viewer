@@ -103,7 +103,7 @@ class OptInOutUrlsScanResponse(TypedDict):
 
 
 async def check_spawning(
-    image_urls: List[str], session: ClientSession, semaphore: Semaphore, limiter: AsyncLimiter, url: str
+    image_urls: List[str], session: ClientSession, semaphore: Semaphore, limiter: AsyncLimiter, spawning_url: str
 ) -> Any:
     if not image_urls:
         return {"urls": []}
@@ -111,7 +111,7 @@ async def check_spawning(
         image_urls = image_urls + [""]  # the API requires >1 urls
     async with semaphore:
         async with limiter:
-            async with session.post(url=url, data="\n".join(image_urls)) as resp:
+            async with session.post(url=spawning_url, data="\n".join(image_urls)) as resp:
                 spawning_response = await resp.json()
                 return spawning_response
 
@@ -211,13 +211,6 @@ def compute_opt_in_out_urls_scan_response(
     except KeyError as e:
         raise PreviousStepFormatError("Previous step did not return the expected content.", e) from e
 
-    if features and len(features) > columns_max_number:
-        raise TooManyColumnsError(
-            f"The number of columns ({len(features)}) exceeds the maximum supported number of columns"
-            f" ({columns_max_number}). This is a current limitation of the datasets viewer. You can reduce the number"
-            " of columns if you want the viewer to work."
-        )
-
     # get the info
     try:
         info = get_dataset_config_info(
@@ -252,6 +245,12 @@ def compute_opt_in_out_urls_scan_response(
             opt_in_urls=[],
             opt_out_urls=[],
             num_scanned_rows=0,
+        )
+
+    if len(urls_columns) > columns_max_number:
+        raise TooManyColumnsError(
+            f"The number of columns ({len(urls_columns)}) exceeds the maximum supported number of columns to scan"
+            f" ({columns_max_number})."
         )
 
     # get the rows
