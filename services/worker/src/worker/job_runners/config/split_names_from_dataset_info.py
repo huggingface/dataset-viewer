@@ -90,7 +90,7 @@ def compute_split_names_from_dataset_info_response(dataset: str, config: str) ->
     """
     logging.info(f"get split names from dataset info for dataset={dataset}, config={config}")
     try:
-        response = get_response(kind="config-info", dataset=dataset)
+        response = get_response(kind="config-info", dataset=dataset, config=config)
     except DoesNotExist as e:
         raise DatasetNotFoundError("No response found in previous step for this dataset: 'config-info'.", e) from e
     if response["http_status"] != HTTPStatus.OK:

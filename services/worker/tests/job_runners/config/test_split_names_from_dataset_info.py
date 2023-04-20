@@ -127,8 +127,11 @@ def test_compute(
     error_code: str,
     content: Any,
 ) -> None:
-    upsert_response(kind="config-info", dataset=dataset, content=upstream_content, http_status=upstream_status)
-    job_runner = get_job_runner(dataset, "config_name", app_config, False)
+    config = "config_name"
+    upsert_response(
+        kind="config-info", dataset=dataset, config=config, content=upstream_content, http_status=upstream_status
+    )
+    job_runner = get_job_runner(dataset, config, app_config, False)
     job_runner.get_dataset_git_revision = Mock(return_value="1.0.0")  # type: ignore
 
     if error_code:
