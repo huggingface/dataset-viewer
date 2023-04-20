@@ -544,16 +544,25 @@ class JobRunner(ABC):
         except Exception:
             # if the response is not in the cache, we don't create the children jobs
             return
-        if response_in_cache["http_status"] != HTTPStatus.OK:
-            # if the response is not valid, we don't create the children jobs
-            return
-        new_split_full_names_for_split: set[SplitFullName] = self.get_new_splits(response_in_cache["content"])
-        new_split_full_names_for_config: set[SplitFullName] = {
-            SplitFullName(dataset=s.dataset, config=s.config, split=None) for s in new_split_full_names_for_split
-        }
-        new_split_full_names_for_dataset: set[SplitFullName] = {
-            SplitFullName(dataset=s.dataset, config=None, split=None) for s in new_split_full_names_for_config
-        }  # should be self.dataset
+        if response_in_cache["http_status"] == HTTPStatus.OK:
+            new_split_full_names_for_split: set[SplitFullName] = self.get_new_splits(response_in_cache["content"])
+            new_split_full_names_for_config: set[SplitFullName] = {
+                SplitFullName(dataset=s.dataset, config=s.config, split=None) for s in new_split_full_names_for_split
+            }
+        elif self.processing_step.input_type == "split":
+            new_split_full_names_for_split = {
+                SplitFullName(dataset=self.dataset, config=self.config, split=self.split)
+            }
+            new_split_full_names_for_config = {SplitFullName(dataset=self.dataset, config=self.config, split=None)}
+        elif self.processing_step.input_type == "config":
+            new_split_full_names_for_split = set()
+            new_split_full_names_for_config = {SplitFullName(dataset=self.dataset, config=self.config, split=None)}
+
+        else:
+            new_split_full_names_for_split = set()
+            new_split_full_names_for_config = set()
+        new_split_full_names_for_dataset = {SplitFullName(dataset=self.dataset, config=None, split=None)}
+
         for processing_step in self.processing_step.children:
             new_split_full_names = (
                 new_split_full_names_for_split
@@ -563,6 +572,7 @@ class JobRunner(ABC):
                 else new_split_full_names_for_dataset
             )
             # remove obsolete responses from the cache
+            # Note that this will remove response for the children steps, not for the grandchildren steps or beyond
             split_full_names_in_cache = get_split_full_names_for_dataset_and_kind(
                 dataset=self.dataset, kind=processing_step.cache_kind
             )
