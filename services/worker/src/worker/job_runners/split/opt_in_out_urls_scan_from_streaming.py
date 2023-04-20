@@ -100,8 +100,6 @@ class OptInOutUrlsScanResponse(TypedDict):
     opt_out_urls: List[OptUrl]
     num_scanned_rows: int
     has_urls_columns: bool
-    opt_in_urls_indices: List[int]
-    opt_out_urls_indices: List[int]
 
 
 async def check_spawning(
@@ -253,8 +251,6 @@ def compute_opt_in_out_urls_scan_response(
             urls_columns=[],
             opt_in_urls=[],
             opt_out_urls=[],
-            opt_in_urls_indices=[],
-            opt_out_urls_indices=[],
             num_scanned_rows=0,
         )
 
@@ -308,8 +304,6 @@ def compute_opt_in_out_urls_scan_response(
         urls_columns=urls_columns,
         opt_in_urls=opt_in_urls,
         opt_out_urls=opt_out_urls,
-        opt_in_urls_indices=opt_in_urls_indices,
-        opt_out_urls_indices=opt_out_urls_indices,
         num_scanned_rows=num_scanned_rows,
     )
 
