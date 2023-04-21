@@ -190,6 +190,42 @@ def ask_access(
         raise err
 
 
+def raise_if_not_supported(dataset_info: DatasetInfo) -> None:
+    """
+    Raise an error if the dataset is not supported by the datasets-server.
+    Args:
+        dataset_info (`DatasetInfo`):
+            The dataset info.
+    Returns:
+        `None`
+    <Tip>
+    Raises the following errors:
+        - [`~libcommon.dataset.DisabledViewerError`]: if the dataset viewer is disabled.
+        - [`~libcommon.dataset.DatasetNotFoundError`]: if the dataset id does not exist, or if the dataset is private
+    </Tip>
+    """
+    if not dataset_info.id or dataset_info.private:
+        raise DatasetNotFoundError(DOES_NOT_EXIST_OR_PRIVATE_DATASET_ERROR_MESSAGE)
+    if dataset_info.cardData and not dataset_info.cardData.get("viewer", True):
+        raise DisabledViewerError("The dataset viewer has been disabled on this dataset.")
+
+
+def is_supported(dataset_info: DatasetInfo) -> bool:
+    """
+    Check if the dataset is supported by the datasets-server.
+    Args:
+        dataset_info (`DatasetInfo`):
+            The dataset info.
+    Returns:
+        `bool`: True if the dataset is supported, False otherwise.
+    """
+    try:
+        raise_if_not_supported(dataset_info)
+    except DatasetError:
+        return False
+    return True
+
+
 def get_dataset_info_for_supported_datasets(
     dataset: str,
     hf_endpoint: str,
@@ -257,10 +293,7 @@ def get_dataset_info_for_supported_datasets(
             ),
             cause=err,
         ) from err
-    if dataset_info.private:
-        raise DatasetNotFoundError(DOES_NOT_EXIST_OR_PRIVATE_DATASET_ERROR_MESSAGE)
-    if dataset_info.cardData and not dataset_info.cardData.get("viewer", True):
-        raise DisabledViewerError("The dataset viewer has been disabled on this dataset.")
+    raise_if_not_supported(dataset_info)
     return dataset_info
 
 
@@ -346,6 +379,5 @@ def check_support(
     )
 
 
-def get_supported_datasets(hf_endpoint: str, hf_token: Optional[str] = None) -> list[str]:
-    return [d.id for d in HfApi(endpoint=hf_endpoint, token=hf_token).list_datasets() if d.id and not d.private]
-    # no timeout on this function. It's used only in the admin service
+def get_supported_dataset_infos(hf_endpoint: str, hf_token: Optional[str] = None) -> list[DatasetInfo]:
+    return [d for d in HfApi(endpoint=hf_endpoint, token=hf_token).list_datasets() if is_supported(d)]

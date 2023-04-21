@@ -4,7 +4,7 @@
 from http import HTTPStatus
 
 from libcommon.metrics import CacheTotalMetric, JobTotalMetric
-from libcommon.processing_graph import ProcessingStep
+from libcommon.processing_graph import ProcessingGraph
 from libcommon.queue import Queue
 from libcommon.simple_cache import upsert_response
 
@@ -17,28 +17,24 @@ def test_collect_metrics() -> None:
     split = None
     content = {"some": "content"}
 
-    test_type = "test_type"
+    step_name = "test_type"
+    processing_graph = ProcessingGraph(
+        processing_graph_specification={step_name: {"input_type": "dataset", "job_runner_version": 1}}
+    )
     queue = Queue()
-    queue.upsert_job(job_type=test_type, dataset="dataset", config="config", split="split")
-
+    queue.upsert_job(
+        job_type=processing_graph.get_step(step_name).job_type, dataset="dataset", config="config", split="split"
+    )
     upsert_response(
-        kind=test_type, dataset=dataset, config=config, split=split, content=content, http_status=HTTPStatus.OK
+        kind=processing_graph.get_step(step_name).cache_kind,
+        dataset=dataset,
+        config=config,
+        split=split,
+        content=content,
+        http_status=HTTPStatus.OK,
     )
 
-    processing_steps = [
-        ProcessingStep(
-            name=test_type,
-            input_type="dataset",
-            requires=[],
-            required_by_dataset_viewer=False,
-            ancestors=[],
-            children=[],
-            parents=[],
-            job_runner_version=1,
-        )
-    ]
-
-    collect_metrics(processing_steps=processing_steps)
+    collect_metrics(processing_graph=processing_graph)
 
     cache_metrics = CacheTotalMetric.objects()
     assert cache_metrics

@@ -4,33 +4,45 @@
 import logging
 from typing import Optional
 
-import libcommon
-from libcommon.operations import update_dataset
-from libcommon.processing_graph import ProcessingStep
-from libcommon.queue import Priority
+from libcommon.dataset import get_supported_dataset_infos
+from libcommon.processing_graph import ProcessingGraph
+from libcommon.state import DatasetState
 
 
 def backfill_cache(
-    init_processing_steps: list[ProcessingStep],
+    processing_graph: ProcessingGraph,
     hf_endpoint: str,
     hf_token: Optional[str] = None,
 ) -> None:
-    logging.info("backfill init processing steps for supported datasets")
-    supported_datasets = libcommon.dataset.get_supported_datasets(hf_endpoint=hf_endpoint, hf_token=hf_token)
-    logging.info(f"about to backfill {len(supported_datasets)} datasets")
+    logging.info("backfill supported datasets")
+    supported_dataset_infos = get_supported_dataset_infos(hf_endpoint=hf_endpoint, hf_token=hf_token)
+    logging.info(f"analyzing {len(supported_dataset_infos)} supported datasets")
+    analyzed_datasets = 0
     backfilled_datasets = 0
+    created_jobs = 0
     log_batch = 100
-    for dataset in libcommon.dataset.get_supported_datasets(hf_endpoint=hf_endpoint, hf_token=hf_token):
-        update_dataset(
-            dataset=dataset,
-            init_processing_steps=init_processing_steps,
-            hf_endpoint=hf_endpoint,
-            hf_token=hf_token,
-            force=False,
-            priority=Priority.LOW,
-            do_check_support=False,
+
+    def log() -> None:
+        logging.info(
+            f"  {analyzed_datasets} analyzed datasets: {backfilled_datasets} backfilled datasets"
+            f" ({100 * backfilled_datasets / analyzed_datasets:.2f}%), with {created_jobs} created jobs."
         )
-        backfilled_datasets += 1
+
+    for dataset_info in supported_dataset_infos:
+        analyzed_datasets += 1
+
+        dataset = dataset_info.id
+        if not dataset:
+            # should not occur
+            continue
+        dataset_state = DatasetState(dataset=dataset, processing_graph=processing_graph, revision=dataset_info.sha)
+        if dataset_state.should_be_backfilled:
+            backfilled_datasets += 1
+            created_jobs += dataset_state.backfill()
+
+        analyzed_datasets += 1
         if backfilled_datasets % log_batch == 0:
-            logging.info(f"{backfilled_datasets} datasets have been backfilled")
+            log()
+
+    log()
     logging.info("backfill completed")
