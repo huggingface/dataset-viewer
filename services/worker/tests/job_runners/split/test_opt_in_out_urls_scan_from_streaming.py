@@ -141,6 +141,9 @@ FIRST_ROWS_WITH_OPT_IN_OUT_URLS = {
                 "opt_in_urls": [],
                 "opt_out_urls": [],
                 "urls_columns": [],
+                "num_opt_out_urls": 0,
+                "num_opt_in_urls": 0,
+                "num_urls": 0,
             },
         ),
         (
@@ -156,6 +159,9 @@ FIRST_ROWS_WITH_OPT_IN_OUT_URLS = {
                     {"url": "http://testurl.test/test_image-optOut.jpg", "row_idx": 0, "column_name": "col"}
                 ],
                 "urls_columns": ["col"],
+                "num_opt_out_urls": 1,
+                "num_opt_in_urls": 1,
+                "num_urls": 4,
             },
         ),
     ],

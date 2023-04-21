@@ -102,6 +102,9 @@ class OptInOutUrlsScanResponse(TypedDict):
     urls_columns: List[str]
     opt_in_urls: List[OptUrl]
     opt_out_urls: List[OptUrl]
+    num_opt_in_urls: int
+    num_opt_out_urls: int
+    num_urls: int
     num_scanned_rows: int
     has_urls_columns: bool
 
@@ -236,11 +239,14 @@ def compute_opt_in_out_urls_scan_response(
 
     if not urls_columns:
         return OptInOutUrlsScanResponse(
-            has_urls_columns=False,
             urls_columns=[],
             opt_in_urls=[],
             opt_out_urls=[],
+            num_opt_in_urls=0,
+            num_opt_out_urls=0,
+            num_urls=0,
             num_scanned_rows=0,
+            has_urls_columns=False,
         )
 
     if len(urls_columns) > columns_max_number:
@@ -295,11 +301,14 @@ def compute_opt_in_out_urls_scan_response(
 
     # return scan result
     return OptInOutUrlsScanResponse(
-        has_urls_columns=True,
         urls_columns=urls_columns,
         opt_in_urls=opt_in_urls,
         opt_out_urls=opt_out_urls,
+        num_opt_in_urls=len(opt_in_urls),
+        num_opt_out_urls=len(opt_out_urls),
+        num_urls=len(urls),
         num_scanned_rows=num_scanned_rows,
+        has_urls_columns=True,
     )
 
 
