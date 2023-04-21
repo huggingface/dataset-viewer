@@ -180,8 +180,10 @@ class AppConfig:
     cache: CacheConfig = field(default_factory=CacheConfig)
     common: CommonConfig = field(default_factory=CommonConfig)
     datasets_based: DatasetsBasedConfig = field(default_factory=DatasetsBasedConfig)
+    first_rows: FirstRowsConfig = field(default_factory=FirstRowsConfig)
     log: LogConfig = field(default_factory=LogConfig)
     numba: NumbaConfig = field(default_factory=NumbaConfig)
+    parquet_and_info: ParquetAndInfoConfig = field(default_factory=ParquetAndInfoConfig)
     processing_graph: ProcessingGraphConfig = field(default_factory=ProcessingGraphConfig)
     queue: QueueConfig = field(default_factory=QueueConfig)
     worker: WorkerConfig = field(default_factory=WorkerConfig)
@@ -193,8 +195,10 @@ class AppConfig:
             common=CommonConfig.from_env(),
             cache=CacheConfig.from_env(),
             datasets_based=DatasetsBasedConfig.from_env(),
+            first_rows=FirstRowsConfig.from_env(),
             log=LogConfig.from_env(),
             numba=NumbaConfig.from_env(),
+            parquet_and_info=ParquetAndInfoConfig.from_env(),
             processing_graph=ProcessingGraphConfig.from_env(),
             queue=QueueConfig.from_env(),
             worker=WorkerConfig.from_env(),

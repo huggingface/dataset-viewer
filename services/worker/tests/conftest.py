@@ -11,7 +11,7 @@ from libcommon.simple_cache import _clean_cache_database
 from libcommon.storage import StrPath, init_assets_dir
 from pytest import MonkeyPatch, fixture
 
-from worker.config import AppConfig, FirstRowsConfig
+from worker.config import AppConfig
 from worker.main import WORKER_STATE_FILE_NAME
 from worker.resources import LibrariesResource
 
@@ -101,11 +101,6 @@ def libraries_resource(app_config: AppConfig) -> Iterator[LibrariesResource]:
         numba_path=app_config.numba.path,
     ) as libraries_resource:
         yield libraries_resource
-
-
-@fixture
-def first_rows_config(set_env_vars: MonkeyPatch) -> FirstRowsConfig:
-    return FirstRowsConfig.from_env()
 
 
 @fixture
