@@ -41,6 +41,7 @@ from huggingface_hub._commit_api import (
 from huggingface_hub.hf_api import DatasetInfo, HfApi, RepoFile
 from huggingface_hub.utils._errors import RepositoryNotFoundError, RevisionNotFoundError
 from libcommon.constants import (
+    PROCESSING_STEP_PARQUET_AND_DATASET_INFO_ROW_GROUP_SIZE_FOR_AUDIO_DATASETS,
     PROCESSING_STEP_PARQUET_AND_DATASET_INFO_ROW_GROUP_SIZE_FOR_IMAGE_DATASETS,
     PROCESSING_STEP_PARQUET_AND_DATASET_INFO_VERSION,
 )
@@ -654,11 +655,12 @@ def get_writer_batch_size(ds_config_info: datasets.info.DatasetInfo) -> Optional
             Writer batch size to pass to a dataset builder.
             If `None`, then it will use the `datasets` default.
     """
-    return (
-        PROCESSING_STEP_PARQUET_AND_DATASET_INFO_ROW_GROUP_SIZE_FOR_IMAGE_DATASETS
-        if "Image(" in str(ds_config_info.features)
-        else None
-    )
+    if "Audio(" in str(ds_config_info.features):
+        return PROCESSING_STEP_PARQUET_AND_DATASET_INFO_ROW_GROUP_SIZE_FOR_AUDIO_DATASETS
+    elif "Image(" in str(ds_config_info.features):
+        return PROCESSING_STEP_PARQUET_AND_DATASET_INFO_ROW_GROUP_SIZE_FOR_IMAGE_DATASETS
+    else:
+        return None
 
 
 def compute_parquet_and_dataset_info_response(
