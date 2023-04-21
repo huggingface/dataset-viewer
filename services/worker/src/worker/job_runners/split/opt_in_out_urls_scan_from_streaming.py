@@ -328,7 +328,6 @@ class SplitOptInOutUrlsScanJobRunner(DatasetsBasedJobRunner):
         job_info: JobInfo,
         app_config: AppConfig,
         processing_step: ProcessingStep,
-        urls_scan_config: OptInOutUrlsScanConfig,
         hf_datasets_cache: Path,
     ) -> None:
         super().__init__(
@@ -337,7 +336,7 @@ class SplitOptInOutUrlsScanJobRunner(DatasetsBasedJobRunner):
             processing_step=processing_step,
             hf_datasets_cache=hf_datasets_cache,
         )
-        self.urls_scan_config = urls_scan_config
+        self.urls_scan_config = app_config.urls_scan
 
     def compute(self) -> CompleteJobResult:
         if self.config is None or self.split is None:

@@ -201,13 +201,11 @@ class JobRunnerFactory(BaseJobRunnerFactory):
             )
 
         if job_type == SplitOptInOutUrlsScanJobRunner.get_job_type():
-            urls_scan_config = OptInOutUrlsScanConfig.from_env()
             return SplitOptInOutUrlsScanJobRunner(
                 job_info=job_info,
                 app_config=self.app_config,
                 processing_step=processing_step,
                 hf_datasets_cache=self.hf_datasets_cache,
-                urls_scan_config=urls_scan_config,
             )
 
         supported_job_types = [

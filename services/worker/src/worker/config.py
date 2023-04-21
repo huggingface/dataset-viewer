@@ -227,6 +227,7 @@ class AppConfig:
     processing_graph: ProcessingGraphConfig = field(default_factory=ProcessingGraphConfig)
     queue: QueueConfig = field(default_factory=QueueConfig)
     worker: WorkerConfig = field(default_factory=WorkerConfig)
+    urls_scan: OptInOutUrlsScanConfig = field(default_factory=OptInOutUrlsScanConfig)
 
     @classmethod
     def from_env(cls) -> "AppConfig":
@@ -242,4 +243,5 @@ class AppConfig:
             processing_graph=ProcessingGraphConfig.from_env(),
             queue=QueueConfig.from_env(),
             worker=WorkerConfig.from_env(),
+            urls_scan=OptInOutUrlsScanConfig.from_env(),
         )

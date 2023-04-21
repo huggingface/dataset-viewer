@@ -17,7 +17,7 @@ from libcommon.queue import Priority
 from libcommon.resources import CacheMongoResource, QueueMongoResource
 from libcommon.simple_cache import get_response, upsert_response
 
-from worker.config import AppConfig, OptInOutUrlsScanConfig
+from worker.config import AppConfig
 from worker.job_runners.split.opt_in_out_urls_scan_from_streaming import (
     ExternalServerError,
     SplitOptInOutUrlsScanJobRunner,
@@ -28,7 +28,7 @@ from worker.resources import LibrariesResource
 from ...constants import CI_SPAWNING_TOKEN
 from ...fixtures.hub import HubDatasets, get_default_config_split
 
-GetJobRunner = Callable[[str, str, str, AppConfig, OptInOutUrlsScanConfig, bool], SplitOptInOutUrlsScanJobRunner]
+GetJobRunner = Callable[[str, str, str, AppConfig, bool], SplitOptInOutUrlsScanJobRunner]
 
 
 async def mock_check_spawning(
@@ -48,7 +48,6 @@ def get_job_runner(
         config: str,
         split: str,
         app_config: AppConfig,
-        urls_scan_config: OptInOutUrlsScanConfig,
         force: bool = False,
     ) -> SplitOptInOutUrlsScanJobRunner:
         return SplitOptInOutUrlsScanJobRunner(
@@ -73,7 +72,6 @@ def get_job_runner(
                 job_runner_version=SplitOptInOutUrlsScanJobRunner.get_job_runner_version(),
             ),
             hf_datasets_cache=libraries_resource.hf_datasets_cache,
-            urls_scan_config=urls_scan_config,
         )
 
     return _get_job_runner
@@ -170,13 +168,12 @@ def test_compute(
     hub_datasets: HubDatasets,
     app_config: AppConfig,
     get_job_runner: GetJobRunner,
-    urls_scan_config: OptInOutUrlsScanConfig,
     name: str,
     upstream_content: Mapping[str, Any],
     expected_content: Mapping[str, Any],
 ) -> None:
     dataset, config, split = get_default_config_split(hub_datasets[name]["name"])
-    job_runner = get_job_runner(dataset, config, split, app_config, urls_scan_config, False)
+    job_runner = get_job_runner(dataset, config, split, app_config, False)
     upsert_response(
         kind="split-first-rows-from-streaming",
         dataset=dataset,
@@ -234,7 +231,6 @@ def test_compute_failed(
     app_config: AppConfig,
     hub_datasets: HubDatasets,
     get_job_runner: GetJobRunner,
-    urls_scan_config: OptInOutUrlsScanConfig,
     dataset: str,
     columns_max_number: int,
     upstream_content: Mapping[str, Any],
@@ -246,7 +242,11 @@ def test_compute_failed(
         dataset = hub_datasets["spawning_opt_in_out"]["name"]
     dataset, config, split = get_default_config_split(dataset)
     job_runner = get_job_runner(
-        dataset, config, split, app_config, replace(urls_scan_config, columns_max_number=columns_max_number), False
+        dataset,
+        config,
+        split,
+        replace(app_config, urls_scan=replace(app_config.urls_scan, columns_max_number=columns_max_number)),
+        False,
     )
     if dataset != "doesnotexist":
         upsert_response(
@@ -269,12 +269,15 @@ def test_compute_failed(
 def test_compute_error_from_spawning(
     app_config: AppConfig,
     get_job_runner: GetJobRunner,
-    urls_scan_config: OptInOutUrlsScanConfig,
     hub_public_spawning_opt_in_out: str,
 ) -> None:
     dataset, config, split = get_default_config_split(hub_public_spawning_opt_in_out)
     job_runner = get_job_runner(
-        dataset, config, split, app_config, replace(urls_scan_config, spawning_url="wrong_url"), False
+        dataset,
+        config,
+        split,
+        replace(app_config, urls_scan=replace(app_config.urls_scan, spawning_url="wrong_url")),
+        False,
     )
     upsert_response(
         kind="split-first-rows-from-streaming",
@@ -292,7 +295,7 @@ def test_compute_error_from_spawning(
 
 
 @pytest.mark.asyncio
-async def test_real_check_spawning_response(urls_scan_config: OptInOutUrlsScanConfig) -> None:
+async def test_real_check_spawning_response(app_config: AppConfig) -> None:
     semaphore = Semaphore(value=10)
     limiter = AsyncLimiter(10, time_period=1)
 
@@ -300,7 +303,7 @@ async def test_real_check_spawning_response(urls_scan_config: OptInOutUrlsScanCo
     async with ClientSession(headers=headers) as session:
         image_url = "http://testurl.test/test_image.jpg"
         image_urls = [image_url]
-        spawning_url = urls_scan_config.spawning_url
+        spawning_url = app_config.urls_scan.spawning_url
         spawning_response = await check_spawning(image_urls, session, semaphore, limiter, spawning_url)
         assert spawning_response and isinstance(spawning_response, dict)
         assert spawning_response["urls"] and isinstance(spawning_response["urls"], list)
