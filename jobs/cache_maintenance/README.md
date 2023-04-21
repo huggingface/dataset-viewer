@@ -14,7 +14,7 @@ The script can be configured using environment variables. They are grouped by sc
 
 ### Actions
 
-Set environment variables to configure the job (`DATABASE_MIGRATIONS_` prefix):
+Set environment variables to configure the job (`CACHE_MAINTENANCE_` prefix):
 
 - `CACHE_MAINTENANCE_ACTION`: the action to launch, among `backfill`, `metrics`, `skip`. Defaults to `skip`.
 
