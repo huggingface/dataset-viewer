@@ -52,7 +52,7 @@ def fetch_split_names(dataset: str, config: str) -> List[str]:
         config=config,
         split=None,
     )
-    for split_name_item in best_response.response["content"]["split_names"]:
+    for split_name_item in best_response.response["content"]["splits"]:
         split_name = split_name_item["split"]
         if not isinstance(split_name, str):
             raise ValueError(f"Invalid split name: {split_name}, type should be str, got: {type(split_name)}")
