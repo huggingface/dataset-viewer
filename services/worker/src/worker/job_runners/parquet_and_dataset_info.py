@@ -14,6 +14,7 @@ from urllib.parse import quote
 
 import datasets
 import datasets.config
+import datasets.info
 import numpy as np
 import requests
 from datasets import (
@@ -39,7 +40,11 @@ from huggingface_hub._commit_api import (
 )
 from huggingface_hub.hf_api import DatasetInfo, HfApi, RepoFile
 from huggingface_hub.utils._errors import RepositoryNotFoundError, RevisionNotFoundError
-from libcommon.constants import PROCESSING_STEP_PARQUET_AND_DATASET_INFO_VERSION
+from libcommon.constants import (
+    PROCESSING_STEP_PARQUET_AND_DATASET_INFO_ROW_GROUP_SIZE_FOR_AUDIO_DATASETS,
+    PROCESSING_STEP_PARQUET_AND_DATASET_INFO_ROW_GROUP_SIZE_FOR_IMAGE_DATASETS,
+    PROCESSING_STEP_PARQUET_AND_DATASET_INFO_VERSION,
+)
 from libcommon.dataset import DatasetNotFoundError, ask_access
 from libcommon.processing_graph import ProcessingStep
 from libcommon.queue import JobInfo
@@ -634,6 +639,30 @@ def raise_if_too_big_from_external_data_files(
                 ) from error
 
 
+def get_writer_batch_size(ds_config_info: datasets.info.DatasetInfo) -> Optional[int]:
+    """
+    Get the writer_batch_size that defines the maximum row group size in the parquet files.
+    The default in `datasets` is 1,000 but we lower it to 100 for image datasets.
+    This allows to optimize random access to parquet file, since accessing 1 row requires
+    to read its entire row group.
+
+    Args:
+        ds_config_info (`datasets.info.DatasetInfo`):
+            Dataset info from `datasets`.
+
+    Returns:
+        writer_batch_size (`Optional[int]`):
+            Writer batch size to pass to a dataset builder.
+            If `None`, then it will use the `datasets` default.
+    """
+    if "Audio(" in str(ds_config_info.features):
+        return PROCESSING_STEP_PARQUET_AND_DATASET_INFO_ROW_GROUP_SIZE_FOR_AUDIO_DATASETS
+    elif "Image(" in str(ds_config_info.features):
+        return PROCESSING_STEP_PARQUET_AND_DATASET_INFO_ROW_GROUP_SIZE_FOR_IMAGE_DATASETS
+    else:
+        return None
+
+
 def compute_parquet_and_dataset_info_response(
     dataset: str,
     hf_endpoint: str,
@@ -766,6 +795,11 @@ def compute_parquet_and_dataset_info_response(
             use_auth_token=hf_token,
             download_config=download_config,
         )
+        writer_batch_size = get_writer_batch_size(builder.info)
+        if writer_batch_size is not None and (
+            builder._writer_batch_size is None or builder._writer_batch_size > writer_batch_size
+        ):
+            builder._writer_batch_size = writer_batch_size
         raise_if_too_big_from_external_data_files(
             builder=builder,
             max_dataset_size=max_dataset_size,
