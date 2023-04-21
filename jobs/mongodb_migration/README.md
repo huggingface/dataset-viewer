@@ -6,7 +6,7 @@
 
 The script can be configured using environment variables. They are grouped by scope.
 
-### Admin service
+### Migration script
 
 Set environment variables to configure the job (`DATABASE_MIGRATIONS_` prefix):
 
@@ -17,22 +17,8 @@ Set environment variables to configure the job (`DATABASE_MIGRATIONS_` prefix):
 
 See [../../libs/libcommon/README.md](../../libs/libcommon/README.md) for more information about the common configuration.
 
-## Script
+## Launch
 
-The script:
-
-- `run`: run all the migrations. First look at the previously executed migrations. Run the new ones, and revert them in case of error.
-
-To launch the scripts:
-
-- if the image runs in a docker container:
-
-  ```shell
-  docker exec -it datasets-server_mongodb_migration_1 make <SCRIPT>
-  ```
-
-- if the image runs in a kube pod:
-
-  ```shell
-  kubectl exec datasets-server-prod-mongodb_migration-5cc8f8fcd7-k7jfc -- make <SCRIPT>
-  ```
+```shell
+make run
+```
