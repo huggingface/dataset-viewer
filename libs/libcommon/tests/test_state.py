@@ -90,7 +90,7 @@ SPLIT_NAMES_OK = ["split1", "split2"]
 
 
 def get_SPLIT_NAMES_CONTENT_OK(dataset: str, config: str, splits: List[str]) -> Any:
-    return {"split_names": [{"dataset": dataset, "config": config, "split": split_name} for split_name in splits]}
+    return {"splits": [{"dataset": dataset, "config": config, "split": split_name} for split_name in splits]}
 
 
 SPLIT_NAMES_RESPONSE_OK = ResponseSpec(
