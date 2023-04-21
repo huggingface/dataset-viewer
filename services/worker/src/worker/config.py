@@ -132,7 +132,7 @@ OPT_IN_OUT_URLS_SCAN_URLS_NUMBER_PER_BATCH = 1000
 
 
 @dataclass(frozen=True)
-class OptinOutUrlsScanConfig:
+class OptInOutUrlsScanConfig:
     rows_max_number: int = OPT_IN_OUT_URLS_SCAN_ROWS_MAX_NUMBER
     columns_max_number: int = FIRST_ROWS_COLUMNS_MAX_NUMBER
     urls_number_per_batch: int = OPT_IN_OUT_URLS_SCAN_URLS_NUMBER_PER_BATCH
@@ -141,7 +141,7 @@ class OptinOutUrlsScanConfig:
     max_requests_per_second: int = OPT_IN_OUT_URLS_SCAN_MAX_REQUESTS_PER_SECOND
 
     @classmethod
-    def from_env(cls) -> "OptinOutUrlsScanConfig":
+    def from_env(cls) -> "OptInOutUrlsScanConfig":
         env = Env(expand_vars=True)
         with env.prefixed("OPT_IN_OUT_URLS_SCAN_"):
             return cls(

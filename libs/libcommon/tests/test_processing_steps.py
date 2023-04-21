@@ -144,7 +144,7 @@ def graph() -> ProcessingGraph:
         ),
         (
             "split-first-rows-from-streaming",
-            ["dataset-is-valid"],
+            ["dataset-is-valid", "split-opt-in-out-urls-scan"],
             [
                 "/split-names-from-streaming",
                 "/split-names-from-dataset-info",
@@ -207,6 +207,18 @@ def graph() -> ProcessingGraph:
                 "/split-names-from-streaming",
                 "split-first-rows-from-parquet",
                 "split-first-rows-from-streaming",
+            ],
+        ),
+        (
+            "split-opt-in-out-urls-scan",
+            [],
+            [
+                "/config-names",
+                "/split-names-from-streaming",
+                "/split-names-from-dataset-info",
+                "split-first-rows-from-streaming",
+                "config-parquet-and-info",
+                "config-info",
             ],
         ),
     ],

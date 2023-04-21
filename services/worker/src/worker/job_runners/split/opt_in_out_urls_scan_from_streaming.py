@@ -25,7 +25,7 @@ from libcommon.queue import JobInfo
 from libcommon.simple_cache import DoesNotExist, SplitFullName, get_response
 from libcommon.storage import StrPath
 
-from worker.config import AppConfig, OptinOutUrlsScanConfig
+from worker.config import AppConfig, OptInOutUrlsScanConfig
 from worker.job_runner import CompleteJobResult, ConfigNotFoundError, JobRunnerError
 from worker.job_runners._datasets_based_job_runner import DatasetsBasedJobRunner
 from worker.job_runners.split.first_rows_from_streaming import (
@@ -34,7 +34,7 @@ from worker.job_runners.split.first_rows_from_streaming import (
     retry,
 )
 
-OptinOutUrlsScanJobRunnerErrorCode = Literal[
+SplitOptInOutUrlsScanJobRunnerErrorCode = Literal[
     "InfoError",
     "TooManyColumnsError",
     "PreviousStepStatusError",
@@ -45,14 +45,14 @@ OptinOutUrlsScanJobRunnerErrorCode = Literal[
 ]
 
 
-class OptinOutUrlsScanJobRunnerError(JobRunnerError):
+class SplitOptInOutUrlsScanJobRunnerError(JobRunnerError):
     """Base class for exceptions in this module."""
 
     def __init__(
         self,
         message: str,
         status_code: HTTPStatus,
-        code: OptinOutUrlsScanJobRunnerErrorCode,
+        code: SplitOptInOutUrlsScanJobRunnerErrorCode,
         cause: Optional[BaseException] = None,
         disclose_cause: bool = False,
     ):
@@ -61,56 +61,56 @@ class OptinOutUrlsScanJobRunnerError(JobRunnerError):
         )
 
 
-class InfoError(OptinOutUrlsScanJobRunnerError):
+class InfoError(SplitOptInOutUrlsScanJobRunnerError):
     """Raised when the info could not be fetched."""
 
     def __init__(self, message: str, cause: Optional[BaseException] = None):
         super().__init__(message, HTTPStatus.INTERNAL_SERVER_ERROR, "InfoError", cause, True)
 
 
-class TooManyColumnsError(OptinOutUrlsScanJobRunnerError):
+class TooManyColumnsError(SplitOptInOutUrlsScanJobRunnerError):
     """Raised when the dataset exceeded the max number of columns."""
 
     def __init__(self, message: str, cause: Optional[BaseException] = None):
         super().__init__(message, HTTPStatus.INTERNAL_SERVER_ERROR, "TooManyColumnsError", cause, True)
 
 
-class PreviousStepStatusError(OptinOutUrlsScanJobRunnerError):
+class PreviousStepStatusError(SplitOptInOutUrlsScanJobRunnerError):
     """Raised when the previous step gave an error. The job should not have been created."""
 
     def __init__(self, message: str, cause: Optional[BaseException] = None):
         super().__init__(message, HTTPStatus.INTERNAL_SERVER_ERROR, "PreviousStepStatusError", cause, False)
 
 
-class PreviousStepFormatError(OptinOutUrlsScanJobRunnerError):
+class PreviousStepFormatError(SplitOptInOutUrlsScanJobRunnerError):
     """Raised when the content of the previous step has not the expected format."""
 
     def __init__(self, message: str, cause: Optional[BaseException] = None):
         super().__init__(message, HTTPStatus.INTERNAL_SERVER_ERROR, "PreviousStepFormatError", cause, False)
 
 
-class StreamingRowsError(OptinOutUrlsScanJobRunnerError):
+class StreamingRowsError(SplitOptInOutUrlsScanJobRunnerError):
     """Raised when the rows could not be fetched in streaming mode."""
 
     def __init__(self, message: str, cause: Optional[BaseException] = None):
         super().__init__(message, HTTPStatus.INTERNAL_SERVER_ERROR, "StreamingRowsError", cause, True)
 
 
-class NormalRowsError(OptinOutUrlsScanJobRunnerError):
+class NormalRowsError(SplitOptInOutUrlsScanJobRunnerError):
     """Raised when the rows could not be fetched in normal mode."""
 
     def __init__(self, message: str, cause: Optional[BaseException] = None):
         super().__init__(message, HTTPStatus.INTERNAL_SERVER_ERROR, "NormalRowsError", cause, True)
 
 
-class MissingSpawningTokenError(OptinOutUrlsScanJobRunnerError):
+class MissingSpawningTokenError(SplitOptInOutUrlsScanJobRunnerError):
     """Raised when the spawning.ai token is not set."""
 
     def __init__(self, message: str, cause: Optional[BaseException] = None):
         super().__init__(message, HTTPStatus.INTERNAL_SERVER_ERROR, "MissingSpawningTokenError", cause, False)
 
 
-class OptinOutUrlsScanResponse(TypedDict):
+class OptInOutUrlsScanResponse(TypedDict):
     urls_columns: List[str]
     opt_in_urls: List[str]
     opt_out_urls: List[str]
@@ -230,7 +230,7 @@ def compute_opt_in_out_urls_scan_response(
     spawning_token: Optional[str],
     max_concurrent_requests_number: int,
     max_requests_per_second: int,
-) -> OptinOutUrlsScanResponse:
+) -> OptInOutUrlsScanResponse:
     logging.info(f"get opt-in-out-urls-scan for dataset={dataset} config={config} split={split}")
 
     use_auth_token: Union[bool, str, None] = hf_token if hf_token is not None else False
@@ -297,7 +297,7 @@ def compute_opt_in_out_urls_scan_response(
             urls_columns.append(string_column)
 
     if not urls_columns:
-        return OptinOutUrlsScanResponse(
+        return OptInOutUrlsScanResponse(
             has_urls_columns=False,
             urls_columns=[],
             opt_in_urls=[],
@@ -364,7 +364,7 @@ def compute_opt_in_out_urls_scan_response(
     ]
 
     # return scan result
-    return OptinOutUrlsScanResponse(
+    return OptInOutUrlsScanResponse(
         has_urls_columns=True,
         urls_columns=urls_columns,
         opt_in_urls=opt_in_urls,
@@ -375,8 +375,8 @@ def compute_opt_in_out_urls_scan_response(
     )
 
 
-class OptinOutUrlsScanJobRunner(DatasetsBasedJobRunner):
-    urls_scan_config: OptinOutUrlsScanConfig
+class SplitOptInOutUrlsScanJobRunner(DatasetsBasedJobRunner):
+    urls_scan_config: OptInOutUrlsScanConfig
 
     @staticmethod
     def get_job_type() -> str:
@@ -391,9 +391,8 @@ class OptinOutUrlsScanJobRunner(DatasetsBasedJobRunner):
         job_info: JobInfo,
         app_config: AppConfig,
         processing_step: ProcessingStep,
-        urls_scan_config: OptinOutUrlsScanConfig,
+        urls_scan_config: OptInOutUrlsScanConfig,
         hf_datasets_cache: Path,
-        assets_directory: StrPath,
     ) -> None:
         super().__init__(
             job_info=job_info,
@@ -402,8 +401,6 @@ class OptinOutUrlsScanJobRunner(DatasetsBasedJobRunner):
             hf_datasets_cache=hf_datasets_cache,
         )
         self.urls_scan_config = urls_scan_config
-        self.assets_directory = assets_directory
-        self.assets_base_url = app_config.assets.base_url
 
     def compute(self) -> CompleteJobResult:
         if self.config is None or self.split is None:
