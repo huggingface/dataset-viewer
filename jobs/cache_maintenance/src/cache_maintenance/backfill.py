@@ -40,7 +40,6 @@ def backfill_cache(
             backfilled_datasets += 1
             created_jobs += dataset_state.backfill()
 
-        analyzed_datasets += 1
         if backfilled_datasets % log_batch == 0:
             log()
 
