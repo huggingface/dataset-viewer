@@ -243,7 +243,6 @@ class ConfigState:
 
 @dataclass
 class CacheStatus:
-    blocked_by_parent: Dict[str, ArtifactState] = field(default_factory=dict)
     cache_has_different_git_revision: Dict[str, ArtifactState] = field(default_factory=dict)
     cache_is_outdated_by_parent: Dict[str, ArtifactState] = field(default_factory=dict)
     cache_is_empty: Dict[str, ArtifactState] = field(default_factory=dict)
@@ -253,7 +252,6 @@ class CacheStatus:
 
     def as_response(self) -> Dict[str, List[str]]:
         return {
-            "blocked_by_parent": sorted(self.blocked_by_parent.keys()),
             "cache_has_different_git_revision": sorted(self.cache_has_different_git_revision.keys()),
             "cache_is_outdated_by_parent": sorted(self.cache_is_outdated_by_parent.keys()),
             "cache_is_empty": sorted(self.cache_is_empty.keys()),
@@ -331,12 +329,6 @@ class Plan:
 
     def as_response(self) -> List[str]:
         return sorted(task.id for task in self.tasks)
-
-
-@dataclass
-class ParentState:
-    is_fan_in: bool
-    artifact_states: List[ArtifactState]
 
 
 @dataclass
@@ -437,35 +429,13 @@ class DatasetState:
             # config
             artifact_states = self._get_artifact_states_for_step(step)
             for artifact_state in artifact_states:
-                parent_states = [
-                    ParentState(
-                        artifact_states=self._get_artifact_states_for_step(
-                            step=parent_step, config=artifact_state.config, split=artifact_state.split
-                        ),
-                        is_fan_in=(parent_step.input_type == "config" and step.input_type == "dataset")
-                        or (parent_step.input_type == "split" and step.input_type == "dataset")
-                        or (parent_step.input_type == "split" and step.input_type == "config"),
-                    )
-                    for parent_step in step.parents
-                ]
-
-                # blocked by a parent?
-                if any(
-                    parent_artifact_state.id not in cache_status.up_to_date
-                    for parent_state in parent_states
-                    for parent_artifact_state in parent_state.artifact_states
-                    if not parent_state.is_fan_in
-                    # ^ the fan-in relations between steps do not block, because these steps consider the
-                    # cases: ok, pending and error. So, if one of the previous artifacts is pending, we must not block
-                ):
-                    cache_status.blocked_by_parent[artifact_state.id] = artifact_state
-                    continue
-
                 # any of the parents is more recent?
                 if any(
                     artifact_state.cache_state.is_older_than(parent_artifact_state.cache_state)
-                    for parent_state in parent_states
-                    for parent_artifact_state in parent_state.artifact_states
+                    for parent_step in step.parents
+                    for parent_artifact_state in self._get_artifact_states_for_step(
+                        step=parent_step, config=artifact_state.config, split=artifact_state.split
+                    )
                 ):
                     cache_status.cache_is_outdated_by_parent[artifact_state.id] = artifact_state
                     continue
