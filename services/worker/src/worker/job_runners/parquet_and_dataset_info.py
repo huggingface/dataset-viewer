@@ -795,12 +795,15 @@ def compute_parquet_and_dataset_info_response(
             download_config=download_config,
         )
         writer_batch_size = get_writer_batch_size(builder.info)
+        if writer_batch_size is not None and (
+            builder._writer_batch_size is None or builder._writer_batch_size > writer_batch_size
+        ):
+            builder._writer_batch_size = writer_batch_size
         raise_if_too_big_from_external_data_files(
             builder=builder,
             max_dataset_size=max_dataset_size,
             max_external_data_files=max_external_data_files,
             hf_token=hf_token,
-            writer_batch_size=writer_batch_size,
         )
         builder.download_and_prepare(file_format="parquet")  # the parquet files are stored in the cache dir
         dataset_info[config] = asdict(builder.info)
