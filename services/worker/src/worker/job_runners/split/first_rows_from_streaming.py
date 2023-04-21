@@ -472,7 +472,6 @@ class SplitFirstRowsFromStreamingJobRunner(DatasetsBasedJobRunner):
         job_info: JobInfo,
         app_config: AppConfig,
         processing_step: ProcessingStep,
-        first_rows_config: FirstRowsConfig,
         hf_datasets_cache: Path,
         assets_directory: StrPath,
     ) -> None:
@@ -482,7 +481,7 @@ class SplitFirstRowsFromStreamingJobRunner(DatasetsBasedJobRunner):
             processing_step=processing_step,
             hf_datasets_cache=hf_datasets_cache,
         )
-        self.first_rows_config = first_rows_config
+        self.first_rows_config = app_config.first_rows
         self.assets_directory = assets_directory
         self.assets_base_url = app_config.assets.base_url
 

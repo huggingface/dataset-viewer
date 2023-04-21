@@ -859,7 +859,6 @@ class ParquetAndDatasetInfoJobRunner(DatasetsBasedJobRunner):
         app_config: AppConfig,
         processing_step: ProcessingStep,
         hf_datasets_cache: Path,
-        parquet_and_dataset_info_config: ParquetAndInfoConfig,
     ) -> None:
         super().__init__(
             job_info=job_info,
@@ -867,7 +866,7 @@ class ParquetAndDatasetInfoJobRunner(DatasetsBasedJobRunner):
             processing_step=processing_step,
             hf_datasets_cache=hf_datasets_cache,
         )
-        self.parquet_and_dataset_info_config = parquet_and_dataset_info_config
+        self.parquet_and_dataset_info_config = app_config.parquet_and_info
 
     def compute(self) -> CompleteJobResult:
         if self.dataset is None:

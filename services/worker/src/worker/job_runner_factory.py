@@ -9,7 +9,7 @@ from libcommon.processing_graph import ProcessingGraph
 from libcommon.queue import JobInfo
 from libcommon.storage import StrPath
 
-from worker.config import AppConfig, FirstRowsConfig, ParquetAndInfoConfig
+from worker.config import AppConfig
 from worker.job_runner import JobRunner
 from worker.job_runners.config.info import ConfigInfoJobRunner
 from worker.job_runners.config.parquet import ConfigParquetJobRunner
@@ -90,13 +90,11 @@ class JobRunnerFactory(BaseJobRunnerFactory):
                 hf_datasets_cache=self.hf_datasets_cache,
             )
         if job_type == SplitFirstRowsFromStreamingJobRunner.get_job_type():
-            first_rows_config = FirstRowsConfig.from_env()
             return SplitFirstRowsFromStreamingJobRunner(
                 job_info=job_info,
                 app_config=self.app_config,
                 processing_step=processing_step,
                 hf_datasets_cache=self.hf_datasets_cache,
-                first_rows_config=first_rows_config,
                 assets_directory=self.assets_directory,
             )
         if job_type == ParquetAndDatasetInfoJobRunner.get_job_type():
@@ -105,7 +103,6 @@ class JobRunnerFactory(BaseJobRunnerFactory):
                 app_config=self.app_config,
                 processing_step=processing_step,
                 hf_datasets_cache=self.hf_datasets_cache,
-                parquet_and_dataset_info_config=ParquetAndInfoConfig.from_env(),
             )
         if job_type == ConfigParquetAndInfoJobRunner.get_job_type():
             return ConfigParquetAndInfoJobRunner(
@@ -113,7 +110,6 @@ class JobRunnerFactory(BaseJobRunnerFactory):
                 app_config=self.app_config,
                 processing_step=processing_step,
                 hf_datasets_cache=self.hf_datasets_cache,
-                parquet_and_info_config=ParquetAndInfoConfig.from_env(),
             )
         if job_type == ConfigParquetJobRunner.get_job_type():
             return ConfigParquetJobRunner(
@@ -186,13 +182,11 @@ class JobRunnerFactory(BaseJobRunnerFactory):
                 worker_config=self.app_config.worker,
             )
         if job_type == SplitFirstRowsFromParquetJobRunner.get_job_type():
-            first_rows_config = FirstRowsConfig.from_env()
             return SplitFirstRowsFromParquetJobRunner(
                 job_info=job_info,
                 app_config=self.app_config,
                 processing_step=processing_step,
                 hf_datasets_cache=self.hf_datasets_cache,
-                first_rows_config=first_rows_config,
                 assets_directory=self.assets_directory,
             )
         if job_type == DatasetIsValidJobRunner.get_job_type():
