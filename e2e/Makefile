@@ -11,10 +11,10 @@ export API_UVICORN_PORT := 9080
 export COMMON_HF_ENDPOINT := https://hub-ci.huggingface.co
 export COMMON_HF_TOKEN := hf_app_datasets-server_token
 # ^ hard coded, see e2e/tests/fixtures/hub.py
-export COMMON_LOG_LEVEL := DEBUG
+export LOG_LEVEL := DEBUG
 export FIRST_ROWS_MAX_NUMBER := 4
 export MONGO_PORT := 27050
-export PARQUET_AND_DATASET_INFO_COMMITTER_HF_TOKEN := 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
+export PARQUET_AND_INFO_COMMITTER_HF_TOKEN := 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
 export PORT_REVERSE_PROXY := 9000
 export PROMETHEUS_MULTIPROC_DIR := /tmp
 export WORKER_SLEEP_SECONDS := 1

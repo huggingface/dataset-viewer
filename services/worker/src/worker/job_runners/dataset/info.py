@@ -6,16 +6,18 @@ from http import HTTPStatus
 from typing import Any, Dict, List, Literal, Mapping, Optional, Tuple, TypedDict
 
 from libcommon.constants import PROCESSING_STEP_DATASET_INFO_VERSION
-from libcommon.dataset import DatasetNotFoundError
 from libcommon.simple_cache import DoesNotExist, SplitFullName, get_response
 
-from worker.job_runner import JobResult, JobRunner, JobRunnerError
+from worker.job_runner import (
+    JobResult,
+    JobRunner,
+    JobRunnerError,
+    ParameterMissingError,
+    get_previous_step_or_raise,
+)
 from worker.utils import PreviousJob
 
-DatasetInfoJobRunnerErrorCode = Literal[
-    "PreviousStepStatusError",
-    "PreviousStepFormatError",
-]
+DatasetInfoJobRunnerErrorCode = Literal["PreviousStepFormatError"]
 
 
 class DatasetInfoResponse(TypedDict):
@@ -40,13 +42,6 @@ class DatasetInfoJobRunnerError(JobRunnerError):
         )
 
 
-class PreviousStepStatusError(DatasetInfoJobRunnerError):
-    """Raised when the previous step gave an error. The job should not have been created."""
-
-    def __init__(self, message: str, cause: Optional[BaseException] = None):
-        super().__init__(message, HTTPStatus.INTERNAL_SERVER_ERROR, "PreviousStepStatusError", cause, False)
-
-
 class PreviousStepFormatError(DatasetInfoJobRunnerError):
     """Raised when the content of the previous step has not the expected format."""
 
@@ -68,29 +63,18 @@ def compute_dataset_info_response(dataset: str) -> Tuple[DatasetInfoResponse, fl
         or raise errors).
     <Tip>
     Raises the following errors:
-        - [`~job_runners.dataset_info.PreviousStepStatusError`]
+        - [`~job_runner.PreviousStepError`]
             If the previous step gave an error.
-        - [`~job_runners.dataset_info.PreviousStepFormatError`]
+        - [`~job_runners.dataset.info.PreviousStepFormatError`]
             If the content of the previous step doesn't have the expected format.
-        - [`~libcommon.dataset.DatasetNotFoundError`]
-            If the dataset does not exist, or if the
-            token does not give the sufficient access to the dataset, or if the dataset is private
-            (private datasets are not supported by the datasets server)
     </Tip>
     """
     logging.info(f"get dataset_info for {dataset=}")
 
-    try:
-        response = get_response(kind="/config-names", dataset=dataset)
-    except DoesNotExist as e:
-        raise DatasetNotFoundError("No response for '/config-names' found for this dataset: .", e) from e
-    if response["http_status"] != HTTPStatus.OK:
-        raise PreviousStepStatusError(
-            f"Previous step raised an error: {response['http_status']}. This job should not have been created."
-        )
-    content = response["content"]
+    config_names_best_response = get_previous_step_or_raise(kinds=["/config-names"], dataset=dataset)
+    content = config_names_best_response.response["content"]
     if "config_names" not in content:
-        raise PreviousStepFormatError("'/config-names' did not return the expected content: 'config_names'.")
+        raise PreviousStepFormatError("Previous step did not return the expected content: 'config_names'.")
 
     try:
         config_infos: Dict[str, Any] = {}
@@ -113,7 +97,7 @@ def compute_dataset_info_response(dataset: str) -> Tuple[DatasetInfoResponse, fl
                 )
                 continue
             if config_response["http_status"] != HTTPStatus.OK:
-                logging.debug(f"Previous step gave an error: {response['http_status']}")
+                logging.debug(f"Previous step gave an error: {config_response['http_status']}")
                 failed.append(
                     PreviousJob(
                         kind="config-info",
@@ -143,6 +127,8 @@ class DatasetInfoJobRunner(JobRunner):
         return PROCESSING_STEP_DATASET_INFO_VERSION
 
     def compute(self) -> JobResult:
+        if self.dataset is None:
+            raise ParameterMissingError("'dataset' parameter is required")
         response_content, progress = compute_dataset_info_response(dataset=self.dataset)
         return JobResult(response_content, progress=progress)
 

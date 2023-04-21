@@ -5,17 +5,24 @@ import logging
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 from http import HTTPStatus
-from typing import Any, Literal, Mapping, Optional
+from typing import Any, List, Literal, Mapping, Optional
 
 from libcommon.config import CommonConfig
 from libcommon.dataset import DatasetNotFoundError, get_dataset_git_revision
-from libcommon.exceptions import CustomError
+from libcommon.exceptions import (
+    CustomError,
+    ErrorResponseWithCause,
+    ErrorResponseWithoutCause,
+)
 from libcommon.processing_graph import ProcessingStep
 from libcommon.queue import JobInfo, Priority, Queue, Status
 from libcommon.simple_cache import (
+    BestResponse,
+    CacheEntryWithDetails,
     DoesNotExist,
     SplitFullName,
     delete_response,
+    get_best_response,
     get_response,
     get_response_without_content,
     get_split_full_names_for_dataset_and_kind,
@@ -26,13 +33,14 @@ from libcommon.utils import orjson_dumps
 from worker.config import WorkerConfig
 
 GeneralJobRunnerErrorCode = Literal[
-    "ConfigNotFoundError",
+    "ParameterMissingError",
     "NoGitRevisionError",
     "SplitNotFoundError",
     "UnexpectedError",
     "TooBigContentError",
     "JobRunnerCrashedError",
     "JobRunnerExceededMaximumDurationError",
+    "ResponseAlreadyComputedError",
 ]
 
 # List of error codes that should trigger a retry.
@@ -87,19 +95,6 @@ class GeneralJobRunnerError(JobRunnerError):
         )
 
 
-class ConfigNotFoundError(GeneralJobRunnerError):
-    """Raised when the config does not exist."""
-
-    def __init__(self, message: str, cause: Optional[BaseException] = None):
-        super().__init__(
-            message=message,
-            status_code=HTTPStatus.NOT_FOUND,
-            code="ConfigNotFoundError",
-            cause=cause,
-            disclose_cause=False,
-        )
-
-
 class SplitNotFoundError(GeneralJobRunnerError):
     """Raised when the split does not exist."""
 
@@ -108,6 +103,19 @@ class SplitNotFoundError(GeneralJobRunnerError):
             message=message,
             status_code=HTTPStatus.NOT_FOUND,
             code="SplitNotFoundError",
+            cause=cause,
+            disclose_cause=False,
+        )
+
+
+class ParameterMissingError(GeneralJobRunnerError):
+    """Raised when request is missing some parameter."""
+
+    def __init__(self, message: str, cause: Optional[BaseException] = None):
+        super().__init__(
+            message=message,
+            status_code=HTTPStatus.BAD_REQUEST,
+            code="ParameterMissingError",
             cause=cause,
             disclose_cause=False,
         )
@@ -179,6 +187,112 @@ class JobRunnerExceededMaximumDurationError(GeneralJobRunnerError):
         )
 
 
+class ResponseAlreadyComputedError(GeneralJobRunnerError):
+    """Raised when response has been already computed by another job runner."""
+
+    def __init__(self, message: str, cause: Optional[BaseException] = None):
+        super().__init__(
+            message=message,
+            status_code=HTTPStatus.INTERNAL_SERVER_ERROR,
+            code="ResponseAlreadyComputedError",
+            cause=cause,
+            disclose_cause=True,
+        )
+
+
+class PreviousStepError(JobRunnerError):
+    """Raised when the previous step failed. It contains the contents of the error response,
+    and the details contain extra information about the previous step.
+    """
+
+    error_with_cause: ErrorResponseWithCause
+    error_without_cause: ErrorResponseWithoutCause
+
+    def __init__(
+        self,
+        message: str,
+        status_code: HTTPStatus,
+        code: str,
+        cause: Optional[BaseException],
+        disclose_cause: bool,
+        error_with_cause: ErrorResponseWithCause,
+        error_without_cause: ErrorResponseWithoutCause,
+    ):
+        super().__init__(
+            message=message, status_code=status_code, code=code, cause=cause, disclose_cause=disclose_cause
+        )
+        self.error_with_cause = error_with_cause
+        self.error_without_cause = error_without_cause
+
+    @staticmethod
+    def from_response(
+        response: CacheEntryWithDetails,
+        kind: str,
+        dataset: str,
+        config: Optional[str] = None,
+        split: Optional[str] = None,
+    ) -> "PreviousStepError":
+        if response.get("http_status") == HTTPStatus.OK:
+            raise ValueError("Cannot create a PreviousStepError, the response should contain an error")
+
+        message = response["content"]["error"] if "error" in response["content"] else "Unknown error"
+        status_code = response["http_status"]
+        error_code = response["error_code"] or "PreviousStepError"
+        cause = None  # No way to create the same exception
+        disclose_cause = response["details"] == response["content"]
+        error_without_cause: ErrorResponseWithoutCause = {"error": message}
+        error_with_cause: ErrorResponseWithCause = {
+            "error": message,
+            # Add lines in the traceback to give some info about the previous step error (a bit hacky)
+            "cause_traceback": [
+                "The previous step failed, the error is copied to this step:",
+                f"  {kind=} {dataset=} {config=} {split=}",
+                "---",
+            ],
+        }
+        if "cause_exception" in response["details"] and isinstance(response["details"]["cause_exception"], str):
+            error_with_cause["cause_exception"] = response["details"]["cause_exception"]
+        if "cause_message" in response["details"] and isinstance(response["details"]["cause_message"], str):
+            error_with_cause["cause_message"] = response["details"]["cause_message"]
+        if (
+            "cause_traceback" in response["details"]
+            and isinstance(response["details"]["cause_traceback"], list)
+            and all(isinstance(line, str) for line in response["details"]["cause_traceback"])
+        ):
+            error_with_cause["cause_traceback"].extend(*response["details"]["cause_traceback"])
+        return PreviousStepError(
+            message=message,
+            status_code=status_code,
+            code=error_code,
+            cause=cause,
+            disclose_cause=disclose_cause,
+            error_without_cause=error_without_cause,
+            error_with_cause=error_with_cause,
+        )
+
+    def as_response_with_cause(self) -> ErrorResponseWithCause:
+        return self.error_with_cause
+
+    def as_response_without_cause(self) -> ErrorResponseWithoutCause:
+        return self.error_without_cause
+
+
+def get_previous_step_or_raise(
+    kinds: List[str], dataset: str, config: Optional[str] = None, split: Optional[str] = None
+) -> BestResponse:
+    """Get the previous step from the cache, or raise an exception if it failed."""
+    best_response = get_best_response(kinds=kinds, dataset=dataset, config=config, split=split)
+    if best_response.response["http_status"] != HTTPStatus.OK:
+        raise PreviousStepError.from_response(
+            response=best_response.response,
+            kind=best_response.kind,
+            dataset=dataset,
+            config=config,
+            split=split,
+        )
+    return best_response
+
+
 class JobRunner(ABC):
     """
     Base class for job runners. A job runner is a class that processes a job, for a specific processing step.
@@ -204,6 +318,7 @@ class JobRunner(ABC):
     worker_config: WorkerConfig
     common_config: CommonConfig
     processing_step: ProcessingStep
+    _dataset_git_revision: Optional[str] = None
 
     @staticmethod
     @abstractmethod
@@ -284,9 +399,11 @@ class JobRunner(ABC):
 
     def get_dataset_git_revision(self) -> Optional[str]:
         """Get the git revision of the dataset repository."""
-        return get_dataset_git_revision(
-            dataset=self.dataset, hf_endpoint=self.common_config.hf_endpoint, hf_token=self.common_config.hf_token
-        )
+        if self._dataset_git_revision is None:
+            self._dataset_git_revision = get_dataset_git_revision(
+                dataset=self.dataset, hf_endpoint=self.common_config.hf_endpoint, hf_token=self.common_config.hf_token
+            )
+        return self._dataset_git_revision
 
     # TODO: set the git revision as part of the job_info -> no need to get info from the Hub
     # if None: run the job
@@ -371,16 +488,9 @@ class JobRunner(ABC):
             )
             self.debug(f"dataset={self.dataset} config={self.config} split={self.split} is valid, cache updated")
             return True
-        except (
-            DatasetNotFoundError,
-            ConfigNotFoundError,
-            SplitNotFoundError,
-        ):
-            # To avoid filling the cache, we don't save these errors. Otherwise, DoS is possible.
-            self.debug(
-                f"the dataset={self.dataset}, config {self.config} or split {self.split} could not be found, don't"
-                " update the cache"
-            )
+        except DatasetNotFoundError:
+            # To avoid filling the cache, we don't save this error. Otherwise, DoS is possible.
+            self.debug(f"the dataset={self.dataset} could not be found, don't update the cache")
             return False
         except Exception as err:
             e = err if isinstance(err, CustomError) else UnexpectedError(str(err), err)
@@ -527,3 +637,23 @@ class JobRunner(ABC):
             f"response for dataset={self.dataset} config={self.config} split={self.split} had an error (exceeded"
             " maximum duration), cache updated"
         )
+
+    def raise_if_parallel_response_exists(self, parallel_cache_kind: str, parallel_job_version: int) -> None:
+        try:
+            existing_response = get_response_without_content(
+                kind=parallel_cache_kind, dataset=self.dataset, config=self.config, split=self.split
+            )
+            dataset_git_revision = self.get_dataset_git_revision()
+            if (
+                existing_response["http_status"] == HTTPStatus.OK
+                and existing_response["job_runner_version"] == parallel_job_version
+                and existing_response["progress"] == 1.0  # completed response
+                and dataset_git_revision is not None
+                and existing_response["dataset_git_revision"] == dataset_git_revision
+            ):
+                raise ResponseAlreadyComputedError(
+                    f"Response has already been computed and stored in cache kind: {parallel_cache_kind}. Compute will"
+                    " be skipped."
+                )
+        except DoesNotExist:
+            logging.debug(f"no cache found for {parallel_cache_kind}.")

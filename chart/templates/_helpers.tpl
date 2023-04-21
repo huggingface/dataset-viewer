@@ -34,8 +34,8 @@ Docker image management
 {{ include "hf.common.images.image" (dict "imageRoot" .Values.images.jobs.mongodbMigration "global" .Values.global.huggingface) }}
 {{- end -}}
 
-{{- define "jobs.cacheRefresh.image" -}}
-{{ include "hf.common.images.image" (dict "imageRoot" .Values.images.jobs.cacheRefresh "global" .Values.global.huggingface) }}
+{{- define "jobs.cacheMaintenance.image" -}}
+{{ include "hf.common.images.image" (dict "imageRoot" .Values.images.jobs.cacheMaintenance "global" .Values.global.huggingface) }}
 {{- end -}}
 
 {{- define "services.admin.image" -}}
@@ -73,9 +73,14 @@ app.kubernetes.io/component: "{{ include "name" . }}-storage-admin"
 app.kubernetes.io/component: "{{ include "name" . }}-mongodb-migration"
 {{- end -}}
 
-{{- define "labels.cacheRefresh" -}}
+{{- define "labels.cacheMaintenance" -}}
 {{ include "hf.labels.commons" . }}
-app.kubernetes.io/component: "{{ include "name" . }}-cache-refresh"
+app.kubernetes.io/component: "{{ include "name" . }}-cache-maintenance"
+{{- end -}}
+
+{{- define "labels.metricsCollector" -}}
+{{ include "hf.labels.commons" . }}
+app.kubernetes.io/component: "{{ include "name" . }}-metrics-collector"
 {{- end -}}
 
 {{- define "labels.admin" -}}
@@ -132,6 +137,22 @@ The assets/ subpath in the NFS
 */}}
 {{- define "assets.subpath" -}}
 {{- printf "%s/%s/%s/" .Chart.Name .Release.Name "assets" }}
+{{- end }}
+
+{{/*
+The cached-assets base URL
+*/}}
+{{- define "cachedAssets.baseUrl" -}}
+{{- printf "%s%s/cached-assets" (include "datasetsServer.ingress.scheme" .) (include "datasetsServer.ingress.hostname" .) }}
+{{- end }}
+
+{{/*
+The cached-assets/ subpath in the NFS
+- in a subdirectory named as the chart (datasets-server/), and below it,
+- in a subdirectory named as the Release, so that Releases will not share the same dir
+*/}}
+{{- define "cachedAssets.subpath" -}}
+{{- printf "%s/%s/%s/" .Chart.Name .Release.Name "cached-assets" }}
 {{- end }}
 
 {{/*

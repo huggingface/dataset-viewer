@@ -32,12 +32,11 @@ images:
       useGlobalRegistry: false
       repository: datasets-server-jobs-mongodb_migration
       tag: sha-fb3399a
-    # cacheRefresh:
-    #   registry: huggingface
-    #   useGlobalRegistry: false
-    #   repository: datasets-server-jobs-cache_refresh
-    #   tag: sha-fb3399a
-    # --- temporary disabling this job ---
+    cacheMaintenance:
+      registry: huggingface
+      useGlobalRegistry: false
+      repository: datasets-server-jobs-cache_maintenance
+      tag: sha-fb3399a
   services:
     admin:
       registry: huggingface
@@ -59,8 +58,10 @@ images:
 common:
   # URL of the HuggingFace Hub
   hfEndpoint: ""
+
+log:
   # Log level
-  logLevel: "INFO"
+  level: "INFO"
 
 # --- common parameters ---
 
@@ -112,6 +113,10 @@ queue:
   # Name of the mongo db database used to store the jobs queue
   mongoDatabase: "datasets_server_queue"
 
+metrics:
+  # Name of the mongo db database used to store metrics
+  mongoDatabase: "datasets_server_metrics"
+
 worker:
   # maximum size in bytes of the response content computed by a worker
   contentMaxBytes: "10_000_000"
@@ -144,7 +149,7 @@ firstRows:
   # Max number of columns in the /first-rows endpoint response
   columnsMaxNumber: 1_000
 
-parquetAndDatasetInfo:
+parquetAndInfo:
   # comma-separated list of the blocked datasets. Defaults to empty.
   blockedDatasets: ""
   # the git commit message when the parquet files are uploaded to the Hub. Defaults to `Update parquet files`.
@@ -166,6 +171,20 @@ assets:
   # Directory on the shared storage (audio files and images)
   storageDirectory: "/assets"
 
+cachedAssets:
+  # base URL for the cached assets files. It should be set accordingly to the datasets-server domain, eg https://datasets-server.huggingface.co/cached-assets
+  # baseUrl: "not used for now"
+  # Directory on the cached shared storage (audio files and images)
+  storageDirectory: "/cached-assets"
+  # Probability of cleaning the cached assets directory at each request.
+  cleanCacheProba: 0.05
+  # When cleaning the cached assets directory: keep the rows with an index below a certain number.
+  keepFirstRowsNumber: 100
+  # When cleaning the cached assets directory: keep the most recently accessed rows.
+  keepMostRecentRowsNumber: 200
+  # When cleaning the cached assets directory: maximum number of rows to discard.
+  maxCleanedRowsNumber: 10000
+
 
 # Directory where the cache data will be stored
 cacheDirectory: "/datasets-server-cache"
@@ -184,7 +203,22 @@ mongodbMigration:
       cpu: 0
   tolerations: []
 
-cacheRefresh:
+cacheMaintenance:
+  action: "skip"
+  # ^ allowed values are {skip,backfill,upgrade,collect-metrics}
+  nodeSelector: {}
+  resources:
+    requests:
+      cpu: 0
+    limits:
+      cpu: 0
+  tolerations: []
+
+# --- cron jobs  ---
+metricsCollector:
+  action: "collect-metrics"
+  schedule: "*/5 * * * *"
+  # every five minutes
   nodeSelector: {}
   resources:
     requests:

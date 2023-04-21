@@ -17,7 +17,7 @@ Set environment variables to configure the worker.
 - `WORKER_MAX_LOAD_PCT`: maximum load of the machine (in percentage: the max between the 1m load and the 5m load divided by the number of CPUs \*100) allowed to start a job. Set to 0 to disable the test. Defaults to 70.
 - `WORKER_MAX_MEMORY_PCT`: maximum memory (RAM + SWAP) usage of the machine (in percentage) allowed to start a job. Set to 0 to disable the test. Defaults to 80.
 - `WORKER_MAX_MISSING_HEARTBEATS`: the number of hearbeats a job must have missed to be considered a zombie job. Defaults to `5`.
-- `WORKER_ONLY_JOB_TYPES`: comma-separated list of the job types to process, e.g. "/splits,/first-rows". If empty, the worker processes all the jobs. Defaults to empty.
+- `WORKER_ONLY_JOB_TYPES`: comma-separated list of the job types to process, e.g. "/config-names,dataset-split-names". If empty, the worker processes all the jobs. Defaults to empty.
 - `WORKER_SLEEP_SECONDS`: wait duration in seconds at each loop iteration before checking if resources are available and processing a job if any is available. Note that the loop doesn't wait just after finishing a job: the next job is immediately processed. Defaults to `15`.
 - `WORKER_STORAGE_PATHS`: comma-separated list of paths to check for disk usage. Defaults to empty.
 
@@ -63,16 +63,16 @@ Also, set the assets-related configuration for the first-rows worker. See [../..
 
 ### Parquet and dataset info worker
 
-Set environment variables to configure the parquet worker (`PARQUET_AND_DATASET_INFO_` prefix):
+Set environment variables to configure the parquet worker (`PARQUET_AND_INFO_` prefix):
 
-- `PARQUET_AND_DATASET_INFO_BLOCKED_DATASETS`: comma-separated list of the blocked datasets. If empty, no dataset is blocked. Defaults to empty.
-- `PARQUET_AND_DATASET_INFO_COMMIT_MESSAGE`: the git commit message when the worker uploads the parquet files to the Hub. Defaults to `Update parquet files`.
-- `PARQUET_AND_DATASET_INFO_COMMITTER_HF_TOKEN`: the user token (https://huggingface.co/settings/tokens) to commit the parquet files to the Hub. The user must be allowed to create the `refs/convert/parquet` branch (see `PARQUET_AND_DATASET_INFO_TARGET_REVISION`) ([Hugging Face organization](https://huggingface.co/huggingface) members have this right). It must also have the right to push to the `refs/convert/parquet` branch ([Datasets maintainers](https://huggingface.co/datasets-maintainers) members have this right). It must have permission to write. If not set, the worker will fail. Defaults to None.
-- `PARQUET_AND_DATASET_INFO_MAX_DATASET_SIZE`: the maximum size in bytes of the dataset to pre-compute the parquet files. Bigger datasets, or datasets without that information, are ignored. Defaults to `100_000_000`.
-- `PARQUET_AND_DATASET_INFO_SOURCE_REVISION`: the git revision of the dataset to use to prepare the parquet files. Defaults to `main`.
-- `PARQUET_AND_DATASET_INFO_SUPPORTED_DATASETS`: comma-separated list of the supported datasets. The worker does not test the size of supported datasets against the maximum dataset size. Defaults to empty.
-- `PARQUET_AND_DATASET_INFO_TARGET_REVISION`: the git revision of the dataset where to store the parquet files. Make sure the committer token (`PARQUET_AND_DATASET_INFO_COMMITTER_HF_TOKEN`) has the permission to write there. Defaults to `refs/convert/parquet`.
-- `PARQUET_AND_DATASET_INFO_URL_TEMPLATE`: the URL template to build the parquet file URLs. Defaults to `/datasets/%s/resolve/%s/%s`.
+- `PARQUET_AND_INFO_BLOCKED_DATASETS`: comma-separated list of the blocked datasets. If empty, no dataset is blocked. Defaults to empty.
+- `PARQUET_AND_INFO_COMMIT_MESSAGE`: the git commit message when the worker uploads the parquet files to the Hub. Defaults to `Update parquet files`.
+- `PARQUET_AND_INFO_COMMITTER_HF_TOKEN`: the user token (https://huggingface.co/settings/tokens) to commit the parquet files to the Hub. The user must be allowed to create the `refs/convert/parquet` branch (see `PARQUET_AND_INFO_TARGET_REVISION`) ([Hugging Face organization](https://huggingface.co/huggingface) members have this right). It must also have the right to push to the `refs/convert/parquet` branch ([Datasets maintainers](https://huggingface.co/datasets-maintainers) members have this right). It must have permission to write. If not set, the worker will fail. Defaults to None.
+- `PARQUET_AND_INFO_MAX_DATASET_SIZE`: the maximum size in bytes of the dataset to pre-compute the parquet files. Bigger datasets, or datasets without that information, are ignored. Defaults to `100_000_000`.
+- `PARQUET_AND_INFO_SOURCE_REVISION`: the git revision of the dataset to use to prepare the parquet files. Defaults to `main`.
+- `PARQUET_AND_INFO_SUPPORTED_DATASETS`: comma-separated list of the supported datasets. The worker does not test the size of supported datasets against the maximum dataset size. Defaults to empty.
+- `PARQUET_AND_INFO_TARGET_REVISION`: the git revision of the dataset where to store the parquet files. Make sure the committer token (`PARQUET_AND_INFO_COMMITTER_HF_TOKEN`) has the permission to write there. Defaults to `refs/convert/parquet`.
+- `PARQUET_AND_INFO_URL_TEMPLATE`: the URL template to build the parquet file URLs. Defaults to `/datasets/%s/resolve/%s/%s`.
 
 ### Splits worker
 

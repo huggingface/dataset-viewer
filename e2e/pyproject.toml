@@ -13,10 +13,10 @@ python = "3.9.15"
 bandit = "^1.7.4"
 black = "^22.12.0"
 flake8 = "^3.9.2"
-huggingface-hub = "^0.12.0"
+huggingface-hub = "^0.13.0"
 isort = "^5.12.0"
 mypy = "^1.0.0"
-pip-audit = "^2.4.14"
+pip-audit = "^2.5.4"
 pytest = "^7.2.1"
 pytest-cov = "^2.12.1"
 requests = "^2.28.2"
@@ -41,3 +41,10 @@ preview = true
 
 [tool.mypy]
 strict = true
+
+[[tool.mypy.overrides]]
+module = [
+    "huggingface_hub.*",
+]
+# ^ huggingface_hub is not typed since version 0.13.0
+ignore_missing_imports = true

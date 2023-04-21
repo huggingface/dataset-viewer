@@ -5,18 +5,14 @@ from http import HTTPStatus
 from typing import Any, Callable
 
 import pytest
-from libcommon.dataset import DatasetNotFoundError
 from libcommon.processing_graph import ProcessingStep
 from libcommon.queue import Priority
 from libcommon.resources import CacheMongoResource, QueueMongoResource
 from libcommon.simple_cache import upsert_response
 
 from worker.config import AppConfig
-from worker.job_runners.config.info import (
-    ConfigInfoJobRunner,
-    PreviousStepFormatError,
-    PreviousStepStatusError,
-)
+from worker.job_runner import PreviousStepError
+from worker.job_runners.config.info import ConfigInfoJobRunner, PreviousStepFormatError
 
 
 @pytest.fixture(autouse=True)
@@ -161,11 +157,11 @@ def get_job_runner(
             processing_step=ProcessingStep(
                 name=ConfigInfoJobRunner.get_job_type(),
                 input_type="dataset",
-                requires=None,
+                requires=[],
                 required_by_dataset_viewer=False,
-                parent=None,
                 ancestors=[],
                 children=[],
+                parents=[],
                 job_runner_version=ConfigInfoJobRunner.get_job_runner_version(),
             ),
         )
@@ -182,7 +178,7 @@ def get_job_runner(
             HTTPStatus.OK,
             {
                 "parquet_files": PARQUET_FILES,
-                "dataset_info": DATASET_INFO_OK,
+                "dataset_info": CONFIG_INFO_1,
             },
             None,
             {"dataset_info": CONFIG_INFO_1},
@@ -193,7 +189,7 @@ def get_job_runner(
             "config_1",
             HTTPStatus.NOT_FOUND,
             {"error": "error"},
-            PreviousStepStatusError.__name__,
+            PreviousStepError.__name__,
             None,
             True,
         ),
@@ -220,7 +216,11 @@ def test_compute(
     should_raise: bool,
 ) -> None:
     upsert_response(
-        kind="/parquet-and-dataset-info", dataset=dataset, content=upstream_content, http_status=upstream_status
+        kind="config-parquet-and-info",
+        dataset=dataset,
+        config=config,
+        content=upstream_content,
+        http_status=upstream_status,
     )
     job_runner = get_job_runner(dataset, config, app_config, False)
     if should_raise:
@@ -234,5 +234,5 @@ def test_compute(
 def test_doesnotexist(app_config: AppConfig, get_job_runner: GetJobRunner) -> None:
     dataset = config = "doesnotexist"
     job_runner = get_job_runner(dataset, config, app_config, False)
-    with pytest.raises(DatasetNotFoundError):
+    with pytest.raises(PreviousStepError):
         job_runner.compute()

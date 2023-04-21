@@ -2,7 +2,8 @@
 # Copyright 2022 The HuggingFace Authors.
 
 import types
-from datetime import datetime, timezone
+from dataclasses import dataclass
+from datetime import datetime
 from http import HTTPStatus
 from typing import (
     Any,
@@ -32,6 +33,7 @@ from mongoengine.fields import (
 from mongoengine.queryset.queryset import QuerySet
 
 from libcommon.constants import CACHE_MONGOENGINE_ALIAS
+from libcommon.utils import get_datetime
 
 # START monkey patching ### hack ###
 # see https://github.com/sbdchd/mongo-types#install
@@ -51,10 +53,6 @@ class QuerySetManager(Generic[U]):
 
 
 # END monkey patching ### hack ###
-
-
-def get_datetime() -> datetime:
-    return datetime.now(timezone.utc)
 
 
 class SplitFullName(NamedTuple):
@@ -185,24 +183,35 @@ def get_response_without_content(
     }
 
 
-def get_dataset_responses_without_content_for_kind(kind: str, dataset: str) -> List[CacheEntryWithoutContent]:
-    responses = CachedResponse.objects(kind=kind, dataset=dataset).only(
-        "http_status", "error_code", "job_runner_version", "dataset_git_revision", "progress"
+class CacheEntryMetadata(CacheEntryWithoutContent):
+    updated_at: datetime
+
+
+# Note: we let the exceptions throw (ie DoesNotExist): it's the responsibility of the caller to manage them
+def get_response_metadata(
+    kind: str, dataset: str, config: Optional[str] = None, split: Optional[str] = None
+) -> CacheEntryMetadata:
+    response = (
+        CachedResponse.objects(kind=kind, dataset=dataset, config=config, split=split)
+        .only("http_status", "error_code", "job_runner_version", "dataset_git_revision", "progress", "updated_at")
+        .get()
     )
-    return [
-        {
-            "http_status": response.http_status,
-            "error_code": response.error_code,
-            "job_runner_version": response.job_runner_version,
-            "dataset_git_revision": response.dataset_git_revision,
-            "progress": response.progress,
-        }
-        for response in responses
-    ]
+    return {
+        "http_status": response.http_status,
+        "error_code": response.error_code,
+        "dataset_git_revision": response.dataset_git_revision,
+        "job_runner_version": response.job_runner_version,
+        "progress": response.progress,
+        "updated_at": response.updated_at,
+    }
 
 
 class CacheEntry(CacheEntryWithoutContent):
     content: Mapping[str, Any]
+
+
+class CacheEntryWithDetails(CacheEntry):
+    details: Mapping[str, str]
 
 
 # Note: we let the exceptions throw (ie DoesNotExist): it's the responsibility of the caller to manage them
@@ -222,6 +231,104 @@ def get_response(kind: str, dataset: str, config: Optional[str] = None, split: O
     }
 
 
+# Note: we let the exceptions throw (ie DoesNotExist): it's the responsibility of the caller to manage them
+def get_response_with_details(
+    kind: str, dataset: str, config: Optional[str] = None, split: Optional[str] = None
+) -> CacheEntryWithDetails:
+    response = (
+        CachedResponse.objects(kind=kind, dataset=dataset, config=config, split=split)
+        .only(
+            "content", "http_status", "error_code", "job_runner_version", "dataset_git_revision", "progress", "details"
+        )
+        .get()
+    )
+    return {
+        "content": response.content,
+        "http_status": response.http_status,
+        "error_code": response.error_code,
+        "job_runner_version": response.job_runner_version,
+        "dataset_git_revision": response.dataset_git_revision,
+        "progress": response.progress,
+        "details": response.details,
+    }
+
+
+def get_response_or_missing_error(
+    kind: str, dataset: str, config: Optional[str] = None, split: Optional[str] = None
+) -> CacheEntryWithDetails:
+    try:
+        response = get_response_with_details(kind=kind, dataset=dataset, config=config, split=split)
+    except DoesNotExist:
+        response = CacheEntryWithDetails(
+            content={
+                "error": (
+                    f"Cached response not found for kind {kind}, dataset {dataset}, config {config}, split {split}"
+                )
+            },
+            http_status=HTTPStatus.NOT_FOUND,
+            error_code="CachedResponseNotFound",
+            dataset_git_revision=None,
+            job_runner_version=None,
+            progress=None,
+            details={},
+        )
+    return response
+
+
+@dataclass
+class BestResponse:
+    kind: str
+    response: CacheEntryWithDetails
+
+
+def get_best_response(
+    kinds: List[str], dataset: str, config: Optional[str] = None, split: Optional[str] = None
+) -> BestResponse:
+    """
+    Get the best response from a list of cache kinds.
+
+    Best means:
+    - the first success response with the highest progress,
+    - else: the first error response (including cache miss)
+
+    Args:
+        kinds (`List[str]`):
+            A non-empty list of cache kinds to look responses for.
+        dataset (`str`):
+            A namespace (user or an organization) and a repo name separated by a `/`.
+        config (`str`, optional):
+            A config name.
+        split (`str`, optional):
+            A split name.
+    Returns:
+        BestResponse: The best response (object with fields: kind and response). The response can be an error,
+          including a cache miss (error code: `CachedResponseNotFound`)
+    """
+    if not kinds:
+        raise ValueError("kinds must be a non-empty list")
+    best_response_candidates = [
+        BestResponse(
+            kind=kind, response=get_response_or_missing_error(kind=kind, dataset=dataset, config=config, split=split)
+        )
+        for kind in kinds
+    ]
+    max_index = 0
+    max_value = float("-inf")
+    for index, candidate in enumerate(best_response_candidates):
+        if candidate.response["http_status"] >= HTTPStatus.BAD_REQUEST.value:
+            # only the first error response is considered
+            continue
+        value = (
+            0.0
+            if candidate.response["progress"] is None or candidate.response["progress"] < 0.0
+            else candidate.response["progress"]
+        )
+        if value > max_value:
+            max_value = value
+            max_index = index
+    return best_response_candidates[max_index]
+
+
 def get_split_full_names_for_dataset_and_kind(dataset: str, kind: str) -> set[SplitFullName]:
     return {
         SplitFullName(dataset=response.dataset, config=response.config, split=response.split)
@@ -233,9 +340,13 @@ def get_valid_datasets(kind: str) -> Set[str]:
     return set(CachedResponse.objects(kind=kind, http_status=HTTPStatus.OK).distinct("dataset"))
 
 
-def get_validity_by_kind(dataset: str) -> Mapping[str, bool]:
+def get_validity_by_kind(dataset: str, kinds: Optional[List[str]] = None) -> Mapping[str, bool]:
     # TODO: rework with aggregate
-    entries = CachedResponse.objects(dataset=dataset).only("kind", "http_status")
+    entries = (
+        CachedResponse.objects(dataset=dataset)
+        if kinds is None
+        else CachedResponse.objects(dataset=dataset, kind__in=kinds)
+    ).only("kind", "http_status")
     return {
         str(kind): entries(kind=kind, http_status=HTTPStatus.OK).first() is not None
         for kind in sorted(entries.distinct("kind"))
@@ -283,6 +394,7 @@ class CacheReport(TypedDict):
     error_code: Optional[str]
     job_runner_version: Optional[int]
     dataset_git_revision: Optional[str]
+    progress: Optional[float]
 
 
 class CacheReportsPage(TypedDict):
@@ -345,6 +457,7 @@ def get_cache_reports(kind: str, cursor: Optional[str], limit: int) -> CacheRepo
             "error_code",
             "job_runner_version",
             "dataset_git_revision",
+            "progress",
         )
         .limit(limit)
     )
@@ -359,6 +472,7 @@ def get_cache_reports(kind: str, cursor: Optional[str], limit: int) -> CacheRepo
                 "error_code": object.error_code,
                 "job_runner_version": object.job_runner_version,
                 "dataset_git_revision": object.dataset_git_revision,
+                "progress": object.progress,
             }
             for object in objects
         ],
@@ -372,6 +486,34 @@ def get_outdated_split_full_names_for_step(kind: str, current_version: int) -> L
     )
     return [
         SplitFullName(dataset=response.dataset, config=response.config, split=response.split) for response in responses
+    ]
+
+
+def get_dataset_responses_without_content_for_kind(kind: str, dataset: str) -> List[CacheReport]:
+    responses = CachedResponse.objects(kind=kind, dataset=dataset).only(
+        "kind",
+        "dataset",
+        "config",
+        "split",
+        "http_status",
+        "error_code",
+        "job_runner_version",
+        "dataset_git_revision",
+        "progress",
+    )
+    return [
+        {
+            "kind": response.kind,
+            "dataset": response.dataset,
+            "config": response.config,
+            "split": response.split,
+            "http_status": response.http_status,
+            "error_code": response.error_code,
+            "job_runner_version": response.job_runner_version,
+            "dataset_git_revision": response.dataset_git_revision,
+            "progress": response.progress,
+        }
+        for response in responses
     ]
 
 
@@ -436,6 +578,7 @@ def get_cache_reports_with_content(kind: str, cursor: Optional[str], limit: int)
             "dataset_git_revision",
             "details",
             "updated_at",
+            "progress",
         )
         .limit(limit)
     )
@@ -453,6 +596,7 @@ def get_cache_reports_with_content(kind: str, cursor: Optional[str], limit: int)
                 "dataset_git_revision": object.dataset_git_revision,
                 "details": object.details,
                 "updated_at": object.updated_at,
+                "progress": object.progress,
             }
             for object in objects
         ],

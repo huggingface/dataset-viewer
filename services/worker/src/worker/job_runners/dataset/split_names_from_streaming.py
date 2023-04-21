@@ -8,15 +8,18 @@ from typing import Any, List, Literal, Mapping, Optional, Tuple, TypedDict
 from libcommon.constants import (
     PROCESSING_STEP_DATASET_SPLIT_NAMES_FROM_STREAMING_VERSION,
 )
-from libcommon.dataset import DatasetNotFoundError
 from libcommon.simple_cache import DoesNotExist, SplitFullName, get_response
 
-from worker.job_runner import JobResult, JobRunner, JobRunnerError
+from worker.job_runner import (
+    JobResult,
+    JobRunner,
+    JobRunnerError,
+    ParameterMissingError,
+    get_previous_step_or_raise,
+)
 from worker.utils import ConfigItem, SplitItem
 
-DatasetSplitNamesFromStreamingJobRunnerErrorCode = Literal[
-    "PreviousStepStatusError", "PreviousStepFormatError", "ResponseNotReady"
-]
+DatasetSplitNamesFromStreamingJobRunnerErrorCode = Literal["PreviousStepFormatError", "ResponseNotReady"]
 
 
 class DatasetSplitNamesFromStreamingJobRunnerError(JobRunnerError):
@@ -33,13 +36,6 @@ class DatasetSplitNamesFromStreamingJobRunnerError(JobRunnerError):
         super().__init__(
             message=message, status_code=status_code, code=code, cause=cause, disclose_cause=disclose_cause
         )
-
-
-class PreviousStepStatusError(DatasetSplitNamesFromStreamingJobRunnerError):
-    """Raised when the previous step gave an error. The job should not have been created."""
-
-    def __init__(self, message: str, cause: Optional[BaseException] = None):
-        super().__init__(message, HTTPStatus.INTERNAL_SERVER_ERROR, "PreviousStepStatusError", cause, False)
 
 
 class PreviousStepFormatError(DatasetSplitNamesFromStreamingJobRunnerError):
@@ -81,27 +77,20 @@ def compute_dataset_split_names_from_streaming_response(
          a list of pending configs to be processed [pending] and the list of errors [failed] by config.
     <Tip>
     Raises the following errors:
-        - [`~job_runners.dataset_split_names_from_streaming.PreviousStepStatusError`]
+        - [`~job_runner.PreviousStepError`]
           If the the previous step gave an error.
-        - [`~job_runners.dataset_split_names_from_streaming.PreviousStepFormatError`]
+        - [`~job_runners.dataset.split_names_from_streaming.PreviousStepFormatError`]
             If the content of the previous step has not the expected format
-        - [`~libcommon.dataset.DatasetNotFoundError`]
-            If previous step content was not found for the dataset
     </Tip>
     """
     logging.info(f"get dataset split names from dataset info for dataset={dataset}")
-    try:
-        config_names = get_response(kind="/config-names", dataset=dataset)
-        config_content = config_names["content"]["config_names"]
-    except DoesNotExist as e:
-        raise DatasetNotFoundError("No response found in previous step '/config-names' for this dataset.", e) from e
-    except KeyError as e:
-        raise PreviousStepFormatError("Previous step '/config-names' did not return the expected content.") from e
 
-    if config_names["http_status"] != HTTPStatus.OK:
-        raise PreviousStepStatusError(
-            f"Previous step gave an error: {config_names['http_status']}. This job should not have been created."
-        )
+    config_names_best_response = get_previous_step_or_raise(kinds=["/config-names"], dataset=dataset)
+    content = config_names_best_response.response["content"]
+    if "config_names" not in content:
+        raise PreviousStepFormatError("Previous step did not return the expected content: 'config_names'.")
+    config_content = content["config_names"]
+
     try:
         splits: List[SplitItem] = []
         pending: List[ConfigItem] = []
@@ -162,7 +151,7 @@ class DatasetSplitNamesFromStreamingJobRunner(JobRunner):
 
     def compute(self) -> JobResult:
         if self.dataset is None:
-            raise ValueError("dataset is required")
+            raise ParameterMissingError("'dataset' parameter is required")
         response_content, progress = compute_dataset_split_names_from_streaming_response(dataset=self.dataset)
         return JobResult(response_content, progress=progress)
 

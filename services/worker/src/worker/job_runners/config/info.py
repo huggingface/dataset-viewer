@@ -3,17 +3,17 @@ from http import HTTPStatus
 from typing import Any, Dict, Literal, Mapping, Optional, Set, TypedDict
 
 from libcommon.constants import PROCESSING_STEP_CONFIG_INFO_VERSION
-from libcommon.dataset import DatasetNotFoundError
-from libcommon.simple_cache import DoesNotExist, SplitFullName, get_response
+from libcommon.simple_cache import SplitFullName
 
-from worker.job_runner import CompleteJobResult, JobRunner, JobRunnerError
-from worker.job_runners.parquet_and_dataset_info import ParquetAndDatasetInfoResponse
+from worker.job_runner import (
+    CompleteJobResult,
+    JobRunner,
+    JobRunnerError,
+    ParameterMissingError,
+    get_previous_step_or_raise,
+)
 
-ConfigInfoJobRunnerErrorCode = Literal[
-    "PreviousStepStatusError",
-    "PreviousStepFormatError",
-    "MissingInfoForConfigError",
-]
+ConfigInfoJobRunnerErrorCode = Literal["PreviousStepFormatError"]
 
 
 class ConfigInfoJobRunnerError(JobRunnerError):
@@ -32,25 +32,11 @@ class ConfigInfoJobRunnerError(JobRunnerError):
         )
 
 
-class PreviousStepStatusError(ConfigInfoJobRunnerError):
-    """Raised when the previous step gave an error. The job should not have been created."""
-
-    def __init__(self, message: str, cause: Optional[BaseException] = None):
-        super().__init__(message, HTTPStatus.INTERNAL_SERVER_ERROR, "PreviousStepStatusError", cause, False)
-
-
 class PreviousStepFormatError(ConfigInfoJobRunnerError):
     """Raised when the content of the previous step has not the expected format."""
 
     def __init__(self, message: str, cause: Optional[BaseException] = None):
         super().__init__(message, HTTPStatus.INTERNAL_SERVER_ERROR, "PreviousStepFormatError", cause, False)
-
-
-class MissingInfoForConfigError(ConfigInfoJobRunnerError):
-    """Raised when the dataset info from the parquet export is missing the requested dataset configuration."""
-
-    def __init__(self, message: str, cause: Optional[BaseException] = None):
-        super().__init__(message, HTTPStatus.INTERNAL_SERVER_ERROR, "MissingInfoForConfigError", cause, False)
 
 
 class ConfigInfoResponse(TypedDict):
@@ -64,59 +50,34 @@ def compute_config_info_response(dataset: str, config: str) -> ConfigInfoRespons
         dataset (`str`):
             A namespace (user or an organization) and a repo name separated
             by a `/`.
+        config (`str`):
+            Dataset configuration name
     Returns:
         `ConfigInfoResponse`: An object with the dataset_info response for requested config.
     <Tip>
     Raises the following errors:
-        - [`~job_runners.config_info.PreviousStepStatusError`]
-        `If the previous step gave an error.
-        - [`~job_runners.config_info.PreviousStepFormatError`]
+        - [`~job_runner.PreviousStepError`]
+            If the previous step gave an error.
+        - [`~job_runners.config.info.PreviousStepFormatError`]
             If the content of the previous step doesn't have the expected format
-        - [`~job_runners.config_info.MissingInfoForConfigError`]
-            If the dataset info from the parquet export doesn't have the requested dataset configuration
-        - [`~libcommon.dataset.DatasetNotFoundError`]
-            If the dataset does not exist, or if the
-            token does not give the sufficient access to the dataset, or if the dataset is private
-            (private datasets are not supported by the datasets server)
     </Tip>
     """
     logging.info(f"get dataset_info for {dataset=} and {config=}")
-
+    previous_step = "config-parquet-and-info"
+    dataset_info_best_response = get_previous_step_or_raise(kinds=[previous_step], dataset=dataset, config=config)
+    content = dataset_info_best_response.response["content"]
     try:
-        response = get_response(kind="/parquet-and-dataset-info", dataset=dataset)
-    except DoesNotExist as e:
-        raise DatasetNotFoundError(
-            "No response found in previous step for this dataset: '/parquet-and-dataset-info'.", e
+        config_info = content["dataset_info"]
+    except Exception as e:
+        raise PreviousStepFormatError(
+            f"Previous step '{previous_step}' did not return the expected content: 'dataset_info'.", e
         ) from e
 
-    if response["http_status"] != HTTPStatus.OK:
-        raise PreviousStepStatusError(f"Previous step raised an error: {response['http_status']}..")
-
-    try:
-        content = ParquetAndDatasetInfoResponse(
-            parquet_files=response["content"]["parquet_files"], dataset_info=response["content"]["dataset_info"]
+    if not isinstance(config_info, dict):
+        raise PreviousStepFormatError(
+            "Previous step did not return the expected content.",
+            TypeError(f"dataset_info should be a dict, but got {type(config_info)}"),
         )
-    except Exception as e:
-        raise PreviousStepFormatError("Previous step did not return the expected content: 'dataset_info'.", e) from e
-
-    if config not in content["dataset_info"]:
-        if not isinstance(content["dataset_info"], dict):
-            raise PreviousStepFormatError(
-                "Previous step did not return the expected content.",
-                TypeError(f"dataset_info should be a dict, but got {type(content['dataset_info'])}"),
-            )
-        raise MissingInfoForConfigError(
-            f"Dataset configuration '{config}' is missing in the dataset info from the parquet export. "
-            f"Available configurations: {', '.join(list(content['dataset_info'])[:10])}"
-            + f"... ({len(content['dataset_info']) - 10})"
-            if len(content["dataset_info"]) > 10
-            else ""
-        )
-    try:
-        config_info = content["dataset_info"][config]
-
-    except Exception as e:
-        raise PreviousStepFormatError("Previous step did not return the expected content.", e) from e
 
     return ConfigInfoResponse(dataset_info=config_info)
 
@@ -132,9 +93,9 @@ class ConfigInfoJobRunner(JobRunner):
 
     def compute(self) -> CompleteJobResult:
         if self.dataset is None:
-            raise ValueError("dataset is required")
+            raise ParameterMissingError("'dataset' parameter is required")
         if self.config is None:
-            raise ValueError("config is required")
+            raise ParameterMissingError("'config' parameter is required")
         return CompleteJobResult(compute_config_info_response(dataset=self.dataset, config=self.config))
 
     # TODO: is it needed?

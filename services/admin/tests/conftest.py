@@ -3,9 +3,14 @@
 
 from typing import Iterator, List
 
+from libcommon.metrics import _clean_metrics_database
 from libcommon.processing_graph import ProcessingGraph, ProcessingStep
 from libcommon.queue import _clean_queue_database
-from libcommon.resources import CacheMongoResource, QueueMongoResource
+from libcommon.resources import (
+    CacheMongoResource,
+    MetricsMongoResource,
+    QueueMongoResource,
+)
 from libcommon.simple_cache import _clean_cache_database
 from libcommon.storage import StrPath, init_assets_dir
 from pytest import MonkeyPatch, fixture
@@ -22,6 +27,7 @@ def monkeypatch_session(hf_endpoint: str, hf_token: str) -> Iterator[MonkeyPatch
     monkeypatch_session = MonkeyPatch()
     monkeypatch_session.setenv("CACHE_MONGO_DATABASE", "datasets_server_cache_test")
     monkeypatch_session.setenv("QUEUE_MONGO_DATABASE", "datasets_server_queue_test")
+    monkeypatch_session.setenv("METRICS_MONGO_DATABASE", "datasets_server_metrics_test")
     monkeypatch_session.setenv("COMMON_HF_ENDPOINT", hf_endpoint)
     monkeypatch_session.setenv("COMMON_HF_TOKEN", hf_token)
     yield monkeypatch_session
@@ -59,3 +65,12 @@ def queue_mongo_resource(app_config: AppConfig) -> Iterator[QueueMongoResource]:
     with QueueMongoResource(database=app_config.queue.mongo_database, host=app_config.queue.mongo_url) as resource:
         yield resource
         _clean_queue_database()
+
+
+@fixture(autouse=True)
+def metrics_mongo_resource(app_config: AppConfig) -> Iterator[MetricsMongoResource]:
+    with MetricsMongoResource(
+        database=app_config.metrics.mongo_database, host=app_config.metrics.mongo_url
+    ) as resource:
+        yield resource
+        _clean_metrics_database()

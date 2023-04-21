@@ -7,7 +7,7 @@ from libcommon.simple_cache import CachedResponse
 from mongoengine.connection import get_db
 
 from mongodb_migration.check import check_documents
-from mongodb_migration.migration import IrreversibleMigration, Migration
+from mongodb_migration.migration import IrreversibleMigrationError, Migration
 
 
 # connection already occurred in the main.py (caveat: we use globals)
@@ -18,7 +18,7 @@ class MigrationRemoveWorkerVersionFromCachedResponse(Migration):
         db["cachedResponsesBlue"].update_many({}, {"$unset": {"worker_version": ""}})
 
     def down(self) -> None:
-        raise IrreversibleMigration("This migration does not support rollback")
+        raise IrreversibleMigrationError("This migration does not support rollback")
 
     def validate(self) -> None:
         logging.info("Ensure that a random selection of cached results don't have 'worker_version' field")

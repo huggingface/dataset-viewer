@@ -9,6 +9,8 @@ from libcommon.config import (
     AssetsConfig,
     CacheConfig,
     CommonConfig,
+    LogConfig,
+    MetricsConfig,
     ProcessingGraphConfig,
     QueueConfig,
 )
@@ -78,8 +80,10 @@ class AppConfig:
     assets: AssetsConfig = field(default_factory=AssetsConfig)
     cache: CacheConfig = field(default_factory=CacheConfig)
     common: CommonConfig = field(default_factory=CommonConfig)
+    log: LogConfig = field(default_factory=LogConfig)
     processing_graph: ProcessingGraphConfig = field(default_factory=ProcessingGraphConfig)
     queue: QueueConfig = field(default_factory=QueueConfig)
+    metrics: MetricsConfig = field(default_factory=MetricsConfig)
 
     @classmethod
     def from_env(cls) -> "AppConfig":
@@ -88,7 +92,9 @@ class AppConfig:
             common=common_config,
             assets=AssetsConfig.from_env(),
             cache=CacheConfig.from_env(),
+            log=LogConfig.from_env(),
             processing_graph=ProcessingGraphConfig.from_env(),
             queue=QueueConfig.from_env(),
             admin=AdminConfig.from_env(common_config),
+            metrics=MetricsConfig.from_env(),
         )

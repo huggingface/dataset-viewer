@@ -2,8 +2,10 @@
 # Copyright 2022 The HuggingFace Authors.
 
 import os
+from http import HTTPStatus
 from typing import List
 
+from libcommon.metrics import CacheTotalMetric, JobTotalMetric
 from libcommon.processing_graph import ProcessingStep
 from libcommon.storage import StrPath
 
@@ -14,6 +16,25 @@ def test_prometheus(
     assets_directory: StrPath,
     processing_steps: List[ProcessingStep],
 ) -> None:
+    cache_metric = {
+        "kind": "dummy",
+        "http_status": HTTPStatus.OK,
+        "error_code": None,
+        "total": 1,
+    }
+
+    collection = CacheTotalMetric._get_collection()
+    collection.insert_one(cache_metric)
+
+    job_metric = {
+        "queue": "dummy",
+        "status": "waiting",
+        "total": 1,
+    }
+
+    collection = JobTotalMetric._get_collection()
+    collection.insert_one(job_metric)
+
     is_multiprocess = "PROMETHEUS_MULTIPROC_DIR" in os.environ
 
     prometheus = Prometheus(processing_steps=processing_steps, assets_directory=assets_directory)
@@ -33,11 +54,9 @@ def test_prometheus(
         assert metrics[name] > 0
 
     additional_field = ('pid="' + str(os.getpid()) + '",') if is_multiprocess else ""
-    for processing_step in processing_steps:
-        assert (
-            "queue_jobs_total{" + additional_field + 'queue="' + processing_step.job_type + '",status="started"}'
-            in metrics
-        )
+
+    assert 'responses_in_cache_total{error_code="None",http_status="200",kind="dummy"}' in metrics
+    assert 'queue_jobs_total{queue="dummy",status="waiting"}' in metrics
 
     for type in ["total", "used", "free", "percent"]:
         assert "assets_disk_usage{" + additional_field + 'type="' + type + '"}' in metrics

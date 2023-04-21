@@ -5,17 +5,16 @@ from http import HTTPStatus
 from typing import Any, Callable, List
 
 import pytest
-from libcommon.dataset import DatasetNotFoundError
 from libcommon.processing_graph import ProcessingStep
 from libcommon.queue import Priority
 from libcommon.resources import CacheMongoResource, QueueMongoResource
 from libcommon.simple_cache import upsert_response
 
 from worker.config import AppConfig
+from worker.job_runner import PreviousStepError
 from worker.job_runners.dataset.info import (
     DatasetInfoJobRunner,
     PreviousStepFormatError,
-    PreviousStepStatusError,
 )
 from worker.utils import PreviousJob
 
@@ -132,11 +131,11 @@ def get_job_runner(
             processing_step=ProcessingStep(
                 name=DatasetInfoJobRunner.get_job_type(),
                 input_type="dataset",
-                requires=None,
+                requires=[],
                 required_by_dataset_viewer=False,
-                parent=None,
                 ancestors=[],
                 children=[],
+                parents=[],
                 job_runner_version=DatasetInfoJobRunner.get_job_runner_version(),
             ),
         )
@@ -193,7 +192,7 @@ def get_job_runner(
                     content={"error": "error"},
                 )
             ],
-            PreviousStepStatusError.__name__,
+            PreviousStepError.__name__,
             None,
             True,
         ),
@@ -239,5 +238,5 @@ def test_compute(
 def test_doesnotexist(app_config: AppConfig, get_job_runner: GetJobRunner) -> None:
     dataset = "doesnotexist"
     job_runner = get_job_runner(dataset, app_config, False)
-    with pytest.raises(DatasetNotFoundError):
+    with pytest.raises(PreviousStepError):
         job_runner.compute()

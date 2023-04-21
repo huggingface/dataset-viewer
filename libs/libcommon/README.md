@@ -15,7 +15,12 @@ Set the common environment variables to configure the following aspects:
 
 - `COMMON_HF_ENDPOINT`: URL of the HuggingFace Hub. Defaults to `https://huggingface.co`.
 - `COMMON_HF_TOKEN`: App Access Token (ask moonlanding administrators to get one, only the `read` role is required) to access the gated datasets. Defaults to empty.
-- `COMMON_LOG_LEVEL`: log level, among `DEBUG`, `INFO`, `WARNING`, `ERROR`, and `CRITICAL`. Defaults to `INFO`.
+
+## Logs configuration
+
+Set the common environment variables to configure the logs:
+
+- `LOG_LEVEL`: log level, among `DEBUG`, `INFO`, `WARNING`, `ERROR`, and `CRITICAL`. Defaults to `INFO`.
 
 ## Cache configuration
 
@@ -31,3 +36,10 @@ Set environment variables to configure the job queues to precompute API response
 - `QUEUE_MAX_JOBS_PER_NAMESPACE`: maximum number of started jobs for the same namespace (the user or organization, before the `/` separator in the dataset name, or the "canonical" dataset name if not present). Defaults to 1.
 - `QUEUE_MONGO_DATABASE`: name of the database used for storing the queue. Defaults to `datasets_server_queue`.
 - `QUEUE_MONGO_URL`: URL used to connect to the MongoDB server. Defaults to `mongodb://localhost:27017`.
+
+## Metrics configuration
+
+Set environment variables to configure the storage of calculated metrics in a MongoDB database:
+
+- `METRICS_MONGO_DATABASE`: name of the database used for storing the metrics. Defaults to `datasets_server_metrics`.
+- `METRICS_MONGO_URL`: URL used to connect to the MongoDB server. Defaults to `mongodb://localhost:27017`.

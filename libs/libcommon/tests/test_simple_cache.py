@@ -4,7 +4,7 @@
 from datetime import datetime
 from http import HTTPStatus
 from time import process_time
-from typing import Iterator, Optional
+from typing import Dict, List, Optional, TypedDict
 
 import pytest
 from pymongo.errors import DocumentTooLarge
@@ -18,9 +18,9 @@ from libcommon.simple_cache import (
     InvalidCursor,
     InvalidLimit,
     SplitFullName,
-    _clean_cache_database,
     delete_dataset_responses,
     delete_response,
+    get_best_response,
     get_cache_reports,
     get_cache_reports_with_content,
     get_dataset_responses_without_content_for_kind,
@@ -36,14 +36,8 @@ from libcommon.simple_cache import (
 
 
 @pytest.fixture(autouse=True)
-def cache_mongo_resource(cache_mongo_host: str) -> Iterator[CacheMongoResource]:
-    database = "datasets_server_cache_test"
-    host = cache_mongo_host
-    if "test" not in database:
-        raise ValueError("Test must be launched on a test mongo database")
-    with CacheMongoResource(database=database, host=host) as cache_mongo_resource:
-        yield cache_mongo_resource
-        _clean_cache_database()
+def cache_mongo_resource_autouse(cache_mongo_resource: CacheMongoResource) -> CacheMongoResource:
+    return cache_mongo_resource
 
 
 def test_insert_null_values() -> None:
@@ -315,12 +309,16 @@ def test_get_validity_by_kind_empty() -> None:
 
 def test_get_validity_by_kind_two_valid_datasets() -> None:
     kind = "test_kind"
+    other_kind = "other_kind"
     dataset_a = "test_dataset_a"
     dataset_b = "test_dataset_b"
     upsert_response(kind=kind, dataset=dataset_a, content={}, http_status=HTTPStatus.OK)
     upsert_response(kind=kind, dataset=dataset_b, content={}, http_status=HTTPStatus.OK)
     assert get_validity_by_kind(dataset=dataset_a) == {kind: True}
     assert get_validity_by_kind(dataset=dataset_b) == {kind: True}
+    assert get_validity_by_kind(dataset=dataset_b, kinds=[kind]) == {kind: True}
+    assert not get_validity_by_kind(dataset=dataset_b, kinds=[other_kind])
+    assert get_validity_by_kind(dataset=dataset_b, kinds=[kind, other_kind]) == {kind: True}
 
 
 def test_get_validity_by_kind_two_valid_kinds() -> None:
@@ -483,6 +481,7 @@ def test_get_cache_reports() -> None:
             "error_code": None,
             "job_runner_version": None,
             "dataset_git_revision": None,
+            "progress": None,
         },
         {
             "kind": kind,
@@ -493,6 +492,7 @@ def test_get_cache_reports() -> None:
             "error_code": error_code_b,
             "job_runner_version": job_runner_version_b,
             "dataset_git_revision": dataset_git_revision_b,
+            "progress": None,
         },
     ]
     assert response["next_cursor"] != ""
@@ -509,6 +509,7 @@ def test_get_cache_reports() -> None:
                 "error_code": error_code_c,
                 "job_runner_version": None,
                 "dataset_git_revision": None,
+                "progress": None,
             },
         ],
         "next_cursor": "",
@@ -532,6 +533,7 @@ def test_get_cache_reports() -> None:
             "dataset_git_revision": None,
             "details": {},
             "updated_at": REDACTED_DATE,
+            "progress": None,
         },
         {
             "kind": kind,
@@ -545,6 +547,7 @@ def test_get_cache_reports() -> None:
             "dataset_git_revision": dataset_git_revision_b,
             "details": details_b,
             "updated_at": REDACTED_DATE,
+            "progress": None,
         },
     ]
     assert response_with_content["next_cursor"] != ""
@@ -566,6 +569,7 @@ def test_get_cache_reports() -> None:
                 "dataset_git_revision": None,
                 "details": details_c,
                 "updated_at": REDACTED_DATE,
+                "progress": None,
             },
         ],
         "next_cursor": "",
@@ -644,3 +648,120 @@ def test_get_outdated_split_full_names_for_step() -> None:
     result = get_outdated_split_full_names_for_step(kind=kind, current_version=current_version)
     assert result
     assert len(result) == 1
+
+
+class EntrySpec(TypedDict):
+    kind: str
+    dataset: str
+    config: Optional[str]
+    http_status: HTTPStatus
+    progress: Optional[float]
+
+
+@pytest.mark.parametrize(
+    "selected_entries,kinds,dataset,config,best_entry",
+    [
+        # Best means:
+        # - the first success response with progress=1.0 is returned
+        (["ok1"], ["kind1"], "dataset", None, "ok1"),
+        (["ok_config1"], ["kind1"], "dataset", "config", "ok_config1"),
+        (["ok1", "ok2"], ["kind1", "kind2"], "dataset", None, "ok1"),
+        (["ok1", "ok2"], ["kind2", "kind1"], "dataset", None, "ok2"),
+        (["partial1", "ok2"], ["kind1", "kind2"], "dataset", None, "ok2"),
+        (["error1", "ok2"], ["kind1", "kind2"], "dataset", None, "ok2"),
+        # - if no success response with progress=1.0 is found, the success response with the highest progress is
+        #  returned
+        (["partial1", "partial2"], ["kind1", "kind2"], "dataset", None, "partial2"),
+        (["partial1", "error2"], ["kind1", "kind2"], "dataset", None, "partial1"),
+        # - if no success response is found, the first error response is returned
+        (["error1", "error2"], ["kind1", "kind2"], "dataset", None, "error1"),
+        (["error1", "error2"], ["kind2", "kind1"], "dataset", None, "error2"),
+        # - if no response is found, an error response is returned
+        ([], ["kind1"], "dataset", None, "cache_miss"),
+        (["ok_config1"], ["kind1"], "dataset", None, "cache_miss"),
+        (["ok1"], ["kind1"], "dataset", "config", "cache_miss"),
+    ],
+)
+def test_get_best_response(
+    selected_entries: List[str], kinds: List[str], dataset: str, config: Optional[str], best_entry: str
+) -> None:
+    # arrange
+    entries: Dict[str, EntrySpec] = {
+        "ok1": {
+            "kind": "kind1",
+            "dataset": "dataset",
+            "config": None,
+            "http_status": HTTPStatus.OK,
+            "progress": 1.0,
+        },
+        "ok2": {
+            "kind": "kind2",
+            "dataset": "dataset",
+            "config": None,
+            "http_status": HTTPStatus.OK,
+            "progress": 1.0,
+        },
+        "partial1": {
+            "kind": "kind1",
+            "dataset": "dataset",
+            "config": None,
+            "http_status": HTTPStatus.OK,
+            "progress": 0,
+        },
+        "partial2": {
+            "kind": "kind2",
+            "dataset": "dataset",
+            "config": None,
+            "http_status": HTTPStatus.OK,
+            "progress": 0.5,
+        },
+        "ok_config1": {
+            "kind": "kind1",
+            "dataset": "dataset",
+            "config": "config",
+            "http_status": HTTPStatus.OK,
+            "progress": 1.0,
+        },
+        "error1": {
+            "kind": "kind1",
+            "dataset": "dataset",
+            "config": None,
+            "http_status": HTTPStatus.INTERNAL_SERVER_ERROR,
+            "progress": 1.0,
+        },
+        "error2": {
+            "kind": "kind2",
+            "dataset": "dataset",
+            "config": None,
+            "http_status": HTTPStatus.NOT_FOUND,
+            "progress": 1.0,
+        },
+        "cache_miss": {
+            "kind": "kind1",
+            "dataset": "dataset",
+            "config": None,
+            "http_status": HTTPStatus.NOT_FOUND,
+            "progress": None,
+        },
+    }
+
+    for entry in selected_entries:
+        upsert_response(
+            kind=entries[entry]["kind"],
+            dataset=entries[entry]["dataset"],
+            config=entries[entry]["config"],
+            http_status=entries[entry]["http_status"],
+            progress=entries[entry]["progress"],
+            content={"error": "some_error"} if (entries[entry]["http_status"] >= HTTPStatus.BAD_REQUEST.value) else {},
+        )
+
+    # act
+    best_response = get_best_response(kinds, dataset, config)
+
+    # assert
+    assert best_response.kind == entries[best_entry]["kind"]
+    assert ("error" in best_response.response["content"]) is (
+        entries[best_entry]["http_status"] >= HTTPStatus.BAD_REQUEST.value
+    )
+    assert best_response.response["http_status"] == entries[best_entry]["http_status"].value
+    assert best_response.response["progress"] == entries[best_entry]["progress"]

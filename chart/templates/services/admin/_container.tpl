@@ -7,9 +7,12 @@
   imagePullPolicy: {{ .Values.images.pullPolicy }}
   env:
   {{ include "envAssets" . | nindent 2 }}
+  {{ include "envCachedAssets" . | nindent 2 }}
   {{ include "envCache" . | nindent 2 }}
   {{ include "envQueue" . | nindent 2 }}
   {{ include "envCommon" . | nindent 2 }}
+  {{ include "envLog" . | nindent 2 }}
+  {{ include "envMetrics" . | nindent 2 }}
   # service
   - name: ADMIN_HF_ORGANIZATION
     value: {{ .Values.admin.hfOrganization | quote }}
@@ -31,7 +34,9 @@
     value: {{ .Values.admin.uvicornNumWorkers | quote }}
   - name: ADMIN_UVICORN_PORT
     value: {{ .Values.admin.uvicornPort | quote }}
-  volumeMounts: {{ include "volumeMountAssetsRO" . | nindent 2 }}
+  volumeMounts:
+  {{ include "volumeMountAssetsRO" . | nindent 2 }}
+  {{ include "volumeMountCachedAssetsRO" . | nindent 2 }}
   securityContext:
     allowPrivilegeEscalation: false
   readinessProbe:

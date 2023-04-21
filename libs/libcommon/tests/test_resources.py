@@ -10,6 +10,7 @@ from pymongo.errors import ServerSelectionTimeoutError
 
 from libcommon.resources import (
     CacheMongoResource,
+    MetricsMongoResource,
     MongoConnectionFailure,
     MongoResource,
     QueueMongoResource,
@@ -105,6 +106,20 @@ def test_cache_database(cache_mongo_host: str) -> None:
 
 def test_queue_database(queue_mongo_host: str) -> None:
     resource = QueueMongoResource(database="test_queue_database", host=queue_mongo_host)
+
+    class User(Document):
+        name = StringField()
+        meta = {"db_alias": resource.mongoengine_alias}
+
+    assert len(User.objects()) == 0  # type: ignore
+    # clean
+    User.drop_collection()  # type: ignore
+    assert resource.is_available()
+    resource.release()
+
+
+def test_metrics_database(metrics_mongo_host: str) -> None:
+    resource = MetricsMongoResource(database="test_metrics_database", host=metrics_mongo_host)
 
     class User(Document):
         name = StringField()

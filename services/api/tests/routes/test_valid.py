@@ -11,31 +11,31 @@ from api.routes.valid import get_valid, is_valid
 dataset_step = ProcessingStep(
     name="/dataset-step",
     input_type="dataset",
-    requires=None,
+    requires=[],
     required_by_dataset_viewer=False,
-    parent=None,
     ancestors=[],
     children=[],
+    parents=[],
     job_runner_version=1,
 )
 config_step = ProcessingStep(
     name="/config-step",
     input_type="config",
-    requires=None,
+    requires=[],
     required_by_dataset_viewer=False,
-    parent=None,
     ancestors=[],
     children=[],
+    parents=[],
     job_runner_version=1,
 )
 split_step = ProcessingStep(
     name="/split-step",
     input_type="split",
-    requires=None,
+    requires=[],
     required_by_dataset_viewer=False,
-    parent=None,
     ancestors=[],
     children=[],
+    parents=[],
     job_runner_version=1,
 )
 

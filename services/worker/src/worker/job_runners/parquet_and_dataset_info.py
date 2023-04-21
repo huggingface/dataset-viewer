@@ -42,7 +42,7 @@ from huggingface_hub._commit_api import (
 from huggingface_hub.hf_api import DatasetInfo, HfApi, RepoFile
 from huggingface_hub.utils._errors import RepositoryNotFoundError, RevisionNotFoundError
 from libcommon.constants import (
-    PARQUET_AND_DATASET_INFO_ROW_GROUP_SIZE_FOR_IMAGE_DATASETS,
+    PROCESSING_STEP_PARQUET_AND_DATASET_INFO_ROW_GROUP_SIZE_FOR_IMAGE_DATASETS,
     PROCESSING_STEP_PARQUET_AND_DATASET_INFO_VERSION,
 )
 from libcommon.dataset import DatasetNotFoundError, ask_access
@@ -50,9 +50,10 @@ from libcommon.processing_graph import ProcessingStep
 from libcommon.queue import JobInfo
 from libcommon.simple_cache import SplitFullName
 
-from worker.config import AppConfig, ParquetAndDatasetInfoConfig
-from worker.job_runner import CompleteJobResult, JobRunnerError
+from worker.config import AppConfig, ParquetAndInfoConfig
+from worker.job_runner import CompleteJobResult, JobRunnerError, ParameterMissingError
 from worker.job_runners._datasets_based_job_runner import DatasetsBasedJobRunner
+from worker.job_runners.config.parquet_and_info import ParquetFile, ParquetFileItem
 
 ParquetAndDatasetInfoJobRunnerErrorCode = Literal[
     "DatasetRevisionNotFoundError",
@@ -129,15 +130,6 @@ class DatasetTooBigFromDatasetsError(ParquetAndDatasetInfoJobRunnerError):
         super().__init__(message, HTTPStatus.NOT_IMPLEMENTED, "DatasetTooBigFromDatasetsError", cause, False)
 
 
-class ParquetFileItem(TypedDict):
-    dataset: str
-    config: str
-    split: str
-    url: str
-    filename: str
-    size: int
-
-
 class ParquetAndDatasetInfoResponse(TypedDict):
     parquet_files: List[ParquetFileItem]
     dataset_info: Dict[str, Any]
@@ -146,25 +138,13 @@ class ParquetAndDatasetInfoResponse(TypedDict):
 DATASET_TYPE = "dataset"
 
 
-class ParquetFile:
-    def __init__(self, local_file: str, local_dir: str, config: str):
-        if not local_file.startswith(local_dir):
-            raise ValueError(f"{local_file} is not in {local_dir}")
-        self.local_file = local_file
-        self.local_dir = local_dir
-        self.config = config
-
-    def repo_file(self) -> str:
-        return f'{self.config}/{self.local_file.removeprefix(f"{self.local_dir}/")}'
-
-
 # TODO: use huggingface_hub's hf_hub_url after
 # https://github.com/huggingface/huggingface_hub/issues/1082
 def hf_hub_url(repo_id: str, filename: str, hf_endpoint: str, revision: str, url_template: str) -> str:
     return (hf_endpoint + url_template) % (repo_id, quote(revision, safe=""), filename)
 
 
-p = re.compile(r"(?P<builder>[\w-]+?)-(?P<split>[\w]+?)(-[0-9]{5}-of-[0-9]{5})?.parquet")
+p = re.compile(r"(?P<builder>[\w-]+?)-(?P<split>\w+(\.\w+)*?)(-[0-9]{5}-of-[0-9]{5})?.parquet")
 
 
 def parse_repo_filename(filename: str) -> Tuple[str, str]:
@@ -676,7 +656,7 @@ def get_writer_batch_size(ds_config_info: datasets.info.DatasetInfo) -> Optional
             If `None`, then it will use the `datasets` default.
     """
     return (
-        PARQUET_AND_DATASET_INFO_ROW_GROUP_SIZE_FOR_IMAGE_DATASETS
+        PROCESSING_STEP_PARQUET_AND_DATASET_INFO_ROW_GROUP_SIZE_FOR_IMAGE_DATASETS
         if "Image(" in str(ds_config_info.features)
         else None
     )
@@ -893,7 +873,7 @@ def compute_parquet_and_dataset_info_response(
 
 
 class ParquetAndDatasetInfoJobRunner(DatasetsBasedJobRunner):
-    parquet_and_dataset_info_config: ParquetAndDatasetInfoConfig
+    parquet_and_dataset_info_config: ParquetAndInfoConfig
 
     @staticmethod
     def get_job_type() -> str:
@@ -909,7 +889,7 @@ class ParquetAndDatasetInfoJobRunner(DatasetsBasedJobRunner):
         app_config: AppConfig,
         processing_step: ProcessingStep,
         hf_datasets_cache: Path,
-        parquet_and_dataset_info_config: ParquetAndDatasetInfoConfig,
+        parquet_and_dataset_info_config: ParquetAndInfoConfig,
     ) -> None:
         super().__init__(
             job_info=job_info,
@@ -920,6 +900,8 @@ class ParquetAndDatasetInfoJobRunner(DatasetsBasedJobRunner):
         self.parquet_and_dataset_info_config = parquet_and_dataset_info_config
 
     def compute(self) -> CompleteJobResult:
+        if self.dataset is None:
+            raise ParameterMissingError("'dataset' parameter is required")
         return CompleteJobResult(
             compute_parquet_and_dataset_info_response(
                 dataset=self.dataset,

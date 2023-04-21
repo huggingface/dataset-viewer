@@ -9,7 +9,7 @@ from mongodb_migration.database_migrations import (
     DatabaseMigration,
     _clean_maintenance_database,
 )
-from mongodb_migration.migration import IrreversibleMigration, Migration
+from mongodb_migration.migration import IrreversibleMigrationError, Migration
 from mongodb_migration.plan import Plan, SavedMigrationsError
 from mongodb_migration.resources import MigrationsMongoResource
 
@@ -73,7 +73,7 @@ class MigrationErrorIrreversible(Migration):
         raise RuntimeError("Error in up")
 
     def down(self) -> None:
-        raise IrreversibleMigration("Error in down")
+        raise IrreversibleMigrationError("Error in down")
 
     def validate(self) -> None:
         pass
@@ -122,7 +122,7 @@ def test_collected_migrations_order_dont_matter(collected_migrations: List[Migra
         ([migration_error_in_up], [], RuntimeError),
         ([migration_error_in_validate], [], RuntimeError),
         ([migration_error_in_up_and_down], [migration_error_in_up_and_down], RuntimeError),
-        ([migration_error_irreversible], [migration_error_irreversible], IrreversibleMigration),
+        ([migration_error_irreversible], [migration_error_irreversible], IrreversibleMigrationError),
         ([migration_ok_a, migration_error_in_up], [], RuntimeError),
         (
             [migration_ok_a, migration_error_in_up_and_down],

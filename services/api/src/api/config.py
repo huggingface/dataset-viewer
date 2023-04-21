@@ -7,7 +7,9 @@ from typing import List, Mapping, Optional
 from environs import Env
 from libcommon.config import (
     CacheConfig,
+    CachedAssetsConfig,
     CommonConfig,
+    LogConfig,
     ProcessingGraphConfig,
     QueueConfig,
 )
@@ -77,8 +79,10 @@ class ApiConfig:
 @dataclass(frozen=True)
 class AppConfig:
     api: ApiConfig = field(default_factory=ApiConfig)
+    cached_assets: CachedAssetsConfig = field(default_factory=CachedAssetsConfig)
     cache: CacheConfig = field(default_factory=CacheConfig)
     common: CommonConfig = field(default_factory=CommonConfig)
+    log: LogConfig = field(default_factory=LogConfig)
     queue: QueueConfig = field(default_factory=QueueConfig)
     processing_graph: ProcessingGraphConfig = field(default_factory=ProcessingGraphConfig)
 
@@ -87,7 +91,9 @@ class AppConfig:
         common_config = CommonConfig.from_env()
         return cls(
             common=common_config,
+            cached_assets=CachedAssetsConfig.from_env(),
             cache=CacheConfig.from_env(),
+            log=LogConfig.from_env(),
             processing_graph=ProcessingGraphConfig.from_env(),
             queue=QueueConfig.from_env(),
             api=ApiConfig.from_env(common_config=common_config),
@@ -113,11 +119,18 @@ class EndpointConfig:
         default_factory=lambda: {
             "/config-names": {"dataset": ["/config-names"]},
             "/splits": {
-                "dataset": ["/splits", "dataset-split-names-from-streaming", "dataset-split-names-from-dataset-info"],
+                "dataset": [
+                    "dataset-split-names",
+                    "dataset-split-names-from-streaming",
+                    "dataset-split-names-from-dataset-info",
+                ],
                 "config": ["/split-names-from-streaming", "/split-names-from-dataset-info"],
             },
-            "/first-rows": {"split": ["split-first-rows-from-streaming"]},
-            "/parquet-and-dataset-info": {"dataset": ["/parquet-and-dataset-info"]},
+            "/first-rows": {"split": ["split-first-rows-from-streaming", "split-first-rows-from-parquet"]},
+            "/parquet-and-dataset-info": {
+                "dataset": ["/parquet-and-dataset-info"],
+                "config": ["config-parquet-and-info"],
+            },
             "/parquet": {
                 "dataset": ["dataset-parquet"],
                 "config": ["config-parquet"],

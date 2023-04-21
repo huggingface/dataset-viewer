@@ -17,7 +17,7 @@ from libcommon.queue import Priority
 from libcommon.resources import CacheMongoResource, QueueMongoResource
 from libcommon.simple_cache import DoesNotExist, get_response
 
-from worker.config import AppConfig, ParquetAndDatasetInfoConfig
+from worker.config import AppConfig, ParquetAndInfoConfig
 from worker.job_runners.parquet_and_dataset_info import (
     DatasetInBlockListError,
     DatasetTooBigFromDatasetsError,
@@ -44,11 +44,11 @@ from ..fixtures.hub import HubDatasets
 def set_supported_datasets(hub_datasets: HubDatasets) -> Iterator[pytest.MonkeyPatch]:
     mp = pytest.MonkeyPatch()
     mp.setenv(
-        "PARQUET_AND_DATASET_INFO_BLOCKED_DATASETS",
+        "PARQUET_AND_INFO_BLOCKED_DATASETS",
         ",".join(value["name"] for value in hub_datasets.values() if "jsonl" in value["name"]),
     )
     mp.setenv(
-        "PARQUET_AND_DATASET_INFO_SUPPORTED_DATASETS",
+        "PARQUET_AND_INFO_SUPPORTED_DATASETS",
         ",".join(value["name"] for value in hub_datasets.values() if "big" not in value["name"]),
     )
     yield mp
@@ -58,11 +58,11 @@ def set_supported_datasets(hub_datasets: HubDatasets) -> Iterator[pytest.MonkeyP
 @pytest.fixture
 def parquet_and_dataset_info_config(
     set_env_vars: pytest.MonkeyPatch, set_supported_datasets: pytest.MonkeyPatch
-) -> ParquetAndDatasetInfoConfig:
-    return ParquetAndDatasetInfoConfig.from_env()
+) -> ParquetAndInfoConfig:
+    return ParquetAndInfoConfig.from_env()
 
 
-GetJobRunner = Callable[[str, AppConfig, ParquetAndDatasetInfoConfig, bool], ParquetAndDatasetInfoJobRunner]
+GetJobRunner = Callable[[str, AppConfig, ParquetAndInfoConfig, bool], ParquetAndDatasetInfoJobRunner]
 
 
 @pytest.fixture
@@ -74,7 +74,7 @@ def get_job_runner(
     def _get_job_runner(
         dataset: str,
         app_config: AppConfig,
-        parquet_and_dataset_info_config: ParquetAndDatasetInfoConfig,
+        parquet_and_dataset_info_config: ParquetAndInfoConfig,
         force: bool = False,
     ) -> ParquetAndDatasetInfoJobRunner:
         return ParquetAndDatasetInfoJobRunner(
@@ -91,11 +91,11 @@ def get_job_runner(
             processing_step=ProcessingStep(
                 name=ParquetAndDatasetInfoJobRunner.get_job_type(),
                 input_type="dataset",
-                requires=None,
+                requires=[],
                 required_by_dataset_viewer=False,
-                parent=None,
                 ancestors=[],
                 children=[],
+                parents=[],
                 job_runner_version=ParquetAndDatasetInfoJobRunner.get_job_runner_version(),
             ),
             hf_datasets_cache=libraries_resource.hf_datasets_cache,
@@ -125,7 +125,7 @@ def assert_content_is_equal(content: Any, expected: Any) -> None:
 def test_compute(
     app_config: AppConfig,
     get_job_runner: GetJobRunner,
-    parquet_and_dataset_info_config: ParquetAndDatasetInfoConfig,
+    parquet_and_dataset_info_config: ParquetAndInfoConfig,
     hub_datasets: HubDatasets,
 ) -> None:
     dataset = hub_datasets["public"]["name"]
@@ -142,7 +142,7 @@ def test_compute(
 
 
 def test_doesnotexist(
-    app_config: AppConfig, get_job_runner: GetJobRunner, parquet_and_dataset_info_config: ParquetAndDatasetInfoConfig
+    app_config: AppConfig, get_job_runner: GetJobRunner, parquet_and_dataset_info_config: ParquetAndInfoConfig
 ) -> None:
     dataset = "doesnotexist"
     job_runner = get_job_runner(dataset, app_config, parquet_and_dataset_info_config, False)
@@ -177,7 +177,7 @@ def test_raise_if_too_big_from_hub(
     name: str,
     raises: bool,
     app_config: AppConfig,
-    parquet_and_dataset_info_config: ParquetAndDatasetInfoConfig,
+    parquet_and_dataset_info_config: ParquetAndInfoConfig,
 ) -> None:
     dataset = hub_datasets[name]["name"]
     dataset_info = get_dataset_info_or_raise(
@@ -206,7 +206,7 @@ def test_raise_if_too_big_from_datasets(
     name: str,
     raises: bool,
     app_config: AppConfig,
-    parquet_and_dataset_info_config: ParquetAndDatasetInfoConfig,
+    parquet_and_dataset_info_config: ParquetAndInfoConfig,
 ) -> None:
     dataset = hub_datasets[name]["name"]
     if raises:
@@ -241,7 +241,7 @@ def test_raise_if_too_big_external_files(
     max_dataset_size: Optional[int],
     max_external_data_files: Optional[int],
     app_config: AppConfig,
-    parquet_and_dataset_info_config: ParquetAndDatasetInfoConfig,
+    parquet_and_dataset_info_config: ParquetAndInfoConfig,
 ) -> None:
     max_dataset_size = max_dataset_size or parquet_and_dataset_info_config.max_dataset_size
     max_external_data_files = max_external_data_files or parquet_and_dataset_info_config.max_external_data_files
@@ -275,7 +275,7 @@ def test_raise_if_too_many_external_files(
     max_dataset_size: Optional[int],
     max_external_data_files: Optional[int],
     app_config: AppConfig,
-    parquet_and_dataset_info_config: ParquetAndDatasetInfoConfig,
+    parquet_and_dataset_info_config: ParquetAndInfoConfig,
 ) -> None:
     max_dataset_size = max_dataset_size or parquet_and_dataset_info_config.max_dataset_size
     max_external_data_files = max_external_data_files or parquet_and_dataset_info_config.max_external_data_files
@@ -306,7 +306,7 @@ def test_raise_if_too_many_external_files(
 def test_raise_if_not_supported(
     hub_public_big: str,
     app_config: AppConfig,
-    parquet_and_dataset_info_config: ParquetAndDatasetInfoConfig,
+    parquet_and_dataset_info_config: ParquetAndInfoConfig,
     in_list: bool,
     raises: bool,
 ) -> None:
@@ -338,7 +338,7 @@ def test_raise_if_not_supported(
 def test_not_supported_if_big(
     app_config: AppConfig,
     get_job_runner: GetJobRunner,
-    parquet_and_dataset_info_config: ParquetAndDatasetInfoConfig,
+    parquet_and_dataset_info_config: ParquetAndInfoConfig,
     hub_public_big: str,
 ) -> None:
     # Not in the list of supported datasets and bigger than the maximum size
@@ -353,10 +353,10 @@ def test_not_supported_if_big(
 def test_supported_if_gated(
     app_config: AppConfig,
     get_job_runner: GetJobRunner,
-    parquet_and_dataset_info_config: ParquetAndDatasetInfoConfig,
+    parquet_and_dataset_info_config: ParquetAndInfoConfig,
     hub_gated_csv: str,
 ) -> None:
-    # Access should must be granted
+    # Access must be granted
     dataset = hub_gated_csv
     job_runner = get_job_runner(dataset, app_config, parquet_and_dataset_info_config, False)
     assert job_runner.process()
@@ -368,7 +368,7 @@ def test_supported_if_gated(
 def test_not_supported_if_gated_with_extra_fields(
     app_config: AppConfig,
     get_job_runner: GetJobRunner,
-    parquet_and_dataset_info_config: ParquetAndDatasetInfoConfig,
+    parquet_and_dataset_info_config: ParquetAndInfoConfig,
     hub_gated_extra_fields_csv: str,
 ) -> None:
     # Access request should fail because extra fields in gated datasets are not supported
@@ -383,7 +383,7 @@ def test_not_supported_if_gated_with_extra_fields(
 def test_blocked(
     app_config: AppConfig,
     get_job_runner: GetJobRunner,
-    parquet_and_dataset_info_config: ParquetAndDatasetInfoConfig,
+    parquet_and_dataset_info_config: ParquetAndInfoConfig,
     hub_public_jsonl: str,
 ) -> None:
     # In the list of blocked datasets
@@ -404,7 +404,7 @@ def test_compute_splits_response_simple_csv_ok(
     get_job_runner: GetJobRunner,
     name: str,
     app_config: AppConfig,
-    parquet_and_dataset_info_config: ParquetAndDatasetInfoConfig,
+    parquet_and_dataset_info_config: ParquetAndInfoConfig,
     data_df: pd.DataFrame,
 ) -> None:
     dataset = hub_datasets[name]["name"]
@@ -447,7 +447,7 @@ def test_compute_splits_response_simple_csv_error(
     error_code: str,
     cause: str,
     app_config: AppConfig,
-    parquet_and_dataset_info_config: ParquetAndDatasetInfoConfig,
+    parquet_and_dataset_info_config: ParquetAndInfoConfig,
 ) -> None:
     dataset = hub_datasets[name]["name"]
     job_runner = get_job_runner(dataset, app_config, parquet_and_dataset_info_config, False)
@@ -472,6 +472,7 @@ def test_compute_splits_response_simple_csv_error(
         ("config/builder-with-dashes-split.parquet", "split", "config", False),
         ("config/builder-split-00000-of-00001.parquet", "split", "config", False),
         ("config/builder-with-dashes-split-00000-of-00001.parquet", "split", "config", False),
+        ("config/builder-split.with.dots-00000-of-00001.parquet", "split.with.dots", "config", False),
         (
             "config/builder-with-dashes-caveat-asplitwithdashesisnotsupported-00000-of-00001.parquet",
             "asplitwithdashesisnotsupported",

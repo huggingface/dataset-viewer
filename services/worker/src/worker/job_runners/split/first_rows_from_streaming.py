@@ -8,18 +8,7 @@ import time
 import warnings
 from http import HTTPStatus
 from pathlib import Path
-from typing import (
-    Any,
-    Callable,
-    List,
-    Literal,
-    Mapping,
-    Optional,
-    TypedDict,
-    TypeVar,
-    Union,
-    cast,
-)
+from typing import Any, Callable, List, Literal, Mapping, Optional, TypeVar, Union, cast
 
 from datasets import (
     Dataset,
@@ -27,28 +16,33 @@ from datasets import (
     Features,
     IterableDataset,
     get_dataset_config_info,
-    get_dataset_config_names,
-    get_dataset_split_names,
     load_dataset,
 )
-from libcommon.constants import PROCESSING_STEP_SPLIT_FIRST_ROWS_FROM_STREAMING_VERSION
+from libcommon.constants import (
+    PROCESSING_STEP_SPLIT_FIRST_ROWS_FROM_PARQUET_VERSION,
+    PROCESSING_STEP_SPLIT_FIRST_ROWS_FROM_STREAMING_VERSION,
+)
 from libcommon.processing_graph import ProcessingStep
 from libcommon.queue import JobInfo
-from libcommon.simple_cache import DoesNotExist
-from libcommon.simple_cache import SplitFullName as _SplitFullName
-from libcommon.simple_cache import get_response
+from libcommon.simple_cache import SplitFullName
 from libcommon.storage import StrPath
-from libcommon.utils import orjson_dumps
+from libcommon.viewer_utils.features import get_cell_value
 
 from worker.config import AppConfig, FirstRowsConfig
-from worker.features import get_cell_value
 from worker.job_runner import (
     CompleteJobResult,
-    ConfigNotFoundError,
     JobRunnerError,
+    ParameterMissingError,
     SplitNotFoundError,
+    get_previous_step_or_raise,
 )
 from worker.job_runners._datasets_based_job_runner import DatasetsBasedJobRunner
+from worker.utils import (
+    SplitFirstRowsResponse,
+    create_truncated_row_items,
+    get_json_size,
+    to_features_list,
+)
 
 SplitFirstRowsFromStreamingJobRunnerErrorCode = Literal[
     "SplitsNamesError",
@@ -60,7 +54,6 @@ SplitFirstRowsFromStreamingJobRunnerErrorCode = Literal[
     "RowsPostProcessingError",
     "TooManyColumnsError",
     "TooBigContentError",
-    "PreviousStepStatusError",
     "PreviousStepFormatError",
 ]
 
@@ -144,13 +137,6 @@ class TooBigContentError(SplitFirstRowsFromStreamingJobRunnerError):
         super().__init__(message, HTTPStatus.INTERNAL_SERVER_ERROR, "TooBigContentError", cause, False)
 
 
-class PreviousStepStatusError(SplitFirstRowsFromStreamingJobRunnerError):
-    """Raised when the previous step gave an error. The job should not have been created."""
-
-    def __init__(self, message: str, cause: Optional[BaseException] = None):
-        super().__init__(message, HTTPStatus.INTERNAL_SERVER_ERROR, "PreviousStepStatusError", cause, False)
-
-
 class PreviousStepFormatError(SplitFirstRowsFromStreamingJobRunnerError):
     """Raised when the content of the previous step has not the expected format."""
 
@@ -189,26 +175,6 @@ def retry(func: FuncT) -> FuncT:
 Row = Mapping[str, Any]
 
 
-class FeatureItem(TypedDict):
-    feature_idx: int
-    name: str
-    type: Mapping[str, Any]
-
-
-class RowItem(TypedDict):
-    row_idx: int
-    row: Mapping[str, Any]
-    truncated_cells: List[str]
-
-
-class SplitFirstRowsFromStreamingResponse(TypedDict):
-    dataset: str
-    config: str
-    split: str
-    features: List[FeatureItem]
-    rows: List[RowItem]
-
-
 @retry
 def get_rows(
     dataset: str,
@@ -241,130 +207,6 @@ def get_rows(
     return rows_plus_one[:rows_max_number]
 
 
-def get_json_size(obj: Any) -> int:
-    """Returns the size of an object in bytes once serialized as JSON
-
-    Args:
-        obj (Any): the Python object
-
-    Returns:
-        int: the size of the serialized object in bytes
-    """
-    return len(orjson_dumps(obj))
-
-
-# from https://stackoverflow.com/a/43848928/7351594
-def utf8_lead_byte(b: int) -> bool:
-    """A UTF-8 intermediate byte starts with the bits 10xxxxxx."""
-    return (b & 0xC0) != 0x80
-
-
-def utf8_byte_truncate(text: str, max_bytes: int) -> str:
-    """If text[max_bytes] is not a lead byte, back up until a lead byte is
-    found and truncate before that character."""
-    utf8 = text.encode("utf8")
-    if len(utf8) <= max_bytes:
-        return text
-    i = max_bytes
-    while i > 0 and not utf8_lead_byte(utf8[i]):
-        i -= 1
-    return utf8[:i].decode("utf8", "ignore")
-
-
-# Mutates row_item, and returns it anyway
-def truncate_row_item(row_item: RowItem, min_cell_bytes: int) -> RowItem:
-    row = {}
-    for column_name, cell in row_item["row"].items():
-        # for now: all the cells above min_cell_bytes are truncated to min_cell_bytes
-        # it's done by replacing the cell (which can have any type) by a string with
-        # its JSON serialization, and then truncating it to min_cell_bytes
-        cell_json = orjson_dumps(cell)
-        if len(cell_json) <= min_cell_bytes:
-            row[column_name] = cell
-        else:
-            cell_json_str = cell_json.decode("utf8", "ignore")
-            row_item["truncated_cells"].append(column_name)
-            row[column_name] = utf8_byte_truncate(text=cell_json_str, max_bytes=min_cell_bytes)
-    row_item["row"] = row
-    return row_item
-
-
-COMMA_SIZE = 1  # the comma "," is encoded with one byte in utf-8
-
-
-# Mutates row_items, and returns them anyway
-def truncate_row_items(row_items: List[RowItem], min_cell_bytes: int, rows_max_bytes: int) -> List[RowItem]:
-    # compute the current size
-    rows_bytes = sum(get_json_size(row_item) for row_item in row_items) + COMMA_SIZE * (len(row_items) - 1)
-
-    # Loop backwards, so that the last rows are truncated first
-    for row_item in reversed(row_items):
-        if rows_bytes < rows_max_bytes:
-            break
-        previous_size = get_json_size(row_item) + COMMA_SIZE
-        row_item = truncate_row_item(row_item=row_item, min_cell_bytes=min_cell_bytes)
-        new_size = get_json_size(row_item) + COMMA_SIZE
-        rows_bytes += new_size - previous_size
-        row_idx = row_item["row_idx"]
-        logging.debug(f"the size of the rows is now ({rows_bytes}) after truncating row idx={row_idx}")
-    return row_items
-
-
-def to_row_item(row_idx: int, row: Row) -> RowItem:
-    return {
-        "row_idx": row_idx,
-        "row": row,
-        "truncated_cells": [],
-    }
-
-
-def create_truncated_row_items(
-    rows: List[Row],
-    min_cell_bytes: int,
-    rows_max_bytes: int,
-    rows_min_number: int,
-) -> List[RowItem]:
-    row_items = []
-    rows_bytes = 0
-
-    # two restrictions must be enforced:
-    # - at least rows_min_number rows
-    # - at most rows_max_bytes bytes. Note that it's the limit to the sum of the rows sizes. The JSON response size
-    #   will be greater, due to the other fields (row_idx, truncated_cells, features, etc.).
-    # To enforce this:
-    # 1. first get the first rows_min_number rows
-    for row_idx, row in enumerate(rows[:rows_min_number]):
-        row_item = to_row_item(row_idx=row_idx, row=row)
-        rows_bytes += get_json_size(row_item) + COMMA_SIZE
-        row_items.append(row_item)
-
-    # 2. if the total is over the bytes limit, truncate the values, iterating backwards starting
-    # from the last rows, until getting under the threshold
-    # caveat: the truncation might not be enough to get under the threshold if:
-    # - the number of columns is too high
-    # - rows_max_bytes is too low (or even negative)
-    if rows_bytes >= rows_max_bytes:
-        logging.debug(
-            f"the size of the first {rows_min_number} rows ({rows_bytes}) is above the max number of bytes"
-            f" ({rows_max_bytes}), they will be truncated"
-        )
-        return truncate_row_items(row_items=row_items, min_cell_bytes=min_cell_bytes, rows_max_bytes=rows_max_bytes)
-
-    # 3. else: add the remaining rows until the end, or until the bytes threshold
-    for idx, row in enumerate(rows[rows_min_number:]):
-        row_idx = rows_min_number + idx
-        row_item = to_row_item(row_idx=row_idx, row=row)
-        rows_bytes += get_json_size(row_item) + COMMA_SIZE
-        if rows_bytes >= rows_max_bytes:
-            logging.debug(
-                f"the rows in the split have been truncated to {row_idx} row(s) to keep the size"
-                f" ({rows_bytes}) under the limit ({rows_max_bytes})"
-            )
-            break
-        row_items.append(row_item)
-    return row_items
-
-
 def transform_rows(
     dataset: str,
     config: str,
@@ -393,40 +235,6 @@ def transform_rows(
     ]
 
 
-# in JSON, dicts do not carry any order, so we need to return a list
-#
-# > An object is an *unordered* collection of zero or more name/value pairs, where a name is a string and a value
-#   is a string, number, boolean, null, object, or array.
-# > An array is an *ordered* sequence of zero or more values.
-# > The terms "object" and "array" come from the conventions of JavaScript.
-# from https://stackoverflow.com/a/7214312/7351594 / https://www.rfc-editor.org/rfc/rfc7159.html
-def to_features_list(features: Features) -> List[FeatureItem]:
-    features_dict = features.to_dict()
-    return [
-        {
-            "feature_idx": idx,
-            "name": name,
-            "type": features_dict[name],
-        }
-        for idx, name in enumerate(features)
-    ]
-
-
-class SplitFullName(TypedDict):
-    dataset: str
-    config: str
-    split: str
-
-
-def get_dataset_split_full_names(dataset: str, use_auth_token: Union[bool, str, None] = False) -> List[SplitFullName]:
-    logging.info(f"get dataset '{dataset}' split full names")
-    return [
-        {"dataset": dataset, "config": config, "split": split}
-        for config in get_dataset_config_names(path=dataset, use_auth_token=use_auth_token)
-        for split in get_dataset_split_names(path=dataset, config_name=config, use_auth_token=use_auth_token)
-    ]
-
-
 def compute_first_rows_response(
     dataset: str,
     config: str,
@@ -440,7 +248,7 @@ def compute_first_rows_response(
     columns_max_number: int,
     assets_directory: StrPath,
     max_size_fallback: Optional[int] = None,
-) -> SplitFirstRowsFromStreamingResponse:
+) -> SplitFirstRowsResponse:
     """
     Get the response of /first-rows for one specific split of a dataset from huggingface.co.
     Dataset can be private or gated if you pass an acceptable token.
@@ -475,44 +283,41 @@ def compute_first_rows_response(
         assets_directory (`str` or `pathlib.Path`):
             The directory where the assets are stored.
     Returns:
-        [`SplitFirstRowsFromStreamingResponse`]: The list of first rows of the split.
+        [`SplitFirstRowsResponse`]: The list of first rows of the split.
     <Tip>
     Raises the following errors:
-        - [`~job_runner.ConfigNotFoundError`]
-          If the config does not exist in the dataset.
         - [`~job_runner.SplitNotFoundError`]
           If the split does not exist in the dataset.
-        - [`~job_runners.first_rows.InfoError`]
+        - [`~job_runners.split.first_rows.InfoError`]
           If the config info could not be obtained using the datasets library.
-        - [`~job_runners.first_rows.FeaturesError`]
+        - [`~job_runners.split.first_rows.FeaturesError`]
           If the split features could not be obtained using the datasets library.
-        - [`~job_runners.first_rows.StreamingRowsError`]
+        - [`~job_runners.split.first_rows.StreamingRowsError`]
           If the split rows could not be obtained using the datasets library in streaming mode.
-        - [`~job_runners.first_rows.NormalRowsError`]
+        - [`~job_runners.split.first_rows.NormalRowsError`]
           If the split rows could not be obtained using the datasets library in normal mode.
-        - [`~job_runners.first_rows.RowsPostProcessingError`]
+        - [`~job_runners.split.first_rows.RowsPostProcessingError`]
           If the post-processing of the split rows failed, e.g. while saving the images or audio files to the assets.
-        - [`~job_runners.first_rows.TooManyColumnsError`]
+        - [`~job_runners.split.first_rows.TooManyColumnsError`]
           If the number of columns (features) exceeds the maximum supported number of columns.
-        - [`~job_runners.first_rows.TooBigContentError`]
+        - [`~job_runners.split.first_rows.TooBigContentError`]
           If the first rows content exceeds the maximum supported size of bytes.
+        - [`~job_runner.PreviousStepError`]
+            If the previous step gave an error.
+        - [`~job_runners.split.first_rows.PreviousStepFormatError`]
+            If the content of the previous step has not the expected format
     </Tip>
     """
     logging.info(f"get first-rows for dataset={dataset} config={config} split={split}")
     use_auth_token: Union[bool, str, None] = hf_token if hf_token is not None else False
     # first ensure the tuple (dataset, config, split) exists on the Hub
+    split_names_best_response = get_previous_step_or_raise(
+        kinds=["/split-names-from-streaming", "/split-names-from-dataset-info"], dataset=dataset, config=config
+    )
     try:
-        upstream_response = get_response(kind="/split-names-from-streaming", dataset=dataset, config=config)
-        splits_content = upstream_response["content"]["splits"]
-    except DoesNotExist:
-        raise ConfigNotFoundError(f"The config '{config}' does not exist for the dataset.'")
+        splits_content = split_names_best_response.response["content"]["splits"]
     except Exception as e:
-        raise PreviousStepFormatError("Previous step did not return the expected content.") from e
-
-    if upstream_response["http_status"] != HTTPStatus.OK:
-        raise PreviousStepStatusError(
-            f"Previous step gave an error: {upstream_response['http_status']}. This job should not have been created."
-        )
+        raise PreviousStepFormatError("Previous step did not return the expected content.", e) from e
 
     if split not in [split_item["split"] for split_item in splits_content]:
         raise SplitNotFoundError(f"The split '{split}' does not exist for the config '{config}' of the dataset.")
@@ -564,7 +369,7 @@ def compute_first_rows_response(
 
     # validate size of response without the rows
     features_list = to_features_list(features=features)
-    response_features_only: SplitFirstRowsFromStreamingResponse = {
+    response_features_only: SplitFirstRowsResponse = {
         "dataset": dataset,
         "config": config,
         "split": split,
@@ -682,8 +487,16 @@ class SplitFirstRowsFromStreamingJobRunner(DatasetsBasedJobRunner):
         self.assets_base_url = app_config.assets.base_url
 
     def compute(self) -> CompleteJobResult:
-        if self.config is None or self.split is None:
-            raise ValueError("config and split are required")
+        if self.dataset is None:
+            raise ParameterMissingError("'dataset' parameter is required")
+        if self.config is None:
+            raise ParameterMissingError("'config' parameter is required")
+        if self.split is None:
+            raise ParameterMissingError("'split' parameter is required")
+        self.raise_if_parallel_response_exists(
+            parallel_cache_kind="split-first-rows-from-parquet",
+            parallel_job_version=PROCESSING_STEP_SPLIT_FIRST_ROWS_FROM_PARQUET_VERSION,
+        )
         return CompleteJobResult(
             compute_first_rows_response(
                 dataset=self.dataset,
@@ -700,8 +513,8 @@ class SplitFirstRowsFromStreamingJobRunner(DatasetsBasedJobRunner):
             )
         )
 
-    def get_new_splits(self, _: Mapping[str, Any]) -> set[_SplitFullName]:
+    def get_new_splits(self, _: Mapping[str, Any]) -> set[SplitFullName]:
         """Get the set of new splits, from the content created by compute."""
         if self.config is None or self.split is None:
             raise ValueError("config and split are required")
-        return {_SplitFullName(dataset=self.dataset, config=self.config, split=self.split)}
+        return {SplitFullName(dataset=self.dataset, config=self.config, split=self.split)}

@@ -46,11 +46,11 @@ def get_job_runner(
             processing_step=ProcessingStep(
                 name=ConfigNamesJobRunner.get_job_type(),
                 input_type="dataset",
-                requires=None,
+                requires=[],
                 required_by_dataset_viewer=False,
-                parent=None,
                 ancestors=[],
                 children=[],
+                parents=[],
                 job_runner_version=ConfigNamesJobRunner.get_job_runner_version(),
             ),
             hf_datasets_cache=libraries_resource.hf_datasets_cache,

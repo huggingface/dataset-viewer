@@ -5,13 +5,13 @@ from http import HTTPStatus
 from typing import Any, Callable
 
 import pytest
-from libcommon.dataset import DatasetNotFoundError
 from libcommon.processing_graph import ProcessingStep
 from libcommon.queue import Priority
 from libcommon.resources import CacheMongoResource, QueueMongoResource
 from libcommon.simple_cache import SplitFullName, upsert_response
 
 from worker.config import AppConfig
+from worker.job_runner import PreviousStepError
 from worker.job_runners.dataset.split_names_from_streaming import (
     DatasetSplitNamesFromStreamingJobRunner,
     PreviousStepFormatError,
@@ -45,11 +45,11 @@ def get_job_runner(
             processing_step=ProcessingStep(
                 name=DatasetSplitNamesFromStreamingJobRunner.get_job_type(),
                 input_type="dataset",
-                requires=None,
+                requires=[],
                 required_by_dataset_viewer=False,
-                parent=None,
                 ancestors=[],
                 children=[],
+                parents=[],
                 job_runner_version=DatasetSplitNamesFromStreamingJobRunner.get_job_runner_version(),
             ),
         )
@@ -237,7 +237,7 @@ def test_compute_format_error(app_config: AppConfig, get_job_runner: GetJobRunne
 def test_doesnotexist(app_config: AppConfig, get_job_runner: GetJobRunner) -> None:
     dataset = "doesnotexist"
     job_runner = get_job_runner(dataset, app_config, False)
-    with pytest.raises(DatasetNotFoundError):
+    with pytest.raises(PreviousStepError):
         job_runner.compute()
 
 

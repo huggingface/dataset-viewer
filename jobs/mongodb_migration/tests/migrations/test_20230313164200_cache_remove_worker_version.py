@@ -5,7 +5,7 @@ from libcommon.resources import MongoResource
 from mongoengine.connection import get_db
 from pytest import raises
 
-from mongodb_migration.migration import IrreversibleMigration
+from mongodb_migration.migration import IrreversibleMigrationError
 from mongodb_migration.migrations._20230313164200_cache_remove_worker_version import (
     MigrationRemoveWorkerVersionFromCachedResponse,
 )
@@ -33,6 +33,6 @@ def test_cache_remove_worker_version(mongo_host: str) -> None:
         assert result
         assert "worker_version" not in result
 
-        with raises(IrreversibleMigration):
+        with raises(IrreversibleMigrationError):
             migration.down()
         db["cachedResponsesBlue"].drop()

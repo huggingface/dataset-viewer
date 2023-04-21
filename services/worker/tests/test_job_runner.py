@@ -1,9 +1,11 @@
 from dataclasses import dataclass
 from http import HTTPStatus
 from typing import Any, Mapping, Optional
+from unittest.mock import Mock
 
 import pytest
 from libcommon.config import CommonConfig
+from libcommon.exceptions import CustomError
 from libcommon.processing_graph import ProcessingGraph, ProcessingStep
 from libcommon.queue import Priority, Queue, Status
 from libcommon.resources import CacheMongoResource, QueueMongoResource
@@ -223,11 +225,11 @@ def test_check_type(
     another_processing_step = ProcessingStep(
         name=f"not-{test_processing_step.name}",
         input_type="dataset",
-        requires=None,
+        requires=[],
         required_by_dataset_viewer=False,
-        parent=None,
         ancestors=[],
         children=[],
+        parents=[],
         job_runner_version=1,
     )
     with pytest.raises(ValueError):
@@ -333,3 +335,42 @@ def test_job_runner_set_crashed(
     assert response.content == expected_error
     assert response.details == expected_error
     # TODO: check if it stores the correct dataset git sha and job version when it's implemented
+
+
+def test_raise_if_parallel_response_exists(
+    test_processing_step: ProcessingStep,
+) -> None:
+    dataset = "dataset"
+    config = "config"
+    split = "split"
+    current_dataset_git_revision = "CURRENT_GIT_REVISION"
+    upsert_response(
+        kind="dummy-parallel",
+        dataset=dataset,
+        config=config,
+        split=split,
+        content={},
+        dataset_git_revision=current_dataset_git_revision,
+        job_runner_version=1,
+        progress=1.0,
+        http_status=HTTPStatus.OK,
+    )
+    job_runner = DummyJobRunner(
+        job_info={
+            "job_id": "job_id",
+            "type": "/dummy",
+            "dataset": dataset,
+            "config": config,
+            "split": split,
+            "force": False,
+            "priority": Priority.NORMAL,
+        },
+        processing_step=test_processing_step,
+        common_config=CommonConfig(),
+        worker_config=WorkerConfig(),
+    )
+    job_runner.get_dataset_git_revision = Mock(return_value=current_dataset_git_revision)  # type: ignore
+    with pytest.raises(CustomError) as exc_info:
+        job_runner.raise_if_parallel_response_exists(parallel_cache_kind="dummy-parallel", parallel_job_version=1)
+    assert exc_info.value.status_code == HTTPStatus.INTERNAL_SERVER_ERROR
+    assert exc_info.value.code == "ResponseAlreadyComputedError"

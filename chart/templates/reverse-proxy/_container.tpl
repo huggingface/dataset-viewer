@@ -8,6 +8,8 @@
   env:
   - name: ASSETS_DIRECTORY
     value: {{ .Values.assets.storageDirectory | quote }}
+  - name: CACHED_ASSETS_DIRECTORY
+    value: {{ .Values.cachedAssets.storageDirectory | quote }}
   - name: HOST
     value: {{ .Values.reverseProxy.host | quote }}
   - name: PORT
@@ -18,6 +20,7 @@
     value: {{ include "api.url" . | quote }}
   volumeMounts:
   {{ include "volumeMountAssetsRO" . | nindent 2 }}
+  {{ include "volumeMountCachedAssetsRO" . | nindent 2 }}
   - name: nginx-templates
     mountPath: /etc/nginx/templates
     mountPropagation: None
