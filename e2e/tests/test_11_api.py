@@ -1,6 +1,8 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2022 The HuggingFace Authors.
 
+from typing import Literal
+
 import pytest
 
 from .fixtures.hub import AuthHeaders, AuthType, DatasetRepos, DatasetReposType
@@ -34,26 +36,72 @@ def test_auth_e2e(
     headers = auth_headers[auth]
 
     # asking for the dataset will launch the jobs, without the need of a webhook
-    endpoints = [
-        f"/config-names?dataset={dataset}",
-        f"/splits?dataset={dataset}",
-        f"/first-rows?dataset={dataset}&config={config}&split={split}",
-        f"/parquet-and-dataset-info?dataset={dataset}&config={config}",
-        f"/parquet?dataset={dataset}",
-        f"/parquet?dataset={dataset}&config={config}",
-        f"/dataset-info?dataset={dataset}",
-        f"/dataset-info?dataset={dataset}&config={config}",
-        f"/size?dataset={dataset}",
-        f"/size?dataset={dataset}&config={config}",
-    ]
-    for endpoint in endpoints:
-        poll_until_ready_and_assert(
-            relative_url=endpoint,
-            expected_status_code=expected_status_code,
-            expected_error_code=expected_error_code,
-            headers=headers,
-        )
+    poll_until_ready_and_assert(
+        relative_url=f"/config-names?dataset={dataset}",
+        expected_status_code=expected_status_code,
+        expected_error_code=expected_error_code,
+        headers=headers,
+    )
 
+
+@pytest.mark.parametrize(
+    "endpoint,input_type",
+    [
+        ("/config-names", "dataset"),
+        ("/splits", "dataset"),
+        ("/splits", "config"),
+        ("/first-rows", "split"),
+        ("/parquet-and-dataset-info", "dataset"),
+        ("/parquet", "dataset"),
+        ("/parquet", "config"),
+        ("/dataset-info", "dataset"),
+        ("/dataset-info", "config"),
+        ("/size", "dataset"),
+        ("/size", "config"),
+        ("/is-valid", "dataset"),
+        ("/valid", "all"),
+    ],
+)
+def test_endpoint(
+    auth_headers: AuthHeaders,
+    hf_public_dataset_repo_csv_data: str,
+    endpoint: str,
+    input_type: Literal["all", "dataset", "config", "split"],
+) -> None:
+    auth: AuthType = "none"
+    expected_status_code: int = 200
+    expected_error_code = None
+    # TODO: add dataset with various splits, or various configs
+    dataset, config, split = get_default_config_split(hf_public_dataset_repo_csv_data)
+    headers = auth_headers[auth]
+
+    # asking for the dataset will launch the jobs, without the need of a webhook
+    relative_url = endpoint
+    if input_type != "all":
+        relative_url += f"?dataset={dataset}"
+        if input_type != "dataset":
+            relative_url += f"&config={config}"
+            if input_type != "config":
+                relative_url += f"&split={split}"
+
+    poll_until_ready_and_assert(
+        relative_url=relative_url,
+        expected_status_code=expected_status_code,
+        expected_error_code=expected_error_code,
+        headers=headers,
+    )
+
+
+def test_rows_endpoint(
+    auth_headers: AuthHeaders,
+    hf_public_dataset_repo_csv_data: str,
+) -> None:
+    auth: AuthType = "none"
+    expected_status_code: int = 200
+    expected_error_code = None
+    # TODO: add dataset with various splits, or various configs
+    dataset, config, split = get_default_config_split(hf_public_dataset_repo_csv_data)
+    headers = auth_headers[auth]
     # ensure the /rows endpoint works as well
     offset = 1
     limit = 10
@@ -66,13 +114,13 @@ def test_auth_e2e(
     if not expected_error_code:
         content = rows_response.json()
         assert "rows" in content, rows_response
+        assert "features" in content, rows_response
         rows = content["rows"]
+        features = content["features"]
         assert isinstance(rows, list), rows
+        assert isinstance(features, list), features
         assert len(rows) == 3, rows
         assert rows[0] == {"row_idx": 1, "row": {"col_1": 1, "col_2": 1, "col_3": 1.0}, "truncated_cells": []}, rows[0]
-        assert "features" in content, rows_response
-        features = content["features"]
-        assert isinstance(features, list), features
         assert features == [
             {"feature_idx": 0, "name": "col_1", "type": {"dtype": "int64", "_type": "Value"}},
             {"feature_idx": 1, "name": "col_2", "type": {"dtype": "int64", "_type": "Value"}},

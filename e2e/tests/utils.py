@@ -121,7 +121,7 @@ def poll_until_ready_and_assert(
         time.sleep(interval)
         response = get(relative_url=relative_url, headers=headers, url=url)
         print(response.headers.get("X-Error-Code"))
-        should_retry = response.headers.get("X-Error-Code") == "ResponseNotReady"
+        should_retry = response.headers.get("X-Error-Code") in ["ResponseNotReady", "ResponseAlreadyComputedError"]
     if retries == 0 or response is None:
         raise RuntimeError("Poll timeout")
     assert response.status_code == expected_status_code, log(response, url)
