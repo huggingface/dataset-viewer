@@ -12,7 +12,6 @@ from worker.job_runner import (
     CompleteJobResult,
     JobRunner,
     JobRunnerError,
-    ParameterMissingError,
     get_previous_step_or_raise,
 )
 from worker.job_runners.config.parquet_and_info import ParquetFileItem
@@ -90,10 +89,6 @@ class ConfigParquetJobRunner(JobRunner):
         return PROCESSING_STEP_CONFIG_PARQUET_VERSION
 
     def compute(self) -> CompleteJobResult:
-        if self.dataset is None:
-            raise ParameterMissingError("'dataset' parameter is required")
-        if self.config is None:
-            raise ParameterMissingError("'config' parameter is required")
         return CompleteJobResult(compute_parquet_response(dataset=self.dataset, config=self.config))
 
     def get_new_splits(self, content: Mapping[str, Any]) -> set[SplitFullName]:

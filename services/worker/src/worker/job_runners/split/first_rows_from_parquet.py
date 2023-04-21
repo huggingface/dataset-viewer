@@ -311,8 +311,6 @@ class SplitFirstRowsFromParquetJobRunner(DatasetsBasedJobRunner):
         self.assets_base_url = app_config.assets.base_url
 
     def compute(self) -> CompleteJobResult:
-        if self.config is None or self.split is None:
-            raise ValueError("config and split are required")
         self.raise_if_parallel_response_exists(
             parallel_cache_kind="split-first-rows-from-streaming",
             parallel_job_version=PROCESSING_STEP_SPLIT_FIRST_ROWS_FROM_STREAMING_VERSION,

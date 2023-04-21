@@ -463,10 +463,20 @@ class JobRunner(ABC):
                 raise NoGitRevisionError(f"Could not get git revision for dataset {self.dataset}")
             try:
                 self.pre_compute()
+
+                # validate input parameters based on processing_step
+                input_type = self.processing_step.input_type
+                if self.dataset is None:
+                    raise ParameterMissingError("'dataset' parameter is required")
+                if input_type in {"split", "config"} and self.config is None:
+                    raise ParameterMissingError("'config' parameter is required")
+                if input_type == "split" and self.split is None:
+                    raise ParameterMissingError("'split' parameter is required")
+
                 job_result = self.compute()
                 content = job_result.content
 
-                # Validate content size
+                # validate content size
                 if len(orjson_dumps(content)) > self.worker_config.content_max_bytes:
                     raise TooBigContentError(
                         "The computed response content exceeds the supported size in bytes"

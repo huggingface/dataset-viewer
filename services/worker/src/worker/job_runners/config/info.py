@@ -9,7 +9,6 @@ from worker.job_runner import (
     CompleteJobResult,
     JobRunner,
     JobRunnerError,
-    ParameterMissingError,
     get_previous_step_or_raise,
 )
 
@@ -92,10 +91,6 @@ class ConfigInfoJobRunner(JobRunner):
         return PROCESSING_STEP_CONFIG_INFO_VERSION
 
     def compute(self) -> CompleteJobResult:
-        if self.dataset is None:
-            raise ParameterMissingError("'dataset' parameter is required")
-        if self.config is None:
-            raise ParameterMissingError("'config' parameter is required")
         return CompleteJobResult(compute_config_info_response(dataset=self.dataset, config=self.config))
 
     # TODO: is it needed?

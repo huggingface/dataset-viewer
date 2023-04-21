@@ -149,8 +149,6 @@ class DatasetSplitNamesJobRunner(JobRunner):
         return PROCESSING_STEP_DATASET_SPLIT_NAMES_VERSION
 
     def compute(self) -> JobResult:
-        if self.dataset is None:
-            raise ValueError("dataset is required")
         response_content, progress = compute_dataset_split_names_response(dataset=self.dataset)
         return JobResult(response_content, progress=progress)
 

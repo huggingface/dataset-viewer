@@ -14,7 +14,6 @@ from libcommon.simple_cache import SplitFullName
 from worker.job_runner import (
     CompleteJobResult,
     JobRunnerError,
-    ParameterMissingError,
     get_previous_step_or_raise,
 )
 from worker.job_runners._datasets_based_job_runner import DatasetsBasedJobRunner
@@ -105,10 +104,6 @@ class SplitNamesFromDatasetInfoJobRunner(DatasetsBasedJobRunner):
         return PROCESSING_STEP_SPLIT_NAMES_FROM_DATASET_INFO_VERSION
 
     def compute(self) -> CompleteJobResult:
-        if self.dataset is None:
-            raise ParameterMissingError("'dataset' parameter is required")
-        if self.config is None:
-            raise ParameterMissingError("'config' parameter is required")
         """
         Raises [`~job_runners.config.split_names_from_dataset_info.ResponseAlreadyComputedError`]
           If response has been already computed by /split-names-from-streaming job runner.

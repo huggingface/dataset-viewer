@@ -14,7 +14,6 @@ from worker.job_runner import (
     JobResult,
     JobRunner,
     JobRunnerError,
-    ParameterMissingError,
     get_previous_step_or_raise,
 )
 from worker.utils import ConfigItem, SplitItem
@@ -150,8 +149,6 @@ class DatasetSplitNamesFromStreamingJobRunner(JobRunner):
         return PROCESSING_STEP_DATASET_SPLIT_NAMES_FROM_STREAMING_VERSION
 
     def compute(self) -> JobResult:
-        if self.dataset is None:
-            raise ParameterMissingError("'dataset' parameter is required")
         response_content, progress = compute_dataset_split_names_from_streaming_response(dataset=self.dataset)
         return JobResult(response_content, progress=progress)
 

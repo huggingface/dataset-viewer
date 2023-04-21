@@ -21,7 +21,6 @@ from worker.config import AppConfig, FirstRowsConfig
 from worker.job_runner import (
     CompleteJobResult,
     JobRunnerError,
-    ParameterMissingError,
     SplitNotFoundError,
     get_previous_step_or_raise,
 )
@@ -372,12 +371,6 @@ class SplitFirstRowsFromStreamingJobRunner(DatasetsBasedJobRunner):
         self.assets_base_url = app_config.assets.base_url
 
     def compute(self) -> CompleteJobResult:
-        if self.dataset is None:
-            raise ParameterMissingError("'dataset' parameter is required")
-        if self.config is None:
-            raise ParameterMissingError("'config' parameter is required")
-        if self.split is None:
-            raise ParameterMissingError("'split' parameter is required")
         self.raise_if_parallel_response_exists(
             parallel_cache_kind="split-first-rows-from-parquet",
             parallel_job_version=PROCESSING_STEP_SPLIT_FIRST_ROWS_FROM_PARQUET_VERSION,
