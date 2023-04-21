@@ -281,6 +281,11 @@ def get_SPLIT_STATE_DICT(dataset: str, config: str, split: str) -> Any:
                 "job_state": {"is_in_process": False},
                 "cache_state": {"exists": False, "is_success": False},
             },
+            {
+                "id": f"split-opt-in-out-urls-scan,{dataset},{config},{split}",
+                "job_state": {"is_in_process": False},
+                "cache_state": {"exists": False, "is_success": False},
+            },
         ],
     }
 
@@ -844,6 +849,8 @@ def test_plan_incoherent_state() -> None:
                 "split-first-rows-from-parquet,dataset,config1,split2",
                 "split-first-rows-from-streaming,dataset,config1,split1",
                 "split-first-rows-from-streaming,dataset,config1,split2",
+                "split-opt-in-out-urls-scan,dataset,config1,split1",
+                "split-opt-in-out-urls-scan,dataset,config1,split2",
             ],
             "cache_has_different_git_revision": [],
             "cache_is_outdated_by_parent": [],
@@ -957,6 +964,8 @@ def test_plan_get_splits() -> None:
                 "dataset-is-valid,dataset",
                 "split-first-rows-from-parquet,dataset,config1,split1",
                 "split-first-rows-from-parquet,dataset,config1,split2",
+                "split-opt-in-out-urls-scan,dataset,config1,split1",
+                "split-opt-in-out-urls-scan,dataset,config1,split2",
             ],
             "cache_has_different_git_revision": [],
             "cache_is_outdated_by_parent": [],
@@ -1098,6 +1107,8 @@ def test_plan_updated_at() -> None:
                 "split-first-rows-from-parquet,dataset,config1,split2",
                 "split-first-rows-from-streaming,dataset,config1,split1",
                 "split-first-rows-from-streaming,dataset,config1,split2",
+                "split-opt-in-out-urls-scan,dataset,config1,split1",
+                "split-opt-in-out-urls-scan,dataset,config1,split2",
             ],
             "cache_has_different_git_revision": [],
             "cache_is_outdated_by_parent": [

@@ -82,6 +82,9 @@ secrets:
     fromSecret: false
     secretName: "webhook-secret"
     value: ""
+  spawningToken:
+    fromSecret: true
+    secretName: "spawning-token"
 
 uid: 1000
 gid: 3000
@@ -164,6 +167,20 @@ parquetAndInfo:
   targetRevision: "refs/convert/parquet"
   # the URL template to build the parquet file URLs. Defaults to `/datasets/%s/resolve/%s/%s`.
   urlTemplate: "/datasets/%s/resolve/%s/%s"
+
+optInOutUrlsScan:
+  columnsMaxNumber: 10
+  # the max number of columns to scan
+  maxConcurrentRequestsNumber: 10
+  # the max concurrent request number 
+  maxRequestsPerSecond: 20
+  # the max number of request allowed to process in parallel per second
+  rowsMaxNumber: 1_000
+  # the max number of rows to scan
+  urlsNumberPerBatch: 1_000
+  # the number of grouped urls to be send in every request to spawning 
+  spawningUrl: "https://opts-api.spawningaiapi.com/api/v2/query/urls"
+  # the URL for spawning requests
 
 assets:
   # base URL for the assets files. It should be set accordingly to the datasets-server domain, eg https://datasets-server.huggingface.co/assets
