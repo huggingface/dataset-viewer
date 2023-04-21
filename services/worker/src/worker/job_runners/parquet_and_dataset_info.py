@@ -19,7 +19,6 @@ import numpy as np
 import requests
 from datasets import (
     DownloadConfig,
-    get_dataset_config_info,
     get_dataset_config_names,
     get_dataset_infos,
     load_dataset_builder,
