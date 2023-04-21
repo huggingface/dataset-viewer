@@ -91,7 +91,9 @@ class ConfigInfoJobRunner(JobRunner):
         return PROCESSING_STEP_CONFIG_INFO_VERSION
 
     def compute(self) -> CompleteJobResult:
-        return CompleteJobResult(compute_config_info_response(dataset=self.dataset, config=self.config))
+        return CompleteJobResult(
+            compute_config_info_response(dataset=self.dataset, config=self.config)  # type: ignore
+        )
 
     # TODO: is it needed?
     def get_new_splits(self, content: Mapping[str, Any]) -> Set[SplitFullName]:

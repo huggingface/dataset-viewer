@@ -136,7 +136,7 @@ class SplitNamesFromStreamingJobRunner(DatasetsBasedJobRunner):
         return CompleteJobResult(
             compute_split_names_from_streaming_response(
                 dataset=self.dataset,
-                config=self.config,
+                config=self.config,  # type: ignore
                 hf_token=self.common_config.hf_token,
             )
         )

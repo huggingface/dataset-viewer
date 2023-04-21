@@ -318,8 +318,8 @@ class SplitFirstRowsFromParquetJobRunner(DatasetsBasedJobRunner):
         return CompleteJobResult(
             compute_first_rows_response(
                 dataset=self.dataset,
-                config=self.config,
-                split=self.split,
+                config=self.config,  # type: ignore
+                split=self.split,  # type: ignore
                 assets_base_url=self.assets_base_url,
                 assets_directory=self.assets_directory,
                 hf_token=self.common_config.hf_token,

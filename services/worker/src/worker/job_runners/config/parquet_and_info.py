@@ -932,7 +932,7 @@ class ConfigParquetAndInfoJobRunner(DatasetsBasedJobRunner):
         return CompleteJobResult(
             compute_config_parquet_and_info_response(
                 dataset=self.dataset,
-                config=self.config,
+                config=self.config,  # type: ignore
                 hf_endpoint=self.common_config.hf_endpoint,
                 hf_token=self.common_config.hf_token,
                 committer_hf_token=self.parquet_and_info_config.committer_hf_token,

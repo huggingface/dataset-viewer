@@ -113,7 +113,7 @@ class SplitNamesFromDatasetInfoJobRunner(DatasetsBasedJobRunner):
             parallel_job_version=PROCESSING_STEP_SPLIT_NAMES_FROM_STREAMING_VERSION,
         )
         return CompleteJobResult(
-            compute_split_names_from_dataset_info_response(dataset=self.dataset, config=self.config)
+            compute_split_names_from_dataset_info_response(dataset=self.dataset, config=self.config)  # type: ignore
         )
 
     def get_new_splits(self, content: Mapping[str, Any]) -> set[SplitFullName]:

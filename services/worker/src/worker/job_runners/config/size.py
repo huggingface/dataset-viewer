@@ -158,7 +158,9 @@ class ConfigSizeJobRunner(JobRunner):
         return PROCESSING_STEP_CONFIG_SIZE_VERSION
 
     def compute(self) -> CompleteJobResult:
-        return CompleteJobResult(compute_config_size_response(dataset=self.dataset, config=self.config))
+        return CompleteJobResult(
+            compute_config_size_response(dataset=self.dataset, config=self.config)  # type: ignore
+        )
 
     def get_new_splits(self, content: Mapping[str, Any]) -> set[SplitFullName]:
         """Get the set of new splits, from the content created by the compute."""
