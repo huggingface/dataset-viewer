@@ -11,7 +11,9 @@ from mongodb_migration.migrations._20230424173000_queue_delete_parquet_and_datas
 
 def test_queue_delete_parquet_and_dataset_info(mongo_host: str) -> None:
     job_type = "/parquet-and-dataset-info"
-    with MongoResource(database="test_queue_parquet_and_dataset_info", host=mongo_host, mongoengine_alias="queue"):
+    with MongoResource(
+        database="test_queue_delete_parquet_and_dataset_info", host=mongo_host, mongoengine_alias="queue"
+    ):
         db = get_db("queue")
         db["jobsBlue"].insert_many(
             [

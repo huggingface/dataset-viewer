@@ -9,9 +9,11 @@ from mongodb_migration.migrations._20230424173000_cache_delete_parquet_and_datas
 )
 
 
-def test_cache_remove_splits(mongo_host: str) -> None:
+def test_cache_delete_parquet_and_dataset_info(mongo_host: str) -> None:
     kind = "/parquet-and-dataset-info"
-    with MongoResource(database="test_cache_parquet_and_dataset_info", host=mongo_host, mongoengine_alias="cache"):
+    with MongoResource(
+        database="test_cache_delete_parquet_and_dataset_info", host=mongo_host, mongoengine_alias="cache"
+    ):
         db = get_db("cache")
         db["cachedResponsesBlue"].insert_many([{"kind": kind, "dataset": "dataset", "http_status": 200}])
         assert db["cachedResponsesBlue"].find_one({"kind": kind})  # Ensure there is at least one record to update
