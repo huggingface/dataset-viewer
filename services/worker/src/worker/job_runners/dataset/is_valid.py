@@ -2,17 +2,12 @@
 # Copyright 2022 The HuggingFace Authors.
 
 import logging
-from typing import Any, Literal, Mapping, Tuple, TypedDict
+from typing import Any, Mapping, Tuple, TypedDict
 
 from libcommon.constants import PROCESSING_STEP_DATASET_IS_VALID_VERSION
 from libcommon.simple_cache import SplitFullName, get_validity_by_kind
 
 from worker.job_runner import JobResult, JobRunner
-
-IsValidJobRunnerErrorCode = Literal[
-    "PreviousStepStatusError",
-    "PreviousStepFormatError",
-]
 
 
 class DatasetIsValidResponse(TypedDict):

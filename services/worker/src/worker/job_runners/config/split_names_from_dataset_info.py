@@ -9,15 +9,18 @@ from libcommon.constants import (
     PROCESSING_STEP_SPLIT_NAMES_FROM_DATASET_INFO_VERSION,
     PROCESSING_STEP_SPLIT_NAMES_FROM_STREAMING_VERSION,
 )
-from libcommon.dataset import DatasetNotFoundError
-from libcommon.simple_cache import DoesNotExist, SplitFullName, get_response
+from libcommon.simple_cache import SplitFullName
 
-from worker.job_runner import CompleteJobResult, JobRunnerError, ParameterMissingError
+from worker.job_runner import (
+    CompleteJobResult,
+    JobRunnerError,
+    ParameterMissingError,
+    get_previous_step_or_raise,
+)
 from worker.job_runners._datasets_based_job_runner import DatasetsBasedJobRunner
 from worker.utils import SplitItem, SplitsList
 
 SplitNamesFromDatasetInfoJobRunnerErrorCode = Literal[
-    "PreviousStepStatusError",
     "PreviousStepFormatError",
     "ResponseAlreadyComputedError",
 ]
@@ -37,13 +40,6 @@ class SplitNamesFromDatasetInfoJobRunnerError(JobRunnerError):
         super().__init__(
             message=message, status_code=status_code, code=code, cause=cause, disclose_cause=disclose_cause
         )
-
-
-class PreviousStepStatusError(SplitNamesFromDatasetInfoJobRunnerError):
-    """Raised when the previous step gave an error. The job should not have been created."""
-
-    def __init__(self, message: str, cause: Optional[BaseException] = None):
-        super().__init__(message, HTTPStatus.INTERNAL_SERVER_ERROR, "PreviousStepStatusError", cause, False)
 
 
 class PreviousStepFormatError(SplitNamesFromDatasetInfoJobRunnerError):
@@ -78,28 +74,17 @@ def compute_split_names_from_dataset_info_response(dataset: str, config: str) ->
         `SplitsList`: An object with the list of split names for the dataset and config.
     <Tip>
     Raises the following errors:
-        - [`~job_runners.config.split_names_from_dataset_info.PreviousStepStatusError`]
-          If the the previous step gave an error.
+        - [`~job_runner.PreviousStepError`]
+            If the previous step gave an error.
         - [`~job_runners.config.split_names_from_dataset_info.PreviousStepFormatError`]
             If the content of the previous step has not the expected format
-        - [`~libcommon.dataset.DatasetNotFoundError`]
-            If previous step content was not found for the dataset
-        - [`~job_runners.config.split_names_from_dataset_info.ResponseAlreadyComputedError`]
-          If reponse has been already computed by /split-names-from-streaming job runner.
     </Tip>
     """
     logging.info(f"get split names from dataset info for dataset={dataset}, config={config}")
-    try:
-        response = get_response(kind="config-info", dataset=dataset)
-    except DoesNotExist as e:
-        raise DatasetNotFoundError("No response found in previous step for this dataset: 'config-info'.", e) from e
-    if response["http_status"] != HTTPStatus.OK:
-        raise PreviousStepStatusError(
-            f"Previous step gave an error: {response['http_status']}. This job should not have been created."
-        )
+    config_info_best_response = get_previous_step_or_raise(kinds=["config-info"], dataset=dataset, config=config)
 
     try:
-        splits_content = response["content"]["dataset_info"]["splits"]
+        splits_content = config_info_best_response.response["content"]["dataset_info"]["splits"]
     except Exception as e:
         raise PreviousStepFormatError("Previous step 'config-info' did not return the expected content.") from e
 
@@ -124,8 +109,12 @@ class SplitNamesFromDatasetInfoJobRunner(DatasetsBasedJobRunner):
             raise ParameterMissingError("'dataset' parameter is required")
         if self.config is None:
             raise ParameterMissingError("'config' parameter is required")
+        """
+        Raises [`~job_runners.config.split_names_from_dataset_info.ResponseAlreadyComputedError`]
+          If response has been already computed by /split-names-from-streaming job runner.
+        """
         self.raise_if_parallel_response_exists(
-            parallel_job_type="/split-names-from-streaming",
+            parallel_cache_kind="/split-names-from-streaming",
             parallel_job_version=PROCESSING_STEP_SPLIT_NAMES_FROM_STREAMING_VERSION,
         )
         return CompleteJobResult(

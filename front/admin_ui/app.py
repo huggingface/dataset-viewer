@@ -78,6 +78,10 @@ with gr.Blocks() as demo:
                 cached_responses_table = gr.DataFrame()
                 gr.Markdown("### Pending jobs")
                 jobs_table = gr.DataFrame()
+                backfill_message = gr.Markdown("", visible=False)
+                backfill_plan_table = gr.DataFrame(visible=False)
+                backfill_execute_button = gr.Button("Execute backfill plan", visible=False)
+                backfill_execute_error = gr.Markdown("", visible=False)
 
 
     def auth(token):
@@ -175,6 +179,46 @@ with gr.Blocks() as demo:
                 cached_responses_table: gr.update(value=None),
                 jobs_table: gr.update(value=None)
             }
+    
+    def get_backfill_plan(token, dataset):
+        headers = {"Authorization": f"Bearer {token}"}
+        response = requests.get(f"{DSS_ENDPOINT}/admin/dataset-state?dataset={dataset}", headers=headers, timeout=60)
+        if response.status_code != 200:
+            return {
+                backfill_message: gr.update(value=f"❌ Failed to get backfill plan for {dataset} (error {response.status_code})", visible=True),
+                backfill_plan_table: gr.update(value=None,visible=False),
+                backfill_execute_button: gr.update( visible=False),
+                backfill_execute_error: gr.update( visible=False)
+            }
+        dataset_state = response.json()
+        tasks_df = pd.DataFrame(dataset_state["plan"])
+        has_tasks = len(tasks_df) > 0
+        return {
+            backfill_message: gr.update(
+                value="""### Backfill plan
+
+The cache is outdated or in an incoherent state. Here is the plan to backfill the cache."""
+            ,visible=has_tasks),
+            backfill_plan_table: gr.update(value=tasks_df,visible=has_tasks),
+            backfill_execute_button: gr.update(visible=has_tasks),
+            backfill_execute_error: gr.update(visible=False),
+        }
+
+    def get_dataset_status_and_backfill_plan(token, dataset):
+        return {**get_dataset_status(token, dataset), **get_backfill_plan(token, dataset)}
+
+
+    def execute_backfill_plan(token, dataset):
+        headers = {"Authorization": f"Bearer {token}"}
+        response = requests.post(f"{DSS_ENDPOINT}/admin/dataset-backfill?dataset={dataset}", headers=headers, timeout=60)
+        state = get_dataset_status_and_backfill_plan(token, dataset)
+        message = (
+            "✅ Backfill plan executed"
+            if response.status_code == 200
+            else f"❌ Failed to execute backfill plan (error {response.status_code})<pre>{response.text}</pre>"
+        )
+        state[backfill_execute_error] = gr.update(value=message, visible=True)
+        return state
 
     def query_jobs(pending_jobs_query):
         global pending_jobs_df
@@ -223,7 +267,8 @@ with gr.Blocks() as demo:
     query_pending_jobs_button.click(query_jobs, inputs=pending_jobs_query, outputs=[pending_jobs_query_result_df])
     
     refresh_dataset_button.click(refresh_dataset, inputs=[token_box, refresh_type, refresh_dataset_name, refresh_config_name, refresh_split_name], outputs=refresh_dataset_output)
-    dataset_status_button.click(get_dataset_status, inputs=[token_box, dataset_name], outputs=[cached_responses_table, jobs_table])
+    dataset_status_button.click(get_dataset_status_and_backfill_plan, inputs=[token_box, dataset_name], outputs=[cached_responses_table, jobs_table, backfill_message, backfill_plan_table, backfill_execute_button, backfill_execute_error])
+    backfill_execute_button.click(execute_backfill_plan, inputs=[token_box, dataset_name], outputs=[cached_responses_table, jobs_table, backfill_message, backfill_plan_table, backfill_execute_button, backfill_execute_error])
 
 
 if __name__ == "__main__":

@@ -45,6 +45,7 @@ services:
     depends_on:
       - mongodb
     restart: always
+    network_mode: ${DEV_NETWORK_MODE}
     ports:
       - ${ADMIN_UVICORN_PORT-8081}:${ADMIN_UVICORN_PORT-8081}
   api:
@@ -76,6 +77,7 @@ services:
       API_UVICORN_HOSTNAME: 0.0.0.0 # required for docker compose
       API_UVICORN_NUM_WORKERS: ${API_UVICORN_NUM_WORKERS-2}
       API_UVICORN_PORT: ${API_UVICORN_PORT-8080}
+    network_mode: ${DEV_NETWORK_MODE}
     ports:
       - ${API_UVICORN_PORT-8080}:${API_UVICORN_PORT-8080}
     depends_on:
@@ -110,6 +112,14 @@ services:
       PARQUET_AND_INFO_URL_TEMPLATE: ${PARQUET_AND_INFO_URL_TEMPLATE-/datasets/%s/resolve/%s/%s}
       WORKER_STORAGE_PATHS: ${ASSETS_STORAGE_DIRECTORY-/assets}
       # ^ note: the datasets cache is automatically added, so no need to add it here
+      OPT_IN_OUT_URLS_SCAN_COLUMNS_MAX_NUMBER: ${OPT_IN_OUT_URLS_SCAN_COLUMNS_MAX_NUMBER-10}
+      OPT_IN_OUT_URLS_SCAN_MAX_CONCURRENT_REQUESTS_NUMBER: ${OPT_IN_OUT_URLS_SCAN_MAX_CONCURRENT_REQUESTS_NUMBER-100}
+      OPT_IN_OUT_URLS_SCAN_MAX_REQUESTS_PER_SECOND: ${OPT_IN_OUT_URLS_SCAN_MAX_REQUESTS_PER_SECOND-50}
+      OPT_IN_OUT_URLS_SCAN_ROWS_MAX_NUMBER: ${OPT_IN_OUT_URLS_SCAN_ROWS_MAX_NUMBER-100_000}
+      OPT_IN_OUT_URLS_SCAN_SPAWNING_TOKEN: ${OPT_IN_OUT_URLS_SCAN_SPAWNING_TOKEN-}
+      OPT_IN_OUT_URLS_SCAN_URLS_NUMBER_PER_BATCH: ${OPT_IN_OUT_URLS_SCAN_URLS_NUMBER_PER_BATCH-1000}
+      OPT_IN_OUT_URLS_SCAN_SPAWNING_URL: ${OPT_IN_OUT_URLS_SCAN_SPAWNING_URL-https://opts-api.spawningaiapi.com/api/v2/query/urls}
+    network_mode: ${DEV_NETWORK_MODE}
     restart: always
   mongodb:
     image: docker.io/mongo

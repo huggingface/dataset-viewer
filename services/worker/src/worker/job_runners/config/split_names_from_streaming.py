@@ -95,8 +95,6 @@ def compute_split_names_from_streaming_response(
           The dataset is empty.
         - [`~job_runners.config.split_names_from_streaming.SplitsNamesError`]
           If the list of splits could not be obtained using the datasets library.
-        - [`~job_runners.config.split_names_from_streaming.ResponseAlreadyComputedError`]
-          If reponse has been already computed by /split-names-from-dataset-info job runner.
     </Tip>
     """
     logging.info(f"get split names for dataset={dataset}, config={config}")
@@ -131,8 +129,12 @@ class SplitNamesFromStreamingJobRunner(DatasetsBasedJobRunner):
             raise ParameterMissingError("'dataset' parameter is required")
         if self.config is None:
             raise ParameterMissingError("'config' parameter is required")
+        """
+        Raises [`~job_runners.config.split_names_from_streaming.ResponseAlreadyComputedError`]
+          If response has been already computed by /split-names-from-dataset-info job runner.
+        """
         self.raise_if_parallel_response_exists(
-            parallel_job_type="/split-names-from-dataset-info",
+            parallel_cache_kind="/split-names-from-dataset-info",
             parallel_job_version=PROCESSING_STEP_SPLIT_NAMES_FROM_DATASET_INFO_VERSION,
         )
         return CompleteJobResult(

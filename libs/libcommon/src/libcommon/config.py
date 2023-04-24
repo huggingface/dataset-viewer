@@ -25,6 +25,7 @@ from libcommon.constants import (
     PROCESSING_STEP_SPLIT_FIRST_ROWS_FROM_STREAMING_VERSION,
     PROCESSING_STEP_SPLIT_NAMES_FROM_DATASET_INFO_VERSION,
     PROCESSING_STEP_SPLIT_NAMES_FROM_STREAMING_VERSION,
+    PROCESSING_STEP_SPLIT_OPT_IN_OUT_URLS_SCAN_VERSION,
 )
 from libcommon.processing_graph import ProcessingGraphSpecification
 
@@ -160,6 +161,25 @@ class QueueConfig:
             )
 
 
+METRICS_MONGO_DATABASE = "datasets_server_metrics"
+METRICS_MONGO_URL = "mongodb://localhost:27017"
+
+
+@dataclass(frozen=True)
+class MetricsConfig:
+    mongo_database: str = METRICS_MONGO_DATABASE
+    mongo_url: str = METRICS_MONGO_URL
+
+    @classmethod
+    def from_env(cls) -> "MetricsConfig":
+        env = Env(expand_vars=True)
+        with env.prefixed("METRICS_"):
+            return cls(
+                mongo_database=env.str(name="MONGO_DATABASE", default=METRICS_MONGO_DATABASE),
+                mongo_url=env.str(name="MONGO_URL", default=METRICS_MONGO_URL),
+            )
+
+
 @dataclass(frozen=True)
 class ProcessingGraphConfig:
     specification: ProcessingGraphSpecification = field(
@@ -193,7 +213,7 @@ class ProcessingGraphConfig:
             },
             "dataset-parquet": {
                 "input_type": "dataset",
-                "requires": "config-parquet",
+                "requires": ["config-parquet", "/config-names"],
                 "job_runner_version": PROCESSING_STEP_DATASET_PARQUET_VERSION,
             },
             "config-info": {
@@ -203,7 +223,7 @@ class ProcessingGraphConfig:
             },
             "dataset-info": {
                 "input_type": "dataset",
-                "requires": "config-info",
+                "requires": ["config-info", "/config-names"],
                 "job_runner_version": PROCESSING_STEP_DATASET_INFO_VERSION,
             },
             "/split-names-from-dataset-info": {
@@ -218,22 +238,22 @@ class ProcessingGraphConfig:
             },
             "dataset-size": {
                 "input_type": "dataset",
-                "requires": "config-size",
+                "requires": ["config-size", "/config-names"],
                 "job_runner_version": PROCESSING_STEP_DATASET_SIZE_VERSION,
             },
             "dataset-split-names-from-streaming": {
                 "input_type": "dataset",
-                "requires": "/split-names-from-streaming",
+                "requires": ["/split-names-from-streaming", "/config-names"],
                 "job_runner_version": PROCESSING_STEP_DATASET_SPLIT_NAMES_FROM_STREAMING_VERSION,
             },  # to be deprecated
             "dataset-split-names-from-dataset-info": {
                 "input_type": "dataset",
-                "requires": "/split-names-from-dataset-info",
+                "requires": ["/split-names-from-dataset-info", "/config-names"],
                 "job_runner_version": PROCESSING_STEP_DATASET_SPLIT_NAMES_FROM_DATASET_INFO_VERSION,
             },  # to be deprecated
             "dataset-split-names": {
                 "input_type": "dataset",
-                "requires": ["/split-names-from-dataset-info", "/split-names-from-streaming"],
+                "requires": ["/split-names-from-dataset-info", "/split-names-from-streaming", "/config-names"],
                 "job_runner_version": PROCESSING_STEP_DATASET_SPLIT_NAMES_VERSION,
             },
             "dataset-is-valid": {
@@ -244,6 +264,11 @@ class ProcessingGraphConfig:
                     "split-first-rows-from-streaming",
                 ],
                 "job_runner_version": PROCESSING_STEP_DATASET_IS_VALID_VERSION,
+            },
+            "split-opt-in-out-urls-scan": {
+                "input_type": "split",
+                "requires": ["split-first-rows-from-streaming"],
+                "job_runner_version": PROCESSING_STEP_SPLIT_OPT_IN_OUT_URLS_SCAN_VERSION,
             },
         }
     )

@@ -9,7 +9,8 @@ from typing import Any, Callable, Optional
 
 import orjson
 from filelock import FileLock
-from libcommon.queue import Queue, get_datetime
+from libcommon.queue import Queue
+from libcommon.utils import get_datetime
 from mirakuru import OutputExecutor
 
 from worker import start_worker_loop

@@ -251,6 +251,13 @@ def hub_public_legacy_configs(dataset_script_with_two_configs_path: str) -> Iter
     delete_hub_dataset_repo(repo_id=repo_id)
 
 
+@pytest.fixture(scope="session")
+def hub_public_spawning_opt_in_out(datasets: Mapping[str, Dataset]) -> Iterator[str]:
+    repo_id = create_hub_dataset_repo(prefix="spawning_opt_in_out", dataset=datasets["spawning_opt_in_out"])
+    yield repo_id
+    delete_hub_dataset_repo(repo_id=repo_id)
+
+
 class HubDatasetTest(TypedDict):
     name: str
     config_names_response: Any
@@ -501,6 +508,13 @@ TEXT_rows = [
 ]
 
 
+SPAWNING_OPT_IN_OUT_cols = {
+    "col": [{"_type": "Value", "dtype": "string"}],
+}
+
+SPAWNING_OPT_IN_OUT_rows = ["http://testurl.test/test_image.jpg", "http://testurl.test/test_image2.jpg", "other"]
+
+
 @pytest.fixture(scope="session")
 def hub_datasets(
     hub_public_empty: str,
@@ -514,6 +528,7 @@ def hub_datasets(
     hub_public_images_list: str,
     hub_public_big: str,
     hub_public_external_files: str,
+    hub_public_spawning_opt_in_out: str,
 ) -> HubDatasets:
     return {
         "does_not_exist": {
@@ -620,6 +635,16 @@ def hub_datasets(
             "config_names_response": create_config_names_response(hub_public_external_files),
             "splits_response": create_splits_response(hub_public_external_files),
             "first_rows_response": create_first_rows_response(hub_public_external_files, TEXT_cols, TEXT_rows),
+            "parquet_and_info_response": None,
+        },
+        "spawning_opt_in_out": {
+            "name": hub_public_spawning_opt_in_out,
+            "config_names_response": create_config_names_response(hub_public_spawning_opt_in_out),
+            "splits_response": create_splits_response(hub_public_spawning_opt_in_out),
+            "first_rows_response": create_first_rows_response(
+                hub_public_spawning_opt_in_out, SPAWNING_OPT_IN_OUT_cols, SPAWNING_OPT_IN_OUT_rows
+            ),
+            "parquet_and_dataset_info_response": None,
             "parquet_and_info_response": None,
         },
     }

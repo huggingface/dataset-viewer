@@ -6,7 +6,7 @@ import enum
 import logging
 import types
 from collections import Counter
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timedelta
 from itertools import groupby
 from operator import itemgetter
 from typing import Dict, Generic, List, Literal, Optional, Type, TypedDict, TypeVar
@@ -17,6 +17,7 @@ from mongoengine.fields import BooleanField, DateTimeField, EnumField, StringFie
 from mongoengine.queryset.queryset import QuerySet
 
 from libcommon.constants import QUEUE_MONGOENGINE_ALIAS, QUEUE_TTL_SECONDS
+from libcommon.utils import get_datetime
 
 # START monkey patching ### hack ###
 # see https://github.com/sbdchd/mongo-types#install
@@ -94,10 +95,6 @@ class DumpByPendingStatus(TypedDict):
 
 class EmptyQueueError(Exception):
     pass
-
-
-def get_datetime() -> datetime:
-    return datetime.now(timezone.utc)
 
 
 # States:
@@ -282,15 +279,50 @@ class Queue:
 
         Returns: the job
         """
-        existing = Job.objects(type=job_type, dataset=dataset, config=config, split=split, status=Status.WAITING)
-        if existing(force=True).count() > 0:
-            force = True
-        if existing(priority=Priority.NORMAL).count() > 0:
-            priority = Priority.NORMAL
-        existing.update(finished_at=get_datetime(), status=Status.CANCELLED)
+        canceled_jobs = self.cancel_jobs(
+            job_type=job_type, dataset=dataset, config=config, split=split, statuses_to_cancel=[Status.WAITING]
+        )
+        for job in canceled_jobs:
+            if job["force"]:
+                force = True
+            if job["priority"] == Priority.NORMAL:
+                priority = Priority.NORMAL
         return self._add_job(
             job_type=job_type, dataset=dataset, config=config, split=split, force=force, priority=priority
         )
+
+    def cancel_jobs(
+        self,
+        job_type: str,
+        dataset: str,
+        config: Optional[str] = None,
+        split: Optional[str] = None,
+        statuses_to_cancel: Optional[List[Status]] = None,
+    ) -> List[JobDict]:
+        """Cancel jobs from the queue.
+
+        Returns the list of canceled jobs (as JobDict, before they are canceled, to be able to know their previous
+        status)
+
+        Args:
+            job_type (`str`): The type of the job
+            dataset (`str`): The dataset on which to apply the job.
+            config (`str`, optional): The config on which to apply the job.
+            split (`str`, optional): The config on which to apply the job.
+            statuses_to_cancel (`list[Status]`, optional): The list of statuses to cancel. Defaults to
+                [Status.WAITING, Status.STARTED].
+
+        Returns:
+            `list[JobDict]`: The list of canceled jobs
+        """
+        if statuses_to_cancel is None:
+            statuses_to_cancel = [Status.WAITING, Status.STARTED]
+        existing = Job.objects(
+            type=job_type, dataset=dataset, config=config, split=split, status__in=statuses_to_cancel
+        )
+        job_dicts = [job.to_dict() for job in existing]
+        existing.update(finished_at=get_datetime(), status=Status.CANCELLED)
+        return job_dicts
 
     def _get_next_waiting_job_for_priority(
         self, priority: Priority, only_job_types: Optional[list[str]] = None

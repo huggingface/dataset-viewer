@@ -61,4 +61,28 @@
   value: {{ .Values.parquetAndInfo.targetRevision | quote }}
 - name: PARQUET_AND_INFO_URL_TEMPLATE
   value: {{ .Values.parquetAndInfo.urlTemplate | quote }}
+# specific to the split-opt-in-out-urls-scan job runner
+- name: OPT_IN_OUT_URLS_SCAN_COLUMNS_MAX_NUMBER
+  value: {{ .Values.optInOutUrlsScan.columnsMaxNumber | quote }}
+- name: OPT_IN_OUT_URLS_SCAN_MAX_CONCURRENT_REQUESTS_NUMBER
+  value: {{ .Values.optInOutUrlsScan.maxConcurrentRequestsNumber | quote }}
+- name: OPT_IN_OUT_URLS_SCAN_MAX_REQUESTS_PER_SECOND
+  value: {{ .Values.optInOutUrlsScan.maxRequestsPerSecond | quote }}
+- name: OPT_IN_OUT_URLS_SCAN_ROWS_MAX_NUMBER
+  value: {{ .Values.optInOutUrlsScan.rowsMaxNumber | quote }}
+- name: OPT_IN_OUT_URLS_SCAN_SPAWNING_TOKEN
+  {{- if .Values.secrets.spawningToken.fromSecret }}
+  valueFrom:
+    secretKeyRef:
+      name: {{ .Values.secrets.spawningToken.secretName | quote }}
+      key: SPAWNING_TOKEN
+      optional: false
+  {{- else }}
+  value: {{ .Values.secrets.spawningToken.value }}
+  {{- end }}
+- name: OPT_IN_OUT_URLS_SCAN_URLS_NUMBER_PER_BATCH
+  value: {{ .Values.optInOutUrlsScan.urlsNumberPerBatch | quote }}
+- name: OPT_IN_OUT_URLS_SCAN_SPAWNING_URL
+  value: {{ .Values.optInOutUrlsScan.spawningUrl | quote }}
+
 {{- end -}}

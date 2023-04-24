@@ -229,6 +229,7 @@ def test_check_type(
         required_by_dataset_viewer=False,
         ancestors=[],
         children=[],
+        parents=[],
         job_runner_version=1,
     )
     with pytest.raises(ValueError):
@@ -370,6 +371,6 @@ def test_raise_if_parallel_response_exists(
     )
     job_runner.get_dataset_git_revision = Mock(return_value=current_dataset_git_revision)  # type: ignore
     with pytest.raises(CustomError) as exc_info:
-        job_runner.raise_if_parallel_response_exists(parallel_job_type="dummy-parallel", parallel_job_version=1)
+        job_runner.raise_if_parallel_response_exists(parallel_cache_kind="dummy-parallel", parallel_job_version=1)
     assert exc_info.value.status_code == HTTPStatus.INTERNAL_SERVER_ERROR
     assert exc_info.value.code == "ResponseAlreadyComputedError"

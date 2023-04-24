@@ -7,7 +7,6 @@ from unittest.mock import Mock
 
 import pytest
 from libcommon.constants import PROCESSING_STEP_SPLIT_NAMES_FROM_STREAMING_VERSION
-from libcommon.dataset import DatasetNotFoundError
 from libcommon.exceptions import CustomError
 from libcommon.processing_graph import ProcessingStep
 from libcommon.queue import Priority
@@ -15,9 +14,9 @@ from libcommon.resources import CacheMongoResource, QueueMongoResource
 from libcommon.simple_cache import upsert_response
 
 from worker.config import AppConfig
+from worker.job_runner import PreviousStepError
 from worker.job_runners.config.split_names_from_dataset_info import (
     PreviousStepFormatError,
-    PreviousStepStatusError,
     SplitNamesFromDatasetInfoJobRunner,
 )
 from worker.resources import LibrariesResource
@@ -55,6 +54,7 @@ def get_job_runner(
                 required_by_dataset_viewer=False,
                 ancestors=[],
                 children=[],
+                parents=[],
                 job_runner_version=SplitNamesFromDatasetInfoJobRunner.get_job_runner_version(),
             ),
             hf_datasets_cache=libraries_resource.hf_datasets_cache,
@@ -91,7 +91,7 @@ def get_job_runner(
             "upstream_fail",
             HTTPStatus.INTERNAL_SERVER_ERROR,
             {"error": "error"},
-            PreviousStepStatusError.__name__,
+            PreviousStepError.__name__,
             None,
         ),
         (
@@ -126,8 +126,11 @@ def test_compute(
     error_code: str,
     content: Any,
 ) -> None:
-    upsert_response(kind="config-info", dataset=dataset, content=upstream_content, http_status=upstream_status)
-    job_runner = get_job_runner(dataset, "config_name", app_config, False)
+    config = "config_name"
+    upsert_response(
+        kind="config-info", dataset=dataset, config=config, content=upstream_content, http_status=upstream_status
+    )
+    job_runner = get_job_runner(dataset, config, app_config, False)
     job_runner.get_dataset_git_revision = Mock(return_value="1.0.0")  # type: ignore
 
     if error_code:
@@ -145,15 +148,15 @@ def test_doesnotexist(app_config: AppConfig, get_job_runner: GetJobRunner) -> No
     with pytest.raises(CustomError) as exc_info:
         worker.compute()
     assert exc_info.value.status_code == HTTPStatus.NOT_FOUND
-    assert exc_info.value.code == DatasetNotFoundError.__name__
+    assert exc_info.value.code == "CachedResponseNotFound"
 
 
 @pytest.mark.parametrize(
     "streaming_response_status,dataset_git_revision,error_code,status_code",
     [
         (HTTPStatus.OK, "CURRENT_GIT_REVISION", "ResponseAlreadyComputedError", HTTPStatus.INTERNAL_SERVER_ERROR),
-        (HTTPStatus.INTERNAL_SERVER_ERROR, "CURRENT_GIT_REVISION", "DatasetNotFoundError", HTTPStatus.NOT_FOUND),
-        (HTTPStatus.OK, "DIFFERENT_GIT_REVISION", "DatasetNotFoundError", HTTPStatus.NOT_FOUND),
+        (HTTPStatus.INTERNAL_SERVER_ERROR, "CURRENT_GIT_REVISION", "CachedResponseNotFound", HTTPStatus.NOT_FOUND),
+        (HTTPStatus.OK, "DIFFERENT_GIT_REVISION", "CachedResponseNotFound", HTTPStatus.NOT_FOUND),
     ],
 )
 def test_response_already_computed(

@@ -6,7 +6,6 @@ from http import HTTPStatus
 from typing import Any, Literal, Mapping, Optional, Tuple, TypedDict
 
 from libcommon.constants import PROCESSING_STEP_DATASET_SIZE_VERSION
-from libcommon.dataset import DatasetNotFoundError
 from libcommon.simple_cache import DoesNotExist, SplitFullName, get_response
 
 from worker.job_runner import (
@@ -14,14 +13,12 @@ from worker.job_runner import (
     JobRunner,
     JobRunnerError,
     ParameterMissingError,
+    get_previous_step_or_raise,
 )
 from worker.job_runners.config.size import ConfigSize, ConfigSizeResponse, SplitSize
 from worker.utils import PreviousJob
 
-SizesJobRunnerErrorCode = Literal[
-    "PreviousStepStatusError",
-    "PreviousStepFormatError",
-]
+SizesJobRunnerErrorCode = Literal["PreviousStepFormatError"]
 
 
 class DatasetSize(TypedDict):
@@ -60,13 +57,6 @@ class DatasetSizeJobRunnerError(JobRunnerError):
         )
 
 
-class PreviousStepStatusError(DatasetSizeJobRunnerError):
-    """Raised when the previous step gave an error. The job should not have been created."""
-
-    def __init__(self, message: str, cause: Optional[BaseException] = None):
-        super().__init__(message, HTTPStatus.INTERNAL_SERVER_ERROR, "PreviousStepStatusError", cause, False)
-
-
 class PreviousStepFormatError(DatasetSizeJobRunnerError):
     """Raised when the content of the previous step has not the expected format."""
 
@@ -85,7 +75,7 @@ def compute_sizes_response(dataset: str) -> Tuple[DatasetSizeResponse, float]:
         `DatasetSizeResponse`: An object with the sizes_response.
     <Tip>
     Raises the following errors:
-        - [`~job_runners.dataset.size.PreviousStepStatusError`]
+        - [`~job_runner.PreviousStepError`]
           If the previous step gave an error.
         - [`~job_runners.dataset.size.PreviousStepFormatError`]
             If the content of the previous step has not the expected format
@@ -93,17 +83,10 @@ def compute_sizes_response(dataset: str) -> Tuple[DatasetSizeResponse, float]:
     """
     logging.info(f"get sizes for dataset={dataset}")
 
-    try:
-        response = get_response(kind="/config-names", dataset=dataset)
-    except DoesNotExist as e:
-        raise DatasetNotFoundError("No response for '/config-names' found for this dataset: .", e) from e
-    if response["http_status"] != HTTPStatus.OK:
-        raise PreviousStepStatusError(
-            f"Previous step raised an error: {response['http_status']}. This job should not have been created."
-        )
-    content = response["content"]
+    config_names_best_response = get_previous_step_or_raise(kinds=["/config-names"], dataset=dataset)
+    content = config_names_best_response.response["content"]
     if "config_names" not in content:
-        raise PreviousStepFormatError("'/config-names' did not return the expected content: 'config_names'.")
+        raise PreviousStepFormatError("Previous step did not return the expected content: 'config_names'.")
 
     try:
         split_sizes: list[SplitSize] = []

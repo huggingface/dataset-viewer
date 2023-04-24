@@ -24,10 +24,12 @@ def assert_lists_are_equal(a: List[ProcessingStep], b: List[ProcessingStep]) -> 
 def assert_step(
     step: ProcessingStep,
     children: List[ProcessingStep],
+    parents: List[ProcessingStep],
     ancestors: List[ProcessingStep],
 ) -> None:
     assert step is not None
     assert_lists_are_equal(step.children, children)
+    assert_lists_are_equal(step.parents, parents)
     assert_lists_are_equal(step.get_ancestors(), ancestors)
 
 
@@ -48,12 +50,12 @@ def test_graph() -> None:
     e = graph.get_step("e")
     f = graph.get_step("f")
 
-    assert_step(a, children=[c, f], ancestors=[])
-    assert_step(b, children=[f], ancestors=[])
-    assert_step(c, children=[d, e], ancestors=[a])
-    assert_step(d, children=[], ancestors=[a, c])
-    assert_step(e, children=[], ancestors=[a, c])
-    assert_step(f, children=[], ancestors=[a, b])
+    assert_step(a, children=[c, d, f], parents=[], ancestors=[])
+    assert_step(b, children=[f], parents=[], ancestors=[])
+    assert_step(c, children=[d, e], parents=[a], ancestors=[a])
+    assert_step(d, children=[], parents=[a, c], ancestors=[a, c])
+    assert_step(e, children=[], parents=[c], ancestors=[a, c])
+    assert_step(f, children=[], parents=[a, b], ancestors=[a, b])
 
 
 @pytest.fixture(scope="module")
@@ -63,29 +65,69 @@ def graph() -> ProcessingGraph:
 
 
 @pytest.mark.parametrize(
-    "step_name,children,ancestors",
+    "step_name,children,parents,ancestors",
     [
-        ("/config-names", ["/split-names-from-streaming", "config-parquet-and-info"], []),
-        ("config-parquet-and-info", ["config-parquet", "config-info", "config-size"], ["/config-names"]),
+        (
+            "/config-names",
+            [
+                "/split-names-from-streaming",
+                "config-parquet-and-info",
+                "dataset-split-names-from-dataset-info",
+                "dataset-split-names-from-streaming",
+                "dataset-split-names",
+                "dataset-parquet",
+                "dataset-info",
+                "dataset-size",
+            ],
+            [],
+            [],
+        ),
+        (
+            "config-parquet-and-info",
+            [
+                "config-parquet",
+                "config-info",
+                "config-size",
+            ],
+            ["/config-names"],
+            ["/config-names"],
+        ),
         (
             "/split-names-from-dataset-info",
-            ["dataset-split-names-from-dataset-info", "split-first-rows-from-streaming", "dataset-split-names"],
+            [
+                "dataset-split-names-from-dataset-info",
+                "split-first-rows-from-streaming",
+                "dataset-split-names",
+            ],
+            ["config-info"],
             ["/config-names", "config-parquet-and-info", "config-info"],
         ),
         (
             "/split-names-from-streaming",
             ["split-first-rows-from-streaming", "dataset-split-names-from-streaming", "dataset-split-names"],
             ["/config-names"],
+            ["/config-names"],
         ),
         (
             "dataset-split-names-from-dataset-info",
             [],
+            ["/config-names", "/split-names-from-dataset-info"],
             ["/config-names", "config-parquet-and-info", "config-info", "/split-names-from-dataset-info"],
         ),
-        ("dataset-split-names-from-streaming", [], ["/config-names", "/split-names-from-streaming"]),
+        (
+            "dataset-split-names-from-streaming",
+            [],
+            ["/config-names", "/split-names-from-streaming"],
+            ["/config-names", "/split-names-from-streaming"],
+        ),
         (
             "dataset-split-names",
             ["dataset-is-valid"],
+            [
+                "/config-names",
+                "/split-names-from-dataset-info",
+                "/split-names-from-streaming",
+            ],
             [
                 "/config-names",
                 "config-parquet-and-info",
@@ -97,11 +139,16 @@ def graph() -> ProcessingGraph:
         (
             "split-first-rows-from-parquet",
             ["dataset-is-valid"],
+            ["config-parquet"],
             ["config-parquet", "/config-names", "config-parquet-and-info"],
         ),
         (
             "split-first-rows-from-streaming",
-            ["dataset-is-valid"],
+            ["dataset-is-valid", "split-opt-in-out-urls-scan"],
+            [
+                "/split-names-from-streaming",
+                "/split-names-from-dataset-info",
+            ],
             [
                 "/config-names",
                 "/split-names-from-streaming",
@@ -110,23 +157,46 @@ def graph() -> ProcessingGraph:
                 "config-info",
             ],
         ),
+        ("/parquet-and-dataset-info", [], [], []),
         (
             "config-parquet",
             ["split-first-rows-from-parquet", "dataset-parquet"],
+            ["config-parquet-and-info"],
             ["/config-names", "config-parquet-and-info"],
         ),
-        ("dataset-parquet", [], ["/config-names", "config-parquet-and-info", "config-parquet"]),
+        (
+            "dataset-parquet",
+            [],
+            ["/config-names", "config-parquet"],
+            ["/config-names", "config-parquet-and-info", "config-parquet"],
+        ),
         (
             "config-info",
             ["dataset-info", "/split-names-from-dataset-info"],
+            ["config-parquet-and-info"],
             ["/config-names", "config-parquet-and-info"],
         ),
-        ("dataset-info", [], ["/config-names", "config-parquet-and-info", "config-info"]),
-        ("config-size", ["dataset-size"], ["/config-names", "config-parquet-and-info"]),
-        ("dataset-size", [], ["/config-names", "config-parquet-and-info", "config-size"]),
+        (
+            "dataset-info",
+            [],
+            ["/config-names", "config-info"],
+            ["/config-names", "config-parquet-and-info", "config-info"],
+        ),
+        ("config-size", ["dataset-size"], ["config-parquet-and-info"], ["/config-names", "config-parquet-and-info"]),
+        (
+            "dataset-size",
+            [],
+            ["/config-names", "config-size"],
+            ["/config-names", "config-parquet-and-info", "config-size"],
+        ),
         (
             "dataset-is-valid",
             [],
+            [
+                "dataset-split-names",
+                "split-first-rows-from-parquet",
+                "split-first-rows-from-streaming",
+            ],
             [
                 "/config-names",
                 "config-parquet-and-info",
@@ -139,14 +209,28 @@ def graph() -> ProcessingGraph:
                 "split-first-rows-from-streaming",
             ],
         ),
+        (
+            "split-opt-in-out-urls-scan",
+            [],
+            ["split-first-rows-from-streaming"],
+            [
+                "/config-names",
+                "/split-names-from-streaming",
+                "split-first-rows-from-streaming",
+                "/split-names-from-dataset-info",
+                "config-info",
+                "config-parquet-and-info",
+            ],
+        ),
     ],
 )
 def test_default_graph_steps(
-    graph: ProcessingGraph, step_name: str, children: List[str], ancestors: List[str]
+    graph: ProcessingGraph, step_name: str, children: List[str], parents: List[str], ancestors: List[str]
 ) -> None:
     assert_step(
         graph.get_step(step_name),
         children=[graph.get_step(child) for child in children],
+        parents=[graph.get_step(parent) for parent in parents],
         ancestors=[graph.get_step(ancestor) for ancestor in ancestors],
     )
 

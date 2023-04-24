@@ -123,6 +123,46 @@ class FirstRowsConfig:
             )
 
 
+OPT_IN_OUT_URLS_SCAN_COLUMNS_MAX_NUMBER = 10
+OPT_IN_OUT_URLS_SCAN_MAX_CONCURRENT_REQUESTS_NUMBER = 100
+OPT_IN_OUT_URLS_SCAN_MAX_REQUESTS_PER_SECOND = 50
+OPT_IN_OUT_URLS_SCAN_ROWS_MAX_NUMBER = 100_000
+OPT_IN_OUT_URLS_SCAN_SPAWNING_TOKEN = None
+OPT_IN_OUT_URLS_SCAN_URLS_NUMBER_PER_BATCH = 1000
+OPT_IN_OUT_URLS_SCAN_SPAWNING_URL = "https://opts-api.spawningaiapi.com/api/v2/query/urls"
+
+
+@dataclass(frozen=True)
+class OptInOutUrlsScanConfig:
+    spawning_url: str = OPT_IN_OUT_URLS_SCAN_SPAWNING_URL
+    rows_max_number: int = OPT_IN_OUT_URLS_SCAN_ROWS_MAX_NUMBER
+    columns_max_number: int = FIRST_ROWS_COLUMNS_MAX_NUMBER
+    urls_number_per_batch: int = OPT_IN_OUT_URLS_SCAN_URLS_NUMBER_PER_BATCH
+    spawning_token: Optional[str] = OPT_IN_OUT_URLS_SCAN_SPAWNING_TOKEN
+    max_concurrent_requests_number: int = OPT_IN_OUT_URLS_SCAN_MAX_CONCURRENT_REQUESTS_NUMBER
+    max_requests_per_second: int = OPT_IN_OUT_URLS_SCAN_MAX_REQUESTS_PER_SECOND
+
+    @classmethod
+    def from_env(cls) -> "OptInOutUrlsScanConfig":
+        env = Env(expand_vars=True)
+        with env.prefixed("OPT_IN_OUT_URLS_SCAN_"):
+            return cls(
+                rows_max_number=env.int(name="ROWS_MAX_NUMBER", default=OPT_IN_OUT_URLS_SCAN_ROWS_MAX_NUMBER),
+                columns_max_number=env.int(name="COLUMNS_MAX_NUMBER", default=OPT_IN_OUT_URLS_SCAN_COLUMNS_MAX_NUMBER),
+                urls_number_per_batch=env.int(
+                    name="URLS_NUMBER_PER_BATCH", default=OPT_IN_OUT_URLS_SCAN_URLS_NUMBER_PER_BATCH
+                ),
+                spawning_token=env.str(name="SPAWNING_TOKEN", default=OPT_IN_OUT_URLS_SCAN_SPAWNING_TOKEN),
+                max_concurrent_requests_number=env.int(
+                    name="MAX_CONCURRENT_REQUESTS_NUMBER", default=OPT_IN_OUT_URLS_SCAN_MAX_CONCURRENT_REQUESTS_NUMBER
+                ),
+                max_requests_per_second=env.int(
+                    name="MAX_REQUESTS_PER_SECOND", default=OPT_IN_OUT_URLS_SCAN_MAX_REQUESTS_PER_SECOND
+                ),
+                spawning_url=env.str(name="SPAWNING_URL", default=OPT_IN_OUT_URLS_SCAN_SPAWNING_URL),
+            )
+
+
 PARQUET_AND_INFO_COMMIT_MESSAGE = "Update parquet files"
 PARQUET_AND_INFO_COMMITTER_HF_TOKEN = None
 PARQUET_AND_INFO_MAX_DATASET_SIZE = 100_000_000
@@ -180,11 +220,14 @@ class AppConfig:
     cache: CacheConfig = field(default_factory=CacheConfig)
     common: CommonConfig = field(default_factory=CommonConfig)
     datasets_based: DatasetsBasedConfig = field(default_factory=DatasetsBasedConfig)
+    first_rows: FirstRowsConfig = field(default_factory=FirstRowsConfig)
     log: LogConfig = field(default_factory=LogConfig)
     numba: NumbaConfig = field(default_factory=NumbaConfig)
+    parquet_and_info: ParquetAndInfoConfig = field(default_factory=ParquetAndInfoConfig)
     processing_graph: ProcessingGraphConfig = field(default_factory=ProcessingGraphConfig)
     queue: QueueConfig = field(default_factory=QueueConfig)
     worker: WorkerConfig = field(default_factory=WorkerConfig)
+    urls_scan: OptInOutUrlsScanConfig = field(default_factory=OptInOutUrlsScanConfig)
 
     @classmethod
     def from_env(cls) -> "AppConfig":
@@ -193,9 +236,12 @@ class AppConfig:
             common=CommonConfig.from_env(),
             cache=CacheConfig.from_env(),
             datasets_based=DatasetsBasedConfig.from_env(),
+            first_rows=FirstRowsConfig.from_env(),
             log=LogConfig.from_env(),
             numba=NumbaConfig.from_env(),
+            parquet_and_info=ParquetAndInfoConfig.from_env(),
             processing_graph=ProcessingGraphConfig.from_env(),
             queue=QueueConfig.from_env(),
             worker=WorkerConfig.from_env(),
+            urls_scan=OptInOutUrlsScanConfig.from_env(),
         )

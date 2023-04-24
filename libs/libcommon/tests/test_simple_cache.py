@@ -4,7 +4,7 @@
 from datetime import datetime
 from http import HTTPStatus
 from time import process_time
-from typing import Dict, Iterator, List, Optional, TypedDict
+from typing import Dict, List, Optional, TypedDict
 
 import pytest
 from pymongo.errors import DocumentTooLarge
@@ -18,7 +18,6 @@ from libcommon.simple_cache import (
     InvalidCursor,
     InvalidLimit,
     SplitFullName,
-    _clean_cache_database,
     delete_dataset_responses,
     delete_response,
     get_best_response,
@@ -37,14 +36,8 @@ from libcommon.simple_cache import (
 
 
 @pytest.fixture(autouse=True)
-def cache_mongo_resource(cache_mongo_host: str) -> Iterator[CacheMongoResource]:
-    database = "datasets_server_cache_test"
-    host = cache_mongo_host
-    if "test" not in database:
-        raise ValueError("Test must be launched on a test mongo database")
-    with CacheMongoResource(database=database, host=host) as cache_mongo_resource:
-        yield cache_mongo_resource
-        _clean_cache_database()
+def cache_mongo_resource_autouse(cache_mongo_resource: CacheMongoResource) -> CacheMongoResource:
+    return cache_mongo_resource
 
 
 def test_insert_null_values() -> None:
@@ -662,7 +655,7 @@ class EntrySpec(TypedDict):
     dataset: str
     config: Optional[str]
     http_status: HTTPStatus
-    progress: float
+    progress: Optional[float]
 
 
 @pytest.mark.parametrize(
@@ -683,14 +676,14 @@ class EntrySpec(TypedDict):
         # - if no success response is found, the first error response is returned
         (["error1", "error2"], ["kind1", "kind2"], "dataset", None, "error1"),
         (["error1", "error2"], ["kind2", "kind1"], "dataset", None, "error2"),
-        # - if no response is found, a `~libcommon.simple_cache.DoesNotExist` error is raised
-        ([], ["kind1"], "dataset", None, None),
-        (["ok_config1"], ["kind1"], "dataset", None, None),
-        (["ok1"], ["kind1"], "dataset", "config", None),
+        # - if no response is found, an error response is returned
+        ([], ["kind1"], "dataset", None, "cache_miss"),
+        (["ok_config1"], ["kind1"], "dataset", None, "cache_miss"),
+        (["ok1"], ["kind1"], "dataset", "config", "cache_miss"),
     ],
 )
 def test_get_best_response(
-    selected_entries: List[str], kinds: List[str], dataset: str, config: Optional[str], best_entry: Optional[str]
+    selected_entries: List[str], kinds: List[str], dataset: str, config: Optional[str], best_entry: str
 ) -> None:
     # arrange
     entries: Dict[str, EntrySpec] = {
@@ -743,6 +736,13 @@ def test_get_best_response(
             "http_status": HTTPStatus.NOT_FOUND,
             "progress": 1.0,
         },
+        "cache_miss": {
+            "kind": "kind1",
+            "dataset": "dataset",
+            "config": None,
+            "http_status": HTTPStatus.NOT_FOUND,
+            "progress": None,
+        },
     }
 
     for entry in selected_entries:
@@ -752,18 +752,16 @@ def test_get_best_response(
             config=entries[entry]["config"],
             http_status=entries[entry]["http_status"],
             progress=entries[entry]["progress"],
-            content={"entry": entry},
+            content={"error": "some_error"} if (entries[entry]["http_status"] >= HTTPStatus.BAD_REQUEST.value) else {},
         )
 
     # act
-    if best_entry is None:
-        with pytest.raises(DoesNotExist):
-            get_best_response(kinds, dataset, config)
-        return
     best_response = get_best_response(kinds, dataset, config)
 
     # assert
     assert best_response.kind == entries[best_entry]["kind"]
-    assert best_response.response["content"]["entry"] == best_entry
+    assert ("error" in best_response.response["content"]) is (
+        entries[best_entry]["http_status"] >= HTTPStatus.BAD_REQUEST.value
+    )
     assert best_response.response["http_status"] == entries[best_entry]["http_status"].value
     assert best_response.response["progress"] == entries[best_entry]["progress"]

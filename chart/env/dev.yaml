@@ -64,6 +64,9 @@ secrets:
     fromSecret: false
     secretName: "webhook-secret"
     value: ""
+  spawningToken:
+    fromSecret: true
+    secretName: "spawning-token"
 
 persistence:
   existingClaim: "nfs-datasets-server-pvc"
@@ -104,6 +107,19 @@ cacheMaintenance:
       cpu: 100m
     limits:
       cpu: 1
+
+# --- cron jobs  ---
+metricsCollector:
+  action: "collect-metrics"
+  schedule: "*/5 * * * *"
+  # every five minutes
+  nodeSelector: {}
+  resources:
+    requests:
+      cpu: 0
+    limits:
+      cpu: 0
+  tolerations: []
 
 # --- storage admin (to manually inspect the storage, in /data) ---
 

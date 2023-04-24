@@ -17,7 +17,7 @@ from libcommon.simple_cache import DoesNotExist, get_response, upsert_response
 from libcommon.storage import StrPath
 from pyarrow.fs import LocalFileSystem
 
-from worker.config import AppConfig, FirstRowsConfig
+from worker.config import AppConfig
 from worker.job_runners.split.first_rows_from_parquet import (
     SplitFirstRowsFromParquetJobRunner,
 )
@@ -26,7 +26,7 @@ from worker.utils import get_json_size
 
 from ...fixtures.hub import get_default_config_split
 
-GetJobRunner = Callable[[str, str, str, AppConfig, FirstRowsConfig, bool], SplitFirstRowsFromParquetJobRunner]
+GetJobRunner = Callable[[str, str, str, AppConfig, bool], SplitFirstRowsFromParquetJobRunner]
 
 
 @pytest.fixture
@@ -41,7 +41,6 @@ def get_job_runner(
         config: str,
         split: str,
         app_config: AppConfig,
-        first_rows_config: FirstRowsConfig,
         force: bool = False,
     ) -> SplitFirstRowsFromParquetJobRunner:
         return SplitFirstRowsFromParquetJobRunner(
@@ -62,20 +61,20 @@ def get_job_runner(
                 required_by_dataset_viewer=True,
                 ancestors=[],
                 children=[],
+                parents=[],
                 job_runner_version=SplitFirstRowsFromParquetJobRunner.get_job_runner_version(),
             ),
             hf_datasets_cache=libraries_resource.hf_datasets_cache,
-            first_rows_config=first_rows_config,
             assets_directory=assets_directory,
         )
 
     return _get_job_runner
 
 
-def test_doesnotexist(app_config: AppConfig, get_job_runner: GetJobRunner, first_rows_config: FirstRowsConfig) -> None:
+def test_doesnotexist(app_config: AppConfig, get_job_runner: GetJobRunner) -> None:
     dataset = "doesnotexist"
     dataset, config, split = get_default_config_split(dataset)
-    job_runner = get_job_runner(dataset, config, split, app_config, first_rows_config, False)
+    job_runner = get_job_runner(dataset, config, split, app_config, False)
     assert not job_runner.process()
     with pytest.raises(DoesNotExist):
         get_response(kind=job_runner.processing_step.cache_kind, dataset=dataset, config=config, split=split)
@@ -92,7 +91,6 @@ def test_doesnotexist(app_config: AppConfig, get_job_runner: GetJobRunner, first
 def test_compute(
     get_job_runner: GetJobRunner,
     app_config: AppConfig,
-    first_rows_config: FirstRowsConfig,
     rows_max_bytes: int,
     columns_max_number: int,
     error_code: str,
@@ -127,14 +125,17 @@ def test_compute(
             dataset,
             config,
             split,
-            replace(app_config, common=replace(app_config.common, hf_token=None)),
             replace(
-                first_rows_config,
-                max_number=1_000_000,
-                min_number=10,
-                max_bytes=rows_max_bytes,
-                min_cell_bytes=10,
-                columns_max_number=columns_max_number,
+                app_config,
+                common=replace(app_config.common, hf_token=None),
+                first_rows=replace(
+                    app_config.first_rows,
+                    max_number=1_000_000,
+                    min_number=10,
+                    max_bytes=rows_max_bytes,
+                    min_cell_bytes=10,
+                    columns_max_number=columns_max_number,
+                ),
             ),
             False,
         )
@@ -176,13 +177,12 @@ def test_compute(
     "streaming_response_status,dataset_git_revision,error_code,status_code",
     [
         (HTTPStatus.OK, "CURRENT_GIT_REVISION", "ResponseAlreadyComputedError", HTTPStatus.INTERNAL_SERVER_ERROR),
-        (HTTPStatus.INTERNAL_SERVER_ERROR, "CURRENT_GIT_REVISION", "ConfigNotFoundError", HTTPStatus.NOT_FOUND),
-        (HTTPStatus.OK, "DIFFERENT_GIT_REVISION", "ConfigNotFoundError", HTTPStatus.NOT_FOUND),
+        (HTTPStatus.INTERNAL_SERVER_ERROR, "CURRENT_GIT_REVISION", "CachedResponseNotFound", HTTPStatus.NOT_FOUND),
+        (HTTPStatus.OK, "DIFFERENT_GIT_REVISION", "CachedResponseNotFound", HTTPStatus.NOT_FOUND),
     ],
 )
 def test_response_already_computed(
     app_config: AppConfig,
-    first_rows_config: FirstRowsConfig,
     get_job_runner: GetJobRunner,
     streaming_response_status: HTTPStatus,
     dataset_git_revision: str,
@@ -209,7 +209,6 @@ def test_response_already_computed(
         config,
         split,
         app_config,
-        first_rows_config,
         False,
     )
     job_runner.get_dataset_git_revision = Mock(return_value=current_dataset_git_revision)  # type: ignore

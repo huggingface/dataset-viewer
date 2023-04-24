@@ -11,7 +11,7 @@ from libcommon.simple_cache import _clean_cache_database
 from libcommon.storage import StrPath, init_assets_dir
 from pytest import MonkeyPatch, fixture
 
-from worker.config import AppConfig, FirstRowsConfig
+from worker.config import AppConfig
 from worker.main import WORKER_STATE_FILE_NAME
 from worker.resources import LibrariesResource
 
@@ -67,6 +67,7 @@ def set_env_vars(
     mp.setenv("WORKER_HEARTBEAT_INTERVAL_SECONDS", "1")
     mp.setenv("WORKER_KILL_ZOMBIES_INTERVAL_SECONDS", "1")
     mp.setenv("WORKER_KILL_LONG_JOBS_INTERVAL_SECONDS", "1")
+    mp.setenv("OPT_IN_OUT_URLS_SCAN_SPAWNING_TOKEN", "dummy_spawning_token")
     yield mp
     mp.undo()
 
@@ -104,11 +105,6 @@ def libraries_resource(app_config: AppConfig) -> Iterator[LibrariesResource]:
 
 
 @fixture
-def first_rows_config(set_env_vars: MonkeyPatch) -> FirstRowsConfig:
-    return FirstRowsConfig.from_env()
-
-
-@fixture
 def assets_directory(app_config: AppConfig) -> StrPath:
     return init_assets_dir(app_config.assets.storage_directory)
 
@@ -122,6 +118,7 @@ def test_processing_step() -> ProcessingStep:
         required_by_dataset_viewer=False,
         ancestors=[],
         children=[],
+        parents=[],
         job_runner_version=1,
     )
 

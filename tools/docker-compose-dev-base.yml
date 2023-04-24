@@ -10,12 +10,15 @@ services:
       # huggingface_hub
       HF_ENDPOINT: ${COMMON_HF_ENDPOINT-https://hub-ci.huggingface.co} # see https://github.com/huggingface/datasets/pull/5196#issuecomment-1322191411
       # cache
-      CACHE_MONGO_URL: ${CACHE_MONGO_URL-mongodb://host.docker.internal:${MONGO_PORT-27017}} # use mongo container by default
+      CACHE_MONGO_URL: ${CACHE_MONGO_URL-mongodb://${DEV_MONGO_HOST-host.docker.internal}:${MONGO_PORT-27017}} # use mongo container by default
       CACHE_MONGO_DATABASE: ${CACHE_MONGO_DATABASE-datasets_server_cache}
       # queue
       QUEUE_MAX_JOBS_PER_NAMESPACE: ${QUEUE_MAX_JOBS_PER_NAMESPACE-1}
-      QUEUE_MONGO_URL: ${QUEUE_MONGO_URL-mongodb://host.docker.internal:${MONGO_PORT-27017}} # use mongo container by default
+      QUEUE_MONGO_URL: ${QUEUE_MONGO_URL-mongodb://${DEV_MONGO_HOST-host.docker.internal}:${MONGO_PORT-27017}} # use mongo container by default
       QUEUE_MONGO_DATABASE: ${QUEUE_MONGO_DATABASE-datasets_server_queue}
+      # metrics
+      METRICS_MONGO_URL: ${METRICS_MONGO_URL-mongodb://${DEV_MONGO_HOST-host.docker.internal}:${MONGO_PORT-27017}} # use mongo container by default
+      METRICS_MONGO_DATABASE: ${METRICS_MONGO_DATABASE-datasets_server_metrics}
       # worker
       WORKER_CONTENT_MAX_BYTES: ${WORKER_CONTENT_MAX_BYTES-10_000_000}
       WORKER_MAX_DISK_USAGE_PCT: ${WORKER_MAX_DISK_USAGE_PCT-90}

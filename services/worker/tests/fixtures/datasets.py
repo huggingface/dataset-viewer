@@ -130,4 +130,17 @@ def datasets() -> Mapping[str, Dataset]:
         "big": Dataset.from_pandas(
             pd.DataFrame({"col": ["a" * 1_234 for _ in range(4_567)]}, dtype=pd.StringDtype(storage="python"))
         ),
+        "spawning_opt_in_out": Dataset.from_pandas(
+            pd.DataFrame(
+                {
+                    "col": [
+                        "http://testurl.test/test_image-optOut.jpg",
+                        "http://testurl.test/test_image2.jpg",
+                        "other",
+                        "http://testurl.test/test_image3-optIn.jpg",
+                    ]
+                },
+                dtype=pd.StringDtype(storage="python"),
+            )
+        ),
     }

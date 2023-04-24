@@ -6,10 +6,14 @@ from http import HTTPStatus
 from typing import Any, List, Literal, Mapping, Optional, Tuple
 
 from libcommon.constants import PROCESSING_STEP_DATASET_SPLIT_NAMES_VERSION
-from libcommon.dataset import DatasetNotFoundError
-from libcommon.simple_cache import DoesNotExist, SplitFullName, get_best_response
+from libcommon.simple_cache import SplitFullName, get_best_response
 
-from worker.job_runner import JobResult, JobRunner, JobRunnerError
+from worker.job_runner import (
+    JobResult,
+    JobRunner,
+    JobRunnerError,
+    get_previous_step_or_raise,
+)
 from worker.utils import (
     ConfigItem,
     DatasetSplitNamesResponse,
@@ -17,10 +21,7 @@ from worker.utils import (
     SplitItem,
 )
 
-DatasetSplitNamesErrorCode = Literal[
-    "PreviousStepStatusError",
-    "PreviousStepFormatError",
-]
+DatasetSplitNamesErrorCode = Literal["PreviousStepFormatError"]
 
 
 class DatasetSplitNamesJobRunnerError(JobRunnerError):
@@ -37,13 +38,6 @@ class DatasetSplitNamesJobRunnerError(JobRunnerError):
         super().__init__(
             message=message, status_code=status_code, code=code, cause=cause, disclose_cause=disclose_cause
         )
-
-
-class PreviousStepStatusError(DatasetSplitNamesJobRunnerError):
-    """Raised when the previous step gave an error. The job should not have been created."""
-
-    def __init__(self, message: str, cause: Optional[BaseException] = None):
-        super().__init__(message, HTTPStatus.INTERNAL_SERVER_ERROR, "PreviousStepStatusError", cause, False)
 
 
 class PreviousStepFormatError(DatasetSplitNamesJobRunnerError):
@@ -65,37 +59,30 @@ def compute_dataset_split_names_response(dataset: str) -> Tuple[DatasetSplitName
          a list of pending configs to be processed [pending] and the list of errors [failed] by config.
     <Tip>
     Raises the following errors:
-        - [`~job_runners.dataset_split_names.PreviousStepStatusError`]
+        - [`~job_runner.PreviousStepError`]
           If the the previous step gave an error.
         - [`~job_runners.dataset_split_names.PreviousStepFormatError`]
             If the content of the previous step has not the expected format
-        - [`~libcommon.dataset.DatasetNotFoundError`]
-            If previous step content was not found for the dataset
     </Tip>
     """
     logging.info(f"get dataset split names for dataset={dataset}")
 
     # Get the config names from the previous steps
-    try:
-        best_response = get_best_response(["/config-names", "dataset-info"], dataset)
-        if best_response.kind == "/config-names":
-            config_names = [
-                config_name_item["config"] for config_name_item in best_response.response["content"]["config_names"]
-            ]
-        elif best_response.kind == "dataset-info":
-            config_names = list(best_response.response["content"]["dataset-info"].keys())
-        else:
-            raise PreviousStepFormatError(
-                "Previous step '/config-names' or 'dataset-info' did not return the expected content."
-            )
-    except DoesNotExist as e:
-        raise DatasetNotFoundError(
-            "No response found in previous step for this dataset: '/config-names' or 'dataset-info'.", e
-        ) from e
-    except KeyError as e:
+
+    config_names_best_response = get_previous_step_or_raise(kinds=["/config-names", "dataset-info"], dataset=dataset)
+    content = config_names_best_response.response["content"]
+    if config_names_best_response.kind == "/config-names":
+        if "config_names" not in content:
+            raise PreviousStepFormatError("'/config-names' did not return the expected content: 'config_names'.")
+        config_names = [config_name_item["config"] for config_name_item in content["config_names"]]
+    elif config_names_best_response.kind == "dataset-info":
+        if "dataset_info" not in content:
+            raise PreviousStepFormatError("'dataset-info' did not return the expected content: 'dataset_info'.")
+        config_names = list(content["dataset-info"].keys())
+    else:
         raise PreviousStepFormatError(
-            "Previous steps '/config-names' or 'dataset-info' did not return the expected content.", e
-        ) from e
+            "Previous step '/config-names' or 'dataset-info' did not return the expected content."
+        )
     if any(not isinstance(config_name, str) for config_name in config_names):
         raise PreviousStepFormatError(
             "Previous steps '/config-names' or 'dataset-info' did not return a list of config names."
@@ -109,9 +96,8 @@ def compute_dataset_split_names_response(dataset: str) -> Tuple[DatasetSplitName
         total = 0
         for config in config_names:
             total += 1
-            try:
-                best_response = get_best_response(split_names_cache_kinds, dataset=dataset, config=config)
-            except DoesNotExist:
+            best_response = get_best_response(split_names_cache_kinds, dataset=dataset, config=config)
+            if best_response.response["error_code"] == "CachedResponseNotFound":
                 logging.debug(
                     "No response (successful or erroneous) found in cache for the previous steps"
                     f" '{split_names_cache_kinds}' for this dataset."
