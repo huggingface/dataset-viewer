@@ -644,7 +644,6 @@ def hub_datasets(
             "first_rows_response": create_first_rows_response(
                 hub_public_spawning_opt_in_out, SPAWNING_OPT_IN_OUT_cols, SPAWNING_OPT_IN_OUT_rows
             ),
-            "parquet_and_dataset_info_response": None,
             "parquet_and_info_response": None,
         },
     }
