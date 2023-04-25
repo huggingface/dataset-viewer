@@ -423,7 +423,6 @@ def test_dataset_state_as_dict() -> None:
                 "job_state": {"is_in_process": False},
                 "cache_state": {"exists": True, "is_success": True},  # <- this entry is in the cache
             },
-            # TODO: should there be anything related to config-parquet-and-info?
             {
                 "id": f"dataset-parquet,{DATASET_NAME}",
                 "job_state": {"is_in_process": False},
@@ -525,7 +524,6 @@ def test_plan() -> None:
         # The root dataset-level steps, as well as the "fan-in" steps, are ready to be backfilled.
         tasks=[
             "CreateJob[/config-names,dataset]",
-            # "CreateJob[config-parquet-and-info,config]",
             "CreateJob[dataset-info,dataset]",
             "CreateJob[dataset-is-valid,dataset]",
             "CreateJob[dataset-parquet,dataset]",
@@ -542,7 +540,6 @@ def test_plan_job_creation_and_termination() -> None:
     dataset_state = get_dataset_state()
     assert dataset_state.plan.as_response() == [
         "CreateJob[/config-names,dataset]",
-        # "CreateJob[config-parquet-and-info,config]",
         "CreateJob[dataset-info,dataset]",
         "CreateJob[dataset-is-valid,dataset]",
         "CreateJob[dataset-parquet,dataset]",
@@ -563,7 +560,6 @@ def test_plan_job_creation_and_termination() -> None:
             "cache_is_outdated_by_parent": [],
             "cache_is_empty": [
                 "/config-names,dataset",
-                # "config-parquet-and-info,config",
                 "dataset-info,dataset",
                 "dataset-is-valid,dataset",
                 "dataset-parquet,dataset",
@@ -580,7 +576,6 @@ def test_plan_job_creation_and_termination() -> None:
         queue_status={
             "in_process": [
                 "/config-names,dataset",
-                # "config-parquet-and-info,config",
                 "dataset-info,dataset",
                 "dataset-is-valid,dataset",
                 "dataset-parquet,dataset",
@@ -647,7 +642,6 @@ def test_plan_job_creation_and_termination() -> None:
         # the job "/config-names,dataset" is no more in process
         queue_status={
             "in_process": [
-                # "config-parquet-and-info,config",
                 "dataset-info,dataset",
                 "dataset-is-valid,dataset",
                 "dataset-parquet,dataset",
