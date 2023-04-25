@@ -20,7 +20,8 @@ WORKER_HEARTBEAT_INTERVAL_SECONDS = 60
 WORKER_KILL_LONG_JOB_INTERVAL_SECONDS = 60
 WORKER_KILL_ZOMBIES_INTERVAL_SECONDS = 10 * 60
 WORKER_MAX_DISK_USAGE_PCT = 90
-WORKER_MAX_JOB_DURATION_SECONDS = 20 * 60
+WORKER_MAX_JOB_DURATION_SECONDS = 20 * 60  # 20 minutes
+WORKER_MAX_LONG_JOB_DURATION_SECONDS = 3 * 60 * 60  # 3 hours
 WORKER_MAX_LOAD_PCT = 70
 WORKER_MAX_MEMORY_PCT = 80
 WORKER_MAX_MISSING_HEARTBEATS = 5
@@ -46,6 +47,7 @@ class WorkerConfig:
     max_missing_heartbeats: int = WORKER_MAX_MISSING_HEARTBEATS
     kill_zombies_interval_seconds: int = WORKER_KILL_ZOMBIES_INTERVAL_SECONDS
     max_job_duration_seconds: int = WORKER_MAX_JOB_DURATION_SECONDS
+    max_long_job_duration_seconds: int = WORKER_MAX_LONG_JOB_DURATION_SECONDS
     kill_long_job_interval_seconds: int = WORKER_KILL_LONG_JOB_INTERVAL_SECONDS
 
     @classmethod
@@ -72,6 +74,9 @@ class WorkerConfig:
                 ),
                 max_job_duration_seconds=env.int(
                     name="MAX_JOB_DURATION_SECONDS", default=WORKER_MAX_JOB_DURATION_SECONDS
+                ),
+                max_long_job_duration_seconds=env.int(
+                    name="MAX_LONG_JOB_DURATION_SECONDS", default=WORKER_MAX_LONG_JOB_DURATION_SECONDS
                 ),
                 kill_long_job_interval_seconds=env.int(
                     name="KILL_LONG_JOB_INTERVAL_SECONDS", default=WORKER_KILL_LONG_JOB_INTERVAL_SECONDS
@@ -126,7 +131,6 @@ class FirstRowsConfig:
 OPT_IN_OUT_URLS_SCAN_COLUMNS_MAX_NUMBER = 10
 OPT_IN_OUT_URLS_SCAN_MAX_CONCURRENT_REQUESTS_NUMBER = 100
 OPT_IN_OUT_URLS_SCAN_MAX_REQUESTS_PER_SECOND = 50
-OPT_IN_OUT_URLS_SCAN_ROWS_MAX_NUMBER = 100_000
 OPT_IN_OUT_URLS_SCAN_SPAWNING_TOKEN = None
 OPT_IN_OUT_URLS_SCAN_URLS_NUMBER_PER_BATCH = 1000
 OPT_IN_OUT_URLS_SCAN_SPAWNING_URL = "https://opts-api.spawningaiapi.com/api/v2/query/urls"
@@ -135,7 +139,6 @@ OPT_IN_OUT_URLS_SCAN_SPAWNING_URL = "https://opts-api.spawningaiapi.com/api/v2/q
 @dataclass(frozen=True)
 class OptInOutUrlsScanConfig:
     spawning_url: str = OPT_IN_OUT_URLS_SCAN_SPAWNING_URL
-    rows_max_number: int = OPT_IN_OUT_URLS_SCAN_ROWS_MAX_NUMBER
     columns_max_number: int = FIRST_ROWS_COLUMNS_MAX_NUMBER
     urls_number_per_batch: int = OPT_IN_OUT_URLS_SCAN_URLS_NUMBER_PER_BATCH
     spawning_token: Optional[str] = OPT_IN_OUT_URLS_SCAN_SPAWNING_TOKEN
@@ -147,7 +150,6 @@ class OptInOutUrlsScanConfig:
         env = Env(expand_vars=True)
         with env.prefixed("OPT_IN_OUT_URLS_SCAN_"):
             return cls(
-                rows_max_number=env.int(name="ROWS_MAX_NUMBER", default=OPT_IN_OUT_URLS_SCAN_ROWS_MAX_NUMBER),
                 columns_max_number=env.int(name="COLUMNS_MAX_NUMBER", default=OPT_IN_OUT_URLS_SCAN_COLUMNS_MAX_NUMBER),
                 urls_number_per_batch=env.int(
                     name="URLS_NUMBER_PER_BATCH", default=OPT_IN_OUT_URLS_SCAN_URLS_NUMBER_PER_BATCH

@@ -68,8 +68,6 @@
   value: {{ .Values.optInOutUrlsScan.maxConcurrentRequestsNumber | quote }}
 - name: OPT_IN_OUT_URLS_SCAN_MAX_REQUESTS_PER_SECOND
   value: {{ .Values.optInOutUrlsScan.maxRequestsPerSecond | quote }}
-- name: OPT_IN_OUT_URLS_SCAN_ROWS_MAX_NUMBER
-  value: {{ .Values.optInOutUrlsScan.rowsMaxNumber | quote }}
 - name: OPT_IN_OUT_URLS_SCAN_SPAWNING_TOKEN
   {{- if .Values.secrets.spawningToken.fromSecret }}
   valueFrom:

@@ -198,6 +198,7 @@ class JobRunnerFactory(BaseJobRunnerFactory):
                 app_config=self.app_config,
                 processing_step=processing_step,
                 hf_datasets_cache=self.hf_datasets_cache,
+                assets_directory=self.assets_directory,
             )
 
         supported_job_types = [

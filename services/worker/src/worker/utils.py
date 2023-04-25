@@ -264,8 +264,8 @@ def get_rows(
     config: str,
     split: str,
     streaming: bool,
-    rows_max_number: int,
     use_auth_token: Union[bool, str, None] = False,
+    rows_max_number: Optional[int] = None,
     column_names: Optional[List[str]] = None,
 ) -> List[Row]:
     download_config = DownloadConfig(delete_extracted=True)
@@ -284,6 +284,8 @@ def get_rows(
         raise TypeError("load_dataset should return a Dataset in normal mode")
     if column_names:
         ds = ds.select_columns(column_names)
+    if not rows_max_number:
+        return list(ds)
     rows_plus_one = list(itertools.islice(ds, rows_max_number + 1))
     # ^^ to be able to detect if a split has exactly ROWS_MAX_NUMBER rows
     if len(rows_plus_one) <= rows_max_number:
@@ -297,9 +299,9 @@ def get_rows_or_raise(
     dataset: str,
     config: str,
     split: str,
-    rows_max_number: int,
     use_auth_token: Union[bool, str, None],
     info: DatasetInfo,
+    rows_max_number: Optional[int] = None,
     max_size_fallback: Optional[int] = None,
     column_names: Optional[List[str]] = [],
 ) -> List[Row]:

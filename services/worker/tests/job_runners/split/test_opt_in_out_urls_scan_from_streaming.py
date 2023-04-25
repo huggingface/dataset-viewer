@@ -16,6 +16,7 @@ from libcommon.processing_graph import ProcessingStep
 from libcommon.queue import Priority
 from libcommon.resources import CacheMongoResource, QueueMongoResource
 from libcommon.simple_cache import get_response, upsert_response
+from libcommon.storage import StrPath
 
 from worker.config import AppConfig
 from worker.job_runners.split.opt_in_out_urls_scan_from_streaming import (
@@ -39,6 +40,7 @@ async def mock_check_spawning(
 
 @pytest.fixture
 def get_job_runner(
+    assets_directory: StrPath,
     libraries_resource: LibrariesResource,
     cache_mongo_resource: CacheMongoResource,
     queue_mongo_resource: QueueMongoResource,
@@ -72,6 +74,7 @@ def get_job_runner(
                 job_runner_version=SplitOptInOutUrlsScanJobRunner.get_job_runner_version(),
             ),
             hf_datasets_cache=libraries_resource.hf_datasets_cache,
+            assets_directory=assets_directory,
         )
 
     return _get_job_runner

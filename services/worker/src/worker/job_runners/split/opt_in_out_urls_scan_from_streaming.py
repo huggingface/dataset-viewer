@@ -7,6 +7,8 @@ from http import HTTPStatus
 from pathlib import Path
 from typing import Any, List, Literal, Mapping, Optional, Tuple, TypedDict, Union
 
+import pandas as pd
+import pyarrow as pa
 from aiohttp import ClientSession
 from aiolimiter import AsyncLimiter
 from datasets import get_dataset_config_info
@@ -14,6 +16,8 @@ from libcommon.constants import PROCESSING_STEP_SPLIT_OPT_IN_OUT_URLS_SCAN_VERSI
 from libcommon.processing_graph import ProcessingStep
 from libcommon.queue import JobInfo
 from libcommon.simple_cache import SplitFullName
+from libcommon.storage import StrPath
+from libcommon.viewer_utils.asset import ParquetSource, create_parquet_file
 
 from worker.config import AppConfig, OptInOutUrlsScanConfig
 from worker.job_runner import (
@@ -100,8 +104,8 @@ class OptUrl(TypedDict):
 
 class OptInOutUrlsScanResponse(TypedDict):
     urls_columns: List[str]
-    opt_in_urls: List[OptUrl]
-    opt_out_urls: List[OptUrl]
+    opt_in_urls_source: Optional[ParquetSource]
+    opt_out_urls_source: Optional[ParquetSource]
     num_opt_in_urls: int
     num_opt_out_urls: int
     num_urls: int
@@ -177,13 +181,14 @@ def compute_opt_in_out_urls_scan_response(
     config: str,
     split: str,
     hf_token: Optional[str],
-    rows_max_number: int,
     columns_max_number: int,
     urls_number_per_batch: int,
     spawning_token: Optional[str],
     max_concurrent_requests_number: int,
     max_requests_per_second: int,
     spawning_url: str,
+    assets_base_url: str,
+    assets_directory: StrPath,
 ) -> OptInOutUrlsScanResponse:
     logging.info(f"get opt-in-out-urls-scan for dataset={dataset} config={config} split={split}")
 
@@ -240,8 +245,8 @@ def compute_opt_in_out_urls_scan_response(
     if not urls_columns:
         return OptInOutUrlsScanResponse(
             urls_columns=[],
-            opt_in_urls=[],
-            opt_out_urls=[],
+            opt_in_urls_source=None,
+            opt_out_urls_source=None,
             num_opt_in_urls=0,
             num_opt_out_urls=0,
             num_urls=0,
@@ -261,7 +266,6 @@ def compute_opt_in_out_urls_scan_response(
         config=config,
         split=split,
         info=info,
-        rows_max_number=rows_max_number,
         use_auth_token=use_auth_token,
         column_names=urls_columns,
     )
@@ -299,11 +303,35 @@ def compute_opt_in_out_urls_scan_response(
         for url_idx in opt_out_urls_indices
     ]
 
+    in_df = pd.DataFrame({"opt_in_urls": opt_in_urls})
+    in_table = pa.Table.from_pandas(in_df)
+    opt_in_urls_src = create_parquet_file(
+        dataset=dataset,
+        config=config,
+        split=split,
+        table=in_table,
+        assets_directory=assets_directory,
+        assets_base_url=assets_base_url,
+        filename="opt_in_urls.parquet",
+    )
+
+    out_df = pd.DataFrame({"opt_out_urls": opt_out_urls})
+    out_table = pa.Table.from_pandas(out_df)
+    opt_out_urls_src = create_parquet_file(
+        dataset=dataset,
+        config=config,
+        split=split,
+        table=out_table,
+        assets_directory=assets_directory,
+        assets_base_url=assets_base_url,
+        filename="opt_out_urls.parquet",
+    )
+
     # return scan result
     return OptInOutUrlsScanResponse(
         urls_columns=urls_columns,
-        opt_in_urls=opt_in_urls,
-        opt_out_urls=opt_out_urls,
+        opt_in_urls_source=opt_in_urls_src,
+        opt_out_urls_source=opt_out_urls_src,
         num_opt_in_urls=len(opt_in_urls),
         num_opt_out_urls=len(opt_out_urls),
         num_urls=len(urls),
@@ -329,6 +357,7 @@ class SplitOptInOutUrlsScanJobRunner(DatasetsBasedJobRunner):
         app_config: AppConfig,
         processing_step: ProcessingStep,
         hf_datasets_cache: Path,
+        assets_directory: StrPath,
     ) -> None:
         super().__init__(
             job_info=job_info,
@@ -337,6 +366,8 @@ class SplitOptInOutUrlsScanJobRunner(DatasetsBasedJobRunner):
             hf_datasets_cache=hf_datasets_cache,
         )
         self.urls_scan_config = app_config.urls_scan
+        self.assets_directory = assets_directory
+        self.assets_base_url = app_config.assets.base_url
 
     def compute(self) -> CompleteJobResult:
         if self.config is None or self.split is None:
@@ -347,13 +378,14 @@ class SplitOptInOutUrlsScanJobRunner(DatasetsBasedJobRunner):
                 config=self.config,
                 split=self.split,
                 hf_token=self.common_config.hf_token,
-                rows_max_number=self.urls_scan_config.rows_max_number,
                 columns_max_number=self.urls_scan_config.columns_max_number,
                 urls_number_per_batch=self.urls_scan_config.urls_number_per_batch,
                 spawning_token=self.urls_scan_config.spawning_token,
                 max_concurrent_requests_number=self.urls_scan_config.max_concurrent_requests_number,
                 max_requests_per_second=self.urls_scan_config.max_requests_per_second,
                 spawning_url=self.urls_scan_config.spawning_url,
+                assets_base_url=self.assets_base_url,
+                assets_directory=self.assets_directory,
             )
         )
 
@@ -362,3 +394,6 @@ class SplitOptInOutUrlsScanJobRunner(DatasetsBasedJobRunner):
         if self.config is None or self.split is None:
             raise ValueError("config and split are required")
         return {SplitFullName(dataset=self.dataset, config=self.config, split=self.split)}
+
+    def get_max_job_duration_seconds(self) -> int:
+        return self.worker_config.max_long_job_duration_seconds

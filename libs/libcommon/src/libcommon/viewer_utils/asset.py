@@ -6,6 +6,8 @@ from os import makedirs
 from pathlib import Path
 from typing import Generator, List, Tuple, TypedDict
 
+import pyarrow
+import pyarrow.parquet as pq
 import soundfile  # type:ignore
 from numpy import ndarray
 from PIL import Image  # type: ignore
@@ -23,6 +25,13 @@ def create_asset_dir(
 ) -> Tuple[Path, str]:
     dir_path = Path(assets_directory).resolve() / dataset / DATASET_SEPARATOR / config / split / str(row_idx) / column
     url_dir_path = f"{dataset}/{DATASET_SEPARATOR}/{config}/{split}/{row_idx}/{column}"
+    makedirs(dir_path, ASSET_DIR_MODE, exist_ok=True)
+    return dir_path, url_dir_path
+
+
+def create_asset_dir(dataset: str, config: str, split: str, assets_directory: StrPath) -> Tuple[Path, str]:
+    dir_path = Path(assets_directory).resolve() / dataset / DATASET_SEPARATOR / config / split
+    url_dir_path = f"{dataset}/{DATASET_SEPARATOR}/{config}/{split}"
     makedirs(dir_path, ASSET_DIR_MODE, exist_ok=True)
     return dir_path, url_dir_path
 
@@ -91,6 +100,32 @@ def create_image_file(
 class AudioSource(TypedDict):
     src: str
     type: str
+
+
+class ParquetSource(TypedDict):
+    src: str
+    type: str
+
+
+def create_parquet_file(
+    dataset: str,
+    config: str,
+    split: str,
+    table: pyarrow.Table,
+    assets_base_url: str,
+    filename: str,
+    assets_directory: StrPath,
+) -> ParquetSource:
+    dir_path, url_dir_path = create_asset_dir(
+        dataset=dataset,
+        config=config,
+        split=split,
+        assets_directory=assets_directory,
+    )
+    makedirs(dir_path, ASSET_DIR_MODE, exist_ok=True)
+    parquet_file_name = dir_path / filename
+    pq.write_table(table, parquet_file_name)
+    return {"src": f"{assets_base_url}/{url_dir_path}/{filename}", "type": "parquet"}
 
 
 def create_audio_files(
