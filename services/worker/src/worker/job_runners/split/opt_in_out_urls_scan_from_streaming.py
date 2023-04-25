@@ -7,6 +7,8 @@ from http import HTTPStatus
 from pathlib import Path
 from typing import Any, List, Literal, Mapping, Optional, Tuple, TypedDict, Union
 
+import pandas as pd
+import pyarrow as pa
 from aiohttp import ClientSession
 from aiolimiter import AsyncLimiter
 from datasets import get_dataset_config_info
@@ -308,6 +310,30 @@ def compute_opt_in_out_urls_scan_response(
         headers=headers,
     )
 
+    in_df = pd.DataFrame({"opt_in_urls": opt_in_urls})
+    in_table = pa.Table.from_pandas(in_df)
+    opt_in_urls_src = create_parquet_file(
+        dataset=dataset,
+        config=config,
+        split=split,
+        table=in_table,
+        assets_directory=assets_directory,
+        assets_base_url=assets_base_url,
+        filename="opt_in_urls.parquet",
+    )
+
+    out_df = pd.DataFrame({"opt_out_urls": opt_out_urls})
+    out_table = pa.Table.from_pandas(out_df)
+    opt_out_urls_src = create_parquet_file(
+        dataset=dataset,
+        config=config,
+        split=split,
+        table=out_table,
+        assets_directory=assets_directory,
+        assets_base_url=assets_base_url,
+        filename="opt_out_urls.parquet",
+    )
+
     # return scan result
     return OptInOutUrlsScanResponse(
         urls_columns=urls_columns,
@@ -374,3 +400,6 @@ class SplitOptInOutUrlsScanJobRunner(DatasetsBasedJobRunner):
         if self.config is None or self.split is None:
             raise ValueError("config and split are required")
         return {SplitFullName(dataset=self.dataset, config=self.config, split=self.split)}
+
+    def get_max_job_duration_seconds(self) -> int:
+        return self.worker_config.max_long_job_duration_seconds

@@ -7,6 +7,8 @@ from os import makedirs
 from pathlib import Path
 from typing import Any, Generator, List, Tuple, TypedDict
 
+import pyarrow
+import pyarrow.parquet as pq
 import soundfile  # type:ignore
 from numpy import ndarray
 from PIL import Image  # type: ignore

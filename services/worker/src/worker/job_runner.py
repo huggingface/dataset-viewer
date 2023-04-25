@@ -657,3 +657,6 @@ class JobRunner(ABC):
                 )
         except DoesNotExist:
             logging.debug(f"no cache found for {parallel_cache_kind}.")
+
+    def get_max_job_duration_seconds(self) -> int:
+        return self.worker_config.max_job_duration_seconds
