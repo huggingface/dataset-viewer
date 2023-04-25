@@ -13,7 +13,7 @@ from libcommon.simple_cache import SplitFullName
 from worker.job_runner import CompleteJobResult, JobRunnerError, ParameterMissingError
 from worker.job_runners._datasets_based_job_runner import DatasetsBasedJobRunner
 
-ConfigNamesJobRunnerErrorCode = Literal["EmptyDatasetError", "ConfigNamesError"]
+ConfigNamesJobRunnerErrorCode = Literal["EmptyDatasetError", "DatasetModuleNotInstalledError", "ConfigNamesError"]
 
 
 class ConfigNamesJobRunnerError(JobRunnerError):
@@ -37,6 +37,13 @@ class EmptyDatasetError(ConfigNamesJobRunnerError):
 
     def __init__(self, message: str, cause: Optional[BaseException] = None):
         super().__init__(message, HTTPStatus.INTERNAL_SERVER_ERROR, "EmptyDatasetError", cause, True)
+
+
+class DatasetModuleNotInstalledError(ConfigNamesJobRunnerError):
+    """Raised when the dataset tries to import a module that is not installed."""
+
+    def __init__(self, message: str, cause: Optional[BaseException] = None):
+        super().__init__(message, HTTPStatus.INTERNAL_SERVER_ERROR, "DatasetModuleNotInstalledError", cause, True)
 
 
 class ConfigNamesError(ConfigNamesJobRunnerError):
@@ -77,6 +84,8 @@ def compute_config_names_response(
     Raises the following errors:
         - [`~job_runners.config_names.EmptyDatasetError`]
           The dataset is empty.
+        - [`~job_runners.config_names.DatasetModuleNotInstalledError`]
+          The dataset tries to import a module that is not installed.
         - [`~job_runners.config_names.ConfigNamesError`]
           If the list of configs could not be obtained using the datasets library.
     </Tip>
@@ -91,6 +100,10 @@ def compute_config_names_response(
         ]
     except _EmptyDatasetError as err:
         raise EmptyDatasetError("The dataset is empty.", cause=err) from err
+    except ImportError as err:
+        raise DatasetModuleNotInstalledError(
+            "The dataset tries to import a module that is not installed.", cause=err
+        ) from err
     except Exception as err:
         raise ConfigNamesError("Cannot get the config names for the dataset.", cause=err) from err
     return ConfigNamesResponse(config_names=config_name_items)
