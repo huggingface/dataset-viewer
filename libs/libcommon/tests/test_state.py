@@ -506,7 +506,6 @@ def test_plan() -> None:
             "cache_is_outdated_by_parent": [],
             "cache_is_empty": [
                 "/config-names,dataset",
-                # "config-parquet-and-info,config",
                 "dataset-info,dataset",
                 "dataset-is-valid,dataset",
                 "dataset-parquet,dataset",
