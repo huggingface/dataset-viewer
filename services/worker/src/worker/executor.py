@@ -123,9 +123,8 @@ class WorkerExecutor:
         if worker_state and worker_state["current_job_info"]:
             long_job = worker_state["current_job_info"]
             last_updated = worker_state["last_updated"]
-            job_runner = self.job_runner_factory.create_job_runner(long_job)
 
-            if last_updated + timedelta(seconds=job_runner.get_max_job_duration_seconds()) <= get_datetime():
+            if last_updated + timedelta(seconds=self.app_config.worker.max_job_duration_seconds) <= get_datetime():
                 _duration_seconds = int((get_datetime() - last_updated).total_seconds())
                 logging.warning(
                     f"Job {long_job} exceeded maximum duration of"
@@ -135,6 +134,7 @@ class WorkerExecutor:
                     worker_loop_executor.stop()  # raises an error if the worker returned exit code 1
                 finally:
                     Queue().kill_long_job(long_job)
+                    job_runner = self.job_runner_factory.create_job_runner(long_job)
                     message = "Job runner was killed while running this job (job exceeded maximum duration)."
                     job_runner.set_exceeded_maximum_duration(message=message)
 
