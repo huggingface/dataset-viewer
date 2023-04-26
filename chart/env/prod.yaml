@@ -236,7 +236,7 @@ workers:
   -
     deployName: "all"
     maxJobsPerNamespace: 5
-    workerOnlyJobTypes: ""
+    workerOnlyJobTypes: "/split-names-from-streaming,config-parquet-and-info,split-first-rows-from-parquet,dataset-is-valid"
     nodeSelector:
       role-datasets-server-worker: "true"
     replicas: 80
@@ -262,4 +262,21 @@ workers:
       limits:
         cpu: 2
         memory: "1Gi"
+    tolerations: []
+  -
+    deployName: "spawning"
+    maxJobsPerNamespace: 5
+    maxJobDurationSeconds: 36_000
+    # 10 hours
+    workerOnlyJobTypes: "split-opt-in-out-urls-scan"
+    nodeSelector:
+      role-datasets-server-worker: "true"
+    replicas: 5
+    resources:
+      requests:
+        cpu: 1
+        memory: "2Gi"
+      limits:
+        cpu: 2
+        memory: "8Gi"
     tolerations: []
