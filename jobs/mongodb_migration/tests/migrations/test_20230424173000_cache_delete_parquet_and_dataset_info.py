@@ -4,7 +4,7 @@
 from libcommon.resources import MongoResource
 from mongoengine.connection import get_db
 
-from mongodb_migration.migrations._20230424173000_cache_delete_parquet_and_dataset_info import (
+from mongodb_migration.migrations._20230424174000_cache_delete_parquet_and_dataset_info import (
     MigrationCacheDeleteParquetAndDatasetInfo,
 )
 
