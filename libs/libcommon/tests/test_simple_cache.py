@@ -17,7 +17,6 @@ from libcommon.simple_cache import (
     DoesNotExist,
     InvalidCursor,
     InvalidLimit,
-    SplitFullName,
     delete_dataset_responses,
     delete_response,
     get_best_response,
@@ -28,7 +27,6 @@ from libcommon.simple_cache import (
     get_response,
     get_response_without_content,
     get_responses_count_by_kind_status_and_error_code,
-    get_split_full_names_for_dataset_and_kind,
     get_valid_datasets,
     get_validity_by_kind,
     upsert_response,
@@ -212,45 +210,6 @@ def test_big_row() -> None:
         upsert_response(
             kind=kind, dataset=dataset, config=config, split=split, content=big_content, http_status=HTTPStatus.OK
         )
-
-
-def test_get_split_full_names_for_dataset_and_kind() -> None:
-    kind_a = "test_kind_a"
-    kind_b = "test_kind_b"
-    dataset_a = "test_dataset_a"
-    dataset_b = "test_dataset_b"
-    dataset_c = "test_dataset_c"
-    config_a = "test_config_a"
-    config_b = "test_config_b"
-    split_a = "test_split_a"
-    split_b = None
-    upsert_response(kind=kind_a, dataset=dataset_a, content={}, http_status=HTTPStatus.OK)
-    upsert_response(
-        kind=kind_b, dataset=dataset_a, config=config_a, split=split_a, content={}, http_status=HTTPStatus.OK
-    )
-    upsert_response(
-        kind=kind_b, dataset=dataset_a, config=config_b, split=split_a, content={}, http_status=HTTPStatus.OK
-    )
-    upsert_response(
-        kind=kind_b, dataset=dataset_a, config=config_b, split=split_b, content={}, http_status=HTTPStatus.OK
-    )
-    upsert_response(kind=kind_a, dataset=dataset_b, content={}, http_status=HTTPStatus.OK)
-    result = get_split_full_names_for_dataset_and_kind(dataset=dataset_a, kind=kind_a)
-    expected = {SplitFullName(dataset_a, None, None)}
-    assert len(result) == len(expected) and all(x in expected for x in result)
-    # ^ compare the contents of the lists without caring about the order
-    result = get_split_full_names_for_dataset_and_kind(dataset=dataset_a, kind=kind_b)
-    expected = {
-        SplitFullName(dataset_a, config_a, split_a),
-        SplitFullName(dataset_a, config_b, split_b),
-        SplitFullName(dataset_a, config_b, split_a),
-    }
-    assert len(result) == len(expected) and all(x in expected for x in result)
-    # ^ compare the contents of the lists without caring about the order
-    assert get_split_full_names_for_dataset_and_kind(dataset=dataset_b, kind=kind_a) == {
-        SplitFullName(dataset_b, None, None)
-    }
-    assert get_split_full_names_for_dataset_and_kind(dataset=dataset_c, kind=kind_a) == set()
 
 
 def test_get_valid_dataset_names_empty() -> None:

@@ -21,11 +21,9 @@ from libcommon.simple_cache import (
     CacheEntryWithDetails,
     DoesNotExist,
     SplitFullName,
-    delete_response,
     get_best_response,
     get_response,
     get_response_without_content,
-    get_split_full_names_for_dataset_and_kind,
     upsert_response,
 )
 from libcommon.utils import orjson_dumps
