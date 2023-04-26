@@ -25,6 +25,34 @@ from libcommon.state import (
     fetch_split_names,
 )
 
+from .utils import (
+    CONFIG_NAME_1,
+    CONFIG_NAME_2,
+    CONFIG_NAMES,
+    CONFIG_NAMES_CONTENT,
+    CURRENT_GIT_REVISION,
+    DATASET_NAME,
+    SPLIT_NAME_1,
+    SPLIT_NAME_2,
+    SPLIT_NAMES,
+    SPLIT_NAMES_CONTENT,
+)
+
+
+class ResponseSpec(TypedDict):
+    content: Mapping[str, Any]
+    http_status: HTTPStatus
+
+
+CACHE_KIND = "cache_kind"
+JOB_TYPE = "job_type"
+SPLIT_NAMES_RESPONSE_OK = ResponseSpec(content=SPLIT_NAMES_CONTENT, http_status=HTTPStatus.OK)
+CONTENT_ERROR = {"error": "error"}
+RESPONSE_ERROR = ResponseSpec(content=CONTENT_ERROR, http_status=HTTPStatus.INTERNAL_SERVER_ERROR)
+
+
+PROCESSING_GRAPH = ProcessingGraph(processing_graph_specification=ProcessingGraphConfig().specification)
+
 
 @pytest.fixture(autouse=True)
 def queue_mongo_resource_autouse(queue_mongo_resource: QueueMongoResource) -> QueueMongoResource:
@@ -36,16 +64,10 @@ def cache_mongo_resource_autouse(cache_mongo_resource: CacheMongoResource) -> Ca
     return cache_mongo_resource
 
 
-DATASET_NAME = "dataset"
-CONFIG_NAMES_OK = ["config1", "config2"]
-CONFIG_NAMES_CONTENT_OK = {"config_names": [{"config": config_name} for config_name in CONFIG_NAMES_OK]}
-CONTENT_ERROR = {"error": "error"}
-
-
 @pytest.mark.parametrize(
     "content,http_status,expected_config_names",
     [
-        (CONFIG_NAMES_CONTENT_OK, HTTPStatus.OK, CONFIG_NAMES_OK),
+        (CONFIG_NAMES_CONTENT, HTTPStatus.OK, CONFIG_NAMES),
         (CONTENT_ERROR, HTTPStatus.INTERNAL_SERVER_ERROR, None),
         (None, HTTPStatus.OK, None),
     ],
@@ -72,39 +94,19 @@ def test_fetch_config_names(
         assert config_names == expected_config_names
 
 
-class ResponseSpec(TypedDict):
-    content: Mapping[str, Any]
-    http_status: HTTPStatus
-
-
-CONFIG_NAME_1 = "config1"
-SPLIT_NAMES_OK = ["split1", "split2"]
-
-
-def get_SPLIT_NAMES_CONTENT_OK(dataset: str, config: str, splits: List[str]) -> Any:
-    return {"splits": [{"dataset": dataset, "config": config, "split": split_name} for split_name in splits]}
-
-
-SPLIT_NAMES_RESPONSE_OK = ResponseSpec(
-    content=get_SPLIT_NAMES_CONTENT_OK(dataset=DATASET_NAME, config=CONFIG_NAME_1, splits=SPLIT_NAMES_OK),
-    http_status=HTTPStatus.OK,
-)
-SPLIT_NAMES_RESPONSE_ERROR = ResponseSpec(content={"error": "error"}, http_status=HTTPStatus.INTERNAL_SERVER_ERROR)
-
-
 @pytest.mark.parametrize(
     "response_spec_by_kind,expected_split_names",
     [
-        ({HARD_CODED_SPLIT_NAMES_FROM_DATASET_INFO_CACHE_KIND: SPLIT_NAMES_RESPONSE_OK}, SPLIT_NAMES_OK),
-        ({HARD_CODED_SPLIT_NAMES_FROM_STREAMING_CACHE_KIND: SPLIT_NAMES_RESPONSE_OK}, SPLIT_NAMES_OK),
+        ({HARD_CODED_SPLIT_NAMES_FROM_DATASET_INFO_CACHE_KIND: SPLIT_NAMES_RESPONSE_OK}, SPLIT_NAMES),
+        ({HARD_CODED_SPLIT_NAMES_FROM_STREAMING_CACHE_KIND: SPLIT_NAMES_RESPONSE_OK}, SPLIT_NAMES),
         (
             {
-                HARD_CODED_SPLIT_NAMES_FROM_DATASET_INFO_CACHE_KIND: SPLIT_NAMES_RESPONSE_ERROR,
+                HARD_CODED_SPLIT_NAMES_FROM_DATASET_INFO_CACHE_KIND: RESPONSE_ERROR,
                 HARD_CODED_SPLIT_NAMES_FROM_STREAMING_CACHE_KIND: SPLIT_NAMES_RESPONSE_OK,
             },
-            SPLIT_NAMES_OK,
+            SPLIT_NAMES,
         ),
-        ({HARD_CODED_SPLIT_NAMES_FROM_DATASET_INFO_CACHE_KIND: SPLIT_NAMES_RESPONSE_ERROR}, None),
+        ({HARD_CODED_SPLIT_NAMES_FROM_DATASET_INFO_CACHE_KIND: RESPONSE_ERROR}, None),
         ({}, None),
     ],
 )
@@ -131,16 +133,12 @@ def test_fetch_split_names(
         assert split_names == expected_split_names
 
 
-SPLIT_NAME = "split"
-JOB_TYPE = "job_type"
-
-
 @pytest.mark.parametrize(
     "dataset,config,split,job_type",
     [
         (DATASET_NAME, None, None, JOB_TYPE),
         (DATASET_NAME, CONFIG_NAME_1, None, JOB_TYPE),
-        (DATASET_NAME, CONFIG_NAME_1, SPLIT_NAME, JOB_TYPE),
+        (DATASET_NAME, CONFIG_NAME_1, SPLIT_NAME_1, JOB_TYPE),
     ],
 )
 def test_job_state_is_in_process(dataset: str, config: Optional[str], split: Optional[str], job_type: str) -> None:
@@ -158,7 +156,7 @@ def test_job_state_is_in_process(dataset: str, config: Optional[str], split: Opt
     [
         (DATASET_NAME, None, None, JOB_TYPE),
         (DATASET_NAME, CONFIG_NAME_1, None, JOB_TYPE),
-        (DATASET_NAME, CONFIG_NAME_1, SPLIT_NAME, JOB_TYPE),
+        (DATASET_NAME, CONFIG_NAME_1, SPLIT_NAME_1, JOB_TYPE),
     ],
 )
 def test_job_state_as_dict(dataset: str, config: Optional[str], split: Optional[str], job_type: str) -> None:
@@ -169,15 +167,12 @@ def test_job_state_as_dict(dataset: str, config: Optional[str], split: Optional[
     }
 
 
-CACHE_KIND = "cache_kind"
-
-
 @pytest.mark.parametrize(
     "dataset,config,split,cache_kind",
     [
         (DATASET_NAME, None, None, CACHE_KIND),
         (DATASET_NAME, CONFIG_NAME_1, None, CACHE_KIND),
-        (DATASET_NAME, CONFIG_NAME_1, SPLIT_NAME, CACHE_KIND),
+        (DATASET_NAME, CONFIG_NAME_1, SPLIT_NAME_1, CACHE_KIND),
     ],
 )
 def test_cache_state_exists(dataset: str, config: Optional[str], split: Optional[str], cache_kind: str) -> None:
@@ -193,7 +188,7 @@ def test_cache_state_exists(dataset: str, config: Optional[str], split: Optional
     [
         (DATASET_NAME, None, None, CACHE_KIND),
         (DATASET_NAME, CONFIG_NAME_1, None, CACHE_KIND),
-        (DATASET_NAME, CONFIG_NAME_1, SPLIT_NAME, CACHE_KIND),
+        (DATASET_NAME, CONFIG_NAME_1, SPLIT_NAME_1, CACHE_KIND),
     ],
 )
 def test_cache_state_is_success(dataset: str, config: Optional[str], split: Optional[str], cache_kind: str) -> None:
@@ -217,7 +212,7 @@ def test_cache_state_is_success(dataset: str, config: Optional[str], split: Opti
     [
         (DATASET_NAME, None, None, CACHE_KIND),
         (DATASET_NAME, CONFIG_NAME_1, None, CACHE_KIND),
-        (DATASET_NAME, CONFIG_NAME_1, SPLIT_NAME, CACHE_KIND),
+        (DATASET_NAME, CONFIG_NAME_1, SPLIT_NAME_1, CACHE_KIND),
     ],
 )
 def test_cache_state_as_dict(dataset: str, config: Optional[str], split: Optional[str], cache_kind: str) -> None:
@@ -280,20 +275,14 @@ def get_SPLIT_STATE_DICT(dataset: str, config: str, split: str) -> Any:
     }
 
 
-SPLIT1_NAME = "split1"
-
-
 def test_split_state_as_dict() -> None:
     dataset = DATASET_NAME
     config = CONFIG_NAME_1
-    split = SPLIT1_NAME
+    split = SPLIT_NAME_1
     processing_graph = PROCESSING_GRAPH
     assert SplitState(
         dataset=dataset, config=config, split=split, processing_graph=processing_graph
     ).as_dict() == get_SPLIT_STATE_DICT(dataset=dataset, config=config, split=split)
-
-
-SPLIT2_NAME = "split2"
 
 
 def get_CONFIG_STATE_DICT(dataset: str, config: str, split_states: List[Any], cache_exists: bool) -> Any:
@@ -356,17 +345,11 @@ def test_config_state_as_dict() -> None:
         dataset=DATASET_NAME,
         config=CONFIG_NAME_1,
         split_states=[
-            get_SPLIT_STATE_DICT(dataset=dataset, config=config, split=SPLIT1_NAME),
-            get_SPLIT_STATE_DICT(dataset=dataset, config=config, split=SPLIT2_NAME),
+            get_SPLIT_STATE_DICT(dataset=dataset, config=config, split=SPLIT_NAME_1),
+            get_SPLIT_STATE_DICT(dataset=dataset, config=config, split=SPLIT_NAME_2),
         ],
         cache_exists=True,
     )
-
-
-CONFIG_NAME_2 = "config2"
-TWO_CONFIG_NAMES = [CONFIG_NAME_1, CONFIG_NAME_2]
-TWO_CONFIG_NAMES_CONTENT_OK = {"config_names": [{"config": config} for config in TWO_CONFIG_NAMES]}
-CURRENT_GIT_REVISION = "current_git_revision"
 
 
 def test_dataset_state_as_dict() -> None:
@@ -376,7 +359,7 @@ def test_dataset_state_as_dict() -> None:
         dataset=dataset,
         config=None,
         split=None,
-        content=TWO_CONFIG_NAMES_CONTENT_OK,
+        content=CONFIG_NAMES_CONTENT,
         http_status=HTTPStatus.OK,
     )
     upsert_response(
@@ -397,8 +380,8 @@ def test_dataset_state_as_dict() -> None:
                 dataset=dataset,
                 config=CONFIG_NAME_1,
                 split_states=[
-                    get_SPLIT_STATE_DICT(dataset=dataset, config=CONFIG_NAME_1, split=SPLIT1_NAME),
-                    get_SPLIT_STATE_DICT(dataset=dataset, config=CONFIG_NAME_1, split=SPLIT2_NAME),
+                    get_SPLIT_STATE_DICT(dataset=dataset, config=CONFIG_NAME_1, split=SPLIT_NAME_1),
+                    get_SPLIT_STATE_DICT(dataset=dataset, config=CONFIG_NAME_1, split=SPLIT_NAME_2),
                 ],
                 cache_exists=True,
             ),

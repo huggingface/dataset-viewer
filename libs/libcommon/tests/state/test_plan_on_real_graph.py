@@ -20,6 +20,18 @@ from libcommon.resources import CacheMongoResource, QueueMongoResource
 from libcommon.simple_cache import upsert_response
 from libcommon.state import DatasetState
 
+from .utils import (
+    CONFIG_NAME_1,
+    CONFIG_NAMES,
+    CONFIG_NAMES_CONTENT,
+    CURRENT_GIT_REVISION,
+    DATASET_NAME,
+    SPLIT_NAMES,
+    SPLIT_NAMES_CONTENT,
+)
+
+PROCESSING_GRAPH = ProcessingGraph(processing_graph_specification=ProcessingGraphConfig().specification)
+
 
 @pytest.fixture(autouse=True)
 def queue_mongo_resource_autouse(queue_mongo_resource: QueueMongoResource) -> QueueMongoResource:
@@ -29,21 +41,6 @@ def queue_mongo_resource_autouse(queue_mongo_resource: QueueMongoResource) -> Qu
 @pytest.fixture(autouse=True)
 def cache_mongo_resource_autouse(cache_mongo_resource: CacheMongoResource) -> CacheMongoResource:
     return cache_mongo_resource
-
-
-DATASET_NAME = "dataset"
-CONFIG_NAME_1 = "config1"
-CONFIG_NAME_2 = "config2"
-TWO_CONFIG_NAMES = [CONFIG_NAME_1, CONFIG_NAME_2]
-TWO_CONFIG_NAMES_CONTENT_OK = {"config_names": [{"config": config} for config in TWO_CONFIG_NAMES]}
-SPLIT_NAMES_OK = ["split1", "split2"]
-SPLIT_NAMES_CONFIG1_CONTENT_OK = {
-    "splits": [
-        {"dataset": DATASET_NAME, "config": CONFIG_NAME_1, "split": split_name} for split_name in SPLIT_NAMES_OK
-    ]
-}
-CURRENT_GIT_REVISION = "current_git_revision"
-PROCESSING_GRAPH = ProcessingGraph(processing_graph_specification=ProcessingGraphConfig().specification)
 
 
 def get_dataset_state(
@@ -179,7 +176,7 @@ def test_plan_job_creation_and_termination() -> None:
         dataset=job_info["dataset"],
         config=job_info["config"],
         split=job_info["split"],
-        content=TWO_CONFIG_NAMES_CONTENT_OK,
+        content=CONFIG_NAMES_CONTENT,
         http_status=HTTPStatus.OK,
         job_runner_version=PROCESSING_STEP_CONFIG_NAMES_VERSION,
         dataset_git_revision=CURRENT_GIT_REVISION,
@@ -188,7 +185,7 @@ def test_plan_job_creation_and_termination() -> None:
 
     assert_dataset_state(
         # The config names are now known
-        config_names=TWO_CONFIG_NAMES,
+        config_names=CONFIG_NAMES,
         # The split names are not yet known
         split_names_in_first_config=[],
         # The "/config-names" step is up-to-date
@@ -261,7 +258,7 @@ def test_plan_retry_error() -> None:
         dataset=DATASET_NAME,
         config=None,
         split=None,
-        content=TWO_CONFIG_NAMES_CONTENT_OK,
+        content=CONFIG_NAMES_CONTENT,
         http_status=HTTPStatus.INTERNAL_SERVER_ERROR,
         job_runner_version=PROCESSING_STEP_CONFIG_NAMES_VERSION,
         error_code=ERROR_CODE_TO_RETRY,
@@ -271,7 +268,7 @@ def test_plan_retry_error() -> None:
     assert_dataset_state(
         error_codes_to_retry=[ERROR_CODE_TO_RETRY],
         # The config names are known
-        config_names=TWO_CONFIG_NAMES,
+        config_names=CONFIG_NAMES,
         # The split names are not yet known
         split_names_in_first_config=[],
         # "/config-names,dataset" is in the cache, but it's not categorized in up to date,
@@ -286,8 +283,6 @@ def test_plan_retry_error() -> None:
                 "/split-names-from-streaming,dataset,config2",
                 "config-info,dataset,config1",
                 "config-info,dataset,config2",
-                "config-opt-in-out-urls-count,dataset,config1",
-                "config-opt-in-out-urls-count,dataset,config2",
                 "config-parquet,dataset,config1",
                 "config-parquet,dataset,config2",
                 "config-parquet-and-info,dataset,config1",
@@ -296,7 +291,6 @@ def test_plan_retry_error() -> None:
                 "config-size,dataset,config2",
                 "dataset-info,dataset",
                 "dataset-is-valid,dataset",
-                "dataset-opt-in-out-urls-count,dataset",
                 "dataset-parquet,dataset",
                 "dataset-size,dataset",
                 "dataset-split-names,dataset",
@@ -340,7 +334,7 @@ def test_plan_incoherent_state() -> None:
         dataset=DATASET_NAME,
         config=None,
         split=None,
-        content=TWO_CONFIG_NAMES_CONTENT_OK,
+        content=CONFIG_NAMES_CONTENT,
         http_status=HTTPStatus.OK,
         job_runner_version=PROCESSING_STEP_CONFIG_NAMES_VERSION,
         dataset_git_revision=CURRENT_GIT_REVISION,
@@ -353,7 +347,7 @@ def test_plan_incoherent_state() -> None:
         dataset=DATASET_NAME,
         config=CONFIG_NAME_1,
         split=None,
-        content=SPLIT_NAMES_CONFIG1_CONTENT_OK,
+        content=SPLIT_NAMES_CONTENT,
         http_status=HTTPStatus.OK,
         job_runner_version=PROCESSING_STEP_SPLIT_NAMES_FROM_DATASET_INFO_VERSION,
         dataset_git_revision=CURRENT_GIT_REVISION,
@@ -361,9 +355,9 @@ def test_plan_incoherent_state() -> None:
 
     assert_dataset_state(
         # The config names are known
-        config_names=TWO_CONFIG_NAMES,
+        config_names=CONFIG_NAMES,
         # The split names are known
-        split_names_in_first_config=SPLIT_NAMES_OK,
+        split_names_in_first_config=SPLIT_NAMES,
         # The split level artifacts for config1 are ready to be backfilled
         cache_status={
             "cache_has_different_git_revision": [],
@@ -441,7 +435,7 @@ def test_plan_updated_at() -> None:
         dataset=DATASET_NAME,
         config=None,
         split=None,
-        content=TWO_CONFIG_NAMES_CONTENT_OK,
+        content=CONFIG_NAMES_CONTENT,
         http_status=HTTPStatus.OK,
         job_runner_version=PROCESSING_STEP_CONFIG_NAMES_VERSION,
         dataset_git_revision=CURRENT_GIT_REVISION,
@@ -452,7 +446,7 @@ def test_plan_updated_at() -> None:
         dataset=DATASET_NAME,
         config=CONFIG_NAME_1,
         split=None,
-        content=TWO_CONFIG_NAMES_CONTENT_OK,  # <- not important
+        content=CONFIG_NAMES_CONTENT,  # <- not important
         http_status=HTTPStatus.OK,
         job_runner_version=PROCESSING_STEP_CONFIG_PARQUET_AND_INFO_VERSION,
         dataset_git_revision=CURRENT_GIT_REVISION,
@@ -463,7 +457,7 @@ def test_plan_updated_at() -> None:
         dataset=DATASET_NAME,
         config=None,
         split=None,
-        content=TWO_CONFIG_NAMES_CONTENT_OK,
+        content=CONFIG_NAMES_CONTENT,
         http_status=HTTPStatus.OK,
         job_runner_version=PROCESSING_STEP_CONFIG_NAMES_VERSION,
         dataset_git_revision=CURRENT_GIT_REVISION,
@@ -471,7 +465,7 @@ def test_plan_updated_at() -> None:
 
     assert_dataset_state(
         # The config names are known
-        config_names=TWO_CONFIG_NAMES,
+        config_names=CONFIG_NAMES,
         # The split names are not yet known
         split_names_in_first_config=[],
         # config-parquet-and-info,dataset,config1 is marked as outdated by parent,
@@ -538,14 +532,14 @@ def test_plan_job_runner_version() -> None:
         dataset=DATASET_NAME,
         config=None,
         split=None,
-        content=TWO_CONFIG_NAMES_CONTENT_OK,
+        content=CONFIG_NAMES_CONTENT,
         http_status=HTTPStatus.OK,
         job_runner_version=PROCESSING_STEP_CONFIG_NAMES_VERSION - 1,  # <- old version
         dataset_git_revision=CURRENT_GIT_REVISION,
     )
     assert_dataset_state(
         # The config names are known
-        config_names=TWO_CONFIG_NAMES,
+        config_names=CONFIG_NAMES,
         # The split names are not known
         split_names_in_first_config=[],
         # /config-names is in the category: "is_job_runner_obsolete"
@@ -625,7 +619,7 @@ def test_plan_git_revision(
         dataset=DATASET_NAME,
         config=None,
         split=None,
-        content=TWO_CONFIG_NAMES_CONTENT_OK,
+        content=CONFIG_NAMES_CONTENT,
         http_status=HTTPStatus.OK,
         job_runner_version=PROCESSING_STEP_CONFIG_NAMES_VERSION,
         dataset_git_revision=cached_dataset_get_revision,
@@ -636,7 +630,7 @@ def test_plan_git_revision(
         assert_dataset_state(
             git_revision=dataset_git_revision,
             # The config names are known
-            config_names=TWO_CONFIG_NAMES,
+            config_names=CONFIG_NAMES,
             # The split names are not known
             split_names_in_first_config=[],
             cache_status={
@@ -697,7 +691,7 @@ def test_plan_git_revision(
         assert_dataset_state(
             git_revision=dataset_git_revision,
             # The config names are known
-            config_names=TWO_CONFIG_NAMES,
+            config_names=CONFIG_NAMES,
             # The split names are not known
             split_names_in_first_config=[],
             cache_status={
@@ -762,7 +756,7 @@ def test_plan_update_fan_in_parent() -> None:
         dataset=DATASET_NAME,
         config=None,
         split=None,
-        content=TWO_CONFIG_NAMES_CONTENT_OK,
+        content=CONFIG_NAMES_CONTENT,
         http_status=HTTPStatus.OK,
         job_runner_version=PROCESSING_STEP_CONFIG_NAMES_VERSION,
         dataset_git_revision=CURRENT_GIT_REVISION,
@@ -773,7 +767,7 @@ def test_plan_update_fan_in_parent() -> None:
         dataset=DATASET_NAME,
         config=None,
         split=None,
-        content=TWO_CONFIG_NAMES_CONTENT_OK,  # <- not important
+        content=CONFIG_NAMES_CONTENT,  # <- not important
         http_status=HTTPStatus.OK,
         job_runner_version=PROCESSING_STEP_DATASET_PARQUET_VERSION,
         dataset_git_revision=CURRENT_GIT_REVISION,
@@ -784,7 +778,7 @@ def test_plan_update_fan_in_parent() -> None:
         dataset=DATASET_NAME,
         config=CONFIG_NAME_1,
         split=None,
-        content=TWO_CONFIG_NAMES_CONTENT_OK,  # <- not important
+        content=CONFIG_NAMES_CONTENT,  # <- not important
         http_status=HTTPStatus.OK,
         job_runner_version=PROCESSING_STEP_CONFIG_PARQUET_AND_INFO_VERSION,
         dataset_git_revision=CURRENT_GIT_REVISION,
@@ -795,14 +789,14 @@ def test_plan_update_fan_in_parent() -> None:
         dataset=DATASET_NAME,
         config=CONFIG_NAME_1,
         split=None,
-        content=TWO_CONFIG_NAMES_CONTENT_OK,  # <- not important
+        content=CONFIG_NAMES_CONTENT,  # <- not important
         http_status=HTTPStatus.OK,
         job_runner_version=PROCESSING_STEP_CONFIG_PARQUET_VERSION,
         dataset_git_revision=CURRENT_GIT_REVISION,
     )
     assert_dataset_state(
         # The config names are known
-        config_names=TWO_CONFIG_NAMES,
+        config_names=CONFIG_NAMES,
         # The split names are not known
         split_names_in_first_config=[],
         # dataset-parquet,dataset is in the category: "cache_is_outdated_by_parent"
