@@ -277,3 +277,17 @@ def test_default_graph_required_by_dataset_viewer(graph: ProcessingGraph) -> Non
         graph.get_steps_required_by_dataset_viewer(),
         [graph.get_step(step_name) for step_name in {"split-first-rows-from-streaming"}],
     )
+
+
+def test_default_graph_provide_dataset_config_names(graph: ProcessingGraph) -> None:
+    assert_lists_are_equal(
+        graph.provide_dataset_config_names,
+        [graph.get_step(step_name) for step_name in {"/config-names"}],
+    )
+
+
+def test_default_graph_provide_config_split_names(graph: ProcessingGraph) -> None:
+    assert_lists_are_equal(
+        graph.provide_config_split_names,
+        [graph.get_step(step_name) for step_name in {"/split-names-from-streaming", "/split-names-from-dataset-info"}],
+    )

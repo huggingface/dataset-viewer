@@ -12,17 +12,13 @@ from libcommon.queue import Queue, Status
 from libcommon.resources import CacheMongoResource, QueueMongoResource
 from libcommon.simple_cache import upsert_response
 from libcommon.state import (
-    HARD_CODED_CONFIG_NAMES_CACHE_KIND,
-    HARD_CODED_SPLIT_NAMES_FROM_DATASET_INFO_CACHE_KIND,
-    HARD_CODED_SPLIT_NAMES_FROM_STREAMING_CACHE_KIND,
     ArtifactState,
     CacheState,
     ConfigState,
     DatasetState,
     JobState,
     SplitState,
-    fetch_config_names,
-    fetch_split_names,
+    fetch_names,
 )
 
 from .utils import (
@@ -64,57 +60,35 @@ def cache_mongo_resource_autouse(cache_mongo_resource: CacheMongoResource) -> Ca
     return cache_mongo_resource
 
 
-@pytest.mark.parametrize(
-    "content,http_status,expected_config_names",
-    [
-        (CONFIG_NAMES_CONTENT, HTTPStatus.OK, CONFIG_NAMES),
-        (CONTENT_ERROR, HTTPStatus.INTERNAL_SERVER_ERROR, None),
-        (None, HTTPStatus.OK, None),
-    ],
+CACHE_KIND_A = "cache_kind_a"
+CACHE_KIND_B = "cache_kind_b"
+NAMES_FIELD = "names"
+NAME_FIELD = "name"
+NAMES = ["name_1", "name_2", "name_3"]
+NAMES_RESPONSE_OK = ResponseSpec(
+    content={NAMES_FIELD: [{NAME_FIELD: name} for name in NAMES]}, http_status=HTTPStatus.OK
 )
-def test_fetch_config_names(
-    content: Optional[Mapping[str, Any]], http_status: HTTPStatus, expected_config_names: Optional[List[str]]
-) -> None:
-    raises = expected_config_names is None
-    if content:
-        upsert_response(
-            kind=HARD_CODED_CONFIG_NAMES_CACHE_KIND,
-            dataset=DATASET_NAME,
-            config=None,
-            split=None,
-            content=content,
-            http_status=http_status,
-        )
-
-    if raises:
-        with pytest.raises(Exception):
-            fetch_config_names(dataset=DATASET_NAME)
-    else:
-        config_names = fetch_config_names(dataset=DATASET_NAME)
-        assert config_names == expected_config_names
 
 
 @pytest.mark.parametrize(
-    "response_spec_by_kind,expected_split_names",
+    "cache_kinds,response_spec_by_kind,expected_names",
     [
-        ({HARD_CODED_SPLIT_NAMES_FROM_DATASET_INFO_CACHE_KIND: SPLIT_NAMES_RESPONSE_OK}, SPLIT_NAMES),
-        ({HARD_CODED_SPLIT_NAMES_FROM_STREAMING_CACHE_KIND: SPLIT_NAMES_RESPONSE_OK}, SPLIT_NAMES),
-        (
-            {
-                HARD_CODED_SPLIT_NAMES_FROM_DATASET_INFO_CACHE_KIND: RESPONSE_ERROR,
-                HARD_CODED_SPLIT_NAMES_FROM_STREAMING_CACHE_KIND: SPLIT_NAMES_RESPONSE_OK,
-            },
-            SPLIT_NAMES,
-        ),
-        ({HARD_CODED_SPLIT_NAMES_FROM_DATASET_INFO_CACHE_KIND: RESPONSE_ERROR}, None),
-        ({}, None),
+        ([], {}, None),
+        ([CACHE_KIND_A], {}, None),
+        ([CACHE_KIND_A], {CACHE_KIND_A: RESPONSE_ERROR}, None),
+        ([CACHE_KIND_A], {CACHE_KIND_A: NAMES_RESPONSE_OK}, NAMES),
+        ([CACHE_KIND_A, CACHE_KIND_B], {CACHE_KIND_A: NAMES_RESPONSE_OK}, NAMES),
+        ([CACHE_KIND_A, CACHE_KIND_B], {CACHE_KIND_A: NAMES_RESPONSE_OK, CACHE_KIND_B: RESPONSE_ERROR}, NAMES),
+        ([CACHE_KIND_A, CACHE_KIND_B], {CACHE_KIND_A: NAMES_RESPONSE_OK, CACHE_KIND_B: NAMES_RESPONSE_OK}, NAMES),
+        ([CACHE_KIND_A, CACHE_KIND_B], {CACHE_KIND_A: RESPONSE_ERROR, CACHE_KIND_B: RESPONSE_ERROR}, None),
     ],
 )
-def test_fetch_split_names(
+def test_fetch_names(
+    cache_kinds: List[str],
     response_spec_by_kind: Mapping[str, Mapping[str, Any]],
-    expected_split_names: Optional[List[str]],
+    expected_names: Optional[List[str]],
 ) -> None:
-    raises = expected_split_names is None
+    raises = expected_names is None
     for kind, response_spec in response_spec_by_kind.items():
         upsert_response(
             kind=kind,
@@ -127,10 +101,22 @@ def test_fetch_split_names(
 
     if raises:
         with pytest.raises(Exception):
-            fetch_split_names(dataset=DATASET_NAME, config=CONFIG_NAME_1)
+            fetch_names(
+                dataset=DATASET_NAME,
+                config=CONFIG_NAME_1,
+                cache_kinds=cache_kinds,
+                names_field=NAMES_FIELD,
+                name_field=NAME_FIELD,
+            )
     else:
-        split_names = fetch_split_names(dataset=DATASET_NAME, config=CONFIG_NAME_1)
-        assert split_names == expected_split_names
+        names = fetch_names(
+            dataset=DATASET_NAME,
+            config=CONFIG_NAME_1,
+            cache_kinds=cache_kinds,
+            names_field=NAMES_FIELD,
+            name_field=NAME_FIELD,
+        )
+        assert names == expected_names
 
 
 @pytest.mark.parametrize(

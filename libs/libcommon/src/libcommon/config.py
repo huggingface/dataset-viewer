@@ -185,10 +185,15 @@ class MetricsConfig:
 class ProcessingGraphConfig:
     specification: ProcessingGraphSpecification = field(
         default_factory=lambda: {
-            "/config-names": {"input_type": "dataset", "job_runner_version": PROCESSING_STEP_CONFIG_NAMES_VERSION},
+            "/config-names": {
+                "input_type": "dataset",
+                "provides_dataset_config_names": True,
+                "job_runner_version": PROCESSING_STEP_CONFIG_NAMES_VERSION,
+            },
             "/split-names-from-streaming": {
                 "input_type": "config",
                 "requires": "/config-names",
+                "provides_config_split_names": True,
                 "job_runner_version": PROCESSING_STEP_SPLIT_NAMES_FROM_STREAMING_VERSION,
             },
             "split-first-rows-from-streaming": {
@@ -230,6 +235,7 @@ class ProcessingGraphConfig:
             "/split-names-from-dataset-info": {
                 "input_type": "config",
                 "requires": "config-info",
+                "provides_config_split_names": True,
                 "job_runner_version": PROCESSING_STEP_SPLIT_NAMES_FROM_DATASET_INFO_VERSION,
             },
             "config-size": {

@@ -5,7 +5,7 @@ from __future__ import annotations
 
 import warnings
 from dataclasses import dataclass
-from typing import List, Literal, Mapping, TypedDict, Union
+from typing import List, Literal, Mapping, Optional, TypedDict, Union
 
 import networkx as nx
 
@@ -20,6 +20,8 @@ class ProcessingStepSpecification(_ProcessingStepSpecification, total=False):
     requires: Union[List[str], str, None]
     required_by_dataset_viewer: Literal[True]
     job_runner_version: int
+    provides_dataset_config_names: bool
+    provides_config_split_names: bool
 
 
 @dataclass
@@ -46,6 +48,16 @@ class ProcessingStep:
     children: List[ProcessingStep]
     parents: List[ProcessingStep]
     job_runner_version: int
+    provides_dataset_config_names: Optional[bool] = False
+    provides_config_split_names: Optional[bool] = False
+
+    def __post_init__(self) -> None:
+        if self.provides_dataset_config_names and self.input_type != "dataset":
+            raise ValueError(
+                f"Step {self.name} provides dataset config names but its input type is {self.input_type}."
+            )
+        if self.provides_config_split_names and self.input_type != "config":
+            raise ValueError(f"Step {self.name} provides config split names but its input type is {self.input_type}.")
 
     @property
     def endpoint(self) -> str:
@@ -93,6 +105,8 @@ class ProcessingGraph:
     roots: List[ProcessingStep]
     required_by_dataset_viewer: List[ProcessingStep]
     topologically_ordered_steps: List[ProcessingStep]
+    provide_dataset_config_names: List[ProcessingStep]
+    provide_config_split_names: List[ProcessingStep]
 
     def __init__(self, processing_graph_specification: ProcessingGraphSpecification):
         self.steps = {
@@ -101,6 +115,8 @@ class ProcessingGraph:
                 input_type=specification["input_type"],
                 requires=get_required_steps(specification.get("requires")),
                 required_by_dataset_viewer=specification.get("required_by_dataset_viewer", False),
+                provides_dataset_config_names=specification.get("provides_dataset_config_names", False),
+                provides_config_split_names=specification.get("provides_config_split_names", False),
                 ancestors=[],
                 children=[],
                 parents=[],
@@ -129,6 +145,10 @@ class ProcessingGraph:
         self.roots = [self.get_step(name) for name, degree in graph.in_degree() if degree == 0]
         self.required_by_dataset_viewer = [step for step in self.steps.values() if step.required_by_dataset_viewer]
         self.topologically_ordered_steps = [self.get_step(name) for name in nx.topological_sort(graph)]
+        self.provide_dataset_config_names = [
+            step for step in self.steps.values() if step.provides_dataset_config_names
+        ]
+        self.provide_config_split_names = [step for step in self.steps.values() if step.provides_config_split_names]
 
     def get_step(self, name: str) -> ProcessingStep:
         """Get a step by its name."""

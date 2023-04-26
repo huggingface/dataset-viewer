@@ -15,7 +15,6 @@ from libcommon.simple_cache import (
     CacheEntryMetadata,
     DoesNotExist,
     get_best_response,
-    get_response,
     get_response_metadata,
 )
 from libcommon.utils import inputs_to_string
@@ -26,40 +25,20 @@ from libcommon.utils import inputs_to_string
 # TODO: assets, cached_assets, parquet files
 # TODO: obsolete/dangling cache entries and jobs
 
-HARD_CODED_CONFIG_NAMES_CACHE_KIND = "/config-names"
-HARD_CODED_SPLIT_NAMES_FROM_STREAMING_CACHE_KIND = "/split-names-from-streaming"
-HARD_CODED_SPLIT_NAMES_FROM_DATASET_INFO_CACHE_KIND = "/split-names-from-dataset-info"
 
+def fetch_names(
+    dataset: str, config: Optional[str], cache_kinds: List[str], names_field: str, name_field: str
+) -> List[str]:
+    """Fetch a list of names from the database."""
+    names = []
 
-def fetch_config_names(dataset: str) -> List[str]:
-    """Fetch the list of config names from the database."""
-    config_names = []
-
-    response = get_response(HARD_CODED_CONFIG_NAMES_CACHE_KIND, dataset=dataset, config=None, split=None)
-    for config_name_item in response["content"]["config_names"]:
-        config_name = config_name_item["config"]
-        if not isinstance(config_name, str):
-            raise ValueError(f"Invalid config name: {config_name}, type should be str, got: {type(config_name)}")
-        config_names.append(config_name)
-    return config_names
-
-
-def fetch_split_names(dataset: str, config: str) -> List[str]:
-    """Fetch the list of config names from the database."""
-    split_names = []
-
-    best_response = get_best_response(
-        [HARD_CODED_SPLIT_NAMES_FROM_DATASET_INFO_CACHE_KIND, HARD_CODED_SPLIT_NAMES_FROM_STREAMING_CACHE_KIND],
-        dataset=dataset,
-        config=config,
-        split=None,
-    )
-    for split_name_item in best_response.response["content"]["splits"]:
-        split_name = split_name_item["split"]
-        if not isinstance(split_name, str):
-            raise ValueError(f"Invalid split name: {split_name}, type should be str, got: {type(split_name)}")
-        split_names.append(split_name)
-    return split_names
+    best_response = get_best_response(kinds=cache_kinds, dataset=dataset, config=config)
+    for name_item in best_response.response["content"][names_field]:
+        name = name_item[name_field]
+        if not isinstance(name, str):
+            raise ValueError(f"Invalid name: {name}, type should be str, got: {type(name)}")
+        names.append(name)
+    return names
 
 
 @dataclass
@@ -247,7 +226,13 @@ class ConfigState:
         }
 
         try:
-            self.split_names = fetch_split_names(self.dataset, self.config)
+            self.split_names = fetch_names(
+                dataset=self.dataset,
+                config=self.config,
+                cache_kinds=[step.cache_kind for step in self.processing_graph.provide_config_split_names],
+                names_field="splits",
+                name_field="split",
+            )
         except Exception:
             self.split_names = []
 
@@ -397,7 +382,13 @@ class DatasetState:
             if step.input_type == "dataset"
         }
         try:
-            self.config_names = fetch_config_names(self.dataset)
+            self.config_names = fetch_names(
+                dataset=self.dataset,
+                config=None,
+                cache_kinds=[step.cache_kind for step in self.processing_graph.provide_dataset_config_names],
+                names_field="config_names",
+                name_field="config",
+            )
         except Exception:
             self.config_names = []
         self.config_states = [
