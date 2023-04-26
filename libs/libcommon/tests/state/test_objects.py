@@ -6,11 +6,10 @@ from typing import Any, List, Mapping, Optional, TypedDict
 
 import pytest
 
-from libcommon.config import ProcessingGraphConfig
 from libcommon.processing_graph import ProcessingGraph
 from libcommon.queue import Queue, Status
 from libcommon.resources import CacheMongoResource, QueueMongoResource
-from libcommon.simple_cache import upsert_response
+from libcommon.simple_cache import delete_response, upsert_response
 from libcommon.state import (
     ArtifactState,
     CacheState,
@@ -23,13 +22,12 @@ from libcommon.state import (
 
 from .utils import (
     CONFIG_NAME_1,
-    CONFIG_NAME_2,
     CONFIG_NAMES,
     CONFIG_NAMES_CONTENT,
     CURRENT_GIT_REVISION,
     DATASET_NAME,
+    SIMPLE_PROCESSING_GRAPH_SPECIFICATION,
     SPLIT_NAME_1,
-    SPLIT_NAME_2,
     SPLIT_NAMES,
     SPLIT_NAMES_CONTENT,
 )
@@ -41,13 +39,18 @@ class ResponseSpec(TypedDict):
 
 
 CACHE_KIND = "cache_kind"
-JOB_TYPE = "job_type"
-SPLIT_NAMES_RESPONSE_OK = ResponseSpec(content=SPLIT_NAMES_CONTENT, http_status=HTTPStatus.OK)
+CACHE_KIND_A = "cache_kind_a"
+CACHE_KIND_B = "cache_kind_b"
 CONTENT_ERROR = {"error": "error"}
+JOB_TYPE = "job_type"
+NAME_FIELD = "name"
+NAMES = ["name_1", "name_2", "name_3"]
+NAMES_FIELD = "names"
+NAMES_RESPONSE_OK = ResponseSpec(
+    content={NAMES_FIELD: [{NAME_FIELD: name} for name in NAMES]}, http_status=HTTPStatus.OK
+)
+PROCESSING_GRAPH = ProcessingGraph(processing_graph_specification=SIMPLE_PROCESSING_GRAPH_SPECIFICATION)
 RESPONSE_ERROR = ResponseSpec(content=CONTENT_ERROR, http_status=HTTPStatus.INTERNAL_SERVER_ERROR)
-
-
-PROCESSING_GRAPH = ProcessingGraph(processing_graph_specification=ProcessingGraphConfig().specification)
 
 
 @pytest.fixture(autouse=True)
@@ -58,16 +61,6 @@ def queue_mongo_resource_autouse(queue_mongo_resource: QueueMongoResource) -> Qu
 @pytest.fixture(autouse=True)
 def cache_mongo_resource_autouse(cache_mongo_resource: CacheMongoResource) -> CacheMongoResource:
     return cache_mongo_resource
-
-
-CACHE_KIND_A = "cache_kind_a"
-CACHE_KIND_B = "cache_kind_b"
-NAMES_FIELD = "names"
-NAME_FIELD = "name"
-NAMES = ["name_1", "name_2", "name_3"]
-NAMES_RESPONSE_OK = ResponseSpec(
-    content={NAMES_FIELD: [{NAME_FIELD: name} for name in NAMES]}, http_status=HTTPStatus.OK
-)
 
 
 @pytest.mark.parametrize(
@@ -138,22 +131,6 @@ def test_job_state_is_in_process(dataset: str, config: Optional[str], split: Opt
 
 
 @pytest.mark.parametrize(
-    "dataset,config,split,job_type",
-    [
-        (DATASET_NAME, None, None, JOB_TYPE),
-        (DATASET_NAME, CONFIG_NAME_1, None, JOB_TYPE),
-        (DATASET_NAME, CONFIG_NAME_1, SPLIT_NAME_1, JOB_TYPE),
-    ],
-)
-def test_job_state_as_dict(dataset: str, config: Optional[str], split: Optional[str], job_type: str) -> None:
-    queue = Queue()
-    queue.upsert_job(job_type=job_type, dataset=dataset, config=config, split=split)
-    assert JobState(dataset=dataset, config=config, split=split, job_type=job_type).as_dict() == {
-        "is_in_process": True,
-    }
-
-
-@pytest.mark.parametrize(
     "dataset,config,split,cache_kind",
     [
         (DATASET_NAME, None, None, CACHE_KIND),
@@ -167,6 +144,8 @@ def test_cache_state_exists(dataset: str, config: Optional[str], split: Optional
         kind=cache_kind, dataset=dataset, config=config, split=split, content={}, http_status=HTTPStatus.OK
     )
     assert CacheState(dataset=dataset, config=config, split=split, cache_kind=cache_kind).exists
+    delete_response(kind=cache_kind, dataset=dataset, config=config, split=split)
+    assert not CacheState(dataset=dataset, config=config, split=split, cache_kind=cache_kind).exists
 
 
 @pytest.mark.parametrize(
@@ -178,6 +157,7 @@ def test_cache_state_exists(dataset: str, config: Optional[str], split: Optional
     ],
 )
 def test_cache_state_is_success(dataset: str, config: Optional[str], split: Optional[str], cache_kind: str) -> None:
+    assert not CacheState(dataset=dataset, config=config, split=split, cache_kind=cache_kind).is_success
     upsert_response(
         kind=cache_kind, dataset=dataset, config=config, split=split, content={}, http_status=HTTPStatus.OK
     )
@@ -191,157 +171,80 @@ def test_cache_state_is_success(dataset: str, config: Optional[str], split: Opti
         http_status=HTTPStatus.INTERNAL_SERVER_ERROR,
     )
     assert not CacheState(dataset=dataset, config=config, split=split, cache_kind=cache_kind).is_success
-
-
-@pytest.mark.parametrize(
-    "dataset,config,split,cache_kind",
-    [
-        (DATASET_NAME, None, None, CACHE_KIND),
-        (DATASET_NAME, CONFIG_NAME_1, None, CACHE_KIND),
-        (DATASET_NAME, CONFIG_NAME_1, SPLIT_NAME_1, CACHE_KIND),
-    ],
-)
-def test_cache_state_as_dict(dataset: str, config: Optional[str], split: Optional[str], cache_kind: str) -> None:
-    assert CacheState(dataset=dataset, config=config, split=split, cache_kind=cache_kind).as_dict() == {
-        "exists": False,
-        "is_success": False,
-    }
-    upsert_response(
-        kind=cache_kind,
-        dataset=dataset,
-        config=config,
-        split=split,
-        content={"some": "content"},
-        http_status=HTTPStatus.OK,
-    )
-    assert CacheState(dataset=dataset, config=config, split=split, cache_kind=cache_kind).as_dict() == {
-        "exists": True,
-        "is_success": True,
-    }
-
-
-PROCESSING_GRAPH = ProcessingGraph(processing_graph_specification=ProcessingGraphConfig().specification)
+    delete_response(kind=cache_kind, dataset=dataset, config=config, split=split)
+    assert not CacheState(dataset=dataset, config=config, split=split, cache_kind=cache_kind).is_success
 
 
 def test_artifact_state() -> None:
     dataset = DATASET_NAME
     config = None
     split = None
-    step = PROCESSING_GRAPH.get_step(name="/config-names")
+    step_name = "dataset-a"
+    step = PROCESSING_GRAPH.get_step(name=step_name)
     artifact_state = ArtifactState(dataset=dataset, config=config, split=split, step=step)
-    assert artifact_state.as_dict() == {
-        "id": f"/config-names,{dataset}",
-        "job_state": {"is_in_process": False},
-        "cache_state": {"exists": False, "is_success": False},
-    }
+    assert artifact_state.id == f"{step_name},{dataset}"
     assert not artifact_state.cache_state.exists
+    assert not artifact_state.cache_state.is_success
     assert not artifact_state.job_state.is_in_process
 
 
-def get_SPLIT_STATE_DICT(dataset: str, config: str, split: str) -> Any:
-    return {
-        "split": split,
-        "artifact_states": [
-            {
-                "id": f"split-first-rows-from-streaming,{dataset},{config},{split}",
-                "job_state": {"is_in_process": False},
-                "cache_state": {"exists": False, "is_success": False},
-            },
-            {
-                "id": f"split-first-rows-from-parquet,{dataset},{config},{split}",
-                "job_state": {"is_in_process": False},
-                "cache_state": {"exists": False, "is_success": False},
-            },
-            {
-                "id": f"split-opt-in-out-urls-scan,{dataset},{config},{split}",
-                "job_state": {"is_in_process": False},
-                "cache_state": {"exists": False, "is_success": False},
-            },
-        ],
-    }
-
-
-def test_split_state_as_dict() -> None:
+def test_split_state() -> None:
     dataset = DATASET_NAME
     config = CONFIG_NAME_1
     split = SPLIT_NAME_1
-    processing_graph = PROCESSING_GRAPH
-    assert SplitState(
-        dataset=dataset, config=config, split=split, processing_graph=processing_graph
-    ).as_dict() == get_SPLIT_STATE_DICT(dataset=dataset, config=config, split=split)
+    expected_split_step_name = "split-c"
+    split_state = SplitState(dataset=dataset, config=config, split=split, processing_graph=PROCESSING_GRAPH)
 
+    assert split_state.dataset == dataset
+    assert split_state.config == config
+    assert split_state.split == split
 
-def get_CONFIG_STATE_DICT(dataset: str, config: str, split_states: List[Any], cache_exists: bool) -> Any:
-    return {
-        "config": config,
-        "split_states": split_states,
-        "artifact_states": [
-            {
-                "id": f"/split-names-from-streaming,{dataset},{config}",
-                "job_state": {"is_in_process": False},
-                "cache_state": {"exists": False, "is_success": False},
-            },
-            {
-                "id": f"config-parquet-and-info,{dataset},{config}",
-                "job_state": {"is_in_process": False},
-                "cache_state": {"exists": False, "is_success": False},
-            },
-            {
-                "id": f"config-parquet,{dataset},{config}",
-                "job_state": {"is_in_process": False},
-                "cache_state": {"exists": False, "is_success": False},
-            },
-            {
-                "id": f"config-info,{dataset},{config}",
-                "job_state": {"is_in_process": False},
-                "cache_state": {"exists": False, "is_success": False},
-            },
-            {
-                "id": f"/split-names-from-dataset-info,{dataset},{config}",
-                "job_state": {"is_in_process": False},
-                "cache_state": {
-                    "exists": cache_exists,
-                    "is_success": cache_exists,
-                },  # ^ if this entry is in the cache
-            },
-            {
-                "id": f"config-size,{dataset},{config}",
-                "job_state": {"is_in_process": False},
-                "cache_state": {"exists": False, "is_success": False},
-            },
-        ],
-    }
+    assert len(split_state.artifact_state_by_step) == 1
+    assert expected_split_step_name in split_state.artifact_state_by_step
+    artifact_state = split_state.artifact_state_by_step[expected_split_step_name]
+    assert artifact_state.id == f"{expected_split_step_name},{dataset},{config},{split}"
+    assert not artifact_state.cache_state.exists
+    assert not artifact_state.cache_state.is_success
+    assert not artifact_state.job_state.is_in_process
 
 
 def test_config_state_as_dict() -> None:
     dataset = DATASET_NAME
     config = CONFIG_NAME_1
+    expected_config_step_name = "config-b"
     upsert_response(
-        kind=HARD_CODED_SPLIT_NAMES_FROM_DATASET_INFO_CACHE_KIND,
+        kind=PROCESSING_GRAPH.get_step(expected_config_step_name).cache_kind,
         dataset=DATASET_NAME,
         config=CONFIG_NAME_1,
         split=None,
-        content=SPLIT_NAMES_RESPONSE_OK["content"],
-        http_status=SPLIT_NAMES_RESPONSE_OK["http_status"],
+        content=SPLIT_NAMES_CONTENT,
+        http_status=HTTPStatus.OK,
     )
-    processing_graph = PROCESSING_GRAPH
-    assert ConfigState(
-        dataset=dataset, config=config, processing_graph=processing_graph
-    ).as_dict() == get_CONFIG_STATE_DICT(
-        dataset=DATASET_NAME,
-        config=CONFIG_NAME_1,
-        split_states=[
-            get_SPLIT_STATE_DICT(dataset=dataset, config=config, split=SPLIT_NAME_1),
-            get_SPLIT_STATE_DICT(dataset=dataset, config=config, split=SPLIT_NAME_2),
-        ],
-        cache_exists=True,
-    )
+    config_state = ConfigState(dataset=dataset, config=config, processing_graph=PROCESSING_GRAPH)
+
+    assert config_state.dataset == dataset
+    assert config_state.config == config
+
+    assert len(config_state.artifact_state_by_step) == 1
+    assert expected_config_step_name in config_state.artifact_state_by_step
+    artifact_state = config_state.artifact_state_by_step[expected_config_step_name]
+    assert artifact_state.id == f"{expected_config_step_name},{dataset},{config}"
+    assert artifact_state.cache_state.exists  # <- in the cache
+    assert artifact_state.cache_state.is_success  # <- is a success
+    assert not artifact_state.job_state.is_in_process
+
+    assert config_state.split_names == SPLIT_NAMES
+    assert len(config_state.split_states) == len(SPLIT_NAMES)
+    assert config_state.split_states[0].split == SPLIT_NAMES[0]
+    assert config_state.split_states[1].split == SPLIT_NAMES[1]
 
 
 def test_dataset_state_as_dict() -> None:
     dataset = DATASET_NAME
+    expected_dataset_step_name = "dataset-a"
+    expected_config_step_name = "config-b"
     upsert_response(
-        kind=HARD_CODED_CONFIG_NAMES_CACHE_KIND,
+        kind=PROCESSING_GRAPH.get_step(expected_dataset_step_name).cache_kind,
         dataset=dataset,
         config=None,
         split=None,
@@ -349,80 +252,26 @@ def test_dataset_state_as_dict() -> None:
         http_status=HTTPStatus.OK,
     )
     upsert_response(
-        kind=HARD_CODED_SPLIT_NAMES_FROM_DATASET_INFO_CACHE_KIND,
+        kind=PROCESSING_GRAPH.get_step(expected_config_step_name).cache_kind,
         dataset=dataset,
         config=CONFIG_NAME_1,
         split=None,
-        content=SPLIT_NAMES_RESPONSE_OK["content"],
-        http_status=SPLIT_NAMES_RESPONSE_OK["http_status"],
+        content=SPLIT_NAMES_CONTENT,
+        http_status=HTTPStatus.OK,
     )
-    processing_graph = PROCESSING_GRAPH
-    assert DatasetState(
-        dataset=dataset, processing_graph=processing_graph, revision=CURRENT_GIT_REVISION
-    ).as_dict() == {
-        "dataset": "dataset",
-        "config_states": [
-            get_CONFIG_STATE_DICT(
-                dataset=dataset,
-                config=CONFIG_NAME_1,
-                split_states=[
-                    get_SPLIT_STATE_DICT(dataset=dataset, config=CONFIG_NAME_1, split=SPLIT_NAME_1),
-                    get_SPLIT_STATE_DICT(dataset=dataset, config=CONFIG_NAME_1, split=SPLIT_NAME_2),
-                ],
-                cache_exists=True,
-            ),
-            get_CONFIG_STATE_DICT(
-                dataset=dataset,
-                config=CONFIG_NAME_2,
-                split_states=[],
-                cache_exists=False,
-            ),
-        ],
-        "artifact_states": [
-            {
-                "id": f"/config-names,{DATASET_NAME}",
-                "job_state": {"is_in_process": False},
-                "cache_state": {"exists": True, "is_success": True},  # <- this entry is in the cache
-            },
-            {
-                "id": f"/parquet-and-dataset-info,{DATASET_NAME}",
-                "job_state": {"is_in_process": False},
-                "cache_state": {"exists": False, "is_success": False},
-            },
-            {
-                "id": f"dataset-parquet,{DATASET_NAME}",
-                "job_state": {"is_in_process": False},
-                "cache_state": {"exists": False, "is_success": False},
-            },
-            {
-                "id": f"dataset-info,{DATASET_NAME}",
-                "job_state": {"is_in_process": False},
-                "cache_state": {"exists": False, "is_success": False},
-            },
-            {
-                "id": f"dataset-size,{DATASET_NAME}",
-                "job_state": {"is_in_process": False},
-                "cache_state": {"exists": False, "is_success": False},
-            },
-            {
-                "id": f"dataset-split-names-from-streaming,{DATASET_NAME}",
-                "job_state": {"is_in_process": False},
-                "cache_state": {"exists": False, "is_success": False},
-            },
-            {
-                "id": f"dataset-split-names-from-dataset-info,{DATASET_NAME}",
-                "job_state": {"is_in_process": False},
-                "cache_state": {"exists": False, "is_success": False},
-            },
-            {
-                "id": f"dataset-split-names,{DATASET_NAME}",
-                "job_state": {"is_in_process": False},
-                "cache_state": {"exists": False, "is_success": False},
-            },
-            {
-                "id": f"dataset-is-valid,{DATASET_NAME}",
-                "job_state": {"is_in_process": False},
-                "cache_state": {"exists": False, "is_success": False},
-            },
-        ],
-    }
+    dataset_state = DatasetState(dataset=dataset, processing_graph=PROCESSING_GRAPH, revision=CURRENT_GIT_REVISION)
+
+    assert dataset_state.dataset == dataset
+
+    assert len(dataset_state.artifact_state_by_step) == 1
+    assert expected_dataset_step_name in dataset_state.artifact_state_by_step
+    artifact_state = dataset_state.artifact_state_by_step[expected_dataset_step_name]
+    assert artifact_state.id == f"{expected_dataset_step_name},{dataset}"
+    assert artifact_state.cache_state.exists  # <- in the cache
+    assert artifact_state.cache_state.is_success  # <- is a success
+    assert not artifact_state.job_state.is_in_process
+
+    assert dataset_state.config_names == CONFIG_NAMES
+    assert len(dataset_state.config_states) == len(CONFIG_NAMES)
+    assert dataset_state.config_states[0].config == CONFIG_NAMES[0]
+    assert dataset_state.config_states[1].config == CONFIG_NAMES[1]

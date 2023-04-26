@@ -56,11 +56,6 @@ class JobState:
             job_type=self.job_type, dataset=self.dataset, config=self.config, split=self.split
         )
 
-    def as_dict(self) -> Dict[str, Any]:
-        return {
-            "is_in_process": self.is_in_process,
-        }
-
 
 @dataclass
 class CacheState:
@@ -84,12 +79,6 @@ class CacheState:
         """Whether the cache entry exists."""
         self.exists = self.cache_entry_metadata is not None
         self.is_success = self.cache_entry_metadata is not None and self.cache_entry_metadata["http_status"] < 400
-
-    def as_dict(self) -> Dict[str, Any]:
-        return {
-            "exists": self.exists,
-            "is_success": self.is_success,
-        }
 
     def is_empty(self) -> bool:
         return self.cache_entry_metadata is None
@@ -159,13 +148,6 @@ class ArtifactState:
             return True
         return job_runner_version < self.step.job_runner_version
 
-    def as_dict(self) -> Dict[str, Any]:
-        return {
-            "id": self.id,
-            "job_state": self.job_state.as_dict(),
-            "cache_state": self.cache_state.as_dict(),
-        }
-
 
 @dataclass
 class SplitState:
@@ -190,12 +172,6 @@ class SplitState:
             )
             for step in self.processing_graph.steps.values()
             if step.input_type == "split"
-        }
-
-    def as_dict(self) -> Dict[str, Any]:
-        return {
-            "split": self.split,
-            "artifact_states": [artifact_state.as_dict() for artifact_state in self.artifact_state_by_step.values()],
         }
 
 
@@ -246,13 +222,6 @@ class ConfigState:
             )
             for split_name in self.split_names
         ]
-
-    def as_dict(self) -> Dict[str, Any]:
-        return {
-            "config": self.config,
-            "split_states": [split_state.as_dict() for split_state in self.split_states],
-            "artifact_states": [artifact_state.as_dict() for artifact_state in self.artifact_state_by_step.values()],
-        }
 
 
 @dataclass
@@ -544,13 +513,6 @@ class DatasetState:
             The number of jobs created.
         """
         return self.plan.run()
-
-    def as_dict(self) -> Dict[str, Any]:
-        return {
-            "dataset": self.dataset,
-            "config_states": [config_state.as_dict() for config_state in self.config_states],
-            "artifact_states": [artifact_state.as_dict() for artifact_state in self.artifact_state_by_step.values()],
-        }
 
     def as_response(self) -> Dict[str, Any]:
         return {
