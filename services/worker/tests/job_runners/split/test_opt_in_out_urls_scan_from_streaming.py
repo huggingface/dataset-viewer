@@ -139,8 +139,7 @@ FIRST_ROWS_WITH_OPT_IN_OUT_URLS = {
             {
                 "has_urls_columns": False,
                 "num_scanned_rows": 0,
-                "opt_in_urls": [],
-                "opt_out_urls": [],
+                "opt_in_out_urls_source": None,
                 "urls_columns": [],
                 "num_opt_out_urls": 0,
                 "num_opt_in_urls": 0,
@@ -153,12 +152,7 @@ FIRST_ROWS_WITH_OPT_IN_OUT_URLS = {
             {
                 "has_urls_columns": True,
                 "num_scanned_rows": 4,
-                "opt_in_urls": [
-                    {"url": "http://testurl.test/test_image3-optIn.jpg", "row_idx": 3, "column_name": "col"}
-                ],
-                "opt_out_urls": [
-                    {"url": "http://testurl.test/test_image-optOut.jpg", "row_idx": 0, "column_name": "col"}
-                ],
+                "opt_in_out_urls_source": "assets/",
                 "urls_columns": ["col"],
                 "num_opt_out_urls": 1,
                 "num_opt_in_urls": 1,
@@ -194,9 +188,21 @@ def test_compute(
         kind=job_runner.processing_step.cache_kind, dataset=dataset, config=config, split=split
     )
     assert cached_response
-    assert cached_response["content"] == expected_content
     assert cached_response["http_status"] == HTTPStatus.OK
     assert cached_response["error_code"] is None
+
+    content = cached_response["content"]
+    assert content
+    assert content["has_urls_columns"] == expected_content["has_urls_columns"]
+    assert content["num_scanned_rows"] == expected_content["num_scanned_rows"]
+    assert content["urls_columns"] == expected_content["urls_columns"]
+    assert content["num_opt_out_urls"] == expected_content["num_opt_out_urls"]
+    assert content["num_opt_in_urls"] == expected_content["num_opt_in_urls"]
+    assert content["num_urls"] == expected_content["num_urls"]
+    if expected_content["has_urls_columns"]:
+        assert content["opt_in_out_urls_source"] is not None and isinstance(content["opt_in_out_urls_source"], dict)
+    else:
+        assert content["opt_in_out_urls_source"] is None
 
 
 @pytest.mark.parametrize(
