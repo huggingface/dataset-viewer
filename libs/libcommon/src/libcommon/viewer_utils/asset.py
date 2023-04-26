@@ -1,13 +1,12 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2022 The HuggingFace Authors.
 
+import csv
 import os
 from os import makedirs
 from pathlib import Path
-from typing import Generator, List, Tuple, TypedDict
+from typing import Any, Generator, List, Tuple, TypedDict
 
-import csv
-import pyarrow.parquet as pq
 import soundfile  # type:ignore
 from numpy import ndarray
 from PIL import Image  # type: ignore
@@ -29,7 +28,7 @@ def create_asset_dir(
     return dir_path, url_dir_path
 
 
-def create_asset_dir(dataset: str, config: str, split: str, assets_directory: StrPath) -> Tuple[Path, str]:
+def create_file_dir(dataset: str, config: str, split: str, assets_directory: StrPath) -> Tuple[Path, str]:
     dir_path = Path(assets_directory).resolve() / dataset / DATASET_SEPARATOR / config / split
     url_dir_path = f"{dataset}/{DATASET_SEPARATOR}/{config}/{split}"
     makedirs(dir_path, ASSET_DIR_MODE, exist_ok=True)
@@ -111,13 +110,13 @@ def create_csv_file(
     dataset: str,
     config: str,
     split: str,
-    data: List[dict],
+    data: Any,
     headers: List[str],
     assets_base_url: str,
     file_name: str,
     assets_directory: StrPath,
 ) -> FileSource:
-    dir_path, url_dir_path = create_asset_dir(
+    dir_path, url_dir_path = create_file_dir(
         dataset=dataset,
         config=config,
         split=split,
@@ -126,8 +125,11 @@ def create_csv_file(
     makedirs(dir_path, ASSET_DIR_MODE, exist_ok=True)
     file_path = dir_path / file_name
 
-    with open(file_path, 'w') as output_file:
-        fc = csv.DictWriter(output_file, fieldnames=headers,)
+    with open(file_path, "w") as output_file:
+        fc = csv.DictWriter(
+            output_file,
+            fieldnames=headers,
+        )
         fc.writeheader()
         fc.writerows(data)
 

@@ -7,8 +7,6 @@ from http import HTTPStatus
 from pathlib import Path
 from typing import Any, List, Literal, Mapping, Optional, Tuple, TypedDict, Union
 
-import pandas as pd
-import pyarrow as pa
 from aiohttp import ClientSession
 from aiolimiter import AsyncLimiter
 from datasets import get_dataset_config_info
@@ -171,7 +169,7 @@ async def opt_in_out_scan_urls(
         spawning_response = task.result()
         spawning_response_urls = spawning_response["urls"]
         for i in range(len(spawning_response_urls)):
-            if spawning_response_urls[i]["optIn"] or spawning_response_urls[i]["optOut"]: 
+            if spawning_response_urls[i]["optIn"] or spawning_response_urls[i]["optOut"]:
                 idx = offset + i
                 num_opt_in += 1 if spawning_response_urls[i]["optIn"] else 0
                 num_opt_out += 1 if spawning_response_urls[i]["optOut"] else 0
@@ -257,8 +255,7 @@ def compute_opt_in_out_urls_scan_response(
     if not urls_columns:
         return OptInOutUrlsScanResponse(
             urls_columns=[],
-            opt_in_urls_source=None,
-            opt_out_urls_source=None,
+            opt_in_out_urls_source=None,
             num_opt_in_urls=0,
             num_opt_out_urls=0,
             num_urls=0,

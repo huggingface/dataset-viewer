@@ -123,7 +123,6 @@ class WorkerExecutor:
         if worker_state and worker_state["current_job_info"]:
             long_job = worker_state["current_job_info"]
             last_updated = worker_state["last_updated"]
-
             if last_updated + timedelta(seconds=self.app_config.worker.max_job_duration_seconds) <= get_datetime():
                 _duration_seconds = int((get_datetime() - last_updated).total_seconds())
                 logging.warning(
