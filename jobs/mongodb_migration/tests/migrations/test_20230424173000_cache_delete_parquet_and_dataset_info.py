@@ -16,7 +16,7 @@ def test_cache_delete_parquet_and_dataset_info(mongo_host: str) -> None:
     ):
         db = get_db("cache")
         db["cachedResponsesBlue"].insert_many([{"kind": kind, "dataset": "dataset", "http_status": 200}])
-        assert db["cachedResponsesBlue"].find_one({"kind": kind})  # Ensure there is at least one record to update
+        assert db["cachedResponsesBlue"].find_one({"kind": kind})  # Ensure there is at least one record to delete
 
         migration = MigrationCacheDeleteParquetAndDatasetInfo(
             version="20230424173000",

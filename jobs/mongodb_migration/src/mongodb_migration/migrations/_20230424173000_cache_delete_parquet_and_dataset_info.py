@@ -14,10 +14,10 @@ db_name = "cache"
 
 class MigrationCacheDeleteParquetAndDatasetInfo(Migration):
     def up(self) -> None:
-        logging.info(f"Delete cahe entries of kind {cache_kind}")
+        logging.info(f"Delete cache entries of kind {cache_kind}")
         db = get_db(db_name)
 
-        # update existing documents with the old kind
+        # delete existing documents
         db["cachedResponsesBlue"].delete_many({"kind": cache_kind})
 
     def down(self) -> None:
