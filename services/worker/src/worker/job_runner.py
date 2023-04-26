@@ -571,23 +571,6 @@ class JobRunner(ABC):
                 if processing_step.input_type == "config"
                 else new_split_full_names_for_dataset
             )
-            # remove obsolete responses from the cache
-            # Note that this will remove response for the children steps, not for the grandchildren steps or beyond
-            split_full_names_in_cache = get_split_full_names_for_dataset_and_kind(
-                dataset=self.dataset, kind=processing_step.cache_kind
-            )
-            split_full_names_to_delete = split_full_names_in_cache.difference(new_split_full_names)
-            for split_full_name in split_full_names_to_delete:
-                delete_response(
-                    kind=processing_step.cache_kind,
-                    dataset=split_full_name.dataset,
-                    config=split_full_name.config,
-                    split=split_full_name.split,
-                )
-            logging.debug(
-                f"{len(split_full_names_to_delete)} obsolete responses"
-                f"of kind {processing_step.cache_kind} deleted from cache for dataset={self.dataset}"
-            )
             # compute the responses for the new splits
             queue = Queue()
             for split_full_name in new_split_full_names:
