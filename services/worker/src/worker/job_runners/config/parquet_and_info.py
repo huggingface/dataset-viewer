@@ -679,7 +679,7 @@ def compute_config_parquet_and_info_response(
     max_external_data_files: int,
 ) -> ConfigParquetAndInfoResponse:
     """
-    Get the response of /parquet-and-dataset-info for one specific dataset on huggingface.co.
+    Get the response of config-parquet-and-info for one specific dataset and config on huggingface.co.
     It is assumed that the dataset can be accessed with the token.
     Args:
         dataset (`str`):
@@ -778,7 +778,7 @@ def compute_config_parquet_and_info_response(
         max_dataset_size=max_dataset_size,
     )
 
-    logging.info(f"get config names for {dataset=}")
+    logging.info(f"getting config names for {dataset=}")
     previous_step = "/config-names"
     config_names_best_response = get_previous_step_or_raise(kinds=[previous_step], dataset=dataset)
 

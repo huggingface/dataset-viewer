@@ -47,6 +47,12 @@ from mongodb_migration.migrations._20230407091400_queue_delete_splits import (
 from mongodb_migration.migrations._20230407091500_cache_delete_splits import (
     MigrationCacheDeleteSplits,
 )
+from mongodb_migration.migrations._20230424173000_queue_delete_parquet_and_dataset_info import (
+    MigrationQueueDeleteParquetAndDatasetInfo,
+)
+from mongodb_migration.migrations._20230424174000_cache_delete_parquet_and_dataset_info import (
+    MigrationCacheDeleteParquetAndDatasetInfo,
+)
 
 
 # TODO: add a way to automatically collect migrations from the migrations/ folder
@@ -110,5 +116,12 @@ class MigrationsCollector:
             MigrationCacheDeleteSplits(
                 version="20230407091500",
                 description="delete the cache entries of kind '/splits'",
+            ),
+            MigrationQueueDeleteParquetAndDatasetInfo(
+                version="20230424173000",
+                description="delete the jobs of type '/parquet-and-dataset-info'",
+            ),
+            MigrationCacheDeleteParquetAndDatasetInfo(
+                version="20230424174000", description="delete the cache entries of kind '/parquet-and-dataset-info'"
             ),
         ]

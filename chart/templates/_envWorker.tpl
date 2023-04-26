@@ -36,7 +36,7 @@
   value: {{ .Values.firstRows.minNumber| quote }}
 - name: FIRST_ROWS_COLUMNS_MAX_NUMBER
   value: {{ .Values.firstRows.columnsMaxNumber| quote }}
-# specific to the /parquet-and-dataset-info and config-parquet-and-info job runners
+# specific to 'config-parquet-and-info' job runner
 - name: PARQUET_AND_INFO_BLOCKED_DATASETS
   value: {{ .Values.parquetAndInfo.blockedDatasets | quote }}
 - name: PARQUET_AND_INFO_COMMIT_MESSAGE

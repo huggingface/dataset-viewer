@@ -33,7 +33,6 @@ from worker.job_runners.dataset.split_names_from_dataset_info import (
 from worker.job_runners.dataset.split_names_from_streaming import (
     DatasetSplitNamesFromStreamingJobRunner,
 )
-from worker.job_runners.parquet_and_dataset_info import ParquetAndDatasetInfoJobRunner
 from worker.job_runners.split.first_rows_from_parquet import (
     SplitFirstRowsFromParquetJobRunner,
 )
@@ -99,13 +98,6 @@ class JobRunnerFactory(BaseJobRunnerFactory):
                 processing_step=processing_step,
                 hf_datasets_cache=self.hf_datasets_cache,
                 assets_directory=self.assets_directory,
-            )
-        if job_type == ParquetAndDatasetInfoJobRunner.get_job_type():
-            return ParquetAndDatasetInfoJobRunner(
-                job_info=job_info,
-                app_config=self.app_config,
-                processing_step=processing_step,
-                hf_datasets_cache=self.hf_datasets_cache,
             )
         if job_type == ConfigParquetAndInfoJobRunner.get_job_type():
             return ConfigParquetAndInfoJobRunner(
@@ -212,7 +204,6 @@ class JobRunnerFactory(BaseJobRunnerFactory):
             ConfigNamesJobRunner.get_job_type(),
             SplitNamesFromStreamingJobRunner.get_job_type(),
             SplitFirstRowsFromStreamingJobRunner.get_job_type(),
-            ParquetAndDatasetInfoJobRunner.get_job_type(),
             ConfigParquetAndInfoJobRunner.get_job_type(),
             ConfigParquetJobRunner.get_job_type(),
             DatasetParquetJobRunner.get_job_type(),
