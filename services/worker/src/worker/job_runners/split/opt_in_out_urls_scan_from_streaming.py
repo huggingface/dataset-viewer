@@ -17,7 +17,7 @@ from libcommon.processing_graph import ProcessingStep
 from libcommon.queue import JobInfo
 from libcommon.simple_cache import SplitFullName
 from libcommon.storage import StrPath
-from libcommon.viewer_utils.asset import ParquetSource, create_parquet_file
+from libcommon.viewer_utils.asset import FileSource, create_csv_file
 
 from worker.config import AppConfig, OptInOutUrlsScanConfig
 from worker.job_runner import (
@@ -100,12 +100,13 @@ class OptUrl(TypedDict):
     url: str
     row_idx: int
     column_name: str
+    opt_in: bool
+    opt_out: bool
 
 
 class OptInOutUrlsScanResponse(TypedDict):
     urls_columns: List[str]
-    opt_in_urls_source: Optional[ParquetSource]
-    opt_out_urls_source: Optional[ParquetSource]
+    opt_in_out_urls_source: Optional[FileSource]
     num_opt_in_urls: int
     num_opt_out_urls: int
     num_urls: int
@@ -129,26 +130,25 @@ async def check_spawning(
 
 async def opt_in_out_task(
     image_urls: List[str], session: ClientSession, semaphore: Semaphore, limiter: AsyncLimiter, spawning_url: str
-) -> Tuple[List[Any], List[Any]]:
+) -> Any:
     try:
         spawning_response = await check_spawning(image_urls, session, semaphore, limiter, spawning_url)
     except Exception:
         raise ExternalServerError(message=f"Error when trying to connect to {spawning_url}")
     if "urls" not in spawning_response:
         raise ExternalServerError(message=f"Error when trying to connect to {spawning_url}: '{spawning_response}'")
-    opt_in_urls_indices = [i for i in range(len(image_urls)) if spawning_response["urls"][i]["optIn"]]
-    opt_out_urls_indices = [i for i in range(len(image_urls)) if spawning_response["urls"][i]["optOut"]]
-    return opt_in_urls_indices, opt_out_urls_indices
+    return spawning_response
 
 
 async def opt_in_out_scan_urls(
     urls: List[str],
+    urls_columns: List[str],
     urls_number_per_batch: int,
     spawning_token: str,
     max_concurrent_requests_number: int,
     max_requests_per_second: int,
     spawning_url: str,
-) -> Tuple[List[int], List[int]]:
+) -> Tuple[List[OptUrl], int, int]:
     offsets = []
     tasks = []
     semaphore = Semaphore(value=max_concurrent_requests_number)
@@ -164,16 +164,28 @@ async def opt_in_out_scan_urls(
             )  # noqa: E203
         await wait(tasks)
 
-    opt_in_urls_indices = []
-    opt_out_urls_indices = []
+    opt_in_out_urls = []
+    num_opt_in = 0
+    num_opt_out = 0
     for offset, task in zip(offsets, tasks):
-        batch_opt_in_urls_indices, batch_opt_out_urls_indices = task.result()
-        for batch_opt_in_urls_idx in batch_opt_in_urls_indices:
-            opt_in_urls_indices.append(offset + batch_opt_in_urls_idx)
-        for batch_opt_out_urls_idx in batch_opt_out_urls_indices:
-            opt_out_urls_indices.append(offset + batch_opt_out_urls_idx)
+        spawning_response = task.result()
+        spawning_response_urls = spawning_response["urls"]
+        for i in range(len(spawning_response_urls)):
+            if spawning_response_urls[i]["optIn"] or spawning_response_urls[i]["optOut"]: 
+                idx = offset + i
+                num_opt_in += 1 if spawning_response_urls[i]["optIn"] else 0
+                num_opt_out += 1 if spawning_response_urls[i]["optOut"] else 0
 
-    return opt_in_urls_indices, opt_out_urls_indices
+                opt_in_out_urls.append(
+                    OptUrl(
+                        url=urls[idx],
+                        row_idx=idx // len(urls_columns),
+                        column_name=urls_columns[idx % len(urls_columns)],
+                        opt_in=spawning_response_urls[i]["optIn"],
+                        opt_out=spawning_response_urls[i]["optOut"],
+                    )
+                )
+    return opt_in_out_urls, num_opt_in, num_opt_out
 
 
 def compute_opt_in_out_urls_scan_response(
@@ -275,9 +287,10 @@ def compute_opt_in_out_urls_scan_response(
     urls = [row[urls_column] for row in rows for urls_column in urls_columns]
 
     # scan the urls
-    opt_in_urls_indices, opt_out_urls_indices = run(
+    opt_in_out_urls, num_opt_in, num_opt_out = run(
         opt_in_out_scan_urls(
             urls,
+            urls_columns,
             urls_number_per_batch=urls_number_per_batch,
             spawning_token=spawning_token,
             max_concurrent_requests_number=max_concurrent_requests_number,
@@ -286,54 +299,24 @@ def compute_opt_in_out_urls_scan_response(
         )
     )
 
-    opt_in_urls = [
-        OptUrl(
-            url=urls[url_idx],
-            row_idx=url_idx // len(urls_columns),
-            column_name=urls_columns[url_idx % len(urls_columns)],
-        )
-        for url_idx in opt_in_urls_indices
-    ]
-    opt_out_urls = [
-        OptUrl(
-            url=urls[url_idx],
-            row_idx=url_idx // len(urls_columns),
-            column_name=urls_columns[url_idx % len(urls_columns)],
-        )
-        for url_idx in opt_out_urls_indices
-    ]
-
-    in_df = pd.DataFrame({"opt_in_urls": opt_in_urls})
-    in_table = pa.Table.from_pandas(in_df)
-    opt_in_urls_src = create_parquet_file(
+    headers = ["url", "row_idx", "column_name", "opt_in", "opt_out"]
+    csv_src = create_csv_file(
+        assets_base_url=assets_base_url,
+        assets_directory=assets_directory,
         dataset=dataset,
         config=config,
         split=split,
-        table=in_table,
-        assets_directory=assets_directory,
-        assets_base_url=assets_base_url,
-        filename="opt_in_urls.parquet",
-    )
-
-    out_df = pd.DataFrame({"opt_out_urls": opt_out_urls})
-    out_table = pa.Table.from_pandas(out_df)
-    opt_out_urls_src = create_parquet_file(
-        dataset=dataset,
-        config=config,
-        split=split,
-        table=out_table,
-        assets_directory=assets_directory,
-        assets_base_url=assets_base_url,
-        filename="opt_out_urls.parquet",
+        data=opt_in_out_urls,
+        file_name="opt_in_out.csv",
+        headers=headers,
     )
 
     # return scan result
     return OptInOutUrlsScanResponse(
         urls_columns=urls_columns,
-        opt_in_urls_source=opt_in_urls_src,
-        opt_out_urls_source=opt_out_urls_src,
-        num_opt_in_urls=len(opt_in_urls),
-        num_opt_out_urls=len(opt_out_urls),
+        opt_in_out_urls_source=csv_src,
+        num_opt_in_urls=num_opt_in,
+        num_opt_out_urls=num_opt_out,
         num_urls=len(urls),
         num_scanned_rows=num_scanned_rows,
         has_urls_columns=True,
@@ -394,6 +377,3 @@ class SplitOptInOutUrlsScanJobRunner(DatasetsBasedJobRunner):
         if self.config is None or self.split is None:
             raise ValueError("config and split are required")
         return {SplitFullName(dataset=self.dataset, config=self.config, split=self.split)}
-
-    def get_max_job_duration_seconds(self) -> int:
-        return self.worker_config.max_long_job_duration_seconds

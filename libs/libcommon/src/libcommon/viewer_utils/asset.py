@@ -6,7 +6,7 @@ from os import makedirs
 from pathlib import Path
 from typing import Generator, List, Tuple, TypedDict
 
-import pyarrow
+import csv
 import pyarrow.parquet as pq
 import soundfile  # type:ignore
 from numpy import ndarray
@@ -102,20 +102,21 @@ class AudioSource(TypedDict):
     type: str
 
 
-class ParquetSource(TypedDict):
+class FileSource(TypedDict):
     src: str
     type: str
 
 
-def create_parquet_file(
+def create_csv_file(
     dataset: str,
     config: str,
     split: str,
-    table: pyarrow.Table,
+    data: List[dict],
+    headers: List[str],
     assets_base_url: str,
-    filename: str,
+    file_name: str,
     assets_directory: StrPath,
-) -> ParquetSource:
+) -> FileSource:
     dir_path, url_dir_path = create_asset_dir(
         dataset=dataset,
         config=config,
@@ -123,9 +124,14 @@ def create_parquet_file(
         assets_directory=assets_directory,
     )
     makedirs(dir_path, ASSET_DIR_MODE, exist_ok=True)
-    parquet_file_name = dir_path / filename
-    pq.write_table(table, parquet_file_name)
-    return {"src": f"{assets_base_url}/{url_dir_path}/{filename}", "type": "parquet"}
+    file_path = dir_path / file_name
+
+    with open(file_path, 'w') as output_file:
+        fc = csv.DictWriter(output_file, fieldnames=headers,)
+        fc.writeheader()
+        fc.writerows(data)
+
+    return {"src": f"{assets_base_url}/{url_dir_path}/{file_name}", "type": "csv"}
 
 
 def create_audio_files(
