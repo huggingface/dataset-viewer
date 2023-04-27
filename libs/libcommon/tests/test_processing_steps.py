@@ -37,10 +37,10 @@ def test_graph() -> None:
     specification: ProcessingGraphSpecification = {
         "a": {"input_type": "dataset", "job_runner_version": 1},
         "b": {"input_type": "dataset", "job_runner_version": 1},
-        "c": {"input_type": "dataset", "requires": "a", "job_runner_version": 1},
-        "d": {"input_type": "dataset", "requires": ["a", "c"], "job_runner_version": 1},
-        "e": {"input_type": "dataset", "requires": ["c"], "job_runner_version": 1},
-        "f": {"input_type": "dataset", "requires": ["a", "b"], "job_runner_version": 1},
+        "c": {"input_type": "dataset", "triggered_by": "a", "job_runner_version": 1},
+        "d": {"input_type": "dataset", "triggered_by": ["a", "c"], "job_runner_version": 1},
+        "e": {"input_type": "dataset", "triggered_by": ["c"], "job_runner_version": 1},
+        "f": {"input_type": "dataset", "triggered_by": ["a", "b"], "job_runner_version": 1},
     }
     graph = ProcessingGraph(ProcessingGraphConfig(specification).specification)
     a = graph.get_step("a")

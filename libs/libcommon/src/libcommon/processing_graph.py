@@ -4,7 +4,7 @@
 from __future__ import annotations
 
 import warnings
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import List, Literal, Mapping, Optional, TypedDict, Union
 
 import networkx as nx
@@ -17,7 +17,7 @@ class _ProcessingStepSpecification(TypedDict):
 
 
 class ProcessingStepSpecification(_ProcessingStepSpecification, total=False):
-    requires: Union[List[str], str, None]
+    triggered_by: Union[List[str], str, None]
     required_by_dataset_viewer: Literal[True]
     job_runner_version: int
     provides_dataset_config_names: bool
@@ -28,26 +28,41 @@ class ProcessingStepSpecification(_ProcessingStepSpecification, total=False):
 class ProcessingStep:
     """A dataset processing step.
 
-    It contains the details of:
-    - the step name
-    - the cache kind (ie. the key in the cache)
-    - the job type (ie. the job to run to compute the response)
-    - the input type ('dataset', 'config' or 'split')
-    - the ancestors: all the chain of previous steps, even those that are not required, in no particular order
-    - the children: steps that will be triggered at the end of the step, in no particular order.
+    Attributes:
+        name (str): The step name.
+        input_type (InputType): The input type ('dataset', 'config' or 'split').
+        job_runner_version (int): The version of the job runner to use to compute the response.
+        triggered_by (List[str], optional): The steps that trigger this step, in no particular order. If None, the
+            step is a root. Defaults to None.
+        parents (List[ProcessingStep], optional): The steps that trigger this step, in no particular order.
+            Defaults to [].
+        ancestors (List[ProcessingStep], optional): All the chain of previous steps, even those that do not trigger the
+            step directly, in no particular order. Defaults to [].
+        children (List[ProcessingStep], optional): Steps that will be triggered at the end of the step, in no
+            particular order. Defaults to [].
+        required_by_dataset_viewer (bool, optional): Whether the step is required by the dataset viewer. Defaults to
+            False.
+        provides_dataset_config_names (bool, optional): Whether the step provides dataset config names. Defaults to
+            False.
+        provides_config_split_names (bool, optional): Whether the step provides config split names. Defaults to False.
 
-    Beware: the children are computed from "requires", but with a subtlety: if c requires a and b, and if b requires a,
-      only b will trigger c, i.e. c will be a child of a, but not of a.
+    Getters:
+        job_type (str): The job type (ie. the job to run to compute the response).
+        cache_kind (str): The cache kind (ie. the key in the cache).
+
+    Raises:
+        ValueError: If the step provides dataset config names but its input type is not 'dataset', or if the step
+            provides config split names but its input type is not 'config'.
     """
 
     name: str
     input_type: InputType
-    requires: List[str]
-    required_by_dataset_viewer: bool
-    ancestors: List[ProcessingStep]
-    children: List[ProcessingStep]
-    parents: List[ProcessingStep]
     job_runner_version: int
+    triggered_by: List[str] = field(default_factory=list)
+    parents: List[ProcessingStep] = field(default_factory=list)
+    ancestors: List[ProcessingStep] = field(default_factory=list)
+    children: List[ProcessingStep] = field(default_factory=list)
+    required_by_dataset_viewer: bool = False
     provides_dataset_config_names: Optional[bool] = False
     provides_config_split_names: Optional[bool] = False
 
@@ -73,10 +88,10 @@ class ProcessingStep:
 ProcessingGraphSpecification = Mapping[str, ProcessingStepSpecification]
 
 
-def get_required_steps(requires: Union[List[str], str, None]) -> List[str]:
-    if requires is None:
+def get_triggered_by_as_list(triggered_by: Union[List[str], str, None]) -> List[str]:
+    if triggered_by is None:
         return []
-    return [requires] if isinstance(requires, str) else requires
+    return [triggered_by] if isinstance(triggered_by, str) else triggered_by
 
 
 class ProcessingGraph:
@@ -104,7 +119,7 @@ class ProcessingGraph:
             name: ProcessingStep(
                 name=name,
                 input_type=specification["input_type"],
-                requires=get_required_steps(specification.get("requires")),
+                triggered_by=get_triggered_by_as_list(specification.get("triggered_by")),
                 required_by_dataset_viewer=specification.get("required_by_dataset_viewer", False),
                 provides_dataset_config_names=specification.get("provides_dataset_config_names", False),
                 provides_config_split_names=specification.get("provides_config_split_names", False),
@@ -122,7 +137,7 @@ class ProcessingGraph:
         graph = nx.DiGraph()
         for name, step in self.steps.items():
             graph.add_node(name)
-            for step_name in step.requires:
+            for step_name in step.triggered_by:
                 graph.add_edge(step_name, name)
         if not nx.is_directed_acyclic_graph(graph):
             raise ValueError("The graph is not a directed acyclic graph.")

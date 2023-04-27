@@ -58,7 +58,7 @@ def get_job_runner(
             processing_step=ProcessingStep(
                 name=ConfigParquetJobRunner.get_job_type(),
                 input_type="config",
-                requires=[],
+                triggered_by=[],
                 required_by_dataset_viewer=False,
                 ancestors=[],
                 children=[],

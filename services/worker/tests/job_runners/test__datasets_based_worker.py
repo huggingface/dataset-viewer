@@ -70,7 +70,7 @@ def get_job_runner(
             processing_step=ProcessingStep(
                 name=DummyJobRunner.get_job_type(),
                 input_type="split",
-                requires=[],
+                triggered_by=[],
                 required_by_dataset_viewer=False,
                 ancestors=[],
                 children=[],
