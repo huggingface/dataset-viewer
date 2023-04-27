@@ -32,7 +32,7 @@ from mongoengine.fields import (
 )
 from mongoengine.queryset.queryset import QuerySet
 
-from libcommon.constants import CACHE_MONGOENGINE_ALIAS
+from libcommon.constants import CACHE_COLLECTION_RESPONSES, CACHE_MONGOENGINE_ALIAS
 from libcommon.utils import get_datetime
 
 # START monkey patching ### hack ###
@@ -100,7 +100,7 @@ class CachedResponse(Document):
     updated_at = DateTimeField(default=get_datetime)
 
     meta = {
-        "collection": "cachedResponsesBlue",
+        "collection": CACHE_COLLECTION_RESPONSES,
         "db_alias": CACHE_MONGOENGINE_ALIAS,
         "indexes": [
             ("kind", "dataset", "config", "split"),

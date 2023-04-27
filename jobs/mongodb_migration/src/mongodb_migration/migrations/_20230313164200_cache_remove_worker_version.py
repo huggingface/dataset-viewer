@@ -3,6 +3,7 @@
 
 import logging
 
+from libcommon.constants import CACHE_COLLECTION_RESPONSES, CACHE_MONGOENGINE_ALIAS
 from libcommon.simple_cache import CachedResponse
 from mongoengine.connection import get_db
 
@@ -14,8 +15,8 @@ from mongodb_migration.migration import IrreversibleMigrationError, Migration
 class MigrationRemoveWorkerVersionFromCachedResponse(Migration):
     def up(self) -> None:
         logging.info("Removing 'worker_version' field.")
-        db = get_db("cache")
-        db["cachedResponsesBlue"].update_many({}, {"$unset": {"worker_version": ""}})
+        db = get_db(CACHE_MONGOENGINE_ALIAS)
+        db[CACHE_COLLECTION_RESPONSES].update_many({}, {"$unset": {"worker_version": ""}})
 
     def down(self) -> None:
         raise IrreversibleMigrationError("This migration does not support rollback")

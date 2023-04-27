@@ -53,6 +53,9 @@ from mongodb_migration.migrations._20230424173000_queue_delete_parquet_and_datas
 from mongodb_migration.migrations._20230424174000_cache_delete_parquet_and_dataset_info import (
     MigrationCacheDeleteParquetAndDatasetInfo,
 )
+from mongodb_migration.migrations._20230427121500_metrics_delete_parquet_and_dataset_info import (
+    MigrationMetricsDeleteParquetAndDatasetInfo,
+)
 
 
 # TODO: add a way to automatically collect migrations from the migrations/ folder
@@ -123,5 +126,9 @@ class MigrationsCollector:
             ),
             MigrationCacheDeleteParquetAndDatasetInfo(
                 version="20230424174000", description="delete the cache entries of kind '/parquet-and-dataset-info'"
+            ),
+            MigrationMetricsDeleteParquetAndDatasetInfo(
+                version="20230427121500",
+                description="delete the queue and cache metrics for step '/parquet-and-dataset-info'",
             ),
         ]

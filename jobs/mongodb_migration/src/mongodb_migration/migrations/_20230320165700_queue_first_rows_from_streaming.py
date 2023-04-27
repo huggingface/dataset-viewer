@@ -3,6 +3,7 @@
 
 import logging
 
+from libcommon.constants import QUEUE_COLLECTION_JOBS, QUEUE_MONGOENGINE_ALIAS
 from libcommon.queue import Job
 from mongoengine.connection import get_db
 
@@ -11,7 +12,6 @@ from mongodb_migration.migration import Migration
 
 first_rows = "/first-rows"
 split_first_rows_from_streaming = "split-first-rows-from-streaming"
-db_name = "queue"
 
 
 # connection already occurred in the main.py (caveat: we use globals)
@@ -23,8 +23,8 @@ class MigrationQueueUpdateFirstRows(Migration):
             f" {split_first_rows_from_streaming}"
         )
 
-        db = get_db("queue")
-        db["jobsBlue"].update_many(
+        db = get_db(QUEUE_MONGOENGINE_ALIAS)
+        db[QUEUE_COLLECTION_JOBS].update_many(
             {"type": first_rows},
             [
                 {
@@ -49,8 +49,8 @@ class MigrationQueueUpdateFirstRows(Migration):
             f" {first_rows}"
         )
 
-        db = get_db("queue")
-        db["jobsBlue"].update_many(
+        db = get_db(QUEUE_MONGOENGINE_ALIAS)
+        db[QUEUE_COLLECTION_JOBS].update_many(
             {"type": split_first_rows_from_streaming},
             [
                 {
