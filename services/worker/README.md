@@ -12,6 +12,7 @@ Set environment variables to configure the worker.
 
 - `WORKER_CONTENT_MAX_BYTES`: the maximum size in bytes of the response content computed by a worker (to prevent returning big responses in the REST API). Defaults to `10_000_000`.
 - `WORKER_HEARTBEAT_INTERVAL_SECONDS`: the time interval between two heartbeats. Each heartbeat updates the job "last_heartbeat" field in the queue. Defaults to `60` (1 minute).
+- `WORKER_JOB_TYPES_BLOCKED`: comma-separated list of job types that will not be processed, e.g. "/config-names,dataset-split-names". If empty, no job type is blocked. Defaults to empty.
 - `WORKER_JOB_TYPES_ONLY`: comma-separated list of the non-blocked job types to process, e.g. "/config-names,dataset-split-names". If empty, the worker processes all the non-blocked jobs. Defaults to empty.
 - `WORKER_KILL_ZOMBIES_INTERVAL_SECONDS`: the time interval at which the worker looks for zombie jobs to kill them. Defaults to `600` (10 minutes).
 - `WORKER_MAX_DISK_USAGE_PCT`: maximum disk usage of every storage disk in the list (in percentage) to allow a job to start. Set to 0 to disable the test. Defaults to 90.

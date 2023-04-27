@@ -199,6 +199,7 @@ workers:
   -
     deployName: "all"
     maxJobsPerNamespace: 1
+    workerJobTypesBlocked: ""
     workerJobTypesOnly: ""
     nodeSelector: {}
     replicas: 1
@@ -213,6 +214,7 @@ workers:
   -
     deployName: "light"
     maxJobsPerNamespace: 1
+    workerJobTypesBlocked: ""
     workerJobTypesOnly: "config-parquet,dataset-parquet,config-info,dataset-info,/split-names-from-dataset-info,config-size,dataset-size,dataset-split-names-from-streaming,dataset-split-names-from-dataset-info"
     nodeSelector: {}
     replicas: 1

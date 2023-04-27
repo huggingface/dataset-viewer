@@ -208,24 +208,32 @@ def test_max_jobs_per_namespace(max_jobs_per_namespace: Optional[int]) -> None:
 
 
 @pytest.mark.parametrize(
-    "job_type,job_types_only",
+    "job_type,job_types_blocked,job_types_only,should_raise",
     [
-        ("test_type", None),
-        ("test_type", ["test_type"]),
-        ("test_type", ["other_type", "test_type"]),
-        ("test_type", ["other_type"]),
+        ("test_type", None, None, False),
+        ("test_type", None, ["test_type"], False),
+        ("test_type", ["other_type"], None, False),
+        ("test_type", ["other_type"], ["test_type"], False),
+        ("test_type", None, ["other_type"], True),
+        ("test_type", ["test_type"], None, True),
+        ("test_type", ["test_type"], ["test_type"], True),
+        ("test_type", ["other_type", "test_type"], None, True),
+        ("test_type", ["other_type"], ["other_type"], True),
+        ("test_type", ["other_type", "test_type"], ["other_type", "test_type"], True),
     ],
 )
-def test_job_types_only(job_type: str, job_types_only: Optional[list[str]]) -> None:
+def test_job_types_only(
+    job_type: str, job_types_blocked: Optional[list[str]], job_types_only: Optional[list[str]], should_raise: bool
+) -> None:
     test_dataset = "test_dataset"
     queue = Queue(max_jobs_per_namespace=100)
     queue.upsert_job(job_type=job_type, dataset=test_dataset, config=None, split=None)
     assert queue.is_job_in_process(job_type=job_type, dataset=test_dataset, config=None, split=None)
-    if job_types_only and job_type not in job_types_only:
+    if should_raise:
         with pytest.raises(EmptyQueueError):
-            queue.start_job(job_types_only=job_types_only)
+            queue.start_job(job_types_blocked=job_types_blocked, job_types_only=job_types_only)
     else:
-        job_info = queue.start_job(job_types_only=job_types_only)
+        job_info = queue.start_job(job_types_blocked=job_types_blocked, job_types_only=job_types_only)
         assert job_info["dataset"] == test_dataset
 
 
@@ -315,7 +323,7 @@ def test_queue_heartbeat() -> None:
     job_type = "test_type"
     queue = Queue()
     job = queue.upsert_job(job_type=job_type, dataset="dataset1", config="config", split="split1")
-    queue.start_job([job_type])
+    queue.start_job(job_types_only=[job_type])
     assert job.last_heartbeat is None
     queue.heartbeat(job.pk)
     job.reload()
@@ -329,9 +337,9 @@ def test_queue_get_zombies() -> None:
     queue = Queue()
     with patch("libcommon.queue.get_datetime", get_old_datetime):
         zombie = queue.upsert_job(job_type=job_type, dataset="dataset1", config="config", split="split1")
-        queue.start_job([job_type])
+        queue.start_job(job_types_only=[job_type])
     queue.upsert_job(job_type=job_type, dataset="dataset1", config="config", split="split2")
-    queue.start_job([job_type])
+    queue.start_job(job_types_only=[job_type])
     assert queue.get_zombies(max_seconds_without_heartbeat=10) == [zombie.info()]
     assert queue.get_zombies(max_seconds_without_heartbeat=-1) == []
     assert queue.get_zombies(max_seconds_without_heartbeat=0) == []
@@ -343,9 +351,9 @@ def test_queue_kill_zombies() -> None:
     queue = Queue()
     with patch("libcommon.queue.get_datetime", get_old_datetime):
         zombie = queue.upsert_job(job_type=job_type, dataset="dataset1", config="config", split="split1")
-        queue.start_job([job_type])
+        queue.start_job(job_types_only=[job_type])
     another_job = queue.upsert_job(job_type=job_type, dataset="dataset1", config="config", split="split2")
-    queue.start_job([job_type])
+    queue.start_job(job_types_only=[job_type])
 
     assert queue.get_zombies(max_seconds_without_heartbeat=10) == [zombie.info()]
     queue.kill_zombies([zombie.info()])

@@ -365,6 +365,8 @@ workers:
     deployName: "all"
     # Maximum number of jobs running at the same time for the same namespace
     maxJobsPerNamespace: 1
+    # job types that this worker will not process
+    workerJobTypesBlocked: ""
     # job types that this worker can process
     workerJobTypesOnly: ""
     nodeSelector: {}
@@ -380,6 +382,8 @@ workers:
     deployName: "light"
     # Maximum number of jobs running at the same time for the same namespace
     maxJobsPerNamespace: 1
+    # job types that this worker will not process
+    workerJobTypesBlocked: ""
     # job types that this worker can process
     workerJobTypesOnly: "config-parquet,dataset-parquet,config-info,dataset-info,/split-names-from-dataset-info,config-size,dataset-size,dataset-split-names-from-streaming,dataset-split-names-from-dataset-info"
     nodeSelector: {}

@@ -36,6 +36,7 @@ def get_empty_str_list() -> List[str]:
 class WorkerConfig:
     content_max_bytes: int = WORKER_CONTENT_MAX_BYTES
     heartbeat_interval_seconds: int = WORKER_HEARTBEAT_INTERVAL_SECONDS
+    job_types_blocked: list[str] = field(default_factory=get_empty_str_list)
     job_types_only: list[str] = field(default_factory=get_empty_str_list)
     kill_long_job_interval_seconds: int = WORKER_KILL_LONG_JOB_INTERVAL_SECONDS
     kill_zombies_interval_seconds: int = WORKER_KILL_ZOMBIES_INTERVAL_SECONDS
@@ -57,6 +58,7 @@ class WorkerConfig:
                 heartbeat_interval_seconds=env.int(
                     name="HEARTBEAT_INTERVAL_SECONDS", default=WORKER_HEARTBEAT_INTERVAL_SECONDS
                 ),
+                job_types_blocked=env.list(name="JOB_TYPES_BLOCKED", default=get_empty_str_list()),
                 job_types_only=env.list(name="JOB_TYPES_ONLY", default=get_empty_str_list()),
                 kill_long_job_interval_seconds=env.int(
                     name="KILL_LONG_JOB_INTERVAL_SECONDS", default=WORKER_KILL_LONG_JOB_INTERVAL_SECONDS

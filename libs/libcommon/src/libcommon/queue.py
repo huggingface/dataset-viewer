@@ -325,7 +325,10 @@ class Queue:
         return job_dicts
 
     def _get_next_waiting_job_for_priority(
-        self, priority: Priority, job_types_only: Optional[list[str]] = None
+        self,
+        priority: Priority,
+        job_types_blocked: Optional[list[str]] = None,
+        job_types_only: Optional[list[str]] = None,
     ) -> Job:
         """Get the next job in the queue for a given priority.
 
@@ -337,6 +340,7 @@ class Queue:
 
         Args:
             priority (`Priority`): The priority of the job.
+            job_types_blocked: if not None, jobs of the given types are not considered.
             job_types_only: if not None, only jobs of the given types are considered.
 
         Raises:
@@ -344,36 +348,30 @@ class Queue:
 
         Returns: the job
         """
-        logging.debug("Getting next waiting job for priority %s, among types %s", priority, job_types_only or "all")
-        started_jobs = (
-            Job.objects(type__in=job_types_only, status=Status.STARTED)
-            if job_types_only
-            else Job.objects(status=Status.STARTED)
+        logging.debug(
+            f"Getting next waiting job for priority {priority}, blocked types: {job_types_blocked}, only types:"
+            f" {job_types_only}"
         )
+        filters = {}
+        if job_types_blocked:
+            filters["type__nin"] = job_types_blocked
+        if job_types_only:
+            filters["type__in"] = job_types_only
+        started_jobs = Job.objects(status=Status.STARTED, **filters)
         logging.debug(f"Number of started jobs: {started_jobs.count()}")
         started_job_namespaces = [job.namespace for job in started_jobs.only("namespace")]
         logging.debug(f"Started job namespaces: {started_job_namespaces}")
 
         next_waiting_job = (
-            (
-                Job.objects(
-                    type__in=job_types_only,
-                    status=Status.WAITING,
-                    namespace__nin=set(started_job_namespaces),
-                    priority=priority,
-                )
-                if job_types_only
-                else Job.objects(
-                    status=Status.WAITING,
-                    namespace__nin=set(started_job_namespaces),
-                    priority=priority,
-                )
+            Job.objects(
+                status=Status.WAITING, namespace__nin=set(started_job_namespaces), priority=priority, **filters
             )
             .order_by("+created_at")
             .only("type", "dataset", "config", "split", "force")
             .no_cache()
             .first()
         )
+
         # ^ no_cache should generate a query on every iteration, which should solve concurrency issues between workers
         if next_waiting_job is not None:
             return next_waiting_job
@@ -404,21 +402,12 @@ class Queue:
             least_common_namespaces_group = descending_frequency_namespace_groups.pop()
             logging.debug(f"Least common namespaces group: {least_common_namespaces_group}")
             next_waiting_job = (
-                (
-                    Job.objects(
-                        type__in=job_types_only,
-                        status=Status.WAITING,
-                        namespace__in=least_common_namespaces_group,
-                        unicity_id__nin=started_unicity_ids,
-                        priority=priority,
-                    )
-                    if job_types_only
-                    else Job.objects(
-                        status=Status.WAITING,
-                        namespace__in=least_common_namespaces_group,
-                        unicity_id__nin=started_unicity_ids,
-                        priority=priority,
-                    )
+                Job.objects(
+                    status=Status.WAITING,
+                    namespace__in=least_common_namespaces_group,
+                    unicity_id__nin=started_unicity_ids,
+                    priority=priority,
+                    **filters,
                 )
                 .order_by("+created_at")
                 .only("type", "dataset", "config", "split", "force")
@@ -432,7 +421,9 @@ class Queue:
             " namespace)"
         )
 
-    def get_next_waiting_job(self, job_types_only: Optional[list[str]] = None) -> Job:
+    def get_next_waiting_job(
+        self, job_types_blocked: Optional[list[str]] = None, job_types_only: Optional[list[str]] = None
+    ) -> Job:
         """Get the next job in the queue.
 
         Get the waiting job with the oldest creation date with the following criteria:
@@ -443,6 +434,7 @@ class Queue:
           - ensuring that the unicity_id field is unique among the started jobs.
 
         Args:
+            job_types_blocked: if not None, jobs of the given types are not considered.
             job_types_only: if not None, only jobs of the given types are considered.
 
         Raises:
@@ -452,17 +444,22 @@ class Queue:
         """
         for priority in [Priority.NORMAL, Priority.LOW]:
             with contextlib.suppress(EmptyQueueError):
-                return self._get_next_waiting_job_for_priority(priority=priority, job_types_only=job_types_only)
+                return self._get_next_waiting_job_for_priority(
+                    priority=priority, job_types_blocked=job_types_blocked, job_types_only=job_types_only
+                )
         raise EmptyQueueError(
             f"no job available (within the limit of {self.max_jobs_per_namespace} started jobs per namespace)"
         )
 
-    def start_job(self, job_types_only: Optional[list[str]] = None) -> JobInfo:
+    def start_job(
+        self, job_types_blocked: Optional[list[str]] = None, job_types_only: Optional[list[str]] = None
+    ) -> JobInfo:
         """Start the next job in the queue.
 
         The job is moved from the waiting state to the started state.
 
         Args:
+            job_types_blocked: if not None, jobs of the given types are not considered.
             job_types_only: if not None, only jobs of the given types are considered.
 
         Raises:
@@ -471,11 +468,17 @@ class Queue:
 
         Returns: the job id, the type, the input arguments: dataset, config and split and the force flag
         """
-        logging.debug("looking for a job to start, among the following types: %s", job_types_only or "all")
-        next_waiting_job = self.get_next_waiting_job(job_types_only=job_types_only)
+        logging.debug(f"looking for a job to start, blocked types: {job_types_blocked}, only types: {job_types_only}")
+        next_waiting_job = self.get_next_waiting_job(
+            job_types_blocked=job_types_blocked, job_types_only=job_types_only
+        )
         logging.debug(f"job found: {next_waiting_job}")
         # ^ can raise EmptyQueueError
         next_waiting_job.update(started_at=get_datetime(), status=Status.STARTED)
+        if job_types_blocked and next_waiting_job.type in job_types_blocked:
+            raise RuntimeError(
+                f"The job type {next_waiting_job.type} is in the list of blocked job types {job_types_only}"
+            )
         if job_types_only and next_waiting_job.type not in job_types_only:
             raise RuntimeError(
                 f"The job type {next_waiting_job.type} is not in the list of allowed job types {job_types_only}"
@@ -708,7 +711,7 @@ class Queue:
         zombie_job_ids = [zombie["job_id"] for zombie in zombies]
         zombies_examples = zombie_job_ids[:10]
         zombies_examples_str = ", ".join(zombies_examples) + ("..." if len(zombies_examples) != len(zombies) else "")
-        logging.info(f"Killing {len(zombies)} zombies. Job ids = " + zombies_examples_str)
+        logging.info(f"Killing {len(zombies)} zombies. Job ids = {zombies_examples_str}")
         return Job.objects(pk__in=zombie_job_ids, status=Status.STARTED).update(
             status=Status.ERROR, finished_at=get_datetime()
         )
@@ -721,7 +724,7 @@ class Queue:
         Returns: number of killed long jobs.
         """
         long_job_id = long_job["job_id"]
-        logging.info("Killing a long job. Job id = " + long_job_id)
+        logging.info(f"Killing a long job. Job id = {long_job_id}")
         return Job.objects(pk=long_job_id, status=Status.STARTED).update(
             status=Status.ERROR, finished_at=get_datetime()
         )
