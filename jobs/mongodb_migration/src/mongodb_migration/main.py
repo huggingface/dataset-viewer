@@ -5,7 +5,11 @@ import logging
 import sys
 
 from libcommon.log import init_logging
-from libcommon.resources import CacheMongoResource, QueueMongoResource
+from libcommon.resources import (
+    CacheMongoResource,
+    MetricsMongoResource,
+    QueueMongoResource,
+)
 
 from mongodb_migration.collector import MigrationsCollector
 from mongodb_migration.config import JobConfig
@@ -23,6 +27,9 @@ def run_job() -> None:
         CacheMongoResource(
             database=job_config.cache.mongo_database, host=job_config.cache.mongo_url
         ) as cache_resource,
+        MetricsMongoResource(
+            database=job_config.metrics.mongo_database, host=job_config.metrics.mongo_url
+        ) as metrics_resource,
         QueueMongoResource(
             database=job_config.queue.mongo_database, host=job_config.queue.mongo_url
         ) as queue_resource,
@@ -33,6 +40,11 @@ def run_job() -> None:
         if not cache_resource.is_available():
             logging.warning(
                 "The connection to the cache database could not be established. The migration job is skipped."
+            )
+            return
+        if not metrics_resource.is_available():
+            logging.warning(
+                "The connection to the metrics database could not be established. The migration job is skipped."
             )
             return
         if not queue_resource.is_available():
