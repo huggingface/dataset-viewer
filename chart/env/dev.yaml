@@ -214,8 +214,8 @@ workers:
   -
     deployName: "light"
     maxJobsPerNamespace: 1
-    workerJobTypesBlocked: ""
-    workerJobTypesOnly: "config-parquet,dataset-parquet,config-info,dataset-info,/split-names-from-dataset-info,config-size,dataset-size,dataset-split-names-from-streaming,dataset-split-names-from-dataset-info"
+    workerJobTypesBlocked: "/config-names,/split-names-from-streaming,config-parquet-and-info,split-first-rows-from-parquet,split-first-rows-from-streaming,split-opt-in-out-urls-scan"
+    workerJobTypesOnly: ""
     nodeSelector: {}
     replicas: 1
     resources:
