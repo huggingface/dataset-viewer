@@ -16,7 +16,11 @@ from mongoengine import Document, DoesNotExist
 from mongoengine.fields import BooleanField, DateTimeField, EnumField, StringField
 from mongoengine.queryset.queryset import QuerySet
 
-from libcommon.constants import QUEUE_MONGOENGINE_ALIAS, QUEUE_TTL_SECONDS
+from libcommon.constants import (
+    QUEUE_COLLECTION_JOBS,
+    QUEUE_MONGOENGINE_ALIAS,
+    QUEUE_TTL_SECONDS,
+)
 from libcommon.utils import get_datetime, inputs_to_string
 
 # START monkey patching ### hack ###
@@ -124,7 +128,7 @@ class Job(Document):
     """
 
     meta = {
-        "collection": "jobsBlue",
+        "collection": QUEUE_COLLECTION_JOBS,
         "db_alias": QUEUE_MONGOENGINE_ALIAS,
         "indexes": [
             "dataset",

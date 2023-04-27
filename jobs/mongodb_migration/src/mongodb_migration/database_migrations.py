@@ -8,7 +8,10 @@ from mongoengine import Document, DoesNotExist
 from mongoengine.fields import StringField
 from mongoengine.queryset.queryset import QuerySet
 
-from mongodb_migration.constants import DATABASE_MIGRATIONS_MONGOENGINE_ALIAS
+from mongodb_migration.constants import (
+    DATABASE_MIGRATIONS_COLLECTION_MIGRATIONS,
+    DATABASE_MIGRATIONS_MONGOENGINE_ALIAS,
+)
 
 # START monkey patching ### hack ###
 # see https://github.com/sbdchd/mongo-types#install
@@ -39,7 +42,7 @@ class DatabaseMigration(Document):
     """
 
     meta = {
-        "collection": "databaseMigrations",
+        "collection": DATABASE_MIGRATIONS_COLLECTION_MIGRATIONS,
         "db_alias": DATABASE_MIGRATIONS_MONGOENGINE_ALIAS,
     }
     version = StringField(required=True)
