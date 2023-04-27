@@ -3,7 +3,6 @@
 
 from __future__ import annotations
 
-import warnings
 from dataclasses import dataclass, field
 from typing import List, Literal, Mapping, Optional, TypedDict, Union
 
@@ -123,9 +122,6 @@ class ProcessingGraph:
                 required_by_dataset_viewer=specification.get("required_by_dataset_viewer", False),
                 provides_dataset_config_names=specification.get("provides_dataset_config_names", False),
                 provides_config_split_names=specification.get("provides_config_split_names", False),
-                ancestors=[],
-                children=[],
-                parents=[],
                 job_runner_version=specification["job_runner_version"],
             )
             for name, specification in processing_graph_specification.items()

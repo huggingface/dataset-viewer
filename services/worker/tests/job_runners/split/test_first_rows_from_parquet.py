@@ -55,11 +55,7 @@ def get_job_runner(
             processing_step=ProcessingStep(
                 name=SplitFirstRowsFromParquetJobRunner.get_job_type(),
                 input_type="split",
-                triggered_by=[],
                 required_by_dataset_viewer=True,
-                ancestors=[],
-                children=[],
-                parents=[],
                 job_runner_version=SplitFirstRowsFromParquetJobRunner.get_job_runner_version(),
             ),
             assets_directory=assets_directory,

@@ -8,36 +8,9 @@ from libcommon.simple_cache import _clean_cache_database, upsert_response
 from api.config import AppConfig
 from api.routes.valid import get_valid, is_valid
 
-dataset_step = ProcessingStep(
-    name="/dataset-step",
-    input_type="dataset",
-    triggered_by=[],
-    required_by_dataset_viewer=False,
-    ancestors=[],
-    children=[],
-    parents=[],
-    job_runner_version=1,
-)
-config_step = ProcessingStep(
-    name="/config-step",
-    input_type="config",
-    triggered_by=[],
-    required_by_dataset_viewer=False,
-    ancestors=[],
-    children=[],
-    parents=[],
-    job_runner_version=1,
-)
-split_step = ProcessingStep(
-    name="/split-step",
-    input_type="split",
-    triggered_by=[],
-    required_by_dataset_viewer=False,
-    ancestors=[],
-    children=[],
-    parents=[],
-    job_runner_version=1,
-)
+dataset_step = ProcessingStep(name="/dataset-step", input_type="dataset", job_runner_version=1)
+config_step = ProcessingStep(name="/config-step", input_type="config", job_runner_version=1)
+split_step = ProcessingStep(name="/split-step", input_type="split", job_runner_version=1)
 
 
 @pytest.fixture(autouse=True)

@@ -233,14 +233,7 @@ def test_check_type(
         )
 
     another_processing_step = ProcessingStep(
-        name=f"not-{test_processing_step.name}",
-        input_type="dataset",
-        triggered_by=[],
-        required_by_dataset_viewer=False,
-        ancestors=[],
-        children=[],
-        parents=[],
-        job_runner_version=1,
+        name=f"not-{test_processing_step.name}", input_type="dataset", job_runner_version=1
     )
     with pytest.raises(ValueError):
         DummyJobRunner(

@@ -111,16 +111,7 @@ def assets_directory(app_config: AppConfig) -> StrPath:
 
 @fixture()
 def test_processing_step() -> ProcessingStep:
-    return ProcessingStep(
-        name="/dummy",
-        input_type="dataset",
-        triggered_by=[],
-        required_by_dataset_viewer=False,
-        ancestors=[],
-        children=[],
-        parents=[],
-        job_runner_version=1,
-    )
+    return ProcessingStep(name="/dummy", input_type="dataset", job_runner_version=1)
 
 
 # Import fixture modules as plugins
