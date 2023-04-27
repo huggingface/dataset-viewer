@@ -138,7 +138,6 @@ class OptInOutUrlsScanConfig:
     columns_max_number: int = FIRST_ROWS_COLUMNS_MAX_NUMBER
     max_concurrent_requests_number: int = OPT_IN_OUT_URLS_SCAN_MAX_CONCURRENT_REQUESTS_NUMBER
     max_requests_per_second: int = OPT_IN_OUT_URLS_SCAN_MAX_REQUESTS_PER_SECOND
-    rows_max_number: int = OPT_IN_OUT_URLS_SCAN_ROWS_MAX_NUMBER
     spawning_token: Optional[str] = OPT_IN_OUT_URLS_SCAN_SPAWNING_TOKEN
     spawning_url: str = OPT_IN_OUT_URLS_SCAN_SPAWNING_URL
     urls_number_per_batch: int = OPT_IN_OUT_URLS_SCAN_URLS_NUMBER_PER_BATCH
@@ -155,7 +154,6 @@ class OptInOutUrlsScanConfig:
                 max_requests_per_second=env.int(
                     name="MAX_REQUESTS_PER_SECOND", default=OPT_IN_OUT_URLS_SCAN_MAX_REQUESTS_PER_SECOND
                 ),
-                rows_max_number=env.int(name="ROWS_MAX_NUMBER", default=OPT_IN_OUT_URLS_SCAN_ROWS_MAX_NUMBER),
                 spawning_token=env.str(name="SPAWNING_TOKEN", default=OPT_IN_OUT_URLS_SCAN_SPAWNING_TOKEN),
                 spawning_url=env.str(name="SPAWNING_URL", default=OPT_IN_OUT_URLS_SCAN_SPAWNING_URL),
                 urls_number_per_batch=env.int(

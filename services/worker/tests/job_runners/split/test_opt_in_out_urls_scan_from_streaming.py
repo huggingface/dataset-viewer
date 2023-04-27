@@ -139,7 +139,7 @@ FIRST_ROWS_WITH_OPT_IN_OUT_URLS = {
             {
                 "has_urls_columns": False,
                 "num_scanned_rows": 0,
-                "opt_in_out_urls_source": None,
+                "urls_file": None,
                 "urls_columns": [],
                 "num_opt_out_urls": 0,
                 "num_opt_in_urls": 0,
@@ -152,7 +152,7 @@ FIRST_ROWS_WITH_OPT_IN_OUT_URLS = {
             {
                 "has_urls_columns": True,
                 "num_scanned_rows": 4,
-                "opt_in_out_urls_source": "assets/",
+                "urls_file": "assets/",
                 "urls_columns": ["col"],
                 "num_opt_out_urls": 1,
                 "num_opt_in_urls": 1,
@@ -200,9 +200,9 @@ def test_compute(
     assert content["num_opt_in_urls"] == expected_content["num_opt_in_urls"]
     assert content["num_urls"] == expected_content["num_urls"]
     if expected_content["has_urls_columns"]:
-        assert content["opt_in_out_urls_source"] is not None and isinstance(content["opt_in_out_urls_source"], dict)
+        assert content["urls_file"] is not None and isinstance(content["urls_file"], dict)
     else:
-        assert content["opt_in_out_urls_source"] is None
+        assert content["urls_file"] is None
 
 
 @pytest.mark.parametrize(

@@ -5,10 +5,8 @@ import logging
 from asyncio import Semaphore, create_task, run, wait
 from http import HTTPStatus
 from pathlib import Path
-from typing import Any, List, Literal, Mapping, Optional, Tuple, TypedDict, Union
+from typing import Any, List, Literal, Mapping, Optional, TypedDict, Union
 
-import pandas as pd
-import pyarrow as pa
 from aiohttp import ClientSession
 from aiolimiter import AsyncLimiter
 from datasets import get_dataset_config_info
@@ -99,14 +97,20 @@ class ExternalServerError(SplitOptInOutUrlsScanJobRunnerError):
 class OptUrl(TypedDict):
     url: str
     row_idx: int
-    column_name: str
-    opt_in: bool
-    opt_out: bool
+    feature_name: str
+    is_opt_in: bool
+    is_opt_out: bool
+
+
+class OptInOutContent(TypedDict):
+    urls: List[OptUrl]
+    num_opt_in: int
+    num_opt_out: int
 
 
 class OptInOutUrlsScanResponse(TypedDict):
     urls_columns: List[str]
-    opt_in_out_urls_source: Optional[FileSource]
+    urls_file: Optional[FileSource]
     num_opt_in_urls: int
     num_opt_out_urls: int
     num_urls: int
@@ -123,21 +127,16 @@ async def check_spawning(
         image_urls = image_urls + [""]  # the API requires >1 urls
     async with semaphore:
         async with limiter:
-            async with session.post(url=spawning_url, data="\n".join(image_urls)) as resp:
-                spawning_response = await resp.json()
-                return spawning_response
-
-
-async def opt_in_out_task(
-    image_urls: List[str], session: ClientSession, semaphore: Semaphore, limiter: AsyncLimiter, spawning_url: str
-) -> Any:
-    try:
-        spawning_response = await check_spawning(image_urls, session, semaphore, limiter, spawning_url)
-    except Exception as e:
-        raise ExternalServerError(message=f"Error when trying to connect to {spawning_url}", cause=e) from e
-    if "urls" not in spawning_response:
-        raise ExternalServerError(message=f"Error when trying to connect to {spawning_url}: '{spawning_response}'")
-    return spawning_response
+            try:
+                async with session.post(url=spawning_url, data="\n".join(image_urls)) as resp:
+                    spawning_response = await resp.json()
+                    if "urls" not in spawning_response:
+                        raise ExternalServerError(
+                            message=f"Error when trying to connect to {spawning_url}: '{spawning_response}'"
+                        )
+                    return spawning_response
+            except Exception as e:
+                raise ExternalServerError(message=f"Error when trying to connect to {spawning_url}", cause=e) from e
 
 
 async def opt_in_out_scan_urls(
@@ -148,7 +147,7 @@ async def opt_in_out_scan_urls(
     max_concurrent_requests_number: int,
     max_requests_per_second: int,
     spawning_url: str,
-) -> Tuple[List[OptUrl], int, int]:
+) -> OptInOutContent:
     offsets = []
     tasks = []
     semaphore = Semaphore(value=max_concurrent_requests_number)
@@ -160,7 +159,7 @@ async def opt_in_out_scan_urls(
             offsets.append(offset)
             limit = offset + urls_number_per_batch
             tasks.append(
-                create_task(opt_in_out_task(urls[offset:limit], session, semaphore, limiter, spawning_url))
+                create_task(check_spawning(urls[offset:limit], session, semaphore, limiter, spawning_url))
             )  # noqa: E203
         await wait(tasks)
 
@@ -169,23 +168,36 @@ async def opt_in_out_scan_urls(
     num_opt_out = 0
     for offset, task in zip(offsets, tasks):
         spawning_response = task.result()
+        if not isinstance(spawning_response, dict):
+            raise TypeError("spawning response should be a dict.")
         spawning_response_urls = spawning_response["urls"]
+        if not isinstance(spawning_response_urls, list):
+            raise TypeError("spawning response urls should be a list.")
         for i in range(len(spawning_response_urls)):
-            if spawning_response_urls[i]["optIn"] or spawning_response_urls[i]["optOut"]:
+            spawning_item = spawning_response_urls[i]
+            if not isinstance(spawning_item, dict):
+                raise TypeError("spawning response item should be a dict.")
+            is_opt_in = spawning_item["optIn"]
+            is_opt_out = spawning_item["optOut"]
+            if not isinstance(is_opt_in, bool):
+                raise TypeError("optIn should be a bool.")
+            if not isinstance(is_opt_out, bool):
+                raise TypeError("optOut should be a bool.")
+            if is_opt_in or is_opt_out:
                 idx = offset + i
-                num_opt_in += 1 if spawning_response_urls[i]["optIn"] else 0
-                num_opt_out += 1 if spawning_response_urls[i]["optOut"] else 0
+                num_opt_in += 1 if is_opt_in else 0
+                num_opt_out += 1 if is_opt_out else 0
 
                 opt_in_out_urls.append(
                     OptUrl(
                         url=urls[idx],
                         row_idx=idx // len(urls_columns),
-                        column_name=urls_columns[idx % len(urls_columns)],
-                        opt_in=spawning_response_urls[i]["optIn"],
-                        opt_out=spawning_response_urls[i]["optOut"],
+                        feature_name=urls_columns[idx % len(urls_columns)],
+                        is_opt_in=is_opt_in,
+                        is_opt_out=is_opt_out,
                     )
                 )
-    return opt_in_out_urls, num_opt_in, num_opt_out
+    return OptInOutContent(urls=opt_in_out_urls, num_opt_in=num_opt_in, num_opt_out=num_opt_out)
 
 
 def compute_opt_in_out_urls_scan_response(
@@ -257,7 +269,7 @@ def compute_opt_in_out_urls_scan_response(
     if not urls_columns:
         return OptInOutUrlsScanResponse(
             urls_columns=[],
-            opt_in_out_urls_source=None,
+            urls_file=None,
             num_opt_in_urls=0,
             num_opt_out_urls=0,
             num_urls=0,
@@ -286,7 +298,7 @@ def compute_opt_in_out_urls_scan_response(
     urls = [row[urls_column] for row in rows for urls_column in urls_columns]
 
     # scan the urls
-    opt_in_out_urls, num_opt_in, num_opt_out = run(
+    opt_in_out_content = run(
         opt_in_out_scan_urls(
             urls,
             urls_columns,
@@ -298,35 +310,24 @@ def compute_opt_in_out_urls_scan_response(
         )
     )
 
-    headers = ["url", "row_idx", "column_name", "opt_in", "opt_out"]
-    csv_src = create_csv_file(
+    headers = ["url", "row_idx", "feature_name", "is_opt_in", "is_opt_out"]
+    urls_csv_file = create_csv_file(
         assets_base_url=assets_base_url,
         assets_directory=assets_directory,
         dataset=dataset,
         config=config,
         split=split,
-        data=opt_in_out_urls,
-        file_name="opt_in_out.csv",
         headers=headers,
-    )
-
-    in_df = pd.DataFrame({"opt_in_urls": opt_in_urls})
-    in_table = pa.Table.from_pandas(in_df)
-    opt_in_urls_src = create_parquet_file(
-        dataset=dataset,
-        config=config,
-        split=split,
-        data=opt_in_out_urls,
+        data=opt_in_out_content["urls"],
         file_name="opt_in_out.csv",
-        headers=headers,
     )
 
     # return scan result
     return OptInOutUrlsScanResponse(
         urls_columns=urls_columns,
-        opt_in_out_urls_source=csv_src,
-        num_opt_in_urls=num_opt_in,
-        num_opt_out_urls=num_opt_out,
+        urls_file=urls_csv_file,
+        num_opt_in_urls=opt_in_out_content["num_opt_in"],
+        num_opt_out_urls=opt_in_out_content["num_opt_out"],
         num_urls=len(urls),
         num_scanned_rows=num_scanned_rows,
         has_urls_columns=True,
