@@ -3,7 +3,7 @@
 
 import base64
 from datetime import datetime, timezone
-from typing import Any
+from typing import Any, Optional
 
 import orjson
 
@@ -24,3 +24,19 @@ def orjson_dumps(content: Any) -> bytes:
 
 def get_datetime() -> datetime:
     return datetime.now(timezone.utc)
+
+
+def inputs_to_string(
+    dataset: str,
+    config: Optional[str] = None,
+    split: Optional[str] = None,
+    prefix: Optional[str] = None,
+) -> str:
+    result = dataset
+    if config is not None:
+        result = f"{result},{config}"
+        if split is not None:
+            result = f"{result},{split}"
+    if prefix is not None:
+        result = f"{prefix},{result}"
+    return result
