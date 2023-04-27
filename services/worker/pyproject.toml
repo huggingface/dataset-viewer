@@ -89,6 +89,7 @@ strict = true
 
 [[tool.mypy.overrides]]
 module = [
+    "aiolimiter.*",
     "datasets.*",
     "hffs.*",
     "huggingface_hub.*",
