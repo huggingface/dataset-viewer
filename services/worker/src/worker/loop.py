@@ -18,10 +18,6 @@ from worker.config import WorkerConfig
 from worker.job_runner_factory import BaseJobRunnerFactory
 
 
-class UnknownJobTypeError(Exception):
-    pass
-
-
 class WorkerState(TypedDict):
     current_job_info: Optional[JobInfo]
     last_updated: datetime
@@ -129,18 +125,6 @@ class Loop:
                 job_types_blocked=self.worker_config.job_types_blocked,
                 job_types_only=self.worker_config.job_types_only,
             )
-            if self.worker_config.job_types_blocked and job_info["type"] in self.worker_config.job_types_blocked:
-                raise UnknownJobTypeError(
-                    f"Job of type {job_info['type']} is not supported (blocked job types:"
-                    f" ${', '.join(self.worker_config.job_types_only)}). The queue should not have provided this"
-                    " job. It is in an inconsistent state. Please report this issue to the datasets team."
-                )
-            if self.worker_config.job_types_only and job_info["type"] not in self.worker_config.job_types_only:
-                raise UnknownJobTypeError(
-                    f"Job of type {job_info['type']} is not supported (only"
-                    f" ${', '.join(self.worker_config.job_types_only)}). The queue should not have provided this"
-                    " job. It is in an inconsistent state. Please report this issue to the datasets team."
-                )
             self.set_worker_state(current_job_info=job_info)
             logging.debug(f"job assigned: {job_info}")
         except EmptyQueueError:
