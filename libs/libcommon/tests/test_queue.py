@@ -208,7 +208,7 @@ def test_max_jobs_per_namespace(max_jobs_per_namespace: Optional[int]) -> None:
 
 
 @pytest.mark.parametrize(
-    "job_type,only_job_types",
+    "job_type,job_types_only",
     [
         ("test_type", None),
         ("test_type", ["test_type"]),
@@ -216,16 +216,16 @@ def test_max_jobs_per_namespace(max_jobs_per_namespace: Optional[int]) -> None:
         ("test_type", ["other_type"]),
     ],
 )
-def test_only_job_types(job_type: str, only_job_types: Optional[list[str]]) -> None:
+def test_job_types_only(job_type: str, job_types_only: Optional[list[str]]) -> None:
     test_dataset = "test_dataset"
     queue = Queue(max_jobs_per_namespace=100)
     queue.upsert_job(job_type=job_type, dataset=test_dataset, config=None, split=None)
     assert queue.is_job_in_process(job_type=job_type, dataset=test_dataset, config=None, split=None)
-    if only_job_types and job_type not in only_job_types:
+    if job_types_only and job_type not in job_types_only:
         with pytest.raises(EmptyQueueError):
-            queue.start_job(only_job_types=only_job_types)
+            queue.start_job(job_types_only=job_types_only)
     else:
-        job_info = queue.start_job(only_job_types=only_job_types)
+        job_info = queue.start_job(job_types_only=job_types_only)
         assert job_info["dataset"] == test_dataset
 
 

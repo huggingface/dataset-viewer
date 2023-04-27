@@ -325,7 +325,7 @@ class Queue:
         return job_dicts
 
     def _get_next_waiting_job_for_priority(
-        self, priority: Priority, only_job_types: Optional[list[str]] = None
+        self, priority: Priority, job_types_only: Optional[list[str]] = None
     ) -> Job:
         """Get the next job in the queue for a given priority.
 
@@ -337,17 +337,17 @@ class Queue:
 
         Args:
             priority (`Priority`): The priority of the job.
-            only_job_types: if not None, only jobs of the given types are considered.
+            job_types_only: if not None, only jobs of the given types are considered.
 
         Raises:
             EmptyQueueError: if there is no waiting job in the queue that satisfies the restrictions above.
 
         Returns: the job
         """
-        logging.debug("Getting next waiting job for priority %s, among types %s", priority, only_job_types or "all")
+        logging.debug("Getting next waiting job for priority %s, among types %s", priority, job_types_only or "all")
         started_jobs = (
-            Job.objects(type__in=only_job_types, status=Status.STARTED)
-            if only_job_types
+            Job.objects(type__in=job_types_only, status=Status.STARTED)
+            if job_types_only
             else Job.objects(status=Status.STARTED)
         )
         logging.debug(f"Number of started jobs: {started_jobs.count()}")
@@ -357,12 +357,12 @@ class Queue:
         next_waiting_job = (
             (
                 Job.objects(
-                    type__in=only_job_types,
+                    type__in=job_types_only,
                     status=Status.WAITING,
                     namespace__nin=set(started_job_namespaces),
                     priority=priority,
                 )
-                if only_job_types
+                if job_types_only
                 else Job.objects(
                     status=Status.WAITING,
                     namespace__nin=set(started_job_namespaces),
@@ -406,13 +406,13 @@ class Queue:
             next_waiting_job = (
                 (
                     Job.objects(
-                        type__in=only_job_types,
+                        type__in=job_types_only,
                         status=Status.WAITING,
                         namespace__in=least_common_namespaces_group,
                         unicity_id__nin=started_unicity_ids,
                         priority=priority,
                     )
-                    if only_job_types
+                    if job_types_only
                     else Job.objects(
                         status=Status.WAITING,
                         namespace__in=least_common_namespaces_group,
@@ -432,7 +432,7 @@ class Queue:
             " namespace)"
         )
 
-    def get_next_waiting_job(self, only_job_types: Optional[list[str]] = None) -> Job:
+    def get_next_waiting_job(self, job_types_only: Optional[list[str]] = None) -> Job:
         """Get the next job in the queue.
 
         Get the waiting job with the oldest creation date with the following criteria:
@@ -443,7 +443,7 @@ class Queue:
           - ensuring that the unicity_id field is unique among the started jobs.
 
         Args:
-            only_job_types: if not None, only jobs of the given types are considered.
+            job_types_only: if not None, only jobs of the given types are considered.
 
         Raises:
             EmptyQueueError: if there is no waiting job in the queue that satisfies the restrictions above.
@@ -452,18 +452,18 @@ class Queue:
         """
         for priority in [Priority.NORMAL, Priority.LOW]:
             with contextlib.suppress(EmptyQueueError):
-                return self._get_next_waiting_job_for_priority(priority=priority, only_job_types=only_job_types)
+                return self._get_next_waiting_job_for_priority(priority=priority, job_types_only=job_types_only)
         raise EmptyQueueError(
             f"no job available (within the limit of {self.max_jobs_per_namespace} started jobs per namespace)"
         )
 
-    def start_job(self, only_job_types: Optional[list[str]] = None) -> JobInfo:
+    def start_job(self, job_types_only: Optional[list[str]] = None) -> JobInfo:
         """Start the next job in the queue.
 
         The job is moved from the waiting state to the started state.
 
         Args:
-            only_job_types: if not None, only jobs of the given types are considered.
+            job_types_only: if not None, only jobs of the given types are considered.
 
         Raises:
             EmptyQueueError: if there is no job in the queue, within the limit of the maximum number of started jobs
@@ -471,14 +471,14 @@ class Queue:
 
         Returns: the job id, the type, the input arguments: dataset, config and split and the force flag
         """
-        logging.debug("looking for a job to start, among the following types: %s", only_job_types or "all")
-        next_waiting_job = self.get_next_waiting_job(only_job_types=only_job_types)
+        logging.debug("looking for a job to start, among the following types: %s", job_types_only or "all")
+        next_waiting_job = self.get_next_waiting_job(job_types_only=job_types_only)
         logging.debug(f"job found: {next_waiting_job}")
         # ^ can raise EmptyQueueError
         next_waiting_job.update(started_at=get_datetime(), status=Status.STARTED)
-        if only_job_types and next_waiting_job.type not in only_job_types:
+        if job_types_only and next_waiting_job.type not in job_types_only:
             raise RuntimeError(
-                f"The job type {next_waiting_job.type} is not in the list of allowed job types {only_job_types}"
+                f"The job type {next_waiting_job.type} is not in the list of allowed job types {job_types_only}"
             )
         return next_waiting_job.info()
 

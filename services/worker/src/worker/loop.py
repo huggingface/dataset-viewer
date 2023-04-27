@@ -125,11 +125,11 @@ class Loop:
         logging.debug("try to process a job")
 
         try:
-            job_info = self.queue.start_job(only_job_types=self.worker_config.only_job_types)
-            if self.worker_config.only_job_types and job_info["type"] not in self.worker_config.only_job_types:
+            job_info = self.queue.start_job(job_types_only=self.worker_config.job_types_only)
+            if self.worker_config.job_types_only and job_info["type"] not in self.worker_config.job_types_only:
                 raise UnknownJobTypeError(
                     f"Job of type {job_info['type']} is not supported (only"
-                    f" ${', '.join(self.worker_config.only_job_types)}). The queue should not have provided this"
+                    f" ${', '.join(self.worker_config.job_types_only)}). The queue should not have provided this"
                     " job. It is in an inconsistent state. Please report this issue to the datasets team."
                 )
             self.set_worker_state(current_job_info=job_info)

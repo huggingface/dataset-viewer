@@ -236,7 +236,7 @@ workers:
   -
     deployName: "all"
     maxJobsPerNamespace: 5
-    workerOnlyJobTypes: ""
+    workerJobTypesOnly: ""
     nodeSelector:
       role-datasets-server-worker: "true"
     replicas: 80
@@ -251,7 +251,7 @@ workers:
   -
     deployName: "light"
     maxJobsPerNamespace: 2
-    workerOnlyJobTypes: "/config-names,config-parquet,dataset-parquet,config-info,dataset-info,/split-names-from-dataset-info,config-size,dataset-size,dataset-split-names-from-streaming,dataset-split-names-from-dataset-info"
+    workerJobTypesOnly: "/config-names,config-parquet,dataset-parquet,config-info,dataset-info,/split-names-from-dataset-info,config-size,dataset-size,dataset-split-names-from-streaming,dataset-split-names-from-dataset-info"
     nodeSelector:
       role-datasets-server-worker: "true"
     replicas: 4

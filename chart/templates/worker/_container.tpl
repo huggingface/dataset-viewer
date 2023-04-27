@@ -17,8 +17,8 @@
     value: {{ printf "%s/%s/datasets" .Values.cacheDirectory .workerValues.deployName | quote }}
   - name: QUEUE_MAX_JOBS_PER_NAMESPACE
     value: {{ .workerValues.maxJobsPerNamespace | quote }}
-  - name: WORKER_ONLY_JOB_TYPES
-    value: {{ .workerValues.workerOnlyJobTypes | quote }}
+  - name: WORKER_JOB_TYPES_ONLY
+    value: {{ .workerValues.workerJobTypesOnly | quote }}
   volumeMounts:
   {{ include "volumeMountAssetsRW" . | nindent 2 }}
   {{ include "volumeMountCache" . | nindent 2 }}
