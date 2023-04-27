@@ -21,7 +21,7 @@ ASSET_DIR_MODE = 0o755
 DATASETS_SERVER_MDATE_FILENAME = ".dss"
 
 
-def create_asset_dir(
+def create_cell_dir(
     dataset: str, config: str, split: str, row_idx: int, column: str, assets_directory: StrPath
 ) -> Tuple[Path, str]:
     dir_path = Path(assets_directory).resolve() / dataset / DATASET_SEPARATOR / config / split / str(row_idx) / column
@@ -30,7 +30,7 @@ def create_asset_dir(
     return dir_path, url_dir_path
 
 
-def create_file_dir(dataset: str, config: str, split: str, assets_directory: StrPath) -> Tuple[Path, str]:
+def create_split_dir(dataset: str, config: str, split: str, assets_directory: StrPath) -> Tuple[Path, str]:
     dir_path = Path(assets_directory).resolve() / dataset / DATASET_SEPARATOR / config / split
     url_dir_path = f"{dataset}/{DATASET_SEPARATOR}/{config}/{split}"
     makedirs(dir_path, ASSET_DIR_MODE, exist_ok=True)
@@ -79,7 +79,7 @@ def create_image_file(
     assets_directory: StrPath,
     overwrite: bool = True,
 ) -> ImageSource:
-    dir_path, url_dir_path = create_asset_dir(
+    dir_path, url_dir_path = create_cell_dir(
         dataset=dataset,
         config=config,
         split=split,
@@ -118,7 +118,7 @@ def create_csv_file(
     file_name: str,
     assets_directory: StrPath,
 ) -> FileSource:
-    dir_path, url_dir_path = create_file_dir(
+    dir_path, url_dir_path = create_split_dir(
         dataset=dataset,
         config=config,
         split=split,
@@ -153,7 +153,7 @@ def create_audio_files(
 ) -> List[AudioSource]:
     wav_filename = f"{filename_base}.wav"
     mp3_filename = f"{filename_base}.mp3"
-    dir_path, url_dir_path = create_asset_dir(
+    dir_path, url_dir_path = create_cell_dir(
         dataset=dataset,
         config=config,
         split=split,
