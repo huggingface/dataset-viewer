@@ -60,11 +60,6 @@ class ProcessingStep:
             raise ValueError(f"Step {self.name} provides config split names but its input type is {self.input_type}.")
 
     @property
-    def endpoint(self) -> str:
-        warnings.warn("The use of endpoint is deprecated, name will be used instead.", category=DeprecationWarning)
-        return self.name
-
-    @property
     def job_type(self) -> str:
         """The job type (ie. the job to run to compute the response)."""
         return self.name
