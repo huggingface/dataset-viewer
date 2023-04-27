@@ -6,10 +6,11 @@ from typing import Iterator
 from environs import Env
 from pytest import fixture
 
+from libcommon.config import AssetsConfig
 from libcommon.queue import _clean_queue_database
 from libcommon.resources import CacheMongoResource, QueueMongoResource
 from libcommon.simple_cache import _clean_cache_database
-from libcommon.storage import StrPath, init_cached_assets_dir
+from libcommon.storage import StrPath, init_assets_dir, init_cached_assets_dir
 
 # Import fixture modules as plugins
 pytest_plugins = ["tests.fixtures.datasets"]
@@ -57,6 +58,12 @@ def metrics_mongo_host(env: Env) -> str:
 def cached_assets_directory(tmp_path: Path) -> StrPath:
     cached_assets_directory = tmp_path / "cached-assets"
     return init_cached_assets_dir(cached_assets_directory)
+
+
+@fixture
+def assets_directory() -> StrPath:
+    assets_config = AssetsConfig.from_env()
+    return init_assets_dir(assets_config.storage_directory)
 
 
 @fixture

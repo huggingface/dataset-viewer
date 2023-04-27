@@ -4,9 +4,11 @@
 from asyncio import Semaphore
 from dataclasses import replace
 from http import HTTPStatus
+from pathlib import Path
 from typing import Any, Callable, List, Mapping
 from unittest.mock import patch
 
+import pandas as pd
 import pytest
 from aiohttp import ClientSession
 from aiolimiter import AsyncLimiter
@@ -123,15 +125,24 @@ FIRST_ROWS_WITH_OPT_IN_OUT_URLS = {
         }
     ],
     "rows": [
-        {"row_idx": 0, "row": {"col": "http://testurl.test/test_image.jpg"}, "truncated_cells": []},
+        {"row_idx": 0, "row": {"col": "http://testurl.test/test_image-optOut.jpg"}, "truncated_cells": []},
         {"row_idx": 1, "row": {"col": "http://testurl.test/test_image2.jpg"}, "truncated_cells": []},
         {"row_idx": 2, "row": {"col": "other"}, "truncated_cells": []},
+        {"row_idx": 3, "row": {"col": "http://testurl.test/test_image3-optIn.jpg"}, "truncated_cells": []},
     ],
+}
+
+OPT_IN_OUT_DATAFRAME = {
+    "url": ["http://testurl.test/test_image-optOut.jpg", "http://testurl.test/test_image3-optIn.jpg"],
+    "row_idx": [0, 3],
+    "feature_name": ["col", "col"],
+    "is_opt_in": [False, True],
+    "is_opt_out": [True, False],
 }
 
 
 @pytest.mark.parametrize(
-    "name,upstream_content,expected_content",
+    "name,upstream_content,expected_content,expected_dataframe",
     [
         (
             "public",
@@ -139,12 +150,12 @@ FIRST_ROWS_WITH_OPT_IN_OUT_URLS = {
             {
                 "has_urls_columns": False,
                 "num_scanned_rows": 0,
-                "urls_file": None,
                 "urls_columns": [],
                 "num_opt_out_urls": 0,
                 "num_opt_in_urls": 0,
                 "num_urls": 0,
             },
+            None,
         ),
         (
             "spawning_opt_in_out",
@@ -152,22 +163,24 @@ FIRST_ROWS_WITH_OPT_IN_OUT_URLS = {
             {
                 "has_urls_columns": True,
                 "num_scanned_rows": 4,
-                "urls_file": "assets/",
                 "urls_columns": ["col"],
                 "num_opt_out_urls": 1,
                 "num_opt_in_urls": 1,
                 "num_urls": 4,
             },
+            pd.DataFrame(OPT_IN_OUT_DATAFRAME),
         ),
     ],
 )
 def test_compute(
+    assets_directory: StrPath,
     hub_datasets: HubDatasets,
     app_config: AppConfig,
     get_job_runner: GetJobRunner,
     name: str,
     upstream_content: Mapping[str, Any],
     expected_content: Mapping[str, Any],
+    expected_dataframe: pd.DataFrame,
 ) -> None:
     dataset, config, split = get_default_config_split(hub_datasets[name]["name"])
     job_runner = get_job_runner(dataset, config, split, app_config, False)
@@ -201,6 +214,12 @@ def test_compute(
     assert content["num_urls"] == expected_content["num_urls"]
     if expected_content["has_urls_columns"]:
         assert content["urls_file"] is not None and isinstance(content["urls_file"], dict)
+        assert content["urls_file"]["src"] is not None
+        assert content["urls_file"]["type"] == "text/csv"
+        file_location = Path(assets_directory).resolve() / dataset / "--" / config / split / "opt_in_out.csv"
+        data = pd.read_csv(file_location)
+        assert data is not None
+        assert data.equals(expected_dataframe)
     else:
         assert content["urls_file"] is None
 
@@ -299,8 +318,10 @@ def test_compute_error_from_spawning(
         progress=1.0,
         http_status=HTTPStatus.OK,
     )
-    with pytest.raises(ExternalServerError):
-        job_runner.compute()
+    with patch("worker.job_runners.split.opt_in_out_urls_scan_from_streaming.RETRY_TIMES", [1]):
+        with patch("worker.job_runners.split.opt_in_out_urls_scan_from_streaming.TIMEOUT", 1):
+            with pytest.raises(ExternalServerError):
+                job_runner.compute()
 
 
 @pytest.mark.asyncio

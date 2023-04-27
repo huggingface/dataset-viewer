@@ -2,6 +2,7 @@
 # Copyright 2022 The HuggingFace Authors.
 
 import logging
+import time
 from asyncio import Semaphore, create_task, run, wait
 from http import HTTPStatus
 from pathlib import Path
@@ -118,6 +119,10 @@ class OptInOutUrlsScanResponse(TypedDict):
     has_urls_columns: bool
 
 
+RETRY_TIMES = ([1] * 5) + ([10] * 5) + ([10 * 60] * 10) + ([60 * 60] * 3)
+TIMEOUT = 60
+
+
 async def check_spawning(
     image_urls: List[str], session: ClientSession, semaphore: Semaphore, limiter: AsyncLimiter, spawning_url: str
 ) -> Any:
@@ -127,16 +132,20 @@ async def check_spawning(
         image_urls = image_urls + [""]  # the API requires >1 urls
     async with semaphore:
         async with limiter:
-            try:
-                async with session.post(url=spawning_url, data="\n".join(image_urls)) as resp:
-                    spawning_response = await resp.json()
-                    if "urls" not in spawning_response:
-                        raise ExternalServerError(
-                            message=f"Error when trying to connect to {spawning_url}: '{spawning_response}'"
-                        )
-                    return spawning_response
-            except Exception as e:
-                raise ExternalServerError(message=f"Error when trying to connect to {spawning_url}", cause=e) from e
+            last_exception = None
+            for retry_time in RETRY_TIMES:
+                try:
+                    async with session.post(url=spawning_url, data="\n".join(image_urls), timeout=TIMEOUT) as resp:
+                        return await resp.json()
+                except Exception as e:
+                    logging.warning(str(e))
+                    last_exception = e
+                    pass
+                logging.warning(f"Retrying in {retry_time} seconds")
+                time.sleep(retry_time)
+            raise ExternalServerError(
+                message=f"Error when trying to connect to {spawning_url}", cause=last_exception
+            ) from last_exception
 
 
 async def opt_in_out_scan_urls(
@@ -154,14 +163,17 @@ async def opt_in_out_scan_urls(
     limiter = AsyncLimiter(max_requests_per_second, time_period=1)
 
     headers = {"Authorization": f"API {spawning_token}"}
-    async with ClientSession(headers=headers) as session:
-        for offset in range(0, len(urls), urls_number_per_batch):
-            offsets.append(offset)
-            limit = offset + urls_number_per_batch
-            tasks.append(
-                create_task(check_spawning(urls[offset:limit], session, semaphore, limiter, spawning_url))
-            )  # noqa: E203
-        await wait(tasks)
+    try:
+        async with ClientSession(headers=headers) as session:
+            for offset in range(0, len(urls), urls_number_per_batch):
+                offsets.append(offset)
+                limit = offset + urls_number_per_batch
+                tasks.append(
+                    create_task(check_spawning(urls[offset:limit], session, semaphore, limiter, spawning_url))
+                )  # noqa: E203
+            await wait(tasks)
+    except Exception as e:
+        raise ExternalServerError(message=f"Error when trying to connect to {spawning_url}", cause=e) from e
 
     opt_in_out_urls = []
     num_opt_in = 0
@@ -170,7 +182,9 @@ async def opt_in_out_scan_urls(
         spawning_response = task.result()
         if not isinstance(spawning_response, dict):
             raise TypeError("spawning response should be a dict.")
-        spawning_response_urls = spawning_response["urls"]
+        spawning_response_urls = spawning_response.get("urls")
+        if not spawning_response_urls:
+            raise ExternalServerError(message=f"Unexpected response format from {spawning_url}: '{spawning_response}'")
         if not isinstance(spawning_response_urls, list):
             raise TypeError("spawning response urls should be a list.")
         for i in range(len(spawning_response_urls)):
