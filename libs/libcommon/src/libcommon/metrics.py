@@ -9,7 +9,11 @@ from mongoengine import Document
 from mongoengine.fields import DateTimeField, IntField, ObjectIdField, StringField
 from mongoengine.queryset.queryset import QuerySet
 
-from libcommon.constants import METRICS_MONGOENGINE_ALIAS
+from libcommon.constants import (
+    METRICS_COLLECTION_CACHE_TOTAL_METRIC,
+    METRICS_COLLECTION_JOB_TOTAL_METRIC,
+    METRICS_MONGOENGINE_ALIAS,
+)
 from libcommon.utils import get_datetime
 
 # START monkey patching ### hack ###
@@ -49,7 +53,7 @@ class JobTotalMetric(Document):
     created_at = DateTimeField(default=get_datetime)
 
     meta = {
-        "collection": "jobTotalMetric",
+        "collection": METRICS_COLLECTION_JOB_TOTAL_METRIC,
         "db_alias": METRICS_MONGOENGINE_ALIAS,
         "indexes": [("queue", "status")],
     }
@@ -75,7 +79,7 @@ class CacheTotalMetric(Document):
     created_at = DateTimeField(default=get_datetime)
 
     meta = {
-        "collection": "cacheTotalMetric",
+        "collection": METRICS_COLLECTION_CACHE_TOTAL_METRIC,
         "db_alias": METRICS_MONGOENGINE_ALIAS,
         "indexes": [("kind", "http_status", "error_code")],
     }

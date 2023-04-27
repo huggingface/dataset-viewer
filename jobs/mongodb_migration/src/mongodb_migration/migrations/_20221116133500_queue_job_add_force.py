@@ -3,6 +3,7 @@
 
 import logging
 
+from libcommon.constants import QUEUE_COLLECTION_JOBS, QUEUE_MONGOENGINE_ALIAS
 from libcommon.queue import Job
 from mongoengine.connection import get_db
 
@@ -15,13 +16,13 @@ class MigrationAddForceToJob(Migration):
     def up(self) -> None:
         # See https://docs.mongoengine.org/guide/migration.html#example-1-addition-of-a-field
         logging.info("If missing, add the force field with the default value (False) to  the jobs")
-        db = get_db("queue")
-        db["jobsBlue"].update_many({"force": {"$exists": False}}, {"$set": {"force": False}})
+        db = get_db(QUEUE_MONGOENGINE_ALIAS)
+        db[QUEUE_COLLECTION_JOBS].update_many({"force": {"$exists": False}}, {"$set": {"force": False}})
 
     def down(self) -> None:
         logging.info("Remove the force field from all the jobs")
-        db = get_db("queue")
-        db["jobsBlue"].update_many({}, {"$unset": {"force": ""}})
+        db = get_db(QUEUE_MONGOENGINE_ALIAS)
+        db[QUEUE_COLLECTION_JOBS].update_many({}, {"$unset": {"force": ""}})
 
     def validate(self) -> None:
         logging.info("Ensure that a random selection of jobs have the 'force' field")
