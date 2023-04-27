@@ -100,10 +100,20 @@ class ProcessingGraph:
       graph).
     The graph can have multiple roots.
 
-    It contains the details of:
-    - the index of all the steps, identified by their name
-    - the first step, or roots: they don't have a previous step. This means that they will be computed first when a
-      dataset is updated.
+    Args:
+        processing_graph_specification (ProcessingGraphSpecification): The specification of the graph.
+
+    Attributes:
+        steps (Mapping[str, ProcessingStep]): The steps of the graph, identified by their name.
+        roots (List[ProcessingStep]): The first steps of the graph, or roots: they don't have a previous step. This
+            means that they will be computed first when a dataset is updated.
+        required_by_dataset_viewer (List[ProcessingStep]): The steps that are required by the dataset viewer.
+        topologically_ordered_steps (List[ProcessingStep]): The steps, ordered topologically.
+        provide_dataset_config_names (List[ProcessingStep]): The steps that provide dataset config names.
+        provide_config_split_names (List[ProcessingStep]): The steps that provide config split names.
+
+    Raises:
+        ValueError: If the graph is not a DAG.
     """
 
     steps: Mapping[str, ProcessingStep]
