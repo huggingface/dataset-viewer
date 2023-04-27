@@ -1,6 +1,7 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2023 The HuggingFace Authors.
 
+from libcommon.constants import QUEUE_COLLECTION_JOBS, QUEUE_MONGOENGINE_ALIAS
 from libcommon.resources import MongoResource
 from mongoengine.connection import get_db
 
@@ -14,8 +15,8 @@ def test_queue_delete_parquet_and_dataset_info(mongo_host: str) -> None:
     with MongoResource(
         database="test_queue_delete_parquet_and_dataset_info", host=mongo_host, mongoengine_alias="queue"
     ):
-        db = get_db("queue")
-        db["jobsBlue"].insert_many(
+        db = get_db(QUEUE_MONGOENGINE_ALIAS)
+        db[QUEUE_COLLECTION_JOBS].insert_many(
             [
                 {
                     "type": job_type,
@@ -25,7 +26,7 @@ def test_queue_delete_parquet_and_dataset_info(mongo_host: str) -> None:
                 }
             ]
         )
-        assert db["jobsBlue"].find_one({"type": job_type})  # Ensure there is at least one record to delete
+        assert db[QUEUE_COLLECTION_JOBS].find_one({"type": job_type})  # Ensure there is at least one record to delete
 
         migration = MigrationQueueDeleteParquetAndDatasetInfo(
             version="20230424173000",
@@ -33,6 +34,6 @@ def test_queue_delete_parquet_and_dataset_info(mongo_host: str) -> None:
         )
         migration.up()
 
-        assert not db["jobsBlue"].find_one({"type": job_type})  # Ensure 0 records with old type
+        assert not db[QUEUE_COLLECTION_JOBS].find_one({"type": job_type})  # Ensure 0 records with old type
 
-        db["jobsBlue"].drop()
+        db[QUEUE_COLLECTION_JOBS].drop()

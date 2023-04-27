@@ -3,6 +3,7 @@
 
 import logging
 
+from libcommon.constants import QUEUE_COLLECTION_JOBS, QUEUE_MONGOENGINE_ALIAS
 from libcommon.queue import Job
 from mongoengine.connection import get_db
 
@@ -23,8 +24,8 @@ class MigrationQueueUpdateSplitNames(Migration):
             f" {split_names_from_streaming}"
         )
 
-        db = get_db("queue")
-        db["jobsBlue"].update_many(
+        db = get_db(QUEUE_MONGOENGINE_ALIAS)
+        db[QUEUE_COLLECTION_JOBS].update_many(
             {"type": split_names},
             [
                 {
@@ -49,8 +50,8 @@ class MigrationQueueUpdateSplitNames(Migration):
             f" {split_names}"
         )
 
-        db = get_db("queue")
-        db["jobsBlue"].update_many(
+        db = get_db(QUEUE_MONGOENGINE_ALIAS)
+        db[QUEUE_COLLECTION_JOBS].update_many(
             {"type": split_names_from_streaming},
             [
                 {
