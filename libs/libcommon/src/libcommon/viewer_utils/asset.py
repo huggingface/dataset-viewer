@@ -133,7 +133,7 @@ def create_csv_file(
         fc.writeheader()
         fc.writerows(data)
 
-    return {"src": f"{assets_base_url}/{url_dir_path}/{file_name}", "type": "csv"}
+    return {"src": f"{assets_base_url}/{url_dir_path}/{file_name}", "type": "text/csv"}
 
 
 def create_audio_files(
