@@ -17,7 +17,7 @@ from mongoengine.fields import BooleanField, DateTimeField, EnumField, StringFie
 from mongoengine.queryset.queryset import QuerySet
 
 from libcommon.constants import QUEUE_MONGOENGINE_ALIAS, QUEUE_TTL_SECONDS
-from libcommon.utils import get_datetime
+from libcommon.utils import get_datetime, inputs_to_string
 
 # START monkey patching ### hack ###
 # see https://github.com/sbdchd/mongo-types#install
@@ -245,7 +245,7 @@ class Queue:
             dataset=dataset,
             config=config,
             split=split,
-            unicity_id=f"Job[{job_type}][{dataset}][{config}][{split}]",
+            unicity_id=inputs_to_string(dataset=dataset, config=config, split=split, prefix=job_type),
             namespace=dataset.split("/")[0],
             force=force,
             priority=priority,

@@ -17,6 +17,7 @@ from libcommon.simple_cache import (
     get_response,
     get_response_metadata,
 )
+from libcommon.utils import inputs_to_string
 
 # TODO: use the term Artifact elsewhere in the code (a Step should produce one or several Artifacts, depending on the
 # input level: one, one per dataset, one per config, or one per split)
@@ -154,7 +155,7 @@ class ArtifactState:
                 raise ValueError("Step input type is split, but config or split is None")
         else:
             raise ValueError(f"Invalid step input type: {self.step.input_type}")
-        self.id = ",".join([p for p in (self.step.name, self.dataset, self.config, self.split) if p])
+        self.id = inputs_to_string(dataset=self.dataset, config=self.config, split=self.split, prefix=self.step.name)
 
         self.job_state = JobState(
             job_type=self.step.job_type, dataset=self.dataset, config=self.config, split=self.split
