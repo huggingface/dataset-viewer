@@ -14,7 +14,7 @@ import requests
 from datasets import Audio, Features, Image, Value
 from huggingface_hub.hf_api import HfApi
 from libcommon.exceptions import CustomError
-from libcommon.processing_graph import ProcessingStep
+from libcommon.processing_graph import ProcessingGraph
 from libcommon.queue import Priority
 from libcommon.resources import CacheMongoResource, QueueMongoResource
 from libcommon.simple_cache import DoesNotExist, get_response, upsert_response
@@ -73,6 +73,15 @@ def get_job_runner(
         app_config: AppConfig,
         force: bool = False,
     ) -> ConfigParquetAndInfoJobRunner:
+        step_name = ConfigParquetAndInfoJobRunner.get_job_type()
+        processing_graph = ProcessingGraph(
+            {
+                step_name: {
+                    "input_type": "dataset",
+                    "job_runner_version": ConfigParquetAndInfoJobRunner.get_job_runner_version(),
+                }
+            }
+        )
         return ConfigParquetAndInfoJobRunner(
             job_info={
                 "type": ConfigParquetAndInfoJobRunner.get_job_type(),
@@ -84,11 +93,8 @@ def get_job_runner(
                 "priority": Priority.NORMAL,
             },
             app_config=app_config,
-            processing_step=ProcessingStep(
-                name=ConfigParquetAndInfoJobRunner.get_job_type(),
-                input_type="config",
-                job_runner_version=ConfigParquetAndInfoJobRunner.get_job_runner_version(),
-            ),
+            processing_step=processing_graph.get_step(step_name),
+            processing_graph=processing_graph,
             hf_datasets_cache=libraries_resource.hf_datasets_cache,
         )
 

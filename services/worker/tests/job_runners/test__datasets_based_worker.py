@@ -9,7 +9,7 @@ from typing import Callable, Optional
 
 import datasets.config
 import pytest
-from libcommon.processing_graph import ProcessingStep
+from libcommon.processing_graph import ProcessingGraph
 from libcommon.queue import Priority
 from libcommon.resources import CacheMongoResource, QueueMongoResource
 from libcommon.simple_cache import get_response
@@ -56,6 +56,15 @@ def get_job_runner(
         app_config: AppConfig,
         force: bool,
     ) -> DummyJobRunner:
+        step_name = DummyJobRunner.get_job_type()
+        processing_graph = ProcessingGraph(
+            {
+                step_name: {
+                    "input_type": "dataset",
+                    "job_runner_version": DummyJobRunner.get_job_runner_version(),
+                }
+            }
+        )
         return DummyJobRunner(
             job_info={
                 "type": DummyJobRunner.get_job_type(),
@@ -67,11 +76,8 @@ def get_job_runner(
                 "priority": Priority.NORMAL,
             },
             app_config=app_config,
-            processing_step=ProcessingStep(
-                name=DummyJobRunner.get_job_type(),
-                input_type="split",
-                job_runner_version=DummyJobRunner.get_job_runner_version(),
-            ),
+            processing_step=processing_graph.get_step(step_name),
+            processing_graph=processing_graph,
             hf_datasets_cache=libraries_resource.hf_datasets_cache,
         )
 

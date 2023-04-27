@@ -2,12 +2,12 @@
 # Copyright 2022 The HuggingFace Authors.
 
 import logging
-from typing import Any, List, Literal, Optional, TypedDict
+from typing import Any, Literal, Optional, TypedDict
 
 from jsonschema import ValidationError, validate
 from libcommon.dataset import DatasetError
 from libcommon.operations import delete_dataset, update_dataset
-from libcommon.processing_graph import ProcessingStep
+from libcommon.processing_graph import ProcessingGraph
 from libcommon.queue import Priority
 from starlette.requests import Request
 from starlette.responses import Response
@@ -56,7 +56,7 @@ def parse_payload(json: Any) -> MoonWebhookV2Payload:
 
 
 def process_payload(
-    init_processing_steps: List[ProcessingStep],
+    processing_graph: ProcessingGraph,
     payload: MoonWebhookV2Payload,
     hf_endpoint: str,
     hf_token: Optional[str] = None,
@@ -72,7 +72,7 @@ def process_payload(
     if event in ["add", "update"]:
         update_dataset(
             dataset=dataset,
-            init_processing_steps=init_processing_steps,
+            processing_graph=processing_graph,
             hf_endpoint=hf_endpoint,
             hf_token=hf_token,
             force=False,
@@ -85,7 +85,7 @@ def process_payload(
         if event == "move" and (moved_to := payload["movedTo"]):
             update_dataset(
                 dataset=moved_to,
-                init_processing_steps=init_processing_steps,
+                processing_graph=processing_graph,
                 hf_token=hf_token,
                 hf_endpoint=hf_endpoint,
                 force=False,
@@ -99,7 +99,7 @@ def process_payload(
 
 
 def create_webhook_endpoint(
-    init_processing_steps: List[ProcessingStep],
+    processing_graph: ProcessingGraph,
     hf_endpoint: str,
     hf_token: Optional[str] = None,
     hf_webhook_secret: Optional[str] = None,
@@ -140,7 +140,7 @@ def create_webhook_endpoint(
             with StepProfiler(method="webhook_endpoint", step="process payload"):
                 try:
                     process_payload(
-                        init_processing_steps=init_processing_steps,
+                        processing_graph=processing_graph,
                         payload=payload,
                         hf_endpoint=hf_endpoint,
                         hf_token=hf_token,

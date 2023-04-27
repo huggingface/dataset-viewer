@@ -169,7 +169,11 @@ class CacheEntry:
     ],
 )
 def test_should_skip_job(
-    test_processing_step: ProcessingStep, force: bool, cache_entry: Optional[CacheEntry], expected_skip: bool
+    test_processing_graph: ProcessingGraph,
+    test_processing_step: ProcessingStep,
+    force: bool,
+    cache_entry: Optional[CacheEntry],
+    expected_skip: bool,
 ) -> None:
     job_id = "job_id"
     dataset = "dataset"
@@ -186,6 +190,7 @@ def test_should_skip_job(
             "priority": Priority.NORMAL,
         },
         processing_step=test_processing_step,
+        processing_graph=test_processing_graph,
         common_config=CommonConfig(),
         worker_config=WorkerConfig(),
     )
@@ -207,6 +212,8 @@ def test_should_skip_job(
 
 
 def test_check_type(
+    test_processing_graph: ProcessingGraph,
+    another_processing_step: ProcessingStep,
     test_processing_step: ProcessingStep,
 ) -> None:
     job_id = "job_id"
@@ -228,13 +235,10 @@ def test_check_type(
                 "priority": Priority.NORMAL,
             },
             processing_step=test_processing_step,
+            processing_graph=test_processing_graph,
             common_config=CommonConfig(),
             worker_config=WorkerConfig(),
         )
-
-    another_processing_step = ProcessingStep(
-        name=f"not-{test_processing_step.name}", input_type="dataset", job_runner_version=1
-    )
     with pytest.raises(ValueError):
         DummyJobRunner(
             job_info={
@@ -247,6 +251,7 @@ def test_check_type(
                 "priority": Priority.NORMAL,
             },
             processing_step=another_processing_step,
+            processing_graph=test_processing_graph,
             common_config=CommonConfig(),
             worker_config=WorkerConfig(),
         )
@@ -273,6 +278,7 @@ def test_create_children_jobs() -> None:
             "priority": Priority.LOW,
         },
         processing_step=root_step,
+        processing_graph=graph,
         common_config=CommonConfig(),
         worker_config=WorkerConfig(),
     )
@@ -305,6 +311,7 @@ def test_create_children_jobs() -> None:
 
 
 def test_job_runner_set_crashed(
+    test_processing_graph: ProcessingGraph,
     test_processing_step: ProcessingStep,
 ) -> None:
     job_id = "job_id"
@@ -324,6 +331,7 @@ def test_job_runner_set_crashed(
             "priority": Priority.NORMAL,
         },
         processing_step=test_processing_step,
+        processing_graph=test_processing_graph,
         common_config=CommonConfig(),
         worker_config=WorkerConfig(),
     )
@@ -341,6 +349,7 @@ def test_job_runner_set_crashed(
 
 
 def test_raise_if_parallel_response_exists(
+    test_processing_graph: ProcessingGraph,
     test_processing_step: ProcessingStep,
 ) -> None:
     dataset = "dataset"
@@ -369,6 +378,7 @@ def test_raise_if_parallel_response_exists(
             "priority": Priority.NORMAL,
         },
         processing_step=test_processing_step,
+        processing_graph=test_processing_graph,
         common_config=CommonConfig(),
         worker_config=WorkerConfig(),
     )

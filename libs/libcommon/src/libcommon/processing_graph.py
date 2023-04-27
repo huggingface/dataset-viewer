@@ -31,18 +31,18 @@ class ProcessingStep:
         name (str): The step name.
         input_type (InputType): The input type ('dataset', 'config' or 'split').
         job_runner_version (int): The version of the job runner to use to compute the response.
-        triggered_by (List[str], optional): The steps that trigger this step, in no particular order. If None, the
-            step is a root. Defaults to None.
-        parents (List[ProcessingStep], optional): The steps that trigger this step, in no particular order.
-            Defaults to [].
-        ancestors (List[ProcessingStep], optional): All the chain of previous steps, even those that do not trigger the
-            step directly, in no particular order. Defaults to [].
-        children (List[ProcessingStep], optional): Steps that will be triggered at the end of the step, in no
-            particular order. Defaults to [].
+        triggered_by (List[str], optional): The names of the steps that trigger this step, in no particular order.
+          If None, the step is a root. Defaults to None.
+        parents (List[str], optional): The names of the steps that trigger this step, in no particular order.
+          Defaults to [].
+        ancestors (List[str], optional): All the chain of previous steps names, even those that do not trigger the
+          step directly, in no particular order. Defaults to [].
+        children (List[str], optional): Names of the steps that will be triggered at the end of the step, in no
+          particular order. Defaults to [].
         required_by_dataset_viewer (bool, optional): Whether the step is required by the dataset viewer. Defaults to
-            False.
+          False.
         provides_dataset_config_names (bool, optional): Whether the step provides dataset config names. Defaults to
-            False.
+          False.
         provides_config_split_names (bool, optional): Whether the step provides config split names. Defaults to False.
 
     Getters:
@@ -51,16 +51,16 @@ class ProcessingStep:
 
     Raises:
         ValueError: If the step provides dataset config names but its input type is not 'dataset', or if the step
-            provides config split names but its input type is not 'config'.
+          provides config split names but its input type is not 'config'.
     """
 
     name: str
     input_type: InputType
     job_runner_version: int
     triggered_by: List[str] = field(default_factory=list)
-    parents: List[ProcessingStep] = field(default_factory=list)
-    ancestors: List[ProcessingStep] = field(default_factory=list)
-    children: List[ProcessingStep] = field(default_factory=list)
+    parents: List[str] = field(default_factory=list)
+    ancestors: List[str] = field(default_factory=list)
+    children: List[str] = field(default_factory=list)
     required_by_dataset_viewer: bool = False
     provides_dataset_config_names: Optional[bool] = False
     provides_config_split_names: Optional[bool] = False
@@ -105,23 +105,23 @@ class ProcessingGraph:
 
     Attributes:
         steps (Mapping[str, ProcessingStep]): The steps of the graph, identified by their name.
-        roots (List[ProcessingStep]): The first steps of the graph, or roots: they don't have a previous step. This
+        roots (List[str]): The names of the first steps of the graph, or roots: they don't have a previous step. This
             means that they will be computed first when a dataset is updated.
-        required_by_dataset_viewer (List[ProcessingStep]): The steps that are required by the dataset viewer.
-        topologically_ordered_steps (List[ProcessingStep]): The steps, ordered topologically.
-        provide_dataset_config_names (List[ProcessingStep]): The steps that provide dataset config names.
-        provide_config_split_names (List[ProcessingStep]): The steps that provide config split names.
+        required_by_dataset_viewer (List[str]): The names of the steps that are required by the dataset viewer.
+        topologically_ordered_steps (List[str]): The names of the steps, ordered topologically.
+        provide_dataset_config_names (List[str]): The names of the steps that provide dataset config names.
+        provide_config_split_names (List[str]): The names of the steps that provide config split names.
 
     Raises:
         ValueError: If the graph is not a DAG.
     """
 
     steps: Mapping[str, ProcessingStep]
-    roots: List[ProcessingStep]
-    required_by_dataset_viewer: List[ProcessingStep]
-    topologically_ordered_steps: List[ProcessingStep]
-    provide_dataset_config_names: List[ProcessingStep]
-    provide_config_split_names: List[ProcessingStep]
+    roots: List[str]
+    required_by_dataset_viewer: List[str]
+    topologically_ordered_steps: List[str]
+    provide_dataset_config_names: List[str]
+    provide_config_split_names: List[str]
 
     def __init__(self, processing_graph_specification: ProcessingGraphSpecification):
         self.steps = {
@@ -149,18 +149,22 @@ class ProcessingGraph:
             raise ValueError("The graph is not a directed acyclic graph.")
 
         for step in self.steps.values():
-            step.ancestors = [self.get_step(name) for name in nx.ancestors(graph, step.name)]
+            step.ancestors = list(nx.ancestors(graph, step.name))
         for step in self.steps.values():
-            step.parents = [self.get_step(name) for name in graph.predecessors(step.name)]
+            step.parents = list(graph.predecessors(step.name))
             for parent in step.parents:
-                parent.children.append(step)
-        self.roots = [self.get_step(name) for name, degree in graph.in_degree() if degree == 0]
-        self.required_by_dataset_viewer = [step for step in self.steps.values() if step.required_by_dataset_viewer]
-        self.topologically_ordered_steps = [self.get_step(name) for name in nx.topological_sort(graph)]
-        self.provide_dataset_config_names = [
-            step for step in self.steps.values() if step.provides_dataset_config_names
+                self.get_step(parent).children.append(step.name)
+        self.roots = [name for name, degree in graph.in_degree() if degree == 0]
+        self.required_by_dataset_viewer = [
+            step.name for step in self.steps.values() if step.required_by_dataset_viewer
         ]
-        self.provide_config_split_names = [step for step in self.steps.values() if step.provides_config_split_names]
+        self.topologically_ordered_steps = list(nx.topological_sort(graph))
+        self.provide_dataset_config_names = [
+            step.name for step in self.steps.values() if step.provides_dataset_config_names
+        ]
+        self.provide_config_split_names = [
+            step.name for step in self.steps.values() if step.provides_config_split_names
+        ]
 
     def get_step(self, name: str) -> ProcessingStep:
         """Get a step by its name."""
@@ -174,8 +178,20 @@ class ProcessingGraph:
 
     def get_first_steps(self) -> List[ProcessingStep]:
         """Get the first steps."""
-        return self.roots
+        return [self.get_step(name) for name in self.roots]
 
     def get_steps_required_by_dataset_viewer(self) -> List[ProcessingStep]:
         """Get the steps required by the dataset viewer."""
-        return self.required_by_dataset_viewer
+        return [self.get_step(name) for name in self.required_by_dataset_viewer]
+
+    def get_steps_that_provide_config_split_names(self) -> List[ProcessingStep]:
+        """Get the steps that provide a config's split names."""
+        return [self.get_step(name) for name in self.provide_config_split_names]
+
+    def get_steps_that_provide_dataset_config_names(self) -> List[ProcessingStep]:
+        """Get the steps that provide a dataset's config names."""
+        return [self.get_step(name) for name in self.provide_dataset_config_names]
+
+    def get_topologically_ordered_steps(self) -> List[ProcessingStep]:
+        """Get the steps, ordered topologically."""
+        return [self.get_step(name) for name in self.topologically_ordered_steps]

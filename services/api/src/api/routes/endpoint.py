@@ -54,7 +54,7 @@ def get_cache_entry_from_steps(
     dataset: str,
     config: Optional[str],
     split: Optional[str],
-    init_processing_steps: List[ProcessingStep],
+    processing_graph: ProcessingGraph,
     hf_endpoint: str,
     hf_token: Optional[str] = None,
 ) -> CacheEntry:
@@ -93,7 +93,7 @@ def get_cache_entry_from_steps(
             try:
                 check_in_process(
                     processing_step=processing_step,
-                    init_processing_steps=init_processing_steps,
+                    processing_graph=processing_graph,
                     dataset=dataset,
                     config=config,
                     split=split,
@@ -206,7 +206,7 @@ def get_input_type_validator_by_parameters(
 def create_endpoint(
     endpoint_name: str,
     steps_by_input_type: StepsByInputType,
-    init_processing_steps: List[ProcessingStep],
+    processing_graph: ProcessingGraph,
     hf_endpoint: str,
     hf_token: Optional[str] = None,
     hf_jwt_public_key: Optional[str] = None,
@@ -261,7 +261,7 @@ def create_endpoint(
                 # getting result based on processing steps
                 with StepProfiler(method="processing_step_endpoint", step="get cache entry", context=context):
                     result = get_cache_entry_from_steps(
-                        processing_steps, dataset, config, split, init_processing_steps, hf_endpoint, hf_token
+                        processing_steps, dataset, config, split, processing_graph, hf_endpoint, hf_token
                     )
 
                 content = result["content"]

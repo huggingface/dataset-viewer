@@ -205,7 +205,9 @@ class ConfigState:
             self.split_names = fetch_names(
                 dataset=self.dataset,
                 config=self.config,
-                cache_kinds=[step.cache_kind for step in self.processing_graph.provide_config_split_names],
+                cache_kinds=[
+                    step.cache_kind for step in self.processing_graph.get_steps_that_provide_config_split_names()
+                ],
                 names_field="splits",
                 name_field="split",
             )
@@ -354,7 +356,9 @@ class DatasetState:
             self.config_names = fetch_names(
                 dataset=self.dataset,
                 config=None,
-                cache_kinds=[step.cache_kind for step in self.processing_graph.provide_dataset_config_names],
+                cache_kinds=[
+                    step.cache_kind for step in self.processing_graph.get_steps_that_provide_dataset_config_names()
+                ],
                 names_field="config_names",
                 name_field="config",
             )
@@ -434,7 +438,7 @@ class DatasetState:
     def _get_cache_status(self) -> CacheStatus:
         cache_status = CacheStatus()
 
-        for step in self.processing_graph.topologically_ordered_steps:
+        for step in self.processing_graph.get_topologically_ordered_steps():
             # Every step can have one or multiple artifacts, for example config-level steps have one artifact per
             # config
             artifact_states = self._get_artifact_states_for_step(step)
@@ -442,9 +446,11 @@ class DatasetState:
                 # any of the parents is more recent?
                 if any(
                     artifact_state.cache_state.is_older_than(parent_artifact_state.cache_state)
-                    for parent_step in step.parents
+                    for parent_step_name in step.parents
                     for parent_artifact_state in self._get_artifact_states_for_step(
-                        step=parent_step, config=artifact_state.config, split=artifact_state.split
+                        step=self.processing_graph.get_step(parent_step_name),
+                        config=artifact_state.config,
+                        split=artifact_state.split,
                     )
                 ):
                     cache_status.cache_is_outdated_by_parent[artifact_state.id] = artifact_state
@@ -478,7 +484,7 @@ class DatasetState:
     def _get_queue_status(self) -> QueueStatus:
         queue_status = QueueStatus()
 
-        for step in self.processing_graph.topologically_ordered_steps:
+        for step in self.processing_graph.get_topologically_ordered_steps():
             artifact_states = self._get_artifact_states_for_step(step)
             for artifact_state in artifact_states:
                 if artifact_state.job_state.is_in_process:

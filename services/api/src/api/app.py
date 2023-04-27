@@ -41,7 +41,6 @@ def create_app_with_config(app_config: AppConfig, endpoint_config: EndpointConfi
     processing_graph = ProcessingGraph(app_config.processing_graph.specification)
     endpoints_definition = EndpointsDefinition(processing_graph, endpoint_config)
     processing_steps_required_by_dataset_viewer = processing_graph.get_steps_required_by_dataset_viewer()
-    init_processing_steps = processing_graph.get_first_steps()
     hf_jwt_public_key = (
         fetch_jwt_public_key(
             url=app_config.api.hf_jwt_public_key_url,
@@ -78,7 +77,7 @@ def create_app_with_config(app_config: AppConfig, endpoint_config: EndpointConfi
             endpoint=create_endpoint(
                 endpoint_name=endpoint_name,
                 steps_by_input_type=steps_by_input_type,
-                init_processing_steps=init_processing_steps,
+                processing_graph=processing_graph,
                 hf_endpoint=app_config.common.hf_endpoint,
                 hf_token=app_config.common.hf_token,
                 hf_jwt_public_key=hf_jwt_public_key,
@@ -118,7 +117,7 @@ def create_app_with_config(app_config: AppConfig, endpoint_config: EndpointConfi
         Route(
             "/webhook",
             endpoint=create_webhook_endpoint(
-                init_processing_steps=init_processing_steps,
+                processing_graph=processing_graph,
                 hf_endpoint=app_config.common.hf_endpoint,
                 hf_token=app_config.common.hf_token,
                 hf_webhook_secret=app_config.api.hf_webhook_secret,
@@ -131,7 +130,7 @@ def create_app_with_config(app_config: AppConfig, endpoint_config: EndpointConfi
             "/rows",
             endpoint=create_rows_endpoint(
                 config_parquet_processing_steps=config_parquet_processing_steps,
-                init_processing_steps=init_processing_steps,
+                processing_graph=processing_graph,
                 cached_assets_base_url=app_config.cached_assets.base_url,
                 cached_assets_directory=cached_assets_directory,
                 hf_endpoint=app_config.common.hf_endpoint,

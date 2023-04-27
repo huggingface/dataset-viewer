@@ -45,6 +45,6 @@ def test_force_refresh(
 ) -> None:
     dataset = "glue"
     processing_graph = ProcessingGraph(real_app_config.processing_graph.specification)
-    path = next(iter(processing_graph.steps.values())).endpoint
+    path = next(iter(processing_graph.steps.values())).job_type
     response = real_client.request("post", f"/force-refresh{path}?dataset={dataset}")
     assert response.status_code == 200, response.text

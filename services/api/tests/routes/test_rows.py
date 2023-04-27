@@ -10,7 +10,7 @@ import pytest
 from datasets import Dataset, Image, concatenate_datasets
 from datasets.table import embed_table_storage
 from fsspec import AbstractFileSystem
-from libcommon.processing_graph import ProcessingStep
+from libcommon.processing_graph import ProcessingGraph, ProcessingStep
 from libcommon.simple_cache import _clean_cache_database, upsert_response
 from libcommon.storage import StrPath
 from libcommon.viewer_utils.asset import update_last_modified_date_of_rows_in_assets_dir
@@ -153,7 +153,7 @@ def config_parquet_processing_steps(endpoint_definition: StepsByInputTypeAndEndp
 def indexer(app_config: AppConfig, config_parquet_processing_steps: List[ProcessingStep]) -> Indexer:
     return Indexer(
         config_parquet_processing_steps=config_parquet_processing_steps,
-        init_processing_steps=[],
+        processing_graph=ProcessingGraph({}),
         hf_endpoint=app_config.common.hf_endpoint,
         hf_token=app_config.common.hf_token,
     )

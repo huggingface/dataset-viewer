@@ -5,7 +5,7 @@ from http import HTTPStatus
 from typing import Any, Callable
 
 import pytest
-from libcommon.processing_graph import ProcessingStep
+from libcommon.processing_graph import ProcessingGraph
 from libcommon.queue import Priority
 from libcommon.resources import CacheMongoResource, QueueMongoResource
 from libcommon.simple_cache import upsert_response
@@ -35,6 +35,15 @@ def get_job_runner(
         app_config: AppConfig,
         force: bool = False,
     ) -> ConfigSizeJobRunner:
+        step_name = ConfigSizeJobRunner.get_job_type()
+        processing_graph = ProcessingGraph(
+            {
+                step_name: {
+                    "input_type": "dataset",
+                    "job_runner_version": ConfigSizeJobRunner.get_job_runner_version(),
+                }
+            }
+        )
         return ConfigSizeJobRunner(
             job_info={
                 "type": ConfigSizeJobRunner.get_job_type(),
@@ -47,11 +56,8 @@ def get_job_runner(
             },
             common_config=app_config.common,
             worker_config=app_config.worker,
-            processing_step=ProcessingStep(
-                name=ConfigSizeJobRunner.get_job_type(),
-                input_type="config",
-                job_runner_version=ConfigSizeJobRunner.get_job_runner_version(),
-            ),
+            processing_step=processing_graph.get_step(step_name),
+            processing_graph=processing_graph,
         )
 
     return _get_job_runner

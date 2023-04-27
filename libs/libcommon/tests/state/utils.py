@@ -26,9 +26,9 @@ SIMPLE_PROCESSING_GRAPH_SPECIFICATION: ProcessingGraphSpecification = {
         "input_type": "config",
         "provides_config_split_names": True,
         "job_runner_version": STEP_VERSION,
-        "requires": "dataset-a",
+        "triggered_by": "dataset-a",
     },
-    "split-c": {"input_type": "split", "job_runner_version": STEP_VERSION, "requires": "config-b"},
+    "split-c": {"input_type": "split", "job_runner_version": STEP_VERSION, "triggered_by": "config-b"},
 }
 
 #     "/config-names": {"input_type": "dataset", "job_runner_version": PROCESSING_STEP_CONFIG_NAMES_VERSION},

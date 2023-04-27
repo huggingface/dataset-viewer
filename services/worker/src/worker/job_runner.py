@@ -14,7 +14,7 @@ from libcommon.exceptions import (
     ErrorResponseWithCause,
     ErrorResponseWithoutCause,
 )
-from libcommon.processing_graph import ProcessingStep
+from libcommon.processing_graph import ProcessingGraph, ProcessingStep
 from libcommon.queue import JobInfo, Priority, Queue, Status
 from libcommon.simple_cache import (
     BestResponse,
@@ -316,6 +316,7 @@ class JobRunner(ABC):
     worker_config: WorkerConfig
     common_config: CommonConfig
     processing_step: ProcessingStep
+    processing_graph: ProcessingGraph
     _dataset_git_revision: Optional[str] = None
 
     @staticmethod
@@ -334,6 +335,7 @@ class JobRunner(ABC):
         common_config: CommonConfig,
         worker_config: WorkerConfig,
         processing_step: ProcessingStep,
+        processing_graph: ProcessingGraph,
     ) -> None:
         self.job_type = job_info["type"]
         self.job_id = job_info["job_id"]
@@ -345,6 +347,7 @@ class JobRunner(ABC):
         self.common_config = common_config
         self.worker_config = worker_config
         self.processing_step = processing_step
+        self.processing_graph = processing_graph
         self.setup()
 
     def setup(self) -> None:
@@ -561,7 +564,9 @@ class JobRunner(ABC):
             new_split_full_names_for_config = set()
         new_split_full_names_for_dataset = {SplitFullName(dataset=self.dataset, config=None, split=None)}
 
-        for processing_step in self.processing_step.children:
+        for processing_step in [
+            self.processing_graph.get_step(step_name) for step_name in self.processing_step.children
+        ]:
             new_split_full_names = (
                 new_split_full_names_for_split
                 if processing_step.input_type == "split"

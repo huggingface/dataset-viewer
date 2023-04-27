@@ -10,7 +10,7 @@ from unittest.mock import Mock, patch
 import pytest
 from libcommon.constants import PROCESSING_STEP_SPLIT_FIRST_ROWS_FROM_STREAMING_VERSION
 from libcommon.exceptions import CustomError
-from libcommon.processing_graph import ProcessingStep
+from libcommon.processing_graph import ProcessingGraph
 from libcommon.queue import Priority
 from libcommon.resources import CacheMongoResource, QueueMongoResource
 from libcommon.simple_cache import DoesNotExist, get_response, upsert_response
@@ -41,6 +41,15 @@ def get_job_runner(
         app_config: AppConfig,
         force: bool = False,
     ) -> SplitFirstRowsFromParquetJobRunner:
+        step_name = SplitFirstRowsFromParquetJobRunner.get_job_type()
+        processing_graph = ProcessingGraph(
+            {
+                step_name: {
+                    "input_type": "dataset",
+                    "job_runner_version": SplitFirstRowsFromParquetJobRunner.get_job_runner_version(),
+                }
+            }
+        )
         return SplitFirstRowsFromParquetJobRunner(
             job_info={
                 "type": SplitFirstRowsFromParquetJobRunner.get_job_type(),
@@ -52,12 +61,8 @@ def get_job_runner(
                 "priority": Priority.NORMAL,
             },
             app_config=app_config,
-            processing_step=ProcessingStep(
-                name=SplitFirstRowsFromParquetJobRunner.get_job_type(),
-                input_type="split",
-                required_by_dataset_viewer=True,
-                job_runner_version=SplitFirstRowsFromParquetJobRunner.get_job_runner_version(),
-            ),
+            processing_step=processing_graph.get_step(step_name),
+            processing_graph=processing_graph,
             assets_directory=assets_directory,
         )
 

@@ -3,11 +3,11 @@
 
 import logging
 from http import HTTPStatus
-from typing import List, Optional
+from typing import Optional
 
 from libcommon.dataset import check_support
 from libcommon.exceptions import LoggedError
-from libcommon.processing_graph import ProcessingStep
+from libcommon.processing_graph import ProcessingGraph, ProcessingStep
 from libcommon.queue import Priority, Queue
 from libcommon.simple_cache import DoesNotExist, delete_dataset_responses, get_response
 
@@ -21,7 +21,7 @@ class PreviousStepError(LoggedError):
 
 def update_dataset(
     dataset: str,
-    init_processing_steps: List[ProcessingStep],
+    processing_graph: ProcessingGraph,
     hf_endpoint: str,
     hf_token: Optional[str] = None,
     force: bool = False,
@@ -34,7 +34,7 @@ def update_dataset(
 
     Args:
         dataset (str): the dataset
-        init_processing_steps (List[ProcessingStep]): the processing steps that must be run when updating a dataset
+        processing_graph (ProcessingGraph): the processing graph
         hf_endpoint (str): the HF endpoint
         hf_token (Optional[str], optional): The HF token. Defaults to None.
         force (bool, optional): Force the update. Defaults to False.
@@ -58,7 +58,7 @@ def update_dataset(
         )
     logging.debug(f"refresh dataset='{dataset}'")
     queue = Queue()
-    for init_processing_step in init_processing_steps:
+    for init_processing_step in processing_graph.get_first_steps():
         if init_processing_step.input_type == "dataset":
             queue.upsert_job(job_type=init_processing_step.job_type, dataset=dataset, force=force, priority=priority)
 
@@ -78,7 +78,7 @@ def delete_dataset(dataset: str) -> None:
 
 def check_in_process(
     processing_step: ProcessingStep,
-    init_processing_steps: List[ProcessingStep],
+    processing_graph: ProcessingGraph,
     dataset: str,
     hf_endpoint: str,
     hf_token: Optional[str] = None,
@@ -90,7 +90,7 @@ def check_in_process(
 
     Args:
         processing_step (ProcessingStep): the processing step
-        init_processing_steps (List[ProcessingStep]): the processing steps that must be run when updating a dataset
+        processing_graph (ProcessingGraph): the processing graph
         dataset (str): the dataset
         hf_endpoint (str): the HF endpoint
         hf_token (Optional[str], optional): The HF token. Defaults to None.
@@ -110,22 +110,22 @@ def check_in_process(
         - [`~libcommon.operations.PreviousStepError`]: a previous step has an error
         - [`~libcommon.dataset.DatasetError`]: if the dataset could not be accessed or is not supported
     """
-    all_steps = processing_step.ancestors + [processing_step]
+    ancestors = [processing_graph.get_step(ancestor) for ancestor in processing_step.ancestors]
     queue = Queue()
     if any(
         queue.is_job_in_process(job_type=step.job_type, dataset=dataset, config=config, split=split)
-        for step in all_steps
+        for step in ancestors + [processing_step]
     ):
         # the processing step, or a previous one, is still being computed
         return
-    for step in processing_step.ancestors:
+    for step in ancestors:
         try:
             result = get_response(kind=step.cache_kind, dataset=dataset, config=config, split=split)
         except DoesNotExist:
             # a previous step has not been computed, update the dataset
             update_dataset(
                 dataset=dataset,
-                init_processing_steps=init_processing_steps,
+                processing_graph=processing_graph,
                 hf_endpoint=hf_endpoint,
                 hf_token=hf_token,
                 force=False,
@@ -139,7 +139,7 @@ def check_in_process(
     # if the dataset is supported. Check if it is supported and update it if so.
     update_dataset(
         dataset=dataset,
-        init_processing_steps=init_processing_steps,
+        processing_graph=processing_graph,
         hf_endpoint=hf_endpoint,
         hf_token=hf_token,
         force=False,

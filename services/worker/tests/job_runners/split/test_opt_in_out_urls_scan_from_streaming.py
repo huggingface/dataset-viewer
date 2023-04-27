@@ -12,7 +12,7 @@ from aiohttp import ClientSession
 from aiolimiter import AsyncLimiter
 from libcommon.constants import PROCESSING_STEP_SPLIT_OPT_IN_OUT_URLS_SCAN_VERSION
 from libcommon.exceptions import CustomError
-from libcommon.processing_graph import ProcessingStep
+from libcommon.processing_graph import ProcessingGraph
 from libcommon.queue import Priority
 from libcommon.resources import CacheMongoResource, QueueMongoResource
 from libcommon.simple_cache import get_response, upsert_response
@@ -50,6 +50,15 @@ def get_job_runner(
         app_config: AppConfig,
         force: bool = False,
     ) -> SplitOptInOutUrlsScanJobRunner:
+        step_name = SplitOptInOutUrlsScanJobRunner.get_job_type()
+        processing_graph = ProcessingGraph(
+            {
+                step_name: {
+                    "input_type": "dataset",
+                    "job_runner_version": SplitOptInOutUrlsScanJobRunner.get_job_runner_version(),
+                }
+            }
+        )
         return SplitOptInOutUrlsScanJobRunner(
             job_info={
                 "type": SplitOptInOutUrlsScanJobRunner.get_job_type(),
@@ -61,12 +70,8 @@ def get_job_runner(
                 "priority": Priority.NORMAL,
             },
             app_config=app_config,
-            processing_step=ProcessingStep(
-                name=SplitOptInOutUrlsScanJobRunner.get_job_type(),
-                input_type="split",
-                required_by_dataset_viewer=True,
-                job_runner_version=SplitOptInOutUrlsScanJobRunner.get_job_runner_version(),
-            ),
+            processing_step=processing_graph.get_step(step_name),
+            processing_graph=processing_graph,
             hf_datasets_cache=libraries_resource.hf_datasets_cache,
         )
 
