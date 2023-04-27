@@ -74,10 +74,6 @@ class ProcessingStep:
         """The cache kind (ie. the key in the cache)."""
         return self.name
 
-    def get_ancestors(self) -> List[ProcessingStep]:
-        """Get all the ancestors previous steps required to compute the response of the given step."""
-        return self.ancestors
-
 
 ProcessingGraphSpecification = Mapping[str, ProcessingStepSpecification]
 

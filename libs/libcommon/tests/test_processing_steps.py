@@ -30,7 +30,7 @@ def assert_step(
     assert step is not None
     assert_lists_are_equal(step.children, children)
     assert_lists_are_equal(step.parents, parents)
-    assert_lists_are_equal(step.get_ancestors(), ancestors)
+    assert_lists_are_equal(step.ancestors, ancestors)
 
 
 def test_graph() -> None:

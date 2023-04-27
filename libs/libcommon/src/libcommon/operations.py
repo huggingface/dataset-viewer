@@ -110,7 +110,7 @@ def check_in_process(
         - [`~libcommon.operations.PreviousStepError`]: a previous step has an error
         - [`~libcommon.dataset.DatasetError`]: if the dataset could not be accessed or is not supported
     """
-    all_steps = processing_step.get_ancestors() + [processing_step]
+    all_steps = processing_step.ancestors + [processing_step]
     queue = Queue()
     if any(
         queue.is_job_in_process(job_type=step.job_type, dataset=dataset, config=config, split=split)
@@ -118,7 +118,7 @@ def check_in_process(
     ):
         # the processing step, or a previous one, is still being computed
         return
-    for step in processing_step.get_ancestors():
+    for step in processing_step.ancestors:
         try:
             result = get_response(kind=step.cache_kind, dataset=dataset, config=config, split=split)
         except DoesNotExist:
