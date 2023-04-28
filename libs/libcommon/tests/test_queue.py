@@ -9,7 +9,8 @@ from unittest.mock import patch
 import pytest
 import pytz
 
-from libcommon.queue import EmptyQueueError, Priority, Queue, Status
+from libcommon.constants import QUEUE_TTL_SECONDS
+from libcommon.queue import EmptyQueueError, Job, Priority, Queue, Status
 from libcommon.resources import QueueMongoResource
 from libcommon.utils import get_datetime
 
@@ -362,3 +363,15 @@ def test_queue_kill_zombies() -> None:
     another_job.reload()
     assert zombie.status == Status.ERROR
     assert another_job.status == Status.STARTED
+
+
+def test_has_ttl_index_on_finished_at_field() -> None:
+    ttl_index_names = [
+        name
+        for name, value in Job._get_collection().index_information().items()
+        if "expireAfterSeconds" in value and "key" in value and value["key"] == [("finished_at", 1)]
+    ]
+    assert len(ttl_index_names) == 1
+    ttl_index_name = ttl_index_names[0]
+    assert ttl_index_name == "finished_at_1"
+    assert Job._get_collection().index_information()[ttl_index_name]["expireAfterSeconds"] == QUEUE_TTL_SECONDS
