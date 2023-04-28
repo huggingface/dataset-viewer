@@ -65,6 +65,9 @@ from mongodb_migration.migrations._20230428175100_cache_delete_dataset_split_nam
 from mongodb_migration.migrations._20230428181800_queue_delete_dataset_split_names_from_streaming import (
     MigrationQueueDeleteDatasetSplitNamesFromStreaming,
 )
+from mongodb_migration.migrations._20230428193100_metrics_delete_dataset_split_names_from_streaming import (
+    MigrationMetricsDeleteDatasetSplitNamesFromStreaming,
+)
 
 
 # TODO: add a way to automatically collect migrations from the migrations/ folder
@@ -151,5 +154,9 @@ class MigrationsCollector:
             MigrationQueueDeleteDatasetSplitNamesFromStreaming(
                 version="20230428181800",
                 description="delete the jobs of type 'dataset-split-names-from-streaming'",
+            ),
+            MigrationMetricsDeleteDatasetSplitNamesFromStreaming(
+                version="20230428193100",
+                description="delete the queue and cache metrics for step 'dataset-split-names-from-streaming'",
             ),
         ]
