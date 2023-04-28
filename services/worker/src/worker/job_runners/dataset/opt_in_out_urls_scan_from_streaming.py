@@ -3,7 +3,7 @@
 
 import logging
 from http import HTTPStatus
-from typing import Any, List, Literal, Mapping, Optional, TypedDict
+from typing import Any, List, Literal, Mapping, Optional, Tuple, TypedDict
 
 from libcommon.constants import PROCESSING_STEP_DATASET_OPT_IN_OUT_URLS_SCAN_VERSION
 from libcommon.simple_cache import DoesNotExist, SplitFullName, get_response
@@ -52,7 +52,7 @@ class PreviousStepFormatError(DatasetOptInOutUrlsScanJobRunnerError):
         super().__init__(message, HTTPStatus.INTERNAL_SERVER_ERROR, "PreviousStepFormatError", cause, False)
 
 
-def compute_opt_in_out_urls_scan_response(dataset: str) -> DatasetOptInOutUrlsScanResponse:
+def compute_opt_in_out_urls_scan_response(dataset: str) -> Tuple[DatasetOptInOutUrlsScanResponse, float]:
     logging.info(f"get opt-in-out-urls-scan for dataset={dataset}")
 
     config_names_response = get_previous_step_or_raise(kinds=["/config-names"], dataset=dataset)
@@ -80,12 +80,12 @@ def compute_opt_in_out_urls_scan_response(dataset: str) -> DatasetOptInOutUrlsSc
             if response["http_status"] != HTTPStatus.OK:
                 logging.debug(f"Previous step gave an error: {response['http_status']}.")
                 continue
-            config_opt_in_out_content = OptInOutUrlsScanResponse(response["content"])
-            urls_columns.extend(config_opt_in_out_content["urls_columns"])
-            num_opt_in_urls += config_opt_in_out_content["num_opt_in_urls"]
-            num_opt_out_urls += config_opt_in_out_content["num_opt_out_urls"]
-            num_urls += config_opt_in_out_content["num_urls"]
-            num_scanned_rows += config_opt_in_out_content["num_scanned_rows"]
+            split_opt_in_out_content = response["content"]
+            urls_columns.extend(split_opt_in_out_content["urls_columns"])
+            num_opt_in_urls += split_opt_in_out_content["num_opt_in_urls"]
+            num_opt_out_urls += split_opt_in_out_content["num_opt_out_urls"]
+            num_urls += split_opt_in_out_content["num_urls"]
+            num_scanned_rows += split_opt_in_out_content["num_scanned_rows"]
     except Exception as e:
         raise PreviousStepFormatError("Previous step did not return the expected content.", e) from e
 

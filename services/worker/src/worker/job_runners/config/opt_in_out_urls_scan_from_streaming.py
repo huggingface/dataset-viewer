@@ -3,7 +3,7 @@
 
 import logging
 from http import HTTPStatus
-from typing import Any, Literal, Mapping, Optional
+from typing import Any, Literal, Mapping, Optional, Tuple
 
 from libcommon.constants import PROCESSING_STEP_CONFIG_OPT_IN_OUT_URLS_SCAN_VERSION
 from libcommon.simple_cache import DoesNotExist, SplitFullName, get_response
@@ -15,7 +15,7 @@ from worker.job_runner import (
     ParameterMissingError,
     get_previous_step_or_raise,
 )
-from worker.utils import OptInOutUrlsScanDetailedResponse, OptInOutUrlsScanResponse
+from worker.utils import OptInOutUrlsScanResponse
 
 ConfigOptInOutUrlsScanJobRunnerErrorCode = Literal["PreviousStepFormatError"]
 
@@ -43,7 +43,7 @@ class PreviousStepFormatError(ConfigOptInOutUrlsScanJobRunnerError):
         super().__init__(message, HTTPStatus.INTERNAL_SERVER_ERROR, "PreviousStepFormatError", cause, False)
 
 
-def compute_opt_in_out_urls_scan_response(dataset: str, config: str) -> OptInOutUrlsScanResponse:
+def compute_opt_in_out_urls_scan_response(dataset: str, config: str) -> Tuple[OptInOutUrlsScanResponse, float]:
     logging.info(f"get config-opt-in-out-urls-scan for dataset={dataset} config={config}")
 
     split_names_response = get_previous_step_or_raise(
@@ -73,7 +73,7 @@ def compute_opt_in_out_urls_scan_response(dataset: str, config: str) -> OptInOut
             if response["http_status"] != HTTPStatus.OK:
                 logging.debug(f"Previous step gave an error: {response['http_status']}.")
                 continue
-            split_opt_in_out_content = OptInOutUrlsScanDetailedResponse(response["content"])
+            split_opt_in_out_content = response["content"]
             urls_columns.extend(split_opt_in_out_content["urls_columns"])
             num_opt_in_urls += split_opt_in_out_content["num_opt_in_urls"]
             num_opt_out_urls += split_opt_in_out_content["num_opt_out_urls"]
