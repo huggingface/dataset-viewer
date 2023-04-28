@@ -112,8 +112,10 @@ mongodbMigration:
 # --- jobs (post-upgrade hooks) ---
 
 cacheMaintenance:
-  action: "skip"
+  action: "backfill"
   # ^ allowed values are {skip,backfill,upgrade}
+  log:
+    level: "debug"
   resources:
     requests:
       cpu: 1
@@ -124,7 +126,7 @@ cacheMaintenance:
 
 # --- cron jobs  ---
 backfill:
-  enabled: true
+  enabled: false
   action: "backfill"
   schedule: "40 */6 * * *"
   # every six hour

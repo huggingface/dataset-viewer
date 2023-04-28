@@ -223,6 +223,8 @@ mongodbMigration:
 cacheMaintenance:
   action: "skip"
   # ^ allowed values are {skip,backfill,upgrade,collect-metrics}
+  log:
+    level: "info"
   nodeSelector: {}
   resources:
     requests:
