@@ -439,11 +439,6 @@ def test_dataset_state_as_dict() -> None:
                 "cache_state": {"exists": False, "is_success": False},
             },
             {
-                "id": f"dataset-split-names-from-streaming,{DATASET_NAME}",
-                "job_state": {"is_in_process": False},
-                "cache_state": {"exists": False, "is_success": False},
-            },
-            {
                 "id": f"dataset-split-names-from-dataset-info,{DATASET_NAME}",
                 "job_state": {"is_in_process": False},
                 "cache_state": {"exists": False, "is_success": False},
@@ -512,7 +507,6 @@ def test_plan() -> None:
                 "dataset-size,dataset",
                 "dataset-split-names,dataset",
                 "dataset-split-names-from-dataset-info,dataset",
-                "dataset-split-names-from-streaming,dataset",
             ],
             "cache_is_error_to_retry": [],
             "cache_is_job_runner_obsolete": [],
@@ -529,7 +523,6 @@ def test_plan() -> None:
             "CreateJob[dataset-size,dataset]",
             "CreateJob[dataset-split-names,dataset]",
             "CreateJob[dataset-split-names-from-dataset-info,dataset]",
-            "CreateJob[dataset-split-names-from-streaming,dataset]",
         ],
     )
 
@@ -545,7 +538,6 @@ def test_plan_job_creation_and_termination() -> None:
         "CreateJob[dataset-size,dataset]",
         "CreateJob[dataset-split-names,dataset]",
         "CreateJob[dataset-split-names-from-dataset-info,dataset]",
-        "CreateJob[dataset-split-names-from-streaming,dataset]",
     ]
     dataset_state.backfill()
     assert_dataset_state(
@@ -565,7 +557,6 @@ def test_plan_job_creation_and_termination() -> None:
                 "dataset-size,dataset",
                 "dataset-split-names,dataset",
                 "dataset-split-names-from-dataset-info,dataset",
-                "dataset-split-names-from-streaming,dataset",
             ],
             "cache_is_error_to_retry": [],
             "cache_is_job_runner_obsolete": [],
@@ -581,7 +572,6 @@ def test_plan_job_creation_and_termination() -> None:
                 "dataset-size,dataset",
                 "dataset-split-names,dataset",
                 "dataset-split-names-from-dataset-info,dataset",
-                "dataset-split-names-from-streaming,dataset",
             ]
         },
         # thus: no new task
@@ -632,7 +622,6 @@ def test_plan_job_creation_and_termination() -> None:
                 "dataset-size,dataset",
                 "dataset-split-names,dataset",
                 "dataset-split-names-from-dataset-info,dataset",
-                "dataset-split-names-from-streaming,dataset",
             ],
             "cache_is_error_to_retry": [],
             "cache_is_job_runner_obsolete": [],
@@ -647,7 +636,6 @@ def test_plan_job_creation_and_termination() -> None:
                 "dataset-size,dataset",
                 "dataset-split-names,dataset",
                 "dataset-split-names-from-dataset-info,dataset",
-                "dataset-split-names-from-streaming,dataset",
             ]
         },
         tasks=[
@@ -712,7 +700,6 @@ def test_plan_retry_error() -> None:
                     "dataset-size,dataset",
                     "dataset-split-names,dataset",
                     "dataset-split-names-from-dataset-info,dataset",
-                    "dataset-split-names-from-streaming,dataset",
                 ],
                 "cache_is_error_to_retry": ["/config-names,dataset"],
                 "cache_is_job_runner_obsolete": [],
@@ -740,7 +727,6 @@ def test_plan_retry_error() -> None:
                 "CreateJob[dataset-size,dataset]",
                 "CreateJob[dataset-split-names,dataset]",
                 "CreateJob[dataset-split-names-from-dataset-info,dataset]",
-                "CreateJob[dataset-split-names-from-streaming,dataset]",
             ],
         )
 
@@ -798,7 +784,6 @@ def test_plan_incoherent_state() -> None:
                 "dataset-size,dataset",
                 "dataset-split-names,dataset",
                 "dataset-split-names-from-dataset-info,dataset",
-                "dataset-split-names-from-streaming,dataset",
                 "split-first-rows-from-parquet,dataset,config1,split1",
                 "split-first-rows-from-parquet,dataset,config1,split2",
                 "split-first-rows-from-streaming,dataset,config1,split1",
@@ -832,7 +817,6 @@ def test_plan_incoherent_state() -> None:
             "CreateJob[dataset-size,dataset]",
             "CreateJob[dataset-split-names,dataset]",
             "CreateJob[dataset-split-names-from-dataset-info,dataset]",
-            "CreateJob[dataset-split-names-from-streaming,dataset]",
             "CreateJob[split-first-rows-from-parquet,dataset,config1,split1]",
             "CreateJob[split-first-rows-from-parquet,dataset,config1,split2]",
             "CreateJob[split-first-rows-from-streaming,dataset,config1,split1]",
@@ -906,7 +890,6 @@ def test_plan_updated_at() -> None:
                 "dataset-size,dataset",
                 "dataset-split-names,dataset",
                 "dataset-split-names-from-dataset-info,dataset",
-                "dataset-split-names-from-streaming,dataset",
             ],
             "cache_is_error_to_retry": [],
             "cache_is_job_runner_obsolete": [],
@@ -933,7 +916,6 @@ def test_plan_updated_at() -> None:
             "CreateJob[dataset-size,dataset]",
             "CreateJob[dataset-split-names,dataset]",
             "CreateJob[dataset-split-names-from-dataset-info,dataset]",
-            "CreateJob[dataset-split-names-from-streaming,dataset]",
         ],
     )
 
@@ -978,7 +960,6 @@ def test_plan_job_runner_version() -> None:
                 "dataset-size,dataset",
                 "dataset-split-names,dataset",
                 "dataset-split-names-from-dataset-info,dataset",
-                "dataset-split-names-from-streaming,dataset",
             ],
             "cache_is_error_to_retry": [],
             "cache_is_job_runner_obsolete": ["/config-names,dataset"],
@@ -1006,7 +987,6 @@ def test_plan_job_runner_version() -> None:
             "CreateJob[dataset-size,dataset]",
             "CreateJob[dataset-split-names,dataset]",
             "CreateJob[dataset-split-names-from-dataset-info,dataset]",
-            "CreateJob[dataset-split-names-from-streaming,dataset]",
         ],
     )
 
@@ -1066,7 +1046,6 @@ def test_plan_git_revision(
                     "dataset-size,dataset",
                     "dataset-split-names,dataset",
                     "dataset-split-names-from-dataset-info,dataset",
-                    "dataset-split-names-from-streaming,dataset",
                 ],
                 "cache_is_error_to_retry": [],
                 "cache_is_job_runner_obsolete": [],
@@ -1093,7 +1072,6 @@ def test_plan_git_revision(
                 "CreateJob[dataset-size,dataset]",
                 "CreateJob[dataset-split-names,dataset]",
                 "CreateJob[dataset-split-names-from-dataset-info,dataset]",
-                "CreateJob[dataset-split-names-from-streaming,dataset]",
             ],
         )
     else:
@@ -1125,7 +1103,6 @@ def test_plan_git_revision(
                     "dataset-size,dataset",
                     "dataset-split-names,dataset",
                     "dataset-split-names-from-dataset-info,dataset",
-                    "dataset-split-names-from-streaming,dataset",
                 ],
                 "cache_is_error_to_retry": [],
                 "cache_is_job_runner_obsolete": [],
@@ -1151,7 +1128,6 @@ def test_plan_git_revision(
                 "CreateJob[dataset-size,dataset]",
                 "CreateJob[dataset-split-names,dataset]",
                 "CreateJob[dataset-split-names-from-dataset-info,dataset]",
-                "CreateJob[dataset-split-names-from-streaming,dataset]",
             ],
         )
 
@@ -1229,7 +1205,6 @@ def test_plan_update_fan_in_parent() -> None:
                 "dataset-size,dataset",
                 "dataset-split-names,dataset",
                 "dataset-split-names-from-dataset-info,dataset",
-                "dataset-split-names-from-streaming,dataset",
             ],
             "cache_is_error_to_retry": [],
             "cache_is_job_runner_obsolete": [],
@@ -1258,6 +1233,5 @@ def test_plan_update_fan_in_parent() -> None:
             "CreateJob[dataset-size,dataset]",
             "CreateJob[dataset-split-names,dataset]",
             "CreateJob[dataset-split-names-from-dataset-info,dataset]",
-            "CreateJob[dataset-split-names-from-streaming,dataset]",
         ],
     )

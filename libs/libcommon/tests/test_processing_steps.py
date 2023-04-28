@@ -73,7 +73,6 @@ def graph() -> ProcessingGraph:
                 "/split-names-from-streaming",
                 "config-parquet-and-info",
                 "dataset-split-names-from-dataset-info",
-                "dataset-split-names-from-streaming",
                 "dataset-split-names",
                 "dataset-parquet",
                 "dataset-info",
@@ -104,7 +103,7 @@ def graph() -> ProcessingGraph:
         ),
         (
             "/split-names-from-streaming",
-            ["split-first-rows-from-streaming", "dataset-split-names-from-streaming", "dataset-split-names"],
+            ["split-first-rows-from-streaming", "dataset-split-names"],
             ["/config-names"],
             ["/config-names"],
         ),
@@ -113,12 +112,6 @@ def graph() -> ProcessingGraph:
             [],
             ["/config-names", "/split-names-from-dataset-info"],
             ["/config-names", "config-parquet-and-info", "config-info", "/split-names-from-dataset-info"],
-        ),
-        (
-            "dataset-split-names-from-streaming",
-            [],
-            ["/config-names", "/split-names-from-streaming"],
-            ["/config-names", "/split-names-from-streaming"],
         ),
         (
             "dataset-split-names",
