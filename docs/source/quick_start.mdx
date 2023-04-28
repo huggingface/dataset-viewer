@@ -15,7 +15,7 @@ Each feature is served through an endpoint summarized in the table below:
 | [/is-valid](./valid)        | GET    | Check whether a specific dataset is valid.                                       | `dataset`: name of the dataset                                                                     |
 | [/splits](./splits)         | GET    | Get the list of configurations and splits of a dataset.                          | `dataset`: name of the dataset                                                                     |
 | [/first-rows](./first-rows) | GET    | Get the columns (with data type) and first rows of a dataset split.              | - `dataset`: name of the dataset<br>- `config`: name of the config<br>- `split`: name of the split |
-| [/parquet](./parquet)       | GET    | Get the list of parquet files of a dataset.                                      | `dataset`: name of the datasett                                                                    |
+| [/parquet](./parquet)       | GET    | Get the list of parquet files of a dataset.                                      | `dataset`: name of the dataset                                                                     |
 
 There is no installation or setup required to use Datasets Server.
 
@@ -52,7 +52,7 @@ import requests
 headers = {"Authorization": f"Bearer {API_TOKEN}"}
 API_URL = "https://datasets-server.huggingface.co/is-valid?dataset=mozilla-foundation/common_voice_10_0"
 def query():
-    response = requests.request("GET", API_URL, headers=headers)
+    response = requests.get(API_URL, headers=headers)
     return response.json()
 data = query()
 ```
@@ -95,7 +95,7 @@ The `/valid` endpoint returns a JSON list of datasets stored on the Hub that loa
 import requests
 API_URL = "https://datasets-server.huggingface.co/valid"
 def query():
-    response = requests.request("GET", API_URL)
+    response = requests.get(API_URL)
     return response.json()
 data = query()
 ```
@@ -134,7 +134,7 @@ To check whether a specific dataset is valid, for example, [Rotten Tomatoes](htt
 import requests
 API_URL = "https://datasets-server.huggingface.co/is-valid?dataset=rotten_tomatoes"
 def query():
-    response = requests.request("GET", API_URL)
+    response = requests.get(API_URL)
     return response.json()
 data = query()
 ```
@@ -175,7 +175,7 @@ The `/splits` endpoint returns a JSON list of the splits in a dataset:
 import requests
 API_URL = "https://datasets-server.huggingface.co/splits?dataset=rotten_tomatoes"
 def query():
-    response = requests.request("GET", API_URL)
+    response = requests.get(API_URL)
     return response.json()
 data = query()
 ```
@@ -208,7 +208,7 @@ curl https://datasets-server.huggingface.co/splits?dataset=rotten_tomatoes \
 
 ## Preview a dataset
 
-The `/first-rows` endpoint returns a JSON list of the first 100 rows of a dataset. You should specify the dataset name, configuration name (you can find out the configuration name from the `/splits` endpoint), and split name of the dataset you'd like to preview:
+The `/first-rows` endpoint returns a JSON list of the first 100 rows of a dataset. It also returns the types of data features ("columns" data types). You should specify the dataset name, configuration name (you can find out the configuration name from the `/splits` endpoint), and split name of the dataset you'd like to preview:
 
 <inferencesnippet>
 <python>
@@ -216,7 +216,7 @@ The `/first-rows` endpoint returns a JSON list of the first 100 rows of a datase
 import requests
 API_URL = "https://datasets-server.huggingface.co/first-rows?dataset=rotten_tomatoes&config=default&split=train"
 def query():
-    response = requests.request("GET", API_URL)
+    response = requests.get(API_URL)
     return response.json()
 data = query()
 ```
@@ -249,7 +249,7 @@ curl https://datasets-server.huggingface.co/first-rows?dataset=rotten_tomatoes&c
 
 ## Access parquet files
 
-The datasets-server converts every dataset on the Hub to the [parquet](https://parquet.apache.org/) format. The `/parquet` endpoint returns a JSON list of the parquet URLs for a dataset:
+The datasets-server converts every public dataset on the Hub to the [parquet](https://parquet.apache.org/) format. The `/parquet` endpoint returns a JSON list of the parquet URLs for a dataset:
 
 <inferencesnippet>
 <python>
@@ -257,7 +257,7 @@ The datasets-server converts every dataset on the Hub to the [parquet](https://p
 import requests
 API_URL = "https://datasets-server.huggingface.co/parquet?dataset=rotten_tomatoes"
 def query():
-    response = requests.request("GET", API_URL)
+    response = requests.get(API_URL)
     return response.json()
 data = query()
 ```

@@ -27,7 +27,7 @@ import requests
 headers = {"Authorization": f"Bearer {API_TOKEN}"}
 API_URL = "https://datasets-server.huggingface.co/first-rows?dataset=duorc&config=SelfRC&split=train"
 def query():
-    response = requests.request("GET", API_URL, headers=headers)
+    response = requests.get(API_URL, headers=headers)
     return response.json()
 data = query()
 ```

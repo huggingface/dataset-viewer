@@ -27,7 +27,7 @@ The `/valid` endpoint returns a list of Hub datasets that are expected to load w
 import requests
 API_URL = "https://datasets-server.huggingface.co/valid"
 def query():
-    response = requests.request("GET", API_URL)
+    response = requests.get(API_URL)
     return response.json()
 data = query()
 ```
@@ -83,7 +83,7 @@ import requests
 headers = {"Authorization": f"Bearer {API_TOKEN}"}
 API_URL = "https://datasets-server.huggingface.co/is-valid?dataset=rotten_tomatoes"
 def query():
-    response = requests.request("GET", API_URL, headers=headers)
+    response = requests.get(API_URL, headers=headers)
     return response.json()
 data = query()
 ```
