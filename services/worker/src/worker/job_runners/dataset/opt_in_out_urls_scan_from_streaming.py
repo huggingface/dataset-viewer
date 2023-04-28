@@ -81,7 +81,7 @@ def compute_opt_in_out_urls_scan_response(dataset: str) -> DatasetOptInOutUrlsSc
                 logging.debug(f"Previous step gave an error: {response['http_status']}.")
                 continue
             config_opt_in_out_content = OptInOutUrlsScanResponse(response["content"])
-            urls_columns.append(config_opt_in_out_content["urls_columns"])
+            urls_columns.extend(config_opt_in_out_content["urls_columns"])
             num_opt_in_urls += config_opt_in_out_content["num_opt_in_urls"]
             num_opt_out_urls += config_opt_in_out_content["num_opt_out_urls"]
             num_urls += config_opt_in_out_content["num_urls"]
