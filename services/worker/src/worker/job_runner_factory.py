@@ -12,6 +12,9 @@ from libcommon.storage import StrPath
 from worker.config import AppConfig
 from worker.job_runner import JobRunner
 from worker.job_runners.config.info import ConfigInfoJobRunner
+from worker.job_runners.config.opt_in_out_urls_scan_from_streaming import (
+    ConfigOptInOutUrlsScanJobRunner,
+)
 from worker.job_runners.config.parquet import ConfigParquetJobRunner
 from worker.job_runners.config.parquet_and_info import ConfigParquetAndInfoJobRunner
 from worker.job_runners.config.size import ConfigSizeJobRunner
@@ -24,6 +27,9 @@ from worker.job_runners.config.split_names_from_streaming import (
 from worker.job_runners.config_names import ConfigNamesJobRunner
 from worker.job_runners.dataset.info import DatasetInfoJobRunner
 from worker.job_runners.dataset.is_valid import DatasetIsValidJobRunner
+from worker.job_runners.dataset.opt_in_out_urls_scan_from_streaming import (
+    DatasetOptInOutUrlsScanJobRunner,
+)
 from worker.job_runners.dataset.parquet import DatasetParquetJobRunner
 from worker.job_runners.dataset.size import DatasetSizeJobRunner
 from worker.job_runners.dataset.split_names import DatasetSplitNamesJobRunner
@@ -192,6 +198,20 @@ class JobRunnerFactory(BaseJobRunnerFactory):
                 processing_step=processing_step,
                 hf_datasets_cache=self.hf_datasets_cache,
             )
+        if job_type == ConfigOptInOutUrlsScanJobRunner.get_job_type():
+            return ConfigOptInOutUrlsScanJobRunner(
+                job_info=job_info,
+                common_config=self.app_config.common,
+                worker_config=self.app_config.worker,
+                processing_step=processing_step,
+            )
+        if job_type == DatasetOptInOutUrlsScanJobRunner.get_job_type():
+            return DatasetOptInOutUrlsScanJobRunner(
+                job_info=job_info,
+                common_config=self.app_config.common,
+                worker_config=self.app_config.worker,
+                processing_step=processing_step,
+            )
 
         if job_type == SplitOptInOutUrlsCountJobRunner.get_job_type():
             return SplitOptInOutUrlsCountJobRunner(
@@ -218,5 +238,7 @@ class JobRunnerFactory(BaseJobRunnerFactory):
             DatasetIsValidJobRunner.get_job_type(),
             SplitOptInOutUrlsScanJobRunner.get_job_type(),
             SplitOptInOutUrlsCountJobRunner.get_job_type(),
+            ConfigOptInOutUrlsScanJobRunner.get_job_type(),
+            DatasetOptInOutUrlsScanJobRunner.get_job_type(),
         ]
         raise ValueError(f"Unsupported job type: '{job_type}'. The supported job types are: {supported_job_types}")

@@ -140,6 +140,8 @@ class EndpointConfig:
             },
             "/opt-in-out-urls": {
                 "split": ["split-opt-in-out-urls-count"],
+                "dataset": ["dataset-opt-in-out-urls-scan"],
+                "config": ["config-opt-in-out-urls-scan"],
             },
         }
     )
