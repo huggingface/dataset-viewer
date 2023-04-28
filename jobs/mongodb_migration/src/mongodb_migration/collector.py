@@ -59,6 +59,9 @@ from mongodb_migration.migrations._20230427121500_metrics_delete_parquet_and_dat
 from mongodb_migration.migrations._20230428145000_queue_delete_ttl_index import (
     MigrationQueueDeleteTTLIndexOnFinishedAt,
 )
+from mongodb_migration.migrations._20230428175100_cache_delete_dataset_split_names_from_streaming import (
+    MigrationCacheDeleteDatasetSplitNamesFromStreaming,
+)
 
 
 # TODO: add a way to automatically collect migrations from the migrations/ folder
@@ -137,5 +140,9 @@ class MigrationsCollector:
             MigrationQueueDeleteTTLIndexOnFinishedAt(
                 version="20230428145000",
                 description="delete the TTL index on the 'finished_at' field in the queue database",
+            ),
+            MigrationCacheDeleteDatasetSplitNamesFromStreaming(
+                version="20230428180600",
+                description="delete the jobs of type 'dataset-split-names-from-streaming'",
             ),
         ]
