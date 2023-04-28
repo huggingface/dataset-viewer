@@ -1,15 +1,13 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2023 The HuggingFace Authors.
 
-from typing import Any, List, Mapping
-
 import logging
+from typing import Any, List, Mapping
 
 from libcommon.constants import QUEUE_COLLECTION_JOBS, QUEUE_MONGOENGINE_ALIAS
 from mongoengine.connection import get_db
 
 from mongodb_migration.migration import IrreversibleMigrationError, Migration
-
 
 field_name = "finished_at"
 
