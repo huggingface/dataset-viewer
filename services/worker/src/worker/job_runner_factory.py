@@ -202,7 +202,6 @@ class JobRunnerFactory(BaseJobRunnerFactory):
             DatasetSizeJobRunner.get_job_type(),
             ConfigSizeJobRunner.get_job_type(),
             SplitNamesFromDatasetInfoJobRunner.get_job_type(),
-            DatasetSplitNamesFromStreamingJobRunner.get_job_type(),
             DatasetSplitNamesFromDatasetInfoJobRunner.get_job_type(),
             SplitFirstRowsFromParquetJobRunner.get_job_type(),
             DatasetIsValidJobRunner.get_job_type(),
