@@ -232,6 +232,20 @@ cacheMaintenance:
   tolerations: []
 
 # --- cron jobs  ---
+backfill:
+  enabled: false
+  action: "backfill"
+  schedule: "0 */3 * * *"
+  # every 3 hours
+  nodeSelector: {}
+  resources:
+    requests:
+      cpu: 0
+    limits:
+      cpu: 0
+  tolerations: []
+
+
 metricsCollector:
   action: "collect-metrics"
   schedule: "*/5 * * * *"

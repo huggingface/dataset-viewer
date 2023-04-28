@@ -324,9 +324,15 @@ class Plan:
     def add(self, task: Task) -> None:
         self.tasks.append(task)
 
-    def run(self) -> None:
+    def run(self) -> int:
+        """Run all the tasks in the plan.
+
+        Returns:
+            The number of tasks that were run.
+        """
         for task in self.tasks:
             task.run()
+        return len(self.tasks)
 
     def as_response(self) -> List[str]:
         return sorted(task.id for task in self.tasks)
@@ -346,6 +352,7 @@ class DatasetState:
     cache_status: CacheStatus = field(init=False)
     queue_status: QueueStatus = field(init=False)
     plan: Plan = field(init=False)
+    should_be_backfilled: bool = field(init=False)
 
     def __post_init__(self) -> None:
         self.artifact_state_by_step = {
@@ -364,6 +371,7 @@ class DatasetState:
         self.cache_status = self._get_cache_status()
         self.queue_status = self._get_queue_status()
         self.plan = self._create_plan()
+        self.should_be_backfilled = len(self.plan.tasks) > 0
 
     def _get_artifact_states_for_step(
         self, step: ProcessingStep, config: Optional[str] = None, split: Optional[str] = None
@@ -497,8 +505,13 @@ class DatasetState:
             plan.add(DeleteJobTask(artifact_state=self.queue_status.in_process[artifact_state_id]))
         return plan
 
-    def backfill(self) -> None:
-        self.plan.run()
+    def backfill(self) -> int:
+        """Backfill the cache.
+
+        Returns:
+            The number of jobs created.
+        """
+        return self.plan.run()
 
     def as_dict(self) -> Dict[str, Any]:
         return {

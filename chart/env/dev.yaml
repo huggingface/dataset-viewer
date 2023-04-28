@@ -109,6 +109,9 @@ cacheMaintenance:
       cpu: 1
 
 # --- cron jobs  ---
+backfill:
+  enabled: false
+
 metricsCollector:
   action: "collect-metrics"
   schedule: "*/5 * * * *"

@@ -123,6 +123,20 @@ cacheMaintenance:
       memory: "8Gi"
 
 # --- cron jobs  ---
+backfill:
+  enabled: true
+  action: "backfill"
+  schedule: "0 * * * *"
+  # every hour
+  nodeSelector: {}
+  resources:
+    requests:
+      cpu: 1
+    limits:
+      cpu: 1
+      memory: "512Mi"
+  tolerations: []
+
 metricsCollector:
   action: "collect-metrics"
   schedule: "*/2 * * * *"

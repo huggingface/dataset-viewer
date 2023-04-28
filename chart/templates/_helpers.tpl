@@ -83,6 +83,11 @@ app.kubernetes.io/component: "{{ include "name" . }}-cache-maintenance"
 app.kubernetes.io/component: "{{ include "name" . }}-metrics-collector"
 {{- end -}}
 
+{{- define "labels.backfill" -}}
+{{ include "hf.labels.commons" . }}
+app.kubernetes.io/component: "{{ include "name" . }}-backfill"
+{{- end -}}
+
 {{- define "labels.admin" -}}
 {{ include "hf.labels.commons" . }}
 app.kubernetes.io/component: "{{ include "name" . }}-admin"

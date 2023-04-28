@@ -1,0 +1,24 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2022 The HuggingFace Authors.
+
+{{- if and .Values.images.jobs.cacheMaintenance .Values.backfill.enabled }}
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  labels: {{ include "labels.backfill" . | nindent 4 }}
+  name: "{{ include "name" . }}-job-backfill"
+  namespace: {{ .Release.Namespace }}
+spec:
+  schedule: {{ .Values.backfill.schedule | quote }}
+  jobTemplate:
+    spec:
+      ttlSecondsAfterFinished: 3600
+      template:
+        spec:
+          restartPolicy: OnFailure
+          {{- include "image.imagePullSecrets" . | nindent 6 }}
+          nodeSelector: {{ toYaml .Values.backfill.nodeSelector | nindent 12 }}
+          tolerations: {{ toYaml .Values.backfill.tolerations | nindent 12 }}
+          containers: {{ include "containerBackfill" . | nindent 12 }}
+          securityContext: {{ include "securityContext" . | nindent 12 }}
+{{- end}}
