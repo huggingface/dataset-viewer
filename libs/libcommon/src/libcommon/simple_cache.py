@@ -329,13 +329,6 @@ def get_best_response(
     return best_response_candidates[max_index]
 
 
-def get_split_full_names_for_dataset_and_kind(dataset: str, kind: str) -> set[SplitFullName]:
-    return {
-        SplitFullName(dataset=response.dataset, config=response.config, split=response.split)
-        for response in CachedResponse.objects(dataset=dataset, kind=kind).only("dataset", "config", "split")
-    }
-
-
 def get_valid_datasets(kind: str) -> Set[str]:
     return set(CachedResponse.objects(kind=kind, http_status=HTTPStatus.OK).distinct("dataset"))
 
