@@ -52,7 +52,7 @@ import requests
 headers = {"Authorization": f"Bearer {API_TOKEN}"}
 API_URL = "https://datasets-server.huggingface.co/is-valid?dataset=mozilla-foundation/common_voice_10_0"
 def query():
-    response = requests.request("GET", API_URL, headers=headers)
+    response = requests.get(API_URL, headers=headers)
     return response.json()
 data = query()
 ```
@@ -95,7 +95,7 @@ The `/valid` endpoint returns a JSON list of datasets stored on the Hub that loa
 import requests
 API_URL = "https://datasets-server.huggingface.co/valid"
 def query():
-    response = requests.request("GET", API_URL)
+    response = requests.get(API_URL)
     return response.json()
 data = query()
 ```
@@ -134,7 +134,7 @@ To check whether a specific dataset is valid, for example, [Rotten Tomatoes](htt
 import requests
 API_URL = "https://datasets-server.huggingface.co/is-valid?dataset=rotten_tomatoes"
 def query():
-    response = requests.request("GET", API_URL)
+    response = requests.get(API_URL)
     return response.json()
 data = query()
 ```
@@ -175,7 +175,7 @@ The `/splits` endpoint returns a JSON list of the splits in a dataset:
 import requests
 API_URL = "https://datasets-server.huggingface.co/splits?dataset=rotten_tomatoes"
 def query():
-    response = requests.request("GET", API_URL)
+    response = requests.get(API_URL)
     return response.json()
 data = query()
 ```
@@ -216,7 +216,7 @@ The `/first-rows` endpoint returns a JSON list of the first 100 rows of a datase
 import requests
 API_URL = "https://datasets-server.huggingface.co/first-rows?dataset=rotten_tomatoes&config=default&split=train"
 def query():
-    response = requests.request("GET", API_URL)
+    response = requests.get(API_URL)
     return response.json()
 data = query()
 ```
@@ -257,7 +257,7 @@ The datasets-server converts every public dataset on the Hub to the [parquet](ht
 import requests
 API_URL = "https://datasets-server.huggingface.co/parquet?dataset=rotten_tomatoes"
 def query():
-    response = requests.request("GET", API_URL)
+    response = requests.get(API_URL)
     return response.json()
 data = query()
 ```
