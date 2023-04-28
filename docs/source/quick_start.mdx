@@ -208,7 +208,7 @@ curl https://datasets-server.huggingface.co/splits?dataset=rotten_tomatoes \
 
 ## Preview a dataset
 
-The `/first-rows` endpoint returns a JSON list of the first 100 rows of a dataset. You should specify the dataset name, configuration name (you can find out the configuration name from the `/splits` endpoint), and split name of the dataset you'd like to preview:
+The `/first-rows` endpoint returns a JSON list of the first 100 rows of a dataset. It also returns the types of data features ("columns" data types). You should specify the dataset name, configuration name (you can find out the configuration name from the `/splits` endpoint), and split name of the dataset you'd like to preview:
 
 <inferencesnippet>
 <python>
