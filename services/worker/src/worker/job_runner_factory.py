@@ -30,9 +30,6 @@ from worker.job_runners.dataset.split_names import DatasetSplitNamesJobRunner
 from worker.job_runners.dataset.split_names_from_dataset_info import (
     DatasetSplitNamesFromDatasetInfoJobRunner,
 )
-from worker.job_runners.dataset.split_names_from_streaming import (
-    DatasetSplitNamesFromStreamingJobRunner,
-)
 from worker.job_runners.split.first_rows_from_parquet import (
     SplitFirstRowsFromParquetJobRunner,
 )
@@ -157,13 +154,6 @@ class JobRunnerFactory(BaseJobRunnerFactory):
             )
         if job_type == DatasetSplitNamesJobRunner.get_job_type():
             return DatasetSplitNamesJobRunner(
-                job_info=job_info,
-                processing_step=processing_step,
-                common_config=self.app_config.common,
-                worker_config=self.app_config.worker,
-            )
-        if job_type == DatasetSplitNamesFromStreamingJobRunner.get_job_type():
-            return DatasetSplitNamesFromStreamingJobRunner(
                 job_info=job_info,
                 processing_step=processing_step,
                 common_config=self.app_config.common,
