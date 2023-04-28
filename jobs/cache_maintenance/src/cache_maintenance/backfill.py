@@ -24,8 +24,9 @@ def backfill_cache(
 
     def get_log() -> str:
         return (
-            f"{analyzed_datasets} analyzed datasets: {backfilled_datasets} backfilled datasets"
-            f" ({100 * backfilled_datasets / analyzed_datasets:.2f}%), with {total_created_jobs} created jobs."
+            f"{analyzed_datasets} analyzed datasets ({len(supported_dataset_infos)} datasets left):"
+            f" {backfilled_datasets} backfilled datasets ({100 * backfilled_datasets / analyzed_datasets:.2f}%), with"
+            f" {total_created_jobs} created jobs."
         )
 
     for dataset_info in supported_dataset_infos:
