@@ -7,6 +7,7 @@
   imagePullPolicy: {{ .Values.images.pullPolicy }}
   env:
   {{ include "envCache" . | nindent 2 }}
+  {{ include "envMetrics" . | nindent 2 }}
   {{ include "envQueue" . | nindent 2 }}
   {{ include "envLog" . | nindent 2 }}
   - name: DATABASE_MIGRATIONS_MONGO_DATABASE
