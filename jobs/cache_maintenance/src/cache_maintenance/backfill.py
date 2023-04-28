@@ -19,13 +19,13 @@ def backfill_cache(
     logging.info(f"analyzing {len(supported_dataset_infos)} supported datasets")
     analyzed_datasets = 0
     backfilled_datasets = 0
-    created_jobs = 0
+    total_created_jobs = 0
     log_batch = 100
 
     def log() -> None:
         logging.info(
-            f"  {analyzed_datasets} analyzed datasets: {backfilled_datasets} backfilled datasets"
-            f" ({100 * backfilled_datasets / analyzed_datasets:.2f}%), with {created_jobs} created jobs."
+            f"{analyzed_datasets} analyzed datasets: {backfilled_datasets} backfilled datasets"
+            f" ({100 * backfilled_datasets / analyzed_datasets:.2f}%), with {total_created_jobs} created jobs."
         )
 
     for dataset_info in supported_dataset_infos:
@@ -36,9 +36,10 @@ def backfill_cache(
             # should not occur
             continue
         dataset_state = DatasetState(dataset=dataset, processing_graph=processing_graph, revision=dataset_info.sha)
-        if dataset_state.should_be_backfilled:
+        created_jobs = dataset_state.backfill()
+        if created_jobs > 0:
             backfilled_datasets += 1
-            created_jobs += dataset_state.backfill()
+        total_created_jobs += created_jobs
 
         if analyzed_datasets % log_batch == 0:
             log()
