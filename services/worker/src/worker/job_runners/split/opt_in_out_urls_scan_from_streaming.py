@@ -5,7 +5,7 @@ import logging
 from asyncio import Semaphore, create_task, run, wait
 from http import HTTPStatus
 from pathlib import Path
-from typing import Any, List, Literal, Mapping, Optional, Tuple, TypedDict, Union
+from typing import Any, List, Literal, Mapping, Optional, Tuple, Union
 
 from aiohttp import ClientSession
 from aiolimiter import AsyncLimiter
@@ -22,7 +22,12 @@ from worker.job_runner import (
     get_previous_step_or_raise,
 )
 from worker.job_runners._datasets_based_job_runner import DatasetsBasedJobRunner
-from worker.utils import SplitFirstRowsResponse, get_rows_or_raise
+from worker.utils import (
+    OptInOutUrlsScanDetailedResponse,
+    OptUrl,
+    SplitFirstRowsResponse,
+    get_rows_or_raise,
+)
 
 SplitOptInOutUrlsScanJobRunnerErrorCode = Literal[
     "InfoError",
@@ -90,23 +95,6 @@ class ExternalServerError(SplitOptInOutUrlsScanJobRunnerError):
 
     def __init__(self, message: str, cause: Optional[BaseException] = None):
         super().__init__(message, HTTPStatus.INTERNAL_SERVER_ERROR, "ExternalServerError", cause, False)
-
-
-class OptUrl(TypedDict):
-    url: str
-    row_idx: int
-    column_name: str
-
-
-class OptInOutUrlsScanResponse(TypedDict):
-    urls_columns: List[str]
-    opt_in_urls: List[OptUrl]
-    opt_out_urls: List[OptUrl]
-    num_opt_in_urls: int
-    num_opt_out_urls: int
-    num_urls: int
-    num_scanned_rows: int
-    has_urls_columns: bool
 
 
 async def check_spawning(
@@ -184,7 +172,7 @@ def compute_opt_in_out_urls_scan_response(
     max_concurrent_requests_number: int,
     max_requests_per_second: int,
     spawning_url: str,
-) -> OptInOutUrlsScanResponse:
+) -> OptInOutUrlsScanDetailedResponse:
     logging.info(f"get opt-in-out-urls-scan for dataset={dataset} config={config} split={split}")
 
     use_auth_token: Union[bool, str, None] = hf_token if hf_token is not None else False
@@ -238,7 +226,7 @@ def compute_opt_in_out_urls_scan_response(
             urls_columns.append(string_column)
 
     if not urls_columns:
-        return OptInOutUrlsScanResponse(
+        return OptInOutUrlsScanDetailedResponse(
             urls_columns=[],
             opt_in_urls=[],
             opt_out_urls=[],
@@ -300,7 +288,7 @@ def compute_opt_in_out_urls_scan_response(
     ]
 
     # return scan result
-    return OptInOutUrlsScanResponse(
+    return OptInOutUrlsScanDetailedResponse(
         urls_columns=urls_columns,
         opt_in_urls=opt_in_urls,
         opt_out_urls=opt_out_urls,
