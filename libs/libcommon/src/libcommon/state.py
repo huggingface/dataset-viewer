@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import contextlib
+import logging
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional
@@ -331,6 +332,7 @@ class Plan:
             The number of tasks that were run.
         """
         for task in self.tasks:
+            logging.debug(f"Running task {task.id}")
             task.run()
         return len(self.tasks)
 
