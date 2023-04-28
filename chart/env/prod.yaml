@@ -126,8 +126,8 @@ cacheMaintenance:
 backfill:
   enabled: true
   action: "backfill"
-  schedule: "0 * * * *"
-  # every hour
+  schedule: "40 */6 * * *"
+  # every six hour
   nodeSelector: {}
   resources:
     requests:
