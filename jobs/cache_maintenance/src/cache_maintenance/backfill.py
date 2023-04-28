@@ -22,8 +22,8 @@ def backfill_cache(
     total_created_jobs = 0
     log_batch = 100
 
-    def log() -> None:
-        logging.info(
+    def get_log() -> str:
+        return (
             f"{analyzed_datasets} analyzed datasets: {backfilled_datasets} backfilled datasets"
             f" ({100 * backfilled_datasets / analyzed_datasets:.2f}%), with {total_created_jobs} created jobs."
         )
@@ -41,8 +41,9 @@ def backfill_cache(
             backfilled_datasets += 1
         total_created_jobs += created_jobs
 
+        logging.debug(get_log())
         if analyzed_datasets % log_batch == 0:
-            log()
+            logging.info(get_log())
 
-    log()
+    logging.info(get_log())
     logging.info("backfill completed")
