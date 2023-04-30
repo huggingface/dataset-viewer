@@ -236,6 +236,8 @@ cacheMaintenance:
 # --- cron jobs  ---
 backfill:
   enabled: false
+  log:
+    level: "info"
   action: "backfill"
   schedule: "0 */3 * * *"
   # every 3 hours
