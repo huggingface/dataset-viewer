@@ -23,7 +23,7 @@ def prepare_and_clean_mongo(app_config: AppConfig) -> None:
     pass
 
 
-GetJobRunner = Callable[[str, str, AppConfig, bool], DatasetOptInOutUrlsScanJobRunner]
+GetJobRunner = Callable[[str, AppConfig, bool], DatasetOptInOutUrlsScanJobRunner]
 
 
 @pytest.fixture
@@ -153,7 +153,9 @@ def test_compute(
     )
 
     if config_names_status == HTTPStatus.OK:
-        for split_item, status, content in zip(config_names_content["config_names"], config_upstream_status, config_upstream_content):
+        for split_item, status, content in zip(
+            config_names_content["config_names"], config_upstream_status, config_upstream_content
+        ):
             upsert_response(
                 kind="config-opt-in-out-urls-scan",
                 dataset=dataset,
