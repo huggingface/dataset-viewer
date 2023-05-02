@@ -134,6 +134,7 @@ def upsert_response(
     job_runner_version: Optional[int] = None,
     dataset_git_revision: Optional[str] = None,
     progress: Optional[float] = None,
+    updated_at: Optional[datetime] = None,
 ) -> None:
     CachedResponse.objects(kind=kind, dataset=dataset, config=config, split=split).upsert_one(
         content=content,
@@ -142,7 +143,7 @@ def upsert_response(
         details=details,
         dataset_git_revision=dataset_git_revision,
         progress=progress,
-        updated_at=get_datetime(),
+        updated_at=updated_at or get_datetime(),
         job_runner_version=job_runner_version,
     )
 
@@ -385,6 +386,8 @@ class CacheReport(TypedDict):
     split: Optional[str]
     http_status: int
     error_code: Optional[str]
+    details: Mapping[str, Any]
+    updated_at: datetime
     job_runner_version: Optional[int]
     dataset_git_revision: Optional[str]
     progress: Optional[float]
@@ -438,22 +441,7 @@ def get_cache_reports(kind: str, cursor: Optional[str], limit: int) -> CacheRepo
             raise InvalidCursor("Invalid cursor.") from err
     if limit <= 0:
         raise InvalidLimit("Invalid limit.")
-    objects = list(
-        queryset.order_by("+id")
-        .only(
-            "id",
-            "kind",
-            "dataset",
-            "config",
-            "split",
-            "http_status",
-            "error_code",
-            "job_runner_version",
-            "dataset_git_revision",
-            "progress",
-        )
-        .limit(limit)
-    )
+    objects = list(queryset.order_by("+id").exclude("content").limit(limit))
     return {
         "cache_reports": [
             {
@@ -463,6 +451,8 @@ def get_cache_reports(kind: str, cursor: Optional[str], limit: int) -> CacheRepo
                 "split": object.split,
                 "http_status": object.http_status.value,
                 "error_code": object.error_code,
+                "details": object.details,
+                "updated_at": object.updated_at,
                 "job_runner_version": object.job_runner_version,
                 "dataset_git_revision": object.dataset_git_revision,
                 "progress": object.progress,
@@ -483,17 +473,7 @@ def get_outdated_split_full_names_for_step(kind: str, current_version: int) -> L
 
 
 def get_dataset_responses_without_content_for_kind(kind: str, dataset: str) -> List[CacheReport]:
-    responses = CachedResponse.objects(kind=kind, dataset=dataset).only(
-        "kind",
-        "dataset",
-        "config",
-        "split",
-        "http_status",
-        "error_code",
-        "job_runner_version",
-        "dataset_git_revision",
-        "progress",
-    )
+    responses = CachedResponse.objects(kind=kind, dataset=dataset).exclude("content")
     return [
         {
             "kind": response.kind,
@@ -502,6 +482,8 @@ def get_dataset_responses_without_content_for_kind(kind: str, dataset: str) -> L
             "split": response.split,
             "http_status": response.http_status,
             "error_code": response.error_code,
+            "details": response.details,
+            "updated_at": response.updated_at,
             "job_runner_version": response.job_runner_version,
             "dataset_git_revision": response.dataset_git_revision,
             "progress": response.progress,
@@ -512,8 +494,6 @@ def get_dataset_responses_without_content_for_kind(kind: str, dataset: str) -> L
 
 class CacheReportWithContent(CacheReport):
     content: Mapping[str, Any]
-    details: Mapping[str, Any]
-    updated_at: datetime
 
 
 class CacheReportsWithContentPage(TypedDict):
@@ -556,25 +536,7 @@ def get_cache_reports_with_content(kind: str, cursor: Optional[str], limit: int)
             raise InvalidCursor("Invalid cursor.") from err
     if limit <= 0:
         raise InvalidLimit("Invalid limit.")
-    objects = list(
-        queryset.order_by("+id")
-        .only(
-            "id",
-            "kind",
-            "dataset",
-            "config",
-            "split",
-            "http_status",
-            "error_code",
-            "content",
-            "job_runner_version",
-            "dataset_git_revision",
-            "details",
-            "updated_at",
-            "progress",
-        )
-        .limit(limit)
-    )
+    objects = list(queryset.order_by("+id").limit(limit))
     return {
         "cache_reports_with_content": [
             {
