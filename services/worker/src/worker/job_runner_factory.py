@@ -8,16 +8,13 @@ from pathlib import Path
 from libcommon.processing_graph import ProcessingGraph
 from libcommon.queue import JobInfo
 from libcommon.storage import StrPath
-from services.worker.src.worker.job_runners.config.opt_in_out_urls_scan_count import (
-    ConfigOptInOutUrlsCountJobRunner,
-)
-from services.worker.src.worker.job_runners.dataset.opt_in_out_urls_count import (
-    DatasetOptInOutUrlsCountJobRunner,
-)
 
 from worker.config import AppConfig
 from worker.job_runner import JobRunner
 from worker.job_runners.config.info import ConfigInfoJobRunner
+from worker.job_runners.config.opt_in_out_urls_count import (
+    ConfigOptInOutUrlsCountJobRunner,
+)
 from worker.job_runners.config.parquet import ConfigParquetJobRunner
 from worker.job_runners.config.parquet_and_info import ConfigParquetAndInfoJobRunner
 from worker.job_runners.config.size import ConfigSizeJobRunner
@@ -30,6 +27,9 @@ from worker.job_runners.config.split_names_from_streaming import (
 from worker.job_runners.config_names import ConfigNamesJobRunner
 from worker.job_runners.dataset.info import DatasetInfoJobRunner
 from worker.job_runners.dataset.is_valid import DatasetIsValidJobRunner
+from worker.job_runners.dataset.opt_in_out_urls_count import (
+    DatasetOptInOutUrlsCountJobRunner,
+)
 from worker.job_runners.dataset.parquet import DatasetParquetJobRunner
 from worker.job_runners.dataset.size import DatasetSizeJobRunner
 from worker.job_runners.dataset.split_names import DatasetSplitNamesJobRunner
