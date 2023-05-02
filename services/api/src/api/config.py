@@ -139,8 +139,8 @@ class EndpointConfig:
                 "dataset": ["dataset-size"],
                 "config": ["config-size"],
             },
-            "/opt-in-out-urls-scan": {
-                "split": ["split-opt-in-out-urls-scan"],
+            "/opt-in-out-urls": {
+                "split": ["split-opt-in-out-urls-count"],
             },
         }
     )
