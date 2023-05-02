@@ -5,10 +5,10 @@ from itertools import product
 import pandas as pd
 import requests
 import gradio as gr
-import matplotlib.pyplot as plt
 import matplotlib
 import huggingface_hub as hfh
 import duckdb
+import json
 
 matplotlib.use('SVG')
 
@@ -146,11 +146,11 @@ with gr.Blocks() as demo:
                     "split": cached_response["split"],
                     "http_status": cached_response["http_status"],
                     "error_code": cached_response["error_code"],
-                    "details": cached_response["details"],
-                    "updated_at": cached_response["updated_at"],
                     "job_runner_version": cached_response["job_runner_version"],
                     "dataset_git_revision": cached_response["dataset_git_revision"],
-                    "progress": cached_response["progress"]
+                    "progress": cached_response["progress"],
+                    "updated_at": cached_response["updated_at"],
+                    "details": json.dumps(cached_response["details"]),
                 }
                 for job_type, content in dataset_status.items()
                 for cached_response in content["cached_responses"]
