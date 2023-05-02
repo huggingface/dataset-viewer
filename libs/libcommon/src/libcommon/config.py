@@ -274,12 +274,12 @@ class ProcessingGraphConfig:
             },
             "config-opt-in-out-urls-scan": {
                 "input_type": "config",
-                "requires": ["split-opt-in-out-urls-scan"],
+                "requires": ["/split-names-from-streaming", "split-opt-in-out-urls-scan"],
                 "job_runner_version": PROCESSING_STEP_CONFIG_OPT_IN_OUT_URLS_SCAN_VERSION,
             },
             "dataset-opt-in-out-urls-scan": {
                 "input_type": "dataset",
-                "requires": ["config-opt-in-out-urls-scan"],
+                "requires": ["/config-names", "config-opt-in-out-urls-scan"],
                 "job_runner_version": PROCESSING_STEP_DATASET_OPT_IN_OUT_URLS_SCAN_VERSION,
             },
         }
