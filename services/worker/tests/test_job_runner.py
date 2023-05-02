@@ -9,10 +9,20 @@ from libcommon.exceptions import CustomError
 from libcommon.processing_graph import ProcessingGraph, ProcessingStep
 from libcommon.queue import Priority, Queue, Status
 from libcommon.resources import CacheMongoResource, QueueMongoResource
-from libcommon.simple_cache import CachedResponse, SplitFullName, get_response_with_details, upsert_response
+from libcommon.simple_cache import (
+    CachedResponse,
+    SplitFullName,
+    get_response_with_details,
+    upsert_response,
+)
 
 from worker.config import WorkerConfig
-from worker.job_runner import ERROR_CODES_TO_RETRY, CompleteJobResult, JobRunner, PreviousStepError
+from worker.job_runner import (
+    ERROR_CODES_TO_RETRY,
+    CompleteJobResult,
+    JobRunner,
+    PreviousStepError,
+)
 
 
 @pytest.fixture(autouse=True)
