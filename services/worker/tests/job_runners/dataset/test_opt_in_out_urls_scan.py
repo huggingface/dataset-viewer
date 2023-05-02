@@ -157,7 +157,7 @@ def test_compute(
             config_names_content["config_names"], config_upstream_status, config_upstream_content
         ):
             upsert_response(
-                kind="config-opt-in-out-urls-scan",
+                kind="config-opt-in-out-urls-count",
                 dataset=dataset,
                 config=split_item["config"],
                 content=content,

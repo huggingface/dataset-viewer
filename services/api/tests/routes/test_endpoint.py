@@ -77,9 +77,13 @@ def test_endpoints_definition() -> None:
 
     opt_in_out_urls = definition["/opt-in-out-urls"]
     assert opt_in_out_urls is not None
-    assert sorted(list(opt_in_out_urls)) == ["split"]
+    assert sorted(list(opt_in_out_urls)) == ["split", "config", "dataset"]
     assert opt_in_out_urls["split"] is not None
+    assert opt_in_out_urls["config"] is not None
+    assert opt_in_out_urls["dataset"] is not None
     assert len(opt_in_out_urls["split"]) == 1  # Only has one processing step
+    assert len(opt_in_out_urls["config"]) == 1  # Only has one processing step
+    assert len(opt_in_out_urls["dataset"]) == 1  # Only has one processing step
 
 
 def test_get_cache_entry_from_steps() -> None:

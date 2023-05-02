@@ -11,13 +11,13 @@ from environs import Env
 from libcommon.constants import (
     PROCESSING_STEP_CONFIG_INFO_VERSION,
     PROCESSING_STEP_CONFIG_NAMES_VERSION,
-    PROCESSING_STEP_CONFIG_OPT_IN_OUT_URLS_SCAN_VERSION,
+    PROCESSING_STEP_CONFIG_OPT_IN_OUT_URLS_COUNT_VERSION,
     PROCESSING_STEP_CONFIG_PARQUET_AND_INFO_VERSION,
     PROCESSING_STEP_CONFIG_PARQUET_VERSION,
     PROCESSING_STEP_CONFIG_SIZE_VERSION,
     PROCESSING_STEP_DATASET_INFO_VERSION,
     PROCESSING_STEP_DATASET_IS_VALID_VERSION,
-    PROCESSING_STEP_DATASET_OPT_IN_OUT_URLS_SCAN_VERSION,
+    PROCESSING_STEP_DATASET_OPT_IN_OUT_URLS_COUNT_VERSION,
     PROCESSING_STEP_DATASET_PARQUET_VERSION,
     PROCESSING_STEP_DATASET_SIZE_VERSION,
     PROCESSING_STEP_DATASET_SPLIT_NAMES_FROM_DATASET_INFO_VERSION,
@@ -272,15 +272,15 @@ class ProcessingGraphConfig:
                 "requires": ["split-opt-in-out-urls-scan"],
                 "job_runner_version": PROCESSING_STEP_SPLIT_OPT_IN_OUT_URLS_COUNT_VERSION,
             },
-            "config-opt-in-out-urls-scan": {
+            "config-opt-in-out-urls-count": {
                 "input_type": "config",
                 "requires": ["/split-names-from-streaming", "split-opt-in-out-urls-scan"],
-                "job_runner_version": PROCESSING_STEP_CONFIG_OPT_IN_OUT_URLS_SCAN_VERSION,
+                "job_runner_version": PROCESSING_STEP_CONFIG_OPT_IN_OUT_URLS_COUNT_VERSION,
             },
-            "dataset-opt-in-out-urls-scan": {
+            "dataset-opt-in-out-urls-count": {
                 "input_type": "dataset",
-                "requires": ["/config-names", "config-opt-in-out-urls-scan"],
-                "job_runner_version": PROCESSING_STEP_DATASET_OPT_IN_OUT_URLS_SCAN_VERSION,
+                "requires": ["/config-names", "config-opt-in-out-urls-count"],
+                "job_runner_version": PROCESSING_STEP_DATASET_OPT_IN_OUT_URLS_COUNT_VERSION,
             },
         }
     )
