@@ -466,8 +466,16 @@ CONFIG_PARQUET_AND_INFO_OK = {"config": CONFIG_NAME_1, "content": "not important
 CONFIG_INFO_OK = {"config": CONFIG_NAME_1, "content": "not important"}
 
 
-def get_dataset_state(git_revision: Optional[str] = CURRENT_GIT_REVISION) -> DatasetState:
-    return DatasetState(dataset=DATASET_NAME, processing_graph=PROCESSING_GRAPH, revision=git_revision)
+def get_dataset_state(
+    git_revision: Optional[str] = CURRENT_GIT_REVISION,
+    error_codes_to_retry: Optional[List[str]] = None,
+) -> DatasetState:
+    return DatasetState(
+        dataset=DATASET_NAME,
+        processing_graph=PROCESSING_GRAPH,
+        revision=git_revision,
+        error_codes_to_retry=error_codes_to_retry,
+    )
 
 
 def assert_dataset_state(
@@ -477,8 +485,9 @@ def assert_dataset_state(
     queue_status: Dict[str, List[str]],
     tasks: List[str],
     git_revision: Optional[str] = CURRENT_GIT_REVISION,
+    error_codes_to_retry: Optional[List[str]] = None,
 ) -> DatasetState:
-    dataset_state = get_dataset_state(git_revision=git_revision)
+    dataset_state = get_dataset_state(git_revision=git_revision, error_codes_to_retry=error_codes_to_retry)
     assert dataset_state.config_names == config_names
     assert len(dataset_state.config_states) == len(config_names)
     if len(config_names):
@@ -682,67 +691,67 @@ def test_plan_retry_error() -> None:
         dataset_git_revision=CURRENT_GIT_REVISION,
     )
 
-    with patch("libcommon.state.ERROR_CODES_TO_RETRY", [ERROR_CODE_TO_RETRY]):
-        assert_dataset_state(
-            # The config names are known
-            config_names=TWO_CONFIG_NAMES,
-            # The split names are not yet known
-            split_names_in_first_config=[],
-            # "/config-names,dataset" is in the cache, but it's not categorized in up to date,
-            # but in "cache_is_error_to_retry" due to the error code
-            cache_status={
-                "cache_has_different_git_revision": [],
-                "cache_is_outdated_by_parent": [],
-                "cache_is_empty": [
-                    "/split-names-from-dataset-info,dataset,config1",
-                    "/split-names-from-dataset-info,dataset,config2",
-                    "/split-names-from-streaming,dataset,config1",
-                    "/split-names-from-streaming,dataset,config2",
-                    "config-info,dataset,config1",
-                    "config-info,dataset,config2",
-                    "config-parquet,dataset,config1",
-                    "config-parquet,dataset,config2",
-                    "config-parquet-and-info,dataset,config1",
-                    "config-parquet-and-info,dataset,config2",
-                    "config-size,dataset,config1",
-                    "config-size,dataset,config2",
-                    "dataset-info,dataset",
-                    "dataset-is-valid,dataset",
-                    "dataset-parquet,dataset",
-                    "dataset-size,dataset",
-                    "dataset-split-names,dataset",
-                    "dataset-split-names-from-dataset-info,dataset",
-                    "dataset-split-names-from-streaming,dataset",
-                ],
-                "cache_is_error_to_retry": ["/config-names,dataset"],
-                "cache_is_job_runner_obsolete": [],
-                "up_to_date": [],
-            },
-            queue_status={"in_process": []},
-            # The "/config-names,dataset" artifact will be retried
-            tasks=[
-                "CreateJob[/config-names,dataset]",
-                "CreateJob[/split-names-from-dataset-info,dataset,config1]",
-                "CreateJob[/split-names-from-dataset-info,dataset,config2]",
-                "CreateJob[/split-names-from-streaming,dataset,config1]",
-                "CreateJob[/split-names-from-streaming,dataset,config2]",
-                "CreateJob[config-info,dataset,config1]",
-                "CreateJob[config-info,dataset,config2]",
-                "CreateJob[config-parquet,dataset,config1]",
-                "CreateJob[config-parquet,dataset,config2]",
-                "CreateJob[config-parquet-and-info,dataset,config1]",
-                "CreateJob[config-parquet-and-info,dataset,config2]",
-                "CreateJob[config-size,dataset,config1]",
-                "CreateJob[config-size,dataset,config2]",
-                "CreateJob[dataset-info,dataset]",
-                "CreateJob[dataset-is-valid,dataset]",
-                "CreateJob[dataset-parquet,dataset]",
-                "CreateJob[dataset-size,dataset]",
-                "CreateJob[dataset-split-names,dataset]",
-                "CreateJob[dataset-split-names-from-dataset-info,dataset]",
-                "CreateJob[dataset-split-names-from-streaming,dataset]",
+    assert_dataset_state(
+        error_codes_to_retry=[ERROR_CODE_TO_RETRY],
+        # The config names are known
+        config_names=TWO_CONFIG_NAMES,
+        # The split names are not yet known
+        split_names_in_first_config=[],
+        # "/config-names,dataset" is in the cache, but it's not categorized in up to date,
+        # but in "cache_is_error_to_retry" due to the error code
+        cache_status={
+            "cache_has_different_git_revision": [],
+            "cache_is_outdated_by_parent": [],
+            "cache_is_empty": [
+                "/split-names-from-dataset-info,dataset,config1",
+                "/split-names-from-dataset-info,dataset,config2",
+                "/split-names-from-streaming,dataset,config1",
+                "/split-names-from-streaming,dataset,config2",
+                "config-info,dataset,config1",
+                "config-info,dataset,config2",
+                "config-parquet,dataset,config1",
+                "config-parquet,dataset,config2",
+                "config-parquet-and-info,dataset,config1",
+                "config-parquet-and-info,dataset,config2",
+                "config-size,dataset,config1",
+                "config-size,dataset,config2",
+                "dataset-info,dataset",
+                "dataset-is-valid,dataset",
+                "dataset-parquet,dataset",
+                "dataset-size,dataset",
+                "dataset-split-names,dataset",
+                "dataset-split-names-from-dataset-info,dataset",
+                "dataset-split-names-from-streaming,dataset",
             ],
-        )
+            "cache_is_error_to_retry": ["/config-names,dataset"],
+            "cache_is_job_runner_obsolete": [],
+            "up_to_date": [],
+        },
+        queue_status={"in_process": []},
+        # The "/config-names,dataset" artifact will be retried
+        tasks=[
+            "CreateJob[/config-names,dataset]",
+            "CreateJob[/split-names-from-dataset-info,dataset,config1]",
+            "CreateJob[/split-names-from-dataset-info,dataset,config2]",
+            "CreateJob[/split-names-from-streaming,dataset,config1]",
+            "CreateJob[/split-names-from-streaming,dataset,config2]",
+            "CreateJob[config-info,dataset,config1]",
+            "CreateJob[config-info,dataset,config2]",
+            "CreateJob[config-parquet,dataset,config1]",
+            "CreateJob[config-parquet,dataset,config2]",
+            "CreateJob[config-parquet-and-info,dataset,config1]",
+            "CreateJob[config-parquet-and-info,dataset,config2]",
+            "CreateJob[config-size,dataset,config1]",
+            "CreateJob[config-size,dataset,config2]",
+            "CreateJob[dataset-info,dataset]",
+            "CreateJob[dataset-is-valid,dataset]",
+            "CreateJob[dataset-parquet,dataset]",
+            "CreateJob[dataset-size,dataset]",
+            "CreateJob[dataset-split-names,dataset]",
+            "CreateJob[dataset-split-names-from-dataset-info,dataset]",
+            "CreateJob[dataset-split-names-from-streaming,dataset]",
+        ],
+    )
 
 
 def test_plan_incoherent_state() -> None:

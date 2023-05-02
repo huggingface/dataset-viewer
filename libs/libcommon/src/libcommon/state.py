@@ -83,9 +83,6 @@ class JobState:
         }
 
 
-ERROR_CODES_TO_RETRY: List[str] = []
-
-
 @dataclass
 class CacheState:
     """The state of a cache entry for a given input."""
@@ -94,6 +91,7 @@ class CacheState:
     config: Optional[str]
     split: Optional[str]
     cache_kind: str
+    error_codes_to_retry: Optional[List[str]] = None
     cache_entry_metadata: Optional[CacheEntryMetadata] = field(init=False)
     exists: bool = field(init=False)
     is_success: bool = field(init=False)
@@ -118,9 +116,13 @@ class CacheState:
         return self.cache_entry_metadata is None
 
     def is_error_to_retry(self) -> bool:
-        return self.cache_entry_metadata is not None and (
-            self.cache_entry_metadata["http_status"] >= 400
-            and self.cache_entry_metadata["error_code"] in ERROR_CODES_TO_RETRY
+        return (
+            self.error_codes_to_retry is not None
+            and self.cache_entry_metadata is not None
+            and (
+                self.cache_entry_metadata["http_status"] >= 400
+                and self.cache_entry_metadata["error_code"] in self.error_codes_to_retry
+            )
         )
 
     def is_older_than(self, other: "CacheState") -> bool:
@@ -140,6 +142,7 @@ class ArtifactState:
     dataset: str
     config: Optional[str]
     split: Optional[str]
+    error_codes_to_retry: Optional[List[str]] = None
 
     job_state: JobState = field(init=False)
     cache_state: CacheState = field(init=False)
@@ -162,7 +165,11 @@ class ArtifactState:
             job_type=self.step.job_type, dataset=self.dataset, config=self.config, split=self.split
         )
         self.cache_state = CacheState(
-            cache_kind=self.step.cache_kind, dataset=self.dataset, config=self.config, split=self.split
+            cache_kind=self.step.cache_kind,
+            dataset=self.dataset,
+            config=self.config,
+            split=self.split,
+            error_codes_to_retry=self.error_codes_to_retry,
         )
 
     def is_job_runner_obsolete(self) -> bool:
@@ -189,12 +196,19 @@ class SplitState:
     config: str
     split: str
     processing_graph: ProcessingGraph
+    error_codes_to_retry: Optional[List[str]] = None
 
     artifact_state_by_step: Dict[str, ArtifactState] = field(init=False)
 
     def __post_init__(self) -> None:
         self.artifact_state_by_step = {
-            step.name: ArtifactState(step=step, dataset=self.dataset, config=self.config, split=self.split)
+            step.name: ArtifactState(
+                step=step,
+                dataset=self.dataset,
+                config=self.config,
+                split=self.split,
+                error_codes_to_retry=self.error_codes_to_retry,
+            )
             for step in self.processing_graph.steps.values()
             if step.input_type == "split"
         }
@@ -213,6 +227,7 @@ class ConfigState:
     dataset: str
     config: str
     processing_graph: ProcessingGraph
+    error_codes_to_retry: Optional[List[str]] = None
 
     split_names: List[str] = field(init=False)
     split_states: List[SplitState] = field(init=False)
@@ -220,7 +235,13 @@ class ConfigState:
 
     def __post_init__(self) -> None:
         self.artifact_state_by_step = {
-            step.name: ArtifactState(step=step, dataset=self.dataset, config=self.config, split=None)
+            step.name: ArtifactState(
+                step=step,
+                dataset=self.dataset,
+                config=self.config,
+                split=None,
+                error_codes_to_retry=self.error_codes_to_retry,
+            )
             for step in self.processing_graph.steps.values()
             if step.input_type == "config"
         }
@@ -231,7 +252,13 @@ class ConfigState:
             self.split_names = []
 
         self.split_states = [
-            SplitState(self.dataset, self.config, split_name, processing_graph=self.processing_graph)
+            SplitState(
+                self.dataset,
+                self.config,
+                split_name,
+                processing_graph=self.processing_graph,
+                error_codes_to_retry=self.error_codes_to_retry,
+            )
             for split_name in self.split_names
         ]
 
@@ -347,6 +374,7 @@ class DatasetState:
     dataset: str
     processing_graph: ProcessingGraph
     revision: Optional[str]
+    error_codes_to_retry: Optional[List[str]] = None
 
     config_names: List[str] = field(init=False)
     config_states: List[ConfigState] = field(init=False)
@@ -358,7 +386,13 @@ class DatasetState:
 
     def __post_init__(self) -> None:
         self.artifact_state_by_step = {
-            step.name: ArtifactState(step=step, dataset=self.dataset, config=None, split=None)
+            step.name: ArtifactState(
+                step=step,
+                dataset=self.dataset,
+                config=None,
+                split=None,
+                error_codes_to_retry=self.error_codes_to_retry,
+            )
             for step in self.processing_graph.steps.values()
             if step.input_type == "dataset"
         }
@@ -367,7 +401,12 @@ class DatasetState:
         except Exception:
             self.config_names = []
         self.config_states = [
-            ConfigState(dataset=self.dataset, config=config_name, processing_graph=self.processing_graph)
+            ConfigState(
+                dataset=self.dataset,
+                config=config_name,
+                processing_graph=self.processing_graph,
+                error_codes_to_retry=self.error_codes_to_retry,
+            )
             for config_name in self.config_names
         ]
         self.cache_status = self._get_cache_status()
