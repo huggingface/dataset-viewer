@@ -229,7 +229,7 @@ def graph() -> ProcessingGraph:
                 "split-opt-in-out-urls-scan",
             ],
         ),
-        (   
+        (
             "config-opt-in-out-urls-count",
             ["dataset-opt-in-out-urls-count"],
             ["split-opt-in-out-urls-scan", "/split-names-from-streaming"],
