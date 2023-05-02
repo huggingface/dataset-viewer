@@ -237,7 +237,7 @@ class PreviousStepError(JobRunnerError):
         status_code = response["http_status"]
         error_code = response["error_code"] or "PreviousStepError"
         cause = None  # No way to create the same exception
-        disclose_cause = response["details"] == response["content"]
+        disclose_cause = orjson_dumps(response["details"]) == orjson_dumps(response["content"])
         error_without_cause: ErrorResponseWithoutCause = {"error": message}
         error_with_cause: ErrorResponseWithCause = {
             "error": message,
