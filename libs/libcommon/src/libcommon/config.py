@@ -25,6 +25,7 @@ from libcommon.constants import (
     PROCESSING_STEP_SPLIT_FIRST_ROWS_FROM_STREAMING_VERSION,
     PROCESSING_STEP_SPLIT_NAMES_FROM_DATASET_INFO_VERSION,
     PROCESSING_STEP_SPLIT_NAMES_FROM_STREAMING_VERSION,
+    PROCESSING_STEP_SPLIT_OPT_IN_OUT_URLS_COUNT_VERSION,
     PROCESSING_STEP_SPLIT_OPT_IN_OUT_URLS_SCAN_VERSION,
 )
 from libcommon.processing_graph import ProcessingGraphSpecification
@@ -269,6 +270,11 @@ class ProcessingGraphConfig:
                 "input_type": "split",
                 "requires": ["split-first-rows-from-streaming"],
                 "job_runner_version": PROCESSING_STEP_SPLIT_OPT_IN_OUT_URLS_SCAN_VERSION,
+            },
+            "split-opt-in-out-urls-count": {
+                "input_type": "split",
+                "requires": ["split-opt-in-out-urls-scan"],
+                "job_runner_version": PROCESSING_STEP_SPLIT_OPT_IN_OUT_URLS_COUNT_VERSION,
             },
         }
     )
