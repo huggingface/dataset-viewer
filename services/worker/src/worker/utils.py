@@ -90,7 +90,7 @@ class OptUrl(TypedDict):
     column_name: str
 
 
-class OptInOutUrlsScanResponse(TypedDict):
+class OptInOutUrlsCountResponse(TypedDict):
     urls_columns: List[str]
     num_opt_in_urls: int
     num_opt_out_urls: int
@@ -99,7 +99,7 @@ class OptInOutUrlsScanResponse(TypedDict):
     has_urls_columns: bool
 
 
-class OptInOutUrlsScanDetailedResponse(OptInOutUrlsScanResponse):
+class OptInOutUrlsScanResponse(OptInOutUrlsCountResponse):
     opt_in_urls: List[OptUrl]
     opt_out_urls: List[OptUrl]
 

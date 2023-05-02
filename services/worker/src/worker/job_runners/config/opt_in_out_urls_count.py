@@ -15,7 +15,7 @@ from worker.job_runner import (
     ParameterMissingError,
     get_previous_step_or_raise,
 )
-from worker.utils import OptInOutUrlsScanResponse
+from worker.utils import OptInOutUrlsCountResponse
 
 ConfigOptInOutUrlsCountJobRunnerErrorCode = Literal["PreviousStepFormatError"]
 
@@ -43,7 +43,7 @@ class PreviousStepFormatError(ConfigOptInOutUrlsCountJobRunnerError):
         super().__init__(message, HTTPStatus.INTERNAL_SERVER_ERROR, "PreviousStepFormatError", cause, False)
 
 
-def compute_opt_in_out_urls_scan_response(dataset: str, config: str) -> Tuple[OptInOutUrlsScanResponse, float]:
+def compute_opt_in_out_urls_scan_response(dataset: str, config: str) -> Tuple[OptInOutUrlsCountResponse, float]:
     logging.info(f"get config-opt-in-out-urls-count for dataset={dataset} config={config}")
 
     split_names_response = get_previous_step_or_raise(
@@ -87,7 +87,7 @@ def compute_opt_in_out_urls_scan_response(dataset: str, config: str) -> Tuple[Op
     progress = (total - pending) / total if total else 1.0
 
     return (
-        OptInOutUrlsScanResponse(
+        OptInOutUrlsCountResponse(
             urls_columns=unique_urls_columns,
             has_urls_columns=has_urls_columns,
             num_opt_in_urls=num_opt_in_urls,

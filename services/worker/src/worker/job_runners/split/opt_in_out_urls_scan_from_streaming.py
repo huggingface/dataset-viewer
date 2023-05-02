@@ -23,7 +23,7 @@ from worker.job_runner import (
 )
 from worker.job_runners._datasets_based_job_runner import DatasetsBasedJobRunner
 from worker.utils import (
-    OptInOutUrlsScanDetailedResponse,
+    OptInOutUrlsScanResponse,
     OptUrl,
     SplitFirstRowsResponse,
     get_rows_or_raise,
@@ -172,7 +172,7 @@ def compute_opt_in_out_urls_scan_response(
     max_concurrent_requests_number: int,
     max_requests_per_second: int,
     spawning_url: str,
-) -> OptInOutUrlsScanDetailedResponse:
+) -> OptInOutUrlsScanResponse:
     logging.info(f"get opt-in-out-urls-scan for dataset={dataset} config={config} split={split}")
 
     use_auth_token: Union[bool, str, None] = hf_token if hf_token is not None else False
@@ -226,7 +226,7 @@ def compute_opt_in_out_urls_scan_response(
             urls_columns.append(string_column)
 
     if not urls_columns:
-        return OptInOutUrlsScanDetailedResponse(
+        return OptInOutUrlsScanResponse(
             urls_columns=[],
             opt_in_urls=[],
             opt_out_urls=[],
@@ -288,7 +288,7 @@ def compute_opt_in_out_urls_scan_response(
     ]
 
     # return scan result
-    return OptInOutUrlsScanDetailedResponse(
+    return OptInOutUrlsScanResponse(
         urls_columns=urls_columns,
         opt_in_urls=opt_in_urls,
         opt_out_urls=opt_out_urls,

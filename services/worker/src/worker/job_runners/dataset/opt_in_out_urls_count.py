@@ -15,7 +15,7 @@ from worker.job_runner import (
     ParameterMissingError,
     get_previous_step_or_raise,
 )
-from worker.utils import OptInOutUrlsScanResponse
+from worker.utils import OptInOutUrlsCountResponse
 
 DatasetOptInOutUrlsCountJobRunnerErrorCode = Literal["PreviousStepFormatError"]
 
@@ -99,7 +99,7 @@ def compute_opt_in_out_urls_scan_response(dataset: str) -> Tuple[DatasetOptInOut
     progress = (total - pending) / total if total else 1.0
 
     return (
-        OptInOutUrlsScanResponse(
+        OptInOutUrlsCountResponse(
             urls_columns=unique_urls_columns,
             has_urls_columns=has_urls_columns,
             num_opt_in_urls=num_opt_in_urls,
