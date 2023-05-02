@@ -9,10 +9,20 @@ from libcommon.exceptions import CustomError
 from libcommon.processing_graph import ProcessingGraph, ProcessingStep
 from libcommon.queue import Priority, Queue, Status
 from libcommon.resources import CacheMongoResource, QueueMongoResource
-from libcommon.simple_cache import CachedResponse, SplitFullName, upsert_response
+from libcommon.simple_cache import (
+    CachedResponse,
+    SplitFullName,
+    get_response_with_details,
+    upsert_response,
+)
 
 from worker.config import WorkerConfig
-from worker.job_runner import ERROR_CODES_TO_RETRY, CompleteJobResult, JobRunner
+from worker.job_runner import (
+    ERROR_CODES_TO_RETRY,
+    CompleteJobResult,
+    JobRunner,
+    PreviousStepError,
+)
 
 
 @pytest.fixture(autouse=True)
@@ -374,3 +384,62 @@ def test_raise_if_parallel_response_exists(
         job_runner.raise_if_parallel_response_exists(parallel_cache_kind="dummy-parallel", parallel_job_version=1)
     assert exc_info.value.status_code == HTTPStatus.INTERNAL_SERVER_ERROR
     assert exc_info.value.code == "ResponseAlreadyComputedError"
+
+
+@pytest.mark.parametrize("disclose_cause", [False, True])
+def test_previous_step_error(disclose_cause: bool) -> None:
+    dataset = "dataset"
+    config = "config"
+    split = "split"
+    kind = "cache_kind"
+    error_code = "ErrorCode"
+    error_message = "error message"
+    cause_exception = "CauseException"
+    cause_message = "cause message"
+    cause_traceback = ["traceback1", "traceback2"]
+    details = {
+        "error": error_message,
+        "cause_exception": cause_exception,
+        "cause_message": cause_message,
+        "cause_traceback": cause_traceback,
+    }
+    content = details if disclose_cause else {"error": error_message}
+    job_runner_version = 1
+    dataset_git_revision = "dataset_git_revision"
+    progress = 1.0
+    upsert_response(
+        kind=kind,
+        dataset=dataset,
+        config=config,
+        split=split,
+        content=content,
+        http_status=HTTPStatus.INTERNAL_SERVER_ERROR,
+        error_code=error_code,
+        details=details,
+        job_runner_version=job_runner_version,
+        dataset_git_revision=dataset_git_revision,
+        progress=progress,
+    )
+    response = get_response_with_details(kind=kind, dataset=dataset, config=config, split=split)
+    error = PreviousStepError.from_response(response=response, kind=kind, dataset=dataset, config=config, split=split)
+    assert error.disclose_cause == disclose_cause
+    assert error.status_code == HTTPStatus.INTERNAL_SERVER_ERROR
+    assert error.code == error_code
+    assert error.as_response_without_cause() == {
+        "error": error_message,
+    }
+    assert error.as_response_with_cause() == {
+        "error": error_message,
+        "cause_exception": cause_exception,
+        "cause_message": cause_message,
+        "cause_traceback": [
+            "The previous step failed, the error is copied to this step:",
+            f"  {kind=} {dataset=} {config=} {split=}",
+            "---",
+            *cause_traceback,
+        ],
+    }
+    if disclose_cause:
+        assert error.as_response() == error.as_response_with_cause()
+    else:
+        assert error.as_response() == error.as_response_without_cause()

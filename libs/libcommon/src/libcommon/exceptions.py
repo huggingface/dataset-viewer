@@ -37,24 +37,23 @@ class CustomError(LoggedError):
         status_code: HTTPStatus,
         code: str,
         cause: Optional[BaseException] = None,
-        disclose_cause: bool = False,
+        disclose_cause: Optional[bool] = None,
     ):
         super().__init__(message)
         self.exception = type(self).__name__
         self.status_code = status_code
         self.code = code
         self.message = str(self)
+        self.disclose_cause = disclose_cause if disclose_cause is not None else cause is not None
         if cause is not None:
             self.cause_exception: Optional[str] = type(cause).__name__
             self.cause_message: Optional[str] = str(cause)
             (t, v, tb) = sys.exc_info()
             self.cause_traceback: Optional[List[str]] = traceback.format_exception(t, v, tb)
-            self.disclose_cause = disclose_cause
         else:
             self.cause_exception = None
             self.cause_message = None
             self.cause_traceback = None
-            self.disclose_cause = False
 
     def as_response_with_cause(self) -> ErrorResponseWithCause:
         error: ErrorResponseWithCause = {"error": self.message}
