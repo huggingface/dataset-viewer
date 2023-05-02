@@ -3,7 +3,6 @@
 
 from http import HTTPStatus
 from typing import Any, Dict, List, Mapping, Optional, TypedDict
-from unittest.mock import patch
 
 import pytest
 
