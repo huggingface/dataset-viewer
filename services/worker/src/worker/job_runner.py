@@ -257,7 +257,7 @@ class PreviousStepError(JobRunnerError):
             and isinstance(response["details"]["cause_traceback"], list)
             and all(isinstance(line, str) for line in response["details"]["cause_traceback"])
         ):
-            error_with_cause["cause_traceback"].extend(*response["details"]["cause_traceback"])
+            error_with_cause["cause_traceback"].extend(response["details"]["cause_traceback"])
         return PreviousStepError(
             message=message,
             status_code=status_code,
