@@ -678,7 +678,7 @@ def test_plan_job_creation_and_termination() -> None:
             "CreateJob[config-info,dataset,config1]",
             "CreateJob[config-info,dataset,config2]",
             "CreateJob[config-opt-in-out-urls-scan,dataset,config1]",
-            "CreateJob[config-opt-in-out-urls-scan,dataset,config2]",            
+            "CreateJob[config-opt-in-out-urls-scan,dataset,config2]",
             "CreateJob[config-parquet,dataset,config1]",
             "CreateJob[config-parquet,dataset,config2]",
             "CreateJob[config-parquet-and-info,dataset,config1]",

@@ -82,7 +82,7 @@ def compute_opt_in_out_urls_scan_response(dataset: str, config: str) -> Tuple[Op
     except Exception as e:
         raise PreviousStepFormatError("Previous step did not return the expected content.", e) from e
 
-    unique_urls_columns = list(set(urls_columns))
+    unique_urls_columns = sorted(list(set(urls_columns)))
     has_urls_columns = len(unique_urls_columns) > 0
     progress = (total - pending) / total if total else 1.0
 

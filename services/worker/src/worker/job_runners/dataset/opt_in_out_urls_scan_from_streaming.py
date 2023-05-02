@@ -80,6 +80,11 @@ def compute_opt_in_out_urls_scan_response(dataset: str) -> Tuple[DatasetOptInOut
             if response["http_status"] != HTTPStatus.OK:
                 logging.debug(f"Previous step gave an error: {response['http_status']}.")
                 continue
+            else:
+                if response["progress"] and response["progress"] < 1.0:
+                    logging.debug(f"Previous step is still in progress: {response['progress']}.")
+                    pending += 1
+                    continue
             split_opt_in_out_content = response["content"]
             urls_columns.extend(split_opt_in_out_content["urls_columns"])
             num_opt_in_urls += split_opt_in_out_content["num_opt_in_urls"]
@@ -89,7 +94,7 @@ def compute_opt_in_out_urls_scan_response(dataset: str) -> Tuple[DatasetOptInOut
     except Exception as e:
         raise PreviousStepFormatError("Previous step did not return the expected content.", e) from e
 
-    unique_urls_columns = list(set(urls_columns))
+    unique_urls_columns = sorted(list(set(urls_columns)))
     has_urls_columns = len(unique_urls_columns) > 0
     progress = (total - pending) / total if total else 1.0
 
