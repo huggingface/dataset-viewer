@@ -225,6 +225,8 @@ cacheMaintenance:
   # ^ allowed values are {skip,backfill,upgrade,collect-metrics}
   log:
     level: "info"
+  backfill:
+    error_codes_to_retry: ""
   nodeSelector: {}
   resources:
     requests:
@@ -239,6 +241,7 @@ backfill:
   log:
     level: "info"
   action: "backfill"
+  error_codes_to_retry: ""
   schedule: "0 */3 * * *"
   # every 3 hours
   nodeSelector: {}

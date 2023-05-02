@@ -15,6 +15,8 @@
     {{ include "envMetrics" . | nindent 2 }}
   - name: CACHE_MAINTENANCE_ACTION
     value: {{ .Values.backfill.action | quote }}
+  - name: CACHE_MAINTENANCE_BACKFILL_ERROR_CODES_TO_RETRY
+    value: {{ .Values.backfill.error_codes_to_retry | quote }}
   - name: LOG_LEVEL
     value: {{ .Values.backfill.log.level | quote }}
 {{- end -}}
