@@ -18,6 +18,10 @@ Set environment variables to configure the job (`CACHE_MAINTENANCE_` prefix):
 
 - `CACHE_MAINTENANCE_ACTION`: the action to launch, among `backfill`, `metrics`, `skip`. Defaults to `skip`.
 
+Specific to the backfill action:
+
+- `CACHE_MAINTENANCE_BACKFILL_ERROR_CODES_TO_RETRY`: the list of error codes to retry. Defaults to None.
+
 ### Common
 
 See [../../libs/libcommon/README.md](../../libs/libcommon/README.md) for more information about the common configuration.

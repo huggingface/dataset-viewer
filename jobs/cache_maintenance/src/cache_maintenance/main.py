@@ -61,6 +61,7 @@ def run_job() -> None:
                 processing_graph=processing_graph,
                 hf_endpoint=job_config.common.hf_endpoint,
                 hf_token=job_config.common.hf_token,
+                error_codes_to_retry=job_config.backfill.error_codes_to_retry,
             )
         elif action == "collect-metrics":
             collect_metrics(processing_graph=processing_graph)
@@ -73,5 +74,6 @@ if __name__ == "__main__":
     try:
         run_job()
         sys.exit(0)
-    except Exception:
+    except Exception as e:
+        logging.exception(e)
         sys.exit(1)
