@@ -21,7 +21,6 @@ from worker.config import AppConfig
 from worker.job_runners.split.first_rows_from_parquet import (
     SplitFirstRowsFromParquetJobRunner,
 )
-from worker.resources import LibrariesResource
 from worker.utils import get_json_size
 
 from ...fixtures.hub import get_default_config_split
