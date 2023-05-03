@@ -32,7 +32,6 @@ GetJobRunner = Callable[[str, str, str, AppConfig, bool], SplitFirstRowsFromParq
 @pytest.fixture
 def get_job_runner(
     assets_directory: StrPath,
-    libraries_resource: LibrariesResource,
     cache_mongo_resource: CacheMongoResource,
     queue_mongo_resource: QueueMongoResource,
 ) -> GetJobRunner:
@@ -64,7 +63,6 @@ def get_job_runner(
                 parents=[],
                 job_runner_version=SplitFirstRowsFromParquetJobRunner.get_job_runner_version(),
             ),
-            hf_datasets_cache=libraries_resource.hf_datasets_cache,
             assets_directory=assets_directory,
         )
 
