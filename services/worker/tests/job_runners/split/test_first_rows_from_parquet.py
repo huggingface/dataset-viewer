@@ -21,7 +21,6 @@ from worker.config import AppConfig
 from worker.job_runners.split.first_rows_from_parquet import (
     SplitFirstRowsFromParquetJobRunner,
 )
-from worker.resources import LibrariesResource
 from worker.utils import get_json_size
 
 from ...fixtures.hub import get_default_config_split
@@ -32,7 +31,6 @@ GetJobRunner = Callable[[str, str, str, AppConfig, bool], SplitFirstRowsFromParq
 @pytest.fixture
 def get_job_runner(
     assets_directory: StrPath,
-    libraries_resource: LibrariesResource,
     cache_mongo_resource: CacheMongoResource,
     queue_mongo_resource: QueueMongoResource,
 ) -> GetJobRunner:
@@ -64,7 +62,6 @@ def get_job_runner(
                 parents=[],
                 job_runner_version=SplitFirstRowsFromParquetJobRunner.get_job_runner_version(),
             ),
-            hf_datasets_cache=libraries_resource.hf_datasets_cache,
             assets_directory=assets_directory,
         )
 

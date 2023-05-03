@@ -13,11 +13,11 @@ from libcommon.simple_cache import SplitFullName
 
 from worker.job_runner import (
     CompleteJobResult,
+    JobRunner,
     JobRunnerError,
     ParameterMissingError,
     get_previous_step_or_raise,
 )
-from worker.job_runners._datasets_based_job_runner import DatasetsBasedJobRunner
 from worker.utils import SplitItem, SplitsList
 
 SplitNamesFromDatasetInfoJobRunnerErrorCode = Literal[
@@ -95,7 +95,7 @@ def compute_split_names_from_dataset_info_response(dataset: str, config: str) ->
     return SplitsList(splits=split_name_items)
 
 
-class SplitNamesFromDatasetInfoJobRunner(DatasetsBasedJobRunner):
+class SplitNamesFromDatasetInfoJobRunner(JobRunner):
     @staticmethod
     def get_job_type() -> str:
         return "/split-names-from-dataset-info"
