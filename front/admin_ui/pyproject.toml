@@ -5,7 +5,7 @@ description = "Admin interface for datasets-server"
 authors = ["Quentin Lhoest <quentin@huggingface.co>"]
 
 [tool.poetry.dependencies]
-gradio = "~3.18.0"
+gradio = "3.28.1"
 matplotlib = "^3.7.0"
 requests = "^2.28.2"
 python = "3.9.15"
