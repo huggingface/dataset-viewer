@@ -20,15 +20,6 @@ from worker.utils import OptInOutUrlsCountResponse
 DatasetOptInOutUrlsCountJobRunnerErrorCode = Literal["PreviousStepFormatError"]
 
 
-class DatasetOptInOutUrlsCountResponse(TypedDict):
-    urls_columns: List[str]
-    num_opt_in_urls: int
-    num_opt_out_urls: int
-    num_urls: int
-    num_scanned_rows: int
-    has_urls_columns: bool
-
-
 class DatasetOptInOutUrlsCountJobRunnerError(JobRunnerError):
     """Base class for exceptions in this module."""
 
@@ -52,7 +43,7 @@ class PreviousStepFormatError(DatasetOptInOutUrlsCountJobRunnerError):
         super().__init__(message, HTTPStatus.INTERNAL_SERVER_ERROR, "PreviousStepFormatError", cause, False)
 
 
-def compute_opt_in_out_urls_count_response(dataset: str) -> Tuple[DatasetOptInOutUrlsCountResponse, float]:
+def compute_opt_in_out_urls_count_response(dataset: str) -> Tuple[OptInOutUrlsCountResponse, float]:
     logging.info(f"get opt-in-out-urls-count for dataset={dataset}")
 
     config_names_response = get_previous_step_or_raise(kinds=["/config-names"], dataset=dataset)
