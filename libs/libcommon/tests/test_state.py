@@ -367,8 +367,9 @@ def test_config_state_as_dict() -> None:
         http_status=SPLIT_NAMES_RESPONSE_OK["http_status"],
     )
     processing_graph = PROCESSING_GRAPH
-    configState = ConfigState(dataset=dataset, config=config, processing_graph=processing_graph).as_dict()
-    assert configState == get_CONFIG_STATE_DICT(
+    assert ConfigState(
+        dataset=dataset, config=config, processing_graph=processing_graph
+    ).as_dict() == get_CONFIG_STATE_DICT(
         dataset=DATASET_NAME,
         config=CONFIG_NAME_1,
         split_states=[
@@ -404,10 +405,9 @@ def test_dataset_state_as_dict() -> None:
         http_status=SPLIT_NAMES_RESPONSE_OK["http_status"],
     )
     processing_graph = PROCESSING_GRAPH
-    dataset_state = DatasetState(
+    assert DatasetState(
         dataset=dataset, processing_graph=processing_graph, revision=CURRENT_GIT_REVISION
-    ).as_dict()
-    assert dataset_state == {
+    ).as_dict() == {
         "dataset": "dataset",
         "config_states": [
             get_CONFIG_STATE_DICT(
