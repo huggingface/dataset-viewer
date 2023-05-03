@@ -5,7 +5,7 @@ import logging
 from asyncio import Semaphore, create_task, run, wait
 from http import HTTPStatus
 from pathlib import Path
-from typing import Any, List, Literal, Mapping, Optional, Tuple, TypedDict, Union
+from typing import Any, List, Literal, Mapping, Optional, Tuple, Union
 
 from aiohttp import ClientSession
 from aiolimiter import AsyncLimiter
@@ -22,7 +22,12 @@ from worker.job_runner import (
     get_previous_step_or_raise,
 )
 from worker.job_runners._datasets_based_job_runner import DatasetsBasedJobRunner
-from worker.utils import SplitFirstRowsResponse, get_rows_or_raise
+from worker.utils import (
+    OptInOutUrlsScanResponse,
+    OptUrl,
+    SplitFirstRowsResponse,
+    get_rows_or_raise,
+)
 
 SplitOptInOutUrlsScanJobRunnerErrorCode = Literal[
     "InfoError",
@@ -90,23 +95,6 @@ class ExternalServerError(SplitOptInOutUrlsScanJobRunnerError):
 
     def __init__(self, message: str, cause: Optional[BaseException] = None):
         super().__init__(message, HTTPStatus.INTERNAL_SERVER_ERROR, "ExternalServerError", cause, False)
-
-
-class OptUrl(TypedDict):
-    url: str
-    row_idx: int
-    column_name: str
-
-
-class OptInOutUrlsScanResponse(TypedDict):
-    urls_columns: List[str]
-    opt_in_urls: List[OptUrl]
-    opt_out_urls: List[OptUrl]
-    num_opt_in_urls: int
-    num_opt_out_urls: int
-    num_urls: int
-    num_scanned_rows: int
-    has_urls_columns: bool
 
 
 async def check_spawning(

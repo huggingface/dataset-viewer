@@ -3,7 +3,7 @@
 
 import logging
 from http import HTTPStatus
-from typing import Any, List, Literal, Mapping, Optional, TypedDict
+from typing import Any, Literal, Mapping, Optional
 
 from libcommon.constants import PROCESSING_STEP_SPLIT_OPT_IN_OUT_URLS_COUNT_VERSION
 from libcommon.simple_cache import SplitFullName
@@ -14,6 +14,7 @@ from worker.job_runner import (
     JobRunnerError,
     get_previous_step_or_raise,
 )
+from worker.utils import OptInOutUrlsCountResponse
 
 SplitOptInOutUrlsCountJobRunnerErrorCode = Literal["PreviousStepFormatError"]
 
@@ -39,15 +40,6 @@ class PreviousStepFormatError(SplitOptInOutUrlsCountJobRunnerError):
 
     def __init__(self, message: str, cause: Optional[BaseException] = None):
         super().__init__(message, HTTPStatus.INTERNAL_SERVER_ERROR, "PreviousStepFormatError", cause, False)
-
-
-class OptInOutUrlsCountResponse(TypedDict):
-    urls_columns: List[str]
-    num_opt_in_urls: int
-    num_opt_out_urls: int
-    num_urls: int
-    num_scanned_rows: int
-    has_urls_columns: bool
 
 
 def compute_opt_in_out_urls_count_response(
