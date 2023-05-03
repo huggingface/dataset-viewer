@@ -78,7 +78,7 @@ def compute_dataset_split_names_response(dataset: str) -> Tuple[DatasetSplitName
     elif config_names_best_response.kind == "dataset-info":
         if "dataset_info" not in content:
             raise PreviousStepFormatError("'dataset-info' did not return the expected content: 'dataset_info'.")
-        config_names = list(content["dataset-info"].keys())
+        config_names = list(content["dataset_info"].keys())
     else:
         raise PreviousStepFormatError(
             "Previous step '/config-names' or 'dataset-info' did not return the expected content."
