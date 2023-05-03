@@ -361,11 +361,13 @@ def test_get_cache_reports() -> None:
     dataset_a = "test_dataset_a"
     content_a = {"key": "a"}
     http_status_a = HTTPStatus.OK
+    updated_at_a = datetime(2020, 1, 1, 0, 0, 0)
     upsert_response(
         kind=kind,
         dataset=dataset_a,
         content=content_a,
         http_status=http_status_a,
+        updated_at=updated_at_a,
     )
 
     dataset_b = "test_dataset_b"
@@ -378,6 +380,7 @@ def test_get_cache_reports() -> None:
     }
     job_runner_version_b = 0
     dataset_git_revision_b = "123456"
+    updated_at_b = datetime(2020, 1, 1, 0, 0, 1)
     upsert_response(
         kind=kind,
         dataset=dataset_b,
@@ -388,6 +391,7 @@ def test_get_cache_reports() -> None:
         error_code=error_code_b,
         job_runner_version=job_runner_version_b,
         dataset_git_revision=dataset_git_revision_b,
+        updated_at=updated_at_b,
     )
 
     dataset_c = "test_dataset_c"
@@ -399,6 +403,7 @@ def test_get_cache_reports() -> None:
     details_c = {
         "error": "error c",
     }
+    updated_at_c = datetime(2020, 1, 1, 0, 0, 2)
     upsert_response(
         kind=kind,
         dataset=dataset_c,
@@ -408,6 +413,7 @@ def test_get_cache_reports() -> None:
         details=details_c,
         http_status=http_status_c,
         error_code=error_code_c,
+        updated_at=updated_at_c,
     )
     upsert_response(
         kind=kind_2,
@@ -416,8 +422,8 @@ def test_get_cache_reports() -> None:
         details=details_c,
         http_status=http_status_c,
         error_code=error_code_c,
+        updated_at=updated_at_c,
     )
-
     upsert_response(
         kind=kind_2,
         dataset=dataset_c,
@@ -427,6 +433,7 @@ def test_get_cache_reports() -> None:
         details=details_c,
         http_status=http_status_c,
         error_code=error_code_c,
+        updated_at=updated_at_c,
     )
 
     response = get_cache_reports(kind=kind, cursor="", limit=2)
@@ -438,6 +445,8 @@ def test_get_cache_reports() -> None:
             "split": None,
             "http_status": http_status_a.value,
             "error_code": None,
+            "details": {},
+            "updated_at": updated_at_a,
             "job_runner_version": None,
             "dataset_git_revision": None,
             "progress": None,
@@ -449,6 +458,8 @@ def test_get_cache_reports() -> None:
             "split": None,
             "http_status": http_status_b.value,
             "error_code": error_code_b,
+            "details": details_b,
+            "updated_at": updated_at_b,
             "job_runner_version": job_runner_version_b,
             "dataset_git_revision": dataset_git_revision_b,
             "progress": None,
@@ -466,6 +477,8 @@ def test_get_cache_reports() -> None:
                 "split": split_c,
                 "http_status": http_status_c.value,
                 "error_code": error_code_c,
+                "details": details_c,
+                "updated_at": updated_at_c,
                 "job_runner_version": None,
                 "dataset_git_revision": None,
                 "progress": None,
@@ -476,9 +489,6 @@ def test_get_cache_reports() -> None:
 
     response_with_content = get_cache_reports_with_content(kind=kind, cursor="", limit=2)
     # redact the response to make it simpler to compare with the expected
-    REDACTED_DATE = datetime(2020, 1, 1, 0, 0, 0)
-    for c in response_with_content["cache_reports_with_content"]:
-        c["updated_at"] = REDACTED_DATE
     assert response_with_content["cache_reports_with_content"] == [
         {
             "kind": kind,
@@ -491,7 +501,7 @@ def test_get_cache_reports() -> None:
             "job_runner_version": None,
             "dataset_git_revision": None,
             "details": {},
-            "updated_at": REDACTED_DATE,
+            "updated_at": updated_at_a,
             "progress": None,
         },
         {
@@ -505,15 +515,13 @@ def test_get_cache_reports() -> None:
             "job_runner_version": job_runner_version_b,
             "dataset_git_revision": dataset_git_revision_b,
             "details": details_b,
-            "updated_at": REDACTED_DATE,
+            "updated_at": updated_at_b,
             "progress": None,
         },
     ]
     assert response_with_content["next_cursor"] != ""
     next_cursor = response_with_content["next_cursor"]
     response_with_content = get_cache_reports_with_content(kind=kind, cursor=next_cursor, limit=2)
-    for c in response_with_content["cache_reports_with_content"]:
-        c["updated_at"] = REDACTED_DATE
     assert response_with_content == {
         "cache_reports_with_content": [
             {
@@ -527,7 +535,7 @@ def test_get_cache_reports() -> None:
                 "job_runner_version": None,
                 "dataset_git_revision": None,
                 "details": details_c,
-                "updated_at": REDACTED_DATE,
+                "updated_at": updated_at_c,
                 "progress": None,
             },
         ],
@@ -545,6 +553,7 @@ def test_get_cache_reports() -> None:
     assert len(result_a) == 1
     assert result_a[0]["http_status"] == HTTPStatus.OK.value
     assert result_a[0]["error_code"] is None
+    assert result_a[0]["details"] == {}
 
     assert not get_dataset_responses_without_content_for_kind(kind=kind_2, dataset=dataset_a)
 
@@ -553,6 +562,8 @@ def test_get_cache_reports() -> None:
     for result in result_c:
         assert result["http_status"] == http_status_c.value
         assert result["error_code"] == error_code_c
+        assert result["details"] == details_c
+        assert result["updated_at"] == updated_at_c
 
 
 @pytest.mark.parametrize("num_entries", [1, 10, 100, 1_000])

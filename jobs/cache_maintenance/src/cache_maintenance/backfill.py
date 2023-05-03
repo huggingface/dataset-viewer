@@ -2,7 +2,7 @@
 # Copyright 2022 The HuggingFace Authors.
 
 import logging
-from typing import Optional
+from typing import List, Optional
 
 from libcommon.dataset import get_supported_dataset_infos
 from libcommon.processing_graph import ProcessingGraph
@@ -13,6 +13,7 @@ def backfill_cache(
     processing_graph: ProcessingGraph,
     hf_endpoint: str,
     hf_token: Optional[str] = None,
+    error_codes_to_retry: Optional[List[str]] = None,
 ) -> None:
     logging.info("backfill supported datasets")
     supported_dataset_infos = get_supported_dataset_infos(hf_endpoint=hf_endpoint, hf_token=hf_token)
@@ -24,7 +25,7 @@ def backfill_cache(
 
     def get_log() -> str:
         return (
-            f"{analyzed_datasets} analyzed datasets ({len(supported_dataset_infos)} datasets left):"
+            f"{analyzed_datasets} analyzed datasets (total: {len(supported_dataset_infos)} datasets):"
             f" {backfilled_datasets} backfilled datasets ({100 * backfilled_datasets / analyzed_datasets:.2f}%), with"
             f" {total_created_jobs} created jobs."
         )
@@ -36,7 +37,12 @@ def backfill_cache(
         if not dataset:
             # should not occur
             continue
-        dataset_state = DatasetState(dataset=dataset, processing_graph=processing_graph, revision=dataset_info.sha)
+        dataset_state = DatasetState(
+            dataset=dataset,
+            processing_graph=processing_graph,
+            revision=dataset_info.sha,
+            error_codes_to_retry=error_codes_to_retry,
+        )
         created_jobs = dataset_state.backfill()
         if created_jobs > 0:
             backfilled_datasets += 1

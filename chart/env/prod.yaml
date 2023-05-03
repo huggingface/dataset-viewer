@@ -116,6 +116,8 @@ cacheMaintenance:
   # ^ allowed values are {skip,backfill,upgrade}
   log:
     level: "debug"
+  backfill:
+    error_codes_to_retry: "UnexpectedError"
   resources:
     requests:
       cpu: 1
@@ -126,10 +128,13 @@ cacheMaintenance:
 
 # --- cron jobs  ---
 backfill:
-  enabled: false
+  enabled: true
+  log:
+    level: "debug"
   action: "backfill"
-  schedule: "40 */6 * * *"
-  # every six hour
+  error_codes_to_retry: ""
+  schedule: "00 12 * * *"
+  # every day at 12:00
   nodeSelector: {}
   resources:
     requests:

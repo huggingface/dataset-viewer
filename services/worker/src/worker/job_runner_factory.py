@@ -36,6 +36,9 @@ from worker.job_runners.split.first_rows_from_parquet import (
 from worker.job_runners.split.first_rows_from_streaming import (
     SplitFirstRowsFromStreamingJobRunner,
 )
+from worker.job_runners.split.opt_in_out_urls_count import (
+    SplitOptInOutUrlsCountJobRunner,
+)
 from worker.job_runners.split.opt_in_out_urls_scan_from_streaming import (
     SplitOptInOutUrlsScanJobRunner,
 )
@@ -190,6 +193,14 @@ class JobRunnerFactory(BaseJobRunnerFactory):
                 hf_datasets_cache=self.hf_datasets_cache,
             )
 
+        if job_type == SplitOptInOutUrlsCountJobRunner.get_job_type():
+            return SplitOptInOutUrlsCountJobRunner(
+                job_info=job_info,
+                processing_step=processing_step,
+                common_config=self.app_config.common,
+                worker_config=self.app_config.worker,
+            )
+
         supported_job_types = [
             ConfigNamesJobRunner.get_job_type(),
             SplitNamesFromStreamingJobRunner.get_job_type(),
@@ -206,5 +217,6 @@ class JobRunnerFactory(BaseJobRunnerFactory):
             SplitFirstRowsFromParquetJobRunner.get_job_type(),
             DatasetIsValidJobRunner.get_job_type(),
             SplitOptInOutUrlsScanJobRunner.get_job_type(),
+            SplitOptInOutUrlsCountJobRunner.get_job_type(),
         ]
         raise ValueError(f"Unsupported job type: '{job_type}'. The supported job types are: {supported_job_types}")

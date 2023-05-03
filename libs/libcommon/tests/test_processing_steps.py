@@ -203,7 +203,7 @@ def graph() -> ProcessingGraph:
         ),
         (
             "split-opt-in-out-urls-scan",
-            [],
+            ["split-opt-in-out-urls-count"],
             ["split-first-rows-from-streaming"],
             [
                 "/config-names",
@@ -212,6 +212,20 @@ def graph() -> ProcessingGraph:
                 "/split-names-from-dataset-info",
                 "config-info",
                 "config-parquet-and-info",
+            ],
+        ),
+        (
+            "split-opt-in-out-urls-count",
+            [],
+            ["split-opt-in-out-urls-scan"],
+            [
+                "/config-names",
+                "/split-names-from-streaming",
+                "split-first-rows-from-streaming",
+                "/split-names-from-dataset-info",
+                "config-info",
+                "config-parquet-and-info",
+                "split-opt-in-out-urls-scan",
             ],
         ),
     ],
