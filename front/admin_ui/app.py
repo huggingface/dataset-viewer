@@ -69,7 +69,7 @@ with gr.Blocks() as demo:
                 refresh_config_name = gr.Textbox(label="config (optional)", placeholder="en")
                 refresh_split_name = gr.Textbox(label="split (optional)", placeholder="train, test")
                 gr.Markdown("*you can select multiple values by separating them with commas, e.g. split='train, test'*")
-                refresh_dataset_button = gr.Button("Force resfresh dataset")
+                refresh_dataset_button = gr.Button("Force refresh dataset")
                 refresh_dataset_output = gr.Markdown("")
             with gr.Tab("Dataset status"):
                 dataset_name = gr.Textbox(label="dataset", placeholder="c4")
@@ -246,7 +246,7 @@ The cache is outdated or in an incoherent state. Here is the plan to backfill th
                 refresh_split_name = refresh_split_name.strip()
                 params["split"] = refresh_split_name
             params = urllib.parse.urlencode(params)
-            response = requests.post(f"{DSS_ENDPOINT}/admin/force-refresh/{refresh_type}?{params}", headers=headers, timeout=60)
+            response = requests.post(f"{DSS_ENDPOINT}/admin/force-refresh{refresh_type}?{params}", headers=headers, timeout=60)
             if response.status_code == 200:
                 result = f"[{refresh_dataset_name}] ✅ Added processing step to the queue: '{refresh_type}'"
                 if refresh_config_name:
