@@ -39,6 +39,23 @@ def healthcheck():
         return f"❌ Failed to connect to {DSS_ENDPOINT} (error {response.status_code})"
 
 
+def draw_graph(width, height):
+    config = ProcessingGraphConfig()
+    libcommon_graph = ProcessingGraph(config.specification)
+    steps = libcommon_graph.steps
+
+    graph = nx.DiGraph()
+    for name, step in steps.items():
+        graph.add_node(name)
+        for step_name in step.requires:
+            graph.add_edge(step_name, name)
+
+    pos = nx.nx_agraph.graphviz_layout(graph, prog="dot")
+    fig = plt.figure(figsize=(width, height))
+    nx.draw_networkx(graph, pos=pos)
+    return fig
+
+
 with gr.Blocks() as demo:
     gr.Markdown(" ## Datasets-server admin page")
     gr.Markdown(healthcheck)
@@ -86,7 +103,13 @@ with gr.Blocks() as demo:
                 backfill_plan_table = gr.DataFrame(visible=False)
                 backfill_execute_button = gr.Button("Execute backfill plan", visible=False)
                 backfill_execute_error = gr.Markdown("", visible=False)
-
+            with gr.Tab("Processing graph"):
+                with gr.Row():
+                    width = gr.Slider(1, 30, 19, step=1, label="Width")
+                    height = gr.Slider(1, 30, 15, step=1, label="Height")
+                output = gr.Plot()
+                draw_button = gr.Button("Plot processing graph")
+                draw_button.click(draw_graph, inputs=[width, height], outputs=output)
 
     def auth(token):
         if not token:
@@ -266,24 +289,6 @@ The cache is outdated or in an incoherent state. Here is the plan to backfill th
                     result += f": {response.content}"
             all_results += result.strip("\n") + "\n"
         return "```\n" + all_results + "\n```"
-
-    def draw_graph():
-        config = ProcessingGraphConfig()
-        libcommon_graph = ProcessingGraph(config.specification)
-        steps = libcommon_graph.steps
-
-        graph = nx.DiGraph()
-        for name, step in steps.items():
-            graph.add_node(name)
-            for step_name in step.requires:
-                graph.add_edge(step_name, name)
-
-        pos = nx.nx_agraph.graphviz_layout(graph, prog="dot")
-
-        plt.figure(figsize=(15, 15))
-        nx.draw_networkx(graph, pos=pos)
-        plt.show()
-
 
     token_box.change(auth, inputs=token_box, outputs=[auth_error, welcome_title, auth_page, main_page])
 
