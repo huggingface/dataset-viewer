@@ -117,7 +117,7 @@ cacheMaintenance:
   log:
     level: "debug"
   backfill:
-    error_codes_to_retry: "UnexpectedError"
+    error_codes_to_retry: ""
   resources:
     requests:
       cpu: 1
