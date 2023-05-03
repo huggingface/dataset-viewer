@@ -11,7 +11,7 @@ import datasets.info
 import pandas as pd
 import pytest
 import requests
-from datasets import Features, Image, Value
+from datasets import Audio, Features, Image, Value
 from huggingface_hub.hf_api import HfApi
 from libcommon.exceptions import CustomError
 from libcommon.processing_graph import ProcessingStep
@@ -623,13 +623,15 @@ def test_parse_repo_filename(filename: str, split: str, config: str, raises: boo
 
 
 @pytest.mark.parametrize(
-    "ds_info, with_image",
+    "ds_info, has_big_chunks",
     [
         (datasets.info.DatasetInfo(), False),
         (datasets.info.DatasetInfo(features=Features({"text": Value("string")})), False),
         (datasets.info.DatasetInfo(features=Features({"image": Image()})), True),
+        (datasets.info.DatasetInfo(features=Features({"audio": Audio()})), True),
         (datasets.info.DatasetInfo(features=Features({"nested": [{"image": Image()}]})), True),
+        (datasets.info.DatasetInfo(features=Features({"blob": Value("binary")})), True),
     ],
 )
-def test_get_writer_batch_size(ds_info: datasets.info.DatasetInfo, with_image: bool) -> None:
-    assert get_writer_batch_size(ds_info) == (100 if with_image else None)
+def test_get_writer_batch_size(ds_info: datasets.info.DatasetInfo, has_big_chunks: bool) -> None:
+    assert get_writer_batch_size(ds_info) == (100 if has_big_chunks else None)
