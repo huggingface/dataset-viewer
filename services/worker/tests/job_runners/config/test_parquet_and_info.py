@@ -7,9 +7,11 @@ from http import HTTPStatus
 from typing import Any, Callable, Iterator, List, Optional
 
 import datasets.builder
+import datasets.info
 import pandas as pd
 import pytest
 import requests
+from datasets import Features, Image, Value
 from huggingface_hub.hf_api import HfApi
 from libcommon.exceptions import CustomError
 from libcommon.processing_graph import ProcessingStep
@@ -26,6 +28,7 @@ from worker.job_runners.config.parquet_and_info import (
     DatasetWithTooBigExternalFilesError,
     DatasetWithTooManyExternalFilesError,
     get_dataset_info_or_raise,
+    get_writer_batch_size,
     parse_repo_filename,
     raise_if_blocked,
     raise_if_not_supported,
@@ -617,3 +620,16 @@ def test_parse_repo_filename(filename: str, split: str, config: str, raises: boo
             parse_repo_filename(filename)
     else:
         assert parse_repo_filename(filename) == (config, split)
+
+
+@pytest.mark.parametrize(
+    "ds_info, with_image",
+    [
+        (datasets.info.DatasetInfo(), False),
+        (datasets.info.DatasetInfo(features=Features({"text": Value("string")})), False),
+        (datasets.info.DatasetInfo(features=Features({"image": Image()})), True),
+        (datasets.info.DatasetInfo(features=Features({"nested": [{"image": Image()}]})), True),
+    ],
+)
+def test_get_writer_batch_size(ds_info: datasets.info.DatasetInfo, with_image: bool) -> None:
+    assert get_writer_batch_size(ds_info) == (100 if with_image else None)
