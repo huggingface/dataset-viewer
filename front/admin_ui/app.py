@@ -5,7 +5,11 @@ from itertools import product
 import pandas as pd
 import requests
 import gradio as gr
+from libcommon.processing_graph import ProcessingGraph
+from libcommon.config import ProcessingGraphConfig
 import matplotlib
+import matplotlib.pyplot as plt
+import networkx as nx
 import huggingface_hub as hfh
 import duckdb
 import json
@@ -262,6 +266,24 @@ The cache is outdated or in an incoherent state. Here is the plan to backfill th
                     result += f": {response.content}"
             all_results += result.strip("\n") + "\n"
         return "```\n" + all_results + "\n```"
+
+    def draw_graph():
+        config = ProcessingGraphConfig()
+        libcommon_graph = ProcessingGraph(config.specification)
+        steps = libcommon_graph.steps
+
+        graph = nx.DiGraph()
+        for name, step in steps.items():
+            graph.add_node(name)
+            for step_name in step.requires:
+                graph.add_edge(step_name, name)
+
+        pos = nx.nx_agraph.graphviz_layout(graph, prog="dot")
+
+        plt.figure(figsize=(15, 15))
+        nx.draw_networkx(graph, pos=pos)
+        plt.show()
+
 
     token_box.change(auth, inputs=token_box, outputs=[auth_error, welcome_title, auth_page, main_page])
 
