@@ -52,8 +52,8 @@ class PreviousStepFormatError(DatasetOptInOutUrlsCountJobRunnerError):
         super().__init__(message, HTTPStatus.INTERNAL_SERVER_ERROR, "PreviousStepFormatError", cause, False)
 
 
-def compute_opt_in_out_urls_scan_response(dataset: str) -> Tuple[DatasetOptInOutUrlsCountResponse, float]:
-    logging.info(f"get opt-in-out-urls-scan for dataset={dataset}")
+def compute_opt_in_out_urls_count_response(dataset: str) -> Tuple[DatasetOptInOutUrlsCountResponse, float]:
+    logging.info(f"get opt-in-out-urls-count for dataset={dataset}")
 
     config_names_response = get_previous_step_or_raise(kinds=["/config-names"], dataset=dataset)
     content = config_names_response.response["content"]
@@ -123,7 +123,7 @@ class DatasetOptInOutUrlsCountJobRunner(JobRunner):
     def compute(self) -> JobResult:
         if self.dataset is None:
             raise ParameterMissingError("'dataset' parameter is required")
-        response_content, progress = compute_opt_in_out_urls_scan_response(dataset=self.dataset)
+        response_content, progress = compute_opt_in_out_urls_count_response(dataset=self.dataset)
         return JobResult(response_content, progress=progress)
 
     def get_new_splits(self, _: Mapping[str, Any]) -> set[SplitFullName]:

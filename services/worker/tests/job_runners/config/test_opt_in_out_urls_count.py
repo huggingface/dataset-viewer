@@ -161,7 +161,7 @@ def test_compute(
     if split_names_status == HTTPStatus.OK:
         for split_item, status, content in zip(split_names_content["splits"], spawning_status, spawning_content):
             upsert_response(
-                kind="split-opt-in-out-urls-scan",
+                kind="split-opt-in-out-urls-count",
                 dataset=dataset,
                 config=split_item["config"],
                 split=split_item["split"],

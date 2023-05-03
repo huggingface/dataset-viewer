@@ -65,9 +65,11 @@ def compute_opt_in_out_urls_scan_response(dataset: str, config: str) -> Tuple[Op
             split = split_item["split"]
             total += 1
             try:
-                response = get_response(kind="split-opt-in-out-urls-scan", dataset=dataset, config=config, split=split)
+                response = get_response(
+                    kind="split-opt-in-out-urls-count", dataset=dataset, config=config, split=split
+                )
             except DoesNotExist:
-                logging.debug("No response found in previous step for this dataset: 'split-opt-in-out-urls-scan'.")
+                logging.debug("No response found in previous step for this dataset: 'split-opt-in-out-urls-count'.")
                 pending += 1
                 continue
             if response["http_status"] != HTTPStatus.OK:

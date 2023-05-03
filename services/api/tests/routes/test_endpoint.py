@@ -77,7 +77,7 @@ def test_endpoints_definition() -> None:
 
     opt_in_out_urls = definition["/opt-in-out-urls"]
     assert opt_in_out_urls is not None
-    assert sorted(list(opt_in_out_urls)) == ["split", "config", "dataset"]
+    assert sorted(list(opt_in_out_urls)) == ["config", "dataset", "split"]
     assert opt_in_out_urls["split"] is not None
     assert opt_in_out_urls["config"] is not None
     assert opt_in_out_urls["dataset"] is not None

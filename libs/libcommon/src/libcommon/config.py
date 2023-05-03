@@ -274,7 +274,7 @@ class ProcessingGraphConfig:
             },
             "config-opt-in-out-urls-count": {
                 "input_type": "config",
-                "requires": ["/split-names-from-streaming", "split-opt-in-out-urls-scan"],
+                "requires": ["/split-names-from-streaming", "split-opt-in-out-urls-count"],
                 "job_runner_version": PROCESSING_STEP_CONFIG_OPT_IN_OUT_URLS_COUNT_VERSION,
             },
             "dataset-opt-in-out-urls-count": {

@@ -104,7 +104,7 @@ def graph() -> ProcessingGraph:
         ),
         (
             "/split-names-from-streaming",
-            ["split-first-rows-from-streaming", "dataset-split-names", "config-opt-in-out-urls-scan"],
+            ["split-first-rows-from-streaming", "dataset-split-names", "config-opt-in-out-urls-count"],
             ["/config-names"],
             ["/config-names"],
         ),
@@ -204,7 +204,7 @@ def graph() -> ProcessingGraph:
         ),
         (
             "split-opt-in-out-urls-scan",
-            ["split-opt-in-out-urls-count", "config-opt-in-out-urls-count"],
+            ["split-opt-in-out-urls-count"],
             ["split-first-rows-from-streaming"],
             [
                 "/config-names",
@@ -217,7 +217,7 @@ def graph() -> ProcessingGraph:
         ),
         (
             "split-opt-in-out-urls-count",
-            [],
+            ["config-opt-in-out-urls-count"],
             ["split-opt-in-out-urls-scan"],
             [
                 "/config-names",
@@ -232,7 +232,7 @@ def graph() -> ProcessingGraph:
         (
             "config-opt-in-out-urls-count",
             ["dataset-opt-in-out-urls-count"],
-            ["split-opt-in-out-urls-scan", "/split-names-from-streaming"],
+            ["split-opt-in-out-urls-count", "/split-names-from-streaming"],
             [
                 "/config-names",
                 "/split-names-from-streaming",
@@ -240,6 +240,7 @@ def graph() -> ProcessingGraph:
                 "/split-names-from-dataset-info",
                 "config-info",
                 "config-parquet-and-info",
+                "split-opt-in-out-urls-count",
                 "split-opt-in-out-urls-scan",
             ],
         ),
@@ -255,6 +256,7 @@ def graph() -> ProcessingGraph:
                 "config-info",
                 "config-parquet-and-info",
                 "config-opt-in-out-urls-count",
+                "split-opt-in-out-urls-count",
                 "split-opt-in-out-urls-scan",
             ],
         ),
