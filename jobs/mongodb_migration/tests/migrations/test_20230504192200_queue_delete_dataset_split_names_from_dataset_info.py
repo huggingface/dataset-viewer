@@ -1,13 +1,13 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2023 The HuggingFace Authors.
 
-from libcommon.constants import QUEUE_COLLECTION_JOBS, QUEUE_MONGOENGINE_ALIAS
 from libcommon.resources import MongoResource
 from mongoengine.connection import get_db
 
-from mongodb_migration.migrations._20230504192200_queue_delete_dataset_split_names_from_dataset_info import (
-    MigrationQueueDeleteDatasetSplitNamesFromDatasetInfo,
-)
+from mongodb_migration.delete_migration import DeleteQueueMigration
+
+QUEUE_MONGOENGINE_ALIAS = DeleteQueueMigration._MONGOENGINE_ALIAS
+QUEUE_COLLECTION_JOBS = DeleteQueueMigration._COLLECTION_JOBS
 
 
 def test_queue_delete_dataset_split_names_from_dataset_info(mongo_host: str) -> None:
@@ -28,7 +28,8 @@ def test_queue_delete_dataset_split_names_from_dataset_info(mongo_host: str) -> 
         )
         assert db[QUEUE_COLLECTION_JOBS].find_one({"type": job_type})  # Ensure there is at least one record to delete
 
-        migration = MigrationQueueDeleteDatasetSplitNamesFromDatasetInfo(
+        migration = DeleteQueueMigration(
+            job_type=job_type,
             version="20230504192800",
             description=f"remove jobs of type '{job_type}'",
         )

@@ -1,10 +1,10 @@
-from libcommon.constants import CACHE_COLLECTION_RESPONSES, CACHE_MONGOENGINE_ALIAS
 from libcommon.resources import MongoResource
 from mongoengine.connection import get_db
 
-from mongodb_migration.migrations._20230504185100_cache_delete_dataset_split_names_from_dataset_info import (
-    MigrationCacheDeleteDatasetSplitNamesFromDatasetInfo,
-)
+from mongodb_migration.delete_migration import DeleteCacheMigration
+
+CACHE_MONGOENGINE_ALIAS = DeleteCacheMigration._MONGOENGINE_ALIAS
+CACHE_COLLECTION_RESPONSES = DeleteCacheMigration._COLLECTION_RESPONSES
 
 
 def test_cache_delete_dataset_split_names_from_dataset_info(mongo_host: str) -> None:
@@ -16,7 +16,8 @@ def test_cache_delete_dataset_split_names_from_dataset_info(mongo_host: str) -> 
         db[CACHE_COLLECTION_RESPONSES].insert_many([{"kind": kind, "dataset": "dataset", "http_status": 200}])
         assert db[CACHE_COLLECTION_RESPONSES].find_one({"kind": kind})  # Ensure there is at least one record to delete
 
-        migration = MigrationCacheDeleteDatasetSplitNamesFromDatasetInfo(
+        migration = DeleteCacheMigration(
+            cache_kind=kind,
             version="20230504192000",
             description=f"remove cache for kind {kind}",
         )

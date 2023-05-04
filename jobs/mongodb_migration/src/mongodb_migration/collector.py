@@ -3,6 +3,11 @@
 
 from typing import List
 
+from mongodb_migration.delete_migration import (
+    DeleteCacheMigration,
+    DeleteMetricsMigration,
+    DeleteQueueMigration,
+)
 from mongodb_migration.migration import Migration
 from mongodb_migration.migrations._20221110230400_example import MigrationExample
 from mongodb_migration.migrations._20221116133500_queue_job_add_force import (
@@ -67,12 +72,6 @@ from mongodb_migration.migrations._20230428181800_queue_delete_dataset_split_nam
 )
 from mongodb_migration.migrations._20230428193100_metrics_delete_dataset_split_names_from_streaming import (
     MigrationMetricsDeleteDatasetSplitNamesFromStreaming,
-)
-from mongodb_migration.migrations._20230504185100_cache_delete_dataset_split_names_from_dataset_info import (
-    MigrationCacheDeleteDatasetSplitNamesFromDatasetInfo,
-)
-from mongodb_migration.migrations._20230504192200_queue_delete_dataset_split_names_from_dataset_info import (
-    MigrationQueueDeleteDatasetSplitNamesFromDatasetInfo,
 )
 
 
@@ -165,11 +164,20 @@ class MigrationsCollector:
                 version="20230428193100",
                 description="delete the queue and cache metrics for step 'dataset-split-names-from-streaming'",
             ),
-            MigrationCacheDeleteDatasetSplitNamesFromDatasetInfo(
+            DeleteCacheMigration(
+                cache_kind="dataset-split-names-from-dataset-info",
                 version="20230504185100",
                 description="delete the cache entries of kind 'dataset-split-names-from-dataset-info'",
             ),
-            MigrationQueueDeleteDatasetSplitNamesFromDatasetInfo(
-                version="20230504192200", description="delete the jobs of type 'dataset-split-names-from-dataset-info'"
+            DeleteQueueMigration(
+                job_type="dataset-split-names-from-dataset-info",
+                version="20230504192200",
+                description="delete the jobs of type 'dataset-split-names-from-dataset-info'",
+            ),
+            DeleteMetricsMigration(
+                job_type="dataset-split-names-from-dataset-info",
+                cache_kind="dataset-split-names-from-dataset-info",
+                version="20230504194600",
+                description="delete the queue and cache metrics for step 'dataset-split-names-from-dataset-info'",
             ),
         ]
