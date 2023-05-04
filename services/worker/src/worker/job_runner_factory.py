@@ -157,9 +157,9 @@ class JobRunnerFactory(BaseJobRunnerFactory):
         if job_type == SplitNamesFromDatasetInfoJobRunner.get_job_type():
             return SplitNamesFromDatasetInfoJobRunner(
                 job_info=job_info,
-                app_config=self.app_config,
+                common_config=self.app_config.common,
+                worker_config=self.app_config.worker,
                 processing_step=processing_step,
-                hf_datasets_cache=self.hf_datasets_cache,
             )
         if job_type == DatasetSplitNamesJobRunner.get_job_type():
             return DatasetSplitNamesJobRunner(
@@ -180,7 +180,6 @@ class JobRunnerFactory(BaseJobRunnerFactory):
                 job_info=job_info,
                 app_config=self.app_config,
                 processing_step=processing_step,
-                hf_datasets_cache=self.hf_datasets_cache,
                 assets_directory=self.assets_directory,
             )
         if job_type == DatasetIsValidJobRunner.get_job_type():
