@@ -50,12 +50,27 @@ class ProcessingStepSpecification(TypedDict, total=False):
     provides_config_split_names: bool
 
 
+ProcessingGraphSpecification = Mapping[str, ProcessingStepSpecification]
+
+
 class ProcessingStepDoesNotExist(Exception):
     pass
 
 
 @dataclass
 class ProcessingStep:
+    """A dataset processing step.
+
+    Attributes:
+        name (str): The processing step name.
+        input_type (InputType): The input type ('dataset', 'config' or 'split').
+        job_runner_version (int): The version of the job runner to use to compute the response.
+
+    Getters:
+        cache_kind (str): The cache kind (ie. the key in the cache).
+        job_type (str): The job type (ie. the job to run to compute the response).
+    """
+
     name: str
     input_type: InputType
     job_runner_version: int
@@ -67,34 +82,17 @@ class ProcessingStep:
         self.cache_kind = self.name
         self.job_type = self.name
 
+    def copy(self) -> ProcessingStep:
+        """Copy the processing step.
 
-#     """A dataset processing step.
-
-#     Attributes:
-#         name (str): The step name.
-#         input_type (InputType): The input type ('dataset', 'config' or 'split').
-#         job_runner_version (int): The version of the job runner to use to compute the response.
-#         triggered_by (List[str], optional): The names of the steps that trigger this step, in no particular order.
-#           If None, the step is a root. Defaults to None.
-#         parents (List[str], optional): The names of the steps that trigger this step, in no particular order.
-#           Defaults to [].
-#         ancestors (List[str], optional): All the chain of previous steps names, even those that do not trigger the
-#           step directly, in no particular order. Defaults to [].
-#         children (List[str], optional): Names of the steps that will be triggered at the end of the step, in no
-#           particular order. Defaults to [].
-#         required_by_dataset_viewer (bool, optional): Whether the step is required by the dataset viewer. Defaults to
-#           False.
-#         provides_dataset_config_names (bool, optional): Whether the step provides dataset config names. Defaults to
-#           False.
-#         provides_config_split_names (bool, optional): Whether the step provides config split names. Defaults to
-#           False.
-#     Getters:
-#         job_type (str): The job type (ie. the job to run to compute the response).
-#         cache_kind (str): The cache kind (ie. the key in the cache).
-# """
-
-
-ProcessingGraphSpecification = Mapping[str, ProcessingStepSpecification]
+        Returns:
+            ProcessingStep: The copy of the processing step.
+        """
+        return ProcessingStep(
+            name=self.name,
+            input_type=self.input_type,
+            job_runner_version=self.job_runner_version,
+        )
 
 
 def get_triggered_by_as_list(triggered_by: Union[List[str], str, None]) -> List[str]:
@@ -103,30 +101,26 @@ def get_triggered_by_as_list(triggered_by: Union[List[str], str, None]) -> List[
     return [triggered_by] if isinstance(triggered_by, str) else triggered_by
 
 
+def copy_processing_steps_list(processing_steps: List[ProcessingStep]) -> List[ProcessingStep]:
+    return [processing_step.copy() for processing_step in processing_steps]
+
+
 @dataclass
 class ProcessingGraph:
-    """A graph of dataset processing steps.
+    """A graph of processing steps.
 
-    The steps can have multiple parents, and multiple children (next steps, found automatically by traversing the
-      graph).
+    The processing steps can have multiple parents, and multiple children (next processing steps, found automatically
+      by traversing the graph).
     The graph can have multiple roots.
 
     Args:
         processing_graph_specification (ProcessingGraphSpecification): The specification of the graph.
 
-    Attributes:
-        steps (Mapping[str, ProcessingStep]): The steps of the graph, identified by their name.
-        roots (List[str]): The names of the first steps of the graph, or roots: they don't have a previous step. This
-            means that they will be computed first when a dataset is updated.
-        required_by_dataset_viewer (List[str]): The names of the steps that are required by the dataset viewer.
-        topologically_ordered_steps (List[str]): The names of the steps, ordered topologically.
-        provide_dataset_config_names (List[str]): The names of the steps that provide dataset config names.
-        provide_config_split_names (List[str]): The names of the steps that provide config split names.
-
     Raises:
         ValueError: If the graph is not a DAG.
-        ValueError: If one step provides dataset config names but its input type is not 'dataset', or if one step
-          provides config split names but its input type is not 'config'.
+        ValueError: If a processing step provides dataset config names but its input type is not 'dataset', or if a
+          processing step provides config split names but its input type is not 'config'.
+        ValueError: If a root processing step (ie. a processing step with no parent) is not a dataset processing step.
     """
 
     processing_graph_specification: ProcessingGraphSpecification
@@ -134,11 +128,12 @@ class ProcessingGraph:
     _nx_graph: nx.DiGraph = field(init=False)
     _processing_steps: Mapping[str, ProcessingStep] = field(init=False)
     _processing_step_names_by_input_type: Mapping[InputType, List[str]] = field(init=False)
-    # roots: List[str] = field(init=False)
-    # required_by_dataset_viewer: List[str] = field(init=False)
-    # topologically_ordered_steps: List[str] = field(init=False)
-    # provide_dataset_config_names: List[str] = field(init=False)
-    # provide_config_split_names: List[str] = field(init=False)
+    _first_processing_steps: List[ProcessingStep] = field(init=False)
+    _processing_steps_required_by_dataset_viewer: List[ProcessingStep] = field(init=False)
+    _config_split_names_processing_steps: List[ProcessingStep] = field(init=False)
+    _dataset_config_names_processing_steps: List[ProcessingStep] = field(init=False)
+    _topologically_ordered_processing_steps: List[ProcessingStep] = field(init=False)
+    _alphabetically_ordered_processing_steps: List[ProcessingStep] = field(init=False)
 
     def __post_init__(self) -> None:
         _nx_graph = nx.DiGraph()
@@ -194,37 +189,77 @@ class ProcessingGraph:
         self._nx_graph = _nx_graph
         self._processing_steps = _processing_steps
         self._processing_step_names_by_input_type = _processing_step_names_by_input_type
-        # for processing_step in self._processing_steps.values():
-        #     processing_step.ancestors = list(nx.ancestors(graph, processing_step.name))
-        # for processing_step in self._processing_steps.values():
-        #     processing_step.parents = list(graph.predecessors(processing_step.name))
-        #     for parent in processing_step.parents:
-        #         self.get_processing_step(parent).children.append(processing_step.name)
-        # self.required_by_dataset_viewer = [node for node in self._nx_graph.nodes if node.required_by_dataset_viewer]
-        # self.topologically_ordered_processing_steps = list(nx.topological_sort(self._nx_graph))
-        # self.provide_dataset_config_names = [
-        #     processing_step.name for processing_step in self._processing_steps.values()
-        #     if processing_step.provides_dataset_config_names
-        # ]
-        # self.provide_config_split_names = [
-        #     processing_step.name for processing_step in self._processing_steps.values()
-        #     if processing_step.provides_config_split_names
-        # ]
+        self._first_processing_steps = [
+            self._processing_steps[processing_step_name]
+            for processing_step_name, degree in _nx_graph.in_degree()
+            if degree == 0
+        ]
+        if any(processing_step.input_type != "dataset" for processing_step in self._first_processing_steps):
+            raise ValueError("The first processing steps must be dataset-level. The graph state is incoherent.")
+        self._processing_steps_required_by_dataset_viewer = [
+            self._processing_steps[processing_step_name]
+            for (processing_step_name, required) in _nx_graph.nodes(data="required_by_dataset_viewer")
+            if required
+        ]
+        self._config_split_names_processing_steps = [
+            self._processing_steps[processing_step_name]
+            for (processing_step_name, provides) in _nx_graph.nodes(data="provides_config_split_names")
+            if provides
+        ]
+        self._dataset_config_names_processing_steps = [
+            self.get_processing_step(processing_step_name)
+            for (processing_step_name, provides) in _nx_graph.nodes(data="provides_dataset_config_names")
+            if provides
+        ]
+        self._topologically_ordered_processing_steps = [
+            self.get_processing_step(processing_step_name) for processing_step_name in nx.topological_sort(_nx_graph)
+        ]
+        self._alphabetically_ordered_processing_steps = [
+            self.get_processing_step(processing_step_name) for processing_step_name in sorted(_nx_graph.nodes())
+        ]
 
     def get_processing_step(self, processing_step_name: str) -> ProcessingStep:
-        """Get a processing step by its name."""
+        """
+        Get a processing step by its name.
+
+        The returned processing step is a copy of the original one, so that it can be modified without affecting the
+        original one.
+
+        Args:
+            processing_step_name (str): The name of the processing step
+
+        Returns:
+            ProcessingStep: The processing step
+        """
         try:
-            return self._processing_steps[processing_step_name]
+            return self._processing_steps[processing_step_name].copy()
         except nx.NetworkXError as e:
             raise ProcessingStepDoesNotExist(f"Unknown job type: {processing_step_name}") from e
 
     def get_processing_step_by_job_type(self, job_type: str) -> ProcessingStep:
+        """
+        Get a processing step by its job type.
+
+        The returned processing step is a copy of the original one, so that it can be modified without affecting the
+        original one.
+
+        Args:
+            job_type (str): The job type of the processing step
+
+        Returns:
+            ProcessingStep: The processing step
+        """
         # for now: the job_type is just an alias for the processing step name
         return self.get_processing_step(job_type)
 
     def get_children(self, processing_step_name: str) -> List[ProcessingStep]:
         """
         Get the list of children processing steps
+
+        The children processing steps are the ones that will be triggered at the end of the processing step.
+
+        The returned processing steps are copies of the original ones, so that they can be modified without affecting
+        the original ones.
 
         Args:
             processing_step_name (str): The name of the processing step
@@ -245,6 +280,11 @@ class ProcessingGraph:
     def get_parents(self, processing_step_name: str) -> List[ProcessingStep]:
         """
         Get the list of parents processing steps
+
+        The parent processing steps are the ones that trigger the processing step.
+
+        The returned processing steps are copies of the original ones, so that they can be modified without affecting
+        the original ones.
 
         Args:
             processing_step_name (str): The name of the processing step
@@ -267,6 +307,11 @@ class ProcessingGraph:
         """
         Get the list of ancestors processing steps
 
+        The ancestor processing steps are the ones that trigger the processing step, directly or not.
+
+        The returned processing steps are copies of the original ones, so that they can be modified without affecting
+        the original ones.
+
         Args:
             processing_step_name (str): The name of the processing step
 
@@ -284,57 +329,98 @@ class ProcessingGraph:
             raise ProcessingStepDoesNotExist(f"Unknown processing step: {processing_step_name}") from e
 
     def get_first_processing_steps(self) -> List[ProcessingStep]:
-        """Get the first processing steps."""
-        processing_steps = [
-            self.get_processing_step(name) for name, degree in self._nx_graph.in_degree() if degree == 0
-        ]
-        if any(processing_step.input_type != "dataset" for processing_step in processing_steps):
-            raise ValueError("The first processing steps must be dataset-level. The graph state is incoherent.")
-        return processing_steps
+        """
+        Get the first processing steps.
+
+        The first processing steps are the ones that don't have a previous step. This means that they will be computed
+        first when a dataset is updated. Their input type is always "dataset".
+
+        The returned processing steps are copies of the original ones, so that they can be modified without affecting
+        the original ones.
+
+        Returns:
+            List[ProcessingStep]: The list of first processing steps
+        """
+        return copy_processing_steps_list(self._first_processing_steps)
 
     def get_processing_steps_required_by_dataset_viewer(self) -> List[ProcessingStep]:
-        """Get the processing steps required by the dataset viewer."""
-        return [
-            self.get_processing_step(name)
-            for (name, required) in self._nx_graph.nodes(data="required_by_dataset_viewer")
-            if required
-        ]
+        """
+        Get the processing steps required by the dataset viewer.
+
+        The returned processing steps are copies of the original ones, so that they can be modified without affecting
+        the original ones.
+
+        Returns:
+            List[ProcessingStep]: The list of processing steps required by the dataset viewer
+        """
+        return copy_processing_steps_list(self._processing_steps_required_by_dataset_viewer)
 
     def get_config_split_names_processing_steps(self) -> List[ProcessingStep]:
-        """Get the processing steps that provide a config's split names."""
-        return [
-            self.get_processing_step(name)
-            for (name, provides) in self._nx_graph.nodes(data="provides_config_split_names")
-            if provides
-        ]
+        """
+        Get the processing steps that provide a config's split names.
+
+        The returned processing steps are copies of the original ones, so that they can be modified without affecting
+        the original ones.
+
+        Returns:
+            List[ProcessingStep]: The list of processing steps that provide a config's split names
+        """
+        return copy_processing_steps_list(self._config_split_names_processing_steps)
 
     def get_dataset_config_names_processing_steps(self) -> List[ProcessingStep]:
-        """Get the processing steps that provide a dataset's config names."""
-        return [
-            self.get_processing_step(name)
-            for (name, provides) in self._nx_graph.nodes(data="provides_dataset_config_names")
-            if provides
-        ]
+        """
+        Get the processing steps that provide a dataset's config names.
+
+        The returned processing steps are copies of the original ones, so that they can be modified without affecting
+        the original ones.
+
+        Returns:
+            List[ProcessingStep]: The list of processing steps that provide a dataset's config names
+        """
+        return copy_processing_steps_list(self._dataset_config_names_processing_steps)
 
     def get_topologically_ordered_processing_steps(self) -> List[ProcessingStep]:
-        """Get the processing steps, ordered topologically."""
-        return [self.get_processing_step(name) for name in nx.topological_sort(self._nx_graph)]
+        """
+        Get the processing steps, ordered topologically.
+
+        This means that the first processing steps are the ones that don't have a previous step, and that the last
+        processing steps are the ones that don't have a next step.
+
+        The returned processing steps are copies of the original ones, so that they can be modified without affecting
+        the original ones.
+
+        Returns:
+            List[ProcessingStep]: The list of processing steps
+        """
+        return copy_processing_steps_list(self._topologically_ordered_processing_steps)
 
     def get_alphabetically_ordered_processing_steps(self) -> List[ProcessingStep]:
-        """Get the processing steps, ordered alphabetically."""
-        return [self.get_processing_step(name) for name in sorted(self._nx_graph.nodes())]
+        """
+        Get the processing steps, ordered alphabetically by the name of the processing steps.
+
+        The returned processing steps are copies of the original ones, so that they can be modified without affecting
+        the original ones.
+
+        Returns:
+            List[ProcessingStep]: The list of processing steps
+        """
+        return copy_processing_steps_list(self._alphabetically_ordered_processing_steps)
 
     def get_processing_steps(
         self, order: Optional[Literal["alphabetical", "topological"]] = None
     ) -> List[ProcessingStep]:
-        """Get the processing steps.
+        """
+        Get the processing steps.
+
+        The returned processing steps are copies of the original ones, so that they can be modified without affecting
+        the original ones.
 
         Args:
             order (Optional[Literal["alphabetical", "topological"]], optional): The order in which to return the
               processing steps. If None, the order is alphabetical. Defaults to None.
 
         Returns:
-            List[str]: The list of processing steps
+            List[ProcessingStep]: The list of processing steps
         """
         if order == "topological":
             return self.get_topologically_ordered_processing_steps()
@@ -342,7 +428,18 @@ class ProcessingGraph:
         return self.get_alphabetically_ordered_processing_steps()
 
     def get_input_type_processing_steps(self, input_type: InputType = "dataset") -> List[ProcessingStep]:
-        """Get the processing steps of input type `input_type`, in an undefined order."""
+        """
+        Get the processing steps of input type `input_type`, in an undefined order.
+
+        The returned processing steps are copies of the original ones, so that they can be modified without affecting
+        the original ones.
+
+        Args:
+            input_type (InputType, optional): The input type. Defaults to "dataset".
+
+        Returns:
+            List[ProcessingStep]: The list of processing steps
+        """
         return [
             self.get_processing_step(processing_step_name)
             for processing_step_name in self._processing_step_names_by_input_type[input_type]
