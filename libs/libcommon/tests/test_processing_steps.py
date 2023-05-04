@@ -72,6 +72,7 @@ def graph() -> ProcessingGraph:
             [
                 "/split-names-from-streaming",
                 "config-parquet-and-info",
+                "dataset-opt-in-out-urls-count",
                 "dataset-split-names-from-dataset-info",
                 "dataset-split-names",
                 "dataset-parquet",
@@ -103,7 +104,7 @@ def graph() -> ProcessingGraph:
         ),
         (
             "/split-names-from-streaming",
-            ["split-first-rows-from-streaming", "dataset-split-names"],
+            ["split-first-rows-from-streaming", "dataset-split-names", "config-opt-in-out-urls-count"],
             ["/config-names"],
             ["/config-names"],
         ),
@@ -216,7 +217,7 @@ def graph() -> ProcessingGraph:
         ),
         (
             "split-opt-in-out-urls-count",
-            [],
+            ["config-opt-in-out-urls-count"],
             ["split-opt-in-out-urls-scan"],
             [
                 "/config-names",
@@ -225,6 +226,37 @@ def graph() -> ProcessingGraph:
                 "/split-names-from-dataset-info",
                 "config-info",
                 "config-parquet-and-info",
+                "split-opt-in-out-urls-scan",
+            ],
+        ),
+        (
+            "config-opt-in-out-urls-count",
+            ["dataset-opt-in-out-urls-count"],
+            ["split-opt-in-out-urls-count", "/split-names-from-streaming"],
+            [
+                "/config-names",
+                "/split-names-from-streaming",
+                "split-first-rows-from-streaming",
+                "/split-names-from-dataset-info",
+                "config-info",
+                "config-parquet-and-info",
+                "split-opt-in-out-urls-count",
+                "split-opt-in-out-urls-scan",
+            ],
+        ),
+        (
+            "dataset-opt-in-out-urls-count",
+            [],
+            ["config-opt-in-out-urls-count", "/config-names"],
+            [
+                "/config-names",
+                "/split-names-from-streaming",
+                "split-first-rows-from-streaming",
+                "/split-names-from-dataset-info",
+                "config-info",
+                "config-parquet-and-info",
+                "config-opt-in-out-urls-count",
+                "split-opt-in-out-urls-count",
                 "split-opt-in-out-urls-scan",
             ],
         ),

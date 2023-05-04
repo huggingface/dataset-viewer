@@ -4,7 +4,6 @@
 import logging
 from functools import partial
 from http import HTTPStatus
-from pathlib import Path
 from typing import Any, List, Literal, Mapping, Optional
 
 import pyarrow as pa
@@ -27,10 +26,10 @@ from tqdm.contrib.concurrent import thread_map
 from worker.config import AppConfig, FirstRowsConfig
 from worker.job_runner import (
     CompleteJobResult,
+    JobRunner,
     JobRunnerError,
     get_previous_step_or_raise,
 )
-from worker.job_runners._datasets_based_job_runner import DatasetsBasedJobRunner
 from worker.utils import (
     Row,
     RowItem,
@@ -280,7 +279,7 @@ def compute_first_rows_response(
     return response
 
 
-class SplitFirstRowsFromParquetJobRunner(DatasetsBasedJobRunner):
+class SplitFirstRowsFromParquetJobRunner(JobRunner):
     assets_directory: StrPath
     first_rows_config: FirstRowsConfig
 
@@ -297,14 +296,13 @@ class SplitFirstRowsFromParquetJobRunner(DatasetsBasedJobRunner):
         job_info: JobInfo,
         app_config: AppConfig,
         processing_step: ProcessingStep,
-        hf_datasets_cache: Path,
         assets_directory: StrPath,
     ) -> None:
         super().__init__(
             job_info=job_info,
-            app_config=app_config,
+            common_config=app_config.common,
+            worker_config=app_config.worker,
             processing_step=processing_step,
-            hf_datasets_cache=hf_datasets_cache,
         )
         self.first_rows_config = app_config.first_rows
         self.assets_directory = assets_directory

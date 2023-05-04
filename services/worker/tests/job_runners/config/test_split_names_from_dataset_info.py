@@ -19,14 +19,12 @@ from worker.job_runners.config.split_names_from_dataset_info import (
     PreviousStepFormatError,
     SplitNamesFromDatasetInfoJobRunner,
 )
-from worker.resources import LibrariesResource
 
 GetJobRunner = Callable[[str, str, AppConfig, bool], SplitNamesFromDatasetInfoJobRunner]
 
 
 @pytest.fixture
 def get_job_runner(
-    libraries_resource: LibrariesResource,
     cache_mongo_resource: CacheMongoResource,
     queue_mongo_resource: QueueMongoResource,
 ) -> GetJobRunner:
@@ -46,7 +44,8 @@ def get_job_runner(
                 "force": force,
                 "priority": Priority.NORMAL,
             },
-            app_config=app_config,
+            common_config=app_config.common,
+            worker_config=app_config.worker,
             processing_step=ProcessingStep(
                 name=SplitNamesFromDatasetInfoJobRunner.get_job_type(),
                 input_type="config",
@@ -57,7 +56,6 @@ def get_job_runner(
                 parents=[],
                 job_runner_version=SplitNamesFromDatasetInfoJobRunner.get_job_runner_version(),
             ),
-            hf_datasets_cache=libraries_resource.hf_datasets_cache,
         )
 
     return _get_job_runner

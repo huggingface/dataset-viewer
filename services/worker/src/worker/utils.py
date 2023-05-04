@@ -84,6 +84,26 @@ class SplitFirstRowsResponse(TypedDict):
     rows: List[RowItem]
 
 
+class OptUrl(TypedDict):
+    url: str
+    row_idx: int
+    column_name: str
+
+
+class OptInOutUrlsCountResponse(TypedDict):
+    urls_columns: List[str]
+    num_opt_in_urls: int
+    num_opt_out_urls: int
+    num_urls: int
+    num_scanned_rows: int
+    has_urls_columns: bool
+
+
+class OptInOutUrlsScanResponse(OptInOutUrlsCountResponse):
+    opt_in_urls: List[OptUrl]
+    opt_out_urls: List[OptUrl]
+
+
 # in JSON, dicts do not carry any order, so we need to return a list
 #
 # > An object is an *unordered* collection of zero or more name/value pairs, where a name is a string and a value
