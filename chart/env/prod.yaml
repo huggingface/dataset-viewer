@@ -112,7 +112,7 @@ mongodbMigration:
 # --- jobs (post-upgrade hooks) ---
 
 cacheMaintenance:
-  action: "backfill"
+  action: "skip"
   # ^ allowed values are {skip,backfill,upgrade}
   log:
     level: "debug"
@@ -242,7 +242,7 @@ api:
 
   nodeSelector:
     role-datasets-server: "true"
-  replicas: 4
+  replicas: 12
   service:
     type: NodePort
   resources:
