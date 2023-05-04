@@ -40,10 +40,12 @@ def get_job_runner(
         processing_step_name = SplitNamesFromStreamingJobRunner.get_job_type()
         processing_graph = ProcessingGraph(
             {
+                "dataset-level": {"input_type": "dataset"},
                 processing_step_name: {
                     "input_type": "dataset",
                     "job_runner_version": SplitNamesFromStreamingJobRunner.get_job_runner_version(),
-                }
+                    "triggered_by": "dataset-level",
+                },
             }
         )
         return SplitNamesFromStreamingJobRunner(

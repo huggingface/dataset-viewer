@@ -58,12 +58,20 @@ def test_one_step(
 @pytest.mark.parametrize(
     "processing_graph_specification,expected_is_valid,expected_valid",
     [
-        ({dataset_step: {}, config_step: {"input_type": "config"}, split_step: {"input_type": "split"}}, True, []),
+        (
+            {
+                dataset_step: {},
+                config_step: {"input_type": "config", "triggered_by": dataset_step},
+                split_step: {"input_type": "split", "triggered_by": config_step},
+            },
+            True,
+            [],
+        ),
         (
             {
                 dataset_step: {"required_by_dataset_viewer": True},
-                config_step: {"input_type": "config"},
-                split_step: {"input_type": "split"},
+                config_step: {"input_type": "config", "triggered_by": dataset_step},
+                split_step: {"input_type": "split", "triggered_by": config_step},
             },
             True,
             ["dataset"],
@@ -71,8 +79,12 @@ def test_one_step(
         (
             {
                 dataset_step: {},
-                config_step: {"input_type": "config", "required_by_dataset_viewer": True},
-                split_step: {"input_type": "split"},
+                config_step: {
+                    "input_type": "config",
+                    "triggered_by": dataset_step,
+                    "required_by_dataset_viewer": True,
+                },
+                split_step: {"input_type": "split", "triggered_by": config_step},
             },
             True,
             ["dataset"],
@@ -80,8 +92,8 @@ def test_one_step(
         (
             {
                 dataset_step: {},
-                config_step: {"input_type": "config"},
-                split_step: {"input_type": "split", "required_by_dataset_viewer": True},
+                config_step: {"input_type": "config", "triggered_by": dataset_step},
+                split_step: {"input_type": "split", "triggered_by": config_step, "required_by_dataset_viewer": True},
             },
             True,
             ["dataset"],
@@ -89,8 +101,12 @@ def test_one_step(
         (
             {
                 dataset_step: {"required_by_dataset_viewer": True},
-                config_step: {"input_type": "config", "required_by_dataset_viewer": True},
-                split_step: {"input_type": "split", "required_by_dataset_viewer": True},
+                config_step: {
+                    "input_type": "config",
+                    "triggered_by": dataset_step,
+                    "required_by_dataset_viewer": True,
+                },
+                split_step: {"input_type": "split", "triggered_by": config_step, "required_by_dataset_viewer": True},
             },
             True,
             ["dataset"],

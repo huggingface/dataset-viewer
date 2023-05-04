@@ -49,10 +49,6 @@ def create_app_with_config(app_config: AppConfig, endpoint_config: EndpointConfi
         if app_config.api.hf_jwt_public_key_url and app_config.api.hf_jwt_algorithm
         else None
     )
-    parquet_processing_steps_by_input_type = endpoints_definition.steps_by_input_type_and_endpoint.get("/parquet")
-    if not parquet_processing_steps_by_input_type or not parquet_processing_steps_by_input_type["config"]:
-        raise RuntimeError("The parquet endpoint is not configured. Exiting.")
-    config_parquet_processing_steps = parquet_processing_steps_by_input_type["config"]
 
     middleware = [
         Middleware(
@@ -128,7 +124,6 @@ def create_app_with_config(app_config: AppConfig, endpoint_config: EndpointConfi
         Route(
             "/rows",
             endpoint=create_rows_endpoint(
-                config_parquet_processing_steps=config_parquet_processing_steps,
                 processing_graph=processing_graph,
                 cached_assets_base_url=app_config.cached_assets.base_url,
                 cached_assets_directory=cached_assets_directory,

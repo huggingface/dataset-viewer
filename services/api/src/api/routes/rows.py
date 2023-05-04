@@ -15,7 +15,7 @@ import pyarrow as pa
 import pyarrow.parquet as pq
 from datasets import Features
 from hffs.fs import HfFileSystem
-from libcommon.processing_graph import ProcessingGraph, ProcessingStep
+from libcommon.processing_graph import ProcessingGraph
 from libcommon.viewer_utils.asset import (
     glob_rows_in_assets_dir,
     update_last_modified_date_of_rows_in_assets_dir,
@@ -92,7 +92,6 @@ class RowsIndex:
         config: str,
         split: str,
         processing_graph: ProcessingGraph,
-        config_parquet_processing_steps: List[ProcessingStep],
         hf_endpoint: str,
         hf_token: Optional[str],
     ):
@@ -101,20 +100,21 @@ class RowsIndex:
         self.split = split
         self.processing_graph = processing_graph
         self.__post_init__(
-            config_parquet_processing_steps=config_parquet_processing_steps,
             hf_endpoint=hf_endpoint,
             hf_token=hf_token,
         )
 
     def __post_init__(
         self,
-        config_parquet_processing_steps: List[ProcessingStep],
         hf_endpoint: str,
         hf_token: Optional[str],
     ) -> None:
         with StepProfiler(method="rows.index", step="all"):
             # get the list of parquet files
             with StepProfiler(method="rows.index", step="get list of parquet files for split"):
+                config_parquet_processing_steps = self.processing_graph.get_config_parquet_processing_steps()
+                if not config_parquet_processing_steps:
+                    raise RuntimeError("No processing steps are configured to provide a config's parquet response.")
                 try:
                     result = get_cache_entry_from_steps(
                         processing_steps=config_parquet_processing_steps,
@@ -215,12 +215,10 @@ class RowsIndex:
 class Indexer:
     def __init__(
         self,
-        config_parquet_processing_steps: List[ProcessingStep],
         processing_graph: ProcessingGraph,
         hf_endpoint: str,
         hf_token: Optional[str] = None,
     ):
-        self.config_parquet_processing_steps = config_parquet_processing_steps
         self.processing_graph = processing_graph
         self.hf_endpoint = hf_endpoint
         self.hf_token = hf_token
@@ -236,7 +234,6 @@ class Indexer:
             dataset=dataset,
             config=config,
             split=split,
-            config_parquet_processing_steps=self.config_parquet_processing_steps,
             processing_graph=self.processing_graph,
             hf_endpoint=self.hf_endpoint,
             hf_token=self.hf_token,
@@ -442,7 +439,6 @@ def create_response(
 
 
 def create_rows_endpoint(
-    config_parquet_processing_steps: List[ProcessingStep],
     processing_graph: ProcessingGraph,
     cached_assets_base_url: str,
     cached_assets_directory: StrPath,
@@ -460,7 +456,6 @@ def create_rows_endpoint(
     max_cleaned_rows_number: int = -1,
 ) -> Endpoint:
     indexer = Indexer(
-        config_parquet_processing_steps=config_parquet_processing_steps,
         processing_graph=processing_graph,
         hf_endpoint=hf_endpoint,
         hf_token=hf_token,

@@ -38,10 +38,12 @@ def get_job_runner(
         processing_step_name = ConfigSizeJobRunner.get_job_type()
         processing_graph = ProcessingGraph(
             {
+                "dataset-level": {"input_type": "dataset"},
                 processing_step_name: {
                     "input_type": "dataset",
                     "job_runner_version": ConfigSizeJobRunner.get_job_runner_version(),
-                }
+                    "triggered_by": "dataset-level",
+                },
             }
         )
         return ConfigSizeJobRunner(
