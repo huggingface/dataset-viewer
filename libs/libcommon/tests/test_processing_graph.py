@@ -13,30 +13,20 @@ from libcommon.processing_graph import (
 )
 
 
-def get_step_name(step: ProcessingStep) -> str:
-    return step.name
-
-
-def assert_str_lists_are_equal(a: List[str], b: List[str]) -> None:
-    assert sorted(a) == sorted(b)
-
-
-def assert_lists_are_equal(a: List[ProcessingStep], b: List[ProcessingStep]) -> None:
-    assert sorted(a, key=get_step_name) == sorted(b, key=get_step_name)
+def assert_lists_are_equal(a: List[ProcessingStep], b: List[str]) -> None:
+    assert sorted(processing_step.name for processing_step in a) == sorted(b)
 
 
 def assert_step(
     graph: ProcessingGraph,
-    step_name: str,
+    processing_step_name: str,
     children: List[str],
     parents: List[str],
     ancestors: List[str],
 ) -> None:
-    step = graph.get_step(step_name)
-    assert step is not None
-    assert_str_lists_are_equal(step.children, children)
-    assert_str_lists_are_equal(step.parents, parents)
-    assert_str_lists_are_equal(step.ancestors, ancestors)
+    assert_lists_are_equal(graph.get_children(processing_step_name), children)
+    assert_lists_are_equal(graph.get_parents(processing_step_name), parents)
+    assert_lists_are_equal(graph.get_ancestors(processing_step_name), ancestors)
 
 
 def test_graph() -> None:
@@ -71,7 +61,7 @@ def graph() -> ProcessingGraph:
 
 
 @pytest.mark.parametrize(
-    "step_name,children,parents,ancestors",
+    "processing_step_name,children,parents,ancestors",
     [
         (
             "/config-names",
@@ -261,32 +251,27 @@ def graph() -> ProcessingGraph:
     ],
 )
 def test_default_graph_steps(
-    graph: ProcessingGraph, step_name: str, children: List[str], parents: List[str], ancestors: List[str]
+    graph: ProcessingGraph, processing_step_name: str, children: List[str], parents: List[str], ancestors: List[str]
 ) -> None:
-    assert_step(graph, step_name, children=children, parents=parents, ancestors=ancestors)
+    assert_step(graph, processing_step_name, children=children, parents=parents, ancestors=ancestors)
 
 
 def test_default_graph_first_steps(graph: ProcessingGraph) -> None:
     roots = ["/config-names"]
-    assert_str_lists_are_equal(graph.roots, roots)
-    assert_lists_are_equal(graph.get_first_steps(), [graph.get_step(step_name) for step_name in roots])
+    assert_lists_are_equal(graph.get_first_processing_steps(), roots)
 
 
 def test_default_graph_required_by_dataset_viewer(graph: ProcessingGraph) -> None:
     required_by_dataset_viewer = ["split-first-rows-from-streaming"]
-    assert_str_lists_are_equal(graph.required_by_dataset_viewer, required_by_dataset_viewer)
-    assert_lists_are_equal(
-        graph.get_steps_required_by_dataset_viewer(),
-        [graph.get_step(step_name) for step_name in required_by_dataset_viewer],
-    )
+    assert_lists_are_equal(graph.get_processing_steps_required_by_dataset_viewer(), required_by_dataset_viewer)
 
 
 def test_default_graph_provide_dataset_config_names(graph: ProcessingGraph) -> None:
-    assert_str_lists_are_equal(graph.provide_dataset_config_names, ["/config-names"])
+    assert_lists_are_equal(graph.get_dataset_config_names_processing_steps(), ["/config-names"])
 
 
 def test_default_graph_provide_config_split_names(graph: ProcessingGraph) -> None:
-    assert_str_lists_are_equal(
-        graph.provide_config_split_names,
+    assert_lists_are_equal(
+        graph.get_config_split_names_processing_steps(),
         ["/split-names-from-streaming", "/split-names-from-dataset-info"],
     )

@@ -179,10 +179,10 @@ def test_artifact_state() -> None:
     dataset = DATASET_NAME
     config = None
     split = None
-    step_name = "dataset-a"
-    step = PROCESSING_GRAPH.get_step(name=step_name)
-    artifact_state = ArtifactState(dataset=dataset, config=config, split=split, step=step)
-    assert artifact_state.id == f"{step_name},{dataset}"
+    processing_step_name = "dataset-a"
+    processing_step = PROCESSING_GRAPH.get_processing_step(processing_step_name)
+    artifact_state = ArtifactState(dataset=dataset, config=config, split=split, processing_step=processing_step)
+    assert artifact_state.id == f"{processing_step_name},{dataset}"
     assert not artifact_state.cache_state.exists
     assert not artifact_state.cache_state.is_success
     assert not artifact_state.job_state.is_in_process
@@ -192,7 +192,7 @@ def test_split_state() -> None:
     dataset = DATASET_NAME
     config = CONFIG_NAME_1
     split = SPLIT_NAME_1
-    expected_split_step_name = "split-c"
+    expected_split_processing_step_name = "split-c"
     split_state = SplitState(dataset=dataset, config=config, split=split, processing_graph=PROCESSING_GRAPH)
 
     assert split_state.dataset == dataset
@@ -200,9 +200,9 @@ def test_split_state() -> None:
     assert split_state.split == split
 
     assert len(split_state.artifact_state_by_step) == 1
-    assert expected_split_step_name in split_state.artifact_state_by_step
-    artifact_state = split_state.artifact_state_by_step[expected_split_step_name]
-    assert artifact_state.id == f"{expected_split_step_name},{dataset},{config},{split}"
+    assert expected_split_processing_step_name in split_state.artifact_state_by_step
+    artifact_state = split_state.artifact_state_by_step[expected_split_processing_step_name]
+    assert artifact_state.id == f"{expected_split_processing_step_name},{dataset},{config},{split}"
     assert not artifact_state.cache_state.exists
     assert not artifact_state.cache_state.is_success
     assert not artifact_state.job_state.is_in_process
@@ -211,9 +211,11 @@ def test_split_state() -> None:
 def test_config_state_as_dict() -> None:
     dataset = DATASET_NAME
     config = CONFIG_NAME_1
-    expected_config_step_name = "config-b"
+    expected_config_processing_step_name = "config-b"
+    processing_step = PROCESSING_GRAPH.get_processing_step(expected_config_processing_step_name)
+
     upsert_response(
-        kind=PROCESSING_GRAPH.get_step(expected_config_step_name).cache_kind,
+        kind=processing_step.cache_kind,
         dataset=DATASET_NAME,
         config=CONFIG_NAME_1,
         split=None,
@@ -226,9 +228,9 @@ def test_config_state_as_dict() -> None:
     assert config_state.config == config
 
     assert len(config_state.artifact_state_by_step) == 1
-    assert expected_config_step_name in config_state.artifact_state_by_step
-    artifact_state = config_state.artifact_state_by_step[expected_config_step_name]
-    assert artifact_state.id == f"{expected_config_step_name},{dataset},{config}"
+    assert expected_config_processing_step_name in config_state.artifact_state_by_step
+    artifact_state = config_state.artifact_state_by_step[expected_config_processing_step_name]
+    assert artifact_state.id == f"{expected_config_processing_step_name},{dataset},{config}"
     assert artifact_state.cache_state.exists  # <- in the cache
     assert artifact_state.cache_state.is_success  # <- is a success
     assert not artifact_state.job_state.is_in_process
@@ -241,10 +243,12 @@ def test_config_state_as_dict() -> None:
 
 def test_dataset_state_as_dict() -> None:
     dataset = DATASET_NAME
-    expected_dataset_step_name = "dataset-a"
-    expected_config_step_name = "config-b"
+    expected_dataset_processing_step_name = "dataset-a"
+    dataset_step = PROCESSING_GRAPH.get_processing_step(expected_dataset_processing_step_name)
+    expected_config_processing_step_name = "config-b"
+    config_step = PROCESSING_GRAPH.get_processing_step(expected_config_processing_step_name)
     upsert_response(
-        kind=PROCESSING_GRAPH.get_step(expected_dataset_step_name).cache_kind,
+        kind=dataset_step.cache_kind,
         dataset=dataset,
         config=None,
         split=None,
@@ -252,7 +256,7 @@ def test_dataset_state_as_dict() -> None:
         http_status=HTTPStatus.OK,
     )
     upsert_response(
-        kind=PROCESSING_GRAPH.get_step(expected_config_step_name).cache_kind,
+        kind=config_step.cache_kind,
         dataset=dataset,
         config=CONFIG_NAME_1,
         split=None,
@@ -264,9 +268,9 @@ def test_dataset_state_as_dict() -> None:
     assert dataset_state.dataset == dataset
 
     assert len(dataset_state.artifact_state_by_step) == 1
-    assert expected_dataset_step_name in dataset_state.artifact_state_by_step
-    artifact_state = dataset_state.artifact_state_by_step[expected_dataset_step_name]
-    assert artifact_state.id == f"{expected_dataset_step_name},{dataset}"
+    assert expected_dataset_processing_step_name in dataset_state.artifact_state_by_step
+    artifact_state = dataset_state.artifact_state_by_step[expected_dataset_processing_step_name]
+    assert artifact_state.id == f"{expected_dataset_processing_step_name},{dataset}"
     assert artifact_state.cache_state.exists  # <- in the cache
     assert artifact_state.cache_state.is_success  # <- is a success
     assert not artifact_state.job_state.is_in_process

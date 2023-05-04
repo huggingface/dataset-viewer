@@ -4,7 +4,6 @@
 import logging
 from typing import Optional
 
-from libcommon.processing_graph import ProcessingStep
 from libcommon.queue import Queue
 from starlette.requests import Request
 from starlette.responses import Response
@@ -20,17 +19,17 @@ from admin.utils import (
 
 
 def create_cancel_jobs_endpoint(
-    processing_step: ProcessingStep,
+    job_type: str,
     external_auth_url: Optional[str] = None,
     organization: Optional[str] = None,
 ) -> Endpoint:
     async def cancel_jobs_endpoint(request: Request) -> Response:
         try:
-            logging.info(f"/cancel-jobs{processing_step.job_type}")
+            logging.info(f"/cancel-jobs{job_type}")
 
             # if auth_check fails, it will raise an exception that will be caught below
             auth_check(external_auth_url=external_auth_url, request=request, organization=organization)
-            Queue().cancel_started_jobs(job_type=processing_step.job_type)
+            Queue().cancel_started_jobs(job_type=job_type)
             return get_json_ok_response(
                 {"status": "ok"},
                 max_age=0,

@@ -30,10 +30,10 @@ def get_job_runner(
         app_config: AppConfig,
         force: bool = False,
     ) -> DatasetSplitNamesJobRunner:
-        step_name = DatasetSplitNamesJobRunner.get_job_type()
+        processing_step_name = DatasetSplitNamesJobRunner.get_job_type()
         processing_graph = ProcessingGraph(
             {
-                step_name: {
+                processing_step_name: {
                     "input_type": "dataset",
                     "job_runner_version": DatasetSplitNamesJobRunner.get_job_runner_version(),
                 }
@@ -51,7 +51,7 @@ def get_job_runner(
             },
             common_config=app_config.common,
             worker_config=app_config.worker,
-            processing_step=processing_graph.get_step(step_name),
+            processing_step=processing_graph.get_processing_step(processing_step_name),
             processing_graph=processing_graph,
         )
 

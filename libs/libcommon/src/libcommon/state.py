@@ -106,7 +106,7 @@ class CacheState:
 class ArtifactState:
     """The state of an artifact."""
 
-    step: ProcessingStep
+    processing_step: ProcessingStep
     dataset: str
     config: Optional[str]
     split: Optional[str]
@@ -116,24 +116,29 @@ class ArtifactState:
     cache_state: CacheState = field(init=False)
 
     def __post_init__(self) -> None:
-        if self.step.input_type == "dataset":
+        if self.processing_step.input_type == "dataset":
             if self.config is not None or self.split is not None:
                 raise ValueError("Step input type is dataset, but config or split is not None")
-        elif self.step.input_type == "config":
+        elif self.processing_step.input_type == "config":
             if self.config is None or self.split is not None:
                 raise ValueError("Step input type is config, but config is None or split is not None")
-        elif self.step.input_type == "split":
+        elif self.processing_step.input_type == "split":
             if self.config is None or self.split is None:
                 raise ValueError("Step input type is split, but config or split is None")
         else:
-            raise ValueError(f"Invalid step input type: {self.step.input_type}")
-        self.id = inputs_to_string(dataset=self.dataset, config=self.config, split=self.split, prefix=self.step.name)
+            raise ValueError(f"Invalid step input type: {self.processing_step.input_type}")
+        self.id = inputs_to_string(
+            dataset=self.dataset, config=self.config, split=self.split, prefix=self.processing_step.name
+        )
 
         self.job_state = JobState(
-            job_type=self.step.job_type, dataset=self.dataset, config=self.config, split=self.split
+            job_type=self.processing_step.job_type,
+            dataset=self.dataset,
+            config=self.config,
+            split=self.split,
         )
         self.cache_state = CacheState(
-            cache_kind=self.step.cache_kind,
+            cache_kind=self.processing_step.cache_kind,
             dataset=self.dataset,
             config=self.config,
             split=self.split,
@@ -146,7 +151,7 @@ class ArtifactState:
         job_runner_version = self.cache_state.cache_entry_metadata["job_runner_version"]
         if job_runner_version is None:
             return True
-        return job_runner_version < self.step.job_runner_version
+        return job_runner_version < self.processing_step.job_runner_version
 
 
 @dataclass
@@ -163,15 +168,14 @@ class SplitState:
 
     def __post_init__(self) -> None:
         self.artifact_state_by_step = {
-            step.name: ArtifactState(
-                step=step,
+            processing_step.name: ArtifactState(
+                processing_step=processing_step,
                 dataset=self.dataset,
                 config=self.config,
                 split=self.split,
                 error_codes_to_retry=self.error_codes_to_retry,
             )
-            for step in self.processing_graph.steps.values()
-            if step.input_type == "split"
+            for processing_step in self.processing_graph.get_input_type_processing_steps(input_type="split")
         }
 
 
@@ -190,15 +194,14 @@ class ConfigState:
 
     def __post_init__(self) -> None:
         self.artifact_state_by_step = {
-            step.name: ArtifactState(
-                step=step,
+            processing_step.name: ArtifactState(
+                processing_step=processing_step,
                 dataset=self.dataset,
                 config=self.config,
                 split=None,
                 error_codes_to_retry=self.error_codes_to_retry,
             )
-            for step in self.processing_graph.steps.values()
-            if step.input_type == "config"
+            for processing_step in self.processing_graph.get_input_type_processing_steps(input_type="config")
         }
 
         try:
@@ -206,7 +209,8 @@ class ConfigState:
                 dataset=self.dataset,
                 config=self.config,
                 cache_kinds=[
-                    step.cache_kind for step in self.processing_graph.get_steps_that_provide_config_split_names()
+                    processing_step.cache_kind
+                    for processing_step in self.processing_graph.get_config_split_names_processing_steps()
                 ],
                 names_field="splits",
                 name_field="split",
@@ -275,7 +279,7 @@ class CreateJobTask(Task):
 
     def run(self) -> None:
         Queue().upsert_job(
-            job_type=self.artifact_state.step.job_type,
+            job_type=self.artifact_state.processing_step.job_type,
             dataset=self.artifact_state.dataset,
             config=self.artifact_state.config,
             split=self.artifact_state.split,
@@ -293,7 +297,7 @@ class DeleteJobTask(Task):
         # TODO: the started jobs are also canceled: we need to ensure the job runners will
         # not try to update the cache when they finish
         Queue().cancel_jobs(
-            job_type=self.artifact_state.step.job_type,
+            job_type=self.artifact_state.processing_step.job_type,
             dataset=self.artifact_state.dataset,
             config=self.artifact_state.config,
             split=self.artifact_state.split,
@@ -342,22 +346,22 @@ class DatasetState:
 
     def __post_init__(self) -> None:
         self.artifact_state_by_step = {
-            step.name: ArtifactState(
-                step=step,
+            processing_step.name: ArtifactState(
+                processing_step=processing_step,
                 dataset=self.dataset,
                 config=None,
                 split=None,
                 error_codes_to_retry=self.error_codes_to_retry,
             )
-            for step in self.processing_graph.steps.values()
-            if step.input_type == "dataset"
+            for processing_step in self.processing_graph.get_input_type_processing_steps(input_type="dataset")
         }
         try:
             self.config_names = fetch_names(
                 dataset=self.dataset,
                 config=None,
                 cache_kinds=[
-                    step.cache_kind for step in self.processing_graph.get_steps_that_provide_dataset_config_names()
+                    processing_step.cache_kind
+                    for processing_step in self.processing_graph.get_dataset_config_names_processing_steps()
                 ],
                 names_field="config_names",
                 name_field="config",
@@ -379,76 +383,76 @@ class DatasetState:
         self.should_be_backfilled = len(self.plan.tasks) > 0
 
     def _get_artifact_states_for_step(
-        self, step: ProcessingStep, config: Optional[str] = None, split: Optional[str] = None
+        self, processing_step: ProcessingStep, config: Optional[str] = None, split: Optional[str] = None
     ) -> List[ArtifactState]:
         """Get the artifact states for a step.
 
         Args:
-            step: the processing step
-            config: if not None, and step input type is config or split, only return the artifact states for this
-              config
-            split: if not None, and step input type is split, only return the artifact states for this split (config
-              must be specified)
+            processing_step (ProcessingStep): the processing step
+            config (str, optional): if not None, and step input type is config or split, only return the artifact
+              states for this config
+            split (str, optional): if not None, and step input type is split, only return the artifact states for
+              this split (config must be specified)
 
         Returns:
             the artifact states for the step
         """
-        if step.input_type == "dataset":
-            artifact_states = [self.artifact_state_by_step[step.name]]
-        elif step.input_type == "config":
+        if processing_step.input_type == "dataset":
+            artifact_states = [self.artifact_state_by_step[processing_step.name]]
+        elif processing_step.input_type == "config":
             if config is None:
                 artifact_states = [
-                    config_state.artifact_state_by_step[step.name] for config_state in self.config_states
+                    config_state.artifact_state_by_step[processing_step.name] for config_state in self.config_states
                 ]
             else:
                 artifact_states = [
-                    config_state.artifact_state_by_step[step.name]
+                    config_state.artifact_state_by_step[processing_step.name]
                     for config_state in self.config_states
                     if config_state.config == config
                 ]
-        elif step.input_type == "split":
+        elif processing_step.input_type == "split":
             if config is None:
                 artifact_states = [
-                    split_state.artifact_state_by_step[step.name]
+                    split_state.artifact_state_by_step[processing_step.name]
                     for config_state in self.config_states
                     for split_state in config_state.split_states
                 ]
             elif split is None:
                 artifact_states = [
-                    split_state.artifact_state_by_step[step.name]
+                    split_state.artifact_state_by_step[processing_step.name]
                     for config_state in self.config_states
                     if config_state.config == config
                     for split_state in config_state.split_states
                 ]
             else:
                 artifact_states = [
-                    split_state.artifact_state_by_step[step.name]
+                    split_state.artifact_state_by_step[processing_step.name]
                     for config_state in self.config_states
                     if config_state.config == config
                     for split_state in config_state.split_states
                     if split_state.split == split
                 ]
         else:
-            raise ValueError(f"Invalid input type: {step.input_type}")
+            raise ValueError(f"Invalid input type: {processing_step.input_type}")
         artifact_states_ids = {artifact_state.id for artifact_state in artifact_states}
         if len(artifact_states_ids) != len(artifact_states):
-            raise ValueError(f"Duplicate artifact states for step {step.name}")
+            raise ValueError(f"Duplicate artifact states for processing_step {processing_step}")
         return artifact_states
 
     def _get_cache_status(self) -> CacheStatus:
         cache_status = CacheStatus()
 
-        for step in self.processing_graph.get_topologically_ordered_steps():
+        for processing_step in self.processing_graph.get_topologically_ordered_processing_steps():
             # Every step can have one or multiple artifacts, for example config-level steps have one artifact per
             # config
-            artifact_states = self._get_artifact_states_for_step(step)
+            artifact_states = self._get_artifact_states_for_step(processing_step)
             for artifact_state in artifact_states:
                 # any of the parents is more recent?
                 if any(
                     artifact_state.cache_state.is_older_than(parent_artifact_state.cache_state)
-                    for parent_step_name in step.parents
+                    for parent_step in self.processing_graph.get_parents(processing_step.name)
                     for parent_artifact_state in self._get_artifact_states_for_step(
-                        step=self.processing_graph.get_step(parent_step_name),
+                        processing_step=parent_step,
                         config=artifact_state.config,
                         split=artifact_state.split,
                     )
@@ -484,8 +488,8 @@ class DatasetState:
     def _get_queue_status(self) -> QueueStatus:
         queue_status = QueueStatus()
 
-        for step in self.processing_graph.get_topologically_ordered_steps():
-            artifact_states = self._get_artifact_states_for_step(step)
+        for processing_step in self.processing_graph.get_topologically_ordered_processing_steps():
+            artifact_states = self._get_artifact_states_for_step(processing_step)
             for artifact_state in artifact_states:
                 if artifact_state.job_state.is_in_process:
                     queue_status.in_process[artifact_state.id] = artifact_state

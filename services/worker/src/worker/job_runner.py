@@ -354,8 +354,8 @@ class JobRunner(ABC):
         job_type = self.get_job_type()
         if self.processing_step.job_type != job_type:
             raise ValueError(
-                f"The processing step's job type is {self.processing_step.job_type}, but the job runner only processes"
-                f" {job_type}"
+                f"The processing step's job type is {self.processing_step.job_type}, but"
+                f" the job runner only processes {job_type}"
             )
         if self.job_type != job_type:
             raise ValueError(
@@ -369,7 +369,7 @@ class JobRunner(ABC):
         )
 
     def log(self, level: int, msg: str) -> None:
-        logging.log(level=level, msg=f"[{self.processing_step.job_type}] {msg}")
+        logging.log(level=level, msg=f"[{self.job_type}] {msg}")
 
     def debug(self, msg: str) -> None:
         self.log(level=logging.DEBUG, msg=msg)
@@ -427,7 +427,10 @@ class JobRunner(ABC):
             return False
         try:
             cached_response = get_response_without_content(
-                kind=self.processing_step.cache_kind, dataset=self.dataset, config=self.config, split=self.split
+                kind=self.processing_step.cache_kind,
+                dataset=self.dataset,
+                config=self.config,
+                split=self.split,
             )
         except DoesNotExist:
             # no entry in the cache
@@ -536,11 +539,15 @@ class JobRunner(ABC):
 
     def create_children_jobs(self) -> None:
         """Create children jobs for the current job."""
-        if len(self.processing_step.children) <= 0:
+        children = self.processing_graph.get_children(self.processing_step.name)
+        if len(children) <= 0:
             return
         try:
             response_in_cache = get_response(
-                kind=self.processing_step.cache_kind, dataset=self.dataset, config=self.config, split=self.split
+                kind=self.processing_step.cache_kind,
+                dataset=self.dataset,
+                config=self.config,
+                split=self.split,
             )
         except Exception:
             # if the response is not in the cache, we don't create the children jobs
@@ -564,9 +571,7 @@ class JobRunner(ABC):
             new_split_full_names_for_config = set()
         new_split_full_names_for_dataset = {SplitFullName(dataset=self.dataset, config=None, split=None)}
 
-        for processing_step in [
-            self.processing_graph.get_step(step_name) for step_name in self.processing_step.children
-        ]:
+        for processing_step in children:
             new_split_full_names = (
                 new_split_full_names_for_split
                 if processing_step.input_type == "split"
@@ -587,8 +592,8 @@ class JobRunner(ABC):
                     priority=self.priority,
                 )
             logging.debug(
-                f"{len(new_split_full_names)} jobs"
-                f"of type {processing_step.job_type} added to queue for dataset={self.dataset}"
+                f"{len(new_split_full_names)} jobs of type {processing_step.job_type} added"
+                f" to queue for dataset={self.dataset}"
             )
 
     def post_compute(self) -> None:

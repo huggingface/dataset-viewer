@@ -56,10 +56,10 @@ def get_job_runner(
         app_config: AppConfig,
         force: bool,
     ) -> DummyJobRunner:
-        step_name = DummyJobRunner.get_job_type()
+        processing_step_name = DummyJobRunner.get_job_type()
         processing_graph = ProcessingGraph(
             {
-                step_name: {
+                processing_step_name: {
                     "input_type": "dataset",
                     "job_runner_version": DummyJobRunner.get_job_runner_version(),
                 }
@@ -76,7 +76,7 @@ def get_job_runner(
                 "priority": Priority.NORMAL,
             },
             app_config=app_config,
-            processing_step=processing_graph.get_step(step_name),
+            processing_step=processing_graph.get_processing_step(processing_step_name),
             processing_graph=processing_graph,
             hf_datasets_cache=libraries_resource.hf_datasets_cache,
         )
@@ -170,7 +170,12 @@ def test_process_big_content(hub_datasets: HubDatasets, app_config: AppConfig, g
     )
 
     assert not worker.process()
-    cached_response = get_response(kind=worker.processing_step.cache_kind, dataset=dataset, config=config, split=split)
+    cached_response = get_response(
+        kind=worker.processing_step.cache_kind,
+        dataset=dataset,
+        config=config,
+        split=split,
+    )
 
     assert cached_response["http_status"] == HTTPStatus.NOT_IMPLEMENTED
     assert cached_response["error_code"] == "TooBigContentError"

@@ -321,7 +321,7 @@ def test_update_last_modified_date_of_rows_in_assets_dir(tmp_path: Path) -> None
         length=3,
         assets_directory=cached_assets_directory,
     )
-    most_recent_rows_dirs = sorted([row_dir for row_dir in split_dir.glob("*")], key=os.path.getmtime, reverse=True)
+    most_recent_rows_dirs = sorted(list(split_dir.glob("*")), key=os.path.getmtime, reverse=True)
     most_recent_rows = [int(row_dir.name) for row_dir in most_recent_rows_dirs]
     assert sorted(most_recent_rows[:3]) == [2, 3, 4]
     assert most_recent_rows[3:] == [7, 6, 5, 1, 0]

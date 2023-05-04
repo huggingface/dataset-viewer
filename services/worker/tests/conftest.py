@@ -113,20 +113,20 @@ def assets_directory(app_config: AppConfig) -> StrPath:
 def test_processing_graph() -> ProcessingGraph:
     return ProcessingGraph(
         {
-            "/dummy": {"input_type": "dataset", "job_runner_version": 1},
-            "/dummy2": {"input_type": "dataset", "job_runner_version": 1},
+            "/dummy": {"input_type": "dataset"},
+            "/dummy2": {"input_type": "dataset"},
         }
     )
 
 
 @fixture
 def test_processing_step(test_processing_graph: ProcessingGraph) -> ProcessingStep:
-    return test_processing_graph.get_step("/dummy")
+    return test_processing_graph.get_processing_step("/dummy")
 
 
 @fixture
 def another_processing_step(test_processing_graph: ProcessingGraph) -> ProcessingStep:
-    return test_processing_graph.get_step("/dummy2")
+    return test_processing_graph.get_processing_step("/dummy2")
 
 
 # Import fixture modules as plugins

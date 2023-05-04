@@ -67,11 +67,8 @@ def test_process_next_job(
     dataset = "dataset"
     config = "config"
     split = "split"
-    loop.queue.upsert_job(job_type=test_processing_step.job_type, dataset=dataset, config=config, split=split)
-    assert loop.queue.is_job_in_process(
-        job_type=test_processing_step.job_type, dataset=dataset, config=config, split=split
-    )
+    job_type = test_processing_step.job_type
+    loop.queue.upsert_job(job_type=job_type, dataset=dataset, config=config, split=split)
+    assert loop.queue.is_job_in_process(job_type=job_type, dataset=dataset, config=config, split=split)
     assert loop.process_next_job()
-    assert not loop.queue.is_job_in_process(
-        job_type=test_processing_step.job_type, dataset=dataset, config=config, split=split
-    )
+    assert not loop.queue.is_job_in_process(job_type=job_type, dataset=dataset, config=config, split=split)

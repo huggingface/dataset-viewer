@@ -40,7 +40,6 @@ def create_app_with_config(app_config: AppConfig, endpoint_config: EndpointConfi
 
     processing_graph = ProcessingGraph(app_config.processing_graph.specification)
     endpoints_definition = EndpointsDefinition(processing_graph, endpoint_config)
-    processing_steps_required_by_dataset_viewer = processing_graph.get_steps_required_by_dataset_viewer()
     hf_jwt_public_key = (
         fetch_jwt_public_key(
             url=app_config.api.hf_jwt_public_key_url,
@@ -93,7 +92,7 @@ def create_app_with_config(app_config: AppConfig, endpoint_config: EndpointConfi
         Route(
             "/valid",
             endpoint=create_valid_endpoint(
-                processing_steps_for_valid=processing_steps_required_by_dataset_viewer,
+                processing_graph=processing_graph,
                 max_age_long=app_config.api.max_age_long,
                 max_age_short=app_config.api.max_age_short,
             ),
@@ -105,7 +104,7 @@ def create_app_with_config(app_config: AppConfig, endpoint_config: EndpointConfi
                 hf_jwt_algorithm=app_config.api.hf_jwt_algorithm,
                 external_auth_url=app_config.api.external_auth_url,
                 hf_timeout_seconds=app_config.api.hf_timeout_seconds,
-                processing_steps_for_valid=processing_steps_required_by_dataset_viewer,
+                processing_graph=processing_graph,
                 max_age_long=app_config.api.max_age_long,
                 max_age_short=app_config.api.max_age_short,
             ),

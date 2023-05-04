@@ -260,13 +260,13 @@ def test_check_type(
 def test_create_children_jobs() -> None:
     graph = ProcessingGraph(
         {
-            "/dummy": {"input_type": "dataset", "job_runner_version": 1},
-            "/child-dataset": {"input_type": "dataset", "triggered_by": "/dummy", "job_runner_version": 1},
-            "/child-config": {"input_type": "config", "triggered_by": "/dummy", "job_runner_version": 1},
-            "/child-split": {"input_type": "split", "triggered_by": "/dummy", "job_runner_version": 1},
+            "/dummy": {"input_type": "dataset"},
+            "/child-dataset": {"input_type": "dataset", "triggered_by": "/dummy"},
+            "/child-config": {"input_type": "config", "triggered_by": "/dummy"},
+            "/child-split": {"input_type": "split", "triggered_by": "/dummy"},
         }
     )
-    root_step = graph.get_step("/dummy")
+    root_step = graph.get_processing_step("/dummy")
     job_runner = DummyJobRunner(
         job_info={
             "job_id": "job_id",

@@ -41,10 +41,10 @@ def get_job_runner(
         app_config: AppConfig,
         force: bool = False,
     ) -> SplitFirstRowsFromParquetJobRunner:
-        step_name = SplitFirstRowsFromParquetJobRunner.get_job_type()
+        processing_step_name = SplitFirstRowsFromParquetJobRunner.get_job_type()
         processing_graph = ProcessingGraph(
             {
-                step_name: {
+                processing_step_name: {
                     "input_type": "dataset",
                     "job_runner_version": SplitFirstRowsFromParquetJobRunner.get_job_runner_version(),
                 }
@@ -61,7 +61,7 @@ def get_job_runner(
                 "priority": Priority.NORMAL,
             },
             app_config=app_config,
-            processing_step=processing_graph.get_step(step_name),
+            processing_step=processing_graph.get_processing_step(processing_step_name),
             processing_graph=processing_graph,
             assets_directory=assets_directory,
         )

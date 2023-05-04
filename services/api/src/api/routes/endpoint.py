@@ -40,12 +40,17 @@ class EndpointsDefinition:
     steps_by_input_type_and_endpoint: StepsByInputTypeAndEndpoint
 
     def __init__(self, graph: ProcessingGraph, endpoint_config: EndpointConfig):
+        processing_step_names_by_input_type_and_endpoint = (
+            endpoint_config.processing_step_names_by_input_type_and_endpoint.items()
+        )
         self.steps_by_input_type_and_endpoint = {
             endpoint: {
-                input_type: [graph.get_step(step_name) for step_name in step_names]
-                for input_type, step_names in step_names_by_input_type.items()
+                input_type: [
+                    graph.get_processing_step(processing_step_name) for processing_step_name in processing_step_names
+                ]
+                for input_type, processing_step_names in processing_step_names_by_input_type.items()
             }
-            for endpoint, step_names_by_input_type in endpoint_config.step_names_by_input_type_and_endpoint.items()
+            for endpoint, processing_step_names_by_input_type in processing_step_names_by_input_type_and_endpoint
         }
 
 
@@ -76,23 +81,18 @@ def get_cache_entry_from_steps(
     last_result = None
     for processing_step in processing_steps:
         try:
-            last_result = get_response(
-                kind=processing_step.cache_kind,
-                dataset=dataset,
-                config=config,
-                split=split,
-            )
+            last_result = get_response(kind=processing_step.cache_kind, dataset=dataset, config=config, split=split)
 
             if last_result["http_status"] == HTTPStatus.OK:
                 return last_result
         except DoesNotExist:
             logging.debug(
-                f"processing_step={processing_step.name} dataset={dataset} "
-                f"config={config} split={split} no entry found"
+                f"processing_step={processing_step.name} dataset={dataset} config={config} split={split} no entry"
+                " found"
             )
             try:
                 check_in_process(
-                    processing_step=processing_step,
+                    processing_step_name=processing_step.name,
                     processing_graph=processing_graph,
                     dataset=dataset,
                     config=config,
@@ -100,8 +100,8 @@ def get_cache_entry_from_steps(
                     hf_endpoint=hf_endpoint,
                     hf_token=hf_token,
                 )
-            except (PreviousStepError, DatasetError):
-                raise ResponseNotFoundError("Not found.")
+            except (PreviousStepError, DatasetError) as e:
+                raise ResponseNotFoundError("Not found.") from e
     if last_result:
         return last_result
 

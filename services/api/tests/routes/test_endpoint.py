@@ -97,8 +97,8 @@ def test_get_cache_entry_from_steps() -> None:
     cache_with_error = "/split-names-from-streaming"
     cache_without_error = "/split-names-from-dataset-info"
 
-    step_with_error = processing_graph.get_step(cache_with_error)
-    step_without_error = processing_graph.get_step(cache_without_error)
+    step_with_error = processing_graph.get_processing_step(cache_with_error)
+    step_without_error = processing_graph.get_processing_step(cache_without_error)
 
     upsert_response(
         kind=cache_without_error,
@@ -150,7 +150,7 @@ def test_get_cache_entry_from_steps() -> None:
     # pending job throws exception
     queue = Queue()
     queue.upsert_job(job_type="dataset-split-names", dataset=dataset, config=config, force=True)
-    non_existent_step = processing_graph.get_step("dataset-split-names")
+    non_existent_step = processing_graph.get_processing_step("dataset-split-names")
     with raises(ResponseNotReadyError):
         get_cache_entry_from_steps(
             [non_existent_step], dataset, config, None, processing_graph, app_config.common.hf_endpoint
