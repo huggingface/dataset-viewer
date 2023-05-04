@@ -12,7 +12,6 @@ from worker.job_runner import (
     JobResult,
     JobRunner,
     JobRunnerError,
-    ParameterMissingError,
     get_previous_step_or_raise,
 )
 from worker.utils import OptInOutUrlsCountResponse
@@ -112,8 +111,6 @@ class DatasetOptInOutUrlsCountJobRunner(JobRunner):
         return PROCESSING_STEP_DATASET_OPT_IN_OUT_URLS_COUNT_VERSION
 
     def compute(self) -> JobResult:
-        if self.dataset is None:
-            raise ParameterMissingError("'dataset' parameter is required")
         response_content, progress = compute_opt_in_out_urls_count_response(dataset=self.dataset)
         return JobResult(response_content, progress=progress)
 

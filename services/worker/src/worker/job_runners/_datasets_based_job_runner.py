@@ -39,8 +39,7 @@ class DatasetsBasedJobRunner(JobRunner):
     ) -> None:
         super().__init__(
             job_info=job_info,
-            common_config=app_config.common,
-            worker_config=app_config.worker,
+            app_config=app_config,
             processing_step=processing_step,
             processing_graph=processing_graph,
         )
@@ -49,7 +48,7 @@ class DatasetsBasedJobRunner(JobRunner):
 
     def get_cache_subdirectory(self, date: datetime) -> str:
         date_str = date.strftime("%Y-%m-%d-%H-%M-%S")
-        payload = (date_str, self.get_job_type(), self.dataset, self.config, self.split, self.force)
+        payload = (date_str, self.get_job_type(), self.dataset, self._config, self._split, self.force)
         hash_suffix = sha1(json.dumps(payload, sort_keys=True).encode(), usedforsecurity=False).hexdigest()[:8]
         prefix = f"{date_str}-{self.get_job_type()}-{self.dataset}"[:64]
         subdirectory = f"{prefix}-{hash_suffix}"

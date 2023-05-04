@@ -26,10 +26,10 @@ from tqdm.contrib.concurrent import thread_map
 from worker.config import AppConfig, FirstRowsConfig
 from worker.job_runner import (
     CompleteJobResult,
-    JobRunner,
     JobRunnerError,
     get_previous_step_or_raise,
 )
+from worker.job_runners.split.split_job_runner import SplitRunner
 from worker.utils import (
     Row,
     RowItem,
@@ -279,7 +279,7 @@ def compute_first_rows_response(
     return response
 
 
-class SplitFirstRowsFromParquetJobRunner(JobRunner):
+class SplitFirstRowsFromParquetJobRunner(SplitRunner):
     assets_directory: StrPath
     first_rows_config: FirstRowsConfig
 
@@ -301,8 +301,7 @@ class SplitFirstRowsFromParquetJobRunner(JobRunner):
     ) -> None:
         super().__init__(
             job_info=job_info,
-            common_config=app_config.common,
-            worker_config=app_config.worker,
+            app_config=app_config,
             processing_step=processing_step,
             processing_graph=processing_graph,
         )
@@ -311,8 +310,6 @@ class SplitFirstRowsFromParquetJobRunner(JobRunner):
         self.assets_base_url = app_config.assets.base_url
 
     def compute(self) -> CompleteJobResult:
-        if self.config is None or self.split is None:
-            raise ValueError("config and split are required")
         self.raise_if_parallel_response_exists(
             parallel_cache_kind="split-first-rows-from-streaming",
             parallel_job_version=PROCESSING_STEP_SPLIT_FIRST_ROWS_FROM_STREAMING_VERSION,

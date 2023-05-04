@@ -12,7 +12,6 @@ from worker.job_runner import (
     JobResult,
     JobRunner,
     JobRunnerError,
-    ParameterMissingError,
     get_previous_step_or_raise,
 )
 from worker.job_runners.config.size import ConfigSize, ConfigSizeResponse, SplitSize
@@ -166,8 +165,6 @@ class DatasetSizeJobRunner(JobRunner):
         return PROCESSING_STEP_DATASET_SIZE_VERSION
 
     def compute(self) -> JobResult:
-        if self.dataset is None:
-            raise ParameterMissingError("'dataset' parameter is required")
         response_content, progress = compute_sizes_response(dataset=self.dataset)
         return JobResult(response_content, progress=progress)
 

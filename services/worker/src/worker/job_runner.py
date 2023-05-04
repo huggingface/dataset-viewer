@@ -5,6 +5,7 @@ import logging
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 from http import HTTPStatus
+from pathlib import Path
 from typing import Any, List, Literal, Mapping, Optional
 
 from libcommon.config import CommonConfig
@@ -28,7 +29,7 @@ from libcommon.simple_cache import (
 )
 from libcommon.utils import orjson_dumps
 
-from worker.config import WorkerConfig
+from worker.config import AppConfig, WorkerConfig
 
 GeneralJobRunnerErrorCode = Literal[
     "ParameterMissingError",
@@ -309,8 +310,8 @@ class JobRunner(ABC):
 
     job_id: str
     dataset: str
-    config: Optional[str] = None
-    split: Optional[str] = None
+    _config: Optional[str] = None
+    _split: Optional[str] = None
     force: bool
     priority: Priority
     worker_config: WorkerConfig
@@ -332,25 +333,27 @@ class JobRunner(ABC):
     def __init__(
         self,
         job_info: JobInfo,
-        common_config: CommonConfig,
-        worker_config: WorkerConfig,
+        app_config: AppConfig,
         processing_step: ProcessingStep,
         processing_graph: ProcessingGraph,
     ) -> None:
         self.job_type = job_info["type"]
         self.job_id = job_info["job_id"]
         self.dataset = job_info["dataset"]
-        self.config = job_info["config"]
-        self.split = job_info["split"]
+        self._config = job_info["config"]
+        self._split = job_info["split"]
         self.force = job_info["force"]
         self.priority = job_info["priority"]
-        self.common_config = common_config
-        self.worker_config = worker_config
+        self.common_config = app_config.common
+        self.worker_config = app_config.worker
         self.processing_step = processing_step
         self.processing_graph = processing_graph
         self.setup()
 
     def setup(self) -> None:
+        if self.dataset is None:
+            raise ParameterMissingError("'dataset' parameter is required")
+
         job_type = self.get_job_type()
         if self.processing_step.job_type != job_type:
             raise ValueError(
@@ -364,8 +367,8 @@ class JobRunner(ABC):
 
     def __str__(self) -> str:
         return (
-            f"JobRunner(job_id={self.job_id} dataset={self.dataset} config={self.config}"
-            + f" split={self.split} force={self.force})"
+            f"JobRunner(job_id={self.job_id} dataset={self.dataset} config={self._config}"
+            + f" split={self._split} force={self.force})"
         )
 
     def log(self, level: int, msg: str) -> None:
@@ -427,10 +430,7 @@ class JobRunner(ABC):
             return False
         try:
             cached_response = get_response_without_content(
-                kind=self.processing_step.cache_kind,
-                dataset=self.dataset,
-                config=self.config,
-                split=self.split,
+                kind=self.processing_step.cache_kind, dataset=self.dataset, config=self._config, split=self._split
             )
         except DoesNotExist:
             # no entry in the cache
@@ -482,15 +482,15 @@ class JobRunner(ABC):
             upsert_response(
                 kind=self.processing_step.cache_kind,
                 dataset=self.dataset,
-                config=self.config,
-                split=self.split,
+                config=self._config,
+                split=self._split,
                 content=content,
                 http_status=HTTPStatus.OK,
                 job_runner_version=self.get_job_runner_version(),
                 dataset_git_revision=dataset_git_revision,
                 progress=job_result.progress,
             )
-            self.debug(f"dataset={self.dataset} config={self.config} split={self.split} is valid, cache updated")
+            self.debug(f"dataset={self.dataset} config={self._config} split={self._split} is valid, cache updated")
             return True
         except DatasetNotFoundError:
             # To avoid filling the cache, we don't save this error. Otherwise, DoS is possible.
@@ -501,8 +501,8 @@ class JobRunner(ABC):
             upsert_response(
                 kind=self.processing_step.cache_kind,
                 dataset=self.dataset,
-                config=self.config,
-                split=self.split,
+                config=self._config,
+                split=self._split,
                 content=dict(e.as_response()),
                 http_status=e.status_code,
                 error_code=e.code,
@@ -511,7 +511,7 @@ class JobRunner(ABC):
                 dataset_git_revision=dataset_git_revision,
             )
             self.debug(
-                f"response for dataset={self.dataset} config={self.config} split={self.split} had an error, cache"
+                f"response for dataset={self.dataset} config={self._config} split={self._split} had an error, cache"
                 " updated"
             )
             return False
@@ -544,10 +544,7 @@ class JobRunner(ABC):
             return
         try:
             response_in_cache = get_response(
-                kind=self.processing_step.cache_kind,
-                dataset=self.dataset,
-                config=self.config,
-                split=self.split,
+                kind=self.processing_step.cache_kind, dataset=self.dataset, config=self._config, split=self._split
             )
         except Exception:
             # if the response is not in the cache, we don't create the children jobs
@@ -559,12 +556,12 @@ class JobRunner(ABC):
             }
         elif self.processing_step.input_type == "split":
             new_split_full_names_for_split = {
-                SplitFullName(dataset=self.dataset, config=self.config, split=self.split)
+                SplitFullName(dataset=self.dataset, config=self._config, split=self._split)
             }
-            new_split_full_names_for_config = {SplitFullName(dataset=self.dataset, config=self.config, split=None)}
+            new_split_full_names_for_config = {SplitFullName(dataset=self.dataset, config=self._config, split=None)}
         elif self.processing_step.input_type == "config":
             new_split_full_names_for_split = set()
-            new_split_full_names_for_config = {SplitFullName(dataset=self.dataset, config=self.config, split=None)}
+            new_split_full_names_for_config = {SplitFullName(dataset=self.dataset, config=self._config, split=None)}
 
         else:
             new_split_full_names_for_split = set()
@@ -605,8 +602,8 @@ class JobRunner(ABC):
         upsert_response(
             kind=self.processing_step.cache_kind,
             dataset=self.dataset,
-            config=self.config,
-            split=self.split,
+            config=self._config,
+            split=self._split,
             content=dict(error.as_response()),
             http_status=error.status_code,
             error_code=error.code,
@@ -616,7 +613,7 @@ class JobRunner(ABC):
         )
         logging.debug(
             "response for"
-            f" dataset={self.dataset} config={self.config} split={self.split} had an error (crashed),"
+            f" dataset={self.dataset} config={self._config} split={self._split} had an error (crashed),"
             " cache updated"
         )
 
@@ -625,8 +622,8 @@ class JobRunner(ABC):
         upsert_response(
             kind=self.processing_step.cache_kind,
             dataset=self.dataset,
-            config=self.config,
-            split=self.split,
+            config=self._config,
+            split=self._split,
             content=dict(error.as_response()),
             http_status=error.status_code,
             error_code=error.code,
@@ -635,14 +632,14 @@ class JobRunner(ABC):
             dataset_git_revision=self.get_dataset_git_revision(),
         )
         logging.debug(
-            f"response for dataset={self.dataset} config={self.config} split={self.split} had an error (exceeded"
+            f"response for dataset={self.dataset} config={self._config} split={self._split} had an error (exceeded"
             " maximum duration), cache updated"
         )
 
     def raise_if_parallel_response_exists(self, parallel_cache_kind: str, parallel_job_version: int) -> None:
         try:
             existing_response = get_response_without_content(
-                kind=parallel_cache_kind, dataset=self.dataset, config=self.config, split=self.split
+                kind=parallel_cache_kind, dataset=self.dataset, config=self._config, split=self._split
             )
             dataset_git_revision = self.get_dataset_git_revision()
             if (
