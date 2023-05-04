@@ -112,58 +112,50 @@ class JobRunnerFactory(BaseJobRunnerFactory):
         if job_type == ConfigParquetJobRunner.get_job_type():
             return ConfigParquetJobRunner(
                 job_info=job_info,
-                common_config=self.app_config.common,
-                worker_config=self.app_config.worker,
+                app_config=self.app_config,
                 processing_step=processing_step,
             )
         if job_type == DatasetParquetJobRunner.get_job_type():
             return DatasetParquetJobRunner(
                 job_info=job_info,
-                common_config=self.app_config.common,
-                worker_config=self.app_config.worker,
+                app_config=self.app_config,
                 processing_step=processing_step,
             )
         if job_type == DatasetInfoJobRunner.get_job_type():
             return DatasetInfoJobRunner(
                 job_info=job_info,
-                common_config=self.app_config.common,
-                worker_config=self.app_config.worker,
+                app_config=self.app_config,
                 processing_step=processing_step,
             )
         if job_type == ConfigInfoJobRunner.get_job_type():
             return ConfigInfoJobRunner(
                 job_info=job_info,
-                common_config=self.app_config.common,
-                worker_config=self.app_config.worker,
+                app_config=self.app_config,
                 processing_step=processing_step,
             )
         if job_type == DatasetSizeJobRunner.get_job_type():
             return DatasetSizeJobRunner(
                 job_info=job_info,
-                common_config=self.app_config.common,
-                worker_config=self.app_config.worker,
+                app_config=self.app_config,
                 processing_step=processing_step,
             )
         if job_type == ConfigSizeJobRunner.get_job_type():
             return ConfigSizeJobRunner(
                 job_info=job_info,
-                common_config=self.app_config.common,
-                worker_config=self.app_config.worker,
+                app_config=self.app_config,
                 processing_step=processing_step,
             )
         if job_type == SplitNamesFromDatasetInfoJobRunner.get_job_type():
             return SplitNamesFromDatasetInfoJobRunner(
                 job_info=job_info,
-                common_config=self.app_config.common,
-                worker_config=self.app_config.worker,
+                app_config=self.app_config,
                 processing_step=processing_step,
             )
         if job_type == DatasetSplitNamesJobRunner.get_job_type():
             return DatasetSplitNamesJobRunner(
                 job_info=job_info,
                 processing_step=processing_step,
-                common_config=self.app_config.common,
-                worker_config=self.app_config.worker,
+                app_config=self.app_config,
             )
         if job_type == SplitFirstRowsFromParquetJobRunner.get_job_type():
             return SplitFirstRowsFromParquetJobRunner(
@@ -176,8 +168,7 @@ class JobRunnerFactory(BaseJobRunnerFactory):
             return DatasetIsValidJobRunner(
                 job_info=job_info,
                 processing_step=processing_step,
-                common_config=self.app_config.common,
-                worker_config=self.app_config.worker,
+                app_config=self.app_config,
             )
 
         if job_type == SplitOptInOutUrlsScanJobRunner.get_job_type():
@@ -190,24 +181,21 @@ class JobRunnerFactory(BaseJobRunnerFactory):
         if job_type == ConfigOptInOutUrlsCountJobRunner.get_job_type():
             return ConfigOptInOutUrlsCountJobRunner(
                 job_info=job_info,
-                common_config=self.app_config.common,
-                worker_config=self.app_config.worker,
+                app_config=self.app_config,
                 processing_step=processing_step,
             )
         if job_type == DatasetOptInOutUrlsCountJobRunner.get_job_type():
             return DatasetOptInOutUrlsCountJobRunner(
                 job_info=job_info,
-                common_config=self.app_config.common,
-                worker_config=self.app_config.worker,
+                app_config=self.app_config,
                 processing_step=processing_step,
             )
 
         if job_type == SplitOptInOutUrlsCountJobRunner.get_job_type():
             return SplitOptInOutUrlsCountJobRunner(
                 job_info=job_info,
+                app_config=self.app_config,
                 processing_step=processing_step,
-                common_config=self.app_config.common,
-                worker_config=self.app_config.worker,
             )
 
         supported_job_types = [

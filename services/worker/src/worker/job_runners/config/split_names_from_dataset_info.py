@@ -13,11 +13,10 @@ from libcommon.simple_cache import SplitFullName
 
 from worker.job_runner import (
     CompleteJobResult,
-    JobRunner,
     JobRunnerError,
-    ParameterMissingError,
     get_previous_step_or_raise,
 )
+from worker.job_runners.config.config_job_runner import ConfigRunner
 from worker.utils import SplitItem, SplitsList
 
 SplitNamesFromDatasetInfoJobRunnerErrorCode = Literal[
@@ -95,7 +94,7 @@ def compute_split_names_from_dataset_info_response(dataset: str, config: str) ->
     return SplitsList(splits=split_name_items)
 
 
-class SplitNamesFromDatasetInfoJobRunner(JobRunner):
+class SplitNamesFromDatasetInfoJobRunner(ConfigRunner):
     @staticmethod
     def get_job_type() -> str:
         return "/split-names-from-dataset-info"
@@ -105,10 +104,6 @@ class SplitNamesFromDatasetInfoJobRunner(JobRunner):
         return PROCESSING_STEP_SPLIT_NAMES_FROM_DATASET_INFO_VERSION
 
     def compute(self) -> CompleteJobResult:
-        if self.dataset is None:
-            raise ParameterMissingError("'dataset' parameter is required")
-        if self.config is None:
-            raise ParameterMissingError("'config' parameter is required")
         """
         Raises [`~job_runners.config.split_names_from_dataset_info.ResponseAlreadyComputedError`]
           If response has been already computed by /split-names-from-streaming job runner.

@@ -50,10 +50,9 @@ from worker.config import AppConfig, ParquetAndInfoConfig
 from worker.job_runner import (
     CompleteJobResult,
     JobRunnerError,
-    ParameterMissingError,
     get_previous_step_or_raise,
 )
-from worker.job_runners._datasets_based_job_runner import DatasetsBasedJobRunner
+from worker.job_runners.config.config_job_runner import ConfigCacheRunner
 from worker.job_runners.config_names import ConfigNamesError
 
 ConfigParquetAndInfoJobRunnerErrorCode = Literal[
@@ -938,7 +937,7 @@ def compute_config_parquet_and_info_response(
     )
 
 
-class ConfigParquetAndInfoJobRunner(DatasetsBasedJobRunner):
+class ConfigParquetAndInfoJobRunner(ConfigCacheRunner):
     parquet_and_info_config: ParquetAndInfoConfig
 
     @staticmethod
@@ -965,10 +964,6 @@ class ConfigParquetAndInfoJobRunner(DatasetsBasedJobRunner):
         self.parquet_and_info_config = app_config.parquet_and_info
 
     def compute(self) -> CompleteJobResult:
-        if self.dataset is None:
-            raise ParameterMissingError("'dataset' parameter is required")
-        if self.config is None:
-            raise ParameterMissingError("'config' parameter is required")
         return CompleteJobResult(
             compute_config_parquet_and_info_response(
                 dataset=self.dataset,
