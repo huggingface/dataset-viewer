@@ -82,7 +82,7 @@ def get_parquet_fs(dataset: str, hf_token: Optional[str]) -> HfFileSystem:
     return HfFileSystem(dataset, repo_type="dataset", revision=PARQUET_REVISION, token=hf_token)
 
 
-UNSUPPORTED_FEATURES_MAGIC_STRINGS = ["'binary'"]
+UNSUPPORTED_FEATURES_MAGIC_STRINGS = ["Image(", "Audio(", "'binary'"]
 
 
 class RowsIndex:
