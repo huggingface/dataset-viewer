@@ -3,10 +3,10 @@
 
 from typing import List
 
-from mongodb_migration.delete_migration import (
-    DeleteCacheMigration,
-    DeleteMetricsMigration,
-    DeleteQueueMigration,
+from mongodb_migration.deletion_migrations import (
+    CacheDeletionMigration,
+    MetricsDeletionMigration,
+    QueueDeletionMigration,
 )
 from mongodb_migration.migration import Migration
 from mongodb_migration.migrations._20221110230400_example import MigrationExample
@@ -46,32 +46,8 @@ from mongodb_migration.migrations._20230323155000_cache_dataset_info import (
 from mongodb_migration.migrations._20230323160000_queue_dataset_info import (
     MigrationQueueUpdateDatasetInfo,
 )
-from mongodb_migration.migrations._20230407091400_queue_delete_splits import (
-    MigrationQueueDeleteSplits,
-)
-from mongodb_migration.migrations._20230407091500_cache_delete_splits import (
-    MigrationCacheDeleteSplits,
-)
-from mongodb_migration.migrations._20230424173000_queue_delete_parquet_and_dataset_info import (
-    MigrationQueueDeleteParquetAndDatasetInfo,
-)
-from mongodb_migration.migrations._20230424174000_cache_delete_parquet_and_dataset_info import (
-    MigrationCacheDeleteParquetAndDatasetInfo,
-)
-from mongodb_migration.migrations._20230427121500_metrics_delete_parquet_and_dataset_info import (
-    MigrationMetricsDeleteParquetAndDatasetInfo,
-)
 from mongodb_migration.migrations._20230428145000_queue_delete_ttl_index import (
     MigrationQueueDeleteTTLIndexOnFinishedAt,
-)
-from mongodb_migration.migrations._20230428175100_cache_delete_dataset_split_names_from_streaming import (
-    MigrationCacheDeleteDatasetSplitNamesFromStreaming,
-)
-from mongodb_migration.migrations._20230428181800_queue_delete_dataset_split_names_from_streaming import (
-    MigrationQueueDeleteDatasetSplitNamesFromStreaming,
-)
-from mongodb_migration.migrations._20230428193100_metrics_delete_dataset_split_names_from_streaming import (
-    MigrationMetricsDeleteDatasetSplitNamesFromStreaming,
 )
 
 
@@ -129,22 +105,29 @@ class MigrationsCollector:
                 version="20230323160000",
                 description="update 'type' and 'unicity_id' fields in job from /dataset-info to dataset-info",
             ),
-            MigrationQueueDeleteSplits(
+            QueueDeletionMigration(
+                job_type="/splits",
                 version="20230407091400",
                 description="delete the jobs of type '/splits'",
             ),
-            MigrationCacheDeleteSplits(
+            CacheDeletionMigration(
+                cache_kind="/splits",
                 version="20230407091500",
                 description="delete the cache entries of kind '/splits'",
             ),
-            MigrationQueueDeleteParquetAndDatasetInfo(
+            QueueDeletionMigration(
+                job_type="'/parquet-and-dataset-info'",
                 version="20230424173000",
                 description="delete the jobs of type '/parquet-and-dataset-info'",
             ),
-            MigrationCacheDeleteParquetAndDatasetInfo(
-                version="20230424174000", description="delete the cache entries of kind '/parquet-and-dataset-info'"
+            CacheDeletionMigration(
+                cache_kind="'/parquet-and-dataset-info'",
+                version="20230424174000",
+                description = "delete the cache entries of kind '/parquet-and-dataset-info'"
             ),
-            MigrationMetricsDeleteParquetAndDatasetInfo(
+            MetricsDeletionMigration(
+                job_type='/parquet-and-dataset-info',
+                cache_kind="'/parquet-and-dataset-info'",
                 version="20230427121500",
                 description="delete the queue and cache metrics for step '/parquet-and-dataset-info'",
             ),
@@ -152,29 +135,33 @@ class MigrationsCollector:
                 version="20230428145000",
                 description="delete the TTL index on the 'finished_at' field in the queue database",
             ),
-            MigrationCacheDeleteDatasetSplitNamesFromStreaming(
+            CacheDeletionMigration(
+                cache_kind="dataset-split-names-from-streaming",
                 version="20230428175100",
                 description="delete the cache entries of kind 'dataset-split-names-from-streaming'",
             ),
-            MigrationQueueDeleteDatasetSplitNamesFromStreaming(
+            QueueDeletionMigration(
+                job_type="dataset-split-names-from-streaming",
                 version="20230428181800",
                 description="delete the jobs of type 'dataset-split-names-from-streaming'",
             ),
-            MigrationMetricsDeleteDatasetSplitNamesFromStreaming(
+            MetricsDeletionMigration(
+                job_type="dataset-split-names-from-streaming",
+                cache_kind="dataset-split-names-from-streaming",
                 version="20230428193100",
                 description="delete the queue and cache metrics for step 'dataset-split-names-from-streaming'",
             ),
-            DeleteCacheMigration(
+            CacheDeletionMigration(
                 cache_kind="dataset-split-names-from-dataset-info",
                 version="20230504185100",
                 description="delete the cache entries of kind 'dataset-split-names-from-dataset-info'",
             ),
-            DeleteQueueMigration(
+            QueueDeletionMigration(
                 job_type="dataset-split-names-from-dataset-info",
                 version="20230504192200",
                 description="delete the jobs of type 'dataset-split-names-from-dataset-info'",
             ),
-            DeleteMetricsMigration(
+            MetricsDeletionMigration(
                 job_type="dataset-split-names-from-dataset-info",
                 cache_kind="dataset-split-names-from-dataset-info",
                 version="20230504194600",
