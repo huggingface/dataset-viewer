@@ -4,7 +4,6 @@ from typing import Any, Mapping, Optional
 from unittest.mock import Mock
 
 import pytest
-from libcommon.config import CommonConfig
 from libcommon.exceptions import CustomError
 from libcommon.processing_graph import ProcessingGraph, ProcessingStep
 from libcommon.queue import Priority, Queue, Status
@@ -16,7 +15,7 @@ from libcommon.simple_cache import (
     upsert_response,
 )
 
-from worker.config import WorkerConfig
+from worker.config import AppConfig
 from worker.job_runner import (
     ERROR_CODES_TO_RETRY,
     CompleteJobResult,
@@ -174,6 +173,7 @@ def test_should_skip_job(
     force: bool,
     cache_entry: Optional[CacheEntry],
     expected_skip: bool,
+    app_config: AppConfig,
 ) -> None:
     job_id = "job_id"
     dataset = "dataset"
@@ -191,8 +191,7 @@ def test_should_skip_job(
         },
         processing_step=test_processing_step,
         processing_graph=test_processing_graph,
-        common_config=CommonConfig(),
-        worker_config=WorkerConfig(),
+        app_config=app_config,
     )
     if cache_entry:
         upsert_response(
@@ -215,6 +214,7 @@ def test_check_type(
     test_processing_graph: ProcessingGraph,
     another_processing_step: ProcessingStep,
     test_processing_step: ProcessingStep,
+    app_config: AppConfig,
 ) -> None:
     job_id = "job_id"
     dataset = "dataset"
@@ -236,8 +236,7 @@ def test_check_type(
             },
             processing_step=test_processing_step,
             processing_graph=test_processing_graph,
-            common_config=CommonConfig(),
-            worker_config=WorkerConfig(),
+            app_config=app_config,
         )
     with pytest.raises(ValueError):
         DummyJobRunner(
@@ -252,12 +251,11 @@ def test_check_type(
             },
             processing_step=another_processing_step,
             processing_graph=test_processing_graph,
-            common_config=CommonConfig(),
-            worker_config=WorkerConfig(),
+            app_config=app_config,
         )
 
 
-def test_create_children_jobs() -> None:
+def test_create_children_jobs(app_config: AppConfig) -> None:
     graph = ProcessingGraph(
         {
             "/dummy": {"input_type": "dataset"},
@@ -279,8 +277,7 @@ def test_create_children_jobs() -> None:
         },
         processing_step=root_step,
         processing_graph=graph,
-        common_config=CommonConfig(),
-        worker_config=WorkerConfig(),
+        app_config=app_config,
     )
     assert not job_runner.should_skip_job()
     # we add an entry to the cache
@@ -313,6 +310,7 @@ def test_create_children_jobs() -> None:
 def test_job_runner_set_crashed(
     test_processing_graph: ProcessingGraph,
     test_processing_step: ProcessingStep,
+    app_config: AppConfig,
 ) -> None:
     job_id = "job_id"
     dataset = "dataset"
@@ -332,8 +330,7 @@ def test_job_runner_set_crashed(
         },
         processing_step=test_processing_step,
         processing_graph=test_processing_graph,
-        common_config=CommonConfig(),
-        worker_config=WorkerConfig(),
+        app_config=app_config,
     )
     job_runner.set_crashed(message=message)
     response = CachedResponse.objects()[0]
@@ -351,6 +348,7 @@ def test_job_runner_set_crashed(
 def test_raise_if_parallel_response_exists(
     test_processing_graph: ProcessingGraph,
     test_processing_step: ProcessingStep,
+    app_config: AppConfig,
 ) -> None:
     dataset = "dataset"
     config = "config"
@@ -379,8 +377,7 @@ def test_raise_if_parallel_response_exists(
         },
         processing_step=test_processing_step,
         processing_graph=test_processing_graph,
-        common_config=CommonConfig(),
-        worker_config=WorkerConfig(),
+        app_config=app_config,
     )
     job_runner.get_dataset_git_revision = Mock(return_value=current_dataset_git_revision)  # type: ignore
     with pytest.raises(CustomError) as exc_info:

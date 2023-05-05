@@ -34,7 +34,7 @@ class DummyJobRunner(DatasetsBasedJobRunner):
         return 1
 
     def compute(self) -> CompleteJobResult:
-        if self.config == "raise":
+        if self._config == "raise":
             raise ValueError("This is a test")
         else:
             return CompleteJobResult({"col1": "a" * 200})

@@ -30,17 +30,17 @@ class DummyJobRunner(JobRunner):
 
 
 class DummyJobRunnerFactory(BaseJobRunnerFactory):
-    def __init__(self, processing_graph: ProcessingGraph, processing_step: ProcessingStep) -> None:
+    def __init__(self, processing_graph: ProcessingGraph, processing_step: ProcessingStep, app_config: AppConfig) -> None:
         self.common_config = CommonConfig()
         self.worker_config = WorkerConfig()
         self.processing_step = processing_step
         self.processing_graph = processing_graph
+        self.app_config = app_config
 
     def _create_job_runner(self, job_info: JobInfo) -> JobRunner:
         return DummyJobRunner(
             job_info=job_info,
-            common_config=self.common_config,
-            worker_config=self.worker_config,
+            app_config=self.app_config,
             processing_step=self.processing_step,
             processing_graph=self.processing_graph,
         )
@@ -55,7 +55,7 @@ def test_process_next_job(
     queue_mongo_resource: QueueMongoResource,
     worker_state_file_path: str,
 ) -> None:
-    factory = DummyJobRunnerFactory(processing_step=test_processing_step, processing_graph=test_processing_graph)
+    factory = DummyJobRunnerFactory(processing_step=test_processing_step, processing_graph=test_processing_graph, app_config=app_config)
     loop = Loop(
         job_runner_factory=factory,
         library_cache_paths=libraries_resource.storage_paths,

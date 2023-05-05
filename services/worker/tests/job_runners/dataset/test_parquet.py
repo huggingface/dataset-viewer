@@ -61,8 +61,7 @@ def get_job_runner(
                 "force": force,
                 "priority": Priority.NORMAL,
             },
-            common_config=app_config.common,
-            worker_config=app_config.worker,
+            app_config=app_config,
             processing_step=processing_graph.get_processing_step(processing_step_name),
             processing_graph=processing_graph,
         )

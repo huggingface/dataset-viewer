@@ -11,6 +11,7 @@ from worker.job_runner import ParameterMissingError
 from worker.job_runners._datasets_based_job_runner import DatasetsBasedJobRunner
 from worker.job_runners.config.config_job_runner import ConfigRunner
 
+
 class SplitRunner(ConfigRunner):
     split: str
 
