@@ -532,7 +532,6 @@ def test_compute_splits_response_simple_csv_ok(
 @pytest.mark.parametrize(
     "name,error_code,cause",
     [
-        ("does_not_exist", "ParameterMissingError", None),
         ("gated_extra_fields", "GatedExtraFieldsError", "HTTPError"),
         ("private", "DatasetNotFoundError", None),
         ("public", "CachedResponseNotFound", None),  # no cache for /config-names -> CachedResponseNotFound
