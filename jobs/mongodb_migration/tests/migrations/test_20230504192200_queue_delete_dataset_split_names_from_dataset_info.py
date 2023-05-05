@@ -6,8 +6,8 @@ from mongoengine.connection import get_db
 
 from mongodb_migration.delete_migration import DeleteQueueMigration
 
-QUEUE_MONGOENGINE_ALIAS = DeleteQueueMigration._MONGOENGINE_ALIAS
-QUEUE_COLLECTION_JOBS = DeleteQueueMigration._COLLECTION_JOBS
+QUEUE_MONGOENGINE_ALIAS = DeleteQueueMigration.MONGOENGINE_ALIAS
+QUEUE_COLLECTION_JOBS = DeleteQueueMigration.COLLECTION_JOBS
 
 
 def test_queue_delete_dataset_split_names_from_dataset_info(mongo_host: str) -> None:

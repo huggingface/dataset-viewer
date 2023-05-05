@@ -7,9 +7,9 @@ from mongoengine.connection import get_db
 
 from mongodb_migration.delete_migration import DeleteMetricsMigration
 
-METRICS_MONGOENGINE_ALIAS = DeleteMetricsMigration._MONGOENGINE_ALIAS
-METRICS_COLLECTION_JOB_TOTAL_METRIC = DeleteMetricsMigration._COLLECTION_JOB_TOTAL_METRIC
-METRICS_COLLECTION_CACHE_TOTAL_METRIC = DeleteMetricsMigration._COLLECTION_CACHE_TOTAL_METRIC
+METRICS_MONGOENGINE_ALIAS = DeleteMetricsMigration.MONGOENGINE_ALIAS
+METRICS_COLLECTION_JOB_TOTAL_METRIC = DeleteMetricsMigration.COLLECTION_JOB_TOTAL_METRIC
+METRICS_COLLECTION_CACHE_TOTAL_METRIC = DeleteMetricsMigration.COLLECTION_CACHE_TOTAL_METRIC
 
 
 def test_metrics_delete_dataset_split_names_from_dataset_info(mongo_host: str) -> None:

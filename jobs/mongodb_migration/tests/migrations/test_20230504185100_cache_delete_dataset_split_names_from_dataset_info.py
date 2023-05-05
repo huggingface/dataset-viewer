@@ -3,8 +3,8 @@ from mongoengine.connection import get_db
 
 from mongodb_migration.delete_migration import DeleteCacheMigration
 
-CACHE_MONGOENGINE_ALIAS = DeleteCacheMigration._MONGOENGINE_ALIAS
-CACHE_COLLECTION_RESPONSES = DeleteCacheMigration._COLLECTION_RESPONSES
+CACHE_MONGOENGINE_ALIAS = DeleteCacheMigration.MONGOENGINE_ALIAS
+CACHE_COLLECTION_RESPONSES = DeleteCacheMigration.COLLECTION_RESPONSES
 
 
 def test_cache_delete_dataset_split_names_from_dataset_info(mongo_host: str) -> None:
