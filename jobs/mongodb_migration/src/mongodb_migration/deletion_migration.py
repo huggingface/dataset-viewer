@@ -18,7 +18,7 @@ from mongoengine.connection import get_db
 from mongodb_migration.migration import IrreversibleMigrationError, Migration
 
 
-class DeleteMetricsMigration(Migration):
+class MetricsDeletionMigration(Migration):
     MONGOENGINE_ALIAS: str = METRICS_MONGOENGINE_ALIAS
     COLLECTION_JOB_TOTAL_METRIC: str = METRICS_COLLECTION_JOB_TOTAL_METRIC
     COLLECTION_CACHE_TOTAL_METRIC: str = METRICS_COLLECTION_CACHE_TOTAL_METRIC
@@ -48,7 +48,7 @@ class DeleteMetricsMigration(Migration):
             raise ValueError(f"Found documents with kind {self.cache_kind}")
 
 
-class DeleteCacheMigration(Migration):
+class CacheDeletionMigration(Migration):
     MONGOENGINE_ALIAS: str = CACHE_MONGOENGINE_ALIAS
     COLLECTION_RESPONSES: str = CACHE_COLLECTION_RESPONSES
 
@@ -74,7 +74,7 @@ class DeleteCacheMigration(Migration):
             raise ValueError(f"Found documents with kind {self.cache_kind}")
 
 
-class DeleteQueueMigration(Migration):
+class QueueDeletionMigration(Migration):
     MONGOENGINE_ALIAS: str = QUEUE_MONGOENGINE_ALIAS
     COLLECTION_JOBS: str = QUEUE_COLLECTION_JOBS
 

@@ -13,10 +13,10 @@ from libcommon.constants import (
 from libcommon.resources import MongoResource
 from mongoengine.connection import get_db
 
-from mongodb_migration.delete_migration import (
-    DeleteCacheMigration,
-    DeleteMetricsMigration,
-    DeleteQueueMigration,
+from mongodb_migration.deletion_migration import (
+    CacheDeletionMigration,
+    MetricsDeletionMigration,
+    QueueDeletionMigration,
 )
 
 
@@ -27,7 +27,7 @@ def test_cache_delete_migration(mongo_host: str):
         db[CACHE_COLLECTION_RESPONSES].insert_many([{"kind": kind, "dataset": "dataset", "http_status": 200}])
         assert db[CACHE_COLLECTION_RESPONSES].find_one({"kind": kind})  # Ensure there is at least one record to delete
 
-        migration = DeleteCacheMigration(
+        migration = CacheDeletionMigration(
             cache_kind=kind,
             version="20230505180100",
             description=f"remove cache for kind {kind}",
@@ -55,7 +55,7 @@ def test_queue_delete_migration(mongo_host: str) -> None:
         )
         assert db[QUEUE_COLLECTION_JOBS].find_one({"type": job_type})  # Ensure there is at least one record to delete
 
-        migration = DeleteQueueMigration(
+        migration = QueueDeletionMigration(
             job_type=job_type,
             version="20230505180200",
             description=f"remove jobs of type '{job_type}'",
@@ -84,7 +84,7 @@ def test_metrics_delete_migration(mongo_host: str) -> None:
             {"kind": cache_kind}
         )  # Ensure there is at least one record to delete
 
-        migration = DeleteMetricsMigration(
+        migration = MetricsDeletionMigration(
             job_type=job_type,
             cache_kind=cache_kind,
             version="20230505180300",
