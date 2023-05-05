@@ -29,7 +29,7 @@ from worker.job_runner import (
     JobRunnerError,
     get_previous_step_or_raise,
 )
-from worker.job_runners.split.split_job_runner import SplitRunner
+from worker.job_runners.split.split_job_runner import SplitJobRunner
 from worker.utils import (
     Row,
     RowItem,
@@ -279,7 +279,7 @@ def compute_first_rows_response(
     return response
 
 
-class SplitFirstRowsFromParquetJobRunner(SplitRunner):
+class SplitFirstRowsFromParquetJobRunner(SplitJobRunner):
     assets_directory: StrPath
     first_rows_config: FirstRowsConfig
 

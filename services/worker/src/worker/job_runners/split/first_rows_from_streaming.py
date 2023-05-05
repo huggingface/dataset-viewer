@@ -24,7 +24,7 @@ from worker.job_runner import (
     SplitNotFoundError,
     get_previous_step_or_raise,
 )
-from worker.job_runners.split.split_job_runner import SplitCacheRunner
+from worker.job_runners.split.split_job_runner import SplitCachedJobRunner
 from worker.utils import (
     Row,
     SplitFirstRowsResponse,
@@ -340,7 +340,7 @@ def compute_first_rows_response(
     return response
 
 
-class SplitFirstRowsFromStreamingJobRunner(SplitCacheRunner):
+class SplitFirstRowsFromStreamingJobRunner(SplitCachedJobRunner):
     assets_directory: StrPath
     first_rows_config: FirstRowsConfig
 

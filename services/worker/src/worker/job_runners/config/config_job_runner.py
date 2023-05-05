@@ -11,7 +11,7 @@ from worker.job_runner import JobRunner, ParameterMissingError
 from worker.job_runners._datasets_based_job_runner import DatasetsBasedJobRunner
 
 
-class ConfigRunner(JobRunner):
+class ConfigJobRunner(JobRunner):
     config: str
 
     def __init__(
@@ -26,7 +26,7 @@ class ConfigRunner(JobRunner):
         self.config = self._config
 
 
-class ConfigCacheRunner(DatasetsBasedJobRunner, ConfigRunner):
+class ConfigCachedJobRunner(DatasetsBasedJobRunner, ConfigJobRunner):
     def __init__(
         self,
         job_info: JobInfo,
@@ -41,7 +41,7 @@ class ConfigCacheRunner(DatasetsBasedJobRunner, ConfigRunner):
             processing_step=processing_step,
             hf_datasets_cache=hf_datasets_cache,
         )
-        ConfigRunner.__init__(
+        ConfigJobRunner.__init__(
             self=self,
             job_info=job_info,
             app_config=app_config,

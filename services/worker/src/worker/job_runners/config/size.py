@@ -13,7 +13,7 @@ from worker.job_runner import (
     JobRunnerError,
     get_previous_step_or_raise,
 )
-from worker.job_runners.config.config_job_runner import ConfigRunner
+from worker.job_runners.config.config_job_runner import ConfigJobRunner
 
 ConfigSizeJobRunnerErrorCode = Literal["PreviousStepFormatError"]
 
@@ -148,7 +148,7 @@ def compute_config_size_response(dataset: str, config: str) -> ConfigSizeRespons
     )
 
 
-class ConfigSizeJobRunner(ConfigRunner):
+class ConfigSizeJobRunner(ConfigJobRunner):
     @staticmethod
     def get_job_type() -> str:
         return "config-size"

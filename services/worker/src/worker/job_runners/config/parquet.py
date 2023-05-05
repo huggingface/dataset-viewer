@@ -13,7 +13,7 @@ from worker.job_runner import (
     JobRunnerError,
     get_previous_step_or_raise,
 )
-from worker.job_runners.config.config_job_runner import ConfigRunner
+from worker.job_runners.config.config_job_runner import ConfigJobRunner
 from worker.job_runners.config.parquet_and_info import ParquetFileItem
 
 ConfigParquetJobRunnerErrorCode = Literal["PreviousStepFormatError"]
@@ -79,7 +79,7 @@ def compute_parquet_response(dataset: str, config: str) -> ConfigParquetResponse
     return ConfigParquetResponse(parquet_files=parquet_files)
 
 
-class ConfigParquetJobRunner(ConfigRunner):
+class ConfigParquetJobRunner(ConfigJobRunner):
     @staticmethod
     def get_job_type() -> str:
         return "config-parquet"
