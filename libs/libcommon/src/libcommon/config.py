@@ -20,7 +20,6 @@ from libcommon.constants import (
     PROCESSING_STEP_DATASET_OPT_IN_OUT_URLS_COUNT_VERSION,
     PROCESSING_STEP_DATASET_PARQUET_VERSION,
     PROCESSING_STEP_DATASET_SIZE_VERSION,
-    PROCESSING_STEP_DATASET_SPLIT_NAMES_FROM_DATASET_INFO_VERSION,
     PROCESSING_STEP_DATASET_SPLIT_NAMES_VERSION,
     PROCESSING_STEP_SPLIT_FIRST_ROWS_FROM_PARQUET_VERSION,
     PROCESSING_STEP_SPLIT_FIRST_ROWS_FROM_STREAMING_VERSION,
@@ -243,11 +242,6 @@ class ProcessingGraphConfig:
                 "requires": ["config-size", "/config-names"],
                 "job_runner_version": PROCESSING_STEP_DATASET_SIZE_VERSION,
             },
-            "dataset-split-names-from-dataset-info": {
-                "input_type": "dataset",
-                "requires": ["/split-names-from-dataset-info", "/config-names"],
-                "job_runner_version": PROCESSING_STEP_DATASET_SPLIT_NAMES_FROM_DATASET_INFO_VERSION,
-            },  # to be deprecated
             "dataset-split-names": {
                 "input_type": "dataset",
                 "requires": ["/split-names-from-dataset-info", "/split-names-from-streaming", "/config-names"],
