@@ -20,7 +20,7 @@ from mongodb_migration.deletion_migrations import (
 )
 
 
-def test_cache_delete_migration(mongo_host: str):
+def test_cache_deletion_migration(mongo_host: str) -> None:
     kind = "cache_kind"
     with MongoResource(database="test_cache_delete_migration", host=mongo_host, mongoengine_alias="cache"):
         db = get_db(CACHE_MONGOENGINE_ALIAS)
@@ -39,7 +39,7 @@ def test_cache_delete_migration(mongo_host: str):
         db[CACHE_COLLECTION_RESPONSES].drop()
 
 
-def test_queue_delete_migration(mongo_host: str) -> None:
+def test_queue_deletion_migration(mongo_host: str) -> None:
     job_type = "job_type"
     with MongoResource(database="test_queue_delete_migration", host=mongo_host, mongoengine_alias="queue"):
         db = get_db(QUEUE_MONGOENGINE_ALIAS)
@@ -67,7 +67,7 @@ def test_queue_delete_migration(mongo_host: str) -> None:
         db[QUEUE_COLLECTION_JOBS].drop()
 
 
-def test_metrics_delete_migration(mongo_host: str) -> None:
+def test_metrics_deletion_migration(mongo_host: str) -> None:
     step_name = job_type = cache_kind = "step_name"
     with MongoResource(
         database="test_metrics_delete_migration",

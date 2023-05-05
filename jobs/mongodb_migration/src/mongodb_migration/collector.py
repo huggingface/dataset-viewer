@@ -123,10 +123,10 @@ class MigrationsCollector:
             CacheDeletionMigration(
                 cache_kind="'/parquet-and-dataset-info'",
                 version="20230424174000",
-                description = "delete the cache entries of kind '/parquet-and-dataset-info'"
+                description="delete the cache entries of kind '/parquet-and-dataset-info'",
             ),
             MetricsDeletionMigration(
-                job_type='/parquet-and-dataset-info',
+                job_type="/parquet-and-dataset-info",
                 cache_kind="'/parquet-and-dataset-info'",
                 version="20230427121500",
                 description="delete the queue and cache metrics for step '/parquet-and-dataset-info'",
