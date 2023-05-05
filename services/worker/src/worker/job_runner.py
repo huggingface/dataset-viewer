@@ -5,7 +5,6 @@ import logging
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 from http import HTTPStatus
-from pathlib import Path
 from typing import Any, List, Literal, Mapping, Optional
 
 from libcommon.config import CommonConfig

@@ -44,8 +44,7 @@ def get_job_runner(
                 "force": force,
                 "priority": Priority.NORMAL,
             },
-            common_config=app_config.common,
-            worker_config=app_config.worker,
+            app_config=app_config,
             processing_step=ProcessingStep(
                 name=SplitNamesFromDatasetInfoJobRunner.get_job_type(),
                 input_type="config",

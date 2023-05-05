@@ -5,9 +5,11 @@ from pathlib import Path
 
 from libcommon.processing_graph import ProcessingStep
 from libcommon.queue import JobInfo
+
 from worker.config import AppConfig
 from worker.job_runner import JobRunner, ParameterMissingError
 from worker.job_runners._datasets_based_job_runner import DatasetsBasedJobRunner
+
 
 class ConfigRunner(JobRunner):
     config: str

@@ -4,7 +4,6 @@ from typing import Any, Mapping, Optional
 from unittest.mock import Mock
 
 import pytest
-from libcommon.config import CommonConfig
 from libcommon.exceptions import CustomError
 from libcommon.processing_graph import ProcessingGraph, ProcessingStep
 from libcommon.queue import Priority, Queue, Status
@@ -16,7 +15,7 @@ from libcommon.simple_cache import (
     upsert_response,
 )
 
-from worker.config import WorkerConfig
+from worker.config import AppConfig
 from worker.job_runner import (
     ERROR_CODES_TO_RETRY,
     CompleteJobResult,
@@ -169,7 +168,11 @@ class CacheEntry:
     ],
 )
 def test_should_skip_job(
-    test_processing_step: ProcessingStep, force: bool, cache_entry: Optional[CacheEntry], expected_skip: bool
+    test_processing_step: ProcessingStep,
+    force: bool,
+    cache_entry: Optional[CacheEntry],
+    expected_skip: bool,
+    app_config: AppConfig,
 ) -> None:
     job_id = "job_id"
     dataset = "dataset"
@@ -186,8 +189,7 @@ def test_should_skip_job(
             "priority": Priority.NORMAL,
         },
         processing_step=test_processing_step,
-        common_config=CommonConfig(),
-        worker_config=WorkerConfig(),
+        app_config=app_config,
     )
     if cache_entry:
         upsert_response(
@@ -206,9 +208,7 @@ def test_should_skip_job(
     assert job_runner.should_skip_job() is expected_skip
 
 
-def test_check_type(
-    test_processing_step: ProcessingStep,
-) -> None:
+def test_check_type(test_processing_step: ProcessingStep, app_config: AppConfig) -> None:
     job_id = "job_id"
     dataset = "dataset"
     config = "config"
@@ -228,8 +228,7 @@ def test_check_type(
                 "priority": Priority.NORMAL,
             },
             processing_step=test_processing_step,
-            common_config=CommonConfig(),
-            worker_config=WorkerConfig(),
+            app_config=app_config,
         )
 
     another_processing_step = ProcessingStep(
@@ -254,12 +253,11 @@ def test_check_type(
                 "priority": Priority.NORMAL,
             },
             processing_step=another_processing_step,
-            common_config=CommonConfig(),
-            worker_config=WorkerConfig(),
+            app_config=app_config,
         )
 
 
-def test_create_children_jobs() -> None:
+def test_create_children_jobs(app_config: AppConfig) -> None:
     graph = ProcessingGraph(
         {
             "/dummy": {"input_type": "dataset", "job_runner_version": 1},
@@ -280,8 +278,7 @@ def test_create_children_jobs() -> None:
             "priority": Priority.LOW,
         },
         processing_step=root_step,
-        common_config=CommonConfig(),
-        worker_config=WorkerConfig(),
+        app_config=app_config,
     )
     assert not job_runner.should_skip_job()
     # we add an entry to the cache
@@ -313,6 +310,7 @@ def test_create_children_jobs() -> None:
 
 def test_job_runner_set_crashed(
     test_processing_step: ProcessingStep,
+    app_config: AppConfig,
 ) -> None:
     job_id = "job_id"
     dataset = "dataset"
@@ -331,8 +329,7 @@ def test_job_runner_set_crashed(
             "priority": Priority.NORMAL,
         },
         processing_step=test_processing_step,
-        common_config=CommonConfig(),
-        worker_config=WorkerConfig(),
+        app_config=app_config,
     )
     job_runner.set_crashed(message=message)
     response = CachedResponse.objects()[0]
@@ -347,9 +344,7 @@ def test_job_runner_set_crashed(
     # TODO: check if it stores the correct dataset git sha and job version when it's implemented
 
 
-def test_raise_if_parallel_response_exists(
-    test_processing_step: ProcessingStep,
-) -> None:
+def test_raise_if_parallel_response_exists(test_processing_step: ProcessingStep, app_config: AppConfig) -> None:
     dataset = "dataset"
     config = "config"
     split = "split"
@@ -376,8 +371,7 @@ def test_raise_if_parallel_response_exists(
             "priority": Priority.NORMAL,
         },
         processing_step=test_processing_step,
-        common_config=CommonConfig(),
-        worker_config=WorkerConfig(),
+        app_config=app_config,
     )
     job_runner.get_dataset_git_revision = Mock(return_value=current_dataset_git_revision)  # type: ignore
     with pytest.raises(CustomError) as exc_info:
