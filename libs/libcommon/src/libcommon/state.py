@@ -275,7 +275,7 @@ class CreateJobTask(Task):
     priority: Priority
 
     def __post_init__(self) -> None:
-        self.id = f"CreateJob[{self.artifact_state.id}]"
+        self.id = f"CreateJob,{self.artifact_state.id}"
 
     def run(self) -> None:
         Queue().upsert_job(
@@ -291,7 +291,7 @@ class CreateJobTask(Task):
 @dataclass
 class DeleteJobTask(Task):
     def __post_init__(self) -> None:
-        self.id = f"DeleteJob[{self.artifact_state.id}]"
+        self.id = f"DeleteJob,{self.artifact_state.id}"
 
     def run(self) -> None:
         # TODO: the started jobs are also canceled: we need to ensure the job runners will
