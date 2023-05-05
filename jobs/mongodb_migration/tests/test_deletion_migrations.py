@@ -13,7 +13,7 @@ from libcommon.constants import (
 from libcommon.resources import MongoResource
 from mongoengine.connection import get_db
 
-from mongodb_migration.deletion_migration import (
+from mongodb_migration.deletion_migrations import (
     CacheDeletionMigration,
     MetricsDeletionMigration,
     QueueDeletionMigration,
