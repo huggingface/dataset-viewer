@@ -116,12 +116,12 @@ class MigrationsCollector:
                 description="delete the cache entries of kind '/splits'",
             ),
             QueueDeletionMigration(
-                job_type="'/parquet-and-dataset-info'",
+                job_type="/parquet-and-dataset-info",
                 version="20230424173000",
                 description="delete the jobs of type '/parquet-and-dataset-info'",
             ),
             CacheDeletionMigration(
-                cache_kind="'/parquet-and-dataset-info'",
+                cache_kind="/parquet-and-dataset-info",
                 version="20230424174000",
                 description="delete the cache entries of kind '/parquet-and-dataset-info'",
             ),
