@@ -13,7 +13,7 @@ from worker.job_runner import (
     JobRunnerError,
     get_previous_step_or_raise,
 )
-from worker.job_runners.split.split_job_runner import SplitRunner
+from worker.job_runners.split.split_job_runner import SplitJobRunner
 from worker.utils import OptInOutUrlsCountResponse
 
 SplitOptInOutUrlsCountJobRunnerErrorCode = Literal["PreviousStepFormatError"]
@@ -69,7 +69,7 @@ def compute_opt_in_out_urls_count_response(
     return opt_in_out_urls_count
 
 
-class SplitOptInOutUrlsCountJobRunner(SplitRunner):
+class SplitOptInOutUrlsCountJobRunner(SplitJobRunner):
     @staticmethod
     def get_job_type() -> str:
         return "split-opt-in-out-urls-count"

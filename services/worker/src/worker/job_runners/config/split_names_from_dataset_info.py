@@ -16,7 +16,7 @@ from worker.job_runner import (
     JobRunnerError,
     get_previous_step_or_raise,
 )
-from worker.job_runners.config.config_job_runner import ConfigRunner
+from worker.job_runners.config.config_job_runner import ConfigJobRunner
 from worker.utils import SplitItem, SplitsList
 
 SplitNamesFromDatasetInfoJobRunnerErrorCode = Literal[
@@ -94,7 +94,7 @@ def compute_split_names_from_dataset_info_response(dataset: str, config: str) ->
     return SplitsList(splits=split_name_items)
 
 
-class SplitNamesFromDatasetInfoJobRunner(ConfigRunner):
+class SplitNamesFromDatasetInfoJobRunner(ConfigJobRunner):
     @staticmethod
     def get_job_type() -> str:
         return "/split-names-from-dataset-info"

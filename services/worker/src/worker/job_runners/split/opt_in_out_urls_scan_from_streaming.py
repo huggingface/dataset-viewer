@@ -21,7 +21,7 @@ from worker.job_runner import (
     JobRunnerError,
     get_previous_step_or_raise,
 )
-from worker.job_runners.split.split_job_runner import SplitCacheRunner
+from worker.job_runners.split.split_job_runner import SplitCachedJobRunner
 from worker.utils import (
     OptInOutUrlsScanResponse,
     OptUrl,
@@ -300,7 +300,7 @@ def compute_opt_in_out_urls_scan_response(
     )
 
 
-class SplitOptInOutUrlsScanJobRunner(SplitCacheRunner):
+class SplitOptInOutUrlsScanJobRunner(SplitCachedJobRunner):
     urls_scan_config: OptInOutUrlsScanConfig
 
     @staticmethod

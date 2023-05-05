@@ -10,7 +10,7 @@ from worker.job_runner import (
     JobRunnerError,
     get_previous_step_or_raise,
 )
-from worker.job_runners.config.config_job_runner import ConfigRunner
+from worker.job_runners.config.config_job_runner import ConfigJobRunner
 
 ConfigInfoJobRunnerErrorCode = Literal["PreviousStepFormatError"]
 
@@ -81,7 +81,7 @@ def compute_config_info_response(dataset: str, config: str) -> ConfigInfoRespons
     return ConfigInfoResponse(dataset_info=config_info)
 
 
-class ConfigInfoJobRunner(ConfigRunner):
+class ConfigInfoJobRunner(ConfigJobRunner):
     @staticmethod
     def get_job_type() -> str:
         return "config-info"

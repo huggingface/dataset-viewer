@@ -52,7 +52,7 @@ from worker.job_runner import (
     JobRunnerError,
     get_previous_step_or_raise,
 )
-from worker.job_runners.config.config_job_runner import ConfigCacheRunner
+from worker.job_runners.config.config_job_runner import ConfigCachedJobRunner
 from worker.job_runners.config_names import ConfigNamesError
 
 ConfigParquetAndInfoJobRunnerErrorCode = Literal[
@@ -937,7 +937,7 @@ def compute_config_parquet_and_info_response(
     )
 
 
-class ConfigParquetAndInfoJobRunner(ConfigCacheRunner):
+class ConfigParquetAndInfoJobRunner(ConfigCachedJobRunner):
     parquet_and_info_config: ParquetAndInfoConfig
 
     @staticmethod

@@ -14,7 +14,7 @@ from libcommon.constants import (
 from libcommon.simple_cache import SplitFullName
 
 from worker.job_runner import CompleteJobResult, JobRunnerError
-from worker.job_runners.config.config_job_runner import ConfigCacheRunner
+from worker.job_runners.config.config_job_runner import ConfigCachedJobRunner
 from worker.utils import SplitItem, SplitsList
 
 SplitNamesFromStreamingJobRunnerErrorCode = Literal[
@@ -115,7 +115,7 @@ def compute_split_names_from_streaming_response(
     return SplitsList({"splits": split_name_items})
 
 
-class SplitNamesFromStreamingJobRunner(ConfigCacheRunner):
+class SplitNamesFromStreamingJobRunner(ConfigCachedJobRunner):
     @staticmethod
     def get_job_type() -> str:
         return "/split-names-from-streaming"

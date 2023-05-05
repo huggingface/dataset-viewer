@@ -9,10 +9,10 @@ from libcommon.queue import JobInfo
 from worker.config import AppConfig
 from worker.job_runner import ParameterMissingError
 from worker.job_runners._datasets_based_job_runner import DatasetsBasedJobRunner
-from worker.job_runners.config.config_job_runner import ConfigRunner
+from worker.job_runners.config.config_job_runner import ConfigJobRunner
 
 
-class SplitRunner(ConfigRunner):
+class SplitJobRunner(ConfigJobRunner):
     split: str
 
     def __init__(
@@ -27,7 +27,7 @@ class SplitRunner(ConfigRunner):
         self.split = self._split
 
 
-class SplitCacheRunner(DatasetsBasedJobRunner, SplitRunner):
+class SplitCachedJobRunner(DatasetsBasedJobRunner, SplitJobRunner):
     def __init__(
         self,
         job_info: JobInfo,
@@ -42,7 +42,7 @@ class SplitCacheRunner(DatasetsBasedJobRunner, SplitRunner):
             processing_step=processing_step,
             hf_datasets_cache=hf_datasets_cache,
         )
-        SplitRunner.__init__(
+        SplitJobRunner.__init__(
             self,
             job_info=job_info,
             app_config=app_config,
