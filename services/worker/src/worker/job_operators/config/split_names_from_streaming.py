@@ -16,8 +16,8 @@ from worker.job_operators.config.config_job_operator import (
     ConfigCachedJobOperator,
 )
 
-from worker.job_runner import CompleteJobResult, JobRunnerError
-from worker.utils import SplitItem, SplitsList
+from worker.job_runner import JobRunnerError
+from worker.utils import SplitItem, SplitsList, CompleteJobResult
 
 SplitNamesFromStreamingJobRunnerErrorCode = Literal[
     "EmptyDatasetError",

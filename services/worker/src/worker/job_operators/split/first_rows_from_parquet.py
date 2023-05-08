@@ -28,11 +28,11 @@ from tqdm.contrib.concurrent import thread_map
 
 from worker.config import AppConfig, FirstRowsConfig
 from worker.job_runner import (
-    CompleteJobResult,
     JobRunnerError,
     get_previous_step_or_raise,
 )
 from worker.utils import (
+    CompleteJobResult,
     Row,
     RowItem,
     SplitFirstRowsResponse,

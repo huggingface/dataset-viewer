@@ -6,6 +6,7 @@ import itertools
 import logging
 import time
 import warnings
+from dataclasses import dataclass, field
 from typing import (
     Any,
     Callable,
@@ -29,6 +30,22 @@ from datasets import (
 from libcommon.utils import orjson_dumps
 
 from worker.common_exceptions import NormalRowsError, StreamingRowsError
+
+
+@dataclass
+class JobResult:
+    content: Mapping[str, Any]
+    progress: float
+
+    def __post_init__(self) -> None:
+        if self.progress < 0.0 or self.progress > 1.0:
+            raise ValueError(f"Progress should be between 0 and 1, but got {self.progress}")
+
+
+@dataclass
+class CompleteJobResult(JobResult):
+    content: Mapping[str, Any]
+    progress: float = field(init=False, default=1.0)
 
 
 class DatasetItem(TypedDict):

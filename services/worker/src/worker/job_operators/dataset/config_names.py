@@ -13,7 +13,9 @@ from worker.job_operators._datasets_based_job_operator import (
     DatasetsBasedJobOperator,
 )
 
-from worker.job_runner import CompleteJobResult, JobRunnerError
+from worker.job_runner import JobRunnerError
+from worker.utils import CompleteJobResult
+
 
 ConfigNamesJobRunnerErrorCode = Literal["EmptyDatasetError", "DatasetModuleNotInstalledError", "ConfigNamesError"]
 

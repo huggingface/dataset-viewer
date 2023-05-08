@@ -22,12 +22,12 @@ from worker.job_operators.split.split_job_operator import (
 
 from worker.config import AppConfig, FirstRowsConfig
 from worker.job_runner import (
-    CompleteJobResult,
     JobRunnerError,
     SplitNotFoundError,
     get_previous_step_or_raise,
 )
 from worker.utils import (
+    CompleteJobResult,
     Row,
     SplitFirstRowsResponse,
     create_truncated_row_items,

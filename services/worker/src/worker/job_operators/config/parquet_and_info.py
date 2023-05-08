@@ -54,10 +54,11 @@ from worker.job_operators.dataset.config_names import (
 
 from worker.config import AppConfig, ParquetAndInfoConfig
 from worker.job_runner import (
-    CompleteJobResult,
     JobRunnerError,
     get_previous_step_or_raise,
 )
+from worker.utils import CompleteJobResult
+
 
 ConfigParquetAndInfoJobRunnerErrorCode = Literal[
     "DatasetRevisionNotFoundError",

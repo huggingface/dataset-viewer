@@ -11,12 +11,10 @@ from libcommon.simple_cache import DoesNotExist, SplitFullName, get_response
 from worker.job_operators.config.size import ConfigSize, ConfigSizeResponse, SplitSize
 from worker.job_operators.dataset.dataset_job_operator import DatasetJobOperator
 from worker.job_runner import (
-    JobResult,
-    JobRunner,
     JobRunnerError,
     get_previous_step_or_raise,
 )
-from worker.utils import PreviousJob
+from worker.utils import JobResult, PreviousJob
 
 SizesJobRunnerErrorCode = Literal["PreviousStepFormatError"]
 

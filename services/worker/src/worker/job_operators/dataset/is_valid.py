@@ -8,8 +8,7 @@ from libcommon.constants import PROCESSING_STEP_DATASET_IS_VALID_VERSION
 from libcommon.simple_cache import SplitFullName, get_validity_by_kind
 
 from worker.job_operators.dataset.dataset_job_operator import DatasetJobOperator
-from worker.job_runner import JobResult, JobRunner
-
+from worker.utils import JobResult
 
 class DatasetIsValidResponse(TypedDict):
     valid: bool
