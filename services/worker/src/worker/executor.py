@@ -12,10 +12,10 @@ from filelock import FileLock
 from libcommon.queue import Queue
 from libcommon.utils import get_datetime
 from mirakuru import OutputExecutor
-
+from worker.job_operator_factory import JobOperatorFactory
+from worker.job_runner import JobRunner
 from worker import start_worker_loop
 from worker.config import AppConfig
-from worker.job_runner_factory import JobRunnerFactory
 from worker.loop import WorkerState
 
 START_WORKER_LOOP_PATH = start_worker_loop.__file__
@@ -38,7 +38,7 @@ class BadWorkerState(RuntimeError):
 
 
 class WorkerExecutor:
-    def __init__(self, app_config: AppConfig, job_runner_factory: JobRunnerFactory, state_file_path: str) -> None:
+    def __init__(self, app_config: AppConfig, job_runner_factory: JobOperatorFactory, state_file_path: str) -> None:
         self.app_config = app_config
         self.job_runner_factory = job_runner_factory
         self.state_file_path = state_file_path
@@ -115,7 +115,9 @@ class WorkerExecutor:
         queue.kill_zombies(zombies)
         message = "Job runner crashed while running this job (missing heartbeats)."
         for zombie in zombies:
-            job_runner = self.job_runner_factory.create_job_runner(zombie)
+            job_runner = JobRunner(
+                job_info=zombie, app_config=self.app_config, job_operator_factory=self.job_runner_factory
+                )
             job_runner.set_crashed(message=message)
 
     def kill_long_job(self, worker_loop_executor: OutputExecutor) -> None:

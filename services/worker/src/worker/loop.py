@@ -14,8 +14,9 @@ from libcommon.queue import EmptyQueueError, JobInfo, Queue
 from libcommon.utils import get_datetime
 from psutil import cpu_count, disk_usage, getloadavg, swap_memory, virtual_memory
 
-from worker.config import WorkerConfig
-from worker.job_runner_factory import BaseJobRunnerFactory
+from worker.config import AppConfig
+from worker.job_operator_factory import BaseJobOperatorFactory
+from worker.job_runner import JobRunner
 
 
 class WorkerState(TypedDict):
@@ -46,9 +47,9 @@ class Loop:
             The path of the file where the state of the loop will be saved.
     """
 
-    job_runner_factory: BaseJobRunnerFactory
+    job_runner_factory: BaseJobOperatorFactory
     library_cache_paths: set[str]
-    worker_config: WorkerConfig
+    app_config: AppConfig
     max_jobs_per_namespace: int
     state_file_path: str
 
@@ -56,38 +57,39 @@ class Loop:
 
     def __post_init__(self) -> None:
         self.queue = Queue(max_jobs_per_namespace=self.max_jobs_per_namespace)
-        self.storage_paths = set(self.worker_config.storage_paths).union(self.library_cache_paths)
+        self.storage_paths = set(self.app_config.worker.storage_paths).union(self.library_cache_paths)
 
     def has_memory(self) -> bool:
-        if self.worker_config.max_memory_pct <= 0:
+        if self.app_config.worker.max_memory_pct <= 0:
             return True
         virtual_memory_used = int(virtual_memory().used)
         virtual_memory_total = int(virtual_memory().total)
         percent = (swap_memory().used + virtual_memory_used) / (swap_memory().total + virtual_memory_total)
-        ok = percent < self.worker_config.max_memory_pct
+        ok = percent < self.app_config.worker.max_memory_pct
         if not ok:
             logging.info(
-                f"memory usage (RAM + SWAP) is too high: {percent:.0f}% - max is {self.worker_config.max_memory_pct}%"
+                f"memory usage (RAM + SWAP) is too high: {percent:.0f}% - max is"
+                f" {self.app_config.worker.max_memory_pct}%"
             )
         return ok
 
     def has_cpu(self) -> bool:
-        if self.worker_config.max_load_pct <= 0:
+        if self.app_config.worker.max_load_pct <= 0:
             return True
         load_pct = max(getloadavg()[:2]) / cpu_count() * 100
         # ^ only current load and 5m load. 15m load is not relevant to decide to launch a new job
-        ok = load_pct < self.worker_config.max_load_pct
+        ok = load_pct < self.app_config.worker.max_load_pct
         if not ok:
-            logging.info(f"cpu load is too high: {load_pct:.0f}% - max is {self.worker_config.max_load_pct}%")
+            logging.info(f"cpu load is too high: {load_pct:.0f}% - max is {self.app_config.worker.max_load_pct}%")
         return ok
 
     def has_storage(self) -> bool:
-        if self.worker_config.max_disk_usage_pct <= 0:
+        if self.app_config.worker.max_disk_usage_pct <= 0:
             return True
         for path in self.storage_paths:
             try:
                 usage = disk_usage(path)
-                if usage.percent >= self.worker_config.max_disk_usage_pct:
+                if usage.percent >= self.app_config.worker.max_disk_usage_pct:
                     return False
             except Exception:
                 # if we can't get the disk usage, we let the process continue
@@ -100,7 +102,7 @@ class Loop:
     def sleep(self) -> None:
         jitter = 0.75 + random.random() / 2  # nosec
         # ^ between 0.75 and 1.25
-        duration = self.worker_config.sleep_seconds * jitter
+        duration = self.app_config.worker.sleep_seconds * jitter
         logging.debug(f"sleep during {duration:.2f} seconds")
         time.sleep(duration)
 
@@ -122,8 +124,8 @@ class Loop:
 
         try:
             job_info = self.queue.start_job(
-                job_types_blocked=self.worker_config.job_types_blocked,
-                job_types_only=self.worker_config.job_types_only,
+                job_types_blocked=self.app_config.worker.job_types_blocked,
+                job_types_only=self.app_config.worker.job_types_only,
             )
             self.set_worker_state(current_job_info=job_info)
             logging.debug(f"job assigned: {job_info}")
@@ -132,7 +134,9 @@ class Loop:
             logging.debug("no job in the queue")
             return False
 
-        job_runner = self.job_runner_factory.create_job_runner(job_info)
+        job_runner = JobRunner(
+            job_info=job_info, app_config=self.app_config, job_operator_factory=self.job_runner_factory
+        )
         finished_status = job_runner.run()
         self.queue.finish_job(job_id=job_runner.job_id, finished_status=finished_status)
         self.set_worker_state(current_job_info=None)

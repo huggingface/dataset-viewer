@@ -7,10 +7,10 @@ from libcommon.log import init_logging
 from libcommon.processing_graph import ProcessingGraph
 from libcommon.resources import CacheMongoResource, QueueMongoResource
 from libcommon.storage import init_assets_dir
+from worker.job_operator_factory import JobOperatorFactory
 
 from worker.config import AppConfig
 from worker.executor import WorkerExecutor
-from worker.job_runner_factory import JobRunnerFactory
 from worker.resources import LibrariesResource
 
 WORKER_STATE_FILE_NAME = "worker_state.json"
@@ -47,7 +47,7 @@ if __name__ == "__main__":
             if not queue_resource.is_available():
                 raise RuntimeError("The connection to the queue database could not be established. Exiting.")
 
-            job_runner_factory = JobRunnerFactory(
+            job_runner_factory = JobOperatorFactory(
                 app_config=app_config,
                 processing_graph=processing_graph,
                 hf_datasets_cache=libraries_resource.hf_datasets_cache,
