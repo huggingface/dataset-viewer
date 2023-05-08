@@ -4,18 +4,42 @@
 import logging
 from abc import ABC, abstractmethod
 from http import HTTPStatus
-from typing import Optional
+from typing import List, Optional
 from libcommon.exceptions import (
     CustomError,
 )
+from libcommon.utils import orjson_dumps
 from libcommon.processing_graph import ProcessingStep
 from libcommon.queue import JobInfo
 from libcommon.simple_cache import (
+    CacheEntryWithDetails,
+    BestResponse,
     DoesNotExist,
+    get_best_response,
     get_response_without_content_info,
 )
 from worker.config import AppConfig
 from worker.utils import JobResult
+from libcommon.exceptions import (
+    CustomError,
+    ErrorResponseWithCause,
+    ErrorResponseWithoutCause,
+)
+
+def get_previous_step_or_raise(
+    kinds: List[str], dataset: str, config: Optional[str] = None, split: Optional[str] = None
+) -> BestResponse:
+    """Get the previous step from the cache, or raise an exception if it failed."""
+    best_response = get_best_response(kinds=kinds, dataset=dataset, config=config, split=split)
+    if best_response.response["http_status"] != HTTPStatus.OK:
+        raise PreviousStepError.from_response(
+            response=best_response.response,
+            kind=best_response.kind,
+            dataset=dataset,
+            config=config,
+            split=split,
+        )
+    return best_response
 
 
 class JobOperatorError(CustomError):
@@ -39,6 +63,83 @@ class ResponseAlreadyComputedError(JobOperatorError):
 
     def __init__(self, message: str, cause: Optional[BaseException] = None):
         super().__init__(message, HTTPStatus.INTERNAL_SERVER_ERROR, "ResponseAlreadyComputedError", cause, True)
+
+
+class PreviousStepError(JobOperatorError):
+    """Raised when the previous step failed. It contains the contents of the error response,
+    and the details contain extra information about the previous step.
+    """
+
+    error_with_cause: ErrorResponseWithCause
+    error_without_cause: ErrorResponseWithoutCause
+
+    def __init__(
+        self,
+        message: str,
+        status_code: HTTPStatus,
+        code: str,
+        cause: Optional[BaseException],
+        disclose_cause: bool,
+        error_with_cause: ErrorResponseWithCause,
+        error_without_cause: ErrorResponseWithoutCause,
+    ):
+        super().__init__(
+            message=message, status_code=status_code, code=code, cause=cause, disclose_cause=disclose_cause
+        )
+        self.error_with_cause = error_with_cause
+        self.error_without_cause = error_without_cause
+
+    @staticmethod
+    def from_response(
+        response: CacheEntryWithDetails,
+        kind: str,
+        dataset: str,
+        config: Optional[str] = None,
+        split: Optional[str] = None,
+    ) -> "PreviousStepError":
+        if response.get("http_status") == HTTPStatus.OK:
+            raise ValueError("Cannot create a PreviousStepError, the response should contain an error")
+
+        message = response["content"]["error"] if "error" in response["content"] else "Unknown error"
+        status_code = response["http_status"]
+        error_code = response["error_code"] or "PreviousStepError"
+        cause = None  # No way to create the same exception
+        disclose_cause = orjson_dumps(response["details"]) == orjson_dumps(response["content"])
+        error_without_cause: ErrorResponseWithoutCause = {"error": message}
+        error_with_cause: ErrorResponseWithCause = {
+            "error": message,
+            # Add lines in the traceback to give some info about the previous step error (a bit hacky)
+            "cause_traceback": [
+                "The previous step failed, the error is copied to this step:",
+                f"  {kind=} {dataset=} {config=} {split=}",
+                "---",
+            ],
+        }
+        if "cause_exception" in response["details"] and isinstance(response["details"]["cause_exception"], str):
+            error_with_cause["cause_exception"] = response["details"]["cause_exception"]
+        if "cause_message" in response["details"] and isinstance(response["details"]["cause_message"], str):
+            error_with_cause["cause_message"] = response["details"]["cause_message"]
+        if (
+            "cause_traceback" in response["details"]
+            and isinstance(response["details"]["cause_traceback"], list)
+            and all(isinstance(line, str) for line in response["details"]["cause_traceback"])
+        ):
+            error_with_cause["cause_traceback"].extend(response["details"]["cause_traceback"])
+        return PreviousStepError(
+            message=message,
+            status_code=status_code,
+            code=error_code,
+            cause=cause,
+            disclose_cause=disclose_cause,
+            error_without_cause=error_without_cause,
+            error_with_cause=error_with_cause,
+        )
+
+    def as_response_with_cause(self) -> ErrorResponseWithCause:
+        return self.error_with_cause
+
+    def as_response_without_cause(self) -> ErrorResponseWithoutCause:
+        return self.error_without_cause
 
 
 class JobOperator(ABC):

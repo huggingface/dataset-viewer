@@ -55,8 +55,9 @@ from worker.job_operators.dataset.config_names import (
 from worker.config import AppConfig, ParquetAndInfoConfig
 from worker.job_runner import (
     JobRunnerError,
-    get_previous_step_or_raise,
 )
+from worker.job_operator import get_previous_step_or_raise
+
 from worker.utils import CompleteJobResult
 
 

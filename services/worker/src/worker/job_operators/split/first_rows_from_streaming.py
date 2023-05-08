@@ -24,8 +24,9 @@ from worker.config import AppConfig, FirstRowsConfig
 from worker.job_runner import (
     JobRunnerError,
     SplitNotFoundError,
-    get_previous_step_or_raise,
 )
+from worker.job_operator import get_previous_step_or_raise
+
 from worker.utils import (
     CompleteJobResult,
     Row,

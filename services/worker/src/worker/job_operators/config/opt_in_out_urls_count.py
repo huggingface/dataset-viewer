@@ -11,7 +11,9 @@ from worker.job_operators.config.config_job_operator import (
     ConfigJobOperator,
 )
 
-from worker.job_runner import JobRunnerError, get_previous_step_or_raise
+from worker.job_runner import JobRunnerError
+from worker.job_operator import get_previous_step_or_raise
+
 from worker.utils import JobResult, OptInOutUrlsCountResponse
 
 ConfigOptInOutUrlsCountJobRunnerErrorCode = Literal["PreviousStepFormatError"]

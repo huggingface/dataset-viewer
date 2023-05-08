@@ -21,8 +21,9 @@ from worker.job_operators.split.split_job_operator import (
 from worker.config import AppConfig, OptInOutUrlsScanConfig
 from worker.job_runner import (
     JobRunnerError,
-    get_previous_step_or_raise,
 )
+from worker.job_operator import get_previous_step_or_raise
+
 from worker.utils import (
     CompleteJobResult,
     OptInOutUrlsScanResponse,

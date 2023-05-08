@@ -13,8 +13,9 @@ from worker.job_operators.config.parquet_and_info import ParquetFileItem
 from worker.job_operators.dataset.dataset_job_operator import DatasetJobOperator
 from worker.job_runner import (
     JobRunnerError,
-    get_previous_step_or_raise,
 )
+from worker.job_operator import get_previous_step_or_raise
+
 from worker.utils import JobResult, PreviousJob
 
 SizesJobRunnerErrorCode = Literal["PreviousStepFormatError"]
