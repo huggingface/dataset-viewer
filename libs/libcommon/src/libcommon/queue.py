@@ -2,7 +2,6 @@
 # Copyright 2022 The HuggingFace Authors.
 
 import contextlib
-import enum
 import logging
 import types
 from collections import Counter
@@ -21,7 +20,7 @@ from libcommon.constants import (
     QUEUE_MONGOENGINE_ALIAS,
     QUEUE_TTL_SECONDS,
 )
-from libcommon.utils import get_datetime, inputs_to_string
+from libcommon.utils import JobInfo, Priority, Status, get_datetime, inputs_to_string
 
 # START monkey patching ### hack ###
 # see https://github.com/sbdchd/mongo-types#install
@@ -43,20 +42,6 @@ class QuerySetManager(Generic[U]):
 # END monkey patching ### hack ###
 
 
-class Status(str, enum.Enum):
-    WAITING = "waiting"
-    STARTED = "started"
-    SUCCESS = "success"
-    ERROR = "error"
-    CANCELLED = "cancelled"
-    SKIPPED = "skipped"
-
-
-class Priority(str, enum.Enum):
-    NORMAL = "normal"
-    LOW = "low"
-
-
 class JobDict(TypedDict):
     type: str
     dataset: str
@@ -71,16 +56,6 @@ class JobDict(TypedDict):
     started_at: Optional[datetime]
     finished_at: Optional[datetime]
     last_heartbeat: Optional[datetime]
-
-
-class JobInfo(TypedDict):
-    job_id: str
-    type: str
-    dataset: str
-    config: Optional[str]
-    split: Optional[str]
-    force: bool
-    priority: Priority
 
 
 class CountByStatus(TypedDict):
