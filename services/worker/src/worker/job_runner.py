@@ -2,7 +2,6 @@
 # Copyright 2022 The HuggingFace Authors.
 
 import logging
-from dataclasses import dataclass, field
 from http import HTTPStatus
 from typing import Any, Literal, Mapping, Optional
 
@@ -20,11 +19,11 @@ from libcommon.simple_cache import (
     get_response_without_content_params,
     upsert_response_params,
 )
-from libcommon.utils import JobParams, JobInfo, Priority, Status, orjson_dumps
+from libcommon.utils import JobInfo, JobParams, Priority, Status, orjson_dumps
 
 from worker.config import AppConfig, WorkerConfig
 from worker.job_operator import JobOperator
-from worker.job_operator_factory import JobOperatorFactory
+from worker.job_operator_factory import BaseJobOperatorFactory
 
 GeneralJobRunnerErrorCode = Literal[
     "ParameterMissingError",
@@ -112,6 +111,13 @@ class NoGitRevisionError(GeneralJobRunnerError):
         )
 
 
+class ResponseAlreadyComputedError(GeneralJobRunnerError):
+    """Raised when response has been already computed by another operator."""
+
+    def __init__(self, message: str, cause: Optional[BaseException] = None):
+        super().__init__(message, HTTPStatus.INTERNAL_SERVER_ERROR, "ResponseAlreadyComputedError", cause, True)
+
+
 class TooBigContentError(GeneralJobRunnerError):
     """Raised when content size in bytes is bigger than the supported value."""
 
@@ -193,7 +199,7 @@ class JobRunner:
     _dataset_git_revision: Optional[str] = None
     job_operator: JobOperator
 
-    def __init__(self, job_info: JobInfo, app_config: AppConfig, job_operator_factory: JobOperatorFactory, processing_graph: ProcessingGraph) -> None:
+    def __init__(self, job_info: JobInfo, app_config: AppConfig, job_operator_factory: BaseJobOperatorFactory, processing_graph: ProcessingGraph) -> None:
         self.job_info = job_info
         self.job_type = job_info["type"]
         self.job_id = job_info["job_id"]
@@ -222,10 +228,7 @@ class JobRunner:
             )
 
     def __str__(self) -> str:
-        return (
-            f"JobRunner(job_id={self.job_id} dataset={self.dataset} job_info={self.job_info}"
-            + f" split={self._split} force={self.force})"
-        )
+        return f"JobRunner(job_id={self.job_id} dataset={self.dataset} job_info={self.job_info}"
 
     def log(self, level: int, msg: str) -> None:
         logging.log(level=level, msg=f"[{self.job_type}] {msg}")
@@ -287,8 +290,7 @@ class JobRunner:
         try:
             cached_response = get_response_without_content_params(
                 kind=self.processing_step.cache_kind,
-                dataset=self.dataset,
-                job_info=self.job_info,
+                job_params=self.job_info["params"],
             )
         except DoesNotExist:
             # no entry in the cache
@@ -314,6 +316,28 @@ class JobRunner:
         return dataset_git_revision is not None and cached_response["dataset_git_revision"] == dataset_git_revision
         # skip if the git revision has not changed
 
+    def raise_if_parallel_response_exists(self, parallel_cache_kind: str, parallel_job_version: int) -> None:
+        try:
+            existing_response = get_response_without_content_params(
+                kind=parallel_cache_kind,
+                job_params=self.job_info["params"],
+            )
+
+            dataset_git_revision = self.get_dataset_git_revision()
+            if (
+                existing_response["http_status"] == HTTPStatus.OK
+                and existing_response["job_runner_version"] == parallel_job_version
+                and existing_response["progress"] == 1.0  # completed response
+                and dataset_git_revision is not None
+                and existing_response["dataset_git_revision"] == dataset_git_revision
+            ):
+                raise ResponseAlreadyComputedError(
+                    f"Response has already been computed and stored in cache kind: {parallel_cache_kind}. Compute will"
+                    " be skipped."
+                )
+        except DoesNotExist:
+            logging.debug(f"no cache found for {parallel_cache_kind}.")
+
     def process(
         self,
     ) -> bool:
@@ -325,6 +349,13 @@ class JobRunner:
                 raise NoGitRevisionError(f"Could not get git revision for dataset {self.dataset}")
             try:
                 self.job_operator.pre_compute()
+                parallel_operator = self.job_operator.get_parallel_operator()
+                if parallel_operator:
+                    self.raise_if_parallel_response_exists(
+                        parallel_cache_kind=parallel_operator["job_type"],
+                        parallel_job_version=parallel_operator["job_operator_version"],
+                    )
+
                 job_result = self.job_operator.compute()
                 content = job_result.content
 
@@ -340,7 +371,7 @@ class JobRunner:
             upsert_response_params(
                 kind=self.processing_step.cache_kind,
                 dataset=self.dataset,
-                job_info=self.job_info,
+                job_params=self.job_info["params"],
                 content=content,
                 http_status=HTTPStatus.OK,
                 job_runner_version=self.job_operator.get_job_runner_version(),
@@ -358,7 +389,7 @@ class JobRunner:
             upsert_response_params(
                 kind=self.processing_step.cache_kind,
                 dataset=self.dataset,
-                job_info=self.job_info,
+                job_params=self.job_info["params"],
                 content=dict(e.as_response()),
                 http_status=e.status_code,
                 error_code=e.code,
@@ -389,7 +420,7 @@ class JobRunner:
             return
         try:
             response_in_cache = get_response_params(
-                kind=self.processing_step.cache_kind, dataset=self.dataset, job_info=self.job_info
+                kind=self.processing_step.cache_kind, dataset=self.dataset, job_params=self.job_info["params"]
             )
         except Exception:
             # if the response is not in the cache, we don't create the children jobs
@@ -399,14 +430,24 @@ class JobRunner:
             new_split_full_names_for_config: set[SplitFullName] = {
                 SplitFullName(dataset=s.dataset, config=s.config, split=None) for s in new_split_full_names_for_split
             }
+        # TODO (Andrea): Change the way it works without to depend on specific fields,
+        # maybe operator can return the list of children
         elif self.processing_step.input_type == "split":
             new_split_full_names_for_split = {
-                SplitFullName(dataset=self.dataset, config=self._config, split=self._split)
+                SplitFullName(
+                    dataset=self.dataset,
+                    config=self.job_info["params"]["config"],
+                    split=self.job_info["params"]["split"],
+                )
             }
-            new_split_full_names_for_config = {SplitFullName(dataset=self.dataset, config=self._config, split=None)}
+            new_split_full_names_for_config = {
+                SplitFullName(dataset=self.dataset, config=self.job_info["params"]["config"], split=None)
+            }
         elif self.processing_step.input_type == "config":
             new_split_full_names_for_split = set()
-            new_split_full_names_for_config = {SplitFullName(dataset=self.dataset, config=self._config, split=None)}
+            new_split_full_names_for_config = {
+                SplitFullName(dataset=self.dataset, config=self.job_info["params"]["config"], split=None)
+            }
 
         else:
             new_split_full_names_for_split = set()
@@ -443,7 +484,7 @@ class JobRunner:
         upsert_response_params(
             kind=self.processing_step.cache_kind,
             dataset=self.dataset,
-            job_info=self.job_info,
+            job_params=self.job_info["params"],
             content=dict(error.as_response()),
             http_status=error.status_code,
             error_code=error.code,
@@ -460,7 +501,7 @@ class JobRunner:
         upsert_response_params(
             kind=self.processing_step.cache_kind,
             dataset=self.dataset,
-            job_info=self.job_info,
+            job_params=self.job_info["params"],
             content=dict(error.as_response()),
             http_status=error.status_code,
             error_code=error.code,

@@ -4,14 +4,12 @@
 from pathlib import Path
 
 from libcommon.processing_graph import ProcessingStep
-from libcommon.queue import JobInfo
-from worker.job_operators._datasets_based_job_operator import (
-    DatasetsBasedJobOperator,
-)
+from libcommon.utils import JobInfo
 
 from worker.config import AppConfig
 from worker.job_operator import JobOperator
-from worker.job_runner import JobRunner, ParameterMissingError
+from worker.job_operators._datasets_based_job_operator import DatasetsBasedJobOperator
+from worker.job_runner import ParameterMissingError
 
 
 class DatasetJobOperator(JobOperator):
@@ -24,9 +22,9 @@ class DatasetJobOperator(JobOperator):
         processing_step: ProcessingStep,
     ) -> None:
         super().__init__(job_info=job_info, app_config=app_config, processing_step=processing_step)
-        if job_info["dataset"] is None:
+        if job_info["params"]["dataset"] is None:
             raise ParameterMissingError("'dataset' parameter is required")
-        self.dataset = job_info["dataset"]
+        self.dataset = job_info["params"]["dataset"]
 
 
 class DatasetCachedJobRunner(DatasetsBasedJobOperator, DatasetJobOperator):

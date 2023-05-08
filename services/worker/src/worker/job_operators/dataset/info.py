@@ -8,12 +8,9 @@ from typing import Any, Dict, List, Literal, Mapping, Optional, Tuple, TypedDict
 from libcommon.constants import PROCESSING_STEP_DATASET_INFO_VERSION
 from libcommon.simple_cache import DoesNotExist, SplitFullName, get_response
 
-from worker.job_operators.dataset.dataset_job_operator import DatasetJobOperator
-from worker.job_runner import (
-    JobRunnerError,
-)
 from worker.job_operator import get_previous_step_or_raise
-
+from worker.job_operators.dataset.dataset_job_operator import DatasetJobOperator
+from worker.job_runner import JobRunnerError
 from worker.utils import JobResult, PreviousJob
 
 DatasetInfoJobRunnerErrorCode = Literal["PreviousStepFormatError"]

@@ -4,6 +4,7 @@ from libcommon.config import CommonConfig
 from libcommon.processing_graph import ProcessingGraph, ProcessingStep
 from libcommon.queue import JobInfo
 from libcommon.resources import CacheMongoResource, QueueMongoResource
+from libcommon.utils import JobInfo
 
 from worker.config import AppConfig, WorkerConfig
 from worker.job_runner import CompleteJobResult, JobRunner

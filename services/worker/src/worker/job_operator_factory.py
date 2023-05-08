@@ -6,10 +6,11 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from libcommon.processing_graph import ProcessingGraph
-from libcommon.queue import JobInfo
 from libcommon.storage import StrPath
+from libcommon.utils import JobInfo
 
 from worker.config import AppConfig
+from worker.job_operator import JobOperator
 from worker.job_operators.config.info import ConfigInfoJobOperator
 from worker.job_operators.config.opt_in_out_urls_count import (
     ConfigOptInOutUrlsCountJobOperator,
@@ -44,7 +45,6 @@ from worker.job_operators.split.opt_in_out_urls_count import (
 from worker.job_operators.split.opt_in_out_urls_scan_from_streaming import (
     SplitOptInOutUrlsScanJobOperator,
 )
-from worker.job_runner import JobOperator
 
 
 class BaseJobOperatorFactory(ABC):

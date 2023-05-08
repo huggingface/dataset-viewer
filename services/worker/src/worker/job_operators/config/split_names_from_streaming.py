@@ -12,12 +12,10 @@ from libcommon.constants import (
     PROCESSING_STEP_SPLIT_NAMES_FROM_STREAMING_VERSION,
 )
 from libcommon.simple_cache import SplitFullName
-from worker.job_operators.config.config_job_operator import (
-    ConfigCachedJobOperator,
-)
 
+from worker.job_operators.config.config_job_operator import ConfigCachedJobOperator
 from worker.job_runner import JobRunnerError
-from worker.utils import SplitItem, SplitsList, CompleteJobResult
+from worker.utils import CompleteJobResult, OperatorInfo, SplitItem, SplitsList
 
 SplitNamesFromStreamingJobRunnerErrorCode = Literal[
     "EmptyDatasetError",
@@ -118,20 +116,19 @@ class SplitNamesFromStreamingJobOperator(ConfigCachedJobOperator):
     def get_job_runner_version() -> int:
         return PROCESSING_STEP_SPLIT_NAMES_FROM_STREAMING_VERSION
 
-    def compute(self) -> CompleteJobResult:
-        """
-        Raises [`~job_runners.config.split_names_from_streaming.ResponseAlreadyComputedError`]
-          If response has been already computed by /split-names-from-dataset-info job runner.
-        """
-        self.raise_if_parallel_response_exists(
-            parallel_cache_kind="/split-names-from-dataset-info",
-            parallel_job_version=PROCESSING_STEP_SPLIT_NAMES_FROM_DATASET_INFO_VERSION,
+    @staticmethod
+    def get_parallel_operator() -> OperatorInfo:  # In the future it could be a list of parallel operators
+        return OperatorInfo(
+            job_operator_version=PROCESSING_STEP_SPLIT_NAMES_FROM_DATASET_INFO_VERSION,
+            job_type="/split-names-from-dataset-info",
         )
+
+    def compute(self) -> CompleteJobResult:
         return CompleteJobResult(
             compute_split_names_from_streaming_response(
                 dataset=self.dataset,
                 config=self.config,
-                hf_token=self.common_config.hf_token,
+                hf_token=self.app_config.common.hf_token,
             )
         )
 

@@ -7,9 +7,9 @@ from libcommon.log import init_logging
 from libcommon.processing_graph import ProcessingGraph
 from libcommon.resources import CacheMongoResource, QueueMongoResource
 from libcommon.storage import init_assets_dir
-from worker.job_operator_factory import JobOperatorFactory
 
 from worker.config import AppConfig
+from worker.job_operator_factory import JobOperatorFactory
 from worker.loop import Loop
 from worker.resources import LibrariesResource
 
@@ -57,6 +57,6 @@ if __name__ == "__main__":
             job_runner_factory=job_runner_factory,
             max_jobs_per_namespace=app_config.queue.max_jobs_per_namespace,
             state_file_path=state_file_path,
-            worker_config=app_config.worker,
+            app_config=app_config,
         )
         loop.run()

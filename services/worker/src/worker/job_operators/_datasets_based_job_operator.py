@@ -11,12 +11,11 @@ from typing import Optional
 
 import datasets.config
 from libcommon.processing_graph import ProcessingStep
-from libcommon.queue import JobInfo
 from libcommon.storage import init_dir, remove_dir
+from libcommon.utils import JobInfo
 
 from worker.config import AppConfig, DatasetsBasedConfig
 from worker.job_operator import JobOperator
-from worker.job_runner import JobRunner
 
 
 class DatasetsBasedJobOperator(JobOperator):
@@ -47,10 +46,17 @@ class DatasetsBasedJobOperator(JobOperator):
 
     def get_cache_subdirectory(self, date: datetime) -> str:
         date_str = date.strftime("%Y-%m-%d-%H-%M-%S")
-        # TODO: change params by job info
-        payload = (date_str, self.get_job_type(), self.dataset, self._config, self._split, self.force)
+        # TODO: Refactor
+        payload = (
+            date_str,
+            self.get_job_type(),
+            self.job_info["params"]["dataset"],
+            self.job_info["params"]["config"],
+            self.job_info["params"]["split"],
+            self.force,
+        )
         hash_suffix = sha1(json.dumps(payload, sort_keys=True).encode(), usedforsecurity=False).hexdigest()[:8]
-        prefix = f"{date_str}-{self.get_job_type()}-{self.dataset}"[:64]
+        prefix = f"{date_str}-{self.get_job_type()}-{self.job_info['params']['dataset']}"[:64]
         subdirectory = f"{prefix}-{hash_suffix}"
         return "".join([c if re.match(r"[\w-]", c) else "-" for c in subdirectory])
 

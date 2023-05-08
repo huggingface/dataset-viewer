@@ -9,13 +9,10 @@ from datasets import get_dataset_config_names
 from datasets.data_files import EmptyDatasetError as _EmptyDatasetError
 from libcommon.constants import PROCESSING_STEP_CONFIG_NAMES_VERSION
 from libcommon.simple_cache import SplitFullName
-from worker.job_operators._datasets_based_job_operator import (
-    DatasetsBasedJobOperator,
-)
 
+from worker.job_operators.dataset.dataset_job_operator import DatasetCachedJobRunner
 from worker.job_runner import JobRunnerError
 from worker.utils import CompleteJobResult
-
 
 ConfigNamesJobRunnerErrorCode = Literal["EmptyDatasetError", "DatasetModuleNotInstalledError", "ConfigNamesError"]
 
@@ -113,7 +110,7 @@ def compute_config_names_response(
     return ConfigNamesResponse(config_names=config_name_items)
 
 
-class ConfigNamesJobOperator(DatasetsBasedJobOperator):
+class ConfigNamesJobOperator(DatasetCachedJobRunner):
     @staticmethod
     def get_job_type() -> str:
         return "/config-names"
@@ -124,7 +121,7 @@ class ConfigNamesJobOperator(DatasetsBasedJobOperator):
 
     def compute(self) -> CompleteJobResult:
         return CompleteJobResult(
-            compute_config_names_response(dataset=self.dataset, hf_token=self.common_config.hf_token)
+            compute_config_names_response(dataset=self.dataset, hf_token=self.app_config.common.hf_token)
         )
 
     def get_new_splits(self, content: Mapping[str, Any]) -> set[SplitFullName]:

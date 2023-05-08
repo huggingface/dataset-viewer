@@ -4,14 +4,10 @@ from typing import Any, Dict, Literal, Mapping, Optional, Set, TypedDict
 
 from libcommon.constants import PROCESSING_STEP_CONFIG_INFO_VERSION
 from libcommon.simple_cache import SplitFullName
-from worker.job_operators.config.config_job_operator import (
-    ConfigJobOperator,
-)
 
-from worker.job_runner import (
-    JobRunnerError
-)
 from worker.job_operator import get_previous_step_or_raise
+from worker.job_operators.config.config_job_operator import ConfigJobOperator
+from worker.job_runner import JobRunnerError
 from worker.utils import CompleteJobResult
 
 ConfigInfoJobRunnerErrorCode = Literal["PreviousStepFormatError"]

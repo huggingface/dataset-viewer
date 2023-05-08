@@ -5,8 +5,8 @@ from typing import Optional
 
 import pytest
 from libcommon.processing_graph import ProcessingGraph
-from libcommon.queue import JobInfo, Priority
 from libcommon.storage import StrPath
+from libcommon.utils import JobInfo, Priority
 
 from worker.config import AppConfig
 from worker.job_runner_factory import JobRunnerFactory

@@ -4,15 +4,11 @@
 from pathlib import Path
 
 from libcommon.processing_graph import ProcessingStep
-from libcommon.queue import JobInfo
-from worker.job_operators._datasets_based_job_operator import (
-    DatasetsBasedJobOperator,
-)
-from worker.job_operators.config.config_job_operator import (
-    ConfigJobOperator,
-)
+from libcommon.utils import JobInfo
 
 from worker.config import AppConfig
+from worker.job_operators._datasets_based_job_operator import DatasetsBasedJobOperator
+from worker.job_operators.config.config_job_operator import ConfigJobOperator
 from worker.job_runner import ParameterMissingError
 
 
@@ -26,9 +22,9 @@ class SplitJobOperator(ConfigJobOperator):
         processing_step: ProcessingStep,
     ) -> None:
         super().__init__(job_info=job_info, app_config=app_config, processing_step=processing_step)
-        if job_info["split"] is None:
+        if job_info["params"]["split"] is None:
             raise ParameterMissingError("'split' parameter is required")
-        self.split = job_info["split"]
+        self.split = job_info["params"]["split"]
 
 
 class SplitCachedJobOperator(DatasetsBasedJobOperator, SplitJobOperator):

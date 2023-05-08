@@ -7,14 +7,10 @@ from typing import Any, Literal, Mapping, Optional
 
 from libcommon.constants import PROCESSING_STEP_SPLIT_OPT_IN_OUT_URLS_COUNT_VERSION
 from libcommon.simple_cache import SplitFullName
-from job_operators.split.split_job_operator import (
-    SplitJobOperator,
-)
 
-from worker.job_runner import (
-    JobRunnerError,
-)
 from worker.job_operator import get_previous_step_or_raise
+from worker.job_operators.split.split_job_operator import SplitJobOperator
+from worker.job_runner import JobRunnerError
 from worker.utils import CompleteJobResult, OptInOutUrlsCountResponse
 
 SplitOptInOutUrlsCountJobRunnerErrorCode = Literal["PreviousStepFormatError"]

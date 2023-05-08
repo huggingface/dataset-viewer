@@ -10,18 +10,13 @@ from libcommon.constants import (
     PROCESSING_STEP_SPLIT_NAMES_FROM_STREAMING_VERSION,
 )
 from libcommon.simple_cache import SplitFullName
-from worker.job_operators.config.config_job_operator import (
-    ConfigJobOperator,
-)
 
-from worker.job_runner import (
-    JobRunnerError,
-)
 from worker.job_operator import get_previous_step_or_raise
+from worker.job_operators.config.config_job_operator import ConfigJobOperator
+from worker.job_runner import JobRunnerError
+from worker.utils import CompleteJobResult, OperatorInfo, SplitItem, SplitsList
 
-from worker.utils import SplitItem, SplitsList, CompleteJobResult
-
-SplitNamesFromDatasetInfoJobRunnerErrorCode = Literal["PreviousStepFormatError",]
+SplitNamesFromDatasetInfoJobRunnerErrorCode = Literal["PreviousStepFormatError"]
 
 
 class SplitNamesFromDatasetInfoJobRunnerError(JobRunnerError):
@@ -95,15 +90,14 @@ class SplitNamesFromDatasetInfoJobOperator(ConfigJobOperator):
     def get_job_runner_version() -> int:
         return PROCESSING_STEP_SPLIT_NAMES_FROM_DATASET_INFO_VERSION
 
-    def compute(self) -> CompleteJobResult:
-        """
-        Raises [`~job_runners.config.split_names_from_dataset_info.ResponseAlreadyComputedError`]
-          If response has been already computed by /split-names-from-streaming job runner.
-        """
-        self.raise_if_parallel_response_exists(
-            parallel_cache_kind="/split-names-from-streaming",
-            parallel_job_version=PROCESSING_STEP_SPLIT_NAMES_FROM_STREAMING_VERSION,
+    @staticmethod
+    def get_parallel_operator() -> OperatorInfo:  # In the future it could be a list of parallel operators
+        return OperatorInfo(
+            job_operator_version=PROCESSING_STEP_SPLIT_NAMES_FROM_STREAMING_VERSION,
+            job_type="/split-names-from-streaming",
         )
+
+    def compute(self) -> CompleteJobResult:
         return CompleteJobResult(
             compute_split_names_from_dataset_info_response(dataset=self.dataset, config=self.config)
         )

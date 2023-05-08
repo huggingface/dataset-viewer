@@ -16,24 +16,20 @@ from libcommon.constants import (
     PROCESSING_STEP_SPLIT_FIRST_ROWS_FROM_STREAMING_VERSION,
 )
 from libcommon.processing_graph import ProcessingStep
-from libcommon.queue import JobInfo
 from libcommon.simple_cache import SplitFullName
 from libcommon.storage import StrPath
+from libcommon.utils import JobInfo
 from libcommon.viewer_utils.features import get_cell_value
 from pyarrow.parquet import ParquetFile
-from worker.job_operators.split.split_job_operator import (
-    SplitJobOperator,
-)
 from tqdm.contrib.concurrent import thread_map
 
 from worker.config import AppConfig, FirstRowsConfig
-from worker.job_runner import (
-    JobRunnerError,
-)
 from worker.job_operator import get_previous_step_or_raise
-
+from worker.job_operators.split.split_job_operator import SplitJobOperator
+from worker.job_runner import JobRunnerError
 from worker.utils import (
     CompleteJobResult,
+    OperatorInfo,
     Row,
     RowItem,
     SplitFirstRowsResponse,
@@ -294,6 +290,13 @@ class SplitFirstRowsFromParquetJobOperator(SplitJobOperator):
     def get_job_runner_version() -> int:
         return PROCESSING_STEP_SPLIT_FIRST_ROWS_FROM_PARQUET_VERSION
 
+    @staticmethod
+    def get_parallel_operator() -> OperatorInfo:  # In the future it could be a list of parallel operators
+        return OperatorInfo(
+            job_operator_version=PROCESSING_STEP_SPLIT_FIRST_ROWS_FROM_STREAMING_VERSION,
+            job_type="/split-names-from-dataset-info",
+        )
+
     def __init__(
         self,
         job_info: JobInfo,
@@ -311,10 +314,6 @@ class SplitFirstRowsFromParquetJobOperator(SplitJobOperator):
         self.assets_base_url = app_config.assets.base_url
 
     def compute(self) -> CompleteJobResult:
-        self.raise_if_parallel_response_exists(
-            parallel_cache_kind="split-first-rows-from-streaming",
-            parallel_job_version=PROCESSING_STEP_SPLIT_FIRST_ROWS_FROM_STREAMING_VERSION,
-        )
         return CompleteJobResult(
             compute_first_rows_response(
                 dataset=self.dataset,
@@ -322,7 +321,7 @@ class SplitFirstRowsFromParquetJobOperator(SplitJobOperator):
                 split=self.split,
                 assets_base_url=self.assets_base_url,
                 assets_directory=self.assets_directory,
-                hf_token=self.common_config.hf_token,
+                hf_token=self.app_config.common.hf_token,
                 min_cell_bytes=self.first_rows_config.min_cell_bytes,
                 rows_max_bytes=self.first_rows_config.max_bytes,
                 rows_max_number=self.first_rows_config.max_number,

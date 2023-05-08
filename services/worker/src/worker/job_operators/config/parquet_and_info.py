@@ -43,23 +43,15 @@ from libcommon.constants import (
 )
 from libcommon.dataset import DatasetNotFoundError, ask_access
 from libcommon.processing_graph import ProcessingStep
-from libcommon.queue import JobInfo
 from libcommon.simple_cache import SplitFullName
-from worker.job_operators.config.config_job_operator import (
-    ConfigCachedJobOperator,
-)
-from worker.job_operators.dataset.config_names import (
-    ConfigNamesError,
-)
+from libcommon.utils import JobInfo
 
 from worker.config import AppConfig, ParquetAndInfoConfig
-from worker.job_runner import (
-    JobRunnerError,
-)
 from worker.job_operator import get_previous_step_or_raise
-
+from worker.job_operators.config.config_job_operator import ConfigCachedJobOperator
+from worker.job_operators.dataset.config_names import ConfigNamesError
+from worker.job_runner import JobRunnerError
 from worker.utils import CompleteJobResult
-
 
 ConfigParquetAndInfoJobRunnerErrorCode = Literal[
     "DatasetRevisionNotFoundError",
@@ -974,8 +966,8 @@ class ConfigParquetAndInfoJobOperator(ConfigCachedJobOperator):
             compute_config_parquet_and_info_response(
                 dataset=self.dataset,
                 config=self.config,
-                hf_endpoint=self.common_config.hf_endpoint,
-                hf_token=self.common_config.hf_token,
+                hf_endpoint=self.app_config.common.hf_endpoint,
+                hf_token=self.app_config.common.hf_token,
                 committer_hf_token=self.parquet_and_info_config.committer_hf_token,
                 source_revision=self.parquet_and_info_config.source_revision,
                 target_revision=self.parquet_and_info_config.target_revision,

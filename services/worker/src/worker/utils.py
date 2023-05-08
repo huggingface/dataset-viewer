@@ -32,6 +32,11 @@ from libcommon.utils import orjson_dumps
 from worker.common_exceptions import NormalRowsError, StreamingRowsError
 
 
+class OperatorInfo(TypedDict):
+    job_type: str
+    job_operator_version: int
+
+
 @dataclass
 class JobResult:
     content: Mapping[str, Any]

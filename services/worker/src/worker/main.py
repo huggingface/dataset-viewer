@@ -7,10 +7,10 @@ from libcommon.log import init_logging
 from libcommon.processing_graph import ProcessingGraph
 from libcommon.resources import CacheMongoResource, QueueMongoResource
 from libcommon.storage import init_assets_dir
-from worker.job_operator_factory import JobOperatorFactory
 
 from worker.config import AppConfig
 from worker.executor import WorkerExecutor
+from worker.job_operator_factory import JobOperatorFactory
 from worker.resources import LibrariesResource
 
 WORKER_STATE_FILE_NAME = "worker_state.json"

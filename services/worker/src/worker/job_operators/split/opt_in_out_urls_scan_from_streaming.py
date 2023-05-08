@@ -10,20 +10,16 @@ from typing import Any, List, Literal, Mapping, Optional, Tuple, Union
 from aiohttp import ClientSession
 from aiolimiter import AsyncLimiter
 from datasets import get_dataset_config_info
+from libcommon.config import CommonConfig
 from libcommon.constants import PROCESSING_STEP_SPLIT_OPT_IN_OUT_URLS_SCAN_VERSION
 from libcommon.processing_graph import ProcessingStep
-from libcommon.queue import JobInfo
 from libcommon.simple_cache import SplitFullName
-from worker.job_operators.split.split_job_operator import (
-    SplitCachedJobOperator,
-)
+from libcommon.utils import JobInfo
 
 from worker.config import AppConfig, OptInOutUrlsScanConfig
-from worker.job_runner import (
-    JobRunnerError,
-)
 from worker.job_operator import get_previous_step_or_raise
-
+from worker.job_operators.split.split_job_operator import SplitCachedJobOperator
+from worker.job_runner import JobRunnerError
 from worker.utils import (
     CompleteJobResult,
     OptInOutUrlsScanResponse,
@@ -305,6 +301,7 @@ def compute_opt_in_out_urls_scan_response(
 
 class SplitOptInOutUrlsScanJobOperator(SplitCachedJobOperator):
     urls_scan_config: OptInOutUrlsScanConfig
+    common_config: CommonConfig
 
     @staticmethod
     def get_job_type() -> str:
@@ -328,6 +325,7 @@ class SplitOptInOutUrlsScanJobOperator(SplitCachedJobOperator):
             hf_datasets_cache=hf_datasets_cache,
         )
         self.urls_scan_config = app_config.urls_scan
+        self.common_config = app_config.common
 
     def compute(self) -> CompleteJobResult:
         if self.config is None or self.split is None:

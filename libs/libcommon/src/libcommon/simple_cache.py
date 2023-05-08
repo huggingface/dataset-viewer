@@ -201,9 +201,9 @@ def get_response_without_content(
 
 
 def get_response_without_content_params(
-    kind: str, dataset: str, job_params: JobParams
+    kind: str, job_params: JobParams
 ) -> CacheEntryWithoutContent:
-    return get_response_without_content(kind=kind, dataset=dataset, config=job_params["config"], split=job_params["split"])
+    return get_response_without_content(kind=kind, dataset=job_params["dataset"], config=job_params["config"], split=job_params["split"])
 
 
 class CacheEntryMetadata(CacheEntryWithoutContent):
