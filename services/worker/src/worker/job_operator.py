@@ -16,7 +16,7 @@ from libcommon.simple_cache import (
     BestResponse,
     DoesNotExist,
     get_best_response,
-    get_response_without_content_info,
+    get_response_without_content_params,
 )
 from worker.config import AppConfig
 from worker.utils import JobResult
@@ -186,7 +186,7 @@ class JobOperator(ABC):
 
     def raise_if_parallel_response_exists(self, parallel_cache_kind: str, parallel_job_version: int) -> None:
         try:
-            existing_response = get_response_without_content_info(
+            existing_response = get_response_without_content_params(
                 kind=parallel_cache_kind,
                 dataset=self.dataset,
                 job_info=self.job_info,

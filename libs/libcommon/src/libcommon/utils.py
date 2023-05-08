@@ -23,12 +23,16 @@ class Priority(str, enum.Enum):
     LOW = "low"
 
 
+class JobParams(TypedDict):
+    dataset: str
+    config: Optional[str]
+    split: Optional[str]  
+
+
 class JobInfo(TypedDict):
     job_id: str
     type: str
-    dataset: str
-    config: Optional[str]
-    split: Optional[str]
+    params: JobParams
     force: bool
     priority: Priority
 
