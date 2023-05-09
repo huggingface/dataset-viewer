@@ -20,13 +20,13 @@ from pyarrow.fs import LocalFileSystem
 
 from worker.config import AppConfig
 from worker.job_operators.split.first_rows_from_parquet import (
-    SplitFirstRowsFromParquetJobRunner,
+    SplitFirstRowsFromParquetJobOperator,
 )
 from worker.utils import get_json_size
 
 from ...fixtures.hub import get_default_config_split
 
-GetJobRunner = Callable[[str, str, str, AppConfig, bool], SplitFirstRowsFromParquetJobRunner]
+GetJobRunner = Callable[[str, str, str, AppConfig, bool], SplitFirstRowsFromParquetJobOperator]
 
 
 @pytest.fixture
@@ -56,10 +56,13 @@ def get_job_runner(
         )
         return SplitFirstRowsFromParquetJobRunner(
             job_info={
-                "type": SplitFirstRowsFromParquetJobRunner.get_job_type(),
-                "dataset": dataset,
-                "config": config,
-                "split": split,
+                "type": SplitFirstRowsFromParquetJobOperator.get_job_type(),
+                "params": {
+                    "dataset": dataset,
+                    "config": config,
+                    "split": split,
+                    "git_revision": "1.0",
+                },
                 "job_id": "job_id",
                 "force": force,
                 "priority": Priority.NORMAL,

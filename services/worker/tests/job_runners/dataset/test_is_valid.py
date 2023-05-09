@@ -12,7 +12,7 @@ from libcommon.simple_cache import upsert_response
 from libcommon.utils import Priority
 
 from worker.config import AppConfig
-from worker.job_operators.dataset.is_valid import DatasetIsValidJobRunner
+from worker.job_operators.dataset.is_valid import DatasetIsValidJobOperator
 
 from ..utils import UpstreamResponse
 
@@ -23,7 +23,7 @@ def prepare_and_clean_mongo(app_config: AppConfig) -> None:
     pass
 
 
-GetJobRunner = Callable[[str, AppConfig, bool], DatasetIsValidJobRunner]
+GetJobRunner = Callable[[str, AppConfig, bool], DatasetIsValidJobOperator]
 
 
 UPSTREAM_RESPONSE_SPLITS: UpstreamResponse = UpstreamResponse(
@@ -86,10 +86,13 @@ def get_job_runner(
         )
         return DatasetIsValidJobRunner(
             job_info={
-                "type": DatasetIsValidJobRunner.get_job_type(),
-                "dataset": dataset,
-                "config": None,
-                "split": None,
+                "type": DatasetIsValidJobOperator.get_job_type(),
+                "params": {
+                    "dataset": dataset,
+                    "config": None,
+                    "split": None,
+                    "git_revision": "1.0",
+                },
                 "job_id": "job_id",
                 "force": force,
                 "priority": Priority.NORMAL,

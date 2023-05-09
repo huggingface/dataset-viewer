@@ -6,11 +6,12 @@ from libcommon.queue import JobInfo
 from libcommon.resources import CacheMongoResource, QueueMongoResource
 from libcommon.utils import JobInfo
 
-from worker.config import AppConfig, WorkerConfig
-from worker.job_runner import CompleteJobResult, JobRunner
-from worker.job_runner_factory import BaseJobRunnerFactory
+from worker.config import AppConfig
+from worker.job_operator import JobRunner
+from worker.job_operator_factory import BaseJobOperatorFactory
 from worker.loop import Loop
 from worker.resources import LibrariesResource
+from worker.utils import CompleteJobResult
 
 
 class DummyJobRunner(JobRunner):
@@ -30,10 +31,8 @@ class DummyJobRunner(JobRunner):
         return CompleteJobResult({"key": "value"})
 
 
-class DummyJobRunnerFactory(BaseJobRunnerFactory):
+class DummyJobRunnerFactory(BaseJobOperatorFactory):
     def __init__(self, processing_graph: ProcessingGraph, processing_step: ProcessingStep, app_config: AppConfig) -> None:
-        self.common_config = CommonConfig()
-        self.worker_config = WorkerConfig()
         self.processing_step = processing_step
         self.processing_graph = processing_graph
         self.app_config = app_config
@@ -60,7 +59,7 @@ def test_process_next_job(
     loop = Loop(
         job_runner_factory=factory,
         library_cache_paths=libraries_resource.storage_paths,
-        worker_config=WorkerConfig(),
+        app_config=app_config,
         max_jobs_per_namespace=app_config.queue.max_jobs_per_namespace,
         state_file_path=worker_state_file_path,
     )

@@ -11,11 +11,11 @@ from libcommon.resources import CacheMongoResource, QueueMongoResource
 from libcommon.simple_cache import upsert_response
 from libcommon.utils import Priority
 
+from worker.common_exceptions import PreviousStepError
 from worker.config import AppConfig
 from worker.job_operators.config.opt_in_out_urls_count import (
-    ConfigOptInOutUrlsCountJobRunner,
+    ConfigOptInOutUrlsCountJobOperator,
 )
-from worker.job_runner import PreviousStepError
 
 
 @pytest.fixture(autouse=True)
@@ -24,7 +24,7 @@ def prepare_and_clean_mongo(app_config: AppConfig) -> None:
     pass
 
 
-GetJobRunner = Callable[[str, str, AppConfig, bool], ConfigOptInOutUrlsCountJobRunner]
+GetJobRunner = Callable[[str, str, AppConfig, bool], ConfigOptInOutUrlsCountJobOperator]
 
 
 @pytest.fixture
@@ -37,24 +37,27 @@ def get_job_runner(
         config: str,
         app_config: AppConfig,
         force: bool = False,
-    ) -> ConfigOptInOutUrlsCountJobRunner:
-        processing_step_name = ConfigOptInOutUrlsCountJobRunner.get_job_type()
+    ) -> ConfigOptInOutUrlsCountJobOperator:
+        processing_step_name = ConfigOptInOutUrlsCountJobOperator.get_job_type()
         processing_graph = ProcessingGraph(
             {
                 "dataset-level": {"input_type": "dataset"},
                 processing_step_name: {
                     "input_type": "config",
-                    "job_runner_version": ConfigOptInOutUrlsCountJobRunner.get_job_runner_version(),
+                    "job_runner_version": ConfigOptInOutUrlsCountJobOperator.get_job_runner_version(),
                     "triggered_by": "dataset-level",
                 },
             }
         )
-        return ConfigOptInOutUrlsCountJobRunner(
+        return ConfigOptInOutUrlsCountJobOperator(
             job_info={
-                "type": ConfigOptInOutUrlsCountJobRunner.get_job_type(),
-                "dataset": dataset,
-                "config": config,
-                "split": None,
+                "type": ConfigOptInOutUrlsCountJobOperator.get_job_type(),
+                "params": {
+                    "dataset": dataset,
+                    "config": config,
+                    "split": None,
+                    "git_revision": "1.0",
+                },
                 "job_id": "job_id",
                 "force": force,
                 "priority": Priority.NORMAL,

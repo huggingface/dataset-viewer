@@ -11,11 +11,11 @@ from libcommon.simple_cache import SplitFullName
 from libcommon.utils import Priority
 
 from worker.config import AppConfig
-from worker.job_operators.split.split_job_runner import SplitJobRunner
-from worker.job_runner import CompleteJobResult
+from worker.job_operators.split.split_job_operator import SplitJobOperator
+from worker.utils import CompleteJobResult
 
 
-class DummySplitJobRunner(SplitJobRunner):
+class DummySplitJobOperator(SplitJobOperator):
     def get_dataset_git_revision(self) -> Optional[str]:
         return "0.0.1"
 
@@ -41,13 +41,16 @@ class DummySplitJobRunner(SplitJobRunner):
 @pytest.mark.parametrize("config,split", [(None, None), (None, "split"), ("config", None)])
 def test_failed_creation(test_processing_step: ProcessingStep, app_config: AppConfig, config: str, split: str) -> None:
     with pytest.raises(CustomError) as exc_info:
-        DummySplitJobRunner(
+        DummySplitJobOperator(
             job_info={
                 "job_id": "job_id",
                 "type": test_processing_step.job_type,
-                "dataset": "dataset",
-                "config": config,
-                "split": split,
+                "params": {
+                    "dataset": "dataset",
+                    "config": config,
+                    "split": split,
+                    "git_revision": "1.0",
+                },
                 "force": False,
                 "priority": Priority.NORMAL,
             },
@@ -60,13 +63,16 @@ def test_failed_creation(test_processing_step: ProcessingStep, app_config: AppCo
 
 def test_success_creation(test_processing_step: ProcessingStep, app_config: AppConfig) -> None:
     assert (
-        DummySplitJobRunner(
+        DummySplitJobOperator(
             job_info={
                 "job_id": "job_id",
                 "type": test_processing_step.job_type,
-                "dataset": "dataset",
-                "config": "config",
-                "split": "split",
+                "params": {
+                    "dataset": "dataset",
+                    "config": "config",
+                    "split": "split",
+                    "git_revision": "1.0",
+                },
                 "force": False,
                 "priority": Priority.NORMAL,
             },

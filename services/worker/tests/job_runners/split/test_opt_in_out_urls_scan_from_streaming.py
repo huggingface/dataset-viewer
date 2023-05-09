@@ -21,7 +21,7 @@ from libcommon.utils import Priority
 from worker.config import AppConfig
 from worker.job_operators.split.opt_in_out_urls_scan_from_streaming import (
     ExternalServerError,
-    SplitOptInOutUrlsScanJobRunner,
+    SplitOptInOutUrlsScanJobOperator,
     check_spawning,
 )
 from worker.resources import LibrariesResource
@@ -29,7 +29,7 @@ from worker.resources import LibrariesResource
 from ...constants import CI_SPAWNING_TOKEN
 from ...fixtures.hub import HubDatasets, get_default_config_split
 
-GetJobRunner = Callable[[str, str, str, AppConfig, bool], SplitOptInOutUrlsScanJobRunner]
+GetJobRunner = Callable[[str, str, str, AppConfig, bool], SplitOptInOutUrlsScanJobOperator]
 
 
 async def mock_check_spawning(
@@ -65,10 +65,13 @@ def get_job_runner(
         )
         return SplitOptInOutUrlsScanJobRunner(
             job_info={
-                "type": SplitOptInOutUrlsScanJobRunner.get_job_type(),
-                "dataset": dataset,
-                "config": config,
-                "split": split,
+                "type": SplitOptInOutUrlsScanJobOperator.get_job_type(),
+                "params": {
+                    "dataset": dataset,
+                    "config": config,
+                    "split": split,
+                    "git_revision": "1.0",
+                },
                 "job_id": "job_id",
                 "force": force,
                 "priority": Priority.NORMAL,

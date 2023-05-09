@@ -3,7 +3,7 @@
 
 import logging
 from http import HTTPStatus
-from typing import Any, Literal, Mapping, Optional
+from typing import Literal, Optional
 
 from libcommon.config import CommonConfig
 from libcommon.dataset import DatasetNotFoundError, get_dataset_git_revision

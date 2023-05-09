@@ -11,14 +11,14 @@ from libcommon.resources import CacheMongoResource, QueueMongoResource
 from libcommon.simple_cache import SplitFullName, upsert_response
 from libcommon.utils import Priority
 
+from worker.common_exceptions import PreviousStepError
 from worker.config import AppConfig
 from worker.job_operators.dataset.split_names import (
-    DatasetSplitNamesJobRunner,
+    DatasetSplitNamesJobOperator,
     PreviousStepFormatError,
 )
-from worker.job_runner import PreviousStepError
 
-GetJobRunner = Callable[[str, AppConfig, bool], DatasetSplitNamesJobRunner]
+GetJobRunner = Callable[[str, AppConfig, bool], DatasetSplitNamesJobOperator]
 
 
 @pytest.fixture
@@ -42,10 +42,13 @@ def get_job_runner(
         )
         return DatasetSplitNamesJobRunner(
             job_info={
-                "type": DatasetSplitNamesJobRunner.get_job_type(),
-                "dataset": dataset,
-                "config": None,
-                "split": None,
+                "type": DatasetSplitNamesJobOperator.get_job_type(),
+                "params": {
+                    "dataset": dataset,
+                    "config": None,
+                    "split": None,
+                    "git_revision": "1.0",
+                },
                 "job_id": "job_id",
                 "force": force,
                 "priority": Priority.NORMAL,

@@ -16,14 +16,14 @@ from libcommon.simple_cache import get_response
 from libcommon.utils import Priority
 
 from worker.config import AppConfig
-from worker.job_runner import CompleteJobResult
-from worker.job_runners._datasets_based_job_runner import DatasetsBasedJobRunner
+from worker.job_operators._datasets_based_job_operator import DatasetsBasedJobOperator
 from worker.resources import LibrariesResource
+from worker.utils import CompleteJobResult
 
 from ..fixtures.hub import HubDatasets, get_default_config_split
 
 
-class DummyJobRunner(DatasetsBasedJobRunner):
+class DummyJobRunner(DatasetsBasedJobOperator):
     @staticmethod
     def get_job_type() -> str:
         return "/config-names"
@@ -35,7 +35,7 @@ class DummyJobRunner(DatasetsBasedJobRunner):
         return 1
 
     def compute(self) -> CompleteJobResult:
-        if self.config == "raise":
+        if self.job_info["params"]["config"] == "raise":
             raise ValueError("This is a test")
         else:
             return CompleteJobResult({"col1": "a" * 200})
@@ -69,9 +69,12 @@ def get_job_runner(
         return DummyJobRunner(
             job_info={
                 "type": DummyJobRunner.get_job_type(),
-                "dataset": dataset,
-                "config": config,
-                "split": split,
+                "params": {
+                    "dataset": dataset,
+                    "config": config,
+                    "split": split,
+                    "git_revision": "1.0",
+                },
                 "job_id": "job_id",
                 "force": force,
                 "priority": Priority.NORMAL,

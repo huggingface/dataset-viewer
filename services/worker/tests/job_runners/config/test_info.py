@@ -11,12 +11,12 @@ from libcommon.resources import CacheMongoResource, QueueMongoResource
 from libcommon.simple_cache import upsert_response
 from libcommon.utils import Priority
 
+from worker.common_exceptions import PreviousStepError
 from worker.config import AppConfig
 from worker.job_operators.config.info import (
-    ConfigInfoJobRunner,
+    ConfigInfoJobOperator,
     PreviousStepFormatError,
 )
-from worker.job_runner import PreviousStepError
 
 
 @pytest.fixture(autouse=True)
@@ -25,7 +25,7 @@ def prepare_and_clean_mongo(app_config: AppConfig) -> None:
     pass
 
 
-GetJobRunner = Callable[[str, str, AppConfig, bool], ConfigInfoJobRunner]
+GetJobRunner = Callable[[str, str, AppConfig, bool], ConfigInfoJobOperator]
 
 
 CONFIG_INFO_1 = {
@@ -145,24 +145,27 @@ def get_job_runner(
         config: str,
         app_config: AppConfig,
         force: bool = False,
-    ) -> ConfigInfoJobRunner:
-        processing_step_name = ConfigInfoJobRunner.get_job_type()
+    ) -> ConfigInfoJobOperator:
+        processing_step_name = ConfigInfoJobOperator.get_job_type()
         processing_graph = ProcessingGraph(
             {
                 "dataset-level": {"input_type": "dataset"},
                 processing_step_name: {
                     "input_type": "dataset",
-                    "job_runner_version": ConfigInfoJobRunner.get_job_runner_version(),
+                    "job_runner_version": ConfigInfoJobOperator.get_job_runner_version(),
                     "triggered_by": "dataset-level",
                 },
             }
         )
-        return ConfigInfoJobRunner(
+        return ConfigInfoJobOperator(
             job_info={
-                "type": ConfigInfoJobRunner.get_job_type(),
-                "dataset": dataset,
-                "config": config,
-                "split": None,
+                "type": ConfigInfoJobOperator.get_job_type(),
+                "params": {
+                    "dataset": dataset,
+                    "config": config,
+                    "split": None,
+                    "git_revision": "1.0",
+                },
                 "job_id": "job_id",
                 "force": force,
                 "priority": Priority.NORMAL,

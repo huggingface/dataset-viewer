@@ -14,12 +14,12 @@ from libcommon.simple_cache import DoesNotExist, get_response
 from libcommon.utils import Priority
 
 from worker.config import AppConfig
-from worker.job_operators.dataset.config_names import ConfigNamesJobRunner
+from worker.job_operators.dataset.config_names import ConfigNamesJobOperator
 from worker.resources import LibrariesResource
 
 from ..fixtures.hub import HubDatasets
 
-GetJobRunner = Callable[[str, AppConfig, bool], ConfigNamesJobRunner]
+GetJobRunner = Callable[[str, AppConfig, bool], ConfigNamesJobOperator]
 
 
 @pytest.fixture
@@ -32,44 +32,44 @@ def get_job_runner(
         dataset: str,
         app_config: AppConfig,
         force: bool = False,
-    ) -> ConfigNamesJobRunner:
-        processing_step_name = ConfigNamesJobRunner.get_job_type()
+    ) -> ConfigNamesJobOperator:
+        processing_step_name = ConfigNamesJobOperator.get_job_type()
         processing_graph = ProcessingGraph(
             {
                 processing_step_name: {
                     "input_type": "dataset",
-                    "job_runner_version": ConfigNamesJobRunner.get_job_runner_version(),
+                    "job_runner_version": ConfigNamesJobOperator.get_job_runner_version(),
                 }
             }
         )
-        return ConfigNamesJobRunner(
+        return ConfigNamesJobOperator(
             job_info={
-                "type": ConfigNamesJobRunner.get_job_type(),
-                "dataset": dataset,
-                "config": None,
-                "split": None,
+                "type": ConfigNamesJobOperator.get_job_type(),
+                "params": {
+                    "dataset": dataset,
+                    "config": None,
+                    "split": None,
+                    "git_revision": "1.0",
+                },
                 "job_id": "job_id",
                 "force": force,
                 "priority": Priority.NORMAL,
             },
             app_config=app_config,
+            processing_graph = ProcessingGraph(
+                {
+                    processing_step_name: {
+                        "input_type": "dataset",
+                        "job_runner_version": ConfigNamesJobOperator.get_job_runner_version(),
+                    }
+                }
+            )
             processing_step=processing_graph.get_processing_step(processing_step_name),
             processing_graph=processing_graph,
             hf_datasets_cache=libraries_resource.hf_datasets_cache,
         )
 
     return _get_job_runner
-
-
-def test_should_skip_job(app_config: AppConfig, hub_public_csv: str, get_job_runner: GetJobRunner) -> None:
-    dataset = hub_public_csv
-    job_runner = get_job_runner(dataset, app_config, False)
-    assert not job_runner.should_skip_job()
-    # we add an entry to the cache
-    job_runner.process()
-    assert job_runner.should_skip_job()
-    job_runner = get_job_runner(dataset, app_config, True)
-    assert not job_runner.should_skip_job()
 
 
 def test_process(app_config: AppConfig, hub_public_csv: str, get_job_runner: GetJobRunner) -> None:

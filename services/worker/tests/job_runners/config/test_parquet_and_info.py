@@ -22,7 +22,7 @@ from libcommon.utils import Priority
 
 from worker.config import AppConfig
 from worker.job_operators.config.parquet_and_info import (
-    ConfigParquetAndInfoJobRunner,
+    ConfigParquetAndInfoJobOperator,
     DatasetInBlockListError,
     DatasetTooBigFromDatasetsError,
     DatasetTooBigFromHubError,
@@ -59,7 +59,7 @@ def set_supported_datasets(hub_datasets: HubDatasets) -> Iterator[pytest.MonkeyP
     mp.undo()
 
 
-GetJobRunner = Callable[[str, str, AppConfig, bool], ConfigParquetAndInfoJobRunner]
+GetJobRunner = Callable[[str, str, AppConfig, bool], ConfigParquetAndInfoJobOperator]
 
 
 @pytest.fixture
@@ -73,24 +73,27 @@ def get_job_runner(
         config: str,
         app_config: AppConfig,
         force: bool = False,
-    ) -> ConfigParquetAndInfoJobRunner:
-        processing_step_name = ConfigParquetAndInfoJobRunner.get_job_type()
+    ) -> ConfigParquetAndInfoJobOperator:
+        processing_step_name = ConfigParquetAndInfoJobOperator.get_job_type()
         processing_graph = ProcessingGraph(
             {
                 "dataset-level": {"input_type": "dataset"},
                 processing_step_name: {
                     "input_type": "dataset",
-                    "job_runner_version": ConfigParquetAndInfoJobRunner.get_job_runner_version(),
+                    "job_runner_version": ConfigParquetAndInfoJobOperator.get_job_runner_version(),
                     "triggered_by": "dataset-level",
                 },
             }
         )
-        return ConfigParquetAndInfoJobRunner(
+        return ConfigParquetAndInfoJobOperator(
             job_info={
-                "type": ConfigParquetAndInfoJobRunner.get_job_type(),
-                "dataset": dataset,
-                "config": config,
-                "split": None,
+                "type": ConfigParquetAndInfoJobOperator.get_job_type(),
+                "params": {
+                    "dataset": dataset,
+                    "config": config,
+                    "split": None,
+                    "git_revision": "1.0",
+                },
                 "job_id": "job_id",
                 "force": force,
                 "priority": Priority.NORMAL,

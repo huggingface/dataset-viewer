@@ -19,17 +19,17 @@ def processing_graph(app_config: AppConfig) -> ProcessingGraph:
 
 
 @pytest.mark.parametrize(
-    "job_type,expected_job_runner",
+    "job_type,expected_job_operator",
     [
-        ("/config-names", "ConfigNamesJobRunner"),
-        ("split-first-rows-from-streaming", "SplitFirstRowsFromStreamingJobRunner"),
-        ("config-parquet-and-info", "ConfigParquetAndInfoJobRunner"),
-        ("config-parquet", "ConfigParquetJobRunner"),
-        ("dataset-parquet", "DatasetParquetJobRunner"),
-        ("config-info", "ConfigInfoJobRunner"),
-        ("dataset-info", "DatasetInfoJobRunner"),
-        ("config-size", "ConfigSizeJobRunner"),
-        ("dataset-size", "DatasetSizeJobRunner"),
+        ("/config-names", "ConfigNamesJobOperator"),
+        ("split-first-rows-from-streaming", "SplitFirstRowsFromStreamingJobOperator"),
+        ("config-parquet-and-info", "ConfigParquetAndInfoJobOperator"),
+        ("config-parquet", "ConfigParquetJobOperator"),
+        ("dataset-parquet", "DatasetParquetJobOperator"),
+        ("config-info", "ConfigInfoJobOperator"),
+        ("dataset-info", "DatasetInfoJobOperator"),
+        ("config-size", "ConfigSizeJobOperator"),
+        ("dataset-size", "DatasetSizeJobOperator"),
         ("/unknown", None),
     ],
 )
@@ -39,7 +39,7 @@ def test_create_job_runner(
     libraries_resource: LibrariesResource,
     assets_directory: StrPath,
     job_type: str,
-    expected_job_runner: Optional[str],
+    expected_job_operator: Optional[str],
 ) -> None:
     factory = JobOperatorFactory(
         app_config=app_config,
@@ -49,16 +49,19 @@ def test_create_job_runner(
     )
     job_info: JobInfo = {
         "type": job_type,
-        "dataset": "dataset",
-        "config": "config",
-        "split": "split",
+        "params": {
+            "dataset": "dataset",
+            "config": "config",
+            "split": "split",
+            "git_revision": "1.0",
+        },
         "job_id": "job_id",
         "force": False,
         "priority": Priority.NORMAL,
     }
-    if expected_job_runner is None:
+    if expected_job_operator is None:
         with pytest.raises(KeyError):
             factory.create_job_runner(job_info=job_info)
     else:
         job_runner = factory.create_job_runner(job_info=job_info)
-        assert job_runner.__class__.__name__ == expected_job_runner
+        assert job_runner.__class__.__name__ == expected_job_operator

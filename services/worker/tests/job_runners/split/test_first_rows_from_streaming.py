@@ -19,14 +19,14 @@ from libcommon.utils import Priority
 
 from worker.config import AppConfig
 from worker.job_operators.split.first_rows_from_streaming import (
-    SplitFirstRowsFromStreamingJobRunner,
+    SplitFirstRowsFromStreamingJobOperator,
 )
 from worker.resources import LibrariesResource
 from worker.utils import get_json_size
 
 from ...fixtures.hub import HubDatasets, get_default_config_split
 
-GetJobRunner = Callable[[str, str, str, AppConfig, bool], SplitFirstRowsFromStreamingJobRunner]
+GetJobRunner = Callable[[str, str, str, AppConfig, bool], SplitFirstRowsFromStreamingJobOperator]
 
 
 @pytest.fixture
@@ -57,10 +57,13 @@ def get_job_runner(
         )
         return SplitFirstRowsFromStreamingJobRunner(
             job_info={
-                "type": SplitFirstRowsFromStreamingJobRunner.get_job_type(),
-                "dataset": dataset,
-                "config": config,
-                "split": split,
+                "type": SplitFirstRowsFromStreamingJobOperator.get_job_type(),
+                "params": {
+                    "dataset": dataset,
+                    "config": config,
+                    "split": split,
+                    "git_revision": "1.0",
+                },
                 "job_id": "job_id",
                 "force": force,
                 "priority": Priority.NORMAL,
@@ -73,24 +76,6 @@ def get_job_runner(
         )
 
     return _get_job_runner
-
-
-def test_should_skip_job(app_config: AppConfig, get_job_runner: GetJobRunner, hub_public_csv: str) -> None:
-    dataset, config, split = get_default_config_split(hub_public_csv)
-    job_runner = get_job_runner(dataset, config, split, app_config, False)
-    assert not job_runner.should_skip_job()
-    # we add an entry to the cache
-    upsert_response(
-        kind="/split-names-from-streaming",
-        dataset=dataset,
-        config=config,
-        content={"splits": [{"dataset": dataset, "config": config, "split": split}]},
-        http_status=HTTPStatus.OK,
-    )
-    job_runner.process()
-    assert job_runner.should_skip_job()
-    job_runner = get_job_runner(dataset, config, split, app_config, True)
-    assert not job_runner.should_skip_job()
 
 
 def test_compute(app_config: AppConfig, get_job_runner: GetJobRunner, hub_public_csv: str) -> None:

@@ -11,9 +11,10 @@ from libcommon.resources import CacheMongoResource, QueueMongoResource
 from libcommon.simple_cache import upsert_response
 from libcommon.utils import Priority
 
+from worker.common_exceptions import PreviousStepError
 from worker.config import AppConfig
 from worker.job_operators.config.parquet import (
-    ConfigParquetJobRunner,
+    ConfigParquetJobOperator,
     ConfigParquetResponse,
     PreviousStepFormatError,
 )
@@ -21,7 +22,6 @@ from worker.job_operators.config.parquet_and_info import (
     ConfigParquetAndInfoResponse,
     ParquetFileItem,
 )
-from worker.job_runner import PreviousStepError
 
 
 @pytest.fixture(autouse=True)
@@ -30,7 +30,7 @@ def prepare_and_clean_mongo(app_config: AppConfig) -> None:
     pass
 
 
-GetJobRunner = Callable[[str, str, AppConfig, bool], ConfigParquetJobRunner]
+GetJobRunner = Callable[[str, str, AppConfig, bool], ConfigParquetJobOperator]
 
 
 @pytest.fixture
@@ -57,10 +57,13 @@ def get_job_runner(
         )
         return ConfigParquetJobRunner(
             job_info={
-                "type": ConfigParquetJobRunner.get_job_type(),
-                "dataset": dataset,
-                "config": config,
-                "split": None,
+                "type": ConfigParquetJobOperator.get_job_type(),
+                "params": {
+                    "dataset": dataset,
+                    "config": config,
+                    "split": None,
+                    "git_revision": "1.0",
+                },
                 "job_id": "job_id",
                 "force": force,
                 "priority": Priority.NORMAL,

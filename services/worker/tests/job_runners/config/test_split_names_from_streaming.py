@@ -17,13 +17,13 @@ from libcommon.utils import Priority
 
 from worker.config import AppConfig
 from worker.job_operators.config.split_names_from_streaming import (
-    SplitNamesFromStreamingJobRunner,
+    SplitNamesFromStreamingJobOperator,
 )
 from worker.resources import LibrariesResource
 
 from ...fixtures.hub import HubDatasets, get_default_config_split
 
-GetJobRunner = Callable[[str, str, AppConfig, bool], SplitNamesFromStreamingJobRunner]
+GetJobRunner = Callable[[str, str, AppConfig, bool], SplitNamesFromStreamingJobOperator]
 
 
 @pytest.fixture
@@ -51,10 +51,13 @@ def get_job_runner(
         )
         return SplitNamesFromStreamingJobRunner(
             job_info={
-                "type": SplitNamesFromStreamingJobRunner.get_job_type(),
-                "dataset": dataset,
-                "config": config,
-                "split": None,
+                "type": SplitNamesFromStreamingJobOperator.get_job_type(),
+                "params": {
+                    "dataset": dataset,
+                    "config": config,
+                    "split": None,
+                    "git_revision": "1.0",
+                },
                 "job_id": "job_id",
                 "force": force,
                 "priority": Priority.NORMAL,

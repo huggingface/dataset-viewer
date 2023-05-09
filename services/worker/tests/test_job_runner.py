@@ -16,8 +16,9 @@ from libcommon.simple_cache import (
 )
 from libcommon.utils import Priority, Status
 
+from worker.common_exceptions import PreviousStepError
 from worker.config import AppConfig
-from worker.job_runner import ERROR_CODES_TO_RETRY, JobRunner, PreviousStepError
+from worker.job_runner import ERROR_CODES_TO_RETRY, JobRunner
 from worker.utils import CompleteJobResult
 
 
@@ -180,9 +181,12 @@ def test_should_skip_job(
         job_info={
             "job_id": job_id,
             "type": test_processing_step.job_type,
-            "dataset": dataset,
-            "config": config,
-            "split": split,
+            "params": {
+                "dataset": dataset,
+                "config": config,
+                "split": split,
+                "git_revision": "1.0",
+            },
             "force": force,
             "priority": Priority.NORMAL,
         },
@@ -225,9 +229,12 @@ def test_check_type(
             job_info={
                 "job_id": job_id,
                 "type": job_type,
-                "dataset": dataset,
-                "config": config,
-                "split": split,
+                "params": {
+                    "dataset": dataset,
+                    "config": config,
+                    "split": split,
+                    "git_revision": "1.0",
+                },
                 "force": force,
                 "priority": Priority.NORMAL,
             },
@@ -240,9 +247,12 @@ def test_check_type(
             job_info={
                 "job_id": job_id,
                 "type": test_processing_step.job_type,
-                "dataset": dataset,
-                "config": config,
-                "split": split,
+                "params": {
+                    "dataset": dataset,
+                    "config": config,
+                    "split": split,
+                    "git_revision": "1.0",
+                },
                 "force": force,
                 "priority": Priority.NORMAL,
             },
@@ -266,9 +276,12 @@ def test_create_children_jobs(app_config: AppConfig) -> None:
         job_info={
             "job_id": "job_id",
             "type": root_step.job_type,
-            "dataset": "dataset",
-            "config": None,
-            "split": None,
+            "params": {
+                "dataset": "dataset",
+                "config": None,
+                "split": None,
+                "git_revision": "1.0",
+            },
             "force": False,
             "priority": Priority.LOW,
         },
@@ -319,9 +332,12 @@ def test_job_runner_set_crashed(
         job_info={
             "job_id": job_id,
             "type": test_processing_step.job_type,
-            "dataset": dataset,
-            "config": config,
-            "split": split,
+            "params": {
+                "dataset": dataset,
+                "config": config,
+                "split": split,
+                "git_revision": "1.0",
+            },
             "force": force,
             "priority": Priority.NORMAL,
         },
@@ -366,9 +382,12 @@ def test_raise_if_parallel_response_exists(
         job_info={
             "job_id": "job_id",
             "type": "/dummy",
-            "dataset": dataset,
-            "config": config,
-            "split": split,
+            "params": {
+                "dataset": dataset,
+                "config": config,
+                "split": split,
+                "git_revision": "1.0",
+            },
             "force": False,
             "priority": Priority.NORMAL,
         },
