@@ -337,3 +337,7 @@ def get_dataset_git_revision(
     return get_dataset_info_for_supported_datasets(  # type: ignore
         dataset=dataset, hf_endpoint=hf_endpoint, hf_token=hf_token, hf_timeout_seconds=hf_timeout_seconds
     ).sha
+
+
+def get_supported_dataset_infos(hf_endpoint: str, hf_token: Optional[str] = None) -> list[DatasetInfo]:
+    return [d for d in HfApi(endpoint=hf_endpoint, token=hf_token).list_datasets() if is_supported(d)]
