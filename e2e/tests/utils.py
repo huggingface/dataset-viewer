@@ -9,7 +9,6 @@ from typing import Any, Mapping, Optional, Tuple
 
 import requests
 from requests import Response
-from requests.auth import AuthBase
 
 PORT_REVERSE_PROXY = os.environ.get("PORT_REVERSE_PROXY", "8000")
 API_UVICORN_PORT = os.environ.get("API_UVICORN_PORT", "8080")
