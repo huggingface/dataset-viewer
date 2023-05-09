@@ -103,17 +103,13 @@ class CacheState:
 
 
 @dataclass
-class ArtifactState:
-    """The state of an artifact."""
+class Artifact:
+    """An artifact."""
 
     processing_step: ProcessingStep
     dataset: str
     config: Optional[str]
     split: Optional[str]
-    error_codes_to_retry: Optional[List[str]] = None
-
-    job_state: JobState = field(init=False)
-    cache_state: CacheState = field(init=False)
 
     def __post_init__(self) -> None:
         if self.processing_step.input_type == "dataset":
@@ -131,6 +127,17 @@ class ArtifactState:
             dataset=self.dataset, config=self.config, split=self.split, prefix=self.processing_step.name
         )
 
+
+@dataclass
+class ArtifactState(Artifact):
+    """The state of an artifact."""
+
+    error_codes_to_retry: Optional[List[str]] = None
+
+    job_state: JobState = field(init=False)
+    cache_state: CacheState = field(init=False)
+
+    def __post_init__(self) -> None:
         self.job_state = JobState(
             job_type=self.processing_step.job_type,
             dataset=self.dataset,
