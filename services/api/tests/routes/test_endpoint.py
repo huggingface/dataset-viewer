@@ -2,13 +2,13 @@
 # Copyright 2022 The HuggingFace Authors.
 
 from http import HTTPStatus
+from unittest.mock import patch
 
 from libcommon.config import ProcessingGraphConfig
 from libcommon.processing_graph import ProcessingGraph
 from libcommon.queue import Queue
 from libcommon.simple_cache import upsert_response
 from pytest import raises
-from unittest.mock import patch
 
 from api.config import AppConfig, EndpointConfig
 from api.routes.endpoint import EndpointsDefinition, get_cache_entry_from_steps
