@@ -7,14 +7,14 @@ from libcommon.resources import CacheMongoResource, QueueMongoResource
 from libcommon.utils import JobInfo
 
 from worker.config import AppConfig
-from worker.job_operator import JobRunner
+from worker.job_operator import JobOperator
 from worker.job_operator_factory import BaseJobOperatorFactory
 from worker.loop import Loop
 from worker.resources import LibrariesResource
 from worker.utils import CompleteJobResult
 
 
-class DummyJobRunner(JobRunner):
+class DummyJobOperator(JobOperator):
     # override get_dataset_git_revision to avoid making a request to the Hub
     def get_dataset_git_revision(self) -> Optional[str]:
         return "0.1.2"
@@ -37,8 +37,8 @@ class DummyJobRunnerFactory(BaseJobOperatorFactory):
         self.processing_graph = processing_graph
         self.app_config = app_config
 
-    def _create_job_runner(self, job_info: JobInfo) -> JobRunner:
-        return DummyJobRunner(
+    def _create_job_runner(self, job_info: JobInfo) -> JobOperator:
+        return DummyJobOperator(
             job_info=job_info,
             app_config=self.app_config,
             processing_step=self.processing_step,

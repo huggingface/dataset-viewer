@@ -1,9 +1,7 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2022 The HuggingFace Authors.
 
-from dataclasses import replace
 from datetime import datetime
-from http import HTTPStatus
 from pathlib import Path
 from typing import Callable, Optional
 
@@ -12,7 +10,6 @@ import pytest
 from libcommon.processing_graph import ProcessingGraph, ProcessingStep
 from libcommon.utils import Priority
 from libcommon.resources import CacheMongoResource, QueueMongoResource
-from libcommon.simple_cache import get_response
 from libcommon.utils import Priority
 
 from worker.config import AppConfig
@@ -20,7 +17,7 @@ from worker.job_operators._datasets_based_job_operator import DatasetsBasedJobOp
 from worker.resources import LibrariesResource
 from worker.utils import CompleteJobResult
 
-from ..fixtures.hub import HubDatasets, get_default_config_split
+from ..fixtures.hub import get_default_config_split
 
 
 class DummyJobRunner(DatasetsBasedJobOperator):
@@ -35,10 +32,7 @@ class DummyJobRunner(DatasetsBasedJobOperator):
         return 1
 
     def compute(self) -> CompleteJobResult:
-        if self.job_info["params"]["config"] == "raise":
-            raise ValueError("This is a test")
-        else:
-            return CompleteJobResult({"col1": "a" * 200})
+        return CompleteJobResult({"col1": "a" * 200})
 
 
 GetJobRunner = Callable[[str, Optional[str], Optional[str], AppConfig, bool], DummyJobRunner]
@@ -141,22 +135,6 @@ def test_set_and_unset_cache(app_config: AppConfig, get_job_runner: GetJobRunner
     assert str(datasets.config.HF_DATASETS_CACHE).startswith(str(datasets_base_path))
     assert "-config-names-user-dataset" in str(datasets.config.HF_DATASETS_CACHE)
     job_runner.unset_cache()
-    assert_datasets_cache_path(path=datasets_base_path, exists=True)
-
-
-@pytest.mark.parametrize("config", ["raise", "dont_raise"])
-def test_process(app_config: AppConfig, get_job_runner: GetJobRunner, hub_public_csv: str, config: str) -> None:
-    # ^ this test requires an existing dataset, otherwise .process fails before setting the cache
-    # it must work in both cases: when the job fails and when it succeeds
-    dataset = hub_public_csv
-    split = "split"
-    job_runner = get_job_runner(dataset, config, split, app_config, False)
-    datasets_base_path = job_runner.base_datasets_cache
-    # the datasets library sets the cache to its own default
-    assert_datasets_cache_path(path=datasets_base_path, exists=False, equals=False)
-    result = job_runner.process()
-    assert result is (config != "raise")
-    # the configured cache is now set (after having deleted a subdirectory used for the job)
     assert_datasets_cache_path(path=datasets_base_path, exists=True)
 
 

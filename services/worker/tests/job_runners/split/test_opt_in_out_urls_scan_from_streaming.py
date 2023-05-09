@@ -15,7 +15,7 @@ from libcommon.exceptions import CustomError
 from libcommon.processing_graph import ProcessingGraph
 from libcommon.utils import Priority
 from libcommon.resources import CacheMongoResource, QueueMongoResource
-from libcommon.simple_cache import get_response, upsert_response
+from libcommon.simple_cache import upsert_response
 from libcommon.utils import Priority
 
 from worker.config import AppConfig
@@ -194,14 +194,9 @@ def test_compute(
         http_status=HTTPStatus.OK,
     )
     with patch("worker.job_operators.split.opt_in_out_urls_scan_from_streaming.check_spawning", mock_check_spawning):
-        assert job_runner.process()
-    cached_response = get_response(
-        kind=job_runner.processing_step.cache_kind, dataset=dataset, config=config, split=split
-    )
-    assert cached_response
-    assert cached_response["content"] == expected_content
-    assert cached_response["http_status"] == HTTPStatus.OK
-    assert cached_response["error_code"] is None
+        response = job_runner.compute()
+    assert response
+    assert response.content == expected_content
 
 
 @pytest.mark.parametrize(

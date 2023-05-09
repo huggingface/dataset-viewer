@@ -17,7 +17,7 @@ from libcommon.exceptions import CustomError
 from libcommon.processing_graph import ProcessingGraph
 from libcommon.utils import Priority
 from libcommon.resources import CacheMongoResource, QueueMongoResource
-from libcommon.simple_cache import DoesNotExist, get_response, upsert_response
+from libcommon.simple_cache import upsert_response
 from libcommon.utils import Priority
 
 from worker.config import AppConfig
@@ -138,13 +138,10 @@ def test_compute(
         content=hub_datasets["public"]["config_names_response"],
     )
     job_runner = get_job_runner(dataset, config, app_config, False)
-    assert job_runner.process()
-    cached_response = get_response(kind=job_runner.processing_step.cache_kind, dataset=dataset, config=config)
-    assert cached_response["http_status"] == HTTPStatus.OK
-    assert cached_response["error_code"] is None
-    assert cached_response["job_runner_version"] == job_runner.get_job_runner_version()
-    assert cached_response["dataset_git_revision"] is not None
-    content = cached_response["content"]
+    response = job_runner.compute()
+    assert response
+    content = response.content
+    assert content
     assert len(content["parquet_files"]) == 1
     assert_content_is_equal(content, hub_datasets["public"]["parquet_and_info_response"])
 
@@ -170,7 +167,7 @@ def test_compute_legacy_configs(
     # first compute and push parquet files for each config for dataset with script with two configs
     for config in original_configs:
         job_runner = get_job_runner(dataset_name, config, app_config, False)
-        assert job_runner.process()
+        assert job_runner.compute()
     hf_api = HfApi(endpoint=CI_HUB_ENDPOINT, token=CI_USER_TOKEN)
     dataset_info = hf_api.dataset_info(
         repo_id=hub_public_legacy_configs, revision=app_config.parquet_and_info.target_revision, files_metadata=False
@@ -199,7 +196,7 @@ def test_compute_legacy_configs(
         },
     )
     job_runner = get_job_runner(dataset_name, "first", app_config, False)
-    assert job_runner.process()
+    assert job_runner.compute()
     dataset_info = hf_api.dataset_info(
         repo_id=hub_public_legacy_configs, revision=app_config.parquet_and_info.target_revision, files_metadata=False
     )
@@ -213,14 +210,6 @@ def test_compute_legacy_configs(
     }
     assert len(updated_repo_configs) == 1
     assert updated_repo_configs == {"first"}
-
-
-def test_doesnotexist(app_config: AppConfig, get_job_runner: GetJobRunner) -> None:
-    dataset, config = "doesnotexist", "nonexisting"
-    job_runner = get_job_runner(dataset, config, app_config, False)
-    assert not job_runner.process()
-    with pytest.raises(DoesNotExist):
-        get_response(kind=job_runner.processing_step.cache_kind, dataset=dataset, config=config)
 
 
 @pytest.mark.parametrize(
@@ -425,10 +414,9 @@ def test_not_supported_if_big(
         content=hub_datasets["big"]["config_names_response"],
     )
     job_runner = get_job_runner(dataset, config, app_config, False)
-    assert not job_runner.process()
-    cached_response = get_response(kind=job_runner.processing_step.cache_kind, dataset=dataset, config=config)
-    assert cached_response["http_status"] == HTTPStatus.NOT_IMPLEMENTED
-    assert cached_response["error_code"] == "DatasetTooBigFromDatasetsError"
+    with pytest.raises(CustomError) as e:
+        job_runner.compute()
+    assert e.type.__name__ == "DatasetTooBigFromDatasetsError"
 
 
 def test_supported_if_gated(
@@ -446,10 +434,9 @@ def test_supported_if_gated(
         content=hub_datasets["gated"]["config_names_response"],
     )
     job_runner = get_job_runner(dataset, config, app_config, False)
-    assert job_runner.process()
-    cached_response = get_response(kind=job_runner.processing_step.cache_kind, dataset=dataset, config=config)
-    assert cached_response["http_status"] == HTTPStatus.OK
-    assert cached_response["error_code"] is None
+    response = job_runner.compute()
+    assert response
+    assert response.content
 
 
 def test_not_supported_if_gated_with_extra_fields(
@@ -467,10 +454,9 @@ def test_not_supported_if_gated_with_extra_fields(
         content=hub_datasets["gated_extra_fields"]["config_names_response"],
     )
     job_runner = get_job_runner(dataset, config, app_config, False)
-    assert not job_runner.process()
-    cached_response = get_response(kind=job_runner.processing_step.cache_kind, dataset=dataset, config=config)
-    assert cached_response["http_status"] == HTTPStatus.NOT_FOUND
-    assert cached_response["error_code"] == "GatedExtraFieldsError"
+    with pytest.raises(CustomError) as e:
+        job_runner.compute()
+    assert e.type.__name__ == "GatedExtraFieldsError"
 
 
 def test_blocked(
@@ -488,10 +474,9 @@ def test_blocked(
         content=hub_datasets["jsonl"]["config_names_response"],
     )
     job_runner = get_job_runner(dataset, config, app_config, False)
-    assert not job_runner.process()
-    cached_response = get_response(kind=job_runner.processing_step.cache_kind, dataset=dataset, config=config)
-    assert cached_response["http_status"] == HTTPStatus.NOT_IMPLEMENTED
-    assert cached_response["error_code"] == "DatasetInBlockListError"
+    with pytest.raises(CustomError) as e:
+        job_runner.compute()
+    assert e.type.__name__ == "DatasetInBlockListError"
 
 
 @pytest.mark.parametrize(

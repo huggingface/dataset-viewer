@@ -2,7 +2,6 @@
 # Copyright 2022 The HuggingFace Authors.
 
 from dataclasses import replace
-from http import HTTPStatus
 from typing import Callable
 
 import pytest
@@ -10,14 +9,13 @@ from libcommon.exceptions import CustomError
 from libcommon.processing_graph import ProcessingGraph
 from libcommon.utils import Priority
 from libcommon.resources import CacheMongoResource, QueueMongoResource
-from libcommon.simple_cache import DoesNotExist, get_response
 from libcommon.utils import Priority
 
 from worker.config import AppConfig
 from worker.job_operators.dataset.config_names import ConfigNamesJobOperator
 from worker.resources import LibrariesResource
 
-from ..fixtures.hub import HubDatasets
+from ...fixtures.hub import HubDatasets
 
 GetJobRunner = Callable[[str, AppConfig, bool], ConfigNamesJobOperator]
 
@@ -72,26 +70,12 @@ def get_job_runner(
     return _get_job_runner
 
 
-def test_process(app_config: AppConfig, hub_public_csv: str, get_job_runner: GetJobRunner) -> None:
+def test_compute(app_config: AppConfig, hub_public_csv: str, get_job_runner: GetJobRunner) -> None:
     dataset = hub_public_csv
     job_runner = get_job_runner(dataset, app_config, False)
-    assert job_runner.process()
-    cached_response = get_response(kind=job_runner.processing_step.cache_kind, dataset=hub_public_csv)
-    assert cached_response["http_status"] == HTTPStatus.OK
-    assert cached_response["error_code"] is None
-    assert cached_response["job_runner_version"] == job_runner.get_job_runner_version()
-    assert cached_response["dataset_git_revision"] is not None
-    assert cached_response["error_code"] is None
-    content = cached_response["content"]
+    response = job_runner.compute()
+    content = response.content
     assert len(content["config_names"]) == 1
-
-
-def test_doesnotexist(app_config: AppConfig, get_job_runner: GetJobRunner) -> None:
-    dataset = "doesnotexist"
-    job_runner = get_job_runner(dataset, app_config, False)
-    assert not job_runner.process()
-    with pytest.raises(DoesNotExist):
-        get_response(kind=job_runner.processing_step.cache_kind, dataset=dataset)
 
 
 @pytest.mark.parametrize(
