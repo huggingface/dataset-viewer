@@ -3,12 +3,10 @@
 from http import HTTPStatus
 from typing import Any, Dict, List, Optional
 
-from libcommon.processing_graph import ProcessingGraph, ProcessingGraphSpecification
+from libcommon.processing_graph import ProcessingGraph
 from libcommon.queue import Queue, Status
 from libcommon.simple_cache import upsert_response
 from libcommon.state import DatasetState
-
-CURRENT_GIT_REVISION = "current_git_revision"
 
 DATASET_NAME = "dataset"
 
@@ -24,17 +22,9 @@ SPLIT_NAMES_CONTENT = {
     "splits": [{"dataset": DATASET_NAME, "config": CONFIG_NAME_1, "split": split_name} for split_name in SPLIT_NAMES]
 }
 
-STEP_VERSION = 1
-STEP_DATASET_A = "dataset-a"
-STEP_CONFIG_B = "config-b"
-STEP_SPLIT_C = "split-c"
-SIMPLE_PROCESSING_GRAPH_SPECIFICATION: ProcessingGraphSpecification = {
-    STEP_DATASET_A: {"input_type": "dataset", "provides_dataset_config_names": True},
-    STEP_CONFIG_B: {"input_type": "config", "provides_config_split_names": True, "triggered_by": STEP_DATASET_A},
-    STEP_SPLIT_C: {"input_type": "split", "triggered_by": STEP_CONFIG_B},
-}
 
 DATASET_GIT_REVISION = "dataset_git_revision"
+OTHER_DATASET_GIT_REVISION = "other_dataset_git_revision"
 JOB_RUNNER_VERSION = 1
 
 
@@ -81,7 +71,12 @@ def assert_dataset_state(
     assert_equality(dataset_state.plan.as_response(), tasks, context="tasks")
 
 
-def put_cache(artifact: str, error_code: Optional[str] = None) -> None:
+def put_cache(
+    artifact: str,
+    error_code: Optional[str] = None,
+    use_old_job_runner_version: Optional[bool] = False,
+    use_other_git_revision: Optional[bool] = False,
+) -> None:
     parts = artifact.split(",")
     if len(parts) < 2 or len(parts) > 4:
         raise ValueError(f"Unexpected artifact {artifact}: should have at least 2 parts and at most 4")
@@ -119,8 +114,8 @@ def put_cache(artifact: str, error_code: Optional[str] = None) -> None:
         split=split,
         content=content,
         http_status=http_status,
-        job_runner_version=JOB_RUNNER_VERSION,
-        dataset_git_revision=DATASET_GIT_REVISION,
+        job_runner_version=JOB_RUNNER_VERSION - 1 if use_old_job_runner_version else JOB_RUNNER_VERSION,
+        dataset_git_revision=OTHER_DATASET_GIT_REVISION if use_other_git_revision else DATASET_GIT_REVISION,
         error_code=error_code,
     )
 
@@ -215,16 +210,6 @@ def compute_all(
 #         "requires": ["config-size", "/config-names"],
 #         "job_runner_version": PROCESSING_STEP_DATASET_SIZE_VERSION,
 #     },
-#     "dataset-split-names-from-streaming": {
-#         "input_type": "dataset",
-#         "requires": ["/split-names-from-streaming", "/config-names"],
-#         "job_runner_version": PROCESSING_STEP_DATASET_SPLIT_NAMES_FROM_STREAMING_VERSION,
-#     },  # to be deprecated
-#     "dataset-split-names-from-dataset-info": {
-#         "input_type": "dataset",
-#         "requires": ["/split-names-from-dataset-info", "/config-names"],
-#         "job_runner_version": PROCESSING_STEP_DATASET_SPLIT_NAMES_FROM_DATASET_INFO_VERSION,
-#     },  # to be deprecated
 #     "dataset-split-names": {
 #         "input_type": "dataset",
 #         "requires": ["/split-names-from-dataset-info", "/split-names-from-streaming", "/config-names"],

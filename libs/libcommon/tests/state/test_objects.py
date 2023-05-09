@@ -24,9 +24,8 @@ from .utils import (
     CONFIG_NAME_1,
     CONFIG_NAMES,
     CONFIG_NAMES_CONTENT,
-    CURRENT_GIT_REVISION,
+    DATASET_GIT_REVISION,
     DATASET_NAME,
-    SIMPLE_PROCESSING_GRAPH_SPECIFICATION,
     SPLIT_NAME_1,
     SPLIT_NAMES,
     SPLIT_NAMES_CONTENT,
@@ -49,7 +48,16 @@ NAMES_FIELD = "names"
 NAMES_RESPONSE_OK = ResponseSpec(
     content={NAMES_FIELD: [{NAME_FIELD: name} for name in NAMES]}, http_status=HTTPStatus.OK
 )
-PROCESSING_GRAPH = ProcessingGraph(processing_graph_specification=SIMPLE_PROCESSING_GRAPH_SPECIFICATION)
+STEP_DATASET_A = "dataset-a"
+STEP_CONFIG_B = "config-b"
+STEP_SPLIT_C = "split-c"
+PROCESSING_GRAPH = ProcessingGraph(
+    processing_graph_specification={
+        STEP_DATASET_A: {"input_type": "dataset", "provides_dataset_config_names": True},
+        STEP_CONFIG_B: {"input_type": "config", "provides_config_split_names": True, "triggered_by": STEP_DATASET_A},
+        STEP_SPLIT_C: {"input_type": "split", "triggered_by": STEP_CONFIG_B},
+    }
+)
 RESPONSE_ERROR = ResponseSpec(content=CONTENT_ERROR, http_status=HTTPStatus.INTERNAL_SERVER_ERROR)
 
 
@@ -263,7 +271,7 @@ def test_dataset_state_as_dict() -> None:
         content=SPLIT_NAMES_CONTENT,
         http_status=HTTPStatus.OK,
     )
-    dataset_state = DatasetState(dataset=dataset, processing_graph=PROCESSING_GRAPH, revision=CURRENT_GIT_REVISION)
+    dataset_state = DatasetState(dataset=dataset, processing_graph=PROCESSING_GRAPH, revision=DATASET_GIT_REVISION)
 
     assert dataset_state.dataset == dataset
 
