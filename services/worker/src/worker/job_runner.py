@@ -265,19 +265,6 @@ class JobRunner:
             self.debug(f"response for dataset={self.dataset} job_info={self.job_info} had an error, cache updated")
             return False
 
-    # should be overridden if the job has children jobs of type "split"
-    def get_new_splits(self, content: Mapping[str, Any]) -> set[SplitFullName]:
-        """Get the set of new splits, from the content created by the compute.
-
-        Can be empty.
-
-        Args:
-            content (:obj:`Mapping[str, Any]`): the content created by the compute.
-        Returns:
-            :obj:`set[SplitFullName]`: the set of new splits full names.
-        """
-        return set()
-
     def create_children_jobs(self) -> None:
         """Create children jobs for the current job."""
         children = self.processing_graph.get_children(self.processing_step.name)
@@ -291,7 +278,9 @@ class JobRunner:
             # if the response is not in the cache, we don't create the children jobs
             return
         if response_in_cache["http_status"] == HTTPStatus.OK:
-            new_split_full_names_for_split: set[SplitFullName] = self.get_new_splits(response_in_cache["content"])
+            new_split_full_names_for_split: set[SplitFullName] = self.job_operator.get_new_splits(
+                response_in_cache["content"]
+            )
             new_split_full_names_for_config: set[SplitFullName] = {
                 SplitFullName(dataset=s.dataset, config=s.config, split=None) for s in new_split_full_names_for_split
             }
