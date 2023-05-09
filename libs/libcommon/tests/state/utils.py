@@ -65,11 +65,20 @@ def assert_dataset_state(
             assert_equality(
                 dataset_state.config_states[0].split_names, split_names_in_first_config, context="split_names"
             )
-    computed_cache_status = dataset_state.cache_status.as_response()
+    computed_cache_status = {
+        "cache_has_different_git_revision": sorted(dataset_state.cache_status.cache_has_different_git_revision.keys()),
+        "cache_is_outdated_by_parent": sorted(dataset_state.cache_status.cache_is_outdated_by_parent.keys()),
+        "cache_is_empty": sorted(dataset_state.cache_status.cache_is_empty.keys()),
+        "cache_is_error_to_retry": sorted(dataset_state.cache_status.cache_is_error_to_retry.keys()),
+        "cache_is_job_runner_obsolete": sorted(dataset_state.cache_status.cache_is_job_runner_obsolete.keys()),
+        "up_to_date": sorted(dataset_state.cache_status.up_to_date.keys()),
+    }
     for key, value in cache_status.items():
         assert_equality(computed_cache_status[key], value, key)
-    assert_equality(dataset_state.queue_status.as_response(), queue_status, context="queue_status")
-    assert_equality(dataset_state.plan.as_response(), tasks, context="tasks")
+    assert_equality(
+        {"in_process": sorted(dataset_state.queue_status.in_process.keys())}, queue_status, context="queue_status"
+    )
+    assert_equality(sorted(task.id for task in dataset_state.plan.tasks), tasks, context="tasks")
 
 
 def put_cache(
