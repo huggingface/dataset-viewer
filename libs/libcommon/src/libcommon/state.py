@@ -7,7 +7,7 @@ import contextlib
 import logging
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
-from typing import Any, Dict, List, Optional
+from typing import Dict, List, Optional
 
 from libcommon.processing_graph import ProcessingGraph, ProcessingStep
 from libcommon.queue import Priority, Queue, Status
@@ -111,6 +111,8 @@ class Artifact:
     config: Optional[str]
     split: Optional[str]
 
+    id: str = field(init=False)
+
     def __post_init__(self) -> None:
         if self.processing_step.input_type == "dataset":
             if self.config is not None or self.split is not None:
@@ -138,6 +140,7 @@ class ArtifactState(Artifact):
     cache_state: CacheState = field(init=False)
 
     def __post_init__(self) -> None:
+        super().__post_init__()
         self.job_state = JobState(
             job_type=self.processing_step.job_type,
             dataset=self.dataset,

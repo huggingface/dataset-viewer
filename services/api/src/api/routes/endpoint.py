@@ -7,9 +7,13 @@ from http import HTTPStatus
 from typing import List, Mapping, Optional, Tuple
 
 from libcommon.dataset import get_dataset_git_revision
-from libcommon.queue import Priority
 from libcommon.processing_graph import InputType, ProcessingGraph, ProcessingStep
-from libcommon.simple_cache import CACHED_RESPONSE_NOT_FOUND, CacheEntry, get_best_response
+from libcommon.queue import Priority
+from libcommon.simple_cache import (
+    CACHED_RESPONSE_NOT_FOUND,
+    CacheEntry,
+    get_best_response,
+)
 from libcommon.state import Artifact, DatasetState
 from starlette.requests import Request
 from starlette.responses import Response
