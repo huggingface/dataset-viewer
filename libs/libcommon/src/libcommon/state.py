@@ -249,10 +249,23 @@ class CacheStatus:
     cache_is_job_runner_obsolete: Dict[str, ArtifactState] = field(default_factory=dict)
     up_to_date: Dict[str, ArtifactState] = field(default_factory=dict)
 
+    def as_response(self) -> Dict[str, List[str]]:
+        return {
+            "cache_has_different_git_revision": sorted(self.cache_has_different_git_revision.keys()),
+            "cache_is_outdated_by_parent": sorted(self.cache_is_outdated_by_parent.keys()),
+            "cache_is_empty": sorted(self.cache_is_empty.keys()),
+            "cache_is_error_to_retry": sorted(self.cache_is_error_to_retry.keys()),
+            "cache_is_job_runner_obsolete": sorted(self.cache_is_job_runner_obsolete.keys()),
+            "up_to_date": sorted(self.up_to_date.keys()),
+        }
+
 
 @dataclass
 class QueueStatus:
     in_process: Dict[str, ArtifactState] = field(default_factory=dict)
+
+    def as_response(self) -> Dict[str, List[str]]:
+        return {"in_process": sorted(self.in_process.keys())}
 
 
 @dataclass
@@ -319,6 +332,9 @@ class Plan:
             logging.debug(f"Running task {task.id}")
             task.run()
         return len(self.tasks)
+
+    def as_response(self) -> List[str]:
+        return sorted(task.id for task in self.tasks)
 
 
 @dataclass
@@ -519,3 +535,11 @@ class DatasetState:
             The number of jobs created.
         """
         return self.plan.run()
+
+    def as_response(self) -> Dict[str, Any]:
+        return {
+            "dataset": self.dataset,
+            "cache_status": self.cache_status.as_response(),
+            "queue_status": self.queue_status.as_response(),
+            "plan": self.plan.as_response(),
+        }
