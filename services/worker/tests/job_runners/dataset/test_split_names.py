@@ -13,12 +13,12 @@ from libcommon.utils import Priority
 
 from worker.common_exceptions import PreviousStepError
 from worker.config import AppConfig
-from worker.job_operators.dataset.split_names import (
-    DatasetSplitNamesJobOperator,
+from worker.job_runners.dataset.split_names import (
+    DatasetSplitNamesJobRunner,
     PreviousStepFormatError,
 )
 
-GetJobRunner = Callable[[str, AppConfig, bool], DatasetSplitNamesJobOperator]
+GetJobRunner = Callable[[str, AppConfig, bool], DatasetSplitNamesJobRunner]
 
 
 @pytest.fixture
@@ -42,7 +42,7 @@ def get_job_runner(
         )
         return DatasetSplitNamesJobRunner(
             job_info={
-                "type": DatasetSplitNamesJobOperator.get_job_type(),
+                "type": DatasetSplitNamesJobRunner.get_job_type(),
                 "params": {
                     "dataset": dataset,
                     "config": None,

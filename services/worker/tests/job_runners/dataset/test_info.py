@@ -13,8 +13,8 @@ from libcommon.utils import Priority
 
 from worker.common_exceptions import PreviousStepError
 from worker.config import AppConfig
-from worker.job_operators.dataset.info import (
-    DatasetInfoJobOperator,
+from worker.job_runners.dataset.info import (
+    DatasetInfoJobRunner,
     PreviousStepFormatError,
 )
 from worker.utils import PreviousJob
@@ -29,7 +29,7 @@ def prepare_and_clean_mongo(app_config: AppConfig) -> None:
     pass
 
 
-GetJobRunner = Callable[[str, AppConfig, bool], DatasetInfoJobOperator]
+GetJobRunner = Callable[[str, AppConfig, bool], DatasetInfoJobRunner]
 
 
 UPSTREAM_RESPONSE_CONFIG_NAMES: UpstreamResponse = UpstreamResponse(
@@ -128,7 +128,7 @@ def get_job_runner(
         )
         return DatasetInfoJobRunner(
             job_info={
-                "type": DatasetInfoJobOperator.get_job_type(),
+                "type": DatasetInfoJobRunner.get_job_type(),
                 "params": {
                     "dataset": dataset,
                     "config": None,

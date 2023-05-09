@@ -9,7 +9,7 @@ from libcommon.constants import PROCESSING_STEP_DATASET_SPLIT_NAMES_VERSION
 from libcommon.simple_cache import SplitFullName, get_best_response
 
 from worker.common_exceptions import JobRunnerError
-from worker.job_operators.dataset.dataset_job_operator import DatasetJobOperator
+from worker.job_runners.dataset.dataset_job_runner import DatasetJobRunner
 from worker.utils import (
     ConfigItem,
     DatasetSplitNamesResponse,
@@ -125,7 +125,7 @@ def compute_dataset_split_names_response(dataset: str) -> Tuple[DatasetSplitName
     )
 
 
-class DatasetSplitNamesJobOperator(DatasetJobOperator):
+class DatasetSplitNamesJobRunner(DatasetJobRunner):
     @staticmethod
     def get_job_type() -> str:
         return "dataset-split-names"

@@ -15,8 +15,8 @@ GeneralJobRunnerErrorCode = Literal[
     "SplitNotFoundError",
     "UnexpectedError",
     "TooBigContentError",
-    "JobRunnerCrashedError",
-    "JobRunnerExceededMaximumDurationError",
+    "JobManagerCrashedError",
+    "JobManagerExceededMaximumDurationError",
     "ResponseAlreadyComputedError",
 ]
 
@@ -93,7 +93,7 @@ class NoGitRevisionError(GeneralJobRunnerError):
 
 
 class ResponseAlreadyComputedError(GeneralJobRunnerError):
-    """Raised when response has been already computed by another operator."""
+    """Raised when response has been already computed by another job runner."""
 
     def __init__(self, message: str, cause: Optional[BaseException] = None):
         super().__init__(message, HTTPStatus.INTERNAL_SERVER_ERROR, "ResponseAlreadyComputedError", cause, True)
@@ -125,27 +125,27 @@ class UnexpectedError(GeneralJobRunnerError):
         )
 
 
-class JobRunnerCrashedError(GeneralJobRunnerError):
+class JobManagerCrashedError(GeneralJobRunnerError):
     """Raised when the job runner crashed and the job became a zombie."""
 
     def __init__(self, message: str, cause: Optional[BaseException] = None):
         super().__init__(
             message=message,
             status_code=HTTPStatus.NOT_IMPLEMENTED,
-            code="JobRunnerCrashedError",
+            code="JobManagerCrashedError",
             cause=cause,
             disclose_cause=False,
         )
 
 
-class JobRunnerExceededMaximumDurationError(GeneralJobRunnerError):
+class JobManagerExceededMaximumDurationError(GeneralJobRunnerError):
     """Raised when the job runner was killed because the job exceeded the maximum duration."""
 
     def __init__(self, message: str, cause: Optional[BaseException] = None):
         super().__init__(
             message=message,
             status_code=HTTPStatus.NOT_IMPLEMENTED,
-            code="JobRunnerExceededMaximumDurationError",
+            code="JobManagerExceededMaximumDurationError",
             cause=cause,
             disclose_cause=False,
         )

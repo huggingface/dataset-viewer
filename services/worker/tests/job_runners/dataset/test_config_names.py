@@ -12,12 +12,12 @@ from libcommon.resources import CacheMongoResource, QueueMongoResource
 from libcommon.utils import Priority
 
 from worker.config import AppConfig
-from worker.job_operators.dataset.config_names import ConfigNamesJobOperator
+from worker.job_runners.dataset.config_names import ConfigNamesJobRunner
 from worker.resources import LibrariesResource
 
 from ...fixtures.hub import HubDatasets
 
-GetJobRunner = Callable[[str, AppConfig, bool], ConfigNamesJobOperator]
+GetJobRunner = Callable[[str, AppConfig, bool], ConfigNamesJobRunner]
 
 
 @pytest.fixture
@@ -42,7 +42,7 @@ def get_job_runner(
         )
         return ConfigNamesJobOperator(
             job_info={
-                "type": ConfigNamesJobOperator.get_job_type(),
+                "type": ConfigNamesJobRunner.get_job_type(),
                 "params": {
                     "dataset": dataset,
                     "config": None,

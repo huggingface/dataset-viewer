@@ -8,12 +8,12 @@ from libcommon.utils import JobInfo
 
 from worker.common_exceptions import ParameterMissingError
 from worker.config import AppConfig
-from worker.job_operator import JobOperator
-from worker.job_operators._datasets_based_job_operator import DatasetsBasedJobOperator
+from worker.job_runners._datasets_based_job_runner import DatasetsBasedJobRunner
+from worker.job_runners.config.config_job_runner import ConfigJobRunner
 
 
-class DatasetJobOperator(JobOperator):
-    dataset: str
+class SplitJobRunner(ConfigJobRunner):
+    split: str
 
     def __init__(
         self,
@@ -22,12 +22,12 @@ class DatasetJobOperator(JobOperator):
         processing_step: ProcessingStep,
     ) -> None:
         super().__init__(job_info=job_info, app_config=app_config, processing_step=processing_step)
-        if job_info["params"]["dataset"] is None:
-            raise ParameterMissingError("'dataset' parameter is required")
-        self.dataset = job_info["params"]["dataset"]
+        if job_info["params"]["split"] is None:
+            raise ParameterMissingError("'split' parameter is required")
+        self.split = job_info["params"]["split"]
 
 
-class DatasetCachedJobRunner(DatasetsBasedJobOperator, DatasetJobOperator):
+class SplitCachedJobRunner(DatasetsBasedJobRunner, SplitJobRunner):
     def __init__(
         self,
         job_info: JobInfo,
@@ -35,15 +35,15 @@ class DatasetCachedJobRunner(DatasetsBasedJobOperator, DatasetJobOperator):
         processing_step: ProcessingStep,
         hf_datasets_cache: Path,
     ) -> None:
-        DatasetsBasedJobOperator.__init__(
-            self=self,
+        DatasetsBasedJobRunner.__init__(
+            self,
             job_info=job_info,
             app_config=app_config,
             processing_step=processing_step,
             hf_datasets_cache=hf_datasets_cache,
         )
-        DatasetJobOperator.__init__(
-            self=self,
+        SplitJobRunner.__init__(
+            self,
             job_info=job_info,
             app_config=app_config,
             processing_step=processing_step,

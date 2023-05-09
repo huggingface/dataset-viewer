@@ -15,10 +15,10 @@ from libcommon.storage import init_dir, remove_dir
 from libcommon.utils import JobInfo
 
 from worker.config import AppConfig, DatasetsBasedConfig
-from worker.job_operator import JobOperator
+from worker.job_runner import JobRunner
 
 
-class DatasetsBasedJobOperator(JobOperator):
+class DatasetsBasedJobRunner(JobRunner):
     """Base class for job runners that use datasets."""
 
     datasets_based_config: DatasetsBasedConfig

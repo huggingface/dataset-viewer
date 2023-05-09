@@ -48,8 +48,8 @@ from libcommon.utils import JobInfo
 
 from worker.common_exceptions import JobRunnerError
 from worker.config import AppConfig, ParquetAndInfoConfig
-from worker.job_operators.config.config_job_operator import ConfigCachedJobOperator
-from worker.job_operators.dataset.config_names import ConfigNamesError
+from worker.job_runners.config.config_job_runner import ConfigCachedJobRunner
+from worker.job_runners.dataset.config_names import ConfigNamesError
 from worker.utils import CompleteJobResult, get_previous_step_or_raise
 
 ConfigParquetAndInfoJobRunnerErrorCode = Literal[
@@ -934,7 +934,7 @@ def compute_config_parquet_and_info_response(
     )
 
 
-class ConfigParquetAndInfoJobOperator(ConfigCachedJobOperator):
+class ConfigParquetAndInfoJobRunner(ConfigCachedJobRunner):
     parquet_and_info_config: ParquetAndInfoConfig
 
     @staticmethod

@@ -22,7 +22,7 @@ from pytest import fixture
 
 from worker.config import AppConfig
 from worker.executor import WorkerExecutor
-from worker.job_operator_factory import JobOperatorFactory
+from worker.job_runner_factory import JobRunnerFactory
 from worker.loop import WorkerState
 from worker.resources import LibrariesResource
 
@@ -194,9 +194,9 @@ def set_zombie_job_in_queue(queue_mongo_resource: QueueMongoResource) -> Iterato
 @fixture
 def job_runner_factory(
     app_config: AppConfig, libraries_resource: LibrariesResource, assets_directory: StrPath
-) -> JobOperatorFactory:
+) -> JobRunnerFactory:
     processing_graph = ProcessingGraph(app_config.processing_graph.specification)
-    return JobOperatorFactory(
+    return JobRunnerFactory(
         app_config=app_config,
         processing_graph=processing_graph,
         hf_datasets_cache=libraries_resource.hf_datasets_cache,
@@ -206,7 +206,7 @@ def job_runner_factory(
 
 @fixture
 def executor(
-    app_config: AppConfig, job_runner_factory: JobOperatorFactory, worker_state_file_path: str
+    app_config: AppConfig, job_runner_factory: JobRunnerFactory, worker_state_file_path: str
 ) -> WorkerExecutor:
     return WorkerExecutor(app_config, job_runner_factory, state_file_path=worker_state_file_path)
 

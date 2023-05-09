@@ -14,8 +14,8 @@ from libcommon.constants import (
 from libcommon.simple_cache import SplitFullName
 
 from worker.common_exceptions import JobRunnerError
-from worker.job_operators.config.config_job_operator import ConfigCachedJobOperator
-from worker.utils import CompleteJobResult, OperatorInfo, SplitItem, SplitsList
+from worker.job_runners.config.config_job_runner import ConfigCachedJobRunner
+from worker.utils import CompleteJobResult, JobRunnerInfo, SplitItem, SplitsList
 
 SplitNamesFromStreamingJobRunnerErrorCode = Literal[
     "EmptyDatasetError",
@@ -107,7 +107,7 @@ def compute_split_names_from_streaming_response(
     return SplitsList({"splits": split_name_items})
 
 
-class SplitNamesFromStreamingJobOperator(ConfigCachedJobOperator):
+class SplitNamesFromStreamingJobRunner(ConfigCachedJobRunner):
     @staticmethod
     def get_job_type() -> str:
         return "/split-names-from-streaming"
@@ -117,9 +117,9 @@ class SplitNamesFromStreamingJobOperator(ConfigCachedJobOperator):
         return PROCESSING_STEP_SPLIT_NAMES_FROM_STREAMING_VERSION
 
     @staticmethod
-    def get_parallel_operator() -> OperatorInfo:  # In the future it could be a list of parallel operators
-        return OperatorInfo(
-            job_operator_version=PROCESSING_STEP_SPLIT_NAMES_FROM_DATASET_INFO_VERSION,
+    def get_parallel_job_runner() -> JobRunnerInfo:
+        return JobRunnerInfo(
+            job_runner_version=PROCESSING_STEP_SPLIT_NAMES_FROM_DATASET_INFO_VERSION,
             job_type="/split-names-from-dataset-info",
         )
 

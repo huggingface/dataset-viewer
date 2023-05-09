@@ -13,8 +13,8 @@ from libcommon.utils import Priority
 
 from worker.common_exceptions import PreviousStepError
 from worker.config import AppConfig
-from worker.job_operators.dataset.opt_in_out_urls_count import (
-    DatasetOptInOutUrlsCountJobOperator,
+from worker.job_runners.dataset.opt_in_out_urls_count import (
+    DatasetOptInOutUrlsCountJobRunner,
 )
 
 
@@ -24,7 +24,7 @@ def prepare_and_clean_mongo(app_config: AppConfig) -> None:
     pass
 
 
-GetJobRunner = Callable[[str, AppConfig, bool], DatasetOptInOutUrlsCountJobOperator]
+GetJobRunner = Callable[[str, AppConfig, bool], DatasetOptInOutUrlsCountJobRunner]
 
 
 @pytest.fixture
@@ -48,7 +48,7 @@ def get_job_runner(
         )
         return DatasetOptInOutUrlsCountJobRunner(
             job_info={
-                "type": DatasetOptInOutUrlsCountJobOperator.get_job_type(),
+                "type": DatasetOptInOutUrlsCountJobRunner.get_job_type(),
                 "params": {
                     "dataset": dataset,
                     "config": None,

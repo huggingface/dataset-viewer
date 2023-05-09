@@ -17,15 +17,15 @@ from libcommon.storage import StrPath
 from libcommon.utils import Priority
 
 from worker.config import AppConfig
-from worker.job_operators.split.first_rows_from_streaming import (
-    SplitFirstRowsFromStreamingJobOperator,
+from worker.job_runners.split.first_rows_from_streaming import (
+    SplitFirstRowsFromStreamingJobRunner,
 )
 from worker.resources import LibrariesResource
 from worker.utils import get_json_size
 
 from ...fixtures.hub import HubDatasets, get_default_config_split
 
-GetJobRunner = Callable[[str, str, str, AppConfig, bool], SplitFirstRowsFromStreamingJobOperator]
+GetJobRunner = Callable[[str, str, str, AppConfig, bool], SplitFirstRowsFromStreamingJobRunner]
 
 
 @pytest.fixture
@@ -56,7 +56,7 @@ def get_job_runner(
         )
         return SplitFirstRowsFromStreamingJobRunner(
             job_info={
-                "type": SplitFirstRowsFromStreamingJobOperator.get_job_type(),
+                "type": SplitFirstRowsFromStreamingJobRunner.get_job_type(),
                 "params": {
                     "dataset": dataset,
                     "config": config,

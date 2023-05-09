@@ -21,8 +21,8 @@ from libcommon.simple_cache import upsert_response
 from libcommon.utils import Priority
 
 from worker.config import AppConfig
-from worker.job_operators.config.parquet_and_info import (
-    ConfigParquetAndInfoJobOperator,
+from worker.job_runners.config.parquet_and_info import (
+    ConfigParquetAndInfoJobRunner,
     DatasetInBlockListError,
     DatasetTooBigFromDatasetsError,
     DatasetTooBigFromHubError,
@@ -59,7 +59,7 @@ def set_supported_datasets(hub_datasets: HubDatasets) -> Iterator[pytest.MonkeyP
     mp.undo()
 
 
-GetJobRunner = Callable[[str, str, AppConfig, bool], ConfigParquetAndInfoJobOperator]
+GetJobRunner = Callable[[str, str, AppConfig, bool], ConfigParquetAndInfoJobRunner]
 
 
 @pytest.fixture
@@ -87,7 +87,7 @@ def get_job_runner(
         )
         return ConfigParquetAndInfoJobOperator(
             job_info={
-                "type": ConfigParquetAndInfoJobOperator.get_job_type(),
+                "type": ConfigParquetAndInfoJobRunner.get_job_type(),
                 "params": {
                     "dataset": dataset,
                     "config": config,

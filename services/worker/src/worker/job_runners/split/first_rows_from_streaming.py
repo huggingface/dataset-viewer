@@ -19,10 +19,10 @@ from libcommon.viewer_utils.features import get_cell_value
 
 from worker.common_exceptions import JobRunnerError, SplitNotFoundError
 from worker.config import AppConfig, FirstRowsConfig
-from worker.job_operators.split.split_job_operator import SplitCachedJobOperator
+from worker.job_runners.split.split_job_runner import SplitCachedJobRunner
 from worker.utils import (
     CompleteJobResult,
-    OperatorInfo,
+    JobRunnerInfo,
     Row,
     SplitFirstRowsResponse,
     create_truncated_row_items,
@@ -338,7 +338,7 @@ def compute_first_rows_response(
     return response
 
 
-class SplitFirstRowsFromStreamingJobOperator(SplitCachedJobOperator):
+class SplitFirstRowsFromStreamingJobRunner(SplitCachedJobRunner):
     assets_directory: StrPath
     first_rows_config: FirstRowsConfig
 
@@ -351,9 +351,9 @@ class SplitFirstRowsFromStreamingJobOperator(SplitCachedJobOperator):
         return PROCESSING_STEP_SPLIT_FIRST_ROWS_FROM_STREAMING_VERSION
 
     @staticmethod
-    def get_parallel_operator() -> OperatorInfo:  # In the future it could be a list of parallel operators
-        return OperatorInfo(
-            job_operator_version=PROCESSING_STEP_SPLIT_FIRST_ROWS_FROM_PARQUET_VERSION,
+    def get_parallel_job_runner() -> JobRunnerInfo:
+        return JobRunnerInfo(
+            job_runner_version=PROCESSING_STEP_SPLIT_FIRST_ROWS_FROM_PARQUET_VERSION,
             job_type="split-first-rows-from-parquet",
         )
 

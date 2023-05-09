@@ -6,7 +6,7 @@ from libcommon.constants import PROCESSING_STEP_CONFIG_INFO_VERSION
 from libcommon.simple_cache import SplitFullName
 
 from worker.common_exceptions import JobRunnerError
-from worker.job_operators.config.config_job_operator import ConfigJobOperator
+from worker.job_runners.config.config_job_runner import ConfigJobRunner
 from worker.utils import CompleteJobResult, get_previous_step_or_raise
 
 ConfigInfoJobRunnerErrorCode = Literal["PreviousStepFormatError"]
@@ -78,7 +78,7 @@ def compute_config_info_response(dataset: str, config: str) -> ConfigInfoRespons
     return ConfigInfoResponse(dataset_info=config_info)
 
 
-class ConfigInfoJobOperator(ConfigJobOperator):
+class ConfigInfoJobRunner(ConfigJobRunner):
     @staticmethod
     def get_job_type() -> str:
         return "config-info"

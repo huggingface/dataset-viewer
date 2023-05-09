@@ -3,27 +3,40 @@
 
 import logging
 from http import HTTPStatus
-from typing import Any, List, Literal, Mapping, Optional, Tuple, TypedDict
+from typing import Any, Literal, Mapping, Optional, Tuple, TypedDict
 
-from libcommon.constants import PROCESSING_STEP_DATASET_PARQUET_VERSION
+from libcommon.constants import PROCESSING_STEP_DATASET_SIZE_VERSION
 from libcommon.simple_cache import DoesNotExist, SplitFullName, get_response
 
 from worker.common_exceptions import JobRunnerError
-from worker.job_operators.config.parquet import ConfigParquetResponse
-from worker.job_operators.config.parquet_and_info import ParquetFileItem
-from worker.job_operators.dataset.dataset_job_operator import DatasetJobOperator
+from worker.job_runners.config.size import ConfigSize, ConfigSizeResponse, SplitSize
+from worker.job_runners.dataset.dataset_job_runner import DatasetJobRunner
 from worker.utils import JobResult, PreviousJob, get_previous_step_or_raise
 
 SizesJobRunnerErrorCode = Literal["PreviousStepFormatError"]
 
 
-class DatasetParquetResponse(TypedDict):
-    parquet_files: List[ParquetFileItem]
+class DatasetSize(TypedDict):
+    dataset: str
+    num_bytes_original_files: int
+    num_bytes_parquet_files: int
+    num_bytes_memory: int
+    num_rows: int
+
+
+class DatasetSizeContent(TypedDict):
+    dataset: DatasetSize
+    configs: list[ConfigSize]
+    splits: list[SplitSize]
+
+
+class DatasetSizeResponse(TypedDict):
+    size: DatasetSizeContent
     pending: list[PreviousJob]
     failed: list[PreviousJob]
 
 
-class DatasetParquetJobRunnerError(JobRunnerError):
+class DatasetSizeJobRunnerError(JobRunnerError):
     """Base class for exceptions in this module."""
 
     def __init__(
@@ -39,31 +52,31 @@ class DatasetParquetJobRunnerError(JobRunnerError):
         )
 
 
-class PreviousStepFormatError(DatasetParquetJobRunnerError):
+class PreviousStepFormatError(DatasetSizeJobRunnerError):
     """Raised when the content of the previous step has not the expected format."""
 
     def __init__(self, message: str, cause: Optional[BaseException] = None):
         super().__init__(message, HTTPStatus.INTERNAL_SERVER_ERROR, "PreviousStepFormatError", cause, False)
 
 
-def compute_sizes_response(dataset: str) -> Tuple[DatasetParquetResponse, float]:
+def compute_sizes_response(dataset: str) -> Tuple[DatasetSizeResponse, float]:
     """
-    Get the response of dataset-parquet for one specific dataset on huggingface.co.
+    Get the response of dataset-size for one specific dataset on huggingface.co.
     Args:
         dataset (`str`):
             A namespace (user or an organization) and a repo name separated
             by a `/`.
     Returns:
-        `DatasetParquetResponse`: An object with the parquet_response (list of parquet files).
+        `DatasetSizeResponse`: An object with the sizes_response.
     <Tip>
     Raises the following errors:
         - [`~job_runner.PreviousStepError`]
           If the previous step gave an error.
-        - [`~job_runners.dataset.parquet.PreviousStepFormatError`]
+        - [`~job_runners.dataset.size.PreviousStepFormatError`]
             If the content of the previous step has not the expected format
     </Tip>
     """
-    logging.info(f"get parquet files for dataset={dataset}")
+    logging.info(f"get sizes for dataset={dataset}")
 
     config_names_best_response = get_previous_step_or_raise(kinds=["/config-names"], dataset=dataset)
     content = config_names_best_response.response["content"]
@@ -71,7 +84,8 @@ def compute_sizes_response(dataset: str) -> Tuple[DatasetParquetResponse, float]
         raise PreviousStepFormatError("Previous step did not return the expected content: 'config_names'.")
 
     try:
-        parquet_files: list[ParquetFileItem] = []
+        split_sizes: list[SplitSize] = []
+        config_sizes: list[ConfigSize] = []
         total = 0
         pending = []
         failed = []
@@ -79,13 +93,13 @@ def compute_sizes_response(dataset: str) -> Tuple[DatasetParquetResponse, float]
             config = config_item["config"]
             total += 1
             try:
-                response = get_response(kind="config-parquet", dataset=dataset, config=config)
+                response = get_response(kind="config-size", dataset=dataset, config=config)
             except DoesNotExist:
-                logging.debug("No response found in previous step for this dataset: 'config-parquet' endpoint.")
+                logging.debug("No response found in previous step for this dataset: 'config-size' endpoint.")
                 pending.append(
                     PreviousJob(
                         {
-                            "kind": "config-parquet",
+                            "kind": "config-size",
                             "dataset": dataset,
                             "config": config,
                             "split": None,
@@ -98,7 +112,7 @@ def compute_sizes_response(dataset: str) -> Tuple[DatasetParquetResponse, float]
                 failed.append(
                     PreviousJob(
                         {
-                            "kind": "config-parquet",
+                            "kind": "config-size",
                             "dataset": dataset,
                             "config": config,
                             "split": None,
@@ -106,31 +120,45 @@ def compute_sizes_response(dataset: str) -> Tuple[DatasetParquetResponse, float]
                     )
                 )
                 continue
-            config_parquet_content = ConfigParquetResponse(parquet_files=response["content"]["parquet_files"])
-            parquet_files.extend(config_parquet_content["parquet_files"])
+            config_size_content = ConfigSizeResponse(size=response["content"]["size"])
+            config_sizes.append(config_size_content["size"]["config"])
+            split_sizes.extend(config_size_content["size"]["splits"])
+        dataset_size: DatasetSize = {
+            "dataset": dataset,
+            "num_bytes_original_files": sum(config_size["num_bytes_original_files"] for config_size in config_sizes),
+            "num_bytes_parquet_files": sum(config_size["num_bytes_parquet_files"] for config_size in config_sizes),
+            "num_bytes_memory": sum(config_size["num_bytes_memory"] for config_size in config_sizes),
+            "num_rows": sum(config_size["num_rows"] for config_size in config_sizes),
+        }
     except Exception as e:
         raise PreviousStepFormatError("Previous step did not return the expected content.", e) from e
 
     progress = (total - len(pending)) / total if total else 1.0
 
     return (
-        DatasetParquetResponse(
-            parquet_files=parquet_files,
-            pending=pending,
-            failed=failed,
+        DatasetSizeResponse(
+            {
+                "size": {
+                    "dataset": dataset_size,
+                    "configs": config_sizes,
+                    "splits": split_sizes,
+                },
+                "pending": pending,
+                "failed": failed,
+            }
         ),
         progress,
     )
 
 
-class DatasetParquetJobOperator(DatasetJobOperator):
+class DatasetSizeJobRunner(DatasetJobRunner):
     @staticmethod
     def get_job_type() -> str:
-        return "dataset-parquet"
+        return "dataset-size"
 
     @staticmethod
     def get_job_runner_version() -> int:
-        return PROCESSING_STEP_DATASET_PARQUET_VERSION
+        return PROCESSING_STEP_DATASET_SIZE_VERSION
 
     def compute(self) -> JobResult:
         response_content, progress = compute_sizes_response(dataset=self.dataset)
@@ -139,6 +167,6 @@ class DatasetParquetJobOperator(DatasetJobOperator):
     def get_new_splits(self, content: Mapping[str, Any]) -> set[SplitFullName]:
         """Get the set of new splits, from the content created by the compute."""
         return {
-            SplitFullName(dataset=parquet_file["dataset"], config=parquet_file["config"], split=parquet_file["split"])
-            for parquet_file in content["parquet_files"]
+            SplitFullName(dataset=split_size["dataset"], config=split_size["config"], split=split_size["split"])
+            for split_size in content["size"]["splits"]
         }

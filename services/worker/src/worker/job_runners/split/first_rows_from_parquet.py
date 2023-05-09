@@ -25,10 +25,10 @@ from tqdm.contrib.concurrent import thread_map
 
 from worker.common_exceptions import JobRunnerError
 from worker.config import AppConfig, FirstRowsConfig
-from worker.job_operators.split.split_job_operator import SplitJobOperator
+from worker.job_runners.split.split_job_runner import SplitJobRunner
 from worker.utils import (
     CompleteJobResult,
-    OperatorInfo,
+    JobRunnerInfo,
     Row,
     RowItem,
     SplitFirstRowsResponse,
@@ -278,7 +278,7 @@ def compute_first_rows_response(
     return response
 
 
-class SplitFirstRowsFromParquetJobOperator(SplitJobOperator):
+class SplitFirstRowsFromParquetJobRunner(SplitJobRunner):
     assets_directory: StrPath
     first_rows_config: FirstRowsConfig
 
@@ -291,9 +291,9 @@ class SplitFirstRowsFromParquetJobOperator(SplitJobOperator):
         return PROCESSING_STEP_SPLIT_FIRST_ROWS_FROM_PARQUET_VERSION
 
     @staticmethod
-    def get_parallel_operator() -> OperatorInfo:  # In the future it could be a list of parallel operators
-        return OperatorInfo(
-            job_operator_version=PROCESSING_STEP_SPLIT_FIRST_ROWS_FROM_STREAMING_VERSION,
+    def get_parallel_job_runner() -> JobRunnerInfo:
+        return JobRunnerInfo(
+            job_runner_version=PROCESSING_STEP_SPLIT_FIRST_ROWS_FROM_STREAMING_VERSION,
             job_type="/split-names-from-dataset-info",
         )
 

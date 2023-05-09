@@ -18,7 +18,7 @@ from libcommon.utils import JobInfo
 
 from worker.common_exceptions import JobRunnerError
 from worker.config import AppConfig, OptInOutUrlsScanConfig
-from worker.job_operators.split.split_job_operator import SplitCachedJobOperator
+from worker.job_runners.split.split_job_runner import SplitCachedJobRunner
 from worker.utils import (
     CompleteJobResult,
     OptInOutUrlsScanResponse,
@@ -299,7 +299,7 @@ def compute_opt_in_out_urls_scan_response(
     )
 
 
-class SplitOptInOutUrlsScanJobOperator(SplitCachedJobOperator):
+class SplitOptInOutUrlsScanJobRunner(SplitCachedJobRunner):
     urls_scan_config: OptInOutUrlsScanConfig
     common_config: CommonConfig
 

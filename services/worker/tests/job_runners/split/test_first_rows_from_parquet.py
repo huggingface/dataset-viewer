@@ -18,12 +18,12 @@ from libcommon.utils import Priority
 from pyarrow.fs import LocalFileSystem
 
 from worker.config import AppConfig
-from worker.job_operators.split.first_rows_from_parquet import (
-    SplitFirstRowsFromParquetJobOperator,
+from worker.job_runners.split.first_rows_from_parquet import (
+    SplitFirstRowsFromParquetJobRunner,
 )
 from worker.utils import get_json_size
 
-GetJobRunner = Callable[[str, str, str, AppConfig, bool], SplitFirstRowsFromParquetJobOperator]
+GetJobRunner = Callable[[str, str, str, AppConfig, bool], SplitFirstRowsFromParquetJobRunner]
 
 
 @pytest.fixture
@@ -53,7 +53,7 @@ def get_job_runner(
         )
         return SplitFirstRowsFromParquetJobRunner(
             job_info={
-                "type": SplitFirstRowsFromParquetJobOperator.get_job_type(),
+                "type": SplitFirstRowsFromParquetJobRunner.get_job_type(),
                 "params": {
                     "dataset": dataset,
                     "config": config,
@@ -107,7 +107,7 @@ def test_compute(
         http_status=HTTPStatus.OK,
     )
 
-    with patch("worker.job_operators.split.first_rows_from_parquet.get_parquet_fs") as mock_read:
+    with patch("worker.job_runners.split.first_rows_from_parquet.get_parquet_fs") as mock_read:
         initial_location = os.getcwd()
         os.chdir("tests/job_runners/split")
         # TODO:  Make localsystem by relative path

@@ -15,8 +15,8 @@ from libcommon.utils import JobInfo, get_datetime
 from psutil import cpu_count, disk_usage, getloadavg, swap_memory, virtual_memory
 
 from worker.config import AppConfig
-from worker.job_operator_factory import BaseJobOperatorFactory
-from worker.job_runner import JobRunner
+from worker.job_manager import JobManager
+from worker.job_runner_factory import BaseJobRunnerFactory
 
 
 class WorkerState(TypedDict):
@@ -47,7 +47,7 @@ class Loop:
             The path of the file where the state of the loop will be saved.
     """
 
-    job_runner_factory: BaseJobOperatorFactory
+    job_runner_factory: BaseJobRunnerFactory
     library_cache_paths: set[str]
     app_config: AppConfig
     max_jobs_per_namespace: int
@@ -134,13 +134,13 @@ class Loop:
             logging.debug("no job in the queue")
             return False
 
-        job_operator = self.job_runner_factory.create_job_runner(job_info)
+        job_runner = self.job_runner_factory.create_job_runner(job_info)
 
-        job_runner = JobRunner(job_info=job_info, app_config=self.app_config, job_operator=job_operator)
-        finished_status = job_runner.run()
-        self.queue.finish_job(job_id=job_runner.job_id, finished_status=finished_status)
+        job_manager = JobManager(job_info=job_info, app_config=self.app_config, job_runner=job_runner)
+        finished_status = job_manager.run()
+        self.queue.finish_job(job_id=job_manager.job_id, finished_status=finished_status)
         self.set_worker_state(current_job_info=None)
-        logging.debug(f"job finished with {finished_status.value}: {job_runner}")
+        logging.debug(f"job finished with {finished_status.value}: {job_manager}")
         return True
 
     def set_worker_state(self, current_job_info: Optional[JobInfo]) -> None:

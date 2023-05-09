@@ -12,10 +12,10 @@ from libcommon.constants import (
 from libcommon.simple_cache import SplitFullName
 
 from worker.common_exceptions import JobRunnerError
-from worker.job_operators.config.config_job_operator import ConfigJobOperator
+from worker.job_runners.config.config_job_runner import ConfigJobRunner
 from worker.utils import (
     CompleteJobResult,
-    OperatorInfo,
+    JobRunnerInfo,
     SplitItem,
     SplitsList,
     get_previous_step_or_raise,
@@ -86,7 +86,7 @@ def compute_split_names_from_dataset_info_response(dataset: str, config: str) ->
     return SplitsList(splits=split_name_items)
 
 
-class SplitNamesFromDatasetInfoJobOperator(ConfigJobOperator):
+class SplitNamesFromDatasetInfoJobRunner(ConfigJobRunner):
     @staticmethod
     def get_job_type() -> str:
         return "/split-names-from-dataset-info"
@@ -96,9 +96,9 @@ class SplitNamesFromDatasetInfoJobOperator(ConfigJobOperator):
         return PROCESSING_STEP_SPLIT_NAMES_FROM_DATASET_INFO_VERSION
 
     @staticmethod
-    def get_parallel_operator() -> OperatorInfo:  # In the future it could be a list of parallel operators
-        return OperatorInfo(
-            job_operator_version=PROCESSING_STEP_SPLIT_NAMES_FROM_STREAMING_VERSION,
+    def get_parallel_job_runner() -> JobRunnerInfo:
+        return JobRunnerInfo(
+            job_runner_version=PROCESSING_STEP_SPLIT_NAMES_FROM_STREAMING_VERSION,
             job_type="/split-names-from-streaming",
         )
 

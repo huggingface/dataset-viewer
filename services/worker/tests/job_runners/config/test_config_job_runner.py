@@ -11,11 +11,11 @@ from libcommon.simple_cache import SplitFullName
 from libcommon.utils import Priority
 
 from worker.config import AppConfig
-from worker.job_operators.config.config_job_operator import ConfigJobOperator
+from worker.job_runners.config.config_job_runner import ConfigJobRunner
 from worker.utils import CompleteJobResult
 
 
-class DummyConfigJobOperator(ConfigJobOperator):
+class DummyConfigJobRunner(ConfigJobRunner):
     def get_dataset_git_revision(self) -> Optional[str]:
         return "0.0.1"
 
@@ -40,7 +40,7 @@ class DummyConfigJobOperator(ConfigJobOperator):
 
 def test_failed_creation(test_processing_step: ProcessingStep, app_config: AppConfig) -> None:
     with pytest.raises(CustomError) as exc_info:
-        DummyConfigJobOperator(
+        DummyConfigJobRunner(
             job_info={
                 "job_id": "job_id",
                 "type": test_processing_step.job_type,
@@ -62,7 +62,7 @@ def test_failed_creation(test_processing_step: ProcessingStep, app_config: AppCo
 
 def test_success_creation(test_processing_step: ProcessingStep, app_config: AppConfig) -> None:
     assert (
-        DummyConfigJobOperator(
+        DummyConfigJobRunner(
             job_info={
                 "job_id": "job_id",
                 "type": test_processing_step.job_type,

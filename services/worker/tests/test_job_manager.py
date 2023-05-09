@@ -18,8 +18,8 @@ from libcommon.utils import JobInfo, Priority, Status
 
 from worker.common_exceptions import PreviousStepError
 from worker.config import AppConfig
-from worker.job_operators.dataset.dataset_job_operator import DatasetJobOperator
-from worker.job_runner import ERROR_CODES_TO_RETRY, JobRunner
+from worker.job_manager import ERROR_CODES_TO_RETRY, JobManager
+from worker.job_runners.dataset.dataset_job_runner import DatasetJobRunner
 from worker.utils import CompleteJobResult
 
 
@@ -32,10 +32,10 @@ def prepare_and_clean_mongo(
     pass
 
 
-class DummyJobOperator(DatasetJobOperator):
+class DummyJobRunner(DatasetJobRunner):
     # override get_dataset_git_revision to avoid making a request to the Hub
     def get_dataset_git_revision(self) -> Optional[str]:
-        return DummyJobOperator._get_dataset_git_revision()
+        return DummyJobRunner._get_dataset_git_revision()
 
     @staticmethod
     def _get_dataset_git_revision() -> Optional[str]:
@@ -71,8 +71,8 @@ class CacheEntry:
             False,
             CacheEntry(
                 error_code="DoNotRetry",  # an error that we don't want to retry
-                job_runner_version=DummyJobOperator.get_job_runner_version(),
-                dataset_git_revision=DummyJobOperator._get_dataset_git_revision(),
+                job_runner_version=DummyJobRunner.get_job_runner_version(),
+                dataset_git_revision=DummyJobRunner._get_dataset_git_revision(),
             ),
             True,  # skip
         ),
@@ -80,8 +80,8 @@ class CacheEntry:
             False,
             CacheEntry(
                 error_code=None,  # no error
-                job_runner_version=DummyJobOperator.get_job_runner_version(),
-                dataset_git_revision=DummyJobOperator._get_dataset_git_revision(),
+                job_runner_version=DummyJobRunner.get_job_runner_version(),
+                dataset_git_revision=DummyJobRunner._get_dataset_git_revision(),
             ),
             True,  # skip
         ),
@@ -89,8 +89,8 @@ class CacheEntry:
             True,  # force
             CacheEntry(
                 error_code="DoNotRetry",
-                job_runner_version=DummyJobOperator.get_job_runner_version(),
-                dataset_git_revision=DummyJobOperator._get_dataset_git_revision(),
+                job_runner_version=DummyJobRunner.get_job_runner_version(),
+                dataset_git_revision=DummyJobRunner._get_dataset_git_revision(),
             ),
             False,  # process
         ),
@@ -103,8 +103,8 @@ class CacheEntry:
             False,
             CacheEntry(
                 error_code=ERROR_CODES_TO_RETRY[0],  # an error that we want to retry
-                job_runner_version=DummyJobOperator.get_job_runner_version(),
-                dataset_git_revision=DummyJobOperator._get_dataset_git_revision(),
+                job_runner_version=DummyJobRunner.get_job_runner_version(),
+                dataset_git_revision=DummyJobRunner._get_dataset_git_revision(),
             ),
             False,  # process
         ),
@@ -113,7 +113,7 @@ class CacheEntry:
             CacheEntry(
                 error_code="DoNotRetry",
                 job_runner_version=None,  # no version
-                dataset_git_revision=DummyJobOperator._get_dataset_git_revision(),
+                dataset_git_revision=DummyJobRunner._get_dataset_git_revision(),
             ),
             False,  # process
         ),
@@ -122,7 +122,7 @@ class CacheEntry:
             CacheEntry(
                 error_code="DoNotRetry",
                 job_runner_version=0,  # a different version
-                dataset_git_revision=DummyJobOperator._get_dataset_git_revision(),
+                dataset_git_revision=DummyJobRunner._get_dataset_git_revision(),
             ),
             False,  # process
         ),
@@ -130,7 +130,7 @@ class CacheEntry:
             False,
             CacheEntry(
                 error_code="DoNotRetry",
-                job_runner_version=DummyJobOperator.get_job_runner_version(),
+                job_runner_version=DummyJobRunner.get_job_runner_version(),
                 dataset_git_revision=None,  # no dataset git revision
             ),
             False,  # process
@@ -139,7 +139,7 @@ class CacheEntry:
             False,
             CacheEntry(
                 error_code="DoNotRetry",
-                job_runner_version=DummyJobOperator.get_job_runner_version(),
+                job_runner_version=DummyJobRunner.get_job_runner_version(),
                 dataset_git_revision="different",  # a different dataset git revision
             ),
             False,  # process
@@ -148,8 +148,8 @@ class CacheEntry:
             False,
             CacheEntry(
                 error_code=None,  # no error
-                job_runner_version=DummyJobOperator.get_job_runner_version(),
-                dataset_git_revision=DummyJobOperator._get_dataset_git_revision(),
+                job_runner_version=DummyJobRunner.get_job_runner_version(),
+                dataset_git_revision=DummyJobRunner._get_dataset_git_revision(),
                 progress=0.5,  # incomplete result
             ),
             False,  # process
@@ -158,8 +158,8 @@ class CacheEntry:
             False,
             CacheEntry(
                 error_code=None,  # no error
-                job_runner_version=DummyJobOperator.get_job_runner_version(),
-                dataset_git_revision=DummyJobOperator._get_dataset_git_revision(),
+                job_runner_version=DummyJobRunner.get_job_runner_version(),
+                dataset_git_revision=DummyJobRunner._get_dataset_git_revision(),
                 progress=1.0,  # complete result
             ),
             True,  # skip
@@ -191,14 +191,14 @@ def test_should_skip_job(
         priority=Priority.NORMAL,
     )
 
-    job_operator = DummyJobOperator(
+    job_runner = DummyJobRunner(
         job_info=job_info,
         processing_step=test_processing_step,
         processing_graph=test_processing_graph,
         app_config=app_config,
     )
 
-    job_runner = JobRunner(job_info=job_info, app_config=app_config, job_operator=job_operator)
+    job_manager = JobManager(job_info=job_info, app_config=app_config, job_runner=job_runner)
 
     if cache_entry:
         upsert_response(
@@ -214,7 +214,7 @@ def test_should_skip_job(
             dataset_git_revision=cache_entry.dataset_git_revision,
             progress=cache_entry.progress,
         )
-    assert job_runner.should_skip_job() is expected_skip
+    assert job_manager.should_skip_job() is expected_skip
 
 
 def test_check_type(
@@ -231,7 +231,7 @@ def test_check_type(
 
     job_type = f"not-{test_processing_step.job_type}"
     with pytest.raises(ValueError):
-        DummyJobOperator(
+        DummyJobRunner(
             job_info={
                 "job_id": job_id,
                 "type": job_type,
@@ -249,7 +249,7 @@ def test_check_type(
             app_config=app_config,
         )
     with pytest.raises(ValueError):
-        DummyJobOperator(
+        DummyJobRunner(
             job_info={
                 "job_id": job_id,
                 "type": test_processing_step.job_type,
@@ -290,19 +290,19 @@ def test_create_children_jobs(app_config: AppConfig) -> None:
         force=False,
         priority=Priority.LOW,
     )
-    job_operator = DummyJobOperator(
+    job_runner = DummyJobRunner(
         job_info=job_info,
         processing_step=root_step,
         processing_graph=graph,
         app_config=app_config,
     )
 
-    job_runner = JobRunner(job_info=job_info, app_config=app_config, job_operator=job_operator)
+    job_manager = JobManager(job_info=job_info, app_config=app_config, job_runner=job_runner)
 
-    assert not job_runner.should_skip_job()
+    assert not job_manager.should_skip_job()
     # we add an entry to the cache
-    job_runner.run()
-    assert job_runner.should_skip_job()
+    job_manager.run()
+    assert job_manager.should_skip_job()
     # check that the children jobs have been created
     queue = Queue()
     child_dataset_jobs = queue.get_dump_with_status(job_type="/child-dataset", status=Status.WAITING)
@@ -351,20 +351,20 @@ def test_job_runner_set_crashed(
         force=force,
         priority=Priority.NORMAL,
     )
-    job_operator = DummyJobOperator(
+    job_runner = DummyJobRunner(
         job_info=job_info,
         processing_step=test_processing_step,
         processing_graph=test_processing_graph,
         app_config=app_config,
     )
 
-    job_runner = JobRunner(job_info=job_info, app_config=app_config, job_operator=job_operator)
+    job_manager = JobManager(job_info=job_info, app_config=app_config, job_runner=job_runner)
 
-    job_runner.set_crashed(message=message)
+    job_manager.set_crashed(message=message)
     response = CachedResponse.objects()[0]
     expected_error = {"error": message}
     assert response.http_status == HTTPStatus.NOT_IMPLEMENTED
-    assert response.error_code == "JobRunnerCrashedError"
+    assert response.error_code == "JobManagerCrashedError"
     assert response.dataset == dataset
     assert response.config == config
     assert response.split == split
@@ -406,17 +406,17 @@ def test_raise_if_parallel_response_exists(
         force=False,
         priority=Priority.NORMAL,
     )
-    job_operator = DummyJobOperator(
+    job_runner = DummyJobRunner(
         job_info=job_info,
         processing_step=test_processing_step,
         processing_graph=test_processing_graph,
         app_config=app_config,
     )
 
-    job_runner = JobRunner(job_info=job_info, app_config=app_config, job_operator=job_operator)
-    job_runner.get_dataset_git_revision = Mock(return_value=current_dataset_git_revision)  # type: ignore
+    job_manager = JobManager(job_info=job_info, app_config=app_config, job_runner=job_runner)
+    job_manager.get_dataset_git_revision = Mock(return_value=current_dataset_git_revision)  # type: ignore
     with pytest.raises(CustomError) as exc_info:
-        job_runner.raise_if_parallel_response_exists(parallel_cache_kind="dummy-parallel", parallel_job_version=1)
+        job_manager.raise_if_parallel_response_exists(parallel_cache_kind="dummy-parallel", parallel_job_version=1)
     assert exc_info.value.status_code == HTTPStatus.INTERNAL_SERVER_ERROR
     assert exc_info.value.code == "ResponseAlreadyComputedError"
 
@@ -481,10 +481,10 @@ def test_previous_step_error(disclose_cause: bool) -> None:
 
 
 # TODO(Andrea): Apply this test
-# def test_doesnotexist(app_config: AppConfig, get_job_runner: GetJobRunner) -> None:
+# def test_doesnotexist(app_config: AppConfig, get_job_runner: GetJobManager) -> None:
 #     dataset = "doesnotexist"
 #     dataset, config, split = get_default_config_split(dataset)
-#     job_runner = get_job_runner(dataset, config, split, app_config, False)
-#     assert not job_runner.process()
+#     job_manager = get_job_runner(dataset, config, split, app_config, False)
+#     assert not job_manager.process()
 #     with pytest.raises(DoesNotExist):
-#         get_response(kind=job_runner.processing_step.cache_kind, dataset=dataset, config=config, split=split)
+#         get_response(kind=job_manager.processing_step.cache_kind, dataset=dataset, config=config, split=split)

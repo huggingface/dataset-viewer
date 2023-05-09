@@ -11,7 +11,7 @@ from libcommon.constants import PROCESSING_STEP_CONFIG_NAMES_VERSION
 from libcommon.simple_cache import SplitFullName
 
 from worker.common_exceptions import JobRunnerError
-from worker.job_operators.dataset.dataset_job_operator import DatasetCachedJobRunner
+from worker.job_runners.dataset.dataset_job_runner import DatasetCachedJobRunner
 from worker.utils import CompleteJobResult
 
 ConfigNamesJobRunnerErrorCode = Literal["EmptyDatasetError", "DatasetModuleNotInstalledError", "ConfigNamesError"]
@@ -110,7 +110,7 @@ def compute_config_names_response(
     return ConfigNamesResponse(config_names=config_name_items)
 
 
-class ConfigNamesJobOperator(DatasetCachedJobRunner):
+class ConfigNamesJobRunner(DatasetCachedJobRunner):
     @staticmethod
     def get_job_type() -> str:
         return "/config-names"

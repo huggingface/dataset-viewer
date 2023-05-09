@@ -9,7 +9,7 @@ from libcommon.constants import PROCESSING_STEP_DATASET_INFO_VERSION
 from libcommon.simple_cache import DoesNotExist, SplitFullName, get_response
 
 from worker.common_exceptions import JobRunnerError
-from worker.job_operators.dataset.dataset_job_operator import DatasetJobOperator
+from worker.job_runners.dataset.dataset_job_runner import DatasetJobRunner
 from worker.utils import JobResult, PreviousJob, get_previous_step_or_raise
 
 DatasetInfoJobRunnerErrorCode = Literal["PreviousStepFormatError"]
@@ -112,7 +112,7 @@ def compute_dataset_info_response(dataset: str) -> Tuple[DatasetInfoResponse, fl
     return DatasetInfoResponse(dataset_info=config_infos, pending=pending, failed=failed), progress
 
 
-class DatasetInfoJobOperator(DatasetJobOperator):
+class DatasetInfoJobRunner(DatasetJobRunner):
     @staticmethod
     def get_job_type() -> str:
         return "dataset-info"

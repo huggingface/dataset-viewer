@@ -9,7 +9,7 @@ from libcommon.constants import PROCESSING_STEP_SPLIT_OPT_IN_OUT_URLS_COUNT_VERS
 from libcommon.simple_cache import SplitFullName
 
 from worker.common_exceptions import JobRunnerError
-from worker.job_operators.split.split_job_operator import SplitJobOperator
+from worker.job_runners.split.split_job_runner import SplitJobRunner
 from worker.utils import (
     CompleteJobResult,
     OptInOutUrlsCountResponse,
@@ -69,7 +69,7 @@ def compute_opt_in_out_urls_count_response(
     return opt_in_out_urls_count
 
 
-class SplitOptInOutUrlsCountJobOperator(SplitJobOperator):
+class SplitOptInOutUrlsCountJobRunner(SplitJobRunner):
     @staticmethod
     def get_job_type() -> str:
         return "split-opt-in-out-urls-count"

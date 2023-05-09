@@ -13,8 +13,8 @@ from libcommon.utils import Priority
 
 from worker.common_exceptions import PreviousStepError
 from worker.config import AppConfig
-from worker.job_operators.dataset.size import (
-    DatasetSizeJobOperator,
+from worker.job_runners.dataset.size import (
+    DatasetSizeJobRunner,
     PreviousStepFormatError,
 )
 
@@ -27,7 +27,7 @@ def prepare_and_clean_mongo(app_config: AppConfig) -> None:
     pass
 
 
-GetJobRunner = Callable[[str, AppConfig, bool], DatasetSizeJobOperator]
+GetJobRunner = Callable[[str, AppConfig, bool], DatasetSizeJobRunner]
 
 
 @pytest.fixture
@@ -51,7 +51,7 @@ def get_job_runner(
         )
         return DatasetSizeJobRunner(
             job_info={
-                "type": DatasetSizeJobOperator.get_job_type(),
+                "type": DatasetSizeJobRunner.get_job_type(),
                 "params": {
                     "dataset": dataset,
                     "config": None,

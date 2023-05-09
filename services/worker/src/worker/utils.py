@@ -38,9 +38,9 @@ from worker.common_exceptions import (
 )
 
 
-class OperatorInfo(TypedDict):
+class JobRunnerInfo(TypedDict):
     job_type: str
-    job_operator_version: int
+    job_runner_version: int
 
 
 @dataclass
