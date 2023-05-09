@@ -10,8 +10,8 @@ from datasets.data_files import EmptyDatasetError as _EmptyDatasetError
 from libcommon.constants import PROCESSING_STEP_CONFIG_NAMES_VERSION
 from libcommon.simple_cache import SplitFullName
 
+from worker.common_exceptions import JobRunnerError
 from worker.job_operators.dataset.dataset_job_operator import DatasetCachedJobRunner
-from worker.job_runner import JobRunnerError
 from worker.utils import CompleteJobResult
 
 ConfigNamesJobRunnerErrorCode = Literal["EmptyDatasetError", "DatasetModuleNotInstalledError", "ConfigNamesError"]

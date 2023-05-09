@@ -46,11 +46,11 @@ from libcommon.processing_graph import ProcessingStep
 from libcommon.simple_cache import SplitFullName
 from libcommon.utils import JobInfo
 
+from worker.common_exceptions import JobRunnerError
 from worker.config import AppConfig, ParquetAndInfoConfig
 from worker.job_operator import get_previous_step_or_raise
 from worker.job_operators.config.config_job_operator import ConfigCachedJobOperator
 from worker.job_operators.dataset.config_names import ConfigNamesError
-from worker.job_runner import JobRunnerError
 from worker.utils import CompleteJobResult
 
 ConfigParquetAndInfoJobRunnerErrorCode = Literal[

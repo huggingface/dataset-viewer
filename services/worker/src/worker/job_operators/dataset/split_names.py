@@ -8,9 +8,9 @@ from typing import Any, List, Literal, Mapping, Optional, Tuple
 from libcommon.constants import PROCESSING_STEP_DATASET_SPLIT_NAMES_VERSION
 from libcommon.simple_cache import SplitFullName, get_best_response
 
+from worker.common_exceptions import JobRunnerError
 from worker.job_operator import get_previous_step_or_raise
 from worker.job_operators.dataset.dataset_job_operator import DatasetJobOperator
-from worker.job_runner import JobRunnerError
 from worker.utils import (
     ConfigItem,
     DatasetSplitNamesResponse,

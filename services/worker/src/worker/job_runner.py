@@ -21,154 +21,19 @@ from libcommon.simple_cache import (
 )
 from libcommon.utils import JobInfo, JobParams, Priority, Status, orjson_dumps
 
+from worker.common_exceptions import (
+    JobRunnerCrashedError,
+    JobRunnerExceededMaximumDurationError,
+    NoGitRevisionError,
+    ResponseAlreadyComputedError,
+    TooBigContentError,
+    UnexpectedError,
+)
 from worker.config import AppConfig, WorkerConfig
 from worker.job_operator import JobOperator
-from worker.job_operator_factory import BaseJobOperatorFactory
-
-GeneralJobRunnerErrorCode = Literal[
-    "ParameterMissingError",
-    "NoGitRevisionError",
-    "SplitNotFoundError",
-    "UnexpectedError",
-    "TooBigContentError",
-    "JobRunnerCrashedError",
-    "JobRunnerExceededMaximumDurationError",
-    "ResponseAlreadyComputedError",
-]
 
 # List of error codes that should trigger a retry.
 ERROR_CODES_TO_RETRY: list[str] = ["ClientConnectionError"]
-
-
-class JobRunnerError(CustomError):
-    """Base class for job runner exceptions."""
-
-    def __init__(
-        self,
-        message: str,
-        status_code: HTTPStatus,
-        code: str,
-        cause: Optional[BaseException] = None,
-        disclose_cause: bool = False,
-    ):
-        super().__init__(
-            message=message, status_code=status_code, code=code, cause=cause, disclose_cause=disclose_cause
-        )
-
-
-class GeneralJobRunnerError(JobRunnerError):
-    """General class for job runner exceptions."""
-
-    def __init__(
-        self,
-        message: str,
-        status_code: HTTPStatus,
-        code: GeneralJobRunnerErrorCode,
-        cause: Optional[BaseException] = None,
-        disclose_cause: bool = False,
-    ):
-        super().__init__(
-            message=message, status_code=status_code, code=code, cause=cause, disclose_cause=disclose_cause
-        )
-
-
-class SplitNotFoundError(GeneralJobRunnerError):
-    """Raised when the split does not exist."""
-
-    def __init__(self, message: str, cause: Optional[BaseException] = None):
-        super().__init__(
-            message=message,
-            status_code=HTTPStatus.NOT_FOUND,
-            code="SplitNotFoundError",
-            cause=cause,
-            disclose_cause=False,
-        )
-
-
-class ParameterMissingError(GeneralJobRunnerError):
-    """Raised when request is missing some parameter."""
-
-    def __init__(self, message: str, cause: Optional[BaseException] = None):
-        super().__init__(
-            message=message,
-            status_code=HTTPStatus.BAD_REQUEST,
-            code="ParameterMissingError",
-            cause=cause,
-            disclose_cause=False,
-        )
-
-
-class NoGitRevisionError(GeneralJobRunnerError):
-    """Raised when the git revision returned by huggingface_hub is None."""
-
-    def __init__(self, message: str, cause: Optional[BaseException] = None):
-        super().__init__(
-            message=message,
-            status_code=HTTPStatus.NOT_FOUND,
-            code="NoGitRevisionError",
-            cause=cause,
-            disclose_cause=False,
-        )
-
-
-class ResponseAlreadyComputedError(GeneralJobRunnerError):
-    """Raised when response has been already computed by another operator."""
-
-    def __init__(self, message: str, cause: Optional[BaseException] = None):
-        super().__init__(message, HTTPStatus.INTERNAL_SERVER_ERROR, "ResponseAlreadyComputedError", cause, True)
-
-
-class TooBigContentError(GeneralJobRunnerError):
-    """Raised when content size in bytes is bigger than the supported value."""
-
-    def __init__(self, message: str, cause: Optional[BaseException] = None):
-        super().__init__(
-            message=message,
-            status_code=HTTPStatus.NOT_IMPLEMENTED,
-            code="TooBigContentError",
-            cause=cause,
-            disclose_cause=False,
-        )
-
-
-class UnexpectedError(GeneralJobRunnerError):
-    """Raised when the job runner raised an unexpected error."""
-
-    def __init__(self, message: str, cause: Optional[BaseException] = None):
-        super().__init__(
-            message=message,
-            status_code=HTTPStatus.INTERNAL_SERVER_ERROR,
-            code="UnexpectedError",
-            cause=cause,
-            disclose_cause=False,
-        )
-        logging.error(message, exc_info=cause)
-
-
-class JobRunnerCrashedError(GeneralJobRunnerError):
-    """Raised when the job runner crashed and the job became a zombie."""
-
-    def __init__(self, message: str, cause: Optional[BaseException] = None):
-        super().__init__(
-            message=message,
-            status_code=HTTPStatus.NOT_IMPLEMENTED,
-            code="JobRunnerCrashedError",
-            cause=cause,
-            disclose_cause=False,
-        )
-
-
-class JobRunnerExceededMaximumDurationError(GeneralJobRunnerError):
-    """Raised when the job runner was killed because the job exceeded the maximum duration."""
-
-    def __init__(self, message: str, cause: Optional[BaseException] = None):
-        super().__init__(
-            message=message,
-            status_code=HTTPStatus.NOT_IMPLEMENTED,
-            code="JobRunnerExceededMaximumDurationError",
-            cause=cause,
-            disclose_cause=False,
-        )
 
 
 class JobRunner:
@@ -199,20 +64,20 @@ class JobRunner:
     _dataset_git_revision: Optional[str] = None
     job_operator: JobOperator
 
-    def __init__(self, job_info: JobInfo, app_config: AppConfig, job_operator_factory: BaseJobOperatorFactory, processing_graph: ProcessingGraph) -> None:
+    def __init__(self, job_info: JobInfo, app_config: AppConfig, job_operator: JobOperator, processing_graph: ProcessingGraph) -> None:
         self.job_info = job_info
         self.job_type = job_info["type"]
         self.job_id = job_info["job_id"]
-        # self.dataset = job_info["dataset"]
+        self.dataset = job_info["dataset"]
         self.force = job_info["force"]
         self.priority = job_info["priority"]
         self.common_config = app_config.common
         self.worker_config = app_config.worker
         # self.processing_step = processing_step
         # self.setup()
-        self.job_operator = job_operator_factory.create_job_runner(self.job_info)
+        self.job_operator = job_operator
         self.processing_step = self.job_operator.processing_step
-        self.job_params = self.job_params
+        self.job_params = job_info["params"]
         self.processing_graph = processing_graph
 
     def setup(self) -> None:

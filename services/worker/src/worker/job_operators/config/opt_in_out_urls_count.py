@@ -8,9 +8,9 @@ from typing import Any, Literal, Mapping, Optional, Tuple
 from libcommon.constants import PROCESSING_STEP_CONFIG_OPT_IN_OUT_URLS_COUNT_VERSION
 from libcommon.simple_cache import DoesNotExist, SplitFullName, get_response
 
+from worker.common_exceptions import JobRunnerError
 from worker.job_operator import get_previous_step_or_raise
 from worker.job_operators.config.config_job_operator import ConfigJobOperator
-from worker.job_runner import JobRunnerError
 from worker.utils import JobResult, OptInOutUrlsCountResponse
 
 ConfigOptInOutUrlsCountJobRunnerErrorCode = Literal["PreviousStepFormatError"]

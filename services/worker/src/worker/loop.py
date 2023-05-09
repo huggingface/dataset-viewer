@@ -134,9 +134,9 @@ class Loop:
             logging.debug("no job in the queue")
             return False
 
-        job_runner = JobRunner(
-            job_info=job_info, app_config=self.app_config, job_operator_factory=self.job_runner_factory
-        )
+        job_operator = self.job_runner_factory.create_job_runner(job_info)
+
+        job_runner = JobRunner(job_info=job_info, app_config=self.app_config, job_operator=job_operator)
         finished_status = job_runner.run()
         self.queue.finish_job(job_id=job_runner.job_id, finished_status=finished_status)
         self.set_worker_state(current_job_info=None)

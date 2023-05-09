@@ -13,8 +13,8 @@ from libcommon.constants import (
 )
 from libcommon.simple_cache import SplitFullName
 
+from worker.common_exceptions import JobRunnerError
 from worker.job_operators.config.config_job_operator import ConfigCachedJobOperator
-from worker.job_runner import JobRunnerError
 from worker.utils import CompleteJobResult, OperatorInfo, SplitItem, SplitsList
 
 SplitNamesFromStreamingJobRunnerErrorCode = Literal[

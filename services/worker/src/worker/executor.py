@@ -116,9 +116,9 @@ class WorkerExecutor:
         queue.kill_zombies(zombies)
         message = "Job runner crashed while running this job (missing heartbeats)."
         for zombie in zombies:
-            job_runner = JobRunner(
-                job_info=zombie, app_config=self.app_config, job_operator_factory=self.job_runner_factory
-            )
+            job_operator = self.job_runner_factory.create_job_runner(zombie)
+
+            job_runner = JobRunner(job_info=zombie, app_config=self.app_config, job_operator=job_operator)
             job_runner.set_crashed(message=message)
 
     def kill_long_job(self, worker_loop_executor: OutputExecutor) -> None:
@@ -136,10 +136,9 @@ class WorkerExecutor:
                     worker_loop_executor.stop()  # raises an error if the worker returned exit code 1
                 finally:
                     Queue().kill_long_job(long_job)
+                    job_operator = self.job_runner_factory.create_job_runner(long_job)
 
-                    job_runner = JobRunner(
-                        job_info=long_job, app_config=self.app_config, job_operator_factory=self.job_runner_factory
-                    )
+                    job_runner = JobRunner(job_info=long_job, app_config=self.app_config, job_operator=job_operator)
                     message = "Job runner was killed while running this job (job exceeded maximum duration)."
                     job_runner.set_exceeded_maximum_duration(message=message)
 

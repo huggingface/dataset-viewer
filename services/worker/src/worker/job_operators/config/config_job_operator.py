@@ -6,10 +6,10 @@ from pathlib import Path
 from libcommon.processing_graph import ProcessingStep
 from libcommon.utils import JobInfo
 
+from worker.common_exceptions import ParameterMissingError
 from worker.config import AppConfig
 from worker.job_operators._datasets_based_job_operator import DatasetsBasedJobOperator
 from worker.job_operators.dataset.dataset_job_operator import DatasetJobOperator
-from worker.job_runner import ParameterMissingError
 
 
 class ConfigJobOperator(DatasetJobOperator):

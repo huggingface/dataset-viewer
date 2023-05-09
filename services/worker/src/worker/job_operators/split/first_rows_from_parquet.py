@@ -23,10 +23,10 @@ from libcommon.viewer_utils.features import get_cell_value
 from pyarrow.parquet import ParquetFile
 from tqdm.contrib.concurrent import thread_map
 
+from worker.common_exceptions import JobRunnerError
 from worker.config import AppConfig, FirstRowsConfig
 from worker.job_operator import get_previous_step_or_raise
 from worker.job_operators.split.split_job_operator import SplitJobOperator
-from worker.job_runner import JobRunnerError
 from worker.utils import (
     CompleteJobResult,
     OperatorInfo,
