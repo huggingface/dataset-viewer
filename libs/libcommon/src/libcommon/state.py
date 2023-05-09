@@ -11,14 +11,13 @@ from typing import Any, Dict, List, Optional
 
 from libcommon.processing_graph import ProcessingGraph, ProcessingStep
 from libcommon.queue import Queue
-from libcommon.utils import Priority, Status
 from libcommon.simple_cache import (
     CacheEntryMetadata,
     DoesNotExist,
     get_best_response,
     get_response_metadata,
 )
-from libcommon.utils import inputs_to_string
+from libcommon.utils import Priority, Status, inputs_to_string
 
 # TODO: use the term Artifact elsewhere in the code (a Step should produce one or several Artifacts, depending on the
 # input level: one, one per dataset, one per config, or one per split)

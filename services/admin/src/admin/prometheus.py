@@ -7,8 +7,9 @@ from typing import Any
 
 from libcommon.metrics import CacheTotalMetric, JobTotalMetric
 from libcommon.processing_graph import ProcessingGraph
-from libcommon.queue import Status
+from libcommon.utils import Status
 from libcommon.storage import StrPath
+from libcommon.utils import Status
 from prometheus_client import (
     CONTENT_TYPE_LATEST,
     REGISTRY,

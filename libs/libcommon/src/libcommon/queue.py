@@ -157,11 +157,11 @@ class Job(Document):
             {
                 "job_id": str(self.pk),  # job.pk is the id. job.id is not recognized by mypy
                 "type": self.type,
-                "dataset": self.dataset,
                 "params": {
                     "dataset": self.dataset,
                     "config": self.config,
                     "split": self.split,
+                    "git_revision": None,
                 },
                 "force": self.force,
                 "priority": self.priority,

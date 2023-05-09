@@ -161,7 +161,20 @@ def upsert_response_params(
     progress: Optional[float] = None,
     updated_at: Optional[datetime] = None,
 ) -> None:
-    upsert_response(kind=kind, dataset=dataset, config=job_params["config"], split=job_params["split"], content=content, dataset_git_revision=dataset_git_revision, details=details, error_code=error_code, http_status=http_status, job_runner_version=job_runner_version, progress=progress, updated_at=updated_at)
+    upsert_response(
+        kind=kind,
+        dataset=dataset,
+        config=job_params["config"],
+        split=job_params["split"],
+        content=content,
+        dataset_git_revision=dataset_git_revision,
+        details=details,
+        error_code=error_code,
+        http_status=http_status,
+        job_runner_version=job_runner_version,
+        progress=progress,
+        updated_at=updated_at,
+    )
 
 
 def delete_response(
@@ -200,10 +213,10 @@ def get_response_without_content(
     }
 
 
-def get_response_without_content_params(
-    kind: str, job_params: JobParams
-) -> CacheEntryWithoutContent:
-    return get_response_without_content(kind=kind, dataset=job_params["dataset"], config=job_params["config"], split=job_params["split"])
+def get_response_without_content_params(kind: str, job_params: JobParams) -> CacheEntryWithoutContent:
+    return get_response_without_content(
+        kind=kind, dataset=job_params["dataset"], config=job_params["config"], split=job_params["split"]
+    )
 
 
 class CacheEntryMetadata(CacheEntryWithoutContent):

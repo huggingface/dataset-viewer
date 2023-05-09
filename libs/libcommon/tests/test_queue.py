@@ -9,9 +9,9 @@ import pytest
 import pytz
 
 from libcommon.constants import QUEUE_TTL_SECONDS
-from libcommon.queue import EmptyQueueError, Job, Priority, Queue, Status
+from libcommon.queue import EmptyQueueError, Job, Queue
 from libcommon.resources import QueueMongoResource
-from libcommon.utils import get_datetime
+from libcommon.utils import Priority, Status, get_datetime
 
 
 def get_old_datetime() -> datetime:
@@ -36,9 +36,9 @@ def test__add_job() -> None:
     # get and start the first job
     job_info = queue.start_job()
     assert job_info["type"] == test_type
-    assert job_info["dataset"] == test_dataset
-    assert job_info["config"] is None
-    assert job_info["split"] is None
+    assert job_info["params"]["dataset"] == test_dataset
+    assert job_info["params"]["config"] is None
+    assert job_info["params"]["split"] is None
     assert job_info["force"]
     assert queue.is_job_in_process(job_type=test_type, dataset=test_dataset)
     # adding the job while the first one has not finished yet adds another waiting job
@@ -83,9 +83,9 @@ def test_upsert_job() -> None:
     # get and start the last job
     job_info = queue.start_job()
     assert job_info["type"] == test_type
-    assert job_info["dataset"] == test_dataset
-    assert job_info["config"] is None
-    assert job_info["split"] is None
+    assert job_info["params"]["dataset"] == test_dataset
+    assert job_info["params"]["config"] is None
+    assert job_info["params"]["split"] is None
     assert job_info["force"]  # the new job inherits from waiting forced jobs
     assert queue.is_job_in_process(job_type=test_type, dataset=test_dataset)
     # adding the job while the first one has not finished yet adds a new waiting job
@@ -141,8 +141,8 @@ def test_cancel_jobs(statuses_to_cancel: Optional[List[Status]], expected_remain
 
 def check_job(queue: Queue, expected_dataset: str, expected_split: str) -> None:
     job_info = queue.start_job()
-    assert job_info["dataset"] == expected_dataset
-    assert job_info["split"] == expected_split
+    assert job_info["params"]["dataset"] == expected_dataset
+    assert job_info["params"]["split"] == expected_split
 
 
 def test_priority_logic() -> None:
@@ -187,16 +187,16 @@ def test_max_jobs_per_namespace(max_jobs_per_namespace: Optional[int]) -> None:
     queue.upsert_job(job_type=test_type, dataset=test_dataset, config=test_config, split="split2")
     queue.upsert_job(job_type=test_type, dataset=test_dataset, config=test_config, split="split3")
     job_info = queue.start_job()
-    assert job_info["dataset"] == test_dataset
-    assert job_info["config"] == test_config
-    assert job_info["split"] == "split1"
+    assert job_info["params"]["dataset"] == test_dataset
+    assert job_info["params"]["config"] == test_config
+    assert job_info["params"]["split"] == "split1"
     assert queue.is_job_in_process(job_type=test_type, dataset=test_dataset, config=test_config, split="split1")
     if max_jobs_per_namespace == 1:
         with pytest.raises(EmptyQueueError):
             queue.start_job()
         return
     job_info_2 = queue.start_job()
-    assert job_info_2["split"] == "split2"
+    assert job_info_2["params"]["split"] == "split2"
     if max_jobs_per_namespace == 2:
         with pytest.raises(EmptyQueueError):
             queue.start_job()
@@ -234,7 +234,7 @@ def test_job_types_only(
             queue.start_job(job_types_blocked=job_types_blocked, job_types_only=job_types_only)
     else:
         job_info = queue.start_job(job_types_blocked=job_types_blocked, job_types_only=job_types_only)
-        assert job_info["dataset"] == test_dataset
+        assert job_info["params"]["dataset"] == test_dataset
 
 
 def test_count_by_status() -> None:
