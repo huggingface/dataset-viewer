@@ -103,7 +103,6 @@ def get_default_config_split(dataset: str) -> Tuple[str, str, str]:
 def log(response: Response, url: str, relative_url: Optional[str] = None) -> str:
     if relative_url is not None:
         try:
-            print(ADMIN_TOKEN)
             extra_response = get(
                 f"/admin/cache-reports{relative_url}", headers={"Authorization": f"Bearer {ADMIN_TOKEN}"}, url=URL
             )

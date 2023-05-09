@@ -88,13 +88,16 @@ def get_cache_entry_from_steps(
     best_response = get_best_response(kinds=kinds, dataset=dataset, config=config, split=split)
     if "error_code" in best_response.response and best_response.response["error_code"] == CACHED_RESPONSE_NOT_FOUND:
         # The cache is missing. Look if the job is in progress, or if it should be backfilled.
-        revision = get_dataset_git_revision(
-            dataset=dataset,
-            hf_endpoint=hf_endpoint,
-            hf_token=hf_token,
-            hf_timeout_seconds=hf_timeout_seconds,
-        )
-        # ^ TODO: the revision could be in the cache (new processing step)
+        try:
+            revision = get_dataset_git_revision(
+                dataset=dataset,
+                hf_endpoint=hf_endpoint,
+                hf_token=hf_token,
+                hf_timeout_seconds=hf_timeout_seconds,
+            )
+            # ^ TODO: the revision could be in the cache (new processing step)
+        except Exception as e:
+            raise ResponseNotFoundError("Not found.") from e
         ERROR_CODES_TO_RETRY: List[str] = []
         # ^ TODO: pass error_codes_to_retry? or set them in the processing graph?
         dataset_state = DatasetState(
