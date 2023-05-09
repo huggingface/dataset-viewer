@@ -19,7 +19,6 @@ from libcommon.viewer_utils.features import get_cell_value
 
 from worker.common_exceptions import JobRunnerError, SplitNotFoundError
 from worker.config import AppConfig, FirstRowsConfig
-from worker.job_operator import get_previous_step_or_raise
 from worker.job_operators.split.split_job_operator import SplitCachedJobOperator
 from worker.utils import (
     CompleteJobResult,
@@ -28,6 +27,7 @@ from worker.utils import (
     SplitFirstRowsResponse,
     create_truncated_row_items,
     get_json_size,
+    get_previous_step_or_raise,
     get_rows_or_raise,
     to_features_list,
 )

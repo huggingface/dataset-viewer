@@ -68,7 +68,6 @@ class JobRunner:
         self.job_info = job_info
         self.job_type = job_info["type"]
         self.job_id = job_info["job_id"]
-        self.dataset = job_info["dataset"]
         self.force = job_info["force"]
         self.priority = job_info["priority"]
         self.common_config = app_config.common
@@ -79,6 +78,7 @@ class JobRunner:
         self.processing_step = self.job_operator.processing_step
         self.job_params = job_info["params"]
         self.processing_graph = processing_graph
+        self.dataset = self.job_params["dataset"]
 
     def setup(self) -> None:
         job_type = self.job_operator.get_job_type()

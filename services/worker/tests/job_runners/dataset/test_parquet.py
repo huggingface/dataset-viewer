@@ -6,19 +6,20 @@ from typing import Any, Callable
 
 import pytest
 from libcommon.processing_graph import ProcessingGraph
-from libcommon.queue import Priority
+from libcommon.utils import Priority
 from libcommon.resources import CacheMongoResource, QueueMongoResource
 from libcommon.simple_cache import upsert_response
+from libcommon.utils import Priority
 
 from worker.config import AppConfig
-from worker.job_runner import PreviousStepError
-from worker.job_runners.config.parquet import ConfigParquetResponse
-from worker.job_runners.config.parquet_and_info import ParquetFileItem
-from worker.job_runners.dataset.parquet import (
+from worker.job_operators.config.parquet import ConfigParquetResponse
+from worker.job_operators.config.parquet_and_info import ParquetFileItem
+from worker.job_operators.dataset.parquet import (
     DatasetParquetJobRunner,
     DatasetParquetResponse,
     PreviousStepFormatError,
 )
+from worker.job_runner import PreviousStepError
 
 from ..utils import UpstreamResponse
 

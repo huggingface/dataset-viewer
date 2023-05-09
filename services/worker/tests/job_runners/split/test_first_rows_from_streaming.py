@@ -11,13 +11,14 @@ from datasets.packaged_modules import csv
 from libcommon.constants import PROCESSING_STEP_SPLIT_FIRST_ROWS_FROM_PARQUET_VERSION
 from libcommon.exceptions import CustomError
 from libcommon.processing_graph import ProcessingGraph
-from libcommon.queue import Priority
+from libcommon.utils import Priority
 from libcommon.resources import CacheMongoResource, QueueMongoResource
 from libcommon.simple_cache import DoesNotExist, get_response, upsert_response
 from libcommon.storage import StrPath
+from libcommon.utils import Priority
 
 from worker.config import AppConfig
-from worker.job_runners.split.first_rows_from_streaming import (
+from worker.job_operators.split.first_rows_from_streaming import (
     SplitFirstRowsFromStreamingJobRunner,
 )
 from worker.resources import LibrariesResource

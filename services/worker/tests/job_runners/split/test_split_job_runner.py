@@ -7,12 +7,12 @@ from typing import Any, Mapping, Optional
 import pytest
 from libcommon.exceptions import CustomError
 from libcommon.processing_graph import ProcessingStep
-from libcommon.queue import Priority
 from libcommon.simple_cache import SplitFullName
+from libcommon.utils import Priority
 
 from worker.config import AppConfig
+from worker.job_operators.split.split_job_runner import SplitJobRunner
 from worker.job_runner import CompleteJobResult
-from worker.job_runners.split.split_job_runner import SplitJobRunner
 
 
 class DummySplitJobRunner(SplitJobRunner):

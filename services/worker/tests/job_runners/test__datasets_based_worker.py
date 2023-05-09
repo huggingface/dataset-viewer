@@ -9,10 +9,11 @@ from typing import Callable, Optional
 
 import datasets.config
 import pytest
-from libcommon.processing_graph import ProcessingGraph
-from libcommon.queue import Priority
+from libcommon.processing_graph import ProcessingGraph, ProcessingStep
+from libcommon.utils import Priority
 from libcommon.resources import CacheMongoResource, QueueMongoResource
 from libcommon.simple_cache import get_response
+from libcommon.utils import Priority
 
 from worker.config import AppConfig
 from worker.job_runner import CompleteJobResult

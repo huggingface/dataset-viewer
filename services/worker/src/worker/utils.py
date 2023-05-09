@@ -7,6 +7,7 @@ import logging
 import time
 import warnings
 from dataclasses import dataclass, field
+from http import HTTPStatus
 from typing import (
     Any,
     Callable,
@@ -27,9 +28,14 @@ from datasets import (
     IterableDataset,
     load_dataset,
 )
+from libcommon.simple_cache import BestResponse, get_best_response
 from libcommon.utils import orjson_dumps
 
-from worker.common_exceptions import NormalRowsError, StreamingRowsError
+from worker.common_exceptions import (
+    NormalRowsError,
+    PreviousStepError,
+    StreamingRowsError,
+)
 
 
 class OperatorInfo(TypedDict):
@@ -384,3 +390,19 @@ def get_rows_or_raise(
                 "Cannot load the dataset split (in normal download mode) to extract the first rows.",
                 cause=err,
             ) from err
+
+
+def get_previous_step_or_raise(
+    kinds: List[str], dataset: str, config: Optional[str] = None, split: Optional[str] = None
+) -> BestResponse:
+    """Get the previous step from the cache, or raise an exception if it failed."""
+    best_response = get_best_response(kinds=kinds, dataset=dataset, config=config, split=split)
+    if best_response.response["http_status"] != HTTPStatus.OK:
+        raise PreviousStepError.from_response(
+            response=best_response.response,
+            kind=best_response.kind,
+            dataset=dataset,
+            config=config,
+            split=split,
+        )
+    return best_response

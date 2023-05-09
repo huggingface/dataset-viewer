@@ -11,14 +11,15 @@ import pytest
 from libcommon.constants import PROCESSING_STEP_SPLIT_FIRST_ROWS_FROM_STREAMING_VERSION
 from libcommon.exceptions import CustomError
 from libcommon.processing_graph import ProcessingGraph
-from libcommon.queue import Priority
+from libcommon.utils import Priority
 from libcommon.resources import CacheMongoResource, QueueMongoResource
 from libcommon.simple_cache import DoesNotExist, get_response, upsert_response
 from libcommon.storage import StrPath
+from libcommon.utils import Priority
 from pyarrow.fs import LocalFileSystem
 
 from worker.config import AppConfig
-from worker.job_runners.split.first_rows_from_parquet import (
+from worker.job_operators.split.first_rows_from_parquet import (
     SplitFirstRowsFromParquetJobRunner,
 )
 from worker.utils import get_json_size
@@ -115,7 +116,7 @@ def test_compute(
         http_status=HTTPStatus.OK,
     )
 
-    with patch("worker.job_runners.split.first_rows_from_parquet.get_parquet_fs") as mock_read:
+    with patch("worker.job_operators.split.first_rows_from_parquet.get_parquet_fs") as mock_read:
         initial_location = os.getcwd()
         os.chdir("tests/job_runners/split")
         # TODO:  Make localsystem by relative path

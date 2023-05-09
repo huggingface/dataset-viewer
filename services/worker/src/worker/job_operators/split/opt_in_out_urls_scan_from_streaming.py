@@ -18,13 +18,13 @@ from libcommon.utils import JobInfo
 
 from worker.common_exceptions import JobRunnerError
 from worker.config import AppConfig, OptInOutUrlsScanConfig
-from worker.job_operator import get_previous_step_or_raise
 from worker.job_operators.split.split_job_operator import SplitCachedJobOperator
 from worker.utils import (
     CompleteJobResult,
     OptInOutUrlsScanResponse,
     OptUrl,
     SplitFirstRowsResponse,
+    get_previous_step_or_raise,
     get_rows_or_raise,
 )
 

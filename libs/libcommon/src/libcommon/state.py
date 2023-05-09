@@ -10,7 +10,8 @@ from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional
 
 from libcommon.processing_graph import ProcessingGraph, ProcessingStep
-from libcommon.queue import Priority, Queue, Status
+from libcommon.queue import Queue
+from libcommon.utils import Priority, Status
 from libcommon.simple_cache import (
     CacheEntryMetadata,
     DoesNotExist,

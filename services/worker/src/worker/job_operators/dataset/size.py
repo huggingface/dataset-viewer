@@ -9,10 +9,9 @@ from libcommon.constants import PROCESSING_STEP_DATASET_SIZE_VERSION
 from libcommon.simple_cache import DoesNotExist, SplitFullName, get_response
 
 from worker.common_exceptions import JobRunnerError
-from worker.job_operator import get_previous_step_or_raise
 from worker.job_operators.config.size import ConfigSize, ConfigSizeResponse, SplitSize
 from worker.job_operators.dataset.dataset_job_operator import DatasetJobOperator
-from worker.utils import JobResult, PreviousJob
+from worker.utils import JobResult, PreviousJob, get_previous_step_or_raise
 
 SizesJobRunnerErrorCode = Literal["PreviousStepFormatError"]
 

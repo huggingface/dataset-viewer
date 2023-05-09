@@ -9,10 +9,9 @@ from libcommon.constants import PROCESSING_STEP_CONFIG_PARQUET_VERSION
 from libcommon.simple_cache import SplitFullName
 
 from worker.common_exceptions import JobRunnerError
-from worker.job_operator import get_previous_step_or_raise
 from worker.job_operators.config.config_job_operator import ConfigJobOperator
 from worker.job_operators.config.parquet_and_info import ParquetFileItem
-from worker.utils import CompleteJobResult
+from worker.utils import CompleteJobResult, get_previous_step_or_raise
 
 ConfigParquetJobRunnerErrorCode = Literal["PreviousStepFormatError"]
 

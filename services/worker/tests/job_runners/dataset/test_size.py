@@ -6,16 +6,17 @@ from typing import Any, Callable
 
 import pytest
 from libcommon.processing_graph import ProcessingGraph
-from libcommon.queue import Priority
+from libcommon.utils import Priority
 from libcommon.resources import CacheMongoResource, QueueMongoResource
 from libcommon.simple_cache import upsert_response
+from libcommon.utils import Priority
 
 from worker.config import AppConfig
-from worker.job_runner import PreviousStepError
-from worker.job_runners.dataset.size import (
+from worker.job_operators.dataset.size import (
     DatasetSizeJobRunner,
     PreviousStepFormatError,
 )
+from worker.job_runner import PreviousStepError
 
 from ..utils import UpstreamResponse
 

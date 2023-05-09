@@ -8,12 +8,13 @@ from typing import Callable
 import pytest
 from libcommon.exceptions import CustomError
 from libcommon.processing_graph import ProcessingGraph
-from libcommon.queue import Priority
+from libcommon.utils import Priority
 from libcommon.resources import CacheMongoResource, QueueMongoResource
 from libcommon.simple_cache import DoesNotExist, get_response
+from libcommon.utils import Priority
 
 from worker.config import AppConfig
-from worker.job_runners.config_names import ConfigNamesJobRunner
+from worker.job_operators.dataset.config_names import ConfigNamesJobRunner
 from worker.resources import LibrariesResource
 
 from ..fixtures.hub import HubDatasets

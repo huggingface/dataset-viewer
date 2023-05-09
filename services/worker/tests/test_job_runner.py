@@ -6,7 +6,7 @@ from unittest.mock import Mock
 import pytest
 from libcommon.exceptions import CustomError
 from libcommon.processing_graph import ProcessingGraph, ProcessingStep
-from libcommon.queue import Priority, Queue, Status
+from libcommon.queue import Queue
 from libcommon.resources import CacheMongoResource, QueueMongoResource
 from libcommon.simple_cache import (
     CachedResponse,
@@ -14,14 +14,11 @@ from libcommon.simple_cache import (
     get_response_with_details,
     upsert_response,
 )
+from libcommon.utils import Priority, Status
 
 from worker.config import AppConfig
-from worker.job_runner import (
-    ERROR_CODES_TO_RETRY,
-    CompleteJobResult,
-    JobRunner,
-    PreviousStepError,
-)
+from worker.job_runner import ERROR_CODES_TO_RETRY, JobRunner, PreviousStepError
+from worker.utils import CompleteJobResult
 
 
 @pytest.fixture(autouse=True)

@@ -12,17 +12,17 @@ import pytest
 import pytz
 from filelock import FileLock
 from libcommon.processing_graph import ProcessingGraph
-from libcommon.queue import DoesNotExist, Job, JobInfo, Priority, Queue, Status
+from libcommon.queue import DoesNotExist, Job, Queue
 from libcommon.resources import CacheMongoResource, QueueMongoResource
 from libcommon.simple_cache import CachedResponse
 from libcommon.storage import StrPath
-from libcommon.utils import get_datetime
+from libcommon.utils import JobInfo, Priority, Status, get_datetime
 from mirakuru import ProcessExitedWithError, TimeoutExpired
 from pytest import fixture
 
 from worker.config import AppConfig
 from worker.executor import WorkerExecutor
-from worker.job_runner_factory import JobRunnerFactory
+from worker.job_operator_factory import JobOperatorFactory
 from worker.loop import WorkerState
 from worker.resources import LibrariesResource
 
@@ -35,9 +35,12 @@ def get_job_info(prefix: str = "base") -> JobInfo:
     return JobInfo(
         job_id=job_id + "0" * (24 - len(job_id)),
         type="/config-names",
-        dataset=f"__DUMMY_DATASETS_SERVER_USER__/{prefix}_dataset_{_TIME}",
-        config="default",
-        split="train",
+        params={
+            "dataset": f"__DUMMY_DATASETS_SERVER_USER__/{prefix}_dataset_{_TIME}",
+            "config": "default",
+            "split": "train",
+            "git_revision": "1.0",
+        },
         force=False,
         priority=Priority.LOW,
     )
@@ -114,9 +117,9 @@ def set_just_started_job_in_queue(queue_mongo_resource: QueueMongoResource) -> I
     job = Job(
         pk=job_info["job_id"],
         type=job_info["type"],
-        dataset=job_info["dataset"],
-        config=job_info["config"],
-        split=job_info["split"],
+        dataset=job_info["params"]["dataset"],
+        config=job_info["params"]["config"],
+        split=job_info["params"]["split"],
         unicity_id="unicity_id",
         namespace="user",
         priority=job_info["priority"],
@@ -143,9 +146,9 @@ def set_long_running_job_in_queue(app_config: AppConfig, queue_mongo_resource: Q
     job = Job(
         pk=job_info["job_id"],
         type=job_info["type"],
-        dataset=job_info["dataset"],
-        config=job_info["config"],
-        split=job_info["split"],
+        dataset=job_info["params"]["dataset"],
+        config=job_info["params"]["config"],
+        split=job_info["params"]["split"],
         unicity_id="unicity_id",
         namespace="user",
         priority=job_info["priority"],
@@ -172,9 +175,9 @@ def set_zombie_job_in_queue(queue_mongo_resource: QueueMongoResource) -> Iterato
     job = Job(
         pk=job_info["job_id"],
         type=job_info["type"],
-        dataset=job_info["dataset"],
-        config=job_info["config"],
-        split=job_info["split"],
+        dataset=job_info["params"]["dataset"],
+        config=job_info["params"]["config"],
+        split=job_info["params"]["split"],
         unicity_id="unicity_id",
         namespace="user",
         priority=job_info["priority"],
@@ -191,9 +194,9 @@ def set_zombie_job_in_queue(queue_mongo_resource: QueueMongoResource) -> Iterato
 @fixture
 def job_runner_factory(
     app_config: AppConfig, libraries_resource: LibrariesResource, assets_directory: StrPath
-) -> JobRunnerFactory:
+) -> JobOperatorFactory:
     processing_graph = ProcessingGraph(app_config.processing_graph.specification)
-    return JobRunnerFactory(
+    return JobOperatorFactory(
         app_config=app_config,
         processing_graph=processing_graph,
         hf_datasets_cache=libraries_resource.hf_datasets_cache,
@@ -203,7 +206,7 @@ def job_runner_factory(
 
 @fixture
 def executor(
-    app_config: AppConfig, job_runner_factory: JobRunnerFactory, worker_state_file_path: str
+    app_config: AppConfig, job_runner_factory: JobOperatorFactory, worker_state_file_path: str
 ) -> WorkerExecutor:
     return WorkerExecutor(app_config, job_runner_factory, state_file_path=worker_state_file_path)
 

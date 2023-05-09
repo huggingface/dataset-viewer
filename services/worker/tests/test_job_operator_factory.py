@@ -9,7 +9,7 @@ from libcommon.storage import StrPath
 from libcommon.utils import JobInfo, Priority
 
 from worker.config import AppConfig
-from worker.job_runner_factory import JobRunnerFactory
+from worker.job_operator_factory import JobOperatorFactory
 from worker.resources import LibrariesResource
 
 
@@ -41,7 +41,7 @@ def test_create_job_runner(
     job_type: str,
     expected_job_runner: Optional[str],
 ) -> None:
-    factory = JobRunnerFactory(
+    factory = JobOperatorFactory(
         app_config=app_config,
         processing_graph=processing_graph,
         hf_datasets_cache=libraries_resource.hf_datasets_cache,

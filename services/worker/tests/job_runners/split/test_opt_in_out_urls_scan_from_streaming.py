@@ -13,12 +13,13 @@ from aiolimiter import AsyncLimiter
 from libcommon.constants import PROCESSING_STEP_SPLIT_OPT_IN_OUT_URLS_SCAN_VERSION
 from libcommon.exceptions import CustomError
 from libcommon.processing_graph import ProcessingGraph
-from libcommon.queue import Priority
+from libcommon.utils import Priority
 from libcommon.resources import CacheMongoResource, QueueMongoResource
 from libcommon.simple_cache import get_response, upsert_response
+from libcommon.utils import Priority
 
 from worker.config import AppConfig
-from worker.job_runners.split.opt_in_out_urls_scan_from_streaming import (
+from worker.job_operators.split.opt_in_out_urls_scan_from_streaming import (
     ExternalServerError,
     SplitOptInOutUrlsScanJobRunner,
     check_spawning,
@@ -189,7 +190,7 @@ def test_compute(
         progress=1.0,
         http_status=HTTPStatus.OK,
     )
-    with patch("worker.job_runners.split.opt_in_out_urls_scan_from_streaming.check_spawning", mock_check_spawning):
+    with patch("worker.job_operators.split.opt_in_out_urls_scan_from_streaming.check_spawning", mock_check_spawning):
         assert job_runner.process()
     cached_response = get_response(
         kind=job_runner.processing_step.cache_kind, dataset=dataset, config=config, split=split

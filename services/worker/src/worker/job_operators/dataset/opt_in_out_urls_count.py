@@ -9,9 +9,12 @@ from libcommon.constants import PROCESSING_STEP_DATASET_OPT_IN_OUT_URLS_COUNT_VE
 from libcommon.simple_cache import DoesNotExist, SplitFullName, get_response
 
 from worker.common_exceptions import JobRunnerError
-from worker.job_operator import get_previous_step_or_raise
 from worker.job_operators.dataset.dataset_job_operator import DatasetJobOperator
-from worker.utils import JobResult, OptInOutUrlsCountResponse
+from worker.utils import (
+    JobResult,
+    OptInOutUrlsCountResponse,
+    get_previous_step_or_raise,
+)
 
 DatasetOptInOutUrlsCountJobRunnerErrorCode = Literal["PreviousStepFormatError"]
 
