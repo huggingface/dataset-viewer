@@ -7,8 +7,7 @@ from typing import Callable, Optional
 
 import datasets.config
 import pytest
-from libcommon.processing_graph import ProcessingGraph, ProcessingStep
-from libcommon.utils import Priority
+from libcommon.processing_graph import ProcessingGraph
 from libcommon.resources import CacheMongoResource, QueueMongoResource
 from libcommon.utils import Priority
 
@@ -74,7 +73,6 @@ def get_job_runner(
             },
             app_config=app_config,
             processing_step=processing_graph.get_processing_step(processing_step_name),
-            processing_graph=processing_graph,
             hf_datasets_cache=libraries_resource.hf_datasets_cache,
         )
 
@@ -142,21 +140,3 @@ def assert_datasets_cache_path(path: Path, exists: bool, equals: bool = True) ->
     assert (datasets.config.HF_DATASETS_CACHE == path) is equals
     assert (datasets.config.DOWNLOADED_DATASETS_PATH == path / datasets.config.DOWNLOADED_DATASETS_DIR) is equals
     assert (datasets.config.EXTRACTED_DATASETS_PATH == path / datasets.config.EXTRACTED_DATASETS_DIR) is equals
-
-
-def test_process_big_content(hub_datasets: HubDatasets, app_config: AppConfig, get_job_runner: GetJobRunner) -> None:
-    dataset, config, split = get_default_config_split(hub_datasets["big"]["name"])
-    worker = get_job_runner(
-        dataset, config, split, replace(app_config, worker=replace(app_config.worker, content_max_bytes=10)), False
-    )
-
-    assert not worker.process()
-    cached_response = get_response(
-        kind=worker.processing_step.cache_kind,
-        dataset=dataset,
-        config=config,
-        split=split,
-    )
-
-    assert cached_response["http_status"] == HTTPStatus.NOT_IMPLEMENTED
-    assert cached_response["error_code"] == "TooBigContentError"

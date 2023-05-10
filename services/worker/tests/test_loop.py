@@ -1,8 +1,6 @@
 from typing import Optional
 
-from libcommon.config import CommonConfig
 from libcommon.processing_graph import ProcessingGraph, ProcessingStep
-from libcommon.queue import JobInfo
 from libcommon.resources import CacheMongoResource, QueueMongoResource
 from libcommon.utils import JobInfo
 
@@ -32,7 +30,9 @@ class DummyJobRunner(JobRunner):
 
 
 class DummyJobRunnerFactory(BaseJobRunnerFactory):
-    def __init__(self, processing_graph: ProcessingGraph, processing_step: ProcessingStep, app_config: AppConfig) -> None:
+    def __init__(
+        self, processing_graph: ProcessingGraph, processing_step: ProcessingStep, app_config: AppConfig
+    ) -> None:
         self.processing_step = processing_step
         self.processing_graph = processing_graph
         self.app_config = app_config
@@ -42,7 +42,6 @@ class DummyJobRunnerFactory(BaseJobRunnerFactory):
             job_info=job_info,
             app_config=self.app_config,
             processing_step=self.processing_step,
-            processing_graph=self.processing_graph,
         )
 
 
@@ -55,7 +54,9 @@ def test_process_next_job(
     queue_mongo_resource: QueueMongoResource,
     worker_state_file_path: str,
 ) -> None:
-    factory = DummyJobRunnerFactory(processing_step=test_processing_step, processing_graph=test_processing_graph, app_config=app_config)
+    factory = DummyJobRunnerFactory(
+        processing_step=test_processing_step, processing_graph=test_processing_graph, app_config=app_config
+    )
     loop = Loop(
         job_runner_factory=factory,
         library_cache_paths=libraries_resource.storage_paths,

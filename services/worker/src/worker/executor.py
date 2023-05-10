@@ -9,6 +9,7 @@ from typing import Any, Callable, Optional
 
 import orjson
 from filelock import FileLock
+from libcommon.processing_graph import ProcessingGraph
 from libcommon.queue import Queue
 from libcommon.utils import get_datetime
 from mirakuru import OutputExecutor
@@ -43,6 +44,7 @@ class WorkerExecutor:
         self.app_config = app_config
         self.job_runner_factory = job_runner_factory
         self.state_file_path = state_file_path
+        self.processing_graph = ProcessingGraph(self.app_config.processing_graph.specification)
 
         max_missing_heartbeats = self.app_config.worker.max_missing_heartbeats
         heartbeat_interval_seconds = self.app_config.worker.heartbeat_interval_seconds
@@ -117,8 +119,12 @@ class WorkerExecutor:
         message = "Job runner crashed while running this job (missing heartbeats)."
         for zombie in zombies:
             job_runner = self.job_runner_factory.create_job_runner(zombie)
-
-            job_manager = JobManager(job_info=zombie, app_config=self.app_config, job_runner=job_runner)
+            job_manager = JobManager(
+                job_info=zombie,
+                app_config=self.app_config,
+                job_runner=job_runner,
+                processing_graph=self.processing_graph,
+            )
             job_manager.set_crashed(message=message)
 
     def kill_long_job(self, worker_loop_executor: OutputExecutor) -> None:
@@ -137,8 +143,12 @@ class WorkerExecutor:
                 finally:
                     Queue().kill_long_job(long_job)
                     job_runner = self.job_runner_factory.create_job_runner(long_job)
-
-                    job_manager = JobManager(job_info=long_job, app_config=self.app_config, job_runner=job_runner)
+                    job_manager = JobManager(
+                        job_info=long_job,
+                        app_config=self.app_config,
+                        job_runner=job_runner,
+                        processing_graph=self.processing_graph,
+                    )
                     message = "Job runner was killed while running this job (job exceeded maximum duration)."
                     job_manager.set_exceeded_maximum_duration(message=message)
 

@@ -10,6 +10,7 @@ from typing import Optional, TypedDict
 
 import orjson
 from filelock import FileLock
+from libcommon.processing_graph import ProcessingGraph
 from libcommon.queue import EmptyQueueError, Queue
 from libcommon.utils import JobInfo, get_datetime
 from psutil import cpu_count, disk_usage, getloadavg, swap_memory, virtual_memory
@@ -135,8 +136,10 @@ class Loop:
             return False
 
         job_runner = self.job_runner_factory.create_job_runner(job_info)
-
-        job_manager = JobManager(job_info=job_info, app_config=self.app_config, job_runner=job_runner)
+        processing_graph = ProcessingGraph(self.app_config.processing_graph.specification)
+        job_manager = JobManager(
+            job_info=job_info, app_config=self.app_config, job_runner=job_runner, processing_graph=processing_graph
+        )
         finished_status = job_manager.run()
         self.queue.finish_job(job_id=job_manager.job_id, finished_status=finished_status)
         self.set_worker_state(current_job_info=None)

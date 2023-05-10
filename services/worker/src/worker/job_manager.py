@@ -8,7 +8,7 @@ from typing import Literal, Optional
 from libcommon.config import CommonConfig
 from libcommon.dataset import DatasetNotFoundError, get_dataset_git_revision
 from libcommon.exceptions import CustomError
-from libcommon.processing_graph import ProcessingStep
+from libcommon.processing_graph import ProcessingGraph, ProcessingStep
 from libcommon.queue import Queue
 from libcommon.simple_cache import (
     DoesNotExist,
@@ -59,7 +59,13 @@ class JobManager:
     _dataset_git_revision: Optional[str] = None
     job_runner: JobRunner
 
-    def __init__(self, job_info: JobInfo, app_config: AppConfig, job_runner: JobRunner) -> None:
+    def __init__(
+        self,
+        job_info: JobInfo,
+        app_config: AppConfig,
+        job_runner: JobRunner,
+        processing_graph: ProcessingGraph,
+    ) -> None:
         self.job_info = job_info
         self.job_type = job_info["type"]
         self.job_id = job_info["job_id"]
@@ -70,6 +76,7 @@ class JobManager:
         self.common_config = app_config.common
         self.worker_config = app_config.worker
         self.job_runner = job_runner
+        self.processing_graph = processing_graph
         self.processing_step = self.job_runner.processing_step
         self.setup()
 
@@ -260,7 +267,8 @@ class JobManager:
 
     def create_children_jobs(self) -> None:
         """Create children jobs for the current job."""
-        if len(self.processing_step.children) <= 0:
+        children = self.processing_graph.get_children(self.processing_step.name)
+        if len(children) <= 0:
             return
         try:
             response_in_cache = get_response_params(
@@ -300,7 +308,7 @@ class JobManager:
             new_split_full_names_for_config = set()
         new_split_full_names_for_dataset = {SplitFullName(dataset=self.dataset, config=None, split=None)}
 
-        for processing_step in self.processing_step.children:
+        for processing_step in children:
             new_split_full_names = (
                 new_split_full_names_for_split
                 if processing_step.input_type == "split"

@@ -13,7 +13,6 @@ from aiolimiter import AsyncLimiter
 from libcommon.constants import PROCESSING_STEP_SPLIT_OPT_IN_OUT_URLS_SCAN_VERSION
 from libcommon.exceptions import CustomError
 from libcommon.processing_graph import ProcessingGraph
-from libcommon.utils import Priority
 from libcommon.resources import CacheMongoResource, QueueMongoResource
 from libcommon.simple_cache import upsert_response
 from libcommon.utils import Priority
@@ -77,7 +76,6 @@ def get_job_runner(
             },
             app_config=app_config,
             processing_step=processing_graph.get_processing_step(processing_step_name),
-            processing_graph=processing_graph,
             hf_datasets_cache=libraries_resource.hf_datasets_cache,
         )
 

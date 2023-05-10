@@ -6,7 +6,6 @@ from typing import Any, Callable
 
 import pytest
 from libcommon.processing_graph import ProcessingGraph
-from libcommon.utils import Priority
 from libcommon.resources import CacheMongoResource, QueueMongoResource
 from libcommon.simple_cache import upsert_response
 from libcommon.utils import Priority
@@ -142,19 +141,19 @@ def get_job_runner(
         config: str,
         app_config: AppConfig,
         force: bool = False,
-    ) -> ConfigInfoJobOperator:
-        processing_step_name = ConfigInfoJobOperator.get_job_type()
+    ) -> ConfigInfoJobRunner:
+        processing_step_name = ConfigInfoJobRunner.get_job_type()
         processing_graph = ProcessingGraph(
             {
                 "dataset-level": {"input_type": "dataset"},
                 processing_step_name: {
                     "input_type": "dataset",
-                    "job_runner_version": ConfigInfoJobOperator.get_job_runner_version(),
+                    "job_runner_version": ConfigInfoJobRunner.get_job_runner_version(),
                     "triggered_by": "dataset-level",
                 },
             }
         )
-        return ConfigInfoJobOperator(
+        return ConfigInfoJobRunner(
             job_info={
                 "type": ConfigInfoJobRunner.get_job_type(),
                 "params": {
@@ -168,7 +167,6 @@ def get_job_runner(
             },
             app_config=app_config,
             processing_step=processing_graph.get_processing_step(processing_step_name),
-            processing_graph=processing_graph,
         )
 
     return _get_job_runner

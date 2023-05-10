@@ -6,7 +6,6 @@ from typing import Any, Callable, List
 
 import pytest
 from libcommon.processing_graph import ProcessingGraph
-from libcommon.utils import Priority
 from libcommon.resources import CacheMongoResource, QueueMongoResource
 from libcommon.simple_cache import upsert_response
 from libcommon.utils import Priority
@@ -37,19 +36,19 @@ def get_job_runner(
         config: str,
         app_config: AppConfig,
         force: bool = False,
-    ) -> ConfigOptInOutUrlsCountJobOperator:
-        processing_step_name = ConfigOptInOutUrlsCountJobOperator.get_job_type()
+    ) -> ConfigOptInOutUrlsCountJobRunner:
+        processing_step_name = ConfigOptInOutUrlsCountJobRunner.get_job_type()
         processing_graph = ProcessingGraph(
             {
                 "dataset-level": {"input_type": "dataset"},
                 processing_step_name: {
                     "input_type": "config",
-                    "job_runner_version": ConfigOptInOutUrlsCountJobOperator.get_job_runner_version(),
+                    "job_runner_version": ConfigOptInOutUrlsCountJobRunner.get_job_runner_version(),
                     "triggered_by": "dataset-level",
                 },
             }
         )
-        return ConfigOptInOutUrlsCountJobOperator(
+        return ConfigOptInOutUrlsCountJobRunner(
             job_info={
                 "type": ConfigOptInOutUrlsCountJobRunner.get_job_type(),
                 "params": {
@@ -63,7 +62,6 @@ def get_job_runner(
             },
             app_config=app_config,
             processing_step=processing_graph.get_processing_step(processing_step_name),
-            processing_graph=processing_graph,
         )
 
     return _get_job_runner

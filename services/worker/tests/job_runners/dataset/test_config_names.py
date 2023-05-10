@@ -7,7 +7,6 @@ from typing import Callable
 import pytest
 from libcommon.exceptions import CustomError
 from libcommon.processing_graph import ProcessingGraph
-from libcommon.utils import Priority
 from libcommon.resources import CacheMongoResource, QueueMongoResource
 from libcommon.utils import Priority
 
@@ -30,17 +29,17 @@ def get_job_runner(
         dataset: str,
         app_config: AppConfig,
         force: bool = False,
-    ) -> ConfigNamesJobOperator:
-        processing_step_name = ConfigNamesJobOperator.get_job_type()
+    ) -> ConfigNamesJobRunner:
+        processing_step_name = ConfigNamesJobRunner.get_job_type()
         processing_graph = ProcessingGraph(
             {
                 processing_step_name: {
                     "input_type": "dataset",
-                    "job_runner_version": ConfigNamesJobOperator.get_job_runner_version(),
+                    "job_runner_version": ConfigNamesJobRunner.get_job_runner_version(),
                 }
             }
         )
-        return ConfigNamesJobOperator(
+        return ConfigNamesJobRunner(
             job_info={
                 "type": ConfigNamesJobRunner.get_job_type(),
                 "params": {
@@ -53,16 +52,7 @@ def get_job_runner(
                 "priority": Priority.NORMAL,
             },
             app_config=app_config,
-            processing_graph = ProcessingGraph(
-                {
-                    processing_step_name: {
-                        "input_type": "dataset",
-                        "job_runner_version": ConfigNamesJobOperator.get_job_runner_version(),
-                    }
-                }
-            )
             processing_step=processing_graph.get_processing_step(processing_step_name),
-            processing_graph=processing_graph,
             hf_datasets_cache=libraries_resource.hf_datasets_cache,
         )
 

@@ -193,11 +193,12 @@ def test_should_skip_job(
     job_runner = DummyJobRunner(
         job_info=job_info,
         processing_step=test_processing_step,
-        processing_graph=test_processing_graph,
         app_config=app_config,
     )
 
-    job_manager = JobManager(job_info=job_info, app_config=app_config, job_runner=job_runner)
+    job_manager = JobManager(
+        job_info=job_info, app_config=app_config, job_runner=job_runner, processing_graph=test_processing_graph
+    )
 
     if cache_entry:
         upsert_response(
@@ -243,7 +244,6 @@ def test_check_type(
                 "priority": Priority.NORMAL,
             },
             processing_step=test_processing_step,
-            processing_graph=test_processing_graph,
             app_config=app_config,
         )
     with pytest.raises(ValueError):
@@ -260,7 +260,6 @@ def test_check_type(
                 "priority": Priority.NORMAL,
             },
             processing_step=another_processing_step,
-            processing_graph=test_processing_graph,
             app_config=app_config,
         )
 
@@ -289,11 +288,10 @@ def test_create_children_jobs(app_config: AppConfig) -> None:
     job_runner = DummyJobRunner(
         job_info=job_info,
         processing_step=root_step,
-        processing_graph=graph,
         app_config=app_config,
     )
 
-    job_manager = JobManager(job_info=job_info, app_config=app_config, job_runner=job_runner)
+    job_manager = JobManager(job_info=job_info, app_config=app_config, job_runner=job_runner, processing_graph=graph)
 
     assert not job_manager.should_skip_job()
     # we add an entry to the cache
@@ -349,11 +347,12 @@ def test_job_runner_set_crashed(
     job_runner = DummyJobRunner(
         job_info=job_info,
         processing_step=test_processing_step,
-        processing_graph=test_processing_graph,
         app_config=app_config,
     )
 
-    job_manager = JobManager(job_info=job_info, app_config=app_config, job_runner=job_runner)
+    job_manager = JobManager(
+        job_info=job_info, app_config=app_config, job_runner=job_runner, processing_graph=test_processing_graph
+    )
 
     job_manager.set_crashed(message=message)
     response = CachedResponse.objects()[0]
@@ -403,11 +402,12 @@ def test_raise_if_parallel_response_exists(
     job_runner = DummyJobRunner(
         job_info=job_info,
         processing_step=test_processing_step,
-        processing_graph=test_processing_graph,
         app_config=app_config,
     )
 
-    job_manager = JobManager(job_info=job_info, app_config=app_config, job_runner=job_runner)
+    job_manager = JobManager(
+        job_info=job_info, app_config=app_config, job_runner=job_runner, processing_graph=test_processing_graph
+    )
     job_manager.get_dataset_git_revision = Mock(return_value=current_dataset_git_revision)  # type: ignore
     with pytest.raises(CustomError) as exc_info:
         job_manager.raise_if_parallel_response_exists(parallel_cache_kind="dummy-parallel", parallel_job_version=1)

@@ -8,7 +8,6 @@ from unittest.mock import Mock
 import pytest
 from libcommon.exceptions import CustomError
 from libcommon.processing_graph import ProcessingGraph
-from libcommon.utils import Priority
 from libcommon.resources import CacheMongoResource, QueueMongoResource
 from libcommon.utils import Priority
 
@@ -60,7 +59,6 @@ def get_job_runner(
             },
             app_config=app_config,
             processing_step=processing_graph.get_processing_step(processing_step_name),
-            processing_graph=processing_graph,
             hf_datasets_cache=libraries_resource.hf_datasets_cache,
         )
 

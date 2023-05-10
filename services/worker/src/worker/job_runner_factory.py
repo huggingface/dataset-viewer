@@ -74,11 +74,11 @@ class JobRunnerFactory(BaseJobRunnerFactory):
     def _create_job_runner(self, job_info: JobInfo) -> JobRunner:
         job_type = job_info["type"]
         try:
-            processing_step = self.processing_graph.get_step_by_job_type(job_type)
+            processing_step = self.processing_graph.get_processing_step_by_job_type(job_type)
         except ValueError as e:
             raise ValueError(
                 f"Unsupported job type: '{job_type}'. The job types declared in the processing graph are:"
-                f" {[step.job_type for step in self.processing_graph.steps.values()]}"
+                f" {[processing_step.job_type for processing_step in self.processing_graph.get_processing_steps()]}"
             ) from e
         if job_type == ConfigNamesJobRunner.get_job_type():
             return ConfigNamesJobRunner(
