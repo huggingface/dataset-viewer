@@ -25,7 +25,7 @@ from worker.utils import get_json_size
 
 from ...fixtures.hub import get_default_config_split
 
-GetJobRunner = Callable[[str, str, str, AppConfig, bool], SplitFirstRowsFromParquetJobRunner]
+GetJobRunner = Callable[[str, str, str, AppConfig], SplitFirstRowsFromParquetJobRunner]
 
 
 @pytest.fixture
@@ -39,7 +39,6 @@ def get_job_runner(
         config: str,
         split: str,
         app_config: AppConfig,
-        force: bool = False,
     ) -> SplitFirstRowsFromParquetJobRunner:
         processing_step_name = SplitFirstRowsFromParquetJobRunner.get_job_type()
         processing_graph = ProcessingGraph(
@@ -60,7 +59,6 @@ def get_job_runner(
                 "config": config,
                 "split": split,
                 "job_id": "job_id",
-                "force": force,
                 "priority": Priority.NORMAL,
             },
             app_config=app_config,
@@ -75,7 +73,7 @@ def get_job_runner(
 def test_doesnotexist(app_config: AppConfig, get_job_runner: GetJobRunner) -> None:
     dataset = "doesnotexist"
     dataset, config, split = get_default_config_split(dataset)
-    job_runner = get_job_runner(dataset, config, split, app_config, False)
+    job_runner = get_job_runner(dataset, config, split, app_config)
     assert not job_runner.process()
     with pytest.raises(DoesNotExist):
         get_response(kind=job_runner.processing_step.cache_kind, dataset=dataset, config=config, split=split)
@@ -146,7 +144,6 @@ def test_compute(
                         columns_max_number=columns_max_number,
                     ),
                 ),
-                False,
             )
 
             job_runner.get_dataset_git_revision = Mock(return_value="1.0.0")  # type: ignore
@@ -215,13 +212,7 @@ def test_response_already_computed(
         progress=1.0,
         http_status=streaming_response_status,
     )
-    job_runner = get_job_runner(
-        dataset,
-        config,
-        split,
-        app_config,
-        False,
-    )
+    job_runner = get_job_runner(dataset, config, split, app_config)
     job_runner.get_dataset_git_revision = Mock(return_value=current_dataset_git_revision)  # type: ignore
     with pytest.raises(CustomError) as exc_info:
         job_runner.compute()

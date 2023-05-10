@@ -49,7 +49,7 @@ class DatasetsBasedJobRunner(JobRunner):
 
     def get_cache_subdirectory(self, date: datetime) -> str:
         date_str = date.strftime("%Y-%m-%d-%H-%M-%S")
-        payload = (date_str, self.get_job_type(), self.dataset, self.config, self.split, self.force)
+        payload = (date_str, self.get_job_type(), self.dataset, self.config, self.split)
         hash_suffix = sha1(json.dumps(payload, sort_keys=True).encode(), usedforsecurity=False).hexdigest()[:8]
         prefix = f"{date_str}-{self.get_job_type()}-{self.dataset}"[:64]
         subdirectory = f"{prefix}-{hash_suffix}"

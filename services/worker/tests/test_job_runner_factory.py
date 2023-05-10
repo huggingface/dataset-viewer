@@ -53,7 +53,6 @@ def test_create_job_runner(
         "config": "config",
         "split": "split",
         "job_id": "job_id",
-        "force": False,
         "priority": Priority.NORMAL,
     }
     if expected_job_runner is None:

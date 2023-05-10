@@ -161,7 +161,6 @@ with gr.Blocks() as demo:
                     "config": job["config"],
                     "split": job["split"],
                     "namespace": job["namespace"],
-                    "force": job["force"],
                     "priority": job["priority"],
                     "status": job["status"],
                     "created_at": job["created_at"],

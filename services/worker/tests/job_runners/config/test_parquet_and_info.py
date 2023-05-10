@@ -58,7 +58,7 @@ def set_supported_datasets(hub_datasets: HubDatasets) -> Iterator[pytest.MonkeyP
     mp.undo()
 
 
-GetJobRunner = Callable[[str, str, AppConfig, bool], ConfigParquetAndInfoJobRunner]
+GetJobRunner = Callable[[str, str, AppConfig], ConfigParquetAndInfoJobRunner]
 
 
 @pytest.fixture
@@ -71,7 +71,6 @@ def get_job_runner(
         dataset: str,
         config: str,
         app_config: AppConfig,
-        force: bool = False,
     ) -> ConfigParquetAndInfoJobRunner:
         processing_step_name = ConfigParquetAndInfoJobRunner.get_job_type()
         processing_graph = ProcessingGraph(
@@ -91,7 +90,6 @@ def get_job_runner(
                 "config": config,
                 "split": None,
                 "job_id": "job_id",
-                "force": force,
                 "priority": Priority.NORMAL,
             },
             app_config=app_config,
@@ -133,7 +131,7 @@ def test_compute(
         http_status=HTTPStatus.OK,
         content=hub_datasets["public"]["config_names_response"],
     )
-    job_runner = get_job_runner(dataset, config, app_config, False)
+    job_runner = get_job_runner(dataset, config, app_config)
     assert job_runner.process()
     cached_response = get_response(kind=job_runner.processing_step.cache_kind, dataset=dataset, config=config)
     assert cached_response["http_status"] == HTTPStatus.OK
@@ -165,7 +163,7 @@ def test_compute_legacy_configs(
     )
     # first compute and push parquet files for each config for dataset with script with two configs
     for config in original_configs:
-        job_runner = get_job_runner(dataset_name, config, app_config, False)
+        job_runner = get_job_runner(dataset_name, config, app_config)
         assert job_runner.process()
     hf_api = HfApi(endpoint=CI_HUB_ENDPOINT, token=CI_USER_TOKEN)
     dataset_info = hf_api.dataset_info(
@@ -194,7 +192,7 @@ def test_compute_legacy_configs(
             ],
         },
     )
-    job_runner = get_job_runner(dataset_name, "first", app_config, False)
+    job_runner = get_job_runner(dataset_name, "first", app_config)
     assert job_runner.process()
     dataset_info = hf_api.dataset_info(
         repo_id=hub_public_legacy_configs, revision=app_config.parquet_and_info.target_revision, files_metadata=False
@@ -213,7 +211,7 @@ def test_compute_legacy_configs(
 
 def test_doesnotexist(app_config: AppConfig, get_job_runner: GetJobRunner) -> None:
     dataset, config = "doesnotexist", "nonexisting"
-    job_runner = get_job_runner(dataset, config, app_config, False)
+    job_runner = get_job_runner(dataset, config, app_config)
     assert not job_runner.process()
     with pytest.raises(DoesNotExist):
         get_response(kind=job_runner.processing_step.cache_kind, dataset=dataset, config=config)
@@ -420,7 +418,7 @@ def test_not_supported_if_big(
         http_status=HTTPStatus.OK,
         content=hub_datasets["big"]["config_names_response"],
     )
-    job_runner = get_job_runner(dataset, config, app_config, False)
+    job_runner = get_job_runner(dataset, config, app_config)
     assert not job_runner.process()
     cached_response = get_response(kind=job_runner.processing_step.cache_kind, dataset=dataset, config=config)
     assert cached_response["http_status"] == HTTPStatus.NOT_IMPLEMENTED
@@ -441,7 +439,7 @@ def test_supported_if_gated(
         http_status=HTTPStatus.OK,
         content=hub_datasets["gated"]["config_names_response"],
     )
-    job_runner = get_job_runner(dataset, config, app_config, False)
+    job_runner = get_job_runner(dataset, config, app_config)
     assert job_runner.process()
     cached_response = get_response(kind=job_runner.processing_step.cache_kind, dataset=dataset, config=config)
     assert cached_response["http_status"] == HTTPStatus.OK
@@ -462,7 +460,7 @@ def test_not_supported_if_gated_with_extra_fields(
         http_status=HTTPStatus.OK,
         content=hub_datasets["gated_extra_fields"]["config_names_response"],
     )
-    job_runner = get_job_runner(dataset, config, app_config, False)
+    job_runner = get_job_runner(dataset, config, app_config)
     assert not job_runner.process()
     cached_response = get_response(kind=job_runner.processing_step.cache_kind, dataset=dataset, config=config)
     assert cached_response["http_status"] == HTTPStatus.NOT_FOUND
@@ -483,7 +481,7 @@ def test_blocked(
         http_status=HTTPStatus.OK,
         content=hub_datasets["jsonl"]["config_names_response"],
     )
-    job_runner = get_job_runner(dataset, config, app_config, False)
+    job_runner = get_job_runner(dataset, config, app_config)
     assert not job_runner.process()
     cached_response = get_response(kind=job_runner.processing_step.cache_kind, dataset=dataset, config=config)
     assert cached_response["http_status"] == HTTPStatus.NOT_IMPLEMENTED
@@ -510,7 +508,7 @@ def test_compute_splits_response_simple_csv_ok(
         content=hub_datasets[name]["config_names_response"],
     )
     expected_parquet_and_info_response = hub_datasets[name]["parquet_and_info_response"]
-    job_runner = get_job_runner(dataset, config, app_config, False)
+    job_runner = get_job_runner(dataset, config, app_config)
     result = job_runner.compute().content
     assert_content_is_equal(result, expected_parquet_and_info_response)
 
@@ -552,7 +550,7 @@ def test_compute_splits_response_simple_csv_error(
     dataset = hub_datasets[name]["name"]
     config_names_response = hub_datasets[name]["config_names_response"]
     config = config_names_response["config_names"][0]["config"] if config_names_response else None
-    job_runner = get_job_runner(dataset, config, app_config, False)
+    job_runner = get_job_runner(dataset, config, app_config)
     with pytest.raises(CustomError) as exc_info:
         job_runner.compute()
     assert exc_info.value.code == error_code
@@ -586,7 +584,7 @@ def test_previous_step_error(
 ) -> None:
     dataset = hub_datasets["public"]["name"]
     config = hub_datasets["public"]["config_names_response"]["config_names"][0]["config"]
-    job_runner = get_job_runner(dataset, config, app_config, False)
+    job_runner = get_job_runner(dataset, config, app_config)
     upsert_response(
         "/config-names",
         dataset=dataset,

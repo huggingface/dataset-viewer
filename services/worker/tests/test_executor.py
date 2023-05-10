@@ -38,7 +38,6 @@ def get_job_info(prefix: str = "base") -> JobInfo:
         dataset=f"__DUMMY_DATASETS_SERVER_USER__/{prefix}_dataset_{_TIME}",
         config="default",
         split="train",
-        force=False,
         priority=Priority.LOW,
     )
 

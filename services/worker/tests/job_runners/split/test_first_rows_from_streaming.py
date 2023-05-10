@@ -25,7 +25,7 @@ from worker.utils import get_json_size
 
 from ...fixtures.hub import HubDatasets, get_default_config_split
 
-GetJobRunner = Callable[[str, str, str, AppConfig, bool], SplitFirstRowsFromStreamingJobRunner]
+GetJobRunner = Callable[[str, str, str, AppConfig], SplitFirstRowsFromStreamingJobRunner]
 
 
 @pytest.fixture
@@ -40,7 +40,6 @@ def get_job_runner(
         config: str,
         split: str,
         app_config: AppConfig,
-        force: bool = False,
     ) -> SplitFirstRowsFromStreamingJobRunner:
         processing_step_name = SplitFirstRowsFromStreamingJobRunner.get_job_type()
         processing_graph = ProcessingGraph(
@@ -61,7 +60,6 @@ def get_job_runner(
                 "config": config,
                 "split": split,
                 "job_id": "job_id",
-                "force": force,
                 "priority": Priority.NORMAL,
             },
             app_config=app_config,
@@ -74,27 +72,9 @@ def get_job_runner(
     return _get_job_runner
 
 
-def test_should_skip_job(app_config: AppConfig, get_job_runner: GetJobRunner, hub_public_csv: str) -> None:
-    dataset, config, split = get_default_config_split(hub_public_csv)
-    job_runner = get_job_runner(dataset, config, split, app_config, False)
-    assert not job_runner.should_skip_job()
-    # we add an entry to the cache
-    upsert_response(
-        kind="/split-names-from-streaming",
-        dataset=dataset,
-        config=config,
-        content={"splits": [{"dataset": dataset, "config": config, "split": split}]},
-        http_status=HTTPStatus.OK,
-    )
-    job_runner.process()
-    assert job_runner.should_skip_job()
-    job_runner = get_job_runner(dataset, config, split, app_config, True)
-    assert not job_runner.should_skip_job()
-
-
 def test_compute(app_config: AppConfig, get_job_runner: GetJobRunner, hub_public_csv: str) -> None:
     dataset, config, split = get_default_config_split(hub_public_csv)
-    job_runner = get_job_runner(dataset, config, split, app_config, False)
+    job_runner = get_job_runner(dataset, config, split, app_config)
     upsert_response(
         kind="/split-names-from-streaming",
         dataset=dataset,
@@ -122,7 +102,7 @@ def test_compute(app_config: AppConfig, get_job_runner: GetJobRunner, hub_public
 def test_doesnotexist(app_config: AppConfig, get_job_runner: GetJobRunner) -> None:
     dataset = "doesnotexist"
     dataset, config, split = get_default_config_split(dataset)
-    job_runner = get_job_runner(dataset, config, split, app_config, False)
+    job_runner = get_job_runner(dataset, config, split, app_config)
     assert not job_runner.process()
     with pytest.raises(DoesNotExist):
         get_response(kind=job_runner.processing_step.cache_kind, dataset=dataset, config=config, split=split)
@@ -169,7 +149,6 @@ def test_number_rows(
         config,
         split,
         app_config if use_token else replace(app_config, common=replace(app_config.common, hf_token=None)),
-        False,
     )
     job_runner.get_dataset_git_revision = Mock(return_value="1.0.0")  # type: ignore
 
@@ -254,7 +233,6 @@ def test_truncation(
                 columns_max_number=columns_max_number,
             ),
         ),
-        False,
     )
 
     upsert_response(
@@ -312,7 +290,6 @@ def test_response_already_computed(
         config,
         split,
         app_config,
-        False,
     )
     job_runner.get_dataset_git_revision = Mock(return_value=current_dataset_git_revision)  # type: ignore
     with pytest.raises(CustomError) as exc_info:

@@ -150,7 +150,7 @@ def test_get_cache_entry_from_steps() -> None:
 
     # pending job throws exception
     queue = Queue()
-    queue.upsert_job(job_type="dataset-split-names", dataset=dataset, config=config, force=True)
+    queue.upsert_job(job_type="dataset-split-names", dataset=dataset, config=config)
     non_existent_step = processing_graph.get_processing_step("dataset-split-names")
     with patch("api.routes.endpoint.get_dataset_git_revision", return_value=None):
         # ^ the dataset does not exist on the Hub, we don't want to raise an issue here

@@ -298,8 +298,8 @@ class JobRunner(ABC):
 
     Args:
         job_info (:obj:`JobInfo`):
-            The job to process. It contains the job_id, the job type, the dataset, the config, the split
-            the force flag, and the priority level.
+            The job to process. It contains the job_id, the job type, the dataset, the config, the split,
+            and the priority level.
         common_config (:obj:`CommonConfig`):
             The common config.
         processing_step (:obj:`ProcessingStep`):
@@ -310,7 +310,6 @@ class JobRunner(ABC):
     dataset: str
     config: Optional[str] = None
     split: Optional[str] = None
-    force: bool
     priority: Priority
     worker_config: WorkerConfig
     common_config: CommonConfig
@@ -341,7 +340,6 @@ class JobRunner(ABC):
         self.dataset = job_info["dataset"]
         self.config = job_info["config"]
         self.split = job_info["split"]
-        self.force = job_info["force"]
         self.priority = job_info["priority"]
         self.common_config = common_config
         self.worker_config = worker_config
@@ -362,10 +360,7 @@ class JobRunner(ABC):
             )
 
     def __str__(self) -> str:
-        return (
-            f"JobRunner(job_id={self.job_id} dataset={self.dataset} config={self.config}"
-            + f" split={self.split} force={self.force})"
-        )
+        return f"JobRunner(job_id={self.job_id} dataset={self.dataset} config={self.config} split={self.split})"
 
     def log(self, level: int, msg: str) -> None:
         logging.log(level=level, msg=f"[{self.job_type}] {msg}")
@@ -411,8 +406,7 @@ class JobRunner(ABC):
         """Return True if the job should be skipped, False otherwise.
 
         The job must be skipped if:
-        - force is False
-        - and a cache entry exists for the dataset
+        - a cache entry exists for the dataset
         - and we can get the git commit and it's not None
         - and the cached entry has been created with the same git commit of the dataset repository
         - and the cached entry has been created with the same major version of the job runner
@@ -422,8 +416,6 @@ class JobRunner(ABC):
         Returns:
             :obj:`bool`: True if the job should be skipped, False otherwise.
         """
-        if self.force:
-            return False
         try:
             cached_response = get_response_without_content(
                 kind=self.processing_step.cache_kind,

@@ -28,7 +28,7 @@ from worker.resources import LibrariesResource
 from ...constants import CI_SPAWNING_TOKEN
 from ...fixtures.hub import HubDatasets, get_default_config_split
 
-GetJobRunner = Callable[[str, str, str, AppConfig, bool], SplitOptInOutUrlsScanJobRunner]
+GetJobRunner = Callable[[str, str, str, AppConfig], SplitOptInOutUrlsScanJobRunner]
 
 
 async def mock_check_spawning(
@@ -48,7 +48,6 @@ def get_job_runner(
         config: str,
         split: str,
         app_config: AppConfig,
-        force: bool = False,
     ) -> SplitOptInOutUrlsScanJobRunner:
         processing_step_name = SplitOptInOutUrlsScanJobRunner.get_job_type()
         processing_graph = ProcessingGraph(
@@ -69,7 +68,6 @@ def get_job_runner(
                 "config": config,
                 "split": split,
                 "job_id": "job_id",
-                "force": force,
                 "priority": Priority.NORMAL,
             },
             app_config=app_config,
@@ -177,7 +175,7 @@ def test_compute(
     expected_content: Mapping[str, Any],
 ) -> None:
     dataset, config, split = get_default_config_split(hub_datasets[name]["name"])
-    job_runner = get_job_runner(dataset, config, split, app_config, False)
+    job_runner = get_job_runner(dataset, config, split, app_config)
     upsert_response(
         kind="split-first-rows-from-streaming",
         dataset=dataset,
@@ -250,7 +248,6 @@ def test_compute_failed(
         config,
         split,
         replace(app_config, urls_scan=replace(app_config.urls_scan, columns_max_number=columns_max_number)),
-        False,
     )
     if dataset != "doesnotexist":
         upsert_response(
@@ -281,7 +278,6 @@ def test_compute_error_from_spawning(
         config,
         split,
         replace(app_config, urls_scan=replace(app_config.urls_scan, spawning_url="wrong_url")),
-        False,
     )
     upsert_response(
         kind="split-first-rows-from-streaming",

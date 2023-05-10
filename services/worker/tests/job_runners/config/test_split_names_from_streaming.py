@@ -22,7 +22,7 @@ from worker.resources import LibrariesResource
 
 from ...fixtures.hub import HubDatasets, get_default_config_split
 
-GetJobRunner = Callable[[str, str, AppConfig, bool], SplitNamesFromStreamingJobRunner]
+GetJobRunner = Callable[[str, str, AppConfig], SplitNamesFromStreamingJobRunner]
 
 
 @pytest.fixture
@@ -35,7 +35,6 @@ def get_job_runner(
         dataset: str,
         config: str,
         app_config: AppConfig,
-        force: bool = False,
     ) -> SplitNamesFromStreamingJobRunner:
         processing_step_name = SplitNamesFromStreamingJobRunner.get_job_type()
         processing_graph = ProcessingGraph(
@@ -55,7 +54,6 @@ def get_job_runner(
                 "config": config,
                 "split": None,
                 "job_id": "job_id",
-                "force": force,
                 "priority": Priority.NORMAL,
             },
             app_config=app_config,
@@ -69,7 +67,7 @@ def get_job_runner(
 
 def test_process(app_config: AppConfig, get_job_runner: GetJobRunner, hub_public_csv: str) -> None:
     dataset, config, _ = get_default_config_split(hub_public_csv)
-    job_runner = get_job_runner(dataset, config, app_config, False)
+    job_runner = get_job_runner(dataset, config, app_config)
     assert job_runner.process()
     cached_response = get_response(kind=job_runner.processing_step.cache_kind, dataset=hub_public_csv, config=config)
     assert cached_response["http_status"] == HTTPStatus.OK
@@ -84,7 +82,7 @@ def test_process(app_config: AppConfig, get_job_runner: GetJobRunner, hub_public
 def test_doesnotexist(app_config: AppConfig, get_job_runner: GetJobRunner) -> None:
     dataset = "doesnotexist"
     config = "some_config"
-    job_runner = get_job_runner(dataset, config, app_config, False)
+    job_runner = get_job_runner(dataset, config, app_config)
     assert not job_runner.process()
     with pytest.raises(DoesNotExist):
         get_response(kind=job_runner.processing_step.cache_kind, dataset=dataset, config=config)
@@ -120,7 +118,6 @@ def test_compute_split_names_from_streaming_response(
         dataset,
         config,
         app_config if use_token else replace(app_config, common=replace(app_config.common, hf_token=None)),
-        False,
     )
     job_runner.get_dataset_git_revision = Mock(return_value="1.0.0")  # type: ignore
     if error_code is None:
@@ -170,7 +167,7 @@ def test_response_already_computed(
         progress=1.0,
         http_status=dataset_info_response_status,
     )
-    job_runner = get_job_runner(dataset, config, app_config, False)
+    job_runner = get_job_runner(dataset, config, app_config)
     job_runner.get_dataset_git_revision = Mock(return_value=current_dataset_git_revision)  # type: ignore
     with pytest.raises(CustomError) as exc_info:
         job_runner.compute()
