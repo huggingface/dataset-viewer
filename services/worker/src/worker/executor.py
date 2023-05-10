@@ -138,8 +138,7 @@ class WorkerExecutor:
                     job_runner.set_exceeded_maximum_duration(message=message)
 
     def is_worker_alive(self, worker_loop_executor: OutputExecutor) -> bool:
-        if not worker_loop_executor.running():
-            worker_loop_executor.stop()  # raises an error if the worker returned exit code 1
-            return False
-        else:
+        if worker_loop_executor.running():
             return True
+        worker_loop_executor.stop()  # raises an error if the worker returned exit code 1
+        return False

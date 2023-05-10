@@ -2,9 +2,9 @@
 # Copyright 2022 The HuggingFace Authors.
 
 import logging
-from typing import List, Optional
+from typing import Optional
 
-from libcommon.processing_graph import ProcessingStep
+from libcommon.processing_graph import ProcessingGraph
 from libcommon.queue import Queue
 from libcommon.simple_cache import get_dataset_responses_without_content_for_kind
 from starlette.requests import Request
@@ -23,7 +23,7 @@ from admin.utils import (
 
 
 def create_dataset_status_endpoint(
-    processing_steps: List[ProcessingStep],
+    processing_graph: ProcessingGraph,
     max_age: int,
     external_auth_url: Optional[str] = None,
     organization: Optional[str] = None,
@@ -40,7 +40,7 @@ def create_dataset_status_endpoint(
             queue = Queue()
             return get_json_ok_response(
                 {
-                    processing_step.job_type: {
+                    processing_step.name: {
                         "cached_responses": get_dataset_responses_without_content_for_kind(
                             kind=processing_step.cache_kind, dataset=dataset
                         ),
@@ -48,7 +48,7 @@ def create_dataset_status_endpoint(
                             dataset=dataset, job_type=processing_step.job_type
                         ),
                     }
-                    for processing_step in processing_steps
+                    for processing_step in processing_graph.get_alphabetically_ordered_processing_steps()
                 },
                 max_age=max_age,
             )

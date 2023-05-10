@@ -100,9 +100,9 @@ class AppConfig:
         )
 
 
-StepNamesByInputType = Mapping[InputType, List[str]]
+ProcessingStepNamesByInputType = Mapping[InputType, List[str]]
 
-StepNamesByInputTypeAndEndpoint = Mapping[str, StepNamesByInputType]
+ProcessingStepNamesByInputTypeAndEndpoint = Mapping[str, ProcessingStepNamesByInputType]
 
 
 @dataclass(frozen=True)
@@ -115,7 +115,7 @@ class EndpointConfig:
     (dataset, config, split)
     """
 
-    step_names_by_input_type_and_endpoint: StepNamesByInputTypeAndEndpoint = field(
+    processing_step_names_by_input_type_and_endpoint: ProcessingStepNamesByInputTypeAndEndpoint = field(
         default_factory=lambda: {
             "/config-names": {"dataset": ["/config-names"]},
             "/splits": {

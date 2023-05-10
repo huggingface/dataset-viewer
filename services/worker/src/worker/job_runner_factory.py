@@ -74,17 +74,18 @@ class JobRunnerFactory(BaseJobRunnerFactory):
     def _create_job_runner(self, job_info: JobInfo) -> JobRunner:
         job_type = job_info["type"]
         try:
-            processing_step = self.processing_graph.get_step_by_job_type(job_type)
+            processing_step = self.processing_graph.get_processing_step_by_job_type(job_type)
         except ValueError as e:
             raise ValueError(
                 f"Unsupported job type: '{job_type}'. The job types declared in the processing graph are:"
-                f" {[step.job_type for step in self.processing_graph.steps.values()]}"
+                f" {[processing_step.job_type for processing_step in self.processing_graph.get_processing_steps()]}"
             ) from e
         if job_type == ConfigNamesJobRunner.get_job_type():
             return ConfigNamesJobRunner(
                 job_info=job_info,
                 app_config=self.app_config,
                 processing_step=processing_step,
+                processing_graph=self.processing_graph,
                 hf_datasets_cache=self.hf_datasets_cache,
             )
         if job_type == SplitNamesFromStreamingJobRunner.get_job_type():
@@ -92,6 +93,7 @@ class JobRunnerFactory(BaseJobRunnerFactory):
                 job_info=job_info,
                 app_config=self.app_config,
                 processing_step=processing_step,
+                processing_graph=self.processing_graph,
                 hf_datasets_cache=self.hf_datasets_cache,
             )
         if job_type == SplitFirstRowsFromStreamingJobRunner.get_job_type():
@@ -99,6 +101,7 @@ class JobRunnerFactory(BaseJobRunnerFactory):
                 job_info=job_info,
                 app_config=self.app_config,
                 processing_step=processing_step,
+                processing_graph=self.processing_graph,
                 hf_datasets_cache=self.hf_datasets_cache,
                 assets_directory=self.assets_directory,
             )
@@ -107,6 +110,7 @@ class JobRunnerFactory(BaseJobRunnerFactory):
                 job_info=job_info,
                 app_config=self.app_config,
                 processing_step=processing_step,
+                processing_graph=self.processing_graph,
                 hf_datasets_cache=self.hf_datasets_cache,
             )
         if job_type == ConfigParquetJobRunner.get_job_type():
@@ -115,6 +119,7 @@ class JobRunnerFactory(BaseJobRunnerFactory):
                 common_config=self.app_config.common,
                 worker_config=self.app_config.worker,
                 processing_step=processing_step,
+                processing_graph=self.processing_graph,
             )
         if job_type == DatasetParquetJobRunner.get_job_type():
             return DatasetParquetJobRunner(
@@ -122,6 +127,7 @@ class JobRunnerFactory(BaseJobRunnerFactory):
                 common_config=self.app_config.common,
                 worker_config=self.app_config.worker,
                 processing_step=processing_step,
+                processing_graph=self.processing_graph,
             )
         if job_type == DatasetInfoJobRunner.get_job_type():
             return DatasetInfoJobRunner(
@@ -129,6 +135,7 @@ class JobRunnerFactory(BaseJobRunnerFactory):
                 common_config=self.app_config.common,
                 worker_config=self.app_config.worker,
                 processing_step=processing_step,
+                processing_graph=self.processing_graph,
             )
         if job_type == ConfigInfoJobRunner.get_job_type():
             return ConfigInfoJobRunner(
@@ -136,6 +143,7 @@ class JobRunnerFactory(BaseJobRunnerFactory):
                 common_config=self.app_config.common,
                 worker_config=self.app_config.worker,
                 processing_step=processing_step,
+                processing_graph=self.processing_graph,
             )
         if job_type == DatasetSizeJobRunner.get_job_type():
             return DatasetSizeJobRunner(
@@ -143,6 +151,7 @@ class JobRunnerFactory(BaseJobRunnerFactory):
                 common_config=self.app_config.common,
                 worker_config=self.app_config.worker,
                 processing_step=processing_step,
+                processing_graph=self.processing_graph,
             )
         if job_type == ConfigSizeJobRunner.get_job_type():
             return ConfigSizeJobRunner(
@@ -150,6 +159,7 @@ class JobRunnerFactory(BaseJobRunnerFactory):
                 common_config=self.app_config.common,
                 worker_config=self.app_config.worker,
                 processing_step=processing_step,
+                processing_graph=self.processing_graph,
             )
         if job_type == SplitNamesFromDatasetInfoJobRunner.get_job_type():
             return SplitNamesFromDatasetInfoJobRunner(
@@ -157,11 +167,13 @@ class JobRunnerFactory(BaseJobRunnerFactory):
                 common_config=self.app_config.common,
                 worker_config=self.app_config.worker,
                 processing_step=processing_step,
+                processing_graph=self.processing_graph,
             )
         if job_type == DatasetSplitNamesJobRunner.get_job_type():
             return DatasetSplitNamesJobRunner(
                 job_info=job_info,
                 processing_step=processing_step,
+                processing_graph=self.processing_graph,
                 common_config=self.app_config.common,
                 worker_config=self.app_config.worker,
             )
@@ -170,12 +182,14 @@ class JobRunnerFactory(BaseJobRunnerFactory):
                 job_info=job_info,
                 app_config=self.app_config,
                 processing_step=processing_step,
+                processing_graph=self.processing_graph,
                 assets_directory=self.assets_directory,
             )
         if job_type == DatasetIsValidJobRunner.get_job_type():
             return DatasetIsValidJobRunner(
                 job_info=job_info,
                 processing_step=processing_step,
+                processing_graph=self.processing_graph,
                 common_config=self.app_config.common,
                 worker_config=self.app_config.worker,
             )
@@ -185,6 +199,7 @@ class JobRunnerFactory(BaseJobRunnerFactory):
                 job_info=job_info,
                 app_config=self.app_config,
                 processing_step=processing_step,
+                processing_graph=self.processing_graph,
                 hf_datasets_cache=self.hf_datasets_cache,
             )
         if job_type == ConfigOptInOutUrlsCountJobRunner.get_job_type():
@@ -193,6 +208,7 @@ class JobRunnerFactory(BaseJobRunnerFactory):
                 common_config=self.app_config.common,
                 worker_config=self.app_config.worker,
                 processing_step=processing_step,
+                processing_graph=self.processing_graph,
             )
         if job_type == DatasetOptInOutUrlsCountJobRunner.get_job_type():
             return DatasetOptInOutUrlsCountJobRunner(
@@ -200,14 +216,16 @@ class JobRunnerFactory(BaseJobRunnerFactory):
                 common_config=self.app_config.common,
                 worker_config=self.app_config.worker,
                 processing_step=processing_step,
+                processing_graph=self.processing_graph,
             )
 
         if job_type == SplitOptInOutUrlsCountJobRunner.get_job_type():
             return SplitOptInOutUrlsCountJobRunner(
                 job_info=job_info,
-                processing_step=processing_step,
                 common_config=self.app_config.common,
                 worker_config=self.app_config.worker,
+                processing_step=processing_step,
+                processing_graph=self.processing_graph,
             )
 
         supported_job_types = [

@@ -10,7 +10,7 @@ import pytest
 from datasets.packaged_modules import csv
 from libcommon.constants import PROCESSING_STEP_SPLIT_FIRST_ROWS_FROM_PARQUET_VERSION
 from libcommon.exceptions import CustomError
-from libcommon.processing_graph import ProcessingStep
+from libcommon.processing_graph import ProcessingGraph
 from libcommon.queue import Priority
 from libcommon.resources import CacheMongoResource, QueueMongoResource
 from libcommon.simple_cache import DoesNotExist, get_response, upsert_response
@@ -42,6 +42,18 @@ def get_job_runner(
         app_config: AppConfig,
         force: bool = False,
     ) -> SplitFirstRowsFromStreamingJobRunner:
+        processing_step_name = SplitFirstRowsFromStreamingJobRunner.get_job_type()
+        processing_graph = ProcessingGraph(
+            {
+                "dataset-level": {"input_type": "dataset"},
+                "config-level": {"input_type": "dataset", "triggered_by": "dataset-level"},
+                processing_step_name: {
+                    "input_type": "dataset",
+                    "job_runner_version": SplitFirstRowsFromStreamingJobRunner.get_job_runner_version(),
+                    "triggered_by": "config-level",
+                },
+            }
+        )
         return SplitFirstRowsFromStreamingJobRunner(
             job_info={
                 "type": SplitFirstRowsFromStreamingJobRunner.get_job_type(),
@@ -53,16 +65,8 @@ def get_job_runner(
                 "priority": Priority.NORMAL,
             },
             app_config=app_config,
-            processing_step=ProcessingStep(
-                name=SplitFirstRowsFromStreamingJobRunner.get_job_type(),
-                input_type="split",
-                requires=[],
-                required_by_dataset_viewer=True,
-                ancestors=[],
-                children=[],
-                parents=[],
-                job_runner_version=SplitFirstRowsFromStreamingJobRunner.get_job_runner_version(),
-            ),
+            processing_step=processing_graph.get_processing_step(processing_step_name),
+            processing_graph=processing_graph,
             hf_datasets_cache=libraries_resource.hf_datasets_cache,
             assets_directory=assets_directory,
         )

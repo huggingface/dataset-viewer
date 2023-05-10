@@ -1,10 +1,10 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2022 The HuggingFace Authors.
 
-from typing import List, Optional
+from typing import Optional
 
 import pytest
-from libcommon.processing_graph import ProcessingStep
+from libcommon.processing_graph import ProcessingGraph
 from starlette.testclient import TestClient
 
 from admin.app import create_app
@@ -63,21 +63,21 @@ def test_metrics(client: TestClient) -> None:
     assert metrics[name] > 0, metrics
 
 
-def test_pending_jobs(client: TestClient, processing_steps: List[ProcessingStep]) -> None:
+def test_pending_jobs(client: TestClient, processing_graph: ProcessingGraph) -> None:
     response = client.request("get", "/pending-jobs")
     assert response.status_code == 200
     json = response.json()
-    for processing_step in processing_steps:
+    for processing_step in processing_graph.get_processing_steps():
         assert json[processing_step.job_type] == {"waiting": [], "started": []}
 
 
-def test_dataset_status(client: TestClient, processing_steps: List[ProcessingStep]) -> None:
+def test_dataset_status(client: TestClient, processing_graph: ProcessingGraph) -> None:
     response = client.request("get", "/dataset-status")
     assert response.status_code == 422
     response = client.request("get", "/dataset-status", params={"dataset": "test-dataset"})
     assert response.status_code == 200
     json = response.json()
-    for processing_step in processing_steps:
+    for processing_step in processing_graph.get_processing_steps():
         assert not json[processing_step.job_type]["cached_responses"]
         assert not json[processing_step.job_type]["jobs"]
 
@@ -92,12 +92,13 @@ def test_dataset_status(client: TestClient, processing_steps: List[ProcessingSte
 )
 def test_cache_reports(
     client: TestClient,
-    processing_steps: List[ProcessingStep],
+    processing_graph: ProcessingGraph,
     cursor: Optional[str],
     http_status: int,
     error_code: Optional[str],
 ) -> None:
-    path = processing_steps[0].job_type
+    first_step = processing_graph.get_processing_steps()[0]
+    path = first_step.cache_kind
     cursor_str = f"?cursor={cursor}" if cursor else ""
     response = client.request("get", f"/cache-reports{path}{cursor_str}")
     assert response.status_code == http_status
@@ -119,12 +120,13 @@ def test_cache_reports(
 )
 def test_cache_reports_with_content(
     client: TestClient,
-    processing_steps: List[ProcessingStep],
+    processing_graph: ProcessingGraph,
     cursor: Optional[str],
     http_status: int,
     error_code: Optional[str],
 ) -> None:
-    path = processing_steps[0].job_type
+    first_step = processing_graph.get_processing_steps()[0]
+    path = first_step.cache_kind
     cursor_str = f"?cursor={cursor}" if cursor else ""
     response = client.request("get", f"/cache-reports-with-content{path}{cursor_str}")
     assert response.status_code == http_status

@@ -10,13 +10,12 @@ import pytest
 from datasets import Dataset, Image, concatenate_datasets
 from datasets.table import embed_table_storage
 from fsspec import AbstractFileSystem
-from libcommon.processing_graph import ProcessingStep
+from libcommon.processing_graph import ProcessingGraph
 from libcommon.simple_cache import _clean_cache_database, upsert_response
 from libcommon.storage import StrPath
 from libcommon.viewer_utils.asset import update_last_modified_date_of_rows_in_assets_dir
 
 from api.config import AppConfig
-from api.routes.endpoint import StepsByInputTypeAndEndpoint
 from api.routes.rows import Indexer, RowsIndex, clean_cached_assets, create_response
 
 
@@ -142,18 +141,9 @@ def dataset_image_with_config_parquet() -> dict[str, Any]:
 
 
 @pytest.fixture
-def config_parquet_processing_steps(endpoint_definition: StepsByInputTypeAndEndpoint) -> List[ProcessingStep]:
-    parquet_processing_steps_by_input_type = endpoint_definition.get("/parquet")
-    if not parquet_processing_steps_by_input_type or not parquet_processing_steps_by_input_type["config"]:
-        raise RuntimeError("The parquet endpoint is not configured. Exiting.")
-    return parquet_processing_steps_by_input_type["config"]
-
-
-@pytest.fixture
-def indexer(app_config: AppConfig, config_parquet_processing_steps: List[ProcessingStep]) -> Indexer:
+def indexer(app_config: AppConfig, processing_graph: ProcessingGraph) -> Indexer:
     return Indexer(
-        config_parquet_processing_steps=config_parquet_processing_steps,
-        init_processing_steps=[],
+        processing_graph=processing_graph,
         hf_endpoint=app_config.common.hf_endpoint,
         hf_token=app_config.common.hf_token,
     )
@@ -321,7 +311,7 @@ def test_update_last_modified_date_of_rows_in_assets_dir(tmp_path: Path) -> None
         length=3,
         assets_directory=cached_assets_directory,
     )
-    most_recent_rows_dirs = sorted([row_dir for row_dir in split_dir.glob("*")], key=os.path.getmtime, reverse=True)
+    most_recent_rows_dirs = sorted(list(split_dir.glob("*")), key=os.path.getmtime, reverse=True)
     most_recent_rows = [int(row_dir.name) for row_dir in most_recent_rows_dirs]
     assert sorted(most_recent_rows[:3]) == [2, 3, 4]
     assert most_recent_rows[3:] == [7, 6, 5, 1, 0]

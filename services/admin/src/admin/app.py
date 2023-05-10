@@ -30,7 +30,6 @@ from admin.routes.dataset_state import create_dataset_state_endpoint
 from admin.routes.dataset_status import create_dataset_status_endpoint
 from admin.routes.force_refresh import create_force_refresh_endpoint
 from admin.routes.healthcheck import healthcheck_endpoint
-from admin.routes.jobs_duration import create_jobs_duration_per_dataset_endpoint
 from admin.routes.pending_jobs import create_pending_jobs_endpoint
 
 
@@ -44,7 +43,6 @@ def create_app() -> Starlette:
         raise RuntimeError("The assets storage directory could not be accessed. Exiting.")
 
     processing_graph = ProcessingGraph(app_config.processing_graph.specification)
-    processing_steps = list(processing_graph.steps.values())
 
     cache_resource = CacheMongoResource(database=app_config.cache.mongo_database, host=app_config.cache.mongo_url)
     queue_resource = QueueMongoResource(database=app_config.queue.mongo_database, host=app_config.queue.mongo_url)
@@ -60,7 +58,7 @@ def create_app() -> Starlette:
     if not metrics_resource.is_available():
         raise RuntimeError("The connection to the metrics database could not be established. Exiting.")
 
-    prometheus = Prometheus(processing_steps=processing_steps, assets_directory=assets_directory)
+    prometheus = Prometheus(processing_graph=processing_graph, assets_directory=assets_directory)
 
     middleware = [
         Middleware(
@@ -69,117 +67,102 @@ def create_app() -> Starlette:
         Middleware(GZipMiddleware),
         Middleware(PrometheusMiddleware, filter_unhandled_paths=True),
     ]
-    routes = (
-        [
-            Route("/healthcheck", endpoint=healthcheck_endpoint),
-            Route("/metrics", endpoint=prometheus.endpoint),
-            # used in a browser tab to monitor the queue
-            Route(
-                "/pending-jobs",
-                endpoint=create_pending_jobs_endpoint(
-                    processing_steps=processing_steps,
-                    max_age=app_config.admin.max_age,
-                    external_auth_url=app_config.admin.external_auth_url,
-                    organization=app_config.admin.hf_organization,
-                ),
+    routes = [
+        Route("/healthcheck", endpoint=healthcheck_endpoint),
+        Route("/metrics", endpoint=prometheus.endpoint),
+        # used in a browser tab to monitor the queue
+        Route(
+            "/pending-jobs",
+            endpoint=create_pending_jobs_endpoint(
+                processing_graph=processing_graph,
+                max_age=app_config.admin.max_age,
+                external_auth_url=app_config.admin.external_auth_url,
+                organization=app_config.admin.hf_organization,
             ),
-            Route(
-                "/dataset-backfill",
-                endpoint=create_dataset_backfill_endpoint(
-                    processing_graph=processing_graph,
-                    hf_endpoint=app_config.common.hf_endpoint,
-                    hf_token=app_config.common.hf_token,
-                    external_auth_url=app_config.admin.external_auth_url,
-                    organization=app_config.admin.hf_organization,
-                ),
-                methods=["POST"],
+        ),
+        Route(
+            "/dataset-backfill",
+            endpoint=create_dataset_backfill_endpoint(
+                processing_graph=processing_graph,
+                hf_endpoint=app_config.common.hf_endpoint,
+                hf_token=app_config.common.hf_token,
+                external_auth_url=app_config.admin.external_auth_url,
+                organization=app_config.admin.hf_organization,
             ),
-            Route(
-                "/dataset-state",
-                endpoint=create_dataset_state_endpoint(
-                    processing_graph=processing_graph,
-                    hf_endpoint=app_config.common.hf_endpoint,
-                    hf_token=app_config.common.hf_token,
-                    max_age=app_config.admin.max_age,
-                    external_auth_url=app_config.admin.external_auth_url,
-                    organization=app_config.admin.hf_organization,
-                ),
+            methods=["POST"],
+        ),
+        Route(
+            "/dataset-state",
+            endpoint=create_dataset_state_endpoint(
+                processing_graph=processing_graph,
+                hf_endpoint=app_config.common.hf_endpoint,
+                hf_token=app_config.common.hf_token,
+                max_age=app_config.admin.max_age,
+                external_auth_url=app_config.admin.external_auth_url,
+                organization=app_config.admin.hf_organization,
             ),
-            Route(
-                "/dataset-status",
-                endpoint=create_dataset_status_endpoint(
-                    processing_steps=processing_steps,
-                    max_age=app_config.admin.max_age,
-                    external_auth_url=app_config.admin.external_auth_url,
-                    organization=app_config.admin.hf_organization,
-                ),
+        ),
+        Route(
+            "/dataset-status",
+            endpoint=create_dataset_status_endpoint(
+                processing_graph=processing_graph,
+                max_age=app_config.admin.max_age,
+                external_auth_url=app_config.admin.external_auth_url,
+                organization=app_config.admin.hf_organization,
             ),
-        ]
-        + [
-            Route(
-                f"/force-refresh{processing_step.job_type}",
-                endpoint=create_force_refresh_endpoint(
-                    processing_step=processing_step,
-                    hf_endpoint=app_config.common.hf_endpoint,
-                    hf_token=app_config.common.hf_token,
-                    external_auth_url=app_config.admin.external_auth_url,
-                    organization=app_config.admin.hf_organization,
+        ),
+    ]
+    for processing_step in processing_graph.get_processing_steps():
+        # beware: here we assume 1-1 mapping between processing steps and cache kinds (and job types)
+        # which is currently the case
+        cache_kind = processing_step.cache_kind
+        job_type = processing_step.job_type
+        input_type = processing_step.input_type
+        routes.extend(
+            [
+                Route(
+                    f"/force-refresh{job_type}",
+                    endpoint=create_force_refresh_endpoint(
+                        input_type=input_type,
+                        job_type=job_type,
+                        hf_endpoint=app_config.common.hf_endpoint,
+                        hf_token=app_config.common.hf_token,
+                        external_auth_url=app_config.admin.external_auth_url,
+                        organization=app_config.admin.hf_organization,
+                    ),
+                    methods=["POST"],
                 ),
-                methods=["POST"],
-            )
-            for processing_step in processing_steps
-        ]
-        + [
-            Route(
-                f"/cache-reports{processing_step.job_type}",
-                endpoint=create_cache_reports_endpoint(
-                    processing_step=processing_step,
-                    cache_reports_num_results=app_config.admin.cache_reports_num_results,
-                    max_age=app_config.admin.max_age,
-                    external_auth_url=app_config.admin.external_auth_url,
-                    organization=app_config.admin.hf_organization,
+                Route(
+                    f"/cache-reports{cache_kind}",
+                    endpoint=create_cache_reports_endpoint(
+                        cache_kind=cache_kind,
+                        cache_reports_num_results=app_config.admin.cache_reports_num_results,
+                        max_age=app_config.admin.max_age,
+                        external_auth_url=app_config.admin.external_auth_url,
+                        organization=app_config.admin.hf_organization,
+                    ),
                 ),
-            )
-            for processing_step in processing_steps
-        ]
-        + [
-            Route(
-                f"/cache-reports-with-content{processing_step.job_type}",
-                endpoint=create_cache_reports_with_content_endpoint(
-                    processing_step=processing_step,
-                    cache_reports_with_content_num_results=app_config.admin.cache_reports_with_content_num_results,
-                    max_age=app_config.admin.max_age,
-                    external_auth_url=app_config.admin.external_auth_url,
-                    organization=app_config.admin.hf_organization,
+                Route(
+                    f"/cache-reports-with-content{cache_kind}",
+                    endpoint=create_cache_reports_with_content_endpoint(
+                        cache_kind=cache_kind,
+                        cache_reports_with_content_num_results=app_config.admin.cache_reports_with_content_num_results,
+                        max_age=app_config.admin.max_age,
+                        external_auth_url=app_config.admin.external_auth_url,
+                        organization=app_config.admin.hf_organization,
+                    ),
                 ),
-            )
-            for processing_step in processing_steps
-        ]
-        + [
-            Route(
-                f"/cancel-jobs{processing_step.job_type}",
-                endpoint=create_cancel_jobs_endpoint(
-                    processing_step=processing_step,
-                    external_auth_url=app_config.admin.external_auth_url,
-                    organization=app_config.admin.hf_organization,
+                Route(
+                    f"/cancel-jobs{job_type}",
+                    endpoint=create_cancel_jobs_endpoint(
+                        job_type=job_type,
+                        external_auth_url=app_config.admin.external_auth_url,
+                        organization=app_config.admin.hf_organization,
+                    ),
+                    methods=["POST"],
                 ),
-                methods=["POST"],
-            )
-            for processing_step in processing_steps
-        ]
-        + [
-            Route(
-                f"/jobs-duration-per-dataset{processing_step.job_type}",
-                endpoint=create_jobs_duration_per_dataset_endpoint(
-                    processing_step=processing_step,
-                    max_age=app_config.admin.max_age,
-                    external_auth_url=app_config.admin.external_auth_url,
-                    organization=app_config.admin.hf_organization,
-                ),
-            )
-            for processing_step in processing_steps
-        ]
-    )
+            ]
+        )
 
     return Starlette(routes=routes, middleware=middleware, on_shutdown=[resource.release for resource in resources])
 

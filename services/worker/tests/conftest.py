@@ -4,7 +4,7 @@
 from pathlib import Path
 from typing import Iterator
 
-from libcommon.processing_graph import ProcessingStep
+from libcommon.processing_graph import ProcessingGraph, ProcessingStep
 from libcommon.queue import _clean_queue_database
 from libcommon.resources import CacheMongoResource, QueueMongoResource
 from libcommon.simple_cache import _clean_cache_database
@@ -109,18 +109,24 @@ def assets_directory(app_config: AppConfig) -> StrPath:
     return init_assets_dir(app_config.assets.storage_directory)
 
 
-@fixture()
-def test_processing_step() -> ProcessingStep:
-    return ProcessingStep(
-        name="/dummy",
-        input_type="dataset",
-        requires=[],
-        required_by_dataset_viewer=False,
-        ancestors=[],
-        children=[],
-        parents=[],
-        job_runner_version=1,
+@fixture
+def test_processing_graph() -> ProcessingGraph:
+    return ProcessingGraph(
+        {
+            "/dummy": {"input_type": "dataset"},
+            "/dummy2": {"input_type": "dataset"},
+        }
     )
+
+
+@fixture
+def test_processing_step(test_processing_graph: ProcessingGraph) -> ProcessingStep:
+    return test_processing_graph.get_processing_step("/dummy")
+
+
+@fixture
+def another_processing_step(test_processing_graph: ProcessingGraph) -> ProcessingStep:
+    return test_processing_graph.get_processing_step("/dummy2")
 
 
 # Import fixture modules as plugins

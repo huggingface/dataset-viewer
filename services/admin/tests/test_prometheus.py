@@ -3,10 +3,9 @@
 
 import os
 from http import HTTPStatus
-from typing import List
 
 from libcommon.metrics import CacheTotalMetric, JobTotalMetric
-from libcommon.processing_graph import ProcessingStep
+from libcommon.processing_graph import ProcessingGraph
 from libcommon.storage import StrPath
 
 from admin.prometheus import Prometheus
@@ -14,7 +13,7 @@ from admin.prometheus import Prometheus
 
 def test_prometheus(
     assets_directory: StrPath,
-    processing_steps: List[ProcessingStep],
+    processing_graph: ProcessingGraph,
 ) -> None:
     cache_metric = {
         "kind": "dummy",
@@ -37,7 +36,7 @@ def test_prometheus(
 
     is_multiprocess = "PROMETHEUS_MULTIPROC_DIR" in os.environ
 
-    prometheus = Prometheus(processing_steps=processing_steps, assets_directory=assets_directory)
+    prometheus = Prometheus(processing_graph=processing_graph, assets_directory=assets_directory)
     registry = prometheus.getRegistry()
     assert registry is not None
 
@@ -53,12 +52,17 @@ def test_prometheus(
         assert name in metrics
         assert metrics[name] > 0
 
-    additional_field = ('pid="' + str(os.getpid()) + '",') if is_multiprocess else ""
+    additional_field = f'pid="{os.getpid()}"' if is_multiprocess else ""
+    last_additional_field = f",{additional_field}" if additional_field else ""
+    not_last_additional_field = f"{additional_field}," if additional_field else ""
 
-    assert 'responses_in_cache_total{error_code="None",http_status="200",kind="dummy"}' in metrics
-    assert 'queue_jobs_total{queue="dummy",status="waiting"}' in metrics
+    assert (
+        'responses_in_cache_total{error_code="None",http_status="200",kind="dummy"' + last_additional_field + "}"
+        in metrics
+    )
+    assert "queue_jobs_total{" + not_last_additional_field + 'queue="dummy",status="waiting"}' in metrics
 
     for type in ["total", "used", "free", "percent"]:
-        assert "assets_disk_usage{" + additional_field + 'type="' + type + '"}' in metrics
-        assert metrics["assets_disk_usage{" + additional_field + 'type="' + type + '"}'] >= 0
-    assert metrics["assets_disk_usage{" + additional_field + 'type="percent"}'] <= 100
+        assert "assets_disk_usage{" + not_last_additional_field + 'type="' + type + '"}' in metrics
+        assert metrics["assets_disk_usage{" + not_last_additional_field + 'type="' + type + '"}'] >= 0
+    assert metrics["assets_disk_usage{" + not_last_additional_field + 'type="percent"}'] <= 100

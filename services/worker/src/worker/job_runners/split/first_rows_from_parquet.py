@@ -15,7 +15,7 @@ from libcommon.constants import (
     PROCESSING_STEP_SPLIT_FIRST_ROWS_FROM_PARQUET_VERSION,
     PROCESSING_STEP_SPLIT_FIRST_ROWS_FROM_STREAMING_VERSION,
 )
-from libcommon.processing_graph import ProcessingStep
+from libcommon.processing_graph import ProcessingGraph, ProcessingStep
 from libcommon.queue import JobInfo
 from libcommon.simple_cache import SplitFullName
 from libcommon.storage import StrPath
@@ -235,7 +235,7 @@ def compute_first_rows_response(
     if len(row_group_readers) == 0:
         raise ParquetResponseEmptyError("No parquet files found.")
 
-    pa_table = pa.concat_tables([row_group_readers[i]() for i in range(0, last_row_group_id + 1)])
+    pa_table = pa.concat_tables([row_group_readers[i]() for i in range(last_row_group_id + 1)])
     result = pa_table.slice(0, num_rows)
 
     rows = [
@@ -296,6 +296,7 @@ class SplitFirstRowsFromParquetJobRunner(JobRunner):
         job_info: JobInfo,
         app_config: AppConfig,
         processing_step: ProcessingStep,
+        processing_graph: ProcessingGraph,
         assets_directory: StrPath,
     ) -> None:
         super().__init__(
@@ -303,6 +304,7 @@ class SplitFirstRowsFromParquetJobRunner(JobRunner):
             common_config=app_config.common,
             worker_config=app_config.worker,
             processing_step=processing_step,
+            processing_graph=processing_graph,
         )
         self.first_rows_config = app_config.first_rows
         self.assets_directory = assets_directory
