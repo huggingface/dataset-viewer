@@ -1399,33 +1399,6 @@ files = [
 numpy = ">=1.14.5"
 
 [[package]]
-name = "hffs"
-version = "0.0.1.dev0"
-description = "Filesystem interface over huggingface.co repositories"
-category = "main"
-optional = false
-python-versions = ">=3.7.0"
-files = []
-develop = false
-
-[package.dependencies]
-fsspec = "*"
-huggingface_hub = ">=0.12.0"
-packaging = ">=20.9"
-requests = "*"
-
-[package.extras]
-dev = ["black (>=23.1,<24.0)", "pytest", "ruff (>=0.0.241)"]
-quality = ["black (>=23.1,<24.0)", "ruff (>=0.0.241)"]
-tests = ["pytest"]
-
-[package.source]
-type = "git"
-url = "https://github.com/huggingface/hffs.git"
-reference = "0e187e74d38e9436353691f4a7a26b15f0663f58"
-resolved_reference = "0e187e74d38e9436353691f4a7a26b15f0663f58"
-
-[[package]]
 name = "html5lib"
 version = "1.1"
 description = "HTML parser based on the WHATWG HTML specification"
@@ -5429,4 +5402,4 @@ cffi = ["cffi (>=1.11)"]
 [metadata]
 lock-version = "2.0"
 python-versions = "3.9.15"
-content-hash = "bc8e01912293deb14c211464bbcacb642584fd8762f25603255b9722dc13313f"
+content-hash = "f63ce8a9962feeaacc96e0ab22e9f3acc4051688ab23d177094f55f75912c04d"
