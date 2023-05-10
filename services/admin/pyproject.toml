@@ -55,6 +55,9 @@ preview = true
 strict = true
 
 [[tool.mypy.overrides]]
-module = "prometheus_client.*"
+module = [
+    "huggingface_hub.*",
+    "prometheus_client.*"
+]
 ignore_missing_imports = true
 # ^ prometheus_client is now typed, but starlette-prometheus requires an old version
