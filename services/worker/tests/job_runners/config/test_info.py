@@ -161,7 +161,6 @@ def get_job_runner(
                     "dataset": dataset,
                     "config": config,
                     "split": None,
-                    "git_revision": "1.0",
                 },
                 "job_id": "job_id",
                 "force": force,

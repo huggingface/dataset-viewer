@@ -27,7 +27,6 @@ class JobParams(TypedDict):
     dataset: str
     config: Optional[str]
     split: Optional[str]
-    git_revision: Optional[str]
 
 
 class JobInfo(TypedDict):

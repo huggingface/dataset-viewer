@@ -161,7 +161,6 @@ class Job(Document):
                     "dataset": self.dataset,
                     "config": self.config,
                     "split": self.split,
-                    "git_revision": None,
                 },
                 "force": self.force,
                 "priority": self.priority,
