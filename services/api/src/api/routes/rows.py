@@ -78,7 +78,7 @@ def get_hf_fs(hf_token: Optional[str]) -> HfFileSystem:
     return HfFileSystem(token=hf_token)
 
 
-def get_hf_parquet_uris(paths: List[str], dataset: str):
+def get_hf_parquet_uris(paths: List[str], dataset: str) -> List[str]:
     """Get the Hugging Face URIs from the Parquet branch of the dataset repository (see PARQUET_REVISION).
 
     Args:
