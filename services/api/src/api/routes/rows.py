@@ -9,6 +9,7 @@ from functools import lru_cache, partial
 from itertools import islice
 from os import PathLike
 from typing import Any, Callable, List, Mapping, Optional, TypedDict, Union
+from urllib.parse import quote_plus
 
 import numpy as np
 import pyarrow as pa
@@ -87,7 +88,7 @@ def get_hf_parquet_uris(paths: List[str], dataset: str) -> List[str]:
     Returns:
         List[str]: List of Parquet URIs.
     """
-    return [f"hf://datasets/{dataset}@{PARQUET_REVISION}/{path}" for path in paths]
+    return [f"hf://datasets/{dataset}@{quote_plus(PARQUET_REVISION)}/{path}" for path in paths]
 
 
 UNSUPPORTED_FEATURES_MAGIC_STRINGS = ["Image(", "Audio(", "'binary'"]

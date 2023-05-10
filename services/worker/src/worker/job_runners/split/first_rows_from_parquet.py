@@ -5,6 +5,7 @@ import logging
 from functools import lru_cache, partial
 from http import HTTPStatus
 from typing import Any, List, Literal, Mapping, Optional
+from urllib.parse import quote_plus
 
 import pyarrow as pa
 from datasets import Features
@@ -155,7 +156,7 @@ def get_hf_parquet_uris(paths: List[str], dataset: str) -> List[str]:
     Returns:
         List[str]: List of Parquet URIs.
     """
-    return [f"hf://datasets/{dataset}@{PARQUET_REVISION}/{path}" for path in paths]
+    return [f"hf://datasets/{dataset}@{quote_plus(PARQUET_REVISION)}/{path}" for path in paths]
 
 
 def compute_first_rows_response(
