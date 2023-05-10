@@ -3,10 +3,9 @@
 
 import logging
 from http import HTTPStatus
-from typing import Any, List, Literal, Mapping, Optional, TypedDict
+from typing import List, Literal, Optional, TypedDict
 
 from libcommon.constants import PROCESSING_STEP_CONFIG_PARQUET_VERSION
-from libcommon.simple_cache import SplitFullName
 
 from worker.job_runner import (
     CompleteJobResult,
@@ -95,10 +94,3 @@ class ConfigParquetJobRunner(JobRunner):
         if self.config is None:
             raise ParameterMissingError("'config' parameter is required")
         return CompleteJobResult(compute_parquet_response(dataset=self.dataset, config=self.config))
-
-    def get_new_splits(self, content: Mapping[str, Any]) -> set[SplitFullName]:
-        """Get the set of new splits, from the content created by the compute."""
-        return {
-            SplitFullName(dataset=self.dataset, config=self.config, split=parquet_file["split"])
-            for parquet_file in content["parquet_files"]
-        }

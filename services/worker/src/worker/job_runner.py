@@ -15,17 +15,16 @@ from libcommon.exceptions import (
     ErrorResponseWithoutCause,
 )
 from libcommon.processing_graph import ProcessingGraph, ProcessingStep
-from libcommon.queue import JobInfo, Priority, Queue, Status
+from libcommon.queue import JobInfo, Priority, Status
 from libcommon.simple_cache import (
     BestResponse,
     CacheEntryWithDetails,
     DoesNotExist,
-    SplitFullName,
     get_best_response,
-    get_response,
     get_response_without_content,
     upsert_response,
 )
+from libcommon.state import DatasetState
 from libcommon.utils import orjson_dumps
 
 from worker.config import WorkerConfig
@@ -395,7 +394,7 @@ class JobRunner(ABC):
         except Exception:
             self.exception(f"error while computing {self}")
             result = Status.ERROR
-        self.create_children_jobs()
+        self.backfill()
         return result
 
     def get_dataset_git_revision(self) -> Optional[str]:
@@ -524,77 +523,15 @@ class JobRunner(ABC):
     def compute(self) -> JobResult:
         pass
 
-    # should be overridden if the job has children jobs of type "split"
-    def get_new_splits(self, content: Mapping[str, Any]) -> set[SplitFullName]:
-        """Get the set of new splits, from the content created by the compute.
-
-        Can be empty.
-
-        Args:
-            content (:obj:`Mapping[str, Any]`): the content created by the compute.
-        Returns:
-            :obj:`set[SplitFullName]`: the set of new splits full names.
-        """
-        return set()
-
-    def create_children_jobs(self) -> None:
-        """Create children jobs for the current job."""
-        children = self.processing_graph.get_children(self.processing_step.name)
-        if len(children) <= 0:
-            return
-        try:
-            response_in_cache = get_response(
-                kind=self.processing_step.cache_kind,
-                dataset=self.dataset,
-                config=self.config,
-                split=self.split,
-            )
-        except Exception:
-            # if the response is not in the cache, we don't create the children jobs
-            return
-        if response_in_cache["http_status"] == HTTPStatus.OK:
-            new_split_full_names_for_split: set[SplitFullName] = self.get_new_splits(response_in_cache["content"])
-            new_split_full_names_for_config: set[SplitFullName] = {
-                SplitFullName(dataset=s.dataset, config=s.config, split=None) for s in new_split_full_names_for_split
-            }
-        elif self.processing_step.input_type == "split":
-            new_split_full_names_for_split = {
-                SplitFullName(dataset=self.dataset, config=self.config, split=self.split)
-            }
-            new_split_full_names_for_config = {SplitFullName(dataset=self.dataset, config=self.config, split=None)}
-        elif self.processing_step.input_type == "config":
-            new_split_full_names_for_split = set()
-            new_split_full_names_for_config = {SplitFullName(dataset=self.dataset, config=self.config, split=None)}
-
-        else:
-            new_split_full_names_for_split = set()
-            new_split_full_names_for_config = set()
-        new_split_full_names_for_dataset = {SplitFullName(dataset=self.dataset, config=None, split=None)}
-
-        for processing_step in children:
-            new_split_full_names = (
-                new_split_full_names_for_split
-                if processing_step.input_type == "split"
-                else new_split_full_names_for_config
-                if processing_step.input_type == "config"
-                else new_split_full_names_for_dataset
-            )
-            # compute the responses for the new splits
-            queue = Queue()
-            for split_full_name in new_split_full_names:
-                # we force the refresh of the children step responses if the current step refresh was forced
-                queue.upsert_job(
-                    job_type=processing_step.job_type,
-                    dataset=split_full_name.dataset,
-                    config=split_full_name.config,
-                    split=split_full_name.split,
-                    force=self.force,
-                    priority=self.priority,
-                )
-            logging.debug(
-                f"{len(new_split_full_names)} jobs of type {processing_step.job_type} added"
-                f" to queue for dataset={self.dataset}"
-            )
+    def backfill(self) -> None:
+        """Evaluate the state of the dataset and backfill the cache if necessary."""
+        DatasetState(
+            dataset=self.dataset,
+            processing_graph=self.processing_graph,
+            revision=self.get_dataset_git_revision(),
+            error_codes_to_retry=ERROR_CODES_TO_RETRY,
+            priority=self.priority,
+        ).backfill()
 
     def post_compute(self) -> None:
         """Hook method called after the compute method."""

@@ -29,8 +29,10 @@ def get_valid(processing_graph: ProcessingGraph) -> List[str]:
     for processing_step in processing_graph.get_processing_steps_required_by_dataset_viewer():
         kind_datasets = get_valid_datasets(kind=processing_step.cache_kind)
         if datasets is None:
+            # first iteration fills the set of datasets
             datasets = kind_datasets
         else:
+            # next iterations remove the datasets that miss a required processing step
             datasets.intersection_update(kind_datasets)
     # note that the list is sorted alphabetically for consistency
     return [] if datasets is None else sorted(datasets)
