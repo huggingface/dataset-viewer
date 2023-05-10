@@ -33,7 +33,6 @@ class JobInfo(TypedDict):
     job_id: str
     type: str
     params: JobParams
-    force: bool
     priority: Priority
 
 

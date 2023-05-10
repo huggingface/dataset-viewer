@@ -22,7 +22,7 @@ from worker.job_runners.split.first_rows_from_parquet import (
 )
 from worker.utils import get_json_size
 
-GetJobRunner = Callable[[str, str, str, AppConfig, bool], SplitFirstRowsFromParquetJobRunner]
+GetJobRunner = Callable[[str, str, str, AppConfig], SplitFirstRowsFromParquetJobRunner]
 
 
 @pytest.fixture
@@ -36,7 +36,6 @@ def get_job_runner(
         config: str,
         split: str,
         app_config: AppConfig,
-        force: bool = False,
     ) -> SplitFirstRowsFromParquetJobRunner:
         processing_step_name = SplitFirstRowsFromParquetJobRunner.get_job_type()
         processing_graph = ProcessingGraph(
@@ -59,7 +58,6 @@ def get_job_runner(
                     "split": split,
                 },
                 "job_id": "job_id",
-                "force": force,
                 "priority": Priority.NORMAL,
             },
             app_config=app_config,
@@ -135,7 +133,6 @@ def test_compute(
                         columns_max_number=columns_max_number,
                     ),
                 ),
-                False,
             )
 
             job_runner.get_dataset_git_revision = Mock(return_value="1.0.0")  # type: ignore

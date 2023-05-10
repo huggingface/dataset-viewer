@@ -39,7 +39,7 @@ class JobManager:
     Args:
         job_info (:obj:`JobInfo`):
             The job to process. It contains the job_id, the job type, the dataset, the config, the split
-            the force flag, and the priority level.
+            and the priority level.
         common_config (:obj:`CommonConfig`):
             The common config.
         processing_step (:obj:`ProcessingStep`):
@@ -48,7 +48,6 @@ class JobManager:
 
     job_id: str
     job_params: JobParams
-    force: bool
     priority: Priority
     worker_config: WorkerConfig
     common_config: CommonConfig
@@ -67,7 +66,6 @@ class JobManager:
         self.job_info = job_info
         self.job_type = job_info["type"]
         self.job_id = job_info["job_id"]
-        self.force = job_info["force"]
         self.priority = job_info["priority"]
         self.job_params = job_info["params"]
         self.common_config = app_config.common
@@ -138,7 +136,6 @@ class JobManager:
         """Return True if the job should be skipped, False otherwise.
 
         The job must be skipped if:
-        - force is False
         - and a cache entry exists for the dataset
         - and we can get the git commit and it's not None
         - and the cached entry has been created with the same git commit of the dataset repository
@@ -149,8 +146,6 @@ class JobManager:
         Returns:
             :obj:`bool`: True if the job should be skipped, False otherwise.
         """
-        if self.force:
-            return False
         try:
             cached_response = get_response_without_content_params(
                 kind=self.processing_step.cache_kind, job_params=self.job_params

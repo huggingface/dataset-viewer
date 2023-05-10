@@ -16,7 +16,7 @@ from worker.resources import LibrariesResource
 
 from ...fixtures.hub import HubDatasets
 
-GetJobRunner = Callable[[str, AppConfig, bool], ConfigNamesJobRunner]
+GetJobRunner = Callable[[str, AppConfig], ConfigNamesJobRunner]
 
 
 @pytest.fixture
@@ -28,7 +28,6 @@ def get_job_runner(
     def _get_job_runner(
         dataset: str,
         app_config: AppConfig,
-        force: bool = False,
     ) -> ConfigNamesJobRunner:
         processing_step_name = ConfigNamesJobRunner.get_job_type()
         processing_graph = ProcessingGraph(
@@ -48,7 +47,6 @@ def get_job_runner(
                     "split": None,
                 },
                 "job_id": "job_id",
-                "force": force,
                 "priority": Priority.NORMAL,
             },
             app_config=app_config,
@@ -61,7 +59,7 @@ def get_job_runner(
 
 def test_compute(app_config: AppConfig, hub_public_csv: str, get_job_runner: GetJobRunner) -> None:
     dataset = hub_public_csv
-    job_runner = get_job_runner(dataset, app_config, False)
+    job_runner = get_job_runner(dataset, app_config)
     response = job_runner.compute()
     content = response.content
     assert len(content["config_names"]) == 1
@@ -96,7 +94,6 @@ def test_compute_splits_response_simple_csv(
     job_runner = get_job_runner(
         dataset,
         app_config if use_token else replace(app_config, common=replace(app_config.common, hf_token=None)),
-        False,
     )
     if error_code is None:
         result = job_runner.compute().content

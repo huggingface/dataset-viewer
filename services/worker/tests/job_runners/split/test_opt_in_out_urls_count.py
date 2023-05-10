@@ -23,7 +23,7 @@ def prepare_and_clean_mongo(app_config: AppConfig) -> None:
     pass
 
 
-GetJobRunner = Callable[[str, str, str, AppConfig, bool], SplitOptInOutUrlsCountJobRunner]
+GetJobRunner = Callable[[str, str, str, AppConfig], SplitOptInOutUrlsCountJobRunner]
 
 
 @pytest.fixture
@@ -36,7 +36,6 @@ def get_job_runner(
         config: str,
         split: str,
         app_config: AppConfig,
-        force: bool = False,
     ) -> SplitOptInOutUrlsCountJobRunner:
         processing_step_name = SplitOptInOutUrlsCountJobRunner.get_job_type()
         processing_graph = ProcessingGraph(
@@ -59,7 +58,6 @@ def get_job_runner(
                     "split": split,
                 },
                 "job_id": "job_id",
-                "force": force,
                 "priority": Priority.NORMAL,
             },
             app_config=app_config,
@@ -144,7 +142,7 @@ def test_compute(
         content=upstream_content,
         http_status=upstream_status,
     )
-    job_runner = get_job_runner(dataset, config, split, app_config, False)
+    job_runner = get_job_runner(dataset, config, split, app_config)
     if should_raise:
         with pytest.raises(Exception) as e:
             job_runner.compute()
@@ -155,6 +153,6 @@ def test_compute(
 
 def test_doesnotexist(app_config: AppConfig, get_job_runner: GetJobRunner) -> None:
     dataset = config = split = "doesnotexist"
-    job_runner = get_job_runner(dataset, config, split, app_config, False)
+    job_runner = get_job_runner(dataset, config, split, app_config)
     with pytest.raises(PreviousStepError):
         job_runner.compute()

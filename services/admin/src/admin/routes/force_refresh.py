@@ -54,7 +54,7 @@ def create_force_refresh_endpoint(
             auth_check(external_auth_url=external_auth_url, request=request, organization=organization)
             get_dataset_git_revision(dataset=dataset, hf_endpoint=hf_endpoint, hf_token=hf_token)
             # ^ TODO: pass the revision to the job (meanwhile: checks if the dataset is supported)
-            Queue().upsert_job(job_type=job_type, dataset=dataset, config=config, split=split, force=True)
+            Queue().upsert_job(job_type=job_type, dataset=dataset, config=config, split=split)
             return get_json_ok_response(
                 {"status": "ok"},
                 max_age=0,

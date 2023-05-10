@@ -17,7 +17,7 @@ from worker.job_runners.dataset.split_names import (
     PreviousStepFormatError,
 )
 
-GetJobRunner = Callable[[str, AppConfig, bool], DatasetSplitNamesJobRunner]
+GetJobRunner = Callable[[str, AppConfig], DatasetSplitNamesJobRunner]
 
 
 @pytest.fixture
@@ -28,7 +28,6 @@ def get_job_runner(
     def _get_job_runner(
         dataset: str,
         app_config: AppConfig,
-        force: bool = False,
     ) -> DatasetSplitNamesJobRunner:
         processing_step_name = DatasetSplitNamesJobRunner.get_job_type()
         processing_graph = ProcessingGraph(
@@ -48,7 +47,6 @@ def get_job_runner(
                     "split": None,
                 },
                 "job_id": "job_id",
-                "force": force,
                 "priority": Priority.NORMAL,
             },
             app_config=app_config,
@@ -179,7 +177,7 @@ def test_compute_progress(
             content=config["response"],
             http_status=HTTPStatus.OK,
         )
-    job_runner = get_job_runner(dataset, app_config, False)
+    job_runner = get_job_runner(dataset, app_config)
     response = job_runner.compute()
     assert response.content == expected_content
     assert response.progress == progress
@@ -219,7 +217,7 @@ def test_compute_error(app_config: AppConfig, get_job_runner: GetJobRunner) -> N
         content={},
         http_status=HTTPStatus.INTERNAL_SERVER_ERROR,
     )
-    job_runner = get_job_runner(dataset, app_config, False)
+    job_runner = get_job_runner(dataset, app_config)
     response = job_runner.compute()
     assert response.content == {
         "splits": [],
@@ -262,13 +260,13 @@ def test_compute_format_error(app_config: AppConfig, get_job_runner: GetJobRunne
         content={"splits": [{"dataset": "dataset", "config": "config", "split": "split"}]},
         http_status=HTTPStatus.OK,
     )
-    job_runner = get_job_runner(dataset, app_config, False)
+    job_runner = get_job_runner(dataset, app_config)
     with pytest.raises(PreviousStepFormatError):
         job_runner.compute()
 
 
 def test_doesnotexist(app_config: AppConfig, get_job_runner: GetJobRunner) -> None:
     dataset = "doesnotexist"
-    job_runner = get_job_runner(dataset, app_config, False)
+    job_runner = get_job_runner(dataset, app_config)
     with pytest.raises(PreviousStepError):
         job_runner.compute()
