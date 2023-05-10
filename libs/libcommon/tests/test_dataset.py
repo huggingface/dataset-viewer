@@ -3,21 +3,21 @@
 
 import pytest
 
-from libcommon.dataset import DatasetInfoHubRequestError, check_support
+from libcommon.dataset import DatasetInfoHubRequestError, get_dataset_git_revision
 
 
 @pytest.mark.real_dataset
-def test_check_support() -> None:
+def test_get_dataset_git_revision() -> None:
     dataset = "glue"
     hf_endpoint = "https://huggingface.co"
     hf_token = None
-    check_support(dataset, hf_endpoint, hf_token)
+    get_dataset_git_revision(dataset, hf_endpoint, hf_token)
 
 
 @pytest.mark.real_dataset
-def test_check_support_timeout() -> None:
+def test_get_dataset_git_revision_timeout() -> None:
     dataset = "glue"
     hf_endpoint = "https://huggingface.co"
     hf_token = None
     with pytest.raises(DatasetInfoHubRequestError):
-        check_support(dataset, hf_endpoint, hf_token, hf_timeout_seconds=0.01)
+        get_dataset_git_revision(dataset, hf_endpoint, hf_token, hf_timeout_seconds=0.01)

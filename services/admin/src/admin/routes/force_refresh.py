@@ -4,7 +4,7 @@
 import logging
 from typing import Optional
 
-from libcommon.dataset import DatasetError, check_support
+from libcommon.dataset import DatasetError, get_dataset_git_revision
 from libcommon.processing_graph import InputType
 from libcommon.queue import Queue
 from starlette.requests import Request
@@ -52,14 +52,9 @@ def create_force_refresh_endpoint(
 
             # if auth_check fails, it will raise an exception that will be caught below
             auth_check(external_auth_url=external_auth_url, request=request, organization=organization)
-            check_support(dataset=dataset, hf_endpoint=hf_endpoint, hf_token=hf_token)
-            Queue().upsert_job(
-                job_type=job_type,
-                dataset=dataset,
-                config=config,
-                split=split,
-                force=True,
-            )
+            get_dataset_git_revision(dataset=dataset, hf_endpoint=hf_endpoint, hf_token=hf_token)
+            # ^ TODO: pass the revision to the job (meanwhile: checks if the dataset is supported)
+            Queue().upsert_job(job_type=job_type, dataset=dataset, config=config, split=split, force=True)
             return get_json_ok_response(
                 {"status": "ok"},
                 max_age=0,

@@ -339,45 +339,5 @@ def get_dataset_git_revision(
     ).sha
 
 
-def check_support(
-    dataset: str,
-    hf_endpoint: str,
-    hf_token: Optional[str] = None,
-    hf_timeout_seconds: Optional[float] = None,
-) -> None:
-    """
-    Check if the dataset exists on the Hub and is supported by the datasets-server.
-    Args:
-        dataset (`str`):
-            A namespace (user or an organization) and a repo name separated
-            by a `/`.
-        hf_endpoint (`str`):
-            The Hub endpoint (for example: "https://huggingface.co")
-        hf_token (`str`, *optional*):
-            An authentication token (See https://huggingface.co/settings/token)
-        hf_timeout_seconds (`float`, *optional*, defaults to None):
-            The timeout in seconds for the request to the Hub.
-    Returns:
-        `None`
-    Raises:
-        - [`~libcommon.dataset.AskAccessHubRequestError`]: if the request to the Hub to get access to the
-            dataset failed or timed out.
-        - [`~libcommon.dataset.DatasetInfoHubRequestError`]: if the request to the Hub to get the dataset
-            info failed or timed out.
-        - [`~libcommon.dataset.GatedExtraFieldsError`]: if the dataset is gated, with extra fields.
-            Programmatic access is not implemented for this type of dataset because there is no easy
-            way to get the list of extra fields.
-        - [`~libcommon.dataset.DisabledViewerError`]: if the dataset viewer is disabled.
-        - [`~libcommon.dataset.GatedDisabledError`]: if the dataset is gated, but disabled.
-        - [`~libcommon.dataset.DatasetNotFoundError`]: if the dataset does not exist, or if the
-            token does not give the sufficient access to the dataset, or if the dataset is private
-            (private datasets are not supported by the datasets server)
-        - ['~requests.exceptions.HTTPError']: any other error when asking access
-    """
-    get_dataset_info_for_supported_datasets(
-        dataset=dataset, hf_endpoint=hf_endpoint, hf_token=hf_token, hf_timeout_seconds=hf_timeout_seconds
-    )
-
-
 def get_supported_dataset_infos(hf_endpoint: str, hf_token: Optional[str] = None) -> list[DatasetInfo]:
     return [d for d in HfApi(endpoint=hf_endpoint, token=hf_token).list_datasets() if is_supported(d)]

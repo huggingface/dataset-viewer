@@ -103,17 +103,15 @@ class CacheState:
 
 
 @dataclass
-class ArtifactState:
-    """The state of an artifact."""
+class Artifact:
+    """An artifact."""
 
     processing_step: ProcessingStep
     dataset: str
     config: Optional[str]
     split: Optional[str]
-    error_codes_to_retry: Optional[List[str]] = None
 
-    job_state: JobState = field(init=False)
-    cache_state: CacheState = field(init=False)
+    id: str = field(init=False)
 
     def __post_init__(self) -> None:
         if self.processing_step.input_type == "dataset":
@@ -131,6 +129,18 @@ class ArtifactState:
             dataset=self.dataset, config=self.config, split=self.split, prefix=self.processing_step.name
         )
 
+
+@dataclass
+class ArtifactState(Artifact):
+    """The state of an artifact."""
+
+    error_codes_to_retry: Optional[List[str]] = None
+
+    job_state: JobState = field(init=False)
+    cache_state: CacheState = field(init=False)
+
+    def __post_init__(self) -> None:
+        super().__post_init__()
         self.job_state = JobState(
             job_type=self.processing_step.job_type,
             dataset=self.dataset,
@@ -335,6 +345,8 @@ class DatasetState:
     processing_graph: ProcessingGraph
     revision: Optional[str]
     error_codes_to_retry: Optional[List[str]] = None
+    priority: Priority = Priority.LOW
+    # force: not supported for now (ie: force recompute some or all artifacts?)
 
     config_names: List[str] = field(init=False)
     config_states: List[ConfigState] = field(init=False)
@@ -511,7 +523,7 @@ class DatasetState:
                 # the job already exists
                 remaining_in_process_artifact_state_ids.remove(artifact_state.id)
                 continue
-            plan.add(CreateJobTask(artifact_state=artifact_state, force=True, priority=Priority.LOW))
+            plan.add(CreateJobTask(artifact_state=artifact_state, force=True, priority=self.priority))
         for artifact_state_id in remaining_in_process_artifact_state_ids:
             plan.add(DeleteJobTask(artifact_state=self.queue_status.in_process[artifact_state_id]))
         return plan
