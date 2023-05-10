@@ -6,7 +6,7 @@ from libcommon.processing_graph import ProcessingGraph, ProcessingGraphSpecifica
 from libcommon.simple_cache import _clean_cache_database, upsert_response
 
 from api.config import AppConfig
-from api.routes.valid import get_valid, is_valid
+from api.routes.valid import get_valid
 
 dataset_step = "dataset-step"
 config_step = "config-step"
@@ -22,41 +22,37 @@ def clean_mongo_databases(app_config: AppConfig) -> None:
 
 
 @pytest.mark.parametrize(
-    "processing_graph_specification,expected_is_valid",
+    "processing_graph_specification",
     [
-        ({}, True),
-        ({step_1: {}}, True),
-        ({step_1: {"required_by_dataset_viewer": True}}, False),
+        {},
+        {step_1: {}},
+        {step_1: {"required_by_dataset_viewer": True}},
     ],
 )
-def test_empty(processing_graph_specification: ProcessingGraphSpecification, expected_is_valid: bool) -> None:
+def test_empty(processing_graph_specification: ProcessingGraphSpecification) -> None:
     processing_graph = ProcessingGraph(processing_graph_specification)
     assert get_valid(processing_graph=processing_graph) == []
-    assert is_valid(dataset="dataset", processing_graph=processing_graph) is expected_is_valid
 
 
 @pytest.mark.parametrize(
-    "processing_graph_specification,expected_is_valid,expected_valid",
+    "processing_graph_specification,expected_valid",
     [
-        ({step_1: {}}, True, []),
-        ({step_1: {"required_by_dataset_viewer": True}}, True, ["dataset"]),
-        ({step_1: {}, step_2: {"required_by_dataset_viewer": True}}, False, []),
-        ({step_1: {"required_by_dataset_viewer": True}, step_2: {"required_by_dataset_viewer": True}}, False, []),
+        ({step_1: {}}, []),
+        ({step_1: {"required_by_dataset_viewer": True}}, ["dataset"]),
+        ({step_1: {}, step_2: {"required_by_dataset_viewer": True}}, []),
+        ({step_1: {"required_by_dataset_viewer": True}, step_2: {"required_by_dataset_viewer": True}}, []),
     ],
 )
-def test_one_step(
-    processing_graph_specification: ProcessingGraphSpecification, expected_is_valid: bool, expected_valid: List[str]
-) -> None:
+def test_one_step(processing_graph_specification: ProcessingGraphSpecification, expected_valid: List[str]) -> None:
     dataset = "dataset"
     processing_graph = ProcessingGraph(processing_graph_specification)
     processing_step = processing_graph.get_processing_step(step_1)
     upsert_response(kind=processing_step.cache_kind, dataset=dataset, content={}, http_status=HTTPStatus.OK)
     assert get_valid(processing_graph=processing_graph) == expected_valid
-    assert is_valid(dataset=dataset, processing_graph=processing_graph) is expected_is_valid
 
 
 @pytest.mark.parametrize(
-    "processing_graph_specification,expected_is_valid,expected_valid",
+    "processing_graph_specification,expected_valid",
     [
         (
             {
@@ -64,7 +60,6 @@ def test_one_step(
                 config_step: {"input_type": "config", "triggered_by": dataset_step},
                 split_step: {"input_type": "split", "triggered_by": config_step},
             },
-            True,
             [],
         ),
         (
@@ -73,7 +68,6 @@ def test_one_step(
                 config_step: {"input_type": "config", "triggered_by": dataset_step},
                 split_step: {"input_type": "split", "triggered_by": config_step},
             },
-            True,
             ["dataset"],
         ),
         (
@@ -86,7 +80,6 @@ def test_one_step(
                 },
                 split_step: {"input_type": "split", "triggered_by": config_step},
             },
-            True,
             ["dataset"],
         ),
         (
@@ -95,7 +88,6 @@ def test_one_step(
                 config_step: {"input_type": "config", "triggered_by": dataset_step},
                 split_step: {"input_type": "split", "triggered_by": config_step, "required_by_dataset_viewer": True},
             },
-            True,
             ["dataset"],
         ),
         (
@@ -108,14 +100,11 @@ def test_one_step(
                 },
                 split_step: {"input_type": "split", "triggered_by": config_step, "required_by_dataset_viewer": True},
             },
-            True,
             ["dataset"],
         ),
     ],
 )
-def test_three_steps(
-    processing_graph_specification: ProcessingGraphSpecification, expected_is_valid: bool, expected_valid: List[str]
-) -> None:
+def test_three_steps(processing_graph_specification: ProcessingGraphSpecification, expected_valid: List[str]) -> None:
     dataset = "dataset"
     config = "config"
     split = "split"
@@ -142,7 +131,6 @@ def test_three_steps(
         http_status=HTTPStatus.OK,
     )
     assert get_valid(processing_graph=processing_graph) == expected_valid
-    assert is_valid(dataset=dataset, processing_graph=processing_graph) is expected_is_valid
 
 
 def test_errors() -> None:
@@ -155,6 +143,3 @@ def test_errors() -> None:
     upsert_response(kind=cache_kind, dataset=dataset_b, content={}, http_status=HTTPStatus.OK)
     upsert_response(kind=cache_kind, dataset=dataset_c, content={}, http_status=HTTPStatus.INTERNAL_SERVER_ERROR)
     assert get_valid(processing_graph=processing_graph) == [dataset_a, dataset_b]
-    assert is_valid(dataset=dataset_a, processing_graph=processing_graph)
-    assert is_valid(dataset=dataset_b, processing_graph=processing_graph)
-    assert not is_valid(dataset=dataset_c, processing_graph=processing_graph)
