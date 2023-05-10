@@ -2,10 +2,9 @@
 # Copyright 2022 The HuggingFace Authors.
 
 from abc import ABC, abstractmethod
-from typing import Any, Mapping, Optional
+from typing import Optional
 
 from libcommon.processing_graph import ProcessingStep
-from libcommon.simple_cache import SplitFullName
 from libcommon.utils import JobInfo
 
 from worker.config import AppConfig
@@ -51,16 +50,3 @@ class JobRunner(ABC):
     def post_compute(self) -> None:
         """Hook method called after the compute method."""
         pass
-
-    # should be overridden if the job has children jobs of type "split"
-    def get_new_splits(self, content: Mapping[str, Any]) -> set[SplitFullName]:
-        """Get the set of new splits, from the content created by the compute.
-
-        Can be empty.
-
-        Args:
-            content (:obj:`Mapping[str, Any]`): the content created by the compute.
-        Returns:
-            :obj:`set[SplitFullName]`: the set of new splits full names.
-        """
-        return set()

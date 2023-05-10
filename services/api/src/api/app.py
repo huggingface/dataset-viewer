@@ -19,7 +19,7 @@ from api.prometheus import Prometheus
 from api.routes.endpoint import EndpointsDefinition, create_endpoint
 from api.routes.healthcheck import healthcheck_endpoint
 from api.routes.rows import create_rows_endpoint
-from api.routes.valid import create_is_valid_endpoint, create_valid_endpoint
+from api.routes.valid import create_valid_endpoint
 from api.routes.webhook import create_webhook_endpoint
 
 
@@ -88,18 +88,6 @@ def create_app_with_config(app_config: AppConfig, endpoint_config: EndpointConfi
         Route(
             "/valid",
             endpoint=create_valid_endpoint(
-                processing_graph=processing_graph,
-                max_age_long=app_config.api.max_age_long,
-                max_age_short=app_config.api.max_age_short,
-            ),
-        ),
-        Route(
-            "/is-valid",
-            endpoint=create_is_valid_endpoint(
-                hf_jwt_public_key=hf_jwt_public_key,
-                hf_jwt_algorithm=app_config.api.hf_jwt_algorithm,
-                external_auth_url=app_config.api.external_auth_url,
-                hf_timeout_seconds=app_config.api.hf_timeout_seconds,
                 processing_graph=processing_graph,
                 max_age_long=app_config.api.max_age_long,
                 max_age_short=app_config.api.max_age_short,

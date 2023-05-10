@@ -4,7 +4,7 @@
 import logging
 from http import HTTPStatus
 from pathlib import Path
-from typing import Any, List, Literal, Mapping, Optional, Union
+from typing import List, Literal, Optional, Union
 
 from datasets import Features, IterableDataset, get_dataset_config_info, load_dataset
 from libcommon.constants import (
@@ -12,7 +12,6 @@ from libcommon.constants import (
     PROCESSING_STEP_SPLIT_FIRST_ROWS_FROM_STREAMING_VERSION,
 )
 from libcommon.processing_graph import ProcessingStep
-from libcommon.simple_cache import SplitFullName
 from libcommon.storage import StrPath
 from libcommon.utils import JobInfo
 from libcommon.viewer_utils.features import get_cell_value
@@ -391,9 +390,3 @@ class SplitFirstRowsFromStreamingJobRunner(SplitCachedJobRunner):
                 columns_max_number=self.first_rows_config.columns_max_number,
             )
         )
-
-    def get_new_splits(self, _: Mapping[str, Any]) -> set[SplitFullName]:
-        """Get the set of new splits, from the content created by compute."""
-        if self.config is None or self.split is None:
-            raise ValueError("config and split are required")
-        return {SplitFullName(dataset=self.dataset, config=self.config, split=self.split)}

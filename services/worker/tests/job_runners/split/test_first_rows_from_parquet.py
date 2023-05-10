@@ -4,7 +4,7 @@
 import os
 from dataclasses import replace
 from http import HTTPStatus
-from typing import Callable
+from typing import Callable, List
 from unittest.mock import Mock, patch
 
 import pytest
@@ -104,31 +104,35 @@ def test_compute(
         http_status=HTTPStatus.OK,
     )
 
-    with patch("worker.job_runners.split.first_rows_from_parquet.get_parquet_fs") as mock_read:
-        initial_location = os.getcwd()
-        os.chdir("tests/job_runners/split")
-        # TODO:  Make localsystem by relative path
-        fs = LocalFileSystem()
-        mock_read.return_value = fs
-        # ^ Mocking file system with local file
-        job_runner = get_job_runner(
-            dataset,
-            config,
-            split,
-            replace(
-                app_config,
-                common=replace(app_config.common, hf_token=None),
-                first_rows=replace(
-                    app_config.first_rows,
-                    max_number=1_000_000,
-                    min_number=10,
-                    max_bytes=rows_max_bytes,
-                    min_cell_bytes=10,
-                    columns_max_number=columns_max_number,
+    with patch("worker.job_runners.split.first_rows_from_parquet.get_hf_fs") as mock_read:
+        with patch(
+            "worker.job_runners.split.first_rows_from_parquet.get_hf_parquet_uris",
+            side_effect=mock_get_hf_parquet_uris,
+        ):
+            initial_location = os.getcwd()
+            os.chdir("tests/job_runners/split")
+            # TODO:  Make localsystem by relative path
+            fs = LocalFileSystem()
+            mock_read.return_value = fs
+            # ^ Mocking file system with local file
+            job_runner = get_job_runner(
+                dataset,
+                config,
+                split,
+                replace(
+                    app_config,
+                    common=replace(app_config.common, hf_token=None),
+                    first_rows=replace(
+                        app_config.first_rows,
+                        max_number=1_000_000,
+                        min_number=10,
+                        max_bytes=rows_max_bytes,
+                        min_cell_bytes=10,
+                        columns_max_number=columns_max_number,
+                    ),
                 ),
-            ),
-            False,
-        )
+                False,
+            )
 
         job_runner.get_dataset_git_revision = Mock(return_value="1.0.0")  # type: ignore
         if error_code:

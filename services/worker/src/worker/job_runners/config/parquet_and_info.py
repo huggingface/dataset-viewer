@@ -9,7 +9,7 @@ from functools import partial
 from http import HTTPStatus
 from multiprocessing.pool import ThreadPool
 from pathlib import Path
-from typing import Any, Dict, List, Literal, Mapping, Optional, Set, Tuple, TypedDict
+from typing import Any, Dict, List, Literal, Optional, Set, Tuple, TypedDict
 from urllib.parse import quote
 
 import datasets
@@ -43,7 +43,6 @@ from libcommon.constants import (
 )
 from libcommon.dataset import DatasetNotFoundError, ask_access
 from libcommon.processing_graph import ProcessingStep
-from libcommon.simple_cache import SplitFullName
 from libcommon.utils import JobInfo
 
 from worker.common_exceptions import JobRunnerError
@@ -978,10 +977,3 @@ class ConfigParquetAndInfoJobRunner(ConfigCachedJobRunner):
                 max_external_data_files=self.parquet_and_info_config.max_external_data_files,
             )
         )
-
-    def get_new_splits(self, content: Mapping[str, Any]) -> Set[SplitFullName]:
-        """Get the set of new splits, from the content created by the compute."""
-        return {
-            SplitFullName(dataset=self.dataset, config=self.config, split=split)
-            for split in content["dataset_info"]["splits"]
-        }

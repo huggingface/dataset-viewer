@@ -8,7 +8,6 @@ license = "Apache-2.0"
 [tool.poetry.dependencies]
 datasets = { extras = ["audio", "vision"], version = "^2.11.0" }
 environs = "^9.5.0"
-hffs = {git = "https://github.com/huggingface/hffs.git", rev="0e187e74d38e9436353691f4a7a26b15f0663f58"}
 jsonschema = "^4.17.0"
 libcommon = {path = "../../libs/libcommon", develop = true}
 pyjwt = { extras = ["crypto"], version = "^2.6.0" }
@@ -66,7 +65,7 @@ disallow_untyped_calls = false
 [[tool.mypy.overrides]]
 module = [
     "datasets.*",
-    "hffs.*",
+    "huggingface_hub.*",
     "prometheus_client.*",
     "pyarrow.*",
     "tqdm.*",

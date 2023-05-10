@@ -3,7 +3,7 @@
 
 import logging
 from http import HTTPStatus
-from typing import Any, List, Literal, Mapping, Optional, Union
+from typing import List, Literal, Optional, Union
 
 from datasets import get_dataset_split_names
 from datasets.data_files import EmptyDatasetError as _EmptyDatasetError
@@ -11,7 +11,6 @@ from libcommon.constants import (
     PROCESSING_STEP_SPLIT_NAMES_FROM_DATASET_INFO_VERSION,
     PROCESSING_STEP_SPLIT_NAMES_FROM_STREAMING_VERSION,
 )
-from libcommon.simple_cache import SplitFullName
 
 from worker.common_exceptions import JobRunnerError
 from worker.job_runners.config.config_job_runner import ConfigCachedJobRunner
@@ -131,7 +130,3 @@ class SplitNamesFromStreamingJobRunner(ConfigCachedJobRunner):
                 hf_token=self.app_config.common.hf_token,
             )
         )
-
-    def get_new_splits(self, content: Mapping[str, Any]) -> set[SplitFullName]:
-        """Get the set of new splits, from the content created by the compute."""
-        return {SplitFullName(dataset=s["dataset"], config=s["config"], split=s["split"]) for s in content["splits"]}

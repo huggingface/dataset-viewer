@@ -99,11 +99,11 @@ def get_default_config_split(dataset: str) -> Tuple[str, str, str]:
     return dataset, config, split
 
 
-def log(response: Response, url: str, relative_url: Optional[str] = None) -> str:
+def log(response: Response, url: str = URL, relative_url: Optional[str] = None, dataset: Optional[str] = None) -> str:
     if relative_url is not None:
         try:
             extra_response = get(
-                f"/admin/cache-reports{relative_url}", headers={"Authorization": f"Bearer {ADMIN_TOKEN}"}, url=URL
+                f"/admin/cache-reports{relative_url}", headers={"Authorization": f"Bearer {ADMIN_TOKEN}"}, url=url
             )
             if extra_response.status_code == 200:
                 extra = f"content of cache_reports: {extra_response.text}"
@@ -111,6 +111,18 @@ def log(response: Response, url: str, relative_url: Optional[str] = None) -> str
                 extra = f"cannot get content of cache_reports: {extra_response.status_code} - {extra_response.text}"
         except Exception as e:
             extra = f"cannot get content of cache_reports - {e}"
+        extra = f"\n{extra}"
+    elif dataset is not None:
+        try:
+            extra_response = get(
+                f"/admin/dataset-state?dataset={dataset}", headers={"Authorization": f"Bearer {ADMIN_TOKEN}"}, url=url
+            )
+            if extra_response.status_code == 200:
+                extra = f"content of dataset-state: {extra_response.text}"
+            else:
+                extra = f"cannot get content of dataset-state: {extra_response.status_code} - {extra_response.text}"
+        except Exception as e:
+            extra = f"cannot get content of dataset-state - {e}"
         extra = f"\n{extra}"
     return f"{response.status_code} - {response.headers} - {response.text} - {url}{extra}"
 

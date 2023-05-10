@@ -19,7 +19,7 @@ class DummyJobRunner(JobRunner):
 
     @staticmethod
     def get_job_type() -> str:
-        return "/dummy"
+        return "dummy"
 
     @staticmethod
     def get_job_runner_version() -> int:

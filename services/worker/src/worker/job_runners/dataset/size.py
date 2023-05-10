@@ -3,10 +3,10 @@
 
 import logging
 from http import HTTPStatus
-from typing import Any, Literal, Mapping, Optional, Tuple, TypedDict
+from typing import Literal, Optional, Tuple, TypedDict
 
 from libcommon.constants import PROCESSING_STEP_DATASET_SIZE_VERSION
-from libcommon.simple_cache import DoesNotExist, SplitFullName, get_response
+from libcommon.simple_cache import DoesNotExist, get_response
 
 from worker.common_exceptions import JobRunnerError
 from worker.job_runners.config.size import ConfigSize, ConfigSizeResponse, SplitSize
@@ -163,10 +163,3 @@ class DatasetSizeJobRunner(DatasetJobRunner):
     def compute(self) -> JobResult:
         response_content, progress = compute_sizes_response(dataset=self.dataset)
         return JobResult(response_content, progress=progress)
-
-    def get_new_splits(self, content: Mapping[str, Any]) -> set[SplitFullName]:
-        """Get the set of new splits, from the content created by the compute."""
-        return {
-            SplitFullName(dataset=split_size["dataset"], config=split_size["config"], split=split_size["split"])
-            for split_size in content["size"]["splits"]
-        }

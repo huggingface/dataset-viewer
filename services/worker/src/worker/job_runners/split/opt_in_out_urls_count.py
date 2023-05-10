@@ -3,10 +3,9 @@
 
 import logging
 from http import HTTPStatus
-from typing import Any, Literal, Mapping, Optional
+from typing import Literal, Optional
 
 from libcommon.constants import PROCESSING_STEP_SPLIT_OPT_IN_OUT_URLS_COUNT_VERSION
-from libcommon.simple_cache import SplitFullName
 
 from worker.common_exceptions import JobRunnerError
 from worker.job_runners.split.split_job_runner import SplitJobRunner
@@ -86,9 +85,3 @@ class SplitOptInOutUrlsCountJobRunner(SplitJobRunner):
                 split=self.split,
             )
         )
-
-    def get_new_splits(self, _: Mapping[str, Any]) -> set[SplitFullName]:
-        """Get the set of new splits, from the content created by compute."""
-        if self.config is None or self.split is None:
-            raise ValueError("config and split are required")
-        return {SplitFullName(dataset=self.dataset, config=self.config, split=self.split)}

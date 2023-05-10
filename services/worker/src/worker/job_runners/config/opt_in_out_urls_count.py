@@ -3,10 +3,10 @@
 
 import logging
 from http import HTTPStatus
-from typing import Any, Literal, Mapping, Optional, Tuple
+from typing import Literal, Optional, Tuple
 
 from libcommon.constants import PROCESSING_STEP_CONFIG_OPT_IN_OUT_URLS_COUNT_VERSION
-from libcommon.simple_cache import DoesNotExist, SplitFullName, get_response
+from libcommon.simple_cache import DoesNotExist, get_response
 
 from worker.common_exceptions import JobRunnerError
 from worker.job_runners.config.config_job_runner import ConfigJobRunner
@@ -112,7 +112,3 @@ class ConfigOptInOutUrlsCountJobRunner(ConfigJobRunner):
     def compute(self) -> JobResult:
         response_content, progress = compute_opt_in_out_urls_scan_response(dataset=self.dataset, config=self.config)
         return JobResult(response_content, progress=progress)
-
-    def get_new_splits(self, _: Mapping[str, Any]) -> set[SplitFullName]:
-        """Get the set of new splits, from the content created by the compute."""
-        return {SplitFullName(dataset=self.dataset, config=self.config, split=None)}

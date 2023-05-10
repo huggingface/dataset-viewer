@@ -1,29 +1,13 @@
-from dataclasses import dataclass
-from http import HTTPStatus
-from typing import Any, Mapping, Optional
-from unittest.mock import Mock
+from typing import Optional
 
 import pytest
-from libcommon.exceptions import CustomError
 from libcommon.processing_graph import ProcessingGraph, ProcessingStep
-from libcommon.queue import Queue
 from libcommon.resources import CacheMongoResource, QueueMongoResource
-from libcommon.simple_cache import (
-    CachedResponse,
-    DoesNotExist,
-    SplitFullName,
-    get_response,
-    get_response_with_details,
-    upsert_response,
-)
-from libcommon.utils import JobInfo, Priority, Status
+from libcommon.utils import Priority
 
-from worker.common_exceptions import PreviousStepError
 from worker.config import AppConfig
-from worker.job_manager import ERROR_CODES_TO_RETRY, JobManager
 from worker.job_runners.dataset.dataset_job_runner import DatasetJobRunner
 from worker.utils import CompleteJobResult
-from .fixtures.hub import get_default_config_split
 
 
 @pytest.fixture(autouse=True)
@@ -50,13 +34,10 @@ class DummyJobRunner(DatasetJobRunner):
 
     @staticmethod
     def get_job_type() -> str:
-        return "/dummy"
+        return "dummy"
 
     def compute(self) -> CompleteJobResult:
         return CompleteJobResult({"key": "value"})
-
-    def get_new_splits(self, content: Mapping[str, Any]) -> set[SplitFullName]:
-        return {SplitFullName(self.dataset, "config", "split1"), SplitFullName(self.dataset, "config", "split2")}
 
 
 def test_check_type(

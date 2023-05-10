@@ -149,6 +149,10 @@ def indexer(app_config: AppConfig, processing_graph: ProcessingGraph) -> Indexer
     )
 
 
+def mock_get_hf_parquet_uris(paths: List[str], dataset: str) -> List[str]:
+    return paths
+
+
 @pytest.fixture
 def rows_index(
     indexer: Indexer,
@@ -156,15 +160,17 @@ def rows_index(
     ds_sharded_fs: AbstractFileSystem,
     dataset_sharded_with_config_parquet: dict[str, Any],
 ) -> Generator[RowsIndex, None, None]:
-    with patch("api.routes.rows.get_parquet_fs", return_value=ds_sharded_fs):
-        yield indexer.get_rows_index("ds_sharded", "plain_text", "train")
+    with patch("api.routes.rows.get_hf_fs", return_value=ds_sharded_fs):
+        with patch("api.routes.rows.get_hf_parquet_uris", side_effect=mock_get_hf_parquet_uris):
+            yield indexer.get_rows_index("ds_sharded", "plain_text", "train")
 
 
 def test_indexer_get_rows_index(
     indexer: Indexer, ds: Dataset, ds_fs: AbstractFileSystem, dataset_with_config_parquet: dict[str, Any]
 ) -> None:
-    with patch("api.routes.rows.get_parquet_fs", return_value=ds_fs):
-        index = indexer.get_rows_index("ds", "plain_text", "train")
+    with patch("api.routes.rows.get_hf_fs", return_value=ds_fs):
+        with patch("api.routes.rows.get_hf_parquet_uris", side_effect=mock_get_hf_parquet_uris):
+            index = indexer.get_rows_index("ds", "plain_text", "train")
     assert index.features == ds.features
     assert index.row_group_offsets.tolist() == [len(ds)]
     assert len(index.row_group_readers) == 1
@@ -180,8 +186,9 @@ def test_indexer_get_rows_index_sharded(
     ds_sharded_fs: AbstractFileSystem,
     dataset_sharded_with_config_parquet: dict[str, Any],
 ) -> None:
-    with patch("api.routes.rows.get_parquet_fs", return_value=ds_sharded_fs):
-        index = indexer.get_rows_index("ds_sharded", "plain_text", "train")
+    with patch("api.routes.rows.get_hf_fs", return_value=ds_sharded_fs):
+        with patch("api.routes.rows.get_hf_parquet_uris", side_effect=mock_get_hf_parquet_uris):
+            index = indexer.get_rows_index("ds_sharded", "plain_text", "train")
     assert index.features == ds_sharded.features
     assert index.row_group_offsets.tolist() == np.cumsum([len(ds)] * 4).tolist()
     assert len(index.row_group_readers) == 4

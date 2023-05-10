@@ -2,10 +2,10 @@
 # Copyright 2022 The HuggingFace Authors.
 
 import logging
-from typing import Any, Mapping, Tuple, TypedDict
+from typing import Tuple, TypedDict
 
 from libcommon.constants import PROCESSING_STEP_DATASET_IS_VALID_VERSION
-from libcommon.simple_cache import SplitFullName, get_validity_by_kind
+from libcommon.simple_cache import get_validity_by_kind
 
 from worker.job_runners.dataset.dataset_job_runner import DatasetJobRunner
 from worker.utils import JobResult
@@ -62,8 +62,3 @@ class DatasetIsValidJobRunner(DatasetJobRunner):
             raise ValueError("dataset is required")
         response_content, progress = compute_is_valid_response(dataset=self.dataset)
         return JobResult(response_content, progress=progress)
-
-    def get_new_splits(self, content: Mapping[str, Any]) -> set[SplitFullName]:
-        """Get the set of new splits, from the content created by the compute."""
-        return set()
-        # ^ it does not make sense to depend on this step. Not sure what should be returned here.

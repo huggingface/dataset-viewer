@@ -2,21 +2,20 @@
 # Copyright 2022 The HuggingFace Authors.
 
 import logging
-from functools import partial
+from functools import lru_cache, partial
 from http import HTTPStatus
-from typing import Any, List, Literal, Mapping, Optional
+from typing import List, Literal, Optional
 
 import pyarrow as pa
 from datasets import Features
-from fsspec import AbstractFileSystem  # type: ignore
-from hffs.fs import HfFileSystem
+from huggingface_hub import HfFileSystem
+from huggingface_hub.hf_file_system import safe_quote
 from libcommon.constants import (
     PARQUET_REVISION,
     PROCESSING_STEP_SPLIT_FIRST_ROWS_FROM_PARQUET_VERSION,
     PROCESSING_STEP_SPLIT_FIRST_ROWS_FROM_STREAMING_VERSION,
 )
 from libcommon.processing_graph import ProcessingStep
-from libcommon.simple_cache import SplitFullName
 from libcommon.storage import StrPath
 from libcommon.utils import JobInfo
 from libcommon.viewer_utils.features import get_cell_value
@@ -134,16 +133,28 @@ def transform_rows(
     ]
 
 
-def get_parquet_fs(dataset: str, hf_token: Optional[str]) -> AbstractFileSystem:
-    """Get the parquet filesystem for a dataset.
-    The parquet files are stored in a separate branch of the dataset repository (see PARQUET_REVISION)
+@lru_cache(maxsize=128)
+def get_hf_fs(hf_token: Optional[str]) -> HfFileSystem:
+    """Get the Hugging Face filesystem.
+
     Args:
-        dataset (str): The dataset name.
         hf_token (Optional[str]): The token to access the filesystem.
     Returns:
-        HfFileSystem: The parquet filesystem.
+        HfFileSystem: The Hugging Face filesystem.
     """
-    return HfFileSystem(dataset, repo_type="dataset", revision=PARQUET_REVISION, token=hf_token)
+    return HfFileSystem(token=hf_token)
+
+
+def get_hf_parquet_uris(paths: List[str], dataset: str) -> List[str]:
+    """Get the Hugging Face URIs from the Parquet branch of the dataset repository (see PARQUET_REVISION).
+
+    Args:
+        paths (List[str]): List of paths.
+        dataset (str): The dataset name.
+    Returns:
+        List[str]: List of Parquet URIs.
+    """
+    return [f"hf://datasets/{dataset}@{safe_quote(PARQUET_REVISION)}/{path}" for path in paths]
 
 
 def compute_first_rows_response(
@@ -178,11 +189,12 @@ def compute_first_rows_response(
 
     logging.debug(f"Found {len(sources)} parquet files for {dataset=}, {config=}, {split=}: {sources}")
 
-    fs = get_parquet_fs(dataset=dataset, hf_token=hf_token)
+    fs = get_hf_fs(hf_token=hf_token)
+    source_uris = get_hf_parquet_uris(sources, dataset=dataset)
     desc = f"{dataset}/{config}/{split}"
     try:
         parquet_files: List[ParquetFile] = thread_map(
-            partial(ParquetFile, filesystem=fs), sources, desc=desc, unit="pq", disable=True
+            partial(ParquetFile, filesystem=fs), source_uris, desc=desc, unit="pq", disable=True
         )
     except Exception as e:
         raise FileSystemError(f"Could not read the parquet files: {e}") from e
@@ -329,9 +341,3 @@ class SplitFirstRowsFromParquetJobRunner(SplitJobRunner):
                 columns_max_number=self.first_rows_config.columns_max_number,
             )
         )
-
-    def get_new_splits(self, _: Mapping[str, Any]) -> set[SplitFullName]:
-        """Get the set of new splits, from the content created by compute."""
-        if self.config is None or self.split is None:
-            raise ValueError("config and split are required")
-        return {SplitFullName(dataset=self.dataset, config=self.config, split=self.split)}
