@@ -41,7 +41,8 @@ def test_failed_creation(test_processing_step: ProcessingStep, app_config: AppCo
                 "job_id": "job_id",
                 "type": test_processing_step.job_type,
                 "params": {
-                    "dataset": None,
+                    "dataset": None,  # type: ignore
+                    # ^ Needed to raise error
                     "config": None,
                     "split": None,
                 },

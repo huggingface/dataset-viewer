@@ -1,4 +1,6 @@
+from dataclasses import replace
 from typing import Optional
+from unittest.mock import patch
 
 from libcommon.processing_graph import ProcessingGraph, ProcessingStep
 from libcommon.resources import CacheMongoResource, QueueMongoResource
@@ -12,11 +14,12 @@ from worker.resources import LibrariesResource
 from worker.utils import CompleteJobResult
 
 
-class DummyJobRunner(JobRunner):
-    # override get_dataset_git_revision to avoid making a request to the Hub
-    def get_dataset_git_revision(self) -> Optional[str]:
-        return "0.1.2"
+# override get_dataset_git_revision to avoid making a request to the Hub
+def get_dataset_git_revision(dataset: str, hf_endpoint: str, hf_token: str) -> Optional[str]:
+    return "0.1.2"
 
+
+class DummyJobRunner(JobRunner):
     @staticmethod
     def get_job_type() -> str:
         return "dummy"
@@ -54,22 +57,25 @@ def test_process_next_job(
     queue_mongo_resource: QueueMongoResource,
     worker_state_file_path: str,
 ) -> None:
+    job_type = test_processing_step.job_type
+    app_config = replace(app_config, worker=replace(app_config.worker, job_types_only=[job_type]))
+
     factory = DummyJobRunnerFactory(
         processing_step=test_processing_step, processing_graph=test_processing_graph, app_config=app_config
     )
-    loop = Loop(
-        job_runner_factory=factory,
-        library_cache_paths=libraries_resource.storage_paths,
-        app_config=app_config,
-        max_jobs_per_namespace=app_config.queue.max_jobs_per_namespace,
-        state_file_path=worker_state_file_path,
-    )
-    assert not loop.process_next_job()
-    dataset = "dataset"
-    config = "config"
-    split = "split"
-    job_type = test_processing_step.job_type
-    loop.queue.upsert_job(job_type=job_type, dataset=dataset, config=config, split=split)
-    assert loop.queue.is_job_in_process(job_type=job_type, dataset=dataset, config=config, split=split)
-    assert loop.process_next_job()
-    assert not loop.queue.is_job_in_process(job_type=job_type, dataset=dataset, config=config, split=split)
+    with patch("worker.job_manager.get_dataset_git_revision", get_dataset_git_revision):
+        loop = Loop(
+            job_runner_factory=factory,
+            library_cache_paths=libraries_resource.storage_paths,
+            app_config=app_config,
+            max_jobs_per_namespace=app_config.queue.max_jobs_per_namespace,
+            state_file_path=worker_state_file_path,
+        )
+        assert not loop.process_next_job()
+        dataset = "dataset"
+        config = "config"
+        split = "split"
+        loop.queue.upsert_job(job_type=job_type, dataset=dataset, config=config, split=split)
+        assert loop.queue.is_job_in_process(job_type=job_type, dataset=dataset, config=config, split=split)
+        assert loop.process_next_job()
+        assert not loop.queue.is_job_in_process(job_type=job_type, dataset=dataset, config=config, split=split)

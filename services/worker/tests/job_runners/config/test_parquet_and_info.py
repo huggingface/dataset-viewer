@@ -2,6 +2,7 @@
 # Copyright 2022 The HuggingFace Authors.
 
 import io
+from dataclasses import replace
 from fnmatch import fnmatch
 from http import HTTPStatus
 from typing import Any, Callable, Iterator, List, Optional
@@ -148,6 +149,8 @@ def test_compute_legacy_configs(
     get_job_runner: GetJobRunner,
     hub_public_legacy_configs: str,
 ) -> None:
+    app_config = replace(app_config, parquet_and_info=replace(app_config.parquet_and_info, max_dataset_size=20_000))
+
     dataset_name = hub_public_legacy_configs
     original_configs = {"first", "second"}
     upsert_response(
