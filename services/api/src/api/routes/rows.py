@@ -14,7 +14,7 @@ import numpy as np
 import pyarrow as pa
 import pyarrow.parquet as pq
 from datasets import Features
-from hffs.fs import HfFileSystem
+from huggingface_hub import HfFileSystem
 from libcommon.processing_graph import ProcessingStep
 from libcommon.viewer_utils.asset import (
     glob_rows_in_assets_dir,
@@ -67,19 +67,27 @@ class ParquetDataProcessingError(Exception):
 
 # TODO: how to invalidate the cache when the parquet branch is created or deleted?
 @lru_cache(maxsize=128)
-def get_parquet_fs(dataset: str, hf_token: Optional[str]) -> HfFileSystem:
-    """Get the parquet filesystem for a dataset.
-
-    The parquet files are stored in a separate branch of the dataset repository (see PARQUET_REVISION)
+def get_hf_fs(hf_token: Optional[str]) -> HfFileSystem:
+    """Get the Hugging Face filesystem.
 
     Args:
-        dataset (str): The dataset name.
         hf_token (Optional[str]): The token to access the filesystem.
-
     Returns:
-        HfFileSystem: The parquet filesystem.
+        HfFileSystem: The Hugging Face filesystem.
     """
-    return HfFileSystem(dataset, repo_type="dataset", revision=PARQUET_REVISION, token=hf_token)
+    return HfFileSystem(token=hf_token)
+
+
+def get_hf_parquet_uris(paths: List[str], dataset: str):
+    """Get the Hugging Face URIs from the Parquet branch of the dataset repository (see PARQUET_REVISION).
+
+    Args:
+        paths (List[str]): List of paths.
+        dataset (str): The dataset name.
+    Returns:
+        List[str]: List of Parquet URIs.
+    """
+    return [f"hf://datasets/{dataset}@{PARQUET_REVISION}/{path}" for path in paths]
 
 
 UNSUPPORTED_FEATURES_MAGIC_STRINGS = ["Image(", "Audio(", "'binary'"]
@@ -147,12 +155,14 @@ class RowsIndex:
                 if not sources:
                     raise ParquetResponseEmptyError("No parquet files found.")
             with StepProfiler(method="rows.index", step="get the Hub's dataset filesystem"):
-                fs = get_parquet_fs(dataset=self.dataset, hf_token=hf_token)
+                fs = get_hf_fs(hf_token=hf_token)
+            with StepProfiler(method="rows.index", step="get the source URIs"):
+                source_uris = get_hf_parquet_uris(sources, dataset=self.dataset)
             with StepProfiler(method="rows.index", step="get one parquet reader per parquet file"):
                 desc = f"{self.dataset}/{self.config}/{self.split}"
                 try:
                     parquet_files: List[pq.ParquetFile] = thread_map(
-                        partial(pq.ParquetFile, filesystem=fs), sources, desc=desc, unit="pq", disable=True
+                        partial(pq.ParquetFile, filesystem=fs), source_uris, desc=desc, unit="pq", disable=True
                     )
                 except Exception as e:
                     raise FileSystemError(f"Could not read the parquet files: {e}") from e
