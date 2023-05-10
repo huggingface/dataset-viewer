@@ -152,8 +152,7 @@ class JobManager:
             return False
         try:
             cached_response = get_response_without_content_params(
-                kind=self.processing_step.cache_kind,
-                job_params=self.job_info["params"],
+                kind=self.processing_step.cache_kind, job_params=self.job_params
             )
         except DoesNotExist:
             # no entry in the cache
@@ -183,7 +182,7 @@ class JobManager:
         try:
             existing_response = get_response_without_content_params(
                 kind=parallel_cache_kind,
-                job_params=self.job_info["params"],
+                job_params=self.job_params,
             )
 
             dataset_git_revision = self.get_dataset_git_revision()
@@ -234,7 +233,7 @@ class JobManager:
             upsert_response_params(
                 kind=self.processing_step.cache_kind,
                 dataset=self.dataset,
-                job_params=self.job_info["params"],
+                job_params=self.job_params,
                 content=content,
                 http_status=HTTPStatus.OK,
                 job_runner_version=self.job_runner.get_job_runner_version(),
@@ -252,7 +251,7 @@ class JobManager:
             upsert_response_params(
                 kind=self.processing_step.cache_kind,
                 dataset=self.dataset,
-                job_params=self.job_info["params"],
+                job_params=self.job_params,
                 content=dict(e.as_response()),
                 http_status=e.status_code,
                 error_code=e.code,
@@ -278,7 +277,7 @@ class JobManager:
         upsert_response_params(
             kind=self.processing_step.cache_kind,
             dataset=self.dataset,
-            job_params=self.job_info["params"],
+            job_params=self.job_params,
             content=dict(error.as_response()),
             http_status=error.status_code,
             error_code=error.code,
@@ -295,7 +294,7 @@ class JobManager:
         upsert_response_params(
             kind=self.processing_step.cache_kind,
             dataset=self.dataset,
-            job_params=self.job_info["params"],
+            job_params=self.job_params,
             content=dict(error.as_response()),
             http_status=error.status_code,
             error_code=error.code,

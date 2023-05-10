@@ -36,10 +36,6 @@ def prepare_and_clean_mongo(
 
 
 class DummyJobRunner(DatasetJobRunner):
-    # override get_dataset_git_revision to avoid making a request to the Hub
-    def get_dataset_git_revision(self) -> Optional[str]:
-        return DummyJobRunner._get_dataset_git_revision()
-
     @staticmethod
     def _get_dataset_git_revision() -> Optional[str]:
         return "0.1.2"
@@ -50,7 +46,7 @@ class DummyJobRunner(DatasetJobRunner):
 
     @staticmethod
     def get_job_type() -> str:
-        return "/dummy"
+        return "dummy"
 
     def compute(self) -> CompleteJobResult:
         return CompleteJobResult({"key": "value"})
@@ -167,12 +163,12 @@ class CacheEntry:
     ],
 )
 def test_should_skip_job(
+    app_config: AppConfig,
     test_processing_graph: ProcessingGraph,
     test_processing_step: ProcessingStep,
     force: bool,
     cache_entry: Optional[CacheEntry],
     expected_skip: bool,
-    app_config: AppConfig,
 ) -> None:
     job_id = "job_id"
     dataset = "dataset"
@@ -214,19 +210,87 @@ def test_should_skip_job(
             dataset_git_revision=cache_entry.dataset_git_revision,
             progress=cache_entry.progress,
         )
+
+    job_manager.get_dataset_git_revision = Mock(return_value="0.1.2")  # type: ignore
+
     assert job_manager.should_skip_job() is expected_skip
 
 
-def test_create_children_jobs(app_config: AppConfig) -> None:
+def test_check_type(
+    test_processing_graph: ProcessingGraph,
+    another_processing_step: ProcessingStep,
+    test_processing_step: ProcessingStep,
+    app_config: AppConfig,
+) -> None:
+    job_id = "job_id"
+    dataset = "dataset"
+    config = "config"
+    split = "split"
+    force = False
+
+    job_type = f"not-{test_processing_step.job_type}"
+    job_info = JobInfo(
+        job_id=job_id,
+        type=job_type,
+        params={
+            "dataset": dataset,
+            "config": config,
+            "split": split,
+        },
+        force=force,
+        priority=Priority.NORMAL,
+    )
+    with pytest.raises(ValueError):
+        job_runner = DummyJobRunner(
+            job_info=job_info,
+            processing_step=test_processing_step,
+            app_config=app_config,
+        )
+
+        JobManager(
+            job_info=job_info, app_config=app_config, job_runner=job_runner, processing_graph=test_processing_graph
+        )
+
+    job_info = JobInfo(
+        job_id=job_id,
+        type=test_processing_step.job_type,
+        params={
+            "dataset": dataset,
+            "config": config,
+            "split": split,
+        },
+        force=force,
+        priority=Priority.NORMAL,
+    )
+    with pytest.raises(ValueError):
+        job_runner = DummyJobRunner(
+            job_info=job_info,
+            processing_step=another_processing_step,
+            app_config=app_config,
+        )
+
+        JobManager(
+            job_info=job_info, app_config=app_config, job_runner=job_runner, processing_graph=test_processing_graph
+        )
+
+
+@pytest.mark.parametrize(
+    "priority",
+    [
+        Priority.LOW,
+        Priority.NORMAL,
+    ],
+)
+def test_backfill(priority: Priority, app_config: AppConfig) -> None:
     graph = ProcessingGraph(
         {
-            "/dummy": {"input_type": "dataset"},
-            "/child-dataset": {"input_type": "dataset", "triggered_by": "/dummy"},
-            "/child-config": {"input_type": "config", "triggered_by": "/dummy"},
-            "/child-split": {"input_type": "split", "triggered_by": "/dummy"},
+            "dummy": {"input_type": "dataset"},
+            "dataset-child": {"input_type": "dataset", "triggered_by": "dummy"},
+            "config-child": {"input_type": "config", "triggered_by": "dummy"},
+            "dataset-unrelated": {"input_type": "dataset"},
         }
     )
-    root_step = graph.get_processing_step("/dummy")
+    root_step = graph.get_processing_step("dummy")
     job_info = JobInfo(
         job_id="job_id",
         type=root_step.job_type,
@@ -236,8 +300,9 @@ def test_create_children_jobs(app_config: AppConfig) -> None:
             "split": None,
         },
         force=False,
-        priority=Priority.LOW,
+        priority=priority,
     )
+
     job_runner = DummyJobRunner(
         job_info=job_info,
         processing_step=root_step,
@@ -245,33 +310,29 @@ def test_create_children_jobs(app_config: AppConfig) -> None:
     )
 
     job_manager = JobManager(job_info=job_info, app_config=app_config, job_runner=job_runner, processing_graph=graph)
+    job_manager.get_dataset_git_revision = Mock(return_value="0.1.2")  # type: ignore
 
     assert not job_manager.should_skip_job()
     # we add an entry to the cache
     job_manager.run()
     assert job_manager.should_skip_job()
-    # check that the children jobs have been created
+    # check that the missing cache entries have been created
     queue = Queue()
-    child_dataset_jobs = queue.get_dump_with_status(job_type="/child-dataset", status=Status.WAITING)
-    assert len(child_dataset_jobs) == 1
-    assert child_dataset_jobs[0]["dataset"] == "dataset"
-    assert child_dataset_jobs[0]["config"] is None
-    assert child_dataset_jobs[0]["split"] is None
-    assert child_dataset_jobs[0]["priority"] is Priority.LOW.value
-    child_config_jobs = queue.get_dump_with_status(job_type="/child-config", status=Status.WAITING)
-    assert len(child_config_jobs) == 1
-    assert child_config_jobs[0]["dataset"] == "dataset"
-    assert child_config_jobs[0]["config"] == "config"
-    assert child_config_jobs[0]["split"] is None
-    assert child_config_jobs[0]["priority"] is Priority.LOW.value
-    child_split_jobs = queue.get_dump_with_status(job_type="/child-split", status=Status.WAITING)
-    assert len(child_split_jobs) == 2
-    assert all(
-        job["dataset"] == "dataset" and job["config"] == "config" and job["priority"] == Priority.LOW.value
-        for job in child_split_jobs
-    )
-    # we don't know the order
-    assert {child_split_jobs[0]["split"], child_split_jobs[1]["split"]} == {"split1", "split2"}
+    dataset_child_jobs = queue.get_dump_with_status(job_type="dataset-child", status=Status.WAITING)
+    assert len(dataset_child_jobs) == 1
+    assert dataset_child_jobs[0]["dataset"] == "dataset"
+    assert dataset_child_jobs[0]["config"] is None
+    assert dataset_child_jobs[0]["split"] is None
+    assert dataset_child_jobs[0]["priority"] is priority.value
+    dataset_unrelated_jobs = queue.get_dump_with_status(job_type="dataset-unrelated", status=Status.WAITING)
+    assert len(dataset_unrelated_jobs) == 1
+    assert dataset_unrelated_jobs[0]["dataset"] == "dataset"
+    assert dataset_unrelated_jobs[0]["config"] is None
+    assert dataset_unrelated_jobs[0]["split"] is None
+    assert dataset_unrelated_jobs[0]["priority"] is priority.value
+    # check that no config level jobs have been created, because the config names are not known
+    config_child_jobs = queue.get_dump_with_status(job_type="config-child", status=Status.WAITING)
+    assert len(config_child_jobs) == 0
 
 
 def test_job_runner_set_crashed(
@@ -306,6 +367,7 @@ def test_job_runner_set_crashed(
     job_manager = JobManager(
         job_info=job_info, app_config=app_config, job_runner=job_runner, processing_graph=test_processing_graph
     )
+    job_manager.get_dataset_git_revision = Mock(return_value="0.1.2")  # type: ignore
 
     job_manager.set_crashed(message=message)
     response = CachedResponse.objects()[0]
@@ -343,7 +405,7 @@ def test_raise_if_parallel_response_exists(
 
     job_info = JobInfo(
         job_id="job_id",
-        type="/dummy",
+        type="dummy",
         params={
             "dataset": dataset,
             "config": config,
@@ -433,7 +495,7 @@ def test_doesnotexist(app_config: AppConfig) -> None:
 
     job_info = JobInfo(
         job_id="job_id",
-        type="/dummy",
+        type="dummy",
         params={
             "dataset": dataset,
             "config": config,
@@ -442,7 +504,7 @@ def test_doesnotexist(app_config: AppConfig) -> None:
         force=False,
         priority=Priority.NORMAL,
     )
-    processing_step_name = "/dummy"
+    processing_step_name = "dummy"
     processing_graph = ProcessingGraph(
         {
             "dataset-level": {"input_type": "dataset"},
@@ -468,63 +530,3 @@ def test_doesnotexist(app_config: AppConfig) -> None:
     assert not job_manager.process()
     with pytest.raises(DoesNotExist):
         get_response(kind=job_manager.processing_step.cache_kind, dataset=dataset, config=config, split=split)
-
-
-@pytest.mark.parametrize(
-    "priority",
-    [
-        Priority.LOW,
-        Priority.NORMAL,
-    ],
-)
-def test_backfill(priority: Priority, app_config: AppConfig) -> None:
-    graph = ProcessingGraph(
-        {
-            "dummy": {"input_type": "dataset"},
-            "dataset-child": {"input_type": "dataset", "triggered_by": "dummy"},
-            "config-child": {"input_type": "config", "triggered_by": "dummy"},
-            "dataset-unrelated": {"input_type": "dataset"},
-        }
-    )
-    root_step = graph.get_processing_step("dummy")
-    job_info = JobInfo(
-        job_id="job_id",
-        type=root_step.job_type,
-        params={
-            "dataset": "dataset",
-            "config": None,
-            "split": None,
-        },
-        force=False,
-        priority=Priority.NORMAL,
-    )
-
-    job_runner = DummyJobRunner(
-        job_info=job_info,
-        processing_step=root_step,
-        app_config=app_config,
-    )
-
-    job_manager = JobManager(job_info=job_info, app_config=app_config, job_runner=job_runner, processing_graph=graph)
-
-    assert not job_manager.should_skip_job()
-    # we add an entry to the cache
-    job_manager.run()
-    assert job_manager.should_skip_job()
-    # check that the missing cache entries have been created
-    queue = Queue()
-    dataset_child_jobs = queue.get_dump_with_status(job_type="dataset-child", status=Status.WAITING)
-    assert len(dataset_child_jobs) == 1
-    assert dataset_child_jobs[0]["dataset"] == "dataset"
-    assert dataset_child_jobs[0]["config"] is None
-    assert dataset_child_jobs[0]["split"] is None
-    assert dataset_child_jobs[0]["priority"] is priority.value
-    dataset_unrelated_jobs = queue.get_dump_with_status(job_type="dataset-unrelated", status=Status.WAITING)
-    assert len(dataset_unrelated_jobs) == 1
-    assert dataset_unrelated_jobs[0]["dataset"] == "dataset"
-    assert dataset_unrelated_jobs[0]["config"] is None
-    assert dataset_unrelated_jobs[0]["split"] is None
-    assert dataset_unrelated_jobs[0]["priority"] is priority.value
-    # check that no config level jobs have been created, because the config names are not known
-    config_child_jobs = queue.get_dump_with_status(job_type="config-child", status=Status.WAITING)
-    assert len(config_child_jobs) == 0

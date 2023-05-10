@@ -116,7 +116,7 @@ class WorkerExecutor:
         queue = Queue()
         zombies = queue.get_zombies(max_seconds_without_heartbeat=self.max_seconds_without_heartbeat_for_zombies)
         queue.kill_zombies(zombies)
-        message = "Job runner crashed while running this job (missing heartbeats)."
+        message = "Job manager crashed while running this job (missing heartbeats)."
         for zombie in zombies:
             job_runner = self.job_runner_factory.create_job_runner(zombie)
             job_manager = JobManager(
@@ -149,7 +149,7 @@ class WorkerExecutor:
                         job_runner=job_runner,
                         processing_graph=self.processing_graph,
                     )
-                    message = "Job runner was killed while running this job (job exceeded maximum duration)."
+                    message = "Job manager was killed while running this job (job exceeded maximum duration)."
                     job_manager.set_exceeded_maximum_duration(message=message)
 
     def is_worker_alive(self, worker_loop_executor: OutputExecutor) -> bool:
