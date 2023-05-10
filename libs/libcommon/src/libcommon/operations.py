@@ -7,9 +7,9 @@ from typing import Optional
 from libcommon.dataset import get_dataset_git_revision
 from libcommon.exceptions import LoggedError
 from libcommon.processing_graph import ProcessingGraph
-from libcommon.utils import Priority
 from libcommon.simple_cache import delete_dataset_responses
 from libcommon.state import DatasetState
+from libcommon.utils import Priority
 
 
 class PreviousStepError(LoggedError):
