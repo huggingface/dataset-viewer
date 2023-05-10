@@ -65,6 +65,7 @@ disallow_untyped_calls = false
 [[tool.mypy.overrides]]
 module = [
     "datasets.*",
+    "huggingface_hub.*",
     "prometheus_client.*",
     "pyarrow.*",
     "tqdm.*",
