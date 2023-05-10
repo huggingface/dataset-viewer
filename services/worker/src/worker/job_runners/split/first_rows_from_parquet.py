@@ -4,7 +4,7 @@
 import logging
 from functools import partial
 from http import HTTPStatus
-from typing import Any, List, Literal, Mapping, Optional
+from typing import List, Literal, Optional
 
 import pyarrow as pa
 from datasets import Features
@@ -17,7 +17,6 @@ from libcommon.constants import (
 )
 from libcommon.processing_graph import ProcessingGraph, ProcessingStep
 from libcommon.queue import JobInfo
-from libcommon.simple_cache import SplitFullName
 from libcommon.storage import StrPath
 from libcommon.viewer_utils.features import get_cell_value
 from pyarrow.parquet import ParquetFile
@@ -332,9 +331,3 @@ class SplitFirstRowsFromParquetJobRunner(JobRunner):
                 columns_max_number=self.first_rows_config.columns_max_number,
             )
         )
-
-    def get_new_splits(self, _: Mapping[str, Any]) -> set[SplitFullName]:
-        """Get the set of new splits, from the content created by compute."""
-        if self.config is None or self.split is None:
-            raise ValueError("config and split are required")
-        return {SplitFullName(dataset=self.dataset, config=self.config, split=self.split)}

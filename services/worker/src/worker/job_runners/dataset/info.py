@@ -3,10 +3,10 @@
 
 import logging
 from http import HTTPStatus
-from typing import Any, Dict, List, Literal, Mapping, Optional, Tuple, TypedDict
+from typing import Any, Dict, List, Literal, Optional, Tuple, TypedDict
 
 from libcommon.constants import PROCESSING_STEP_DATASET_INFO_VERSION
-from libcommon.simple_cache import DoesNotExist, SplitFullName, get_response
+from libcommon.simple_cache import DoesNotExist, get_response
 
 from worker.job_runner import (
     JobResult,
@@ -131,11 +131,3 @@ class DatasetInfoJobRunner(JobRunner):
             raise ParameterMissingError("'dataset' parameter is required")
         response_content, progress = compute_dataset_info_response(dataset=self.dataset)
         return JobResult(response_content, progress=progress)
-
-    def get_new_splits(self, content: Mapping[str, Any]) -> set[SplitFullName]:
-        """Get the set of new splits, from the content created by  self.compute()"""
-        return {
-            SplitFullName(dataset=self.dataset, config=config, split=split)
-            for config in content["dataset_info"]
-            for split in content["dataset_info"][config]["splits"]
-        }

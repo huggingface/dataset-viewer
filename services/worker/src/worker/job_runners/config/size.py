@@ -3,10 +3,9 @@
 
 import logging
 from http import HTTPStatus
-from typing import Any, Literal, Mapping, Optional, TypedDict
+from typing import Literal, Optional, TypedDict
 
 from libcommon.constants import PROCESSING_STEP_CONFIG_SIZE_VERSION
-from libcommon.simple_cache import SplitFullName
 
 from worker.job_runner import (
     CompleteJobResult,
@@ -164,10 +163,3 @@ class ConfigSizeJobRunner(JobRunner):
         if self.config is None:
             raise ParameterMissingError("'config' parameter is required")
         return CompleteJobResult(compute_config_size_response(dataset=self.dataset, config=self.config))
-
-    def get_new_splits(self, content: Mapping[str, Any]) -> set[SplitFullName]:
-        """Get the set of new splits, from the content created by the compute."""
-        return {
-            SplitFullName(dataset=split_size["dataset"], config=split_size["config"], split=split_size["split"])
-            for split_size in content["size"]["splits"]
-        }

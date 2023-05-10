@@ -5,7 +5,7 @@ import logging
 from asyncio import Semaphore, create_task, run, wait
 from http import HTTPStatus
 from pathlib import Path
-from typing import Any, List, Literal, Mapping, Optional, Tuple, Union
+from typing import Any, List, Literal, Optional, Tuple, Union
 
 from aiohttp import ClientSession
 from aiolimiter import AsyncLimiter
@@ -13,7 +13,6 @@ from datasets import get_dataset_config_info
 from libcommon.constants import PROCESSING_STEP_SPLIT_OPT_IN_OUT_URLS_SCAN_VERSION
 from libcommon.processing_graph import ProcessingGraph, ProcessingStep
 from libcommon.queue import JobInfo
-from libcommon.simple_cache import SplitFullName
 
 from worker.config import AppConfig, OptInOutUrlsScanConfig
 from worker.job_runner import (
@@ -346,9 +345,3 @@ class SplitOptInOutUrlsScanJobRunner(DatasetsBasedJobRunner):
                 spawning_url=self.urls_scan_config.spawning_url,
             )
         )
-
-    def get_new_splits(self, _: Mapping[str, Any]) -> set[SplitFullName]:
-        """Get the set of new splits, from the content created by compute."""
-        if self.config is None or self.split is None:
-            raise ValueError("config and split are required")
-        return {SplitFullName(dataset=self.dataset, config=self.config, split=self.split)}
