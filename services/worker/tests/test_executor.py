@@ -342,7 +342,7 @@ def test_executor_stops_on_long_job(
         assert len(responses) == 1
         response = responses[0]
         expected_error = {
-            "error": "Job runner was killed while running this job (job exceeded maximum duration).",
+            "error": "Job manager was killed while running this job (job exceeded maximum duration).",
         }
         assert response.http_status == HTTPStatus.NOT_IMPLEMENTED
         assert response.error_code == "JobManagerExceededMaximumDurationError"

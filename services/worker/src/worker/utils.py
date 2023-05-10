@@ -132,6 +132,8 @@ class OptInOutUrlsScanResponse(OptInOutUrlsCountResponse):
     opt_out_urls: List[OptUrl]
 
 
+# TODO: separate functions from common classes and named dicts otherwise this file will continue growing
+
 # in JSON, dicts do not carry any order, so we need to return a list
 #
 # > An object is an *unordered* collection of zero or more name/value pairs, where a name is a string and a value

@@ -46,7 +46,7 @@ class DatasetsBasedJobRunner(JobRunner):
 
     def get_cache_subdirectory(self, date: datetime) -> str:
         date_str = date.strftime("%Y-%m-%d-%H-%M-%S")
-        # TODO: Refactor
+        # TODO: Refactor, need a way to generate payload based only on provided params
         payload = (
             date_str,
             self.get_job_type(),

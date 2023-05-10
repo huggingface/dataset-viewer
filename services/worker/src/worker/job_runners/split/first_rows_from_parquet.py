@@ -246,7 +246,7 @@ def compute_first_rows_response(
     if len(row_group_readers) == 0:
         raise ParquetResponseEmptyError("No parquet files found.")
 
-    pa_table = pa.concat_tables([row_group_readers[i]() for i in range(0, last_row_group_id + 1)])
+    pa_table = pa.concat_tables([row_group_readers[i]() for i in range(last_row_group_id + 1)])
     result = pa_table.slice(0, num_rows)
 
     rows = [

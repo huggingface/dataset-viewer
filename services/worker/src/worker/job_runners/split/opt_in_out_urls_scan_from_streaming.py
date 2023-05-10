@@ -300,7 +300,6 @@ def compute_opt_in_out_urls_scan_response(
 
 class SplitOptInOutUrlsScanJobRunner(SplitCachedJobRunner):
     urls_scan_config: OptInOutUrlsScanConfig
-    common_config: CommonConfig
 
     @staticmethod
     def get_job_type() -> str:
@@ -324,7 +323,6 @@ class SplitOptInOutUrlsScanJobRunner(SplitCachedJobRunner):
             hf_datasets_cache=hf_datasets_cache,
         )
         self.urls_scan_config = app_config.urls_scan
-        self.common_config = app_config.common
 
     def compute(self) -> CompleteJobResult:
         if self.config is None or self.split is None:
@@ -334,7 +332,7 @@ class SplitOptInOutUrlsScanJobRunner(SplitCachedJobRunner):
                 dataset=self.dataset,
                 config=self.config,
                 split=self.split,
-                hf_token=self.common_config.hf_token,
+                hf_token=self.app_config.common.hf_token,
                 rows_max_number=self.urls_scan_config.rows_max_number,
                 columns_max_number=self.urls_scan_config.columns_max_number,
                 urls_number_per_batch=self.urls_scan_config.urls_number_per_batch,
