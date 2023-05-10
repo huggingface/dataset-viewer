@@ -10,7 +10,9 @@ from libcommon.queue import Queue
 from libcommon.resources import CacheMongoResource, QueueMongoResource
 from libcommon.simple_cache import (
     CachedResponse,
+    DoesNotExist,
     SplitFullName,
+    get_response,
     get_response_with_details,
     upsert_response,
 )
@@ -21,6 +23,7 @@ from worker.config import AppConfig
 from worker.job_manager import ERROR_CODES_TO_RETRY, JobManager
 from worker.job_runners.dataset.dataset_job_runner import DatasetJobRunner
 from worker.utils import CompleteJobResult
+from .fixtures.hub import get_default_config_split
 
 
 @pytest.fixture(autouse=True)
@@ -215,53 +218,6 @@ def test_should_skip_job(
             progress=cache_entry.progress,
         )
     assert job_manager.should_skip_job() is expected_skip
-
-
-def test_check_type(
-    test_processing_graph: ProcessingGraph,
-    another_processing_step: ProcessingStep,
-    test_processing_step: ProcessingStep,
-    app_config: AppConfig,
-) -> None:
-    job_id = "job_id"
-    dataset = "dataset"
-    config = "config"
-    split = "split"
-    force = False
-
-    job_type = f"not-{test_processing_step.job_type}"
-    with pytest.raises(ValueError):
-        DummyJobRunner(
-            job_info={
-                "job_id": job_id,
-                "type": job_type,
-                "params": {
-                    "dataset": dataset,
-                    "config": config,
-                    "split": split,
-                },
-                "force": force,
-                "priority": Priority.NORMAL,
-            },
-            processing_step=test_processing_step,
-            app_config=app_config,
-        )
-    with pytest.raises(ValueError):
-        DummyJobRunner(
-            job_info={
-                "job_id": job_id,
-                "type": test_processing_step.job_type,
-                "params": {
-                    "dataset": dataset,
-                    "config": config,
-                    "split": split,
-                },
-                "force": force,
-                "priority": Priority.NORMAL,
-            },
-            processing_step=another_processing_step,
-            app_config=app_config,
-        )
 
 
 def test_create_children_jobs(app_config: AppConfig) -> None:
@@ -474,11 +430,44 @@ def test_previous_step_error(disclose_cause: bool) -> None:
         assert error.as_response() == error.as_response_without_cause()
 
 
-# TODO(Andrea): Apply this test
-# def test_doesnotexist(app_config: AppConfig, get_job_runner: GetJobManager) -> None:
-#     dataset = "doesnotexist"
-#     dataset, config, split = get_default_config_split(dataset)
-#     job_manager = get_job_runner(dataset, config, split, app_config, False)
-#     assert not job_manager.process()
-#     with pytest.raises(DoesNotExist):
-#         get_response(kind=job_manager.processing_step.cache_kind, dataset=dataset, config=config, split=split)
+def test_doesnotexist(app_config: AppConfig) -> None:
+    dataset = "doesnotexist"
+    dataset, config, split = get_default_config_split(dataset)
+
+    job_info = JobInfo(
+        job_id="job_id",
+        type="/dummy",
+        params={
+            "dataset": dataset,
+            "config": config,
+            "split": split,
+        },
+        force=False,
+        priority=Priority.NORMAL,
+    )
+    processing_step_name = "/dummy"
+    processing_graph = ProcessingGraph(
+            {
+                "dataset-level": {"input_type": "dataset"},
+                processing_step_name: {
+                    "input_type": "dataset",
+                    "job_runner_version": DummyJobRunner.get_job_runner_version(),
+                    "triggered_by": "dataset-level",
+                },
+            }
+        )
+    processing_step=processing_graph.get_processing_step(processing_step_name),
+
+    job_runner = DummyJobRunner(
+        job_info=job_info,
+        processing_step=processing_step,
+        app_config=app_config,
+    )
+
+    job_manager = JobManager(
+        job_info=job_info, app_config=app_config, job_runner=job_runner, processing_graph=processing_graph
+    )
+
+    assert not job_manager.process()
+    with pytest.raises(DoesNotExist):
+        get_response(kind=job_manager.processing_step.cache_kind, dataset=dataset, config=config, split=split)
