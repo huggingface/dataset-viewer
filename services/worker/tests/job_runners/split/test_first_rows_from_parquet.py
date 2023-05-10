@@ -70,6 +70,10 @@ def get_job_runner(
     return _get_job_runner
 
 
+def mock_get_hf_parquet_uris(paths: List[str], dataset: str) -> List[str]:
+    return paths
+
+
 @pytest.mark.parametrize(
     "rows_max_bytes,columns_max_number,error_code",
     [

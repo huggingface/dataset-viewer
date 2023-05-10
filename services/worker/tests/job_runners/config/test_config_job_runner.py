@@ -2,12 +2,11 @@
 # Copyright 2023 The HuggingFace Authors.
 
 from http import HTTPStatus
-from typing import Any, Mapping, Optional
+from typing import Optional
 
 import pytest
 from libcommon.exceptions import CustomError
 from libcommon.processing_graph import ProcessingStep
-from libcommon.simple_cache import SplitFullName
 from libcommon.utils import Priority
 
 from worker.config import AppConfig
@@ -33,9 +32,6 @@ class DummyConfigJobRunner(ConfigJobRunner):
 
     def compute(self) -> CompleteJobResult:
         return CompleteJobResult({"key": "value"})
-
-    def get_new_splits(self, content: Mapping[str, Any]) -> set[SplitFullName]:
-        return {SplitFullName(self.dataset, self.config, None)}
 
 
 def test_failed_creation(test_processing_step: ProcessingStep, app_config: AppConfig) -> None:
