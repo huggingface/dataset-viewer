@@ -261,11 +261,11 @@ workers:
     workerJobTypesOnly: ""
     nodeSelector:
       role-datasets-server-worker: "true"
-    replicas: 80
+    replicas: 20
     resources:
       requests:
         cpu: 1
-        memory: "2Gi"
+        memory: "4Gi"
       limits:
         cpu: 2
         memory: "8Gi"
