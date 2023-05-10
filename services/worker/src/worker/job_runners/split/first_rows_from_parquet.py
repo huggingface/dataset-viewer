@@ -2,7 +2,7 @@
 # Copyright 2022 The HuggingFace Authors.
 
 import logging
-from functools import partial
+from functools import lru_cache, partial
 from http import HTTPStatus
 from typing import Any, List, Literal, Mapping, Optional
 
@@ -134,6 +134,7 @@ def transform_rows(
     ]
 
 
+@lru_cache(maxsize=128)
 def get_hf_fs(hf_token: Optional[str]) -> HfFileSystem:
     """Get the Hugging Face filesystem.
 
