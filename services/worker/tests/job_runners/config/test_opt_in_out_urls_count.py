@@ -5,7 +5,7 @@ from http import HTTPStatus
 from typing import Any, Callable, List
 
 import pytest
-from libcommon.processing_graph import ProcessingStep
+from libcommon.processing_graph import ProcessingGraph
 from libcommon.queue import Priority
 from libcommon.resources import CacheMongoResource, QueueMongoResource
 from libcommon.simple_cache import upsert_response
@@ -37,6 +37,17 @@ def get_job_runner(
         app_config: AppConfig,
         force: bool = False,
     ) -> ConfigOptInOutUrlsCountJobRunner:
+        processing_step_name = ConfigOptInOutUrlsCountJobRunner.get_job_type()
+        processing_graph = ProcessingGraph(
+            {
+                "dataset-level": {"input_type": "dataset"},
+                processing_step_name: {
+                    "input_type": "config",
+                    "job_runner_version": ConfigOptInOutUrlsCountJobRunner.get_job_runner_version(),
+                    "triggered_by": "dataset-level",
+                },
+            }
+        )
         return ConfigOptInOutUrlsCountJobRunner(
             job_info={
                 "type": ConfigOptInOutUrlsCountJobRunner.get_job_type(),
@@ -49,16 +60,8 @@ def get_job_runner(
             },
             common_config=app_config.common,
             worker_config=app_config.worker,
-            processing_step=ProcessingStep(
-                name=ConfigOptInOutUrlsCountJobRunner.get_job_type(),
-                input_type="config",
-                requires=[],
-                required_by_dataset_viewer=False,
-                ancestors=[],
-                children=[],
-                parents=[],
-                job_runner_version=ConfigOptInOutUrlsCountJobRunner.get_job_runner_version(),
-            ),
+            processing_step=processing_graph.get_processing_step(processing_step_name),
+            processing_graph=processing_graph,
         )
 
     return _get_job_runner

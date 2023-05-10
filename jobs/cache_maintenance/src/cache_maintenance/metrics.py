@@ -12,7 +12,7 @@ from libcommon.simple_cache import get_responses_count_by_kind_status_and_error_
 def collect_metrics(processing_graph: ProcessingGraph) -> None:
     logging.info("collecting jobs metrics")
     queue = Queue()
-    for processing_step in processing_graph.steps.values():
+    for processing_step in processing_graph.get_processing_steps():
         for status, total in queue.get_jobs_count_by_status(job_type=processing_step.job_type).items():
             JobTotalMetric.objects(queue=processing_step.job_type, status=status).upsert_one(total=total)
 

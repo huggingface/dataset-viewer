@@ -57,7 +57,7 @@ def test_create_job_runner(
         "priority": Priority.NORMAL,
     }
     if expected_job_runner is None:
-        with pytest.raises(ValueError):
+        with pytest.raises(KeyError):
             factory.create_job_runner(job_info=job_info)
     else:
         job_runner = factory.create_job_runner(job_info=job_info)

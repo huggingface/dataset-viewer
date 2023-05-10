@@ -1,7 +1,7 @@
 from typing import Optional
 
 from libcommon.config import CommonConfig
-from libcommon.processing_graph import ProcessingStep
+from libcommon.processing_graph import ProcessingGraph, ProcessingStep
 from libcommon.queue import JobInfo
 from libcommon.resources import CacheMongoResource, QueueMongoResource
 
@@ -30,10 +30,11 @@ class DummyJobRunner(JobRunner):
 
 
 class DummyJobRunnerFactory(BaseJobRunnerFactory):
-    def __init__(self, processing_step: ProcessingStep) -> None:
+    def __init__(self, processing_graph: ProcessingGraph, processing_step: ProcessingStep) -> None:
         self.common_config = CommonConfig()
         self.worker_config = WorkerConfig()
         self.processing_step = processing_step
+        self.processing_graph = processing_graph
 
     def _create_job_runner(self, job_info: JobInfo) -> JobRunner:
         return DummyJobRunner(
@@ -41,10 +42,12 @@ class DummyJobRunnerFactory(BaseJobRunnerFactory):
             common_config=self.common_config,
             worker_config=self.worker_config,
             processing_step=self.processing_step,
+            processing_graph=self.processing_graph,
         )
 
 
 def test_process_next_job(
+    test_processing_graph: ProcessingGraph,
     test_processing_step: ProcessingStep,
     app_config: AppConfig,
     libraries_resource: LibrariesResource,
@@ -52,7 +55,7 @@ def test_process_next_job(
     queue_mongo_resource: QueueMongoResource,
     worker_state_file_path: str,
 ) -> None:
-    factory = DummyJobRunnerFactory(processing_step=test_processing_step)
+    factory = DummyJobRunnerFactory(processing_step=test_processing_step, processing_graph=test_processing_graph)
     loop = Loop(
         job_runner_factory=factory,
         library_cache_paths=libraries_resource.storage_paths,
@@ -64,11 +67,8 @@ def test_process_next_job(
     dataset = "dataset"
     config = "config"
     split = "split"
-    loop.queue.upsert_job(job_type=test_processing_step.job_type, dataset=dataset, config=config, split=split)
-    assert loop.queue.is_job_in_process(
-        job_type=test_processing_step.job_type, dataset=dataset, config=config, split=split
-    )
+    job_type = test_processing_step.job_type
+    loop.queue.upsert_job(job_type=job_type, dataset=dataset, config=config, split=split)
+    assert loop.queue.is_job_in_process(job_type=job_type, dataset=dataset, config=config, split=split)
     assert loop.process_next_job()
-    assert not loop.queue.is_job_in_process(
-        job_type=test_processing_step.job_type, dataset=dataset, config=config, split=split
-    )
+    assert not loop.queue.is_job_in_process(job_type=job_type, dataset=dataset, config=config, split=split)

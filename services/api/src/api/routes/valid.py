@@ -4,7 +4,7 @@
 import logging
 from typing import List, Optional, Set
 
-from libcommon.processing_graph import ProcessingStep
+from libcommon.processing_graph import ProcessingGraph
 from libcommon.simple_cache import get_valid_datasets, get_validity_by_kind
 from starlette.requests import Request
 from starlette.responses import Response
@@ -22,11 +22,11 @@ from api.utils import (
 )
 
 
-def get_valid(processing_steps_for_valid: List[ProcessingStep]) -> List[str]:
+def get_valid(processing_graph: ProcessingGraph) -> List[str]:
     # a dataset is considered valid if at least one response for PROCESSING_STEPS_FOR_VALID
     # is valid.
     datasets: Optional[Set[str]] = None
-    for processing_step in processing_steps_for_valid:
+    for processing_step in processing_graph.get_processing_steps_required_by_dataset_viewer():
         kind_datasets = get_valid_datasets(kind=processing_step.cache_kind)
         if datasets is None:
             datasets = kind_datasets
@@ -36,18 +36,18 @@ def get_valid(processing_steps_for_valid: List[ProcessingStep]) -> List[str]:
     return [] if datasets is None else sorted(datasets)
 
 
-def is_valid(dataset: str, processing_steps_for_valid: List[ProcessingStep]) -> bool:
+def is_valid(dataset: str, processing_graph: ProcessingGraph) -> bool:
     # a dataset is considered valid if at least one response for PROCESSING_STEPS_FOR_VALID
     # is valid
     validity_by_kind = get_validity_by_kind(dataset=dataset)
     return all(
         processing_step.cache_kind in validity_by_kind and validity_by_kind[processing_step.cache_kind]
-        for processing_step in processing_steps_for_valid
+        for processing_step in processing_graph.get_processing_steps_required_by_dataset_viewer()
     )
 
 
 def create_valid_endpoint(
-    processing_steps_for_valid: List[ProcessingStep],
+    processing_graph: ProcessingGraph,
     max_age_long: int = 0,
     max_age_short: int = 0,
 ) -> Endpoint:
@@ -57,7 +57,7 @@ def create_valid_endpoint(
             try:
                 logging.info("/valid")
                 with StepProfiler(method="valid_endpoint", step="prepare content"):
-                    content = {"valid": get_valid(processing_steps_for_valid=processing_steps_for_valid)}
+                    content = {"valid": get_valid(processing_graph=processing_graph)}
                 with StepProfiler(method="valid_endpoint", step="generate OK response"):
                     return get_json_ok_response(content, max_age=max_age_long)
             except Exception as e:
@@ -68,7 +68,7 @@ def create_valid_endpoint(
 
 
 def create_is_valid_endpoint(
-    processing_steps_for_valid: List[ProcessingStep],
+    processing_graph: ProcessingGraph,
     hf_jwt_public_key: Optional[str] = None,
     hf_jwt_algorithm: Optional[str] = None,
     external_auth_url: Optional[str] = None,
@@ -97,7 +97,7 @@ def create_is_valid_endpoint(
                     )
                 with StepProfiler(method="is_valid_endpoint", step="prepare content"):
                     content = {
-                        "valid": is_valid(dataset=dataset, processing_steps_for_valid=processing_steps_for_valid),
+                        "valid": is_valid(dataset=dataset, processing_graph=processing_graph),
                     }
                 with StepProfiler(method="is_valid_endpoint", step="generate OK response"):
                     return get_json_ok_response(content=content, max_age=max_age_long)

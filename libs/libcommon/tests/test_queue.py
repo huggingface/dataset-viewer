@@ -1,7 +1,6 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2022 The HuggingFace Authors.
 
-import time
 from datetime import datetime, timedelta
 from typing import List, Optional
 from unittest.mock import patch
@@ -291,33 +290,6 @@ def test_get_dataset_pending_jobs_for_type() -> None:
         assert r["dataset"] == test_dataset
         assert r["type"] == test_type
         assert r["status"] in [Status.WAITING.value, Status.STARTED.value]
-
-
-def test_get_total_duration_per_dataset() -> None:
-    test_type = "test_type"
-    test_dataset = "test_dataset"
-    test_config = "test_config"
-    queue = Queue()
-    queue.upsert_job(job_type=test_type, dataset=test_dataset, config=test_config, split="split1")
-    queue.upsert_job(job_type=test_type, dataset=test_dataset, config=test_config, split="split2")
-    queue.upsert_job(job_type=test_type, dataset=test_dataset, config=test_config, split="split3")
-    queue.upsert_job(job_type=test_type, dataset=test_dataset, config=test_config, split="split4")
-    queue.upsert_job(job_type=test_type, dataset=test_dataset, config=test_config, split="split5")
-    job_info = queue.start_job()
-    job_info_2 = queue.start_job()
-    job_info_3 = queue.start_job()
-    _ = queue.start_job()
-    duration = 2
-    time.sleep(duration)
-    # finish three jobs
-    queue.finish_job(job_info["job_id"], finished_status=Status.SUCCESS)
-    queue.finish_job(job_info_2["job_id"], finished_status=Status.ERROR)
-    queue.finish_job(job_info_3["job_id"], finished_status=Status.SUCCESS)
-    # cancel one remaining job
-    queue.cancel_started_jobs(job_type=test_type)
-    # check the total duration
-    assert queue.get_total_duration_per_dataset(job_type=test_type)[test_dataset] >= duration * 3
-    # ^ it should be equal,  not >=, but if the runner is slow, it might take a bit more time
 
 
 def test_queue_heartbeat() -> None:

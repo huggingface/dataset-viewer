@@ -42,7 +42,7 @@ from libcommon.constants import (
     PROCESSING_STEP_CONFIG_PARQUET_AND_INFO_VERSION,
 )
 from libcommon.dataset import DatasetNotFoundError, ask_access
-from libcommon.processing_graph import ProcessingStep
+from libcommon.processing_graph import ProcessingGraph, ProcessingStep
 from libcommon.queue import JobInfo
 from libcommon.simple_cache import SplitFullName
 
@@ -954,12 +954,14 @@ class ConfigParquetAndInfoJobRunner(DatasetsBasedJobRunner):
         job_info: JobInfo,
         app_config: AppConfig,
         processing_step: ProcessingStep,
+        processing_graph: ProcessingGraph,
         hf_datasets_cache: Path,
     ) -> None:
         super().__init__(
             job_info=job_info,
             app_config=app_config,
             processing_step=processing_step,
+            processing_graph=processing_graph,
             hf_datasets_cache=hf_datasets_cache,
         )
         self.parquet_and_info_config = app_config.parquet_and_info

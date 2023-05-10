@@ -11,7 +11,7 @@ from aiohttp import ClientSession
 from aiolimiter import AsyncLimiter
 from datasets import get_dataset_config_info
 from libcommon.constants import PROCESSING_STEP_SPLIT_OPT_IN_OUT_URLS_SCAN_VERSION
-from libcommon.processing_graph import ProcessingStep
+from libcommon.processing_graph import ProcessingGraph, ProcessingStep
 from libcommon.queue import JobInfo
 from libcommon.simple_cache import SplitFullName
 
@@ -316,12 +316,14 @@ class SplitOptInOutUrlsScanJobRunner(DatasetsBasedJobRunner):
         job_info: JobInfo,
         app_config: AppConfig,
         processing_step: ProcessingStep,
+        processing_graph: ProcessingGraph,
         hf_datasets_cache: Path,
     ) -> None:
         super().__init__(
             job_info=job_info,
             app_config=app_config,
             processing_step=processing_step,
+            processing_graph=processing_graph,
             hf_datasets_cache=hf_datasets_cache,
         )
         self.urls_scan_config = app_config.urls_scan

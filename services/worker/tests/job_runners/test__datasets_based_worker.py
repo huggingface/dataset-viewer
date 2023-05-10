@@ -9,7 +9,7 @@ from typing import Callable, Optional
 
 import datasets.config
 import pytest
-from libcommon.processing_graph import ProcessingStep
+from libcommon.processing_graph import ProcessingGraph
 from libcommon.queue import Priority
 from libcommon.resources import CacheMongoResource, QueueMongoResource
 from libcommon.simple_cache import get_response
@@ -56,6 +56,15 @@ def get_job_runner(
         app_config: AppConfig,
         force: bool,
     ) -> DummyJobRunner:
+        processing_step_name = DummyJobRunner.get_job_type()
+        processing_graph = ProcessingGraph(
+            {
+                processing_step_name: {
+                    "input_type": "dataset",
+                    "job_runner_version": DummyJobRunner.get_job_runner_version(),
+                }
+            }
+        )
         return DummyJobRunner(
             job_info={
                 "type": DummyJobRunner.get_job_type(),
@@ -67,16 +76,8 @@ def get_job_runner(
                 "priority": Priority.NORMAL,
             },
             app_config=app_config,
-            processing_step=ProcessingStep(
-                name=DummyJobRunner.get_job_type(),
-                input_type="split",
-                requires=[],
-                required_by_dataset_viewer=False,
-                ancestors=[],
-                children=[],
-                parents=[],
-                job_runner_version=DummyJobRunner.get_job_runner_version(),
-            ),
+            processing_step=processing_graph.get_processing_step(processing_step_name),
+            processing_graph=processing_graph,
             hf_datasets_cache=libraries_resource.hf_datasets_cache,
         )
 
@@ -169,7 +170,12 @@ def test_process_big_content(hub_datasets: HubDatasets, app_config: AppConfig, g
     )
 
     assert not worker.process()
-    cached_response = get_response(kind=worker.processing_step.cache_kind, dataset=dataset, config=config, split=split)
+    cached_response = get_response(
+        kind=worker.processing_step.cache_kind,
+        dataset=dataset,
+        config=config,
+        split=split,
+    )
 
     assert cached_response["http_status"] == HTTPStatus.NOT_IMPLEMENTED
     assert cached_response["error_code"] == "TooBigContentError"

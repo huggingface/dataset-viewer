@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: Apache-2.0
-# Copyright 2022 The HuggingFace Authors.
+# Copyright 2023 The HuggingFace Authors.
 
 from __future__ import annotations
 
@@ -15,7 +15,6 @@ from libcommon.simple_cache import (
     CacheEntryMetadata,
     DoesNotExist,
     get_best_response,
-    get_response,
     get_response_metadata,
 )
 from libcommon.utils import inputs_to_string
@@ -26,40 +25,20 @@ from libcommon.utils import inputs_to_string
 # TODO: assets, cached_assets, parquet files
 # TODO: obsolete/dangling cache entries and jobs
 
-HARD_CODED_CONFIG_NAMES_CACHE_KIND = "/config-names"
-HARD_CODED_SPLIT_NAMES_FROM_STREAMING_CACHE_KIND = "/split-names-from-streaming"
-HARD_CODED_SPLIT_NAMES_FROM_DATASET_INFO_CACHE_KIND = "/split-names-from-dataset-info"
 
+def fetch_names(
+    dataset: str, config: Optional[str], cache_kinds: List[str], names_field: str, name_field: str
+) -> List[str]:
+    """Fetch a list of names from the database."""
+    names = []
 
-def fetch_config_names(dataset: str) -> List[str]:
-    """Fetch the list of config names from the database."""
-    config_names = []
-
-    response = get_response(HARD_CODED_CONFIG_NAMES_CACHE_KIND, dataset=dataset, config=None, split=None)
-    for config_name_item in response["content"]["config_names"]:
-        config_name = config_name_item["config"]
-        if not isinstance(config_name, str):
-            raise ValueError(f"Invalid config name: {config_name}, type should be str, got: {type(config_name)}")
-        config_names.append(config_name)
-    return config_names
-
-
-def fetch_split_names(dataset: str, config: str) -> List[str]:
-    """Fetch the list of config names from the database."""
-    split_names = []
-
-    best_response = get_best_response(
-        [HARD_CODED_SPLIT_NAMES_FROM_DATASET_INFO_CACHE_KIND, HARD_CODED_SPLIT_NAMES_FROM_STREAMING_CACHE_KIND],
-        dataset=dataset,
-        config=config,
-        split=None,
-    )
-    for split_name_item in best_response.response["content"]["splits"]:
-        split_name = split_name_item["split"]
-        if not isinstance(split_name, str):
-            raise ValueError(f"Invalid split name: {split_name}, type should be str, got: {type(split_name)}")
-        split_names.append(split_name)
-    return split_names
+    best_response = get_best_response(kinds=cache_kinds, dataset=dataset, config=config)
+    for name_item in best_response.response["content"][names_field]:
+        name = name_item[name_field]
+        if not isinstance(name, str):
+            raise ValueError(f"Invalid name: {name}, type should be str, got: {type(name)}")
+        names.append(name)
+    return names
 
 
 @dataclass
@@ -76,11 +55,6 @@ class JobState:
         self.is_in_process = Queue().is_job_in_process(
             job_type=self.job_type, dataset=self.dataset, config=self.config, split=self.split
         )
-
-    def as_dict(self) -> Dict[str, Any]:
-        return {
-            "is_in_process": self.is_in_process,
-        }
 
 
 @dataclass
@@ -105,12 +79,6 @@ class CacheState:
         """Whether the cache entry exists."""
         self.exists = self.cache_entry_metadata is not None
         self.is_success = self.cache_entry_metadata is not None and self.cache_entry_metadata["http_status"] < 400
-
-    def as_dict(self) -> Dict[str, Any]:
-        return {
-            "exists": self.exists,
-            "is_success": self.is_success,
-        }
 
     def is_empty(self) -> bool:
         return self.cache_entry_metadata is None
@@ -138,7 +106,7 @@ class CacheState:
 class ArtifactState:
     """The state of an artifact."""
 
-    step: ProcessingStep
+    processing_step: ProcessingStep
     dataset: str
     config: Optional[str]
     split: Optional[str]
@@ -148,24 +116,29 @@ class ArtifactState:
     cache_state: CacheState = field(init=False)
 
     def __post_init__(self) -> None:
-        if self.step.input_type == "dataset":
+        if self.processing_step.input_type == "dataset":
             if self.config is not None or self.split is not None:
                 raise ValueError("Step input type is dataset, but config or split is not None")
-        elif self.step.input_type == "config":
+        elif self.processing_step.input_type == "config":
             if self.config is None or self.split is not None:
                 raise ValueError("Step input type is config, but config is None or split is not None")
-        elif self.step.input_type == "split":
+        elif self.processing_step.input_type == "split":
             if self.config is None or self.split is None:
                 raise ValueError("Step input type is split, but config or split is None")
         else:
-            raise ValueError(f"Invalid step input type: {self.step.input_type}")
-        self.id = inputs_to_string(dataset=self.dataset, config=self.config, split=self.split, prefix=self.step.name)
+            raise ValueError(f"Invalid step input type: {self.processing_step.input_type}")
+        self.id = inputs_to_string(
+            dataset=self.dataset, config=self.config, split=self.split, prefix=self.processing_step.name
+        )
 
         self.job_state = JobState(
-            job_type=self.step.job_type, dataset=self.dataset, config=self.config, split=self.split
+            job_type=self.processing_step.job_type,
+            dataset=self.dataset,
+            config=self.config,
+            split=self.split,
         )
         self.cache_state = CacheState(
-            cache_kind=self.step.cache_kind,
+            cache_kind=self.processing_step.cache_kind,
             dataset=self.dataset,
             config=self.config,
             split=self.split,
@@ -178,14 +151,7 @@ class ArtifactState:
         job_runner_version = self.cache_state.cache_entry_metadata["job_runner_version"]
         if job_runner_version is None:
             return True
-        return job_runner_version < self.step.job_runner_version
-
-    def as_dict(self) -> Dict[str, Any]:
-        return {
-            "id": self.id,
-            "job_state": self.job_state.as_dict(),
-            "cache_state": self.cache_state.as_dict(),
-        }
+        return job_runner_version < self.processing_step.job_runner_version
 
 
 @dataclass
@@ -202,21 +168,14 @@ class SplitState:
 
     def __post_init__(self) -> None:
         self.artifact_state_by_step = {
-            step.name: ArtifactState(
-                step=step,
+            processing_step.name: ArtifactState(
+                processing_step=processing_step,
                 dataset=self.dataset,
                 config=self.config,
                 split=self.split,
                 error_codes_to_retry=self.error_codes_to_retry,
             )
-            for step in self.processing_graph.steps.values()
-            if step.input_type == "split"
-        }
-
-    def as_dict(self) -> Dict[str, Any]:
-        return {
-            "split": self.split,
-            "artifact_states": [artifact_state.as_dict() for artifact_state in self.artifact_state_by_step.values()],
+            for processing_step in self.processing_graph.get_input_type_processing_steps(input_type="split")
         }
 
 
@@ -235,19 +194,27 @@ class ConfigState:
 
     def __post_init__(self) -> None:
         self.artifact_state_by_step = {
-            step.name: ArtifactState(
-                step=step,
+            processing_step.name: ArtifactState(
+                processing_step=processing_step,
                 dataset=self.dataset,
                 config=self.config,
                 split=None,
                 error_codes_to_retry=self.error_codes_to_retry,
             )
-            for step in self.processing_graph.steps.values()
-            if step.input_type == "config"
+            for processing_step in self.processing_graph.get_input_type_processing_steps(input_type="config")
         }
 
         try:
-            self.split_names = fetch_split_names(self.dataset, self.config)
+            self.split_names = fetch_names(
+                dataset=self.dataset,
+                config=self.config,
+                cache_kinds=[
+                    processing_step.cache_kind
+                    for processing_step in self.processing_graph.get_config_split_names_processing_steps()
+                ],
+                names_field="splits",
+                name_field="split",
+            )
         except Exception:
             self.split_names = []
 
@@ -261,13 +228,6 @@ class ConfigState:
             )
             for split_name in self.split_names
         ]
-
-    def as_dict(self) -> Dict[str, Any]:
-        return {
-            "config": self.config,
-            "split_states": [split_state.as_dict() for split_state in self.split_states],
-            "artifact_states": [artifact_state.as_dict() for artifact_state in self.artifact_state_by_step.values()],
-        }
 
 
 @dataclass
@@ -315,11 +275,11 @@ class CreateJobTask(Task):
     priority: Priority
 
     def __post_init__(self) -> None:
-        self.id = f"CreateJob[{self.artifact_state.id}]"
+        self.id = f"CreateJob,{self.artifact_state.id}"
 
     def run(self) -> None:
         Queue().upsert_job(
-            job_type=self.artifact_state.step.job_type,
+            job_type=self.artifact_state.processing_step.job_type,
             dataset=self.artifact_state.dataset,
             config=self.artifact_state.config,
             split=self.artifact_state.split,
@@ -331,13 +291,13 @@ class CreateJobTask(Task):
 @dataclass
 class DeleteJobTask(Task):
     def __post_init__(self) -> None:
-        self.id = f"DeleteJob[{self.artifact_state.id}]"
+        self.id = f"DeleteJob,{self.artifact_state.id}"
 
     def run(self) -> None:
         # TODO: the started jobs are also canceled: we need to ensure the job runners will
         # not try to update the cache when they finish
         Queue().cancel_jobs(
-            job_type=self.artifact_state.step.job_type,
+            job_type=self.artifact_state.processing_step.job_type,
             dataset=self.artifact_state.dataset,
             config=self.artifact_state.config,
             split=self.artifact_state.split,
@@ -386,18 +346,26 @@ class DatasetState:
 
     def __post_init__(self) -> None:
         self.artifact_state_by_step = {
-            step.name: ArtifactState(
-                step=step,
+            processing_step.name: ArtifactState(
+                processing_step=processing_step,
                 dataset=self.dataset,
                 config=None,
                 split=None,
                 error_codes_to_retry=self.error_codes_to_retry,
             )
-            for step in self.processing_graph.steps.values()
-            if step.input_type == "dataset"
+            for processing_step in self.processing_graph.get_input_type_processing_steps(input_type="dataset")
         }
         try:
-            self.config_names = fetch_config_names(self.dataset)
+            self.config_names = fetch_names(
+                dataset=self.dataset,
+                config=None,
+                cache_kinds=[
+                    processing_step.cache_kind
+                    for processing_step in self.processing_graph.get_dataset_config_names_processing_steps()
+                ],
+                names_field="config_names",
+                name_field="config",
+            )
         except Exception:
             self.config_names = []
         self.config_states = [
@@ -415,76 +383,78 @@ class DatasetState:
         self.should_be_backfilled = len(self.plan.tasks) > 0
 
     def _get_artifact_states_for_step(
-        self, step: ProcessingStep, config: Optional[str] = None, split: Optional[str] = None
+        self, processing_step: ProcessingStep, config: Optional[str] = None, split: Optional[str] = None
     ) -> List[ArtifactState]:
         """Get the artifact states for a step.
 
         Args:
-            step: the processing step
-            config: if not None, and step input type is config or split, only return the artifact states for this
-              config
-            split: if not None, and step input type is split, only return the artifact states for this split (config
-              must be specified)
+            processing_step (ProcessingStep): the processing step
+            config (str, optional): if not None, and step input type is config or split, only return the artifact
+              states for this config
+            split (str, optional): if not None, and step input type is split, only return the artifact states for
+              this split (config must be specified)
 
         Returns:
             the artifact states for the step
         """
-        if step.input_type == "dataset":
-            artifact_states = [self.artifact_state_by_step[step.name]]
-        elif step.input_type == "config":
+        if processing_step.input_type == "dataset":
+            artifact_states = [self.artifact_state_by_step[processing_step.name]]
+        elif processing_step.input_type == "config":
             if config is None:
                 artifact_states = [
-                    config_state.artifact_state_by_step[step.name] for config_state in self.config_states
+                    config_state.artifact_state_by_step[processing_step.name] for config_state in self.config_states
                 ]
             else:
                 artifact_states = [
-                    config_state.artifact_state_by_step[step.name]
+                    config_state.artifact_state_by_step[processing_step.name]
                     for config_state in self.config_states
                     if config_state.config == config
                 ]
-        elif step.input_type == "split":
+        elif processing_step.input_type == "split":
             if config is None:
                 artifact_states = [
-                    split_state.artifact_state_by_step[step.name]
+                    split_state.artifact_state_by_step[processing_step.name]
                     for config_state in self.config_states
                     for split_state in config_state.split_states
                 ]
             elif split is None:
                 artifact_states = [
-                    split_state.artifact_state_by_step[step.name]
+                    split_state.artifact_state_by_step[processing_step.name]
                     for config_state in self.config_states
                     if config_state.config == config
                     for split_state in config_state.split_states
                 ]
             else:
                 artifact_states = [
-                    split_state.artifact_state_by_step[step.name]
+                    split_state.artifact_state_by_step[processing_step.name]
                     for config_state in self.config_states
                     if config_state.config == config
                     for split_state in config_state.split_states
                     if split_state.split == split
                 ]
         else:
-            raise ValueError(f"Invalid input type: {step.input_type}")
+            raise ValueError(f"Invalid input type: {processing_step.input_type}")
         artifact_states_ids = {artifact_state.id for artifact_state in artifact_states}
         if len(artifact_states_ids) != len(artifact_states):
-            raise ValueError(f"Duplicate artifact states for step {step.name}")
+            raise ValueError(f"Duplicate artifact states for processing_step {processing_step}")
         return artifact_states
 
     def _get_cache_status(self) -> CacheStatus:
         cache_status = CacheStatus()
 
-        for step in self.processing_graph.topologically_ordered_steps:
+        for processing_step in self.processing_graph.get_topologically_ordered_processing_steps():
             # Every step can have one or multiple artifacts, for example config-level steps have one artifact per
             # config
-            artifact_states = self._get_artifact_states_for_step(step)
+            artifact_states = self._get_artifact_states_for_step(processing_step)
             for artifact_state in artifact_states:
                 # any of the parents is more recent?
                 if any(
                     artifact_state.cache_state.is_older_than(parent_artifact_state.cache_state)
-                    for parent_step in step.parents
+                    for parent_step in self.processing_graph.get_parents(processing_step.name)
                     for parent_artifact_state in self._get_artifact_states_for_step(
-                        step=parent_step, config=artifact_state.config, split=artifact_state.split
+                        processing_step=parent_step,
+                        config=artifact_state.config,
+                        split=artifact_state.split,
                     )
                 ):
                     cache_status.cache_is_outdated_by_parent[artifact_state.id] = artifact_state
@@ -518,8 +488,8 @@ class DatasetState:
     def _get_queue_status(self) -> QueueStatus:
         queue_status = QueueStatus()
 
-        for step in self.processing_graph.topologically_ordered_steps:
-            artifact_states = self._get_artifact_states_for_step(step)
+        for processing_step in self.processing_graph.get_topologically_ordered_processing_steps():
+            artifact_states = self._get_artifact_states_for_step(processing_step)
             for artifact_state in artifact_states:
                 if artifact_state.job_state.is_in_process:
                     queue_status.in_process[artifact_state.id] = artifact_state
@@ -553,13 +523,6 @@ class DatasetState:
             The number of jobs created.
         """
         return self.plan.run()
-
-    def as_dict(self) -> Dict[str, Any]:
-        return {
-            "dataset": self.dataset,
-            "config_states": [config_state.as_dict() for config_state in self.config_states],
-            "artifact_states": [artifact_state.as_dict() for artifact_state in self.artifact_state_by_step.values()],
-        }
 
     def as_response(self) -> Dict[str, Any]:
         return {
