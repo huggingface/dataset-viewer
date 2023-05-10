@@ -142,6 +142,9 @@ class EndpointConfig:
                 "config": ["config-opt-in-out-urls-count"],
                 "split": ["split-opt-in-out-urls-count"],
             },
+            "/is-valid": {
+                "dataset": ["dataset-is-valid"],
+            },
         }
     )
 
