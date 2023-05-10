@@ -49,4 +49,4 @@ jobs:
       - name: Run bandit
         run: poetry run bandit -r src
       - name: Run pip-audit
-        run: bash -c "poetry run pip-audit -r <(poetry export -f requirements.txt --with dev | sed '/^kenlm @/d' | sed '/^torch @/d' | sed '/^torchaudio @/d' | sed '/^libcommon @/d' | sed '/^trec-car-tools @/d' | sed '/^hffs @/d')"
+        run: bash -c "poetry run pip-audit -r <(poetry export -f requirements.txt --with dev | sed '/^kenlm @/d' | sed '/^torch @/d' | sed '/^torchaudio @/d' | sed '/^libcommon @/d' | sed '/^trec-car-tools @/d')"
