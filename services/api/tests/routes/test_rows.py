@@ -166,14 +166,14 @@ def rows_index(
     ds_sharded_fs: AbstractFileSystem,
     dataset_sharded_with_config_parquet: dict[str, Any],
 ) -> Generator[RowsIndex, None, None]:
-    with patch("api.routes.rows.get_parquet_fs", return_value=ds_sharded_fs):
+    with patch("api.routes.rows.get_hf_fs", return_value=ds_sharded_fs):
         yield indexer.get_rows_index("ds_sharded", "plain_text", "train")
 
 
 def test_indexer_get_rows_index(
     indexer: Indexer, ds: Dataset, ds_fs: AbstractFileSystem, dataset_with_config_parquet: dict[str, Any]
 ) -> None:
-    with patch("api.routes.rows.get_parquet_fs", return_value=ds_fs):
+    with patch("api.routes.rows.get_hf_fs", return_value=ds_fs):
         index = indexer.get_rows_index("ds", "plain_text", "train")
     assert index.features == ds.features
     assert index.row_group_offsets.tolist() == [len(ds)]
@@ -190,7 +190,7 @@ def test_indexer_get_rows_index_sharded(
     ds_sharded_fs: AbstractFileSystem,
     dataset_sharded_with_config_parquet: dict[str, Any],
 ) -> None:
-    with patch("api.routes.rows.get_parquet_fs", return_value=ds_sharded_fs):
+    with patch("api.routes.rows.get_hf_fs", return_value=ds_sharded_fs):
         index = indexer.get_rows_index("ds_sharded", "plain_text", "train")
     assert index.features == ds_sharded.features
     assert index.row_group_offsets.tolist() == np.cumsum([len(ds)] * 4).tolist()

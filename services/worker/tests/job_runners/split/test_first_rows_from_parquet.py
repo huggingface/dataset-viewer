@@ -111,7 +111,7 @@ def test_compute(
         http_status=HTTPStatus.OK,
     )
 
-    with patch("worker.job_runners.split.first_rows_from_parquet.get_parquet_fs") as mock_read:
+    with patch("worker.job_runners.split.first_rows_from_parquet.get_hf_fs") as mock_read:
         initial_location = os.getcwd()
         os.chdir("tests/job_runners/split")
         # TODO:  Make localsystem by relative path
