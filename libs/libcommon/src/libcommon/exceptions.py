@@ -76,14 +76,18 @@ class CustomError(LoggedError):
 
 
 JobRunnerErrorCode = Literal[
+    "AskAccessHubRequestError",
     "ConfigNamesError",
     "DatasetInBlockListError",
+    "DatasetInfoHubRequestError",
     "DatasetModuleNotInstalledError",
+    "DatasetNotFoundError",
     "DatasetRevisionNotFoundError",
     "DatasetTooBigFromDatasetsError",
     "DatasetTooBigFromHubError",
     "DatasetWithTooBigExternalFilesError",
     "DatasetWithTooManyExternalFilesError",
+    "DisabledViewerError",
     "EmptyDatasetError",
     "ExternalFilesSizeRequestConnectionError",
     "ExternalFilesSizeRequestError",
@@ -92,6 +96,8 @@ JobRunnerErrorCode = Literal[
     "ExternalServerError",
     "FeaturesError",
     "FileSystemError",
+    "GatedDisabledError",
+    "GatedExtraFieldsError",
     "InfoError",
     "JobManagerCrashedError",
     "JobManagerExceededMaximumDurationError",
@@ -115,6 +121,7 @@ JobRunnerErrorCode = Literal[
 ]
 
 
+# TODO: rename CacheableError?
 class JobRunnerError(CustomError):
     """Base class for job runner exceptions."""
 
@@ -208,6 +215,19 @@ class PreviousStepError(CustomError):
         return self.error_without_cause
 
 
+class AskAccessHubRequestError(JobRunnerError):
+    """Raised when the request to the Hub's ask-access endpoint times out."""
+
+    def __init__(self, message: str, cause: Optional[BaseException] = None):
+        super().__init__(
+            message=message,
+            status_code=HTTPStatus.INTERNAL_SERVER_ERROR,
+            code="AskAccessHubRequestError",
+            cause=cause,
+            disclose_cause=False,
+        )
+
+
 class ConfigNamesError(JobRunnerError):
     """Raised when the config names could not be fetched."""
 
@@ -222,11 +242,37 @@ class DatasetInBlockListError(JobRunnerError):
         super().__init__(message, HTTPStatus.NOT_IMPLEMENTED, "DatasetInBlockListError", cause, False)
 
 
+class DatasetInfoHubRequestError(JobRunnerError):
+    """Raised when the request to the Hub's dataset-info endpoint times out."""
+
+    def __init__(self, message: str, cause: Optional[BaseException] = None):
+        super().__init__(
+            message=message,
+            status_code=HTTPStatus.INTERNAL_SERVER_ERROR,
+            code="DatasetInfoHubRequestError",
+            cause=cause,
+            disclose_cause=False,
+        )
+
+
 class DatasetModuleNotInstalledError(JobRunnerError):
     """Raised when the dataset tries to import a module that is not installed."""
 
     def __init__(self, message: str, cause: Optional[BaseException] = None):
         super().__init__(message, HTTPStatus.INTERNAL_SERVER_ERROR, "DatasetModuleNotInstalledError", cause, True)
+
+
+class DatasetNotFoundError(JobRunnerError):
+    """Raised when the dataset does not exist."""
+
+    def __init__(self, message: str, cause: Optional[BaseException] = None):
+        super().__init__(
+            message=message,
+            status_code=HTTPStatus.NOT_FOUND,
+            code="DatasetNotFoundError",
+            cause=cause,
+            disclose_cause=False,
+        )
 
 
 class DatasetRevisionNotFoundError(JobRunnerError):
@@ -262,6 +308,19 @@ class DatasetWithTooManyExternalFilesError(JobRunnerError):
 
     def __init__(self, message: str, cause: Optional[BaseException] = None):
         super().__init__(message, HTTPStatus.NOT_IMPLEMENTED, "DatasetWithTooManyExternalFilesError", cause, True)
+
+
+class DisabledViewerError(JobRunnerError):
+    """Raised when the dataset viewer is disabled."""
+
+    def __init__(self, message: str, cause: Optional[BaseException] = None):
+        super().__init__(
+            message=message,
+            status_code=HTTPStatus.NOT_FOUND,
+            code="DisabledViewerError",
+            cause=cause,
+            disclose_cause=False,
+        )
 
 
 class EmptyDatasetError(JobRunnerError):
@@ -318,6 +377,32 @@ class FileSystemError(JobRunnerError):
 
     def __init__(self, message: str, cause: Optional[BaseException] = None):
         super().__init__(message, HTTPStatus.INTERNAL_SERVER_ERROR, "FileSystemError", cause, False)
+
+
+class GatedDisabledError(JobRunnerError):
+    """Raised when the dataset is gated, but disabled."""
+
+    def __init__(self, message: str, cause: Optional[BaseException] = None):
+        super().__init__(
+            message=message,
+            status_code=HTTPStatus.NOT_FOUND,
+            code="GatedDisabledError",
+            cause=cause,
+            disclose_cause=False,
+        )
+
+
+class GatedExtraFieldsError(JobRunnerError):
+    """Raised when the dataset is gated, with extra fields."""
+
+    def __init__(self, message: str, cause: Optional[BaseException] = None):
+        super().__init__(
+            message=message,
+            status_code=HTTPStatus.NOT_FOUND,
+            code="GatedExtraFieldsError",
+            cause=cause,
+            disclose_cause=False,
+        )
 
 
 class InfoError(JobRunnerError):
