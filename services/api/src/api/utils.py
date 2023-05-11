@@ -11,16 +11,16 @@ from starlette.requests import Request
 from starlette.responses import JSONResponse, Response
 
 ApiErrorCode = Literal[
-    "MissingRequiredParameter",
-    "InvalidParameter",
-    "ResponseNotReady",
-    "ResponseNotFound",
-    "UnexpectedError",
-    "ExternalUnauthenticatedError",
-    "ExternalAuthenticatedError",
     "AuthCheckHubRequestError",
+    "ExternalAuthenticatedError",
+    "ExternalUnauthenticatedError",
+    "InvalidParameter",
     "JWKError",
+    "MissingRequiredParameter",
     "MissingProcessingStepsError",
+    "ResponseNotFound",
+    "ResponseNotReady",
+    "UnexpectedError",  # also in libcommon.exceptions
 ]
 
 
