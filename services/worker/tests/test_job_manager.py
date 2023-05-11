@@ -4,7 +4,7 @@ from typing import Optional
 from unittest.mock import Mock
 
 import pytest
-from libcommon.exceptions import CustomError
+from libcommon.exceptions import CustomError, PreviousStepError
 from libcommon.processing_graph import ProcessingGraph, ProcessingStep
 from libcommon.queue import Queue
 from libcommon.resources import CacheMongoResource, QueueMongoResource
