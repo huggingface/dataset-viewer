@@ -23,7 +23,7 @@ def test_queue_delete_indexes_with_force(mongo_host: str) -> None:
         db[QUEUE_COLLECTION_JOBS].create_index([("type", 1), (field_name, 1)])
         assert (
             len(get_index_names(db[QUEUE_COLLECTION_JOBS].index_information(), "force")) == 3
-        )  # Ensure the TTL index exists
+        )  # Ensure the indexes exists
 
         migration = MigrationQueueDeleteIndexesWithForce(
             version="20230511100700",
@@ -33,6 +33,6 @@ def test_queue_delete_indexes_with_force(mongo_host: str) -> None:
 
         assert (
             len(get_index_names(db[QUEUE_COLLECTION_JOBS].index_information(), "force")) == 0
-        )  # Ensure the TTL index exists  # Ensure 0 records with old type
+        )  # Ensure the indexes do not exist anymore
 
         db[QUEUE_COLLECTION_JOBS].drop()
