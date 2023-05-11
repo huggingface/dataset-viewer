@@ -150,7 +150,6 @@ def upsert_response(
 
 def upsert_response_params(
     kind: str,
-    dataset: str,
     job_params: JobParams,
     content: Mapping[str, Any],
     http_status: HTTPStatus,
@@ -163,7 +162,7 @@ def upsert_response_params(
 ) -> None:
     upsert_response(
         kind=kind,
-        dataset=dataset,
+        dataset=job_params["dataset"],
         config=job_params["config"],
         split=job_params["split"],
         content=content,
@@ -265,10 +264,6 @@ def get_response(kind: str, dataset: str, config: Optional[str] = None, split: O
         "dataset_git_revision": response.dataset_git_revision,
         "progress": response.progress,
     }
-
-
-def get_response_params(kind: str, dataset: str, job_params: JobParams) -> CacheEntry:
-    return get_response(kind=kind, dataset=dataset, config=job_params["config"], split=job_params["split"])
 
 
 # Note: we let the exceptions throw (ie DoesNotExist): it's the responsibility of the caller to manage them

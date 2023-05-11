@@ -52,8 +52,8 @@ class Loop:
     library_cache_paths: set[str]
     app_config: AppConfig
     max_jobs_per_namespace: int
+    processing_graph: ProcessingGraph
     state_file_path: str
-
     storage_paths: set[str] = field(init=False)
 
     def __post_init__(self) -> None:
@@ -136,9 +136,11 @@ class Loop:
             return False
 
         job_runner = self.job_runner_factory.create_job_runner(job_info)
-        processing_graph = ProcessingGraph(self.app_config.processing_graph.specification)
         job_manager = JobManager(
-            job_info=job_info, app_config=self.app_config, job_runner=job_runner, processing_graph=processing_graph
+            job_info=job_info,
+            app_config=self.app_config,
+            job_runner=job_runner,
+            processing_graph=self.processing_graph,
         )
         finished_status = job_manager.run()
         self.queue.finish_job(job_id=job_manager.job_id, finished_status=finished_status)

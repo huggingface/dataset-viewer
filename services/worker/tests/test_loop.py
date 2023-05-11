@@ -70,6 +70,7 @@ def test_process_next_job(
             app_config=app_config,
             max_jobs_per_namespace=app_config.queue.max_jobs_per_namespace,
             state_file_path=worker_state_file_path,
+            processing_graph=test_processing_graph,
         )
         assert not loop.process_next_job()
         dataset = "dataset"

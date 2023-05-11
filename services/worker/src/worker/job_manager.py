@@ -47,13 +47,13 @@ class JobManager:
     """
 
     job_id: str
-    dataset: str
     job_params: JobParams
     force: bool
     priority: Priority
     worker_config: WorkerConfig
     common_config: CommonConfig
     processing_step: ProcessingStep
+    processing_graph: ProcessingGraph
     _dataset_git_revision: Optional[str] = None
     job_runner: JobRunner
 
@@ -70,7 +70,6 @@ class JobManager:
         self.force = job_info["force"]
         self.priority = job_info["priority"]
         self.job_params = job_info["params"]
-        self.dataset = self.job_params["dataset"]
         self.common_config = app_config.common
         self.worker_config = app_config.worker
         self.job_runner = job_runner
@@ -91,7 +90,7 @@ class JobManager:
             )
 
     def __str__(self) -> str:
-        return f"JobManager(job_id={self.job_id} dataset={self.dataset} job_info={self.job_info}"
+        return f"JobManager(job_id={self.job_id} dataset={self.job_params['dataset']} job_info={self.job_info}"
 
     def log(self, level: int, msg: str) -> None:
         logging.log(level=level, msg=f"[{self.processing_step.job_type}] {msg}")
@@ -127,7 +126,9 @@ class JobManager:
         """Get the git revision of the dataset repository."""
         if self._dataset_git_revision is None:
             self._dataset_git_revision = get_dataset_git_revision(
-                dataset=self.dataset, hf_endpoint=self.common_config.hf_endpoint, hf_token=self.common_config.hf_token
+                dataset=self.job_params["dataset"],
+                hf_endpoint=self.common_config.hf_endpoint,
+                hf_token=self.common_config.hf_token,
             )
         return self._dataset_git_revision
 
@@ -207,8 +208,8 @@ class JobManager:
         try:
             dataset_git_revision = self.get_dataset_git_revision()
             if dataset_git_revision is None:
-                self.debug(f"the dataset={self.dataset} has no git revision, don't update the cache")
-                raise NoGitRevisionError(f"Could not get git revision for dataset {self.dataset}")
+                self.debug(f"the dataset={self.job_params['dataset']} has no git revision, don't update the cache")
+                raise NoGitRevisionError(f"Could not get git revision for dataset {self.job_params['dataset']}")
             try:
                 self.job_runner.pre_compute()
                 parallel_job_runner = self.job_runner.get_parallel_job_runner()
@@ -232,7 +233,6 @@ class JobManager:
                 self.job_runner.post_compute()
             upsert_response_params(
                 kind=self.processing_step.cache_kind,
-                dataset=self.dataset,
                 job_params=self.job_params,
                 content=content,
                 http_status=HTTPStatus.OK,
@@ -240,17 +240,16 @@ class JobManager:
                 dataset_git_revision=dataset_git_revision,
                 progress=job_result.progress,
             )
-            self.debug(f"dataset={self.dataset} job_info={self.job_info} is valid, cache updated")
+            self.debug(f"dataset={self.job_params['dataset']} job_info={self.job_info} is valid, cache updated")
             return True
         except DatasetNotFoundError:
             # To avoid filling the cache, we don't save this error. Otherwise, DoS is possible.
-            self.debug(f"the dataset={self.dataset} could not be found, don't update the cache")
+            self.debug(f"the dataset={self.job_params['dataset']} could not be found, don't update the cache")
             return False
         except Exception as err:
             e = err if isinstance(err, CustomError) else UnexpectedError(str(err), err)
             upsert_response_params(
                 kind=self.processing_step.cache_kind,
-                dataset=self.dataset,
                 job_params=self.job_params,
                 content=dict(e.as_response()),
                 http_status=e.status_code,
@@ -259,13 +258,13 @@ class JobManager:
                 job_runner_version=self.job_runner.get_job_runner_version(),
                 dataset_git_revision=dataset_git_revision,
             )
-            self.debug(f"response for dataset={self.dataset} job_info={self.job_info} had an error, cache updated")
+            self.debug(f"response for job_info={self.job_info} had an error, cache updated")
             return False
 
     def backfill(self) -> None:
         """Evaluate the state of the dataset and backfill the cache if necessary."""
         DatasetState(
-            dataset=self.dataset,
+            dataset=self.job_params["dataset"],
             processing_graph=self.processing_graph,
             revision=self.get_dataset_git_revision(),
             error_codes_to_retry=ERROR_CODES_TO_RETRY,
@@ -276,7 +275,6 @@ class JobManager:
         error = JobManagerCrashedError(message=message, cause=cause)
         upsert_response_params(
             kind=self.processing_step.cache_kind,
-            dataset=self.dataset,
             job_params=self.job_params,
             content=dict(error.as_response()),
             http_status=error.status_code,
@@ -286,14 +284,14 @@ class JobManager:
             dataset_git_revision=self.get_dataset_git_revision(),
         )
         logging.debug(
-            f"response for dataset={self.dataset} job_info={self.job_info} had an error (crashed), cache updated"
+            f"response for dataset={self.job_params['dataset']} job_info={self.job_info} had an error (crashed), cache"
+            " updated"
         )
 
     def set_exceeded_maximum_duration(self, message: str, cause: Optional[BaseException] = None) -> None:
         error = JobManagerExceededMaximumDurationError(message=message, cause=cause)
         upsert_response_params(
             kind=self.processing_step.cache_kind,
-            dataset=self.dataset,
             job_params=self.job_params,
             content=dict(error.as_response()),
             http_status=error.status_code,
@@ -303,6 +301,6 @@ class JobManager:
             dataset_git_revision=self.get_dataset_git_revision(),
         )
         logging.debug(
-            f"response for dataset={self.dataset} job_info={self.job_info} had an error (exceeded"
+            f"response for dataset={self.job_params['dataset']} job_info={self.job_info} had an error (exceeded"
             " maximum duration), cache updated"
         )
