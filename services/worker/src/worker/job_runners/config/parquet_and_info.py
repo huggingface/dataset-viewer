@@ -6,10 +6,9 @@ import glob
 import logging
 import re
 from functools import partial
-from http import HTTPStatus
 from multiprocessing.pool import ThreadPool
 from pathlib import Path
-from typing import Any, Dict, List, Literal, Optional, Set, Tuple, TypedDict
+from typing import Any, Dict, List, Optional, Set, Tuple, TypedDict
 from urllib.parse import quote
 
 import datasets
@@ -42,88 +41,28 @@ from libcommon.constants import (
     PROCESSING_STEP_CONFIG_PARQUET_AND_INFO_VERSION,
 )
 from libcommon.dataset import DatasetNotFoundError, ask_access
+from libcommon.exceptions import (
+    ConfigNamesError,
+    DatasetInBlockListError,
+    DatasetRevisionNotFoundError,
+    DatasetTooBigFromDatasetsError,
+    DatasetTooBigFromHubError,
+    DatasetWithTooBigExternalFilesError,
+    DatasetWithTooManyExternalFilesError,
+    EmptyDatasetError,
+    ExternalFilesSizeRequestConnectionError,
+    ExternalFilesSizeRequestError,
+    ExternalFilesSizeRequestHTTPError,
+    ExternalFilesSizeRequestTimeoutError,
+    PreviousStepFormatError,
+    UnsupportedExternalFilesError,
+)
 from libcommon.processing_graph import ProcessingStep
 from libcommon.utils import JobInfo
 
-from worker.common_exceptions import JobRunnerError
 from worker.config import AppConfig, ParquetAndInfoConfig
 from worker.job_runners.config.config_job_runner import ConfigCachedJobRunner
-from worker.job_runners.dataset.config_names import ConfigNamesError
 from worker.utils import CompleteJobResult, get_previous_step_or_raise
-
-ConfigParquetAndInfoJobRunnerErrorCode = Literal[
-    "DatasetRevisionNotFoundError",
-    "EmptyDatasetError",
-    "DatasetInBlockListError",
-    "DatasetTooBigFromHubError",
-    "DatasetTooBigFromDatasetsError",
-    "UnsupportedExternalFilesError",
-    "DatasetWithTooManyExternalFilesError",
-    "DatasetWithTooBigExternalFilesError",
-    "ExternalFilesSizeRequestHTTPError",
-    "ExternalFilesSizeRequestConnectionError",
-    "ExternalFilesSizeRequestTimeoutError",
-    "ExternalFilesSizeRequestError",
-    "PreviousStepFormatError",
-]
-
-
-class ConfigParquetAndInfoJobRunnerError(JobRunnerError):
-    """Base class for exceptions in this module."""
-
-    def __init__(
-        self,
-        message: str,
-        status_code: HTTPStatus,
-        code: ConfigParquetAndInfoJobRunnerErrorCode,
-        cause: Optional[BaseException] = None,
-        disclose_cause: bool = False,
-    ):
-        super().__init__(
-            message=message, status_code=status_code, code=code, cause=cause, disclose_cause=disclose_cause
-        )
-
-
-class DatasetRevisionNotFoundError(ConfigParquetAndInfoJobRunnerError):
-    """Raised when the revision of a dataset repository does not exist."""
-
-    def __init__(self, message: str, cause: Optional[BaseException] = None):
-        super().__init__(message, HTTPStatus.NOT_FOUND, "DatasetRevisionNotFoundError", cause, False)
-
-
-class EmptyDatasetError(ConfigParquetAndInfoJobRunnerError):
-    """Raised when the dataset has no data."""
-
-    def __init__(self, message: str, cause: Optional[BaseException] = None):
-        super().__init__(message, HTTPStatus.INTERNAL_SERVER_ERROR, "EmptyDatasetError", cause, True)
-
-
-class DatasetInBlockListError(ConfigParquetAndInfoJobRunnerError):
-    """Raised when the dataset is in the list of blocked datasets."""
-
-    def __init__(self, message: str, cause: Optional[BaseException] = None):
-        super().__init__(message, HTTPStatus.NOT_IMPLEMENTED, "DatasetInBlockListError", cause, False)
-
-
-class DatasetTooBigFromHubError(ConfigParquetAndInfoJobRunnerError):
-    """Raised when the dataset size (sum of files on the Hub) is too big."""
-
-    def __init__(self, message: str, cause: Optional[BaseException] = None):
-        super().__init__(message, HTTPStatus.NOT_IMPLEMENTED, "DatasetTooBigFromHubError", cause, False)
-
-
-class DatasetTooBigFromDatasetsError(ConfigParquetAndInfoJobRunnerError):
-    """Raised when the dataset size (sum of config sizes given by the datasets library) is too big."""
-
-    def __init__(self, message: str, cause: Optional[BaseException] = None):
-        super().__init__(message, HTTPStatus.NOT_IMPLEMENTED, "DatasetTooBigFromDatasetsError", cause, False)
-
-
-class PreviousStepFormatError(ConfigParquetAndInfoJobRunnerError):
-    """Raised when the content of the previous step has not the expected format."""
-
-    def __init__(self, message: str, cause: Optional[BaseException] = None):
-        super().__init__(message, HTTPStatus.INTERNAL_SERVER_ERROR, "PreviousStepFormatError", cause, False)
 
 
 class ParquetFileItem(TypedDict):
@@ -458,55 +397,6 @@ class EmptyDownloadSizeError(Exception):
 
 class EmptyFeaturesError(Exception):
     pass
-
-
-class DatasetWithTooManyExternalFilesError(ConfigParquetAndInfoJobRunnerError):
-    """Raised when the dataset size (sum of config sizes given by the datasets library) is too big."""
-
-    def __init__(self, message: str, cause: Optional[BaseException] = None):
-        super().__init__(message, HTTPStatus.NOT_IMPLEMENTED, "DatasetWithTooManyExternalFilesError", cause, True)
-
-
-class DatasetWithTooBigExternalFilesError(ConfigParquetAndInfoJobRunnerError):
-    """Raised when the dataset size (sum of config sizes given by the datasets library) is too big."""
-
-    def __init__(self, message: str, cause: Optional[BaseException] = None):
-        super().__init__(message, HTTPStatus.NOT_IMPLEMENTED, "DatasetWithTooBigExternalFilesError", cause, True)
-
-
-class UnsupportedExternalFilesError(ConfigParquetAndInfoJobRunnerError):
-    """Raised when we failed to get the size of the external files."""
-
-    def __init__(self, message: str, cause: Optional[BaseException] = None):
-        super().__init__(message, HTTPStatus.NOT_IMPLEMENTED, "UnsupportedExternalFilesError", cause, True)
-
-
-class ExternalFilesSizeRequestHTTPError(ConfigParquetAndInfoJobRunnerError):
-    """Raised when we failed to get the size of the external files."""
-
-    def __init__(self, message: str, cause: Optional[BaseException] = None):
-        super().__init__(message, HTTPStatus.NOT_IMPLEMENTED, "ExternalFilesSizeRequestHTTPError", cause, True)
-
-
-class ExternalFilesSizeRequestConnectionError(ConfigParquetAndInfoJobRunnerError):
-    """Raised when we failed to get the size of the external files."""
-
-    def __init__(self, message: str, cause: Optional[BaseException] = None):
-        super().__init__(message, HTTPStatus.NOT_IMPLEMENTED, "ExternalFilesSizeRequestConnectionError", cause, True)
-
-
-class ExternalFilesSizeRequestTimeoutError(ConfigParquetAndInfoJobRunnerError):
-    """Raised when we failed to get the size of the external files."""
-
-    def __init__(self, message: str, cause: Optional[BaseException] = None):
-        super().__init__(message, HTTPStatus.NOT_IMPLEMENTED, "ExternalFilesSizeRequestTimeoutError", cause, True)
-
-
-class ExternalFilesSizeRequestError(ConfigParquetAndInfoJobRunnerError):
-    """Raised when we failed to get the size of the external files."""
-
-    def __init__(self, message: str, cause: Optional[BaseException] = None):
-        super().__init__(message, HTTPStatus.NOT_IMPLEMENTED, "ExternalFilesSizeRequestError", cause, True)
 
 
 def _request_size(url: str, hf_token: Optional[str] = None) -> Optional[int]:

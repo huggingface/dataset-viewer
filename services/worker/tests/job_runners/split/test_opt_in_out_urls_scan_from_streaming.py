@@ -11,7 +11,7 @@ import pytest
 from aiohttp import ClientSession
 from aiolimiter import AsyncLimiter
 from libcommon.constants import PROCESSING_STEP_SPLIT_OPT_IN_OUT_URLS_SCAN_VERSION
-from libcommon.exceptions import CustomError
+from libcommon.exceptions import CustomError, ExternalServerError
 from libcommon.processing_graph import ProcessingGraph
 from libcommon.resources import CacheMongoResource, QueueMongoResource
 from libcommon.simple_cache import upsert_response
@@ -19,7 +19,6 @@ from libcommon.utils import Priority
 
 from worker.config import AppConfig
 from worker.job_runners.split.opt_in_out_urls_scan_from_streaming import (
-    ExternalServerError,
     SplitOptInOutUrlsScanJobRunner,
     check_spawning,
 )

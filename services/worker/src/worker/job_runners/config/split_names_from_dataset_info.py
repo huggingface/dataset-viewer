@@ -2,15 +2,14 @@
 # Copyright 2022 The HuggingFace Authors.
 
 import logging
-from http import HTTPStatus
-from typing import List, Literal, Optional
+from typing import List
 
 from libcommon.constants import (
     PROCESSING_STEP_SPLIT_NAMES_FROM_DATASET_INFO_VERSION,
     PROCESSING_STEP_SPLIT_NAMES_FROM_STREAMING_VERSION,
 )
+from libcommon.exceptions import PreviousStepFormatError
 
-from worker.common_exceptions import JobRunnerError
 from worker.job_runners.config.config_job_runner import ConfigJobRunner
 from worker.utils import (
     CompleteJobResult,
@@ -19,31 +18,6 @@ from worker.utils import (
     SplitsList,
     get_previous_step_or_raise,
 )
-
-SplitNamesFromDatasetInfoJobRunnerErrorCode = Literal["PreviousStepFormatError"]
-
-
-class SplitNamesFromDatasetInfoJobRunnerError(JobRunnerError):
-    """Base class for split names job runner exceptions."""
-
-    def __init__(
-        self,
-        message: str,
-        status_code: HTTPStatus,
-        code: SplitNamesFromDatasetInfoJobRunnerErrorCode,
-        cause: Optional[BaseException] = None,
-        disclose_cause: bool = False,
-    ):
-        super().__init__(
-            message=message, status_code=status_code, code=code, cause=cause, disclose_cause=disclose_cause
-        )
-
-
-class PreviousStepFormatError(SplitNamesFromDatasetInfoJobRunnerError):
-    """Raised when the content of the previous step has not the expected format."""
-
-    def __init__(self, message: str, cause: Optional[BaseException] = None):
-        super().__init__(message, HTTPStatus.INTERNAL_SERVER_ERROR, "PreviousStepFormatError", cause, False)
 
 
 def compute_split_names_from_dataset_info_response(dataset: str, config: str) -> SplitsList:

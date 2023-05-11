@@ -3,43 +3,18 @@
 
 import logging
 from http import HTTPStatus
-from typing import Literal, Optional, Tuple
+from typing import Tuple
 
 from libcommon.constants import PROCESSING_STEP_DATASET_OPT_IN_OUT_URLS_COUNT_VERSION
+from libcommon.exceptions import PreviousStepFormatError
 from libcommon.simple_cache import DoesNotExist, get_response
 
-from worker.common_exceptions import JobRunnerError
 from worker.job_runners.dataset.dataset_job_runner import DatasetJobRunner
 from worker.utils import (
     JobResult,
     OptInOutUrlsCountResponse,
     get_previous_step_or_raise,
 )
-
-DatasetOptInOutUrlsCountJobRunnerErrorCode = Literal["PreviousStepFormatError"]
-
-
-class DatasetOptInOutUrlsCountJobRunnerError(JobRunnerError):
-    """Base class for exceptions in this module."""
-
-    def __init__(
-        self,
-        message: str,
-        status_code: HTTPStatus,
-        code: DatasetOptInOutUrlsCountJobRunnerErrorCode,
-        cause: Optional[BaseException] = None,
-        disclose_cause: bool = False,
-    ):
-        super().__init__(
-            message=message, status_code=status_code, code=code, cause=cause, disclose_cause=disclose_cause
-        )
-
-
-class PreviousStepFormatError(DatasetOptInOutUrlsCountJobRunnerError):
-    """Raised when the content of the previous step has not the expected format."""
-
-    def __init__(self, message: str, cause: Optional[BaseException] = None):
-        super().__init__(message, HTTPStatus.INTERNAL_SERVER_ERROR, "PreviousStepFormatError", cause, False)
 
 
 def compute_opt_in_out_urls_count_response(dataset: str) -> Tuple[OptInOutUrlsCountResponse, float]:

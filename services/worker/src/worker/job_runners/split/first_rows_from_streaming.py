@@ -2,21 +2,28 @@
 # Copyright 2022 The HuggingFace Authors.
 
 import logging
-from http import HTTPStatus
 from pathlib import Path
-from typing import List, Literal, Optional, Union
+from typing import List, Optional, Union
 
 from datasets import Features, IterableDataset, get_dataset_config_info, load_dataset
 from libcommon.constants import (
     PROCESSING_STEP_SPLIT_FIRST_ROWS_FROM_PARQUET_VERSION,
     PROCESSING_STEP_SPLIT_FIRST_ROWS_FROM_STREAMING_VERSION,
 )
+from libcommon.exceptions import (
+    FeaturesError,
+    InfoError,
+    PreviousStepFormatError,
+    RowsPostProcessingError,
+    SplitNotFoundError,
+    TooBigContentError,
+    TooManyColumnsError,
+)
 from libcommon.processing_graph import ProcessingStep
 from libcommon.storage import StrPath
 from libcommon.utils import JobInfo
 from libcommon.viewer_utils.features import get_cell_value
 
-from worker.common_exceptions import JobRunnerError, SplitNotFoundError
 from worker.config import AppConfig, FirstRowsConfig
 from worker.job_runners.split.split_job_runner import SplitCachedJobRunner
 from worker.utils import (
@@ -30,91 +37,6 @@ from worker.utils import (
     get_rows_or_raise,
     to_features_list,
 )
-
-SplitFirstRowsFromStreamingJobRunnerErrorCode = Literal[
-    "SplitsNamesError",
-    "EmptyDatasetError",
-    "InfoError",
-    "FeaturesError",
-    "StreamingRowsError",
-    "NormalRowsError",
-    "RowsPostProcessingError",
-    "TooManyColumnsError",
-    "TooBigContentError",
-    "PreviousStepFormatError",
-]
-
-
-class SplitFirstRowsFromStreamingJobRunnerError(JobRunnerError):
-    """Base class for exceptions in this module."""
-
-    def __init__(
-        self,
-        message: str,
-        status_code: HTTPStatus,
-        code: SplitFirstRowsFromStreamingJobRunnerErrorCode,
-        cause: Optional[BaseException] = None,
-        disclose_cause: bool = False,
-    ):
-        super().__init__(
-            message=message, status_code=status_code, code=code, cause=cause, disclose_cause=disclose_cause
-        )
-
-
-class SplitsNamesError(SplitFirstRowsFromStreamingJobRunnerError):
-    """Raised when the split names could not be fetched."""
-
-    def __init__(self, message: str, cause: Optional[BaseException] = None):
-        super().__init__(message, HTTPStatus.INTERNAL_SERVER_ERROR, "SplitsNamesError", cause, True)
-
-
-class EmptyDatasetError(SplitFirstRowsFromStreamingJobRunnerError):
-    """Raised when the dataset has no data."""
-
-    def __init__(self, message: str, cause: Optional[BaseException] = None):
-        super().__init__(message, HTTPStatus.INTERNAL_SERVER_ERROR, "EmptyDatasetError", cause, True)
-
-
-class InfoError(SplitFirstRowsFromStreamingJobRunnerError):
-    """Raised when the info could not be fetched."""
-
-    def __init__(self, message: str, cause: Optional[BaseException] = None):
-        super().__init__(message, HTTPStatus.INTERNAL_SERVER_ERROR, "InfoError", cause, True)
-
-
-class FeaturesError(SplitFirstRowsFromStreamingJobRunnerError):
-    """Raised when the features could not be fetched."""
-
-    def __init__(self, message: str, cause: Optional[BaseException] = None):
-        super().__init__(message, HTTPStatus.INTERNAL_SERVER_ERROR, "FeaturesError", cause, True)
-
-
-class RowsPostProcessingError(SplitFirstRowsFromStreamingJobRunnerError):
-    """Raised when the rows could not be post-processed successfully."""
-
-    def __init__(self, message: str, cause: Optional[BaseException] = None):
-        super().__init__(message, HTTPStatus.INTERNAL_SERVER_ERROR, "RowsPostProcessingError", cause, False)
-
-
-class TooManyColumnsError(SplitFirstRowsFromStreamingJobRunnerError):
-    """Raised when the dataset exceeded the max number of columns."""
-
-    def __init__(self, message: str, cause: Optional[BaseException] = None):
-        super().__init__(message, HTTPStatus.INTERNAL_SERVER_ERROR, "TooManyColumnsError", cause, True)
-
-
-class TooBigContentError(SplitFirstRowsFromStreamingJobRunnerError):
-    """Raised when the first rows content exceeded the max size of bytes."""
-
-    def __init__(self, message: str, cause: Optional[BaseException] = None):
-        super().__init__(message, HTTPStatus.INTERNAL_SERVER_ERROR, "TooBigContentError", cause, False)
-
-
-class PreviousStepFormatError(SplitFirstRowsFromStreamingJobRunnerError):
-    """Raised when the content of the previous step has not the expected format."""
-
-    def __init__(self, message: str, cause: Optional[BaseException] = None):
-        super().__init__(message, HTTPStatus.INTERNAL_SERVER_ERROR, "PreviousStepFormatError", cause, False)
 
 
 def transform_rows(

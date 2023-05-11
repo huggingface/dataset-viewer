@@ -3,12 +3,12 @@
 
 import logging
 from http import HTTPStatus
-from typing import List, Literal, Optional, Tuple
+from typing import List, Tuple
 
 from libcommon.constants import PROCESSING_STEP_DATASET_SPLIT_NAMES_VERSION
+from libcommon.exceptions import PreviousStepFormatError
 from libcommon.simple_cache import get_best_response
 
-from worker.common_exceptions import JobRunnerError
 from worker.job_runners.dataset.dataset_job_runner import DatasetJobRunner
 from worker.utils import (
     ConfigItem,
@@ -18,31 +18,6 @@ from worker.utils import (
     SplitItem,
     get_previous_step_or_raise,
 )
-
-DatasetSplitNamesErrorCode = Literal["PreviousStepFormatError"]
-
-
-class DatasetSplitNamesJobRunnerError(JobRunnerError):
-    """Base class for exceptions in this module."""
-
-    def __init__(
-        self,
-        message: str,
-        status_code: HTTPStatus,
-        code: DatasetSplitNamesErrorCode,
-        cause: Optional[BaseException] = None,
-        disclose_cause: bool = False,
-    ):
-        super().__init__(
-            message=message, status_code=status_code, code=code, cause=cause, disclose_cause=disclose_cause
-        )
-
-
-class PreviousStepFormatError(DatasetSplitNamesJobRunnerError):
-    """Raised when the content of the previous step has not the expected format."""
-
-    def __init__(self, message: str, cause: Optional[BaseException] = None):
-        super().__init__(message, HTTPStatus.INTERNAL_SERVER_ERROR, "PreviousStepFormatError", cause, False)
 
 
 def compute_dataset_split_names_response(dataset: str) -> Tuple[DatasetSplitNamesResponse, float]:

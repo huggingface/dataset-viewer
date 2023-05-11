@@ -4,7 +4,7 @@ from typing import Optional
 from unittest.mock import Mock
 
 import pytest
-from libcommon.exceptions import CustomError
+from libcommon.exceptions import CustomError, PreviousStepError
 from libcommon.processing_graph import ProcessingGraph, ProcessingStep
 from libcommon.queue import Queue
 from libcommon.resources import CacheMongoResource, QueueMongoResource
@@ -17,7 +17,6 @@ from libcommon.simple_cache import (
 )
 from libcommon.utils import JobInfo, Priority, Status
 
-from worker.common_exceptions import PreviousStepError
 from worker.config import AppConfig
 from worker.job_manager import JobManager
 from worker.job_runners.dataset.dataset_job_runner import DatasetJobRunner
