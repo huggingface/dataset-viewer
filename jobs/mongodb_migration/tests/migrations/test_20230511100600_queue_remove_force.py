@@ -12,7 +12,7 @@ from mongodb_migration.migrations._20230511100600_queue_remove_force import (
 )
 
 
-def test_cache_remove_worker_version(mongo_host: str) -> None:
+def test_queue_remove_force(mongo_host: str) -> None:
     with MongoResource(database="test_queue_remove_force", host=mongo_host, mongoengine_alias="queue"):
         db = get_db(QUEUE_MONGOENGINE_ALIAS)
         db[QUEUE_COLLECTION_JOBS].delete_many({})
