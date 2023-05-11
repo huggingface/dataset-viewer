@@ -8,15 +8,10 @@ from typing import Literal, Optional, Tuple, TypedDict
 from libcommon.constants import PROCESSING_STEP_DATASET_SIZE_VERSION
 from libcommon.simple_cache import DoesNotExist, get_response
 
-from worker.job_runner import (
-    JobResult,
-    JobRunner,
-    JobRunnerError,
-    ParameterMissingError,
-    get_previous_step_or_raise,
-)
+from worker.common_exceptions import JobRunnerError
 from worker.job_runners.config.size import ConfigSize, ConfigSizeResponse, SplitSize
-from worker.utils import PreviousJob
+from worker.job_runners.dataset.dataset_job_runner import DatasetJobRunner
+from worker.utils import JobResult, PreviousJob, get_previous_step_or_raise
 
 SizesJobRunnerErrorCode = Literal["PreviousStepFormatError"]
 
@@ -156,7 +151,7 @@ def compute_sizes_response(dataset: str) -> Tuple[DatasetSizeResponse, float]:
     )
 
 
-class DatasetSizeJobRunner(JobRunner):
+class DatasetSizeJobRunner(DatasetJobRunner):
     @staticmethod
     def get_job_type() -> str:
         return "dataset-size"
@@ -166,7 +161,5 @@ class DatasetSizeJobRunner(JobRunner):
         return PROCESSING_STEP_DATASET_SIZE_VERSION
 
     def compute(self) -> JobResult:
-        if self.dataset is None:
-            raise ParameterMissingError("'dataset' parameter is required")
         response_content, progress = compute_sizes_response(dataset=self.dataset)
         return JobResult(response_content, progress=progress)

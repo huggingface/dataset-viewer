@@ -2,10 +2,39 @@
 # Copyright 2022 The HuggingFace Authors.
 
 import base64
+import enum
 from datetime import datetime, timezone
-from typing import Any, Optional
+from typing import Any, Optional, TypedDict
 
 import orjson
+
+
+class Status(str, enum.Enum):
+    WAITING = "waiting"
+    STARTED = "started"
+    SUCCESS = "success"
+    ERROR = "error"
+    CANCELLED = "cancelled"
+    SKIPPED = "skipped"
+
+
+class Priority(str, enum.Enum):
+    NORMAL = "normal"
+    LOW = "low"
+
+
+class JobParams(TypedDict):
+    dataset: str
+    config: Optional[str]
+    split: Optional[str]
+
+
+class JobInfo(TypedDict):
+    job_id: str
+    type: str
+    params: JobParams
+    force: bool
+    priority: Priority
 
 
 # orjson is used to get rid of errors with datetime (see allenai/c4)

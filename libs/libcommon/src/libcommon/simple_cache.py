@@ -33,7 +33,7 @@ from mongoengine.fields import (
 from mongoengine.queryset.queryset import QuerySet
 
 from libcommon.constants import CACHE_COLLECTION_RESPONSES, CACHE_MONGOENGINE_ALIAS
-from libcommon.utils import get_datetime
+from libcommon.utils import JobParams, get_datetime
 
 # START monkey patching ### hack ###
 # see https://github.com/sbdchd/mongo-types#install
@@ -148,6 +148,34 @@ def upsert_response(
     )
 
 
+def upsert_response_params(
+    kind: str,
+    job_params: JobParams,
+    content: Mapping[str, Any],
+    http_status: HTTPStatus,
+    error_code: Optional[str] = None,
+    details: Optional[Mapping[str, Any]] = None,
+    job_runner_version: Optional[int] = None,
+    dataset_git_revision: Optional[str] = None,
+    progress: Optional[float] = None,
+    updated_at: Optional[datetime] = None,
+) -> None:
+    upsert_response(
+        kind=kind,
+        dataset=job_params["dataset"],
+        config=job_params["config"],
+        split=job_params["split"],
+        content=content,
+        dataset_git_revision=dataset_git_revision,
+        details=details,
+        error_code=error_code,
+        http_status=http_status,
+        job_runner_version=job_runner_version,
+        progress=progress,
+        updated_at=updated_at,
+    )
+
+
 def delete_response(
     kind: str, dataset: str, config: Optional[str] = None, split: Optional[str] = None
 ) -> Optional[int]:
@@ -182,6 +210,12 @@ def get_response_without_content(
         "job_runner_version": response.job_runner_version,
         "progress": response.progress,
     }
+
+
+def get_response_without_content_params(kind: str, job_params: JobParams) -> CacheEntryWithoutContent:
+    return get_response_without_content(
+        kind=kind, dataset=job_params["dataset"], config=job_params["config"], split=job_params["split"]
+    )
 
 
 class CacheEntryMetadata(CacheEntryWithoutContent):

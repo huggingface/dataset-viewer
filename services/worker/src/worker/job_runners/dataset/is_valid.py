@@ -7,7 +7,8 @@ from typing import Tuple, TypedDict
 from libcommon.constants import PROCESSING_STEP_DATASET_IS_VALID_VERSION
 from libcommon.simple_cache import get_validity_by_kind
 
-from worker.job_runner import JobResult, JobRunner
+from worker.job_runners.dataset.dataset_job_runner import DatasetJobRunner
+from worker.utils import JobResult
 
 
 class DatasetIsValidResponse(TypedDict):
@@ -47,7 +48,7 @@ def compute_is_valid_response(dataset: str) -> Tuple[DatasetIsValidResponse, flo
     return (DatasetIsValidResponse({"valid": is_valid}), 1.0)
 
 
-class DatasetIsValidJobRunner(JobRunner):
+class DatasetIsValidJobRunner(DatasetJobRunner):
     @staticmethod
     def get_job_type() -> str:
         return "dataset-is-valid"

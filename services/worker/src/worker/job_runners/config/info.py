@@ -4,13 +4,9 @@ from typing import Any, Dict, Literal, Optional, TypedDict
 
 from libcommon.constants import PROCESSING_STEP_CONFIG_INFO_VERSION
 
-from worker.job_runner import (
-    CompleteJobResult,
-    JobRunner,
-    JobRunnerError,
-    ParameterMissingError,
-    get_previous_step_or_raise,
-)
+from worker.common_exceptions import JobRunnerError
+from worker.job_runners.config.config_job_runner import ConfigJobRunner
+from worker.utils import CompleteJobResult, get_previous_step_or_raise
 
 ConfigInfoJobRunnerErrorCode = Literal["PreviousStepFormatError"]
 
@@ -81,7 +77,7 @@ def compute_config_info_response(dataset: str, config: str) -> ConfigInfoRespons
     return ConfigInfoResponse(dataset_info=config_info)
 
 
-class ConfigInfoJobRunner(JobRunner):
+class ConfigInfoJobRunner(ConfigJobRunner):
     @staticmethod
     def get_job_type() -> str:
         return "config-info"
@@ -91,8 +87,4 @@ class ConfigInfoJobRunner(JobRunner):
         return PROCESSING_STEP_CONFIG_INFO_VERSION
 
     def compute(self) -> CompleteJobResult:
-        if self.dataset is None:
-            raise ParameterMissingError("'dataset' parameter is required")
-        if self.config is None:
-            raise ParameterMissingError("'config' parameter is required")
         return CompleteJobResult(compute_config_info_response(dataset=self.dataset, config=self.config))

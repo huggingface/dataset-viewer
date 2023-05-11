@@ -2,21 +2,19 @@
 # Copyright 2022 The HuggingFace Authors.
 
 from dataclasses import replace
-from http import HTTPStatus
 from typing import Callable
 
 import pytest
 from libcommon.exceptions import CustomError
 from libcommon.processing_graph import ProcessingGraph
-from libcommon.queue import Priority
 from libcommon.resources import CacheMongoResource, QueueMongoResource
-from libcommon.simple_cache import DoesNotExist, get_response
+from libcommon.utils import Priority
 
 from worker.config import AppConfig
-from worker.job_runners.config_names import ConfigNamesJobRunner
+from worker.job_runners.dataset.config_names import ConfigNamesJobRunner
 from worker.resources import LibrariesResource
 
-from ..fixtures.hub import HubDatasets
+from ...fixtures.hub import HubDatasets
 
 GetJobRunner = Callable[[str, AppConfig, bool], ConfigNamesJobRunner]
 
@@ -44,53 +42,29 @@ def get_job_runner(
         return ConfigNamesJobRunner(
             job_info={
                 "type": ConfigNamesJobRunner.get_job_type(),
-                "dataset": dataset,
-                "config": None,
-                "split": None,
+                "params": {
+                    "dataset": dataset,
+                    "config": None,
+                    "split": None,
+                },
                 "job_id": "job_id",
                 "force": force,
                 "priority": Priority.NORMAL,
             },
             app_config=app_config,
             processing_step=processing_graph.get_processing_step(processing_step_name),
-            processing_graph=processing_graph,
             hf_datasets_cache=libraries_resource.hf_datasets_cache,
         )
 
     return _get_job_runner
 
 
-def test_should_skip_job(app_config: AppConfig, hub_public_csv: str, get_job_runner: GetJobRunner) -> None:
+def test_compute(app_config: AppConfig, hub_public_csv: str, get_job_runner: GetJobRunner) -> None:
     dataset = hub_public_csv
     job_runner = get_job_runner(dataset, app_config, False)
-    assert not job_runner.should_skip_job()
-    # we add an entry to the cache
-    job_runner.process()
-    assert job_runner.should_skip_job()
-    job_runner = get_job_runner(dataset, app_config, True)
-    assert not job_runner.should_skip_job()
-
-
-def test_process(app_config: AppConfig, hub_public_csv: str, get_job_runner: GetJobRunner) -> None:
-    dataset = hub_public_csv
-    job_runner = get_job_runner(dataset, app_config, False)
-    assert job_runner.process()
-    cached_response = get_response(kind=job_runner.processing_step.cache_kind, dataset=hub_public_csv)
-    assert cached_response["http_status"] == HTTPStatus.OK
-    assert cached_response["error_code"] is None
-    assert cached_response["job_runner_version"] == job_runner.get_job_runner_version()
-    assert cached_response["dataset_git_revision"] is not None
-    assert cached_response["error_code"] is None
-    content = cached_response["content"]
+    response = job_runner.compute()
+    content = response.content
     assert len(content["config_names"]) == 1
-
-
-def test_doesnotexist(app_config: AppConfig, get_job_runner: GetJobRunner) -> None:
-    dataset = "doesnotexist"
-    job_runner = get_job_runner(dataset, app_config, False)
-    assert not job_runner.process()
-    with pytest.raises(DoesNotExist):
-        get_response(kind=job_runner.processing_step.cache_kind, dataset=dataset)
 
 
 @pytest.mark.parametrize(

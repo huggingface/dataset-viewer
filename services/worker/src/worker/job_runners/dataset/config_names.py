@@ -9,8 +9,9 @@ from datasets import get_dataset_config_names
 from datasets.data_files import EmptyDatasetError as _EmptyDatasetError
 from libcommon.constants import PROCESSING_STEP_CONFIG_NAMES_VERSION
 
-from worker.job_runner import CompleteJobResult, JobRunnerError, ParameterMissingError
-from worker.job_runners._datasets_based_job_runner import DatasetsBasedJobRunner
+from worker.common_exceptions import JobRunnerError
+from worker.job_runners.dataset.dataset_job_runner import DatasetCachedJobRunner
+from worker.utils import CompleteJobResult
 
 ConfigNamesJobRunnerErrorCode = Literal["EmptyDatasetError", "DatasetModuleNotInstalledError", "ConfigNamesError"]
 
@@ -108,7 +109,7 @@ def compute_config_names_response(
     return ConfigNamesResponse(config_names=config_name_items)
 
 
-class ConfigNamesJobRunner(DatasetsBasedJobRunner):
+class ConfigNamesJobRunner(DatasetCachedJobRunner):
     @staticmethod
     def get_job_type() -> str:
         return "/config-names"
@@ -118,8 +119,6 @@ class ConfigNamesJobRunner(DatasetsBasedJobRunner):
         return PROCESSING_STEP_CONFIG_NAMES_VERSION
 
     def compute(self) -> CompleteJobResult:
-        if self.dataset is None:
-            raise ParameterMissingError("'dataset' parameter is required")
         return CompleteJobResult(
-            compute_config_names_response(dataset=self.dataset, hf_token=self.common_config.hf_token)
+            compute_config_names_response(dataset=self.dataset, hf_token=self.app_config.common.hf_token)
         )

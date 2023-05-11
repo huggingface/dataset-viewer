@@ -8,13 +8,12 @@ from typing import Callable, List
 from unittest.mock import Mock, patch
 
 import pytest
-from libcommon.constants import PROCESSING_STEP_SPLIT_FIRST_ROWS_FROM_STREAMING_VERSION
 from libcommon.exceptions import CustomError
 from libcommon.processing_graph import ProcessingGraph
-from libcommon.queue import Priority
 from libcommon.resources import CacheMongoResource, QueueMongoResource
-from libcommon.simple_cache import DoesNotExist, get_response, upsert_response
+from libcommon.simple_cache import upsert_response
 from libcommon.storage import StrPath
+from libcommon.utils import Priority
 from pyarrow.fs import LocalFileSystem
 
 from worker.config import AppConfig
@@ -22,8 +21,6 @@ from worker.job_runners.split.first_rows_from_parquet import (
     SplitFirstRowsFromParquetJobRunner,
 )
 from worker.utils import get_json_size
-
-from ...fixtures.hub import get_default_config_split
 
 GetJobRunner = Callable[[str, str, str, AppConfig, bool], SplitFirstRowsFromParquetJobRunner]
 
@@ -56,29 +53,21 @@ def get_job_runner(
         return SplitFirstRowsFromParquetJobRunner(
             job_info={
                 "type": SplitFirstRowsFromParquetJobRunner.get_job_type(),
-                "dataset": dataset,
-                "config": config,
-                "split": split,
+                "params": {
+                    "dataset": dataset,
+                    "config": config,
+                    "split": split,
+                },
                 "job_id": "job_id",
                 "force": force,
                 "priority": Priority.NORMAL,
             },
             app_config=app_config,
             processing_step=processing_graph.get_processing_step(processing_step_name),
-            processing_graph=processing_graph,
             assets_directory=assets_directory,
         )
 
     return _get_job_runner
-
-
-def test_doesnotexist(app_config: AppConfig, get_job_runner: GetJobRunner) -> None:
-    dataset = "doesnotexist"
-    dataset, config, split = get_default_config_split(dataset)
-    job_runner = get_job_runner(dataset, config, split, app_config, False)
-    assert not job_runner.process()
-    with pytest.raises(DoesNotExist):
-        get_response(kind=job_runner.processing_step.cache_kind, dataset=dataset, config=config, split=split)
 
 
 def mock_get_hf_parquet_uris(paths: List[str], dataset: str) -> List[str]:
@@ -182,48 +171,3 @@ def test_compute(
                 assert response["rows"][2]["truncated_cells"] == []
                 assert response["rows"][2]["row"] == {"col1": 3, "col2": "c"}
             os.chdir(initial_location)
-
-
-@pytest.mark.parametrize(
-    "streaming_response_status,dataset_git_revision,error_code,status_code",
-    [
-        (HTTPStatus.OK, "CURRENT_GIT_REVISION", "ResponseAlreadyComputedError", HTTPStatus.INTERNAL_SERVER_ERROR),
-        (HTTPStatus.INTERNAL_SERVER_ERROR, "CURRENT_GIT_REVISION", "CachedResponseNotFound", HTTPStatus.NOT_FOUND),
-        (HTTPStatus.OK, "DIFFERENT_GIT_REVISION", "CachedResponseNotFound", HTTPStatus.NOT_FOUND),
-    ],
-)
-def test_response_already_computed(
-    app_config: AppConfig,
-    get_job_runner: GetJobRunner,
-    streaming_response_status: HTTPStatus,
-    dataset_git_revision: str,
-    error_code: str,
-    status_code: HTTPStatus,
-) -> None:
-    dataset = "dataset"
-    config = "config"
-    split = "split"
-    current_dataset_git_revision = "CURRENT_GIT_REVISION"
-    upsert_response(
-        kind="split-first-rows-from-streaming",
-        dataset=dataset,
-        config=config,
-        split=split,
-        content={},
-        dataset_git_revision=dataset_git_revision,
-        job_runner_version=PROCESSING_STEP_SPLIT_FIRST_ROWS_FROM_STREAMING_VERSION,
-        progress=1.0,
-        http_status=streaming_response_status,
-    )
-    job_runner = get_job_runner(
-        dataset,
-        config,
-        split,
-        app_config,
-        False,
-    )
-    job_runner.get_dataset_git_revision = Mock(return_value=current_dataset_git_revision)  # type: ignore
-    with pytest.raises(CustomError) as exc_info:
-        job_runner.compute()
-    assert exc_info.value.status_code == status_code
-    assert exc_info.value.code == error_code
