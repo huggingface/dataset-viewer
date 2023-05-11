@@ -6,8 +6,8 @@ from http import HTTPStatus
 from typing import List, Literal, Optional
 
 from libcommon.constants import (
+    PROCESSING_STEP_CONFIG_SPLIT_NAMES_FROM_STREAMING_VERSION,
     PROCESSING_STEP_SPLIT_NAMES_FROM_DATASET_INFO_VERSION,
-    PROCESSING_STEP_SPLIT_NAMES_FROM_STREAMING_VERSION,
 )
 
 from worker.job_runner import (
@@ -49,7 +49,7 @@ class PreviousStepFormatError(SplitNamesFromDatasetInfoJobRunnerError):
 
 
 class ResponseAlreadyComputedError(SplitNamesFromDatasetInfoJobRunnerError):
-    """Raised when response has been already computed by /split-names-from-streaming job runner."""
+    """Raised when response has been already computed by 'config-split-names-from-streaming' job runner."""
 
     def __init__(self, message: str, cause: Optional[BaseException] = None):
         super().__init__(message, HTTPStatus.INTERNAL_SERVER_ERROR, "ResponseAlreadyComputedError", cause, True)
@@ -110,11 +110,11 @@ class SplitNamesFromDatasetInfoJobRunner(JobRunner):
             raise ParameterMissingError("'config' parameter is required")
         """
         Raises [`~job_runners.config.split_names_from_dataset_info.ResponseAlreadyComputedError`]
-          If response has been already computed by /split-names-from-streaming job runner.
+          If response has been already computed by 'config-split-names-from-streaming' job runner.
         """
         self.raise_if_parallel_response_exists(
-            parallel_cache_kind="/split-names-from-streaming",
-            parallel_job_version=PROCESSING_STEP_SPLIT_NAMES_FROM_STREAMING_VERSION,
+            parallel_cache_kind="config-split-names-from-streaming",
+            parallel_job_version=PROCESSING_STEP_CONFIG_SPLIT_NAMES_FROM_STREAMING_VERSION,
         )
         return CompleteJobResult(
             compute_split_names_from_dataset_info_response(dataset=self.dataset, config=self.config)

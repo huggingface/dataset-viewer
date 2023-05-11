@@ -225,7 +225,7 @@ def compute_first_rows_response(
     use_auth_token: Union[bool, str, None] = hf_token if hf_token is not None else False
     # first ensure the tuple (dataset, config, split) exists on the Hub
     split_names_best_response = get_previous_step_or_raise(
-        kinds=["/split-names-from-streaming", "/split-names-from-dataset-info"], dataset=dataset, config=config
+        kinds=["config-split-names-from-streaming", "/split-names-from-dataset-info"], dataset=dataset, config=config
     )
     try:
         splits_content = split_names_best_response.response["content"]["splits"]

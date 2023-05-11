@@ -173,7 +173,7 @@ def test_compute_progress(
             http_status=HTTPStatus.OK,
         )
         upsert_response(
-            kind="/split-names-from-streaming",
+            kind="config-split-names-from-streaming",
             dataset=dataset,
             config=config["config"],
             content=config["response"],
@@ -213,7 +213,7 @@ def test_compute_error(app_config: AppConfig, get_job_runner: GetJobRunner) -> N
         http_status=HTTPStatus.INTERNAL_SERVER_ERROR,
     )
     upsert_response(
-        kind="/split-names-from-streaming",
+        kind="config-split-names-from-streaming",
         dataset=dataset,
         config=config,
         content={},
@@ -247,7 +247,7 @@ def test_compute_format_error(app_config: AppConfig, get_job_runner: GetJobRunne
     )
     # here, /split-names-from-dataset-info will be picked because it's the first success response
     # with progress==1.0 (see libcommon.simple_cache.get_best_response), but it's format is wrong
-    # while the other one (/split-names-from-streaming) is correct
+    # while the other one ('config-split-names-from-streaming') is correct
     upsert_response(
         kind="/split-names-from-dataset-info",
         dataset=dataset,
@@ -256,7 +256,7 @@ def test_compute_format_error(app_config: AppConfig, get_job_runner: GetJobRunne
         http_status=HTTPStatus.OK,
     )
     upsert_response(
-        kind="/split-names-from-streaming",
+        kind="config-split-names-from-streaming",
         dataset=dataset,
         config=config,
         content={"splits": [{"dataset": "dataset", "config": "config", "split": "split"}]},

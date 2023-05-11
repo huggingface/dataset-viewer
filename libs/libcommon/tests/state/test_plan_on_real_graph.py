@@ -147,8 +147,8 @@ def test_plan_job_creation_and_termination() -> None:
             "cache_is_empty": [
                 "/split-names-from-dataset-info,dataset,config1",
                 "/split-names-from-dataset-info,dataset,config2",
-                "/split-names-from-streaming,dataset,config1",
-                "/split-names-from-streaming,dataset,config2",
+                "config-split-names-from-streaming,dataset,config1",
+                "config-split-names-from-streaming,dataset,config2",
                 "config-info,dataset,config1",
                 "config-info,dataset,config2",
                 "config-opt-in-out-urls-count,dataset,config1",
@@ -184,8 +184,8 @@ def test_plan_job_creation_and_termination() -> None:
         tasks=[
             "CreateJob,/split-names-from-dataset-info,dataset,config1",
             "CreateJob,/split-names-from-dataset-info,dataset,config2",
-            "CreateJob,/split-names-from-streaming,dataset,config1",
-            "CreateJob,/split-names-from-streaming,dataset,config2",
+            "CreateJob,config-split-names-from-streaming,dataset,config1",
+            "CreateJob,config-split-names-from-streaming,dataset,config2",
             "CreateJob,config-info,dataset,config1",
             "CreateJob,config-info,dataset,config2",
             "CreateJob,config-opt-in-out-urls-count,dataset,config1",

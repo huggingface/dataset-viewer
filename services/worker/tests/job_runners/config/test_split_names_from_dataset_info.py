@@ -6,7 +6,9 @@ from typing import Any, Callable
 from unittest.mock import Mock
 
 import pytest
-from libcommon.constants import PROCESSING_STEP_SPLIT_NAMES_FROM_STREAMING_VERSION
+from libcommon.constants import (
+    PROCESSING_STEP_CONFIG_SPLIT_NAMES_FROM_STREAMING_VERSION,
+)
 from libcommon.exceptions import CustomError
 from libcommon.processing_graph import ProcessingGraph
 from libcommon.queue import Priority
@@ -172,12 +174,12 @@ def test_response_already_computed(
     config = "config"
     current_dataset_git_revision = "CURRENT_GIT_REVISION"
     upsert_response(
-        kind="/split-names-from-streaming",
+        kind="config-split-names-from-streaming",
         dataset=dataset,
         config=config,
         content={},
         dataset_git_revision=dataset_git_revision,
-        job_runner_version=PROCESSING_STEP_SPLIT_NAMES_FROM_STREAMING_VERSION,
+        job_runner_version=PROCESSING_STEP_CONFIG_SPLIT_NAMES_FROM_STREAMING_VERSION,
         progress=1.0,
         http_status=streaming_response_status,
     )

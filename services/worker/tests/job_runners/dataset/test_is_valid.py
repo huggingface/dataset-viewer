@@ -29,7 +29,7 @@ UPSTREAM_RESPONSE_SPLITS: UpstreamResponse = UpstreamResponse(
     kind="/splits", dataset="dataset_ok", config=None, http_status=HTTPStatus.OK, content={}
 )
 UPSTREAM_RESPONSE_SPLIT_NAMES_FROM_STREAMING: UpstreamResponse = UpstreamResponse(
-    kind="/split-names-from-streaming", dataset="dataset_ok", config=None, http_status=HTTPStatus.OK, content={}
+    kind="config-split-names-from-streaming", dataset="dataset_ok", config=None, http_status=HTTPStatus.OK, content={}
 )
 UPSTREAM_RESPONSE_SPLIT_NAMES_FROM_DATASET_INFO: UpstreamResponse = UpstreamResponse(
     kind="/split-names-from-dataset-info", dataset="dataset_ok", config=None, http_status=HTTPStatus.OK, content={}
