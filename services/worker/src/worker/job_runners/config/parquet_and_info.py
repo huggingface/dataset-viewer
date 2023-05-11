@@ -42,18 +42,14 @@ from libcommon.constants import (
     PROCESSING_STEP_CONFIG_PARQUET_AND_INFO_VERSION,
 )
 from libcommon.dataset import DatasetNotFoundError, ask_access
-from libcommon.processing_graph import ProcessingGraph, ProcessingStep
-from libcommon.queue import JobInfo
+from libcommon.processing_graph import ProcessingStep
+from libcommon.utils import JobInfo
 
+from worker.common_exceptions import JobRunnerError
 from worker.config import AppConfig, ParquetAndInfoConfig
-from worker.job_runner import (
-    CompleteJobResult,
-    JobRunnerError,
-    ParameterMissingError,
-    get_previous_step_or_raise,
-)
-from worker.job_runners._datasets_based_job_runner import DatasetsBasedJobRunner
-from worker.job_runners.config_names import ConfigNamesError
+from worker.job_runners.config.config_job_runner import ConfigCachedJobRunner
+from worker.job_runners.dataset.config_names import ConfigNamesError
+from worker.utils import CompleteJobResult, get_previous_step_or_raise
 
 ConfigParquetAndInfoJobRunnerErrorCode = Literal[
     "DatasetRevisionNotFoundError",
@@ -937,7 +933,7 @@ def compute_config_parquet_and_info_response(
     )
 
 
-class ConfigParquetAndInfoJobRunner(DatasetsBasedJobRunner):
+class ConfigParquetAndInfoJobRunner(ConfigCachedJobRunner):
     parquet_and_info_config: ParquetAndInfoConfig
 
     @staticmethod
@@ -953,29 +949,23 @@ class ConfigParquetAndInfoJobRunner(DatasetsBasedJobRunner):
         job_info: JobInfo,
         app_config: AppConfig,
         processing_step: ProcessingStep,
-        processing_graph: ProcessingGraph,
         hf_datasets_cache: Path,
     ) -> None:
         super().__init__(
             job_info=job_info,
             app_config=app_config,
             processing_step=processing_step,
-            processing_graph=processing_graph,
             hf_datasets_cache=hf_datasets_cache,
         )
         self.parquet_and_info_config = app_config.parquet_and_info
 
     def compute(self) -> CompleteJobResult:
-        if self.dataset is None:
-            raise ParameterMissingError("'dataset' parameter is required")
-        if self.config is None:
-            raise ParameterMissingError("'config' parameter is required")
         return CompleteJobResult(
             compute_config_parquet_and_info_response(
                 dataset=self.dataset,
                 config=self.config,
-                hf_endpoint=self.common_config.hf_endpoint,
-                hf_token=self.common_config.hf_token,
+                hf_endpoint=self.app_config.common.hf_endpoint,
+                hf_token=self.app_config.common.hf_token,
                 committer_hf_token=self.parquet_and_info_config.committer_hf_token,
                 source_revision=self.parquet_and_info_config.source_revision,
                 target_revision=self.parquet_and_info_config.target_revision,

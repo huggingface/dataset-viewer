@@ -7,7 +7,7 @@ from typing import Any, List, Mapping, Optional, TypedDict
 import pytest
 
 from libcommon.processing_graph import ProcessingGraph
-from libcommon.queue import Queue, Status
+from libcommon.queue import Queue
 from libcommon.resources import CacheMongoResource, QueueMongoResource
 from libcommon.simple_cache import delete_response, upsert_response
 from libcommon.state import (
@@ -19,6 +19,7 @@ from libcommon.state import (
     SplitState,
     fetch_names,
 )
+from libcommon.utils import Status
 
 from .utils import (
     CONFIG_NAME_1,

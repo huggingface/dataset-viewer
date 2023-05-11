@@ -6,12 +6,12 @@ from typing import Any, Callable
 
 import pytest
 from libcommon.processing_graph import ProcessingGraph
-from libcommon.queue import Priority
 from libcommon.resources import CacheMongoResource, QueueMongoResource
 from libcommon.simple_cache import upsert_response
+from libcommon.utils import Priority
 
+from worker.common_exceptions import PreviousStepError
 from worker.config import AppConfig
-from worker.job_runner import PreviousStepError
 from worker.job_runners.config.parquet import (
     ConfigParquetJobRunner,
     ConfigParquetResponse,
@@ -57,17 +57,17 @@ def get_job_runner(
         return ConfigParquetJobRunner(
             job_info={
                 "type": ConfigParquetJobRunner.get_job_type(),
-                "dataset": dataset,
-                "config": config,
-                "split": None,
+                "params": {
+                    "dataset": dataset,
+                    "config": config,
+                    "split": None,
+                },
                 "job_id": "job_id",
                 "force": force,
                 "priority": Priority.NORMAL,
             },
-            common_config=app_config.common,
-            worker_config=app_config.worker,
+            app_config=app_config,
             processing_step=processing_graph.get_processing_step(processing_step_name),
-            processing_graph=processing_graph,
         )
 
     return _get_job_runner

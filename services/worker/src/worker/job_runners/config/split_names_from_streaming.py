@@ -12,14 +12,13 @@ from libcommon.constants import (
     PROCESSING_STEP_SPLIT_NAMES_FROM_DATASET_INFO_VERSION,
 )
 
-from worker.job_runner import CompleteJobResult, JobRunnerError, ParameterMissingError
-from worker.job_runners._datasets_based_job_runner import DatasetsBasedJobRunner
-from worker.utils import SplitItem, SplitsList
+from worker.common_exceptions import JobRunnerError
+from worker.job_runners.config.config_job_runner import ConfigCachedJobRunner
+from worker.utils import CompleteJobResult, JobRunnerInfo, SplitItem, SplitsList
 
 SplitNamesFromStreamingJobRunnerErrorCode = Literal[
     "EmptyDatasetError",
     "SplitNamesFromStreamingError",
-    "ResponseAlreadyComputedError",
 ]
 
 
@@ -51,13 +50,6 @@ class EmptyDatasetError(SplitNamesFromStreamingJobRunnerError):
 
     def __init__(self, message: str, cause: Optional[BaseException] = None):
         super().__init__(message, HTTPStatus.INTERNAL_SERVER_ERROR, "EmptyDatasetError", cause, True)
-
-
-class ResponseAlreadyComputedError(SplitNamesFromStreamingJobRunnerError):
-    """Raised when response has been already computed by /split-names-from-dataset-info job runner."""
-
-    def __init__(self, message: str, cause: Optional[BaseException] = None):
-        super().__init__(message, HTTPStatus.INTERNAL_SERVER_ERROR, "ResponseAlreadyComputedError", cause, True)
 
 
 def compute_split_names_from_streaming_response(
@@ -114,7 +106,7 @@ def compute_split_names_from_streaming_response(
     return SplitsList({"splits": split_name_items})
 
 
-class SplitNamesFromStreamingJobRunner(DatasetsBasedJobRunner):
+class SplitNamesFromStreamingJobRunner(ConfigCachedJobRunner):
     @staticmethod
     def get_job_type() -> str:
         return "config-split-names-from-streaming"
@@ -123,23 +115,18 @@ class SplitNamesFromStreamingJobRunner(DatasetsBasedJobRunner):
     def get_job_runner_version() -> int:
         return PROCESSING_STEP_CONFIG_SPLIT_NAMES_FROM_STREAMING_VERSION
 
-    def compute(self) -> CompleteJobResult:
-        if self.dataset is None:
-            raise ParameterMissingError("'dataset' parameter is required")
-        if self.config is None:
-            raise ParameterMissingError("'config' parameter is required")
-        """
-        Raises [`~job_runners.config.split_names_from_streaming.ResponseAlreadyComputedError`]
-          If response has been already computed by /split-names-from-dataset-info job runner.
-        """
-        self.raise_if_parallel_response_exists(
-            parallel_cache_kind="/split-names-from-dataset-info",
-            parallel_job_version=PROCESSING_STEP_SPLIT_NAMES_FROM_DATASET_INFO_VERSION,
+    @staticmethod
+    def get_parallel_job_runner() -> JobRunnerInfo:
+        return JobRunnerInfo(
+            job_runner_version=PROCESSING_STEP_SPLIT_NAMES_FROM_DATASET_INFO_VERSION,
+            job_type="/split-names-from-dataset-info",
         )
+
+    def compute(self) -> CompleteJobResult:
         return CompleteJobResult(
             compute_split_names_from_streaming_response(
                 dataset=self.dataset,
                 config=self.config,
-                hf_token=self.common_config.hf_token,
+                hf_token=self.app_config.common.hf_token,
             )
         )

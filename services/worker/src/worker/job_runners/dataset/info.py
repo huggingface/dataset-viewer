@@ -8,14 +8,9 @@ from typing import Any, Dict, List, Literal, Optional, Tuple, TypedDict
 from libcommon.constants import PROCESSING_STEP_DATASET_INFO_VERSION
 from libcommon.simple_cache import DoesNotExist, get_response
 
-from worker.job_runner import (
-    JobResult,
-    JobRunner,
-    JobRunnerError,
-    ParameterMissingError,
-    get_previous_step_or_raise,
-)
-from worker.utils import PreviousJob
+from worker.common_exceptions import JobRunnerError
+from worker.job_runners.dataset.dataset_job_runner import DatasetJobRunner
+from worker.utils import JobResult, PreviousJob, get_previous_step_or_raise
 
 DatasetInfoJobRunnerErrorCode = Literal["PreviousStepFormatError"]
 
@@ -117,7 +112,7 @@ def compute_dataset_info_response(dataset: str) -> Tuple[DatasetInfoResponse, fl
     return DatasetInfoResponse(dataset_info=config_infos, pending=pending, failed=failed), progress
 
 
-class DatasetInfoJobRunner(JobRunner):
+class DatasetInfoJobRunner(DatasetJobRunner):
     @staticmethod
     def get_job_type() -> str:
         return "dataset-info"
@@ -127,7 +122,5 @@ class DatasetInfoJobRunner(JobRunner):
         return PROCESSING_STEP_DATASET_INFO_VERSION
 
     def compute(self) -> JobResult:
-        if self.dataset is None:
-            raise ParameterMissingError("'dataset' parameter is required")
         response_content, progress = compute_dataset_info_response(dataset=self.dataset)
         return JobResult(response_content, progress=progress)

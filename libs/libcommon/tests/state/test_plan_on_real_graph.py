@@ -8,9 +8,10 @@ import pytest
 from libcommon.config import ProcessingGraphConfig
 from libcommon.constants import PROCESSING_STEP_CONFIG_NAMES_VERSION
 from libcommon.processing_graph import ProcessingGraph
-from libcommon.queue import Queue, Status
+from libcommon.queue import Queue
 from libcommon.resources import CacheMongoResource, QueueMongoResource
 from libcommon.simple_cache import upsert_response
+from libcommon.utils import Status
 
 from .utils import (
     CONFIG_NAMES,
@@ -121,9 +122,9 @@ def test_plan_job_creation_and_termination() -> None:
     job_info = Queue().start_job(job_types_only=["/config-names"])
     upsert_response(
         kind=job_info["type"],
-        dataset=job_info["dataset"],
-        config=job_info["config"],
-        split=job_info["split"],
+        dataset=job_info["params"]["dataset"],
+        config=job_info["params"]["config"],
+        split=job_info["params"]["split"],
         content=CONFIG_NAMES_CONTENT,
         http_status=HTTPStatus.OK,
         job_runner_version=PROCESSING_STEP_CONFIG_NAMES_VERSION,

@@ -8,14 +8,13 @@ from typing import Literal, Optional, Tuple
 from libcommon.constants import PROCESSING_STEP_DATASET_OPT_IN_OUT_URLS_COUNT_VERSION
 from libcommon.simple_cache import DoesNotExist, get_response
 
-from worker.job_runner import (
+from worker.common_exceptions import JobRunnerError
+from worker.job_runners.dataset.dataset_job_runner import DatasetJobRunner
+from worker.utils import (
     JobResult,
-    JobRunner,
-    JobRunnerError,
-    ParameterMissingError,
+    OptInOutUrlsCountResponse,
     get_previous_step_or_raise,
 )
-from worker.utils import OptInOutUrlsCountResponse
 
 DatasetOptInOutUrlsCountJobRunnerErrorCode = Literal["PreviousStepFormatError"]
 
@@ -102,7 +101,7 @@ def compute_opt_in_out_urls_count_response(dataset: str) -> Tuple[OptInOutUrlsCo
     )
 
 
-class DatasetOptInOutUrlsCountJobRunner(JobRunner):
+class DatasetOptInOutUrlsCountJobRunner(DatasetJobRunner):
     @staticmethod
     def get_job_type() -> str:
         return "dataset-opt-in-out-urls-count"
@@ -112,7 +111,5 @@ class DatasetOptInOutUrlsCountJobRunner(JobRunner):
         return PROCESSING_STEP_DATASET_OPT_IN_OUT_URLS_COUNT_VERSION
 
     def compute(self) -> JobResult:
-        if self.dataset is None:
-            raise ParameterMissingError("'dataset' parameter is required")
         response_content, progress = compute_opt_in_out_urls_count_response(dataset=self.dataset)
         return JobResult(response_content, progress=progress)

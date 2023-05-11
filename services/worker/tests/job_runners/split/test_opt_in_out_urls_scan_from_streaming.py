@@ -13,9 +13,9 @@ from aiolimiter import AsyncLimiter
 from libcommon.constants import PROCESSING_STEP_SPLIT_OPT_IN_OUT_URLS_SCAN_VERSION
 from libcommon.exceptions import CustomError
 from libcommon.processing_graph import ProcessingGraph
-from libcommon.queue import Priority
 from libcommon.resources import CacheMongoResource, QueueMongoResource
-from libcommon.simple_cache import get_response, upsert_response
+from libcommon.simple_cache import upsert_response
+from libcommon.utils import Priority
 
 from worker.config import AppConfig
 from worker.job_runners.split.opt_in_out_urls_scan_from_streaming import (
@@ -65,16 +65,17 @@ def get_job_runner(
         return SplitOptInOutUrlsScanJobRunner(
             job_info={
                 "type": SplitOptInOutUrlsScanJobRunner.get_job_type(),
-                "dataset": dataset,
-                "config": config,
-                "split": split,
+                "params": {
+                    "dataset": dataset,
+                    "config": config,
+                    "split": split,
+                },
                 "job_id": "job_id",
                 "force": force,
                 "priority": Priority.NORMAL,
             },
             app_config=app_config,
             processing_step=processing_graph.get_processing_step(processing_step_name),
-            processing_graph=processing_graph,
             hf_datasets_cache=libraries_resource.hf_datasets_cache,
         )
 
@@ -190,14 +191,9 @@ def test_compute(
         http_status=HTTPStatus.OK,
     )
     with patch("worker.job_runners.split.opt_in_out_urls_scan_from_streaming.check_spawning", mock_check_spawning):
-        assert job_runner.process()
-    cached_response = get_response(
-        kind=job_runner.processing_step.cache_kind, dataset=dataset, config=config, split=split
-    )
-    assert cached_response
-    assert cached_response["content"] == expected_content
-    assert cached_response["http_status"] == HTTPStatus.OK
-    assert cached_response["error_code"] is None
+        response = job_runner.compute()
+    assert response
+    assert response.content == expected_content
 
 
 @pytest.mark.parametrize(

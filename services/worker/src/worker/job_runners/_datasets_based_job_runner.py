@@ -10,9 +10,9 @@ from pathlib import Path
 from typing import Optional
 
 import datasets.config
-from libcommon.processing_graph import ProcessingGraph, ProcessingStep
-from libcommon.queue import JobInfo
+from libcommon.processing_graph import ProcessingStep
 from libcommon.storage import init_dir, remove_dir
+from libcommon.utils import JobInfo
 
 from worker.config import AppConfig, DatasetsBasedConfig
 from worker.job_runner import JobRunner
@@ -34,24 +34,29 @@ class DatasetsBasedJobRunner(JobRunner):
         job_info: JobInfo,
         app_config: AppConfig,
         processing_step: ProcessingStep,
-        processing_graph: ProcessingGraph,
         hf_datasets_cache: Path,
     ) -> None:
         super().__init__(
             job_info=job_info,
-            common_config=app_config.common,
-            worker_config=app_config.worker,
+            app_config=app_config,
             processing_step=processing_step,
-            processing_graph=processing_graph,
         )
         self.datasets_based_config = app_config.datasets_based
         self.base_datasets_cache = hf_datasets_cache
 
     def get_cache_subdirectory(self, date: datetime) -> str:
         date_str = date.strftime("%Y-%m-%d-%H-%M-%S")
-        payload = (date_str, self.get_job_type(), self.dataset, self.config, self.split, self.force)
+        # TODO: Refactor, need a way to generate payload based only on provided params
+        payload = (
+            date_str,
+            self.get_job_type(),
+            self.job_info["params"]["dataset"],
+            self.job_info["params"]["config"],
+            self.job_info["params"]["split"],
+            self.force,
+        )
         hash_suffix = sha1(json.dumps(payload, sort_keys=True).encode(), usedforsecurity=False).hexdigest()[:8]
-        prefix = f"{date_str}-{self.get_job_type()}-{self.dataset}"[:64]
+        prefix = f"{date_str}-{self.get_job_type()}-{self.job_info['params']['dataset']}"[:64]
         subdirectory = f"{prefix}-{hash_suffix}"
         return "".join([c if re.match(r"[\w-]", c) else "-" for c in subdirectory])
 
