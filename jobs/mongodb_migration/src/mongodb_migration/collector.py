@@ -49,6 +49,12 @@ from mongodb_migration.migrations._20230323160000_queue_dataset_info import (
 from mongodb_migration.migrations._20230428145000_queue_delete_ttl_index import (
     MigrationQueueDeleteTTLIndexOnFinishedAt,
 )
+from mongodb_migration.migrations._20230511100600_queue_remove_force import (
+    MigrationRemoveForceFromJob,
+)
+from mongodb_migration.migrations._20230511100700_queue_delete_indexes_with_force import (
+    MigrationQueueDeleteIndexesWithForce,
+)
 
 
 # TODO: add a way to automatically collect migrations from the migrations/ folder
@@ -166,5 +172,9 @@ class MigrationsCollector:
                 cache_kind="dataset-split-names-from-dataset-info",
                 version="20230504194600",
                 description="delete the queue and cache metrics for step 'dataset-split-names-from-dataset-info'",
+            ),
+            MigrationRemoveForceFromJob(version="20230511100600", description="remove 'force' field from queue"),
+            MigrationQueueDeleteIndexesWithForce(
+                version="20230511100700", description="remove indexes with field 'force'"
             ),
         ]
