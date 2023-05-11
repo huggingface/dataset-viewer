@@ -97,6 +97,8 @@ with gr.Blocks() as demo:
                 backfill_execute_button = gr.Button("Execute backfill plan", visible=False)
                 backfill_execute_error = gr.Markdown("", visible=False)
             with gr.Tab("Processing graph"):
+                gr.Markdown("## 💫 Please, don't forget to rebuild (factory reboot) this space immediately after each deploy 💫")
+                gr.Markdown("### so that we get the 🚀 production 🚀 version of the graph here ")
                 with gr.Row():
                     width = gr.Slider(1, 30, 19, step=1, label="Width")
                     height = gr.Slider(1, 30, 15, step=1, label="Height")
