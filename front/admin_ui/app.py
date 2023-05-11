@@ -41,14 +41,7 @@ def healthcheck():
 
 def draw_graph(width, height):
     config = ProcessingGraphConfig()
-    libcommon_graph = ProcessingGraph(config.specification)
-    steps = libcommon_graph.steps
-
-    graph = nx.DiGraph()
-    for name, step in steps.items():
-        graph.add_node(name)
-        for step_name in step.requires:
-            graph.add_edge(step_name, name)
+    graph = ProcessingGraph(config.specification)._nx_graph
 
     pos = nx.nx_agraph.graphviz_layout(graph, prog="dot")
     fig = plt.figure(figsize=(width, height))
