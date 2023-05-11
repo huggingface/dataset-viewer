@@ -17,16 +17,15 @@ def test_collect_metrics() -> None:
     split = None
     content = {"some": "content"}
 
-    step_name = "test_type"
+    processing_step_name = "test_type"
     processing_graph = ProcessingGraph(
-        processing_graph_specification={step_name: {"input_type": "dataset", "job_runner_version": 1}}
+        processing_graph_specification={processing_step_name: {"input_type": "dataset", "job_runner_version": 1}}
     )
+    processing_step = processing_graph.get_processing_step(processing_step_name)
     queue = Queue()
-    queue.upsert_job(
-        job_type=processing_graph.get_step(step_name).job_type, dataset="dataset", config="config", split="split"
-    )
+    queue.upsert_job(job_type=processing_step.job_type, dataset="dataset", config="config", split="split")
     upsert_response(
-        kind=processing_graph.get_step(step_name).cache_kind,
+        kind=processing_step.cache_kind,
         dataset=dataset,
         config=config,
         split=split,

@@ -14,8 +14,9 @@ import numpy as np
 import pyarrow as pa
 import pyarrow.parquet as pq
 from datasets import Features
-from hffs.fs import HfFileSystem
-from libcommon.processing_graph import ProcessingStep
+from huggingface_hub import HfFileSystem
+from huggingface_hub.hf_file_system import safe_quote
+from libcommon.processing_graph import ProcessingGraph
 from libcommon.viewer_utils.asset import (
     glob_rows_in_assets_dir,
     update_last_modified_date_of_rows_in_assets_dir,
@@ -67,19 +68,27 @@ class ParquetDataProcessingError(Exception):
 
 # TODO: how to invalidate the cache when the parquet branch is created or deleted?
 @lru_cache(maxsize=128)
-def get_parquet_fs(dataset: str, hf_token: Optional[str]) -> HfFileSystem:
-    """Get the parquet filesystem for a dataset.
-
-    The parquet files are stored in a separate branch of the dataset repository (see PARQUET_REVISION)
+def get_hf_fs(hf_token: Optional[str]) -> HfFileSystem:
+    """Get the Hugging Face filesystem.
 
     Args:
-        dataset (str): The dataset name.
         hf_token (Optional[str]): The token to access the filesystem.
-
     Returns:
-        HfFileSystem: The parquet filesystem.
+        HfFileSystem: The Hugging Face filesystem.
     """
-    return HfFileSystem(dataset, repo_type="dataset", revision=PARQUET_REVISION, token=hf_token)
+    return HfFileSystem(token=hf_token)
+
+
+def get_hf_parquet_uris(paths: List[str], dataset: str) -> List[str]:
+    """Get the Hugging Face URIs from the Parquet branch of the dataset repository (see PARQUET_REVISION).
+
+    Args:
+        paths (List[str]): List of paths.
+        dataset (str): The dataset name.
+    Returns:
+        List[str]: List of Parquet URIs.
+    """
+    return [f"hf://datasets/{dataset}@{safe_quote(PARQUET_REVISION)}/{path}" for path in paths]
 
 
 UNSUPPORTED_FEATURES_MAGIC_STRINGS = ["Image(", "Audio(", "'binary'"]
@@ -91,38 +100,37 @@ class RowsIndex:
         dataset: str,
         config: str,
         split: str,
-        config_parquet_processing_steps: List[ProcessingStep],
-        init_processing_steps: List[ProcessingStep],
+        processing_graph: ProcessingGraph,
         hf_endpoint: str,
         hf_token: Optional[str],
     ):
         self.dataset = dataset
         self.config = config
         self.split = split
+        self.processing_graph = processing_graph
         self.__post_init__(
-            config_parquet_processing_steps=config_parquet_processing_steps,
-            init_processing_steps=init_processing_steps,
             hf_endpoint=hf_endpoint,
             hf_token=hf_token,
         )
 
     def __post_init__(
         self,
-        config_parquet_processing_steps: List[ProcessingStep],
-        init_processing_steps: List[ProcessingStep],
         hf_endpoint: str,
         hf_token: Optional[str],
     ) -> None:
         with StepProfiler(method="rows.index", step="all"):
             # get the list of parquet files
             with StepProfiler(method="rows.index", step="get list of parquet files for split"):
+                config_parquet_processing_steps = self.processing_graph.get_config_parquet_processing_steps()
+                if not config_parquet_processing_steps:
+                    raise RuntimeError("No processing steps are configured to provide a config's parquet response.")
                 try:
                     result = get_cache_entry_from_steps(
                         processing_steps=config_parquet_processing_steps,
                         dataset=self.dataset,
                         config=self.config,
                         split=None,
-                        init_processing_steps=init_processing_steps,
+                        processing_graph=self.processing_graph,
                         hf_endpoint=hf_endpoint,
                         hf_token=hf_token,
                     )
@@ -147,12 +155,14 @@ class RowsIndex:
                 if not sources:
                     raise ParquetResponseEmptyError("No parquet files found.")
             with StepProfiler(method="rows.index", step="get the Hub's dataset filesystem"):
-                fs = get_parquet_fs(dataset=self.dataset, hf_token=hf_token)
+                fs = get_hf_fs(hf_token=hf_token)
+            with StepProfiler(method="rows.index", step="get the source URIs"):
+                source_uris = get_hf_parquet_uris(sources, dataset=self.dataset)
             with StepProfiler(method="rows.index", step="get one parquet reader per parquet file"):
                 desc = f"{self.dataset}/{self.config}/{self.split}"
                 try:
                     parquet_files: List[pq.ParquetFile] = thread_map(
-                        partial(pq.ParquetFile, filesystem=fs), sources, desc=desc, unit="pq", disable=True
+                        partial(pq.ParquetFile, filesystem=fs), source_uris, desc=desc, unit="pq", disable=True
                     )
                 except Exception as e:
                     raise FileSystemError(f"Could not read the parquet files: {e}") from e
@@ -216,13 +226,11 @@ class RowsIndex:
 class Indexer:
     def __init__(
         self,
-        config_parquet_processing_steps: List[ProcessingStep],
-        init_processing_steps: List[ProcessingStep],
+        processing_graph: ProcessingGraph,
         hf_endpoint: str,
         hf_token: Optional[str] = None,
     ):
-        self.config_parquet_processing_steps = config_parquet_processing_steps
-        self.init_processing_steps = init_processing_steps
+        self.processing_graph = processing_graph
         self.hf_endpoint = hf_endpoint
         self.hf_token = hf_token
 
@@ -237,8 +245,7 @@ class Indexer:
             dataset=dataset,
             config=config,
             split=split,
-            config_parquet_processing_steps=self.config_parquet_processing_steps,
-            init_processing_steps=self.init_processing_steps,
+            processing_graph=self.processing_graph,
             hf_endpoint=self.hf_endpoint,
             hf_token=self.hf_token,
         )
@@ -443,8 +450,7 @@ def create_response(
 
 
 def create_rows_endpoint(
-    config_parquet_processing_steps: List[ProcessingStep],
-    init_processing_steps: List[ProcessingStep],
+    processing_graph: ProcessingGraph,
     cached_assets_base_url: str,
     cached_assets_directory: StrPath,
     hf_endpoint: str,
@@ -461,8 +467,7 @@ def create_rows_endpoint(
     max_cleaned_rows_number: int = -1,
 ) -> Endpoint:
     indexer = Indexer(
-        config_parquet_processing_steps=config_parquet_processing_steps,
-        init_processing_steps=init_processing_steps,
+        processing_graph=processing_graph,
         hf_endpoint=hf_endpoint,
         hf_token=hf_token,
     )

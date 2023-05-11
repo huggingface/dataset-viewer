@@ -10,13 +10,12 @@ import pytest
 from datasets import Dataset, Image, concatenate_datasets
 from datasets.table import embed_table_storage
 from fsspec import AbstractFileSystem
-from libcommon.processing_graph import ProcessingStep
+from libcommon.processing_graph import ProcessingGraph
 from libcommon.simple_cache import _clean_cache_database, upsert_response
 from libcommon.storage import StrPath
 from libcommon.viewer_utils.asset import update_last_modified_date_of_rows_in_assets_dir
 
 from api.config import AppConfig
-from api.routes.endpoint import StepsByInputTypeAndEndpoint
 from api.routes.rows import Indexer, RowsIndex, clean_cached_assets, create_response
 
 
@@ -142,21 +141,16 @@ def dataset_image_with_config_parquet() -> dict[str, Any]:
 
 
 @pytest.fixture
-def config_parquet_processing_steps(endpoint_definition: StepsByInputTypeAndEndpoint) -> List[ProcessingStep]:
-    parquet_processing_steps_by_input_type = endpoint_definition.get("/parquet")
-    if not parquet_processing_steps_by_input_type or not parquet_processing_steps_by_input_type["config"]:
-        raise RuntimeError("The parquet endpoint is not configured. Exiting.")
-    return parquet_processing_steps_by_input_type["config"]
-
-
-@pytest.fixture
-def indexer(app_config: AppConfig, config_parquet_processing_steps: List[ProcessingStep]) -> Indexer:
+def indexer(app_config: AppConfig, processing_graph: ProcessingGraph) -> Indexer:
     return Indexer(
-        config_parquet_processing_steps=config_parquet_processing_steps,
-        init_processing_steps=[],
+        processing_graph=processing_graph,
         hf_endpoint=app_config.common.hf_endpoint,
         hf_token=app_config.common.hf_token,
     )
+
+
+def mock_get_hf_parquet_uris(paths: List[str], dataset: str) -> List[str]:
+    return paths
 
 
 @pytest.fixture
@@ -166,15 +160,17 @@ def rows_index(
     ds_sharded_fs: AbstractFileSystem,
     dataset_sharded_with_config_parquet: dict[str, Any],
 ) -> Generator[RowsIndex, None, None]:
-    with patch("api.routes.rows.get_parquet_fs", return_value=ds_sharded_fs):
-        yield indexer.get_rows_index("ds_sharded", "plain_text", "train")
+    with patch("api.routes.rows.get_hf_fs", return_value=ds_sharded_fs):
+        with patch("api.routes.rows.get_hf_parquet_uris", side_effect=mock_get_hf_parquet_uris):
+            yield indexer.get_rows_index("ds_sharded", "plain_text", "train")
 
 
 def test_indexer_get_rows_index(
     indexer: Indexer, ds: Dataset, ds_fs: AbstractFileSystem, dataset_with_config_parquet: dict[str, Any]
 ) -> None:
-    with patch("api.routes.rows.get_parquet_fs", return_value=ds_fs):
-        index = indexer.get_rows_index("ds", "plain_text", "train")
+    with patch("api.routes.rows.get_hf_fs", return_value=ds_fs):
+        with patch("api.routes.rows.get_hf_parquet_uris", side_effect=mock_get_hf_parquet_uris):
+            index = indexer.get_rows_index("ds", "plain_text", "train")
     assert index.features == ds.features
     assert index.row_group_offsets.tolist() == [len(ds)]
     assert len(index.row_group_readers) == 1
@@ -190,8 +186,9 @@ def test_indexer_get_rows_index_sharded(
     ds_sharded_fs: AbstractFileSystem,
     dataset_sharded_with_config_parquet: dict[str, Any],
 ) -> None:
-    with patch("api.routes.rows.get_parquet_fs", return_value=ds_sharded_fs):
-        index = indexer.get_rows_index("ds_sharded", "plain_text", "train")
+    with patch("api.routes.rows.get_hf_fs", return_value=ds_sharded_fs):
+        with patch("api.routes.rows.get_hf_parquet_uris", side_effect=mock_get_hf_parquet_uris):
+            index = indexer.get_rows_index("ds_sharded", "plain_text", "train")
     assert index.features == ds_sharded.features
     assert index.row_group_offsets.tolist() == np.cumsum([len(ds)] * 4).tolist()
     assert len(index.row_group_readers) == 4
@@ -321,7 +318,7 @@ def test_update_last_modified_date_of_rows_in_assets_dir(tmp_path: Path) -> None
         length=3,
         assets_directory=cached_assets_directory,
     )
-    most_recent_rows_dirs = sorted([row_dir for row_dir in split_dir.glob("*")], key=os.path.getmtime, reverse=True)
+    most_recent_rows_dirs = sorted(list(split_dir.glob("*")), key=os.path.getmtime, reverse=True)
     most_recent_rows = [int(row_dir.name) for row_dir in most_recent_rows_dirs]
     assert sorted(most_recent_rows[:3]) == [2, 3, 4]
     assert most_recent_rows[3:] == [7, 6, 5, 1, 0]

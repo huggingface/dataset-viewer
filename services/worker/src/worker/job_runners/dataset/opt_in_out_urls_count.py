@@ -3,10 +3,10 @@
 
 import logging
 from http import HTTPStatus
-from typing import Any, Literal, Mapping, Optional, Tuple
+from typing import Literal, Optional, Tuple
 
 from libcommon.constants import PROCESSING_STEP_DATASET_OPT_IN_OUT_URLS_COUNT_VERSION
-from libcommon.simple_cache import DoesNotExist, SplitFullName, get_response
+from libcommon.simple_cache import DoesNotExist, get_response
 
 from worker.job_runner import (
     JobResult,
@@ -116,7 +116,3 @@ class DatasetOptInOutUrlsCountJobRunner(JobRunner):
             raise ParameterMissingError("'dataset' parameter is required")
         response_content, progress = compute_opt_in_out_urls_count_response(dataset=self.dataset)
         return JobResult(response_content, progress=progress)
-
-    def get_new_splits(self, _: Mapping[str, Any]) -> set[SplitFullName]:
-        """Get the set of new splits, from the content created by the compute."""
-        return {SplitFullName(dataset=self.dataset, config=None, split=None)}

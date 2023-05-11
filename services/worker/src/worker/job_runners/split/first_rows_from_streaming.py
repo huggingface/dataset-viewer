@@ -4,16 +4,15 @@
 import logging
 from http import HTTPStatus
 from pathlib import Path
-from typing import Any, List, Literal, Mapping, Optional, Union
+from typing import List, Literal, Optional, Union
 
 from datasets import Features, IterableDataset, get_dataset_config_info, load_dataset
 from libcommon.constants import (
     PROCESSING_STEP_SPLIT_FIRST_ROWS_FROM_PARQUET_VERSION,
     PROCESSING_STEP_SPLIT_FIRST_ROWS_FROM_STREAMING_VERSION,
 )
-from libcommon.processing_graph import ProcessingStep
+from libcommon.processing_graph import ProcessingGraph, ProcessingStep
 from libcommon.queue import JobInfo
-from libcommon.simple_cache import SplitFullName
 from libcommon.storage import StrPath
 from libcommon.viewer_utils.features import get_cell_value
 
@@ -358,6 +357,7 @@ class SplitFirstRowsFromStreamingJobRunner(DatasetsBasedJobRunner):
         job_info: JobInfo,
         app_config: AppConfig,
         processing_step: ProcessingStep,
+        processing_graph: ProcessingGraph,
         hf_datasets_cache: Path,
         assets_directory: StrPath,
     ) -> None:
@@ -365,6 +365,7 @@ class SplitFirstRowsFromStreamingJobRunner(DatasetsBasedJobRunner):
             job_info=job_info,
             app_config=app_config,
             processing_step=processing_step,
+            processing_graph=processing_graph,
             hf_datasets_cache=hf_datasets_cache,
         )
         self.first_rows_config = app_config.first_rows
@@ -397,9 +398,3 @@ class SplitFirstRowsFromStreamingJobRunner(DatasetsBasedJobRunner):
                 columns_max_number=self.first_rows_config.columns_max_number,
             )
         )
-
-    def get_new_splits(self, _: Mapping[str, Any]) -> set[SplitFullName]:
-        """Get the set of new splits, from the content created by compute."""
-        if self.config is None or self.split is None:
-            raise ValueError("config and split are required")
-        return {SplitFullName(dataset=self.dataset, config=self.config, split=self.split)}

@@ -1,9 +1,8 @@
 import logging
 from http import HTTPStatus
-from typing import Any, Dict, Literal, Mapping, Optional, Set, TypedDict
+from typing import Any, Dict, Literal, Optional, TypedDict
 
 from libcommon.constants import PROCESSING_STEP_CONFIG_INFO_VERSION
-from libcommon.simple_cache import SplitFullName
 
 from worker.job_runner import (
     CompleteJobResult,
@@ -97,11 +96,3 @@ class ConfigInfoJobRunner(JobRunner):
         if self.config is None:
             raise ParameterMissingError("'config' parameter is required")
         return CompleteJobResult(compute_config_info_response(dataset=self.dataset, config=self.config))
-
-    # TODO: is it needed?
-    def get_new_splits(self, content: Mapping[str, Any]) -> Set[SplitFullName]:
-        """Get the set of new splits, from the content created by the compute."""
-        return {
-            SplitFullName(dataset=self.dataset, config=self.config, split=split)
-            for split in content["dataset_info"]["splits"]
-        }

@@ -6,10 +6,15 @@ from abc import ABC, abstractmethod
 from http import HTTPStatus
 from typing import List, Mapping, Optional, Tuple
 
-from libcommon.dataset import DatasetError
-from libcommon.operations import PreviousStepError, check_in_process
+from libcommon.dataset import get_dataset_git_revision
 from libcommon.processing_graph import InputType, ProcessingGraph, ProcessingStep
-from libcommon.simple_cache import CacheEntry, DoesNotExist, get_response
+from libcommon.queue import Priority
+from libcommon.simple_cache import (
+    CACHED_RESPONSE_NOT_FOUND,
+    CacheEntry,
+    get_best_response,
+)
+from libcommon.state import Artifact, DatasetState
 from starlette.requests import Request
 from starlette.responses import Response
 
@@ -40,12 +45,17 @@ class EndpointsDefinition:
     steps_by_input_type_and_endpoint: StepsByInputTypeAndEndpoint
 
     def __init__(self, graph: ProcessingGraph, endpoint_config: EndpointConfig):
+        processing_step_names_by_input_type_and_endpoint = (
+            endpoint_config.processing_step_names_by_input_type_and_endpoint.items()
+        )
         self.steps_by_input_type_and_endpoint = {
             endpoint: {
-                input_type: [graph.get_step(step_name) for step_name in step_names]
-                for input_type, step_names in step_names_by_input_type.items()
+                input_type: [
+                    graph.get_processing_step(processing_step_name) for processing_step_name in processing_step_names
+                ]
+                for input_type, processing_step_names in processing_step_names_by_input_type.items()
             }
-            for endpoint, step_names_by_input_type in endpoint_config.step_names_by_input_type_and_endpoint.items()
+            for endpoint, processing_step_names_by_input_type in processing_step_names_by_input_type_and_endpoint
         }
 
 
@@ -54,9 +64,10 @@ def get_cache_entry_from_steps(
     dataset: str,
     config: Optional[str],
     split: Optional[str],
-    init_processing_steps: List[ProcessingStep],
+    processing_graph: ProcessingGraph,
     hf_endpoint: str,
     hf_token: Optional[str] = None,
+    hf_timeout_seconds: Optional[float] = None,
 ) -> CacheEntry:
     """Gets the cache from the first successful step in the processing steps list.
     If no successful result is found, it will return the last one even if it's an error,
@@ -73,41 +84,50 @@ def get_cache_entry_from_steps(
 
     Returns: the cached record
     """
-    last_result = None
-    for processing_step in processing_steps:
+    kinds = [processing_step.cache_kind for processing_step in processing_steps]
+    best_response = get_best_response(kinds=kinds, dataset=dataset, config=config, split=split)
+    if "error_code" in best_response.response and best_response.response["error_code"] == CACHED_RESPONSE_NOT_FOUND:
+        # The cache is missing. Look if the job is in progress, or if it should be backfilled.
         try:
-            last_result = get_response(
-                kind=processing_step.cache_kind,
+            revision = get_dataset_git_revision(
                 dataset=dataset,
-                config=config,
-                split=split,
+                hf_endpoint=hf_endpoint,
+                hf_token=hf_token,
+                hf_timeout_seconds=hf_timeout_seconds,
             )
+            # ^ TODO: the revision could be in the cache (new processing step)
+        except Exception as e:
+            raise ResponseNotFoundError("Not found.") from e
+        ERROR_CODES_TO_RETRY: List[str] = []
+        # ^ TODO: pass error_codes_to_retry? or set them in the processing graph?
+        dataset_state = DatasetState(
+            dataset=dataset,
+            processing_graph=processing_graph,
+            revision=revision,
+            error_codes_to_retry=ERROR_CODES_TO_RETRY,
+            priority=Priority.NORMAL,
+            # TODO: move Priority outside from queue.py (to remove dependency to this file)
+        )
+        artifact_ids = [
+            Artifact(processing_step=processing_step, dataset=dataset, config=config, split=split).id
+            for processing_step in processing_steps
+        ]
+        should_exist = any(
+            artifact_id in dataset_state.queue_status.in_process for artifact_id in artifact_ids
+        ) or any(
+            f"CreateJob,{artifact_id}" in task.id for task in dataset_state.plan.tasks for artifact_id in artifact_ids
+        )
 
-            if last_result["http_status"] == HTTPStatus.OK:
-                return last_result
-        except DoesNotExist:
-            logging.debug(
-                f"processing_step={processing_step.name} dataset={dataset} "
-                f"config={config} split={split} no entry found"
+        # use the opportunity to backfill if needed
+        dataset_state.backfill()
+
+        if should_exist:
+            raise ResponseNotReadyError(
+                "The server is busier than usual and the response is not ready yet. Please retry later."
             )
-            try:
-                check_in_process(
-                    processing_step=processing_step,
-                    init_processing_steps=init_processing_steps,
-                    dataset=dataset,
-                    config=config,
-                    split=split,
-                    hf_endpoint=hf_endpoint,
-                    hf_token=hf_token,
-                )
-            except (PreviousStepError, DatasetError):
-                raise ResponseNotFoundError("Not found.")
-    if last_result:
-        return last_result
-
-    raise ResponseNotReadyError(
-        "The server is busier than usual and the response is not ready yet. Please retry later."
-    )
+        else:
+            raise ResponseNotFoundError("Not found.")
+    return best_response.response
 
 
 class InputTypeValidator(ABC):
@@ -206,7 +226,7 @@ def get_input_type_validator_by_parameters(
 def create_endpoint(
     endpoint_name: str,
     steps_by_input_type: StepsByInputType,
-    init_processing_steps: List[ProcessingStep],
+    processing_graph: ProcessingGraph,
     hf_endpoint: str,
     hf_token: Optional[str] = None,
     hf_jwt_public_key: Optional[str] = None,
@@ -261,9 +281,15 @@ def create_endpoint(
                 # getting result based on processing steps
                 with StepProfiler(method="processing_step_endpoint", step="get cache entry", context=context):
                     result = get_cache_entry_from_steps(
-                        processing_steps, dataset, config, split, init_processing_steps, hf_endpoint, hf_token
+                        processing_steps=processing_steps,
+                        dataset=dataset,
+                        config=config,
+                        split=split,
+                        processing_graph=processing_graph,
+                        hf_endpoint=hf_endpoint,
+                        hf_token=hf_token,
+                        hf_timeout_seconds=hf_timeout_seconds,
                     )
-
                 content = result["content"]
                 http_status = result["http_status"]
                 error_code = result["error_code"]

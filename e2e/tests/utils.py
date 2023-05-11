@@ -13,6 +13,7 @@ from requests import Response
 PORT_REVERSE_PROXY = os.environ.get("PORT_REVERSE_PROXY", "8000")
 API_UVICORN_PORT = os.environ.get("API_UVICORN_PORT", "8080")
 ADMIN_UVICORN_PORT = os.environ.get("ADMIN_UVICORN_PORT", "8081")
+ADMIN_TOKEN = os.environ.get("PARQUET_AND_INFO_COMMITTER_HF_TOKEN", "")
 INTERVAL = 1
 MAX_DURATION = 10 * 60
 URL = f"http://localhost:{PORT_REVERSE_PROXY}"
@@ -98,8 +99,32 @@ def get_default_config_split(dataset: str) -> Tuple[str, str, str]:
     return dataset, config, split
 
 
-def log(response: Response, url: str) -> str:
-    return f"{response.status_code} - {response.headers} - {response.text} - {url}"
+def log(response: Response, url: str = URL, relative_url: Optional[str] = None, dataset: Optional[str] = None) -> str:
+    if relative_url is not None:
+        try:
+            extra_response = get(
+                f"/admin/cache-reports{relative_url}", headers={"Authorization": f"Bearer {ADMIN_TOKEN}"}, url=url
+            )
+            if extra_response.status_code == 200:
+                extra = f"content of cache_reports: {extra_response.text}"
+            else:
+                extra = f"cannot get content of cache_reports: {extra_response.status_code} - {extra_response.text}"
+        except Exception as e:
+            extra = f"cannot get content of cache_reports - {e}"
+        extra = f"\n{extra}"
+    elif dataset is not None:
+        try:
+            extra_response = get(
+                f"/admin/dataset-state?dataset={dataset}", headers={"Authorization": f"Bearer {ADMIN_TOKEN}"}, url=url
+            )
+            if extra_response.status_code == 200:
+                extra = f"content of dataset-state: {extra_response.text}"
+            else:
+                extra = f"cannot get content of dataset-state: {extra_response.status_code} - {extra_response.text}"
+        except Exception as e:
+            extra = f"cannot get content of dataset-state - {e}"
+        extra = f"\n{extra}"
+    return f"{response.status_code} - {response.headers} - {response.text} - {url}{extra}"
 
 
 def poll_until_ready_and_assert(
@@ -124,8 +149,8 @@ def poll_until_ready_and_assert(
         should_retry = response.headers.get("X-Error-Code") in ["ResponseNotReady", "ResponseAlreadyComputedError"]
     if retries == 0 or response is None:
         raise RuntimeError("Poll timeout")
-    assert response.status_code == expected_status_code, log(response, url)
-    assert response.headers.get("X-Error-Code") == expected_error_code, log(response, url)
+    assert response.status_code == expected_status_code, log(response, url, relative_url)
+    assert response.headers.get("X-Error-Code") == expected_error_code, log(response, url, relative_url)
     return response
 
 

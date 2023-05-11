@@ -9,7 +9,7 @@ from functools import partial
 from http import HTTPStatus
 from multiprocessing.pool import ThreadPool
 from pathlib import Path
-from typing import Any, Dict, List, Literal, Mapping, Optional, Set, Tuple, TypedDict
+from typing import Any, Dict, List, Literal, Optional, Set, Tuple, TypedDict
 from urllib.parse import quote
 
 import datasets
@@ -42,9 +42,8 @@ from libcommon.constants import (
     PROCESSING_STEP_CONFIG_PARQUET_AND_INFO_VERSION,
 )
 from libcommon.dataset import DatasetNotFoundError, ask_access
-from libcommon.processing_graph import ProcessingStep
+from libcommon.processing_graph import ProcessingGraph, ProcessingStep
 from libcommon.queue import JobInfo
-from libcommon.simple_cache import SplitFullName
 
 from worker.config import AppConfig, ParquetAndInfoConfig
 from worker.job_runner import (
@@ -954,12 +953,14 @@ class ConfigParquetAndInfoJobRunner(DatasetsBasedJobRunner):
         job_info: JobInfo,
         app_config: AppConfig,
         processing_step: ProcessingStep,
+        processing_graph: ProcessingGraph,
         hf_datasets_cache: Path,
     ) -> None:
         super().__init__(
             job_info=job_info,
             app_config=app_config,
             processing_step=processing_step,
+            processing_graph=processing_graph,
             hf_datasets_cache=hf_datasets_cache,
         )
         self.parquet_and_info_config = app_config.parquet_and_info
@@ -986,10 +987,3 @@ class ConfigParquetAndInfoJobRunner(DatasetsBasedJobRunner):
                 max_external_data_files=self.parquet_and_info_config.max_external_data_files,
             )
         )
-
-    def get_new_splits(self, content: Mapping[str, Any]) -> Set[SplitFullName]:
-        """Get the set of new splits, from the content created by the compute."""
-        return {
-            SplitFullName(dataset=self.dataset, config=self.config, split=split)
-            for split in content["dataset_info"]["splits"]
-        }

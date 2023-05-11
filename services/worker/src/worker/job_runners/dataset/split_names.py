@@ -3,10 +3,10 @@
 
 import logging
 from http import HTTPStatus
-from typing import Any, List, Literal, Mapping, Optional, Tuple
+from typing import List, Literal, Optional, Tuple
 
 from libcommon.constants import PROCESSING_STEP_DATASET_SPLIT_NAMES_VERSION
-from libcommon.simple_cache import SplitFullName, get_best_response
+from libcommon.simple_cache import get_best_response
 
 from worker.job_runner import (
     JobResult,
@@ -141,10 +141,3 @@ class DatasetSplitNamesJobRunner(JobRunner):
             raise ValueError("dataset is required")
         response_content, progress = compute_dataset_split_names_response(dataset=self.dataset)
         return JobResult(response_content, progress=progress)
-
-    def get_new_splits(self, content: Mapping[str, Any]) -> set[SplitFullName]:
-        """Get the set of new splits, from the content created by the compute."""
-        return {
-            SplitFullName(dataset=split_item["dataset"], config=split_item["config"], split=split_item["split"])
-            for split_item in content["splits"]
-        }

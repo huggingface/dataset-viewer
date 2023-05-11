@@ -254,6 +254,9 @@ def get_response_with_details(
     }
 
 
+CACHED_RESPONSE_NOT_FOUND = "CachedResponseNotFound"
+
+
 def get_response_or_missing_error(
     kind: str, dataset: str, config: Optional[str] = None, split: Optional[str] = None
 ) -> CacheEntryWithDetails:
@@ -267,7 +270,7 @@ def get_response_or_missing_error(
                 )
             },
             http_status=HTTPStatus.NOT_FOUND,
-            error_code="CachedResponseNotFound",
+            error_code=CACHED_RESPONSE_NOT_FOUND,
             dataset_git_revision=None,
             job_runner_version=None,
             progress=None,

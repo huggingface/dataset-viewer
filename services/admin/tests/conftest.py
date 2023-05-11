@@ -1,10 +1,10 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2022 The HuggingFace Authors.
 
-from typing import Iterator, List
+from typing import Iterator
 
 from libcommon.metrics import _clean_metrics_database
-from libcommon.processing_graph import ProcessingGraph, ProcessingStep
+from libcommon.processing_graph import ProcessingGraph
 from libcommon.queue import _clean_queue_database
 from libcommon.resources import (
     CacheMongoResource,
@@ -43,9 +43,8 @@ def app_config(monkeypatch_session: MonkeyPatch) -> AppConfig:
 
 
 @fixture(scope="session")
-def processing_steps(app_config: AppConfig) -> List[ProcessingStep]:
-    processing_graph = ProcessingGraph(app_config.processing_graph.specification)
-    return list(processing_graph.steps.values())
+def processing_graph(app_config: AppConfig) -> ProcessingGraph:
+    return ProcessingGraph(app_config.processing_graph.specification)
 
 
 @fixture(scope="session")

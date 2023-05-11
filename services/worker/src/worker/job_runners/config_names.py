@@ -3,12 +3,11 @@
 
 import logging
 from http import HTTPStatus
-from typing import Any, List, Literal, Mapping, Optional, TypedDict, Union
+from typing import List, Literal, Optional, TypedDict, Union
 
 from datasets import get_dataset_config_names
 from datasets.data_files import EmptyDatasetError as _EmptyDatasetError
 from libcommon.constants import PROCESSING_STEP_CONFIG_NAMES_VERSION
-from libcommon.simple_cache import SplitFullName
 
 from worker.job_runner import CompleteJobResult, JobRunnerError, ParameterMissingError
 from worker.job_runners._datasets_based_job_runner import DatasetsBasedJobRunner
@@ -124,7 +123,3 @@ class ConfigNamesJobRunner(DatasetsBasedJobRunner):
         return CompleteJobResult(
             compute_config_names_response(dataset=self.dataset, hf_token=self.common_config.hf_token)
         )
-
-    def get_new_splits(self, content: Mapping[str, Any]) -> set[SplitFullName]:
-        """Get the set of new splits, from the content created by the compute."""
-        return {SplitFullName(dataset=s["dataset"], config=s["config"], split=None) for s in content["config_names"]}

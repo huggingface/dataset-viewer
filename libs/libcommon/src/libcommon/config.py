@@ -185,71 +185,78 @@ class MetricsConfig:
 class ProcessingGraphConfig:
     specification: ProcessingGraphSpecification = field(
         default_factory=lambda: {
-            "/config-names": {"input_type": "dataset", "job_runner_version": PROCESSING_STEP_CONFIG_NAMES_VERSION},
+            "/config-names": {
+                "input_type": "dataset",
+                "provides_dataset_config_names": True,
+                "job_runner_version": PROCESSING_STEP_CONFIG_NAMES_VERSION,
+            },
             "/split-names-from-streaming": {
                 "input_type": "config",
-                "requires": "/config-names",
+                "triggered_by": "/config-names",
+                "provides_config_split_names": True,
                 "job_runner_version": PROCESSING_STEP_SPLIT_NAMES_FROM_STREAMING_VERSION,
             },
             "split-first-rows-from-streaming": {
                 "input_type": "split",
-                "requires": ["/split-names-from-streaming", "/split-names-from-dataset-info"],
+                "triggered_by": ["/split-names-from-streaming", "/split-names-from-dataset-info"],
                 "required_by_dataset_viewer": True,
                 "job_runner_version": PROCESSING_STEP_SPLIT_FIRST_ROWS_FROM_STREAMING_VERSION,
             },
             "config-parquet-and-info": {
                 "input_type": "config",
-                "requires": "/config-names",
+                "triggered_by": "/config-names",
                 "job_runner_version": PROCESSING_STEP_CONFIG_PARQUET_AND_INFO_VERSION,
             },
             "config-parquet": {
                 "input_type": "config",
-                "requires": "config-parquet-and-info",
+                "triggered_by": "config-parquet-and-info",
                 "job_runner_version": PROCESSING_STEP_CONFIG_PARQUET_VERSION,
+                "provides_config_parquet": True,
             },
             "split-first-rows-from-parquet": {
                 "input_type": "split",
-                "requires": "config-parquet",
+                "triggered_by": "config-parquet",
                 "job_runner_version": PROCESSING_STEP_SPLIT_FIRST_ROWS_FROM_PARQUET_VERSION,
             },
             "dataset-parquet": {
                 "input_type": "dataset",
-                "requires": ["config-parquet", "/config-names"],
+                "triggered_by": ["config-parquet", "/config-names"],
                 "job_runner_version": PROCESSING_STEP_DATASET_PARQUET_VERSION,
             },
             "config-info": {
                 "input_type": "config",
-                "requires": "config-parquet-and-info",
+                "triggered_by": "config-parquet-and-info",
                 "job_runner_version": PROCESSING_STEP_CONFIG_INFO_VERSION,
             },
             "dataset-info": {
                 "input_type": "dataset",
-                "requires": ["config-info", "/config-names"],
+                "triggered_by": ["config-info", "/config-names"],
                 "job_runner_version": PROCESSING_STEP_DATASET_INFO_VERSION,
             },
             "/split-names-from-dataset-info": {
                 "input_type": "config",
-                "requires": "config-info",
+                "triggered_by": "config-info",
+                "provides_config_split_names": True,
                 "job_runner_version": PROCESSING_STEP_SPLIT_NAMES_FROM_DATASET_INFO_VERSION,
             },
             "config-size": {
                 "input_type": "config",
-                "requires": "config-parquet-and-info",
+                "triggered_by": "config-parquet-and-info",
                 "job_runner_version": PROCESSING_STEP_CONFIG_SIZE_VERSION,
             },
             "dataset-size": {
                 "input_type": "dataset",
-                "requires": ["config-size", "/config-names"],
+                "triggered_by": ["config-size", "/config-names"],
                 "job_runner_version": PROCESSING_STEP_DATASET_SIZE_VERSION,
             },
             "dataset-split-names": {
                 "input_type": "dataset",
-                "requires": ["/split-names-from-dataset-info", "/split-names-from-streaming", "/config-names"],
+                "triggered_by": ["/split-names-from-dataset-info", "/split-names-from-streaming", "/config-names"],
                 "job_runner_version": PROCESSING_STEP_DATASET_SPLIT_NAMES_VERSION,
             },
             "dataset-is-valid": {
                 "input_type": "dataset",
-                "requires": [
+                "triggered_by": [
                     "dataset-split-names",
                     "split-first-rows-from-parquet",
                     "split-first-rows-from-streaming",
@@ -258,22 +265,22 @@ class ProcessingGraphConfig:
             },
             "split-opt-in-out-urls-scan": {
                 "input_type": "split",
-                "requires": ["split-first-rows-from-streaming"],
+                "triggered_by": ["split-first-rows-from-streaming"],
                 "job_runner_version": PROCESSING_STEP_SPLIT_OPT_IN_OUT_URLS_SCAN_VERSION,
             },
             "split-opt-in-out-urls-count": {
                 "input_type": "split",
-                "requires": ["split-opt-in-out-urls-scan"],
+                "triggered_by": ["split-opt-in-out-urls-scan"],
                 "job_runner_version": PROCESSING_STEP_SPLIT_OPT_IN_OUT_URLS_COUNT_VERSION,
             },
             "config-opt-in-out-urls-count": {
                 "input_type": "config",
-                "requires": ["/split-names-from-streaming", "split-opt-in-out-urls-count"],
+                "triggered_by": ["/split-names-from-streaming", "split-opt-in-out-urls-count"],
                 "job_runner_version": PROCESSING_STEP_CONFIG_OPT_IN_OUT_URLS_COUNT_VERSION,
             },
             "dataset-opt-in-out-urls-count": {
                 "input_type": "dataset",
-                "requires": ["/config-names", "config-opt-in-out-urls-count"],
+                "triggered_by": ["/config-names", "config-opt-in-out-urls-count"],
                 "job_runner_version": PROCESSING_STEP_DATASET_OPT_IN_OUT_URLS_COUNT_VERSION,
             },
         }

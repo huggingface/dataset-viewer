@@ -10,7 +10,7 @@ from pathlib import Path
 from typing import Optional
 
 import datasets.config
-from libcommon.processing_graph import ProcessingStep
+from libcommon.processing_graph import ProcessingGraph, ProcessingStep
 from libcommon.queue import JobInfo
 from libcommon.storage import init_dir, remove_dir
 
@@ -30,13 +30,19 @@ class DatasetsBasedJobRunner(JobRunner):
     datasets_cache: Optional[Path] = None
 
     def __init__(
-        self, job_info: JobInfo, app_config: AppConfig, processing_step: ProcessingStep, hf_datasets_cache: Path
+        self,
+        job_info: JobInfo,
+        app_config: AppConfig,
+        processing_step: ProcessingStep,
+        processing_graph: ProcessingGraph,
+        hf_datasets_cache: Path,
     ) -> None:
         super().__init__(
             job_info=job_info,
             common_config=app_config.common,
             worker_config=app_config.worker,
             processing_step=processing_step,
+            processing_graph=processing_graph,
         )
         self.datasets_based_config = app_config.datasets_based
         self.base_datasets_cache = hf_datasets_cache

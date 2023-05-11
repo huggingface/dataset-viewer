@@ -12,11 +12,9 @@ aiohttp = "^3.8.4"
 aiolimiter = "^1.0.0"
 bs4 = "^0.0.1"
 conllu = "^4.5.2"
-datasets = { extras = ["audio", "vision"], version = "^2.11.0" }
 environs = "^9.5.0"
 gdown = "^4.6.3"
-hffs = {git = "https://github.com/huggingface/hffs.git", rev="0e187e74d38e9436353691f4a7a26b15f0663f58"}
-huggingface-hub = "^0.13.0"
+huggingface-hub = "^0.14.1"
 kenlm = { git = "https://github.com/kpu/kenlm", branch = "master" }
 kss = "^2.6.0"
 libcommon = {path = "../../libs/libcommon", develop = true}
@@ -91,7 +89,6 @@ strict = true
 module = [
     "aiolimiter.*",
     "datasets.*",
-    "hffs.*",
     "huggingface_hub.*",
     "pyarrow.*",
     "tqdm.*"
