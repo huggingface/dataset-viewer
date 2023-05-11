@@ -15,7 +15,6 @@ class Status(str, enum.Enum):
     SUCCESS = "success"
     ERROR = "error"
     CANCELLED = "cancelled"
-    SKIPPED = "skipped"
 
 
 class Priority(str, enum.Enum):

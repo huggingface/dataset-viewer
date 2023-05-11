@@ -63,7 +63,6 @@ class CountByStatus(TypedDict):
     success: int
     error: int
     cancelled: int
-    skipped: int
 
 
 class DumpByPendingStatus(TypedDict):
@@ -171,9 +170,9 @@ class Queue:
 
     It's a FIFO queue, with the following properties:
     - a job is identified by its input arguments: unicity_id (type, dataset, config and split)
-    - a job can be in one of the following states: waiting, started, success, error, cancelled, skipped
+    - a job can be in one of the following states: waiting, started, success, error, cancelled
     - a job can be in the queue only once (unicity_id) in the "started" or "waiting" state
-    - a job can be in the queue multiple times in the other states (success, error, cancelled, skipped)
+    - a job can be in the queue multiple times in the other states (success, error, cancelled)
     - a job has a priority (two levels: NORMAL and LOW)
     - the queue is ordered by priority then by the creation date of the jobs
     - datasets and users that already have started jobs are de-prioritized (using namespace)
@@ -478,7 +477,7 @@ class Queue:
         job = self.get_job_with_id(job_id=job_id)
         return job.type
 
-    def finish_job(self, job_id: str, finished_status: Literal[Status.SUCCESS, Status.ERROR, Status.SKIPPED]) -> None:
+    def finish_job(self, job_id: str, finished_status: Literal[Status.SUCCESS, Status.ERROR]) -> None:
         """Finish a job in the queue.
 
         The job is moved from the started state to the success or error state.
@@ -563,7 +562,6 @@ class Queue:
             "success": self.count_jobs(status=Status.SUCCESS, job_type=job_type),
             "error": self.count_jobs(status=Status.ERROR, job_type=job_type),
             "cancelled": self.count_jobs(status=Status.CANCELLED, job_type=job_type),
-            "skipped": self.count_jobs(status=Status.SKIPPED, job_type=job_type),
         }
 
     def get_dump_with_status(self, status: Status, job_type: str) -> List[JobDict]:
