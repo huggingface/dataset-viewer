@@ -11,20 +11,18 @@ from aiohttp import ClientSession
 from aiolimiter import AsyncLimiter
 from datasets import get_dataset_config_info
 from libcommon.constants import PROCESSING_STEP_SPLIT_OPT_IN_OUT_URLS_SCAN_VERSION
-from libcommon.processing_graph import ProcessingGraph, ProcessingStep
-from libcommon.queue import JobInfo
+from libcommon.processing_graph import ProcessingStep
+from libcommon.utils import JobInfo
 
+from worker.common_exceptions import JobRunnerError
 from worker.config import AppConfig, OptInOutUrlsScanConfig
-from worker.job_runner import (
-    CompleteJobResult,
-    JobRunnerError,
-    get_previous_step_or_raise,
-)
-from worker.job_runners._datasets_based_job_runner import DatasetsBasedJobRunner
+from worker.job_runners.split.split_job_runner import SplitCachedJobRunner
 from worker.utils import (
+    CompleteJobResult,
     OptInOutUrlsScanResponse,
     OptUrl,
     SplitFirstRowsResponse,
+    get_previous_step_or_raise,
     get_rows_or_raise,
 )
 
@@ -299,7 +297,7 @@ def compute_opt_in_out_urls_scan_response(
     )
 
 
-class SplitOptInOutUrlsScanJobRunner(DatasetsBasedJobRunner):
+class SplitOptInOutUrlsScanJobRunner(SplitCachedJobRunner):
     urls_scan_config: OptInOutUrlsScanConfig
 
     @staticmethod
@@ -315,14 +313,12 @@ class SplitOptInOutUrlsScanJobRunner(DatasetsBasedJobRunner):
         job_info: JobInfo,
         app_config: AppConfig,
         processing_step: ProcessingStep,
-        processing_graph: ProcessingGraph,
         hf_datasets_cache: Path,
     ) -> None:
         super().__init__(
             job_info=job_info,
             app_config=app_config,
             processing_step=processing_step,
-            processing_graph=processing_graph,
             hf_datasets_cache=hf_datasets_cache,
         )
         self.urls_scan_config = app_config.urls_scan
@@ -335,7 +331,7 @@ class SplitOptInOutUrlsScanJobRunner(DatasetsBasedJobRunner):
                 dataset=self.dataset,
                 config=self.config,
                 split=self.split,
-                hf_token=self.common_config.hf_token,
+                hf_token=self.app_config.common.hf_token,
                 rows_max_number=self.urls_scan_config.rows_max_number,
                 columns_max_number=self.urls_scan_config.columns_max_number,
                 urls_number_per_batch=self.urls_scan_config.urls_number_per_batch,

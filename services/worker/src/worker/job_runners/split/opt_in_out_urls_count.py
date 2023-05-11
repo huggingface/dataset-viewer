@@ -7,13 +7,13 @@ from typing import Literal, Optional
 
 from libcommon.constants import PROCESSING_STEP_SPLIT_OPT_IN_OUT_URLS_COUNT_VERSION
 
-from worker.job_runner import (
+from worker.common_exceptions import JobRunnerError
+from worker.job_runners.split.split_job_runner import SplitJobRunner
+from worker.utils import (
     CompleteJobResult,
-    JobRunner,
-    JobRunnerError,
+    OptInOutUrlsCountResponse,
     get_previous_step_or_raise,
 )
-from worker.utils import OptInOutUrlsCountResponse
 
 SplitOptInOutUrlsCountJobRunnerErrorCode = Literal["PreviousStepFormatError"]
 
@@ -68,7 +68,7 @@ def compute_opt_in_out_urls_count_response(
     return opt_in_out_urls_count
 
 
-class SplitOptInOutUrlsCountJobRunner(JobRunner):
+class SplitOptInOutUrlsCountJobRunner(SplitJobRunner):
     @staticmethod
     def get_job_type() -> str:
         return "split-opt-in-out-urls-count"
@@ -78,8 +78,6 @@ class SplitOptInOutUrlsCountJobRunner(JobRunner):
         return PROCESSING_STEP_SPLIT_OPT_IN_OUT_URLS_COUNT_VERSION
 
     def compute(self) -> CompleteJobResult:
-        if self.config is None or self.split is None:
-            raise ValueError("config and split are required")
         return CompleteJobResult(
             compute_opt_in_out_urls_count_response(
                 dataset=self.dataset,

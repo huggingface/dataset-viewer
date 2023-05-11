@@ -8,7 +8,7 @@ from jsonschema import ValidationError, validate
 from libcommon.dataset import DatasetError
 from libcommon.operations import backfill_dataset, delete_dataset
 from libcommon.processing_graph import ProcessingGraph
-from libcommon.queue import Priority
+from libcommon.utils import Priority
 from starlette.requests import Request
 from starlette.responses import Response
 

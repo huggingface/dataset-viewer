@@ -7,13 +7,9 @@ from typing import Literal, Optional, TypedDict
 
 from libcommon.constants import PROCESSING_STEP_CONFIG_SIZE_VERSION
 
-from worker.job_runner import (
-    CompleteJobResult,
-    JobRunner,
-    JobRunnerError,
-    ParameterMissingError,
-    get_previous_step_or_raise,
-)
+from worker.common_exceptions import JobRunnerError
+from worker.job_runners.config.config_job_runner import ConfigJobRunner
+from worker.utils import CompleteJobResult, get_previous_step_or_raise
 
 ConfigSizeJobRunnerErrorCode = Literal["PreviousStepFormatError"]
 
@@ -148,7 +144,7 @@ def compute_config_size_response(dataset: str, config: str) -> ConfigSizeRespons
     )
 
 
-class ConfigSizeJobRunner(JobRunner):
+class ConfigSizeJobRunner(ConfigJobRunner):
     @staticmethod
     def get_job_type() -> str:
         return "config-size"
@@ -158,8 +154,4 @@ class ConfigSizeJobRunner(JobRunner):
         return PROCESSING_STEP_CONFIG_SIZE_VERSION
 
     def compute(self) -> CompleteJobResult:
-        if self.dataset is None:
-            raise ParameterMissingError("'dataset' parameter is required")
-        if self.config is None:
-            raise ParameterMissingError("'config' parameter is required")
         return CompleteJobResult(compute_config_size_response(dataset=self.dataset, config=self.config))

@@ -7,14 +7,10 @@ from typing import List, Literal, Optional, TypedDict
 
 from libcommon.constants import PROCESSING_STEP_CONFIG_PARQUET_VERSION
 
-from worker.job_runner import (
-    CompleteJobResult,
-    JobRunner,
-    JobRunnerError,
-    ParameterMissingError,
-    get_previous_step_or_raise,
-)
+from worker.common_exceptions import JobRunnerError
+from worker.job_runners.config.config_job_runner import ConfigJobRunner
 from worker.job_runners.config.parquet_and_info import ParquetFileItem
+from worker.utils import CompleteJobResult, get_previous_step_or_raise
 
 ConfigParquetJobRunnerErrorCode = Literal["PreviousStepFormatError"]
 
@@ -79,7 +75,7 @@ def compute_parquet_response(dataset: str, config: str) -> ConfigParquetResponse
     return ConfigParquetResponse(parquet_files=parquet_files)
 
 
-class ConfigParquetJobRunner(JobRunner):
+class ConfigParquetJobRunner(ConfigJobRunner):
     @staticmethod
     def get_job_type() -> str:
         return "config-parquet"
@@ -89,8 +85,4 @@ class ConfigParquetJobRunner(JobRunner):
         return PROCESSING_STEP_CONFIG_PARQUET_VERSION
 
     def compute(self) -> CompleteJobResult:
-        if self.dataset is None:
-            raise ParameterMissingError("'dataset' parameter is required")
-        if self.config is None:
-            raise ParameterMissingError("'config' parameter is required")
         return CompleteJobResult(compute_parquet_response(dataset=self.dataset, config=self.config))

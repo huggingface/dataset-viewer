@@ -57,6 +57,7 @@ if __name__ == "__main__":
             job_runner_factory=job_runner_factory,
             max_jobs_per_namespace=app_config.queue.max_jobs_per_namespace,
             state_file_path=state_file_path,
-            worker_config=app_config.worker,
+            app_config=app_config,
+            processing_graph=processing_graph,
         )
         loop.run()

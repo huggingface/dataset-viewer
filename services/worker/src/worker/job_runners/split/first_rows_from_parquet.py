@@ -15,26 +15,25 @@ from libcommon.constants import (
     PROCESSING_STEP_SPLIT_FIRST_ROWS_FROM_PARQUET_VERSION,
     PROCESSING_STEP_SPLIT_FIRST_ROWS_FROM_STREAMING_VERSION,
 )
-from libcommon.processing_graph import ProcessingGraph, ProcessingStep
-from libcommon.queue import JobInfo
+from libcommon.processing_graph import ProcessingStep
 from libcommon.storage import StrPath
+from libcommon.utils import JobInfo
 from libcommon.viewer_utils.features import get_cell_value
 from pyarrow.parquet import ParquetFile
 from tqdm.contrib.concurrent import thread_map
 
+from worker.common_exceptions import JobRunnerError
 from worker.config import AppConfig, FirstRowsConfig
-from worker.job_runner import (
-    CompleteJobResult,
-    JobRunner,
-    JobRunnerError,
-    get_previous_step_or_raise,
-)
+from worker.job_runners.split.split_job_runner import SplitJobRunner
 from worker.utils import (
+    CompleteJobResult,
+    JobRunnerInfo,
     Row,
     RowItem,
     SplitFirstRowsResponse,
     create_truncated_row_items,
     get_json_size,
+    get_previous_step_or_raise,
     to_features_list,
 )
 
@@ -291,7 +290,7 @@ def compute_first_rows_response(
     return response
 
 
-class SplitFirstRowsFromParquetJobRunner(JobRunner):
+class SplitFirstRowsFromParquetJobRunner(SplitJobRunner):
     assets_directory: StrPath
     first_rows_config: FirstRowsConfig
 
@@ -303,32 +302,30 @@ class SplitFirstRowsFromParquetJobRunner(JobRunner):
     def get_job_runner_version() -> int:
         return PROCESSING_STEP_SPLIT_FIRST_ROWS_FROM_PARQUET_VERSION
 
+    @staticmethod
+    def get_parallel_job_runner() -> JobRunnerInfo:
+        return JobRunnerInfo(
+            job_runner_version=PROCESSING_STEP_SPLIT_FIRST_ROWS_FROM_STREAMING_VERSION,
+            job_type="/split-names-from-dataset-info",
+        )
+
     def __init__(
         self,
         job_info: JobInfo,
         app_config: AppConfig,
         processing_step: ProcessingStep,
-        processing_graph: ProcessingGraph,
         assets_directory: StrPath,
     ) -> None:
         super().__init__(
             job_info=job_info,
-            common_config=app_config.common,
-            worker_config=app_config.worker,
+            app_config=app_config,
             processing_step=processing_step,
-            processing_graph=processing_graph,
         )
         self.first_rows_config = app_config.first_rows
         self.assets_directory = assets_directory
         self.assets_base_url = app_config.assets.base_url
 
     def compute(self) -> CompleteJobResult:
-        if self.config is None or self.split is None:
-            raise ValueError("config and split are required")
-        self.raise_if_parallel_response_exists(
-            parallel_cache_kind="split-first-rows-from-streaming",
-            parallel_job_version=PROCESSING_STEP_SPLIT_FIRST_ROWS_FROM_STREAMING_VERSION,
-        )
         return CompleteJobResult(
             compute_first_rows_response(
                 dataset=self.dataset,
@@ -336,7 +333,7 @@ class SplitFirstRowsFromParquetJobRunner(JobRunner):
                 split=self.split,
                 assets_base_url=self.assets_base_url,
                 assets_directory=self.assets_directory,
-                hf_token=self.common_config.hf_token,
+                hf_token=self.app_config.common.hf_token,
                 min_cell_bytes=self.first_rows_config.min_cell_bytes,
                 rows_max_bytes=self.first_rows_config.max_bytes,
                 rows_max_number=self.first_rows_config.max_number,

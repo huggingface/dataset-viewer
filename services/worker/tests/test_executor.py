@@ -12,11 +12,11 @@ import pytest
 import pytz
 from filelock import FileLock
 from libcommon.processing_graph import ProcessingGraph
-from libcommon.queue import DoesNotExist, Job, JobInfo, Priority, Queue, Status
+from libcommon.queue import DoesNotExist, Job, Queue
 from libcommon.resources import CacheMongoResource, QueueMongoResource
 from libcommon.simple_cache import CachedResponse
 from libcommon.storage import StrPath
-from libcommon.utils import get_datetime
+from libcommon.utils import JobInfo, Priority, Status, get_datetime
 from mirakuru import ProcessExitedWithError, TimeoutExpired
 from pytest import fixture
 
@@ -35,9 +35,11 @@ def get_job_info(prefix: str = "base") -> JobInfo:
     return JobInfo(
         job_id=job_id + "0" * (24 - len(job_id)),
         type="/config-names",
-        dataset=f"__DUMMY_DATASETS_SERVER_USER__/{prefix}_dataset_{_TIME}",
-        config="default",
-        split="train",
+        params={
+            "dataset": f"__DUMMY_DATASETS_SERVER_USER__/{prefix}_dataset_{_TIME}",
+            "config": "default",
+            "split": "train",
+        },
         force=False,
         priority=Priority.LOW,
     )
@@ -114,9 +116,9 @@ def set_just_started_job_in_queue(queue_mongo_resource: QueueMongoResource) -> I
     job = Job(
         pk=job_info["job_id"],
         type=job_info["type"],
-        dataset=job_info["dataset"],
-        config=job_info["config"],
-        split=job_info["split"],
+        dataset=job_info["params"]["dataset"],
+        config=job_info["params"]["config"],
+        split=job_info["params"]["split"],
         unicity_id="unicity_id",
         namespace="user",
         priority=job_info["priority"],
@@ -143,9 +145,9 @@ def set_long_running_job_in_queue(app_config: AppConfig, queue_mongo_resource: Q
     job = Job(
         pk=job_info["job_id"],
         type=job_info["type"],
-        dataset=job_info["dataset"],
-        config=job_info["config"],
-        split=job_info["split"],
+        dataset=job_info["params"]["dataset"],
+        config=job_info["params"]["config"],
+        split=job_info["params"]["split"],
         unicity_id="unicity_id",
         namespace="user",
         priority=job_info["priority"],
@@ -172,9 +174,9 @@ def set_zombie_job_in_queue(queue_mongo_resource: QueueMongoResource) -> Iterato
     job = Job(
         pk=job_info["job_id"],
         type=job_info["type"],
-        dataset=job_info["dataset"],
-        config=job_info["config"],
-        split=job_info["split"],
+        dataset=job_info["params"]["dataset"],
+        config=job_info["params"]["config"],
+        split=job_info["params"]["split"],
         unicity_id="unicity_id",
         namespace="user",
         priority=job_info["priority"],
@@ -249,10 +251,10 @@ def test_executor_kill_zombies(
         assert Job.objects(pk=normal_job.pk).get().status == Status.STARTED
         response = CachedResponse.objects()[0]
         expected_error = {
-            "error": "Job runner crashed while running this job (missing heartbeats).",
+            "error": "Job manager crashed while running this job (missing heartbeats).",
         }
         assert response.http_status == HTTPStatus.NOT_IMPLEMENTED
-        assert response.error_code == "JobRunnerCrashedError"
+        assert response.error_code == "JobManagerCrashedError"
         assert response.dataset == zombie.dataset
         assert response.config == zombie.config
         assert response.split == zombie.split
@@ -340,10 +342,10 @@ def test_executor_stops_on_long_job(
         assert len(responses) == 1
         response = responses[0]
         expected_error = {
-            "error": "Job runner was killed while running this job (job exceeded maximum duration).",
+            "error": "Job manager was killed while running this job (job exceeded maximum duration).",
         }
         assert response.http_status == HTTPStatus.NOT_IMPLEMENTED
-        assert response.error_code == "JobRunnerExceededMaximumDurationError"
+        assert response.error_code == "JobManagerExceededMaximumDurationError"
         assert response.dataset == long_job.dataset
         assert response.config == long_job.config
         assert response.split == long_job.split

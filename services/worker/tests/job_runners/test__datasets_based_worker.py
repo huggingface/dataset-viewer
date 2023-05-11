@@ -1,25 +1,22 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2022 The HuggingFace Authors.
 
-from dataclasses import replace
 from datetime import datetime
-from http import HTTPStatus
 from pathlib import Path
 from typing import Callable, Optional
 
 import datasets.config
 import pytest
 from libcommon.processing_graph import ProcessingGraph
-from libcommon.queue import Priority
 from libcommon.resources import CacheMongoResource, QueueMongoResource
-from libcommon.simple_cache import get_response
+from libcommon.utils import Priority
 
 from worker.config import AppConfig
-from worker.job_runner import CompleteJobResult
 from worker.job_runners._datasets_based_job_runner import DatasetsBasedJobRunner
 from worker.resources import LibrariesResource
+from worker.utils import CompleteJobResult
 
-from ..fixtures.hub import HubDatasets, get_default_config_split
+from ..fixtures.hub import get_default_config_split
 
 
 class DummyJobRunner(DatasetsBasedJobRunner):
@@ -34,10 +31,7 @@ class DummyJobRunner(DatasetsBasedJobRunner):
         return 1
 
     def compute(self) -> CompleteJobResult:
-        if self.config == "raise":
-            raise ValueError("This is a test")
-        else:
-            return CompleteJobResult({"col1": "a" * 200})
+        return CompleteJobResult({"col1": "a" * 200})
 
 
 GetJobRunner = Callable[[str, Optional[str], Optional[str], AppConfig, bool], DummyJobRunner]
@@ -68,16 +62,17 @@ def get_job_runner(
         return DummyJobRunner(
             job_info={
                 "type": DummyJobRunner.get_job_type(),
-                "dataset": dataset,
-                "config": config,
-                "split": split,
+                "params": {
+                    "dataset": dataset,
+                    "config": config,
+                    "split": split,
+                },
                 "job_id": "job_id",
                 "force": force,
                 "priority": Priority.NORMAL,
             },
             app_config=app_config,
             processing_step=processing_graph.get_processing_step(processing_step_name),
-            processing_graph=processing_graph,
             hf_datasets_cache=libraries_resource.hf_datasets_cache,
         )
 
@@ -140,42 +135,8 @@ def test_set_and_unset_cache(app_config: AppConfig, get_job_runner: GetJobRunner
     assert_datasets_cache_path(path=datasets_base_path, exists=True)
 
 
-@pytest.mark.parametrize("config", ["raise", "dont_raise"])
-def test_process(app_config: AppConfig, get_job_runner: GetJobRunner, hub_public_csv: str, config: str) -> None:
-    # ^ this test requires an existing dataset, otherwise .process fails before setting the cache
-    # it must work in both cases: when the job fails and when it succeeds
-    dataset = hub_public_csv
-    split = "split"
-    job_runner = get_job_runner(dataset, config, split, app_config, False)
-    datasets_base_path = job_runner.base_datasets_cache
-    # the datasets library sets the cache to its own default
-    assert_datasets_cache_path(path=datasets_base_path, exists=False, equals=False)
-    result = job_runner.process()
-    assert result is (config != "raise")
-    # the configured cache is now set (after having deleted a subdirectory used for the job)
-    assert_datasets_cache_path(path=datasets_base_path, exists=True)
-
-
 def assert_datasets_cache_path(path: Path, exists: bool, equals: bool = True) -> None:
     assert path.exists() is exists
     assert (datasets.config.HF_DATASETS_CACHE == path) is equals
     assert (datasets.config.DOWNLOADED_DATASETS_PATH == path / datasets.config.DOWNLOADED_DATASETS_DIR) is equals
     assert (datasets.config.EXTRACTED_DATASETS_PATH == path / datasets.config.EXTRACTED_DATASETS_DIR) is equals
-
-
-def test_process_big_content(hub_datasets: HubDatasets, app_config: AppConfig, get_job_runner: GetJobRunner) -> None:
-    dataset, config, split = get_default_config_split(hub_datasets["big"]["name"])
-    worker = get_job_runner(
-        dataset, config, split, replace(app_config, worker=replace(app_config.worker, content_max_bytes=10)), False
-    )
-
-    assert not worker.process()
-    cached_response = get_response(
-        kind=worker.processing_step.cache_kind,
-        dataset=dataset,
-        config=config,
-        split=split,
-    )
-
-    assert cached_response["http_status"] == HTTPStatus.NOT_IMPLEMENTED
-    assert cached_response["error_code"] == "TooBigContentError"
