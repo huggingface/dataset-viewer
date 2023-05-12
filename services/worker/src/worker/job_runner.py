@@ -34,10 +34,6 @@ class JobRunner(ABC):
         self.job_info = job_info
         self.app_config = app_config
         self.processing_step = processing_step
-        self.job_type = job_info["type"]
-        self.job_id = job_info["job_id"]
-        self.force = job_info["force"]
-        self.priority = job_info["priority"]
 
     def pre_compute(self) -> None:
         """Hook method called before the compute method."""

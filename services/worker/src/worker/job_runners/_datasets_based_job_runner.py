@@ -53,7 +53,7 @@ class DatasetsBasedJobRunner(JobRunner):
             self.job_info["params"]["dataset"],
             self.job_info["params"]["config"],
             self.job_info["params"]["split"],
-            self.force,
+            self.job_info["force"],
         )
         hash_suffix = sha1(json.dumps(payload, sort_keys=True).encode(), usedforsecurity=False).hexdigest()[:8]
         prefix = f"{date_str}-{self.get_job_type()}-{self.job_info['params']['dataset']}"[:64]
