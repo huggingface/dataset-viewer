@@ -108,12 +108,10 @@ class JobManager:
     def critical(self, msg: str) -> None:
         self.log(level=logging.CRITICAL, msg=msg)
 
-    def run(self) -> Literal[Status.SUCCESS, Status.ERROR, Status.SKIPPED]:
+    def run(self) -> Literal[Status.SUCCESS, Status.ERROR]:
         try:
             self.info(f"compute {self}")
-            result: Literal[Status.SUCCESS, Status.ERROR, Status.SKIPPED] = (
-                Status.SKIPPED if self.should_skip_job() else Status.SUCCESS if self.process() else Status.ERROR
-            )
+            result: Literal[Status.SUCCESS, Status.ERROR] = Status.SUCCESS if self.process() else Status.ERROR
         except Exception:
             self.exception(f"error while computing {self}")
             result = Status.ERROR
@@ -129,50 +127,6 @@ class JobManager:
                 hf_token=self.common_config.hf_token,
             )
         return self._dataset_git_revision
-
-    # TODO: set the git revision as part of the job_info -> no need to get info from the Hub
-    # if None: run the job
-    def should_skip_job(self) -> bool:
-        """Return True if the job should be skipped, False otherwise.
-
-        The job must be skipped if:
-        - and a cache entry exists for the dataset
-        - and we can get the git commit and it's not None
-        - and the cached entry has been created with the same git commit of the dataset repository
-        - and the cached entry has been created with the same major version of the job runner
-        - and the cached entry, if an error, is not among the list of errors that should trigger a retry
-        - and the cached entry is complete (has a progress of 1.)
-
-        Returns:
-            :obj:`bool`: True if the job should be skipped, False otherwise.
-        """
-        try:
-            cached_response = get_response_without_content_params(
-                kind=self.processing_step.cache_kind, job_params=self.job_params
-            )
-        except DoesNotExist:
-            # no entry in the cache
-            return False
-        if cached_response["error_code"] in ERROR_CODES_TO_RETRY:
-            # the cache entry result was a temporary error - we process it
-            return False
-        if (
-            cached_response["job_runner_version"] is None
-            or self.job_runner.get_job_runner_version() > cached_response["job_runner_version"]
-        ):
-            return False
-        if cached_response["progress"] is not None and cached_response["progress"] < 1.0:
-            # this job is still waiting for more inputs to be complete - we should not skip it.
-            # this can happen with fan-in jobs
-            return False
-        try:
-            dataset_git_revision = self.get_dataset_git_revision()
-        except Exception:
-            # an exception occurred while getting the git revision from the Hub - the job will fail anyway, but we
-            # process it to store the error in the cache
-            return False
-        return dataset_git_revision is not None and cached_response["dataset_git_revision"] == dataset_git_revision
-        # skip if the git revision has not changed
 
     def raise_if_parallel_response_exists(self, parallel_cache_kind: str, parallel_job_version: int) -> None:
         try:

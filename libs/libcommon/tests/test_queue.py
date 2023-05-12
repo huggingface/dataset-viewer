@@ -238,8 +238,8 @@ def test_count_by_status() -> None:
     test_dataset = "test_dataset"
     queue = Queue()
 
-    expected_empty = {"waiting": 0, "started": 0, "success": 0, "error": 0, "cancelled": 0, "skipped": 0}
-    expected_one_waiting = {"waiting": 1, "started": 0, "success": 0, "error": 0, "cancelled": 0, "skipped": 0}
+    expected_empty = {"waiting": 0, "started": 0, "success": 0, "error": 0, "cancelled": 0}
+    expected_one_waiting = {"waiting": 1, "started": 0, "success": 0, "error": 0, "cancelled": 0}
 
     assert queue.get_jobs_count_by_status(job_type=test_type) == expected_empty
     assert queue.get_jobs_count_by_status(job_type=test_other_type) == expected_empty
