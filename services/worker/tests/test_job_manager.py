@@ -3,7 +3,7 @@ from http import HTTPStatus
 from typing import Optional
 
 import pytest
-from libcommon.exceptions import CustomError, PreviousStepError
+from libcommon.exceptions import CustomError
 from libcommon.processing_graph import ProcessingGraph, ProcessingStep
 from libcommon.queue import Queue
 from libcommon.resources import CacheMongoResource, QueueMongoResource
