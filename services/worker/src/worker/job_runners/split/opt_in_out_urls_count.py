@@ -61,6 +61,7 @@ def compute_opt_in_out_urls_count_response(
             num_scanned_rows=content["num_scanned_rows"],
             num_urls=content["num_urls"],
             urls_columns=content["urls_columns"],
+            full_scan=content["full_scan"],
         )
     except KeyError as e:
         raise PreviousStepFormatError("Previous step did not return the expected content.", e) from e

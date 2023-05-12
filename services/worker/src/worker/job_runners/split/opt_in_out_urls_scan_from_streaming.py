@@ -232,6 +232,7 @@ def compute_opt_in_out_urls_scan_response(
             num_urls=0,
             num_scanned_rows=0,
             has_urls_columns=False,
+            full_scan=None,
         )
 
     if len(urls_columns) > columns_max_number:
@@ -241,7 +242,7 @@ def compute_opt_in_out_urls_scan_response(
         )
 
     # get the rows
-    rows = get_rows_or_raise(
+    rows_content = get_rows_or_raise(
         dataset=dataset,
         config=config,
         split=split,
@@ -250,6 +251,7 @@ def compute_opt_in_out_urls_scan_response(
         use_auth_token=use_auth_token,
         column_names=urls_columns,
     )
+    rows = rows_content["rows"]
 
     # get the urls
     num_scanned_rows = len(rows)
@@ -294,6 +296,7 @@ def compute_opt_in_out_urls_scan_response(
         num_urls=len(urls),
         num_scanned_rows=num_scanned_rows,
         has_urls_columns=True,
+        full_scan=rows_content["all_fetched"],
     )
 
 

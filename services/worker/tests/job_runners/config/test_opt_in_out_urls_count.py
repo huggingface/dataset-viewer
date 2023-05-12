@@ -70,16 +70,17 @@ def get_job_runner(
     + ",spawning_content,expected_error_code,expected_content,should_raise",
     [
         (
-            "dataset_ok",
+            "dataset_ok_full_scan",
             "config",
             HTTPStatus.OK,
             {
                 "splits": [
-                    {"dataset": "dataset_ok", "config": "config", "split": "split"},
-                    {"dataset": "dataset_ok", "config": "config", "split": "split2"},
+                    {"dataset": "dataset_ok_full_scan", "config": "config", "split": "split"},
+                    {"dataset": "dataset_ok_full_scan", "config": "config", "split": "split2"},
+                    {"dataset": "dataset_ok_full_scan", "config": "config", "split": "split3"},
                 ]
             },
-            [HTTPStatus.OK, HTTPStatus.OK],
+            [HTTPStatus.OK, HTTPStatus.OK, HTTPStatus.OK],
             [
                 {
                     "urls_columns": ["url"],
@@ -88,6 +89,7 @@ def get_job_runner(
                     "num_urls": 10,
                     "num_scanned_rows": 100,
                     "has_urls_columns": True,
+                    "full_scan": True,
                 },
                 {
                     "urls_columns": [],
@@ -96,6 +98,16 @@ def get_job_runner(
                     "num_urls": 0,
                     "num_scanned_rows": 30,
                     "has_urls_columns": False,
+                    "full_scan": True,
+                },
+                {
+                    "urls_columns": [],
+                    "num_opt_in_urls": 0,
+                    "num_opt_out_urls": 0,
+                    "num_urls": 0,
+                    "num_scanned_rows": 30,
+                    "has_urls_columns": False,
+                    "full_scan": True,
                 },
             ],
             None,
@@ -104,8 +116,62 @@ def get_job_runner(
                 "num_opt_in_urls": 1,
                 "num_opt_out_urls": 2,
                 "num_urls": 10,
-                "num_scanned_rows": 130,
+                "num_scanned_rows": 160,
                 "has_urls_columns": True,
+                "full_scan": True,
+            },
+            False,
+        ),
+        (
+            "dataset_ok_not_full_scan",
+            "config",
+            HTTPStatus.OK,
+            {
+                "splits": [
+                    {"dataset": "dataset_ok_not_full_scan", "config": "config", "split": "split"},
+                    {"dataset": "dataset_ok_not_full_scan", "config": "config", "split": "split2"},
+                    {"dataset": "dataset_ok_not_full_scan", "config": "config", "split": "split3"},
+                ]
+            },
+            [HTTPStatus.OK, HTTPStatus.OK, HTTPStatus.OK],
+            [
+                {
+                    "urls_columns": ["url"],
+                    "num_opt_in_urls": 1,
+                    "num_opt_out_urls": 2,
+                    "num_urls": 10,
+                    "num_scanned_rows": 100,
+                    "has_urls_columns": True,
+                    "full_scan": False,
+                },
+                {
+                    "urls_columns": [],
+                    "num_opt_in_urls": 0,
+                    "num_opt_out_urls": 0,
+                    "num_urls": 0,
+                    "num_scanned_rows": 30,
+                    "has_urls_columns": False,
+                    "full_scan": True,
+                },
+                {
+                    "urls_columns": [],
+                    "num_opt_in_urls": 0,
+                    "num_opt_out_urls": 0,
+                    "num_urls": 0,
+                    "num_scanned_rows": 30,
+                    "has_urls_columns": False,
+                    "full_scan": True,
+                },
+            ],
+            None,
+            {
+                "urls_columns": ["url"],
+                "num_opt_in_urls": 1,
+                "num_opt_out_urls": 2,
+                "num_urls": 10,
+                "num_scanned_rows": 160,
+                "has_urls_columns": True,
+                "full_scan": False,
             },
             False,
         ),

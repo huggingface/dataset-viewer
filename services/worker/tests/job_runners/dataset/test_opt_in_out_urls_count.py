@@ -67,12 +67,12 @@ def get_job_runner(
     + ",config_upstream_content,expected_error_code,expected_content,should_raise",
     [
         (
-            "dataset_ok",
+            "dataset_ok_full_scan",
             HTTPStatus.OK,
             {
                 "config_names": [
-                    {"dataset": "dataset_ok", "config": "config1"},
-                    {"dataset": "dataset_ok", "config": "config2"},
+                    {"dataset": "dataset_ok_full_scan", "config": "config1"},
+                    {"dataset": "dataset_ok_full_scan", "config": "config2"},
                 ]
             },
             [HTTPStatus.OK, HTTPStatus.OK],
@@ -84,6 +84,7 @@ def get_job_runner(
                     "num_urls": 100,
                     "num_scanned_rows": 100,
                     "has_urls_columns": True,
+                    "full_scan": True,
                 },
                 {
                     "urls_columns": ["image_url", "label", "url"],
@@ -92,6 +93,7 @@ def get_job_runner(
                     "num_urls": 50,
                     "num_scanned_rows": 300,
                     "has_urls_columns": True,
+                    "full_scan": True,
                 },
             ],
             None,
@@ -102,6 +104,49 @@ def get_job_runner(
                 "num_urls": 150,
                 "num_scanned_rows": 400,
                 "has_urls_columns": True,
+                "full_scan": True,
+            },
+            False,
+        ),
+        (
+            "dataset_ok_not_full_scan",
+            HTTPStatus.OK,
+            {
+                "config_names": [
+                    {"dataset": "dataset_ok_not_full_scan", "config": "config1"},
+                    {"dataset": "dataset_ok_not_full_scan", "config": "config2"},
+                ]
+            },
+            [HTTPStatus.OK, HTTPStatus.OK],
+            [
+                {
+                    "urls_columns": ["image_url", "url"],
+                    "num_opt_in_urls": 10,
+                    "num_opt_out_urls": 20,
+                    "num_urls": 100,
+                    "num_scanned_rows": 100,
+                    "has_urls_columns": True,
+                    "full_scan": False,
+                },
+                {
+                    "urls_columns": ["image_url", "label", "url"],
+                    "num_opt_in_urls": 10,
+                    "num_opt_out_urls": 0,
+                    "num_urls": 50,
+                    "num_scanned_rows": 300,
+                    "has_urls_columns": True,
+                    "full_scan": True,
+                },
+            ],
+            None,
+            {
+                "urls_columns": ["image_url", "label", "url"],
+                "num_opt_in_urls": 20,
+                "num_opt_out_urls": 20,
+                "num_urls": 150,
+                "num_scanned_rows": 400,
+                "has_urls_columns": True,
+                "full_scan": False,
             },
             False,
         ),
