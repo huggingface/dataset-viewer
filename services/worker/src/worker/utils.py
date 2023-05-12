@@ -28,8 +28,8 @@ from datasets import (
     IterableDataset,
     load_dataset,
 )
-from libcommon.exceptions import NormalRowsError, PreviousStepError, StreamingRowsError
-from libcommon.simple_cache import BestResponse, get_best_response
+from libcommon.exceptions import NormalRowsError, StreamingRowsError
+from libcommon.simple_cache import BestResponse, CachedArtifactError, get_best_response
 from libcommon.utils import orjson_dumps
 
 
@@ -404,11 +404,12 @@ def get_previous_step_or_raise(
     """Get the previous step from the cache, or raise an exception if it failed."""
     best_response = get_best_response(kinds=kinds, dataset=dataset, config=config, split=split)
     if best_response.response["http_status"] != HTTPStatus.OK:
-        raise PreviousStepError.from_response(
-            response=best_response.response,
+        raise CachedArtifactError(
+            message="The previous step failed.",
             kind=best_response.kind,
             dataset=dataset,
             config=config,
             split=split,
+            cache_entry_with_details=best_response.response,
         )
     return best_response

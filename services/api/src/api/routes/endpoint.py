@@ -77,7 +77,6 @@ def get_cache_entry_from_steps(
             dataset failed or timed out.
         - [`~libcommon.dataset.DatasetInfoHubRequestError`]: if the request to the Hub to get the dataset
             info failed or timed out.
-        - [`~libcommon.operations.PreviousStepError`]: a previous step has an error
         - [`~libcommon.dataset.DatasetError`]: if the dataset could not be accessed or is not supported
         - [`~api.utils.ResponseNotFoundError`]: if no result is found.
         - [`~api.utils.ResponseNotReadyError`]: if the response is not ready yet.

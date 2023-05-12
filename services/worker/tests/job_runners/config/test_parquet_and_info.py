@@ -558,7 +558,7 @@ def test_compute_splits_response_simple_csv_error(
 @pytest.mark.parametrize(
     "upstream_status,upstream_content,error_code",
     [
-        (HTTPStatus.NOT_FOUND, {"error": "error"}, "PreviousStepError"),
+        (HTTPStatus.NOT_FOUND, {"error": "error"}, "CachedArtifactError"),
         (HTTPStatus.OK, {"not_config_names": "wrong_format"}, "PreviousStepFormatError"),
         (HTTPStatus.OK, {"config_names": "not a list"}, "PreviousStepFormatError"),
     ],

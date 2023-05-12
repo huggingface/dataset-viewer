@@ -130,7 +130,7 @@ def compute_first_rows_response(
           If the number of columns (features) exceeds the maximum supported number of columns.
         - [`libcommon.exceptions.TooBigContentError`]
           If the first rows content exceeds the maximum supported size of bytes.
-        - [`~job_runner.PreviousStepError`]
+        - [`libcommon.simple_cache.CachedArtifactError`]
             If the previous step gave an error.
         - [`libcommon.exceptions.PreviousStepFormatError`]
             If the content of the previous step has not the expected format

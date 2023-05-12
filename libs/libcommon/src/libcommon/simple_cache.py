@@ -7,6 +7,7 @@ from datetime import datetime
 from http import HTTPStatus
 from typing import (
     Any,
+    Dict,
     Generic,
     List,
     Mapping,
@@ -247,6 +248,40 @@ class CacheEntry(CacheEntryWithoutContent):
 
 class CacheEntryWithDetails(CacheEntry):
     details: Mapping[str, str]
+
+
+class CachedArtifactError(Exception):
+    kind: str
+    dataset: str
+    config: Optional[str]
+    split: Optional[str]
+    cache_entry_with_details: CacheEntryWithDetails
+
+    def __init__(
+        self,
+        message: str,
+        kind: str,
+        dataset: str,
+        config: Optional[str],
+        split: Optional[str],
+        cache_entry_with_details: CacheEntryWithDetails,
+    ):
+        super().__init__(message)
+        self.kind = kind
+        self.dataset = dataset
+        self.config = config
+        self.split = split
+        self.cache_entry_with_details = cache_entry_with_details
+
+    def create_enhanced_details(self) -> Dict[str, Any]:
+        enhanced_details: Dict[str, Any] = dict(self.cache_entry_with_details["details"].items())
+        enhanced_details["copied_from_artifact"] = {
+            "kind": self.kind,
+            "dataset": self.dataset,
+            "config": self.config,
+            "split": self.split,
+        }
+        return enhanced_details
 
 
 # Note: we let the exceptions throw (ie DoesNotExist): it's the responsibility of the caller to manage them

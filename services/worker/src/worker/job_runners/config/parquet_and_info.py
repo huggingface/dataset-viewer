@@ -673,7 +673,7 @@ def compute_config_parquet_and_info_response(
             If we failed to get the external files sizes to make sure we can convert the dataset to parquet
         - [`~job_runners.config.parquet_and_info.ExternalFilesSizeRequestError`]
             If we failed to get the external files sizes to make sure we can convert the dataset to parquet
-        - [`~job_runner.PreviousStepError`]
+        - [`libcommon.simple_cache.CachedArtifactError`]
             If the previous step gave an error.
         - [`~job_runners.config.parquet_and_info.PreviousStepFormatError`]
             If the content of the previous step has not the expected format

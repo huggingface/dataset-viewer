@@ -38,7 +38,7 @@ def compute_split_names_from_dataset_info_response(dataset: str, config: str) ->
         `SplitsList`: An object with the list of split names for the dataset and config.
     <Tip>
     Raises the following errors:
-        - [`libcommon.exceptions.PreviousStepError`]
+        - [`libcommon.simple_cache.CachedArtifactError`]
             If the previous step gave an error.
         - [`libcommon.exceptions.PreviousStepFormatError`]
             If the content of the previous step has not the expected format

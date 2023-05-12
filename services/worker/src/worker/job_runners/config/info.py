@@ -25,7 +25,7 @@ def compute_config_info_response(dataset: str, config: str) -> ConfigInfoRespons
         `ConfigInfoResponse`: An object with the dataset_info response for requested config.
     <Tip>
     Raises the following errors:
-        - [`libcommon.exceptions.PreviousStepError`]
+        - [`libcommon.simple_cache.CachedArtifactError`]
             If the previous step gave an error.
         - [`libcommon.exceptions.PreviousStepFormatError`]
             If the content of the previous step doesn't have the expected format

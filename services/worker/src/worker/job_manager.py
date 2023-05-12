@@ -19,6 +19,7 @@ from libcommon.exceptions import (
 )
 from libcommon.processing_graph import ProcessingGraph, ProcessingStep
 from libcommon.simple_cache import (
+    CachedArtifactError,
     DoesNotExist,
     get_response_without_content_params,
     upsert_response_params,
@@ -204,17 +205,36 @@ class JobManager:
             # To avoid filling the cache, we don't save this error. Otherwise, DoS is possible.
             self.debug(f"the dataset={self.job_params['dataset']} could not be found, don't update the cache")
             return False
+        except CachedArtifactError as err:
+            # A previous step (cached artifact required by the job runner) is an error. We copy the cached entry,
+            # so that users can see the underlying error (they are not interested in the internals of the graph).
+            # We add an entry to details: "copied_from_artifact", with its identification details, to have a chance
+            # to debug if needed.
+            upsert_response_params(
+                kind=self.processing_step.cache_kind,
+                job_params=self.job_params,
+                job_runner_version=self.job_runner.get_job_runner_version(),
+                dataset_git_revision=dataset_git_revision,
+                # TODO: should we manage differently arguments above ^ and below v?
+                content=err.cache_entry_with_details["content"],
+                http_status=err.cache_entry_with_details["http_status"],
+                error_code=err.cache_entry_with_details["error_code"],
+                details=err.create_enhanced_details(),
+            )
+            self.debug(f"response for job_info={self.job_info} had an error from a previous step, cache updated")
+            return False
         except Exception as err:
             e = err if isinstance(err, CustomError) else UnexpectedError(str(err), err)
             upsert_response_params(
                 kind=self.processing_step.cache_kind,
                 job_params=self.job_params,
+                job_runner_version=self.job_runner.get_job_runner_version(),
+                dataset_git_revision=dataset_git_revision,
+                # TODO: should we manage differently arguments above ^ and below v?
                 content=dict(e.as_response()),
                 http_status=e.status_code,
                 error_code=e.code,
                 details=dict(e.as_response_with_cause()),
-                job_runner_version=self.job_runner.get_job_runner_version(),
-                dataset_git_revision=dataset_git_revision,
             )
             self.debug(f"response for job_info={self.job_info} had an error, cache updated")
             return False

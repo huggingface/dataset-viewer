@@ -252,7 +252,7 @@ def test_compute(
             10,
             {},
             HTTPStatus.INTERNAL_SERVER_ERROR,
-            "PreviousStepError",
+            "CachedArtifactError",
             HTTPStatus.INTERNAL_SERVER_ERROR,
         ),
         (
