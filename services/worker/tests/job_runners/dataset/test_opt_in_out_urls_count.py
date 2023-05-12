@@ -5,7 +5,6 @@ from http import HTTPStatus
 from typing import Any, Callable, List
 
 import pytest
-from libcommon.exceptions import PreviousStepError
 from libcommon.processing_graph import ProcessingGraph
 from libcommon.resources import CacheMongoResource, QueueMongoResource
 from libcommon.simple_cache import CachedArtifactError, upsert_response
