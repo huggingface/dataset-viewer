@@ -182,9 +182,9 @@ class PreviousStepError(CustomError):
             "error": message,
             # Add lines in the traceback to give some info about the previous step error (a bit hacky)
             "cause_traceback": [
-                "The previous step failed, the error is copied to this step:",
-                f"  {kind=} {dataset=} {config=} {split=}",
-                "---",
+                "The previous step failed, the error is copied from this step:\n",
+                f"  {kind=} {dataset=} {config=} {split=}\n",
+                "---\n",
             ],
         }
         if "cause_exception" in response["details"] and isinstance(response["details"]["cause_exception"], str):

@@ -25,9 +25,9 @@ def compute_config_info_response(dataset: str, config: str) -> ConfigInfoRespons
         `ConfigInfoResponse`: An object with the dataset_info response for requested config.
     <Tip>
     Raises the following errors:
-        - [`~job_runner.PreviousStepError`]
+        - [`libcommon.exceptions.PreviousStepError`]
             If the previous step gave an error.
-        - [`~job_runners.config.info.PreviousStepFormatError`]
+        - [`libcommon.exceptions.PreviousStepFormatError`]
             If the content of the previous step doesn't have the expected format
     </Tip>
     """

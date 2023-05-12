@@ -195,10 +195,10 @@ def get_dataset_info_or_raise(
         `DatasetInfo`: The dataset info
     <Tip>
     Raises the following errors:
-        - [`~.job_runner.DatasetNotFoundError`]
+        - [`libcommon.exceptions.DatasetNotFoundError`]
           If the repository to download from cannot be found. This may be because it doesn't exist,
           or because it is set to `private` and you do not have access.
-        - [`~job_runners.config.parquet_and_info.DatasetRevisionNotFoundError`]
+        - [`libcommon.exceptions.DatasetRevisionNotFoundError`]
           If the revision does not exist or cannot be accessed using the token.
     </Tip>
     """

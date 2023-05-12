@@ -33,9 +33,9 @@ def compute_dataset_info_response(dataset: str) -> Tuple[DatasetInfoResponse, fl
         or raise errors).
     <Tip>
     Raises the following errors:
-        - [`~job_runner.PreviousStepError`]
+        - [`libcommon.exceptions.PreviousStepError`]
             If the previous step gave an error.
-        - [`~job_runners.dataset.info.PreviousStepFormatError`]
+        - [`libcommon.exceptions.PreviousStepFormatError`]
             If the content of the previous step doesn't have the expected format.
     </Tip>
     """

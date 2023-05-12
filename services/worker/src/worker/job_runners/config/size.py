@@ -53,9 +53,9 @@ def compute_config_size_response(dataset: str, config: str) -> ConfigSizeRespons
         `ConfigSizeResponse`: An object with the size_response.
     <Tip>
     Raises the following errors:
-        - [`~job_runner.PreviousStepError`]
+        - [`libcommon.exceptions.PreviousStepError`]
             If the previous step gave an error.
-        - [`~job_runners.config.size.PreviousStepFormatError`]
+        - [`libcommon.exceptions.PreviousStepFormatError`]
             If the content of the previous step has not the expected format
     </Tip>
     """

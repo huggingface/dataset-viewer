@@ -42,13 +42,13 @@ def ask_access(
     Returns:
         `None`
     Raises:
-        - [`~libcommon.dataset.AskAccessHubRequestError`]: if the request to the Hub to get access to the
+        - [`~.exceptions.AskAccessHubRequestError`]: if the request to the Hub to get access to the
             dataset failed or timed out.
-        - [`~libcommon.dataset.GatedExtraFieldsError`]: if the dataset is gated, with extra fields.
+        - [`~.exceptions.GatedExtraFieldsError`]: if the dataset is gated, with extra fields.
             Programmatic access is not implemented for this type of dataset because there is no easy
             way to get the list of extra fields.
-        - [`~libcommon.dataset.GatedDisabledError`]: if the dataset is gated, but disabled.
-        - [`~libcommon.dataset.DatasetNotFoundError`]: if the dataset does not exist, or if the
+        - [`~.exceptions.GatedDisabledError`]: if the dataset is gated, but disabled.
+        - [`~.exceptions.DatasetNotFoundError`]: if the dataset does not exist, or if the
             token does not give the sufficient access to the dataset, or if the dataset is private
             (private datasets are not supported by the datasets server)
         - ['~requests.exceptions.HTTPError']: any other error when asking access

@@ -38,9 +38,9 @@ def compute_split_names_from_dataset_info_response(dataset: str, config: str) ->
         `SplitsList`: An object with the list of split names for the dataset and config.
     <Tip>
     Raises the following errors:
-        - [`~job_runner.PreviousStepError`]
+        - [`libcommon.exceptions.PreviousStepError`]
             If the previous step gave an error.
-        - [`~job_runners.config.split_names_from_dataset_info.PreviousStepFormatError`]
+        - [`libcommon.exceptions.PreviousStepFormatError`]
             If the content of the previous step has not the expected format
     </Tip>
     """

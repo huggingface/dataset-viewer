@@ -118,25 +118,25 @@ def compute_first_rows_response(
         [`SplitFirstRowsResponse`]: The list of first rows of the split.
     <Tip>
     Raises the following errors:
-        - [`~job_runner.SplitNotFoundError`]
+        - [`libcommon.exceptions.SplitNotFoundError`]
           If the split does not exist in the dataset.
-        - [`~job_runners.split.first_rows.InfoError`]
+        - [`libcommon.exceptions.InfoError`]
           If the config info could not be obtained using the datasets library.
-        - [`~job_runners.split.first_rows.FeaturesError`]
+        - [`libcommon.exceptions.FeaturesError`]
           If the split features could not be obtained using the datasets library.
-        - [`~job_runners.split.first_rows.RowsPostProcessingError`]
+        - [`libcommon.exceptions.RowsPostProcessingError`]
           If the post-processing of the split rows failed, e.g. while saving the images or audio files to the assets.
-        - [`~job_runners.split.first_rows.TooManyColumnsError`]
+        - [`libcommon.exceptions.TooManyColumnsError`]
           If the number of columns (features) exceeds the maximum supported number of columns.
-        - [`~job_runners.split.first_rows.TooBigContentError`]
+        - [`libcommon.exceptions.TooBigContentError`]
           If the first rows content exceeds the maximum supported size of bytes.
         - [`~job_runner.PreviousStepError`]
             If the previous step gave an error.
-        - [`~job_runners.split.first_rows.PreviousStepFormatError`]
+        - [`libcommon.exceptions.PreviousStepFormatError`]
             If the content of the previous step has not the expected format
-        - [`~job_runners.common_exceptions.StreamingRowsError`]
+        - [`libcommon.exceptions.StreamingRowsError`]
           If the split rows could not be obtained using the datasets library in streaming mode.
-        - [`~job_runners.common_exceptions.NormalRowsError`]
+        - [`libcommon.exceptions.NormalRowsError`]
           If the split rows could not be obtained using the datasets library in normal mode.
     </Tip>
     """

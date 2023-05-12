@@ -29,9 +29,9 @@ def compute_parquet_response(dataset: str, config: str) -> ConfigParquetResponse
         `ConfigParquetResponse`: An object with the parquet_response (list of parquet files).
     <Tip>
     Raises the following errors:
-        - [`~job_runner.PreviousStepError`]
+        - [`libcommon.exceptions.PreviousStepError`]
             If the previous step gave an error.
-        - [`~job_runners.parquet.PreviousStepFormatError`]
+        - [`libcommon.exceptions.PreviousStepFormatError`]
             If the content of the previous step has not the expected format
     </Tip>
     """

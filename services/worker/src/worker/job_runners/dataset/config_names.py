@@ -46,11 +46,11 @@ def compute_config_names_response(
         `ConfigNamesResponse`: An object with the list of config names.
     <Tip>
     Raises the following errors:
-        - [`~job_runners.config_names.EmptyDatasetError`]
+        - [`libcommon.exceptions.EmptyDatasetError`]
           The dataset is empty.
-        - [`~job_runners.config_names.DatasetModuleNotInstalledError`]
+        - [`libcommon.exceptions.DatasetModuleNotInstalledError`]
           The dataset tries to import a module that is not installed.
-        - [`~job_runners.config_names.ConfigNamesError`]
+        - [`libcommon.exceptions.ConfigNamesError`]
           If the list of configs could not be obtained using the datasets library.
     </Tip>
     """
