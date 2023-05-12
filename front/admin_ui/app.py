@@ -5,7 +5,11 @@ from itertools import product
 import pandas as pd
 import requests
 import gradio as gr
+from libcommon.processing_graph import ProcessingGraph
+from libcommon.config import ProcessingGraphConfig
 import matplotlib
+import matplotlib.pyplot as plt
+import networkx as nx
 import huggingface_hub as hfh
 import duckdb
 import json
@@ -33,6 +37,16 @@ def healthcheck():
 
     else:
         return f"❌ Failed to connect to {DSS_ENDPOINT} (error {response.status_code})"
+
+
+def draw_graph(width, height):
+    config = ProcessingGraphConfig()
+    graph = ProcessingGraph(config.specification)._nx_graph
+
+    pos = nx.nx_agraph.graphviz_layout(graph, prog="dot")
+    fig = plt.figure(figsize=(width, height))
+    nx.draw_networkx(graph, pos=pos)
+    return fig
 
 
 with gr.Blocks() as demo:
@@ -82,7 +96,15 @@ with gr.Blocks() as demo:
                 backfill_plan_table = gr.DataFrame(visible=False)
                 backfill_execute_button = gr.Button("Execute backfill plan", visible=False)
                 backfill_execute_error = gr.Markdown("", visible=False)
-
+            with gr.Tab("Processing graph"):
+                gr.Markdown("## 💫 Please, don't forget to rebuild (factory reboot) this space immediately after each deploy 💫")
+                gr.Markdown("### so that we get the 🚀 production 🚀 version of the graph here ")
+                with gr.Row():
+                    width = gr.Slider(1, 30, 19, step=1, label="Width")
+                    height = gr.Slider(1, 30, 15, step=1, label="Height")
+                output = gr.Plot()
+                draw_button = gr.Button("Plot processing graph")
+                draw_button.click(draw_graph, inputs=[width, height], outputs=output)
 
     def auth(token):
         if not token:
