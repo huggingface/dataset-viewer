@@ -5,7 +5,7 @@ import logging
 from typing import Optional
 
 from libcommon.dataset import get_dataset_git_revision
-from libcommon.exceptions import JobRunnerError
+from libcommon.exceptions import CustomError
 from libcommon.processing_graph import InputType
 from libcommon.queue import Queue
 from starlette.requests import Request
@@ -60,7 +60,7 @@ def create_force_refresh_endpoint(
                 {"status": "ok"},
                 max_age=0,
             )
-        except (JobRunnerError, AdminCustomError) as e:
+        except CustomError as e:
             return get_json_admin_error_response(e, max_age=0)
         except Exception as e:
             return get_json_admin_error_response(UnexpectedError("Unexpected error.", e), max_age=0)
