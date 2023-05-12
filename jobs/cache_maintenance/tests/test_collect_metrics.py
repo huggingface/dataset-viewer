@@ -5,7 +5,7 @@ from http import HTTPStatus
 
 from libcommon.metrics import CacheTotalMetric, JobTotalMetric
 from libcommon.processing_graph import ProcessingGraph
-from libcommon.queue import Queue, Status
+from libcommon.queue import Queue
 from libcommon.simple_cache import upsert_response
 from libcommon.utils import Status
 
