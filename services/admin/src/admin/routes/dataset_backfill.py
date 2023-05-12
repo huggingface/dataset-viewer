@@ -13,7 +13,6 @@ from starlette.responses import Response
 
 from admin.authentication import auth_check
 from admin.utils import (
-    AdminCustomError,
     Endpoint,
     MissingRequiredParameterError,
     UnexpectedError,
