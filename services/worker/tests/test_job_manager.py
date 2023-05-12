@@ -311,9 +311,9 @@ def test_previous_step_error(disclose_cause: bool) -> None:
         "cause_exception": cause_exception,
         "cause_message": cause_message,
         "cause_traceback": [
-            "The previous step failed, the error is copied to this step:",
-            f"  {kind=} {dataset=} {config=} {split=}",
-            "---",
+            "The previous step failed, the error is copied from this step:\n",
+            f"  {kind=} {dataset=} {config=} {split=}\n",
+            "---\n",
             *cause_traceback,
         ],
     }
