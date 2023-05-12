@@ -45,7 +45,7 @@ def draw_graph(width, height):
 
     pos = nx.nx_agraph.graphviz_layout(graph, prog="dot")
     fig = plt.figure(figsize=(width, height))
-    nx.draw_networkx(graph, pos=pos)
+    nx.draw_networkx(graph, pos=pos, node_color="#d1b2f8", node_size=500)
     return fig
 
 
