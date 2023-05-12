@@ -40,7 +40,6 @@ def get_job_info(prefix: str = "base") -> JobInfo:
             "config": "default",
             "split": "train",
         },
-        force=False,
         priority=Priority.LOW,
     )
 

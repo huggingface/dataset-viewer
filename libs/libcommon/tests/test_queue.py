@@ -29,7 +29,7 @@ def test__add_job() -> None:
     # get the queue
     queue = Queue()
     # add a job
-    queue._add_job(job_type=test_type, dataset=test_dataset, force=True)
+    queue._add_job(job_type=test_type, dataset=test_dataset)
     # a second call adds a second waiting job
     queue._add_job(job_type=test_type, dataset=test_dataset)
     assert queue.is_job_in_process(job_type=test_type, dataset=test_dataset)
@@ -39,11 +39,10 @@ def test__add_job() -> None:
     assert job_info["params"]["dataset"] == test_dataset
     assert job_info["params"]["config"] is None
     assert job_info["params"]["split"] is None
-    assert job_info["force"]
     assert queue.is_job_in_process(job_type=test_type, dataset=test_dataset)
     # adding the job while the first one has not finished yet adds another waiting job
     # (there are no limits to the number of waiting jobs)
-    queue._add_job(job_type=test_type, dataset=test_dataset, force=True)
+    queue._add_job(job_type=test_type, dataset=test_dataset)
     with pytest.raises(EmptyQueueError):
         # but: it's not possible to start two jobs with the same arguments
         queue.start_job()
@@ -53,11 +52,9 @@ def test__add_job() -> None:
     assert queue.is_job_in_process(job_type=test_type, dataset=test_dataset)
     # process the second job
     job_info = queue.start_job()
-    assert not job_info["force"]
     queue.finish_job(job_id=job_info["job_id"], finished_status=Status.SUCCESS)
     # and the third one
     job_info = queue.start_job()
-    assert job_info["force"]
     other_job_id = ("1" if job_info["job_id"][0] == "0" else "0") + job_info["job_id"][1:]
     # trying to finish another job fails silently (with a log)
     queue.finish_job(job_id=other_job_id, finished_status=Status.SUCCESS)
@@ -76,7 +73,7 @@ def test_upsert_job() -> None:
     # get the queue
     queue = Queue()
     # upsert a job
-    queue.upsert_job(job_type=test_type, dataset=test_dataset, force=True)
+    queue.upsert_job(job_type=test_type, dataset=test_dataset)
     # a second call creates a second waiting job, and the first one is cancelled
     queue.upsert_job(job_type=test_type, dataset=test_dataset)
     assert queue.is_job_in_process(job_type=test_type, dataset=test_dataset)
@@ -86,10 +83,9 @@ def test_upsert_job() -> None:
     assert job_info["params"]["dataset"] == test_dataset
     assert job_info["params"]["config"] is None
     assert job_info["params"]["split"] is None
-    assert job_info["force"]  # the new job inherits from waiting forced jobs
     assert queue.is_job_in_process(job_type=test_type, dataset=test_dataset)
     # adding the job while the first one has not finished yet adds a new waiting job
-    queue.upsert_job(job_type=test_type, dataset=test_dataset, force=False)
+    queue.upsert_job(job_type=test_type, dataset=test_dataset)
     with pytest.raises(EmptyQueueError):
         # but: it's not possible to start two jobs with the same arguments
         queue.start_job()
@@ -99,7 +95,6 @@ def test_upsert_job() -> None:
     assert queue.is_job_in_process(job_type=test_type, dataset=test_dataset)
     # process the second job
     job_info = queue.start_job()
-    assert not job_info["force"]  # the new jobs does not inherit from started forced jobs
     queue.finish_job(job_id=job_info["job_id"], finished_status=Status.SUCCESS)
     # the queue is empty
     assert not queue.is_job_in_process(job_type=test_type, dataset=test_dataset)
@@ -122,7 +117,7 @@ def test_cancel_jobs(statuses_to_cancel: Optional[List[Status]], expected_remain
     test_type = "test_type"
     test_dataset = "test_dataset"
     queue = Queue()
-    queue._add_job(job_type=test_type, dataset=test_dataset, force=True)
+    queue._add_job(job_type=test_type, dataset=test_dataset)
     queue._add_job(job_type=test_type, dataset=test_dataset)
     queue.start_job()
 

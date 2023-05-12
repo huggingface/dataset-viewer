@@ -61,10 +61,9 @@ class CacheEntry:
 
 
 @pytest.mark.parametrize(
-    "force,cache_entry,expected_skip",
+    "cache_entry,expected_skip",
     [
         (
-            False,
             CacheEntry(
                 error_code="DoNotRetry",  # an error that we don't want to retry
                 job_runner_version=DummyJobRunner.get_job_runner_version(),
@@ -73,7 +72,6 @@ class CacheEntry:
             True,  # skip
         ),
         (
-            False,
             CacheEntry(
                 error_code=None,  # no error
                 job_runner_version=DummyJobRunner.get_job_runner_version(),
@@ -82,21 +80,10 @@ class CacheEntry:
             True,  # skip
         ),
         (
-            True,  # force
-            CacheEntry(
-                error_code="DoNotRetry",
-                job_runner_version=DummyJobRunner.get_job_runner_version(),
-                dataset_git_revision=DummyJobRunner._get_dataset_git_revision(),
-            ),
-            False,  # process
-        ),
-        (
-            False,
             None,  # no cache entry
             False,  # process
         ),
         (
-            False,
             CacheEntry(
                 error_code=ERROR_CODES_TO_RETRY[0],  # an error that we want to retry
                 job_runner_version=DummyJobRunner.get_job_runner_version(),
@@ -105,7 +92,6 @@ class CacheEntry:
             False,  # process
         ),
         (
-            False,
             CacheEntry(
                 error_code="DoNotRetry",
                 job_runner_version=None,  # no version
@@ -114,7 +100,6 @@ class CacheEntry:
             False,  # process
         ),
         (
-            False,
             CacheEntry(
                 error_code="DoNotRetry",
                 job_runner_version=0,  # a different version
@@ -123,7 +108,6 @@ class CacheEntry:
             False,  # process
         ),
         (
-            False,
             CacheEntry(
                 error_code="DoNotRetry",
                 job_runner_version=DummyJobRunner.get_job_runner_version(),
@@ -132,7 +116,6 @@ class CacheEntry:
             False,  # process
         ),
         (
-            False,
             CacheEntry(
                 error_code="DoNotRetry",
                 job_runner_version=DummyJobRunner.get_job_runner_version(),
@@ -141,7 +124,6 @@ class CacheEntry:
             False,  # process
         ),
         (
-            False,
             CacheEntry(
                 error_code=None,  # no error
                 job_runner_version=DummyJobRunner.get_job_runner_version(),
@@ -151,7 +133,6 @@ class CacheEntry:
             False,  # process
         ),
         (
-            False,
             CacheEntry(
                 error_code=None,  # no error
                 job_runner_version=DummyJobRunner.get_job_runner_version(),
@@ -166,7 +147,6 @@ def test_should_skip_job(
     app_config: AppConfig,
     test_processing_graph: ProcessingGraph,
     test_processing_step: ProcessingStep,
-    force: bool,
     cache_entry: Optional[CacheEntry],
     expected_skip: bool,
 ) -> None:
@@ -182,7 +162,6 @@ def test_should_skip_job(
             "config": config,
             "split": split,
         },
-        force=force,
         priority=Priority.NORMAL,
     )
 
@@ -226,7 +205,6 @@ def test_check_type(
     dataset = "dataset"
     config = "config"
     split = "split"
-    force = False
 
     job_type = f"not-{test_processing_step.job_type}"
     job_info = JobInfo(
@@ -237,7 +215,6 @@ def test_check_type(
             "config": config,
             "split": split,
         },
-        force=force,
         priority=Priority.NORMAL,
     )
     with pytest.raises(ValueError):
@@ -259,7 +236,6 @@ def test_check_type(
             "config": config,
             "split": split,
         },
-        force=force,
         priority=Priority.NORMAL,
     )
     with pytest.raises(ValueError):
@@ -299,7 +275,6 @@ def test_backfill(priority: Priority, app_config: AppConfig) -> None:
             "config": None,
             "split": None,
         },
-        force=False,
         priority=priority,
     )
 
@@ -344,7 +319,6 @@ def test_job_runner_set_crashed(
     dataset = "dataset"
     config = "config"
     split = "split"
-    force = False
     message = "I'm crashed :("
 
     job_info = JobInfo(
@@ -355,7 +329,6 @@ def test_job_runner_set_crashed(
             "config": config,
             "split": split,
         },
-        force=force,
         priority=Priority.NORMAL,
     )
     job_runner = DummyJobRunner(
@@ -411,7 +384,6 @@ def test_raise_if_parallel_response_exists(
             "config": config,
             "split": split,
         },
-        force=False,
         priority=Priority.NORMAL,
     )
     job_runner = DummyJobRunner(
@@ -501,7 +473,6 @@ def test_doesnotexist(app_config: AppConfig) -> None:
             "config": config,
             "split": split,
         },
-        force=False,
         priority=Priority.NORMAL,
     )
     processing_step_name = "dummy"

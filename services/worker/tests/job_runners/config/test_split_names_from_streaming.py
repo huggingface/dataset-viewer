@@ -19,7 +19,7 @@ from worker.resources import LibrariesResource
 
 from ...fixtures.hub import HubDatasets, get_default_config_split
 
-GetJobRunner = Callable[[str, str, AppConfig, bool], SplitNamesFromStreamingJobRunner]
+GetJobRunner = Callable[[str, str, AppConfig], SplitNamesFromStreamingJobRunner]
 
 
 @pytest.fixture
@@ -32,7 +32,6 @@ def get_job_runner(
         dataset: str,
         config: str,
         app_config: AppConfig,
-        force: bool = False,
     ) -> SplitNamesFromStreamingJobRunner:
         processing_step_name = SplitNamesFromStreamingJobRunner.get_job_type()
         processing_graph = ProcessingGraph(
@@ -54,7 +53,6 @@ def get_job_runner(
                     "split": None,
                 },
                 "job_id": "job_id",
-                "force": force,
                 "priority": Priority.NORMAL,
             },
             app_config=app_config,
@@ -67,7 +65,7 @@ def get_job_runner(
 
 def test_compute(app_config: AppConfig, get_job_runner: GetJobRunner, hub_public_csv: str) -> None:
     dataset, config, _ = get_default_config_split(hub_public_csv)
-    job_runner = get_job_runner(dataset, config, app_config, False)
+    job_runner = get_job_runner(dataset, config, app_config)
     response = job_runner.compute()
     content = response.content
     assert len(content["splits"]) == 1
@@ -103,7 +101,6 @@ def test_compute_split_names_from_streaming_response(
         dataset,
         config,
         app_config if use_token else replace(app_config, common=replace(app_config.common, hf_token=None)),
-        False,
     )
     job_runner.get_dataset_git_revision = Mock(return_value="1.0.0")  # type: ignore
     if error_code is None:

@@ -21,7 +21,7 @@ def prepare_and_clean_mongo(app_config: AppConfig) -> None:
     pass
 
 
-GetJobRunner = Callable[[str, str, AppConfig, bool], ConfigInfoJobRunner]
+GetJobRunner = Callable[[str, str, AppConfig], ConfigInfoJobRunner]
 
 
 CONFIG_INFO_1 = {
@@ -140,7 +140,6 @@ def get_job_runner(
         dataset: str,
         config: str,
         app_config: AppConfig,
-        force: bool = False,
     ) -> ConfigInfoJobRunner:
         processing_step_name = ConfigInfoJobRunner.get_job_type()
         processing_graph = ProcessingGraph(
@@ -162,7 +161,6 @@ def get_job_runner(
                     "split": None,
                 },
                 "job_id": "job_id",
-                "force": force,
                 "priority": Priority.NORMAL,
             },
             app_config=app_config,
@@ -225,7 +223,7 @@ def test_compute(
         content=upstream_content,
         http_status=upstream_status,
     )
-    job_runner = get_job_runner(dataset, config, app_config, False)
+    job_runner = get_job_runner(dataset, config, app_config)
     if should_raise:
         with pytest.raises(Exception) as e:
             job_runner.compute()
@@ -236,6 +234,6 @@ def test_compute(
 
 def test_doesnotexist(app_config: AppConfig, get_job_runner: GetJobRunner) -> None:
     dataset = config = "doesnotexist"
-    job_runner = get_job_runner(dataset, config, app_config, False)
+    job_runner = get_job_runner(dataset, config, app_config)
     with pytest.raises(PreviousStepError):
         job_runner.compute()
