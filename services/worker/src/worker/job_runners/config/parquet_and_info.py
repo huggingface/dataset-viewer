@@ -40,10 +40,11 @@ from libcommon.constants import (
     PROCESSING_STEP_CONFIG_PARQUET_AND_INFO_ROW_GROUP_SIZE_FOR_IMAGE_DATASETS,
     PROCESSING_STEP_CONFIG_PARQUET_AND_INFO_VERSION,
 )
-from libcommon.dataset import DatasetNotFoundError, ask_access
+from libcommon.dataset import ask_access
 from libcommon.exceptions import (
     ConfigNamesError,
     DatasetInBlockListError,
+    DatasetNotFoundError,
     DatasetRevisionNotFoundError,
     DatasetTooBigFromDatasetsError,
     DatasetTooBigFromHubError,

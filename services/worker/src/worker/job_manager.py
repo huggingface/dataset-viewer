@@ -6,9 +6,10 @@ from http import HTTPStatus
 from typing import Literal, Optional
 
 from libcommon.config import CommonConfig
-from libcommon.dataset import DatasetNotFoundError, get_dataset_git_revision
+from libcommon.dataset import get_dataset_git_revision
 from libcommon.exceptions import (
     CustomError,
+    DatasetNotFoundError,
     JobManagerCrashedError,
     JobManagerExceededMaximumDurationError,
     NoGitRevisionError,
