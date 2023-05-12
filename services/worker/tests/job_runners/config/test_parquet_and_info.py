@@ -24,7 +24,7 @@ from libcommon.exceptions import (
 )
 from libcommon.processing_graph import ProcessingGraph
 from libcommon.resources import CacheMongoResource, QueueMongoResource
-from libcommon.simple_cache import upsert_response
+from libcommon.simple_cache import CachedArtifactError, upsert_response
 from libcommon.utils import Priority
 
 from worker.config import AppConfig
@@ -526,7 +526,6 @@ def test_compute_splits_response_simple_csv_ok(
     [
         ("gated_extra_fields", "GatedExtraFieldsError", "HTTPError"),
         ("private", "DatasetNotFoundError", None),
-        ("public", "CachedResponseNotFound", None),  # no cache for /config-names -> CachedResponseNotFound
     ],
 )
 def test_compute_splits_response_simple_csv_error(
@@ -553,6 +552,28 @@ def test_compute_splits_response_simple_csv_error(
         assert response_dict["cause_exception"] == cause
         assert isinstance(response_dict["cause_traceback"], list)
         assert response_dict["cause_traceback"][0] == "Traceback (most recent call last):\n"
+
+
+@pytest.mark.parametrize(
+    "name,error_code,cause",
+    [
+        ("public", "CachedResponseNotFound", None),  # no cache for /config-names -> CachedResponseNotFound
+    ],
+)
+def test_compute_splits_response_simple_csv_error_2(
+    hub_datasets: HubDatasets,
+    get_job_runner: GetJobRunner,
+    name: str,
+    error_code: str,
+    cause: str,
+    app_config: AppConfig,
+) -> None:
+    dataset = hub_datasets[name]["name"]
+    config_names_response = hub_datasets[name]["config_names_response"]
+    config = config_names_response["config_names"][0]["config"] if config_names_response else None
+    job_runner = get_job_runner(dataset, config, app_config)
+    with pytest.raises(CachedArtifactError):
+        job_runner.compute()
 
 
 @pytest.mark.parametrize(
