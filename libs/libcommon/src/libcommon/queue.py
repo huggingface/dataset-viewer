@@ -230,7 +230,9 @@ class Queue:
             revision=revision,
             config=config,
             split=split,
-            unicity_id=inputs_to_string(dataset=dataset, config=config, split=split, prefix=job_type),
+            unicity_id=inputs_to_string(
+                dataset=dataset, revision=revision, config=config, split=split, prefix=job_type
+            ),
             namespace=dataset.split("/")[0],
             priority=priority,
             created_at=get_datetime(),
@@ -293,6 +295,7 @@ class Queue:
         Args:
             job_type (`str`): The type of the job
             dataset (`str`): The dataset on which to apply the job.
+            revision (`str`): The git revision of the dataset.
             config (`str`, optional): The config on which to apply the job.
             split (`str`, optional): The config on which to apply the job.
             statuses_to_cancel (`list[Status]`, optional): The list of statuses to cancel. Defaults to
