@@ -318,6 +318,7 @@ class DeleteJobTask(Task):
         Queue().cancel_jobs(
             job_type=self.artifact_state.processing_step.job_type,
             dataset=self.artifact_state.dataset,
+            revision=self.artifact_state.revision,
             config=self.artifact_state.config,
             split=self.artifact_state.split,
             statuses_to_cancel=[Status.WAITING, Status.STARTED],
