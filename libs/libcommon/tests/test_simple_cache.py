@@ -785,7 +785,7 @@ def test_cached_artifact_error() -> None:
     assert error.cache_entry_with_details["content"] == content
     assert error.cache_entry_with_details["http_status"] == HTTPStatus.INTERNAL_SERVER_ERROR
     assert error.cache_entry_with_details["error_code"] == error_code
-    assert error.create_enhanced_details() == {
+    assert error.enhanced_details == {
         "error": error_message,
         "cause_exception": cause_exception,
         "cause_message": cause_message,

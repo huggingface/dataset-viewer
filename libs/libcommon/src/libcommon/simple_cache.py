@@ -256,6 +256,7 @@ class CachedArtifactError(Exception):
     config: Optional[str]
     split: Optional[str]
     cache_entry_with_details: CacheEntryWithDetails
+    enhanced_details: Dict[str, Any]
 
     def __init__(
         self,
@@ -272,16 +273,13 @@ class CachedArtifactError(Exception):
         self.config = config
         self.split = split
         self.cache_entry_with_details = cache_entry_with_details
-
-    def create_enhanced_details(self) -> Dict[str, Any]:
-        enhanced_details: Dict[str, Any] = dict(self.cache_entry_with_details["details"].items())
-        enhanced_details["copied_from_artifact"] = {
+        self.enhanced_details: Dict[str, Any] = dict(self.cache_entry_with_details["details"].items())
+        self.enhanced_details["copied_from_artifact"] = {
             "kind": self.kind,
             "dataset": self.dataset,
             "config": self.config,
             "split": self.split,
         }
-        return enhanced_details
 
 
 # Note: we let the exceptions throw (ie DoesNotExist): it's the responsibility of the caller to manage them

@@ -219,7 +219,7 @@ class JobManager:
                 content=err.cache_entry_with_details["content"],
                 http_status=err.cache_entry_with_details["http_status"],
                 error_code=err.cache_entry_with_details["error_code"],
-                details=err.create_enhanced_details(),
+                details=err.enhanced_details,
             )
             self.debug(f"response for job_info={self.job_info} had an error from a previous step, cache updated")
             return False
