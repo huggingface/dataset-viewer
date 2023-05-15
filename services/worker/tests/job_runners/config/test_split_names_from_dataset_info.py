@@ -19,7 +19,7 @@ from worker.job_runners.config.split_names_from_dataset_info import (
     SplitNamesFromDatasetInfoJobRunner,
 )
 
-GetJobRunner = Callable[[str, str, AppConfig, bool], SplitNamesFromDatasetInfoJobRunner]
+GetJobRunner = Callable[[str, str, AppConfig], SplitNamesFromDatasetInfoJobRunner]
 
 
 @pytest.fixture
@@ -31,7 +31,6 @@ def get_job_runner(
         dataset: str,
         config: str,
         app_config: AppConfig,
-        force: bool = False,
     ) -> SplitNamesFromDatasetInfoJobRunner:
         processing_step_name = SplitNamesFromDatasetInfoJobRunner.get_job_type()
         processing_graph = ProcessingGraph(
@@ -53,7 +52,6 @@ def get_job_runner(
                     "split": None,
                 },
                 "job_id": "job_id",
-                "force": force,
                 "priority": Priority.NORMAL,
             },
             app_config=app_config,
@@ -130,7 +128,7 @@ def test_compute(
     upsert_response(
         kind="config-info", dataset=dataset, config=config, content=upstream_content, http_status=upstream_status
     )
-    job_runner = get_job_runner(dataset, config, app_config, False)
+    job_runner = get_job_runner(dataset, config, app_config)
     job_runner.get_dataset_git_revision = Mock(return_value="1.0.0")  # type: ignore
 
     if error_code:
@@ -144,7 +142,7 @@ def test_compute(
 def test_doesnotexist(app_config: AppConfig, get_job_runner: GetJobRunner) -> None:
     dataset = "non_existent"
     config = "non_existent"
-    worker = get_job_runner(dataset, config, app_config, False)
+    worker = get_job_runner(dataset, config, app_config)
     with pytest.raises(CustomError) as exc_info:
         worker.compute()
     assert exc_info.value.status_code == HTTPStatus.NOT_FOUND

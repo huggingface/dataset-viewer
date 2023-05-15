@@ -12,7 +12,7 @@ from typing import Generic, List, Literal, Optional, Type, TypedDict, TypeVar
 
 import pytz
 from mongoengine import Document, DoesNotExist
-from mongoengine.fields import BooleanField, DateTimeField, EnumField, StringField
+from mongoengine.fields import DateTimeField, EnumField, StringField
 from mongoengine.queryset.queryset import QuerySet
 
 from libcommon.constants import (
@@ -49,7 +49,6 @@ class JobDict(TypedDict):
     split: Optional[str]
     unicity_id: str
     namespace: str
-    force: bool
     priority: str
     status: str
     created_at: datetime
@@ -64,7 +63,6 @@ class CountByStatus(TypedDict):
     success: int
     error: int
     cancelled: int
-    skipped: int
 
 
 class DumpByPendingStatus(TypedDict):
@@ -93,7 +91,6 @@ class Job(Document):
         unicity_id (`str`): A string that identifies the job uniquely. Only one job with the same unicity_id can be in
           the started state.
         namespace (`str`): The dataset namespace (user or organization) if any, else the dataset name (canonical name).
-        force (`bool`, optional): If True, the job SHOULD not be skipped. Defaults to False.
         priority (`Priority`, optional): The priority of the job. Defaults to Priority.NORMAL.
         status (`Status`, optional): The status of the job. Defaults to Status.WAITING.
         created_at (`datetime`): The creation date of the job.
@@ -110,7 +107,7 @@ class Job(Document):
             "status",
             ("type", "status"),
             ("type", "dataset", "status"),
-            ("type", "dataset", "config", "split", "status", "force", "priority"),
+            ("type", "dataset", "config", "split", "status", "priority"),
             ("priority", "status", "created_at", "namespace", "unicity_id"),
             ("priority", "status", "created_at", "type", "namespace"),
             ("priority", "status", "type", "created_at", "namespace", "unicity_id"),
@@ -125,7 +122,6 @@ class Job(Document):
     split = StringField()
     unicity_id = StringField(required=True)
     namespace = StringField(required=True)
-    force = BooleanField(default=False)
     priority = EnumField(Priority, default=Priority.NORMAL)
     status = EnumField(Status, default=Status.WAITING)
     created_at = DateTimeField(required=True)
@@ -141,7 +137,6 @@ class Job(Document):
             "split": self.split,
             "unicity_id": self.unicity_id,
             "namespace": self.namespace,
-            "force": self.force,
             "priority": self.priority.value,
             "status": self.status.value,
             "created_at": self.created_at,
@@ -162,7 +157,6 @@ class Job(Document):
                     "config": self.config,
                     "split": self.split,
                 },
-                "force": self.force,
                 "priority": self.priority,
             }
         )
@@ -176,9 +170,9 @@ class Queue:
 
     It's a FIFO queue, with the following properties:
     - a job is identified by its input arguments: unicity_id (type, dataset, config and split)
-    - a job can be in one of the following states: waiting, started, success, error, cancelled, skipped
+    - a job can be in one of the following states: waiting, started, success, error, cancelled
     - a job can be in the queue only once (unicity_id) in the "started" or "waiting" state
-    - a job can be in the queue multiple times in the other states (success, error, cancelled, skipped)
+    - a job can be in the queue multiple times in the other states (success, error, cancelled)
     - a job has a priority (two levels: NORMAL and LOW)
     - the queue is ordered by priority then by the creation date of the jobs
     - datasets and users that already have started jobs are de-prioritized (using namespace)
@@ -205,7 +199,6 @@ class Queue:
         dataset: str,
         config: Optional[str] = None,
         split: Optional[str] = None,
-        force: bool = False,
         priority: Priority = Priority.NORMAL,
     ) -> Job:
         """Add a job to the queue in the waiting state.
@@ -217,7 +210,6 @@ class Queue:
             dataset (`str`): The dataset on which to apply the job.
             config (`str`, optional): The config on which to apply the job.
             split (`str`, optional): The config on which to apply the job.
-            force (`bool`, optional): If True, the job SHOULD not be skipped. Defaults to False.
             priority (`Priority`, optional): The priority of the job. Defaults to Priority.NORMAL.
 
         Returns: the job
@@ -229,7 +221,6 @@ class Queue:
             split=split,
             unicity_id=inputs_to_string(dataset=dataset, config=config, split=split, prefix=job_type),
             namespace=dataset.split("/")[0],
-            force=force,
             priority=priority,
             created_at=get_datetime(),
             status=Status.WAITING,
@@ -241,22 +232,19 @@ class Queue:
         dataset: str,
         config: Optional[str] = None,
         split: Optional[str] = None,
-        force: bool = False,
         priority: Priority = Priority.NORMAL,
     ) -> Job:
         """Add, or update, a job to the queue in the waiting state.
 
         If jobs already exist with the same parameters in the waiting state, they are cancelled and replaced by a new
         one.
-        Note that the new job inherits the force=True property if one of the previous waiting jobs had it.
-        In the same way, the new job inherits the highest priority.
+        Note that the new job inherits the highest priority of the previous waiting jobs.
 
         Args:
             job_type (`str`): The type of the job
             dataset (`str`): The dataset on which to apply the job.
             config (`str`, optional): The config on which to apply the job.
             split (`str`, optional): The config on which to apply the job.
-            force (`bool`, optional): If True, the job SHOULD not be skipped. Defaults to False.
             priority (`Priority`, optional): The priority of the job. Defaults to Priority.NORMAL.
 
         Returns: the job
@@ -264,14 +252,9 @@ class Queue:
         canceled_jobs = self.cancel_jobs(
             job_type=job_type, dataset=dataset, config=config, split=split, statuses_to_cancel=[Status.WAITING]
         )
-        for job in canceled_jobs:
-            if job["force"]:
-                force = True
-            if job["priority"] == Priority.NORMAL:
-                priority = Priority.NORMAL
-        return self._add_job(
-            job_type=job_type, dataset=dataset, config=config, split=split, force=force, priority=priority
-        )
+        if any(job["priority"] == Priority.NORMAL for job in canceled_jobs):
+            priority = Priority.NORMAL
+        return self._add_job(job_type=job_type, dataset=dataset, config=config, split=split, priority=priority)
 
     def cancel_jobs(
         self,
@@ -349,7 +332,7 @@ class Queue:
                 status=Status.WAITING, namespace__nin=set(started_job_namespaces), priority=priority, **filters
             )
             .order_by("+created_at")
-            .only("type", "dataset", "config", "split", "force")
+            .only("type", "dataset", "config", "split")
             .no_cache()
             .first()
         )
@@ -392,7 +375,7 @@ class Queue:
                     **filters,
                 )
                 .order_by("+created_at")
-                .only("type", "dataset", "config", "split", "force")
+                .only("type", "dataset", "config", "split")
                 .no_cache()
                 .first()
             )
@@ -448,7 +431,7 @@ class Queue:
             EmptyQueueError: if there is no job in the queue, within the limit of the maximum number of started jobs
             for a dataset
 
-        Returns: the job id, the type, the input arguments: dataset, config and split and the force flag
+        Returns: the job id, the type, the input arguments: dataset, config and split
         """
         logging.debug(f"looking for a job to start, blocked types: {job_types_blocked}, only types: {job_types_only}")
         next_waiting_job = self.get_next_waiting_job(
@@ -494,7 +477,7 @@ class Queue:
         job = self.get_job_with_id(job_id=job_id)
         return job.type
 
-    def finish_job(self, job_id: str, finished_status: Literal[Status.SUCCESS, Status.ERROR, Status.SKIPPED]) -> None:
+    def finish_job(self, job_id: str, finished_status: Literal[Status.SUCCESS, Status.ERROR]) -> None:
         """Finish a job in the queue.
 
         The job is moved from the started state to the success or error state.
@@ -579,7 +562,6 @@ class Queue:
             "success": self.count_jobs(status=Status.SUCCESS, job_type=job_type),
             "error": self.count_jobs(status=Status.ERROR, job_type=job_type),
             "cancelled": self.count_jobs(status=Status.CANCELLED, job_type=job_type),
-            "skipped": self.count_jobs(status=Status.SKIPPED, job_type=job_type),
         }
 
     def get_dump_with_status(self, status: Status, job_type: str) -> List[JobDict]:

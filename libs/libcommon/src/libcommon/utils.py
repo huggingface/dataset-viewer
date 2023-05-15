@@ -15,7 +15,6 @@ class Status(str, enum.Enum):
     SUCCESS = "success"
     ERROR = "error"
     CANCELLED = "cancelled"
-    SKIPPED = "skipped"
 
 
 class Priority(str, enum.Enum):
@@ -33,7 +32,6 @@ class JobInfo(TypedDict):
     job_id: str
     type: str
     params: JobParams
-    force: bool
     priority: Priority
 
 

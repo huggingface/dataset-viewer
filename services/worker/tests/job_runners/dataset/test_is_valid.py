@@ -22,7 +22,7 @@ def prepare_and_clean_mongo(app_config: AppConfig) -> None:
     pass
 
 
-GetJobRunner = Callable[[str, AppConfig, bool], DatasetIsValidJobRunner]
+GetJobRunner = Callable[[str, AppConfig], DatasetIsValidJobRunner]
 
 
 UPSTREAM_RESPONSE_SPLITS: UpstreamResponse = UpstreamResponse(
@@ -72,7 +72,6 @@ def get_job_runner(
     def _get_job_runner(
         dataset: str,
         app_config: AppConfig,
-        force: bool = False,
     ) -> DatasetIsValidJobRunner:
         processing_step_name = DatasetIsValidJobRunner.get_job_type()
         processing_graph = ProcessingGraph(
@@ -92,7 +91,6 @@ def get_job_runner(
                     "split": None,
                 },
                 "job_id": "job_id",
-                "force": force,
                 "priority": Priority.NORMAL,
             },
             app_config=app_config,
@@ -170,7 +168,7 @@ def test_compute(
 ) -> None:
     for upstream_response in upstream_responses:
         upsert_response(**upstream_response)
-    job_runner = get_job_runner(dataset, app_config, False)
+    job_runner = get_job_runner(dataset, app_config)
     if should_raise:
         with pytest.raises(Exception) as e:
             job_runner.compute()
@@ -183,6 +181,6 @@ def test_compute(
 
 def test_doesnotexist(app_config: AppConfig, get_job_runner: GetJobRunner) -> None:
     dataset = "doesnotexist"
-    job_runner = get_job_runner(dataset, app_config, False)
+    job_runner = get_job_runner(dataset, app_config)
     compute_result = job_runner.compute()
     assert compute_result.content == {"valid": False}

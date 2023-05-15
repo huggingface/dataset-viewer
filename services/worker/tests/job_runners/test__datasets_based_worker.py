@@ -34,7 +34,7 @@ class DummyJobRunner(DatasetsBasedJobRunner):
         return CompleteJobResult({"col1": "a" * 200})
 
 
-GetJobRunner = Callable[[str, Optional[str], Optional[str], AppConfig, bool], DummyJobRunner]
+GetJobRunner = Callable[[str, Optional[str], Optional[str], AppConfig], DummyJobRunner]
 
 
 @pytest.fixture
@@ -48,7 +48,6 @@ def get_job_runner(
         config: Optional[str],
         split: Optional[str],
         app_config: AppConfig,
-        force: bool,
     ) -> DummyJobRunner:
         processing_step_name = DummyJobRunner.get_job_type()
         processing_graph = ProcessingGraph(
@@ -68,7 +67,6 @@ def get_job_runner(
                     "split": split,
                 },
                 "job_id": "job_id",
-                "force": force,
                 "priority": Priority.NORMAL,
             },
             app_config=app_config,
@@ -80,22 +78,20 @@ def get_job_runner(
 
 
 @pytest.mark.parametrize(
-    "dataset,config,split,force,expected",
+    "dataset,config,split,expected",
     [
-        ("user/dataset", "config", "split", True, "2022-11-07-12-34-56--config-names-user-dataset-cdf8effa"),
+        ("user/dataset", "config", "split", "2022-11-07-12-34-56--config-names-user-dataset-ea3b2aed"),
         # Every parameter variation changes the hash, hence the subdirectory
-        ("user/dataset", None, "split", True, "2022-11-07-12-34-56--config-names-user-dataset-54ba8b96"),
-        ("user/dataset", "config2", "split", True, "2022-11-07-12-34-56--config-names-user-dataset-1ad0bdcb"),
-        ("user/dataset", "config", None, True, "2022-11-07-12-34-56--config-names-user-dataset-49c90a57"),
-        ("user/dataset", "config", "split2", True, "2022-11-07-12-34-56--config-names-user-dataset-9a5cd356"),
-        ("user/dataset", "config", "split", False, "2022-11-07-12-34-56--config-names-user-dataset-abec311a"),
+        ("user/dataset", None, "split", "2022-11-07-12-34-56--config-names-user-dataset-4fc26b9d"),
+        ("user/dataset", "config2", "split", "2022-11-07-12-34-56--config-names-user-dataset-2c462406"),
+        ("user/dataset", "config", None, "2022-11-07-12-34-56--config-names-user-dataset-6567ff22"),
+        ("user/dataset", "config", "split2", "2022-11-07-12-34-56--config-names-user-dataset-a8785e1b"),
         # The subdirectory length is truncated, and it always finishes with the hash
         (
             "very_long_dataset_name_0123456789012345678901234567890123456789012345678901234567890123456789",
             "config",
             "split",
-            True,
-            "2022-11-07-12-34-56--config-names-very_long_dataset_name_0123456-30acf104",
+            "2022-11-07-12-34-56--config-names-very_long_dataset_name_0123456-ee38189d",
         ),
     ],
 )
@@ -105,17 +101,16 @@ def test_get_cache_subdirectory(
     dataset: str,
     config: Optional[str],
     split: Optional[str],
-    force: bool,
     expected: str,
 ) -> None:
     date = datetime(2022, 11, 7, 12, 34, 56)
-    job_runner = get_job_runner(dataset, config, split, app_config, force)
+    job_runner = get_job_runner(dataset, config, split, app_config)
     assert job_runner.get_cache_subdirectory(date=date) == expected
 
 
 def test_set_and_unset_datasets_cache(app_config: AppConfig, get_job_runner: GetJobRunner) -> None:
     dataset, config, split = get_default_config_split("dataset")
-    job_runner = get_job_runner(dataset, config, split, app_config, False)
+    job_runner = get_job_runner(dataset, config, split, app_config)
     base_path = job_runner.base_datasets_cache
     dummy_path = base_path / "dummy"
     job_runner.set_datasets_cache(dummy_path)
@@ -126,7 +121,7 @@ def test_set_and_unset_datasets_cache(app_config: AppConfig, get_job_runner: Get
 
 def test_set_and_unset_cache(app_config: AppConfig, get_job_runner: GetJobRunner) -> None:
     dataset, config, split = get_default_config_split("user/dataset")
-    job_runner = get_job_runner(dataset, config, split, app_config, False)
+    job_runner = get_job_runner(dataset, config, split, app_config)
     datasets_base_path = job_runner.base_datasets_cache
     job_runner.set_cache()
     assert str(datasets.config.HF_DATASETS_CACHE).startswith(str(datasets_base_path))

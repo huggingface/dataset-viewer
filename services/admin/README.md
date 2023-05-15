@@ -38,11 +38,11 @@ The admin service provides endpoints:
 
 - `/healthcheck`
 - `/metrics`: give info about the cache and the queue
-- `/cache-reports/{processing_step}`: give detailed reports on the content of the cache for a processing step
-- `/cache-reports-with-content/{processing_step}`: give detailed reports on the content of the cache for a processing step, including the content itself, which can be heavy
+- `/cache-reports{processing_step}`: give detailed reports on the content of the cache for a processing step
+- `/cache-reports-with-content{processing_step}`: give detailed reports on the content of the cache for a processing step, including the content itself, which can be heavy
 - `/pending-jobs`: give the pending jobs, classed by queue and status (waiting or started)
-- `/force-refresh/{processing_step}`: force refresh cache entries for the processing step. It's a POST endpoint. Pass the requested parameters, depending on the processing step's input type:
+- `/force-refresh{processing_step}`: force refresh cache entries for the processing step. It's a POST endpoint. Pass the requested parameters, depending on the processing step's input type:
   - `dataset`: `?dataset={dataset}`
+  - `config`: `?dataset={dataset}&config={config}`
   - `split`: `?dataset={dataset}&config={config}&split={split}`
-- `/cancel-jobs/{processing_step}`: cancel all the started jobs for the processing step (stop the corresponding workers before!). It's a POST endpoint.:
-- `/jobs-duration-per-dataset/{processing_step}`: give the sum of the jobs duration for every dataset, for all the jobs finished in the last 30 days.
+- `/cancel-jobs{processing_step}`: cancel all the started jobs for the processing step (stop the corresponding workers before!). It's a POST endpoint.:
