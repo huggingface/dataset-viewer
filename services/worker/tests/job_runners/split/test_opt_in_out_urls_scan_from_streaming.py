@@ -243,17 +243,16 @@ def test_compute(
 
 
 @pytest.mark.parametrize(
-    "dataset,columns_max_number,upstream_content,upstream_status,error_code,status_code",
+    "dataset,columns_max_number,upstream_content,upstream_status,exception_name",
     [
-        ("doesnotexist", 10, {}, HTTPStatus.OK, "CachedResponseNotFound", HTTPStatus.NOT_FOUND),
-        ("wrong_format", 10, {}, HTTPStatus.OK, "PreviousStepFormatError", HTTPStatus.INTERNAL_SERVER_ERROR),
+        ("doesnotexist", 10, {}, HTTPStatus.OK, "CachedArtifactError"),
+        ("wrong_format", 10, {}, HTTPStatus.OK, "PreviousStepFormatError"),
         (
             "upstream_failed",
             10,
             {},
             HTTPStatus.INTERNAL_SERVER_ERROR,
             "CachedArtifactError",
-            HTTPStatus.INTERNAL_SERVER_ERROR,
         ),
         (
             "info_error",
@@ -261,7 +260,6 @@ def test_compute(
             FIRST_ROWS_WITHOUT_OPT_IN_OUT_URLS,
             HTTPStatus.OK,
             "InfoError",
-            HTTPStatus.INTERNAL_SERVER_ERROR,
         ),
         (
             "too_many_columns",
@@ -269,7 +267,6 @@ def test_compute(
             FIRST_ROWS_WITH_OPT_IN_OUT_URLS,
             HTTPStatus.OK,
             "TooManyColumnsError",
-            HTTPStatus.INTERNAL_SERVER_ERROR,
         ),
     ],
 )
@@ -281,8 +278,7 @@ def test_compute_failed(
     columns_max_number: int,
     upstream_content: Mapping[str, Any],
     upstream_status: HTTPStatus,
-    error_code: str,
-    status_code: HTTPStatus,
+    exception_name: str,
 ) -> None:
     if dataset == "too_many_columns":
         dataset = hub_datasets["spawning_opt_in_out"]["name"]
@@ -305,10 +301,9 @@ def test_compute_failed(
             progress=1.0,
             http_status=upstream_status,
         )
-    with pytest.raises(CustomError) as exc_info:
+    with pytest.raises(Exception) as exc_info:
         job_runner.compute()
-    assert exc_info.value.status_code == status_code
-    assert exc_info.value.code == error_code
+    assert exc_info.typename == exception_name
 
 
 def test_compute_error_from_spawning(

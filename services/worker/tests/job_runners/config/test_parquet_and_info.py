@@ -416,7 +416,7 @@ def test_not_supported_if_big(
     job_runner = get_job_runner(dataset, config, app_config)
     with pytest.raises(CustomError) as e:
         job_runner.compute()
-    assert e.type.__name__ == "DatasetTooBigFromDatasetsError"
+    assert e.typename == "DatasetTooBigFromDatasetsError"
 
 
 def test_supported_if_gated(
@@ -456,7 +456,7 @@ def test_not_supported_if_gated_with_extra_fields(
     job_runner = get_job_runner(dataset, config, app_config)
     with pytest.raises(CustomError) as e:
         job_runner.compute()
-    assert e.type.__name__ == "GatedExtraFieldsError"
+    assert e.typename == "GatedExtraFieldsError"
 
 
 def test_blocked(
@@ -476,7 +476,7 @@ def test_blocked(
     job_runner = get_job_runner(dataset, config, app_config)
     with pytest.raises(CustomError) as e:
         job_runner.compute()
-    assert e.type.__name__ == "DatasetInBlockListError"
+    assert e.typename == "DatasetInBlockListError"
 
 
 @pytest.mark.parametrize(
@@ -577,7 +577,7 @@ def test_compute_splits_response_simple_csv_error_2(
 
 
 @pytest.mark.parametrize(
-    "upstream_status,upstream_content,error_code",
+    "upstream_status,upstream_content,exception_name",
     [
         (HTTPStatus.NOT_FOUND, {"error": "error"}, "CachedArtifactError"),
         (HTTPStatus.OK, {"not_config_names": "wrong_format"}, "PreviousStepFormatError"),
@@ -588,7 +588,7 @@ def test_previous_step_error(
     get_job_runner: GetJobRunner,
     upstream_status: HTTPStatus,
     upstream_content: Any,
-    error_code: str,
+    exception_name: str,
     hub_public_csv: str,
     hub_datasets: HubDatasets,
     app_config: AppConfig,
@@ -602,9 +602,9 @@ def test_previous_step_error(
         http_status=upstream_status,
         content=upstream_content,
     )
-    with pytest.raises(CustomError) as exc_info:
+    with pytest.raises(Exception) as exc_info:
         job_runner.compute()
-    assert exc_info.value.code == error_code
+    assert exc_info.typename == exception_name
 
 
 @pytest.mark.parametrize(

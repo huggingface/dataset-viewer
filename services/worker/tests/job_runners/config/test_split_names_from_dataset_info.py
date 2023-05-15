@@ -6,7 +6,7 @@ from typing import Any, Callable
 from unittest.mock import Mock
 
 import pytest
-from libcommon.exceptions import CustomError, PreviousStepFormatError
+from libcommon.exceptions import PreviousStepFormatError
 from libcommon.processing_graph import ProcessingGraph
 from libcommon.resources import CacheMongoResource, QueueMongoResource
 from libcommon.simple_cache import CachedArtifactError, upsert_response
@@ -132,7 +132,7 @@ def test_compute(
     if error_code:
         with pytest.raises(Exception) as e:
             job_runner.compute()
-        assert e.type.__name__ == error_code
+        assert e.typename == error_code
     else:
         assert job_runner.compute().content == content
 
@@ -141,7 +141,5 @@ def test_doesnotexist(app_config: AppConfig, get_job_runner: GetJobRunner) -> No
     dataset = "non_existent"
     config = "non_existent"
     worker = get_job_runner(dataset, config, app_config)
-    with pytest.raises(CustomError) as exc_info:
+    with pytest.raises(CachedArtifactError):
         worker.compute()
-    assert exc_info.value.status_code == HTTPStatus.NOT_FOUND
-    assert exc_info.value.code == "CachedResponseNotFound"
