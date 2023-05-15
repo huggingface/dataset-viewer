@@ -57,6 +57,7 @@ def compute_opt_in_out_urls_scan_response(dataset: str, config: str) -> Tuple[Op
     num_opt_out_urls = 0
     num_urls = 0
     num_scanned_rows = 0
+    full_scan_count = 0
     try:
         total = 0
         pending = 0
@@ -80,12 +81,14 @@ def compute_opt_in_out_urls_scan_response(dataset: str, config: str) -> Tuple[Op
             num_opt_out_urls += split_opt_in_out_content["num_opt_out_urls"]
             num_urls += split_opt_in_out_content["num_urls"]
             num_scanned_rows += split_opt_in_out_content["num_scanned_rows"]
+            full_scan_count += 1 if split_opt_in_out_content["full_scan"] else 0
     except Exception as e:
         raise PreviousStepFormatError("Previous step did not return the expected content.", e) from e
 
     unique_urls_columns = sorted(list(set(urls_columns)))
     has_urls_columns = len(unique_urls_columns) > 0
     progress = (total - pending) / total if total else 1.0
+    full_scan = full_scan_count == total
 
     return (
         OptInOutUrlsCountResponse(
@@ -95,6 +98,7 @@ def compute_opt_in_out_urls_scan_response(dataset: str, config: str) -> Tuple[Op
             num_opt_out_urls=num_opt_out_urls,
             num_scanned_rows=num_scanned_rows,
             num_urls=num_urls,
+            full_scan=full_scan,
         ),
         progress,
     )

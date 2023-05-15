@@ -88,6 +88,7 @@ def get_job_runner(
                 "num_opt_out_urls": 1,
                 "num_opt_in_urls": 1,
                 "num_urls": 4,
+                "full_scan": True,
             },
             None,
             {
@@ -97,6 +98,7 @@ def get_job_runner(
                 "num_opt_out_urls": 1,
                 "num_opt_in_urls": 1,
                 "num_urls": 4,
+                "full_scan": True,
             },
             False,
         ),
