@@ -5,7 +5,7 @@ import logging
 from typing import Any, Literal, Optional, TypedDict
 
 from jsonschema import ValidationError, validate
-from libcommon.exceptions import CustomError
+from libcommon.exceptions import CustomError, DatasetRevisionEmptyError
 from libcommon.operations import backfill_dataset, delete_dataset
 from libcommon.processing_graph import ProcessingGraph
 from libcommon.utils import Priority
@@ -71,19 +71,24 @@ def process_payload(
     if dataset is None:
         return
     event = payload["event"]
+    if event == "remove":
+        # destructive actions (delete, move) require a trusted sender
+        if trust_sender:
+            delete_dataset(dataset=dataset)
+        return
     revision = payload["repo"]["headSha"] if "headSha" in payload["repo"] else None
+    if revision is None:
+        raise DatasetRevisionEmptyError(message=f"Dataset {dataset} has no revision")
     if event in ["add", "update"]:
         backfill_dataset(
-            dataset=dataset, processing_graph=processing_graph, revision=revision, priority=Priority.NORMAL
+            dataset=dataset, revision=revision, processing_graph=processing_graph, priority=Priority.NORMAL
         )
-    elif trust_sender:
+    elif event == "move" and (moved_to := payload["movedTo"]):
         # destructive actions (delete, move) require a trusted sender
-        if event == "move" and (moved_to := payload["movedTo"]):
+        if trust_sender:
             backfill_dataset(
-                dataset=moved_to, processing_graph=processing_graph, revision=revision, priority=Priority.NORMAL
+                dataset=moved_to, revision=revision, processing_graph=processing_graph, priority=Priority.NORMAL
             )
-            delete_dataset(dataset=dataset)
-        elif event == "remove":
             delete_dataset(dataset=dataset)
 
 

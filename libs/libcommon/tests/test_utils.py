@@ -7,16 +7,16 @@ from libcommon.utils import inputs_to_string
 
 
 @pytest.mark.parametrize(
-    "dataset,config,split,prefix,expected",
+    "dataset,revision,config,split,prefix,expected",
     [
-        ("dataset", None, None, None, "dataset"),
-        ("dataset", "config", None, None, "dataset,config"),
-        ("dataset", None, "split", None, "dataset"),
-        ("dataset", "config", "split", None, "dataset,config,split"),
-        ("dataset", None, None, "prefix", "prefix,dataset"),
-        ("dataset", "config", "split", "prefix", "prefix,dataset,config,split"),
+        ("dataset", "revision", None, None, None, "dataset,revision"),
+        ("dataset", "revision", "config", None, None, "dataset,revision,config"),
+        ("dataset", "revision", None, "split", None, "dataset,revision"),
+        ("dataset", "revision", "config", "split", None, "dataset,revision,config,split"),
+        ("dataset", "revision", None, None, "prefix", "prefix,dataset,revision"),
+        ("dataset", "revision", "config", "split", "prefix", "prefix,dataset,revision,config,split"),
     ],
 )
-def test_inputs_to_string(dataset: str, config: str, split: str, prefix: str, expected: str) -> None:
-    result = inputs_to_string(dataset=dataset, config=config, split=split, prefix=prefix)
+def test_inputs_to_string(dataset: str, revision: str, config: str, split: str, prefix: str, expected: str) -> None:
+    result = inputs_to_string(dataset=dataset, revision=revision, config=config, split=split, prefix=prefix)
     assert result == expected

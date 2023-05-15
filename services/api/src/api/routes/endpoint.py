@@ -73,13 +73,16 @@ def get_cache_entry_from_steps(
     If no successful result is found, it will return the last one even if it's an error,
     Checks if job is still in progress by each processing step in case of no entry found.
     Raises:
-        - [`~libcommon.dataset.AskAccessHubRequestError`]: if the request to the Hub to get access to the
-            dataset failed or timed out.
-        - [`~libcommon.dataset.DatasetInfoHubRequestError`]: if the request to the Hub to get the dataset
-            info failed or timed out.
-        - [`~libcommon.dataset.DatasetError`]: if the dataset could not be accessed or is not supported
-        - [`~api.utils.ResponseNotFoundError`]: if no result is found.
-        - [`~api.utils.ResponseNotReadyError`]: if the response is not ready yet.
+        - [`libcommon.exceptions.AskAccessHubRequestError`]
+          if the request to the Hub to get access to the dataset failed or timed out.
+        - [`libcommon.exceptions.DatasetInfoHubRequestError`]
+          if the request to the Hub to get the dataset info failed or timed out.
+        - [`libcommon.exceptions.DatasetError`]
+          if the dataset could not be accessed or is not supported
+        - [`~utils.ResponseNotFoundError`]
+          if no result is found.
+        - [`~utils.ResponseNotReadyError`]
+          if the response is not ready yet.
 
     Returns: the cached record
     """
@@ -108,7 +111,9 @@ def get_cache_entry_from_steps(
             # TODO: move Priority outside from queue.py (to remove dependency to this file)
         )
         artifact_ids = [
-            Artifact(processing_step=processing_step, dataset=dataset, config=config, split=split).id
+            Artifact(
+                processing_step=processing_step, dataset=dataset, revision=revision, config=config, split=split
+            ).id
             for processing_step in processing_steps
         ]
         should_exist = any(

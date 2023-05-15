@@ -3,7 +3,6 @@
 
 from http import HTTPStatus
 from typing import Any, Callable
-from unittest.mock import Mock
 
 import pytest
 from libcommon.exceptions import PreviousStepFormatError
@@ -46,6 +45,7 @@ def get_job_runner(
                 "type": SplitNamesFromDatasetInfoJobRunner.get_job_type(),
                 "params": {
                     "dataset": dataset,
+                    "revision": "revision",
                     "config": config,
                     "split": None,
                 },
@@ -127,7 +127,6 @@ def test_compute(
         kind="config-info", dataset=dataset, config=config, content=upstream_content, http_status=upstream_status
     )
     job_runner = get_job_runner(dataset, config, app_config)
-    job_runner.get_dataset_git_revision = Mock(return_value="1.0.0")  # type: ignore
 
     if error_code:
         with pytest.raises(Exception) as e:

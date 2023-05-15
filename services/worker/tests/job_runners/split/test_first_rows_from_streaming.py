@@ -4,7 +4,6 @@
 from dataclasses import replace
 from http import HTTPStatus
 from typing import Callable
-from unittest.mock import Mock
 
 import pytest
 from datasets.packaged_modules import csv
@@ -57,6 +56,7 @@ def get_job_runner(
                 "type": SplitFirstRowsFromStreamingJobRunner.get_job_type(),
                 "params": {
                     "dataset": dataset,
+                    "revision": "revision",
                     "config": config,
                     "split": split,
                 },
@@ -136,7 +136,6 @@ def test_number_rows(
         split,
         app_config if use_token else replace(app_config, common=replace(app_config.common, hf_token=None)),
     )
-    job_runner.get_dataset_git_revision = Mock(return_value="1.0.0")  # type: ignore
 
     if exception_name is None:
         upsert_response(
@@ -219,8 +218,6 @@ def test_truncation(
         content={"splits": [{"dataset": dataset, "config": config, "split": split}]},
         http_status=HTTPStatus.OK,
     )
-
-    job_runner.get_dataset_git_revision = Mock(return_value="1.0.0")  # type: ignore
 
     if error_code:
         with pytest.raises(CustomError) as error_info:

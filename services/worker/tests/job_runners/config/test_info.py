@@ -157,6 +157,7 @@ def get_job_runner(
                 "type": ConfigInfoJobRunner.get_job_type(),
                 "params": {
                     "dataset": dataset,
+                    "revision": "revision",
                     "config": config,
                     "split": None,
                 },

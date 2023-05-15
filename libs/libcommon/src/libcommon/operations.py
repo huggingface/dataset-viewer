@@ -34,11 +34,13 @@ def update_dataset(
     Returns: None.
 
     Raises:
-        - [`~libcommon.dataset.AskAccessHubRequestError`]: if the request to the Hub to get access to the
+        - [`~exceptions.AskAccessHubRequestError`]: if the request to the Hub to get access to the
             dataset failed or timed out.
-        - [`~libcommon.dataset.DatasetInfoHubRequestError`]: if the request to the Hub to get the dataset
+        - [`~exceptions.DatasetInfoHubRequestError`]: if the request to the Hub to get the dataset
             info failed or timed out.
-        - [`~libcommon.dataset.DatasetError`]: if the dataset could not be accessed or is not supported
+        - [`~exceptions.DatasetError`]: if the dataset could not be accessed or is not supported
+        - [`~exceptions.DatasetRevisionEmptyError`]
+          if the current git revision (branch, commit) could not be obtained.
     """
     revision = get_dataset_git_revision(
         dataset=dataset, hf_endpoint=hf_endpoint, hf_token=hf_token, hf_timeout_seconds=hf_timeout_seconds
@@ -49,8 +51,8 @@ def update_dataset(
 
 def backfill_dataset(
     dataset: str,
+    revision: str,
     processing_graph: ProcessingGraph,
-    revision: Optional[str] = None,
     priority: Priority = Priority.NORMAL,
 ) -> None:
     """
@@ -58,15 +60,15 @@ def backfill_dataset(
 
     Args:
         dataset (str): the dataset
+        revision (str): The revision of the dataset.
         processing_graph (ProcessingGraph): the processing graph
-        revision (str, optional): The revision of the dataset. Defaults to None.
         priority (Priority, optional): The priority of the job. Defaults to Priority.NORMAL.
 
     Returns: None.
     """
     logging.debug(f"backfill {dataset=} {revision=} {priority=}")
     dataset_state = DatasetState(
-        dataset=dataset, processing_graph=processing_graph, priority=priority, revision=revision
+        dataset=dataset, revision=revision, processing_graph=processing_graph, priority=priority
     )
     dataset_state.backfill()
 

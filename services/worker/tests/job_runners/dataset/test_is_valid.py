@@ -87,6 +87,7 @@ def get_job_runner(
                 "type": DatasetIsValidJobRunner.get_job_type(),
                 "params": {
                     "dataset": dataset,
+                    "revision": "revision",
                     "config": None,
                     "split": None,
                 },
