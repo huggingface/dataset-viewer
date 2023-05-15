@@ -158,11 +158,9 @@ def raise_if_blocked(
             The list of blocked datasets. If empty, no dataset is blocked.
     Returns:
         `None`
-    <Tip>
     Raises the following errors:
         - [`~job_runners.config.parquet_and_info.DatasetInBlockListError`]
           If the dataset is in the list of blocked datasets.
-    </Tip>
     """
     if dataset in blocked_datasets:
         raise DatasetInBlockListError(
@@ -193,14 +191,12 @@ def get_dataset_info_or_raise(
             The git revision (e.g. "main" or sha) of the dataset
     Returns:
         `DatasetInfo`: The dataset info
-    <Tip>
     Raises the following errors:
         - [`libcommon.exceptions.DatasetNotFoundError`]
           If the repository to download from cannot be found. This may be because it doesn't exist,
           or because it is set to `private` and you do not have access.
         - [`libcommon.exceptions.DatasetRevisionNotFoundError`]
           If the revision does not exist or cannot be accessed using the token.
-    </Tip>
     """
     try:
         dataset_info = HfApi(endpoint=hf_endpoint, token=hf_token).dataset_info(
@@ -220,7 +216,8 @@ def raise_if_too_big_from_hub(
     max_dataset_size: int,
 ) -> None:
     """
-    Raise an error if the dataset is too big to be converted to parquet
+    Raise an error if the dataset is too big to be converted to parquet, as measured by the sum of the repository
+    files sizes given by the Hub.
 
     Args:
         dataset_info (`DatasetInfo`):
@@ -229,11 +226,10 @@ def raise_if_too_big_from_hub(
             The maximum size of the dataset in bytes
     Returns:
         `None`
-    <Tip>
     Raises the following errors:
         - [`~job_runners.config.parquet_and_info.DatasetTooBigFromHubError`]
-          If the dataset is too big to be converted to parquet
-    </Tip>
+          If the dataset is too big to be converted to parquet, as measured by the sum of the repository
+          files sizes given by the Hub.
     """
     dataset_size: int = sum(sibling.size for sibling in dataset_info.siblings if sibling.size is not None)
     if dataset_size > max_dataset_size:
@@ -271,13 +267,12 @@ def raise_if_too_big_from_datasets(
             The maximum size of the dataset in bytes
     Returns:
         `None`
-    <Tip>
     Raises the following errors:
-        - [`ValueError`]
-            If the datasets.config.HF_ENDPOINT is not set to the expected value
+        - [`ValueError`](https://docs.python.org/3/library/exceptions.html#ValueError)
+          If the datasets.config.HF_ENDPOINT is not set to the expected value
         - [`~job_runners.config.parquet_and_info.DatasetTooBigFromDatasetsError`]
-            If the dataset is too big to be converted to parquet
-    </Tip>
+          If the dataset is too big to be converted to parquet, as measured by the sum of the configs
+          sizes given by the datasets library.
     """
     if datasets.config.HF_ENDPOINT != hf_endpoint:
         raise ValueError(
@@ -340,27 +335,31 @@ def raise_if_not_supported(
     Returns:
         `ParquetResponseResult`: An object with the parquet_response
           (dataset and list of parquet files) and the dataset_git_revision (sha) if any.
-    <Tip>
     Raises the following errors:
+        - [`libcommon.exceptions.AskAccessHubRequestError`]
+          if the request to the Hub to get access to the dataset failed or timed out.
+        - [`libcommon.exceptions.DatasetNotFoundError`]:
+          if the dataset does not exist, or if the token does not give the sufficient access to the dataset,
+        - [`libcommon.exceptions.GatedDisabledError`]
+          if the dataset is gated, but disabled.
+          or if the dataset is private (private datasets are not supported by the datasets server).
+        - [`libcommon.exceptions.GatedExtraFieldsError`]
+          if the dataset is gated, with extra fields. Programmatic access is not implemented for this type of
+          dataset because there is no easy way to get the list of extra fields.
+        - ['requests.exceptions.HTTPError'](https://requests.readthedocs.io/en/latest/api/#requests.HTTPError)
+          any other error when asking access
         - [`~job_runners.config.parquet_and_info.DatasetInBlockListError`]
           If the dataset is in the list of blocked datasets.
-        - [`~libcommon.dataset.GatedExtraFieldsError`]: if the dataset is gated, with extra fields.
-            Programmatic access is not implemented for this type of dataset because there is no easy
-            way to get the list of extra fields.
-        - [`~libcommon.dataset.GatedDisabledError`]: if the dataset is gated, but disabled.
-        - [`~libcommon.dataset.DatasetNotFoundError`]: if the dataset does not exist, or if the
-            token does not give the sufficient access to the dataset, or if the dataset is private
-            (private datasets are not supported by the datasets server)
-        - ['~requests.exceptions.HTTPError']: any other error when asking access
         - [`~job_runners.config.parquet_and_info.DatasetRevisionNotFoundError`]
           If the revision does not exist or cannot be accessed using the token.
-        - [`~job_runners.config.parquet_and_info.DatasetTooBigFromHubError`]
-          If the dataset is too big to be converted to parquet
-        - [`ValueError`]
-            If the datasets.config.HF_ENDPOINT is not set to the expected value
         - [`~job_runners.config.parquet_and_info.DatasetTooBigFromDatasetsError`]
-            If the dataset is too big to be converted to parquet
-    </Tip>
+          If the dataset is too big to be converted to parquet, as measured by the sum of the configs
+          sizes given by the datasets library.
+        - [`~job_runners.config.parquet_and_info.DatasetTooBigFromHubError`]
+          If the dataset is too big to be converted to parquet, as measured by the sum of the repository
+          files sizes given by the Hub.
+        - [`ValueError`](https://docs.python.org/3/library/exceptions.html#ValueError)
+            If the datasets.config.HF_ENDPOINT is not set to the expected value
     """
     raise_if_blocked(dataset=dataset, blocked_datasets=blocked_datasets)
     ask_access(dataset=dataset, hf_endpoint=hf_endpoint, hf_token=committer_hf_token)
@@ -632,33 +631,35 @@ def compute_config_parquet_and_info_response(
     Returns:
         `ConfigParquetAndInfoResponse`: An object with the config_parquet_and_info_response
           (dataset info and list of parquet files).
-    <Tip>
     Raises the following errors:
+        - [`libcommon.exceptions.AskAccessHubRequestError`]
+          if the request to the Hub to get access to the dataset failed or timed out.
+        - [`libcommon.exceptions.DatasetNotFoundError`]:
+          if the dataset does not exist, or if the token does not give the sufficient access to the dataset,
+        - [`libcommon.exceptions.GatedDisabledError`]
+          if the dataset is gated, but disabled.
+          or if the dataset is private (private datasets are not supported by the datasets server).
+        - [`libcommon.exceptions.GatedExtraFieldsError`]
+          if the dataset is gated, with extra fields. Programmatic access is not implemented for this type of
+          dataset because there is no easy way to get the list of extra fields.
+        - ['requests.exceptions.HTTPError'](https://requests.readthedocs.io/en/latest/api/#requests.HTTPError)
+          any other error when asking access
+        - [`libcommon.simple_cache.CachedArtifactError`]
+            If the previous step gave an error.
         - [`~job_runners.config.parquet_and_info.DatasetInBlockListError`]
           If the dataset is in the list of blocked datasets.
-        - [`libcommon.dataset.GatedExtraFieldsError`]: if the dataset is gated, with extra fields.
-            Programmatic access is not implemented for this type of dataset because there is no easy
-            way to get the list of extra fields.
-        - [`libcommon.dataset.GatedDisabledError`]: if the dataset is gated, but disabled.
-        - [`libcommon.dataset.DatasetNotFoundError`]: if the dataset does not exist, or if the
-            token does not give the sufficient access to the dataset, or if the dataset is private
-            (private datasets are not supported by the datasets server)
-        - ['HTTPError'](https://requests.readthedocs.io/en/latest/api/#requests.HTTPError): any other error when
-            asking access
         - [`~job_runners.config.parquet_and_info.DatasetRevisionNotFoundError`]
           If the revision does not exist or cannot be accessed using the token.
-        - [`~job_runners.config.parquet_and_info.DatasetTooBigFromHubError`]
-          If the dataset is too big to be converted to parquet
-        - [`ValueError`](https://docs.python.org/3/library/exceptions.html#ValueError)
-            If the datasets.config.HF_ENDPOINT is not set to the expected value
         - [`~job_runners.config.parquet_and_info.DatasetTooBigFromDatasetsError`]
-            If the dataset is too big to be converted to parquet
+          If the dataset is too big to be converted to parquet, as measured by the sum of the configs
+          sizes given by the datasets library.
+        - [`~job_runners.config.parquet_and_info.DatasetTooBigFromHubError`]
+          If the dataset is too big to be converted to parquet, as measured by the sum of the repository
+          files sizes given by the Hub.
         - [`~job_runners.config.parquet_and_info.EmptyDatasetError`]
           The dataset is empty.
         - [`~job_runners.config.parquet_and_info.ConfigNamesError`]
           If the list of configurations could not be obtained using the datasets library.
-        - [`~job_runners.config.parquet_and_info.DatasetInBlockListError`]
-          If the dataset is in the list of blocked datasets.
         - [`~job_runners.config.parquet_and_info.DatasetWithTooManyExternalFilesError`]
             If the dataset has too many external files to be converted to parquet
         - [`~job_runners.config.parquet_and_info.DatasetWithTooBigExternalFilesError`]
@@ -673,12 +674,10 @@ def compute_config_parquet_and_info_response(
             If we failed to get the external files sizes to make sure we can convert the dataset to parquet
         - [`~job_runners.config.parquet_and_info.ExternalFilesSizeRequestError`]
             If we failed to get the external files sizes to make sure we can convert the dataset to parquet
-        - [`libcommon.simple_cache.CachedArtifactError`]
-            If the previous step gave an error.
         - [`~job_runners.config.parquet_and_info.PreviousStepFormatError`]
             If the content of the previous step has not the expected format
-
-    </Tip>
+        - [`ValueError`](https://docs.python.org/3/library/exceptions.html#ValueError)
+            If the datasets.config.HF_ENDPOINT is not set to the expected value
     """
     logging.info(f"get parquet files and dataset info for {dataset=} {config=}")
 

@@ -44,7 +44,6 @@ def compute_config_names_response(
             An authentication token (See https://huggingface.co/settings/token)
     Returns:
         `ConfigNamesResponse`: An object with the list of config names.
-    <Tip>
     Raises the following errors:
         - [`libcommon.exceptions.EmptyDatasetError`]
           The dataset is empty.
@@ -52,7 +51,6 @@ def compute_config_names_response(
           The dataset tries to import a module that is not installed.
         - [`libcommon.exceptions.ConfigNamesError`]
           If the list of configs could not be obtained using the datasets library.
-    </Tip>
     """
     logging.info(f"get config names for dataset={dataset}")
     use_auth_token: Union[bool, str, None] = hf_token if hf_token is not None else False

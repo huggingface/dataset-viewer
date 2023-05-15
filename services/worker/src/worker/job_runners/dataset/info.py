@@ -31,13 +31,11 @@ def compute_dataset_info_response(dataset: str) -> Tuple[DatasetInfoResponse, fl
         progress float value from 0. to 1. which corresponds to the percentage of dataset configs
         correctly processed and included in current response (some configs might not exist in cache yet
         or raise errors).
-    <Tip>
     Raises the following errors:
         - [`libcommon.simple_cache.CachedArtifactError`]
             If the previous step gave an error.
         - [`libcommon.exceptions.PreviousStepFormatError`]
             If the content of the previous step doesn't have the expected format.
-    </Tip>
     """
     logging.info(f"get dataset_info for {dataset=}")
 

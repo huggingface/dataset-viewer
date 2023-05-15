@@ -27,13 +27,11 @@ def compute_parquet_response(dataset: str, config: str) -> ConfigParquetResponse
             A configuration name.
     Returns:
         `ConfigParquetResponse`: An object with the parquet_response (list of parquet files).
-    <Tip>
     Raises the following errors:
         - [`libcommon.simple_cache.CachedArtifactError`]
-            If the previous step gave an error.
+          If the previous step gave an error.
         - [`libcommon.exceptions.PreviousStepFormatError`]
-            If the content of the previous step has not the expected format
-    </Tip>
+          If the content of the previous step has not the expected format
     """
     logging.info(f"get parquet files for dataset={dataset}, config={config}")
 

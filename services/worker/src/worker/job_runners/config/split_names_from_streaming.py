@@ -44,13 +44,11 @@ def compute_split_names_from_streaming_response(
             An authentication token (See https://huggingface.co/settings/token)
     Returns:
         `SplitsList`: An object with the list of split names for the dataset and config.
-    <Tip>
     Raises the following errors:
         - [`libcommon.exceptions.EmptyDatasetError`]
           The dataset is empty.
         - [`libcommon.exceptions.SplitsNamesError`]
           If the list of splits could not be obtained using the datasets library.
-    </Tip>
     """
     logging.info(f"get split names for dataset={dataset}, config={config}")
     use_auth_token: Union[bool, str, None] = hf_token if hf_token is not None else False

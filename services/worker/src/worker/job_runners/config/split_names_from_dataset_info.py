@@ -36,13 +36,11 @@ def compute_split_names_from_dataset_info_response(dataset: str, config: str) ->
             A configuration name.
     Returns:
         `SplitsList`: An object with the list of split names for the dataset and config.
-    <Tip>
     Raises the following errors:
         - [`libcommon.simple_cache.CachedArtifactError`]
-            If the previous step gave an error.
+          If the previous step gave an error.
         - [`libcommon.exceptions.PreviousStepFormatError`]
-            If the content of the previous step has not the expected format
-    </Tip>
+          If the content of the previous step has not the expected format
     """
     logging.info(f"get split names from dataset info for dataset={dataset}, config={config}")
     config_info_best_response = get_previous_step_or_raise(kinds=["config-info"], dataset=dataset, config=config)

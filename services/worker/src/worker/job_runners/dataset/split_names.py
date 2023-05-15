@@ -30,13 +30,11 @@ def compute_dataset_split_names_response(dataset: str) -> Tuple[DatasetSplitName
     Returns:
         `DatasetSplitNamesResponse`: An object with a list of split names for the dataset [splits],
          a list of pending configs to be processed [pending] and the list of errors [failed] by config.
-    <Tip>
     Raises the following errors:
         - [`libcommon.simple_cache.CachedArtifactError`]
           If the the previous step gave an error.
         - [`libcommon.exceptions.PreviousStepFormatError`]
             If the content of the previous step has not the expected format
-    </Tip>
     """
     logging.info(f"get dataset split names for dataset={dataset}")
 

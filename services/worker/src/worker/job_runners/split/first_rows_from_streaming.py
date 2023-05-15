@@ -116,7 +116,6 @@ def compute_first_rows_response(
             The directory where the assets are stored.
     Returns:
         [`SplitFirstRowsResponse`]: The list of first rows of the split.
-    <Tip>
     Raises the following errors:
         - [`libcommon.exceptions.SplitNotFoundError`]
           If the split does not exist in the dataset.
@@ -131,14 +130,13 @@ def compute_first_rows_response(
         - [`libcommon.exceptions.TooBigContentError`]
           If the first rows content exceeds the maximum supported size of bytes.
         - [`libcommon.simple_cache.CachedArtifactError`]
-            If the previous step gave an error.
+          If the previous step gave an error.
         - [`libcommon.exceptions.PreviousStepFormatError`]
-            If the content of the previous step has not the expected format
+          If the content of the previous step has not the expected format
         - [`libcommon.exceptions.StreamingRowsError`]
           If the split rows could not be obtained using the datasets library in streaming mode.
         - [`libcommon.exceptions.NormalRowsError`]
           If the split rows could not be obtained using the datasets library in normal mode.
-    </Tip>
     """
     logging.info(f"get first-rows for dataset={dataset} config={config} split={split}")
     use_auth_token: Union[bool, str, None] = hf_token if hf_token is not None else False

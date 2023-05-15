@@ -23,13 +23,11 @@ def compute_config_info_response(dataset: str, config: str) -> ConfigInfoRespons
             Dataset configuration name
     Returns:
         `ConfigInfoResponse`: An object with the dataset_info response for requested config.
-    <Tip>
     Raises the following errors:
         - [`libcommon.simple_cache.CachedArtifactError`]
-            If the previous step gave an error.
+          If the previous step gave an error.
         - [`libcommon.exceptions.PreviousStepFormatError`]
-            If the content of the previous step doesn't have the expected format
-    </Tip>
+          If the content of the previous step doesn't have the expected format.
     """
     logging.info(f"get dataset_info for {dataset=} and {config=}")
     previous_step = "config-parquet-and-info"

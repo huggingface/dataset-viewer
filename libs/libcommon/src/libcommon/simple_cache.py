@@ -494,13 +494,11 @@ def get_cache_reports(kind: str, cursor: Optional[str], limit: int) -> CacheRepo
     Returns:
         [`CacheReportsPage`]: A dict with the list of reports and the next cursor. The next cursor is
         an empty string if there are no more items to be fetched.
-    <Tip>
     Raises the following errors:
-        - [`~libcommon.simple_cache.InvalidCursor`]
+        - [`~simple_cache.InvalidCursor`]
           If the cursor is invalid.
-        - [`~libcommon.simple_cache.InvalidLimit`]
+        - [`~simple_cache.InvalidLimit`]
           If the limit is an invalid number.
-    </Tip>
     """
     if not cursor:
         queryset = CachedResponse.objects(kind=kind)
@@ -589,13 +587,11 @@ def get_cache_reports_with_content(kind: str, cursor: Optional[str], limit: int)
     Returns:
         [`CacheReportsWithContentPage`]: A dict with the list of reports and the next cursor. The next cursor is
         an empty string if there are no more items to be fetched.
-    <Tip>
     Raises the following errors:
-        - [`~libcommon.simple_cache.InvalidCursor`]
+        - [`~simple_cache.InvalidCursor`]
           If the cursor is invalid.
-        - [`~libcommon.simple_cache.InvalidLimit`]
+        - [`~simple_cache.InvalidLimit`]
           If the limit is an invalid number.
-    </Tip>
     """
     if not cursor:
         queryset = CachedResponse.objects(kind=kind)

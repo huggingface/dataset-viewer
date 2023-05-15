@@ -43,13 +43,11 @@ def compute_sizes_response(dataset: str) -> Tuple[DatasetSizeResponse, float]:
             by a `/`.
     Returns:
         `DatasetSizeResponse`: An object with the sizes_response.
-    <Tip>
     Raises the following errors:
         - [`libcommon.simple_cache.CachedArtifactError`]
           If the previous step gave an error.
         - [`libcommon.exceptions.PreviousStepFormatError`]
             If the content of the previous step has not the expected format
-    </Tip>
     """
     logging.info(f"get sizes for dataset={dataset}")
 
