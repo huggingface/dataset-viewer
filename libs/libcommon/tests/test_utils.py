@@ -9,11 +9,13 @@ from libcommon.utils import inputs_to_string
 @pytest.mark.parametrize(
     "dataset,revision,config,split,prefix,expected",
     [
+        ("dataset", None, None, None, None, "dataset"),
         ("dataset", "revision", None, None, None, "dataset,revision"),
         ("dataset", "revision", "config", None, None, "dataset,revision,config"),
         ("dataset", "revision", None, "split", None, "dataset,revision"),
         ("dataset", "revision", "config", "split", None, "dataset,revision,config,split"),
-        ("dataset", "revision", None, None, "prefix", "prefix,dataset,revision"),
+        ("dataset", None, "config", "split", None, "dataset,config,split"),
+        ("dataset", None, None, None, "prefix", "prefix,dataset"),
         ("dataset", "revision", "config", "split", "prefix", "prefix,dataset,revision,config,split"),
     ],
 )

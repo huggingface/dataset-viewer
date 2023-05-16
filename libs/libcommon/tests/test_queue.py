@@ -72,36 +72,40 @@ def test__add_job() -> None:
 def test_upsert_job() -> None:
     test_type = "test_type"
     test_dataset = "test_dataset"
-    test_revision = "test_revision"
+    test_revision_1 = "test_revision_1"
+    test_revision_2 = "test_revision_2"
     # get the queue
     queue = Queue()
     # upsert a job
-    queue.upsert_job(job_type=test_type, dataset=test_dataset, revision=test_revision)
+    queue.upsert_job(job_type=test_type, dataset=test_dataset, revision=test_revision_1)
     # a second call creates a second waiting job, and the first one is cancelled
-    queue.upsert_job(job_type=test_type, dataset=test_dataset, revision=test_revision)
-    assert queue.is_job_in_process(job_type=test_type, dataset=test_dataset, revision=test_revision)
+    queue.upsert_job(job_type=test_type, dataset=test_dataset, revision=test_revision_1)
+    # a third call, with a different revision, creates a third waiting job, and the second one is cancelled
+    # because the unicity_id is the same
+    queue.upsert_job(job_type=test_type, dataset=test_dataset, revision=test_revision_2)
+    assert queue.is_job_in_process(job_type=test_type, dataset=test_dataset, revision=test_revision_2)
     # get and start the last job
     job_info = queue.start_job()
     assert job_info["type"] == test_type
     assert job_info["params"]["dataset"] == test_dataset
-    assert job_info["params"]["revision"] == test_revision
+    assert job_info["params"]["revision"] == test_revision_2
     assert job_info["params"]["config"] is None
     assert job_info["params"]["split"] is None
-    assert queue.is_job_in_process(job_type=test_type, dataset=test_dataset, revision=test_revision)
+    assert queue.is_job_in_process(job_type=test_type, dataset=test_dataset, revision=test_revision_2)
     # adding the job while the first one has not finished yet adds a new waiting job
-    queue.upsert_job(job_type=test_type, dataset=test_dataset, revision=test_revision)
+    queue.upsert_job(job_type=test_type, dataset=test_dataset, revision=test_revision_2)
     with pytest.raises(EmptyQueueError):
         # but: it's not possible to start two jobs with the same arguments
         queue.start_job()
     # finish the first job
     queue.finish_job(job_id=job_info["job_id"], finished_status=Status.SUCCESS)
     # the queue is not empty
-    assert queue.is_job_in_process(job_type=test_type, dataset=test_dataset, revision=test_revision)
+    assert queue.is_job_in_process(job_type=test_type, dataset=test_dataset, revision=test_revision_2)
     # process the second job
     job_info = queue.start_job()
     queue.finish_job(job_id=job_info["job_id"], finished_status=Status.SUCCESS)
     # the queue is empty
-    assert not queue.is_job_in_process(job_type=test_type, dataset=test_dataset, revision=test_revision)
+    assert not queue.is_job_in_process(job_type=test_type, dataset=test_dataset, revision=test_revision_2)
     with pytest.raises(EmptyQueueError):
         # an error is raised if we try to start a job
         queue.start_job()
@@ -120,23 +124,27 @@ def test_upsert_job() -> None:
 def test_cancel_jobs(statuses_to_cancel: Optional[List[Status]], expected_remaining_number: int) -> None:
     test_type = "test_type"
     test_dataset = "test_dataset"
-    test_revision = "test_revision"
+    test_revision_1 = "test_revision_1"
+    test_revision_2 = "test_revision_2"
     queue = Queue()
-    queue._add_job(job_type=test_type, dataset=test_dataset, revision=test_revision)
-    queue._add_job(job_type=test_type, dataset=test_dataset, revision=test_revision)
+    queue._add_job(job_type=test_type, dataset=test_dataset, revision=test_revision_1)
+    queue._add_job(job_type=test_type, dataset=test_dataset, revision=test_revision_2)
     queue.start_job()
 
     canceled_job_dicts = queue.cancel_jobs(
-        job_type=test_type, dataset=test_dataset, revision=test_revision, statuses_to_cancel=statuses_to_cancel
+        job_type=test_type, dataset=test_dataset, statuses_to_cancel=statuses_to_cancel
     )
     assert len(canceled_job_dicts) == 2 - expected_remaining_number
 
     if expected_remaining_number == 0:
-        assert not queue.is_job_in_process(job_type=test_type, dataset=test_dataset, revision=test_revision)
         with pytest.raises(EmptyQueueError):
             queue.start_job()
-    else:
-        assert queue.is_job_in_process(job_type=test_type, dataset=test_dataset, revision=test_revision)
+    assert queue.is_job_in_process(job_type=test_type, dataset=test_dataset, revision=test_revision_1) == (
+        statuses_to_cancel is not None and Status.STARTED not in statuses_to_cancel
+    )
+    assert queue.is_job_in_process(job_type=test_type, dataset=test_dataset, revision=test_revision_2) == (
+        statuses_to_cancel is not None and Status.WAITING not in statuses_to_cancel
+    )
 
 
 def check_job(queue: Queue, expected_dataset: str, expected_split: str) -> None:

@@ -47,7 +47,7 @@ def test_queue_deletion_migration(mongo_host: str) -> None:
             [
                 {
                     "type": job_type,
-                    "unicity_id": f"{job_type},dataset,revision,config,split",
+                    "unicity_id": f"{job_type},dataset,config,split",
                     "dataset": "dataset",
                     "revision": "revision",
                     "http_status": 200,

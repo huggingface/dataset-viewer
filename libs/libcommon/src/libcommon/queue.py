@@ -91,7 +91,7 @@ class Job(Document):
         config (`str`, optional): The config on which to apply the job.
         split (`str`, optional): The split on which to apply the job.
         unicity_id (`str`): A string that identifies the job uniquely. Only one job with the same unicity_id can be in
-          the started state.
+          the started state. The revision is not part of the unicity_id.
         namespace (`str`): The dataset namespace (user or organization) if any, else the dataset name (canonical name).
         priority (`Priority`, optional): The priority of the job. Defaults to Priority.NORMAL.
         status (`Status`, optional): The status of the job. Defaults to Status.WAITING.
@@ -177,7 +177,7 @@ class Queue:
     the jobs. You can create multiple Queue objects, it has no effect on the database.
 
     It's a FIFO queue, with the following properties:
-    - a job is identified by its input arguments: unicity_id (type, dataset, revision, config and split)
+    - a job is identified by its input arguments: unicity_id (type, dataset, config and split, NOT revision)
     - a job can be in one of the following states: waiting, started, success, error, cancelled
     - a job can be in the queue only once (unicity_id) in the "started" or "waiting" state
     - a job can be in the queue multiple times in the other states (success, error, cancelled)
@@ -230,9 +230,7 @@ class Queue:
             revision=revision,
             config=config,
             split=split,
-            unicity_id=inputs_to_string(
-                dataset=dataset, revision=revision, config=config, split=split, prefix=job_type
-            ),
+            unicity_id=inputs_to_string(dataset=dataset, config=config, split=split, prefix=job_type),
             namespace=dataset.split("/")[0],
             priority=priority,
             created_at=get_datetime(),
@@ -267,7 +265,6 @@ class Queue:
         canceled_jobs = self.cancel_jobs(
             job_type=job_type,
             dataset=dataset,
-            revision=revision,
             config=config,
             split=split,
             statuses_to_cancel=[Status.WAITING],
@@ -282,12 +279,13 @@ class Queue:
         self,
         job_type: str,
         dataset: str,
-        revision: str,
         config: Optional[str] = None,
         split: Optional[str] = None,
         statuses_to_cancel: Optional[List[Status]] = None,
     ) -> List[JobDict]:
         """Cancel jobs from the queue.
+
+        Note that the jobs for all the revisions are canceled.
 
         Returns the list of canceled jobs (as JobDict, before they are canceled, to be able to know their previous
         status)
@@ -295,7 +293,6 @@ class Queue:
         Args:
             job_type (`str`): The type of the job
             dataset (`str`): The dataset on which to apply the job.
-            revision (`str`): The git revision of the dataset.
             config (`str`, optional): The config on which to apply the job.
             split (`str`, optional): The config on which to apply the job.
             statuses_to_cancel (`list[Status]`, optional): The list of statuses to cancel. Defaults to
@@ -309,7 +306,6 @@ class Queue:
         existing = Job.objects(
             type=job_type,
             dataset=dataset,
-            revision=revision,
             config=config,
             split=split,
             status__in=statuses_to_cancel,
