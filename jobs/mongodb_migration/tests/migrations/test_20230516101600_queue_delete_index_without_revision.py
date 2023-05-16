@@ -21,7 +21,7 @@ def test_queue_delete_index_without_revision(mongo_host: str) -> None:
         assert len(get_index_names(db[QUEUE_COLLECTION_JOBS].index_information())) == 1  # Ensure the indexes exists
 
         migration = MigrationQueueDeleteIndexWithoutRevision(
-            version="20230516102900",
+            version="20230516101600",
             description="remove index without revision",
         )
         migration.up()
