@@ -218,7 +218,6 @@ class ProcessingGraphConfig:
                 "input_type": "config",
                 "triggered_by": "config-parquet",
                 "job_runner_version": PROCESSING_STEP_CONFIG_PARQUET_METADATA_VERSION,
-                "provides_config_parquet": True,
             },
             "split-first-rows-from-parquet": {
                 "input_type": "split",

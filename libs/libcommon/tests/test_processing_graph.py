@@ -141,7 +141,7 @@ def graph() -> ProcessingGraph:
         ),
         (
             "config-parquet",
-            ["split-first-rows-from-parquet", "dataset-parquet"],
+            ["config-parquet-metadata", "split-first-rows-from-parquet", "dataset-parquet"],
             ["config-parquet-and-info"],
             ["/config-names", "config-parquet-and-info"],
         ),
