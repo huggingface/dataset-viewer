@@ -295,7 +295,7 @@ def compute_first_rows_response(
         )
 
     # get the rows
-    rows = get_rows_or_raise(
+    rows_content = get_rows_or_raise(
         dataset=dataset,
         config=config,
         split=split,
@@ -304,6 +304,7 @@ def compute_first_rows_response(
         rows_max_number=rows_max_number,
         use_auth_token=use_auth_token,
     )
+    rows = rows_content["rows"]
 
     # transform the rows, if needed (e.g. save the images or audio to the assets, and return their URL)
     try:

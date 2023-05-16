@@ -320,7 +320,7 @@ def to_rows_list(
         {
             "row_idx": idx + offset,
             "row": row,
-            "truncated_cells": unsupported_columns,
+            "truncated_cells": [],
         }
         for idx, row in enumerate(transformed_rows)
     ]

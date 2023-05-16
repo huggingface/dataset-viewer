@@ -123,18 +123,20 @@ FIRST_ROWS_WITH_OPT_IN_OUT_URLS = {
         }
     ],
     "rows": [
-        {"row_idx": 0, "row": {"col": "http://testurl.test/test_image.jpg"}, "truncated_cells": []},
+        {"row_idx": 0, "row": {"col": "http://testurl.test/test_image-optOut.jpg"}, "truncated_cells": []},
         {"row_idx": 1, "row": {"col": "http://testurl.test/test_image2.jpg"}, "truncated_cells": []},
         {"row_idx": 2, "row": {"col": "other"}, "truncated_cells": []},
+        {"row_idx": 1, "row": {"col": "http://testurl.test/test_image3-optIn.jpg"}, "truncated_cells": []},
     ],
 }
 
 
 @pytest.mark.parametrize(
-    "name,upstream_content,expected_content",
+    "name,rows_max_number,upstream_content,expected_content",
     [
         (
             "public",
+            100_000,
             FIRST_ROWS_WITHOUT_OPT_IN_OUT_URLS,
             {
                 "has_urls_columns": False,
@@ -145,10 +147,12 @@ FIRST_ROWS_WITH_OPT_IN_OUT_URLS = {
                 "num_opt_out_urls": 0,
                 "num_opt_in_urls": 0,
                 "num_urls": 0,
+                "full_scan": None,
             },
         ),
         (
             "spawning_opt_in_out",
+            100_000,  # dataset has less rows
             FIRST_ROWS_WITH_OPT_IN_OUT_URLS,
             {
                 "has_urls_columns": True,
@@ -163,6 +167,45 @@ FIRST_ROWS_WITH_OPT_IN_OUT_URLS = {
                 "num_opt_out_urls": 1,
                 "num_opt_in_urls": 1,
                 "num_urls": 4,
+                "full_scan": True,
+            },
+        ),
+        (
+            "spawning_opt_in_out",
+            3,  # dataset has more rows
+            FIRST_ROWS_WITH_OPT_IN_OUT_URLS,
+            {
+                "has_urls_columns": True,
+                "num_scanned_rows": 3,
+                "opt_in_urls": [],
+                "opt_out_urls": [
+                    {"url": "http://testurl.test/test_image-optOut.jpg", "row_idx": 0, "column_name": "col"}
+                ],
+                "urls_columns": ["col"],
+                "num_opt_out_urls": 1,
+                "num_opt_in_urls": 0,
+                "num_urls": 3,
+                "full_scan": False,
+            },
+        ),
+        (
+            "spawning_opt_in_out",
+            4,  # dataset has same amount of rows
+            FIRST_ROWS_WITH_OPT_IN_OUT_URLS,
+            {
+                "has_urls_columns": True,
+                "num_scanned_rows": 4,
+                "opt_in_urls": [
+                    {"url": "http://testurl.test/test_image3-optIn.jpg", "row_idx": 3, "column_name": "col"}
+                ],
+                "opt_out_urls": [
+                    {"url": "http://testurl.test/test_image-optOut.jpg", "row_idx": 0, "column_name": "col"}
+                ],
+                "urls_columns": ["col"],
+                "num_opt_out_urls": 1,
+                "num_opt_in_urls": 1,
+                "num_urls": 4,
+                "full_scan": True,
             },
         ),
     ],
@@ -172,11 +215,17 @@ def test_compute(
     app_config: AppConfig,
     get_job_runner: GetJobRunner,
     name: str,
+    rows_max_number: int,
     upstream_content: Mapping[str, Any],
     expected_content: Mapping[str, Any],
 ) -> None:
     dataset, config, split = get_default_config_split(hub_datasets[name]["name"])
-    job_runner = get_job_runner(dataset, config, split, app_config)
+    job_runner = get_job_runner(
+        dataset,
+        config,
+        split,
+        replace(app_config, urls_scan=replace(app_config.urls_scan, rows_max_number=rows_max_number)),
+    )
     upsert_response(
         kind="split-first-rows-from-streaming",
         dataset=dataset,

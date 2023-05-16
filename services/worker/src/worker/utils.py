@@ -125,11 +125,20 @@ class OptInOutUrlsCountResponse(TypedDict):
     num_urls: int
     num_scanned_rows: int
     has_urls_columns: bool
+    full_scan: Optional[bool]
 
 
 class OptInOutUrlsScanResponse(OptInOutUrlsCountResponse):
     opt_in_urls: List[OptUrl]
     opt_out_urls: List[OptUrl]
+
+
+Row = Mapping[str, Any]
+
+
+class RowsContent(TypedDict):
+    rows: List[Row]
+    all_fetched: bool
 
 
 # TODO: separate functions from common classes and named dicts otherwise this file will continue growing
@@ -221,9 +230,6 @@ def truncate_row_items(row_items: List[RowItem], min_cell_bytes: int, rows_max_b
         new_size = get_json_size(row_item) + COMMA_SIZE
         rows_bytes += new_size - previous_size
     return row_items
-
-
-Row = Mapping[str, Any]
 
 
 def to_row_item(row_idx: int, row: Row) -> RowItem:
@@ -318,7 +324,7 @@ def get_rows(
     rows_max_number: int,
     use_auth_token: Union[bool, str, None] = False,
     column_names: Optional[List[str]] = None,
-) -> List[Row]:
+) -> RowsContent:
     download_config = DownloadConfig(delete_extracted=True)
     ds = load_dataset(
         dataset,
@@ -337,11 +343,13 @@ def get_rows(
         ds = ds.select_columns(column_names)
     rows_plus_one = list(itertools.islice(ds, rows_max_number + 1))
     # ^^ to be able to detect if a split has exactly ROWS_MAX_NUMBER rows
-    if len(rows_plus_one) <= rows_max_number:
+    rows = rows_plus_one[:rows_max_number]
+    all_fetched = len(rows_plus_one) <= rows_max_number
+    if all_fetched:
         logging.debug(f"all the rows in the split have been fetched ({len(rows_plus_one)})")
     else:
         logging.debug(f"the rows in the split have been truncated ({rows_max_number} rows)")
-    return rows_plus_one[:rows_max_number]
+    return RowsContent(rows=rows, all_fetched=all_fetched)
 
 
 def get_rows_or_raise(
@@ -353,7 +361,7 @@ def get_rows_or_raise(
     info: DatasetInfo,
     max_size_fallback: Optional[int] = None,
     column_names: Optional[List[str]] = [],
-) -> List[Row]:
+) -> RowsContent:
     try:
         return get_rows(
             dataset=dataset,
