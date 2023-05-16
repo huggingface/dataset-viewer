@@ -53,7 +53,6 @@ class JobManager:
     common_config: CommonConfig
     processing_step: ProcessingStep
     processing_graph: ProcessingGraph
-    _dataset_git_revision: Optional[str] = None
     job_runner: JobRunner
 
     def __init__(
