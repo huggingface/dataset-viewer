@@ -58,6 +58,10 @@ from mongodb_migration.migrations._20230511100700_queue_delete_indexes_with_forc
 from mongodb_migration.migrations._20230511110700_queue_delete_skipped_jobs import (
     MigrationDeleteSkippedJobs,
 )
+from mongodb_migration.renaming_migrations import (
+    CacheRenamingMigration,
+    QueueRenamingMigration,
+)
 
 
 # TODO: add a way to automatically collect migrations from the migrations/ folder
@@ -181,4 +185,22 @@ class MigrationsCollector:
                 version="20230511100700", description="remove indexes with field 'force'"
             ),
             MigrationDeleteSkippedJobs(version="20230511110700", description="delete jobs with skipped status"),
+            CacheRenamingMigration(
+                cache_kind="/split-names-from-streaming",
+                new_cache_kind="config-split-names-from-streaming",
+                version="20230516164500",
+                description=(
+                    "update 'kind' field in cache from '/split-names-from-streaming' "
+                    "to 'config-split-names-from-streaming'"
+                ),
+            ),
+            QueueRenamingMigration(
+                job_type="/split-names-from-streaming",
+                new_job_type="config-split-names-from-streaming",
+                version="20230516164700",
+                description=(
+                    "update 'type' and 'unicity_id' fields in job from '/split-names-from-streaming' "
+                    "to 'config-split-names-from-streaming'"
+                ),
+            ),
         ]
