@@ -13,7 +13,6 @@ from libcommon.utils import Status
 DATASET_NAME = "dataset"
 
 REVISION_NAME = "revision"
-OTHER_REVISION_NAME = "other_revision"
 
 CONFIG_NAME_1 = "config1"
 CONFIG_NAME_2 = "config2"
@@ -80,7 +79,6 @@ def put_cache(
     artifact: str,
     error_code: Optional[str] = None,
     use_old_job_runner_version: Optional[bool] = False,
-    use_other_git_revision: Optional[bool] = False,
 ) -> None:
     parts = artifact.split(",")
     if len(parts) < 3 or len(parts) > 5:
@@ -121,7 +119,7 @@ def put_cache(
         content=content,
         http_status=http_status,
         job_runner_version=JOB_RUNNER_VERSION - 1 if use_old_job_runner_version else JOB_RUNNER_VERSION,
-        dataset_git_revision=OTHER_REVISION_NAME if use_other_git_revision else REVISION_NAME,
+        dataset_git_revision=revision,
         error_code=error_code,
     )
 

@@ -7,12 +7,7 @@ from libcommon.exceptions import CustomError
 from libcommon.processing_graph import ProcessingGraph, ProcessingStep
 from libcommon.queue import Queue
 from libcommon.resources import CacheMongoResource, QueueMongoResource
-from libcommon.simple_cache import (
-    CachedResponse,
-    DoesNotExist,
-    get_response,
-    upsert_response,
-)
+from libcommon.simple_cache import CachedResponse, get_response, upsert_response
 from libcommon.utils import JobInfo, Priority, Status
 
 from worker.config import AppConfig

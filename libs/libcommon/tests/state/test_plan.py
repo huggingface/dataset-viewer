@@ -18,6 +18,8 @@ from .utils import (
     put_cache,
 )
 
+OTHER_REVISION_NAME = f"other_{REVISION_NAME}"
+
 CONFIG_NAME_1 = "config1"
 CONFIG_NAME_2 = "config2"
 CONFIG_NAMES = [CONFIG_NAME_1, CONFIG_NAME_2]
@@ -42,6 +44,7 @@ STEP_DH = "dataset-h"
 STEP_DI = "dataset-i"
 
 ARTIFACT_DA = f"{STEP_DA},{DATASET_NAME},{REVISION_NAME}"
+ARTIFACT_DA_OTHER_REVISION = f"{STEP_DA},{DATASET_NAME},{OTHER_REVISION_NAME}"
 ARTIFACT_DB = f"{STEP_DB},{DATASET_NAME},{REVISION_NAME}"
 ARTIFACT_DC = f"{STEP_DC},{DATASET_NAME},{REVISION_NAME}"
 ARTIFACT_DD = f"{STEP_DD},{DATASET_NAME},{REVISION_NAME}"
@@ -613,7 +616,7 @@ def test_plan_git_revision_and_outdated_by_parent(
 ) -> None:
     compute_all(processing_graph=processing_graph)
 
-    put_cache(ARTIFACT_DA, use_other_git_revision=True)
+    put_cache(ARTIFACT_DA_OTHER_REVISION)
 
     dataset_state = get_dataset_state(processing_graph=processing_graph)
     assert_dataset_state(

@@ -16,7 +16,14 @@ from mongodb_migration.migrations._20230511100700_queue_delete_indexes_with_forc
 
 def test_queue_delete_indexes_with_force(mongo_host: str) -> None:
     with MongoResource(database="test_queue_delete_indexes_with_force", host=mongo_host, mongoengine_alias="queue"):
-        Job(type="test", dataset="test", unicity_id="test", namespace="test", created_at=get_datetime()).save()
+        Job(
+            type="test",
+            dataset="test",
+            revision="revision",
+            unicity_id="test",
+            namespace="test",
+            created_at=get_datetime(),
+        ).save()
         db = get_db(QUEUE_MONGOENGINE_ALIAS)
         db[QUEUE_COLLECTION_JOBS].create_index(field_name)
         db[QUEUE_COLLECTION_JOBS].create_index([(field_name, 1), ("type", 1)])
