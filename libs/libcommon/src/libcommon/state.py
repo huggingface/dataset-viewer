@@ -235,7 +235,7 @@ class ConfigState:
                 ],
                 names_field="splits",
                 name_field="split",
-            )  # TODO: return the status? (revision != self.revision?)
+            )  # Note that we use the cached content even the revision is different (ie. maybe obsolete)
         except Exception:
             self.split_names = []
 
@@ -388,7 +388,7 @@ class DatasetState:
                 ],
                 names_field="config_names",
                 name_field="config",
-            )  # TODO: return the status? (revision != self.revision?)
+            )  # Note that we use the cached content even the revision is different (ie. maybe obsolete)
         except Exception:
             self.config_names = []
         self.config_states = [
