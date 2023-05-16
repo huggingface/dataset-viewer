@@ -6,6 +6,7 @@ from os import makedirs
 from pathlib import Path
 from typing import Generator, List, Tuple, TypedDict
 
+import pyarrow.parquet as pq
 import soundfile  # type:ignore
 from numpy import ndarray
 from PIL import Image  # type: ignore
@@ -13,7 +14,10 @@ from pydub import AudioSegment  # type:ignore
 
 from libcommon.storage import StrPath
 
+# should start with a dash to differentiate with dataset names which can't start with a dash
 DATASET_SEPARATOR = "--"
+PARQUET_METADATA_DATASET_SEPARATOR = "-pq-meta"
+
 ASSET_DIR_MODE = 0o755
 DATASETS_SERVER_MDATE_FILENAME = ".dss"
 
@@ -128,3 +132,32 @@ def create_audio_files(
         {"src": f"{assets_base_url}/{url_dir_path}/{mp3_filename}", "type": "audio/mpeg"},
         {"src": f"{assets_base_url}/{url_dir_path}/{wav_filename}", "type": "audio/wav"},
     ]
+
+
+def create_parquet_metadata_asset_dir(
+    dataset: str, config: str, assets_directory: StrPath
+) -> Tuple[Path, str]:
+    dir_path = Path(assets_directory).resolve() / dataset / PARQUET_METADATA_DATASET_SEPARATOR / config
+    dir_path_in_asset_dir = f"{dataset}/{PARQUET_METADATA_DATASET_SEPARATOR}/{config}"
+    makedirs(dir_path, ASSET_DIR_MODE, exist_ok=True)
+    return dir_path, dir_path_in_asset_dir
+
+
+def create_parquet_metadata_file(
+    dataset: str,
+    config: str,
+    parquet_file_metadata: pq.FileMetaData,
+    filename: str,
+    assets_directory: StrPath,
+    overwrite: bool = True,
+) -> str:
+    dir_path, dir_path_in_asset_dir = create_parquet_metadata_asset_dir(
+        dataset=dataset,
+        config=config,
+        assets_directory=assets_directory,
+    )
+    parquet_file_path = dir_path / filename
+    if overwrite or not parquet_file_path.exists():
+        parquet_file_metadata.write_metadata_file(parquet_file_path)
+    parquet_metadata_path_in_asset_dir= f"{dir_path_in_asset_dir}/{filename}"
+    return parquet_metadata_path_in_asset_dir

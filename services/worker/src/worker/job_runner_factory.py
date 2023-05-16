@@ -17,6 +17,7 @@ from worker.job_runners.config.opt_in_out_urls_count import (
 )
 from worker.job_runners.config.parquet import ConfigParquetJobRunner
 from worker.job_runners.config.parquet_and_info import ConfigParquetAndInfoJobRunner
+from worker.job_runners.config.parquet_metadata import ConfigParquetMetadataJobRunner
 from worker.job_runners.config.size import ConfigSizeJobRunner
 from worker.job_runners.config.split_names_from_dataset_info import (
     SplitNamesFromDatasetInfoJobRunner,
@@ -114,6 +115,13 @@ class JobRunnerFactory(BaseJobRunnerFactory):
                 job_info=job_info,
                 app_config=self.app_config,
                 processing_step=processing_step,
+            )
+        if job_type == ConfigParquetMetadataJobRunner.get_job_type():
+            return ConfigParquetMetadataJobRunner(
+                job_info=job_info,
+                app_config=self.app_config,
+                processing_step=processing_step,
+                assets_directory=self.assets_directory,
             )
         if job_type == DatasetParquetJobRunner.get_job_type():
             return DatasetParquetJobRunner(

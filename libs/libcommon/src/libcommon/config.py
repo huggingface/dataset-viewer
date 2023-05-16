@@ -13,6 +13,7 @@ from libcommon.constants import (
     PROCESSING_STEP_CONFIG_NAMES_VERSION,
     PROCESSING_STEP_CONFIG_OPT_IN_OUT_URLS_COUNT_VERSION,
     PROCESSING_STEP_CONFIG_PARQUET_AND_INFO_VERSION,
+    PROCESSING_STEP_CONFIG_PARQUET_METADATA_VERSION,
     PROCESSING_STEP_CONFIG_PARQUET_VERSION,
     PROCESSING_STEP_CONFIG_SIZE_VERSION,
     PROCESSING_STEP_DATASET_INFO_VERSION,
@@ -211,6 +212,12 @@ class ProcessingGraphConfig:
                 "input_type": "config",
                 "triggered_by": "config-parquet-and-info",
                 "job_runner_version": PROCESSING_STEP_CONFIG_PARQUET_VERSION,
+                "provides_config_parquet": True,
+            },
+            "config-parquet-metadata": {
+                "input_type": "config",
+                "triggered_by": "config-parquet",
+                "job_runner_version": PROCESSING_STEP_CONFIG_PARQUET_METADATA_VERSION,
                 "provides_config_parquet": True,
             },
             "split-first-rows-from-parquet": {
