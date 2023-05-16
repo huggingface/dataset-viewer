@@ -131,7 +131,10 @@ def test_cancel_jobs(statuses_to_cancel: Optional[List[Status]], expected_remain
     queue._add_job(job_type=test_type, dataset=test_dataset, revision=test_revision_2)
     queue.start_job()
 
-    queue.cancel_jobs(job_type=test_type, dataset=test_dataset, statuses_to_cancel=statuses_to_cancel)
+    canceled_job_dicts = queue.cancel_jobs(
+        job_type=test_type, dataset=test_dataset, statuses_to_cancel=statuses_to_cancel
+    )
+    assert len(canceled_job_dicts) == 2 - expected_remaining_number
 
     if expected_remaining_number == 0:
         with pytest.raises(EmptyQueueError):
