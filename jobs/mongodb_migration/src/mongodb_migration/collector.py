@@ -58,6 +58,9 @@ from mongodb_migration.migrations._20230511100700_queue_delete_indexes_with_forc
 from mongodb_migration.migrations._20230511110700_queue_delete_skipped_jobs import (
     MigrationDeleteSkippedJobs,
 )
+from mongodb_migration.migrations._20230516101600_queue_delete_index_without_revision import (
+    MigrationQueueDeleteIndexWithoutRevision,
+)
 
 
 # TODO: add a way to automatically collect migrations from the migrations/ folder
@@ -181,4 +184,7 @@ class MigrationsCollector:
                 version="20230511100700", description="remove indexes with field 'force'"
             ),
             MigrationDeleteSkippedJobs(version="20230511110700", description="delete jobs with skipped status"),
+            MigrationQueueDeleteIndexWithoutRevision(
+                version="20230516101600", description="remove index without revision"
+            ),
         ]

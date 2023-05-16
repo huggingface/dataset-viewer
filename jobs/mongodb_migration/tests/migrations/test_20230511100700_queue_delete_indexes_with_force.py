@@ -6,7 +6,9 @@ from libcommon.queue import Job
 from libcommon.resources import MongoResource
 from libcommon.utils import get_datetime
 from mongoengine.connection import get_db
+from pytest import raises
 
+from mongodb_migration.migration import IrreversibleMigrationError
 from mongodb_migration.migrations._20230511100700_queue_delete_indexes_with_force import (
     MigrationQueueDeleteIndexesWithForce,
     field_name,
@@ -42,4 +44,6 @@ def test_queue_delete_indexes_with_force(mongo_host: str) -> None:
             len(get_index_names(db[QUEUE_COLLECTION_JOBS].index_information(), "force")) == 0
         )  # Ensure the indexes do not exist anymore
 
+        with raises(IrreversibleMigrationError):
+            migration.down()
         db[QUEUE_COLLECTION_JOBS].drop()
