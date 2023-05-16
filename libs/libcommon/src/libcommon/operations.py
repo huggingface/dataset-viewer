@@ -2,9 +2,7 @@
 # Copyright 2022 The HuggingFace Authors.
 
 import logging
-from typing import Optional
 
-from libcommon.dataset import get_dataset_git_revision
 from libcommon.processing_graph import ProcessingGraph
 from libcommon.simple_cache import delete_dataset_responses
 from libcommon.state import DatasetState
