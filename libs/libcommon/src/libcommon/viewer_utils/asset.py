@@ -134,9 +134,7 @@ def create_audio_files(
     ]
 
 
-def create_parquet_metadata_asset_dir(
-    dataset: str, config: str, assets_directory: StrPath
-) -> Tuple[Path, str]:
+def create_parquet_metadata_asset_dir(dataset: str, config: str, assets_directory: StrPath) -> Tuple[Path, str]:
     dir_path = Path(assets_directory).resolve() / dataset / PARQUET_METADATA_DATASET_SEPARATOR / config
     dir_path_in_asset_dir = f"{dataset}/{PARQUET_METADATA_DATASET_SEPARATOR}/{config}"
     makedirs(dir_path, ASSET_DIR_MODE, exist_ok=True)
@@ -159,5 +157,5 @@ def create_parquet_metadata_file(
     parquet_file_path = dir_path / filename
     if overwrite or not parquet_file_path.exists():
         parquet_file_metadata.write_metadata_file(parquet_file_path)
-    parquet_metadata_path_in_asset_dir= f"{dir_path_in_asset_dir}/{filename}"
+    parquet_metadata_path_in_asset_dir = f"{dir_path_in_asset_dir}/{filename}"
     return parquet_metadata_path_in_asset_dir

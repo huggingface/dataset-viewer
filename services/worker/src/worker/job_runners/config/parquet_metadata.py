@@ -15,10 +15,7 @@ from libcommon.constants import (
 from libcommon.processing_graph import ProcessingStep
 from libcommon.storage import StrPath
 from libcommon.utils import JobInfo
-from libcommon.viewer_utils.asset import (
-    create_parquet_metadata_asset_dir,
-    create_parquet_metadata_file,
-)
+from libcommon.viewer_utils.asset import create_parquet_metadata_file
 from pyarrow.parquet import ParquetFile
 from tqdm.contrib.concurrent import thread_map
 
