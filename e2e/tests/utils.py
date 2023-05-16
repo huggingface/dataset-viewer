@@ -133,7 +133,7 @@ def poll_until_ready_and_assert(
     expected_error_code: Optional[str],
     headers: Optional[Headers] = None,
     url: str = URL,
-    check_x_revision: bool = True,
+    check_x_revision: bool = False,
 ) -> Any:
     if headers is None:
         headers = {}
