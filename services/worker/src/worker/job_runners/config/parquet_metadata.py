@@ -118,16 +118,22 @@ def compute_parquet_metadata_response(
             by a `/`.
         config (`str`):
             A configuration name.
-        hf_token (`str`, optional):
-            A HF token to access the parquet files.
+        hf_token (`str`, *optional*):
+            An authentication token (See https://huggingface.co/settings/token)
+        assets_directory (`str` or `pathlib.Path`):
+            The directory where the assets are stored.
     Returns:
         `ConfigParquetMetadataResponse`: An object with the parquet_response (list of parquet files).
     <Tip>
     Raises the following errors:
         - [`~job_runner.PreviousStepError`]
             If the previous step gave an error.
-        - [`~job_runners.parquet.PreviousStepFormatError`]
+        - [`~job_runners.parquet_metadata.PreviousStepFormatError`]
             If the content of the previous step has not the expected format
+        - [`~job_runner.parquet_metadata.ParquetResponseEmptyError`]
+            If the previous step provided an empty list of parquet files.
+        - [`~job_runners.parquet_metadata.FileSystemError`]
+            If the HfFileSystem couldn't access the parquet files.
     </Tip>
     """
     logging.info(f"get parquet files for dataset={dataset}, config={config}")
