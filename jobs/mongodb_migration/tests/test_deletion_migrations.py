@@ -22,7 +22,11 @@ from mongodb_migration.deletion_migrations import (
 
 def test_cache_deletion_migration(mongo_host: str) -> None:
     kind = "cache_kind"
-    with MongoResource(database="test_cache_delete_migration", host=mongo_host, mongoengine_alias="cache"):
+    with MongoResource(
+            database="test_cache_delete_migration",
+            host=mongo_host,
+            mongoengine_alias=CACHE_MONGOENGINE_ALIAS,
+    ):
         db = get_db(CACHE_MONGOENGINE_ALIAS)
         db[CACHE_COLLECTION_RESPONSES].insert_many([{"kind": kind, "dataset": "dataset", "http_status": 200}])
         assert db[CACHE_COLLECTION_RESPONSES].find_one({"kind": kind})  # Ensure there is at least one record to delete
@@ -41,7 +45,11 @@ def test_cache_deletion_migration(mongo_host: str) -> None:
 
 def test_queue_deletion_migration(mongo_host: str) -> None:
     job_type = "job_type"
-    with MongoResource(database="test_queue_delete_migration", host=mongo_host, mongoengine_alias="queue"):
+    with MongoResource(
+            database="test_queue_delete_migration",
+            host=mongo_host,
+            mongoengine_alias=QUEUE_MONGOENGINE_ALIAS,
+    ):
         db = get_db(QUEUE_MONGOENGINE_ALIAS)
         db[QUEUE_COLLECTION_JOBS].insert_many(
             [

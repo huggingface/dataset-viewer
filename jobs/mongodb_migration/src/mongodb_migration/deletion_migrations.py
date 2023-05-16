@@ -2,32 +2,18 @@
 # Copyright 2023 The HuggingFace Authors.
 
 import logging
-from typing import Any
 
-from libcommon.constants import (
-    CACHE_COLLECTION_RESPONSES,
-    CACHE_MONGOENGINE_ALIAS,
-    METRICS_COLLECTION_CACHE_TOTAL_METRIC,
-    METRICS_COLLECTION_JOB_TOTAL_METRIC,
-    METRICS_MONGOENGINE_ALIAS,
-    QUEUE_COLLECTION_JOBS,
-    QUEUE_MONGOENGINE_ALIAS,
-)
 from mongoengine.connection import get_db
 
-from mongodb_migration.migration import IrreversibleMigrationError, Migration
+from mongodb_migration.migration import (
+    CacheMigration,
+    IrreversibleMigrationError,
+    MetricsMigration,
+    QueueMigration,
+)
 
 
-class MetricsDeletionMigration(Migration):
-    MONGOENGINE_ALIAS: str = METRICS_MONGOENGINE_ALIAS
-    COLLECTION_JOB_TOTAL_METRIC: str = METRICS_COLLECTION_JOB_TOTAL_METRIC
-    COLLECTION_CACHE_TOTAL_METRIC: str = METRICS_COLLECTION_CACHE_TOTAL_METRIC
-
-    def __init__(self, job_type: str, cache_kind: str, *args: Any, **kwargs: Any):
-        self.job_type = job_type
-        self.cache_kind = cache_kind
-        super().__init__(*args, **kwargs)
-
+class MetricsDeletionMigration(MetricsMigration):
     def up(self) -> None:
         logging.info(f"Delete job metrics of type {self.job_type}")
 
@@ -48,14 +34,7 @@ class MetricsDeletionMigration(Migration):
             raise ValueError(f"Found documents with kind {self.cache_kind}")
 
 
-class CacheDeletionMigration(Migration):
-    MONGOENGINE_ALIAS: str = CACHE_MONGOENGINE_ALIAS
-    COLLECTION_RESPONSES: str = CACHE_COLLECTION_RESPONSES
-
-    def __init__(self, cache_kind: str, *args: Any, **kwargs: Any):
-        self.cache_kind = cache_kind
-        super().__init__(*args, **kwargs)
-
+class CacheDeletionMigration(CacheMigration):
     def up(self) -> None:
         logging.info(f"Delete cache entries of kind {self.cache_kind}")
         db = get_db(self.MONGOENGINE_ALIAS)
@@ -74,14 +53,7 @@ class CacheDeletionMigration(Migration):
             raise ValueError(f"Found documents with kind {self.cache_kind}")
 
 
-class QueueDeletionMigration(Migration):
-    MONGOENGINE_ALIAS: str = QUEUE_MONGOENGINE_ALIAS
-    COLLECTION_JOBS: str = QUEUE_COLLECTION_JOBS
-
-    def __init__(self, job_type: str, *args: Any, **kwargs: Any):
-        self.job_type = job_type
-        super().__init__(*args, **kwargs)
-
+class QueueDeletionMigration(QueueMigration):
     def up(self) -> None:
         logging.info(f"Delete jobs of type {self.job_type}")
 
