@@ -158,6 +158,8 @@ def test_plan_job_creation_and_termination() -> None:
                 "config-parquet,dataset,config2",
                 "config-parquet-and-info,dataset,config1",
                 "config-parquet-and-info,dataset,config2",
+                "config-parquet-metadata,dataset,config1",
+                "config-parquet-metadata,dataset,config2",
                 "config-size,dataset,config1",
                 "config-size,dataset,config2",
                 "dataset-info,dataset",
