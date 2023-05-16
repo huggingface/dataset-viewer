@@ -89,6 +89,7 @@ def test_endpoint(
         expected_status_code=expected_status_code,
         expected_error_code=expected_error_code,
         headers=headers,
+        check_x_revision=input_type != "all",
     )
 
 
@@ -110,6 +111,7 @@ def test_rows_endpoint(
         expected_status_code=expected_status_code,
         expected_error_code=expected_error_code,
         headers=headers,
+        check_x_revision=True,
     )
     if not expected_error_code:
         content = rows_response.json()

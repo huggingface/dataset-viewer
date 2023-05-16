@@ -133,6 +133,7 @@ def poll_until_ready_and_assert(
     expected_error_code: Optional[str],
     headers: Optional[Headers] = None,
     url: str = URL,
+    check_x_revision: bool = True,
 ) -> Any:
     if headers is None:
         headers = {}
@@ -151,6 +152,9 @@ def poll_until_ready_and_assert(
         raise RuntimeError("Poll timeout")
     assert response.status_code == expected_status_code, log(response, url, relative_url)
     assert response.headers.get("X-Error-Code") == expected_error_code, log(response, url, relative_url)
+    if check_x_revision:
+        assert response.headers.get("X-Revision") is not None, log(response, url, relative_url)
+        assert len(str(response.headers.get("X-Revision"))) == 40, log(response, url, relative_url)
     return response
 
 
