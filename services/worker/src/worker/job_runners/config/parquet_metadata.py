@@ -3,14 +3,18 @@
 
 import logging
 from functools import lru_cache, partial
-from http import HTTPStatus
-from typing import List, Literal, Optional, TypedDict
+from typing import List, Optional, TypedDict
 
 from huggingface_hub import HfFileSystem
 from huggingface_hub.hf_file_system import safe_quote
 from libcommon.constants import (
     PARQUET_REVISION,
     PROCESSING_STEP_CONFIG_PARQUET_METADATA_VERSION,
+)
+from libcommon.exceptions import (
+    FileSystemError,
+    ParquetResponseEmptyError,
+    PreviousStepFormatError,
 )
 from libcommon.processing_graph import ProcessingStep
 from libcommon.storage import StrPath
@@ -19,15 +23,10 @@ from libcommon.viewer_utils.parquet_metadata import create_parquet_metadata_file
 from pyarrow.parquet import ParquetFile
 from tqdm.contrib.concurrent import thread_map
 
-from worker.common_exceptions import JobRunnerError
 from worker.config import AppConfig
 from worker.job_runners.config.config_job_runner import ConfigJobRunner
 from worker.job_runners.config.parquet_and_info import ParquetFileItem
 from worker.utils import CompleteJobResult, get_previous_step_or_raise
-
-ConfigParquetMetadataJobRunnerErrorCode = Literal[
-    "PreviousStepFormatError", "ParquetResponseEmptyError", "FileSystemError"
-]
 
 
 class ParquetFileAndMetadataItem(TypedDict):
@@ -43,43 +42,6 @@ class ParquetFileAndMetadataItem(TypedDict):
 
 class ConfigParquetMetadataResponse(TypedDict):
     parquet_files_and_metadata: List[ParquetFileAndMetadataItem]
-
-
-class ConfigParquetMetadataJobRunnerError(JobRunnerError):
-    """Base class for exceptions in this module."""
-
-    def __init__(
-        self,
-        message: str,
-        status_code: HTTPStatus,
-        code: ConfigParquetMetadataJobRunnerErrorCode,
-        cause: Optional[BaseException] = None,
-        disclose_cause: bool = False,
-    ):
-        super().__init__(
-            message=message, status_code=status_code, code=code, cause=cause, disclose_cause=disclose_cause
-        )
-
-
-class PreviousStepFormatError(ConfigParquetMetadataJobRunnerError):
-    """Raised when the content of the previous step has not the expected format."""
-
-    def __init__(self, message: str, cause: Optional[BaseException] = None):
-        super().__init__(message, HTTPStatus.INTERNAL_SERVER_ERROR, "PreviousStepFormatError", cause, False)
-
-
-class ParquetResponseEmptyError(ConfigParquetMetadataJobRunnerError):
-    """Raised when no parquet files were found for split."""
-
-    def __init__(self, message: str, cause: Optional[BaseException] = None):
-        super().__init__(message, HTTPStatus.INTERNAL_SERVER_ERROR, "ParquetResponseEmptyError", cause, False)
-
-
-class FileSystemError(ConfigParquetMetadataJobRunnerError):
-    """Raised when an error happen reading from File System."""
-
-    def __init__(self, message: str, cause: Optional[BaseException] = None):
-        super().__init__(message, HTTPStatus.INTERNAL_SERVER_ERROR, "FileSystemError", cause, False)
 
 
 @lru_cache(maxsize=128)
@@ -126,13 +88,13 @@ def compute_parquet_metadata_response(
         `ConfigParquetMetadataResponse`: An object with the parquet_response (list of parquet files).
     <Tip>
     Raises the following errors:
-        - [`~job_runner.PreviousStepError`]
+        - [`~libcommon.simple_cache.CachedArtifactError`]
             If the previous step gave an error.
-        - [`~job_runners.parquet_metadata.PreviousStepFormatError`]
+        - [`~libcommon.exceptions.PreviousStepFormatError`]
             If the content of the previous step has not the expected format
-        - [`~job_runner.parquet_metadata.ParquetResponseEmptyError`]
+        - [`~libcommon.exceptions.ParquetResponseEmptyError`]
             If the previous step provided an empty list of parquet files.
-        - [`~job_runners.parquet_metadata.FileSystemError`]
+        - [`~libcommon.exceptions.FileSystemError`]
             If the HfFileSystem couldn't access the parquet files.
     </Tip>
     """

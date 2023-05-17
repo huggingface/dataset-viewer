@@ -12,13 +12,13 @@ import pyarrow.parquet as pq
 import pytest
 from huggingface_hub.hf_file_system import safe_quote
 from libcommon.constants import PARQUET_REVISION
+from libcommon.exceptions import PreviousStepFormatError
 from libcommon.processing_graph import ProcessingGraph
 from libcommon.resources import CacheMongoResource, QueueMongoResource
-from libcommon.simple_cache import upsert_response
+from libcommon.simple_cache import CachedArtifactError, upsert_response
 from libcommon.storage import StrPath
 from libcommon.utils import Priority
 
-from worker.common_exceptions import PreviousStepError
 from worker.config import AppConfig
 from worker.job_runners.config.parquet import ConfigParquetResponse
 from worker.job_runners.config.parquet_and_info import ParquetFileItem
@@ -26,7 +26,6 @@ from worker.job_runners.config.parquet_metadata import (
     ConfigParquetMetadataJobRunner,
     ConfigParquetMetadataResponse,
     ParquetFileAndMetadataItem,
-    PreviousStepFormatError,
     get_hf_fs,
 )
 
@@ -70,6 +69,7 @@ def get_job_runner(
                 "type": ConfigParquetMetadataJobRunner.get_job_type(),
                 "params": {
                     "dataset": dataset,
+                    "revision": "revision",
                     "config": config,
                     "split": None,
                 },
@@ -133,7 +133,7 @@ def get_job_runner(
             "config_1",
             HTTPStatus.NOT_FOUND,
             {"error": "error"},
-            PreviousStepError.__name__,
+            CachedArtifactError.__name__,
             None,
             True,
         ),
@@ -194,5 +194,5 @@ def test_compute(
 def test_doesnotexist(app_config: AppConfig, get_job_runner: GetJobRunner) -> None:
     dataset = config = "doesnotexist"
     job_runner = get_job_runner(dataset, config, app_config)
-    with pytest.raises(PreviousStepError):
+    with pytest.raises(CachedArtifactError):
         job_runner.compute()
