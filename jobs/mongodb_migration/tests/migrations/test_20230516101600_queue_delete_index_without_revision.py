@@ -15,7 +15,9 @@ from mongodb_migration.migrations._20230516101600_queue_delete_index_without_rev
 
 
 def test_queue_delete_index_without_revision(mongo_host: str) -> None:
-    with MongoResource(database="test_queue_delete_index_without_revision", host=mongo_host, mongoengine_alias="queue"):
+    with MongoResource(
+        database="test_queue_delete_index_without_revision", host=mongo_host, mongoengine_alias="queue"
+    ):
         db = get_db(QUEUE_MONGOENGINE_ALIAS)
         db[QUEUE_COLLECTION_JOBS].create_index(INDEX_DEFINITION)
         assert len(get_index_names(db[QUEUE_COLLECTION_JOBS].index_information())) == 1  # Ensure the indexes exists
