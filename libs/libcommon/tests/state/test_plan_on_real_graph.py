@@ -197,6 +197,8 @@ def test_plan_job_creation_and_termination() -> None:
             "CreateJob,config-parquet,dataset,config2",
             "CreateJob,config-parquet-and-info,dataset,config1",
             "CreateJob,config-parquet-and-info,dataset,config2",
+            "CreateJob,config-parquet-metadata,dataset,config1",
+            "CreateJob,config-parquet-metadata,dataset,config2",
             "CreateJob,config-size,dataset,config1",
             "CreateJob,config-size,dataset,config2",
         ],
