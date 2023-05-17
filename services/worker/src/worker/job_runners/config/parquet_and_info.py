@@ -159,7 +159,7 @@ def raise_if_blocked(
     Returns:
         `None`
     Raises the following errors:
-        - [`~job_runners.config.parquet_and_info.DatasetInBlockListError`]
+        - [`libcommon.exceptions.DatasetInBlockListError`]
           If the dataset is in the list of blocked datasets.
     """
     if dataset in blocked_datasets:
@@ -227,7 +227,7 @@ def raise_if_too_big_from_hub(
     Returns:
         `None`
     Raises the following errors:
-        - [`~job_runners.config.parquet_and_info.DatasetTooBigFromHubError`]
+        - [`libcommon.exceptions.DatasetTooBigFromHubError`]
           If the dataset is too big to be converted to parquet, as measured by the sum of the repository
           files sizes given by the Hub.
     """
@@ -270,7 +270,7 @@ def raise_if_too_big_from_datasets(
     Raises the following errors:
         - [`ValueError`](https://docs.python.org/3/library/exceptions.html#ValueError)
           If the datasets.config.HF_ENDPOINT is not set to the expected value
-        - [`~job_runners.config.parquet_and_info.DatasetTooBigFromDatasetsError`]
+        - [`libcommon.exceptions.DatasetTooBigFromDatasetsError`]
           If the dataset is too big to be converted to parquet, as measured by the sum of the configs
           sizes given by the datasets library.
     """
@@ -348,14 +348,14 @@ def raise_if_not_supported(
           dataset because there is no easy way to get the list of extra fields.
         - ['requests.exceptions.HTTPError'](https://requests.readthedocs.io/en/latest/api/#requests.HTTPError)
           any other error when asking access
-        - [`~job_runners.config.parquet_and_info.DatasetInBlockListError`]
+        - [`libcommon.exceptions.DatasetInBlockListError`]
           If the dataset is in the list of blocked datasets.
-        - [`~job_runners.config.parquet_and_info.DatasetRevisionNotFoundError`]
+        - [`libcommon.exceptions.DatasetRevisionNotFoundError`]
           If the revision does not exist or cannot be accessed using the token.
-        - [`~job_runners.config.parquet_and_info.DatasetTooBigFromDatasetsError`]
+        - [`libcommon.exceptions.DatasetTooBigFromDatasetsError`]
           If the dataset is too big to be converted to parquet, as measured by the sum of the configs
           sizes given by the datasets library.
-        - [`~job_runners.config.parquet_and_info.DatasetTooBigFromHubError`]
+        - [`libcommon.exceptions.DatasetTooBigFromHubError`]
           If the dataset is too big to be converted to parquet, as measured by the sum of the repository
           files sizes given by the Hub.
         - [`ValueError`](https://docs.python.org/3/library/exceptions.html#ValueError)
@@ -646,35 +646,35 @@ def compute_config_parquet_and_info_response(
           any other error when asking access
         - [`libcommon.simple_cache.CachedArtifactError`]
             If the previous step gave an error.
-        - [`~job_runners.config.parquet_and_info.DatasetInBlockListError`]
+        - [`libcommon.exceptions.DatasetInBlockListError`]
           If the dataset is in the list of blocked datasets.
-        - [`~job_runners.config.parquet_and_info.DatasetRevisionNotFoundError`]
+        - [`libcommon.exceptions.DatasetRevisionNotFoundError`]
           If the revision does not exist or cannot be accessed using the token.
-        - [`~job_runners.config.parquet_and_info.DatasetTooBigFromDatasetsError`]
+        - [`libcommon.exceptions.DatasetTooBigFromDatasetsError`]
           If the dataset is too big to be converted to parquet, as measured by the sum of the configs
           sizes given by the datasets library.
-        - [`~job_runners.config.parquet_and_info.DatasetTooBigFromHubError`]
+        - [`libcommon.exceptions.DatasetTooBigFromHubError`]
           If the dataset is too big to be converted to parquet, as measured by the sum of the repository
           files sizes given by the Hub.
-        - [`~job_runners.config.parquet_and_info.EmptyDatasetError`]
+        - [`libcommon.exceptions.EmptyDatasetError`]
           The dataset is empty.
-        - [`~job_runners.config.parquet_and_info.ConfigNamesError`]
+        - [`libcommon.exceptions.ConfigNamesError`]
           If the list of configurations could not be obtained using the datasets library.
-        - [`~job_runners.config.parquet_and_info.DatasetWithTooManyExternalFilesError`]
+        - [`libcommon.exceptions.DatasetWithTooManyExternalFilesError`]
             If the dataset has too many external files to be converted to parquet
-        - [`~job_runners.config.parquet_and_info.DatasetWithTooBigExternalFilesError`]
+        - [`libcommon.exceptions.DatasetWithTooBigExternalFilesError`]
             If the dataset is too big external files be converted to parquet
-        - [`~job_runners.config.parquet_and_info.UnsupportedExternalFilesError`]
+        - [`libcommon.exceptions.UnsupportedExternalFilesError`]
             If we failed to get the external files sizes to make sure we can convert the dataset to parquet
-        - [`~job_runners.config.parquet_and_info.ExternalFilesSizeRequestHTTPError`]
+        - [`libcommon.exceptions.ExternalFilesSizeRequestHTTPError`]
             If we failed to get the external files sizes to make sure we can convert the dataset to parquet
-        - [`~job_runners.config.parquet_and_info.ExternalFilesSizeRequestConnectionError`]
+        - [`libcommon.exceptions.ExternalFilesSizeRequestConnectionError`]
             If we failed to get the external files sizes to make sure we can convert the dataset to parquet
-        - [`~job_runners.config.parquet_and_info.ExternalFilesSizeRequestTimeoutError`]
+        - [`libcommon.exceptions.ExternalFilesSizeRequestTimeoutError`]
             If we failed to get the external files sizes to make sure we can convert the dataset to parquet
-        - [`~job_runners.config.parquet_and_info.ExternalFilesSizeRequestError`]
+        - [`libcommon.exceptions.ExternalFilesSizeRequestError`]
             If we failed to get the external files sizes to make sure we can convert the dataset to parquet
-        - [`~job_runners.config.parquet_and_info.PreviousStepFormatError`]
+        - [`libcommon.exceptions.PreviousStepFormatError`]
             If the content of the previous step has not the expected format
         - [`ValueError`](https://docs.python.org/3/library/exceptions.html#ValueError)
             If the datasets.config.HF_ENDPOINT is not set to the expected value
