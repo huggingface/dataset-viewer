@@ -5,7 +5,7 @@ import logging
 from typing import Any, Literal, Optional, TypedDict
 
 from jsonschema import ValidationError, validate
-from libcommon.dataset import DatasetError
+from libcommon.exceptions import CustomError
 from libcommon.operations import backfill_dataset, delete_dataset
 from libcommon.processing_graph import ProcessingGraph
 from libcommon.utils import Priority
@@ -123,7 +123,7 @@ def create_webhook_endpoint(processing_graph: ProcessingGraph, hf_webhook_secret
             with StepProfiler(method="webhook_endpoint", step="process payload"):
                 try:
                     process_payload(processing_graph=processing_graph, payload=payload, trust_sender=trust_sender)
-                except DatasetError as e:
+                except CustomError as e:
                     content = {"status": "error", "error": "the dataset is not supported"}
                     dataset = payload["repo"]["name"]
                     logging.debug(f"/webhook: the dataset {dataset} is not supported. JSON: {json}. Error: {e}")

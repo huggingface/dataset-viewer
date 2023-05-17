@@ -5,17 +5,14 @@ from http import HTTPStatus
 from typing import Any, Callable
 
 import pytest
+from libcommon.exceptions import PreviousStepFormatError
 from libcommon.processing_graph import ProcessingGraph
 from libcommon.resources import CacheMongoResource, QueueMongoResource
-from libcommon.simple_cache import upsert_response
+from libcommon.simple_cache import CachedArtifactError, upsert_response
 from libcommon.utils import Priority
 
-from worker.common_exceptions import PreviousStepError
 from worker.config import AppConfig
-from worker.job_runners.dataset.split_names import (
-    DatasetSplitNamesJobRunner,
-    PreviousStepFormatError,
-)
+from worker.job_runners.dataset.split_names import DatasetSplitNamesJobRunner
 
 GetJobRunner = Callable[[str, AppConfig], DatasetSplitNamesJobRunner]
 
@@ -268,5 +265,5 @@ def test_compute_format_error(app_config: AppConfig, get_job_runner: GetJobRunne
 def test_doesnotexist(app_config: AppConfig, get_job_runner: GetJobRunner) -> None:
     dataset = "doesnotexist"
     job_runner = get_job_runner(dataset, app_config)
-    with pytest.raises(PreviousStepError):
+    with pytest.raises(CachedArtifactError):
         job_runner.compute()

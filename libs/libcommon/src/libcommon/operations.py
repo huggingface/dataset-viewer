@@ -5,16 +5,10 @@ import logging
 from typing import Optional
 
 from libcommon.dataset import get_dataset_git_revision
-from libcommon.exceptions import LoggedError
 from libcommon.processing_graph import ProcessingGraph
 from libcommon.simple_cache import delete_dataset_responses
 from libcommon.state import DatasetState
 from libcommon.utils import Priority
-
-
-class PreviousStepError(LoggedError):
-    def __init__(self, dataset: str, job_type: str, config: Optional[str] = None, split: Optional[str] = None):
-        super().__init__(f"Response for {job_type} for dataset={dataset}, config={config}, split={split} is an error.")
 
 
 def update_dataset(

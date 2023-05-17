@@ -3,7 +3,8 @@
 
 import pytest
 
-from libcommon.dataset import DatasetInfoHubRequestError, get_dataset_git_revision
+from libcommon.dataset import get_dataset_git_revision
+from libcommon.exceptions import DatasetInfoHubRequestError
 
 
 @pytest.mark.real_dataset
