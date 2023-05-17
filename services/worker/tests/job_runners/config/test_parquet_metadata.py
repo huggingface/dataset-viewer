@@ -45,7 +45,7 @@ pq.write_table(pa.table({"a": [0, 1, 2]}), dummy_parquet_buffer)
 
 @pytest.fixture
 def get_job_runner(
-    assets_directory: StrPath,
+    parquet_metadata_directory: StrPath,
     cache_mongo_resource: CacheMongoResource,
     queue_mongo_resource: QueueMongoResource,
 ) -> GetJobRunner:
@@ -78,7 +78,7 @@ def get_job_runner(
             },
             app_config=app_config,
             processing_step=processing_graph.get_processing_step(processing_step_name),
-            assets_directory=assets_directory,
+            parquet_metadata_directory=parquet_metadata_directory,
         )
 
     return _get_job_runner
@@ -112,7 +112,7 @@ def get_job_runner(
                         filename="filename1",
                         size=0,
                         num_rows=3,
-                        metadata_path_in_asset_dir="ok/-pq-meta/config_1/filename1",
+                        parquet_metadata_subpath="ok/--/config_1/filename1",
                     ),
                     ParquetFileAndMetadataItem(
                         dataset="ok",
@@ -122,7 +122,7 @@ def get_job_runner(
                         filename="filename2",
                         size=0,
                         num_rows=3,
-                        metadata_path_in_asset_dir="ok/-pq-meta/config_1/filename2",
+                        parquet_metadata_subpath="ok/--/config_1/filename2",
                     ),
                 ]
             ),
@@ -184,7 +184,8 @@ def test_compute(
         for parquet_file_and_metadata_item in expected_content["parquet_files_and_metadata"]:
             assert (
                 pq.read_metadata(
-                    Path(job_runner.assets_directory) / parquet_file_and_metadata_item["metadata_path_in_asset_dir"]
+                    Path(job_runner.parquet_metadata_directory)
+                    / parquet_file_and_metadata_item["parquet_metadata_subpath"]
                 )
                 == pq.ParquetFile(dummy_parquet_buffer).metadata
             )

@@ -87,6 +87,22 @@ class CachedAssetsConfig:
             )
 
 
+PARQUET_METADATA_STORAGE_DIRECTORY = None
+
+
+@dataclass(frozen=True)
+class ParquetMetadataConfig:
+    storage_directory: Optional[str] = PARQUET_METADATA_STORAGE_DIRECTORY
+
+    @classmethod
+    def from_env(cls) -> "PARQUET_METADATA_STORAGE_DIRECTORY":
+        env = Env(expand_vars=True)
+        with env.prefixed("PARQUET_METADATA_"):
+            return cls(
+                storage_directory=env.str(name="STORAGE_DIRECTORY", default=PARQUET_METADATA_STORAGE_DIRECTORY),
+            )
+
+
 COMMON_HF_ENDPOINT = "https://huggingface.co"
 COMMON_HF_TOKEN = None
 

@@ -71,6 +71,7 @@ class JobRunnerFactory(BaseJobRunnerFactory):
     processing_graph: ProcessingGraph
     hf_datasets_cache: Path
     assets_directory: StrPath
+    parquet_metadata_directory: StrPath
 
     def _create_job_runner(self, job_info: JobInfo) -> JobRunner:
         job_type = job_info["type"]
@@ -121,7 +122,7 @@ class JobRunnerFactory(BaseJobRunnerFactory):
                 job_info=job_info,
                 app_config=self.app_config,
                 processing_step=processing_step,
-                assets_directory=self.assets_directory,
+                parquet_metadata_directory=self.parquet_metadata_directory,
             )
         if job_type == DatasetParquetJobRunner.get_job_type():
             return DatasetParquetJobRunner(

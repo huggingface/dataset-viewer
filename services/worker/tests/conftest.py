@@ -110,6 +110,11 @@ def assets_directory(app_config: AppConfig) -> StrPath:
 
 
 @fixture
+def parquet_metadata_directory(app_config: AppConfig) -> StrPath:
+    return init_assets_dir(app_config.parquet_metadata.storage_directory)
+
+
+@fixture
 def test_processing_graph() -> ProcessingGraph:
     return ProcessingGraph(
         {

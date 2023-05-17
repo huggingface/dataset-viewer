@@ -15,7 +15,7 @@ from libcommon.constants import (
 from libcommon.processing_graph import ProcessingStep
 from libcommon.storage import StrPath
 from libcommon.utils import JobInfo
-from libcommon.viewer_utils.asset import create_parquet_metadata_file
+from libcommon.viewer_utils.parquet_metadata import create_parquet_metadata_file
 from pyarrow.parquet import ParquetFile
 from tqdm.contrib.concurrent import thread_map
 
@@ -38,7 +38,7 @@ class ParquetFileAndMetadataItem(TypedDict):
     filename: str
     size: int
     num_rows: int
-    metadata_path_in_asset_dir: str
+    parquet_metadata_subpath: str
 
 
 class ConfigParquetMetadataResponse(TypedDict):
@@ -108,7 +108,7 @@ def get_hf_parquet_uris(paths: List[str], dataset: str, config: str) -> List[str
 
 
 def compute_parquet_metadata_response(
-    dataset: str, config: str, hf_token: Optional[str], assets_directory: StrPath
+    dataset: str, config: str, hf_token: Optional[str], parquet_metadata_directory: StrPath
 ) -> ConfigParquetMetadataResponse:
     """
     Get the response of /parquet for one specific dataset on huggingface.co.
@@ -120,8 +120,8 @@ def compute_parquet_metadata_response(
             A configuration name.
         hf_token (`str`, *optional*):
             An authentication token (See https://huggingface.co/settings/token)
-        assets_directory (`str` or `pathlib.Path`):
-            The directory where the assets are stored.
+        parquet_metadata_directory (`str` or `pathlib.Path`):
+            The directory where the parquet metadata files are stored.
     Returns:
         `ConfigParquetMetadataResponse`: An object with the parquet_response (list of parquet files).
     <Tip>
@@ -163,12 +163,12 @@ def compute_parquet_metadata_response(
 
     parquet_files_and_metadata = []
     for parquet_file_item, parquet_file in zip(parquet_file_items, parquet_files):
-        metadata_path_in_asset_dir = create_parquet_metadata_file(
+        parquet_metadata_subpath = create_parquet_metadata_file(
             dataset=dataset,
             config=config,
             parquet_file_metadata=parquet_file.metadata,
             filename=parquet_file_item["filename"],
-            assets_directory=assets_directory,
+            parquet_metadata_directory=parquet_metadata_directory,
         )
         num_rows = parquet_file.metadata.num_rows
         parquet_files_and_metadata.append(
@@ -180,7 +180,7 @@ def compute_parquet_metadata_response(
                 filename=parquet_file_item["filename"],
                 size=parquet_file_item["size"],
                 num_rows=num_rows,
-                metadata_path_in_asset_dir=metadata_path_in_asset_dir,
+                parquet_metadata_subpath=parquet_metadata_subpath,
             )
         )
 
@@ -188,7 +188,7 @@ def compute_parquet_metadata_response(
 
 
 class ConfigParquetMetadataJobRunner(ConfigJobRunner):
-    assets_directory: StrPath
+    parquet_metadata_directory: StrPath
 
     @staticmethod
     def get_job_type() -> str:
@@ -203,14 +203,14 @@ class ConfigParquetMetadataJobRunner(ConfigJobRunner):
         job_info: JobInfo,
         app_config: AppConfig,
         processing_step: ProcessingStep,
-        assets_directory: StrPath,
+        parquet_metadata_directory: StrPath,
     ) -> None:
         super().__init__(
             job_info=job_info,
             app_config=app_config,
             processing_step=processing_step,
         )
-        self.assets_directory = assets_directory
+        self.parquet_metadata_directory = parquet_metadata_directory
 
     def compute(self) -> CompleteJobResult:
         return CompleteJobResult(
@@ -218,6 +218,6 @@ class ConfigParquetMetadataJobRunner(ConfigJobRunner):
                 dataset=self.dataset,
                 config=self.config,
                 hf_token=self.app_config.common.hf_token,
-                assets_directory=self.assets_directory,
+                parquet_metadata_directory=self.parquet_metadata_directory,
             )
         )
