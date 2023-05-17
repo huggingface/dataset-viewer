@@ -2,7 +2,10 @@
 # Copyright 2023 The HuggingFace Authors.
 
 from libcommon.constants import (
-    CACHE_COLLECTION_RESPONSES, CACHE_MONGOENGINE_ALIAS, QUEUE_COLLECTION_JOBS, QUEUE_MONGOENGINE_ALIAS
+    CACHE_COLLECTION_RESPONSES,
+    CACHE_MONGOENGINE_ALIAS,
+    QUEUE_COLLECTION_JOBS,
+    QUEUE_MONGOENGINE_ALIAS,
 )
 from libcommon.resources import MongoResource
 from mongoengine.connection import get_db
@@ -47,7 +50,7 @@ def test_queue_renaming_migration(mongo_host: str) -> None:
             [
                 {
                     "type": old_job,
-                    "unicity_id": f"Job[{old_job}][dataset][config][split]",
+                    "unicity_id": f"{old_job},dataset,config,split",
                     "dataset": "dataset",
                     "http_status": 200,
                 }
@@ -67,5 +70,5 @@ def test_queue_renaming_migration(mongo_host: str) -> None:
 
         result = db[QUEUE_COLLECTION_JOBS].find_one({"type": new_job})
         assert result
-        assert result["unicity_id"] == f"Job[{new_job}][dataset][config][split]"
+        assert result["unicity_id"] == f"{new_job},dataset,config,split"
         db[QUEUE_COLLECTION_JOBS].drop()
