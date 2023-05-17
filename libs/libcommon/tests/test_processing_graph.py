@@ -146,6 +146,12 @@ def graph() -> ProcessingGraph:
             ["/config-names", "config-parquet-and-info"],
         ),
         (
+            "config-parquet-metadata",
+            [],
+            ["config-parquet"],
+            ["/config-names", "config-parquet-and-info", "config-parquet"],
+        ),
+        (
             "dataset-parquet",
             [],
             ["/config-names", "config-parquet"],
