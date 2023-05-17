@@ -205,7 +205,7 @@ cachedAssets:
 
 parquetMetadata:
   # Directory on the shared storage (parquet metadata files used for random access in /rows)
-  storageDirectory: "/cached-assets"
+  storageDirectory: "/parquet-metadata"
 
 
 # Directory where the cache data will be stored
