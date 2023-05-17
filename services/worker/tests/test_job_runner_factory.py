@@ -51,6 +51,7 @@ def test_create_job_runner(
         "type": job_type,
         "params": {
             "dataset": "dataset",
+            "revision": "revision",
             "config": "config",
             "split": "split",
         },

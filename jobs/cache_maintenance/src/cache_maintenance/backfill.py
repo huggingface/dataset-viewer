@@ -35,12 +35,17 @@ def backfill_cache(
 
         dataset = dataset_info.id
         if not dataset:
+            logging.warning(f"dataset id not found for {dataset_info}")
+            # should not occur
+            continue
+        if dataset_info.sha is None:
+            logging.warning(f"dataset revision not found for {dataset_info}")
             # should not occur
             continue
         dataset_state = DatasetState(
             dataset=dataset,
             processing_graph=processing_graph,
-            revision=dataset_info.sha,
+            revision=str(dataset_info.sha),
             error_codes_to_retry=error_codes_to_retry,
         )
         created_jobs = dataset_state.backfill()

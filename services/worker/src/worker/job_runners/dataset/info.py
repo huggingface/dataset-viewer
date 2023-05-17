@@ -3,45 +3,20 @@
 
 import logging
 from http import HTTPStatus
-from typing import Any, Dict, List, Literal, Optional, Tuple, TypedDict
+from typing import Any, Dict, List, Tuple, TypedDict
 
 from libcommon.constants import PROCESSING_STEP_DATASET_INFO_VERSION
+from libcommon.exceptions import PreviousStepFormatError
 from libcommon.simple_cache import DoesNotExist, get_response
 
-from worker.common_exceptions import JobRunnerError
 from worker.job_runners.dataset.dataset_job_runner import DatasetJobRunner
 from worker.utils import JobResult, PreviousJob, get_previous_step_or_raise
-
-DatasetInfoJobRunnerErrorCode = Literal["PreviousStepFormatError"]
 
 
 class DatasetInfoResponse(TypedDict):
     dataset_info: Dict[str, Any]
     pending: List[PreviousJob]
     failed: List[PreviousJob]
-
-
-class DatasetInfoJobRunnerError(JobRunnerError):
-    """Base class for exceptions in this module."""
-
-    def __init__(
-        self,
-        message: str,
-        status_code: HTTPStatus,
-        code: DatasetInfoJobRunnerErrorCode,
-        cause: Optional[BaseException] = None,
-        disclose_cause: bool = False,
-    ):
-        super().__init__(
-            message=message, status_code=status_code, code=code, cause=cause, disclose_cause=disclose_cause
-        )
-
-
-class PreviousStepFormatError(DatasetInfoJobRunnerError):
-    """Raised when the content of the previous step has not the expected format."""
-
-    def __init__(self, message: str, cause: Optional[BaseException] = None):
-        super().__init__(message, HTTPStatus.INTERNAL_SERVER_ERROR, "PreviousStepFormatError", cause, False)
 
 
 def compute_dataset_info_response(dataset: str) -> Tuple[DatasetInfoResponse, float]:
@@ -56,13 +31,11 @@ def compute_dataset_info_response(dataset: str) -> Tuple[DatasetInfoResponse, fl
         progress float value from 0. to 1. which corresponds to the percentage of dataset configs
         correctly processed and included in current response (some configs might not exist in cache yet
         or raise errors).
-    <Tip>
     Raises the following errors:
-        - [`~job_runner.PreviousStepError`]
+        - [`libcommon.simple_cache.CachedArtifactError`]
             If the previous step gave an error.
-        - [`~job_runners.dataset.info.PreviousStepFormatError`]
+        - [`libcommon.exceptions.PreviousStepFormatError`]
             If the content of the previous step doesn't have the expected format.
-    </Tip>
     """
     logging.info(f"get dataset_info for {dataset=}")
 

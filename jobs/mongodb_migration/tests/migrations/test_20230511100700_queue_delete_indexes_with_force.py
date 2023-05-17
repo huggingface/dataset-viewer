@@ -6,7 +6,9 @@ from libcommon.queue import Job
 from libcommon.resources import MongoResource
 from libcommon.utils import get_datetime
 from mongoengine.connection import get_db
+from pytest import raises
 
+from mongodb_migration.migration import IrreversibleMigrationError
 from mongodb_migration.migrations._20230511100700_queue_delete_indexes_with_force import (
     MigrationQueueDeleteIndexesWithForce,
     field_name,
@@ -16,7 +18,14 @@ from mongodb_migration.migrations._20230511100700_queue_delete_indexes_with_forc
 
 def test_queue_delete_indexes_with_force(mongo_host: str) -> None:
     with MongoResource(database="test_queue_delete_indexes_with_force", host=mongo_host, mongoengine_alias="queue"):
-        Job(type="test", dataset="test", unicity_id="test", namespace="test", created_at=get_datetime()).save()
+        Job(
+            type="test",
+            dataset="test",
+            revision="revision",
+            unicity_id="test",
+            namespace="test",
+            created_at=get_datetime(),
+        ).save()
         db = get_db(QUEUE_MONGOENGINE_ALIAS)
         db[QUEUE_COLLECTION_JOBS].create_index(field_name)
         db[QUEUE_COLLECTION_JOBS].create_index([(field_name, 1), ("type", 1)])
@@ -35,4 +44,6 @@ def test_queue_delete_indexes_with_force(mongo_host: str) -> None:
             len(get_index_names(db[QUEUE_COLLECTION_JOBS].index_information(), "force")) == 0
         )  # Ensure the indexes do not exist anymore
 
+        with raises(IrreversibleMigrationError):
+            migration.down()
         db[QUEUE_COLLECTION_JOBS].drop()

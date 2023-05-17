@@ -1,23 +1,15 @@
 from dataclasses import dataclass
 from http import HTTPStatus
 from typing import Optional
-from unittest.mock import Mock
 
 import pytest
 from libcommon.exceptions import CustomError
 from libcommon.processing_graph import ProcessingGraph, ProcessingStep
-from libcommon.queue import Queue
+from libcommon.queue import Job, Queue
 from libcommon.resources import CacheMongoResource, QueueMongoResource
-from libcommon.simple_cache import (
-    CachedResponse,
-    DoesNotExist,
-    get_response,
-    get_response_with_details,
-    upsert_response,
-)
+from libcommon.simple_cache import CachedResponse, get_response, upsert_response
 from libcommon.utils import JobInfo, Priority, Status
 
-from worker.common_exceptions import PreviousStepError
 from worker.config import AppConfig
 from worker.job_manager import JobManager
 from worker.job_runners.dataset.dataset_job_runner import DatasetJobRunner
@@ -36,10 +28,6 @@ def prepare_and_clean_mongo(
 
 
 class DummyJobRunner(DatasetJobRunner):
-    @staticmethod
-    def _get_dataset_git_revision() -> Optional[str]:
-        return "0.1.2"
-
     @staticmethod
     def get_job_runner_version() -> int:
         return 1
@@ -68,6 +56,7 @@ def test_check_type(
 ) -> None:
     job_id = "job_id"
     dataset = "dataset"
+    revision = "revision"
     config = "config"
     split = "split"
 
@@ -77,6 +66,7 @@ def test_check_type(
         type=job_type,
         params={
             "dataset": dataset,
+            "revision": revision,
             "config": config,
             "split": split,
         },
@@ -98,6 +88,7 @@ def test_check_type(
         type=test_processing_step.job_type,
         params={
             "dataset": dataset,
+            "revision": revision,
             "config": config,
             "split": split,
         },
@@ -132,16 +123,18 @@ def test_backfill(priority: Priority, app_config: AppConfig) -> None:
         }
     )
     root_step = graph.get_processing_step("dummy")
-    job_info = JobInfo(
-        job_id="job_id",
-        type=root_step.job_type,
-        params={
-            "dataset": "dataset",
-            "config": None,
-            "split": None,
-        },
+    queue = Queue()
+    assert Job.objects().count() == 0
+    queue.upsert_job(
+        job_type=root_step.job_type,
+        dataset="dataset",
+        revision="revision",
+        config=None,
+        split=None,
         priority=priority,
     )
+    job_info = queue.start_job()
+    assert job_info["priority"] == priority
 
     job_runner = DummyJobRunner(
         job_info=job_info,
@@ -150,21 +143,42 @@ def test_backfill(priority: Priority, app_config: AppConfig) -> None:
     )
 
     job_manager = JobManager(job_info=job_info, app_config=app_config, job_runner=job_runner, processing_graph=graph)
-    job_manager.get_dataset_git_revision = Mock(return_value="0.1.2")  # type: ignore
+    assert job_manager.priority == priority
 
-    # we add an entry to the cache
-    job_manager.run()
-    # check that the missing cache entries have been created
-    queue = Queue()
+    job_result = job_manager.run_job()
+    assert job_result["is_success"]
+    assert job_result["output"] is not None
+    assert job_result["output"]["content"] == {"key": "value"}
+
+    job_manager.finish(job_result=job_result)
+    # check that the job has been finished with success
+    job = queue.get_job_with_id(job_id=job_info["job_id"])
+    assert job.status == Status.SUCCESS
+    assert job.priority == priority
+
+    # check that the cache entry has have been created
+    cached_response = get_response(kind=root_step.cache_kind, dataset="dataset", config=None, split=None)
+    assert cached_response is not None
+    assert cached_response["http_status"] == HTTPStatus.OK
+    assert cached_response["error_code"] is None
+    assert cached_response["content"] == {"key": "value"}
+    assert cached_response["dataset_git_revision"] == "revision"
+    assert cached_response["job_runner_version"] == 1
+    assert cached_response["progress"] == 1.0
+
+    # check that the missing cache entries have been created (backfill)
+
     dataset_child_jobs = queue.get_dump_with_status(job_type="dataset-child", status=Status.WAITING)
     assert len(dataset_child_jobs) == 1
     assert dataset_child_jobs[0]["dataset"] == "dataset"
+    assert dataset_child_jobs[0]["revision"] == "revision"
     assert dataset_child_jobs[0]["config"] is None
     assert dataset_child_jobs[0]["split"] is None
     assert dataset_child_jobs[0]["priority"] is priority.value
     dataset_unrelated_jobs = queue.get_dump_with_status(job_type="dataset-unrelated", status=Status.WAITING)
     assert len(dataset_unrelated_jobs) == 1
     assert dataset_unrelated_jobs[0]["dataset"] == "dataset"
+    assert dataset_unrelated_jobs[0]["revision"] == "revision"
     assert dataset_unrelated_jobs[0]["config"] is None
     assert dataset_unrelated_jobs[0]["split"] is None
     assert dataset_unrelated_jobs[0]["priority"] is priority.value
@@ -178,22 +192,24 @@ def test_job_runner_set_crashed(
     test_processing_step: ProcessingStep,
     app_config: AppConfig,
 ) -> None:
-    job_id = "job_id"
     dataset = "dataset"
+    revision = "revision"
     config = "config"
     split = "split"
     message = "I'm crashed :("
 
-    job_info = JobInfo(
-        job_id=job_id,
-        type=test_processing_step.job_type,
-        params={
-            "dataset": dataset,
-            "config": config,
-            "split": split,
-        },
+    queue = Queue()
+    assert Job.objects().count() == 0
+    queue.upsert_job(
+        job_type=test_processing_step.job_type,
+        dataset=dataset,
+        revision=revision,
+        config=config,
+        split=split,
         priority=Priority.NORMAL,
     )
+    job_info = queue.start_job()
+
     job_runner = DummyJobRunner(
         job_info=job_info,
         processing_step=test_processing_step,
@@ -203,7 +219,6 @@ def test_job_runner_set_crashed(
     job_manager = JobManager(
         job_info=job_info, app_config=app_config, job_runner=job_runner, processing_graph=test_processing_graph
     )
-    job_manager.get_dataset_git_revision = Mock(return_value="0.1.2")  # type: ignore
 
     job_manager.set_crashed(message=message)
     response = CachedResponse.objects()[0]
@@ -211,6 +226,7 @@ def test_job_runner_set_crashed(
     assert response.http_status == HTTPStatus.NOT_IMPLEMENTED
     assert response.error_code == "JobManagerCrashedError"
     assert response.dataset == dataset
+    assert response.dataset_git_revision == revision
     assert response.config == config
     assert response.split == split
     assert response.content == expected_error
@@ -224,16 +240,16 @@ def test_raise_if_parallel_response_exists(
     app_config: AppConfig,
 ) -> None:
     dataset = "dataset"
+    revision = "revision"
     config = "config"
     split = "split"
-    current_dataset_git_revision = "CURRENT_GIT_REVISION"
     upsert_response(
         kind="dummy-parallel",
         dataset=dataset,
         config=config,
         split=split,
         content={},
-        dataset_git_revision=current_dataset_git_revision,
+        dataset_git_revision=revision,
         job_runner_version=1,
         progress=1.0,
         http_status=HTTPStatus.OK,
@@ -244,6 +260,7 @@ def test_raise_if_parallel_response_exists(
         type="dummy",
         params={
             "dataset": dataset,
+            "revision": revision,
             "config": config,
             "split": split,
         },
@@ -258,74 +275,15 @@ def test_raise_if_parallel_response_exists(
     job_manager = JobManager(
         job_info=job_info, app_config=app_config, job_runner=job_runner, processing_graph=test_processing_graph
     )
-    job_manager.get_dataset_git_revision = Mock(return_value=current_dataset_git_revision)  # type: ignore
     with pytest.raises(CustomError) as exc_info:
         job_manager.raise_if_parallel_response_exists(parallel_cache_kind="dummy-parallel", parallel_job_version=1)
     assert exc_info.value.status_code == HTTPStatus.INTERNAL_SERVER_ERROR
     assert exc_info.value.code == "ResponseAlreadyComputedError"
 
 
-@pytest.mark.parametrize("disclose_cause", [False, True])
-def test_previous_step_error(disclose_cause: bool) -> None:
-    dataset = "dataset"
-    config = "config"
-    split = "split"
-    kind = "cache_kind"
-    error_code = "ErrorCode"
-    error_message = "error message"
-    cause_exception = "CauseException"
-    cause_message = "cause message"
-    cause_traceback = ["traceback1", "traceback2"]
-    details = {
-        "error": error_message,
-        "cause_exception": cause_exception,
-        "cause_message": cause_message,
-        "cause_traceback": cause_traceback,
-    }
-    content = details if disclose_cause else {"error": error_message}
-    job_runner_version = 1
-    dataset_git_revision = "dataset_git_revision"
-    progress = 1.0
-    upsert_response(
-        kind=kind,
-        dataset=dataset,
-        config=config,
-        split=split,
-        content=content,
-        http_status=HTTPStatus.INTERNAL_SERVER_ERROR,
-        error_code=error_code,
-        details=details,
-        job_runner_version=job_runner_version,
-        dataset_git_revision=dataset_git_revision,
-        progress=progress,
-    )
-    response = get_response_with_details(kind=kind, dataset=dataset, config=config, split=split)
-    error = PreviousStepError.from_response(response=response, kind=kind, dataset=dataset, config=config, split=split)
-    assert error.disclose_cause == disclose_cause
-    assert error.status_code == HTTPStatus.INTERNAL_SERVER_ERROR
-    assert error.code == error_code
-    assert error.as_response_without_cause() == {
-        "error": error_message,
-    }
-    assert error.as_response_with_cause() == {
-        "error": error_message,
-        "cause_exception": cause_exception,
-        "cause_message": cause_message,
-        "cause_traceback": [
-            "The previous step failed, the error is copied to this step:",
-            f"  {kind=} {dataset=} {config=} {split=}",
-            "---",
-            *cause_traceback,
-        ],
-    }
-    if disclose_cause:
-        assert error.as_response() == error.as_response_with_cause()
-    else:
-        assert error.as_response() == error.as_response_without_cause()
-
-
 def test_doesnotexist(app_config: AppConfig) -> None:
     dataset = "doesnotexist"
+    revision = "revision"
     dataset, config, split = get_default_config_split(dataset)
 
     job_info = JobInfo(
@@ -333,6 +291,7 @@ def test_doesnotexist(app_config: AppConfig) -> None:
         type="dummy",
         params={
             "dataset": dataset,
+            "revision": revision,
             "config": config,
             "split": split,
         },
@@ -361,6 +320,7 @@ def test_doesnotexist(app_config: AppConfig) -> None:
         job_info=job_info, app_config=app_config, job_runner=job_runner, processing_graph=processing_graph
     )
 
-    assert not job_manager.process()
-    with pytest.raises(DoesNotExist):
-        get_response(kind=job_manager.processing_step.cache_kind, dataset=dataset, config=config, split=split)
+    job_result = job_manager.process()
+    # ^ the job is processed, since we don't contact the Hub to check if the dataset exists
+    assert job_result["output"] is not None
+    assert job_result["output"]["content"] == {"key": "value"}

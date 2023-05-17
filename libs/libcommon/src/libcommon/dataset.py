@@ -1,133 +1,24 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2022 The HuggingFace Authors.
 
-from http import HTTPStatus
-from typing import Literal, Optional
+from typing import Optional
 
 import requests
 from huggingface_hub.hf_api import DatasetInfo, HfApi
 from huggingface_hub.utils._errors import RepositoryNotFoundError, RevisionNotFoundError
 from huggingface_hub.utils._headers import build_hf_headers
 
-from libcommon.exceptions import CustomError
-
-DatasetErrorCode = Literal[
-    "AskAccessHubRequestError",
-    "DatasetInfoHubRequestError",
-    "DatasetNotFoundError",
-    "DatasetRevisionNotFoundError",
-    "DisabledViewerError",
-    "GatedDisabledError",
-    "GatedExtraFieldsError",
-]
-
-
-class DatasetError(CustomError):
-    """Base class for dataset exceptions."""
-
-    def __init__(
-        self,
-        message: str,
-        status_code: HTTPStatus,
-        code: DatasetErrorCode,
-        cause: Optional[BaseException] = None,
-        disclose_cause: bool = False,
-    ):
-        super().__init__(
-            message=message, status_code=status_code, code=str(code), cause=cause, disclose_cause=disclose_cause
-        )
-
-
-class AskAccessHubRequestError(DatasetError):
-    """Raised when the request to the Hub's ask-access endpoint times out."""
-
-    def __init__(self, message: str, cause: Optional[BaseException] = None):
-        super().__init__(
-            message=message,
-            status_code=HTTPStatus.INTERNAL_SERVER_ERROR,
-            code="AskAccessHubRequestError",
-            cause=cause,
-            disclose_cause=False,
-        )
-
-
-class DatasetInfoHubRequestError(DatasetError):
-    """Raised when the request to the Hub's dataset-info endpoint times out."""
-
-    def __init__(self, message: str, cause: Optional[BaseException] = None):
-        super().__init__(
-            message=message,
-            status_code=HTTPStatus.INTERNAL_SERVER_ERROR,
-            code="DatasetInfoHubRequestError",
-            cause=cause,
-            disclose_cause=False,
-        )
-
-
-class DatasetNotFoundError(DatasetError):
-    """Raised when the dataset does not exist."""
-
-    def __init__(self, message: str, cause: Optional[BaseException] = None):
-        super().__init__(
-            message=message,
-            status_code=HTTPStatus.NOT_FOUND,
-            code="DatasetNotFoundError",
-            cause=cause,
-            disclose_cause=False,
-        )
-
-
-class DatasetRevisionNotFoundError(DatasetError):
-    """Raised when the dataset revision (git branch) does not exist."""
-
-    def __init__(self, message: str, cause: Optional[BaseException] = None):
-        super().__init__(
-            message=message,
-            status_code=HTTPStatus.NOT_FOUND,
-            code="DatasetRevisionNotFoundError",
-            cause=cause,
-            disclose_cause=True,
-        )
-
-
-class DisabledViewerError(DatasetError):
-    """Raised when the dataset viewer is disabled."""
-
-    def __init__(self, message: str, cause: Optional[BaseException] = None):
-        super().__init__(
-            message=message,
-            status_code=HTTPStatus.NOT_FOUND,
-            code="DisabledViewerError",
-            cause=cause,
-            disclose_cause=False,
-        )
-
-
-class GatedDisabledError(DatasetError):
-    """Raised when the dataset is gated, but disabled."""
-
-    def __init__(self, message: str, cause: Optional[BaseException] = None):
-        super().__init__(
-            message=message,
-            status_code=HTTPStatus.NOT_FOUND,
-            code="GatedDisabledError",
-            cause=cause,
-            disclose_cause=False,
-        )
-
-
-class GatedExtraFieldsError(DatasetError):
-    """Raised when the dataset is gated, with extra fields."""
-
-    def __init__(self, message: str, cause: Optional[BaseException] = None):
-        super().__init__(
-            message=message,
-            status_code=HTTPStatus.NOT_FOUND,
-            code="GatedExtraFieldsError",
-            cause=cause,
-            disclose_cause=False,
-        )
-
+from libcommon.exceptions import (
+    AskAccessHubRequestError,
+    CustomError,
+    DatasetInfoHubRequestError,
+    DatasetNotFoundError,
+    DatasetRevisionEmptyError,
+    DatasetRevisionNotFoundError,
+    DisabledViewerError,
+    GatedDisabledError,
+    GatedExtraFieldsError,
+)
 
 DOES_NOT_EXIST_OR_PRIVATE_DATASET_ERROR_MESSAGE = (
     "The dataset does not exist on the Hub, or is private. Private datasets are not yet supported."
@@ -152,16 +43,18 @@ def ask_access(
     Returns:
         `None`
     Raises:
-        - [`~libcommon.dataset.AskAccessHubRequestError`]: if the request to the Hub to get access to the
-            dataset failed or timed out.
-        - [`~libcommon.dataset.GatedExtraFieldsError`]: if the dataset is gated, with extra fields.
-            Programmatic access is not implemented for this type of dataset because there is no easy
-            way to get the list of extra fields.
-        - [`~libcommon.dataset.GatedDisabledError`]: if the dataset is gated, but disabled.
-        - [`~libcommon.dataset.DatasetNotFoundError`]: if the dataset does not exist, or if the
-            token does not give the sufficient access to the dataset, or if the dataset is private
-            (private datasets are not supported by the datasets server)
-        - ['~requests.exceptions.HTTPError']: any other error when asking access
+        - [`~exceptions.AskAccessHubRequestError`]
+          if the request to the Hub to get access to the dataset failed or timed out.
+        - [`~exceptions.DatasetNotFoundError`]:
+          if the dataset does not exist, or if the token does not give the sufficient access to the dataset,
+        - [`~exceptions.GatedDisabledError`]
+          if the dataset is gated, but disabled.
+          or if the dataset is private (private datasets are not supported by the datasets server).
+        - [`~exceptions.GatedExtraFieldsError`]
+          if the dataset is gated, with extra fields. Programmatic access is not implemented for this type of
+          dataset because there is no easy way to get the list of extra fields.
+        - ['requests.exceptions.HTTPError'](https://requests.readthedocs.io/en/latest/api/#requests.HTTPError)
+          any other error when asking access
     """
     path = f"{hf_endpoint}/datasets/{dataset}/ask-access"
     try:
@@ -198,11 +91,11 @@ def raise_if_not_supported(dataset_info: DatasetInfo) -> None:
             The dataset info.
     Returns:
         `None`
-    <Tip>
     Raises the following errors:
-        - [`~libcommon.dataset.DisabledViewerError`]: if the dataset viewer is disabled.
-        - [`~libcommon.dataset.DatasetNotFoundError`]: if the dataset id does not exist, or if the dataset is private
-    </Tip>
+        - [`~exceptions.DatasetNotFoundError`]
+          if the dataset id does not exist, or if the dataset is private
+        - [`~exceptions.DisabledViewerError`]
+          if the dataset viewer is disabled.
     """
     if not dataset_info.id or dataset_info.private:
         raise DatasetNotFoundError(DOES_NOT_EXIST_OR_PRIVATE_DATASET_ERROR_MESSAGE)
@@ -221,7 +114,7 @@ def is_supported(dataset_info: DatasetInfo) -> bool:
     """
     try:
         raise_if_not_supported(dataset_info)
-    except DatasetError:
+    except CustomError:
         return False
     return True
 
@@ -246,24 +139,25 @@ def get_dataset_info_for_supported_datasets(
             The timeout in seconds for the request to the Hub.
     Returns:
         `DatasetInfo`: the dataset info.
-    <Tip>
     Raises the following errors:
-        - [`~libcommon.dataset.AskAccessHubRequestError`]: if the request to the Hub to get access to the
-            dataset failed or timed out.
-        - [`~libcommon.dataset.DatasetInfoHubRequestError`]: if the request to the Hub to get the dataset
-            info failed or timed out.
-        - [`~libcommon.dataset.GatedExtraFieldsError`]: if the dataset is gated, with extra fields.
-            Programmatic access is not implemented for this type of dataset because there is no easy
-            way to get the list of extra fields.
-        - [`~libcommon.dataset.DisabledViewerError`]: if the dataset viewer is disabled.
-        - [`~libcommon.dataset.GatedDisabledError`]: if the dataset is gated, but disabled.
-        - [`~libcommon.dataset.DatasetNotFoundError`]: if the dataset does not exist, or if the
-            token does not give the sufficient access to the dataset, or if the dataset is private
-            (private datasets are not supported by the datasets server).
-        - [`~libcommon.dataset.DatasetRevisionNotFoundError`]: if the git revision (branch, commit) does not
-            exist in the repository.
-        - ['~requests.exceptions.HTTPError']: any other error when asking access
-    </Tip>
+        - [`~exceptions.AskAccessHubRequestError`]
+          if the request to the Hub to get access to the dataset failed or timed out.
+        - [`~exceptions.DatasetInfoHubRequestError`]
+          if the request to the Hub to get the dataset info failed or timed out.
+        - [`~exceptions.DatasetNotFoundError`]:
+          if the dataset does not exist, or if the token does not give the sufficient access to the dataset,
+          or if the dataset is private (private datasets are not supported by the datasets server).
+        - [`~exceptions.DatasetRevisionNotFoundError`]
+          if the git revision (branch, commit) does not exist in the repository.
+        - [`~exceptions.DisabledViewerError`]
+          if the dataset viewer is disabled.
+        - [`~exceptions.GatedDisabledError`]
+          if the dataset is gated, but disabled.
+        - [`~exceptions.GatedExtraFieldsError`]
+          if the dataset is gated, with extra fields. Programmatic access is not implemented for this type of
+          dataset because there is no easy way to get the list of extra fields.
+        - ['requests.exceptions.HTTPError'](https://requests.readthedocs.io/en/latest/api/#requests.HTTPError)
+          any other error when asking access
     """
     try:
         try:
@@ -277,7 +171,7 @@ def get_dataset_info_for_supported_datasets(
             dataset_info = HfApi(endpoint=hf_endpoint).dataset_info(
                 repo_id=dataset, token=hf_token, timeout=hf_timeout_seconds
             )
-    except DatasetError as err:
+    except CustomError as err:
         raise err
     except RepositoryNotFoundError as err:
         raise DatasetNotFoundError(DOES_NOT_EXIST_OR_PRIVATE_DATASET_ERROR_MESSAGE, cause=err) from err
@@ -302,7 +196,7 @@ def get_dataset_git_revision(
     hf_endpoint: str,
     hf_token: Optional[str] = None,
     hf_timeout_seconds: Optional[float] = None,
-) -> Optional[str]:
+) -> str:
     """
     Get the git revision of the dataset.
     Args:
@@ -317,26 +211,34 @@ def get_dataset_git_revision(
             The timeout in seconds for the request to the Hub.
     Returns:
         `Union[str, None]`: the dataset git revision (sha) if any.
-    <Tip>
     Raises the following errors:
-        - [`~libcommon.dataset.AskAccessHubRequestError`]: if the request to the Hub to get access to the
-            dataset failed or timed out.
-        - [`~libcommon.dataset.DatasetInfoHubRequestError`]: if the request to the Hub to get the dataset
-            info failed or timed out.
-        - [`~libcommon.dataset.GatedExtraFieldsError`]: if the dataset is gated, with extra fields.
-            Programmatic access is not implemented for this type of dataset because there is no easy
-            way to get the list of extra fields.
-        - [`~libcommon.dataset.DisabledViewerError`]: if the dataset viewer is disabled.
-        - [`~libcommon.dataset.GatedDisabledError`]: if the dataset is gated, but disabled.
-        - [`~libcommon.dataset.DatasetNotFoundError`]: if the dataset does not exist, or if the
-            token does not give the sufficient access to the dataset, or if the dataset is private
-            (private datasets are not supported by the datasets server)
-        - ['~requests.exceptions.HTTPError']: any other error when asking access
-    </Tip>
+        - [`~exceptions.AskAccessHubRequestError`]
+          if the request to the Hub to get access to the dataset failed or timed out.
+        - [`~exceptions.DatasetInfoHubRequestError`]
+          if the request to the Hub to get the dataset info failed or timed out.
+        - [`~exceptions.DatasetNotFoundError`]:
+          if the dataset does not exist, or if the token does not give the sufficient access to the dataset,
+          or if the dataset is private (private datasets are not supported by the datasets server).
+        - [`~exceptions.DatasetRevisionEmptyError`]
+          if the current git revision (branch, commit) could not be obtained.
+        - [`~exceptions.DatasetRevisionNotFoundError`]
+          if the git revision (branch, commit) does not exist in the repository.
+        - [`~exceptions.DisabledViewerError`]
+          if the dataset viewer is disabled.
+        - [`~exceptions.GatedDisabledError`]
+          if the dataset is gated, but disabled.
+        - [`~exceptions.GatedExtraFieldsError`]
+          if the dataset is gated, with extra fields. Programmatic access is not implemented for this type of
+          dataset because there is no easy way to get the list of extra fields.
+        - ['requests.exceptions.HTTPError'](https://requests.readthedocs.io/en/latest/api/#requests.HTTPError)
+          any other error when asking access
     """
-    return get_dataset_info_for_supported_datasets(  # type: ignore
+    sha = get_dataset_info_for_supported_datasets(
         dataset=dataset, hf_endpoint=hf_endpoint, hf_token=hf_token, hf_timeout_seconds=hf_timeout_seconds
     ).sha
+    if sha is None:
+        raise DatasetRevisionEmptyError(f"The dataset {dataset} has no git revision.")
+    return sha  # type: ignore
 
 
 def get_supported_dataset_infos(hf_endpoint: str, hf_token: Optional[str] = None) -> list[DatasetInfo]:

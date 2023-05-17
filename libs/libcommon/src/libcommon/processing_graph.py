@@ -21,6 +21,7 @@ import networkx as nx
 from libcommon.constants import DEFAULT_INPUT_TYPE, DEFAULT_JOB_RUNNER_VERSION
 
 InputType = Literal["dataset", "config", "split"]
+# ^ note that for now, the "dataset" input type means: dataset + git revision
 
 
 def guard_input_type(x: Any) -> InputType:

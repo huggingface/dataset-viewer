@@ -15,7 +15,14 @@ from mongodb_migration.migrations._20230428145000_queue_delete_ttl_index import 
 
 def test_queue_delete_ttl_index(mongo_host: str) -> None:
     with MongoResource(database="test_queue_delete_ttl_index", host=mongo_host, mongoengine_alias="queue"):
-        Job(type="test", dataset="test", unicity_id="test", namespace="test", created_at=get_datetime()).save()
+        Job(
+            type="test",
+            dataset="test",
+            revision="test",
+            unicity_id="test",
+            namespace="test",
+            created_at=get_datetime(),
+        ).save()
         db = get_db(QUEUE_MONGOENGINE_ALIAS)
         assert (
             len(get_index_names(db[QUEUE_COLLECTION_JOBS].index_information(), "finished_at")) == 1
