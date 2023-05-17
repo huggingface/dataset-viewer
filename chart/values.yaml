@@ -203,6 +203,11 @@ cachedAssets:
   maxCleanedRowsNumber: 10000
 
 
+parquetMetadata:
+  # Directory on the shared storage (parquet metadata files used for random access in /rows)
+  storageDirectory: "/cached-assets"
+
+
 # Directory where the cache data will be stored
 cacheDirectory: "/datasets-server-cache"
 

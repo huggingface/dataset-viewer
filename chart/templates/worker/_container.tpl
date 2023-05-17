@@ -24,6 +24,7 @@
   volumeMounts:
   {{ include "volumeMountAssetsRW" . | nindent 2 }}
   {{ include "volumeMountCache" . | nindent 2 }}
+  {{ include "volumeMountParquetMetadataRW" . | nindent 2 }}
   securityContext:
     allowPrivilegeEscalation: false
   resources: {{ toYaml .workerValues.resources | nindent 4 }}
