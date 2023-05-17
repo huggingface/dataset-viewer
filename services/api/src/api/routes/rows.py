@@ -105,6 +105,7 @@ class RowsIndex:
         hf_token: Optional[str],
     ):
         self.dataset = dataset
+        self.revision: Optional[str] = None
         self.config = config
         self.split = split
         self.processing_graph = processing_graph
@@ -134,6 +135,7 @@ class RowsIndex:
                         hf_endpoint=hf_endpoint,
                         hf_token=hf_token,
                     )
+                    self.revision = result["dataset_git_revision"]
                     content = result["content"]
                 except ApiCustomError as e:
                     raise e
@@ -473,6 +475,7 @@ def create_rows_endpoint(
     )
 
     async def rows_endpoint(request: Request) -> Response:
+        revision: Optional[str] = None
         with StepProfiler(method="rows_endpoint", step="all"):
             try:
                 with StepProfiler(method="rows_endpoint", step="validate parameters"):
@@ -504,6 +507,7 @@ def create_rows_endpoint(
                     )
                 with StepProfiler(method="rows_endpoint", step="get row groups index"):
                     rows_index = indexer.get_rows_index(dataset=dataset, config=config, split=split)
+                    revision = rows_index.revision
                 with StepProfiler(method="rows_endpoint", step="query the rows"):
                     pa_table = rows_index.query(offset=offset, length=length)
                 with StepProfiler(method="rows_endpoint", step="clean cache"):
@@ -548,10 +552,10 @@ def create_rows_endpoint(
                         assets_directory=cached_assets_directory,
                     )
                 with StepProfiler(method="rows_endpoint", step="generate the OK response"):
-                    return get_json_ok_response(content=response, max_age=max_age_long)
+                    return get_json_ok_response(content=response, max_age=max_age_long, revision=revision)
             except Exception as e:
                 error = e if isinstance(e, ApiCustomError) else UnexpectedError("Unexpected error.", e)
                 with StepProfiler(method="rows_endpoint", step="generate API error response"):
-                    return get_json_api_error_response(error=error, max_age=max_age_short)
+                    return get_json_api_error_response(error=error, max_age=max_age_short, revision=revision)
 
     return rows_endpoint

@@ -118,27 +118,43 @@ def get_response(content: Any, status_code: int = 200, max_age: int = 0) -> Resp
 
 
 def get_json_response(
-    content: Any, status_code: HTTPStatus = HTTPStatus.OK, max_age: int = 0, error_code: Optional[str] = None
+    content: Any,
+    status_code: HTTPStatus = HTTPStatus.OK,
+    max_age: int = 0,
+    error_code: Optional[str] = None,
+    revision: Optional[str] = None,
 ) -> Response:
     headers = {"Cache-Control": f"max-age={max_age}" if max_age > 0 else "no-store"}
     if error_code is not None:
         headers["X-Error-Code"] = error_code
+    if revision is not None:
+        headers["X-Revision"] = revision
     return OrjsonResponse(content=content, status_code=status_code.value, headers=headers)
 
 
-def get_json_ok_response(content: Any, max_age: int = 0) -> Response:
-    return get_json_response(content=content, max_age=max_age)
+def get_json_ok_response(content: Any, max_age: int = 0, revision: Optional[str] = None) -> Response:
+    return get_json_response(content=content, max_age=max_age, revision=revision)
 
 
 def get_json_error_response(
-    content: Any, status_code: HTTPStatus = HTTPStatus.OK, max_age: int = 0, error_code: Optional[str] = None
+    content: Any,
+    status_code: HTTPStatus = HTTPStatus.OK,
+    max_age: int = 0,
+    error_code: Optional[str] = None,
+    revision: Optional[str] = None,
 ) -> Response:
-    return get_json_response(content=content, status_code=status_code, max_age=max_age, error_code=error_code)
+    return get_json_response(
+        content=content, status_code=status_code, max_age=max_age, error_code=error_code, revision=revision
+    )
 
 
-def get_json_api_error_response(error: ApiCustomError, max_age: int = 0) -> Response:
+def get_json_api_error_response(error: ApiCustomError, max_age: int = 0, revision: Optional[str] = None) -> Response:
     return get_json_error_response(
-        content=error.as_response(), status_code=error.status_code, max_age=max_age, error_code=error.code
+        content=error.as_response(),
+        status_code=error.status_code,
+        max_age=max_age,
+        error_code=error.code,
+        revision=revision,
     )
 
 
