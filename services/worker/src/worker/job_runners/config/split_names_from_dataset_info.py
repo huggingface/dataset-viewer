@@ -88,7 +88,7 @@ def compute_split_names_from_dataset_info_response(dataset: str, config: str) ->
 class SplitNamesFromDatasetInfoJobRunner(ConfigJobRunner):
     @staticmethod
     def get_job_type() -> str:
-        return "config-split-names-from-dataset-info"
+        return "/split-names-from-dataset-info"
 
     @staticmethod
     def get_job_runner_version() -> int:
