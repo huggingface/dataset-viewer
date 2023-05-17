@@ -216,24 +216,20 @@ def raise_if_too_big_from_hub(
     max_dataset_size: int,
 ) -> None:
     """
-        Raise an error if the dataset is too big to be converted to parquet, as measured by the sum of the repository
-        files sizes given by the Hub.
+    Raise an error if the dataset is too big to be converted to parquet, as measured by the sum of the repository
+    files sizes given by the Hub.
 
-        Args:
-            dataset_info (`DatasetInfo`):
-                The dataset info
-            max_dataset_size (`int`):
-                The maximum size of the dataset in bytes
-        Returns:
-            `None`
-        Raises the following errors:
-    <<<<<<< HEAD
-            - [`libcommon.exceptions.DatasetTooBigFromHubError`]
-    =======
-            - [`~job_runners.config.parquet_and_info.DatasetTooBigFromHubError`]
-    >>>>>>> 1f5bba56 (docs: ✏️ harmonize the docstrings)
-              If the dataset is too big to be converted to parquet, as measured by the sum of the repository
-              files sizes given by the Hub.
+    Args:
+        dataset_info (`DatasetInfo`):
+            The dataset info
+        max_dataset_size (`int`):
+            The maximum size of the dataset in bytes
+    Returns:
+        `None`
+    Raises the following errors:
+        - [`libcommon.exceptions.DatasetTooBigFromHubError`]
+          If the dataset is too big to be converted to parquet, as measured by the sum of the repository
+          files sizes given by the Hub.
     """
     dataset_size: int = sum(sibling.size for sibling in dataset_info.siblings if sibling.size is not None)
     if dataset_size > max_dataset_size:
@@ -252,35 +248,31 @@ def raise_if_too_big_from_datasets(
     max_dataset_size: int,
 ) -> None:
     """
-        Raise an error if the dataset is too big to be converted to parquet, as measured by the sum of the configs
-        sizes given by the datasets library
+    Raise an error if the dataset is too big to be converted to parquet, as measured by the sum of the configs
+    sizes given by the datasets library
 
-        Args:
-            dataset (`str`):
-                A namespace (user or an organization) and a repo name separated
-                by a `/`.
-            config (`str`):
-                Dataset configuration name
-            hf_endpoint (`str`):
-                The Hub endpoint (for example: "https://huggingface.co")
-            hf_token (`str`, `optional`):
-                An app authentication token with read access to all the datasets.
-            revision (`str`):
-                The git revision (e.g. "main" or sha) of the dataset
-            max_dataset_size (`int`):
-                The maximum size of the dataset in bytes
-        Returns:
-            `None`
-        Raises the following errors:
-            - [`ValueError`](https://docs.python.org/3/library/exceptions.html#ValueError)
-              If the datasets.config.HF_ENDPOINT is not set to the expected value
-    <<<<<<< HEAD
-            - [`libcommon.exceptions.DatasetTooBigFromDatasetsError`]
-    =======
-            - [`~job_runners.config.parquet_and_info.DatasetTooBigFromDatasetsError`]
-    >>>>>>> 1f5bba56 (docs: ✏️ harmonize the docstrings)
-              If the dataset is too big to be converted to parquet, as measured by the sum of the configs
-              sizes given by the datasets library.
+    Args:
+        dataset (`str`):
+            A namespace (user or an organization) and a repo name separated
+            by a `/`.
+        config (`str`):
+            Dataset configuration name
+        hf_endpoint (`str`):
+            The Hub endpoint (for example: "https://huggingface.co")
+        hf_token (`str`, `optional`):
+            An app authentication token with read access to all the datasets.
+        revision (`str`):
+            The git revision (e.g. "main" or sha) of the dataset
+        max_dataset_size (`int`):
+            The maximum size of the dataset in bytes
+    Returns:
+        `None`
+    Raises the following errors:
+        - [`ValueError`](https://docs.python.org/3/library/exceptions.html#ValueError)
+          If the datasets.config.HF_ENDPOINT is not set to the expected value
+        - [`libcommon.exceptions.DatasetTooBigFromDatasetsError`]
+          If the dataset is too big to be converted to parquet, as measured by the sum of the configs
+          sizes given by the datasets library.
     """
     if datasets.config.HF_ENDPOINT != hf_endpoint:
         raise ValueError(
@@ -311,74 +303,63 @@ def raise_if_not_supported(
     max_dataset_size: int,
 ) -> None:
     """
-        Raise an error if the dataset is not supported:
-        - if the dataset is in the list of blocked datasets
-        - if the dataset cannot be accessed (does not exist, gated with extra fields, private)
-        - if the dataset is too big, and not in the list of supported datasets
+    Raise an error if the dataset is not supported:
+    - if the dataset is in the list of blocked datasets
+    - if the dataset cannot be accessed (does not exist, gated with extra fields, private)
+    - if the dataset is too big, and not in the list of supported datasets
 
-        Args:
-            dataset (`str`):
-                A namespace (user or an organization) and a repo name separated
-                by a `/`.
-            config (`str`):
-                Dataset configuration name
-            hf_endpoint (`str`):
-                The Hub endpoint (for example: "https://huggingface.co")
-            hf_token (`str`, `optional`):
-                An app authentication token with read access to all the datasets.
-            committer_hf_token (`str`, `optional`):
-                A user authentication token (See https://huggingface.co/settings/token) with write access. It must:
-                - be part of the `huggingface` organization (to create the ref/convert/parquet "branch")
-                - be part of the `datasets-maintainers` organization (to push to the ref/convert/parquet "branch")
-            revision (`str`):
-                The git revision (e.g. "main" or sha) of the dataset
-            supported_datasets (`List[str]`):
-                The list of supported datasets, saving the blocked datasets. If empty, all datasets are supported
-                (saving the blocked datasets).
-            blocked_datasets (`List[str]`):
-                The list of blocked datasets. If empty, no dataset is blocked.
-            max_dataset_size (`int`):
-                The maximum size of a dataset in bytes. If the dataset is under the limit (which means that the size
-                can be fetched), it will be allowed.
-        Returns:
-            `ParquetResponseResult`: An object with the parquet_response
-              (dataset and list of parquet files) and the dataset_git_revision (sha) if any.
-        Raises the following errors:
-            - [`libcommon.exceptions.AskAccessHubRequestError`]
-              if the request to the Hub to get access to the dataset failed or timed out.
-            - [`libcommon.exceptions.DatasetNotFoundError`]:
-              if the dataset does not exist, or if the token does not give the sufficient access to the dataset,
-            - [`libcommon.exceptions.GatedDisabledError`]
-              if the dataset is gated, but disabled.
-              or if the dataset is private (private datasets are not supported by the datasets server).
-            - [`libcommon.exceptions.GatedExtraFieldsError`]
-              if the dataset is gated, with extra fields. Programmatic access is not implemented for this type of
-              dataset because there is no easy way to get the list of extra fields.
-            - ['requests.exceptions.HTTPError'](https://requests.readthedocs.io/en/latest/api/#requests.HTTPError)
-              any other error when asking access
-    <<<<<<< HEAD
-            - [`libcommon.exceptions.DatasetInBlockListError`]
-              If the dataset is in the list of blocked datasets.
-            - [`libcommon.exceptions.DatasetRevisionNotFoundError`]
-              If the revision does not exist or cannot be accessed using the token.
-            - [`libcommon.exceptions.DatasetTooBigFromDatasetsError`]
-              If the dataset is too big to be converted to parquet, as measured by the sum of the configs
-              sizes given by the datasets library.
-            - [`libcommon.exceptions.DatasetTooBigFromHubError`]
-    =======
-            - [`~job_runners.config.parquet_and_info.DatasetInBlockListError`]
-              If the dataset is in the list of blocked datasets.
-            - [`~job_runners.config.parquet_and_info.DatasetRevisionNotFoundError`]
-              If the revision does not exist or cannot be accessed using the token.
-            - [`~job_runners.config.parquet_and_info.DatasetTooBigFromDatasetsError`]
-              If the dataset is too big to be converted to parquet, as measured by the sum of the configs
-              sizes given by the datasets library.
-            - [`~job_runners.config.parquet_and_info.DatasetTooBigFromHubError`]
-    >>>>>>> 1f5bba56 (docs: ✏️ harmonize the docstrings)
-              If the dataset is too big to be converted to parquet, as measured by the sum of the repository
-              files sizes given by the Hub.
-            - [`ValueError`](https://docs.python.org/3/library/exceptions.html#ValueError)
-                If the datasets.config.HF_ENDPOINT is not set to the expected value
+    Args:
+        dataset (`str`):
+            A namespace (user or an organization) and a repo name separated
+            by a `/`.
+        config (`str`):
+            Dataset configuration name
+        hf_endpoint (`str`):
+            The Hub endpoint (for example: "https://huggingface.co")
+        hf_token (`str`, `optional`):
+            An app authentication token with read access to all the datasets.
+        committer_hf_token (`str`, `optional`):
+            A user authentication token (See https://huggingface.co/settings/token) with write access. It must:
+            - be part of the `huggingface` organization (to create the ref/convert/parquet "branch")
+            - be part of the `datasets-maintainers` organization (to push to the ref/convert/parquet "branch")
+        revision (`str`):
+            The git revision (e.g. "main" or sha) of the dataset
+        supported_datasets (`List[str]`):
+            The list of supported datasets, saving the blocked datasets. If empty, all datasets are supported
+            (saving the blocked datasets).
+        blocked_datasets (`List[str]`):
+            The list of blocked datasets. If empty, no dataset is blocked.
+        max_dataset_size (`int`):
+            The maximum size of a dataset in bytes. If the dataset is under the limit (which means that the size
+            can be fetched), it will be allowed.
+    Returns:
+        `ParquetResponseResult`: An object with the parquet_response
+          (dataset and list of parquet files) and the dataset_git_revision (sha) if any.
+    Raises the following errors:
+        - [`libcommon.exceptions.AskAccessHubRequestError`]
+          if the request to the Hub to get access to the dataset failed or timed out.
+        - [`libcommon.exceptions.DatasetNotFoundError`]:
+          if the dataset does not exist, or if the token does not give the sufficient access to the dataset,
+        - [`libcommon.exceptions.GatedDisabledError`]
+          if the dataset is gated, but disabled.
+          or if the dataset is private (private datasets are not supported by the datasets server).
+        - [`libcommon.exceptions.GatedExtraFieldsError`]
+          if the dataset is gated, with extra fields. Programmatic access is not implemented for this type of
+          dataset because there is no easy way to get the list of extra fields.
+        - ['requests.exceptions.HTTPError'](https://requests.readthedocs.io/en/latest/api/#requests.HTTPError)
+          any other error when asking access
+        - [`libcommon.exceptions.DatasetInBlockListError`]
+          If the dataset is in the list of blocked datasets.
+        - [`libcommon.exceptions.DatasetRevisionNotFoundError`]
+          If the revision does not exist or cannot be accessed using the token.
+        - [`libcommon.exceptions.DatasetTooBigFromDatasetsError`]
+          If the dataset is too big to be converted to parquet, as measured by the sum of the configs
+          sizes given by the datasets library.
+        - [`libcommon.exceptions.DatasetTooBigFromHubError`]
+          If the dataset is too big to be converted to parquet, as measured by the sum of the repository
+          files sizes given by the Hub.
+        - [`ValueError`](https://docs.python.org/3/library/exceptions.html#ValueError)
+            If the datasets.config.HF_ENDPOINT is not set to the expected value
     """
     raise_if_blocked(dataset=dataset, blocked_datasets=blocked_datasets)
     ask_access(dataset=dataset, hf_endpoint=hf_endpoint, hf_token=committer_hf_token)
