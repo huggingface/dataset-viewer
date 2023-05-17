@@ -79,6 +79,7 @@ CacheableErrorCode = Literal[
     "DatasetInfoHubRequestError",
     "DatasetModuleNotInstalledError",
     "DatasetNotFoundError",
+    "DatasetRevisionEmptyError",
     "DatasetRevisionNotFoundError",
     "DatasetTooBigFromDatasetsError",
     "DatasetTooBigFromHubError",
@@ -99,7 +100,6 @@ CacheableErrorCode = Literal[
     "JobManagerCrashedError",
     "JobManagerExceededMaximumDurationError",
     "MissingSpawningTokenError",
-    "NoGitRevisionError",
     "NormalRowsError",
     "ParameterMissingError",
     "ParquetResponseEmptyError",
@@ -192,6 +192,13 @@ class DatasetNotFoundError(CacheableError):
             cause=cause,
             disclose_cause=False,
         )
+
+
+class DatasetRevisionEmptyError(CacheableError):
+    """Raised when the current git revision (branch, commit) could not be obtained."""
+
+    def __init__(self, message: str, cause: Optional[BaseException] = None):
+        super().__init__(message, HTTPStatus.INTERNAL_SERVER_ERROR, "DatasetRevisionEmptyError", cause, False)
 
 
 class DatasetRevisionNotFoundError(CacheableError):
@@ -362,19 +369,6 @@ class MissingSpawningTokenError(CacheableError):
 
     def __init__(self, message: str, cause: Optional[BaseException] = None):
         super().__init__(message, HTTPStatus.INTERNAL_SERVER_ERROR, "MissingSpawningTokenError", cause, False)
-
-
-class NoGitRevisionError(CacheableError):
-    """Raised when the git revision returned by huggingface_hub is None."""
-
-    def __init__(self, message: str, cause: Optional[BaseException] = None):
-        super().__init__(
-            message=message,
-            status_code=HTTPStatus.NOT_FOUND,
-            code="NoGitRevisionError",
-            cause=cause,
-            disclose_cause=False,
-        )
 
 
 class NormalRowsError(CacheableError):

@@ -13,6 +13,7 @@ from libcommon.exceptions import (
     CustomError,
     DatasetInfoHubRequestError,
     DatasetNotFoundError,
+    DatasetRevisionEmptyError,
     DatasetRevisionNotFoundError,
     DisabledViewerError,
     GatedDisabledError,
@@ -195,7 +196,7 @@ def get_dataset_git_revision(
     hf_endpoint: str,
     hf_token: Optional[str] = None,
     hf_timeout_seconds: Optional[float] = None,
-) -> Optional[str]:
+) -> str:
     """
     Get the git revision of the dataset.
     Args:
@@ -218,6 +219,8 @@ def get_dataset_git_revision(
         - [`~exceptions.DatasetNotFoundError`]:
           if the dataset does not exist, or if the token does not give the sufficient access to the dataset,
           or if the dataset is private (private datasets are not supported by the datasets server).
+        - [`~exceptions.DatasetRevisionEmptyError`]
+          if the current git revision (branch, commit) could not be obtained.
         - [`~exceptions.DatasetRevisionNotFoundError`]
           if the git revision (branch, commit) does not exist in the repository.
         - [`~exceptions.DisabledViewerError`]
@@ -230,9 +233,12 @@ def get_dataset_git_revision(
         - ['requests.exceptions.HTTPError'](https://requests.readthedocs.io/en/latest/api/#requests.HTTPError)
           any other error when asking access
     """
-    return get_dataset_info_for_supported_datasets(  # type: ignore
+    sha = get_dataset_info_for_supported_datasets(
         dataset=dataset, hf_endpoint=hf_endpoint, hf_token=hf_token, hf_timeout_seconds=hf_timeout_seconds
     ).sha
+    if sha is None:
+        raise DatasetRevisionEmptyError(f"The dataset {dataset} has no git revision.")
+    return sha  # type: ignore
 
 
 def get_supported_dataset_infos(hf_endpoint: str, hf_token: Optional[str] = None) -> list[DatasetInfo]:

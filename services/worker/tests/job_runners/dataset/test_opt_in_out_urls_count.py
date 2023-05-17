@@ -48,6 +48,7 @@ def get_job_runner(
                 "type": DatasetOptInOutUrlsCountJobRunner.get_job_type(),
                 "params": {
                     "dataset": dataset,
+                    "revision": "revision",
                     "config": None,
                     "split": None,
                 },

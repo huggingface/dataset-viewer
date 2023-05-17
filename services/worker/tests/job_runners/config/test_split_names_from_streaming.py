@@ -3,7 +3,6 @@
 
 from dataclasses import replace
 from typing import Callable
-from unittest.mock import Mock
 
 import pytest
 from libcommon.exceptions import CustomError
@@ -49,6 +48,7 @@ def get_job_runner(
                 "type": SplitNamesFromStreamingJobRunner.get_job_type(),
                 "params": {
                     "dataset": dataset,
+                    "revision": "revision",
                     "config": config,
                     "split": None,
                 },
@@ -102,7 +102,6 @@ def test_compute_split_names_from_streaming_response(
         config,
         app_config if use_token else replace(app_config, common=replace(app_config.common, hf_token=None)),
     )
-    job_runner.get_dataset_git_revision = Mock(return_value="1.0.0")  # type: ignore
     if error_code is None:
         result = job_runner.compute().content
         assert result == expected_configs_response

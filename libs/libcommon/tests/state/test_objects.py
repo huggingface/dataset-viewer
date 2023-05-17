@@ -25,8 +25,8 @@ from .utils import (
     CONFIG_NAME_1,
     CONFIG_NAMES,
     CONFIG_NAMES_CONTENT,
-    DATASET_GIT_REVISION,
     DATASET_NAME,
+    REVISION_NAME,
     SPLIT_NAME_1,
     SPLIT_NAMES,
     SPLIT_NAMES_CONTENT,
@@ -122,21 +122,25 @@ def test_fetch_names(
 
 
 @pytest.mark.parametrize(
-    "dataset,config,split,job_type",
+    "dataset,revision,config,split,job_type",
     [
-        (DATASET_NAME, None, None, JOB_TYPE),
-        (DATASET_NAME, CONFIG_NAME_1, None, JOB_TYPE),
-        (DATASET_NAME, CONFIG_NAME_1, SPLIT_NAME_1, JOB_TYPE),
+        (DATASET_NAME, REVISION_NAME, None, None, JOB_TYPE),
+        (DATASET_NAME, REVISION_NAME, CONFIG_NAME_1, None, JOB_TYPE),
+        (DATASET_NAME, REVISION_NAME, CONFIG_NAME_1, SPLIT_NAME_1, JOB_TYPE),
     ],
 )
-def test_job_state_is_in_process(dataset: str, config: Optional[str], split: Optional[str], job_type: str) -> None:
+def test_job_state_is_in_process(
+    dataset: str, revision: str, config: Optional[str], split: Optional[str], job_type: str
+) -> None:
     queue = Queue()
-    queue.upsert_job(job_type=job_type, dataset=dataset, config=config, split=split)
-    assert JobState(dataset=dataset, config=config, split=split, job_type=job_type).is_in_process
+    queue.upsert_job(job_type=job_type, dataset=dataset, revision=revision, config=config, split=split)
+    assert JobState(dataset=dataset, revision=revision, config=config, split=split, job_type=job_type).is_in_process
     job_info = queue.start_job()
-    assert JobState(dataset=dataset, config=config, split=split, job_type=job_type).is_in_process
+    assert JobState(dataset=dataset, revision=revision, config=config, split=split, job_type=job_type).is_in_process
     queue.finish_job(job_id=job_info["job_id"], finished_status=Status.SUCCESS)
-    assert not JobState(dataset=dataset, config=config, split=split, job_type=job_type).is_in_process
+    assert not JobState(
+        dataset=dataset, revision=revision, config=config, split=split, job_type=job_type
+    ).is_in_process
 
 
 @pytest.mark.parametrize(
@@ -186,12 +190,15 @@ def test_cache_state_is_success(dataset: str, config: Optional[str], split: Opti
 
 def test_artifact_state() -> None:
     dataset = DATASET_NAME
+    revision = REVISION_NAME
     config = None
     split = None
     processing_step_name = "dataset-a"
     processing_step = PROCESSING_GRAPH.get_processing_step(processing_step_name)
-    artifact_state = ArtifactState(dataset=dataset, config=config, split=split, processing_step=processing_step)
-    assert artifact_state.id == f"{processing_step_name},{dataset}"
+    artifact_state = ArtifactState(
+        dataset=dataset, revision=revision, config=config, split=split, processing_step=processing_step
+    )
+    assert artifact_state.id == f"{processing_step_name},{dataset},{revision}"
     assert not artifact_state.cache_state.exists
     assert not artifact_state.cache_state.is_success
     assert not artifact_state.job_state.is_in_process
@@ -199,19 +206,23 @@ def test_artifact_state() -> None:
 
 def test_split_state() -> None:
     dataset = DATASET_NAME
+    revision = REVISION_NAME
     config = CONFIG_NAME_1
     split = SPLIT_NAME_1
     expected_split_processing_step_name = "split-c"
-    split_state = SplitState(dataset=dataset, config=config, split=split, processing_graph=PROCESSING_GRAPH)
+    split_state = SplitState(
+        dataset=dataset, revision=revision, config=config, split=split, processing_graph=PROCESSING_GRAPH
+    )
 
     assert split_state.dataset == dataset
+    assert split_state.revision == revision
     assert split_state.config == config
     assert split_state.split == split
 
     assert len(split_state.artifact_state_by_step) == 1
     assert expected_split_processing_step_name in split_state.artifact_state_by_step
     artifact_state = split_state.artifact_state_by_step[expected_split_processing_step_name]
-    assert artifact_state.id == f"{expected_split_processing_step_name},{dataset},{config},{split}"
+    assert artifact_state.id == f"{expected_split_processing_step_name},{dataset},{revision},{config},{split}"
     assert not artifact_state.cache_state.exists
     assert not artifact_state.cache_state.is_success
     assert not artifact_state.job_state.is_in_process
@@ -219,27 +230,29 @@ def test_split_state() -> None:
 
 def test_config_state_as_dict() -> None:
     dataset = DATASET_NAME
+    revision = REVISION_NAME
     config = CONFIG_NAME_1
     expected_config_processing_step_name = "config-b"
     processing_step = PROCESSING_GRAPH.get_processing_step(expected_config_processing_step_name)
 
     upsert_response(
         kind=processing_step.cache_kind,
-        dataset=DATASET_NAME,
-        config=CONFIG_NAME_1,
+        dataset=dataset,
+        config=config,
         split=None,
         content=SPLIT_NAMES_CONTENT,
         http_status=HTTPStatus.OK,
     )
-    config_state = ConfigState(dataset=dataset, config=config, processing_graph=PROCESSING_GRAPH)
+    config_state = ConfigState(dataset=dataset, revision=revision, config=config, processing_graph=PROCESSING_GRAPH)
 
     assert config_state.dataset == dataset
+    assert config_state.revision == revision
     assert config_state.config == config
 
     assert len(config_state.artifact_state_by_step) == 1
     assert expected_config_processing_step_name in config_state.artifact_state_by_step
     artifact_state = config_state.artifact_state_by_step[expected_config_processing_step_name]
-    assert artifact_state.id == f"{expected_config_processing_step_name},{dataset},{config}"
+    assert artifact_state.id == f"{expected_config_processing_step_name},{dataset},{revision},{config}"
     assert artifact_state.cache_state.exists  # <- in the cache
     assert artifact_state.cache_state.is_success  # <- is a success
     assert not artifact_state.job_state.is_in_process
@@ -252,6 +265,7 @@ def test_config_state_as_dict() -> None:
 
 def test_dataset_state_as_dict() -> None:
     dataset = DATASET_NAME
+    revision = REVISION_NAME
     expected_dataset_processing_step_name = "dataset-a"
     dataset_step = PROCESSING_GRAPH.get_processing_step(expected_dataset_processing_step_name)
     expected_config_processing_step_name = "config-b"
@@ -272,14 +286,15 @@ def test_dataset_state_as_dict() -> None:
         content=SPLIT_NAMES_CONTENT,
         http_status=HTTPStatus.OK,
     )
-    dataset_state = DatasetState(dataset=dataset, processing_graph=PROCESSING_GRAPH, revision=DATASET_GIT_REVISION)
+    dataset_state = DatasetState(dataset=dataset, revision=revision, processing_graph=PROCESSING_GRAPH)
 
     assert dataset_state.dataset == dataset
+    assert dataset_state.revision == revision
 
     assert len(dataset_state.artifact_state_by_step) == 1
     assert expected_dataset_processing_step_name in dataset_state.artifact_state_by_step
     artifact_state = dataset_state.artifact_state_by_step[expected_dataset_processing_step_name]
-    assert artifact_state.id == f"{expected_dataset_processing_step_name},{dataset}"
+    assert artifact_state.id == f"{expected_dataset_processing_step_name},{dataset},{revision}"
     assert artifact_state.cache_state.exists  # <- in the cache
     assert artifact_state.cache_state.is_success  # <- is a success
     assert not artifact_state.job_state.is_in_process

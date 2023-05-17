@@ -50,6 +50,7 @@ def get_job_runner(
                 "type": ConfigSizeJobRunner.get_job_type(),
                 "params": {
                     "dataset": dataset,
+                    "revision": "revision",
                     "config": config,
                     "split": None,
                 },
