@@ -175,19 +175,19 @@ def test_compute(
         with patch("worker.job_runners.config.parquet_metadata.ParquetFile") as mock_ParquetFile:
             mock_ParquetFile.return_value = pq.ParquetFile(dummy_parquet_buffer)
             assert job_runner.compute().content == expected_content
-            assert mock_ParquetFile.call_count == 2
-            mock_ParquetFile.assert_any_call(
-                f"hf://datasets/{dataset}@{safe_quote(PARQUET_REVISION)}/{config}/filename1",
-                filesystem=get_hf_fs(app_config.common.hf_token),
+            assert mock_ParquetFile.call_count == len(upstream_content["parquet_files"])
+            for parque_file_item in upstream_content["parquet_files"]:
+                mock_ParquetFile.assert_any_call(
+                    f"hf://datasets/{dataset}@{safe_quote(PARQUET_REVISION)}/{config}/{parque_file_item['filename']}",
+                    filesystem=get_hf_fs(app_config.common.hf_token),
+                )
+        for parquet_file_and_metadata_item in expected_content["parquet_files_and_metadata"]:
+            assert (
+                pq.read_metadata(
+                    Path(job_runner.assets_directory) / parquet_file_and_metadata_item["metadata_path_in_asset_dir"]
+                )
+                == pq.ParquetFile(dummy_parquet_buffer).metadata
             )
-            mock_ParquetFile.assert_any_call(
-                f"hf://datasets/{dataset}@{safe_quote(PARQUET_REVISION)}/{config}/filename2",
-                filesystem=get_hf_fs(app_config.common.hf_token),
-            )
-        assert (
-            pq.read_metadata(Path(job_runner.assets_directory) / "ok/-pq-meta/config_1/filename1")
-            == pq.ParquetFile(dummy_parquet_buffer).metadata
-        )
 
 
 def test_doesnotexist(app_config: AppConfig, get_job_runner: GetJobRunner) -> None:
