@@ -8,9 +8,10 @@ from libcommon.processing_graph import ProcessingGraph
 from libcommon.queue import Queue
 from libcommon.simple_cache import upsert_response
 from libcommon.state import DatasetState
-from libcommon.utils import Status
 
 DATASET_NAME = "dataset"
+
+REVISION_NAME = "revision"
 
 CONFIG_NAME_1 = "config1"
 CONFIG_NAME_2 = "config2"
@@ -25,21 +26,21 @@ SPLIT_NAMES_CONTENT = {
 }
 
 
-DATASET_GIT_REVISION = "dataset_git_revision"
-OTHER_DATASET_GIT_REVISION = "other_dataset_git_revision"
+# DATASET_GIT_REVISION = "dataset_git_revision"
+# OTHER_DATASET_GIT_REVISION = "other_dataset_git_revision"
 JOB_RUNNER_VERSION = 1
 
 
 def get_dataset_state(
     processing_graph: ProcessingGraph,
     dataset: str = DATASET_NAME,
-    git_revision: Optional[str] = DATASET_GIT_REVISION,
+    revision: str = REVISION_NAME,
     error_codes_to_retry: Optional[List[str]] = None,
 ) -> DatasetState:
     return DatasetState(
         dataset=dataset,
+        revision=revision,
         processing_graph=processing_graph,
-        revision=git_revision,
         error_codes_to_retry=error_codes_to_retry,
     )
 
@@ -81,31 +82,31 @@ def put_cache(
     artifact: str,
     error_code: Optional[str] = None,
     use_old_job_runner_version: Optional[bool] = False,
-    use_other_git_revision: Optional[bool] = False,
 ) -> None:
     parts = artifact.split(",")
-    if len(parts) < 2 or len(parts) > 4:
+    if len(parts) < 3 or len(parts) > 5:
         raise ValueError(f"Unexpected artifact {artifact}: should have at least 2 parts and at most 4")
     step = parts[0]
     dataset = parts[1]
-    if len(parts) == 2:
+    revision = parts[2]
+    if len(parts) == 3:
         if not step.startswith("dataset-"):
             raise ValueError(f"Unexpected artifact {artifact}: should start with dataset-")
         content = CONFIG_NAMES_CONTENT
         config = None
         split = None
-    elif len(parts) == 3:
+    elif len(parts) == 4:
         if not step.startswith("config-"):
             raise ValueError(f"Unexpected artifact {artifact}: should start with config-")
         content = SPLIT_NAMES_CONTENT
-        config = parts[2]
+        config = parts[3]
         split = None
     else:
         if not step.startswith("split-"):
             raise ValueError(f"Unexpected artifact {artifact}: should start with split-")
         content = {}
-        config = parts[2]
-        split = parts[3]
+        config = parts[3]
+        split = parts[4]
 
     if error_code:
         http_status = HTTPStatus.INTERNAL_SERVER_ERROR
@@ -121,7 +122,7 @@ def put_cache(
         content=content,
         http_status=http_status,
         job_runner_version=JOB_RUNNER_VERSION - 1 if use_old_job_runner_version else JOB_RUNNER_VERSION,
-        dataset_git_revision=OTHER_DATASET_GIT_REVISION if use_other_git_revision else DATASET_GIT_REVISION,
+        dataset_git_revision=revision,
         error_code=error_code,
     )
 
@@ -130,16 +131,16 @@ def process_next_job(artifact: str) -> None:
     job_type = artifact.split(",")[0]
     job_info = Queue().start_job(job_types_only=[job_type])
     put_cache(artifact)
-    Queue().finish_job(job_id=job_info["job_id"], finished_status=Status.SUCCESS)
+    Queue().finish_job(job_id=job_info["job_id"], is_success=True)
 
 
 def compute_all(
     processing_graph: ProcessingGraph,
     dataset: str = DATASET_NAME,
-    git_revision: Optional[str] = DATASET_GIT_REVISION,
+    revision: str = REVISION_NAME,
     error_codes_to_retry: Optional[List[str]] = None,
 ) -> None:
-    dataset_state = get_dataset_state(processing_graph, dataset, git_revision, error_codes_to_retry)
+    dataset_state = get_dataset_state(processing_graph, dataset, revision, error_codes_to_retry)
     max_runs = 100
     while dataset_state.should_be_backfilled and max_runs >= 0:
         if max_runs == 0:
@@ -152,4 +153,4 @@ def compute_all(
                 raise ValueError(f"Unexpected task id {task.id}: should contain a comma")
             if task_type == "CreateJob":
                 process_next_job(artifact)
-        dataset_state = get_dataset_state(processing_graph, dataset, git_revision, error_codes_to_retry)
+        dataset_state = get_dataset_state(processing_graph, dataset, revision, error_codes_to_retry)

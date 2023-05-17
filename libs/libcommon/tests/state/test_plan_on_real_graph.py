@@ -11,12 +11,11 @@ from libcommon.processing_graph import ProcessingGraph
 from libcommon.queue import Queue
 from libcommon.resources import CacheMongoResource, QueueMongoResource
 from libcommon.simple_cache import upsert_response
-from libcommon.utils import Status
 
 from .utils import (
     CONFIG_NAMES,
     CONFIG_NAMES_CONTENT,
-    DATASET_GIT_REVISION,
+    REVISION_NAME,
     assert_dataset_state,
     get_dataset_state,
 )
@@ -50,13 +49,13 @@ def test_plan_job_creation_and_termination() -> None:
             "cache_has_different_git_revision": [],
             "cache_is_outdated_by_parent": [],
             "cache_is_empty": [
-                "/config-names,dataset",
-                "dataset-info,dataset",
-                "dataset-is-valid,dataset",
-                "dataset-opt-in-out-urls-count,dataset",
-                "dataset-parquet,dataset",
-                "dataset-size,dataset",
-                "dataset-split-names,dataset",
+                "/config-names,dataset,revision",
+                "dataset-info,dataset,revision",
+                "dataset-is-valid,dataset,revision",
+                "dataset-opt-in-out-urls-count,dataset,revision",
+                "dataset-parquet,dataset,revision",
+                "dataset-size,dataset,revision",
+                "dataset-split-names,dataset,revision",
             ],
             "cache_is_error_to_retry": [],
             "cache_is_job_runner_obsolete": [],
@@ -66,13 +65,13 @@ def test_plan_job_creation_and_termination() -> None:
         queue_status={"in_process": []},
         # The root dataset-level steps, as well as the "fan-in" steps, are ready to be backfilled.
         tasks=[
-            "CreateJob,/config-names,dataset",
-            "CreateJob,dataset-info,dataset",
-            "CreateJob,dataset-is-valid,dataset",
-            "CreateJob,dataset-opt-in-out-urls-count,dataset",
-            "CreateJob,dataset-parquet,dataset",
-            "CreateJob,dataset-size,dataset",
-            "CreateJob,dataset-split-names,dataset",
+            "CreateJob,/config-names,dataset,revision",
+            "CreateJob,dataset-info,dataset,revision",
+            "CreateJob,dataset-is-valid,dataset,revision",
+            "CreateJob,dataset-opt-in-out-urls-count,dataset,revision",
+            "CreateJob,dataset-parquet,dataset,revision",
+            "CreateJob,dataset-size,dataset,revision",
+            "CreateJob,dataset-split-names,dataset,revision",
         ],
     )
 
@@ -90,13 +89,13 @@ def test_plan_job_creation_and_termination() -> None:
             "cache_has_different_git_revision": [],
             "cache_is_outdated_by_parent": [],
             "cache_is_empty": [
-                "/config-names,dataset",
-                "dataset-info,dataset",
-                "dataset-is-valid,dataset",
-                "dataset-opt-in-out-urls-count,dataset",
-                "dataset-parquet,dataset",
-                "dataset-size,dataset",
-                "dataset-split-names,dataset",
+                "/config-names,dataset,revision",
+                "dataset-info,dataset,revision",
+                "dataset-is-valid,dataset,revision",
+                "dataset-opt-in-out-urls-count,dataset,revision",
+                "dataset-parquet,dataset,revision",
+                "dataset-size,dataset,revision",
+                "dataset-split-names,dataset,revision",
             ],
             "cache_is_error_to_retry": [],
             "cache_is_job_runner_obsolete": [],
@@ -105,20 +104,20 @@ def test_plan_job_creation_and_termination() -> None:
         # the jobs have been created and are in process
         queue_status={
             "in_process": [
-                "/config-names,dataset",
-                "dataset-info,dataset",
-                "dataset-is-valid,dataset",
-                "dataset-opt-in-out-urls-count,dataset",
-                "dataset-parquet,dataset",
-                "dataset-size,dataset",
-                "dataset-split-names,dataset",
+                "/config-names,dataset,revision",
+                "dataset-info,dataset,revision",
+                "dataset-is-valid,dataset,revision",
+                "dataset-opt-in-out-urls-count,dataset,revision",
+                "dataset-parquet,dataset,revision",
+                "dataset-size,dataset,revision",
+                "dataset-split-names,dataset,revision",
             ]
         },
         # thus: no new task
         tasks=[],
     )
 
-    # we simulate the job for "/config-names,dataset" has finished
+    # we simulate the job for "/config-names,dataset,revision" has finished
     job_info = Queue().start_job(job_types_only=["/config-names"])
     upsert_response(
         kind=job_info["type"],
@@ -128,9 +127,9 @@ def test_plan_job_creation_and_termination() -> None:
         content=CONFIG_NAMES_CONTENT,
         http_status=HTTPStatus.OK,
         job_runner_version=PROCESSING_STEP_CONFIG_NAMES_VERSION,
-        dataset_git_revision=DATASET_GIT_REVISION,
+        dataset_git_revision=REVISION_NAME,
     )
-    Queue().finish_job(job_id=job_info["job_id"], finished_status=Status.SUCCESS)
+    Queue().finish_job(job_id=job_info["job_id"], is_success=True)
 
     dataset_state = get_dataset_state(processing_graph=PROCESSING_GRAPH)
     assert_dataset_state(
@@ -146,56 +145,56 @@ def test_plan_job_creation_and_termination() -> None:
             "cache_has_different_git_revision": [],
             "cache_is_outdated_by_parent": [],
             "cache_is_empty": [
-                "/split-names-from-dataset-info,dataset,config1",
-                "/split-names-from-dataset-info,dataset,config2",
-                "config-split-names-from-streaming,dataset,config1",
-                "config-split-names-from-streaming,dataset,config2",
-                "config-info,dataset,config1",
-                "config-info,dataset,config2",
-                "config-opt-in-out-urls-count,dataset,config1",
-                "config-opt-in-out-urls-count,dataset,config2",
-                "config-parquet,dataset,config1",
-                "config-parquet,dataset,config2",
-                "config-parquet-and-info,dataset,config1",
-                "config-parquet-and-info,dataset,config2",
-                "config-size,dataset,config1",
-                "config-size,dataset,config2",
-                "dataset-info,dataset",
-                "dataset-is-valid,dataset",
-                "dataset-opt-in-out-urls-count,dataset",
-                "dataset-parquet,dataset",
-                "dataset-size,dataset",
-                "dataset-split-names,dataset",
+                "/split-names-from-dataset-info,dataset,revision,config1",
+                "/split-names-from-dataset-info,dataset,revision,config2",
+                "config-split-names-from-streaming,dataset,revision,config1",
+                "config-split-names-from-streaming,dataset,revision,config2",
+                "config-info,dataset,revision,config1",
+                "config-info,dataset,revision,config2",
+                "config-opt-in-out-urls-count,dataset,revision,config1",
+                "config-opt-in-out-urls-count,dataset,revision,config2",
+                "config-parquet,dataset,revision,config1",
+                "config-parquet,dataset,revision,config2",
+                "config-parquet-and-info,dataset,revision,config1",
+                "config-parquet-and-info,dataset,revision,config2",
+                "config-size,dataset,revision,config1",
+                "config-size,dataset,revision,config2",
+                "dataset-info,dataset,revision",
+                "dataset-is-valid,dataset,revision",
+                "dataset-opt-in-out-urls-count,dataset,revision",
+                "dataset-parquet,dataset,revision",
+                "dataset-size,dataset,revision",
+                "dataset-split-names,dataset,revision",
             ],
             "cache_is_error_to_retry": [],
             "cache_is_job_runner_obsolete": [],
-            "up_to_date": ["/config-names,dataset"],
+            "up_to_date": ["/config-names,dataset,revision"],
         },
-        # the job "/config-names,dataset" is no more in process
+        # the job "/config-names,dataset,revision" is no more in process
         queue_status={
             "in_process": [
-                "dataset-info,dataset",
-                "dataset-is-valid,dataset",
-                "dataset-opt-in-out-urls-count,dataset",
-                "dataset-parquet,dataset",
-                "dataset-size,dataset",
-                "dataset-split-names,dataset",
+                "dataset-info,dataset,revision",
+                "dataset-is-valid,dataset,revision",
+                "dataset-opt-in-out-urls-count,dataset,revision",
+                "dataset-parquet,dataset,revision",
+                "dataset-size,dataset,revision",
+                "dataset-split-names,dataset,revision",
             ]
         },
         tasks=[
-            "CreateJob,/split-names-from-dataset-info,dataset,config1",
-            "CreateJob,/split-names-from-dataset-info,dataset,config2",
-            "CreateJob,config-split-names-from-streaming,dataset,config1",
-            "CreateJob,config-split-names-from-streaming,dataset,config2",
-            "CreateJob,config-info,dataset,config1",
-            "CreateJob,config-info,dataset,config2",
-            "CreateJob,config-opt-in-out-urls-count,dataset,config1",
-            "CreateJob,config-opt-in-out-urls-count,dataset,config2",
-            "CreateJob,config-parquet,dataset,config1",
-            "CreateJob,config-parquet,dataset,config2",
-            "CreateJob,config-parquet-and-info,dataset,config1",
-            "CreateJob,config-parquet-and-info,dataset,config2",
-            "CreateJob,config-size,dataset,config1",
-            "CreateJob,config-size,dataset,config2",
+            "CreateJob,/split-names-from-dataset-info,dataset,revision,config1",
+            "CreateJob,/split-names-from-dataset-info,dataset,revision,config2",
+            "CreateJob,config-split-names-from-streaming,dataset,revision,config1",
+            "CreateJob,config-split-names-from-streaming,dataset,revision,config2",
+            "CreateJob,config-info,dataset,revision,config1",
+            "CreateJob,config-info,dataset,revision,config2",
+            "CreateJob,config-opt-in-out-urls-count,dataset,revision,config1",
+            "CreateJob,config-opt-in-out-urls-count,dataset,revision,config2",
+            "CreateJob,config-parquet,dataset,revision,config1",
+            "CreateJob,config-parquet,dataset,revision,config2",
+            "CreateJob,config-parquet-and-info,dataset,revision,config1",
+            "CreateJob,config-parquet-and-info,dataset,revision,config2",
+            "CreateJob,config-size,dataset,revision,config1",
+            "CreateJob,config-size,dataset,revision,config2",
         ],
     )

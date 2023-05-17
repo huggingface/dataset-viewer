@@ -46,6 +46,7 @@ class JobState:
     """The state of a job for a given input."""
 
     dataset: str
+    revision: str
     config: Optional[str]
     split: Optional[str]
     job_type: str
@@ -53,7 +54,7 @@ class JobState:
 
     def __post_init__(self) -> None:
         self.is_in_process = Queue().is_job_in_process(
-            job_type=self.job_type, dataset=self.dataset, config=self.config, split=self.split
+            job_type=self.job_type, dataset=self.dataset, revision=self.revision, config=self.config, split=self.split
         )
 
 
@@ -108,6 +109,7 @@ class Artifact:
 
     processing_step: ProcessingStep
     dataset: str
+    revision: str
     config: Optional[str]
     split: Optional[str]
 
@@ -126,7 +128,11 @@ class Artifact:
         else:
             raise ValueError(f"Invalid step input type: {self.processing_step.input_type}")
         self.id = inputs_to_string(
-            dataset=self.dataset, config=self.config, split=self.split, prefix=self.processing_step.name
+            dataset=self.dataset,
+            revision=self.revision,
+            config=self.config,
+            split=self.split,
+            prefix=self.processing_step.name,
         )
 
 
@@ -144,6 +150,7 @@ class ArtifactState(Artifact):
         self.job_state = JobState(
             job_type=self.processing_step.job_type,
             dataset=self.dataset,
+            revision=self.revision,
             config=self.config,
             split=self.split,
         )
@@ -169,6 +176,7 @@ class SplitState:
     """The state of a split."""
 
     dataset: str
+    revision: str
     config: str
     split: str
     processing_graph: ProcessingGraph
@@ -181,6 +189,7 @@ class SplitState:
             processing_step.name: ArtifactState(
                 processing_step=processing_step,
                 dataset=self.dataset,
+                revision=self.revision,
                 config=self.config,
                 split=self.split,
                 error_codes_to_retry=self.error_codes_to_retry,
@@ -194,6 +203,7 @@ class ConfigState:
     """The state of a config."""
 
     dataset: str
+    revision: str
     config: str
     processing_graph: ProcessingGraph
     error_codes_to_retry: Optional[List[str]] = None
@@ -207,6 +217,7 @@ class ConfigState:
             processing_step.name: ArtifactState(
                 processing_step=processing_step,
                 dataset=self.dataset,
+                revision=self.revision,
                 config=self.config,
                 split=None,
                 error_codes_to_retry=self.error_codes_to_retry,
@@ -224,13 +235,14 @@ class ConfigState:
                 ],
                 names_field="splits",
                 name_field="split",
-            )
+            )  # Note that we use the cached content even the revision is different (ie. maybe obsolete)
         except Exception:
             self.split_names = []
 
         self.split_states = [
             SplitState(
                 self.dataset,
+                self.revision,
                 self.config,
                 split_name,
                 processing_graph=self.processing_graph,
@@ -290,6 +302,7 @@ class CreateJobTask(Task):
         Queue().upsert_job(
             job_type=self.artifact_state.processing_step.job_type,
             dataset=self.artifact_state.dataset,
+            revision=self.artifact_state.revision,
             config=self.artifact_state.config,
             split=self.artifact_state.split,
             priority=self.priority,
@@ -302,8 +315,6 @@ class DeleteJobTask(Task):
         self.id = f"DeleteJob,{self.artifact_state.id}"
 
     def run(self) -> None:
-        # TODO: the started jobs are also canceled: we need to ensure the job runners will
-        # not try to update the cache when they finish
         Queue().cancel_jobs(
             job_type=self.artifact_state.processing_step.job_type,
             dataset=self.artifact_state.dataset,
@@ -341,7 +352,7 @@ class DatasetState:
 
     dataset: str
     processing_graph: ProcessingGraph
-    revision: Optional[str]
+    revision: str
     error_codes_to_retry: Optional[List[str]] = None
     priority: Priority = Priority.LOW
 
@@ -358,6 +369,7 @@ class DatasetState:
             processing_step.name: ArtifactState(
                 processing_step=processing_step,
                 dataset=self.dataset,
+                revision=self.revision,
                 config=None,
                 split=None,
                 error_codes_to_retry=self.error_codes_to_retry,
@@ -374,12 +386,13 @@ class DatasetState:
                 ],
                 names_field="config_names",
                 name_field="config",
-            )
+            )  # Note that we use the cached content even the revision is different (ie. maybe obsolete)
         except Exception:
             self.config_names = []
         self.config_states = [
             ConfigState(
                 dataset=self.dataset,
+                revision=self.revision,
                 config=config_name,
                 processing_graph=self.processing_graph,
                 error_codes_to_retry=self.error_codes_to_retry,
@@ -536,6 +549,7 @@ class DatasetState:
     def as_response(self) -> Dict[str, Any]:
         return {
             "dataset": self.dataset,
+            "revision": self.revision,
             "cache_status": self.cache_status.as_response(),
             "queue_status": self.queue_status.as_response(),
             "plan": self.plan.as_response(),

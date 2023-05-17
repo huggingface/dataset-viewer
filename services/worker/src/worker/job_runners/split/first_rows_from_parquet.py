@@ -3,8 +3,7 @@
 
 import logging
 from functools import lru_cache, partial
-from http import HTTPStatus
-from typing import List, Literal, Optional
+from typing import List, Optional
 
 import pyarrow as pa
 from datasets import Features
@@ -15,6 +14,14 @@ from libcommon.constants import (
     PROCESSING_STEP_SPLIT_FIRST_ROWS_FROM_PARQUET_VERSION,
     PROCESSING_STEP_SPLIT_FIRST_ROWS_FROM_STREAMING_VERSION,
 )
+from libcommon.exceptions import (
+    FileSystemError,
+    ParquetResponseEmptyError,
+    PreviousStepFormatError,
+    RowsPostProcessingError,
+    TooBigContentError,
+    TooManyColumnsError,
+)
 from libcommon.processing_graph import ProcessingStep
 from libcommon.storage import StrPath
 from libcommon.utils import JobInfo
@@ -22,7 +29,6 @@ from libcommon.viewer_utils.features import get_cell_value
 from pyarrow.parquet import ParquetFile
 from tqdm.contrib.concurrent import thread_map
 
-from worker.common_exceptions import JobRunnerError
 from worker.config import AppConfig, FirstRowsConfig
 from worker.job_runners.split.split_job_runner import SplitJobRunner
 from worker.utils import (
@@ -36,73 +42,6 @@ from worker.utils import (
     get_previous_step_or_raise,
     to_features_list,
 )
-
-SplitFirstRowsFromParquetJobRunnerErrorCode = Literal[
-    "RowsPostProcessingError",
-    "TooManyColumnsError",
-    "TooBigContentError",
-    "PreviousStepFormatError",
-    "ParquetResponseEmptyError",
-    "FileSystemError",
-]
-
-
-class SplitFirstRowsFromParquetJobRunnerError(JobRunnerError):
-    """Base class for exceptions in this module."""
-
-    def __init__(
-        self,
-        message: str,
-        status_code: HTTPStatus,
-        code: SplitFirstRowsFromParquetJobRunnerErrorCode,
-        cause: Optional[BaseException] = None,
-        disclose_cause: bool = False,
-    ):
-        super().__init__(
-            message=message, status_code=status_code, code=code, cause=cause, disclose_cause=disclose_cause
-        )
-
-
-class RowsPostProcessingError(SplitFirstRowsFromParquetJobRunnerError):
-    """Raised when the rows could not be post-processed successfully."""
-
-    def __init__(self, message: str, cause: Optional[BaseException] = None):
-        super().__init__(message, HTTPStatus.INTERNAL_SERVER_ERROR, "RowsPostProcessingError", cause, False)
-
-
-class TooManyColumnsError(SplitFirstRowsFromParquetJobRunnerError):
-    """Raised when the dataset exceeded the max number of columns."""
-
-    def __init__(self, message: str, cause: Optional[BaseException] = None):
-        super().__init__(message, HTTPStatus.INTERNAL_SERVER_ERROR, "TooManyColumnsError", cause, True)
-
-
-class TooBigContentError(SplitFirstRowsFromParquetJobRunnerError):
-    """Raised when the first rows content exceeded the max size of bytes."""
-
-    def __init__(self, message: str, cause: Optional[BaseException] = None):
-        super().__init__(message, HTTPStatus.INTERNAL_SERVER_ERROR, "TooBigContentError", cause, False)
-
-
-class PreviousStepFormatError(SplitFirstRowsFromParquetJobRunnerError):
-    """Raised when the content of the previous step has not the expected format."""
-
-    def __init__(self, message: str, cause: Optional[BaseException] = None):
-        super().__init__(message, HTTPStatus.INTERNAL_SERVER_ERROR, "PreviousStepFormatError", cause, False)
-
-
-class ParquetResponseEmptyError(SplitFirstRowsFromParquetJobRunnerError):
-    """Raised when no parquet files were found for split."""
-
-    def __init__(self, message: str, cause: Optional[BaseException] = None):
-        super().__init__(message, HTTPStatus.INTERNAL_SERVER_ERROR, "ParquetResponseEmptyError", cause, False)
-
-
-class FileSystemError(SplitFirstRowsFromParquetJobRunnerError):
-    """Raised when an error happen reading from File System."""
-
-    def __init__(self, message: str, cause: Optional[BaseException] = None):
-        super().__init__(message, HTTPStatus.INTERNAL_SERVER_ERROR, "FileSystemError", cause, False)
 
 
 def transform_rows(

@@ -11,12 +11,12 @@ from starlette.requests import Request
 from starlette.responses import JSONResponse, Response
 
 AdminErrorCode = Literal[
-    "MissingRequiredParameter",
-    "InvalidParameter",
-    "UnsupportedDatasetError",
-    "UnexpectedError",
-    "ExternalUnauthenticatedError",
     "ExternalAuthenticatedError",
+    "ExternalUnauthenticatedError",
+    "InvalidParameter",
+    "MissingRequiredParameter",
+    "UnsupportedDatasetError",
+    "UnexpectedError",  # also in libcommon.exceptions
 ]
 
 

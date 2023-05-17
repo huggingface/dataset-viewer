@@ -7,6 +7,7 @@ from datetime import datetime
 from http import HTTPStatus
 from typing import (
     Any,
+    Dict,
     Generic,
     List,
     Mapping,
@@ -156,7 +157,6 @@ def upsert_response_params(
     error_code: Optional[str] = None,
     details: Optional[Mapping[str, Any]] = None,
     job_runner_version: Optional[int] = None,
-    dataset_git_revision: Optional[str] = None,
     progress: Optional[float] = None,
     updated_at: Optional[datetime] = None,
 ) -> None:
@@ -166,7 +166,7 @@ def upsert_response_params(
         config=job_params["config"],
         split=job_params["split"],
         content=content,
-        dataset_git_revision=dataset_git_revision,
+        dataset_git_revision=job_params["revision"],
         details=details,
         error_code=error_code,
         http_status=http_status,
@@ -213,6 +213,7 @@ def get_response_without_content(
 
 
 def get_response_without_content_params(kind: str, job_params: JobParams) -> CacheEntryWithoutContent:
+    # the "revision" param is not used, we want the cached response even for an old revision
     return get_response_without_content(
         kind=kind, dataset=job_params["dataset"], config=job_params["config"], split=job_params["split"]
     )
@@ -247,6 +248,38 @@ class CacheEntry(CacheEntryWithoutContent):
 
 class CacheEntryWithDetails(CacheEntry):
     details: Mapping[str, str]
+
+
+class CachedArtifactError(Exception):
+    kind: str
+    dataset: str
+    config: Optional[str]
+    split: Optional[str]
+    cache_entry_with_details: CacheEntryWithDetails
+    enhanced_details: Dict[str, Any]
+
+    def __init__(
+        self,
+        message: str,
+        kind: str,
+        dataset: str,
+        config: Optional[str],
+        split: Optional[str],
+        cache_entry_with_details: CacheEntryWithDetails,
+    ):
+        super().__init__(message)
+        self.kind = kind
+        self.dataset = dataset
+        self.config = config
+        self.split = split
+        self.cache_entry_with_details = cache_entry_with_details
+        self.enhanced_details: Dict[str, Any] = dict(self.cache_entry_with_details["details"].items())
+        self.enhanced_details["copied_from_artifact"] = {
+            "kind": self.kind,
+            "dataset": self.dataset,
+            "config": self.config,
+            "split": self.split,
+        }
 
 
 # Note: we let the exceptions throw (ie DoesNotExist): it's the responsibility of the caller to manage them
@@ -461,13 +494,11 @@ def get_cache_reports(kind: str, cursor: Optional[str], limit: int) -> CacheRepo
     Returns:
         [`CacheReportsPage`]: A dict with the list of reports and the next cursor. The next cursor is
         an empty string if there are no more items to be fetched.
-    <Tip>
     Raises the following errors:
-        - [`~libcommon.simple_cache.InvalidCursor`]
+        - [`~simple_cache.InvalidCursor`]
           If the cursor is invalid.
-        - [`~libcommon.simple_cache.InvalidLimit`]
+        - [`~simple_cache.InvalidLimit`]
           If the limit is an invalid number.
-    </Tip>
     """
     if not cursor:
         queryset = CachedResponse.objects(kind=kind)
@@ -556,13 +587,11 @@ def get_cache_reports_with_content(kind: str, cursor: Optional[str], limit: int)
     Returns:
         [`CacheReportsWithContentPage`]: A dict with the list of reports and the next cursor. The next cursor is
         an empty string if there are no more items to be fetched.
-    <Tip>
     Raises the following errors:
-        - [`~libcommon.simple_cache.InvalidCursor`]
+        - [`~simple_cache.InvalidCursor`]
           If the cursor is invalid.
-        - [`~libcommon.simple_cache.InvalidLimit`]
+        - [`~simple_cache.InvalidLimit`]
           If the limit is an invalid number.
-    </Tip>
     """
     if not cursor:
         queryset = CachedResponse.objects(kind=kind)

@@ -2,7 +2,6 @@
 # Copyright 2023 The HuggingFace Authors.
 
 from http import HTTPStatus
-from typing import Optional
 
 import pytest
 from libcommon.exceptions import CustomError
@@ -15,13 +14,6 @@ from worker.utils import CompleteJobResult
 
 
 class DummyConfigJobRunner(ConfigJobRunner):
-    def get_dataset_git_revision(self) -> Optional[str]:
-        return "0.0.1"
-
-    @staticmethod
-    def _get_dataset_git_revision() -> Optional[str]:
-        return "0.0.1"
-
     @staticmethod
     def get_job_runner_version() -> int:
         return 1
@@ -42,6 +34,7 @@ def test_failed_creation(test_processing_step: ProcessingStep, app_config: AppCo
                 "type": test_processing_step.job_type,
                 "params": {
                     "dataset": "dataset",
+                    "revision": "revision",
                     "config": None,
                     "split": None,
                 },
@@ -62,6 +55,7 @@ def test_success_creation(test_processing_step: ProcessingStep, app_config: AppC
                 "type": test_processing_step.job_type,
                 "params": {
                     "dataset": "dataset",
+                    "revision": "revision",
                     "config": "config",
                     "split": None,
                 },

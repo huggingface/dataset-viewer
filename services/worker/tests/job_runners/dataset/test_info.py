@@ -5,17 +5,14 @@ from http import HTTPStatus
 from typing import Any, Callable, List
 
 import pytest
+from libcommon.exceptions import PreviousStepFormatError
 from libcommon.processing_graph import ProcessingGraph
 from libcommon.resources import CacheMongoResource, QueueMongoResource
-from libcommon.simple_cache import upsert_response
+from libcommon.simple_cache import CachedArtifactError, upsert_response
 from libcommon.utils import Priority
 
-from worker.common_exceptions import PreviousStepError
 from worker.config import AppConfig
-from worker.job_runners.dataset.info import (
-    DatasetInfoJobRunner,
-    PreviousStepFormatError,
-)
+from worker.job_runners.dataset.info import DatasetInfoJobRunner
 from worker.utils import PreviousJob
 
 from ..config.test_info import CONFIG_INFO_1, CONFIG_INFO_2, DATASET_INFO_OK
@@ -129,6 +126,7 @@ def get_job_runner(
                 "type": DatasetInfoJobRunner.get_job_type(),
                 "params": {
                     "dataset": dataset,
+                    "revision": "revision",
                     "config": None,
                     "split": None,
                 },
@@ -191,7 +189,7 @@ def get_job_runner(
                     content={"error": "error"},
                 )
             ],
-            PreviousStepError.__name__,
+            CachedArtifactError.__name__,
             None,
             True,
         ),
@@ -227,7 +225,7 @@ def test_compute(
     if should_raise:
         with pytest.raises(Exception) as e:
             job_runner.compute()
-        assert e.type.__name__ == expected_error_code
+        assert e.typename == expected_error_code
     else:
         compute_result = job_runner.compute()
         assert compute_result.content == expected[0]
@@ -237,5 +235,5 @@ def test_compute(
 def test_doesnotexist(app_config: AppConfig, get_job_runner: GetJobRunner) -> None:
     dataset = "doesnotexist"
     job_runner = get_job_runner(dataset, app_config)
-    with pytest.raises(PreviousStepError):
+    with pytest.raises(CachedArtifactError):
         job_runner.compute()

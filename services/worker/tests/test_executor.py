@@ -37,6 +37,7 @@ def get_job_info(prefix: str = "base") -> JobInfo:
         type="/config-names",
         params={
             "dataset": f"__DUMMY_DATASETS_SERVER_USER__/{prefix}_dataset_{_TIME}",
+            "revision": "revision",
             "config": "default",
             "split": "train",
         },
@@ -90,7 +91,7 @@ def start_worker_loop_with_long_job() -> None:
         if current_job.status == Status.STARTED:
             write_worker_state(worker_state, app_config.worker.state_file_path)
             time.sleep(20)
-            Queue().finish_job(current_job_info["job_id"], finished_status=Status.SUCCESS)
+            Queue().finish_job(current_job_info["job_id"], is_success=True)
 
 
 @fixture
@@ -116,6 +117,7 @@ def set_just_started_job_in_queue(queue_mongo_resource: QueueMongoResource) -> I
         pk=job_info["job_id"],
         type=job_info["type"],
         dataset=job_info["params"]["dataset"],
+        revision=job_info["params"]["revision"],
         config=job_info["params"]["config"],
         split=job_info["params"]["split"],
         unicity_id="unicity_id",
@@ -145,6 +147,7 @@ def set_long_running_job_in_queue(app_config: AppConfig, queue_mongo_resource: Q
         pk=job_info["job_id"],
         type=job_info["type"],
         dataset=job_info["params"]["dataset"],
+        revision=job_info["params"]["revision"],
         config=job_info["params"]["config"],
         split=job_info["params"]["split"],
         unicity_id="unicity_id",
@@ -174,6 +177,7 @@ def set_zombie_job_in_queue(queue_mongo_resource: QueueMongoResource) -> Iterato
         pk=job_info["job_id"],
         type=job_info["type"],
         dataset=job_info["params"]["dataset"],
+        revision=job_info["params"]["revision"],
         config=job_info["params"]["config"],
         split=job_info["params"]["split"],
         unicity_id="unicity_id",

@@ -2,55 +2,19 @@
 # Copyright 2022 The HuggingFace Authors.
 
 import logging
-from http import HTTPStatus
-from typing import List, Literal, Optional, TypedDict, Union
+from typing import List, Optional, TypedDict, Union
 
 from datasets import get_dataset_config_names
 from datasets.data_files import EmptyDatasetError as _EmptyDatasetError
 from libcommon.constants import PROCESSING_STEP_CONFIG_NAMES_VERSION
+from libcommon.exceptions import (
+    ConfigNamesError,
+    DatasetModuleNotInstalledError,
+    EmptyDatasetError,
+)
 
-from worker.common_exceptions import JobRunnerError
 from worker.job_runners.dataset.dataset_job_runner import DatasetCachedJobRunner
 from worker.utils import CompleteJobResult
-
-ConfigNamesJobRunnerErrorCode = Literal["EmptyDatasetError", "DatasetModuleNotInstalledError", "ConfigNamesError"]
-
-
-class ConfigNamesJobRunnerError(JobRunnerError):
-    """Base class for job runner exceptions."""
-
-    def __init__(
-        self,
-        message: str,
-        status_code: HTTPStatus,
-        code: ConfigNamesJobRunnerErrorCode,
-        cause: Optional[BaseException] = None,
-        disclose_cause: bool = False,
-    ):
-        super().__init__(
-            message=message, status_code=status_code, code=code, cause=cause, disclose_cause=disclose_cause
-        )
-
-
-class EmptyDatasetError(ConfigNamesJobRunnerError):
-    """Raised when the dataset has no data."""
-
-    def __init__(self, message: str, cause: Optional[BaseException] = None):
-        super().__init__(message, HTTPStatus.INTERNAL_SERVER_ERROR, "EmptyDatasetError", cause, True)
-
-
-class DatasetModuleNotInstalledError(ConfigNamesJobRunnerError):
-    """Raised when the dataset tries to import a module that is not installed."""
-
-    def __init__(self, message: str, cause: Optional[BaseException] = None):
-        super().__init__(message, HTTPStatus.INTERNAL_SERVER_ERROR, "DatasetModuleNotInstalledError", cause, True)
-
-
-class ConfigNamesError(ConfigNamesJobRunnerError):
-    """Raised when the config names could not be fetched."""
-
-    def __init__(self, message: str, cause: Optional[BaseException] = None):
-        super().__init__(message, HTTPStatus.INTERNAL_SERVER_ERROR, "ConfigNamesError", cause, True)
 
 
 class ConfigNameItem(TypedDict):
@@ -80,15 +44,13 @@ def compute_config_names_response(
             An authentication token (See https://huggingface.co/settings/token)
     Returns:
         `ConfigNamesResponse`: An object with the list of config names.
-    <Tip>
     Raises the following errors:
-        - [`~job_runners.config_names.EmptyDatasetError`]
+        - [`libcommon.exceptions.EmptyDatasetError`]
           The dataset is empty.
-        - [`~job_runners.config_names.DatasetModuleNotInstalledError`]
+        - [`libcommon.exceptions.DatasetModuleNotInstalledError`]
           The dataset tries to import a module that is not installed.
-        - [`~job_runners.config_names.ConfigNamesError`]
+        - [`libcommon.exceptions.ConfigNamesError`]
           If the list of configs could not be obtained using the datasets library.
-    </Tip>
     """
     logging.info(f"get config names for dataset={dataset}")
     use_auth_token: Union[bool, str, None] = hf_token if hf_token is not None else False

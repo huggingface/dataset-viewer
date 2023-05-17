@@ -73,14 +73,16 @@ def get_cache_entry_from_steps(
     If no successful result is found, it will return the last one even if it's an error,
     Checks if job is still in progress by each processing step in case of no entry found.
     Raises:
-        - [`~libcommon.dataset.AskAccessHubRequestError`]: if the request to the Hub to get access to the
-            dataset failed or timed out.
-        - [`~libcommon.dataset.DatasetInfoHubRequestError`]: if the request to the Hub to get the dataset
-            info failed or timed out.
-        - [`~libcommon.operations.PreviousStepError`]: a previous step has an error
-        - [`~libcommon.dataset.DatasetError`]: if the dataset could not be accessed or is not supported
-        - [`~api.utils.ResponseNotFoundError`]: if no result is found.
-        - [`~api.utils.ResponseNotReadyError`]: if the response is not ready yet.
+        - [`libcommon.exceptions.AskAccessHubRequestError`]
+          if the request to the Hub to get access to the dataset failed or timed out.
+        - [`libcommon.exceptions.DatasetInfoHubRequestError`]
+          if the request to the Hub to get the dataset info failed or timed out.
+        - [`libcommon.exceptions.DatasetError`]
+          if the dataset could not be accessed or is not supported
+        - [`~utils.ResponseNotFoundError`]
+          if no result is found.
+        - [`~utils.ResponseNotReadyError`]
+          if the response is not ready yet.
 
     Returns: the cached record
     """
@@ -109,7 +111,9 @@ def get_cache_entry_from_steps(
             # TODO: move Priority outside from queue.py (to remove dependency to this file)
         )
         artifact_ids = [
-            Artifact(processing_step=processing_step, dataset=dataset, config=config, split=split).id
+            Artifact(
+                processing_step=processing_step, dataset=dataset, revision=revision, config=config, split=split
+            ).id
             for processing_step in processing_steps
         ]
         should_exist = any(
@@ -238,6 +242,7 @@ def create_endpoint(
 ) -> Endpoint:
     async def processing_step_endpoint(request: Request) -> Response:
         context = f"endpoint: {endpoint_name}"
+        revision: Optional[str] = None
         with StepProfiler(method="processing_step_endpoint", step="all", context=context):
             try:
                 with StepProfiler(
@@ -293,19 +298,24 @@ def create_endpoint(
                 content = result["content"]
                 http_status = result["http_status"]
                 error_code = result["error_code"]
+                revision = result["dataset_git_revision"]
                 if http_status == HTTPStatus.OK:
                     with StepProfiler(method="processing_step_endpoint", step="generate OK response", context=context):
-                        return get_json_ok_response(content=content, max_age=max_age_long)
+                        return get_json_ok_response(content=content, max_age=max_age_long, revision=revision)
 
                 with StepProfiler(method="processing_step_endpoint", step="generate error response", context=context):
                     return get_json_error_response(
-                        content=content, status_code=http_status, max_age=max_age_short, error_code=error_code
+                        content=content,
+                        status_code=http_status,
+                        max_age=max_age_short,
+                        error_code=error_code,
+                        revision=revision,
                     )
             except Exception as e:
                 error = e if isinstance(e, ApiCustomError) else UnexpectedError("Unexpected error.", e)
                 with StepProfiler(
                     method="processing_step_endpoint", step="generate API error response", context=context
                 ):
-                    return get_json_api_error_response(error=error, max_age=max_age_short)
+                    return get_json_api_error_response(error=error, max_age=max_age_short, revision=revision)
 
     return processing_step_endpoint

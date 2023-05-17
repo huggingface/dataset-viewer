@@ -11,6 +11,7 @@ from pymongo.errors import DocumentTooLarge
 
 from libcommon.resources import CacheMongoResource
 from libcommon.simple_cache import (
+    CachedArtifactError,
     CachedResponse,
     CacheReportsPage,
     CacheReportsWithContentPage,
@@ -25,6 +26,7 @@ from libcommon.simple_cache import (
     get_dataset_responses_without_content_for_kind,
     get_outdated_split_full_names_for_step,
     get_response,
+    get_response_with_details,
     get_response_without_content,
     get_responses_count_by_kind_status_and_error_code,
     get_valid_datasets,
@@ -735,3 +737,63 @@ def test_get_best_response(
     )
     assert best_response.response["http_status"] == entries[best_entry]["http_status"].value
     assert best_response.response["progress"] == entries[best_entry]["progress"]
+
+
+def test_cached_artifact_error() -> None:
+    dataset = "dataset"
+    config = "config"
+    split = "split"
+    kind = "cache_kind"
+    error_code = "ErrorCode"
+    error_message = "error message"
+    cause_exception = "CauseException"
+    cause_message = "cause message"
+    cause_traceback = ["traceback1", "traceback2"]
+    details = {
+        "error": error_message,
+        "cause_exception": cause_exception,
+        "cause_message": cause_message,
+        "cause_traceback": cause_traceback,
+    }
+    content = {"error": error_message}
+    job_runner_version = 1
+    dataset_git_revision = "dataset_git_revision"
+    progress = 1.0
+    upsert_response(
+        kind=kind,
+        dataset=dataset,
+        config=config,
+        split=split,
+        content=content,
+        http_status=HTTPStatus.INTERNAL_SERVER_ERROR,
+        error_code=error_code,
+        details=details,
+        job_runner_version=job_runner_version,
+        dataset_git_revision=dataset_git_revision,
+        progress=progress,
+    )
+    response = get_response_with_details(kind=kind, dataset=dataset, config=config, split=split)
+    error = CachedArtifactError(
+        message="Previous step error",
+        kind=kind,
+        dataset=dataset,
+        config=config,
+        split=split,
+        cache_entry_with_details=response,
+    )
+
+    assert error.cache_entry_with_details["content"] == content
+    assert error.cache_entry_with_details["http_status"] == HTTPStatus.INTERNAL_SERVER_ERROR
+    assert error.cache_entry_with_details["error_code"] == error_code
+    assert error.enhanced_details == {
+        "error": error_message,
+        "cause_exception": cause_exception,
+        "cause_message": cause_message,
+        "cause_traceback": cause_traceback,
+        "copied_from_artifact": {
+            "kind": kind,
+            "dataset": dataset,
+            "config": config,
+            "split": split,
+        },
+    }
