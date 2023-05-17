@@ -27,6 +27,7 @@ from libcommon.constants import (
     PROCESSING_STEP_SPLIT_NAMES_FROM_STREAMING_VERSION,
     PROCESSING_STEP_SPLIT_OPT_IN_OUT_URLS_COUNT_VERSION,
     PROCESSING_STEP_SPLIT_OPT_IN_OUT_URLS_SCAN_VERSION,
+    PROCESSING_STEP_SPLIT_BASIC_STATS_VERSION,
 )
 from libcommon.processing_graph import ProcessingGraphSpecification
 
@@ -283,6 +284,11 @@ class ProcessingGraphConfig:
                 "triggered_by": ["/config-names", "config-opt-in-out-urls-count"],
                 "job_runner_version": PROCESSING_STEP_DATASET_OPT_IN_OUT_URLS_COUNT_VERSION,
             },
+            "split-basic-stats": {
+                "input_type": "split",
+                "triggered_by": ["config-parquet"],
+                "job_runner_version": PROCESSING_STEP_SPLIT_BASIC_STATS_VERSION,
+            }
         }
     )
 
