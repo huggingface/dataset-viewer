@@ -95,7 +95,7 @@ class ParquetMetadataConfig:
     storage_directory: Optional[str] = PARQUET_METADATA_STORAGE_DIRECTORY
 
     @classmethod
-    def from_env(cls) -> "PARQUET_METADATA_STORAGE_DIRECTORY":
+    def from_env(cls) -> "ParquetMetadataConfig":
         env = Env(expand_vars=True)
         with env.prefixed("PARQUET_METADATA_"):
             return cls(
