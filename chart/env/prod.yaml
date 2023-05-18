@@ -290,7 +290,7 @@ workers:
     deployName: "temporal-opt-in-out"
     maxJobsPerNamespace: 2
     workerJobTypesBlocked: ""
-    workerJobTypesOnly: "config-opt-in-out-urls-count,dataset-opt-in-out-urls-count"
+    workerJobTypesOnly: "split-opt-in-out-urls-scan"
     nodeSelector:
       role-datasets-server-worker: "true"
     replicas: 20
