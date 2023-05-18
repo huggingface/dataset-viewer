@@ -92,6 +92,7 @@ def compute_basic_stats_response(
     df = dd.read_parquet(parquet_files_urls)
     for column_name in df:
         if is_numeric_dtype(df[column_name].dtype):
+            # this is silly but it's just to try
             minimum = df[column_name].min().compute().item()
             maximum = df[column_name].max().compute().item()
             median = df[column_name].median().compute().item()
