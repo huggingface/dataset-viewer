@@ -128,7 +128,7 @@ cacheMaintenance:
 
 # --- cron jobs  ---
 backfill:
-  enabled: true
+  enabled: false
   log:
     level: "debug"
   action: "backfill"
