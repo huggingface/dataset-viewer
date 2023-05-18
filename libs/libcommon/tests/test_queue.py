@@ -49,19 +49,19 @@ def test__add_job() -> None:
         # but: it's not possible to start two jobs with the same arguments
         queue.start_job()
     # finish the first job
-    queue.finish_job(job_id=job_info["job_id"], is_success=True)
+    queue.finish_job(job_id=job_info["job_id"], finished_status=Status.SUCCESS)
     # the queue is not empty
     assert queue.is_job_in_process(job_type=test_type, dataset=test_dataset, revision=test_revision)
     # process the second job
     job_info = queue.start_job()
-    queue.finish_job(job_id=job_info["job_id"], is_success=True)
+    queue.finish_job(job_id=job_info["job_id"], finished_status=Status.SUCCESS)
     # and the third one
     job_info = queue.start_job()
     other_job_id = ("1" if job_info["job_id"][0] == "0" else "0") + job_info["job_id"][1:]
     # trying to finish another job fails silently (with a log)
-    queue.finish_job(job_id=other_job_id, is_success=True)
+    queue.finish_job(job_id=other_job_id, finished_status=Status.SUCCESS)
     # finish it
-    queue.finish_job(job_id=job_info["job_id"], is_success=True)
+    queue.finish_job(job_id=job_info["job_id"], finished_status=Status.SUCCESS)
     # the queue is empty
     assert not queue.is_job_in_process(job_type=test_type, dataset=test_dataset, revision=test_revision)
     with pytest.raises(EmptyQueueError):
@@ -98,12 +98,12 @@ def test_upsert_job() -> None:
         # but: it's not possible to start two jobs with the same arguments
         queue.start_job()
     # finish the first job
-    queue.finish_job(job_id=job_info["job_id"], is_success=True)
+    queue.finish_job(job_id=job_info["job_id"], finished_status=Status.SUCCESS)
     # the queue is not empty
     assert queue.is_job_in_process(job_type=test_type, dataset=test_dataset, revision=test_revision_2)
     # process the second job
     job_info = queue.start_job()
-    queue.finish_job(job_id=job_info["job_id"], is_success=True)
+    queue.finish_job(job_id=job_info["job_id"], finished_status=Status.SUCCESS)
     # the queue is empty
     assert not queue.is_job_in_process(job_type=test_type, dataset=test_dataset, revision=test_revision_2)
     with pytest.raises(EmptyQueueError):
@@ -252,7 +252,7 @@ def test_max_jobs_per_namespace(max_jobs_per_namespace: Optional[int]) -> None:
         return
     # max_jobs_per_namespace <= 0 and max_jobs_per_namespace == None are the same
     # finish the first job
-    queue.finish_job(job_info["job_id"], is_success=True)
+    queue.finish_job(job_info["job_id"], finished_status=Status.SUCCESS)
     assert not queue.is_job_in_process(
         job_type=test_type, dataset=test_dataset, revision=test_revision, config=test_config, split="split1"
     )
@@ -330,7 +330,7 @@ def test_get_dataset_pending_jobs_for_type() -> None:
             for job_type in [test_type, test_another_type]:
                 queue.upsert_job(job_type=job_type, dataset=dataset, revision=test_revision, config=config, split=None)
                 job_info = queue.start_job()
-                queue.finish_job(job_info["job_id"], is_success=True)
+                queue.finish_job(job_info["job_id"], finished_status=Status.SUCCESS)
     for config in test_configs_started:
         for dataset in [test_dataset, test_another_dataset]:
             for job_type in [test_type, test_another_type]:
@@ -375,6 +375,28 @@ def test_queue_get_zombies() -> None:
     assert queue.get_zombies(max_seconds_without_heartbeat=-1) == []
     assert queue.get_zombies(max_seconds_without_heartbeat=0) == []
     assert queue.get_zombies(max_seconds_without_heartbeat=9999999) == []
+
+
+def test_queue_kill_zombies() -> None:
+    job_type = "test_type"
+    queue = Queue()
+    with patch("libcommon.queue.get_datetime", get_old_datetime):
+        zombie = queue.upsert_job(
+            job_type=job_type, dataset="dataset1", revision="revision", config="config", split="split1"
+        )
+        queue.start_job(job_types_only=[job_type])
+    another_job = queue.upsert_job(
+        job_type=job_type, dataset="dataset1", revision="revision", config="config", split="split2"
+    )
+    queue.start_job(job_types_only=[job_type])
+
+    assert queue.get_zombies(max_seconds_without_heartbeat=10) == [zombie.info()]
+    queue.kill_zombies([zombie.info()])
+    assert queue.get_zombies(max_seconds_without_heartbeat=10) == []
+    zombie.reload()
+    another_job.reload()
+    assert zombie.status == Status.ERROR
+    assert another_job.status == Status.STARTED
 
 
 def test_has_ttl_index_on_finished_at_field() -> None:

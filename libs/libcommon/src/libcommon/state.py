@@ -315,6 +315,8 @@ class DeleteJobTask(Task):
         self.id = f"DeleteJob,{self.artifact_state.id}"
 
     def run(self) -> None:
+        # TODO: the started jobs are also canceled: we need to ensure the job runners will
+        # not try to update the cache when they finish
         Queue().cancel_jobs(
             job_type=self.artifact_state.processing_step.job_type,
             dataset=self.artifact_state.dataset,
