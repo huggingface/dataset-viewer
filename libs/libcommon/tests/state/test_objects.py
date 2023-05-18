@@ -19,6 +19,7 @@ from libcommon.state import (
     SplitState,
     fetch_names,
 )
+from libcommon.utils import Status
 
 from .utils import (
     CONFIG_NAME_1,
@@ -136,7 +137,7 @@ def test_job_state_is_in_process(
     assert JobState(dataset=dataset, revision=revision, config=config, split=split, job_type=job_type).is_in_process
     job_info = queue.start_job()
     assert JobState(dataset=dataset, revision=revision, config=config, split=split, job_type=job_type).is_in_process
-    queue.finish_job(job_id=job_info["job_id"], is_success=True)
+    queue.finish_job(job_id=job_info["job_id"], finished_status=Status.SUCCESS)
     assert not JobState(
         dataset=dataset, revision=revision, config=config, split=split, job_type=job_type
     ).is_in_process

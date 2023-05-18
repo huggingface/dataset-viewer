@@ -8,6 +8,7 @@ from libcommon.processing_graph import ProcessingGraph
 from libcommon.queue import Queue
 from libcommon.simple_cache import upsert_response
 from libcommon.state import DatasetState
+from libcommon.utils import Status
 
 DATASET_NAME = "dataset"
 
@@ -127,7 +128,7 @@ def process_next_job(artifact: str) -> None:
     job_type = artifact.split(",")[0]
     job_info = Queue().start_job(job_types_only=[job_type])
     put_cache(artifact)
-    Queue().finish_job(job_id=job_info["job_id"], is_success=True)
+    Queue().finish_job(job_id=job_info["job_id"], finished_status=Status.SUCCESS)
 
 
 def compute_all(

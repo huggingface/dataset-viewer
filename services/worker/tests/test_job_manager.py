@@ -5,7 +5,7 @@ from typing import Optional
 import pytest
 from libcommon.exceptions import CustomError
 from libcommon.processing_graph import ProcessingGraph, ProcessingStep
-from libcommon.queue import Job, Queue
+from libcommon.queue import Queue
 from libcommon.resources import CacheMongoResource, QueueMongoResource
 from libcommon.simple_cache import CachedResponse, get_response, upsert_response
 from libcommon.utils import JobInfo, Priority, Status
@@ -123,18 +123,17 @@ def test_backfill(priority: Priority, app_config: AppConfig) -> None:
         }
     )
     root_step = graph.get_processing_step("dummy")
-    queue = Queue()
-    assert Job.objects().count() == 0
-    queue.upsert_job(
-        job_type=root_step.job_type,
-        dataset="dataset",
-        revision="revision",
-        config=None,
-        split=None,
+    job_info = JobInfo(
+        job_id="job_id",
+        type=root_step.job_type,
+        params={
+            "dataset": "dataset",
+            "revision": "revision",
+            "config": None,
+            "split": None,
+        },
         priority=priority,
     )
-    job_info = queue.start_job()
-    assert job_info["priority"] == priority
 
     job_runner = DummyJobRunner(
         job_info=job_info,
@@ -143,31 +142,11 @@ def test_backfill(priority: Priority, app_config: AppConfig) -> None:
     )
 
     job_manager = JobManager(job_info=job_info, app_config=app_config, job_runner=job_runner, processing_graph=graph)
-    assert job_manager.priority == priority
 
-    job_result = job_manager.run_job()
-    assert job_result["is_success"]
-    assert job_result["output"] is not None
-    assert job_result["output"]["content"] == {"key": "value"}
-
-    job_manager.finish(job_result=job_result)
-    # check that the job has been finished with success
-    job = queue.get_job_with_id(job_id=job_info["job_id"])
-    assert job.status == Status.SUCCESS
-    assert job.priority == priority
-
-    # check that the cache entry has have been created
-    cached_response = get_response(kind=root_step.cache_kind, dataset="dataset", config=None, split=None)
-    assert cached_response is not None
-    assert cached_response["http_status"] == HTTPStatus.OK
-    assert cached_response["error_code"] is None
-    assert cached_response["content"] == {"key": "value"}
-    assert cached_response["dataset_git_revision"] == "revision"
-    assert cached_response["job_runner_version"] == 1
-    assert cached_response["progress"] == 1.0
-
-    # check that the missing cache entries have been created (backfill)
-
+    # we add an entry to the cache
+    job_manager.run()
+    # check that the missing cache entries have been created
+    queue = Queue()
     dataset_child_jobs = queue.get_dump_with_status(job_type="dataset-child", status=Status.WAITING)
     assert len(dataset_child_jobs) == 1
     assert dataset_child_jobs[0]["dataset"] == "dataset"
@@ -192,24 +171,24 @@ def test_job_runner_set_crashed(
     test_processing_step: ProcessingStep,
     app_config: AppConfig,
 ) -> None:
+    job_id = "job_id"
     dataset = "dataset"
     revision = "revision"
     config = "config"
     split = "split"
     message = "I'm crashed :("
 
-    queue = Queue()
-    assert Job.objects().count() == 0
-    queue.upsert_job(
-        job_type=test_processing_step.job_type,
-        dataset=dataset,
-        revision=revision,
-        config=config,
-        split=split,
+    job_info = JobInfo(
+        job_id=job_id,
+        type=test_processing_step.job_type,
+        params={
+            "dataset": dataset,
+            "revision": revision,
+            "config": config,
+            "split": split,
+        },
         priority=Priority.NORMAL,
     )
-    job_info = queue.start_job()
-
     job_runner = DummyJobRunner(
         job_info=job_info,
         processing_step=test_processing_step,
@@ -320,7 +299,7 @@ def test_doesnotexist(app_config: AppConfig) -> None:
         job_info=job_info, app_config=app_config, job_runner=job_runner, processing_graph=processing_graph
     )
 
-    job_result = job_manager.process()
+    assert job_manager.process()
     # ^ the job is processed, since we don't contact the Hub to check if the dataset exists
-    assert job_result["output"] is not None
-    assert job_result["output"]["content"] == {"key": "value"}
+    response = get_response(kind=job_manager.processing_step.cache_kind, dataset=dataset, config=config, split=split)
+    assert response["content"] == {"key": "value"}

@@ -11,6 +11,7 @@ from libcommon.processing_graph import ProcessingGraph
 from libcommon.queue import Queue
 from libcommon.resources import CacheMongoResource, QueueMongoResource
 from libcommon.simple_cache import upsert_response
+from libcommon.utils import Status
 
 from .utils import (
     CONFIG_NAMES,
@@ -129,7 +130,7 @@ def test_plan_job_creation_and_termination() -> None:
         job_runner_version=PROCESSING_STEP_CONFIG_NAMES_VERSION,
         dataset_git_revision=REVISION_NAME,
     )
-    Queue().finish_job(job_id=job_info["job_id"], is_success=True)
+    Queue().finish_job(job_id=job_info["job_id"], finished_status=Status.SUCCESS)
 
     dataset_state = get_dataset_state(processing_graph=PROCESSING_GRAPH)
     assert_dataset_state(
