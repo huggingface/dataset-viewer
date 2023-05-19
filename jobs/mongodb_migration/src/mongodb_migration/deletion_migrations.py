@@ -18,8 +18,10 @@ class MetricsDeletionMigration(MetricsMigration):
         logging.info(f"Delete job metrics of type {self.job_type}")
 
         db = get_db(self.MONGOENGINE_ALIAS)
-        db[self.COLLECTION_JOB_TOTAL_METRIC].delete_many({"queue": self.job_type})
-        db[self.COLLECTION_CACHE_TOTAL_METRIC].delete_many({"kind": self.cache_kind})
+        result = db[self.COLLECTION_JOB_TOTAL_METRIC].delete_many({"queue": self.job_type})
+        logging.info(f"{result.deleted_count} deleted job metrics")
+        result = db[self.COLLECTION_CACHE_TOTAL_METRIC].delete_many({"kind": self.cache_kind})
+        logging.info(f"{result.deleted_count} deleted cache metrics")
 
     def down(self) -> None:
         raise IrreversibleMigrationError("This migration does not support rollback")
@@ -40,7 +42,8 @@ class CacheDeletionMigration(CacheMigration):
         db = get_db(self.MONGOENGINE_ALIAS)
 
         # delete existing documents
-        db[self.COLLECTION_RESPONSES].delete_many({"kind": self.cache_kind})
+        result = db[self.COLLECTION_RESPONSES].delete_many({"kind": self.cache_kind})
+        logging.info(f"{result.deleted_count} deleted cache entries")
 
     def down(self) -> None:
         raise IrreversibleMigrationError("This migration does not support rollback")
@@ -58,7 +61,8 @@ class QueueDeletionMigration(QueueMigration):
         logging.info(f"Delete jobs of type {self.job_type}")
 
         db = get_db(self.MONGOENGINE_ALIAS)
-        db[self.COLLECTION_JOBS].delete_many({"type": self.job_type})
+        result = db[self.COLLECTION_JOBS].delete_many({"type": self.job_type})
+        logging.info(f"{result.deleted_count} deleted jobs")
 
     def down(self) -> None:
         raise IrreversibleMigrationError("This migration does not support rollback")

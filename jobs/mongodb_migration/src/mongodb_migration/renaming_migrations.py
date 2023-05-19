@@ -21,12 +21,22 @@ class CacheRenamingMigration(CacheMigration):
         db = get_db(self.MONGOENGINE_ALIAS)
 
         # update existing documents with the old kind
-        db[self.COLLECTION_RESPONSES].update_many({"kind": self.cache_kind}, {"$set": {"kind": self.new_cache_kind}})
+        result = db[self.COLLECTION_RESPONSES].update_many(
+            {"kind": self.cache_kind}, {"$set": {"kind": self.new_cache_kind}}
+        )
+        logging.info(
+            f"{result.matched_count} cache entries to be renamed - {result.modified_count} cache entries renamed"
+        )
 
     def down(self) -> None:
         logging.info(f"Rollback cache_kind field from '{self.new_cache_kind}' to '{self.cache_kind}'")
         db = get_db(self.MONGOENGINE_ALIAS)
-        db[self.COLLECTION_RESPONSES].update_many({"kind": self.new_cache_kind}, {"$set": {"kind": self.cache_kind}})
+        result = db[self.COLLECTION_RESPONSES].update_many(
+            {"kind": self.new_cache_kind}, {"$set": {"kind": self.cache_kind}}
+        )
+        logging.info(
+            f"{result.matched_count} cache entries to be renamed - {result.modified_count} cache entries renamed"
+        )
 
     def validate(self) -> None:
         logging.info("Validate modified documents")
@@ -47,7 +57,7 @@ class QueueRenamingMigration(QueueMigration):
         )
 
         db = get_db(self.MONGOENGINE_ALIAS)
-        db[self.COLLECTION_JOBS].update_many(
+        result = db[self.COLLECTION_JOBS].update_many(
             {"type": self.job_type},
             [
                 {
@@ -64,6 +74,7 @@ class QueueRenamingMigration(QueueMigration):
                 },
             ],  # type: ignore
         )
+        logging.info(f"{result.matched_count} jobs to be renamed - {result.modified_count} jobs renamed")
 
     def down(self) -> None:
         logging.info(
@@ -73,7 +84,7 @@ class QueueRenamingMigration(QueueMigration):
         )
 
         db = get_db(self.MONGOENGINE_ALIAS)
-        db[self.COLLECTION_JOBS].update_many(
+        result = db[self.COLLECTION_JOBS].update_many(
             {"type": self.new_job_type},
             [
                 {
@@ -90,6 +101,7 @@ class QueueRenamingMigration(QueueMigration):
                 },
             ],  # type: ignore
         )
+        logging.info(f"{result.matched_count} jobs to be renamed - {result.modified_count} jobs renamed")
 
     def validate(self) -> None:
         logging.info("Validate modified documents")
