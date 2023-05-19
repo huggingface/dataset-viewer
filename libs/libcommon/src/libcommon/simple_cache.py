@@ -86,10 +86,12 @@ class CachedResponse(Document):
 
     id = ObjectIdField(db_field="_id", primary_key=True, default=ObjectId)
 
-    kind = StringField(required=True, unique_with=["dataset", "config", "split"])
+    kind = StringField(required=True, unique_with=["dataset", "config", "split", "partition_start", "partition_end"])
     dataset = StringField(required=True)
     config = StringField()
     split = StringField()
+    partition_start = IntField()
+    partition_end = IntField()
 
     http_status = EnumField(HTTPStatus, required=True)
     error_code = StringField()
@@ -105,7 +107,7 @@ class CachedResponse(Document):
         "collection": CACHE_COLLECTION_RESPONSES,
         "db_alias": CACHE_MONGOENGINE_ALIAS,
         "indexes": [
-            ("kind", "dataset", "config", "split"),
+            ("kind", "dataset", "config", "split", "partition_start", "partition_end"),
             ("dataset", "kind", "http_status"),
             ("kind", "http_status", "dataset"),
             ("kind", "http_status", "error_code"),
@@ -131,6 +133,8 @@ def upsert_response(
     http_status: HTTPStatus,
     config: Optional[str] = None,
     split: Optional[str] = None,
+    partition_start: Optional[int] = None,
+    partition_end: Optional[int] = None,
     error_code: Optional[str] = None,
     details: Optional[Mapping[str, Any]] = None,
     job_runner_version: Optional[int] = None,
@@ -138,7 +142,7 @@ def upsert_response(
     progress: Optional[float] = None,
     updated_at: Optional[datetime] = None,
 ) -> None:
-    CachedResponse.objects(kind=kind, dataset=dataset, config=config, split=split).upsert_one(
+    CachedResponse.objects(kind=kind, dataset=dataset, config=config, split=split, partition_start=partition_start, partition_end=partition_end).upsert_one(
         content=content,
         http_status=http_status,
         error_code=error_code,
@@ -167,6 +171,8 @@ def upsert_response_params(
         dataset=job_params["dataset"],
         config=job_params["config"],
         split=job_params["split"],
+        partition_start=job_params["partition_start"],
+        partition_end=job_params["partition_end"],
         content=content,
         dataset_git_revision=dataset_git_revision,
         details=details,
@@ -198,10 +204,10 @@ class CacheEntryWithoutContent(TypedDict):
 
 # Note: we let the exceptions throw (ie DoesNotExist): it's the responsibility of the caller to manage them
 def get_response_without_content(
-    kind: str, dataset: str, config: Optional[str] = None, split: Optional[str] = None
+    kind: str, dataset: str, config: Optional[str] = None, split: Optional[str] = None, partition_start: Optional[int] = None, partition_end: Optional[int] = None,
 ) -> CacheEntryWithoutContent:
     response = (
-        CachedResponse.objects(kind=kind, dataset=dataset, config=config, split=split)
+        CachedResponse.objects(kind=kind, dataset=dataset, config=config, split=split, partition_start=partition_start, partition_end=partition_end)
         .only("http_status", "error_code", "job_runner_version", "dataset_git_revision", "progress")
         .get()
     )
@@ -216,7 +222,7 @@ def get_response_without_content(
 
 def get_response_without_content_params(kind: str, job_params: JobParams) -> CacheEntryWithoutContent:
     return get_response_without_content(
-        kind=kind, dataset=job_params["dataset"], config=job_params["config"], split=job_params["split"]
+        kind=kind, dataset=job_params["dataset"], config=job_params["config"], split=job_params["split"], partition_start=job_params["partition_start"], partition_end=job_params["partition_end"]
     )
 
 
@@ -256,6 +262,8 @@ class CachedArtifactError(Exception):
     dataset: str
     config: Optional[str]
     split: Optional[str]
+    partition_start: Optional[int]
+    partition_end: Optional[int]
     cache_entry_with_details: CacheEntryWithDetails
     enhanced_details: Dict[str, Any]
 
@@ -266,6 +274,8 @@ class CachedArtifactError(Exception):
         dataset: str,
         config: Optional[str],
         split: Optional[str],
+        partition_start: Optional[int],
+        partition_end: Optional[int],
         cache_entry_with_details: CacheEntryWithDetails,
     ):
         super().__init__(message)
@@ -273,6 +283,8 @@ class CachedArtifactError(Exception):
         self.dataset = dataset
         self.config = config
         self.split = split
+        self.partition_start = partition_start,
+        self.partition_end = partition_end,
         self.cache_entry_with_details = cache_entry_with_details
         self.enhanced_details: Dict[str, Any] = dict(self.cache_entry_with_details["details"].items())
         self.enhanced_details["copied_from_artifact"] = {
@@ -280,6 +292,8 @@ class CachedArtifactError(Exception):
             "dataset": self.dataset,
             "config": self.config,
             "split": self.split,
+            "partition_start": self.partition_start,
+            "partition_end": self.partition_end,
         }
 
 
@@ -518,6 +532,8 @@ def get_cache_reports(kind: str, cursor: Optional[str], limit: int) -> CacheRepo
                 "dataset": object.dataset,
                 "config": object.config,
                 "split": object.split,
+                "partition_start": object.partition_start,
+                "partition_end": object.partition_end,
                 "http_status": object.http_status.value,
                 "error_code": object.error_code,
                 "details": object.details,
@@ -532,15 +548,6 @@ def get_cache_reports(kind: str, cursor: Optional[str], limit: int) -> CacheRepo
     }
 
 
-def get_outdated_split_full_names_for_step(kind: str, current_version: int) -> List[SplitFullName]:
-    responses = CachedResponse.objects(kind=kind, job_runner_version__lt=current_version).only(
-        "dataset", "config", "split"
-    )
-    return [
-        SplitFullName(dataset=response.dataset, config=response.config, split=response.split) for response in responses
-    ]
-
-
 def get_dataset_responses_without_content_for_kind(kind: str, dataset: str) -> List[CacheReport]:
     responses = CachedResponse.objects(kind=kind, dataset=dataset).exclude("content")
     return [
@@ -549,6 +556,8 @@ def get_dataset_responses_without_content_for_kind(kind: str, dataset: str) -> L
             "dataset": response.dataset,
             "config": response.config,
             "split": response.split,
+            "partition_start":  response.partition_start,
+            "partition_end":  response.partition_end,
             "http_status": response.http_status,
             "error_code": response.error_code,
             "details": response.details,
@@ -611,6 +620,8 @@ def get_cache_reports_with_content(kind: str, cursor: Optional[str], limit: int)
                 "dataset": object.dataset,
                 "config": object.config,
                 "split": object.split,
+                "partition_start": object.partition_start,
+                "partition_end": object.partition_end,
                 "http_status": object.http_status.value,
                 "error_code": object.error_code,
                 "content": object.content,

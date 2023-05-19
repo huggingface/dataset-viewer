@@ -217,6 +217,20 @@ class NumbaConfig:
             return cls(path=env.str(name="NUMBA_CACHE_DIR", default=NUMBA_CACHE_DIR))
 
 
+PARTITION_CHUNK_SIZE = 100
+
+
+@dataclass(frozen=True)
+class PartitionConfig:
+    chunk_size: Optional[str] = PARTITION_CHUNK_SIZE
+
+    @classmethod
+    def from_env(cls) -> "PartitionConfig":
+        env = Env(expand_vars=True)
+        with env.prefixed("PARTITION_"):
+            return cls(chunk_size=env.int(name="CHUNK_SIZE", default=PARTITION_CHUNK_SIZE))
+
+
 @dataclass(frozen=True)
 class AppConfig:
     assets: AssetsConfig = field(default_factory=AssetsConfig)
@@ -232,6 +246,7 @@ class AppConfig:
     worker: WorkerConfig = field(default_factory=WorkerConfig)
     urls_scan: OptInOutUrlsScanConfig = field(default_factory=OptInOutUrlsScanConfig)
     parquet_metadata: ParquetMetadataConfig = field(default_factory=ParquetMetadataConfig)
+    partition: PartitionConfig = field(default_factory=PartitionConfig)
 
     @classmethod
     def from_env(cls) -> "AppConfig":
@@ -249,4 +264,5 @@ class AppConfig:
             worker=WorkerConfig.from_env(),
             urls_scan=OptInOutUrlsScanConfig.from_env(),
             parquet_metadata=ParquetMetadataConfig.from_env(),
+            partition=PartitionConfig.from_env(),
         )

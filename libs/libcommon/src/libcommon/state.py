@@ -41,6 +41,24 @@ def fetch_names(
     return names
 
 
+def fetch_intervals(
+    dataset: str, config: Optional[str], split: Optional[str], cache_kinds: List[str]
+) -> List[tuple]:
+    """Fetch a list of names from the database."""
+    intervals = []
+
+    best_response = get_best_response(kinds=cache_kinds, dataset=dataset, config=config)
+    for name_item in best_response.response["content"]["partitions"]:
+        start = name_item["partition_start"]
+        if not isinstance(start, int):
+            raise ValueError(f"Invalid name: {start}, type should be int, got: {type(start)}")
+        end = name_item["partition_end"]
+        if not isinstance(end, int):
+            raise ValueError(f"Invalid name: {end}, type should be int, got: {type(end)}")
+        intervals.append((start, end))
+    return intervals
+
+
 @dataclass
 class JobState:
     """The state of a job for a given input."""
@@ -49,6 +67,8 @@ class JobState:
     revision: str
     config: Optional[str]
     split: Optional[str]
+    partition_start: Optional[int]
+    partition_end: Optional[int]
     job_type: str
     is_in_process: bool
 
@@ -60,6 +80,8 @@ class CacheState:
     dataset: str
     config: Optional[str]
     split: Optional[str]
+    partition_start: Optional[int]
+    partition_end: Optional[int]
     cache_kind: str
     cache_entries_df: pd.DataFrame
     error_codes_to_retry: Optional[List[str]] = None
@@ -121,6 +143,8 @@ class Artifact:
     revision: str
     config: Optional[str]
     split: Optional[str]
+    partition_start: Optional[int]
+    partition_end: Optional[int]
 
     id: str = field(init=False)
 
@@ -134,6 +158,9 @@ class Artifact:
         elif self.processing_step.input_type == "split":
             if self.config is None or self.split is None:
                 raise ValueError("Step input type is split, but config or split is None")
+        elif self.processing_step.input_type == "partition":
+            if self.config is None or self.split is None or self.partition_start is None or self.partition_end is None:
+                raise ValueError("Step input type is partition, but config or split or partition_start or partition_end is None")
         else:
             raise ValueError(f"Invalid step input type: {self.processing_step.input_type}")
         self.id = inputs_to_string(
@@ -141,6 +168,8 @@ class Artifact:
             revision=self.revision,
             config=self.config,
             split=self.split,
+            partition_start=self.partition_start,
+            parition_end=self.partition_end,
             prefix=self.processing_step.name,
         )
 
@@ -165,12 +194,16 @@ class ArtifactState(Artifact):
             config=self.config,
             split=self.split,
             is_in_process=self.has_pending_job,
+            partition_start=self.partition_start,
+            partition_end=self.partition_end,
         )
         self.cache_state = CacheState(
             cache_kind=self.processing_step.cache_kind,
             dataset=self.dataset,
             config=self.config,
             split=self.split,
+            partition_start=self.partition_start,
+            partition_end=self.partition_end,
             error_codes_to_retry=self.error_codes_to_retry,
             cache_entries_df=self.cache_entries_df,
         )
@@ -185,19 +218,21 @@ class ArtifactState(Artifact):
 
 
 @dataclass
-class SplitState:
-    """The state of a split."""
+class PartitionState:
+    """The state of a partition."""
 
     dataset: str
     revision: str
     config: str
     split: str
+    partition_start: int
+    partition_end: int
     processing_graph: ProcessingGraph
     pending_jobs_df: pd.DataFrame
     cache_entries_df: pd.DataFrame
     error_codes_to_retry: Optional[List[str]] = None
-
     artifact_state_by_step: Dict[str, ArtifactState] = field(init=False)
+
 
     def __post_init__(self) -> None:
         self.pending_jobs_df = self.pending_jobs_df[
@@ -219,12 +254,72 @@ class SplitState:
                 revision=self.revision,
                 config=self.config,
                 split=self.split,
+                partition_start=self.partition_start,
+                partition_end=self.partition_end,
+                error_codes_to_retry=self.error_codes_to_retry,
+            )
+            for processing_step in self.processing_graph.get_input_type_processing_steps(input_type="partition")
+        }
+
+
+@dataclass
+class SplitState:
+    """The state of a split."""
+
+    dataset: str
+    revision: str
+    config: str
+    split: str
+    processing_graph: ProcessingGraph
+    error_codes_to_retry: Optional[List[str]] = None
+    artifact_state_by_step: Dict[str, ArtifactState] = field(init=False)
+    partitions: List[tuple] = field(init=False)
+    partition_states: List[SplitState] = field(init=False)
+
+
+    def __post_init__(self) -> None:
+        self.artifact_state_by_step = {
+            processing_step.name: ArtifactState(
+                processing_step=processing_step,
+                dataset=self.dataset,
+                revision=self.revision,
+                config=self.config,
+                split=self.split,
+                partition_start=None,
+                partition_end=None,
                 error_codes_to_retry=self.error_codes_to_retry,
                 has_pending_job=(self.pending_jobs_df["type"] == processing_step.job_type).any(),
                 cache_entries_df=self.cache_entries_df[(self.cache_entries_df["kind"] == processing_step.cache_kind)],
             )
             for processing_step in self.processing_graph.get_input_type_processing_steps(input_type="split")
         }
+
+        try:
+            self.partitions = fetch_intervals(
+                dataset=self.dataset,
+                config=self.config,
+                split=self.split,
+                cache_kinds=[
+                    processing_step.cache_kind
+                    for processing_step in self.processing_graph.get_split_partitions_processing_steps()
+                ]
+            )  # Note that we use the cached content even the revision is different (ie. maybe obsolete)
+        except Exception:
+            self.partitions = []
+
+        self.partition_states = [
+            PartitionState(
+                self.dataset,
+                self.revision,
+                self.config,
+                self.split,
+                start,
+                end,
+                processing_graph=self.processing_graph,
+                error_codes_to_retry=self.error_codes_to_retry,
+            )
+            for (start, end) in self.partitions
+        ]
 
 
 @dataclass
@@ -260,6 +355,8 @@ class ConfigState:
                 revision=self.revision,
                 config=self.config,
                 split=None,
+                partition_start=None,
+                partition_end=None,
                 error_codes_to_retry=self.error_codes_to_retry,
                 has_pending_job=(
                     (self.pending_jobs_df["split"].isnull())
@@ -432,6 +529,8 @@ class DatasetState:
                 revision=self.revision,
                 config=None,
                 split=None,
+                partition_start=None,
+                partition_end=None,
                 error_codes_to_retry=self.error_codes_to_retry,
                 has_pending_job=(
                     (self.pending_jobs_df["config"].isnull())

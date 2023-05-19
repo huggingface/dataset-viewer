@@ -13,7 +13,7 @@ from typing import Generic, List, Optional, Type, TypedDict, TypeVar
 import pandas as pd
 import pytz
 from mongoengine import Document, DoesNotExist
-from mongoengine.fields import DateTimeField, EnumField, StringField
+from mongoengine.fields import DateTimeField, EnumField, StringField, IntField
 from mongoengine.queryset.queryset import QuerySet
 
 from libcommon.constants import (
@@ -117,7 +117,7 @@ class Job(Document):
             "status",
             ("type", "status"),
             ("type", "dataset", "status"),
-            ("type", "dataset", "revision", "config", "split", "status", "priority"),
+            ("type", "dataset", "revision", "config", "split", "partition_start", "partition_end", "status", "priority"),
             ("priority", "status", "created_at", "namespace", "unicity_id"),
             ("priority", "status", "created_at", "type", "namespace"),
             ("priority", "status", "type", "created_at", "namespace", "unicity_id"),
@@ -134,6 +134,8 @@ class Job(Document):
     revision = StringField(required=True)
     config = StringField()
     split = StringField()
+    partition_start = IntField()
+    partition_end = IntField()
     unicity_id = StringField(required=True)
     namespace = StringField(required=True)
     priority = EnumField(Priority, default=Priority.NORMAL)
@@ -150,6 +152,8 @@ class Job(Document):
             "revision": self.revision,
             "config": self.config,
             "split": self.split,
+            "partition_start": self.partition_start,
+            "partition_end": self.partition_end,
             "unicity_id": self.unicity_id,
             "namespace": self.namespace,
             "priority": self.priority.value,
@@ -172,6 +176,8 @@ class Job(Document):
                     "revision": self.revision,
                     "config": self.config,
                     "split": self.split,
+                    "partition_start": self.partition_start,
+                    "partition_end": self.partition_end,
                 },
                 "priority": self.priority,
             }
@@ -198,7 +204,7 @@ class Queue:
     the jobs. You can create multiple Queue objects, it has no effect on the database.
 
     It's a FIFO queue, with the following properties:
-    - a job is identified by its input arguments: unicity_id (type, dataset, config and split, NOT revision)
+    - a job is identified by its input arguments: unicity_id (type, dataset, config, split, partition_start and partition_end, NOT revision)
     - a job can be in one of the following states: waiting, started, success, error, cancelled
     - a job can be in the queue only once (unicity_id) in the "started" or "waiting" state
     - a job can be in the queue multiple times in the other states (success, error, cancelled)
@@ -378,7 +384,7 @@ class Queue:
                 status=Status.WAITING, namespace__nin=set(started_job_namespaces), priority=priority, **filters
             )
             .order_by("+created_at")
-            .only("type", "dataset", "revision", "config", "split", "priority")
+            .only("type", "dataset", "revision", "config", "split", "priority", "partition_start", "partition_end")
             .no_cache()
             .first()
         )
@@ -421,7 +427,7 @@ class Queue:
                     **filters,
                 )
                 .order_by("+created_at")
-                .only("type", "dataset", "revision", "config", "split", "priority")
+                .only("type", "dataset", "revision", "config", "split", "priority", "partition_start", "partition_end")
                 .no_cache()
                 .first()
             )

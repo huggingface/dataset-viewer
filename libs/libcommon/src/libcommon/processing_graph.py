@@ -20,7 +20,7 @@ import networkx as nx
 
 from libcommon.constants import DEFAULT_INPUT_TYPE, DEFAULT_JOB_RUNNER_VERSION
 
-InputType = Literal["dataset", "config", "split"]
+InputType = Literal["dataset", "config", "split", "partition"]
 # ^ note that for now, the "dataset" input type means: dataset + git revision
 
 
@@ -31,6 +31,8 @@ def guard_input_type(x: Any) -> InputType:
         return "config"
     elif x == "split":
         return "split"
+    elif x == "partition":
+        return "partition"
     if x in get_args(InputType):
         raise RuntimeError(f"Value {x} should be included in the literal values")
     raise ValueError(f"Invalid input type: {x}")
@@ -49,6 +51,7 @@ class ProcessingStepSpecification(TypedDict, total=False):
     job_runner_version: int
     provides_dataset_config_names: bool
     provides_config_split_names: bool
+    provides_split_partitions: bool
     provides_config_parquet: bool
     provides_config_parquet_metadata: bool
 
@@ -137,6 +140,7 @@ class ProcessingGraph:
     _config_parquet_processing_steps: List[ProcessingStep] = field(init=False)
     _config_parquet_metadata_processing_steps: List[ProcessingStep] = field(init=False)
     _dataset_config_names_processing_steps: List[ProcessingStep] = field(init=False)
+    _split_partitions_processing_steps: List[ProcessingStep] = field(init=False)
     _topologically_ordered_processing_steps: List[ProcessingStep] = field(init=False)
     _alphabetically_ordered_processing_steps: List[ProcessingStep] = field(init=False)
 
@@ -147,28 +151,40 @@ class ProcessingGraph:
             "dataset": [],
             "config": [],
             "split": [],
+            "partition": [],
         }
         for name, specification in self.processing_graph_specification.items():
             # check that the step is consistent with its specification
             input_type = guard_input_type(specification.get("input_type", DEFAULT_INPUT_TYPE))
+
             provides_dataset_config_names = specification.get("provides_dataset_config_names", False)
             if provides_dataset_config_names and input_type != "dataset":
                 raise ValueError(
                     f"Processing step {name} provides dataset config names but its input type is {input_type}."
                 )
+
             provides_config_split_names = specification.get("provides_config_split_names", False)
             if provides_config_split_names and input_type != "config":
                 raise ValueError(
                     f"Processing step {name} provides config split names but its input type is {input_type}."
                 )
+
             provides_config_parquet = specification.get("provides_config_parquet", False)
             if provides_config_parquet and input_type != "config":
                 raise ValueError(f"Processing step {name} provides config parquet but its input type is {input_type}.")
+
             provides_config_parquet_metadata = specification.get("provides_config_parquet_metadata", False)
             if provides_config_parquet_metadata and input_type != "config":
                 raise ValueError(
                     f"Processing step {name} provides config parquet metadata but its input type is {input_type}."
                 )
+            
+            provides_split_partitions = specification.get("provides_split_partitions", False)
+            if provides_split_partitions and input_type != "split":
+                raise ValueError(
+                    f"Processing step {name} provides split partitions but its input type is {input_type}."
+                )
+            
             if (
                 _nx_graph.has_node(name)
                 or name in _processing_steps
@@ -180,6 +196,7 @@ class ProcessingGraph:
                 required_by_dataset_viewer=specification.get("required_by_dataset_viewer", False),
                 provides_dataset_config_names=provides_dataset_config_names,
                 provides_config_split_names=provides_config_split_names,
+                provides_split_partitions=provides_split_partitions,
                 provides_config_parquet=provides_config_parquet,
                 provides_config_parquet_metadata=provides_config_parquet_metadata,
             )
@@ -234,6 +251,11 @@ class ProcessingGraph:
         self._dataset_config_names_processing_steps = [
             self.get_processing_step(processing_step_name)
             for (processing_step_name, provides) in _nx_graph.nodes(data="provides_dataset_config_names")
+            if provides
+        ]
+        self._split_partitions_processing_steps = [
+            self.get_processing_step(processing_step_name)
+            for (processing_step_name, provides) in _nx_graph.nodes(data="provides_split_partitions")
             if provides
         ]
         self._topologically_ordered_processing_steps = [
@@ -403,6 +425,9 @@ class ProcessingGraph:
             List[ProcessingStep]: The list of processing steps that provide a config's parquet response
         """
         return copy_processing_steps_list(self._config_parquet_metadata_processing_steps)
+
+    def get_split_partitions_processing_steps(self) -> List[ProcessingStep]:
+        return copy_processing_steps_list(self._split_partitions_processing_steps)
 
     def get_config_split_names_processing_steps(self) -> List[ProcessingStep]:
         """
