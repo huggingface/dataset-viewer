@@ -137,6 +137,12 @@ with gr.Blocks() as demo:
                 for job_state in pending_jobs[job_type]
                 for job in pending_jobs[job_type][job_state]
             ])
+            if "started_at" in pending_jobs_df.columns:
+                pending_jobs_df["started_at"] = pd.to_datetime(pending_jobs_df["started_at"], errors="coerce")
+            if "finished_at" in pending_jobs_df.columns:
+                pending_jobs_df["finished_at"] = pd.to_datetime(pending_jobs_df["finished_at"], errors="coerce")
+            if "last_heartbeat" in pending_jobs_df.columns:
+                pending_jobs_df["last_heartbeat"] = pd.to_datetime(pending_jobs_df["last_heartbeat"], errors="coerce")
             if "created_at" in pending_jobs_df.columns:
                 pending_jobs_df["created_at"] = pd.to_datetime(pending_jobs_df["created_at"], errors="coerce")
                 most_recent = pending_jobs_df.nlargest(5, "created_at")
