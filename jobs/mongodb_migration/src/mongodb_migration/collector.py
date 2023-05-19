@@ -19,9 +19,6 @@ from mongodb_migration.migrations._20221117223000_cache_generic_response import 
 from mongodb_migration.migrations._20230126164900_queue_job_add_priority import (
     MigrationAddPriorityToJob,
 )
-from mongodb_migration.migrations._20230216112500_cache_split_names_from_streaming import (
-    MigrationCacheUpdateSplitNames,
-)
 from mongodb_migration.migrations._20230309123100_cache_add_progress import (
     MigrationAddProgressToCacheResponse,
 )
@@ -71,7 +68,7 @@ class MigrationsCollector:
                 version="20230126164900",
                 description="add 'priority' field to jobs in queue database",
             ),
-            MigrationCacheUpdateSplitNames(
+            CacheRenamingMigration(
                 cache_kind="/split-names",
                 new_cache_kind="/split-names-from-streaming",
                 version="20230216112500",
