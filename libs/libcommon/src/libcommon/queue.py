@@ -8,7 +8,7 @@ from collections import Counter
 from datetime import datetime, timedelta
 from itertools import groupby
 from operator import itemgetter
-from typing import Generic, List, Literal, Optional, Type, TypedDict, TypeVar
+from typing import Generic, List, Optional, Type, TypedDict, TypeVar
 
 import pytz
 from mongoengine import Document, DoesNotExist
@@ -502,31 +502,39 @@ class Queue:
         job = self.get_job_with_id(job_id=job_id)
         return job.type
 
-    def finish_job(self, job_id: str, finished_status: Literal[Status.SUCCESS, Status.ERROR]) -> None:
+    def finish_job(self, job_id: str, is_success: bool) -> bool:
         """Finish a job in the queue.
 
         The job is moved from the started state to the success or error state.
 
         Args:
             job_id (`str`, required): id of the job
-            success (`bool`, required): whether the job succeeded or not
+            is_success (`bool`, required): whether the job succeeded or not
 
-        Returns: nothing
+        Returns:
+            `bool`: whether the job existed, and had the expected format (STARTED status, non-empty started_at, empty
+            finished_at) before finishing
         """
+        result = True
         try:
             job = Job.objects(pk=job_id).get()
         except DoesNotExist:
             logging.error(f"job {job_id} does not exist. Aborting.")
-            return
+            return False
         if job.status is not Status.STARTED:
             logging.warning(
                 f"job {job.unicity_id} has a not the STARTED status ({job.status.value}). Force finishing anyway."
             )
+            result = False
         if job.finished_at is not None:
             logging.warning(f"job {job.unicity_id} has a non-empty finished_at field. Force finishing anyway.")
+            result = False
         if job.started_at is None:
             logging.warning(f"job {job.unicity_id} has an empty started_at field. Force finishing anyway.")
+            result = False
+        finished_status = Status.SUCCESS if is_success else Status.ERROR
         job.update(finished_at=get_datetime(), status=finished_status)
+        return result
 
     def is_job_in_process(
         self, job_type: str, dataset: str, revision: str, config: Optional[str] = None, split: Optional[str] = None

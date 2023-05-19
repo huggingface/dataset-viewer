@@ -142,10 +142,11 @@ class Loop:
             job_runner=job_runner,
             processing_graph=self.processing_graph,
         )
-        finished_status = job_manager.run()
-        self.queue.finish_job(job_id=job_manager.job_id, finished_status=finished_status)
+        is_success = job_manager.run()
+        self.queue.finish_job(job_id=job_manager.job_id, is_success=is_success)
         self.set_worker_state(current_job_info=None)
-        logging.debug(f"job finished with {finished_status.value}: {job_manager}")
+        finished_status = "success" if is_success else "error"
+        logging.debug(f"job finished with {finished_status}: {job_manager}")
         return True
 
     def set_worker_state(self, current_job_info: Optional[JobInfo]) -> None:

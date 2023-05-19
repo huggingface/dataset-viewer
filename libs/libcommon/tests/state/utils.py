@@ -132,7 +132,7 @@ def process_next_job(artifact: str) -> None:
     job_type = artifact.split(",")[0]
     job_info = Queue().start_job(job_types_only=[job_type])
     put_cache(artifact)
-    Queue().finish_job(job_id=job_info["job_id"], finished_status=Status.SUCCESS)
+    Queue().finish_job(job_id=job_info["job_id"], is_success=True)
 
 
 def compute_all(

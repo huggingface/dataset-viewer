@@ -3,7 +3,7 @@
 
 import logging
 from http import HTTPStatus
-from typing import Literal, Optional
+from typing import Optional
 
 from libcommon.config import CommonConfig
 from libcommon.exceptions import (
@@ -23,7 +23,7 @@ from libcommon.simple_cache import (
     upsert_response_params,
 )
 from libcommon.state import DatasetState
-from libcommon.utils import JobInfo, JobParams, Priority, Status, orjson_dumps
+from libcommon.utils import JobInfo, JobParams, Priority, orjson_dumps
 
 from worker.config import AppConfig, WorkerConfig
 from worker.job_runner import JobRunner
@@ -107,13 +107,13 @@ class JobManager:
     def critical(self, msg: str) -> None:
         self.log(level=logging.CRITICAL, msg=msg)
 
-    def run(self) -> Literal[Status.SUCCESS, Status.ERROR]:
+    def run(self) -> bool:
         try:
             self.info(f"compute {self}")
-            result: Literal[Status.SUCCESS, Status.ERROR] = Status.SUCCESS if self.process() else Status.ERROR
+            result = self.process()
         except Exception:
             self.exception(f"error while computing {self}")
-            result = Status.ERROR
+            result = False
         self.backfill()
         return result
 
