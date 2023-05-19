@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: Apache-2.0
-# Copyright 2022 The HuggingFace Authors.
+# Copyright 2023 The HuggingFace Authors.
 
 from typing import List
 
@@ -19,12 +19,6 @@ from mongodb_migration.migrations._20221117223000_cache_generic_response import 
 from mongodb_migration.migrations._20230126164900_queue_job_add_priority import (
     MigrationAddPriorityToJob,
 )
-from mongodb_migration.migrations._20230216112500_cache_split_names_from_streaming import (
-    MigrationCacheUpdateSplitNames,
-)
-from mongodb_migration.migrations._20230216141000_queue_split_names_from_streaming import (
-    MigrationQueueUpdateSplitNames,
-)
 from mongodb_migration.migrations._20230309123100_cache_add_progress import (
     MigrationAddProgressToCacheResponse,
 )
@@ -33,18 +27,6 @@ from mongodb_migration.migrations._20230309141600_cache_add_job_runner_version i
 )
 from mongodb_migration.migrations._20230313164200_cache_remove_worker_version import (
     MigrationRemoveWorkerVersionFromCachedResponse,
-)
-from mongodb_migration.migrations._20230320163700_cache_first_rows_from_streaming import (
-    MigrationCacheUpdateFirstRows,
-)
-from mongodb_migration.migrations._20230320165700_queue_first_rows_from_streaming import (
-    MigrationQueueUpdateFirstRows,
-)
-from mongodb_migration.migrations._20230323155000_cache_dataset_info import (
-    MigrationCacheUpdateDatasetInfo,
-)
-from mongodb_migration.migrations._20230323160000_queue_dataset_info import (
-    MigrationQueueUpdateDatasetInfo,
 )
 from mongodb_migration.migrations._20230428145000_queue_delete_ttl_index import (
     MigrationQueueDeleteTTLIndexOnFinishedAt,
@@ -64,6 +46,10 @@ from mongodb_migration.migrations._20230516101500_queue_job_add_revision import 
 from mongodb_migration.migrations._20230516101600_queue_delete_index_without_revision import (
     MigrationQueueDeleteIndexWithoutRevision,
 )
+from mongodb_migration.renaming_migrations import (
+    CacheRenamingMigration,
+    QueueRenamingMigration,
+)
 
 
 # TODO: add a way to automatically collect migrations from the migrations/ folder
@@ -82,11 +68,15 @@ class MigrationsCollector:
                 version="20230126164900",
                 description="add 'priority' field to jobs in queue database",
             ),
-            MigrationCacheUpdateSplitNames(
+            CacheRenamingMigration(
+                cache_kind="/split-names",
+                new_cache_kind="/split-names-from-streaming",
                 version="20230216112500",
                 description="update 'kind' field in cache from /split-names to /split-names-from-streaming",
             ),
-            MigrationQueueUpdateSplitNames(
+            QueueRenamingMigration(
+                job_type="/split-names",
+                new_job_type="/split-names-from-streaming",
                 version="20230216141000",
                 description=(
                     "update 'type' and 'unicity_id' fields in job from /split-names to /split-names-from-streaming"
@@ -102,21 +92,29 @@ class MigrationsCollector:
             MigrationRemoveWorkerVersionFromCachedResponse(
                 version="20230313164200", description="remove 'worker_version' field from cache"
             ),
-            MigrationCacheUpdateFirstRows(
+            CacheRenamingMigration(
+                cache_kind="/first-rows",
+                new_cache_kind="split-first-rows-from-streaming",
                 version="20230320163700",
                 description="update 'kind' field in cache from /first-rows to split-first-rows-from-streaming",
             ),
-            MigrationQueueUpdateFirstRows(
+            QueueRenamingMigration(
+                job_type="/first-rows",
+                new_job_type="split-first-rows-from-streaming",
                 version="20230320165700",
                 description=(
                     "update 'type' and 'unicity_id' fields in job from /first-rows to split-first-rows-from-streaming"
                 ),
             ),
-            MigrationCacheUpdateDatasetInfo(
+            CacheRenamingMigration(
+                cache_kind="/dataset-info",
+                new_cache_kind="dataset-info",
                 version="20230323155000",
                 description="update 'kind' field in cache from '/dataset-info' to 'dataset-info'",
             ),
-            MigrationQueueUpdateDatasetInfo(
+            QueueRenamingMigration(
+                job_type="/dataset-info",
+                new_job_type="dataset-info",
                 version="20230323160000",
                 description="update 'type' and 'unicity_id' fields in job from /dataset-info to dataset-info",
             ),
@@ -192,5 +190,23 @@ class MigrationsCollector:
             ),
             MigrationQueueDeleteIndexWithoutRevision(
                 version="20230516101600", description="remove index without revision"
+            ),
+            CacheRenamingMigration(
+                cache_kind="/split-names-from-streaming",
+                new_cache_kind="config-split-names-from-streaming",
+                version="20230516164500",
+                description=(
+                    "update 'kind' field in cache from '/split-names-from-streaming' "
+                    "to 'config-split-names-from-streaming'"
+                ),
+            ),
+            QueueRenamingMigration(
+                job_type="/split-names-from-streaming",
+                new_job_type="config-split-names-from-streaming",
+                version="20230516164700",
+                description=(
+                    "update 'type' and 'unicity_id' fields in job from '/split-names-from-streaming' "
+                    "to 'config-split-names-from-streaming'"
+                ),
             ),
         ]

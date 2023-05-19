@@ -17,7 +17,7 @@ class DatasetIsValidResponse(TypedDict):
 
 SPLIT_KINDS = [
     "/splits",
-    "/split-names-from-streaming",
+    "config-split-names-from-streaming",
     "/split-names-from-dataset-info",
 ]
 FIRST_ROWS_KINDS = ["split-first-rows-from-streaming", "split-first-rows-from-parquet"]

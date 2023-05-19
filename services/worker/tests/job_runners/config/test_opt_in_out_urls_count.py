@@ -218,7 +218,7 @@ def test_compute(
     should_raise: bool,
 ) -> None:
     upsert_response(
-        kind="/split-names-from-streaming",
+        kind="config-split-names-from-streaming",
         dataset=dataset,
         config=config,
         content=split_names_content,

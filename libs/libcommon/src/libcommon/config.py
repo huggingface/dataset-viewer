@@ -15,6 +15,7 @@ from libcommon.constants import (
     PROCESSING_STEP_CONFIG_PARQUET_AND_INFO_VERSION,
     PROCESSING_STEP_CONFIG_PARQUET_VERSION,
     PROCESSING_STEP_CONFIG_SIZE_VERSION,
+    PROCESSING_STEP_CONFIG_SPLIT_NAMES_FROM_STREAMING_VERSION,
     PROCESSING_STEP_DATASET_INFO_VERSION,
     PROCESSING_STEP_DATASET_IS_VALID_VERSION,
     PROCESSING_STEP_DATASET_OPT_IN_OUT_URLS_COUNT_VERSION,
@@ -24,7 +25,6 @@ from libcommon.constants import (
     PROCESSING_STEP_SPLIT_FIRST_ROWS_FROM_PARQUET_VERSION,
     PROCESSING_STEP_SPLIT_FIRST_ROWS_FROM_STREAMING_VERSION,
     PROCESSING_STEP_SPLIT_NAMES_FROM_DATASET_INFO_VERSION,
-    PROCESSING_STEP_SPLIT_NAMES_FROM_STREAMING_VERSION,
     PROCESSING_STEP_SPLIT_OPT_IN_OUT_URLS_COUNT_VERSION,
     PROCESSING_STEP_SPLIT_OPT_IN_OUT_URLS_SCAN_VERSION,
 )
@@ -190,15 +190,15 @@ class ProcessingGraphConfig:
                 "provides_dataset_config_names": True,
                 "job_runner_version": PROCESSING_STEP_CONFIG_NAMES_VERSION,
             },
-            "/split-names-from-streaming": {
+            "config-split-names-from-streaming": {
                 "input_type": "config",
                 "triggered_by": "/config-names",
                 "provides_config_split_names": True,
-                "job_runner_version": PROCESSING_STEP_SPLIT_NAMES_FROM_STREAMING_VERSION,
+                "job_runner_version": PROCESSING_STEP_CONFIG_SPLIT_NAMES_FROM_STREAMING_VERSION,
             },
             "split-first-rows-from-streaming": {
                 "input_type": "split",
-                "triggered_by": ["/split-names-from-streaming", "/split-names-from-dataset-info"],
+                "triggered_by": ["config-split-names-from-streaming", "/split-names-from-dataset-info"],
                 "required_by_dataset_viewer": True,
                 "job_runner_version": PROCESSING_STEP_SPLIT_FIRST_ROWS_FROM_STREAMING_VERSION,
             },
@@ -251,7 +251,11 @@ class ProcessingGraphConfig:
             },
             "dataset-split-names": {
                 "input_type": "dataset",
-                "triggered_by": ["/split-names-from-dataset-info", "/split-names-from-streaming", "/config-names"],
+                "triggered_by": [
+                    "/split-names-from-dataset-info",
+                    "config-split-names-from-streaming",
+                    "/config-names",
+                ],
                 "job_runner_version": PROCESSING_STEP_DATASET_SPLIT_NAMES_VERSION,
             },
             "dataset-is-valid": {
@@ -275,7 +279,7 @@ class ProcessingGraphConfig:
             },
             "config-opt-in-out-urls-count": {
                 "input_type": "config",
-                "triggered_by": ["/split-names-from-streaming", "split-opt-in-out-urls-count"],
+                "triggered_by": ["config-split-names-from-streaming", "split-opt-in-out-urls-count"],
                 "job_runner_version": PROCESSING_STEP_CONFIG_OPT_IN_OUT_URLS_COUNT_VERSION,
             },
             "dataset-opt-in-out-urls-count": {

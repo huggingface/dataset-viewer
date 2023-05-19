@@ -5,8 +5,8 @@ import logging
 from typing import List
 
 from libcommon.constants import (
+    PROCESSING_STEP_CONFIG_SPLIT_NAMES_FROM_STREAMING_VERSION,
     PROCESSING_STEP_SPLIT_NAMES_FROM_DATASET_INFO_VERSION,
-    PROCESSING_STEP_SPLIT_NAMES_FROM_STREAMING_VERSION,
 )
 from libcommon.exceptions import PreviousStepFormatError
 
@@ -69,8 +69,8 @@ class SplitNamesFromDatasetInfoJobRunner(ConfigJobRunner):
     @staticmethod
     def get_parallel_job_runner() -> JobRunnerInfo:
         return JobRunnerInfo(
-            job_runner_version=PROCESSING_STEP_SPLIT_NAMES_FROM_STREAMING_VERSION,
-            job_type="/split-names-from-streaming",
+            job_runner_version=PROCESSING_STEP_CONFIG_SPLIT_NAMES_FROM_STREAMING_VERSION,
+            job_type="config-split-names-from-streaming",
         )
 
     def compute(self) -> CompleteJobResult:
