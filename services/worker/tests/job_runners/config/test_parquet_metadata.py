@@ -10,8 +10,7 @@ from unittest.mock import patch
 import pyarrow as pa
 import pyarrow.parquet as pq
 import pytest
-from huggingface_hub.hf_file_system import safe_quote
-from libcommon.constants import PARQUET_REVISION
+from fsspec.implementations.http import HTTPFileSystem
 from libcommon.exceptions import PreviousStepFormatError
 from libcommon.processing_graph import ProcessingGraph
 from libcommon.resources import CacheMongoResource, QueueMongoResource
@@ -25,8 +24,7 @@ from worker.job_runners.config.parquet_and_info import ParquetFileItem
 from worker.job_runners.config.parquet_metadata import (
     ConfigParquetMetadataJobRunner,
     ConfigParquetMetadataResponse,
-    ParquetFileAndMetadataItem,
-    get_hf_fs,
+    ParquetFileMetadataItem,
 )
 
 
@@ -103,8 +101,8 @@ def get_job_runner(
             ),
             None,
             ConfigParquetMetadataResponse(
-                parquet_files_and_metadata=[
-                    ParquetFileAndMetadataItem(
+                parquet_files_metadata=[
+                    ParquetFileMetadataItem(
                         dataset="ok",
                         config="config_1",
                         split="train",
@@ -114,7 +112,7 @@ def get_job_runner(
                         num_rows=3,
                         parquet_metadata_subpath="ok/--/config_1/filename1",
                     ),
-                    ParquetFileAndMetadataItem(
+                    ParquetFileMetadataItem(
                         dataset="ok",
                         config="config_1",
                         split="train",
@@ -172,27 +170,19 @@ def test_compute(
             job_runner.compute()
         assert e.type.__name__ == expected_error_code
     else:
-        with patch("worker.job_runners.config.parquet_metadata.ParquetFile") as mock_ParquetFile:
+        with patch("worker.job_runners.config.parquet_metadata.get_parquet_file") as mock_ParquetFile:
             mock_ParquetFile.return_value = pq.ParquetFile(dummy_parquet_buffer)
             assert job_runner.compute().content == expected_content
             assert mock_ParquetFile.call_count == len(upstream_content["parquet_files"])
             for parquet_file_item in upstream_content["parquet_files"]:
                 mock_ParquetFile.assert_any_call(
-                    f"hf://datasets/{dataset}@{safe_quote(PARQUET_REVISION)}/{config}/{parquet_file_item['filename']}",
-                    filesystem=get_hf_fs(app_config.common.hf_token),
+                    parquet_file_item["url"], fs=HTTPFileSystem(), hf_token=app_config.common.hf_token
                 )
-        for parquet_file_and_metadata_item in expected_content["parquet_files_and_metadata"]:
+        for parquet_file_metadata_item in expected_content["parquet_files_metadata"]:
             assert (
                 pq.read_metadata(
                     Path(job_runner.parquet_metadata_directory)
-                    / parquet_file_and_metadata_item["parquet_metadata_subpath"]
+                    / parquet_file_metadata_item["parquet_metadata_subpath"]
                 )
                 == pq.ParquetFile(dummy_parquet_buffer).metadata
             )
-
-
-def test_doesnotexist(app_config: AppConfig, get_job_runner: GetJobRunner) -> None:
-    dataset = config = "doesnotexist"
-    job_runner = get_job_runner(dataset, config, app_config)
-    with pytest.raises(CachedArtifactError):
-        job_runner.compute()

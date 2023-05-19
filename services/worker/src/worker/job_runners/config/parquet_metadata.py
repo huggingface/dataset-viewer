@@ -2,15 +2,12 @@
 # Copyright 2022 The HuggingFace Authors.
 
 import logging
-from functools import lru_cache, partial
+from functools import partial
 from typing import List, Optional, TypedDict
 
-from huggingface_hub import HfFileSystem
-from huggingface_hub.hf_file_system import safe_quote
-from libcommon.constants import (
-    PARQUET_REVISION,
-    PROCESSING_STEP_CONFIG_PARQUET_METADATA_VERSION,
-)
+from datasets.utils.file_utils import get_authentication_headers_for_url
+from fsspec.implementations.http import HTTPFileSystem
+from libcommon.constants import PROCESSING_STEP_CONFIG_PARQUET_METADATA_VERSION
 from libcommon.exceptions import (
     FileSystemError,
     ParquetResponseEmptyError,
@@ -29,7 +26,7 @@ from worker.job_runners.config.parquet_and_info import ParquetFileItem
 from worker.utils import CompleteJobResult, get_previous_step_or_raise
 
 
-class ParquetFileAndMetadataItem(TypedDict):
+class ParquetFileMetadataItem(TypedDict):
     dataset: str
     config: str
     split: str
@@ -41,32 +38,12 @@ class ParquetFileAndMetadataItem(TypedDict):
 
 
 class ConfigParquetMetadataResponse(TypedDict):
-    parquet_files_and_metadata: List[ParquetFileAndMetadataItem]
+    parquet_files_metadata: List[ParquetFileMetadataItem]
 
 
-@lru_cache(maxsize=128)
-def get_hf_fs(hf_token: Optional[str]) -> HfFileSystem:
-    """Get the Hugging Face filesystem.
-
-    Args:
-        hf_token (Optional[str]): The token to access the filesystem.
-    Returns:
-        HfFileSystem: The Hugging Face filesystem.
-    """
-    return HfFileSystem(token=hf_token)
-
-
-def get_hf_parquet_uris(paths: List[str], dataset: str, config: str) -> List[str]:
-    """Get the Hugging Face URIs from the Parquet branch of the dataset repository (see PARQUET_REVISION).
-
-    Args:
-        paths (List[str]): List of paths.
-        dataset (str): The dataset name.
-        config (str): The dataset configuration name.
-    Returns:
-        List[str]: List of Parquet URIs.
-    """
-    return [f"hf://datasets/{dataset}@{safe_quote(PARQUET_REVISION)}/{config}/{path}" for path in paths]
+def get_parquet_file(url: str, fs: HTTPFileSystem, hf_token: Optional[str]) -> ParquetFile:
+    headers = get_authentication_headers_for_url(url, use_auth_token=hf_token)
+    return ParquetFile(fs.open(url, headers=headers))
 
 
 def compute_parquet_metadata_response(
@@ -111,19 +88,17 @@ def compute_parquet_metadata_response(
     except Exception as e:
         raise PreviousStepFormatError("Previous step did not return the expected content.") from e
 
-    fs = get_hf_fs(hf_token=hf_token)
-    source_uris = get_hf_parquet_uris(
-        [parquet_file_item["filename"] for parquet_file_item in parquet_file_items], dataset=dataset, config=config
-    )
+    fs = HTTPFileSystem()
+    source_urls = [parquet_file_item["url"] for parquet_file_item in parquet_file_items]
     desc = f"{dataset}/{config}"
     try:
         parquet_files: List[ParquetFile] = thread_map(
-            partial(ParquetFile, filesystem=fs), source_uris, desc=desc, unit="pq", disable=True
+            partial(get_parquet_file, fs=fs, hf_token=hf_token), source_urls, desc=desc, unit="pq", disable=True
         )
     except Exception as e:
         raise FileSystemError(f"Could not read the parquet files: {e}") from e
 
-    parquet_files_and_metadata = []
+    parquet_files_metadata = []
     for parquet_file_item, parquet_file in zip(parquet_file_items, parquet_files):
         parquet_metadata_subpath = create_parquet_metadata_file(
             dataset=dataset,
@@ -133,8 +108,8 @@ def compute_parquet_metadata_response(
             parquet_metadata_directory=parquet_metadata_directory,
         )
         num_rows = parquet_file.metadata.num_rows
-        parquet_files_and_metadata.append(
-            ParquetFileAndMetadataItem(
+        parquet_files_metadata.append(
+            ParquetFileMetadataItem(
                 dataset=dataset,
                 config=config,
                 split=parquet_file_item["split"],
@@ -146,7 +121,7 @@ def compute_parquet_metadata_response(
             )
         )
 
-    return ConfigParquetMetadataResponse(parquet_files_and_metadata=parquet_files_and_metadata)
+    return ConfigParquetMetadataResponse(parquet_files_metadata=parquet_files_metadata)
 
 
 class ConfigParquetMetadataJobRunner(ConfigJobRunner):

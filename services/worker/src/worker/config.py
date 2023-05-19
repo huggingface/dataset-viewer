@@ -248,4 +248,5 @@ class AppConfig:
             queue=QueueConfig.from_env(),
             worker=WorkerConfig.from_env(),
             urls_scan=OptInOutUrlsScanConfig.from_env(),
+            parquet_metadata=ParquetMetadataConfig.from_env(),
         )
