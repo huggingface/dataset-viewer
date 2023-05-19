@@ -26,8 +26,24 @@ class PartitionJobRunner(PartitionJobRunner):
         return CompleteJobResult({"key": "value"})
 
 
-@pytest.mark.parametrize("config,split,partition_start,partition_end", [(None, None, None, None), (None, "split", 0, 100), ("config", None, None, None), ("config", "split", 0, None), ("config", "split", None, 100)])
-def test_failed_creation(test_processing_step: ProcessingStep, app_config: AppConfig, config: str, split: str, partition_start: int, partition_end: int) -> None:
+@pytest.mark.parametrize(
+    "config,split,partition_start,partition_end",
+    [
+        (None, None, None, None),
+        (None, "split", 0, 100),
+        ("config", None, None, None),
+        ("config", "split", 0, None),
+        ("config", "split", None, 100),
+    ],
+)
+def test_failed_creation(
+    test_processing_step: ProcessingStep,
+    app_config: AppConfig,
+    config: str,
+    split: str,
+    partition_start: int,
+    partition_end: int,
+) -> None:
     with pytest.raises(CustomError) as exc_info:
         PartitionJobRunner(
             job_info={
