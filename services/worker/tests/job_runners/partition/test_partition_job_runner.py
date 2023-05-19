@@ -13,7 +13,7 @@ from worker.job_runners.partition.partition_job_runner import PartitionJobRunner
 from worker.utils import CompleteJobResult
 
 
-class PartitionJobRunner(PartitionJobRunner):
+class DummyPartitionJobRunner(PartitionJobRunner):
     @staticmethod
     def get_job_runner_version() -> int:
         return 1
@@ -45,7 +45,7 @@ def test_failed_creation(
     partition_end: int,
 ) -> None:
     with pytest.raises(CustomError) as exc_info:
-        PartitionJobRunner(
+        DummyPartitionJobRunner(
             job_info={
                 "job_id": "job_id",
                 "type": test_processing_step.job_type,
@@ -68,7 +68,7 @@ def test_failed_creation(
 
 def test_success_creation(test_processing_step: ProcessingStep, app_config: AppConfig) -> None:
     assert (
-        PartitionJobRunner(
+        DummyPartitionJobRunner(
             job_info={
                 "job_id": "job_id",
                 "type": test_processing_step.job_type,
