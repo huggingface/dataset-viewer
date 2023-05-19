@@ -8,7 +8,7 @@ from collections import Counter
 from datetime import datetime, timedelta
 from itertools import groupby
 from operator import itemgetter
-from typing import Generic, List, Optional, Type, TypedDict, TypeVar
+from typing import Generic, List, Literal, Optional, Type, TypedDict, TypeVar
 
 import pytz
 from mongoengine import Document, DoesNotExist
@@ -357,7 +357,7 @@ class Queue:
                 status=Status.WAITING, namespace__nin=set(started_job_namespaces), priority=priority, **filters
             )
             .order_by("+created_at")
-            .only("type", "dataset", "revision", "config", "split", "priority")
+            .only("type", "dataset", "revision", "config", "split")
             .no_cache()
             .first()
         )
@@ -400,7 +400,7 @@ class Queue:
                     **filters,
                 )
                 .order_by("+created_at")
-                .only("type", "dataset", "revision", "config", "split", "priority")
+                .only("type", "dataset", "revision", "config", "split")
                 .no_cache()
                 .first()
             )
@@ -502,39 +502,31 @@ class Queue:
         job = self.get_job_with_id(job_id=job_id)
         return job.type
 
-    def finish_job(self, job_id: str, is_success: bool) -> bool:
+    def finish_job(self, job_id: str, finished_status: Literal[Status.SUCCESS, Status.ERROR]) -> None:
         """Finish a job in the queue.
 
         The job is moved from the started state to the success or error state.
 
         Args:
             job_id (`str`, required): id of the job
-            is_success (`bool`, required): whether the job succeeded or not
+            success (`bool`, required): whether the job succeeded or not
 
-        Returns:
-            `bool`: whether the job existed, and had the expected format (STARTED status, non-empty started_at, empty
-            finished_at) before finishing
+        Returns: nothing
         """
-        result = True
         try:
             job = Job.objects(pk=job_id).get()
         except DoesNotExist:
             logging.error(f"job {job_id} does not exist. Aborting.")
-            return False
+            return
         if job.status is not Status.STARTED:
             logging.warning(
                 f"job {job.unicity_id} has a not the STARTED status ({job.status.value}). Force finishing anyway."
             )
-            result = False
         if job.finished_at is not None:
             logging.warning(f"job {job.unicity_id} has a non-empty finished_at field. Force finishing anyway.")
-            result = False
         if job.started_at is None:
             logging.warning(f"job {job.unicity_id} has an empty started_at field. Force finishing anyway.")
-            result = False
-        finished_status = Status.SUCCESS if is_success else Status.ERROR
         job.update(finished_at=get_datetime(), status=finished_status)
-        return result
 
     def is_job_in_process(
         self, job_type: str, dataset: str, revision: str, config: Optional[str] = None, split: Optional[str] = None
@@ -672,6 +664,36 @@ class Queue:
             )
         ]
         return [zombie.info() for zombie in zombies]
+
+    def kill_zombies(self, zombies: List[JobInfo]) -> int:
+        """Kill the zombie jobs in the queue, setting their status to ERROR.
+        It does nothing if the input list of zombies contain jobs that have already been updated and
+        are not in the STARTED status anymore.
+
+        Returns: number of killed zombies.
+        """
+        if not zombies:
+            return 0
+        zombie_job_ids = [zombie["job_id"] for zombie in zombies]
+        zombies_examples = zombie_job_ids[:10]
+        zombies_examples_str = ", ".join(zombies_examples) + ("..." if len(zombies_examples) != len(zombies) else "")
+        logging.info(f"Killing {len(zombies)} zombies. Job ids = {zombies_examples_str}")
+        return Job.objects(pk__in=zombie_job_ids, status=Status.STARTED).update(
+            status=Status.ERROR, finished_at=get_datetime()
+        )
+
+    def kill_long_job(self, long_job: JobInfo) -> int:
+        """Kill the long job in the queue, setting its status to ERROR.
+        It does nothing if the input job has already been updated and
+        is not in the STARTED status anymore.
+
+        Returns: number of killed long jobs.
+        """
+        long_job_id = long_job["job_id"]
+        logging.info(f"Killing a long job. Job id = {long_job_id}")
+        return Job.objects(pk=long_job_id, status=Status.STARTED).update(
+            status=Status.ERROR, finished_at=get_datetime()
+        )
 
 
 # only for the tests

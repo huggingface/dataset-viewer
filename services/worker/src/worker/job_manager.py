@@ -3,7 +3,7 @@
 
 import logging
 from http import HTTPStatus
-from typing import Any, Mapping, Optional, TypedDict
+from typing import Literal, Optional
 
 from libcommon.config import CommonConfig
 from libcommon.exceptions import (
@@ -16,7 +16,6 @@ from libcommon.exceptions import (
     UnexpectedError,
 )
 from libcommon.processing_graph import ProcessingGraph, ProcessingStep
-from libcommon.queue import Queue
 from libcommon.simple_cache import (
     CachedArtifactError,
     DoesNotExist,
@@ -24,26 +23,13 @@ from libcommon.simple_cache import (
     upsert_response_params,
 )
 from libcommon.state import DatasetState
-from libcommon.utils import JobInfo, JobParams, Priority, orjson_dumps
+from libcommon.utils import JobInfo, JobParams, Priority, Status, orjson_dumps
 
 from worker.config import AppConfig, WorkerConfig
 from worker.job_runner import JobRunner
 
 # List of error codes that should trigger a retry.
 ERROR_CODES_TO_RETRY: list[str] = ["ClientConnectionError"]
-
-
-class JobOutput(TypedDict):
-    content: Mapping[str, Any]
-    http_status: HTTPStatus
-    error_code: Optional[str]
-    details: Optional[Mapping[str, Any]]
-    progress: Optional[float]
-
-
-class JobResult(TypedDict):
-    is_success: bool
-    output: Optional[JobOutput]
 
 
 class JobManager:
@@ -121,33 +107,15 @@ class JobManager:
     def critical(self, msg: str) -> None:
         self.log(level=logging.CRITICAL, msg=msg)
 
-    def run_job(self) -> JobResult:
+    def run(self) -> Literal[Status.SUCCESS, Status.ERROR]:
         try:
-            job_result: JobResult = self.process()
+            self.info(f"compute {self}")
+            result: Literal[Status.SUCCESS, Status.ERROR] = Status.SUCCESS if self.process() else Status.ERROR
         except Exception:
             self.exception(f"error while computing {self}")
-            job_result = {
-                "is_success": False,
-                "output": None,
-            }
-        result_str = "SUCCESS" if job_result["is_success"] else "ERROR"
-        self.debug(f"job output with {result_str} - {self}")
-        return job_result
-
-    def finish(self, job_result: JobResult) -> None:
-        # check if the job is still in started status
-        # if not, it means that the job was cancelled, and we don't want to update the cache
-        job_was_valid = Queue().finish_job(
-            job_id=self.job_id,
-            is_success=job_result["is_success"],
-        )
-        if job_was_valid and job_result["output"]:
-            self.set_cache(job_result["output"])
-            logging.debug("the job output has been written to the cache.")
-            self.backfill()
-            logging.debug("the dataset has been backfilled.")
-        else:
-            logging.debug("the job output has not been written to the cache, and the dataset has not been backfilled.")
+            result = Status.ERROR
+        self.backfill()
+        return result
 
     def raise_if_parallel_response_exists(self, parallel_cache_kind: str, parallel_job_version: int) -> None:
         try:
@@ -171,8 +139,7 @@ class JobManager:
 
     def process(
         self,
-    ) -> JobResult:
-        self.info(f"compute {self}")
+    ) -> bool:
         try:
             try:
                 self.job_runner.pre_compute()
@@ -195,53 +162,57 @@ class JobManager:
             finally:
                 # ensure the post_compute hook is called even if the compute raises an exception
                 self.job_runner.post_compute()
+            upsert_response_params(
+                kind=self.processing_step.cache_kind,
+                job_params=self.job_params,
+                content=content,
+                http_status=HTTPStatus.OK,
+                job_runner_version=self.job_runner.get_job_runner_version(),
+                dataset_git_revision=self.job_params["revision"],
+                progress=job_result.progress,
+            )
             self.debug(
                 f"dataset={self.job_params['dataset']} revision={self.job_params['revision']} job_info={self.job_info}"
-                " is valid"
+                " is valid, cache updated"
             )
-            return {
-                "is_success": True,
-                "output": {
-                    "content": content,
-                    "http_status": HTTPStatus.OK,
-                    "error_code": None,
-                    "details": None,
-                    "progress": job_result.progress,
-                },
-            }
+            return True
         except DatasetNotFoundError:
             # To avoid filling the cache, we don't save this error. Otherwise, DoS is possible.
             self.debug(f"the dataset={self.job_params['dataset']} could not be found, don't update the cache")
-            return {"is_success": False, "output": None}
+            return False
         except CachedArtifactError as err:
             # A previous step (cached artifact required by the job runner) is an error. We copy the cached entry,
             # so that users can see the underlying error (they are not interested in the internals of the graph).
             # We add an entry to details: "copied_from_artifact", with its identification details, to have a chance
             # to debug if needed.
-            self.debug(f"response for job_info={self.job_info} had an error from a previous step")
-            return {
-                "is_success": False,
-                "output": {
-                    "content": err.cache_entry_with_details["content"],
-                    "http_status": err.cache_entry_with_details["http_status"],
-                    "error_code": err.cache_entry_with_details["error_code"],
-                    "details": err.enhanced_details,
-                    "progress": None,
-                },
-            }
+            upsert_response_params(
+                kind=self.processing_step.cache_kind,
+                job_params=self.job_params,
+                job_runner_version=self.job_runner.get_job_runner_version(),
+                dataset_git_revision=self.job_params["revision"],
+                # TODO: should we manage differently arguments above ^ and below v?
+                content=err.cache_entry_with_details["content"],
+                http_status=err.cache_entry_with_details["http_status"],
+                error_code=err.cache_entry_with_details["error_code"],
+                details=err.enhanced_details,
+            )
+            self.debug(f"response for job_info={self.job_info} had an error from a previous step, cache updated")
+            return False
         except Exception as err:
             e = err if isinstance(err, CustomError) else UnexpectedError(str(err), err)
-            self.debug(f"response for job_info={self.job_info} had an error")
-            return {
-                "is_success": False,
-                "output": {
-                    "content": dict(e.as_response()),
-                    "http_status": e.status_code,
-                    "error_code": e.code,
-                    "details": dict(e.as_response_with_cause()),
-                    "progress": None,
-                },
-            }
+            upsert_response_params(
+                kind=self.processing_step.cache_kind,
+                job_params=self.job_params,
+                job_runner_version=self.job_runner.get_job_runner_version(),
+                dataset_git_revision=self.job_params["revision"],
+                # TODO: should we manage differently arguments above ^ and below v?
+                content=dict(e.as_response()),
+                http_status=e.status_code,
+                error_code=e.code,
+                details=dict(e.as_response_with_cause()),
+            )
+            self.debug(f"response for job_info={self.job_info} had an error, cache updated")
+            return False
 
     def backfill(self) -> None:
         """Evaluate the state of the dataset and backfill the cache if necessary."""
@@ -253,56 +224,38 @@ class JobManager:
             priority=self.priority,
         ).backfill()
 
-    def set_cache(self, output: JobOutput) -> None:
+    def set_crashed(self, message: str, cause: Optional[BaseException] = None) -> None:
+        error = JobManagerCrashedError(message=message, cause=cause)
         upsert_response_params(
-            # inputs
             kind=self.processing_step.cache_kind,
             job_params=self.job_params,
+            content=dict(error.as_response()),
+            http_status=error.status_code,
+            error_code=error.code,
+            details=dict(error.as_response_with_cause()),
             job_runner_version=self.job_runner.get_job_runner_version(),
-            # output
-            content=output["content"],
-            http_status=output["http_status"],
-            error_code=output["error_code"],
-            details=output["details"],
-            progress=output["progress"],
+            dataset_git_revision=self.job_params["revision"],
         )
-
-    def set_crashed(self, message: str, cause: Optional[BaseException] = None) -> None:
-        self.debug(
+        logging.debug(
             "response for"
             f" dataset={self.job_params['dataset']} revision={self.job_params['revision']} job_info={self.job_info}"
-            " had an error (crashed)"
-        )
-        error = JobManagerCrashedError(message=message, cause=cause)
-        self.finish(
-            job_result={
-                "is_success": False,
-                "output": {
-                    "content": dict(error.as_response()),
-                    "http_status": error.status_code,
-                    "error_code": error.code,
-                    "details": dict(error.as_response_with_cause()),
-                    "progress": None,
-                },
-            }
+            " had an error (crashed), cache updated"
         )
 
     def set_exceeded_maximum_duration(self, message: str, cause: Optional[BaseException] = None) -> None:
-        self.debug(
+        error = JobManagerExceededMaximumDurationError(message=message, cause=cause)
+        upsert_response_params(
+            kind=self.processing_step.cache_kind,
+            job_params=self.job_params,
+            content=dict(error.as_response()),
+            http_status=error.status_code,
+            error_code=error.code,
+            details=dict(error.as_response_with_cause()),
+            job_runner_version=self.job_runner.get_job_runner_version(),
+            dataset_git_revision=self.job_params["revision"],
+        )
+        logging.debug(
             "response for"
             f" dataset={self.job_params['dataset']} revision={self.job_params['revision']} job_info={self.job_info}"
-            " had an error (exceeded maximum duration)"
-        )
-        error = JobManagerExceededMaximumDurationError(message=message, cause=cause)
-        self.finish(
-            job_result={
-                "is_success": False,
-                "output": {
-                    "content": dict(error.as_response()),
-                    "http_status": error.status_code,
-                    "error_code": error.code,
-                    "details": dict(error.as_response_with_cause()),
-                    "progress": None,
-                },
-            }
+            " had an error (exceeded maximum duration), cache updated"
         )
