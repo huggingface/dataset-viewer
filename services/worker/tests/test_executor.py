@@ -195,7 +195,10 @@ def set_zombie_job_in_queue(queue_mongo_resource: QueueMongoResource) -> Iterato
 
 @fixture
 def job_runner_factory(
-    app_config: AppConfig, libraries_resource: LibrariesResource, assets_directory: StrPath
+    app_config: AppConfig,
+    libraries_resource: LibrariesResource,
+    assets_directory: StrPath,
+    parquet_metadata_directory: StrPath,
 ) -> JobRunnerFactory:
     processing_graph = ProcessingGraph(app_config.processing_graph.specification)
     return JobRunnerFactory(
@@ -203,6 +206,7 @@ def job_runner_factory(
         processing_graph=processing_graph,
         hf_datasets_cache=libraries_resource.hf_datasets_cache,
         assets_directory=assets_directory,
+        parquet_metadata_directory=parquet_metadata_directory,
     )
 
 

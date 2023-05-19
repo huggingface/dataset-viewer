@@ -13,6 +13,7 @@ from libcommon.constants import (
     PROCESSING_STEP_CONFIG_NAMES_VERSION,
     PROCESSING_STEP_CONFIG_OPT_IN_OUT_URLS_COUNT_VERSION,
     PROCESSING_STEP_CONFIG_PARQUET_AND_INFO_VERSION,
+    PROCESSING_STEP_CONFIG_PARQUET_METADATA_VERSION,
     PROCESSING_STEP_CONFIG_PARQUET_VERSION,
     PROCESSING_STEP_CONFIG_SIZE_VERSION,
     PROCESSING_STEP_CONFIG_SPLIT_NAMES_FROM_STREAMING_VERSION,
@@ -83,6 +84,22 @@ class CachedAssetsConfig:
                 max_cleaned_rows_number=env.float(
                     name="MAX_CLEAN_SAMPLE_SIZE", default=CACHED_ASSETS_MAX_CLEANED_ROWS_NUMBER
                 ),
+            )
+
+
+PARQUET_METADATA_STORAGE_DIRECTORY = None
+
+
+@dataclass(frozen=True)
+class ParquetMetadataConfig:
+    storage_directory: Optional[str] = PARQUET_METADATA_STORAGE_DIRECTORY
+
+    @classmethod
+    def from_env(cls) -> "ParquetMetadataConfig":
+        env = Env(expand_vars=True)
+        with env.prefixed("PARQUET_METADATA_"):
+            return cls(
+                storage_directory=env.str(name="STORAGE_DIRECTORY", default=PARQUET_METADATA_STORAGE_DIRECTORY),
             )
 
 
@@ -212,6 +229,11 @@ class ProcessingGraphConfig:
                 "triggered_by": "config-parquet-and-info",
                 "job_runner_version": PROCESSING_STEP_CONFIG_PARQUET_VERSION,
                 "provides_config_parquet": True,
+            },
+            "config-parquet-metadata": {
+                "input_type": "config",
+                "triggered_by": "config-parquet",
+                "job_runner_version": PROCESSING_STEP_CONFIG_PARQUET_METADATA_VERSION,
             },
             "split-first-rows-from-parquet": {
                 "input_type": "split",

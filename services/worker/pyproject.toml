@@ -91,6 +91,7 @@ module = [
     "datasets.*",
     "huggingface_hub.*",
     "pyarrow.*",
-    "tqdm.*"
+    "tqdm.*",
+    "fsspec.*"
 ]
 ignore_missing_imports = true

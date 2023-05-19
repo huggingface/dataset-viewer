@@ -38,6 +38,7 @@ def test_create_job_runner(
     processing_graph: ProcessingGraph,
     libraries_resource: LibrariesResource,
     assets_directory: StrPath,
+    parquet_metadata_directory: StrPath,
     job_type: str,
     expected_job_runner: Optional[str],
 ) -> None:
@@ -46,6 +47,7 @@ def test_create_job_runner(
         processing_graph=processing_graph,
         hf_datasets_cache=libraries_resource.hf_datasets_cache,
         assets_directory=assets_directory,
+        parquet_metadata_directory=parquet_metadata_directory,
     )
     job_info: JobInfo = {
         "type": job_type,

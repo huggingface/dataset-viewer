@@ -8,6 +8,7 @@
   env:
   {{ include "envAssets" . | nindent 2 }}
   {{ include "envCache" . | nindent 2 }}
+  {{ include "envParquetMetadata" . | nindent 2 }}
   {{ include "envQueue" . | nindent 2 }}
   {{ include "envCommon" . | nindent 2 }}
   {{ include "envLog" . | nindent 2 }}
@@ -24,6 +25,7 @@
   volumeMounts:
   {{ include "volumeMountAssetsRW" . | nindent 2 }}
   {{ include "volumeMountCache" . | nindent 2 }}
+  {{ include "volumeMountParquetMetadataRW" . | nindent 2 }}
   securityContext:
     allowPrivilegeEscalation: false
   resources: {{ toYaml .workerValues.resources | nindent 4 }}
