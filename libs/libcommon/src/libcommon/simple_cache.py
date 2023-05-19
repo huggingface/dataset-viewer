@@ -123,6 +123,8 @@ class CachedResponse(Document):
 # null values, see https://www.mongodb.com/docs/v5.0/core/index-unique/#unique-index-and-missing-field.
 CachedResponse.config.required = False  # type: ignore
 CachedResponse.split.required = False  # type: ignore
+CachedResponse.partition_start.required = False  # type: ignore
+CachedResponse.partition_end.required = False  # type: ignore
 
 
 # Note: we let the exceptions throw (ie DocumentTooLarge): it's the responsibility of the caller to manage them
