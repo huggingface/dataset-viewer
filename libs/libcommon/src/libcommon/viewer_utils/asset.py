@@ -13,7 +13,6 @@ from pydub import AudioSegment  # type:ignore
 
 from libcommon.storage import StrPath
 
-# should start with a dash to differentiate with dataset names which can't start with a dash
 DATASET_SEPARATOR = "--"
 
 ASSET_DIR_MODE = 0o755

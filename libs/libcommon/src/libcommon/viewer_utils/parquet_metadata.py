@@ -6,7 +6,6 @@ import pyarrow.parquet as pq
 
 from libcommon.storage import StrPath
 
-# should start with a dash to differentiate with dataset names which can't start with a dash
 DATASET_SEPARATOR = "--"
 
 PARQUET_METADATA_DIR_MODE = 0o755
