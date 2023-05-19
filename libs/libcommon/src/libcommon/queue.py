@@ -13,7 +13,7 @@ from typing import Generic, List, Optional, Type, TypedDict, TypeVar
 import pandas as pd
 import pytz
 from mongoengine import Document, DoesNotExist
-from mongoengine.fields import DateTimeField, EnumField, StringField, IntField
+from mongoengine.fields import DateTimeField, EnumField, IntField, StringField
 from mongoengine.queryset.queryset import QuerySet
 
 from libcommon.constants import (
@@ -56,6 +56,8 @@ class JobDict(TypedDict):
     revision: str
     config: Optional[str]
     split: Optional[str]
+    partition_start: Optional[int]
+    partition_end: Optional[int]
     unicity_id: str
     namespace: str
     priority: str
@@ -117,7 +119,17 @@ class Job(Document):
             "status",
             ("type", "status"),
             ("type", "dataset", "status"),
-            ("type", "dataset", "revision", "config", "split", "partition_start", "partition_end", "status", "priority"),
+            (
+                "type",
+                "dataset",
+                "revision",
+                "config",
+                "split",
+                "partition_start",
+                "partition_end",
+                "status",
+                "priority",
+            ),
             ("priority", "status", "created_at", "namespace", "unicity_id"),
             ("priority", "status", "created_at", "type", "namespace"),
             ("priority", "status", "type", "created_at", "namespace", "unicity_id"),
@@ -204,7 +216,8 @@ class Queue:
     the jobs. You can create multiple Queue objects, it has no effect on the database.
 
     It's a FIFO queue, with the following properties:
-    - a job is identified by its input arguments: unicity_id (type, dataset, config, split, partition_start and partition_end, NOT revision)
+    - a job is identified by its input arguments: unicity_id (type, dataset, config, split,
+      partition_start and partition_end, NOT revision)
     - a job can be in one of the following states: waiting, started, success, error, cancelled
     - a job can be in the queue only once (unicity_id) in the "started" or "waiting" state
     - a job can be in the queue multiple times in the other states (success, error, cancelled)

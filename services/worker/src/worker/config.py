@@ -222,7 +222,7 @@ PARTITION_CHUNK_SIZE = 100
 
 @dataclass(frozen=True)
 class PartitionConfig:
-    chunk_size: Optional[str] = PARTITION_CHUNK_SIZE
+    chunk_size: int = PARTITION_CHUNK_SIZE
 
     @classmethod
     def from_env(cls) -> "PartitionConfig":

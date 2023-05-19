@@ -56,6 +56,8 @@ def test_create_job_runner(
             "revision": "revision",
             "config": "config",
             "split": "split",
+            "partition_start": None,
+            "partition_end": None,
         },
         "job_id": "job_id",
         "priority": Priority.NORMAL,

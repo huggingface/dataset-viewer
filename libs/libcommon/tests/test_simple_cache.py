@@ -751,6 +751,8 @@ def test_cached_artifact_error() -> None:
         dataset=dataset,
         config=config,
         split=split,
+        partition_start=None,
+        partition_end=None,
         cache_entry_with_details=response,
     )
 

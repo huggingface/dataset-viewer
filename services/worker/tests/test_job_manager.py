@@ -69,6 +69,8 @@ def test_check_type(
             "revision": revision,
             "config": config,
             "split": split,
+            "partition_start": None,
+            "partition_end": None,
         },
         priority=Priority.NORMAL,
     )
@@ -91,6 +93,8 @@ def test_check_type(
             "revision": revision,
             "config": config,
             "split": split,
+            "partition_start": None,
+            "partition_end": None,
         },
         priority=Priority.NORMAL,
     )
@@ -131,6 +135,8 @@ def test_backfill(priority: Priority, app_config: AppConfig) -> None:
             "revision": "revision",
             "config": None,
             "split": None,
+            "partition_start": None,
+            "partition_end": None,
         },
         priority=priority,
     )
@@ -187,6 +193,8 @@ def test_job_runner_set_crashed(
             "revision": revision,
             "config": config,
             "split": split,
+            "partition_start": None,
+            "partition_end": None,
         },
         priority=Priority.NORMAL,
     )
@@ -243,6 +251,8 @@ def test_raise_if_parallel_response_exists(
             "revision": revision,
             "config": config,
             "split": split,
+            "partition_start": None,
+            "partition_end": None,
         },
         priority=Priority.NORMAL,
     )
@@ -274,6 +284,8 @@ def test_doesnotexist(app_config: AppConfig) -> None:
             "revision": revision,
             "config": config,
             "split": split,
+            "partition_start": None,
+            "partition_end": None,
         },
         priority=Priority.NORMAL,
     )

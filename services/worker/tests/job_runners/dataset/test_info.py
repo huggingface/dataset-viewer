@@ -129,6 +129,8 @@ def get_job_runner(
                     "revision": "revision",
                     "config": None,
                     "split": None,
+                    "partition_start": None,
+                    "partition_end": None,
                 },
                 "job_id": "job_id",
                 "priority": Priority.NORMAL,

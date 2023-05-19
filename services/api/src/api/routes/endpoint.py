@@ -112,7 +112,13 @@ def get_cache_entry_from_steps(
         )
         artifact_ids = [
             Artifact(
-                processing_step=processing_step, dataset=dataset, revision=revision, config=config, split=split
+                processing_step=processing_step,
+                dataset=dataset,
+                revision=revision,
+                config=config,
+                split=split,
+                partition_start=None,
+                partition_end=None,
             ).id
             for processing_step in processing_steps
         ]

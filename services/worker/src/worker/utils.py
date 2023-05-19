@@ -409,7 +409,12 @@ def get_rows_or_raise(
 
 
 def get_previous_step_or_raise(
-    kinds: List[str], dataset: str, config: Optional[str] = None, split: Optional[str] = None
+    kinds: List[str],
+    dataset: str,
+    config: Optional[str] = None,
+    split: Optional[str] = None,
+    partition_start: Optional[int] = None,
+    partition_end: Optional[int] = None,
 ) -> BestResponse:
     """Get the previous step from the cache, or raise an exception if it failed."""
     best_response = get_best_response(kinds=kinds, dataset=dataset, config=config, split=split)
@@ -420,6 +425,8 @@ def get_previous_step_or_raise(
             dataset=dataset,
             config=config,
             split=split,
+            partition_start=partition_start,
+            partition_end=partition_end,
             cache_entry_with_details=best_response.response,
         )
     return best_response

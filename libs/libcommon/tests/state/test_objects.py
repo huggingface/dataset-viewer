@@ -138,6 +138,8 @@ def test_cache_state_exists(dataset: str, config: Optional[str], split: Optional
         split=split,
         cache_kind=cache_kind,
         cache_entries_df=get_cache_entries_df(dataset=dataset),
+        partition_start=None,
+        partition_end=None
     ).exists
     upsert_response(
         kind=cache_kind, dataset=dataset, config=config, split=split, content={}, http_status=HTTPStatus.OK
@@ -148,6 +150,8 @@ def test_cache_state_exists(dataset: str, config: Optional[str], split: Optional
         split=split,
         cache_kind=cache_kind,
         cache_entries_df=get_cache_entries_df(dataset=dataset),
+        partition_start=None,
+        partition_end=None,
     ).exists
     delete_response(kind=cache_kind, dataset=dataset, config=config, split=split)
     assert not CacheState(
@@ -156,6 +160,8 @@ def test_cache_state_exists(dataset: str, config: Optional[str], split: Optional
         split=split,
         cache_kind=cache_kind,
         cache_entries_df=get_cache_entries_df(dataset=dataset),
+        partition_start=None,
+        partition_end=None,
     ).exists
 
 
@@ -174,6 +180,8 @@ def test_cache_state_is_success(dataset: str, config: Optional[str], split: Opti
         split=split,
         cache_kind=cache_kind,
         cache_entries_df=get_cache_entries_df(dataset=dataset),
+        partition_start=None,
+        partition_end=None,
     ).is_success
     upsert_response(
         kind=cache_kind, dataset=dataset, config=config, split=split, content={}, http_status=HTTPStatus.OK
@@ -184,6 +192,8 @@ def test_cache_state_is_success(dataset: str, config: Optional[str], split: Opti
         split=split,
         cache_kind=cache_kind,
         cache_entries_df=get_cache_entries_df(dataset=dataset),
+        partition_start=None,
+        partition_end=None,
     ).is_success
     upsert_response(
         kind=cache_kind,
@@ -199,6 +209,8 @@ def test_cache_state_is_success(dataset: str, config: Optional[str], split: Opti
         split=split,
         cache_kind=cache_kind,
         cache_entries_df=get_cache_entries_df(dataset=dataset),
+        partition_start=None,
+        partition_end=None,
     ).is_success
     delete_response(kind=cache_kind, dataset=dataset, config=config, split=split)
     assert not CacheState(
@@ -232,6 +244,8 @@ def test_artifact_state(has_pending_job: bool, expected_is_in_process: bool) -> 
         processing_step=processing_step,
         has_pending_job=has_pending_job,
         cache_entries_df=get_cache_entries_df(dataset=dataset),
+        partition_start=None,
+        partition_end=None,
     )
     assert artifact_state.id == f"{processing_step_name},{dataset},{revision}"
     assert not artifact_state.cache_state.exists

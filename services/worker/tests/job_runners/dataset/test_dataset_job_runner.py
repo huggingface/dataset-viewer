@@ -59,6 +59,8 @@ def test_success_creation(test_processing_step: ProcessingStep, app_config: AppC
                     "revision": "revision",
                     "config": None,
                     "split": None,
+                    "partition_start": None,
+                    "partition_end": None,
                 },
                 "priority": Priority.NORMAL,
             },

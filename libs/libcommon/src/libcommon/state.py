@@ -6,7 +6,7 @@ from __future__ import annotations
 import logging
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Tuple
 
 import pandas as pd
 
@@ -43,11 +43,11 @@ def fetch_names(
 
 def fetch_intervals(
     dataset: str, config: Optional[str], split: Optional[str], cache_kinds: List[str]
-) -> List[tuple]:
+) -> List[Tuple[int, int]]:
     """Fetch a list of names from the database."""
     intervals = []
 
-    best_response = get_best_response(kinds=cache_kinds, dataset=dataset, config=config)
+    best_response = get_best_response(kinds=cache_kinds, dataset=dataset, config=config, split=split)
     for name_item in best_response.response["content"]["partitions"]:
         start = name_item["partition_start"]
         if not isinstance(start, int):
@@ -160,7 +160,9 @@ class Artifact:
                 raise ValueError("Step input type is split, but config or split is None")
         elif self.processing_step.input_type == "partition":
             if self.config is None or self.split is None or self.partition_start is None or self.partition_end is None:
-                raise ValueError("Step input type is partition, but config or split or partition_start or partition_end is None")
+                raise ValueError(
+                    "Step input type is partition, but config or split or partition_start or partition_end is None"
+                )
         else:
             raise ValueError(f"Invalid step input type: {self.processing_step.input_type}")
         self.id = inputs_to_string(
@@ -233,7 +235,6 @@ class PartitionState:
     error_codes_to_retry: Optional[List[str]] = None
     artifact_state_by_step: Dict[str, ArtifactState] = field(init=False)
 
-
     def __post_init__(self) -> None:
         self.pending_jobs_df = self.pending_jobs_df[
             (self.pending_jobs_df["dataset"] == self.dataset)
@@ -273,9 +274,8 @@ class SplitState:
     processing_graph: ProcessingGraph
     error_codes_to_retry: Optional[List[str]] = None
     artifact_state_by_step: Dict[str, ArtifactState] = field(init=False)
-    partitions: List[tuple] = field(init=False)
-    partition_states: List[SplitState] = field(init=False)
-
+    partitions: List[Tuple[int, int]] = field(init=False)
+    partition_states: List[PartitionState] = field(init=False)
 
     def __post_init__(self) -> None:
         self.artifact_state_by_step = {
@@ -302,7 +302,7 @@ class SplitState:
                 cache_kinds=[
                     processing_step.cache_kind
                     for processing_step in self.processing_graph.get_split_partitions_processing_steps()
-                ]
+                ],
             )  # Note that we use the cached content even the revision is different (ie. maybe obsolete)
         except Exception:
             self.partitions = []

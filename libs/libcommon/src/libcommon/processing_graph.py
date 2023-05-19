@@ -184,7 +184,7 @@ class ProcessingGraph:
                 raise ValueError(
                     f"Processing step {name} provides split partitions but its input type is {input_type}."
                 )
-            
+
             if (
                 _nx_graph.has_node(name)
                 or name in _processing_steps
