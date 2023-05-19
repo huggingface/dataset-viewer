@@ -19,7 +19,6 @@ from libcommon.state import (
     SplitState,
     fetch_names,
 )
-from libcommon.utils import Status
 
 from .utils import (
     CONFIG_NAME_1,

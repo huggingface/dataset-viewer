@@ -11,7 +11,6 @@ from libcommon.processing_graph import ProcessingGraph
 from libcommon.queue import Queue
 from libcommon.resources import CacheMongoResource, QueueMongoResource
 from libcommon.simple_cache import upsert_response
-from libcommon.utils import Status
 
 from .utils import (
     CONFIG_NAMES,

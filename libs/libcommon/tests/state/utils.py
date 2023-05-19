@@ -8,7 +8,6 @@ from libcommon.processing_graph import ProcessingGraph
 from libcommon.queue import Queue
 from libcommon.simple_cache import upsert_response
 from libcommon.state import DatasetState
-from libcommon.utils import Status
 
 DATASET_NAME = "dataset"
 
