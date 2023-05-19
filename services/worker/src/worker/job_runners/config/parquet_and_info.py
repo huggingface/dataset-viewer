@@ -6,10 +6,9 @@ import glob
 import logging
 import re
 from functools import partial
-from http import HTTPStatus
 from multiprocessing.pool import ThreadPool
 from pathlib import Path
-from typing import Any, Dict, List, Literal, Optional, Set, Tuple, TypedDict
+from typing import Any, Dict, List, Optional, Set, Tuple, TypedDict
 from urllib.parse import quote
 
 import datasets
@@ -41,89 +40,30 @@ from libcommon.constants import (
     PROCESSING_STEP_CONFIG_PARQUET_AND_INFO_ROW_GROUP_SIZE_FOR_IMAGE_DATASETS,
     PROCESSING_STEP_CONFIG_PARQUET_AND_INFO_VERSION,
 )
-from libcommon.dataset import DatasetNotFoundError, ask_access
+from libcommon.dataset import ask_access
+from libcommon.exceptions import (
+    ConfigNamesError,
+    DatasetInBlockListError,
+    DatasetNotFoundError,
+    DatasetRevisionNotFoundError,
+    DatasetTooBigFromDatasetsError,
+    DatasetTooBigFromHubError,
+    DatasetWithTooBigExternalFilesError,
+    DatasetWithTooManyExternalFilesError,
+    EmptyDatasetError,
+    ExternalFilesSizeRequestConnectionError,
+    ExternalFilesSizeRequestError,
+    ExternalFilesSizeRequestHTTPError,
+    ExternalFilesSizeRequestTimeoutError,
+    PreviousStepFormatError,
+    UnsupportedExternalFilesError,
+)
 from libcommon.processing_graph import ProcessingStep
 from libcommon.utils import JobInfo
 
-from worker.common_exceptions import JobRunnerError
 from worker.config import AppConfig, ParquetAndInfoConfig
 from worker.job_runners.config.config_job_runner import ConfigCachedJobRunner
-from worker.job_runners.dataset.config_names import ConfigNamesError
 from worker.utils import CompleteJobResult, get_previous_step_or_raise
-
-ConfigParquetAndInfoJobRunnerErrorCode = Literal[
-    "DatasetRevisionNotFoundError",
-    "EmptyDatasetError",
-    "DatasetInBlockListError",
-    "DatasetTooBigFromHubError",
-    "DatasetTooBigFromDatasetsError",
-    "UnsupportedExternalFilesError",
-    "DatasetWithTooManyExternalFilesError",
-    "DatasetWithTooBigExternalFilesError",
-    "ExternalFilesSizeRequestHTTPError",
-    "ExternalFilesSizeRequestConnectionError",
-    "ExternalFilesSizeRequestTimeoutError",
-    "ExternalFilesSizeRequestError",
-    "PreviousStepFormatError",
-]
-
-
-class ConfigParquetAndInfoJobRunnerError(JobRunnerError):
-    """Base class for exceptions in this module."""
-
-    def __init__(
-        self,
-        message: str,
-        status_code: HTTPStatus,
-        code: ConfigParquetAndInfoJobRunnerErrorCode,
-        cause: Optional[BaseException] = None,
-        disclose_cause: bool = False,
-    ):
-        super().__init__(
-            message=message, status_code=status_code, code=code, cause=cause, disclose_cause=disclose_cause
-        )
-
-
-class DatasetRevisionNotFoundError(ConfigParquetAndInfoJobRunnerError):
-    """Raised when the revision of a dataset repository does not exist."""
-
-    def __init__(self, message: str, cause: Optional[BaseException] = None):
-        super().__init__(message, HTTPStatus.NOT_FOUND, "DatasetRevisionNotFoundError", cause, False)
-
-
-class EmptyDatasetError(ConfigParquetAndInfoJobRunnerError):
-    """Raised when the dataset has no data."""
-
-    def __init__(self, message: str, cause: Optional[BaseException] = None):
-        super().__init__(message, HTTPStatus.INTERNAL_SERVER_ERROR, "EmptyDatasetError", cause, True)
-
-
-class DatasetInBlockListError(ConfigParquetAndInfoJobRunnerError):
-    """Raised when the dataset is in the list of blocked datasets."""
-
-    def __init__(self, message: str, cause: Optional[BaseException] = None):
-        super().__init__(message, HTTPStatus.NOT_IMPLEMENTED, "DatasetInBlockListError", cause, False)
-
-
-class DatasetTooBigFromHubError(ConfigParquetAndInfoJobRunnerError):
-    """Raised when the dataset size (sum of files on the Hub) is too big."""
-
-    def __init__(self, message: str, cause: Optional[BaseException] = None):
-        super().__init__(message, HTTPStatus.NOT_IMPLEMENTED, "DatasetTooBigFromHubError", cause, False)
-
-
-class DatasetTooBigFromDatasetsError(ConfigParquetAndInfoJobRunnerError):
-    """Raised when the dataset size (sum of config sizes given by the datasets library) is too big."""
-
-    def __init__(self, message: str, cause: Optional[BaseException] = None):
-        super().__init__(message, HTTPStatus.NOT_IMPLEMENTED, "DatasetTooBigFromDatasetsError", cause, False)
-
-
-class PreviousStepFormatError(ConfigParquetAndInfoJobRunnerError):
-    """Raised when the content of the previous step has not the expected format."""
-
-    def __init__(self, message: str, cause: Optional[BaseException] = None):
-        super().__init__(message, HTTPStatus.INTERNAL_SERVER_ERROR, "PreviousStepFormatError", cause, False)
 
 
 class ParquetFileItem(TypedDict):
@@ -218,11 +158,9 @@ def raise_if_blocked(
             The list of blocked datasets. If empty, no dataset is blocked.
     Returns:
         `None`
-    <Tip>
     Raises the following errors:
-        - [`~job_runners.config.parquet_and_info.DatasetInBlockListError`]
+        - [`libcommon.exceptions.DatasetInBlockListError`]
           If the dataset is in the list of blocked datasets.
-    </Tip>
     """
     if dataset in blocked_datasets:
         raise DatasetInBlockListError(
@@ -253,14 +191,12 @@ def get_dataset_info_or_raise(
             The git revision (e.g. "main" or sha) of the dataset
     Returns:
         `DatasetInfo`: The dataset info
-    <Tip>
     Raises the following errors:
-        - [`~.job_runner.DatasetNotFoundError`]
+        - [`libcommon.exceptions.DatasetNotFoundError`]
           If the repository to download from cannot be found. This may be because it doesn't exist,
           or because it is set to `private` and you do not have access.
-        - [`~job_runners.config.parquet_and_info.DatasetRevisionNotFoundError`]
+        - [`libcommon.exceptions.DatasetRevisionNotFoundError`]
           If the revision does not exist or cannot be accessed using the token.
-    </Tip>
     """
     try:
         dataset_info = HfApi(endpoint=hf_endpoint, token=hf_token).dataset_info(
@@ -280,7 +216,8 @@ def raise_if_too_big_from_hub(
     max_dataset_size: int,
 ) -> None:
     """
-    Raise an error if the dataset is too big to be converted to parquet
+    Raise an error if the dataset is too big to be converted to parquet, as measured by the sum of the repository
+    files sizes given by the Hub.
 
     Args:
         dataset_info (`DatasetInfo`):
@@ -289,11 +226,10 @@ def raise_if_too_big_from_hub(
             The maximum size of the dataset in bytes
     Returns:
         `None`
-    <Tip>
     Raises the following errors:
-        - [`~job_runners.config.parquet_and_info.DatasetTooBigFromHubError`]
-          If the dataset is too big to be converted to parquet
-    </Tip>
+        - [`libcommon.exceptions.DatasetTooBigFromHubError`]
+          If the dataset is too big to be converted to parquet, as measured by the sum of the repository
+          files sizes given by the Hub.
     """
     dataset_size: int = sum(sibling.size for sibling in dataset_info.siblings if sibling.size is not None)
     if dataset_size > max_dataset_size:
@@ -331,13 +267,12 @@ def raise_if_too_big_from_datasets(
             The maximum size of the dataset in bytes
     Returns:
         `None`
-    <Tip>
     Raises the following errors:
-        - [`ValueError`]
-            If the datasets.config.HF_ENDPOINT is not set to the expected value
-        - [`~job_runners.config.parquet_and_info.DatasetTooBigFromDatasetsError`]
-            If the dataset is too big to be converted to parquet
-    </Tip>
+        - [`ValueError`](https://docs.python.org/3/library/exceptions.html#ValueError)
+          If the datasets.config.HF_ENDPOINT is not set to the expected value
+        - [`libcommon.exceptions.DatasetTooBigFromDatasetsError`]
+          If the dataset is too big to be converted to parquet, as measured by the sum of the configs
+          sizes given by the datasets library.
     """
     if datasets.config.HF_ENDPOINT != hf_endpoint:
         raise ValueError(
@@ -400,27 +335,31 @@ def raise_if_not_supported(
     Returns:
         `ParquetResponseResult`: An object with the parquet_response
           (dataset and list of parquet files) and the dataset_git_revision (sha) if any.
-    <Tip>
     Raises the following errors:
-        - [`~job_runners.config.parquet_and_info.DatasetInBlockListError`]
+        - [`libcommon.exceptions.AskAccessHubRequestError`]
+          if the request to the Hub to get access to the dataset failed or timed out.
+        - [`libcommon.exceptions.DatasetNotFoundError`]:
+          if the dataset does not exist, or if the token does not give the sufficient access to the dataset,
+        - [`libcommon.exceptions.GatedDisabledError`]
+          if the dataset is gated, but disabled.
+          or if the dataset is private (private datasets are not supported by the datasets server).
+        - [`libcommon.exceptions.GatedExtraFieldsError`]
+          if the dataset is gated, with extra fields. Programmatic access is not implemented for this type of
+          dataset because there is no easy way to get the list of extra fields.
+        - ['requests.exceptions.HTTPError'](https://requests.readthedocs.io/en/latest/api/#requests.HTTPError)
+          any other error when asking access
+        - [`libcommon.exceptions.DatasetInBlockListError`]
           If the dataset is in the list of blocked datasets.
-        - [`~libcommon.dataset.GatedExtraFieldsError`]: if the dataset is gated, with extra fields.
-            Programmatic access is not implemented for this type of dataset because there is no easy
-            way to get the list of extra fields.
-        - [`~libcommon.dataset.GatedDisabledError`]: if the dataset is gated, but disabled.
-        - [`~libcommon.dataset.DatasetNotFoundError`]: if the dataset does not exist, or if the
-            token does not give the sufficient access to the dataset, or if the dataset is private
-            (private datasets are not supported by the datasets server)
-        - ['~requests.exceptions.HTTPError']: any other error when asking access
-        - [`~job_runners.config.parquet_and_info.DatasetRevisionNotFoundError`]
+        - [`libcommon.exceptions.DatasetRevisionNotFoundError`]
           If the revision does not exist or cannot be accessed using the token.
-        - [`~job_runners.config.parquet_and_info.DatasetTooBigFromHubError`]
-          If the dataset is too big to be converted to parquet
-        - [`ValueError`]
+        - [`libcommon.exceptions.DatasetTooBigFromDatasetsError`]
+          If the dataset is too big to be converted to parquet, as measured by the sum of the configs
+          sizes given by the datasets library.
+        - [`libcommon.exceptions.DatasetTooBigFromHubError`]
+          If the dataset is too big to be converted to parquet, as measured by the sum of the repository
+          files sizes given by the Hub.
+        - [`ValueError`](https://docs.python.org/3/library/exceptions.html#ValueError)
             If the datasets.config.HF_ENDPOINT is not set to the expected value
-        - [`~job_runners.config.parquet_and_info.DatasetTooBigFromDatasetsError`]
-            If the dataset is too big to be converted to parquet
-    </Tip>
     """
     raise_if_blocked(dataset=dataset, blocked_datasets=blocked_datasets)
     ask_access(dataset=dataset, hf_endpoint=hf_endpoint, hf_token=committer_hf_token)
@@ -458,55 +397,6 @@ class EmptyDownloadSizeError(Exception):
 
 class EmptyFeaturesError(Exception):
     pass
-
-
-class DatasetWithTooManyExternalFilesError(ConfigParquetAndInfoJobRunnerError):
-    """Raised when the dataset size (sum of config sizes given by the datasets library) is too big."""
-
-    def __init__(self, message: str, cause: Optional[BaseException] = None):
-        super().__init__(message, HTTPStatus.NOT_IMPLEMENTED, "DatasetWithTooManyExternalFilesError", cause, True)
-
-
-class DatasetWithTooBigExternalFilesError(ConfigParquetAndInfoJobRunnerError):
-    """Raised when the dataset size (sum of config sizes given by the datasets library) is too big."""
-
-    def __init__(self, message: str, cause: Optional[BaseException] = None):
-        super().__init__(message, HTTPStatus.NOT_IMPLEMENTED, "DatasetWithTooBigExternalFilesError", cause, True)
-
-
-class UnsupportedExternalFilesError(ConfigParquetAndInfoJobRunnerError):
-    """Raised when we failed to get the size of the external files."""
-
-    def __init__(self, message: str, cause: Optional[BaseException] = None):
-        super().__init__(message, HTTPStatus.NOT_IMPLEMENTED, "UnsupportedExternalFilesError", cause, True)
-
-
-class ExternalFilesSizeRequestHTTPError(ConfigParquetAndInfoJobRunnerError):
-    """Raised when we failed to get the size of the external files."""
-
-    def __init__(self, message: str, cause: Optional[BaseException] = None):
-        super().__init__(message, HTTPStatus.NOT_IMPLEMENTED, "ExternalFilesSizeRequestHTTPError", cause, True)
-
-
-class ExternalFilesSizeRequestConnectionError(ConfigParquetAndInfoJobRunnerError):
-    """Raised when we failed to get the size of the external files."""
-
-    def __init__(self, message: str, cause: Optional[BaseException] = None):
-        super().__init__(message, HTTPStatus.NOT_IMPLEMENTED, "ExternalFilesSizeRequestConnectionError", cause, True)
-
-
-class ExternalFilesSizeRequestTimeoutError(ConfigParquetAndInfoJobRunnerError):
-    """Raised when we failed to get the size of the external files."""
-
-    def __init__(self, message: str, cause: Optional[BaseException] = None):
-        super().__init__(message, HTTPStatus.NOT_IMPLEMENTED, "ExternalFilesSizeRequestTimeoutError", cause, True)
-
-
-class ExternalFilesSizeRequestError(ConfigParquetAndInfoJobRunnerError):
-    """Raised when we failed to get the size of the external files."""
-
-    def __init__(self, message: str, cause: Optional[BaseException] = None):
-        super().__init__(message, HTTPStatus.NOT_IMPLEMENTED, "ExternalFilesSizeRequestError", cause, True)
 
 
 def _request_size(url: str, hf_token: Optional[str] = None) -> Optional[int]:
@@ -741,53 +631,53 @@ def compute_config_parquet_and_info_response(
     Returns:
         `ConfigParquetAndInfoResponse`: An object with the config_parquet_and_info_response
           (dataset info and list of parquet files).
-    <Tip>
     Raises the following errors:
-        - [`~job_runners.config.parquet_and_info.DatasetInBlockListError`]
+        - [`libcommon.exceptions.AskAccessHubRequestError`]
+          if the request to the Hub to get access to the dataset failed or timed out.
+        - [`libcommon.exceptions.DatasetNotFoundError`]:
+          if the dataset does not exist, or if the token does not give the sufficient access to the dataset,
+        - [`libcommon.exceptions.GatedDisabledError`]
+          if the dataset is gated, but disabled.
+          or if the dataset is private (private datasets are not supported by the datasets server).
+        - [`libcommon.exceptions.GatedExtraFieldsError`]
+          if the dataset is gated, with extra fields. Programmatic access is not implemented for this type of
+          dataset because there is no easy way to get the list of extra fields.
+        - ['requests.exceptions.HTTPError'](https://requests.readthedocs.io/en/latest/api/#requests.HTTPError)
+          any other error when asking access
+        - [`libcommon.simple_cache.CachedArtifactError`]
+            If the previous step gave an error.
+        - [`libcommon.exceptions.DatasetInBlockListError`]
           If the dataset is in the list of blocked datasets.
-        - [`libcommon.dataset.GatedExtraFieldsError`]: if the dataset is gated, with extra fields.
-            Programmatic access is not implemented for this type of dataset because there is no easy
-            way to get the list of extra fields.
-        - [`libcommon.dataset.GatedDisabledError`]: if the dataset is gated, but disabled.
-        - [`libcommon.dataset.DatasetNotFoundError`]: if the dataset does not exist, or if the
-            token does not give the sufficient access to the dataset, or if the dataset is private
-            (private datasets are not supported by the datasets server)
-        - ['HTTPError'](https://requests.readthedocs.io/en/latest/api/#requests.HTTPError): any other error when
-            asking access
-        - [`~job_runners.config.parquet_and_info.DatasetRevisionNotFoundError`]
+        - [`libcommon.exceptions.DatasetRevisionNotFoundError`]
           If the revision does not exist or cannot be accessed using the token.
-        - [`~job_runners.config.parquet_and_info.DatasetTooBigFromHubError`]
-          If the dataset is too big to be converted to parquet
+        - [`libcommon.exceptions.DatasetTooBigFromDatasetsError`]
+          If the dataset is too big to be converted to parquet, as measured by the sum of the configs
+          sizes given by the datasets library.
+        - [`libcommon.exceptions.DatasetTooBigFromHubError`]
+          If the dataset is too big to be converted to parquet, as measured by the sum of the repository
+          files sizes given by the Hub.
+        - [`libcommon.exceptions.EmptyDatasetError`]
+          The dataset is empty.
+        - [`libcommon.exceptions.ConfigNamesError`]
+          If the list of configurations could not be obtained using the datasets library.
+        - [`libcommon.exceptions.DatasetWithTooManyExternalFilesError`]
+            If the dataset has too many external files to be converted to parquet
+        - [`libcommon.exceptions.DatasetWithTooBigExternalFilesError`]
+            If the dataset is too big external files be converted to parquet
+        - [`libcommon.exceptions.UnsupportedExternalFilesError`]
+            If we failed to get the external files sizes to make sure we can convert the dataset to parquet
+        - [`libcommon.exceptions.ExternalFilesSizeRequestHTTPError`]
+            If we failed to get the external files sizes to make sure we can convert the dataset to parquet
+        - [`libcommon.exceptions.ExternalFilesSizeRequestConnectionError`]
+            If we failed to get the external files sizes to make sure we can convert the dataset to parquet
+        - [`libcommon.exceptions.ExternalFilesSizeRequestTimeoutError`]
+            If we failed to get the external files sizes to make sure we can convert the dataset to parquet
+        - [`libcommon.exceptions.ExternalFilesSizeRequestError`]
+            If we failed to get the external files sizes to make sure we can convert the dataset to parquet
+        - [`libcommon.exceptions.PreviousStepFormatError`]
+            If the content of the previous step has not the expected format
         - [`ValueError`](https://docs.python.org/3/library/exceptions.html#ValueError)
             If the datasets.config.HF_ENDPOINT is not set to the expected value
-        - [`~job_runners.config.parquet_and_info.DatasetTooBigFromDatasetsError`]
-            If the dataset is too big to be converted to parquet
-        - [`~job_runners.config.parquet_and_info.EmptyDatasetError`]
-          The dataset is empty.
-        - [`~job_runners.config.parquet_and_info.ConfigNamesError`]
-          If the list of configurations could not be obtained using the datasets library.
-        - [`~job_runners.config.parquet_and_info.DatasetInBlockListError`]
-          If the dataset is in the list of blocked datasets.
-        - [`~job_runners.config.parquet_and_info.DatasetWithTooManyExternalFilesError`]
-            If the dataset has too many external files to be converted to parquet
-        - [`~job_runners.config.parquet_and_info.DatasetWithTooBigExternalFilesError`]
-            If the dataset is too big external files be converted to parquet
-        - [`~job_runners.config.parquet_and_info.UnsupportedExternalFilesError`]
-            If we failed to get the external files sizes to make sure we can convert the dataset to parquet
-        - [`~job_runners.config.parquet_and_info.ExternalFilesSizeRequestHTTPError`]
-            If we failed to get the external files sizes to make sure we can convert the dataset to parquet
-        - [`~job_runners.config.parquet_and_info.ExternalFilesSizeRequestConnectionError`]
-            If we failed to get the external files sizes to make sure we can convert the dataset to parquet
-        - [`~job_runners.config.parquet_and_info.ExternalFilesSizeRequestTimeoutError`]
-            If we failed to get the external files sizes to make sure we can convert the dataset to parquet
-        - [`~job_runners.config.parquet_and_info.ExternalFilesSizeRequestError`]
-            If we failed to get the external files sizes to make sure we can convert the dataset to parquet
-        - [`~job_runner.PreviousStepError`]
-            If the previous step gave an error.
-        - [`~job_runners.config.parquet_and_info.PreviousStepFormatError`]
-            If the content of the previous step has not the expected format
-
-    </Tip>
     """
     logging.info(f"get parquet files and dataset info for {dataset=} {config=}")
 

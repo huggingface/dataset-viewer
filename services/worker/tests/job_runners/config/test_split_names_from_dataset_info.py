@@ -3,19 +3,16 @@
 
 from http import HTTPStatus
 from typing import Any, Callable
-from unittest.mock import Mock
 
 import pytest
-from libcommon.exceptions import CustomError
+from libcommon.exceptions import PreviousStepFormatError
 from libcommon.processing_graph import ProcessingGraph
 from libcommon.resources import CacheMongoResource, QueueMongoResource
-from libcommon.simple_cache import upsert_response
+from libcommon.simple_cache import CachedArtifactError, upsert_response
 from libcommon.utils import Priority
 
-from worker.common_exceptions import PreviousStepError
 from worker.config import AppConfig
 from worker.job_runners.config.split_names_from_dataset_info import (
-    PreviousStepFormatError,
     SplitNamesFromDatasetInfoJobRunner,
 )
 
@@ -48,6 +45,7 @@ def get_job_runner(
                 "type": SplitNamesFromDatasetInfoJobRunner.get_job_type(),
                 "params": {
                     "dataset": dataset,
+                    "revision": "revision",
                     "config": config,
                     "split": None,
                 },
@@ -89,7 +87,7 @@ def get_job_runner(
             "upstream_fail",
             HTTPStatus.INTERNAL_SERVER_ERROR,
             {"error": "error"},
-            PreviousStepError.__name__,
+            CachedArtifactError.__name__,
             None,
         ),
         (
@@ -129,12 +127,11 @@ def test_compute(
         kind="config-info", dataset=dataset, config=config, content=upstream_content, http_status=upstream_status
     )
     job_runner = get_job_runner(dataset, config, app_config)
-    job_runner.get_dataset_git_revision = Mock(return_value="1.0.0")  # type: ignore
 
     if error_code:
         with pytest.raises(Exception) as e:
             job_runner.compute()
-        assert e.type.__name__ == error_code
+        assert e.typename == error_code
     else:
         assert job_runner.compute().content == content
 
@@ -143,7 +140,5 @@ def test_doesnotexist(app_config: AppConfig, get_job_runner: GetJobRunner) -> No
     dataset = "non_existent"
     config = "non_existent"
     worker = get_job_runner(dataset, config, app_config)
-    with pytest.raises(CustomError) as exc_info:
+    with pytest.raises(CachedArtifactError):
         worker.compute()
-    assert exc_info.value.status_code == HTTPStatus.NOT_FOUND
-    assert exc_info.value.code == "CachedResponseNotFound"

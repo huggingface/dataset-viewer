@@ -3,18 +3,23 @@
 
 import logging
 from asyncio import Semaphore, create_task, run, wait
-from http import HTTPStatus
 from pathlib import Path
-from typing import Any, List, Literal, Optional, Tuple, Union
+from typing import Any, List, Optional, Tuple, Union
 
 from aiohttp import ClientSession
 from aiolimiter import AsyncLimiter
 from datasets import get_dataset_config_info
 from libcommon.constants import PROCESSING_STEP_SPLIT_OPT_IN_OUT_URLS_SCAN_VERSION
+from libcommon.exceptions import (
+    ExternalServerError,
+    InfoError,
+    MissingSpawningTokenError,
+    PreviousStepFormatError,
+    TooManyColumnsError,
+)
 from libcommon.processing_graph import ProcessingStep
 from libcommon.utils import JobInfo
 
-from worker.common_exceptions import JobRunnerError
 from worker.config import AppConfig, OptInOutUrlsScanConfig
 from worker.job_runners.split.split_job_runner import SplitCachedJobRunner
 from worker.utils import (
@@ -25,73 +30,6 @@ from worker.utils import (
     get_previous_step_or_raise,
     get_rows_or_raise,
 )
-
-SplitOptInOutUrlsScanJobRunnerErrorCode = Literal[
-    "InfoError",
-    "TooManyColumnsError",
-    "PreviousStepStatusError",
-    "PreviousStepFormatError",
-    "MissingSpawningTokenError",
-    "ExternalServerError",
-]
-
-
-class SplitOptInOutUrlsScanJobRunnerError(JobRunnerError):
-    """Base class for exceptions in this module."""
-
-    def __init__(
-        self,
-        message: str,
-        status_code: HTTPStatus,
-        code: SplitOptInOutUrlsScanJobRunnerErrorCode,
-        cause: Optional[BaseException] = None,
-        disclose_cause: bool = False,
-    ):
-        super().__init__(
-            message=message, status_code=status_code, code=code, cause=cause, disclose_cause=disclose_cause
-        )
-
-
-class InfoError(SplitOptInOutUrlsScanJobRunnerError):
-    """Raised when the info could not be fetched."""
-
-    def __init__(self, message: str, cause: Optional[BaseException] = None):
-        super().__init__(message, HTTPStatus.INTERNAL_SERVER_ERROR, "InfoError", cause, True)
-
-
-class TooManyColumnsError(SplitOptInOutUrlsScanJobRunnerError):
-    """Raised when the dataset exceeded the max number of columns."""
-
-    def __init__(self, message: str, cause: Optional[BaseException] = None):
-        super().__init__(message, HTTPStatus.INTERNAL_SERVER_ERROR, "TooManyColumnsError", cause, True)
-
-
-class PreviousStepStatusError(SplitOptInOutUrlsScanJobRunnerError):
-    """Raised when the previous step gave an error. The job should not have been created."""
-
-    def __init__(self, message: str, cause: Optional[BaseException] = None):
-        super().__init__(message, HTTPStatus.INTERNAL_SERVER_ERROR, "PreviousStepStatusError", cause, False)
-
-
-class PreviousStepFormatError(SplitOptInOutUrlsScanJobRunnerError):
-    """Raised when the content of the previous step has not the expected format."""
-
-    def __init__(self, message: str, cause: Optional[BaseException] = None):
-        super().__init__(message, HTTPStatus.INTERNAL_SERVER_ERROR, "PreviousStepFormatError", cause, False)
-
-
-class MissingSpawningTokenError(SplitOptInOutUrlsScanJobRunnerError):
-    """Raised when the spawning.ai token is not set."""
-
-    def __init__(self, message: str, cause: Optional[BaseException] = None):
-        super().__init__(message, HTTPStatus.INTERNAL_SERVER_ERROR, "MissingSpawningTokenError", cause, False)
-
-
-class ExternalServerError(SplitOptInOutUrlsScanJobRunnerError):
-    """Raised when the spawning.ai server is not responding."""
-
-    def __init__(self, message: str, cause: Optional[BaseException] = None):
-        super().__init__(message, HTTPStatus.INTERNAL_SERVER_ERROR, "ExternalServerError", cause, False)
 
 
 async def check_spawning(

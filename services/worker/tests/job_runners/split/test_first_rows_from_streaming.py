@@ -4,7 +4,6 @@
 from dataclasses import replace
 from http import HTTPStatus
 from typing import Callable
-from unittest.mock import Mock
 
 import pytest
 from datasets.packaged_modules import csv
@@ -57,6 +56,7 @@ def get_job_runner(
                 "type": SplitFirstRowsFromStreamingJobRunner.get_job_type(),
                 "params": {
                     "dataset": dataset,
+                    "revision": "revision",
                     "config": config,
                     "split": split,
                 },
@@ -95,7 +95,7 @@ def test_compute(app_config: AppConfig, get_job_runner: GetJobRunner, hub_public
 
 
 @pytest.mark.parametrize(
-    "name,use_token,error_code,cause",
+    "name,use_token,exception_name,cause",
     [
         ("public", False, None, None),
         ("audio", False, None, None),
@@ -104,7 +104,7 @@ def test_compute(app_config: AppConfig, get_job_runner: GetJobRunner, hub_public
         ("jsonl", False, None, None),
         ("gated", True, None, None),
         ("private", True, None, None),
-        ("does_not_exist_config", False, "CachedResponseNotFound", None),
+        ("does_not_exist_config", False, "CachedArtifactError", None),
         # should we really test the following cases?
         # The assumption is that the dataset exists and is accessible with the token
         ("does_not_exist_split", False, "SplitNotFoundError", None),
@@ -117,7 +117,7 @@ def test_number_rows(
     get_job_runner: GetJobRunner,
     name: str,
     use_token: bool,
-    error_code: str,
+    exception_name: str,
     cause: str,
     app_config: AppConfig,
 ) -> None:
@@ -136,9 +136,8 @@ def test_number_rows(
         split,
         app_config if use_token else replace(app_config, common=replace(app_config.common, hf_token=None)),
     )
-    job_runner.get_dataset_git_revision = Mock(return_value="1.0.0")  # type: ignore
 
-    if error_code is None:
+    if exception_name is None:
         upsert_response(
             kind="/split-names-from-streaming",
             dataset=dataset,
@@ -149,7 +148,7 @@ def test_number_rows(
         result = job_runner.compute().content
         assert result == expected_first_rows_response
         return
-    elif error_code == "SplitNotFoundError":
+    elif exception_name == "SplitNotFoundError":
         upsert_response(
             kind="/split-names-from-streaming",
             dataset=dataset,
@@ -157,7 +156,7 @@ def test_number_rows(
             content={"splits": [{"dataset": dataset, "config": config, "split": "other_split"}]},
             http_status=HTTPStatus.OK,
         )
-    elif error_code in {"InfoError", "SplitsNamesError"}:
+    elif exception_name in {"InfoError", "SplitsNamesError"}:
         upsert_response(
             kind="/split-names-from-streaming",
             dataset=dataset,
@@ -166,18 +165,9 @@ def test_number_rows(
             http_status=HTTPStatus.OK,
         )
 
-    with pytest.raises(CustomError) as exc_info:
+    with pytest.raises(Exception) as exc_info:
         job_runner.compute()
-    assert exc_info.value.code == error_code
-    assert exc_info.value.cause_exception == cause
-    if exc_info.value.disclose_cause:
-        response = exc_info.value.as_response()
-        assert set(response.keys()) == {"error", "cause_exception", "cause_message", "cause_traceback"}
-        response_dict = dict(response)
-        # ^ to remove mypy warnings
-        assert response_dict["cause_exception"] == cause
-        assert isinstance(response_dict["cause_traceback"], list)
-        assert response_dict["cause_traceback"][0] == "Traceback (most recent call last):\n"
+    assert exc_info.typename == exception_name
 
 
 @pytest.mark.parametrize(
@@ -228,8 +218,6 @@ def test_truncation(
         content={"splits": [{"dataset": dataset, "config": config, "split": split}]},
         http_status=HTTPStatus.OK,
     )
-
-    job_runner.get_dataset_git_revision = Mock(return_value="1.0.0")  # type: ignore
 
     if error_code:
         with pytest.raises(CustomError) as error_info:

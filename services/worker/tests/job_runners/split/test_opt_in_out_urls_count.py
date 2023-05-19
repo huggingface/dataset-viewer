@@ -7,10 +7,9 @@ from typing import Any, Callable
 import pytest
 from libcommon.processing_graph import ProcessingGraph
 from libcommon.resources import CacheMongoResource, QueueMongoResource
-from libcommon.simple_cache import upsert_response
+from libcommon.simple_cache import CachedArtifactError, upsert_response
 from libcommon.utils import Priority
 
-from worker.common_exceptions import PreviousStepError
 from worker.config import AppConfig
 from worker.job_runners.split.opt_in_out_urls_count import (
     SplitOptInOutUrlsCountJobRunner,
@@ -54,6 +53,7 @@ def get_job_runner(
                 "type": SplitOptInOutUrlsCountJobRunner.get_job_type(),
                 "params": {
                     "dataset": dataset,
+                    "revision": "revision",
                     "config": config,
                     "split": split,
                 },
@@ -108,7 +108,7 @@ def get_job_runner(
             "split_previous_step_error",
             HTTPStatus.INTERNAL_SERVER_ERROR,
             {},
-            "PreviousStepError",
+            "CachedArtifactError",
             None,
             True,
         ),
@@ -148,7 +148,7 @@ def test_compute(
     if should_raise:
         with pytest.raises(Exception) as e:
             job_runner.compute()
-        assert e.type.__name__ == expected_error_code
+        assert e.typename == expected_error_code
     else:
         assert job_runner.compute().content == expected_content
 
@@ -156,5 +156,5 @@ def test_compute(
 def test_doesnotexist(app_config: AppConfig, get_job_runner: GetJobRunner) -> None:
     dataset = config = split = "doesnotexist"
     job_runner = get_job_runner(dataset, config, split, app_config)
-    with pytest.raises(PreviousStepError):
+    with pytest.raises(CachedArtifactError):
         job_runner.compute()

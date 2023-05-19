@@ -25,7 +25,7 @@ class MigrationDeleteSkippedJobs(Migration):
         raise IrreversibleMigrationError("This migration does not support rollback")
 
     def validate(self) -> None:
-        logging.info("Ensure that a random selection of cached results don't have the status {status}")
+        logging.info("Ensure that a random selection of jobs don't have the status {status}")
 
         def custom_validation(doc: Document) -> None:
             if not isinstance(doc, Job):

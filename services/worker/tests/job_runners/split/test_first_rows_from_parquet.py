@@ -5,7 +5,7 @@ import os
 from dataclasses import replace
 from http import HTTPStatus
 from typing import Callable, List
-from unittest.mock import Mock, patch
+from unittest.mock import patch
 
 import pytest
 from libcommon.exceptions import CustomError
@@ -54,6 +54,7 @@ def get_job_runner(
                 "type": SplitFirstRowsFromParquetJobRunner.get_job_type(),
                 "params": {
                     "dataset": dataset,
+                    "revision": "revision",
                     "config": config,
                     "split": split,
                 },
@@ -135,7 +136,6 @@ def test_compute(
                 ),
             )
 
-            job_runner.get_dataset_git_revision = Mock(return_value="1.0.0")  # type: ignore
             if error_code:
                 with pytest.raises(CustomError) as error_info:
                     job_runner.compute()

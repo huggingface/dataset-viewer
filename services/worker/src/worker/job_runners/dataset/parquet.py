@@ -3,47 +3,22 @@
 
 import logging
 from http import HTTPStatus
-from typing import List, Literal, Optional, Tuple, TypedDict
+from typing import List, Tuple, TypedDict
 
 from libcommon.constants import PROCESSING_STEP_DATASET_PARQUET_VERSION
+from libcommon.exceptions import PreviousStepFormatError
 from libcommon.simple_cache import DoesNotExist, get_response
 
-from worker.common_exceptions import JobRunnerError
 from worker.job_runners.config.parquet import ConfigParquetResponse
 from worker.job_runners.config.parquet_and_info import ParquetFileItem
 from worker.job_runners.dataset.dataset_job_runner import DatasetJobRunner
 from worker.utils import JobResult, PreviousJob, get_previous_step_or_raise
-
-SizesJobRunnerErrorCode = Literal["PreviousStepFormatError"]
 
 
 class DatasetParquetResponse(TypedDict):
     parquet_files: List[ParquetFileItem]
     pending: list[PreviousJob]
     failed: list[PreviousJob]
-
-
-class DatasetParquetJobRunnerError(JobRunnerError):
-    """Base class for exceptions in this module."""
-
-    def __init__(
-        self,
-        message: str,
-        status_code: HTTPStatus,
-        code: SizesJobRunnerErrorCode,
-        cause: Optional[BaseException] = None,
-        disclose_cause: bool = False,
-    ):
-        super().__init__(
-            message=message, status_code=status_code, code=code, cause=cause, disclose_cause=disclose_cause
-        )
-
-
-class PreviousStepFormatError(DatasetParquetJobRunnerError):
-    """Raised when the content of the previous step has not the expected format."""
-
-    def __init__(self, message: str, cause: Optional[BaseException] = None):
-        super().__init__(message, HTTPStatus.INTERNAL_SERVER_ERROR, "PreviousStepFormatError", cause, False)
 
 
 def compute_sizes_response(dataset: str) -> Tuple[DatasetParquetResponse, float]:
@@ -55,13 +30,11 @@ def compute_sizes_response(dataset: str) -> Tuple[DatasetParquetResponse, float]
             by a `/`.
     Returns:
         `DatasetParquetResponse`: An object with the parquet_response (list of parquet files).
-    <Tip>
     Raises the following errors:
-        - [`~job_runner.PreviousStepError`]
+        - [`libcommon.simple_cache.CachedArtifactError`]
           If the previous step gave an error.
-        - [`~job_runners.dataset.parquet.PreviousStepFormatError`]
+        - [`libcommon.exceptions.PreviousStepFormatError`]
             If the content of the previous step has not the expected format
-    </Tip>
     """
     logging.info(f"get parquet files for dataset={dataset}")
 

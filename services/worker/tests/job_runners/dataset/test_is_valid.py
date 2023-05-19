@@ -87,6 +87,7 @@ def get_job_runner(
                 "type": DatasetIsValidJobRunner.get_job_type(),
                 "params": {
                     "dataset": dataset,
+                    "revision": "revision",
                     "config": None,
                     "split": None,
                 },
@@ -172,7 +173,7 @@ def test_compute(
     if should_raise:
         with pytest.raises(Exception) as e:
             job_runner.compute()
-        assert e.type.__name__ == expected_error_code
+        assert e.typename == expected_error_code
     else:
         compute_result = job_runner.compute()
         assert compute_result.content == expected[0]
