@@ -147,10 +147,11 @@ def test_cancel_jobs(statuses_to_cancel: Optional[List[Status]], expected_remain
     )
 
 
-def check_job(queue: Queue, expected_dataset: str, expected_split: str) -> None:
+def check_job(queue: Queue, expected_dataset: str, expected_split: str, expected_priority: Priority) -> None:
     job_info = queue.start_job()
     assert job_info["params"]["dataset"] == expected_dataset
     assert job_info["params"]["split"] == expected_split
+    assert job_info["priority"] == expected_priority
 
 
 def test_priority_logic() -> None:
@@ -197,17 +198,21 @@ def test_priority_logic() -> None:
         split="split1",
         priority=Priority.LOW,
     )
-    check_job(queue=queue, expected_dataset="dataset1/dataset", expected_split="split1")
-    check_job(queue=queue, expected_dataset="dataset2", expected_split="split2")
-    check_job(queue=queue, expected_dataset="dataset3", expected_split="split1")
+    check_job(
+        queue=queue, expected_dataset="dataset1/dataset", expected_split="split1", expected_priority=Priority.NORMAL
+    )
+    check_job(queue=queue, expected_dataset="dataset2", expected_split="split2", expected_priority=Priority.NORMAL)
+    check_job(queue=queue, expected_dataset="dataset3", expected_split="split1", expected_priority=Priority.NORMAL)
     # ^ before the other "dataset3" jobs because its priority is higher (it inherited Priority.NORMAL in upsert_job)
-    check_job(queue=queue, expected_dataset="dataset1", expected_split="split2")
+    check_job(queue=queue, expected_dataset="dataset1", expected_split="split2", expected_priority=Priority.NORMAL)
     # ^ same namespace as dataset1/dataset, goes after namespaces without any started job
-    check_job(queue=queue, expected_dataset="dataset1", expected_split="split1")
+    check_job(queue=queue, expected_dataset="dataset1", expected_split="split1", expected_priority=Priority.NORMAL)
     # ^ comes after the other "dataset1" jobs because the last upsert_job call moved its creation date
-    check_job(queue=queue, expected_dataset="dataset2/dataset", expected_split="split1")
+    check_job(
+        queue=queue, expected_dataset="dataset2/dataset", expected_split="split1", expected_priority=Priority.LOW
+    )
     # ^ comes after the other "dataset2" jobs because its priority is lower
-    check_job(queue=queue, expected_dataset="dataset2", expected_split="split1")
+    check_job(queue=queue, expected_dataset="dataset2", expected_split="split1", expected_priority=Priority.LOW)
     # ^ the rest of the rules apply for Priority.LOW jobs
     with pytest.raises(EmptyQueueError):
         queue.start_job()

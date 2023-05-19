@@ -357,7 +357,7 @@ class Queue:
                 status=Status.WAITING, namespace__nin=set(started_job_namespaces), priority=priority, **filters
             )
             .order_by("+created_at")
-            .only("type", "dataset", "revision", "config", "split")
+            .only("type", "dataset", "revision", "config", "split", "priority")
             .no_cache()
             .first()
         )
@@ -400,7 +400,7 @@ class Queue:
                     **filters,
                 )
                 .order_by("+created_at")
-                .only("type", "dataset", "revision", "config", "split")
+                .only("type", "dataset", "revision", "config", "split", "priority")
                 .no_cache()
                 .first()
             )
