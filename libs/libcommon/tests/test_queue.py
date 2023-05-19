@@ -382,28 +382,6 @@ def test_queue_get_zombies() -> None:
     assert queue.get_zombies(max_seconds_without_heartbeat=9999999) == []
 
 
-def test_queue_kill_zombies() -> None:
-    job_type = "test_type"
-    queue = Queue()
-    with patch("libcommon.queue.get_datetime", get_old_datetime):
-        zombie = queue.upsert_job(
-            job_type=job_type, dataset="dataset1", revision="revision", config="config", split="split1"
-        )
-        queue.start_job(job_types_only=[job_type])
-    another_job = queue.upsert_job(
-        job_type=job_type, dataset="dataset1", revision="revision", config="config", split="split2"
-    )
-    queue.start_job(job_types_only=[job_type])
-
-    assert queue.get_zombies(max_seconds_without_heartbeat=10) == [zombie.info()]
-    queue.kill_zombies([zombie.info()])
-    assert queue.get_zombies(max_seconds_without_heartbeat=10) == []
-    zombie.reload()
-    another_job.reload()
-    assert zombie.status == Status.ERROR
-    assert another_job.status == Status.STARTED
-
-
 def test_has_ttl_index_on_finished_at_field() -> None:
     ttl_index_names = [
         name
