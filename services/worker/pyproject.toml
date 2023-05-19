@@ -41,7 +41,7 @@ tensorflow-macos = {version = "^2.11.1", markers = "sys_platform == 'darwin' and
 tfrecord = "^1.14.1"
 torch = { url = "https://download.pytorch.org/whl/cpu/torch-1.13.1%2Bcpu-cp39-cp39-linux_x86_64.whl" }
 torchaudio = { url = "https://download.pytorch.org/whl/cpu/torchaudio-0.13.1%2Bcpu-cp39-cp39-linux_x86_64.whl" }
-transformers = "^4.29.2"
+transformers = { git = "https://github.com/huggingface/transformers.git", rev = "80ca92470938bbcc348e2d9cf4734c7c25cb1c43" }
 trec-car-tools = { path = "vendors/trec-car-tools/python3" }
 typer = "^0.4.2"
 wget = "^3.2"
