@@ -46,6 +46,7 @@ from worker.job_runners.split.opt_in_out_urls_count import (
 from worker.job_runners.split.opt_in_out_urls_scan_from_streaming import (
     SplitOptInOutUrlsScanJobRunner,
 )
+from worker.job_runners.split.partitions import SplitPartitionsJobRunner
 
 
 class BaseJobRunnerFactory(ABC):
@@ -206,6 +207,12 @@ class JobRunnerFactory(BaseJobRunnerFactory):
                 app_config=self.app_config,
                 processing_step=processing_step,
             )
+        if job_type == SplitPartitionsJobRunner.get_job_type():
+            return SplitPartitionsJobRunner(
+                job_info=job_info,
+                app_config=self.app_config,
+                processing_step=processing_step,
+            )
 
         supported_job_types = [
             ConfigNamesJobRunner.get_job_type(),
@@ -225,5 +232,6 @@ class JobRunnerFactory(BaseJobRunnerFactory):
             SplitOptInOutUrlsCountJobRunner.get_job_type(),
             ConfigOptInOutUrlsCountJobRunner.get_job_type(),
             DatasetOptInOutUrlsCountJobRunner.get_job_type(),
+            SplitPartitionsJobRunner.get_job_type(),
         ]
         raise ValueError(f"Unsupported job type: '{job_type}'. The supported job types are: {supported_job_types}")

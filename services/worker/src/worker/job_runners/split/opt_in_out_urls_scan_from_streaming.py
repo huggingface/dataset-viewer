@@ -268,8 +268,6 @@ class SplitOptInOutUrlsScanJobRunner(SplitCachedJobRunner):
         self.urls_scan_config = app_config.urls_scan
 
     def compute(self) -> CompleteJobResult:
-        if self.config is None or self.split is None:
-            raise ValueError("config and split are required")
         return CompleteJobResult(
             compute_opt_in_out_urls_scan_response(
                 dataset=self.dataset,

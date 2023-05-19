@@ -28,6 +28,7 @@ from libcommon.constants import (
     PROCESSING_STEP_SPLIT_NAMES_FROM_DATASET_INFO_VERSION,
     PROCESSING_STEP_SPLIT_OPT_IN_OUT_URLS_COUNT_VERSION,
     PROCESSING_STEP_SPLIT_OPT_IN_OUT_URLS_SCAN_VERSION,
+    PROCESSING_STEP_SPLIT_PARTITIONS_VERSION,
 )
 from libcommon.processing_graph import ProcessingGraphSpecification
 
@@ -294,6 +295,12 @@ class ProcessingGraphConfig:
                 "input_type": "split",
                 "triggered_by": ["split-first-rows-from-streaming", "split-first-rows-from-parquet"],
                 "job_runner_version": PROCESSING_STEP_SPLIT_OPT_IN_OUT_URLS_SCAN_VERSION,
+            },
+            "split-partitions": {
+                "input_type": "split",
+                "triggered_by": ["config-size"],
+                "provides_split_partitions": True,
+                "job_runner_version": PROCESSING_STEP_SPLIT_PARTITIONS_VERSION,
             },
             "split-opt-in-out-urls-count": {
                 "input_type": "split",

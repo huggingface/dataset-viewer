@@ -113,6 +113,16 @@ class OptUrl(TypedDict):
     column_name: str
 
 
+class Partition(TypedDict):
+    partition_start: int
+    partition_end: int
+
+
+class PartitionsReponse(TypedDict):
+    num_rows: int
+    partitions: List[Partition]
+
+
 class OptInOutUrlsCountResponse(TypedDict):
     urls_columns: List[str]
     num_opt_in_urls: int

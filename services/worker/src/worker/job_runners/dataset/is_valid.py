@@ -54,7 +54,5 @@ class DatasetIsValidJobRunner(DatasetJobRunner):
         return PROCESSING_STEP_DATASET_IS_VALID_VERSION
 
     def compute(self) -> JobResult:
-        if self.dataset is None:
-            raise ValueError("dataset is required")
         response_content, progress = compute_is_valid_response(dataset=self.dataset)
         return JobResult(response_content, progress=progress)
