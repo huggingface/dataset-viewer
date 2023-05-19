@@ -176,9 +176,9 @@ def test_compute(
             mock_ParquetFile.return_value = pq.ParquetFile(dummy_parquet_buffer)
             assert job_runner.compute().content == expected_content
             assert mock_ParquetFile.call_count == len(upstream_content["parquet_files"])
-            for parque_file_item in upstream_content["parquet_files"]:
+            for parquet_file_item in upstream_content["parquet_files"]:
                 mock_ParquetFile.assert_any_call(
-                    f"hf://datasets/{dataset}@{safe_quote(PARQUET_REVISION)}/{config}/{parque_file_item['filename']}",
+                    f"hf://datasets/{dataset}@{safe_quote(PARQUET_REVISION)}/{config}/{parquet_file_item['filename']}",
                     filesystem=get_hf_fs(app_config.common.hf_token),
                 )
         for parquet_file_and_metadata_item in expected_content["parquet_files_and_metadata"]:
