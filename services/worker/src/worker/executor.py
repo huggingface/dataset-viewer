@@ -11,7 +11,7 @@ import orjson
 from filelock import FileLock
 from libcommon.processing_graph import ProcessingGraph
 from libcommon.queue import Queue
-from libcommon.utils import Status, get_datetime
+from libcommon.utils import get_datetime
 from mirakuru import OutputExecutor
 
 from worker import start_worker_loop
@@ -126,7 +126,7 @@ class WorkerExecutor:
             )
             job_manager.set_crashed(message=message)
             logging.info(f"Killing zombie. Job info = {zombie}")
-            queue.finish_job(job_id=zombie["job_id"], finished_status=Status.ERROR)
+            queue.finish_job(job_id=zombie["job_id"], is_success=False)
 
     def kill_long_job(self, worker_loop_executor: OutputExecutor) -> None:
         worker_state = self.get_state()
@@ -143,7 +143,7 @@ class WorkerExecutor:
                     worker_loop_executor.stop()  # raises an error if the worker returned exit code 1
                 finally:
                     logging.info(f"Killing a long job. Job info = {long_job}")
-                    Queue().finish_job(job_id=long_job["job_id"], finished_status=Status.ERROR)
+                    Queue().finish_job(job_id=long_job["job_id"], is_success=False)
                     job_runner = self.job_runner_factory.create_job_runner(long_job)
                     job_manager = JobManager(
                         job_info=long_job,
