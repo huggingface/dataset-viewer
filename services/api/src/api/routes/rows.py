@@ -120,7 +120,7 @@ def get_hf_parquet_uris(paths: List[str], dataset: str) -> List[str]:
     return [f"hf://datasets/{dataset}@{safe_quote(PARQUET_REVISION)}/{path}" for path in paths]
 
 
-UNSUPPORTED_FEATURES_MAGIC_STRINGS = ["Image(", "Audio(", "'binary'"]
+UNSUPPORTED_FEATURES_MAGIC_STRINGS = ["'binary'"]
 
 
 def get_supported_unsupported_columns(features: Features) -> Tuple[List[str], List[str]]:
