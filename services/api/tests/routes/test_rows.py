@@ -20,7 +20,6 @@ from libcommon.viewer_utils.asset import update_last_modified_date_of_rows_in_as
 from api.config import AppConfig
 from api.routes.rows import (
     Indexer,
-    ParquetFileMetadataItem,
     ParquetIndexWithMetadata,
     ParquetIndexWithoutMetadata,
     RowsIndex,
@@ -127,7 +126,7 @@ def dataset_with_config_parquet_metadata(
                 "filename": "ds-train.parquet",
                 "size": ds_fs.info("plain_text/ds-train.parquet")["size"],
                 "num_rows": pq.read_metadata(ds_fs.open("plain_text/ds-train.parquet")).num_rows,
-                "parquet_metadata_subpath": f"ds/--/plain_text/ds-train.parquet",
+                "parquet_metadata_subpath": "ds/--/plain_text/ds-train.parquet",
             }
         ]
     }
