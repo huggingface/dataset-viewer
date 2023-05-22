@@ -16,7 +16,13 @@ from libcommon.storage import StrPath
 from libcommon.viewer_utils.asset import update_last_modified_date_of_rows_in_assets_dir
 
 from api.config import AppConfig
-from api.routes.rows import Indexer, RowsIndex, clean_cached_assets, create_response
+from api.routes.rows import (
+    Indexer,
+    ParquetIndexWithoutMetadata,
+    RowsIndex,
+    clean_cached_assets,
+    create_response,
+)
 
 
 @pytest.fixture(autouse=True)
@@ -172,10 +178,11 @@ def test_indexer_get_rows_index(
     with patch("api.routes.rows.get_hf_fs", return_value=ds_fs):
         with patch("api.routes.rows.get_hf_parquet_uris", side_effect=mock_get_hf_parquet_uris):
             index = indexer.get_rows_index("ds", "plain_text", "train")
-    assert index.features == ds.features
-    assert index.row_group_offsets.tolist() == [len(ds)]
-    assert len(index.row_group_readers) == 1
-    row_group_reader = index.row_group_readers[0]
+    assert isinstance(index.parquet_index, ParquetIndexWithoutMetadata)
+    assert index.parquet_index.features == ds.features
+    assert index.parquet_index.row_group_offsets.tolist() == [len(ds)]
+    assert len(index.parquet_index.row_group_readers) == 1
+    row_group_reader = index.parquet_index.row_group_readers[0]
     pa_table = row_group_reader()
     assert pa_table.to_pydict() == ds.to_dict()
 
@@ -190,10 +197,11 @@ def test_indexer_get_rows_index_sharded(
     with patch("api.routes.rows.get_hf_fs", return_value=ds_sharded_fs):
         with patch("api.routes.rows.get_hf_parquet_uris", side_effect=mock_get_hf_parquet_uris):
             index = indexer.get_rows_index("ds_sharded", "plain_text", "train")
-    assert index.features == ds_sharded.features
-    assert index.row_group_offsets.tolist() == np.cumsum([len(ds)] * 4).tolist()
-    assert len(index.row_group_readers) == 4
-    row_group_reader = index.row_group_readers[0]
+    assert isinstance(index.parquet_index, ParquetIndexWithoutMetadata)
+    assert index.parquet_index.features == ds_sharded.features
+    assert index.parquet_index.row_group_offsets.tolist() == np.cumsum([len(ds)] * 4).tolist()
+    assert len(index.parquet_index.row_group_readers) == 4
+    row_group_reader = index.parquet_index.row_group_readers[0]
     pa_table = row_group_reader()
     assert pa_table.to_pydict() == ds.to_dict()
 
