@@ -1,4 +1,5 @@
 import os
+import shutil
 import time
 from http import HTTPStatus
 from pathlib import Path
@@ -6,6 +7,7 @@ from typing import Any, Generator, List
 from unittest.mock import patch
 
 import numpy as np
+import pyarrow.parquet as pq
 import pytest
 from datasets import Dataset, Image, concatenate_datasets
 from datasets.table import embed_table_storage
@@ -18,6 +20,8 @@ from libcommon.viewer_utils.asset import update_last_modified_date_of_rows_in_as
 from api.config import AppConfig
 from api.routes.rows import (
     Indexer,
+    ParquetFileMetadataItem,
+    ParquetIndexWithMetadata,
     ParquetIndexWithoutMetadata,
     RowsIndex,
     clean_cached_assets,
@@ -70,6 +74,21 @@ def ds_image_fs(ds_image: Dataset, tmpfs: AbstractFileSystem) -> Generator[Abstr
 
 
 @pytest.fixture
+def ds_parquet_metadata_dir(
+    ds_fs: AbstractFileSystem, parquet_metadata_directory: StrPath
+) -> Generator[StrPath, None, None]:
+    parquet_shard_paths = ds_fs.glob("**.parquet")
+    for parquet_shard_path in parquet_shard_paths:
+        parquet_file_metadata_path = Path(parquet_metadata_directory) / "ds" / "--" / parquet_shard_path
+        parquet_file_metadata_path.parent.mkdir(parents=True, exist_ok=True)
+        with ds_fs.open(parquet_shard_path) as parquet_shard_f:
+            with open(parquet_file_metadata_path, "wb") as parquet_file_metadata_f:
+                pq.read_metadata(parquet_shard_f).write_metadata_file(parquet_file_metadata_f)
+    yield parquet_metadata_directory
+    shutil.rmtree(Path(parquet_metadata_directory) / "ds")
+
+
+@pytest.fixture
 def dataset_with_config_parquet() -> dict[str, Any]:
     config_parquet_content = {
         "parquet_files": [
@@ -92,6 +111,50 @@ def dataset_with_config_parquet() -> dict[str, Any]:
         progress=1.0,
     )
     return config_parquet_content
+
+
+@pytest.fixture
+def dataset_with_config_parquet_metadata(
+    ds_fs: AbstractFileSystem, ds_parquet_metadata_dir: StrPath
+) -> dict[str, Any]:
+    config_parquet_content = {
+        "parquet_files_metadata": [
+            {
+                "dataset": "ds",
+                "config": "plain_text",
+                "split": "train",
+                "url": "https://fake.huggingface.co/datasets/ds/resolve/refs%2Fconvert%2Fparquet/plain_text/ds-train.parquet",  # noqa: E501
+                "filename": "ds-train.parquet",
+                "size": ds_fs.info("plain_text/ds-train.parquet")["size"],
+                "num_rows": pq.read_metadata(ds_fs.open("plain_text/ds-train.parquet")).num_rows,
+                "parquet_metadata_subpath": f"ds/--/plain_text/ds-train.parquet",
+            }
+        ]
+    }
+    upsert_response(
+        kind="config-parquet-metadata",
+        dataset="ds",
+        config="plain_text",
+        content=config_parquet_content,
+        http_status=HTTPStatus.OK,
+        progress=1.0,
+    )
+    return config_parquet_content
+
+
+@pytest.fixture
+def ds_sharded_parquet_metadata_dir(
+    ds_sharded_fs: AbstractFileSystem, parquet_metadata_directory: StrPath
+) -> Generator[StrPath, None, None]:
+    parquet_shard_paths = ds_sharded_fs.glob("**.parquet")
+    for parquet_shard_path in parquet_shard_paths:
+        parquet_file_metadata_path = Path(parquet_metadata_directory) / "ds_sharded" / "--" / parquet_shard_path
+        parquet_file_metadata_path.parent.mkdir(parents=True, exist_ok=True)
+        with ds_sharded_fs.open(parquet_shard_path) as parquet_shard_f:
+            with open(parquet_file_metadata_path, "wb") as parquet_file_metadata_f:
+                pq.read_metadata(parquet_shard_f).write_metadata_file(parquet_file_metadata_f)
+    yield parquet_metadata_directory
+    shutil.rmtree(Path(parquet_metadata_directory) / "ds_sharded")
 
 
 @pytest.fixture
@@ -119,6 +182,36 @@ def dataset_sharded_with_config_parquet() -> dict[str, Any]:
         progress=1.0,
     )
     return config_parquet_content
+
+
+@pytest.fixture
+def dataset_sharded_with_config_parquet_metadata(
+    ds_sharded_fs: AbstractFileSystem, ds_sharded_parquet_metadata_dir: StrPath
+) -> dict[str, Any]:
+    config_parquet_metadata_content = {
+        "parquet_files_metadata": [
+            {
+                "dataset": "ds_sharded",
+                "config": "plain_text",
+                "split": "train",
+                "url": f"https://fake.huggingface.co/datasets/ds/resolve/refs%2Fconvert%2Fparquet/{parquet_file_path}",  # noqa: E501
+                "filename": os.path.basename(parquet_file_path),
+                "size": ds_sharded_fs.info(parquet_file_path)["size"],
+                "num_rows": pq.read_metadata(ds_sharded_fs.open(parquet_file_path)).num_rows,
+                "parquet_metadata_subpath": f"ds_sharded/--/{parquet_file_path}",
+            }
+            for parquet_file_path in ds_sharded_fs.glob("plain_text/*.parquet")
+        ]
+    }
+    upsert_response(
+        kind="config-parquet-metadata",
+        dataset="ds_sharded",
+        config="plain_text",
+        content=config_parquet_metadata_content,
+        http_status=HTTPStatus.OK,
+        progress=1.0,
+    )
+    return config_parquet_metadata_content
 
 
 @pytest.fixture
@@ -214,6 +307,69 @@ def test_rows_index_query(rows_index: RowsIndex, ds_sharded: Dataset) -> None:
     assert rows_index.query(offset=1, length=99999999).to_pydict() == ds_sharded[1:]
     with pytest.raises(IndexError):
         rows_index.query(offset=-1, length=2)
+
+
+@pytest.fixture
+def rows_index_with_parquet_metadata(
+    indexer: Indexer,
+    ds_sharded: Dataset,
+    ds_sharded_fs: AbstractFileSystem,
+    dataset_sharded_with_config_parquet_metadata: dict[str, Any],
+) -> Generator[RowsIndex, None, None]:
+    with ds_sharded_fs.open("plain_text/ds_sharded-train-00000-of-00004.parquet") as f:
+        with patch("api.routes.rows.HTTPFile", return_value=f):
+            yield indexer.get_rows_index("ds_sharded", "plain_text", "train")
+
+
+def test_indexer_get_rows_index_with_parquet_metadata(
+    indexer: Indexer, ds: Dataset, ds_fs: AbstractFileSystem, dataset_with_config_parquet_metadata: dict[str, Any]
+) -> None:
+    with ds_fs.open("plain_text/ds-train.parquet") as f:
+        with patch("api.routes.rows.HTTPFile", return_value=f):
+            index = indexer.get_rows_index("ds", "plain_text", "train")
+    assert isinstance(index.parquet_index, ParquetIndexWithMetadata)
+    assert index.parquet_index.features == ds.features
+    assert index.parquet_index.num_rows == [len(ds)]
+    assert index.parquet_index.parquet_files_urls == [
+        parquet_file_metadata_item["url"]
+        for parquet_file_metadata_item in dataset_with_config_parquet_metadata["parquet_files_metadata"]
+    ]
+    assert len(index.parquet_index.metadata_paths) == 1
+    assert os.path.exists(index.parquet_index.metadata_paths[0])
+
+
+def test_indexer_get_rows_index_sharded_with_parquet_metadata(
+    indexer: Indexer,
+    ds: Dataset,
+    ds_sharded: Dataset,
+    ds_sharded_fs: AbstractFileSystem,
+    dataset_sharded_with_config_parquet_metadata: dict[str, Any],
+) -> None:
+    with ds_sharded_fs.open("plain_text/ds_sharded-train-00000-of-00004.parquet") as f:
+        with patch("api.routes.rows.HTTPFile", return_value=f):
+            index = indexer.get_rows_index("ds_sharded", "plain_text", "train")
+    assert isinstance(index.parquet_index, ParquetIndexWithMetadata)
+    assert index.parquet_index.features == ds_sharded.features
+    assert index.parquet_index.num_rows == [len(ds)] * 4
+    assert index.parquet_index.parquet_files_urls == [
+        parquet_file_metadata_item["url"]
+        for parquet_file_metadata_item in dataset_sharded_with_config_parquet_metadata["parquet_files_metadata"]
+    ]
+    assert len(index.parquet_index.metadata_paths) == 4
+    assert all(os.path.exists(index.parquet_index.metadata_paths[i]) for i in range(4))
+
+
+def test_rows_index_query_with_parquet_metadata(
+    rows_index_with_parquet_metadata: RowsIndex, ds_sharded: Dataset
+) -> None:
+    assert isinstance(rows_index_with_parquet_metadata.parquet_index, ParquetIndexWithMetadata)
+    assert rows_index_with_parquet_metadata.query(offset=1, length=3).to_pydict() == ds_sharded[1:4]
+    assert rows_index_with_parquet_metadata.query(offset=1, length=-1).to_pydict() == ds_sharded[:0]
+    assert rows_index_with_parquet_metadata.query(offset=1, length=0).to_pydict() == ds_sharded[:0]
+    assert rows_index_with_parquet_metadata.query(offset=999999, length=1).to_pydict() == ds_sharded[:0]
+    assert rows_index_with_parquet_metadata.query(offset=1, length=99999999).to_pydict() == ds_sharded[1:]
+    with pytest.raises(IndexError):
+        rows_index_with_parquet_metadata.query(offset=-1, length=2)
 
 
 def test_create_response(ds: Dataset, app_config: AppConfig, cached_assets_directory: StrPath) -> None:
