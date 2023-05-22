@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: Apache-2.0
-# Copyright 2022 The HuggingFace Authors.
+# Copyright 2023 The HuggingFace Authors.
 
 from http import HTTPStatus
 from typing import Any, Callable
@@ -7,13 +7,11 @@ from typing import Any, Callable
 import pytest
 from libcommon.processing_graph import ProcessingGraph
 from libcommon.resources import CacheMongoResource, QueueMongoResource
-from libcommon.simple_cache import CachedArtifactError, upsert_response
+from libcommon.simple_cache import upsert_response
 from libcommon.utils import Priority
 
 from worker.config import AppConfig
-from worker.job_runners.split.opt_in_out_urls_count import (
-    SplitOptInOutUrlsCountJobRunner,
-)
+from worker.job_runners.split.partitions import SplitPartitionsJobRunner
 
 
 @pytest.fixture(autouse=True)
@@ -22,7 +20,7 @@ def prepare_and_clean_mongo(app_config: AppConfig) -> None:
     pass
 
 
-GetJobRunner = Callable[[str, str, str, AppConfig], SplitOptInOutUrlsCountJobRunner]
+GetJobRunner = Callable[[str, str, str, AppConfig], SplitPartitionsJobRunner]
 
 
 @pytest.fixture
@@ -35,22 +33,22 @@ def get_job_runner(
         config: str,
         split: str,
         app_config: AppConfig,
-    ) -> SplitOptInOutUrlsCountJobRunner:
-        processing_step_name = SplitOptInOutUrlsCountJobRunner.get_job_type()
+    ) -> SplitPartitionsJobRunner:
+        processing_step_name = SplitPartitionsJobRunner.get_job_type()
         processing_graph = ProcessingGraph(
             {
                 "dataset-level": {"input_type": "dataset"},
-                "config-level": {"input_type": "dataset", "triggered_by": "dataset-level"},
+                "config-level": {"input_type": "config", "triggered_by": "dataset-level"},
                 processing_step_name: {
                     "input_type": "split",
-                    "job_runner_version": SplitOptInOutUrlsCountJobRunner.get_job_runner_version(),
+                    "job_runner_version": SplitPartitionsJobRunner.get_job_runner_version(),
                     "triggered_by": "config-level",
                 },
             }
         )
-        return SplitOptInOutUrlsCountJobRunner(
+        return SplitPartitionsJobRunner(
             job_info={
-                "type": SplitOptInOutUrlsCountJobRunner.get_job_type(),
+                "type": SplitPartitionsJobRunner.get_job_type(),
                 "params": {
                     "dataset": dataset,
                     "revision": "revision",
@@ -77,29 +75,37 @@ def get_job_runner(
             "split_ok",
             HTTPStatus.OK,
             {
-                "has_urls_columns": True,
-                "num_scanned_rows": 4,
-                "opt_in_urls": [
-                    {"url": "http://testurl.test/test_image3-optIn.jpg", "row_idx": 3, "column_name": "col"}
-                ],
-                "opt_out_urls": [
-                    {"url": "http://testurl.test/test_image-optOut.jpg", "row_idx": 0, "column_name": "col"}
-                ],
-                "urls_columns": ["col"],
-                "num_opt_out_urls": 1,
-                "num_opt_in_urls": 1,
-                "num_urls": 4,
-                "full_scan": True,
+                "size": {
+                    "splits": [
+                        {
+                            "dataset": "dataset_ok",
+                            "config": "config_ok",
+                            "split": "split_ok",
+                            "num_bytes_parquet_files": 14_281_188,
+                            "num_bytes_memory": 17_470_800,
+                            "num_rows": 300_010,
+                            "num_columns": 2,
+                        },
+                    ],
+                }
             },
             None,
             {
-                "has_urls_columns": True,
-                "num_scanned_rows": 4,
-                "urls_columns": ["col"],
-                "num_opt_out_urls": 1,
-                "num_opt_in_urls": 1,
-                "num_urls": 4,
-                "full_scan": True,
+                "num_rows": 300_010,
+                "partitions": [
+                    {
+                        "partition": "0-99999",
+                    },
+                    {
+                        "partition": "100000-199999",
+                    },
+                    {
+                        "partition": "200000-299999",
+                    },
+                    {
+                        "partition": "300000-300009",
+                    },
+                ],
             },
             False,
         ),
@@ -138,10 +144,10 @@ def test_compute(
     should_raise: bool,
 ) -> None:
     upsert_response(
-        kind="split-opt-in-out-urls-scan",
+        kind="config-size",
         dataset=dataset,
         config=config,
-        split=split,
+        split=None,
         content=upstream_content,
         http_status=upstream_status,
     )
@@ -152,10 +158,3 @@ def test_compute(
         assert e.typename == expected_error_code
     else:
         assert job_runner.compute().content == expected_content
-
-
-def test_doesnotexist(app_config: AppConfig, get_job_runner: GetJobRunner) -> None:
-    dataset = config = split = "doesnotexist"
-    job_runner = get_job_runner(dataset, config, split, app_config)
-    with pytest.raises(CachedArtifactError):
-        job_runner.compute()

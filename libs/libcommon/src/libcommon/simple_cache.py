@@ -86,12 +86,11 @@ class CachedResponse(Document):
 
     id = ObjectIdField(db_field="_id", primary_key=True, default=ObjectId)
 
-    kind = StringField(required=True, unique_with=["dataset", "config", "split", "partition_start", "partition_end"])
+    kind = StringField(required=True, unique_with=["dataset", "config", "split", "partition"])
     dataset = StringField(required=True)
     config = StringField()
     split = StringField()
-    partition_start = IntField()
-    partition_end = IntField()
+    partition = StringField()
 
     http_status = EnumField(HTTPStatus, required=True)
     error_code = StringField()
@@ -107,7 +106,7 @@ class CachedResponse(Document):
         "collection": CACHE_COLLECTION_RESPONSES,
         "db_alias": CACHE_MONGOENGINE_ALIAS,
         "indexes": [
-            ("kind", "dataset", "config", "split", "partition_start", "partition_end"),
+            ("kind", "dataset", "config", "split", "partition"),
             ("dataset", "kind", "http_status"),
             ("kind", "http_status", "dataset"),
             ("kind", "http_status", "error_code"),
@@ -123,8 +122,7 @@ class CachedResponse(Document):
 # null values, see https://www.mongodb.com/docs/v5.0/core/index-unique/#unique-index-and-missing-field.
 CachedResponse.config.required = False  # type: ignore
 CachedResponse.split.required = False  # type: ignore
-CachedResponse.partition_start.required = False  # type: ignore
-CachedResponse.partition_end.required = False  # type: ignore
+CachedResponse.partition.required = False  # type: ignore
 
 
 # Note: we let the exceptions throw (ie DocumentTooLarge): it's the responsibility of the caller to manage them
@@ -135,8 +133,7 @@ def upsert_response(
     http_status: HTTPStatus,
     config: Optional[str] = None,
     split: Optional[str] = None,
-    partition_start: Optional[int] = None,
-    partition_end: Optional[int] = None,
+    partition: Optional[str] = None,
     error_code: Optional[str] = None,
     details: Optional[Mapping[str, Any]] = None,
     job_runner_version: Optional[int] = None,
@@ -149,8 +146,7 @@ def upsert_response(
         dataset=dataset,
         config=config,
         split=split,
-        partition_start=partition_start,
-        partition_end=partition_end,
+        partition=partition,
     ).upsert_one(
         content=content,
         http_status=http_status,
@@ -180,8 +176,7 @@ def upsert_response_params(
         dataset=job_params["dataset"],
         config=job_params["config"],
         split=job_params["split"],
-        partition_start=job_params["partition_start"],
-        partition_end=job_params["partition_end"],
+        partition=job_params["partition"],
         content=content,
         dataset_git_revision=dataset_git_revision,
         details=details,
@@ -217,8 +212,7 @@ def get_response_without_content(
     dataset: str,
     config: Optional[str] = None,
     split: Optional[str] = None,
-    partition_start: Optional[int] = None,
-    partition_end: Optional[int] = None,
+    partition: Optional[str] = None,
 ) -> CacheEntryWithoutContent:
     response = (
         CachedResponse.objects(
@@ -226,8 +220,7 @@ def get_response_without_content(
             dataset=dataset,
             config=config,
             split=split,
-            partition_start=partition_start,
-            partition_end=partition_end,
+            partition=partition,
         )
         .only("http_status", "error_code", "job_runner_version", "dataset_git_revision", "progress")
         .get()
@@ -247,8 +240,7 @@ def get_response_without_content_params(kind: str, job_params: JobParams) -> Cac
         dataset=job_params["dataset"],
         config=job_params["config"],
         split=job_params["split"],
-        partition_start=job_params["partition_start"],
-        partition_end=job_params["partition_end"],
+        partition=job_params["partition"],
     )
 
 
@@ -288,8 +280,7 @@ class CachedArtifactError(Exception):
     dataset: str
     config: Optional[str]
     split: Optional[str]
-    partition_start: Optional[int]
-    partition_end: Optional[int]
+    partition: Optional[str]
     cache_entry_with_details: CacheEntryWithDetails
     enhanced_details: Dict[str, Any]
 
@@ -300,8 +291,7 @@ class CachedArtifactError(Exception):
         dataset: str,
         config: Optional[str],
         split: Optional[str],
-        partition_start: Optional[int],
-        partition_end: Optional[int],
+        partition: Optional[str],
         cache_entry_with_details: CacheEntryWithDetails,
     ):
         super().__init__(message)
@@ -309,8 +299,7 @@ class CachedArtifactError(Exception):
         self.dataset = dataset
         self.config = config
         self.split = split
-        self.partition_start = partition_start
-        self.partition_end = partition_end
+        self.partition = partition
         self.cache_entry_with_details = cache_entry_with_details
         self.enhanced_details: Dict[str, Any] = dict(self.cache_entry_with_details["details"].items())
         self.enhanced_details["copied_from_artifact"] = {
@@ -318,8 +307,7 @@ class CachedArtifactError(Exception):
             "dataset": self.dataset,
             "config": self.config,
             "split": self.split,
-            "partition_start": self.partition_start,
-            "partition_end": self.partition_end,
+            "partition": self.partition,
         }
 
 
@@ -495,8 +483,7 @@ class CacheReport(TypedDict):
     dataset: str
     config: Optional[str]
     split: Optional[str]
-    partition_start: Optional[int]
-    partition_end: Optional[int]
+    partition: Optional[str]
     http_status: int
     error_code: Optional[str]
     details: Mapping[str, Any]
@@ -531,7 +518,7 @@ def get_cache_reports(kind: str, cursor: Optional[str], limit: int) -> CacheRepo
         cursor (`str`):
             An opaque string value representing a pointer to a specific CachedResponse item in the dataset. The
             server returns results after the given pointer.
-            An empty string means to end from the beginning.
+            An empty string means to start from the beginning.
         limit (strictly positive `int`):
             The maximum number of results.
     Returns:
@@ -560,8 +547,7 @@ def get_cache_reports(kind: str, cursor: Optional[str], limit: int) -> CacheRepo
                 "dataset": object.dataset,
                 "config": object.config,
                 "split": object.split,
-                "partition_start": object.partition_start,
-                "partition_end": object.partition_end,
+                "partition": object.partition,
                 "http_status": object.http_status.value,
                 "error_code": object.error_code,
                 "details": object.details,
@@ -584,8 +570,7 @@ def get_dataset_responses_without_content_for_kind(kind: str, dataset: str) -> L
             "dataset": response.dataset,
             "config": response.config,
             "split": response.split,
-            "partition_start": response.partition_start,
-            "partition_end": response.partition_end,
+            "partition": response.partition,
             "http_status": response.http_status,
             "error_code": response.error_code,
             "details": response.details,
@@ -648,8 +633,7 @@ def get_cache_reports_with_content(kind: str, cursor: Optional[str], limit: int)
                 "dataset": object.dataset,
                 "config": object.config,
                 "split": object.split,
-                "partition_start": object.partition_start,
-                "partition_end": object.partition_end,
+                "partition": object.partition,
                 "http_status": object.http_status.value,
                 "error_code": object.error_code,
                 "content": object.content,
@@ -670,8 +654,7 @@ class CacheEntryFullMetadata(CacheEntryMetadata):
     dataset: str
     config: Optional[str]
     split: Optional[str]
-    partition_start: Optional[int]
-    partition_end: Optional[int]
+    partition: Optional[str]
 
 
 def _get_df(entries: List[CacheEntryFullMetadata]) -> pd.DataFrame:
@@ -681,8 +664,7 @@ def _get_df(entries: List[CacheEntryFullMetadata]) -> pd.DataFrame:
             "dataset": pd.Series([entry["dataset"] for entry in entries], dtype="str"),
             "config": pd.Series([entry["config"] for entry in entries], dtype="str"),
             "split": pd.Series([entry["split"] for entry in entries], dtype="str"),
-            "partition_start": pd.Series([entry["partition_start"] for entry in entries], dtype="Int64"),
-            "partition_end": pd.Series([entry["partition_end"] for entry in entries], dtype="Int64"),
+            "partition": pd.Series([entry["partition"] for entry in entries], dtype="str"),
             "http_status": pd.Series(
                 [entry["http_status"] for entry in entries], dtype="category"
             ),  # check if it's working as expected
@@ -706,8 +688,7 @@ def get_cache_entries_df(dataset: str) -> pd.DataFrame:
                 "dataset": response.dataset,
                 "config": response.config,
                 "split": response.split,
-                "partition_start": response.partition_start,
-                "partition_end": response.partition_end,
+                "partition": response.partition,
                 "http_status": response.http_status,
                 "error_code": response.error_code,
                 "dataset_git_revision": response.dataset_git_revision,
@@ -720,8 +701,7 @@ def get_cache_entries_df(dataset: str) -> pd.DataFrame:
                 "dataset",
                 "config",
                 "split",
-                "partition_start",
-                "partition_end",
+                "partition",
                 "http_status",
                 "error_code",
                 "job_runner_version",

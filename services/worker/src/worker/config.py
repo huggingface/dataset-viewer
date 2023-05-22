@@ -217,7 +217,7 @@ class NumbaConfig:
             return cls(path=env.str(name="NUMBA_CACHE_DIR", default=NUMBA_CACHE_DIR))
 
 
-PARTITION_CHUNK_SIZE = 100
+PARTITION_CHUNK_SIZE = 100_000
 
 
 @dataclass(frozen=True)

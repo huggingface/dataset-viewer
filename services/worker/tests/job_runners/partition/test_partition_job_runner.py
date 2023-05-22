@@ -27,13 +27,15 @@ class DummyPartitionJobRunner(PartitionJobRunner):
 
 
 @pytest.mark.parametrize(
-    "config,split,partition_start,partition_end",
+    "config,split,partition",
     [
-        (None, None, None, None),
-        (None, "split", 0, 100),
-        ("config", None, None, None),
-        ("config", "split", 0, None),
-        ("config", "split", None, 100),
+        (None, None, None),
+        (None, "split", "0-100"),
+        ("config", None, "0-100"),
+        ("config", "split", "0-"),
+        ("config", "split", "-100"),
+        ("config", "split", "WRONG FORMAT"),
+        ("config", "split", "-"),
     ],
 )
 def test_failed_creation(
@@ -41,8 +43,7 @@ def test_failed_creation(
     app_config: AppConfig,
     config: str,
     split: str,
-    partition_start: int,
-    partition_end: int,
+    partition: str,
 ) -> None:
     with pytest.raises(CustomError) as exc_info:
         DummyPartitionJobRunner(
@@ -54,8 +55,7 @@ def test_failed_creation(
                     "revision": "revision",
                     "config": config,
                     "split": split,
-                    "partition_start": partition_start,
-                    "partition_end": partition_end,
+                    "partition": partition,
                 },
                 "priority": Priority.NORMAL,
             },
@@ -77,8 +77,7 @@ def test_success_creation(test_processing_step: ProcessingStep, app_config: AppC
                     "revision": "revision",
                     "config": "config",
                     "split": "split",
-                    "partition_start": 0,
-                    "partition_end": 100,
+                    "partition": "0-100",
                 },
                 "priority": Priority.NORMAL,
             },

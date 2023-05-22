@@ -117,8 +117,7 @@ def get_cache_entry_from_steps(
                 revision=revision,
                 config=config,
                 split=split,
-                partition_start=None,
-                partition_end=None,
+                partition=None,
             ).id
             for processing_step in processing_steps
         ]

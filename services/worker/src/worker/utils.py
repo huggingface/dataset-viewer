@@ -14,6 +14,7 @@ from typing import (
     List,
     Mapping,
     Optional,
+    Tuple,
     TypedDict,
     TypeVar,
     Union,
@@ -113,14 +114,9 @@ class OptUrl(TypedDict):
     column_name: str
 
 
-class Partition(TypedDict):
-    partition_start: int
-    partition_end: int
-
-
 class PartitionsReponse(TypedDict):
     num_rows: int
-    partitions: List[Partition]
+    partitions: List[str]
 
 
 class OptInOutUrlsCountResponse(TypedDict):
@@ -413,8 +409,7 @@ def get_previous_step_or_raise(
     dataset: str,
     config: Optional[str] = None,
     split: Optional[str] = None,
-    partition_start: Optional[int] = None,
-    partition_end: Optional[int] = None,
+    partition: Optional[str] = None,
 ) -> BestResponse:
     """Get the previous step from the cache, or raise an exception if it failed."""
     best_response = get_best_response(kinds=kinds, dataset=dataset, config=config, split=split)
@@ -425,8 +420,29 @@ def get_previous_step_or_raise(
             dataset=dataset,
             config=config,
             split=split,
-            partition_start=partition_start,
-            partition_end=partition_end,
+            partition=partition,
             cache_entry_with_details=best_response.response,
         )
     return best_response
+
+
+PARTITIONS_SEPARATOR = "-"
+
+
+def partition_to_string(partition_start: int, partition_end: int) -> str:
+    return f"{partition_start}{PARTITIONS_SEPARATOR}{partition_end}"
+
+
+def partition_values_from_string(partition: str) -> Tuple[Optional[int], Optional[int]]:
+    try:
+        params = partition.split(PARTITIONS_SEPARATOR)
+        partition_start = params[0]
+        partition_end = params[1]
+        if not isinstance(partition_start, int) or not isinstance(partition_end, int):
+            raise ValueError("partitions are not numerical values.")
+        if partition_end < partition_start:
+            raise ValueError("partition start should be greater than partition end.")
+        return (params[0], params[1])
+    except Exception as e:
+        logging.error(f"Could not get partition values, error: {e}")
+        return (None, None)

@@ -13,7 +13,7 @@ from typing import Generic, List, Optional, Type, TypedDict, TypeVar
 import pandas as pd
 import pytz
 from mongoengine import Document, DoesNotExist
-from mongoengine.fields import DateTimeField, EnumField, IntField, StringField
+from mongoengine.fields import DateTimeField, EnumField, StringField
 from mongoengine.queryset.queryset import QuerySet
 
 from libcommon.constants import (
@@ -56,8 +56,7 @@ class JobDict(TypedDict):
     revision: str
     config: Optional[str]
     split: Optional[str]
-    partition_start: Optional[int]
-    partition_end: Optional[int]
+    partition: Optional[str]
     unicity_id: str
     namespace: str
     priority: str
@@ -125,8 +124,7 @@ class Job(Document):
                 "revision",
                 "config",
                 "split",
-                "partition_start",
-                "partition_end",
+                "partition",
                 "status",
                 "priority",
             ),
@@ -146,8 +144,7 @@ class Job(Document):
     revision = StringField(required=True)
     config = StringField()
     split = StringField()
-    partition_start = IntField()
-    partition_end = IntField()
+    partition = StringField()
     unicity_id = StringField(required=True)
     namespace = StringField(required=True)
     priority = EnumField(Priority, default=Priority.NORMAL)
@@ -164,8 +161,7 @@ class Job(Document):
             "revision": self.revision,
             "config": self.config,
             "split": self.split,
-            "partition_start": self.partition_start,
-            "partition_end": self.partition_end,
+            "partition": self.partition,
             "unicity_id": self.unicity_id,
             "namespace": self.namespace,
             "priority": self.priority.value,
@@ -188,8 +184,7 @@ class Job(Document):
                     "revision": self.revision,
                     "config": self.config,
                     "split": self.split,
-                    "partition_start": self.partition_start,
-                    "partition_end": self.partition_end,
+                    "partition": self.partition,
                 },
                 "priority": self.priority,
             }
@@ -204,8 +199,7 @@ class Job(Document):
                 "revision": self.revision,
                 "config": self.config,
                 "split": self.split,
-                "partition_start": self.partition_start,
-                "partition_end": self.partition_end,
+                "partition": self.partition,
                 "priority": self.priority.value,
             }
         )
@@ -219,7 +213,7 @@ class Queue:
 
     It's a FIFO queue, with the following properties:
     - a job is identified by its input arguments: unicity_id (type, dataset, config, split,
-      partition_start and partition_end, NOT revision)
+      and partition, NOT revision)
     - a job can be in one of the following states: waiting, started, success, error, cancelled
     - a job can be in the queue only once (unicity_id) in the "started" or "waiting" state
     - a job can be in the queue multiple times in the other states (success, error, cancelled)
@@ -399,7 +393,7 @@ class Queue:
                 status=Status.WAITING, namespace__nin=set(started_job_namespaces), priority=priority, **filters
             )
             .order_by("+created_at")
-            .only("type", "dataset", "revision", "config", "split", "priority", "partition_start", "partition_end")
+            .only("type", "dataset", "revision", "config", "split", "priority", "partition")
             .no_cache()
             .first()
         )
@@ -442,7 +436,7 @@ class Queue:
                     **filters,
                 )
                 .order_by("+created_at")
-                .only("type", "dataset", "revision", "config", "split", "priority", "partition_start", "partition_end")
+                .only("type", "dataset", "revision", "config", "split", "priority", "partition")
                 .no_cache()
                 .first()
             )
@@ -622,8 +616,7 @@ class Queue:
                 "revision": pd.Series([job["revision"] for job in jobs], dtype="str"),
                 "config": pd.Series([job["config"] for job in jobs], dtype="str"),
                 "split": pd.Series([job["split"] for job in jobs], dtype="str"),
-                "partition_start": pd.Series([job["partition_start"] for job in jobs], dtype="Int64"),
-                "partition_end": pd.Series([job["partition_end"] for job in jobs], dtype="Int64"),
+                "partition": pd.Series([job["partition"] for job in jobs], dtype="str"),
                 "priority": pd.Series([job["priority"] for job in jobs], dtype="category"),
             }
         )

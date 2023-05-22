@@ -27,8 +27,7 @@ class JobParams(TypedDict):
     revision: str
     config: Optional[str]
     split: Optional[str]
-    partition_start: Optional[int]
-    partition_end: Optional[int]
+    partition: Optional[str]
 
 
 class JobInfo(TypedDict):
@@ -45,8 +44,7 @@ class FlatJobInfo(TypedDict):
     revision: str
     config: Optional[str]
     split: Optional[str]
-    partition_start: Optional[int]
-    partition_end: Optional[int]
+    partition: Optional[str]
     priority: str
 
 
@@ -73,7 +71,7 @@ def inputs_to_string(
     revision: Optional[str] = None,
     config: Optional[str] = None,
     split: Optional[str] = None,
-    partition_start: Optional[int] = None,
+    partition: Optional[str] = None,
     parition_end: Optional[int] = None,
     prefix: Optional[str] = None,
 ) -> str:
@@ -84,8 +82,8 @@ def inputs_to_string(
         result = f"{result},{config}"
         if split is not None:
             result = f"{result},{split}"
-            if partition_start is not None:
-                result = f"{result},{partition_start}"
+            if partition is not None:
+                result = f"{result},{partition}"
                 if parition_end is not None:
                     result = f"{result},{parition_end}"
     if prefix is not None:

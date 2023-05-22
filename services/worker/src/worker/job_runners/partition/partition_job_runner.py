@@ -7,9 +7,11 @@ from libcommon.utils import JobInfo
 
 from worker.config import AppConfig
 from worker.job_runners.split.split_job_runner import SplitJobRunner
+from worker.utils import PARTITIONS_SEPARATOR, partition_values_from_string
 
 
 class PartitionJobRunner(SplitJobRunner):
+    partition: str
     partition_start: int
     partition_end: int
 
@@ -20,7 +22,14 @@ class PartitionJobRunner(SplitJobRunner):
         processing_step: ProcessingStep,
     ) -> None:
         super().__init__(job_info=job_info, app_config=app_config, processing_step=processing_step)
-        if job_info["params"]["partition_start"] is None or job_info["params"]["partition_end"] is None:
-            raise ParameterMissingError("'partition_start' and 'partition_end' parameters are required")
-        self.partition_start = job_info["params"]["partition_start"]
-        self.partition_end = job_info["params"]["partition_end"]
+        if job_info["params"]["partition"] is None:
+            raise ParameterMissingError("'partition' parameter is required")
+        self.partition = job_info["params"]["partition"]
+        (partition_start, partition_end) = partition_values_from_string(self.partition)
+        if partition_start is None or partition_end is None:
+            raise ValueError(
+                "'partition' parameter has a wrong format, expected is"
+                f" partition_start{PARTITIONS_SEPARATOR}partition_end"
+            )
+        self.partition_start = partition_start
+        self.partition_end = partition_end

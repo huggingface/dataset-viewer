@@ -40,8 +40,7 @@ def get_job_info(prefix: str = "base") -> JobInfo:
             "revision": "revision",
             "config": "default",
             "split": "train",
-            "partition_start": None,
-            "partition_end": None,
+            "partition": None,
         },
         priority=Priority.LOW,
     )
