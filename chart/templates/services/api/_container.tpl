@@ -8,6 +8,7 @@
   env:
   {{ include "envCachedAssets" . | nindent 2 }}
   {{ include "envCache" . | nindent 2 }}
+  {{ include "envParquetMetadata" . | nindent 2 }}
   {{ include "envQueue" . | nindent 2 }}
   {{ include "envCommon" . | nindent 2 }}
   {{ include "envLog" . | nindent 2 }}
@@ -46,6 +47,7 @@
     value: {{ .Values.api.uvicornPort | quote }}
   volumeMounts:
   {{ include "volumeMountCachedAssetsRW" . | nindent 2 }}
+  {{ include "volumeMountParquetMetadataRO" . | nindent 2 }}
   securityContext:
     allowPrivilegeEscalation: false
   readinessProbe:
