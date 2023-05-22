@@ -72,7 +72,6 @@ def inputs_to_string(
     config: Optional[str] = None,
     split: Optional[str] = None,
     partition: Optional[str] = None,
-    parition_end: Optional[int] = None,
     prefix: Optional[str] = None,
 ) -> str:
     result = dataset
@@ -84,8 +83,6 @@ def inputs_to_string(
             result = f"{result},{split}"
             if partition is not None:
                 result = f"{result},{partition}"
-                if parition_end is not None:
-                    result = f"{result},{parition_end}"
     if prefix is not None:
         result = f"{prefix},{result}"
     return result

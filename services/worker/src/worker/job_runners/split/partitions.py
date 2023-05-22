@@ -12,6 +12,7 @@ from worker.config import AppConfig, PartitionConfig
 from worker.job_runners.split.split_job_runner import SplitJobRunner
 from worker.utils import (
     CompleteJobResult,
+    Partition,
     PartitionsReponse,
     get_previous_step_or_raise,
     partition_to_string,
@@ -41,9 +42,14 @@ def compute_partitions(
 
     num_rows = split_size["num_rows"]
     partitions = [
-        partition_to_string(
-            partition_start=offset,
-            partition_end=offset + chunck_size - 1 if offset + chunck_size - 1 < num_rows else num_rows - 1,
+        Partition(
+            dataset=dataset,
+            config=config,
+            split=split,
+            partition=partition_to_string(
+                partition_start=offset,
+                partition_end=offset + chunck_size - 1 if offset + chunck_size - 1 < num_rows else num_rows - 1,
+            ),
         )
         for offset in range(0, num_rows, chunck_size)
     ]

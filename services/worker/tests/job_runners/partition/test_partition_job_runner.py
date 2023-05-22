@@ -27,15 +27,15 @@ class DummyPartitionJobRunner(PartitionJobRunner):
 
 
 @pytest.mark.parametrize(
-    "config,split,partition",
+    "config,split,partition,expected_error",
     [
-        (None, None, None),
-        (None, "split", "0-100"),
-        ("config", None, "0-100"),
-        ("config", "split", "0-"),
-        ("config", "split", "-100"),
-        ("config", "split", "WRONG FORMAT"),
-        ("config", "split", "-"),
+        (None, None, None, "ParameterMissingError"),
+        (None, "split", "0-100", "ParameterMissingError"),
+        ("config", None, "0-100", "ParameterMissingError"),
+        ("config", "split", "0-", "PartitionFormatError"),
+        ("config", "split", "-100", "PartitionFormatError"),
+        ("config", "split", "WRONG FORMAT", "PartitionFormatError"),
+        ("config", "split", "-", "PartitionFormatError"),
     ],
 )
 def test_failed_creation(
@@ -44,6 +44,7 @@ def test_failed_creation(
     config: str,
     split: str,
     partition: str,
+    expected_error: str,
 ) -> None:
     with pytest.raises(CustomError) as exc_info:
         DummyPartitionJobRunner(
@@ -62,7 +63,7 @@ def test_failed_creation(
             processing_step=test_processing_step,
             app_config=app_config,
         )
-    assert exc_info.value.code == "ParameterMissingError"
+    assert exc_info.value.code == expected_error
     assert exc_info.value.status_code == HTTPStatus.BAD_REQUEST
 
 

@@ -1,7 +1,7 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2023 The HuggingFace Authors.
 
-from libcommon.exceptions import ParameterMissingError
+from libcommon.exceptions import ParameterMissingError, PartitionFormatError
 from libcommon.processing_graph import ProcessingStep
 from libcommon.utils import JobInfo
 
@@ -27,7 +27,7 @@ class PartitionJobRunner(SplitJobRunner):
         self.partition = job_info["params"]["partition"]
         (partition_start, partition_end) = partition_values_from_string(self.partition)
         if partition_start is None or partition_end is None:
-            raise ValueError(
+            raise PartitionFormatError(
                 "'partition' parameter has a wrong format, expected is"
                 f" partition_start{PARTITIONS_SEPARATOR}partition_end"
             )

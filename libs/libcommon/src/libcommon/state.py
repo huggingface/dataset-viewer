@@ -6,7 +6,7 @@ from __future__ import annotations
 import logging
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional
 
 import pandas as pd
 
@@ -251,7 +251,7 @@ class SplitState:
     pending_jobs_df: pd.DataFrame
     cache_entries_df: pd.DataFrame
     error_codes_to_retry: Optional[List[str]] = None
-    partitions: List[Tuple[int, int]] = field(init=False)
+    partitions: List[str] = field(init=False)
     partition_states: List[PartitionState] = field(init=False)
     artifact_state_by_step: Dict[str, ArtifactState] = field(init=False)
 
@@ -288,6 +288,35 @@ class SplitState:
             )
             for processing_step in self.processing_graph.get_input_type_processing_steps(input_type="split")
         }
+
+        try:
+            self.partitions = fetch_names(
+                dataset=self.dataset,
+                config=self.config,
+                cache_kinds=[
+                    processing_step.cache_kind
+                    for processing_step in self.processing_graph.get_split_partitions_processing_steps()
+                ],
+                names_field="partitions",
+                name_field="partition",
+            )  # Note that we use the cached content even the revision is different (ie. maybe obsolete)
+        except Exception:
+            self.partitions = []
+
+        self.partition_states = [
+            PartitionState(
+                self.dataset,
+                self.revision,
+                self.config,
+                self.split,
+                partition_name,
+                processing_graph=self.processing_graph,
+                error_codes_to_retry=self.error_codes_to_retry,
+                pending_jobs_df=self.pending_jobs_df[self.pending_jobs_df["partition"] == partition_name],
+                cache_entries_df=self.cache_entries_df[self.cache_entries_df["partition"] == partition_name],
+            )
+            for partition_name in self.partitions
+        ]
 
 
 @dataclass

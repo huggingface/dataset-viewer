@@ -114,9 +114,16 @@ class OptUrl(TypedDict):
     column_name: str
 
 
+class Partition(TypedDict):
+    dataset: str
+    config: str
+    split: str
+    partition: str
+
+
 class PartitionsReponse(TypedDict):
     num_rows: int
-    partitions: List[str]
+    partitions: List[Partition]
 
 
 class OptInOutUrlsCountResponse(TypedDict):
@@ -436,13 +443,11 @@ def partition_to_string(partition_start: int, partition_end: int) -> str:
 def partition_values_from_string(partition: str) -> Tuple[Optional[int], Optional[int]]:
     try:
         params = partition.split(PARTITIONS_SEPARATOR)
-        partition_start = params[0]
-        partition_end = params[1]
-        if not isinstance(partition_start, int) or not isinstance(partition_end, int):
-            raise ValueError("partitions are not numerical values.")
+        partition_start = int(params[0])
+        partition_end = int(params[1])
         if partition_end < partition_start:
             raise ValueError("partition start should be greater than partition end.")
-        return (params[0], params[1])
+        return (partition_start, partition_end)
     except Exception as e:
         logging.error(f"Could not get partition values, error: {e}")
         return (None, None)

@@ -94,15 +94,27 @@ def get_job_runner(
                 "num_rows": 300_010,
                 "partitions": [
                     {
+                        "dataset": "dataset_ok",
+                        "config": "config_ok",
+                        "split": "split_ok",
                         "partition": "0-99999",
                     },
                     {
+                        "dataset": "dataset_ok",
+                        "config": "config_ok",
+                        "split": "split_ok",
                         "partition": "100000-199999",
                     },
                     {
+                        "dataset": "dataset_ok",
+                        "config": "config_ok",
+                        "split": "split_ok",
                         "partition": "200000-299999",
                     },
                     {
+                        "dataset": "dataset_ok",
+                        "config": "config_ok",
+                        "split": "split_ok",
                         "partition": "300000-300009",
                     },
                 ],

@@ -103,6 +103,7 @@ CacheableErrorCode = Literal[
     "NormalRowsError",
     "ParameterMissingError",
     "ParquetResponseEmptyError",
+    "PartitionFormatError",
     "PreviousStepFormatError",
     "PreviousStepStatusError",
     "ResponseAlreadyComputedError",
@@ -505,3 +506,16 @@ class UnsupportedExternalFilesError(CacheableError):
 
     def __init__(self, message: str, cause: Optional[BaseException] = None):
         super().__init__(message, HTTPStatus.NOT_IMPLEMENTED, "UnsupportedExternalFilesError", cause, True)
+
+
+class PartitionFormatError(CacheableError):
+    """Raised when unable to get partition start and end from parameters."""
+
+    def __init__(self, message: str, cause: Optional[BaseException] = None):
+        super().__init__(
+            message=message,
+            status_code=HTTPStatus.BAD_REQUEST,
+            code="PartitionFormatError",
+            cause=cause,
+            disclose_cause=False,
+        )
