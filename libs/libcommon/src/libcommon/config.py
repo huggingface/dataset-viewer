@@ -291,7 +291,7 @@ class ProcessingGraphConfig:
             },
             "split-opt-in-out-urls-scan": {
                 "input_type": "split",
-                "triggered_by": ["split-first-rows-from-streaming"],
+                "triggered_by": ["split-first-rows-from-streaming", "split-first-rows-from-parquet"],
                 "job_runner_version": PROCESSING_STEP_SPLIT_OPT_IN_OUT_URLS_SCAN_VERSION,
             },
             "split-opt-in-out-urls-count": {
@@ -301,7 +301,11 @@ class ProcessingGraphConfig:
             },
             "config-opt-in-out-urls-count": {
                 "input_type": "config",
-                "triggered_by": ["config-split-names-from-streaming", "split-opt-in-out-urls-count"],
+                "triggered_by": [
+                    "config-split-names-from-streaming",
+                    "/split-names-from-dataset-info",
+                    "split-opt-in-out-urls-count",
+                ],
                 "job_runner_version": PROCESSING_STEP_CONFIG_OPT_IN_OUT_URLS_COUNT_VERSION,
             },
             "dataset-opt-in-out-urls-count": {
