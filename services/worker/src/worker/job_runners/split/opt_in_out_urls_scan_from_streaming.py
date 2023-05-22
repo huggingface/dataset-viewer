@@ -116,7 +116,7 @@ def compute_opt_in_out_urls_scan_response(
 
     # get the first rows from previous job
     upstream_response = get_previous_step_or_raise(
-        kinds=["split-first-rows-from-streaming, split-first-rows-from-parquet"],
+        kinds=["split-first-rows-from-streaming", "split-first-rows-from-parquet"],
         dataset=dataset,
         config=config,
         split=split,
