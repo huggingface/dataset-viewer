@@ -10,7 +10,17 @@ from dataclasses import dataclass
 from functools import lru_cache, partial
 from itertools import islice
 from os import PathLike
-from typing import Any, Callable, List, Mapping, Optional, Tuple, TypedDict, Union
+from typing import (
+    Any,
+    Callable,
+    List,
+    Literal,
+    Mapping,
+    Optional,
+    Tuple,
+    TypedDict,
+    Union,
+)
 
 import numpy as np
 import numpy.typing as npt
@@ -119,6 +129,13 @@ def get_hf_parquet_uris(paths: List[str], dataset: str) -> List[str]:
     """
     return [f"hf://datasets/{dataset}@{safe_quote(PARQUET_REVISION)}/{path}" for path in paths]
 
+
+PARQUET_METADATA_DATASETS_ALLOW_LIST: Union[Literal["all"], List[str]] = [
+    "cifar100",
+    "beans",
+    "lewtun/dog_food",
+    "nateraw/kitti",
+]
 
 UNSUPPORTED_FEATURES_MAGIC_STRINGS = ["'binary'"]
 # it's too slow for image and audio if parquet metadata are not available
@@ -393,9 +410,15 @@ class RowsIndex:
             # get the list of parquet files
             with StepProfiler(method="rows.index", step="get list of parquet files for split"):
                 config_parquet_processing_steps = self.processing_graph.get_config_parquet_processing_steps()
-                config_parquet_metadata_processing_steps = (
-                    self.processing_graph.get_config_parquet_metadata_processing_steps()
-                )
+                if (
+                    PARQUET_METADATA_DATASETS_ALLOW_LIST == "all"
+                    or self.dataset in PARQUET_METADATA_DATASETS_ALLOW_LIST
+                ):  # TODO(QL): enable for all datasets once it works well
+                    config_parquet_metadata_processing_steps = (
+                        self.processing_graph.get_config_parquet_metadata_processing_steps()
+                    )
+                else:
+                    config_parquet_metadata_processing_steps = []
                 if not config_parquet_processing_steps:
                     raise RuntimeError("No processing steps are configured to provide a config's parquet response.")
                 try:

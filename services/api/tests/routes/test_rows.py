@@ -33,6 +33,12 @@ def clean_mongo_databases(app_config: AppConfig) -> None:
     _clean_cache_database()
 
 
+@pytest.fixture(autouse=True)
+def enable_parquet_metadata_on_all_datasets() -> Generator[None, None, None]:
+    with patch("api.routes.rows.PARQUET_METADATA_DATASETS_ALLOW_LIST", "all"):
+        yield
+
+
 @pytest.fixture
 def ds() -> Dataset:
     return Dataset.from_dict({"text": ["Hello there", "General Kenobi"]})
