@@ -141,11 +141,12 @@ def dataset_image_with_config_parquet() -> dict[str, Any]:
 
 
 @pytest.fixture
-def indexer(app_config: AppConfig, processing_graph: ProcessingGraph) -> Indexer:
+def indexer(app_config: AppConfig, processing_graph: ProcessingGraph, parquet_metadata_directory: StrPath) -> Indexer:
     return Indexer(
         processing_graph=processing_graph,
         hf_endpoint=app_config.common.hf_endpoint,
         hf_token=app_config.common.hf_token,
+        parquet_metadata_directory=parquet_metadata_directory,
     )
 
 
