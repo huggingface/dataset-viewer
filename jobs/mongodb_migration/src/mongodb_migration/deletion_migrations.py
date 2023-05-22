@@ -2,6 +2,7 @@
 # Copyright 2023 The HuggingFace Authors.
 
 import logging
+from typing import Optional
 
 from mongoengine.connection import get_db
 
@@ -14,6 +15,11 @@ from mongodb_migration.migration import (
 
 
 class MetricsDeletionMigration(MetricsMigration):
+    def __init__(self, job_type: str, cache_kind: str, version: str, description: Optional[str] = None):
+        if not description:
+            description = f"delete the queue and cache metrics for step '{job_type}'"
+        super().__init__(job_type=job_type, cache_kind=cache_kind, version=version, description=description)
+
     def up(self) -> None:
         logging.info(f"Delete job metrics of type {self.job_type}")
 
@@ -37,6 +43,11 @@ class MetricsDeletionMigration(MetricsMigration):
 
 
 class CacheDeletionMigration(CacheMigration):
+    def __init__(self, cache_kind: str, version: str, description: Optional[str] = None):
+        if not description:
+            description = f"delete the cache entries of kind '{cache_kind}'"
+        super().__init__(cache_kind=cache_kind, version=version, description=description)
+
     def up(self) -> None:
         logging.info(f"Delete cache entries of kind {self.cache_kind}")
         db = get_db(self.MONGOENGINE_ALIAS)
@@ -57,6 +68,11 @@ class CacheDeletionMigration(CacheMigration):
 
 
 class QueueDeletionMigration(QueueMigration):
+    def __init__(self, job_type: str, version: str, description: Optional[str] = None):
+        if not description:
+            description = f"delete the jobs of type '{job_type}'"
+        super().__init__(job_type=job_type, version=version, description=description)
+
     def up(self) -> None:
         logging.info(f"Delete jobs of type {self.job_type}")
 
