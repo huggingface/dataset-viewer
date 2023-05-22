@@ -9,6 +9,8 @@ from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional
 
+import pandas as pd
+
 from libcommon.processing_graph import ProcessingGraph, ProcessingStep
 from libcommon.queue import Queue
 from libcommon.simple_cache import (
@@ -50,12 +52,7 @@ class JobState:
     config: Optional[str]
     split: Optional[str]
     job_type: str
-    is_in_process: bool = field(init=False)
-
-    def __post_init__(self) -> None:
-        self.is_in_process = Queue().is_job_in_process(
-            job_type=self.job_type, dataset=self.dataset, revision=self.revision, config=self.config, split=self.split
-        )
+    is_in_process: bool
 
 
 @dataclass
@@ -140,6 +137,7 @@ class Artifact:
 class ArtifactState(Artifact):
     """The state of an artifact."""
 
+    has_pending_job: bool
     error_codes_to_retry: Optional[List[str]] = None
 
     job_state: JobState = field(init=False)
@@ -153,6 +151,7 @@ class ArtifactState(Artifact):
             revision=self.revision,
             config=self.config,
             split=self.split,
+            is_in_process=self.has_pending_job,
         )
         self.cache_state = CacheState(
             cache_kind=self.processing_step.cache_kind,
@@ -180,11 +179,19 @@ class SplitState:
     config: str
     split: str
     processing_graph: ProcessingGraph
+    pending_jobs_df: pd.DataFrame
     error_codes_to_retry: Optional[List[str]] = None
 
     artifact_state_by_step: Dict[str, ArtifactState] = field(init=False)
 
     def __post_init__(self) -> None:
+        self.pending_jobs_df = self.pending_jobs_df[
+            (self.pending_jobs_df["dataset"] == self.dataset)
+            & (self.pending_jobs_df["revision"] == self.revision)
+            & (self.pending_jobs_df["config"] == self.config)
+            & (self.pending_jobs_df["split"] == self.split)
+        ]
+        # ^ safety check
         self.artifact_state_by_step = {
             processing_step.name: ArtifactState(
                 processing_step=processing_step,
@@ -193,6 +200,7 @@ class SplitState:
                 config=self.config,
                 split=self.split,
                 error_codes_to_retry=self.error_codes_to_retry,
+                has_pending_job=(self.pending_jobs_df["type"] == processing_step.job_type).any(),
             )
             for processing_step in self.processing_graph.get_input_type_processing_steps(input_type="split")
         }
@@ -206,6 +214,7 @@ class ConfigState:
     revision: str
     config: str
     processing_graph: ProcessingGraph
+    pending_jobs_df: pd.DataFrame
     error_codes_to_retry: Optional[List[str]] = None
 
     split_names: List[str] = field(init=False)
@@ -213,6 +222,12 @@ class ConfigState:
     artifact_state_by_step: Dict[str, ArtifactState] = field(init=False)
 
     def __post_init__(self) -> None:
+        self.pending_jobs_df = self.pending_jobs_df[
+            (self.pending_jobs_df["dataset"] == self.dataset)
+            & (self.pending_jobs_df["revision"] == self.revision)
+            & (self.pending_jobs_df["config"] == self.config)
+        ]
+        # ^ safety check
         self.artifact_state_by_step = {
             processing_step.name: ArtifactState(
                 processing_step=processing_step,
@@ -221,6 +236,10 @@ class ConfigState:
                 config=self.config,
                 split=None,
                 error_codes_to_retry=self.error_codes_to_retry,
+                has_pending_job=(
+                    (self.pending_jobs_df["split"].isnull())
+                    & (self.pending_jobs_df["type"] == processing_step.job_type)
+                ).any(),
             )
             for processing_step in self.processing_graph.get_input_type_processing_steps(input_type="config")
         }
@@ -247,6 +266,7 @@ class ConfigState:
                 split_name,
                 processing_graph=self.processing_graph,
                 error_codes_to_retry=self.error_codes_to_retry,
+                pending_jobs_df=self.pending_jobs_df[self.pending_jobs_df["split"] == split_name],
             )
             for split_name in self.split_names
         ]
@@ -358,6 +378,7 @@ class DatasetState:
     error_codes_to_retry: Optional[List[str]] = None
     priority: Priority = Priority.LOW
 
+    pending_jobs_df: pd.DataFrame = field(init=False)
     config_names: List[str] = field(init=False)
     config_states: List[ConfigState] = field(init=False)
     artifact_state_by_step: Dict[str, ArtifactState] = field(init=False)
@@ -367,6 +388,12 @@ class DatasetState:
     should_be_backfilled: bool = field(init=False)
 
     def __post_init__(self) -> None:
+        self.pending_jobs_df = Queue().get_pending_jobs_df(dataset=self.dataset, revision=self.revision)
+        self.pending_jobs_df = self.pending_jobs_df[
+            (self.pending_jobs_df["dataset"] == self.dataset) & (self.pending_jobs_df["revision"] == self.revision)
+        ]
+        print(self.pending_jobs_df)
+        # ^ safety check
         self.artifact_state_by_step = {
             processing_step.name: ArtifactState(
                 processing_step=processing_step,
@@ -375,9 +402,15 @@ class DatasetState:
                 config=None,
                 split=None,
                 error_codes_to_retry=self.error_codes_to_retry,
+                has_pending_job=(
+                    (self.pending_jobs_df["config"].isnull())
+                    & (self.pending_jobs_df["split"].isnull())
+                    & (self.pending_jobs_df["type"] == processing_step.job_type)
+                ).any(),
             )
             for processing_step in self.processing_graph.get_input_type_processing_steps(input_type="dataset")
         }
+        print(self.artifact_state_by_step)
         try:
             self.config_names = fetch_names(
                 dataset=self.dataset,
@@ -398,6 +431,7 @@ class DatasetState:
                 config=config_name,
                 processing_graph=self.processing_graph,
                 error_codes_to_retry=self.error_codes_to_retry,
+                pending_jobs_df=self.pending_jobs_df[self.pending_jobs_df["config"] == config_name],
             )
             for config_name in self.config_names
         ]

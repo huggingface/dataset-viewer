@@ -15,7 +15,6 @@ from libcommon.state import (
     CacheState,
     ConfigState,
     DatasetState,
-    JobState,
     SplitState,
     fetch_names,
 )
@@ -121,28 +120,6 @@ def test_fetch_names(
 
 
 @pytest.mark.parametrize(
-    "dataset,revision,config,split,job_type",
-    [
-        (DATASET_NAME, REVISION_NAME, None, None, JOB_TYPE),
-        (DATASET_NAME, REVISION_NAME, CONFIG_NAME_1, None, JOB_TYPE),
-        (DATASET_NAME, REVISION_NAME, CONFIG_NAME_1, SPLIT_NAME_1, JOB_TYPE),
-    ],
-)
-def test_job_state_is_in_process(
-    dataset: str, revision: str, config: Optional[str], split: Optional[str], job_type: str
-) -> None:
-    queue = Queue()
-    queue.upsert_job(job_type=job_type, dataset=dataset, revision=revision, config=config, split=split)
-    assert JobState(dataset=dataset, revision=revision, config=config, split=split, job_type=job_type).is_in_process
-    job_info = queue.start_job()
-    assert JobState(dataset=dataset, revision=revision, config=config, split=split, job_type=job_type).is_in_process
-    queue.finish_job(job_id=job_info["job_id"], is_success=True)
-    assert not JobState(
-        dataset=dataset, revision=revision, config=config, split=split, job_type=job_type
-    ).is_in_process
-
-
-@pytest.mark.parametrize(
     "dataset,config,split,cache_kind",
     [
         (DATASET_NAME, None, None, CACHE_KIND),
@@ -187,7 +164,14 @@ def test_cache_state_is_success(dataset: str, config: Optional[str], split: Opti
     assert not CacheState(dataset=dataset, config=config, split=split, cache_kind=cache_kind).is_success
 
 
-def test_artifact_state() -> None:
+@pytest.mark.parametrize(
+    "has_pending_job,expected_is_in_process",
+    [
+        (False, False),
+        (True, True),
+    ],
+)
+def test_artifact_state(has_pending_job: bool, expected_is_in_process: bool) -> None:
     dataset = DATASET_NAME
     revision = REVISION_NAME
     config = None
@@ -195,12 +179,17 @@ def test_artifact_state() -> None:
     processing_step_name = "dataset-a"
     processing_step = PROCESSING_GRAPH.get_processing_step(processing_step_name)
     artifact_state = ArtifactState(
-        dataset=dataset, revision=revision, config=config, split=split, processing_step=processing_step
+        dataset=dataset,
+        revision=revision,
+        config=config,
+        split=split,
+        processing_step=processing_step,
+        has_pending_job=has_pending_job,
     )
     assert artifact_state.id == f"{processing_step_name},{dataset},{revision}"
     assert not artifact_state.cache_state.exists
     assert not artifact_state.cache_state.is_success
-    assert not artifact_state.job_state.is_in_process
+    assert artifact_state.job_state.is_in_process is expected_is_in_process
 
 
 def test_split_state() -> None:
@@ -210,7 +199,12 @@ def test_split_state() -> None:
     split = SPLIT_NAME_1
     expected_split_processing_step_name = "split-c"
     split_state = SplitState(
-        dataset=dataset, revision=revision, config=config, split=split, processing_graph=PROCESSING_GRAPH
+        dataset=dataset,
+        revision=revision,
+        config=config,
+        split=split,
+        processing_graph=PROCESSING_GRAPH,
+        pending_jobs_df=Queue()._get_df(jobs=[]),
     )
 
     assert split_state.dataset == dataset
@@ -242,7 +236,13 @@ def test_config_state_as_dict() -> None:
         content=SPLIT_NAMES_CONTENT,
         http_status=HTTPStatus.OK,
     )
-    config_state = ConfigState(dataset=dataset, revision=revision, config=config, processing_graph=PROCESSING_GRAPH)
+    config_state = ConfigState(
+        dataset=dataset,
+        revision=revision,
+        config=config,
+        processing_graph=PROCESSING_GRAPH,
+        pending_jobs_df=Queue()._get_df(jobs=[]),
+    )
 
     assert config_state.dataset == dataset
     assert config_state.revision == revision

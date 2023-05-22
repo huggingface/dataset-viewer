@@ -10,6 +10,7 @@ from itertools import groupby
 from operator import itemgetter
 from typing import Generic, List, Optional, Type, TypedDict, TypeVar
 
+import pandas as pd
 import pytz
 from mongoengine import Document, DoesNotExist
 from mongoengine.fields import DateTimeField, EnumField, StringField
@@ -20,7 +21,14 @@ from libcommon.constants import (
     QUEUE_MONGOENGINE_ALIAS,
     QUEUE_TTL_SECONDS,
 )
-from libcommon.utils import JobInfo, Priority, Status, get_datetime, inputs_to_string
+from libcommon.utils import (
+    FlatJobInfo,
+    JobInfo,
+    Priority,
+    Status,
+    get_datetime,
+    inputs_to_string,
+)
 
 # START monkey patching ### hack ###
 # see https://github.com/sbdchd/mongo-types#install
@@ -166,6 +174,19 @@ class Job(Document):
                     "split": self.split,
                 },
                 "priority": self.priority,
+            }
+        )
+
+    def flat_info(self) -> FlatJobInfo:
+        return FlatJobInfo(
+            {
+                "job_id": str(self.pk),  # job.pk is the id. job.id is not recognized by mypy
+                "type": self.type,
+                "dataset": self.dataset,
+                "revision": self.revision,
+                "config": self.config,
+                "split": self.split,
+                "priority": self.priority.value,
             }
         )
 
@@ -570,6 +591,28 @@ class Queue:
             self.upsert_job(
                 job_type=job.type, dataset=job.dataset, revision=job.revision, config=job.config, split=job.split
             )
+
+    def _get_df(self, jobs: List[FlatJobInfo]) -> pd.DataFrame:
+        return pd.DataFrame(
+            {
+                "job_id": pd.Series([job["job_id"] for job in jobs], dtype="str"),
+                "type": pd.Series([job["type"] for job in jobs], dtype="category"),
+                "dataset": pd.Series([job["dataset"] for job in jobs], dtype="str"),
+                "revision": pd.Series([job["revision"] for job in jobs], dtype="str"),
+                "config": pd.Series([job["config"] for job in jobs], dtype="str"),
+                "split": pd.Series([job["split"] for job in jobs], dtype="str"),
+                "priority": pd.Series([job["priority"] for job in jobs], dtype="category"),
+            }
+        )
+        # ^ does not seem optimal at all, but I get the types right
+
+    def get_pending_jobs_df(self, dataset: str, revision: str) -> pd.DataFrame:
+        return self._get_df(
+            [
+                job.flat_info()
+                for job in Job.objects(dataset=dataset, revision=revision, status__in=[Status.WAITING, Status.STARTED])
+            ]
+        )
 
     # special reports
     def count_jobs(self, status: Status, job_type: str) -> int:
