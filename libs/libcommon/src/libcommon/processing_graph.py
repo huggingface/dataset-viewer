@@ -166,7 +166,9 @@ class ProcessingGraph:
                 raise ValueError(f"Processing step {name} provides config parquet but its input type is {input_type}.")
             provides_config_parquet_metadata = specification.get("provides_config_parquet_metadata", False)
             if provides_config_parquet_metadata and input_type != "config":
-                raise ValueError(f"Processing step {name} provides config parquet metadata but its input type is {input_type}.")
+                raise ValueError(
+                    f"Processing step {name} provides config parquet metadata but its input type is {input_type}."
+                )
             if (
                 _nx_graph.has_node(name)
                 or name in _processing_steps

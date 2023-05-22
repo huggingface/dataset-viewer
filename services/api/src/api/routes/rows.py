@@ -260,9 +260,9 @@ class ParquetIndexWithMetadata:
             parquet_offset = (
                 offset - parquet_file_offsets[first_parquet_file_id - 1] if first_parquet_file_id > 0 else offset
             )
-            urls = self.parquet_files_urls[first_parquet_file_id : last_parquet_file_id + 1]
-            metadata_paths = self.metadata_paths[first_parquet_file_id : last_parquet_file_id + 1]
-            num_bytes = self.num_bytes[first_parquet_file_id : last_parquet_file_id + 1]
+            urls = self.parquet_files_urls[first_parquet_file_id:last_parquet_file_id + 1]
+            metadata_paths = self.metadata_paths[first_parquet_file_id:last_parquet_file_id + 1]
+            num_bytes = self.num_bytes[first_parquet_file_id:last_parquet_file_id + 1]
 
         with StepProfiler(
             method="rows.query.with_metadata", step="load the remote parquet files using metadata from disk"
