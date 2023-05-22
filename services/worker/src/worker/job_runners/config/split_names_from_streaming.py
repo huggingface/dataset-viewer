@@ -65,10 +65,10 @@ def compute_split_names_from_streaming_response(
             f"Cannot get the split names for the config '{config}' of the dataset.",
             cause=err,
         ) from err
-    return SplitsList({"splits": split_name_items})
+    return SplitsList(splits=split_name_items)
 
 
-class SplitNamesFromStreamingJobRunner(ConfigCachedJobRunner):
+class ConfigSplitNamesFromStreamingJobRunner(ConfigCachedJobRunner):
     @staticmethod
     def get_job_type() -> str:
         return "config-split-names-from-streaming"

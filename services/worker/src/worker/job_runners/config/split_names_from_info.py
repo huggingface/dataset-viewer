@@ -57,7 +57,7 @@ def compute_split_names_from_dataset_info_response(dataset: str, config: str) ->
     return SplitsList(splits=split_name_items)
 
 
-class SplitNamesFromDatasetInfoJobRunner(ConfigJobRunner):
+class ConfigSplitNamesFromInfoJobRunner(ConfigJobRunner):
     @staticmethod
     def get_job_type() -> str:
         return "config-split-names-from-info"
