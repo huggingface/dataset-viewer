@@ -185,4 +185,19 @@ class MigrationsCollector:
                 cache_kind="/split-names-from-streaming",
                 version="20230522094400",
             ),
+            CacheRenamingMigration(
+                cache_kind="/split-names-from-dataset-info",
+                new_cache_kind="config-split-names-from-info",
+                version="20230522190800",
+            ),
+            QueueRenamingMigration(
+                job_type="/split-names-from-dataset-info",
+                new_job_type="config-split-names-from-info",
+                version="20230522191000",
+            ),
+            MetricsDeletionMigration(
+                job_type="/split-names-from-dataset-info",
+                cache_kind="/split-names-from-dataset-info",
+                version="20230522191200",
+            ),
         ]
