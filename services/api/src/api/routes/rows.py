@@ -121,14 +121,25 @@ def get_hf_parquet_uris(paths: List[str], dataset: str) -> List[str]:
 
 
 UNSUPPORTED_FEATURES_MAGIC_STRINGS = ["'binary'"]
+# it's too slow for image and audio if parquet metadata are not available
+UNSUPPORTED_FEATURES_MAGIC_STRINGS_WITHOUT_PARQUET_METADATA = [
+    "Audio(",
+    "Image(",
+    "'binary'",
+]
 
 
-def get_supported_unsupported_columns(features: Features) -> Tuple[List[str], List[str]]:
+def get_supported_unsupported_columns(features: Features, with_parquet_metadata: bool) -> Tuple[List[str], List[str]]:
     supported_columns, unsupported_columns = [], []
+    unsupported_features_magic_strings = (
+        UNSUPPORTED_FEATURES_MAGIC_STRINGS
+        if with_parquet_metadata
+        else UNSUPPORTED_FEATURES_MAGIC_STRINGS_WITHOUT_PARQUET_METADATA
+    )
     for column, feature in features.items():
         str_feature = str(feature)
         str_column = str(column)
-        if any(magic_string in str_feature for magic_string in UNSUPPORTED_FEATURES_MAGIC_STRINGS):
+        if any(magic_string in str_feature for magic_string in unsupported_features_magic_strings):
             unsupported_columns.append(str_column)
         else:
             supported_columns.append(str_column)
@@ -197,7 +208,9 @@ class ParquetIndexWithoutMetadata:
                 raise FileSystemError(f"Could not read the parquet files: {e}") from e
         with StepProfiler(method="rows.index.without_metadata", step="get the dataset's features"):
             features = Features.from_arrow_schema(parquet_files[0].schema.to_arrow_schema())
-            supported_columns, unsupported_columns = get_supported_unsupported_columns(features)
+            supported_columns, unsupported_columns = get_supported_unsupported_columns(
+                features, with_parquet_metadata=False
+            )
 
         with StepProfiler(method="rows.index.without_metadata", step="create the row group offsets"):
             row_group_offsets = np.cumsum(
@@ -333,7 +346,9 @@ class ParquetIndexWithMetadata:
 
         with StepProfiler(method="rows.index.with_metadata", step="get the dataset's features"):
             features = Features.from_arrow_schema(pq.read_schema(metadata_paths[0]))
-            supported_columns, unsupported_columns = get_supported_unsupported_columns(features)
+            supported_columns, unsupported_columns = get_supported_unsupported_columns(
+                features, with_parquet_metadata=True
+            )
         return ParquetIndexWithMetadata(
             features=features,
             supported_columns=supported_columns,
