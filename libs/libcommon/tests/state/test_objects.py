@@ -9,7 +9,11 @@ import pytest
 from libcommon.processing_graph import ProcessingGraph
 from libcommon.queue import Queue
 from libcommon.resources import CacheMongoResource, QueueMongoResource
-from libcommon.simple_cache import delete_response, upsert_response
+from libcommon.simple_cache import (
+    delete_response,
+    get_cache_entries_df,
+    upsert_response,
+)
 from libcommon.state import (
     ArtifactState,
     CacheState,
@@ -128,13 +132,31 @@ def test_fetch_names(
     ],
 )
 def test_cache_state_exists(dataset: str, config: Optional[str], split: Optional[str], cache_kind: str) -> None:
-    assert not CacheState(dataset=dataset, config=config, split=split, cache_kind=cache_kind).exists
+    assert not CacheState(
+        dataset=dataset,
+        config=config,
+        split=split,
+        cache_kind=cache_kind,
+        cache_entries_df=get_cache_entries_df(dataset=dataset),
+    ).exists
     upsert_response(
         kind=cache_kind, dataset=dataset, config=config, split=split, content={}, http_status=HTTPStatus.OK
     )
-    assert CacheState(dataset=dataset, config=config, split=split, cache_kind=cache_kind).exists
+    assert CacheState(
+        dataset=dataset,
+        config=config,
+        split=split,
+        cache_kind=cache_kind,
+        cache_entries_df=get_cache_entries_df(dataset=dataset),
+    ).exists
     delete_response(kind=cache_kind, dataset=dataset, config=config, split=split)
-    assert not CacheState(dataset=dataset, config=config, split=split, cache_kind=cache_kind).exists
+    assert not CacheState(
+        dataset=dataset,
+        config=config,
+        split=split,
+        cache_kind=cache_kind,
+        cache_entries_df=get_cache_entries_df(dataset=dataset),
+    ).exists
 
 
 @pytest.mark.parametrize(
@@ -146,11 +168,23 @@ def test_cache_state_exists(dataset: str, config: Optional[str], split: Optional
     ],
 )
 def test_cache_state_is_success(dataset: str, config: Optional[str], split: Optional[str], cache_kind: str) -> None:
-    assert not CacheState(dataset=dataset, config=config, split=split, cache_kind=cache_kind).is_success
+    assert not CacheState(
+        dataset=dataset,
+        config=config,
+        split=split,
+        cache_kind=cache_kind,
+        cache_entries_df=get_cache_entries_df(dataset=dataset),
+    ).is_success
     upsert_response(
         kind=cache_kind, dataset=dataset, config=config, split=split, content={}, http_status=HTTPStatus.OK
     )
-    assert CacheState(dataset=dataset, config=config, split=split, cache_kind=cache_kind).is_success
+    assert CacheState(
+        dataset=dataset,
+        config=config,
+        split=split,
+        cache_kind=cache_kind,
+        cache_entries_df=get_cache_entries_df(dataset=dataset),
+    ).is_success
     upsert_response(
         kind=cache_kind,
         dataset=dataset,
@@ -159,9 +193,21 @@ def test_cache_state_is_success(dataset: str, config: Optional[str], split: Opti
         content={},
         http_status=HTTPStatus.INTERNAL_SERVER_ERROR,
     )
-    assert not CacheState(dataset=dataset, config=config, split=split, cache_kind=cache_kind).is_success
+    assert not CacheState(
+        dataset=dataset,
+        config=config,
+        split=split,
+        cache_kind=cache_kind,
+        cache_entries_df=get_cache_entries_df(dataset=dataset),
+    ).is_success
     delete_response(kind=cache_kind, dataset=dataset, config=config, split=split)
-    assert not CacheState(dataset=dataset, config=config, split=split, cache_kind=cache_kind).is_success
+    assert not CacheState(
+        dataset=dataset,
+        config=config,
+        split=split,
+        cache_kind=cache_kind,
+        cache_entries_df=get_cache_entries_df(dataset=dataset),
+    ).is_success
 
 
 @pytest.mark.parametrize(
@@ -185,6 +231,7 @@ def test_artifact_state(has_pending_job: bool, expected_is_in_process: bool) -> 
         split=split,
         processing_step=processing_step,
         has_pending_job=has_pending_job,
+        cache_entries_df=get_cache_entries_df(dataset=dataset),
     )
     assert artifact_state.id == f"{processing_step_name},{dataset},{revision}"
     assert not artifact_state.cache_state.exists
@@ -205,6 +252,7 @@ def test_split_state() -> None:
         split=split,
         processing_graph=PROCESSING_GRAPH,
         pending_jobs_df=Queue()._get_df(jobs=[]),
+        cache_entries_df=get_cache_entries_df(dataset=dataset),
     )
 
     assert split_state.dataset == dataset
@@ -242,6 +290,7 @@ def test_config_state_as_dict() -> None:
         config=config,
         processing_graph=PROCESSING_GRAPH,
         pending_jobs_df=Queue()._get_df(jobs=[]),
+        cache_entries_df=get_cache_entries_df(dataset=dataset),
     )
 
     assert config_state.dataset == dataset
