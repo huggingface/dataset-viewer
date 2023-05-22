@@ -139,7 +139,7 @@ def test_cache_state_exists(dataset: str, config: Optional[str], split: Optional
         cache_kind=cache_kind,
         cache_entries_df=get_cache_entries_df(dataset=dataset),
         partition_start=None,
-        partition_end=None
+        partition_end=None,
     ).exists
     upsert_response(
         kind=cache_kind, dataset=dataset, config=config, split=split, content={}, http_status=HTTPStatus.OK
@@ -219,6 +219,8 @@ def test_cache_state_is_success(dataset: str, config: Optional[str], split: Opti
         split=split,
         cache_kind=cache_kind,
         cache_entries_df=get_cache_entries_df(dataset=dataset),
+        partition_start=None,
+        partition_end=None,
     ).is_success
 
 

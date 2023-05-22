@@ -670,6 +670,8 @@ class CacheEntryFullMetadata(CacheEntryMetadata):
     dataset: str
     config: Optional[str]
     split: Optional[str]
+    partition_start: Optional[int]
+    partition_end: Optional[int]
 
 
 def _get_df(entries: List[CacheEntryFullMetadata]) -> pd.DataFrame:
@@ -679,6 +681,8 @@ def _get_df(entries: List[CacheEntryFullMetadata]) -> pd.DataFrame:
             "dataset": pd.Series([entry["dataset"] for entry in entries], dtype="str"),
             "config": pd.Series([entry["config"] for entry in entries], dtype="str"),
             "split": pd.Series([entry["split"] for entry in entries], dtype="str"),
+            "partition_start": pd.Series([entry["partition_start"] for entry in entries], dtype="Int64"),
+            "partition_end": pd.Series([entry["partition_end"] for entry in entries], dtype="Int64"),
             "http_status": pd.Series(
                 [entry["http_status"] for entry in entries], dtype="category"
             ),  # check if it's working as expected
@@ -702,6 +706,8 @@ def get_cache_entries_df(dataset: str) -> pd.DataFrame:
                 "dataset": response.dataset,
                 "config": response.config,
                 "split": response.split,
+                "partition_start": response.partition_start,
+                "partition_end": response.partition_end,
                 "http_status": response.http_status,
                 "error_code": response.error_code,
                 "dataset_git_revision": response.dataset_git_revision,
@@ -714,6 +720,8 @@ def get_cache_entries_df(dataset: str) -> pd.DataFrame:
                 "dataset",
                 "config",
                 "split",
+                "partition_start",
+                "partition_end",
                 "http_status",
                 "error_code",
                 "job_runner_version",

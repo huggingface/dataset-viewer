@@ -178,7 +178,7 @@ class ProcessingGraph:
                 raise ValueError(
                     f"Processing step {name} provides config parquet metadata but its input type is {input_type}."
                 )
-            
+
             provides_split_partitions = specification.get("provides_split_partitions", False)
             if provides_split_partitions and input_type != "split":
                 raise ValueError(

@@ -241,11 +241,15 @@ class PartitionState:
             & (self.pending_jobs_df["revision"] == self.revision)
             & (self.pending_jobs_df["config"] == self.config)
             & (self.pending_jobs_df["split"] == self.split)
+            & (self.pending_jobs_df["partition_start"] == self.partition_start)
+            & (self.pending_jobs_df["partition_end"] == self.partition_end)
         ]
         self.cache_entries_df = self.cache_entries_df[
             (self.cache_entries_df["dataset"] == self.dataset)
             & (self.cache_entries_df["config"] == self.config)
             & (self.cache_entries_df["split"] == self.split)
+            & (self.cache_entries_df["partition_start"] == self.partition_start)
+            & (self.cache_entries_df["partition_end"] == self.partition_end)
         ]
         # ^ safety check
         self.artifact_state_by_step = {
@@ -258,6 +262,8 @@ class PartitionState:
                 partition_start=self.partition_start,
                 partition_end=self.partition_end,
                 error_codes_to_retry=self.error_codes_to_retry,
+                has_pending_job=(self.pending_jobs_df["type"] == processing_step.job_type).any(),
+                cache_entries_df=self.cache_entries_df[(self.cache_entries_df["kind"] == processing_step.cache_kind)],
             )
             for processing_step in self.processing_graph.get_input_type_processing_steps(input_type="partition")
         }
@@ -272,12 +278,26 @@ class SplitState:
     config: str
     split: str
     processing_graph: ProcessingGraph
+    pending_jobs_df: pd.DataFrame
+    cache_entries_df: pd.DataFrame
     error_codes_to_retry: Optional[List[str]] = None
-    artifact_state_by_step: Dict[str, ArtifactState] = field(init=False)
     partitions: List[Tuple[int, int]] = field(init=False)
     partition_states: List[PartitionState] = field(init=False)
+    artifact_state_by_step: Dict[str, ArtifactState] = field(init=False)
 
     def __post_init__(self) -> None:
+        self.pending_jobs_df = self.pending_jobs_df[
+            (self.pending_jobs_df["dataset"] == self.dataset)
+            & (self.pending_jobs_df["revision"] == self.revision)
+            & (self.pending_jobs_df["config"] == self.config)
+            & (self.pending_jobs_df["split"] == self.split)
+        ]
+        self.cache_entries_df = self.cache_entries_df[
+            (self.cache_entries_df["dataset"] == self.dataset)
+            & (self.cache_entries_df["config"] == self.config)
+            & (self.cache_entries_df["split"] == self.split)
+        ]
+        # ^ safety check
         self.artifact_state_by_step = {
             processing_step.name: ArtifactState(
                 processing_step=processing_step,
@@ -288,38 +308,19 @@ class SplitState:
                 partition_start=None,
                 partition_end=None,
                 error_codes_to_retry=self.error_codes_to_retry,
-                has_pending_job=(self.pending_jobs_df["type"] == processing_step.job_type).any(),
-                cache_entries_df=self.cache_entries_df[(self.cache_entries_df["kind"] == processing_step.cache_kind)],
+                has_pending_job=(
+                    (self.pending_jobs_df["partition_start"].isnull())
+                    & (self.pending_jobs_df["partition_end"].isnull())
+                    & (self.pending_jobs_df["type"] == processing_step.job_type)
+                ).any(),
+                cache_entries_df=self.cache_entries_df[
+                    (self.cache_entries_df["kind"] == processing_step.cache_kind)
+                    & (self.cache_entries_df["partition_start"].isnull())
+                    & (self.cache_entries_df["partition_end"].isnull())
+                ],
             )
             for processing_step in self.processing_graph.get_input_type_processing_steps(input_type="split")
         }
-
-        try:
-            self.partitions = fetch_intervals(
-                dataset=self.dataset,
-                config=self.config,
-                split=self.split,
-                cache_kinds=[
-                    processing_step.cache_kind
-                    for processing_step in self.processing_graph.get_split_partitions_processing_steps()
-                ],
-            )  # Note that we use the cached content even the revision is different (ie. maybe obsolete)
-        except Exception:
-            self.partitions = []
-
-        self.partition_states = [
-            PartitionState(
-                self.dataset,
-                self.revision,
-                self.config,
-                self.split,
-                start,
-                end,
-                processing_graph=self.processing_graph,
-                error_codes_to_retry=self.error_codes_to_retry,
-            )
-            for (start, end) in self.partitions
-        ]
 
 
 @dataclass
@@ -362,7 +363,10 @@ class ConfigState:
                     (self.pending_jobs_df["split"].isnull())
                     & (self.pending_jobs_df["type"] == processing_step.job_type)
                 ).any(),
-                cache_entries_df=self.cache_entries_df[(self.cache_entries_df["kind"] == processing_step.cache_kind)],
+                cache_entries_df=self.cache_entries_df[
+                    (self.cache_entries_df["kind"] == processing_step.cache_kind)
+                    & (self.cache_entries_df["split"].isnull())
+                ],
             )
             for processing_step in self.processing_graph.get_input_type_processing_steps(input_type="config")
         }

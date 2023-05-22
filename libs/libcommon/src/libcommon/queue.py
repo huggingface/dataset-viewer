@@ -204,6 +204,8 @@ class Job(Document):
                 "revision": self.revision,
                 "config": self.config,
                 "split": self.split,
+                "partition_start": self.partition_start,
+                "partition_end": self.partition_end,
                 "priority": self.priority.value,
             }
         )
@@ -620,6 +622,8 @@ class Queue:
                 "revision": pd.Series([job["revision"] for job in jobs], dtype="str"),
                 "config": pd.Series([job["config"] for job in jobs], dtype="str"),
                 "split": pd.Series([job["split"] for job in jobs], dtype="str"),
+                "partition_start": pd.Series([job["partition_start"] for job in jobs], dtype="Int64"),
+                "partition_end": pd.Series([job["partition_end"] for job in jobs], dtype="Int64"),
                 "priority": pd.Series([job["priority"] for job in jobs], dtype="category"),
             }
         )

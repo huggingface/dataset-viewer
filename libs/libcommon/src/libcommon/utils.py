@@ -45,6 +45,8 @@ class FlatJobInfo(TypedDict):
     revision: str
     config: Optional[str]
     split: Optional[str]
+    partition_start: Optional[int]
+    partition_end: Optional[int]
     priority: str
 
 
