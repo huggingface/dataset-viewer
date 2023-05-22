@@ -209,4 +209,10 @@ class MigrationsCollector:
                     "to 'config-split-names-from-streaming'"
                 ),
             ),
+            MetricsDeletionMigration(
+                job_type="/split-names-from-streaming",
+                cache_kind="/split-names-from-streaming",
+                version="20230522094400",
+                description="delete the queue and cache metrics for step '/split-names-from-streaming'",
+            ),
         ]
