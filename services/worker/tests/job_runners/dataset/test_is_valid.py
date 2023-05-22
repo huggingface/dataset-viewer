@@ -25,9 +25,6 @@ def prepare_and_clean_mongo(app_config: AppConfig) -> None:
 GetJobRunner = Callable[[str, AppConfig], DatasetIsValidJobRunner]
 
 
-UPSTREAM_RESPONSE_SPLITS: UpstreamResponse = UpstreamResponse(
-    kind="/splits", dataset="dataset_ok", config=None, http_status=HTTPStatus.OK, content={}
-)
 UPSTREAM_RESPONSE_SPLIT_NAMES_FROM_STREAMING: UpstreamResponse = UpstreamResponse(
     kind="config-split-names-from-streaming", dataset="dataset_ok", config=None, http_status=HTTPStatus.OK, content={}
 )
@@ -44,8 +41,12 @@ UPSTREAM_RESPONSE_SPLIT_FIRST_ROWS_FROM_STREAMING: UpstreamResponse = UpstreamRe
 UPSTREAM_RESPONSE_SPLIT_FIRST_ROWS_FROM_PARQUET: UpstreamResponse = UpstreamResponse(
     kind="split-first-rows-from-parquet", dataset="dataset_ok", config="config", http_status=HTTPStatus.OK, content={}
 )
-UPSTREAM_RESPONSE_SPLITS_ERROR: UpstreamResponse = UpstreamResponse(
-    kind="/splits", dataset="dataset_ok", config=None, http_status=HTTPStatus.INTERNAL_SERVER_ERROR, content={}
+UPSTREAM_RESPONSE_SPLIT_NAMES_FROM_DATASET_INFO_ERROR: UpstreamResponse = UpstreamResponse(
+    kind="/split-names-from-dataset-info",
+    dataset="dataset_ok",
+    config=None,
+    http_status=HTTPStatus.INTERNAL_SERVER_ERROR,
+    content={},
 )
 UPSTREAM_RESPONSE_SPLIT_FIRST_ROWS_FROM_STREAMING_ERROR: UpstreamResponse = UpstreamResponse(
     kind="split-first-rows-from-streaming",
@@ -107,7 +108,7 @@ def get_job_runner(
         (
             "dataset_ok",
             [
-                UPSTREAM_RESPONSE_SPLITS,
+                UPSTREAM_RESPONSE_SPLIT_NAMES_FROM_STREAMING,
                 UPSTREAM_RESPONSE_SPLIT_FIRST_ROWS_FROM_STREAMING,
             ],
             None,
@@ -117,7 +118,6 @@ def get_job_runner(
         (
             "dataset_ok",
             [
-                UPSTREAM_RESPONSE_SPLITS,
                 UPSTREAM_RESPONSE_SPLIT_NAMES_FROM_STREAMING,
                 UPSTREAM_RESPONSE_SPLIT_NAMES_FROM_DATASET_INFO,
                 UPSTREAM_RESPONSE_SPLIT_FIRST_ROWS_FROM_STREAMING,
@@ -128,18 +128,18 @@ def get_job_runner(
             False,
         ),
         ("dataset_ok", [], None, EXPECTED_ERROR, False),
-        ("dataset_ok", [UPSTREAM_RESPONSE_SPLITS], None, EXPECTED_ERROR, False),
+        ("dataset_ok", [UPSTREAM_RESPONSE_SPLIT_NAMES_FROM_DATASET_INFO], None, EXPECTED_ERROR, False),
         ("dataset_ok", [UPSTREAM_RESPONSE_SPLIT_FIRST_ROWS_FROM_STREAMING], None, EXPECTED_ERROR, False),
         (
             "dataset_ok",
-            [UPSTREAM_RESPONSE_SPLITS_ERROR, UPSTREAM_RESPONSE_SPLIT_FIRST_ROWS_FROM_STREAMING],
+            [UPSTREAM_RESPONSE_SPLIT_NAMES_FROM_DATASET_INFO_ERROR, UPSTREAM_RESPONSE_SPLIT_FIRST_ROWS_FROM_STREAMING],
             None,
             EXPECTED_ERROR,
             False,
         ),
         (
             "dataset_ok",
-            [UPSTREAM_RESPONSE_SPLITS, UPSTREAM_RESPONSE_SPLIT_FIRST_ROWS_FROM_STREAMING_ERROR],
+            [UPSTREAM_RESPONSE_SPLIT_NAMES_FROM_DATASET_INFO, UPSTREAM_RESPONSE_SPLIT_FIRST_ROWS_FROM_STREAMING_ERROR],
             None,
             EXPECTED_ERROR,
             False,
@@ -148,7 +148,7 @@ def get_job_runner(
             "dataset_ok",
             [
                 UPSTREAM_RESPONSE_SPLIT_NAMES_FROM_STREAMING,
-                UPSTREAM_RESPONSE_SPLITS_ERROR,
+                UPSTREAM_RESPONSE_SPLIT_NAMES_FROM_DATASET_INFO_ERROR,
                 UPSTREAM_RESPONSE_SPLIT_FIRST_ROWS_FROM_PARQUET,
                 UPSTREAM_RESPONSE_SPLIT_FIRST_ROWS_FROM_STREAMING_ERROR,
             ],
