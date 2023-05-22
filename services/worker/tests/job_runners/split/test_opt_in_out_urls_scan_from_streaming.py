@@ -10,7 +10,10 @@ from unittest.mock import patch
 import pytest
 from aiohttp import ClientSession
 from aiolimiter import AsyncLimiter
-from libcommon.constants import PROCESSING_STEP_SPLIT_OPT_IN_OUT_URLS_SCAN_VERSION
+from libcommon.constants import (
+    PROCESSING_STEP_SPLIT_FIRST_ROWS_FROM_STREAMING_VERSION,
+    PROCESSING_STEP_SPLIT_OPT_IN_OUT_URLS_SCAN_VERSION,
+)
 from libcommon.exceptions import ExternalServerError
 from libcommon.processing_graph import ProcessingGraph
 from libcommon.resources import CacheMongoResource, QueueMongoResource
@@ -233,7 +236,7 @@ def test_compute(
         split=split,
         content=upstream_content,
         dataset_git_revision="dataset_git_revision",
-        job_runner_version=PROCESSING_STEP_SPLIT_OPT_IN_OUT_URLS_SCAN_VERSION,
+        job_runner_version=PROCESSING_STEP_SPLIT_FIRST_ROWS_FROM_STREAMING_VERSION,
         progress=1.0,
         http_status=HTTPStatus.OK,
     )
