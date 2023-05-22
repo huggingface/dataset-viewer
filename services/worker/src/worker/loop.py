@@ -144,6 +144,7 @@ class Loop:
         )
         is_success = job_manager.run()
         self.queue.finish_job(job_id=job_manager.job_id, is_success=is_success)
+        job_manager.backfill()
         self.set_worker_state(current_job_info=None)
         finished_status = "success" if is_success else "error"
         logging.debug(f"job finished with {finished_status}: {job_manager}")

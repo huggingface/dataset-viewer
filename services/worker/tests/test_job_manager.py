@@ -145,6 +145,7 @@ def test_backfill(priority: Priority, app_config: AppConfig) -> None:
 
     # we add an entry to the cache
     job_manager.run()
+    job_manager.backfill()
     # check that the missing cache entries have been created
     queue = Queue()
     dataset_child_jobs = queue.get_dump_with_status(job_type="dataset-child", status=Status.WAITING)

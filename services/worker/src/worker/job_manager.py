@@ -114,7 +114,6 @@ class JobManager:
         except Exception:
             self.exception(f"error while computing {self}")
             result = False
-        self.backfill()
         return result
 
     def raise_if_parallel_response_exists(self, parallel_cache_kind: str, parallel_job_version: int) -> None:
