@@ -11,8 +11,8 @@ import pytest
 from aiohttp import ClientSession
 from aiolimiter import AsyncLimiter
 from libcommon.constants import (
-    PROCESSING_STEP_SPLIT_OPT_IN_OUT_URLS_SCAN_VERSION,
     PROCESSING_STEP_SPLIT_FIRST_ROWS_FROM_STREAMING_VERSION,
+    PROCESSING_STEP_SPLIT_OPT_IN_OUT_URLS_SCAN_VERSION,
 )
 from libcommon.exceptions import ExternalServerError
 from libcommon.processing_graph import ProcessingGraph
