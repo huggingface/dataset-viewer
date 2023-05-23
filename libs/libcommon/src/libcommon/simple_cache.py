@@ -158,7 +158,6 @@ def upsert_response_params(
     error_code: Optional[str] = None,
     details: Optional[Mapping[str, Any]] = None,
     job_runner_version: Optional[int] = None,
-    dataset_git_revision: Optional[str] = None,
     progress: Optional[float] = None,
     updated_at: Optional[datetime] = None,
 ) -> None:
