@@ -118,6 +118,7 @@ class Job(Document):
         "db_alias": QUEUE_MONGOENGINE_ALIAS,
         "indexes": [
             "dataset",
+            ("dataset", "revision", "status"),
             "status",
             ("type", "status"),
             ("type", "dataset", "status"),
