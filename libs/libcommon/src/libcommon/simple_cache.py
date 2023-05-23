@@ -168,7 +168,7 @@ def upsert_response_params(
         config=job_params["config"],
         split=job_params["split"],
         content=content,
-        dataset_git_revision=dataset_git_revision,
+        dataset_git_revision=job_params["revision"],
         details=details,
         error_code=error_code,
         http_status=http_status,
