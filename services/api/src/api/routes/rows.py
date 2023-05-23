@@ -135,7 +135,7 @@ PARQUET_METADATA_DATASETS_ALLOW_LIST: Union[Literal["all"], List[str]] = [
     "beans",  # images
     "lewtun/dog_food",  # images
     "glue",  # texts
-    "kmfoda/booksum", # long texts
+    "kmfoda/booksum",  # long texts
     "arabic_speech_corpus",  # audio
     "segments/sidewalk-semantic",  # two columns of full hd images
 ]
