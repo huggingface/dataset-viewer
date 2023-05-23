@@ -1096,6 +1096,7 @@ pymongo = {version = "^3.13.0", extras = ["srv"]}
 pytz = "^2020.1"
 requests = "^2.31.0"
 soundfile = ">=0.12.1"
+starlette-prometheus = "^0.9.0"
 
 [package.source]
 type = "directory"
