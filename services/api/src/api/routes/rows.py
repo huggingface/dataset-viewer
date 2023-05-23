@@ -131,10 +131,13 @@ def get_hf_parquet_uris(paths: List[str], dataset: str) -> List[str]:
 
 
 PARQUET_METADATA_DATASETS_ALLOW_LIST: Union[Literal["all"], List[str]] = [
-    "cifar100",
-    "beans",
-    "lewtun/dog_food",
-    "nateraw/kitti",
+    "cifar100",  # small images
+    "beans",  # images
+    "lewtun/dog_food",  # images
+    "glue",  # texts
+    "kmfoda/booksum",  # long texts
+    "arabic_speech_corpus",  # audio
+    "segments/sidewalk-semantic",  # two columns of full hd images
 ]
 
 UNSUPPORTED_FEATURES_MAGIC_STRINGS = ["'binary'"]
